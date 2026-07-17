@@ -54,6 +54,16 @@ describe('interactive overlay contract', () => {
     expect(chess).not.toMatch(/id="(?:black-name|white-name|game-over-title)"\s+data-i18n=/);
   });
 
+  test('newer Connect4 revisions cancel all local result and leaderboard presentation', () => {
+    const html = readOverlay('connect4.html');
+
+    expect(html).toContain('function clearInteractivePresentation()');
+    expect(html).toContain('clearInteractivePresentation();');
+    expect(html).toContain('showResult({ ...display.result, state: snapshotState }, { authoritative: true })');
+    expect(html).toContain('if (!authoritative)');
+    expect(html).not.toContain('interactiveLeaderboardTimer = setTimeout');
+  });
+
   test.each(['unified.html', 'connect4.html', 'chess.html'])(
     '%s contains syntactically valid inline scripts',
     filename => {

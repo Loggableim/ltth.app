@@ -691,6 +691,8 @@
     let lastInteractiveSessionRevision = -1;
     let latestInteractiveQueueIdle = true;
     let interactiveSnapshotActive = false;
+    let resultHideTimer = null;
+    let containerHideTimer = null;
     const ROWS = 6;
     const COLUMNS = 7;
 
@@ -921,6 +923,17 @@
     // Leaderboard display
     let currentLeaderboardIndex = 0;
     let leaderboardRotationInterval = null;
+
+    function clearInteractivePresentation() {
+      if (resultHideTimer) clearTimeout(resultHideTimer);
+      if (containerHideTimer) clearTimeout(containerHideTimer);
+      if (leaderboardRotationInterval) clearInterval(leaderboardRotationInterval);
+      resultHideTimer = null;
+      containerHideTimer = null;
+      leaderboardRotationInterval = null;
+      document.getElementById('game-result').classList.remove('show');
+      hideLeaderboard();
+    }
 
     // Show leaderboard rotation
     async function showLeaderboardRotation(gameType) {
@@ -1199,7 +1212,7 @@
     }
 
     // Show game result
-    function showResult(data) {
+    function showResult(data, { authoritative = false } = {}) {
       const resultDiv = document.getElementById('game-result');
       const resultText = document.getElementById('result-text');
       const xpReward = document.getElementById('xp-reward');
@@ -1284,18 +1297,23 @@
       
       resultDiv.classList.add('show');
       
-      // Hide result after 5 seconds
-      setTimeout(() => {
-        resultDiv.classList.remove('show');
-        setTimeout(() => {
-          document.getElementById('game-container').classList.remove('active');
-        }, 1000);
-      }, 5000);
+      if (!authoritative) {
+        // Legacy games still own their local result duration. Interactive
+        // games are hidden only by a newer authoritative display revision.
+        resultHideTimer = setTimeout(() => {
+          resultHideTimer = null;
+          resultDiv.classList.remove('show');
+          containerHideTimer = setTimeout(() => {
+            containerHideTimer = null;
+            document.getElementById('game-container').classList.remove('active');
+          }, 1000);
+        }, 5000);
+      }
     }
 
     function applyInteractiveSnapshot(state) {
       const display = state?.display;
-      if (!display || display.gameType !== 'connect4') return;
+      if (!display) return;
       const displayRevision = Number(display.displayRevision);
       const sessionRevision = Number(display.sessionRevision ?? display.result?.sessionRevision ?? -1);
       if (!Number.isFinite(displayRevision)) return;
@@ -1307,6 +1325,13 @@
 
       lastInteractiveDisplayRevision = displayRevision;
       lastInteractiveSessionRevision = sessionRevision;
+      clearInteractivePresentation();
+      if (display.gameType !== 'connect4') {
+        interactiveSnapshotActive = false;
+        currentSession = null;
+        document.getElementById('game-container').classList.remove('active');
+        return;
+      }
       latestInteractiveQueueIdle = (state.hostQueue?.length || 0) === 0;
       interactiveSnapshotActive = ['playing', 'animating', 'result'].includes(display.phase);
 
@@ -1322,12 +1347,7 @@
       document.getElementById('game-container').classList.add('active');
 
       if (display.phase === 'result' && display.result) {
-        showResult({ ...display.result, state: snapshotState });
-        if (latestInteractiveQueueIdle) {
-          setTimeout(() => showLeaderboardRotation('connect4'), 5500);
-        }
-      } else {
-        document.getElementById('game-result').classList.remove('show');
+        showResult({ ...display.result, state: snapshotState }, { authoritative: true });
       }
     }
 

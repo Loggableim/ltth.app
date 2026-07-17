@@ -550,6 +550,13 @@ class GameEngineDatabase {
       CREATE INDEX IF NOT EXISTS game_interactive_queue_sequence
         ON game_interactive_queue(sequence);
 
+      CREATE TABLE IF NOT EXISTS game_interactive_move_identities (
+        session_id INTEGER NOT NULL,
+        move_identity TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        PRIMARY KEY (session_id, move_identity)
+      );
+
       CREATE TABLE IF NOT EXISTS game_interactive_meta (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
@@ -733,7 +740,34 @@ class GameEngineDatabase {
       SELECT * FROM game_interactive_sessions
       WHERE status = 'active'
       ORDER BY created_at ASC, session_id ASC
-    `).all().map(row => this._mapInteractiveStateRow(row));
+    `).all().map(row => {
+      try {
+        return this._mapInteractiveStateRow(row);
+      } catch (error) {
+        return {
+          sessionId: row.session_id,
+          gameType: row.game_type,
+          recoveryError: error.message
+        };
+      }
+    });
+  }
+
+  hasInteractiveMoveIdentity(sessionId, moveIdentity) {
+    if (!moveIdentity) return false;
+    return Boolean(this.db.prepare(`
+      SELECT 1 FROM game_interactive_move_identities
+      WHERE session_id = ? AND move_identity = ?
+    `).get(sessionId, String(moveIdentity)));
+  }
+
+  recordInteractiveMoveIdentity(sessionId, moveIdentity) {
+    if (!moveIdentity) return false;
+    return this.db.prepare(`
+      INSERT OR IGNORE INTO game_interactive_move_identities (
+        session_id, move_identity, created_at
+      ) VALUES (?, ?, ?)
+    `).run(sessionId, String(moveIdentity), Date.now()).changes > 0;
   }
 
   enqueueInteractiveTurn(entry) {
@@ -791,6 +825,25 @@ class GameEngineDatabase {
         viewerDeadlineMs: null
       });
       return this.getInteractiveState(sessionId);
+    });
+  }
+
+  failInteractiveRecovery(sessionId) {
+    return this.transaction(() => {
+      this.removeInteractiveTurn(sessionId);
+      const interactiveChanged = this.db.prepare(`
+        UPDATE game_interactive_sessions
+        SET status = 'completed', terminal_reason = 'recovery_failed',
+            viewer_deadline_ms = NULL, updated_at = ?
+        WHERE session_id = ?
+      `).run(Date.now(), sessionId).changes > 0;
+      this.db.prepare(`
+        UPDATE game_sessions
+        SET status = 'completed', win_reason = 'recovery_failed',
+            ended_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND status IN ('waiting', 'active')
+      `).run(sessionId);
+      return interactiveChanged;
     });
   }
 

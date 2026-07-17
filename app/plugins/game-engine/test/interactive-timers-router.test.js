@@ -94,6 +94,27 @@ describe('InteractiveTurnTimers', () => {
     expect(onHostTimeout).not.toHaveBeenCalled();
   });
 
+  test('checkpoints the visible chess host clock and persists its final value on destroy', () => {
+    const visible = session({
+      gameType: 'chess',
+      turnRole: 'host',
+      hostTimeRemainingMs: 10000
+    });
+    sessions.set(1, visible);
+    timers.resumeHostChess(visible);
+
+    jest.advanceTimersByTime(2100);
+    expect(database.updateInteractiveState).toHaveBeenLastCalledWith(1, {
+      hostTimeRemainingMs: 8000
+    });
+
+    jest.advanceTimersByTime(400);
+    timers.destroy();
+    expect(database.updateInteractiveState).toHaveBeenLastCalledWith(1, {
+      hostTimeRemainingMs: 7500
+    });
+  });
+
   test('ends a visible chess host turn exactly once when its clock expires', () => {
     const visible = session({
       gameType: 'chess',

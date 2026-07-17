@@ -6,7 +6,10 @@ class InteractiveTurnTimers {
     onHostTimeout,
     now = () => Date.now(),
     setTimeoutFn = setTimeout,
-    clearTimeoutFn = clearTimeout
+    clearTimeoutFn = clearTimeout,
+    setIntervalFn = setInterval,
+    clearIntervalFn = clearInterval,
+    hostCheckpointIntervalMs = 1000
   }) {
     this.getSession = getSession;
     this.database = database;
@@ -15,6 +18,9 @@ class InteractiveTurnTimers {
     this.now = now;
     this.setTimeoutFn = setTimeoutFn;
     this.clearTimeoutFn = clearTimeoutFn;
+    this.setIntervalFn = setIntervalFn;
+    this.clearIntervalFn = clearIntervalFn;
+    this.hostCheckpointIntervalMs = hostCheckpointIntervalMs;
     this.viewerTimers = new Map();
     this.hostTimers = new Map();
   }
@@ -91,6 +97,8 @@ class InteractiveTurnTimers {
     const remaining = Math.max(0, Number(session.hostTimeRemainingMs) || 0);
     const startedAt = this.now();
     const timeout = this.setTimeoutFn(() => {
+      const running = this.hostTimers.get(sessionId);
+      if (running?.checkpoint) this.clearIntervalFn(running.checkpoint);
       this.hostTimers.delete(sessionId);
       const current = this.getSession(sessionId);
       if (
@@ -109,7 +117,27 @@ class InteractiveTurnTimers {
       this.onHostTimeout?.(sessionId, revision);
     }, remaining);
     timeout.unref?.();
-    this.hostTimers.set(sessionId, { timeout, startedAt, remaining, revision });
+    const checkpoint = this.setIntervalFn(() => {
+      const running = this.hostTimers.get(sessionId);
+      const current = this.getSession(sessionId);
+      if (
+        !running ||
+        !current ||
+        current.status !== 'active' ||
+        current.gameType !== 'chess' ||
+        current.turnRole !== 'host' ||
+        current.sessionRevision !== revision
+      ) {
+        return;
+      }
+      const checkpointRemaining = Math.max(0, remaining - (this.now() - startedAt));
+      current.hostTimeRemainingMs = checkpointRemaining;
+      this.database.updateInteractiveState(sessionId, {
+        hostTimeRemainingMs: checkpointRemaining
+      });
+    }, this.hostCheckpointIntervalMs);
+    checkpoint.unref?.();
+    this.hostTimers.set(sessionId, { timeout, checkpoint, startedAt, remaining, revision });
     return remaining;
   }
 
@@ -118,6 +146,7 @@ class InteractiveTurnTimers {
     const running = this.hostTimers.get(sessionId);
     if (!running) return session.hostTimeRemainingMs;
     this.clearTimeoutFn(running.timeout);
+    if (running.checkpoint) this.clearIntervalFn(running.checkpoint);
     this.hostTimers.delete(sessionId);
     const remaining = Math.max(0, running.remaining - (this.now() - running.startedAt));
     session.hostTimeRemainingMs = remaining;
@@ -139,13 +168,19 @@ class InteractiveTurnTimers {
     const normalizedId = Number(sessionId);
     this.clearViewer(normalizedId, { persist: false });
     const running = this.hostTimers.get(normalizedId);
-    if (running) this.clearTimeoutFn(running.timeout);
+    if (running) {
+      this.clearTimeoutFn(running.timeout);
+      if (running.checkpoint) this.clearIntervalFn(running.checkpoint);
+    }
     this.hostTimers.delete(normalizedId);
   }
 
   destroy() {
+    for (const sessionId of Array.from(this.hostTimers.keys())) {
+      const session = this.getSession(sessionId);
+      if (session) this.pauseHostChess(session, { persist: true });
+    }
     for (const timeout of this.viewerTimers.values()) this.clearTimeoutFn(timeout);
-    for (const running of this.hostTimers.values()) this.clearTimeoutFn(running.timeout);
     this.viewerTimers.clear();
     this.hostTimers.clear();
   }

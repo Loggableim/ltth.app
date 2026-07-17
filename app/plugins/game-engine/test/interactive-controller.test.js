@@ -26,6 +26,7 @@ function createHarness(options = {}) {
   const io = { emit: jest.fn() };
   const finishGame = jest.fn();
   const emitLegacyEvent = jest.fn();
+  const discardRestoredGame = jest.fn();
   const settings = {
     connect4ViewerResponseSeconds: 30,
     chessViewerResponseSeconds: 60,
@@ -90,6 +91,7 @@ function createHarness(options = {}) {
     logger,
     createGame,
     restoreGame,
+    discardRestoredGame,
     finishGame,
     emitLegacyEvent,
     resolveHostName: () => 'RealHost',
@@ -109,7 +111,8 @@ function createHarness(options = {}) {
     finishGame,
     emitLegacyEvent,
     createGame,
-    restoreGame
+    restoreGame,
+    discardRestoredGame
   };
 }
 
@@ -222,6 +225,73 @@ describe('InteractiveController', () => {
     harness.sqlite.close();
   });
 
+  test('rejects a chess host move when the visible clock already reached zero', () => {
+    const harness = createHarness();
+    harness.controller.init();
+    const chess = harness.controller.startMatch({
+      gameType: 'chess',
+      viewerId: 'flagged-host-viewer',
+      viewerDisplayName: 'Flagged Host Viewer',
+      timeControl: '0.1+0'
+    });
+    const display = harness.controller.getState().display;
+    harness.controller.timers.hostTimers.get(chess.sessionId).startedAt -= 6001;
+
+    expect(harness.controller.applyHostMove({
+      sessionId: chess.sessionId,
+      gameType: 'chess',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move: { move: 'e4' }
+    })).toMatchObject({ success: false, error: 'host_timeout' });
+    expect(harness.controller.getState().activeSessions).toEqual([]);
+    expect(harness.finishGame).toHaveBeenCalledWith(expect.objectContaining({
+      sessionId: chess.sessionId,
+      reason: 'host_timeout',
+      winnerRole: 'viewer'
+    }));
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('uses the response deadline instead of the viewer total chess clock', () => {
+    const harness = createHarness({
+      settings: { chessViewerResponseSeconds: 60 }
+    });
+    harness.controller.init();
+    const chess = harness.controller.startMatch({
+      gameType: 'chess',
+      viewerId: 'patient-viewer',
+      viewerDisplayName: 'Patient Viewer',
+      timeControl: '0.1+0'
+    });
+    let display = harness.controller.getState().display;
+    expect(harness.controller.applyHostMove({
+      sessionId: chess.sessionId,
+      gameType: 'chess',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move: { move: 'e4' }
+    })).toMatchObject({ success: true });
+
+    jest.advanceTimersByTime(7000);
+    expect(harness.controller.applyViewerMove({
+      viewerId: 'patient-viewer',
+      gameType: 'chess',
+      move: { move: 'e5' },
+      moveIdentity: 'chat-patient-1'
+    })).toMatchObject({ success: true });
+
+    const active = harness.controller.getState().activeSessions[0];
+    expect(active).toMatchObject({ status: 'active', turnRole: 'host', moveCount: 2 });
+    expect(active.state.timers.black).toBe(6000);
+    expect(active.state.winner).toBeNull();
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
   test('routes viewer chat moves only to the stable viewer session', () => {
     const harness = createHarness({ connect4HostStarts: false });
     harness.controller.init();
@@ -245,6 +315,42 @@ describe('InteractiveController', () => {
     });
     expect(duplicate).toMatchObject({ success: true, duplicate: true });
     expect(harness.controller.getState().hostQueue).toHaveLength(1);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('deduplicates a delayed viewer chat event after an intervening host move', () => {
+    const harness = createHarness({ connect4HostStarts: false });
+    harness.controller.init();
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'viewer-delayed',
+      viewerDisplayName: 'Delayed Viewer'
+    });
+    expect(harness.controller.applyViewerMove({
+      viewerId: 'viewer-delayed',
+      gameType: 'connect4',
+      move: { column: 'A' },
+      moveIdentity: 'chat-delayed-1'
+    })).toMatchObject({ success: true });
+
+    const display = harness.controller.getState().display;
+    expect(harness.controller.applyHostMove({
+      sessionId: match.sessionId,
+      gameType: 'connect4',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move: { column: 'B' }
+    })).toMatchObject({ success: true });
+
+    expect(harness.controller.applyViewerMove({
+      viewerId: 'viewer-delayed',
+      gameType: 'connect4',
+      move: { column: 'A' },
+      moveIdentity: 'chat-delayed-1'
+    })).toMatchObject({ success: true, duplicate: true });
+    expect(harness.controller.getState().activeSessions[0].moveCount).toBe(2);
 
     harness.controller.destroy();
     harness.sqlite.close();
@@ -325,6 +431,64 @@ describe('InteractiveController', () => {
     ]);
     expect(secondHarness.controller.getState().display.displaySessionId).toBe(first.sessionId);
     expect(secondHarness.restoreGame).toHaveBeenCalledTimes(2);
+
+    secondHarness.controller.destroy();
+    firstHarness.sqlite.close();
+  });
+
+  test('persists the live chess host clock before an orderly restart', () => {
+    const firstHarness = createHarness();
+    firstHarness.controller.init();
+    const chess = firstHarness.controller.startMatch({
+      gameType: 'chess',
+      viewerId: 'restart-viewer',
+      viewerDisplayName: 'Restart Viewer',
+      timeControl: '5+0'
+    });
+    jest.advanceTimersByTime(2500);
+    firstHarness.controller.destroy();
+
+    expect(firstHarness.database.getInteractiveState(chess.sessionId).hostTimeRemainingMs).toBe(297500);
+
+    const secondHarness = createHarness({
+      dbContext: firstHarness.dbContext,
+      nextSessionId: 100
+    });
+    secondHarness.controller.init();
+    expect(secondHarness.controller.getState().display.hostTimeRemainingMs).toBe(297500);
+
+    secondHarness.controller.destroy();
+    firstHarness.sqlite.close();
+  });
+
+  test('closes only a corrupt persisted session and restores the remaining games', () => {
+    const firstHarness = createHarness();
+    firstHarness.controller.init();
+    const corrupt = firstHarness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'corrupt-viewer',
+      viewerDisplayName: 'Corrupt Viewer'
+    });
+    const healthy = firstHarness.controller.startMatch({
+      gameType: 'chess',
+      viewerId: 'healthy-viewer',
+      viewerDisplayName: 'Healthy Viewer'
+    });
+    firstHarness.controller.destroy();
+    firstHarness.sqlite.prepare(`
+      UPDATE game_interactive_sessions SET state_json = ? WHERE session_id = ?
+    `).run('{not-json', corrupt.sessionId);
+
+    const secondHarness = createHarness({
+      dbContext: firstHarness.dbContext,
+      nextSessionId: 100
+    });
+    expect(secondHarness.controller.init()).toMatchObject({ recovered: 1 });
+    expect(secondHarness.controller.getState().activeSessions.map(row => row.sessionId)).toEqual([healthy.sessionId]);
+    expect(firstHarness.sqlite.prepare(`
+      SELECT status, terminal_reason FROM game_interactive_sessions WHERE session_id = ?
+    `).get(corrupt.sessionId)).toEqual({ status: 'completed', terminal_reason: 'recovery_failed' });
+    expect(secondHarness.discardRestoredGame).toHaveBeenCalledWith(corrupt.sessionId);
 
     secondHarness.controller.destroy();
     firstHarness.sqlite.close();

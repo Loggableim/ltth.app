@@ -62,6 +62,15 @@ describe('GameEnginePlugin interactive controller integration', () => {
     expect(plugin._resolveHostDisplayName()).toBe('Streamer');
   });
 
+  test('discards an orphaned legacy game instance after failed interactive recovery', () => {
+    const { plugin } = createPlugin();
+    plugin.activeSessions.set(17, { status: 'active' });
+
+    plugin._discardRestoredInteractiveGame(17);
+
+    expect(plugin.activeSessions.has(17)).toBe(false);
+  });
+
   test('starts interactive games immediately instead of adding them to UnifiedQueueManager', () => {
     const { plugin } = createPlugin();
     plugin.interactiveController = {
