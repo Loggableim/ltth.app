@@ -132,6 +132,37 @@ describe('Gift catalog refresh while connected', () => {
     expect(result.count).toBe(1);
   });
 
+  test('uses the saved username to refresh the room ID while disconnected', async () => {
+    const { adapter, db } = createAdapter();
+    db.getSetting.mockImplementation((key) => (
+      key === 'last_connected_username' ? '@offline-streamer' : null
+    ));
+    adapter.currentUsername = null;
+    adapter.fetchRoomId = jest.fn(async (username) => {
+      adapter.roomId = '7312345678901234569';
+      return username;
+    });
+    axios.get.mockResolvedValueOnce({
+      data: {
+        data: {
+          gifts: [{
+            id: '5655',
+            name: 'Rose',
+            image: { url_list: ['https://example.test/rose.png'] },
+            diamond_count: '1'
+          }]
+        }
+      }
+    });
+
+    const result = await adapter.updateGiftCatalog({ preferConnected: true });
+
+    expect(adapter.fetchRoomId).toHaveBeenCalledWith('offline-streamer');
+    expect(axios.get.mock.calls[0][0]).toContain('room_id=7312345678901234569');
+    expect(result.success).toBe(true);
+    expect(result.count).toBe(1);
+  });
+
   test('normalizes locale codes before persisting refreshed gift catalogs', async () => {
     const { adapter, db } = createAdapter();
 
