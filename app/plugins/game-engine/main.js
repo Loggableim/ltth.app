@@ -26,6 +26,7 @@ const WheelGame = require('./games/wheel');
 const SlotGame = require('./games/slot');
 const ArenaGame = require('./games/arena');
 const UnifiedQueueManager = require('./backend/unified-queue');
+const InteractiveController = require('./backend/interactive-controller');
 const SocketAuthorization = require('./backend/socket-authorization');
 const path = require('path');
 const fs = require('fs');
@@ -80,6 +81,7 @@ class GameEnginePlugin {
     // Unified queue manager for Plinko, Wheel, Slot, Connect4, and Chess
     this.unifiedQueue = new UnifiedQueueManager(this.logger, this.io);
     this.unifiedQueue.setGameEnginePlugin(this);
+    this.interactiveController = null;
     
     // GCCE integration state
     this.gcceCommandsRegistered = false;
@@ -172,8 +174,36 @@ class GameEnginePlugin {
           labelWin:       '🏆 {player} gewinnt!',
         }
       },
+      interactive: {
+        connect4ViewerResponseSeconds: 30,
+        chessViewerResponseSeconds: 60,
+        maxConcurrentInteractiveSessions: 20,
+        interactiveResultDisplaySeconds: 3
+      },
       arena: ArenaGame.DEFAULT_CONFIG
     };
+  }
+
+  _resolveHostDisplayName() {
+    const liveUsername = String(this.api.tiktok?.currentUsername || '').trim().replace(/^@/, '');
+    if (liveUsername) return liveUsername;
+    const activeProfile = String(this.api.pluginLoader?.activeProfile || '').trim().replace(/^@/, '');
+    return activeProfile || 'Streamer';
+  }
+
+  _getChatMoveIdentity(data) {
+    const identity = data?.msgId ?? data?.messageId ?? data?.id ?? data?.eventId;
+    return identity == null || identity === '' ? null : `chat:${identity}`;
+  }
+
+  _getInteractiveSettings() {
+    const stored = this.db?.getGameConfig?.('interactive') || {};
+    const settings = this._getConfigWithDefaults('interactive', stored);
+    if (stored.connect4ViewerResponseSeconds == null && this.db?.getRoundTimer) {
+      const legacyTimer = this.db.getRoundTimer('connect4');
+      settings.connect4ViewerResponseSeconds = Number(legacyTimer?.time_limit_seconds) || 30;
+    }
+    return settings;
   }
 
   _getSocketIO() {
@@ -206,6 +236,154 @@ class GameEnginePlugin {
 
     this.db = new GameEngineDatabase(this.api, this.logger);
     this.db.initialize();
+  }
+
+  _createInteractiveGame({
+    gameType,
+    viewerId,
+    viewerDisplayName,
+    hostDisplayName,
+    config,
+    timeControl,
+    triggerType,
+    triggerValue
+  }) {
+    if (gameType === 'connect4') {
+      const streamerRole = config.streamerRole || 'player2';
+      const sessionId = this.db.createSession(
+        gameType,
+        streamerRole === 'player1' ? 'streamer' : viewerId,
+        streamerRole === 'player1' ? 'streamer' : 'viewer',
+        triggerType,
+        triggerValue
+      );
+      this.db.addPlayer2(
+        sessionId,
+        streamerRole === 'player2' ? 'streamer' : viewerId,
+        streamerRole === 'player2' ? 'streamer' : 'viewer'
+      );
+      const player1 = {
+        username: streamerRole === 'player1' ? 'streamer' : viewerId,
+        role: streamerRole === 'player1' ? 'streamer' : 'viewer',
+        color: config.player1Color,
+        nickname: streamerRole === 'player1' ? hostDisplayName : viewerDisplayName
+      };
+      const player2 = {
+        username: streamerRole === 'player2' ? 'streamer' : viewerId,
+        role: streamerRole === 'player2' ? 'streamer' : 'viewer',
+        color: config.player2Color,
+        nickname: streamerRole === 'player2' ? hostDisplayName : viewerDisplayName
+      };
+      const game = new Connect4Game(sessionId, player1, player2, this.logger);
+      this.activeSessions.set(sessionId, game);
+      return { sessionId, game, timeControl: null };
+    }
+
+    const configuredSide = config.streamerRole || 'random';
+    const streamerSide = configuredSide === 'white' || configuredSide === 'black'
+      ? configuredSide
+      : Math.random() < 0.5 ? 'white' : 'black';
+    const gameTimeControl = timeControl || config.defaultTimeControl || '5+0';
+    const sessionId = this.db.createSession(
+      'chess',
+      streamerSide === 'white' ? 'streamer' : viewerId,
+      streamerSide === 'white' ? 'streamer' : 'viewer',
+      triggerType,
+      triggerValue
+    );
+    this.db.addPlayer2(
+      sessionId,
+      streamerSide === 'black' ? 'streamer' : viewerId,
+      streamerSide === 'black' ? 'streamer' : 'viewer'
+    );
+    const whitePlayer = {
+      username: streamerSide === 'white' ? 'streamer' : viewerId,
+      role: streamerSide === 'white' ? 'streamer' : 'viewer',
+      color: config.whiteColor,
+      nickname: streamerSide === 'white' ? hostDisplayName : viewerDisplayName,
+      side: 'white'
+    };
+    const blackPlayer = {
+      username: streamerSide === 'black' ? 'streamer' : viewerId,
+      role: streamerSide === 'black' ? 'streamer' : 'viewer',
+      color: config.blackColor,
+      nickname: streamerSide === 'black' ? hostDisplayName : viewerDisplayName,
+      side: 'black'
+    };
+    const game = new ChessGame(sessionId, whitePlayer, blackPlayer, gameTimeControl, this.logger);
+    this.activeSessions.set(sessionId, game);
+    return { sessionId, game, timeControl: gameTimeControl };
+  }
+
+  _restoreInteractiveGame(row) {
+    let game;
+    if (row.gameType === 'connect4') {
+      game = new Connect4Game(row.sessionId, row.state.player1, row.state.player2, this.logger);
+    } else {
+      game = new ChessGame(
+        row.sessionId,
+        row.state.whitePlayer,
+        row.state.blackPlayer,
+        row.timeControl || '5+0',
+        this.logger
+      );
+    }
+    this.activeSessions.set(row.sessionId, game);
+    return { sessionId: row.sessionId, game, timeControl: row.timeControl };
+  }
+
+  _emitInteractiveLegacyEvent(event, payload) {
+    const session = payload.session;
+    if (event === 'started') {
+      this.io.emit('game-engine:game-started', {
+        sessionId: session.sessionId,
+        gameType: session.gameType,
+        state: payload.state,
+        config: payload.config,
+        timeControl: session.timeControl,
+        useUnified: true
+      });
+      return;
+    }
+    if (event === 'move') {
+      const move = payload.result.move;
+      if (move && this.db?.saveMove) {
+        const playerUsername = payload.actorRole === 'host' ? 'streamer' : session.viewerId;
+        this.db.saveMove(session.sessionId, playerUsername, move, move.moveNumber);
+      }
+      this.io.emit('game-engine:move-made', {
+        sessionId: session.sessionId,
+        gameType: session.gameType,
+        move,
+        state: session.adapter.getState()
+      });
+    }
+  }
+
+  _finishInteractiveGame(payload) {
+    this.endGame(
+      payload.sessionId,
+      payload.winner,
+      payload.reason,
+      payload.gameResult,
+      { interactive: true }
+    );
+  }
+
+  _initializeInteractiveController() {
+    this.interactiveController = new InteractiveController({
+      database: this.db,
+      io: this.io,
+      logger: this.logger,
+      createGame: input => this._createInteractiveGame(input),
+      restoreGame: row => this._restoreInteractiveGame(row),
+      finishGame: payload => this._finishInteractiveGame(payload),
+      emitLegacyEvent: (event, payload) => this._emitInteractiveLegacyEvent(event, payload),
+      resolveHostName: () => this._resolveHostDisplayName(),
+      getConfig: gameType => this._getConfigWithDefaults(gameType, this.db.getGameConfig(gameType)),
+      getSettings: () => this._getInteractiveSettings()
+    });
+    return this.interactiveController.init();
   }
 
   _safeJoin(baseDir, ...parts) {
@@ -826,6 +1004,9 @@ class GameEnginePlugin {
       } catch (error) {
         this.logger.warn(`Failed to load overlay settings: ${error.message}`);
       }
+
+      const interactiveRecovery = this._initializeInteractiveController();
+      this.logger.info(`Interactive games restored: ${interactiveRecovery.recovered}, host queue: ${interactiveRecovery.queueLength}`);
       
       // Register routes
       this.registerRoutes();
@@ -951,6 +1132,14 @@ class GameEnginePlugin {
       this.arenaGame = null;
     }
 
+    const interactiveSessionIds = new Set(
+      this.interactiveController?.registry?.list?.().map(session => session.sessionId) || []
+    );
+    if (this.interactiveController) {
+      this.interactiveController.destroy();
+      this.interactiveController = null;
+    }
+
     // Destroy unified queue
     if (this.unifiedQueue) {
       this.unifiedQueue.destroy();
@@ -979,6 +1168,10 @@ class GameEnginePlugin {
         } catch (error) {
           this.logger.warn(`Failed to clear timer interval for session ${sessionId}: ${error.message}`);
         }
+      }
+      if (interactiveSessionIds.has(sessionId)) {
+        this.activeSessions.delete(sessionId);
+        continue;
       }
       this.endGame(sessionId, null, 'plugin_shutdown');
     }
@@ -1736,35 +1929,25 @@ class GameEnginePlugin {
       }
     });
 
-    // API: Get active session
+    this.api.registerRoute('GET', '/api/game-engine/interactive/state', (req, res) => {
+      if (!this.interactiveController) {
+        return res.status(503).json({ error: 'Interactive controller is not initialized' });
+      }
+      return res.json(this.interactiveController.getState());
+    });
+
+    // Compatibility endpoint: return the authoritative board selected for display.
     this.api.registerRoute('GET', '/api/game-engine/active-session', (req, res) => {
       try {
-        // Return the first active session (in a real scenario, might need to filter by streamer)
-        const activeSessions = Array.from(this.activeSessions.entries()).map(([id, game]) => {
-          // Determine game type from the game instance
-          let gameType = 'connect4';
-          if (game.chess) {
-            // ChessGame has a chess.js instance
-            gameType = 'chess';
-          } else if (game.COLUMNS && game.ROWS) {
-            // Connect4Game has COLUMNS and ROWS properties
-            gameType = 'connect4';
-          }
-          
-          // Also check database for stored game type
-          const session = this.db.getSession(id);
-          if (session && session.game_type) {
-            gameType = session.game_type;
-          }
-          
-          return {
-            sessionId: id,
-            gameType: gameType,
-            state: game.getState()
-          };
-        });
-        
-        res.json(activeSessions.length > 0 ? activeSessions[0] : null);
+        if (this.interactiveController) {
+          const display = this.interactiveController.getState().display;
+          return res.json(display.displaySessionId == null ? null : {
+            sessionId: display.displaySessionId,
+            gameType: display.gameType,
+            state: display.state
+          });
+        }
+        return res.json(null);
       } catch (error) {
         this.logger.error(`Error getting active session: ${error.message}`);
         res.status(500).json({ error: error.message });
@@ -3353,6 +3536,21 @@ class GameEnginePlugin {
         this.handleStreamerMove(data);
       });
 
+      socket.on('game-engine:interactive-host-move', (data) => {
+        if (!this._requireSocketRole(socket, 'game-engine:interactive-host-move', 'admin')) return;
+        const result = this.interactiveController?.applyHostMove(data) || {
+          success: false,
+          error: 'interactive_controller_unavailable'
+        };
+        if (!result.success) {
+          socket.emit('game-engine:error', {
+            sessionId: data?.sessionId,
+            error: result.error
+          });
+          this.interactiveController?.emitState(socket);
+        }
+      });
+
       socket.on('game-engine:cancel-game', (data) => {
         if (!this._requireSocketRole(socket, 'game-engine:cancel-game', 'admin')) return;
         this.cancelGame(data.sessionId);
@@ -3412,6 +3610,10 @@ class GameEnginePlugin {
       // Unified overlay requests current game state (e.g. on load or reconnect)
       socket.on('game-engine:request-state', () => {
         if (!this._requireSocketRole(socket, 'game-engine:request-state', ['admin', 'overlay'])) return;
+        if (this.interactiveController) {
+          this.interactiveController.emitState(socket);
+          return;
+        }
         if (this.activeSessions.size > 0) {
           const [sessionId] = [...this.activeSessions.entries()][0];
           const session = this.db.getSession(sessionId);
@@ -4290,7 +4492,7 @@ class GameEnginePlugin {
    * @returns {boolean} True if should use unified queue
    */
   shouldUseUnifiedQueue(gameType) {
-    return this.unifiedQueue && (gameType === 'connect4' || gameType === 'chess');
+    return false;
   }
 
   /**
@@ -4301,6 +4503,17 @@ class GameEnginePlugin {
 
     if (!['connect4', 'chess'].includes(gameType)) {
       return { success: false, error: 'unsupported_game_type' };
+    }
+
+    if (this.interactiveController) {
+      return this.interactiveController.startMatch({
+        gameType,
+        viewerId: viewerUsername,
+        viewerDisplayName: viewerNickname,
+        triggerType,
+        triggerValue,
+        giftPictureUrl
+      });
     }
 
     // Check if unified queue is available for this game type
@@ -4377,6 +4590,17 @@ class GameEnginePlugin {
   async startGameFromQueue(gameType, viewerUsername, viewerNickname, triggerType, triggerValue, giftPictureUrl = null) {
     try {
       this._ensureDatabaseInitialized();
+
+      if (this.interactiveController) {
+        return this.interactiveController.startMatch({
+          gameType,
+          viewerId: viewerUsername,
+          viewerDisplayName: viewerNickname,
+          triggerType,
+          triggerValue,
+          giftPictureUrl
+        });
+      }
 
       this.logger.info(`🎮 [GAME ENGINE] Starting ${gameType} from unified queue for ${viewerUsername}`);
       // Check if player already has an active game
@@ -4540,7 +4764,7 @@ class GameEnginePlugin {
       const c4Match = message.match(/^\/c4\s+([a-g])$/i);
       if (c4Match) {
         const column = c4Match[1].toUpperCase();
-        this.handleViewerMove(viewerId, viewerNickname, 'connect4', column);
+        this.handleViewerMove(viewerId, viewerNickname, 'connect4', column, this._getChatMoveIdentity(data));
         return;
       }
       
@@ -4584,7 +4808,7 @@ class GameEnginePlugin {
     
     if (match) {
       const column = match[1].toUpperCase();
-      this.handleViewerMove(viewerId, viewerNickname, 'connect4', column);
+      this.handleViewerMove(viewerId, viewerNickname, 'connect4', column, this._getChatMoveIdentity(data));
     }
   }
 
@@ -4686,7 +4910,13 @@ class GameEnginePlugin {
         };
       }
 
-      return this.handleViewerMove(userId, nickname, 'connect4', column);
+      return this.handleViewerMove(
+        userId,
+        nickname,
+        'connect4',
+        column,
+        this._getChatMoveIdentity(context.rawData || context)
+      );
     } catch (error) {
       this.logger.error(`Error in handleConnect4Command: ${error.message}`);
       return {
@@ -4709,44 +4939,22 @@ class GameEnginePlugin {
       
       const c4ChatCommand = this.getConnect4StartCommandName();
       
-      // Check if there's already an active game
-      if (this.activeSessions.size > 0 || this.pendingChallenges.size > 0) {
-        // Game in progress - add to queue
-        const result = this.handleGameStart('connect4', userId, nickname, 'command', `/${c4ChatCommand}`);
-
-        if (result && result.queued === false) {
-          return {
-            success: false,
-            error: result.error || 'Queue rejected request',
-            message: result.error || 'Could not queue game.',
-            displayOverlay: true
-          };
-        }
-        
-        return {
-          success: true,
-          message: `Game queued! You are position ${result?.position || 0} in the queue.`,
-          displayOverlay: true
-        };
-      }
-
-      // Check if player already has an active game
-      const activeSession = this.db.getActiveSessionForPlayer(userId);
-      if (activeSession) {
+      const result = this.handleGameStart('connect4', userId, nickname, 'command', `/${c4ChatCommand}`);
+      if (!result?.success) {
         return {
           success: false,
-          error: 'You already have an active game',
-          message: 'You already have a game in progress.',
+          error: result?.error || 'game_start_failed',
+          message: result?.error === 'active_session'
+            ? 'You already have an interactive game in progress.'
+            : result?.error === 'interactive_session_limit'
+              ? 'The interactive game limit is currently reached.'
+              : 'Could not start the game.',
           displayOverlay: true
         };
       }
-
-      // Start a new game via command (no gift required)
-      this.handleGameStart('connect4', userId, nickname, 'command', `/${c4ChatCommand}`);
-      
       return {
         success: true,
-        message: `Game started! ${nickname} vs Streamer. Use /c4 <A-G> to make your move.`,
+        message: `Game started! ${this._resolveHostDisplayName()} vs ${nickname}. Use /c4 <A-G> to make your move.`,
         displayOverlay: true
       };
     } catch (error) {
@@ -4768,6 +4976,17 @@ class GameEnginePlugin {
     if (gameType !== 'connect4' && gameType !== 'chess') {
       this.logger.warn(`Unsupported game type: ${gameType}`);
       return { success: false, error: `Unsupported game type: ${gameType}` };
+    }
+
+    if (this.interactiveController) {
+      return this.interactiveController.startMatch({
+        gameType,
+        viewerId: viewerUsername,
+        viewerDisplayName: viewerNickname,
+        triggerType,
+        triggerValue,
+        timeControl
+      });
     }
 
     // Get configuration
@@ -5040,7 +5259,26 @@ class GameEnginePlugin {
   /**
    * Handle viewer move
    */
-  handleViewerMove(username, nickname, gameType, column) {
+  handleViewerMove(username, nickname, gameType, column, moveIdentity = null) {
+    if (this.interactiveController) {
+      const result = this.interactiveController.applyViewerMove({
+        viewerId: username,
+        gameType,
+        move: { column },
+        moveIdentity
+      });
+      const messages = {
+        no_active_session: 'You do not have an active game.',
+        wrong_game_type: 'Use the move command for your active game.',
+        not_viewer_turn: 'It is not your turn!',
+        viewer_timeout: 'Your response time expired. You lost the game.'
+      };
+      return {
+        ...result,
+        message: result.success ? 'Move made successfully!' : messages[result.error] || result.error,
+        displayOverlay: true
+      };
+    }
     // Find active game for this viewer
     const activeSession = this.db.getActiveSessionForPlayer(username);
     
@@ -5121,6 +5359,28 @@ class GameEnginePlugin {
    * Handle streamer move
    */
   handleStreamerMove(data) {
+    if (this.interactiveController) {
+      const display = this.interactiveController.getState().display;
+      const envelope = data?.gameType && data?.sessionRevision != null && data?.displayRevision != null
+        ? data
+        : {
+          sessionId: data?.sessionId,
+          gameType: display.gameType,
+          sessionRevision: display.sessionRevision,
+          displayRevision: display.displayRevision,
+          move: display.gameType === 'chess'
+            ? { move: data?.move }
+            : { column: data?.column }
+        };
+      const result = this.interactiveController.applyHostMove(envelope);
+      if (!result.success) {
+        this.io.emit('game-engine:error', {
+          sessionId: envelope.sessionId,
+          error: result.error
+        });
+      }
+      return result;
+    }
     const { sessionId, column } = data;
     
     const session = this.db.getSession(sessionId);
@@ -5377,6 +5637,9 @@ class GameEnginePlugin {
    * Cancel a game
    */
   cancelGame(sessionId) {
+    if (this.interactiveController?.registry?.get(sessionId)) {
+      return this.interactiveController.cancel(sessionId);
+    }
     this.endGame(sessionId, null, 'cancelled');
   }
 
@@ -5648,7 +5911,12 @@ class GameEnginePlugin {
 
       const move = args[0];
       
-      return this.handleViewerChessMove(userId, nickname, move);
+      return this.handleViewerChessMove(
+        userId,
+        nickname,
+        move,
+        this._getChatMoveIdentity(context.rawData || context)
+      );
     } catch (error) {
       this.logger.error(`Error in handleChessMoveCommand: ${error.message}`);
       return {
@@ -5686,39 +5954,28 @@ class GameEnginePlugin {
         }
       }
 
-      // Check if there's already an active game
-      if (this.activeSessions.size > 0 || this.pendingChallenges.size > 0) {
-        // Game in progress - add to queue
-        const result = this.handleGameStart('chess', userId, nickname, 'command', '/chessstart');
-        
-        return {
-          success: true,
-          message: `Chess game queued! You are position ${result?.position || 0} in the queue.`,
-          displayOverlay: true
-        };
-      }
-
-      // Check if player already has an active game
-      const activeSession = this.db.getActiveSessionForPlayer(userId);
-      if (activeSession) {
-        return {
-          success: false,
-          error: 'You already have an active game',
-          message: 'You already have a game in progress.',
-          displayOverlay: true
-        };
-      }
-
       // Get config to check default time control
       const config = this.db.getGameConfig('chess') || this.defaultConfigs.chess;
       const finalTimeControl = timeControl || config.defaultTimeControl || '5+0';
 
       // Start a new chess game
-      this.startGame('chess', userId, nickname, 'command', '/chessstart', finalTimeControl);
+      const result = this.startGame('chess', userId, nickname, 'command', '/chessstart', finalTimeControl);
+      if (!result?.success) {
+        return {
+          success: false,
+          error: result?.error || 'game_start_failed',
+          message: result?.error === 'active_session'
+            ? 'You already have an interactive game in progress.'
+            : result?.error === 'interactive_session_limit'
+              ? 'The interactive game limit is currently reached.'
+              : 'Could not start the chess game.',
+          displayOverlay: true
+        };
+      }
       
       return {
         success: true,
-        message: `Chess game started! ${nickname} vs Streamer. Time control: ${finalTimeControl}. Use /move <move> to play.`,
+        message: `Chess game started! ${this._resolveHostDisplayName()} vs ${nickname}. Time control: ${finalTimeControl}. Use /move <move> to play.`,
         displayOverlay: true
       };
     } catch (error) {
@@ -5738,6 +5995,32 @@ class GameEnginePlugin {
     try {
       // Use userId for player identification (unique TikTok ID)
       const userId = context.userId || context.username;
+
+      const interactiveSession = this.interactiveController?.registry?.getByViewer(userId);
+      if (interactiveSession) {
+        if (interactiveSession.gameType !== 'chess') {
+          return {
+            success: false,
+            message: 'Resignation is only available in chess games.',
+            displayOverlay: true
+          };
+        }
+        const resignation = interactiveSession.adapter.game.resign(userId);
+        if (!resignation.success) {
+          return { success: false, message: resignation.error, displayOverlay: true };
+        }
+        this.interactiveController.end(interactiveSession.sessionId, {
+          winner: resignation.winner,
+          winnerRole: 'host',
+          reason: 'resignation',
+          gameResult: resignation
+        });
+        return {
+          success: true,
+          message: 'You resigned from the game.',
+          displayOverlay: true
+        };
+      }
       
       // Find active game for this player
       const activeSession = this.db.getActiveSessionForPlayer(userId);
@@ -5914,7 +6197,20 @@ class GameEnginePlugin {
   /**
    * Handle viewer chess move
    */
-  handleViewerChessMove(username, nickname, move) {
+  handleViewerChessMove(username, nickname, move, moveIdentity = null) {
+    if (this.interactiveController) {
+      const result = this.interactiveController.applyViewerMove({
+        viewerId: username,
+        gameType: 'chess',
+        move: { move },
+        moveIdentity
+      });
+      return {
+        ...result,
+        message: result.success ? 'Move made successfully!' : result.error,
+        displayOverlay: true
+      };
+    }
     // Find active game for this viewer
     const activeSession = this.db.getActiveSessionForPlayer(username);
     

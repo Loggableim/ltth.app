@@ -1,238 +1,128 @@
-/**
- * Connect4 Unified Queue Integration Test
- * 
- * Tests that Connect4 games properly queue using the UnifiedQueueManager
- */
-
 const GameEnginePlugin = require('../main');
 const UnifiedQueueManager = require('../backend/unified-queue');
 
-describe('Connect4 Unified Queue Integration', () => {
+describe('Interactive games are separated from the transient unified queue', () => {
   let plugin;
-  let mockApi;
-  let mockSocketIO;
-  let mockDb;
+  let io;
+  let database;
 
   beforeEach(() => {
-    // Mock Socket.IO
-    mockSocketIO = {
-      on: jest.fn(),
-      emit: jest.fn()
-    };
-
-    // Mock Database
-    mockDb = {
-      initialize: jest.fn(),
-      prepare: jest.fn(() => ({
-        run: jest.fn(),
-        get: jest.fn(),
-        all: jest.fn(() => [])
-      })),
+    io = { on: jest.fn(), emit: jest.fn() };
+    database = {
       getGameConfig: jest.fn(() => null),
       getTriggers: jest.fn(() => []),
       getSession: jest.fn(() => null),
-      getActiveSessionForPlayer: jest.fn(() => null),
-      createSession: jest.fn(() => 1),
-      getXPRewards: jest.fn(() => ({ win_xp: 100, loss_xp: 25, draw_xp: 50, participation_xp: 10 }))
+      getXPRewards: jest.fn(() => ({
+        win_xp: 100,
+        loss_xp: 25,
+        draw_xp: 50,
+        participation_xp: 10
+      }))
     };
-
-    // Mock API
-    mockApi = {
+    const api = {
       log: jest.fn(),
-      getSocketIO: () => mockSocketIO,
-      getDatabase: () => mockDb,
+      getSocketIO: () => io,
+      getDatabase: () => database,
       registerRoute: jest.fn(),
       registerSocket: jest.fn(),
       registerTikTokEvent: jest.fn(),
-      getConfig: jest.fn(() => Promise.resolve(null)),
-      setConfig: jest.fn(() => Promise.resolve()),
-      emit: jest.fn(),
-      pluginLoader: {
-        loadedPlugins: new Map()
-      }
+      pluginLoader: { loadedPlugins: new Map() }
     };
-
-    plugin = new GameEnginePlugin(mockApi);
+    plugin = new GameEnginePlugin(api);
+    plugin.db = database;
+    plugin.interactiveController = {
+      startMatch: jest.fn(input => ({
+        success: true,
+        started: true,
+        sessionId: input.viewerId === 'user1' ? 1 : input.viewerId === 'user2' ? 2 : 3
+      }))
+    };
   });
 
-  afterEach(() => {
-    if (plugin) {
-      if (plugin.gcceRetryInterval) {
-        clearInterval(plugin.gcceRetryInterval);
-        plugin.gcceRetryInterval = null;
-      }
-      
-      plugin.activeSessions.clear();
-      plugin.pendingChallenges.clear();
-      
-      plugin.db = mockDb;
-      
-      // Note: We don't call destroy() here because:
-      // 1. It would try to cleanup resources that don't exist in the mock environment
-      // 2. The unifiedQueue.destroy() would fail because games are mocked
-      // 3. Test cleanup is sufficient with manual clearing above
-      // In a real environment, destroy() is called properly with all dependencies
-    }
+  test('keeps UnifiedQueueManager available for transient games', () => {
+    expect(plugin.unifiedQueue).toBeInstanceOf(UnifiedQueueManager);
+    expect(plugin.unifiedQueue.gameEnginePlugin).toBe(plugin);
   });
 
-  describe('UnifiedQueueManager Integration', () => {
-    test('should have unified queue manager initialized', () => {
-      expect(plugin.unifiedQueue).toBeDefined();
-      expect(plugin.unifiedQueue).toBeInstanceOf(UnifiedQueueManager);
-    });
+  test('starts Connect 4 through the interactive controller even while another match exists', () => {
+    plugin.activeSessions.set(99, {});
+    const queueConnect4 = jest.spyOn(plugin.unifiedQueue, 'queueConnect4');
 
-    test('should have game engine reference set in unified queue', () => {
-      expect(plugin.unifiedQueue.gameEnginePlugin).toBe(plugin);
-    });
+    const result = plugin.handleGameStart('connect4', 'user1', 'User One', 'command', '/c4start');
 
-    test('should queue Connect4 game when another game is active', () => {
-      // Simulate an active game
-      plugin.activeSessions.set(1, {});
-      
-      // Try to start Connect4 game
-      plugin.handleGameStart('connect4', 'user1', 'User One', 'command', '/c4start');
-      
-      // Verify game was queued in unified queue
-      expect(plugin.unifiedQueue.queue.length).toBe(1);
-      expect(plugin.unifiedQueue.queue[0].type).toBe('connect4');
-      expect(plugin.unifiedQueue.queue[0].data.viewerUsername).toBe('user1');
-    });
-
-    test('should emit unified-queue:connect4-queued event when queuing', () => {
-      // Simulate an active game
-      plugin.activeSessions.set(1, {});
-      
-      // Try to start Connect4 game
-      plugin.handleGameStart('connect4', 'user1', 'User One', 'command', '/c4start');
-      
-      // Verify socket event was emitted
-      expect(mockSocketIO.emit).toHaveBeenCalledWith(
-        'unified-queue:connect4-queued',
-        expect.objectContaining({
-          position: 1,
-          gameType: 'connect4',
-          username: 'user1',
-          nickname: 'User One'
-        })
-      );
-    });
-
-    test('should queue Chess game when another game is active', () => {
-      // Simulate an active game
-      plugin.activeSessions.set(1, {});
-      
-      // Try to start Chess game
-      plugin.handleGameStart('chess', 'user2', 'User Two', 'command', '/chessstart');
-      
-      // Verify game was queued in unified queue
-      expect(plugin.unifiedQueue.queue.length).toBe(1);
-      expect(plugin.unifiedQueue.queue[0].type).toBe('chess');
-      expect(plugin.unifiedQueue.queue[0].data.viewerUsername).toBe('user2');
-    });
-
-    test('should handle multiple games queued in order', () => {
-      // Simulate an active game
-      plugin.activeSessions.set(1, {});
-      
-      // Queue multiple games
-      plugin.handleGameStart('connect4', 'user1', 'User One', 'command', '/c4start');
-      plugin.handleGameStart('chess', 'user2', 'User Two', 'command', '/chessstart');
-      plugin.handleGameStart('connect4', 'user3', 'User Three', 'command', '/c4start');
-      
-      // Verify all games were queued in order (FIFO)
-      expect(plugin.unifiedQueue.queue.length).toBe(3);
-      expect(plugin.unifiedQueue.queue[0].data.viewerUsername).toBe('user1');
-      expect(plugin.unifiedQueue.queue[1].data.viewerUsername).toBe('user2');
-      expect(plugin.unifiedQueue.queue[2].data.viewerUsername).toBe('user3');
-    });
-
-    test('should call completeProcessing when Connect4 game ends', () => {
-      // Setup a mock session
-      const mockSession = {
-        id: 1,
-        game_type: 'connect4',
-        player1_username: 'user1',
-        player2_username: 'streamer',
-        status: 'active'
-      };
-      
-      mockDb.getSession = jest.fn(() => mockSession);
-      mockDb.endSession = jest.fn();
-      
-      // Setup a mock game
-      const mockGame = {
-        player1: { username: 'user1', role: 'viewer' },
-        player2: { username: 'streamer', role: 'streamer' },
-        getState: jest.fn(() => ({ board: [] }))
-      };
-      
-      plugin.activeSessions.set(1, mockGame);
-      
-      // Spy on completeProcessing
-      const completeProcessingSpy = jest.spyOn(plugin.unifiedQueue, 'completeProcessing');
-      
-      // End the game
-      plugin.endGame(1, 1, 'win', { winner: 1 });
-      
-      // Verify completeProcessing was called
-      expect(completeProcessingSpy).toHaveBeenCalled();
-    });
-
-    test('rejects unsupported interactive game types instead of using a legacy queue', () => {
-      // Simulate an active game
-      plugin.activeSessions.set(1, {});
-      
-      const result = plugin.handleGameStart('othergame', 'user1', 'User One', 'command', '/start');
-      expect(result).toMatchObject({ success: false, error: 'unsupported_game_type' });
-      expect(plugin.unifiedQueue.queue.length).toBe(0);
-    });
+    expect(result).toMatchObject({ success: true, started: true, sessionId: 1 });
+    expect(plugin.interactiveController.startMatch).toHaveBeenCalledWith(expect.objectContaining({
+      gameType: 'connect4',
+      viewerId: 'user1'
+    }));
+    expect(queueConnect4).not.toHaveBeenCalled();
   });
 
-  describe('startGameFromQueue Method', () => {
-    test('should start game without queuing when called from unified queue', async () => {
-      mockDb.getGameConfig = jest.fn(() => ({
-        showChallengeScreen: false
-      }));
-      
-      plugin.startGame = jest.fn(() => ({ success: true, started: true, sessionId: 123 }));
-      
-      const result = await plugin.startGameFromQueue('connect4', 'user1', 'User One', 'command', '/c4start');
-      
-      expect(plugin.startGame).toHaveBeenCalledWith('connect4', 'user1', 'User One', 'command', '/c4start');
-      expect(result).toMatchObject({ success: true, started: true, sessionId: 123 });
-    });
+  test('starts chess through the same interactive controller without serializing it', () => {
+    plugin.activeSessions.set(99, {});
+    const queueChess = jest.spyOn(plugin.unifiedQueue, 'queueChess');
 
-    test('should complete processing if player already has active game', async () => {
-      mockDb.getActiveSessionForPlayer = jest.fn(() => ({ id: 999 }));
-      
-      const completeProcessingSpy = jest.spyOn(plugin.unifiedQueue, 'completeProcessing');
-      
-      const result = await plugin.startGameFromQueue('connect4', 'user1', 'User One', 'command', '/c4start');
-      
-      expect(completeProcessingSpy).toHaveBeenCalled();
-      expect(result).toMatchObject({
-        success: false,
-        completed: true,
-        error: expect.stringContaining('active game')
-      });
-    });
+    const result = plugin.handleGameStart('chess', 'user2', 'User Two', 'command', '/chessstart');
+
+    expect(result).toMatchObject({ success: true, started: true, sessionId: 2 });
+    expect(plugin.interactiveController.startMatch).toHaveBeenCalledWith(expect.objectContaining({
+      gameType: 'chess',
+      viewerId: 'user2'
+    }));
+    expect(queueChess).not.toHaveBeenCalled();
   });
 
-  describe('Queue Status', () => {
-    test('should return correct queue status', () => {
-      // Simulate an active game
-      plugin.activeSessions.set(1, {});
-      
-      // Queue some games
-      plugin.handleGameStart('connect4', 'user1', 'User One', 'command', '/c4start');
-      plugin.handleGameStart('chess', 'user2', 'User Two', 'command', '/chessstart');
-      
-      const status = plugin.unifiedQueue.getStatus();
-      
-      expect(status.queueLength).toBe(2);
-      expect(status.queue).toHaveLength(2);
-      expect(status.queue[0].gameType).toBe('connect4');
-      expect(status.queue[1].gameType).toBe('chess');
+  test('preserves start order at the interactive-controller boundary', () => {
+    plugin.handleGameStart('connect4', 'user1', 'User One', 'command', '/c4start');
+    plugin.handleGameStart('chess', 'user2', 'User Two', 'command', '/chessstart');
+    plugin.handleGameStart('connect4', 'user3', 'User Three', 'command', '/c4start');
+
+    expect(plugin.interactiveController.startMatch.mock.calls.map(call => [
+      call[0].viewerId,
+      call[0].gameType
+    ])).toEqual([
+      ['user1', 'connect4'],
+      ['user2', 'chess'],
+      ['user3', 'connect4']
+    ]);
+    expect(plugin.unifiedQueue.getStatus().queueLength).toBe(0);
+  });
+
+  test('does not complete transient queue processing when a legacy interactive result is finalized', () => {
+    const session = {
+      id: 1,
+      game_type: 'connect4',
+      player1_username: 'user1',
+      player2_username: 'streamer',
+      status: 'active'
+    };
+    database.getSession = jest.fn(() => session);
+    database.endSession = jest.fn();
+    database.updatePlayerStats = jest.fn(() => ({ isNewRecord: false }));
+    plugin.activeSessions.set(1, {
+      player1: { username: 'user1', role: 'viewer' },
+      player2: { username: 'streamer', role: 'streamer' },
+      getState: () => ({ board: [] })
     });
+    const completeProcessing = jest.spyOn(plugin.unifiedQueue, 'completeProcessing');
+
+    plugin.endGame(1, 1, 'win', { winner: 1 });
+
+    expect(completeProcessing).not.toHaveBeenCalled();
+  });
+
+  test('rejects unsupported interactive game types', () => {
+    expect(plugin.handleGameStart('othergame', 'user1', 'User One', 'command', '/start')).toEqual({
+      success: false,
+      error: 'unsupported_game_type'
+    });
+    expect(plugin.interactiveController.startMatch).not.toHaveBeenCalled();
+  });
+
+  test('legacy queued-start callback also delegates without touching the transient queue', async () => {
+    const result = await plugin.startGameFromQueue('connect4', 'user1', 'User One', 'command', '/c4start');
+
+    expect(result).toMatchObject({ success: true, started: true, sessionId: 1 });
+    expect(plugin.unifiedQueue.getStatus().queueLength).toBe(0);
   });
 });

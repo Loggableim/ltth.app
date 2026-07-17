@@ -304,7 +304,7 @@ describe('Game Engine GCCE Integration', () => {
         getGameConfig: jest.fn(() => plugin.defaultConfigs.connect4)
       };
       
-      plugin.handleGameStart = jest.fn();
+      plugin.handleGameStart = jest.fn(() => ({ success: true, sessionId: 42 }));
       
       const result = await plugin.handleConnect4StartCommand(args, context);
       
@@ -319,7 +319,7 @@ describe('Game Engine GCCE Integration', () => {
       );
     });
 
-    test('should queue game when another game is already active', async () => {
+    test('should start another interactive match when another game is already active', async () => {
       const context = {
         username: 'Test User',
         userId: 'test123'
@@ -334,13 +334,13 @@ describe('Game Engine GCCE Integration', () => {
         getGameConfig: jest.fn(() => plugin.defaultConfigs.connect4)
       };
       
-      plugin.handleGameStart = jest.fn();
+      plugin.handleGameStart = jest.fn(() => ({ success: true, sessionId: 43 }));
       
       const result = await plugin.handleConnect4StartCommand(args, context);
       
-      // When there's an active game, the command should queue and return success
+      // Matches run concurrently; only their host turns enter the display queue.
       expect(result.success).toBe(true);
-      expect(result.message).toContain('queued');
+      expect(result.message).toContain('Game started');
       expect(plugin.handleGameStart).toHaveBeenCalled();
     });
 
@@ -355,14 +355,14 @@ describe('Game Engine GCCE Integration', () => {
         getGameConfig: jest.fn(() => plugin.defaultConfigs.connect4)
       };
       plugin.handleGameStart = jest.fn(() => ({
-        queued: false,
-        error: 'Queue is full'
+        success: false,
+        error: 'interactive_session_limit'
       }));
 
       const result = await plugin.handleConnect4StartCommand([], context);
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('Queue is full');
+      expect(result.message).toContain('limit');
     });
 
     test('should preserve command trigger type when creating a pending challenge', () => {

@@ -192,6 +192,36 @@ describe('InteractiveController', () => {
     harness.sqlite.close();
   });
 
+  test('persists only visible elapsed chess host time when the host moves', () => {
+    const harness = createHarness();
+    harness.controller.init();
+    const chess = harness.controller.startMatch({
+      gameType: 'chess',
+      viewerId: 'chess-viewer',
+      viewerDisplayName: 'Chess Viewer',
+      timeControl: '5+0'
+    });
+    jest.advanceTimersByTime(2000);
+    const display = harness.controller.getState().display;
+
+    expect(harness.controller.applyHostMove({
+      sessionId: chess.sessionId,
+      gameType: 'chess',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move: { move: 'e4' }
+    })).toMatchObject({ success: true });
+
+    expect(harness.database.getInteractiveState(chess.sessionId)).toMatchObject({
+      hostTimeRemainingMs: 298000,
+      state: {
+        timers: { white: 298000, black: 300000 }
+      }
+    });
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
   test('routes viewer chat moves only to the stable viewer session', () => {
     const harness = createHarness({ connect4HostStarts: false });
     harness.controller.init();
