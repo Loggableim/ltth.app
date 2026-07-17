@@ -67,7 +67,8 @@ describe('InteractiveSessionRegistry', () => {
         turnRole: 'viewer',
         viewerTimeRemainingMs: 5000,
         moveCount: 4,
-        lastActivityAt: 1000
+        lastActivityAt: 1000,
+        state: { moveCount: 4, board: [[0]] }
       })
     ]);
     expect(registry.summaries(4000)[0]).not.toHaveProperty('adapter');

@@ -1084,6 +1084,10 @@
       display: grid;
     }
 
+    #active-game > div.card {
+      display: none;
+    }
+
     #active-game > .status-bar {
       grid-column: 1 / -1;
     }
@@ -1109,6 +1113,127 @@
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015));
       border: 1px solid var(--color-border);
       overflow: hidden;
+    }
+
+    #interactive-now-on-stream {
+      grid-column: 1;
+      margin-bottom: 0;
+    }
+
+    #interactive-host-queue-card {
+      grid-column: 2;
+      margin-bottom: 0;
+    }
+
+    #interactive-background-card,
+    #interactive-settings-card {
+      grid-column: 1 / -1;
+      margin-bottom: 0;
+    }
+
+    .interactive-meta-row,
+    .interactive-list-item,
+    .interactive-settings-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .interactive-meta-row {
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      margin: 12px 0;
+      color: var(--color-text-secondary);
+    }
+
+    .interactive-badge {
+      display: inline-flex;
+      width: fit-content;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(100, 181, 246, 0.18);
+      color: var(--color-accent-primary);
+      font-weight: 800;
+    }
+
+    #interactive-board-preview {
+      display: grid;
+      justify-content: center;
+      margin: 18px 0;
+      min-height: 280px;
+      align-content: center;
+    }
+
+    .interactive-connect4-board {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(34px, 58px));
+      gap: 7px;
+      padding: 12px;
+      border-radius: 14px;
+      background: #2455a4;
+    }
+
+    .interactive-connect4-cell {
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: rgba(7, 15, 30, 0.85);
+      border: 2px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .interactive-connect4-cell.player-1 { background: #e74c3c; }
+    .interactive-connect4-cell.player-2 { background: #f1c40f; }
+
+    .interactive-host-controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin: 14px 0;
+    }
+
+    .interactive-column-button {
+      min-width: 48px;
+      padding: 10px 14px;
+      font-weight: 800;
+    }
+
+    .interactive-chess-board {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(34px, 58px));
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .interactive-chess-square {
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1;
+      min-width: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      font-size: clamp(24px, 3vw, 42px);
+      color: #111;
+    }
+
+    .interactive-chess-square.light { background: #d9c7a2; }
+    .interactive-chess-square.dark { background: #7b5d3f; }
+    .interactive-chess-square.selected { box-shadow: inset 0 0 0 4px #64b5f6; }
+
+    .interactive-list-item {
+      grid-template-columns: auto minmax(120px, 1fr) repeat(2, auto);
+      align-items: center;
+      padding: 11px 13px;
+      margin-top: 8px;
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .interactive-list-item.now {
+      border-color: var(--brand-primary);
+      background: rgba(76, 175, 80, 0.1);
+    }
+
+    .interactive-settings-grid {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     }
 
     .column-button {
@@ -1163,6 +1288,17 @@
       #active-game > .card:nth-of-type(2),
       #active-game > .card:nth-of-type(3) {
         grid-column: 1 / -1;
+      }
+
+      #interactive-now-on-stream,
+      #interactive-host-queue-card,
+      #interactive-background-card,
+      #interactive-settings-card {
+        grid-column: 1 / -1;
+      }
+
+      .interactive-list-item {
+        grid-template-columns: 1fr;
       }
 
       .header-container {
@@ -1259,6 +1395,62 @@
         <div class="card">
           <button class="danger" id="cancelGameBtn" data-i18n="game_engine.cancel_game">Cancel game</button>
         </div>
+
+        <section class="card" id="interactive-now-on-stream">
+          <span class="interactive-badge" id="interactive-game-badge">Bereit</span>
+          <h3 id="interactive-matchup">Noch kein Board auf Sendung</h3>
+          <div class="interactive-meta-row">
+            <span id="interactive-turn-status">–</span>
+            <span id="interactive-timer-status">–</span>
+            <span id="interactive-revision-status">–</span>
+          </div>
+          <div id="interactive-board-preview" aria-live="polite"></div>
+          <div id="interactive-connect4-controls" class="interactive-host-controls" hidden>
+            <button type="button" class="interactive-column-button" data-interactive-column="A">A</button>
+            <button type="button" class="interactive-column-button" data-interactive-column="B">B</button>
+            <button type="button" class="interactive-column-button" data-interactive-column="C">C</button>
+            <button type="button" class="interactive-column-button" data-interactive-column="D">D</button>
+            <button type="button" class="interactive-column-button" data-interactive-column="E">E</button>
+            <button type="button" class="interactive-column-button" data-interactive-column="F">F</button>
+            <button type="button" class="interactive-column-button" data-interactive-column="G">G</button>
+          </div>
+          <p id="interactive-chess-help" hidden>Quelle und danach Zielfeld anklicken.</p>
+          <button class="danger" id="cancelInteractiveGameBtn">Angezeigte Partie abbrechen</button>
+        </section>
+
+        <section class="card" id="interactive-host-queue-card">
+          <h3>Host-Zug-Queue</h3>
+          <p>Nur Partien, in denen der Host am Zug ist. Die Reihenfolge ist autoritativ.</p>
+          <div id="interactive-host-queue"></div>
+        </section>
+
+        <section class="card" id="interactive-background-card">
+          <h3>Aktive Partien im Hintergrund</h3>
+          <div id="interactive-background-matches"></div>
+        </section>
+
+        <section class="card" id="interactive-settings-card">
+          <h3>Interaktive Spielsteuerung</h3>
+          <div class="interactive-settings-grid">
+            <div class="form-group">
+              <label for="interactive-connect4-response">Connect 4: Spieler-Zugzeit (Sekunden)</label>
+              <input id="interactive-connect4-response" type="number" min="5" max="300" value="30">
+            </div>
+            <div class="form-group">
+              <label for="interactive-chess-response">Schach: Spieler-Zugzeit (Sekunden)</label>
+              <input id="interactive-chess-response" type="number" min="5" max="300" value="60">
+            </div>
+            <div class="form-group">
+              <label for="interactive-max-sessions">Maximal parallele Partien</label>
+              <input id="interactive-max-sessions" type="number" min="1" max="50" value="20">
+            </div>
+            <div class="form-group">
+              <label for="interactive-result-seconds">Ergebnis-Anzeige (Sekunden)</label>
+              <input id="interactive-result-seconds" type="number" min="1" max="10" value="3">
+            </div>
+          </div>
+          <button type="button" id="save-interactive-settings">Einstellungen speichern</button>
+        </section>
       </div>
     </div>
 
@@ -4128,6 +4320,9 @@
   <script>
     const socket = io({ auth: { role: 'admin' } });
     let currentSessionId = null;
+    let latestInteractiveAdminState = null;
+    let interactiveSelectedChessSquare = null;
+    let interactiveAdminStateReceivedAt = 0;
 
     // Initialize language switcher
     // Note: i18n is auto-initialized by i18n-client.js
@@ -4852,6 +5047,302 @@
       return text;
     }
 
+    const interactiveChessPieces = {
+      K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘', P: '♙',
+      k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟'
+    };
+
+    function interactiveElement(tag, className = '', text = '') {
+      const element = document.createElement(tag);
+      if (className) element.className = className;
+      if (text !== '') element.textContent = text;
+      return element;
+    }
+
+    function interactiveFormatDuration(milliseconds) {
+      if (milliseconds == null || !Number.isFinite(Number(milliseconds))) return 'pausiert';
+      const seconds = Math.max(0, Math.ceil(Number(milliseconds) / 1000));
+      return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+    }
+
+    function interactiveDisplayState(state) {
+      return state?.display?.state || state?.display?.result?.state || null;
+    }
+
+    function canSubmitInteractiveHostMove(state = latestInteractiveAdminState) {
+      const display = state?.display;
+      const head = state?.hostQueue?.[0];
+      return Boolean(
+        display &&
+        display.phase === 'playing' &&
+        display.currentTurnRole === 'host' &&
+        display.displaySessionId != null &&
+        Number(head?.sessionId) === Number(display.displaySessionId)
+      );
+    }
+
+    function renderInteractiveConnect4(container, gameState) {
+      const board = interactiveElement('div', 'interactive-connect4-board');
+      for (const row of gameState?.board || []) {
+        for (const cell of row) {
+          board.appendChild(interactiveElement(
+            'span',
+            `interactive-connect4-cell${cell ? ` player-${cell}` : ''}`
+          ));
+        }
+      }
+      container.appendChild(board);
+    }
+
+    function parseInteractiveFen(fen) {
+      const squares = [];
+      const ranks = String(fen || '').split(' ')[0].split('/');
+      for (const rank of ranks) {
+        const cells = [];
+        for (const token of rank) {
+          if (/\d/.test(token)) {
+            for (let index = 0; index < Number(token); index += 1) cells.push('');
+          } else {
+            cells.push(token);
+          }
+        }
+        squares.push(cells);
+      }
+      return squares;
+    }
+
+    function renderInteractiveChess(container, gameState, interactive = false) {
+      const board = interactiveElement('div', 'interactive-chess-board');
+      const position = parseInteractiveFen(gameState?.fen);
+      for (let row = 0; row < 8; row += 1) {
+        for (let column = 0; column < 8; column += 1) {
+          const squareName = `${String.fromCharCode(97 + column)}${8 - row}`;
+          const square = interactiveElement(
+            interactive ? 'button' : 'span',
+            `interactive-chess-square ${(row + column) % 2 === 0 ? 'light' : 'dark'}`,
+            interactiveChessPieces[position[row]?.[column]] || ''
+          );
+          square.title = squareName;
+          square.dataset.square = squareName;
+          if (interactive && interactiveSelectedChessSquare === squareName) square.classList.add('selected');
+          if (interactive) {
+            square.type = 'button';
+            square.disabled = !canSubmitInteractiveHostMove();
+            square.addEventListener('click', () => selectInteractiveChessSquare(squareName));
+          }
+          board.appendChild(square);
+        }
+      }
+      container.appendChild(board);
+    }
+
+    function renderInteractiveBoard(container, gameType, gameState, interactive = false) {
+      container.replaceChildren();
+      if (!gameState) {
+        container.appendChild(interactiveElement('p', '', 'Kein Brett für diese Anzeige verfügbar.'));
+        return;
+      }
+      if (gameType === 'connect4') renderInteractiveConnect4(container, gameState);
+      else if (gameType === 'chess') renderInteractiveChess(container, gameState, interactive);
+    }
+
+    function interactiveTimerLabel(display) {
+      const elapsed = Date.now() - interactiveAdminStateReceivedAt;
+      if (display?.currentTurnRole === 'viewer' && display.viewerDeadlineMs != null) {
+        const serverNow = Number(display.serverTimestamp) + elapsed;
+        return `Spieler: ${interactiveFormatDuration(Number(display.viewerDeadlineMs) - serverNow)}`;
+      }
+      if (display?.gameType === 'chess' && display.currentTurnRole === 'host') {
+        return `Host: ${interactiveFormatDuration(Number(display.hostTimeRemainingMs) - elapsed)}`;
+      }
+      return display?.phase === 'result' ? 'Ergebnis wird angezeigt' : 'Uhr pausiert';
+    }
+
+    function renderInteractiveNow(state) {
+      const display = state.display || {};
+      const result = display.result;
+      const sessionId = display.displaySessionId ?? result?.sessionId ?? null;
+      const gameType = display.gameType;
+      const gameState = interactiveDisplayState(state);
+      currentSessionId = sessionId;
+      document.getElementById('interactive-game-badge').textContent = gameType === 'chess'
+        ? 'Schach'
+        : gameType === 'connect4'
+          ? 'Connect 4'
+          : 'Bereit';
+      document.getElementById('interactive-matchup').textContent = gameType
+        ? `${display.hostDisplayName || 'Host'} vs. ${display.viewerDisplayName || 'Player'}`
+        : 'Aktuell kein Host-Zug auf Sendung';
+      document.getElementById('interactive-turn-status').textContent = display.phase === 'result'
+        ? `Ergebnis: ${result?.reason || 'beendet'}`
+        : display.currentTurnRole === 'host'
+          ? 'Host ist am Zug'
+          : display.currentTurnRole === 'viewer'
+            ? 'Spieler ist am Zug'
+            : 'Warte auf nächsten Host-Zug';
+      document.getElementById('interactive-timer-status').textContent = interactiveTimerLabel(display);
+      document.getElementById('interactive-revision-status').textContent =
+        `Session r${display.sessionRevision ?? result?.sessionRevision ?? '–'} · Display r${display.displayRevision ?? '–'}`;
+
+      renderInteractiveBoard(
+        document.getElementById('interactive-board-preview'),
+        gameType,
+        gameState,
+        gameType === 'chess'
+      );
+
+      const canMove = canSubmitInteractiveHostMove(state);
+      const connect4Controls = document.getElementById('interactive-connect4-controls');
+      connect4Controls.hidden = gameType !== 'connect4';
+      connect4Controls.querySelectorAll('button').forEach(button => { button.disabled = !canMove; });
+      document.getElementById('interactive-chess-help').hidden = gameType !== 'chess';
+      document.getElementById('cancelInteractiveGameBtn').disabled = sessionId == null || display.phase === 'result';
+    }
+
+    function makeInteractiveListItem(parts, isNow = false) {
+      const item = interactiveElement('div', `interactive-list-item${isNow ? ' now' : ''}`);
+      for (const part of parts) item.appendChild(interactiveElement('span', '', part));
+      return item;
+    }
+
+    function renderInteractiveQueue(state) {
+      const container = document.getElementById('interactive-host-queue');
+      container.replaceChildren();
+      const now = Number(state.serverTimestamp) + (Date.now() - interactiveAdminStateReceivedAt);
+      if (!state.hostQueue?.length) {
+        container.appendChild(interactiveElement('p', '', 'Keine Host-Züge warten.'));
+        return;
+      }
+      state.hostQueue.forEach((entry, index) => {
+        container.appendChild(makeInteractiveListItem([
+          `#${index + 1}`,
+          `${entry.gameType === 'chess' ? 'Schach' : 'Connect 4'} · ${entry.viewerDisplayName}`,
+          `wartet ${interactiveFormatDuration(now - Number(entry.enqueuedAt))}`,
+          index === 0 ? 'Jetzt auf Sendung' : 'wartet'
+        ], index === 0 && Number(entry.sessionId) === Number(state.display?.displaySessionId)));
+      });
+    }
+
+    function renderInteractiveBackground(state) {
+      const container = document.getElementById('interactive-background-matches');
+      container.replaceChildren();
+      const displayedId = Number(state.display?.displaySessionId);
+      const background = (state.activeSessions || []).filter(session => Number(session.sessionId) !== displayedId);
+      if (!background.length) {
+        container.appendChild(interactiveElement('p', '', 'Keine weiteren aktiven Partien.'));
+        return;
+      }
+      for (const session of background) {
+        const details = interactiveElement('details', 'interactive-list-item');
+        const timer = session.turnRole === 'viewer'
+          ? `Spieler ${interactiveFormatDuration(Number(session.viewerTimeRemainingMs) - (Date.now() - interactiveAdminStateReceivedAt))}`
+          : session.gameType === 'chess'
+            ? `Host ${interactiveFormatDuration(session.hostTimeRemainingMs)}`
+            : 'Host-Zug wartet';
+        const summary = interactiveElement(
+          'summary',
+          '',
+          `${session.gameType === 'chess' ? 'Schach' : 'Connect 4'} · ${session.hostDisplayName} vs. ${session.viewerDisplayName} · ${timer} · ${session.moveCount} Züge · aktiv vor ${interactiveFormatDuration(Number(state.serverTimestamp) - Number(session.lastActivityAt))}`
+        );
+        details.appendChild(summary);
+        const board = interactiveElement('div');
+        renderInteractiveBoard(board, session.gameType, session.state, false);
+        details.appendChild(board);
+        container.appendChild(details);
+      }
+    }
+
+    function renderInteractiveState(state) {
+      latestInteractiveAdminState = state;
+      const hasInteractiveState = Boolean(
+        state?.activeSessions?.length ||
+        ['playing', 'animating', 'result'].includes(state?.display?.phase)
+      );
+      document.getElementById('no-game').style.display = hasInteractiveState ? 'none' : 'block';
+      document.getElementById('active-game').classList.toggle('show', hasInteractiveState);
+      if (!hasInteractiveState) {
+        currentSessionId = null;
+        return;
+      }
+      document.getElementById('game-status').textContent =
+        `${state.activeSessions.length} aktive Partie${state.activeSessions.length === 1 ? '' : 'n'} · ${state.hostQueue.length} Host-Zug${state.hostQueue.length === 1 ? '' : 'e'} in der Queue`;
+      renderInteractiveNow(state);
+      renderInteractiveQueue(state);
+      renderInteractiveBackground(state);
+    }
+
+    function submitInteractiveHostMove(move) {
+      const display = latestInteractiveAdminState?.display;
+      if (!canSubmitInteractiveHostMove()) {
+        showMessage('Dieser Zug ist nicht mehr aktuell oder der Host ist nicht am Zug.', 'error');
+        return;
+      }
+      socket.emit('game-engine:interactive-host-move', {
+        sessionId: display.displaySessionId,
+        gameType: display.gameType,
+        sessionRevision: display.sessionRevision,
+        displayRevision: display.displayRevision,
+        move
+      });
+    }
+
+    function selectInteractiveChessSquare(square) {
+      if (!canSubmitInteractiveHostMove()) return;
+      if (!interactiveSelectedChessSquare) {
+        interactiveSelectedChessSquare = square;
+        renderInteractiveNow(latestInteractiveAdminState);
+        return;
+      }
+      const from = interactiveSelectedChessSquare;
+      interactiveSelectedChessSquare = null;
+      const promotion = /[18]$/.test(square) ? 'q' : '';
+      submitInteractiveHostMove({ uci: `${from}${square}${promotion}` });
+    }
+
+    async function loadInteractiveState() {
+      try {
+        const response = await fetch('/api/game-engine/interactive/state');
+        const state = await response.json();
+        interactiveAdminStateReceivedAt = Date.now();
+        renderInteractiveState(state);
+      } catch (error) {
+        console.error('Failed to load interactive state:', error);
+      }
+    }
+
+    function applyInteractiveSettings(config) {
+      document.getElementById('interactive-connect4-response').value = config.connect4ViewerResponseSeconds ?? 30;
+      document.getElementById('interactive-chess-response').value = config.chessViewerResponseSeconds ?? 60;
+      document.getElementById('interactive-max-sessions').value = config.maxConcurrentInteractiveSessions ?? 20;
+      document.getElementById('interactive-result-seconds').value = config.interactiveResultDisplaySeconds ?? 3;
+    }
+
+    async function loadInteractiveSettings() {
+      try {
+        const response = await fetch('/api/game-engine/config/interactive');
+        applyInteractiveSettings(await response.json());
+      } catch (error) {
+        console.error('Failed to load interactive settings:', error);
+      }
+    }
+
+    async function saveInteractiveSettings() {
+      const config = {
+        connect4ViewerResponseSeconds: Number(document.getElementById('interactive-connect4-response').value),
+        chessViewerResponseSeconds: Number(document.getElementById('interactive-chess-response').value),
+        maxConcurrentInteractiveSessions: Number(document.getElementById('interactive-max-sessions').value),
+        interactiveResultDisplaySeconds: Number(document.getElementById('interactive-result-seconds').value)
+      };
+      const response = await fetch('/api/game-engine/config/interactive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      });
+      if (!response.ok) throw new Error('Einstellungen konnten nicht gespeichert werden');
+      applyInteractiveSettings(config);
+      showMessage('Interaktive Einstellungen gespeichert.');
+    }
+
     // Clear active game display
     function clearActiveGame() {
       currentSessionId = null;
@@ -4860,23 +5351,35 @@
     }
 
     // Socket events
+    socket.on('game-engine:interactive-state', state => {
+      const currentRevision = Number(latestInteractiveAdminState?.display?.displayRevision ?? -1);
+      const incomingRevision = Number(state?.display?.displayRevision ?? -1);
+      if (incomingRevision < currentRevision) return;
+      interactiveAdminStateReceivedAt = Date.now();
+      interactiveSelectedChessSquare = null;
+      renderInteractiveState(state);
+    });
+
     socket.on('game-engine:challenge-created', (data) => {
       // Show notification about new challenge
       showMessage(`Neue Herausforderung von ${data.challengerNickname || data.challengerUsername}!`);
     });
 
     socket.on('game-engine:game-started', (data) => {
+      if (data.interactive) return;
       updateActiveGame(data);
       loadStats();
     });
 
     socket.on('game-engine:move-made', (data) => {
+      if (data.interactive) return;
       if (data.sessionId === currentSessionId) {
         updateActiveGame(data);
       }
     });
 
     socket.on('game-engine:game-ended', (data) => {
+      if (data.interactive) return;
       if (data.sessionId === currentSessionId) {
         clearActiveGame();
         loadStats();
@@ -4889,18 +5392,7 @@
 
     // Check for active session on load
     async function checkActiveSession() {
-      try {
-        const res = await fetch('/api/game-engine/active-session');
-        const data = await res.json();
-
-        if (data && data.sessionId) {
-          updateActiveGame(data);
-        } else {
-          clearActiveGame();
-        }
-      } catch (error) {
-        console.error('Failed to check active session:', error);
-      }
+      await loadInteractiveState();
     }
 
     // ELO Settings Functions
@@ -5832,6 +6324,28 @@
     // ===========================================
     // Event Listeners Setup
     // ===========================================
+
+    document.addEventListener('click', event => {
+      const button = event.target.closest('[data-interactive-column]');
+      if (!button) return;
+      submitInteractiveHostMove({ column: button.dataset.interactiveColumn });
+    });
+
+    document.getElementById('cancelInteractiveGameBtn')?.addEventListener('click', () => {
+      const sessionId = latestInteractiveAdminState?.display?.displaySessionId;
+      if (sessionId == null) return;
+      if (confirm('Angezeigte Partie wirklich abbrechen?')) {
+        socket.emit('game-engine:cancel-game', { sessionId });
+      }
+    });
+
+    document.getElementById('save-interactive-settings')?.addEventListener('click', () => {
+      saveInteractiveSettings().catch(error => showMessage(error.message, 'error'));
+    });
+
+    setInterval(() => {
+      if (latestInteractiveAdminState) renderInteractiveState(latestInteractiveAdminState);
+    }, 1000);
     
     // Column buttons for streamer moves
     document.addEventListener('click', (e) => {
@@ -7490,6 +8004,7 @@
     loadXPRewards();
     loadStats();
     checkActiveSession();
+    loadInteractiveSettings();
     loadELOLeaderboard();
     loadCurrentMedia();
 
