@@ -293,15 +293,28 @@ async function testSuperfanFinale() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 username: 'TestSuperfan',
-                profilePictureUrl: 'https://www.gravatar.com/avatar/?d=mp&s=200'
+                profilePictureUrl: 'https://www.gravatar.com/avatar/?d=mp&s=200',
+                settings: {
+                    superfanFinaleEnabled: document.getElementById('superfan-finale-toggle').classList.contains('active'),
+                    superfanFinaleCooldownHours: Number(document.getElementById('superfan-finale-cooldown').value),
+                    superfanFinaleIntensity: Number(document.getElementById('superfan-finale-intensity').value),
+                    goalFinaleStyle: document.getElementById('finale-style').value,
+                    goalFinaleLength: document.getElementById('finale-length').value
+                }
             })
         });
         const payload = await response.json();
-        if (!response.ok || !payload.accepted) throw new Error(payload.reason || payload.error || 'Finale rejected');
+        if (!response.ok || !payload.accepted) {
+            const backendReason = [payload.reason, payload.error]
+                .find(value => typeof value === 'string' && value.trim());
+            throw new Error(backendReason ? backendReason.trim().slice(0, 160) : 'Finale rejected');
+        }
         showToast(window.i18n?.t('webgpu_fireworks.superfan_finale_test_success') || 'Superfan finale triggered!', 'success');
     } catch (error) {
         console.error('[Fireworks Settings] Failed to trigger Superfan finale:', error);
-        showToast(window.i18n?.t('webgpu_fireworks.superfan_finale_test_failed') || 'Failed to trigger Superfan finale', 'error');
+        const message = window.i18n?.t('webgpu_fireworks.superfan_finale_test_failed') || 'Failed to trigger Superfan finale';
+        const detail = typeof error?.message === 'string' ? error.message.trim().slice(0, 160) : '';
+        showToast(detail ? `${message}: ${detail}` : message, 'error');
     }
 }
 

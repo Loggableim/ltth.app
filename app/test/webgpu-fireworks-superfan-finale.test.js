@@ -242,13 +242,87 @@ describe('WebGPU Superfan finale foundation', () => {
     expect(history.getLastAcceptedAt('id:a')).toBeNull();
   });
 
-  test('test route bypasses cooldown without mutating history', () => {
+  test('test route uses normalized visible overrides without mutating config or cooldown history', () => {
     const { api, plugin, history } = createPlugin();
     plugin.registerRoutes();
     plugin.triggerFinale = jest.fn(request => ({ accepted: true, id: request.eventId }));
+    const handleSuperfanEntry = jest.spyOn(plugin, 'handleSuperfanEntry');
+    const persistedConfig = { ...plugin.config };
     const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
-    api.routes.get('post:/api/webgpu-fireworks/test-superfan')({ body: { username: 'TestSuperfan' } }, res);
+    api.routes.get('post:/api/webgpu-fireworks/test-superfan')({
+      body: {
+        username: 'TestSuperfan',
+        settings: {
+          superfanFinaleEnabled: false,
+          superfanFinaleCooldownHours: 168,
+          superfanFinaleIntensity: 7.5,
+          goalFinaleStyle: 'sky-ballet',
+          goalFinaleLength: 'short'
+        }
+      }
+    }, res);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, accepted: true }));
+    expect(handleSuperfanEntry).toHaveBeenCalledWith(expect.objectContaining({
+      uniqueId: 'TestSuperfan'
+    }), expect.objectContaining({
+      authoritative: true,
+      bypassCooldown: true,
+      bypassEnabled: true,
+      configOverride: expect.objectContaining({
+        superfanFinaleEnabled: false,
+        superfanFinaleCooldownHours: 168,
+        superfanFinaleIntensity: 7.5,
+        goalFinaleStyle: 'sky-ballet',
+        goalFinaleLength: 'short'
+      })
+    }));
+    expect(plugin.triggerFinale).toHaveBeenCalledWith(expect.objectContaining({
+      intensity: 7.5,
+      style: 'sky-ballet',
+      length: 'short',
+      bypassEnabled: true
+    }));
+    expect(plugin.config).toEqual(persistedConfig);
+    expect(api.setConfig).not.toHaveBeenCalled();
+    expect(history.snapshot()).toEqual({});
+  });
+
+  test('test route normalizes invalid overrides before planning the finale', () => {
+    const { api, plugin, history } = createPlugin();
+    plugin.registerRoutes();
+    plugin.triggerFinale = jest.fn(request => ({ accepted: true, id: request.eventId }));
+    const handleSuperfanEntry = jest.spyOn(plugin, 'handleSuperfanEntry');
+    const persistedConfig = { ...plugin.config };
+    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+    api.routes.get('post:/api/webgpu-fireworks/test-superfan')({
+      body: {
+        settings: {
+          superfanFinaleEnabled: 'false',
+          superfanFinaleCooldownHours: 13,
+          superfanFinaleIntensity: 99,
+          goalFinaleStyle: 'not-a-style',
+          goalFinaleLength: 'huge'
+        }
+      }
+    }, res);
+
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, accepted: true }));
+    expect(handleSuperfanEntry).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      configOverride: expect.objectContaining({
+        superfanFinaleEnabled: true,
+        superfanFinaleCooldownHours: 24,
+        superfanFinaleIntensity: 10,
+        goalFinaleStyle: 'auto',
+        goalFinaleLength: 'medium'
+      })
+    }));
+    expect(plugin.triggerFinale).toHaveBeenCalledWith(expect.objectContaining({
+      intensity: 10,
+      style: 'auto',
+      length: 'medium'
+    }));
+    expect(plugin.config).toEqual(persistedConfig);
     expect(history.snapshot()).toEqual({});
   });
 

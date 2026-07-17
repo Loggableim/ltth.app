@@ -33,6 +33,13 @@ const { FinaleShowPlanner, FINALE_STYLES } = require('./lib/finale-show-planner'
 const { SuperfanFinaleHistory, normalizeSuperfanIdentity } = require('./lib/superfan-finale-history');
 
 const FIREWORKS_CONFIG_MIGRATION_VERSION = 1;
+const SUPERFAN_FINALE_TEST_CONFIG_KEYS = Object.freeze([
+    'superfanFinaleEnabled',
+    'superfanFinaleCooldownHours',
+    'superfanFinaleIntensity',
+    'goalFinaleStyle',
+    'goalFinaleLength'
+]);
 
 class FireworksPlugin {
     constructor(api) {
@@ -763,12 +770,27 @@ class FireworksPlugin {
         // Test Superfan finale
         this.api.registerRoute('post', '/api/webgpu-fireworks/test-superfan', (req, res) => {
             try {
+                const requestedSettings = req.body?.settings;
+                const testConfigInput = { ...(this.config || {}) };
+                if (requestedSettings && typeof requestedSettings === 'object' && !Array.isArray(requestedSettings)) {
+                    for (const key of SUPERFAN_FINALE_TEST_CONFIG_KEYS) {
+                        if (Object.prototype.hasOwnProperty.call(requestedSettings, key)) {
+                            testConfigInput[key] = requestedSettings[key];
+                        }
+                    }
+                }
+                const configOverride = normalizeConfig(testConfigInput);
                 const result = this.handleSuperfanEntry({
                     userId: 'test-superfan',
                     uniqueId: req.body?.username || 'TestSuperfan',
                     profilePictureUrl: req.body?.profilePictureUrl || null,
                     teamMemberLevel: 1
-                }, { authoritative: true, bypassCooldown: true, bypassEnabled: true });
+                }, {
+                    authoritative: true,
+                    bypassCooldown: true,
+                    bypassEnabled: true,
+                    configOverride
+                });
                 res.json({ success: result.accepted, ...result });
             } catch (error) {
                 res.status(500).json({ success: false, error: error.message });
@@ -1311,8 +1333,11 @@ class FireworksPlugin {
     handleSuperfanEntry(data = {}, options = {}) {
         const authoritative = options.authoritative === true;
         const bypassCooldown = options.bypassCooldown === true;
-        if (!this.config.enabled && options.bypassEnabled !== true) return { accepted: false, reason: 'disabled' };
-        if (!this.config.superfanFinaleEnabled && options.bypassEnabled !== true) return { accepted: false, reason: 'feature-disabled' };
+        const effectiveConfig = options.configOverride
+            ? normalizeConfig({ ...(this.config || {}), ...options.configOverride })
+            : this.config;
+        if (!effectiveConfig.enabled && options.bypassEnabled !== true) return { accepted: false, reason: 'disabled' };
+        if (!effectiveConfig.superfanFinaleEnabled && options.bypassEnabled !== true) return { accepted: false, reason: 'feature-disabled' };
         const teamMemberLevel = Number(data.teamMemberLevel);
         if (!authoritative && (!Number.isFinite(teamMemberLevel) || teamMemberLevel <= 0)) {
             return { accepted: false, reason: 'not-superfan' };
@@ -1326,7 +1351,7 @@ class FireworksPlugin {
         const now = Date.now();
         if (!bypassCooldown && !this.superfanFinaleHistory.isEligible(
             identity,
-            this.config.superfanFinaleCooldownHours,
+            effectiveConfig.superfanFinaleCooldownHours,
             now
         )) return { accepted: false, reason: 'cooldown', identity };
 
@@ -1338,9 +1363,9 @@ class FireworksPlugin {
         const username = data.uniqueId || data.username || data.nickname || 'Superfan';
         const eventId = `superfan:${identity}:${now}`;
         const finale = this.triggerFinale({
-            style: this.config.goalFinaleStyle,
-            length: this.config.goalFinaleLength,
-            intensity: this.config.superfanFinaleIntensity,
+            style: effectiveConfig.goalFinaleStyle,
+            length: effectiveConfig.goalFinaleLength,
+            intensity: effectiveConfig.superfanFinaleIntensity,
             eventId,
             bypassEnabled: options.bypassEnabled === true
         });
@@ -1349,12 +1374,12 @@ class FireworksPlugin {
         this.scheduleFollowerAnimation({
             username,
             profilePictureUrl: data.profilePictureUrl || data.userProfilePictureUrl || null,
-            duration: this.config.followerAnimationDuration || 3000,
-            position: this.config.followerAnimationPosition || 'center',
-            size: this.config.followerAnimationSize || 'medium',
-            scale: this.config.followerAnimationScale || 1,
-            style: this.config.followerAnimationStyle || 'gradient-purple',
-            entrance: this.config.followerAnimationEntrance || 'scale',
+            duration: effectiveConfig.followerAnimationDuration || 3000,
+            position: effectiveConfig.followerAnimationPosition || 'center',
+            size: effectiveConfig.followerAnimationSize || 'medium',
+            scale: effectiveConfig.followerAnimationScale || 1,
+            style: effectiveConfig.followerAnimationStyle || 'gradient-purple',
+            entrance: effectiveConfig.followerAnimationEntrance || 'scale',
             thankYouText: 'Superfan joined, this firework is for you!'
         }, 0);
         if (!bypassCooldown) this.superfanFinaleHistory.markAccepted(identity, now);
