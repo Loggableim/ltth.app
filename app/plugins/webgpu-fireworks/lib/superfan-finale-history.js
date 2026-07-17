@@ -12,11 +12,14 @@ function normalizeSuperfanIdentityAliases(data = {}) {
     if (!aliases.includes(alias)) aliases.push(alias);
   };
 
-  append('id', data.userId);
-  append('id', data.user?.id);
-  append('user', data.uniqueId, true);
-  append('user', data.username, true);
-  append('user', data.nickname, true);
+  const userId = [data.userId, data.user?.id]
+    .map(value => String(value ?? '').trim())
+    .find(Boolean);
+  const handle = [data.uniqueId, data.username, data.nickname]
+    .map(value => String(value ?? '').trim())
+    .find(Boolean);
+  append('id', userId);
+  append('user', handle, true);
   return aliases;
 }
 
@@ -95,7 +98,18 @@ class SuperfanFinaleHistory {
     if (identities.length === 0) return { canonical: null, changed: false };
 
     const stableId = identities.find(alias => alias.startsWith('id:'));
-    const resolved = identities.map(alias => this.aliases.get(alias) || alias);
+    const conflictingAliases = new Set();
+    const resolved = identities.map(alias => {
+      const mapped = this.aliases.get(alias);
+      if (stableId && mapped?.startsWith('id:') && mapped !== stableId) {
+        conflictingAliases.add(alias);
+        if (typeof this.log === 'function') {
+          this.log(`Superfan identity alias conflict: ${alias} already belongs to ${mapped}; keeping ${stableId} separate`);
+        }
+        return alias;
+      }
+      return mapped || alias;
+    });
     const existing = resolved.find(alias => this.entries.has(alias));
     const canonical = stableId || existing || resolved[0];
     let changed = false;
@@ -114,7 +128,7 @@ class SuperfanFinaleHistory {
     }
 
     for (const alias of identities) {
-      if (alias === canonical) continue;
+      if (alias === canonical || conflictingAliases.has(alias)) continue;
       if (this.aliases.get(alias) !== canonical) {
         this.aliases.set(alias, canonical);
         changed = true;

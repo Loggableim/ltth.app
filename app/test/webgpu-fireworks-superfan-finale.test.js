@@ -48,14 +48,59 @@ describe('WebGPU Superfan finale foundation', () => {
     expect(normalizeSuperfanIdentity({ uniqueId: '  ', username: 'Valid.Name' })).toBe('user:valid.name');
   });
 
-  test('extracts every stable Superfan identity alias in priority order', () => {
+  test('extracts only the highest-priority stable ID and handle alias', () => {
     expect(normalizeSuperfanIdentityAliases({
       userId: ' 42 ',
       user: { id: 42 },
       uniqueId: '  Fan.Name  ',
       username: 'fan.name',
       nickname: ' Display Name '
-    })).toEqual(['id:42', 'user:fan.name', 'user:display name']);
+    })).toEqual(['id:42', 'user:fan.name']);
+  });
+
+  test('keeps different stable IDs separate when only their nickname matches', () => {
+    const filePath = path.join(tempDir, 'shared-nickname-history.json');
+    const history = new SuperfanFinaleHistory({ filePath, now: () => 1_000_000 });
+
+    history.markAccepted(normalizeSuperfanIdentityAliases({
+      userId: 'a', uniqueId: 'Alpha.Live', nickname: 'Shared Display'
+    }), 900_000);
+    history.markAccepted(normalizeSuperfanIdentityAliases({
+      userId: 'b', uniqueId: 'Beta.Live', nickname: 'Shared Display'
+    }), 1_000_000);
+
+    expect(history.snapshot()).toEqual({ 'id:a': 900_000, 'id:b': 1_000_000 });
+    expect(history.aliasSnapshot()).toEqual({
+      'user:alpha.live': 'id:a',
+      'user:beta.live': 'id:b'
+    });
+  });
+
+  test('does not steal history when one handle is already bound to another stable ID', () => {
+    const filePath = path.join(tempDir, 'conflicting-handle-history.json');
+    const warnings = [];
+    const history = new SuperfanFinaleHistory({
+      filePath,
+      log: message => warnings.push(message),
+      now: () => 1_000_000
+    });
+    const firstIdentity = normalizeSuperfanIdentityAliases({ userId: 'a', uniqueId: 'Shared.Handle' });
+    const conflictingIdentity = normalizeSuperfanIdentityAliases({ userId: 'b', uniqueId: ' shared.handle ' });
+
+    history.markAccepted(firstIdentity, 900_000);
+    expect(history.isEligible(conflictingIdentity, 24, 1_000_000)).toBe(true);
+    expect(history.snapshot()).toEqual({ 'id:a': 900_000 });
+
+    history.markAccepted(conflictingIdentity, 1_000_000);
+    expect(history.snapshot()).toEqual({ 'id:a': 900_000, 'id:b': 1_000_000 });
+    expect(history.aliasSnapshot()).toEqual({ 'user:shared.handle': 'id:a' });
+    expect(warnings).toEqual(expect.arrayContaining([
+      expect.stringContaining('Superfan identity alias conflict')
+    ]));
+
+    const reloaded = new SuperfanFinaleHistory({ filePath, now: () => 1_000_000 });
+    expect(reloaded.load()).toBe(2);
+    expect(reloaded.snapshot()).toEqual({ 'id:a': 900_000, 'id:b': 1_000_000 });
   });
 
   test('persists one cooldown when an id-plus-handle event is followed by a handle-only event', () => {
