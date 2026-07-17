@@ -346,12 +346,26 @@ class InteractiveController {
     }
     if (session.turnRole !== 'host') return { success: false, error: 'not_host_turn' };
 
-    if (session.gameType === 'chess') this.timers.pauseHostChess(session, { persist: false });
+    let chessHostSide = null;
+    let chessHostTimeBeforeMove = null;
+    if (session.gameType === 'chess') {
+      this.timers.pauseHostChess(session, { persist: false });
+      chessHostTimeBeforeMove = session.hostTimeRemainingMs;
+      const chessState = session.adapter.getState();
+      chessHostSide = ['white', 'black'].find(side => chessState[`${side}Player`]?.role === 'streamer');
+      if (chessHostSide) {
+        session.adapter.game.timers[chessHostSide] = chessHostTimeBeforeMove;
+        session.adapter.game.lastMoveTime = null;
+      }
+    }
     const previousState = session.adapter.getState();
     const result = session.adapter.applyHostMove(envelope.move);
     if (!result.success) {
       if (session.gameType === 'chess') this.timers.resumeHostChess(session);
       return { success: false, error: result.error };
+    }
+    if (session.gameType === 'chess') {
+      session.hostTimeRemainingMs = this._hostTimeFromState('chess', session.adapter.getState());
     }
 
     session.sessionRevision += 1;
@@ -385,6 +399,10 @@ class InteractiveController {
       return { success: true, sessionId: session.sessionId, result };
     } catch (error) {
       session.adapter.restoreState(previousState);
+      if (session.gameType === 'chess') {
+        session.hostTimeRemainingMs = chessHostTimeBeforeMove;
+        if (chessHostSide) session.adapter.game.timers[chessHostSide] = chessHostTimeBeforeMove;
+      }
       session.sessionRevision -= 1;
       session.turnRole = 'host';
       session.viewerDeadlineMs = null;
