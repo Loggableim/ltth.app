@@ -46,6 +46,14 @@ describe('interactive overlay contract', () => {
     expect(html).toContain('if (!latestInteractiveQueueIdle) return;');
   });
 
+  test('live player names and status text are not overwritten by translations', () => {
+    const connect4 = readOverlay('connect4.html');
+    const chess = readOverlay('chess.html');
+
+    expect(connect4).not.toMatch(/id="(?:game-title|game-status|player1-name|player2-name)"\s+data-i18n=/);
+    expect(chess).not.toMatch(/id="(?:black-name|white-name|game-over-title)"\s+data-i18n=/);
+  });
+
   test.each(['unified.html', 'connect4.html', 'chess.html'])(
     '%s contains syntactically valid inline scripts',
     filename => {

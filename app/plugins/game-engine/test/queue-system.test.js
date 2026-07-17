@@ -101,17 +101,24 @@ describe('Game Engine Queue System', () => {
     expect(commandTriggers.length).toBeGreaterThan(0);
   });
 
-  test('handleGameStart should queue game when session is active', () => {
+  test('handleGameStart should bypass the transient queue for interactive games', () => {
     // Simulate active session
     plugin.activeSessions.set(1, { mock: 'game' });
+    plugin.interactiveController.startMatch = jest.fn(() => ({
+      success: true,
+      started: true,
+      sessionId: 2
+    }));
 
     // Try to start another game
-    plugin.handleGameStart('connect4', 'testuser', 'Test User', 'command', '!play');
+    const result = plugin.handleGameStart('connect4', 'testuser', 'Test User', 'command', '!play');
 
-    // Should be queued by the single queue manager.
-    expect(plugin.unifiedQueue.queue).toHaveLength(1);
-    expect(plugin.unifiedQueue.queue[0].data.viewerUsername).toBe('testuser');
-    expect(plugin.unifiedQueue.queue[0].type).toBe('connect4');
+    expect(result).toMatchObject({ success: true, sessionId: 2 });
+    expect(plugin.interactiveController.startMatch).toHaveBeenCalledWith(expect.objectContaining({
+      gameType: 'connect4',
+      viewerId: 'testuser'
+    }));
+    expect(plugin.unifiedQueue.queue).toHaveLength(0);
 
     // Cleanup
     plugin.activeSessions.clear();

@@ -1189,6 +1189,10 @@
       margin: 14px 0;
     }
 
+    #interactive-connect4-controls[hidden] {
+      display: none !important;
+    }
+
     .interactive-column-button {
       min-width: 48px;
       padding: 10px 14px;
@@ -1370,8 +1374,8 @@
 
       <div id="active-game">
         <div class="status-bar">
-          <h3 data-i18n="game_engine.connect4_running">Connect4 game running</h3>
-          <p id="game-status" data-i18n="game_engine.waiting_move">Waiting for move…</p>
+          <h3>Interactive Games</h3>
+          <p id="game-status">Waiting for move…</p>
         </div>
 
         <div class="card">
@@ -5158,6 +5162,13 @@
       return display?.phase === 'result' ? 'Ergebnis wird angezeigt' : 'Uhr pausiert';
     }
 
+    function refreshInteractiveClocks() {
+      const display = latestInteractiveAdminState?.display;
+      if (!display) return;
+      const timerStatus = document.getElementById('interactive-timer-status');
+      if (timerStatus) timerStatus.textContent = interactiveTimerLabel(display);
+    }
+
     function renderInteractiveNow(state) {
       const display = state.display || {};
       const result = display.result;
@@ -6344,7 +6355,7 @@
     });
 
     setInterval(() => {
-      if (latestInteractiveAdminState) renderInteractiveState(latestInteractiveAdminState);
+      refreshInteractiveClocks();
     }, 1000);
     
     // Column buttons for streamer moves
