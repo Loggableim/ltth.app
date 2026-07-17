@@ -30,6 +30,7 @@ const {
 const { evaluateTriggerPolicy } = require('./lib/trigger-policy');
 const { SpawnPlanner } = require('./lib/spawn-planner');
 const { FinaleShowPlanner, FINALE_STYLES } = require('./lib/finale-show-planner');
+const { SuperfanFinaleHistory, normalizeSuperfanIdentity } = require('./lib/superfan-finale-history');
 
 const FIREWORKS_CONFIG_MIGRATION_VERSION = 1;
 
@@ -37,9 +38,13 @@ class FireworksPlugin {
     constructor(api) {
         this.api = api;
         // Use persistent storage in user profile directory (survives updates)
-        const pluginDataDir = api.getPluginDataDir();
-        this.uploadDir = path.join(pluginDataDir, 'uploads');
+        this.pluginDataDir = api.getPluginDataDir();
+        this.uploadDir = path.join(this.pluginDataDir, 'uploads');
         this.upload = null;
+        this.superfanFinaleHistory = new SuperfanFinaleHistory({
+            filePath: path.join(this.pluginDataDir, 'superfan-finales.json'),
+            log: message => this.api.log(message, 'warn')
+        });
 
         // Plugin state
         this.config = null;
@@ -62,6 +67,7 @@ class FireworksPlugin {
         // Server-side active firework tracking (browser global not available server-side)
         this.activeFireworkCount = 0;
         this.activeFireworkTimers = new Map();
+        this.notificationTimers = new Set();
         this.useLegacyGiftDropGuards = false;
         this.spawnPlanner = new SpawnPlanner();
         this.finaleShowPlanner = new FinaleShowPlanner();
@@ -74,6 +80,7 @@ class FireworksPlugin {
 
         // Ensure plugin data directory exists
         this.api.ensurePluginDataDir();
+        this.superfanFinaleHistory.load();
 
         // Migrate old uploads if they exist
         await this.migrateOldData();
@@ -753,6 +760,21 @@ class FireworksPlugin {
             }
         });
 
+        // Test Superfan finale
+        this.api.registerRoute('post', '/api/webgpu-fireworks/test-superfan', (req, res) => {
+            try {
+                const result = this.handleSuperfanEntry({
+                    userId: 'test-superfan',
+                    uniqueId: req.body?.username || 'TestSuperfan',
+                    profilePictureUrl: req.body?.profilePictureUrl || null,
+                    teamMemberLevel: 1
+                }, { authoritative: true, bypassCooldown: true, bypassEnabled: true });
+                res.json({ success: result.accepted, ...result });
+            } catch (error) {
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
         // Trigger random firework
         this.api.registerRoute('post', '/api/webgpu-fireworks/random', (req, res) => {
             try {
@@ -995,6 +1017,14 @@ class FireworksPlugin {
             }
 
             this.handleFollowerEvent(data);
+        });
+
+        this.api.registerTikTokEvent('join', data => {
+            this.handleSuperfanEntry(data, { authoritative: false });
+        });
+
+        this.api.registerTikTokEvent('superfan', data => {
+            this.handleSuperfanEntry(data, { authoritative: true });
         });
 
         // Chat event - interactive trigger
@@ -1278,6 +1308,69 @@ class FireworksPlugin {
         }
     }
 
+    handleSuperfanEntry(data = {}, options = {}) {
+        const authoritative = options.authoritative === true;
+        const bypassCooldown = options.bypassCooldown === true;
+        if (!this.config.enabled && options.bypassEnabled !== true) return { accepted: false, reason: 'disabled' };
+        if (!this.config.superfanFinaleEnabled && options.bypassEnabled !== true) return { accepted: false, reason: 'feature-disabled' };
+        if (!authoritative && Number(data.teamMemberLevel) <= 0) return { accepted: false, reason: 'not-superfan' };
+
+        const identity = normalizeSuperfanIdentity(data);
+        if (!identity) {
+            this.api.log('[FIREWORKS] Superfan finale skipped: missing user identity', 'debug');
+            return { accepted: false, reason: 'missing-identity' };
+        }
+        const now = Date.now();
+        if (!bypassCooldown && !this.superfanFinaleHistory.isEligible(
+            identity,
+            this.config.superfanFinaleCooldownHours,
+            now
+        )) return { accepted: false, reason: 'cooldown', identity };
+
+        const rendererStatus = this.getRendererStatus();
+        if (rendererStatus.state !== 'ready') {
+            return { accepted: false, reason: 'renderer-not-ready', identity };
+        }
+
+        const username = data.uniqueId || data.username || data.nickname || 'Superfan';
+        const eventId = `superfan:${identity}:${now}`;
+        const finale = this.triggerFinale({
+            style: this.config.goalFinaleStyle,
+            length: this.config.goalFinaleLength,
+            intensity: this.config.superfanFinaleIntensity,
+            eventId,
+            bypassEnabled: options.bypassEnabled === true
+        });
+        if (!finale.accepted) return { accepted: false, reason: finale.reason || 'finale-rejected', identity, finale };
+
+        this.scheduleFollowerAnimation({
+            username,
+            profilePictureUrl: data.profilePictureUrl || data.userProfilePictureUrl || null,
+            duration: this.config.followerAnimationDuration || 3000,
+            position: this.config.followerAnimationPosition || 'center',
+            size: this.config.followerAnimationSize || 'medium',
+            scale: this.config.followerAnimationScale || 1,
+            style: this.config.followerAnimationStyle || 'gradient-purple',
+            entrance: this.config.followerAnimationEntrance || 'scale',
+            thankYouText: 'Superfan joined, this firework is for you!'
+        }, 0);
+        if (!bypassCooldown) this.superfanFinaleHistory.markAccepted(identity, now);
+        return { accepted: true, identity, finale };
+    }
+
+    scheduleFollowerAnimation(payload, delayMs = 0) {
+        if (delayMs <= 0) {
+            this.api.emit('webgpu-fireworks:follower-animation', payload);
+            return null;
+        }
+        const timer = setTimeout(() => {
+            this.notificationTimers.delete(timer);
+            this.api.emit('webgpu-fireworks:follower-animation', payload);
+        }, delayMs);
+        this.notificationTimers.add(timer);
+        return timer;
+    }
+
     /**
      * Handle follow event - celebrate new follower with fireworks
      */
@@ -1291,18 +1384,16 @@ class FireworksPlugin {
         if (this.config.followerShowAnimation) {
             const animationDelay = this.config.followerAnimationDelay || 3000;
 
-            setTimeout(() => {
-                this.api.emit('webgpu-fireworks:follower-animation', {
-                    username: username,
-                    profilePictureUrl: this.config.followerShowProfilePicture ? profilePictureUrl : null,
-                    duration: this.config.followerAnimationDuration || 3000,
-                    position: this.config.followerAnimationPosition || 'center',
-                    size: this.config.followerAnimationSize || 'medium',
-                    scale: this.config.followerAnimationScale || 1.0,
-                    style: this.config.followerAnimationStyle || 'gradient-purple',
-                    entrance: this.config.followerAnimationEntrance || 'scale',
-                    thankYouText: this.config.followerThankYouText || 'Thanks for the follow! 💙'
-                });
+            this.scheduleFollowerAnimation({
+                username: username,
+                profilePictureUrl: this.config.followerShowProfilePicture ? profilePictureUrl : null,
+                duration: this.config.followerAnimationDuration || 3000,
+                position: this.config.followerAnimationPosition || 'center',
+                size: this.config.followerAnimationSize || 'medium',
+                scale: this.config.followerAnimationScale || 1.0,
+                style: this.config.followerAnimationStyle || 'gradient-purple',
+                entrance: this.config.followerAnimationEntrance || 'scale',
+                thankYouText: this.config.followerThankYouText || 'Thanks for the follow! 💙'
             }, animationDelay);
         }
 
@@ -1730,6 +1821,7 @@ class FireworksPlugin {
         this.api.log('   - POST   /api/webgpu-fireworks/trigger', 'info');
         this.api.log('   - POST   /api/webgpu-fireworks/finale', 'info');
         this.api.log('   - POST   /api/webgpu-fireworks/test-follower', 'info');
+        this.api.log('   - POST   /api/webgpu-fireworks/test-superfan', 'info');
         this.api.log('   - POST   /api/webgpu-fireworks/random', 'info');
         this.api.log('   - GET    /api/webgpu-fireworks/gift-mappings', 'info');
         this.api.log('   - POST   /api/webgpu-fireworks/gift-mappings', 'info');
@@ -1807,6 +1899,12 @@ class FireworksPlugin {
         }
         this.activeFireworkTimers.clear();
         this.activeFireworkCount = 0;
+
+        // Cancel delayed follower notifications
+        for (const timer of this.notificationTimers) {
+            clearTimeout(timer);
+        }
+        this.notificationTimers.clear();
 
         // PluginAPI owns the connection disposer and removes it on unload.
         this.fpsUpdateHandler = null;
