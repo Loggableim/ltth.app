@@ -391,6 +391,47 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(result.streamUrl).toBe(directTrack.streamUrl);
   });
 
+  test('allows a scheduled Auto-DJ handoff without bypassing the consecutive limit', async () => {
+    const outgoingTrack = {
+      id: 'outgoing-auto-dj',
+      title: 'Outgoing Auto-DJ',
+      requestedBy: 'AutoDJ',
+      streamUrl: 'https://media.example.test/outgoing.m4a'
+    };
+    const incomingTrack = {
+      id: 'incoming-auto-dj',
+      title: 'Incoming Auto-DJ',
+      requestedBy: 'AutoDJ',
+      streamUrl: 'https://media.example.test/incoming.m4a'
+    };
+    const { plugin } = createPluginWithQueue([]);
+    plugin._maybePlayAutoDJ = MusicBotPlugin.prototype._maybePlayAutoDJ.bind(plugin);
+    plugin.config.autoDJ.enabled = true;
+    plugin.autoDJ = {
+      onQueueEmpty: jest.fn(async () => ({ song: incomingTrack })),
+      getNextSong: jest.fn(),
+      recordFailedTrack: jest.fn(),
+      markTrackStarted: jest.fn(),
+      getStatus: jest.fn(() => ({ mode: 'mix' }))
+    };
+    plugin.queueManager.markPlaying = jest.fn();
+    plugin.playbackEngine = {
+      play: jest.fn(async () => incomingTrack),
+      getNowPlaying: jest.fn(() => outgoingTrack),
+      isPlaying: jest.fn(() => true)
+    };
+
+    const result = await plugin._maybePlayAutoDJ(false, true);
+
+    expect(result).toEqual(expect.objectContaining({ id: incomingTrack.id }));
+    expect(plugin.autoDJ.onQueueEmpty).toHaveBeenCalledTimes(1);
+    expect(plugin.autoDJ.getNextSong).not.toHaveBeenCalled();
+    expect(plugin.playbackEngine.play).toHaveBeenCalledWith(expect.objectContaining({
+      id: incomingTrack.id,
+      requestedBy: 'AutoDJ'
+    }));
+  });
+
   test('excludes an unresolvable Auto-DJ page and plays the next bounded candidate', async () => {
     const brokenTrack = {
       title: 'Broken history page',
@@ -1027,17 +1068,19 @@ describe('Music Bot runtime and UI regressions', () => {
       const { plugin } = createPluginWithQueue([]);
       plugin.config.playback.crossfadeDuration = 3000;
       plugin.playbackEngine = {
-        getNowPlaying: jest.fn(() => ({ id: 'current' })),
+        getNowPlaying: jest.fn(() => ({ id: 'current', requestedBy: 'AutoDJ' })),
         isPlaying: jest.fn(() => true)
       };
       plugin._playNextFromQueue = jest.fn(async () => ({ success: true }));
+      plugin._maybePlayAutoDJ = jest.fn(async () => ({ id: 'next-auto-dj' }));
 
       plugin._scheduleCrossfadeTransition({ id: 'current', duration: 120 });
       jest.advanceTimersByTime(116999);
-      expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
+      expect(plugin._maybePlayAutoDJ).not.toHaveBeenCalled();
 
       jest.advanceTimersByTime(1);
-      expect(plugin._playNextFromQueue).toHaveBeenCalledTimes(1);
+      expect(plugin._maybePlayAutoDJ).toHaveBeenCalledWith(false, true);
+      expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
     } finally {
       jest.useRealTimers();
     }

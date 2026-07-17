@@ -3033,13 +3033,18 @@ class MusicBotPlugin extends EventEmitter {
     return this.queueManager.getQueue().find((item) => item.requestedBy?.toLowerCase() === lower);
   }
 
-  async _maybePlayAutoDJ(force = false) {
+  async _maybePlayAutoDJ(force = false, allowActiveAutoDJ = false) {
     if (this._isSafetyLocked() || !this.autoDJ || !this.config.autoDJ?.enabled) {
       return null;
     }
     if (this.queueManager?.getQueue?.().length > 0) return null;
     const activeBeforeResolve = this.playbackEngine?.getNowPlaying?.();
-    if (force && activeBeforeResolve && activeBeforeResolve.requestedBy !== 'AutoDJ') return null;
+    const mayReplaceActiveAutoDJ = force || allowActiveAutoDJ;
+    if (
+      mayReplaceActiveAutoDJ
+      && activeBeforeResolve
+      && activeBeforeResolve.requestedBy !== 'AutoDJ'
+    ) return null;
 
     let result = null;
     let track = null;
@@ -3049,8 +3054,8 @@ class MusicBotPlugin extends EventEmitter {
       if (
         this._isSafetyLocked()
         || this.queueManager?.getQueue?.().length > 0
-        || (!force && this.playbackEngine?.isPlaying?.())
-        || (force && this.playbackEngine?.isPlaying?.()
+        || (!mayReplaceActiveAutoDJ && this.playbackEngine?.isPlaying?.())
+        || (mayReplaceActiveAutoDJ && this.playbackEngine?.isPlaying?.()
           && this.playbackEngine?.getNowPlaying?.()?.requestedBy !== 'AutoDJ')
       ) {
         return null;
@@ -3070,8 +3075,8 @@ class MusicBotPlugin extends EventEmitter {
       if (
         this._isSafetyLocked()
         || this.queueManager?.getQueue?.().length > 0
-        || (!force && this.playbackEngine?.isPlaying?.())
-        || (force && this.playbackEngine?.isPlaying?.()
+        || (!mayReplaceActiveAutoDJ && this.playbackEngine?.isPlaying?.())
+        || (mayReplaceActiveAutoDJ && this.playbackEngine?.isPlaying?.()
           && this.playbackEngine?.getNowPlaying?.()?.requestedBy !== 'AutoDJ')
       ) {
         return null;
@@ -3374,7 +3379,11 @@ class MusicBotPlugin extends EventEmitter {
       this.crossfadeTimer = null;
       const current = this.playbackEngine?.getNowPlaying?.();
       if (!trackId || current?.id !== trackId || !this.playbackEngine?.isPlaying?.()) return;
-      this._playNextFromQueue().catch((error) => {
+      const advance = current.requestedBy === 'AutoDJ'
+        && this.queueManager?.getQueue?.().length === 0
+        ? this._maybePlayAutoDJ(false, true)
+        : this._playNextFromQueue();
+      Promise.resolve(advance).catch((error) => {
         this.api.log(`[music-bot] Crossfade transition failed: ${error.message}`, 'warn');
       });
     }, durationMs - crossfadeMs);
