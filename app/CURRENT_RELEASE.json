@@ -1,5 +1,5 @@
 {
   "version": "1.3.32",
-  "updated_at": "2026-07-17T04:14:00.314984+00:00",
+  "updated_at": "2026-07-17T04:19:22.849231+00:00",
   "notes": "LTTH Version 1.3.32 Release Notes\n\nVersion 1.3.32 adds a persistent interactive turn queue for concurrent Connect Four and Chess matches, rotating OBS boards, host controls, and timed viewer turns.\n\n- NEW: Connect Four and Chess share one persistent FIFO queue for concurrent viewer matches\n- NEW: The unified OBS overlay rotates all active boards and labels every match as host vs. player\n- NEW: Viewers play through chat while the streamer controls host turns from the Game Engine dashboard\n- FIXED: The viewer clock runs only on player turns; a timeout causes an automatic player loss\n- FIXED: Queue recovery, event deduplication, and host-control races are hardened\n- IMPROVED: Public release metadata and download surfaces bumped to 1.3.32\n"
 }
