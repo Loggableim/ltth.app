@@ -40,6 +40,8 @@ const AutoDJ = require('./lib/auto-dj');
 const DEFAULT_PRECACHE_LOOKAHEAD = 2;
 const MAX_PRECACHE_LOOKAHEAD = 5;
 const MPV_INSTALL_TIMEOUT_MS = 5 * 60 * 1000;
+const AUTODJ_FAILURE_LIMIT = 3;
+const AUTODJ_FAILURE_WINDOW_MS = 60 * 1000;
 
 const DEFAULT_CONFIG = {
   enabled: true,
@@ -186,6 +188,7 @@ class MusicBotPlugin extends EventEmitter {
     this.playbackSyncTimer = null;
     this.crossfadeTimer = null;
     this._autoDjRecoveryTracks = new WeakSet();
+    this._autoDjPlaybackFailures = [];
     this._pendingTrackAdvance = null;
     this._pendingSkipAdvance = null;
     this._queueAdvanceOperation = null;
@@ -2921,7 +2924,6 @@ class MusicBotPlugin extends EventEmitter {
 
   _emitError(message) {
     this.api.emit('musicbot:error', { message });
-    this._emitToast('error', 'API-Fehler', String(message || 'Unbekannter Fehler'));
   }
 
   _emitNowPlaying(track) {
@@ -3053,7 +3055,27 @@ class MusicBotPlugin extends EventEmitter {
       ) {
         return null;
       }
-      track = this._decorateTrackIdentity(result.song || result);
+      const selectedTrack = this._decorateTrackIdentity(result.song || result);
+      try {
+        track = await this._prepareAutoDJTrack(selectedTrack);
+      } catch (error) {
+        this.autoDJ.recordFailedTrack?.(selectedTrack, 'resolve-failed');
+        this.api.log(
+          `[music-bot] AutoDJ could not resolve "${selectedTrack.title || selectedTrack.id}": ${error.message}`,
+          'warn'
+        );
+        track = null;
+        continue;
+      }
+      if (
+        this._isSafetyLocked()
+        || this.queueManager?.getQueue?.().length > 0
+        || (!force && this.playbackEngine?.isPlaying?.())
+        || (force && this.playbackEngine?.isPlaying?.()
+          && this.playbackEngine?.getNowPlaying?.()?.requestedBy !== 'AutoDJ')
+      ) {
+        return null;
+      }
       const banMessage = this._checkBans(track, 'AutoDJ');
       if (!banMessage) break;
       this.autoDJ.recordFailedTrack?.(track, 'blocked-by-ban-list');
@@ -3086,10 +3108,48 @@ class MusicBotPlugin extends EventEmitter {
     }
   }
 
+  async _prepareAutoDJTrack(track) {
+    if (!track || typeof track !== 'object') {
+      throw new Error('AutoDJ selected an invalid track');
+    }
+
+    if (track.localPath || track.streamUrl) {
+      return this._decorateTrackIdentity({ ...track, requestedBy: 'AutoDJ' });
+    }
+    if (!track.url) {
+      throw new Error('AutoDJ track has no playable locator');
+    }
+    if (!this.musicResolver?.resolve) {
+      throw new Error('Music resolver is unavailable');
+    }
+
+    const resolved = await this.musicResolver.resolve(track.url);
+    if (!resolved?.success || !resolved.song) {
+      throw new Error(resolved?.message || 'AutoDJ track could not be resolved');
+    }
+    if (!resolved.song.localPath && !resolved.song.streamUrl) {
+      throw new Error('Resolver returned no direct media stream');
+    }
+
+    return this._decorateTrackIdentity({
+      ...track,
+      ...resolved.song,
+      requestedBy: 'AutoDJ'
+    });
+  }
+
+  _recordAutoDJPlaybackFailure(now = Date.now()) {
+    const cutoff = now - AUTODJ_FAILURE_WINDOW_MS;
+    this._autoDjPlaybackFailures = this._autoDjPlaybackFailures
+      .filter((timestamp) => timestamp >= cutoff);
+    this._autoDjPlaybackFailures.push(now);
+    return this._autoDjPlaybackFailures.length;
+  }
+
   async _handleAutoDJPlaybackFailure(track, reason, error) {
     if (!track || typeof track !== 'object') return null;
     const activeTrack = this.playbackEngine?.getNowPlaying?.();
-    if (activeTrack !== track) {
+    if (activeTrack && activeTrack !== track) {
       this.api.log('[music-bot] Ignoring stale AutoDJ playback failure for ' + (track.id || track.title || 'unknown'), 'warn');
       return null;
     }
@@ -3101,6 +3161,25 @@ class MusicBotPlugin extends EventEmitter {
     const preserveReplacementOutgoing = reason === 'ipc-confirmed'
       && this.playbackEngine.rememberReplacementOutgoing?.(track);
     this.playbackEngine.clearNowPlaying && this.playbackEngine.clearNowPlaying({ preserveReplacementOutgoing });
+    const recentFailureCount = this._recordAutoDJPlaybackFailure();
+    if (recentFailureCount >= AUTODJ_FAILURE_LIMIT) {
+      this.autoDJ?.deactivate?.();
+      this.queueManager?.markPlaying?.(null);
+      this.queueManager?.resetVoteSkips?.();
+      this.api.log(
+        `[music-bot] AutoDJ paused after ${recentFailureCount} playback failures in 60 seconds`,
+        'error'
+      );
+      this._emitToast(
+        'error',
+        'AutoDJ pausiert',
+        '3 Titel konnten innerhalb von 60 Sekunden nicht abgespielt werden.'
+      );
+      this._emitPlaybackStopped();
+      this._emitNowPlaying(null);
+      this._emitRuntimeHealth();
+      return null;
+    }
     this.api.log('[music-bot] AutoDJ track failed (' + reason + '); selecting replacement for ' + (track.id || track.title || 'unknown'), 'warn');
     return await this._maybePlayAutoDJ(true);
   }

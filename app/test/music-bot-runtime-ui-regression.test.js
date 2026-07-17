@@ -225,7 +225,12 @@ describe('Music Bot runtime and UI regressions', () => {
   });
 
   test('records the selected Auto-DJ track when its initial playback start fails', async () => {
-    const track = { id: 'start-failed', title: 'Broken stream', requestedBy: 'AutoDJ' };
+    const track = {
+      id: 'start-failed',
+      title: 'Broken stream',
+      requestedBy: 'AutoDJ',
+      streamUrl: 'https://media.example.test/broken-stream.m4a'
+    };
     const { plugin } = createPluginWithQueue([]);
     plugin._maybePlayAutoDJ = MusicBotPlugin.prototype._maybePlayAutoDJ.bind(plugin);
     plugin.config.autoDJ.enabled = true;
@@ -247,6 +252,188 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(plugin.autoDJ.recordFailedTrack.mock.invocationCallOrder[0])
       .toBeLessThan(plugin.autoDJ.markPlaybackFailed.mock.invocationCallOrder[0]);
     expect(plugin.autoDJ.getNextSong).toHaveBeenCalledTimes(1);
+  });
+
+  test('resolves a page-only Auto-DJ history track before handing it to MPV', async () => {
+    const historyTrack = {
+      title: 'History page',
+      artist: 'History Artist',
+      url: 'https://www.youtube.com/watch?v=history01',
+      source: 'youtube',
+      youtubeId: 'history01',
+      channelName: 'Original Channel'
+    };
+    const resolvedTrack = {
+      title: 'History page refreshed',
+      artist: 'History Artist',
+      url: historyTrack.url,
+      streamUrl: 'https://media.example.test/history01.m4a',
+      source: 'youtube',
+      provider: 'youtube',
+      providerId: 'history01',
+      trackKey: 'youtube:history01',
+      youtubeId: 'history01',
+      channelName: 'Resolved Channel'
+    };
+    const { plugin } = createPluginWithQueue([]);
+    plugin._maybePlayAutoDJ = MusicBotPlugin.prototype._maybePlayAutoDJ.bind(plugin);
+    plugin.config.autoDJ.enabled = true;
+    plugin.musicResolver = {
+      resolve: jest.fn(async () => ({ success: true, song: resolvedTrack }))
+    };
+    plugin.autoDJ = {
+      getNextSong: jest.fn(async () => ({ song: historyTrack })),
+      recordFailedTrack: jest.fn(),
+      markTrackStarted: jest.fn(),
+      getStatus: jest.fn(() => ({ mode: 'mix' }))
+    };
+    plugin.queueManager.markPlaying = jest.fn();
+    plugin.playbackEngine = {
+      play: jest.fn(async () => {}),
+      getNowPlaying: jest.fn(() => null),
+      isPlaying: jest.fn(() => false)
+    };
+
+    const result = await plugin._maybePlayAutoDJ(true);
+
+    expect(plugin.musicResolver.resolve).toHaveBeenCalledWith(historyTrack.url);
+    expect(plugin.playbackEngine.play).toHaveBeenCalledWith(expect.objectContaining({
+      title: resolvedTrack.title,
+      streamUrl: resolvedTrack.streamUrl,
+      requestedBy: 'AutoDJ',
+      trackKey: 'youtube:history01'
+    }));
+    expect(result).toEqual(expect.objectContaining({
+      streamUrl: resolvedTrack.streamUrl,
+      requestedBy: 'AutoDJ'
+    }));
+  });
+
+  test('does not replace a viewer request that starts while Auto-DJ resolution is pending', async () => {
+    const queue = [];
+    const historyTrack = {
+      title: 'Slow history page',
+      url: 'https://www.youtube.com/watch?v=slowhistory',
+      source: 'youtube',
+      youtubeId: 'slowhistory'
+    };
+    let releaseResolve;
+    const { plugin } = createPluginWithQueue(queue);
+    plugin._maybePlayAutoDJ = MusicBotPlugin.prototype._maybePlayAutoDJ.bind(plugin);
+    plugin.config.autoDJ.enabled = true;
+    plugin.musicResolver = {
+      resolve: jest.fn(() => new Promise((resolve) => {
+        releaseResolve = resolve;
+      }))
+    };
+    plugin.autoDJ = {
+      getNextSong: jest.fn(async () => ({ song: historyTrack })),
+      recordFailedTrack: jest.fn(),
+      markTrackStarted: jest.fn(),
+      getStatus: jest.fn(() => ({ mode: 'mix' }))
+    };
+    plugin.queueManager.markPlaying = jest.fn();
+    plugin.playbackEngine = {
+      play: jest.fn(async () => {}),
+      getNowPlaying: jest.fn(() => null),
+      isPlaying: jest.fn(() => false)
+    };
+
+    const autoDjStart = plugin._maybePlayAutoDJ(true);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(plugin.musicResolver.resolve).toHaveBeenCalled();
+    queue.push({ id: 'viewer-next', title: 'Viewer next', requestedBy: 'viewer' });
+    releaseResolve({
+      success: true,
+      song: {
+        ...historyTrack,
+        streamUrl: 'https://media.example.test/slowhistory.m4a'
+      }
+    });
+
+    await expect(autoDjStart).resolves.toBeNull();
+    expect(plugin.playbackEngine.play).not.toHaveBeenCalled();
+    expect(queue[0].id).toBe('viewer-next');
+  });
+
+  test('keeps an already resolved Auto-DJ stream out of the resolver', async () => {
+    const directTrack = {
+      title: 'Direct radio stream',
+      url: 'https://radio.example.test/station',
+      streamUrl: 'https://media.example.test/station.aac',
+      source: 'radio'
+    };
+    const { plugin } = createPluginWithQueue([]);
+    plugin._maybePlayAutoDJ = MusicBotPlugin.prototype._maybePlayAutoDJ.bind(plugin);
+    plugin.config.autoDJ.enabled = true;
+    plugin.musicResolver = { resolve: jest.fn() };
+    plugin.autoDJ = {
+      getNextSong: jest.fn(async () => ({ song: directTrack })),
+      recordFailedTrack: jest.fn(),
+      markTrackStarted: jest.fn(),
+      getStatus: jest.fn(() => ({ mode: 'mix' }))
+    };
+    plugin.queueManager.markPlaying = jest.fn();
+    plugin.playbackEngine = {
+      play: jest.fn(async () => {}),
+      getNowPlaying: jest.fn(() => null),
+      isPlaying: jest.fn(() => false)
+    };
+
+    const result = await plugin._maybePlayAutoDJ(true);
+
+    expect(plugin.musicResolver.resolve).not.toHaveBeenCalled();
+    expect(plugin.playbackEngine.play).toHaveBeenCalledWith(expect.objectContaining({
+      streamUrl: directTrack.streamUrl,
+      requestedBy: 'AutoDJ'
+    }));
+    expect(result.streamUrl).toBe(directTrack.streamUrl);
+  });
+
+  test('excludes an unresolvable Auto-DJ page and plays the next bounded candidate', async () => {
+    const brokenTrack = {
+      title: 'Broken history page',
+      url: 'https://www.youtube.com/watch?v=brokenpage',
+      source: 'youtube',
+      youtubeId: 'brokenpage'
+    };
+    const playableTrack = {
+      title: 'Working radio stream',
+      url: 'https://radio.example.test/working',
+      streamUrl: 'https://media.example.test/working.aac',
+      source: 'radio'
+    };
+    const { plugin } = createPluginWithQueue([]);
+    plugin._maybePlayAutoDJ = MusicBotPlugin.prototype._maybePlayAutoDJ.bind(plugin);
+    plugin.config.autoDJ.enabled = true;
+    plugin.musicResolver = {
+      resolve: jest.fn(async () => ({ success: false, message: 'No playable result' }))
+    };
+    plugin.autoDJ = {
+      getNextSong: jest.fn()
+        .mockResolvedValueOnce({ song: brokenTrack })
+        .mockResolvedValueOnce({ song: playableTrack }),
+      recordFailedTrack: jest.fn(),
+      markTrackStarted: jest.fn(),
+      getStatus: jest.fn(() => ({ mode: 'mix' }))
+    };
+    plugin.queueManager.markPlaying = jest.fn();
+    plugin.playbackEngine = {
+      play: jest.fn(async () => {}),
+      getNowPlaying: jest.fn(() => null),
+      isPlaying: jest.fn(() => false)
+    };
+
+    const result = await plugin._maybePlayAutoDJ(true);
+
+    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledWith(
+      expect.objectContaining({ youtubeId: brokenTrack.youtubeId }),
+      'resolve-failed'
+    );
+    expect(plugin.autoDJ.getNextSong).toHaveBeenCalledTimes(2);
+    expect(plugin.playbackEngine.play).toHaveBeenCalledTimes(1);
+    expect(result.streamUrl).toBe(playableTrack.streamUrl);
   });
 
   test('keeps an Auto-DJ stream playing when the controller heartbeat confirms playback', async () => {
@@ -332,6 +519,63 @@ describe('Music Bot runtime and UI regressions', () => {
 
     expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledTimes(2);
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(2);
+  });
+
+  test('stops immediate Auto-DJ replacement after three playback failures in 60 seconds', async () => {
+    const tracks = [1, 2, 3].map((index) => ({
+      id: `rapid-failure-${index}`,
+      title: `Rapid failure ${index}`,
+      requestedBy: 'AutoDJ'
+    }));
+    const { plugin } = createPluginWithQueue([]);
+    let activeTrack = tracks[0];
+    plugin.autoDJ = {
+      recordFailedTrack: jest.fn(),
+      markPlaybackFailed: jest.fn(),
+      deactivate: jest.fn()
+    };
+    plugin.playbackEngine = {
+      getNowPlaying: jest.fn(() => activeTrack),
+      clearNowPlaying: jest.fn()
+    };
+    plugin._stopPlaybackSync = jest.fn();
+    plugin._maybePlayAutoDJ = jest.fn(async () => null);
+    plugin._emitToast = jest.fn();
+    plugin._emitPlaybackStopped = jest.fn();
+    plugin._emitNowPlaying = jest.fn();
+    plugin._emitRuntimeHealth = jest.fn();
+    plugin.queueManager.markPlaying = jest.fn();
+    plugin.queueManager.resetVoteSkips = jest.fn();
+
+    for (const track of tracks) {
+      activeTrack = track;
+      await plugin._handleAutoDJPlaybackFailure(track, 'mpv-track-end', new Error('unrecognized file format'));
+    }
+
+    expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(2);
+    expect(plugin.autoDJ.deactivate).toHaveBeenCalledTimes(1);
+    expect(plugin._emitToast).toHaveBeenCalledWith(
+      'error',
+      'AutoDJ pausiert',
+      expect.stringContaining('3')
+    );
+    expect(plugin.queueManager.markPlaying).toHaveBeenCalledWith(null);
+    expect(plugin.queueManager.resetVoteSkips).toHaveBeenCalledTimes(1);
+    expect(plugin._emitPlaybackStopped).toHaveBeenCalledTimes(1);
+    expect(plugin._emitNowPlaying).toHaveBeenCalledWith(null);
+    expect(plugin._emitRuntimeHealth).toHaveBeenCalledTimes(1);
+  });
+
+  test('emits playback errors through one UI channel', () => {
+    const { plugin, api } = createPluginWithQueue([]);
+    api.emit.mockClear();
+
+    plugin._emitError('unrecognized file format');
+
+    expect(api.emit).toHaveBeenCalledTimes(1);
+    expect(api.emit).toHaveBeenCalledWith('musicbot:error', {
+      message: 'unrecognized file format'
+    });
   });
 
   test('ignores a delayed Auto-DJ track-end for the replaced track after watchdog recovery', async () => {

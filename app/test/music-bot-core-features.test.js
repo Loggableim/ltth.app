@@ -577,6 +577,57 @@ describe('Music Bot core features', () => {
     }
   });
 
+  test('excludes skipped rows from grouped Auto-DJ history candidates', () => {
+    const db = createAutoDjDb();
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'history',
+      historyMinPlays: 2
+    }, {}, db, { log: jest.fn() });
+
+    autoDJ._loadHistoryCandidates();
+
+    const historyQuery = db.prepare.mock.calls
+      .map(([sql]) => sql)
+      .find((sql) => sql.includes('COUNT(*) as plays'));
+    expect(historyQuery).toContain('COALESCE(skipped, 0) = 0');
+  });
+
+  test('skips failed-stream exclusions when selecting in history mode', async () => {
+    const broken = {
+      youtubeId: 'broken-history',
+      title: 'Broken History',
+      artist: 'Broken Artist',
+      url: 'https://www.youtube.com/watch?v=broken-history',
+      plays: 3
+    };
+    const allowed = {
+      youtubeId: 'allowed-history',
+      title: 'Allowed History',
+      artist: 'Allowed Artist',
+      url: 'https://www.youtube.com/watch?v=allowed-history',
+      plays: 2
+    };
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'history',
+      historyMinPlays: 2,
+      historyShuffled: false
+    }, {}, createAutoDjDb({
+      historyCandidates: [broken, allowed],
+      exclusions: [{
+        youtubeId: broken.youtubeId,
+        titleKey: 'broken history',
+        artistKey: 'broken artist'
+      }]
+    }), { log: jest.fn() });
+
+    const result = await autoDJ.getNextSong();
+
+    expect(result.song.youtubeId).toBe(allowed.youtubeId);
+    expect(autoDJ.getStatus().blockedCount).toBe(1);
+  });
+
   test('falls back to history when the weighted radio lookup has no result', async () => {
     const seed = {
       youtubeId: 'seed-1', title: 'History seed', artist: 'Seed Artist',

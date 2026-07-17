@@ -819,12 +819,14 @@ describe('Music Bot Safety Lock runtime integration', () => {
       id: 'blocked-auto',
       title: 'Blocked AutoDJ',
       trackKey: 'youtube:blockedauto1',
+      streamUrl: 'https://media.example.test/blocked-auto.m4a',
       requestedBy: 'AutoDJ'
     };
     const allowed = {
       id: 'allowed-auto',
       title: 'Allowed AutoDJ',
       trackKey: 'youtube:allowedauto1',
+      streamUrl: 'https://media.example.test/allowed-auto.m4a',
       requestedBy: 'AutoDJ'
     };
     plugin.autoDJ.onQueueEmpty = jest.fn()
