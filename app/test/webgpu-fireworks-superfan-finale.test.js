@@ -38,6 +38,14 @@ describe('WebGPU Superfan finale foundation', () => {
     expect(normalizeSuperfanIdentity({})).toBeNull();
   });
 
+  test('falls back from a blank top-level user id to the nested user id', () => {
+    expect(normalizeSuperfanIdentity({ userId: '  ', user: { id: 42 } })).toBe('id:42');
+  });
+
+  test('falls back from a blank unique id to the username', () => {
+    expect(normalizeSuperfanIdentity({ uniqueId: '  ', username: 'Valid.Name' })).toBe('user:valid.name');
+  });
+
   test('persists independent timestamps and safely ignores corrupt JSON', () => {
     const filePath = path.join(tempDir, 'superfan-finales.json');
     let now = 1_000_000;
@@ -72,5 +80,21 @@ describe('WebGPU Superfan finale foundation', () => {
     history.markAccepted('id:a');
     expect(history.getLastAcceptedAt('id:a')).toBe(1234);
     expect(warnings).toEqual([expect.stringContaining('disk full')]);
+  });
+
+  test('discards future history entries while loading a current entry', () => {
+    const filePath = path.join(tempDir, 'superfan-finales.json');
+    const now = 1_000_000;
+    fs.writeFileSync(filePath, JSON.stringify({
+      version: 1,
+      entries: {
+        'id:current': now,
+        'id:future': now + 1
+      }
+    }), 'utf8');
+    const history = new SuperfanFinaleHistory({ filePath, now: () => now });
+
+    expect(history.load()).toBe(1);
+    expect(history.snapshot()).toEqual({ 'id:current': now });
   });
 });

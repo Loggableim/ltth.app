@@ -4,10 +4,14 @@ const path = require('path');
 const MAX_HISTORY_AGE_MS = 168 * 60 * 60 * 1000;
 
 function normalizeSuperfanIdentity(data = {}) {
-  const userId = String(data.userId ?? data.user?.id ?? '').trim();
+  const userId = [data.userId, data.user?.id]
+    .map(value => String(value ?? '').trim())
+    .find(Boolean);
   if (userId) return `id:${userId}`;
-  const handle = String(data.uniqueId || data.username || data.nickname || '').trim().toLowerCase();
-  return handle ? `user:${handle}` : null;
+  const handle = [data.uniqueId, data.username, data.nickname]
+    .map(value => String(value ?? '').trim())
+    .find(Boolean);
+  return handle ? `user:${handle.toLowerCase()}` : null;
 }
 
 class SuperfanFinaleHistory {
@@ -23,9 +27,10 @@ class SuperfanFinaleHistory {
     if (!fs.existsSync(this.filePath)) return 0;
     try {
       const parsed = JSON.parse(fs.readFileSync(this.filePath, 'utf8'));
-      const cutoff = this.now() - MAX_HISTORY_AGE_MS;
+      const loadedAt = this.now();
+      const cutoff = loadedAt - MAX_HISTORY_AGE_MS;
       for (const [identity, timestamp] of Object.entries(parsed.entries || {})) {
-        if (typeof identity === 'string' && Number.isFinite(timestamp) && timestamp >= cutoff) {
+        if (typeof identity === 'string' && Number.isFinite(timestamp) && timestamp >= cutoff && timestamp <= loadedAt) {
           this.entries.set(identity, timestamp);
         }
       }
