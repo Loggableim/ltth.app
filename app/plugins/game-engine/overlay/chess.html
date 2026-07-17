@@ -105,7 +105,7 @@
 
     .piece {
       cursor: pointer;
-      transition: transform 0.3s ease;
+      transition: transform var(--interactive-animation-ms, 300ms) ease;
       user-select: none;
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
     }
@@ -460,6 +460,10 @@
     let gameState = null;
     let config = {};
     let lastMoveSquares = [];
+    let lastInteractiveDisplayRevision = -1;
+    let lastInteractiveSessionRevision = -1;
+    let interactiveSnapshotActive = false;
+    let interactiveClockInterval = null;
 
     // Initialize board
     function initBoard() {
@@ -674,9 +678,100 @@
       }
     }
 
+    function stopInteractiveClock() {
+      if (interactiveClockInterval) clearInterval(interactiveClockInterval);
+      interactiveClockInterval = null;
+    }
+
+    function renderInteractiveClock(display, state) {
+      stopInteractiveClock();
+      const timers = { ...state.timers };
+      const hostSide = ['white', 'black'].find(side => state[`${side}Player`]?.role === 'streamer');
+      const render = () => {
+        const visibleTimers = { ...timers };
+        if (
+          hostSide &&
+          display.currentTurnRole === 'host' &&
+          Number.isFinite(Number(display.hostTimeRemainingMs))
+        ) {
+          visibleTimers[hostSide] = Math.max(
+            0,
+            Number(display.hostTimeRemainingMs) - (Date.now() - receivedAt)
+          );
+        }
+        updateTimers(visibleTimers);
+      };
+      const receivedAt = Date.now();
+      render();
+      if (display.currentTurnRole === 'host' && display.phase === 'playing') {
+        interactiveClockInterval = setInterval(render, 250);
+      }
+    }
+
+    function showInteractiveResult(result) {
+      const overlay = document.getElementById('game-over-overlay');
+      const title = document.getElementById('game-over-title');
+      const winnerName = document.getElementById('winner-name');
+      const reason = document.getElementById('game-over-reason');
+      const winner = result.winnerDisplayName;
+      title.textContent = winner ? `${winner} gewinnt!` : 'Remis';
+      winnerName.textContent = winner || '';
+      reason.textContent = result.reason || '';
+      overlay.classList.add('show');
+    }
+
+    function applyInteractiveSnapshot(state) {
+      const display = state?.display;
+      if (!display || display.gameType !== 'chess') return;
+      const displayRevision = Number(display.displayRevision);
+      const sessionRevision = Number(display.sessionRevision ?? display.result?.sessionRevision ?? -1);
+      if (!Number.isFinite(displayRevision)) return;
+      if (displayRevision < lastInteractiveDisplayRevision) return;
+      if (
+        displayRevision === lastInteractiveDisplayRevision &&
+        sessionRevision <= lastInteractiveSessionRevision
+      ) return;
+
+      lastInteractiveDisplayRevision = displayRevision;
+      lastInteractiveSessionRevision = sessionRevision;
+      interactiveSnapshotActive = ['playing', 'animating', 'result'].includes(display.phase);
+      const snapshotState = display.state || display.result?.state;
+      if (!interactiveSnapshotActive || !snapshotState) {
+        stopInteractiveClock();
+        return;
+      }
+
+      gameState = snapshotState;
+      config = display.config || config || {};
+      applyDisplayTexts(config.displayTexts);
+      const animationMs = Math.max(100, Math.min(2000, Number(config.animationSpeed) || 500));
+      document.documentElement.style.setProperty('--interactive-animation-ms', `${animationMs}ms`);
+      document.getElementById('white-name').textContent =
+        gameState.whitePlayer.nickname || gameState.whitePlayer.username;
+      document.getElementById('black-name').textContent =
+        gameState.blackPlayer.nickname || gameState.blackPlayer.username;
+      updateBoardFromFEN(gameState.fen);
+      highlightLastMove(gameState.lastMove);
+      updateActivePlayer(gameState.currentPlayer);
+      updateCapturedPieces(gameState.capturedPieces || { white: {}, black: {} });
+      renderInteractiveClock(display, gameState);
+      document.getElementById('overlay-container').classList.add('active');
+
+      if (display.phase === 'result' && display.result) showInteractiveResult(display.result);
+      else document.getElementById('game-over-overlay').classList.remove('show');
+    }
+
+    window.addEventListener('message', event => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== 'game-engine:interactive-snapshot') return;
+      applyInteractiveSnapshot(event.data.payload);
+    });
+
+    socket.on('game-engine:interactive-state', applyInteractiveSnapshot);
+
     // Socket events
     socket.on('game-engine:game-started', (data) => {
-      if (data.gameType !== 'chess') return;
+      if (data.gameType !== 'chess' || interactiveSnapshotActive) return;
       
       gameState = data.state;
       config = data.config;
@@ -699,7 +794,7 @@
     });
 
     socket.on('game-engine:move-made', (data) => {
-      if (data.gameType !== 'chess') return;
+      if (data.gameType !== 'chess' || interactiveSnapshotActive) return;
       
       gameState = data.state;
       
@@ -713,6 +808,7 @@
     });
 
     socket.on('game-engine:timer-update', (data) => {
+      if (interactiveSnapshotActive) return;
       updateTimers(data.timers);
     });
 
@@ -721,7 +817,7 @@
     });
 
     socket.on('game-engine:game-ended', (data) => {
-      if (data.gameType !== 'chess') return;
+      if (data.gameType !== 'chess' || interactiveSnapshotActive) return;
       
       setTimeout(() => {
         const overlay = document.getElementById('game-over-overlay');

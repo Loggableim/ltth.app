@@ -34,7 +34,7 @@
       border: none;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 300ms ease-in-out;
+      transition: opacity var(--interactive-animation-ms, 300ms) ease-in-out;
     }
 
     .game-frame.active {
@@ -109,6 +109,37 @@
       color: #aaa;
       margin-top: 3px;
     }
+
+    #interactive-matchup {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      min-width: 320px;
+      padding: 12px 22px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 14px;
+      background: rgba(8, 12, 20, 0.88);
+      color: #fff;
+      font: 700 22px/1.2 Arial, sans-serif;
+      text-align: center;
+      text-shadow: 0 2px 5px #000;
+      backdrop-filter: blur(10px);
+      z-index: 1100;
+    }
+
+    #interactive-matchup.visible {
+      display: block;
+    }
+
+    #interactive-status {
+      display: block;
+      margin-top: 4px;
+      color: #b9c6da;
+      font-size: 12px;
+      font-weight: 500;
+    }
     </style>
     <script src="/js/i18n-client.js"></script>
 </head>
@@ -120,6 +151,11 @@
     <iframe id="frame-plinko" class="game-frame" data-src="/overlay/game-engine/plinko"></iframe>
     <iframe id="frame-wheel" class="game-frame" data-src="/overlay/game-engine/wheel"></iframe>
     <iframe id="frame-slot" class="game-frame" data-src="/overlay/game-engine/slot"></iframe>
+
+    <div id="interactive-matchup" aria-live="polite">
+      <span id="interactive-matchup-names"></span>
+      <span id="interactive-status"></span>
+    </div>
     
     <!-- Idle state -->
     <div id="idle-state" class="visible">
@@ -138,15 +174,21 @@
   <script>
     const socket = io({ auth: { role: 'overlay' } });
     let currentGame = null;
+    let latestInteractiveState = null;
+    let lastInteractiveDisplayRevision = -1;
+    let interactiveStatusInterval = null;
+    let interactiveStateReceivedAt = 0;
 
     // Game switched event
     socket.on('game-engine:game-switched', (data) => {
+      if (data.gameType === 'connect4' || data.gameType === 'chess') return;
       console.log('Game switched:', data);
       switchToGame(data.gameType);
     });
 
     // Game started event (backwards compatibility)
     socket.on('game-engine:game-started', (data) => {
+      if (data.gameType === 'connect4' || data.gameType === 'chess') return;
       if (data.useUnified) {
         console.log('Game started (unified):', data);
         switchToGame(data.gameType);
@@ -156,6 +198,7 @@
     // Game ended event
     // Bug 1 fix: reset currentGame to null before the timeout so showIdleState() can fire
     socket.on('game-engine:game-ended', (data) => {
+      if (data.gameType === 'connect4' || data.gameType === 'chess') return;
       console.log('Game ended:', data);
       currentGame = null;
       setTimeout(() => {
@@ -167,6 +210,7 @@
 
     // Bug 2 fix: receive current state from backend when overlay loads/reconnects
     socket.on('game-engine:current-state', (data) => {
+      if (latestInteractiveState?.display?.phase !== 'idle') return;
       if (data.hasActiveGame && data.useUnified) {
         switchToGame(data.gameType);
       } else {
@@ -206,11 +250,38 @@
 
     // Idle event
     socket.on('game-engine:idle', () => {
+      if (latestInteractiveState?.display?.phase !== 'idle') return;
       showIdleState();
     });
 
+    socket.on('game-engine:interactive-state', (state) => {
+      const display = state?.display;
+      if (!display || !Number.isFinite(Number(display.displayRevision))) return;
+      if (Number(display.displayRevision) < lastInteractiveDisplayRevision) return;
+      lastInteractiveDisplayRevision = Number(display.displayRevision);
+      latestInteractiveState = state;
+      interactiveStateReceivedAt = Date.now();
+
+      const gameType = display.gameType;
+      const ownsDisplay = ['playing', 'animating', 'result'].includes(display.phase) &&
+        (gameType === 'connect4' || gameType === 'chess');
+
+      if (!ownsDisplay) {
+        hideInteractiveMatchup();
+        if (currentGame === 'connect4' || currentGame === 'chess') showIdleState();
+        updateQueueIndicator(state.hostQueue?.length || 0);
+        return;
+      }
+
+      const animationMs = Math.max(100, Math.min(2000, Number(display.config?.animationSpeed) || 500));
+      document.documentElement.style.setProperty('--interactive-animation-ms', `${animationMs}ms`);
+      showInteractiveMatchup(display, state.hostQueue?.length || 0);
+      switchToGame(gameType, state);
+      updateQueueIndicator(state.hostQueue?.length || 0);
+    });
+
     // Bug 5 fix: lazy-load iframe src only when the game first becomes active
-    function switchToGame(gameType) {
+    function switchToGame(gameType, interactiveState = null) {
       // Hide all frames
       document.querySelectorAll('.game-frame').forEach(frame => {
         frame.classList.remove('active');
@@ -229,6 +300,7 @@
         }
         frame.classList.add('active');
         currentGame = gameType;
+        if (interactiveState) forwardInteractiveSnapshot(frame, interactiveState);
       } else {
         console.error('Unknown game type:', gameType);
         showIdleState();
@@ -243,7 +315,71 @@
 
       // Show idle state
       document.getElementById('idle-state').classList.add('visible');
+      hideInteractiveMatchup();
       currentGame = null;
+    }
+
+    function showInteractiveMatchup(display, queueLength) {
+      const matchup = document.getElementById('interactive-matchup');
+      document.getElementById('interactive-matchup-names').textContent =
+        `${display.hostDisplayName || 'Host'} vs. ${display.viewerDisplayName || 'Player'}`;
+      if (interactiveStatusInterval) clearInterval(interactiveStatusInterval);
+      const renderStatus = () => {
+        const elapsedMs = Date.now() - interactiveStateReceivedAt;
+        let phaseLabel = display.phase === 'result'
+          ? 'Ergebnis'
+          : display.currentTurnRole === 'host'
+            ? 'Host ist am Zug'
+            : 'Spieler ist am Zug';
+        if (
+          display.currentTurnRole === 'viewer' &&
+          display.viewerDeadlineMs != null &&
+          Number.isFinite(Number(display.viewerDeadlineMs))
+        ) {
+          const serverNow = Number(display.serverTimestamp) + elapsedMs;
+          phaseLabel += ` · ${Math.max(0, Math.ceil((Number(display.viewerDeadlineMs) - serverNow) / 1000))}s`;
+        } else if (
+          display.gameType === 'chess' &&
+          display.currentTurnRole === 'host' &&
+          display.hostTimeRemainingMs != null &&
+          Number.isFinite(Number(display.hostTimeRemainingMs))
+        ) {
+          phaseLabel += ` · ${formatClock(Number(display.hostTimeRemainingMs) - elapsedMs)}`;
+        }
+        document.getElementById('interactive-status').textContent =
+          `${display.gameType === 'chess' ? 'Schach' : 'Connect 4'} · ${phaseLabel} · ${queueLength} Host-Zug${queueLength === 1 ? '' : 'e'}`;
+      };
+      renderStatus();
+      if (display.phase === 'playing') interactiveStatusInterval = setInterval(renderStatus, 250);
+      matchup.classList.add('visible');
+    }
+
+    function hideInteractiveMatchup() {
+      if (interactiveStatusInterval) clearInterval(interactiveStatusInterval);
+      interactiveStatusInterval = null;
+      document.getElementById('interactive-matchup').classList.remove('visible');
+    }
+
+    function formatClock(milliseconds) {
+      const seconds = Math.max(0, Math.ceil(milliseconds / 1000));
+      return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+    }
+
+    function forwardInteractiveSnapshot(frame, state) {
+      const send = payload => frame.contentWindow?.postMessage({
+        type: 'game-engine:interactive-snapshot',
+        payload
+      }, window.location.origin);
+      if (frame.dataset.ready === 'true') {
+        send(state);
+      } else if (frame.dataset.waitingForLoad !== 'true') {
+        frame.dataset.waitingForLoad = 'true';
+        frame.addEventListener('load', () => {
+          frame.dataset.ready = 'true';
+          frame.dataset.waitingForLoad = 'false';
+          if (latestInteractiveState) send(latestInteractiveState);
+        }, { once: true });
+      }
     }
 
     // Bug 4 fix: driven by authoritative backend events (unified-queue:status / unified-queue:cleared)
