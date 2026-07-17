@@ -701,8 +701,14 @@ class PlaybackController extends EventEmitter {
 
   async _rampSlots(outgoing, incoming, durationMs, transition) {
     const steps = Math.max(1, Math.ceil(Math.max(0, durationMs) / RAMP_STEP_MS));
+    const startedAt = this._timing.now();
     for (let step = 1; step <= steps; step += 1) {
       this._throwIfAborted(transition);
+      const targetAt = startedAt + ((durationMs * step) / steps);
+      const waitMs = targetAt - this._timing.now();
+      if (waitMs > 0) {
+        await this._delay(waitMs, transition);
+      }
       const ratio = step / steps;
       const outgoingVolume = this._masterVolume * (1 - ratio);
       const incomingVolume = this._masterVolume * ratio;
@@ -710,9 +716,6 @@ class PlaybackController extends EventEmitter {
         outgoing.engine.setVolume(outgoingVolume),
         incoming.engine.setVolume(incomingVolume)
       ]), transition);
-      if (step < steps) {
-        await this._delay(RAMP_STEP_MS, transition);
-      }
     }
   }
 

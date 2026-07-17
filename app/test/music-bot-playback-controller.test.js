@@ -90,6 +90,9 @@ class FakeEngine extends EventEmitter {
   }
 
   async setVolume(volume) {
+    if (this.options.setVolume) {
+      await this.options.setVolume(volume, this);
+    }
     this.volume = volume;
     this.volumeCalls.push(volume);
     this.emit('volume-changed', volume);
@@ -322,6 +325,32 @@ describe('Music Bot lifecycle-safe playback controller', () => {
       transportState: 'playing'
     }));
     expect(controller.getSnapshot().activePlaybackId).not.toBe('incoming');
+  });
+
+  test('keeps the configured crossfade on a wall-clock deadline despite IPC latency', async () => {
+    jest.useFakeTimers({ now: 0 });
+    const delayedVolume = async (_volume, engine) => {
+      if (!engine.nowPlaying) return;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    };
+    const outgoing = new FakeEngine('A', { setVolume: delayedVolume });
+    const incoming = new FakeEngine('B', { setVolume: delayedVolume });
+    const { controller } = createHarness({
+      crossfadeDuration: 300,
+      engines: [outgoing, incoming]
+    });
+
+    await controller.play({ id: 'outgoing', title: 'Outgoing', url: 'outgoing.mp3' });
+    const startedAt = Date.now();
+    const crossfade = controller.play({ id: 'incoming', title: 'Incoming', url: 'incoming.mp3' });
+    await jest.runAllTimersAsync();
+    await crossfade;
+
+    const elapsed = Date.now() - startedAt;
+    expect(elapsed).toBeGreaterThanOrEqual(300);
+    expect(elapsed).toBeLessThanOrEqual(325);
+    expect(outgoing.volumeCalls.at(-1)).toBe(0);
+    expect(incoming.volumeCalls.at(-1)).toBe(80);
   });
 
   test('applies active ducking and the current master/device config to a later incoming slot', async () => {
