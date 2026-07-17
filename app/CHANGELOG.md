@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.33] - 2026-07-17
+
+### Fixed
+
+- **Weather Control Overlay Recovery**: OBS overlays reconnect after a server-initiated app restart and replay their ready handshake when Weather Control reloads.
+
+### Changed
+
+- **Localized Plugin Tutorials**: Refreshed the 39 sourced tutorials in German, English, Spanish, and French with verified product captures.
+- **Test Execution**: Run the Jest suite in a resource-safe single-process mode.
+- **Release Metadata**: Synchronized package, launcher, download, locale, and website version surfaces to 1.3.33.
+
 ## [1.3.32] - 2026-07-17
 
 ### Added
