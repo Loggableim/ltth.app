@@ -125,6 +125,39 @@ describe('GameEngineDatabase interactive persistence', () => {
     ]);
   });
 
+  test('persists viewer move identities as a session-scoped deduplication ledger', () => {
+    database.createInteractiveState(session());
+
+    expect(database.hasInteractiveMoveIdentity(41, 'chat-1')).toBe(false);
+    expect(database.recordInteractiveMoveIdentity(41, 'chat-1')).toBe(true);
+    expect(database.recordInteractiveMoveIdentity(41, 'chat-1')).toBe(false);
+    expect(database.hasInteractiveMoveIdentity(41, 'chat-1')).toBe(true);
+    expect(database.hasInteractiveMoveIdentity(41, 'chat-2')).toBe(false);
+  });
+
+  test('returns a recoverable sentinel for corrupt state JSON and can close it without parsing', () => {
+    sqlite.prepare(`
+      INSERT INTO game_sessions (
+        id, game_type, player1_username, player1_role, status
+      ) VALUES (?, 'connect4', 'viewer-41', 'viewer', 'active')
+    `).run(41);
+    database.createInteractiveState(session());
+    sqlite.prepare(`UPDATE game_interactive_sessions SET state_json = ? WHERE session_id = ?`)
+      .run('{not-json', 41);
+
+    expect(database.getActiveInteractiveStates()).toEqual([
+      expect.objectContaining({ sessionId: 41, recoveryError: expect.any(String) })
+    ]);
+    expect(() => database.failInteractiveRecovery(41)).not.toThrow();
+    expect(sqlite.prepare(`
+      SELECT status, terminal_reason FROM game_interactive_sessions WHERE session_id = ?
+    `).get(41)).toEqual({ status: 'completed', terminal_reason: 'recovery_failed' });
+    expect(sqlite.prepare(`
+      SELECT status, win_reason, ended_at IS NOT NULL AS has_ended
+      FROM game_sessions WHERE id = ?
+    `).get(41)).toEqual({ status: 'completed', win_reason: 'recovery_failed', has_ended: 1 });
+  });
+
   test('rolls state and queue changes back atomically', () => {
     database.createInteractiveState(session());
 

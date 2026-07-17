@@ -332,6 +332,10 @@ class GameEnginePlugin {
     return { sessionId: row.sessionId, game, timeControl: row.timeControl };
   }
 
+  _discardRestoredInteractiveGame(sessionId) {
+    this.activeSessions.delete(Number(sessionId));
+  }
+
   _emitInteractiveLegacyEvent(event, payload) {
     const session = payload.session;
     if (event === 'started') {
@@ -379,6 +383,7 @@ class GameEnginePlugin {
       logger: this.logger,
       createGame: input => this._createInteractiveGame(input),
       restoreGame: row => this._restoreInteractiveGame(row),
+      discardRestoredGame: sessionId => this._discardRestoredInteractiveGame(sessionId),
       finishGame: payload => this._finishInteractiveGame(payload),
       emitLegacyEvent: (event, payload) => this._emitInteractiveLegacyEvent(event, payload),
       resolveHostName: () => this._resolveHostDisplayName(),

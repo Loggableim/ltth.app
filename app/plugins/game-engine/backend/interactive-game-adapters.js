@@ -33,7 +33,10 @@ class InteractiveGameAdapter {
     }
     return this.gameType === 'connect4'
       ? this.game.dropPiece(this._moveValue(move))
-      : this.game.makeMove(this._moveValue(move), viewerId);
+      : this.game.makeMove(this._moveValue(move), viewerId, {
+        skipElapsedTime: true,
+        applyIncrement: false
+      });
   }
 
   applyHostMove(move) {
@@ -43,7 +46,10 @@ class InteractiveGameAdapter {
     }
     return this.gameType === 'connect4'
       ? this.game.dropPiece(this._moveValue(move))
-      : this.game.makeMove(this._moveValue(move), current.username);
+      : this.game.makeMove(this._moveValue(move), current.username, {
+        skipElapsedTime: true,
+        applyIncrement: true
+      });
   }
 
   isComplete() {

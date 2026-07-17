@@ -18,6 +18,7 @@ class InteractiveController {
     logger,
     createGame,
     restoreGame,
+    discardRestoredGame,
     finishGame,
     emitLegacyEvent,
     resolveHostName,
@@ -30,6 +31,7 @@ class InteractiveController {
     this.logger = logger;
     this.createGame = createGame;
     this.restoreGame = restoreGame;
+    this.discardRestoredGame = discardRestoredGame;
     this.finishGame = finishGame;
     this.emitLegacyEvent = emitLegacyEvent;
     this.resolveHostName = resolveHostName;
@@ -146,6 +148,7 @@ class InteractiveController {
     const activeRows = this.database.getActiveInteractiveStates();
     for (const row of activeRows) {
       try {
+        if (row.recoveryError) throw new Error(row.recoveryError);
         const restored = this.restoreGame(row);
         const adapter = createInteractiveAdapter(row.gameType, restored.game);
         adapter.restoreState(row.state);
@@ -160,7 +163,10 @@ class InteractiveController {
         recovered += 1;
         this._logTransition('session_recovered', session);
       } catch (error) {
-        this.database.completeInteractiveState(row.sessionId, 'recovery_error');
+        this.timers.clear(row.sessionId);
+        this.registry.remove(row.sessionId);
+        this.discardRestoredGame?.(row.sessionId);
+        this.database.failInteractiveRecovery(row.sessionId);
         this.logger?.error?.(`[INTERACTIVE] Failed to recover session ${row.sessionId}: ${error.message}`);
       }
     }
@@ -269,7 +275,7 @@ class InteractiveController {
     const session = this.registry.getByViewer(viewerId);
     if (!session) return { success: false, error: 'no_active_session' };
     if (session.gameType !== gameType) return { success: false, error: 'wrong_game_type' };
-    if (moveIdentity && session.lastMoveIdentity === moveIdentity) {
+    if (moveIdentity && this.database.hasInteractiveMoveIdentity(session.sessionId, moveIdentity)) {
       return { success: true, duplicate: true, sessionId: session.sessionId };
     }
     if (session.turnRole !== 'viewer') return { success: false, error: 'not_viewer_turn' };
@@ -303,9 +309,12 @@ class InteractiveController {
           winnerRole: this._roleForWinner(session, result.winner),
           reason: result.winReason || (result.draw ? 'draw' : 'win'),
           gameResult: result
-        });
+        }, { moveIdentity });
       } else {
         this.database.transaction(() => {
+          if (moveIdentity && !this.database.recordInteractiveMoveIdentity(session.sessionId, moveIdentity)) {
+            throw new Error('duplicate_move_identity');
+          }
           this.database.updateInteractiveState(session.sessionId, this._sessionRecord(session));
           this.queue.enqueue(session);
         });
@@ -349,7 +358,11 @@ class InteractiveController {
     let chessHostSide = null;
     let chessHostTimeBeforeMove = null;
     if (session.gameType === 'chess') {
-      this.timers.pauseHostChess(session, { persist: false });
+      const remaining = this.timers.pauseHostChess(session, { persist: false });
+      if (remaining <= 0) {
+        this._handleHostTimeout(session.sessionId, session.sessionRevision);
+        return { success: false, error: 'host_timeout' };
+      }
       chessHostTimeBeforeMove = session.hostTimeRemainingMs;
       const chessState = session.adapter.getState();
       chessHostSide = ['white', 'black'].find(side => chessState[`${side}Player`]?.role === 'streamer');
@@ -371,7 +384,6 @@ class InteractiveController {
     session.sessionRevision += 1;
     session.turnRole = session.adapter.getCurrentTurnRole();
     session.lastActivityAt = this.now();
-    session.lastMoveIdentity = `host:${session.sessionRevision}:${JSON.stringify(envelope.move)}`;
     session.viewerDeadlineMs = result.gameOver || session.adapter.isComplete()
       ? null
       : this.now() + (this._viewerResponseSeconds(session.gameType) * 1000);
@@ -474,7 +486,7 @@ class InteractiveController {
     return true;
   }
 
-  _completeSession(session, outcome) {
+  _completeSession(session, outcome, { moveIdentity = null } = {}) {
     const resultPayload = {
       sessionId: session.sessionId,
       gameType: session.gameType,
@@ -495,6 +507,9 @@ class InteractiveController {
     };
     this.timers.clear(session.sessionId);
     this.database.transaction(() => {
+      if (moveIdentity && !this.database.recordInteractiveMoveIdentity(session.sessionId, moveIdentity)) {
+        throw new Error('duplicate_move_identity');
+      }
       this.queue.remove(session.sessionId);
       this.database.updateInteractiveState(session.sessionId, this._sessionRecord(session));
       this.database.completeInteractiveState(session.sessionId, outcome.reason);

@@ -178,7 +178,7 @@ class ChessGame {
   /**
    * Make a move in the game
    */
-  makeMove(moveInput, playerUsername) {
+  makeMove(moveInput, playerUsername, clockOptions = {}) {
     // Validate it's the correct player's turn
     const currentPlayer = this.getCurrentPlayerInfo();
     if (currentPlayer.username !== playerUsername) {
@@ -195,9 +195,13 @@ class ChessGame {
       return moveResult;
     }
     
-    // Update timer (add increment and switch player)
-    this.updateTimer();
-    this.timers[this.currentPlayer] += this.timeControl.increment;
+    // Interactive matches own their clocks externally: the visible host clock
+    // is managed by InteractiveTurnTimers and viewers use a response deadline.
+    // Legacy chess keeps the original elapsed-time and increment behaviour.
+    if (!clockOptions.skipElapsedTime) this.updateTimer();
+    if (clockOptions.applyIncrement !== false) {
+      this.timers[this.currentPlayer] += this.timeControl.increment;
+    }
     
     // Record move
     this.moveCount++;
