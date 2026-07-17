@@ -26,6 +26,14 @@ function createArena(config = {}, options = {}) {
     random: options.random || (() => 0.5)
   });
 
+  const withTestProfilePicture = (data = {}) => Object.prototype.hasOwnProperty.call(data, 'profilePictureUrl')
+    ? data
+    : { ...data, profilePictureUrl: 'https://example.test/test-avatar.png' };
+  const handleActivity = arena.handleActivity.bind(arena);
+  const handleGift = arena.handleGift.bind(arena);
+  arena.handleActivity = (data, activityType) => handleActivity(withTestProfilePicture(data), activityType);
+  arena.handleGift = data => handleGift(withTestProfilePicture(data));
+
   return { arena, io, db };
 }
 
@@ -516,6 +524,38 @@ describe('ArenaGame', () => {
       username: 'viewer_1',
       activityType: 'chat'
     }));
+  });
+
+  it('does not queue or spawn viewers without a profile picture', () => {
+    const { arena } = createArena();
+
+    const joinResult = arena.handleActivity({
+      uniqueId: 'missing_profile_joiner',
+      nickname: 'Missing Profile',
+      profilePictureUrl: ''
+    }, 'join');
+    const chatResult = arena.handleActivity({
+      uniqueId: 'missing_profile_chatter',
+      nickname: 'Missing Profile',
+      profilePictureUrl: ''
+    }, 'chat');
+    const giftResult = arena.handleGift({
+      uniqueId: 'missing_profile_gifter',
+      nickname: 'Missing Profile',
+      profilePictureUrl: '',
+      giftName: 'Rose',
+      giftId: 5655,
+      repeatEnd: true
+    });
+
+    for (const result of [joinResult, chatResult, giftResult]) {
+      expect(result).toEqual(expect.objectContaining({
+        success: false,
+        error: 'Profile picture required to spawn'
+      }));
+    }
+    expect(arena.pendingSpawns.size).toBe(0);
+    expect(arena.players.size).toBe(0);
   });
 
   it('queues joiners for 15 seconds before spawning them as smaller faster players', () => {
@@ -6589,6 +6629,27 @@ describe('GameEnginePlugin arena integration', () => {
     plugin.registerRoutes();
 
     expect(routes['GET /api/game-engine/arena/avatar']).toEqual(expect.any(Function));
+  });
+
+  it('allows TikTok EU CDN avatars through the Arena proxy', async () => {
+    const { plugin } = createPlugin();
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn().mockResolvedValue({
+      status: 200,
+      headers: { get: jest.fn(() => 'image/webp') }
+    });
+
+    try {
+      await expect(plugin._fetchAllowedArenaAvatar(
+        'https://p16-common-sign.tiktokcdn-eu.com/avatar.webp'
+      )).resolves.toEqual(expect.objectContaining({ status: 200 }));
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://p16-common-sign.tiktokcdn-eu.com/avatar.webp',
+        expect.objectContaining({ redirect: 'manual' })
+      );
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 
   it('revalidates every Arena avatar redirect before fetching the next hop', async () => {
