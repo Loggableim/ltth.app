@@ -26,6 +26,35 @@
         "failed": "Impossible d’enregistrer les réglages.",
         "noData": "Aucune donnée disponible.",
         "confirm": "Voulez-vous continuer ?"
+      },
+      "safety": {
+        "kicker": "Sécurité en direct",
+        "title": "Contrôle du Soundbot",
+        "description": "L'arrêt d'urgence termine uniquement les processus Soundbot. LTTH et la file restent actifs.",
+        "emergencyStop": "Arrêt d'urgence",
+        "unlock": "Déverrouiller le Safety Lock",
+        "reset": "Réinitialiser le lecteur",
+        "testTone": "Son de test"
+      },
+      "health": {
+        "refresh": "Actualiser l'état",
+        "export": "Exporter le diagnostic",
+        "state": "État",
+        "players": "Lecteurs A/B",
+        "mpv": "MPV / IPC",
+        "ipcLatency": "Latence IPC",
+        "mediaTitle": "Titre MPV réel",
+        "resolver": "Résolveur",
+        "cache": "Cache",
+        "lastError": "Dernière erreur",
+        "checkedAt": "Heure de vérification"
+      },
+      "banMenu": {
+        "title": "Bloquer le titre",
+        "track": "Bloquer ce morceau",
+        "artist": "Bloquer l'artiste",
+        "channel": "Bloquer la chaîne",
+        "keyword": "Bloquer un mot du titre"
       }
     }
   },

@@ -26,6 +26,35 @@
         "failed": "Einstellungen konnten nicht gespeichert werden.",
         "noData": "Keine Daten verfügbar.",
         "confirm": "Bist du sicher?"
+      },
+      "safety": {
+        "kicker": "Live-Sicherheit",
+        "title": "Soundbot-Kontrolle",
+        "description": "Not-Aus stoppt ausschließlich Soundbot-Prozesse. Die LTTH-App und die Queue bleiben aktiv.",
+        "emergencyStop": "Not-Aus",
+        "unlock": "Safety-Lock entsperren",
+        "reset": "Player zurücksetzen",
+        "testTone": "Testton"
+      },
+      "health": {
+        "refresh": "Health aktualisieren",
+        "export": "Diagnose exportieren",
+        "state": "Zustand",
+        "players": "Player A/B",
+        "mpv": "MPV / IPC",
+        "ipcLatency": "IPC-Latenz",
+        "mediaTitle": "Tatsächlicher MPV-Titel",
+        "resolver": "Resolver",
+        "cache": "Cache",
+        "lastError": "Letzter Fehler",
+        "checkedAt": "Prüfzeit"
+      },
+      "banMenu": {
+        "title": "Titel sperren",
+        "track": "Diesen Song sperren",
+        "artist": "Künstler sperren",
+        "channel": "Kanal sperren",
+        "keyword": "Titelbegriff sperren"
       }
     }
   },
