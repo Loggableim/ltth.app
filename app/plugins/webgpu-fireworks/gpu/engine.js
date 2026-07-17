@@ -908,7 +908,7 @@ class WebGPUFireworksEngine {
             this.audio.ensureContext();
         });
         this.socket.on('webgpu-fireworks:trigger', data => this.handleIncomingTrigger(data));
-        this.socket.on('webgpu-fireworks:finale', data => this.handleFinale(data));
+        this.socket.on('webgpu-fireworks:finale', data => this.handleFinaleSocketEvent(data));
         this.socket.on('webgpu-fireworks:follower-animation', data => this.showFollowerAnimation(data));
         this.socket.on('webgpu-fireworks:get-active-count', () => {
             const metrics = this.renderer?.getMetrics() || {};
@@ -1911,7 +1911,7 @@ class WebGPUFireworksEngine {
         this.ensureFinaleRuntimeState();
         const id = this.finaleIdentity(data);
         if (this.finaleIds.has(id)) {
-            return { accepted: false, duplicate: true, id, queueLength: this.finaleQueue.length };
+            return { accepted: false, duplicate: true, reason: 'duplicate', id, queueLength: this.finaleQueue.length };
         }
         const showPlan = this.isValidShowPlan(data.showPlan)
             ? { ...data.showPlan, id }
@@ -1921,6 +1921,14 @@ class WebGPUFireworksEngine {
             (this.rendererStatus?.state && this.rendererStatus.state !== 'ready') ||
             this.renderer?.initialized === false
         );
+        if (data.requiresRendererReady === true && rendererKnownUnavailable) {
+            return {
+                accepted: false,
+                reason: 'renderer-not-ready',
+                id,
+                queueLength: this.finaleQueue.length
+            };
+        }
         const queued = Boolean(this.currentFinale || rendererKnownUnavailable);
         this.finaleIds.add(id);
         let details;
@@ -1942,6 +1950,28 @@ class WebGPUFireworksEngine {
             seededPhase: details.seededPhase,
             frequency: details.frequency
         };
+    }
+
+    handleFinaleSocketEvent(data = {}) {
+        const rawEventId = data.eventId ?? data.id;
+        const eventId = (typeof rawEventId === 'string' || typeof rawEventId === 'number')
+            ? String(rawEventId).trim().slice(0, 160)
+            : '';
+        let result;
+        try {
+            result = this.handleFinale(data);
+        } catch (error) {
+            console.error('[WebGPU Fireworks] Finale queue rejected:', error);
+            result = { accepted: false, reason: 'renderer-error', id: eventId || null };
+        }
+        if (data.ackRequested === true && eventId) {
+            this.socket?.emit('webgpu-fireworks:finale-ack', {
+                eventId,
+                accepted: result.accepted === true,
+                ...(result.accepted === true ? {} : { reason: result.reason || 'queue-rejected' })
+            });
+        }
+        return result;
     }
 
     showGiftPopup(data) {

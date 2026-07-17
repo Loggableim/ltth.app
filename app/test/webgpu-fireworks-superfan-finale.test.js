@@ -9,7 +9,8 @@ const {
 } = require('../plugins/webgpu-fireworks/lib/config-schema');
 const {
   SuperfanFinaleHistory,
-  normalizeSuperfanIdentity
+  normalizeSuperfanIdentity,
+  normalizeSuperfanIdentityAliases
 } = require('../plugins/webgpu-fireworks/lib/superfan-finale-history');
 const FireworksPlugin = require('../plugins/webgpu-fireworks/main');
 
@@ -45,6 +46,62 @@ describe('WebGPU Superfan finale foundation', () => {
 
   test('falls back from a blank unique id to the username', () => {
     expect(normalizeSuperfanIdentity({ uniqueId: '  ', username: 'Valid.Name' })).toBe('user:valid.name');
+  });
+
+  test('extracts every stable Superfan identity alias in priority order', () => {
+    expect(normalizeSuperfanIdentityAliases({
+      userId: ' 42 ',
+      user: { id: 42 },
+      uniqueId: '  Fan.Name  ',
+      username: 'fan.name',
+      nickname: ' Display Name '
+    })).toEqual(['id:42', 'user:fan.name', 'user:display name']);
+  });
+
+  test('persists one cooldown when an id-plus-handle event is followed by a handle-only event', () => {
+    const filePath = path.join(tempDir, 'id-first-history.json');
+    const now = 1_000_000;
+    const first = new SuperfanFinaleHistory({ filePath, now: () => now });
+    const mixedAliases = normalizeSuperfanIdentityAliases({ userId: '42', uniqueId: '  Fan.Name ' });
+
+    first.markAccepted(mixedAliases);
+    expect(first.snapshot()).toEqual({ 'id:42': now });
+    expect(JSON.parse(fs.readFileSync(filePath, 'utf8'))).toMatchObject({
+      version: 2,
+      entries: { 'id:42': now },
+      aliases: { 'user:fan.name': 'id:42' }
+    });
+
+    const reloaded = new SuperfanFinaleHistory({ filePath, now: () => now });
+    expect(reloaded.load()).toBe(1);
+    expect(reloaded.isEligible(
+      normalizeSuperfanIdentityAliases({ uniqueId: ' FAN.NAME ' }),
+      24,
+      now
+    )).toBe(false);
+    expect(reloaded.snapshot()).toEqual({ 'id:42': now });
+  });
+
+  test('migrates handle-first history to a stable id and keeps it collapsed after reload', () => {
+    const filePath = path.join(tempDir, 'handle-first-history.json');
+    const now = 1_000_000;
+    const handleOnly = new SuperfanFinaleHistory({ filePath, now: () => now });
+    handleOnly.markAccepted(normalizeSuperfanIdentityAliases({ username: ' Fan.Name ' }));
+
+    const mixed = new SuperfanFinaleHistory({ filePath, now: () => now });
+    expect(mixed.load()).toBe(1);
+    expect(mixed.isEligible(
+      normalizeSuperfanIdentityAliases({ userId: '42', uniqueId: 'fan.name' }),
+      24,
+      now
+    )).toBe(false);
+    expect(mixed.snapshot()).toEqual({ 'id:42': now });
+
+    const idOnly = new SuperfanFinaleHistory({ filePath, now: () => now });
+    expect(idOnly.load()).toBe(1);
+    expect(idOnly.isEligible(normalizeSuperfanIdentityAliases({ userId: '42' }), 24, now)).toBe(false);
+    expect(JSON.parse(fs.readFileSync(filePath, 'utf8')).aliases)
+      .toMatchObject({ 'user:fan.name': 'id:42' });
   });
 
   test('persists independent timestamps and safely ignores corrupt JSON', () => {
@@ -99,12 +156,61 @@ describe('WebGPU Superfan finale foundation', () => {
     expect(history.snapshot()).toEqual({ 'id:current': now });
   });
 
+  test('restores the original history when the replacement rename fails and cleans temporary files', () => {
+    const filePath = path.join(tempDir, 'replace-safe-history.json');
+    let now = 1_000_000;
+    const history = new SuperfanFinaleHistory({ filePath, now: () => now });
+    history.markAccepted('id:a');
+    now = 2_000_000;
+    history.entries.set('id:a', now);
+
+    const realRename = fs.renameSync;
+    let tempToTargetAttempts = 0;
+    const rename = jest.spyOn(fs, 'renameSync').mockImplementation((source, destination) => {
+      if (String(source).endsWith('.tmp') && destination === filePath) {
+        tempToTargetAttempts++;
+        if (tempToTargetAttempts <= 2) {
+          const error = new Error(`rename attempt ${tempToTargetAttempts} failed`);
+          error.code = tempToTargetAttempts === 1 ? 'EEXIST' : 'EIO';
+          throw error;
+        }
+      }
+      return realRename(source, destination);
+    });
+    try {
+      expect(() => history.save()).toThrow('rename attempt 2 failed');
+    } finally {
+      rename.mockRestore();
+    }
+
+    expect(JSON.parse(fs.readFileSync(filePath, 'utf8')).entries).toEqual({ 'id:a': 1_000_000 });
+    expect(fs.existsSync(`${filePath}.bak`)).toBe(false);
+    expect(fs.existsSync(`${filePath}.${process.pid}.tmp`)).toBe(false);
+  });
+
+  test('recovers a valid orphaned backup during load', () => {
+    const filePath = path.join(tempDir, 'recover-history.json');
+    const now = 1_000_000;
+    fs.writeFileSync(`${filePath}.bak`, JSON.stringify({
+      version: 2,
+      entries: { 'id:recovered': now },
+      aliases: { 'user:recovered': 'id:recovered' }
+    }), 'utf8');
+
+    const history = new SuperfanFinaleHistory({ filePath, now: () => now });
+    expect(history.load()).toBe(1);
+    expect(history.getLastAcceptedAt('user:recovered')).toBe(now);
+    expect(fs.existsSync(filePath)).toBe(true);
+  });
+
   function createApi() {
     const routes = new Map();
     const events = new Map();
+    const socketConnections = [];
     return {
       routes,
       events,
+      socketConnections,
       getPluginDataDir: () => tempDir,
       ensurePluginDataDir: jest.fn(),
       getConfig: jest.fn(() => null),
@@ -114,8 +220,24 @@ describe('WebGPU Superfan finale foundation', () => {
       log: jest.fn(),
       registerMiddleware: jest.fn(),
       registerRoute: jest.fn((method, route, handler) => routes.set(`${method}:${route}`, handler)),
-      registerTikTokEvent: jest.fn((event, handler) => events.set(event, handler))
+      registerTikTokEvent: jest.fn((event, handler) => events.set(event, handler)),
+      registerSocketConnection: jest.fn(handler => socketConnections.push(handler))
     };
+  }
+
+  function connectSocket(plugin, api, id = 'overlay-1') {
+    const handlers = new Map();
+    const socket = {
+      id,
+      handlers,
+      emit: jest.fn(),
+      on: jest.fn((event, handler) => handlers.set(event, handler)),
+      removeAllListeners: jest.fn(event => handlers.delete(event))
+    };
+    plugin.registerSocketHandlers();
+    api.socketConnections[0](socket);
+    handlers.get('webgpu-fireworks:renderer-status')({ state: 'ready' });
+    return socket;
   }
 
   function createPlugin(config = {}, now = 1_000_000) {
@@ -179,6 +301,11 @@ describe('WebGPU Superfan finale foundation', () => {
       profilePictureUrl: '/a.png',
       thankYouText: 'Superfan joined, this firework is for you!'
     }));
+    expect(history.getLastAcceptedAt('id:a')).toBeNull();
+    plugin.handleSuperfanFinaleAck({
+      eventId: [...plugin.pendingSuperfanFinales.keys()][0],
+      accepted: true
+    });
     expect(history.getLastAcceptedAt('id:a')).not.toBeNull();
 
     api.events.get('superfan')({ userId: 'a', uniqueId: 'Alpha' });
@@ -240,6 +367,173 @@ describe('WebGPU Superfan finale foundation', () => {
       .toMatchObject({ accepted: false, reason: 'renderer-not-ready' });
     expect(plugin.triggerFinale).not.toHaveBeenCalled();
     expect(history.getLastAcceptedAt('id:a')).toBeNull();
+  });
+
+  test('commits cooldown exactly once only after the correlated browser queue ACK', () => {
+    const { api, plugin, history } = createPlugin();
+    connectSocket(plugin, api);
+    const markAccepted = jest.spyOn(history, 'markAccepted');
+
+    const result = plugin.handleSuperfanEntry({
+      userId: 'a', uniqueId: 'Alpha', eventId: 'join-upstream-7'
+    }, { authoritative: true });
+
+    expect(result).toMatchObject({ accepted: true, pending: true, eventId: 'superfan-event:join-upstream-7' });
+    expect(history.snapshot()).toEqual({});
+    expect(api.emit).toHaveBeenCalledWith('webgpu-fireworks:finale', expect.objectContaining({
+      id: 'superfan-event:join-upstream-7',
+      ackRequested: true,
+      requiresRendererReady: true
+    }));
+
+    expect(plugin.handleSuperfanFinaleAck({ eventId: result.eventId, accepted: true })).toBe(true);
+    expect(history.snapshot()).toEqual({ 'id:a': expect.any(Number) });
+    expect(markAccepted).toHaveBeenCalledTimes(1);
+    expect(plugin.handleSuperfanFinaleAck({ eventId: result.eventId, accepted: true })).toBe(false);
+    expect(markAccepted).toHaveBeenCalledTimes(1);
+  });
+
+  test.each([
+    [
+      { userId: 'a', uniqueId: ' Alpha ' },
+      { username: ' ALPHA ' }
+    ],
+    [
+      { username: ' Alpha ' },
+      { userId: 'a', uniqueId: ' ALPHA ' }
+    ]
+  ])('deduplicates mixed-shape aliases while the same Superfan finale is pending', (first, second) => {
+    const { plugin } = createPlugin();
+    const triggerFinale = jest.spyOn(plugin, 'triggerFinale');
+    const initial = plugin.handleSuperfanEntry(first, { authoritative: true });
+    const duplicate = plugin.handleSuperfanEntry(second, { authoritative: true });
+
+    expect(initial).toMatchObject({ accepted: true, pending: true });
+    expect(duplicate).toMatchObject({ accepted: false, reason: 'pending', eventId: initial.eventId });
+    expect(triggerFinale).toHaveBeenCalledTimes(1);
+    expect(plugin.pendingSuperfanFinales.size).toBe(1);
+  });
+
+  test('clears a negative ACK and generates monotone retry IDs without consuming cooldown', () => {
+    const { plugin, history } = createPlugin();
+    const first = plugin.handleSuperfanEntry({ userId: 'a', uniqueId: 'Alpha' }, { authoritative: true });
+
+    expect(plugin.handleSuperfanFinaleAck({ eventId: first.eventId, accepted: false, reason: 'duplicate' })).toBe(false);
+    expect(history.snapshot()).toEqual({});
+    expect(plugin.pendingSuperfanFinales.size).toBe(0);
+
+    const retry = plugin.handleSuperfanEntry({ userId: 'a', uniqueId: 'Alpha' }, { authoritative: true });
+    expect(first.eventId).toBe('superfan:id:a:1');
+    expect(retry.eventId).toBe('superfan:id:a:2');
+  });
+
+  test('expires an unacknowledged attempt and ignores its late ACK', () => {
+    jest.useFakeTimers();
+    try {
+      const { plugin, history } = createPlugin();
+      plugin.superfanFinaleAckTimeoutMs = 50;
+      const result = plugin.handleSuperfanEntry({ userId: 'a', uniqueId: 'Alpha' }, { authoritative: true });
+
+      jest.advanceTimersByTime(50);
+      expect(plugin.pendingSuperfanFinales.size).toBe(0);
+      expect(plugin.handleSuperfanFinaleAck({ eventId: result.eventId, accepted: true })).toBe(false);
+      expect(history.snapshot()).toEqual({});
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test.each(['disconnect', 'renderer-error', 'destroy'])('clears pending work on %s and ignores a late ACK', async failure => {
+    const { api, plugin, history } = createPlugin();
+    const socket = connectSocket(plugin, api);
+    const result = plugin.handleSuperfanEntry({ userId: 'a', uniqueId: 'Alpha' }, { authoritative: true });
+
+    if (failure === 'disconnect') socket.handlers.get('disconnect')();
+    else if (failure === 'renderer-error') {
+      socket.handlers.get('webgpu-fireworks:renderer-status')({ state: 'error', reason: 'render pass failed' });
+    } else await plugin.destroy();
+
+    expect(plugin.pendingSuperfanFinales.size).toBe(0);
+    expect(plugin.handleSuperfanFinaleAck({ eventId: result.eventId, accepted: true }, socket)).toBe(false);
+    expect(history.snapshot()).toEqual({});
+  });
+
+  test('keeps a pending attempt alive while another ready overlay can still ACK it', () => {
+    const { api, plugin, history } = createPlugin();
+    const firstSocket = connectSocket(plugin, api, 'overlay-1');
+    const secondSocket = connectSocket(plugin, api, 'overlay-2');
+    const result = plugin.handleSuperfanEntry({ userId: 'a', uniqueId: 'Alpha' }, { authoritative: true });
+
+    firstSocket.handlers.get('disconnect')();
+    expect(plugin.pendingSuperfanFinales.size).toBe(1);
+    expect(plugin.handleSuperfanFinaleAck({ eventId: result.eventId, accepted: true }, secondSocket)).toBe(true);
+    expect(history.snapshot()).toEqual({ 'id:a': expect.any(Number) });
+  });
+
+  test('does not overwrite pending state when different users reuse an upstream event ID', () => {
+    const { plugin } = createPlugin();
+    const first = plugin.handleSuperfanEntry({
+      userId: 'a', uniqueId: 'Alpha', eventId: 'shared-upstream-id'
+    }, { authoritative: true });
+    const collision = plugin.handleSuperfanEntry({
+      userId: 'b', uniqueId: 'Beta', eventId: 'shared-upstream-id'
+    }, { authoritative: true });
+
+    expect(collision).toEqual({
+      accepted: false,
+      reason: 'event-id-pending',
+      eventId: first.eventId
+    });
+    expect(plugin.pendingSuperfanFinales.get(first.eventId)).toMatchObject({ identity: 'id:a' });
+    expect(plugin.pendingSuperfanAliases.get('id:b')).toBeUndefined();
+  });
+
+  test.each(['false', 'throw'])('does not consume cooldown when the immediate notification emit returns %s', mode => {
+    const { api, plugin, history } = createPlugin();
+    api.emit.mockImplementation(event => {
+      if (event !== 'webgpu-fireworks:follower-animation') return true;
+      if (mode === 'throw') throw new Error('notification transport failed');
+      return false;
+    });
+
+    const result = plugin.handleSuperfanEntry({ userId: 'a', uniqueId: 'Alpha' }, { authoritative: true });
+    expect(result).toMatchObject({ accepted: false, reason: 'notification-rejected' });
+    expect(plugin.pendingSuperfanFinales.size).toBe(0);
+    expect(history.snapshot()).toEqual({});
+    expect(api.emit).toHaveBeenCalledWith('webgpu-fireworks:follower-animation', expect.objectContaining({
+      thankYouText: 'Superfan joined, this firework is for you!'
+    }));
+  });
+
+  test('waits for notification acceptance when a queue ACK arrives synchronously', () => {
+    const { api, plugin, history } = createPlugin();
+    api.emit.mockImplementation((event, payload) => {
+      if (event === 'webgpu-fireworks:finale') {
+        plugin.handleSuperfanFinaleAck({ eventId: payload.eventId, accepted: true });
+      }
+      return true;
+    });
+
+    const result = plugin.handleSuperfanEntry({ userId: 'a', uniqueId: 'Alpha' }, { authoritative: true });
+    expect(result).toMatchObject({ accepted: true, pending: false });
+    expect(history.snapshot()).toEqual({ 'id:a': expect.any(Number) });
+    expect([...api.emit.mock.calls].map(call => call[0])).toEqual([
+      'webgpu-fireworks:finale',
+      'webgpu-fireworks:follower-animation'
+    ]);
+  });
+
+  test('clears pending state when the finale emit throws', () => {
+    const { api, plugin, history } = createPlugin();
+    api.emit.mockImplementation(event => {
+      if (event === 'webgpu-fireworks:finale') throw new Error('socket transport failed');
+      return true;
+    });
+
+    expect(plugin.handleSuperfanEntry({ userId: 'a', uniqueId: 'Alpha' }, { authoritative: true }))
+      .toMatchObject({ accepted: false, reason: 'submission-error' });
+    expect(plugin.pendingSuperfanFinales.size).toBe(0);
+    expect(history.snapshot()).toEqual({});
   });
 
   test('test route uses normalized visible overrides without mutating config or cooldown history', () => {

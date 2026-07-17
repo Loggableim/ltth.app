@@ -30,7 +30,7 @@ const {
 const { evaluateTriggerPolicy } = require('./lib/trigger-policy');
 const { SpawnPlanner } = require('./lib/spawn-planner');
 const { FinaleShowPlanner, FINALE_STYLES } = require('./lib/finale-show-planner');
-const { SuperfanFinaleHistory, normalizeSuperfanIdentity } = require('./lib/superfan-finale-history');
+const { SuperfanFinaleHistory, normalizeSuperfanIdentityAliases } = require('./lib/superfan-finale-history');
 
 const FIREWORKS_CONFIG_MIGRATION_VERSION = 1;
 const SUPERFAN_FINALE_TEST_CONFIG_KEYS = Object.freeze([
@@ -67,6 +67,10 @@ class FireworksPlugin {
         this.benchmarkPreset = null;
         this.connectedSockets = new Set();
         this.overlayTelemetry = new Map();
+        this.pendingSuperfanFinales = new Map();
+        this.pendingSuperfanAliases = new Map();
+        this.superfanFinaleAttemptCounter = 0;
+        this.superfanFinaleAckTimeoutMs = 5000;
 
         // Combo timeout (ms) - reset combo if no gift within this time
         this.COMBO_TIMEOUT = 10000;
@@ -263,8 +267,13 @@ class FireworksPlugin {
                         updatedAt: Date.now()
                     });
                     if (state !== 'ready' && state !== 'initializing') {
+                        this.clearPendingSuperfanFinalesForSocket(socket.id, `renderer-${state}`);
                         this.api.log(`[WEBGPU FIREWORKS] Renderer ${state}: ${data.reason || 'no details'}`, 'warn');
                     }
+                });
+
+                socket.on('webgpu-fireworks:finale-ack', data => {
+                    this.handleSuperfanFinaleAck(data, socket);
                 });
 
                 socket.on('webgpu-fireworks:interactive-trigger', (data = {}) => {
@@ -290,6 +299,7 @@ class FireworksPlugin {
 
                 // Clean up on disconnect
                 socket.on('disconnect', () => {
+                    this.clearPendingSuperfanFinalesForSocket(socket.id, 'renderer-disconnected');
                     this.connectedSockets.delete(socket);
                     this.overlayTelemetry.delete(socket.id);
                     this.currentFps = this.getOverlayFps(false).fps;
@@ -1347,14 +1357,22 @@ class FireworksPlugin {
             return { accepted: false, reason: 'not-superfan' };
         }
 
-        const identity = normalizeSuperfanIdentity(data);
-        if (!identity) {
+        const identities = normalizeSuperfanIdentityAliases(data);
+        if (identities.length === 0) {
             this.api.log('[FIREWORKS] Superfan finale skipped: missing user identity', 'debug');
             return { accepted: false, reason: 'missing-identity' };
         }
+        const pendingEventId = identities
+            .map(alias => this.pendingSuperfanAliases.get(alias))
+            .find(Boolean);
+        if (pendingEventId) {
+            return { accepted: false, reason: 'pending', eventId: pendingEventId };
+        }
+
+        const identity = this.superfanFinaleHistory.resolve(identities, { persistMigration: true }).canonical;
         const now = Date.now();
         if (!bypassCooldown && !this.superfanFinaleHistory.isEligible(
-            identity,
+            identities,
             effectiveConfig.superfanFinaleCooldownHours,
             now
         )) return { accepted: false, reason: 'cooldown', identity };
@@ -1365,17 +1383,45 @@ class FireworksPlugin {
         }
 
         const username = data.uniqueId || data.username || data.nickname || 'Superfan';
-        const eventId = `superfan:${identity}:${now}`;
-        const finale = this.triggerFinale({
-            style: effectiveConfig.goalFinaleStyle,
-            length: effectiveConfig.goalFinaleLength,
-            intensity: effectiveConfig.superfanFinaleIntensity,
+        const upstreamEventId = [data.eventId, data.id]
+            .map(value => String(value ?? '').trim())
+            .find(Boolean);
+        const eventId = upstreamEventId
+            ? `superfan-event:${upstreamEventId.slice(0, 140)}`
+            : `superfan:${identity}:${++this.superfanFinaleAttemptCounter}`;
+        if (this.pendingSuperfanFinales.has(eventId)) {
+            return { accepted: false, reason: 'event-id-pending', eventId };
+        }
+        const attempt = this.beginPendingSuperfanFinale({
             eventId,
-            bypassEnabled: options.bypassEnabled === true
+            identities,
+            identity,
+            acceptedAt: now,
+            bypassCooldown
         });
-        if (!finale.accepted) return { accepted: false, reason: finale.reason || 'finale-rejected', identity, finale };
 
-        this.scheduleFollowerAnimation({
+        let finale;
+        try {
+            finale = this.triggerFinale({
+                style: effectiveConfig.goalFinaleStyle,
+                length: effectiveConfig.goalFinaleLength,
+                intensity: effectiveConfig.superfanFinaleIntensity,
+                eventId,
+                bypassEnabled: options.bypassEnabled === true,
+                ackRequested: true,
+                requiresRendererReady: true
+            });
+        } catch (error) {
+            this.clearPendingSuperfanFinale(eventId, 'submission-error');
+            this.api.log(`[FIREWORKS] Superfan finale submission failed: ${error.message}`, 'warn');
+            return { accepted: false, reason: 'submission-error', identity };
+        }
+        if (!finale.accepted) {
+            this.clearPendingSuperfanFinale(eventId, finale.reason || 'finale-rejected');
+            return { accepted: false, reason: finale.reason || 'finale-rejected', identity, finale };
+        }
+
+        const notificationAccepted = this.scheduleFollowerAnimation({
             username,
             profilePictureUrl: data.profilePictureUrl || data.userProfilePictureUrl || null,
             duration: effectiveConfig.followerAnimationDuration || 3000,
@@ -1386,18 +1432,116 @@ class FireworksPlugin {
             entrance: effectiveConfig.followerAnimationEntrance || 'scale',
             thankYouText: 'Superfan joined, this firework is for you!'
         }, 0);
-        if (!bypassCooldown) this.superfanFinaleHistory.markAccepted(identity, now);
-        return { accepted: true, identity, finale };
+        if (!notificationAccepted) {
+            this.clearPendingSuperfanFinale(eventId, 'notification-rejected');
+            return { accepted: false, reason: 'notification-rejected', identity, finale };
+        }
+        attempt.notificationAccepted = true;
+        this.completePendingSuperfanFinale(attempt);
+        return {
+            accepted: true,
+            pending: this.pendingSuperfanFinales.has(eventId),
+            eventId,
+            identity,
+            finale
+        };
+    }
+
+    beginPendingSuperfanFinale({ eventId, identities, identity, acceptedAt, bypassCooldown }) {
+        const telemetryCutoff = Date.now() - 5000;
+        const targetSocketIds = new Set([...this.connectedSockets]
+            .filter(socket => {
+                const telemetry = this.overlayTelemetry.get(socket.id);
+                return telemetry && telemetry.updatedAt >= telemetryCutoff &&
+                    telemetry.benchmark !== true && telemetry.state === 'ready';
+            })
+            .map(socket => socket.id));
+        const attempt = {
+            eventId,
+            identities,
+            identity,
+            acceptedAt,
+            bypassCooldown,
+            notificationAccepted: false,
+            rendererAccepted: false,
+            targetSocketIds,
+            timer: null
+        };
+        attempt.timer = setTimeout(() => {
+            this.clearPendingSuperfanFinale(eventId, 'ack-timeout');
+        }, this.superfanFinaleAckTimeoutMs);
+        attempt.timer.unref?.();
+        this.pendingSuperfanFinales.set(eventId, attempt);
+        for (const alias of identities) this.pendingSuperfanAliases.set(alias, eventId);
+        return attempt;
+    }
+
+    clearPendingSuperfanFinale(eventId, reason = 'cleared') {
+        const attempt = this.pendingSuperfanFinales.get(eventId);
+        if (!attempt) return null;
+        clearTimeout(attempt.timer);
+        this.pendingSuperfanFinales.delete(eventId);
+        for (const alias of attempt.identities) {
+            if (this.pendingSuperfanAliases.get(alias) === eventId) this.pendingSuperfanAliases.delete(alias);
+        }
+        attempt.clearedReason = reason;
+        return attempt;
+    }
+
+    clearPendingSuperfanFinalesForSocket(socketId, reason) {
+        for (const attempt of [...this.pendingSuperfanFinales.values()]) {
+            if (attempt.targetSocketIds.has(socketId)) {
+                attempt.targetSocketIds.delete(socketId);
+                if (attempt.targetSocketIds.size === 0) {
+                    this.clearPendingSuperfanFinale(attempt.eventId, reason);
+                }
+            }
+        }
+    }
+
+    completePendingSuperfanFinale(attempt) {
+        if (!attempt || !attempt.notificationAccepted || !attempt.rendererAccepted) return false;
+        if (this.pendingSuperfanFinales.get(attempt.eventId) !== attempt) return false;
+        this.clearPendingSuperfanFinale(attempt.eventId, 'accepted');
+        if (!attempt.bypassCooldown) {
+            this.superfanFinaleHistory.markAccepted(attempt.identities, attempt.acceptedAt);
+        }
+        return true;
+    }
+
+    handleSuperfanFinaleAck(data = {}, socket = null) {
+        const eventId = typeof data.eventId === 'string' ? data.eventId : '';
+        const attempt = this.pendingSuperfanFinales.get(eventId);
+        if (!attempt) return false;
+        if (socket && attempt.targetSocketIds.size > 0 && !attempt.targetSocketIds.has(socket.id)) return false;
+        if (data.accepted !== true) {
+            if (socket && attempt.targetSocketIds.size > 0) {
+                attempt.targetSocketIds.delete(socket.id);
+                if (attempt.targetSocketIds.size > 0) return false;
+            }
+            this.clearPendingSuperfanFinale(eventId, data.reason || 'renderer-rejected');
+            return false;
+        }
+        attempt.rendererAccepted = true;
+        return this.completePendingSuperfanFinale(attempt);
     }
 
     scheduleFollowerAnimation(payload, delayMs = 0) {
         if (delayMs <= 0) {
-            this.api.emit('webgpu-fireworks:follower-animation', payload);
-            return null;
+            try {
+                return this.api.emit('webgpu-fireworks:follower-animation', payload) !== false;
+            } catch (error) {
+                this.api.log(`[FIREWORKS] Follower animation emit failed: ${error.message}`, 'warn');
+                return false;
+            }
         }
         const timer = setTimeout(() => {
             this.notificationTimers.delete(timer);
-            this.api.emit('webgpu-fireworks:follower-animation', payload);
+            try {
+                this.api.emit('webgpu-fireworks:follower-animation', payload);
+            } catch (error) {
+                this.api.log(`[FIREWORKS] Delayed follower animation emit failed: ${error.message}`, 'warn');
+            }
         }, delayMs);
         this.notificationTimers.add(timer);
         return timer;
@@ -1716,6 +1860,11 @@ class FireworksPlugin {
             explosionSound: config.explosionSound
         };
 
+        if (request.ackRequested === true) {
+            payload.ackRequested = true;
+            payload.requiresRendererReady = request.requiresRendererReady === true;
+        }
+
         const submitted = this.api.emit('webgpu-fireworks:finale', payload);
         if (submitted === false) {
             return { ...payload, accepted: false, reason: 'submission-rejected' };
@@ -1941,6 +2090,11 @@ class FireworksPlugin {
         }
         this.notificationTimers.clear();
 
+        // Cancel pending Superfan acknowledgements without consuming cooldowns.
+        for (const eventId of [...this.pendingSuperfanFinales.keys()]) {
+            this.clearPendingSuperfanFinale(eventId, 'plugin-destroyed');
+        }
+
         // PluginAPI owns the connection disposer and removes it on unload.
         this.fpsUpdateHandler = null;
 
@@ -1950,6 +2104,7 @@ class FireworksPlugin {
                 socket.removeAllListeners('webgpu-fireworks:fps-update');
                 socket.removeAllListeners('webgpu-fireworks:register-overlay');
                 socket.removeAllListeners('webgpu-fireworks:renderer-status');
+                socket.removeAllListeners('webgpu-fireworks:finale-ack');
                 socket.removeAllListeners('webgpu-fireworks:active-count-response');
                 socket.removeAllListeners('webgpu-fireworks:interactive-trigger');
             });

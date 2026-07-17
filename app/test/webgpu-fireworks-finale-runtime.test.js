@@ -82,6 +82,66 @@ function mockGiftLaunches(engine) {
 }
 
 describe('WebGPU choreographed finale runtime', () => {
+  test('ACKs only after the real finale handler accepts the queue entry', () => {
+    const engine = makeRuntime(10000);
+
+    const result = engine.handleFinaleSocketEvent({
+      id: 'superfan-accepted',
+      eventId: 'superfan-accepted',
+      ackRequested: true,
+      requiresRendererReady: true,
+      showPlan: tinyPlan('superfan-accepted')
+    });
+
+    expect(result).toMatchObject({ accepted: true, id: 'superfan-accepted' });
+    expect(engine.finaleIds.has('superfan-accepted')).toBe(true);
+    expect(engine.socket.emit).toHaveBeenCalledWith('webgpu-fireworks:finale-ack', expect.objectContaining({
+      eventId: 'superfan-accepted',
+      accepted: true
+    }));
+  });
+
+  test.each([
+    ['not-ready', engine => { engine.rendererStatus.state = 'device-lost'; }, 'renderer-not-ready'],
+    ['duplicate', engine => { engine.finaleIds.add('superfan-rejected'); }, 'duplicate']
+  ])('sends a negative ACK when the queue rejects a %s finale', (label, prepare, reason) => {
+    const engine = makeRuntime(10000);
+    prepare(engine);
+
+    const result = engine.handleFinaleSocketEvent({
+      id: 'superfan-rejected',
+      eventId: 'superfan-rejected',
+      ackRequested: true,
+      requiresRendererReady: true,
+      showPlan: tinyPlan('superfan-rejected')
+    });
+
+    expect(result).toMatchObject({ accepted: false });
+    expect(engine.socket.emit).toHaveBeenCalledWith('webgpu-fireworks:finale-ack', {
+      eventId: 'superfan-rejected',
+      accepted: false,
+      reason
+    });
+  });
+
+  test('converts a renderer exception into a negative correlated ACK', () => {
+    const engine = makeRuntime(10000);
+    jest.spyOn(engine, 'handleFinale').mockImplementation(() => { throw new Error('queue exploded'); });
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      expect(engine.handleFinaleSocketEvent({ eventId: 'superfan-error', ackRequested: true }))
+        .toMatchObject({ accepted: false, reason: 'renderer-error' });
+      expect(engine.socket.emit).toHaveBeenCalledWith('webgpu-fireworks:finale-ack', {
+        eventId: 'superfan-error',
+        accepted: false,
+        reason: 'renderer-error'
+      });
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
   test('queues shows FIFO, deduplicates active and waiting IDs, and starts the next at the complete duration', () => {
     let now = 10000;
     const engine = makeRuntime(now);
