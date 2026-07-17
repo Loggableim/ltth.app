@@ -187,11 +187,48 @@ describe('WebGPU Superfan finale foundation', () => {
     expect(plugin.triggerFinale).toHaveBeenCalledTimes(2);
   });
 
+  test.each([
+    ['missing', undefined],
+    ['non-numeric', 'vip'],
+    ['infinite', Infinity],
+    ['negative', -1]
+  ])('rejects a tentative join with a %s team member level', (label, teamMemberLevel) => {
+    const { plugin, history } = createPlugin();
+    plugin.triggerFinale = jest.fn(() => ({ accepted: true }));
+
+    expect(plugin.handleSuperfanEntry({
+      userId: `invalid-${label}`,
+      uniqueId: 'InvalidJoin',
+      teamMemberLevel
+    }, { authoritative: false })).toEqual({ accepted: false, reason: 'not-superfan' });
+    expect(plugin.triggerFinale).not.toHaveBeenCalled();
+    expect(history.snapshot()).toEqual({});
+  });
+
   test('does not consume cooldown when the finale is rejected', () => {
     const { plugin, history } = createPlugin();
     plugin.triggerFinale = jest.fn(() => ({ accepted: false, reason: 'disabled' }));
     expect(plugin.handleSuperfanEntry({ userId: 'a', uniqueId: 'Alpha' }, { authoritative: true }))
       .toMatchObject({ accepted: false, reason: 'disabled' });
+    expect(history.getLastAcceptedAt('id:a')).toBeNull();
+  });
+
+  test('does not consume cooldown when the real finale submission is rejected', () => {
+    const { api, plugin, history } = createPlugin();
+    api.emit.mockImplementation(event => event === 'webgpu-fireworks:finale' ? false : true);
+
+    expect(plugin.handleSuperfanEntry({ userId: 'a', uniqueId: 'Alpha' }, { authoritative: true }))
+      .toMatchObject({
+        accepted: false,
+        reason: 'submission-rejected',
+        identity: 'id:a',
+        finale: { accepted: false, reason: 'submission-rejected' }
+      });
+    expect(api.emit).toHaveBeenCalledWith('webgpu-fireworks:finale', expect.objectContaining({
+      accepted: true,
+      eventId: expect.stringContaining('superfan:id:a:')
+    }));
+    expect(api.emit).not.toHaveBeenCalledWith('webgpu-fireworks:follower-animation', expect.anything());
     expect(history.getLastAcceptedAt('id:a')).toBeNull();
   });
 

@@ -1313,7 +1313,10 @@ class FireworksPlugin {
         const bypassCooldown = options.bypassCooldown === true;
         if (!this.config.enabled && options.bypassEnabled !== true) return { accepted: false, reason: 'disabled' };
         if (!this.config.superfanFinaleEnabled && options.bypassEnabled !== true) return { accepted: false, reason: 'feature-disabled' };
-        if (!authoritative && Number(data.teamMemberLevel) <= 0) return { accepted: false, reason: 'not-superfan' };
+        const teamMemberLevel = Number(data.teamMemberLevel);
+        if (!authoritative && (!Number.isFinite(teamMemberLevel) || teamMemberLevel <= 0)) {
+            return { accepted: false, reason: 'not-superfan' };
+        }
 
         const identity = normalizeSuperfanIdentity(data);
         if (!identity) {
@@ -1684,7 +1687,10 @@ class FireworksPlugin {
             explosionSound: config.explosionSound
         };
 
-        this.api.emit('webgpu-fireworks:finale', payload);
+        const submitted = this.api.emit('webgpu-fireworks:finale', payload);
+        if (submitted === false) {
+            return { ...payload, accepted: false, reason: 'submission-rejected' };
+        }
         return payload;
     }
 
