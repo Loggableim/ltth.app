@@ -286,6 +286,25 @@ async function triggerFinale() {
     }
 }
 
+async function testSuperfanFinale() {
+    try {
+        const response = await fetch('/api/webgpu-fireworks/test-superfan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: 'TestSuperfan',
+                profilePictureUrl: 'https://www.gravatar.com/avatar/?d=mp&s=200'
+            })
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.accepted) throw new Error(payload.reason || payload.error || 'Finale rejected');
+        showToast(window.i18n?.t('webgpu_fireworks.superfan_finale_test_success') || 'Superfan finale triggered!', 'success');
+    } catch (error) {
+        console.error('[Fireworks Settings] Failed to trigger Superfan finale:', error);
+        showToast(window.i18n?.t('webgpu_fireworks.superfan_finale_test_failed') || 'Failed to trigger Superfan finale', 'error');
+    }
+}
+
 async function testFollowerFireworks() {
     try {
         await fetch('/api/webgpu-fireworks/test-follower', {
@@ -373,6 +392,12 @@ function updateUI() {
     document.getElementById('finale-intensity-value').textContent = (config.goalFinaleIntensity || 3) + 'x';
     document.getElementById('finale-style').value = config.goalFinaleStyle || 'auto';
     document.getElementById('finale-length').value = config.goalFinaleLength || 'medium';
+
+    // Superfan finale
+    updateToggle('superfan-finale-toggle', config.superfanFinaleEnabled !== false);
+    document.getElementById('superfan-finale-cooldown').value = String(config.superfanFinaleCooldownHours ?? 24);
+    document.getElementById('superfan-finale-intensity').value = config.superfanFinaleIntensity ?? 3;
+    document.getElementById('superfan-finale-intensity-value').textContent = `${config.superfanFinaleIntensity ?? 3}x`;
 
     // Follower fireworks
     updateToggle('follower-toggle', config.followerFireworksEnabled);
@@ -744,6 +769,7 @@ function setupEventListeners() {
     // Test buttons
     document.getElementById('test-btn').addEventListener('click', triggerTest);
     document.getElementById('test-finale-btn').addEventListener('click', triggerFinale);
+    document.getElementById('test-superfan-finale-btn')?.addEventListener('click', testSuperfanFinale);
     document.getElementById('test-follower-btn')?.addEventListener('click', testFollowerFireworks);
     document.getElementById('test-gift-btn')?.addEventListener('click', () => triggerTestShape('burst', 1.0));
     document.getElementById('test-combo-btn')?.addEventListener('click', () => triggerTestShape('burst', 3.0));
@@ -838,6 +864,12 @@ function setupEventListeners() {
     });
     document.getElementById('finale-length')?.addEventListener('change', function() {
         config.goalFinaleLength = this.value;
+    });
+    document.getElementById('superfan-finale-cooldown')?.addEventListener('change', function() {
+        config.superfanFinaleCooldownHours = Number(this.value);
+    });
+    setupRangeSlider('superfan-finale-intensity', 'superfan-finale-intensity-value', 'x', value => {
+        config.superfanFinaleIntensity = Number(value);
     });
 
     setupRangeSlider('follower-rocket-count', 'follower-rocket-count-value', '', (val) => {

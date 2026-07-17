@@ -150,7 +150,19 @@
     "performance_resolution": "Performance & Auflösung",
     "orientation": "Ausrichtung",
     "target_fps": "Ziel-FPS",
-    "enable_queue": "Warteschlangensystem aktivieren"
+    "enable_queue": "Warteschlangensystem aktivieren",
+    "superfan_finale": "Superfan-Finale",
+    "enable_superfan_finale": "Superfan-Finales aktivieren",
+    "superfan_finale_cooldown": "Wiederholung pro Superfan",
+    "superfan_finale_every_6h": "Alle 6 Stunden",
+    "superfan_finale_every_12h": "Alle 12 Stunden",
+    "superfan_finale_every_24h": "Alle 24 Stunden",
+    "superfan_finale_every_3d": "Alle 3 Tage",
+    "superfan_finale_every_7d": "Alle 7 Tage",
+    "superfan_finale_intensity": "Finale-Intensität",
+    "test_superfan_finale": "Superfan-Finale testen",
+    "superfan_finale_test_success": "Superfan-Finale ausgelöst!",
+    "superfan_finale_test_failed": "Superfan-Finale konnte nicht ausgelöst werden"
   },
   "generated": {
     "70047a182210": "WebGPU Fireworks Overlay - TikTok Stream Tool",
