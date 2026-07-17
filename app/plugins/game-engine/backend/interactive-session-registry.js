@@ -89,7 +89,8 @@ class InteractiveSessionRegistry {
         hostTimeRemainingMs: session.hostTimeRemainingMs ?? null,
         moveCount: Number(state.moveCount) || 0,
         lastActivityAt: session.lastActivityAt,
-        status: session.status
+        status: session.status,
+        state
       };
     });
   }

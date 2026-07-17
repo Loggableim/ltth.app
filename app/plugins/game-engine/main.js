@@ -341,7 +341,8 @@ class GameEnginePlugin {
         state: payload.state,
         config: payload.config,
         timeControl: session.timeControl,
-        useUnified: true
+        useUnified: true,
+        interactive: true
       });
       return;
     }
@@ -355,7 +356,8 @@ class GameEnginePlugin {
         sessionId: session.sessionId,
         gameType: session.gameType,
         move,
-        state: session.adapter.getState()
+        state: session.adapter.getState(),
+        interactive: true
       });
     }
   }
@@ -5436,7 +5438,7 @@ class GameEnginePlugin {
   /**
    * End a game and award XP
    */
-  endGame(sessionId, winner, reason, gameResult = null) {
+  endGame(sessionId, winner, reason, gameResult = null, options = {}) {
     this._ensureDatabaseInitialized();
 
     // Bug #5 fix - Wrap DB operations in try-catch
@@ -5551,6 +5553,7 @@ class GameEnginePlugin {
       reason,
       state: game && game.getState ? game.getState() : null,
       gameResult,
+      interactive: options.interactive === true,
       winStreak: winnerStreakInfo ? {
         newWinStreak: winnerStreakInfo.current_win_streak,
         bestWinStreak: winnerStreakInfo.best_win_streak

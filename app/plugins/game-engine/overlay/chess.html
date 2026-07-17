@@ -771,7 +771,7 @@
 
     // Socket events
     socket.on('game-engine:game-started', (data) => {
-      if (data.gameType !== 'chess' || interactiveSnapshotActive) return;
+      if (data.interactive || data.gameType !== 'chess' || interactiveSnapshotActive) return;
       
       gameState = data.state;
       config = data.config;
@@ -794,7 +794,7 @@
     });
 
     socket.on('game-engine:move-made', (data) => {
-      if (data.gameType !== 'chess' || interactiveSnapshotActive) return;
+      if (data.interactive || data.gameType !== 'chess' || interactiveSnapshotActive) return;
       
       gameState = data.state;
       
@@ -817,7 +817,7 @@
     });
 
     socket.on('game-engine:game-ended', (data) => {
-      if (data.gameType !== 'chess' || interactiveSnapshotActive) return;
+      if (data.interactive || data.gameType !== 'chess' || interactiveSnapshotActive) return;
       
       setTimeout(() => {
         const overlay = document.getElementById('game-over-overlay');
