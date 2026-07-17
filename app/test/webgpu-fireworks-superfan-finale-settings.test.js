@@ -214,9 +214,14 @@ describe('WebGPU Superfan finale settings', () => {
     const intensity = document.getElementById('superfan-finale-intensity');
     intensity.value = '7.5';
     intensity.dispatchEvent(new window.Event('input', { bubbles: true }));
+    const mediumThreshold = document.getElementById('tier-medium');
+    mediumThreshold.value = '750';
+    mediumThreshold.dispatchEvent(new window.Event('change', { bubbles: true }));
     document.getElementById('save-btn').click();
     await waitFor(() => expect(findRequests(fetchMock, '/api/webgpu-fireworks/config')).toHaveLength(2));
     const bodyB = JSON.parse(findRequests(fetchMock, '/api/webgpu-fireworks/config')[1][1].body);
+    expect(bodyB.escalationThresholds).toMatchObject({ medium: 750, big: 500 });
+    const normalizedBodyB = normalizeConfig(bodyB);
 
     try {
       saveA.resolve(jsonResponse({ success: true, config: normalizeConfig(bodyA) }));
@@ -229,9 +234,43 @@ describe('WebGPU Superfan finale settings', () => {
         superfanFinaleIntensity: 7.5
       });
     } finally {
-      saveB.resolve(jsonResponse({ success: true, config: normalizeConfig(bodyB) }));
+      saveB.resolve(jsonResponse({ success: true, config: normalizedBodyB }));
       await new Promise(resolve => setImmediate(resolve));
     }
+
+    expect(document.getElementById('superfan-finale-intensity').value).toBe('7.5');
+    expect(document.getElementById('tier-big').value).toBe('750');
+    await expect(readCurrentSuperfanSettings(window, fetchMock)).resolves.toMatchObject({
+      superfanFinaleEnabled: false,
+      superfanFinaleIntensity: 7.5
+    });
+  });
+
+  test('nested config edits during a save stay dirty and survive its stale response', async () => {
+    const saveA = deferred();
+    const { window, fetchMock } = await bootSettings({
+      initialConfig: {
+        escalationThresholds: { small: 0, medium: 100, big: 500, massive: 1000 }
+      },
+      saveResponses: [saveA.promise]
+    });
+    const document = window.document;
+
+    document.getElementById('save-btn').click();
+    await waitFor(() => expect(findRequests(fetchMock, '/api/webgpu-fireworks/config')).toHaveLength(1));
+    const bodyA = JSON.parse(findRequests(fetchMock, '/api/webgpu-fireworks/config')[0][1].body);
+    const mediumThreshold = document.getElementById('tier-medium');
+    mediumThreshold.value = '275';
+    mediumThreshold.dispatchEvent(new window.Event('change', { bubbles: true }));
+
+    saveA.resolve(jsonResponse({ success: true, config: normalizeConfig(bodyA) }));
+    await new Promise(resolve => setImmediate(resolve));
+
+    expect(mediumThreshold.value).toBe('275');
+    document.getElementById('save-btn').click();
+    await waitFor(() => expect(findRequests(fetchMock, '/api/webgpu-fireworks/config')).toHaveLength(2));
+    const bodyB = JSON.parse(findRequests(fetchMock, '/api/webgpu-fireworks/config')[1][1].body);
+    expect(bodyB.escalationThresholds.medium).toBe(275);
   });
 
   test('save-correlated socket updates cannot roll back newer unsaved edits', async () => {
