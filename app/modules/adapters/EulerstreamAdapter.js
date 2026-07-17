@@ -43,6 +43,7 @@ class EulerstreamAdapter extends BaseAdapter {
     constructor(io, db, logger = console) {
         super(io, db, logger);
         this.ws = null;
+        this._restFallbackConnection = null;
 
         // Explicit connection state and bounded reconnect configuration
         this.connectionState = 'idle';
@@ -487,6 +488,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
     async _connectInternal(username, options = {}, generation = this._activeGeneration) {
         this._clearPendingReconnectTimers();
+        let apiKey;
 
         try {
             this.currentUsername = username;
@@ -496,7 +498,7 @@ class EulerstreamAdapter extends BaseAdapter {
             // Read Eulerstream WebSocket authentication key from configuration.
             // A fallback key can only reach this point after explicit UI consent.
             const keySelection = this._resolveEulerApiKey();
-            const apiKey = keySelection.activeKey;
+            apiKey = keySelection.activeKey;
             const usingFallback = keySelection.usingFallback;
             this._connectionKeySelection = keySelection;
             
@@ -610,6 +612,16 @@ class EulerstreamAdapter extends BaseAdapter {
 
             if (generation !== this._activeGeneration) {
                 throw error;
+            }
+
+            if (this._isEulerstreamRestFallbackError(error) && this.confirmedRoomId) {
+                try {
+                    this.logger.warn(`Eulerstream sign server failed before LIVE confirmation; trying REST fallback for room ${this.confirmedRoomId}`);
+                    return await this._connectViaEulerstreamRestFallback(username, apiKey, generation);
+                } catch (fallbackError) {
+                    this.logger.warn(`Eulerstream REST fallback failed: ${fallbackError.message}`);
+                    error = fallbackError;
+                }
             }
 
             const errorInfo = this._analyzeError(error);
@@ -799,6 +811,80 @@ class EulerstreamAdapter extends BaseAdapter {
         error.code = code;
         Object.assign(error, details);
         return error;
+    }
+
+    _isEulerstreamRestFallbackError(error) {
+        if (!error || Number(error.code) !== 1011) return false;
+        const text = [error.message, error.closeReason, error.reason]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+        return /ttwid|signing|room_info|ws state error/.test(text);
+    }
+
+    async _connectViaEulerstreamRestFallback(username, apiKey, generation) {
+        if (generation !== this._activeGeneration) {
+            throw this._createConnectionError('Connection was superseded.', 'superseded', 409);
+        }
+
+        this._clearConnectionTimers();
+        this.isConnected = false;
+        this.connectionState = 'validating';
+        this._connectedEventEmitted = false;
+        this._connectionHadLive = false;
+        this.eventEmitter = new EventEmitter();
+        this._registerEulerstreamEvents();
+
+        // Keep this optional connector lazy so the main adapter and Jest suite
+        // remain CommonJS-compatible when the fallback is not needed.
+        const { TikTokLiveConnection } = require('tiktok-live-connector');
+        const connection = new TikTokLiveConnection(username, {
+            signApiKey: apiKey,
+            processInitialData: false,
+            fetchRoomInfoOnConnect: false
+        });
+        this._restFallbackConnection = connection;
+
+        for (const eventName of ['chat', 'gift', 'social', 'like', 'member', 'subscribe', 'share', 'emote']) {
+            connection.on(eventName, data => {
+                if (generation === this._activeGeneration && this.eventEmitter) {
+                    this.eventEmitter.emit(eventName, data);
+                }
+            });
+        }
+
+        connection.on('disconnected', data => {
+            if (generation !== this._activeGeneration || this._manualDisconnect) return;
+            if (this.connectionState === 'live') {
+                this._handleSocketClose(
+                    generation,
+                    Number(data?.code) || 1006,
+                    data?.reason || 'REST fallback WebSocket disconnected',
+                    { source: 'eulerstream-rest-fallback' }
+                );
+            }
+        });
+
+        await connection.connect(this.confirmedRoomId);
+
+        if (generation !== this._activeGeneration) {
+            await connection.disconnect().catch(() => {});
+            throw this._createConnectionError('Connection was superseded.', 'superseded', 409);
+        }
+
+        const classification = await this._confirmLive({
+            generation,
+            roomId: this.confirmedRoomId,
+            source: 'eulerstream-rest-fallback',
+            payload: {}
+        });
+
+        this.logger.info(`✅ Connected to TikTok LIVE via Eulerstream REST fallback: @${username}`);
+        return this._buildConnectedPayload(
+            classification.isNewStream,
+            classification.isReconnect,
+            false
+        );
     }
 
     _rejectPendingConnect(error) {
@@ -2545,7 +2631,8 @@ class EulerstreamAdapter extends BaseAdapter {
             error = this._createConnectionError(
                 code === 1000 ? 'The connection closed normally.' : 'The connection closed before LIVE was confirmed.',
                 this.connectionState,
-                code
+                code,
+                { closeReason: reasonText }
             );
             this.broadcastStatus(this.connectionState, { code, message: error.message, retryable: false });
             emitDisconnect(error.message);
@@ -2805,6 +2892,11 @@ class EulerstreamAdapter extends BaseAdapter {
                 this.ws.close();
             }
             this.ws = null;
+        }
+        if (this._restFallbackConnection) {
+            const fallbackConnection = this._restFallbackConnection;
+            this._restFallbackConnection = null;
+            fallbackConnection.disconnect().catch(() => {});
         }
         if (this.eventEmitter) {
             this.eventEmitter.removeAllListeners();
