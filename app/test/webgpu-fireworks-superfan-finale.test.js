@@ -257,25 +257,31 @@ describe('WebGPU Superfan finale foundation', () => {
           superfanFinaleCooldownHours: 168,
           superfanFinaleIntensity: 7.5,
           goalFinaleStyle: 'sky-ballet',
-          goalFinaleLength: 'short'
+          goalFinaleLength: 'short',
+          enabled: false,
+          followerAnimationDuration: 9000,
+          unknownKey: 'must-not-pass'
         }
       }
     }, res);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, accepted: true }));
-    expect(handleSuperfanEntry).toHaveBeenCalledWith(expect.objectContaining({
-      uniqueId: 'TestSuperfan'
-    }), expect.objectContaining({
+    const [entry, options] = handleSuperfanEntry.mock.calls[0];
+    expect(entry).toEqual(expect.objectContaining({ uniqueId: 'TestSuperfan' }));
+    expect(options).toEqual(expect.objectContaining({
       authoritative: true,
       bypassCooldown: true,
-      bypassEnabled: true,
-      configOverride: expect.objectContaining({
-        superfanFinaleEnabled: false,
-        superfanFinaleCooldownHours: 168,
-        superfanFinaleIntensity: 7.5,
-        goalFinaleStyle: 'sky-ballet',
-        goalFinaleLength: 'short'
-      })
+      bypassEnabled: true
     }));
+    expect(options.configOverride).toEqual({
+      superfanFinaleEnabled: false,
+      superfanFinaleCooldownHours: 168,
+      superfanFinaleIntensity: 7.5,
+      goalFinaleStyle: 'sky-ballet',
+      goalFinaleLength: 'short'
+    });
+    expect(options.configOverride).not.toHaveProperty('enabled');
+    expect(options.configOverride).not.toHaveProperty('followerAnimationDuration');
+    expect(options.configOverride).not.toHaveProperty('unknownKey');
     expect(plugin.triggerFinale).toHaveBeenCalledWith(expect.objectContaining({
       intensity: 7.5,
       style: 'sky-ballet',

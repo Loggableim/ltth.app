@@ -779,7 +779,11 @@ class FireworksPlugin {
                         }
                     }
                 }
-                const configOverride = normalizeConfig(testConfigInput);
+                const normalizedTestConfig = normalizeConfig(testConfigInput);
+                const configOverride = {};
+                for (const key of SUPERFAN_FINALE_TEST_CONFIG_KEYS) {
+                    configOverride[key] = normalizedTestConfig[key];
+                }
                 const result = this.handleSuperfanEntry({
                     userId: 'test-superfan',
                     uniqueId: req.body?.username || 'TestSuperfan',

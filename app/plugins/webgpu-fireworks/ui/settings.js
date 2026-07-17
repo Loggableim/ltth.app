@@ -4,11 +4,70 @@
  */
 
 // State
-let config = {};
+let configRevision = 0;
+let localConfigDirty = false;
+let applyingRemoteConfig = false;
+let activeSaveRequests = 0;
+let latestSaveRequestId = 0;
+let config = createTrackedConfig({});
 let socket = null;
 let rendererStatusTimer = null;
 let paletteSaveTimer = null;
 let palettePreviewTimer = null;
+
+function markLocalConfigChange() {
+    if (applyingRemoteConfig) return;
+    configRevision += 1;
+    localConfigDirty = true;
+}
+
+function createTrackedConfig(value) {
+    const proxies = new WeakMap();
+
+    const wrap = target => {
+        if (!target || typeof target !== 'object') return target;
+        if (proxies.has(target)) return proxies.get(target);
+
+        const proxy = new Proxy(target, {
+            get(object, property) {
+                return wrap(Reflect.get(object, property));
+            },
+            set(object, property, nextValue) {
+                const previousValue = Reflect.get(object, property);
+                const changed = !Object.is(previousValue, nextValue);
+                const updated = Reflect.set(object, property, nextValue);
+                if (updated && changed) markLocalConfigChange();
+                return updated;
+            },
+            deleteProperty(object, property) {
+                const existed = Object.prototype.hasOwnProperty.call(object, property);
+                const deleted = Reflect.deleteProperty(object, property);
+                if (deleted && existed) markLocalConfigChange();
+                return deleted;
+            }
+        });
+        proxies.set(target, proxy);
+        return proxy;
+    };
+
+    return wrap(value && typeof value === 'object' ? value : {});
+}
+
+function applyRemoteConfig(nextConfig) {
+    applyingRemoteConfig = true;
+    try {
+        config = createTrackedConfig(nextConfig);
+        updateUI();
+        configRevision += 1;
+        localConfigDirty = false;
+    } finally {
+        applyingRemoteConfig = false;
+    }
+}
+
+function canApplyRemoteConfig() {
+    return !localConfigDirty && activeSaveRequests === 0;
+}
 
 // Benchmark configuration constants
 const BENCHMARK_CONFIG = {
@@ -97,9 +156,8 @@ function connectSocket() {
         });
 
         socket.on('webgpu-fireworks:config-update', (data) => {
-            if (data.config) {
-                config = data.config;
-                updateUI();
+            if (data.config && canApplyRemoteConfig()) {
+                applyRemoteConfig(data.config);
             }
         });
     } catch (e) {
@@ -112,13 +170,13 @@ function connectSocket() {
 // ============================================================================
 
 async function loadConfig() {
+    const requestedAtRevision = configRevision;
     try {
         const response = await fetch('/api/webgpu-fireworks/config');
         const data = await response.json();
 
-        if (data.success) {
-            config = data.config;
-            updateUI();
+        if (data.success && requestedAtRevision === configRevision && canApplyRemoteConfig()) {
+            applyRemoteConfig(data.config);
         }
     } catch (e) {
         console.error('[Fireworks Settings] Failed to load config:', e);
@@ -212,30 +270,43 @@ async function loadRendererStatus() {
 }
 
 async function saveConfig(showSuccessToast = true) {
+    normalizeInternalResolutionBounds();
+    const requestId = ++latestSaveRequestId;
+    const requestedAtRevision = configRevision;
+    const serializedConfig = JSON.stringify(config);
+    activeSaveRequests += 1;
+
     try {
-        normalizeInternalResolutionBounds();
         const response = await fetch('/api/webgpu-fireworks/config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(config)
+            body: serializedConfig
         });
 
         const data = await response.json();
+        const isCurrentRequest = requestId === latestSaveRequestId
+            && requestedAtRevision === configRevision;
 
         if (data.success) {
+            if (!isCurrentRequest) return;
             if (data.config) {
-                config = data.config;
-                updateUI();
+                applyRemoteConfig(data.config);
+            } else {
+                localConfigDirty = false;
             }
             if (showSuccessToast) {
                 showToast('Settings saved successfully!', 'success');
             }
-        } else {
+        } else if (requestId === latestSaveRequestId) {
             showToast('Failed to save settings', 'error');
         }
     } catch (e) {
-        console.error('[Fireworks Settings] Failed to save config:', e);
-        showToast('Failed to save settings', 'error');
+        if (requestId === latestSaveRequestId) {
+            console.error('[Fireworks Settings] Failed to save config:', e);
+            showToast('Failed to save settings', 'error');
+        }
+    } finally {
+        activeSaveRequests = Math.max(0, activeSaveRequests - 1);
     }
 }
 

@@ -18,6 +18,12 @@ describe('WebGPU Superfan finale settings', () => {
     return { ok, json: async () => body };
   }
 
+  function deferred() {
+    let resolve;
+    const promise = new Promise(resolvePromise => { resolve = resolvePromise; });
+    return { promise, resolve };
+  }
+
   async function waitFor(assertion) {
     const startedAt = Date.now();
     let lastError;
@@ -39,7 +45,23 @@ describe('WebGPU Superfan finale settings', () => {
     ));
   }
 
-  async function bootSettings({ initialConfig = {}, testResponse, translations = {} } = {}) {
+  function findRequests(fetchMock, url, method = 'POST') {
+    return fetchMock.mock.calls.filter(([requestUrl, options = {}]) => (
+      String(requestUrl) === url && options.method === method
+    ));
+  }
+
+  async function readCurrentSuperfanSettings(window, fetchMock) {
+    const requestsBefore = findRequests(fetchMock, '/api/webgpu-fireworks/test-superfan').length;
+    window.document.getElementById('test-superfan-finale-btn').click();
+    await waitFor(() => {
+      expect(findRequests(fetchMock, '/api/webgpu-fireworks/test-superfan')).toHaveLength(requestsBefore + 1);
+    });
+    const requests = findRequests(fetchMock, '/api/webgpu-fireworks/test-superfan');
+    return JSON.parse(requests[requests.length - 1][1].body).settings;
+  }
+
+  async function bootSettings({ initialConfig = {}, saveResponses = [], testResponse, translations = {} } = {}) {
     const loadedConfig = normalizeConfig(initialConfig);
     dom = new JSDOM(html, {
       runScripts: 'outside-only',
@@ -61,7 +83,11 @@ describe('WebGPU Superfan finale settings', () => {
       onChange: jest.fn(),
       t: jest.fn(key => translations[key] || key)
     };
-    window.io = jest.fn(() => ({ on: jest.fn(), emit: jest.fn() }));
+    const socketHandlers = new Map();
+    window.io = jest.fn(() => ({
+      on: jest.fn((event, handler) => socketHandlers.set(event, handler)),
+      emit: jest.fn()
+    }));
     window.setInterval = jest.fn(() => 1);
     window.clearInterval = jest.fn();
     window.setTimeout = jest.fn(() => 1);
@@ -77,6 +103,7 @@ describe('WebGPU Superfan finale settings', () => {
         return jsonResponse({ success: false });
       }
       if (requestUrl === '/api/webgpu-fireworks/config' && options.method === 'POST') {
+        if (saveResponses.length > 0) return saveResponses.shift();
         return jsonResponse({
           success: true,
           config: normalizeConfig(JSON.parse(options.body || '{}'))
@@ -97,7 +124,7 @@ describe('WebGPU Superfan finale settings', () => {
     });
     await new Promise(resolve => setImmediate(resolve));
 
-    return { window, fetchMock };
+    return { window, fetchMock, socketHandlers };
   }
 
   test('exposes enabled, cooldown, intensity, and inherited finale controls', () => {
@@ -123,7 +150,10 @@ describe('WebGPU Superfan finale settings', () => {
         superfanFinaleCooldownHours: 6,
         superfanFinaleIntensity: 1,
         goalFinaleStyle: 'symmetric-salute',
-        goalFinaleLength: 'long'
+        goalFinaleLength: 'long',
+        audioVolume: 0.42,
+        queueEnabled: true,
+        themeColors: ['#112233', '#445566']
       }
     });
     const document = window.document;
@@ -141,7 +171,10 @@ describe('WebGPU Superfan finale settings', () => {
       superfanFinaleCooldownHours: 6,
       superfanFinaleIntensity: 1,
       goalFinaleStyle: 'symmetric-salute',
-      goalFinaleLength: 'long'
+      goalFinaleLength: 'long',
+      audioVolume: 0.42,
+      queueEnabled: true,
+      themeColors: ['#112233', '#445566']
     });
   });
 
@@ -163,6 +196,88 @@ describe('WebGPU Superfan finale settings', () => {
     expect(saved.superfanFinaleCooldownHours).toBe(72);
     expect(saved.superfanFinaleIntensity).toBe(8.5);
     expect(document.getElementById('superfan-finale-intensity-value').textContent).toBe('8.5x');
+  });
+
+  test('late Save A cannot roll back newer local edits or Save B', async () => {
+    const saveA = deferred();
+    const saveB = deferred();
+    const { window, fetchMock } = await bootSettings({
+      saveResponses: [saveA.promise, saveB.promise]
+    });
+    const document = window.document;
+
+    document.getElementById('save-btn').click();
+    await waitFor(() => expect(findRequests(fetchMock, '/api/webgpu-fireworks/config')).toHaveLength(1));
+    const bodyA = JSON.parse(findRequests(fetchMock, '/api/webgpu-fireworks/config')[0][1].body);
+
+    document.getElementById('superfan-finale-toggle').click();
+    const intensity = document.getElementById('superfan-finale-intensity');
+    intensity.value = '7.5';
+    intensity.dispatchEvent(new window.Event('input', { bubbles: true }));
+    document.getElementById('save-btn').click();
+    await waitFor(() => expect(findRequests(fetchMock, '/api/webgpu-fireworks/config')).toHaveLength(2));
+    const bodyB = JSON.parse(findRequests(fetchMock, '/api/webgpu-fireworks/config')[1][1].body);
+
+    try {
+      saveA.resolve(jsonResponse({ success: true, config: normalizeConfig(bodyA) }));
+      await new Promise(resolve => setImmediate(resolve));
+
+      expect(document.getElementById('superfan-finale-toggle').classList.contains('active')).toBe(false);
+      expect(document.getElementById('superfan-finale-intensity').value).toBe('7.5');
+      await expect(readCurrentSuperfanSettings(window, fetchMock)).resolves.toMatchObject({
+        superfanFinaleEnabled: false,
+        superfanFinaleIntensity: 7.5
+      });
+    } finally {
+      saveB.resolve(jsonResponse({ success: true, config: normalizeConfig(bodyB) }));
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  });
+
+  test('save-correlated socket updates cannot roll back newer unsaved edits', async () => {
+    const saveA = deferred();
+    const { window, fetchMock, socketHandlers } = await bootSettings({
+      saveResponses: [saveA.promise]
+    });
+    const document = window.document;
+
+    document.getElementById('save-btn').click();
+    await waitFor(() => expect(findRequests(fetchMock, '/api/webgpu-fireworks/config')).toHaveLength(1));
+    const bodyA = JSON.parse(findRequests(fetchMock, '/api/webgpu-fireworks/config')[0][1].body);
+    document.getElementById('superfan-finale-toggle').click();
+    const intensity = document.getElementById('superfan-finale-intensity');
+    intensity.value = '8.5';
+    intensity.dispatchEvent(new window.Event('input', { bubbles: true }));
+
+    try {
+      socketHandlers.get('webgpu-fireworks:config-update')({ config: normalizeConfig(bodyA) });
+      expect(document.getElementById('superfan-finale-toggle').classList.contains('active')).toBe(false);
+      expect(document.getElementById('superfan-finale-intensity').value).toBe('8.5');
+      await expect(readCurrentSuperfanSettings(window, fetchMock)).resolves.toMatchObject({
+        superfanFinaleEnabled: false,
+        superfanFinaleIntensity: 8.5
+      });
+    } finally {
+      saveA.resolve(jsonResponse({ success: true, config: normalizeConfig(bodyA) }));
+      await new Promise(resolve => setImmediate(resolve));
+    }
+  });
+
+  test('socket config updates still apply while the form is clean and no save is active', async () => {
+    const { window, fetchMock, socketHandlers } = await bootSettings();
+    const remoteConfig = normalizeConfig({
+      superfanFinaleEnabled: false,
+      superfanFinaleIntensity: 5.5
+    });
+
+    socketHandlers.get('webgpu-fireworks:config-update')({ config: remoteConfig });
+
+    expect(window.document.getElementById('superfan-finale-toggle').classList.contains('active')).toBe(false);
+    expect(window.document.getElementById('superfan-finale-intensity').value).toBe('5.5');
+    await expect(readCurrentSuperfanSettings(window, fetchMock)).resolves.toMatchObject({
+      superfanFinaleEnabled: false,
+      superfanFinaleIntensity: 5.5
+    });
   });
 
   test('test button sends the currently visible unsaved Superfan and inherited finale settings', async () => {
