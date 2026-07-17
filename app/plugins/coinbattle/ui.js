@@ -83,6 +83,24 @@
     }, translations);
   }
 
+  function translateCoinBattle(key, params = {}, fallback = key) {
+    const value = getTranslationValue(`plugins.coinbattle.${key}`);
+    if (typeof value !== 'string') return fallback;
+    return value.replace(/\{(\w+)\}/g, (match, name) => (
+      Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+    ));
+  }
+
+  function runtimeError(error, fallback) {
+    return translateCoinBattle('runtime.toast.backend_error', {
+      message: error || ''
+    }, fallback);
+  }
+
+  function loadingMarkup(key, fallback) {
+    return `<p class="loading">${escapeHtml(translateCoinBattle(key, {}, fallback))}</p>`;
+  }
+
   function applyTranslations() {
     document.documentElement.lang = currentLanguage;
 
@@ -102,8 +120,24 @@
       }
     });
 
-    const title = getTranslationValue('ui.title') || 'CoinBattle';
-    document.title = `${title} - Admin Panel`;
+    document.querySelectorAll('[data-i18n-aria-label]').forEach((element) => {
+      const key = element.getAttribute('data-i18n-aria-label');
+      const value = getTranslationValue(key);
+      if (typeof value === 'string') {
+        element.setAttribute('aria-label', value);
+      }
+    });
+
+    document.querySelectorAll('[data-i18n-placeholder]').forEach((element) => {
+      const key = element.getAttribute('data-i18n-placeholder');
+      const value = getTranslationValue(key);
+      if (typeof value === 'string') {
+        element.setAttribute('placeholder', value);
+      }
+    });
+
+    const title = getTranslationValue('plugins.coinbattle.ui.title') || 'CoinBattle';
+    document.title = translateCoinBattle('runtime.title', { title }, `${title} - Admin Panel`);
 
   }
 
@@ -361,25 +395,25 @@
 
     // Match events
     socket.on('coinbattle:match-started', () => {
-      showNotification('Match started!', 'success');
+      showNotification(translateCoinBattle('runtime.toast.match_started', {}, 'Match started!'), 'success');
       socket.emit('coinbattle:get-state');
     });
 
     socket.on('coinbattle:match-ended', (data) => {
-      showNotification('Match ended!', 'info');
+      showNotification(translateCoinBattle('runtime.toast.match_ended', {}, 'Match ended!'), 'info');
       socket.emit('coinbattle:get-state');
     });
 
     socket.on('coinbattle:match-paused', () => {
-      showNotification('Match paused', 'warning');
+      showNotification(translateCoinBattle('runtime.toast.match_paused', {}, 'Match paused'), 'warning');
     });
 
     socket.on('coinbattle:match-resumed', () => {
-      showNotification('Match resumed', 'success');
+      showNotification(translateCoinBattle('runtime.toast.match_resumed', {}, 'Match resumed'), 'success');
     });
 
     socket.on('coinbattle:match-extended', (data) => {
-      showNotification(`Match extended by ${data.additionalSeconds}s`, 'info');
+      showNotification(translateCoinBattle('runtime.toast.match_extended', { seconds: data.additionalSeconds }, `Match extended by ${data.additionalSeconds}s`), 'info');
     });
 
     // Multiplier events
@@ -389,14 +423,14 @@
         value: data.multiplier,
         endTime: data.endTime
       };
-      showNotification(`${data.multiplier}x multiplier activated!`, 'success');
+      showNotification(translateCoinBattle('runtime.toast.multiplier_activated', { multiplier: data.multiplier }, `${data.multiplier}x multiplier activated!`), 'success');
       updateMultiplierDisplay();
     });
 
     socket.on('coinbattle:multiplier-ended', () => {
       currentState.multiplier = { active: false, value: 1.0 };
       updateMultiplierDisplay();
-      showNotification('Multiplier ended', 'info');
+      showNotification(translateCoinBattle('runtime.toast.multiplier_ended', {}, 'Multiplier ended'), 'info');
     });
 
     // Gift events
@@ -406,23 +440,27 @@
 
     // Pyramid mode events
     socket.on('pyramid:round-started', (data) => {
-      showNotification('Pyramid round started!', 'success');
+      showNotification(translateCoinBattle('runtime.toast.pyramid_started', {}, 'Pyramid round started!'), 'success');
       document.getElementById('btn-start-pyramid').disabled = true;
       document.getElementById('btn-stop-pyramid').disabled = false;
     });
 
     socket.on('pyramid:round-ended', (data) => {
-      showNotification('Pyramid round ended!', 'info');
+      showNotification(translateCoinBattle('runtime.toast.pyramid_ended', {}, 'Pyramid round ended!'), 'info');
       document.getElementById('btn-start-pyramid').disabled = false;
       document.getElementById('btn-stop-pyramid').disabled = true;
     });
 
     socket.on('pyramid:knockout', (data) => {
-      showNotification(`🥊 ${data.newLeader?.nickname} takes the lead!`, 'warning');
+      showNotification(translateCoinBattle(
+        'runtime.toast.pyramid_leader',
+        { nickname: data.newLeader?.nickname || '' },
+        `🥊 ${data.newLeader?.nickname || ''} takes the lead!`
+      ), 'warning');
     });
 
     socket.on('pyramid:round-extended', (data) => {
-      showNotification(`Pyramid extended by ${data.extension.toFixed(1)}s`, 'info');
+      showNotification(translateCoinBattle('runtime.toast.pyramid_extended', { seconds: data.extension.toFixed(1) }, `Pyramid extended by ${data.extension.toFixed(1)}s`), 'info');
     });
   }
 
@@ -442,12 +480,12 @@
 
       const result = await response.json();
       if (result.success) {
-        showNotification('Match started successfully!', 'success');
+        showNotification(translateCoinBattle('runtime.toast.match_started_success', {}, 'Match started successfully!'), 'success');
       } else {
-        showNotification(`Error: ${result.error}`, 'danger');
+        showNotification(runtimeError(result.error, `Error: ${result.error}`), 'danger');
       }
     } catch (error) {
-      showNotification(`Error starting match: ${error.message}`, 'danger');
+      showNotification(runtimeError(error.message, `Error starting match: ${error.message}`), 'danger');
     }
   }
 
@@ -455,7 +493,7 @@
    * End current match
    */
   async function endMatch() {
-    if (!confirm('Are you sure you want to end the current match?')) {
+    if (!confirm(translateCoinBattle('runtime.dialog.end_match_confirm', {}, 'Are you sure you want to end the current match?'))) {
       return;
     }
 
@@ -467,12 +505,12 @@
 
       const result = await response.json();
       if (result.success) {
-        showNotification('Match ended successfully!', 'success');
+        showNotification(translateCoinBattle('runtime.toast.match_ended_success', {}, 'Match ended successfully!'), 'success');
       } else {
-        showNotification(`Error: ${result.error}`, 'danger');
+        showNotification(runtimeError(result.error, `Error: ${result.error}`), 'danger');
       }
     } catch (error) {
-      showNotification(`Error ending match: ${error.message}`, 'danger');
+      showNotification(runtimeError(error.message, `Error ending match: ${error.message}`), 'danger');
     }
   }
 
@@ -491,10 +529,10 @@
 
       const result = await response.json();
       if (!result.success) {
-        showNotification(`Error: ${result.error}`, 'danger');
+        showNotification(runtimeError(result.error, `Error: ${result.error}`), 'danger');
       }
     } catch (error) {
-      showNotification(`Error: ${error.message}`, 'danger');
+      showNotification(runtimeError(error.message, `Error: ${error.message}`), 'danger');
     }
   }
 
@@ -511,12 +549,12 @@
 
       const result = await response.json();
       if (result.success) {
-        showNotification('Match extended by 60 seconds!', 'success');
+        showNotification(translateCoinBattle('runtime.toast.match_extended', { seconds: 60 }, 'Match extended by 60 seconds!'), 'success');
       } else {
-        showNotification(`Error: ${result.error}`, 'danger');
+        showNotification(runtimeError(result.error, `Error: ${result.error}`), 'danger');
       }
     } catch (error) {
-      showNotification(`Error extending match: ${error.message}`, 'danger');
+      showNotification(runtimeError(error.message, `Error extending match: ${error.message}`), 'danger');
     }
   }
 
@@ -537,12 +575,12 @@
 
       const result = await response.json();
       if (result.success) {
-        showNotification('2x Multiplier activated for 30 seconds!', 'success');
+        showNotification(translateCoinBattle('runtime.toast.multiplier_activated_for', { multiplier: 2, seconds: 30 }, '2x Multiplier activated for 30 seconds!'), 'success');
       } else {
-        showNotification(`Error: ${result.error}`, 'danger');
+        showNotification(runtimeError(result.error, `Error: ${result.error}`), 'danger');
       }
     } catch (error) {
-      showNotification(`Error activating multiplier: ${error.message}`, 'danger');
+      showNotification(runtimeError(error.message, `Error activating multiplier: ${error.message}`), 'danger');
     }
   }
 
@@ -558,12 +596,14 @@
 
       const result = await response.json();
       if (result.success) {
-        showNotification('Simulation started!', 'success');
+        showNotification(translateCoinBattle('runtime.toast.simulation_started', {}, 'Simulation started!'), 'success');
         document.getElementById('btn-start-simulation').disabled = true;
         document.getElementById('btn-stop-simulation').disabled = false;
+      } else {
+        showNotification(runtimeError(result.error, `Error: ${result.error}`), 'danger');
       }
     } catch (error) {
-      showNotification(`Error: ${error.message}`, 'danger');
+      showNotification(runtimeError(error.message, `Error: ${error.message}`), 'danger');
     }
   }
 
@@ -579,12 +619,14 @@
 
       const result = await response.json();
       if (result.success) {
-        showNotification('Simulation stopped!', 'info');
+        showNotification(translateCoinBattle('runtime.toast.simulation_stopped', {}, 'Simulation stopped!'), 'info');
         document.getElementById('btn-start-simulation').disabled = false;
         document.getElementById('btn-stop-simulation').disabled = true;
+      } else {
+        showNotification(runtimeError(result.error, `Error: ${result.error}`), 'danger');
       }
     } catch (error) {
-      showNotification(`Error: ${error.message}`, 'danger');
+      showNotification(runtimeError(error.message, `Error: ${error.message}`), 'danger');
     }
   }
 
@@ -706,13 +748,13 @@
 
       const result = await response.json();
       if (result.success) {
-        showNotification('Settings saved successfully!', 'success');
+        showNotification(translateCoinBattle('runtime.toast.settings_saved', {}, 'Settings saved successfully!'), 'success');
         currentState.config = config;
       } else {
-        showNotification(`Error: ${result.error}`, 'danger');
+        showNotification(runtimeError(result.error, `Error: ${result.error}`), 'danger');
       }
     } catch (error) {
-      showNotification(`Error saving settings: ${error.message}`, 'danger');
+      showNotification(runtimeError(error.message, `Error saving settings: ${error.message}`), 'danger');
     }
   }
 
@@ -720,11 +762,11 @@
    * Reset settings to defaults
    */
   function resetSettings() {
-    if (!confirm('Reset all settings to defaults?')) {
+    if (!confirm(translateCoinBattle('runtime.dialog.reset_settings_confirm', {}, 'Reset all settings to defaults?'))) {
       return;
     }
     loadConfig();
-    showNotification('Settings reset to defaults', 'info');
+    showNotification(translateCoinBattle('runtime.toast.settings_reset', {}, 'Settings reset to defaults'), 'info');
   }
 
   /**
@@ -765,17 +807,17 @@
       // Try modern Clipboard API first
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(url);
-        showNotification('URL copied to clipboard!', 'success');
+        showNotification(translateCoinBattle('runtime.toast.url_copied', {}, 'URL copied to clipboard!'), 'success');
       } else {
         // Fallback to legacy method
         input.select();
         document.execCommand('copy');
-        showNotification('URL copied to clipboard!', 'success');
+        showNotification(translateCoinBattle('runtime.toast.url_copied', {}, 'URL copied to clipboard!'), 'success');
       }
     } catch (error) {
       // Final fallback - manual selection
       input.select();
-      showNotification('Please copy the URL manually (Ctrl+C)', 'warning');
+      showNotification(translateCoinBattle('runtime.toast.copy_manually', {}, 'Please copy the URL manually (Ctrl+C)'), 'warning');
     }
   }
 
@@ -793,7 +835,7 @@
    */
   async function loadLifetimeLeaderboard() {
     const container = document.getElementById('lifetime-leaderboard');
-    container.innerHTML = '<p class="loading"><span class="spinner"></span></p>';
+    container.innerHTML = loadingMarkup('runtime.load.loading', 'Loading...');
 
     try {
       const response = await fetch('/api/plugins/coinbattle/leaderboard/lifetime?limit=20');
@@ -802,10 +844,10 @@
       if (result.success && result.data.length > 0) {
         container.innerHTML = renderLeaderboardTable(result.data, true);
       } else {
-        container.innerHTML = '<p class="loading">No data available</p>';
+        container.innerHTML = loadingMarkup('runtime.load.no_data', 'No data available');
       }
     } catch (error) {
-      container.innerHTML = '<p class="loading">Error loading leaderboard</p>';
+      container.innerHTML = loadingMarkup('runtime.load.leaderboard_failed', 'Error loading leaderboard');
     }
   }
 
@@ -814,7 +856,7 @@
    */
   async function loadMatchHistory() {
     const container = document.getElementById('match-history');
-    container.innerHTML = '<p class="loading"><span class="spinner"></span></p>';
+    container.innerHTML = loadingMarkup('runtime.load.loading', 'Loading...');
 
     try {
       const response = await fetch('/api/plugins/coinbattle/history?limit=20');
@@ -823,10 +865,10 @@
       if (result.success && result.data.length > 0) {
         container.innerHTML = result.data.map(match => renderHistoryItem(match)).join('');
       } else {
-        container.innerHTML = '<p class="loading">No match history</p>';
+        container.innerHTML = loadingMarkup('runtime.load.history_empty', 'No match history');
       }
     } catch (error) {
-      container.innerHTML = '<p class="loading">Error loading history</p>';
+      container.innerHTML = loadingMarkup('runtime.load.history_failed', 'Error loading history');
     }
   }
 
@@ -837,18 +879,22 @@
     const date = new Date(match.start_time * 1000).toLocaleString();
     const duration = formatDuration(match.duration || 0);
     const modeLabel = match.mode === 'team'
-      ? 'Team Battle'
+      ? translateCoinBattle('runtime.history.team_battle', {}, 'Team Battle')
       : match.mode === 'pyramid'
-        ? 'Pyramid Battle'
-        : 'Solo';
+        ? translateCoinBattle('runtime.history.pyramid_battle', {}, 'Pyramid Battle')
+        : translateCoinBattle('runtime.history.solo', {}, 'Solo');
+    const matchLabel = translateCoinBattle('runtime.history.match_number', { id: match.id }, `Match #${match.id}`);
+    const durationLabel = translateCoinBattle('runtime.history.duration', {}, 'Duration');
+    const coinsLabel = translateCoinBattle('runtime.history.coins', {}, 'Coins');
+    const exportLabel = translateCoinBattle('runtime.history.export', {}, 'Export');
     
     return `
       <div class="history-item">
         <div class="history-info">
-          <div><strong>Match #${match.id}</strong> - ${modeLabel}</div>
-          <div class="history-meta">${date} • Duration: ${duration} • Coins: ${match.total_coins || 0}</div>
+          <div><strong>${escapeHtml(matchLabel)}</strong> - ${escapeHtml(modeLabel)}</div>
+          <div class="history-meta">${escapeHtml(date)} • ${escapeHtml(durationLabel)}: ${escapeHtml(duration)} • ${escapeHtml(coinsLabel)}: ${match.total_coins || 0}</div>
         </div>
-        <button class="btn btn-sm btn-secondary" onclick="exportMatch(${match.id})">📥 Export</button>
+        <button class="btn btn-sm btn-secondary" onclick="exportMatch(${match.id})">📥 ${escapeHtml(exportLabel)}</button>
       </div>
     `;
   }
@@ -869,10 +915,10 @@
         link.href = url;
         link.download = `coinbattle-match-${matchId}.json`;
         link.click();
-        showNotification('Match data exported!', 'success');
+        showNotification(translateCoinBattle('runtime.toast.match_exported', {}, 'Match data exported!'), 'success');
       }
     } catch (error) {
-      showNotification(`Error exporting: ${error.message}`, 'danger');
+      showNotification(runtimeError(error.message, `Error exporting: ${error.message}`), 'danger');
     }
   };
 
@@ -886,14 +932,23 @@
 
     // Update status
     const statusText = document.getElementById('match-status-text');
-    statusText.textContent = isActive ? (isPaused ? 'Paused' : 'Active') : 'Inactive';
+    statusText.textContent = isActive
+      ? (isPaused
+        ? translateCoinBattle('runtime.status.paused', {}, 'Paused')
+        : translateCoinBattle('runtime.status.active', {}, 'Active'))
+      : translateCoinBattle('runtime.status.inactive', {}, 'Inactive');
     statusText.className = `stat-value ${isActive ? (isPaused ? 'warning' : 'success') : ''}`;
 
     // Update buttons
     document.getElementById('btn-start-match').disabled = isActive;
     document.getElementById('btn-end-match').disabled = !isActive;
     document.getElementById('btn-pause-match').disabled = !isActive;
-    document.getElementById('btn-pause-match').textContent = isPaused ? '▶️ Resume' : '⏸️ Pause';
+    const pauseButton = document.getElementById('btn-pause-match');
+    if (pauseButton) {
+      pauseButton.textContent = isPaused
+        ? translateCoinBattle('runtime.action.resume', {}, '▶️ Resume')
+        : translateCoinBattle('runtime.action.pause', {}, '⏸️ Pause');
+    }
     document.getElementById('btn-extend-match').disabled = !isActive;
     document.getElementById('btn-activate-multiplier').disabled = !isActive;
     
@@ -946,7 +1001,7 @@
     const container = document.getElementById('current-leaderboard');
 
     if (!currentState.active || !currentState.leaderboard || currentState.leaderboard.length === 0) {
-      container.innerHTML = '<p class="loading">No active match</p>';
+      container.innerHTML = loadingMarkup('runtime.load.no_active_match', 'No active match');
       return;
     }
 
@@ -957,17 +1012,24 @@
    * Render leaderboard table
    */
   function renderLeaderboardTable(data, showLifetimeStats) {
+    const rankLabel = escapeHtml(translateCoinBattle('runtime.table.rank', {}, 'Rank'));
+    const playerLabel = escapeHtml(translateCoinBattle('runtime.table.player', {}, 'Player'));
+    const teamLabel = escapeHtml(translateCoinBattle('runtime.table.team', {}, 'Team'));
+    const coinsLabel = escapeHtml(translateCoinBattle('runtime.table.coins', {}, 'Coins'));
+    const giftsLabel = escapeHtml(translateCoinBattle('runtime.table.gifts', {}, 'Gifts'));
+    const matchesLabel = escapeHtml(translateCoinBattle('runtime.table.matches', {}, 'Matches'));
+    const winsLabel = escapeHtml(translateCoinBattle('runtime.table.wins', {}, 'Wins'));
     let html = '<table class="leaderboard-table"><thead><tr>';
-    html += '<th>Rank</th>';
-    html += '<th>Player</th>';
+    html += `<th>${rankLabel}</th>`;
+    html += `<th>${playerLabel}</th>`;
     if (!showLifetimeStats && currentState.match?.mode === 'team') {
-      html += '<th>Team</th>';
+      html += `<th>${teamLabel}</th>`;
     }
-    html += '<th>Coins</th>';
-    html += '<th>Gifts</th>';
+    html += `<th>${coinsLabel}</th>`;
+    html += `<th>${giftsLabel}</th>`;
     if (showLifetimeStats) {
-      html += '<th>Matches</th>';
-      html += '<th>Wins</th>';
+      html += `<th>${matchesLabel}</th>`;
+      html += `<th>${winsLabel}</th>`;
     }
     html += '</tr></thead><tbody>';
 
@@ -1196,12 +1258,12 @@
 
       const result = await response.json();
       if (result.success) {
-        showNotification('Pyramid settings saved!', 'success');
+        showNotification(translateCoinBattle('runtime.toast.pyramid_settings_saved', {}, 'Pyramid settings saved!'), 'success');
       } else {
-        showNotification(`Error: ${result.error}`, 'danger');
+        showNotification(runtimeError(result.error, `Error: ${result.error}`), 'danger');
       }
     } catch (error) {
-      showNotification(`Error saving pyramid settings: ${error.message}`, 'danger');
+      showNotification(runtimeError(error.message, `Error saving pyramid settings: ${error.message}`), 'danger');
     }
   }
 
@@ -1214,10 +1276,10 @@
     
     // Define settings to validate
     const settings = [
-      { id: 'setting-likes-per-point', name: 'Likes per Point', default: 100 },
-      { id: 'setting-shares-per-point', name: 'Shares per Point', default: 50 },
-      { id: 'setting-follows-per-point', name: 'Follows per Point', default: 10 },
-      { id: 'setting-comments-per-point', name: 'Comments per Point', default: 25 }
+      { id: 'setting-likes-per-point', labelKey: 'labels.likes_per_point', fallback: 'Likes per Point', default: 100 },
+      { id: 'setting-shares-per-point', labelKey: 'labels.shares_per_point', fallback: 'Shares per Point', default: 50 },
+      { id: 'setting-follows-per-point', labelKey: 'labels.follows_per_point', fallback: 'Follows per Point', default: 10 },
+      { id: 'setting-comments-per-point', labelKey: 'labels.comments_per_point', fallback: 'Comments per Point', default: 25 }
     ];
 
     // Validate all values
@@ -1225,7 +1287,11 @@
     for (const setting of settings) {
       const value = parseInt(document.getElementById(setting.id)?.value || setting.default);
       if (isNaN(value) || value < 1) {
-        showNotification(`Please enter a valid positive number for ${setting.name}`, 'danger');
+        showNotification(translateCoinBattle(
+          'runtime.toast.positive_number_required',
+          { setting: translateCoinBattle(setting.labelKey, {}, setting.fallback) },
+          `Please enter a valid positive number for ${setting.fallback}`
+        ), 'danger');
         return;
       }
       values[setting.id.replace('setting-', '').replace(/-/g, '_')] = value;
@@ -1248,12 +1314,12 @@
 
       const result = await response.json();
       if (result.success) {
-        showNotification('Likes & Interactions settings saved!', 'success');
+        showNotification(translateCoinBattle('runtime.toast.likes_settings_saved', {}, 'Likes & Interactions settings saved!'), 'success');
       } else {
-        showNotification(`Error: ${result.error}`, 'danger');
+        showNotification(runtimeError(result.error, `Error: ${result.error}`), 'danger');
       }
     } catch (error) {
-      showNotification(`Error saving likes settings: ${error.message}`, 'danger');
+      showNotification(runtimeError(error.message, `Error saving likes settings: ${error.message}`), 'danger');
     }
   }
 
@@ -1270,14 +1336,14 @@
 
       const result = await response.json();
       if (result.success) {
-        showNotification('Pyramid round started!', 'success');
+        showNotification(translateCoinBattle('runtime.toast.pyramid_started', {}, 'Pyramid round started!'), 'success');
         document.getElementById('btn-start-pyramid').disabled = true;
         document.getElementById('btn-stop-pyramid').disabled = false;
       } else {
-        showNotification(`Error: ${result.error}`, 'danger');
+        showNotification(runtimeError(result.error, `Error: ${result.error}`), 'danger');
       }
     } catch (error) {
-      showNotification(`Error starting pyramid: ${error.message}`, 'danger');
+      showNotification(runtimeError(error.message, `Error starting pyramid: ${error.message}`), 'danger');
     }
   }
 
@@ -1285,7 +1351,7 @@
    * Stop pyramid round
    */
   async function stopPyramid() {
-    if (!confirm('Are you sure you want to end the pyramid round?')) {
+    if (!confirm(translateCoinBattle('runtime.dialog.end_pyramid_confirm', {}, 'Are you sure you want to end the pyramid round?'))) {
       return;
     }
 
@@ -1297,14 +1363,14 @@
 
       const result = await response.json();
       if (result.success) {
-        showNotification('Pyramid round ended!', 'success');
+        showNotification(translateCoinBattle('runtime.toast.pyramid_ended', {}, 'Pyramid round ended!'), 'success');
         document.getElementById('btn-start-pyramid').disabled = false;
         document.getElementById('btn-stop-pyramid').disabled = true;
       } else {
-        showNotification(`Error: ${result.error}`, 'danger');
+        showNotification(runtimeError(result.error, `Error: ${result.error}`), 'danger');
       }
     } catch (error) {
-      showNotification(`Error stopping pyramid: ${error.message}`, 'danger');
+      showNotification(runtimeError(error.message, `Error stopping pyramid: ${error.message}`), 'danger');
     }
   }
 
@@ -1318,15 +1384,15 @@
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(url);
-        showNotification('Pyramid URL copied!', 'success');
+        showNotification(translateCoinBattle('runtime.toast.pyramid_url_copied', {}, 'Pyramid URL copied!'), 'success');
       } else {
         input.select();
         document.execCommand('copy');
-        showNotification('Pyramid URL copied!', 'success');
+        showNotification(translateCoinBattle('runtime.toast.pyramid_url_copied', {}, 'Pyramid URL copied!'), 'success');
       }
     } catch (error) {
       input.select();
-      showNotification('Please copy manually (Ctrl+C)', 'warning');
+      showNotification(translateCoinBattle('runtime.toast.pyramid_copy_manually', {}, 'Please copy manually (Ctrl+C)'), 'warning');
     }
   }
 
@@ -1378,7 +1444,7 @@
    */
   async function loadWeeklyLeaderboard() {
     const container = document.getElementById('weekly-leaderboard');
-    container.innerHTML = '<p class="loading"><span class="spinner"></span></p>';
+    container.innerHTML = loadingMarkup('runtime.load.loading', 'Loading...');
 
     try {
       const response = await fetch('/api/plugins/coinbattle/leaderboard/weekly?limit=20');
@@ -1387,10 +1453,10 @@
       if (result.success && result.data.length > 0) {
         container.innerHTML = renderLeaderboardTable(result.data, true);
       } else {
-        container.innerHTML = '<p class="loading">No data available for this week</p>';
+        container.innerHTML = loadingMarkup('runtime.load.weekly_empty', 'No data available for this week');
       }
     } catch (error) {
-      container.innerHTML = '<p class="loading">Error loading weekly leaderboard</p>';
+      container.innerHTML = loadingMarkup('runtime.load.weekly_failed', 'Error loading weekly leaderboard');
     }
   }
 
@@ -1400,7 +1466,7 @@
   async function loadSeasonLeaderboard() {
     const container = document.getElementById('season-leaderboard');
     const infoBox = document.getElementById('season-leaderboard-info');
-    container.innerHTML = '<p class="loading"><span class="spinner"></span></p>';
+    container.innerHTML = loadingMarkup('runtime.load.loading', 'Loading...');
 
     try {
       const response = await fetch('/api/plugins/coinbattle/leaderboard/season?limit=20');
@@ -1410,20 +1476,28 @@
         const startDate = new Date(result.season.start_date * 1000).toLocaleDateString();
         const endDate = new Date(result.season.end_date * 1000).toLocaleDateString();
         infoBox.className = 'alert alert-success';
-        infoBox.textContent = `Season: ${result.season.season_name} (${startDate} - ${endDate})`;
+        infoBox.textContent = translateCoinBattle('runtime.season.summary', {
+          name: result.season.season_name,
+          startDate,
+          endDate
+        }, `Season: ${result.season.season_name} (${startDate} - ${endDate})`);
         
         if (result.data.length > 0) {
           container.innerHTML = renderLeaderboardTable(result.data, true);
         } else {
-          container.innerHTML = '<p class="loading">No data available for this season</p>';
+          container.innerHTML = loadingMarkup('runtime.load.season_empty', 'No data available for this season');
         }
       } else {
         infoBox.className = 'alert alert-info';
-        infoBox.textContent = 'No active season. Configure a season above to see season leaderboard';
-        container.innerHTML = '<p class="loading">No active season configured</p>';
+        infoBox.textContent = translateCoinBattle(
+          'runtime.season.leaderboard_inactive',
+          {},
+          'No active season. Configure a season above to see season leaderboard'
+        );
+        container.innerHTML = loadingMarkup('runtime.load.season_inactive', 'No active season configured');
       }
     } catch (error) {
-      container.innerHTML = '<p class="loading">Error loading season leaderboard</p>';
+      container.innerHTML = loadingMarkup('runtime.load.season_failed', 'Error loading season leaderboard');
     }
   }
 
@@ -1432,7 +1506,7 @@
    */
   async function loadUsersForManagement() {
     const container = document.getElementById('users-list');
-    container.innerHTML = '<p class="loading"><span class="spinner"></span></p>';
+    container.innerHTML = loadingMarkup('runtime.load.loading', 'Loading...');
 
     try {
       const response = await fetch('/api/plugins/coinbattle/players?limit=100');
@@ -1441,10 +1515,10 @@
       if (result.success && result.data.length > 0) {
         container.innerHTML = renderUsersManagementTable(result.data);
       } else {
-        container.innerHTML = '<p class="loading">No users found</p>';
+        container.innerHTML = loadingMarkup('runtime.load.users_empty', 'No users found');
       }
     } catch (error) {
-      container.innerHTML = '<p class="loading">Error loading users</p>';
+      container.innerHTML = loadingMarkup('runtime.load.users_failed', 'Error loading users');
     }
   }
 
@@ -1452,15 +1526,21 @@
    * Render users management table
    */
   function renderUsersManagementTable(users) {
+    const nicknameLabel = escapeHtml(translateCoinBattle('runtime.table.nickname', {}, 'Nickname'));
+    const totalCoinsLabel = escapeHtml(translateCoinBattle('runtime.table.total_coins', {}, 'Total Coins'));
+    const matchesLabel = escapeHtml(translateCoinBattle('runtime.table.matches', {}, 'Matches'));
+    const winsLabel = escapeHtml(translateCoinBattle('runtime.table.wins', {}, 'Wins'));
+    const actionsLabel = escapeHtml(translateCoinBattle('runtime.table.actions', {}, 'Actions'));
+    const deleteLabel = escapeHtml(translateCoinBattle('runtime.action.delete', {}, 'Delete'));
     let html = `
       <table class="leaderboard-table">
         <thead>
           <tr>
-            <th>Nickname</th>
-            <th>Total Coins</th>
-            <th>Matches</th>
-            <th>Wins</th>
-            <th>Actions</th>
+            <th>${nicknameLabel}</th>
+            <th>${totalCoinsLabel}</th>
+            <th>${matchesLabel}</th>
+            <th>${winsLabel}</th>
+            <th>${actionsLabel}</th>
           </tr>
         </thead>
         <tbody>
@@ -1481,7 +1561,7 @@
             <button class="btn btn-sm btn-danger delete-user-btn" 
                     data-user-id="${escapeHtml(user.user_id)}" 
                     data-nickname="${escapeHtml(user.nickname)}">
-              🗑️ Delete
+              🗑️ ${deleteLabel}
             </button>
           </td>
         </tr>
@@ -1498,7 +1578,11 @@
   async function deleteUser(userId, nickname) {
     // Use textContent to safely display nickname (confirm uses plain text, not HTML)
     const safeNickname = nickname || userId;
-    if (!confirm(`Are you sure you want to delete "${safeNickname}" from all leaderboards? This cannot be undone.`)) {
+    if (!confirm(translateCoinBattle(
+      'runtime.dialog.delete_user_confirm',
+      { nickname: safeNickname },
+      `Are you sure you want to delete "${safeNickname}" from all leaderboards? This cannot be undone.`
+    ))) {
       return;
     }
 
@@ -1509,13 +1593,17 @@
       const result = await response.json();
 
       if (result.success) {
-        showNotification(`User "${safeNickname}" deleted successfully`, 'success');
+        showNotification(translateCoinBattle(
+          'runtime.toast.user_deleted',
+          { nickname: safeNickname },
+          `User "${safeNickname}" deleted successfully`
+        ), 'success');
         loadUsersForManagement(); // Reload the list
       } else {
-        showNotification(`Error: ${result.error}`, 'danger');
+        showNotification(runtimeError(result.error, `Error: ${result.error}`), 'danger');
       }
     } catch (error) {
-      showNotification('Error deleting user', 'danger');
+      showNotification(runtimeError(error.message, 'Error deleting user'), 'danger');
     }
   }
 
@@ -1533,24 +1621,26 @@
         const season = result.data;
         const startDate = new Date(season.start_date * 1000).toLocaleDateString();
         const endDate = new Date(season.end_date * 1000).toLocaleDateString();
+        const activeLabel = escapeHtml(translateCoinBattle('runtime.season.active_label', {}, 'Active Season:'));
+        const periodLabel = escapeHtml(translateCoinBattle('runtime.season.period_label', {}, 'Period:'));
         
         container.innerHTML = `
           <div class="alert alert-success">
-            <strong>Active Season:</strong> ${escapeHtml(season.season_name)}<br>
-            <strong>Period:</strong> ${startDate} - ${endDate}
+            <strong>${activeLabel}</strong> ${escapeHtml(season.season_name)}<br>
+            <strong>${periodLabel}</strong> ${escapeHtml(startDate)} - ${escapeHtml(endDate)}
           </div>
         `;
       } else {
         container.innerHTML = `
           <div class="alert alert-warning">
-            No active season configured
+            ${escapeHtml(translateCoinBattle('runtime.season.active_missing', {}, 'No active season configured'))}
           </div>
         `;
       }
     } catch (error) {
       container.innerHTML = `
         <div class="alert alert-danger">
-          Error loading season info
+          ${escapeHtml(translateCoinBattle('runtime.season.info_failed', {}, 'Error loading season info'))}
         </div>
       `;
     }
@@ -1565,7 +1655,7 @@
     const endDateInput = document.getElementById('season-end-date').value;
 
     if (!seasonName || !startDateInput || !endDateInput) {
-      showNotification('Please fill in all season fields', 'warning');
+      showNotification(translateCoinBattle('runtime.toast.season_fields_required', {}, 'Please fill in all season fields'), 'warning');
       return;
     }
 
@@ -1573,7 +1663,7 @@
     const endDate = Math.floor(new Date(endDateInput).getTime() / 1000);
 
     if (startDate >= endDate) {
-      showNotification('End date must be after start date', 'warning');
+      showNotification(translateCoinBattle('runtime.toast.season_end_after_start', {}, 'End date must be after start date'), 'warning');
       return;
     }
 
@@ -1586,7 +1676,7 @@
       const result = await response.json();
 
       if (result.success) {
-        showNotification('Season saved successfully', 'success');
+        showNotification(translateCoinBattle('runtime.toast.season_saved', {}, 'Season saved successfully'), 'success');
         loadSeasonInfo();
         
         // Clear form
@@ -1594,10 +1684,10 @@
         document.getElementById('season-start-date').value = '';
         document.getElementById('season-end-date').value = '';
       } else {
-        showNotification(`Error: ${result.error}`, 'danger');
+        showNotification(runtimeError(result.error, `Error: ${result.error}`), 'danger');
       }
     } catch (error) {
-      showNotification('Error saving season', 'danger');
+      showNotification(runtimeError(error.message, 'Error saving season'), 'danger');
     }
   }
 

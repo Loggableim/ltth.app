@@ -220,7 +220,7 @@ class BadgeRenderer {
         `;
     }
 
-    badge.title = `Team Level ${level}`;
+    badge.title = ClarityHUDI18n.text('badge.team_level', 'Team level {level}', { level });
     return badge;
   }
 
@@ -231,7 +231,7 @@ class BadgeRenderer {
     const badge = document.createElement('span');
     badge.className = 'badge badge-moderator';
     badge.textContent = '🔧';
-    badge.title = 'Moderator';
+    badge.title = ClarityHUDI18n.text('badge.moderator', 'Moderator');
     
     const size = this.getBadgeSize();
     badge.style.cssText = `
@@ -253,7 +253,7 @@ class BadgeRenderer {
     const badge = document.createElement('span');
     badge.className = 'badge badge-subscriber';
     badge.textContent = '⭐';
-    badge.title = 'Subscriber';
+    badge.title = ClarityHUDI18n.text('badge.subscriber', 'Subscriber');
     
     const size = this.getBadgeSize();
     badge.style.cssText = `
@@ -274,7 +274,7 @@ class BadgeRenderer {
     const badge = document.createElement('span');
     badge.className = `badge badge-gifter badge-gifter-${level}`;
     badge.textContent = '🎁';
-    badge.title = `Gifter Level ${level}`;
+    badge.title = ClarityHUDI18n.text('badge.gifter_level', 'Gifter level {level}', { level });
     
     const size = this.getBadgeSize();
     const color = level >= 10 ? '#FF1493' : level >= 5 ? '#9370DB' : '#FF69B4';
@@ -297,7 +297,9 @@ class BadgeRenderer {
     const badge = document.createElement('span');
     badge.className = `badge badge-fanclub badge-fanclub-${level}`;
     badge.textContent = '👥';
-    badge.title = clubName ? `${clubName} (Level ${level})` : `Fan Club Level ${level}`;
+    badge.title = clubName
+      ? ClarityHUDI18n.text('badge.fan_club_with_name', '{clubName} (level {level})', { clubName, level })
+      : ClarityHUDI18n.text('badge.fan_club_level', 'Fan club level {level}', { level });
     
     const size = this.getBadgeSize();
     badge.style.cssText = `

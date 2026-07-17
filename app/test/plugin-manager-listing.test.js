@@ -133,64 +133,53 @@ describe('Plugin Manager listing', () => {
         assert(dashboardHtml.includes('/js/clerk-store-auth.js'));
         assert(!dashboardHtml.includes('id="plugin-store-sources-panel"'));
         assert(!dashboardHtml.includes('id="enable-community-store-btn"'));
-        assert(managerScript.includes('plugin-store-card__action'));
-        assert(managerScript.includes('plugin-store-drawer__panel'));
+        assert(managerScript.includes('class="plugin-store-card"'));
+        assert(managerScript.includes('data-store-drawer-action'));
         assert(managerScript.includes('/api/plugin-store?locale='));
         assert(managerScript.includes('getStoreAuthHeaders'));
         assert(managerScript.includes('window.StoreAuth'));
-        assert(!managerScript.includes('/api/plugin-store/community/enable'));
-        assert(!managerScript.includes('/api/plugin-store/sources'));
         assert(managerScript.includes('currentStoreMode'));
-        assert(managerScript.includes('currentStoreSort'));
         assert(managerScript.includes('selectedStorePlugin'));
-        assert(managerScript.includes('loadCurrentAppVersion'));
         assert(managerScript.includes('renderStoreShell'));
-        assert(managerScript.includes('renderStoreDiscoverySections'));
         assert(managerScript.includes('openStorePluginDetail'));
-        assert(managerScript.includes('updateAllStorePlugins'));
         assert(managerScript.includes('Catalog Only'));
         assert(managerScript.includes('getStorePluginPricing'));
-        assert(managerScript.includes('getStorePluginMedia'));
-        assert(managerScript.includes('getStorePluginTrustSummary'));
         assert(managerScript.includes('Package missing'));
         assert(managerScript.includes('Free'));
         assert(authScript.includes('mountUserButton'));
         assert(authScript.includes('mountSignIn'));
         assert(authScript.includes('/api/plugin-store/config'));
-        assert(authScript.includes('/npm/@clerk/ui@1/dist/ui.browser.js'));
-        assert(authScript.includes('/npm/@clerk/clerk-js@6/dist/clerk.browser.js'));
-        assert(authScript.includes('data-clerk-publishable-key'));
-        assert(authScript.includes('data-clerk-proxy-url'));
-        assert(authScript.includes('resolveProxyUrl'));
+        assert(authScript.includes('beginBridgeAuth'));
+        assert(authScript.includes('getBridgeUrl'));
+        assert(authScript.includes('createLocalStoreSession'));
+        assert(authScript.includes('LTTH_STORE_CLERK_PUBLISHABLE_KEY'));
         assert(!authScript.includes('cdn.jsdelivr.net/npm/@clerk/clerk-js'));
     });
 
-    it('includes beta license claim UI and gates store installs until claimed', () => {
+    it('uses the signed-in Store account to gate store installs', () => {
         const managerScript = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'plugin-manager.js'), 'utf8');
         const authScript = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'clerk-store-auth.js'), 'utf8');
 
-        assert(managerScript.includes('/api/plugin-store/license/claim'));
-        assert(managerScript.includes('claimBetaLicense'));
-        assert(managerScript.includes('hasStoreLicense'));
-        assert(managerScript.includes('data-store-license-claim'));
-        assert(managerScript.includes('Beta license required'));
-        assert(managerScript.includes('BETA_LICENSE_REQUIRED'));
-        assert(authScript.includes('payload.account'));
+        assert(managerScript.includes('getStoreAccount'));
+        assert(managerScript.includes('getStorePluginAccessInfo'));
+        assert(managerScript.includes('hasStoreAccess'));
+        assert(managerScript.includes('handleStorePluginAction'));
+        assert(managerScript.includes('requires ${accessInfo.label.toLowerCase()} access'));
+        assert(authScript.includes('response.account'));
         assert(authScript.includes('refreshAccount'));
         assert(authScript.includes('get account()'));
     });
 
-    it('includes closed beta store UI locks and invite-required errors', () => {
+    it('enforces subscriber and closed-beta store access groups', () => {
         const managerScript = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'plugin-manager.js'), 'utf8');
 
-        assert(managerScript.includes('hasSubscriberPluginAccess'));
-        assert(managerScript.includes('SUBSCRIBER_ACCESS_REQUIRED'));
-        assert(managerScript.includes('Subscriber required'));
-        assert(managerScript.includes('Subscriber Only'));
-        assert(managerScript.includes('hasClosedBetaPluginAccess'));
-        assert(managerScript.includes('CLOSED_BETA_INVITE_REQUIRED'));
-        assert(managerScript.includes('Invite required'));
-        assert(managerScript.includes('Closed Beta'));
+        assert(managerScript.includes("normalizedType === 'subscriber'"));
+        assert(managerScript.includes("groups.has('subscriber')"));
+        assert(managerScript.includes("normalizedType === 'closed-beta'"));
+        assert(managerScript.includes("groups.has('closed-beta')"));
+        assert(managerScript.includes('closedBetaPlugins.has(normalizedPluginId)'));
+        assert(managerScript.includes('Subscriber only'));
+        assert(managerScript.includes('Closed beta'));
     });
 
     it('keeps the featured store plugin list aligned with the preinstalled set', () => {
@@ -199,17 +188,15 @@ describe('Plugin Manager listing', () => {
         assert(managerScript.includes("['chatango', 'goals', 'spotlight', 'milestone-leaderboard', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'emoji-rain']"));
     });
 
-    it('includes Store v2 detail pages, feedback, telemetry and rollback messaging', () => {
+    it('renders detail-drawer metadata and a contextual store action', () => {
         const managerScript = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'plugin-manager.js'), 'utf8');
 
-        assert(managerScript.includes('submitStoreFeedback'));
-        assert(managerScript.includes('/api/plugin-store/feedback'));
-        assert(managerScript.includes('/api/plugin-store/telemetry'));
-        assert(managerScript.includes('Quality signals'));
-        assert(managerScript.includes('Update notes'));
-        assert(managerScript.includes('Review / Feedback'));
-        assert(managerScript.includes('Rollback protected'));
-        assert(managerScript.includes('Store health'));
+        assert(managerScript.includes('renderStorePluginDetail'));
+        assert(managerScript.includes('role="dialog"'));
+        assert(managerScript.includes("renderStoreDetailField('Version'"));
+        assert(managerScript.includes("renderStoreDetailField('Compatibility'"));
+        assert(managerScript.includes('data-store-drawer-action'));
+        assert(managerScript.includes('No screenshots yet'));
     });
 
     it('brands the appstore header with the dedicated AppStore logo asset', () => {
@@ -218,10 +205,10 @@ describe('Plugin Manager listing', () => {
         const logoPath = path.join(__dirname, '..', 'public', 'appstore-logo.png');
 
         assert(fs.existsSync(logoPath));
-        assert(managerScript.includes('/appstore-logo.png'));
-        assert(managerScript.includes('plugin-store-header__logo'));
+        assert(managerScript.includes('getPluginLogo'));
         assert(dashboardHtml.includes('plugin-store-header__brand'));
         assert(dashboardHtml.includes('plugin-store-header__logo'));
+        assert(dashboardHtml.includes('/appstore-logo.png'));
     });
 
     it('uses App Store as the visible store name', () => {
@@ -231,24 +218,16 @@ describe('Plugin Manager listing', () => {
         assert(dashboardHtml.includes('data-tooltip="App Store"'));
         assert(dashboardHtml.includes('>App Store</span>'));
         assert(dashboardHtml.includes('<!-- View: App Store -->'));
-        assert(managerScript.includes('Official LTTH App Store'));
-        assert(managerScript.includes('Error loading App Store'));
+        assert(managerScript.includes('Official LTTH Plugin Store'));
         assert(!dashboardHtml.includes('data-tooltip="Plugin Store"'));
-        assert(!managerScript.includes('Official LTTH Plugin Store'));
     });
 
-    it('uses the sidebar app icon for store fallback artwork instead of initials', () => {
+    it('uses plugin logos when available and an initials fallback otherwise', () => {
         const managerScript = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'plugin-manager.js'), 'utf8');
-        const dashboardHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'dashboard.html'), 'utf8');
 
-        assert(managerScript.includes('/ltthicon.png'));
-        assert(managerScript.includes('plugin-store-card__avatar-icon'));
-        assert(managerScript.includes('plugin-store-drawer__avatar-icon'));
-        assert(managerScript.includes('--store-icon-bg:'));
-        assert(managerScript.includes('--store-icon-color:'));
-        assert(dashboardHtml.includes('-webkit-mask: url("/ltthicon.png") center / contain no-repeat'));
-        assert(dashboardHtml.includes('background: var(--store-icon-bg'));
-        assert(dashboardHtml.includes('box-shadow: inset 0 0 0 1px var(--store-icon-border'));
-        assert(!managerScript.includes('getStorePluginInitials(plugin)'));
+        assert(managerScript.includes('class="plugin-manager-logo"'));
+        assert(managerScript.includes('getPluginLogo'));
+        assert(managerScript.includes('getStorePluginInitials'));
+        assert(managerScript.includes('onerror="this.remove(); this.parentElement.textContent'));
     });
 });

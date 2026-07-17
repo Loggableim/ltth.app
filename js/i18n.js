@@ -3,11 +3,11 @@
     'use strict';
     
     let translations = {};
-    let currentLang = 'en';
+    let currentLang = 'de';
 
     function normalizeLang(lang) {
         const normalized = String(lang || '').trim().toLowerCase().replace('_', '-').split('-')[0];
-        return ['de', 'en', 'es', 'fr'].includes(normalized) ? normalized : 'en';
+        return ['de', 'en', 'es', 'fr'].includes(normalized) ? normalized : 'de';
     }
     
     function get(key) {
@@ -31,12 +31,19 @@
         try {
             const response = await fetch('/locales/' + lang + '.json', { cache: 'no-cache' });
             if (!response.ok) throw new Error('HTTP ' + response.status);
-            translations = await response.json();
+            const baseTranslations = await response.json();
+            const guideResponse = await fetch('/locales/guides/' + lang + '.json', { cache: 'no-cache' });
+            const isGuidePage = /^\/docs\/plugins\//.test(window.location.pathname);
+            if (!guideResponse.ok && isGuidePage) {
+                throw new Error('Guide locale HTTP ' + guideResponse.status);
+            }
+            const guideTranslations = guideResponse.ok ? await guideResponse.json() : {};
+            translations = { ...baseTranslations, ...guideTranslations };
             currentLang = lang;
             return true;
         } catch(e) {
             console.warn('i18n: Could not load locale', lang, e);
-            // Keep supported locales isolated. Falling back to English here
+            // Keep supported locales isolated. Falling back to German here
             // hides missing deployment assets and makes a partially
             // translated page look healthy to users and QA.
             return false;
@@ -45,6 +52,7 @@
     
     function apply() {
         document.documentElement.lang = currentLang;
+        document.documentElement.dataset.lang = currentLang;
         document.querySelectorAll('[data-i18n-href]').forEach(el => {
             const key = el.getAttribute('data-i18n-href');
             const value = get(key);

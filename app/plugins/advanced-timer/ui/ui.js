@@ -10,6 +10,190 @@ let giftCatalog = [];
 const _advEventsBoundContainers = new WeakSet();
 const _saveProfileBtnBound = new WeakSet();
 
+function t(key, params) {
+    return window.i18n.t(key, params);
+}
+
+const TIMER_TEXT_KEYS = Object.freeze({
+    timer: 'plugins.advanced-timer.runtime.timer',
+    quickAddTen: 'plugins.advanced-timer.runtime.quickAddTen',
+    quickAddThirty: 'plugins.advanced-timer.runtime.quickAddThirty',
+    quickAddMinute: 'plugins.advanced-timer.runtime.quickAddMinute',
+    quickAddFiveMinutes: 'plugins.advanced-timer.runtime.quickAddFiveMinutes',
+    quickRemoveTen: 'plugins.advanced-timer.runtime.quickRemoveTen',
+    quickRemoveThirty: 'plugins.advanced-timer.runtime.quickRemoveThirty',
+    overlay: 'plugins.advanced-timer.runtime.overlay',
+    copyOverlayUrl: 'plugins.advanced-timer.runtime.copyOverlayUrl',
+    settings: 'plugins.advanced-timer.ui.buttons.settings',
+    expiryAction: 'plugins.advanced-timer.runtime.expiryAction',
+    expiryNone: 'plugins.advanced-timer.runtime.expiryNone',
+    expiryRestart: 'plugins.advanced-timer.runtime.expiryRestart',
+    expiryAlert: 'plugins.advanced-timer.runtime.expiryAlert',
+    expirySound: 'plugins.advanced-timer.runtime.expirySound',
+    expirySceneChange: 'plugins.advanced-timer.runtime.expirySceneChange',
+    expiryTriggerChain: 'plugins.advanced-timer.runtime.expiryTriggerChain',
+    interactions: 'plugins.advanced-timer.runtime.interactions',
+    interactionsHint: 'plugins.advanced-timer.runtime.interactionsHint',
+    perCoin: 'plugins.advanced-timer.runtime.perCoin',
+    perSubscribe: 'plugins.advanced-timer.runtime.perSubscribe',
+    perFollow: 'plugins.advanced-timer.runtime.perFollow',
+    perShare: 'plugins.advanced-timer.runtime.perShare',
+    perLike: 'plugins.advanced-timer.runtime.perLike',
+    perChat: 'plugins.advanced-timer.runtime.perChat',
+    advancedRulesLink: 'plugins.advanced-timer.runtime.advancedRulesLink',
+    saved: 'plugins.advanced-timer.runtime.saved',
+    multiplier: 'plugins.advanced-timer.runtime.multiplier',
+    multiplierDescription: 'plugins.advanced-timer.runtime.multiplierDescription',
+    keyboardShortcuts: 'plugins.advanced-timer.runtime.keyboardShortcuts',
+    startPause: 'plugins.advanced-timer.runtime.startPause',
+    increase: 'plugins.advanced-timer.runtime.increase',
+    reduce: 'plugins.advanced-timer.runtime.reduce',
+    stepSeconds: 'plugins.advanced-timer.runtime.stepSeconds',
+    saveShortcuts: 'plugins.advanced-timer.runtime.saveShortcuts',
+    loadLogHint: 'plugins.advanced-timer.runtime.loadLogHint',
+    refresh: 'plugins.advanced-timer.runtime.refresh',
+    giftOverrides: 'plugins.advanced-timer.runtime.giftOverrides',
+    giftOverridesDescription: 'plugins.advanced-timer.runtime.giftOverridesDescription',
+    clickToLoad: 'plugins.advanced-timer.runtime.clickToLoad',
+    selectGift: 'plugins.advanced-timer.runtime.selectGift',
+    seconds: 'plugins.advanced-timer.runtime.seconds',
+    add: 'plugins.advanced-timer.runtime.add',
+    sourceLike: 'plugins.advanced-timer.runtime.sourceLike',
+    sourceCoin: 'plugins.advanced-timer.runtime.sourceCoin',
+    sourceCustomGift: 'plugins.advanced-timer.runtime.sourceCustomGift',
+    sourceFollow: 'plugins.advanced-timer.runtime.sourceFollow',
+    sourceSubscribe: 'plugins.advanced-timer.runtime.sourceSubscribe',
+    sourceShare: 'plugins.advanced-timer.runtime.sourceShare',
+    sourceChat: 'plugins.advanced-timer.runtime.sourceChat',
+    sourceManual: 'plugins.advanced-timer.runtime.sourceManual',
+    sourceFlow: 'plugins.advanced-timer.runtime.sourceFlow',
+    sourceRule: 'plugins.advanced-timer.runtime.sourceRule',
+    deleteTimer: 'plugins.advanced-timer.runtime.deleteTimer',
+    noAdvancedRules: 'plugins.advanced-timer.runtime.noAdvancedRules',
+    advancedRulesDescription: 'plugins.advanced-timer.runtime.advancedRulesDescription',
+    close: 'plugins.advanced-timer.runtime.close',
+    edit: 'plugins.advanced-timer.runtime.edit',
+    addEventRule: 'plugins.advanced-timer.runtime.addEventRule',
+    editEventRule: 'plugins.advanced-timer.runtime.editEventRule',
+    eventType: 'plugins.advanced-timer.runtime.eventType',
+    action: 'plugins.advanced-timer.runtime.action',
+    valueSeconds: 'plugins.advanced-timer.runtime.valueSeconds',
+    giftName: 'plugins.advanced-timer.runtime.giftName',
+    giftNamePlaceholder: 'plugins.advanced-timer.runtime.giftNamePlaceholder',
+    minCoins: 'plugins.advanced-timer.runtime.minCoins',
+    minLikes: 'plugins.advanced-timer.runtime.minLikes',
+    commandPrefix: 'plugins.advanced-timer.runtime.commandPrefix',
+    keywordContains: 'plugins.advanced-timer.runtime.keywordContains',
+    keywordPlaceholder: 'plugins.advanced-timer.runtime.keywordPlaceholder',
+    noGiftOverrides: 'plugins.advanced-timer.runtime.noGiftOverrides',
+    diamonds: 'plugins.advanced-timer.runtime.diamonds',
+    selectGiftAlert: 'plugins.advanced-timer.runtime.selectGiftAlert',
+    unknownGift: 'plugins.advanced-timer.runtime.unknownGift',
+    failedSave: 'plugins.advanced-timer.runtime.failedSave',
+    removeGiftOverride: 'plugins.advanced-timer.runtime.removeGiftOverride',
+    failedSaveRotator: 'plugins.advanced-timer.runtime.failedSaveRotator',
+    failedSaveThreshold: 'plugins.advanced-timer.runtime.failedSaveThreshold',
+    frameAlt: 'plugins.advanced-timer.runtime.frameAlt',
+    chooseFile: 'plugins.advanced-timer.runtime.chooseFile',
+    frameTooLarge: 'plugins.advanced-timer.runtime.frameTooLarge',
+    uploadFailed: 'plugins.advanced-timer.runtime.uploadFailed',
+    uploadError: 'plugins.advanced-timer.runtime.uploadError',
+    removeFrame: 'plugins.advanced-timer.runtime.removeFrame',
+    deleteFailed: 'plugins.advanced-timer.runtime.deleteFailed',
+    failedCreateTimer: 'plugins.advanced-timer.runtime.failedCreateTimer',
+    noSavedProfiles: 'plugins.advanced-timer.runtime.noSavedProfiles',
+    apply: 'plugins.advanced-timer.runtime.apply',
+    profileNamePrompt: 'plugins.advanced-timer.runtime.profileNamePrompt',
+    applyProfileConfirm: 'plugins.advanced-timer.runtime.applyProfileConfirm',
+    deleteProfileConfirm: 'plugins.advanced-timer.runtime.deleteProfileConfirm',
+    deleteTimerConfirm: 'plugins.advanced-timer.ui.messages.confirmDelete',
+    deleteEventRuleConfirm: 'plugins.advanced-timer.runtime.deleteEventRuleConfirm',
+    conditionGift: 'plugins.advanced-timer.runtime.conditionGift',
+    conditionMinCoins: 'plugins.advanced-timer.runtime.conditionMinCoins',
+    conditionMinLikes: 'plugins.advanced-timer.runtime.conditionMinLikes',
+    conditionCommand: 'plugins.advanced-timer.runtime.conditionCommand',
+    conditionKeyword: 'plugins.advanced-timer.runtime.conditionKeyword',
+    timerName: 'plugins.advanced-timer.ui.labels.timerName',
+    initialDuration: 'plugins.advanced-timer.ui.labels.initialDuration',
+    activityLog: 'plugins.advanced-timer.ui.labels.activityLog',
+    start: 'plugins.advanced-timer.ui.buttons.start',
+    pause: 'plugins.advanced-timer.ui.buttons.pause',
+    stop: 'plugins.advanced-timer.ui.buttons.stop',
+    reset: 'plugins.advanced-timer.ui.buttons.reset',
+    save: 'plugins.advanced-timer.ui.buttons.save',
+    cancel: 'plugins.advanced-timer.ui.buttons.cancel',
+    delete: 'plugins.advanced-timer.ui.buttons.delete',
+    export: 'plugins.advanced-timer.ui.buttons.export',
+    noActivity: 'plugins.advanced-timer.ui.messages.noActivity',
+    modeCountdown: 'plugins.advanced-timer.ui.modes.countdown',
+    modeCountup: 'plugins.advanced-timer.ui.modes.countup',
+    modeStopwatch: 'plugins.advanced-timer.ui.modes.stopwatch',
+    modeLoop: 'plugins.advanced-timer.ui.modes.loop',
+    modeInterval: 'plugins.advanced-timer.ui.modes.interval',
+    stateRunning: 'plugins.advanced-timer.ui.states.running',
+    statePaused: 'plugins.advanced-timer.ui.states.paused',
+    stateStopped: 'plugins.advanced-timer.ui.states.stopped',
+    stateCompleted: 'plugins.advanced-timer.ui.states.completed',
+    eventGift: 'plugins.advanced-timer.events.types.gift',
+    eventLike: 'plugins.advanced-timer.events.types.like',
+    eventFollow: 'plugins.advanced-timer.events.types.follow',
+    eventShare: 'plugins.advanced-timer.events.types.share',
+    eventSubscribe: 'plugins.advanced-timer.events.types.subscribe',
+    eventChat: 'plugins.advanced-timer.events.types.chat',
+    addTime: 'plugins.advanced-timer.events.actions.addTime',
+    removeTime: 'plugins.advanced-timer.events.actions.removeTime',
+    setValue: 'plugins.advanced-timer.events.actions.setValue',
+    rotatorTitle: 'plugins.advanced-timer.rotator.sectionTitle',
+    rotatorDescription: 'plugins.advanced-timer.rotator.sectionDesc',
+    rotatorEnable: 'plugins.advanced-timer.rotator.enable',
+    rotatorPosition: 'plugins.advanced-timer.rotator.position',
+    rotatorTop: 'plugins.advanced-timer.rotator.positionTop',
+    rotatorBottom: 'plugins.advanced-timer.rotator.positionBottom',
+    rotatorLeft: 'plugins.advanced-timer.rotator.positionLeft',
+    rotatorRight: 'plugins.advanced-timer.rotator.positionRight',
+    rotatorSlots: 'plugins.advanced-timer.rotator.slots',
+    rotatorRotation: 'plugins.advanced-timer.rotator.rotationMs',
+    rotatorMinSeconds: 'plugins.advanced-timer.rotator.minSeconds',
+    rotatorGiftImage: 'plugins.advanced-timer.rotator.showGiftImage',
+    rotatorGiftName: 'plugins.advanced-timer.rotator.showGiftName',
+    rotatorTimeDelta: 'plugins.advanced-timer.rotator.showTimeDelta',
+    rotatorSourceEmoji: 'plugins.advanced-timer.rotator.showSourceEmoji',
+    rotatorFontScale: 'plugins.advanced-timer.rotator.fontScale',
+    rotatorFadeAlpha: 'plugins.advanced-timer.rotator.fadeAlpha',
+    rotatorSources: 'plugins.advanced-timer.rotator.sourcesShown',
+    rotatorSave: 'plugins.advanced-timer.rotator.save',
+    thresholdTitle: 'plugins.advanced-timer.thresholdEffects.sectionTitle',
+    thresholdDescription: 'plugins.advanced-timer.thresholdEffects.sectionDesc',
+    thresholdEnable: 'plugins.advanced-timer.thresholdEffects.enable',
+    thresholdSeconds: 'plugins.advanced-timer.thresholdEffects.thresholdSeconds',
+    thresholdDirection: 'plugins.advanced-timer.thresholdEffects.direction',
+    thresholdBoth: 'plugins.advanced-timer.thresholdEffects.directionBoth',
+    thresholdPositive: 'plugins.advanced-timer.thresholdEffects.directionPositive',
+    thresholdNegative: 'plugins.advanced-timer.thresholdEffects.directionNegative',
+    thresholdDuration: 'plugins.advanced-timer.thresholdEffects.durationMs',
+    thresholdBuiltin: 'plugins.advanced-timer.thresholdEffects.builtin',
+    thresholdIntensity: 'plugins.advanced-timer.thresholdEffects.intensity',
+    frameSlotsTitle: 'plugins.advanced-timer.thresholdEffects.frameSlotsTitle',
+    frameSlot: 'plugins.advanced-timer.thresholdEffects.frameSlotN',
+    frameEmpty: 'plugins.advanced-timer.thresholdEffects.frameEmpty',
+    frameLabel: 'plugins.advanced-timer.thresholdEffects.frameLabel',
+    frameUpload: 'plugins.advanced-timer.thresholdEffects.frameUpload',
+    frameRemove: 'plugins.advanced-timer.thresholdEffects.frameRemove',
+    saveSettings: 'plugins.advanced-timer.thresholdEffects.save',
+    effectFlame: 'plugins.advanced-timer.runtime.effectFlame',
+    effectLightning: 'plugins.advanced-timer.runtime.effectLightning',
+    effectSparks: 'plugins.advanced-timer.runtime.effectSparks',
+    effectPulseGlow: 'plugins.advanced-timer.runtime.effectPulseGlow',
+    effectRainbowShake: 'plugins.advanced-timer.runtime.effectRainbowShake',
+    effectGoldFlux: 'plugins.advanced-timer.runtime.effectGoldFlux',
+    times: 'plugins.advanced-timer.runtime.times',
+    chevron: 'plugins.advanced-timer.runtime.chevron'
+});
+
+function tr(name, params) {
+    return t(TIMER_TEXT_KEYS[name], params);
+}
+
 // ---------------------------------------------------------------------------
 // Init
 // ---------------------------------------------------------------------------
@@ -139,12 +323,11 @@ function renderTimers() {
     const container = document.getElementById('timers-container');
     renderDashboardStats();
     if (timers.length === 0) {
-        container.innerHTML =
-            '<div class="at-empty-state">' +
-            '<div class="at-empty-state-icon">Timer</div>' +
-            '<div class="at-empty-state-text">No timers yet</div>' +
-            '<button class="btn btn-primary" data-tab="create">Create Your First Timer</button>' +
-            '</div>';
+        container.innerHTML = `<div class="at-empty-state">
+            <div class="at-empty-state-icon">${tr('timer')}</div>
+            <div class="at-empty-state-text">${t('plugins.advanced-timer.ui.messages.noTimers')}</div>
+            <button class="btn btn-primary" data-tab="create">${t('plugins.advanced-timer.ui.messages.createFirst')}</button>
+        </div>`;
         container.querySelector('[data-tab]')?.addEventListener('click', e => showTab('create', e.currentTarget));
         return;
     }
@@ -204,186 +387,186 @@ function buildTimerCard(t) {
         '<div class="timer-controls" id="tctrl-' + t.id + '">' + timerControlButtons(t) + '</div>' +
         // Quick +/-
         '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">' +
-          '<button class="btn btn-secondary btn-xs" data-at="add" data-s="10">+10s</button>' +
-          '<button class="btn btn-secondary btn-xs" data-at="add" data-s="30">+30s</button>' +
-          '<button class="btn btn-secondary btn-xs" data-at="add" data-s="60">+1m</button>' +
-          '<button class="btn btn-secondary btn-xs" data-at="add" data-s="300">+5m</button>' +
-          '<button class="btn btn-secondary btn-xs" data-at="remove" data-s="10">-10s</button>' +
-          '<button class="btn btn-secondary btn-xs" data-at="remove" data-s="30">-30s</button>' +
+          '<button class="btn btn-secondary btn-xs" data-at="add" data-s="10">' + tr('quickAddTen') + '</button>' +
+          '<button class="btn btn-secondary btn-xs" data-at="add" data-s="30">' + tr('quickAddThirty') + '</button>' +
+          '<button class="btn btn-secondary btn-xs" data-at="add" data-s="60">' + tr('quickAddMinute') + '</button>' +
+          '<button class="btn btn-secondary btn-xs" data-at="add" data-s="300">' + tr('quickAddFiveMinutes') + '</button>' +
+          '<button class="btn btn-secondary btn-xs" data-at="remove" data-s="10">' + tr('quickRemoveTen') + '</button>' +
+          '<button class="btn btn-secondary btn-xs" data-at="remove" data-s="30">' + tr('quickRemoveThirty') + '</button>' +
         '</div>' +
         // Overlay URL
         '<div class="at-overlay-row">' +
-          '<span style="font-size:0.78rem;color:var(--color-text-secondary);flex-shrink:0;">Overlay:</span>' +
+          '<span style="font-size:0.78rem;color:var(--color-text-secondary);flex-shrink:0;">' + tr('overlay') + '</span>' +
           '<span class="at-overlay-url-text">' + overlayUrl + '</span>' +
-          '<button class="btn btn-xs btn-secondary copy-url-btn" title="Copy URL">Copy</button>' +
+          '<button class="btn btn-xs btn-secondary copy-url-btn" title="' + tr('copyOverlayUrl') + '">' + tr('copyOverlayUrl') + '</button>' +
         '</div>' +
         // Settings section
-        '<button class="at-section-toggle" data-sec="settings">Settings <span class="chevron">▼</span></button>' +
+        '<button class="at-section-toggle" data-sec="settings">' + tr('settings') + ' <span class="chevron">' + tr('chevron') + '</span></button>' +
         '<div class="at-section-body" data-sec-body="settings">' +
           '<div class="at-settings-grid">' +
-            '<div class="at-field-group"><label class="at-field-label">Timer Name</label>' +
+            '<div class="at-field-group"><label class="at-field-label">' + tr('timerName') + '</label>' +
               '<input class="at-field-input" type="text" data-field="name" value="' + escapeHtml(t.name) + '"></div>' +
-            '<div class="at-field-group"><label class="at-field-label">Initial Duration (seconds)</label>' +
+            '<div class="at-field-group"><label class="at-field-label">' + tr('initialDuration') + '</label>' +
               '<input class="at-field-input" type="number" min="0" data-field="initial_duration" value="' + (t.initial_duration || 0) + '"></div>' +
-            '<div class="at-field-group"><label class="at-field-label">Action on Expiry</label>' +
+            '<div class="at-field-group"><label class="at-field-label">' + tr('expiryAction') + '</label>' +
               '<select class="at-field-input" data-field="expiry_action">' +
-                '<option value="none"' + ((t.expiry_action||'none')==='none'?' selected':'') + '>None</option>' +
-                '<option value="restart"' + (t.expiry_action==='restart'?' selected':'') + '>Restart</option>' +
-                '<option value="alert"' + (t.expiry_action==='alert'?' selected':'') + '>Show Alert</option>' +
-                '<option value="sound"' + (t.expiry_action==='sound'?' selected':'') + '>Play Sound</option>' +
-                '<option value="scene_change"' + (t.expiry_action==='scene_change'?' selected':'') + '>Scene Change</option>' +
-                '<option value="chain"' + (t.expiry_action==='chain'?' selected':'') + '>Trigger Chain</option>' +
+                '<option value="none"' + ((t.expiry_action||'none')==='none'?' selected':'') + '>' + tr('expiryNone') + '</option>' +
+                '<option value="restart"' + (t.expiry_action==='restart'?' selected':'') + '>' + tr('expiryRestart') + '</option>' +
+                '<option value="alert"' + (t.expiry_action==='alert'?' selected':'') + '>' + tr('expiryAlert') + '</option>' +
+                '<option value="sound"' + (t.expiry_action==='sound'?' selected':'') + '>' + tr('expirySound') + '</option>' +
+                '<option value="scene_change"' + (t.expiry_action==='scene_change'?' selected':'') + '>' + tr('expirySceneChange') + '</option>' +
+                '<option value="chain"' + (t.expiry_action==='chain'?' selected':'') + '>' + tr('expiryTriggerChain') + '</option>' +
               '</select></div>' +
           '</div>' +
-          '<div style="margin-top:10px;"><button class="btn btn-sm btn-primary save-settings-btn">Save Settings</button></div>' +
+          '<div style="margin-top:10px;"><button class="btn btn-sm btn-primary save-settings-btn">' + tr('saveSettings') + '</button></div>' +
         '</div>' +
         // Interactions section
-        '<button class="at-section-toggle open" data-sec="interactions">Interactions <span class="chevron" style="transform:rotate(180deg);">▼</span></button>' +
+        '<button class="at-section-toggle open" data-sec="interactions">' + tr('interactions') + ' <span class="chevron" style="transform:rotate(180deg);">' + tr('chevron') + '</span></button>' +
         '<div class="at-section-body open" data-sec-body="interactions">' +
-          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin-bottom:10px;">Positive = add time, negative = reduce. Supports decimals (e.g. 0.05).</p>' +
+          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin-bottom:10px;">' + tr('interactionsHint') + '</p>' +
           '<div class="at-interactions-grid">' +
-            interactionRow('per_coin',      'Per Coin',         t.per_coin) +
-            interactionRow('per_subscribe', 'Per Subscribe',    t.per_subscribe) +
-            interactionRow('per_follow',    'Per Follow',       t.per_follow) +
-            interactionRow('per_share',     'Per Share',        t.per_share) +
-            interactionRow('per_like',      'Per Like',         t.per_like) +
-            interactionRow('per_chat',      'Per Chat Message', t.per_chat) +
+            interactionRow('per_coin',      tr('perCoin'),      t.per_coin) +
+            interactionRow('per_subscribe', tr('perSubscribe'), t.per_subscribe) +
+            interactionRow('per_follow',    tr('perFollow'),    t.per_follow) +
+            interactionRow('per_share',     tr('perShare'),     t.per_share) +
+            interactionRow('per_like',      tr('perLike'),      t.per_like) +
+            interactionRow('per_chat',      tr('perChat'),      t.per_chat) +
           '</div>' +
-          '<a class="at-adv-events-link" data-adv-timer="' + t.id + '">Advanced Event Rules (gift-name filters, commands...)</a>' +
-          '<span class="at-save-indicator" id="si-' + t.id + '">Saved</span>' +
+          '<a class="at-adv-events-link" data-adv-timer="' + t.id + '">' + tr('advancedRulesLink') + '</a>' +
+          '<span class="at-save-indicator" id="si-' + t.id + '">' + tr('saved') + '</span>' +
         '</div>' +
         // Multiplier section
-        '<button class="at-section-toggle open" data-sec="multiplier">Multiplier <span class="chevron" style="transform:rotate(180deg);">▼</span></button>' +
+        '<button class="at-section-toggle open" data-sec="multiplier">' + tr('multiplier') + ' <span class="chevron" style="transform:rotate(180deg);">' + tr('chevron') + '</span></button>' +
         '<div class="at-section-body open" data-sec-body="multiplier">' +
           '<div class="at-multiplier-row">' +
             '<label class="at-toggle-switch"><input type="checkbox" class="multiplier-toggle"' + (t.multiplier_enabled ? ' checked' : '') + '><span class="at-toggle-slider"></span></label>' +
-            '<span style="font-size:0.85rem;">x</span>' +
+            '<span style="font-size:0.85rem;">' + tr('times') + '</span>' +
             '<input class="at-interaction-input multiplier-value-input" type="number" min="0.01" step="0.01" value="' + (t.multiplier || 1) + '" style="width:70px;">' +
-            '<span class="at-interaction-unit">multiplier</span>' +
-            '<span style="font-size:0.78rem;color:var(--color-text-secondary);">(all interaction values x this factor)</span>' +
+            '<span class="at-interaction-unit">' + tr('multiplier') + '</span>' +
+            '<span style="font-size:0.78rem;color:var(--color-text-secondary);">' + tr('multiplierDescription') + '</span>' +
           '</div>' +
         '</div>' +
         // Keyboard Shortcuts section
-        '<button class="at-section-toggle" data-sec="shortcuts">Keyboard Shortcuts <span class="chevron">▼</span></button>' +
+        '<button class="at-section-toggle" data-sec="shortcuts">' + tr('keyboardShortcuts') + ' <span class="chevron">' + tr('chevron') + '</span></button>' +
         '<div class="at-section-body" data-sec-body="shortcuts">' +
           '<div class="at-shortcuts-grid">' +
-            '<div class="at-shortcut-row"><span class="at-shortcut-label">Start / Pause</span><input class="shortcut-input" type="text" data-sc="shortcut_start_pause" value="' + escapeHtml(t.shortcut_start_pause||'') + '" placeholder="e.g. ALT+P"></div>' +
-            '<div class="at-shortcut-row"><span class="at-shortcut-label">Increase</span><input class="shortcut-input" type="text" data-sc="shortcut_increase" value="' + escapeHtml(t.shortcut_increase||'') + '" placeholder="e.g. ALT+S"></div>' +
-            '<div class="at-shortcut-row"><span class="at-shortcut-label">Reduce</span><input class="shortcut-input" type="text" data-sc="shortcut_decrease" value="' + escapeHtml(t.shortcut_decrease||'') + '" placeholder="e.g. ALT+A"></div>' +
-            '<div class="at-shortcut-row"><span class="at-shortcut-label">Step (seconds)</span><input class="shortcut-input" type="number" min="1" data-sc="shortcut_step" value="' + (t.shortcut_step||60) + '" style="width:70px;"></div>' +
+            '<div class="at-shortcut-row"><span class="at-shortcut-label">' + tr('startPause') + '</span><input class="shortcut-input" type="text" data-sc="shortcut_start_pause" value="' + escapeHtml(t.shortcut_start_pause||'') + '" placeholder="ALT+P"></div>' +
+            '<div class="at-shortcut-row"><span class="at-shortcut-label">' + tr('increase') + '</span><input class="shortcut-input" type="text" data-sc="shortcut_increase" value="' + escapeHtml(t.shortcut_increase||'') + '" placeholder="ALT+S"></div>' +
+            '<div class="at-shortcut-row"><span class="at-shortcut-label">' + tr('reduce') + '</span><input class="shortcut-input" type="text" data-sc="shortcut_decrease" value="' + escapeHtml(t.shortcut_decrease||'') + '" placeholder="ALT+A"></div>' +
+            '<div class="at-shortcut-row"><span class="at-shortcut-label">' + tr('stepSeconds') + '</span><input class="shortcut-input" type="number" min="1" data-sc="shortcut_step" value="' + (t.shortcut_step||60) + '" style="width:70px;"></div>' +
           '</div>' +
-          '<div style="margin-top:10px;"><button class="btn btn-sm btn-primary save-shortcuts-btn">Save Shortcuts</button></div>' +
+          '<div style="margin-top:10px;"><button class="btn btn-sm btn-primary save-shortcuts-btn">' + tr('saveShortcuts') + '</button></div>' +
         '</div>' +
         // Activity log section
-        '<button class="at-section-toggle" data-sec="log">Activity Log <span class="chevron">▼</span></button>' +
+        '<button class="at-section-toggle" data-sec="log">' + tr('activityLog') + ' <span class="chevron">▼</span></button>' +
         '<div class="at-section-body" data-sec-body="log">' +
-          '<div class="at-log-entries" id="log-' + t.id + '"><p style="color:var(--color-text-secondary);font-size:0.82rem;">Click the section header to load.</p></div>' +
+          '<div class="at-log-entries" id="log-' + t.id + '"><p style="color:var(--color-text-secondary);font-size:0.82rem;">' + tr('loadLogHint') + '</p></div>' +
           '<div style="margin-top:8px;display:flex;gap:8px;">' +
-            '<button class="btn btn-sm btn-secondary reload-log-btn">Refresh</button>' +
-            '<a href="/api/advanced-timer/timers/' + t.id + '/export-logs" target="_blank" class="btn btn-sm btn-secondary">Export</a>' +
+            '<button class="btn btn-sm btn-secondary reload-log-btn">' + tr('refresh') + '</button>' +
+            '<a href="/api/advanced-timer/timers/' + t.id + '/export-logs" target="_blank" class="btn btn-sm btn-secondary">' + tr('export') + '</a>' +
           '</div>' +
         '</div>' +
         // Gift Overrides section
-        '<button class="at-section-toggle" data-sec="gift-overrides">Gift Overrides <span class="chevron">▼</span></button>' +
+        '<button class="at-section-toggle" data-sec="gift-overrides">' + tr('giftOverrides') + ' <span class="chevron">' + tr('chevron') + '</span></button>' +
         '<div class="at-section-body" data-sec-body="gift-overrides">' +
-          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin-bottom:10px;">Override per_coin for specific gifts. When set, the flat per_coin value is NOT applied for this gift - only the override counts.</p>' +
-          '<div class="gift-override-list" id="gol-' + t.id + '"><p style="color:var(--color-text-secondary);font-size:0.82rem;">Click to load.</p></div>' +
+          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin-bottom:10px;">' + tr('giftOverridesDescription') + '</p>' +
+          '<div class="gift-override-list" id="gol-' + t.id + '"><p style="color:var(--color-text-secondary);font-size:0.82rem;">' + tr('clickToLoad') + '</p></div>' +
           '<div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap;">' +
-            '<select class="at-field-input" id="go-gift-select-' + t.id + '" style="flex:1;min-width:140px;"><option value="">Select Gift</option></select>' +
-            '<input type="number" class="at-field-input" id="go-seconds-' + t.id + '" placeholder="Seconds" value="30" min="0" step="0.01" style="width:90px;">' +
-            '<button class="btn btn-sm btn-primary" id="go-add-btn-' + t.id + '">Add</button>' +
+            '<select class="at-field-input" id="go-gift-select-' + t.id + '" style="flex:1;min-width:140px;"><option value="">' + tr('selectGift') + '</option></select>' +
+            '<input type="number" class="at-field-input" id="go-seconds-' + t.id + '" placeholder="' + tr('seconds') + '" value="30" min="0" step="0.01" style="width:90px;">' +
+            '<button class="btn btn-sm btn-primary" id="go-add-btn-' + t.id + '">' + tr('add') + '</button>' +
           '</div>' +
         '</div>' +
         // Rotator section
-        '<button class="at-section-toggle" data-sec="rotator">Rotator (Delta Slider) <span class="chevron">▼</span></button>' +
+        '<button class="at-section-toggle" data-sec="rotator">' + tr('rotatorTitle') + ' <span class="chevron">' + tr('chevron') + '</span></button>' +
         '<div class="at-section-body" data-sec-body="rotator">' +
-          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin-bottom:10px;">Shows the most recent time-delta around the timer (top/bottom/left/right). Custom gifts display the gift GIF from the catalog.</p>' +
+          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin-bottom:10px;">' + tr('rotatorDescription') + '</p>' +
           '<div class="at-rotator-grid" id="rotator-form-' + t.id + '">' +
-            '<label class="at-rotator-row"><span>Enable Rotator</span>' +
+            '<label class="at-rotator-row"><span>' + tr('rotatorEnable') + '</span>' +
               '<label class="at-toggle-switch"><input type="checkbox" data-rot="enabled" checked><span class="at-toggle-slider"></span></label></label>' +
-            '<label class="at-rotator-row"><span>Position</span>' +
+            '<label class="at-rotator-row"><span>' + tr('rotatorPosition') + '</span>' +
               '<select class="at-field-input" data-rot="position" style="width:140px;">' +
-                '<option value="top">Top</option>' +
-                '<option value="bottom">Bottom</option>' +
-                '<option value="left">Left</option>' +
-                '<option value="right">Right</option>' +
+                '<option value="top">' + tr('rotatorTop') + '</option>' +
+                '<option value="bottom">' + tr('rotatorBottom') + '</option>' +
+                '<option value="left">' + tr('rotatorLeft') + '</option>' +
+                '<option value="right">' + tr('rotatorRight') + '</option>' +
               '</select></label>' +
-            '<label class="at-rotator-row"><span>Slots</span>' +
+            '<label class="at-rotator-row"><span>' + tr('rotatorSlots') + '</span>' +
               '<input class="at-field-input" type="number" data-rot="slot_count" min="1" max="8" value="1" style="width:80px;"></label>' +
-            '<label class="at-rotator-row"><span>Rotation (ms)</span>' +
+            '<label class="at-rotator-row"><span>' + tr('rotatorRotation') + '</span>' +
               '<input class="at-field-input" type="number" data-rot="rotation_interval_ms" min="800" max="30000" value="4500" style="width:90px;"></label>' +
-            '<label class="at-rotator-row"><span>Min seconds to show</span>' +
+            '<label class="at-rotator-row"><span>' + tr('rotatorMinSeconds') + '</span>' +
               '<input class="at-field-input" type="number" data-rot="min_seconds_to_show" min="0" step="0.1" value="0" style="width:80px;"></label>' +
-            '<label class="at-rotator-row"><span>Show gift image</span>' +
+            '<label class="at-rotator-row"><span>' + tr('rotatorGiftImage') + '</span>' +
               '<label class="at-toggle-switch"><input type="checkbox" data-rot="show_gift_images" checked><span class="at-toggle-slider"></span></label></label>' +
-            '<label class="at-rotator-row"><span>Show gift name</span>' +
+            '<label class="at-rotator-row"><span>' + tr('rotatorGiftName') + '</span>' +
               '<label class="at-toggle-switch"><input type="checkbox" data-rot="show_gift_names" checked><span class="at-toggle-slider"></span></label></label>' +
-            '<label class="at-rotator-row"><span>Show time delta</span>' +
+            '<label class="at-rotator-row"><span>' + tr('rotatorTimeDelta') + '</span>' +
               '<label class="at-toggle-switch"><input type="checkbox" data-rot="show_time_delta" checked><span class="at-toggle-slider"></span></label></label>' +
-            '<label class="at-rotator-row"><span>Show source emoji</span>' +
+            '<label class="at-rotator-row"><span>' + tr('rotatorSourceEmoji') + '</span>' +
               '<label class="at-toggle-switch"><input type="checkbox" data-rot="show_source_emoji" checked><span class="at-toggle-slider"></span></label></label>' +
-            '<label class="at-rotator-row"><span>Font scale</span>' +
+            '<label class="at-rotator-row"><span>' + tr('rotatorFontScale') + '</span>' +
               '<input class="at-field-input" type="number" data-rot="font_scale" min="0.5" max="2.0" step="0.05" value="1.0" style="width:80px;"></label>' +
-            '<label class="at-rotator-row"><span>Fade alpha</span>' +
+            '<label class="at-rotator-row"><span>' + tr('rotatorFadeAlpha') + '</span>' +
               '<input class="at-field-input" type="number" data-rot="fade_alpha" min="0.3" max="1.0" step="0.05" value="0.92" style="width:80px;"></label>' +
           '</div>' +
-          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin:10px 0 4px;">Sources shown:</p>' +
+          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin:10px 0 4px;">' + tr('rotatorSources') + '</p>' +
           '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;" id="rotator-sources-' + t.id + '">' +
-            '<label class="at-source-chip"><input type="checkbox" data-rot-src="like" checked> Like</label>' +
-            '<label class="at-source-chip"><input type="checkbox" data-rot-src="coin" checked> Coin/Gift</label>' +
-            '<label class="at-source-chip"><input type="checkbox" data-rot-src="override" checked> Custom Gift</label>' +
-            '<label class="at-source-chip"><input type="checkbox" data-rot-src="follow" checked> Follow</label>' +
-            '<label class="at-source-chip"><input type="checkbox" data-rot-src="subscribe" checked> Sub (Superfan)</label>' +
-            '<label class="at-source-chip"><input type="checkbox" data-rot-src="share" checked> Share</label>' +
-            '<label class="at-source-chip"><input type="checkbox" data-rot-src="chat" checked> Chat</label>' +
-            '<label class="at-source-chip"><input type="checkbox" data-rot-src="manual" checked> Manual</label>' +
-            '<label class="at-source-chip"><input type="checkbox" data-rot-src="flow" checked> Flow</label>' +
-            '<label class="at-source-chip"><input type="checkbox" data-rot-src="rule" checked> Rule</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="like" checked> ' + tr('sourceLike') + '</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="coin" checked> ' + tr('sourceCoin') + '</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="override" checked> ' + tr('sourceCustomGift') + '</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="follow" checked> ' + tr('sourceFollow') + '</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="subscribe" checked> ' + tr('sourceSubscribe') + '</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="share" checked> ' + tr('sourceShare') + '</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="chat" checked> ' + tr('sourceChat') + '</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="manual" checked> ' + tr('sourceManual') + '</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="flow" checked> ' + tr('sourceFlow') + '</label>' +
+            '<label class="at-source-chip"><input type="checkbox" data-rot-src="rule" checked> ' + tr('sourceRule') + '</label>' +
           '</div>' +
           '<div style="margin-top:10px;display:flex;gap:8px;align-items:center;">' +
-            '<button class="btn btn-sm btn-primary save-rotator-btn" data-timer-id="' + t.id + '">Save Rotator</button>' +
-            '<span class="at-save-indicator" id="rot-si-' + t.id + '">Saved</span>' +
+            '<button class="btn btn-sm btn-primary save-rotator-btn" data-timer-id="' + t.id + '">' + tr('rotatorSave') + '</button>' +
+            '<span class="at-save-indicator" id="rot-si-' + t.id + '">' + tr('saved') + '</span>' +
           '</div>' +
         '</div>' +
         // Threshold Effects section
-        '<button class="at-section-toggle" data-sec="threshold">Big-Delta Effects <span class="chevron">▼</span></button>' +
+        '<button class="at-section-toggle" data-sec="threshold">' + tr('thresholdTitle') + ' <span class="chevron">' + tr('chevron') + '</span></button>' +
         '<div class="at-section-body" data-sec-body="threshold">' +
-          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin-bottom:10px;">When a single time-delta exceeds the threshold, the timer is wrapped in a frame/animation. Use a built-in style, upload your own, or both.</p>' +
+          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin-bottom:10px;">' + tr('thresholdDescription') + '</p>' +
           '<div class="at-rotator-grid" id="threshold-form-' + t.id + '">' +
-            '<label class="at-rotator-row"><span>Enable Effects</span>' +
+            '<label class="at-rotator-row"><span>' + tr('thresholdEnable') + '</span>' +
               '<label class="at-toggle-switch"><input type="checkbox" data-thr="enabled" checked><span class="at-toggle-slider"></span></label></label>' +
-            '<label class="at-rotator-row"><span>Threshold (seconds)</span>' +
+            '<label class="at-rotator-row"><span>' + tr('thresholdSeconds') + '</span>' +
               '<input class="at-field-input" type="number" data-thr="threshold_seconds" min="0.1" step="1" value="60" style="width:90px;"></label>' +
-            '<label class="at-rotator-row"><span>Direction</span>' +
+            '<label class="at-rotator-row"><span>' + tr('thresholdDirection') + '</span>' +
               '<select class="at-field-input" data-thr="direction" style="width:120px;">' +
-                '<option value="both">Both (+/-)</option>' +
-                '<option value="positive">Positive only</option>' +
-                '<option value="negative">Negative only</option>' +
+                '<option value="both">' + tr('thresholdBoth') + '</option>' +
+                '<option value="positive">' + tr('thresholdPositive') + '</option>' +
+                '<option value="negative">' + tr('thresholdNegative') + '</option>' +
               '</select></label>' +
-            '<label class="at-rotator-row"><span>Effect duration (ms)</span>' +
+            '<label class="at-rotator-row"><span>' + tr('thresholdDuration') + '</span>' +
               '<input class="at-field-input" type="number" data-thr="duration_ms" min="200" max="10000" step="100" value="1500" style="width:90px;"></label>' +
-            '<label class="at-rotator-row"><span>Built-in animation</span>' +
+            '<label class="at-rotator-row"><span>' + tr('thresholdBuiltin') + '</span>' +
               '<select class="at-field-input" data-thr="builtin_animation" style="width:160px;">' +
-                '<option value="flame">Flame</option>' +
-                '<option value="lightning">Lightning</option>' +
-                '<option value="sparks">Sparks</option>' +
-                '<option value="pulse-glow">Pulse Glow</option>' +
-                '<option value="rainbow-shake">Rainbow Shake</option>' +
-                '<option value="gold-flux">Gold Flux</option>' +
+                '<option value="flame">' + tr('effectFlame') + '</option>' +
+                '<option value="lightning">' + tr('effectLightning') + '</option>' +
+                '<option value="sparks">' + tr('effectSparks') + '</option>' +
+                '<option value="pulse-glow">' + tr('effectPulseGlow') + '</option>' +
+                '<option value="rainbow-shake">' + tr('effectRainbowShake') + '</option>' +
+                '<option value="gold-flux">' + tr('effectGoldFlux') + '</option>' +
               '</select></label>' +
-            '<label class="at-rotator-row"><span>Intensity (0.5..2.0)</span>' +
+            '<label class="at-rotator-row"><span>' + tr('thresholdIntensity') + '</span>' +
               '<input class="at-field-input" type="number" data-thr="intensity" min="0.5" max="2.0" step="0.05" value="1.0" style="width:80px;"></label>' +
           '</div>' +
-          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin:12px 0 4px;">Custom frame slots (upload up to 6 PNG/WebP/GIF/SVG - shown round-robin):</p>' +
+          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin:12px 0 4px;">' + tr('frameSlotsTitle') + '</p>' +
           '<div id="threshold-frames-' + t.id + '" class="at-frame-slot-grid"></div>' +
           '<div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
-            '<button class="btn btn-sm btn-primary save-threshold-btn" data-timer-id="' + t.id + '">Save Settings</button>' +
-            '<span class="at-save-indicator" id="thr-si-' + t.id + '">Saved</span>' +
+            '<button class="btn btn-sm btn-primary save-threshold-btn" data-timer-id="' + t.id + '">' + tr('saveSettings') + '</button>' +
+            '<span class="at-save-indicator" id="thr-si-' + t.id + '">' + tr('saved') + '</span>' +
           '</div>' +
         '</div>' +
         // Delete
         '<div style="margin-top:12px;border-top:1px solid var(--color-border);padding-top:12px;display:flex;justify-content:flex-end;">' +
-          '<button class="btn btn-sm btn-danger delete-timer-btn">Delete Timer</button>' +
+          '<button class="btn btn-sm btn-danger delete-timer-btn">' + tr('deleteTimer') + '</button>' +
         '</div>';
 
     const tid = t.id;
@@ -499,105 +682,7 @@ function buildTimerCard(t) {
     // Delete
     card.querySelector('.delete-timer-btn')?.addEventListener('click', () => deleteTimer(tid));
 
-    normalizeTimerCardLabels(card);
-
     return card;
-}
-
-function normalizeTimerCardLabels(card) {
-    if (!card) return;
-
-    const setText = (selector, text) => {
-        const el = card.querySelector(selector);
-        if (el) el.textContent = text;
-    };
-
-    const sectionLabels = {
-        settings: 'Settings',
-        interactions: 'Interactions',
-        multiplier: 'Multiplier',
-        shortcuts: 'Keyboard Shortcuts',
-        log: 'Activity Log',
-        'gift-overrides': 'Gift Overrides',
-        rotator: 'Rotator (Delta Slider)',
-        threshold: 'Big-Delta Effects'
-    };
-
-    card.querySelectorAll('.at-section-toggle').forEach(btn => {
-        const sec = btn.getAttribute('data-sec');
-        if (sectionLabels[sec]) {
-            btn.innerHTML = sectionLabels[sec] + ' <span class="chevron">v</span>';
-        }
-    });
-
-    setText('.copy-url-btn', 'Copy');
-    setText('.reload-log-btn', 'Refresh');
-    setText('.save-rotator-btn', 'Save Rotator');
-    setText('.save-threshold-btn', 'Save Settings');
-    setText('.delete-timer-btn', 'Delete Timer');
-    setText('.at-adv-events-link', 'Advanced Event Rules (gift-name filters, commands...)');
-
-    const ctrlLabels = { start: 'Start', pause: 'Pause', stop: 'Stop', reset: 'Reset' };
-    card.querySelectorAll('[data-ctrl]').forEach(btn => {
-        const ctrl = btn.getAttribute('data-ctrl');
-        if (ctrlLabels[ctrl]) btn.textContent = ctrlLabels[ctrl];
-    });
-
-    const interactionLabels = {
-        per_coin: 'Per Coin',
-        per_subscribe: 'Per Subscribe',
-        per_follow: 'Per Follow',
-        per_share: 'Per Share',
-        per_like: 'Per Like',
-        per_chat: 'Per Chat Message'
-    };
-    card.querySelectorAll('.at-interaction-row').forEach(row => {
-        const input = row.querySelector('.at-interaction-input');
-        const label = row.querySelector('.at-interaction-label');
-        const key = input?.getAttribute('data-int');
-        if (label && interactionLabels[key]) label.textContent = interactionLabels[key];
-    });
-
-    const rotatorLabels = {
-        like: 'Like',
-        coin: 'Coin/Gift',
-        override: 'Custom Gift',
-        follow: 'Follow',
-        subscribe: 'Sub (Superfan)',
-        share: 'Share',
-        chat: 'Chat',
-        manual: 'Manual',
-        flow: 'Flow',
-        rule: 'Rule'
-    };
-    card.querySelectorAll('.at-source-chip').forEach(chip => {
-        const input = chip.querySelector('input[data-rot-src]');
-        const src = input?.getAttribute('data-rot-src');
-        if (!input || !rotatorLabels[src]) return;
-        const checked = input.checked;
-        chip.innerHTML = '';
-        const nextInput = document.createElement('input');
-        nextInput.type = 'checkbox';
-        nextInput.setAttribute('data-rot-src', src);
-        nextInput.checked = checked;
-        chip.appendChild(nextInput);
-        chip.appendChild(document.createTextNode(' ' + rotatorLabels[src]));
-    });
-
-    const effectSelect = card.querySelector('[data-thr="effect"]');
-    if (effectSelect) {
-        const effectLabels = {
-            flame: 'Flame',
-            lightning: 'Lightning',
-            sparks: 'Sparks',
-            'pulse-glow': 'Pulse Glow',
-            'rainbow-shake': 'Rainbow Shake',
-            'gold-flux': 'Gold Flux'
-        };
-        Array.from(effectSelect.options).forEach(opt => {
-            if (effectLabels[opt.value]) opt.textContent = effectLabels[opt.value];
-        });
-    }
 }
 
 function interactionRow(field, label, value) {
@@ -612,10 +697,10 @@ function interactionRow(field, label, value) {
 
 function timerControlButtons(t) {
     let html = '';
-    if (t.state !== 'running') html += '<button class="btn btn-success btn-sm" data-ctrl="start">Start</button>';
-    if (t.state === 'running') html += '<button class="btn btn-warning btn-sm" data-ctrl="pause">Pause</button>';
-    if (t.state === 'running' || t.state === 'paused') html += '<button class="btn btn-danger btn-sm" data-ctrl="stop">Stop</button>';
-    html += '<button class="btn btn-secondary btn-sm" data-ctrl="reset">Reset</button>';
+    if (t.state !== 'running') html += '<button class="btn btn-success btn-sm" data-ctrl="start">' + tr('start') + '</button>';
+    if (t.state === 'running') html += '<button class="btn btn-warning btn-sm" data-ctrl="pause">' + tr('pause') + '</button>';
+    if (t.state === 'running' || t.state === 'paused') html += '<button class="btn btn-danger btn-sm" data-ctrl="stop">' + tr('stop') + '</button>';
+    html += '<button class="btn btn-secondary btn-sm" data-ctrl="reset">' + tr('reset') + '</button>';
     return html;
 }
 
@@ -634,7 +719,7 @@ async function timerAction(id, action, body) {
 }
 
 async function deleteTimer(id) {
-    if (!confirm('Delete this timer?')) return;
+    if (!confirm(tr('deleteTimerConfirm'))) return;
     try {
         const res = await fetch('/api/advanced-timer/timers/' + id, { method: 'DELETE' });
         const data = await res.json();
@@ -711,7 +796,7 @@ async function loadLog(id) {
         const container = document.getElementById('log-' + id);
         if (!container) return;
         if (!data.success || !data.logs.length) {
-            container.innerHTML = '<p style="color:var(--color-text-secondary);font-size:0.82rem;">No activity yet.</p>';
+            container.innerHTML = '<p style="color:var(--color-text-secondary);font-size:0.82rem;">' + tr('noActivity') + '</p>';
             return;
         }
         container.innerHTML = data.logs.map(l => {
@@ -748,12 +833,12 @@ function createAdvEventsModal() {
     modal.style.cssText = 'display:none;position:fixed;inset:0;background:var(--color-modal-backdrop,rgba(0,0,0,.5));z-index:2000;align-items:center;justify-content:center;';
     modal.innerHTML =
         '<div style="background:var(--color-modal-bg,var(--color-bg-card));border:1px solid var(--color-border);border-radius:16px;padding:28px;max-width:560px;width:92%;max-height:88vh;overflow-y:auto;">' +
-          '<div style="font-size:1.2rem;font-weight:700;margin-bottom:16px;">Advanced Event Rules</div>' +
-          '<p style="font-size:0.82rem;color:var(--color-text-secondary);margin-bottom:14px;">These rules add on top of the flat per-* values. Use for gift-name filters, minCoins, chat commands.</p>' +
+          '<div style="font-size:1.2rem;font-weight:700;margin-bottom:16px;">' + tr('advancedRulesLink') + '</div>' +
+          '<p style="font-size:0.82rem;color:var(--color-text-secondary);margin-bottom:14px;">' + tr('advancedRulesDescription') + '</p>' +
           '<div id="adv-events-list"></div>' +
           '<div style="display:flex;gap:10px;margin-top:14px;">' +
-            '<button class="btn btn-sm btn-primary" id="add-adv-event-btn">+ Add Rule</button>' +
-            '<button class="btn btn-sm btn-secondary" id="close-adv-events-btn">Close</button>' +
+            '<button class="btn btn-sm btn-primary" id="add-adv-event-btn">' + tr('addEventRule') + '</button>' +
+            '<button class="btn btn-sm btn-secondary" id="close-adv-events-btn">' + tr('close') + '</button>' +
           '</div>' +
         '</div>';
     document.body.appendChild(modal);
@@ -774,7 +859,7 @@ async function loadAdvEvents(timerId) {
 function renderAdvEvents(events) {
     const container = document.getElementById('adv-events-list');
     if (!events.length) {
-        container.innerHTML = '<p style="color:var(--color-text-secondary);font-size:0.85rem;text-align:center;padding:12px;">No advanced rules yet.</p>';
+        container.innerHTML = '<p style="color:var(--color-text-secondary);font-size:0.85rem;text-align:center;padding:12px;">' + tr('noAdvancedRules') + '</p>';
         return;
     }
     container.innerHTML = events.map(ev => {
@@ -783,8 +868,8 @@ function renderAdvEvents(events) {
             '<div style="font-weight:600;">' + getEventLabel(ev.event_type) + ' -> ' + getActionLabel(ev.action_type) + ' ' + ev.action_value + 's</div>' +
             (cStr ? '<div style="color:var(--color-text-secondary);margin-top:2px;">' + cStr + '</div>' : '') +
             '<div style="margin-top:8px;display:flex;gap:6px;">' +
-              '<button class="btn btn-xs btn-secondary adv-edit-btn">Edit</button>' +
-              '<button class="btn btn-xs btn-danger adv-del-btn">Delete</button>' +
+              '<button class="btn btn-xs btn-secondary adv-edit-btn">' + tr('edit') + '</button>' +
+              '<button class="btn btn-xs btn-danger adv-del-btn">' + tr('delete') + '</button>' +
             '</div></div>';
     }).join('');
 
@@ -806,24 +891,27 @@ function renderAdvEvents(events) {
 }
 
 function getEventLabel(t) {
-    return { gift:'Gift', like:'Like', follow:'Follow', share:'Share', subscribe:'Subscribe', chat:'Chat' }[t] || t;
+    return {
+        gift: tr('eventGift'), like: tr('eventLike'), follow: tr('eventFollow'),
+        share: tr('eventShare'), subscribe: tr('eventSubscribe'), chat: tr('eventChat')
+    }[t] || t;
 }
 function getActionLabel(t) {
-    return { add_time:'Add', remove_time:'Remove', set_value:'Set to' }[t] || t;
+    return { add_time: tr('addTime'), remove_time: tr('removeTime'), set_value: tr('setValue') }[t] || t;
 }
 function formatConditions(type, cond) {
     if (!cond || !Object.keys(cond).length) return '';
     const p = [];
-    if (cond.giftName) p.push('Gift: ' + cond.giftName);
-    if (cond.minCoins) p.push('Min coins: ' + cond.minCoins);
-    if (cond.minLikes) p.push('Min likes: ' + cond.minLikes);
-    if (cond.command) p.push('Command: ' + cond.command);
-    if (cond.keyword) p.push('Keyword: ' + cond.keyword);
+    if (cond.giftName) p.push(tr('conditionGift', { value: cond.giftName }));
+    if (cond.minCoins) p.push(tr('conditionMinCoins', { value: cond.minCoins }));
+    if (cond.minLikes) p.push(tr('conditionMinLikes', { value: cond.minLikes }));
+    if (cond.command) p.push(tr('conditionCommand', { value: cond.command }));
+    if (cond.keyword) p.push(tr('conditionKeyword', { value: cond.keyword }));
     return p.join(' · ');
 }
 
 async function deleteAdvEvent(id) {
-    if (!confirm('Delete this event rule?')) return;
+    if (!confirm(tr('deleteEventRuleConfirm'))) return;
     try {
         await fetch('/api/advanced-timer/events/' + id, { method: 'DELETE' });
         loadAdvEvents(currentAdvTimerId);
@@ -838,21 +926,21 @@ function showEventEditor(eventId) {
     editor.style.cssText = 'display:flex;position:fixed;inset:0;background:var(--color-modal-backdrop,rgba(0,0,0,.5));z-index:3000;align-items:center;justify-content:center;';
     editor.innerHTML =
         '<div style="background:var(--color-modal-bg,var(--color-bg-card));border:1px solid var(--color-border);border-radius:14px;padding:24px;max-width:480px;width:92%;max-height:88vh;overflow-y:auto;">' +
-          '<div style="font-size:1.1rem;font-weight:700;margin-bottom:14px;">' + (eventId ? 'Edit' : 'Add') + ' Event Rule</div>' +
-          '<div class="at-form-group"><label class="at-form-label">Event Type</label>' +
+          '<div style="font-size:1.1rem;font-weight:700;margin-bottom:14px;">' + (eventId ? tr('editEventRule') : tr('addEventRule')) + '</div>' +
+          '<div class="at-form-group"><label class="at-form-label">' + tr('eventType') + '</label>' +
             '<select class="at-form-control" id="ee-type">' +
               ['gift','like','follow','share','subscribe','chat'].map(v => '<option value="' + v + '">' + getEventLabel(v) + '</option>').join('') +
             '</select></div>' +
-          '<div class="at-form-group"><label class="at-form-label">Action</label>' +
+          '<div class="at-form-group"><label class="at-form-label">' + tr('action') + '</label>' +
             '<select class="at-form-control" id="ee-action">' +
-              '<option value="add_time">Add Time</option><option value="remove_time">Remove Time</option><option value="set_value">Set Value</option>' +
+              '<option value="add_time">' + tr('addTime') + '</option><option value="remove_time">' + tr('removeTime') + '</option><option value="set_value">' + tr('setValue') + '</option>' +
             '</select></div>' +
-          '<div class="at-form-group"><label class="at-form-label">Value (seconds)</label>' +
+          '<div class="at-form-group"><label class="at-form-label">' + tr('valueSeconds') + '</label>' +
             '<input type="number" class="at-form-control" id="ee-value" value="10" min="0" step="0.01"></div>' +
           '<div id="ee-conditions"></div>' +
           '<div style="display:flex;gap:10px;margin-top:16px;">' +
-            '<button class="btn btn-sm btn-primary" id="ee-save">Save</button>' +
-            '<button class="btn btn-sm btn-secondary" id="ee-cancel">Cancel</button>' +
+            '<button class="btn btn-sm btn-primary" id="ee-save">' + tr('save') + '</button>' +
+            '<button class="btn btn-sm btn-secondary" id="ee-cancel">' + tr('cancel') + '</button>' +
           '</div>' +
         '</div>';
     document.body.appendChild(editor);
@@ -862,13 +950,13 @@ function showEventEditor(eventId) {
         const tp = typeSelect.value;
         const c = editor.querySelector('#ee-conditions');
         if (tp === 'gift') {
-            c.innerHTML = '<div class="at-form-group"><label class="at-form-label">Gift Name (blank = any)</label><input class="at-form-control" id="ee-gift-name" placeholder="e.g. Rose"></div>' +
-                '<div class="at-form-group"><label class="at-form-label">Min Coins (0 = no min)</label><input type="number" class="at-form-control" id="ee-min-coins" value="0" min="0"></div>';
+            c.innerHTML = '<div class="at-form-group"><label class="at-form-label">' + tr('giftName') + '</label><input class="at-form-control" id="ee-gift-name" placeholder="' + tr('giftNamePlaceholder') + '"></div>' +
+                '<div class="at-form-group"><label class="at-form-label">' + tr('minCoins') + '</label><input type="number" class="at-form-control" id="ee-min-coins" value="0" min="0"></div>';
         } else if (tp === 'like') {
-            c.innerHTML = '<div class="at-form-group"><label class="at-form-label">Min Likes per Event</label><input type="number" class="at-form-control" id="ee-min-likes" value="0" min="0"></div>';
+            c.innerHTML = '<div class="at-form-group"><label class="at-form-label">' + tr('minLikes') + '</label><input type="number" class="at-form-control" id="ee-min-likes" value="0" min="0"></div>';
         } else if (tp === 'chat') {
-            c.innerHTML = '<div class="at-form-group"><label class="at-form-label">Command prefix (e.g. !time)</label><input class="at-form-control" id="ee-command" placeholder="!time"></div>' +
-                '<div class="at-form-group"><label class="at-form-label">Keyword (contains)</label><input class="at-form-control" id="ee-keyword" placeholder="add time"></div>';
+            c.innerHTML = '<div class="at-form-group"><label class="at-form-label">' + tr('commandPrefix') + '</label><input class="at-form-control" id="ee-command" placeholder="!time"></div>' +
+                '<div class="at-form-group"><label class="at-form-label">' + tr('keywordContains') + '</label><input class="at-form-control" id="ee-keyword" placeholder="' + tr('keywordPlaceholder') + '"></div>';
         } else { c.innerHTML = ''; }
     };
     typeSelect.addEventListener('change', renderCond);
@@ -931,7 +1019,7 @@ function setupCreateForm() {
             const res = await fetch('/api/advanced-timer/timers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             const data = await res.json();
             if (data.success) { form.reset(); updateFields(); await loadTimers(); showTab('timers'); }
-            else alert(data.error || 'Failed to create timer');
+            else alert(data.error || tr('failedCreateTimer'));
         } catch (err) { console.error('createTimer', err); }
     });
 }
@@ -957,11 +1045,11 @@ function renderProfiles(profiles) {
               '<div><div class="at-profile-name">' + escapeHtml(p.name) + '</div>' +
               '<div class="at-profile-meta">' + new Date(p.created_at * 1000).toLocaleDateString() + '</div></div>' +
               '<div style="display:flex;gap:8px;">' +
-                '<button class="btn btn-xs btn-primary profile-apply-btn">Apply</button>' +
-                '<button class="btn btn-xs btn-danger profile-del-btn">Delete</button>' +
+                '<button class="btn btn-xs btn-primary profile-apply-btn">' + tr('apply') + '</button>' +
+                '<button class="btn btn-xs btn-danger profile-del-btn">' + tr('delete') + '</button>' +
               '</div>' +
             '</div>').join('')
-        : '<p style="color:var(--color-text-secondary);">No saved profiles. Click "Save Current Setup" to save your timers.</p>';
+        : '<p style="color:var(--color-text-secondary);">' + tr('noSavedProfiles') + '</p>';
 
     // Event delegation - safe, no inline onclick
     container.querySelectorAll('[data-profile-id]').forEach(card => {
@@ -974,7 +1062,7 @@ function renderProfiles(profiles) {
     if (saveBtn && !_saveProfileBtnBound.has(saveBtn)) {
         _saveProfileBtnBound.add(saveBtn);
         saveBtn.addEventListener('click', async () => {
-            const name = prompt('Profile name:');
+            const name = prompt(tr('profileNamePrompt'));
             if (!name) return;
             await fetch('/api/advanced-timer/profiles', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -986,7 +1074,7 @@ function renderProfiles(profiles) {
 }
 
 async function applyProfile(id) {
-    if (!confirm('Apply this profile? Current timers will be replaced.')) return;
+    if (!confirm(tr('applyProfileConfirm'))) return;
     try {
         const res = await fetch('/api/advanced-timer/profiles/' + id + '/apply', { method: 'POST' });
         const data = await res.json();
@@ -995,7 +1083,7 @@ async function applyProfile(id) {
 }
 
 async function deleteProfile(id) {
-    if (!confirm('Delete this profile?')) return;
+    if (!confirm(tr('deleteProfileConfirm'))) return;
     try { await fetch('/api/advanced-timer/profiles/' + id, { method: 'DELETE' }); loadProfiles(); }
     catch (e) { console.error('deleteProfile', e); }
 }
@@ -1027,10 +1115,15 @@ function formatTime(seconds) {
 function pad(n) { return String(n).padStart(2, '0'); }
 
 function getModeLabel(mode) {
-    return { countdown:'Countdown', countup:'Count Up', stopwatch:'Stopwatch', loop:'Loop', interval:'Interval' }[mode] || mode;
+    return {
+        countdown: tr('modeCountdown'), countup: tr('modeCountup'), stopwatch: tr('modeStopwatch'),
+        loop: tr('modeLoop'), interval: tr('modeInterval')
+    }[mode] || mode;
 }
 function getStateLabel(state) {
-    return { running:'Running', paused:'Paused', stopped:'Stopped', completed:'Completed' }[state] || state;
+    return {
+        running: tr('stateRunning'), paused: tr('statePaused'), stopped: tr('stateStopped'), completed: tr('stateCompleted')
+    }[state] || state;
 }
 function escapeHtml(text) {
     const d = document.createElement('div');
@@ -1049,13 +1142,13 @@ async function loadGiftOverrides(timerId) {
         const res = await fetch('/api/advanced-timer/timers/' + timerId + '/gift-overrides');
         const data = await res.json();
         if (!data.success || !data.overrides.length) {
-            container.innerHTML = '<p style="color:var(--color-text-secondary);font-size:0.82rem;">No gift overrides yet.</p>';
+            container.innerHTML = '<p style="color:var(--color-text-secondary);font-size:0.82rem;">' + tr('noGiftOverrides') + '</p>';
             return;
         }
         container.innerHTML = data.overrides.map(o =>
             '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--color-border);font-size:0.84rem;">' +
                 '<span><strong>' + escapeHtml(o.gift_name) + '</strong> -> ' + (o.seconds > 0 ? '+' : '') + o.seconds + 's</span>' +
-                '<button class="btn btn-xs btn-danger go-del-btn" data-go-id="' + o.id + '" data-timer="' + timerId + '">Delete</button>' +
+                '<button class="btn btn-xs btn-danger go-del-btn" data-go-id="' + o.id + '" data-timer="' + timerId + '">' + tr('delete') + '</button>' +
             '</div>'
         ).join('');
         // Attach delete handlers
@@ -1074,7 +1167,7 @@ function populateGiftSelect(timerId) {
     for (const gift of giftCatalog) {
         const opt = document.createElement('option');
         opt.value = gift.id;
-        opt.textContent = gift.name + ' (' + gift.diamond_count + ' diamonds)';
+        opt.textContent = gift.name + ' (' + gift.diamond_count + ' ' + tr('diamonds') + ')';
         select.appendChild(opt);
     }
 }
@@ -1084,11 +1177,11 @@ async function addGiftOverride(timerId) {
     const secondsInput = document.getElementById('go-seconds-' + timerId);
     if (!select || !secondsInput) return;
     const giftId = parseInt(select.value);
-    if (!giftId) { alert('Please select a gift from the catalog.'); return; }
+    if (!giftId) { alert(tr('selectGiftAlert')); return; }
     const seconds = parseFloat(secondsInput.value) || 0;
     // Find gift name from catalog
     const gift = giftCatalog.find(g => g.id === giftId);
-    const giftName = gift ? gift.name : 'Unknown';
+    const giftName = gift ? gift.name : tr('unknownGift');
     try {
         const res = await fetch('/api/advanced-timer/timers/' + timerId + '/gift-overrides', {
             method: 'POST',
@@ -1101,13 +1194,13 @@ async function addGiftOverride(timerId) {
             secondsInput.value = '30';
             loadGiftOverrides(timerId);
         } else {
-            alert(data.error || 'Failed to save');
+            alert(data.error || tr('failedSave'));
         }
     } catch (e) { console.error('addGiftOverride', e); }
 }
 
 async function deleteGiftOverride(overrideId, timerId) {
-    if (!confirm('Remove this gift override?')) return;
+    if (!confirm(tr('removeGiftOverride'))) return;
     try {
         const res = await fetch('/api/advanced-timer/gift-overrides/' + overrideId, { method: 'DELETE' });
         const data = await res.json();
@@ -1169,7 +1262,7 @@ async function saveRotatorSettings(timerId, card) {
             const ind = document.getElementById('rot-si-' + timerId);
             if (ind) { ind.classList.add('show'); setTimeout(() => ind.classList.remove('show'), 1500); }
         } else {
-            alert(data.error || 'Failed to save rotator settings');
+            alert(data.error || tr('failedSaveRotator'));
         }
     } catch (e) { console.error('saveRotatorSettings', e); }
 }
@@ -1213,7 +1306,7 @@ async function saveThresholdSettings(timerId, card) {
             const ind = document.getElementById('thr-si-' + timerId);
             if (ind) { ind.classList.add('show'); setTimeout(() => ind.classList.remove('show'), 1500); }
         } else {
-            alert(data.error || 'Failed to save threshold settings');
+            alert(data.error || tr('failedSaveThreshold'));
         }
     } catch (e) { console.error('saveThresholdSettings', e); }
 }
@@ -1229,16 +1322,16 @@ function renderFrameSlots(timerId, frames) {
         const f = frameMap.get(slot);
         html.push(
             '<div class="at-frame-slot-card">' +
-                '<div class="at-frame-slot-header">Slot ' + slot + '</div>' +
+                '<div class="at-frame-slot-header">' + tr('frameSlot', { n: slot }) + '</div>' +
                 (f
-                    ? '<div class="at-frame-slot-preview"><img src="' + escapeHtml(f.url) + '" alt="frame"></div>' +
-                      '<div class="at-frame-slot-name">' + escapeHtml(f.label || f.filename || 'frame') + '</div>' +
-                      '<button class="btn btn-xs btn-danger delete-frame-btn" data-frame-slot="' + slot + '">Delete Remove</button>'
-                    : '<div class="at-frame-slot-empty">No frame</div>') +
+                    ? '<div class="at-frame-slot-preview"><img src="' + escapeHtml(f.url) + '" alt="' + tr('frameAlt') + '"></div>' +
+                      '<div class="at-frame-slot-name">' + escapeHtml(f.label || f.filename || tr('frameAlt')) + '</div>' +
+                      '<button class="btn btn-xs btn-danger delete-frame-btn" data-frame-slot="' + slot + '">' + tr('frameRemove') + '</button>'
+                    : '<div class="at-frame-slot-empty">' + tr('frameEmpty') + '</div>') +
                 '<form class="at-frame-slot-upload" enctype="multipart/form-data">' +
                   '<input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" data-frame-slot="' + slot + '">' +
-                  '<input type="text" placeholder="Label (optional)" data-frame-label="' + slot + '" style="margin-top:4px;">' +
-                  '<button type="button" class="btn btn-xs btn-primary upload-frame-btn" data-frame-slot="' + slot + '" style="margin-top:4px;">Upload</button>' +
+                  '<input type="text" placeholder="' + tr('frameLabel') + '" data-frame-label="' + slot + '" style="margin-top:4px;">' +
+                  '<button type="button" class="btn btn-xs btn-primary upload-frame-btn" data-frame-slot="' + slot + '" style="margin-top:4px;">' + tr('frameUpload') + '</button>' +
                 '</form>' +
             '</div>'
         );
@@ -1270,12 +1363,12 @@ async function uploadFrame(timerId, slot, container) {
     const fileInput = container.querySelector('input[type="file"][data-frame-slot="' + slot + '"]');
     const labelInput = container.querySelector('input[data-frame-label="' + slot + '"]');
     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-        alert('Choose a file first.');
+        alert(tr('chooseFile'));
         return;
     }
     const file = fileInput.files[0];
     if (file.size > 8 * 1024 * 1024) {
-        alert('Frame must be under 8 MB.');
+        alert(tr('frameTooLarge'));
         return;
     }
     const fd = new FormData();
@@ -1292,13 +1385,13 @@ async function uploadFrame(timerId, slot, container) {
             const card = container.closest('.at-timer-card');
             if (card) loadThresholdSettings(timerId, card);
         } else {
-            alert(data.error || 'Upload failed');
+            alert(data.error || tr('uploadFailed'));
         }
-    } catch (e) { console.error('uploadFrame', e); alert('Upload error'); }
+    } catch (e) { console.error('uploadFrame', e); alert(tr('uploadError')); }
 }
 
 async function deleteFrame(timerId, slot) {
-    if (!confirm('Remove frame in slot ' + slot + '?')) return;
+    if (!confirm(tr('removeFrame', { n: slot }))) return;
     try {
         const res = await fetch('/api/advanced-timer/timers/' + timerId + '/threshold-effects/frame/' + slot, {
             method: 'DELETE'
@@ -1311,7 +1404,7 @@ async function deleteFrame(timerId, slot) {
                 if (card) loadThresholdSettings(timerId, card);
             }
         } else {
-            alert(data.error || 'Delete failed');
+            alert(data.error || tr('deleteFailed'));
         }
     } catch (e) { console.error('deleteFrame', e); }
 }

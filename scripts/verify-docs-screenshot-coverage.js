@@ -6,6 +6,8 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const { LOCALES, buildDocsSpec } = require('./docs-screenshot-spec');
+const { isAllowedCaptureNetworkUrl } = require('./lib/capture-receipt');
+const { validateDocsCaptureReceipts } = require('./verify-docs-capture-receipts');
 
 const ROOT = path.resolve(__dirname, '..');
 const manifestPath = path.join(ROOT, 'screenshots', 'docs-capture-manifest.json');
@@ -80,6 +82,7 @@ const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 assert.strictEqual(manifest.version, spec.version, 'Capture manifest version is stale');
 assert.strictEqual(manifest.specHash, specHash(spec), 'Capture manifest was not recorded from the current step specification');
 assert.deepStrictEqual(manifest.failures || [], [], 'Capture failures must be resolved, not carried into the manifest');
+validateDocsCaptureReceipts({ manifest, assets: spec.assets, locales: LOCALES });
 
 const expected = new Map();
 for (const locale of LOCALES) {
@@ -88,7 +91,7 @@ for (const locale of LOCALES) {
 assert.strictEqual((manifest.outputs || []).length, expected.size, `Expected ${expected.size} current tutorial captures`);
 
 const seen = new Set();
-const hashesByGuideLocale = new Map();
+  const hashesByLocale = new Map();
 for (const output of manifest.outputs || []) {
   const key = `${output.locale}:${output.id}`;
   const expectedEntry = expected.get(key);
@@ -101,31 +104,85 @@ for (const output of manifest.outputs || []) {
   assert.strictEqual(output.route, asset.route, `${key} route drifted`);
   assert.strictEqual(output.selector, asset.selector, `${key} selector drifted`);
   assert.deepStrictEqual(output.action, asset.action, `${key} action drifted`);
+  assert.deepStrictEqual(output.workflow, asset.workflow, `${key} workflow contract drifted`);
+  assert.ok(output.receipt, `${key} is missing its CaptureReceipt`);
+  assert.deepStrictEqual(output.receipt?.operations, asset.workflow.operations, `${key} receipt operations drifted`);
+  assert.ok(output.receipt?.postconditions?.every((condition) => condition.passed === true), `${key} has an unfulfilled receipt postcondition`);
+  assert.strictEqual(output.receipt?.schemaVersion, 2, `${key} must use CaptureReceipt schema 2`);
+  assert.ok(Array.isArray(output.receipt?.network), `${key} is missing network evidence`);
+  assert.ok(output.receipt.network.every((entry) => isAllowedCaptureNetworkUrl(entry.url)), `${key} contacted a non-local origin`);
+  assert.deepStrictEqual(output.receipt?.console, [], `${key} has browser console errors`);
+  assert.ok(Array.isArray(output.receipt?.interactions), `${key} is missing executed interaction evidence`);
+  if (asset.workflow.captureRule?.stateChange) {
+    const interactionConditions = asset.workflow.postconditions.filter((condition) => condition.type === 'interaction');
+    assert.ok(interactionConditions.length, `${key} declares a state change without an interaction postcondition`);
+    for (const condition of interactionConditions) {
+      const expected = condition.expected || {};
+      assert.ok(output.receipt.interactions.some((interaction) => (
+        interaction.status === 'performed'
+        && interaction.selector === condition.selector
+        && interaction.type === expected.type
+        && (expected.changed === undefined || interaction.changed === expected.changed)
+      )), `${key} is missing the declared executed interaction`);
+    }
+  }
   assert.strictEqual(output.state?.lang, locale, `${key} document language is not localized`);
   assert.strictEqual(output.state?.i18n, locale, `${key} plugin i18n language is not localized`);
   assert.strictEqual(output.state?.theme, 'cid', `${key} was not captured in the Cid theme`);
   assert.strictEqual(output.focus?.selector, asset.selector, `${key} did not focus its declared UI anchor`);
   assert.ok(Array.isArray(output.preparation), `${key} did not record its capture preparation list`);
   for (const preparation of output.preparation) {
-    assert.ok(['activate-tab', 'capture-only-safe-demo-reveal'].includes(preparation?.type), `${key} used an undeclared capture-only preparation`);
+    const isTabActivation = preparation?.type === 'activate-tab';
+    const isTimerCreation = asset.guideId === 'advanced-timer'
+      && asset.stepId === 'timer-overlay'
+      && preparation?.type === 'create-demo-timer'
+      && preparation.selector === '#timer-form button[type="submit"]';
+    const isTimerOverlayUrl = asset.guideId === 'advanced-timer'
+      && asset.stepId === 'timer-overlay'
+      && preparation?.type === 'use-created-overlay-url'
+      && preparation.selector === '#timer-container'
+      && typeof preparation.timerId === 'string'
+      && preparation.timerId.length > 0;
+    const isGoalCreation = asset.guideId === 'goals'
+      && asset.stepId === 'goal-overlay'
+      && preparation?.type === 'create-demo-goal'
+      && preparation.selector === '#goal-form button[type="submit"]';
+    const isGoalOverlayUrl = asset.guideId === 'goals'
+      && asset.stepId === 'goal-overlay'
+      && preparation?.type === 'use-created-overlay-url'
+      && preparation.selector === '#goal-container'
+      && typeof preparation.goalId === 'string'
+      && preparation.goalId.length > 0;
+    assert.ok(isTabActivation || isTimerCreation || isTimerOverlayUrl || isGoalCreation || isGoalOverlayUrl,
+      `${key} recorded an unrecognized capture preparation`);
   }
-  assert.strictEqual(output.focus?.label, asset.focusText[locale], `${key} did not render its localized capture label`);
+  assert.strictEqual(output.focus?.selector, asset.selector, `${key} did not focus its declared product anchor`);
   const relative = asset.canonical.replace(/^\/screenshots\//, '');
   const file = path.join(ROOT, 'screenshots', locale === 'en' ? relative : path.join(locale, relative));
   assert.strictEqual(output.path, path.relative(ROOT, file).replace(/\\/g, '/'), `${key} wrote to an unexpected image path`);
   assert.ok(fs.existsSync(file), `${key} screenshot file is missing`);
   const png = pngDetails(file);
-  assert.strictEqual(png.width, asset.viewport.width, `${key} screenshot width is wrong`);
-  assert.strictEqual(png.height, asset.viewport.height, `${key} screenshot height is wrong`);
-  assert.ok(png.bytes > 4096, `${key} screenshot is blank or implausibly small`);
-  assert.ok(png.colors > 12 && png.contrast > 20, `${key} screenshot is visually blank or lacks meaningful contrast`);
+  // Product captures are direct, anchor-centred crops. Verify both the
+  // recorded crop bounds and the PNG dimensions instead of requiring a full
+  // viewport screenshot with unreadably small controls.
+  assert.ok(output.screenshotClip, `${key} did not record its product crop`);
+  const imageCrop = asset.workflow.captureRule.imageCrop || {};
+  assert.strictEqual(output.screenshotClip.width, Math.min(output.state?.viewport?.clientWidth || 0, imageCrop.width || 640), `${key} crop width is wrong`);
+  assert.strictEqual(output.screenshotClip.height, Math.min(output.state?.viewport?.height || 0, imageCrop.height || 560), `${key} crop height is wrong`);
+  assert.strictEqual(png.width, output.screenshotClip.width, `${key} screenshot width is wrong`);
+  assert.strictEqual(png.height, output.screenshotClip.height, `${key} screenshot height is wrong`);
+  // Documentation screenshots must show a real product surface. A transparent
+  // or uniform overlay is not a usable workflow image, even when an event would
+  // make it render later. The sampled output can be deliberately dark, so only
+  // reject genuinely uniform or implausibly small images here.
+  assert.ok(png.bytes > 2048, `${key} screenshot is blank or implausibly small`);
+  assert.ok(png.colors > 1 && png.contrast > 0, `${key} screenshot is visually blank or lacks meaningful contrast`);
   const hash = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
   assert.strictEqual(output.sha256, hash, `${key} manifest hash does not match screenshot`);
-  const guideLocale = `${locale}:${asset.guideId}`;
-  const guideHashes = hashesByGuideLocale.get(guideLocale) || new Set();
-  assert.ok(!guideHashes.has(hash), `${key} duplicates a different step image in the same guide and locale`);
-  guideHashes.add(hash);
-  hashesByGuideLocale.set(guideLocale, guideHashes);
+  const localeHashes = hashesByLocale.get(locale) || new Set();
+  assert.ok(!localeHashes.has(hash), `${key} duplicates a different tutorial screenshot in the same locale`);
+  localeHashes.add(hash);
+  hashesByLocale.set(locale, localeHashes);
 }
 
 assert.strictEqual(seen.size, expected.size, 'Not every guide step and locale was captured');

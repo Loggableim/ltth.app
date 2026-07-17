@@ -5,6 +5,36 @@ let editingGoalId = null;
 let editingMultiGoalId = null;
 let previewUpdateTimer = null;
 
+function t(key, fallback, params = {}) {
+    const translated = window.i18n?.t?.(key, params);
+    if (translated && translated !== key) {
+        return translated;
+    }
+
+    return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+    ));
+}
+
+function updateLocalizedAccessibilityText() {
+    const logo = document.querySelector('.sidebar-brand-logo');
+    if (logo) {
+        logo.alt = t('plugins.goals.goals.ui.brand_logo', 'Live Goals');
+    }
+}
+
+window.i18n?.ready?.then(() => {
+    updateLocalizedAccessibilityText();
+    renderGoals();
+    renderMultiGoals();
+});
+
+window.i18n?.onLanguageChange?.(() => {
+    updateLocalizedAccessibilityText();
+    renderGoals();
+    renderMultiGoals();
+});
+
 (function injectGoalSelectorStyles() {
     if (document.getElementById('goal-selector-styles')) return;
     const style = document.createElement('style');
@@ -109,8 +139,8 @@ function renderGoals() {
         container.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon">🎯</div>
-                <div class="empty-state-text">No goals created yet</div>
-                <button class="btn btn-primary" id="create-first-goal-btn">Create Your First Goal</button>
+                <div class="empty-state-text">${t('plugins.goals.goals.ui.runtime.empty_goals', 'No goals created yet')}</div>
+                <button class="btn btn-primary" id="create-first-goal-btn">${t('plugins.goals.goals.ui.runtime.create_first_goal', 'Create Your First Goal')}</button>
             </div>
         `;
         // Add event listener to the newly created button
@@ -131,8 +161,8 @@ function renderGoals() {
                         <span class="goal-card-badge ${badgeClass}">${goal.goal_type}</span>
                     </div>
                     <div style="display: flex; gap: 8px;">
-                        <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;" data-action="edit-goal" data-goal-id="${goal.id}">Edit</button>
-                        <button class="btn btn-danger" style="padding: 6px 12px; font-size: 0.85rem;" data-action="delete-goal" data-goal-id="${goal.id}">Delete</button>
+                        <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;" data-action="edit-goal" data-goal-id="${goal.id}">${t('plugins.goals.goals.ui.runtime.edit_goal', 'Edit')}</button>
+                        <button class="btn btn-danger" style="padding: 6px 12px; font-size: 0.85rem;" data-action="delete-goal" data-goal-id="${goal.id}">${t('plugins.goals.goals.ui.runtime.delete_goal', 'Delete')}</button>
                     </div>
                 </div>
 
@@ -143,21 +173,21 @@ function renderGoals() {
                 <div class="goal-stats">
                     <span>${goal.current_value} / ${goal.target_value}</span>
                     <span>${progress.toFixed(0)}%</span>
-                    <span>Template: ${goal.template_id}</span>
+                    <span>${t('plugins.goals.goals.ui.runtime.template_label', 'Template')}: ${goal.template_id}</span>
                 </div>
 
                 <div style="margin-top: 16px;">
-                    <strong style="font-size: 0.85rem; color: var(--text-secondary);">Overlay URL:</strong>
+                    <strong style="font-size: 0.85rem; color: var(--text-secondary);">${t('plugins.goals.goals.ui.runtime.overlay_url', 'Overlay URL')}:</strong>
                     <div class="overlay-url">
                         ${overlayUrl}
-                        <button class="btn btn-primary copy-btn" data-action="copy-url" data-url="${escapeHtml(overlayUrl)}">Copy</button>
+                        <button class="btn btn-primary copy-btn" data-action="copy-url" data-url="${escapeHtml(overlayUrl)}">${t('plugins.goals.goals.ui.runtime.copy', 'Copy')}</button>
                     </div>
                 </div>
 
                 <div class="goal-actions">
-                    <button class="btn btn-secondary" data-action="reset-goal" data-goal-id="${goal.id}">Reset</button>
+                    <button class="btn btn-secondary" data-action="reset-goal" data-goal-id="${goal.id}">${t('plugins.goals.goals.ui.runtime.reset', 'Reset')}</button>
                     <button class="btn btn-secondary" data-action="increment-goal" data-goal-id="${goal.id}">+1</button>
-                    ${goal.goal_type === 'custom' ? `<button class="btn btn-secondary" data-action="set-goal-value" data-goal-id="${goal.id}">Set Value</button>` : ''}
+                    ${goal.goal_type === 'custom' ? `<button class="btn btn-secondary" data-action="set-goal-value" data-goal-id="${goal.id}">${t('plugins.goals.goals.ui.runtime.set_value', 'Set Value')}</button>` : ''}
                 </div>
             </div>
         `;
@@ -169,7 +199,7 @@ function renderGoals() {
 
 function openCreateModal() {
     editingGoalId = null;
-    document.querySelector('.modal-header').textContent = 'Create New Goal';
+    document.querySelector('.modal-header').textContent = t('plugins.goals.goals.ui.runtime.create_goal', 'Create New Goal');
     document.getElementById('goal-form').reset();
 
     // Set default colors based on coin type (will update when type changes)
@@ -214,7 +244,7 @@ function editGoal(id) {
     };
 
     editingGoalId = id;
-    document.querySelector('.modal-header').textContent = 'Edit Goal';
+    document.querySelector('.modal-header').textContent = t('plugins.goals.goals.ui.runtime.edit_goal', 'Edit Goal');
     document.getElementById('goal-name').value = goal.name;
     document.getElementById('goal-type').value = goal.goal_type;
     document.getElementById('goal-template').value = goal.template_id;
@@ -308,17 +338,17 @@ async function saveGoal(e) {
     if (result.success) {
         closeModal();
     } else {
-        alert('Error saving goal: ' + result.error);
+        alert(t('plugins.goals.goals.ui.runtime.error_saving_goal', 'Error saving goal: {error}', { error: result.error }));
     }
 }
 
 async function deleteGoal(id) {
-    if (!confirm('Are you sure you want to delete this goal?')) return;
+    if (!confirm(t('plugins.goals.goals.ui.runtime.confirm_delete_goal', 'Are you sure you want to delete this goal?'))) return;
 
     const response = await fetch(`/api/goals/${id}`, { method: 'DELETE' });
     const result = await response.json();
     if (!result.success) {
-        alert('Error deleting goal: ' + result.error);
+        alert(t('plugins.goals.goals.ui.runtime.error_deleting_goal', 'Error deleting goal: {error}', { error: result.error }));
     }
 }
 
@@ -326,7 +356,7 @@ async function resetGoal(id) {
     const response = await fetch(`/api/goals/${id}/reset`, { method: 'POST' });
     const result = await response.json();
     if (!result.success) {
-        alert('Error resetting goal: ' + result.error);
+        alert(t('plugins.goals.goals.ui.runtime.error_resetting_goal', 'Error resetting goal: {error}', { error: result.error }));
     }
 }
 
@@ -338,12 +368,12 @@ async function incrementGoal(id) {
     });
     const result = await response.json();
     if (!result.success) {
-        alert('Error incrementing goal: ' + result.error);
+        alert(t('plugins.goals.goals.ui.runtime.error_incrementing_goal', 'Error incrementing goal: {error}', { error: result.error }));
     }
 }
 
 async function setGoalValue(id) {
-    const value = prompt('Enter new value:');
+    const value = prompt(t('plugins.goals.goals.ui.runtime.enter_new_value', 'Enter new value:'));
     if (value === null) return;
 
     const response = await fetch(`/api/goals/${id}`, {
@@ -353,13 +383,13 @@ async function setGoalValue(id) {
     });
     const result = await response.json();
     if (!result.success) {
-        alert('Error setting value: ' + result.error);
+        alert(t('plugins.goals.goals.ui.runtime.error_setting_value', 'Error setting value: {error}', { error: result.error }));
     }
 }
 
 function copyUrl(url) {
     navigator.clipboard.writeText(url).then(() => {
-        alert('URL copied to clipboard!');
+        alert(t('plugins.goals.goals.ui.runtime.url_copied', 'URL copied to clipboard!'));
     });
 }
 
@@ -589,7 +619,7 @@ function updatePreview() {
     // Get the template
     const template = getTemplate(templateId);
     if (!template) {
-        previewFrame.innerHTML = '<div class="preview-loading">Template not found</div>';
+        previewFrame.innerHTML = `<div class="preview-loading">${t('plugins.goals.goals.ui.runtime.template_not_found', 'Template not found')}</div>`;
         return;
     }
 
@@ -646,7 +676,7 @@ function updatePreview() {
         previewFrame.style.transform = `scale(${scale})`;
     } catch (error) {
         console.error('Preview render error:', error);
-        previewFrame.innerHTML = '<div class="preview-loading">Error rendering preview</div>';
+        previewFrame.innerHTML = `<div class="preview-loading">${t('plugins.goals.goals.ui.runtime.error_rendering_preview', 'Error rendering preview')}</div>`;
     }
 }
 
@@ -799,9 +829,9 @@ function openMultiGoalModal() {
             document.getElementById('multigoal-width').value = multigoal.overlay_width;
             document.getElementById('multigoal-height').value = multigoal.overlay_height;
         }
-        modal.querySelector('.modal-header').textContent = 'Edit MultiGoal';
+        modal.querySelector('.modal-header').textContent = t('plugins.goals.goals.ui.runtime.edit_multigoal', 'Edit MultiGoal');
     } else {
-        modal.querySelector('.modal-header').textContent = 'Create MultiGoal';
+        modal.querySelector('.modal-header').textContent = t('plugins.goals.goals.ui.runtime.create_multigoal', 'Create MultiGoal');
     }
 
     // Load goals for selection
@@ -820,7 +850,7 @@ function loadGoalsSelector() {
     const selector = document.getElementById('multigoal-goals-selector');
     
     if (goals.length === 0) {
-        selector.innerHTML = '<div style="color: var(--color-text-muted); text-align: center; padding: 20px;">No goals available. Create some goals first.</div>';
+        selector.innerHTML = `<div style="color: var(--color-text-muted); text-align: center; padding: 20px;">${t('plugins.goals.goals.ui.runtime.no_goals_available', 'No goals available. Create some goals first.')}</div>`;
         return;
     }
 
@@ -871,7 +901,7 @@ async function saveMultiGoal() {
         .map(cb => cb.value);
 
     if (selectedGoals.length < 2) {
-        alert('Please select at least 2 goals for the multigoal rotation');
+        alert(t('plugins.goals.goals.ui.runtime.select_two_goals', 'Please select at least 2 goals for the multigoal rotation'));
         return;
     }
 
@@ -903,11 +933,11 @@ async function saveMultiGoal() {
             closeMultiGoalModal();
             editingMultiGoalId = null;
         } else {
-            alert('Error: ' + result.error);
+            alert(t('plugins.goals.goals.ui.runtime.error_saving_multigoal', 'Error saving multigoal: {error}', { error: result.error }));
         }
     } catch (error) {
         console.error('Error saving multigoal:', error);
-        alert('Error saving multigoal');
+        alert(t('plugins.goals.goals.ui.runtime.error_saving_multigoal', 'Error saving multigoal: {error}', { error: error.message || '' }));
     }
 }
 
@@ -919,8 +949,8 @@ function renderMultiGoals() {
         container.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon">🔄</div>
-                <div class="empty-state-text">No multigoals created yet</div>
-                <button class="btn btn-primary" id="create-first-multigoal-btn">Create Your First MultiGoal</button>
+                <div class="empty-state-text">${t('plugins.goals.goals.ui.runtime.empty_multigoals', 'No multigoals created yet')}</div>
+                <button class="btn btn-primary" id="create-first-multigoal-btn">${t('plugins.goals.goals.ui.runtime.create_first_multigoal', 'Create Your First MultiGoal')}</button>
             </div>
         `;
         // Re-attach event listener
@@ -974,11 +1004,11 @@ function setupMultiGoalCardEventListeners() {
 function renderMultiGoalCard(multigoal) {
     const overlayUrl = `${window.location.origin}/goals/multigoal-overlay?id=${multigoal.id}`;
     const animationNames = {
-        slide: 'Slide',
-        fade: 'Fade',
-        cube: 'Cube',
-        wave: 'Wave',
-        particle: 'Particle'
+            slide: t('plugins.goals.goals.ui.runtime.animation_slide', 'Slide'),
+            fade: t('plugins.goals.goals.ui.runtime.animation_fade', 'Fade'),
+            cube: t('plugins.goals.goals.ui.runtime.animation_cube', 'Cube'),
+            wave: t('plugins.goals.goals.ui.runtime.animation_wave', 'Wave'),
+            particle: t('plugins.goals.goals.ui.runtime.animation_particle', 'Particle')
     };
 
     return `
@@ -987,33 +1017,33 @@ function renderMultiGoalCard(multigoal) {
                 <div class="multigoal-title">🔄 ${multigoal.name}</div>
                 <div>
                     <span style="padding: 4px 12px; background: var(--color-active-bg); border-radius: 12px; font-size: 0.85rem; font-weight: 600;">
-                        ${multigoal.goal_ids?.length || 0} goals
+                            ${t('plugins.goals.goals.ui.runtime.goal_count', '{count} goals', { count: multigoal.goal_ids?.length || 0 })}
                     </span>
                 </div>
             </div>
 
             <div class="multigoal-info">
                 <div class="multigoal-info-item">
-                    <div class="multigoal-info-label">Interval</div>
-                    <div class="multigoal-info-value">${multigoal.rotation_interval}s</div>
+                    <div class="multigoal-info-label">${t('plugins.goals.goals.ui.runtime.interval', 'Interval')}</div>
+                    <div class="multigoal-info-value">${t('plugins.goals.goals.ui.runtime.interval_value', '{seconds}s', { seconds: multigoal.rotation_interval })}</div>
                 </div>
                 <div class="multigoal-info-item">
-                    <div class="multigoal-info-label">Animation</div>
+                    <div class="multigoal-info-label">${t('plugins.goals.goals.ui.runtime.animation', 'Animation')}</div>
                     <div class="multigoal-info-value">${animationNames[multigoal.animation_type] || multigoal.animation_type}</div>
                 </div>
                 <div class="multigoal-info-item">
-                    <div class="multigoal-info-label">Size</div>
+                    <div class="multigoal-info-label">${t('plugins.goals.goals.ui.runtime.size', 'Size')}</div>
                     <div class="multigoal-info-value">${multigoal.overlay_width}×${multigoal.overlay_height}</div>
                 </div>
             </div>
 
             <div class="multigoal-goals-list">
                 <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: var(--color-text-muted);">
-                    Included Goals:
+                        ${t('plugins.goals.goals.ui.runtime.included_goals', 'Included goals')}:
                 </div>
                 ${(multigoal.goal_ids || []).map(goalId => {
                     const goal = goals.find(g => g.id === goalId);
-                    if (!goal) return `<div class="multigoal-goal-item" style="color: var(--color-text-muted);">Goal not found (${goalId})</div>`;
+                        if (!goal) return `<div class="multigoal-goal-item" style="color: var(--color-text-muted);">${t('plugins.goals.goals.ui.runtime.goal_not_found', 'Goal not found ({id})', { id: goalId })}</div>`;
                     return `
                         <div class="multigoal-goal-item">
                             ${getGoalTypeIcon(goal.goal_type)} ${goal.name}
@@ -1026,7 +1056,7 @@ function renderMultiGoalCard(multigoal) {
             </div>
 
             <div style="background: var(--color-bg-tertiary); padding: 12px; border-radius: 8px; margin-top: 12px;">
-                <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 8px;">Overlay URL:</div>
+                <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 8px;">${t('plugins.goals.goals.ui.runtime.overlay_url', 'Overlay URL')}:</div>
                 <div style="display: flex; gap: 8px;">
                     <input type="text"
                            value="${overlayUrl}"
@@ -1036,7 +1066,7 @@ function renderMultiGoalCard(multigoal) {
                     <button class="btn btn-secondary"
                             style="padding: 8px 16px;"
                             data-action="copy-multigoal-url" data-url="${escapeHtml(overlayUrl)}">
-                        📋 Copy
+                            📋 ${t('plugins.goals.goals.ui.runtime.copy', 'Copy')}
                     </button>
                 </div>
             </div>
@@ -1045,12 +1075,12 @@ function renderMultiGoalCard(multigoal) {
                 <button class="btn btn-primary"
                         style="flex: 1;"
                         data-action="edit-multigoal" data-id="${escapeHtml(multigoal.id)}">
-                    ✏️ Edit
+                        ✏️ ${t('plugins.goals.goals.ui.runtime.edit_goal', 'Edit')}
                 </button>
                 <button class="btn btn-danger"
                         style="flex: 1;"
                         data-action="delete-multigoal" data-id="${escapeHtml(multigoal.id)}" data-name="${escapeHtml(multigoal.name)}">
-                    🗑️ Delete
+                        🗑️ ${t('plugins.goals.goals.ui.runtime.delete_goal', 'Delete')}
                 </button>
             </div>
         </div>
@@ -1065,7 +1095,7 @@ function editMultiGoal(id) {
 
 // Delete multigoal
 async function deleteMultiGoal(id, name) {
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) {
+    if (!confirm(t('plugins.goals.goals.ui.runtime.confirm_delete_multigoal', 'Are you sure you want to delete "{name}"?', { name }))) {
         return;
     }
 
@@ -1077,11 +1107,11 @@ async function deleteMultiGoal(id, name) {
         const result = await response.json();
 
         if (!result.success) {
-            alert('Error: ' + result.error);
+            alert(t('plugins.goals.goals.ui.runtime.error_deleting_multigoal', 'Error deleting multigoal: {error}', { error: result.error }));
         }
     } catch (error) {
         console.error('Error deleting multigoal:', error);
-        alert('Error deleting multigoal');
+        alert(t('plugins.goals.goals.ui.runtime.error_deleting_multigoal', 'Error deleting multigoal: {error}', { error: error.message || '' }));
     }
 }
 
@@ -1090,7 +1120,7 @@ function copyToClipboard(text, btnElement) {
     navigator.clipboard.writeText(text).then(() => {
         const btn = btnElement;
         const originalText = btn.textContent;
-        btn.textContent = '✓ Copied!';
+        btn.textContent = `✓ ${t('plugins.goals.goals.ui.runtime.copied', 'Copied!')}`;
         setTimeout(() => {
             btn.textContent = originalText;
         }, 2000);

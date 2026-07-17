@@ -325,37 +325,37 @@
   },
   {
     "id": "emoji-rain",
-    "name": "EmojiRain",
+    "name": "Emoji Rain",
     "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/emoji-rain/emoji-card.png",
-      "en": "/screenshots/docs/plugins/emoji-rain/emoji-card.png",
-      "es": "/screenshots/es/docs/plugins/emoji-rain/emoji-card.png",
-      "fr": "/screenshots/fr/docs/plugins/emoji-rain/emoji-card.png"
+      "de": "/screenshots/de/docs/plugins/emoji-rain/enable-emoji-rain.png",
+      "en": "/screenshots/docs/plugins/emoji-rain/enable-emoji-rain.png",
+      "es": "/screenshots/es/docs/plugins/emoji-rain/enable-emoji-rain.png",
+      "fr": "/screenshots/fr/docs/plugins/emoji-rain/enable-emoji-rain.png"
     },
     "translations": {
       "de": {
-        "title": "EmojiRain",
-        "summary": "EmojiRain richtet Emoji-Preset, Spawn-Regeln und Geschenkzuordnung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "Emojis erscheinen in der Vorschau, ohne TikTok LIVE zu verbinden"
+        "title": "Emoji Rain",
+        "summary": "Konfiguriere Emojis, die optionale OBS-HUD-Auflösung und einen lokalen Testrain. Die Anleitung verwendet keine TikTok-Verbindung und keine produktive OBS-Szene.",
+        "firstResult": "Der Test lässt die gewählten Emojis im lokalen HUD fallen."
       },
       "en": {
-        "title": "EmojiRain",
-        "summary": "EmojiRain configures emoji preset, spawn rules, and gift mapping with a safe local check instead of a LIVE trigger.",
-        "firstResult": "emojis appear in preview without connecting TikTok LIVE"
+        "title": "Emoji Rain",
+        "summary": "Configure the emoji list, optional OBS HUD resolution, and a local test rain. This guide uses no TikTok connection and no production OBS scene.",
+        "firstResult": "The test drops the selected emojis in the local HUD."
       },
       "es": {
-        "title": "EmojiRain",
-        "summary": "EmojiRain configura preajuste de emoji, reglas de aparición y asignación de regalos mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "los emojis aparecen en la vista previa sin conectar TikTok LIVE"
+        "title": "Emoji Rain",
+        "summary": "Configura la lista de emojis, la resolución opcional del HUD de OBS y una lluvia de prueba local. Esta guía no usa TikTok ni una escena productiva de OBS.",
+        "firstResult": "La prueba deja caer los emojis seleccionados en el HUD local."
       },
       "fr": {
-        "title": "EmojiRain",
-        "summary": "EmojiRain configure préréglage emoji, règles d’apparition et mappage des cadeaux avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "les emojis apparaissent dans l’aperçu sans connecter TikTok LIVE"
+        "title": "Emoji Rain",
+        "summary": "Configurez la liste d’emoji, la résolution facultative du HUD OBS et une pluie de test locale. Ce guide n’utilise ni TikTok ni une scène OBS de production.",
+        "firstResult": "Le test fait tomber les emoji sélectionnés dans le HUD local."
       }
     }
   },
@@ -543,8 +543,8 @@
     "id": "store-admin",
     "name": "LTTH App Store Admin",
     "category": "utility",
-    "access": "available",
-    "devStatus": "available",
+    "access": "working-beta",
+    "devStatus": "working-beta",
     "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/store-admin/store-card.png",
@@ -788,6 +788,42 @@
         "title": "Pup Cid's Little Quiz Show Plugin",
         "summary": "Pup Cid's Little Quiz Show Plugin configure banque de questions, temps de réponse et logique de score avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
         "firstResult": "la vue de jeu affiche la question sans interaction de chat LIVE"
+      }
+    }
+  },
+  {
+    "id": "schnorrbecher",
+    "name": "Schnorrbecher",
+    "category": "plugin",
+    "access": "working-beta",
+    "devStatus": "working-beta",
+    "storeAvailable": false,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/schnorrbecher/coin-jar-config.png",
+      "en": "/screenshots/docs/plugins/schnorrbecher/coin-jar-config.png",
+      "es": "/screenshots/es/docs/plugins/schnorrbecher/coin-jar-config.png",
+      "fr": "/screenshots/fr/docs/plugins/schnorrbecher/coin-jar-config.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Schnorrbecher",
+        "summary": "Schnorrbecher richtet Geschenkeglas, lokale Testwerte und OBS-Overlay ein, ohne eine LIVE-Szene zu verändern.",
+        "firstResult": "der Testwert erscheint im isolierten Becher, ohne eine LIVE-Szene zu verändern"
+      },
+      "en": {
+        "title": "Schnorrbecher",
+        "summary": "Schnorrbecher configures the gift jar, local test values, and OBS overlay without changing a LIVE scene.",
+        "firstResult": "the test value appears in the isolated jar without changing a LIVE scene"
+      },
+      "es": {
+        "title": "Schnorrbecher",
+        "summary": "Schnorrbecher configura el tarro de regalos, los valores de prueba locales y el overlay de OBS sin cambiar una escena LIVE.",
+        "firstResult": "el valor de prueba aparece en el tarro aislado sin cambiar una escena LIVE"
+      },
+      "fr": {
+        "title": "Schnorrbecher",
+        "summary": "Schnorrbecher configure le bocal de cadeaux, les valeurs de test locales et l’overlay OBS sans modifier une scène LIVE.",
+        "firstResult": "la valeur de test apparaît dans le bocal isolé sans modifier une scène LIVE"
       }
     }
   },

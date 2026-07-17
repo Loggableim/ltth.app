@@ -1,23 +1,42 @@
-const overlayTypes = [
-  { id: 'follower', name: 'Follower Spotlight', accent: '#22c55e', description: 'Highlights the most recent follower.' },
-  { id: 'like', name: 'Like Spotlight', accent: '#fb7185', description: 'Highlights the most recent like event.' },
-  { id: 'chatter', name: 'Chat Spotlight', accent: '#38bdf8', description: 'Highlights the most recent chat message.' },
-  { id: 'share', name: 'Share Spotlight', accent: '#14b8a6', description: 'Highlights the most recent share.' },
-  { id: 'gifter', name: 'Gifter Spotlight', accent: '#f59e0b', description: 'Highlights the most recent gift sender.' },
-  { id: 'subscriber', name: 'Subscriber Spotlight', accent: '#8b5cf6', description: 'Highlights the most recent subscriber.' },
-  { id: 'topgift', name: 'Top Gift Spotlight', accent: '#f97316', description: 'Shows the biggest gift of the stream.' },
-  { id: 'giftstreak', name: 'Gift Streak Spotlight', accent: '#ec4899', description: 'Shows the current streak leader.' },
-  { id: 'multihud', name: 'Rotation Spotlight', accent: '#6366f1', description: 'Cycles through multiple spotlight modes.' }
-];
-
 let currentType = null;
 let currentPreviewType = null;
 let allSettings = {};
 
-// Initialize UI
-function init() {
+function interpolate(fallback, params = {}) {
+  return String(fallback).replace(/\{([A-Za-z_][\w.-]*)\}/g, (match, name) => (
+    Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+  ));
+}
+
+function translate(key, fallback, params = {}) {
+  const value = window.i18n?.t?.(key, params);
+  return value && value !== key ? value : interpolate(fallback, params);
+}
+
+function getOverlayTypes() {
+  return [
+    { id: 'follower', accent: '#22c55e', name: translate('plugins.spotlight.runtime.cards.name_follower', 'Follower Spotlight'), description: translate('plugins.spotlight.runtime.cards.description_follower', 'Highlights the most recent follower.') },
+    { id: 'like', accent: '#fb7185', name: translate('plugins.spotlight.runtime.cards.name_like', 'Like Spotlight'), description: translate('plugins.spotlight.runtime.cards.description_like', 'Highlights the most recent like event.') },
+    { id: 'chatter', accent: '#38bdf8', name: translate('plugins.spotlight.runtime.cards.name_chatter', 'Chat Spotlight'), description: translate('plugins.spotlight.runtime.cards.description_chatter', 'Highlights the most recent chat message.') },
+    { id: 'share', accent: '#14b8a6', name: translate('plugins.spotlight.runtime.cards.name_share', 'Share Spotlight'), description: translate('plugins.spotlight.runtime.cards.description_share', 'Highlights the most recent share.') },
+    { id: 'gifter', accent: '#f59e0b', name: translate('plugins.spotlight.runtime.cards.name_gifter', 'Gifter Spotlight'), description: translate('plugins.spotlight.runtime.cards.description_gifter', 'Highlights the most recent gift sender.') },
+    { id: 'subscriber', accent: '#8b5cf6', name: translate('plugins.spotlight.runtime.cards.name_subscriber', 'Subscriber Spotlight'), description: translate('plugins.spotlight.runtime.cards.description_subscriber', 'Highlights the most recent subscriber.') },
+    { id: 'topgift', accent: '#f97316', name: translate('plugins.spotlight.runtime.cards.name_topgift', 'Top Gift Spotlight'), description: translate('plugins.spotlight.runtime.cards.description_topgift', 'Shows the biggest gift of the stream.') },
+    { id: 'giftstreak', accent: '#ec4899', name: translate('plugins.spotlight.runtime.cards.name_giftstreak', 'Gift Streak Spotlight'), description: translate('plugins.spotlight.runtime.cards.description_giftstreak', 'Shows the current streak leader.') },
+    { id: 'multihud', accent: '#6366f1', name: translate('plugins.spotlight.runtime.cards.name_multihud', 'Rotation Spotlight'), description: translate('plugins.spotlight.runtime.cards.description_multihud', 'Cycles through multiple spotlight modes.') }
+  ];
+}
+
+// Initialize UI after the locale bundle is available so generated controls do
+// not briefly render in the fallback language.
+async function init() {
+  if (window.i18n?.ready) await window.i18n.ready;
   renderOverlayCards();
   loadAllSettings();
+  window.i18n?.onLanguageChange?.(() => {
+    renderOverlayCards();
+    if (currentType) renderSettingsForm(currentType);
+  });
 }
 
 // Render overlay cards
@@ -28,13 +47,14 @@ function renderOverlayCards() {
   }
 
   const origin = window.location.origin;
+  const overlayTypes = getOverlayTypes();
   grid.innerHTML = overlayTypes.map((type) => {
     const url = `${origin}/overlay/spotlight/${type.id}`;
     return `
       <article class="overlay-card" style="--overlay-accent: ${type.accent};">
         <div class="overlay-card__top">
           <div class="overlay-card__headline">
-            <span class="overlay-card__eyebrow">Live mode</span>
+            <span class="overlay-card__eyebrow">${translate('plugins.spotlight.runtime.cards.live_mode', 'Live mode')}</span>
             <h3>${type.name}</h3>
             <p>${type.description}</p>
           </div>
@@ -42,19 +62,19 @@ function renderOverlayCards() {
         </div>
 
         <div class="url-container">
-          <div class="overlay-card__label">Overlay URL</div>
+          <div class="overlay-card__label">${translate('plugins.spotlight.runtime.cards.overlay_url', 'Overlay URL')}</div>
           <code>${url}</code>
         </div>
 
         <div class="button-group">
           <button class="btn btn-primary btn-sm" data-action="copy" data-type="${type.id}">
-            Copy URL
+            ${translate('plugins.spotlight.runtime.cards.copy_url', 'Copy URL')}
           </button>
           <button class="btn btn-secondary btn-sm" data-action="preview" data-type="${type.id}">
-            Preview
+            ${translate('plugins.spotlight.runtime.cards.preview', 'Preview')}
           </button>
           <button class="btn btn-ghost btn-sm" data-action="settings" data-type="${type.id}">
-            Settings
+            ${translate('plugins.spotlight.runtime.cards.settings', 'Settings')}
           </button>
         </div>
       </article>
@@ -110,7 +130,7 @@ async function loadAllSettings() {
     }
   } catch (error) {
     console.error('Error loading settings:', error);
-    showToast('Error loading settings', 'error');
+    showToast(translate('plugins.spotlight.runtime.toast.settings_load_failed', 'Error loading settings'), 'error');
   }
 }
 
@@ -118,16 +138,16 @@ async function loadAllSettings() {
 function copyURL(type) {
   const url = `${window.location.origin}/overlay/spotlight/${type}`;
   navigator.clipboard.writeText(url).then(() => {
-    showToast(`URL copied to clipboard!`);
+    showToast(translate('plugins.spotlight.runtime.toast.url_copied', 'URL copied to clipboard!'));
   }).catch(err => {
-    showToast('Failed to copy URL', 'error');
+    showToast(translate('plugins.spotlight.runtime.toast.url_copy_failed', 'Failed to copy URL'), 'error');
   });
 }
 
 // Open preview
 function openPreview(type) {
   currentPreviewType = type;
-  const typeName = overlayTypes.find(t => t.id === type)?.name || type;
+  const typeName = getOverlayTypes().find(t => t.id === type)?.name || type;
   document.getElementById('preview-title-type').textContent = typeName;
 
   const url = `/overlay/spotlight/${type}`;
@@ -152,20 +172,20 @@ async function testOverlay(type) {
     const data = await response.json();
 
     if (data.success) {
-      showToast(`Test event sent for ${type}!`);
+      showToast(translate('plugins.spotlight.runtime.toast.test_sent', 'Test event sent for {type}!', { type }));
     } else {
-      showToast('Test failed: ' + data.error, 'error');
+      showToast(translate('plugins.spotlight.runtime.toast.test_failed', 'Test failed: {error}', { error: data.error || '' }), 'error');
     }
   } catch (error) {
     console.error('Error testing overlay:', error);
-    showToast('Error testing overlay', 'error');
+    showToast(translate('plugins.spotlight.runtime.toast.overlay_test_failed', 'Error testing overlay'), 'error');
   }
 }
 
 // Open settings modal
 function openSettings(type) {
   currentType = type;
-  const typeName = overlayTypes.find(t => t.id === type)?.name || type;
+  const typeName = getOverlayTypes().find(t => t.id === type)?.name || type;
   document.getElementById('modal-title-type').textContent = typeName;
 
   renderSettingsForm(type);
@@ -178,283 +198,147 @@ function closeSettingsModal() {
   currentType = null;
 }
 
-// Render settings form
+function settingText(key, fallback, params = {}) {
+  return translate(`plugins.spotlight.runtime.settings.${key}`, fallback, params);
+}
+
+function settingOption(value, key, fallback, selected) {
+  return `<option value="${value}" ${selected ? 'selected' : ''}>${settingText(key, fallback)}</option>`;
+}
+
+function eventCheckbox(id, key, fallback, icon, checked) {
+  return `<div class="checkbox-group"><input type="checkbox" id="event-${id}" value="${id}" ${checked ? 'checked' : ''}><label for="event-${id}">${icon} ${settingText(key, fallback)}</label></div>`;
+}
+
+// Render settings form without changing its stable DOM IDs or saved config keys.
 function renderSettingsForm(type) {
   const settings = allSettings[type] || {};
   const container = document.getElementById('settings-form-container');
+  const selectedEvents = settings.selectedEvents;
+  const isSelected = (id, defaultSelected = false) => (!selectedEvents ? defaultSelected : selectedEvents.includes(id));
+  const animationOptions = (currentValue) => [
+    settingOption('fade', 'animation_fade', 'Fade', currentValue === 'fade'),
+    settingOption('slide', 'animation_slide', 'Slide', currentValue === 'slide'),
+    settingOption('pop', 'animation_pop', 'Pop', currentValue === 'pop'),
+    settingOption('zoom', 'animation_zoom', 'Zoom', currentValue === 'zoom'),
+    settingOption('glow', 'animation_glow', 'Glow', currentValue === 'glow'),
+    settingOption('bounce', 'effect_bounce', 'Bounce', currentValue === 'bounce'),
+    settingOption('none', 'effect_none', 'None', currentValue === 'none')
+  ].join('');
 
   container.innerHTML = `
-    <!-- Design Variant -->
     <div class="settings-section">
-      <h4>🎨 Design Variant</h4>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Choose a Design Style</label>
-          <select id="designVariant">
-            <option value="default" ${settings.designVariant === 'default' || !settings.designVariant ? 'selected' : ''}>Default - Clean & Modern</option>
-            <option value="minimal" ${settings.designVariant === 'minimal' ? 'selected' : ''}>Minimal - Subtle & Clean</option>
-            <option value="compact" ${settings.designVariant === 'compact' ? 'selected' : ''}>Compact - Small & Tight</option>
-            <option value="neon" ${settings.designVariant === 'neon' ? 'selected' : ''}>Neon - Cyberpunk Glow</option>
-            <option value="glassmorphism" ${settings.designVariant === 'glassmorphism' ? 'selected' : ''}>Glassmorphism - Frosted Glass</option>
-            <option value="retro" ${settings.designVariant === 'retro' ? 'selected' : ''}>Retro - 8-bit Pixel Style</option>
-          </select>
-        </div>
-      </div>
-      <p style="font-size: 12px; color: var(--color-text-muted); margin-top: 10px;">
-        💡 Each design variant has its own unique look. Some variants may override certain settings like borders or fonts for the best visual effect.
-      </p>
+      <h4>🎨 ${settingText('design_variant', 'Design Variant')}</h4>
+      <div class="form-row"><div class="form-group">
+        <label>${settingText('choose_design_style', 'Choose a Design Style')}</label>
+        <select id="designVariant">
+          ${settingOption('default', 'variant_default', 'Default - Clean & Modern', settings.designVariant === 'default' || !settings.designVariant)}
+          ${settingOption('minimal', 'variant_minimal', 'Minimal - Subtle & Clean', settings.designVariant === 'minimal')}
+          ${settingOption('compact', 'variant_compact', 'Compact - Small & Tight', settings.designVariant === 'compact')}
+          ${settingOption('neon', 'variant_neon', 'Neon - Cyberpunk Glow', settings.designVariant === 'neon')}
+          ${settingOption('glassmorphism', 'variant_glassmorphism', 'Glassmorphism - Frosted Glass', settings.designVariant === 'glassmorphism')}
+          ${settingOption('retro', 'variant_retro', 'Retro - 8-bit Pixel Style', settings.designVariant === 'retro')}
+        </select>
+      </div></div>
+      <p style="font-size: 12px; color: var(--color-text-muted); margin-top: 10px;">💡 ${settingText('design_help', 'Each design variant has its own unique look. Some variants may override certain settings like borders or fonts for the best visual effect.')}</p>
     </div>
 
-    <!-- Font Settings -->
     <div class="settings-section">
-      <h4>📝 Font Settings</h4>
+      <h4>📝 ${settingText('font_settings', 'Font Settings')}</h4>
       <div class="form-row">
-        <div class="form-group">
-          <label>Font Family</label>
-          <input type="text" id="fontFamily" value="${settings.fontFamily || 'Exo 2'}">
-        </div>
-        <div class="form-group">
-          <label>Font Size</label>
-          <input type="text" id="fontSize" value="${settings.fontSize || '32px'}">
-        </div>
+        <div class="form-group"><label>${settingText('font_family', 'Font Family')}</label><input type="text" id="fontFamily" value="${settings.fontFamily || 'Exo 2'}"></div>
+        <div class="form-group"><label>${settingText('font_size', 'Font Size')}</label><input type="text" id="fontSize" value="${settings.fontSize || '32px'}"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>Line Spacing</label>
-          <input type="text" id="fontLineSpacing" value="${settings.fontLineSpacing || '1.2'}">
-        </div>
-        <div class="form-group">
-          <label>Letter Spacing</label>
-          <input type="text" id="fontLetterSpacing" value="${settings.fontLetterSpacing || 'normal'}">
-        </div>
+        <div class="form-group"><label>${settingText('line_spacing', 'Line Spacing')}</label><input type="text" id="fontLineSpacing" value="${settings.fontLineSpacing || '1.2'}"></div>
+        <div class="form-group"><label>${settingText('letter_spacing', 'Letter Spacing')}</label><input type="text" id="fontLetterSpacing" value="${settings.fontLetterSpacing || 'normal'}"></div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Font Color</label>
-          <div class="color-input-wrapper">
-            <input type="color" id="fontColor-picker" value="${settings.fontColor || '#FFFFFF'}">
-            <input type="text" id="fontColor" value="${settings.fontColor || '#FFFFFF'}">
-          </div>
-        </div>
-      </div>
+      <div class="form-row"><div class="form-group"><label>${settingText('font_color', 'Font Color')}</label><div class="color-input-wrapper"><input type="color" id="fontColor-picker" value="${settings.fontColor || '#FFFFFF'}"><input type="text" id="fontColor" value="${settings.fontColor || '#FFFFFF'}"></div></div></div>
     </div>
 
-    <!-- Username Effects -->
     <div class="settings-section">
-      <h4>✨ Username Effects</h4>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Effect Type</label>
-          <select id="usernameEffect">
-            <option value="none" ${settings.usernameEffect === 'none' ? 'selected' : ''}>None</option>
-            <option value="wave" ${settings.usernameEffect === 'wave' ? 'selected' : ''}>Wave</option>
-            <option value="wave-slow" ${settings.usernameEffect === 'wave-slow' ? 'selected' : ''}>Wave (Slow)</option>
-            <option value="wave-fast" ${settings.usernameEffect === 'wave-fast' ? 'selected' : ''}>Wave (Fast)</option>
-            <option value="jitter" ${settings.usernameEffect === 'jitter' ? 'selected' : ''}>Jitter</option>
-            <option value="bounce" ${settings.usernameEffect === 'bounce' ? 'selected' : ''}>Bounce</option>
-          </select>
-        </div>
-      </div>
-      <div class="checkbox-group">
-        <input type="checkbox" id="usernameGlow" ${settings.usernameGlow ? 'checked' : ''}>
-        <label for="usernameGlow">Enable Glow Effect</label>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Glow Color</label>
-          <div class="color-input-wrapper">
-            <input type="color" id="usernameGlowColor-picker" value="${settings.usernameGlowColor || '#00FF00'}">
-            <input type="text" id="usernameGlowColor" value="${settings.usernameGlowColor || '#00FF00'}">
-          </div>
-        </div>
-      </div>
+      <h4>✨ ${settingText('username_effects', 'Username Effects')}</h4>
+      <div class="form-row"><div class="form-group"><label>${settingText('effect_type', 'Effect Type')}</label><select id="usernameEffect">
+        ${settingOption('none', 'effect_none', 'None', settings.usernameEffect === 'none')}
+        ${settingOption('wave', 'effect_wave', 'Wave', settings.usernameEffect === 'wave')}
+        ${settingOption('wave-slow', 'effect_wave_slow', 'Wave (Slow)', settings.usernameEffect === 'wave-slow')}
+        ${settingOption('wave-fast', 'effect_wave_fast', 'Wave (Fast)', settings.usernameEffect === 'wave-fast')}
+        ${settingOption('jitter', 'effect_jitter', 'Jitter', settings.usernameEffect === 'jitter')}
+        ${settingOption('bounce', 'effect_bounce', 'Bounce', settings.usernameEffect === 'bounce')}
+      </select></div></div>
+      <div class="checkbox-group"><input type="checkbox" id="usernameGlow" ${settings.usernameGlow ? 'checked' : ''}><label for="usernameGlow">${settingText('enable_glow_effect', 'Enable Glow Effect')}</label></div>
+      <div class="form-row"><div class="form-group"><label>${settingText('glow_color', 'Glow Color')}</label><div class="color-input-wrapper"><input type="color" id="usernameGlowColor-picker" value="${settings.usernameGlowColor || '#00FF00'}"><input type="text" id="usernameGlowColor" value="${settings.usernameGlowColor || '#00FF00'}"></div></div></div>
     </div>
 
-    <!-- Border -->
     <div class="settings-section">
-      <h4>🖼️ Border</h4>
-      <div class="checkbox-group">
-        <input type="checkbox" id="enableBorder" ${settings.enableBorder ? 'checked' : ''}>
-        <label for="enableBorder">Enable Border</label>
+      <h4>🖼️ ${settingText('border', 'Border')}</h4>
+      <div class="checkbox-group"><input type="checkbox" id="enableBorder" ${settings.enableBorder ? 'checked' : ''}><label for="enableBorder">${settingText('enable_border', 'Enable Border')}</label></div>
+      <div class="form-row"><div class="form-group"><label>${settingText('border_color', 'Border Color')}</label><div class="color-input-wrapper"><input type="color" id="borderColor-picker" value="${settings.borderColor || '#FFFFFF'}"><input type="text" id="borderColor" value="${settings.borderColor || '#FFFFFF'}"></div></div></div>
+    </div>
+
+    <div class="settings-section">
+      <h4>🎨 ${settingText('background', 'Background')}</h4>
+      <div class="checkbox-group"><input type="checkbox" id="enableBackground" ${settings.enableBackground ? 'checked' : ''}><label for="enableBackground">${settingText('enable_background', 'Enable Background')}</label></div>
+      <div class="form-row"><div class="form-group"><label>${settingText('background_color', 'Background Color (RGBA)')}</label><input type="text" id="backgroundColor" value="${settings.backgroundColor || 'rgba(0, 0, 0, 0.7)'}"></div></div>
+    </div>
+
+    <div class="settings-section">
+      <h4>👤 ${settingText('profile_picture', 'Profile Picture')}</h4>
+      <div class="checkbox-group"><input type="checkbox" id="showProfilePicture" ${settings.showProfilePicture !== false ? 'checked' : ''}><label for="showProfilePicture">${settingText('show_profile_picture', 'Show Profile Picture')}</label></div>
+      <div class="form-row"><div class="form-group"><label>${settingText('profile_picture_size', 'Profile Picture Size')}</label><input type="text" id="profilePictureSize" value="${settings.profilePictureSize || '80px'}"></div></div>
+    </div>
+
+    <div class="settings-section">
+      <h4>📐 ${settingText('layout', 'Layout')}</h4>
+      <div class="checkbox-group"><input type="checkbox" id="showUsername" ${settings.showUsername !== false ? 'checked' : ''}><label for="showUsername">${settingText('show_username', 'Show Username')}</label></div>
+      <div class="form-row"><div class="form-group"><label>${settingText('hud_alignment', 'HUD Alignment')}</label><select id="hudAlignment">
+        ${settingOption('center', 'alignment_center', 'Center', (settings.hudAlignment || 'center') === 'center')}
+        ${settingOption('left', 'alignment_left', 'Left', settings.hudAlignment === 'left')}
+        ${settingOption('right', 'alignment_right', 'Right', settings.hudAlignment === 'right')}
+      </select></div></div>
+    </div>
+
+    <div class="settings-section">
+      <h4>🎬 ${settingText('animations', 'Animations')}</h4>
+      <div class="form-row">
+        <div class="form-group"><label>${settingText('in_animation', 'In Animation')}</label><select id="inAnimationType">${animationOptions(settings.inAnimationType)}</select></div>
+        <div class="form-group"><label>${settingText('out_animation', 'Out Animation')}</label><select id="outAnimationType">${animationOptions(settings.outAnimationType)}</select></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>Border Color</label>
-          <div class="color-input-wrapper">
-            <input type="color" id="borderColor-picker" value="${settings.borderColor || '#FFFFFF'}">
-            <input type="text" id="borderColor" value="${settings.borderColor || '#FFFFFF'}">
-          </div>
-        </div>
+        <div class="form-group"><label>${settingText('animation_speed', 'Animation Speed')}</label><select id="animationSpeed">
+          ${settingOption('slow', 'speed_slow', 'Slow', settings.animationSpeed === 'slow')}
+          ${settingOption('medium', 'speed_medium', 'Medium', settings.animationSpeed === 'medium')}
+          ${settingOption('fast', 'speed_fast', 'Fast', settings.animationSpeed === 'fast')}
+        </select></div>
+        <div class="form-group"><label>${settingText('fade_duration', 'Fade Duration')}</label><input type="text" id="fadeDuration" value="${settings.fadeDuration || '0.5s'}"></div>
       </div>
     </div>
 
-    <!-- Background -->
     <div class="settings-section">
-      <h4>🎨 Background</h4>
-      <div class="checkbox-group">
-        <input type="checkbox" id="enableBackground" ${settings.enableBackground ? 'checked' : ''}>
-        <label for="enableBackground">Enable Background</label>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Background Color (RGBA)</label>
-          <input type="text" id="backgroundColor" value="${settings.backgroundColor || 'rgba(0, 0, 0, 0.7)'}">
-        </div>
-      </div>
-    </div>
-
-    <!-- Profile Picture -->
-    <div class="settings-section">
-      <h4>👤 Profile Picture</h4>
-      <div class="checkbox-group">
-        <input type="checkbox" id="showProfilePicture" ${settings.showProfilePicture !== false ? 'checked' : ''}>
-        <label for="showProfilePicture">Show Profile Picture</label>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Profile Picture Size</label>
-          <input type="text" id="profilePictureSize" value="${settings.profilePictureSize || '80px'}">
-        </div>
-      </div>
-    </div>
-
-    <!-- Layout -->
-    <div class="settings-section">
-      <h4>📐 Layout</h4>
-      <div class="checkbox-group">
-        <input type="checkbox" id="showUsername" ${settings.showUsername !== false ? 'checked' : ''}>
-        <label for="showUsername">Show Username</label>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>HUD Alignment</label>
-          <select id="hudAlignment">
-            <option value="center" ${(settings.hudAlignment || 'center') === 'center' ? 'selected' : ''}>Center</option>
-            <option value="left" ${settings.hudAlignment === 'left' ? 'selected' : ''}>Left</option>
-            <option value="right" ${settings.hudAlignment === 'right' ? 'selected' : ''}>Right</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <!-- Animations -->
-    <div class="settings-section">
-      <h4>🎬 Animations</h4>
-      <div class="form-row">
-        <div class="form-group">
-          <label>In Animation</label>
-          <select id="inAnimationType">
-            <option value="fade" ${settings.inAnimationType === 'fade' ? 'selected' : ''}>Fade</option>
-            <option value="slide" ${settings.inAnimationType === 'slide' ? 'selected' : ''}>Slide</option>
-            <option value="pop" ${settings.inAnimationType === 'pop' ? 'selected' : ''}>Pop</option>
-            <option value="zoom" ${settings.inAnimationType === 'zoom' ? 'selected' : ''}>Zoom</option>
-            <option value="glow" ${settings.inAnimationType === 'glow' ? 'selected' : ''}>Glow</option>
-            <option value="bounce" ${settings.inAnimationType === 'bounce' ? 'selected' : ''}>Bounce</option>
-            <option value="none" ${settings.inAnimationType === 'none' ? 'selected' : ''}>None</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Out Animation</label>
-          <select id="outAnimationType">
-            <option value="fade" ${settings.outAnimationType === 'fade' ? 'selected' : ''}>Fade</option>
-            <option value="slide" ${settings.outAnimationType === 'slide' ? 'selected' : ''}>Slide</option>
-            <option value="pop" ${settings.outAnimationType === 'pop' ? 'selected' : ''}>Pop</option>
-            <option value="zoom" ${settings.outAnimationType === 'zoom' ? 'selected' : ''}>Zoom</option>
-            <option value="glow" ${settings.outAnimationType === 'glow' ? 'selected' : ''}>Glow</option>
-            <option value="bounce" ${settings.outAnimationType === 'bounce' ? 'selected' : ''}>Bounce</option>
-            <option value="none" ${settings.outAnimationType === 'none' ? 'selected' : ''}>None</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Animation Speed</label>
-          <select id="animationSpeed">
-            <option value="slow" ${settings.animationSpeed === 'slow' ? 'selected' : ''}>Slow</option>
-            <option value="medium" ${settings.animationSpeed === 'medium' ? 'selected' : ''}>Medium</option>
-            <option value="fast" ${settings.animationSpeed === 'fast' ? 'selected' : ''}>Fast</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Fade Duration</label>
-          <input type="text" id="fadeDuration" value="${settings.fadeDuration || '0.5s'}">
-        </div>
-      </div>
-    </div>
-
-    <!-- Behavior -->
-    <div class="settings-section">
-      <h4>⚙️ Behavior</h4>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Auto Refresh Interval (seconds, 0 = disabled)</label>
-          <input type="number" id="refreshIntervalSeconds" value="${settings.refreshIntervalSeconds || 0}" min="0">
-        </div>
-      </div>
-      <div class="checkbox-group">
-        <input type="checkbox" id="hideOnNullUser" ${settings.hideOnNullUser !== false ? 'checked' : ''}>
-        <label for="hideOnNullUser">Hide When No User Data</label>
-      </div>
-      <div class="checkbox-group">
-        <input type="checkbox" id="preloadImages" ${settings.preloadImages !== false ? 'checked' : ''}>
-        <label for="preloadImages">Preload Profile Images</label>
-      </div>
+      <h4>⚙️ ${settingText('behavior', 'Behavior')}</h4>
+      <div class="form-row"><div class="form-group"><label>${settingText('auto_refresh_interval', 'Auto Refresh Interval (seconds, 0 = disabled)')}</label><input type="number" id="refreshIntervalSeconds" value="${settings.refreshIntervalSeconds || 0}" min="0"></div></div>
+      <div class="checkbox-group"><input type="checkbox" id="hideOnNullUser" ${settings.hideOnNullUser !== false ? 'checked' : ''}><label for="hideOnNullUser">${settingText('hide_without_user_data', 'Hide When No User Data')}</label></div>
+      <div class="checkbox-group"><input type="checkbox" id="preloadImages" ${settings.preloadImages !== false ? 'checked' : ''}><label for="preloadImages">${settingText('preload_profile_images', 'Preload Profile Images')}</label></div>
     </div>
 
     ${type === 'multihud' ? `
-    <!-- Multi-HUD Rotation Settings -->
-    <div class="settings-section">
-      <h4>🔄 Multi-HUD Rotation Settings</h4>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Rotation Interval (seconds)</label>
-          <input type="number" id="rotationIntervalSeconds" value="${settings.rotationIntervalSeconds || 5}" min="1" max="60">
-          <small style="color: var(--color-text-muted);">How often to switch between events</small>
+      <div class="settings-section">
+        <h4>🔄 ${settingText('multi_hud_rotation', 'Multi-HUD Rotation Settings')}</h4>
+        <div class="form-row"><div class="form-group"><label>${settingText('rotation_interval', 'Rotation Interval (seconds)')}</label><input type="number" id="rotationIntervalSeconds" value="${settings.rotationIntervalSeconds || 5}" min="1" max="60"><small style="color: var(--color-text-muted);">${settingText('rotation_interval_help', 'How often to switch between events')}</small></div></div>
+        <div class="form-group" style="margin-top: 15px;"><label>${settingText('select_events', 'Select Events to Display')}</label><small style="color: var(--color-text-muted); display: block; margin-bottom: 10px;">${settingText('select_events_help', 'Choose which events should be included in the rotation')}</small>
+          ${eventCheckbox('follower', 'event_follower', 'Follower', '👤', isSelected('follower', true))}
+          ${eventCheckbox('like', 'event_like', 'Like', '❤️', isSelected('like', true))}
+          ${eventCheckbox('chatter', 'event_chatter', 'Chatter', '💬', isSelected('chatter', true))}
+          ${eventCheckbox('share', 'event_share', 'Share', '🔗', isSelected('share', true))}
+          ${eventCheckbox('gifter', 'event_gifter', 'Gifter', '🎁', isSelected('gifter', true))}
+          ${eventCheckbox('subscriber', 'event_subscriber', 'Subscriber', '⭐', isSelected('subscriber', true))}
+          ${eventCheckbox('topgift', 'event_topgift', 'Top Gift', '💎', isSelected('topgift'))}
+          ${eventCheckbox('giftstreak', 'event_gift_streak', 'Gift Streak', '🔥', isSelected('giftstreak'))}
         </div>
       </div>
-      <div class="form-group" style="margin-top: 15px;">
-        <label>Select Events to Display</label>
-        <small style="color: var(--color-text-muted); display: block; margin-bottom: 10px;">
-          Choose which events should be included in the rotation
-        </small>
-        <div class="checkbox-group">
-          <input type="checkbox" id="event-follower" value="follower" ${!settings.selectedEvents || settings.selectedEvents.includes('follower') ? 'checked' : ''}>
-          <label for="event-follower">👤 Follower</label>
-        </div>
-        <div class="checkbox-group">
-          <input type="checkbox" id="event-like" value="like" ${!settings.selectedEvents || settings.selectedEvents.includes('like') ? 'checked' : ''}>
-          <label for="event-like">❤️ Like</label>
-        </div>
-        <div class="checkbox-group">
-          <input type="checkbox" id="event-chatter" value="chatter" ${!settings.selectedEvents || settings.selectedEvents.includes('chatter') ? 'checked' : ''}>
-          <label for="event-chatter">💬 Chatter</label>
-        </div>
-        <div class="checkbox-group">
-          <input type="checkbox" id="event-share" value="share" ${!settings.selectedEvents || settings.selectedEvents.includes('share') ? 'checked' : ''}>
-          <label for="event-share">🔗 Share</label>
-        </div>
-        <div class="checkbox-group">
-          <input type="checkbox" id="event-gifter" value="gifter" ${!settings.selectedEvents || settings.selectedEvents.includes('gifter') ? 'checked' : ''}>
-          <label for="event-gifter">🎁 Gifter</label>
-        </div>
-        <div class="checkbox-group">
-          <input type="checkbox" id="event-subscriber" value="subscriber" ${!settings.selectedEvents || settings.selectedEvents.includes('subscriber') ? 'checked' : ''}>
-          <label for="event-subscriber">⭐ Subscriber</label>
-        </div>
-        <div class="checkbox-group">
-          <input type="checkbox" id="event-topgift" value="topgift" ${settings.selectedEvents && settings.selectedEvents.includes('topgift') ? 'checked' : ''}>
-          <label for="event-topgift">💎 Top Gift</label>
-        </div>
-        <div class="checkbox-group">
-          <input type="checkbox" id="event-giftstreak" value="giftstreak" ${settings.selectedEvents && settings.selectedEvents.includes('giftstreak') ? 'checked' : ''}>
-          <label for="event-giftstreak">🔥 Gift Streak</label>
-        </div>
-      </div>
-    </div>
     ` : ''}
   `;
 
-  // Setup color picker sync
   setupColorPickers();
 }
 
@@ -548,7 +432,7 @@ async function saveSettings() {
     });
 
     if (selectedEvents.length === 0) {
-      showToast('Select at least one event for Multi-HUD rotation', 'error');
+      showToast(translate('plugins.spotlight.runtime.toast.select_rotation_event', 'Select at least one event for Multi-HUD rotation'), 'error');
       return;
     }
     
@@ -568,14 +452,14 @@ async function saveSettings() {
 
     if (data.success) {
       allSettings[currentType] = data.settings;
-      showToast('Settings saved successfully!');
+      showToast(translate('plugins.spotlight.runtime.toast.settings_saved', 'Settings saved successfully!'));
       closeSettingsModal();
     } else {
-      showToast('Error saving settings: ' + data.error, 'error');
+      showToast(translate('plugins.spotlight.runtime.toast.settings_save_failed', 'Error saving settings: {error}', { error: data.error || '' }), 'error');
     }
   } catch (error) {
     console.error('Error saving settings:', error);
-    showToast('Error saving settings', 'error');
+    showToast(translate('plugins.spotlight.runtime.toast.settings_save_failed', 'Error saving settings: {error}', { error: error.message || '' }), 'error');
   }
 }
 

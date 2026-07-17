@@ -1,0 +1,51 @@
+{
+  "plugins": {
+    "store-admin": {
+      "ui": {
+        "title": "Administration de l’App Store LTTH",
+        "description": "Gérez les licences bêta et l’accès aux plugins en bêta fermée pour les utilisateurs Clerk.",
+        "searchPlaceholder": "Rechercher par e-mail ou nom d’utilisateur",
+        "searchUsers": "Rechercher des utilisateurs",
+        "checkAdminSession": "Vérifier la session d’administration",
+        "refresh": "Actualiser",
+        "storeHealth": "État de la boutique",
+        "storeHealthDescription": "Télémétrie locale de l’App Store et état des installations.",
+        "latestFeedback": "Derniers retours",
+        "latestFeedbackDescription": "Avis récents envoyés depuis le panneau de l’App Store."
+      },
+      "users": {
+        "activeBetaLicense": "Licence bêta active",
+        "noActiveLicense": "Aucune licence active",
+        "noProfileName": "Aucun nom de profil",
+        "administrator": "Administrateur",
+        "allClosedBeta": "Toutes les bêtas fermées",
+        "saveAccess": "Enregistrer l’accès",
+        "claimBetaLicense": "Attribuer une licence bêta",
+        "revokeLicense": "Révoquer la licence"
+      },
+      "metrics": {
+        "feedback": "Retours",
+        "telemetry": "Télémétrie",
+        "installFailures": "Échecs d’installation",
+        "rollbacks": "Retours en arrière"
+      },
+      "feedback": {
+        "unknown": "inconnu",
+        "notAvailable": "n/d",
+        "noMessage": "Aucun message",
+        "empty": "Aucun retour App Store pour le moment."
+      },
+      "status": {
+        "loadingUsers": "Chargement des utilisateurs…",
+        "usersLoaded": "{count} profil(s) utilisateur chargé(s).",
+        "accessSaved": "Accès enregistré.",
+        "licenseRevoked": "Licence révoquée.",
+        "licenseClaimed": "Licence attribuée.",
+        "adminSessionOk": "Session d’administration OK : {userId}"
+      },
+      "errors": {
+        "requestFailed": "La requête a échoué"
+      }
+    }
+  }
+}

@@ -1,3 +1,9 @@
+function patternEditorText(key, fallback, params = {}) {
+    return typeof window.OpenShockPatternI18n === 'function'
+        ? window.OpenShockPatternI18n(key, fallback, params)
+        : fallback;
+}
+
 /**
  * @file PatternEditorView.tsx.js - Main Pattern Editor View
  * @description Composes all pattern editor components and manages layout/modes
@@ -85,10 +91,10 @@ class PatternEditorView {
                 <!-- Header -->
                 <div class="pattern-editor-header">
                     <h1 class="text-3xl font-bold text-white mb-2">
-                        ⚡ Pattern Editor
+                        ⚡ ${patternEditorText('view.title', 'Pattern Editor')}
                     </h1>
                     <p class="text-gray-400 mb-4">
-                        Erstelle und bearbeite OpenShock Patterns mit dem visuellen Editor
+                        ${patternEditorText('view.subtitle', 'Create and edit OpenShock patterns with the visual editor')}
                     </p>
                 </div>
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="generated.9f2688a97e65">Openshock Queue</title>
+    <title data-i18n="plugins.openshock.labels.openshock_queue">Openshock Queue</title>
     <link rel="stylesheet" href="/css/themes.css">
     <link rel="stylesheet" href="/openshock/openshock.css">
     <script>
@@ -482,7 +482,7 @@
             width: 20px;
             text-align: center;
         }
-    
+
         /* Cid theme alignment */
         html[data-theme="cid"] body {
             background: #030603;
@@ -586,7 +586,7 @@
         <div class="queue-header">
             <div class="queue-stats">
                 <div class="stat-item">
-                    <div class="stat-label" data-i18n="generated.4b193db89ef5">In Queue</div>
+                    <div class="stat-label" data-i18n="plugins.openshock.labels.in_queue">In Queue</div>
                     <div class="stat-value" id="queueLength">0</div>
                 </div>
                 <div class="stat-item">
@@ -594,11 +594,11 @@
                     <div class="stat-value" id="processingCount">0</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-label" data-i18n="generated.0574963502a2">Total Processed</div>
+                    <div class="stat-label" data-i18n="plugins.openshock.labels.total_processed">Total Processed</div>
                     <div class="stat-value" id="totalProcessed">0</div>
                 </div>
             </div>
-            <button class="btn-clear" id="btnClearQueue" onclick="clearQueue()" data-i18n="generated.c5cb48cd471a">
+            <button class="btn-clear" id="btnClearQueue" onclick="clearQueue()" data-i18n="plugins.openshock.labels.queue_leeren">
                 🗑️ Queue leeren
             </button>
         </div>
@@ -608,7 +608,7 @@
 
         <!-- Pending queue items -->
         <div id="queue-section">
-            <div class="section-title" data-i18n="generated.debbbf6ca025">⏳ Wartende Shocks</div>
+            <div class="section-title" data-i18n="plugins.openshock.labels.wartende_shocks">⏳ Wartende Shocks</div>
             <div id="queue-list"></div>
         </div>
     </div>
@@ -616,6 +616,15 @@
     <script>
         const socket = io();
         let currentState = null;
+
+        function queueText(key, fallback, params = {}) {
+            const translationKey = `plugins.openshock.runtime.queue_page.${key}`;
+            const translated = window.i18n?.t(translationKey, params);
+            const value = translated && translated !== translationKey ? translated : fallback;
+            return String(value).replace(/\{(\w+)\}/g, (match, name) => (
+                Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+            ));
+        }
 
         // Socket event listener for queue updates
         socket.on('openshock:queue:update', (state) => {
@@ -673,33 +682,33 @@
 
             const item = state.currentItem;
             const command = item.command || {};
-            
+
             currentDiv.innerHTML = `
                 <div class="current-processing">
                     <div class="processing-header">
                         <span class="processing-icon">🔄</span>
-                        <span class="processing-title">Aktuell in Verarbeitung</span>
+                        <span class="processing-title">${queueText('processing', 'Processing now')}</span>
                     </div>
                     <div class="processing-details">
                         <div class="detail-item">
-                            <div class="detail-label">Quelle</div>
-                            <div class="detail-value">${escapeHtml(item.source || 'Unknown')}</div>
+                            <div class="detail-label">${queueText('source', 'Source')}</div>
+                            <div class="detail-value">${escapeHtml(item.source || queueText('unknown', 'Unknown'))}</div>
                         </div>
                         <div class="detail-item">
-                            <div class="detail-label">Typ</div>
-                            <div class="detail-value">${getTypeIcon(command.type)} ${escapeHtml(command.type || 'N/A')}</div>
+                            <div class="detail-label">${queueText('type', 'Type')}</div>
+                            <div class="detail-value">${getTypeIcon(command.type)} ${escapeHtml(command.type || queueText('not_available', 'N/A'))}</div>
                         </div>
                         <div class="detail-item">
-                            <div class="detail-label">Intensität</div>
+                            <div class="detail-label">${queueText('intensity', 'Intensity')}</div>
                             <div class="detail-value">${command.intensity || 0}%</div>
                         </div>
                         <div class="detail-item">
-                            <div class="detail-label">Dauer</div>
+                            <div class="detail-label">${queueText('duration', 'Duration')}</div>
                             <div class="detail-value">${command.duration || 0}ms</div>
                         </div>
                         <div class="detail-item">
-                            <div class="detail-label">Device</div>
-                            <div class="detail-value">${escapeHtml(command.deviceName || command.deviceId || 'N/A')}</div>
+                            <div class="detail-label">${queueText('device', 'Device')}</div>
+                            <div class="detail-value">${escapeHtml(command.deviceName || command.deviceId || queueText('not_available', 'N/A'))}</div>
                         </div>
                     </div>
                 </div>
@@ -709,7 +718,7 @@
         // Render pending queue items
         function renderQueueList(state) {
             const queueDiv = document.getElementById('queue-list');
-            
+
             // Get pending items from queue
             const pendingItems = state.queueItems?.filter(item => item.status === 'pending') || [];
 
@@ -717,7 +726,7 @@
                 queueDiv.innerHTML = `
                     <div class="queue-empty">
                         <div class="queue-empty-icon">✨</div>
-                        <div class="queue-empty-text">Keine wartenden Shocks</div>
+                        <div class="queue-empty-text">${queueText('empty', 'No shocks waiting')}</div>
                     </div>
                 `;
                 return;
@@ -726,18 +735,18 @@
             queueDiv.innerHTML = pendingItems.map((item, index) => {
                 const command = item.command || {};
                 const createdTime = new Date(item.enqueuedAt).toLocaleTimeString('de-DE');
-                
+
                 return `
                     <div class="queue-item ${item.status}">
                         <div class="queue-item-main">
                             <div class="queue-item-header">
                                 <span class="queue-position">#${index + 1}</span>
-                                <span class="queue-source">${escapeHtml(item.source || 'Unknown')}</span>
+                                <span class="queue-source">${escapeHtml(item.source || queueText('unknown', 'Unknown'))}</span>
                             </div>
                             <div class="queue-item-details">
                                 <span class="detail-badge">
                                     <span class="type-icon">${getTypeIcon(command.type)}</span>
-                                    ${escapeHtml(command.type || 'N/A')}
+                                    ${escapeHtml(command.type || queueText('not_available', 'N/A'))}
                                 </span>
                                 <span class="detail-badge">
                                     ⚡ ${command.intensity || 0}%
@@ -746,13 +755,13 @@
                                     ⏱️ ${command.duration || 0}ms
                                 </span>
                                 <span class="detail-badge">
-                                    🎯 ${escapeHtml(command.deviceName || command.deviceId || 'N/A')}
+                                    🎯 ${escapeHtml(command.deviceName || command.deviceId || queueText('not_available', 'N/A'))}
                                 </span>
                             </div>
                         </div>
                         <div class="queue-item-meta">
                             <span class="queue-time">${createdTime}</span>
-                            <span class="status-badge status-${item.status}">${item.status}</span>
+                            <span class="status-badge status-${item.status}">${queueText(`status_${item.status}`, item.status)}</span>
                         </div>
                     </div>
                 `;
@@ -779,18 +788,18 @@
 
         // Clear queue button handler
         function clearQueue() {
-            if (!confirm('Möchtest du wirklich die gesamte Queue leeren?\n\nAlle wartenden Shocks werden entfernt.')) {
+            if (!confirm(queueText('clear_confirm', 'Clear the whole queue?\n\nAll waiting shocks will be removed.'))) {
                 return;
             }
 
             socket.emit('openshock:queue:clear');
-            
+
             // Show immediate feedback
             const btnClear = document.getElementById('btnClearQueue');
             const originalText = btnClear.textContent;
-            btnClear.textContent = '✓ Geleert';
+            btnClear.textContent = `✓ ${queueText('cleared', 'Cleared')}`;
             btnClear.disabled = true;
-            
+
             setTimeout(() => {
                 btnClear.textContent = originalText;
             }, 2000);

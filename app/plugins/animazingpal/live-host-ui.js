@@ -49,6 +49,57 @@
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[char]));
 
+  const LIVE_HOST_MARKUP_KEYS = Object.freeze({
+    'Aktivierung speichern': 'copy.save_activation',
+    'Aktive Persönlichkeit': 'copy.active_personality',
+    'Aktiven Provider und Modell testen': 'copy.test_active_provider',
+    'Alle Einstellungen zurücksetzen': 'copy.reset_all',
+    'Antwortverhalten': 'copy.response_behavior',
+    'Anzeigename': 'fields.bundle_name',
+    'Bundle-ID': 'fields.bundle_id',
+    'Bereich zurücksetzen': 'copy.reset_section',
+    'Begrüßungs-Warmup': 'copy.greeting_warmup',
+    'Brain-Provider': 'copy.brain_provider',
+    'Diagnose': 'copy.diagnostics',
+    'Ereignisse': 'copy.events',
+    'Emotion': 'fields.bundle_emotion',
+    'Fish.audio': 'copy.fish_audio',
+    'Gift aus Katalog wählen...': 'copy.choose_catalog_gift',
+    'Gift-Namen als Fallback, kommasepariert': 'fields.bundle_gift_names',
+    'Intelligenter Live Host': 'copy.title',
+    'Jetzt lesend verbinden': 'copy.connect_readonly',
+    'Live Host aktiv': 'copy.host_enabled',
+    'Lautstärke': 'fields.bundle_volume',
+    'Pitch': 'fields.bundle_pitch',
+    'Queue-Priorität': 'fields.bundle_priority',
+    'Modus speichern': 'copy.save_mode',
+    'Pflicht-Setup: TikTok-Kanal, Fish.audio-Stimme und CABLE-Ausgabegerät auswählen; danach den Preflight ausführen.': 'copy.required_setup',
+    'Speichern': 'copy.save',
+    'Sidekick-Name für diesen Avatar': 'fields.bundle_sidekick_name',
+    'Tempo': 'fields.bundle_speed',
+    'Testtext': 'fields.test_text',
+    'TikTok-LIVE-Ereignisquelle': 'copy.tiktok_event_source',
+    'Top-User Limit': 'fields.warmup_user_limit',
+    'Varianten/User': 'fields.warmup_variants_per_user',
+    '24/7 Preflight prüfen': 'copy.run_preflight',
+    '24/7 Produktionsprofil': 'copy.production_profile'
+  });
+
+  function liveHostText(key, fallback, params = {}) {
+    return translateRuntime(`plugins.animazingpal.live_host.${key}`, fallback, params);
+  }
+
+  function localizeLiveHostText(text) {
+    const key = LIVE_HOST_MARKUP_KEYS[text];
+    return key ? liveHostText(key, text) : text;
+  }
+
+  function localizeLiveHostMarkup(markup) {
+    return Object.entries(LIVE_HOST_MARKUP_KEYS)
+      .sort(([left], [right]) => right.length - left.length)
+      .reduce((localized, [source, key]) => localized.split(source).join(escapeHtml(liveHostText(key, source))), markup);
+  }
+
   function get(path, fallback = '') {
     let value = state.config;
     for (const part of path.split('.')) value = value?.[part];
@@ -64,25 +115,26 @@
   }
 
   function input(path, label, options = {}) {
+    const localizedLabel = localizeLiveHostText(label);
     const type = options.type || 'text';
     const value = get(path, options.fallback ?? '');
     if (type === 'checkbox') {
-      return `<label class="flex items-center gap-2"><input type="checkbox" data-lh="${path}" ${value ? 'checked' : ''}><span>${escapeHtml(label)}</span></label>`;
+      return `<label class="flex items-center gap-2"><input type="checkbox" data-lh="${path}" ${value ? 'checked' : ''}><span>${escapeHtml(localizedLabel)}</span></label>`;
     }
     if (type === 'select') {
       const choices = options.options || [];
       return `<label class="block"><span class="text-gray-400 text-sm">${escapeHtml(label)}</span><select class="select" data-lh="${path}">${choices.map(choice => {
         const item = typeof choice === 'string' ? { value: choice, label: choice } : choice;
-        return `<option value="${escapeHtml(item.value)}" ${String(value) === String(item.value) ? 'selected' : ''}>${escapeHtml(item.label)}</option>`;
+            return `<option value="${escapeHtml(item.value)}" ${String(value) === String(item.value) ? 'selected' : ''}>${escapeHtml(localizeLiveHostText(item.label))}</option>`;
       }).join('')}</select></label>`;
     }
     const attrs = ['min', 'max', 'step', 'placeholder'].filter(key => options[key] !== undefined)
       .map(key => `${key}="${escapeHtml(options[key])}"`).join(' ');
-    return `<label class="block"><span class="text-gray-400 text-sm">${escapeHtml(label)}</span><input class="input" type="${type}" data-lh="${path}" value="${escapeHtml(type === 'password' ? '' : value)}" ${attrs}></label>`;
+    return `<label class="block"><span class="text-gray-400 text-sm">${escapeHtml(localizedLabel)}</span><input class="input" type="${type}" data-lh="${path}" value="${escapeHtml(type === 'password' ? '' : value)}" ${attrs}></label>`;
   }
 
   function textarea(path, label, rows = 3) {
-    return `<label class="block"><span class="text-gray-400 text-sm">${escapeHtml(label)}</span><textarea class="input" rows="${rows}" data-lh="${path}">${escapeHtml(get(path))}</textarea></label>`;
+    return `<label class="block"><span class="text-gray-400 text-sm">${escapeHtml(localizeLiveHostText(label))}</span><textarea class="input" rows="${rows}" data-lh="${path}">${escapeHtml(get(path))}</textarea></label>`;
   }
 
   function actions(section) {
@@ -136,7 +188,7 @@
     const select = document.getElementById(selectId);
     if (!select) return;
     const selected = select.value;
-    select.innerHTML = '<option value="">Gift aus Katalog wählen...</option>';
+    select.innerHTML = `<option value="">${escapeHtml(liveHostText('copy.choose_catalog_gift', 'Gift aus Katalog wählen...'))}</option>`;
     state.gifts.forEach(gift => {
       const option = document.createElement('option');
       option.value = gift.id || gift.name;
@@ -364,7 +416,7 @@
   }  function render() {
     const root = document.getElementById('liveHostSettings');
     if (!root || !state.config) return;
-    root.innerHTML = `
+    const markup = `
       <div class="card flex flex-wrap items-center gap-3"><h2 class="text-xl font-bold flex-1">Intelligenter Live Host</h2>
         ${input('enabled', 'Live Host aktiv', { type: 'checkbox' })}
         ${input('operatingMode', 'Betriebsmodus', { type: 'select', options: [
@@ -422,6 +474,7 @@
       ${renderIdleMotion()}
       ${renderDiagnostics()}
     `;
+    root.innerHTML = localizeLiveHostMarkup(markup);
     bind();
   }
 
@@ -443,8 +496,8 @@
       <p class="text-sm text-gray-400 mb-3">Erzeugt gecachte Begrüßungsvarianten inklusive Fish.audio-Audio. Danach werden bekannte Viewer ohne neuen LLM-/TTS-Call begrüßt.</p>
       <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
         <label class="block md:col-span-2"><span class="text-gray-400 text-sm">Streamer-Profil</span><input class="input" id="greetingWarmupStreamer" value="${escapeHtml(streamer)}" placeholder="pupcid"></label>
-        <label class="block"><span class="text-gray-400 text-sm">Top-User Limit</span><input class="input" id="greetingWarmupLimit" type="number" min="1" max="100" value="20"></label>
-        <label class="block"><span class="text-gray-400 text-sm">Varianten/User</span><input class="input" id="greetingWarmupVariants" type="number" min="1" max="3" value="3"></label>
+        <label class="block"><span class="text-gray-400 text-sm" data-i18n-key="plugins.animazingpal.live_host.fields.warmup_user_limit">Top-User Limit</span><input class="input" id="greetingWarmupLimit" type="number" min="1" max="100" value="20"></label>
+        <label class="block"><span class="text-gray-400 text-sm" data-i18n-key="plugins.animazingpal.live_host.fields.warmup_variants_per_user">Varianten/User</span><input class="input" id="greetingWarmupVariants" type="number" min="1" max="3" value="3"></label>
       </div>
       <div class="flex flex-wrap items-center gap-3 mt-3">
         <button class="btn btn-success" data-greeting-warmup ${warmup.running ? 'disabled' : ''}>${escapeHtml(runningLabel)}</button>
@@ -462,7 +515,7 @@
       ${input('tts.volume', 'Lautstärke', { type: 'number', min: 0, max: 100 })}${input('tts.speed', 'Tempo', { type: 'number', min: 0.5, max: 2, step: 0.05 })}
       ${input('tts.streaming', 'Streaming', { type: 'checkbox' })}${input('tts.priority', 'Queue-Priorität', { type: 'number', min: 0, max: 100 })}
       ${input('tts.duckOtherAudio', 'Audio-Ducking', { type: 'checkbox' })}${input('tts.fallbackBehavior', 'Fallback', { type: 'select', options: ['silent', 'default-voice', 'error'] })}${input('tts.probeStaleMs', 'Probe-Stale nach ms', { type: 'number', min: 30000, max: 86400000 })}
-    </div><label class="block mt-3"><span class="text-gray-400 text-sm">Testtext</span><input id="liveHostTestText" class="input" value="Hallo, ich bin dein intelligenter AnimazingPal Live Host."></label><button class="btn btn-success mt-3" data-speak-test>Sprachtest</button>${actions('tts')}</div>
+    </div><label class="block mt-3"><span class="text-gray-400 text-sm" data-i18n-key="plugins.animazingpal.live_host.fields.test_text">Testtext</span><input id="liveHostTestText" class="input" value="Hallo, ich bin dein intelligenter AnimazingPal Live Host."></label><button class="btn btn-success mt-3" data-speak-test>Sprachtest</button>${actions('tts')}</div>
     <div class="card"><h2 class="text-xl font-bold mb-3">Animaze-Ausgabe / Virtual Cable</h2><div class="grid grid-cols-1 gap-3">
       ${input('animaze.audioOutputDeviceId', 'Animaze-Ausgabe / Virtual Cable', { type: 'select', options: deviceOptions() })}
       ${renderAudioRoutingStatus()}
@@ -497,15 +550,15 @@
       </div>
       <div id="avatarBundleList" class="mt-4 space-y-2">${bundles.length ? bundles.map(bundle => `<div class="flex items-center gap-2 bg-gray-800 p-2 rounded"><strong class="flex-1">${escapeHtml(bundle.name || bundle.id)}${bundle.sidekickName ? ` (${escapeHtml(bundle.sidekickName)})` : ''}</strong><span class="text-gray-400">${escapeHtml((bundle.giftIds || bundle.gifts || []).join(', '))}</span><button class="btn btn-secondary" data-bundle-edit="${escapeHtml(bundle.id)}">Bearbeiten</button><button class="btn btn-success" data-bundle-activate="${escapeHtml(bundle.id)}">Aktivieren</button><button class="btn btn-danger" data-bundle-delete="${escapeHtml(bundle.id)}">Löschen</button></div>`).join('') : '<p class="text-gray-400">Noch keine Bundles.</p>'}</div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
-        <input class="input" id="bundleId" placeholder="Bundle-ID"><input class="input" id="bundleName" placeholder="Anzeigename">
-        <input class="input" id="bundleSidekickName" placeholder="Sidekick-Name für diesen Avatar">
+        <input class="input" id="bundleId" placeholder="Bundle-ID" data-i18n-key="plugins.animazingpal.live_host.fields.bundle_id"><input class="input" id="bundleName" placeholder="Anzeigename" data-i18n-key="plugins.animazingpal.live_host.fields.bundle_name">
+        <input class="input" id="bundleSidekickName" placeholder="Sidekick-Name für diesen Avatar" data-i18n-key="plugins.animazingpal.live_host.fields.bundle_sidekick_name">
         <select class="select" id="bundleAvatar"><option value="">Avatar wählen</option>${state.avatars.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('')}</select>
         <select class="select" id="bundlePersonality"><option value="">Persönlichkeit wählen</option>${state.personalities.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('')}</select>
         <select class="select" id="bundleVoice">${voiceOptions().map(item => `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`).join('')}</select>
-        <input class="input" id="bundleEmotion" placeholder="Emotion"><input class="input" id="bundlePitch" type="number" min="-12" max="12" step="0.1" placeholder="Pitch">
-        <input class="input" id="bundleVolume" type="number" min="0" max="100" placeholder="Lautstärke"><input class="input" id="bundleSpeed" type="number" min="0.5" max="2" step="0.05" placeholder="Tempo">
-        <input class="input" id="bundlePriority" type="number" min="0" max="100" placeholder="Queue-Priorität">
-        <input class="input md:col-span-2" id="bundleGiftNames" placeholder="Gift-Namen als Fallback, kommasepariert">
+        <input class="input" id="bundleEmotion" placeholder="Emotion" data-i18n-key="plugins.animazingpal.live_host.fields.bundle_emotion"><input class="input" id="bundlePitch" type="number" min="-12" max="12" step="0.1" placeholder="Pitch" data-i18n-key="plugins.animazingpal.live_host.fields.bundle_pitch">
+        <input class="input" id="bundleVolume" type="number" min="0" max="100" placeholder="Lautstärke" data-i18n-key="plugins.animazingpal.live_host.fields.bundle_volume"><input class="input" id="bundleSpeed" type="number" min="0.5" max="2" step="0.05" placeholder="Tempo" data-i18n-key="plugins.animazingpal.live_host.fields.bundle_speed">
+        <input class="input" id="bundlePriority" type="number" min="0" max="100" placeholder="Queue-Priorität" data-i18n-key="plugins.animazingpal.live_host.fields.bundle_priority">
+        <input class="input md:col-span-2" id="bundleGiftNames" placeholder="Gift-Namen als Fallback, kommasepariert" data-i18n-key="plugins.animazingpal.live_host.fields.bundle_gift_names">
         <select class="select md:col-span-2" id="bundleGifts" multiple size="6">${state.gifts.map(gift => `<option value="${escapeHtml(gift.id)}">${escapeHtml(gift.name)} (#${escapeHtml(gift.id)})</option>`).join('')}</select>
         <button class="btn btn-primary" data-bundle-save>Bundle hinzufügen/aktualisieren</button>
       </div>${actions('avatarBundles')}${actions('avatarSwitch')}</div></section>`;
@@ -598,7 +651,7 @@
     const body = await request('/api/animazingpal/live-host/config', { method: 'POST', body: JSON.stringify(patch) });
     state.config = body.config;
     render();
-    notify(`${section} gespeichert`);
+    notify(liveHostText('messages.section_saved', '{section} gespeichert', { section }));
   }
 
   function mergeDevices(...groups) {
@@ -624,7 +677,7 @@
         .filter(device => device.kind === 'audiooutput')
         .map(device => ({ deviceId: device.deviceId, label: device.label || device.deviceId, source: 'browser' }));
     } catch (error) {
-      notify(`Audiogeräte nicht lesbar: ${error.message}`, true);
+      notify(liveHostText('messages.audio_devices_unreadable', 'Audiogeräte nicht lesbar: {message}', { message: error.message }), true);
       return [];
     }
   }
@@ -642,7 +695,7 @@
         .map(device => ({ deviceId: device.deviceId, label: device.label || device.deviceId, source: 'browser' }));
       return state.inputDevices;
     } catch (error) {
-      notify(`Host-Mikrofone nicht lesbar: ${error.message}`, true);
+      notify(liveHostText('messages.host_microphones_unreadable', 'Host-Mikrofone nicht lesbar: {message}', { message: error.message }), true);
       return state.inputDevices || [];
     } finally {
       permissionStream?.getTracks?.().forEach(track => track.stop());
@@ -680,7 +733,7 @@
     });
     state.config = body.config;
     render();
-    notify(`Animaze-Ausgabegerät gespeichert: ${device.label || device.deviceId}`);
+    notify(liveHostText('messages.output_device_saved', 'Animaze-Ausgabegerät gespeichert: {device}', { device: device.label || device.deviceId }));
   }  async function runPreflight() {
     const body = await request('/api/animazingpal/live-host/preflight', {
       method: 'POST',
@@ -688,7 +741,9 @@
     });
     state.preflight = body.preflight;
     render();
-    notify(state.preflight.ready ? '24/7 Preflight bereit' : '24/7 Preflight hat blockierende Fehler', !state.preflight.ready);
+    notify(state.preflight.ready
+      ? liveHostText('messages.preflight_ready', '24/7 Preflight bereit')
+      : liveHostText('messages.preflight_blocked', '24/7 Preflight hat blockierende Fehler'), !state.preflight.ready);
   }
 
   async function sendBrowserHeartbeat() {
@@ -727,8 +782,8 @@
     });
     await refreshLiveHostHealth();
     notify(result.success
-      ? `Animaze Bewegungstest gesendet: ${result.name || result.index}`
-      : `Animaze Bewegungstest fehlgeschlagen: ${result.error || 'unbekannt'}`, !result.success);
+      ? liveHostText('messages.movement_test_sent', 'Animaze Bewegungstest gesendet: {name}', { name: result.name || result.index })
+      : liveHostText('messages.movement_test_failed', 'Animaze Bewegungstest fehlgeschlagen: {message}', { message: result.error || liveHostText('copy.unknown', 'unbekannt') }), !result.success);
   }
 
   async function runTtsProbe() {
@@ -738,8 +793,8 @@
     });
     await refreshLiveHostHealth();
     notify(result.success
-      ? 'TTS Probe ok'
-      : `TTS Probe fehlgeschlagen: ${result.error || 'unbekannt'}`, !result.success);
+      ? liveHostText('messages.tts_probe_ok', 'TTS Probe ok')
+      : liveHostText('messages.tts_probe_failed', 'TTS Probe fehlgeschlagen: {message}', { message: result.error || liveHostText('copy.unknown', 'unbekannt') }), !result.success);
   }
 
   function getSelectedHostMic() {
@@ -952,7 +1007,7 @@
     state.hostAsr.recording = true;
     startHostAsrSegment();
     await refreshAsrStatus();
-    notify('Host-STT gestartet');
+    notify(liveHostText('messages.host_stt_started', 'Host-STT gestartet'));
   }
 
   function startHostAsrSegment() {
@@ -1013,7 +1068,7 @@
     state.hostAsr.processorNode = null;
     state.hostAsr.wavChunks = [];
     render();
-    notify('Host-STT gestoppt');
+    notify(liveHostText('messages.host_stt_stopped', 'Host-STT gestoppt'));
   }
 
   function startLiveHostHealthRefresh() {
@@ -1057,7 +1112,7 @@
 
   function saveBundle() {
     const id = document.getElementById('bundleId').value.trim();
-    if (!id) return notify('Bundle-ID fehlt', true);
+    if (!id) return notify(liveHostText('messages.bundle_id_required', 'Bundle-ID fehlt'), true);
     const bundle = {
       id, name: document.getElementById('bundleName').value.trim() || id,
       sidekickName: document.getElementById('bundleSidekickName').value.trim(),
@@ -1102,7 +1157,7 @@
       });
       state.greetingWarmup.lastResult = result;
       state.greetingWarmup.lastError = null;
-      notify(`Begrüßungs-Warmup: ${result.generated || 0} Varianten generiert`);
+      notify(liveHostText('messages.warmup_generated', 'Begrüßungs-Warmup: {count} Varianten generiert', { count: result.generated || 0 }));
     } catch (error) {
       state.greetingWarmup.lastError = error.message;
       notify(error.message, true);
@@ -1115,16 +1170,16 @@
   function bind() {
     document.querySelectorAll('[data-livehost-save]').forEach(button => button.onclick = () => save(button.dataset.livehostSave).catch(error => notify(error.message, true)));
     document.querySelectorAll('[data-livehost-reset]').forEach(button => button.onclick = async () => {
-      if (!window.confirm(`Bereich ${button.dataset.livehostReset} wirklich zurücksetzen? API-Keys bleiben erhalten.`)) return;
+      if (!window.confirm(liveHostText('messages.reset_confirm', 'Bereich {section} wirklich zurücksetzen? API-Keys bleiben erhalten.', { section: button.dataset.livehostReset }))) return;
       try { const body = await request('/api/animazingpal/live-host/reset', { method: 'POST', body: JSON.stringify({ section: button.dataset.livehostReset }) }); state.config = body.config; render(); } catch (error) { notify(error.message, true); }
     });
-    document.querySelector('[data-preset]')?.addEventListener('click', async event => { try { const body = await request('/api/animazingpal/live-host/preset', { method: 'POST', body: JSON.stringify({ preset: event.currentTarget.dataset.preset }) }); state.config = body.config; render(); notify('24/7 Produktionsprofil angewendet'); } catch (error) { notify(error.message, true); } });
-    document.querySelector('[data-speak-test]')?.addEventListener('click', () => request('/api/animazingpal/live-host/speak-test', { method: 'POST', body: JSON.stringify({ text: document.getElementById('liveHostTestText').value }) }).then(() => notify('Sprachtest gestartet')).catch(error => notify(error.message, true)));
+    document.querySelector('[data-preset]')?.addEventListener('click', async event => { try { const body = await request('/api/animazingpal/live-host/preset', { method: 'POST', body: JSON.stringify({ preset: event.currentTarget.dataset.preset }) }); state.config = body.config; render(); notify(liveHostText('messages.production_profile_applied', '24/7 Produktionsprofil angewendet')); } catch (error) { notify(error.message, true); } });
+    document.querySelector('[data-speak-test]')?.addEventListener('click', () => request('/api/animazingpal/live-host/speak-test', { method: 'POST', body: JSON.stringify({ text: document.getElementById('liveHostTestText').value }) }).then(() => notify(liveHostText('messages.speech_test_started', 'Sprachtest gestartet'))).catch(error => notify(error.message, true)));
     document.querySelector('[data-provider-test]')?.addEventListener('click', async () => {
       try {
         await save('providers');
         const result = await request('/api/animazingpal/brain/test', { method: 'POST', body: '{}' });
-        notify(`Provider-Test erfolgreich${result.response ? `: ${result.response}` : ''}`);
+        notify(liveHostText('messages.provider_test_succeeded', 'Provider-Test erfolgreich{response}', { response: result.response ? `: ${result.response}` : '' }));
       } catch (error) { notify(error.message, true); }
     });
     document.querySelector('[data-source-connect]')?.addEventListener('click', async () => {
@@ -1132,17 +1187,17 @@
         await save('source');
         const username = document.querySelector('[data-lh="source.username"]').value;
         const result = await request('/api/animazingpal/live-host/source/connect', { method: 'POST', body: JSON.stringify({ username }) });
-        notify(`Lesend mit @${result.username} verbunden`);
+        notify(liveHostText('messages.readonly_connected', 'Lesend mit @{username} verbunden', { username: result.username }));
       } catch (error) { notify(error.message, true); }
     });
     document.querySelector('[data-greeting-warmup]')?.addEventListener('click', () => runGreetingWarmup().catch(error => notify(error.message, true)));
     document.getElementById('liveHostPersonality')?.addEventListener('change', event => {
       if (!event.target.value) return;
-      request('/api/animazingpal/brain/personality/set', { method: 'POST', body: JSON.stringify({ personality: event.target.value }) }).then(() => notify('Persönlichkeit aktiviert')).catch(error => notify(error.message, true));
+      request('/api/animazingpal/brain/personality/set', { method: 'POST', body: JSON.stringify({ personality: event.target.value }) }).then(() => notify(liveHostText('messages.personality_activated', 'Persönlichkeit aktiviert'))).catch(error => notify(error.message, true));
     });
     document.querySelector('[data-refresh-devices]')?.addEventListener('click', () => loadDevices().then(render));
     document.querySelector('[data-refresh-input-devices]')?.addEventListener('click', () => loadHostInputDevices(true).then(render));
-    document.querySelector('[data-asr-status]')?.addEventListener('click', () => refreshAsrStatus().then(() => notify('Host-STT Status aktualisiert')).catch(error => notify(error.message, true)));
+    document.querySelector('[data-asr-status]')?.addEventListener('click', () => refreshAsrStatus().then(() => notify(liveHostText('messages.host_stt_status_updated', 'Host-STT Status aktualisiert'))).catch(error => notify(error.message, true)));
     document.querySelector('[data-asr-start]')?.addEventListener('click', () => startHostAsr().catch(error => {
       state.hostAsr.lastError = error.message;
       render();
@@ -1161,8 +1216,8 @@
       if (state.config.activeAvatarBundleId === button.dataset.bundleDelete) state.config.activeAvatarBundleId = '';
       save('avatarBundles').catch(error => notify(error.message, true));
     });
-    document.querySelectorAll('[data-bundle-activate]').forEach(button => button.onclick = () => request('/api/animazingpal/live-host/avatar/activate', { method: 'POST', body: JSON.stringify({ bundleId: button.dataset.bundleActivate }) }).then(() => notify('Avatar-Bundle aktiviert')).catch(error => notify(error.message, true)));
-    document.querySelectorAll('[data-clear-key]').forEach(button => button.onclick = () => request('/api/animazingpal/live-host/config', { method: 'POST', body: JSON.stringify({ providers: { [button.dataset.clearKey]: { clearApiKey: true } } }) }).then(body => { state.config = body.config; render(); notify('API-Key gelöscht'); }).catch(error => notify(error.message, true)));
+    document.querySelectorAll('[data-bundle-activate]').forEach(button => button.onclick = () => request('/api/animazingpal/live-host/avatar/activate', { method: 'POST', body: JSON.stringify({ bundleId: button.dataset.bundleActivate }) }).then(() => notify(liveHostText('messages.bundle_activated', 'Avatar-Bundle aktiviert'))).catch(error => notify(error.message, true)));
+    document.querySelectorAll('[data-clear-key]').forEach(button => button.onclick = () => request('/api/animazingpal/live-host/config', { method: 'POST', body: JSON.stringify({ providers: { [button.dataset.clearKey]: { clearApiKey: true } } }) }).then(body => { state.config = body.config; render(); notify(liveHostText('messages.api_key_deleted', 'API-Key gelöscht')); }).catch(error => notify(error.message, true)));
   }
 
   async function initialize() {
@@ -1195,7 +1250,8 @@
       render();
       startLiveHostHealthRefresh();
     } catch (error) {
-      document.getElementById('liveHostSettings').innerHTML = `<div class="card text-red-400">Live-Host-Konfiguration konnte nicht geladen werden: ${escapeHtml(error.message)}</div>`;
+      const message = liveHostText('messages.config_load_failed', 'Live-Host-Konfiguration konnte nicht geladen werden: {message}', { message: error.message });
+      document.getElementById('liveHostSettings').innerHTML = `<div class="card text-red-400">${escapeHtml(message)}</div>`;
     }
   }
 

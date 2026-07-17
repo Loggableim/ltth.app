@@ -28,7 +28,7 @@ describe('Pyramid Battle restoration', () => {
   test('shows Pyramid Battle in the CoinBattle match mode select', () => {
     const html = fs.readFileSync(path.join(__dirname, '../ui.html'), 'utf8');
 
-    expect(html).toContain('<option value="pyramid">Pyramid Battle</option>');
+    expect(html).toMatch(/<option\s+value="pyramid"[^>]*>Pyramid Battle<\/option>/);
   });
 
   test('accepts pyramid as a CoinBattle match mode', () => {

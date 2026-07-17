@@ -29,8 +29,8 @@ describe('Fireworks benchmark UI', () => {
     settingsHtml = readAppFile('plugins', 'fireworks', 'ui', 'settings.html');
     settingsJs = readAppFile('plugins', 'fireworks', 'ui', 'settings.js');
     mainJs = readAppFile('plugins', 'fireworks', 'main.js');
-    enLocale = JSON.parse(readAppFile('locales', 'en.json'));
-    deLocale = JSON.parse(readAppFile('locales', 'de.json'));
+    enLocale = JSON.parse(readAppFile('plugins', 'fireworks', 'locales', 'en.json'));
+    deLocale = JSON.parse(readAppFile('plugins', 'fireworks', 'locales', 'de.json'));
   });
 
   test('all settings page i18n keys resolve from app locales', () => {
@@ -92,19 +92,19 @@ describe('Fireworks benchmark UI', () => {
 
   test('fireworks english labels do not fall back to question marks', () => {
     const keys = [
-      'fireworks.save_settings',
-      'fireworks.gift_triggers',
-      'fireworks.combo_system',
-      'fireworks.explosion_shapes',
-      'fireworks.test_burst',
-      'fireworks.test_heart',
-      'fireworks.test_star',
-      'fireworks.test_ring',
-      'fireworks.test_spiral',
-      'fireworks.test_paws',
-      'fireworks.test_random',
-      'fireworks.colors',
-      'fireworks.visual_effects'
+      'plugins.fireworks.fireworks.save_settings',
+      'plugins.fireworks.fireworks.gift_triggers',
+      'plugins.fireworks.fireworks.combo_system',
+      'plugins.fireworks.fireworks.explosion_shapes',
+      'plugins.fireworks.fireworks.test_burst',
+      'plugins.fireworks.fireworks.test_heart',
+      'plugins.fireworks.fireworks.test_star',
+      'plugins.fireworks.fireworks.test_ring',
+      'plugins.fireworks.fireworks.test_spiral',
+      'plugins.fireworks.fireworks.test_paws',
+      'plugins.fireworks.fireworks.test_random',
+      'plugins.fireworks.fireworks.colors',
+      'plugins.fireworks.fireworks.visual_effects'
     ];
 
     for (const key of keys) {

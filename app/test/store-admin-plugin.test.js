@@ -125,6 +125,53 @@ describe('Store admin plugin', () => {
     assert(uiHtml.includes('/api/store-admin/health'));
     assert(uiHtml.includes('/api/store-admin/feedback'));
   });
+
+  it('uses stable namespaced runtime keys with complete Store Admin locales', () => {
+    const pluginRoot = path.join(__dirname, '..', '..', 'plugin-store', 'sources', 'store-admin');
+    const uiHtml = fs.readFileSync(path.join(pluginRoot, 'ui.html'), 'utf8');
+    const runtimeKeys = [
+      'plugins.store-admin.errors.requestFailed',
+      'plugins.store-admin.feedback.empty',
+      'plugins.store-admin.feedback.noMessage',
+      'plugins.store-admin.feedback.notAvailable',
+      'plugins.store-admin.feedback.unknown',
+      'plugins.store-admin.metrics.feedback',
+      'plugins.store-admin.metrics.installFailures',
+      'plugins.store-admin.metrics.rollbacks',
+      'plugins.store-admin.metrics.telemetry',
+      'plugins.store-admin.status.accessSaved',
+      'plugins.store-admin.status.adminSessionOk',
+      'plugins.store-admin.status.licenseClaimed',
+      'plugins.store-admin.status.licenseRevoked',
+      'plugins.store-admin.status.loadingUsers',
+      'plugins.store-admin.status.usersLoaded',
+      'plugins.store-admin.users.activeBetaLicense',
+      'plugins.store-admin.users.administrator',
+      'plugins.store-admin.users.allClosedBeta',
+      'plugins.store-admin.users.claimBetaLicense',
+      'plugins.store-admin.users.noActiveLicense',
+      'plugins.store-admin.users.noProfileName',
+      'plugins.store-admin.users.revokeLicense',
+      'plugins.store-admin.users.saveAccess'
+    ];
+
+    runtimeKeys.forEach((key) => {
+      assert(uiHtml.includes(`t('${key}'`), `missing namespaced runtime key ${key}`);
+    });
+
+    const locales = Object.fromEntries(['de', 'en', 'es', 'fr'].map((locale) => [
+      locale,
+      JSON.parse(fs.readFileSync(path.join(pluginRoot, 'locales', `${locale}.json`), 'utf8'))
+    ]));
+    runtimeKeys.forEach((key) => {
+      const pathSegments = key.split('.').slice(2);
+      for (const [locale, content] of Object.entries(locales)) {
+        const value = pathSegments.reduce((current, segment) => current && current[segment], content.plugins['store-admin']);
+        assert.strictEqual(typeof value, 'string', `missing ${locale} value for ${key}`);
+      }
+    });
+    assert.notStrictEqual(locales.de.plugins['store-admin'].users.administrator, 'Administrator');
+  });
 });
 
 function createApi() {

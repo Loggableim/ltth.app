@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.2b50b83ebf2e">Developer Guides</title>
+  <title data-i18n="plugins.gift-catalog.labels.developer_guides_2b50b8">Developer Guides</title>
   <link rel="stylesheet" href="/css/themes.css">
   <script>
     (function () {
@@ -625,17 +625,17 @@
     <section class="gc-card">
       <div class="gc-title-wrap">
         <div>
-          <h1 data-i18n="generated.090041c66636">Developer Guides</h1>
-          <p class="gc-description" data-i18n="generated.aa3a2aaa78ec">
+          <h1 data-i18n="plugins.gift-catalog.labels.developer_guides">Developer Guides</h1>
+          <p class="gc-description" data-i18n="plugins.gift-catalog.labels.start_point_for_developer_oriented_tiktok_integration_guides">
             Start point for developer-oriented TikTok integration guides.
           </p>
         </div>
         <span id="connection-state" class="gc-status">
           <span class="gc-dot"></span>
-          <span data-i18n="gift_catalog.ui.status.disconnected">Disconnected</span>
+          <span data-i18n="plugins.gift-catalog.gift_catalog.ui.status.disconnected">Disconnected</span>
         </span>
       </div>
-      <p id="connection-message" class="gc-description" data-i18n="generated.ad028690bc65">
+      <p id="connection-message" class="gc-description" data-i18n="plugins.gift-catalog.labels.endpoints_are_tested_live_against_api_gift_catalog">
         Endpoints are tested live against:
         /api/gift-catalog-manager/config,
         /api/gift-catalog-manager/refresh
@@ -645,40 +645,40 @@
     </section>
 
     <div class="gc-tabs" id="guide-tabs">
-      <button class="gc-tab active" data-tab="gift-catalog" type="button" data-i18n="generated.55c805eb66f8">Gift Catalog Guide</button>
-      <button class="gc-tab" data-tab="future-guides" type="button" disabled data-i18n="generated.cdc86084f3cb">Future Guides</button>
+      <button class="gc-tab active" data-tab="gift-catalog" type="button" data-i18n="plugins.gift-catalog.labels.gift_catalog_guide">Gift Catalog Guide</button>
+      <button class="gc-tab" data-tab="future-guides" type="button" disabled data-i18n="plugins.gift-catalog.labels.future_guides">Future Guides</button>
     </div>
 
     <section class="gc-panel active" data-tab-panel="gift-catalog">
       <div class="gc-grid">
       <section class="gc-card">
           <div class="gc-card-header">
-            <h2 data-i18n="generated.618c8f3eff7d">Region and language defaults</h2>
+            <h2 data-i18n="plugins.gift-catalog.labels.region_and_language_defaults">Region and language defaults</h2>
             <span class="gc-step">1</span>
           </div>
-          <p data-i18n="generated.4c3b6050f1c3">Store defaults used by refresh and inspect how locale/region affects names.</p>
+          <p data-i18n="plugins.gift-catalog.labels.store_defaults_used_by_refresh_and_inspect_how">Store defaults used by refresh and inspect how locale/region affects names.</p>
           <form id="config-form">
             <div class="gc-row">
               <div class="gc-field">
-                <label for="app-language">app_language</label>
-                <input id="app-language" class="gc-input" placeholder="en-US" />
+                <label for="app-language" data-i18n="plugins.gift-catalog.gift_catalog.ui.labels.app_language">app_language</label>
+                        <input id="app-language" class="gc-input" placeholder="en-US" data-i18n-placeholder="plugins.gift-catalog.form_controls.app_language_placeholder" />
               </div>
               <div class="gc-field">
-                <label for="browser-language">browser_language</label>
-                <input id="browser-language" class="gc-input" placeholder="en" />
+                <label for="browser-language" data-i18n="plugins.gift-catalog.gift_catalog.ui.labels.browser_language">browser_language</label>
+                        <input id="browser-language" class="gc-input" placeholder="en" data-i18n-placeholder="plugins.gift-catalog.form_controls.browser_language_placeholder" />
               </div>
             </div>
             <div class="gc-row">
               <div class="gc-field">
-                <label for="webcast-language">webcast_language</label>
-                <input id="webcast-language" class="gc-input" placeholder="en" />
+                <label for="webcast-language" data-i18n="plugins.gift-catalog.gift_catalog.ui.labels.webcast_language">webcast_language</label>
+                <input id="webcast-language" class="gc-input" placeholder="en" data-i18n-placeholder="plugins.gift-catalog.form_controls.webcast_language_placeholder" />
               </div>
               <div class="gc-field">
-                <label for="priority-region">priority_region</label>
-                <input id="priority-region" class="gc-input" placeholder="DE or empty" />
+                <label for="priority-region" data-i18n="plugins.gift-catalog.gift_catalog.ui.labels.priority_region">priority_region</label>
+                        <input id="priority-region" class="gc-input" placeholder="DE or empty" data-i18n-placeholder="plugins.gift-catalog.form_controls.priority_region_placeholder" />
               </div>
               <div class="gc-field">
-                <label data-i18n="generated.d13980d35000">Region quick set</label>
+                <label data-i18n="plugins.gift-catalog.labels.region_quick_set">Region quick set</label>
                 <div class="gc-flag-row">
                   <button class="gc-region-pill" id="region-auto" type="button" data-region="">AUTO</button>
                   <button class="gc-region-pill" type="button" data-region="DE">DE</button>
@@ -690,15 +690,15 @@
             </div>
             <div class="gc-row">
               <div class="gc-field">
-                <label for="tz-name">tz_name</label>
-                <input id="tz-name" class="gc-input" placeholder="Europe/Berlin" />
+                <label for="tz-name" data-i18n="plugins.gift-catalog.gift_catalog.ui.labels.tz_name">tz_name</label>
+                        <input id="tz-name" class="gc-input" placeholder="Europe/Berlin" data-i18n-placeholder="plugins.gift-catalog.form_controls.time_zone_placeholder" />
               </div>
               <div class="gc-field">
-                <label for="locales" data-i18n="generated.e5a491ae919a">locales (comma separated)</label>
-                <input id="locales" class="gc-input" placeholder="en,de,es,fr" />
+                <label for="locales" data-i18n="plugins.gift-catalog.labels.locales_comma_separated">locales (comma separated)</label>
+                        <input id="locales" class="gc-input" placeholder="en,de,es,fr" data-i18n-placeholder="plugins.gift-catalog.form_controls.locales_placeholder" />
               </div>
               <div class="gc-field">
-                <label data-i18n="generated.d203262a2e67">Locale quick-picks</label>
+                <label data-i18n="plugins.gift-catalog.labels.locale_quick_picks_d20326">Locale quick-picks</label>
                 <div class="gc-flag-row" id="locale-quick-picks">
                   <button class="gc-flag-btn" type="button" data-locale="en" data-region="" data-source="config"><span class="gc-flag-chip" data-locale="en"></span><span>EN</span></button>
                   <button class="gc-flag-btn" type="button" data-locale="de" data-region="DE" data-source="config"><span class="gc-flag-chip" data-locale="de"></span><span>DE</span></button>
@@ -709,8 +709,8 @@
             </div>
           </form>
           <div class="gc-actions">
-            <button id="load-config" data-i18n="generated.0d8478dfda78">Load saved config</button>
-            <button id="save-config" class="btn-secondary" data-i18n="generated.9cd4adc9315c">Save as default</button>
+            <button id="load-config" data-i18n="plugins.gift-catalog.labels.load_saved_config">Load saved config</button>
+            <button id="save-config" class="btn-secondary" data-i18n="plugins.gift-catalog.labels.save_as_default">Save as default</button>
             <button id="preset-de" class="btn-secondary">DE</button>
             <button id="preset-us" class="btn-secondary">US</button>
             <button id="preset-jp" class="btn-secondary">JP</button>
@@ -720,62 +720,62 @@
 
         <section class="gc-card">
           <div class="gc-card-header">
-            <h2 data-i18n="generated.a360e4d45829">Refresh demo calls</h2>
+            <h2 data-i18n="plugins.gift-catalog.labels.refresh_demo_calls">Refresh demo calls</h2>
             <span class="gc-step">2</span>
           </div>
-          <p data-i18n="generated.709a97912045">Send custom payloads to validate region/language behavior from another plugin endpoint.</p>
+          <p data-i18n="plugins.gift-catalog.labels.send_custom_payloads_to_validate_region_language_behavior">Send custom payloads to validate region/language behavior from another plugin endpoint.</p>
 
           <div class="gc-endpoint">
             <span class="method">POST</span>
             <code>/api/gift-catalog-manager/refresh</code>
-            <button id="refresh-current" class="gc-copy-btn btn-secondary" type="button" data-i18n="generated.e09d5ea34faf">Use saved config</button>
+            <button id="refresh-current" class="gc-copy-btn btn-secondary" type="button" data-i18n="plugins.gift-catalog.labels.use_saved_config">Use saved config</button>
           </div>
 
           <div class="gc-endpoint">
             <span class="method">POST</span>
             <code>/api/gift-catalog-manager/refresh</code>
-            <button id="refresh-custom" class="gc-copy-btn btn-secondary" type="button" data-i18n="generated.f0d5aa6b9063">Use current form</button>
+            <button id="refresh-custom" class="gc-copy-btn btn-secondary" type="button" data-i18n="plugins.gift-catalog.labels.use_current_form">Use current form</button>
           </div>
 
           <div class="gc-endpoint">
             <span class="method">POST</span>
             <code>/api/gift-catalog/update</code>
-            <button id="refresh-core" class="gc-copy-btn btn-secondary" type="button" data-i18n="generated.f45f73b101c2">Legacy server endpoint</button>
+            <button id="refresh-core" class="gc-copy-btn btn-secondary" type="button" data-i18n="plugins.gift-catalog.labels.legacy_server_endpoint">Legacy server endpoint</button>
           </div>
 
-          <div class="gc-info" data-i18n="generated.045279acf2be">
+          <div class="gc-info" data-i18n="plugins.gift-catalog.labels.the_backend_can_call_refresh_with_parameters_the">
             The backend can call refresh with parameters. The demo below sends a request with a custom locale bundle and shows the returned payload.
           </div>
           <div class="gc-actions">
-            <button id="run-refresh-form" data-i18n="generated.65ef653e54a9">Run current form</button>
-            <button id="run-refresh-default" class="btn-secondary" data-i18n="generated.adf3d7b7e3d3">Run defaults</button>
-            <button id="run-refresh-core" class="btn-secondary" data-i18n="generated.9e4409d6e6af">Run core update</button>
-            <button id="run-refresh-all" class="btn-secondary" data-i18n="generated.1b54395d0b16">Run all configured locales</button>
+            <button id="run-refresh-form" data-i18n="plugins.gift-catalog.labels.run_current_form">Run current form</button>
+            <button id="run-refresh-default" class="btn-secondary" data-i18n="plugins.gift-catalog.labels.run_defaults">Run defaults</button>
+            <button id="run-refresh-core" class="btn-secondary" data-i18n="plugins.gift-catalog.labels.run_core_update">Run core update</button>
+            <button id="run-refresh-all" class="btn-secondary" data-i18n="plugins.gift-catalog.labels.run_all_configured_locales">Run all configured locales</button>
           </div>
           <pre id="refresh-output" class="gc-result">No refresh call executed yet.</pre>
         </section>
 
         <section class="gc-card">
           <div class="gc-card-header">
-            <h2 data-i18n="generated.5539b098d017">Catalog readout</h2>
+            <h2 data-i18n="plugins.gift-catalog.labels.catalog_readout">Catalog readout</h2>
             <span class="gc-step">3</span>
           </div>
-          <p data-i18n="generated.701f9c884e07">Inspect current catalog payload from the shared endpoint used by existing plugins.</p>
+          <p data-i18n="plugins.gift-catalog.labels.inspect_current_catalog_payload_from_the_shared_endpoint">Inspect current catalog payload from the shared endpoint used by existing plugins.</p>
           <div class="gc-row">
             <div class="gc-field">
-              <label for="catalog-locale">Locale</label>
+              <label for="catalog-locale" data-i18n="plugins.gift-catalog.gift_catalog.ui.labels.locale">Locale</label>
               <select id="catalog-locale" class="gc-select">
-                <option value="" data-i18n="generated.4a17e55c3099">Default names</option>
-                <option value="en">en</option>
-                <option value="de">de</option>
-                <option value="es">es</option>
-                <option value="fr">fr</option>
+                <option value="" data-i18n="plugins.gift-catalog.labels.default_names">Default names</option>
+                <option value="en" data-i18n="plugins.gift-catalog.gift_catalog.ui.options.locale_en">en</option>
+                <option value="de" data-i18n="plugins.gift-catalog.gift_catalog.ui.options.locale_de">de</option>
+                <option value="es" data-i18n="plugins.gift-catalog.gift_catalog.ui.options.locale_es">es</option>
+                <option value="fr" data-i18n="plugins.gift-catalog.gift_catalog.ui.options.locale_fr">fr</option>
               </select>
             </div>
             <div class="gc-field">
-              <label for="catalog-region" data-i18n="generated.c2f5d9985cd1">Region override</label>
+              <label for="catalog-region" data-i18n="plugins.gift-catalog.labels.region_override_c2f5d9">Region override</label>
               <select id="catalog-region" class="gc-select">
-                <option value="">(none)</option>
+                <option value="" data-i18n="plugins.gift-catalog.gift_catalog.ui.options.none">(none)</option>
                 <option value="DE">DE</option>
                 <option value="ES">ES</option>
                 <option value="FR">FR</option>
@@ -783,7 +783,7 @@
               </select>
             </div>
             <div class="gc-field">
-                <label data-i18n="generated.013e431e8d0a">Locale quick-picks</label>
+                <label data-i18n="plugins.gift-catalog.labels.locale_quick_picks">Locale quick-picks</label>
                 <div class="gc-flag-row" id="catalog-locale-quick">
                   <button class="gc-flag-btn" type="button" data-locale="en" data-source="catalog"><span class="gc-flag-chip" data-locale="en"></span><span>EN</span></button>
                   <button class="gc-flag-btn" type="button" data-locale="de" data-source="catalog"><span class="gc-flag-chip" data-locale="de"></span><span>DE</span></button>
@@ -792,7 +792,7 @@
                 </div>
             </div>
             <div class="gc-field">
-              <label data-i18n="generated.5ce50f1b86aa">Region quick-picks</label>
+              <label data-i18n="plugins.gift-catalog.labels.region_quick_picks">Region quick-picks</label>
               <div class="gc-flag-row" id="catalog-region-quick">
                 <button class="gc-region-pill" type="button" data-region="">AUTO</button>
                 <button class="gc-region-pill" type="button" data-region="DE">DE</button>
@@ -802,10 +802,10 @@
               </div>
             </div>
           <div class="gc-actions">
-            <button id="load-catalog-manager" data-i18n="generated.ebd5c6586b61">Load /api/gift-catalog-manager/catalog</button>
-            <button id="load-catalog-legacy" class="btn-secondary" data-i18n="generated.5b04a074817f">Load /api/gift-catalog</button>
-            <button id="load-catalog-sample" class="btn-secondary" data-i18n="generated.40375f93143b">Load 1st 10 sample gifts</button>
-            <button id="load-catalog-all" class="btn-secondary" data-i18n="generated.a756f1db2186">Load all locales</button>
+            <button id="load-catalog-manager" data-i18n="plugins.gift-catalog.labels.load_api_gift_catalog_manager_catalog">Load /api/gift-catalog-manager/catalog</button>
+            <button id="load-catalog-legacy" class="btn-secondary" data-i18n="plugins.gift-catalog.labels.load_api_gift_catalog">Load /api/gift-catalog</button>
+            <button id="load-catalog-sample" class="btn-secondary" data-i18n="plugins.gift-catalog.labels.load_1st_10_sample_gifts">Load 1st 10 sample gifts</button>
+            <button id="load-catalog-all" class="btn-secondary" data-i18n="plugins.gift-catalog.labels.load_all_locales">Load all locales</button>
           </div>
           <pre id="catalog-output" class="gc-result">No catalog loaded yet.</pre>
         </section>
@@ -813,26 +813,26 @@
 
         <section class="gc-card">
           <div class="gc-card-header">
-            <h2 data-i18n="generated.2913754c07a9">Demo integrations</h2>
+            <h2 data-i18n="plugins.gift-catalog.labels.demo_integrations">Demo integrations</h2>
             <span class="gc-step">4</span>
           </div>
-          <p data-i18n="generated.8ebfed403ce5">These controls intentionally mirror the kinds of embeds you requested: dropdown, list and scroll area.</p>
+          <p data-i18n="plugins.gift-catalog.labels.these_controls_intentionally_mirror_the_kinds_of_embeds">These controls intentionally mirror the kinds of embeds you requested: dropdown, list and scroll area.</p>
 
           <div class="gc-row-2">
             <div class="gc-field">
-              <label for="demo-list-source" data-i18n="generated.a1377cfa5570">List data source</label>
+              <label for="demo-list-source" data-i18n="plugins.gift-catalog.labels.list_data_source">List data source</label>
               <select id="demo-list-source" class="gc-select">
-                <option value="static" data-i18n="generated.baf26245d7e2">Static demo data</option>
-                <option value="live" data-i18n="generated.41d71a8efece">Live /api/gift-catalog-manager/catalog</option>
+                <option value="static" data-i18n="plugins.gift-catalog.labels.static_demo_data">Static demo data</option>
+                <option value="live" data-i18n="plugins.gift-catalog.labels.live_api_gift_catalog_manager_catalog">Live /api/gift-catalog-manager/catalog</option>
             </select>
           </div>
           <div class="gc-field">
-            <label for="demo-list-locale">Locale</label>
+            <label for="demo-list-locale" data-i18n="plugins.gift-catalog.gift_catalog.ui.labels.locale">Locale</label>
             <select id="demo-list-locale" class="gc-select">
-              <option value="en">en</option>
-              <option value="de">de</option>
-              <option value="es">es</option>
-              <option value="fr">fr</option>
+              <option value="en" data-i18n="plugins.gift-catalog.gift_catalog.ui.options.locale_en">en</option>
+              <option value="de" data-i18n="plugins.gift-catalog.gift_catalog.ui.options.locale_de">de</option>
+              <option value="es" data-i18n="plugins.gift-catalog.gift_catalog.ui.options.locale_es">es</option>
+              <option value="fr" data-i18n="plugins.gift-catalog.gift_catalog.ui.options.locale_fr">fr</option>
             </select>
               <div class="gc-flag-row" id="demo-locale-quick">
                 <button class="gc-flag-btn" type="button" data-locale="en" data-source="demo"><span class="gc-flag-chip" data-locale="en"></span><span>EN</span></button>
@@ -842,7 +842,7 @@
               </div>
             </div>
               <div class="gc-field">
-                <label for="demo-region" data-i18n="generated.5954551f9195">Region override</label>
+                <label for="demo-region" data-i18n="plugins.gift-catalog.labels.region_override">Region override</label>
                 <select id="demo-region" class="gc-select">
                   <option value="">AUTO</option>
                   <option value="DE">DE</option>
@@ -863,38 +863,38 @@
           <div class="gc-endpoint preview">
             <span class="method">GET</span>
             <code id="demo-endpoint-preview">/api/gift-catalog-manager/catalog</code>
-            <button class="gc-copy-btn btn-secondary" id="copy-demo-endpoint" type="button" data-i18n="generated.7dfc749e79f2">Copy endpoint</button>
+            <button class="gc-copy-btn btn-secondary" id="copy-demo-endpoint" type="button" data-i18n="plugins.gift-catalog.labels.copy_endpoint">Copy endpoint</button>
           </div>
 
         <div class="gc-actions">
-          <button id="demo-refresh-list" class="btn-secondary" type="button" data-i18n="generated.990b555b17d3">Render demo list</button>
-          <button id="demo-shuffle-list" class="btn-secondary" type="button" data-i18n="generated.7c3991633428">Shuffle order</button>
-          <button id="demo-reset-list" class="btn-secondary" type="button" data-i18n="generated.21ce1e3ac4e1">Reset list</button>
+          <button id="demo-refresh-list" class="btn-secondary" type="button" data-i18n="plugins.gift-catalog.labels.render_demo_list">Render demo list</button>
+          <button id="demo-shuffle-list" class="btn-secondary" type="button" data-i18n="plugins.gift-catalog.labels.shuffle_order">Shuffle order</button>
+          <button id="demo-reset-list" class="btn-secondary" type="button" data-i18n="plugins.gift-catalog.labels.reset_list">Reset list</button>
         </div>
 
         <div class="gc-scroll-area" id="demo-scroll-area">
           <ul id="demo-list" class="gc-demo-list">
             <li class="gc-demo-list-item">
-              <span data-i18n="generated.26bf8c18ec18">Loading demo entries…</span>
-              <span class="gc-demo-list-item-meta" data-i18n="generated.89fd8ceda928">No source selected</span>
+              <span data-i18n="plugins.gift-catalog.labels.loading_demo_entries">Loading demo entries…</span>
+              <span class="gc-demo-list-item-meta" data-i18n="plugins.gift-catalog.labels.no_source_selected">No source selected</span>
             </li>
           </ul>
         </div>
-        <p id="demo-list-status" class="gc-info" style="margin-top: 8px;" data-i18n="generated.2820a91b9725">Select a source and render.</p>
+        <p id="demo-list-status" class="gc-info" style="margin-top: 8px;" data-i18n="plugins.gift-catalog.labels.select_a_source_and_render">Select a source and render.</p>
       </section>
 
       <section class="gc-card">
         <div class="gc-card-header">
-          <h2 data-i18n="generated.624db90ff515">Implementation demos (copy-ready)</h2>
+          <h2 data-i18n="plugins.gift-catalog.labels.implementation_demos_copy_ready">Implementation demos (copy-ready)</h2>
           <span class="gc-step">5</span>
         </div>
-        <p data-i18n="generated.6b1fadb306c8">Use these snippets in other plugins; adjust route base to your preferred pattern.</p>
+        <p data-i18n="plugins.gift-catalog.labels.use_these_snippets_in_other_plugins_adjust_route">Use these snippets in other plugins; adjust route base to your preferred pattern.</p>
 
         <div class="gc-row-2">
           <div class="gc-snippet">
-            <div class="gc-snippet-caption"><span data-i18n="generated.47b19ea53d30">
+            <div class="gc-snippet-caption"><span data-i18n="plugins.gift-catalog.labels.frontend_plugin_request">
               Frontend plugin request
-              </span><button class="gc-copy-btn btn-secondary" data-copy="snippet-frontend">Copy</button>
+              </span><button class="gc-copy-btn btn-secondary" data-copy="snippet-frontend" data-i18n="plugins.gift-catalog.gift_catalog.ui.actions.copy">Copy</button>
             </div>
             <pre id="snippet-frontend">const payload = {
   app_language: 'de-DE',
@@ -917,9 +917,9 @@ if (!data.success) throw new Error(data.error || 'refresh failed');
           </div>
 
           <div class="gc-snippet">
-            <div class="gc-snippet-caption"><span data-i18n="generated.ab6f0ca3d74e">
+            <div class="gc-snippet-caption"><span data-i18n="plugins.gift-catalog.labels.shared_catalog_consumer">
               Shared catalog consumer
-              </span><button class="gc-copy-btn btn-secondary" data-copy="snippet-consumer">Copy</button>
+              </span><button class="gc-copy-btn btn-secondary" data-copy="snippet-consumer" data-i18n="plugins.gift-catalog.gift_catalog.ui.actions.copy">Copy</button>
             </div>
             <pre id="snippet-consumer">const response = await fetch('/api/gift-catalog-manager/catalog?locales=de,fr');
 const payload = await response.json();
@@ -940,9 +940,9 @@ if (payload.success && Array.isArray(payload.catalog)) {
           </div>
 
           <div class="gc-snippet">
-            <div class="gc-snippet-caption"><span data-i18n="generated.1b786ffb7c44">
+            <div class="gc-snippet-caption"><span data-i18n="plugins.gift-catalog.labels.backend_route_fallback">
               Backend route fallback
-              </span><button class="gc-copy-btn btn-secondary" data-copy="snippet-backend">Copy</button>
+              </span><button class="gc-copy-btn btn-secondary" data-copy="snippet-backend" data-i18n="plugins.gift-catalog.gift_catalog.ui.actions.copy">Copy</button>
             </div>
             <pre id="snippet-backend">this.api.registerRoute('POST', '/my-plugin/gifts/refresh', async (req, res) => {
   const options = req.body || {};
@@ -958,9 +958,9 @@ if (payload.success && Array.isArray(payload.catalog)) {
           </div>
 
           <div class="gc-snippet">
-            <div class="gc-snippet-caption"><span data-i18n="generated.fd18b1a5e422">
+            <div class="gc-snippet-caption"><span data-i18n="plugins.gift-catalog.labels.language_map_utility">
               Language map utility
-              </span><button class="gc-copy-btn btn-secondary" data-copy="snippet-map">Copy</button>
+              </span><button class="gc-copy-btn btn-secondary" data-copy="snippet-map" data-i18n="plugins.gift-catalog.gift_catalog.ui.actions.copy">Copy</button>
             </div>
             <pre id="snippet-map">const localeMap = {
   en: { app: 'en-US', browser: 'en', webcast: 'en' },
@@ -975,14 +975,14 @@ function resolveGiftLocale(locale) {
         </div>
       </section>
 
-        <p class="gc-footer" data-i18n="generated.2c0fe71d2520">Developer preview created for internal plugin integration checks and demo-driven implementation planning.</p>
-        <p class="gc-note" data-i18n="generated.dad9394cf75c">Region + Locale controls are intentionally centralized so downstream plugins consume one pattern and one API contract.</p>
+        <p class="gc-footer" data-i18n="plugins.gift-catalog.labels.developer_preview_created_for_internal_plugin_integration_checks">Developer preview created for internal plugin integration checks and demo-driven implementation planning.</p>
+        <p class="gc-note" data-i18n="plugins.gift-catalog.labels.region_locale_controls_are_intentionally_centralized_so_downstream">Region + Locale controls are intentionally centralized so downstream plugins consume one pattern and one API contract.</p>
       </section>
 
       <section class="gc-panel" data-tab-panel="future-guides">
         <section class="gc-card">
-          <h2 data-i18n="generated.50f60a7c3fb3">Coming Guides</h2>
-          <p class="gc-panel-placeholder" data-i18n="generated.85a0d3b3bf51">
+          <h2 data-i18n="plugins.gift-catalog.labels.coming_guides">Coming Guides</h2>
+          <p class="gc-panel-placeholder" data-i18n="plugins.gift-catalog.labels.placeholder_for_future_developer_guides_use_this_tab">
             Placeholder for future developer guides.
             Use this tab as the anchor for additional guide surfaces.
           </p>
@@ -999,6 +999,15 @@ function resolveGiftLocale(locale) {
           catalog: '/api/gift-catalog',
           coreRefresh: '/api/gift-catalog/update'
         };
+
+        function translateUi(key, fallback, params) {
+          const values = params || {};
+          const translation = window.i18n?.t(key, values);
+          if (translation && translation !== key) return translation;
+          return String(fallback).replace(/\{(\w+)\}/g, function (_, name) {
+            return Object.prototype.hasOwnProperty.call(values, name) ? values[name] : `{${name}}`;
+          });
+        }
 
         const demoGiftData = {
           en: ['Rose', 'Firework', 'K-Pop Heart', 'Rocket', 'Crown', 'Moon', 'Sparkle', 'Pizza', 'Galaxy', 'Golden Ticket', 'Confetti', 'Star'],
@@ -1534,12 +1543,31 @@ function resolveGiftLocale(locale) {
 
           if (!gifts.length) {
             const emptyItem = document.createElement('li');
+            const title = document.createElement('span');
+            const meta = document.createElement('span');
             emptyItem.className = 'gc-demo-list-item';
-            emptyItem.innerHTML = '<span>No gifts available.</span><span class="gc-demo-list-item-meta">Load catalog first for live mode</span>';
+            title.textContent = translateUi(
+              'plugins.gift-catalog.gift_catalog.ui.messages.no_gifts_available',
+              'No gifts available.'
+            );
+            meta.className = 'gc-demo-list-item-meta';
+            meta.textContent = translateUi(
+              'plugins.gift-catalog.gift_catalog.ui.messages.load_catalog_first_for_live_mode',
+              'Load catalog first for live mode'
+            );
+            emptyItem.appendChild(title);
+            emptyItem.appendChild(meta);
             demoComponents.listContainer.appendChild(emptyItem);
             demoComponents.listStatus.textContent = useLive
-              ? 'No gifts loaded from /api/gift-catalog-manager/catalog.'
-              : 'Static list for locale ' + locale + ' is empty.';
+              ? translateUi(
+                'plugins.gift-catalog.gift_catalog.ui.messages.no_live_gifts_loaded',
+                'No gifts loaded from /api/gift-catalog-manager/catalog.'
+              )
+              : translateUi(
+                'plugins.gift-catalog.gift_catalog.ui.messages.static_list_empty',
+                'Static list for locale {locale} is empty.',
+                { locale: locale }
+              );
             return;
           }
 
@@ -1550,15 +1578,25 @@ function resolveGiftLocale(locale) {
             item.className = 'gc-demo-list-item';
             title.textContent = (index + 1) + '. ' + name;
             meta.className = 'gc-demo-list-item-meta';
-            meta.textContent = useLive ? 'Live source' : 'Demo source ' + locale;
+            meta.textContent = useLive
+              ? translateUi('plugins.gift-catalog.gift_catalog.ui.messages.live_source', 'Live source')
+              : translateUi('plugins.gift-catalog.gift_catalog.ui.messages.demo_source', 'Demo source {locale}', { locale: locale });
             item.appendChild(title);
             item.appendChild(meta);
             demoComponents.listContainer.appendChild(item);
           });
 
           demoComponents.listStatus.textContent = useLive
-            ? ('Loaded from live endpoint: ' + gifts.length + ' gift entries.')
-            : ('Demo list rendered for locale: ' + locale + ' (' + gifts.length + ' entries).');
+            ? translateUi(
+              'plugins.gift-catalog.gift_catalog.ui.messages.live_entries_loaded',
+              'Loaded from live endpoint: {count} gift entries.',
+              { count: gifts.length }
+            )
+            : translateUi(
+              'plugins.gift-catalog.gift_catalog.ui.messages.demo_list_rendered',
+              'Demo list rendered for locale: {locale} ({count} entries).',
+              { locale: locale, count: gifts.length }
+            );
         }
 
         function copySnippet(id) {
@@ -1570,10 +1608,10 @@ function resolveGiftLocale(locale) {
 
           if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(value).catch(function () {
-              window.prompt('Copy failed. Use this snippet:', value);
+              window.prompt(translateUi('plugins.gift-catalog.gift_catalog.ui.messages.copy_failed_prompt', 'Copy failed. Use this snippet:'), value);
             });
           } else {
-            window.prompt('Copy this snippet:', value);
+            window.prompt(translateUi('plugins.gift-catalog.gift_catalog.ui.messages.copy_prompt', 'Copy this snippet:'), value);
           }
         }
 
@@ -1664,12 +1702,12 @@ function resolveGiftLocale(locale) {
             }
 
             if (!navigator.clipboard) {
-              window.prompt('Endpoint:', demoComponents.endpointPreview.textContent || '');
+              window.prompt(translateUi('plugins.gift-catalog.gift_catalog.ui.messages.endpoint_prompt', 'Endpoint:'), demoComponents.endpointPreview.textContent || '');
               return;
             }
 
             navigator.clipboard.writeText(demoComponents.endpointPreview.textContent || '').catch(function () {
-              window.prompt('Endpoint:', demoComponents.endpointPreview.textContent || '');
+              window.prompt(translateUi('plugins.gift-catalog.gift_catalog.ui.messages.endpoint_prompt', 'Endpoint:'), demoComponents.endpointPreview.textContent || '');
             });
           });
 
@@ -1811,7 +1849,7 @@ function resolveGiftLocale(locale) {
         loadConfig();
       })();
     </script>
-  
+
 <style id="final-gift-catalog-day-label-contrast">
 html[data-theme="day"] label {
   color: #0f172a !important;

@@ -519,6 +519,11 @@ router.get('/page/:pageId', async (req, res) => {
         // Render markdown to HTML
         const markdownParser = await initMarked();
         let html = markdownParser(processedMarkdown);
+        const languageAnchor = getLanguageAnchor(requestedLocale);
+        // A selected embedded language section is promoted to an H1. Preserve
+        // the normalized anchor returned by this API so deep links and the
+        // client-side language navigator point at an actual rendered element.
+        html = html.replace(/^<h1(?![^>]*\bid=)([^>]*)>/i, `<h1 id="${languageAnchor}"$1>`);
         
         // Process image paths to be relative to server
         html = html.replace(/src="(?!http)([^"]+)"/g, (match, imgPath) => {
@@ -554,7 +559,7 @@ router.get('/page/:pageId', async (req, res) => {
             lastUpdated: stats.mtime.toISOString(),
             preferredLanguage: requestedLocale,
             languageSource: selectedVariant.source,
-            languageAnchor: getLanguageAnchor(requestedLocale)
+            languageAnchor
         });
         
     } catch (error) {

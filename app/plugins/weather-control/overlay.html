@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.ebecd84294ad">Weather Control Overlay</title>
+  <title data-i18n="plugins.weather-control.labels.weather_control_overlay">Weather Control Overlay</title>
   <style>
     * {
       box-sizing: border-box;
@@ -174,23 +174,23 @@
   <div id="connection-status"></div>
   <div id="gamification-hud" aria-live="polite">
     <div class="gamification-title">
-      <span data-i18n="generated.c2a7b3dab075">Community Weather</span>
+      <span data-i18n="plugins.weather-control.labels.community_weather">Community Weather</span>
       <span class="gamification-pill" id="gamification-next-reward">-</span>
     </div>
     <div>
       <div class="gamification-row">
-        <span id="gamification-quest-title">Quest</span>
+        <span id="gamification-quest-title" data-i18n="plugins.weather-control.ui.overlay.quest">Quest</span>
         <span class="gamification-pill" id="gamification-quest-progress">0/0</span>
       </div>
       <div class="gamification-row">
-        <span id="gamification-streak-title">Streak</span>
+        <span id="gamification-streak-title" data-i18n="plugins.weather-control.ui.overlay.streak">Streak</span>
         <span class="gamification-pill" id="gamification-streak-value">0</span>
       </div>
       <div class="gamification-meter" aria-hidden="true">
         <div class="gamification-meter-fill" id="gamification-meter-fill"></div>
       </div>
       <div class="gamification-row" style="margin-top: 6px;">
-        <span id="gamification-meter-label">Meter</span>
+        <span id="gamification-meter-label" data-i18n="plugins.weather-control.ui.overlay.meter">Meter</span>
         <span class="gamification-pill" id="gamification-meter-value">0/100</span>
       </div>
     </div>
@@ -237,6 +237,17 @@
       let debugTimer = null;
       let gamificationState = null;
       const resizeEngine = () => engine?.updateDimensions();
+
+      function weatherText(key, fallback, params = {}) {
+        const translated = window.i18n?.t?.(key);
+        let text = translated && translated !== key ? translated : fallback;
+        Object.entries(params).forEach(([name, value]) => {
+          text = text
+            .replace(new RegExp(`{{${name}}}`, 'g'), value)
+            .replace(new RegExp(`{${name}}`, 'g'), value);
+        });
+        return text;
+      }
 
       function log(message) {
         if (debug) {
@@ -311,7 +322,7 @@
           meterFill.style.width = `${Math.min(100, ((meter.current || 0) / max) * 100)}%`;
         }
         if (questTitle) {
-          questTitle.textContent = quest?.title || 'Quest';
+          questTitle.textContent = quest?.title || weatherText('plugins.weather-control.runtime.overlay.quest', 'Quest');
         }
         if (questProgress) {
           questProgress.textContent = quest ? `${quest.progress ?? 0}/${quest.target ?? 0}` : '0/0';
@@ -320,13 +331,18 @@
           streakValue.textContent = String(streaks.current ?? 0);
         }
         if (nextReward) {
-          nextReward.textContent = rewards.nextThreshold ? `${rewards.nextThreshold.label || 'Reward'} @ ${rewards.nextThreshold.meter}` : '-';
+          nextReward.textContent = rewards.nextThreshold
+            ? weatherText('plugins.weather-control.runtime.overlay.next_reward', '{reward} @ {meter}', {
+              reward: rewards.nextThreshold.label || weatherText('plugins.weather-control.runtime.overlay.reward', 'Reward'),
+              meter: rewards.nextThreshold.meter
+            })
+            : '-';
         }
         if (meterLabel && config?.gamification?.overlay?.showMeter === false) {
-          meterLabel.textContent = 'Meter disabled';
+          meterLabel.textContent = weatherText('plugins.weather-control.runtime.overlay.meter_disabled', 'Meter disabled');
         }
         if (streakTitle && config?.gamification?.overlay?.showStreak === false) {
-          streakTitle.textContent = 'Streak disabled';
+          streakTitle.textContent = weatherText('plugins.weather-control.runtime.overlay.streak_disabled', 'Streak disabled');
         }
       }
 
@@ -504,14 +520,14 @@
         debugInfo.classList.add('active');
         const activeEffects = engine.getActiveEffects();
         debugInfo.innerHTML = [
-          '<strong>Weather Control Debug</strong>',
-          `Socket: ${socket && socket.connected ? 'connected' : 'disconnected'}`,
-          `FPS: ${engine.getFPS()} / avg ${engine.getAverageFPS()}`,
-          `Quality: ${engine.options.renderQuality}`,
-          `Particles: ${engine.getParticleCount()}`,
-          `Active: ${activeEffects.map(effect => effect.type).join(', ') || '-'}`,
-          `Queue: ${effectQueue.length}`,
-          `Events: ${totalEventsReceived}`
+          `<strong>${weatherText('plugins.weather-control.runtime.overlay.debug_title', 'Weather Control Debug')}</strong>`,
+          weatherText('plugins.weather-control.runtime.overlay.debug_socket', 'Socket: {status}', { status: socket && socket.connected ? weatherText('plugins.weather-control.runtime.overlay.socket_connected', 'connected') : weatherText('plugins.weather-control.runtime.overlay.socket_disconnected', 'disconnected') }),
+          weatherText('plugins.weather-control.runtime.overlay.debug_fps', 'FPS: {fps} / avg {average}', { fps: engine.getFPS(), average: engine.getAverageFPS() }),
+          weatherText('plugins.weather-control.runtime.overlay.debug_quality', 'Quality: {quality}', { quality: engine.options.renderQuality }),
+          weatherText('plugins.weather-control.runtime.overlay.debug_particles', 'Particles: {count}', { count: engine.getParticleCount() }),
+          weatherText('plugins.weather-control.runtime.overlay.debug_active', 'Active: {effects}', { effects: activeEffects.map(effect => effect.type).join(', ') || '-' }),
+          weatherText('plugins.weather-control.runtime.overlay.debug_queue', 'Queue: {count}', { count: effectQueue.length }),
+          weatherText('plugins.weather-control.runtime.overlay.debug_events', 'Events: {count}', { count: totalEventsReceived })
         ].join('<br>');
       }
 
@@ -540,16 +556,16 @@
         });
 
         socket.on('connect', () => {
-          updateConnectionStatus('connected', 'Connected');
+          updateConnectionStatus('connected', weatherText('plugins.weather-control.runtime.overlay.connected', 'Connected'));
           socket.emit('weather:client-ready');
           socket.emit('weather:request-gamification-state');
           broadcastState();
         });
 
-        socket.on('disconnect', () => updateConnectionStatus('disconnected', 'Disconnected'));
-        socket.on('reconnect_attempt', (attempt) => updateConnectionStatus('reconnecting', `Reconnecting ${attempt}`));
+        socket.on('disconnect', () => updateConnectionStatus('disconnected', weatherText('plugins.weather-control.runtime.overlay.disconnected', 'Disconnected')));
+        socket.on('reconnect_attempt', (attempt) => updateConnectionStatus('reconnecting', weatherText('plugins.weather-control.runtime.overlay.reconnecting', 'Reconnecting {attempt}', { attempt })));
         socket.on('reconnect', () => {
-          updateConnectionStatus('connected', 'Reconnected');
+          updateConnectionStatus('connected', weatherText('plugins.weather-control.runtime.overlay.reconnected', 'Reconnected'));
           socket.emit('weather:client-ready');
           socket.emit('weather:request-gamification-state');
         });
@@ -581,7 +597,7 @@
         initEngine();
         initSocket();
         await fetchGamificationState();
-        updateConnectionStatus('reconnecting', 'Connecting');
+        updateConnectionStatus('reconnecting', weatherText('plugins.weather-control.runtime.overlay.connecting', 'Connecting'));
 
         queueTimer = setInterval(processQueue, 250);
         debugTimer = setInterval(updateDebugInfo, 250);
@@ -607,7 +623,7 @@
       window.addEventListener('load', () => {
         init().catch((error) => {
           console.error('[Weather Overlay] Failed to initialize', error);
-          updateConnectionStatus('disconnected', `Init failed: ${error.message}`);
+          updateConnectionStatus('disconnected', weatherText('plugins.weather-control.runtime.overlay.init_failed', 'Initialization failed: {error}', { error: error.message }));
         });
       });
       window.addEventListener('beforeunload', cleanup);

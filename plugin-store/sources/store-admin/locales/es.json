@@ -1,0 +1,51 @@
+{
+  "plugins": {
+    "store-admin": {
+      "ui": {
+        "title": "Administración de la App Store de LTTH",
+        "description": "Gestiona licencias beta y el acceso a plugins de beta cerrada para usuarios de Clerk.",
+        "searchPlaceholder": "Buscar por correo o nombre de usuario",
+        "searchUsers": "Buscar usuarios",
+        "checkAdminSession": "Comprobar sesión de administración",
+        "refresh": "Actualizar",
+        "storeHealth": "Estado de la tienda",
+        "storeHealthDescription": "Telemetría local de la App Store y estado de las instalaciones.",
+        "latestFeedback": "Comentarios recientes",
+        "latestFeedbackDescription": "Reseñas recientes enviadas desde la vista de la App Store."
+      },
+      "users": {
+        "activeBetaLicense": "Licencia beta activa",
+        "noActiveLicense": "Sin licencia activa",
+        "noProfileName": "Sin nombre de perfil",
+        "administrator": "Administrador",
+        "allClosedBeta": "Todas las betas cerradas",
+        "saveAccess": "Guardar acceso",
+        "claimBetaLicense": "Asignar licencia beta",
+        "revokeLicense": "Revocar licencia"
+      },
+      "metrics": {
+        "feedback": "Comentarios",
+        "telemetry": "Telemetría",
+        "installFailures": "Instalaciones fallidas",
+        "rollbacks": "Reversiones"
+      },
+      "feedback": {
+        "unknown": "desconocido",
+        "notAvailable": "n/d",
+        "noMessage": "Sin mensaje",
+        "empty": "Aún no hay comentarios de la App Store."
+      },
+      "status": {
+        "loadingUsers": "Cargando usuarios…",
+        "usersLoaded": "{count} perfil(es) de usuario cargado(s).",
+        "accessSaved": "Acceso guardado.",
+        "licenseRevoked": "Licencia revocada.",
+        "licenseClaimed": "Licencia asignada.",
+        "adminSessionOk": "Sesión de administración correcta: {userId}"
+      },
+      "errors": {
+        "requestFailed": "La solicitud ha fallado"
+      }
+    }
+  }
+}

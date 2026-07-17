@@ -2,7 +2,7 @@
 
 const { LOCALES, buildGuides } = require('./plugin-tutorial-source');
 
-const SPEC_VERSION = '2026-07-13-plugin-docs-v2';
+const SPEC_VERSION = '2026-07-15-plugin-docs-v6';
 
 function buildDocsSpec(repoRoot) {
   const guides = buildGuides(repoRoot);
@@ -12,7 +12,7 @@ function buildDocsSpec(repoRoot) {
     source: 'plugin-tutorial-source',
     theme: 'cid',
     locales: LOCALES,
-    viewport: { width: 1280, height: 800, deviceScaleFactor: 1 },
+    viewport: { width: 1440, height: 900, deviceScaleFactor: 1 },
     assets: guides.flatMap((guide) => guide.steps.map((step) => ({
       id: `${guide.id}__${step.id}`,
       guideId: guide.id,
@@ -21,10 +21,11 @@ function buildDocsSpec(repoRoot) {
       route: step.capture.route,
       selector: step.capture.assertVisible,
       action: step.capture.action,
+      workflow: step.workflow,
       focusText: step.capture.focusText,
       expected: step.capture.expected,
       fixture: guide.capture.fixture,
-      viewport: { width: 1280, height: 800, deviceScaleFactor: 1 }
+      viewport: { width: 1440, height: 900, deviceScaleFactor: 1 }
     })))
   };
 }

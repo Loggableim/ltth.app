@@ -26,37 +26,38 @@
 <body>
   <main>
     <header id="bridge-overview">
-      <p class="eyebrow" data-copy="eyebrow">Local, read-only reference</p>
-      <h1 data-copy="title">API Bridge contract</h1>
-      <p class="lede" data-copy="lede">Inspect these local endpoints before integrating a client. This page never sends an action request.</p>
+      <p class="eyebrow" data-copy="eyebrow" data-i18n="plugins.api-bridge.api_bridge.ui.contract.eyebrow">Local, read-only reference</p>
+      <h1 data-copy="title" data-i18n="plugins.api-bridge.api_bridge.ui.contract.title">API Bridge contract</h1>
+      <p class="lede" data-copy="lede" data-i18n="plugins.api-bridge.api_bridge.ui.contract.lede">Inspect these local endpoints before integrating a client. This page never sends an action request.</p>
     </header>
     <div class="grid">
       <section id="bridge-info">
         <h2><span class="method">GET</span><code>/api/bridge/info</code></h2>
-        <p data-copy="info">Identify the running LTTH and API Bridge versions.</p>
+        <p data-copy="info" data-i18n="plugins.api-bridge.api_bridge.ui.contract.endpoints.info">Identify the running LTTH and API Bridge versions.</p>
         <pre>{ "success": true, "data": { "plugin": "api-bridge" } }</pre>
       </section>
       <section id="bridge-actions">
         <h2><span class="method">GET</span><code>/api/bridge/actions</code></h2>
-        <p data-copy="actions">List action IDs and their declared parameters. Reading this endpoint has no side effect.</p>
+        <p data-copy="actions" data-i18n="plugins.api-bridge.api_bridge.ui.contract.endpoints.actions">List action IDs and their declared parameters. Reading this endpoint has no side effect.</p>
         <pre>{ "success": true, "data": [ { "id": "…" } ] }</pre>
       </section>
       <section id="bridge-events">
         <h2><span class="method">GET</span><code>/api/bridge/events?limit=1</code></h2>
-        <p data-copy="events">Review the most recent event record; a new temporary profile starts with an empty list.</p>
+        <p data-copy="events" data-i18n="plugins.api-bridge.api_bridge.ui.contract.endpoints.events">Review the most recent event record; a new temporary profile starts with an empty list.</p>
         <pre>{ "success": true, "data": { "events": [], "total": 0 } }</pre>
       </section>
       <section id="bridge-request">
         <h2><span class="method post">POST</span><code>/api/bridge/actions/exec</code></h2>
-        <p data-copy="request">Execution belongs in a separately tested client. Verify the required body without sending it here.</p>
+        <p data-copy="request" data-i18n="plugins.api-bridge.api_bridge.ui.contract.endpoints.request">Execution belongs in a separately tested client. Verify the required body without sending it here.</p>
         <pre>{ "actionId": "declared-action-id", "context": {} }</pre>
       </section>
       <section id="bridge-safety" class="wide">
-        <h2 data-copy="safetyTitle">Safe integration boundary</h2>
-        <p class="safe" data-copy="safety">Use GET endpoints first. Keep credentials and production action IDs out of screenshots and test profiles; POST execution is intentionally not available on this page.</p>
+        <h2 data-copy="safetyTitle" data-i18n="plugins.api-bridge.api_bridge.ui.contract.safety.title">Safe integration boundary</h2>
+        <p class="safe" data-copy="safety" data-i18n="plugins.api-bridge.api_bridge.ui.contract.safety.body">Use GET endpoints first. Keep credentials and production action IDs out of screenshots and test profiles; POST execution is intentionally not available on this page.</p>
       </section>
     </div>
   </main>
+  <script src="/js/i18n-client.js"></script>
   <script>
     const locale = new URLSearchParams(location.search).get('lang') || localStorage.getItem('app_locale') || 'en';
     const copy = {
@@ -65,9 +66,19 @@
       es: { eyebrow: 'Referencia local de solo lectura', title: 'Contrato de API Bridge', lede: 'Inspecciona estos endpoints locales antes de integrar un cliente. Esta página no envía solicitudes de acción.', info: 'Identifica las versiones en ejecución de LTTH y API Bridge.', actions: 'Enumera IDs de acción y sus parámetros declarados. Leer este endpoint no tiene efectos.', events: 'Revisa el evento más reciente; un perfil temporal nuevo empieza con una lista vacía.', request: 'La ejecución pertenece a un cliente probado por separado. Verifica el body requerido sin enviarlo aquí.', safetyTitle: 'Límite seguro de integración', safety: 'Usa primero endpoints GET. Mantén credenciales e IDs de producción fuera de capturas y perfiles de prueba; la ejecución POST no está disponible aquí intencionadamente.' },
       fr: { eyebrow: 'Référence locale en lecture seule', title: 'Contrat API Bridge', lede: 'Inspectez ces endpoints locaux avant d’intégrer un client. Cette page n’envoie aucune demande d’action.', info: 'Identifiez les versions LTTH et API Bridge en cours.', actions: 'Listez les identifiants d’action et leurs paramètres déclarés. La lecture de cet endpoint est sans effet.', events: 'Examinez le dernier événement ; un profil temporaire neuf commence avec une liste vide.', request: 'L’exécution appartient à un client testé séparément. Vérifiez le corps requis sans l’envoyer ici.', safetyTitle: 'Limite d’intégration sûre', safety: 'Utilisez d’abord les endpoints GET. Gardez identifiants et IDs de production hors des captures et profils de test ; l’exécution POST n’est volontairement pas disponible ici.' }
     };
-    const selected = copy[locale] || copy.en;
-    document.documentElement.lang = locale;
+    const requestedLocale = ['de', 'en', 'es', 'fr'].includes(locale) ? locale : 'en';
+    const selected = copy[requestedLocale] || copy.en;
+    document.documentElement.lang = requestedLocale;
     document.querySelectorAll('[data-copy]').forEach((node) => { node.textContent = selected[node.dataset.copy] || node.textContent; });
+    if (typeof I18nClient !== 'undefined') {
+      const i18n = new I18nClient();
+      i18n.init()
+        .then(async () => {
+          if (i18n.getLocale() !== requestedLocale) await i18n.setLocale(requestedLocale);
+          i18n.updateDOM();
+        })
+        .catch(() => {});
+    }
   </script>
 </body>
 </html>

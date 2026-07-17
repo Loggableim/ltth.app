@@ -1,278 +1,446 @@
 {
-  "interactive_story": {
-    "plugin": {
-      "name": "Interaktiver Story-Generator",
-      "description": "Erstelle KI-gestützte interaktive Geschichten mit Chat-Abstimmungen, Stimmen und OBS-Overlays."
-    },
-    "ui": {
-      "title": "Interaktiver Story-Generator",
-      "actions": {
-        "save": "Speichern",
-        "cancel": "Abbrechen",
-        "refresh": "Aktualisieren",
-        "close": "Schließen",
-        "test": "Testen",
-        "clear": "Leeren"
+  "plugins": {
+    "interactive-story": {
+      "form_controls": {
+        "openrouter_api_key_placeholder": "OpenRouter-Schlüssel: sk-or-...",
+        "ollama_api_key_placeholder": "Optional für lokales Ollama",
+        "ollama_model_placeholder": "Ollama-Modell: qwen3.5:cloud",
+        "obs_overlay_preview_title": "OBS-Overlay-Vorschau"
       },
-      "status": {
-        "ready": "Bereit",
-        "loading": "Wird geladen…",
-        "connected": "Verbunden",
-        "disconnected": "Getrennt",
-        "error": "Fehler"
+      "interactive_story": {
+        "plugin": {
+          "name": "Interaktiver Story-Generator",
+          "description": "Erstelle KI-gestützte interaktive Geschichten mit Chat-Abstimmungen, Stimmen und OBS-Overlays."
+        },
+        "ui": {
+          "title": "Interaktiver Story-Generator",
+          "actions": {
+            "save": "Speichern",
+            "cancel": "Abbrechen",
+            "refresh": "Aktualisieren",
+            "close": "Schließen",
+            "test": "Testen",
+            "clear": "Leeren"
+          },
+          "status": {
+            "ready": "Bereit",
+            "loading": "Wird geladen…",
+            "connected": "Verbunden",
+            "disconnected": "Getrennt",
+            "error": "Fehler"
+          },
+          "messages": {
+            "saved": "Einstellungen gespeichert.",
+            "failed": "Einstellungen konnten nicht gespeichert werden.",
+            "noData": "Keine Daten verfügbar.",
+            "confirm": "Bist du sicher?"
+          },
+          "language": {
+            "english": "English",
+            "german": "Deutsch"
+          },
+          "providers": {
+            "siliconflow": "SiliconFlow"
+          },
+          "voices": {
+            "label": "Stimme",
+            "mrBeast": "MrBeast"
+          },
+          "votePatterns": {
+            "numbers": "1, 2, 3, 4"
+          },
+          "overlay": {
+            "sentenceBySentence": "Satz f\u00fcr Satz",
+            "arial": "Arial",
+            "georgia": "Georgia",
+            "transparent": "Durchsichtig"
+          },
+          "validation": {
+            "expectedApiKeyLength": "Erwartet: ca. 64 Zeichen",
+            "apiKeyWhitespace": "API-Schl\u00fcssel enth\u00e4lt Leerzeichen!"
+          },
+          "themes": {
+            "furry": "Furry"
+          }
+        }
       },
-      "messages": {
-        "saved": "Einstellungen gespeichert.",
-        "failed": "Einstellungen konnten nicht gespeichert werden.",
-        "noData": "Keine Daten verfügbar.",
-        "confirm": "Bist du sicher?"
+      "hero": {
+        "status": {
+          "ready": "Bereit für deinen nächsten Stream"
+        },
+        "theme_synced": "Thema mit dem Dashboard synchronisiert",
+        "language_label": "Sprache"
+      },
+      "cards": {
+        "overlay": {
+          "open": "Overlay öffnen",
+          "title": "OBS-Overlay",
+          "url_label": "Overlay-URL für die OBS-Browserquelle:",
+          "copy": "Kopieren",
+          "hint": "Füge diese URL in OBS als Browserquelle hinzu (empfohlene Größe: 1920×1080).",
+          "preview": {
+            "show": "Vorschau anzeigen"
+          },
+          "preview_hint": "Diese Vorschau wird mit 50 % der 1920×1080-Overlayansicht gerendert."
+        },
+        "status": {
+          "title": "Live-Status",
+          "plugin": "Plugin-Status",
+          "loading": "Wird geladen …",
+          "session": "Aktive Sitzung",
+          "none": "Keine",
+          "chapter": "Aktuelles Kapitel",
+          "voting": "Abstimmung",
+          "inactive": "Inaktiv"
+        },
+        "configuration": {
+          "title": "Story einrichten",
+          "api_info": "API-Informationen",
+          "test_api_key": "API-Schlüssel testen",
+          "test_hint": "Klicke, um deinen API-Schlüssel zu prüfen",
+          "providers": {
+            "llm": "LLM-Anbieter",
+            "image": "Bildanbieter",
+            "tts": "TTS-Anbieter",
+            "openrouter_key": "OpenRouter-API-Schlüssel",
+            "ollama_url": "Ollama-Basis-URL",
+            "ollama_key": "Ollama-API-Schlüssel"
+          },
+          "models": {
+            "openai_llm": "OpenAI-LLM-Modell",
+            "openrouter_llm": "OpenRouter-Modell",
+            "ollama_llm": "Ollama-Modell",
+            "silicon_llm": "SiliconFlow-LLM-Modell",
+            "openai_image": "OpenAI-Bildmodell",
+            "silicon_image": "SiliconFlow-Bildmodell"
+          },
+          "voting": {
+            "auto_tts": "Sprachausgabe aktivieren",
+            "max_chapters": "Maximale Kapitel",
+            "choices": "Anzahl Optionen",
+            "duration": "Abstimmungsdauer (Sekunden)",
+            "pattern": "Abstimmungs-Schlüsselwortmuster",
+            "auto_images": "Bilder automatisch erzeugen",
+            "case_sensitive": "Groß-/Kleinschreibung bei Abstimmungen beachten",
+            "offline_mode": "Offline-/Testmodus",
+            "manual_mode": "Manueller Modus",
+            "manual_tts": "TTS im manuellen Modus verwenden",
+            "debug_logging": "Debug-Protokollierung",
+            "api_logging": "API-Anfrageprotokollierung"
+          },
+          "story": {
+            "language": "Story-Sprache"
+          },
+          "overlay": {
+            "orientation": "Orientierung",
+            "resolution": "Auflösung",
+            "display_mode": "Anzeigemodus",
+            "font_family": "Schriftart",
+            "text_size": "Textgröße (em)",
+            "title_size": "Titelgröße (em)",
+            "text_color": "Textfarbe",
+            "title_color": "Titelfarbe"
+          },
+          "save": "Konfiguration speichern"
+        },
+        "story_controls": {
+          "title": "Story-Steuerung",
+          "start_new": "Neue Story starten",
+          "select_theme": "Thema auswählen:",
+          "custom_outline": "Benutzerdefinierte Handlung (optional)",
+          "custom_outline_placeholder": "Benutzerdefinierter Umrissplatzhalter",
+          "start_btn": "Story starten",
+          "active_story": "Aktive Story",
+          "end_story": "Story beenden",
+          "manual_title": "Manueller Modus:",
+          "manual_body": "Jede Runde manuell weiterschalten",
+          "manual_current_round": "Aktuelle Runde:",
+          "manual_chapter": "Kapitel:",
+          "manual_voting_active": "Abstimmung aktiv:",
+          "manual_voting_results": "Aktuelle Abstimmungsergebnisse:",
+          "manual_advance": "Zur nächsten Runde weiter",
+          "manual_show_results": "Abstimmungsergebnisse anzeigen",
+          "offline_title": "Offline-/Testmodus:",
+          "offline_body": "Nächsten Pfad manuell wählen",
+          "force_vote": "Abstimmung sofort beenden",
+          "regenerate_image": "Bild erneut generieren"
+        },
+        "memory": {
+          "title": "Story-Speicher / Lore-Datenbank",
+          "characters": "Charaktere",
+          "locations": "Standorte",
+          "items": "Artikel"
+        },
+        "voters": {
+          "title": "Top-Abstimmende"
+        },
+        "debug": {
+          "title": "Debug-Protokolle",
+          "clear": "Klar",
+          "empty": "Noch keine Protokolle vorhanden"
+        }
+      },
+      "alerts": {
+        "admin_choice_error": "Die Option konnte nicht gewählt werden: {message}",
+        "advance_error": "Die Runde konnte nicht fortgesetzt werden: {message}",
+        "api_test_error": "Der API-Schlüsseltest ist fehlgeschlagen.",
+        "config_save_error": "Die Konfiguration konnte nicht gespeichert werden: {message}",
+        "config_saved": "Konfiguration gespeichert.",
+        "generation_failed": "Die Story-Generierung ist fehlgeschlagen: {message}",
+        "generation_timeout": "Die Story-Generierung hat zu lange gedauert. Warte einige Minuten und versuche es erneut, beende die aktuelle Story, wechsle zu einem schnelleren Modell oder reduziere die maximale Kapitelzahl.",
+        "overlay_blocked": "Das Popup wurde blockiert. Erlaube Popups oder öffne diese URL manuell:\n{url}",
+        "overlay_copied": "Overlay-URL kopiert.",
+        "overlay_copy_failed": "Die URL konnte nicht kopiert werden. Markiere sie und kopiere sie manuell.",
+        "overlay_missing": "Keine Overlay-URL verfügbar. Lade die Seite neu und versuche es erneut.",
+        "overlay_open_error": "Das Overlay konnte nicht geöffnet werden. Öffne diese URL manuell:\n{url}",
+        "story_end_error": "Die Story konnte nicht beendet werden: {message}",
+        "story_error": "Story-Fehler: {message}",
+        "story_start_error": "Die Story konnte nicht gestartet werden: {message}",
+        "theme_required": "Wähle vor dem Start der Story ein Thema aus.",
+        "ui_missing": "Ein benötigtes Bedienelement fehlt. Lade die Seite neu und versuche es erneut."
+      },
+      "prompts": {
+        "advance_chapter": "Von Kapitel {current} zu Kapitel {next} von {total} wechseln?",
+        "confirm_choice": "Option {option} wählen?",
+        "confirm_end_story": "Die aktuelle Story beenden?",
+        "no_active_chapter": "Es gibt kein aktives Kapitel, von dem aus fortgesetzt werden kann."
+      },
+      "runtime": {
+        "actions": {
+          "ending": "Story wird beendet…",
+          "generating": "Wird generiert…",
+          "preview_hide": "Vorschau ausblenden",
+          "preview_show": "Vorschau anzeigen",
+          "start_story": "Story starten",
+          "story_ended": "Story beendet",
+          "test_api_key": "API-Schlüssel testen",
+          "testing": "Wird getestet…"
+        },
+        "api_test": {
+          "check_console": "Weitere Details findest du in der Browserkonsole.",
+          "diagnostics": "Diagnose",
+          "error_details": "Fehler: {message}",
+          "prefix": "Präfix: {value}",
+          "provider_details": "Anbieter: {provider}<br>API-Schlüssellänge: {keyLength} Zeichen<br>Präfix: {keyPrefix}<br>Getestetes Modell: {testedModel}",
+          "provider_summary": "Anbieter: {provider}<br>API-Schlüssellänge: {keyLength} Zeichen",
+          "status_code": "Statuscode: {code}",
+          "troubleshooting": "Schritte zur Fehlerbehebung",
+          "unknown": "Unbekannt"
+        },
+        "boolean": {
+          "no": "Nein",
+          "yes": "Ja"
+        },
+        "chapter": {
+          "current": "Aktuelles Kapitel",
+          "empty_body": "Starte eine Story, um Kapitel, Abstimmung und Bild hier im Fokus zu sehen.",
+          "empty_eyebrow": "Kapitel bereit",
+          "empty_title": "Noch keine aktive Story",
+          "image_alt": "Kapitelbild",
+          "image_pending": "Bild wird generiert",
+          "image_pending_body": "Das Kapitelbild erscheint hier, sobald es fertig ist.",
+          "no_choices": "Noch keine Optionen verfügbar.",
+          "vote_sync": "Live-Abstimmung und Kapitelvisuals sind synchronisiert."
+        },
+        "debug": {
+          "empty": "Noch keine Protokolle verfügbar"
+        },
+        "manual": {
+          "vote_summary": "{votes} Stimmen ({percentage} %)"
+        },
+        "overlay": {
+          "vote_timer": "Verbleibende Zeit: {seconds}s",
+          "voting_ended": "Abstimmung beendet"
+        },
+        "preview": {
+          "adventure_content": "Unser Held erwacht in einem geheimnisvollen Wald, umgeben von uralten Bäumen, die von längst vergangenen Geheimnissen flüstern.",
+          "adventure_title": "Der Beginn eines epischen Abenteuers",
+          "demo_choice_camp": "Zum Lager zurückkehren",
+          "demo_choice_mountain": "Den Berg besteigen",
+          "demo_choice_river": "Dem Fluss folgen",
+          "demo_content": "Dies ist eine Vorschau des Story-Inhalts.",
+          "demo_title": "Demo-Kapitel",
+          "temple_choice_altar": "Den Altar aufsuchen",
+          "temple_choice_runes": "Die Runen genau untersuchen",
+          "temple_choice_voice": "Der Stimme folgen",
+          "temple_content": "Als du durch die massiven Steintüren trittst, läuft dir ein Schauer über den Rücken. Die Wände sind mit uralten Runen bedeckt, die im Dunkeln schwach zu leuchten scheinen. Eine geheimnisvolle Stimme hallt durch die Kammer und spricht in einer Sprache, die du irgendwie verstehst.",
+          "temple_title": "Der uralte Tempel",
+          "vote_choice_corridor": "Den dunklen Korridor betreten",
+          "vote_choice_exit": "Nach einem anderen Ausgang suchen",
+          "vote_choice_help": "Um Hilfe rufen"
+        },
+        "provider_help": {
+          "ollama": "Nutze einen lokalen oder Cloud-Ollama-Endpunkt. Ein lokaler API-Schlüssel ist optional; einige Cloud-Bereitstellungen benötigen ihn.",
+          "openai": "Verwendet den globalen OpenAI-API-Schlüssel aus den Einstellungen. Wähle ein Modell, das zu deinem Story-Workflow passt.",
+          "openrouter": "Nutze einen OpenRouter-API-Schlüssel und wähle ein kompatibles Modell, bei Verfügbarkeit auch kostenlose Routen.",
+          "siliconflow": "Nutze SiliconFlow, wenn für diese Story-Pipeline bereits ein kompatibles SiliconFlow-Setup vorhanden ist."
+        },
+        "status": {
+          "active_time": "Aktiv ({seconds}s)",
+          "chapter_prefix": "Kapitel",
+          "connection_offline": "Nicht verbunden",
+          "connection_online": "Verbunden",
+          "configured": "Konfiguriert",
+          "generation_ready": "Bereit zur Generierung",
+          "inactive": "Inaktiv",
+          "none": "Keine",
+          "not_configured": "Nicht konfiguriert",
+          "ready": "Bereit",
+          "ready_to_start": "Bereit zum Start",
+          "story_active": "Story aktiv",
+          "voting_idle": "Abstimmung pausiert",
+          "voting_running": "Abstimmung läuft"
+        },
+        "story": {
+          "chapter_badge": "Kapitel {current} von {total}",
+          "option_label": "Auswahl {option}: {choice}"
+        },
+        "theme": {
+          "cid": "CID",
+          "contrast": "Hoher Kontrast",
+          "day": "Tag",
+          "load_failed": "Themen konnten nicht geladen werden",
+          "night": "Nacht",
+          "synced": "Thema synchronisiert",
+          "vision-impaired": "Sehbeeinträchtigt"
+        },
+        "voters": {
+          "votes": "{count} Stimmen"
+        },
+        "voices": {
+          "group_label": "{engine}-Stimmen"
+        }
+      },
+      "labels": {
+        "content_start_buffer_seconds": "Inhaltsstartpuffer (Sekunden)",
+        "leave_empty_for_local_ollama_required_only_for": "Für das örtliche Ollama leer lassen; Nur für einige Cloud-Bereitstellungen erforderlich.",
+        "fish_audio_tts": "Fish.audio-Sprachausgabe",
+        "adam_deep_male": "Adam (Tief männlich)",
+        "gpt_4o_mini_cost_effective": "GPT-4o Mini (Kostengünstig)",
+        "german_male_neural": "Deutsch - Männlich (Neural)",
+        "these_buttons_send_test_data_to_the_overlay": "Diese Schaltflächen senden Testdaten zu Vorschauzwecken an das Overlay",
+        "test_title_display": "Testen Sie die Titelanzeige",
+        "start_story": "Geschichte starten!",
+        "show_detailed_api_requests_debug_only": "Detaillierte API-Anfragen anzeigen (nur Debug)",
+        "use_the_test_api_key_button_below": "Verwenden Sie unten die Schaltfläche „API-Schlüssel testen“.",
+        "winner": "Gewinner!",
+        "speechify_tts": "Speechify-Sprachausgabe",
+        "francais_french": "Français (Französisch)",
+        "default_spinner": "Standard-Spinner",
+        "enable_detailed_logging_api_diagnostics": "Aktivieren Sie detaillierte Protokollierung und API-Diagnose",
+        "story_voting_settings": "Story- und Abstimmungseinstellungen",
+        "quick_start": "Schnellstart",
+        "select_a_theme_and_click_start_story": "Wählen Sie ein Thema aus und klicken Sie auf Story starten",
+        "english_us_storyteller": "Englisch US - Geschichtenerzähler",
+        "times_new_roman": "Times New Roman",
+        "landscape_horizontal": "Landschaft (horizontal)",
+        "deutsch_german": "Deutsch (Deutsch)",
+        "alloy_neutral": "Legierung (Neutral)",
+        "test_overlay_display": "Testen Sie die Overlay-Anzeige",
+        "elevenlabs_tts": "ElevenLabs-Sprachausgabe",
+        "fable_british": "Fabel (britisch)",
+        "set_your_openai_openrouter_ollama_or_siliconflow_api": "Legen Sie Ihren OpenAI-, OpenRouter-, Ollama- oder SiliconFlow-API-Schlüssel in den Einstellungen fest",
+        "test_voting_choices": "Testen Sie die Wahlmöglichkeiten",
+        "openai_dall_e": "OpenAI (DALL-E)",
+        "admin_chooses_path_no_live_chat": "Der Administrator wählt den Pfad (kein Live-Chat)",
+        "openrouter_free_router_recommended": "Kostenloser OpenRouter-Router (empfohlen)",
+        "manually_advance_each_round": "Schalten Sie jede Runde manuell weiter",
+        "timing_configuration": "Timing-Konfiguration",
+        "overlay_customization": "Overlay-Anpassung",
+        "flux_1_schnell": "FLUX.1 Schnell (Bildmodell)",
+        "1280x720_hd": "1280×720 (HD-Auflösung)",
+        "1920x1080_full_hd": "1920×1080 (Full-HD-Auflösung)",
+        "deepseek_v3": "DeepSeek V3 (Sprachmodell)",
+        "llama_3_2_3b_instruct_free": "Lama 3.2 3B Instruct (kostenlos)",
+        "for_zero_cost_routing": "für kostenfreies Routing.",
+        "uk_english_male_neural": "Britisches Englisch – männlich (neural)",
+        "echo_male": "Echo (männlich)",
+        "female_voice": "Weibliche Stimme",
+        "interactive_story": "Interaktive Geschichte",
+        "tts_engine": "TTS-Engine",
+        "generating_animation": "Animation erzeugen",
+        "system_tts_ltth_tts_plugin": "System-TTS (LTTH TTS-Plugin)",
+        "gpt_4o_multimodal": "GPT-4o (multimodales Modell)",
+        "dark_bottom_fade_default": "Dunkler unterer Fade (Standard)",
+        "bella_soft_female": "Bella (weiche Frau)",
+        "us_english_male_neural": "US-Englisch – männlich (neural)",
+        "tiktok_tts_free": "TikTok TTS (kostenlos)",
+        "segoe_ui_default": "Segoe-Benutzeroberfläche (Standard)",
+        "advanced_settings": "Erweiterte Einstellungen",
+        "english_us_narrator": "Englisch US – Erzähler",
+        "voting_highlight_color": "Abstimmungshervorhebungsfarbe",
+        "gemma_2_9b_it_free": "Gemma 2 9B IT (kostenlos)",
+        "portrait_vertical": "Porträt (vertikal)",
+        "test_chapter_display": "Testkapitelanzeige",
+        "italiano_italian": "Italiano (Italienisch)",
+        "api_configuration": "API-Konfiguration",
+        "required_for_openrouter_use": "Erforderlich für OpenRouter. Benutzen",
+        "espanol_spanish": "Español (Spanisch)",
+        "dall_e_2_cost_efficient": "DALL-E 2 (Kosteneffizient)",
+        "henry_deep_male": "Henry (Tief männlich)",
+        "a_b_c_d": "A, B, C, D",
+        "use_your_cloud_endpoint_or_a_local_instance": "Verwenden Sie Ihren Cloud-Endpunkt oder eine lokale Instanz, z",
+        "openrouter_free_router": "OpenRouter (kostenloser Router)",
+        "english_us_male": "Englisch US – männlich",
+        "clear_overlay": "Klare Überlagerung",
+        "star_wars_scroll_tts_synced": "Star Wars Scroll (TTS synchronisiert)",
+        "antwort_1_2_3": "Antworten 1, 2, 3…",
+        "meta_llama_3_1_8b": "Meta-Lama 3.1-8B",
+        "rachel_calm_female": "Rachel (ruhige Frau)",
+        "o1_reasoning": "o1 (Begründung)",
+        "voting_results_display_seconds": "Anzeige der Abstimmungsergebnisse (Sekunden)",
+        "us_english_female_neural": "US-Englisch – Weiblich (Neural)",
+        "openai_tts": "OpenAI-Sprachausgabe",
+        "dall_e_3_high_quality": "DALL-E 3 (Hohe Qualität)",
+        "blue_gradient": "Blauer Farbverlauf",
+        "interactive_story_generator_admin_panel": "Interaktiver Story-Generator – Admin-Panel",
+        "male_voice": "Männliche Stimme",
+        "generation_bereit": "Bereit zur Generierung",
+        "onyx_deep_male": "Onyx (Tief männlich)",
+        "narrator_default": "Erzähler (Standard)",
+        "title_image_preview_seconds": "Titelbildvorschau (Sekunden)",
+        "answer_1_2_3": "Antwort 1, 2, 3...",
+        "add_obs_overlay": "OBS-Overlay hinzufügen",
+        "shimmer_soft_female": "Schimmer (weich weiblich)",
+        "z_image_turbo": "Z-Image Turbo (Bildmodell)",
+        "qwen_2_5_7b": "Qwen 2,5-7B",
+        "tts_voice_configuration": "TTS-Sprachkonfiguration",
+        "final_chapter_auto_end_seconds": "Automatisches Ende des letzten Kapitels (Sekunden)",
+        "english_us_female": "Englisch US – weiblich",
+        "openai_dall_e_system_tts": "OpenAI • DALL-E • System-Sprachausgabe",
+        "a_b_c_d_c2f6f1": "!a, !b, !c, !d",
+        "time_to_show_title_image_before_narration": "Zeit, das Titelbild vor dem Kommentar zu zeigen",
+        "portugues_portuguese": "Português (Portugiesisch)",
+        "background_gradient": "Hintergrundverlauf",
+        "josh_deep_male_2": "Josh (tiefe männliche Stimme 2)",
+        "copy_the_overlay_url_to_obs_browser_source": "Kopieren Sie die Overlay-URL in die OBS-Browserquelle",
+        "interactive_story_obs_overlay": "Interaktive Geschichte – OBS Overlay",
+        "german_female_neural": "Deutsch - Weiblich (Neural)",
+        "ai_generierte_stories_mit_chat_voting_bildern_tts": "KI-generierte Stories mit Chat-Voting, Bildern, TTS und OBS-Overlay.",
+        "uk_english_female_neural": "Britisches Englisch – Weiblich (Neural)",
+        "1080x1920_portrait_full_hd": "1080x1920 (Porträt Full HD)",
+        "custom_animation_url": "Benutzerdefinierte Animations-URL",
+        "automatically_narrate_chapters_with_tts_disable_for_self": "Erzählen Sie Kapitel automatisch mit TTS. Für den Selbstlesemodus deaktivieren.",
+        "custom_gif_mp4": "Benutzerdefiniertes GIF/MP4",
+        "2560x1440_2k": "2560x1440 (2K)",
+        "gpt_4_turbo_fast": "GPT-4 Turbo (Schnell)",
+        "story_ends_after_this_many_chapters": "Die Geschichte endet nach so vielen Kapiteln",
+        "time_remaining": "Verbleibende Zeit: --",
+        "test_connection": "Testverbindung",
+        "openrouter_base_url": "OpenRouter-Basis-URL",
+        "siliconflow_tts": "SiliconFlow-Sprachausgabe",
+        "full_chapter": "Vollständiges Kapitel",
+        "vote_now_type_your_choice_in_chat": "Jetzt abstimmen! Geben Sie Ihre Wahl im Chat ein",
+        "configure_api": "API konfigurieren",
+        "ollama_cloud_local": "Ollama Cloud / Lokal",
+        "dark_full": "Dunkel voll",
+        "min_title_read_time_seconds": "Min. Titellesezeit (Sekunden)",
+        "openai_gpt": "OpenAI (GPT)",
+        "generating_next_chapter": "Nächstes Kapitel wird erstellt...",
+        "google_cloud_tts": "Google Cloud-Sprachausgabe",
+        "chapter_transition_delay_seconds": "Kapitelübergangsverzögerung (Sekunden)",
+        "nova_female": "Nova (weiblich)"
       }
     }
-  },
-  "hero": {
-    "status": {
-      "ready": "Ready"
-    },
-    "theme_synced": "Theme synced",
-    "language_label": "Language label"
-  },
-  "cards": {
-    "overlay": {
-      "open": "Open",
-      "title": "Title",
-      "url_label": "Url label",
-      "copy": "Copy",
-      "hint": "Hint",
-      "preview": {
-        "show": "Show"
-      },
-      "preview_hint": "Preview hint"
-    },
-    "status": {
-      "title": "Title",
-      "plugin": "Plugin",
-      "loading": "Loading",
-      "session": "Session",
-      "none": "None",
-      "chapter": "Chapter",
-      "voting": "Voting",
-      "inactive": "Inactive"
-    },
-    "configuration": {
-      "title": "Title",
-      "api_info": "Api info",
-      "test_api_key": "Test api key",
-      "test_hint": "Test hint",
-      "providers": {
-        "llm": "Llm",
-        "image": "Image",
-        "tts": "Tts",
-        "openrouter_key": "Openrouter key",
-        "ollama_url": "Ollama url",
-        "ollama_key": "Ollama key"
-      },
-      "models": {
-        "openai_llm": "Openai llm",
-        "openrouter_llm": "Openrouter llm",
-        "ollama_llm": "Ollama llm",
-        "silicon_llm": "Silicon llm",
-        "openai_image": "Openai image",
-        "silicon_image": "Silicon image"
-      },
-      "voting": {
-        "auto_tts": "Auto tts",
-        "max_chapters": "Max chapters",
-        "choices": "Choices",
-        "duration": "Duration",
-        "pattern": "Pattern",
-        "auto_images": "Auto images",
-        "case_sensitive": "Case sensitive",
-        "offline_mode": "Offline mode",
-        "manual_mode": "Manual mode",
-        "manual_tts": "Manual tts",
-        "debug_logging": "Debug logging",
-        "api_logging": "Api logging"
-      },
-      "story": {
-        "language": "Language"
-      },
-      "overlay": {
-        "orientation": "Orientation",
-        "resolution": "Resolution",
-        "display_mode": "Display mode",
-        "font_family": "Font family",
-        "text_size": "Text size",
-        "title_size": "Title size",
-        "text_color": "Text color",
-        "title_color": "Title color"
-      },
-      "save": "Save"
-    },
-    "story_controls": {
-      "title": "Title",
-      "start_new": "Start new",
-      "select_theme": "Select theme",
-      "custom_outline": "Custom outline",
-      "custom_outline_placeholder": "Custom outline placeholder",
-      "start_btn": "Start btn",
-      "active_story": "Active story",
-      "end_story": "End story",
-      "manual_title": "Manual title",
-      "manual_body": "Manual body",
-      "manual_current_round": "Manual current round",
-      "manual_chapter": "Manual chapter",
-      "manual_voting_active": "Manual voting active",
-      "manual_voting_results": "Manual voting results",
-      "manual_advance": "Manual advance",
-      "manual_show_results": "Manual show results",
-      "offline_title": "Offline title",
-      "offline_body": "Offline body",
-      "force_vote": "Force vote",
-      "regenerate_image": "Regenerate image"
-    },
-    "memory": {
-      "title": "Title",
-      "characters": "Characters",
-      "locations": "Locations",
-      "items": "Items"
-    },
-    "voters": {
-      "title": "Title"
-    },
-    "debug": {
-      "title": "Title",
-      "clear": "Clear",
-      "empty": "Empty"
-    }
-  },
-  "generated": {
-    "cbd85e7514b8": "Interactive Story - OBS Overlay",
-    "eaca07ac1f70": "Vote Now! Type your choice in chat",
-    "e7eb75276728": "Time Remaining: --",
-    "fac6e6fa6110": "Generating next chapter...",
-    "14016c28bca9": "Winner!",
-    "a1b2af44f7e9": "Interactive Story Generator - Admin Panel",
-    "52e86ea9d0f7": "Interactive Story",
-    "cd4a53d194b4": "AI-generierte Stories mit Chat-Voting, Bildern, TTS und OBS-Overlay.",
-    "a401ef97c61a": "Generation bereit",
-    "c27bea89c798": "OpenAI • DALL-E • System TTS",
-    "1bdf8be28255": "Quick Start",
-    "ed043dd57e30": "Configure API",
-    "31380e59f941": "Set your OpenAI, OpenRouter, Ollama, or SiliconFlow API key in Settings",
-    "e814051051f1": "Test Connection",
-    "1155ab5ac9e4": "Use the Test API Key button below",
-    "accf3a66c7ef": "Add OBS Overlay",
-    "caaef34e55a2": "Copy the overlay URL to OBS Browser Source",
-    "107fabb11bc9": "Start Story!",
-    "24cc9e6b54aa": "Select a theme and click Start Story",
-    "7e2a5ef9f127": "API Configuration",
-    "f5ac0f4d5417": "OpenAI (GPT)",
-    "84df4e5c6b62": "OpenRouter (Free Router)",
-    "eea7521b7673": "Ollama Cloud / Local",
-    "3a573b230507": "OpenAI (DALL-E)",
-    "649acde5c84f": "System TTS (LTTH TTS Plugin)",
-    "7e3139fed066": "Required for OpenRouter. Use",
-    "4b383feb6dab": "for zero-cost routing.",
-    "e886d56872a7": "OpenRouter Base URL",
-    "825b1d0439ba": "Use your cloud endpoint or a local instance such as",
-    "01b471825da4": "Leave empty for local Ollama; required only for some cloud deployments.",
-    "04aacc047e4f": "GPT-4o Mini (Cost-effective)",
-    "65aa00e6fbcd": "GPT-4o (Multimodal)",
-    "e0d711d24ce0": "GPT-4 Turbo (Fast)",
-    "8f74151bab95": "o1 (Reasoning)",
-    "3b012884487f": "OpenRouter Free Router (Recommended)",
-    "4964e63958f2": "Llama 3.2 3B Instruct (Free)",
-    "7805b30d1370": "Gemma 2 9B IT (Free)",
-    "47a2330fd488": "DeepSeek V3",
-    "b76f522b0956": "Qwen 2.5-7B",
-    "8cc2ce8bbcc0": "Meta-Llama 3.1-8B",
-    "9bed1402f8b1": "DALL-E 3 (High Quality)",
-    "7f84e674b40b": "DALL-E 2 (Cost-efficient)",
-    "40c1641ec1b1": "FLUX.1 Schnell",
-    "b58ce8a42e99": "Z-Image Turbo",
-    "bba9b85ad2d3": "TTS Voice Configuration",
-    "53e89570d558": "TTS Engine",
-    "9b5473981254": "OpenAI TTS",
-    "6e6f12194f15": "TikTok TTS (Free)",
-    "fb74f0810152": "Google Cloud TTS",
-    "3082fdd3be9c": "ElevenLabs TTS",
-    "15d3c1e07d8f": "Speechify TTS",
-    "e9c5d0b9bfd1": "SiliconFlow TTS",
-    "029339e0cc7f": "Fish.audio TTS",
-    "2d652e746bb6": "Alloy (Neutral)",
-    "4f4086e3d53b": "Echo (Male)",
-    "3133d4a43d09": "Fable (British)",
-    "a5a2a1a934be": "Onyx (Deep Male)",
-    "ff9685a02494": "Nova (Female)",
-    "b2d7bc66965c": "Shimmer (Soft Female)",
-    "c05e43bf13fa": "English US - Female",
-    "8631fcfb6b5f": "English US - Male",
-    "2573c6e81131": "English US - Storyteller",
-    "7110adbf7589": "English US - Narrator",
-    "98f1cccd6566": "US English - Female (Neural)",
-    "66da175afb4e": "US English - Male (Neural)",
-    "d6c313a5c587": "UK English - Female (Neural)",
-    "4ed84edf883a": "UK English - Male (Neural)",
-    "cc34056cd6ad": "German - Female (Neural)",
-    "05269784654a": "German - Male (Neural)",
-    "02aba148f1ff": "Adam (Deep Male)",
-    "665ade8e202a": "Bella (Soft Female)",
-    "c83080238bb5": "Josh (Deep Male 2)",
-    "8cde68fa07f2": "Rachel (Calm Female)",
-    "808ada43b054": "Henry (Deep Male)",
-    "a91d021d3137": "Narrator (Default)",
-    "a2d82b8e1fd1": "Male Voice",
-    "51129df3ccba": "Female Voice",
-    "db350c384b5c": "Automatically narrate chapters with TTS. Disable for self-reading mode.",
-    "1ac1ac6f6949": "Story & Voting Settings",
-    "2971eec1aa11": "Deutsch (German)",
-    "7ec0985be6b4": "Español (Spanish)",
-    "1862b6b8cbb6": "Français (French)",
-    "7e2062c6bc35": "Italiano (Italian)",
-    "c69af446cb6b": "Português (Portuguese)",
-    "e211f2477a93": "Story ends after this many chapters",
-    "c2f6f1e497ea": "!a, !b, !c, !d",
-    "819d8cf94eb3": "A, B, C, D",
-    "89f3a7b5dc97": "Antwort 1, 2, 3...",
-    "aa293e75edde": "Answer 1, 2, 3...",
-    "3fb9bc61c045": "Overlay Customization",
-    "29571e114170": "Landscape (Horizontal)",
-    "7c273ac8f883": "Portrait (Vertical)",
-    "43d4a8527573": "1920x1080 (Full HD)",
-    "42f0640f6964": "1280x720 (HD)",
-    "df0f2c8f9ea8": "2560x1440 (2K)",
-    "d793368bad58": "1080x1920 (Portrait Full HD)",
-    "ea1d905e14aa": "Full Chapter",
-    "87f29c42e928": "Star Wars Scroll (TTS Synced)",
-    "6f80fce071f8": "Segoe UI (Default)",
-    "28faa17d5b1c": "Times New Roman",
-    "71bd88c22907": "Voting Highlight Color",
-    "c7608ae8ea31": "Background Gradient",
-    "65df3c784eef": "Dark Bottom Fade (Default)",
-    "efc3ff39bfff": "Dark Full",
-    "a059d3c6732c": "Blue Gradient",
-    "3dfd2d7950f7": "Timing Configuration",
-    "a933cabdff59": "Title Image Preview (seconds)",
-    "c5fccb27926f": "Time to show title image before narration",
-    "eff3c45dc07c": "Min Title Read Time (seconds)",
-    "014913db1c84": "Content Start Buffer (seconds)",
-    "95835fcd6cab": "Voting Results Display (seconds)",
-    "fc222fff67ac": "Chapter Transition Delay (seconds)",
-    "bc5fc2035b86": "Final Chapter Auto-End (seconds)",
-    "55efa9c2d451": "Generating Animation",
-    "18e456111d7d": "Default Spinner",
-    "ddd177c3899c": "Custom GIF/MP4",
-    "dae6b0728282": "Custom Animation URL",
-    "710993ac0285": "Advanced Settings",
-    "3a7dbd165bfb": "Admin chooses path (no live chat)",
-    "3b1b01326c4a": "Manually advance each round",
-    "1a8c8050568f": "Enable detailed logging & API diagnostics",
-    "10929f86673a": "Show detailed API requests (debug only)",
-    "2e63a2f80e08": "Test Overlay Display",
-    "0fe1a1b10d58": "Test Title Display",
-    "7c3abc59ac16": "Test Chapter Display",
-    "31636d3f2448": "Test Voting Choices",
-    "868512bc4495": "Clear Overlay",
-    "060ecfce739e": "These buttons send test data to the overlay for preview purposes"
   }
 }

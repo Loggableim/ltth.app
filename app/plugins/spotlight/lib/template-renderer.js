@@ -100,6 +100,32 @@ class TemplateRenderer {
     return this.escapeHtml(text).replace(/"/g, '&quot;');
   }
 
+  translate(key, fallback, params = {}) {
+    const value = typeof window !== 'undefined' && window.i18n?.t
+      ? window.i18n.t(key, params)
+      : key;
+    if (value && value !== key) return value;
+    return String(fallback).replace(/\{([A-Za-z_][\w.-]*)\}/g, (match, name) => (
+      Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+    ));
+  }
+
+  eventLabel(userData) {
+    const labels = {
+      follower: ['plugins.spotlight.runtime.overlay.event_follower', 'New Follower'],
+      like: ['plugins.spotlight.runtime.overlay.event_like', 'New Like'],
+      chatter: ['plugins.spotlight.runtime.overlay.event_chatter', 'New Chat'],
+      share: ['plugins.spotlight.runtime.overlay.event_share', 'New Share'],
+      gifter: ['plugins.spotlight.runtime.overlay.event_gifter', 'New Gift'],
+      subscriber: ['plugins.spotlight.runtime.overlay.event_subscriber', 'New Subscriber'],
+      topgift: ['plugins.spotlight.runtime.overlay.event_top_gift', 'Top Gift'],
+      giftstreak: ['plugins.spotlight.runtime.overlay.event_gift_streak', 'Gift Streak']
+    };
+    const entry = labels[userData?.eventType];
+    if (entry) return this.translate(entry[0], entry[1]);
+    return userData?.label || this.translate('plugins.spotlight.runtime.overlay.event', 'Event');
+  }
+
   /**
    * Get current design variant configuration
    */
@@ -251,7 +277,7 @@ class TemplateRenderer {
       // Show container with placeholder message
       this.clearTextEffects();
       this.container.style.display = '';
-      this.container.innerHTML = '<div class="no-data">Waiting for event...</div>';
+      this.container.innerHTML = `<div class="no-data">${this.translate('plugins.spotlight.runtime.overlay.waiting_for_event', 'Waiting for event...')}</div>`;
       return;
     }
 
@@ -554,7 +580,7 @@ class TemplateRenderer {
    * Includes onerror fallback for OBS BrowserSource compatibility
    */
   buildGiftIcon(userData, preloadedGiftPicUrl, size, variant) {
-    const giftName = userData.metadata?.giftName || 'Gift';
+    const giftName = userData.metadata?.giftName || this.translate('plugins.spotlight.runtime.overlay.gift', 'Gift');
     const borderRadius = variant.giftBorderRadius || '10px';
     const showBorder = !variant.hideBorder && this.settings.enableBorder;
     const borderWidth = this.settings.borderWidth || '3px';
@@ -636,7 +662,7 @@ class TemplateRenderer {
     const actualFontSize = variant.retroFont ? this.calculateReducedSize(fontSize, 0.6) : fontSize;
 
     // Event label
-    const escapedLabel = this.escapeHtml(userData.label || 'Event');
+    const escapedLabel = this.escapeHtml(this.eventLabel(userData));
     let labelStyle = `
       font-size: calc(${actualFontSize} * 0.6);
       color: ${fontColor};
@@ -658,7 +684,7 @@ class TemplateRenderer {
 
     // Username
     if (this.settings.showUsername) {
-      const escapedNickname = this.escapeHtml(userData.nickname || 'Anonymous');
+      const escapedNickname = this.escapeHtml(userData.nickname || this.translate('plugins.spotlight.runtime.overlay.anonymous', 'Anonymous'));
       let usernameStyle = `
         font-family: ${fontFamily};
         font-size: ${actualFontSize};
@@ -697,7 +723,7 @@ class TemplateRenderer {
       if (userData.metadata.coins && userData.metadata.coins > 0) {
         const coins = parseInt(userData.metadata.coins) || 0;
         const coinColor = variant.neonGlow ? '#ffd700' : '#ffd700';
-        giftInfo.push(`<span style="color: ${coinColor};">&#x1F4B0; ${coins} coins</span>`);
+        giftInfo.push(`<span style="color: ${coinColor};">&#x1F4B0; ${this.translate('plugins.spotlight.runtime.overlay.coins', '{coins} coins', { coins })}</span>`);
       }
       
       if (giftInfo.length > 0) {

@@ -1,70 +1,97 @@
 {
-  "thermal_printer": {
-    "name": "Thermodrucker",
-    "description": "Druckt TikTok Live Events auf einem Thermodrucker (ESC/POS)",
-    "status": {
-      "connected": "Verbunden",
-      "disconnected": "Getrennt",
-      "reconnecting": "Verbinde neu...",
-      "queue_size": "Warteschlangengröße",
-      "printed_jobs": "Gedruckte Aufträge",
-      "failed_jobs": "Fehlgeschlagene Aufträge",
-      "uptime": "Laufzeit"
-    },
-    "config": {
-      "enable": "Thermodrucker aktivieren",
-      "printer_type": "Drucker-Typ",
-      "usb": "USB",
-      "network": "Netzwerk",
-      "usb_vendor_id": "USB Vendor ID",
-      "usb_product_id": "USB Product ID",
-      "network_host": "Netzwerk Host/IP",
-      "network_port": "Netzwerk Port",
-      "event_filters": "Event-Filter",
-      "print_chats": "Chat-Nachrichten drucken",
-      "print_gifts": "Geschenke drucken",
-      "print_follows": "Follows drucken",
-      "print_shares": "Shares drucken",
-      "min_coins": "Minimum Coins zum Drucken",
-      "ignore_bot_commands": "Bot-Befehle ignorieren (Nachrichten die mit '!' beginnen)",
-      "formatting": "Formatierung",
-      "auto_cut": "Papier nach jedem Event automatisch schneiden",
-      "paper_width": "Papierbreite (Zeichen)",
-      "encoding": "Zeichenkodierung",
-      "advanced": "Erweiterte Einstellungen",
-      "reconnect_attempts": "Neuverbindungsversuche",
-      "reconnect_delay": "Neuverbindungsverzögerung (ms)",
-      "queue_max_size": "Maximale Warteschlangengröße",
-      "print_delay": "Druckverzögerung (ms)"
-    },
-    "actions": {
-      "test_print": "Testdruck",
-      "save": "Konfiguration speichern",
-      "back": "Zurück zum Dashboard"
-    },
-    "messages": {
-      "config_saved": "Konfiguration erfolgreich gespeichert!",
-      "config_error": "Fehler beim Speichern der Konfiguration",
-      "test_queued": "Testdruck-Auftrag in Warteschlange!",
-      "test_error": "Fehler beim Senden des Testdrucks",
-      "printer_not_running": "Drucker-Dienst läuft nicht"
+  "plugins": {
+    "thermal-printer": {
+      "form_controls": {
+        "usb_vendor_id_placeholder": "z. B. 0x04b8",
+        "usb_product_id_placeholder": "z. B. 0x0e15"
+      },
+      "thermal_printer": {
+        "name": "Thermodrucker",
+        "description": "Druckt TikTok Live Events auf einem Thermodrucker (ESC/POS)",
+        "status": {
+          "connected": "Verbunden",
+          "disconnected": "Getrennt",
+          "loading": "Wird geladen...",
+          "reconnecting": "Verbinde neu...",
+          "queue_size": "Warteschlangengröße",
+          "printed_jobs": "Gedruckte Aufträge",
+          "failed_jobs": "Fehlgeschlagene Aufträge",
+          "uptime": "Laufzeit",
+          "uptime_hours": "{hours} Std. {minutes} Min.",
+          "uptime_minutes": "{minutes} Min. {seconds} Sek.",
+          "uptime_seconds": "{seconds} Sek."
+        },
+        "config": {
+          "enable": "Thermodrucker aktivieren",
+          "printer_type": "Drucker-Typ",
+          "usb": "USB",
+          "network": "Netzwerk",
+          "usb_vendor_id": "USB-Anbieter-ID",
+          "usb_product_id": "USB-Produkt-ID",
+          "network_host": "Netzwerk Host/IP",
+          "network_port": "Netzwerk Port",
+          "event_filters": "Event-Filter",
+          "print_chats": "Chat-Nachrichten drucken",
+          "print_gifts": "Geschenke drucken",
+          "print_follows": "Follows drucken",
+          "print_shares": "Shares drucken",
+          "min_coins": "Minimum Coins zum Drucken",
+          "ignore_bot_commands": "Bot-Befehle ignorieren (Nachrichten die mit '!' beginnen)",
+          "formatting": "Formatierung",
+          "auto_cut": "Papier nach jedem Event automatisch schneiden",
+          "paper_width": "Papierbreite (Zeichen)",
+          "encoding": "Zeichenkodierung",
+          "advanced": "Erweiterte Einstellungen",
+          "reconnect_attempts": "Neuverbindungsversuche",
+          "reconnect_delay": "Neuverbindungsverzögerung (ms)",
+          "queue_max_size": "Maximale Warteschlangengröße",
+          "print_delay": "Druckverzögerung (ms)"
+        },
+        "actions": {
+          "test_print": "Testdruck",
+          "save": "Konfiguration speichern",
+          "back": "Zurück zum Dashboard"
+        },
+        "messages": {
+          "config_saved": "Konfiguration erfolgreich gespeichert!",
+          "config_error": "Die Konfiguration konnte nicht gespeichert werden.",
+          "config_error_details": "Die Konfiguration konnte nicht gespeichert werden: {details}",
+          "test_queued": "Testdruck-Auftrag in Warteschlange!",
+          "test_error": "Der Testdruck konnte nicht gesendet werden.",
+          "test_error_details": "Der Testdruck konnte nicht gesendet werden: {details}",
+          "printer_not_running": "Der Druckerdienst läuft nicht.",
+          "validation_printer_type": "Wähle USB oder Netzwerk als Druckertyp.",
+          "validation_usb_ids": "Gib beide USB-IDs an oder lasse beide für die automatische Erkennung leer.",
+          "validation_network_host": "Gib den Netzwerk-Host für einen Netzwerkdrucker an.",
+          "validation_network_port": "Gib einen gültigen Netzwerk-Port an (1-65535).",
+          "validation_min_coins": "Die Mindestanzahl an Coins darf nicht negativ sein.",
+          "validation_width": "Die Papierbreite muss zwischen 32 und 80 Zeichen liegen.",
+          "validation_reconnect_attempts": "Die Neuverbindungsversuche dürfen nicht negativ sein.",
+          "validation_reconnect_delay": "Die Neuverbindungsverzögerung darf nicht negativ sein.",
+          "validation_queue_size": "Die maximale Warteschlangengröße muss mindestens 1 sein.",
+          "validation_print_delay": "Die Druckverzögerung darf nicht negativ sein."
+        }
+      },
+      "labels": {
+        "only_print_gifts_with_at_least_this_many": "Geschenke nur mit mindestens so vielen Münzen ausdrucken (spart Papier)",
+        "typical_48_for_80mm_paper_32_for_58mm": "Typisch: 48 für 80-mm-Papier, 32 für 58-mm-Papier",
+        "thermal_printer_configuration": "Thermodrucker – Konfiguration",
+        "gb18030_default": "GB18030 (Standard)",
+        "printer_connection": "Druckeranschluss",
+        "save_configuration": "Konfiguration speichern",
+        "test_print": "Testdruck",
+        "back_to_dashboard": "Zurück zum Dashboard",
+        "event_filters": "Event-Filter",
+        "connection_status": "Verbindungsstatus",
+        "advanced_settings": "Erweiterte Einstellungen",
+        "e_g_0x0e15_for_tm_t20_leave_empty": "z. B. 0x0e15 für TM-T20 (für automatische Erkennung leer lassen)",
+        "delay_between_print_jobs_prevents_overloading": "Verzögerung zwischen Druckaufträgen (verhindert Überlastung)",
+        "minimum_coins_to_print_gifts": "Mindestanzahl an zu druckenden Münzen (Geschenke)",
+        "e_g_0x04b8_for_epson_leave_empty_for": "z. B. 0x04b8 für Epson (für automatische Erkennung leer lassen)",
+        "status": "Aktueller Zustand",
+        "configuration": "Konfiguration",
+        "formatting": "Formatierung"
+      }
     }
-  },
-  "generated": {
-    "3ee1fddf1259": "Thermal Printer - Configuration",
-    "997d134acc58": "Zurück zum Dashboard",
-    "a58f2ec5003c": "Connection Status",
-    "6f939fcb088e": "Printer Connection",
-    "edf570ac77a7": "e.g., 0x04b8 for Epson (leave empty for auto-detect)",
-    "b9540ba89dfd": "e.g., 0x0e15 for TM-T20 (leave empty for auto-detect)",
-    "9dc827bdc32c": "Event-Filter",
-    "cfc7e4a32810": "Minimum Coins to Print (Gifts)",
-    "0666dd4875b1": "Only print gifts with at least this many coins (saves paper)",
-    "6d8f13193ca0": "GB18030 (Default)",
-    "a9fe613c5931": "Erweiterte Einstellungen",
-    "cf2a7e073163": "Delay between print jobs (prevents overloading)",
-    "9627d567d91a": "Testdruck",
-    "89e7397c6e4b": "Konfiguration speichern",
-    "1551e3bcfd2e": "Typical: 48 for 80mm paper, 32 for 58mm paper"
   }
 }

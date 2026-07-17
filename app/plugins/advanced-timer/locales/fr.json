@@ -1,206 +1,233 @@
 {
-  "plugin": {
-    "name": "Advanced Timer",
-    "description": "Professional multi-timer system with event automation and customizable overlays"
-  },
-  "ui": {
-    "title": "Advanced Timer - Multi-Timer System",
-    "tabs": {
-      "timers": "Timers",
-      "create": "Create Timer",
-      "profiles": "Profiles",
-      "help": "Help"
-    },
-    "buttons": {
-      "newTimer": "New Timer",
-      "start": "Start",
-      "pause": "Pause",
-      "stop": "Stop",
-      "reset": "Réinitialiser",
-      "settings": "Paramètres",
-      "delete": "Delete",
-      "save": "Enregistrer",
-      "cancel": "Cancel",
-      "create": "Create Timer",
-      "export": "Export",
-      "copy": "Copier l'URL"
-    },
-    "labels": {
-      "timerName": "Timer Name",
-      "timerMode": "Timer Mode",
-      "initialDuration": "Initial Duration (seconds)",
-      "targetValue": "Target Value (seconds)",
-      "overlayUrl": "URL de l'Overlay",
-      "activityLog": "Activity Log"
-    },
-    "modes": {
-      "countdown": "Countdown - Count down from a time",
-      "countup": "Count Up - Count up to a target",
-      "stopwatch": "Stopwatch - Count up indefinitely",
-      "loop": "Loop - Repeat countdown continuously",
-      "interval": "Interval - Repeat up to target"
-    },
-    "states": {
-      "running": "Running",
-      "paused": "Paused",
-      "stopped": "Stopped",
-      "completed": "Completed"
-    },
-    "messages": {
-      "noTimers": "No timers yet",
-      "createFirst": "Create Your First Timer",
-      "timerCreated": "Timer created successfully!",
-      "timerUpdated": "Timer updated successfully!",
-      "timerDeleted": "Timer deleted successfully!",
-      "confirmDelete": "Are you sure you want to delete this timer?",
-      "urlCopied": "URL copied to clipboard!",
-      "noActivity": "No activity yet",
-      "quickStart": "Create a timer and configure events in the timer settings to add time based on TikTok events (gifts, likes, follows, etc.)"
-    },
-    "help": {
-      "modesTitle": "Timer Modes",
-      "modesCountdown": "Countdown: Counts down from a starting time to zero",
-      "modesCountup": "Count Up: Counts up from zero to a target value",
-      "modesStopwatch": "Stopwatch: Counts up indefinitely",
-      "modesLoop": "Loop: Continuously repeats countdown",
-      "modesInterval": "Interval: Counts up to target, resets and repeats",
-      "eventAutomationTitle": "Event Automation",
-      "eventAutomationDesc": "Configure timers to respond to TikTok events:",
-      "eventGifts": "Cadeaux - Ajouter/retirer du temps basé sur la valeur en pièces (secondes par pièce)",
-      "eventLikes": "J'aime - Modifier le minuteur basé sur les j'aime reçus (secondes par j'aime)",
-      "eventFollows": "Follows - Reward new followers",
-      "eventShares": "Shares - Encourage sharing",
-      "eventChat": "Chat Commands - Allow viewers to interact",
-      "timerChainsTitle": "Timer Chains",
-      "timerChainsDesc": "Link timers together - when Timer A completes, automatically start/stop/reset Timer B",
-      "overlaysTitle": "Overlays",
-      "overlaysDesc": "Each timer has its own overlay URL that can be added as a Browser Source in OBS"
-    },
-    "settings": {
-      "tabs": {
-        "basic": "Basic",
-        "events": "Events",
-        "overlay": "Overlay",
-        "logs": "Logs"
+  "plugins": {
+    "advanced-timer": {
+      "form_controls": {
+        "sections_aria": "Sections d'Advanced Timer",
+        "timer_summary_aria": "Résumé du minuteur",
+        "timer_name_placeholder": "Mon minuteur"
       },
-      "eventsDesc": "Configure how TikTok events affect this timer",
-      "addEventRule": "+ Add Event Rule",
-      "overlayInfo": "Add this URL as a Browser Source in OBS to display this timer"
+      "plugin": {
+        "name": "Minuteur avancé",
+      "description": "Système professionnel de plusieurs minuteurs avec automatisation des événements et superpositions personnalisables"
+      },
+      "ui": {
+        "title": "Minuteur avancé - Système multi-minuteurs",
+        "tabs": {
+          "timers": "Minuteurs",
+          "create": "Créer un minuteur",
+          "profiles": "Profils",
+          "help": "Aide"
+        },
+        "buttons": {
+          "newTimer": "Nouveau minuteur",
+          "start": "Démarrer",
+          "pause": "Mettre en pause",
+          "stop": "Arrêter",
+          "reset": "Réinitialiser",
+          "settings": "Paramètres",
+          "delete": "Supprimer",
+          "save": "Enregistrer",
+          "cancel": "Annuler",
+          "create": "Créer un minuteur",
+          "export": "Exporter",
+          "copy": "Copier l'URL"
+        },
+        "labels": {
+          "timerName": "Nom du minuteur",
+          "timerMode": "Mode du minuteur",
+          "initialDuration": "Durée initiale (secondes)",
+          "targetValue": "Valeur cible (secondes)",
+          "overlayUrl": "URL de l'Overlay",
+          "activityLog": "Journal d'activité"
+        },
+        "modes": {
+          "countdown": "Compte à rebours - Diminue depuis une durée",
+          "countup": "Compte ascendant - Monte jusqu'à une cible",
+          "stopwatch": "Chronomètre - Monte indéfiniment",
+          "loop": "Boucle - Répète le compte à rebours en continu",
+          "interval": "Intervalle - Répète jusqu'à la cible"
+        },
+        "states": {
+          "running": "En cours",
+          "paused": "En pause",
+          "stopped": "Arrêté",
+          "completed": "Terminé"
+        },
+        "stats": {
+          "total": "Total général"
+        },
+        "messages": {
+          "noTimers": "Aucun minuteur pour le moment",
+          "createFirst": "Créez votre premier minuteur",
+          "timerCreated": "Le minuteur a été créé.",
+          "timerUpdated": "Le minuteur a été mis à jour.",
+          "timerDeleted": "Le minuteur a été supprimé.",
+          "confirmDelete": "Voulez-vous vraiment supprimer ce minuteur ?",
+          "urlCopied": "L'URL a été copiée dans le presse-papiers.",
+          "noActivity": "Aucune activité pour le moment",
+          "quickStart": "Créez un minuteur et configurez des événements dans ses paramètres pour ajouter du temps selon les événements TikTok (cadeaux, J'aime, abonnements, etc.)"
+        },
+        "help": {
+          "modesTitle": "Modes du minuteur",
+          "modesCountdown": "Compte à rebours : décompte depuis une durée initiale jusqu'à zéro",
+          "modesCountup": "Compte ascendant : monte de zéro jusqu'à une valeur cible",
+          "modesStopwatch": "Chronomètre : monte indéfiniment",
+          "modesLoop": "Boucle : répète le compte à rebours en continu",
+          "modesInterval": "Intervalle : compte jusqu'à la valeur cible, se réinitialise et se répète",
+          "eventAutomationTitle": "Automatisation des événements",
+          "eventAutomationDesc": "Configurez des minuteurs qui réagissent aux événements TikTok :",
+          "eventGifts": "Cadeaux - Ajouter/retirer du temps basé sur la valeur en pièces (secondes par pièce)",
+          "eventLikes": "J'aime - Modifier le minuteur basé sur les j'aime reçus (secondes par j'aime)",
+          "eventFollows": "Suivis - Récompensez les nouveaux abonnés",
+          "eventShares": "Partages - Encouragez le partage",
+          "eventChat": "Commandes de chat - Permettent au public d'interagir",
+          "timerChainsTitle": "Chaînes de minuteurs",
+          "timerChainsDesc": "Liez des minuteurs : lorsque le minuteur A se termine, démarrez, arrêtez ou réinitialisez automatiquement le minuteur B",
+          "overlaysTitle": "Superpositions",
+          "overlaysDesc": "Chaque minuteur possède sa propre URL de superposition pouvant être ajoutée comme source de navigateur dans OBS"
+        },
+        "settings": {
+          "tabs": {
+            "basic": "Général",
+            "events": "Événements",
+            "overlay": "Overlay",
+            "logs": "Journaux"
+          },
+          "eventsDesc": "Configurez l'effet des événements TikTok sur ce minuteur",
+          "addEventRule": "+ Ajouter une règle d'événement",
+          "overlayInfo": "Ajoutez cette URL comme source de navigateur dans OBS pour afficher ce minuteur"
+        }
+      },
+      "events": {
+        "types": {
+          "gift": "Cadeau",
+          "like": "Comme",
+          "follow": "Suivre",
+          "share": "Partager",
+          "subscribe": "Abonnement",
+          "chat": "Chat"
+        },
+        "actions": {
+          "addTime": "Ajouter du temps",
+          "removeTime": "Retirer du temps",
+          "setValue": "Définir la valeur"
+        }
+      },
+      "logs": {
+        "events": {
+          "started": "Démarré",
+          "paused": "En pause",
+          "stopped": "Arrêté",
+          "reset": "Réinitialiser",
+          "completed": "Terminé",
+          "time_added": "Temps ajouté",
+          "time_removed": "Temps retiré",
+          "gift": "Cadeau",
+          "like": "Comme",
+          "follow": "Suivre",
+          "share": "Partager",
+          "subscribe": "Abonnement",
+          "chat": "Chat",
+          "chain_triggered": "Chaîne déclenchée",
+          "threshold_reached": "Seuil atteint",
+          "flow": "Flux"
+        }
+      },
+      "rotator": {
+        "sectionTitle": "Rotateur (Curseur de delta)",
+        "sectionDesc": "Affiche le dernier changement de temps autour du minuteur (haut/bas/gauche/droite). Les cadeaux personnalisés affichent le GIF du catalogue.",
+        "enable": "Activer le rotateur",
+        "position": "Emplacement",
+        "positionTop": "Haut",
+        "positionBottom": "Bas",
+        "positionLeft": "Gauche",
+        "positionRight": "Droite",
+        "slots": "Machines à sous",
+        "rotationMs": "Cadence (ms)",
+        "minSeconds": "Secondes min. à afficher",
+        "showGiftImage": "Afficher l'image du cadeau",
+        "showGiftName": "Afficher le nom du cadeau",
+        "showTimeDelta": "Afficher le Δ de temps",
+        "showSourceEmoji": "Afficher l'emoji source",
+        "fontScale": "Taille de police",
+        "fadeAlpha": "Opacité",
+        "sourcesShown": "Sources affichées :",
+        "save": "Enregistrer le rotateur"
+      },
+      "thresholdEffects": {
+        "sectionTitle": "Effets de grand changement",
+        "sectionDesc": "Lorsqu'un seul changement de temps dépasse le seuil, le minuteur est entouré d'un cadre/anim. Style intégré, uploadé, ou les deux combinés.",
+        "enable": "Activer les effets",
+        "thresholdSeconds": "Seuil (secondes)",
+        "direction": "Sens",
+        "directionBoth": "Les deux (+/-)",
+        "directionPositive": "Positif seulement",
+        "directionNegative": "Négatif seulement",
+        "durationMs": "Durée de l'effet (ms)",
+        "builtin": "Animation intégrée",
+        "intensity": "Intensité (0.5..2.0)",
+        "frameSlotsTitle": "Slots de cadre personnalisés (jusqu'à 6 PNG/WebP/GIF/SVG — affichés en rotation) :",
+        "frameSlotN": "Emplacement {n}",
+        "frameEmpty": "Aucun cadre",
+        "frameLabel": "Étiquette (optionnel)",
+        "frameUpload": "Téléverser",
+        "frameRemove": "Retirer",
+        "save": "Enregistrer les réglages"
+      },
+      "runtime": {
+        "timer": "Minuteur", "quickAddTen": "+10 s", "quickAddThirty": "+30 s", "quickAddMinute": "+1 min", "quickAddFiveMinutes": "+5 min", "quickRemoveTen": "-10 s", "quickRemoveThirty": "-30 s",
+        "overlay": "Superposition :", "copyOverlayUrl": "Copier l'URL de superposition", "expiryAction": "Action à l'expiration", "expiryNone": "Aucune", "expiryRestart": "Redémarrer", "expiryAlert": "Afficher une alerte", "expirySound": "Lire un son", "expirySceneChange": "Changer de scène", "expiryTriggerChain": "Déclencher la chaîne",
+        "interactions": "Actions utilisateur", "interactionsHint": "Les valeurs positives ajoutent du temps et les valeurs négatives en retirent. Les décimales sont prises en charge (par exemple 0,05).", "perCoin": "Par pièce", "perSubscribe": "Par abonnement", "perFollow": "Par suivi", "perShare": "Par partage", "perLike": "Par J'aime", "perChat": "Par message de chat", "advancedRulesLink": "Règles d'événement avancées (filtres de nom de cadeau, commandes...)", "saved": "Enregistré",
+        "multiplier": "Multiplicateur", "multiplierDescription": "(multiplie toutes les valeurs d'interaction par ce facteur)", "keyboardShortcuts": "Raccourcis clavier", "startPause": "Démarrer / mettre en pause", "increase": "Augmenter", "reduce": "Réduire", "stepSeconds": "Pas (secondes)", "saveShortcuts": "Enregistrer les raccourcis", "loadLogHint": "Ouvrez cette section pour charger le journal d'activité.", "refresh": "Actualiser",
+        "giftOverrides": "Remplacements de cadeaux", "giftOverridesDescription": "Remplace la valeur par pièce pour des cadeaux précis. Lorsqu'une valeur est définie, seul ce remplacement est appliqué à ce cadeau.", "clickToLoad": "Cliquez pour charger.", "selectGift": "Sélectionner un cadeau", "seconds": "Secondes", "add": "Ajouter",
+        "sourceLike": "J'aime", "sourceCoin": "Pièce / cadeau", "sourceCustomGift": "Cadeau personnalisé", "sourceFollow": "Suivi", "sourceSubscribe": "Abonnement (Superfan)", "sourceShare": "Partage", "sourceChat": "Chat", "sourceManual": "Manuel", "sourceFlow": "Flux", "sourceRule": "Règle",
+        "deleteTimer": "Supprimer le minuteur", "noAdvancedRules": "Aucune règle avancée pour le moment.", "advancedRulesDescription": "Ces règles complètent les valeurs simples par événement. Utilisez-les pour les filtres de nom de cadeau, les pièces minimales ou les commandes de chat.", "close": "Fermer", "edit": "Modifier", "addEventRule": "Ajouter une règle d'événement", "editEventRule": "Modifier la règle d'événement", "eventType": "Type d'événement", "action": "Opération", "valueSeconds": "Valeur (secondes)",
+        "giftName": "Nom du cadeau (vide = n'importe lequel)", "giftNamePlaceholder": "par exemple Rose", "minCoins": "Pièces minimales (0 = aucun minimum)", "minLikes": "J'aime minimum par événement", "commandPrefix": "Préfixe de commande (par exemple !time)", "keywordContains": "Le mot-clé contient", "keywordPlaceholder": "ajouter du temps",
+        "noGiftOverrides": "Aucun remplacement de cadeau pour le moment.", "diamonds": "diamants", "selectGiftAlert": "Sélectionnez d'abord un cadeau dans le catalogue.", "unknownGift": "Cadeau inconnu", "failedSave": "Impossible d'enregistrer les modifications.", "removeGiftOverride": "Retirer ce remplacement de cadeau ?", "failedSaveRotator": "Impossible d'enregistrer les réglages du rotateur.", "failedSaveThreshold": "Impossible d'enregistrer les réglages du seuil.", "frameAlt": "Cadre personnalisé", "chooseFile": "Choisissez d'abord un fichier.", "frameTooLarge": "Le cadre doit faire moins de 8 Mo.", "uploadFailed": "Le téléversement a échoué.", "uploadError": "Une erreur de téléversement est survenue.", "removeFrame": "Retirer le cadre de l'emplacement {n} ?", "deleteFailed": "La suppression a échoué.",
+        "failedCreateTimer": "Impossible de créer le minuteur.", "noSavedProfiles": "Aucun profil enregistré. Utilisez Enregistrer la configuration actuelle pour conserver les minuteurs actuels.", "apply": "Appliquer", "profileNamePrompt": "Nom du profil :", "applyProfileConfirm": "Appliquer ce profil ? Les minuteurs actuels seront remplacés.", "deleteProfileConfirm": "Supprimer ce profil ?", "deleteEventRuleConfirm": "Supprimer cette règle d'événement ?",
+        "conditionGift": "Cadeau : {value}", "conditionMinCoins": "Pièces minimales : {value}", "conditionMinLikes": "J'aime minimum : {value}", "conditionCommand": "Commande : {value}", "conditionKeyword": "Mot-clé : {value}",
+        "effectFlame": "Flamme", "effectLightning": "Éclair", "effectSparks": "Étincelles", "effectPulseGlow": "Lueur pulsée", "effectRainbowShake": "Secousse arc-en-ciel", "effectGoldFlux": "Flux doré", "times": "×", "chevron": "▼",
+        "overlayMissingEyebrow": "Superposition Advanced Timer", "overlayMissingTitle": "ID du minuteur manquant", "overlayMissingDescription": "Cette superposition nécessite un paramètre de requête timer. Ouvrez-la depuis Advanced Timer ou ajoutez un ID de minuteur pour prévisualiser un minuteur actif.", "overlayMissingExample": "Exemple :", "overlayTimerNotFound": "Minuteur introuvable", "overlayMostRecent": "Le plus récent", "overlayPrevious": "Précédent"
+      },
+      "labels": {
+        "save_current_setup": "Enregistrer la configuration actuelle",
+        "counts_down_to_zero_great_for_subathon_timers": "Compte à rebours jusqu'à zéro - idéal pour les chronomètres de sous-athon",
+        "advanced_event_rules": "Règles d'événement avancées",
+        "directly_on_each_timer_card_use_positive_values": "directement sur chaque carte de minuterie. Utilisez des valeurs positives pour ajouter du temps, négatives pour réduire.",
+        "counts_up_to_target_then_resets_and_repeats": "Compte jusqu'à la cible, puis se réinitialise et se répète",
+        "x_multiplier": "x Multiplicateur",
+        "advanced_event_rules_2e8c2b": "Règles d'événement avancées",
+        "enable_the": "Activer le",
+        "count_up_count_up_to_a_target": "Count Up - comptez jusqu'à un objectif",
+        "each_timer_card_shows_its_overlay_url_add": "Chaque carte de minuterie affiche son URL de superposition. Ajoutez-le en tant que source de navigateur dans OBS.",
+        "to_multiply_all_interaction_values_by_a_factor": "pour multiplier toutes les valeurs d'interaction par un facteur (par exemple, x10 pour les événements).",
+        "countdown_count_down_from_a_time": "Compte à rebours - compte à rebours à partir d'un temps",
+        "counts_up_to_a_target_value": "Compte jusqu'à une valeur cible",
+        "link_on_each_timer_card_to_configure_per": "lien sur chaque carte de minuterie pour configurer les règles par cadeau et par commande.",
+        "stopwatch_count_up_indefinitely": "Chronomètre - comptez indéfiniment",
+        "create_timer": "Créer une minuterie",
+        "timer_overlay": "Superposition de minuterie",
+        "quick_setup": "Configuration rapide",
+        "quick_reference_for_modes_direct_interactions_multiplier_behavior": "Référence rapide pour les modes, les interactions directes, le comportement du multiplicateur et l'utilisation de la superposition OBS.",
+        "control_every_active_timer_inspect_states_copy_overlay": "Contrôlez chaque minuterie active, inspectez les états, copiez les URL de superposition et accédez aux règles d'événement avancées sans perdre l'ensemble des fonctionnalités.",
+        "need_gift_name_filters_or_chat_command_matching": "Besoin de filtres de nom de cadeau ou de correspondance de commandes de chat ? Utilisez le",
+        "obs_overlay": "Superposition OBS",
+        "save_reapply_and_move_between_timer_setups_without": "Enregistrez, réappliquez et déplacez-vous entre les configurations de minuterie sans reconstruire votre structure.",
+        "direct_interactions": "Interactions directes",
+        "choose_the_mode_configure_the_baseline_duration_and": "Choisissez le mode, configurez la durée de référence et gardez les interactions directes prêtes pour le réglage côté flux.",
+        "counts_up_indefinitely": "Compte indéfiniment",
+        "timers_at_a_glance": "Les minuteries en un coup d'œil",
+        "multi_timer_control_center": "Centre de contrôle multi-minuterie",
+        "interval_repeat_up_to_target": "Intervalle - répéter jusqu'à la cible",
+        "wide_screen_ready_timers_rules_rotators_profiles_stay": "Prêt pour le grand écran. Les minuteries, règles, rotateurs et profils restent disponibles.",
+        "count_up": "Compte à rebours :",
+        "timer_overlay_dbe4d9": "Superposition de minuterie",
+        "after_creating_the_timer_you_can_set_per": "Après avoir créé le minuteur, vous pouvez définir Par Coin, Par J'aime, Par Suivi, etc. directement sur la carte du minuteur - aucune règle d'événement distincte n'est nécessaire pour les interactions de base.",
+        "continuously_repeats_countdown": "Répète continuellement le compte à rebours",
+        "per_coin_per_follow_per_share_per_subscribe": "Par pièce, par suivi, par partage, par abonnement, par j'aime, par message de discussion",
+        "help_and_setup": "Aide et configuration",
+        "loop_repeat_countdown_continuously": "Boucle - répéter le compte à rebours en continu"
+      }
     }
-  },
-  "events": {
-    "types": {
-      "gift": "Gift",
-      "like": "Like",
-      "follow": "Follow",
-      "share": "Share",
-      "subscribe": "Subscribe",
-      "chat": "Chat"
-    },
-    "actions": {
-      "addTime": "Add Time",
-      "removeTime": "Remove Time",
-      "setValue": "Set Value"
-    }
-  },
-  "logs": {
-    "events": {
-      "started": "Started",
-      "paused": "Paused",
-      "stopped": "Stopped",
-      "reset": "Réinitialiser",
-      "completed": "Completed",
-      "time_added": "Time Added",
-      "time_removed": "Time Removed",
-      "gift": "Gift",
-      "like": "Like",
-      "follow": "Follow",
-      "share": "Share",
-      "subscribe": "Subscribe",
-      "chat": "Chat",
-      "chain_triggered": "Chain Triggered",
-      "threshold_reached": "Threshold Reached",
-      "flow": "Flow"
-    }
-  },
-  "rotator": {
-    "sectionTitle": "Rotateur (Curseur de delta)",
-    "sectionDesc": "Affiche le dernier changement de temps autour du minuteur (haut/bas/gauche/droite). Les cadeaux personnalisés affichent le GIF du catalogue.",
-    "enable": "Activer le rotateur",
-    "position": "Position",
-    "positionTop": "Haut",
-    "positionBottom": "Bas",
-    "positionLeft": "Gauche",
-    "positionRight": "Droite",
-    "slots": "Slots",
-    "rotationMs": "Rotation (ms)",
-    "minSeconds": "Secondes min. à afficher",
-    "showGiftImage": "Afficher l'image du cadeau",
-    "showGiftName": "Afficher le nom du cadeau",
-    "showTimeDelta": "Afficher le Δ de temps",
-    "showSourceEmoji": "Afficher l'emoji source",
-    "fontScale": "Taille de police",
-    "fadeAlpha": "Opacité",
-    "sourcesShown": "Sources affichées :",
-    "save": "Enregistrer le rotateur"
-  },
-  "thresholdEffects": {
-    "sectionTitle": "Effets de grand changement",
-    "sectionDesc": "Lorsqu'un seul changement de temps dépasse le seuil, le minuteur est entouré d'un cadre/anim. Style intégré, uploadé, ou les deux combinés.",
-    "enable": "Activer les effets",
-    "thresholdSeconds": "Seuil (secondes)",
-    "direction": "Direction",
-    "directionBoth": "Les deux (+/-)",
-    "directionPositive": "Positif seulement",
-    "directionNegative": "Négatif seulement",
-    "durationMs": "Durée de l'effet (ms)",
-    "builtin": "Animation intégrée",
-    "intensity": "Intensité (0.5..2.0)",
-    "frameSlotsTitle": "Slots de cadre personnalisés (jusqu'à 6 PNG/WebP/GIF/SVG — affichés en rotation) :",
-    "frameSlotN": "Slot {n}",
-    "frameEmpty": "Aucun cadre",
-    "frameLabel": "Étiquette (optionnel)",
-    "frameUpload": "Téléverser",
-    "frameRemove": "Retirer",
-    "save": "Enregistrer les réglages"
-  },
-  "generated": {
-    "dbe4d9133c04": "Timer Overlay",
-    "7f8ab618d3d9": "Timer Overlay",
-    "c3c568c922cd": "Multi-timer control center",
-    "c7b8ec23a7ac": "Wide-screen ready. Timers, rules, rotators, profiles stay available.",
-    "c279a2a1a555": "Timers at a glance",
-    "990ecde05a91": "Control every active timer, inspect states, copy overlay URLs and jump into advanced event rules without losing the full feature set.",
-    "7e53695347bc": "Create timer",
-    "b86f46ec6bc1": "Choose the mode, configure the baseline duration and keep direct interactions ready for stream-side tuning.",
-    "4de504791293": "Countdown - count down from a time",
-    "3727e833d7fc": "Count Up - count up to a target",
-    "7949abfa845e": "Stopwatch - count up indefinitely",
-    "f804752b216c": "Loop - repeat countdown continuously",
-    "c67371171158": "Interval - repeat up to target",
-    "81be5107a3e8": "Quick Setup",
-    "dde33698cb4a": "After creating the timer you can set Per Coin, Per Like, Per Follow etc. directly on the timer card - no separate event rules needed for basic interactions.",
-    "b2f95e10b87e": "Save, reapply and move between timer setups without rebuilding your structure.",
-    "1a6372899e2b": "Save Current Setup",
-    "e85f00ba5a80": "Help and setup",
-    "83b669204be5": "Quick reference for modes, direct interactions, multiplier behavior and OBS overlay usage.",
-    "1ad6e9c6eaca": "Counts down to zero - great for subathon timers",
-    "ceaf09dc8ffc": "Count Up:",
-    "50692ddbb216": "Counts up to a target value",
-    "bf7052e8e302": "Counts up indefinitely",
-    "e2ca52006976": "Continuously repeats countdown",
-    "2826418935bb": "Counts up to target, then resets and repeats",
-    "b37ed4b61f44": "Direct Interactions",
-    "e2de78ab8955": "Per Coin, Per Follow, Per Share, Per Subscribe, Per Like, Per Chat Message",
-    "25b6639f41ec": "directly on each timer card. Use positive values to add time, negative to reduce.",
-    "32d2e97eab9a": "Enable the",
-    "2b6f7ea3eabe": "x Multiplier",
-    "420669edaed3": "to multiply all interaction values by a factor (for example, x10 for events).",
-    "1fe350d539b4": "Advanced Event Rules",
-    "a9513a9f35b8": "Need gift-name filters or chat-command matching? Use the",
-    "2e8c2bf59aba": "Advanced Event Rules",
-    "645a41f54e47": "link on each timer card to configure per-gift and per-command rules.",
-    "ae1cc5120d6d": "OBS Overlay",
-    "3b7dbecac785": "Each timer card shows its overlay URL. Add it as a Browser Source in OBS."
   }
 }

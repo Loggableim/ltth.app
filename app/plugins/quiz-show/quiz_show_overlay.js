@@ -6,6 +6,10 @@
 (function() {
     'use strict';
 
+    function t(key, params) {
+        return window.i18n?.t(key, params) || key;
+    }
+
     // ============================================
     // CONFIGURATION & STATE
     // ============================================
@@ -826,9 +830,12 @@
                 roundNumberDisplay.style.display = 'flex';
                 
                 if (gameData.totalRounds > 0) {
-                    roundNumberText.textContent = `Runde ${gameData.currentRound} / ${gameData.totalRounds}`;
+                    roundNumberText.textContent = t('plugins.quiz-show.runtime.overlay.round_of_total', {
+                        current: gameData.currentRound,
+                        total: gameData.totalRounds
+                    });
                 } else {
-                    roundNumberText.textContent = `Runde ${gameData.currentRound}`;
+                    roundNumberText.textContent = t('plugins.quiz-show.runtime.overlay.round', { current: gameData.currentRound });
                 }
             } else if (roundNumberDisplay) {
                 roundNumberDisplay.style.display = 'none';
@@ -1243,7 +1250,7 @@
 
         icon.textContent = data.icon;
         title.textContent = data.title;
-        user.textContent = `von ${joker.username}`;
+        user.textContent = t('plugins.quiz-show.runtime.overlay.by_user', { user: joker.username });
 
         notification.classList.remove('hidden');
         notification.classList.add('animate-slide-in');
@@ -1340,7 +1347,7 @@
                 <h1 style="font-size: 3em; color: gold; margin-bottom: 10px; text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);">MVP</h1>
                 <h2 style="font-size: 2.5em; color: white; margin-bottom: 10px;">${escapeHtml(mvp.username)}</h2>
                 <div style="font-size: 2em; color: #10b981;">
-                    <span style="font-weight: bold;">${mvp.points}</span> Punkte
+                    ${t('plugins.quiz-show.runtime.overlay.mvp_points', { points: mvp.points })}
                 </div>
             </div>
         `;
@@ -1393,7 +1400,7 @@
             <div class="error-content" style="transform: scale(0); transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);">
                 <div style="font-size: 3em; margin-bottom: 15px;">❓</div>
                 <h2 style="font-size: 2em; margin-bottom: 10px; font-weight: bold;">${escapeHtml(message)}</h2>
-                <p style="font-size: 1.2em; opacity: 0.9;">Bitte fügen Sie neue Fragen hinzu und starten Sie erneut.</p>
+                <p style="font-size: 1.2em; opacity: 0.9;">${t('plugins.quiz-show.runtime.overlay.no_questions_instruction')}</p>
             </div>
         `;
 
@@ -1563,7 +1570,7 @@
     function createVoterIcon(voter, index, animate) {
         const icon = document.createElement('div');
         icon.className = 'voter-icon';
-        icon.title = voter.username || 'Anonymous';
+        icon.title = voter.username || t('plugins.quiz-show.runtime.overlay.anonymous');
         
         // Add animation delay for staggered appearance
         if (animate) {
@@ -1676,7 +1683,11 @@
             hideQuizSections();
 
             // Set display type
-            leaderboardType.textContent = displayType === 'round' ? 'Runde' : displayType === 'season' ? 'Season' : 'Runde + Season';
+            leaderboardType.textContent = displayType === 'round'
+                ? t('plugins.quiz-show.runtime.overlay.leaderboard_round')
+                : displayType === 'season'
+                    ? t('plugins.quiz-show.runtime.leaderboard.season')
+                    : t('plugins.quiz-show.runtime.overlay.leaderboard_round_season');
 
             // Clear existing entries
             leaderboardList.innerHTML = '';
@@ -1700,11 +1711,11 @@
 
                 const username = document.createElement('div');
                 username.className = 'leaderboard-username';
-                username.textContent = entry.username || 'Unknown';
+                username.textContent = entry.username || t('plugins.quiz-show.runtime.overlay.unknown');
 
                 const points = document.createElement('div');
                 points.className = 'leaderboard-points';
-                points.textContent = `${entry.points || 0} Pkt`;
+                points.textContent = t('plugins.quiz-show.runtime.overlay.points', { points: entry.points || 0 });
 
                 li.appendChild(rank);
                 li.appendChild(avatar);
@@ -2135,7 +2146,9 @@
         const overlay = document.getElementById('categoryVoteOverlay');
         const countdown = document.getElementById('categoryVoteCountdown');
         if (countdown) {
-            countdown.textContent = data.selectedCategory ? `Gewaehlte Kategorie: ${data.selectedCategory}` : 'Voting beendet';
+            countdown.textContent = data.selectedCategory
+                ? t('plugins.quiz-show.runtime.voting.selected', { category: data.selectedCategory })
+                : t('plugins.quiz-show.runtime.voting.ended');
         }
         setTimeout(() => {
             if (overlay) overlay.classList.add('hidden');
@@ -2169,7 +2182,7 @@
         const user = document.getElementById('achievementUser');
         if (!overlay || !title || !user || !award) return;
 
-        title.textContent = award.label || award.id || 'Achievement';
+        title.textContent = award.label || award.id || t('plugins.quiz-show.runtime.overlay.achievement');
         user.textContent = award.username || award.userId || '';
         overlay.classList.remove('hidden');
         setTimeout(() => {

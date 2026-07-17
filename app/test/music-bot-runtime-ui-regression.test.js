@@ -1342,7 +1342,7 @@ describe('Music Bot runtime and UI regressions', () => {
     await new Promise((resolve) => setTimeout(resolve, 25));
 
     expect(skipButton.disabled).toBe(false);
-    expect(skipButton.textContent).toBe('Skip');
+    expect(skipButton.textContent).toBe('Überspringen');
     expect(dom.window.document.getElementById('now-playing').textContent).toContain('Auto-DJ Next');
   });
 
@@ -1360,7 +1360,7 @@ describe('Music Bot runtime and UI regressions', () => {
     await Promise.resolve();
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(state.textContent).toBe('Paused');
+    expect(state.textContent).toBe('Pausiert');
   });
 
   test('identifies both songs when moving a queue item', async () => {

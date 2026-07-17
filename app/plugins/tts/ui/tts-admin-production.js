@@ -37,6 +37,18 @@ let isPageUnloading = false;
 let socketReady = false;
 let abortControllers = new Set();
 
+function translateRuntime(key, params = {}, fallback = key) {
+    if (window.i18n && typeof window.i18n.t === 'function') {
+        const translated = window.i18n.t(key, params);
+        if (translated && translated !== key) return translated;
+    }
+    return fallback;
+}
+
+function runtimeFailure(key, error, fallback) {
+    return translateRuntime(key, { message: error?.message || '' }, fallback);
+}
+
 // ============================================================================
 // SOCKET.IO INITIALIZATION
 // ============================================================================
@@ -197,46 +209,46 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
         // Initialize Socket.io and wait for connection or timeout
-        if (statusEl) statusEl.textContent = 'Connecting to server...';
+        if (statusEl) statusEl.textContent = translateRuntime('plugins.tts.runtime.status.connecting', {}, 'Connecting to server...');
         await initializeSocket();
         console.log('✓ Socket.io initialization complete');
 
         // Load configuration
-        if (statusEl) statusEl.textContent = 'Loading configuration...';
+        if (statusEl) statusEl.textContent = translateRuntime('plugins.tts.runtime.status.loading_config', {}, 'Loading configuration...');
         await loadConfig();
         console.log('✓ Config loaded');
 
         // Load Event TTS configuration
-        if (statusEl) statusEl.textContent = 'Loading Event TTS configuration...';
+        if (statusEl) statusEl.textContent = translateRuntime('plugins.tts.runtime.status.loading_event_config', {}, 'Loading Event TTS configuration...');
         try {
             await loadEventTTSConfig();
             console.log('✓ Event TTS config loaded');
         } catch (error) {
             if (!isPageUnloading && error.name !== 'AbortError') {
                 console.error('✗ Event TTS config load failed:', error);
-                showNotification('Failed to load Event TTS config (non-critical)', 'warning');
+                showNotification(translateRuntime('plugins.tts.runtime.event_test.load_failed', {}, 'Failed to load Event TTS config (non-critical)'), 'warning');
             }
         }
 
         // Load voices
-        if (statusEl) statusEl.textContent = 'Loading voices...';
+        if (statusEl) statusEl.textContent = translateRuntime('plugins.tts.runtime.status.loading_voices', {}, 'Loading voices...');
         await loadVoices();
         console.log('✓ Voices loaded');
 
         // Load statistics (non-critical)
-        if (statusEl) statusEl.textContent = 'Loading statistics...';
+        if (statusEl) statusEl.textContent = translateRuntime('plugins.tts.runtime.status.loading_statistics', {}, 'Loading statistics...');
         try {
             await loadStats();
             console.log('✓ Stats loaded');
         } catch (error) {
             if (!isPageUnloading && error.name !== 'AbortError') {
                 console.error('✗ Stats load failed:', error);
-                showNotification('Failed to load statistics (non-critical)', 'warning');
+        showNotification(translateRuntime('plugins.tts.runtime.status.statistics_load_failed', {}, 'Failed to load statistics (non-critical)'), 'warning');
             }
         }
 
         // Load plugin status (including debug mode)
-        if (statusEl) statusEl.textContent = 'Loading plugin status...';
+        if (statusEl) statusEl.textContent = translateRuntime('plugins.tts.runtime.status.loading_plugin_status', {}, 'Loading plugin status...');
         try {
             await loadPluginStatus();
             console.log('✓ Plugin status loaded');
@@ -247,7 +259,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Load debug logs (non-critical)
-        if (statusEl) statusEl.textContent = 'Loading debug logs...';
+        if (statusEl) statusEl.textContent = translateRuntime('plugins.tts.runtime.status.loading_debug_logs', {}, 'Loading debug logs...');
         try {
             await loadDebugLogs();
             updateDebugModeUI();
@@ -278,16 +290,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Success!
         console.log('✓ TTS Admin Panel initialized successfully');
-        if (statusEl) statusEl.innerHTML = '<span class="text-green-500">✓ Initialized successfully</span>';
+        if (statusEl) statusEl.innerHTML = `<span class="text-green-500">✓ ${escapeHtml(translateRuntime('plugins.tts.runtime.status.initialized', {}, 'Initialized successfully'))}</span>`;
         if (debugInfo) debugInfo.style.display = 'none';
 
     } catch (error) {
         if (!isPageUnloading) {
             console.error('✗ Initialization failed:', error);
             if (statusEl) {
-                statusEl.innerHTML = `<span class="text-red-500">✗ Init failed: ${escapeHtml(error.message || 'Unbekannter Fehler')}</span>`;
+                statusEl.innerHTML = `<span class="text-red-500">✗ ${escapeHtml(runtimeFailure('plugins.tts.runtime.status.init_failed', error, `Init failed: ${error.message || 'Unknown error'}`))}</span>`;
             }
-            showNotification(`Initialization failed: ${error.message}`, 'error');
+            showNotification(runtimeFailure('plugins.tts.runtime.status.init_failed', error, `Initialization failed: ${error.message}`), 'error');
         }
         // Hide the loading banner even on error - the status element shows the error state
         if (debugInfo) debugInfo.style.display = 'none';
@@ -524,7 +536,7 @@ async function loadConfig() {
 
     } catch (error) {
         console.error('Failed to load config:', error);
-        showNotification(`Failed to load configuration: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.load.config_failed', error, `Failed to load configuration: ${error.message}`), 'error');
         throw error; // Re-throw for initialization to catch
     }
 }
@@ -602,13 +614,13 @@ function populateConfig(config) {
     if (tiktokSessionInput) {
         if (config.tiktokSessionId) {
             if (config.tiktokSessionId === '***HIDDEN***') {
-                tiktokSessionInput.placeholder = 'SessionID configured (hidden for security)';
+                tiktokSessionInput.placeholder = translateRuntime('plugins.tts.runtime.input.session_id_configured_placeholder', {}, 'SessionID configured (hidden for security)');
                 tiktokSessionInput.value = '';
             } else {
                 tiktokSessionInput.value = config.tiktokSessionId;
             }
         } else {
-            tiktokSessionInput.placeholder = 'Enter SessionID...';
+            tiktokSessionInput.placeholder = translateRuntime('plugins.tts.runtime.input.session_id_placeholder', {}, 'Enter SessionID...');
             tiktokSessionInput.value = '';
         }
     }
@@ -693,7 +705,7 @@ async function saveConfig() {
         // Save Event TTS configuration as well
         await saveEventTTSConfig();
         
-        showNotification('Configuration saved successfully', 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.save.success', {}, 'Configuration saved successfully'), 'success');
         
         // Re-render Fish.audio custom voices list after save
         // to ensure UI reflects the server's state
@@ -711,7 +723,7 @@ async function saveConfig() {
 
     } catch (error) {
         console.error('Failed to save config:', error);
-        showNotification(`Failed to save configuration: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.save.failed', error, `Failed to save configuration: ${error.message}`), 'error');
     }
 }
 
@@ -727,7 +739,7 @@ function renderFishCustomVoices() {
     const voiceIds = Object.keys(customVoices);
 
     if (voiceIds.length === 0) {
-        container.innerHTML = '<p class="text-gray-500 text-sm italic py-8 text-center">No custom voices added yet. Add your first custom voice above.</p>';
+        container.innerHTML = `<p class="text-gray-500 text-sm italic py-8 text-center">${escapeHtml(translateRuntime('plugins.tts.runtime.voice.custom_empty', {}, 'No custom voices added yet. Add your first custom voice above.'))}</p>`;
         return;
     }
 
@@ -761,7 +773,7 @@ function addFishCustomVoice() {
     const langSelect = document.getElementById('fishCustomVoiceLang');
 
     if (!nameInput || !referenceIdInput || !langSelect) {
-        showNotification('Custom voice form elements not found', 'error');
+        showNotification(translateRuntime('plugins.tts.runtime.voice.custom_form_unavailable', {}, 'Custom voice form elements not found'), 'error');
         return;
     }
 
@@ -771,34 +783,34 @@ function addFishCustomVoice() {
 
     // Validation
     if (!name) {
-        showNotification('Please enter a voice name', 'error');
+        showNotification(translateRuntime('plugins.tts.runtime.validation.voice_name_required', {}, 'Please enter a voice name'), 'error');
         nameInput.focus();
         return;
     }
 
     if (!referenceId) {
-        showNotification('Please enter a reference ID', 'error');
+        showNotification(translateRuntime('plugins.tts.runtime.validation.reference_id_required', {}, 'Please enter a reference ID'), 'error');
         referenceIdInput.focus();
         return;
     }
 
     // Validate voice name format (no spaces, alphanumeric + dashes/underscores)
     if (!/^[a-z0-9-_]+$/i.test(name)) {
-        showNotification('Voice name can only contain letters, numbers, dashes, and underscores (no spaces)', 'error');
+        showNotification(translateRuntime('plugins.tts.runtime.validation.voice_name_format', {}, 'Voice name can only contain letters, numbers, dashes, and underscores (no spaces)'), 'error');
         nameInput.focus();
         return;
     }
 
     // Validate reference ID format (32-character hexadecimal)
     if (!/^[a-f0-9]{32}$/i.test(referenceId)) {
-        showNotification('Reference ID must be a 32-character hexadecimal string', 'error');
+        showNotification(translateRuntime('plugins.tts.runtime.validation.reference_id_format', {}, 'Reference ID must be a 32-character hexadecimal string'), 'error');
         referenceIdInput.focus();
         return;
     }
 
     // Check if voice name already exists
     if (currentConfig.customFishVoices && currentConfig.customFishVoices[name]) {
-        showNotification(`A voice with the name "${name}" already exists`, 'error');
+        showNotification(translateRuntime('plugins.tts.runtime.voice.custom_exists', { name }, `A voice with the name "${name}" already exists`), 'error');
         return;
     }
 
@@ -836,7 +848,7 @@ function addFishCustomVoice() {
     populateEventTTSVoiceSelect();
 
     // Show success message
-    showNotification(`Custom voice "${name}" added successfully. Don't forget to save your configuration!`, 'success');
+    showNotification(translateRuntime('plugins.tts.runtime.voice.custom_added', { name }, `Custom voice "${name}" added successfully. Don't forget to save your configuration!`), 'success');
 
     // Highlight save button
     const saveBtn = document.getElementById('saveConfigBtnSidebar');
@@ -848,12 +860,12 @@ function addFishCustomVoice() {
 
 function removeFishCustomVoice(voiceId) {
     if (!currentConfig.customFishVoices || !currentConfig.customFishVoices[voiceId]) {
-        showNotification('Voice not found', 'error');
+        showNotification(translateRuntime('plugins.tts.runtime.voice.custom_not_found', {}, 'Voice not found'), 'error');
         return;
     }
 
     // Confirm removal
-    if (!confirm(`Remove custom voice "${voiceId}"?`)) {
+    if (!confirm(translateRuntime('plugins.tts.runtime.voice.remove_confirm', { voiceId }, `Remove custom voice "${voiceId}"?`))) {
         return;
     }
 
@@ -873,7 +885,7 @@ function removeFishCustomVoice(voiceId) {
     populateEventTTSVoiceSelect();
 
     // Show success message
-    showNotification(`Custom voice "${voiceId}" removed. Don't forget to save your configuration!`, 'success');
+    showNotification(translateRuntime('plugins.tts.runtime.voice.custom_removed', { voiceId }, `Custom voice "${voiceId}" removed. Don't forget to save your configuration!`), 'success');
 
     // Highlight save button
     const saveBtn = document.getElementById('saveConfigBtnSidebar');
@@ -904,7 +916,7 @@ async function loadVoices() {
 
     } catch (error) {
         console.error('Failed to load voices:', error);
-        showNotification(`Failed to load voices: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.voice.load_failed', error, `Failed to load voices: ${error.message}`), 'error');
         throw error;
     }
 }
@@ -919,7 +931,7 @@ function populateVoiceSelect() {
     const engineVoices = voices[engine];
 
     if (!engineVoices) {
-        select.innerHTML = '<option value="">No voices available</option>';
+        select.innerHTML = `<option value="">${escapeHtml(translateRuntime('plugins.tts.runtime.voice.none_available', {}, 'No voices available'))}</option>`;
         return;
     }
 
@@ -984,7 +996,7 @@ function populateManualVoiceSelect() {
     const engineVoices = voices[engine];
 
     if (!engineVoices) {
-        select.innerHTML = '<option value="">No voices available</option>';
+        select.innerHTML = `<option value="">${escapeHtml(translateRuntime('plugins.tts.runtime.voice.none_available', {}, 'No voices available'))}</option>`;
         return;
     }
 
@@ -1013,7 +1025,7 @@ function populateEventTTSVoiceSelect() {
     // Store current selection
     const currentValue = select.value;
     
-    select.innerHTML = '<option value="">Standard Voice verwenden</option>';
+    select.innerHTML = `<option value="">${escapeHtml(translateRuntime('plugins.tts.runtime.voice.default', {}, 'Use default voice'))}</option>`;
 
     const engine = document.getElementById('defaultEngine')?.value || 'tiktok';
     const engineVoices = voices[engine];
@@ -1052,7 +1064,7 @@ async function assignManualVoice() {
     const voiceSelect = document.getElementById('manualVoice');
 
     if (!usernameInput || !engineSelect || !voiceSelect) {
-        showNotification('Form elements not found', 'error');
+        showNotification(translateRuntime('plugins.tts.runtime.manual.form_unavailable', {}, 'Form elements not found'), 'error');
         return;
     }
 
@@ -1062,13 +1074,13 @@ async function assignManualVoice() {
 
     // Validation
     if (!username) {
-        showNotification('Please enter a username', 'warning');
+        showNotification(translateRuntime('plugins.tts.runtime.manual.username_required', {}, 'Please enter a username'), 'warning');
         usernameInput.focus();
         return;
     }
 
     if (!voiceId) {
-        showNotification('Please select a voice', 'warning');
+        showNotification(translateRuntime('plugins.tts.runtime.manual.voice_required', {}, 'Please select a voice'), 'warning');
         return;
     }
 
@@ -1089,7 +1101,7 @@ async function assignManualVoice() {
             throw new Error(data.error || 'Failed to assign voice');
         }
 
-        showNotification(`✓ Voice '${voiceId}' (${engine}) assigned to ${username}`, 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.manual.assigned', { voiceId, engine, username }, `✓ Voice '${voiceId}' (${engine}) assigned to ${username}`), 'success');
 
         // Clear form
         usernameInput.value = '';
@@ -1099,7 +1111,7 @@ async function assignManualVoice() {
 
     } catch (error) {
         console.error('Failed to assign voice manually:', error);
-        showNotification(`Failed to assign voice: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.manual.assign_failed', error, `Failed to assign voice: ${error.message}`), 'error');
     }
 }
 
@@ -1138,7 +1150,7 @@ async function loadUsers(filter = null) {
 
     } catch (error) {
         console.error('Failed to load users:', error);
-        showNotification(`Failed to load users: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.users.load_failed', error, `Failed to load users: ${error.message}`), 'error');
         throw error;
     }
 }
@@ -1205,14 +1217,17 @@ function updateUserResultsInfo() {
 
     if (shown === 0) {
         info.textContent = search
-            ? `No users found for "${search}".`
-            : 'No users found.';
+            ? translateRuntime('plugins.tts.runtime.users.no_results_for', { search }, `No users found for "${search}".`)
+            : translateRuntime('plugins.tts.runtime.users.no_results', {}, 'No users found.');
         return;
     }
 
     const searchSuffix = search ? ` for "${search}"` : '';
     const limitSuffix = total > shown ? ` (limit ${limit})` : '';
-    info.textContent = `Showing ${shown} of ${total} users${searchSuffix}${limitSuffix}`;
+    info.textContent = translateRuntime('plugins.tts.runtime.users.results_summary',
+        { shown, total, search: searchSuffix, limit: limitSuffix },
+        `Showing ${shown} of ${total} users${searchSuffix}${limitSuffix}`
+    );
 }
 
 function renderUsers() {
@@ -1223,7 +1238,7 @@ function renderUsers() {
     const filtered = currentUsers;
 
     if (filtered.length === 0) {
-        list.innerHTML = '<div class="text-gray-400 text-center py-8">No users found. Users are automatically created when they first use TTS.</div>';
+        list.innerHTML = `<div class="text-gray-400 text-center py-8">${escapeHtml(translateRuntime('plugins.tts.runtime.users.empty', {}, 'No users found. Users are automatically created when they first use TTS.'))}</div>`;
         return;
     }
 
@@ -1351,12 +1366,12 @@ async function allowUser(userId, username) {
             throw new Error(data.error || 'Failed to allow user');
         }
 
-        showNotification(`TTS allowed for ${username}`, 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.users.allowed', { username }, `TTS allowed for ${username}`), 'success');
         await loadUsers(currentFilter);
 
     } catch (error) {
         console.error('Failed to allow user:', error);
-        showNotification(`Failed to allow user: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.users.allow_failed', error, `Failed to allow user: ${error.message}`), 'error');
     }
 }
 
@@ -1368,17 +1383,17 @@ async function denyUser(userId, username) {
             throw new Error(data.error || 'Failed to deny user');
         }
 
-        showNotification(`TTS revoked for ${username}`, 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.users.revoked', { username }, `TTS revoked for ${username}`), 'success');
         await loadUsers(currentFilter);
 
     } catch (error) {
         console.error('Failed to deny user:', error);
-        showNotification(`Failed to deny user: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.users.revoke_failed', error, `Failed to deny user: ${error.message}`), 'error');
     }
 }
 
 async function blacklistUser(userId, username) {
-    if (!confirm(`Are you sure you want to blacklist ${username}?`)) return;
+    if (!confirm(translateRuntime('plugins.tts.runtime.users.blacklist_confirm', { username }, `Are you sure you want to blacklist ${username}?`))) return;
 
     try {
         const data = await postJSON(`/api/tts/users/${userId}/blacklist`, { username });
@@ -1387,12 +1402,12 @@ async function blacklistUser(userId, username) {
             throw new Error(data.error || 'Failed to blacklist user');
         }
 
-        showNotification(`${username} has been blacklisted`, 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.users.blacklisted', { username }, `${username} has been blacklisted`), 'success');
         await loadUsers(currentFilter);
 
     } catch (error) {
         console.error('Failed to blacklist user:', error);
-        showNotification(`Failed to blacklist user: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.users.blacklist_failed', error, `Failed to blacklist user: ${error.message}`), 'error');
     }
 }
 
@@ -1404,12 +1419,12 @@ async function unblacklistUser(userId) {
             throw new Error(data.error || 'Failed to unblacklist user');
         }
 
-        showNotification('User removed from blacklist', 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.users.unblacklisted', {}, 'User removed from blacklist'), 'success');
         await loadUsers(currentFilter);
 
     } catch (error) {
         console.error('Failed to unblacklist user:', error);
-        showNotification(`Failed to unblacklist user: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.users.unblacklist_failed', error, `Failed to unblacklist user: ${error.message}`), 'error');
     }
 }
 
@@ -1486,7 +1501,7 @@ async function updateUserGain(userId, gain) {
         
     } catch (error) {
         console.error('Failed to update user gain:', error);
-        showNotification(`Failed to update gain: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.gain.update_failed', error, `Failed to update gain: ${error.message}`), 'error');
     }
 }
 
@@ -1537,7 +1552,7 @@ function assignVoiceDialog(userId, username) {
 
     if (!modal) {
         console.error('[TTS] Modal element not found! Cannot open voice assignment dialog.');
-        showNotification('Error: Voice assignment dialog not available', 'error');
+        showNotification(translateRuntime('plugins.tts.runtime.modal.unavailable', {}, 'Voice assignment dialog is not available'), 'error');
         return;
     }
 
@@ -1613,7 +1628,7 @@ function assignVoiceDialog(userId, username) {
     if (confirmBtn) {
         confirmBtn.onclick = async () => {
             if (!modalState.selectedVoiceId) {
-                showNotification('Please select a voice', 'error');
+        showNotification(translateRuntime('plugins.tts.runtime.modal.voice_required', {}, 'Please select a voice'), 'error');
                 return;
             }
             console.log('[TTS] Assigning voice:', modalState.selectedVoiceId, 'with emotion:', modalState.selectedEmotion, 'gain:', modalState.volumeGain, 'to user:', username);
@@ -1650,7 +1665,7 @@ function renderModalVoiceList() {
     });
 
     if (!voiceList || Object.keys(voiceList).length === 0) {
-        list.innerHTML = '<div class="text-gray-400 text-center py-4">No voices available for this engine</div>';
+        list.innerHTML = `<div class="text-gray-400 text-center py-4">${escapeHtml(translateRuntime('plugins.tts.runtime.voice.none_for_engine', {}, 'No voices available for this engine'))}</div>`;
         console.warn('[TTS] No voices available for engine:', engine);
         return;
     }
@@ -1662,7 +1677,7 @@ function renderModalVoiceList() {
     );
 
     if (filteredVoices.length === 0) {
-        list.innerHTML = '<div class="text-gray-400 text-center py-4">No voices match your search</div>';
+        list.innerHTML = `<div class="text-gray-400 text-center py-4">${escapeHtml(translateRuntime('plugins.tts.runtime.voice.none_matching', {}, 'No voices match your search'))}</div>`;
         return;
     }
 
@@ -1705,12 +1720,12 @@ async function assignVoice(userId, username, voiceId, engine, emotion = null, ga
             throw new Error(data.error || 'Failed to assign voice');
         }
 
-        showNotification(`Voice assigned to ${username}`, 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.modal.assigned', { username }, `Voice assigned to ${username}`), 'success');
         await loadUsers(currentFilter);
 
     } catch (error) {
         console.error('Failed to assign voice:', error);
-        showNotification(`Failed to assign voice: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.modal.assign_failed', error, `Failed to assign voice: ${error.message}`), 'error');
     }
 }
 
@@ -1768,7 +1783,7 @@ function renderQueue(queue) {
     // Render queue list
     if (list) {
         if (!queue.nextItems || queue.nextItems.length === 0) {
-            list.innerHTML = '<div class="text-gray-400 text-center py-8">Queue is empty</div>';
+            list.innerHTML = `<div class="text-gray-400 text-center py-8">${escapeHtml(translateRuntime('plugins.tts.runtime.queue.empty', {}, 'Queue is empty'))}</div>`;
         } else {
             list.innerHTML = queue.nextItems.map((item, i) => `
                 <div class="bg-gray-700 rounded p-3 flex justify-between items-center">
@@ -1793,7 +1808,7 @@ function renderQueue(queue) {
                 </div>
             `;
         } else {
-            nowPlaying.innerHTML = '<div class="text-gray-400">No audio playing</div>';
+            nowPlaying.innerHTML = `<div class="text-gray-400">${escapeHtml(translateRuntime('plugins.tts.runtime.queue.no_audio_playing', {}, 'No audio playing'))}</div>`;
         }
     }
 
@@ -1803,7 +1818,7 @@ function renderQueue(queue) {
 }
 
 async function clearQueue() {
-    if (!confirm('Clear entire queue?')) return;
+    if (!confirm(translateRuntime('plugins.tts.runtime.queue.clear_confirm', {}, 'Clear entire queue?'))) return;
 
     try {
         const data = await postJSON('/api/tts/queue/clear', {});
@@ -1812,12 +1827,12 @@ async function clearQueue() {
             throw new Error(data.error || 'Failed to clear queue');
         }
 
-        showNotification(`Cleared ${data.cleared} items from queue`, 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.queue.cleared', { count: data.cleared }, `Cleared ${data.cleared} items from queue`), 'success');
         await loadQueue();
 
     } catch (error) {
         console.error('Failed to clear queue:', error);
-        showNotification(`Failed to clear queue: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.queue.clear_failed', error, `Failed to clear queue: ${error.message}`), 'error');
     }
 }
 
@@ -1830,15 +1845,15 @@ async function skipCurrent() {
         }
 
         if (data.skipped) {
-            showNotification('Skipped current item', 'success');
+            showNotification(translateRuntime('plugins.tts.runtime.queue.skipped', {}, 'Skipped current item'), 'success');
             await loadQueue();
         } else {
-            showNotification('Nothing to skip', 'info');
+            showNotification(translateRuntime('plugins.tts.runtime.queue.nothing_to_skip', {}, 'Nothing to skip'), 'info');
         }
 
     } catch (error) {
         console.error('Failed to skip:', error);
-        showNotification(`Failed to skip: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.queue.skip_failed', error, `Failed to skip: ${error.message}`), 'error');
     }
 }
 
@@ -1852,7 +1867,7 @@ async function testTTS() {
 
     const text = input.value.trim();
     if (!text) {
-        showNotification('Please enter text to test', 'warning');
+        showNotification(translateRuntime('plugins.tts.runtime.test.text_required', {}, 'Please enter text to test'), 'warning');
         return;
     }
 
@@ -1879,13 +1894,13 @@ async function testTTS() {
             throw new Error(data.error || 'Failed to queue TTS');
         }
 
-        showNotification('TTS queued successfully', 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.test.queued', {}, 'TTS queued successfully'), 'success');
         input.value = ''; // Clear input
         await loadQueue();
 
     } catch (error) {
         console.error('Failed to test TTS:', error);
-        showNotification(`Failed: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.test.failed', error, `Failed: ${error.message}`), 'error');
     }
 }
 
@@ -1947,11 +1962,11 @@ function renderQueueStats(stats) {
     if (!el) return;
 
     el.innerHTML = `
-        <div class="flex justify-between"><span>Total Queued:</span><span class="font-bold">${stats.totalQueued || 0}</span></div>
-        <div class="flex justify-between"><span>Total Played:</span><span class="font-bold">${stats.totalPlayed || 0}</span></div>
-        <div class="flex justify-between"><span>Total Dropped:</span><span class="font-bold text-red-400">${stats.totalDropped || 0}</span></div>
-        <div class="flex justify-between"><span>Rate Limited:</span><span class="font-bold text-yellow-400">${stats.totalRateLimited || 0}</span></div>
-        <div class="flex justify-between"><span>Current Queue:</span><span class="font-bold">${stats.currentQueueSize || 0}</span></div>
+        <div class="flex justify-between"><span>${escapeHtml(translateRuntime('plugins.tts.runtime.queue.stats.total_queued', {}, 'Total queued:'))}</span><span class="font-bold">${stats.totalQueued || 0}</span></div>
+        <div class="flex justify-between"><span>${escapeHtml(translateRuntime('plugins.tts.runtime.queue.stats.total_played', {}, 'Total played:'))}</span><span class="font-bold">${stats.totalPlayed || 0}</span></div>
+        <div class="flex justify-between"><span>${escapeHtml(translateRuntime('plugins.tts.runtime.queue.stats.total_dropped', {}, 'Total dropped:'))}</span><span class="font-bold text-red-400">${stats.totalDropped || 0}</span></div>
+        <div class="flex justify-between"><span>${escapeHtml(translateRuntime('plugins.tts.runtime.queue.stats.rate_limited', {}, 'Rate limited:'))}</span><span class="font-bold text-yellow-400">${stats.totalRateLimited || 0}</span></div>
+        <div class="flex justify-between"><span>${escapeHtml(translateRuntime('plugins.tts.runtime.queue.stats.current_queue', {}, 'Current queue:'))}</span><span class="font-bold">${stats.currentQueueSize || 0}</span></div>
     `;
 }
 
@@ -1960,10 +1975,10 @@ function renderPermissionStats(stats) {
     if (!el) return;
 
     el.innerHTML = `
-        <div class="flex justify-between"><span>Total Users:</span><span class="font-bold">${stats.total_users || 0}</span></div>
-        <div class="flex justify-between"><span>Whitelisted:</span><span class="font-bold text-green-400">${stats.whitelisted_users || 0}</span></div>
-        <div class="flex justify-between"><span>Blacklisted:</span><span class="font-bold text-red-400">${stats.blacklisted_users || 0}</span></div>
-        <div class="flex justify-between"><span>Voice Assigned:</span><span class="font-bold text-purple-400">${stats.voice_assigned_users || 0}</span></div>
+        <div class="flex justify-between"><span>${escapeHtml(translateRuntime('plugins.tts.runtime.permissions.stats.total_users', {}, 'Total users:'))}</span><span class="font-bold">${stats.total_users || 0}</span></div>
+        <div class="flex justify-between"><span>${escapeHtml(translateRuntime('plugins.tts.runtime.permissions.stats.whitelisted', {}, 'Whitelisted:'))}</span><span class="font-bold text-green-400">${stats.whitelisted_users || 0}</span></div>
+        <div class="flex justify-between"><span>${escapeHtml(translateRuntime('plugins.tts.runtime.permissions.stats.blacklisted', {}, 'Blacklisted:'))}</span><span class="font-bold text-red-400">${stats.blacklisted_users || 0}</span></div>
+        <div class="flex justify-between"><span>${escapeHtml(translateRuntime('plugins.tts.runtime.permissions.stats.voice_assigned', {}, 'Voice assigned:'))}</span><span class="font-bold text-purple-400">${stats.voice_assigned_users || 0}</span></div>
     `;
 }
 
@@ -2247,14 +2262,14 @@ function addSpecificGiftRule(rule) {
             <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center space-x-2">
                     <input type="checkbox" class="gift-rule-enabled w-4 h-4" ${rule.enabled ? 'checked' : ''}>
-                    <input type="text" class="gift-rule-name bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm" placeholder="Gift Name (e.g. Rose)" value="${rule.giftName || ''}">
+                    <input type="text" class="gift-rule-name bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm" placeholder="${escapeHtml(translateRuntime('plugins.tts.runtime.gift_rules.name_placeholder', {}, 'Gift name (e.g. Rose)'))}" value="${rule.giftName || ''}">
                 </div>
-                <button class="remove-gift-rule bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">Remove</button>
+                <button class="remove-gift-rule bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">${escapeHtml(translateRuntime('plugins.tts.runtime.gift_rules.remove', {}, 'Remove'))}</button>
             </div>
             <div class="grid grid-cols-2 gap-2">
-                <input type="text" class="gift-rule-template bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm" placeholder="Template" value="${rule.template || ''}">
+                <input type="text" class="gift-rule-template bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm" placeholder="${escapeHtml(translateRuntime('plugins.tts.runtime.gift_rules.template_placeholder', {}, 'Template'))}" value="${rule.template || ''}">
                 <select class="gift-rule-voice bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm">
-                    <option value="">Default Voice</option>
+                    <option value="">${escapeHtml(translateRuntime('plugins.tts.runtime.gift_rules.default_voice', {}, 'Default voice'))}</option>
                     ${getVoiceOptionsHTML(rule.voiceId)}
                 </select>
             </div>
@@ -2279,8 +2294,8 @@ function addPeriodicReminderMessage(message) {
     
     const messageHTML = `
         <div class="reminder-message-item bg-gray-700/30 rounded p-3 mb-2 flex items-center space-x-2">
-            <input type="text" class="reminder-message-text flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm" placeholder="Message" value="${message || ''}">
-            <button class="remove-reminder-message bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm">Remove</button>
+            <input type="text" class="reminder-message-text flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm" placeholder="${escapeHtml(translateRuntime('plugins.tts.runtime.gift_rules.reminder_placeholder', {}, 'Message'))}" value="${message || ''}">
+            <button class="remove-reminder-message bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm">${escapeHtml(translateRuntime('plugins.tts.runtime.gift_rules.remove', {}, 'Remove'))}</button>
         </div>
     `;
     container.insertAdjacentHTML('beforeend', messageHTML);
@@ -2308,14 +2323,14 @@ function renderSpecificGiftRules(rules) {
                 <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center space-x-2">
                         <input type="checkbox" class="gift-rule-enabled w-4 h-4" ${rule.enabled ? 'checked' : ''}>
-                        <input type="text" class="gift-rule-name bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm" placeholder="Gift Name (z.B. Rose)" value="${rule.giftName || ''}">
+                        <input type="text" class="gift-rule-name bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm" placeholder="${escapeHtml(translateRuntime('plugins.tts.runtime.gift_rules.name_placeholder', {}, 'Gift name (e.g. Rose)'))}" value="${rule.giftName || ''}">
                     </div>
-                    <button class="remove-gift-rule bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">Remove</button>
+                    <button class="remove-gift-rule bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">${escapeHtml(translateRuntime('plugins.tts.runtime.gift_rules.remove', {}, 'Remove'))}</button>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
-                    <input type="text" class="gift-rule-template bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm" placeholder="Template" value="${rule.template || ''}">
+                    <input type="text" class="gift-rule-template bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm" placeholder="${escapeHtml(translateRuntime('plugins.tts.runtime.gift_rules.template_placeholder', {}, 'Template'))}" value="${rule.template || ''}">
                     <select class="gift-rule-voice bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm">
-                        <option value="">Default Voice</option>
+                        <option value="">${escapeHtml(translateRuntime('plugins.tts.runtime.gift_rules.default_voice', {}, 'Default voice'))}</option>
                         ${getVoiceOptionsHTML(rule.voiceId)}
                     </select>
                 </div>
@@ -2344,8 +2359,8 @@ function renderPeriodicReminderMessages(messages) {
     messages.forEach(message => {
         const messageHTML = `
             <div class="reminder-message-item bg-gray-700/30 rounded p-3 mb-2 flex items-center space-x-2">
-                <input type="text" class="reminder-message-text flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm" placeholder="Message" value="${message || ''}">
-                <button class="remove-reminder-message bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm">Remove</button>
+                <input type="text" class="reminder-message-text flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm" placeholder="${escapeHtml(translateRuntime('plugins.tts.runtime.gift_rules.reminder_placeholder', {}, 'Message'))}" value="${message || ''}">
+                <button class="remove-reminder-message bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm">${escapeHtml(translateRuntime('plugins.tts.runtime.gift_rules.remove', {}, 'Remove'))}</button>
             </div>
         `;
         container.insertAdjacentHTML('beforeend', messageHTML);
@@ -2528,7 +2543,7 @@ async function loadEventTTSConfig() {
         
     } catch (error) {
         console.error('Failed to load Event TTS config:', error);
-        showNotification(`Failed to load Event TTS config: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.event_test.load_failed', error, `Failed to load Event TTS config: ${error.message}`), 'error');
     }
 }
 
@@ -2697,12 +2712,12 @@ async function saveEventTTSConfig() {
             throw new Error(data.error || 'Failed to save Event TTS config');
         }
         
-        showNotification('Event TTS configuration saved successfully!', 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.event_test.saved', {}, 'Event TTS configuration saved successfully!'), 'success');
         console.log('Event TTS config saved successfully');
         
     } catch (error) {
         console.error('Failed to save Event TTS config:', error);
-        showNotification(`Failed to save Event TTS config: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.event_test.save_failed', error, `Failed to save Event TTS config: ${error.message}`), 'error');
     }
 }
 
@@ -2728,11 +2743,11 @@ async function testGiftEvent() {
             throw new Error(data.error || 'Failed to test Gift Event TTS');
         }
         
-        showNotification('Gift Event TTS test queued!', 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.event_test.gift_queued', {}, 'Gift Event TTS test queued!'), 'success');
         
     } catch (error) {
         console.error('Failed to test Gift Event TTS:', error);
-        showNotification(`Failed to test Gift Event TTS: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.event_test.failed', error, `Failed to test Gift Event TTS: ${error.message}`), 'error');
     }
 }
 
@@ -2758,11 +2773,11 @@ async function testFollowEvent() {
             throw new Error(data.error || 'Failed to test Follow Event TTS');
         }
         
-        showNotification('Follow Event TTS test queued!', 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.event_test.follow_queued', {}, 'Follow Event TTS test queued!'), 'success');
         
     } catch (error) {
         console.error('Failed to test Follow Event TTS:', error);
-        showNotification(`Failed to test Follow Event TTS: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.event_test.failed', error, `Failed to test Follow Event TTS: ${error.message}`), 'error');
     }
 }
 
@@ -2788,11 +2803,11 @@ async function testShareEvent() {
             throw new Error(data.error || 'Failed to test Share Event TTS');
         }
         
-        showNotification('Share Event TTS test queued!', 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.event_test.share_queued', {}, 'Share Event TTS test queued!'), 'success');
         
     } catch (error) {
         console.error('Failed to test Share Event TTS:', error);
-        showNotification(`Failed to test Share Event TTS: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.event_test.failed', error, `Failed to test Share Event TTS: ${error.message}`), 'error');
     }
 }
 
@@ -2818,11 +2833,11 @@ async function testSubscribeEvent() {
             throw new Error(data.error || 'Failed to test Subscribe Event TTS');
         }
         
-        showNotification('Subscribe Event TTS test queued!', 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.event_test.subscribe_queued', {}, 'Subscribe Event TTS test queued!'), 'success');
         
     } catch (error) {
         console.error('Failed to test Subscribe Event TTS:', error);
-        showNotification(`Failed to test Subscribe Event TTS: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.event_test.failed', error, `Failed to test Subscribe Event TTS: ${error.message}`), 'error');
     }
 }
 
@@ -2848,11 +2863,11 @@ async function testLikeEvent() {
             throw new Error(data.error || 'Failed to test Like Event TTS');
         }
         
-        showNotification('Like Event TTS test queued!', 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.event_test.like_queued', {}, 'Like Event TTS test queued!'), 'success');
         
     } catch (error) {
         console.error('Failed to test Like Event TTS:', error);
-        showNotification(`Failed to test Like Event TTS: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.event_test.failed', error, `Failed to test Like Event TTS: ${error.message}`), 'error');
     }
 }
 
@@ -2878,11 +2893,11 @@ async function testJoinEvent() {
             throw new Error(data.error || 'Failed to test Join Event TTS');
         }
         
-        showNotification('Join Event TTS test queued!', 'success');
+        showNotification(translateRuntime('plugins.tts.runtime.event_test.join_queued', {}, 'Join Event TTS test queued!'), 'success');
         
     } catch (error) {
         console.error('Failed to test Join Event TTS:', error);
-        showNotification(`Failed to test Join Event TTS: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.event_test.failed', error, `Failed to test Join Event TTS: ${error.message}`), 'error');
     }
 }
 
@@ -2989,11 +3004,11 @@ async function refreshTopGifterList() {
         const response = await fetch('/api/tts/top-gifters');
         const data = await response.json();
         if (!data.success) {
-            container.innerHTML = '<span class="text-red-400">Fehler beim Laden.</span>';
+            container.innerHTML = `<span class="text-red-400">${escapeHtml(translateRuntime('plugins.tts.runtime.gifters.load_failed', {}, 'Could not load gifters.'))}</span>`;
             return;
         }
         if (!data.gifters || data.gifters.length === 0) {
-            container.innerHTML = '<span class="text-gray-500">Noch keine Gifter in dieser Session.</span>';
+            container.innerHTML = `<span class="text-gray-500">${escapeHtml(translateRuntime('plugins.tts.runtime.gifters.empty', {}, 'No gifters in this session yet.'))}</span>`;
             return;
         }
         container.innerHTML = data.gifters.map(g =>
@@ -3003,7 +3018,7 @@ async function refreshTopGifterList() {
             </div>`
         ).join('');
     } catch (error) {
-        container.innerHTML = `<span class="text-red-400">Fehler: ${escapeHtml(String(error.message))}</span>`;
+        container.innerHTML = `<span class="text-red-400">${escapeHtml(translateRuntime('plugins.tts.runtime.gifters.error', { message: String(error.message || '') }, `Error: ${String(error.message || '')}`))}</span>`;
     }
 }
 
@@ -3132,7 +3147,7 @@ function renderDebugLogs() {
 
     // Render logs
     if (filteredLogs.length === 0) {
-        container.innerHTML = '<div class="text-gray-500 text-center py-8">No logs match the current filter</div>';
+        container.innerHTML = `<div class="text-gray-500 text-center py-8">${escapeHtml(translateRuntime('plugins.tts.runtime.logs.empty', {}, 'No logs match the current filter'))}</div>`;
     } else {
         container.innerHTML = filteredLogs.map(log => formatDebugLog(log)).join('');
     }
@@ -3228,7 +3243,7 @@ function filterDebugLogs(category) {
  * Clear debug logs
  */
 async function clearDebugLogs() {
-    if (!confirm('Clear all debug logs?')) return;
+    if (!confirm(translateRuntime('plugins.tts.runtime.logs.clear_confirm', {}, 'Clear all debug logs?'))) return;
 
     try {
         const data = await postJSON('/api/tts/debug/clear', {});
@@ -3237,13 +3252,13 @@ async function clearDebugLogs() {
             debugLogs = [];
             renderDebugLogs();
             updateDebugStats();
-            showNotification('Debug logs cleared', 'success');
+            showNotification(translateRuntime('plugins.tts.runtime.logs.cleared', {}, 'Debug logs cleared'), 'success');
         } else {
             throw new Error(data.error || 'Failed to clear logs');
         }
     } catch (error) {
         console.error('Failed to clear debug logs:', error);
-        showNotification(`Failed to clear logs: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.logs.clear_failed', error, `Failed to clear logs: ${error.message}`), 'error');
     }
 }
 
@@ -3257,13 +3272,13 @@ async function toggleDebugMode() {
         if (data.success) {
             debugEnabled = data.debugEnabled;
             updateDebugModeUI();
-            showNotification(`Debug mode ${debugEnabled ? 'enabled' : 'disabled'}`, 'success');
+            showNotification(translateRuntime('plugins.tts.runtime.debug.mode_changed', { state: debugEnabled ? translateRuntime('plugins.tts.runtime.debug.enabled', {}, 'enabled') : translateRuntime('plugins.tts.runtime.debug.disabled', {}, 'disabled') }, `Debug mode ${debugEnabled ? 'enabled' : 'disabled'}`), 'success');
         } else {
             throw new Error(data.error || 'Failed to toggle debug mode');
         }
     } catch (error) {
         console.error('Failed to toggle debug mode:', error);
-        showNotification(`Failed to toggle debug mode: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.debug.toggle_failed', error, `Failed to toggle debug mode: ${error.message}`), 'error');
     }
 }
 
@@ -3276,20 +3291,24 @@ function updateDebugModeUI() {
     const liveUpdateStatus = document.getElementById('liveUpdateStatus');
 
     if (toggleText) {
-        toggleText.textContent = debugEnabled ? 'Disable Debug' : 'Enable Debug';
+        toggleText.textContent = debugEnabled
+            ? translateRuntime('plugins.tts.runtime.debug.disable', {}, 'Disable debug')
+            : translateRuntime('plugins.tts.runtime.debug.enable', {}, 'Enable debug');
     }
 
     if (statusEl) {
-        statusEl.textContent = debugEnabled ? 'Enabled' : 'Disabled';
+        statusEl.textContent = debugEnabled
+            ? translateRuntime('plugins.tts.runtime.debug.enabled', {}, 'Enabled')
+            : translateRuntime('plugins.tts.runtime.debug.disabled', {}, 'Disabled');
         statusEl.className = debugEnabled ? 'ml-2 font-bold tts-debug-success' : 'ml-2 font-bold tts-debug-error';
     }
 
     if (liveUpdateStatus) {
         if (debugEnabled && socket) {
-            liveUpdateStatus.textContent = 'Active';
+            liveUpdateStatus.textContent = translateRuntime('plugins.tts.runtime.debug.active', {}, 'Active');
             liveUpdateStatus.className = 'ml-2 font-bold tts-debug-success pulse';
         } else {
-            liveUpdateStatus.textContent = 'Inactive';
+            liveUpdateStatus.textContent = translateRuntime('plugins.tts.runtime.debug.inactive', {}, 'Inactive');
             liveUpdateStatus.className = 'ml-2 font-bold text-gray-500';
         }
     }
@@ -3380,7 +3399,7 @@ function handleAudioFileSelect(event) {
     // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-        showNotification('Audio file is too large. Maximum size is 5MB.', 'error');
+        showNotification(translateRuntime('plugins.tts.runtime.voice_clone.file_too_large', {}, 'Audio file is too large. Maximum size is 5MB.'), 'error');
         event.target.value = '';
         if (preview) preview.classList.add('hidden');
         return;
@@ -3431,7 +3450,7 @@ async function handleVoiceCloneCreate(event) {
 
     // Validate inputs
     if (!nameInput?.value || !audioInput?.files?.[0] || !consentCheckbox?.checked) {
-        showNotification('Please fill all required fields and confirm consent', 'error');
+        showNotification(translateRuntime('plugins.tts.runtime.voice_clone.consent_required', {}, 'Please fill all required fields and confirm consent'), 'error');
         return;
     }
 
@@ -3466,14 +3485,14 @@ async function handleVoiceCloneCreate(event) {
 
         if (data.success) {
             // Success
-            showNotification(`Voice clone "${voiceName}" created successfully!`, 'success');
+            showNotification(translateRuntime('plugins.tts.runtime.voice_clone.created', { voiceName }, `Voice clone "${voiceName}" created successfully!`), 'success');
             
             // Show success message
             if (resultDiv) {
                 resultDiv.innerHTML = `
                     <div class="bg-green-900 border-l-4 border-green-500 p-3 rounded">
                         <p class="text-sm text-green-100">
-                            ✅ Voice clone created successfully! Voice ID: <code class="bg-green-800 px-2 py-1 rounded">${data.voice.voice_id}</code>
+                            ✅ ${escapeHtml(translateRuntime('plugins.tts.runtime.voice_clone.created', { voiceName }, `Voice clone "${voiceName}" created successfully!`))} <code class="bg-green-800 px-2 py-1 rounded">${escapeHtml(data.voice.voice_id)}</code>
                         </p>
                     </div>
                 `;
@@ -3492,14 +3511,14 @@ async function handleVoiceCloneCreate(event) {
         }
     } catch (error) {
         console.error('Failed to create voice clone:', error);
-        showNotification(`Failed to create voice clone: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.voice_clone.create_failed', error, `Failed to create voice clone: ${error.message}`), 'error');
         
         // Show error message
         if (resultDiv) {
             resultDiv.innerHTML = `
                 <div class="bg-red-900 border-l-4 border-red-500 p-3 rounded">
                     <p class="text-sm text-red-100">
-                        ❌ ${error.message}
+                        ❌ ${escapeHtml(error.message)}
                     </p>
                 </div>
             `;
@@ -3525,7 +3544,7 @@ async function loadVoiceClones() {
         listContainer.innerHTML = `
             <div class="text-center text-gray-400 py-8">
                 <i class="fas fa-spinner fa-spin text-3xl mb-2"></i>
-                <p>Loading voice clones...</p>
+                    <p data-i18n="plugins.tts.runtime.voice_clone.loading">${escapeHtml(translateRuntime('plugins.tts.runtime.voice_clone.loading', {}, 'Loading voice clones...'))}</p>
             </div>
         `;
 
@@ -3538,7 +3557,7 @@ async function loadVoiceClones() {
                 listContainer.innerHTML = `
                     <div class="text-center text-gray-400 py-8">
                         <i class="fas fa-microphone text-4xl mb-2 opacity-50"></i>
-                        <p>No voice clones yet. Create your first one!</p>
+                        <p data-i18n="plugins.tts.runtime.voice_clone.empty">${escapeHtml(translateRuntime('plugins.tts.runtime.voice_clone.empty', {}, 'No voice clones yet. Create your first one!'))}</p>
                     </div>
                 `;
             } else {
@@ -3565,13 +3584,15 @@ async function loadVoiceClones() {
                                 <div class="flex flex-col space-y-2">
                                     <button 
                                         class="voice-clone-test-btn bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded"
-                                        title="Test this voice"
+                                        title="${escapeHtml(translateRuntime('plugins.tts.runtime.voice_clone.test_tooltip', {}, 'Test this voice'))}"
+                                        data-i18n-title="plugins.tts.runtime.voice_clone.test_tooltip"
                                     >
                                         🔊 Test
                                     </button>
                                     <button 
                                         class="voice-clone-delete-btn bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded"
-                                        title="Delete this voice"
+                                        title="${escapeHtml(translateRuntime('plugins.tts.runtime.voice_clone.delete_tooltip', {}, 'Delete this voice'))}"
+                                        data-i18n-title="plugins.tts.runtime.voice_clone.delete_tooltip"
                                     >
                                         🗑️ Delete
                                     </button>
@@ -3592,7 +3613,7 @@ async function loadVoiceClones() {
         listContainer.innerHTML = `
             <div class="text-center text-red-400 py-8">
                 <i class="fas fa-exclamation-triangle text-3xl mb-2"></i>
-                <p>Failed to load voice clones</p>
+                    <p data-i18n="plugins.tts.runtime.voice_clone.load_failed">${escapeHtml(translateRuntime('plugins.tts.runtime.voice_clone.load_failed', {}, 'Failed to load voice clones'))}</p>
                 <p class="text-sm mt-2">${escapeHtml(error.message)}</p>
             </div>
         `;
@@ -3644,7 +3665,7 @@ async function testVoiceClone(voiceId, voiceName) {
         // Use a default test text instead of prompt for better UX and security
         const testText = 'Hello! This is a test of my custom voice clone.';
 
-        showNotification(`Testing voice "${voiceName}"...`, 'info');
+        showNotification(translateRuntime('plugins.tts.runtime.voice_clone.test_started', { voiceName }, `Testing voice "${voiceName}"...`), 'info');
 
         const response = await fetchJSON('/api/tts/speak', {
             method: 'POST',
@@ -3660,13 +3681,13 @@ async function testVoiceClone(voiceId, voiceName) {
         });
 
         if (response.success) {
-            showNotification('Voice test queued successfully!', 'success');
+            showNotification(translateRuntime('plugins.tts.runtime.voice_clone.test_queued', {}, 'Voice test queued successfully!'), 'success');
         } else {
             throw new Error(response.error || 'Failed to test voice');
         }
     } catch (error) {
         console.error('Failed to test voice clone:', error);
-        showNotification(`Failed to test voice: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.voice_clone.test_failed', error, `Failed to test voice: ${error.message}`), 'error');
     }
 }
 
@@ -3677,25 +3698,25 @@ async function testVoiceClone(voiceId, voiceName) {
 async function deleteVoiceClone(voiceId, voiceName) {
     // For now, keep confirm() for simplicity, but ideally would use a modal
     // This is acceptable as it's only used in admin interface
-    if (!confirm(`Are you sure you want to delete the voice clone "${voiceName}"?\n\nThis action cannot be undone.`)) {
+    if (!confirm(translateRuntime('plugins.tts.runtime.voice_clone.delete_confirm', { voiceName }, `Are you sure you want to delete the voice clone "${voiceName}"?\n\nThis action cannot be undone.`))) {
         return;
     }
 
     try {
-        showNotification(`Deleting voice "${voiceName}"...`, 'info');
+        showNotification(translateRuntime('plugins.tts.runtime.voice_clone.deleting', { voiceName }, `Deleting voice "${voiceName}"...`), 'info');
 
         const response = await fetchJSON(`/api/tts/voice-clones/${voiceId}`, {
             method: 'DELETE'
         });
 
         if (response.success) {
-            showNotification(`Voice "${voiceName}" deleted successfully!`, 'success');
+            showNotification(translateRuntime('plugins.tts.runtime.voice_clone.deleted', { voiceName }, `Voice "${voiceName}" deleted successfully!`), 'success');
             await loadVoiceClones();
         } else {
             throw new Error(response.error || 'Failed to delete voice clone');
         }
     } catch (error) {
         console.error('Failed to delete voice clone:', error);
-        showNotification(`Failed to delete voice: ${error.message}`, 'error');
+        showNotification(runtimeFailure('plugins.tts.runtime.voice_clone.delete_failed', error, `Failed to delete voice: ${error.message}`), 'error');
     }
 }

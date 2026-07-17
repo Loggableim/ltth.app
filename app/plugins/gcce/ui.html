@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="generated.6e7630e4e274">Global Chat Command Engine - Configuration</title>
+    <title data-i18n="plugins.gcce.labels.global_chat_command_engine_configuration">Global Chat Command Engine - Configuration</title>
     <link rel="stylesheet" href="/css/themes.css">
     <script>
         (function () {
@@ -909,7 +909,7 @@
             background: #050505;
             border-width: 2px;
         }
-    
+
         /* Cid theme alignment */
         html[data-theme="cid"] body {
             background: #030603;
@@ -1031,85 +1031,85 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1 data-i18n="generated.3b4dcadd2295">🎯 Global Chat Command Engine</h1>
-            <p data-i18n="gcce.subtitle">Universal chat command interpreter and framework for all plugins</p>
+            <h1 data-i18n="plugins.gcce.labels.global_chat_command_engine">🎯 Global Chat Command Engine</h1>
+            <p data-i18n="plugins.gcce.gcce.subtitle">Universal chat command interpreter and framework for all plugins</p>
         </div>
 
         <div id="message-container"></div>
 
         <!-- Navigation Tabs -->
         <div class="nav-tabs">
-            <button class="nav-tab active" data-tab="dashboard" data-i18n="generated.58df16b518a2">📊 Dashboard</button>
-            <button class="nav-tab" data-tab="commands" data-i18n="generated.2182bdf72a21">⚡ Commands</button>
-            <button class="nav-tab" data-tab="monitoring" data-i18n="generated.942ecf895232">📈 Monitoring</button>
-            <button class="nav-tab" data-tab="hud" data-i18n="generated.dc2caabbad2c">🎨 HUD Overlay</button>
-            <button class="nav-tab" data-tab="config" data-i18n="generated.29814694a8d8">⚙️ Configuration</button>
+            <button class="nav-tab active" data-tab="dashboard" data-i18n="plugins.gcce.labels.dashboard">📊 Dashboard</button>
+            <button class="nav-tab" data-tab="commands" data-i18n="plugins.gcce.labels.commands">⚡ Commands</button>
+            <button class="nav-tab" data-tab="monitoring" data-i18n="plugins.gcce.labels.monitoring">📈 Monitoring</button>
+            <button class="nav-tab" data-tab="hud" data-i18n="plugins.gcce.labels.hud_overlay">🎨 HUD Overlay</button>
+            <button class="nav-tab" data-tab="config" data-i18n="plugins.gcce.labels.configuration_298146">⚙️ Configuration</button>
         </div>
 
         <!-- Dashboard Tab -->
         <div id="tab-dashboard" class="tab-content active">
             <!-- Quick Actions -->
             <div class="card">
-                <div class="card-title" data-i18n="generated.2143123c3df9">🚀 Quick Actions</div>
+                <div class="card-title" data-i18n="plugins.gcce.labels.quick_actions">🚀 Quick Actions</div>
                 <div class="quick-actions">
                     <button class="action-btn" id="btn-refresh-stats">
-                        <span>🔄</span><span data-i18n="generated.c71b56d1ee8f"> Refresh Stats
+                        <span>🔄</span><span data-i18n="plugins.gcce.labels.refresh_stats"> Refresh Stats
                     </span></button>
                     <button class="action-btn" id="btn-clear-cache">
-                        <span>🗑️</span><span data-i18n="generated.010ba6deddfa"> Clear Caches
+                        <span>🗑️</span><span data-i18n="plugins.gcce.labels.clear_caches"> Clear Caches
                     </span></button>
                     <button class="action-btn" id="btn-export-audit">
-                        <span>📥</span><span data-i18n="generated.26adf4b3b53b"> Export Audit Log
+                        <span>📥</span><span data-i18n="plugins.gcce.labels.export_audit_log"> Export Audit Log
                     </span></button>
                     <button class="action-btn" id="btn-view-history">
-                        <span>📜</span><span data-i18n="generated.63f8adae5a9c"> View History
+                        <span>📜</span><span data-i18n="plugins.gcce.labels.view_history"> View History
                     </span></button>
                 </div>
             </div>
 
             <!-- Enhanced Statistics Grid -->
             <div class="card">
-                <div class="card-title" data-i18n="generated.3c6661eed135">📊 Live Statistics</div>
+                <div class="card-title" data-i18n="plugins.gcce.labels.live_statistics">📊 Live Statistics</div>
                 <div class="stats-grid" id="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-label" data-i18n="gcce.statistics.total_commands">Total Commands</div>
+                        <div class="stat-label" data-i18n="plugins.gcce.gcce.statistics.total_commands">Total Commands</div>
                         <div class="stat-value" id="stat-total-commands">-</div>
-                        <div class="metric-trend up" id="trend-commands" data-i18n="generated.8610052f9a8b">↑ Live</div>
+                        <div class="metric-trend up" id="trend-commands" data-i18n="plugins.gcce.labels.live">↑ Live</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label" data-i18n="gcce.statistics.enabled_commands">Enabled Commands</div>
+                        <div class="stat-label" data-i18n="plugins.gcce.gcce.statistics.enabled_commands">Enabled Commands</div>
                         <div class="stat-value" id="stat-enabled-commands">-</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label" data-i18n="generated.0141969e311e">Commands Executed</div>
+                        <div class="stat-label" data-i18n="plugins.gcce.labels.commands_executed">Commands Executed</div>
                         <div class="stat-value" id="stat-executed">-</div>
                         <div class="metric-trend up" id="trend-executed">+0</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label" data-i18n="generated.e38db76bdf69">Success Rate</div>
+                        <div class="stat-label" data-i18n="plugins.gcce.labels.success_rate_e38db7">Success Rate</div>
                         <div class="stat-value" id="stat-success-rate">-</div>
                         <div class="progress-bar">
                             <div class="progress-fill" id="progress-success" style="width: 0%"></div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label" data-i18n="generated.ea51d84f9d7f">Cache Hit Rate</div>
+                        <div class="stat-label" data-i18n="plugins.gcce.labels.cache_hit_rate">Cache Hit Rate</div>
                         <div class="stat-value" id="stat-cache-hit">-</div>
                         <div class="progress-bar">
                             <div class="progress-fill" id="progress-cache" style="width: 0%"></div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label" data-i18n="generated.755193245f81">Active Users</div>
+                        <div class="stat-label" data-i18n="plugins.gcce.labels.active_users">Active Users</div>
                         <div class="stat-value" id="stat-active-users">-</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label" data-i18n="generated.4fae5fda4336">Event Reduction</div>
+                        <div class="stat-label" data-i18n="plugins.gcce.labels.event_reduction">Event Reduction</div>
                         <div class="stat-value" id="stat-event-reduction">-</div>
-                        <div class="metric-trend down" id="trend-events" data-i18n="generated.21753a40ce25">↓ Optimized</div>
+                        <div class="metric-trend down" id="trend-events" data-i18n="plugins.gcce.labels.optimized">↓ Optimized</div>
                     </div>
                     <div class="stat-card">
-                    <div class="stat-label" data-i18n="gcce.statistics.registered_plugins">Registered Plugins</div>
+                    <div class="stat-label" data-i18n="plugins.gcce.gcce.statistics.registered_plugins">Registered Plugins</div>
                     <div class="stat-value" id="stat-plugins">-</div>
                 </div>
             </div>
@@ -1117,81 +1117,81 @@
 
         <!-- Configuration -->
         <div class="card">
-            <div class="card-title" data-i18n="generated.1df5f14e13fb">⚙️ Configuration</div>
+            <div class="card-title" data-i18n="plugins.gcce.labels.configuration">⚙️ Configuration</div>
             <form id="config-form">
                 <div class="config-group">
-                    <label class="config-label" for="command-prefix" data-i18n="gcce.config.command_prefix">Command Prefix</label>
-                    <div class="config-description" data-i18n="gcce.config.command_prefix_desc">Prefix used to identify chat commands (e.g., "!" for !help)</div>
+                    <label class="config-label" for="command-prefix" data-i18n="plugins.gcce.gcce.config.command_prefix">Command Prefix</label>
+                    <div class="config-description" data-i18n="plugins.gcce.gcce.config.command_prefix_desc">Prefix used to identify chat commands (e.g., "!" for !help)</div>
                     <input type="text" id="command-prefix" name="commandPrefix" maxlength="5" value="!">
                 </div>
 
                 <div class="config-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-built-in" name="enableBuiltInCommands" checked>
-                        <label class="config-label" for="enable-built-in" style="margin: 0;" data-i18n="gcce.config.enable_built_in">Enable Built-in Commands</label>
+                        <label class="config-label" for="enable-built-in" style="margin: 0;" data-i18n="plugins.gcce.gcce.config.enable_built_in">Enable Built-in Commands</label>
                     </div>
-                    <div class="config-description" data-i18n="gcce.config.enable_built_in_desc">Enable default commands like !help, !commands, etc.</div>
+                    <div class="config-description" data-i18n="plugins.gcce.gcce.config.enable_built_in_desc">Enable default commands like !help, !commands, etc.</div>
                 </div>
 
                 <div class="config-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-overlay" name="enableOverlayMessages" checked>
-                        <label class="config-label" for="enable-overlay" style="margin: 0;" data-i18n="gcce.config.enable_overlay">Enable Overlay Messages</label>
+                        <label class="config-label" for="enable-overlay" style="margin: 0;" data-i18n="plugins.gcce.gcce.config.enable_overlay">Enable Overlay Messages</label>
                     </div>
-                    <div class="config-description" data-i18n="gcce.config.enable_overlay_desc">Show command responses on stream overlays</div>
+                    <div class="config-description" data-i18n="plugins.gcce.gcce.config.enable_overlay_desc">Show command responses on stream overlays</div>
                 </div>
 
                 <div class="config-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-help" name="enableHelpCommand" checked>
-                        <label class="config-label" for="enable-help" style="margin: 0;" data-i18n="gcce.config.enable_help">Enable Help Command</label>
+                        <label class="config-label" for="enable-help" style="margin: 0;" data-i18n="plugins.gcce.gcce.config.enable_help">Enable Help Command</label>
                     </div>
-                    <div class="config-description" data-i18n="gcce.config.enable_help_desc">Allow users to use !help command</div>
+                    <div class="config-description" data-i18n="plugins.gcce.gcce.config.enable_help_desc">Allow users to use !help command</div>
                 </div>
 
-                <button type="submit" class="btn btn-primary" data-i18n="gcce.config.save">Save Configuration</button>
+                <button type="submit" class="btn btn-primary" data-i18n="plugins.gcce.gcce.config.save">Save Configuration</button>
             </form>
         </div>
 
         <!-- Registered Commands -->
         <div class="card">
-            <div class="card-title" data-i18n="generated.546ec6dbcd07">📝 Registered Commands</div>
-            <div id="commands-container" class="loading" data-i18n="gcce.commands.loading">Loading commands...</div>
+            <div class="card-title" data-i18n="plugins.gcce.labels.registered_commands">📝 Registered Commands</div>
+            <div id="commands-container" class="loading" data-i18n="plugins.gcce.gcce.commands.loading">Loading commands...</div>
         </div>
     </div>
 
     <!-- Commands Tab -->
     <div id="tab-commands" class="tab-content">
         <div class="card">
-            <div class="card-title" data-i18n="generated.16775436cf12">⚡ All Commands</div>
-            
+            <div class="card-title" data-i18n="plugins.gcce.labels.all_commands">⚡ All Commands</div>
+
             <!-- Filter Bar -->
             <div class="filter-bar">
-                <input type="text" id="cmd-filter-search" class="filter-input" placeholder="Search commands...">
+                <input type="text" id="cmd-filter-search" class="filter-input" placeholder="Search commands..." data-i18n-placeholder="plugins.gcce.form_controls.command_search_placeholder">
                 <select id="cmd-filter-category" class="filter-input">
-                    <option value="" data-i18n="generated.820b9501a918">All Categories</option>
-                    <option value="System">System</option>
-                    <option value="Information">Information</option>
+                    <option value="" data-i18n="plugins.gcce.labels.all_categories">All Categories</option>
+                    <option value="System" data-i18n="plugins.gcce.ui.category_system">System</option>
+                    <option value="Information" data-i18n="plugins.gcce.ui.category_information">Information</option>
                     <option value="HUD">HUD</option>
-                    <option value="Moderation">Moderation</option>
-                    <option value="Fun">Fun</option>
-                    <option value="Utility">Utility</option>
+                    <option value="Moderation" data-i18n="plugins.gcce.ui.category_moderation">Moderation</option>
+                    <option value="Fun" data-i18n="plugins.gcce.ui.category_fun">Fun</option>
+                    <option value="Utility" data-i18n="plugins.gcce.ui.category_utility">Utility</option>
                 </select>
                 <select id="cmd-filter-permission" class="filter-input">
-                    <option value="" data-i18n="generated.f19226692d07">All Permissions</option>
-                    <option value="all" data-i18n="generated.e32ad6c0c6f0">All Viewers</option>
-                    <option value="subscriber">Subscribers</option>
-                    <option value="moderator">Moderators</option>
-                    <option value="owner" data-i18n="generated.71d743b98f88">Owner Only</option>
+                    <option value="" data-i18n="plugins.gcce.labels.all_permissions">All Permissions</option>
+                    <option value="all" data-i18n="plugins.gcce.labels.all_viewers_e32ad6">All Viewers</option>
+                    <option value="subscriber" data-i18n="plugins.gcce.ui.permission_subscribers">Subscribers</option>
+                    <option value="moderator" data-i18n="plugins.gcce.ui.permission_moderators">Moderators</option>
+                    <option value="owner" data-i18n="plugins.gcce.labels.owner_only">Owner Only</option>
                 </select>
                 <select id="cmd-filter-status" class="filter-input">
-                    <option value="" data-i18n="generated.dc5037a5554c">All Status</option>
-                    <option value="enabled" data-i18n="generated.6386183bde10">Enabled Only</option>
-                    <option value="disabled" data-i18n="generated.20109c035a3c">Disabled Only</option>
+                    <option value="" data-i18n="plugins.gcce.labels.all_status">All Status</option>
+                    <option value="enabled" data-i18n="plugins.gcce.labels.enabled_only">Enabled Only</option>
+                    <option value="disabled" data-i18n="plugins.gcce.labels.disabled_only">Disabled Only</option>
                 </select>
             </div>
-            
-            <div id="all-commands-container" class="loading" data-i18n="gcce.commands.loading">Loading commands...</div>
+
+            <div id="all-commands-container" class="loading" data-i18n="plugins.gcce.gcce.commands.loading">Loading commands...</div>
         </div>
     </div>
 
@@ -1199,30 +1199,30 @@
     <div id="tab-monitoring" class="tab-content">
         <!-- Real-time Command Log -->
         <div class="card">
-            <div class="card-title" data-i18n="generated.830e01a0a2e5">📊 Real-time Command Execution Log</div>
+            <div class="card-title" data-i18n="plugins.gcce.labels.real_time_command_execution_log">📊 Real-time Command Execution Log</div>
             <div class="filter-bar">
-                <input type="text" id="log-filter-user" class="filter-input" placeholder="Filter by username...">
+                <input type="text" id="log-filter-user" class="filter-input" placeholder="Filter by username..." data-i18n-placeholder="plugins.gcce.form_controls.username_filter_placeholder">
                 <select id="log-filter-status" class="filter-input">
-                    <option value="" data-i18n="generated.91345e1d5bb9">All Statuses</option>
-                    <option value="success" data-i18n="generated.e9eb98f1a99c">Success Only</option>
-                    <option value="failed" data-i18n="generated.9b98d44579ce">Failed Only</option>
+                    <option value="" data-i18n="plugins.gcce.labels.all_statuses">All Statuses</option>
+                    <option value="success" data-i18n="plugins.gcce.labels.success_only">Success Only</option>
+                    <option value="failed" data-i18n="plugins.gcce.labels.failed_only">Failed Only</option>
                 </select>
-                <button class="btn btn-sm" id="btn-clear-logs" data-i18n="generated.445f07373d1f">🗑️ Clear Logs</button>
+                <button class="btn btn-sm" id="btn-clear-logs" data-i18n="plugins.gcce.labels.clear_logs">🗑️ Clear Logs</button>
             </div>
             <div class="realtime-log" id="realtime-log">
                 <div class="log-entry">
                     <span class="log-timestamp">--:--:--</span>
-                    <span class="log-user" data-i18n="generated.d292e16ee88b">Waiting for commands...</span>
+                    <span class="log-user" data-i18n="plugins.gcce.labels.waiting_for_commands">Waiting for commands...</span>
                 </div>
             </div>
         </div>
 
         <!-- Performance Metrics -->
         <div class="card">
-            <div class="card-title" data-i18n="generated.19d41868b7e0">⚡ Performance Metrics</div>
+            <div class="card-title" data-i18n="plugins.gcce.labels.performance_metrics">⚡ Performance Metrics</div>
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-label" data-i18n="generated.c4f506833512">Avg Execution Time</div>
+                    <div class="stat-label" data-i18n="plugins.gcce.labels.avg_execution_time">Avg Execution Time</div>
                     <div class="stat-value" id="monitor-avg-time">0ms</div>
                     <div class="metric-trend" id="monitor-time-trend">Calculating...</div>
                 </div>
@@ -1232,14 +1232,14 @@
                     <div class="metric-trend up" id="monitor-rate-trend">Live</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label" data-i18n="generated.e00a15cc4a81">Error Rate</div>
+                    <div class="stat-label" data-i18n="plugins.gcce.labels.error_rate">Error Rate</div>
                     <div class="stat-value" id="monitor-error-rate">0%</div>
                     <div class="progress-bar">
                         <div class="progress-fill" id="monitor-error-progress" style="width: 0%; background: #ef4444;"></div>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label" data-i18n="generated.cdbc39722f49">Peak Load</div>
+                    <div class="stat-label" data-i18n="plugins.gcce.labels.peak_load">Peak Load</div>
                     <div class="stat-value" id="monitor-peak">0</div>
                     <div class="metric-trend" id="monitor-peak-time">--:--</div>
                 </div>
@@ -1248,22 +1248,22 @@
 
         <!-- System Health -->
         <div class="card">
-            <div class="card-title" data-i18n="generated.3bb9d8b0835b">🏥 System Health</div>
+            <div class="card-title" data-i18n="plugins.gcce.labels.system_health">🏥 System Health</div>
             <div class="grid-2">
                 <div>
                     <div class="config-group">
-                        <div class="stat-label" data-i18n="generated.8fc47cccaabf">Cache Performance</div>
+                        <div class="stat-label" data-i18n="plugins.gcce.labels.cache_performance">Cache Performance</div>
                         <div id="health-cache-status">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                                <span data-i18n="generated.035c7f95ce01">User Data Cache:</span>
+                                <span data-i18n="plugins.gcce.labels.user_data_cache">User Data Cache:</span>
                                 <span id="health-user-cache">--</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                                <span data-i18n="generated.798c8992e7de">Command Cache:</span>
+                                <span data-i18n="plugins.gcce.labels.command_cache">Command Cache:</span>
                                 <span id="health-cmd-cache">--</span>
                             </div>
                             <div style="display: flex; justify-content: space-between;">
-                                <span data-i18n="generated.213dcacea7f7">Permission Cache:</span>
+                                <span data-i18n="plugins.gcce.labels.permission_cache">Permission Cache:</span>
                                 <span id="health-perm-cache">--</span>
                             </div>
                         </div>
@@ -1271,18 +1271,18 @@
                 </div>
                 <div>
                     <div class="config-group">
-                        <div class="stat-label" data-i18n="generated.eb9bf1fe58a1">Rate Limiter Status</div>
+                        <div class="stat-label" data-i18n="plugins.gcce.labels.rate_limiter_status">Rate Limiter Status</div>
                         <div id="health-ratelimit-status">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                                <span data-i18n="generated.ceb5d2323137">Active Limiters:</span>
+                                <span data-i18n="plugins.gcce.labels.active_limiters">Active Limiters:</span>
                                 <span id="health-active-limiters">--</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                                <span data-i18n="generated.af10e1d6511d">Blocked Requests:</span>
+                                <span data-i18n="plugins.gcce.labels.blocked_requests">Blocked Requests:</span>
                                 <span id="health-blocked">--</span>
                             </div>
                             <div style="display: flex; justify-content: space-between;">
-                                <span data-i18n="generated.87fbe57d870c">Cooldowns Active:</span>
+                                <span data-i18n="plugins.gcce.labels.cooldowns_active">Cooldowns Active:</span>
                                 <span id="health-cooldowns">--</span>
                             </div>
                         </div>
@@ -1293,16 +1293,16 @@
 
         <!-- Top Commands Chart -->
         <div class="card">
-            <div class="card-title" data-i18n="generated.1cf6864d5b73">📈 Most Used Commands (Last Hour)</div>
+            <div class="card-title" data-i18n="plugins.gcce.labels.most_used_commands_last_hour">📈 Most Used Commands (Last Hour)</div>
             <div id="top-commands-chart">
                 <table class="commands-table">
                     <thead>
                         <tr>
-                            <th>Rank</th>
-                            <th data-i18n="gcce.commands.table.command">Command</th>
-                            <th>Executions</th>
-                            <th data-i18n="generated.952eb04b0af7">Success Rate</th>
-                            <th data-i18n="generated.9d71442c9906">Avg Time</th>
+                            <th data-i18n="plugins.gcce.ui.table_rank">Rank</th>
+                            <th data-i18n="plugins.gcce.gcce.commands.table.command">Command</th>
+                            <th data-i18n="plugins.gcce.ui.table_executions">Executions</th>
+                            <th data-i18n="plugins.gcce.labels.success_rate">Success Rate</th>
+                            <th data-i18n="plugins.gcce.labels.avg_time">Avg Time</th>
                         </tr>
                     </thead>
                     <tbody id="top-commands-body">
@@ -1317,169 +1317,169 @@
         <div id="tab-hud" class="tab-content">
             <!-- HUD Configuration -->
             <div class="card">
-                <div class="card-title" data-i18n="generated.9c9abc4bb359">🎨 HUD Overlay Configuration</div>
-                
+                <div class="card-title" data-i18n="plugins.gcce.labels.hud_overlay_configuration">🎨 HUD Overlay Configuration</div>
+
             <div class="config-group">
-                <label class="config-label" data-i18n="generated.ff25df16a9b7">Overlay URL for OBS</label>
-                <div class="config-description"><span data-i18n="generated.3290b62bcebd">
+                <label class="config-label" data-i18n="plugins.gcce.labels.overlay_url_for_obs">Overlay URL for OBS</label>
+                <div class="config-description"><span data-i18n="plugins.gcce.labels.add_this_url_as_a_browser_source_in">
                     Add this URL as a Browser Source in OBS:
                     </span><code id="hud-overlay-url">http://localhost:3000/plugins/gcce/overlay-hud</code>
-                    <button class="btn-sm" id="btn-copy-overlay-url" data-i18n="generated.6b1c9c55a4fd">📋 Copy</button>
+                    <button class="btn-sm" id="btn-copy-overlay-url" data-i18n="plugins.gcce.labels.copy">📋 Copy</button>
                 </div>
             </div>
 
             <div class="config-group">
-                <label class="config-label" data-i18n="generated.020abb43c38b">Enable HUD Commands</label>
+                <label class="config-label" data-i18n="plugins.gcce.labels.enable_hud_commands">Enable HUD Commands</label>
                 <div class="checkbox-group">
                     <input type="checkbox" id="hud-enabled" onchange="updateHUDConfig()">
-                    <label for="hud-enabled" data-i18n="generated.5bdf2cc8afe5">Allow HUD display commands</label>
+                    <label for="hud-enabled" data-i18n="plugins.gcce.labels.allow_hud_display_commands">Allow HUD display commands</label>
                 </div>
             </div>
 
             <div class="config-group">
-                <label class="config-label" data-i18n="generated.326359838069">Text Display Permission</label>
+                <label class="config-label" data-i18n="plugins.gcce.labels.text_display_permission">Text Display Permission</label>
                 <select id="hud-perm-text" onchange="updateHUDConfig()">
-                    <option value="all" data-i18n="generated.af719f614534">All Viewers</option>
-                    <option value="subscriber">Subscribers</option>
-                    <option value="moderator">Moderators</option>
-                    <option value="broadcaster" data-i18n="generated.682fa1b33ad6">Broadcaster Only</option>
+                    <option value="all" data-i18n="plugins.gcce.labels.all_viewers_af719f">All Viewers</option>
+                            <option value="subscriber" data-i18n="plugins.gcce.ui.permission_subscribers">Subscribers</option>
+                            <option value="moderator" data-i18n="plugins.gcce.ui.permission_moderators">Moderators</option>
+                    <option value="broadcaster" data-i18n="plugins.gcce.labels.broadcaster_only_682fa1">Broadcaster Only</option>
                 </select>
             </div>
 
             <div class="config-group">
-                <label class="config-label" data-i18n="generated.f2384d318b70">Image Display Permission</label>
+                <label class="config-label" data-i18n="plugins.gcce.labels.image_display_permission">Image Display Permission</label>
                 <select id="hud-perm-image" onchange="updateHUDConfig()">
-                    <option value="all" data-i18n="generated.325ce39aa109">All Viewers</option>
-                    <option value="subscriber">Subscribers</option>
-                    <option value="moderator">Moderators</option>
-                    <option value="broadcaster" data-i18n="generated.20a61965fff7">Broadcaster Only</option>
+                    <option value="all" data-i18n="plugins.gcce.labels.all_viewers">All Viewers</option>
+                            <option value="subscriber" data-i18n="plugins.gcce.ui.permission_subscribers">Subscribers</option>
+                            <option value="moderator" data-i18n="plugins.gcce.ui.permission_moderators">Moderators</option>
+                    <option value="broadcaster" data-i18n="plugins.gcce.labels.broadcaster_only">Broadcaster Only</option>
                 </select>
             </div>
 
             <div class="config-group">
-                <label class="config-label" data-i18n="generated.917125da7cbc">Default Text Duration (seconds)</label>
+                <label class="config-label" data-i18n="plugins.gcce.labels.default_text_duration_seconds">Default Text Duration (seconds)</label>
                 <input type="number" id="hud-text-duration" min="3" max="60" value="10" onchange="updateHUDConfig()">
             </div>
 
             <div class="config-group">
-                <label class="config-label" data-i18n="generated.a48fbd08586d">Default Image Duration (seconds)</label>
+                <label class="config-label" data-i18n="plugins.gcce.labels.default_image_duration_seconds">Default Image Duration (seconds)</label>
                 <input type="number" id="hud-image-duration" min="3" max="60" value="10" onchange="updateHUDConfig()">
             </div>
 
             <div class="config-group">
-                <label class="config-label" data-i18n="generated.9e87c8441ad7">Default Position</label>
+                <label class="config-label" data-i18n="plugins.gcce.labels.default_position">Default Position</label>
                 <select id="hud-position" onchange="updateHUDConfig()">
-                    <option value="top-left" data-i18n="generated.c9790bfd9f7c">Top Left</option>
-                    <option value="top-center" data-i18n="generated.df7b39d741bc">Top Center</option>
-                    <option value="top-right" data-i18n="generated.14a19937dff5">Top Right</option>
-                    <option value="center-left" data-i18n="generated.bda0aab6167e">Center Left</option>
-                    <option value="center">Center</option>
-                    <option value="center-right" data-i18n="generated.b63864f344f7">Center Right</option>
-                    <option value="bottom-left" data-i18n="generated.f7a4e7c6bf32">Bottom Left</option>
-                    <option value="bottom-center" data-i18n="generated.3ad7ba0f0314">Bottom Center</option>
-                    <option value="bottom-right" data-i18n="generated.f7c567fe9275">Bottom Right</option>
+                    <option value="top-left" data-i18n="plugins.gcce.labels.top_left">Top Left</option>
+                    <option value="top-center" data-i18n="plugins.gcce.labels.top_center">Top Center</option>
+                    <option value="top-right" data-i18n="plugins.gcce.labels.top_right">Top Right</option>
+                    <option value="center-left" data-i18n="plugins.gcce.labels.center_left">Center Left</option>
+                                    <option value="center" data-i18n="plugins.gcce.ui.position_center">Center</option>
+                    <option value="center-right" data-i18n="plugins.gcce.labels.center_right">Center Right</option>
+                    <option value="bottom-left" data-i18n="plugins.gcce.labels.bottom_left">Bottom Left</option>
+                    <option value="bottom-center" data-i18n="plugins.gcce.labels.bottom_center">Bottom Center</option>
+                    <option value="bottom-right" data-i18n="plugins.gcce.labels.bottom_right">Bottom Right</option>
                 </select>
             </div>
         </div>
 
         <!-- Custom Media -->
         <div class="card">
-            <div class="card-title" data-i18n="generated.ad343b5d2e6e">🎞️ Custom Media via Chat</div>
-            <p class="config-description"><span data-i18n="generated.034401a34604">Allow viewers to trigger your GIF/MP4 snippets with custom chat commands like </span><code>!hype</code>, <code>/wave</code><span data-i18n="generated.3cdd4cf6b60d">, or </span><code>!dance</code><span data-i18n="generated.3590eb80d474">. Supported: .gif, .mp4, .webm.</span></p>
+            <div class="card-title" data-i18n="plugins.gcce.labels.custom_media_via_chat">🎞️ Custom Media via Chat</div>
+            <p class="config-description"><span data-i18n="plugins.gcce.labels.allow_viewers_to_trigger_your_gif_mp4_snippets">Allow viewers to trigger your GIF/MP4 snippets with custom chat commands like </span><code>!hype</code>, <code>/wave</code><span data-i18n="plugins.gcce.labels.or">, or </span><code>!dance</code><span data-i18n="plugins.gcce.labels.supported_gif_mp4_webm">. Supported: .gif, .mp4, .webm.</span></p>
             <div class="grid-2">
                 <div>
                     <div class="config-group">
-                        <label class="config-label" data-i18n="generated.4feab9a1737d">Media Name</label>
-                        <input type="text" id="media-label" placeholder="e.g. hype" maxlength="50">
+                        <label class="config-label" data-i18n="plugins.gcce.labels.media_name">Media Name</label>
+                                <input type="text" id="media-label" placeholder="e.g. hype" data-i18n-placeholder="plugins.gcce.form_controls.media_label_placeholder" maxlength="50">
                     </div>
                     <div class="config-group">
-                        <label class="config-label" data-i18n="generated.f9b702949686">Media URL</label>
-                        <input type="text" id="media-url" placeholder="https://...gif or mp4">
+                        <label class="config-label" data-i18n="plugins.gcce.labels.media_url">Media URL</label>
+                                <input type="text" id="media-url" placeholder="https://...gif or mp4" data-i18n-placeholder="plugins.gcce.form_controls.media_url_placeholder">
                     </div>
                     <div class="config-group">
-                        <label class="config-label" data-i18n="generated.11b2898ab85b">Chat Command (optional)</label>
-                        <input type="text" id="media-command" placeholder="e.g. !hype or /wave" maxlength="50">
-                        <small class="config-description" data-i18n="generated.b01b7f1e4137">If empty, use /hudmedia &lt;name&gt;</small>
+                        <label class="config-label" data-i18n="plugins.gcce.labels.chat_command_optional">Chat Command (optional)</label>
+                                <input type="text" id="media-command" placeholder="e.g. !hype or /wave" data-i18n-placeholder="plugins.gcce.form_controls.media_command_placeholder" maxlength="50">
+                        <small class="config-description" data-i18n="plugins.gcce.labels.if_empty_use_hudmedia_name">If empty, use /hudmedia &lt;name&gt;</small>
                     </div>
                 </div>
                 <div>
                     <div class="config-group">
-                        <label class="config-label" data-i18n="generated.436cf0b52d36">Default Duration (s)</label>
+                        <label class="config-label" data-i18n="plugins.gcce.labels.default_duration_s">Default Duration (s)</label>
                         <input type="number" id="media-duration" min="3" max="60" value="10">
                     </div>
                     <div class="config-group">
-                        <label class="config-label" data-i18n="generated.172fe49c6989">Detected Type</label>
-                        <div id="media-type-preview" class="config-description" data-i18n="generated.e07db5fd873a">GIF/MP4 automatically detected</div>
+                        <label class="config-label" data-i18n="plugins.gcce.labels.detected_type">Detected Type</label>
+                        <div id="media-type-preview" class="config-description" data-i18n="plugins.gcce.labels.gif_mp4_automatically_detected">GIF/MP4 automatically detected</div>
                     </div>
                 </div>
             </div>
             <div class="quick-actions">
-                <button class="btn btn-primary btn-sm" id="btn-add-media" data-i18n="generated.2a2bf4577b62">➕ Add Media</button>
-                <button class="btn btn-primary btn-sm" id="btn-save-media" data-i18n="generated.e9abd880e33d">💾 Save Library</button>
-                <button class="btn btn-primary btn-sm" id="btn-test-media" data-i18n="generated.765cada9e7b4">🧪 Test /hudmedia</button>
+                <button class="btn btn-primary btn-sm" id="btn-add-media" data-i18n="plugins.gcce.labels.add_media">➕ Add Media</button>
+                <button class="btn btn-primary btn-sm" id="btn-save-media" data-i18n="plugins.gcce.labels.save_library">💾 Save Library</button>
+                <button class="btn btn-primary btn-sm" id="btn-test-media" data-i18n="plugins.gcce.labels.test_hudmedia">🧪 Test /hudmedia</button>
             </div>
-            <div id="hud-media-list" class="loading" data-i18n="generated.a55603c8a630">Loading media library...</div>
+            <div id="hud-media-list" class="loading" data-i18n="plugins.gcce.labels.loading_media_library">Loading media library...</div>
         </div>
 
         <!-- Gift Rotator -->
         <div class="card">
-            <div class="card-title" data-i18n="generated.b6751b677989">🎁 Gift HUD Rotator</div>
-            <p class="config-description" data-i18n="generated.7317fcdaac81">Select gifts from the TikTok gift catalog, add headline & info, choose a template/font/color, and rotate them on your OBS HUD. You can also add custom media (images/videos) alongside gifts.</p>
+            <div class="card-title" data-i18n="plugins.gcce.labels.gift_hud_rotator">🎁 Gift HUD Rotator</div>
+            <p class="config-description" data-i18n="plugins.gcce.labels.select_gifts_from_the_tiktok_gift_catalog_add">Select gifts from the TikTok gift catalog, add headline & info, choose a template/font/color, and rotate them on your OBS HUD. You can also add custom media (images/videos) alongside gifts.</p>
             <div class="grid-2">
                 <div>
                     <div class="checkbox-group">
                         <input type="checkbox" id="rotator-enabled">
-                        <label for="rotator-enabled" class="config-label" style="margin:0;" data-i18n="generated.16f9695b8708">Enable Gift Rotator</label>
+                        <label for="rotator-enabled" class="config-label" style="margin:0;" data-i18n="plugins.gcce.labels.enable_gift_rotator">Enable Gift Rotator</label>
                     </div>
                     <div class="config-group">
-                        <label class="config-label" data-i18n="generated.ff53fd3996da">Rotation Interval (s)</label>
+                        <label class="config-label" data-i18n="plugins.gcce.labels.rotation_interval_s">Rotation Interval (s)</label>
                         <input type="number" id="rotator-interval" min="3" max="60" value="10">
                     </div>
-                    
+
                     <!-- Entry Type Selector -->
                     <div class="config-group">
-                        <label class="config-label" data-i18n="generated.754f3e9f4c62">Entry Type</label>
+                        <label class="config-label" data-i18n="plugins.gcce.labels.entry_type">Entry Type</label>
                         <div class="grid-2">
-                            <button class="btn btn-primary btn-sm" id="btn-select-gift-mode" style="font-size:0.9rem;" data-i18n="generated.50b19498e5df">🎁 TikTok Gift</button>
-                            <button class="btn btn-secondary btn-sm" id="btn-select-media-mode" style="font-size:0.9rem;" data-i18n="generated.c689ed94b7c8">📁 Custom Media</button>
+                            <button class="btn btn-primary btn-sm" id="btn-select-gift-mode" style="font-size:0.9rem;" data-i18n="plugins.gcce.labels.tiktok_gift">🎁 TikTok Gift</button>
+                            <button class="btn btn-secondary btn-sm" id="btn-select-media-mode" style="font-size:0.9rem;" data-i18n="plugins.gcce.labels.custom_media_c689ed">📁 Custom Media</button>
                         </div>
                     </div>
-                    
+
                     <!-- Gift Selection (default) -->
                     <div class="config-group" id="gift-selection-section">
-                        <label class="config-label" data-i18n="generated.0424f7bccd20">Gift Selection</label>
+                        <label class="config-label" data-i18n="plugins.gcce.labels.gift_selection">Gift Selection</label>
                         <div class="gift-catalog-header">
-                            <div id="gift-catalog-status" class="config-description" data-i18n="generated.96bfd43e708a">Catalog not loaded</div>
-                            <button class="btn btn-primary btn-sm" id="btn-load-gift-catalog" data-i18n="generated.390c2f7c073d">🔄 Load Gift Catalog</button>
+                            <div id="gift-catalog-status" class="config-description" data-i18n="plugins.gcce.labels.catalog_not_loaded">Catalog not loaded</div>
+                            <button class="btn btn-primary btn-sm" id="btn-load-gift-catalog" data-i18n="plugins.gcce.labels.load_gift_catalog">🔄 Load Gift Catalog</button>
                         </div>
-                        <input type="text" id="gift-catalog-search" class="gift-catalog-search" placeholder="Search gifts by name or ID...">
+                            <input type="text" id="gift-catalog-search" class="gift-catalog-search" placeholder="Search gifts by name or ID..." data-i18n-placeholder="plugins.gcce.form_controls.gift_search_placeholder">
                         <div id="gift-catalog-grid" class="gift-catalog-grid"></div>
                         <div id="selected-gift-preview" class="selected-gift-preview">
                             <img id="selected-gift-preview-img" src="" alt="Gift">
                             <div class="selected-gift-info">
-                                <div class="selected-gift-name" id="selected-gift-preview-name" data-i18n="generated.4fd521ddd031">No gift selected</div>
+                                <div class="selected-gift-name" id="selected-gift-preview-name" data-i18n="plugins.gcce.labels.no_gift_selected">No gift selected</div>
                                 <div class="selected-gift-id" id="selected-gift-preview-id"></div>
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Custom Media Section (hidden by default) -->
                     <div class="config-group" id="media-selection-section" style="display:none;">
-                        <label class="config-label" data-i18n="generated.9df0ad746883">Custom Media</label>
+                        <label class="config-label" data-i18n="plugins.gcce.labels.custom_media">Custom Media</label>
                         <div style="margin-bottom:12px;">
-                            <div class="config-description" style="margin-bottom:8px;" data-i18n="generated.03cbb239f9f6">Upload File (PNG, JPEG, GIF, MP4)</div>
+                            <div class="config-description" style="margin-bottom:8px;" data-i18n="plugins.gcce.labels.upload_file_png_jpeg_gif_mp4">Upload File (PNG, JPEG, GIF, MP4)</div>
                             <input type="file" id="media-upload-input" accept="image/png,image/jpeg,image/gif,video/mp4" style="margin-bottom:8px;">
-                            <button class="btn btn-primary btn-sm" id="btn-upload-media" data-i18n="generated.1b8c288c441e">📤 Upload</button>
+                            <button class="btn btn-primary btn-sm" id="btn-upload-media" data-i18n="plugins.gcce.labels.upload">📤 Upload</button>
                         </div>
                         <div style="margin-bottom:12px;">
-                            <div class="config-description" style="margin-bottom:8px;" data-i18n="generated.96e091038e3b">Or External URL</div>
+                            <div class="config-description" style="margin-bottom:8px;" data-i18n="plugins.gcce.labels.or_external_url">Or External URL</div>
                             <input type="text" id="media-url-input" placeholder="https://example.com/image.gif">
-                            <button class="btn btn-secondary btn-sm" id="btn-use-media-url" style="margin-top:4px;" data-i18n="generated.15694b5e09d3">🔗 Use URL</button>
+                            <button class="btn btn-secondary btn-sm" id="btn-use-media-url" style="margin-top:4px;" data-i18n="plugins.gcce.labels.use_url">🔗 Use URL</button>
                         </div>
                         <div id="selected-media-preview" class="selected-gift-preview" style="display:none;">
                             <div id="selected-media-preview-content"></div>
                             <div class="selected-gift-info">
-                                <div class="selected-gift-name" id="selected-media-preview-name" data-i18n="generated.ac70a6b2b894">Media selected</div>
+                                <div class="selected-gift-name" id="selected-media-preview-name" data-i18n="plugins.gcce.labels.media_selected">Media selected</div>
                                 <div class="selected-gift-id" id="selected-media-preview-type"></div>
                             </div>
                         </div>
@@ -1487,101 +1487,101 @@
                 </div>
                 <div>
                     <div class="config-group">
-                        <label class="config-label">Headline</label>
-                        <input type="text" id="rotator-title" placeholder="e.g. Star Gifter">
+                        <label class="config-label" data-i18n="plugins.gcce.ui.headline">Headline</label>
+                                <input type="text" id="rotator-title" placeholder="e.g. Star Gifter" data-i18n-placeholder="plugins.gcce.form_controls.rotator_title_placeholder">
                     </div>
                     <div class="config-group">
-                        <label class="config-label" data-i18n="generated.152414937fdd">Info Text (optional)</label>
-                        <input type="text" id="rotator-info" placeholder="Short message to show on HUD">
+                        <label class="config-label" data-i18n="plugins.gcce.labels.info_text_optional">Info Text (optional)</label>
+                                <input type="text" id="rotator-info" placeholder="Short message to show on HUD" data-i18n-placeholder="plugins.gcce.form_controls.rotator_info_placeholder">
                     </div>
                     <div class="config-group">
-                        <label class="config-label">Design</label>
+                        <label class="config-label" data-i18n="plugins.gcce.ui.design">Design</label>
                         <div class="grid-2">
                             <div>
-                                <div class="config-description">Template</div>
+                                <div class="config-description" data-i18n="plugins.gcce.ui.template">Template</div>
                                 <select id="rotator-template">
-                                    <option value="card">Card</option>
-                                    <option value="banner">Banner</option>
-                                    <option value="minimal">Minimal</option>
-                                    <option value="modern" data-i18n="generated.67037a412bcf">Modern Glass</option>
-                                    <option value="neon" data-i18n="generated.d4806a13b343">Neon Glow</option>
-                                    <option value="elegant">Elegant</option>
-                                    <option value="bold">Bold</option>
-                                    <option value="compact">Compact</option>
-                                    <option value="wide" data-i18n="generated.0a3d9e250e21">Wide Banner</option>
-                                    <option value="gradient">Gradient</option>
+                                    <option value="card" data-i18n="plugins.gcce.ui.template_card">Card</option>
+                                    <option value="banner" data-i18n="plugins.gcce.ui.template_banner">Banner</option>
+                                    <option value="minimal" data-i18n="plugins.gcce.ui.template_minimal">Minimal</option>
+                                    <option value="modern" data-i18n="plugins.gcce.labels.modern_glass">Modern Glass</option>
+                                    <option value="neon" data-i18n="plugins.gcce.labels.neon_glow">Neon Glow</option>
+                                    <option value="elegant" data-i18n="plugins.gcce.ui.template_elegant">Elegant</option>
+                                    <option value="bold" data-i18n="plugins.gcce.ui.template_bold">Bold</option>
+                                    <option value="compact" data-i18n="plugins.gcce.ui.template_compact">Compact</option>
+                                    <option value="wide" data-i18n="plugins.gcce.labels.wide_banner">Wide Banner</option>
+                                    <option value="gradient" data-i18n="plugins.gcce.ui.template_gradient">Gradient</option>
                                 </select>
                             </div>
                             <div>
-                                <div class="config-description">Font</div>
+                                <div class="config-description" data-i18n="plugins.gcce.ui.font">Font</div>
                                 <select id="rotator-font">
-                                    <option value="Inter, sans-serif">Inter</option>
-                                    <option value="'Montserrat', sans-serif">Montserrat</option>
-                                    <option value="'Oswald', sans-serif">Oswald</option>
-                                    <option value="'Poppins', sans-serif">Poppins</option>
-                                    <option value="'Roboto', sans-serif">Roboto</option>
-                                    <option value="'Raleway', sans-serif">Raleway</option>
+                                    <option value="Inter, sans-serif" data-i18n="plugins.gcce.ui.font_inter">Inter</option>
+                                    <option value="'Montserrat', sans-serif" data-i18n="plugins.gcce.ui.font_montserrat">Montserrat</option>
+                                    <option value="'Oswald', sans-serif" data-i18n="plugins.gcce.ui.font_oswald">Oswald</option>
+                                    <option value="'Poppins', sans-serif" data-i18n="plugins.gcce.ui.font_poppins">Poppins</option>
+                                    <option value="'Roboto', sans-serif" data-i18n="plugins.gcce.ui.font_roboto">Roboto</option>
+                                    <option value="'Raleway', sans-serif" data-i18n="plugins.gcce.ui.font_raleway">Raleway</option>
                                 </select>
                             </div>
                         </div>
                     </div>
                     <div class="config-group">
-                        <label class="config-label" data-i18n="generated.e7685be2c39e">Transition Animation</label>
+                        <label class="config-label" data-i18n="plugins.gcce.labels.transition_animation">Transition Animation</label>
                         <select id="rotator-animation">
-                            <option value="fade">Fade</option>
-                            <option value="slide-left" data-i18n="generated.c5f09e4906f0">Slide from Left</option>
-                            <option value="slide-right" data-i18n="generated.a3f2b35f25ac">Slide from Right</option>
-                            <option value="slide-up" data-i18n="generated.20369d76fe2e">Slide from Bottom</option>
-                            <option value="slide-down" data-i18n="generated.ef1d7e29932a">Slide from Top</option>
-                            <option value="zoom" data-i18n="generated.dbe940a4176d">Zoom In</option>
-                            <option value="flip">Flip</option>
-                            <option value="rotate" data-i18n="generated.e83e8f2610dc">Rotate In</option>
-                            <option value="bounce">Bounce</option>
-                            <option value="swing">Swing</option>
+                            <option value="fade" data-i18n="plugins.gcce.ui.animation_fade">Fade</option>
+                            <option value="slide-left" data-i18n="plugins.gcce.labels.slide_from_left">Slide from Left</option>
+                            <option value="slide-right" data-i18n="plugins.gcce.labels.slide_from_right">Slide from Right</option>
+                            <option value="slide-up" data-i18n="plugins.gcce.labels.slide_from_bottom">Slide from Bottom</option>
+                            <option value="slide-down" data-i18n="plugins.gcce.labels.slide_from_top">Slide from Top</option>
+                            <option value="zoom" data-i18n="plugins.gcce.labels.zoom_in">Zoom In</option>
+                            <option value="flip" data-i18n="plugins.gcce.ui.animation_flip">Flip</option>
+                            <option value="rotate" data-i18n="plugins.gcce.labels.rotate_in">Rotate In</option>
+                            <option value="bounce" data-i18n="plugins.gcce.ui.animation_bounce">Bounce</option>
+                            <option value="swing" data-i18n="plugins.gcce.ui.animation_swing">Swing</option>
                         </select>
                     </div>
                     <div class="config-group">
-                        <label class="config-label">Colors</label>
+                        <label class="config-label" data-i18n="plugins.gcce.ui.colors">Colors</label>
                         <div class="grid-2">
                             <div>
-                                <div class="config-description">Text</div>
+                                <div class="config-description" data-i18n="plugins.gcce.ui.color_text">Text</div>
                                 <input type="color" id="rotator-text-color" value="#ffffff">
                             </div>
                             <div>
-                                <div class="config-description">Accent</div>
+                                <div class="config-description" data-i18n="plugins.gcce.ui.color_accent">Accent</div>
                                 <input type="color" id="rotator-accent-color" value="#ff5f9e">
                             </div>
                         </div>
-                        <div class="config-description" style="margin-top:8px;">Background</div>
+                        <div class="config-description" style="margin-top:8px;" data-i18n="plugins.gcce.ui.color_background">Background</div>
                         <input type="text" id="rotator-bg-color" value="rgba(0,0,0,0.65)">
                     </div>
                 </div>
             </div>
             <div class="quick-actions">
-                <button class="btn btn-primary btn-sm" id="btn-add-rotator" data-i18n="generated.1d7ac5994922">➕ Add to Rotator</button>
-                <button class="btn btn-primary btn-sm" id="btn-save-rotator" data-i18n="generated.b965605b27d5">💾 Save Rotator</button>
+                <button class="btn btn-primary btn-sm" id="btn-add-rotator" data-i18n="plugins.gcce.labels.add_to_rotator">➕ Add to Rotator</button>
+                <button class="btn btn-primary btn-sm" id="btn-save-rotator" data-i18n="plugins.gcce.labels.save_rotator">💾 Save Rotator</button>
             </div>
-            <div id="rotator-entries" class="loading" data-i18n="generated.fcb5062b16aa">No entries yet</div>
+            <div id="rotator-entries" class="loading" data-i18n="plugins.gcce.labels.no_entries_yet">No entries yet</div>
         </div>
 
         <!-- HUD Statistics -->
         <div class="card">
-            <div class="card-title" data-i18n="generated.7e9396548434">📊 HUD Statistics</div>
+            <div class="card-title" data-i18n="plugins.gcce.labels.hud_statistics">📊 HUD Statistics</div>
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-label" data-i18n="generated.a7341eb14917">Total Displayed</div>
+                    <div class="stat-label" data-i18n="plugins.gcce.labels.total_displayed">Total Displayed</div>
                     <div class="stat-value" id="hud-stat-total">0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label" data-i18n="generated.7e524daa53df">Active Elements</div>
+                    <div class="stat-label" data-i18n="plugins.gcce.labels.active_elements">Active Elements</div>
                     <div class="stat-value" id="hud-stat-active">0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label" data-i18n="generated.269197cd99c9">Most Used Position</div>
+                    <div class="stat-label" data-i18n="plugins.gcce.labels.most_used_position">Most Used Position</div>
                     <div class="stat-value" id="hud-stat-position">-</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label" data-i18n="generated.e45a29677faf">Avg Duration</div>
+                    <div class="stat-label" data-i18n="plugins.gcce.labels.avg_duration">Avg Duration</div>
                     <div class="stat-value" id="hud-stat-duration">0s</div>
                 </div>
             </div>
@@ -1589,36 +1589,36 @@
 
         <!-- Active HUD Elements -->
         <div class="card">
-            <div class="card-title" data-i18n="generated.90a2b80aa08f">🎬 Active Elements</div>
+            <div class="card-title" data-i18n="plugins.gcce.labels.active_elements_90a2b8">🎬 Active Elements</div>
             <div id="hud-active-elements">
-                <p data-i18n="generated.55e33b1fbca1">No active HUD elements</p>
+                <p data-i18n="plugins.gcce.labels.no_active_hud_elements">No active HUD elements</p>
             </div>
-            <button class="btn btn-primary" id="btn-clear-hud" style="margin-top: 16px;" data-i18n="generated.5f870eef405c">Clear All</button>
+            <button class="btn btn-primary" id="btn-clear-hud" style="margin-top: 16px;" data-i18n="plugins.gcce.labels.clear_all">Clear All</button>
         </div>
 
         <!-- Test HUD -->
         <div class="card">
-            <div class="card-title" data-i18n="generated.919aaf3bf820">🧪 Test HUD Display</div>
+            <div class="card-title" data-i18n="plugins.gcce.labels.test_hud_display">🧪 Test HUD Display</div>
             <div class="config-group">
-                <label class="config-label" data-i18n="generated.19951b232049">Test Text</label>
-                <input type="text" id="hud-test-text" placeholder="Enter test text" value="Hello from HUD!">
-                <button class="btn btn-primary" id="btn-test-hud-text" style="margin-top: 8px;" data-i18n="generated.1c28a9b16274">Display Text</button>
+                <label class="config-label" data-i18n="plugins.gcce.labels.test_text">Test Text</label>
+                                <input type="text" id="hud-test-text" placeholder="Enter test text" data-i18n-placeholder="plugins.gcce.form_controls.hud_test_text_placeholder" value="Hello from HUD!">
+                <button class="btn btn-primary" id="btn-test-hud-text" style="margin-top: 8px;" data-i18n="plugins.gcce.labels.display_text">Display Text</button>
             </div>
             <div class="config-group">
-                <label class="config-label" data-i18n="generated.de8e87499d37">Test Image URL</label>
-                <input type="text" id="hud-test-image" placeholder="Enter image URL">
-                <button class="btn btn-primary" id="btn-test-hud-image" style="margin-top: 8px;" data-i18n="generated.6c44caf6a58c">Display Image</button>
+                <label class="config-label" data-i18n="plugins.gcce.labels.test_image_url">Test Image URL</label>
+                                <input type="text" id="hud-test-image" placeholder="Enter image URL" data-i18n-placeholder="plugins.gcce.form_controls.hud_test_image_placeholder">
+                <button class="btn btn-primary" id="btn-test-hud-image" style="margin-top: 8px;" data-i18n="plugins.gcce.labels.display_image">Display Image</button>
             </div>
         </div>
 
         <!-- Available Commands -->
         <div class="card">
-            <div class="card-title" data-i18n="generated.adcc50c14fa7">💬 Available Commands</div>
+            <div class="card-title" data-i18n="plugins.gcce.labels.available_commands">💬 Available Commands</div>
             <ul>
-                 <li><code>/hudtext [duration] &lt;text&gt;</code><span data-i18n="generated.fc6543e74714"> - Display text on overlay</span></li>
-                 <li><code>/hudimage [duration] &lt;url&gt;</code><span data-i18n="generated.8659645e5234"> - Display image on overlay</span></li>
-                <li><code>/hudmedia [duration] &lt;name|url&gt;</code><span data-i18n="generated.1490efb36880"> - Display custom GIF/MP4 from your media library</span></li>
-                 <li><code>/hudclear</code><span data-i18n="generated.84fa50bacd54"> - Clear all HUD elements (moderator)</span></li>
+                 <li><code>/hudtext [duration] &lt;text&gt;</code><span data-i18n="plugins.gcce.labels.display_text_on_overlay"> - Display text on overlay</span></li>
+                 <li><code>/hudimage [duration] &lt;url&gt;</code><span data-i18n="plugins.gcce.labels.display_image_on_overlay"> - Display image on overlay</span></li>
+                <li><code>/hudmedia [duration] &lt;name|url&gt;</code><span data-i18n="plugins.gcce.labels.display_custom_gif_mp4_from_your_media_library"> - Display custom GIF/MP4 from your media library</span></li>
+                 <li><code>/hudclear</code><span data-i18n="plugins.gcce.labels.clear_all_hud_elements_moderator"> - Clear all HUD elements (moderator)</span></li>
              </ul>
          </div>
      </div>
@@ -1627,42 +1627,42 @@
     <div id="tab-config" class="tab-content">
         <!-- Advanced Configuration -->
         <div class="card">
-            <div class="card-title" data-i18n="generated.58b755ab85d5">⚙️ Advanced GCCE Configuration</div>
+            <div class="card-title" data-i18n="plugins.gcce.labels.advanced_gcce_configuration">⚙️ Advanced GCCE Configuration</div>
             <form id="advanced-config-form">
                 <div class="grid-2">
                     <div class="config-group">
-                        <label class="config-label" for="rate-limit-global" data-i18n="generated.974177b9bfa9">Global Rate Limit (commands/minute)</label>
-                        <div class="config-description" data-i18n="generated.fc18e7d70e14">Maximum commands per minute across all users</div>
+                        <label class="config-label" for="rate-limit-global" data-i18n="plugins.gcce.labels.global_rate_limit_commands_minute">Global Rate Limit (commands/minute)</label>
+                        <div class="config-description" data-i18n="plugins.gcce.labels.maximum_commands_per_minute_across_all_users">Maximum commands per minute across all users</div>
                         <input type="number" id="rate-limit-global" min="1" max="1000" value="100">
                     </div>
 
                     <div class="config-group">
-                        <label class="config-label" for="rate-limit-user" data-i18n="generated.02cbded7440b">User Rate Limit (commands/minute)</label>
-                        <div class="config-description" data-i18n="generated.0820edafad55">Maximum commands per minute per user</div>
+                        <label class="config-label" for="rate-limit-user" data-i18n="plugins.gcce.labels.user_rate_limit_commands_minute">User Rate Limit (commands/minute)</label>
+                        <div class="config-description" data-i18n="plugins.gcce.labels.maximum_commands_per_minute_per_user">Maximum commands per minute per user</div>
                         <input type="number" id="rate-limit-user" min="1" max="100" value="10">
                     </div>
 
                     <div class="config-group">
-                        <label class="config-label" for="cache-ttl" data-i18n="generated.9b58d5995d8b">User Cache TTL (seconds)</label>
-                        <div class="config-description" data-i18n="generated.40975bef3b8b">How long to cache user data</div>
+                        <label class="config-label" for="cache-ttl" data-i18n="plugins.gcce.labels.user_cache_ttl_seconds">User Cache TTL (seconds)</label>
+                        <div class="config-description" data-i18n="plugins.gcce.labels.how_long_to_cache_user_data">How long to cache user data</div>
                         <input type="number" id="cache-ttl" min="60" max="3600" value="300">
                     </div>
 
                     <div class="config-group">
-                        <label class="config-label" for="audit-max" data-i18n="generated.0979a497d60b">Audit Log Max Entries</label>
-                        <div class="config-description" data-i18n="generated.586edfe655a3">Maximum number of audit log entries to keep</div>
+                        <label class="config-label" for="audit-max" data-i18n="plugins.gcce.labels.audit_log_max_entries">Audit Log Max Entries</label>
+                        <div class="config-description" data-i18n="plugins.gcce.labels.maximum_number_of_audit_log_entries_to_keep">Maximum number of audit log entries to keep</div>
                         <input type="number" id="audit-max" min="1000" max="100000" value="10000">
                     </div>
 
                     <div class="config-group">
-                        <label class="config-label" for="history-max" data-i18n="generated.225f0a05f7ae">History Max Entries</label>
-                        <div class="config-description" data-i18n="generated.0fc33d10b74a">Maximum number of history entries to keep</div>
+                        <label class="config-label" for="history-max" data-i18n="plugins.gcce.labels.history_max_entries">History Max Entries</label>
+                        <div class="config-description" data-i18n="plugins.gcce.labels.maximum_number_of_history_entries_to_keep">Maximum number of history entries to keep</div>
                         <input type="number" id="history-max" min="50" max="1000" value="100">
                     </div>
 
                     <div class="config-group">
-                        <label class="config-label" for="batch-interval" data-i18n="generated.c37918fb4a86">Socket Batch Interval (ms)</label>
-                        <div class="config-description" data-i18n="generated.6932c4cfa7aa">Interval for batching socket events</div>
+                        <label class="config-label" for="batch-interval" data-i18n="plugins.gcce.labels.socket_batch_interval_ms">Socket Batch Interval (ms)</label>
+                        <div class="config-description" data-i18n="plugins.gcce.labels.interval_for_batching_socket_events">Interval for batching socket events</div>
                         <input type="number" id="batch-interval" min="10" max="500" value="50">
                     </div>
                 </div>
@@ -1670,72 +1670,72 @@
                 <div class="config-group" style="margin-top: 24px;">
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-autocomplete" checked>
-                        <label class="config-label" for="enable-autocomplete" style="margin: 0;" data-i18n="generated.2182c5e23876">Enable Command Auto-Complete</label>
+                        <label class="config-label" for="enable-autocomplete" style="margin: 0;" data-i18n="plugins.gcce.labels.enable_command_auto_complete">Enable Command Auto-Complete</label>
                     </div>
-                    <div class="config-description" data-i18n="generated.0c33877257d9">Allow users to get command suggestions</div>
+                    <div class="config-description" data-i18n="plugins.gcce.labels.allow_users_to_get_command_suggestions">Allow users to get command suggestions</div>
                 </div>
 
                 <div class="config-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-macros" checked>
-                        <label class="config-label" for="enable-macros" style="margin: 0;" data-i18n="generated.fa4cfe59b296">Enable Command Macros</label>
+                        <label class="config-label" for="enable-macros" style="margin: 0;" data-i18n="plugins.gcce.labels.enable_command_macros">Enable Command Macros</label>
                     </div>
-                    <div class="config-description" data-i18n="generated.6b2c7d7b2276">Allow execution of command macros (sequences)</div>
+                    <div class="config-description" data-i18n="plugins.gcce.labels.allow_execution_of_command_macros_sequences">Allow execution of command macros (sequences)</div>
                 </div>
 
                 <div class="config-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-scheduler" checked>
-                        <label class="config-label" for="enable-scheduler" style="margin: 0;" data-i18n="generated.3752f4575a96">Enable Command Scheduler</label>
+                        <label class="config-label" for="enable-scheduler" style="margin: 0;" data-i18n="plugins.gcce.labels.enable_command_scheduler">Enable Command Scheduler</label>
                     </div>
-                    <div class="config-description" data-i18n="generated.c05e86c74b1e">Allow scheduled command execution</div>
+                    <div class="config-description" data-i18n="plugins.gcce.labels.allow_scheduled_command_execution">Allow scheduled command execution</div>
                 </div>
 
                 <div class="config-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-pipeline" checked>
-                        <label class="config-label" for="enable-pipeline" style="margin: 0;" data-i18n="generated.35c0d506c605">Enable Command Pipelines</label>
+                        <label class="config-label" for="enable-pipeline" style="margin: 0;" data-i18n="plugins.gcce.labels.enable_command_pipelines">Enable Command Pipelines</label>
                     </div>
-                    <div class="config-description" data-i18n="generated.b0ddebf6fb5e">Allow chaining multiple commands together</div>
+                    <div class="config-description" data-i18n="plugins.gcce.labels.allow_chaining_multiple_commands_together">Allow chaining multiple commands together</div>
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="margin-top: 16px;" data-i18n="generated.abdcf076163b">💾 Save Advanced Configuration</button>
+                <button type="submit" class="btn btn-primary" style="margin-top: 16px;" data-i18n="plugins.gcce.labels.save_advanced_configuration">💾 Save Advanced Configuration</button>
             </form>
         </div>
 
         <!-- Debug & Diagnostics -->
         <div class="card">
-            <div class="card-title" data-i18n="generated.e6d18de86957">🔧 Debug & Diagnostics</div>
+            <div class="card-title" data-i18n="plugins.gcce.labels.debug_diagnostics">🔧 Debug & Diagnostics</div>
             <div class="quick-actions">
                 <button class="action-btn" id="btn-test-command">
-                    <span>🧪</span><span data-i18n="generated.1045a2abd241"> Test Command
+                    <span>🧪</span><span data-i18n="plugins.gcce.labels.test_command"> Test Command
                 </span></button>
                 <button class="action-btn" id="btn-validate-commands">
-                    <span>✅</span><span data-i18n="generated.daa01490c0cc"> Validate All Commands
+                    <span>✅</span><span data-i18n="plugins.gcce.labels.validate_all_commands"> Validate All Commands
                 </span></button>
                 <button class="action-btn" id="btn-rebuild-indexes">
-                    <span>🔨</span><span data-i18n="generated.4d967539f8f7"> Rebuild Indexes
+                    <span>🔨</span><span data-i18n="plugins.gcce.labels.rebuild_indexes"> Rebuild Indexes
                 </span></button>
                 <button class="action-btn" id="btn-system-info">
-                    <span data-i18n="generated.21f9cc89d526">ℹ️</span><span data-i18n="generated.2e23eee822c5"> System Info
+                    <span data-i18n="plugins.gcce.labels.i">ℹ️</span><span data-i18n="plugins.gcce.labels.system_info"> System Info
                 </span></button>
             </div>
         </div>
 
         <!-- Import/Export -->
         <div class="card">
-            <div class="card-title" data-i18n="generated.b764b6af7920">📦 Import/Export</div>
+            <div class="card-title" data-i18n="plugins.gcce.labels.import_export">📦 Import/Export</div>
             <div class="grid-2">
                 <div class="config-group">
-                    <label class="config-label" data-i18n="generated.cf92fed59ec0">Export Commands</label>
-                    <div class="config-description" data-i18n="generated.3e1a31c25bf4">Export all command definitions to JSON</div>
-                    <button class="btn btn-primary btn-sm" id="btn-export-commands" data-i18n="generated.abba7f8c4154">📥 Export Commands</button>
+                    <label class="config-label" data-i18n="plugins.gcce.labels.export_commands_cf92fe">Export Commands</label>
+                    <div class="config-description" data-i18n="plugins.gcce.labels.export_all_command_definitions_to_json">Export all command definitions to JSON</div>
+                    <button class="btn btn-primary btn-sm" id="btn-export-commands" data-i18n="plugins.gcce.labels.export_commands">📥 Export Commands</button>
                 </div>
                 <div class="config-group">
-                    <label class="config-label" data-i18n="generated.47de2a43d422">Import Commands</label>
-                    <div class="config-description" data-i18n="generated.dc54a87a9ffa">Import command definitions from JSON</div>
+                    <label class="config-label" data-i18n="plugins.gcce.labels.import_commands_47de2a">Import Commands</label>
+                    <div class="config-description" data-i18n="plugins.gcce.labels.import_command_definitions_from_json">Import command definitions from JSON</div>
                     <input type="file" id="import-commands-file" accept=".json" style="display: none;">
-                    <button class="btn btn-primary btn-sm" id="btn-import-commands" data-i18n="generated.1db4c1f1cc5a">📤 Import Commands</button>
+                    <button class="btn btn-primary btn-sm" id="btn-import-commands" data-i18n="plugins.gcce.labels.import_commands">📤 Import Commands</button>
                 </div>
             </div>
         </div>
@@ -1749,6 +1749,34 @@
         let hudMediaLibrary = [];
         let giftRotator = { enabled: false, intervalSeconds: 10, entries: [] };
         let giftCatalog = [];
+
+        function interpolateRuntimeFallback(fallback, params = {}) {
+            return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+                Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+            ));
+        }
+
+        function t(key, fallback, params = {}) {
+            const translated = window.i18n?.t?.(key, params);
+            return translated && translated !== key ? translated : interpolateRuntimeFallback(fallback, params);
+        }
+
+        function runtimeText(key, fallback, params = {}) {
+            return t(`plugins.gcce.runtime.${key}`, fallback, params);
+        }
+
+        function rerenderRuntimeCopy() {
+            displayCommands(commands);
+            renderMediaLibrary();
+            renderGiftCatalogGrid(document.getElementById('gift-catalog-search')?.value || '');
+            renderRotatorEntries();
+        }
+
+        function registerRuntimeI18n() {
+            if (!window.i18n) return;
+            if (typeof window.i18n?.onChange === 'function') window.i18n.onChange(rerenderRuntimeCopy);
+            if (typeof window.i18n?.onLanguageChange === 'function') window.i18n.onLanguageChange(rerenderRuntimeCopy);
+        }
 
         // Load configuration
         async function loadConfig() {
@@ -1789,7 +1817,7 @@
                 }
             } catch (error) {
                 console.error('Failed to load commands:', error);
-                document.getElementById('commands-container').innerHTML = '<div class="error">Failed to load commands</div>';
+                document.getElementById('commands-container').innerHTML = `<div class="error">${escapeHtml(runtimeText('errors.load_commands', 'Failed to load commands'))}</div>`;
             }
         }
 
@@ -1815,9 +1843,9 @@
         // Display commands
         function displayCommands(commandsList, containerId = 'commands-container') {
             const container = document.getElementById(containerId);
-            
+
             if (!commandsList || commandsList.length === 0) {
-                container.innerHTML = '<p class="loading">No commands registered yet.</p>';
+                container.innerHTML = `<p class="loading" data-i18n="plugins.gcce.ui.no_commands">${t('plugins.gcce.ui.no_commands', 'No commands registered yet.')}</p>`;
                 return;
             }
 
@@ -1826,18 +1854,18 @@
             table.innerHTML = `
                 <thead>
                     <tr>
-                        <th>Command</th>
-                        <th>Description</th>
-                        <th>Plugin</th>
-                        <th>Permission</th>
-                        <th>Enabled</th>
+                        <th>${t('plugins.gcce.gcce.commands.table.command', 'Command')}</th>
+                        <th>${t('plugins.gcce.gcce.commands.table.description', 'Description')}</th>
+                        <th>${t('plugins.gcce.gcce.commands.table.plugin', 'Plugin')}</th>
+                        <th>${t('plugins.gcce.gcce.commands.table.permission', 'Permission')}</th>
+                        <th>${t('plugins.gcce.gcce.commands.table.enabled', 'Enabled')}</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${commandsList.map(cmd => {
                         const commandName = cmd.name || '';
                         const permission = cmd.permission || 'viewer';
-                        const pluginName = cmd.plugin || cmd.pluginId || 'built-in';
+                        const pluginName = cmd.plugin || cmd.pluginId || runtimeText('data.built_in', 'Built-in');
                         return `
                         <tr>
                             <td><span class="command-name">${escapeHtml(commandName)}</span></td>
@@ -1855,10 +1883,10 @@
                     }).join('')}
                 </tbody>
             `;
-            
+
             container.innerHTML = '';
             container.appendChild(table);
-            
+
             // Add event delegation for toggle switches
             table.addEventListener('change', (e) => {
                 if (e.target.type === 'checkbox' && e.target.dataset.commandName) {
@@ -1878,15 +1906,17 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    showMessage(`Command ${commandName} ${enabled ? 'enabled' : 'disabled'}`, 'success');
+                    showMessage(enabled
+                        ? runtimeText('status.command_enabled', 'Command {name} enabled', { name: commandName })
+                        : runtimeText('status.command_disabled', 'Command {name} disabled', { name: commandName }), 'success');
                     loadStats();
                 } else {
-                    showMessage('Failed to toggle command', 'error');
+                    showMessage(runtimeText('errors.toggle_command', 'Failed to toggle command'), 'error');
                     loadCommands(); // Reload to reset checkbox
                 }
             } catch (error) {
                 console.error('Failed to toggle command:', error);
-                showMessage('Failed to toggle command', 'error');
+                showMessage(runtimeText('errors.toggle_command', 'Failed to toggle command'), 'error');
                 loadCommands(); // Reload to reset checkbox
             }
         }
@@ -1894,7 +1924,7 @@
         // Handle form submission
         document.getElementById('config-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const formData = new FormData(e.target);
             const newConfig = {
                 commandPrefix: formData.get('commandPrefix'),
@@ -1912,14 +1942,14 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    showMessage('Configuration saved successfully!', 'success');
+                    showMessage(runtimeText('status.configuration_saved', 'Configuration saved successfully!'), 'success');
                     config = data.config;
                 } else {
-                    showMessage('Failed to save configuration', 'error');
+                    showMessage(runtimeText('errors.save_configuration', 'Failed to save configuration'), 'error');
                 }
             } catch (error) {
                 console.error('Failed to save config:', error);
-                showMessage('Failed to save configuration', 'error');
+                showMessage(runtimeText('errors.save_configuration', 'Failed to save configuration'), 'error');
             }
         });
 
@@ -1930,7 +1960,7 @@
             message.className = type;
             message.textContent = text;
             container.appendChild(message);
-            
+
             setTimeout(() => message.remove(), 5000);
         }
 
@@ -2031,18 +2061,18 @@
                     hudMediaLibrary = data.media || [];
                     renderMediaLibrary();
                 } else {
-                    document.getElementById('hud-media-list').innerHTML = '<div class="error">Failed to load media library</div>';
+                    document.getElementById('hud-media-list').innerHTML = `<div class="error">${t('plugins.gcce.ui.media_load_failed', 'Failed to load media library')}</div>`;
                 }
             } catch (error) {
                 console.error('Failed to load media library:', error);
-                document.getElementById('hud-media-list').innerHTML = '<div class="error">Failed to load media library</div>';
+                document.getElementById('hud-media-list').innerHTML = `<div class="error">${t('plugins.gcce.ui.media_load_failed', 'Failed to load media library')}</div>`;
             }
         }
 
         function renderMediaLibrary() {
             const container = document.getElementById('hud-media-list');
             if (!hudMediaLibrary || hudMediaLibrary.length === 0) {
-                container.innerHTML = '<div class="config-description">No custom media configured yet.</div>';
+                container.innerHTML = `<div class="config-description">${t('plugins.gcce.ui.no_custom_media', 'No custom media configured yet.')}</div>`;
                 return;
             }
 
@@ -2055,9 +2085,9 @@
                     <td class="command-name">${escapeHtml(label)}</td>
                     <td><code>${escapeHtml(command)}</code></td>
                     <td>${escapeHtml(detectMediaType(item.url || ''))}</td>
-                    <td>${escapeHtml(duration)}s</td>
+                    <td>${escapeHtml(duration)}${escapeHtml(runtimeText('units.seconds_short', 's'))}</td>
                     <td><span class="config-description" style="font-size:0.85em;">${escapeHtml(item.url || '')}</span></td>
-                    <td><button class="btn btn-sm" data-remove-media="${escapeHtml(item.id || '')}">Remove</button></td>
+                    <td><button class="btn btn-sm" data-remove-media="${escapeHtml(item.id || '')}" aria-label="${escapeHtml(runtimeText('accessibility.remove_media', 'Remove media {name}', { name: label }))}">${t('plugins.gcce.ui.remove', 'Remove')}</button></td>
                 </tr>
             `;
             }).join('');
@@ -2066,11 +2096,11 @@
                 <table class="commands-table">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Chat Command</th>
-                            <th>Type</th>
-                            <th>Duration</th>
-                            <th>URL</th>
+                            <th>${t('plugins.gcce.ui.table_name', 'Name')}</th>
+                            <th>${t('plugins.gcce.ui.table_chat_command', 'Chat Command')}</th>
+                            <th>${t('plugins.gcce.ui.table_type', 'Type')}</th>
+                            <th>${t('plugins.gcce.ui.table_duration', 'Duration')}</th>
+                            <th>${runtimeText('table.url', 'URL')}</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -2094,7 +2124,7 @@
             const command = document.getElementById('media-command').value.trim();
 
             if (!label || !url) {
-                showMessage('Please enter media name and URL', 'error');
+                showMessage(runtimeText('validation.media_name_url_required', 'Please enter media name and URL'), 'error');
                 return;
             }
 
@@ -2103,27 +2133,27 @@
                 // Normalize command for comparison (remove prefix)
                 const normalizeCommand = (cmd) => {
                     const trimmed = cmd.trim().toLowerCase();
-                    return trimmed.startsWith('/') || trimmed.startsWith('!') 
-                        ? trimmed.substring(1) 
+                    return trimmed.startsWith('/') || trimmed.startsWith('!')
+                        ? trimmed.substring(1)
                         : trimmed;
                 };
-                
+
                 const normalizedCommand = normalizeCommand(command);
-                
+
                 // Check for duplicate commands (after normalization)
                 const isDuplicate = hudMediaLibrary.some(item => {
                     if (!item.command) return false;
                     return normalizeCommand(item.command) === normalizedCommand;
                 });
-                
+
                 if (isDuplicate) {
-                    showMessage('Command already in use by another media item', 'error');
+                    showMessage(runtimeText('validation.media_command_duplicate', 'Command already in use by another media item'), 'error');
                     return;
                 }
             }
 
             const type = detectMediaType(url);
-            document.getElementById('media-type-preview').textContent = `Detected: ${type}`;
+            document.getElementById('media-type-preview').textContent = runtimeText('status.detected_type', 'Detected: {type}', { type });
 
             hudMediaLibrary.push({
                 id: `media-${Date.now()}`,
@@ -2133,13 +2163,13 @@
                 type,
                 command: command || null
             });
-            
+
             // Clear form
             document.getElementById('media-label').value = '';
             document.getElementById('media-url').value = '';
             document.getElementById('media-command').value = '';
             document.getElementById('media-duration').value = '10';
-            
+
             renderMediaLibrary();
         }
 
@@ -2154,13 +2184,13 @@
                 if (data.success) {
                     hudMediaLibrary = data.media || [];
                     renderMediaLibrary();
-                    showMessage('Media library saved', 'success');
+                    showMessage(runtimeText('hud.media_library_saved', 'Media library saved'), 'success');
                 } else {
-                    showMessage('Failed to save media library', 'error');
+                    showMessage(runtimeText('errors.save_media_library', 'Failed to save media library'), 'error');
                 }
             } catch (error) {
                 console.error('Failed to save media library:', error);
-                showMessage('Failed to save media library', 'error');
+                showMessage(runtimeText('errors.save_media_library', 'Failed to save media library'), 'error');
             }
         }
 
@@ -2171,7 +2201,7 @@
             const payloadUrl = url || (hudMediaLibrary.find(m => m.label === label)?.url || '');
 
             if (!payloadUrl) {
-                showMessage('Enter a media URL or pick an existing entry', 'error');
+                showMessage(runtimeText('validation.media_url_or_entry_required', 'Enter a media URL or pick an existing entry'), 'error');
                 return;
             }
 
@@ -2183,13 +2213,13 @@
                 });
                 const data = await response.json();
                 if (data.success) {
-                    showMessage('Media test sent to HUD overlay', 'success');
+                    showMessage(runtimeText('hud.media_test_sent', 'Media test sent to HUD overlay'), 'success');
                 } else {
-                    showMessage(data.error || 'Media test failed', 'error');
+                    showMessage(runtimeText('errors.media_test_failed', 'Media test failed: {error}', { error: data.error || runtimeText('errors.unknown', 'Unknown error') }), 'error');
                 }
             } catch (error) {
                 console.error('Failed to test media:', error);
-                showMessage('Failed to test media', 'error');
+                showMessage(runtimeText('errors.media_test_failed', 'Media test failed: {error}', { error: error.message || runtimeText('errors.unknown', 'Unknown error') }), 'error');
             }
         }
 
@@ -2226,12 +2256,12 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    showMessage('HUD configuration saved', 'success');
+                    showMessage(runtimeText('hud.configuration_saved', 'HUD configuration saved'), 'success');
                     hudConfig = data.config;
                 }
             } catch (error) {
                 console.error('Failed to save HUD config:', error);
-                showMessage('Failed to save HUD configuration', 'error');
+                showMessage(runtimeText('errors.save_hud_configuration', 'Failed to save HUD configuration'), 'error');
             }
         }
 
@@ -2244,7 +2274,7 @@
                     document.getElementById('hud-stat-total').textContent = stats.totalDisplayed || 0;
                     document.getElementById('hud-stat-active').textContent = stats.activeCount || 0;
                     document.getElementById('hud-stat-position').textContent = stats.mostUsedPosition || '-';
-                    document.getElementById('hud-stat-duration').textContent = (stats.averageDuration || 0) + 's';
+                    document.getElementById('hud-stat-duration').textContent = `${stats.averageDuration || 0}${runtimeText('units.seconds_short', 's')}`;
                 }
             } catch (error) {
                 console.error('Failed to load HUD stats:', error);
@@ -2265,9 +2295,9 @@
 
         function displayActiveElements(elements) {
             const container = document.getElementById('hud-active-elements');
-            
+
             if (!elements || elements.length === 0) {
-                container.innerHTML = '<p>No active HUD elements</p>';
+                container.innerHTML = `<p>${t('plugins.gcce.labels.no_active_hud_elements', 'No active HUD elements')}</p>`;
                 return;
             }
 
@@ -2279,7 +2309,7 @@
                 html += `
                     <div class="element-item">
                         <strong>${escapeHtml(type)}</strong>: ${escapeHtml(content)}...
-                        <br><small>User: ${escapeHtml(el.username || '')} | Remaining: ${remaining}s</small>
+                        <br><small>${escapeHtml(runtimeText('hud.active_element_details', 'User: {user} | Remaining: {seconds}s', { user: el.username || '', seconds: remaining }))}</small>
                     </div>
                 `;
             });
@@ -2290,7 +2320,7 @@
         async function testHUDText() {
             const text = document.getElementById('hud-test-text').value;
             if (!text) {
-                showMessage('Please enter test text', 'error');
+                showMessage(runtimeText('validation.test_text_required', 'Please enter test text'), 'error');
                 return;
             }
 
@@ -2303,21 +2333,21 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    showMessage('Test text displayed on HUD overlay', 'success');
+                    showMessage(runtimeText('hud.test_text_displayed', 'Test text displayed on HUD overlay'), 'success');
                     setTimeout(() => loadActiveElements(), 500);
                 } else {
-                    showMessage('Failed to display text: ' + data.error, 'error');
+                    showMessage(runtimeText('errors.display_text_failed', 'Failed to display text: {error}', { error: data.error || runtimeText('errors.unknown', 'Unknown error') }), 'error');
                 }
             } catch (error) {
                 console.error('Failed to test HUD text:', error);
-                showMessage('Failed to display text', 'error');
+                showMessage(runtimeText('errors.display_text_failed', 'Failed to display text: {error}', { error: error.message || runtimeText('errors.unknown', 'Unknown error') }), 'error');
             }
         }
 
         async function testHUDImage() {
             const url = document.getElementById('hud-test-image').value;
             if (!url) {
-                showMessage('Please enter image URL', 'error');
+                showMessage(runtimeText('validation.image_url_required', 'Please enter image URL'), 'error');
                 return;
             }
 
@@ -2330,14 +2360,14 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    showMessage('Test image displayed on HUD overlay', 'success');
+                    showMessage(runtimeText('hud.test_image_displayed', 'Test image displayed on HUD overlay'), 'success');
                     setTimeout(() => loadActiveElements(), 500);
                 } else {
-                    showMessage('Failed to display image: ' + data.error, 'error');
+                    showMessage(runtimeText('errors.display_image_failed', 'Failed to display image: {error}', { error: data.error || runtimeText('errors.unknown', 'Unknown error') }), 'error');
                 }
             } catch (error) {
                 console.error('Failed to test HUD image:', error);
-                showMessage('Failed to display image', 'error');
+                showMessage(runtimeText('errors.display_image_failed', 'Failed to display image: {error}', { error: error.message || runtimeText('errors.unknown', 'Unknown error') }), 'error');
             }
         }
 
@@ -2346,12 +2376,12 @@
                 const response = await fetch('/api/gcce/hud/clear', { method: 'POST' });
                 const data = await response.json();
                 if (data.success) {
-                    showMessage('All HUD elements cleared', 'success');
+                    showMessage(runtimeText('hud.elements_cleared', 'All HUD elements cleared'), 'success');
                     loadActiveElements();
                 }
             } catch (error) {
                 console.error('Failed to clear HUD:', error);
-                showMessage('Failed to clear HUD', 'error');
+                showMessage(runtimeText('errors.clear_hud', 'Failed to clear HUD'), 'error');
             }
         }
 
@@ -2365,15 +2395,15 @@
                 const data = await response.json();
                 const status = document.getElementById('gift-catalog-status');
                 if (!data.success) {
-                    status.textContent = 'Failed to load gift catalog';
+                    status.textContent = runtimeText('gift_catalog.load_failed', 'Failed to load gift catalog');
                     return;
                 }
                 giftCatalog = data.catalog || [];
-                status.textContent = `Loaded ${giftCatalog.length} gifts`;
+                status.textContent = runtimeText('gift_catalog.loaded', 'Loaded {count} gifts', { count: giftCatalog.length });
                 renderGiftCatalogGrid();
             } catch (error) {
                 console.error('Failed to load gift catalog:', error);
-                document.getElementById('gift-catalog-status').textContent = 'Failed to load gift catalog';
+                document.getElementById('gift-catalog-status').textContent = runtimeText('gift_catalog.load_failed', 'Failed to load gift catalog');
             }
         }
 
@@ -2394,15 +2424,15 @@
                 const msgDiv = document.createElement('div');
                 msgDiv.className = 'config-description';
                 msgDiv.style.cssText = 'grid-column: 1/-1; text-align: center; padding: 20px;';
-                msgDiv.textContent = 'No gifts available. Click "Load Gift Catalog" to fetch gifts.';
+                msgDiv.textContent = runtimeText('gift_catalog.empty', 'No gifts available. Click "Load Gift Catalog" to fetch gifts.');
                 grid.appendChild(msgDiv);
                 return;
             }
 
             const lowerFilterText = filterText.toLowerCase();
             const filtered = filterText
-                ? giftCatalog.filter(g => 
-                    g.name.toLowerCase().includes(lowerFilterText) || 
+                ? giftCatalog.filter(g =>
+                    g.name.toLowerCase().includes(lowerFilterText) ||
                     String(g.id).includes(filterText)
                   )
                 : giftCatalog;
@@ -2412,7 +2442,7 @@
                 const msgDiv = document.createElement('div');
                 msgDiv.className = 'config-description';
                 msgDiv.style.cssText = 'grid-column: 1/-1; text-align: center; padding: 20px;';
-                msgDiv.textContent = 'No gifts match your search.';
+                msgDiv.textContent = runtimeText('gift_catalog.no_matches', 'No gifts match your search.');
                 grid.appendChild(msgDiv);
                 return;
             }
@@ -2434,16 +2464,16 @@
                     const img = document.createElement('img');
                     img.src = g.image_url || g.image_url_72;
                     img.alt = g.name;
-                    
+
                     const fallbackDiv = document.createElement('div');
                     fallbackDiv.style.cssText = 'display:none; width:64px; height:64px; align-items:center; justify-content:center; font-size:32px; background:rgba(255,255,255,0.05); border-radius:8px;';
                     fallbackDiv.textContent = '🎁';
-                    
+
                     img.addEventListener('error', function() {
                         this.style.display = 'none';
                         fallbackDiv.style.display = 'flex';
                     });
-                    
+
                     itemDiv.appendChild(img);
                     itemDiv.appendChild(fallbackDiv);
                 } else {
@@ -2495,7 +2525,7 @@
             preview.classList.add('visible');
             previewImg.src = selectedGift.image_url || selectedGift.image_url_72 || '';
             previewName.textContent = selectedGift.name;
-            previewId.textContent = `ID: ${selectedGift.id}`;
+            previewId.textContent = runtimeText('gift_catalog.gift_id', 'ID: {id}', { id: selectedGift.id });
 
             // Auto-fill title if empty
             const titleInput = document.getElementById('rotator-title');
@@ -2524,7 +2554,7 @@
         async function uploadMedia() {
             const fileInput = document.getElementById('media-upload-input');
             if (!fileInput.files || fileInput.files.length === 0) {
-                showMessage('Please select a file first', 'error');
+                showMessage(runtimeText('validation.file_required', 'Please select a file first'), 'error');
                 return;
             }
 
@@ -2533,7 +2563,7 @@
             formData.append('media', file);
 
             try {
-                showMessage('Uploading...', 'info');
+                showMessage(runtimeText('status.uploading', 'Uploading...'), 'info');
                 const response = await fetch('/api/gcce/hud/media-upload', {
                     method: 'POST',
                     body: formData
@@ -2548,13 +2578,13 @@
                         filename: data.filename
                     };
                     showMediaPreview(selectedMedia);
-                    showMessage('Media uploaded successfully', 'success');
+                    showMessage(runtimeText('status.media_uploaded', 'Media uploaded successfully'), 'success');
                 } else {
-                    showMessage(data.error || 'Upload failed', 'error');
+                    showMessage(runtimeText('errors.upload_failed', 'Upload failed: {error}', { error: data.error || runtimeText('errors.unknown', 'Unknown error') }), 'error');
                 }
             } catch (error) {
                 console.error('Media upload error:', error);
-                showMessage('Upload failed: ' + error.message, 'error');
+                showMessage(runtimeText('errors.upload_failed', 'Upload failed: {error}', { error: error.message || runtimeText('errors.unknown', 'Unknown error') }), 'error');
             }
         }
 
@@ -2563,7 +2593,7 @@
             const url = urlInput.value.trim();
 
             if (!url) {
-                showMessage('Please enter a URL', 'error');
+                showMessage(runtimeText('validation.url_required', 'Please enter a URL'), 'error');
                 return;
             }
 
@@ -2572,7 +2602,7 @@
             try {
                 parsedUrl = new URL(url);
             } catch {
-                showMessage('Invalid URL format', 'error');
+                showMessage(runtimeText('validation.invalid_url', 'Invalid URL format'), 'error');
                 return;
             }
 
@@ -2580,7 +2610,7 @@
             const pathname = parsedUrl.pathname.toLowerCase();
             let mediaKind = 'image';
             let mimetype = 'application/octet-stream';
-            
+
             if (pathname.endsWith('.mp4')) {
                 mediaKind = 'video';
                 mimetype = 'video/mp4';
@@ -2605,7 +2635,7 @@
             };
 
             showMediaPreview(selectedMedia);
-            showMessage('External URL set', 'success');
+            showMessage(runtimeText('status.external_url_set', 'External URL set'), 'success');
         }
 
         function showMediaPreview(media) {
@@ -2633,14 +2663,14 @@
                 content.appendChild(img);
             }
 
-            name.textContent = media.filename || 'Media';
+            name.textContent = media.filename || runtimeText('hud.media_fallback_name', 'Media');
             type.textContent = `${media.mediaKind} (${media.mimetype})`;
             preview.style.display = 'flex';
 
             // Auto-fill title if empty
             const titleInput = document.getElementById('rotator-title');
             if (!titleInput.value) {
-                const baseName = media.filename ? media.filename.replace(/\.[^.]+$/, '') : 'Custom Media';
+                const baseName = media.filename ? media.filename.replace(/\.[^.]+$/, '') : runtimeText('hud.custom_media_fallback_name', 'Custom media');
                 titleInput.value = baseName;
             }
         }
@@ -2651,14 +2681,14 @@
                 container.textContent = '';
                 const msgDiv = document.createElement('div');
                 msgDiv.className = 'config-description';
-                msgDiv.textContent = 'No gifts added yet. Select a gift from the catalog above and click "Add to Rotator".';
+                msgDiv.textContent = runtimeText('rotator.empty', 'No entries yet. Select a gift from the catalog above and click "Add to Rotator".');
                 container.appendChild(msgDiv);
                 return;
             }
 
             // Clear container
             container.innerHTML = '';
-            
+
             // Create grid
             const gridDiv = document.createElement('div');
             gridDiv.className = 'rotator-entries-grid';
@@ -2671,7 +2701,7 @@
                 // Create image container
                 const imageDiv = document.createElement('div');
                 imageDiv.className = 'rotator-entry-image';
-                
+
                 const entryType = entry.type || 'gift';
                 if (entryType === 'media') {
                     // Media entry
@@ -2721,22 +2751,24 @@
 
                 const infoDiv = document.createElement('div');
                 infoDiv.className = 'rotator-entry-info';
-                infoDiv.textContent = entry.info || 'No description';
+                infoDiv.textContent = entry.info || runtimeText('rotator.no_description', 'No description');
                 contentDiv.appendChild(infoDiv);
 
                 const templateDiv = document.createElement('div');
                 templateDiv.className = 'rotator-entry-template';
-                
+
                 // Add type badge
                 const typeBadge = document.createElement('span');
                 typeBadge.className = 'rotator-entry-template-badge';
-                typeBadge.textContent = entryType === 'media' ? '📁 media' : '🎁 gift';
+                typeBadge.textContent = entryType === 'media'
+                    ? `📁 ${runtimeText('rotator.type_media', 'Media')}`
+                    : `🎁 ${runtimeText('rotator.type_gift', 'Gift')}`;
                 typeBadge.style.backgroundColor = entryType === 'media' ? '#4a90e2' : '#ff5f9e';
                 templateDiv.appendChild(typeBadge);
-                
+
                 const templateBadge = document.createElement('span');
                 templateBadge.className = 'rotator-entry-template-badge';
-                templateBadge.textContent = entry.template || 'card';
+                templateBadge.textContent = entry.template || t('plugins.gcce.ui.template_card', 'Card');
                 templateDiv.appendChild(templateBadge);
 
                 if (entry.animation) {
@@ -2754,7 +2786,8 @@
 
                 const removeBtn = document.createElement('button');
                 removeBtn.className = 'btn btn-sm';
-                removeBtn.textContent = '🗑️ Remove';
+                removeBtn.textContent = `🗑️ ${t('plugins.gcce.ui.remove', 'Remove')}`;
+                removeBtn.setAttribute('aria-label', runtimeText('accessibility.remove_rotator_entry', 'Remove rotator entry {name}', { name: entry.title || entry.giftName || '' }));
                 removeBtn.addEventListener('click', () => {
                     giftRotator.entries = giftRotator.entries.filter(e => e.id !== entry.id);
                     renderRotatorEntries();
@@ -2774,12 +2807,12 @@
 
         function addRotatorEntry() {
             if (currentEntryMode === 'gift' && !selectedGift) {
-                showMessage('Please select a gift from the catalog first', 'error');
+                showMessage(runtimeText('validation.gift_required', 'Please select a gift from the catalog first'), 'error');
                 return;
             }
-            
+
             if (currentEntryMode === 'media' && !selectedMedia) {
-                showMessage('Please upload or select media first', 'error');
+                showMessage(runtimeText('validation.media_required', 'Please upload or select media first'), 'error');
                 return;
             }
 
@@ -2793,7 +2826,7 @@
             const backgroundColor = document.getElementById('rotator-bg-color').value;
 
             giftRotator.entries = giftRotator.entries || [];
-            
+
             if (currentEntryMode === 'media') {
                 // Add media entry
                 giftRotator.entries.push({
@@ -2802,7 +2835,7 @@
                     mediaUrl: selectedMedia.url,
                     mediaKind: selectedMedia.mediaKind,
                     mimetype: selectedMedia.mimetype,
-                    title: title || selectedMedia.filename || 'Custom Media',
+                    title: title || selectedMedia.filename || runtimeText('hud.custom_media_fallback_name', 'Custom media'),
                     info,
                     template,
                     animation,
@@ -2811,10 +2844,10 @@
                     accentColor,
                     backgroundColor
                 });
-                
+
                 renderRotatorEntries();
-                showMessage(`Added "${title || selectedMedia.filename}" to rotator`, 'success');
-                
+                showMessage(runtimeText('rotator.entry_added', 'Added "{name}" to rotator', { name: title || selectedMedia.filename || runtimeText('hud.custom_media_fallback_name', 'Custom media') }), 'success');
+
                 // Clear form
                 document.getElementById('rotator-title').value = '';
                 document.getElementById('rotator-info').value = '';
@@ -2839,10 +2872,10 @@
                     accentColor,
                     backgroundColor
                 });
-                
+
                 renderRotatorEntries();
-                showMessage(`Added "${title || selectedGift.name}" to rotator`, 'success');
-                
+                showMessage(runtimeText('rotator.entry_added', 'Added "{name}" to rotator', { name: title || selectedGift.name }), 'success');
+
                 // Clear form
                 document.getElementById('rotator-title').value = '';
                 document.getElementById('rotator-info').value = '';
@@ -2879,22 +2912,22 @@
                 if (data.success) {
                     giftRotator = data.rotator || giftRotator;
                     renderRotatorEntries();
-                    showMessage('Gift rotator saved', 'success');
+                    showMessage(runtimeText('rotator.saved', 'Gift rotator saved'), 'success');
                 } else {
-                    showMessage('Failed to save gift rotator', 'error');
+                    showMessage(runtimeText('errors.save_rotator', 'Failed to save gift rotator'), 'error');
                 }
             } catch (error) {
                 console.error('Failed to save gift rotator:', error);
-                showMessage('Failed to save gift rotator', 'error');
+                showMessage(runtimeText('errors.save_rotator', 'Failed to save gift rotator'), 'error');
             }
         }
 
         function copyOverlayUrl() {
             const url = document.getElementById('hud-overlay-url').textContent;
             navigator.clipboard.writeText(url).then(() => {
-                showMessage('Overlay URL copied to clipboard', 'success');
+                showMessage(runtimeText('status.overlay_url_copied', 'Overlay URL copied to clipboard'), 'success');
             }).catch(() => {
-                showMessage('Failed to copy URL', 'error');
+                showMessage(runtimeText('errors.copy_url', 'Failed to copy URL'), 'error');
             });
         }
 
@@ -2906,7 +2939,7 @@
                 loadHUDStats();
                 loadActiveElements();
             }
-            showMessage('Stats refreshed', 'success');
+            showMessage(runtimeText('status.stats_refreshed', 'Stats refreshed'), 'success');
         }
 
         async function clearCache() {
@@ -2914,11 +2947,11 @@
                 const response = await fetch('/api/gcce/cache/invalidate', { method: 'POST' });
                 const data = await response.json();
                 if (data.success) {
-                    showMessage('Cache cleared successfully', 'success');
+                    showMessage(runtimeText('status.cache_cleared', 'Cache cleared successfully'), 'success');
                     loadStats();
                 }
             } catch (error) {
-                showMessage('Failed to clear cache', 'error');
+                showMessage(runtimeText('errors.clear_cache', 'Failed to clear cache'), 'error');
             }
         }
 
@@ -2933,10 +2966,10 @@
                     a.href = url;
                     a.download = `gcce-audit-${Date.now()}.json`;
                     a.click();
-                    showMessage('Audit log exported', 'success');
+                    showMessage(runtimeText('status.audit_log_exported', 'Audit log exported'), 'success');
                 }
             } catch (error) {
-                showMessage('Failed to export audit log', 'error');
+                showMessage(runtimeText('errors.export_audit_log', 'Failed to export audit log'), 'error');
             }
         }
 
@@ -2947,11 +2980,11 @@
                 if (data.success) {
                     displayHistoryModal(data.history);
                 } else {
-                    showMessage('Failed to load history', 'error');
+                    showMessage(runtimeText('errors.load_history', 'Failed to load history'), 'error');
                 }
             } catch (error) {
                 console.error('Failed to load history:', error);
-                showMessage('Failed to load history', 'error');
+                showMessage(runtimeText('errors.load_history', 'Failed to load history'), 'error');
             }
         }
 
@@ -2960,33 +2993,33 @@
                 <div id="history-modal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center;">
                     <div style="background: var(--color-bg-card); border-radius: 12px; padding: 24px; max-width: 90%; max-height: 90%; overflow: auto; width: 1000px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                            <h2 style="margin: 0;">📜 Command History</h2>
-                            <button class="btn btn-sm" onclick="document.getElementById('history-modal').remove()">✕ Close</button>
+                            <h2 style="margin: 0;">📜 ${escapeHtml(runtimeText('dialogs.command_history', 'Command history'))}</h2>
+                            <button class="btn btn-sm" aria-label="${escapeHtml(runtimeText('accessibility.close_history', 'Close command history'))}" onclick="document.getElementById('history-modal').remove()">✕ ${escapeHtml(runtimeText('dialogs.close', 'Close'))}</button>
                         </div>
                         <div style="margin-bottom: 16px;">
-                            <input type="text" id="history-search" placeholder="Search by username or command..." style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--color-border); background: var(--color-bg-secondary); color: var(--color-text-primary);">
+                            <input type="text" id="history-search" placeholder="${escapeHtml(runtimeText('dialogs.history_search_placeholder', 'Search by username or command...'))}" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--color-border); background: var(--color-bg-secondary); color: var(--color-text-primary);">
                         </div>
                         <table class="commands-table">
                             <thead>
                                 <tr>
-                                    <th>Time</th>
-                                    <th>User</th>
-                                    <th>Command</th>
-                                    <th>Arguments</th>
-                                    <th>Status</th>
+                                    <th data-i18n="plugins.gcce.ui.table_time">Time</th>
+                                    <th data-i18n="plugins.gcce.ui.table_user">User</th>
+                                    <th data-i18n="plugins.gcce.gcce.commands.table.command">Command</th>
+                                    <th data-i18n="plugins.gcce.ui.table_arguments">Arguments</th>
+                                    <th data-i18n="plugins.gcce.ui.table_status">Status</th>
                                 </tr>
                             </thead>
                             <tbody id="history-table-body">
                                 ${history.map(entry => `
                                     <tr>
                                         <td>${escapeHtml(new Date(entry.timestamp).toLocaleString())}</td>
-                                        <td>${escapeHtml(entry.context?.username || 'Unknown')}</td>
-                                        <td><span class="command-name">/${escapeHtml(entry.command?.name || 'Unknown')}</span></td>
+                                        <td>${escapeHtml(entry.context?.username || runtimeText('data.unknown_user', 'Unknown'))}</td>
+                                        <td><span class="command-name">/${escapeHtml(entry.command?.name || runtimeText('data.unknown_command', 'Unknown'))}</span></td>
                                         <td>${escapeHtml((entry.command?.args || []).join(' '))}</td>
                                         <td>
-                                            ${entry.result?.success 
-                                                ? '<span class="permission-badge permission-viewer" style="background: #10b981;">Success</span>' 
-                                                : '<span class="permission-badge permission-owner" style="background: #ef4444;">Failed</span>'}
+                                            ${entry.result?.success
+                                            ? `<span class="permission-badge permission-viewer" style="background: #10b981;">${escapeHtml(runtimeText('status.success', 'Success'))}</span>`
+                                            : `<span class="permission-badge permission-owner" style="background: #ef4444;">${escapeHtml(runtimeText('status.failed', 'Failed'))}</span>`}
                                         </td>
                                     </tr>
                                 `).join('')}
@@ -2995,11 +3028,11 @@
                     </div>
                 </div>
             `;
-            
+
             const modalDiv = document.createElement('div');
             modalDiv.innerHTML = modalHTML;
             document.body.appendChild(modalDiv.firstElementChild);
-            
+
             // Add search functionality
             document.getElementById('history-search').addEventListener('input', (e) => {
                 const searchTerm = e.target.value.toLowerCase();
@@ -3056,8 +3089,8 @@
             const filteredLogs = logs.filter(log => {
                 const username = String(log.username || '');
                 const matchUser = !filterUser || username.toLowerCase().includes(filterUser);
-                const matchStatus = !filterStatus || 
-                    (filterStatus === 'success' && log.success) || 
+                const matchStatus = !filterStatus ||
+                    (filterStatus === 'success' && log.success) ||
                     (filterStatus === 'failed' && !log.success);
                 return matchUser && matchStatus;
             }).slice(0, 20);
@@ -3071,7 +3104,7 @@
                         <span class="log-timestamp">${escapeHtml(time)}</span>
                         <span class="log-user">${escapeHtml(log.username || '')}</span>
                         <span class="log-command">/${escapeHtml(log.command || '')}</span>
-                        <span>${log.success ? '✓' : '✗'} ${executionTime}ms</span>
+                        <span>${log.success ? '✓' : '✗'} ${executionTime}${runtimeText('units.milliseconds_short', 'ms')}</span>
                     </div>
                 `;
             }).join('');
@@ -3082,7 +3115,7 @@
 
             // Calculate average execution time
             const avgTime = logs.reduce((sum, log) => sum + (log.executionTime || 0), 0) / logs.length;
-            document.getElementById('monitor-avg-time').textContent = Math.round(avgTime) + 'ms';
+            document.getElementById('monitor-avg-time').textContent = `${Math.round(avgTime)}${runtimeText('units.milliseconds_short', 'ms')}`;
 
             // Calculate commands per minute (based on last 50 logs)
             const now = Date.now();
@@ -3099,13 +3132,13 @@
             // Update trend
             const trend = document.getElementById('monitor-time-trend');
             if (avgTime < 50) {
-                trend.textContent = '⚡ Fast';
+                trend.textContent = runtimeText('monitoring.trend_fast', '⚡ Fast');
                 trend.className = 'metric-trend up';
             } else if (avgTime < 200) {
-                trend.textContent = '✓ Good';
+                trend.textContent = runtimeText('monitoring.trend_good', '✓ Good');
                 trend.className = 'metric-trend';
             } else {
-                trend.textContent = '⚠ Slow';
+                trend.textContent = runtimeText('monitoring.trend_slow', '⚠ Slow');
                 trend.className = 'metric-trend down';
             }
 
@@ -3118,13 +3151,13 @@
 
             // Cache performance
             if (stats.userDataCache) {
-                document.getElementById('health-user-cache').textContent = `${stats.userDataCache.hitRate}% hit rate`;
+                document.getElementById('health-user-cache').textContent = runtimeText('monitoring.hit_rate', '{rate}% hit rate', { rate: stats.userDataCache.hitRate });
             }
             if (stats.registry && stats.registry.cacheHitRate !== undefined) {
-                document.getElementById('health-cmd-cache').textContent = `${stats.registry.cacheHitRate}% hit rate`;
+                document.getElementById('health-cmd-cache').textContent = runtimeText('monitoring.hit_rate', '{rate}% hit rate', { rate: stats.registry.cacheHitRate });
             }
             if (stats.permissionMemoization) {
-                document.getElementById('health-perm-cache').textContent = `${stats.permissionMemoization.hitRate || 0}% hit rate`;
+                document.getElementById('health-perm-cache').textContent = runtimeText('monitoring.hit_rate', '{rate}% hit rate', { rate: stats.permissionMemoization.hitRate || 0 });
             }
 
             // Rate limiter
@@ -3171,7 +3204,7 @@
 
                 const tbody = document.getElementById('top-commands-body');
                 if (topCommands.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No command data yet</td></tr>';
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">${escapeHtml(runtimeText('monitoring.no_command_data', 'No command data yet'))}</td></tr>`;
                     return;
                 }
 
@@ -3181,7 +3214,7 @@
                         <td><span class="command-name">/${escapeHtml(cmd.command || '')}</span></td>
                         <td>${Number(cmd.count || 0)}</td>
                         <td>${Number(cmd.successRate || 0)}%</td>
-                        <td>${Number(cmd.avgTime || 0)}ms</td>
+                        <td>${Number(cmd.avgTime || 0)}${runtimeText('units.milliseconds_short', 'ms')}</td>
                     </tr>
                 `).join('');
             } catch (error) {
@@ -3203,7 +3236,7 @@
         }
 
         function clearLogs() {
-            document.getElementById('realtime-log').innerHTML = '<div class="log-entry"><span class="log-timestamp">--:--:--</span><span class="log-user">Logs cleared</span></div>';
+            document.getElementById('realtime-log').innerHTML = `<div class="log-entry"><span class="log-timestamp">--:--:--</span><span class="log-user">${t('plugins.gcce.ui.logs_cleared', 'Logs cleared')}</span></div>`;
         }
 
         // ========================================
@@ -3221,7 +3254,7 @@
                 }
             } catch (error) {
                 console.error('Failed to load all commands:', error);
-                document.getElementById('all-commands-container').innerHTML = '<div class="error">Failed to load commands</div>';
+                document.getElementById('all-commands-container').innerHTML = `<div class="error">${escapeHtml(runtimeText('errors.load_commands', 'Failed to load commands'))}</div>`;
             }
         }
 
@@ -3232,15 +3265,15 @@
             const status = document.getElementById('cmd-filter-status')?.value || '';
 
             const filtered = allCommandsCache.filter(cmd => {
-                const matchSearch = !search || 
-                    cmd.name.toLowerCase().includes(search) || 
+                const matchSearch = !search ||
+                    cmd.name.toLowerCase().includes(search) ||
                     (cmd.description || '').toLowerCase().includes(search);
                 const matchCategory = !category || cmd.category === category;
                 const matchPermission = !permission || cmd.permission === permission;
-                const matchStatus = !status || 
-                    (status === 'enabled' && cmd.enabled) || 
+                const matchStatus = !status ||
+                    (status === 'enabled' && cmd.enabled) ||
                     (status === 'disabled' && !cmd.enabled);
-                
+
                 return matchSearch && matchCategory && matchPermission && matchStatus;
             });
 
@@ -3266,7 +3299,7 @@
 
         async function saveAdvancedConfig(e) {
             e.preventDefault();
-            
+
             const config = {
                 rateLimitGlobal: parseInt(document.getElementById('rate-limit-global').value),
                 rateLimitUser: parseInt(document.getElementById('rate-limit-user').value),
@@ -3289,18 +3322,18 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    showMessage('Advanced configuration saved successfully', 'success');
+                    showMessage(runtimeText('status.advanced_configuration_saved', 'Advanced configuration saved successfully'), 'success');
                 } else {
-                    showMessage('Failed to save advanced configuration', 'error');
+                    showMessage(runtimeText('errors.save_advanced_configuration', 'Failed to save advanced configuration'), 'error');
                 }
             } catch (error) {
                 console.error('Failed to save advanced config:', error);
-                showMessage('Failed to save advanced configuration', 'error');
+                showMessage(runtimeText('errors.save_advanced_configuration', 'Failed to save advanced configuration'), 'error');
             }
         }
 
         async function testCommand() {
-            const cmdName = prompt('Enter command name to test (without /):');
+            const cmdName = prompt(runtimeText('dialogs.test_command_prompt', 'Enter command name to test (without /):'));
             if (!cmdName) return;
 
             try {
@@ -3316,12 +3349,12 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    showMessage(`Test passed in ${data.executionTime}ms`, 'success');
+                    showMessage(runtimeText('status.test_passed', 'Test passed in {duration}ms', { duration: data.executionTime }), 'success');
                 } else {
-                    showMessage(`Test failed: ${data.error}`, 'error');
+                    showMessage(runtimeText('errors.test_failed', 'Test failed: {error}', { error: data.error || runtimeText('errors.unknown', 'Unknown error') }), 'error');
                 }
             } catch (error) {
-                showMessage('Test execution failed', 'error');
+                showMessage(runtimeText('errors.test_execution_failed', 'Test execution failed'), 'error');
             }
         }
 
@@ -3330,17 +3363,17 @@
                 const response = await fetch('/api/gcce/commands');
                 const data = await response.json();
                 if (data.success) {
-                    const invalid = data.commands.filter(cmd => 
+                    const invalid = data.commands.filter(cmd =>
                         !cmd.name || !(cmd.plugin || cmd.pluginId) || !cmd.syntax
                     );
                     if (invalid.length === 0) {
-                        showMessage(`All ${data.commands.length} commands are valid`, 'success');
+                        showMessage(runtimeText('status.commands_valid', 'All {count} commands are valid', { count: data.commands.length }), 'success');
                     } else {
-                        showMessage(`Found ${invalid.length} invalid commands`, 'error');
+                        showMessage(runtimeText('errors.commands_invalid', 'Found {count} invalid commands', { count: invalid.length }), 'error');
                     }
                 }
             } catch (error) {
-                showMessage('Validation failed', 'error');
+                showMessage(runtimeText('errors.validation_failed', 'Validation failed'), 'error');
             }
         }
 
@@ -3353,10 +3386,10 @@
                 });
                 const data = await response.json();
                 if (data.success) {
-                    showMessage('Indexes rebuilt successfully', 'success');
+                    showMessage(runtimeText('status.indexes_rebuilt', 'Indexes rebuilt successfully'), 'success');
                 }
             } catch (error) {
-                showMessage('Failed to rebuild indexes', 'error');
+                showMessage(runtimeText('errors.rebuild_indexes', 'Failed to rebuild indexes'), 'error');
             }
         }
 
@@ -3369,9 +3402,9 @@
                     const modal = `
                         <div id="info-modal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center;">
                             <div style="background: var(--color-bg-card); border-radius: 12px; padding: 24px; max-width: 90%; max-height: 90%; overflow: auto;">
-                                <h2>System Information</h2>
+                                <h2>${t('plugins.gcce.labels.system_info', 'System Information')}</h2>
                                 <pre style="background: var(--color-bg-secondary); padding: 16px; border-radius: 8px; overflow: auto;">${escapeHtml(info)}</pre>
-                                <button class="btn btn-primary" onclick="document.getElementById('info-modal').remove()">Close</button>
+                                <button class="btn btn-primary" aria-label="${escapeHtml(runtimeText('accessibility.close_system_info', 'Close system information'))}" onclick="document.getElementById('info-modal').remove()">${t('plugins.gcce.ui.close', 'Close')}</button>
                             </div>
                         </div>
                     `;
@@ -3380,7 +3413,7 @@
                     document.body.appendChild(div.firstElementChild);
                 }
             } catch (error) {
-                showMessage('Failed to load system info', 'error');
+                showMessage(runtimeText('errors.load_system_info', 'Failed to load system info'), 'error');
             }
         }
 
@@ -3395,10 +3428,10 @@
                     a.href = url;
                     a.download = `gcce-commands-${Date.now()}.json`;
                     a.click();
-                    showMessage(`Exported ${data.count} commands`, 'success');
+                    showMessage(runtimeText('status.commands_exported', 'Exported {count} commands', { count: data.count }), 'success');
                 }
             } catch (error) {
-                showMessage('Failed to export commands', 'error');
+                showMessage(runtimeText('errors.export_commands', 'Failed to export commands'), 'error');
             }
         }
 
@@ -3422,12 +3455,12 @@
                                 const imported = Array.isArray(data.result?.success)
                                     ? data.result.success.length
                                     : (data.result?.imported || 0);
-                                showMessage(`Imported ${imported} commands`, 'success');
+                                showMessage(runtimeText('status.commands_imported', 'Imported {count} commands', { count: imported }), 'success');
                                 loadCommands();
                                 loadAllCommands();
                             }
                         } catch (error) {
-                            showMessage('Failed to import commands', 'error');
+                            showMessage(runtimeText('errors.import_commands', 'Failed to import commands'), 'error');
                         }
                     };
                     reader.readAsText(file);
@@ -3438,6 +3471,8 @@
 
         // Add event listeners for all buttons
         document.addEventListener('DOMContentLoaded', () => {
+            registerRuntimeI18n();
+            if (window.i18n?.ready) window.i18n.ready.then(rerenderRuntimeCopy);
             // Tab navigation
             document.querySelectorAll('.nav-tab').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -3470,6 +3505,7 @@
             // HUD buttons
             const btnCopyOverlayUrl = document.getElementById('btn-copy-overlay-url');
             if (btnCopyOverlayUrl) {
+                btnCopyOverlayUrl.setAttribute('aria-label', runtimeText('accessibility.copy_overlay_url', 'Copy overlay URL'));
                 btnCopyOverlayUrl.addEventListener('click', copyOverlayUrl);
             }
 
@@ -3635,7 +3671,7 @@
                 const logEntry = `
                     <div class="log-entry ${statusClass}">
                         <span class="log-timestamp">${escapeHtml(time)}</span>
-                        <span class="log-user">${escapeHtml(data.username || 'Unknown')}</span>
+                            <span class="log-user">${escapeHtml(data.username || runtimeText('data.unknown_user', 'Unknown'))}</span>
                         <span class="log-command">${escapeHtml(data.message || '')}</span>
                         <span>${data.success ? '✓' : '✗'}</span>
                     </div>

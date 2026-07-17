@@ -1,70 +1,97 @@
 {
-  "thermal_printer": {
-    "name": "Thermal Printer",
-    "description": "Prints TikTok Live events on a thermal printer (ESC/POS)",
-    "status": {
-      "connected": "Connected",
-      "disconnected": "Disconnected",
-      "reconnecting": "Reconnecting...",
-      "queue_size": "Queue Size",
-      "printed_jobs": "Printed Jobs",
-      "failed_jobs": "Failed Jobs",
-      "uptime": "Uptime"
-    },
-    "config": {
-      "enable": "Enable Thermal Printer",
-      "printer_type": "Printer Type",
-      "usb": "USB",
-      "network": "Network",
-      "usb_vendor_id": "USB Vendor ID",
-      "usb_product_id": "USB Product ID",
-      "network_host": "Network Host/IP",
-      "network_port": "Network Port",
-      "event_filters": "Event Filters",
-      "print_chats": "Print Chat Messages",
-      "print_gifts": "Print Gifts",
-      "print_follows": "Print Follows",
-      "print_shares": "Print Shares",
-      "min_coins": "Minimum Coins to Print",
-      "ignore_bot_commands": "Ignore Bot Commands (messages starting with '!')",
-      "formatting": "Formatting",
-      "auto_cut": "Auto-cut paper after each event",
-      "paper_width": "Paper Width (characters)",
-      "encoding": "Character Encoding",
-      "advanced": "Advanced Settings",
-      "reconnect_attempts": "Reconnect Attempts",
-      "reconnect_delay": "Reconnect Delay (ms)",
-      "queue_max_size": "Max Queue Size",
-      "print_delay": "Print Delay (ms)"
-    },
-    "actions": {
-      "test_print": "Test Print",
-      "save": "Save Configuration",
-      "back": "Back to Dashboard"
-    },
-    "messages": {
-      "config_saved": "Configuration saved successfully!",
-      "config_error": "Error saving configuration",
-      "test_queued": "Test print job queued!",
-      "test_error": "Error sending test print",
-      "printer_not_running": "Printer service not running"
+  "plugins": {
+    "thermal-printer": {
+      "form_controls": {
+        "usb_vendor_id_placeholder": "p. ex. 0x04b8",
+        "usb_product_id_placeholder": "p. ex. 0x0e15"
+      },
+      "thermal_printer": {
+        "name": "Imprimante thermique",
+        "description": "Imprime les événements TikTok Live sur une imprimante thermique (ESC/POS)",
+        "status": {
+          "connected": "Connectée",
+          "disconnected": "Déconnectée",
+          "loading": "Chargement...",
+          "reconnecting": "Reconnexion...",
+          "queue_size": "Taille de la file",
+          "printed_jobs": "Travaux imprimés",
+          "failed_jobs": "Travaux échoués",
+          "uptime": "Durée de fonctionnement",
+          "uptime_hours": "{hours} h {minutes} min",
+          "uptime_minutes": "{minutes} min {seconds} s",
+          "uptime_seconds": "{seconds} s"
+        },
+        "config": {
+          "enable": "Activer l'imprimante thermique",
+          "printer_type": "Type d'imprimante",
+          "usb": "USB",
+          "network": "Réseau",
+          "usb_vendor_id": "ID du fournisseur USB",
+          "usb_product_id": "Identifiant du produit USB",
+          "network_host": "Hôte/IP réseau",
+          "network_port": "Port réseau",
+          "event_filters": "Filtres d'événements",
+          "print_chats": "Imprimer les messages du chat",
+          "print_gifts": "Imprimer les cadeaux",
+          "print_follows": "Imprimer les abonnements",
+          "print_shares": "Imprimer les partages",
+          "min_coins": "Nombre minimal de pièces à imprimer",
+          "ignore_bot_commands": "Ignorer les commandes du bot (messages commençant par '!')",
+          "formatting": "Mise en forme",
+          "auto_cut": "Couper automatiquement le papier après chaque événement",
+          "paper_width": "Largeur du papier (caractères)",
+          "encoding": "Encodage des caractères",
+          "advanced": "Paramètres avancés",
+          "reconnect_attempts": "Tentatives de reconnexion",
+          "reconnect_delay": "Délai de reconnexion (ms)",
+          "queue_max_size": "Taille maximale de la file",
+          "print_delay": "Délai d'impression (ms)"
+        },
+        "actions": {
+          "test_print": "Impression de test",
+          "save": "Enregistrer la configuration",
+          "back": "Retour au tableau de bord"
+        },
+        "messages": {
+          "config_saved": "Configuration enregistrée.",
+          "config_error": "Impossible d'enregistrer la configuration.",
+          "config_error_details": "Impossible d'enregistrer la configuration : {details}",
+          "test_queued": "Travail d'impression de test mis en file d'attente.",
+          "test_error": "Impossible d'envoyer l'impression de test.",
+          "test_error_details": "Impossible d'envoyer l'impression de test : {details}",
+          "printer_not_running": "Le service d'impression n'est pas en cours d'exécution.",
+          "validation_printer_type": "Sélectionnez USB ou réseau comme type d'imprimante.",
+          "validation_usb_ids": "Saisissez les deux identifiants USB ou laissez-les vides pour la détection automatique.",
+          "validation_network_host": "Indiquez l'hôte réseau pour les imprimantes réseau.",
+          "validation_network_port": "Indiquez un port réseau valide (1-65535).",
+          "validation_min_coins": "Le nombre minimal de pièces ne peut pas être négatif.",
+          "validation_width": "La largeur doit être comprise entre 32 et 80 caractères.",
+          "validation_reconnect_attempts": "Le nombre de tentatives de reconnexion ne peut pas être négatif.",
+          "validation_reconnect_delay": "Le délai de reconnexion ne peut pas être négatif.",
+          "validation_queue_size": "La taille maximale de la file doit être d'au moins 1.",
+          "validation_print_delay": "Le délai d'impression ne peut pas être négatif."
+        }
+      },
+      "labels": {
+        "only_print_gifts_with_at_least_this_many": "Imprimez uniquement des cadeaux avec au moins ce nombre de pièces (économie de papier)",
+        "typical_48_for_80mm_paper_32_for_58mm": "Typique : 48 pour du papier de 80 mm, 32 pour du papier de 58 mm",
+        "thermal_printer_configuration": "Imprimante thermique - Configuration",
+        "gb18030_default": "GB18030 (par défaut)",
+        "printer_connection": "Connexion de l'imprimante",
+        "save_configuration": "Enregistrer la configuration",
+        "test_print": "Impression de test",
+        "back_to_dashboard": "Retour au tableau de bord",
+        "event_filters": "Filtres d'événements",
+        "connection_status": "État de la connexion",
+        "advanced_settings": "Paramètres avancés",
+        "e_g_0x0e15_for_tm_t20_leave_empty": "par exemple, 0x0e15 pour TM-T20 (laisser vide pour la détection automatique)",
+        "delay_between_print_jobs_prevents_overloading": "Délai entre les travaux d'impression (évite la surcharge)",
+        "minimum_coins_to_print_gifts": "Pièces minimales à imprimer (cadeaux)",
+        "e_g_0x04b8_for_epson_leave_empty_for": "par exemple, 0x04b8 pour Epson (laissez vide pour la détection automatique)",
+        "status": "État",
+        "configuration": "Paramètres",
+        "formatting": "Mise en forme"
+      }
     }
-  },
-  "generated": {
-    "3ee1fddf1259": "Thermal Printer - Configuration",
-    "997d134acc58": "Back to Dashboard",
-    "a58f2ec5003c": "Connection Status",
-    "6f939fcb088e": "Printer Connection",
-    "edf570ac77a7": "e.g., 0x04b8 for Epson (leave empty for auto-detect)",
-    "b9540ba89dfd": "e.g., 0x0e15 for TM-T20 (leave empty for auto-detect)",
-    "9dc827bdc32c": "Event Filters",
-    "cfc7e4a32810": "Minimum Coins to Print (Gifts)",
-    "0666dd4875b1": "Only print gifts with at least this many coins (saves paper)",
-    "6d8f13193ca0": "GB18030 (Default)",
-    "a9fe613c5931": "Advanced Settings",
-    "cf2a7e073163": "Delay between print jobs (prevents overloading)",
-    "9627d567d91a": "Test Print",
-    "89e7397c6e4b": "Save Configuration",
-    "1551e3bcfd2e": "Typical: 48 for 80mm paper, 32 for 58mm paper"
   }
 }

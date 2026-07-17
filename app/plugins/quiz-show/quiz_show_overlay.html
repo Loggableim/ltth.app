@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="generated.a68ec56cf478">Quiz Show Overlay</title>
+    <title data-i18n="plugins.quiz-show.labels.quiz_show_overlay">Quiz Show Overlay</title>
     <link rel="stylesheet" href="/quiz-show/quiz_show_overlay.css">
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/i18n-client.js"></script>
@@ -24,20 +24,20 @@
             <div id="questionSection" class="question-section draggable" data-element="question">
                 <div class="question-header">
                     <div class="quiz-logo" id="roundNumberDisplay" style="display: none;">
-                        <span class="logo-text" id="roundNumberText" data-i18n="generated.3d60ebfec5e3">Runde 1</span>
+                        <span class="logo-text" id="roundNumberText" data-i18n="plugins.quiz-show.labels.runde_1">Runde 1</span>
                     </div>
                     <div id="roundIndicator" class="round-indicator" style="display: none;">
                         <!-- Removed: no longer needed -->
                     </div>
                     <div class="category-display" id="categoryDisplay" style="display: none;">
                         <span class="category-icon" id="categoryIcon"></span>
-                        <span class="category-text" id="categoryText" data-i18n="quiz_show.ai_packages.generate.category">Kategorie</span>
+                        <span class="category-text" id="categoryText" data-i18n="plugins.quiz-show.quiz_show.ai_packages.generate.category">Kategorie</span>
                     </div>
                 </div>
 
                 <div id="questionDisplay" class="question-display">
                     <div class="question-card">
-                        <div class="question-text" id="questionText" data-i18n="generated.2cbc467dd0b5">
+                        <div class="question-text" id="questionText" data-i18n="plugins.quiz-show.labels.warte_auf_frage">
                             Warte auf Frage...
                         </div>
                     </div>
@@ -110,7 +110,7 @@
                         <circle id="timerProgress" class="timer-progress" cx="100" cy="100" r="85" />
                     </svg>
                     <div class="timer-text">
-                        <div class="timer-value" id="timerValue">30</div>
+                        <div class="timer-value" id="timerValue" data-i18n="plugins.quiz-show.ui.defaults.round_duration">30</div>
                         <div class="timer-label">Sekunden</div>
                     </div>
                 </div>
@@ -121,14 +121,14 @@
                         <div id="timerBarProgress" class="timer-bar"></div>
                     </div>
                     <div class="timer-bar-text">
-                        <span id="timerBarValue">30</span>s
+                        <span id="timerBarValue" data-i18n="plugins.quiz-show.ui.defaults.round_duration">30</span>s
                     </div>
                 </div>
 
                 <!-- Neon Glow Timer -->
                 <div class="timer-neon" id="timerNeon">
-                    <div class="timer-neon-value" id="timerNeonValue">30</div>
-                    <div class="timer-neon-label" data-i18n="generated.c1deef7fd8e2">Sekunden verbleibend</div>
+                    <div class="timer-neon-value" id="timerNeonValue" data-i18n="plugins.quiz-show.ui.defaults.round_duration">30</div>
+                    <div class="timer-neon-label" data-i18n="plugins.quiz-show.labels.sekunden_verbleibend">Sekunden verbleibend</div>
                 </div>
 
                 <!-- Ring Timer with Gradient -->
@@ -147,7 +147,7 @@
                         <circle id="timerRingProgress" class="timer-ring-progress" cx="110" cy="110" r="90" />
                     </svg>
                     <div class="timer-text">
-                        <div class="timer-value" id="timerRingValue">30</div>
+                        <div class="timer-value" id="timerRingValue" data-i18n="plugins.quiz-show.ui.defaults.round_duration">30</div>
                         <div class="timer-label">Sekunden</div>
                     </div>
                 </div>
@@ -157,8 +157,8 @@
             <div id="jokerNotification" class="joker-notification hidden">
                 <div class="joker-icon" id="jokerIcon"></div>
                 <div class="joker-content">
-                    <div class="joker-title" id="jokerTitle" data-i18n="generated.a6c0c0fc3c08">Joker aktiviert!</div>
-                    <div class="joker-user" id="jokerUser" data-i18n="generated.51cebf7a8ccb">von Username</div>
+                    <div class="joker-title" id="jokerTitle" data-i18n="plugins.quiz-show.labels.joker_aktiviert">Joker aktiviert!</div>
+                    <div class="joker-user" id="jokerUser" data-i18n="plugins.quiz-show.labels.von_username">von Username</div>
                 </div>
             </div>
 
@@ -166,15 +166,15 @@
             <div id="correctReveal" class="correct-reveal hidden">
                 <div class="correct-reveal-content">
                     <div class="correct-icon">✓</div>
-                    <div class="correct-text" data-i18n="generated.44864e1f7d95">Richtige Antwort!</div>
+                    <div class="correct-text" data-i18n="plugins.quiz-show.labels.richtige_antwort">Richtige Antwort!</div>
                 </div>
             </div>
 
             <!-- Leaderboard Overlay -->
             <div id="leaderboardOverlay" class="leaderboard-overlay hidden" data-animation="fade">
                 <div class="leaderboard-header">
-                    <div class="leaderboard-title" data-i18n="quiz_show.leaderboard.title"> Leaderboard</div>
-                    <div class="leaderboard-type" id="leaderboardType">Season</div>
+                    <div class="leaderboard-title" data-i18n="plugins.quiz-show.quiz_show.leaderboard.title"> Leaderboard</div>
+                    <div class="leaderboard-type" id="leaderboardType" data-i18n="plugins.quiz-show.ui.navigation.season">Season</div>
                 </div>
                 <ul class="leaderboard-list" id="leaderboardList">
                     <!-- Leaderboard entries will be inserted here -->
@@ -197,12 +197,12 @@
                     </div>
                     <div class="slot-machine-display">
                         <div class="slot-machine-reel">
-                            <div class="slot-machine-category" id="slotMachineCategory" data-i18n="quiz_show.ai_packages.generate.category">Kategorie</div>
+                            <div class="slot-machine-category" id="slotMachineCategory" data-i18n="plugins.quiz-show.quiz_show.ai_packages.generate.category">Kategorie</div>
                         </div>
                     </div>
                     <div class="slot-machine-selected hidden" id="slotMachineSelected">
                         <div class="slot-machine-selected-icon"></div>
-                        <div class="slot-machine-selected-text" data-i18n="generated.6085e833110a">Gewählt:</div>
+                        <div class="slot-machine-selected-text" data-i18n="plugins.quiz-show.labels.gewahlt">Gewählt:</div>
                         <div class="slot-machine-selected-category" id="slotMachineSelectedCategory"></div>
                     </div>
                 </div>
@@ -218,15 +218,15 @@
             <!-- Duel Overlay -->
             <div id="duelOverlay" class="duel-overlay hidden">
                 <div class="duel-side duel-left">
-                    <div id="duelLeftLabel" class="duel-label" data-i18n="generated.5c9165b0b2c4">Team A</div>
+                    <div id="duelLeftLabel" class="duel-label" data-i18n="plugins.quiz-show.labels.team_a">Team A</div>
                     <div id="duelLeftScore" class="duel-score">0</div>
-                    <div id="duelLeftStreak" class="duel-streak" data-i18n="generated.adcd0583cc77">Serie 0</div>
+                    <div id="duelLeftStreak" class="duel-streak" data-i18n="plugins.quiz-show.labels.serie_0">Serie 0</div>
                 </div>
                 <div class="duel-vs">VS</div>
                 <div class="duel-side duel-right">
-                    <div id="duelRightLabel" class="duel-label" data-i18n="generated.8b217a6a94fd">Team B</div>
+                    <div id="duelRightLabel" class="duel-label" data-i18n="plugins.quiz-show.labels.team_b">Team B</div>
                     <div id="duelRightScore" class="duel-score">0</div>
-                    <div id="duelRightStreak" class="duel-streak" data-i18n="generated.fbfca682c882">Serie 0</div>
+                    <div id="duelRightStreak" class="duel-streak" data-i18n="plugins.quiz-show.labels.serie_0_fbfca6">Serie 0</div>
                 </div>
             </div>
 

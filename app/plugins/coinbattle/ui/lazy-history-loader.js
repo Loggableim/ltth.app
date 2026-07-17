@@ -5,6 +5,17 @@
  * Implements infinite scroll with lazy loading for efficient match history browsing
  */
 
+function translateHistory(key, fallback, params = {}) {
+  const fullKey = `plugins.coinbattle.${key}`;
+  const translated = window.i18n?.t?.(fullKey, params);
+  if (translated && translated !== fullKey) {
+    return translated;
+  }
+  return fallback.replace(/\{(\w+)\}/g, (match, name) => (
+    Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+  ));
+}
+
 class LazyMatchHistoryLoader {
   constructor(container, fetchFunction, options = {}) {
     this.container = container;
@@ -56,14 +67,14 @@ class LazyMatchHistoryLoader {
     this.loaderElement.className = 'match-history-loader';
     this.loaderElement.innerHTML = `
       <div class="loader-spinner"></div>
-      <p>Loading matches...</p>
+      <p>${this.escapeHTML(translateHistory('runtime.history_loader.loading_matches', 'Loading matches...'))}</p>
     `;
     this.loaderElement.style.display = 'none';
     
     // Create end indicator
     this.endElement = document.createElement('div');
     this.endElement.className = 'match-history-end';
-    this.endElement.innerHTML = '<p>No more matches to load</p>';
+    this.endElement.innerHTML = `<p>${this.escapeHTML(translateHistory('runtime.history_loader.no_more_matches', 'No more matches to load'))}</p>`;
     this.endElement.style.display = 'none';
     
     // Add elements to container
@@ -147,7 +158,7 @@ class LazyMatchHistoryLoader {
       
     } catch (error) {
       console.error('Failed to load match history:', error);
-      this.showError('Failed to load matches. Please try again.');
+      this.showError(translateHistory('runtime.history_loader.load_failed', 'Failed to load matches. Please try again.'));
     } finally {
       this.isLoading = false;
       this.hideLoader();
@@ -181,26 +192,28 @@ class LazyMatchHistoryLoader {
     
     const duration = match.duration 
       ? this.formatDuration(match.duration)
-      : 'Unknown';
+      : translateHistory('runtime.history_loader.unknown', 'Unknown');
     
     const winner = match.winner_player_id 
-      ? `Winner: ${match.winner_player_id}`
-      : (match.winner_team ? `Team ${match.winner_team} wins!` : 'No winner');
+      ? translateHistory('runtime.history_loader.winner_player', 'Winner: {player}', { player: match.winner_player_id })
+      : (match.winner_team
+        ? translateHistory('runtime.history_loader.team_wins', 'Team {team} wins!', { team: match.winner_team })
+        : translateHistory('runtime.history_loader.no_winner', 'No winner'));
     const totalCoins = Number.isFinite(Number(match.total_coins)) ? Number(match.total_coins) : 0;
     const totalGifts = Number.isFinite(Number(match.total_gifts)) ? Number(match.total_gifts) : 0;
     
     item.innerHTML = `
       <div class="match-header">
         <span class="match-id">#${this.escapeHTML(match.id)}</span>
-        <span class="match-mode">${this.escapeHTML(match.mode || 'solo')}</span>
+        <span class="match-mode">${this.escapeHTML(match.mode || translateHistory('runtime.history_loader.solo', 'Solo'))}</span>
       </div>
       <div class="match-details">
         <div class="match-date">${this.escapeHTML(dateStr)}</div>
-        <div class="match-duration">Duration: ${this.escapeHTML(duration)}</div>
+        <div class="match-duration">${this.escapeHTML(translateHistory('runtime.history_loader.duration', 'Duration: {duration}', { duration }))}</div>
       </div>
       <div class="match-stats">
-        <span class="match-coins">${totalCoins.toLocaleString()} coins</span>
-        <span class="match-gifts">${totalGifts.toLocaleString()} gifts</span>
+        <span class="match-coins">${this.escapeHTML(translateHistory('runtime.history_loader.coins', '{count} coins', { count: totalCoins.toLocaleString() }))}</span>
+        <span class="match-gifts">${this.escapeHTML(translateHistory('runtime.history_loader.gifts', '{count} gifts', { count: totalGifts.toLocaleString() }))}</span>
       </div>
       <div class="match-winner">${this.escapeHTML(winner)}</div>
     `;
@@ -255,7 +268,7 @@ class LazyMatchHistoryLoader {
     errorElement.className = 'match-history-error';
     errorElement.innerHTML = `
       <p class="error-message">${this.escapeHTML(message)}</p>
-      <button class="retry-btn">Retry</button>
+      <button class="retry-btn">${this.escapeHTML(translateHistory('runtime.history_loader.retry', 'Retry'))}</button>
     `;
     
     errorElement.querySelector('.retry-btn').addEventListener('click', () => {

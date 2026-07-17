@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="generated.71b7101fe965">GCCE HUD Overlay</title>
+    <title data-i18n="plugins.gcce.labels.gcce_hud_overlay">GCCE HUD Overlay</title>
     <script>
         (function () {
             const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
@@ -556,7 +556,7 @@
         } catch (error) {
             console.error('Failed to initialize socket.io:', error);
         }
-        
+
         if (!socket) {
             console.error('GCCE HUD Overlay: Socket.io is not available');
         } else {
@@ -620,7 +620,7 @@
                     img.src = content;
                     img.style.maxWidth = (style.maxWidth || 400) + 'px';
                     img.style.maxHeight = (style.maxHeight || 400) + 'px';
-                    
+
                     // Handle image load errors
                     img.onerror = () => {
                         console.error('Failed to load image:', content);
@@ -655,12 +655,12 @@
                     elementsByPosition.set(position, []);
                 }
                 const positionElements = elementsByPosition.get(position);
-                
+
                 // Add stacking offset if needed
                 if (positionElements.length > 0) {
                     el.classList.add('stacked');
                 }
-                
+
                 positionElements.push(id);
 
                 container.appendChild(el);
@@ -681,12 +681,12 @@
                 const data = activeElements.get(id);
                 if (data) {
                     const { element, position } = data;
-                    
+
                     element.classList.add('fade-out');
                     setTimeout(() => {
                         element.remove();
                         activeElements.delete(id);
-                        
+
                         // Update position tracking
                         const positionElements = elementsByPosition.get(position);
                         if (positionElements) {
@@ -836,12 +836,12 @@
             const animation = escapeHtml(entry.animation || 'fade');
             const title = escapeHtml(entry.title || entry.giftName || 'Gift');
             const info = entry.info ? escapeHtml(entry.info) : '';
-            
+
             // Determine entry type and media source
             const entryType = entry.type || 'gift';
             let mediaSource = '';
             let altText = '';
-            
+
             if (entryType === 'media') {
                 mediaSource = entry.mediaUrl || '';
                 altText = escapeHtml(entry.title || 'Media');
@@ -849,7 +849,7 @@
                 mediaSource = entry.giftImage || '';
                 altText = escapeHtml(entry.giftName || 'Gift');
             }
-            
+
             // Validate CSS values to prevent injection
             const textColor = validateCssColor(entry.textColor, '#ffffff');
             const backgroundColor = validateCssColor(entry.backgroundColor, 'rgba(0,0,0,0.65)');
@@ -866,7 +866,7 @@
 
             const thumbDiv = document.createElement('div');
             thumbDiv.className = 'rotator-gift-thumb';
-            
+
             if (mediaSource) {
                 // For media entries, check if it's video or image
                 if (entryType === 'media' && entry.mediaKind === 'video') {
@@ -903,11 +903,11 @@
 
             const copyDiv = document.createElement('div');
             copyDiv.className = 'rotator-copy';
-            
+
             const h4 = document.createElement('h4');
             h4.textContent = title;
             copyDiv.appendChild(h4);
-            
+
             if (info) {
                 const p = document.createElement('p');
                 p.textContent = info;
@@ -916,7 +916,7 @@
 
             cardDiv.appendChild(thumbDiv);
             cardDiv.appendChild(copyDiv);
-            
+
             rotatorContainer.textContent = '';
             rotatorContainer.appendChild(cardDiv);
         }

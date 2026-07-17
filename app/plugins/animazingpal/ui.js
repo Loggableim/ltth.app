@@ -8,6 +8,7 @@ let supportedPlatforms = [];
 let viewerbaseState = null;
 let giftCatalog = [];
 let isConnected = false;
+let latestStatus = null;
 let animazingPalAudioUnlocked = false;
 let pendingAnimazingPalTTS = [];
 let animazingPalSinkWarningShown = false;
@@ -34,8 +35,39 @@ window.animazingPalTTSPlaybackState = {
 let toastQueue = [];
 let toastShowing = false;
 
+function translate(key, fallback, params = {}) {
+  if (window.i18n?.initialized) {
+    const translated = window.i18n.t(key, params);
+    return translated === key ? fallback : translated;
+  }
+  return fallback;
+}
+
+function translateRuntime(key, fallback, params = {}) {
+  const fullKey = key.startsWith('plugins.animazingpal.')
+    ? key
+    : `plugins.animazingpal.runtime.${key}`;
+  return translate(fullKey, fallback, params);
+}
+
+function runtimeError(message, fallback) {
+  return translateRuntime('plugins.animazingpal.runtime.toast.backend_error', fallback, { message: message || '' });
+}
+
+function runtimeEmptyMarkup(key, fallback, className = 'text-gray-400') {
+  return `<p class="${className}">${escapeHtml(translateRuntime(key, fallback))}</p>`;
+}
+
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  if (window.i18n) {
+    await window.i18n.init();
+    window.i18n.updateDOM();
+    window.i18n.onLanguageChange(() => {
+      if (latestStatus) updateStatus(latestStatus);
+    });
+  }
+
   fetchStatus();
   loadPersonalities();
   loadGiftCatalog();
@@ -231,10 +263,10 @@ function setupEventListeners() {
           });
           const result = await response.json();
           if (result.success) {
-            showToast('Persönlichkeit gewechselt');
+            showToast(translateRuntime('plugins.animazingpal.runtime.toast.personality_switched', 'Persönlichkeit gewechselt'));
           }
         } catch (error) {
-          showToast('Fehler beim Wechseln der Persönlichkeit', 'error');
+          showToast(runtimeError(error.message, 'Fehler beim Wechseln der Persönlichkeit'), 'error');
         }
       }
     });
@@ -271,6 +303,7 @@ async function fetchStatus() {
 }
 
 function updateStatus(data) {
+  latestStatus = data;
   isConnected = data.isConnected;
   currentConfig = data.config || {};
   currentPlatformState = data.platformState || null;
@@ -291,17 +324,17 @@ function updateStatus(data) {
   
   if (isConnected) {
     statusDot.className = 'status-dot status-connected';
-    statusText.textContent = 'Verbunden';
-    connectBtn.textContent = 'Trennen';
+    statusText.textContent = translateRuntime('plugins.animazingpal.runtime.connection.connected', 'Verbunden');
+    connectBtn.textContent = translateRuntime('plugins.animazingpal.runtime.connection.disconnect', 'Trennen');
     connectBtn.className = 'btn btn-danger';
-    connectionStatus.textContent = 'Verbunden';
+    connectionStatus.textContent = translateRuntime('plugins.animazingpal.runtime.connection.connected', 'Verbunden');
     connectionStatus.className = 'text-green-500';
   } else {
     statusDot.className = 'status-dot status-disconnected';
-    statusText.textContent = 'Nicht verbunden';
-    connectBtn.textContent = 'Verbinden';
+    statusText.textContent = translateRuntime('plugins.animazingpal.runtime.connection.disconnected', 'Nicht verbunden');
+    connectBtn.textContent = translateRuntime('plugins.animazingpal.runtime.connection.connect', 'Verbinden');
     connectBtn.className = 'btn btn-primary';
-    connectionStatus.textContent = 'Nicht verbunden';
+    connectionStatus.textContent = translateRuntime('plugins.animazingpal.runtime.connection.disconnected', 'Nicht verbunden');
     connectionStatus.className = 'text-red-500';
   }
   
@@ -324,7 +357,10 @@ function updateStatus(data) {
   if (currentAvatar && currentAvatarInfo) {
     currentAvatarInfo.innerHTML = renderCurrentPlatformInfo(activePlatformKey, currentAvatar);
   } else if (currentAvatarInfo) {
-    currentAvatarInfo.textContent = 'Keine Avatar-Informationen verfügbar';
+    currentAvatarInfo.textContent = translate(
+      'plugins.animazingpal.ui.messages.no_avatar_information',
+      'Keine Avatar-Informationen verfügbar'
+    );
   }
   
   // Update settings form
@@ -344,8 +380,8 @@ function updateStatus(data) {
   if (settingsAuthToken) {
     settingsAuthToken.value = activeProfile.authToken || '';
     settingsAuthToken.placeholder = activeProfile.authTokenConfigured
-      ? 'Token gespeichert - leer lassen, um ihn beizubehalten'
-      : 'Optional: nur für VTube Studio';
+      ? translateRuntime('plugins.animazingpal.runtime.placeholder.token_configured', 'Token gespeichert - leer lassen, um ihn beizubehalten')
+      : translateRuntime('plugins.animazingpal.runtime.placeholder.vtube_token_optional', 'Optional: nur für VTube Studio');
   }
   togglePlatformSettings(activePlatformKey);
   updateViewerbaseConfigForm(currentConfig.viewerbase || {});
@@ -477,16 +513,16 @@ function getAllowedActionTypes(platformKey = getPlatformKey()) {
 
 function getActionLabel(actionType) {
   const labels = {
-    emote: 'Emote',
-    specialAction: 'Spezialaktion',
-    pose: 'Pose',
-    idle: 'Idle Animation',
-    chatMessage: 'Host-TTS Vorlage',
-    hotkey: 'Hotkey',
-    expression: 'Expression',
-    motion: 'Motion',
-    reset: 'Reset',
-    loadAvatar: 'Avatar/Model laden'
+    emote: translateRuntime('plugins.animazingpal.runtime.action.emote', 'Emote'),
+    specialAction: translateRuntime('plugins.animazingpal.runtime.action.special_action', 'Spezialaktion'),
+    pose: translateRuntime('plugins.animazingpal.runtime.action.pose', 'Pose'),
+    idle: translateRuntime('plugins.animazingpal.runtime.action.idle', 'Idle Animation'),
+    chatMessage: translateRuntime('plugins.animazingpal.runtime.action.chat_message', 'Host-TTS Vorlage'),
+    hotkey: translateRuntime('plugins.animazingpal.runtime.action.hotkey', 'Hotkey'),
+    expression: translateRuntime('plugins.animazingpal.runtime.action.expression', 'Expression'),
+    motion: translateRuntime('plugins.animazingpal.runtime.action.motion', 'Motion'),
+    reset: translateRuntime('plugins.animazingpal.runtime.action.reset', 'Reset'),
+    loadAvatar: translateRuntime('plugins.animazingpal.runtime.action.load_avatar', 'Avatar/Model laden')
   };
   return labels[actionType] || actionType;
 }
@@ -545,8 +581,8 @@ function updateViewerbaseConfigForm(viewerbaseConfig = {}) {
   if (authToken) {
     authToken.value = '';
     authToken.placeholder = externalSync.authTokenConfigured
-      ? 'Token gespeichert - leer lassen, um ihn beizubehalten'
-      : 'Optional';
+      ? translateRuntime('plugins.animazingpal.runtime.placeholder.token_configured', 'Token gespeichert - leer lassen, um ihn beizubehalten')
+      : translateRuntime('plugins.animazingpal.runtime.placeholder.optional', 'Optional');
   }
 }
 
@@ -622,7 +658,7 @@ function renderViewerbaseTopSupporters(entries) {
   if (!el) return;
 
   if (!Array.isArray(entries) || entries.length === 0) {
-    el.innerHTML = '<p class="text-gray-400">Keine Daten verfügbar</p>';
+    el.innerHTML = runtimeEmptyMarkup('empty.no_data', 'Keine Daten verfügbar');
     return;
   }
 
@@ -630,15 +666,15 @@ function renderViewerbaseTopSupporters(entries) {
     <div class="card bg-gray-800">
       <div class="flex justify-between items-start gap-3">
         <div>
-          <div class="font-bold">${escapeHtml(entry.displayName || entry.username || `User ${index + 1}`)}</div>
-          <div class="text-xs text-gray-400">@${escapeHtml(entry.username || 'unknown')}</div>
+          <div class="font-bold">${escapeHtml(entry.displayName || entry.username || translateRuntime('plugins.animazingpal.runtime.viewerbase.user_fallback', `User ${index + 1}`, { number: index + 1 }))}</div>
+          <div class="text-xs text-gray-400">@${escapeHtml(entry.username || translateRuntime('plugins.animazingpal.runtime.viewerbase.unknown_user', 'unknown'))}</div>
         </div>
         <div class="text-right text-sm">
-          <div>${Number(entry.total_diamonds || 0).toLocaleString('de-DE')} Diamonds</div>
-          <div class="text-gray-400">${Number(entry.gift_count || 0)} Gifts</div>
+          <div>${translateRuntime('plugins.animazingpal.runtime.viewerbase.diamonds', `${Number(entry.total_diamonds || 0).toLocaleString('de-DE')} Diamonds`, { count: Number(entry.total_diamonds || 0).toLocaleString('de-DE') })}</div>
+          <div class="text-gray-400">${translateRuntime('plugins.animazingpal.runtime.viewerbase.gifts', `${Number(entry.gift_count || 0)} Gifts`, { count: Number(entry.gift_count || 0) })}</div>
         </div>
       </div>
-      <div class="text-xs text-gray-500 mt-2">Streams: ${Number(entry.stream_count || 0)}</div>
+      <div class="text-xs text-gray-500 mt-2">${translateRuntime('plugins.animazingpal.runtime.viewerbase.streams', `Streams: ${Number(entry.stream_count || 0)}`, { count: Number(entry.stream_count || 0) })}</div>
     </div>
   `).join('');
 }
@@ -648,7 +684,7 @@ function renderViewerbaseFrequentChatters(entries) {
   if (!el) return;
 
   if (!Array.isArray(entries) || entries.length === 0) {
-    el.innerHTML = '<p class="text-gray-400">Keine Daten verfügbar</p>';
+    el.innerHTML = runtimeEmptyMarkup('empty.no_data', 'Keine Daten verfügbar');
     return;
   }
 
@@ -656,15 +692,15 @@ function renderViewerbaseFrequentChatters(entries) {
     <div class="card bg-gray-800">
       <div class="flex justify-between items-start gap-3">
         <div>
-          <div class="font-bold">${escapeHtml(entry.displayName || entry.username || `User ${index + 1}`)}</div>
-          <div class="text-xs text-gray-400">@${escapeHtml(entry.username || 'unknown')}</div>
+          <div class="font-bold">${escapeHtml(entry.displayName || entry.username || translateRuntime('plugins.animazingpal.runtime.viewerbase.user_fallback', `User ${index + 1}`, { number: index + 1 }))}</div>
+          <div class="text-xs text-gray-400">@${escapeHtml(entry.username || translateRuntime('plugins.animazingpal.runtime.viewerbase.unknown_user', 'unknown'))}</div>
         </div>
         <div class="text-right text-sm">
-          <div>${Number(entry.interaction_count || 0)} Interactions</div>
-          <div class="text-gray-400">${Number(entry.stream_count || 0)} Streams</div>
+          <div>${translateRuntime('plugins.animazingpal.runtime.viewerbase.interactions', `${Number(entry.interaction_count || 0)} Interactions`, { count: Number(entry.interaction_count || 0) })}</div>
+          <div class="text-gray-400">${translateRuntime('plugins.animazingpal.runtime.viewerbase.streams', `${Number(entry.stream_count || 0)} Streams`, { count: Number(entry.stream_count || 0) })}</div>
         </div>
       </div>
-      <div class="text-xs text-gray-500 mt-2">${escapeHtml(entry.last_topic || 'Kein letztes Thema')}</div>
+      <div class="text-xs text-gray-500 mt-2">${escapeHtml(entry.last_topic || translateRuntime('plugins.animazingpal.runtime.viewerbase.no_last_topic', 'Kein letztes Thema'))}</div>
     </div>
   `).join('');
 }
@@ -674,7 +710,7 @@ function renderViewerbaseRecentMemories(entries) {
   if (!el) return;
 
   if (!Array.isArray(entries) || entries.length === 0) {
-    el.innerHTML = '<p class="text-gray-400">Keine Daten verfügbar</p>';
+    el.innerHTML = runtimeEmptyMarkup('empty.no_data', 'Keine Daten verfügbar');
     return;
   }
 
@@ -688,7 +724,7 @@ function renderViewerbaseRecentMemories(entries) {
       <div class="card bg-gray-800">
         <div class="flex justify-between items-start gap-3">
           <div>
-            <div class="font-bold">${escapeHtml(entry.memory_type || 'general')}</div>
+            <div class="font-bold">${escapeHtml(entry.memory_type || translateRuntime('plugins.animazingpal.runtime.viewerbase.general_memory', 'general'))}</div>
             <div class="text-xs text-gray-400">${escapeHtml(createdAt)}${entry.source_user ? ` · @${escapeHtml(entry.source_user)}` : ''}</div>
           </div>
           <div class="text-sm text-gray-300">${Number(entry.importance || 0).toFixed(2)}</div>
@@ -711,7 +747,7 @@ async function loadViewerbase() {
     }
   } catch (error) {
     console.error('Failed to load viewerbase:', error);
-    showToast('Viewerbase konnte nicht geladen werden', 'error');
+    showToast(runtimeError(error.message, 'Viewerbase konnte nicht geladen werden'), 'error');
   }
 }
 
@@ -752,7 +788,7 @@ async function saveViewerbaseSettings() {
     });
     const data = await response.json();
     if (!data.success) {
-      showToast(`Viewerbase konnte nicht gespeichert werden: ${data.error || 'Unbekannter Fehler'}`, 'error');
+      showToast(runtimeError(data.error, `Viewerbase konnte nicht gespeichert werden: ${data.error || 'Unbekannter Fehler'}`), 'error');
       return;
     }
 
@@ -760,10 +796,10 @@ async function saveViewerbaseSettings() {
     currentConfig.viewerbase = data.config?.viewerbase || currentConfig.viewerbase;
     updateViewerbaseConfigForm(currentConfig.viewerbase || viewerbaseConfig);
     updateViewerbaseStatusUI();
-    showToast('Viewerbase-Einstellungen gespeichert');
+    showToast(translateRuntime('plugins.animazingpal.runtime.toast.viewerbase_saved', 'Viewerbase-Einstellungen gespeichert'));
   } catch (error) {
     console.error('Failed to save viewerbase settings:', error);
-    showToast('Viewerbase konnte nicht gespeichert werden', 'error');
+    showToast(runtimeError(error.message, 'Viewerbase konnte nicht gespeichert werden'), 'error');
   }
 }
 
@@ -776,16 +812,16 @@ async function syncViewerbaseNow() {
     });
     const data = await response.json();
     if (!data.success) {
-      showToast(`Viewerbase Sync fehlgeschlagen: ${data.error || 'Unbekannter Fehler'}`, 'error');
+      showToast(runtimeError(data.error, `Viewerbase Sync fehlgeschlagen: ${data.error || 'Unbekannter Fehler'}`), 'error');
       return;
     }
 
     viewerbaseState = data.viewerbase || viewerbaseState;
     updateViewerbaseStatusUI();
-    showToast('Viewerbase Sync ausgelöst');
+    showToast(translateRuntime('plugins.animazingpal.runtime.toast.viewerbase_sync_started', 'Viewerbase Sync ausgelöst'));
   } catch (error) {
     console.error('Failed to sync viewerbase:', error);
-    showToast('Viewerbase Sync konnte nicht ausgelöst werden', 'error');
+    showToast(runtimeError(error.message, 'Viewerbase Sync konnte nicht ausgelöst werden'), 'error');
   }
 }
 
@@ -793,22 +829,22 @@ function updatePlatformSectionTitles() {
   const platformKey = getPlatformKey();
   const titles = {
     animaze: {
-      emotes: 'Emotes',
-      specialActions: 'Spezialaktionen',
-      poses: 'Posen',
-      idles: 'Idle Animationen'
+      emotes: translateRuntime('plugins.animazingpal.runtime.section.animaze.emotes', 'Emotes'),
+      specialActions: translateRuntime('plugins.animazingpal.runtime.section.animaze.special_actions', 'Spezialaktionen'),
+      poses: translateRuntime('plugins.animazingpal.runtime.section.animaze.poses', 'Posen'),
+      idles: translateRuntime('plugins.animazingpal.runtime.section.animaze.idles', 'Idle Animationen')
     },
     'vtube-studio': {
-      emotes: 'Hotkeys',
-      specialActions: 'Modelle',
-      poses: 'Aktionen',
-      idles: 'Nicht unterstützt'
+      emotes: translateRuntime('plugins.animazingpal.runtime.section.vtube_studio.emotes', 'Hotkeys'),
+      specialActions: translateRuntime('plugins.animazingpal.runtime.section.vtube_studio.special_actions', 'Modelle'),
+      poses: translateRuntime('plugins.animazingpal.runtime.section.vtube_studio.poses', 'Aktionen'),
+      idles: translateRuntime('plugins.animazingpal.runtime.section.vtube_studio.idles', 'Nicht unterstützt')
     },
     vseeface: {
-      emotes: 'Expressions',
-      specialActions: 'Motions',
-      poses: 'Reset',
-      idles: 'Nicht unterstützt'
+      emotes: translateRuntime('plugins.animazingpal.runtime.section.vseeface.emotes', 'Expressions'),
+      specialActions: translateRuntime('plugins.animazingpal.runtime.section.vseeface.special_actions', 'Motions'),
+      poses: translateRuntime('plugins.animazingpal.runtime.section.vseeface.poses', 'Reset'),
+      idles: translateRuntime('plugins.animazingpal.runtime.section.vseeface.idles', 'Nicht unterstützt')
     }
   };
   const titleSet = titles[platformKey] || titles.animaze;
@@ -843,7 +879,7 @@ function updateAnimazeDataUI() {
         btn.addEventListener('click', () => triggerEmote(btn.dataset.value));
       });
     } else {
-      emotesList.innerHTML = '<p class="text-gray-400 col-span-2">Keine Hotkeys verfügbar</p>';
+      emotesList.innerHTML = runtimeEmptyMarkup('empty.no_hotkeys', 'Keine Hotkeys verfügbar', 'text-gray-400 col-span-2');
     }
 
     if (platformData.availableModels?.length > 0) {
@@ -856,11 +892,11 @@ function updateAnimazeDataUI() {
         btn.addEventListener('click', () => loadAvatar(btn.dataset.value));
       });
     } else {
-      specialActionsList.innerHTML = '<p class="text-gray-400 col-span-2">Keine Modelle verfügbar</p>';
+      specialActionsList.innerHTML = runtimeEmptyMarkup('empty.no_models', 'Keine Modelle verfügbar', 'text-gray-400 col-span-2');
     }
 
-    posesList.innerHTML = '<p class="text-gray-400 col-span-2">VTube Studio nutzt Hotkeys statt Posen</p>';
-    idlesList.innerHTML = '<p class="text-gray-400 col-span-2">Idle-Animationen werden hier nicht unterstützt</p>';
+    posesList.innerHTML = runtimeEmptyMarkup('empty.vtube_uses_hotkeys', 'VTube Studio nutzt Hotkeys statt Posen', 'text-gray-400 col-span-2');
+    idlesList.innerHTML = runtimeEmptyMarkup('empty.idles_unsupported', 'Idle-Animationen werden hier nicht unterstützt', 'text-gray-400 col-span-2');
   } else if (platformKey === 'vseeface') {
     if (platformData.expressions?.length > 0) {
       emotesList.innerHTML = platformData.expressions.map(expression => `
@@ -872,7 +908,7 @@ function updateAnimazeDataUI() {
         btn.addEventListener('click', () => triggerEmote(btn.dataset.value));
       });
     } else {
-      emotesList.innerHTML = '<p class="text-gray-400 col-span-2">Keine Expressions verfügbar</p>';
+      emotesList.innerHTML = runtimeEmptyMarkup('empty.no_expressions', 'Keine Expressions verfügbar', 'text-gray-400 col-span-2');
     }
 
     if (platformData.motions?.length > 0) {
@@ -885,19 +921,19 @@ function updateAnimazeDataUI() {
         btn.addEventListener('click', () => triggerSpecialAction(btn.dataset.value));
       });
     } else {
-      specialActionsList.innerHTML = '<p class="text-gray-400 col-span-2">Keine Motions verfügbar</p>';
+      specialActionsList.innerHTML = runtimeEmptyMarkup('empty.no_motions', 'Keine Motions verfügbar', 'text-gray-400 col-span-2');
     }
 
     posesList.innerHTML = `
       <button class="grid-item text-sm" data-action="trigger-reset" data-value="reset">
-        Reset
+        ${escapeHtml(translateRuntime('plugins.animazingpal.runtime.action.reset', 'Reset'))}
       </button>
     `;
     posesList.querySelectorAll('[data-action="trigger-reset"]').forEach(btn => {
       btn.addEventListener('click', () => triggerIdle(btn.dataset.value));
     });
 
-    idlesList.innerHTML = '<p class="text-gray-400 col-span-2">Idle-Animationen werden hier nicht unterstützt</p>';
+    idlesList.innerHTML = runtimeEmptyMarkup('empty.idles_unsupported', 'Idle-Animationen werden hier nicht unterstützt', 'text-gray-400 col-span-2');
   } else {
     if (platformData.emotes?.length > 0) {
       emotesList.innerHTML = platformData.emotes.map(e => `
@@ -909,7 +945,7 @@ function updateAnimazeDataUI() {
         btn.addEventListener('click', () => triggerEmote(btn.dataset.value));
       });
     } else {
-      emotesList.innerHTML = '<p class="text-gray-400 col-span-2">Keine Emotes verfügbar</p>';
+      emotesList.innerHTML = runtimeEmptyMarkup('empty.no_emotes', 'Keine Emotes verfügbar', 'text-gray-400 col-span-2');
     }
     
     if (platformData.specialActions?.length > 0) {
@@ -922,7 +958,7 @@ function updateAnimazeDataUI() {
         btn.addEventListener('click', () => triggerSpecialAction(parseInt(btn.dataset.value, 10)));
       });
     } else {
-      specialActionsList.innerHTML = '<p class="text-gray-400 col-span-2">Keine Spezialaktionen verfügbar</p>';
+      specialActionsList.innerHTML = runtimeEmptyMarkup('empty.no_special_actions', 'Keine Spezialaktionen verfügbar', 'text-gray-400 col-span-2');
     }
     
     if (platformData.poses?.length > 0) {
@@ -935,7 +971,7 @@ function updateAnimazeDataUI() {
         btn.addEventListener('click', () => triggerPose(parseInt(btn.dataset.value, 10)));
       });
     } else {
-      posesList.innerHTML = '<p class="text-gray-400 col-span-2">Keine Posen verfügbar</p>';
+      posesList.innerHTML = runtimeEmptyMarkup('empty.no_poses', 'Keine Posen verfügbar', 'text-gray-400 col-span-2');
     }
     
     if (platformData.idleAnims?.length > 0) {
@@ -948,7 +984,7 @@ function updateAnimazeDataUI() {
         btn.addEventListener('click', () => triggerIdle(parseInt(btn.dataset.value, 10)));
       });
     } else {
-      idlesList.innerHTML = '<p class="text-gray-400 col-span-2">Keine Idle Animationen verfügbar</p>';
+      idlesList.innerHTML = runtimeEmptyMarkup('empty.no_idles', 'Keine Idle Animationen verfügbar', 'text-gray-400 col-span-2');
     }
   }
   
@@ -965,7 +1001,7 @@ function updateActionValueSelects() {
     if (!typeSelect || !valueSelect) return;
     
     const type = typeSelect.value;
-    valueSelect.innerHTML = '<option value="">Auswählen...</option>';
+    valueSelect.innerHTML = `<option value="">${escapeHtml(translateRuntime('plugins.animazingpal.runtime.select.choose', 'Auswählen...'))}</option>`;
     
     let options = [];
     switch (type) {
@@ -987,14 +1023,14 @@ function updateActionValueSelects() {
         options = platformKey === 'animaze'
           ? (platformData.poses || []).map(p => ({ value: p.index, label: p.animName }))
           : platformKey === 'vseeface'
-            ? [{ value: 'reset', label: 'Reset' }]
+            ? [{ value: 'reset', label: translateRuntime('plugins.animazingpal.runtime.action.reset', 'Reset') }]
             : [];
         break;
       case 'idle':
         options = platformKey === 'animaze'
           ? (platformData.idleAnims || []).map(i => ({ value: i.index, label: i.animName }))
           : platformKey === 'vseeface'
-            ? [{ value: 'reset', label: 'Reset' }]
+            ? [{ value: 'reset', label: translateRuntime('plugins.animazingpal.runtime.action.reset', 'Reset') }]
             : [];
         break;
       case 'hotkey':
@@ -1032,7 +1068,7 @@ function updateDynamicActionTypes() {
     if (!typeSelect) return;
 
     const currentValue = typeSelect.value || currentConfig.eventActions?.[event]?.actionType || '';
-    typeSelect.innerHTML = '<option value="">Keine Aktion</option>';
+    typeSelect.innerHTML = `<option value="">${escapeHtml(translateRuntime('plugins.animazingpal.runtime.select.no_action', 'Keine Aktion'))}</option>`;
 
     allowedTypes.forEach(type => {
       const option = document.createElement('option');
@@ -1099,16 +1135,20 @@ async function toggleConnection() {
     const data = await response.json();
     
     if (!data.success) {
-      showToast(`Verbindung fehlgeschlagen: ${data.error || 'Unbekannter Fehler'}`, 'error');
+      showToast(runtimeError(data.error, `Verbindung fehlgeschlagen: ${data.error || 'Unbekannter Fehler'}`), 'error');
     } else if (!isConnected && !data.isConnected) {
-      const platformLabel = getPlatformDefinition().label || 'das Ziel';
-      showToast(`Verbindung zu ${platformLabel} fehlgeschlagen. Prüfe, ob die App läuft und die API aktiv ist.`, 'error');
+      const platformLabel = getPlatformDefinition().label || translateRuntime('plugins.animazingpal.runtime.connection.target', 'das Ziel');
+      showToast(translateRuntime(
+        'plugins.animazingpal.runtime.toast.connection_target_failed',
+        `Verbindung zu ${platformLabel} fehlgeschlagen. Prüfe, ob die App läuft und die API aktiv ist.`,
+        { platform: platformLabel }
+      ), 'error');
     }
     
     fetchStatus();
   } catch (error) {
     console.error('Connection toggle error:', error);
-    showToast(`Fehler: ${error.message}`, 'error');
+    showToast(runtimeError(error.message, `Fehler: ${error.message}`), 'error');
   }
 }
 
@@ -1122,12 +1162,12 @@ async function testConnection() {
 async function refreshData() {
   await fetch('/api/animazingpal/refresh', { method: 'POST' });
   fetchStatus();
-  showToast('Daten aktualisiert');
+  showToast(translateRuntime('plugins.animazingpal.runtime.toast.data_refreshed', 'Daten aktualisiert'));
 }
 
 async function calibrateTracker() {
   await fetch('/api/animazingpal/calibrate', { method: 'POST' });
-  showToast('Tracker-Kalibrierung gestartet');
+  showToast(translateRuntime('plugins.animazingpal.runtime.toast.calibration_started', 'Tracker-Kalibrierung gestartet'));
 }
 
 async function toggleBroadcast(enable) {
@@ -1136,7 +1176,10 @@ async function toggleBroadcast(enable) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ toggle: enable })
   });
-  showToast(enable ? 'Broadcast gestartet' : 'Broadcast gestoppt');
+  showToast(translateRuntime(
+    enable ? 'toast.broadcast_started' : 'toast.broadcast_stopped',
+    enable ? 'Broadcast gestartet' : 'Broadcast gestoppt'
+  ));
 }
 
 async function triggerEmote(itemName) {
@@ -1145,7 +1188,7 @@ async function triggerEmote(itemName) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ itemName })
   });
-  showToast(`Emote ausgelöst: ${itemName}`);
+  showToast(translateRuntime('plugins.animazingpal.runtime.toast.emote_triggered', `Emote ausgelöst: ${itemName}`, { name: itemName }));
 }
 
 async function triggerSpecialAction(index) {
@@ -1154,7 +1197,7 @@ async function triggerSpecialAction(index) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ index })
   });
-  showToast(`Spezialaktion ausgelöst`);
+  showToast(translateRuntime('plugins.animazingpal.runtime.toast.special_action_triggered', 'Spezialaktion ausgelöst'));
 }
 
 async function triggerPose(index) {
@@ -1163,7 +1206,7 @@ async function triggerPose(index) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ index })
   });
-  showToast(`Pose ausgelöst`);
+  showToast(translateRuntime('plugins.animazingpal.runtime.toast.pose_triggered', 'Pose ausgelöst'));
 }
 
 async function triggerIdle(index) {
@@ -1172,7 +1215,7 @@ async function triggerIdle(index) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ index })
   });
-  showToast(`Idle Animation ausgelöst`);
+  showToast(translateRuntime('plugins.animazingpal.runtime.toast.idle_triggered', 'Idle Animation ausgelöst'));
 }
 
 async function loadAvatar(name) {
@@ -1181,7 +1224,7 @@ async function loadAvatar(name) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name })
   });
-  showToast(`Avatar/Model geladen: ${name}`);
+  showToast(translateRuntime('plugins.animazingpal.runtime.toast.avatar_loaded', `Avatar/Model geladen: ${name}`, { name }));
 }
 
 async function updateEventAction(event) {
@@ -1221,7 +1264,7 @@ async function updateEventAction(event) {
   });
   
   currentConfig.eventActions = eventActions;
-  showToast(`${event} Event aktualisiert`);
+  showToast(translateRuntime('plugins.animazingpal.runtime.toast.event_updated', `${event} Event aktualisiert`, { event }));
 }
 
 async function saveSettings() {
@@ -1279,7 +1322,7 @@ async function saveSettings() {
     body: JSON.stringify(config)
   });
   
-  showToast('Einstellungen gespeichert');
+  showToast(translateRuntime('plugins.animazingpal.runtime.toast.settings_saved', 'Einstellungen gespeichert'));
   fetchStatus();
 }
 
@@ -1293,15 +1336,15 @@ async function applyStreamReadyPreset() {
 
     const data = await response.json();
     if (!data.success) {
-      showToast(`Preset konnte nicht angewendet werden: ${data.error || 'Unbekannter Fehler'}`, 'error');
+      showToast(runtimeError(data.error, `Preset konnte nicht angewendet werden: ${data.error || 'Unbekannter Fehler'}`), 'error');
       return;
     }
 
-    showToast(`Preset angewendet: ${data.preset?.label || 'Stream Ready'}`);
+    showToast(translateRuntime('plugins.animazingpal.runtime.toast.preset_applied', `Preset angewendet: ${data.preset?.label || 'Stream Ready'}`, { preset: data.preset?.label || 'Stream Ready' }));
     fetchStatus();
   } catch (error) {
     console.error('Preset apply error:', error);
-    showToast(`Preset konnte nicht angewendet werden: ${error.message}`, 'error');
+    showToast(runtimeError(error.message, `Preset konnte nicht angewendet werden: ${error.message}`), 'error');
   }
 }
 
@@ -1376,9 +1419,9 @@ function showAnimazingPalAudioPrompt() {
   prompt.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-indigo-600 text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-4 max-w-2xl';
   prompt.style.zIndex = '99999';
   prompt.innerHTML = `
-    <span><strong>AnimazingPal Audio:</strong> klicken, damit Fish.audio auf das konfigurierte Animaze-Ausgabegerät geroutet wird.</span>
+    <span>${escapeHtml(translateRuntime('plugins.animazingpal.runtime.audio.prompt', 'Aktiviere Audio, damit Fish.audio auf das konfigurierte Animaze-Ausgabegerät geroutet wird.'))}</span>
     <button id="animazingpal-enable-audio-btn" class="bg-white text-indigo-700 px-4 py-2 rounded font-semibold hover:bg-indigo-50 transition flex-shrink-0">
-      Audio aktivieren
+      ${escapeHtml(translateRuntime('plugins.animazingpal.runtime.audio.enable', 'Audio aktivieren'))}
     </button>
   `;
 
@@ -1557,7 +1600,10 @@ function showAnimazingPalSinkWarningIfNeeded(routing) {
   if (routing.reason !== 'setSinkId_unsupported') return;
 
   animazingPalSinkWarningShown = true;
-  showToast('Browser kann das Animaze-Ausgabegerät nicht direkt wählen. Setze Windows-Standardausgabe auf CABLE Input oder nutze einen Browser mit setSinkId.', 'error');
+  showToast(translateRuntime(
+    'plugins.animazingpal.runtime.toast.audio_output_unavailable',
+    'Browser kann das Animaze-Ausgabegerät nicht direkt wählen. Setze Windows-Standardausgabe auf CABLE Input oder nutze einen Browser mit setSinkId.'
+  ), 'error');
 }
 
 function showToast(message, type = 'info') {
@@ -1598,32 +1644,35 @@ function processToastQueue() {
 }
 
 function addGiftMappingPromptLegacy() {
-  const giftName = prompt('TikTok Gift-Name oder Gift-ID für das Mapping:');
+  const giftName = prompt(translateRuntime('plugins.animazingpal.runtime.mapping.gift_catalog_prompt', 'TikTok Gift-Name oder Gift-ID für das Mapping:'));
   if (!giftName) return;
 
   const allowedActionTypes = new Set(getAllowedActionTypes());
-  const actionType = prompt(`Aktionstyp (${Array.from(allowedActionTypes).join(', ')}):`, Array.from(allowedActionTypes)[0] || 'emote');
+  const actionType = prompt(
+    translateRuntime('plugins.animazingpal.runtime.mapping.action_type_prompt', `Aktionstyp (${Array.from(allowedActionTypes).join(', ')}):`, { types: Array.from(allowedActionTypes).join(', ') }),
+    Array.from(allowedActionTypes)[0] || 'emote'
+  );
   if (!actionType || !allowedActionTypes.has(actionType)) {
-    showToast('Ungültiger Aktionstyp', 'error');
+    showToast(translateRuntime('plugins.animazingpal.runtime.mapping.invalid_action_type', 'Ungültiger Aktionstyp'), 'error');
     return;
   }
 
   let actionValue = null;
   if (actionType !== 'chatMessage' && actionType !== 'reset') {
-    const valuePrompt = prompt('Aktion-Wert (Emote-Name oder Index):', '');
+    const valuePrompt = prompt(translateRuntime('plugins.animazingpal.runtime.mapping.action_value_prompt', 'Aktion-Wert (Emote-Name oder Index):'), '');
     if (valuePrompt === null) return;
     const trimmedValue = valuePrompt.trim();
     if (trimmedValue) {
       actionValue = normalizeActionValue(actionType, trimmedValue);
       if (['specialAction', 'pose', 'idle'].includes(actionType) && Number.isNaN(actionValue)) {
-        showToast('Bitte eine gültige Zahl eingeben', 'error');
+        showToast(translateRuntime('plugins.animazingpal.runtime.mapping.valid_number_required', 'Bitte eine gültige Zahl eingeben'), 'error');
         return;
       }
     }
   }
 
-  const chatMessage = prompt('Optionale Chat-Nachricht (leer lassen für keine):', '')?.trim() || null;
-  const useEcho = chatMessage ? confirm('Echo für diese Chat-Nachricht erzwingen?') : null;
+  const chatMessage = prompt(translateRuntime('plugins.animazingpal.runtime.mapping.chat_message_prompt', 'Optionale Chat-Nachricht (leer lassen für keine):'), '')?.trim() || null;
+  const useEcho = chatMessage ? confirm(translateRuntime('plugins.animazingpal.runtime.mapping.echo_confirmation', 'Echo für diese Chat-Nachricht erzwingen?')) : null;
 
   const mappings = Array.isArray(currentConfig.giftMappings) ? [...currentConfig.giftMappings] : [];
   mappings.push({
@@ -1682,7 +1731,7 @@ function populateGiftMappingForm() {
   if (!giftSelect || !typeSelect || !valueSelect) return;
 
   const selectedGift = giftSelect.value;
-  giftSelect.innerHTML = '<option value="">Gift aus Katalog wählen...</option>';
+  giftSelect.innerHTML = `<option value="">${escapeHtml(translateRuntime('plugins.animazingpal.runtime.mapping.choose_gift', 'Gift aus Katalog wählen...'))}</option>`;
   giftCatalog.forEach(gift => {
     const option = document.createElement('option');
     option.value = gift.id || gift.name;
@@ -1693,7 +1742,7 @@ function populateGiftMappingForm() {
   if ([...giftSelect.options].some(option => option.value === selectedGift)) giftSelect.value = selectedGift;
 
   const selectedValue = valueSelect.value;
-  valueSelect.innerHTML = '<option value="">Auswählen...</option>';
+  valueSelect.innerHTML = `<option value="">${escapeHtml(translateRuntime('plugins.animazingpal.runtime.select.choose', 'Auswählen...'))}</option>`;
   getGiftMappingActionOptions(typeSelect.value || 'emote').forEach(item => {
     if (item.value === null || item.value === undefined || item.value === '') return;
     const option = document.createElement('option');
@@ -1712,11 +1761,11 @@ function addGiftMapping() {
   const giftId = giftSelect?.value || '';
   const giftName = selectedGift?.dataset?.giftName || selectedGift?.textContent?.replace(/\s+\(#.*$/, '').trim() || giftId;
   if (!giftId && !giftName) {
-    showToast('Bitte ein Gift aus dem Katalog auswählen', 'error');
+    showToast(translateRuntime('plugins.animazingpal.runtime.mapping.gift_required', 'Bitte ein Gift aus dem Katalog auswählen'), 'error');
     return;
   }
   if (!actionType || !rawActionValue) {
-    showToast('Bitte Aktionstyp und Aktion auswählen', 'error');
+    showToast(translateRuntime('plugins.animazingpal.runtime.mapping.action_required', 'Bitte Aktionstyp und Aktion auswählen'), 'error');
     return;
   }
 
@@ -1743,16 +1792,20 @@ async function saveGiftMappings(mappings) {
 
     const result = await response.json();
     if (!result.success) {
-      showToast(`Gift-Mapping konnte nicht gespeichert werden: ${result.error || 'Unbekannter Fehler'}`, 'error');
+      showToast(translateRuntime(
+        'plugins.animazingpal.runtime.mapping.save_failed',
+        `Gift-Mapping konnte nicht gespeichert werden: ${result.error || 'Unbekannter Fehler'}`,
+        { message: result.error || translateRuntime('plugins.animazingpal.runtime.toast.unknown_error', 'Unbekannter Fehler') }
+      ), 'error');
       return;
     }
 
     currentConfig.giftMappings = result.mappings || mappings;
     renderGiftMappings();
-    showToast('Gift-Mapping gespeichert');
+    showToast(translateRuntime('plugins.animazingpal.runtime.mapping.save_success', 'Gift-Mapping gespeichert'));
   } catch (error) {
     console.error('Failed to save gift mappings:', error);
-    showToast('Gift-Mapping konnte nicht gespeichert werden', 'error');
+    showToast(runtimeError(error.message, 'Gift-Mapping konnte nicht gespeichert werden'), 'error');
   }
 }
 
@@ -1762,7 +1815,7 @@ function renderGiftMappings() {
 
   const mappings = Array.isArray(currentConfig.giftMappings) ? currentConfig.giftMappings : [];
   if (mappings.length === 0) {
-    list.innerHTML = '<p class="text-gray-400">Keine Gift Mappings konfiguriert</p>';
+    list.innerHTML = runtimeEmptyMarkup('empty.no_gift_mappings', 'Keine Gift Mappings konfiguriert');
     return;
   }
 
@@ -1773,23 +1826,27 @@ function renderGiftMappings() {
     item.className = 'card bg-gray-800 flex items-start justify-between gap-3';
 
     const details = [];
-    details.push(`Typ: ${mapping.actionType || 'unbekannt'}`);
+    details.push(translateRuntime('plugins.animazingpal.runtime.mapping.type', `Typ: ${mapping.actionType || 'unbekannt'}`, { value: mapping.actionType || translateRuntime('plugins.animazingpal.runtime.mapping.unknown', 'unbekannt') }));
     if (mapping.actionValue !== null && mapping.actionValue !== undefined && mapping.actionValue !== '') {
-      details.push(`Wert: ${mapping.actionValue}`);
+      details.push(translateRuntime('plugins.animazingpal.runtime.mapping.value', `Wert: ${mapping.actionValue}`, { value: mapping.actionValue }));
     }
     if (mapping.chatMessage) {
-      details.push(`Chat: ${mapping.chatMessage}`);
+      details.push(translateRuntime('plugins.animazingpal.runtime.mapping.chat', `Chat: ${mapping.chatMessage}`, { value: mapping.chatMessage }));
     }
     if (mapping.useEcho !== null && mapping.useEcho !== undefined) {
-      details.push(`Echo: ${mapping.useEcho ? 'an' : 'aus'}`);
+      details.push(translateRuntime('plugins.animazingpal.runtime.mapping.echo', `Echo: ${mapping.useEcho ? 'an' : 'aus'}`, {
+        value: mapping.useEcho
+          ? translateRuntime('plugins.animazingpal.runtime.mapping.enabled', 'an')
+          : translateRuntime('plugins.animazingpal.runtime.mapping.disabled', 'aus')
+      }));
     }
 
     item.innerHTML = `
       <div class="flex-1">
-        <div class="font-bold">${escapeHtml(mapping.giftName || mapping.giftId || `Mapping ${index + 1}`)}</div>
+        <div class="font-bold">${escapeHtml(mapping.giftName || mapping.giftId || translateRuntime('plugins.animazingpal.runtime.mapping.fallback_name', `Mapping ${index + 1}`, { number: index + 1 }))}</div>
         <div class="text-sm text-gray-400 mt-1">${escapeHtml(details.join(' · '))}</div>
       </div>
-      <button class="btn btn-danger btn-sm" data-delete-gift-mapping="${index}">Entfernen</button>
+      <button class="btn btn-danger btn-sm" data-delete-gift-mapping="${index}">${escapeHtml(translateRuntime('plugins.animazingpal.runtime.mapping.remove', 'Entfernen'))}</button>
     `;
     list.appendChild(item);
   });
@@ -1863,11 +1920,11 @@ async function searchMemories() {
     if (data.success) {
       displayMemories(data.memories || []);
     } else {
-      showToast('Fehler beim Laden der Erinnerungen', 'error');
+      showToast(runtimeError(data.error, 'Fehler beim Laden der Erinnerungen'), 'error');
     }
   } catch (error) {
     console.error('Memory search error:', error);
-    showToast('Fehler: ' + error.message, 'error');
+    showToast(runtimeError(error.message, `Fehler: ${error.message}`), 'error');
   }
 }
 
@@ -1882,7 +1939,7 @@ async function loadAllMemories() {
       // Update user filter dropdown
       const users = [...new Set(data.memories.map(m => m.source_user).filter(u => u))];
       const userSelect = document.getElementById('memoryFilterUser');
-      userSelect.innerHTML = '<option value="">Alle Benutzer</option>';
+      userSelect.innerHTML = `<option value="">${escapeHtml(translateRuntime('plugins.animazingpal.runtime.memory.all_users', 'Alle Benutzer'))}</option>`;
       users.forEach(user => {
         const option = document.createElement('option');
         option.value = user;
@@ -1892,7 +1949,7 @@ async function loadAllMemories() {
     }
   } catch (error) {
     console.error('Failed to load memories:', error);
-    showToast('Fehler beim Laden', 'error');
+    showToast(runtimeError(error.message, 'Fehler beim Laden'), 'error');
   }
 }
 
@@ -1900,7 +1957,7 @@ function displayMemories(memories) {
   const resultsDiv = document.getElementById('memoryResults');
   
   if (memories.length === 0) {
-    resultsDiv.innerHTML = '<p class="text-gray-400">Keine Erinnerungen gefunden.</p>';
+    resultsDiv.innerHTML = runtimeEmptyMarkup('empty.no_memories', 'Keine Erinnerungen gefunden.');
     return;
   }
   
@@ -1915,7 +1972,7 @@ function displayMemories(memories) {
         <div class="flex justify-between items-start mb-2">
           <div class="flex-1">
             ${memory.source_user ? `<div class="text-sm font-bold text-blue-400">👤 ${memory.source_user}</div>` : ''}
-            <div class="text-sm text-gray-500">${date} · ${memory.memory_type || 'general'}</div>
+            <div class="text-sm text-gray-500">${date} · ${memory.memory_type || translateRuntime('plugins.animazingpal.runtime.memory.general', 'general')}</div>
           </div>
           <div class="${importanceColor} font-bold">
             ${(memory.importance || 0).toFixed(2)}
@@ -1932,7 +1989,7 @@ function displayMemories(memories) {
 }
 
 async function archiveOldMemories() {
-  if (!confirm('Möchtest du alte Erinnerungen wirklich archivieren? Dies fasst alte Erinnerungen zusammen.')) {
+  if (!confirm(translateRuntime('plugins.animazingpal.runtime.memory.archive_confirm', 'Möchtest du alte Erinnerungen wirklich archivieren? Dies fasst alte Erinnerungen zusammen.'))) {
     return;
   }
   
@@ -1941,14 +1998,14 @@ async function archiveOldMemories() {
     const data = await response.json();
     
     if (data.success) {
-      showToast('Erinnerungen archiviert');
+      showToast(translateRuntime('plugins.animazingpal.runtime.memory.archived', 'Erinnerungen archiviert'));
       loadMemoryStats();
       loadAllMemories();
     } else {
-      showToast('Fehler: ' + data.error, 'error');
+      showToast(runtimeError(data.error, `Fehler: ${data.error}`), 'error');
     }
   } catch (error) {
-    showToast('Fehler beim Archivieren: ' + error.message, 'error');
+    showToast(runtimeError(error.message, `Fehler beim Archivieren: ${error.message}`), 'error');
   }
 }
 
@@ -2022,12 +2079,12 @@ async function savePersonalitySettings() {
     const result = await response.json();
     
     if (result.success) {
-      showToast('Persönlichkeits-Einstellungen gespeichert');
+      showToast(translateRuntime('plugins.animazingpal.runtime.toast.personality_settings_saved', 'Persönlichkeits-Einstellungen gespeichert'));
     } else {
-      showToast('Fehler: ' + result.error, 'error');
+      showToast(runtimeError(result.error, `Fehler: ${result.error}`), 'error');
     }
   } catch (error) {
-    showToast('Fehler beim Speichern: ' + error.message, 'error');
+    showToast(runtimeError(error.message, `Fehler beim Speichern: ${error.message}`), 'error');
   }
 }
 
@@ -2108,28 +2165,28 @@ async function saveBrainConfig() {
     
     const result = await response.json();
     if (result.success) {
-      showToast('Brain-Konfiguration gespeichert');
+      showToast(translateRuntime('plugins.animazingpal.runtime.toast.brain_config_saved', 'Brain-Konfiguration gespeichert'));
     } else {
-      showToast('Fehler beim Speichern: ' + result.error, 'error');
+      showToast(runtimeError(result.error, `Fehler beim Speichern: ${result.error}`), 'error');
     }
   } catch (error) {
-    showToast('Fehler beim Speichern: ' + error.message, 'error');
+    showToast(runtimeError(error.message, `Fehler beim Speichern: ${error.message}`), 'error');
   }
 }
 
 async function testBrainConnection() {
   try {
-    showToast('Teste Verbindung...');
+    showToast(translateRuntime('plugins.animazingpal.runtime.toast.testing_connection', 'Teste Verbindung...'));
     const response = await fetch('/api/animazingpal/brain/test', { method: 'POST' });
     const result = await response.json();
     
     if (result.success) {
-      showToast('Verbindung erfolgreich!');
+      showToast(translateRuntime('plugins.animazingpal.runtime.toast.connection_successful', 'Verbindung erfolgreich!'));
     } else {
-      showToast('Verbindung fehlgeschlagen: ' + result.error, 'error');
+      showToast(runtimeError(result.error, `Verbindung fehlgeschlagen: ${result.error}`), 'error');
     }
   } catch (error) {
-    showToast('Verbindung fehlgeschlagen: ' + error.message, 'error');
+    showToast(runtimeError(error.message, `Verbindung fehlgeschlagen: ${error.message}`), 'error');
   }
 }
 
@@ -2161,12 +2218,12 @@ function updatePersonaList() {
       <div class="flex-1">
         <div class="font-bold">${persona.display_name}</div>
         <div class="text-sm text-gray-400">${persona.description || ''}</div>
-        ${persona.is_active ? '<span class="text-xs bg-green-600 text-white px-2 py-1 rounded">Aktiv</span>' : ''}
-        ${persona.is_custom ? '<span class="text-xs bg-blue-600 text-white px-2 py-1 rounded ml-1">Custom</span>' : ''}
+        ${persona.is_active ? `<span class="text-xs bg-green-600 text-white px-2 py-1 rounded">${escapeHtml(translateRuntime('plugins.animazingpal.runtime.persona.active', 'Aktiv'))}</span>` : ''}
+        ${persona.is_custom ? `<span class="text-xs bg-blue-600 text-white px-2 py-1 rounded ml-1">${escapeHtml(translateRuntime('plugins.animazingpal.runtime.persona.custom', 'Custom'))}</span>` : ''}
       </div>
       <div class="flex gap-2">
-        <button class="btn btn-secondary btn-sm" onclick="editPersona('${persona.name}')">Bearbeiten</button>
-        ${persona.is_custom ? `<button class="btn btn-danger btn-sm" onclick="deletePersona('${persona.name}')">Löschen</button>` : ''}
+        <button class="btn btn-secondary btn-sm" onclick="editPersona('${persona.name}')">${escapeHtml(translateRuntime('plugins.animazingpal.runtime.persona.edit', 'Bearbeiten'))}</button>
+        ${persona.is_custom ? `<button class="btn btn-danger btn-sm" onclick="deletePersona('${persona.name}')">${escapeHtml(translateRuntime('plugins.animazingpal.runtime.persona.delete', 'Löschen'))}</button>` : ''}
       </div>
     `;
     personaList.appendChild(item);
@@ -2177,7 +2234,7 @@ function updateActivePersonaSelect() {
   const select = document.getElementById('activePersonaSelect');
   if (!select) return;
   
-  select.innerHTML = '<option value="">Keine ausgewählt</option>';
+  select.innerHTML = `<option value="">${escapeHtml(translateRuntime('plugins.animazingpal.runtime.persona.none_selected', 'Keine ausgewählt'))}</option>`;
   
   currentPersonas.forEach(persona => {
     const option = document.createElement('option');
@@ -2264,12 +2321,12 @@ async function savePersona() {
   try {
     personaData.catchphrases = JSON.parse(document.getElementById('editPersonaCatchphrases').value);
   } catch (error) {
-    showToast('Fehler: Catchphrases müssen ein gültiges JSON-Array sein', 'error');
+    showToast(translateRuntime('plugins.animazingpal.runtime.persona.catchphrases_json_required', 'Fehler: Catchphrases müssen ein gültiges JSON-Array sein'), 'error');
     return;
   }
   
   if (!personaData.name || !personaData.system_prompt) {
-    showToast('Name und System Prompt sind erforderlich', 'error');
+    showToast(translateRuntime('plugins.animazingpal.runtime.persona.name_and_prompt_required', 'Name und System Prompt sind erforderlich'), 'error');
     return;
   }
   
@@ -2294,14 +2351,14 @@ async function savePersona() {
     const result = await response.json();
     
     if (result.success) {
-      showToast('Persona gespeichert!');
+      showToast(translateRuntime('plugins.animazingpal.runtime.persona.saved', 'Persona gespeichert!'));
       hidePersonaEditor();
       await loadPersonas();
     } else {
-      showToast('Fehler: ' + result.error, 'error');
+      showToast(runtimeError(result.error, `Fehler: ${result.error}`), 'error');
     }
   } catch (error) {
-    showToast('Fehler beim Speichern: ' + error.message, 'error');
+    showToast(runtimeError(error.message, `Fehler beim Speichern: ${error.message}`), 'error');
   }
 }
 
@@ -2310,7 +2367,7 @@ async function editPersona(personaName) {
 }
 
 async function deletePersona(personaName) {
-  if (!confirm(`Persona "${personaName}" wirklich löschen?`)) {
+  if (!confirm(translateRuntime('plugins.animazingpal.runtime.persona.delete_confirm', `Persona "${personaName}" wirklich löschen?`, { name: personaName }))) {
     return;
   }
   
@@ -2322,13 +2379,13 @@ async function deletePersona(personaName) {
     const result = await response.json();
     
     if (result.success) {
-      showToast('Persona gelöscht');
+      showToast(translateRuntime('plugins.animazingpal.runtime.persona.deleted', 'Persona gelöscht'));
       await loadPersonas();
     } else {
-      showToast('Fehler: ' + result.error, 'error');
+      showToast(runtimeError(result.error, `Fehler: ${result.error}`), 'error');
     }
   } catch (error) {
-    showToast('Fehler beim Löschen: ' + error.message, 'error');
+    showToast(runtimeError(error.message, `Fehler beim Löschen: ${error.message}`), 'error');
   }
 }
 
@@ -2347,13 +2404,13 @@ async function setActivePersona() {
     const result = await response.json();
     
     if (result.success) {
-      showToast('Aktive Persona geändert: ' + result.personality.display_name);
+      showToast(translateRuntime('plugins.animazingpal.runtime.persona.active_changed', `Aktive Persona geändert: ${result.personality.display_name}`, { name: result.personality.display_name }));
       await loadPersonas();
     } else {
-      showToast('Fehler: ' + result.error, 'error');
+      showToast(runtimeError(result.error, `Fehler: ${result.error}`), 'error');
     }
   } catch (error) {
-    showToast('Fehler: ' + error.message, 'error');
+    showToast(runtimeError(error.message, `Fehler: ${error.message}`), 'error');
   }
 }
 
@@ -2375,18 +2432,18 @@ async function saveBrainSettings() {
     const result = await response.json();
 
     if (result.success) {
-      showToast('Brain Einstellungen gespeichert!');
+      showToast(translateRuntime('plugins.animazingpal.runtime.toast.brain_settings_saved', 'Brain Einstellungen gespeichert!'));
     } else {
-      showToast('Fehler: ' + result.error, 'error');
+      showToast(runtimeError(result.error, `Fehler: ${result.error}`), 'error');
     }
   } catch (error) {
-    showToast('Fehler beim Speichern: ' + error.message, 'error');
+    showToast(runtimeError(error.message, `Fehler beim Speichern: ${error.message}`), 'error');
   }
 }
 
 // Logic Matrix Functions
 async function addLogicMatrixRule() {
-  showToast('Logic Matrix Editor wird implementiert...', 'info');
+  showToast(translateRuntime('plugins.animazingpal.runtime.toast.logic_matrix_coming_soon', 'Logic Matrix Editor wird implementiert...'), 'info');
   // Stub for future implementation
 }
 
@@ -2395,7 +2452,7 @@ async function testLogicMatrix() {
   const eventDataText = document.getElementById('testEventData').value;
 
   if (!eventType) {
-    showToast('Bitte Event-Typ auswählen', 'error');
+    showToast(translateRuntime('plugins.animazingpal.runtime.toast.event_type_required', 'Bitte Event-Typ auswählen'), 'error');
     return;
   }
 
@@ -2403,7 +2460,7 @@ async function testLogicMatrix() {
   try {
     eventData = JSON.parse(eventDataText);
   } catch (error) {
-    showToast('Ungültiges JSON-Format', 'error');
+    showToast(translateRuntime('plugins.animazingpal.runtime.toast.invalid_json', 'Ungültiges JSON-Format'), 'error');
     return;
   }
 
@@ -2422,23 +2479,23 @@ async function testLogicMatrix() {
     if (result.success) {
       resultsDiv.classList.remove('hidden');
       outputPre.textContent = JSON.stringify(result, null, 2);
-      showToast('Test erfolgreich durchgeführt');
+      showToast(translateRuntime('plugins.animazingpal.runtime.toast.test_completed', 'Test erfolgreich durchgeführt'));
     } else {
       resultsDiv.classList.remove('hidden');
-      outputPre.textContent = `Fehler: ${result.error}`;
-      showToast('Test fehlgeschlagen', 'error');
+      outputPre.textContent = runtimeError(result.error, `Fehler: ${result.error}`);
+      showToast(translateRuntime('plugins.animazingpal.runtime.toast.test_failed', 'Test fehlgeschlagen'), 'error');
     }
   } catch (error) {
-    showToast('Fehler beim Test: ' + error.message, 'error');
+    showToast(runtimeError(error.message, `Fehler beim Test: ${error.message}`), 'error');
   }
 }
 
 // Persona Management Functions
 async function createPersona() {
-  const personaName = prompt('Neuer Persona Name:');
+  const personaName = prompt(translateRuntime('plugins.animazingpal.runtime.persona.new_name_prompt', 'Neuer Persona Name:'));
   if (!personaName) return;
 
-  const systemPrompt = prompt('System Prompt (Persönlichkeitsbeschreibung):');
+  const systemPrompt = prompt(translateRuntime('plugins.animazingpal.runtime.persona.system_prompt_prompt', 'System Prompt (Persönlichkeitsbeschreibung):'));
   if (!systemPrompt) return;
 
   try {
@@ -2456,14 +2513,14 @@ async function createPersona() {
     const result = await response.json();
 
     if (result.success) {
-      showToast('Persona erstellt');
+      showToast(translateRuntime('plugins.animazingpal.runtime.persona.created', 'Persona erstellt'));
       // Reload personalities list
       loadPersonalities();
     } else {
-      showToast('Fehler: ' + result.error, 'error');
+      showToast(runtimeError(result.error, `Fehler: ${result.error}`), 'error');
     }
   } catch (error) {
-    showToast('Fehler beim Erstellen: ' + error.message, 'error');
+    showToast(runtimeError(error.message, `Fehler beim Erstellen: ${error.message}`), 'error');
   }
 }
 
@@ -2472,11 +2529,11 @@ async function editPersonaFromSelector() {
   const selectedPersona = personaSelector.value;
 
   if (!selectedPersona) {
-    showToast('Bitte eine Persona auswählen', 'error');
+    showToast(translateRuntime('plugins.animazingpal.runtime.persona.selection_required', 'Bitte eine Persona auswählen'), 'error');
     return;
   }
 
-  const systemPrompt = prompt(`Neuer System Prompt für "${selectedPersona}":`);
+  const systemPrompt = prompt(translateRuntime('plugins.animazingpal.runtime.persona.update_system_prompt', `Neuer System Prompt für "${selectedPersona}":`, { name: selectedPersona }));
   if (!systemPrompt) return;
 
   try {
@@ -2491,12 +2548,12 @@ async function editPersonaFromSelector() {
     const result = await response.json();
 
     if (result.success) {
-      showToast('Persona aktualisiert');
+      showToast(translateRuntime('plugins.animazingpal.runtime.persona.updated', 'Persona aktualisiert'));
     } else {
-      showToast('Fehler: ' + result.error, 'error');
+      showToast(runtimeError(result.error, `Fehler: ${result.error}`), 'error');
     }
   } catch (error) {
-    showToast('Fehler beim Bearbeiten: ' + error.message, 'error');
+    showToast(runtimeError(error.message, `Fehler beim Bearbeiten: ${error.message}`), 'error');
   }
 }
 
@@ -2510,7 +2567,7 @@ async function loadPersonalities() {
       const activePersonality = document.getElementById('activePersonality');
       
       // Update persona selector
-      personaSelector.innerHTML = '<option value="">Persona auswählen...</option>';
+      personaSelector.innerHTML = `<option value="">${escapeHtml(translateRuntime('plugins.animazingpal.runtime.persona.select', 'Persona auswählen...'))}</option>`;
       data.personalities.forEach(p => {
         const option = document.createElement('option');
         option.value = p.name;
@@ -2519,7 +2576,7 @@ async function loadPersonalities() {
       });
       
       // Update active personality selector
-      activePersonality.innerHTML = '<option value="">Keine ausgewählt</option>';
+      activePersonality.innerHTML = `<option value="">${escapeHtml(translateRuntime('plugins.animazingpal.runtime.persona.none_selected', 'Keine ausgewählt'))}</option>`;
       data.personalities.forEach(p => {
         const option = document.createElement('option');
         option.value = p.name;
@@ -2537,11 +2594,11 @@ async function deletePersonaFromSelector() {
   const selectedPersona = personaSelector.value;
 
   if (!selectedPersona) {
-    showToast('Bitte eine Persona auswählen', 'error');
+    showToast(translateRuntime('plugins.animazingpal.runtime.persona.selection_required', 'Bitte eine Persona auswählen'), 'error');
     return;
   }
 
-  if (!confirm(`Persona "${selectedPersona}" wirklich löschen?`)) {
+  if (!confirm(translateRuntime('plugins.animazingpal.runtime.persona.delete_confirm', `Persona "${selectedPersona}" wirklich löschen?`, { name: selectedPersona }))) {
     return;
   }
 
@@ -2553,14 +2610,14 @@ async function deletePersonaFromSelector() {
     const result = await response.json();
 
     if (result.success) {
-      showToast('Persona gelöscht');
+      showToast(translateRuntime('plugins.animazingpal.runtime.persona.deleted', 'Persona gelöscht'));
       personaSelector.value = '';
       loadPersonalities();
     } else {
-      showToast('Fehler: ' + result.error, 'error');
+      showToast(runtimeError(result.error, `Fehler: ${result.error}`), 'error');
     }
   } catch (error) {
-    showToast('Fehler beim Löschen: ' + error.message, 'error');
+    showToast(runtimeError(error.message, `Fehler beim Löschen: ${error.message}`), 'error');
   }
 }
 
@@ -2571,7 +2628,7 @@ function updateOverridesUI(overrideBehaviors = []) {
   if (!overridesList) return;
   
   if (overrideBehaviors.length === 0) {
-    overridesList.innerHTML = '<p class="text-gray-400">Keine Override Behaviors verfügbar</p>';
+    overridesList.innerHTML = runtimeEmptyMarkup('empty.no_override_behaviors', 'Keine Override Behaviors verfügbar');
     return;
   }
   
@@ -2597,12 +2654,15 @@ async function toggleOverride(behavior, enabled) {
     const result = await response.json();
     
     if (result.success) {
-      showToast(`${behavior}: ${enabled ? 'Aktiviert' : 'Deaktiviert'}`);
+      showToast(translateRuntime('plugins.animazingpal.runtime.toast.override_updated', `${behavior}: ${enabled ? 'Aktiviert' : 'Deaktiviert'}`, {
+        behavior,
+        state: enabled ? translateRuntime('plugins.animazingpal.runtime.mapping.enabled', 'Aktiviert') : translateRuntime('plugins.animazingpal.runtime.mapping.disabled', 'Deaktiviert')
+      }));
     } else {
-      showToast('Fehler: ' + result.error, 'error');
+      showToast(runtimeError(result.error, `Fehler: ${result.error}`), 'error');
     }
   } catch (error) {
-    showToast('Fehler beim Umschalten: ' + error.message, 'error');
+    showToast(runtimeError(error.message, `Fehler beim Umschalten: ${error.message}`), 'error');
   }
 }
 

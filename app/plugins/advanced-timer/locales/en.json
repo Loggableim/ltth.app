@@ -1,206 +1,233 @@
 {
-  "plugin": {
-    "name": "Advanced Timer",
-    "description": "Professional multi-timer system with event automation and customizable overlays"
-  },
-  "ui": {
-    "title": "Advanced Timer - Multi-Timer System",
-    "tabs": {
-      "timers": "Timers",
-      "create": "Create Timer",
-      "profiles": "Profiles",
-      "help": "Help"
-    },
-    "buttons": {
-      "newTimer": "New Timer",
-      "start": "Start",
-      "pause": "Pause",
-      "stop": "Stop",
-      "reset": "Reset",
-      "settings": "Settings",
-      "delete": "Delete",
-      "save": "Save",
-      "cancel": "Cancel",
-      "create": "Create Timer",
-      "export": "Export",
-      "copy": "Copy URL"
-    },
-    "labels": {
-      "timerName": "Timer Name",
-      "timerMode": "Timer Mode",
-      "initialDuration": "Initial Duration (seconds)",
-      "targetValue": "Target Value (seconds)",
-      "overlayUrl": "Overlay URL",
-      "activityLog": "Activity Log"
-    },
-    "modes": {
-      "countdown": "Countdown - Count down from a time",
-      "countup": "Count Up - Count up to a target",
-      "stopwatch": "Stopwatch - Count up indefinitely",
-      "loop": "Loop - Repeat countdown continuously",
-      "interval": "Interval - Repeat up to target"
-    },
-    "states": {
-      "running": "Running",
-      "paused": "Paused",
-      "stopped": "Stopped",
-      "completed": "Completed"
-    },
-    "messages": {
-      "noTimers": "No timers yet",
-      "createFirst": "Create Your First Timer",
-      "timerCreated": "Timer created successfully!",
-      "timerUpdated": "Timer updated successfully!",
-      "timerDeleted": "Timer deleted successfully!",
-      "confirmDelete": "Are you sure you want to delete this timer?",
-      "urlCopied": "URL copied to clipboard!",
-      "noActivity": "No activity yet",
-      "quickStart": "Create a timer and configure events in the timer settings to add time based on TikTok events (gifts, likes, follows, etc.)"
-    },
-    "help": {
-      "modesTitle": "Timer Modes",
-      "modesCountdown": "Countdown: Counts down from a starting time to zero",
-      "modesCountup": "Count Up: Counts up from zero to a target value",
-      "modesStopwatch": "Stopwatch: Counts up indefinitely",
-      "modesLoop": "Loop: Continuously repeats countdown",
-      "modesInterval": "Interval: Counts up to target, resets and repeats",
-      "eventAutomationTitle": "Event Automation",
-      "eventAutomationDesc": "Configure timers to respond to TikTok events:",
-      "eventGifts": "Gifts - Add/remove time based on coin value (seconds per coin)",
-      "eventLikes": "Likes - Modify timer based on likes received (seconds per like)",
-      "eventFollows": "Follows - Reward new followers",
-      "eventShares": "Shares - Encourage sharing",
-      "eventChat": "Chat Commands - Allow viewers to interact",
-      "timerChainsTitle": "Timer Chains",
-      "timerChainsDesc": "Link timers together - when Timer A completes, automatically start/stop/reset Timer B",
-      "overlaysTitle": "Overlays",
-      "overlaysDesc": "Each timer has its own overlay URL that can be added as a Browser Source in OBS"
-    },
-    "settings": {
-      "tabs": {
-        "basic": "Basic",
-        "events": "Events",
-        "overlay": "Overlay",
-        "logs": "Logs"
+  "plugins": {
+    "advanced-timer": {
+      "form_controls": {
+        "sections_aria": "Advanced Timer sections",
+        "timer_summary_aria": "Timer summary",
+        "timer_name_placeholder": "My Timer"
       },
-      "eventsDesc": "Configure how TikTok events affect this timer",
-      "addEventRule": "+ Add Event Rule",
-      "overlayInfo": "Add this URL as a Browser Source in OBS to display this timer"
+      "plugin": {
+        "name": "Advanced Timer",
+        "description": "Professional multi-timer system with event automation and customizable overlays"
+      },
+      "ui": {
+        "title": "Advanced Timer - Multi-Timer System",
+        "tabs": {
+          "timers": "Timers",
+          "create": "Create Timer",
+          "profiles": "Profiles",
+          "help": "Help"
+        },
+        "buttons": {
+          "newTimer": "New Timer",
+          "start": "Start",
+          "pause": "Pause",
+          "stop": "Stop",
+          "reset": "Reset",
+          "settings": "Settings",
+          "delete": "Delete",
+          "save": "Save",
+          "cancel": "Cancel",
+          "create": "Create Timer",
+          "export": "Export",
+          "copy": "Copy URL"
+        },
+        "labels": {
+          "timerName": "Timer Name",
+          "timerMode": "Timer Mode",
+          "initialDuration": "Initial Duration (seconds)",
+          "targetValue": "Target Value (seconds)",
+          "overlayUrl": "Overlay URL",
+          "activityLog": "Activity Log"
+        },
+        "modes": {
+          "countdown": "Countdown - Count down from a time",
+          "countup": "Count Up - Count up to a target",
+          "stopwatch": "Stopwatch - Count up indefinitely",
+          "loop": "Loop - Repeat countdown continuously",
+          "interval": "Interval - Repeat up to target"
+        },
+        "states": {
+          "running": "Running",
+          "paused": "Paused",
+          "stopped": "Stopped",
+          "completed": "Completed"
+        },
+        "stats": {
+          "total": "Total"
+        },
+        "messages": {
+          "noTimers": "No timers yet",
+          "createFirst": "Create Your First Timer",
+          "timerCreated": "Timer created successfully!",
+          "timerUpdated": "Timer updated successfully!",
+          "timerDeleted": "Timer deleted successfully!",
+          "confirmDelete": "Are you sure you want to delete this timer?",
+          "urlCopied": "URL copied to clipboard!",
+          "noActivity": "No activity yet",
+          "quickStart": "Create a timer and configure events in the timer settings to add time based on TikTok events (gifts, likes, follows, etc.)"
+        },
+        "help": {
+          "modesTitle": "Timer Modes",
+          "modesCountdown": "Countdown: Counts down from a starting time to zero",
+          "modesCountup": "Count Up: Counts up from zero to a target value",
+          "modesStopwatch": "Stopwatch: Counts up indefinitely",
+          "modesLoop": "Loop: Continuously repeats countdown",
+          "modesInterval": "Interval: Counts up to target, resets and repeats",
+          "eventAutomationTitle": "Event Automation",
+          "eventAutomationDesc": "Configure timers to respond to TikTok events:",
+          "eventGifts": "Gifts - Add/remove time based on coin value (seconds per coin)",
+          "eventLikes": "Likes - Modify timer based on likes received (seconds per like)",
+          "eventFollows": "Follows - Reward new followers",
+          "eventShares": "Shares - Encourage sharing",
+          "eventChat": "Chat Commands - Allow viewers to interact",
+          "timerChainsTitle": "Timer Chains",
+          "timerChainsDesc": "Link timers together - when Timer A completes, automatically start/stop/reset Timer B",
+          "overlaysTitle": "Overlays",
+          "overlaysDesc": "Each timer has its own overlay URL that can be added as a Browser Source in OBS"
+        },
+        "settings": {
+          "tabs": {
+            "basic": "Basic",
+            "events": "Events",
+            "overlay": "Overlay",
+            "logs": "Logs"
+          },
+          "eventsDesc": "Configure how TikTok events affect this timer",
+          "addEventRule": "+ Add Event Rule",
+          "overlayInfo": "Add this URL as a Browser Source in OBS to display this timer"
+        }
+      },
+      "events": {
+        "types": {
+          "gift": "Gift",
+          "like": "Like",
+          "follow": "Follow",
+          "share": "Share",
+          "subscribe": "Subscribe",
+          "chat": "Chat"
+        },
+        "actions": {
+          "addTime": "Add Time",
+          "removeTime": "Remove Time",
+          "setValue": "Set Value"
+        }
+      },
+      "logs": {
+        "events": {
+          "started": "Started",
+          "paused": "Paused",
+          "stopped": "Stopped",
+          "reset": "Reset",
+          "completed": "Completed",
+          "time_added": "Time Added",
+          "time_removed": "Time Removed",
+          "gift": "Gift",
+          "like": "Like",
+          "follow": "Follow",
+          "share": "Share",
+          "subscribe": "Subscribe",
+          "chat": "Chat",
+          "chain_triggered": "Chain Triggered",
+          "threshold_reached": "Threshold Reached",
+          "flow": "Flow"
+        }
+      },
+      "rotator": {
+        "sectionTitle": "Rotator (Delta Slider)",
+        "sectionDesc": "Shows the most recent time-delta around the timer (top/bottom/left/right). Custom gifts display the gift GIF from the catalog.",
+        "enable": "Enable Rotator",
+        "position": "Position",
+        "positionTop": "Top",
+        "positionBottom": "Bottom",
+        "positionLeft": "Left",
+        "positionRight": "Right",
+        "slots": "Slots",
+        "rotationMs": "Rotation (ms)",
+        "minSeconds": "Min seconds to show",
+        "showGiftImage": "Show gift image",
+        "showGiftName": "Show gift name",
+        "showTimeDelta": "Show time delta",
+        "showSourceEmoji": "Show source emoji",
+        "fontScale": "Font scale",
+        "fadeAlpha": "Fade alpha",
+        "sourcesShown": "Sources shown:",
+        "save": "Save Rotator"
+      },
+      "thresholdEffects": {
+        "sectionTitle": "Big-Delta Effects",
+        "sectionDesc": "When a single time-delta exceeds the threshold, the timer is wrapped in a frame/animation. Use a built-in style, upload your own, or both.",
+        "enable": "Enable Effects",
+        "thresholdSeconds": "Threshold (seconds)",
+        "direction": "Direction",
+        "directionBoth": "Both (+/-)",
+        "directionPositive": "Positive only",
+        "directionNegative": "Negative only",
+        "durationMs": "Effect duration (ms)",
+        "builtin": "Built-in animation",
+        "intensity": "Intensity (0.5..2.0)",
+        "frameSlotsTitle": "Custom frame slots (upload up to 6 PNG/WebP/GIF/SVG — shown round-robin):",
+        "frameSlotN": "Slot {n}",
+        "frameEmpty": "No frame",
+        "frameLabel": "Label (optional)",
+        "frameUpload": "Upload",
+        "frameRemove": "Remove",
+        "save": "Save Settings"
+      },
+      "runtime": {
+        "timer": "Timer", "quickAddTen": "+10s", "quickAddThirty": "+30s", "quickAddMinute": "+1m", "quickAddFiveMinutes": "+5m", "quickRemoveTen": "-10s", "quickRemoveThirty": "-30s",
+        "overlay": "Overlay:", "copyOverlayUrl": "Copy overlay URL", "expiryAction": "Action on expiry", "expiryNone": "None", "expiryRestart": "Restart", "expiryAlert": "Show alert", "expirySound": "Play sound", "expirySceneChange": "Change scene", "expiryTriggerChain": "Trigger chain",
+        "interactions": "Interactions", "interactionsHint": "Positive values add time, negative values reduce it. Decimals are supported (for example 0.05).", "perCoin": "Per coin", "perSubscribe": "Per subscription", "perFollow": "Per follow", "perShare": "Per share", "perLike": "Per like", "perChat": "Per chat message", "advancedRulesLink": "Advanced event rules (gift-name filters, commands...)", "saved": "Saved",
+        "multiplier": "Multiplier", "multiplierDescription": "(multiplies all interaction values by this factor)", "keyboardShortcuts": "Keyboard shortcuts", "startPause": "Start / pause", "increase": "Increase", "reduce": "Reduce", "stepSeconds": "Step (seconds)", "saveShortcuts": "Save shortcuts", "loadLogHint": "Open this section to load the activity log.", "refresh": "Refresh",
+        "giftOverrides": "Gift overrides", "giftOverridesDescription": "Override the per-coin value for individual gifts. When set, only the override is used for that gift.", "clickToLoad": "Click to load.", "selectGift": "Select gift", "seconds": "Seconds", "add": "Add",
+        "sourceLike": "Like", "sourceCoin": "Coin / gift", "sourceCustomGift": "Custom gift", "sourceFollow": "Follow", "sourceSubscribe": "Subscription (Superfan)", "sourceShare": "Share", "sourceChat": "Chat", "sourceManual": "Manual", "sourceFlow": "Flow", "sourceRule": "Rule",
+        "deleteTimer": "Delete timer", "noAdvancedRules": "No advanced rules yet.", "advancedRulesDescription": "These rules extend the flat per-event values. Use them for gift-name filters, minimum coins, or chat commands.", "close": "Close", "edit": "Edit", "addEventRule": "Add event rule", "editEventRule": "Edit event rule", "eventType": "Event type", "action": "Action", "valueSeconds": "Value (seconds)",
+        "giftName": "Gift name (blank means any)", "giftNamePlaceholder": "for example Rose", "minCoins": "Minimum coins (0 means no minimum)", "minLikes": "Minimum likes per event", "commandPrefix": "Command prefix (for example !time)", "keywordContains": "Keyword contains", "keywordPlaceholder": "add time",
+        "noGiftOverrides": "No gift overrides yet.", "diamonds": "diamonds", "selectGiftAlert": "Select a gift from the catalog first.", "unknownGift": "Unknown gift", "failedSave": "Could not save the changes.", "removeGiftOverride": "Remove this gift override?", "failedSaveRotator": "Could not save the rotator settings.", "failedSaveThreshold": "Could not save the threshold settings.", "frameAlt": "Custom frame", "chooseFile": "Choose a file first.", "frameTooLarge": "The frame must be smaller than 8 MB.", "uploadFailed": "Upload failed.", "uploadError": "An upload error occurred.", "removeFrame": "Remove the frame in slot {n}?", "deleteFailed": "Delete failed.",
+        "failedCreateTimer": "Could not create the timer.", "noSavedProfiles": "No saved profiles. Use Save Current Setup to save the current timers.", "apply": "Apply", "profileNamePrompt": "Profile name:", "applyProfileConfirm": "Apply this profile? Current timers will be replaced.", "deleteProfileConfirm": "Delete this profile?", "deleteEventRuleConfirm": "Delete this event rule?",
+        "conditionGift": "Gift: {value}", "conditionMinCoins": "Minimum coins: {value}", "conditionMinLikes": "Minimum likes: {value}", "conditionCommand": "Command: {value}", "conditionKeyword": "Keyword: {value}",
+        "effectFlame": "Flame", "effectLightning": "Lightning", "effectSparks": "Sparks", "effectPulseGlow": "Pulse glow", "effectRainbowShake": "Rainbow shake", "effectGoldFlux": "Gold flux", "times": "×", "chevron": "▼",
+        "overlayMissingEyebrow": "Advanced Timer overlay", "overlayMissingTitle": "Timer ID missing", "overlayMissingDescription": "This overlay needs a timer query parameter. Open it from Advanced Timer or append a timer ID to preview a live timer.", "overlayMissingExample": "Example:", "overlayTimerNotFound": "Timer not found", "overlayMostRecent": "Most recent", "overlayPrevious": "Previous"
+      },
+      "labels": {
+        "save_current_setup": "Save Current Setup",
+        "counts_down_to_zero_great_for_subathon_timers": "Counts down to zero - great for subathon timers",
+        "advanced_event_rules": "Advanced Event Rules",
+        "directly_on_each_timer_card_use_positive_values": "directly on each timer card. Use positive values to add time, negative to reduce.",
+        "counts_up_to_target_then_resets_and_repeats": "Counts up to target, then resets and repeats",
+        "x_multiplier": "x Multiplier",
+        "advanced_event_rules_2e8c2b": "Advanced Event Rules",
+        "enable_the": "Enable the",
+        "count_up_count_up_to_a_target": "Count Up - count up to a target",
+        "each_timer_card_shows_its_overlay_url_add": "Each timer card shows its overlay URL. Add it as a Browser Source in OBS.",
+        "to_multiply_all_interaction_values_by_a_factor": "to multiply all interaction values by a factor (for example, x10 for events).",
+        "countdown_count_down_from_a_time": "Countdown - count down from a time",
+        "counts_up_to_a_target_value": "Counts up to a target value",
+        "link_on_each_timer_card_to_configure_per": "link on each timer card to configure per-gift and per-command rules.",
+        "stopwatch_count_up_indefinitely": "Stopwatch - count up indefinitely",
+        "create_timer": "Create timer",
+        "timer_overlay": "Timer Overlay",
+        "quick_setup": "Quick Setup",
+        "quick_reference_for_modes_direct_interactions_multiplier_behavior": "Quick reference for modes, direct interactions, multiplier behavior and OBS overlay usage.",
+        "control_every_active_timer_inspect_states_copy_overlay": "Control every active timer, inspect states, copy overlay URLs and jump into advanced event rules without losing the full feature set.",
+        "need_gift_name_filters_or_chat_command_matching": "Need gift-name filters or chat-command matching? Use the",
+        "obs_overlay": "OBS Overlay",
+        "save_reapply_and_move_between_timer_setups_without": "Save, reapply and move between timer setups without rebuilding your structure.",
+        "direct_interactions": "Direct Interactions",
+        "choose_the_mode_configure_the_baseline_duration_and": "Choose the mode, configure the baseline duration and keep direct interactions ready for stream-side tuning.",
+        "counts_up_indefinitely": "Counts up indefinitely",
+        "timers_at_a_glance": "Timers at a glance",
+        "multi_timer_control_center": "Multi-timer control center",
+        "interval_repeat_up_to_target": "Interval - repeat up to target",
+        "wide_screen_ready_timers_rules_rotators_profiles_stay": "Wide-screen ready. Timers, rules, rotators, profiles stay available.",
+        "count_up": "Count Up:",
+        "timer_overlay_dbe4d9": "Timer Overlay",
+        "after_creating_the_timer_you_can_set_per": "After creating the timer you can set Per Coin, Per Like, Per Follow etc. directly on the timer card - no separate event rules needed for basic interactions.",
+        "continuously_repeats_countdown": "Continuously repeats countdown",
+        "per_coin_per_follow_per_share_per_subscribe": "Per Coin, Per Follow, Per Share, Per Subscribe, Per Like, Per Chat Message",
+        "help_and_setup": "Help and setup",
+        "loop_repeat_countdown_continuously": "Loop - repeat countdown continuously"
+      }
     }
-  },
-  "events": {
-    "types": {
-      "gift": "Gift",
-      "like": "Like",
-      "follow": "Follow",
-      "share": "Share",
-      "subscribe": "Subscribe",
-      "chat": "Chat"
-    },
-    "actions": {
-      "addTime": "Add Time",
-      "removeTime": "Remove Time",
-      "setValue": "Set Value"
-    }
-  },
-  "logs": {
-    "events": {
-      "started": "Started",
-      "paused": "Paused",
-      "stopped": "Stopped",
-      "reset": "Reset",
-      "completed": "Completed",
-      "time_added": "Time Added",
-      "time_removed": "Time Removed",
-      "gift": "Gift",
-      "like": "Like",
-      "follow": "Follow",
-      "share": "Share",
-      "subscribe": "Subscribe",
-      "chat": "Chat",
-      "chain_triggered": "Chain Triggered",
-      "threshold_reached": "Threshold Reached",
-      "flow": "Flow"
-    }
-  },
-  "rotator": {
-    "sectionTitle": "Rotator (Delta Slider)",
-    "sectionDesc": "Shows the most recent time-delta around the timer (top/bottom/left/right). Custom gifts display the gift GIF from the catalog.",
-    "enable": "Enable Rotator",
-    "position": "Position",
-    "positionTop": "Top",
-    "positionBottom": "Bottom",
-    "positionLeft": "Left",
-    "positionRight": "Right",
-    "slots": "Slots",
-    "rotationMs": "Rotation (ms)",
-    "minSeconds": "Min seconds to show",
-    "showGiftImage": "Show gift image",
-    "showGiftName": "Show gift name",
-    "showTimeDelta": "Show time delta",
-    "showSourceEmoji": "Show source emoji",
-    "fontScale": "Font scale",
-    "fadeAlpha": "Fade alpha",
-    "sourcesShown": "Sources shown:",
-    "save": "Save Rotator"
-  },
-  "thresholdEffects": {
-    "sectionTitle": "Big-Delta Effects",
-    "sectionDesc": "When a single time-delta exceeds the threshold, the timer is wrapped in a frame/animation. Use a built-in style, upload your own, or both.",
-    "enable": "Enable Effects",
-    "thresholdSeconds": "Threshold (seconds)",
-    "direction": "Direction",
-    "directionBoth": "Both (+/-)",
-    "directionPositive": "Positive only",
-    "directionNegative": "Negative only",
-    "durationMs": "Effect duration (ms)",
-    "builtin": "Built-in animation",
-    "intensity": "Intensity (0.5..2.0)",
-    "frameSlotsTitle": "Custom frame slots (upload up to 6 PNG/WebP/GIF/SVG — shown round-robin):",
-    "frameSlotN": "Slot {n}",
-    "frameEmpty": "No frame",
-    "frameLabel": "Label (optional)",
-    "frameUpload": "Upload",
-    "frameRemove": "Remove",
-    "save": "Save Settings"
-  },
-  "generated": {
-    "dbe4d9133c04": "Timer Overlay",
-    "7f8ab618d3d9": "Timer Overlay",
-    "c3c568c922cd": "Multi-timer control center",
-    "c7b8ec23a7ac": "Wide-screen ready. Timers, rules, rotators, profiles stay available.",
-    "c279a2a1a555": "Timers at a glance",
-    "990ecde05a91": "Control every active timer, inspect states, copy overlay URLs and jump into advanced event rules without losing the full feature set.",
-    "7e53695347bc": "Create timer",
-    "b86f46ec6bc1": "Choose the mode, configure the baseline duration and keep direct interactions ready for stream-side tuning.",
-    "4de504791293": "Countdown - count down from a time",
-    "3727e833d7fc": "Count Up - count up to a target",
-    "7949abfa845e": "Stopwatch - count up indefinitely",
-    "f804752b216c": "Loop - repeat countdown continuously",
-    "c67371171158": "Interval - repeat up to target",
-    "81be5107a3e8": "Quick Setup",
-    "dde33698cb4a": "After creating the timer you can set Per Coin, Per Like, Per Follow etc. directly on the timer card - no separate event rules needed for basic interactions.",
-    "b2f95e10b87e": "Save, reapply and move between timer setups without rebuilding your structure.",
-    "1a6372899e2b": "Save Current Setup",
-    "e85f00ba5a80": "Help and setup",
-    "83b669204be5": "Quick reference for modes, direct interactions, multiplier behavior and OBS overlay usage.",
-    "1ad6e9c6eaca": "Counts down to zero - great for subathon timers",
-    "ceaf09dc8ffc": "Count Up:",
-    "50692ddbb216": "Counts up to a target value",
-    "bf7052e8e302": "Counts up indefinitely",
-    "e2ca52006976": "Continuously repeats countdown",
-    "2826418935bb": "Counts up to target, then resets and repeats",
-    "b37ed4b61f44": "Direct Interactions",
-    "e2de78ab8955": "Per Coin, Per Follow, Per Share, Per Subscribe, Per Like, Per Chat Message",
-    "25b6639f41ec": "directly on each timer card. Use positive values to add time, negative to reduce.",
-    "32d2e97eab9a": "Enable the",
-    "2b6f7ea3eabe": "x Multiplier",
-    "420669edaed3": "to multiply all interaction values by a factor (for example, x10 for events).",
-    "1fe350d539b4": "Advanced Event Rules",
-    "a9513a9f35b8": "Need gift-name filters or chat-command matching? Use the",
-    "2e8c2bf59aba": "Advanced Event Rules",
-    "645a41f54e47": "link on each timer card to configure per-gift and per-command rules.",
-    "ae1cc5120d6d": "OBS Overlay",
-    "3b7dbecac785": "Each timer card shows its overlay URL. Add it as a Browser Source in OBS."
   }
 }

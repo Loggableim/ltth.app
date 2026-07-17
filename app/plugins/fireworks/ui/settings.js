@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Listen for language changes from main app
         window.i18n.onChange(() => {
             window.i18n.updateDOM();
+            refreshLocalizedRuntimeState();
         });
     }
     
@@ -107,7 +108,7 @@ async function loadConfig() {
         }
     } catch (e) {
         console.error('[Fireworks Settings] Failed to load config:', e);
-        showToast('Failed to load configuration', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.configuration_load_failed', 'Failed to load configuration'), 'error');
     }
 }
 
@@ -128,14 +129,14 @@ async function saveConfig(showSuccessToast = true) {
                 updateUI();
             }
             if (showSuccessToast) {
-                showToast('Settings saved successfully!', 'success');
+                showToast(translateFireworks('plugins.fireworks.ui.messages.settings_saved', 'Settings saved successfully!'), 'success');
             }
         } else {
-            showToast('Failed to save settings', 'error');
+            showToast(translateFireworks('plugins.fireworks.ui.messages.settings_save_failed', 'Failed to save settings'), 'error');
         }
     } catch (e) {
         console.error('[Fireworks Settings] Failed to save config:', e);
-        showToast('Failed to save settings', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.settings_save_failed', 'Failed to save settings'), 'error');
     }
 }
 
@@ -154,10 +155,10 @@ async function triggerTest() {
             })
         });
         
-        showToast('Firework triggered', 'success');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.firework_triggered', 'Firework triggered'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger test:', e);
-        showToast('Failed to trigger test', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.trigger_failed', 'Failed to trigger test'), 'error');
     }
 }
 
@@ -174,10 +175,10 @@ async function triggerFinale() {
             })
         });
         
-        showToast('Finale triggered!', 'success');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.finale_triggered', 'Finale triggered!'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger finale:', e);
-        showToast('Failed to trigger finale', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.finale_trigger_failed', 'Failed to trigger finale'), 'error');
     }
 }
 
@@ -192,10 +193,10 @@ async function testFollowerFireworks() {
             })
         });
         
-        showToast('Follower fireworks triggered!', 'success');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.follower_triggered', 'Follower fireworks triggered!'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger follower test:', e);
-        showToast('Failed to trigger follower test', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.follower_trigger_failed', 'Failed to trigger follower test'), 'error');
     }
 }
 
@@ -466,18 +467,15 @@ function readCurrentTheme() {
 }
 
 function formatThemeLabel(theme) {
-    switch (theme) {
-        case 'day':
-            return 'Day';
-        case 'contrast':
-            return 'High Contrast';
-        case 'vision-impaired':
-            return 'Vision';
-        case 'cid':
-            return 'CID';
-        default:
-            return 'Night';
-    }
+    const themes = {
+        day: 'Day',
+        contrast: 'High Contrast',
+        'vision-impaired': 'Vision',
+        cid: 'CID',
+        night: 'Night'
+    };
+    const key = Object.hasOwn(themes, theme) ? theme : 'night';
+    return translateFireworks(`plugins.fireworks.ui.themes.${key}`, themes[key]);
 }
 
 function setChipState(id, value, enabled = null) {
@@ -503,22 +501,63 @@ function updateOverviewSummary() {
     const queueEnabled = !!config.queueEnabled;
     const adaptiveEnabled = config.adaptivePerformance !== false;
 
-    setChipState('overview-enabled-state', config.enabled ? 'Enabled' : 'Disabled', config.enabled);
-    setChipState('overview-theme-state', `Theme: ${theme}`);
-    setChipState('overview-resolution-state', `${resolutionPreset} · ${orientation === 'portrait' ? 'Portrait' : 'Landscape'}`);
-    setChipState('overview-performance-state', `${targetFps} FPS · ${maxParticles.toLocaleString()} particles`);
-    setChipState('overview-safety-state', `${queueEnabled ? 'Queue on' : 'Queue off'} · ${adaptiveEnabled ? 'Adaptive on' : 'Adaptive off'}`);
+    const orientationLabel = getLocalizedOrientation(orientation);
+    const enabledLabel = translateFireworks(
+        config.enabled ? 'plugins.fireworks.ui.status.enabled' : 'plugins.fireworks.ui.status.disabled',
+        config.enabled ? 'Enabled' : 'Disabled'
+    );
+    const queueLabel = translateFireworks(
+        queueEnabled ? 'plugins.fireworks.ui.status.queue_on' : 'plugins.fireworks.ui.status.queue_off',
+        queueEnabled ? 'Queue on' : 'Queue off'
+    );
+    const adaptiveLabel = translateFireworks(
+        adaptiveEnabled ? 'plugins.fireworks.ui.status.adaptive_on' : 'plugins.fireworks.ui.status.adaptive_off',
+        adaptiveEnabled ? 'Adaptive on' : 'Adaptive off'
+    );
+
+    setChipState('overview-enabled-state', enabledLabel, config.enabled);
+    setChipState('overview-theme-state', translateFireworks('plugins.fireworks.ui.summary.theme', 'Theme: {theme}', { theme }));
+    setChipState('overview-resolution-state', translateFireworks('plugins.fireworks.ui.summary.resolution', '{preset} · {orientation}', { preset: resolutionPreset, orientation: orientationLabel }));
+    setChipState('overview-performance-state', translateFireworks('plugins.fireworks.ui.summary.performance', '{fps} FPS · {particles} particles', { fps: targetFps, particles: maxParticles.toLocaleString() }));
+    setChipState('overview-safety-state', translateFireworks('plugins.fireworks.ui.summary.safety', '{queue} · {adaptive}', { queue: queueLabel, adaptive: adaptiveLabel }));
+}
+
+function translateFireworks(key, fallback, params = {}) {
+    const translated = window.i18n?.t?.(key, params);
+    if (translated && translated !== key) return translated;
+    return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+    ));
+}
+
+function getLocalizedOrientation(orientation) {
+    const isPortrait = orientation === 'portrait';
+    return translateFireworks(
+        isPortrait ? 'plugins.fireworks.ui.defaults.portrait' : 'plugins.fireworks.ui.defaults.landscape',
+        isPortrait ? 'Portrait' : 'Landscape'
+    );
+}
+
+function refreshLocalizedRuntimeState() {
+    updateOverviewSummary();
+    updateResolutionInfo(config.resolutionPreset || '1080p', config.orientation || 'landscape');
+    updateInternalResolutionInfo(
+        config.resolutionPreset || '1080p',
+        config.internalMaxResolutionPreset || '4k',
+        config.internalMinResolutionPreset || '540p',
+        config.orientation || 'landscape'
+    );
 }
 
 function updateResolutionInfo(preset, orientation) {
     const resolutions = {
-        '360p': { landscape: '640x360', portrait: '360x640', impact: 'Minimal' },
-        '480p': { landscape: '854x480', portrait: '480x854', impact: 'Very Low' },
-        '540p': { landscape: '960x540', portrait: '540x960', impact: 'Low' },
-        '720p': { landscape: '1280x720', portrait: '720x1280', impact: 'Medium' },
-        '1080p': { landscape: '1920x1080', portrait: '1080x1920', impact: 'High' },
-        '1440p': { landscape: '2560x1440', portrait: '1440x2560', impact: 'Very High' },
-        '4k': { landscape: '3840x2160', portrait: '2160x3840', impact: 'Ultra' }
+        '360p': { landscape: '640x360', portrait: '360x640', impact: 'minimal', fallbackImpact: 'Minimal' },
+        '480p': { landscape: '854x480', portrait: '480x854', impact: 'very_low', fallbackImpact: 'Very Low' },
+        '540p': { landscape: '960x540', portrait: '540x960', impact: 'low', fallbackImpact: 'Low' },
+        '720p': { landscape: '1280x720', portrait: '720x1280', impact: 'medium', fallbackImpact: 'Medium' },
+        '1080p': { landscape: '1920x1080', portrait: '1080x1920', impact: 'high', fallbackImpact: 'High' },
+        '1440p': { landscape: '2560x1440', portrait: '1440x2560', impact: 'very_high', fallbackImpact: 'Very High' },
+        '4k': { landscape: '3840x2160', portrait: '2160x3840', impact: 'ultra', fallbackImpact: 'Ultra' }
     };
     
     const info = resolutions[preset] || resolutions['1080p'];
@@ -529,8 +568,8 @@ function updateResolutionInfo(preset, orientation) {
     const performanceEl = document.getElementById('performance-impact');
     
     if (currentResEl) currentResEl.textContent = resolution;
-    if (currentOrientEl) currentOrientEl.textContent = orientation === 'portrait' ? 'Portrait' : 'Landscape';
-    if (performanceEl) performanceEl.textContent = info.impact;
+    if (currentOrientEl) currentOrientEl.textContent = getLocalizedOrientation(orientation);
+    if (performanceEl) performanceEl.textContent = translateFireworks(`plugins.fireworks.ui.impact.${info.impact}`, info.fallbackImpact);
 }
 
 function getResolutionLabel(preset, orientation) {
@@ -877,7 +916,7 @@ function setupEventListeners() {
     document.getElementById('copy-overlay-url').addEventListener('click', () => {
         const url = window.location.origin + '/fireworks/overlay';
         navigator.clipboard.writeText(url).then(() => {
-            showToast('Overlay URL copied to clipboard!', 'success');
+            showToast(translateFireworks('plugins.fireworks.ui.messages.overlay_url_copied', 'Overlay URL copied to clipboard!'), 'success');
         });
     });
     
@@ -932,7 +971,7 @@ function addColorSwatch(color) {
     swatch.className = 'color-swatch';
     swatch.style.background = color;
     swatch.dataset.color = color;
-    swatch.title = `${color} - click to remove`;
+    swatch.title = translateFireworks('plugins.fireworks.ui.messages.color_remove_hint', '{color} — click to remove', { color });
     swatch.draggable = true;
     swatch.addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', color));
     swatch.addEventListener('dragover', event => event.preventDefault());
@@ -946,7 +985,7 @@ function addColorSwatch(color) {
         colors.splice(to, 0, colors.splice(from, 1)[0]);
         renderColorSwatches();
     });
-    swatch.title = `${color} — click to remove`;
+    swatch.title = translateFireworks('plugins.fireworks.ui.messages.color_remove_hint', '{color} — click to remove', { color });
     swatch.addEventListener('click', () => {
         config.themeColors = (config.themeColors || []).filter(item => item !== color);
         renderColorSwatches();
@@ -992,10 +1031,10 @@ async function triggerTestShape(shape, intensity = 1.5) {
             })
         });
         
-        showToast(`${shape} firework triggered!`, 'success');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.shape_triggered', '{shape} firework triggered!', { shape }), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger test:', e);
-        showToast('Failed to trigger test', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.trigger_failed', 'Failed to trigger test'), 'error');
     }
 }
 
@@ -1029,10 +1068,10 @@ async function triggerTestTier(tier) {
             })
         });
         
-        showToast(`${tier} tier firework triggered!`, 'success');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.tier_triggered', '{tier} tier firework triggered!', { tier }), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger tier test:', e);
-        showToast('Failed to trigger tier test', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.tier_trigger_failed', 'Failed to trigger tier test'), 'error');
     }
 }
 
@@ -1046,10 +1085,10 @@ async function triggerTestRandom() {
             headers: { 'Content-Type': 'application/json' }
         });
         
-        showToast('Random firework triggered!', 'success');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.random_triggered', 'Random firework triggered!'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger random:', e);
-        showToast('Failed to trigger random', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.random_trigger_failed', 'Failed to trigger random'), 'error');
     }
 }
 
@@ -1081,10 +1120,10 @@ async function triggerTestAvatar() {
             })
         });
         
-        showToast('Avatar firework test triggered!', 'success');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.avatar_triggered', 'Avatar firework test triggered!'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger avatar test:', e);
-        showToast('Failed to trigger avatar test', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.avatar_trigger_failed', 'Failed to trigger avatar test'), 'error');
     } finally {
         if (avatarUrl) {
             setTimeout(() => URL.revokeObjectURL(avatarUrl), 60000);
@@ -1230,7 +1269,7 @@ function initializePresets() {
 async function applyPreset(presetName) {
     const preset = PRESETS[presetName];
     if (!preset) {
-        const msg = window.i18n ? window.i18n.t('fireworks.presets.not_found') : 'Preset not found';
+        const msg = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.presets.not_found') : 'Preset not found';
         showToast(msg, 'error');
         return;
     }
@@ -1243,9 +1282,9 @@ async function applyPreset(presetName) {
             const presetResult = results.find(r => r.preset === presetName);
             
             if (presetResult && presetResult.avgFps < 30) {
-                const warningTitle = window.i18n ? window.i18n.t('fireworks.presets.warning_title') : 'Warning: This preset might lag on your system!';
-                const warningFps = window.i18n ? window.i18n.t('fireworks.presets.warning_fps').replace('{fps}', presetResult.avgFps.toFixed(1)) : `The benchmark measured an average FPS of ${presetResult.avgFps.toFixed(1)}.`;
-                const warningConfirm = window.i18n ? window.i18n.t('fireworks.presets.warning_confirm') : 'Do you want to use this setting anyway?';
+                const warningTitle = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.presets.warning_title') : 'Warning: This preset might lag on your system!';
+                const warningFps = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.presets.warning_fps').replace('{fps}', presetResult.avgFps.toFixed(1)) : `The benchmark measured an average FPS of ${presetResult.avgFps.toFixed(1)}.`;
+                const warningConfirm = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.presets.warning_confirm') : 'Do you want to use this setting anyway?';
                 
                 const confirmed = confirm(
                     `⚠️ ${warningTitle}\n\n${warningFps}\n\n${warningConfirm}`
@@ -1269,7 +1308,7 @@ async function applyPreset(presetName) {
     // Save config
     await saveConfig();
     
-    const msg = window.i18n ? window.i18n.t('fireworks.presets.applied') : 'Preset applied!';
+    const msg = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.presets.applied') : 'Preset applied!';
     showToast(`${msg} (${presetName.toUpperCase()})`, 'success');
     
     // Switch to settings tab to show changes
@@ -1322,7 +1361,7 @@ async function startBenchmark() {
     benchmarkWindow = window.open(overlayUrl, 'FireworksBenchmark', 'width=1920,height=1080');
     
     if (!benchmarkWindow) {
-        const msg = window.i18n ? window.i18n.t('fireworks.benchmark.popup_blocked') : 'Could not open benchmark window. Please allow pop-ups.';
+        const msg = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.benchmark.popup_blocked') : 'Could not open benchmark window. Please allow pop-ups.';
         showToast(msg, 'error');
         benchmarkRunning = false;
         resetBenchmarkUi();
@@ -1359,7 +1398,7 @@ async function startBenchmark() {
         }
     } catch (e) {
         console.error('Benchmark failed:', e);
-        showToast('Benchmark failed', 'error');
+        showToast(translateFireworks('plugins.fireworks.ui.messages.benchmark_failed', 'Benchmark failed'), 'error');
     } finally {
         await restoreBenchmarkPreset();
         closeBenchmarkWindow();
@@ -1378,7 +1417,7 @@ function stopBenchmark() {
     resetBenchmarkUi();
     restoreBenchmarkPreset();
     
-    const msg = window.i18n ? window.i18n.t('fireworks.benchmark.cancelled') : 'Benchmark cancelled';
+    const msg = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.benchmark.cancelled') : 'Benchmark cancelled';
     showToast(msg, 'error');
 }
 
@@ -1548,14 +1587,25 @@ function displayBenchmarkResults() {
             fpsIcon = '❌';
         }
         
+        const fpsMetrics = translateFireworks(
+            'plugins.fireworks.ui.messages.benchmark_fps_metrics',
+            'Min: {min} FPS | Max: {max} FPS',
+            { min: result.minFps.toFixed(1), max: result.maxFps.toFixed(1) }
+        );
+        const renderMetrics = translateFireworks(
+            'plugins.fireworks.ui.messages.benchmark_render_metrics',
+            'Resolution: {resolution} | Particles: {particles}',
+            { resolution: result.config.resolutionPreset, particles: result.config.maxParticles }
+        );
+
         resultCard.innerHTML = `
             <div class="flex items-center justify-between mb-2">
                 <h4 class="font-bold text-lg ${colorClass}">${fpsIcon} ${result.preset.toUpperCase()}</h4>
                 <span class="text-2xl font-bold ${colorClass}">${result.avgFps.toFixed(1)} FPS</span>
             </div>
             <div class="text-sm text-gray-400 space-y-1">
-                <div>Min: ${result.minFps.toFixed(1)} FPS | Max: ${result.maxFps.toFixed(1)} FPS</div>
-                <div>Resolution: ${result.config.resolutionPreset} | Particles: ${result.config.maxParticles}</div>
+                <div>${fpsMetrics}</div>
+                <div>${renderMetrics}</div>
             </div>
         `;
         
@@ -1569,13 +1619,13 @@ function displayBenchmarkResults() {
     recommendationsDiv.innerHTML = '';
     
     if (recommendations.length === 0) {
-        const msg = window.i18n ? window.i18n.t('fireworks.benchmark.no_good_presets') : 'No preset reaches 30 FPS. We recommend the "Potato" preset for your system.';
-        const applyText = window.i18n ? window.i18n.t('fireworks.presets.apply') : 'Apply';
+        const msg = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.benchmark.no_good_presets') : 'No preset reaches 30 FPS. We recommend the "Potato" preset for your system.';
+        const applyText = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.presets.apply') : 'Apply';
         
         const btn = document.createElement('button');
         btn.className = 'w-full mt-4 bg-green-500 hover:bg-green-600 py-3 rounded-lg font-bold transition';
         btn.dataset.preset = 'potato';
-        btn.textContent = `🥔 Potato ${applyText}`;
+        btn.textContent = `🥔 ${translateFireworks('plugins.fireworks.ui.presets.potato', 'Potato')} ${applyText}`;
         btn.addEventListener('click', () => applyPreset('potato'));
         
         const para = document.createElement('p');
@@ -1589,9 +1639,9 @@ function displayBenchmarkResults() {
             const recDiv = document.createElement('div');
             recDiv.className = 'mb-4';
             
-            const bestChoice = window.i18n ? window.i18n.t('fireworks.benchmark.best_choice') : 'Best Choice';
-            const alternative = window.i18n ? window.i18n.t('fireworks.benchmark.alternative') : 'Alternative';
-            const applyText = window.i18n ? window.i18n.t('fireworks.presets.apply') : 'Apply';
+            const bestChoice = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.benchmark.best_choice') : 'Best Choice';
+            const alternative = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.benchmark.alternative') : 'Alternative';
+            const applyText = window.i18n ? window.i18n.t('plugins.fireworks.fireworks.presets.apply') : 'Apply';
             
             const rank = index === 0 ? `🥇 ${bestChoice}` : `🥈 ${alternative}`;
             

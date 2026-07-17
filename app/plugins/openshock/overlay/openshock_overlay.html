@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=1920, height=1080">
-    <title data-i18n="generated.57fb6bdace61">OpenShock Overlay</title>
+    <title data-i18n="plugins.openshock.labels.openshock_overlay">OpenShock Overlay</title>
     <script>
         (function () {
             const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
@@ -36,13 +36,6 @@
             syncTheme();
             window.addEventListener('focus', syncTheme);
             document.addEventListener('visibilitychange', () => { if (!document.hidden) syncTheme(); });
-
-            try {
-                new MutationObserver(syncTheme).observe(document.documentElement, {
-                    attributes: true,
-                    attributeFilter: ['data-theme']
-                });
-            } catch (error) {}
 
             try {
                 if (window.parent && window.parent !== window) {
@@ -588,13 +581,13 @@
         <div id="event-card" class="event-card">
             <div class="event-header">
                 <div id="event-type" class="event-type">Shock</div>
-                <div id="event-device" class="event-device" data-i18n="generated.05019fc575c4">Device Name</div>
+                <div id="event-device" class="event-device" data-i18n="plugins.openshock.labels.device_name">Device Name</div>
             </div>
 
             <div class="event-body">
                 <!-- Intensity Bar -->
                 <div class="intensity-container">
-                    <label>Intensity</label>
+                    <label data-i18n="plugins.openshock.ui.labels.intensity">Intensity</label>
                     <div class="intensity-bar">
                         <div id="intensity-fill" class="intensity-fill" style="width: 50%;"></div>
                         <span id="intensity-value" class="intensity-value">50%</span>
@@ -603,7 +596,7 @@
 
                 <!-- Duration Bar (Countdown) -->
                 <div class="duration-container">
-                    <label>Duration</label>
+                    <label data-i18n="plugins.openshock.ui.labels.duration">Duration</label>
                     <div class="duration-bar">
                         <div id="duration-fill" class="duration-fill" style="width: 100%;"></div>
                         <span id="duration-value" class="duration-value">1000ms</span>
@@ -619,7 +612,7 @@
 
         <!-- Pattern Preview (shown when pattern is active) -->
         <div id="pattern-preview" class="pattern-preview hidden">
-            <h3 id="pattern-name" data-i18n="generated.d5e5652d70a3">Pattern Name</h3>
+            <h3 id="pattern-name" data-i18n="plugins.openshock.labels.pattern_name_d5e565">Pattern Name</h3>
             <div id="pattern-timeline" class="pattern-timeline">
                 <!-- Pattern steps will be dynamically added here -->
             </div>
@@ -628,22 +621,22 @@
         <!-- Safety Warning (shown when safety issue occurs) -->
         <div id="safety-warning" class="safety-warning hidden">
             <span class="warning-icon">⚠️</span>
-            <span id="warning-message" data-i18n="generated.b1572daa8fa0">Safety Warning Message</span>
+            <span id="warning-message" data-i18n="plugins.openshock.labels.safety_warning_message">Safety Warning Message</span>
         </div>
     </div>
 
     <!-- Stats Corner (optional, can be toggled) -->
     <div id="stats-corner" class="stats-corner hidden">
         <div class="stat-item">
-            <span class="stat-label">Queue:</span>
+            <span class="stat-label" data-i18n="plugins.openshock.ui.overlay.queue">Queue:</span>
             <span id="stat-queue" class="stat-value">0</span>
         </div>
         <div class="stat-item">
-            <span class="stat-label">Active:</span>
+            <span class="stat-label" data-i18n="plugins.openshock.ui.overlay.active">Active:</span>
             <span id="stat-active" class="stat-value">0</span>
         </div>
         <div class="stat-item">
-            <span class="stat-label">Today:</span>
+            <span class="stat-label" data-i18n="plugins.openshock.ui.overlay.today">Today:</span>
             <span id="stat-total" class="stat-value">0</span>
         </div>
     </div>

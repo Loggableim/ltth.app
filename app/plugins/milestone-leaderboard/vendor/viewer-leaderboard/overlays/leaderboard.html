@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.a9f52c428ea1">XP Leaderboard</title>
+  <title data-i18n="plugins.milestone-leaderboard.labels.xp_leaderboard">XP Leaderboard</title>
   <style>
     :root {
       --accent-color: #FFD700;
@@ -169,19 +169,19 @@
       z-index: 1;
     }
 
-    .rank-1 .rank { 
-      color: #FFD700; 
+    .rank-1 .rank {
+      color: #FFD700;
       text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
       animation: rankPulse 2s ease-in-out infinite;
     }
-    
-    .rank-2 .rank { 
-      color: #C0C0C0; 
+
+    .rank-2 .rank {
+      color: #C0C0C0;
       text-shadow: 0 0 8px rgba(192, 192, 192, 0.6);
     }
-    
-    .rank-3 .rank { 
-      color: #CD7F32; 
+
+    .rank-3 .rank {
+      color: #CD7F32;
       text-shadow: 0 0 8px rgba(205, 127, 50, 0.6);
     }
 
@@ -326,15 +326,16 @@
     }
     </style>
     <script src="/js/i18n-client.js"></script>
+    <script src="/plugins/viewer-leaderboard/viewer-xp-i18n.js"></script>
 </head>
 <body>
   <div class="leaderboard">
     <div class="header">
-      <h1 data-i18n="generated.3ade651e90ef">🏆 Top Viewers 🏆</h1>
-      <div class="subtitle" id="subtitle" data-i18n="generated.50efabe313ce">All Time</div>
+      <h1 data-i18n="plugins.milestone-leaderboard.labels.top_viewers">🏆 Top Viewers 🏆</h1>
+      <div class="subtitle" id="subtitle" data-i18n="plugins.milestone-leaderboard.labels.all_time_50efab">All Time</div>
     </div>
     <ul class="leaderboard-list" id="leaderboardList">
-      <li class="no-data">Loading...</li>
+      <li class="no-data" data-i18n="plugins.milestone-leaderboard.ui.status.loading">Loading...</li>
     </ul>
     <div class="update-time" id="updateTime"></div>
   </div>
@@ -342,7 +343,7 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
-    
+
     // Connection status logging
     socket.on('connect', () => {
       console.log('✅ Leaderboard: Socket.io connected');
@@ -355,7 +356,7 @@
     socket.on('connect_error', (error) => {
       console.error('❌ Leaderboard: Socket.io connection error:', error);
     });
-    
+
     // Get URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const limit = parseInt(urlParams.get('limit') || '10');
@@ -393,7 +394,7 @@
 
     // Update subtitle
     if (days) {
-      document.getElementById('subtitle').textContent = `Last ${days} Days`;
+      document.getElementById('subtitle').textContent = ViewerXpI18n.text('leaderboard_last_days', 'Last {days} Days', { days });
     }
 
     // Format number with separators
@@ -414,21 +415,21 @@
     // Update leaderboard display
     function updateLeaderboard(data) {
       const list = document.getElementById('leaderboardList');
-      
+
       if (!data || data.length === 0) {
-        list.innerHTML = '<li class="no-data">No viewers yet</li>';
+        list.innerHTML = `<li class="no-data">${ViewerXpI18n.text('no_viewers', 'No viewers yet')}</li>`;
         return;
       }
 
       list.innerHTML = '';
-      
+
       data.forEach((viewer, index) => {
         const rank = index + 1;
         const item = document.createElement('li');
         item.className = `leaderboard-item rank-${rank <= 3 ? rank : 'other'}`;
-        
+
         const xpValue = days ? viewer.xp_period : viewer.xp;
-        
+
         item.innerHTML = `
           <div class="rank">
             <span class="rank-icon">${getRankIcon(rank)}</span>
@@ -440,18 +441,21 @@
             ${viewer.title ? `<div class="viewer-title">${viewer.title}</div>` : ''}
           </div>
           <div class="level-info">
-            <div class="level-badge">Lvl ${viewer.level}</div>
+            <div class="level-badge">${ViewerXpI18n.text('leaderboard_level', 'Level {level}', { level: viewer.level })}</div>
             <div class="xp-amount">${formatNumber(xpValue)} XP</div>
           </div>
         `;
-        
+
         list.appendChild(item);
       });
 
       // Update time
       const now = new Date();
-      document.getElementById('updateTime').textContent = 
-        `Last updated: ${now.toLocaleTimeString()}`;
+      document.getElementById('updateTime').textContent = ViewerXpI18n.text(
+        'leaderboard_updated',
+        'Last updated: {time}',
+        { time: now.toLocaleTimeString() }
+      );
     }
 
     // Fetch leaderboard

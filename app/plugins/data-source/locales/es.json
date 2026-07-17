@@ -1,46 +1,62 @@
 {
-  "data_source": {
-    "plugin": {
-      "name": "Gestor de fuentes de datos",
-      "description": "Elige Eulerstream o TikFinity como fuente de datos de TikTok."
-    },
-    "ui": {
-      "title": "Gestor de fuentes de datos",
-      "actions": {
-        "save": "Guardar",
-        "cancel": "Cancelar",
-        "refresh": "Actualizar",
-        "close": "Cerrar",
-        "test": "Probar",
-        "clear": "Borrar"
+  "plugins": {
+    "data-source": {
+      "data_source": {
+        "plugin": {
+          "name": "Gestor de fuentes de datos",
+          "description": "Elige Eulerstream o TikFinity como fuente de datos de TikTok."
+        },
+        "ui": {
+          "title": "Gestor de fuentes de datos",
+          "actions": {
+            "save": "Guardar",
+            "cancel": "Cancelar",
+            "refresh": "Actualizar",
+            "close": "Cerrar",
+            "test": "Probar",
+            "clear": "Borrar"
+          },
+          "sources": {
+            "eulerstream": "Fuente de Eulerstream",
+            "tikfinity": "TikFinity"
+          },
+          "status": {
+            "ready": "Listo",
+            "loading": "Cargando …",
+            "connected": "Conectado",
+            "disconnected": "Desconectado",
+            "error": "Se produjo un error"
+          },
+          "messages": {
+            "saved": "Ajustes guardados.",
+            "failed": "No se pudieron guardar los ajustes.",
+            "noData": "No hay datos disponibles.",
+            "confirm": "¿Seguro que quieres continuar?"
+          },
+          "runtime": {
+            "loadFailed": "No se pudo cargar la fuente de datos.",
+            "switchFailed": "No se pudo cambiar la fuente de datos.",
+            "invalidPort": "Introduce un puerto entre 1 y 65535.",
+            "settingsSaved": "Se guardó la configuración de TikFinity.",
+            "settingsSaveFailed": "No se pudo guardar la configuración de TikFinity.",
+            "sourceChanged": "Fuente de datos cambiada: {source}"
+          }
+        }
       },
-      "status": {
-        "ready": "Listo",
-        "loading": "Cargando …",
-        "connected": "Conectado",
-        "disconnected": "Desconectado",
-        "error": "Error"
-      },
-      "messages": {
-        "saved": "Ajustes guardados.",
-        "failed": "No se pudieron guardar los ajustes.",
-        "noData": "No hay datos disponibles.",
-        "confirm": "¿Seguro que quieres continuar?"
+      "labels": {
+        "die_anderung_wird_beim": "El cambio se realizará en",
+        "websocket_port": "Puerto WebSocket",
+        "lauft_und_mit_deinem_tiktok_account_verbunden_ist": "se está ejecutando y conectado a su cuenta de TikTok antes de conectarse.",
+        "nachsten_verbinden": "próxima conexión",
+        "aktiv_ein_laufender_stream_wird_nicht_unterbrochen": "activo. Una transmisión en ejecución no se interrumpe.",
+        "tikfinity_einstellungen": "⚙️ Configuración de TikFinity",
+        "direkte_websocket_verbindung_zu_tiktok_uber_eulerstream_sdk": "Conexión WebSocket directa a TikTok a través del SDK de Eulerstream. Requiere clave API.",
+        "datenquellen_manager": "🔌 Administrador de fuentes de datos",
+        "tikfinity_desktop_app": "Aplicación de escritorio TikFinity",
+        "stelle_sicher_dass_die": "⚠️ Asegúrate de que",
+        "verbindung_uber_die_tikfinity_desktop_app_lokaler_websocket": "Conexión a través de la aplicación de escritorio TikFinity (WebSocket local). TikFinity necesita ejecutarse.",
+        "einstellungen_speichern": "💾 Guardar configuración"
       }
     }
-  },
-  "generated": {
-    "b47a69f1d841": "🔌 Datenquellen-Manager",
-    "129f6225610c": "Die Änderung wird beim",
-    "2ccbd9cb162e": "nächsten Verbinden",
-    "32d1296c7fb8": "aktiv. Ein laufender Stream wird nicht unterbrochen.",
-    "b1594359082e": "Direkte WebSocket-Verbindung zu TikTok über Eulerstream SDK. Benötigt API-Key.",
-    "f4c4c00a4e5e": "Verbindung über die TikFinity Desktop App (lokaler WebSocket). TikFinity muss laufen.",
-    "34c7dfc0d5d0": "⚙️ TikFinity Einstellungen",
-    "d8781ae2bc2b": "⚠️ Stelle sicher, dass die",
-    "cfa0c4c5b1ff": "TikFinity Desktop App",
-    "29bc64103728": "läuft und mit deinem TikTok-Account verbunden ist, bevor du dich verbindest.",
-    "273b0f615627": "WebSocket Port",
-    "ffe3ff0db820": "💾 Einstellungen speichern"
   }
 }

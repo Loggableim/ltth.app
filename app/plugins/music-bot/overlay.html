@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.a251b6bb5993">Music Bot Now Playing Overlay</title>
+  <title data-i18n="plugins.music-bot.labels.music_bot_now_playing_overlay">Music Bot Now Playing Overlay</title>
+  <script src="/js/i18n-client.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
@@ -647,7 +648,6 @@
       padding: 2px 0;
     }
     </style>
-    <script src="/js/i18n-client.js"></script>
 </head>
 <body>
   <div id="overlay-root" class="pos-bottom-left">
@@ -656,7 +656,7 @@
     <div id="widget-compact" style="display:none">
       <div id="compact-thumb" class="thumb" aria-hidden="true"></div>
       <div class="meta">
-        <p id="compact-title" class="title" data-i18n="generated.7fb4a2534f23">Waiting for music...</p>
+        <p id="compact-title" class="title" data-i18n="plugins.music-bot.labels.waiting_for_music_7fb4a2">Waiting for music...</p>
         <p id="compact-artist" class="artist"></p>
         <p id="compact-requester" class="requester"></p>
         <div class="progress">
@@ -673,7 +673,7 @@
     <div id="widget-fullwidth" style="display:none">
       <div id="fullwidth-thumb" class="thumb" aria-hidden="true"></div>
       <div class="meta">
-        <p id="fullwidth-title" class="title" data-i18n="generated.6ff35950bcee">Waiting for music...</p>
+        <p id="fullwidth-title" class="title" data-i18n="plugins.music-bot.labels.waiting_for_music_6ff359">Waiting for music...</p>
         <p id="fullwidth-artist" class="artist"></p>
         <p id="fullwidth-requester" class="requester"></p>
       </div>
@@ -690,7 +690,7 @@
     <!-- MINIMAL -->
     <div id="widget-minimal" style="display:none">
       <div class="marquee-wrapper">
-        <span id="minimal-text" class="marquee-text" data-i18n="generated.383c04aeb9dd">🎵 Waiting for music...</span>
+        <span id="minimal-text" class="marquee-text" data-i18n="plugins.music-bot.labels.waiting_for_music_383c04">🎵 Waiting for music...</span>
       </div>
     </div>
 
@@ -699,7 +699,7 @@
       <div id="card-thumb" class="thumb" aria-hidden="true"></div>
       <img id="card-avatar" class="requester-avatar" alt="" style="display:none">
       <div class="meta">
-        <p id="card-title" class="title" data-i18n="generated.2bb4c658b0b9">Waiting for music...</p>
+        <p id="card-title" class="title" data-i18n="plugins.music-bot.labels.waiting_for_music">Waiting for music...</p>
         <p id="card-artist" class="artist"></p>
         <p id="card-requester" class="requester"></p>
       </div>
@@ -710,12 +710,12 @@
         <div id="card-time" class="time">--:-- / --:--</div>
       </div>
       <div id="card-queue-preview" class="queue-preview" style="display:none">
-        <div class="queue-preview-label" data-i18n="generated.421dd64a4bf6">Nächste Songs</div>
+        <div class="queue-preview-label" data-i18n="plugins.music-bot.labels.nachste_songs">Nächste Songs</div>
         <div id="card-queue-items"></div>
       </div>
     </div>
 
-    <div class="idle-message" id="idle-message" data-i18n="generated.c3bfc3f2ef06">🎵 Queue ist leer – !sr um einen Song zu requesten</div>
+    <div class="idle-message" id="idle-message" data-i18n="plugins.music-bot.labels.queue_ist_leer_sr_um_einen_song_zu">🎵 Queue ist leer – !sr um einen Song zu requesten</div>
 
   </div>
 
@@ -724,7 +724,7 @@
   </div>
   <div class="vote-skip-label" id="vote-skip-label"></div>
   <div id="up-next-widget" class="up-next-widget">
-    <div class="up-next-title" data-i18n="generated.51358cdf3b35">Up Next</div>
+    <div class="up-next-title" data-i18n="plugins.music-bot.labels.up_next">Up Next</div>
     <div id="up-next-items"></div>
   </div>
 
@@ -741,6 +741,16 @@
       };
       const allowedThemes = new Set(['default', 'cyberpunk', 'minimal', 'neon']);
       const allowedDesigns = new Set(['compact', 'fullwidth', 'minimal', 'card']);
+      const I18N_PREFIX = 'plugins.music-bot.music_bot.ui.controls.overlay';
+
+      function tr(key, fallback, params = {}) {
+        const fullKey = `${I18N_PREFIX}.${key}`;
+        const translated = window.i18n?.t(fullKey, params);
+        if (translated && translated !== fullKey) return translated;
+        return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+          Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : match
+        ));
+      }
 
       const params = new URLSearchParams(window.location.search);
       const position = allowedPositions.has(params.get('position')) ? params.get('position') : 'bottom-left';
@@ -824,8 +834,8 @@
 
         fill.style.width = `${percent}%`;
         label.textContent = data.skipped
-          ? `⏭ Song wird übersprungen!`
-          : `Vote Skip: ${votes}/${required}`;
+          ? tr('songSkipping', '⏭ Song wird übersprungen!')
+          : tr('voteSkip', 'Vote Skip: {votes}/{required}', { votes, required });
 
         if (data.skipped) {
           bar.classList.add('active');
@@ -920,7 +930,7 @@
 
         currentTrack = {
           id: payload.id || currentTrack?.id || null,
-          title: payload.title || 'Unbekannter Titel',
+          title: payload.title || tr('unknownTitle', 'Unbekannter Titel'),
           artist: payload.artist || '',
           requestedBy: payload.requestedBy || '',
           requesterAvatar: payload.requesterAvatar || null,
@@ -986,7 +996,7 @@
           if (r.artist) r.artist.textContent = currentTrack.artist || ' ';
           if (r.requester) {
             r.requester.textContent = currentTrack.requestedBy
-              ? `Requested by @${currentTrack.requestedBy}` : '';
+              ? tr('requestedBy', 'Angefragt von @{requester}', { requester: currentTrack.requestedBy }) : '';
           }
           if (r.thumb) {
             r.thumb.classList.add('artwork');
@@ -1051,7 +1061,7 @@
 
         if (design === 'fullwidth' && r.queueCount) {
           const qLen = currentQueue.length;
-          r.queueCount.textContent = qLen > 0 ? `🎵 +${qLen} in Queue` : '';
+          r.queueCount.textContent = qLen > 0 ? tr('queueCount', '🎵 +{count} in Warteschlange', { count: qLen }) : '';
         }
         if (design === 'card' && r.queuePreview && r.queueItems) {
           const cardPreviewSongs = currentQueue.slice(0, UP_NEXT_LIMIT);
@@ -1109,7 +1119,7 @@
           r.avatar.removeAttribute('src');
         }
         if (design === 'minimal' && r.text) {
-          r.text.textContent = '🎵 Waiting for music...';
+              r.text.textContent = tr('waitingForMusic', '🎵 Warte auf Musik...');
           r.text.classList.remove('scrolling');
         }
       }

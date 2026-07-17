@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.ef2aaeeb7359">XP Event Ticker</title>
+  <title data-i18n="plugins.milestone-leaderboard.labels.xp_event_ticker">XP Event Ticker</title>
   <script src="/socket.io/socket.io.js"></script>
   <script>
     (function () {
@@ -371,36 +371,37 @@
     }
   </style>
     <script src="/js/i18n-client.js"></script>
+    <script src="/plugins/viewer-leaderboard/viewer-xp-i18n.js"></script>
 </head>
 <body>
   <div class="ticker-container">
     <div class="ticker-header">
       <span class="ticker-icon">⭐</span>
-      <span data-i18n="generated.ee1281f9ee19">Live XP Events</span>
-      <span class="connection-status" id="connectionStatus">Connecting...</span>
+      <span data-i18n="plugins.milestone-leaderboard.labels.live_xp_events">Live XP Events</span>
+      <span class="connection-status" id="connectionStatus" data-i18n="plugins.milestone-leaderboard.ui.connection.connecting">Connecting...</span>
     </div>
     <div class="events-list" id="eventsList">
-      <div class="empty-message" data-i18n="generated.11288244685d">Waiting for events...</div>
+      <div class="empty-message" data-i18n="plugins.milestone-leaderboard.labels.waiting_for_events">Waiting for events...</div>
     </div>
   </div>
 
   <!-- Settings Panel (hidden in production, visible in preview) -->
   <div class="settings-panel" id="settingsPanel" style="display: none;">
-    <h3 style="margin-bottom: 10px;" data-i18n="generated.af68d8063f8b">Overlay Settings</h3>
-    <label data-i18n="generated.b93eab7541ca">Max Events:</label>
+    <h3 style="margin-bottom: 10px;" data-i18n="plugins.milestone-leaderboard.labels.overlay_settings">Overlay Settings</h3>
+    <label data-i18n="plugins.milestone-leaderboard.labels.max_events">Max Events:</label>
     <input type="number" id="maxEvents" value="10" min="5" max="50">
-    
-    <label data-i18n="generated.5334b4891a95">Animation Duration (ms):</label>
+
+    <label data-i18n="plugins.milestone-leaderboard.labels.animation_duration_ms">Animation Duration (ms):</label>
     <input type="number" id="animDuration" value="300" min="100" max="1000">
-    
-    <label data-i18n="generated.1e72f167f8ca">Auto Scroll:</label>
+
+    <label data-i18n="plugins.milestone-leaderboard.labels.auto_scroll">Auto Scroll:</label>
     <select id="autoScroll">
-      <option value="true">Enabled</option>
-      <option value="false">Disabled</option>
+      <option value="true" data-i18n="plugins.milestone-leaderboard.ui.status.enabled">Enabled</option>
+      <option value="false" data-i18n="plugins.milestone-leaderboard.ui.status.disabled">Disabled</option>
     </select>
-    
-    <button onclick="applySettings()" data-i18n="generated.bcee833ca29f">Apply Settings</button>
-    <button onclick="toggleSettings()" data-i18n="generated.2352893bb6a2">Hide Settings</button>
+
+    <button onclick="applySettings()" data-i18n="plugins.milestone-leaderboard.labels.apply_settings">Apply Settings</button>
+    <button onclick="toggleSettings()" data-i18n="plugins.milestone-leaderboard.labels.hide_settings">Hide Settings</button>
   </div>
 
   <script>
@@ -443,19 +444,19 @@
     // Connection handlers
     socket.on('connect', () => {
       console.log('Connected to server');
-      connectionStatus.textContent = 'Connected';
+      connectionStatus.textContent = ViewerXpI18n.text('ticker_connected', 'Connected');
       connectionStatus.className = 'connection-status connected';
-      
+
       // Subscribe to XP events
       socket.emit('viewerxp:subscribe-events');
-      
+
       // Request recent events
       socket.emit('viewerxp:get-recent-events', { limit: config.maxEvents });
     });
 
     socket.on('disconnect', () => {
       console.log('Disconnected from server');
-      connectionStatus.textContent = 'Disconnected';
+      connectionStatus.textContent = ViewerXpI18n.text('ticker_disconnected', 'Disconnected');
       connectionStatus.className = 'connection-status disconnected';
     });
 
@@ -479,19 +480,19 @@
     // Add new event
     function addEvent(event) {
       events.unshift(event);
-      
+
       // Trim to max events
       if (events.length > config.maxEvents) {
         events = events.slice(0, config.maxEvents);
       }
-      
+
       renderEvents();
     }
 
     // Render events
     function renderEvents() {
       if (events.length === 0) {
-        eventsList.innerHTML = '<div class="empty-message">Waiting for events...</div>';
+        eventsList.innerHTML = `<div class="empty-message">${ViewerXpI18n.text('ticker_waiting', 'Waiting for events…')}</div>`;
         return;
       }
 
@@ -499,7 +500,7 @@
         const time = formatTime(event.created_at);
         const icon = eventIcons[event.event_type] || '⭐';
         const eventClass = getEventClass(event.event_type);
-        
+
         return `
           <div class="event-item ${eventClass}">
             <div class="event-header">
@@ -509,7 +510,7 @@
             <div class="event-details">
               <span class="event-icon">${icon}</span>
               <span class="event-type">${formatEventType(event.event_type)}</span>
-              <span class="event-xp">+${event.xp_awarded} XP</span>
+              <span class="event-xp">${ViewerXpI18n.text('ticker_xp', '+{amount} XP', { amount: event.xp_awarded })}</span>
             </div>
           </div>
         `;
@@ -524,15 +525,29 @@
     function formatTime(timestamp) {
       const now = Date.now();
       const diff = Math.floor((now - timestamp) / 1000);
-      
-      if (diff < 60) return 'just now';
-      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-      return `${Math.floor(diff / 86400)}d ago`;
+
+      if (diff < 60) return ViewerXpI18n.text('relative_now', 'Just now');
+      if (diff < 3600) return ViewerXpI18n.text('relative_minutes_ago', '{count}m ago', { count: Math.floor(diff / 60) });
+      if (diff < 86400) return ViewerXpI18n.text('relative_hours_ago', '{count}h ago', { count: Math.floor(diff / 3600) });
+      return ViewerXpI18n.text('relative_days_ago', '{count}d ago', { count: Math.floor(diff / 86400) });
     }
 
     function formatEventType(type) {
-      return type.replace(/_/g, ' ').replace(/tier\d+/, '');
+      const normalizedType = type.replace(/^gift_tier\d+$/, 'gift');
+      const eventKeys = {
+        chat_message: 'event_chat_message',
+        gift: 'event_gift',
+        follow: 'event_follow',
+        share: 'event_share',
+        like: 'event_like',
+        subscribe: 'event_subscribe',
+        daily_bonus: 'event_daily_bonus',
+        streak_bonus: 'event_streak_bonus',
+        watch_time_minute: 'event_watch_time_minute'
+      };
+      const key = eventKeys[normalizedType];
+      const fallback = normalizedType.replace(/_/g, ' ');
+      return key ? ViewerXpI18n.text(key, fallback) : fallback;
     }
 
     function getEventClass(type) {
@@ -560,11 +575,11 @@
       config.maxEvents = parseInt(document.getElementById('maxEvents').value);
       config.animDuration = parseInt(document.getElementById('animDuration').value);
       config.autoScroll = document.getElementById('autoScroll').value === 'true';
-      
+
       // Re-trim events
       events = events.slice(0, config.maxEvents);
       renderEvents();
-      
+
       console.log('Settings applied:', config);
     }
 

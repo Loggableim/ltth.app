@@ -444,10 +444,10 @@ describe('Visual FX Frame Plugin', () => {
 
         expect(content).toMatch(/id="status"[^>]*role="status"[^>]*aria-live="polite"/);
         expect(content).toMatch(/<iframe[^>]*id="previewIframe"[^>]*title="/);
-        expect(content).toContain('<label for="frameX">');
-        expect(content).toContain('<label for="frameY">');
-        expect(content).toContain('<label for="frameWidth">');
-        expect(content).toContain('<label for="frameHeight">');
+        expect(content).toMatch(/<label\s+[^>]*for="frameX"[^>]*>/);
+        expect(content).toMatch(/<label\s+[^>]*for="frameY"[^>]*>/);
+        expect(content).toMatch(/<label\s+[^>]*for="frameWidth"[^>]*>/);
+        expect(content).toMatch(/<label\s+[^>]*for="frameHeight"[^>]*>/);
         expect(content).toContain("removeBtn.setAttribute('aria-label'");
         expect(content).toMatch(/class="btn btn-secondary preset-delete-btn"[^>]*aria-label=/);
     });

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.1781e7310045">ClarityHUD - Chat Overlay</title>
+  <title data-i18n="plugins.clarityhud.labels.clarityhud_chat_overlay">ClarityHUD - Chat Overlay</title>
   <link href="/fonts/exo-2.css" rel="stylesheet">
   <style>
     /* CSS Custom Properties for Dynamic Configuration */
@@ -72,27 +72,27 @@
       flex-direction: column;
       gap: 4px;
     }
-    
+
     .chat-message-header {
       display: flex;
       align-items: center;
       gap: 6px;
       flex-wrap: wrap;
     }
-    
+
     .badge-container {
       display: inline-flex;
       align-items: center;
       gap: 2px;
     }
-    
+
     .tiktok-emote {
       display: inline-block;
       height: 1.5em;
       vertical-align: middle;
       margin: 0 2px;
     }
-    
+
     .unicode-emoji {
       display: inline;
       margin: 0 1px;
@@ -199,9 +199,9 @@
 <body>
   <!-- Debug Console -->
   <div id="debug-console">
-    <div id="debug-status" data-i18n="generated.55c53de68491">Status: Initializing...</div>
-    <div id="debug-socket" data-i18n="generated.7981cb1e56eb">Socket: Disconnected</div>
-    <div id="debug-events" data-i18n="generated.e8b6f6acfc0e">Events: 0</div>
+    <div id="debug-status" data-i18n="plugins.clarityhud.labels.status_initializing_55c53d">Status: Initializing...</div>
+    <div id="debug-socket" data-i18n="plugins.clarityhud.labels.socket_disconnected">Socket: Disconnected</div>
+    <div id="debug-events" data-i18n="plugins.clarityhud.labels.events_0_e8b6f6">Events: 0</div>
   </div>
 
   <div id="chat-container">
@@ -213,6 +213,7 @@
 
   <!-- Libraries -->
   <script src="/plugins/clarityhud/lib/animations.js"></script>
+  <script src="/plugins/clarityhud/lib/i18n-runtime.js"></script>
   <script src="/plugins/clarityhud/lib/accessibility.js"></script>
   <script src="/plugins/clarityhud/lib/emoji-parser.js"></script>
   <script src="/plugins/clarityhud/lib/badge-renderer.js"></script>

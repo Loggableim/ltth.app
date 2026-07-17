@@ -92,7 +92,7 @@ describe('WebGPU Fireworks premium graphics and synchronized crackling', () => {
         expect(localeStrings(locale).some(value => /&#(?:x[0-9a-f]+|[0-9]+);/i.test(value))).toBe(false);
       }
       const english = require('../plugins/webgpu-fireworks/locales/en.json');
-      expect(english.webgpu_fireworks.visual_effects).toBe('✨ Visual Effects');
+      expect(english.plugins['webgpu-fireworks'].webgpu_fireworks.visual_effects).toBe('✨ Visual Effects');
     });
 
     test('integrates a follower avatar into the rocket head without a trailing image particle', () => {

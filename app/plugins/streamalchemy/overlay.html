@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=1920, height=1080">
-  <title data-i18n="generated.b40567f73524">StreamAlchemy Overlay</title>
+  <title data-i18n="plugins.streamalchemy.labels.streamalchemy_overlay">StreamAlchemy Overlay</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     * {
@@ -283,7 +283,7 @@
           <strong id="craftNameB"></strong>
         </div>
       </div>
-      <div class="craft-status" id="craftStatus">Crafting...</div>
+      <div class="craft-status" id="craftStatus" data-i18n="plugins.streamalchemy.ui.overlay.craftingInProgress">Crafting...</div>
     </section>
 
     <section class="toast" id="toast" aria-live="polite">
@@ -305,12 +305,20 @@
     let toastTimer = null;
     let craftTimer = null;
 
+    function translateUi(key, fallback, params = {}) {
+      const translation = window.i18n?.t(key, params);
+      if (translation && translation !== key) return translation;
+      return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+      ));
+    }
+
     function imageSource(item) {
       return item?.image_url || item?.imageURL || item?.imageUrl || '';
     }
 
     function itemName(item) {
-      return item?.name || item?.item_name || item?.itemId || item?.item_id || 'Unknown item';
+      return item?.name || item?.item_name || item?.itemId || item?.item_id || translateUi('plugins.streamalchemy.ui.overlay.unknownItem', 'Unknown item');
     }
 
     const RARITY_FRAME_CLASSES = ['frame-common', 'frame-rare', 'frame-legendary', 'frame-mythic'];
@@ -332,7 +340,7 @@
 
     function showToast({ kicker, title, subtitle, image, rarity }) {
       clearTimeout(toastTimer);
-      document.getElementById('toastKicker').textContent = kicker || 'StreamAlchemy';
+      document.getElementById('toastKicker').textContent = kicker || translateUi('plugins.streamalchemy.ui.app.title', 'StreamAlchemy');
       document.getElementById('toastTitle').textContent = title || '';
       document.getElementById('toastSubtitle').textContent = subtitle || '';
       document.getElementById('toastImage').src = image || '';
@@ -348,7 +356,7 @@
       applyFrame(document.getElementById('craftFrameB'), itemB?.rarity);
       document.getElementById('craftNameA').textContent = itemName(itemA);
       document.getElementById('craftNameB').textContent = itemName(itemB);
-      document.getElementById('craftStatus').textContent = status || 'Crafting...';
+      document.getElementById('craftStatus').textContent = status || translateUi('plugins.streamalchemy.ui.overlay.craftingInProgress', 'Crafting...');
     }
 
     function showCraft(itemA, itemB, status, mode = 'crafting') {
@@ -368,31 +376,36 @@
     socket.on('streamalchemy:base_item_obtained', data => {
       const item = data.item || data.baseItem || data;
       showToast({
-        kicker: 'Item obtained',
+        kicker: translateUi('plugins.streamalchemy.ui.overlay.itemObtained', 'Item obtained'),
         title: itemName(item),
-        subtitle: `${data.username || data.user || 'Viewer'} received ${item.rarity || 'an item'}`,
+        subtitle: translateUi('plugins.streamalchemy.ui.overlay.viewerReceived', '{viewer} received {item}', {
+          viewer: data.username || data.user || translateUi('plugins.streamalchemy.ui.overlay.viewer', 'Viewer'),
+          item: item.rarity || translateUi('plugins.streamalchemy.ui.overlay.anItem', 'an item')
+        }),
         image: imageSource(item),
         rarity: item?.rarity
       });
     });
 
     socket.on('streamalchemy:crafting_started', data => {
-      showCraft(data.itemA || data.inputA, data.itemB || data.inputB, 'Crafting...');
+      showCraft(data.itemA || data.inputA, data.itemB || data.inputB, translateUi('plugins.streamalchemy.ui.overlay.craftingInProgress', 'Crafting...'));
     });
 
     socket.on('streamalchemy:item_crafting', data => {
-      showCraft(data.itemA || data.inputA, data.itemB || data.inputB, 'Item crafting...', 'item-crafting');
+      showCraft(data.itemA || data.inputA, data.itemB || data.inputB, translateUi('plugins.streamalchemy.ui.overlay.itemCrafting', 'Item crafting...'), 'item-crafting');
     });
 
     socket.on('streamalchemy:crafting_completed', data => {
       const item = data.item || data.craftedItem || data.resultItem || data.result;
-      document.getElementById('craftStatus').textContent = 'Crafting complete';
+      document.getElementById('craftStatus').textContent = translateUi('plugins.streamalchemy.ui.overlay.craftingComplete', 'Crafting complete');
       hideCraft(900);
       setTimeout(() => {
         showToast({
-          kicker: 'Crafted',
+          kicker: translateUi('plugins.streamalchemy.ui.overlay.crafted', 'Crafted'),
           title: itemName(item),
-          subtitle: data.cached ? 'Recipe cache reused' : 'New recipe discovered',
+          subtitle: data.cached
+            ? translateUi('plugins.streamalchemy.ui.overlay.recipeCacheReused', 'Recipe cache reused')
+            : translateUi('plugins.streamalchemy.ui.overlay.newRecipeDiscovered', 'New recipe discovered'),
           image: imageSource(item),
           rarity: item?.rarity
         });
@@ -400,12 +413,12 @@
     });
 
     socket.on('streamalchemy:crafting_failed', data => {
-      document.getElementById('craftStatus').textContent = 'Crafting failed';
+      document.getElementById('craftStatus').textContent = translateUi('plugins.streamalchemy.ui.overlay.craftingFailed', 'Crafting failed');
       hideCraft(1600);
       showToast({
-        kicker: 'Crafting failed',
-        title: data.reason || data.error || 'Generation unavailable',
-        subtitle: 'Inputs were restored to inventory',
+        kicker: translateUi('plugins.streamalchemy.ui.overlay.craftingFailed', 'Crafting failed'),
+        title: data.reason || data.error || translateUi('plugins.streamalchemy.ui.overlay.generationUnavailable', 'Generation unavailable'),
+        subtitle: translateUi('plugins.streamalchemy.ui.overlay.inputsRestored', 'Inputs were restored to inventory'),
         image: '',
         rarity: 'Common'
       });
@@ -414,9 +427,9 @@
     socket.on('streamalchemy:recipe_cache_hit', data => {
       const item = data.item || data.craftedItem || data.resultItem || data.result;
       showToast({
-        kicker: 'Recipe cache',
+        kicker: translateUi('plugins.streamalchemy.ui.overlay.recipeCache', 'Recipe cache'),
         title: itemName(item),
-        subtitle: 'Existing image reused',
+        subtitle: translateUi('plugins.streamalchemy.ui.overlay.existingImageReused', 'Existing image reused'),
         image: imageSource(item),
         rarity: item?.rarity
       });

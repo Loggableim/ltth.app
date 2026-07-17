@@ -12,6 +12,14 @@ function flatten(value, prefix = '', result = new Set()) {
   return result;
 }
 
+function flattenValues(value, result = []) {
+  Object.values(value || {}).forEach((child) => {
+    if (child && typeof child === 'object' && !Array.isArray(child)) flattenValues(child, result);
+    else result.push(child);
+  });
+  return result;
+}
+
 describe('translation contract', () => {
   test('every manifest-backed plugin ships all four locale files', () => {
     const pluginsRoot = path.join(__dirname, '..', 'plugins');
@@ -37,11 +45,26 @@ describe('translation contract', () => {
     expect(report.findings).toEqual([]);
   });
 
+  test('the standalone home-page locale maps keep the same FAQ coverage', () => {
+    const localeRoot = path.join(__dirname, '..', '..', 'locales');
+    const homeLocales = Object.fromEntries(locales.map((locale) => {
+      const file = path.join(localeRoot, `home-${locale}.json`);
+      return [locale, JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, ''))];
+    }));
+    const reference = Object.keys(homeLocales.en).sort();
+
+    locales.forEach((locale) => {
+      expect(Object.keys(homeLocales[locale]).sort()).toEqual(reference);
+      expect(flattenValues(homeLocales[locale]).every((value) => typeof value === 'string' && value.trim())).toBe(true);
+    });
+  });
+
   test('the runtime payload includes locales for disabled plugin pages', () => {
     jest.resetModules();
     const runtimeI18n = require('../modules/i18n');
     const french = runtimeI18n.getAllTranslations('fr');
-    expect(french.webgpu_fireworks.webgpu_obs_required).toBe('OBS WebGPU requis');
-    expect(french.webgpu_emoji_rain).toBeDefined();
+    expect(french.plugins['webgpu-fireworks'].webgpu_fireworks.webgpu_obs_required).toBe('OBS WebGPU requis');
+    expect(french.plugins['webgpu-emoji-rain']).toBeDefined();
+    expect(french.webgpu_fireworks).toBeUndefined();
   });
 });

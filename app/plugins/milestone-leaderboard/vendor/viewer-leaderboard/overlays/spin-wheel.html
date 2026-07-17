@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.dc87f95293bb">Spin Wheel Overlay</title>
+  <title data-i18n="plugins.milestone-leaderboard.labels.spin_wheel_overlay">Spin Wheel Overlay</title>
   <style>
     * {
       margin: 0;
@@ -237,7 +237,7 @@
     function formatNumber(value) {
       const absValue = Math.abs(value);
       const sign = value < 0 ? '-' : '';
-      
+
       if (absValue >= 1000000) {
         const millions = absValue / 1000000;
         if (millions >= 10) {
@@ -256,14 +256,14 @@
     function createWheel(fieldValues) {
       const wheel = document.getElementById('wheel');
       wheel.innerHTML = '';
-      
+
       const numFields = fieldValues.length;
       const anglePerSegment = 360 / numFields;
 
       fieldValues.forEach((value, index) => {
         const segment = document.createElement('div');
         segment.className = `wheel-segment ${value >= 0 ? 'positive' : 'negative'}`;
-        
+
         const rotation = anglePerSegment * index;
         segment.style.transform = `rotate(${rotation}deg)`;
 
@@ -271,7 +271,7 @@
         inner.className = 'wheel-segment-inner';
         inner.style.transform = `rotate(${-rotation}deg) translateY(-120px)`;
         inner.textContent = formatNumber(value);
-        
+
         segment.appendChild(inner);
         wheel.appendChild(segment);
       });
@@ -280,7 +280,7 @@
     // Spin the wheel
     function spinWheel(data) {
       const { username, betAmount, fieldIndex, fieldValue, xpChange, netChange, xpAfter, isWin, spinConfig } = data;
-      
+
       // Create wheel with current config
       createWheel(spinConfig.field_values);
 
@@ -297,7 +297,7 @@
       // Calculate target rotation
       const numFields = spinConfig.field_values.length;
       const anglePerSegment = 360 / numFields;
-      
+
       // We want the pointer (top) to point to the winning segment
       // Add extra spins for effect (3-5 full rotations)
       const extraSpins = 3 + Math.floor(Math.random() * 3);
@@ -332,12 +332,12 @@
 
       resultTitle.textContent = isWin ? '🎉 YOU WIN! 🎉' : '😢 YOU LOSE 😢';
       resultTitle.className = `result-title ${isWin ? 'win' : 'loss'}`;
-      
+
       resultValue.textContent = `Result: ${formatNumber(fieldValue)} XP`;
-      
+
       const changeText = netChange >= 0 ? `+${formatNumber(netChange)}` : formatNumber(netChange);
       netChangeEl.textContent = `Net Change: ${changeText} XP`;
-      
+
       totalXPEl.textContent = `Total XP: ${formatNumber(xpAfter)} XP`;
 
       resultDisplay.classList.add('active');

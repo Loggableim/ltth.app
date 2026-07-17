@@ -117,6 +117,41 @@ describe('Plugin store routes', () => {
     assert.strictEqual(response.body.clerkEnabled, true);
     assert.strictEqual(response.body.publishableKey, 'pk_test_public');
     assert.strictEqual(response.body.accountPortalBaseUrl, 'https://ltth.app/auth');
+    assert.strictEqual(Object.hasOwn(response.body, 'automaticAuthDisabled'), false);
+  });
+
+  it('keeps the public Store config unchanged in the isolated docs profile', async () => {
+    const { app } = createTestApp(tempDir, {
+      LTTH_DOCS_CAPTURE: 'true'
+    });
+
+    const response = await request(app).get('/api/plugin-store/config').expect(200);
+
+    assert.strictEqual(response.body.success, true);
+    assert.strictEqual(response.body.clerkEnabled, true);
+    assert.strictEqual(Object.hasOwn(response.body, 'automaticAuthDisabled'), false);
+  });
+
+  it('continues to require Clerk auth in the isolated docs profile', async () => {
+    const { app } = createTestApp(tempDir, {
+      LTTH_DOCS_CAPTURE: 'true'
+    });
+
+    const response = await request(app)
+      .get('/api/plugin-store/account')
+      .expect(401);
+
+    assert.strictEqual(response.body.code, 'AUTH_REQUIRED');
+  });
+
+  it('continues to require Clerk auth for the store account outside the docs profile', async () => {
+    const { app } = createTestApp(tempDir);
+
+    const response = await request(app)
+      .get('/api/plugin-store/account')
+      .expect(401);
+
+    assert.strictEqual(response.body.code, 'AUTH_REQUIRED');
   });
 
   it('requires Clerk auth for store listing and persists the local session cookie', async () => {

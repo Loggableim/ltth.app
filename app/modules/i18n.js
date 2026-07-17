@@ -17,11 +17,17 @@ function readJsonFile(filePath) {
 }
 
 class I18n {
-  constructor(defaultLocale = 'en') {
+  constructor(defaultLocale = 'de', { localesDir, pluginRoots } = {}) {
     this.defaultLocale = defaultLocale;
     this.currentLocale = defaultLocale;
     this.translations = {};
+    this.translationOrigins = {};
     this.supportedLocales = ['en', 'de', 'es', 'fr'];
+    this.localesDir = localesDir || path.join(__dirname, '..', 'locales');
+    this.pluginRoots = pluginRoots || [
+      path.join(__dirname, '..', 'plugins'),
+      path.join(__dirname, '..', '..', 'plugin-store', 'sources')
+    ];
     this.loadTranslations();
   }
 
@@ -34,7 +40,7 @@ class I18n {
    * Load all translation files
    */
   loadTranslations() {
-    const localesDir = path.join(__dirname, '..', 'locales');
+    const localesDir = this.localesDir;
 
     // Create locales directory if it doesn't exist
     if (!fs.existsSync(localesDir)) {
@@ -47,6 +53,7 @@ class I18n {
       if (fs.existsSync(filePath)) {
         try {
           this.translations[locale] = readJsonFile(filePath);
+          this.recordTranslationOrigins(locale, this.translations[locale], filePath);
         } catch (error) {
           console.error(`Failed to load ${locale} translations:`, error.message);
           this.translations[locale] = {};
@@ -70,45 +77,71 @@ class I18n {
    * rendering English labels just because the plugin is currently inactive.
    */
   loadPluginTranslations() {
-    const pluginsDir = path.join(__dirname, '..', 'plugins');
-
-    if (!fs.existsSync(pluginsDir)) {
-      return;
-    }
-
     try {
-      const plugins = fs.readdirSync(pluginsDir);
+      const pluginsDirectories = this.pluginRoots.filter(fs.existsSync);
+      const loadedPluginIds = new Set();
 
-      for (const plugin of plugins) {
-        const pluginLocalesDir = path.join(pluginsDir, plugin, 'locales');
+      for (const pluginsDir of pluginsDirectories) {
+        const plugins = fs.readdirSync(pluginsDir, { withFileTypes: true })
+          .filter((entry) => entry.isDirectory())
+          .map((entry) => entry.name);
 
-        if (fs.existsSync(pluginLocalesDir)) {
-          for (const locale of this.supportedLocales) {
-            const pluginLocalePath = path.join(pluginLocalesDir, `${locale}.json`);
+        for (const plugin of plugins) {
+          const manifestPath = path.join(pluginsDir, plugin, 'plugin.json');
+          const pluginLocalesDir = path.join(pluginsDir, plugin, 'locales');
+          let pluginId = plugin;
 
-            if (fs.existsSync(pluginLocalePath)) {
-              try {
-                const pluginTranslations = readJsonFile(pluginLocalePath);
+          if (fs.existsSync(manifestPath)) {
+            try {
+              const manifest = readJsonFile(manifestPath);
+              if (typeof manifest.id === 'string' && manifest.id.trim()) pluginId = manifest.id.trim();
+            } catch (error) {
+              console.error(`Failed to read manifest for plugin ${plugin}:`, error.message);
+            }
+          }
 
-                // Merge plugin translations into main translations
-                if (!this.translations[locale]) {
-                  this.translations[locale] = {};
+          // Runtime plugin manifests take precedence over mirrored store
+          // sources. Loading both locale directories would make a valid
+          // duplicate source look like a conflicting translation namespace.
+          if (loadedPluginIds.has(pluginId)) continue;
+
+          if (fs.existsSync(pluginLocalesDir)) {
+            for (const locale of this.supportedLocales) {
+              const pluginLocalePath = path.join(pluginLocalesDir, `${locale}.json`);
+
+              if (fs.existsSync(pluginLocalePath)) {
+                try {
+                  const pluginTranslations = readJsonFile(pluginLocalePath);
+
+                  // Merge plugin translations into main translations
+                  if (!this.translations[locale]) {
+                    this.translations[locale] = {};
+                  }
+
+                  const namespacedTranslations = pluginTranslations.plugins
+                    && pluginTranslations.plugins[pluginId]
+                    ? pluginTranslations
+                    : { plugins: { [pluginId]: pluginTranslations } };
+
+                  this.translations[locale] = this.mergeTranslationSource(
+                    locale,
+                    namespacedTranslations,
+                    pluginLocalePath
+                  );
+
+                  console.log(`✅ Loaded ${locale} translations for plugin: ${plugin}`);
+                } catch (error) {
+                  if (error.message.startsWith('Translation collision at ')) throw error;
+                  console.error(`Failed to load ${locale} translations for plugin ${plugin}:`, error.message);
                 }
-
-                this.translations[locale] = this.deepMerge(
-                  this.translations[locale],
-                  pluginTranslations
-                );
-
-                console.log(`✅ Loaded ${locale} translations for plugin: ${plugin}`);
-              } catch (error) {
-                console.error(`Failed to load ${locale} translations for plugin ${plugin}:`, error.message);
               }
             }
+            loadedPluginIds.add(pluginId);
           }
         }
       }
     } catch (error) {
+      if (error.message.startsWith('Translation collision at ')) throw error;
       console.error('Error loading plugin translations:', error.message);
     }
   }
@@ -134,6 +167,67 @@ class I18n {
     }
 
     return output;
+  }
+
+  translationLeaves(value, prefix = '', leaves = {}) {
+    if (!this.isObject(value)) {
+      leaves[prefix] = value;
+      return leaves;
+    }
+    Object.entries(value).forEach(([key, child]) => {
+      const fullKey = prefix ? `${prefix}.${key}` : key;
+      this.translationLeaves(child, fullKey, leaves);
+    });
+    return leaves;
+  }
+
+  recordTranslationOrigins(locale, translations, sourcePath) {
+    if (!this.translationOrigins[locale]) this.translationOrigins[locale] = new Map();
+    Object.keys(this.translationLeaves(translations)).forEach((key) => {
+      if (!this.translationOrigins[locale].has(key)) {
+        this.translationOrigins[locale].set(key, sourcePath);
+      }
+    });
+  }
+
+  mergeTranslationSource(locale, source, sourcePath, target = this.translations[locale] || {}, fallbackSourcePath = 'existing translations') {
+    const targetLeaves = this.translationLeaves(target);
+    const sourceLeaves = this.translationLeaves(source);
+    const origins = this.translationOrigins[locale] || new Map();
+    const targetBranchOrigins = new Map();
+    Object.keys(targetLeaves).forEach((targetKey) => {
+      const segments = targetKey.split('.');
+      for (let index = 1; index < segments.length; index++) {
+        const branch = segments.slice(0, index).join('.');
+        if (!targetBranchOrigins.has(branch)) targetBranchOrigins.set(branch, targetKey);
+      }
+    });
+
+    const collision = (key, existingKey = key) => {
+      const existingSource = origins.get(existingKey) || fallbackSourcePath;
+      throw new Error(`Translation collision at ${key} between ${existingSource} and ${sourcePath}`);
+    };
+
+    Object.entries(sourceLeaves).forEach(([key, value]) => {
+      if (Object.hasOwn(targetLeaves, key) && targetLeaves[key] !== value) {
+        collision(key);
+      }
+
+      const segments = key.split('.');
+      for (let index = 1; index < segments.length; index++) {
+        const ancestor = segments.slice(0, index).join('.');
+        if (Object.hasOwn(targetLeaves, ancestor)) collision(ancestor);
+      }
+
+      const descendant = targetBranchOrigins.get(key);
+      if (descendant) {
+        collision(key, descendant);
+      }
+    });
+
+    const merged = this.deepMerge(target, source);
+    this.recordTranslationOrigins(locale, source, sourcePath);
+    return merged;
   }
 
   /**
@@ -233,7 +327,7 @@ class I18n {
    */
   init(req, res, next) {
     // Get locale from query, header, or default
-    const requested = req.query.lang || req.headers['accept-language']?.split(',')[0] || 'en';
+    const requested = req.query.lang || req.headers['accept-language']?.split(',')[0] || 'de';
     const locale = globalI18n.normalizeLocale(requested);
 
     // Attach i18n to request
@@ -246,6 +340,7 @@ class I18n {
 }
 
 // Create global instance
-const globalI18n = new I18n('en');
+const globalI18n = new I18n('de');
 
 module.exports = globalI18n;
+module.exports.I18n = I18n;

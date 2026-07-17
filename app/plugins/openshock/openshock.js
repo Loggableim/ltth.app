@@ -19,6 +19,19 @@ let debugLogs = [];
 let updateInterval = null;
 let currentTab = 'dashboard';
 
+const LEGACY_RUNTIME_I18N_PREFIX = 'plugins.openshock.runtime.legacy.';
+
+function legacyRuntimeText(key, fallback, params = {}) {
+    const translationKey = `${LEGACY_RUNTIME_I18N_PREFIX}${key}`;
+    const translated = window.i18n && typeof window.i18n.t === 'function'
+        ? window.i18n.t(translationKey, params)
+        : translationKey;
+    const value = translated && translated !== translationKey ? translated : fallback;
+    return String(value).replace(/\{(\w+)\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+    ));
+}
+
 // ====================================================================
 // INITIALIZATION
 // ====================================================================
@@ -306,7 +319,7 @@ function renderDeviceList() {
 
     if (devices.length === 0) {
         container.innerHTML = `
-            <p class="text-muted text-center">No devices found. Configure API key first.</p>
+            <p class="text-muted text-center">${escapeHtml(legacyRuntimeText('no_devices', 'No devices found. Configure API key first.'))}</p>
         `;
         
         // Also update test shock dropdown and mapping device dropdown
@@ -401,7 +414,7 @@ function renderCommandLog(commands) {
     if (!container) return;
 
     if (commands.length === 0) {
-        container.innerHTML = '<p class="text-muted text-center">No commands executed yet.</p>';
+        container.innerHTML = `<p class="text-muted text-center">${escapeHtml(legacyRuntimeText('no_commands', 'No commands executed yet.'))}</p>`;
         return;
     }
 
@@ -426,7 +439,7 @@ function renderMappingList() {
 
     if (mappings.length === 0) {
         container.innerHTML = `
-            <p class="text-muted text-center">No mappings configured. Click "Add Mapping" to create one.</p>
+            <p class="text-muted text-center">${escapeHtml(legacyRuntimeText('no_mappings', 'No mappings configured. Click "Add Mapping" to create one.'))}</p>
         `;
         return;
     }
@@ -508,7 +521,7 @@ function renderPatternList() {
 
     // Render preset patterns
     if (presetPatterns.length === 0) {
-        presetContainer.innerHTML = `<p class="text-muted text-center">No preset patterns available.</p>`;
+        presetContainer.innerHTML = `<p class="text-muted text-center">${escapeHtml(legacyRuntimeText('no_preset_patterns', 'No preset patterns available.'))}</p>`;
     } else {
         const presetHtml = presetPatterns.map(pattern => `
             <div class="pattern-card">
@@ -539,7 +552,7 @@ function renderPatternList() {
 
     // Render custom patterns
     if (customPatterns.length === 0) {
-        customContainer.innerHTML = `<p class="text-muted text-center">No custom patterns created yet.</p>`;
+        customContainer.innerHTML = `<p class="text-muted text-center">${escapeHtml(legacyRuntimeText('no_custom_patterns', 'No custom patterns created yet.'))}</p>`;
     } else {
         const customHtml = customPatterns.map(pattern => `
             <div class="pattern-card">
@@ -585,7 +598,7 @@ function renderGiftCatalog() {
 
     if (giftCatalog.length === 0) {
         container.innerHTML = `
-            <p class="text-muted text-center">No gifts found in catalog. The catalog will be populated when you connect to TikTok Live.</p>
+            <p class="text-muted text-center">${escapeHtml(legacyRuntimeText('no_gifts', 'No gifts found in catalog. The catalog will be populated when you connect to TikTok Live.'))}</p>
         `;
         return;
     }
@@ -618,7 +631,7 @@ function updateGiftNameSelect() {
     if (!select) return;
     
     // Clear existing options except "All Gifts"
-    select.innerHTML = '<option value="">All Gifts</option>';
+    select.innerHTML = `<option value="">${escapeHtml(legacyRuntimeText('all_gifts', 'All Gifts'))}</option>`;
     
     // Add gift options sorted by diamond count (descending)
     const sortedGifts = [...giftCatalog].sort((a, b) => (b.diamond_count || 0) - (a.diamond_count || 0));
@@ -639,7 +652,9 @@ function renderQueueStatus() {
         queueLengthEl.textContent = queueStatus.pending || 0;
     }
     if (queueProcessingEl) {
-        queueProcessingEl.textContent = queueStatus.processing ? 'Yes' : 'No';
+        queueProcessingEl.textContent = queueStatus.processing
+            ? legacyRuntimeText('yes', 'Yes')
+            : legacyRuntimeText('no', 'No');
     }
 }
 
@@ -670,13 +685,13 @@ function updateConnectionStatus(status) {
 
     if (status === 'connected') {
         badge.classList.add('openshock-connection-connected');
-        badge.innerHTML = '<i class="fas fa-check-circle"></i> Connected';
+        badge.innerHTML = `<i class="fas fa-check-circle"></i> ${escapeHtml(legacyRuntimeText('connected', 'Connected'))}`;
     } else if (status === 'disconnected') {
         badge.classList.add('openshock-connection-disconnected');
-        badge.innerHTML = '<i class="fas fa-times-circle"></i> Disconnected';
+        badge.innerHTML = `<i class="fas fa-times-circle"></i> ${escapeHtml(legacyRuntimeText('disconnected', 'Disconnected'))}`;
     } else {
         badge.classList.add('openshock-connection-error');
-        badge.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error';
+        badge.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${escapeHtml(legacyRuntimeText('error', 'Error'))}`;
     }
 }
 
@@ -694,7 +709,9 @@ function openMappingModal(mappingId = null) {
     // Set modal title
     const modalTitle = document.getElementById('mappingModalTitle');
     if (modalTitle) {
-        modalTitle.textContent = isEdit ? 'Edit Event Mapping' : 'Add Event Mapping';
+        modalTitle.textContent = isEdit
+            ? legacyRuntimeText('edit_event_mapping', 'Edit Event Mapping')
+            : legacyRuntimeText('add_event_mapping', 'Add Event Mapping');
     }
 
     // Store mapping ID in a data attribute if editing
@@ -1043,7 +1060,7 @@ async function refreshGiftCatalog() {
     const button = document.getElementById('refreshGiftCatalog');
     if (button) {
         button.disabled = true;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+        button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${escapeHtml(legacyRuntimeText('refreshing', 'Refreshing...'))}`;
     }
     
     try {
@@ -1056,7 +1073,7 @@ async function refreshGiftCatalog() {
     } finally {
         if (button) {
             button.disabled = false;
-            button.innerHTML = '🔄 Refresh Catalog';
+            button.innerHTML = `🔄 ${escapeHtml(legacyRuntimeText('refresh_catalog', 'Refresh Catalog'))}`;
         }
     }
 }
@@ -1079,7 +1096,9 @@ function openPatternModal(patternId = null) {
     const descriptionInput = document.getElementById('patternDescription');
 
     if (modalTitle) {
-        modalTitle.textContent = isEdit ? 'Edit Pattern' : 'Add Pattern';
+        modalTitle.textContent = isEdit
+            ? legacyRuntimeText('edit_pattern', 'Edit Pattern')
+            : legacyRuntimeText('add_pattern', 'Add Pattern');
     }
 
     // Store pattern ID in modal data attribute
@@ -1103,7 +1122,7 @@ function renderPatternSteps() {
     if (!container) return;
 
     if (currentPatternSteps.length === 0) {
-        container.innerHTML = '<p class="text-muted text-center">No steps added yet. Click "Add Step" to begin.</p>';
+        container.innerHTML = `<p class="text-muted text-center">${escapeHtml(legacyRuntimeText('no_steps', 'No steps added yet. Click "Add Step" to begin.'))}</p>`;
         return;
     }
 
@@ -1166,7 +1185,7 @@ function renderPatternPreview() {
     if (!container) return;
 
     if (currentPatternSteps.length === 0) {
-        container.innerHTML = '<p class="text-muted text-center pattern-timeline-text">Add steps to see preview</p>';
+        container.innerHTML = `<p class="text-muted text-center pattern-timeline-text">${escapeHtml(legacyRuntimeText('add_steps_preview', 'Add steps to see preview'))}</p>`;
         return;
     }
 
@@ -1323,13 +1342,13 @@ async function executePattern(id, deviceId) {
 
 function generateFromCurve() {
     // Open curve generator modal
-    const curveType = prompt('Enter curve type (linear, exponential, sine, pulse):');
+    const curveType = prompt(legacyRuntimeText('curve_type_prompt', 'Enter curve type (linear, exponential, sine, pulse):'));
     if (!curveType) return;
 
-    const steps = parseInt(prompt('Enter number of steps (5-20):', '10'));
+    const steps = parseInt(prompt(legacyRuntimeText('curve_steps_prompt', 'Enter number of steps (5-20):'), '10'));
     if (!steps || steps < 5 || steps > 20) return;
 
-    const duration = parseInt(prompt('Enter step duration (ms):', '500'));
+    const duration = parseInt(prompt(legacyRuntimeText('curve_duration_prompt', 'Enter step duration (ms):'), '500'));
     if (!duration) return;
 
     // Generate pattern based on curve
@@ -1501,7 +1520,7 @@ async function testConnection() {
     const button = document.querySelector('.test-connection-btn');
     if (button) {
         button.disabled = true;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+        button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${escapeHtml(legacyRuntimeText('testing', 'Testing...'))}`;
     }
 
     try {
@@ -1539,7 +1558,7 @@ async function testConnection() {
     } finally {
         if (button) {
             button.disabled = false;
-            button.innerHTML = '<i class="fas fa-plug"></i> Test Connection';
+            button.innerHTML = `<i class="fas fa-plug"></i> ${escapeHtml(legacyRuntimeText('test_connection', 'Test Connection'))}`;
         }
     }
 }
@@ -1550,17 +1569,19 @@ function updateApiStatus(connected, deviceCount) {
     if (apiStatusEl) {
         if (connected) {
             apiStatusEl.textContent = '🟢';
-            apiStatusEl.title = 'API Connected';
+            apiStatusEl.title = legacyRuntimeText('api_connected', 'API Connected');
         } else {
             apiStatusEl.textContent = '🔴';
-            apiStatusEl.title = 'API Disconnected';
+            apiStatusEl.title = legacyRuntimeText('api_disconnected', 'API Disconnected');
         }
     }
     
     // Update Connection State
     const connectionStateEl = document.getElementById('connectionState');
     if (connectionStateEl) {
-        connectionStateEl.textContent = connected ? 'Online' : 'Offline';
+        connectionStateEl.textContent = connected
+            ? legacyRuntimeText('online', 'Online')
+            : legacyRuntimeText('offline', 'Offline');
     }
     
     // Update Device Count
@@ -1577,7 +1598,7 @@ function updateTestShockDeviceList() {
     if (!testShockDevice) return;
     
     // Clear existing options
-    testShockDevice.innerHTML = '<option value="">-- Select a device --</option>';
+    testShockDevice.innerHTML = `<option value="">${escapeHtml(legacyRuntimeText('select_device_test', '-- Select a device --'))}</option>`;
     
     // Add device options
     devices.forEach(device => {
@@ -1588,7 +1609,7 @@ function updateTestShockDeviceList() {
         // Disable paused devices and add indicator
         if (device.isPaused) {
             option.disabled = true;
-            option.textContent += ' (Paused)';
+            option.textContent += ` (${legacyRuntimeText('paused', 'Paused')})`;
         }
         
         testShockDevice.appendChild(option);
@@ -1606,7 +1627,7 @@ function updateMappingDeviceList(selectedDeviceId = '') {
     if (!deviceSelect) return;
     
     // Clear existing options
-    deviceSelect.innerHTML = '<option value="">Select Device...</option>';
+    deviceSelect.innerHTML = `<option value="">${escapeHtml(legacyRuntimeText('select_device', 'Select Device...'))}</option>`;
     
     // Add device options
     devices.forEach(device => {
@@ -1617,7 +1638,7 @@ function updateMappingDeviceList(selectedDeviceId = '') {
         // Disable paused devices and add indicator
         if (device.isPaused) {
             option.disabled = true;
-            option.textContent += ' (Paused)';
+            option.textContent += ` (${legacyRuntimeText('paused', 'Paused')})`;
         }
         
         if (device.id === selectedDeviceId) {
@@ -1633,7 +1654,7 @@ function updateMappingPatternList(selectedPatternId = '') {
     if (!patternSelect) return;
     
     // Clear existing options
-    patternSelect.innerHTML = '<option value="">None (Single pulse)</option>';
+    patternSelect.innerHTML = `<option value="">${escapeHtml(legacyRuntimeText('single_pulse', 'None (Single pulse)'))}</option>`;
     
     // Add pattern options - include both preset and custom patterns
     patterns.forEach(pattern => {
@@ -1667,10 +1688,10 @@ function configurePatternEditButton(button, isPreset) {
     button.style.display = 'inline-flex';
     if (isPreset) {
         button.disabled = true;
-        button.title = 'Preset patterns cannot be edited';
+        button.title = legacyRuntimeText('preset_not_editable', 'Preset patterns cannot be edited');
     } else {
         button.disabled = false;
-        button.title = 'Edit this pattern';
+        button.title = legacyRuntimeText('edit_pattern_hint', 'Edit this pattern');
     }
 }
 
@@ -1732,7 +1753,7 @@ function updateMappingPatternPreview(patternId) {
         stepsContainer.innerHTML = stepsHtml;
         previewBox.style.display = 'block';
     } else {
-        stepsContainer.innerHTML = '<p class="text-muted" style="margin: 0; font-size: 0.85em;">No steps defined</p>';
+        stepsContainer.innerHTML = `<p class="text-muted" style="margin: 0; font-size: 0.85em;">${escapeHtml(legacyRuntimeText('no_steps_defined', 'No steps defined'))}</p>`;
         previewBox.style.display = 'block';
     }
 }
@@ -1874,7 +1895,7 @@ async function executeTestShock() {
     const button = document.getElementById('testShockButton');
     if (button) {
         button.disabled = true;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+        button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${escapeHtml(legacyRuntimeText('sending', 'Sending...'))}`;
     }
     
     try {
@@ -1900,7 +1921,7 @@ async function executeTestShock() {
     } finally {
         if (button) {
             button.disabled = false;
-            button.innerHTML = '⚡ Test Shock (1s, 100%)';
+            button.innerHTML = `⚡ ${escapeHtml(legacyRuntimeText('test_shock', 'Test Shock (1s, 100%)'))}`;
         }
     }
 }
@@ -1909,7 +1930,7 @@ async function refreshDevices() {
     const button = document.querySelector('.refresh-devices-btn');
     if (button) {
         button.disabled = true;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+        button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${escapeHtml(legacyRuntimeText('refreshing', 'Refreshing...'))}`;
     }
 
     try {
@@ -1940,7 +1961,7 @@ async function refreshDevices() {
     } finally {
         if (button) {
             button.disabled = false;
-            button.innerHTML = '<i class="fas fa-sync"></i> Refresh Devices';
+            button.innerHTML = `<i class="fas fa-sync"></i> ${escapeHtml(legacyRuntimeText('refresh_devices', 'Refresh Devices'))}`;
         }
     }
 }
@@ -2767,7 +2788,7 @@ async function resumeQueue() {
 function clearDebugLog() {
     const debugLog = document.getElementById('debugLog');
     if (debugLog) {
-        debugLog.innerHTML = '<p class="text-muted text-center">Debug log is empty.</p>';
+        debugLog.innerHTML = `<p class="text-muted text-center">${escapeHtml(legacyRuntimeText('debug_log_empty', 'Debug log is empty.'))}</p>`;
     }
     showNotification('Debug log cleared', 'success');
 }

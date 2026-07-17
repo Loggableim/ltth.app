@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="generated.2eef0b16226e">Soundboard Configuration</title>
+    <title data-i18n="plugins.soundboard.labels.soundboard_configuration">Soundboard Configuration</title>
     <link rel="stylesheet" href="/css/tailwind.output.css">
     <link rel="stylesheet" href="/css/navigation.css">
     <link rel="stylesheet" href="/css/themes.css">
@@ -126,7 +126,7 @@
             text-align: right;
             max-width: 240px;
         }
-        
+
         /* Volume Slider Styles */
         .volume-slider {
             height: 4px;
@@ -134,30 +134,30 @@
             background: var(--color-border);
             cursor: pointer;
         }
-        
+
         .volume-slider-inline {
             width: 80px;
         }
-        
+
         .volume-slider-event {
             flex: 1;
         }
-        
+
         .volume-slider-test {
             width: 60px;
             height: 3px;
         }
-        
+
         .volume-label {
             font-size: 0.75rem;
             color: var(--color-text-secondary);
             min-width: 35px;
         }
-        
+
         .volume-label-test {
             font-size: 0.7rem;
         }
-        
+
         /* OBS Overlay Section */
         .obs-overlay-section {
             background: linear-gradient(180deg, var(--color-bg-card), var(--color-bg-secondary));
@@ -166,7 +166,7 @@
             padding: 20px;
             margin-bottom: 24px;
         }
-        
+
         .obs-overlay-section h3 {
             color: var(--color-text-primary);
             margin-bottom: 12px;
@@ -174,7 +174,7 @@
             align-items: center;
             gap: 10px;
         }
-        
+
         .overlay-url-box {
             display: flex;
             gap: 8px;
@@ -185,7 +185,7 @@
             padding: 12px;
             margin-top: 12px;
         }
-        
+
         .overlay-url-box input {
             flex: 1;
             background: transparent;
@@ -194,16 +194,16 @@
             font-family: monospace;
             font-size: 0.9rem;
         }
-        
+
         .overlay-url-box input:focus {
             outline: none;
         }
-        
+
         /* Collapsible Section Styles */
         .collapsible-section {
             margin-bottom: 16px;
         }
-        
+
         .collapsible-header {
             display: flex;
             justify-content: space-between;
@@ -216,18 +216,18 @@
             transition: all 0.2s;
             user-select: none;
         }
-        
+
         .collapsible-header:hover {
             border-color: var(--color-accent-primary);
             background: var(--color-bg-hover);
         }
-        
+
         .collapsible-header.active {
             border-bottom-left-radius: 0;
             border-bottom-right-radius: 0;
             border-color: var(--color-accent-primary);
         }
-        
+
         .collapsible-header h3 {
             margin: 0;
             display: flex;
@@ -236,15 +236,15 @@
             color: var(--color-text-primary);
             font-size: 1.1rem;
         }
-        
+
         .collapsible-toggle {
             transition: transform 0.3s;
         }
-        
+
         .collapsible-header.active .collapsible-toggle {
             transform: rotate(180deg);
         }
-        
+
         .collapsible-content {
             display: none;
             padding: 20px;
@@ -254,11 +254,11 @@
             border-bottom-left-radius: 8px;
             border-bottom-right-radius: 8px;
         }
-        
+
         .collapsible-content.active {
             display: block;
         }
-        
+
         /* Event Sound Card with Animation */
         .event-sound-card {
             background: linear-gradient(180deg, var(--color-bg-card), var(--color-bg-secondary));
@@ -268,11 +268,11 @@
             margin-bottom: 16px;
             transition: all 0.2s;
         }
-        
+
         .event-sound-card:hover {
             border-color: var(--color-accent-primary);
         }
-        
+
         .event-sound-card .event-header {
             display: flex;
             align-items: center;
@@ -281,19 +281,19 @@
             padding-bottom: 12px;
             border-bottom: 1px solid var(--color-border);
         }
-        
+
         .event-sound-card .event-header h4 {
             margin: 0;
             flex: 1;
             color: var(--color-text-primary);
             font-size: 1rem;
         }
-        
+
         .event-sound-card .sound-section,
         .event-sound-card .animation-section {
             margin-bottom: 12px;
         }
-        
+
         .event-sound-card .section-label {
             font-size: 0.8rem;
             color: var(--color-text-secondary);
@@ -302,27 +302,27 @@
             align-items: center;
             gap: 6px;
         }
-        
+
         .event-sound-card .inline-controls {
             display: flex;
             gap: 8px;
             align-items: center;
         }
-        
+
         .event-sound-card .inline-controls input[type="text"] {
             flex: 1;
         }
-        
+
         .event-sound-card .inline-controls select {
             width: 120px;
         }
-        
+
         .event-sound-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 16px;
         }
-        
+
         /* Soundboard specific styles */
         .myinstants-search {
             margin-top: 24px;
@@ -331,7 +331,7 @@
             border: 1px solid var(--color-border);
             border-radius: 8px;
         }
-        
+
         .myinstants-search h4 {
             color: var(--color-text-primary);
             font-size: 1.1rem;
@@ -341,22 +341,22 @@
             align-items: center;
             gap: 8px;
         }
-        
+
         .search-box {
             display: flex;
             gap: 12px;
             margin-bottom: 16px;
         }
-        
+
         .search-box input {
             flex: 1;
         }
-        
+
         .myinstants-results {
             display: grid;
             gap: 12px;
         }
-        
+
         .myinstants-result-item {
             background: linear-gradient(180deg, var(--color-bg-card), var(--color-bg-secondary));
             padding: 12px;
@@ -371,23 +371,23 @@
         .myinstants-results > .myinstants-result-item:nth-child(even) {
             background: linear-gradient(180deg, var(--color-bg-secondary), var(--color-bg-tertiary));
         }
-        
+
         .myinstants-result-item:hover {
             background: var(--color-bg-hover);
             border-color: var(--color-accent-primary);
         }
-        
+
         .myinstants-result-info {
             flex: 1;
             min-width: 0;
         }
-        
+
         .myinstants-result-name {
             font-weight: 600;
             color: var(--color-text-primary);
             margin-bottom: 4px;
         }
-        
+
         .myinstants-result-url {
             font-size: 0.85rem;
             color: #94a3b8;
@@ -395,7 +395,7 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        
+
         .myinstants-result-actions {
             display: flex;
             gap: 8px;
@@ -543,7 +543,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        
+
         .add-gift-sound {
             margin-top: 24px;
             padding: 16px;
@@ -551,14 +551,14 @@
             border: 1px solid var(--color-border);
             border-radius: 8px;
         }
-        
+
         .add-gift-sound h4 {
             color: var(--color-text-primary);
             font-size: 1.1rem;
             font-weight: 600;
             margin-bottom: 12px;
         }
-        
+
         .gift-catalog {
             margin-bottom: 24px;
             padding: 16px;
@@ -566,21 +566,21 @@
             border: 1px solid var(--color-border);
             border-radius: 8px;
         }
-        
+
         .gift-catalog-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
         }
-        
+
         .gift-catalog-header h4 {
             color: var(--color-text-primary);
             font-size: 1.1rem;
             font-weight: 600;
             margin: 0;
         }
-        
+
         /* Advanced Search Styles */
         .advanced-search {
             margin-top: 24px;
@@ -589,7 +589,7 @@
             border: 1px solid var(--color-accent-primary);
             border-radius: 8px;
         }
-        
+
         .advanced-search h3 {
             color: var(--color-accent-primary);
             font-size: 1.2rem;
@@ -599,14 +599,14 @@
             align-items: center;
             gap: 10px;
         }
-        
+
         .search-filters {
             display: grid;
             grid-template-columns: 1fr auto auto;
             gap: 12px;
             margin-bottom: 16px;
         }
-        
+
         .category-buttons {
             display: flex;
             gap: 8px;
@@ -617,7 +617,7 @@
             border: 1px solid var(--color-border);
             border-radius: 10px;
         }
-        
+
         .category-btn {
             padding: 6px 14px;
             background: var(--color-bg-primary);
@@ -628,19 +628,19 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        
+
         .category-btn:hover {
             background: var(--color-bg-hover);
             border-color: var(--color-accent-primary);
         }
-        
+
         .category-btn.active {
             background: var(--color-accent-primary);
             border-color: var(--color-accent-primary);
             color: #0f172a;
             font-weight: 600;
         }
-        
+
         /* Gift Catalog Modal */
         .modal-overlay {
             position: fixed;
@@ -655,11 +655,11 @@
             z-index: 10000;
             padding: 20px;
         }
-        
+
         .modal-overlay.active {
             display: flex;
         }
-        
+
         .modal-content {
             background: var(--color-bg-primary);
             border: 2px solid var(--color-accent-primary);
@@ -671,7 +671,7 @@
             flex-direction: column;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
         }
-        
+
         .modal-header {
             padding: 20px;
             border-bottom: 1px solid var(--color-border);
@@ -679,7 +679,7 @@
             justify-content: space-between;
             align-items: center;
         }
-        
+
         .modal-header h3 {
             color: var(--color-accent-primary);
             font-size: 1.3rem;
@@ -689,7 +689,7 @@
             align-items: center;
             gap: 10px;
         }
-        
+
         .modal-close {
             background: transparent;
             border: none;
@@ -699,7 +699,7 @@
             border-radius: 6px;
             transition: all 0.2s;
         }
-        
+
         .modal-close:hover {
             background: var(--color-bg-hover);
         }
@@ -722,13 +722,13 @@
             width: min(96vw, 1200px);
             max-width: none;
         }
-        
+
         .modal-body {
             padding: 20px;
             overflow-y: auto;
             flex: 1;
         }
-        
+
         .selected-sound-info {
             background: var(--color-bg-secondary);
             border: 1px solid var(--color-border);
@@ -736,25 +736,25 @@
             border-radius: 8px;
             margin-bottom: 20px;
         }
-        
+
         .selected-sound-info h4 {
             color: var(--color-text-primary);
             font-size: 1rem;
             font-weight: 600;
             margin-bottom: 8px;
         }
-        
+
         .selected-sound-name {
             color: var(--color-accent-primary);
             font-weight: 600;
         }
-        
+
         .gift-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 12px;
         }
-        
+
         .gift-card {
             background: linear-gradient(180deg, var(--color-bg-card), var(--color-bg-secondary));
             border: 2px solid var(--color-border);
@@ -768,17 +768,17 @@
         .gift-grid > .gift-card:nth-child(even) {
             background: linear-gradient(180deg, var(--color-bg-secondary), var(--color-bg-tertiary));
         }
-        
+
         .gift-card:hover {
             background: var(--color-bg-hover);
             border-color: var(--color-accent-primary);
             transform: translateY(-2px);
         }
-        
+
         .gift-card.has-sound {
             border-color: var(--color-accent-primary);
         }
-        
+
         .gift-card-image {
             width: 60px;
             height: 60px;
@@ -788,32 +788,32 @@
             justify-content: center;
             font-size: 2rem;
         }
-        
+
         .gift-card-image img {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
         }
-        
+
         .gift-card-name {
             color: var(--color-text-primary);
             font-weight: 600;
             font-size: 0.9rem;
             margin-bottom: 4px;
         }
-        
+
         .gift-card-id {
             color: #94a3b8;
             font-size: 0.8rem;
             margin-bottom: 4px;
         }
-        
+
         .gift-card-coins {
             color: var(--color-accent-primary);
             font-weight: 600;
             font-size: 0.85rem;
         }
-        
+
         .gift-card-badge {
             display: inline-block;
             background: var(--color-accent-primary);
@@ -1568,7 +1568,7 @@
                 display: flex;
             }
         }
-    
+
         /* Cid theme alignment */
         html[data-theme="cid"] body {
             background: #030603;
@@ -1689,7 +1689,7 @@
             -webkit-text-fill-color: var(--color-text-primary);
             box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.08);
         }
-    
+
         /* Accessibility contrast pass: explicit readable controls in contrast modes */
         html[data-theme="contrast"] .btn-primary,
         html[data-theme="contrast"] .btn-success,
@@ -1736,9 +1736,9 @@
             <img class="standalone-logo" data-brand-logo src="/soundboard-logo.png" alt="LTTH Soundboard">
         </div>
         <div class="standalone-actions">
-            <div class="soundboard-save-state" id="soundboard-save-state" data-i18n="generated.a8ec3fd3e52c">Workspace ready</div>
+            <div class="soundboard-save-state" id="soundboard-save-state" data-i18n="plugins.soundboard.labels.workspace_ready">Workspace ready</div>
             <button class="btn btn-primary btn-lg standalone-save-btn" type="button" data-save-proxy>
-                <i data-lucide="save"></i><span data-i18n="generated.67b43609c179">
+                <i data-lucide="save"></i><span data-i18n="plugins.soundboard.labels.save_settings">
                 Save Settings
             </span></button>
         </div>
@@ -1747,27 +1747,27 @@
     <!-- Soundboard Content -->
     <div class="soundboard-content">
         <div class="soundboard-workspace">
-            <aside class="soundboard-sidebar" aria-label="Soundboard workspace navigation">
+            <aside class="soundboard-sidebar" aria-label="Soundboard workspace navigation" data-i18n-aria-label="plugins.soundboard.ui.navigation.workspaceNavigation">
                 <nav class="soundboard-nav">
                     <button class="soundboard-nav-btn active" type="button" data-soundboard-view="overview">
                         <i data-lucide="layout-dashboard"></i>
-                        <span class="soundboard-nav-label">Overview</span>
+                        <span class="soundboard-nav-label" data-i18n="plugins.soundboard.ui.navigation.overview">Overview</span>
                     </button>
                     <button class="soundboard-nav-btn" type="button" data-soundboard-view="gift-mapping">
                         <i data-lucide="gift"></i>
-                        <span class="soundboard-nav-label" data-i18n="generated.e8521a8bd498">Gift Mapping</span>
+                        <span class="soundboard-nav-label" data-i18n="plugins.soundboard.labels.gift_mapping">Gift Mapping</span>
                     </button>
                     <button class="soundboard-nav-btn" type="button" data-soundboard-view="event-sounds">
                         <i data-lucide="zap"></i>
-                        <span class="soundboard-nav-label" data-i18n="generated.97acaeee5117">Event Sounds</span>
+                        <span class="soundboard-nav-label" data-i18n="plugins.soundboard.labels.event_sounds">Event Sounds</span>
                     </button>
                     <button class="soundboard-nav-btn" type="button" data-soundboard-view="obs-overlay">
                         <i data-lucide="monitor"></i>
-                        <span class="soundboard-nav-label" data-i18n="generated.0c5c080770af">OBS Overlay</span>
+                        <span class="soundboard-nav-label" data-i18n="plugins.soundboard.labels.obs_overlay">OBS Overlay</span>
                     </button>
                     <button class="soundboard-nav-btn" type="button" data-soundboard-view="advanced-tools">
                         <i data-lucide="wrench"></i>
-                        <span class="soundboard-nav-label" data-i18n="generated.2be6fb9aefc7">Advanced Tools</span>
+                        <span class="soundboard-nav-label" data-i18n="plugins.soundboard.labels.advanced_tools_2be6fb">Advanced Tools</span>
                     </button>
                 </nav>
             </aside>
@@ -1776,66 +1776,66 @@
                 <section class="workspace-panel active" data-workspace-panel="overview">
                     <div class="workspace-header">
                         <div>
-                            <h2><i data-lucide="layout-dashboard"></i> Overview</h2>
-                            <p class="workspace-subtitle" data-i18n="generated.0bac3652c080">Status, quick actions, and the shortest path to the common soundboard tasks.</p>
+                            <h2><i data-lucide="layout-dashboard"></i><span data-i18n="plugins.soundboard.ui.navigation.overview"> Overview</span></h2>
+                            <p class="workspace-subtitle" data-i18n="plugins.soundboard.labels.status_quick_actions_and_the_shortest_path_to">Status, quick actions, and the shortest path to the common soundboard tasks.</p>
                         </div>
                     </div>
                     <div class="overview-grid">
                         <button class="workspace-card overview-metric workspace-jump" type="button" data-soundboard-view="gift-mapping">
-                            <span class="metric-label" data-i18n="generated.6181a9710c06">Configured gifts</span>
-                            <span class="metric-value" id="overview-gift-count">0</span>
-                            <span class="workspace-subtitle" data-i18n="generated.7e68406e4269">Open gift mapping</span>
+                            <span class="metric-label" data-i18n="plugins.soundboard.labels.configured_gifts">Configured gifts</span>
+                            <output class="metric-value" id="overview-gift-count">0</output>
+                            <span class="workspace-subtitle" data-i18n="plugins.soundboard.labels.open_gift_mapping">Open gift mapping</span>
                         </button>
                         <button class="workspace-card overview-metric workspace-jump" type="button" data-soundboard-view="event-sounds">
-                            <span class="metric-label" data-i18n="soundboard.title">Soundboard</span>
-                            <span class="metric-value" id="overview-enabled-state">Unknown</span>
-                            <span class="workspace-subtitle" data-i18n="generated.e542b7ffe363">Open event settings</span>
+                            <span class="metric-label" data-i18n="plugins.soundboard.soundboard.title">Soundboard</span>
+                            <span class="metric-value" id="overview-enabled-state" data-i18n="plugins.soundboard.ui.status.unknown">Unknown</span>
+                            <span class="workspace-subtitle" data-i18n="plugins.soundboard.labels.open_event_settings">Open event settings</span>
                         </button>
                         <button class="workspace-card overview-metric workspace-jump" type="button" data-soundboard-view="obs-overlay">
-                            <span class="metric-label" data-i18n="generated.941a39a263b8">OBS Overlay</span>
-                            <span class="metric-value" id="overview-obs-state">Ready</span>
-                            <span class="workspace-subtitle" data-i18n="generated.6fc35b00bac8">Copy URL and tune layout</span>
+                            <span class="metric-label" data-i18n="plugins.soundboard.labels.obs_overlay_941a39">OBS Overlay</span>
+                            <span class="metric-value" id="overview-obs-state" data-i18n="plugins.soundboard.ui.status.ready">Ready</span>
+                            <span class="workspace-subtitle" data-i18n="plugins.soundboard.labels.copy_url_and_tune_layout">Copy URL and tune layout</span>
                         </button>
                         <button class="workspace-card overview-metric workspace-jump" type="button" data-soundboard-view="library-search">
-                            <span class="metric-label">Library</span>
-                            <span class="metric-value" data-i18n="generated.54eefe4adcab">Sounds + GIFs</span>
-                            <span class="workspace-subtitle" data-i18n="generated.094cf3f6c6f3">Search MyInstants and GIFs</span>
+                            <span class="metric-label" data-i18n="plugins.soundboard.ui.navigation.library">Library</span>
+                            <span class="metric-value" data-i18n="plugins.soundboard.labels.sounds_gifs">Sounds + GIFs</span>
+                            <span class="workspace-subtitle" data-i18n="plugins.soundboard.labels.search_myinstants_and_gifs">Search MyInstants and GIFs</span>
                         </button>
                     </div>
                     <div class="workspace-card" style="margin-top: 16px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px;">
                             <div>
-                                <h3 data-i18n="generated.a9208528388a">Recommended gift mappings</h3>
-                                <p class="workspace-subtitle" data-i18n="generated.3b11cc83eb07">Frequently dropped gifts that do not have dedicated audio yet.</p>
+                                <h3 data-i18n="plugins.soundboard.labels.recommended_gift_mappings">Recommended gift mappings</h3>
+                                <p class="workspace-subtitle" data-i18n="plugins.soundboard.labels.frequently_dropped_gifts_that_do_not_have_dedicated">Frequently dropped gifts that do not have dedicated audio yet.</p>
                             </div>
                             <button id="refresh-gift-recommendations-btn" class="btn btn-sm btn-ghost" type="button">
                                 <i data-lucide="refresh-cw"></i>
-                                Refresh
+                                <span data-i18n="plugins.soundboard.ui.actions.refresh">Refresh</span>
                             </button>
                         </div>
                         <div id="gift-recommendations-list" class="gift-recommendations-list">
-                            <div class="text-gray-400 text-sm" data-i18n="generated.3a2ed4b0fe9a">Loading recommendations...</div>
+                            <div class="text-gray-400 text-sm" data-i18n="plugins.soundboard.labels.loading_recommendations">Loading recommendations...</div>
                         </div>
                     </div>
                 </section>
         <!-- OBS Overlay Section - PROMINENT -->
         <section class="obs-overlay-section workspace-panel" data-workspace-panel="obs-overlay">
             <h3>
-                <i data-lucide="monitor"></i><span data-i18n="generated.59f283e4aca1">
+                <i data-lucide="monitor"></i><span data-i18n="plugins.soundboard.labels.obs_animation_overlay">
                 OBS Animation Overlay
             </span></h3>
-            <p style="color: var(--color-text-secondary); margin-bottom: 12px;" data-i18n="generated.d644977ec7cc">
+            <p style="color: var(--color-text-secondary); margin-bottom: 12px;" data-i18n="plugins.soundboard.labels.add_this_url_as_a_browser_source_in">
                 Add this URL as a Browser Source in OBS to display MP4/GIF animations when gifts are received or events occur.
                 Recommended size: 1920x1080, transparent background.
             </p>
             <div class="overlay-url-box">
                 <i data-lucide="link" style="color: var(--color-accent-primary); flex-shrink: 0;"></i>
-                <input type="text" id="animation-overlay-url" readonly value="" placeholder="Loading...">
-                <button id="copy-overlay-url" class="btn btn-sm btn-primary" title="Copy URL">
+                <input type="text" id="animation-overlay-url" readonly value="" placeholder="Loading..." data-i18n-placeholder="plugins.soundboard.ui.placeholders.loading">
+                <button id="copy-overlay-url" class="btn btn-sm btn-primary" title="Copy URL" data-i18n-title="plugins.soundboard.ui.actions.copyUrl">
                     <i data-lucide="copy"></i>
-                    Copy
+                    <span data-i18n="plugins.soundboard.ui.actions.copy">Copy</span>
                 </button>
-                <a id="open-overlay-url" href="#" target="_blank" class="btn btn-sm btn-ghost" title="Open in new tab">
+                <a id="open-overlay-url" href="#" target="_blank" class="btn btn-sm btn-ghost" title="Open in new tab" data-i18n-title="plugins.soundboard.ui.actions.openInNewTab">
                     <i data-lucide="external-link"></i>
                 </a>
             </div>
@@ -1843,58 +1843,58 @@
                 <div style="display: flex; align-items: flex-start; gap: 8px;">
                     <i data-lucide="info" style="color: #3b82f6; width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0;"></i>
                     <span style="font-size: 0.85rem; color: var(--color-text-secondary);">
-                        <strong data-i18n="generated.d45681cf472b">How to use:</strong><span data-i18n="generated.cb39044159be"> In OBS, add a Browser Source -> paste this URL -> preview it in the canvas.
+                        <strong data-i18n="plugins.soundboard.labels.how_to_use">How to use:</strong><span data-i18n="plugins.soundboard.labels.in_obs_add_a_browser_source_paste_this"> In OBS, add a Browser Source -> paste this URL -> preview it in the canvas.
                         Animations will play automatically when configured gifts are received.
                     </span></span>
                 </div>
             </div>
             <div class="form-grid overlay-layout-grid">
                 <div class="form-group">
-                    <label data-i18n="generated.c7bf1d2fa922">X Position (%)</label>
+                    <label data-i18n="plugins.soundboard.labels.x_position">X Position (%)</label>
                     <input type="number" id="soundboard-animation-x" min="0" max="100" value="50" class="form-input">
                 </div>
                 <div class="form-group">
-                    <label data-i18n="generated.92fb41770447">Y Position (%)</label>
+                    <label data-i18n="plugins.soundboard.labels.y_position">Y Position (%)</label>
                     <input type="number" id="soundboard-animation-y" min="0" max="100" value="50" class="form-input">
                 </div>
                 <div class="form-group">
-                    <label data-i18n="generated.78518dceb45c">Width (vw)</label>
+                    <label data-i18n="plugins.soundboard.labels.width_vw">Width (vw)</label>
                     <input type="number" id="soundboard-animation-width" min="5" max="100" value="45" class="form-input">
                 </div>
                 <div class="form-group">
-                    <label data-i18n="generated.26244a7abddd">Height (vh)</label>
+                    <label data-i18n="plugins.soundboard.labels.height_vh">Height (vh)</label>
                     <input type="number" id="soundboard-animation-height" min="5" max="100" value="45" class="form-input">
                 </div>
                 <div class="form-group">
-                    <label>Anchor</label>
+                    <label data-i18n="plugins.soundboard.ui.animation.anchor">Anchor</label>
                     <select id="soundboard-animation-anchor" class="form-select">
-                        <option value="center">Center</option>
-                        <option value="top-left" data-i18n="generated.49c230e6a91d">Top Left</option>
-                        <option value="top">Top</option>
-                        <option value="top-right" data-i18n="generated.2edc03236b32">Top Right</option>
-                        <option value="left">Left</option>
-                        <option value="right">Right</option>
-                        <option value="bottom-left" data-i18n="generated.3f6c38ea77f7">Bottom Left</option>
-                        <option value="bottom">Bottom</option>
-                        <option value="bottom-right" data-i18n="generated.303accb5d9fd">Bottom Right</option>
+                        <option value="center" data-i18n="plugins.soundboard.ui.animation.center">Center</option>
+                        <option value="top-left" data-i18n="plugins.soundboard.labels.top_left">Top Left</option>
+                        <option value="top" data-i18n="plugins.soundboard.ui.animation.top">Top</option>
+                        <option value="top-right" data-i18n="plugins.soundboard.labels.top_right">Top Right</option>
+                        <option value="left" data-i18n="plugins.soundboard.ui.animation.left">Left</option>
+                        <option value="right" data-i18n="plugins.soundboard.ui.animation.right">Right</option>
+                        <option value="bottom-left" data-i18n="plugins.soundboard.labels.bottom_left">Bottom Left</option>
+                        <option value="bottom" data-i18n="plugins.soundboard.ui.animation.bottom">Bottom</option>
+                        <option value="bottom-right" data-i18n="plugins.soundboard.labels.bottom_right">Bottom Right</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label data-i18n="generated.fec5476dea5a">GIF/Image Seconds</label>
+                    <label data-i18n="plugins.soundboard.labels.gif_image_seconds">GIF/Image Seconds</label>
                     <input type="number" id="soundboard-animation-duration" min="1" max="30" value="5" class="form-input">
                 </div>
                 <div class="form-group">
-                    <label>Fit</label>
+                    <label data-i18n="plugins.soundboard.ui.animation.fit">Fit</label>
                     <select id="soundboard-animation-fit" class="form-select">
-                        <option value="contain">Contain</option>
-                        <option value="cover">Cover</option>
-                        <option value="fill">Fill</option>
+                        <option value="contain" data-i18n="plugins.soundboard.ui.animation.contain">Contain</option>
+                        <option value="cover" data-i18n="plugins.soundboard.ui.animation.cover">Cover</option>
+                        <option value="fill" data-i18n="plugins.soundboard.ui.animation.fill">Fill</option>
                     </select>
                 </div>
             </div>
             <div class="overlay-layout-actions">
                 <button id="test-focused-animation-btn" class="btn btn-sm btn-ghost">
-                    <i data-lucide="play"></i><span data-i18n="generated.08a46af43e04">
+                    <i data-lucide="play"></i><span data-i18n="plugins.soundboard.labels.test_selected_animation_in_obs">
                     Test selected animation in OBS
                 </span></button>
             </div>
@@ -1904,7 +1904,7 @@
         <section class="collapsible-section workspace-panel" data-workspace-panel="overview">
             <div class="collapsible-header active" data-target="playback-settings-content">
                 <h3>
-                    <i data-lucide="settings"></i><span data-i18n="generated.10a6053a1998">
+                    <i data-lucide="settings"></i><span data-i18n="plugins.soundboard.labels.playback_settings">
                     Playback Settings
                 </span></h3>
                 <i data-lucide="chevron-down" class="collapsible-toggle"></i>
@@ -1914,37 +1914,37 @@
                     <div class="form-group">
                         <label class="checkbox-label" style="margin-bottom: 16px;">
                             <input type="checkbox" id="soundboard-enabled" checked>
-                            <span style="font-weight: 600;" data-i18n="soundboard.config.enabled">Enable Soundboard</span>
+                            <span style="font-weight: 600;" data-i18n="plugins.soundboard.soundboard.config.enabled">Enable Soundboard</span>
                         </label>
                     </div>
                     <div class="form-group">
-                        <label data-i18n="soundboard.config.audio_target">Audio Playback Target</label>
+                        <label data-i18n="plugins.soundboard.soundboard.config.audio_target">Audio Playback Target</label>
                         <select id="soundboard-audio-target" class="form-select">
-                            <option value="dashboard" data-i18n="soundboard.config.audio_target_dashboard">Dashboard Only</option>
-                            <option value="obs_overlay" data-i18n="soundboard.config.audio_target_obs">OBS Overlay Only</option>
-                            <option value="both" selected data-i18n="generated.41314d71bdde">Both (Dashboard + OBS Overlay)</option>
+                            <option value="dashboard" data-i18n="plugins.soundboard.soundboard.config.audio_target_dashboard">Dashboard Only</option>
+                            <option value="obs_overlay" data-i18n="plugins.soundboard.soundboard.config.audio_target_obs">OBS Overlay Only</option>
+                            <option value="both" selected data-i18n="plugins.soundboard.labels.both_dashboard_obs_overlay">Both (Dashboard + OBS Overlay)</option>
                         </select>
                         <small style="color: var(--color-text-secondary); font-size: 0.8rem; margin-top: 4px; display: block;">
-                            <strong>Dashboard:</strong><span data-i18n="generated.09c84cde7a0a"> Audio plays directly in your browser (recommended if OBS audio not working).</span><br>
-                            <strong data-i18n="generated.435d37012c36">OBS Overlay:</strong><span data-i18n="generated.a7722d4f3d07"> Audio plays in the OBS browser source.</span><br>
-                            <strong>Both:</strong><span data-i18n="generated.b738523863b7"> Audio plays in both locations.
+                            <strong data-i18n="plugins.soundboard.ui.audioTarget.dashboard">Dashboard:</strong><span data-i18n="plugins.soundboard.labels.audio_plays_directly_in_your_browser_recommended_if"> Audio plays directly in your browser (recommended if OBS audio not working).</span><br>
+                            <strong data-i18n="plugins.soundboard.labels.obs_overlay_435d37">OBS Overlay:</strong><span data-i18n="plugins.soundboard.labels.audio_plays_in_the_obs_browser_source"> Audio plays in the OBS browser source.</span><br>
+                            <strong data-i18n="plugins.soundboard.ui.audioTarget.both">Both:</strong><span data-i18n="plugins.soundboard.labels.audio_plays_in_both_locations"> Audio plays in both locations.
                         </span></small>
                     </div>
                     <div class="form-group">
-                        <label data-i18n="generated.b2ef252a0c7f">Play Mode</label>
+                        <label data-i18n="plugins.soundboard.labels.play_mode">Play Mode</label>
                         <select id="soundboard-play-mode" class="form-select">
-                            <option value="overlap" data-i18n="generated.e37ef31f290a">Overlap (play immediately)</option>
-                            <option value="queue-all" data-i18n="generated.92e7a6f44542">Queue All (global sequential)</option>
-                            <option value="queue-per-gift" data-i18n="generated.d13ed28bda96">Queue Per Gift (same gift types queue)</option>
+                            <option value="overlap" data-i18n="plugins.soundboard.labels.overlap_play_immediately">Overlap (play immediately)</option>
+                            <option value="queue-all" data-i18n="plugins.soundboard.labels.queue_all_global_sequential">Queue All (global sequential)</option>
+                            <option value="queue-per-gift" data-i18n="plugins.soundboard.labels.queue_per_gift_same_gift_types_queue">Queue Per Gift (same gift types queue)</option>
                         </select>
-                        <small style="color: var(--color-text-secondary); font-size: 0.8rem; margin-top: 4px; display: block;"><span data-i18n="generated.6b9597fbd920">
-                            Overlap: All sounds play immediately.</span><br><span data-i18n="generated.a47d83fc7f1e">
-                            Queue All: All sounds play one after another.</span><br><span data-i18n="generated.aed56eeb6aa9">
+                        <small style="color: var(--color-text-secondary); font-size: 0.8rem; margin-top: 4px; display: block;"><span data-i18n="plugins.soundboard.labels.overlap_all_sounds_play_immediately">
+                            Overlap: All sounds play immediately.</span><br><span data-i18n="plugins.soundboard.labels.queue_all_all_sounds_play_one_after_another">
+                            Queue All: All sounds play one after another.</span><br><span data-i18n="plugins.soundboard.labels.queue_per_gift_same_gift_types_wait_different">
                             Queue Per Gift: Same gift types wait, different gifts can play simultaneously.
                         </span></small>
                     </div>
                     <div class="form-group">
-                        <label data-i18n="generated.2d42ba9adb2c">Max Queue Length</label>
+                        <label data-i18n="plugins.soundboard.labels.max_queue_length">Max Queue Length</label>
                         <input type="number" id="soundboard-max-queue" min="1" max="50" value="10" class="form-input">
                     </div>
                 </div>
@@ -1955,35 +1955,35 @@
         <section class="collapsible-section workspace-panel" data-workspace-panel="event-sounds">
             <div class="collapsible-header active" data-target="event-sounds-content">
                 <h3>
-                    <i data-lucide="zap"></i><span data-i18n="generated.98963dc17078">
+                    <i data-lucide="zap"></i><span data-i18n="plugins.soundboard.labels.event_sounds_animations">
                     Event Sounds & Animations
                 </span></h3>
                 <i data-lucide="chevron-down" class="collapsible-toggle"></i>
             </div>
             <div id="event-sounds-content" class="collapsible-content active">
-                <p style="color: var(--color-text-secondary); margin-bottom: 16px; font-size: 0.9rem;" data-i18n="generated.d58c43f134e3">
+                <p style="color: var(--color-text-secondary); margin-bottom: 16px; font-size: 0.9rem;" data-i18n="plugins.soundboard.labels.configure_sounds_and_mp4_gif_animations_for_tiktok">
                     Configure sounds and MP4/GIF animations for TikTok events. Animations will display in the OBS overlay above.
                 </p>
-                
+
                 <div class="event-sound-grid">
                     <!-- Follow Event -->
                     <div class="event-sound-card">
                         <div class="event-header">
                             <i data-lucide="user-plus" style="color: var(--color-accent-primary);"></i>
-                            <h4>Follow</h4>
-                            <button data-test-sound="follow" class="btn btn-xs btn-ghost" title="Test Sound" aria-label="Test Follow sound">
+                            <h4 data-i18n="plugins.soundboard.ui.events.follow">Follow</h4>
+                            <button data-test-sound="follow" class="btn btn-xs btn-ghost" title="Test Sound" aria-label="Test Follow sound" data-i18n-title="plugins.soundboard.ui.events.testSound" data-i18n-aria-label="plugins.soundboard.ui.events.testFollowSound">
                                 <i data-lucide="play"></i>
                             </button>
                         </div>
                         <div class="sound-section">
                             <div class="section-label">
-                                <i data-lucide="volume-2"></i> Sound
+                                <i data-lucide="volume-2"></i><span data-i18n="plugins.soundboard.ui.table.sound"> Sound</span>
                             </div>
                             <div class="inline-controls">
-                                <input type="text" id="soundboard-follow-url" placeholder="Sound URL (MP3)" class="form-input">
+                                <input type="text" id="soundboard-follow-url" placeholder="Sound URL (MP3)" data-i18n-placeholder="plugins.soundboard.ui.placeholders.soundUrl" class="form-input">
                             </div>
                             <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;">Volume:</label>
+                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;" data-i18n="plugins.soundboard.ui.events.volume">Volume:</label>
                                 <input type="range" id="soundboard-follow-volume-slider" min="0" max="100" value="100" class="volume-slider volume-slider-event">
                                 <span id="soundboard-follow-volume-label" class="volume-label">100%</span>
                                 <input type="number" id="soundboard-follow-volume" min="0" max="1" step="0.1" value="1.0" style="display: none;">
@@ -1991,19 +1991,19 @@
                         </div>
                         <div class="animation-section">
                             <div class="section-label">
-                                <i data-lucide="video"></i><span data-i18n="generated.4ebf80692d8c"> Animation (MP4/GIF)
+                                <i data-lucide="video"></i><span data-i18n="plugins.soundboard.labels.animation_mp4_gif"> Animation (MP4/GIF)
                             </span></div>
                             <div class="inline-controls">
-                                <input type="text" id="soundboard-follow-animation-url" placeholder="Animation URL" class="form-input">
+                                <input type="text" id="soundboard-follow-animation-url" placeholder="Animation URL" data-i18n-placeholder="plugins.soundboard.ui.placeholders.animationUrl" class="form-input">
                                 <select id="soundboard-follow-animation-type" class="form-select">
-                                    <option value="none">None</option>
-                                    <option value="video">Video</option>
-                                    <option value="gif">GIF</option>
-                                    <option value="image">Image</option>
+                                    <option value="none" data-i18n="plugins.soundboard.ui.animation.none">None</option>
+                                    <option value="video" data-i18n="plugins.soundboard.ui.animation.video">Video</option>
+                                    <option value="gif" data-i18n="plugins.soundboard.ui.animation.gif">GIF</option>
+                                    <option value="image" data-i18n="plugins.soundboard.ui.animation.image">Image</option>
                                 </select>
                             </div>
                             <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;">Volume:</label>
+                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;" data-i18n="plugins.soundboard.ui.events.volume">Volume:</label>
                                 <input type="range" id="soundboard-follow-animation-volume-slider" min="0" max="100" value="100" class="volume-slider volume-slider-event">
                                 <span id="soundboard-follow-animation-volume-label" class="volume-label">100%</span>
                                 <input type="number" id="soundboard-follow-animation-volume" min="0" max="1" step="0.1" value="1.0" style="display: none;">
@@ -2015,20 +2015,20 @@
                     <div class="event-sound-card">
                         <div class="event-header">
                             <i data-lucide="crown" style="color: #f59e0b;"></i>
-                            <h4 data-i18n="generated.b800050af24b">Subscribe (Super Fan)</h4>
-                            <button data-test-sound="subscribe" class="btn btn-xs btn-ghost" title="Test Sound" aria-label="Test Subscribe sound">
+                            <h4 data-i18n="plugins.soundboard.labels.subscribe_super_fan">Subscribe (Super Fan)</h4>
+                            <button data-test-sound="subscribe" class="btn btn-xs btn-ghost" title="Test Sound" aria-label="Test Subscribe sound" data-i18n-title="plugins.soundboard.ui.events.testSound" data-i18n-aria-label="plugins.soundboard.ui.events.testSubscribeSound">
                                 <i data-lucide="play"></i>
                             </button>
                         </div>
                         <div class="sound-section">
                             <div class="section-label">
-                                <i data-lucide="volume-2"></i> Sound
+                                <i data-lucide="volume-2"></i><span data-i18n="plugins.soundboard.ui.table.sound"> Sound</span>
                             </div>
                             <div class="inline-controls">
-                                <input type="text" id="soundboard-subscribe-url" placeholder="Sound URL (MP3)" class="form-input">
+                                <input type="text" id="soundboard-subscribe-url" placeholder="Sound URL (MP3)" data-i18n-placeholder="plugins.soundboard.ui.placeholders.soundUrl" class="form-input">
                             </div>
                             <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;">Volume:</label>
+                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;" data-i18n="plugins.soundboard.ui.events.volume">Volume:</label>
                                 <input type="range" id="soundboard-subscribe-volume-slider" min="0" max="100" value="100" class="volume-slider volume-slider-event">
                                 <span id="soundboard-subscribe-volume-label" class="volume-label">100%</span>
                                 <input type="number" id="soundboard-subscribe-volume" min="0" max="1" step="0.1" value="1.0" style="display: none;">
@@ -2036,19 +2036,19 @@
                         </div>
                         <div class="animation-section">
                             <div class="section-label">
-                                <i data-lucide="video"></i><span data-i18n="generated.83138c3afc3f"> Animation (MP4/GIF)
+                                <i data-lucide="video"></i><span data-i18n="plugins.soundboard.labels.animation_mp4_gif_83138c"> Animation (MP4/GIF)
                             </span></div>
                             <div class="inline-controls">
-                                <input type="text" id="soundboard-subscribe-animation-url" placeholder="Animation URL" class="form-input">
+                                <input type="text" id="soundboard-subscribe-animation-url" placeholder="Animation URL" data-i18n-placeholder="plugins.soundboard.ui.placeholders.animationUrl" class="form-input">
                                 <select id="soundboard-subscribe-animation-type" class="form-select">
-                                    <option value="none">None</option>
-                                    <option value="video">Video</option>
-                                    <option value="gif">GIF</option>
-                                    <option value="image">Image</option>
+                                    <option value="none" data-i18n="plugins.soundboard.ui.animation.none">None</option>
+                                    <option value="video" data-i18n="plugins.soundboard.ui.animation.video">Video</option>
+                                    <option value="gif" data-i18n="plugins.soundboard.ui.animation.gif">GIF</option>
+                                    <option value="image" data-i18n="plugins.soundboard.ui.animation.image">Image</option>
                                 </select>
                             </div>
                             <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;">Volume:</label>
+                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;" data-i18n="plugins.soundboard.ui.events.volume">Volume:</label>
                                 <input type="range" id="soundboard-subscribe-animation-volume-slider" min="0" max="100" value="100" class="volume-slider volume-slider-event">
                                 <span id="soundboard-subscribe-animation-volume-label" class="volume-label">100%</span>
                                 <input type="number" id="soundboard-subscribe-animation-volume" min="0" max="1" step="0.1" value="1.0" style="display: none;">
@@ -2060,20 +2060,20 @@
                     <div class="event-sound-card">
                         <div class="event-header">
                             <i data-lucide="share-2" style="color: #8b5cf6;"></i>
-                            <h4>Share</h4>
-                            <button data-test-sound="share" class="btn btn-xs btn-ghost" title="Test Sound" aria-label="Test Share sound">
+                            <h4 data-i18n="plugins.soundboard.ui.events.share">Share</h4>
+                            <button data-test-sound="share" class="btn btn-xs btn-ghost" title="Test Sound" aria-label="Test Share sound" data-i18n-title="plugins.soundboard.ui.events.testSound" data-i18n-aria-label="plugins.soundboard.ui.events.testShareSound">
                                 <i data-lucide="play"></i>
                             </button>
                         </div>
                         <div class="sound-section">
                             <div class="section-label">
-                                <i data-lucide="volume-2"></i> Sound
+                                <i data-lucide="volume-2"></i><span data-i18n="plugins.soundboard.ui.table.sound"> Sound</span>
                             </div>
                             <div class="inline-controls">
-                                <input type="text" id="soundboard-share-url" placeholder="Sound URL (MP3)" class="form-input">
+                                <input type="text" id="soundboard-share-url" placeholder="Sound URL (MP3)" data-i18n-placeholder="plugins.soundboard.ui.placeholders.soundUrl" class="form-input">
                             </div>
                             <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;">Volume:</label>
+                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;" data-i18n="plugins.soundboard.ui.events.volume">Volume:</label>
                                 <input type="range" id="soundboard-share-volume-slider" min="0" max="100" value="100" class="volume-slider volume-slider-event">
                                 <span id="soundboard-share-volume-label" class="volume-label">100%</span>
                                 <input type="number" id="soundboard-share-volume" min="0" max="1" step="0.1" value="1.0" style="display: none;">
@@ -2081,19 +2081,19 @@
                         </div>
                         <div class="animation-section">
                             <div class="section-label">
-                                <i data-lucide="video"></i><span data-i18n="generated.63a0da00767a"> Animation (MP4/GIF)
+                                <i data-lucide="video"></i><span data-i18n="plugins.soundboard.labels.animation_mp4_gif_63a0da"> Animation (MP4/GIF)
                             </span></div>
                             <div class="inline-controls">
-                                <input type="text" id="soundboard-share-animation-url" placeholder="Animation URL" class="form-input">
+                                <input type="text" id="soundboard-share-animation-url" placeholder="Animation URL" data-i18n-placeholder="plugins.soundboard.ui.placeholders.animationUrl" class="form-input">
                                 <select id="soundboard-share-animation-type" class="form-select">
-                                    <option value="none">None</option>
-                                    <option value="video">Video</option>
-                                    <option value="gif">GIF</option>
-                                    <option value="image">Image</option>
+                                    <option value="none" data-i18n="plugins.soundboard.ui.animation.none">None</option>
+                                    <option value="video" data-i18n="plugins.soundboard.ui.animation.video">Video</option>
+                                    <option value="gif" data-i18n="plugins.soundboard.ui.animation.gif">GIF</option>
+                                    <option value="image" data-i18n="plugins.soundboard.ui.animation.image">Image</option>
                                 </select>
                             </div>
                             <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;">Volume:</label>
+                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;" data-i18n="plugins.soundboard.ui.events.volume">Volume:</label>
                                 <input type="range" id="soundboard-share-animation-volume-slider" min="0" max="100" value="100" class="volume-slider volume-slider-event">
                                 <span id="soundboard-share-animation-volume-label" class="volume-label">100%</span>
                                 <input type="number" id="soundboard-share-animation-volume" min="0" max="1" step="0.1" value="1.0" style="display: none;">
@@ -2105,20 +2105,20 @@
                     <div class="event-sound-card">
                         <div class="event-header">
                             <i data-lucide="gift" style="color: #ec4899;"></i>
-                            <h4 data-i18n="generated.137e71fdc88b">Default Gift Sound</h4>
-                            <button data-test-sound="gift" class="btn btn-xs btn-ghost" title="Test Sound" aria-label="Test Gift sound">
+                            <h4 data-i18n="plugins.soundboard.labels.default_gift_sound">Default Gift Sound</h4>
+                            <button data-test-sound="gift" class="btn btn-xs btn-ghost" title="Test Sound" aria-label="Test Gift sound" data-i18n-title="plugins.soundboard.ui.events.testSound" data-i18n-aria-label="plugins.soundboard.ui.events.testGiftSound">
                                 <i data-lucide="play"></i>
                             </button>
                         </div>
                         <div class="sound-section">
                             <div class="section-label">
-                                <i data-lucide="volume-2"></i><span data-i18n="generated.67c19225241a"> Sound (fallback for unconfigured gifts)
+                                <i data-lucide="volume-2"></i><span data-i18n="plugins.soundboard.labels.sound_fallback_for_unconfigured_gifts"> Sound (fallback for unconfigured gifts)
                             </span></div>
                             <div class="inline-controls">
-                                <input type="text" id="soundboard-gift-url" placeholder="Sound URL (MP3)" class="form-input">
+                                <input type="text" id="soundboard-gift-url" placeholder="Sound URL (MP3)" data-i18n-placeholder="plugins.soundboard.ui.placeholders.soundUrl" class="form-input">
                             </div>
                             <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;">Volume:</label>
+                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;" data-i18n="plugins.soundboard.ui.events.volume">Volume:</label>
                                 <input type="range" id="soundboard-gift-volume-slider" min="0" max="100" value="100" class="volume-slider volume-slider-event">
                                 <span id="soundboard-gift-volume-label" class="volume-label">100%</span>
                                 <input type="number" id="soundboard-gift-volume" min="0" max="1" step="0.1" value="1.0" style="display: none;">
@@ -2126,26 +2126,26 @@
                         </div>
                         <div class="animation-section">
                             <div class="section-label">
-                                <i data-lucide="video"></i><span data-i18n="generated.8652f82885a7"> Animation (fallback)
+                                <i data-lucide="video"></i><span data-i18n="plugins.soundboard.labels.animation_fallback"> Animation (fallback)
                             </span></div>
                             <div class="inline-controls">
-                                <input type="text" id="soundboard-gift-animation-url" placeholder="Animation URL" class="form-input">
+                                <input type="text" id="soundboard-gift-animation-url" placeholder="Animation URL" data-i18n-placeholder="plugins.soundboard.ui.placeholders.animationUrl" class="form-input">
                                 <select id="soundboard-gift-animation-type" class="form-select">
-                                    <option value="none">None</option>
-                                    <option value="video">Video</option>
-                                    <option value="gif">GIF</option>
-                                    <option value="image">Image</option>
+                                    <option value="none" data-i18n="plugins.soundboard.ui.animation.none">None</option>
+                                    <option value="video" data-i18n="plugins.soundboard.ui.animation.video">Video</option>
+                                    <option value="gif" data-i18n="plugins.soundboard.ui.animation.gif">GIF</option>
+                                    <option value="image" data-i18n="plugins.soundboard.ui.animation.image">Image</option>
                                 </select>
                             </div>
                             <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;">Volume:</label>
+                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;" data-i18n="plugins.soundboard.ui.events.volume">Volume:</label>
                                 <input type="range" id="soundboard-gift-animation-volume-slider" min="0" max="100" value="100" class="volume-slider volume-slider-event">
                                 <span id="soundboard-gift-animation-volume-label" class="volume-label">100%</span>
                                 <input type="number" id="soundboard-gift-animation-volume" min="0" max="1" step="0.1" value="1.0" style="display: none;">
                             </div>
                         </div>
                         <p style="font-size: 0.8rem; color: var(--color-text-secondary); margin-top: 8px;">
-                            <i data-lucide="info" style="width: 14px; height: 14px; display: inline; vertical-align: middle;"></i><span data-i18n="generated.542c44ab17e7">
+                            <i data-lucide="info" style="width: 14px; height: 14px; display: inline; vertical-align: middle;"></i><span data-i18n="plugins.soundboard.labels.for_gift_specific_sounds_and_animations_use_the">
                             For gift-specific sounds and animations, use the "Gift-Specific Sounds" section below.
                         </span></p>
                     </div>
@@ -2154,20 +2154,20 @@
                     <div class="event-sound-card">
                         <div class="event-header">
                             <i data-lucide="heart" style="color: #ef4444;"></i>
-                            <h4 data-i18n="generated.9c128b09fe65">Like Threshold</h4>
-                            <button data-test-sound="like" class="btn btn-xs btn-ghost" title="Test Sound" aria-label="Test Like sound">
+                            <h4 data-i18n="plugins.soundboard.labels.like_threshold">Like Threshold</h4>
+                            <button data-test-sound="like" class="btn btn-xs btn-ghost" title="Test Sound" aria-label="Test Like sound" data-i18n-title="plugins.soundboard.ui.events.testSound" data-i18n-aria-label="plugins.soundboard.ui.events.testLikeSound">
                                 <i data-lucide="play"></i>
                             </button>
                         </div>
                         <div class="sound-section">
                             <div class="section-label">
-                                <i data-lucide="volume-2"></i> Sound
+                                <i data-lucide="volume-2"></i><span data-i18n="plugins.soundboard.ui.table.sound"> Sound</span>
                             </div>
                             <div class="inline-controls">
-                                <input type="text" id="soundboard-like-url" placeholder="Sound URL (MP3)" class="form-input">
+                                <input type="text" id="soundboard-like-url" placeholder="Sound URL (MP3)" data-i18n-placeholder="plugins.soundboard.ui.placeholders.soundUrl" class="form-input">
                             </div>
                             <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;">Volume:</label>
+                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;" data-i18n="plugins.soundboard.ui.events.volume">Volume:</label>
                                 <input type="range" id="soundboard-like-volume-slider" min="0" max="100" value="100" class="volume-slider volume-slider-event">
                                 <span id="soundboard-like-volume-label" class="volume-label">100%</span>
                                 <input type="number" id="soundboard-like-volume" min="0" max="1" step="0.1" value="1.0" style="display: none;">
@@ -2175,19 +2175,19 @@
                         </div>
                         <div class="animation-section">
                             <div class="section-label">
-                                <i data-lucide="video"></i><span data-i18n="generated.5a98592bd5b7"> Animation (MP4/GIF)
+                                <i data-lucide="video"></i><span data-i18n="plugins.soundboard.labels.animation_mp4_gif_5a9859"> Animation (MP4/GIF)
                             </span></div>
                             <div class="inline-controls">
-                                <input type="text" id="soundboard-like-animation-url" placeholder="Animation URL" class="form-input">
+                                <input type="text" id="soundboard-like-animation-url" placeholder="Animation URL" data-i18n-placeholder="plugins.soundboard.ui.placeholders.animationUrl" class="form-input">
                                 <select id="soundboard-like-animation-type" class="form-select">
-                                    <option value="none">None</option>
-                                    <option value="video">Video</option>
-                                    <option value="gif">GIF</option>
-                                    <option value="image">Image</option>
+                                    <option value="none" data-i18n="plugins.soundboard.ui.animation.none">None</option>
+                                    <option value="video" data-i18n="plugins.soundboard.ui.animation.video">Video</option>
+                                    <option value="gif" data-i18n="plugins.soundboard.ui.animation.gif">GIF</option>
+                                    <option value="image" data-i18n="plugins.soundboard.ui.animation.image">Image</option>
                                 </select>
                             </div>
                             <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;">Volume:</label>
+                                <label style="font-size: 0.8rem; color: var(--color-text-secondary); min-width: 50px;" data-i18n="plugins.soundboard.ui.events.volume">Volume:</label>
                                 <input type="range" id="soundboard-like-animation-volume-slider" min="0" max="100" value="100" class="volume-slider volume-slider-event">
                                 <span id="soundboard-like-animation-volume-label" class="volume-label">100%</span>
                                 <input type="number" id="soundboard-like-animation-volume" min="0" max="1" step="0.1" value="1.0" style="display: none;">
@@ -2195,11 +2195,11 @@
                         </div>
                         <div style="display: flex; gap: 12px; margin-top: 12px;">
                             <div class="form-group" style="flex: 1;">
-                                <label style="font-size: 0.8rem; color: var(--color-text-secondary);" data-i18n="generated.38a30db7c19f">Threshold (likes)</label>
-                                <input type="number" id="soundboard-like-threshold" min="0" value="0" placeholder="0 = disabled" class="form-input">
+                                <label style="font-size: 0.8rem; color: var(--color-text-secondary);" data-i18n="plugins.soundboard.labels.threshold_likes">Threshold (likes)</label>
+                                <input type="number" id="soundboard-like-threshold" min="0" value="0" placeholder="0 = disabled" data-i18n-placeholder="plugins.soundboard.ui.placeholders.likeThresholdDisabled" class="form-input">
                             </div>
                             <div class="form-group" style="flex: 1;">
-                                <label style="font-size: 0.8rem; color: var(--color-text-secondary);" data-i18n="generated.e4c85da1883a">Time Window (s)</label>
+                                <label style="font-size: 0.8rem; color: var(--color-text-secondary);" data-i18n="plugins.soundboard.labels.time_window_s">Time Window (s)</label>
                                 <input type="number" id="soundboard-like-window" min="1" value="10" class="form-input">
                             </div>
                         </div>
@@ -2212,7 +2212,7 @@
         <section class="collapsible-section workspace-panel gift-workspace-panel" data-workspace-panel="gift-mapping">
             <div class="collapsible-header active" data-target="gift-sounds-content">
                 <h3>
-                    <i data-lucide="gift"></i><span data-i18n="generated.3a82dd224fc4">
+                    <i data-lucide="gift"></i><span data-i18n="plugins.soundboard.labels.gift_specific_sounds_animations">
                     Gift-Specific Sounds & Animations
                 </span></h3>
                 <i data-lucide="chevron-down" class="collapsible-toggle"></i>
@@ -2222,16 +2222,16 @@
             <!-- Gift Catalog Browser -->
             <div class="gift-catalog">
                 <div class="gift-catalog-header">
-                    <h4 data-i18n="generated.1a8366f9488a">Available Gifts from Stream</h4>
+                    <h4 data-i18n="plugins.soundboard.labels.available_gifts_from_stream">Available Gifts from Stream</h4>
                     <button id="refresh-catalog-btn" class="btn btn-sm btn-primary">
-                        <i data-lucide="refresh-cw" id="refresh-icon"></i><span data-i18n="generated.d57ef9f28bdd">
+                        <i data-lucide="refresh-cw" id="refresh-icon"></i><span data-i18n="plugins.soundboard.labels.refresh_catalog">
                         Refresh Catalog
                     </span></button>
                 </div>
                 <div class="gift-catalog-search" style="display: flex; gap: 8px; align-items: center; margin-top: 10px;">
                     <i data-lucide="search" style="width: 16px; height: 16px; color: var(--color-text-secondary); flex-shrink: 0;"></i>
-                    <input type="search" id="gift-catalog-search-input" placeholder="Search gifts by ID or name..." class="form-input" style="flex: 1;">
-                    <button id="clear-gift-catalog-search" class="btn btn-sm btn-ghost" type="button">Clear</button>
+                    <input type="search" id="gift-catalog-search-input" placeholder="Search gifts by ID or name..." data-i18n-placeholder="plugins.soundboard.ui.placeholders.searchGifts" class="form-input" style="flex: 1;">
+                    <button id="clear-gift-catalog-search" class="btn btn-sm btn-ghost" type="button" data-i18n="plugins.soundboard.ui.actions.clear">Clear</button>
                 </div>
                 <div id="gift-catalog-info" class="gift-catalog-info"></div>
                 <div id="gift-catalog-list" class="gift-catalog-grid"></div>
@@ -2240,14 +2240,14 @@
             <!-- MyInstants Search -->
             <div class="myinstants-search">
                 <h4>
-                    <i data-lucide="search"></i><span data-i18n="generated.b70a45478fff">
+                    <i data-lucide="search"></i><span data-i18n="plugins.soundboard.labels.search_myinstants">
                     Search MyInstants
                 </span></h4>
                 <div class="search-box">
-                    <input type="text" id="myinstants-search-input" placeholder="Search for sound effects..." class="form-input">
+                    <input type="text" id="myinstants-search-input" placeholder="Search for sound effects..." data-i18n-placeholder="plugins.soundboard.ui.placeholders.searchSoundEffects" class="form-input">
                     <button id="myinstants-search-btn" class="btn btn-primary">
                         <i data-lucide="search"></i>
-                        Search
+                        <span data-i18n="plugins.soundboard.ui.actions.search">Search</span>
                     </button>
                 </div>
                 <div id="myinstants-results" class="myinstants-results"></div>
@@ -2256,14 +2256,14 @@
             <!-- GIF Search -->
             <div class="gif-search">
                 <h4>
-                    <i data-lucide="image"></i><span data-i18n="generated.dd3889ed04ed">
+                    <i data-lucide="image"></i><span data-i18n="plugins.soundboard.labels.search_gifs">
                     Search GIFs
                 </span></h4>
                 <div class="search-box">
-                    <input type="text" id="gif-search-input" placeholder="Search for GIF animations..." class="form-input">
+                    <input type="text" id="gif-search-input" placeholder="Search for GIF animations..." data-i18n-placeholder="plugins.soundboard.ui.placeholders.searchGifAnimations" class="form-input">
                     <button id="gif-search-btn" class="btn btn-primary">
                         <i data-lucide="search"></i>
-                        Search
+                        <span data-i18n="plugins.soundboard.ui.actions.search">Search</span>
                     </button>
                 </div>
                 <div id="gif-search-status" style="color: var(--color-text-secondary); font-size: 0.85rem; margin-top: 8px;"></div>
@@ -2273,39 +2273,39 @@
             <!-- Add Gift Sound -->
             <div class="add-gift-sound">
                 <h4>
-                    <i data-lucide="plus-circle"></i><span data-i18n="generated.73c182c486d8">
+                    <i data-lucide="plus-circle"></i><span data-i18n="plugins.soundboard.labels.add_edit_gift_sound">
                     Add/Edit Gift Sound
                 </span></h4>
                 <div class="form-grid">
-                    <input type="number" id="new-gift-id" placeholder="Gift ID" readonly class="form-input">
-                    <input type="text" id="new-gift-label" placeholder="Label" readonly class="form-input">
-                    <input type="text" id="new-gift-url" placeholder="MP3 URL" class="form-input">
-                    <input type="number" id="new-gift-volume" min="0" max="1" step="0.1" value="1.0" placeholder="Volume" class="form-input">
+                    <input type="number" id="new-gift-id" placeholder="Gift ID" data-i18n-placeholder="plugins.soundboard.ui.placeholders.giftId" readonly class="form-input">
+                    <input type="text" id="new-gift-label" placeholder="Label" data-i18n-placeholder="plugins.soundboard.ui.placeholders.label" readonly class="form-input">
+                    <input type="text" id="new-gift-url" placeholder="MP3 URL" data-i18n-placeholder="plugins.soundboard.ui.placeholders.mp3Url" class="form-input">
+                    <input type="number" id="new-gift-volume" min="0" max="1" step="0.1" value="1.0" placeholder="Volume" data-i18n-placeholder="plugins.soundboard.ui.placeholders.volume" class="form-input">
                 </div>
                 <div class="form-grid">
-                    <input type="text" id="new-gift-animation-url" placeholder="Animation URL (optional)" class="form-input">
+                    <input type="text" id="new-gift-animation-url" placeholder="Animation URL (optional)" data-i18n-placeholder="plugins.soundboard.ui.placeholders.animationUrlOptional" class="form-input">
                     <select id="new-gift-animation-type" class="form-select">
-                        <option value="none" data-i18n="generated.7e00e0aa7425">No Animation</option>
-                        <option value="image">Image</option>
-                        <option value="video">Video</option>
-                        <option value="gif">GIF</option>
+                        <option value="none" data-i18n="plugins.soundboard.labels.no_animation">No Animation</option>
+                        <option value="image" data-i18n="plugins.soundboard.ui.animation.image">Image</option>
+                        <option value="video" data-i18n="plugins.soundboard.ui.animation.video">Video</option>
+                        <option value="gif" data-i18n="plugins.soundboard.ui.animation.gif">GIF</option>
                     </select>
-                    <input type="number" id="new-gift-animation-volume" min="0" max="1" step="0.1" value="1.0" placeholder="Animation Volume" class="form-input">
+                    <input type="number" id="new-gift-animation-volume" min="0" max="1" step="0.1" value="1.0" placeholder="Animation Volume" data-i18n-placeholder="plugins.soundboard.ui.placeholders.animationVolume" class="form-input">
                 </div>
                 <div class="form-actions">
                     <button id="add-gift-sound-btn" class="btn btn-primary">
-                        <i data-lucide="plus"></i><span data-i18n="generated.821e34f196de">
+                        <i data-lucide="plus"></i><span data-i18n="plugins.soundboard.labels.add_update_gift_sound">
                         Add/Update Gift Sound
                     </span></button>
-                    <button id="clear-gift-form-btn" class="btn btn-ghost">Clear</button>
+                    <button id="clear-gift-form-btn" class="btn btn-ghost" data-i18n="plugins.soundboard.ui.actions.clear">Clear</button>
                 </div>
             </div>
 
             <div class="workspace-card gift-library-card">
                 <div class="workspace-header" style="margin-bottom: 0; padding-bottom: 12px;">
                     <div>
-                        <h2><i data-lucide="search"></i><span data-i18n="generated.77b92a9d0f08"> Library Search</span></h2>
-                        <p class="workspace-subtitle" data-i18n="generated.a0b0fdffc57f">Search MyInstants and GIFs without leaving the gift mapping workspace.</p>
+                        <h2><i data-lucide="search"></i><span data-i18n="plugins.soundboard.labels.library_search"> Library Search</span></h2>
+                        <p class="workspace-subtitle" data-i18n="plugins.soundboard.labels.search_myinstants_and_gifs_without_leaving_the_gift">Search MyInstants and GIFs without leaving the gift mapping workspace.</p>
                     </div>
                 </div>
                 <div class="library-grid" style="margin-top: 4px;">
@@ -2315,30 +2315,30 @@
                 <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 12px; margin-top: 12px;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <i data-lucide="info" style="color: #3b82f6; width: 18px; height: 18px; flex-shrink: 0;"></i>
-                        <span style="font-size: 0.85rem; line-height: 1.4;"><span data-i18n="generated.0b85661400eb">
-                            Search for sounds by keyword or browse by category. Click </span><strong>Preview</strong><span data-i18n="generated.62b034a08433"> to test a sound, or </span><strong>Use</strong><span data-i18n="generated.1f17a20125c8"> to bind it to a gift.
+                        <span style="font-size: 0.85rem; line-height: 1.4;"><span data-i18n="plugins.soundboard.labels.search_for_sounds_by_keyword_or_browse_by">
+                            Search for sounds by keyword or browse by category. Click </span><strong data-i18n="plugins.soundboard.ui.search.preview">Preview</strong><span data-i18n="plugins.soundboard.labels.to_test_a_sound_or"> to test a sound, or </span><strong data-i18n="plugins.soundboard.ui.search.use">Use</strong><span data-i18n="plugins.soundboard.labels.to_bind_it_to_a_gift"> to bind it to a gift.
                         </span></span>
                     </div>
                 </div>
                 <div class="search-filters" style="margin-top: 12px;">
-                    <input type="text" id="advanced-search-input" placeholder="Search for sound effects..." class="form-input">
+                    <input type="text" id="advanced-search-input" placeholder="Search for sound effects..." data-i18n-placeholder="plugins.soundboard.ui.placeholders.searchSoundEffects" class="form-input">
                     <button id="trending-search-btn" class="btn btn-ghost">
                         <i data-lucide="trending-up"></i>
-                        Trending
+                        <span data-i18n="plugins.soundboard.ui.search.trending">Trending</span>
                     </button>
                     <button id="advanced-search-btn" class="btn btn-primary">
                         <i data-lucide="search"></i>
-                        Search
+                        <span data-i18n="plugins.soundboard.ui.actions.search">Search</span>
                     </button>
                 </div>
                 <div class="category-buttons" id="category-buttons-container" style="margin-top: 12px;">
                     <button class="category-btn active" data-category="all">
                         <i data-lucide="grid-3x3" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px;"></i>
-                        All
+                        <span data-i18n="plugins.soundboard.ui.search.all">All</span>
                     </button>
                 </div>
                 <div id="advanced-search-results" class="myinstants-results" style="margin-top: 12px;">
-                    <div class="text-gray-400 text-sm text-center py-4" data-i18n="generated.9a0af4c44b4c">
+                    <div class="text-gray-400 text-sm text-center py-4" data-i18n="plugins.soundboard.labels.search_for_sounds_or_browse_trending_sounds_to">
                         Search for sounds or browse trending sounds to get started
                     </div>
                 </div>
@@ -2350,16 +2350,16 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 12px; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <i data-lucide="download" style="color: var(--color-accent-primary); width: 20px; height: 20px;"></i>
-                        <span style="font-weight: 600; color: var(--color-text-primary);" data-i18n="generated.b74c1fbd579b">Audio-Animationen Verwaltung</span>
+                        <span style="font-weight: 600; color: var(--color-text-primary);" data-i18n="plugins.soundboard.labels.audio_animationen_verwaltung">Audio-Animationen Verwaltung</span>
                     </div>
                     <div style="display: flex; gap: 8px;">
                         <button id="export-animations-btn" class="btn btn-sm btn-ghost">
                             <i data-lucide="download"></i>
-                            Exportieren
+                            <span data-i18n="plugins.soundboard.soundboard.animations.export">Exportieren</span>
                         </button>
                         <label for="import-animations-file" class="btn btn-sm btn-primary" style="cursor: pointer; margin: 0;">
                             <i data-lucide="upload"></i>
-                            Importieren
+                            <span data-i18n="plugins.soundboard.soundboard.animations.import">Importieren</span>
                         </label>
                         <input type="file" id="import-animations-file" accept=".json" style="display: none;">
                     </div>
@@ -2368,27 +2368,27 @@
                 <div class="gift-list-toolbar">
                     <div class="gift-list-search">
                         <i data-lucide="search"></i>
-                        <input type="text" id="gift-sounds-search-input" placeholder="Type to filter by gift ID, label, sound, or animation..." class="form-input">
-                        <button id="gift-sounds-search-clear" class="btn btn-sm btn-ghost" type="button">
+                        <input type="text" id="gift-sounds-search-input" placeholder="Type to filter by gift ID, label, sound, or animation..." data-i18n-placeholder="plugins.soundboard.ui.placeholders.filterGifts" class="form-input">
+                        <button id="gift-sounds-search-clear" class="btn btn-sm btn-ghost" type="button" data-i18n="plugins.soundboard.ui.actions.clear">
                             Clear
                         </button>
                     </div>
                     <div class="gift-list-summary">
-                        <span id="gift-sounds-result-count" data-i18n="generated.87a4332ffb6d">0 / 0 gifts</span>
-                        <span id="gift-sounds-result-hint" data-i18n="generated.6b5da97d0a59">Click a column to sort. Type to filter the list.</span>
+                        <span id="gift-sounds-result-count" data-i18n="plugins.soundboard.labels.0_0_gifts">0 / 0 gifts</span>
+                        <span id="gift-sounds-result-hint" data-i18n="plugins.soundboard.labels.click_a_column_to_sort_type_to_filter">Click a column to sort. Type to filter the list.</span>
                     </div>
                 </div>
 
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="giftId"><span data-i18n="generated.6c2e68b32cee">Gift ID</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
-                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="label"><span>Label</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
-                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="mp3Url"><span>Sound</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
-                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="volume"><span data-i18n="soundboard.sounds.volume">Volume</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
-                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="animation"><span>Animation</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
-                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="animationVolume"><span data-i18n="generated.512d4c719b92">Anim. Vol.</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
-                            <th>Actions</th>
+                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="giftId"><span data-i18n="plugins.soundboard.labels.gift_id">Gift ID</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
+                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="label"><span data-i18n="plugins.soundboard.ui.table.label">Label</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
+                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="mp3Url"><span data-i18n="plugins.soundboard.ui.table.sound">Sound</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
+                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="volume"><span data-i18n="plugins.soundboard.soundboard.sounds.volume">Volume</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
+                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="animation"><span data-i18n="plugins.soundboard.ui.table.animation">Animation</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
+                            <th><button type="button" class="gift-sort-header" data-gift-sort-key="animationVolume"><span data-i18n="plugins.soundboard.labels.anim_vol">Anim. Vol.</span><i data-lucide="arrow-up-down" data-sort-icon></i></button></th>
+                            <th data-i18n="plugins.soundboard.ui.table.actions">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="gift-sounds-list"></tbody>
@@ -2401,50 +2401,50 @@
                 <section class="workspace-panel" data-workspace-panel="advanced-tools">
                     <div class="workspace-header">
                         <div>
-                            <h2><i data-lucide="wrench"></i><span data-i18n="generated.0f9f0c7c2a51"> Advanced Tools</span></h2>
-                            <p class="workspace-subtitle" data-i18n="generated.0805321e8589">Diagnostics, import/export, and low-frequency maintenance tools.</p>
+                            <h2><i data-lucide="wrench"></i><span data-i18n="plugins.soundboard.labels.advanced_tools"> Advanced Tools</span></h2>
+                            <p class="workspace-subtitle" data-i18n="plugins.soundboard.labels.diagnostics_import_export_and_low_frequency_maintenance_tools">Diagnostics, import/export, and low-frequency maintenance tools.</p>
                         </div>
                     </div>
                     <div class="tools-grid">
                         <div class="workspace-section-stack">
                             <div class="workspace-card">
                                 <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
-                                    <h3 data-i18n="generated.07e848c2c657">Audio Diagnostics</h3>
-                                    <button id="minimize-audio-test-btn" class="btn btn-sm btn-ghost" type="button" title="Collapse section">
+                                    <h3 data-i18n="plugins.soundboard.labels.audio_diagnostics">Audio Diagnostics</h3>
+                                    <button id="minimize-audio-test-btn" class="btn btn-sm btn-ghost" type="button" title="Collapse section" data-i18n-title="plugins.soundboard.ui.actions.collapseSection">
                                         <i data-lucide="chevron-up"></i>
                                     </button>
                                 </div>
                                 <div id="audio-test-content" class="workspace-section-stack" style="margin-top: 12px;">
                                     <div class="settings-grid">
                                         <div class="workspace-card">
-                                            <span class="metric-label" data-i18n="generated.7c176edbc266">Audio Context</span>
-                                            <div id="audio-context-status" class="metric-value">Unknown</div>
+                                            <span class="metric-label" data-i18n="plugins.soundboard.labels.audio_context">Audio Context</span>
+                                            <div id="audio-context-status" class="metric-value" data-i18n="plugins.soundboard.ui.status.unknown">Unknown</div>
                                         </div>
                                         <div class="workspace-card">
-                                            <span class="metric-label">Autoplay</span>
-                                            <div id="autoplay-status" class="metric-value">Checking...</div>
+                                            <span class="metric-label" data-i18n="plugins.soundboard.ui.status.autoplay">Autoplay</span>
+                                            <div id="autoplay-status" class="metric-value" data-i18n="plugins.soundboard.ui.status.checking">Checking...</div>
                                         </div>
                                         <div class="workspace-card">
-                                            <span class="metric-label" data-i18n="generated.0157c4cc4326">Active Sounds</span>
-                                            <div id="active-sounds-count" class="metric-value">0</div>
+                                            <span class="metric-label" data-i18n="plugins.soundboard.labels.active_sounds">Active Sounds</span>
+                                            <output id="active-sounds-count" class="metric-value">0</output>
                                         </div>
                                     </div>
                                     <div class="quick-actions">
                                         <button id="enable-audio-btn" class="btn btn-primary" type="button">
-                                            <i data-lucide="volume-2"></i><span data-i18n="generated.833033bef0e7">
+                                            <i data-lucide="volume-2"></i><span data-i18n="plugins.soundboard.labels.enable_audio_permissions">
                                             Enable Audio Permissions
                                         </span></button>
                                         <button id="test-audio-btn" class="btn btn-ghost" type="button">
-                                            <i data-lucide="play"></i><span data-i18n="generated.be4457ae9111">
+                                            <i data-lucide="play"></i><span data-i18n="plugins.soundboard.labels.test_audio">
                                             Test Audio
                                         </span></button>
                                         <button id="clear-audio-log-btn" class="btn btn-ghost" type="button">
-                                            <i data-lucide="trash-2"></i><span data-i18n="generated.57ba9e13b597">
+                                            <i data-lucide="trash-2"></i><span data-i18n="plugins.soundboard.labels.clear_log">
                                             Clear Log
                                         </span></button>
                                         <label class="checkbox-label">
                                             <input type="checkbox" id="verbose-logging">
-                                            <span data-i18n="generated.cdc35dc78625">Verbose logging</span>
+                                            <span data-i18n="plugins.soundboard.labels.verbose_logging">Verbose logging</span>
                                         </label>
                                     </div>
                                     <div id="audio-test-player" style="display: none;">
@@ -2453,7 +2453,7 @@
                                         </audio>
                                     </div>
                                     <div id="audio-debug-log" class="audio-debug-log">
-                                        <div style="color: #60a5fa;" data-i18n="generated.50b699b82b29">Audio system ready. Waiting for events...</div>
+                                        <div style="color: #60a5fa;" data-i18n="plugins.soundboard.labels.audio_system_ready_waiting_for_events">Audio system ready. Waiting for events...</div>
                                     </div>
                                 </div>
                             </div>
@@ -2461,27 +2461,27 @@
                         <div class="workspace-section-stack">
                             <div class="workspace-card">
                                 <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
-                                    <h3 data-i18n="generated.f7de70e986aa">Manual Config Import / Export</h3>
-                                    <button id="minimize-config-import-export-btn" class="btn btn-sm btn-ghost" type="button" title="Collapse section">
+                                    <h3 data-i18n="plugins.soundboard.labels.manual_config_import_export">Manual Config Import / Export</h3>
+                                    <button id="minimize-config-import-export-btn" class="btn btn-sm btn-ghost" type="button" title="Collapse section" data-i18n-title="plugins.soundboard.ui.actions.collapseSection">
                                         <i data-lucide="chevron-up"></i>
                                     </button>
                                 </div>
                                 <div id="config-import-export-content" class="workspace-section-stack" style="margin-top: 12px;">
-                                    <textarea id="config-import-export-textarea" class="form-input" rows="16" placeholder="Load or paste exported soundboard animation JSON here."></textarea>
+                                    <textarea id="config-import-export-textarea" class="form-input" rows="16" placeholder="Load or paste exported soundboard animation JSON here." data-i18n-placeholder="plugins.soundboard.ui.placeholders.configImportExport"></textarea>
                                     <div class="quick-actions">
                                         <button id="load-config-to-textarea-btn" class="btn btn-ghost" type="button">
-                                            <i data-lucide="download"></i><span data-i18n="generated.1bd416d9ccaf">
+                                            <i data-lucide="download"></i><span data-i18n="plugins.soundboard.labels.load_config">
                                             Load Config
                                         </span></button>
                                         <button id="import-config-from-textarea-btn" class="btn btn-primary" type="button">
-                                            <i data-lucide="upload"></i><span data-i18n="generated.aa77879469bb">
+                                            <i data-lucide="upload"></i><span data-i18n="plugins.soundboard.labels.import_text">
                                             Import Text
                                         </span></button>
                                         <button id="copy-config-textarea-btn" class="btn btn-ghost" type="button">
                                             <i data-lucide="copy"></i>
-                                            Copy
+                                            <span data-i18n="plugins.soundboard.ui.actions.copy">Copy</span>
                                         </button>
-                                        <button id="clear-config-textarea-btn" class="btn btn-ghost" type="button">
+                                        <button id="clear-config-textarea-btn" class="btn btn-ghost" type="button" data-i18n="plugins.soundboard.ui.actions.clear">
                                             <i data-lucide="x"></i>
                                             Clear
                                         </button>
@@ -2501,26 +2501,26 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>
-                    <i data-lucide="gift"></i><span data-i18n="generated.49ce977c6ce6">
+                    <i data-lucide="gift"></i><span data-i18n="plugins.soundboard.labels.select_gift_for_sound">
                     Select Gift for Sound
                 </span></h3>
-                <button class="modal-close" id="close-gift-modal" type="button" aria-label="Close gift catalog modal" title="Close gift catalog modal">
+                <button class="modal-close" id="close-gift-modal" type="button" aria-label="Close gift catalog modal" title="Close gift catalog modal" data-i18n-aria-label="plugins.soundboard.ui.accessibility.closeGiftCatalogModal" data-i18n-title="plugins.soundboard.ui.accessibility.closeGiftCatalogModal">
                     <i data-lucide="x" style="width: 24px; height: 24px;"></i>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="selected-sound-info">
-                    <h4 data-i18n="generated.f128f0f089e8">Selected Sound:</h4>
+                    <h4 data-i18n="plugins.soundboard.labels.selected_sound">Selected Sound:</h4>
                     <div class="selected-sound-name" id="selected-sound-name">-</div>
                 </div>
                 <div class="gift-catalog-search" style="display: flex; gap: 8px; align-items: center; margin: 12px 0 14px;">
                     <i data-lucide="search" style="width: 16px; height: 16px; color: var(--color-text-secondary); flex-shrink: 0;"></i>
-                    <input type="search" id="modal-gift-search-input" placeholder="Search gifts by ID or name..." class="form-input" style="flex: 1;">
-                    <button id="clear-modal-gift-search" class="btn btn-sm btn-ghost" type="button">Clear</button>
+                    <input type="search" id="modal-gift-search-input" placeholder="Search gifts by ID or name..." data-i18n-placeholder="plugins.soundboard.ui.placeholders.searchGifts" class="form-input" style="flex: 1;">
+                    <button id="clear-modal-gift-search" class="btn btn-sm btn-ghost" type="button" data-i18n="plugins.soundboard.ui.actions.clear">Clear</button>
                 </div>
                 <div id="modal-gift-search-summary" style="color: var(--color-text-secondary); font-size: 0.85rem; margin-bottom: 10px;"></div>
                 <div class="gift-grid" id="modal-gift-grid">
-                    <div class="text-gray-400 text-sm text-center py-8" data-i18n="generated.d05498bb1348">Loading gifts...</div>
+                    <div class="text-gray-400 text-sm text-center py-8" data-i18n="plugins.soundboard.labels.loading_gifts">Loading gifts...</div>
                 </div>
             </div>
         </div>

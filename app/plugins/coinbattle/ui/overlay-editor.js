@@ -1,3 +1,14 @@
+function translateEditor(key, fallback, params = {}) {
+  const fullKey = `plugins.coinbattle.${key}`;
+  const translated = window.i18n?.t?.(fullKey, params);
+  if (translated && translated !== fullKey) {
+    return translated;
+  }
+  return fallback.replace(/\{(\w+)\}/g, (match, name) => (
+    Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+  ));
+}
+
 /**
  * Overlay Editor Module
  * Grid-based positioning system for CoinBattle overlay elements
@@ -273,7 +284,7 @@ class OverlayEditor {
    * Create new layout
    */
   createNewLayout() {
-    const name = prompt('Layout Name:');
+    const name = prompt(translateEditor('runtime.layout_editor.layout_name_prompt', 'Layout name:'));
     if (!name) return;
     
     const id = `custom_${Date.now()}`;
@@ -300,7 +311,10 @@ class OverlayEditor {
   duplicateLayout() {
     if (!this.currentLayout) return;
     
-    const name = prompt('Name für dupliziertes Layout:', `${this.currentLayout.name} (Kopie)`);
+    const name = prompt(
+      translateEditor('runtime.layout_editor.duplicate_name_prompt', 'Name for duplicated layout:'),
+      translateEditor('runtime.layout_editor.duplicate_name_default', '{name} (Copy)', { name: this.currentLayout.name })
+    );
     if (!name) return;
     
     const id = `custom_${Date.now()}`;
@@ -325,11 +339,11 @@ class OverlayEditor {
   async deleteLayout() {
     if (!this.currentLayout) return;
     if (this.currentLayout.id.startsWith('default_')) {
-      alert('Standard-Layouts können nicht gelöscht werden.');
+      alert(translateEditor('runtime.layout_editor.delete_default_layout', 'Default layouts cannot be deleted.'));
       return;
     }
     
-    if (!confirm(`Layout "${this.currentLayout.name}" wirklich löschen?`)) return;
+    if (!confirm(translateEditor('runtime.layout_editor.delete_confirm', 'Delete layout "{name}"?', { name: this.currentLayout.name }))) return;
     
     try {
       const response = await fetch(`/api/plugins/coinbattle/overlay/layouts/${this.currentLayout.id}`, {
@@ -340,11 +354,11 @@ class OverlayEditor {
         this.layouts.delete(this.currentLayout.id);
         this.updateLayoutSelect();
         this.loadLayout('default_1920x1080');
-        this.showMessage('Layout gelöscht', 'success');
+        this.showMessage(translateEditor('runtime.layout_editor.layout_deleted', 'Layout deleted'), 'success');
       }
     } catch (error) {
       console.error('Failed to delete layout:', error);
-      this.showMessage('Fehler beim Löschen', 'error');
+      this.showMessage(translateEditor('runtime.layout_editor.delete_failed', 'Could not delete layout'), 'error');
     }
   }
 
@@ -384,11 +398,11 @@ class OverlayEditor {
         this.layouts.set(layout.id, layout);
         this.currentLayout = layout;
         this.updateLayoutSelect();
-        this.showMessage('Layout gespeichert', 'success');
+        this.showMessage(translateEditor('runtime.layout_editor.layout_saved', 'Layout saved'), 'success');
       }
     } catch (error) {
       console.error('Failed to save layout:', error);
-      this.showMessage('Fehler beim Speichern', 'error');
+      this.showMessage(translateEditor('runtime.layout_editor.save_failed', 'Could not save layout'), 'error');
     }
   }
 
@@ -408,7 +422,7 @@ class OverlayEditor {
     a.click();
     
     URL.revokeObjectURL(url);
-    this.showMessage('Layout exportiert', 'success');
+    this.showMessage(translateEditor('runtime.layout_editor.layout_exported', 'Layout exported'), 'success');
   }
 
   /**
@@ -436,10 +450,10 @@ class OverlayEditor {
         if (select) select.value = layout.id;
         
         this.loadLayout(layout.id);
-        this.showMessage('Layout importiert', 'success');
+        this.showMessage(translateEditor('runtime.layout_editor.layout_imported', 'Layout imported'), 'success');
       } catch (error) {
         console.error('Failed to import layout:', error);
-        this.showMessage('Fehler beim Importieren', 'error');
+        this.showMessage(translateEditor('runtime.layout_editor.import_failed', 'Could not import layout'), 'error');
       }
     };
     
@@ -450,7 +464,7 @@ class OverlayEditor {
    * Reset to default layout
    */
   resetLayout() {
-    if (!confirm('Layout auf Standard zurücksetzen?')) return;
+    if (!confirm(translateEditor('runtime.layout_editor.reset_confirm', 'Reset layout to its default?'))) return;
     
     const width = parseInt(document.getElementById('overlayWidth').value);
     const height = parseInt(document.getElementById('overlayHeight').value);
@@ -463,7 +477,7 @@ class OverlayEditor {
       this.loadLayout('default_1920x1080');
     }
     
-    this.showMessage('Layout zurückgesetzt', 'success');
+    this.showMessage(translateEditor('runtime.layout_editor.layout_reset', 'Layout reset'), 'success');
   }
 
   /**

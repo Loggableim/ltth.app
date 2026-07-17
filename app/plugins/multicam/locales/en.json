@@ -1,104 +1,135 @@
 {
-  "multicam": {
+  "plugins": {
+    "multicam": {
+      "multicam": {
     "title": "Multi-Cam Switcher",
     "subtitle": "Stream Camera Management",
     "safety_lock": "⚠️ SAFETY LOCK ACTIVE - Too many rapid switches detected. Waiting 60 seconds...",
+    "runtime": {
+      "server_unreachable": "The server is not responding. Make sure the LTTH server is running and a TikTok stream is connected.",
+      "retry_load": "🔄 Reload",
+      "server_error": "Server error: {error}",
+      "unknown_error": "Unknown error",
+      "catalog_load_failed": "Could not load the gift catalog. Make sure the LTTH server is running and a TikTok stream is connected.",
+      "empty_catalog": "No gifts are in the catalog. Connect a TikTok stream to load the catalog.",
+      "tier_whale": "🐋 Whale (10,000+)",
+      "tier_large": "🔥 Large (1,000–9,999)",
+      "tier_medium": "💎 Medium (100–999)",
+      "tier_small": "🪙 Small (1–99)",
+      "gift_count": "{count} gifts",
+      "no_filtered_gifts": "No gifts match the current filter.",
+      "no_mapping": "— No assignment —",
+      "minimum_coins": "Min. coins:",
+      "unsaved_changes": "🟡 Unsaved changes",
+      "all_changes_saved": "✅ All changes saved",
+      "saving": "⏳ Saving...",
+      "saved": "✅ Saved!",
+      "error": "❌ Error: {error}",
+      "discard_unsaved_changes": "Discard all unsaved changes?",
+      "connection_failed": "Connection failed: {error}",
+      "select_scene": "Please select a scene"
+    },
     "current_scene": "Current Scene:",
-    "status": {
-      "connected": "Connected",
-      "disconnected": "Disconnected"
-    },
-    "connection": {
-      "title": "Connection",
-      "host": "Host",
-      "port": "Port",
-      "password": "Password",
-      "connect": "Connect OBS",
-      "disconnect": "Disconnect OBS",
-      "save_settings": "Save Settings",
-      "auto_connect_settings": "Auto-Connect Settings",
-      "connect_on_start": "Connect on Start",
-      "connect_on_start_desc": "Automatically connect to OBS when plugin initializes",
-      "connect_delay_ms": "Connection Delay (ms)",
-      "connect_delay_ms_desc": "Delay before connecting on start",
-      "auto_reconnect_enabled": "Enable Auto-Reconnect",
-      "auto_reconnect_enabled_desc": "Automatically reconnect if connection is lost",
-      "max_reconnect_minutes": "Max Reconnect Duration (min)",
-      "max_reconnect_minutes_desc": "Stop reconnecting after this many minutes",
-      "health_check_settings": "Health Check Settings",
-      "health_check_enabled": "Enable Health Check",
-      "health_check_enabled_desc": "Periodically verify OBS connection is healthy",
-      "health_check_interval_ms": "Health Check Interval (ms)",
-      "health_check_interval_ms_desc": "Time between health checks"
-    },
-    "switcher": {
-      "title": "Scene Switcher",
-      "select_scene": "Select Scene...",
-      "switch": "Switch"
-    },
-    "hot_buttons": {
-      "title": "Hot Buttons"
-    },
-    "gift_mapping": {
-      "title": "Gift to Scene Mapping",
-      "description": "Select a gift and assign it to an OBS scene. When users send this gift, the scene will automatically switch.",
-      "select_gift": "Select Gift",
-      "loading": "Loading gifts...",
-      "select_scene": "Target Scene",
-      "select_scene_placeholder": "Select Scene...",
-      "min_coins": "Min Coins (optional)",
-      "add": "Add Mapping",
-      "refresh_gifts": "Refresh Gifts",
-      "current_mappings": "Current Mappings:"
-    },
-    "log": {
-      "title": "Activity Log",
-      "waiting": "Waiting for events..."
-    },
-    "cameras": {
-      "title": "Camera Sources",
-      "add": "Add Camera",
-      "name": "Camera Name",
-      "url": "Source URL",
-      "active": "Active",
-      "preview": "Preview"
-    },
-    "overlay": {
-      "title": "Overlay Settings",
-      "url": "Overlay URL",
-      "copy": "Copy URL",
-      "open": "Open Overlay"
-    },
-    "settings": {
-      "save": "Save Settings",
-      "reset": "Reset to Defaults"
+        "status": {
+          "connected": "Connected",
+          "disconnected": "Disconnected"
+        },
+        "connection": {
+          "title": "Connection",
+          "host": "Host",
+          "port": "Port",
+          "password": "Password",
+          "connect": "Connect OBS",
+          "disconnect": "Disconnect OBS",
+          "save_settings": "Save Settings",
+          "auto_connect_settings": "Auto-Connect Settings",
+          "connect_on_start": "Connect on Start",
+          "connect_on_start_desc": "Automatically connect to OBS when plugin initializes",
+          "connect_delay_ms": "Connection Delay (ms)",
+          "connect_delay_ms_desc": "Delay before connecting on start",
+          "auto_reconnect_enabled": "Enable Auto-Reconnect",
+          "auto_reconnect_enabled_desc": "Automatically reconnect if connection is lost",
+          "max_reconnect_minutes": "Max Reconnect Duration (min)",
+          "max_reconnect_minutes_desc": "Stop reconnecting after this many minutes",
+          "health_check_settings": "Health Check Settings",
+          "health_check_enabled": "Enable Health Check",
+          "health_check_enabled_desc": "Periodically verify OBS connection is healthy",
+          "health_check_interval_ms": "Health Check Interval (ms)",
+          "health_check_interval_ms_desc": "Time between health checks"
+        },
+        "switcher": {
+          "title": "Scene Switcher",
+          "select_scene": "Select Scene...",
+          "switch": "Switch"
+        },
+        "hot_buttons": {
+          "title": "Hot Buttons"
+        },
+        "gift_mapping": {
+          "title": "Gift to Scene Mapping",
+          "description": "Select a gift and assign it to an OBS scene. When users send this gift, the scene will automatically switch.",
+          "select_gift": "Select Gift",
+          "loading": "Loading gifts...",
+          "select_scene": "Target Scene",
+          "select_scene_placeholder": "Select Scene...",
+          "min_coins": "Min Coins (optional)",
+          "add": "Add Mapping",
+          "refresh_gifts": "Refresh Gifts",
+          "current_mappings": "Current Mappings:",
+          "filter": "Filter:",
+          "camera_filter": "Camera:",
+          "sort": "Sort order:"
+        },
+        "log": {
+          "title": "Activity Log",
+          "waiting": "Waiting for events..."
+        },
+        "cameras": {
+          "title": "Camera Sources",
+          "add": "Add Camera",
+          "name": "Camera Name",
+          "url": "Source URL",
+          "active": "Active",
+          "preview": "Preview"
+        },
+        "overlay": {
+          "title": "Overlay Settings",
+          "url": "Overlay URL",
+          "copy": "Copy URL",
+          "open": "Open Overlay"
+        },
+        "settings": {
+          "save": "Save Settings",
+          "reset": "Reset to Defaults"
+        }
+      },
+      "labels": {
+        "warte_auf_events": "Waiting for events...",
+        "aktivitats_log": "Activity log",
+        "name_a_z": "Name (A-Z)",
+        "nur_nicht_zugeordnete": "Just unassigned ones",
+        "klein_1_99_coins": "Small (1-99 coins)",
+        "coins_absteigend": "Coins (descending)",
+        "lade_geschenkekatalog": "Loading gift catalog...",
+        "current_scene": "Current Scene:",
+        "multi_cam_switcher_geschenkekatalog": "🎥 Multi-Cam Switcher — Gift Catalog",
+        "wahle_fur_jedes_geschenk_die_obs_szene_kamera": "For each gift, select the OBS scene (camera) that should be switched automatically. Gifts without attribution will be ignored. Changes are applied with “Save”.",
+        "alle_geschenke": "All gifts",
+        "gro_1000_9999_coins": "Large (1000-9999 coins)",
+        "szene_wahlen": "Select scene...",
+        "alle_kameras": "All cameras",
+        "whale_10_000_coins": "Whale (10,000+ Coins)",
+        "nur_zugeordnete": "Only assigned ones",
+        "multi_cam_switcher_geschenkekatalog_d98d94": "Multi-Cam Switcher - Gift Catalog",
+        "zugeordnete_zuerst": "Assigned first",
+        "geschenkekatalog_kamerazuordnung": "🎁 Gift catalog — camera mapping",
+        "anderungen": "Changes —",
+        "coins_aufsteigend": "Coins (ascending)",
+        "geschenke_zugeordnet": "Gifts assigned",
+        "zurucksetzen": "↺ Reset",
+        "mittel_100_999_coins": "Medium (100-999 coins)",
+        "zuordnungen_speichern": "💾 Save assignments"
+      }
     }
-  },
-  "generated": {
-    "d98d9459e2c2": "Multi-Cam Switcher - Geschenkekatalog",
-    "7b2142ad925b": "🎥 Multi-Cam Switcher — Geschenkekatalog",
-    "538ca4e2a0e1": "Current Scene:",
-    "ac273c3d705c": "Szene wählen...",
-    "e88178498f7d": "🎁 Geschenkekatalog — Kamerazuordnung",
-    "7e1444f0507b": "Wähle für jedes Geschenk die OBS-Szene (Kamera), die automatisch geschaltet werden soll. Geschenke ohne Zuordnung werden ignoriert. Änderungen werden mit \"Speichern\" übernommen.",
-    "85146024a5cf": "Alle Geschenke",
-    "d8e461082e5c": "Nur zugeordnete",
-    "1cb8a372e53e": "Nur nicht zugeordnete",
-    "311e65a5d89e": "Klein (1-99 Coins)",
-    "fd5f62f0c30d": "Mittel (100-999 Coins)",
-    "9bd6e6407dba": "Groß (1000-9999 Coins)",
-    "d4f79ba6f6fd": "Whale (10.000+ Coins)",
-    "cc273318efc2": "Alle Kameras",
-    "3624bd31b43b": "Coins (absteigend)",
-    "f5548d2b2de7": "Coins (aufsteigend)",
-    "195a855060f9": "Name (A-Z)",
-    "db2f31ac9333": "Zugeordnete zuerst",
-    "4b9db5cda62b": "Lade Geschenkekatalog...",
-    "ec57b5b6e58c": "Änderungen —",
-    "f92f14727eb0": "Geschenke zugeordnet",
-    "fe2c68cf499a": "💾 Zuordnungen speichern",
-    "fa72100a3307": "↺ Zurücksetzen",
-    "190b9b430d8c": "Aktivitäts-Log",
-    "165d311ede4f": "Warte auf Events..."
   }
 }

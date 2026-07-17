@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="generated.d98d9459e2c2">Multi-Cam Switcher - Geschenkekatalog</title>
+    <title data-i18n="plugins.multicam.labels.multi_cam_switcher_geschenkekatalog_d98d94">Multi-Cam Switcher - Geschenkekatalog</title>
     <link rel="stylesheet" href="/css/themes.css">
     <script>
         (function () {
@@ -683,7 +683,7 @@
             .gift-card .gift-image { height: 80px; }
             .status-bar { flex-direction: column; align-items: flex-start; }
         }
-    
+
         /* Cid theme alignment */
         html[data-theme="cid"] body {
             background: #030603;
@@ -777,7 +777,7 @@
             border-color: #4ade80;
             -webkit-text-fill-color: #030603;
         }
-    
+
         /* final day action button text overrides */
         html[data-theme="day"] button.primary,
         html[data-theme="day"] button.success,
@@ -797,40 +797,40 @@
 </head>
 <body>
     <div class="container">
-        <h1 data-i18n="generated.7b2142ad925b">🎥 Multi-Cam Switcher — Geschenkekatalog</h1>
+        <h1 data-i18n="plugins.multicam.labels.multi_cam_switcher_geschenkekatalog">🎥 Multi-Cam Switcher — Geschenkekatalog</h1>
 
         <!-- Status Bar -->
         <div class="status-bar">
             <div class="status-indicator">
                 <div class="status-dot" id="statusDot"></div>
-                <span class="status-text" id="statusText" data-i18n="multicam.status.disconnected">Getrennt</span>
+                <span class="status-text" id="statusText" data-i18n="plugins.multicam.multicam.status.disconnected">Getrennt</span>
             </div>
-            <div class="current-scene" id="currentScene"><span data-i18n="generated.538ca4e2a0e1">
+            <div class="current-scene" id="currentScene"><span data-i18n="plugins.multicam.labels.current_scene">
                 Aktuelle Szene: </span><strong>-</strong>
             </div>
             <div class="button-group">
-                <button class="success" id="obs-connect-btn" data-i18n="multicam.connection.connect">OBS verbinden</button>
-                <button class="danger" id="obs-disconnect-btn">Trennen</button>
+                <button class="success" id="obs-connect-btn" data-i18n="plugins.multicam.multicam.connection.connect">OBS verbinden</button>
+                <button class="danger" id="obs-disconnect-btn" data-i18n="plugins.multicam.multicam.connection.disconnect">Trennen</button>
             </div>
         </div>
 
         <!-- Scene Switcher + Hot Buttons -->
         <div class="control-group">
-            <h2>Szenen-Switcher</h2>
+            <h2 data-i18n="plugins.multicam.multicam.switcher.title">Szenen-Switcher</h2>
             <div class="scene-switcher-compact">
                 <select id="sceneSelect">
-                    <option value="" data-i18n="generated.ac273c3d705c">Szene wählen...</option>
+                    <option value="" data-i18n="plugins.multicam.labels.szene_wahlen">Szene wählen...</option>
                 </select>
-                <button class="primary" id="switch-scene-btn">Wechseln</button>
+                <button class="primary" id="switch-scene-btn" data-i18n="plugins.multicam.multicam.switcher.switch">Wechseln</button>
             </div>
-            <h3 style="margin-top: 15px;">Schnellzugriff</h3>
+            <h3 style="margin-top: 15px;" data-i18n="plugins.multicam.multicam.hot_buttons.title">Schnellzugriff</h3>
             <div class="hot-buttons" id="hotButtons"></div>
         </div>
 
         <!-- ===== GESCHENKEKATALOG ===== -->
         <div class="control-group">
-            <h2 data-i18n="generated.e88178498f7d">🎁 Geschenkekatalog — Kamerazuordnung</h2>
-            <p style="color: var(--color-text-muted); font-size: 13px; margin-bottom: 15px;" data-i18n="generated.7e1444f0507b">
+            <h2 data-i18n="plugins.multicam.labels.geschenkekatalog_kamerazuordnung">🎁 Geschenkekatalog — Kamerazuordnung</h2>
+            <p style="color: var(--color-text-muted); font-size: 13px; margin-bottom: 15px;" data-i18n="plugins.multicam.labels.wahle_fur_jedes_geschenk_die_obs_szene_kamera">
                 Wähle für jedes Geschenk die OBS-Szene (Kamera), die automatisch geschaltet werden soll.
                 Geschenke ohne Zuordnung werden ignoriert. Änderungen werden mit "Speichern" übernommen.
             </p>
@@ -838,63 +838,63 @@
             <!-- Filter / Controls -->
             <div class="gift-catalog-controls">
                 <div class="filter-group">
-                    <label for="filter-tier">Filter:</label>
+                    <label for="filter-tier" data-i18n="plugins.multicam.multicam.gift_mapping.filter">Filter:</label>
                     <select id="filter-tier">
-                        <option value="all" data-i18n="generated.85146024a5cf">Alle Geschenke</option>
-                        <option value="mapped" data-i18n="generated.d8e461082e5c">Nur zugeordnete</option>
-                        <option value="unmapped" data-i18n="generated.1cb8a372e53e">Nur nicht zugeordnete</option>
-                        <option value="small" data-i18n="generated.311e65a5d89e">Klein (1-99 Coins)</option>
-                        <option value="medium" data-i18n="generated.fd5f62f0c30d">Mittel (100-999 Coins)</option>
-                        <option value="large" data-i18n="generated.9bd6e6407dba">Groß (1000-9999 Coins)</option>
-                        <option value="whale" data-i18n="generated.d4f79ba6f6fd">Whale (10.000+ Coins)</option>
+                        <option value="all" data-i18n="plugins.multicam.labels.alle_geschenke">Alle Geschenke</option>
+                        <option value="mapped" data-i18n="plugins.multicam.labels.nur_zugeordnete">Nur zugeordnete</option>
+                        <option value="unmapped" data-i18n="plugins.multicam.labels.nur_nicht_zugeordnete">Nur nicht zugeordnete</option>
+                        <option value="small" data-i18n="plugins.multicam.labels.klein_1_99_coins">Klein (1-99 Coins)</option>
+                        <option value="medium" data-i18n="plugins.multicam.labels.mittel_100_999_coins">Mittel (100-999 Coins)</option>
+                        <option value="large" data-i18n="plugins.multicam.labels.gro_1000_9999_coins">Groß (1000-9999 Coins)</option>
+                        <option value="whale" data-i18n="plugins.multicam.labels.whale_10_000_coins">Whale (10.000+ Coins)</option>
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label for="filter-scene">Kamera:</label>
+                    <label for="filter-scene" data-i18n="plugins.multicam.multicam.gift_mapping.camera_filter">Kamera:</label>
                     <select id="filter-scene">
-                        <option value="all" data-i18n="generated.cc273318efc2">Alle Kameras</option>
+                        <option value="all" data-i18n="plugins.multicam.labels.alle_kameras">Alle Kameras</option>
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label for="sort-gifts">Sortierung:</label>
+                    <label for="sort-gifts" data-i18n="plugins.multicam.multicam.gift_mapping.sort">Sortierung:</label>
                     <select id="sort-gifts">
-                        <option value="coins-desc" data-i18n="generated.3624bd31b43b">Coins (absteigend)</option>
-                        <option value="coins-asc" data-i18n="generated.f5548d2b2de7">Coins (aufsteigend)</option>
-                        <option value="name" data-i18n="generated.195a855060f9">Name (A-Z)</option>
-                        <option value="mapped" data-i18n="generated.db2f31ac9333">Zugeordnete zuerst</option>
+                        <option value="coins-desc" data-i18n="plugins.multicam.labels.coins_absteigend">Coins (absteigend)</option>
+                        <option value="coins-asc" data-i18n="plugins.multicam.labels.coins_aufsteigend">Coins (aufsteigend)</option>
+                        <option value="name" data-i18n="plugins.multicam.labels.name_a_z">Name (A-Z)</option>
+                        <option value="mapped" data-i18n="plugins.multicam.labels.zugeordnete_zuerst">Zugeordnete zuerst</option>
                     </select>
                 </div>
                 <div class="stats" id="catalogStats">
-                    <span id="mappedCount">0</span> / <span id="totalCount">0</span> zugeordnet
+                    <output id="mappedCount">0</output> / <output id="totalCount">0</output> <span data-i18n="plugins.multicam.labels.geschenke_zugeordnet">zugeordnet</span>
                 </div>
-                <button id="refreshCatalogBtn" title="Geschenkekatalog neu laden" style="padding: 6px 12px; font-size: 13px;">🔄</button>
+                <button id="refreshCatalogBtn" title="Geschenkekatalog neu laden" data-i18n-title="plugins.multicam.multicam.gift_mapping.refresh_gifts" style="padding: 6px 12px; font-size: 13px;">🔄</button>
             </div>
 
             <!-- Gift Grid Container -->
             <div id="giftGridContainer">
-                <div class="loading-spinner" data-i18n="generated.4b9db5cda62b">Lade Geschenkekatalog...</div>
+                <div class="loading-spinner" data-i18n="plugins.multicam.labels.lade_geschenkekatalog">Lade Geschenkekatalog...</div>
             </div>
 
             <!-- Save Bar -->
             <div class="save-bar" id="saveBar">
                 <div class="save-info">
-                    <span id="changeCount">0</span><span data-i18n="generated.ec57b5b6e58c"> Änderungen — </span><strong id="mappedDisplay">0</strong><span data-i18n="generated.f92f14727eb0"> Geschenke zugeordnet
+                    <output id="changeCount">0</output><span data-i18n="plugins.multicam.labels.anderungen"> Änderungen — </span><output id="mappedDisplay">0</output><span data-i18n="plugins.multicam.labels.geschenke_zugeordnet"> Geschenke zugeordnet
                 </span></div>
                 <div class="button-group">
                     <span class="save-status" id="saveStatus"></span>
-                    <button class="primary" id="saveMappingsBtn" data-i18n="generated.fe2c68cf499a">💾 Zuordnungen speichern</button>
-                    <button id="resetMappingsBtn" data-i18n="generated.fa72100a3307">↺ Zurücksetzen</button>
+                    <button class="primary" id="saveMappingsBtn" data-i18n="plugins.multicam.labels.zuordnungen_speichern">💾 Zuordnungen speichern</button>
+                    <button id="resetMappingsBtn" data-i18n="plugins.multicam.labels.zurucksetzen">↺ Zurücksetzen</button>
                 </div>
             </div>
         </div>
 
         <!-- Activity Log -->
         <div class="control-group">
-            <h2 data-i18n="generated.190b9b430d8c">Aktivitäts-Log</h2>
+            <h2 data-i18n="plugins.multicam.labels.aktivitats_log">Aktivitäts-Log</h2>
             <div class="log-container" id="logContainer">
                 <div class="log-entry">
                     <span class="log-time">--:--:--</span>
-                    <span data-i18n="generated.165d311ede4f">Warte auf Events...</span>
+                    <span data-i18n="plugins.multicam.labels.warte_auf_events">Warte auf Events...</span>
                 </div>
             </div>
         </div>

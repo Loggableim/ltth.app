@@ -6,6 +6,12 @@ const socket = io();
 let currentConfig = null;
 let styleTemplates = {};
 
+function t(key, fallback, params = {}) {
+  const translated = window.i18n?.t?.(key, params);
+  if (translated && translated !== key) return translated;
+  return fallback.replace(/\{\{?(\w+)\}?\}/g, (match, name) => (name in params ? params[name] : match));
+}
+
 // Style descriptions
 const styleDescriptions = {
   furry: 'Animierter tierischer Charakter, weich, lebendig',
@@ -161,7 +167,7 @@ async function saveConfig() {
 async function testApi() {
   const btn = document.getElementById('testApiBtn');
   btn.disabled = true;
-  btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Teste...';
+  btn.innerHTML = `<i class="bi bi-hourglass-split"></i> ${t('plugins.talking-heads.talking_heads_ui.buttons.testing', 'Testing…')}`;
 
   try {
     const response = await fetch('/api/talkingheads/test-api', {
@@ -183,7 +189,7 @@ async function testApi() {
     showNotification('API-Test fehlgeschlagen', 'error');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-check-circle"></i> API testen';
+    btn.innerHTML = `<i class="bi bi-check-circle"></i> ${t('plugins.talking-heads.talking_heads_ui.buttons.test_api', 'Test API')}`;
   }
 }
 
@@ -191,7 +197,7 @@ async function testApi() {
  * Clear cache
  */
 async function clearCache() {
-  if (!confirm('Möchten Sie wirklich alle gecachten Avatare löschen?')) {
+  if (!confirm(t('plugins.talking-heads.talking_heads_ui.notifications.cache_clear_confirm', 'Do you really want to delete all cached avatars?'))) {
     return;
   }
 
@@ -224,8 +230,7 @@ async function loadCacheStats() {
 
     if (data.success) {
       const stats = data.stats;
-      document.getElementById('cacheStats').textContent = 
-        `Cache: ${stats.totalAvatars} Avatare`;
+      document.getElementById('cacheStats').textContent = t('plugins.talking-heads.talking_heads_ui.status.cache_count', 'Cache: {{count}} avatars', { count: stats.totalAvatars });
     }
   } catch (error) {
     console.error('Failed to load cache stats:', error);
@@ -237,13 +242,14 @@ async function loadCacheStats() {
  */
 function updateApiStatus(configured) {
   const statusBadge = document.getElementById('apiStatus');
+  const provider = currentConfig?.imageProvider || 'auto';
   
   if (configured) {
     statusBadge.className = 'badge bg-success';
-    statusBadge.textContent = 'API konfiguriert';
+    statusBadge.textContent = t('plugins.talking-heads.talking_heads_ui.status.api_configured', 'API configured ({{provider}})', { provider });
   } else {
     statusBadge.className = 'badge bg-warning';
-    statusBadge.textContent = 'API nicht konfiguriert';
+    statusBadge.textContent = t('plugins.talking-heads.talking_heads_ui.status.api_missing', 'API not configured ({{provider}})', { provider });
   }
 }
 
@@ -275,7 +281,7 @@ async function loadActiveAnimations() {
       const container = document.getElementById('activeAnimations');
       
       if (data.animations.length === 0) {
-        container.innerHTML = '<div class="text-muted">Keine aktiven Animationen</div>';
+        container.innerHTML = `<div class="text-muted">${t('plugins.talking-heads.talking_heads_ui.empty.no_active_animations', 'No active animations')}</div>`;
       } else {
         container.innerHTML = data.animations.map(anim => `
           <div class="list-group-item">

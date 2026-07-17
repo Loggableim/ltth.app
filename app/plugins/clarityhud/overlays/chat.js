@@ -74,7 +74,7 @@ const STATE = {
 function updateDebugStatus(status) {
   const debugStatus = document.getElementById('debug-status');
   if (debugStatus) {
-    debugStatus.textContent = `Status: ${status}`;
+    debugStatus.textContent = ClarityHUDI18n.text('debug.status', 'Status: {status}', { status });
   }
   HUD_LOG.debug(`[CHAT HUD] Status: ${status}`);
 }
@@ -82,7 +82,7 @@ function updateDebugStatus(status) {
 function updateDebugSocket(status) {
   const debugSocket = document.getElementById('debug-socket');
   if (debugSocket) {
-    debugSocket.textContent = `Socket: ${status}`;
+    debugSocket.textContent = ClarityHUDI18n.text('debug.socket', 'Socket: {status}', { status });
   }
 }
 
@@ -90,7 +90,7 @@ function updateDebugEvents() {
   STATE.eventCount++;
   const debugEvents = document.getElementById('debug-events');
   if (debugEvents) {
-    debugEvents.textContent = `Events: ${STATE.eventCount}`;
+    debugEvents.textContent = ClarityHUDI18n.text('debug.events', 'Events: {count}', { count: STATE.eventCount });
   }
 }
 
@@ -459,7 +459,7 @@ function addMessage(chatData) {
   const normalizedData = {
     user: chatData.user || {
       uniqueId: chatData.uniqueId || 'unknown',
-      nickname: chatData.nickname || chatData.uniqueId || 'Anonymous',
+      nickname: chatData.nickname || chatData.uniqueId || ClarityHUDI18n.text('overlay.anonymous', 'Anonymous'),
       profilePictureUrl: chatData.profilePictureUrl || null,
       badge: chatData.badge || null
     },
@@ -540,7 +540,7 @@ function renderMessageElement(messageData, index) {
     const username = messageData.user?.nickname || 
                      messageData.nickname || 
                      messageData.user?.uniqueId || 
-                     'Anonymous';
+                     ClarityHUDI18n.text('overlay.anonymous', 'Anonymous');
     usernameEl.textContent = username;
 
     // Apply username color based on team level if enabled
@@ -605,7 +605,7 @@ function renderMessageElement(messageData, index) {
     // Return a simple error message element
     const errorEl = document.createElement('div');
     errorEl.className = 'chat-message';
-    errorEl.textContent = `Error rendering message: ${error.message}`;
+    errorEl.textContent = ClarityHUDI18n.text('overlay.message_render_error', 'Error rendering message: {message}', { message: error.message });
     return errorEl;
   }
 }

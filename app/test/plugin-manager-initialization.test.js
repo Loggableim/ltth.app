@@ -35,7 +35,7 @@ describe('Plugin Manager initialization', () => {
     expect(source).toContain("window.StoreAuth.setStoreMode(installedMode ? 'installed' : 'store');");
     expect(authSource).toContain("const shouldShow = visible && state.storeMode !== 'installed';");
     expect(authSource).toContain('setStoreMode,');
-    expect(dashboardSource).toContain('position: relative;\n            z-index: 1;');
+    expect(dashboardSource).toMatch(/\.plugin-store-auth-root\s*\{[\s\S]*?position:\s*relative;[\s\S]*?z-index:\s*1;/);
     expect(dashboardSource).not.toContain('.plugin-store-auth-root {\n            position: fixed;');
   });
 });

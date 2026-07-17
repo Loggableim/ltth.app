@@ -1,104 +1,135 @@
 {
-  "multicam": {
-    "title": "Multi-Cam Switcher",
-    "subtitle": "Stream Camera Management",
-    "safety_lock": "⚠️ SAFETY LOCK ACTIVE - Too many rapid switches detected. Waiting 60 seconds...",
-    "current_scene": "Current Scene:",
+  "plugins": {
+    "multicam": {
+      "multicam": {
+    "title": "Sélecteur multicaméra",
+    "subtitle": "Gestion des caméras de diffusion",
+    "safety_lock": "⚠️ VERROU DE SÉCURITÉ ACTIF : trop de changements rapides détectés. Attente de 60 secondes...",
+    "runtime": {
+      "server_unreachable": "Le serveur ne répond pas. Assurez-vous que le serveur LTTH est en cours d’exécution et qu’un flux TikTok est connecté.",
+      "retry_load": "🔄 Recharger",
+      "server_error": "Erreur du serveur : {error}",
+      "unknown_error": "Erreur inconnue",
+      "catalog_load_failed": "Impossible de charger le catalogue de cadeaux. Assurez-vous que le serveur LTTH est en cours d’exécution et qu’un flux TikTok est connecté.",
+      "empty_catalog": "Aucun cadeau dans le catalogue. Connectez un flux TikTok pour charger le catalogue.",
+      "tier_whale": "🐋 Baleine (10 000+)",
+      "tier_large": "🔥 Grand (1 000–9 999)",
+      "tier_medium": "💎 Moyen (100–999)",
+      "tier_small": "🪙 Petit (1–99)",
+      "gift_count": "{count} cadeaux",
+      "no_filtered_gifts": "Aucun cadeau ne correspond au filtre actuel.",
+      "no_mapping": "— Aucune attribution —",
+      "minimum_coins": "Pièces min. :",
+      "unsaved_changes": "🟡 Modifications non enregistrées",
+      "all_changes_saved": "✅ Toutes les modifications sont enregistrées",
+      "saving": "⏳ Enregistrement...",
+      "saved": "✅ Enregistré !",
+      "error": "❌ Erreur : {error}",
+      "discard_unsaved_changes": "Abandonner toutes les modifications non enregistrées ?",
+      "connection_failed": "Échec de la connexion : {error}",
+      "select_scene": "Veuillez sélectionner une scène"
+    },
+    "current_scene": "Scène actuelle :",
     "status": {
-      "connected": "Connected",
-      "disconnected": "Disconnected"
+      "connected": "Connecté à OBS",
+      "disconnected": "Déconnecté"
     },
     "connection": {
-      "title": "Connection",
-      "host": "Hôte",
-      "port": "Port",
-      "password": "Mot de passe",
-      "connect": "Connect OBS",
-      "disconnect": "Disconnect OBS",
-      "save_settings": "Enregistrer les Paramètres",
-      "auto_connect_settings": "Paramètres de Connexion Automatique",
-      "connect_on_start": "Connecter au Démarrage",
-      "connect_on_start_desc": "Se connecter automatiquement à OBS lors de l'initialisation du plugin",
-      "connect_delay_ms": "Délai de Connexion (ms)",
-      "connect_delay_ms_desc": "Délai avant la connexion au démarrage",
-      "auto_reconnect_enabled": "Activer la Reconnexion Automatique",
-      "auto_reconnect_enabled_desc": "Se reconnecter automatiquement si la connexion est perdue",
-      "max_reconnect_minutes": "Durée Max. de Reconnexion (min)",
-      "max_reconnect_minutes_desc": "Arrêter la reconnexion après ce nombre de minutes",
-      "health_check_settings": "Paramètres de Vérification de Santé",
-      "health_check_enabled": "Activer la Vérification de Santé",
-      "health_check_enabled_desc": "Vérifier périodiquement que la connexion OBS est saine",
-      "health_check_interval_ms": "Intervalle de Vérification de Santé (ms)",
-      "health_check_interval_ms_desc": "Temps entre les vérifications de santé"
-    },
+      "title": "Connexion",
+          "host": "Hôte",
+      "port": "Numéro de port",
+          "password": "Mot de passe",
+      "connect": "Connecter OBS",
+      "disconnect": "Déconnecter OBS",
+          "save_settings": "Enregistrer les Paramètres",
+          "auto_connect_settings": "Paramètres de Connexion Automatique",
+          "connect_on_start": "Connecter au Démarrage",
+          "connect_on_start_desc": "Se connecter automatiquement à OBS lors de l'initialisation du plugin",
+          "connect_delay_ms": "Délai de Connexion (ms)",
+          "connect_delay_ms_desc": "Délai avant la connexion au démarrage",
+          "auto_reconnect_enabled": "Activer la Reconnexion Automatique",
+          "auto_reconnect_enabled_desc": "Se reconnecter automatiquement si la connexion est perdue",
+          "max_reconnect_minutes": "Durée Max. de Reconnexion (min)",
+          "max_reconnect_minutes_desc": "Arrêter la reconnexion après ce nombre de minutes",
+          "health_check_settings": "Paramètres de Vérification de Santé",
+          "health_check_enabled": "Activer la Vérification de Santé",
+          "health_check_enabled_desc": "Vérifier périodiquement que la connexion OBS est saine",
+          "health_check_interval_ms": "Intervalle de Vérification de Santé (ms)",
+          "health_check_interval_ms_desc": "Temps entre les vérifications de santé"
+        },
     "switcher": {
-      "title": "Scene Switcher",
-      "select_scene": "Select Scene...",
-      "switch": "Switch"
+      "title": "Sélecteur de scène",
+      "select_scene": "Sélectionnez une scène...",
+      "switch": "Changer"
     },
     "hot_buttons": {
-      "title": "Hot Buttons"
-    },
-    "gift_mapping": {
-      "title": "Mappage de Cadeau à Scène",
-      "description": "Sélectionnez un cadeau et assignez-le à une scène OBS. Lorsque les utilisateurs envoient ce cadeau, la scène changera automatiquement.",
-      "select_gift": "Sélectionner un Cadeau",
-      "loading": "Chargement des cadeaux...",
-      "select_scene": "Scène Cible",
-      "select_scene_placeholder": "Sélectionner une Scène...",
-      "min_coins": "Pièces Min. (optionnel)",
-      "add": "Ajouter un Mappage",
-      "refresh_gifts": "Actualiser les Cadeaux",
-      "current_mappings": "Mappages Actuels:"
-    },
+      "title": "Boutons rapides"
+        },
+        "gift_mapping": {
+          "title": "Mappage de Cadeau à Scène",
+          "description": "Sélectionnez un cadeau et assignez-le à une scène OBS. Lorsque les utilisateurs envoient ce cadeau, la scène changera automatiquement.",
+          "select_gift": "Sélectionner un Cadeau",
+          "loading": "Chargement des cadeaux...",
+          "select_scene": "Scène Cible",
+          "select_scene_placeholder": "Sélectionner une Scène...",
+          "min_coins": "Pièces Min. (optionnel)",
+          "add": "Ajouter un Mappage",
+          "refresh_gifts": "Actualiser les Cadeaux",
+          "current_mappings": "Mappages Actuels:",
+          "filter": "Filtre :",
+          "camera_filter": "Caméra :",
+          "sort": "Ordre de tri :"
+        },
     "log": {
-      "title": "Activity Log",
-      "waiting": "Waiting for events..."
+      "title": "Journal d’activité",
+      "waiting": "En attente d’événements..."
     },
     "cameras": {
-      "title": "Camera Sources",
-      "add": "Add Camera",
-      "name": "Camera Name",
-      "url": "Source URL",
-      "active": "Active",
-      "preview": "Aperçu"
-    },
+      "title": "Sources vidéo",
+      "add": "Ajouter une caméra",
+      "name": "Nom de la caméra",
+      "url": "URL source",
+      "active": "Activée",
+          "preview": "Aperçu"
+        },
     "overlay": {
-      "title": "Overlay Settings",
-      "url": "URL de l'Overlay",
-      "copy": "Copier l'URL",
-      "open": "Ouvrir l'Overlay"
-    },
+      "title": "Paramètres de superposition",
+          "url": "URL de l'Overlay",
+          "copy": "Copier l'URL",
+          "open": "Ouvrir l'Overlay"
+        },
     "settings": {
-      "save": "Enregistrer les Paramètres",
-      "reset": "Reset to Defaults"
+          "save": "Enregistrer les Paramètres",
+      "reset": "Réinitialiser les valeurs par défaut"
+        }
+      },
+      "labels": {
+        "warte_auf_events": "En attendant les événements...",
+        "aktivitats_log": "Journal d'activité",
+        "name_a_z": "Nom (A-Z)",
+        "nur_nicht_zugeordnete": "Juste ceux qui ne sont pas attribués",
+        "klein_1_99_coins": "Petit (1-99 pièces)",
+        "coins_absteigend": "Pièces (décroissantes)",
+        "lade_geschenkekatalog": "Chargement du catalogue de cadeaux...",
+    "current_scene": "Scène actuelle :",
+        "multi_cam_switcher_geschenkekatalog": "🎥 Sélecteur multi-caméras — Catalogue cadeaux",
+        "wahle_fur_jedes_geschenk_die_obs_szene_kamera": "Pour chaque cadeau, sélectionnez la scène OBS (caméra) qui doit être commutée automatiquement. Les cadeaux sans attribution seront ignorés. Les modifications sont appliquées avec « Enregistrer ».",
+        "alle_geschenke": "Tous les cadeaux",
+        "gro_1000_9999_coins": "Grand (1 000 à 9 999 pièces)",
+        "szene_wahlen": "Sélectionnez une scène...",
+        "alle_kameras": "Toutes les caméras",
+        "whale_10_000_coins": "Baleine (10 000+ pièces)",
+        "nur_zugeordnete": "Uniquement ceux attribués",
+        "multi_cam_switcher_geschenkekatalog_d98d94": "Commutateur multi-caméras - Catalogue cadeaux",
+        "zugeordnete_zuerst": "Attribué en premier",
+        "geschenkekatalog_kamerazuordnung": "🎁 Catalogue cadeaux — cartographie par caméra",
+        "anderungen": "Changements —",
+        "coins_aufsteigend": "Pièces (croissant)",
+        "geschenke_zugeordnet": "Cadeaux attribués",
+        "zurucksetzen": "↺ Réinitialiser",
+        "mittel_100_999_coins": "Moyen (100-999 pièces)",
+        "zuordnungen_speichern": "💾 Enregistrer les devoirs"
+      }
     }
-  },
-  "generated": {
-    "d98d9459e2c2": "Multi-Cam Switcher - Geschenkekatalog",
-    "7b2142ad925b": "🎥 Multi-Cam Switcher — Geschenkekatalog",
-    "538ca4e2a0e1": "Current Scene:",
-    "ac273c3d705c": "Szene wählen...",
-    "e88178498f7d": "🎁 Geschenkekatalog — Kamerazuordnung",
-    "7e1444f0507b": "Wähle für jedes Geschenk die OBS-Szene (Kamera), die automatisch geschaltet werden soll. Geschenke ohne Zuordnung werden ignoriert. Änderungen werden mit \"Speichern\" übernommen.",
-    "85146024a5cf": "Alle Geschenke",
-    "d8e461082e5c": "Nur zugeordnete",
-    "1cb8a372e53e": "Nur nicht zugeordnete",
-    "311e65a5d89e": "Klein (1-99 Coins)",
-    "fd5f62f0c30d": "Mittel (100-999 Coins)",
-    "9bd6e6407dba": "Groß (1000-9999 Coins)",
-    "d4f79ba6f6fd": "Whale (10.000+ Coins)",
-    "cc273318efc2": "Alle Kameras",
-    "3624bd31b43b": "Coins (absteigend)",
-    "f5548d2b2de7": "Coins (aufsteigend)",
-    "195a855060f9": "Name (A-Z)",
-    "db2f31ac9333": "Zugeordnete zuerst",
-    "4b9db5cda62b": "Lade Geschenkekatalog...",
-    "ec57b5b6e58c": "Änderungen —",
-    "f92f14727eb0": "Geschenke zugeordnet",
-    "fe2c68cf499a": "💾 Zuordnungen speichern",
-    "fa72100a3307": "↺ Zurücksetzen",
-    "190b9b430d8c": "Aktivitäts-Log",
-    "165d311ede4f": "Warte auf Events..."
   }
 }

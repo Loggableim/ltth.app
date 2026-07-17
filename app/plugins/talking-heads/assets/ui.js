@@ -28,39 +28,39 @@ const styleDescriptions = {
 
 const styleI18nKeys = {
   furry: {
-    name: 'talking_heads_ui.styles.names.furry',
-    description: 'talking_heads_ui.styles.descriptions.furry'
+    name: 'plugins.talking-heads.talking_heads_ui.styles.names.furry',
+    description: 'plugins.talking-heads.talking_heads_ui.styles.descriptions.furry'
   },
   tech: {
-    name: 'talking_heads_ui.styles.names.tech',
-    description: 'talking_heads_ui.styles.descriptions.tech'
+    name: 'plugins.talking-heads.talking_heads_ui.styles.names.tech',
+    description: 'plugins.talking-heads.talking_heads_ui.styles.descriptions.tech'
   },
   medieval: {
-    name: 'talking_heads_ui.styles.names.medieval',
-    description: 'talking_heads_ui.styles.descriptions.medieval'
+    name: 'plugins.talking-heads.talking_heads_ui.styles.names.medieval',
+    description: 'plugins.talking-heads.talking_heads_ui.styles.descriptions.medieval'
   },
   noble: {
-    name: 'talking_heads_ui.styles.names.noble',
-    description: 'talking_heads_ui.styles.descriptions.noble'
+    name: 'plugins.talking-heads.talking_heads_ui.styles.names.noble',
+    description: 'plugins.talking-heads.talking_heads_ui.styles.descriptions.noble'
   },
   cartoon: {
-    name: 'talking_heads_ui.styles.names.cartoon',
-    description: 'talking_heads_ui.styles.descriptions.cartoon'
+    name: 'plugins.talking-heads.talking_heads_ui.styles.names.cartoon',
+    description: 'plugins.talking-heads.talking_heads_ui.styles.descriptions.cartoon'
   },
   whimsical: {
-    name: 'talking_heads_ui.styles.names.whimsical',
-    description: 'talking_heads_ui.styles.descriptions.whimsical'
+    name: 'plugins.talking-heads.talking_heads_ui.styles.names.whimsical',
+    description: 'plugins.talking-heads.talking_heads_ui.styles.descriptions.whimsical'
   },
   realistic: {
-    name: 'talking_heads_ui.styles.names.realistic',
-    description: 'talking_heads_ui.styles.descriptions.realistic'
+    name: 'plugins.talking-heads.talking_heads_ui.styles.names.realistic',
+    description: 'plugins.talking-heads.talking_heads_ui.styles.descriptions.realistic'
   }
 };
 
 const providerLabelKeys = {
-  openai: 'talking_heads_ui.providers.openai',
-  siliconflow: 'talking_heads_ui.providers.siliconflow',
-  auto: 'talking_heads_ui.providers.auto'
+  openai: 'plugins.talking-heads.talking_heads_ui.providers.openai',
+  siliconflow: 'plugins.talking-heads.talking_heads_ui.providers.siliconflow',
+  auto: 'plugins.talking-heads.talking_heads_ui.providers.auto'
 };
 
 // Initialize on load
@@ -163,9 +163,9 @@ function copyObsHudUrl() {
   input.select();
   input.setSelectionRange(0, input.value.length);
   navigator.clipboard.writeText(input.value).then(() => {
-    showNotification(t('talking_heads_ui.notifications.copy_success', 'OBS HUD URL kopiert'), 'success');
+    showNotification(t('plugins.talking-heads.talking_heads_ui.notifications.copy_success', 'OBS HUD URL kopiert'), 'success');
   }).catch(() => {
-    showNotification(t('talking_heads_ui.notifications.copy_failed', 'Konnte OBS HUD URL nicht kopieren'), 'error');
+    showNotification(t('plugins.talking-heads.talking_heads_ui.notifications.copy_failed', 'Konnte OBS HUD URL nicht kopieren'), 'error');
   });
 }
 
@@ -207,11 +207,11 @@ async function loadConfig() {
       }
     } else {
       console.error('Failed to load config:', data);
-      showNotification(t('talking_heads_ui.notifications.load_failed', 'Fehler beim Laden der Konfiguration: {{error}}', { error: data.error || 'Unbekannter Fehler' }), 'error');
+      showNotification(t('plugins.talking-heads.talking_heads_ui.notifications.load_failed', 'Fehler beim Laden der Konfiguration: {{error}}', { error: data.error || 'Unbekannter Fehler' }), 'error');
     }
   } catch (error) {
     console.error('Failed to load config:', error);
-    showNotification(t('talking_heads_ui.notifications.load_failed', 'Fehler beim Laden der Konfiguration: {{error}}', { error: error.message }), 'error');
+    showNotification(t('plugins.talking-heads.talking_heads_ui.notifications.load_failed', 'Fehler beim Laden der Konfiguration: {{error}}', { error: error.message }), 'error');
   }
 }
 
@@ -380,7 +380,7 @@ function setupEventListeners() {
   document.getElementById('debugLoggingSwitch').addEventListener('change', (e) => {
     toggleDebugLogSection(e.target.checked);
     if (e.target.checked) {
-      showNotification(t('talking_heads_ui.notifications.debug_enabled', 'Debug-Logging aktiviert'), 'info');
+      showNotification(t('plugins.talking-heads.talking_heads_ui.notifications.debug_enabled', 'Debug-Logging aktiviert'), 'info');
       startLogPolling();
     } else {
       stopLogPolling();
@@ -420,7 +420,7 @@ function setupEventListeners() {
     // Reload avatar list to show the new avatar
     loadAvatarList().catch(err => console.error('Failed to reload avatar list:', err));
     // Show notification
-    showNotification(t('talking_heads_ui.notifications.avatar_generated', `Avatar for ${data.username} generated`), 'success');
+    showNotification(t('plugins.talking-heads.talking_heads_ui.notifications.avatar_generated', 'Avatar for {{username}} generated.', { username: data.username }), 'success');
   });
 }
 
@@ -431,7 +431,7 @@ async function saveConfig() {
   try {
     // Wait for config to load if not ready
     if (!currentConfig) {
-      showNotification(t('talking_heads_ui.notifications.config_loading', 'Bitte warten Sie, bis die Konfiguration geladen ist...'), 'info');
+      showNotification(t('plugins.talking-heads.talking_heads_ui.notifications.config_loading', 'Bitte warten Sie, bis die Konfiguration geladen ist...'), 'info');
       return;
     }
     
@@ -466,8 +466,8 @@ async function saveConfig() {
       currentConfig = data.config;
       currentConfig.apiConfigured = data.apiConfigured;
       currentConfig.apiKeySource = data.apiKeySource;
-      showNotification(t('talking_heads_ui.notifications.save_success', 'Konfiguration gespeichert'), 'success');
-      appendClientLog(t('talking_heads_ui.notifications.save_success', 'Konfiguration gespeichert'), 'info');
+      showNotification(t('plugins.talking-heads.talking_heads_ui.notifications.save_success', 'Konfiguration gespeichert'), 'success');
+      appendClientLog(t('plugins.talking-heads.talking_heads_ui.notifications.save_success', 'Konfiguration gespeichert'), 'info');
       if (currentConfig.debugLogging) {
         startLogPolling();
       } else {
@@ -479,14 +479,14 @@ async function saveConfig() {
         lucide.createIcons();
       }
     } else {
-      showNotification(t('talking_heads_ui.notifications.save_failed', 'Fehler beim Speichern: {{error}}', { error: data.error || 'Unbekannter Fehler' }), 'error');
-      appendClientLog(t('talking_heads_ui.notifications.save_failed', 'Fehler beim Speichern: {{error}}', { error: data.error || 'Unbekannter Fehler' }), 'warn');
+      showNotification(t('plugins.talking-heads.talking_heads_ui.notifications.save_failed', 'Fehler beim Speichern: {{error}}', { error: data.error || 'Unbekannter Fehler' }), 'error');
+      appendClientLog(t('plugins.talking-heads.talking_heads_ui.notifications.save_failed', 'Fehler beim Speichern: {{error}}', { error: data.error || 'Unbekannter Fehler' }), 'warn');
       console.error('Config save error:', data);
     }
   } catch (error) {
     console.error('Failed to save config:', error);
-    showNotification(t('talking_heads_ui.notifications.save_failed', 'Fehler beim Speichern der Konfiguration: {{error}}', { error: error.message }), 'error');
-    appendClientLog(t('talking_heads_ui.notifications.save_failed', 'Fehler beim Speichern der Konfiguration: {{error}}', { error: error.message }), 'error');
+    showNotification(t('plugins.talking-heads.talking_heads_ui.notifications.save_failed', 'Fehler beim Speichern der Konfiguration: {{error}}', { error: error.message }), 'error');
+    appendClientLog(t('plugins.talking-heads.talking_heads_ui.notifications.save_failed', 'Fehler beim Speichern der Konfiguration: {{error}}', { error: error.message }), 'error');
   }
 }
 
@@ -497,7 +497,7 @@ async function testApi() {
   const btn = document.getElementById('testApiBtn');
   const originalHTML = btn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = `<i data-lucide="loader" class="inline-block w-4 h-4 mr-2 animate-spin"></i> ${t('talking_heads_ui.buttons.testing', 'Teste...')}`;
+  btn.innerHTML = `<i data-lucide="loader" class="inline-block w-4 h-4 mr-2 animate-spin"></i> ${t('plugins.talking-heads.talking_heads_ui.buttons.testing', 'Teste...')}`;
   
   if (typeof lucide !== 'undefined') {
     lucide.createIcons();
@@ -517,18 +517,18 @@ async function testApi() {
       if (data.provider) {
         currentConfig.activeProvider = data.provider;
       }
-      showNotification(t('talking_heads_ui.notifications.api_test_success', 'API-Verbindung erfolgreich'), 'success');
-      appendClientLog(t('talking_heads_ui.notifications.api_test_success', 'API-Verbindung erfolgreich'), 'info');
+      showNotification(t('plugins.talking-heads.talking_heads_ui.notifications.api_test_success', 'API-Verbindung erfolgreich'), 'success');
+      appendClientLog(t('plugins.talking-heads.talking_heads_ui.notifications.api_test_success', 'API-Verbindung erfolgreich'), 'info');
       updateApiStatus(true, data.apiKeySource || 'global_settings');
     } else {
-      showNotification(t('talking_heads_ui.notifications.api_test_failed', 'API-Verbindung fehlgeschlagen: {{error}}', { error: data.error || 'Unbekannter Fehler' }), 'error');
-      appendClientLog(t('talking_heads_ui.notifications.api_test_failed', 'API-Verbindung fehlgeschlagen: {{error}}', { error: data.error || 'Unbekannter Fehler' }), 'error');
+      showNotification(t('plugins.talking-heads.talking_heads_ui.notifications.api_test_failed', 'API-Verbindung fehlgeschlagen: {{error}}', { error: data.error || 'Unbekannter Fehler' }), 'error');
+      appendClientLog(t('plugins.talking-heads.talking_heads_ui.notifications.api_test_failed', 'API-Verbindung fehlgeschlagen: {{error}}', { error: data.error || 'Unbekannter Fehler' }), 'error');
       updateApiStatus(false, 'none');
     }
   } catch (error) {
     console.error('API test failed:', error);
-    showNotification(t('talking_heads_ui.notifications.api_test_error', 'API-Test fehlgeschlagen: {{error}}', { error: error.message }), 'error');
-    appendClientLog(t('talking_heads_ui.notifications.api_test_error', 'API-Test fehlgeschlagen: {{error}}', { error: error.message }), 'error');
+    showNotification(t('plugins.talking-heads.talking_heads_ui.notifications.api_test_error', 'API-Test fehlgeschlagen: {{error}}', { error: error.message }), 'error');
+    appendClientLog(t('plugins.talking-heads.talking_heads_ui.notifications.api_test_error', 'API-Test fehlgeschlagen: {{error}}', { error: error.message }), 'error');
     updateApiStatus(false, 'none');
   } finally {
     btn.disabled = false;
@@ -546,7 +546,7 @@ async function testGenerate() {
   const btn = document.getElementById('testGenerateBtn');
   const originalHTML = btn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = `<i data-lucide="loader" class="inline-block w-4 h-4 mr-2 animate-spin"></i> ${t('talking_heads_ui.buttons.generating', 'Generiere...')}`;
+  btn.innerHTML = `<i data-lucide="loader" class="inline-block w-4 h-4 mr-2 animate-spin"></i> ${t('plugins.talking-heads.talking_heads_ui.buttons.generating', 'Generiere...')}`;
   
   if (typeof lucide !== 'undefined') {
     lucide.createIcons();
@@ -555,7 +555,7 @@ async function testGenerate() {
   try {
     const styleKey = currentConfig?.defaultStyle || 'cartoon';
     
-    const startMessage = t('talking_heads_ui.notifications.generate_start', 'Starte Test-Generierung... (kann 15-30 Sekunden dauern)');
+    const startMessage = t('plugins.talking-heads.talking_heads_ui.notifications.generate_start', 'Starte Test-Generierung... (kann 15-30 Sekunden dauern)');
     showNotification(`🎨 ${startMessage}`, 'info');
     appendClientLog(startMessage, 'info');
     
@@ -571,17 +571,17 @@ async function testGenerate() {
 
     if (data.success) {
       const spriteCount = typeof data.sprites === 'number' ? data.sprites : 0;
-      showNotification(t('talking_heads_ui.notifications.generate_success', 'Test-Avatar erfolgreich generiert! ({{sprites}} Sprites erstellt)', { sprites: spriteCount }), 'success');
-      appendClientLog(t('talking_heads_ui.notifications.generate_success', 'Test-Avatar erfolgreich generiert! ({{sprites}} Sprites erstellt)', { sprites: spriteCount }), 'info');
+      showNotification(t('plugins.talking-heads.talking_heads_ui.notifications.generate_success', 'Test-Avatar erfolgreich generiert! ({{sprites}} Sprites erstellt)', { sprites: spriteCount }), 'success');
+      appendClientLog(t('plugins.talking-heads.talking_heads_ui.notifications.generate_success', 'Test-Avatar erfolgreich generiert! ({{sprites}} Sprites erstellt)', { sprites: spriteCount }), 'info');
       await loadAvatarList();
     } else {
-      showNotification(t('talking_heads_ui.notifications.generate_failed', 'Avatar-Generierung fehlgeschlagen: {{error}}', { error: data.error || 'Unbekannter Fehler' }), 'error');
-      appendClientLog(t('talking_heads_ui.notifications.generate_failed', 'Avatar-Generierung fehlgeschlagen: {{error}}', { error: data.error || 'Unbekannter Fehler' }), 'error');
+      showNotification(t('plugins.talking-heads.talking_heads_ui.notifications.generate_failed', 'Avatar-Generierung fehlgeschlagen: {{error}}', { error: data.error || 'Unbekannter Fehler' }), 'error');
+      appendClientLog(t('plugins.talking-heads.talking_heads_ui.notifications.generate_failed', 'Avatar-Generierung fehlgeschlagen: {{error}}', { error: data.error || 'Unbekannter Fehler' }), 'error');
     }
   } catch (error) {
     console.error('Test generation failed:', error);
-    showNotification(t('talking_heads_ui.notifications.generate_error', 'Test-Generierung fehlgeschlagen: {{error}}', { error: error.message }), 'error');
-    appendClientLog(t('talking_heads_ui.notifications.generate_error', 'Test-Generierung fehlgeschlagen: {{error}}', { error: error.message }), 'error');
+    showNotification(t('plugins.talking-heads.talking_heads_ui.notifications.generate_error', 'Test-Generierung fehlgeschlagen: {{error}}', { error: error.message }), 'error');
+    appendClientLog(t('plugins.talking-heads.talking_heads_ui.notifications.generate_error', 'Test-Generierung fehlgeschlagen: {{error}}', { error: error.message }), 'error');
   } finally {
     btn.disabled = false;
     btn.innerHTML = originalHTML;
@@ -601,7 +601,7 @@ async function previewTalkingHead() {
 
   const originalHTML = btn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = `<i data-lucide="loader" class="inline-block w-4 h-4 mr-2 animate-spin"></i> Wird vorbereitet...`;
+  btn.innerHTML = `<i data-lucide="loader" class="inline-block w-4 h-4 mr-2 animate-spin"></i> ${t('plugins.talking-heads.talking_heads_ui.buttons.preparing', 'Preparing…')}`;
   if (typeof lucide !== 'undefined') {
     lucide.createIcons();
   }
@@ -654,7 +654,7 @@ async function testAnimation() {
 
   const originalHTML = btn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = `<i data-lucide="loader" class="inline-block w-4 h-4 mr-2 animate-spin"></i> Starte Animation...`;
+  btn.innerHTML = `<i data-lucide="loader" class="inline-block w-4 h-4 mr-2 animate-spin"></i> ${t('plugins.talking-heads.talking_heads_ui.buttons.starting_animation', 'Starting animation…')}`;
   if (typeof lucide !== 'undefined') {
     lucide.createIcons();
   }
@@ -697,7 +697,7 @@ async function testAnimation() {
  * Clear cache
  */
 async function clearCache() {
-  if (!confirm(t('talking_heads_ui.notifications.cache_clear_confirm', 'Möchten Sie wirklich alle gecachten Avatare löschen?'))) {
+  if (!confirm(t('plugins.talking-heads.talking_heads_ui.notifications.cache_clear_confirm', 'Möchten Sie wirklich alle gecachten Avatare löschen?'))) {
     return;
   }
 
@@ -709,18 +709,18 @@ async function clearCache() {
     const data = await response.json();
 
     if (data.success) {
-      showNotification(t('talking_heads_ui.notifications.cache_cleared', '{{count}} Avatare gelöscht', { count: data.deleted }), 'success');
-      appendClientLog(t('talking_heads_ui.notifications.cache_cleared', '{{count}} Avatare gelöscht', { count: data.deleted }), 'info');
+      showNotification(t('plugins.talking-heads.talking_heads_ui.notifications.cache_cleared', '{{count}} Avatare gelöscht', { count: data.deleted }), 'success');
+      appendClientLog(t('plugins.talking-heads.talking_heads_ui.notifications.cache_cleared', '{{count}} Avatare gelöscht', { count: data.deleted }), 'info');
       await loadCacheStats();
       await loadAvatarList();
     } else {
-      showNotification(t('talking_heads_ui.notifications.cache_clear_failed', 'Fehler beim Löschen des Cache'), 'error');
-      appendClientLog(t('talking_heads_ui.notifications.cache_clear_failed', 'Fehler beim Löschen des Cache'), 'error');
+      showNotification(t('plugins.talking-heads.talking_heads_ui.notifications.cache_clear_failed', 'Fehler beim Löschen des Cache'), 'error');
+      appendClientLog(t('plugins.talking-heads.talking_heads_ui.notifications.cache_clear_failed', 'Fehler beim Löschen des Cache'), 'error');
     }
   } catch (error) {
     console.error('Failed to clear cache:', error);
-    showNotification(t('talking_heads_ui.notifications.cache_clear_failed', 'Fehler beim Löschen des Cache'), 'error');
-    appendClientLog(t('talking_heads_ui.notifications.cache_clear_failed', 'Fehler beim Löschen des Cache'), 'error');
+    showNotification(t('plugins.talking-heads.talking_heads_ui.notifications.cache_clear_failed', 'Fehler beim Löschen des Cache'), 'error');
+    appendClientLog(t('plugins.talking-heads.talking_heads_ui.notifications.cache_clear_failed', 'Fehler beim Löschen des Cache'), 'error');
   }
 }
 
@@ -764,7 +764,7 @@ function renderAvatarList(avatars = []) {
   if (!container) return;
 
   if (!avatars.length) {
-    container.innerHTML = '<div class="form-help">Noch keine Avatare generiert.</div>';
+    container.innerHTML = `<div class="form-help">${t('plugins.talking-heads.talking_heads_ui.empty.no_avatars', 'No avatars have been generated yet.')}</div>`;
     return;
   }
 
@@ -825,7 +825,7 @@ async function loadAvailableSprites() {
       if (!select) return;
       
       // Clear and populate dropdown
-      select.innerHTML = '<option value="">-- Bitte Avatar wählen --</option>';
+      select.innerHTML = `<option value="">${t('plugins.talking-heads.talking_heads_ui.placeholders.choose_avatar', '-- Choose avatar --')}</option>`;
       
       data.sprites.forEach(sprite => {
         const option = document.createElement('option');
@@ -949,13 +949,13 @@ function updateApiStatus(configured, source) {
   
   if (configured) {
     statusBadge.className = 'status-badge badge-success';
-    statusBadge.innerHTML = `<i data-lucide="check-circle" class="inline-block w-4 h-4"></i> ${t('talking_heads_ui.status.api_configured', 'API konfiguriert ({{provider}})', { provider: providerLabel })}`;
+    statusBadge.innerHTML = `<i data-lucide="check-circle" class="inline-block w-4 h-4"></i> ${t('plugins.talking-heads.talking_heads_ui.status.api_configured', 'API konfiguriert ({{provider}})', { provider: providerLabel })}`;
     if (warning) {
       warning.style.display = 'none';
     }
   } else {
     statusBadge.className = 'status-badge badge-warning';
-    statusBadge.innerHTML = `<i data-lucide="alert-triangle" class="inline-block w-4 h-4"></i> ${t('talking_heads_ui.status.api_missing', 'Kein API-Key ({{provider}})', { provider: providerLabel })}`;
+    statusBadge.innerHTML = `<i data-lucide="alert-triangle" class="inline-block w-4 h-4"></i> ${t('plugins.talking-heads.talking_heads_ui.status.api_missing', 'Kein API-Key ({{provider}})', { provider: providerLabel })}`;
     if (warning) {
       warning.style.display = 'block';
     }
@@ -1053,7 +1053,7 @@ async function testPermissions() {
   
   const originalHTML = btn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = '<i data-lucide="loader" class="inline-block w-4 h-4 mr-2 animate-spin"></i> Teste...';
+  btn.innerHTML = `<i data-lucide="loader" class="inline-block w-4 h-4 mr-2 animate-spin"></i> ${t('plugins.talking-heads.talking_heads_ui.buttons.testing', 'Testing…')}`;
   if (typeof lucide !== 'undefined') {
     lucide.createIcons();
   }
@@ -1089,13 +1089,13 @@ async function testPermissions() {
       
       showNotification('Berechtigungs-Test abgeschlossen', 'info');
     } else {
-      resultDiv.innerHTML = `<strong>Fehler:</strong> ${escapeHtml(data.error || 'Unbekannter Fehler')}`;
+      resultDiv.innerHTML = `<strong>${t('plugins.talking-heads.talking_heads_ui.errors.prefix', 'Error:')}</strong> ${escapeHtml(data.error || '')}`;
       resultDiv.className = 'alert alert-warning';
       resultDiv.style.display = 'block';
     }
   } catch (error) {
     console.error('Permission test failed:', error);
-    resultDiv.innerHTML = `<strong>Fehler:</strong> ${escapeHtml(error.message || 'Unbekannter Fehler')}`;
+    resultDiv.innerHTML = `<strong>${t('plugins.talking-heads.talking_heads_ui.errors.prefix', 'Error:')}</strong> ${escapeHtml(error.message || '')}`;
     resultDiv.className = 'alert alert-warning';
     resultDiv.style.display = 'block';
   } finally {
@@ -1138,7 +1138,7 @@ function renderLogEntries(logs = []) {
   if (!container) return;
 
   if (!logs.length) {
-    container.textContent = t('talking_heads_ui.logs.empty', 'Noch keine Log-Einträge verfügbar.');
+    container.textContent = t('plugins.talking-heads.talking_heads_ui.logs.empty', 'Noch keine Log-Einträge verfügbar.');
     return;
   }
 
@@ -1224,7 +1224,7 @@ async function loadStreamUsers() {
   
   try {
     loadBtn.disabled = true;
-    loadBtn.innerHTML = '<i data-lucide="loader" class="inline-block w-4 h-4 mr-2 animate-spin"></i> Lade...';
+    loadBtn.innerHTML = `<i data-lucide="loader" class="inline-block w-4 h-4 mr-2 animate-spin"></i> ${t('plugins.talking-heads.talking_heads_ui.buttons.loading', 'Loading…')}`;
     
     currentFilterMode = userFilterSelect?.value || 'active';
     const limit = currentFilterMode === 'active' ? MAX_ACTIVE_USERS : MAX_SEARCH_RESULTS;
@@ -1239,8 +1239,10 @@ async function loadStreamUsers() {
     allUsers = data.users || [];
     filteredUsers = [...allUsers];
     
-    const filterLabel = currentFilterMode === 'active' ? ' (aktiver Stream)' : ' (global)';
-    userCountLabel.textContent = `${allUsers.length} User geladen${filterLabel}`;
+    const filterLabel = currentFilterMode === 'active'
+      ? t('plugins.talking-heads.talking_heads_ui.status.active_stream_scope', ' (active stream)')
+      : t('plugins.talking-heads.talking_heads_ui.status.global_scope', ' (global)');
+    userCountLabel.textContent = t('plugins.talking-heads.talking_heads_ui.status.users_loaded', '{{count}} users loaded{{scope}}', { count: allUsers.length, scope: filterLabel });
     userListContainer.style.display = 'block';
     
     // Clear search input when loading
@@ -1256,7 +1258,7 @@ async function loadStreamUsers() {
     showNotification('Fehler beim Laden der User: ' + error.message, 'error');
   } finally {
     loadBtn.disabled = false;
-    loadBtn.innerHTML = '<i data-lucide="refresh-cw" class="inline-block w-4 h-4 mr-2"></i> User aus Stream laden';
+    loadBtn.innerHTML = `<i data-lucide="refresh-cw" class="inline-block w-4 h-4 mr-2"></i> ${t('plugins.talking-heads.talking_heads_ui.buttons.load_stream_users', 'Load users from stream')}`;
     if (typeof lucide !== 'undefined') {
       lucide.createIcons();
     }
@@ -1291,7 +1293,7 @@ async function filterUserList(searchTerm) {
       
       if (data.success) {
         filteredUsers = data.users || [];
-        userCountLabel.textContent = `${filteredUsers.length} User gefunden (Suche: "${term}")`;
+            userCountLabel.textContent = t('plugins.talking-heads.talking_heads_ui.status.users_found', '{{count}} users found (search: "{{term}}")', { count: filteredUsers.length, term });
         renderUserList(filteredUsers);
       }
     } catch (error) {
@@ -1316,7 +1318,7 @@ function renderUserList(users) {
   if (!container) return;
   
   if (!users || users.length === 0) {
-    container.innerHTML = '<div class="form-help" style="text-align: center; padding: 20px;">Keine User gefunden</div>';
+    container.innerHTML = `<div class="form-help" style="text-align: center; padding: 20px;">${t('plugins.talking-heads.talking_heads_ui.empty.no_users', 'No users found.')}</div>`;
     return;
   }
   

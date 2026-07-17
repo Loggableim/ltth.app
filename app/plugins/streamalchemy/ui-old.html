@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="generated.dd7d2c71b83a">Stream Alchemy - Configuration</title>
+    <title data-i18n="plugins.streamalchemy.labels.stream_alchemy_configuration">Stream Alchemy - Configuration</title>
     <link rel="stylesheet" href="/css/themes.css">
     <script src="/socket.io/socket.io.js"></script>
     <style>
@@ -204,26 +204,26 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1 data-i18n="generated.d5ca1cb8096d">🧪 Stream Alchemy</h1>
-            <p data-i18n="generated.dcab5db5b211">Transform TikTok gifts into virtual RPG items with crafting mechanics</p>
+            <h1 data-i18n="plugins.streamalchemy.labels.stream_alchemy">🧪 Stream Alchemy</h1>
+            <p data-i18n="plugins.streamalchemy.labels.transform_tiktok_gifts_into_virtual_rpg_items_with">Transform TikTok gifts into virtual RPG items with crafting mechanics</p>
         </div>
 
         <div id="message-container"></div>
 
         <!-- Statistics -->
         <div class="card">
-            <div class="card-title" data-i18n="generated.401744b70866">📊 Statistics</div>
+            <div class="card-title" data-i18n="plugins.streamalchemy.labels.statistics">📊 Statistics</div>
             <div class="stats-grid" id="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-label" data-i18n="streamalchemy.stats.total_items">Total Items</div>
+                    <div class="stat-label" data-i18n="plugins.streamalchemy.streamalchemy.stats.total_items">Total Items</div>
                     <div class="stat-value" id="stat-total-items">-</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label" data-i18n="streamalchemy.stats.total_crafts">Total Crafts</div>
+                    <div class="stat-label" data-i18n="plugins.streamalchemy.streamalchemy.stats.total_crafts">Total Crafts</div>
                     <div class="stat-value" id="stat-total-crafts">-</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label" data-i18n="generated.24d89e884158">Active Buffers</div>
+                    <div class="stat-label" data-i18n="plugins.streamalchemy.labels.active_buffers">Active Buffers</div>
                     <div class="stat-value" id="stat-active-buffers">-</div>
                 </div>
             </div>
@@ -231,28 +231,28 @@
 
         <!-- Configuration -->
         <div class="card">
-            <div class="card-title" data-i18n="generated.af2ab1fec712">⚙️ Configuration</div>
+            <div class="card-title" data-i18n="plugins.streamalchemy.labels.configuration">⚙️ Configuration</div>
             <form id="config-form">
                 <div class="config-group">
-                    <label class="config-label" for="craft-window" data-i18n="generated.9c95080a7e57">Crafting Time Window (seconds)</label>
-                    <div class="config-description" data-i18n="generated.3f2a552fb286">Time window for users to send 2 gifts to trigger crafting</div>
+                    <label class="config-label" for="craft-window" data-i18n="plugins.streamalchemy.labels.crafting_time_window_seconds">Crafting Time Window (seconds)</label>
+                    <div class="config-description" data-i18n="plugins.streamalchemy.labels.time_window_for_users_to_send_2_gifts">Time window for users to send 2 gifts to trigger crafting</div>
                     <input type="number" id="craft-window" name="craftWindow" min="1" max="30" value="6">
                 </div>
 
                 <div class="config-group">
-                    <label class="config-label" for="openai-key" data-i18n="generated.3e8a5fbcd640">OpenAI API Key (optional)</label>
-                    <div class="config-description" data-i18n="generated.47943accfe7e">Required for AI-generated item icons</div>
+                    <label class="config-label" for="openai-key" data-i18n="plugins.streamalchemy.labels.openai_api_key_optional">OpenAI API Key (optional)</label>
+                    <div class="config-description" data-i18n="plugins.streamalchemy.labels.required_for_ai_generated_item_icons">Required for AI-generated item icons</div>
                     <input type="text" id="openai-key" name="openaiApiKey" placeholder="sk-...">
                 </div>
 
-                <button type="submit" class="btn btn-primary" data-i18n="generated.bcb4377c71df">Save Configuration</button>
+                <button type="submit" class="btn btn-primary" data-i18n="plugins.streamalchemy.labels.save_configuration">Save Configuration</button>
             </form>
         </div>
 
         <!-- Recent Items -->
         <div class="card">
-            <div class="card-title" data-i18n="generated.54ab516224ea">🎁 Recent Items</div>
-            <div id="items-container" class="loading" data-i18n="streamalchemy.items.loading">Loading items...</div>
+            <div class="card-title" data-i18n="plugins.streamalchemy.labels.recent_items">🎁 Recent Items</div>
+            <div id="items-container" class="loading" data-i18n="plugins.streamalchemy.streamalchemy.items.loading">Loading items...</div>
         </div>
     </div>
 
@@ -260,6 +260,14 @@
         const socket = io();
         let config = {};
         let stats = {};
+
+        function translateUi(key, fallback, params = {}) {
+            const translation = window.i18n?.t(key, params);
+            if (translation && translation !== key) return translation;
+            return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+                Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+            ));
+        }
 
         // Load configuration
         async function loadConfig() {
@@ -299,7 +307,11 @@
                 }
             } catch (error) {
                 console.error('Failed to load items:', error);
-                document.getElementById('items-container').innerHTML = '<div class="error">Failed to load items</div>';
+                const container = document.getElementById('items-container');
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'error';
+                errorMessage.textContent = translateUi('plugins.streamalchemy.ui.legacy.itemsLoadFailed', 'Failed to load items');
+                container.replaceChildren(errorMessage);
             }
         }
 
@@ -319,24 +331,30 @@
         // Display items
         function displayItems(items) {
             const container = document.getElementById('items-container');
-            
+
             if (!items || items.length === 0) {
-                container.innerHTML = '<p class="loading">No items yet. Send gifts to generate items!</p>';
+                const emptyMessage = document.createElement('p');
+                emptyMessage.className = 'loading';
+                emptyMessage.textContent = translateUi('plugins.streamalchemy.ui.legacy.noItems', 'No items yet. Send gifts to generate items!');
+                container.replaceChildren(emptyMessage);
                 return;
             }
 
             const recentItems = items.slice(-20).reverse(); // Last 20 items
-            
+
             const table = document.createElement('table');
             table.className = 'items-table';
+            const headers = [
+                translateUi('plugins.streamalchemy.ui.legacy.name', 'Name'),
+                translateUi('plugins.streamalchemy.ui.legacy.type', 'Type'),
+                translateUi('plugins.streamalchemy.ui.legacy.rarity', 'Rarity'),
+                translateUi('plugins.streamalchemy.ui.legacy.fromGift', 'From Gift'),
+                translateUi('plugins.streamalchemy.ui.legacy.created', 'Created')
+            ];
             table.innerHTML = `
                 <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Rarity</th>
-                        <th>From Gift</th>
-                        <th>Created</th>
+                        ${headers.map(header => `<th>${header}</th>`).join('')}
                     </tr>
                 </thead>
                 <tbody>
@@ -351,15 +369,16 @@
                     `).join('')}
                 </tbody>
             `;
-            
+
             container.innerHTML = '';
             container.appendChild(table);
+            window.i18n?.updateDOM?.();
         }
 
         // Handle form submission
         document.getElementById('config-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const formData = new FormData(e.target);
             const newConfig = {
                 craftWindow: parseInt(formData.get('craftWindow')),
@@ -393,7 +412,7 @@
             message.className = type;
             message.textContent = text;
             container.appendChild(message);
-            
+
             setTimeout(() => message.remove(), 5000);
         }
 

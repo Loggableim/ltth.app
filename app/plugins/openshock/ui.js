@@ -18,12 +18,74 @@ let stats = {};
 let debugLogs = [];
 let updateInterval = null;
 let currentTab = 'dashboard';
+let shareCodes = [];
 
 // Pattern step defaults
 const DEFAULT_STEP_INTENSITY = 50;
 const DEFAULT_STEP_DURATION = 500;
 const MODAL_RENDER_DELAY_MS = 50;
 const MAX_DEBUG_LOGS = 200;
+
+const RUNTIME_I18N_PREFIX = 'plugins.openshock.runtime.';
+const TOAST_SUCCESS = 'success';
+const TOAST_ERROR = 'error';
+
+function interpolateRuntimeFallback(fallback, params = {}) {
+    return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+    ));
+}
+
+function runtimeText(key, fallback, params = {}) {
+    const translationKey = `${RUNTIME_I18N_PREFIX}${key}`;
+    const translated = window.i18n && typeof window.i18n.t === 'function'
+        ? window.i18n.t(translationKey, params)
+        : translationKey;
+    return translated && translated !== translationKey
+        ? translated
+        : interpolateRuntimeFallback(fallback, params);
+}
+
+function setRuntimeAttribute(element, attribute, key, fallback, params = {}) {
+    if (element) element.setAttribute(attribute, runtimeText(key, fallback, params));
+}
+
+function refreshApiKeyPlaceholders() {
+    const apiKeyInput = document.getElementById('apiKey');
+    const pishockApiKeyInput = document.getElementById('pishockApiKey');
+
+    if (apiKeyInput) {
+        apiKeyInput.placeholder = apiKeyInput.value === '***SAVED***'
+            ? runtimeText('placeholders.api_key_configured', 'API key saved (hidden)')
+            : runtimeText('placeholders.api_key', 'Enter your OpenShock API key');
+    }
+
+    if (pishockApiKeyInput) {
+        pishockApiKeyInput.placeholder = pishockApiKeyInput.value === '***SAVED***'
+            ? runtimeText('placeholders.api_key_configured', 'API key saved (hidden)')
+            : runtimeText('placeholders.pishock_api_key', 'Enter your PiShock API key');
+    }
+}
+
+function rerenderRuntimeCopy() {
+    renderDebugLog();
+    renderCommandLog(debugLogs.slice(0, 10));
+    renderMappingList();
+    renderPatternList();
+    renderGiftCatalog();
+    renderQueueStatus();
+    renderShareCodeList(shareCodes);
+    updateApiStatus(devices.length > 0, devices.length);
+    updateEmergencyStopButtons(Boolean(config?.emergencyStop?.enabled));
+    rerenderZappieHellRuntimeCopy();
+    queueMicrotask(refreshApiKeyPlaceholders);
+}
+
+function registerRuntimeI18n() {
+    if (!window.i18n) return;
+    if (typeof window.i18n.onChange === 'function') window.i18n.onChange(rerenderRuntimeCopy);
+    if (typeof window.i18n.onLanguageChange === 'function') window.i18n.onLanguageChange(rerenderRuntimeCopy);
+}
 
 // ====================================================================
 // DEBUG LOGGING FUNCTIONS
@@ -65,7 +127,7 @@ function renderDebugLog() {
     
     if (debugLogs.length === 0) {
         containers.forEach(container => {
-            container.innerHTML = '<p class="text-muted text-center">Debug log is empty. Pattern operations will be logged here.</p>';
+            container.innerHTML = `<p class="text-muted text-center">${escapeHtml(runtimeText('status.debug_log_empty', 'Debug log is empty. Pattern operations will be logged here.'))}</p>`;
         });
         return;
     }
@@ -132,7 +194,9 @@ function toggleDebugVerbose() {
     renderDebugLog();
     const btn = document.getElementById('toggleDebugVerbose');
     if (btn) {
-        btn.textContent = debugVerbose ? '📊 Normal' : '📊 Verbose';
+        btn.textContent = debugVerbose
+            ? `📊 ${runtimeText('status.normal', 'Normal')}`
+            : `📊 ${runtimeText('status.verbose', 'Verbose')}`;
         btn.classList.toggle('btn-primary', debugVerbose);
     }
     addDebugLog('info', `Verbose mode ${debugVerbose ? 'enabled' : 'disabled'}`);
@@ -149,6 +213,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     initializeTabs();
     initializeModals();
     initializeEventDelegation();
+    registerRuntimeI18n();
+    if (window.i18n?.ready) window.i18n.ready.then(rerenderRuntimeCopy);
 
     await loadInitialData();
     startPeriodicUpdates();
@@ -293,7 +359,7 @@ function handleQueueUpdate(data) {
 }
 
 function handleEmergencyStop(data) {
-    showNotification('EMERGENCY STOP ACTIVATED!', 'error');
+    showNotification(runtimeText('safety.emergency_stop_activated', 'EMERGENCY STOP ACTIVATED!'), 'error');
     document.body.classList.add('emergency-active');
     setTimeout(() => {
         document.body.classList.remove('emergency-active');
@@ -368,10 +434,10 @@ async function loadInitialData() {
         // Update API status with device count
         updateApiStatus(devices.length > 0, devices.length);
 
-        showNotification('Hybrid Shock plugin loaded successfully', 'success');
+            showNotification(runtimeText('status.loaded', 'Hybrid Shock plugin loaded successfully'), 'success');
     } catch (error) {
         console.error('[Hybrid Shock] Error loading initial data:', error);
-        showNotification('Error loading Hybrid Shock data', 'error');
+            showNotification(runtimeText('errors.load_data', 'Error loading Hybrid Shock data'), 'error');
         
         // Update API status as failed
         updateApiStatus(false, 0);
@@ -398,10 +464,8 @@ async function loadConfig() {
         if (apiKeyInput) {
             if (config.apiKey) {
                 apiKeyInput.value = '***SAVED***';
-                apiKeyInput.placeholder = 'API Key gespeichert (verborgen)';
             } else {
                 apiKeyInput.value = '';
-                apiKeyInput.placeholder = 'Enter your OpenShock API key';
             }
         }
 
@@ -422,15 +486,16 @@ async function loadConfig() {
         if (pishockApiKeyEl) {
             if (pishockCfg.apiKey) {
                 pishockApiKeyEl.value = '***SAVED***';
-                pishockApiKeyEl.placeholder = 'API Key gespeichert (verborgen)';
             } else {
                 pishockApiKeyEl.value = '';
-                pishockApiKeyEl.placeholder = 'Enter your PiShock API key';
             }
         }
 
+        refreshApiKeyPlaceholders();
+
         // Render ShareCode list
-        renderShareCodeList(pishockCfg.shareCodes || []);
+            shareCodes = pishockCfg.shareCodes || [];
+            renderShareCodeList(shareCodes);
 
         // ---- Safety Settings ----
         if (config.globalLimits) {
@@ -589,7 +654,7 @@ function renderDeviceList() {
 
     if (devices.length === 0) {
         container.innerHTML = `
-            <p class="text-muted text-center">No devices found. Configure API key first.</p>
+            <p class="text-muted text-center">${escapeHtml(runtimeText('devices.no_devices', 'No devices found. Configure API key first.'))}</p>
         `;
         
         // Also update test shock dropdown and mapping device dropdown
@@ -647,19 +712,22 @@ function renderDeviceList() {
                                 <div class="btn-group">
                                     <button data-device-id="${escapeHtml(device.id)}" data-test-type="vibrate"
                                             class="btn btn-sm btn-secondary test-device-btn"
-                                            title="Test Vibrate"
+                                            title="${escapeHtml(runtimeText('accessibility.test_vibrate', 'Test vibrate'))}"
+                                            aria-label="${escapeHtml(runtimeText('accessibility.test_vibrate', 'Test vibrate'))}"
                                             ${device.isPaused ? 'disabled' : ''}>
                                         🔊
                                     </button>
                                     <button data-device-id="${escapeHtml(device.id)}" data-test-type="shock"
                                             class="btn btn-sm btn-warning test-device-btn"
-                                            title="Test Shock"
+                                            title="${escapeHtml(runtimeText('accessibility.test_shock', 'Test shock'))}"
+                                            aria-label="${escapeHtml(runtimeText('accessibility.test_shock', 'Test shock'))}"
                                             ${device.isPaused ? 'disabled' : ''}>
                                         ⚡
                                     </button>
                                     <button data-device-id="${escapeHtml(device.id)}" data-test-type="sound"
                                             class="btn btn-sm btn-info test-device-btn"
-                                            title="Test Sound"
+                                            title="${escapeHtml(runtimeText('accessibility.test_sound', 'Test sound'))}"
+                                            aria-label="${escapeHtml(runtimeText('accessibility.test_sound', 'Test sound'))}"
                                             ${device.isPaused ? 'disabled' : ''}>
                                         🔔
                                     </button>
@@ -684,7 +752,7 @@ function renderCommandLog(commands) {
     if (!container) return;
 
     if (commands.length === 0) {
-        container.innerHTML = '<p class="text-muted text-center">No commands executed yet.</p>';
+        container.innerHTML = `<p class="text-muted text-center">${escapeHtml(runtimeText('queue.no_commands', 'No commands executed yet.'))}</p>`;
         return;
     }
 
@@ -709,7 +777,7 @@ function renderMappingList() {
 
     if (mappings.length === 0) {
         container.innerHTML = `
-            <p class="text-muted text-center">No mappings configured. Click "Add Mapping" to create one.</p>
+            <p class="text-muted text-center">${escapeHtml(runtimeText('mapping.empty', 'No mappings configured. Click "Add Mapping" to create one.'))}</p>
         `;
         return;
     }
@@ -766,7 +834,7 @@ function renderPatternList() {
 
     // Render custom patterns
     if (customPatterns.length === 0) {
-        customContainer.innerHTML = `<p class="text-muted text-center">Noch keine Patterns erstellt. Klicke auf "Neues Pattern" um eines zu erstellen.</p>`;
+        customContainer.innerHTML = `<p class="text-muted text-center">${escapeHtml(runtimeText('pattern.empty', 'Noch keine Patterns erstellt. Klicke auf "Neues Pattern" um eines zu erstellen.'))}</p>`;
     } else {
         const customHtml = customPatterns.map(pattern => `
             <div class="pattern-card">
@@ -812,7 +880,7 @@ function renderGiftCatalog() {
 
     if (giftCatalog.length === 0) {
         container.innerHTML = `
-            <p class="text-muted text-center">No gifts found in catalog. The catalog will be populated when you connect to TikTok Live.</p>
+            <p class="text-muted text-center">${escapeHtml(runtimeText('mapping.gift_catalog_empty', 'No gifts found in catalog. The catalog will be populated when you connect to TikTok Live.'))}</p>
         `;
         return;
     }
@@ -845,7 +913,7 @@ function updateGiftNameSelect() {
     if (!select) return;
     
     // Clear existing options except "All Gifts"
-    select.innerHTML = '<option value="">All Gifts</option>';
+    select.innerHTML = `<option value="">${escapeHtml(runtimeText('mapping.all_gifts', 'All Gifts'))}</option>`;
     
     // Add gift options sorted by diamond count (descending)
     const sortedGifts = [...giftCatalog].sort((a, b) => (b.diamond_count || 0) - (a.diamond_count || 0));
@@ -867,7 +935,9 @@ function renderQueueStatus() {
         queueLengthEl.textContent = queueLength;
     }
     if (queueProcessingEl) {
-        queueProcessingEl.textContent = queueStatus.processing ? 'Yes' : 'No';
+        queueProcessingEl.textContent = queueStatus.processing
+            ? runtimeText('queue.processing_yes', 'Yes')
+            : runtimeText('queue.processing_no', 'No');
     }
 }
 
@@ -904,13 +974,13 @@ function updateConnectionStatus(status) {
 
     if (status === 'connected') {
         badge.classList.add('openshock-connection-connected');
-        badge.innerHTML = '<i class="fas fa-check-circle"></i> Connected';
+        badge.innerHTML = `<i class="fas fa-check-circle"></i> ${escapeHtml(runtimeText('connection.connected', 'Connected'))}`;
     } else if (status === 'disconnected') {
         badge.classList.add('openshock-connection-disconnected');
-        badge.innerHTML = '<i class="fas fa-times-circle"></i> Disconnected';
+        badge.innerHTML = `<i class="fas fa-times-circle"></i> ${escapeHtml(runtimeText('connection.disconnected', 'Disconnected'))}`;
     } else {
         badge.classList.add('openshock-connection-error');
-        badge.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error';
+        badge.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${escapeHtml(runtimeText('connection.error', 'Error'))}`;
     }
 }
 
@@ -928,7 +998,9 @@ function openMappingModal(mappingId = null) {
     // Set modal title
     const modalTitle = document.getElementById('mappingModalTitle');
     if (modalTitle) {
-        modalTitle.textContent = isEdit ? 'Edit Event Mapping' : 'Add Event Mapping';
+        modalTitle.textContent = isEdit
+            ? runtimeText('mapping.dialog_edit', 'Edit Event Mapping')
+            : runtimeText('mapping.dialog_add', 'Add Event Mapping');
     }
 
     // Store mapping ID in a data attribute if editing
@@ -1145,12 +1217,14 @@ async function saveMappingModal() {
         renderMappingList();
         closeModal('mappingModal');
 
-        showNotification(`Mapping ${isEdit ? 'aktualisiert' : 'erstellt'}`, 'success');
+        showNotification(isEdit
+            ? runtimeText('mapping.updated', 'Mapping updated')
+            : runtimeText('mapping.created', 'Mapping created'), 'success');
         addDebugLog('info', `Mapping "${mapping.name}" ${isEdit ? 'updated' : 'created'} successfully`);
     } catch (error) {
         console.error('[OpenShock] Error saving mapping:', error);
         addDebugLog('error', `Mapping save error: ${error.message}`);
-        showNotification(`Fehler beim Speichern: ${error.message}`, 'error');
+        showNotification(runtimeText('errors.save_with_reason', 'Error saving: {error}', { error: error.message }), 'error');
     }
 }
 
@@ -1196,10 +1270,10 @@ async function deleteMapping(id) {
 
         await loadMappings();
         renderMappingList();
-        showNotification('Mapping deleted successfully', 'success');
+        showNotification(runtimeText('mapping.deleted', 'Mapping deleted successfully'), 'success');
     } catch (error) {
         console.error('[OpenShock] Error deleting mapping:', error);
-        showNotification('Error deleting mapping', 'error');
+        showNotification(runtimeText('mapping.delete_failed', 'Error deleting mapping'), 'error');
     }
 }
 
@@ -1215,10 +1289,12 @@ async function toggleMapping(id, enabled) {
 
         await loadMappings();
         renderMappingList();
-        showNotification(`Mapping ${enabled ? 'enabled' : 'disabled'}`, 'success');
+        showNotification(enabled
+            ? runtimeText('mapping.enabled', 'Mapping enabled')
+            : runtimeText('mapping.disabled', 'Mapping disabled'), 'success');
     } catch (error) {
         console.error('[OpenShock] Error toggling mapping:', error);
-        showNotification('Error toggling mapping', 'error');
+        showNotification(runtimeText('mapping.toggle_failed', 'Error toggling mapping'), 'error');
     }
 }
 
@@ -1244,10 +1320,10 @@ async function importMappings() {
 
             await loadMappings();
             renderMappingList();
-            showNotification('Mappings imported successfully', 'success');
+            showNotification(runtimeText('mapping.imported', 'Mappings imported successfully'), 'success');
         } catch (error) {
             console.error('[OpenShock] Error importing mappings:', error);
-            showNotification('Error importing mappings', 'error');
+            showNotification(runtimeText('mapping.import_failed', 'Error importing mappings'), 'error');
         }
     };
 
@@ -1267,10 +1343,10 @@ async function exportMappings() {
         a.click();
         window.URL.revokeObjectURL(url);
 
-        showNotification('Mappings exported successfully', 'success');
+        showNotification(runtimeText('mapping.exported', 'Mappings exported successfully'), 'success');
     } catch (error) {
         console.error('[OpenShock] Error exporting mappings:', error);
-        showNotification('Error exporting mappings', 'error');
+        showNotification(runtimeText('mapping.export_failed', 'Error exporting mappings'), 'error');
     }
 }
 
@@ -1305,20 +1381,20 @@ async function refreshGiftCatalog() {
     const button = document.getElementById('refreshGiftCatalog');
     if (button) {
         button.disabled = true;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+        button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${escapeHtml(runtimeText('buttons.refreshing', 'Refreshing...'))}`;
     }
     
     try {
         await loadGiftCatalog();
         renderGiftCatalog();
-        showNotification(`Gift catalog refreshed - ${giftCatalog.length} gifts loaded`, 'success');
+        showNotification(runtimeText('mapping.gift_catalog_refreshed', 'Gift catalog refreshed - {count} gifts loaded', { count: giftCatalog.length }), 'success');
     } catch (error) {
         console.error('[OpenShock] Error refreshing gift catalog:', error);
-        showNotification('Error refreshing gift catalog', 'error');
+        showNotification(runtimeText('mapping.gift_catalog_refresh_failed', 'Error refreshing gift catalog'), 'error');
     } finally {
         if (button) {
             button.disabled = false;
-            button.innerHTML = '🔄 Refresh Catalog';
+            button.innerHTML = `🔄 ${escapeHtml(runtimeText('buttons.refresh_catalog', 'Refresh Catalog'))}`;
         }
     }
 }
@@ -1343,7 +1419,9 @@ function openPatternModal(patternId = null) {
     const stepCountLabel = document.getElementById('stepCountLabel');
 
     if (modalTitle) {
-        modalTitle.textContent = isEdit ? 'Edit Pattern' : 'Create New Pattern';
+        modalTitle.textContent = isEdit
+            ? runtimeText('pattern.dialog_edit', 'Edit Pattern')
+            : runtimeText('pattern.dialog_create', 'Create New Pattern');
     }
 
     // Store pattern ID in modal data attribute
@@ -1403,7 +1481,7 @@ function renderPatternSteps() {
     }
 
     if (currentPatternSteps.length === 0) {
-        container.innerHTML = '<div class="text-muted text-center p-3">Noch keine Schritte hinzugefügt. Füge oben deinen ersten Schritt hinzu.</div>';
+        container.innerHTML = `<div class="text-muted text-center p-3">${escapeHtml(runtimeText('pattern.steps_empty', 'Noch keine Schritte hinzugefügt. Füge oben deinen ersten Schritt hinzu.'))}</div>`;
         if (patternInfo) patternInfo.style.display = 'none';
         renderPatternPreview();
         return;
@@ -1439,11 +1517,11 @@ function renderPatternSteps() {
                 <span>Dauer: ${step.duration}ms</span>
             </div>
             <div class="pattern-step-actions">
-                ${index > 0 ? `<button data-step-index="${index}" class="btn btn-sm btn-secondary move-up-btn" title="Nach oben">⬆️</button>` : ''}
-                ${index < currentPatternSteps.length - 1 ? `<button data-step-index="${index}" class="btn btn-sm btn-secondary move-down-btn" title="Nach unten">⬇️</button>` : ''}
-                <button data-step-index="${index}" class="btn btn-sm btn-secondary duplicate-step-btn" title="Duplizieren">📋</button>
-                <button data-step-index="${index}" class="btn btn-sm btn-secondary edit-pattern-step-btn" title="Bearbeiten">✏️</button>
-                <button data-step-index="${index}" class="btn btn-sm btn-danger remove-pattern-step-btn" title="Löschen">🗑️</button>
+                ${index > 0 ? `<button data-step-index="${index}" class="btn btn-sm btn-secondary move-up-btn" title="${escapeHtml(runtimeText('pattern.move_up', 'Move up'))}">⬆️</button>` : ''}
+                ${index < currentPatternSteps.length - 1 ? `<button data-step-index="${index}" class="btn btn-sm btn-secondary move-down-btn" title="${escapeHtml(runtimeText('pattern.move_down', 'Move down'))}">⬇️</button>` : ''}
+                <button data-step-index="${index}" class="btn btn-sm btn-secondary duplicate-step-btn" title="${escapeHtml(runtimeText('pattern.duplicate_step', 'Duplicate step'))}">📋</button>
+                <button data-step-index="${index}" class="btn btn-sm btn-secondary edit-pattern-step-btn" title="${escapeHtml(runtimeText('pattern.edit_step', 'Edit step'))}">✏️</button>
+                <button data-step-index="${index}" class="btn btn-sm btn-danger remove-pattern-step-btn" title="${escapeHtml(runtimeText('pattern.delete_step', 'Delete step'))}">🗑️</button>
             </div>
         </div>
     `).join('');
@@ -1510,7 +1588,7 @@ function addPatternStep() {
     // Reset button to add mode
     const addButton = document.getElementById('addPatternStep');
     if (addButton) {
-        addButton.innerHTML = '➕ Schritt zum Pattern hinzufügen';
+        addButton.innerHTML = `➕ ${escapeHtml(runtimeText('pattern.add_step', 'Schritt zum Pattern hinzufügen'))}`;
         addButton.classList.remove('btn-warning');
         addButton.classList.add('btn-success');
     }
@@ -1583,7 +1661,7 @@ function duplicatePatternStep(index) {
         stepCountLabel.textContent = currentPatternSteps.length;
     }
     
-    showNotification(`Schritt ${index + 1} dupliziert`, 'success');
+    showNotification(runtimeText('pattern.step_duplicated', 'Step {step} duplicated', { step: index + 1 }), 'success');
     addDebugLog('info', `Duplicated step ${index + 1}: ${step.type}`);
 }
 
@@ -1651,7 +1729,7 @@ function editPatternStep(index) {
     // Update button text to indicate editing mode
     const addButton = document.getElementById('addPatternStep');
     if (addButton) {
-        addButton.innerHTML = '✏️ Schritt aktualisieren';
+        addButton.innerHTML = `✏️ ${escapeHtml(runtimeText('pattern.update_step', 'Update step'))}`;
         addButton.classList.remove('btn-success');
         addButton.classList.add('btn-warning');
     }
@@ -1665,7 +1743,7 @@ function editPatternStep(index) {
         quickStepForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
     
-    showNotification('Schritt zum Bearbeiten geladen. Passe die Werte an und klicke "Schritt aktualisieren".', 'info');
+    showNotification(runtimeText('pattern.step_loaded_for_edit', 'Step loaded for editing. Adjust the values and click "Update step".'), 'info');
     addDebugLog('info', `Editing step ${index + 1}: ${step.type}`);
 }
 
@@ -1674,7 +1752,7 @@ function renderPatternPreview() {
     if (!container) return;
 
     if (currentPatternSteps.length === 0) {
-        container.innerHTML = '<p class="text-muted text-center pattern-timeline-text">Schritte hinzufügen für Vorschau</p>';
+        container.innerHTML = `<p class="text-muted text-center pattern-timeline-text">${escapeHtml(runtimeText('pattern.preview_empty', 'Add steps for preview'))}</p>`;
         return;
     }
 
@@ -1720,7 +1798,7 @@ async function savePatternModal() {
     const isEdit = !!patternId;
 
     if (currentPatternSteps.length === 0) {
-        showNotification('Pattern muss mindestens einen Schritt haben', 'error');
+        showNotification(runtimeText('pattern.steps_required', 'Pattern must have at least one step'), 'error');
         addDebugLog('error', 'Pattern save failed: No steps');
         return;
     }
@@ -1730,7 +1808,7 @@ async function savePatternModal() {
 
     const patternName = nameInput?.value?.trim();
     if (!patternName) {
-        showNotification('Bitte gib einen Pattern-Namen ein', 'error');
+        showNotification(runtimeText('pattern.name_required', 'Please enter a pattern name'), 'error');
         addDebugLog('error', 'Pattern save failed: No name');
         return;
     }
@@ -1772,12 +1850,14 @@ async function savePatternModal() {
         renderPatternList();
         closeModal('patternModal');
 
-        showNotification(`Pattern "${patternName}" ${isEdit ? 'aktualisiert' : 'erstellt'}`, 'success');
+        showNotification(isEdit
+            ? runtimeText('pattern.updated', 'Pattern "{name}" updated', { name: patternName })
+            : runtimeText('pattern.created', 'Pattern "{name}" created', { name: patternName }), 'success');
         addDebugLog('info', `Pattern "${patternName}" ${isEdit ? 'updated' : 'created'} successfully`);
     } catch (error) {
         console.error('[OpenShock] Error saving pattern:', error);
         addDebugLog('error', `Pattern save error: ${error.message}`);
-        showNotification(`Fehler beim Speichern: ${error.message}`, 'error');
+        showNotification(runtimeText('errors.save_with_reason', 'Error saving: {error}', { error: error.message }), 'error');
     }
 }
 
@@ -1795,16 +1875,16 @@ async function deletePattern(id) {
 
         await loadPatterns();
         renderPatternList();
-        showNotification('Pattern gelöscht', 'success');
+        showNotification(runtimeText('pattern.deleted', 'Pattern deleted'), 'success');
     } catch (error) {
         console.error('[OpenShock] Error deleting pattern:', error);
-        showNotification('Fehler beim Löschen des Patterns', 'error');
+        showNotification(runtimeText('pattern.delete_failed', 'Error deleting pattern'), 'error');
     }
 }
 
 async function executePattern(id, deviceId) {
     if (!deviceId) {
-        showNotification('Bitte wähle ein Gerät aus', 'error');
+        showNotification(runtimeText('devices.select_required', 'Please select a device'), 'error');
         return;
     }
 
@@ -1817,10 +1897,10 @@ async function executePattern(id, deviceId) {
 
         if (!response.ok) throw new Error('Failed to execute pattern');
 
-        showNotification('Pattern wird ausgeführt', 'success');
+        showNotification(runtimeText('pattern.executing', 'Pattern is running'), 'success');
     } catch (error) {
         console.error('[OpenShock] Error executing pattern:', error);
-        showNotification('Fehler beim Ausführen des Patterns', 'error');
+        showNotification(runtimeText('pattern.execute_failed', 'Error executing pattern'), 'error');
     }
 }
 
@@ -2156,7 +2236,7 @@ class CurveEditor {
         if (!container) return;
         
         if (steps.length === 0) {
-            container.innerHTML = '<div class="timeline-empty">Draw on the canvas above to create your pattern</div>';
+        container.innerHTML = `<div class="timeline-empty">${escapeHtml(runtimeText('pattern.draw_curve_hint', 'Draw on the canvas above to create your pattern'))}</div>`;
             return;
         }
         
@@ -2229,7 +2309,7 @@ class CurveEditor {
         // Reset canvas dimensions to match display size
         this.updateCanvasDimensions();
         this.drawGrid();
-        document.getElementById('curveTimelinePreview').innerHTML = '<div class="timeline-empty">Draw on the canvas above to create your pattern</div>';
+    document.getElementById('curveTimelinePreview').innerHTML = `<div class="timeline-empty">${escapeHtml(runtimeText('pattern.draw_curve_hint', 'Draw on the canvas above to create your pattern'))}</div>`;
         document.getElementById('stepCount').textContent = '0';
         document.getElementById('totalDuration').textContent = '0';
         document.getElementById('avgIntensity').textContent = '0';
@@ -2335,13 +2415,13 @@ function updateCurveEditorUI() {
 
 function saveCurvePattern() {
     if (!curveEditor || curveEditor.curvePoints.length < 2) {
-        showNotification('Please draw a curve first', 'error');
+        showNotification(runtimeText('pattern.draw_curve_required', 'Please draw a curve first'), 'error');
         return;
     }
     
     const patternName = document.getElementById('curvePatternName').value.trim();
     if (!patternName) {
-        showNotification('Please enter a pattern name', 'error');
+        showNotification(runtimeText('pattern.name_required', 'Please enter a pattern name'), 'error');
         return;
     }
     
@@ -2362,25 +2442,28 @@ function saveCurvePattern() {
     document.getElementById('patternDescription').value = pattern.description;
     renderPatternSteps();
     
-    showNotification('Pattern loaded into editor. Click Save to store it.', 'success');
+    showNotification(runtimeText('pattern.loaded_into_editor', 'Pattern loaded into editor. Click Save to store it.'), 'success');
 }
 
 function previewCurvePattern() {
     if (!curveEditor || curveEditor.curvePoints.length < 2) {
-        showNotification('Please draw a curve first', 'error');
+        showNotification(runtimeText('pattern.draw_curve_required', 'Please draw a curve first'), 'error');
         return;
     }
     
     const pattern = curveEditor.getPattern();
     
     // Show preview notification
-    showNotification(`Preview: ${pattern.steps.length} steps, ${pattern.steps.reduce((s, step) => s + step.duration + step.delay, 0)}ms total`, 'info');
+    showNotification(runtimeText('pattern.preview', 'Preview: {steps} steps, {duration}ms total', {
+        steps: pattern.steps.length,
+        duration: pattern.steps.reduce((sum, step) => sum + step.duration + step.delay, 0)
+    }), 'info');
 }
 
 function applyCurveTemplate() {
     const template = document.getElementById('curveTemplate').value;
     if (template === 'custom') {
-        showNotification('Select a template type first', 'info');
+        showNotification(runtimeText('pattern.template_required', 'Select a template type first'), 'info');
         return;
     }
     
@@ -2452,10 +2535,10 @@ async function saveSafetyConfig() {
         if (!response.ok) throw new Error('Failed to save safety config');
 
         await loadConfig();
-        showNotification('Safety configuration saved', 'success');
+        showNotification(runtimeText('safety.configuration_saved', 'Safety configuration saved'), 'success');
     } catch (error) {
         console.error('[OpenShock] Error saving safety config:', error);
-        showNotification('Error saving safety configuration', 'error');
+        showNotification(runtimeText('safety.configuration_save_failed', 'Error saving safety configuration'), 'error');
     }
 }
 
@@ -2472,7 +2555,7 @@ async function triggerEmergencyStop() {
 
             if (!response.ok) throw new Error('Failed to clear emergency stop');
 
-            showNotification('✅ Emergency stop cleared - System reactivated', 'success');
+            showNotification(runtimeText('safety.emergency_stop_cleared', 'Emergency stop cleared - System reactivated'), 'success');
             
             // Update config locally
             if (config && config.emergencyStop) {
@@ -2483,7 +2566,7 @@ async function triggerEmergencyStop() {
             updateEmergencyStopButtons(false);
         } catch (error) {
             console.error('[OpenShock] Error clearing emergency stop:', error);
-            showNotification('Error clearing emergency stop', 'error');
+            showNotification(runtimeText('safety.emergency_stop_clear_failed', 'Error clearing emergency stop'), 'error');
         }
     } else {
         // If not active, activate it (toggle on)
@@ -2494,7 +2577,7 @@ async function triggerEmergencyStop() {
 
             if (!response.ok) throw new Error('Failed to trigger emergency stop');
 
-            showNotification('🛑 EMERGENCY STOP ACTIVATED', 'error');
+            showNotification(runtimeText('safety.emergency_stop_activated', 'EMERGENCY STOP ACTIVATED'), 'error');
             
             // Update config locally
             if (config && config.emergencyStop) {
@@ -2505,7 +2588,7 @@ async function triggerEmergencyStop() {
             updateEmergencyStopButtons(true);
         } catch (error) {
             console.error('[OpenShock] Error triggering emergency stop:', error);
-            showNotification('Error triggering emergency stop', 'error');
+            showNotification(runtimeText('safety.emergency_stop_trigger_failed', 'Error triggering emergency stop'), 'error');
         }
     }
 }
@@ -2521,26 +2604,26 @@ function updateEmergencyStopButtons(isActive) {
     if (isActive) {
         // Emergency stop is active - show "Gestoppt" and allow reactivation
         if (headerBtn) {
-            headerBtn.textContent = '✅ Gestoppt';
+            headerBtn.textContent = `✅ ${runtimeText('safety.button_stopped', 'Stopped')}`;
             headerBtn.classList.remove('btn-danger');
             headerBtn.classList.add('btn-success');
-            headerBtn.title = 'Click to reactivate system';
+            headerBtn.title = runtimeText('safety.reactivate_tooltip', 'Click to reactivate system');
         }
         if (safetyTabBtn) {
-            safetyTabBtn.textContent = '✅ Gestoppt';
+            safetyTabBtn.textContent = `✅ ${runtimeText('safety.button_stopped', 'Stopped')}`;
             safetyTabBtn.classList.remove('btn-danger');
             safetyTabBtn.classList.add('btn-success');
         }
     } else {
         // Emergency stop is not active - show "EMERGENCY STOP"
         if (headerBtn) {
-            headerBtn.textContent = '🛑 EMERGENCY STOP';
+            headerBtn.textContent = `🛑 ${runtimeText('safety.button_emergency_stop', 'EMERGENCY STOP')}`;
             headerBtn.classList.remove('btn-success');
             headerBtn.classList.add('btn-danger');
-            headerBtn.title = 'Emergency Stop - Immediately stops all shocks and disables further commands';
+            headerBtn.title = runtimeText('safety.emergency_tooltip', 'Emergency Stop - Immediately stops all shocks and disables further commands');
         }
         if (safetyTabBtn) {
-            safetyTabBtn.textContent = '🛑 EMERGENCY STOP';
+            safetyTabBtn.textContent = `🛑 ${runtimeText('safety.button_emergency_stop', 'EMERGENCY STOP')}`;
             safetyTabBtn.classList.remove('btn-success');
             safetyTabBtn.classList.add('btn-danger');
         }
@@ -2555,10 +2638,10 @@ async function clearEmergencyStop() {
 
         if (!response.ok) throw new Error('Failed to clear emergency stop');
 
-        showNotification('Emergency stop cleared', 'success');
+        showNotification(runtimeText('safety.emergency_stop_cleared', 'Emergency stop cleared'), 'success');
     } catch (error) {
         console.error('[OpenShock] Error clearing emergency stop:', error);
-        showNotification('Error clearing emergency stop', 'error');
+        showNotification(runtimeText('safety.emergency_stop_clear_failed', 'Error clearing emergency stop'), 'error');
     }
 }
 
@@ -2626,8 +2709,8 @@ function renderShareCodeList(shareCodes) {
         deleteBtn.className = 'btn btn-danger btn-sm';
         deleteBtn.style.padding = '3px 8px';
         deleteBtn.textContent = '🗑️';
-        deleteBtn.title = `Delete ShareCode ${sc.code}`;
-        deleteBtn.setAttribute('aria-label', `Delete ShareCode ${sc.code}`);
+        setRuntimeAttribute(deleteBtn, 'title', 'accessibility.delete_share_code', 'Delete ShareCode {code}', { code: sc.code });
+        setRuntimeAttribute(deleteBtn, 'aria-label', 'accessibility.delete_share_code', 'Delete ShareCode {code}', { code: sc.code });
         deleteBtn.addEventListener('click', (e) => {
             e.preventDefault();
             deleteShareCode(sc.code);
@@ -2653,7 +2736,7 @@ async function addShareCode() {
     const name = (nameEl ? nameEl.value : '').trim();
 
     if (!code) {
-        showNotification('Please enter a ShareCode', 'warning');
+        showNotification(runtimeText('devices.share_code_required', 'Please enter a ShareCode'), 'warning');
         return;
     }
 
@@ -2675,17 +2758,18 @@ async function addShareCode() {
         if (nameEl) nameEl.value = '';
 
         // Liste aktualisieren
-        renderShareCodeList(result.shareCodes || []);
+        shareCodes = result.shareCodes || [];
+        renderShareCodeList(shareCodes);
 
         // Devices neu laden (ShareCodes = Devices bei PiShock)
         await loadDevices().catch(() => {});
         renderDeviceList();
 
-        showNotification(`✅ ShareCode "${code}" added`, 'success');
+        showNotification(runtimeText('devices.share_code_added', 'ShareCode "{code}" added', { code }), 'success');
 
     } catch (error) {
         console.error('[OpenShock] Failed to add ShareCode:', error);
-        showNotification(`Error adding ShareCode: ${error.message}`, 'error');
+        showNotification(runtimeText('devices.share_code_add_failed', 'Error adding ShareCode: {error}', { error: error.message }), 'error');
     }
 }
 
@@ -2695,7 +2779,7 @@ async function addShareCode() {
  * @param {string} code - ShareCode der gelöscht werden soll
  */
 async function deleteShareCode(code) {
-    if (!confirm(`Delete ShareCode "${code}"?`)) return;
+    if (!confirm(runtimeText('devices.share_code_delete_confirm', 'Delete ShareCode "{code}"?', { code }))) return;
 
     try {
         const response = await fetch(`/api/openshock/pishock/sharecodes/${encodeURIComponent(code)}`, {
@@ -2737,7 +2821,7 @@ async function saveApiSettings() {
             const baseUrl = document.getElementById('baseUrl').value;
 
             if (!apiKey || apiKey === '***SAVED***') {
-                showNotification('API key ist bereits gespeichert. Gib einen neuen Key ein, um ihn zu ändern.', 'info');
+                showNotification(runtimeText('placeholders.api_key_already_saved', 'API key is already saved. Enter a new key to change it.'), 'info');
                 // Still allow saving provider switch / base URL change
                 configPayload.baseUrl = baseUrl;
             } else {
@@ -2790,20 +2874,20 @@ async function saveApiSettings() {
             updateApiStatus(deviceCount > 0, deviceCount);
             
             if (deviceCount > 0) {
-                showNotification(`✅ Settings saved and ${deviceCount} device(s) loaded`, 'success');
+                showNotification(runtimeText('devices.settings_saved_with_count', 'Settings saved and {count} device(s) loaded', { count: deviceCount }), 'success');
             } else if (result.deviceLoadSuccess === false) {
-                showNotification('⚠️ Settings saved but could not load devices', 'warning');
+                showNotification(runtimeText('devices.settings_saved_load_failed', 'Settings saved but could not load devices'), 'warning');
             } else {
-                showNotification('⚠️ Settings saved but no devices found', 'warning');
+                showNotification(runtimeText('devices.settings_saved_no_devices', 'Settings saved but no devices found'), 'warning');
             }
         } catch (loadError) {
             console.error('[OpenShock] Could not load devices after saving settings:', loadError);
             updateApiStatus(false, 0);
-            showNotification(`❌ Settings saved but failed to load devices: ${loadError.message || 'Unknown error'}`, 'error');
+            showNotification(runtimeText('devices.settings_saved_load_error', 'Settings saved but failed to load devices: {error}', { error: loadError.message || runtimeText('errors.unknown', 'Unknown error') }), 'error');
         }
     } catch (error) {
         console.error('[OpenShock] Error saving API settings:', error);
-        showNotification('Error saving API settings: ' + error.message, 'error');
+        showNotification(runtimeText('devices.settings_save_failed', 'Error saving API settings: {error}', { error: error.message }), 'error');
         updateApiStatus(false, 0);
     }
 }
@@ -2812,7 +2896,7 @@ async function testConnection() {
     const button = document.querySelector('.test-connection-btn');
     if (button) {
         button.disabled = true;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+        button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${escapeHtml(runtimeText('buttons.testing', 'Testing...'))}`;
     }
 
     try {
@@ -2823,7 +2907,7 @@ async function testConnection() {
         const result = await response.json();
 
         if (response.ok && result.success) {
-            showNotification('Connection successful!', 'success');
+            showNotification(runtimeText('connection.successful', 'Connection successful!'), 'success');
             
             // Update API status display
             updateApiStatus(true, result.deviceCount || 0);
@@ -2833,24 +2917,24 @@ async function testConnection() {
                 await loadDevices();
                 renderDeviceList();
                 renderPatternList();
-                showNotification(`Devices refreshed - loaded ${devices.length} device(s)`, 'success');
+                showNotification(runtimeText('devices.refreshed_with_count', 'Devices refreshed - loaded {count} device(s)', { count: devices.length }), 'success');
             } catch (loadError) {
                 console.error('[OpenShock] Could not load devices after connection test:', loadError);
-                showNotification('Connection successful but could not load devices', 'warning');
+                showNotification(runtimeText('connection.successful_load_failed', 'Connection successful but could not load devices'), 'warning');
             }
         } else {
             throw new Error(result.error || 'Connection failed');
         }
     } catch (error) {
         console.error('[OpenShock] Connection test failed:', error);
-        showNotification(`Connection failed: ${error.message}`, 'error');
+        showNotification(runtimeText('connection.failed_with_error', 'Connection failed: {error}', { error: error.message }), 'error');
         
         // Update API status display
         updateApiStatus(false, 0);
     } finally {
         if (button) {
             button.disabled = false;
-            button.innerHTML = '<i class="fas fa-plug"></i> Test Connection';
+            button.innerHTML = `<i class="fas fa-plug"></i> ${escapeHtml(runtimeText('buttons.test_connection', 'Test Connection'))}`;
         }
     }
 }
@@ -2861,17 +2945,19 @@ function updateApiStatus(connected, deviceCount) {
     if (apiStatusEl) {
         if (connected) {
             apiStatusEl.textContent = '🟢';
-            apiStatusEl.title = 'API Connected';
+            apiStatusEl.title = runtimeText('connection.api_connected', 'API Connected');
         } else {
             apiStatusEl.textContent = '🔴';
-            apiStatusEl.title = 'API Disconnected';
+            apiStatusEl.title = runtimeText('connection.api_disconnected', 'API Disconnected');
         }
     }
     
     // Update Connection State
     const connectionStateEl = document.getElementById('connectionState');
     if (connectionStateEl) {
-        connectionStateEl.textContent = connected ? 'Online' : 'Offline';
+        connectionStateEl.textContent = connected
+            ? runtimeText('connection.online', 'Online')
+            : runtimeText('connection.offline', 'Offline');
     }
     
     // Update Device Count
@@ -2887,10 +2973,10 @@ function updateApiStatus(connected, deviceCount) {
         const providerLabel = provider === 'pishock' ? 'PiShock' : 'OpenShock';
         if (connected) {
             providerStatusText.className = 'status-badge status-connected';
-            providerStatusText.innerHTML = `<span class="status-dot"></span><span>${providerLabel} – Connected (${deviceCount} device${deviceCount !== 1 ? 's' : ''})</span>`;
+            providerStatusText.innerHTML = `<span class="status-dot"></span><span>${escapeHtml(runtimeText('connection.provider_connected', '{provider} – Connected ({count} device(s))', { provider: providerLabel, count: deviceCount }))}</span>`;
         } else {
             providerStatusText.className = 'status-badge status-disconnected';
-            providerStatusText.innerHTML = `<span class="status-dot"></span><span>${providerLabel} – Not connected</span>`;
+            providerStatusText.innerHTML = `<span class="status-dot"></span><span>${escapeHtml(runtimeText('connection.provider_disconnected', '{provider} – Not connected', { provider: providerLabel }))}</span>`;
         }
     }
 }
@@ -2902,7 +2988,7 @@ function updateTestShockDeviceList() {
     if (!testShockDevice) return;
     
     // Clear existing options
-    testShockDevice.innerHTML = '<option value="">-- Select a device --</option>';
+    testShockDevice.innerHTML = `<option value="">${escapeHtml(runtimeText('devices.select', '-- Select a device --'))}</option>`;
     
     // Add device options
     devices.forEach(device => {
@@ -2913,7 +2999,7 @@ function updateTestShockDeviceList() {
         // Disable paused devices and add indicator
         if (device.isPaused) {
             option.disabled = true;
-            option.textContent += ' (Paused)';
+            option.textContent += ` (${runtimeText('devices.paused', 'Paused')})`;
         }
         
         testShockDevice.appendChild(option);
@@ -2931,7 +3017,7 @@ function updateMappingDeviceList(selectedDeviceId = '') {
     if (!deviceSelect) return;
     
     // Clear existing options
-    deviceSelect.innerHTML = '<option value="">Select Device...</option>';
+    deviceSelect.innerHTML = `<option value="">${escapeHtml(runtimeText('devices.select', 'Select Device...'))}</option>`;
     
     // Add device options
     devices.forEach(device => {
@@ -2942,7 +3028,7 @@ function updateMappingDeviceList(selectedDeviceId = '') {
         // Disable paused devices and add indicator
         if (device.isPaused) {
             option.disabled = true;
-            option.textContent += ' (Paused)';
+            option.textContent += ` (${runtimeText('devices.paused', 'Paused')})`;
         }
         
         if (device.id === selectedDeviceId) {
@@ -2958,7 +3044,7 @@ function updateMappingPatternList(selectedPatternId = '') {
     if (!patternSelect) return;
     
     // Clear existing options
-    patternSelect.innerHTML = '<option value="">None (Single pulse)</option>';
+    patternSelect.innerHTML = `<option value="">${escapeHtml(runtimeText('pattern.single_pulse', 'None (Single pulse)'))}</option>`;
     
     // Add pattern options - include both preset and custom patterns
     patterns.forEach(pattern => {
@@ -2983,14 +3069,14 @@ async function executeTestShock() {
     const deviceId = testShockDevice ? testShockDevice.value : '';
     
     if (!deviceId) {
-        showNotification('Please select a device for test shock', 'error');
+        showNotification(runtimeText('devices.select_for_test', 'Please select a device for test shock'), 'error');
         return;
     }
     
     const button = document.getElementById('testShockButton');
     if (button) {
         button.disabled = true;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+        button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${escapeHtml(runtimeText('buttons.sending', 'Sending...'))}`;
     }
     
     try {
@@ -3009,14 +3095,14 @@ async function executeTestShock() {
             throw new Error(error.error || 'Test shock failed');
         }
         
-        showNotification('⚡ Test shock sent successfully!', 'success');
+        showNotification(runtimeText('devices.test_shock_sent', 'Test shock sent successfully!'), 'success');
     } catch (error) {
         console.error('[OpenShock] Error sending test shock:', error);
-        showNotification(`Error sending test shock: ${error.message}`, 'error');
+        showNotification(runtimeText('devices.test_shock_failed', 'Error sending test shock: {error}', { error: error.message }), 'error');
     } finally {
         if (button) {
             button.disabled = false;
-            button.innerHTML = '⚡ Test Shock (1s, 100%)';
+            button.innerHTML = `⚡ ${escapeHtml(runtimeText('buttons.test_shock', 'Test Shock (1s, 100%)'))}`;
         }
     }
 }
@@ -3025,7 +3111,7 @@ async function refreshDevices() {
     const button = document.querySelector('.refresh-devices-btn');
     if (button) {
         button.disabled = true;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+        button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${escapeHtml(runtimeText('buttons.refreshing', 'Refreshing...'))}`;
     }
 
     try {
@@ -3046,17 +3132,17 @@ async function refreshDevices() {
         // Update API status with device count
         updateApiStatus(devices.length > 0, devices.length);
         
-        showNotification(`Devices refreshed successfully - loaded ${devices.length} device(s)`, 'success');
+        showNotification(runtimeText('devices.refreshed_with_count', 'Devices refreshed - loaded {count} device(s)', { count: devices.length }), 'success');
     } catch (error) {
         console.error('[OpenShock] Error refreshing devices:', error);
-        showNotification('Error refreshing devices', 'error');
+        showNotification(runtimeText('devices.refresh_failed', 'Error refreshing devices'), 'error');
         
         // Update API status as failed
         updateApiStatus(false, 0);
     } finally {
         if (button) {
             button.disabled = false;
-            button.innerHTML = '<i class="fas fa-sync"></i> Refresh Devices';
+            button.innerHTML = `<i class="fas fa-sync"></i> ${escapeHtml(runtimeText('buttons.refresh_devices', 'Refresh Devices'))}`;
         }
     }
 }
@@ -3075,10 +3161,10 @@ async function clearQueue() {
 
         await loadQueueStatus();
         renderQueueStatus();
-        showNotification('Queue cleared successfully', 'success');
+        showNotification(runtimeText('queue.cleared', 'Queue cleared successfully'), 'success');
     } catch (error) {
         console.error('[OpenShock] Error clearing queue:', error);
-        showNotification('Error clearing queue', 'error');
+        showNotification(runtimeText('queue.clear_failed', 'Error clearing queue'), 'error');
     }
 }
 
@@ -3505,7 +3591,7 @@ function initializeEventDelegation() {
     if (clearAllStepsBtn) {
         clearAllStepsBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            if (confirm('Alle Schritte löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+            if (confirm(runtimeText('pattern.clear_all_steps_confirm', 'Delete all steps? This action cannot be undone.'))) {
                 currentPatternSteps = [];
                 editingStepIndex = null; // Reset editing state
                 renderPatternSteps();
@@ -3994,17 +4080,17 @@ async function resetStats() {
 
         await loadStats();
         renderStats();
-        showNotification('Statistics reset successfully', 'success');
+        showNotification(runtimeText('status.statistics_reset', 'Statistics reset successfully'), 'success');
     } catch (error) {
         console.error('[OpenShock] Error resetting stats:', error);
-        showNotification('Error resetting statistics', 'error');
+        showNotification(runtimeText('errors.statistics_reset', 'Error resetting statistics'), 'error');
     }
 }
 
 function clearCommandLog() {
     debugLogs = [];
     renderCommandLog([]);
-    showNotification('Command log cleared', 'success');
+    showNotification(runtimeText('status.command_log_cleared', 'Command log cleared'), 'success');
 }
 
 function exportCommandLog() {
@@ -4016,7 +4102,7 @@ function exportCommandLog() {
     a.download = `openshock-commandlog-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showNotification('Command log exported', 'success');
+    showNotification(runtimeText('status.command_log_exported', 'Command log exported'), 'success');
 }
 
 async function pauseQueue() {
@@ -4029,10 +4115,10 @@ async function pauseQueue() {
 
         await loadQueueStatus();
         renderQueueStatus();
-        showNotification('Queue paused', 'success');
+        showNotification(runtimeText('queue.paused', 'Queue paused'), 'success');
     } catch (error) {
         console.error('[OpenShock] Error pausing queue:', error);
-        showNotification('Error pausing queue', 'error');
+        showNotification(runtimeText('queue.pause_failed', 'Error pausing queue'), 'error');
     }
 }
 
@@ -4046,10 +4132,10 @@ async function resumeQueue() {
 
         await loadQueueStatus();
         renderQueueStatus();
-        showNotification('Queue resumed', 'success');
+        showNotification(runtimeText('queue.resumed', 'Queue resumed'), 'success');
     } catch (error) {
         console.error('[OpenShock] Error resuming queue:', error);
-        showNotification('Error resuming queue', 'error');
+        showNotification(runtimeText('queue.resume_failed', 'Error resuming queue'), 'error');
     }
 }
 
@@ -4082,10 +4168,10 @@ async function importPatterns() {
             
             // TODO: Send to backend
             console.log('[OpenShock] Imported patterns:', importedPatterns);
-            showNotification('Patterns imported successfully', 'success');
+            showNotification(runtimeText('pattern.imported', 'Patterns imported successfully'), 'success');
         } catch (error) {
             console.error('[OpenShock] Error importing patterns:', error);
-            showNotification('Error importing patterns', 'error');
+            showNotification(runtimeText('pattern.import_failed', 'Error importing patterns'), 'error');
         }
     };
     
@@ -4102,10 +4188,10 @@ async function exportPatterns() {
         a.download = `openshock-patterns-${Date.now()}.json`;
         a.click();
         URL.revokeObjectURL(url);
-        showNotification('Patterns exported', 'success');
+        showNotification(runtimeText('pattern.exported', 'Patterns exported'), 'success');
     } catch (error) {
         console.error('[OpenShock] Error exporting patterns:', error);
-        showNotification('Error exporting patterns', 'error');
+        showNotification(runtimeText('pattern.export_failed', 'Error exporting patterns'), 'error');
     }
 }
 
@@ -4175,6 +4261,31 @@ let currentEditingStep = null;
 let chainSteps = [];
 let zappieHellInitialized = false;
 
+function zappieText(key, fallback, params = {}) {
+    return runtimeText(`zappiehell.${key}`, fallback, params);
+}
+
+function zappieError(key, fallback, error) {
+    return zappieText(key, fallback, { error: error || runtimeText('errors.unknown', 'Unknown error') });
+}
+
+function setZappieHellCopyButtonLabels() {
+    const copyButton = document.getElementById('copyZappieHellOverlayUrl');
+    setRuntimeAttribute(copyButton, 'title', 'zappiehell.accessibility.copy_overlay_url', 'Copy overlay URL');
+    setRuntimeAttribute(copyButton, 'aria-label', 'zappiehell.accessibility.copy_overlay_url', 'Copy overlay URL');
+}
+
+function rerenderZappieHellRuntimeCopy() {
+    setZappieHellCopyButtonLabels();
+    renderGoals();
+    renderChains();
+    renderChainSteps();
+    updateChainSelectors();
+    updateStepPatternList();
+    updateStepDeviceList();
+    updateZappieHellModalTitles();
+}
+
 /**
  * Initialize ZappieHell tab event listeners (once)
  */
@@ -4216,6 +4327,7 @@ function initZappieHellEventListeners() {
     if (closeStepModalBtn) closeStepModalBtn.addEventListener('click', () => closeModal('stepModal'));
 
     if (copyZappieHellOverlayUrl) {
+        setZappieHellCopyButtonLabels();
         copyZappieHellOverlayUrl.addEventListener('click', () => {
             const input = document.getElementById('zappiehellOverlayUrl');
             if (!input) return;
@@ -4225,16 +4337,16 @@ function initZappieHellEventListeners() {
             // Use modern Clipboard API with fallback
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(input.value)
-                    .then(() => showToast('success', 'Overlay URL copied to clipboard!'))
+                    .then(() => showToast(TOAST_SUCCESS, zappieText('overlay.copied', 'Overlay URL copied to clipboard!')))
                     .catch(() => {
                         // Fallback to deprecated method
                         document.execCommand('copy');
-                        showToast('success', 'Overlay URL copied to clipboard!');
+                        showToast(TOAST_SUCCESS, zappieText('overlay.copied', 'Overlay URL copied to clipboard!'));
                     });
             } else {
                 // Fallback for older browsers
                 document.execCommand('copy');
-                showToast('success', 'Overlay URL copied to clipboard!');
+                showToast(TOAST_SUCCESS, zappieText('overlay.copied', 'Overlay URL copied to clipboard!'));
             }
         });
     }
@@ -4261,7 +4373,7 @@ function initZappieHellEventListeners() {
     }
 
     zappieHellInitialized = true;
-    addDebugLog('info', 'ZappieHell event listeners initialized');
+    addDebugLog('info', zappieText('debug.listeners_initialized', 'ZappieHell event listeners initialized'));
 }
 
 /**
@@ -4282,7 +4394,7 @@ function initZappieHellTab() {
     loadGoals();
     loadEventChains();
 
-    addDebugLog('info', 'ZappieHell tab data loaded');
+    addDebugLog('info', zappieText('debug.data_loaded', 'ZappieHell tab data loaded'));
 }
 
 /**
@@ -4299,7 +4411,7 @@ async function loadGoals() {
         }
     } catch (error) {
         console.error('Error loading goals:', error);
-        showToast('error', 'Failed to load goals');
+        showToast(TOAST_ERROR, zappieError('errors.load_goals', 'Failed to load goals: {error}', error.message));
     }
 }
 
@@ -4318,7 +4430,7 @@ async function loadEventChains() {
         }
     } catch (error) {
         console.error('Error loading event chains:', error);
-        showToast('error', 'Failed to load event chains');
+        showToast(TOAST_ERROR, zappieError('errors.load_chains', 'Failed to load event chains: {error}', error.message));
     }
 }
 
@@ -4327,27 +4439,34 @@ async function loadEventChains() {
  */
 function renderGoals() {
     const container = document.getElementById('goalsList');
+    if (!container) return;
     
     if (goals.length === 0) {
-        container.innerHTML = '<p class="text-muted">No goals configured yet.</p>';
+        container.innerHTML = `<p class="text-muted">${escapeHtml(zappieText('goals.empty', 'No goals configured yet.'))}</p>`;
         return;
     }
 
     container.innerHTML = goals.map(goal => {
         const percentage = Math.min(100, Math.round((goal.currentCoins / goal.targetCoins) * 100));
-        const chainName = goal.chainId ? (eventChains.find(c => c.id === goal.chainId)?.name || 'Unknown Chain') : 'No chain';
+        const chainName = goal.chainId
+            ? (eventChains.find(c => c.id === goal.chainId)?.name || zappieText('goals.unknown_chain', 'Unknown chain'))
+            : zappieText('goals.no_chain', 'No chain');
+        const goalName = escapeHtml(goal.name);
+        const activeLabel = goal.active
+            ? zappieText('goals.active', 'Active')
+            : zappieText('goals.inactive', 'Inactive');
         
         return `
             <div class="card mb-3">
                 <div class="card-header">
                     <h3 class="card-title">
-                        ${goal.active ? '✅' : '❌'} ${escapeHtml(goal.name)}
+                        <span role="img" aria-label="${escapeHtml(activeLabel)}" title="${escapeHtml(activeLabel)}">${goal.active ? '✅' : '❌'}</span> ${goalName}
                         <span class="badge badge-${goal.type === 'stream' ? 'primary' : 'secondary'}">${goal.type}</span>
                     </h3>
                     <div class="btn-group">
-                        <button class="btn btn-sm btn-secondary" onclick="window.openShock.editGoal('${goal.id}')">✏️ Edit</button>
-                        <button class="btn btn-sm btn-warning" onclick="window.openShock.resetGoal('${goal.id}')">🔄 Reset</button>
-                        <button class="btn btn-sm btn-danger" onclick="window.openShock.deleteGoal('${goal.id}')">🗑️ Delete</button>
+                        <button class="btn btn-sm btn-secondary" onclick="window.openShock.editGoal('${goal.id}')" aria-label="${escapeHtml(zappieText('accessibility.edit_goal', 'Edit goal {name}', { name: goal.name }))}">✏️ ${escapeHtml(zappieText('buttons.edit', 'Edit'))}</button>
+                        <button class="btn btn-sm btn-warning" onclick="window.openShock.resetGoal('${goal.id}')" aria-label="${escapeHtml(zappieText('accessibility.reset_goal', 'Reset goal {name}', { name: goal.name }))}">🔄 ${escapeHtml(zappieText('buttons.reset', 'Reset'))}</button>
+                        <button class="btn btn-sm btn-danger" onclick="window.openShock.deleteGoal('${goal.id}')" aria-label="${escapeHtml(zappieText('accessibility.delete_goal', 'Delete goal {name}', { name: goal.name }))}">🗑️ ${escapeHtml(zappieText('buttons.delete', 'Delete'))}</button>
                     </div>
                 </div>
                 <div class="card-body">
@@ -4357,16 +4476,16 @@ function renderGoals() {
                             ${percentage}%
                         </div>
                     </div>
-                    <div class="grid-3">
-                        <div>
-                            <strong>Target:</strong> ${goal.targetCoins.toLocaleString()} coins
-                        </div>
-                        <div>
-                            <strong>Current:</strong> ${goal.currentCoins.toLocaleString()} coins
-                        </div>
-                        <div>
-                            <strong>Chain:</strong> ${chainName}
-                        </div>
+                        <div class="grid-3">
+                            <div>
+                                <strong>${escapeHtml(zappieText('goals.target', 'Target'))}:</strong> ${goal.targetCoins.toLocaleString()} ${escapeHtml(zappieText('goals.coins', 'coins'))}
+                            </div>
+                            <div>
+                                <strong>${escapeHtml(zappieText('goals.current', 'Current'))}:</strong> ${goal.currentCoins.toLocaleString()} ${escapeHtml(zappieText('goals.coins', 'coins'))}
+                            </div>
+                            <div>
+                                <strong>${escapeHtml(zappieText('goals.chain', 'Chain'))}:</strong> ${escapeHtml(chainName)}
+                            </div>
                     </div>
                 </div>
             </div>
@@ -4379,26 +4498,28 @@ function renderGoals() {
  */
 function renderChains() {
     const container = document.getElementById('chainsList');
+    if (!container) return;
     
     if (eventChains.length === 0) {
-        container.innerHTML = '<p class="text-muted">No event chains configured yet.</p>';
+        container.innerHTML = `<p class="text-muted">${escapeHtml(zappieText('chains.empty', 'No event chains configured yet.'))}</p>`;
         return;
     }
 
     container.innerHTML = eventChains.map(chain => {
+        const chainName = escapeHtml(chain.name);
         return `
             <div class="card mb-3">
                 <div class="card-header">
-                    <h3 class="card-title">🔗 ${escapeHtml(chain.name)}</h3>
+                    <h3 class="card-title">🔗 ${chainName}</h3>
                     <div class="btn-group">
-                        <button class="btn btn-sm btn-secondary" onclick="window.openShock.editChain('${chain.id}')">✏️ Edit</button>
-                        <button class="btn btn-sm btn-success" onclick="window.openShock.testChain('${chain.id}')">▶️ Test</button>
-                        <button class="btn btn-sm btn-danger" onclick="window.openShock.deleteChain('${chain.id}')">🗑️ Delete</button>
+                        <button class="btn btn-sm btn-secondary" onclick="window.openShock.editChain('${chain.id}')" aria-label="${escapeHtml(zappieText('accessibility.edit_chain', 'Edit event chain {name}', { name: chain.name }))}">✏️ ${escapeHtml(zappieText('buttons.edit', 'Edit'))}</button>
+                        <button class="btn btn-sm btn-success" onclick="window.openShock.testChain('${chain.id}')" aria-label="${escapeHtml(zappieText('accessibility.test_chain', 'Test event chain {name}', { name: chain.name }))}">▶️ ${escapeHtml(zappieText('buttons.test', 'Test'))}</button>
+                        <button class="btn btn-sm btn-danger" onclick="window.openShock.deleteChain('${chain.id}')" aria-label="${escapeHtml(zappieText('accessibility.delete_chain', 'Delete event chain {name}', { name: chain.name }))}">🗑️ ${escapeHtml(zappieText('buttons.delete', 'Delete'))}</button>
                     </div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">${escapeHtml(chain.description || 'No description')}</p>
-                    <p><strong>Steps:</strong> ${chain.steps?.length || 0}</p>
+                    <p class="text-muted">${escapeHtml(chain.description || zappieText('chains.no_description', 'No description'))}</p>
+                    <p><strong>${escapeHtml(zappieText('chains.steps', 'Steps'))}:</strong> ${chain.steps?.length || 0}</p>
                     ${renderChainStepsPreview(chain.steps)}
                 </div>
             </div>
@@ -4410,21 +4531,23 @@ function renderChains() {
  * Render chain steps preview
  */
 function renderChainStepsPreview(steps) {
-    if (!steps || steps.length === 0) return '<p class="text-muted">No steps</p>';
+    if (!steps || steps.length === 0) {
+        return `<p class="text-muted">${escapeHtml(zappieText('chains.preview_empty', 'No steps'))}</p>`;
+    }
     
     return '<ol style="margin-left: 20px;">' + steps.map(step => {
         let icon = '•';
         let label = step.type;
         
         switch(step.type) {
-            case 'openshock': icon = '⚡'; label = 'Hybrid Shock'; break;
-            case 'delay': icon = '⏱️'; label = `Delay (${step.durationMs}ms)`; break;
-            case 'audio': icon = '🔊'; label = 'Audio/TTS'; break;
-            case 'webhook': icon = '🌐'; label = `Webhook (${step.url})`; break;
-            case 'overlay': icon = '📺'; label = 'Overlay'; break;
+            case 'openshock': icon = '⚡'; label = zappieText('steps.type_openshock', 'Hybrid Shock'); break;
+            case 'delay': icon = '⏱️'; label = zappieText('steps.type_delay', 'Delay ({duration}ms)', { duration: step.durationMs }); break;
+            case 'audio': icon = '🔊'; label = zappieText('steps.type_audio', 'Audio/TTS'); break;
+            case 'webhook': icon = '🌐'; label = zappieText('steps.type_webhook', 'Webhook ({url})', { url: step.url || '' }); break;
+            case 'overlay': icon = '📺'; label = zappieText('steps.type_overlay', 'Overlay'); break;
         }
         
-        return `<li>${icon} ${label}</li>`;
+        return `<li>${icon} ${escapeHtml(label)}</li>`;
     }).join('') + '</ol>';
 }
 
@@ -4435,18 +4558,51 @@ function updateChainSelectors() {
     const selector = document.getElementById('goalChainId');
     if (!selector) return;
 
-    selector.innerHTML = '<option value="">-- No chain --</option>' +
+    const selectedValue = selector.value;
+    selector.innerHTML = `<option value="">${escapeHtml(zappieText('goals.no_chain_option', '-- No chain --'))}</option>` +
         eventChains.map(chain => `<option value="${chain.id}">${escapeHtml(chain.name)}</option>`).join('');
+    selector.value = selectedValue;
 }
 
 /**
  * Open goal modal for creating/editing
  */
+function updateGoalModalTitle() {
+    const title = document.getElementById('goalModalTitle');
+    if (!title) return;
+    title.textContent = currentEditingGoal
+        ? `✏️ ${zappieText('goals.modal_edit', 'Edit goal')}`
+        : `➕ ${zappieText('goals.modal_create', 'Add goal')}`;
+}
+
+function updateChainModalTitle() {
+    const title = document.getElementById('chainModalTitle');
+    if (!title) return;
+    title.textContent = currentEditingChain
+        ? `✏️ ${zappieText('chains.modal_edit', 'Edit event chain')}`
+        : `➕ ${zappieText('chains.modal_create', 'Add event chain')}`;
+}
+
+function updateStepModalTitle() {
+    const title = document.getElementById('stepModalTitle');
+    if (!title) return;
+    const isEdit = currentEditingStep !== null;
+    title.textContent = isEdit
+        ? `✏️ ${zappieText('steps.modal_edit', 'Edit event chain step')}`
+        : `➕ ${zappieText('steps.modal_create', 'Add event chain step')}`;
+}
+
+function updateZappieHellModalTitles() {
+    updateGoalModalTitle();
+    updateChainModalTitle();
+    updateStepModalTitle();
+}
+
 function openGoalModal(goalId = null) {
     currentEditingGoal = goalId ? goals.find(g => g.id === goalId) : null;
+    updateGoalModalTitle();
     
     if (currentEditingGoal) {
-        document.getElementById('goalModalTitle').textContent = '✏️ Edit Goal';
         document.getElementById('goalId').value = currentEditingGoal.id;
         document.getElementById('goalName').value = currentEditingGoal.name;
         document.getElementById('goalTargetCoins').value = currentEditingGoal.targetCoins;
@@ -4455,7 +4611,6 @@ function openGoalModal(goalId = null) {
         document.getElementById('goalChainId').value = currentEditingGoal.chainId || '';
         document.getElementById('goalActive').checked = currentEditingGoal.active;
     } else {
-        document.getElementById('goalModalTitle').textContent = '➕ Add Goal';
         document.getElementById('goalId').value = '';
         document.getElementById('goalName').value = '';
         document.getElementById('goalTargetCoins').value = '';
@@ -4482,7 +4637,7 @@ async function saveGoal() {
     };
 
     if (!goalData.name || !goalData.targetCoins) {
-        showToast('error', 'Please fill in all required fields');
+        showToast(TOAST_ERROR, zappieText('goals.validation_required', 'Please fill in all required fields'));
         return;
     }
 
@@ -4500,15 +4655,17 @@ async function saveGoal() {
         const data = await response.json();
         
         if (data.success) {
-            showToast('success', goalId ? 'Goal updated' : 'Goal created');
+            showToast(TOAST_SUCCESS, goalId
+                ? zappieText('goals.updated', 'Goal updated')
+                : zappieText('goals.created', 'Goal created'));
             closeModal('goalModal');
             loadGoals();
         } else {
-            showToast('error', data.error || 'Failed to save goal');
+            showToast(TOAST_ERROR, zappieError('errors.save_goal', 'Failed to save goal: {error}', data.error));
         }
     } catch (error) {
         console.error('Error saving goal:', error);
-        showToast('error', 'Failed to save goal');
+        showToast(TOAST_ERROR, zappieError('errors.save_goal', 'Failed to save goal: {error}', error.message));
     }
 }
 
@@ -4523,7 +4680,7 @@ function editGoal(goalId) {
  * Delete goal
  */
 async function deleteGoal(goalId) {
-    if (!confirm('Are you sure you want to delete this goal?')) return;
+    if (!confirm(zappieText('goals.delete_confirm', 'Are you sure you want to delete this goal?'))) return;
 
     try {
         const response = await fetch(`/api/openshock/zappiehell/goals/${goalId}`, {
@@ -4533,14 +4690,14 @@ async function deleteGoal(goalId) {
         const data = await response.json();
         
         if (data.success) {
-            showToast('success', 'Goal deleted');
+            showToast(TOAST_SUCCESS, zappieText('goals.deleted', 'Goal deleted'));
             loadGoals();
         } else {
-            showToast('error', data.error || 'Failed to delete goal');
+            showToast(TOAST_ERROR, zappieError('errors.delete_goal', 'Failed to delete goal: {error}', data.error));
         }
     } catch (error) {
         console.error('Error deleting goal:', error);
-        showToast('error', 'Failed to delete goal');
+        showToast(TOAST_ERROR, zappieError('errors.delete_goal', 'Failed to delete goal: {error}', error.message));
     }
 }
 
@@ -4548,7 +4705,7 @@ async function deleteGoal(goalId) {
  * Reset goal
  */
 async function resetGoal(goalId) {
-    if (!confirm('Reset this goal to 0 coins?')) return;
+    if (!confirm(zappieText('goals.reset_confirm', 'Reset this goal to 0 coins?'))) return;
 
     try {
         const response = await fetch(`/api/openshock/zappiehell/goals/${goalId}/reset`, {
@@ -4558,14 +4715,14 @@ async function resetGoal(goalId) {
         const data = await response.json();
         
         if (data.success) {
-            showToast('success', 'Goal reset');
+            showToast(TOAST_SUCCESS, zappieText('goals.reset', 'Goal reset'));
             loadGoals();
         } else {
-            showToast('error', data.error || 'Failed to reset goal');
+            showToast(TOAST_ERROR, zappieError('errors.reset_goal', 'Failed to reset goal: {error}', data.error));
         }
     } catch (error) {
         console.error('Error resetting goal:', error);
-        showToast('error', 'Failed to reset goal');
+        showToast(TOAST_ERROR, zappieError('errors.reset_goal', 'Failed to reset goal: {error}', error.message));
     }
 }
 
@@ -4574,15 +4731,14 @@ async function resetGoal(goalId) {
  */
 function openChainModal(chainId = null) {
     currentEditingChain = chainId ? eventChains.find(c => c.id === chainId) : null;
+    updateChainModalTitle();
     
     if (currentEditingChain) {
-        document.getElementById('chainModalTitle').textContent = '✏️ Edit Event Chain';
         document.getElementById('chainId').value = currentEditingChain.id;
         document.getElementById('chainName').value = currentEditingChain.name;
         document.getElementById('chainDescription').value = currentEditingChain.description || '';
         chainSteps = [...(currentEditingChain.steps || [])];
     } else {
-        document.getElementById('chainModalTitle').textContent = '➕ Add Event Chain';
         document.getElementById('chainId').value = '';
         document.getElementById('chainName').value = '';
         document.getElementById('chainDescription').value = '';
@@ -4604,7 +4760,7 @@ async function saveChain() {
     };
 
     if (!chainData.name) {
-        showToast('error', 'Please enter a chain name');
+        showToast(TOAST_ERROR, zappieText('chains.validation_name_required', 'Please enter an event chain name'));
         return;
     }
 
@@ -4622,15 +4778,17 @@ async function saveChain() {
         const data = await response.json();
         
         if (data.success) {
-            showToast('success', chainId ? 'Event chain updated' : 'Event chain created');
+            showToast(TOAST_SUCCESS, chainId
+                ? zappieText('chains.updated', 'Event chain updated')
+                : zappieText('chains.created', 'Event chain created'));
             closeModal('chainModal');
             loadEventChains();
         } else {
-            showToast('error', data.error || 'Failed to save event chain');
+            showToast(TOAST_ERROR, zappieError('errors.save_chain', 'Failed to save event chain: {error}', data.error));
         }
     } catch (error) {
         console.error('Error saving chain:', error);
-        showToast('error', 'Failed to save event chain');
+        showToast(TOAST_ERROR, zappieError('errors.save_chain', 'Failed to save event chain: {error}', error.message));
     }
 }
 
@@ -4645,7 +4803,7 @@ function editChain(chainId) {
  * Delete chain
  */
 async function deleteChain(chainId) {
-    if (!confirm('Are you sure you want to delete this event chain?')) return;
+    if (!confirm(zappieText('chains.delete_confirm', 'Are you sure you want to delete this event chain?'))) return;
 
     try {
         const response = await fetch(`/api/openshock/zappiehell/chains/${chainId}`, {
@@ -4655,14 +4813,14 @@ async function deleteChain(chainId) {
         const data = await response.json();
         
         if (data.success) {
-            showToast('success', 'Event chain deleted');
+            showToast(TOAST_SUCCESS, zappieText('chains.deleted', 'Event chain deleted'));
             loadEventChains();
         } else {
-            showToast('error', data.error || 'Failed to delete event chain');
+            showToast(TOAST_ERROR, zappieError('errors.delete_chain', 'Failed to delete event chain: {error}', data.error));
         }
     } catch (error) {
         console.error('Error deleting chain:', error);
-        showToast('error', 'Failed to delete event chain');
+        showToast(TOAST_ERROR, zappieError('errors.delete_chain', 'Failed to delete event chain: {error}', error.message));
     }
 }
 
@@ -4670,7 +4828,7 @@ async function deleteChain(chainId) {
  * Test chain
  */
 async function testChain(chainId) {
-    if (!confirm('Execute this event chain now as a test?')) return;
+    if (!confirm(zappieText('chains.test_confirm', 'Execute this event chain now as a test?'))) return;
 
     try {
         const response = await fetch(`/api/openshock/zappiehell/chains/${chainId}/execute`, {
@@ -4680,13 +4838,13 @@ async function testChain(chainId) {
         const data = await response.json();
         
         if (data.success) {
-            showToast('success', 'Event chain execution started');
+            showToast(TOAST_SUCCESS, zappieText('chains.execution_started', 'Event chain execution started'));
         } else {
-            showToast('error', data.error || 'Failed to execute event chain');
+            showToast(TOAST_ERROR, zappieError('errors.execute_chain', 'Failed to execute event chain: {error}', data.error));
         }
     } catch (error) {
         console.error('Error executing chain:', error);
-        showToast('error', 'Failed to execute event chain');
+        showToast(TOAST_ERROR, zappieError('errors.execute_chain', 'Failed to execute event chain: {error}', error.message));
     }
 }
 
@@ -4695,9 +4853,10 @@ async function testChain(chainId) {
  */
 function renderChainSteps() {
     const container = document.getElementById('chainStepsList');
+    if (!container) return;
     
     if (chainSteps.length === 0) {
-        container.innerHTML = '<p class="text-muted" style="padding: 20px;">No steps added yet. Click "Add Step" to begin.</p>';
+        container.innerHTML = `<p class="text-muted" style="padding: 20px;">${escapeHtml(zappieText('steps.empty', 'No steps added yet. Click "Add Step" to begin.'))}</p>`;
         return;
     }
 
@@ -4709,27 +4868,29 @@ function renderChainSteps() {
         switch(step.type) {
             case 'openshock':
                 icon = '⚡';
-                label = 'Hybrid Shock';
-                details = step.patternId ? `Pattern ID: ${step.patternId}` : `${step.commandType || 'vibrate'} - ${step.intensity}% - ${step.durationMs}ms`;
+                label = zappieText('steps.type_openshock', 'Hybrid Shock');
+                details = step.patternId
+                    ? zappieText('steps.pattern_id', 'Pattern ID: {id}', { id: step.patternId })
+                    : `${step.commandType || 'vibrate'} - ${step.intensity}% - ${step.durationMs}ms`;
                 break;
             case 'delay':
                 icon = '⏱️';
-                label = 'Delay';
+                label = zappieText('steps.type_delay_short', 'Delay');
                 details = `${step.durationMs}ms`;
                 break;
             case 'audio':
                 icon = '🔊';
-                label = 'Audio/TTS';
+                label = zappieText('steps.type_audio', 'Audio/TTS');
                 details = step.text || step.audioId || '';
                 break;
             case 'webhook':
                 icon = '🌐';
-                label = 'Webhook';
+                label = zappieText('steps.type_webhook_short', 'Webhook');
                 details = `${step.method || 'POST'} ${step.url || ''}`;
                 break;
             case 'overlay':
                 icon = '📺';
-                label = 'Overlay';
+                label = zappieText('steps.type_overlay', 'Overlay');
                 details = step.animationType || '';
                 break;
         }
@@ -4739,12 +4900,12 @@ function renderChainSteps() {
                 <div class="card-body" style="padding: 12px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <strong>${icon} ${label}</strong>
-                            <p class="text-muted" style="margin: 0; font-size: 12px;">${details}</p>
+                            <strong>${icon} ${escapeHtml(label)}</strong>
+                            <p class="text-muted" style="margin: 0; font-size: 12px;">${escapeHtml(details)}</p>
                         </div>
                         <div class="btn-group">
-                            <button class="btn btn-sm btn-secondary" onclick="window.openShock.editChainStep(${index})">✏️</button>
-                            <button class="btn btn-sm btn-danger" onclick="window.openShock.removeChainStep(${index})">🗑️</button>
+                            <button class="btn btn-sm btn-secondary" onclick="window.openShock.editChainStep(${index})" aria-label="${escapeHtml(zappieText('accessibility.edit_step', 'Edit step {step}', { step: index + 1 }))}">✏️</button>
+                            <button class="btn btn-sm btn-danger" onclick="window.openShock.removeChainStep(${index})" aria-label="${escapeHtml(zappieText('accessibility.delete_step', 'Delete step {step}', { step: index + 1 }))}">🗑️</button>
                         </div>
                     </div>
                 </div>
@@ -4758,10 +4919,10 @@ function renderChainSteps() {
  */
 function openStepModal(stepIndex = null) {
     currentEditingStep = stepIndex !== null ? stepIndex : null;
+    updateStepModalTitle();
     
     if (currentEditingStep !== null) {
         const step = chainSteps[currentEditingStep];
-        document.getElementById('stepModalTitle').textContent = '✏️ Edit Chain Step';
         document.getElementById('stepIndex').value = currentEditingStep;
         document.getElementById('stepTypeSelect').value = step.type;
         
@@ -4793,7 +4954,6 @@ function openStepModal(stepIndex = null) {
                 break;
         }
     } else {
-        document.getElementById('stepModalTitle').textContent = '➕ Add Chain Step';
         document.getElementById('stepIndex').value = '';
         document.getElementById('stepTypeSelect').value = 'openshock';
         updateStepFieldsVisibility('openshock');
@@ -4849,8 +5009,10 @@ function updateStepPatternList() {
     const selector = document.getElementById('stepPatternId');
     if (!selector) return;
 
-    selector.innerHTML = '<option value="">-- Direct Command --</option>' +
+    const selectedValue = selector.value;
+    selector.innerHTML = `<option value="">${escapeHtml(zappieText('steps.direct_command', '-- Direct Command --'))}</option>` +
         patterns.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+    selector.value = selectedValue;
 }
 
 /**
@@ -4860,8 +5022,10 @@ function updateStepDeviceList() {
     const selector = document.getElementById('stepDeviceId');
     if (!selector) return;
 
-    selector.innerHTML = '<option value="">-- First Available --</option>' +
+    const selectedValue = selector.value;
+    selector.innerHTML = `<option value="">${escapeHtml(zappieText('steps.first_available', '-- First Available --'))}</option>` +
         devices.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
+    selector.value = selectedValue;
 }
 
 /**
@@ -4892,7 +5056,7 @@ function saveChainStep() {
             try {
                 stepData.body = JSON.parse(document.getElementById('webhookBody').value);
             } catch (e) {
-                showToast('error', `Invalid JSON in webhook body: ${e.message}`);
+                showToast(TOAST_ERROR, zappieError('errors.invalid_webhook_json', 'Invalid JSON in webhook body: {error}', e.message));
                 return;
             }
             break;
@@ -4924,7 +5088,7 @@ function editChainStep(index) {
  * Remove chain step
  */
 function removeChainStep(index) {
-    if (!confirm('Remove this step?')) return;
+    if (!confirm(zappieText('steps.delete_confirm', 'Remove this step?'))) return;
     chainSteps.splice(index, 1);
     renderChainSteps();
 }

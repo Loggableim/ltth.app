@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="generated.2ddec6825dfe">Sidekick HUD Overlay</title>
+  <title data-i18n="plugins.sidekick.labels.sidekick_hud_overlay">Sidekick HUD Overlay</title>
   <style>
     * {
       margin: 0;
@@ -196,25 +196,25 @@
   <div class="overlay-container top-right" id="overlay">
     <div class="overlay-header">
       <div class="status-dot" id="status-dot"></div>
-      <span class="overlay-title" data-i18n="generated.db86a1f48f21">🤖 Sidekick</span>
+      <span class="overlay-title" data-i18n="plugins.sidekick.labels.sidekick">🤖 Sidekick</span>
     </div>
 
     <div class="stats-grid">
       <div class="stat-item">
         <div class="stat-value" id="stat-chats">0</div>
-        <div class="stat-label">Chat/Min</div>
+        <div class="stat-label" data-i18n="plugins.sidekick.ui.overlay.chatPerMinute">Chat/min</div>
       </div>
       <div class="stat-item">
         <div class="stat-value" id="stat-gifts">0</div>
-        <div class="stat-label">Gifts</div>
+        <div class="stat-label" data-i18n="plugins.sidekick.ui.overlay.gifts">Gifts</div>
       </div>
       <div class="stat-item">
         <div class="stat-value" id="stat-follows">0</div>
-        <div class="stat-label">Follows</div>
+        <div class="stat-label" data-i18n="plugins.sidekick.ui.overlay.follows">Follows</div>
       </div>
       <div class="stat-item">
         <div class="stat-value" id="stat-viewers">0</div>
-        <div class="stat-label">Viewer</div>
+        <div class="stat-label" data-i18n="plugins.sidekick.ui.overlay.viewers">Viewers</div>
       </div>
     </div>
 
@@ -242,7 +242,7 @@
 
     // Socket connection
     const socket = io();
-    
+
     // Event icons
     const eventIcons = {
       chat: '💬',
@@ -257,10 +257,18 @@
     // Recent events buffer
     const recentEvents = [];
 
+    function translateOverlay(key, fallback, params = {}) {
+      const translated = window.i18n?.t?.(key, params);
+      if (translated && translated !== key) return translated;
+      return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+      ));
+    }
+
     // Update status
     function updateStatus(status) {
       const statusDot = document.getElementById('status-dot');
-      
+
       if (status.muted) {
         statusDot.className = 'status-dot muted';
       } else if (!status.animaze?.isConnected) {
@@ -272,7 +280,7 @@
       // Update stats
       const rates = status.currentRates || {};
       const session = status.session || {};
-      
+
       document.getElementById('stat-chats').textContent = rates.chatsPerMinute || 0;
       document.getElementById('stat-gifts').textContent = session.totalGifts || 0;
       document.getElementById('stat-follows').textContent = session.totalFollows || 0;
@@ -294,19 +302,19 @@
       container.innerHTML = recentEvents.map(event => {
         const icon = eventIcons[event.type] || '📌';
         let content = '';
-        
+
         switch (event.type) {
           case 'chat':
             content = event.payload?.comment?.substring(0, 30) || '';
             if (event.payload?.comment?.length > 30) content += '...';
             break;
           case 'gift':
-            content = event.payload?.giftName || 'Gift';
+            content = event.payload?.giftName || translateOverlay('plugins.sidekick.ui.overlay.gift', 'Gift');
             break;
           default:
             content = '';
         }
-        
+
         return `
           <div class="event-item">
             <span class="event-icon">${icon}</span>
@@ -354,11 +362,13 @@
 
     // Socket events
     socket.on('sidekick:status', updateStatus);
-    
+
+    window.i18n?.onLanguageChange?.(() => renderEvents());
+
     // Initial load
     fetchStatus();
     fetchEvents();
-    
+
     // Periodic updates
     setInterval(fetchStatus, 2000);
     setInterval(fetchEvents, 5000);

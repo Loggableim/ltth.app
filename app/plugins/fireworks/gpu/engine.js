@@ -81,6 +81,14 @@ const CONFIG = {
     ALPHA_CULL_THRESHOLD: 0.05 // Alpha threshold below which particles are not rendered (Optimization #11)
 };
 
+function translateFireworksOverlay(key, fallback, params = {}) {
+    const translated = window.i18n?.t?.(key, params);
+    if (translated && translated !== key) return translated;
+    return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+    ));
+}
+
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
@@ -2349,12 +2357,18 @@ class FireworksEngine {
         animationEl.classList.add(`entrance-${entrance}`);
         
         // Set username
-        usernameEl.textContent = data.username || 'Unknown';
+        usernameEl.textContent = data.username || translateFireworksOverlay(
+            'plugins.fireworks.ui.messages.unknown_follower',
+            'Unknown'
+        );
         
         // Set thank you text from data if provided
         const thankYouEl = document.getElementById('thank-you-text');
         if (thankYouEl) {
-            thankYouEl.textContent = data.thankYouText || 'Thanks for the follow! 💙';
+            thankYouEl.textContent = data.thankYouText || translateFireworksOverlay(
+                'plugins.fireworks.ui.messages.follower_thanks',
+                'Thanks for the follow! 💙'
+            );
         }
         
         // Set avatar if provided
@@ -2865,13 +2879,21 @@ class FireworksEngine {
         }
         
         const text = document.createElement('span');
-        text.textContent = `${username}: ${coins} coins`;
+        text.textContent = translateFireworksOverlay(
+            'plugins.fireworks.ui.messages.gift_coins',
+            '{username}: {coins} coins',
+            { username, coins }
+        );
         popup.appendChild(text);
         
         if (combo > 1) {
             const comboSpan = document.createElement('span');
             comboSpan.style.color = '#ffcc00';
-            comboSpan.textContent = ` ${combo}x COMBO!`;
+            comboSpan.textContent = ` ${translateFireworksOverlay(
+                'plugins.fireworks.ui.messages.combo',
+                '{combo}x COMBO!',
+                { combo }
+            )}`;
             popup.appendChild(comboSpan);
         }
         
@@ -3443,10 +3465,18 @@ class FireworksEngine {
             border: 3px solid white;
             box-shadow: 0 0 30px rgba(255, 0, 0, 0.8);
         `;
-        warning.innerHTML = `
-            <div>⚠️ OVERLAY FROZEN ⚠️</div>
-            <div style="font-size: 18px; margin-top: 10px;">Performing soft reset...</div>
-        `;
+        const title = document.createElement('div');
+        title.textContent = translateFireworksOverlay(
+            'plugins.fireworks.ui.messages.overlay_frozen',
+            '⚠️ OVERLAY FROZEN ⚠️'
+        );
+        const detail = document.createElement('div');
+        detail.style.cssText = 'font-size: 18px; margin-top: 10px;';
+        detail.textContent = translateFireworksOverlay(
+            'plugins.fireworks.ui.messages.overlay_soft_reset',
+            'Performing soft reset...'
+        );
+        warning.append(title, detail);
         document.body.appendChild(warning);
         // Remove warning after 3 seconds
         setTimeout(() => warning.remove(), 3000);

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="config-import.ui.pageTitle">Config Backup &amp; Restore - Pup Cid's Little TikTool Helper</title>
+    <title data-i18n="plugins.config-import.config-import.ui.pageTitle">Config Backup &amp; Restore - Pup Cid's Little TikTool Helper</title>
     <link rel="stylesheet" href="/css/themes.css">
     <script>
         (function() {
@@ -428,15 +428,15 @@
 <body>
 <div class="container">
     <div class="header">
-        <h1 data-i18n="generated.3ab2685db665">💾 Config Backup &amp; Restore</h1>
-        <p data-i18n="generated.d025b7e91f63">Export your current configuration to a secure backup, restore from a previous backup, or migrate from an older installation.</p>
+        <h1 data-i18n="plugins.config-import.config-import.ui.heroTitle">💾 Config Backup &amp; Restore</h1>
+        <p data-i18n="plugins.config-import.config-import.ui.heroDescription">Export your current configuration to a secure backup, restore from a previous backup, or migrate from an older installation.</p>
     </div>
 
     <!-- Tabs -->
     <div class="tabs">
-        <button class="tab-btn active" data-tab="export" data-i18n="generated.ae1111e83041">📤 Export Backup</button>
-        <button class="tab-btn" data-tab="import" data-i18n="generated.3b27b0d638dd">📥 Import Backup</button>
-        <button class="tab-btn" data-tab="legacy" data-i18n="generated.31c095344a9f">🗂️ Legacy Import</button>
+        <button class="tab-btn active" data-tab="export" data-i18n="plugins.config-import.config-import.ui.tabExport">📤 Export Backup</button>
+        <button class="tab-btn" data-tab="import" data-i18n="plugins.config-import.config-import.ui.tabImport">📥 Import Backup</button>
+        <button class="tab-btn" data-tab="legacy" data-i18n="plugins.config-import.config-import.ui.tabLegacy">🗂️ Legacy Import</button>
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════════════════════
@@ -447,33 +447,33 @@
         <div id="exportAlert" class="alert hidden"></div>
 
         <div class="card">
-            <h2 data-i18n="generated.0d7a3ca52c25">📤 Export Current Configuration</h2>
-            <p class="desc" data-i18n="generated.047bb4e152ae">Create a complete backup ZIP of your settings. The backup can be restored later using the Import tab.</p>
+            <h2 data-i18n="plugins.config-import.config-import.ui.exportTitle">📤 Export Current Configuration</h2>
+            <p class="desc" data-i18n="plugins.config-import.config-import.ui.exportDescription">Create a complete backup ZIP of your settings. The backup can be restored later using the Import tab.</p>
 
-            <p class="section-title" data-i18n="generated.e3b82019c9b3">What to include</p>
+            <p class="section-title" data-i18n="plugins.config-import.config-import.ui.whatToInclude">What to include</p>
             <div class="checkbox-group">
                 <label class="checkbox-label">
-                    <input type="checkbox" id="incGlobal" checked><span data-i18n="generated.972329da7297">
+                    <input type="checkbox" id="incGlobal" checked><span data-i18n="plugins.config-import.config-import.ui.globalSettings">
                     🌍 Global Settings
                 </span></label>
                 <label class="checkbox-label">
-                    <input type="checkbox" id="incPluginSettings" checked><span data-i18n="generated.3f2be0549eff">
+                    <input type="checkbox" id="incPluginSettings" checked><span data-i18n="plugins.config-import.config-import.ui.pluginSettings">
                     🔌 Plugin Settings
                 </span></label>
                 <label class="checkbox-label">
-                    <input type="checkbox" id="incPluginData" checked><span data-i18n="generated.517633ab05e8">
+                    <input type="checkbox" id="incPluginData" checked><span data-i18n="plugins.config-import.config-import.ui.pluginData">
                     📁 Plugin Data Files
                 </span></label>
                 <label class="checkbox-label">
-                    <input type="checkbox" id="incUserConfigs" checked><span data-i18n="generated.ab730adc0bda">
+                    <input type="checkbox" id="incUserConfigs" checked><span data-i18n="plugins.config-import.config-import.ui.userConfigs">
                     User Configs
                 </span></label>
                 <label class="checkbox-label">
-                    <input type="checkbox" id="incUploads" checked><span data-i18n="generated.1ef7da7f3c61">
+                    <input type="checkbox" id="incUploads" checked><span data-i18n="plugins.config-import.config-import.ui.uploads">
                     🖼️ Uploads
                 </span></label>
                 <label class="checkbox-label">
-                    <input type="checkbox" id="incUserData" checked><span data-i18n="generated.3cd695e3408c">
+                    <input type="checkbox" id="incUserData" checked><span data-i18n="plugins.config-import.config-import.ui.userData">
                     🗄️ User Data
                 </span></label>
             </div>
@@ -481,17 +481,17 @@
             <div id="capWarning" class="alert alert-warn hidden" style="margin-top:14px;"></div>
 
             <div style="margin-top:20px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-                <button class="btn btn-primary" id="exportBtn" data-i18n="generated.2039d237a147">
+                <button class="btn btn-primary" id="exportBtn" data-i18n="plugins.config-import.config-import.ui.exportButton">
                     📤 Download Backup
                 </button>
                 <span id="exportStatus" class="hidden" style="color:var(--color-text-muted,#888);font-size:0.88rem;">
-                    <span class="spinner"></span><span data-i18n="generated.9835ca65d0a1"> Creating backup…
+                    <span class="spinner"></span><span data-i18n="plugins.config-import.config-import.ui.creatingBackup"> Creating backup…
                 </span></span>
             </div>
         </div>
 
         <div class="card hidden" id="exportResultCard">
-            <h2 data-i18n="generated.f2e00fd1fd70">✅ Backup Created</h2>
+            <h2 data-i18n="plugins.config-import.config-import.ui.backupCreated">✅ Backup Created</h2>
             <div id="exportResultMsg"></div>
             <div id="exportWarnings"></div>
         </div>
@@ -506,13 +506,13 @@
 
         <!-- Step 1: Upload -->
         <div class="card" id="importStep1">
-            <h2 data-i18n="generated.6c5214a28411">📥 Import Backup File</h2>
-            <p class="desc" data-i18n="generated.59e7125efd85">Upload a ZIP backup file created by this tool. The backup will be previewed before anything is changed.</p>
+            <h2 data-i18n="plugins.config-import.config-import.ui.importTitle">📥 Import Backup File</h2>
+            <p class="desc" data-i18n="plugins.config-import.config-import.ui.importDescription">Upload a ZIP backup file created by this tool. The backup will be previewed before anything is changed.</p>
 
             <div class="upload-zone" id="uploadZone">
                 <div class="icon">📦</div>
-                <p><strong data-i18n="generated.46f3fcb4415f">Drop your backup ZIP here</strong></p>
-                <p data-i18n="generated.14ade627f89d">or click to browse files</p>
+                <p><strong data-i18n="plugins.config-import.config-import.ui.dropBackup">Drop your backup ZIP here</strong></p>
+                <p data-i18n="plugins.config-import.config-import.ui.browseFiles">or click to browse files</p>
                 <input type="file" id="fileInput" accept=".zip,application/zip" style="display:none;">
             </div>
 
@@ -520,22 +520,22 @@
                 <span>📦</span>
                 <span id="selectedFileName"></span>
                 <span id="selectedFileSize" style="color:var(--color-text-muted,#888);"></span>
-                <span class="remove" id="clearFileBtn" title="Remove file">✕</span>
+                <span class="remove" id="clearFileBtn" title="Remove file" data-i18n-title="plugins.config-import.config-import.ui.removeFile">✕</span>
             </div>
 
             <div style="margin-top:16px;">
-                <button class="btn btn-primary" id="validateBtn" disabled data-i18n="generated.a27bf867d7a3">
+                <button class="btn btn-primary" id="validateBtn" disabled data-i18n="plugins.config-import.config-import.ui.validateButton">
                     🔍 Validate &amp; Preview
                 </button>
                 <span id="validateStatus" class="hidden" style="margin-left:12px;color:var(--color-text-muted,#888);font-size:0.88rem;">
-                    <span class="spinner"></span><span data-i18n="generated.6d69c9e93365"> Validating…
+                    <span class="spinner"></span><span data-i18n="plugins.config-import.config-import.ui.validating"> Validating…
                 </span></span>
             </div>
         </div>
 
         <!-- Step 2: Preview -->
         <div class="card hidden" id="importStep2">
-            <h2 data-i18n="generated.b5dd838cc389">🔍 Import Preview</h2>
+            <h2 data-i18n="plugins.config-import.config-import.ui.previewTitle">🔍 Import Preview</h2>
 
             <div id="manifestInfo" style="margin-bottom:16px;font-size:0.88rem;color:var(--color-text-muted,#888);"></div>
 
@@ -543,65 +543,65 @@
 
             <div id="previewWarnings"></div>
 
-            <p class="section-title" data-i18n="generated.9a5912ffe020">Plugin details</p>
+            <p class="section-title" data-i18n="plugins.config-import.config-import.ui.pluginDetails">Plugin details</p>
             <div style="overflow-x:auto;">
                 <table class="preview-table" id="pluginTable">
                     <thead>
                         <tr>
-                            <th>Plugin</th>
-                            <th data-i18n="generated.57d6e684a4b9">New Keys</th>
-                            <th>Conflicts</th>
-                            <th data-i18n="generated.64258d8e3905">Data Files</th>
+                            <th data-i18n="plugins.config-import.config-import.ui.pluginColumn">Plugin</th>
+                            <th data-i18n="plugins.config-import.config-import.ui.newKeys">New Keys</th>
+                            <th data-i18n="plugins.config-import.config-import.ui.conflicts">Conflicts</th>
+                            <th data-i18n="plugins.config-import.config-import.ui.dataFiles">Data Files</th>
                         </tr>
                     </thead>
                     <tbody id="pluginTableBody"></tbody>
                 </table>
             </div>
 
-            <p class="section-title" data-i18n="generated.1d3dd4851bf1">Import mode</p>
+            <p class="section-title" data-i18n="plugins.config-import.config-import.ui.importMode">Import mode</p>
             <div class="mode-group">
-                <button class="mode-btn" data-mode="merge" id="modeMerge"><span data-i18n="generated.2e1036bc0e98">
+                <button class="mode-btn" data-mode="merge" id="modeMerge"><span data-i18n="plugins.config-import.config-import.ui.modeMerge">
                     🔀 Merge
-                    </span><div class="mode-desc" data-i18n="generated.bfafa87a6cfd">Add missing settings only; existing values are kept.</div>
+                    </span><div class="mode-desc" data-i18n="plugins.config-import.config-import.ui.modeMergeDesc">Add missing settings only; existing values are kept.</div>
                 </button>
-                <button class="mode-btn selected" data-mode="replace" id="modeReplace"><span data-i18n="generated.8ba8f7150fb7">
+                <button class="mode-btn selected" data-mode="replace" id="modeReplace"><span data-i18n="plugins.config-import.config-import.ui.modeReplace">
                     🔄 Replace
-                    </span><div class="mode-desc" data-i18n="generated.f699cc6d2010">Overwrite all matching settings with backup values.</div>
+                    </span><div class="mode-desc" data-i18n="plugins.config-import.config-import.ui.modeReplaceDesc">Overwrite all matching settings with backup values.</div>
                 </button>
             </div>
 
-            <p class="section-title" data-i18n="generated.ae5b74c37bea">Sections to restore</p>
+            <p class="section-title" data-i18n="plugins.config-import.config-import.ui.sectionsRestore">Sections to restore</p>
             <div class="checkbox-group" id="importSections">
-                <label class="checkbox-label"><input type="checkbox" id="impGlobal" checked><span data-i18n="generated.25ff211b75cf"> 🌍 Global Settings</span></label>
-                <label class="checkbox-label"><input type="checkbox" id="impPluginSettings" checked><span data-i18n="generated.a911d395a22b"> 🔌 Plugin Settings</span></label>
-                <label class="checkbox-label"><input type="checkbox" id="impPluginData" checked><span data-i18n="generated.78b8e4b999e1"> 📁 Plugin Data Files</span></label>
-                <label class="checkbox-label" id="impUploadsLbl"><input type="checkbox" id="impUploads"><span data-i18n="generated.486cc23e9f4d"> 🖼️ Uploads</span></label>
-                <label class="checkbox-label" id="impUserDataLbl"><input type="checkbox" id="impUserData"><span data-i18n="generated.ee60263493ed"> 🗄️ User Data</span></label>
+                <label class="checkbox-label"><input type="checkbox" id="impGlobal" checked><span data-i18n="plugins.config-import.config-import.ui.globalSettings"> 🌍 Global Settings</span></label>
+                <label class="checkbox-label"><input type="checkbox" id="impPluginSettings" checked><span data-i18n="plugins.config-import.config-import.ui.pluginSettings"> 🔌 Plugin Settings</span></label>
+                <label class="checkbox-label"><input type="checkbox" id="impPluginData" checked><span data-i18n="plugins.config-import.config-import.ui.pluginData"> 📁 Plugin Data Files</span></label>
+                <label class="checkbox-label" id="impUploadsLbl"><input type="checkbox" id="impUploads"><span data-i18n="plugins.config-import.config-import.ui.uploads"> 🖼️ Uploads</span></label>
+                <label class="checkbox-label" id="impUserDataLbl"><input type="checkbox" id="impUserData"><span data-i18n="plugins.config-import.config-import.ui.userData"> 🗄️ User Data</span></label>
             </div>
 
             <div style="margin-top:20px; display:flex; gap:12px; flex-wrap:wrap;">
-                <button class="btn btn-primary" id="doImportBtn" data-i18n="generated.20ea843162ae">
+                <button class="btn btn-primary" id="doImportBtn" data-i18n="plugins.config-import.config-import.ui.importButton">
                     ✅ Restore Now
                 </button>
-                <button class="btn btn-secondary" id="cancelImportBtn" data-i18n="generated.b457fb0fa446">
+                <button class="btn btn-secondary" id="cancelImportBtn" data-i18n="plugins.config-import.config-import.ui.cancelButton">
                     ✕ Cancel
                 </button>
                 <span id="doImportStatus" class="hidden" style="margin-left:4px;color:var(--color-text-muted,#888);font-size:0.88rem;">
-                    <span class="spinner"></span><span data-i18n="generated.9695809fd6ad"> Importing…
+                    <span class="spinner"></span><span data-i18n="plugins.config-import.config-import.ui.importStatus"> Importing…
                 </span></span>
             </div>
         </div>
 
         <!-- Step 3: Result -->
         <div class="card hidden" id="importStep3">
-            <h2 data-i18n="generated.001357a9346f">📋 Import Result</h2>
+            <h2 data-i18n="plugins.config-import.config-import.ui.resultTitle">📋 Import Result</h2>
             <div id="importResultMsg"></div>
             <div id="importResultLog" class="log-area"></div>
-            <button class="btn btn-secondary" id="toggleLogBtn" style="margin-top:10px;display:none;" data-i18n="generated.1b2ccbf4faae">
+            <button class="btn btn-secondary" id="toggleLogBtn" style="margin-top:10px;display:none;" data-i18n="plugins.config-import.config-import.ui.showDetails">
                 🔽 Show Details
             </button>
             <div style="margin-top:16px;">
-                <button class="btn btn-secondary" id="newImportBtn" data-i18n="generated.1563a2832ead">📥 Import Another Backup</button>
+            <button class="btn btn-secondary" id="newImportBtn" data-i18n="plugins.config-import.config-import.ui.importAnother">📥 Import Another Backup</button>
             </div>
         </div>
     </div>
@@ -611,148 +611,57 @@
     ════════════════════════════════════════════════════════════════════════════ -->
     <div id="tab-legacy" class="tab-panel">
 
-        <div class="alert alert-info" style="margin-bottom:16px;"><span data-i18n="generated.b445ce972b87">
-            ℹ️ </span><strong data-i18n="generated.9961ce1e61fe">Legacy Import</strong><span data-i18n="generated.e0189def301c"> – Use this to migrate settings from an older installation that stores files directly in the application directory (pre-persistent-config versions).
+        <div class="alert alert-info" style="margin-bottom:16px;"><span>ℹ️ </span><strong data-i18n="plugins.config-import.config-import.ui.legacyInfoTitle">Legacy Import</strong><span data-i18n="plugins.config-import.config-import.ui.legacyInfoDescription"> – Use this to migrate settings from an older installation that stores files directly in the application directory (pre-persistent-config versions).
         </span></div>
 
         <div id="legacyAlert" class="alert hidden"></div>
 
         <div class="card hidden" id="legacyDiscoveryCard">
-            <h2 data-i18n="generated.450bad319a8a">Detected Old Configs</h2>
-            <p class="desc" data-i18n="generated.b7ff3473f0c3">Known LTTH locations were scanned for old profiles, plugin data, uploads, and user data.</p>
+            <h2 data-i18n="plugins.config-import.config-import.ui.detectedOldConfigs">Detected Old Configs</h2>
+            <p class="desc" data-i18n="plugins.config-import.config-import.ui.detectedOldConfigsDesc">Known LTTH locations were scanned for old profiles, plugin data, uploads, and user data.</p>
             <div id="legacyDiscoveryList"></div>
         </div>
 
         <div class="card">
-            <h2 data-i18n="generated.5c8496ba0cf0">🗂️ Import from Old Installation Path</h2>
-            <p class="desc" data-i18n="generated.c82b500d5b07">Enter the directory where your old LTTH installation was installed. The tool will scan for configuration files and import them into the current persistent storage location.</p>
+            <h2 data-i18n="plugins.config-import.config-import.ui.legacyTitle">🗂️ Import from Old Installation Path</h2>
+            <p class="desc" data-i18n="plugins.config-import.config-import.ui.legacyDescription">Enter the directory where your old LTTH installation was installed. The tool will scan for configuration files and import them into the current persistent storage location.</p>
 
             <div class="form-group">
-                <label for="legacyPathInput" data-i18n="generated.a7a226949812">Old Installation Path</label>
+                <label for="legacyPathInput" data-i18n="plugins.config-import.config-import.ui.oldInstallationPath">Old Installation Path</label>
                 <div style="display:flex;gap:10px;">
-                    <input type="text" id="legacyPathInput" placeholder="e.g. C:\Users\You\ltth or /home/you/ltth" style="flex:1;">
-                    <button class="btn btn-secondary" id="legacyValidateBtn" data-i18n="generated.5b11c40a5cf0">🔍 Scan</button>
+                    <input type="text" id="legacyPathInput" placeholder="e.g. C:\Users\You\ltth or /home/you/ltth" data-i18n-placeholder="plugins.config-import.form_controls.legacy_path_placeholder" style="flex:1;">
+                    <button class="btn btn-secondary" id="legacyValidateBtn" data-i18n="plugins.config-import.config-import.ui.scanButton">🔍 Scan</button>
                 </div>
             </div>
 
             <div class="form-group hidden" id="legacyProfileGroup">
-                <label for="legacyProfileInput" data-i18n="generated.01f3e894a942">Profile name for imported config (optional)</label>
-                <input type="text" id="legacyProfileInput" placeholder="imported-config" maxlength="50">
+                <label for="legacyProfileInput" data-i18n="plugins.config-import.config-import.ui.importedProfileName">Profile name for imported config (optional)</label>
+                    <input type="text" id="legacyProfileInput" placeholder="imported-config" data-i18n-placeholder="plugins.config-import.form_controls.legacy_profile_placeholder" maxlength="50">
             </div>
 
             <div id="legacyFindings" class="hidden">
-                <p class="section-title" data-i18n="generated.ebcd2d7e45cb">Found in path</p>
+                <p class="section-title" data-i18n="plugins.config-import.config-import.ui.foundInPath">Found in path</p>
                 <div id="legacyFindingsList"></div>
             </div>
 
             <div style="margin-top:16px;">
-                <button class="btn btn-primary hidden" id="legacyImportBtn" disabled data-i18n="generated.7d7823a9321c">
+                <button class="btn btn-primary hidden" id="legacyImportBtn" disabled data-i18n="plugins.config-import.config-import.ui.importLegacyButton">
                     📥 Import Legacy Settings
                 </button>
                 <span id="legacyStatus" class="hidden" style="margin-left:12px;color:var(--color-text-muted,#888);font-size:0.88rem;">
-                    <span class="spinner"></span><span data-i18n="generated.242a8c77605e"> Importing…
+                    <span class="spinner"></span><span data-i18n="plugins.config-import.config-import.ui.importing"> Importing…
                 </span></span>
             </div>
         </div>
 
         <div class="card hidden" id="legacyResultCard">
-            <h2 data-i18n="generated.84d731de11c6">📋 Import Result</h2>
+            <h2 data-i18n="plugins.config-import.config-import.ui.importResult">📋 Import Result</h2>
             <div id="legacyResultMsg"></div>
         </div>
     </div>
 </div>
 
 <script src="/js/i18n-client.js"></script>
-<script>
-(() => {
-    const selectors = {
-        '.header h1': 'config-import.ui.heroTitle',
-        '.header p': 'config-import.ui.heroDescription',
-        '.tab-btn[data-tab="export"]': 'config-import.ui.tabExport',
-        '.tab-btn[data-tab="import"]': 'config-import.ui.tabImport',
-        '.tab-btn[data-tab="legacy"]': 'config-import.ui.tabLegacy',
-        '#tab-export h2': 'config-import.ui.exportTitle',
-        '#tab-export .desc': 'config-import.ui.exportDescription',
-        '#tab-export .section-title': 'config-import.ui.whatToInclude',
-        '#exportBtn': 'config-import.ui.exportButton',
-        '#exportResultCard h2': 'config-import.ui.backupCreated',
-        '#tab-import h2': 'config-import.ui.importTitle',
-        '#tab-import .desc': 'config-import.ui.importDescription',
-        '#uploadZone strong': 'config-import.ui.dropBackup',
-        '#uploadZone p:nth-of-type(2)': 'config-import.ui.browseFiles',
-        '#validateBtn': 'config-import.ui.validateButton',
-        '#importStep2 h2': 'config-import.ui.previewTitle',
-        '#pluginTable th:nth-child(2)': 'config-import.ui.newKeys',
-        '#pluginTable th:nth-child(3)': 'config-import.ui.conflicts',
-        '#pluginTable th:nth-child(4)': 'config-import.ui.dataFiles',
-        '#importStep3 h2': 'config-import.ui.resultTitle',
-        '#toggleLogBtn': 'config-import.ui.showDetails',
-        '#newImportBtn': 'config-import.ui.importAnother',
-        '#legacyDiscoveryCard h2': 'config-import.ui.detectedOldConfigs',
-        '#legacyDiscoveryCard .desc': 'config-import.ui.detectedOldConfigsDesc',
-        '#tab-legacy > .card h2': 'config-import.ui.legacyTitle',
-        '#tab-legacy > .card .desc': 'config-import.ui.legacyDescription',
-        'label[for="legacyPathInput"]': 'config-import.ui.oldInstallationPath',
-        '#legacyValidateBtn': 'config-import.ui.scanButton',
-        'label[for="legacyProfileInput"]': 'config-import.ui.importedProfileName',
-        '#legacyFindings .section-title': 'config-import.ui.foundInPath',
-        '#legacyImportBtn': 'config-import.ui.importLegacyButton',
-        '#legacyResultCard h2': 'config-import.ui.importResult'
-    };
-    Object.entries(selectors).forEach(([selector, key]) => {
-        const element = document.querySelector(selector);
-        if (element) element.setAttribute('data-i18n', key);
-    });
-    const markButtonText = (id, key, descriptionKey) => {
-        const button = document.getElementById(id);
-        if (!button) return;
-        const textNode = [...button.childNodes].find(node => node.nodeType === 3 && node.textContent.trim());
-        if (textNode) {
-            const span = document.createElement('span');
-            span.setAttribute('data-i18n', key);
-            span.textContent = textNode.textContent.trim();
-            textNode.replaceWith(span);
-        }
-        const description = button.querySelector('.mode-desc');
-        if (description && descriptionKey) description.setAttribute('data-i18n', descriptionKey);
-    };
-    markButtonText('modeMerge', 'config-import.ui.modeMerge', 'config-import.ui.modeMergeDesc');
-    markButtonText('modeReplace', 'config-import.ui.modeReplace', 'config-import.ui.modeReplaceDesc');
-    const checkboxLabels = {
-        incGlobal: 'config-import.ui.globalSettings',
-        incPluginSettings: 'config-import.ui.pluginSettings',
-        incPluginData: 'config-import.ui.pluginData',
-        incUserConfigs: 'config-import.ui.userConfigs',
-        incUploads: 'config-import.ui.uploads',
-        incUserData: 'config-import.ui.userData',
-        impGlobal: 'config-import.ui.globalSettings',
-        impPluginSettings: 'config-import.ui.pluginSettings',
-        impPluginData: 'config-import.ui.pluginData',
-        impUploads: 'config-import.ui.uploads',
-        impUserData: 'config-import.ui.userData'
-    };
-    Object.entries(checkboxLabels).forEach(([id, key]) => {
-        const input = document.getElementById(id);
-        const label = input && input.closest('label');
-        if (!label || label.querySelector('[data-i18n]')) return;
-        const span = document.createElement('span');
-        span.setAttribute('data-i18n', key);
-        const text = [...label.childNodes].filter(node => node.nodeType === 3).map(node => node.textContent).join('').trim();
-        span.textContent = text;
-        [...label.childNodes].filter(node => node.nodeType === 3).forEach(node => node.remove());
-        label.appendChild(span);
-    });
-    const placeholders = {
-        legacyPathInput: 'config-import.ui.pathPlaceholder',
-        legacyProfileInput: 'config-import.ui.profilePlaceholder'
-    };
-    Object.entries(placeholders).forEach(([id, key]) => {
-        const input = document.getElementById(id);
-        if (input) input.setAttribute('data-i18n-placeholder', key);
-    });
-    if (window.i18n?.ready) window.i18n.ready.then(() => window.i18n.updateDOM());
-})();
-</script>
 <script>
 (function () {
     'use strict';
@@ -779,6 +688,11 @@
         el.textContent = msg;
         el.classList.remove('hidden');
     }
+    const i18nReady = window.i18n?.ready || Promise.resolve();
+    function t(key, params = {}) {
+        const translated = window.i18n?.t(key, params);
+        return translated && translated !== key ? translated : key;
+    }
     function hideEl(el) { el.classList.add('hidden'); }
     function showEl(el) { el.classList.remove('hidden'); }
     function fmtSize(bytes) {
@@ -795,23 +709,25 @@
     const exportResultCard = document.getElementById('exportResultCard');
     const exportAlert = document.getElementById('exportAlert');
 
-    // Load capabilities on page load
-    fetch('/api/config-backup/capabilities')
-        .then(r => r.json())
-        .then(data => {
-            if (!data.success) {
+    function loadCapabilities() {
+        fetch('/api/config-backup/capabilities')
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) {
+                    showAlert(document.getElementById('capWarning'),
+                        t('plugins.config-import.config-import.ui.backupNotReady'), 'warn');
+                    showEl(document.getElementById('capWarning'));
+                }
+            })
+            .catch(() => {
                 showAlert(document.getElementById('capWarning'),
-                    '⚠️ Backup system not fully initialised. Export may be unavailable.', 'warn');
+                    t('plugins.config-import.config-import.ui.backupApiUnavailable'), 'warn');
                 showEl(document.getElementById('capWarning'));
-            }
-        })
-        .catch(() => {
-            showAlert(document.getElementById('capWarning'),
-                '⚠️ Could not reach the backup API. Make sure the server is running.', 'warn');
-            showEl(document.getElementById('capWarning'));
-        });
+            });
+    }
 
     exportBtn.addEventListener('click', async () => {
+        await i18nReady;
         hideEl(exportAlert);
         hideEl(exportResultCard);
         exportBtn.disabled = true;
@@ -841,7 +757,7 @@
 
             const tokenData = await tokenResp.json();
             if (!tokenData.success) {
-                throw new Error(tokenData.error || 'Failed to prepare backup');
+                throw new Error(tokenData.error || t('plugins.config-import.config-import.ui.failedToPrepareBackup'));
             }
 
             const { downloadUrl, filename } = tokenData;
@@ -889,14 +805,14 @@
             const safeUrl = escHtml(downloadUrl);
             document.getElementById('exportResultMsg').innerHTML =
                 `<div class="alert alert-success">` +
-                `✅ Backup ready! &nbsp;` +
+                `${t('plugins.config-import.config-import.ui.backupReady')} &nbsp;` +
                 `📥 <a href="${safeUrl}" download="${safeFilename}" target="_blank" rel="noopener noreferrer"><strong>${safeFilename}</strong></a>` +
-                `<br><small style="opacity:0.8;">If the download did not start automatically, click the link above or right-click → "Save as…"</small>` +
+                `<br><small style="opacity:0.8;">${t('plugins.config-import.config-import.ui.manualDownloadHelp')}</small>` +
                 `</div>`;
 
             showEl(exportResultCard);
         } catch (e) {
-            showAlert(exportAlert, '❌ Export failed: ' + e.message, 'error');
+            showAlert(exportAlert, `${t('plugins.config-import.config-import.ui.exportFailed')} ${e.message}`, 'error');
         } finally {
             exportBtn.disabled = false;
             hideEl(exportStatus);
@@ -920,7 +836,7 @@
         const userConfigsLabel = document.createElement('label');
         userConfigsLabel.className = 'checkbox-label';
         userConfigsLabel.id = 'impUserConfigsLbl';
-        userConfigsLabel.innerHTML = '<input type="checkbox" id="impUserConfigs" checked> User Configs';
+        userConfigsLabel.innerHTML = '<input type="checkbox" id="impUserConfigs" checked><span data-i18n="plugins.config-import.config-import.ui.userConfigs"></span>';
         importSections.insertBefore(userConfigsLabel, document.getElementById('impUploadsLbl'));
     }
     ['impUploads', 'impUserData'].forEach(id => {
@@ -955,8 +871,12 @@
     });
 
     function setFile(file) {
+        if (window.i18n?.ready && !window.i18n.initialized) {
+            i18nReady.then(() => setFile(file));
+            return;
+        }
         if (!file.name.endsWith('.zip') && file.type !== 'application/zip' && file.type !== 'application/x-zip-compressed') {
-            showAlert(importAlert, '❌ Only ZIP backup files are accepted.', 'error');
+            showAlert(importAlert, t('plugins.config-import.config-import.ui.zipBackupOnly'), 'error');
             return;
         }
         selectedFile = file;
@@ -984,6 +904,7 @@
     }
 
     validateBtn.addEventListener('click', async () => {
+        await i18nReady;
         if (!selectedFile) return;
         validateBtn.disabled = true;
         showEl(document.getElementById('validateStatus'));
@@ -998,7 +919,7 @@
 
             if (!data.success) {
                 const msg = (data.errors || [data.error]).join('\n');
-                showAlert(importAlert, '❌ Backup validation failed:\n' + msg, 'error');
+                showAlert(importAlert, `${t('plugins.config-import.config-import.ui.backupValidationFailed')}\n${msg}`, 'error');
                 return;
             }
 
@@ -1007,7 +928,7 @@
             hideEl(importStep1);
             showEl(importStep2);
         } catch (e) {
-            showAlert(importAlert, '❌ Validation error: ' + e.message, 'error');
+            showAlert(importAlert, `${t('plugins.config-import.config-import.ui.validationError')} ${e.message}`, 'error');
         } finally {
             validateBtn.disabled = false;
             hideEl(document.getElementById('validateStatus'));
@@ -1018,9 +939,9 @@
         const manifest = preview.manifest || {};
         const appInfo = manifest.app || {};
         document.getElementById('manifestInfo').innerHTML =
-            `<strong>Backup from:</strong> ${escHtml(manifest.exportedAt || 'unknown')} &nbsp;|&nbsp; ` +
-            `<strong>App version:</strong> ${escHtml(appInfo.version || '?')} &nbsp;|&nbsp; ` +
-            `<strong>Profile:</strong> ${escHtml(manifest.sourceProfile || 'none')}`;
+            `<strong>${t('plugins.config-import.config-import.ui.manifestBackupFrom')}</strong> ${escHtml(manifest.exportedAt || t('plugins.config-import.config-import.ui.unknownValue'))} &nbsp;|&nbsp; ` +
+            `<strong>${t('plugins.config-import.config-import.ui.manifestAppVersion')}</strong> ${escHtml(appInfo.version || '?')} &nbsp;|&nbsp; ` +
+            `<strong>${t('plugins.config-import.config-import.ui.manifestProfile')}</strong> ${escHtml(manifest.sourceProfile || t('plugins.config-import.config-import.ui.noProfile'))}`;
 
         // Summary grid
         const grid = document.getElementById('summaryGrid');
@@ -1029,12 +950,12 @@
         const totalConflicts = Object.values(plugins).reduce((s, p) => s + (p.settingsConflicts || 0), 0) + (preview.global?.conflicts || 0);
         const totalFiles = Object.values(plugins).reduce((s, p) => s + (p.dataFiles || 0), 0);
         grid.innerHTML = [
-            { num: Object.keys(plugins).length, lbl: 'Plugins' },
-            { num: totalNew, lbl: 'New Settings' },
-            { num: totalConflicts, lbl: 'Conflicts' },
-            { num: totalFiles, lbl: 'Data Files' },
-            { num: preview.userConfigFiles || 0, lbl: 'User Configs' },
-            { num: preview.uploadFiles || 0, lbl: 'Upload Files' }
+            { num: Object.keys(plugins).length, lbl: t('plugins.config-import.config-import.ui.plugins') },
+            { num: totalNew, lbl: t('plugins.config-import.config-import.ui.newSettings') },
+            { num: totalConflicts, lbl: t('plugins.config-import.config-import.ui.conflicts') },
+            { num: totalFiles, lbl: t('plugins.config-import.config-import.ui.dataFiles') },
+            { num: preview.userConfigFiles || 0, lbl: t('plugins.config-import.config-import.ui.userConfigs') },
+            { num: preview.uploadFiles || 0, lbl: t('plugins.config-import.config-import.ui.uploadFiles') }
         ].map(item =>
             `<div class="summary-item"><div class="num">${item.num}</div><div class="lbl">${item.lbl}</div></div>`
         ).join('');
@@ -1043,7 +964,7 @@
         const tbody = document.getElementById('pluginTableBody');
         const pluginIds = Object.keys(plugins);
         if (pluginIds.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="color:var(--color-text-muted,#888);padding:16px;">No plugin settings in this backup.</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="4" style="color:var(--color-text-muted,#888);padding:16px;">${t('plugins.config-import.config-import.ui.noPluginSettings')}</td></tr>`;
         } else {
             tbody.innerHTML = pluginIds.map(id => {
                 const p = plugins[id];
@@ -1088,6 +1009,7 @@
     }
 
     document.getElementById('doImportBtn').addEventListener('click', async () => {
+        await i18nReady;
         if (!selectedFile) return;
         const btn = document.getElementById('doImportBtn');
         btn.disabled = true;
@@ -1116,11 +1038,11 @@
 
             if (data.success) {
                 document.getElementById('importResultMsg').innerHTML =
-                    '<div class="alert alert-success">✅ Import completed successfully! Restart the application to apply all changes.</div>';
+                    `<div class="alert alert-success">${t('plugins.config-import.config-import.ui.importCompletedRestart')}</div>`;
             } else {
-                const errMsg = (data.errors || ['Unknown error']).join('\n');
+                const errMsg = (data.errors || [t('plugins.config-import.config-import.ui.unknownError')]).join('\n');
                 document.getElementById('importResultMsg').innerHTML =
-                    `<div class="alert alert-error">❌ Import completed with errors:\n${escHtml(errMsg)}</div>`;
+                    `<div class="alert alert-error">${t('plugins.config-import.config-import.ui.importCompletedWithErrors')}\n${escHtml(errMsg)}</div>`;
             }
 
             // Build log lines
@@ -1134,13 +1056,24 @@
             if (data.report) {
                 const report = data.report;
                 if (report.globalSettings) {
-                    allLines.push({ cls: 'log-ok', text: `Global settings: ${report.globalSettings.imported?.length || 0} imported, ${report.globalSettings.skipped?.length || 0} skipped` });
+                    allLines.push({ cls: 'log-ok', text: t('plugins.config-import.config-import.ui.globalSettingsReport', {
+                        imported: report.globalSettings.imported?.length || 0,
+                        skipped: report.globalSettings.skipped?.length || 0
+                    }) });
                 }
                 if (report.userConfigs) {
-                    allLines.push({ cls: 'log-ok', text: `User configs: ${report.userConfigs.imported?.length || 0} imported, ${report.userConfigs.skipped?.length || 0} skipped, ${report.userConfigs.renamed?.length || 0} renamed` });
+                    allLines.push({ cls: 'log-ok', text: t('plugins.config-import.config-import.ui.userConfigsReport', {
+                        imported: report.userConfigs.imported?.length || 0,
+                        skipped: report.userConfigs.skipped?.length || 0,
+                        renamed: report.userConfigs.renamed?.length || 0
+                    }) });
                 }
                 Object.entries(report.plugins || {}).forEach(([id, p]) => {
-                    allLines.push({ cls: 'log-info', text: `[${id}] settings: +${p.importedSettings?.length || 0} files: +${p.importedFiles?.length || 0}` });
+                    allLines.push({ cls: 'log-info', text: t('plugins.config-import.config-import.ui.pluginReport', {
+                        id,
+                        settings: p.importedSettings?.length || 0,
+                        files: p.importedFiles?.length || 0
+                    }) });
                 });
             }
 
@@ -1149,14 +1082,14 @@
                     `<div class="log-line ${l.cls}">${escHtml(l.text)}</div>`
                 ).join('');
                 showEl(toggleBtn);
-                toggleBtn.textContent = '🔽 Show Details';
+                toggleBtn.textContent = t('plugins.config-import.config-import.ui.showDetails');
                 toggleBtn.onclick = () => {
                     if (logArea.classList.contains('show')) {
                         logArea.classList.remove('show');
-                        toggleBtn.textContent = '🔽 Show Details';
+                        toggleBtn.textContent = t('plugins.config-import.config-import.ui.showDetails');
                     } else {
                         logArea.classList.add('show');
-                        toggleBtn.textContent = '🔼 Hide Details';
+                        toggleBtn.textContent = t('plugins.config-import.config-import.ui.hideDetails');
                     }
                 };
             }
@@ -1164,7 +1097,7 @@
             hideEl(importStep2);
             showEl(importStep3);
             document.getElementById('importResultMsg').innerHTML =
-                `<div class="alert alert-error">❌ Import failed: ${escHtml(e.message)}</div>`;
+                `<div class="alert alert-error">${t('plugins.config-import.config-import.ui.importFailed')} ${escHtml(e.message)}</div>`;
         } finally {
             btn.disabled = false;
             hideEl(document.getElementById('doImportStatus'));
@@ -1196,19 +1129,23 @@
 
             list.innerHTML = candidates.map((candidate, index) => {
                 const candidatePath = candidate.importPath || candidate.actualPath || '';
-                const label = candidate.label || `Legacy source ${index + 1}`;
-                const summary = candidate.summary || `${candidate.fileCount || 0} file(s) detected`;
+                const label = candidate.label || t('plugins.config-import.config-import.ui.legacySource', { index: index + 1 });
+                const summary = candidate.summary || t('plugins.config-import.config-import.ui.fileCount', {
+                    count: candidate.fileCount || 0
+                });
                 return `
                     <div class="legacy-candidate">
                         <div class="legacy-candidate-title">${escHtml(label)}</div>
                         <div class="legacy-candidate-path">${escHtml(candidate.actualPath || candidatePath)}</div>
                         <div class="legacy-candidate-summary">${escHtml(summary)}</div>
-                        <button class="btn btn-secondary legacy-use-candidate" data-path="${escHtml(candidatePath)}">
+                        <button class="btn btn-secondary legacy-use-candidate" data-path="${escHtml(candidatePath)}" data-i18n="plugins.config-import.config-import.ui.useSource">
                             Use this source
                         </button>
                     </div>
                 `;
             }).join('');
+
+            window.i18n?.updateDOM();
 
             list.querySelectorAll('.legacy-use-candidate').forEach(button => {
                 button.addEventListener('click', () => {
@@ -1225,11 +1162,10 @@
         }
     }
 
-    loadLegacyDiscovery();
-
     legacyValidateBtn.addEventListener('click', async () => {
+        await i18nReady;
         const importPath = legacyPathInput.value.trim();
-        if (!importPath) { showAlert(legacyAlert, '❌ Please enter a path.', 'error'); return; }
+        if (!importPath) { showAlert(legacyAlert, t('plugins.config-import.config-import.ui.enterPath'), 'error'); return; }
         hideEl(legacyAlert);
         legacyValidateBtn.disabled = true;
         legacyImportBtn.disabled = true;
@@ -1247,20 +1183,22 @@
                 const fl = document.getElementById('legacyFindingsList');
                 fl.innerHTML = '';
                 const checks = [
-                    { key: 'userConfigs', label: 'user_configs directory' },
-                    { key: 'userData', label: 'user_data directory' },
-                    { key: 'uploads', label: 'uploads directory' },
-                    { key: 'plugins', label: 'plugins directory' },
-                    { key: 'legacyDatabase', label: 'Legacy database.db' },
-                    { key: 'legacyData', label: 'Legacy data/ directory' }
+                    { key: 'userConfigs', label: t('plugins.config-import.config-import.ui.legacyUserConfigs') },
+                    { key: 'userData', label: t('plugins.config-import.config-import.ui.legacyUserData') },
+                    { key: 'uploads', label: t('plugins.config-import.config-import.ui.legacyUploads') },
+                    { key: 'plugins', label: t('plugins.config-import.config-import.ui.legacyPlugins') },
+                    { key: 'legacyDatabase', label: t('plugins.config-import.config-import.ui.legacyDatabase') },
+                    { key: 'legacyData', label: t('plugins.config-import.config-import.ui.legacyData') }
                 ];
                 checks.forEach(c => {
                     if (data.findings && data.findings[c.key]) {
-                        fl.innerHTML += `<div class="alert alert-success" style="margin-bottom:6px;">✅ Found: ${escHtml(c.label)}</div>`;
+                        fl.innerHTML += `<div class="alert alert-success" style="margin-bottom:6px;">${t('plugins.config-import.config-import.ui.found')}: ${escHtml(c.label)}</div>`;
                     }
                 });
                 if (data.findings?.files?.length) {
-                    fl.innerHTML += `<div class="alert alert-info" style="margin-bottom:6px;">📁 ${data.findings.files.length} file(s) detected</div>`;
+                    fl.innerHTML += `<div class="alert alert-info" style="margin-bottom:6px;">${t('plugins.config-import.config-import.ui.fileCount', {
+                        count: data.findings.files.length
+                    })}</div>`;
                 }
                 showEl(document.getElementById('legacyFindings'));
                 showEl(document.getElementById('legacyProfileGroup'));
@@ -1268,7 +1206,7 @@
                 legacyImportBtn.disabled = false;
                 legacyValidated = true;
             } else {
-                showAlert(legacyAlert, '❌ ' + (data.error || 'No configuration files found.'), 'error');
+                showAlert(legacyAlert, data.error || t('plugins.config-import.config-import.ui.noConfigurationFiles'), 'error');
                 hideEl(document.getElementById('legacyFindings'));
                 hideEl(legacyImportBtn);
             }
@@ -1280,6 +1218,7 @@
     });
 
     legacyImportBtn.addEventListener('click', async () => {
+        await i18nReady;
         if (!legacyValidated) return;
         const importPath = legacyPathInput.value.trim();
         const profileName = document.getElementById('legacyProfileInput').value.trim();
@@ -1300,23 +1239,23 @@
             if (data.success) {
                 const items = [];
                 if (data.imported) {
-                    if (data.imported.userConfigs > 0) items.push(`${data.imported.userConfigs} user config files`);
-                    if (data.imported.userData > 0) items.push(`${data.imported.userData} user data files`);
-                    if (data.imported.uploads > 0) items.push(`${data.imported.uploads} uploads`);
-                    if (data.imported.plugins > 0) items.push(`${data.imported.plugins} plugin data files`);
-                    if (data.imported.legacyDatabase > 0) items.push(`${data.imported.legacyDatabase} legacy database files`);
-                    if (data.imported.legacyData > 0) items.push(`${data.imported.legacyData} legacy data files`);
+                    if (data.imported.userConfigs > 0) items.push(t('plugins.config-import.config-import.ui.userConfigFiles', { count: data.imported.userConfigs }));
+                    if (data.imported.userData > 0) items.push(t('plugins.config-import.config-import.ui.userDataFiles', { count: data.imported.userData }));
+                    if (data.imported.uploads > 0) items.push(t('plugins.config-import.config-import.ui.uploadedFiles', { count: data.imported.uploads }));
+                    if (data.imported.plugins > 0) items.push(t('plugins.config-import.config-import.ui.pluginDataFiles', { count: data.imported.plugins }));
+                    if (data.imported.legacyDatabase > 0) items.push(t('plugins.config-import.config-import.ui.legacyDatabaseFiles', { count: data.imported.legacyDatabase }));
+                    if (data.imported.legacyData > 0) items.push(t('plugins.config-import.config-import.ui.legacyDataFiles', { count: data.imported.legacyData }));
                 }
-                let html = '<div class="alert alert-success">✅ Import completed successfully!</div>';
+                let html = `<div class="alert alert-success">${t('plugins.config-import.config-import.ui.legacyImportCompleted')}</div>`;
                 if (items.length > 0) {
-                    html += `<div class="alert alert-info" style="margin-top:8px;">📦 Imported: ${escHtml(items.join(', '))}</div>`;
+                    html += `<div class="alert alert-info" style="margin-top:8px;">${t('plugins.config-import.config-import.ui.importedItems')} ${escHtml(items.join(', '))}</div>`;
                 }
                 if (data.imported?.userConfigs > 0 || data.imported?.legacyDatabase > 0) {
-                    html += '<div class="alert alert-warn" style="margin-top:8px;">⚠️ Go to Settings → User Profiles, switch to the imported profile, then restart the application.</div>';
+                    html += `<div class="alert alert-warn" style="margin-top:8px;">${t('plugins.config-import.config-import.ui.switchProfileRestart')}</div>`;
                 }
                 msgEl.innerHTML = html;
             } else {
-                const errMsg = data.errors?.join('\n') || data.error || 'Import failed.';
+                const errMsg = data.errors?.join('\n') || data.error || t('plugins.config-import.config-import.ui.importFailed');
                 msgEl.innerHTML = `<div class="alert alert-error">❌ ${escHtml(errMsg)}</div>`;
             }
             showEl(legacyResultCard);
@@ -1332,6 +1271,12 @@
         if (e.key === 'Enter') legacyValidateBtn.click();
     });
 
+    i18nReady.then(() => {
+        window.i18n?.updateDOM();
+        loadCapabilities();
+        loadLegacyDiscovery();
+    });
+
     // ── XSS helper ────────────────────────────────────────────────────────────
     const urlParams = new URLSearchParams(window.location.search);
     const initialTab = urlParams.get('tab');
@@ -1344,7 +1289,7 @@
         legacyPathInput.value = initialLegacyPath;
         activateTab('legacy');
         if (urlParams.get('autoScan') === '1') {
-            setTimeout(() => legacyValidateBtn.click(), 0);
+            i18nReady.then(() => legacyValidateBtn.click());
         }
     }
 

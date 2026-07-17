@@ -1,6 +1,15 @@
 const socket = io();
 let config = {};
 
+function pluginText(key, fallback, params = {}) {
+    const fullKey = `plugins.emoji-rain.${key}`;
+    if (window.i18n && typeof window.i18n.t === 'function') {
+        const translated = window.i18n.t(fullKey, params);
+        if (translated && translated !== fullKey) return translated;
+    }
+    return fallback;
+}
+
 // Load configuration on page load
 async function loadConfig() {
     console.log('?? [EMOJI RAIN UI] Loading configuration...');
@@ -21,12 +30,12 @@ async function loadConfig() {
             updateUI();
         } else {
             console.error('? [EMOJI RAIN UI] Config load failed:', data.error);
-            showNotification('Fehler: ' + (data.error || 'Unknown error'), true);
+            showNotification(pluginText('runtime.notifications.error_prefix', 'Error: {error}', { error: data.error || 'Unknown error' }), true);
         }
     } catch (error) {
         console.error('? [EMOJI RAIN UI] Exception during config load:', error);
         console.error('? [EMOJI RAIN UI] Error stack:', error.stack);
-        showNotification('Fehler beim Laden der Konfiguration', true);
+        showNotification(pluginText('runtime.notifications.configuration_load_failed', 'Could not load configuration.'), true);
     }
 }
 
@@ -233,13 +242,19 @@ function updateUI() {
 
         setSummaryText('hero-visual-mode', document.getElementById('visual_mode')?.selectedOptions?.[0]?.textContent || 'Premium Stage');
         setSummaryText('hero-obs-size', `${document.getElementById('obs_hud_width').value || 1920} × ${document.getElementById('obs_hud_height').value || 1080}`);
-        setSummaryText('hero-obs-state', config.obs_hud_enabled === false ? 'Deaktiviert' : 'Aktiviert');
+        setSummaryText('hero-obs-state', config.obs_hud_enabled === false
+            ? pluginText('runtime.status.disabled', 'Disabled')
+            : pluginText('runtime.status.enabled', 'Enabled'));
         setSummaryText('hero-preview-mode', document.getElementById('visual_mode')?.selectedOptions?.[0]?.textContent || 'Premium Stage');
         setSummaryText('hero-preview-mode-copy', document.getElementById('visual_mode')?.selectedOptions?.[0]?.textContent || 'Premium Stage');
         setSummaryText('hero-preview-size', `${document.getElementById('obs_hud_width').value || 1920} × ${document.getElementById('obs_hud_height').value || 1080}`);
         setSummaryText('hero-preview-size-copy', `${document.getElementById('obs_hud_width').value || 1920} × ${document.getElementById('obs_hud_height').value || 1080}`);
-        setSummaryText('hero-preview-state', config.enabled ? 'Aktiviert' : 'Deaktiviert');
-        setSummaryText('hero-preview-state-copy', config.enabled ? 'Aktiviert' : 'Deaktiviert');
+        setSummaryText('hero-preview-state', config.enabled
+            ? pluginText('runtime.status.enabled', 'Enabled')
+            : pluginText('runtime.status.disabled', 'Disabled'));
+        setSummaryText('hero-preview-state-copy', config.enabled
+            ? pluginText('runtime.status.enabled', 'Enabled')
+            : pluginText('runtime.status.disabled', 'Disabled'));
 
         // Detect preset
         const width = config.obs_hud_width || 1920;
@@ -401,7 +416,7 @@ function updateUI() {
     } catch (error) {
         console.error('? [EMOJI RAIN UI] Error updating UI:', error);
         console.error('? [EMOJI RAIN UI] Error stack:', error.stack);
-        showNotification('Fehler beim Aktualisieren der UI', true);
+        showNotification(pluginText('runtime.notifications.ui_update_failed', 'Could not update the UI.'), true);
     }
 }
 
@@ -549,12 +564,12 @@ async function saveConfig() {
 
         if (data.success) {
             config = newConfig;
-            showNotification('Konfiguration gespeichert!');
+            showNotification(pluginText('runtime.notifications.configuration_saved', 'Configuration saved.'));
         } else {
-            showNotification('Fehler beim Speichern: ' + data.error, true);
+            showNotification(pluginText('runtime.notifications.configuration_save_failed', 'Could not save configuration: {error}', { error: data.error || 'Unknown error' }), true);
         }
     } catch (error) {
-        showNotification('Netzwerkfehler beim Speichern', true);
+        showNotification(pluginText('runtime.notifications.network_save_failed', 'Network error while saving.'), true);
         console.error(error);
     }
 }
@@ -565,7 +580,7 @@ let testEmojiRainInProgress = false;
 async function testEmojiRain() {
     // Prevent rapid clicks by checking if a test is already in progress
     if (testEmojiRainInProgress) {
-        showNotification('Bitte warten, Test läuft bereits...', true);
+        showNotification(pluginText('runtime.notifications.test_in_progress', 'Please wait; a test is already running.'), true);
         return;
     }
 
@@ -589,12 +604,12 @@ async function testEmojiRain() {
         const data = await response.json();
 
         if (data.success) {
-            showNotification('Test-Emojis gespawnt!');
+            showNotification(pluginText('runtime.notifications.test_emojis_spawned', 'Test emojis spawned.'));
         } else {
-            showNotification('Fehler: ' + data.error, true);
+            showNotification(pluginText('runtime.notifications.error_prefix', 'Error: {error}', { error: data.error || 'Unknown error' }), true);
         }
     } catch (error) {
-        showNotification('Netzwerkfehler beim Testen', true);
+        showNotification(pluginText('runtime.notifications.network_test_failed', 'Network error while running the test.'), true);
         console.error(error);
     } finally {
         // Re-enable the button after a short delay to prevent rapid clicks
@@ -624,12 +639,12 @@ async function testHeartBalloons() {
         const data = await response.json();
 
         if (data.success) {
-            showNotification('Herzballons gespawnt!');
+            showNotification(pluginText('runtime.notifications.heart_balloons_spawned', 'Test heart balloons spawned.'));
         } else {
-            showNotification('Fehler beim Herzballons-Test: ' + data.error, true);
+            showNotification(pluginText('runtime.notifications.heart_balloons_test_failed', 'Heart-balloons test failed: {error}', { error: data.error || 'Unknown error' }), true);
         }
     } catch (error) {
-        showNotification('Netzwerkfehler beim Herzballons-Test', true);
+        showNotification(pluginText('runtime.notifications.network_test_failed', 'Network error while running the test.'), true);
         console.error(error);
     }
 }
@@ -649,12 +664,12 @@ async function testGiftBall() {
         const data = await response.json();
 
         if (data.success) {
-            showNotification('Geschenk-Kugel gespawnt!');
+            showNotification(pluginText('runtime.notifications.gift_ball_spawned', 'Test gift ball spawned.'));
         } else {
-            showNotification('Fehler beim Geschenk-Kugel-Test: ' + data.error, true);
+            showNotification(pluginText('runtime.notifications.gift_ball_test_failed', 'Gift-ball test failed: {error}', { error: data.error || 'Unknown error' }), true);
         }
     } catch (error) {
-        showNotification('Netzwerkfehler beim Geschenk-Kugel-Test', true);
+        showNotification(pluginText('runtime.notifications.network_test_failed', 'Network error while running the test.'), true);
         console.error(error);
     }
 }
@@ -673,15 +688,17 @@ function onEnabledToggleChange(event) {
         if (data.success) {
             config.enabled = enabled;
             updateEnabledStatus();
-            showNotification(enabled ? 'Emoji Rain aktiviert!' : 'Emoji Rain deaktiviert!');
+            showNotification(enabled
+                ? pluginText('runtime.notifications.enabled', 'Emoji Rain enabled.')
+                : pluginText('runtime.notifications.disabled', 'Emoji Rain disabled.'));
         } else {
             event.target.checked = !enabled;
-            showNotification('Fehler: ' + data.error, true);
+            showNotification(pluginText('runtime.notifications.error_prefix', 'Error: {error}', { error: data.error || 'Unknown error' }), true);
         }
     })
     .catch(error => {
         event.target.checked = !enabled;
-        showNotification('Netzwerkfehler', true);
+        showNotification(pluginText('runtime.notifications.network_failed', 'Network error.'), true);
         console.error(error);
     });
 }
@@ -692,7 +709,9 @@ function updateEnabledStatus() {
     const previewStatus = document.getElementById('hero-preview-state');
     const previewStatusCopy = document.getElementById('hero-preview-state-copy');
     const enabled = document.getElementById('enabled-toggle').checked;
-    const statusText = enabled ? 'Aktiviert' : 'Deaktiviert';
+    const statusText = enabled
+        ? pluginText('runtime.status.enabled', 'Enabled')
+        : pluginText('runtime.status.disabled', 'Disabled');
 
     [heroStatus, toggleStatus, previewStatus, previewStatusCopy].forEach(element => {
         if (!element) return;
@@ -762,7 +781,7 @@ async function uploadImages() {
     const files = fileInput.files;
 
     if (files.length === 0) {
-        showNotification('Bitte wähle mindestens eine Datei aus', true);
+            showNotification(pluginText('runtime.notifications.upload_file_required', 'Choose at least one file.'), true);
         return;
     }
 
@@ -808,9 +827,9 @@ async function uploadImages() {
 
     // Show result
     if (failed > 0) {
-        showNotification(`${uploaded} hochgeladen, ${failed} fehlgeschlagen`, failed > uploaded);
+            showNotification(pluginText('runtime.notifications.upload_result', '{uploaded} uploaded, {failed} failed.', { uploaded, failed }), failed > uploaded);
     } else {
-        showNotification(`${uploaded} Bild(er) erfolgreich hochgeladen!`);
+            showNotification(pluginText('runtime.notifications.upload_success', '{uploaded} image(s) uploaded successfully.', { uploaded }));
     }
 
     // Refresh image list
@@ -885,7 +904,7 @@ async function deleteImage(filename) {
         const data = await response.json();
 
         if (data.success) {
-            showNotification('Bild gelöscht!');
+                showNotification(pluginText('runtime.notifications.image_deleted', 'Image deleted.'));
 
             // Remove URL from textarea
             const currentUrls = document.getElementById('image_urls').value.split('\n');
@@ -900,10 +919,10 @@ async function deleteImage(filename) {
             // Reload image list
             await loadUploadedImages();
         } else {
-            showNotification('Fehler beim Löschen: ' + data.error, true);
+                showNotification(pluginText('runtime.notifications.image_delete_failed', 'Could not delete image: {error}', { error: data.error || 'Unknown error' }), true);
         }
     } catch (error) {
-        showNotification('Netzwerkfehler beim Löschen', true);
+            showNotification(pluginText('runtime.notifications.network_image_delete_failed', 'Network error while deleting the image.'), true);
         console.error(error);
     }
 }
@@ -1000,12 +1019,12 @@ async function addUserMapping() {
     const emoji = useProfilePicture ? '{{profilePicture}}' : document.getElementById('new_user_emoji').value.trim();
 
     if (!username) {
-        showNotification('Bitte Benutzername angeben', true);
+        showNotification(pluginText('runtime.notifications.username_required', 'Enter a username.'), true);
         return;
     }
 
     if (!useProfilePicture && !emoji) {
-        showNotification('Bitte Emoji angeben oder Profilbild-Option aktivieren', true);
+        showNotification(pluginText('runtime.notifications.emoji_or_profile_picture_required', 'Enter an emoji or enable the profile-picture option.'), true);
         return;
     }
 
@@ -1039,13 +1058,13 @@ async function saveUserEmojiMappings() {
         const data = await response.json();
 
         if (data.success) {
-            showNotification('Benutzer-Zuordnungen gespeichert!');
+            showNotification(pluginText('runtime.notifications.user_mappings_saved', 'User mappings saved.'));
             renderUserEmojiMappings();
         } else {
-            showNotification('Fehler beim Speichern: ' + data.error, true);
+            showNotification(pluginText('runtime.notifications.configuration_save_failed', 'Could not save configuration: {error}', { error: data.error || 'Unknown error' }), true);
         }
     } catch (error) {
-        showNotification('Netzwerkfehler beim Speichern', true);
+        showNotification(pluginText('runtime.notifications.network_save_failed', 'Network error while saving.'), true);
         console.error(error);
     }
 }
@@ -1073,7 +1092,7 @@ function updatePerformanceDisplay(fps, activeEmojis, mode) {
     }
 
     setSummaryText('hero-performance', `${fps || '--'} FPS`);
-    setSummaryText('hero-performance-detail', `${activeEmojis || '--'} aktive Emojis · ${mode || 'Normal'}`);
+        setSummaryText('hero-performance-detail', `${activeEmojis || '--'} ${pluginText('runtime.status.active_emojis', 'active emojis')} · ${mode || 'Normal'}`);
 }
 
 // ========== INITIALIZATION ==========

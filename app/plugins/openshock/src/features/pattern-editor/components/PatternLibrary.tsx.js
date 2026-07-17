@@ -1,3 +1,9 @@
+function patternEditorText(key, fallback, params = {}) {
+    return typeof window.OpenShockPatternI18n === 'function'
+        ? window.OpenShockPatternI18n(key, fallback, params)
+        : fallback;
+}
+
 /**
  * @file PatternLibrary.tsx.js - Pattern Library Component
  * @description Displays preset and user patterns in a grid with animated previews
@@ -49,13 +55,13 @@ class PatternLibrary {
         this.container.innerHTML = `
             <div class="pattern-library">
                 <div class="pattern-library-header">
-                    <h2 class="text-2xl font-bold text-white mb-2">Pattern Bibliothek</h2>
-                    <p class="text-gray-400 mb-4">Wähle ein Preset oder erstelle ein eigenes Pattern</p>
+                    <h2 class="text-2xl font-bold text-white mb-2">${patternEditorText('library.title', 'Pattern library')}</h2>
+                    <p class="text-gray-400 mb-4">${patternEditorText('library.subtitle', 'Choose a preset or create your own pattern')}</p>
                 </div>
 
                 <!-- Default Presets -->
                 <div class="mb-6">
-                    <h3 class="text-lg font-semibold text-white mb-3">📦 Standard Presets</h3>
+                    <h3 class="text-lg font-semibold text-white mb-3">📦 ${patternEditorText('library.default_presets', 'Default presets')}</h3>
                     <div class="pattern-grid">
                         ${state.defaultPresets.map(pattern => this._renderPatternCard(pattern)).join('')}
                     </div>
@@ -64,15 +70,15 @@ class PatternLibrary {
                 <!-- User Patterns -->
                 <div class="mb-6">
                     <div class="flex justify-between items-center mb-3">
-                        <h3 class="text-lg font-semibold text-white">✨ Meine Patterns</h3>
+                        <h3 class="text-lg font-semibold text-white">✨ ${patternEditorText('library.my_patterns', 'My patterns')}</h3>
                         <button class="btn btn-sm btn-success" id="createNewPattern">
-                            ➕ Neu erstellen
+                            ➕ ${patternEditorText('library.create_new', 'Create new')}
                         </button>
                     </div>
                     <div class="pattern-grid">
                         ${state.userPatterns.length > 0 
                             ? state.userPatterns.map(pattern => this._renderPatternCard(pattern, true)).join('')
-                            : '<p class="text-gray-500 text-center col-span-full py-8">Noch keine eigenen Patterns. Erstelle dein erstes Pattern!</p>'
+                            : `<p class="text-gray-500 text-center col-span-full py-8">${patternEditorText('library.empty', 'No custom patterns yet. Create your first pattern!')}</p>`
                         }
                     </div>
                 </div>
@@ -115,10 +121,10 @@ class PatternLibrary {
                     <span class="pattern-duration">${this._formatDuration(pattern.duration)}</span>
                     ${isUserPattern ? `
                         <div class="pattern-actions">
-                            <button class="btn-icon" data-action="edit" data-pattern-id="${pattern.id}" title="Bearbeiten">
+                            <button class="btn-icon" data-action="edit" data-pattern-id="${pattern.id}" title="${patternEditorText('library.edit', 'Edit')}">
                                 ✏️
                             </button>
-                            <button class="btn-icon" data-action="delete" data-pattern-id="${pattern.id}" title="Löschen">
+                            <button class="btn-icon" data-action="delete" data-pattern-id="${pattern.id}" title="${patternEditorText('library.delete', 'Delete')}">
                                 🗑️
                             </button>
                         </div>
@@ -126,7 +132,7 @@ class PatternLibrary {
                 </div>
                 
                 <button class="btn btn-primary btn-block mt-2" data-action="select" data-pattern-id="${pattern.id}">
-                    Auswählen
+                    ${patternEditorText('library.select', 'Select')}
                 </button>
             </div>
         `;
@@ -138,11 +144,11 @@ class PatternLibrary {
      */
     _getPresetInfo(presetName) {
         const presets = {
-            'Konstant': { icon: '📊', description: 'Konstante Intensität' },
-            'Rampe': { icon: '📈', description: 'Linear ansteigend' },
-            'Puls': { icon: '💓', description: 'Wiederkehrende Pulse' },
-            'Welle': { icon: '🌊', description: 'Sinuswelle' },
-            'Zufall': { icon: '🎲', description: 'Zufällig' }
+            'Konstant': { icon: '📊', description: patternEditorText('library.presets.constant', 'Constant intensity') },
+            'Rampe': { icon: '📈', description: patternEditorText('library.presets.ramp', 'Linear ramp') },
+            'Puls': { icon: '💓', description: patternEditorText('library.presets.pulse', 'Repeating pulses') },
+            'Welle': { icon: '🌊', description: patternEditorText('library.presets.wave', 'Sine wave') },
+            'Zufall': { icon: '🎲', description: patternEditorText('library.presets.random', 'Random') }
         };
         return presets[presetName] || null;
     }
@@ -175,7 +181,7 @@ class PatternLibrary {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const patternId = e.target.dataset.patternId;
-                if (confirm('Möchten Sie dieses Pattern wirklich löschen?')) {
+                if (confirm(patternEditorText('library.delete_confirm', 'Delete this pattern?'))) {
                     this.store.deleteUserPattern(patternId);
                 }
             });
@@ -188,7 +194,7 @@ class PatternLibrary {
                 // Create a blank custom pattern
                 const newPattern = {
                     id: this.store._generateId(),
-                    name: 'Neues Pattern',
+                    name: patternEditorText('library.new_pattern_name', 'New pattern'),
                     type: 'custom',
                     keyframes: [
                         { time: 0, intensity: 0, interpolation: 'Linear' },

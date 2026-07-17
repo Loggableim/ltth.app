@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="generated.6b3ee93d2858">Quiz Show Leaderboard Overlay</title>
+    <title data-i18n="plugins.quiz-show.labels.quiz_show_leaderboard_overlay">Quiz Show Leaderboard Overlay</title>
     <link rel="stylesheet" href="/quiz-show/quiz_show_overlay.css">
     <script src="/socket.io/socket.io.js"></script>
     <style>
@@ -260,11 +260,11 @@
     <div class="leaderboard-standalone">
         <div class="leaderboard-container" id="leaderboardContainer">
             <div class="leaderboard-header">
-                <div class="leaderboard-title" data-i18n="generated.7f270091d830">🏆 Leaderboard</div>
-                <div class="leaderboard-type" id="leaderboardType">Season</div>
+                <div class="leaderboard-title" data-i18n="plugins.quiz-show.labels.leaderboard">🏆 Leaderboard</div>
+                <div class="leaderboard-type" id="leaderboardType" data-i18n="plugins.quiz-show.ui.navigation.season">Season</div>
             </div>
             <ul class="leaderboard-list" id="leaderboardList">
-                <li class="no-data" data-i18n="generated.ce2031899b24">Keine Einträge vorhanden</li>
+                <li class="no-data" data-i18n="plugins.quiz-show.ui.empty.no_entries">Keine Einträge vorhanden</li>
             </ul>
         </div>
     </div>
@@ -315,7 +315,9 @@
                 const container = document.getElementById('leaderboardContainer');
 
                 // Update type display
-                typeDisplay.textContent = type === 'round' ? 'Diese Runde' : 'Season';
+                typeDisplay.textContent = type === 'round'
+                    ? window.i18n?.t('plugins.quiz-show.runtime.overlay.this_round')
+                    : window.i18n?.t('plugins.quiz-show.runtime.leaderboard.season');
 
                 // Show container
                 if (container.classList.contains('hidden')) {
@@ -326,7 +328,8 @@
 
                 // Render leaderboard
                 if (!leaderboard || leaderboard.length === 0) {
-                    listElement.innerHTML = '<li class="no-data">Keine Einträge vorhanden</li>';
+                    const emptyMessage = window.i18n?.t('plugins.quiz-show.ui.empty.no_entries') || 'Keine Einträge vorhanden';
+                    listElement.innerHTML = `<li class="no-data">${emptyMessage}</li>`;
                     return;
                 }
 
@@ -339,13 +342,13 @@
                     const rank = index + 1;
                     const rankClass = rank <= 3 ? `rank-${rank}` : '';
                     const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
-                    
+
                     return `
                         <li class="leaderboard-item" style="animation-delay: ${index * 0.1}s">
                             <div class="rank ${rankClass}">${medal}</div>
                             <div class="player-info">
                                 <div class="player-name">${escapeHtml(entry.username)}</div>
-                                ${entry.round_points !== undefined ? 
+                                ${entry.round_points !== undefined ?
                                     `<div class="player-stats">Runden-Punkte: ${entry.round_points}</div>` : ''}
                             </div>
                             <div class="points">${entry.points || entry.round_points || 0} 🎯</div>
@@ -365,7 +368,7 @@
                 try {
                     const response = await fetch('/api/quiz-show/leaderboard');
                     const data = await response.json();
-                    
+
                     if (data.success && data.leaderboard) {
                         updateLeaderboard(data.leaderboard, 'season');
                     }
@@ -378,7 +381,7 @@
                 try {
                     const response = await fetch('/api/quiz-show/state');
                     const data = await response.json();
-                    
+
                     if (data.success && data.state && data.state.config) {
                         const container = document.getElementById('leaderboardContainer');
                         if (container && data.state.config.ultraKompaktModus) {

@@ -62,6 +62,30 @@ describe('i18n client fallback rendering', () => {
     expect(window.document.getElementById('custom-label').textContent).toBe('Translated Title');
   });
 
+  test('resolves a legacy plugin key below the current plugin namespace during migration', () => {
+    const dom = new JSDOM('<!doctype html><html><body></body></html>', {
+      url: 'https://ltth.app/emoji-rain/ui.html',
+      runScripts: 'outside-only'
+    });
+    const { window } = dom;
+    loadI18nClient(window);
+
+    const i18n = new window.__I18nClient();
+    i18n.initialized = true;
+    i18n.currentLocale = 'en';
+    i18n.translations = {
+      en: {
+        plugins: {
+          'emoji-rain': {
+            emoji_rain: { hero: { page_title: 'Emoji Rain Settings' } }
+          }
+        }
+      }
+    };
+
+    expect(i18n.t('emoji_rain.hero.page_title')).toBe('Emoji Rain Settings');
+  });
+
   test('does not silently replace a supported locale when its request fails', async () => {
     const dom = new JSDOM('<!doctype html><html><body></body></html>', {
       url: 'https://ltth.app/?lang=en',

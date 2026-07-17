@@ -413,7 +413,8 @@ class ThermalPrinterPlugin {
                 if (!this.printerService) {
                     return res.status(400).json({
                         success: false,
-                        error: 'Printer service not running'
+                        error: 'Printer service not running',
+                        errorCode: 'printer_not_running'
                     });
                 }
                 

@@ -390,6 +390,11 @@ function initializeButtons() {
             btn.addEventListener('click', () => {
                 const isPassword = input.type === 'password';
                 input.type = isPassword ? 'text' : 'password';
+                const labelKey = isPassword ? 'common.dashboard.hide_api_key' : 'common.dashboard.show_api_key';
+                const fallbackLabel = isPassword ? 'Hide API key' : 'Show API key';
+                const translatedLabel = window.i18n?.t(labelKey);
+                btn.setAttribute('data-i18n-aria-label', labelKey);
+                btn.setAttribute('aria-label', translatedLabel && translatedLabel !== labelKey ? translatedLabel : fallbackLabel);
                 const icon = btn.querySelector('i');
                 if (icon) {
                     icon.setAttribute('data-lucide', isPassword ? 'eye-off' : 'eye');
@@ -3620,12 +3625,17 @@ function showAudioEnablePrompt() {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
         </svg>
         <span><strong>Audio aktivieren:</strong> Klicken Sie hier, um TTS-Audio zu hören</span>
-        <button id="enable-audio-btn" class="bg-white text-blue-600 px-4 py-2 rounded font-semibold hover:bg-blue-50 transition flex-shrink-0">
-            Aktivieren
+        <button id="enable-audio-btn" class="bg-white text-blue-600 px-4 py-2 rounded font-semibold hover:bg-blue-50 transition flex-shrink-0" data-i18n="common.dashboard.enable_audio">
+            Enable audio
         </button>
     `;
 
     document.body.appendChild(prompt);
+    if (window.i18n?.ready) {
+        window.i18n.ready.then(() => window.i18n.updateDOM());
+    } else if (window.i18n?.updateDOM) {
+        window.i18n.updateDOM();
+    }
 
     document.getElementById('enable-audio-btn').addEventListener('click', async () => {
         await unlockAudio();
@@ -4800,12 +4810,17 @@ function showFallbackKeyConsentDialog(data = {}) {
             <a href="https://www.eulerstream.com" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:14px;color:#93c5fd;text-decoration:underline">Eigenen Eulerstream Key erstellen</a>
             <div id="fallback-key-consent-countdown" style="min-height:28px;margin:22px 0 0;color:#fbbf24;font-weight:600"></div>
             <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:24px">
-                <button type="button" id="fallback-key-consent-cancel" class="px-4 py-2 rounded bg-gray-700 text-gray-100">Abbrechen</button>
-                <button type="button" id="fallback-key-consent-confirm" class="px-4 py-2 rounded bg-amber-500 text-gray-950 font-semibold">OK, trotzdem verbinden</button>
+                <button type="button" id="fallback-key-consent-cancel" class="px-4 py-2 rounded bg-gray-700 text-gray-100" data-i18n="common.cancel">Cancel</button>
+                <button type="button" id="fallback-key-consent-confirm" class="px-4 py-2 rounded bg-amber-500 text-gray-950 font-semibold" data-i18n="common.dashboard.connect_anyway">Connect anyway</button>
             </div>
         `;
         overlay.appendChild(dialog);
         document.body.appendChild(overlay);
+        if (window.i18n?.ready) {
+            window.i18n.ready.then(() => window.i18n.updateDOM());
+        } else if (window.i18n?.updateDOM) {
+            window.i18n.updateDOM();
+        }
 
         const cleanup = (accepted) => {
             if (overlay.parentNode) overlay.parentNode.removeChild(overlay);

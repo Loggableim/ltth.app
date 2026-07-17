@@ -1,185 +1,306 @@
 {
-  "minecraft_connect": {
-    "title": "Minecraft Connect",
-    "subtitle": "TikTok Live zu Minecraft Integration",
-    "status": {
-      "connected": "Verbunden",
-      "disconnected": "Getrennt",
-      "waiting": "Warte auf Minecraft"
-    },
-    "tabs": {
-      "mappings": "Aktions-Mappings",
-      "actions": "Verfügbare Aktionen",
-      "events": "Ereignisprotokoll",
-      "settings": "Einstellungen"
-    },
-    "mappings": {
-      "title": "Aktions-Mappings",
-      "add": "Mapping hinzufügen",
-      "edit": "Bearbeiten",
-      "delete": "Löschen",
-      "empty": "Noch keine Aktions-Mappings konfiguriert.",
-      "empty_hint": "Klicke auf 'Mapping hinzufügen', um dein erstes TikTok → Minecraft Aktions-Mapping zu erstellen.",
-      "trigger": "TikTok Event Trigger",
-      "conditions": "Bedingungen (optional)",
-      "action": "Minecraft Aktion",
-      "parameters": "Parameter",
-      "enabled": "Aktiviert",
-      "triggers": {
-        "gift": "Geschenk",
-        "follow": "Folgen",
-        "like": "Like",
-        "share": "Teilen",
-        "chat": "Chat",
-        "subscribe": "Abonnieren"
+  "plugins": {
+    "minecraft-connect": {
+      "minecraft_connect": {
+        "title": "Minecraft-Verbindung",
+        "subtitle": "TikTok-LIVE-Integration für Minecraft",
+        "status": {
+          "connected": "Verbunden",
+          "disconnected": "Getrennt",
+          "waiting": "Warte auf Minecraft"
+        },
+        "tabs": {
+          "mappings": "Aktionszuordnungen",
+          "actions": "Verfügbare Aktionen",
+          "events": "Ereignisprotokoll",
+          "settings": "Einstellungen"
+        },
+        "mappings": {
+          "title": "Aktionszuordnungen",
+          "add": "Zuordnung hinzufügen",
+          "edit": "Bearbeiten",
+          "delete": "Löschen",
+          "empty": "Noch keine Aktionszuordnungen konfiguriert.",
+          "empty_hint": "Klicke auf „Zuordnung hinzufügen“, um deine erste TikTok-zu-Minecraft-Aktionszuordnung anzulegen.",
+          "trigger": "TikTok-Ereignisauslöser",
+          "conditions": "Bedingungen (optional)",
+          "action": "Minecraft-Aktion",
+          "parameters": "Parameter",
+          "enabled": "Aktiviert",
+          "triggers": {
+            "gift": "Geschenk",
+            "follow": "Folgen",
+            "like": "Gefällt mir",
+            "share": "Teilen",
+            "chat": "Chat",
+            "subscribe": "Abonnieren"
+          },
+          "add_condition": "Bedingung hinzufügen",
+          "condition_field": "Feld",
+          "condition_operator": "Vergleichsoperator",
+          "condition_value": "Wert",
+          "operators": {
+            "equals": "Gleich",
+            "not_equals": "Ungleich",
+            "greater_than": "Größer als",
+            "less_than": "Kleiner als",
+            "contains": "Enthält"
+          },
+          "placeholder_hint": "Nutze Platzhalter wie {uniqueId}, {giftName}, {giftCount} und {comment} für dynamische Werte"
+        },
+        "actions": {
+          "title": "Verfügbare Minecraft-Aktionen",
+          "test": "Aktion testen",
+          "empty": "Keine Minecraft-Verbindung erkannt.",
+          "empty_hint": "Installiere und starte die TikStreamLink-Fabric-Mod, um verfügbare Aktionen zu sehen.",
+          "spawn_entity": "Entität erzeugen",
+          "give_item": "Gegenstand geben",
+          "set_time": "Zeit setzen",
+          "apply_potion_effect": "Trankeffekt anwenden",
+          "post_chat_message": "Chatnachricht senden",
+          "change_weather": "Wetter ändern",
+          "execute_command": "Befehl ausführen"
+        },
+        "events": {
+          "title": "Ereignisprotokoll",
+          "clear": "Protokoll leeren",
+          "empty": "Noch keine Ereignisse.",
+          "empty_hint": "Ereignisse erscheinen hier, wenn TikTok-Ereignisse Minecraft-Aktionen auslösen.",
+          "triggered_by": "Ausgelöst von",
+          "actions_count": "Aktion(en) ausgelöst"
+        },
+        "settings": {
+          "title": "Einstellungen",
+          "save": "Einstellungen speichern",
+          "saved": "Einstellungen wurden gespeichert. Starte den Server neu, um WebSocket-Änderungen anzuwenden.",
+          "websocket": {
+            "title": "WebSocket-Server",
+            "port": "Netzwerkport",
+            "port_hint": "Port für den WebSocket-Server (Standard: 25560)",
+            "heartbeat": "Heartbeat-Intervall (ms)"
+          },
+          "limits": {
+            "title": "Ratenbegrenzungen",
+            "max_per_minute": "Maximale Aktionen pro Minute",
+            "cooldown": "Befehlsabklingzeit (ms)",
+            "queue_size": "Maximale Warteschlangengröße"
+          },
+          "overlay": {
+            "title": "Overlay",
+            "enabled": "Overlay aktivieren",
+            "show_username": "Benutzernamen anzeigen",
+            "show_action": "Aktionsnamen anzeigen",
+            "duration": "Animationsdauer (ms)"
+          },
+          "stats": {
+            "title": "Statistiken",
+            "total_events": "Ereignisse gesamt",
+            "total_actions": "Aktionen gesamt",
+            "successful": "Erfolgreich",
+            "failed": "Fehlgeschlagen"
+          }
+        },
+        "modal": {
+          "add_title": "Aktionszuordnung hinzufügen",
+          "edit_title": "Aktionszuordnung bearbeiten",
+          "cancel": "Abbrechen",
+          "save": "Speichern"
+        },
+        "messages": {
+          "select_trigger_action": "Wähle einen Auslöser und eine Aktion aus",
+          "save_failed": "Die Zuordnung konnte nicht gespeichert werden",
+          "delete_confirm": "Möchtest du diese Zuordnung löschen?",
+          "delete_failed": "Die Zuordnung konnte nicht gelöscht werden",
+          "test_success": "Die Aktion wurde in die Warteschlange gestellt",
+          "test_failed": "Die Aktion konnte nicht eingereiht werden",
+          "not_connected": "Die Minecraft-Mod ist nicht verbunden"
+        },
+        "ui": {
+          "actions": { "refresh": "Aktualisieren" },
+          "sections": { "commands": "Befehle", "setup": "Einrichtung" },
+          "metrics": { "queue": "Warteschlange" },
+          "connection": { "title": "Verbindung" },
+          "themes": {
+            "switcher": "Designauswahl",
+            "label": "Design",
+            "day": "Tag",
+            "night": "Nacht",
+            "cid": "Cid"
+          }
+        },
+        "runtime": {
+          "status": {
+            "connected": "Verbunden",
+            "disconnected": "Getrennt",
+            "waiting": "Warte auf Minecraft",
+            "queue_theme": "Warteschlange {queue} | Design {theme}"
+          },
+          "mappings": {
+            "empty_title": "Noch keine Befehle.",
+            "empty_hint": "Klicke auf „Befehl hinzufügen“, um deine erste TikTok-zu-Minecraft-Zuordnung anzulegen.",
+            "to": "zu",
+            "edit": "Bearbeiten",
+            "delete": "Löschen",
+            "conditions": "Bedingungen:",
+            "no_conditions": "Keine Bedingungen",
+            "no_parameters": "Keine Parameter",
+            "edit_command": "Befehl bearbeiten",
+            "add_command": "Befehl hinzufügen"
+          },
+          "actions": {
+            "empty_title": "Keine Minecraft-Verbindung erkannt.",
+            "empty_hint": "Installiere und starte die Fabric-Mod, um verfügbare Aktionen zu sehen.",
+            "select": "Aktion auswählen ..."
+          },
+          "chat": {
+            "empty_title": "Noch kein Chat.",
+            "empty_hint": "Chat-Ereignisse erscheinen hier, wenn Zuschauende Nachrichten senden.",
+            "viewer": "Zuschauer",
+            "message": "Nachricht"
+          },
+          "goals": {
+            "label": "Bezeichnung",
+            "current": "Aktuell",
+            "target": "Ziel",
+            "reward_action": "Belohnungsaktion",
+            "reward_action_placeholder": "entitaet_erzeugen",
+            "enabled": "Aktiviert",
+            "remove": "Ziel entfernen",
+            "empty_preview_title": "Noch keine Geschenkbar-Vorschau.",
+            "empty_preview_hint": "Lege mindestens ein Ziel an, um eine Vorschau zu sehen.",
+            "default_label": "Geschenkziel",
+            "no_reward_action": "Keine Belohnungsaktion",
+            "new_goal": "Neues Ziel"
+          },
+          "setup": {
+            "websocket_bridge": "WebSocket-Brücke",
+            "minecraft_mod_connection": "Verbindung zur Minecraft-Mod",
+            "commands_configured": "Befehle konfiguriert",
+            "modern_theme_selected": "Modernes Design ausgewählt"
+          },
+          "conditions": {
+            "field_placeholder": "Feld (zum Beispiel giftName)",
+            "equals": "Gleich",
+            "not_equals": "Ungleich",
+            "greater_than": "Größer als",
+            "less_than": "Kleiner als",
+            "contains": "Enthält",
+            "value_placeholder": "Wert"
+          },
+          "parameters": { "placeholder": "Wert eingeben oder {placeholder} verwenden" },
+          "messages": {
+            "select_trigger_action": "Wähle einen Auslöser und eine Aktion aus",
+            "save_failed": "Die Zuordnung konnte nicht gespeichert werden",
+            "save_failed_with_error": "Die Zuordnung konnte nicht gespeichert werden: {error}",
+            "delete_confirm": "Möchtest du diesen Befehl löschen?",
+            "delete_failed": "Die Zuordnung konnte nicht gelöscht werden",
+            "delete_failed_with_error": "Die Zuordnung konnte nicht gelöscht werden: {error}",
+            "enter_action_name": "Aktionsnamen eingeben:",
+            "test_success": "Die Aktion wurde in die Warteschlange gestellt",
+            "test_failed": "Die Aktion konnte nicht getestet werden",
+            "test_failed_with_error": "Die Aktion konnte nicht eingereiht werden: {error}",
+            "settings_saved": "Einstellungen wurden gespeichert.",
+            "settings_save_failed": "Einstellungen konnten nicht gespeichert werden",
+            "settings_save_failed_with_error": "Einstellungen konnten nicht gespeichert werden: {error}"
+          },
+          "placeholders": {
+            "relay_targets": "z. B. minecraft, overlay",
+            "chat_filters": "Spam, Links, Großbuchstaben"
+          },
+          "modal": { "close": "Dialog schließen" }
+        },
+        "overlay": {
+          "triggered_by": "Ausgelöst von {username}",
+          "entity": "Entität",
+          "item": "Gegenstand",
+          "unknown": "unbekannt",
+          "effect": "Effekt",
+          "actions": {
+            "spawn_entity": "Entität erzeugen",
+            "give_item": "Gegenstand geben",
+            "change_weather": "Wetter ändern",
+            "set_time": "Zeit setzen",
+            "apply_potion_effect": "Trankeffekt anwenden",
+            "post_chat_message": "Chatnachricht senden",
+            "execute_command": "Befehl ausführen"
+          },
+          "parameters": {
+            "spawn_entity": "Erzeuge {count}× {entity}",
+            "give_item": "Gebe {count}× {item}",
+            "change_weather": "Ändere Wetter zu {weather}",
+            "set_time": "Setze Zeit auf {time}",
+            "apply_potion_effect": "Wende {effect} an"
+          }
+        }
       },
-      "add_condition": "Bedingung hinzufügen",
-      "condition_field": "Feld",
-      "condition_operator": "Operator",
-      "condition_value": "Wert",
-      "operators": {
-        "equals": "Gleich",
-        "not_equals": "Ungleich",
-        "greater_than": "Größer als",
-        "less_than": "Kleiner als",
-        "contains": "Enthält"
-      },
-      "placeholder_hint": "Verwende Platzhalter wie {uniqueId}, {giftName}, {giftCount}, {comment} für dynamische Werte"
-    },
-    "actions": {
-      "title": "Verfügbare Minecraft Aktionen",
-      "test": "Aktion testen",
-      "empty": "Keine Minecraft-Verbindung erkannt.",
-      "empty_hint": "Installiere und starte die TikStreamLink Fabric Mod, um verfügbare Aktionen zu sehen.",
-      "spawn_entity": "Entity spawnen",
-      "give_item": "Item geben",
-      "set_time": "Zeit setzen",
-      "apply_potion_effect": "Trank-Effekt anwenden",
-      "post_chat_message": "Chat-Nachricht posten",
-      "change_weather": "Wetter ändern",
-      "execute_command": "Befehl ausführen"
-    },
-    "events": {
-      "title": "Ereignisprotokoll",
-      "clear": "Protokoll löschen",
-      "empty": "Noch keine Ereignisse.",
-      "empty_hint": "Ereignisse erscheinen hier, wenn TikTok-Events Minecraft-Aktionen auslösen.",
-      "triggered_by": "Ausgelöst von",
-      "actions_count": "Aktion(en) ausgelöst"
-    },
-    "settings": {
-      "title": "Einstellungen",
-      "save": "Einstellungen speichern",
-      "saved": "Einstellungen erfolgreich gespeichert! Bitte Server neu starten, um WebSocket-Änderungen anzuwenden.",
-      "websocket": {
-        "title": "WebSocket Server",
-        "port": "Port",
-        "port_hint": "Port für WebSocket Server (Standard: 25560)",
-        "heartbeat": "Heartbeat-Intervall (ms)"
-      },
-      "limits": {
-        "title": "Ratenlimits",
-        "max_per_minute": "Max. Aktionen pro Minute",
-        "cooldown": "Befehl-Cooldown (ms)",
-        "queue_size": "Max. Warteschlangengröße"
-      },
-      "overlay": {
-        "title": "Overlay",
-        "enabled": "Overlay aktivieren",
-        "show_username": "Benutzername anzeigen",
-        "show_action": "Aktionsname anzeigen",
-        "duration": "Animationsdauer (ms)"
-      },
-      "stats": {
-        "title": "Statistiken",
-        "total_events": "Gesamt Events",
-        "total_actions": "Gesamt Aktionen",
-        "successful": "Erfolgreich",
-        "failed": "Fehlgeschlagen"
+      "labels": {
+        "no_gift_bar_preview_yet": "Noch keine Geschenkbar-Vorschau.",
+        "chat_filters": "Chatfilter",
+        "tiktok_event_trigger": "TikTok-Ereignisauslöser",
+        "live_chat_feed": "Live-Chat-Feed",
+        "connection_safety_overlay_and_theme_controls_live_here": "Verbindungs-, Sicherheits-, Overlay- und Designsteuerung befinden sich hier.",
+        "pulled_from_the_minecraft_mod": "Aus der Minecraft-Mod geladen",
+        "relay_mode": "Weiterleitungsmodus",
+        "no_chat_yet": "Noch kein Chat.",
+        "save_setup": "Einrichtung speichern",
+        "mapped_through_the_existing_action_engine": "Über die vorhandene Aktionsengine zugeordnet",
+        "add_goal": "Ziel hinzufügen",
+        "available_actions": "Verfügbare Aktionen",
+        "websocket_port": "WebSocket-Port",
+        "websocket_host": "WebSocket-Host",
+        "max_actions_per_minute": "Maximale Aktionen pro Minute",
+        "use_placeholders_like_uniqueid_giftname_giftcount_comment_for": "Nutze Platzhalter wie {uniqueId}, {giftName}, {giftCount} und {comment} für dynamische Werte.",
+        "a_ltth_control_surface_for_tiktok_to_minecraft": "Eine LTTH-Steueroberfläche für TikTok-zu-Minecraft-Automatisierung mit Brücke, Warteschlange und Zuordnungsengine.",
+        "chat_events_will_appear_here_when_viewers_send": "Chat-Ereignisse erscheinen hier, wenn Zuschauende Nachrichten senden.",
+        "relay_targets": "Weiterleitungsziele",
+        "relay_into_minecraft_chat": "In den Minecraft-Chat weiterleiten",
+        "show_action_name": "Aktionsnamen anzeigen",
+        "add_a_command_to_map_a_tiktok_event": "Füge einen Befehl hinzu, um ein TikTok-Ereignis einer Minecraft-Aktion zuzuordnen.",
+        "show_username": "Benutzernamen anzeigen",
+        "add_command": "Befehl hinzufügen",
+        "vision_impaired": "Sehbeeinträchtigt",
+        "add_a_goal_to_show_an_ltth_gift": "Füge ein Ziel hinzu, um eine LTTH-Geschenkbar anzuzeigen.",
+        "max_queue_size": "Maximale Warteschlangengröße",
+        "enable_chat_relay": "Chatweiterleitung aktivieren",
+        "enable_overlay": "Overlay aktivieren",
+        "rate_limits_and_on_stream_feedback": "Ratenbegrenzungen und Stream-Feedback",
+        "your_commands": "Deine Befehle",
+        "create_at_least_one_goal_to_see_a": "Lege mindestens ein Ziel an, um eine Vorschau zu sehen.",
+        "safety_and_overlay": "Sicherheit und Overlay",
+        "save_chat": "Chat speichern",
+        "goal_editor": "Zielbearbeitung",
+        "high_contrast": "Hoher Kontrast",
+        "bridge_and_mod_status": "Brücken- und Mod-Status",
+        "gift_bar_preview": "Geschenkbar-Vorschau",
+        "no_commands_yet": "Noch keine Befehle.",
+        "relay_settings": "Weiterleitungseinstellungen",
+        "console_commands_and_mapped_actions_triggered_by_tiktok": "Konsolenbefehle und zugeordnete Aktionen, die durch TikTok-Ereignisse ausgelöst werden.",
+        "command_cooldown_ms": "Befehlsabklingzeit (ms)",
+        "select_action": "Aktion auswählen ...",
+        "track_goal_bars_and_let_viewer_gifts_drive": "Verfolge Zielbalken und lasse Zuschauergeschenke den Fortschritt bestimmen.",
+        "no_goals_configured": "Keine Ziele konfiguriert.",
+        "comma_separated_filter_keywords": "Durch Kommas getrennte Filterbegriffe.",
+        "add_command_ca4072": "Befehl hinzufügen",
+        "recent_chat_events_from_tiktok": "Aktuelle Chat-Ereignisse von TikTok",
+        "uses_the_current_goal_values": "Nutzt die aktuellen Zielwerte",
+        "waiting_for_dashboard_state": "Warte auf Dashboard-Status",
+        "overlay_only": "Nur Overlay",
+        "animation_duration_ms": "Animationsdauer (ms)",
+        "install_and_run_the_fabric_mod_to_see": "Installiere und starte die Fabric-Mod, um verfügbare Aktionen zu sehen.",
+        "enable_gift_bars": "Geschenkbalken aktivieren",
+        "comma_separated_targets_for_relayed_messages": "Durch Kommas getrennte Ziele für weitergeleitete Nachrichten.",
+        "relay_tiktok_chat_into_minecraft_and_filter_what": "Leite TikTok-Chat nach Minecraft weiter und filtere, was durchgelassen wird.",
+        "vision_impaired_ddbfc3": "Sehbeeinträchtigt",
+        "high_contrast_de938d": "Hoher Kontrast",
+        "minecraft_connect_overlay": "Minecraft-Verbindungs-Overlay",
+        "select_trigger": "Auslöser auswählen ...",
+        "minecraft_action": "Minecraft-Aktion",
+        "save_gift_bars": "Geschenkbalken speichern",
+        "gift_bars": "Geschenkbalken",
+        "heartbeat_interval_ms": "Heartbeat-Intervall (ms)",
+        "filter_only": "Nur filtern",
+        "gift_bars_ff55ec": "Geschenkbalken"
       }
-    },
-    "modal": {
-      "add_title": "Aktions-Mapping hinzufügen",
-      "edit_title": "Aktions-Mapping bearbeiten",
-      "cancel": "Abbrechen",
-      "save": "Speichern"
-    },
-    "messages": {
-      "select_trigger_action": "Bitte wähle einen Trigger und eine Aktion",
-      "save_failed": "Speichern des Mappings fehlgeschlagen",
-      "delete_confirm": "Bist du sicher, dass du dieses Mapping löschen möchtest?",
-      "delete_failed": "Löschen des Mappings fehlgeschlagen",
-      "test_success": "Aktion erfolgreich in Warteschlange eingereiht",
-      "test_failed": "Einreihen der Aktion fehlgeschlagen",
-      "not_connected": "Minecraft Mod nicht verbunden"
     }
-  },
-  "generated": {
-    "603290612d0a": "A LTTH control surface for TikTok to Minecraft automation, powered by the existing bridge, queue, and mapping engine.",
-    "cd43b24799ad": "Waiting for dashboard state",
-    "de938d329c5f": "High Contrast",
-    "ddbfc319d87b": "Vision Impaired",
-    "f809c3b05425": "Gift bars",
-    "b8244bd6d4c9": "Console commands and mapped actions triggered by TikTok events.",
-    "ca4072263309": "Add command",
-    "987f24623084": "Your commands",
-    "3061fbbd5df1": "Mapped through the existing action engine",
-    "add917801afd": "No commands yet.",
-    "7544ff66734a": "Add a command to map a TikTok event to a Minecraft action.",
-    "4a7187ab9d12": "Available actions",
-    "1a29c2abbc9c": "Pulled from the Minecraft mod",
-    "d52e84e07948": "Install and run the Fabric mod to see available actions.",
-    "dd2cec616727": "Relay TikTok chat into Minecraft and filter what gets passed through.",
-    "9ba051aa3392": "Save chat",
-    "af2d595cd5fa": "Relay settings",
-    "8a5f7cdf9a22": "Enable chat relay",
-    "1bb9bf2efb20": "Relay mode",
-    "6d253492f930": "Relay into Minecraft chat",
-    "fc652d07e5b3": "Filter only",
-    "cfb8b063b54d": "Overlay only",
-    "675f6242e521": "Relay targets",
-    "daeb777004e0": "Comma-separated targets for relayed messages.",
-    "0b1489c54f3a": "Chat filters",
-    "c839c6a27529": "Comma-separated filter keywords.",
-    "160ec7fb74f5": "Live chat feed",
-    "caa455252c1b": "Recent chat events from TikTok",
-    "1fb776020daa": "No chat yet.",
-    "6553a068d0b6": "Chat events will appear here when viewers send messages.",
-    "ff55ecb47e4d": "Gift bars",
-    "bf6e71389e27": "Track goal bars and let viewer gifts drive progress.",
-    "354eeec07ef2": "Add goal",
-    "f29375ffcd69": "Save gift bars",
-    "a56465ce3d55": "Goal editor",
-    "da6933284be9": "Enable gift bars",
-    "c1855d690a91": "No goals configured.",
-    "7fc55813e8c6": "Add a goal to show an LTTH gift bar.",
-    "ac0650c47928": "Gift bar preview",
-    "cd017a4d6288": "Uses the current goal values",
-    "0310defa6e21": "No gift bar preview yet.",
-    "99fd0a5cd779": "Create at least one goal to see a preview.",
-    "16251a96e37c": "Connection, safety, overlay, and theme controls live here.",
-    "3022e56e9b03": "Save setup",
-    "a9fb9ef3e8d0": "Bridge and mod status",
-    "5a5da473384d": "WebSocket host",
-    "591025c59b3a": "WebSocket port",
-    "fb0b4f89a6b1": "Heartbeat interval (ms)",
-    "9a4300764b0c": "Safety and overlay",
-    "93e15a53cd58": "Rate limits and on-stream feedback",
-    "5b331aaccb21": "Max actions per minute",
-    "bcaf6885aeba": "Command cooldown (ms)",
-    "86bf2ee8c800": "Max queue size",
-    "8c68913aff94": "Enable overlay",
-    "783bb95a186e": "Show username",
-    "70150403cec5": "Show action name",
-    "d1f18fa2cafe": "Animation duration (ms)",
-    "a7aa11997356": "High Contrast",
-    "7f56612be16f": "Vision Impaired",
-    "7cc3b04acbb7": "Add Command",
-    "0ba3d80040db": "TikTok event trigger",
-    "e965a3ca346e": "Select trigger...",
-    "ea57fa20d0ef": "Minecraft action",
-    "bf2ef13ca638": "Select action...",
-    "5da914211a55": "Use placeholders like {uniqueId}, {giftName}, {giftCount}, {comment} for dynamic values.",
-    "df3fed128094": "Minecraft Connect Overlay"
   }
 }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="generated.003bfbf5b3b0">OpenShock - Rotating Gifts Overlay</title>
+    <title data-i18n="plugins.openshock.labels.openshock_rotating_gifts_overlay">OpenShock - Rotating Gifts Overlay</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         * {
@@ -183,15 +183,15 @@
 
         <div class="gift-details">
             <div class="detail-row">
-                <span class="detail-label">Pattern:</span>
+                <span class="detail-label" data-i18n="plugins.openshock.ui.overlay.pattern">Pattern:</span>
                 <span class="detail-value" id="patternName">-</span>
             </div>
             <div class="detail-row">
-                <span class="detail-label">Duration:</span>
+                <span class="detail-label" data-i18n="plugins.openshock.ui.overlay.duration">Duration:</span>
                 <span class="detail-value" id="duration">-</span>
             </div>
             <div class="detail-row">
-                <span class="detail-label">Intensity:</span>
+                <span class="detail-label" data-i18n="plugins.openshock.ui.overlay.intensity">Intensity:</span>
                 <div class="intensity-bar">
                     <div class="intensity-fill" id="intensityFill" style="width: 0%"></div>
                 </div>
@@ -201,7 +201,7 @@
         <div class="progress-dots" id="progressDots"></div>
     </div>
 
-    <div class="no-gifts" id="noGifts" style="display: none;" data-i18n="generated.7668ebc7e0f8">
+    <div class="no-gifts" id="noGifts" style="display: none;" data-i18n="plugins.openshock.labels.no_active_gift_mappings_configured">
         No active gift mappings configured
     </div>
 
@@ -215,6 +215,15 @@
         let currentIndex = 0;
         let rotationTimer = null;
         let socket = null;
+
+        function rotatingGiftText(key, fallback, params = {}) {
+            const translationKey = `plugins.openshock.runtime.overlays.rotating_gifts.${key}`;
+            const translated = window.i18n?.t(translationKey, params);
+            const value = translated && translated !== translationKey ? translated : fallback;
+            return String(value).replace(/\{(\w+)\}/g, (match, name) => (
+                Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+            ));
+        }
 
         // Initialize Socket.io connection
         function initSocket() {
@@ -318,12 +327,12 @@
 
             setTimeout(() => {
                 // Update content
-                document.getElementById('giftName').textContent = gift.giftName || 'Unknown Gift';
-                
+                document.getElementById('giftName').textContent = gift.giftName || rotatingGiftText('unknown_gift', 'Unknown gift');
+
                 // Update icon
                 const iconImg = document.getElementById('giftIcon');
                 const iconPlaceholder = document.getElementById('giftIconPlaceholder');
-                
+
                 if (gift.giftIconUrl) {
                     iconImg.src = gift.giftIconUrl;
                     iconImg.style.display = 'block';
@@ -334,8 +343,8 @@
                 }
 
                 // Update pattern info
-                document.getElementById('patternName').textContent = gift.patternName || 'Direct Command';
-                
+                document.getElementById('patternName').textContent = gift.patternName || rotatingGiftText('direct_command', 'Direct command');
+
                 // Format duration
                 const durationMs = gift.patternDurationMs || 0;
                 const durationSec = (durationMs / 1000).toFixed(1);

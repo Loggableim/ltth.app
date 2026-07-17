@@ -222,13 +222,18 @@
             </div>
             <div style="display:flex;gap:8px;align-items:center;">
                 ${isLast ? `
-                    <button class="btn btn-ghost" data-wiz-action="test-flow" id="wizard-test-btn">🧪 Testen</button>
+                    <button class="btn btn-ghost" data-wiz-action="test-flow" id="wizard-test-btn"><span aria-hidden="true">🧪</span> <span data-i18n="common.ifttt_flow_editor.test_flow">Test Flow</span></button>
                     <button class="btn btn-primary" data-wiz-action="save-flow">💾 Flow Speichern</button>
                 ` : `
                     <button class="btn btn-primary" data-wiz-action="next-step">Weiter →</button>
                 `}
             </div>
         `;
+        if (window.i18n?.ready) {
+            window.i18n.ready.then(() => window.i18n.updateDOM());
+        } else if (window.i18n?.updateDOM) {
+            window.i18n.updateDOM();
+        }
     }
 
     // ===== STEP 1: Name & Description =====
@@ -863,8 +868,12 @@
             if (result.success) {
                 const btn = document.getElementById('wizard-test-btn');
                 if (btn) {
-                    btn.textContent = '✅ Getestet!';
-                    setTimeout(() => { btn.textContent = '🧪 Testen'; }, 2000);
+                    btn.innerHTML = '<span aria-hidden="true">✅</span> <span data-i18n="common.dashboard.flow_tested">Tested</span>';
+                    if (window.i18n?.updateDOM) window.i18n.updateDOM();
+                    setTimeout(() => {
+                        btn.innerHTML = '<span aria-hidden="true">🧪</span> <span data-i18n="common.ifttt_flow_editor.test_flow">Test Flow</span>';
+                        if (window.i18n?.updateDOM) window.i18n.updateDOM();
+                    }, 2000);
                 }
             } else {
                 showWizardError('Test fehlgeschlagen: ' + (result.error || 'Fehler'));

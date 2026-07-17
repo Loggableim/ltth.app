@@ -85,20 +85,52 @@ describe('Visual FX Frame WEBGPU Control Room', () => {
   test('contains complete WebGPU labels in all plugin locales', () => {
     for (const locale of ['de', 'en', 'es', 'fr']) {
       const messages = JSON.parse(fs.readFileSync(path.join(pluginRoot, 'locales', `${locale}.json`), 'utf8').replace(/^\uFEFF/, ''));
-      expect(messages.visual_fx_frame_webgpu.webgpu).toMatchObject({
+      const visualFx = messages.plugins?.['visual-fx-frame-webgpu']?.visual_fx_frame_webgpu;
+      expect(visualFx.webgpu).toMatchObject({
         visualStyle: expect.any(String),
         runtime: expect.any(String),
         adapter: expect.any(String),
         import: expect.any(String),
         variants: expect.any(Object)
       });
-      expect(messages.visual_fx_frame_webgpu.webgpu.frameDesigns).toMatchObject({
+      expect(visualFx.webgpu.frameDesigns).toMatchObject({
         solarForge: expect.any(String),
         prismReactor: expect.any(String),
         arcaneBloom: expect.any(String),
         tempestRift: expect.any(String),
         quantumCircuit: expect.any(String)
       });
+    }
+  });
+
+  test('binds every visible frame-tuning slider label to an independent locale string', () => {
+    const fieldKeys = [
+      'frameGap', 'emberFlow', 'moltenCrust', 'refraction', 'sweepSpeed',
+      'runeDensity', 'orbitSpeed', 'arcCount', 'riftTurbulence',
+      'traceDensity', 'hudSweep', 'bloomThreshold', 'edgeFeather',
+      'flameBrightness', 'frameNoiseAmount', 'layerParallax', 'smokeSpeed'
+    ];
+
+    for (const key of fieldKeys) {
+      expect(settings).toContain(`data-i18n="plugins.visual-fx-frame-webgpu.visual_fx_frame_webgpu.ui.controls.fields.${key}"`);
+    }
+
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      const messages = JSON.parse(fs.readFileSync(path.join(pluginRoot, 'locales', `${locale}.json`), 'utf8').replace(/^\uFEFF/, ''));
+      const fields = messages.plugins['visual-fx-frame-webgpu'].visual_fx_frame_webgpu.ui.controls.fields;
+      for (const key of fieldKeys) expect(fields[key]).toEqual(expect.any(String));
+    }
+  });
+
+  test('localizes dynamic trigger controls and runtime status labels', () => {
+    expect(settings).toContain("condInput.placeholder = tr('any'");
+    expect(settings).toContain("tr('removeTriggerRule'");
+    expect(settings).toContain("textContent = tr('error'");
+
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      const messages = JSON.parse(fs.readFileSync(path.join(pluginRoot, 'locales', `${locale}.json`), 'utf8').replace(/^\uFEFF/, ''));
+      const runtime = messages.plugins['visual-fx-frame-webgpu'].visual_fx_frame_webgpu.ui.controls.runtime;
+      expect(runtime).toMatchObject({ any: expect.any(String), removeTriggerRule: expect.any(String), error: expect.any(String) });
     }
   });
 

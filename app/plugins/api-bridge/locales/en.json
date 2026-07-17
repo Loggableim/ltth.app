@@ -1,32 +1,52 @@
 {
-  "api_bridge": {
-    "plugin": {
-      "name": "API Bridge",
-      "description": "Enables external applications to control LTTH through HTTP and WebSocket APIs."
-    },
-    "ui": {
-      "title": "API Bridge",
-      "actions": {
-        "save": "Save",
-        "cancel": "Cancel",
-        "refresh": "Refresh",
-        "close": "Close",
-        "test": "Test",
-        "clear": "Clear"
+  "plugins": {
+    "api-bridge": {
+      "api_bridge": {
+        "plugin": {
+          "name": "API Bridge",
+          "description": "Enables external applications to control LTTH through HTTP and WebSocket APIs."
+        },
+        "ui": {
+          "title": "API Bridge",
+          "actions": {
+            "save": "Save",
+            "cancel": "Cancel",
+            "refresh": "Refresh",
+            "close": "Close",
+            "test": "Test",
+            "clear": "Clear"
+          },
+          "status": {
+            "ready": "Ready",
+            "loading": "Loading…",
+            "connected": "Connected",
+            "disconnected": "Disconnected",
+            "error": "Error"
+          },
+          "messages": {
+            "saved": "Settings saved.",
+            "failed": "Could not save settings.",
+            "noData": "No data available.",
+            "confirm": "Are you sure?"
+          },
+          "contract": {
+            "eyebrow": "Local, read-only reference",
+            "title": "API Bridge contract",
+            "lede": "Inspect these local endpoints before integrating a client. This page never sends an action request.",
+            "endpoints": {
+              "info": "Identify the running LTTH and API Bridge versions.",
+              "actions": "List action IDs and their declared parameters. Reading this endpoint has no side effect.",
+              "events": "Review the most recent event record; a new temporary profile starts with an empty list.",
+              "request": "Execution belongs in a separately tested client. Verify the required body without sending it here."
+            },
+            "safety": {
+              "title": "Safe integration boundary",
+              "body": "Use GET endpoints first. Keep credentials and production action IDs out of screenshots and test profiles; POST execution is intentionally not available on this page."
+            }
+          }
+        }
       },
-      "status": {
-        "ready": "Ready",
-        "loading": "Loading…",
-        "connected": "Connected",
-        "disconnected": "Disconnected",
-        "error": "Error"
-      },
-      "messages": {
-        "saved": "Settings saved.",
-        "failed": "Could not save settings.",
-        "noData": "No data available.",
-        "confirm": "Are you sure?"
-      }
+      "labels": {}
     }
   }
 }

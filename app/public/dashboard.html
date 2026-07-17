@@ -2438,30 +2438,30 @@
                     <img src="/logo-wide.png" alt="LTTH logo" class="sidebar-logo-wide">
                     <img id="sidebar-mini-icon" src="/ltthicon-cutout.png?v=2" alt="LTTH icon" class="sidebar-logo-mini">
                 </div>
-                <button id="sidebar-toggle" class="sidebar-toggle-btn">
+                <button id="sidebar-toggle" class="sidebar-toggle-btn" aria-label="Toggle sidebar" data-i18n-aria-label="common.dashboard.toggle_sidebar">
                     <i data-lucide="panel-left"></i>
                 </button>
                 <!-- Quick Action Mini Icons (only visible when collapsed) -->
                     <div class="sidebar-quick-actions">
-                        <button class="sidebar-quick-icon" id="sidebar-quick-tts" data-action="tts" data-plugin="tts" title="Toggle TTS">
+                        <button class="sidebar-quick-icon" id="sidebar-quick-tts" data-action="tts" data-plugin="tts" title="Toggle TTS" data-i18n-title="common.dashboard.toggle_tts" aria-label="Toggle TTS" data-i18n-aria-label="common.dashboard.toggle_tts">
                             <img src="/ltthttsicon.png" alt="" class="sidebar-quick-plugin-icon sidebar-quick-plugin-icon-tts" aria-hidden="true">
                         </button>
-                    <button class="sidebar-quick-icon" id="sidebar-quick-soundboard" data-action="soundboard" data-plugin="soundboard" title="Toggle Soundboard">
+                    <button class="sidebar-quick-icon" id="sidebar-quick-soundboard" data-action="soundboard" data-plugin="soundboard" title="Toggle Soundboard" data-i18n-title="common.dashboard.toggle_soundboard" aria-label="Toggle Soundboard" data-i18n-aria-label="common.dashboard.toggle_soundboard">
                         <i data-lucide="music"></i>
                     </button>
-                    <button class="sidebar-quick-icon" id="sidebar-quick-flows" data-action="flows" title="Toggle Flows">
+                    <button class="sidebar-quick-icon" id="sidebar-quick-flows" data-action="flows" title="Toggle flows" data-i18n-title="common.dashboard.toggle_flows" aria-label="Toggle flows" data-i18n-aria-label="common.dashboard.toggle_flows">
                         <i data-lucide="git-branch"></i>
                     </button>
-                    <button class="sidebar-quick-icon" id="sidebar-quick-emoji-rain" data-action="emoji-rain" data-plugin="emoji-rain" title="Toggle EmojiRain">
+                    <button class="sidebar-quick-icon" id="sidebar-quick-emoji-rain" data-action="emoji-rain" data-plugin="emoji-rain" title="Toggle Emoji Rain" data-i18n-title="common.dashboard.toggle_emoji_rain" aria-label="Toggle Emoji Rain" data-i18n-aria-label="common.dashboard.toggle_emoji_rain">
                         <img src="/plugins/emoji-rain/assets/sidebar-icon.png" alt="" class="sidebar-quick-plugin-icon" aria-hidden="true">
                     </button>
-                    <button class="sidebar-quick-icon" id="sidebar-quick-webgpu-emoji-rain" data-action="webgpu-emoji-rain" data-plugin="webgpu-emoji-rain" title="Toggle WebGPU EmojiRain">
+                    <button class="sidebar-quick-icon" id="sidebar-quick-webgpu-emoji-rain" data-action="webgpu-emoji-rain" data-plugin="webgpu-emoji-rain" title="Toggle WebGPU Emoji Rain" data-i18n-title="common.dashboard.toggle_webgpu_emoji_rain" aria-label="Toggle WebGPU Emoji Rain" data-i18n-aria-label="common.dashboard.toggle_webgpu_emoji_rain">
                         <img src="/plugins/webgpu-emoji-rain/assets/sidebar-icon.png" alt="" class="sidebar-quick-plugin-icon" aria-hidden="true">
                     </button>
-                    <button class="sidebar-quick-icon" id="sidebar-quick-osc-bridge" data-action="osc-bridge" data-plugin="osc-bridge" title="Toggle OSC-Bridge">
+                    <button class="sidebar-quick-icon" id="sidebar-quick-osc-bridge" data-action="osc-bridge" data-plugin="osc-bridge" title="Toggle OSC Bridge" data-i18n-title="common.dashboard.toggle_osc_bridge" aria-label="Toggle OSC Bridge" data-i18n-aria-label="common.dashboard.toggle_osc_bridge">
                         <i data-lucide="gamepad-2"></i>
                     </button>
-                    <button class="sidebar-quick-icon sidebar-quick-emergency" id="sidebar-quick-openshock-stop" data-action="openshock-emergency-stop" data-plugin="openshock" title="Hybridshock Emergency Stop">
+                    <button class="sidebar-quick-icon sidebar-quick-emergency" id="sidebar-quick-openshock-stop" data-action="openshock-emergency-stop" data-plugin="openshock" title="Hybridshock emergency stop" data-i18n-title="common.dashboard.hybridshock_emergency_stop" aria-label="Hybridshock emergency stop" data-i18n-aria-label="common.dashboard.hybridshock_emergency_stop">
                         <i data-lucide="shield-off"></i>
                     </button>
                 </div>
@@ -2740,7 +2740,7 @@
                             <option value="fr">🇫🇷 FR</option>
                         </select>
                     </div>
-                    <button id="profile-btn" class="topbar-profile-btn">
+                    <button id="profile-btn" class="topbar-profile-btn" aria-label="User Profiles" data-i18n-aria-label="profile.title">
                         <i data-lucide="user"></i>
                         <span id="current-profile-name">default</span>
                     </button>
@@ -2748,7 +2748,7 @@
                         <i data-lucide="settings"></i>
                     </button>
                     <!-- Shutdown Button -->
-                    <button id="topbar-shutdown-btn" class="topbar-icon-btn topbar-shutdown-btn" title="Server herunterfahren und App schließen">
+                    <button id="topbar-shutdown-btn" class="topbar-icon-btn topbar-shutdown-btn" title="Shut down server and close app" data-i18n-title="common.dashboard.shutdown_server_and_close_app" aria-label="Shut down server and close app" data-i18n-aria-label="common.dashboard.shutdown_server_and_close_app">
                         <i data-lucide="power"></i>
                     </button>
                     <!-- Window Controls for frameless window -->
@@ -2819,9 +2819,9 @@
                                     </p>
                                     <div style="margin-bottom: 1rem;">
                                         <label style="display: block; margin-bottom: 0.5rem; color: var(--color-text-primary); font-weight: 600;">
-                                            SessionID: <span style="color: var(--color-accent-danger);">*</span>
+                                            <span data-i18n="common.dashboard.session_id">Session ID</span>: <span style="color: var(--color-accent-danger);">*</span>
                                         </label>
-                                        <input type="text" id="import-sessionid-input" placeholder="Beispiel: 1234567890abcdef1234567890abcdef" style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-bg-primary); color: var(--color-text-primary); font-family: monospace; font-size: 0.9rem;">
+                                        <input type="text" id="import-sessionid-input" placeholder="Example: 1234567890abcdef1234567890abcdef" data-i18n-placeholder="common.dashboard.session_id_example" style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-bg-primary); color: var(--color-text-primary); font-family: monospace; font-size: 0.9rem;">
                                     </div>
                                     <div style="margin-bottom: 1.5rem;">
                                         <label style="display: block; margin-bottom: 0.5rem; color: var(--color-text-primary); font-weight: 600;">
@@ -2925,7 +2925,7 @@
                             </button>
                             <button class="quick-action-btn" id="quick-webgpu-emoji-rain-btn" data-action="webgpu-emoji-rain" data-state="off" data-plugin="webgpu-emoji-rain">
                                 <i data-lucide="sparkles"></i>
-                                <span data-i18n="generated.88fbaad98d41">WebGPU EmojiRain</span>
+                                <span data-i18n="common.dashboard.webgpu_emojirain">WebGPU EmojiRain</span>
                             </button>
                             <button class="quick-action-btn" id="quick-osc-bridge-btn" data-action="osc-bridge" data-state="off" data-plugin="osc-bridge">
                                 <i data-lucide="gamepad-2"></i>
@@ -3029,7 +3029,7 @@
                                 <i data-lucide="sparkles"></i>
                                 <span data-i18n="dashboard.release_notes">Release Notes &amp; Updates</span>
                             </h2>
-                            <button id="dismiss-updates-btn" class="btn btn-sm btn-ghost">
+                            <button id="dismiss-updates-btn" class="btn btn-sm btn-ghost" data-i18n="common.dashboard.hide_updates">
                                 <i data-lucide="x"></i>
                                 Verbergen
                             </button>
@@ -3041,7 +3041,7 @@
                             </div>
                         </div>
                         <button id="show-more-changelog-btn" class="btn btn-sm btn-ghost" style="margin-top: 1rem; display: none;">
-                            <i data-lucide="chevron-down"></i><span data-i18n="generated.7d34d9288d8f">
+                            <i data-lucide="chevron-down"></i><span data-i18n="common.dashboard.show_older_releases">
                             Ältere Releases anzeigen
                         </span></button>
                     </section>
@@ -3067,10 +3067,10 @@
                     <section class="view-section">
                         <div class="view-header">
                             <h2 class="view-title">
-                                <i data-lucide="activity"></i><span data-i18n="generated.5d861dccee1f">
+                                <i data-lucide="activity"></i><span data-i18n="common.dashboard.live_event_log">
                                 Live Event Log
                             </span></h2>
-                            <button id="clear-events-btn" class="btn btn-sm btn-ghost">
+                            <button id="clear-events-btn" class="btn btn-sm btn-ghost" data-i18n="dashboard.clear_events">
                                 <i data-lucide="trash-2"></i>
                                 Clear
                             </button>
@@ -3210,7 +3210,7 @@
                             <!-- Subscribers Panel -->
                             <div id="stats-panel-subscribers" class="stats-detail-panel" data-panel="subscribers" style="display: none;">
                                 <div class="stats-panel-header">
-                                    <h3><i data-lucide="crown"></i><span data-i18n="generated.8f58244d3cbf"> Subscribers / Superfans</span></h3>
+                                    <h3><i data-lucide="crown"></i><span data-i18n="common.dashboard.subscribers_superfans"> Subscribers / Superfans</span></h3>
                                     <button class="stats-panel-close" aria-label="Close panel" data-i18n-aria-label="common.close"><i data-lucide="x"></i></button>
                                 </div>
                                 <div class="stats-panel-content">
@@ -3263,22 +3263,22 @@
                     <section class="view-section">
                         <div class="view-header">
                             <h2 class="view-title">
-                                <img src="/flows-icon.png" alt="" class="view-brand-icon" aria-hidden="true"><span data-i18n="generated.981e87cffc5b">
+                                <img src="/flows-icon.png" alt="" class="view-brand-icon" aria-hidden="true"><span data-i18n="common.dashboard.ifttt_automation_flows">
                                 IFTTT Automation Flows
                             </span></h2>
                             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                                 <a href="/ifttt-flow-editor.html" target="_blank" class="btn btn-primary">
-                                    <i data-lucide="edit"></i><span data-i18n="generated.89c4b363c646">
+                                    <i data-lucide="edit"></i><span data-i18n="common.dashboard.visual_flow_editor">
                                     Visual Flow Editor
                                 </span></a>
-                                <button id="open-wizard-btn" class="btn btn-primary" data-i18n="generated.78cebb083dd8">
+                                <button id="open-wizard-btn" class="btn btn-primary" data-i18n="common.dashboard.wizard">
                                     🧙 Wizard
                                 </button>
                                 <button id="add-flow-btn" class="btn btn-ghost">
-                                    <i data-lucide="plus"></i><span data-i18n="generated.f1706e995e86">
+                                    <i data-lucide="plus"></i><span data-i18n="common.dashboard.quick_create">
                                     Quick Create
                                 </span></button>
-                                <button id="import-flow-btn" class="btn btn-ghost" title="Flow aus JSON importieren" data-i18n="generated.98974b42cfcd">
+                                <button id="import-flow-btn" class="btn btn-ghost" title="Flow aus JSON importieren" data-i18n="common.dashboard.import">
                                     📥 Import
                                 </button>
                                 <input type="file" id="import-flow-file" accept=".json" style="display:none;">
@@ -3299,12 +3299,12 @@
                         <!-- Bulk actions bar (shown when flows are selected) -->
                         <div id="flows-bulk-bar" style="display:none;" class="bg-gray-700 rounded-lg p-3 mb-3 flex items-center gap-3 flex-wrap">
                             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-                                <input type="checkbox" id="flows-select-all" style="width:15px;height:15px;"><span data-i18n="generated.e0e6b2c997cd">
+                                <input type="checkbox" id="flows-select-all" style="width:15px;height:15px;"><span data-i18n="common.dashboard.select_all">
                                 Alle auswählen
                             </span></label>
                             <span id="flows-selected-count" class="text-gray-400 text-sm"></span>
-                            <button id="bulk-enable-flows-btn" class="btn btn-ghost text-sm" data-i18n="generated.5a8388f71915">✅ Aktivieren</button>
-                            <button id="bulk-disable-flows-btn" class="btn btn-ghost text-sm" data-i18n="generated.7772df69abc1">⏸️ Deaktivieren</button>
+                            <button id="bulk-enable-flows-btn" class="btn btn-ghost text-sm" data-i18n="common.dashboard.aktivieren">✅ Aktivieren</button>
+                            <button id="bulk-disable-flows-btn" class="btn btn-ghost text-sm" data-i18n="common.dashboard.deaktivieren">⏸️ Deaktivieren</button>
                         </div>
 
                         <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
@@ -3312,7 +3312,7 @@
                                 <i data-lucide="zap" style="color: var(--color-accent-primary); width: 24px; height: 24px;"></i>
                                 <div>
                                     <strong style="color: var(--color-accent-primary);" data-i18n="dashboard.visual_flow_editor">New: Visual IFTTT Flow Editor</strong>
-                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--color-text-secondary);" data-i18n="generated.a0c0718eb8d3">
+                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--color-text-secondary);" data-i18n="common.dashboard.create_powerful_automation_flows_with_drag_and_drop_interface_supports_triggers_conditions_actions_and_real_time_monitoring">
                                         Create powerful automation flows with drag-and-drop interface. Supports triggers, conditions, actions, and real-time monitoring.
                                     </p>
                                 </div>
@@ -3345,11 +3345,11 @@
                     <section class="view-section">
                         <div class="view-header">
                             <h2 class="view-title">
-                                <i data-lucide="user-circle-2"></i><span data-i18n="generated.03fe6a66b7b9">
+                                <i data-lucide="user-circle-2"></i><span data-i18n="common.dashboard.talking_heads_ai_avatar_animation">
                                 Talking Heads - AI Avatar Animation
                             </span></h2>
                             <a href="/plugins/talking-heads/ui.html" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i><span data-i18n="generated.7bb7f814d8d6">
+                                <i data-lucide="external-link"></i><span data-i18n="common.dashboard.open_in_new_tab">
                                 Open in New Tab
                             </span></a>
                         </div>
@@ -3454,11 +3454,11 @@
                     <section class="view-section">
                         <div class="view-header">
                             <h2 class="view-title">
-                                <i data-lucide="gift"></i><span data-i18n="generated.50750686b420">
+                                <i data-lucide="gift"></i><span data-i18n="common.dashboard.gift_milestone_celebration">
                                 Gift Milestone Celebration
                             </span></h2>
                             <a href="/gift-milestone/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i><span data-i18n="generated.cc2a5cc25c08">
+                                <i data-lucide="external-link"></i><span data-i18n="common.dashboard.open_in_new_tab">
                                 Open in New Tab
                             </span></a>
                         </div>
@@ -3549,7 +3549,7 @@
                                 <span data-i18n="navigation.viewer_profiles">Viewer Profiles</span>
                             </h2>
                             <a href="/viewer-profiles/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i><span data-i18n="generated.f1b48f99a083">
+                                <i data-lucide="external-link"></i><span data-i18n="common.dashboard.open_in_new_tab">
                                 Open in New Tab
                             </span></a>
                         </div>
@@ -3649,7 +3649,7 @@
                                 <span data-i18n="navigation.config_import">Config Import</span>
                             </h2>
                             <a href="/config-import/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i><span data-i18n="generated.cce39fa33a40">
+                                <i data-lucide="external-link"></i><span data-i18n="common.dashboard.open_in_new_tab">
                                 Open in New Tab
                             </span></a>
                         </div>
@@ -3692,11 +3692,11 @@
                         <div class="view-header">
                             <div style="display: flex; gap: 12px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end;">
                                 <button id="upload-plugin-btn" class="btn btn-primary">
-                                    <i data-lucide="upload"></i><span data-i18n="generated.3578a4d44b95">
+                                    <i data-lucide="upload"></i><span data-i18n="common.dashboard.upload_plugin_zip">
                                     Upload Plugin (ZIP)
                                 </span></button>
                                 <button id="reload-plugins-btn" class="btn btn-ghost">
-                                    <i data-lucide="refresh-cw"></i><span data-i18n="generated.2b797c8b2280">
+                                    <i data-lucide="refresh-cw"></i><span data-i18n="common.dashboard.reload_all">
                                     Reload All
                                 </span></button>
                             </div>
@@ -3761,7 +3761,7 @@
                                 <div class="plugin-store-toolbar__search">
                                     <div style="position: relative;">
                                         <i data-lucide="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--color-text-muted);"></i>
-                                        <input type="text" id="plugin-search" class="plugin-store-search" placeholder="Search plugins...">
+                                        <input type="text" id="plugin-search" class="plugin-store-search" placeholder="Search plugins..." data-i18n-placeholder="common.dashboard.search_plugins">
                                     </div>
                                 </div>
                                 <div class="plugin-store-toolbar__filters">
@@ -3935,8 +3935,8 @@
                                     <select id="language-selector" class="form-input">
                                         <option value="en">English</option>
                                         <option value="de">Deutsch</option>
-                                        <option value="es" data-i18n="generated.c407ba13315e">Español</option>
-                                        <option value="fr" data-i18n="generated.4a4626eb06ab">Français</option>
+                                        <option value="es" data-i18n="common.dashboard.espanol">Español</option>
+                                        <option value="fr" data-i18n="common.dashboard.francais">Français</option>
                                     </select>
                                 </div>
                                 <div class="mt-2 text-sm text-gray-400">
@@ -3948,7 +3948,7 @@
                             <!-- Auto-Start Settings -->
                             <div class="settings-card">
                                 <h3 class="card-title">
-                                    <i data-lucide="power"></i><span data-i18n="generated.39ad7f1e9f5c">
+                                    <i data-lucide="power"></i><span data-i18n="common.dashboard.auto_start_on_system_boot">
                                     Auto-Start on System Boot
                                 </span></h3>
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
@@ -3974,10 +3974,10 @@
                             <!-- TikTok Data Source Selection -->
                             <div class="settings-card">
                                 <h3 class="card-title">
-                                    <i data-lucide="radio"></i><span data-i18n="generated.566861b3923a">
+                                    <i data-lucide="radio"></i><span data-i18n="common.dashboard.tiktok_datenquelle">
                                     TikTok Datenquelle
                                 </span></h3>
-                                <p class="text-sm text-gray-400 mb-4" data-i18n="generated.6ee7ce39864c">
+                                <p class="text-sm text-gray-400 mb-4" data-i18n="common.dashboard.wahle_die_datenquelle_fur_tiktok_live_events_die_anderung_wird_beim_nachsten_verbinden_aktiv">
                                     Wähle die Datenquelle für TikTok LIVE Events. Die Änderung wird beim nächsten Verbinden aktiv.
                                 </p>
 
@@ -4006,10 +4006,10 @@
                                         <div class="flex items-start gap-2">
                                             <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0"></i>
                                             <div class="text-sm">
-                                                <p class="text-yellow-400 font-medium mb-1" data-i18n="generated.6a028f6bcffe">
+                                                <p class="text-yellow-400 font-medium mb-1" data-i18n="common.dashboard.tikfinity_desktop_app_erforderlich">
                                                     TikFinity Desktop App erforderlich
                                                 </p>
-                                                <p class="text-gray-400 text-xs" data-i18n="generated.38610ef8fc38">
+                                                <p class="text-gray-400 text-xs" data-i18n="common.dashboard.stelle_sicher_dass_die_tikfinity_desktop_app_lauft_und_mit_deinem_tiktok_account_verbunden_ist">
                                                     Stelle sicher, dass die TikFinity Desktop App läuft und mit deinem TikTok-Account verbunden ist.
                                                 </p>
                                             </div>
@@ -4021,7 +4021,7 @@
                                         <p class="text-xs text-gray-500 mt-1" data-i18n="settings.websocket_hint">Standard: 21213. Nur ändern, wenn TikFinity einen anderen Port verwendet.</p>
                                     </div>
                                     <button id="save-tikfinity-settings" class="btn btn-primary">
-                                        <i data-lucide="save"></i><span data-i18n="generated.c4ad901f6dad">
+                                        <i data-lucide="save"></i><span data-i18n="common.dashboard.tikfinity_einstellungen_speichern">
                                         TikFinity Einstellungen speichern
                                     </span></button>
                                 </div>
@@ -4030,10 +4030,10 @@
                             <!-- EulerStream API Credentials -->
                             <div class="settings-card" id="eulerstream-settings-card">
                                 <h3 class="card-title">
-                                    <i data-lucide="key"></i><span data-i18n="generated.af53fe5d0e63">
+                                    <i data-lucide="key"></i><span data-i18n="common.dashboard.eulerstream_api_key">
                                     EulerStream API Key
                                 </span></h3>
-                                <p class="text-sm text-gray-400 mb-4"><span data-i18n="generated.7bfa638528a6">
+                                <p class="text-sm text-gray-400 mb-4"><span data-i18n="common.dashboard.eulerstream_api_key_for_tiktok_connection_get_your_free_api_key_at">
                                     EulerStream API key for TikTok connection. Get your free API key at </span><a href="https://www.eulerstream.com" target="_blank" class="text-blue-400 hover:text-blue-300">eulerstream.com</a>.
                                 </p>
                                 
@@ -4042,10 +4042,10 @@
                                     <div class="flex items-start gap-2">
                                         <i data-lucide="shield-check" class="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0"></i>
                                         <div class="text-sm">
-                                            <p class="text-green-400 font-medium mb-1" data-i18n="generated.22301b14ee9b">
+                                            <p class="text-green-400 font-medium mb-1" data-i18n="common.dashboard.api_schlussel_wird_persistent_gespeichert">
                                                 API-Schlüssel wird persistent gespeichert
                                             </p>
-                                            <p class="text-gray-400 text-xs" data-i18n="generated.96cbc7974d21">
+                                            <p class="text-gray-400 text-xs" data-i18n="common.dashboard.der_eulerstream_api_schlussel_wird_sicher_gespeichert_und_bleibt_bei_updates_erhalten">
                                                 Der EulerStream API-Schlüssel wird sicher gespeichert und bleibt bei Updates erhalten.
                                             </p>
                                         </div>
@@ -4055,17 +4055,17 @@
                                 <div class="form-group">
                                     <label data-i18n="settings.api_key">API Key</label>
                                     <input type="text" id="tiktok-euler-api-key" class="form-input" placeholder="euler_... or Webhook Secret (64-char hex)">
-                                    <p class="text-xs text-gray-500 mt-1" data-i18n="generated.dd8bec4de049">Starts with "euler_" or 64-character hexadecimal Webhook Secret</p>
+                                    <p class="text-xs text-gray-500 mt-1" data-i18n="common.dashboard.starts_with_euler_or_64_character_hexadecimal_webhook_secret">Starts with "euler_" or 64-character hexadecimal Webhook Secret</p>
                                 </div>
                                 <div class="form-group">
                                     <label class="flex items-center cursor-pointer">
                                         <input type="checkbox" id="tiktok-auto-reconnect" class="mr-2" checked>
                                         <span data-i18n="settings.auto_connect_stream">Automatisch beim Start verbinden</span>
                                     </label>
-                                    <p class="text-xs text-gray-500 mt-1" data-i18n="generated.ed4ce2ee2279">Wenn aktiviert, verbindet sich die Software automatisch beim Start mit dem zuletzt verbundenen Stream</p>
+                                    <p class="text-xs text-gray-500 mt-1" data-i18n="common.dashboard.wenn_aktiviert_verbindet_sich_die_software_automatisch_beim_start_mit_dem_zuletzt_verbundenen_stream">Wenn aktiviert, verbindet sich die Software automatisch beim Start mit dem zuletzt verbundenen Stream</p>
                                 </div>
                                 <button id="save-tiktok-credentials" class="btn btn-primary">
-                                    <i data-lucide="save"></i><span data-i18n="generated.66734d9dd260">
+                                    <i data-lucide="save"></i><span data-i18n="common.dashboard.save_api_key">
                                     Save API Key
                                 </span></button>
                             </div>
@@ -4073,10 +4073,10 @@
                             <!-- API Keys Configuration -->
                             <div class="settings-card">
                                 <h3 class="card-title">
-                                    <i data-lucide="key-round"></i><span data-i18n="generated.2a193d900d7b">
+                                    <i data-lucide="key-round"></i><span data-i18n="common.dashboard.api_keys">
                                     API Keys
                                 </span></h3>
-                                <p class="text-sm text-gray-400 mb-4" data-i18n="generated.5e29a40a9f5b">
+                                <p class="text-sm text-gray-400 mb-4" data-i18n="common.dashboard.zentrale_verwaltung_aller_api_schlussel_nur_dienste_mit_gultigem_key_konnen_genutzt_werden">
                                     Zentrale Verwaltung aller API-Schlüssel. Nur Dienste mit gültigem Key können genutzt werden.
                                 </p>
                                 
@@ -4085,10 +4085,10 @@
                                     <div class="flex items-start gap-2">
                                         <i data-lucide="shield-check" class="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0"></i>
                                         <div class="text-sm">
-                                            <p class="text-green-400 font-medium mb-1" data-i18n="generated.35a7eeea6fed">
+                                            <p class="text-green-400 font-medium mb-1" data-i18n="common.dashboard.alle_api_schlussel_werden_persistent_gespeichert">
                                                 Alle API-Schlüssel werden persistent gespeichert
                                             </p>
-                                            <p class="text-gray-400 text-xs" data-i18n="generated.4fa7fa9b3456">
+                                            <p class="text-gray-400 text-xs" data-i18n="common.dashboard.ihre_api_schlussel_uberleben_updates_und_werden_sicher_au_erhalb_des_anwendungsverzeichnisses_gespeichert">
                                                 Ihre API-Schlüssel überleben Updates und werden sicher außerhalb des Anwendungsverzeichnisses gespeichert.
                                             </p>
                                         </div>
@@ -4098,106 +4098,106 @@
                                 <div class="space-y-4">
                                     <!-- Google Cloud TTS -->
                                     <div class="form-group">
-                                        <label data-i18n="generated.9ea87e69e595">Google Cloud TTS API Key</label>
+                                        <label data-i18n="common.dashboard.google_cloud_tts_api_key">Google Cloud TTS API Key</label>
                                         <div style="display: flex; gap: 8px;">
                                             <input type="password" id="tts-google-api-key" class="form-input" placeholder="Enter Google Cloud API key...">
-                                            <button type="button" id="toggle-tts-google-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;">
+                                            <button type="button" id="toggle-tts-google-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;" aria-label="Show API key" data-i18n-aria-label="common.dashboard.show_api_key">
                                                 <i data-lucide="eye"></i>
                                             </button>
                                         </div>
-                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="generated.e1d76bce5cf5">
-                                            Get your API key from </span><a href="https://console.cloud.google.com" target="_blank" class="text-blue-400 hover:text-blue-300" data-i18n="generated.116c14cfa308">Google Cloud Console</a><span data-i18n="generated.e202a0414105">. Enable the Cloud Text-to-Speech API.
+                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="common.dashboard.get_your_api_key_from">
+                                            Get your API key from </span><a href="https://console.cloud.google.com" target="_blank" class="text-blue-400 hover:text-blue-300" data-i18n="common.dashboard.google_cloud_console">Google Cloud Console</a><span data-i18n="common.dashboard.enable_the_cloud_text_to_speech_api">. Enable the Cloud Text-to-Speech API.
                                         </span></p>
                                     </div>
 
                                     <!-- Speechify TTS -->
                                     <div class="form-group">
-                                        <label data-i18n="generated.2cdeff3fbe7d">Speechify API Key</label>
+                                        <label data-i18n="common.dashboard.speechify_api_key">Speechify API Key</label>
                                         <div style="display: flex; gap: 8px;">
                                             <input type="password" id="tts-speechify-api-key" class="form-input" placeholder="Enter Speechify API key...">
-                                            <button type="button" id="toggle-tts-speechify-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;">
+                                            <button type="button" id="toggle-tts-speechify-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;" aria-label="Show API key" data-i18n-aria-label="common.dashboard.show_api_key">
                                                 <i data-lucide="eye"></i>
                                             </button>
                                         </div>
-                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="generated.e0d0d3406354">
-                                            Get from </span><a href="https://speechify.com/api" target="_blank" class="text-blue-400 hover:text-blue-300">speechify.com/api</a><span data-i18n="generated.7cbdaf343e86">. $10 per 1M characters. 1000+ voices.
+                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="common.dashboard.get_from">
+                                            Get from </span><a href="https://speechify.com/api" target="_blank" class="text-blue-400 hover:text-blue-300">speechify.com/api</a><span data-i18n="common.dashboard.10_per_1m_characters_1000_voices">. $10 per 1M characters. 1000+ voices.
                                         </span></p>
                                     </div>
 
                                     <!-- ElevenLabs TTS -->
                                     <div class="form-group">
-                                        <label data-i18n="generated.50cb8a71cab6">ElevenLabs API Key</label>
+                                        <label data-i18n="common.dashboard.elevenlabs_api_key">ElevenLabs API Key</label>
                                         <div style="display: flex; gap: 8px;">
                                             <input type="password" id="tts-elevenlabs-api-key" class="form-input" placeholder="Enter ElevenLabs API key...">
-                                            <button type="button" id="toggle-tts-elevenlabs-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;">
+                                            <button type="button" id="toggle-tts-elevenlabs-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;" aria-label="Show API key" data-i18n-aria-label="common.dashboard.show_api_key">
                                                 <i data-lucide="eye"></i>
                                             </button>
                                         </div>
-                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="generated.69e75f2c4322">
-                                            Get from </span><a href="https://elevenlabs.io/docs/quickstart" target="_blank" class="text-blue-400 hover:text-blue-300">elevenlabs.io</a><span data-i18n="generated.205568e80ca3">. Ultra-realistic AI voices.
+                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="common.dashboard.get_from">
+                                            Get from </span><a href="https://elevenlabs.io/docs/quickstart" target="_blank" class="text-blue-400 hover:text-blue-300">elevenlabs.io</a><span data-i18n="common.dashboard.ultra_realistic_ai_voices">. Ultra-realistic AI voices.
                                         </span></p>
                                     </div>
 
                                     <!-- OpenAI TTS -->
                                     <div class="form-group">
-                                        <label data-i18n="generated.1caeef8a0c9d">OpenAI TTS API Key</label>
+                                        <label data-i18n="common.dashboard.openai_tts_api_key">OpenAI TTS API Key</label>
                                         <div style="display: flex; gap: 8px;">
                                             <input type="password" id="tts-openai-api-key" class="form-input" placeholder="Enter OpenAI API key...">
-                                            <button type="button" id="toggle-tts-openai-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;">
+                                            <button type="button" id="toggle-tts-openai-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;" aria-label="Show API key" data-i18n-aria-label="common.dashboard.show_api_key">
                                                 <i data-lucide="eye"></i>
                                             </button>
                                         </div>
-                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="generated.adbe981cdf8b">
-                                            Get from </span><a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-400 hover:text-blue-300" data-i18n="generated.b4851fea1451">OpenAI Platform</a><span data-i18n="generated.277b33b9d116">. TTS-1 and TTS-1-HD models.
+                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="common.dashboard.get_from">
+                                            Get from </span><a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-400 hover:text-blue-300" data-i18n="common.dashboard.openai_platform">OpenAI Platform</a><span data-i18n="common.dashboard.tts_1_and_tts_1_hd_models">. TTS-1 and TTS-1-HD models.
                                         </span></p>
                                     </div>
 
                                     <!-- Fish.audio TTS (Official API) -->
                                     <div class="form-group">
-                                        <label data-i18n="generated.163ee4cfddb5">Fish.audio API Key</label>
+                                        <label data-i18n="common.dashboard.fish_audio_api_key">Fish.audio API Key</label>
                                         <div style="display: flex; gap: 8px;">
                                             <input type="password" id="tts-fishaudio-api-key" class="form-input" placeholder="Enter Fish.audio API key...">
-                                            <button type="button" id="toggle-tts-fishaudio-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;">
+                                            <button type="button" id="toggle-tts-fishaudio-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;" aria-label="Show API key" data-i18n-aria-label="common.dashboard.show_api_key">
                                                 <i data-lucide="eye"></i>
                                             </button>
                                         </div>
-                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="generated.7ccb015c7fae">
+                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="common.dashboard.uses_the_official_fish_audio_api_fish_speech_with_the_s1_model_get_your_key_at">
                                             Uses the official Fish.audio API (Fish Speech) with the S1 model. Get your key at
-                                            </span><a href="https://docs.fish.audio/developer-guide/getting-started/quickstart" target="_blank" class="text-blue-400 hover:text-blue-300" data-i18n="generated.61fae76464b1">Fish.audio Quickstart</a>.
+                                            </span><a href="https://docs.fish.audio/developer-guide/getting-started/quickstart" target="_blank" class="text-blue-400 hover:text-blue-300" data-i18n="common.dashboard.fish_audio_quickstart">Fish.audio Quickstart</a>.
                                         </p>
                                     </div>
 
                                     <!-- SiliconFlow API (Fish Speech TTS + StreamAlchemy) -->
                                     <div class="form-group">
-                                        <label data-i18n="generated.24a367aad929">SiliconFlow API Key</label>
+                                        <label data-i18n="common.dashboard.siliconflow_api_key">SiliconFlow API Key</label>
                                         <div style="display: flex; gap: 8px;">
                                             <input type="password" id="tts-fishspeech-api-key" class="form-input" placeholder="Enter SiliconFlow API key...">
-                                            <button type="button" id="toggle-tts-fishspeech-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;">
+                                            <button type="button" id="toggle-tts-fishspeech-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;" aria-label="Show API key" data-i18n-aria-label="common.dashboard.show_api_key">
                                                 <i data-lucide="eye"></i>
                                             </button>
                                         </div>
-                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="generated.df8bc50883f3">
-                                            Get from </span><a href="https://siliconflow.cn" target="_blank" class="text-blue-400 hover:text-blue-300" data-i18n="talking_heads_ui.providers.siliconflow">SiliconFlow</a><span data-i18n="generated.f9378fda6bbf">. Used for Fish Speech 1.5 TTS and StreamAlchemy FLUX.1-schnell image generation.
+                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="common.dashboard.get_from">
+                                            Get from </span><a href="https://siliconflow.cn" target="_blank" class="text-blue-400 hover:text-blue-300" data-i18n="talking_heads_ui.providers.siliconflow">SiliconFlow</a><span data-i18n="common.dashboard.used_for_fish_speech_1_5_tts_and_streamalchemy_flux_1_schnell_image_generation">. Used for Fish Speech 1.5 TTS and StreamAlchemy FLUX.1-schnell image generation.
                                         </span></p>
                                     </div>
 
                                     <!-- Ollama Cloud API (STT Ticker Translation) -->
                                     <div class="form-group">
-                                        <label data-i18n="generated.7baf717093e9">Ollama Cloud API Key (STT Ticker Übersetzung)</label>
+                                        <label data-i18n="common.dashboard.ollama_cloud_api_key_stt_ticker_ubersetzung">Ollama Cloud API Key (STT Ticker Übersetzung)</label>
                                         <div style="display: flex; gap: 8px;">
                                             <input type="password" id="tts-ollama-api-key" class="form-input" placeholder="Enter Ollama Cloud API key...">
-                                            <button type="button" id="toggle-tts-ollama-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;">
+                                            <button type="button" id="toggle-tts-ollama-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;" aria-label="Show API key" data-i18n-aria-label="common.dashboard.show_api_key">
                                                 <i data-lucide="eye"></i>
                                             </button>
                                         </div>
-                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="generated.9715438968ae">
-                                            Wird vom </span><strong data-i18n="generated.bad4e593c5c0">STT Ticker Plugin</strong><span data-i18n="generated.b1fbd95403b3"> für die Echtzeit-Übersetzung von Transkripten genutzt. Get your key at </span><a href="https://ollama.cloud" target="_blank" class="text-blue-400 hover:text-blue-300">ollama.cloud</a>.
+                                        <p class="text-xs text-gray-500 mt-1"><span data-i18n="common.dashboard.wird_vom">
+                                            Wird vom </span><strong data-i18n="common.dashboard.stt_ticker_plugin">STT Ticker Plugin</strong><span data-i18n="common.dashboard.fur_die_echtzeit_ubersetzung_von_transkripten_genutzt_get_your_key_at"> für die Echtzeit-Übersetzung von Transkripten genutzt. Get your key at </span><a href="https://ollama.cloud" target="_blank" class="text-blue-400 hover:text-blue-300">ollama.cloud</a>.
                                         </p>
                                     </div>
                                 </div>
 
                                 <button id="save-tts-api-keys" class="btn btn-primary mt-4">
-                                    <i data-lucide="save"></i><span data-i18n="generated.2c4a6a9fe474">
+                                    <i data-lucide="save"></i><span data-i18n="common.dashboard.save_api_keys">
                                     Save API Keys
                                 </span></button>
                             </div>
@@ -4205,10 +4205,10 @@
                             <!-- OpenAI API Configuration -->
                             <div class="settings-card">
                                 <h3 class="card-title">
-                                    <i data-lucide="brain"></i><span data-i18n="generated.dd4c8ec025ae">
+                                    <i data-lucide="brain"></i><span data-i18n="common.dashboard.openai_api_configuration">
                                     OpenAI API Configuration
                                 </span></h3>
-                                <p class="text-sm text-gray-400 mb-4"><span data-i18n="generated.23584ef30f24">
+                                <p class="text-sm text-gray-400 mb-4"><span data-i18n="common.dashboard.configure_your_openai_api_key_for_ai_powered_features_like_quiz_question_generation_get_your_api_key_at">
                                     Configure your OpenAI API key for AI-powered features like quiz question generation. Get your API key at </span><a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-400 hover:text-blue-300">platform.openai.com</a>.
                                 </p>
                                 
@@ -4218,10 +4218,10 @@
                                         <i data-lucide="shield-check" class="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0"></i>
                                         <div class="text-sm">
                                             <p class="text-green-400 font-medium mb-1">
-                                                <span id="openai-key-status" data-i18n="generated.aea3df423143">API-Schlüssel wird persistent gespeichert</span>
+                                                <span id="openai-key-status" data-i18n="common.dashboard.api_schlussel_wird_persistent_gespeichert">API-Schlüssel wird persistent gespeichert</span>
                                             </p>
-                                            <p class="text-gray-400 text-xs"><span data-i18n="generated.64c1174a63fe">
-                                                Ihre API-Schlüssel werden außerhalb des Anwendungsverzeichnisses gespeichert und bleiben bei Updates erhalten. Speicherort: </span><span id="openai-key-storage-path" class="font-mono text-blue-300" data-i18n="generated.28bfd8d4dfdf">wird geladen...</span>
+                                            <p class="text-gray-400 text-xs"><span data-i18n="common.dashboard.ihre_api_schlussel_werden_au_erhalb_des_anwendungsverzeichnisses_gespeichert_und_bleiben_bei_updates_erhalten_speicherort">
+                                                Ihre API-Schlüssel werden außerhalb des Anwendungsverzeichnisses gespeichert und bleiben bei Updates erhalten. Speicherort: </span><span id="openai-key-storage-path" class="font-mono text-blue-300" data-i18n="common.dashboard.wird_geladen">wird geladen...</span>
                                             </p>
                                         </div>
                                     </div>
@@ -4230,21 +4230,21 @@
                                 <div class="form-group">
                                     <label data-i18n="settings.api_key">API Key</label>
                                     <input type="password" id="openai-api-key" class="form-input" placeholder="sk-...">
-                                    <p class="text-xs text-gray-500 mt-1" id="openai-key-hint" data-i18n="generated.85cba3c5d3fe">API-Schlüssel eingeben...</p>
+                                    <p class="text-xs text-gray-500 mt-1" id="openai-key-hint" data-i18n="common.dashboard.api_schlussel_eingeben">API-Schlüssel eingeben...</p>
                                 </div>
                                 <div class="form-group">
                                     <label>Model</label>
                                     <select id="openai-model" class="form-input">
-                                        <option value="gpt-5-mini" data-i18n="generated.41aa76e2a3b9">GPT-5 Mini (Recommended)</option>
-                                        <option value="gpt-5-nano" data-i18n="generated.fface9b17554">GPT-5 Nano</option>
-                                        <option value="gpt-4o-mini" data-i18n="generated.083c0a67e043">GPT-4o Mini</option>
+                                        <option value="gpt-5-mini" data-i18n="common.dashboard.gpt_5_mini_recommended">GPT-5 Mini (Recommended)</option>
+                                        <option value="gpt-5-nano" data-i18n="common.dashboard.gpt_5_nano">GPT-5 Nano</option>
+                                        <option value="gpt-4o-mini" data-i18n="common.dashboard.gpt_4o_mini">GPT-4o Mini</option>
                                         <option value="gpt-4o">GPT-4o</option>
-                                        <option value="gpt-4-turbo" data-i18n="generated.bb7eff28641c">GPT-4 Turbo</option>
-                                        <option value="gpt-3.5-turbo" data-i18n="generated.e8083f5f3a3e">GPT-3.5 Turbo</option>
+                                        <option value="gpt-4-turbo" data-i18n="common.dashboard.gpt_4_turbo">GPT-4 Turbo</option>
+                                        <option value="gpt-3.5-turbo" data-i18n="common.dashboard.gpt_3_5_turbo">GPT-3.5 Turbo</option>
                                     </select>
                                 </div>
                                 <button id="save-openai-credentials" class="btn btn-primary">
-                                    <i data-lucide="save"></i><span data-i18n="generated.be276db5418d">
+                                    <i data-lucide="save"></i><span data-i18n="common.dashboard.save_openai_configuration">
                                     Save OpenAI Configuration
                                 </span></button>
                             </div>
@@ -4252,18 +4252,18 @@
                             <!-- User Profiles -->
                             <div class="settings-card">
                                 <h3 class="card-title">
-                                    <i data-lucide="users"></i><span data-i18n="generated.1de62e0c996b">
+                                    <i data-lucide="users"></i><span data-i18n="common.dashboard.user_profiles">
                                     User Profiles
                                 </span></h3>
-                                <p class="text-sm text-gray-400 mb-4" data-i18n="generated.edce14c65d61">
+                                <p class="text-sm text-gray-400 mb-4" data-i18n="common.dashboard.switch_between_different_configurations_for_different_streaming_setups">
                                     Switch between different configurations for different streaming setups.
                                 </p>
                                 <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
                                     <div style="display: flex; align-items: center; gap: 12px;">
-                                        <span style="font-weight: 600;" data-i18n="generated.770ef591d741">Active Profile:</span>
+                                        <span style="font-weight: 600;" data-i18n="common.dashboard.active_profile">Active Profile:</span>
                                         <span id="active-profile-display" style="color: #60a5fa;">default</span>
                                     </div>
-                                    <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 8px;" data-i18n="generated.dfeb103c4a36">
+                                    <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 8px;" data-i18n="common.dashboard.profile_changes_require_application_restart">
                                         ⚠️ Profile changes require application restart
                                     </p>
                                 </div>
@@ -4271,15 +4271,15 @@
                                 <!-- Profile restart behavior -->
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
                                     <h4 class="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
-                                        <i data-lucide="rotate-cw" class="inline-block w-4 h-4"></i><span data-i18n="generated.6fec4c1038ce">
+                                        <i data-lucide="rotate-cw" class="inline-block w-4 h-4"></i><span data-i18n="common.dashboard.auto_restart_bei_profilwechsel">
                                         Auto-Restart bei Profilwechsel
                                     </span></h4>
                                     <div class="form-group mb-3">
                                         <label class="checkbox-label">
                                             <input type="checkbox" id="profile-auto-restart-toggle" checked disabled>
-                                            <span data-i18n="generated.c062ea341179">Profilwechsel starten die Anwendung automatisch neu</span>
+                                            <span data-i18n="common.dashboard.profilwechsel_starten_die_anwendung_automatisch_neu">Profilwechsel starten die Anwendung automatisch neu</span>
                                         </label>
-                                        <p class="text-xs text-gray-400 mt-2" data-i18n="generated.5699b3a6ffb1">
+                                        <p class="text-xs text-gray-400 mt-2" data-i18n="common.dashboard.ein_seiten_reload_reicht_nicht_aus_weil_datenbank_und_plugins_beim_serverstart_mit_dem_aktiven_profil_geladen_werden">
                                             Ein Seiten-Reload reicht nicht aus, weil Datenbank und Plugins beim Serverstart mit dem aktiven Profil geladen werden.
                                         </p>
                                     </div>
@@ -4287,16 +4287,16 @@
                                 
                                 <!-- Profile Search and Filter -->
                                 <div class="form-group mb-4">
-                                    <label data-i18n="generated.6dcc620e0907">Search & Filter Profiles</label>
+                                    <label data-i18n="common.dashboard.search_filter_profiles">Search & Filter Profiles</label>
                                     <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                                         <input type="text" id="profile-search-input" placeholder="Search profiles..." class="form-input" style="flex: 1;">
                                     </div>
                                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                                         <button id="filter-recent-btn" class="btn btn-ghost btn-sm profile-filter-btn" data-filter="recent" title="Show last 10 recently modified profiles">
-                                            <i data-lucide="clock"></i><span data-i18n="generated.bddcda4daa4c">
+                                            <i data-lucide="clock"></i><span data-i18n="common.dashboard.recent_10">
                                             Recent (10)
                                         </span></button>
-                                        <button id="filter-all-btn" class="btn btn-ghost btn-sm profile-filter-btn active" data-filter="all" title="Show all profiles">
+                                        <button id="filter-all-btn" class="btn btn-ghost btn-sm profile-filter-btn active" data-filter="all" title="Show all profiles" data-i18n-title="common.dashboard.all_profiles" data-i18n="common.dashboard.all_profiles">
                                             <i data-lucide="list"></i>
                                             All
                                         </button>
@@ -4310,7 +4310,7 @@
                                     <label data-i18n="profile.create_profile">Create New Profile</label>
                                     <div style="display: flex; gap: 8px;">
                                         <input type="text" id="new-profile-username" placeholder="Profile Name" class="form-input">
-                                        <button id="create-profile-btn" class="btn btn-primary">
+                                        <button id="create-profile-btn" class="btn btn-primary" data-i18n="common.dashboard.create">
                                             <i data-lucide="plus"></i>
                                             Create
                                         </button>
@@ -4321,17 +4321,17 @@
                             <!-- Username Aliases -->
                             <div class="settings-card mt-4" id="username-aliases-card">
                                 <h3 class="card-title">
-                                    <i data-lucide="at-sign"></i><span data-i18n="generated.417f1b986bd5">
+                                    <i data-lucide="at-sign"></i><span data-i18n="common.dashboard.tiktok_benutzernamen_aliases">
                                     TikTok Benutzernamen (Aliases)
                                 </span></h3>
-                                <p class="text-sm text-gray-400 mb-4" data-i18n="generated.7066ed2cf070">
+                                <p class="text-sm text-gray-400 mb-4" data-i18n="common.dashboard.hinterlege_alle_tiktok_usernamen_die_zu_diesem_profil_gehoren_das_tool_erkennt_das_profil_auch_nach_einer_namensanderung_automatisch">
                                     Hinterlege alle TikTok-Usernamen, die zu diesem Profil gehören.
                                     Das Tool erkennt das Profil auch nach einer Namensänderung automatisch.
                                 </p>
 
                                 <!-- Alias List -->
                                 <div id="alias-list" class="space-y-2 mb-4">
-                                    <p class="text-gray-500 text-sm" id="alias-list-empty" data-i18n="generated.1472e5b3b934">Keine Usernamen hinterlegt. Das Profil wird beim nächsten Verbinden automatisch eingetragen.</p>
+                                    <p class="text-gray-500 text-sm" id="alias-list-empty" data-i18n="common.dashboard.keine_usernamen_hinterlegt_das_profil_wird_beim_nachsten_verbinden_automatisch_eingetragen">Keine Usernamen hinterlegt. Das Profil wird beim nächsten Verbinden automatisch eingetragen.</p>
                                 </div>
 
                                 <!-- Add Alias Form -->
@@ -4341,7 +4341,7 @@
                                             type="text"
                                             id="new-alias-username"
                                             class="form-input w-full"
-                                            placeholder="TikTok Username (ohne @)"
+                                            placeholder="TikTok Username (without @)" data-i18n-placeholder="dashboard.username_placeholder"
                                             maxlength="100"
                                         >
                                     </div>
@@ -4350,17 +4350,17 @@
                                             type="text"
                                             id="new-alias-label"
                                             class="form-input w-full"
-                                            placeholder="Bezeichnung (optional, z.B. 'Alter Name')"
+                                            placeholder="Label (optional, e.g. 'Former name')" data-i18n-placeholder="common.dashboard.alias_label_placeholder"
                                             maxlength="100"
                                         >
                                     </div>
                                     <button id="add-alias-btn" class="btn btn-primary flex-shrink-0">
-                                        <i data-lucide="plus"></i><span data-i18n="generated.5555dfc941c0">
+                                        <i data-lucide="plus"></i><span data-i18n="common.dashboard.hinzufugen">
                                         Hinzufügen
                                     </span></button>
                                 </div>
 
-                                <p class="text-xs text-gray-500 mt-2" data-i18n="generated.034f9a90e13c">
+                                <p class="text-xs text-gray-500 mt-2" data-i18n="common.dashboard.aktueller_hauptname_klicke_auf_um_einen_namen_als_haupt_username_zu_setzen_das_profil_wird_beim_verbinden_automatisch_erkannt_wenn_einer_dieser_namen_verwendet_wird">
                                     ⭐ = Aktueller Hauptname &nbsp;|&nbsp;
                                     Klicke auf ⭐ um einen Namen als Haupt-Username zu setzen &nbsp;|&nbsp;
                                     Das Profil wird beim Verbinden automatisch erkannt wenn einer dieser Namen verwendet wird.
@@ -4370,10 +4370,10 @@
                             <!-- Config Path Management -->
                             <div class="settings-card">
                                 <h3 class="card-title">
-                                    <i data-lucide="folder-open"></i><span data-i18n="generated.431a354b5c1b">
+                                    <i data-lucide="folder-open"></i><span data-i18n="common.dashboard.configuration_storage_location">
                                     Configuration Storage Location
                                 </span></h3>
-                                <p class="text-sm text-gray-400 mb-4" data-i18n="generated.7db79027403f">
+                                <p class="text-sm text-gray-400 mb-4" data-i18n="common.dashboard.configure_where_your_settings_profiles_and_user_data_are_stored_by_default_configs_are_stored_outside_the_application_folder_to_survive_updates">
                                     Configure where your settings, profiles, and user data are stored. By default, configs are stored outside the application folder to survive updates.
                                 </p>
                                 
@@ -4385,15 +4385,15 @@
                                             <span id="config-path-platform" class="ml-2 font-mono">-</span>
                                         </div>
                                         <div>
-                                            <span class="text-gray-400" data-i18n="generated.f98ac0a7c36a">Default Location:</span>
+                                            <span class="text-gray-400" data-i18n="common.dashboard.default_location">Default Location:</span>
                                             <span id="config-path-default" class="ml-2 font-mono text-xs">-</span>
                                         </div>
                                         <div>
-                                            <span class="text-gray-400" data-i18n="generated.b7709d6b5377">Active Location:</span>
+                                            <span class="text-gray-400" data-i18n="common.dashboard.active_location">Active Location:</span>
                                             <span id="config-path-active" class="ml-2 font-mono text-xs font-semibold text-blue-400">-</span>
                                         </div>
                                         <div>
-                                            <span class="text-gray-400" data-i18n="generated.69a1fd696c39">Using Custom Path:</span>
+                                            <span class="text-gray-400" data-i18n="common.dashboard.using_custom_path">Using Custom Path:</span>
                                             <span id="config-path-is-custom" class="ml-2">-</span>
                                         </div>
                                     </div>
@@ -4427,27 +4427,27 @@
                             <!-- Profile Management Tools -->
                             <div class="settings-card">
                                 <h3 class="card-title">
-                                    <i data-lucide="users"></i><span data-i18n="generated.02486a61f7ec">
+                                    <i data-lucide="users"></i><span data-i18n="common.dashboard.profile_management_tools">
                                     Profile Management Tools
                                     </span><span class="profile-help-icon" data-tooltip="Tools to verify profile integrity, check migration status, and manage profiles" title="Tools to verify profile integrity, check migration status, and manage profiles">
                             <img src="/plugins/quiz-show/assets/quiz-show-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-quiz-show">
                                     </span>
                                 </h3>
-                                <p class="text-sm text-gray-400 mb-4" data-i18n="generated.e68264ef9515">
+                                <p class="text-sm text-gray-400 mb-4" data-i18n="common.dashboard.verify_profile_integrity_check_for_old_data_that_needs_migration_and_access_profile_system_documentation">
                                     Verify profile integrity, check for old data that needs migration, and access profile system documentation.
                                 </p>
 
                                 <!-- Profile Integrity Checker -->
                                 <div class="profile-management-section">
                                     <h4 class="text-lg font-semibold mb-3 flex items-center gap-2">
-                                        <i data-lucide="shield-check"></i><span data-i18n="generated.59bbb1ee1166">
+                                        <i data-lucide="shield-check"></i><span data-i18n="common.dashboard.profile_integrity_verification">
                                         Profile Integrity Verification
                                     </span></h4>
-                                    <p class="text-sm text-gray-400 mb-3" data-i18n="generated.72f1ecc18d5e">
+                                    <p class="text-sm text-gray-400 mb-3" data-i18n="common.dashboard.check_the_integrity_of_all_profile_database_files_and_detect_any_potential_issues">
                                         Check the integrity of all profile database files and detect any potential issues.
                                     </p>
                                     <button id="check-profile-integrity-btn" class="btn btn-primary mb-4">
-                                        <i data-lucide="check-circle"></i><span data-i18n="generated.2ccb9fe6a4bb">
+                                        <i data-lucide="check-circle"></i><span data-i18n="common.dashboard.check_profile_integrity">
                                         Check Profile Integrity
                                     </span></button>
                                     <div id="profile-integrity-results"></div>
@@ -4456,14 +4456,14 @@
                                 <!-- Migration Status Checker -->
                                 <div class="profile-management-section mt-6">
                                     <h4 class="text-lg font-semibold mb-3 flex items-center gap-2">
-                                        <i data-lucide="move"></i><span data-i18n="generated.48274bfee381">
+                                        <i data-lucide="move"></i><span data-i18n="common.dashboard.migration_status">
                                         Migration Status
                                     </span></h4>
-                                    <p class="text-sm text-gray-400 mb-3" data-i18n="generated.756d6f46ca9f">
+                                    <p class="text-sm text-gray-400 mb-3" data-i18n="common.dashboard.check_for_old_database_files_or_orphaned_plugin_data_that_may_need_to_be_migrated_to_the_current_storage_location">
                                         Check for old database files or orphaned plugin data that may need to be migrated to the current storage location.
                                     </p>
                                     <button id="check-migration-status-btn" class="btn btn-primary mb-4">
-                                        <i data-lucide="search"></i><span data-i18n="generated.d1186241c3a8">
+                                        <i data-lucide="search"></i><span data-i18n="common.dashboard.check_migration_status">
                                         Check Migration Status
                                     </span></button>
                                     <div id="migration-status-results"></div>
@@ -4472,23 +4472,23 @@
                                 <!-- Documentation Links -->
                                 <div class="profile-management-section mt-6">
                                     <h4 class="text-lg font-semibold mb-3 flex items-center gap-2">
-                                        <i data-lucide="book-open"></i><span data-i18n="generated.4f9232091d83">
+                                        <i data-lucide="book-open"></i><span data-i18n="common.dashboard.profile_system_documentation">
                                         Profile System Documentation
                                     </span></h4>
-                                    <p class="text-sm text-gray-400 mb-3" data-i18n="generated.ea1d0404ab6f">
+                                    <p class="text-sm text-gray-400 mb-3" data-i18n="common.dashboard.learn_more_about_how_the_profile_system_works_and_troubleshoot_common_issues">
                                         Learn more about how the profile system works and troubleshoot common issues.
                                     </p>
                                     <div class="profile-doc-links">
                                         <a href="docs/STREAMER_PROFILE_SYSTEM_DE.md" target="_blank" class="profile-doc-link">
-                                            <i data-lucide="book"></i><span data-i18n="generated.4d3e2538a9d5">
+                                            <i data-lucide="book"></i><span data-i18n="common.dashboard.user_guide_german">
                                             User Guide (German)
                                         </span></a>
                                         <a href="VIEWER_XP_PROFILE_SYSTEM_ANALYSIS.md" target="_blank" class="profile-doc-link">
-                                            <i data-lucide="file-text"></i><span data-i18n="generated.5055a2624458">
+                                            <i data-lucide="file-text"></i><span data-i18n="common.dashboard.technical_analysis">
                                             Technical Analysis
                                         </span></a>
                                         <a href="PROFILE_SYSTEM_UX_VISUAL_GUIDE.md" target="_blank" class="profile-doc-link">
-                                            <i data-lucide="image"></i><span data-i18n="generated.77d34c1c5fe7">
+                                            <i data-lucide="image"></i><span data-i18n="common.dashboard.visual_guide">
                                             Visual Guide
                                         </span></a>
                                     </div>
@@ -4497,44 +4497,44 @@
                                 <!-- FAQ Section -->
                                 <div class="profile-management-section mt-6">
                                     <h4 class="text-lg font-semibold mb-3 flex items-center gap-2">
-                                        <i data-lucide="help-circle"></i><span data-i18n="generated.7d8594673948">
+                                        <i data-lucide="help-circle"></i><span data-i18n="common.dashboard.frequently_asked_questions">
                                         Frequently Asked Questions
                                     </span></h4>
                                     <div class="space-y-3">
                                         <details class="faq-item">
                                             <summary class="faq-question">
-                                                <i data-lucide="chevron-right"></i><span data-i18n="generated.f0f4cd854718">
+                                                <i data-lucide="chevron-right"></i><span data-i18n="common.dashboard.why_do_i_need_to_restart_after_switching_profiles">
                                                 Why do I need to restart after switching profiles?
                                             </span></summary>
                                             <div class="faq-answer">
-                                                <p data-i18n="generated.686f28c0894a">The profile system loads your database and settings once at startup. When you switch profiles, the new profile information is saved, but the application continues using the old profile's database until you restart. This prevents data corruption and ensures a clean transition.</p>
+                                                <p data-i18n="common.dashboard.the_profile_system_loads_your_database_and_settings_once_at_startup_when_you_switch_profiles_the_new_profile_information_is_saved_but_the_application_continues_using_the_old_profile_s_database_until_you_restart_this_prevents_data_corruption_and_ensures_a_clean_transition">The profile system loads your database and settings once at startup. When you switch profiles, the new profile information is saved, but the application continues using the old profile's database until you restart. This prevents data corruption and ensures a clean transition.</p>
                                             </div>
                                         </details>
                                         <details class="faq-item">
                                             <summary class="faq-question">
-                                                <i data-lucide="chevron-right"></i><span data-i18n="generated.8d0da9d7af57">
+                                                <i data-lucide="chevron-right"></i><span data-i18n="common.dashboard.will_my_viewer_xp_data_persist_after_updates">
                                                 Will my viewer XP data persist after updates?
                                             </span></summary>
                                             <div class="faq-answer">
-                                                <p><span data-i18n="dashboard.profile_data_note_prefix">Yes! All profile data is stored in a persistent location outside the application directory.</span> <strong data-i18n="generated.3c85db3dd328">On Windows:</strong> <code>%LOCALAPPDATA%\ltth.app\user_configs\</code>. <span data-i18n="dashboard.profile_data_note_suffix">This location survives all application updates.</span></p>
+                                                <p><span data-i18n="dashboard.profile_data_note_prefix">Yes! All profile data is stored in a persistent location outside the application directory.</span> <strong data-i18n="common.dashboard.on_windows">On Windows:</strong> <code>%LOCALAPPDATA%\ltth.app\user_configs\</code>. <span data-i18n="dashboard.profile_data_note_suffix">This location survives all application updates.</span></p>
                                             </div>
                                         </details>
                                         <details class="faq-item">
                                             <summary class="faq-question">
-                                                <i data-lucide="chevron-right"></i><span data-i18n="generated.72908ba6fdd5">
+                                                <i data-lucide="chevron-right"></i><span data-i18n="common.dashboard.is_viewer_xp_data_shared_between_profiles">
                                                 Is viewer XP data shared between profiles?
                                             </span></summary>
                                             <div class="faq-answer">
-                                                <p data-i18n="generated.999cb1d2bd47">No! Each profile has its own completely independent database file. Viewer "alice" in profile "streamer1" is completely separate from viewer "alice" in profile "streamer2". They each have their own XP, levels, and badges.</p>
+                                                <p data-i18n="common.dashboard.no_each_profile_has_its_own_completely_independent_database_file_viewer_alice_in_profile_streamer1_is_completely_separate_from_viewer_alice_in_profile_streamer2_they_each_have_their_own_xp_levels_and_badges">No! Each profile has its own completely independent database file. Viewer "alice" in profile "streamer1" is completely separate from viewer "alice" in profile "streamer2". They each have their own XP, levels, and badges.</p>
                                             </div>
                                         </details>
                                         <details class="faq-item">
                                             <summary class="faq-question">
-                                                <i data-lucide="chevron-right"></i><span data-i18n="generated.b30bf7d03730">
+                                                <i data-lucide="chevron-right"></i><span data-i18n="common.dashboard.can_i_enable_auto_restart_after_profile_switch">
                                                 Can I enable auto-restart after profile switch?
                                             </span></summary>
                                             <div class="faq-answer">
-                                                <p><span data-i18n="generated.8d03c84f9572">Yes! In the </span><strong data-i18n="profile.title">User Profiles</strong><span data-i18n="generated.a4a0e939d624"> section above, you can enable the </span><strong data-i18n="generated.d3999f01e4cc">"Auto-Restart on Profile Switch"</strong><span data-i18n="generated.3ea6b762aa9a"> checkbox. When enabled, the application will automatically restart 5 seconds after switching profiles, with a countdown you can cancel if needed.</span></p>
+                                                <p><span data-i18n="common.dashboard.yes_in_the">Yes! In the </span><strong data-i18n="profile.title">User Profiles</strong><span data-i18n="common.dashboard.section_above_you_can_enable_the"> section above, you can enable the </span><strong data-i18n="common.dashboard.auto_restart_on_profile_switch">"Auto-Restart on Profile Switch"</strong><span data-i18n="common.dashboard.checkbox_when_enabled_the_application_will_automatically_restart_5_seconds_after_switching_profiles_with_a_countdown_you_can_cancel_if_needed"> checkbox. When enabled, the application will automatically restart 5 seconds after switching profiles, with a countdown you can cancel if needed.</span></p>
                                             </div>
                                         </details>
                                     </div>
@@ -4554,7 +4554,7 @@
                                 <!-- System Info -->
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
                                     <h4 class="text-sm font-semibold text-gray-300 mb-3">
-                                        <i data-lucide="cpu" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="generated.2759036520a0">
+                                        <i data-lucide="cpu" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="common.dashboard.system_information">
                                         System Information
                                     </span></h4>
                                     <div class="space-y-2 text-sm" id="system-diagnostics-info">
@@ -4563,19 +4563,19 @@
                                             <span id="diag-platform" class="font-mono" data-i18n="common.loading">Loading...</span>
                                         </div>
                                         <div class="grid grid-cols-2 gap-2">
-                                            <span class="text-gray-400" data-i18n="generated.ab782998eda5">Node.js Version:</span>
+                                            <span class="text-gray-400" data-i18n="common.dashboard.node_js_version">Node.js Version:</span>
                                             <span id="diag-node-version" class="font-mono">-</span>
                                         </div>
                                         <div class="grid grid-cols-2 gap-2">
-                                            <span class="text-gray-400" data-i18n="generated.172ec312b4be">Electron Version:</span>
-                                            <span id="diag-electron-version" class="font-mono" data-i18n="generated.6d6ee934ffcc">N/A (Browser)</span>
+                                            <span class="text-gray-400" data-i18n="common.dashboard.electron_version">Electron Version:</span>
+                                            <span id="diag-electron-version" class="font-mono" data-i18n="common.dashboard.n_a_browser">N/A (Browser)</span>
                                         </div>
                                         <div class="grid grid-cols-2 gap-2">
-                                            <span class="text-gray-400" data-i18n="generated.622063a7fd1d">Chrome Version:</span>
+                                            <span class="text-gray-400" data-i18n="common.dashboard.chrome_version">Chrome Version:</span>
                                             <span id="diag-chrome-version" class="font-mono">-</span>
                                         </div>
                                         <div class="grid grid-cols-2 gap-2">
-                                            <span class="text-gray-400" data-i18n="generated.92d9992fb97a">Memory Usage:</span>
+                                            <span class="text-gray-400" data-i18n="common.dashboard.memory_usage">Memory Usage:</span>
                                             <span id="diag-memory" class="font-mono">-</span>
                                         </div>
                                     </div>
@@ -4584,24 +4584,24 @@
                                 <!-- GPU Info -->
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
                                     <h4 class="text-sm font-semibold text-gray-300 mb-3">
-                                        <i data-lucide="monitor" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="generated.4bcd7089e1f6">
+                                        <i data-lucide="monitor" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="common.dashboard.gpu_rendering">
                                         GPU & Rendering
                                     </span></h4>
                                     <div class="space-y-2 text-sm" id="gpu-diagnostics-info">
                                         <div class="grid grid-cols-2 gap-2">
-                                            <span class="text-gray-400" data-i18n="generated.f4104ae2dd44">GPU Renderer:</span>
+                                            <span class="text-gray-400" data-i18n="common.dashboard.gpu_renderer">GPU Renderer:</span>
                                             <span id="diag-gpu-renderer" class="font-mono text-xs">-</span>
                                         </div>
                                         <div class="grid grid-cols-2 gap-2">
-                                            <span class="text-gray-400" data-i18n="generated.102fabd44cfd">GPU Vendor:</span>
+                                            <span class="text-gray-400" data-i18n="common.dashboard.gpu_vendor">GPU Vendor:</span>
                                             <span id="diag-gpu-vendor" class="font-mono">-</span>
                                         </div>
                                         <div class="grid grid-cols-2 gap-2">
-                                            <span class="text-gray-400" data-i18n="generated.9845d2085c4d">WebGL Support:</span>
+                                            <span class="text-gray-400" data-i18n="common.dashboard.webgl_support">WebGL Support:</span>
                                             <span id="diag-webgl" class="font-mono">-</span>
                                         </div>
                                         <div class="grid grid-cols-2 gap-2">
-                                            <span class="text-gray-400" data-i18n="generated.1767e601f228">Hardware Acceleration:</span>
+                                            <span class="text-gray-400" data-i18n="common.dashboard.hardware_acceleration">Hardware Acceleration:</span>
                                             <span id="diag-hw-accel" class="font-mono">-</span>
                                         </div>
                                     </div>
@@ -4610,7 +4610,7 @@
                                 <!-- Logging Controls -->
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
                                     <h4 class="text-sm font-semibold text-gray-300 mb-3">
-                                        <i data-lucide="scroll-text" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="generated.0dc63a340f6b">
+                                        <i data-lucide="scroll-text" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="common.dashboard.logging_settings">
                                         Logging Settings
                                     </span></h4>
                                     <div class="space-y-3">
@@ -4619,21 +4619,21 @@
                                                 <input type="checkbox" id="diag-logging-enabled" checked>
                                                 <span data-i18n="settings.enable_logging">Enable Comprehensive Logging</span>
                                             </label>
-                                            <p class="text-xs text-gray-500 ml-6" data-i18n="generated.5757633f273b">Logs all plugin activities, errors, and system events</p>
+                                            <p class="text-xs text-gray-500 ml-6" data-i18n="common.dashboard.logs_all_plugin_activities_errors_and_system_events">Logs all plugin activities, errors, and system events</p>
                                         </div>
                                         <div class="form-group mb-2">
                                             <label class="checkbox-label">
                                                 <input type="checkbox" id="diag-console-logging" checked>
-                                                <span data-i18n="generated.05107633c63f">Log to Browser Console</span>
+                                                <span data-i18n="common.dashboard.log_to_browser_console">Log to Browser Console</span>
                                             </label>
                                         </div>
                                         <div class="form-group mb-2">
-                                            <label class="text-sm text-gray-400" data-i18n="generated.3721256c3e16">Log Level</label>
+                                            <label class="text-sm text-gray-400" data-i18n="common.dashboard.log_level">Log Level</label>
                                             <select id="diag-log-level" class="form-input mt-1" style="max-width: 200px;">
-                                                <option value="error" data-i18n="generated.c98242df4378">Error Only</option>
-                                                <option value="warn" data-i18n="generated.1e37f3c71226">Warnings & Errors</option>
-                                                <option value="info" selected data-i18n="generated.9fedd6a7c0ad">Info (Recommended)</option>
-                                                <option value="debug" data-i18n="generated.c1e3f0145722">Debug (Verbose)</option>
+                                                <option value="error" data-i18n="common.dashboard.error_only">Error Only</option>
+                                                <option value="warn" data-i18n="common.dashboard.warnings_errors">Warnings & Errors</option>
+                                                <option value="info" selected data-i18n="common.dashboard.info_recommended">Info (Recommended)</option>
+                                                <option value="debug" data-i18n="common.dashboard.debug_verbose">Debug (Verbose)</option>
                                             </select>
                                         </div>
                                     </div>
@@ -4643,41 +4643,41 @@
                                 <div class="bg-gray-800 rounded-lg p-4 mb-4">
                                     <div class="flex justify-between items-center mb-3">
                                         <h4 class="text-sm font-semibold text-gray-300">
-                                            <i data-lucide="terminal" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="generated.47a05f70284d">
+                                            <i data-lucide="terminal" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="common.dashboard.live_log_viewer">
                                             Live Log Viewer
                                         </span></h4>
                                         <div class="flex gap-2">
-                                            <button id="diag-clear-logs" class="btn btn-ghost btn-sm">
-                                                <i data-lucide="trash-2"></i>
-                                                Clear
-                                            </button>
-                                            <button id="diag-copy-logs" class="btn btn-ghost btn-sm">
-                                                <i data-lucide="copy"></i>
-                                                Copy
-                                            </button>
-                                            <button id="diag-download-logs" class="btn btn-ghost btn-sm">
-                                                <i data-lucide="download"></i>
-                                                Export
+                                        <button id="diag-clear-logs" class="btn btn-ghost btn-sm">
+                                            <i data-lucide="trash-2"></i>
+                                            <span data-i18n="common.dashboard.clear">Clear</span>
+                                        </button>
+                                        <button id="diag-copy-logs" class="btn btn-ghost btn-sm">
+                                            <i data-lucide="copy"></i>
+                                            <span data-i18n="common.dashboard.copy">Copy</span>
+                                        </button>
+                                        <button id="diag-download-logs" class="btn btn-ghost btn-sm">
+                                            <i data-lucide="download"></i>
+                                            <span data-i18n="common.dashboard.export">Export</span>
                                             </button>
                                         </div>
                                     </div>
                                     <div id="diag-log-container" class="bg-gray-900 rounded p-3 font-mono text-xs overflow-y-auto" style="height: 200px; max-height: 300px;">
-                                        <div class="text-gray-500" data-i18n="generated.e033894ed9fd">Logs will appear here...</div>
+                                        <div class="text-gray-500" data-i18n="common.dashboard.logs_will_appear_here">Logs will appear here...</div>
                                     </div>
                                 </div>
 
                                 <!-- Quick Actions -->
                                 <div class="flex flex-wrap gap-2">
                                     <button id="diag-refresh-btn" class="btn btn-primary btn-sm">
-                                        <i data-lucide="refresh-cw"></i><span data-i18n="generated.b90201a8d285">
+                                        <i data-lucide="refresh-cw"></i><span data-i18n="common.dashboard.refresh_diagnostics">
                                         Refresh Diagnostics
                                     </span></button>
                                     <button id="diag-test-gpu" class="btn btn-ghost btn-sm">
-                                        <i data-lucide="monitor"></i><span data-i18n="generated.d31a811454c8">
+                                        <i data-lucide="monitor"></i><span data-i18n="common.dashboard.test_gpu">
                                         Test GPU
                                     </span></button>
                                     <button id="diag-check-plugins" class="btn btn-ghost btn-sm">
-                                        <i data-lucide="puzzle"></i><span data-i18n="generated.0635c5155495">
+                                        <i data-lucide="puzzle"></i><span data-i18n="common.dashboard.check_plugins">
                                         Check Plugins
                                     </span></button>
                                 </div>
@@ -4687,9 +4687,9 @@
                             <div class="settings-card">
                                 <h3 class="card-title">
                                     <i data-lucide="network"></i>
-                                    <span data-i18n="generated.c7f01b22c169">Network Access</span>
+                                    <span data-i18n="common.dashboard.network_access">Network Access</span>
                                 </h3>
-                                <p class="text-sm text-gray-400 mb-4" data-i18n="generated.bbcdcc60dd5d">
+                                <p class="text-sm text-gray-400 mb-4" data-i18n="common.dashboard.control_how_the_server_is_accessible_default_is_local_only_127_0_0_1_you_can_allow_lan_access_configure_tunnels_or_set_up_custom_domains">
                                     Control how the server is accessible. Default is local-only (127.0.0.1).
                                     You can allow LAN access, configure tunnels, or set up custom domains.
                                 </p>
@@ -4702,8 +4702,8 @@
                                     <div class="flex items-start gap-2">
                                         <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5"></i>
                                         <div class="text-sm">
-                                            <p class="text-yellow-400 font-medium mb-1" data-i18n="generated.962878e7fb85">Security Warning</p>
-                                            <p class="text-gray-300 text-xs" data-i18n="generated.e905e8673006">The server is accessible outside of localhost. Make sure your firewall is configured appropriately.</p>
+                                            <p class="text-yellow-400 font-medium mb-1" data-i18n="common.dashboard.security_warning">Security Warning</p>
+                                            <p class="text-gray-300 text-xs" data-i18n="common.dashboard.the_server_is_accessible_outside_of_localhost_make_sure_your_firewall_is_configured_appropriately">The server is accessible outside of localhost. Make sure your firewall is configured appropriately.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -4711,48 +4711,48 @@
                                 <!-- Bind Mode -->
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
                                     <h4 class="text-sm font-semibold text-gray-300 mb-3">
-                                        <i data-lucide="server" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="generated.fe6d3f95fad0">
+                                        <i data-lucide="server" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="common.dashboard.bind_mode">
                                         Bind Mode
                                     </span></h4>
                                     <div class="form-group mb-3">
-                                        <label class="text-sm text-gray-400" data-i18n="generated.eef448589d9a">Access Mode</label>
+                                        <label class="text-sm text-gray-400" data-i18n="common.dashboard.access_mode">Access Mode</label>
                                         <select id="network-bind-mode" class="form-input mt-1">
-                                            <option value="local" data-i18n="generated.7561a6dddc0f">Local Only (127.0.0.1) – most secure</option>
-                                            <option value="select" data-i18n="generated.f1f34325453f">Select Interfaces – choose specific network adapters</option>
-                                            <option value="all" data-i18n="generated.1d7b5fc3062f">All Interfaces (0.0.0.0) – full LAN access</option>
-                                            <option value="custom" data-i18n="generated.c9a79408cd09">Custom IP – bind to a specific IP address</option>
+                                            <option value="local" data-i18n="common.dashboard.local_only_127_0_0_1_most_secure">Local Only (127.0.0.1) – most secure</option>
+                                            <option value="select" data-i18n="common.dashboard.select_interfaces_choose_specific_network_adapters">Select Interfaces – choose specific network adapters</option>
+                                            <option value="all" data-i18n="common.dashboard.all_interfaces_0_0_0_0_full_lan_access">All Interfaces (0.0.0.0) – full LAN access</option>
+                                            <option value="custom" data-i18n="common.dashboard.custom_ip_bind_to_a_specific_ip_address">Custom IP – bind to a specific IP address</option>
                                         </select>
-                                        <p class="text-xs text-gray-500 mt-1" data-i18n="generated.6b7578716b44">⚠ Changing bind mode requires a server restart to take effect.</p>
+                                        <p class="text-xs text-gray-500 mt-1" data-i18n="common.dashboard.changing_bind_mode_requires_a_server_restart_to_take_effect">⚠ Changing bind mode requires a server restart to take effect.</p>
                                     </div>
 
                                     <!-- Select Interfaces group -->
                                     <div id="network-select-ifaces-group" style="display:none;">
-                                        <label class="text-sm text-gray-400 mb-2 block" data-i18n="generated.542cb3cddb81">Select Interfaces</label>
+                                        <label class="text-sm text-gray-400 mb-2 block" data-i18n="common.dashboard.select_interfaces">Select Interfaces</label>
                                         <div id="network-iface-list" class="bg-gray-800 rounded p-2 max-h-40 overflow-y-auto">
-                                            <p class="text-sm text-gray-500" data-i18n="generated.52976b1eb5a6">Loading interfaces…</p>
+                                            <p class="text-sm text-gray-500" data-i18n="common.dashboard.loading_interfaces">Loading interfaces…</p>
                                         </div>
                                     </div>
 
                                     <!-- Custom IP group -->
                                     <div id="network-custom-address-group" style="display:none;" class="mt-3">
-                                        <label class="text-sm text-gray-400 mb-1 block" data-i18n="generated.9fb6fd28d8c3">Custom Bind Address</label>
+                                        <label class="text-sm text-gray-400 mb-1 block" data-i18n="common.dashboard.custom_bind_address">Custom Bind Address</label>
                                         <div class="flex gap-2">
                                             <select id="network-custom-address-select" class="form-input flex-1">
-                                                <option value="" data-i18n="generated.30007b87b534">Loading…</option>
+                                                <option value="" data-i18n="common.dashboard.loading">Loading…</option>
                                             </select>
                                         </div>
-                                        <input type="text" id="network-custom-address" class="form-input mt-2" placeholder="e.g. 192.168.1.100">
-                                        <p class="text-xs text-gray-500 mt-1" data-i18n="generated.44cb761e9898">Select from list above or enter manually.</p>
+                                        <input type="text" id="network-custom-address" class="form-input mt-2" placeholder="e.g. 192.168.1.100" data-i18n-placeholder="common.dashboard.custom_bind_address_placeholder">
+                                        <p class="text-xs text-gray-500 mt-1" data-i18n="common.dashboard.select_from_list_above_or_enter_manually">Select from list above or enter manually.</p>
                                     </div>
                                 </div>
 
                                 <!-- Tunnel Section -->
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
                                     <h4 class="text-sm font-semibold text-gray-300 mb-3">
-                                        <i data-lucide="globe" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="generated.a89d5b35a0a2">
+                                        <i data-lucide="globe" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="common.dashboard.tunnel_remote_access">
                                         Tunnel / Remote Access
                                     </span></h4>
-                                    <p class="text-xs text-gray-400 mb-3" data-i18n="generated.70d81defc91f">
+                                    <p class="text-xs text-gray-400 mb-3" data-i18n="common.dashboard.use_a_tunnel_to_make_the_dashboard_accessible_from_the_internet_without_port_forwarding">
                                         Use a tunnel to make the dashboard accessible from the internet without port-forwarding.
                                     </p>
 
@@ -4763,10 +4763,10 @@
                                         </div>
                                         <div class="flex gap-2">
                                             <button id="network-tunnel-start-btn" class="btn btn-primary btn-sm">
-                                                <i data-lucide="play" class="w-4 h-4"></i> Start
+                                                <i data-lucide="play" class="w-4 h-4"></i> <span data-i18n="common.dashboard.start">Start</span>
                                             </button>
                                             <button id="network-tunnel-stop-btn" class="btn btn-danger btn-sm" disabled>
-                                                <i data-lucide="square" class="w-4 h-4"></i> Stop
+                                                <i data-lucide="square" class="w-4 h-4"></i> <span data-i18n="common.dashboard.stop">Stop</span>
                                             </button>
                                         </div>
                                     </div>
@@ -4775,7 +4775,7 @@
                                     <div id="network-tunnel-url" class="flex items-center gap-2 bg-gray-800 rounded p-2 mb-3" style="display:none!important;">
                                         <span class="text-xs text-gray-400 flex-shrink-0">URL:</span>
                                         <span id="network-tunnel-url-text" class="font-mono text-sm flex-1 break-all text-green-400"></span>
-                                        <button id="network-tunnel-url-copy" class="btn btn-sm text-gray-400 hover:text-white" title="Copy">
+                                        <button id="network-tunnel-url-copy" class="btn btn-sm text-gray-400 hover:text-white" title="Copy" data-i18n-title="common.copy" aria-label="Copy" data-i18n-aria-label="common.copy">
                                             <i data-lucide="copy" class="w-4 h-4"></i>
                                         </button>
                                     </div>
@@ -4783,28 +4783,28 @@
                                     <div class="form-group mb-3">
                                         <label class="text-sm text-gray-400">Provider</label>
                                         <select id="network-tunnel-provider" class="form-input mt-1">
-                                            <option value="cloudflare" data-i18n="generated.4229e866b673">Cloudflare (cloudflared)</option>
+                                            <option value="cloudflare" data-i18n="common.dashboard.cloudflare_cloudflared">Cloudflare (cloudflared)</option>
                                             <option value="ngrok">ngrok</option>
-                                            <option value="localtunnel" data-i18n="generated.7f0acf05b3fe">localtunnel (npx)</option>
-                                            <option value="custom" data-i18n="generated.517f0f54e482">Custom Command</option>
+                                            <option value="localtunnel" data-i18n="common.dashboard.localtunnel_npx">localtunnel (npx)</option>
+                                            <option value="custom" data-i18n="common.dashboard.custom_command">Custom Command</option>
                                         </select>
                                     </div>
 
                                     <div class="form-group mb-2">
                                         <label class="checkbox-label">
                                             <input type="checkbox" id="network-tunnel-autostart">
-                                            <span class="text-sm" data-i18n="generated.004bd36fa65c">Auto-start tunnel on server start</span>
+                                            <span class="text-sm" data-i18n="common.dashboard.auto_start_tunnel_on_server_start">Auto-start tunnel on server start</span>
                                         </label>
                                     </div>
 
                                     <!-- Cloudflare Config -->
                                     <div id="tunnel-config-cloudflare" style="display:none;">
                                         <div class="form-group mb-2">
-                                            <label class="text-sm text-gray-400"><span data-i18n="generated.6453342ace73">cloudflared binary path </span><span class="text-gray-500" data-i18n="generated.db37ae3478c4">(default: cloudflared)</span></label>
+                                            <label class="text-sm text-gray-400"><span data-i18n="common.dashboard.cloudflared_binary_path">cloudflared binary path </span><span class="text-gray-500" data-i18n="common.dashboard.default_cloudflared">(default: cloudflared)</span></label>
                                             <input type="text" id="network-tunnel-binary" class="form-input mt-1" placeholder="cloudflared">
                                         </div>
                                         <div class="form-group mb-2">
-                                            <label class="text-sm text-gray-400"><span data-i18n="generated.26a888a0fc0d">Named tunnel </span><span class="text-gray-500" data-i18n="generated.d9b25be25833">(optional – leave empty for quick tunnel)</span></label>
+                                            <label class="text-sm text-gray-400"><span data-i18n="common.dashboard.named_tunnel">Named tunnel </span><span class="text-gray-500" data-i18n="common.dashboard.optional_leave_empty_for_quick_tunnel">(optional – leave empty for quick tunnel)</span></label>
                                             <input type="text" id="network-tunnel-named" class="form-input mt-1" placeholder="my-tunnel-name">
                                         </div>
                                     </div>
@@ -4812,33 +4812,33 @@
                                     <!-- ngrok Config -->
                                     <div id="tunnel-config-ngrok" style="display:none;">
                                         <div class="form-group mb-2">
-                                            <label class="text-sm text-gray-400"><span data-i18n="generated.db3e80676857">Auth Token </span><span class="text-gray-500">(optional)</span></label>
+                                            <label class="text-sm text-gray-400"><span data-i18n="common.dashboard.auth_token">Auth Token </span><span class="text-gray-500">(optional)</span></label>
                                             <input type="password" id="network-tunnel-ngrok-token" class="form-input mt-1" placeholder="ngrok auth token">
                                         </div>
                                         <div class="form-group mb-2">
-                                            <label class="text-sm text-gray-400">Subdomain <span class="text-gray-500" data-i18n="generated.329d3a774ecc">(paid plans)</span></label>
+                                            <label class="text-sm text-gray-400">Subdomain <span class="text-gray-500" data-i18n="common.dashboard.paid_plans">(paid plans)</span></label>
                                             <input type="text" id="network-tunnel-subdomain" class="form-input mt-1" placeholder="my-stream">
                                         </div>
                                         <div class="form-group mb-2">
-                                            <label class="text-sm text-gray-400">Region</label>
-                                            <input type="text" id="network-tunnel-region" class="form-input mt-1" placeholder="eu">
+                                            <label class="text-sm text-gray-400" data-i18n="common.dashboard.tunnel_region">Region</label>
+                                            <input type="text" id="network-tunnel-region" class="form-input mt-1" placeholder="e.g. eu" data-i18n-placeholder="common.dashboard.tunnel_region_placeholder">
                                         </div>
                                     </div>
 
                                     <!-- localtunnel Config -->
                                     <div id="tunnel-config-localtunnel" style="display:none;">
                                         <div class="form-group mb-2">
-                                            <label class="text-sm text-gray-400">Subdomain <span class="text-gray-500">(optional)</span></label>
-                                            <input type="text" id="network-tunnel-subdomain-lt" class="form-input mt-1" placeholder="my-stream">
+                                            <label class="text-sm text-gray-400"><span data-i18n="common.dashboard.tunnel_subdomain">Subdomain</span> <span class="text-gray-500" data-i18n="dashboard.optional">(Optional)</span></label>
+                                            <input type="text" id="network-tunnel-subdomain-lt" class="form-input mt-1" placeholder="my-stream" data-i18n-placeholder="common.dashboard.tunnel_subdomain_placeholder">
                                         </div>
                                     </div>
 
                                     <!-- Custom Command Config -->
                                     <div id="tunnel-config-custom" style="display:none;">
                                         <div class="form-group mb-2">
-                                            <label class="text-sm text-gray-400">Command <span class="text-gray-500">(use {{PORT}} as placeholder)</span></label>
-                                            <input type="text" id="network-tunnel-custom-command" class="form-input mt-1" placeholder="mytunnel --port {{PORT}}">
-                                            <p class="text-xs text-gray-500 mt-1" data-i18n="generated.341e7a50bebe">The command's stdout/stderr will be scanned for any https:// URL.</p>
+                                            <label class="text-sm text-gray-400"><span data-i18n="common.dashboard.tunnel_command">Command</span> <span class="text-gray-500" data-i18n="common.dashboard.tunnel_command_hint">(use {{PORT}} as placeholder)</span></label>
+                                            <input type="text" id="network-tunnel-custom-command" class="form-input mt-1" placeholder="mytunnel --port {{PORT}}" data-i18n-placeholder="common.dashboard.tunnel_command_placeholder">
+                                            <p class="text-xs text-gray-500 mt-1" data-i18n="common.dashboard.the_command_s_stdout_stderr_will_be_scanned_for_any_https_url">The command's stdout/stderr will be scanned for any https:// URL.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -4846,19 +4846,19 @@
                                 <!-- External URLs -->
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
                                     <h4 class="text-sm font-semibold text-gray-300 mb-3">
-                                        <i data-lucide="link" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="generated.fecea62e886a">
+                                        <i data-lucide="link" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="common.dashboard.external_urls_reverse_proxy">
                                         External URLs / Reverse Proxy
                                     </span></h4>
-                                    <p class="text-xs text-gray-400 mb-3" data-i18n="generated.f2411564f311">
+                                    <p class="text-xs text-gray-400 mb-3" data-i18n="common.dashboard.add_custom_domains_or_reverse_proxy_urls_to_the_cors_whitelist_so_that_browsers_served_via_these_domains_can_connect">
                                         Add custom domains or reverse proxy URLs to the CORS whitelist so that browsers served via these domains can connect.
                                     </p>
                                     <div id="network-external-url-list" class="mb-3">
-                                        <p class="text-sm text-gray-500" data-i18n="generated.cc5d39422c2c">Loading…</p>
+                                        <p class="text-sm text-gray-500" data-i18n="common.dashboard.loading">Loading…</p>
                                     </div>
                                     <div class="flex gap-2">
-                                        <input type="text" id="network-external-url-input" class="form-input flex-1" placeholder="https://my-stream.example.com">
+                                        <input type="text" id="network-external-url-input" class="form-input flex-1" placeholder="https://my-stream.example.com" data-i18n-placeholder="common.dashboard.external_url_placeholder">
                                         <button id="network-add-url-btn" class="btn btn-primary btn-sm">
-                                            <i data-lucide="plus" class="w-4 h-4"></i> Add
+                                            <i data-lucide="plus" class="w-4 h-4"></i> <span data-i18n="common.dashboard.add">Add</span>
                                         </button>
                                     </div>
                                 </div>
@@ -4866,44 +4866,44 @@
                                 <!-- Active Access URLs -->
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
                                     <h4 class="text-sm font-semibold text-gray-300 mb-3">
-                                        <i data-lucide="monitor" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="generated.45a60980da83">
+                                        <i data-lucide="monitor" class="inline-block w-4 h-4 mr-1"></i><span data-i18n="common.dashboard.active_access_urls">
                                         Active Access URLs
                                     </span></h4>
                                     <div id="network-access-urls">
-                                        <p class="text-sm text-gray-500" data-i18n="generated.76b9a0adf11e">Loading…</p>
+                                        <p class="text-sm text-gray-500" data-i18n="common.dashboard.loading">Loading…</p>
                                     </div>
                                 </div>
 
                                 <button id="network-save-btn" class="btn btn-primary">
-                                    <i data-lucide="save"></i><span data-i18n="generated.2ef01710998b">
+                                    <i data-lucide="save"></i><span data-i18n="common.dashboard.save_network_settings">
                                     Save Network Settings
                                 </span></button>
-                                <p class="text-xs text-gray-500 mt-2" data-i18n="generated.a8b359088b74">Note: Bind mode changes require a server restart to take effect. Tunnel and external URL changes are applied immediately.</p>
+                                <p class="text-xs text-gray-500 mt-2" data-i18n="common.dashboard.note_bind_mode_changes_require_a_server_restart_to_take_effect_tunnel_and_external_url_changes_are_applied_immediately">Note: Bind mode changes require a server restart to take effect. Tunnel and external URL changes are applied immediately.</p>
                             </div>
 
                             <!-- About & Disclaimer -->
                             <div class="settings-card">
                                 <h3 class="card-title">
                                     <i data-lucide="info"></i>
-                                    <span data-i18n="generated.b358b85a04bd">Über die App / About</span>
+                                    <span data-i18n="common.dashboard.uber_die_app_about">Über die App / About</span>
                                 </h3>
                                 <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
-                                    <h4 class="text-lg font-semibold mb-2" data-i18n="generated.938ba8f5d42c">LTTH.app (LTTH)</h4>
-                                    <p class="text-sm text-gray-300 mb-3" data-i18n="generated.af5e87f23292">
+                                    <h4 class="text-lg font-semibold mb-2" data-i18n="common.dashboard.ltth_app_ltth">LTTH.app (LTTH)</h4>
+                                    <p class="text-sm text-gray-300 mb-3" data-i18n="common.dashboard.professional_tiktok_compatible_live_streaming_tool_for_creators">
                                         Professional TikTok-compatible LIVE streaming tool for creators
                                     </p>
                                     <div class="text-xs text-gray-400">
                                         <div class="flex items-start gap-2 mb-2">
                                             <i data-lucide="code" class="inline-block w-4 h-4 mt-0.5 flex-shrink-0"></i>
-                                            <span data-i18n="generated.b409f1e3bdfb">Open Source unter CC BY-NC 4.0 Lizenz</span>
+                                            <span data-i18n="common.dashboard.open_source_unter_cc_by_nc_4_0_lizenz">Open Source unter CC BY-NC 4.0 Lizenz</span>
                                         </div>
                                         <div class="flex items-start gap-2 mb-2">
                                             <i data-lucide="shield-check" class="inline-block w-4 h-4 mt-0.5 flex-shrink-0"></i>
-                                            <span data-i18n="generated.5ee98d1a4043">100% lokal - keine Datensammlung</span>
+                                            <span data-i18n="common.dashboard.100_lokal_keine_datensammlung">100% lokal - keine Datensammlung</span>
                                         </div>
                                         <div class="flex items-start gap-2">
                                             <i data-lucide="github" class="inline-block w-4 h-4 mt-0.5 flex-shrink-0"></i>
-                                            <span data-i18n="generated.aec573f5f023">Made with ❤️ by PupCid & Claude AI</span>
+                                            <span data-i18n="common.dashboard.made_with_by_pupcid_claude_ai">Made with ❤️ by PupCid & Claude AI</span>
                                         </div>
                                     </div>
                                 </div>
@@ -4912,13 +4912,13 @@
                                     <div class="flex items-start gap-3">
                                         <i data-lucide="alert-triangle" class="inline-block w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5"></i>
                                         <div>
-                                            <h4 class="text-sm font-semibold text-yellow-300 mb-2" data-i18n="generated.d199488a60e5">Wichtiger Hinweis / Important Notice</h4>
+                                            <h4 class="text-sm font-semibold text-yellow-300 mb-2" data-i18n="common.dashboard.wichtiger_hinweis_important_notice">Wichtiger Hinweis / Important Notice</h4>
                                             <p class="text-xs text-gray-300 mb-2">
-                                                <strong data-i18n="generated.afd80eb1f345">LTTH ist ein unabhängiges Analyse- und Creator-Tool.</strong><span data-i18n="generated.035663d5b479">
+                                                <strong data-i18n="common.dashboard.ltth_ist_ein_unabhangiges_analyse_und_creator_tool">LTTH ist ein unabhängiges Analyse- und Creator-Tool.</strong><span data-i18n="common.dashboard.es_besteht_keine_geschaftliche_partnerschaftliche_oder_technische_verbindung_zu_tiktok_oder_bytedance">
                                                 Es besteht keine geschäftliche, partnerschaftliche oder technische Verbindung zu TikTok oder ByteDance.
                                             </span></p>
                                             <p class="text-xs text-gray-300">
-                                                <strong data-i18n="generated.1289b7447136">This product is not an official TikTok product and is not supported, sponsored, or authorized by TikTok or ByteDance.</strong><span data-i18n="generated.85540e332346"> 
+                                                <strong data-i18n="common.dashboard.this_product_is_not_an_official_tiktok_product_and_is_not_supported_sponsored_or_authorized_by_tiktok_or_bytedance">This product is not an official TikTok product and is not supported, sponsored, or authorized by TikTok or ByteDance.</strong>&#32;<span data-i18n="common.dashboard.all_trademarks_and_logos_belong_to_their_respective_owners">
                                                 All trademarks and logos belong to their respective owners.
                                             </span></p>
                                         </div>
@@ -4935,10 +4935,10 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">
-                    <i data-lucide="git-branch"></i><span data-i18n="generated.614418b7022b">
+                    <i data-lucide="git-branch"></i><span data-i18n="common.dashboard.create_automation_flow">
                     Create Automation Flow
                 </span></h3>
-                <button id="flow-modal-close" class="modal-close">
+                <button id="flow-modal-close" class="modal-close" aria-label="Close" data-i18n-aria-label="common.close">
                     <i data-lucide="x"></i>
                 </button>
             </div>
@@ -4948,37 +4948,37 @@
                     <input type="text" id="flow-name" placeholder="e.g., Thank you for big gifts" class="form-input">
                 </div>
                 <div class="form-group">
-                    <label for="flow-trigger-type" data-i18n="generated.f1494a384a5b">Trigger Event</label>
+                    <label for="flow-trigger-type" data-i18n="common.dashboard.trigger_event">Trigger Event</label>
                     <select id="flow-trigger-type" class="form-select">
-                        <option value="tiktok:gift" data-i18n="generated.5cca4c331944">🎁 Gift Received</option>
-                        <option value="tiktok:follow" data-i18n="generated.5b2f25df32a7">⭐ New Follow</option>
-                        <option value="tiktok:subscribe" data-i18n="generated.8c47cd2eda55">🌟 New Subscribe</option>
-                        <option value="tiktok:share" data-i18n="generated.75ddcff55874">🔄 Stream Shared</option>
-                        <option value="tiktok:like" data-i18n="generated.3d0b8a4297f5">❤️ Likes</option>
-                        <option value="tiktok:chat" data-i18n="generated.0983e1b764a4">💬 Chat Message</option>
+                        <option value="tiktok:gift" data-i18n="common.dashboard.gift_received">🎁 Gift Received</option>
+                        <option value="tiktok:follow" data-i18n="common.dashboard.new_follow">⭐ New Follow</option>
+                        <option value="tiktok:subscribe" data-i18n="common.dashboard.new_subscribe">🌟 New Subscribe</option>
+                        <option value="tiktok:share" data-i18n="common.dashboard.stream_shared">🔄 Stream Shared</option>
+                        <option value="tiktok:like" data-i18n="common.dashboard.likes">❤️ Likes</option>
+                        <option value="tiktok:chat" data-i18n="common.dashboard.chat_message">💬 Chat Message</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="flow-action-type" data-i18n="generated.1450bad819cd">Action Type</label>
+                    <label for="flow-action-type" data-i18n="common.dashboard.action_type">Action Type</label>
                     <select id="flow-action-type" class="form-select">
-                        <option value="alert:show" data-i18n="generated.edd840e39943">🔔 Show Alert</option>
-                        <option value="webhook:send" data-i18n="generated.2cf8d75f0e2e">🌐 Webhook (HTTP Request)</option>
+                        <option value="alert:show" data-i18n="common.dashboard.show_alert">🔔 Show Alert</option>
+                        <option value="webhook:send" data-i18n="common.dashboard.webhook_http_request">🌐 Webhook (HTTP Request)</option>
                     </select>
                 </div>
                 <div id="alert-settings" class="form-group">
-                    <label for="flow-action-text" data-i18n="generated.ec26f6acb8f2">Alert Text (supports variables)</label>
+                    <label for="flow-action-text" data-i18n="common.dashboard.alert_text_supports_variables">Alert Text (supports variables)</label>
                     <textarea id="flow-action-text" placeholder="e.g., Thank you {username} for {giftName}!" class="form-textarea"></textarea>
-                    <p class="form-help" data-i18n="generated.cb18c5f5e27f">Available variables: {username}, {giftName}, {coins}, {message}</p>
+                    <p class="form-help" data-i18n="common.dashboard.available_variables_username_giftname_coins_message">Available variables: {username}, {giftName}, {coins}, {message}</p>
                 </div>
                 <div id="webhook-settings" class="form-group" style="display: none;">
-                    <label for="flow-webhook-url" data-i18n="generated.002dfeab6d9b">Webhook URL</label>
+                    <label for="flow-webhook-url" data-i18n="common.dashboard.webhook_url">Webhook URL</label>
                     <input type="text" id="flow-webhook-url" placeholder="https://webhook.site/..." class="form-input">
-                    <p class="form-help" data-i18n="generated.02180b11f68a">Allowed domains: webhook.site, discord.com, zapier.com, ifttt.com, make.com</p>
+                    <p class="form-help" data-i18n="common.dashboard.allowed_domains_webhook_site_discord_com_zapier_com_ifttt_com_make_com">Allowed domains: webhook.site, discord.com, zapier.com, ifttt.com, make.com</p>
                 </div>
             </div>
             <div class="modal-footer">
                 <button id="flow-modal-save-btn" class="btn btn-primary">
-                    <i data-lucide="check"></i><span data-i18n="generated.7df9a2a96b69">
+                    <i data-lucide="check"></i><span data-i18n="common.dashboard.create_flow">
                     Create Flow
                 </span></button>
                 <button id="flow-modal-cancel-btn" class="btn btn-ghost" data-i18n="dashboard.cancel">Cancel</button>
@@ -4990,10 +4990,10 @@
     <div id="flow-wizard-modal" class="modal">
         <div class="modal-content" style="width:min(96vw,1120px);max-width:none;max-height:90vh;display:flex;flex-direction:column;">
             <div class="modal-header" style="flex-shrink:0;">
-                <h3 class="modal-title" data-i18n="generated.f0a2d0c53550">
+                <h3 class="modal-title" data-i18n="common.dashboard.flow_wizard">
                     🧙 Flow Wizard
                 </h3>
-                <button id="flow-wizard-close-btn" class="modal-close">
+                <button id="flow-wizard-close-btn" class="modal-close" aria-label="Close" data-i18n-aria-label="common.close">
                     <i data-lucide="x"></i>
                 </button>
             </div>
@@ -5013,15 +5013,15 @@
     <div id="flow-presets-modal" class="modal">
         <div class="modal-content" style="width:min(96vw,1120px);max-width:none;max-height:90vh;display:flex;flex-direction:column;">
             <div class="modal-header" style="flex-shrink:0;">
-                <h3 class="modal-title" data-i18n="generated.b03df3e97417">
+                <h3 class="modal-title" data-i18n="common.dashboard.flow_presets_vorlagen">
                     📦 Flow Presets / Vorlagen
                 </h3>
-                <button id="flow-presets-close-btn" class="modal-close">
+                <button id="flow-presets-close-btn" class="modal-close" aria-label="Close" data-i18n-aria-label="common.close">
                     <i data-lucide="x"></i>
                 </button>
             </div>
             <div class="modal-body" style="flex:1;overflow-y:auto;">
-                <p class="text-gray-400 mb-4" data-i18n="generated.c0ac8272b723">Starte mit einer vorgefertigten Vorlage oder passe sie im Wizard an.</p>
+                <p class="text-gray-400 mb-4" data-i18n="common.dashboard.starte_mit_einer_vorgefertigten_vorlage_oder_passe_sie_im_wizard_an">Starte mit einer vorgefertigten Vorlage oder passe sie im Wizard an.</p>
                 <div id="flow-presets-list" class="wizard-presets-grid"></div>
             </div>
         </div>

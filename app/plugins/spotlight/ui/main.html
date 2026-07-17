@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="spotlight.title">Spotlight</title>
+  <title data-i18n="plugins.spotlight.spotlight.title">Spotlight</title>
   <link rel="stylesheet" href="/css/themes.css">
   <script>
     (function() {
@@ -774,37 +774,37 @@
       <div class="spotlight-panel spotlight-brand">
         <div class="spotlight-brand__header">
           <div class="spotlight-brand__copy">
-            <div class="spotlight-brand__eyebrow" data-i18n="generated.2483e74f1f82">Live overlay studio</div>
-            <h1 data-i18n="spotlight.title">Spotlight</h1>
-            <p data-i18n="generated.ecfdc4e8071c">Modern live overlays for recent TikTok activity. Copy URLs, preview modes, test event flows, and fine-tune the appearance without losing any of the existing overlay features.</p>
+            <div class="spotlight-brand__eyebrow" data-i18n="plugins.spotlight.labels.live_overlay_studio">Live overlay studio</div>
+            <h1 data-i18n="plugins.spotlight.spotlight.title">Spotlight</h1>
+            <p data-i18n="plugins.spotlight.labels.modern_live_overlays_for_recent_tiktok_activity_copy">Modern live overlays for recent TikTok activity. Copy URLs, preview modes, test event flows, and fine-tune the appearance without losing any of the existing overlay features.</p>
           </div>
           <img src="/plugins/spotlight/assets/spotlight-logo-v1.1.4.png" alt="Spotlight" class="spotlight-brand__logo">
         </div>
 
         <div class="spotlight-chips">
-          <span class="spotlight-chip"><strong id="overlay-count">9</strong><span data-i18n="generated.77d4cf4ab3f3"> overlay modes</span></span>
-          <span class="spotlight-chip" data-i18n="generated.70e2570b6576">Copy and preview URLs</span>
-          <span class="spotlight-chip" data-i18n="generated.59154819e454">Theme-aware UI</span>
-          <span class="spotlight-chip" data-i18n="generated.2fc4f27ea1ec">Wide-screen optimized</span>
+          <span class="spotlight-chip"><strong id="overlay-count">9</strong><span data-i18n="plugins.spotlight.labels.overlay_modes"> overlay modes</span></span>
+          <span class="spotlight-chip" data-i18n="plugins.spotlight.labels.copy_and_preview_urls">Copy and preview URLs</span>
+          <span class="spotlight-chip" data-i18n="plugins.spotlight.labels.theme_aware_ui">Theme-aware UI</span>
+          <span class="spotlight-chip" data-i18n="plugins.spotlight.labels.wide_screen_optimized">Wide-screen optimized</span>
         </div>
       </div>
 
       <div class="spotlight-panel spotlight-stats">
         <div class="spotlight-stat">
-          <p class="spotlight-stat__label">Modes</p>
-          <p class="spotlight-stat__value" data-i18n="generated.294242fda9e1">Follower, Like, Chat, Share, Gift, Subscriber, Top Gift, Gift Streak, Rotation</p>
+          <p class="spotlight-stat__label" data-i18n="plugins.spotlight.labels.modes">Modes</p>
+          <p class="spotlight-stat__value" data-i18n="plugins.spotlight.labels.follower_like_chat_share_gift_subscriber_top_gift">Follower, Like, Chat, Share, Gift, Subscriber, Top Gift, Gift Streak, Rotation</p>
         </div>
         <div class="spotlight-stat">
-          <p class="spotlight-stat__label">Workflow</p>
-          <p class="spotlight-stat__value"><strong>Copy</strong>, <strong>Preview</strong>, <strong>Test</strong><span data-i18n="generated.a4506340d807">, then save settings</span></p>
+          <p class="spotlight-stat__label" data-i18n="plugins.spotlight.labels.workflow">Workflow</p>
+          <p class="spotlight-stat__value"><strong data-i18n="plugins.spotlight.runtime.cards.copy">Copy</strong>, <strong data-i18n="plugins.spotlight.runtime.cards.preview">Preview</strong>, <strong data-i18n="plugins.spotlight.labels.test">Test</strong><span data-i18n="plugins.spotlight.labels.then_save_settings">, then save settings</span></p>
         </div>
         <div class="spotlight-stat">
-          <p class="spotlight-stat__label">Compatibility</p>
-          <p class="spotlight-stat__value" data-i18n="generated.116e60c9f537">Day, night, cid, vision-impaired, and contrast themes</p>
+          <p class="spotlight-stat__label" data-i18n="plugins.spotlight.labels.compatibility">Compatibility</p>
+          <p class="spotlight-stat__value" data-i18n="plugins.spotlight.labels.day_night_cid_vision_impaired_and_contrast_themes">Day, night, cid, vision-impaired, and contrast themes</p>
         </div>
         <div class="spotlight-stat">
-          <p class="spotlight-stat__label">Layout</p>
-          <p class="spotlight-stat__value" data-i18n="generated.7abafb256869">Built for broad desktop screens and embed workflows</p>
+          <p class="spotlight-stat__label" data-i18n="plugins.spotlight.labels.layout">Layout</p>
+          <p class="spotlight-stat__value" data-i18n="plugins.spotlight.labels.built_for_broad_desktop_screens_and_embed_workflows">Built for broad desktop screens and embed workflows</p>
         </div>
       </div>
     </section>
@@ -819,13 +819,13 @@
   <div id="settings-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Settings: <span id="modal-title-type"></span></h2>
+        <h2><span data-i18n="plugins.spotlight.runtime.modal.settings_prefix">Settings:</span> <span id="modal-title-type"></span></h2>
         <span class="close" id="close-settings-modal">&times;</span>
       </div>
       <div class="modal-body" id="settings-form-container"></div>
       <div class="modal-footer">
-        <button class="btn btn-ghost" id="cancel-settings-btn">Cancel</button>
-        <button class="btn btn-primary" id="save-settings-btn" data-i18n="spotlight.config.save">Save Settings</button>
+        <button class="btn btn-ghost" id="cancel-settings-btn" data-i18n="plugins.spotlight.labels.cancel">Cancel</button>
+        <button class="btn btn-primary" id="save-settings-btn" data-i18n="plugins.spotlight.spotlight.config.save">Save Settings</button>
       </div>
     </div>
   </div>
@@ -833,7 +833,7 @@
   <div id="preview-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Preview: <span id="preview-title-type"></span></h2>
+        <h2><span data-i18n="plugins.spotlight.runtime.modal.preview_prefix">Preview:</span> <span id="preview-title-type"></span></h2>
         <span class="close" id="close-preview-modal">&times;</span>
       </div>
       <div class="modal-body">
@@ -842,8 +842,8 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-success" id="preview-test-btn">Test</button>
-        <button class="btn btn-ghost" id="close-preview-btn">Close</button>
+        <button class="btn btn-success" id="preview-test-btn" data-i18n="plugins.spotlight.labels.test">Test</button>
+        <button class="btn btn-ghost" id="close-preview-btn" data-i18n="plugins.spotlight.labels.close">Close</button>
       </div>
     </div>
   </div>

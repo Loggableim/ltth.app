@@ -1,3 +1,9 @@
+function patternEditorText(key, fallback, params = {}) {
+    return typeof window.OpenShockPatternI18n === 'function'
+        ? window.OpenShockPatternI18n(key, fallback, params)
+        : fallback;
+}
+
 /**
  * @file KeyframeEditor.tsx.js - Keyframe Graph Editor Component
  * @description 2D graph editor for creating and editing keyframes
@@ -64,7 +70,7 @@ class KeyframeEditor {
         if (!pattern) {
             this.container.innerHTML = `
                 <div class="empty-state">
-                    <p class="text-gray-400 text-center py-8">Kein Pattern ausgewählt</p>
+                    <p class="text-gray-400 text-center py-8">${patternEditorText('keyframe.empty', 'No pattern selected')}</p>
                 </div>
             `;
             return;
@@ -73,7 +79,7 @@ class KeyframeEditor {
         this.container.innerHTML = `
             <div class="keyframe-editor">
                 <div class="keyframe-editor-header">
-                    <h3 class="text-xl font-bold text-white mb-2">Keyframe Editor</h3>
+                    <h3 class="text-xl font-bold text-white mb-2">${patternEditorText('keyframe.title', 'Keyframe editor')}</h3>
                     <p class="text-gray-400 mb-4">${this._escapeHtml(pattern.name)}</p>
                 </div>
 
@@ -83,15 +89,15 @@ class KeyframeEditor {
 
                 <div class="keyframe-controls">
                     <div class="form-group">
-                        <label class="form-label">Gesamtdauer (ms)</label>
+                        <label class="form-label">${patternEditorText('keyframe.total_duration', 'Total duration (ms)')}</label>
                         <input type="number" id="totalDuration" class="form-input" 
                                value="${state.totalDuration}" min="1000" max="60000" step="100">
                     </div>
 
                     <div class="btn-group">
-                        <button class="btn btn-secondary" id="addKeyframeBtn">➕ Keyframe hinzufügen</button>
+                        <button class="btn btn-secondary" id="addKeyframeBtn">➕ ${patternEditorText('keyframe.add', 'Add keyframe')}</button>
                         <button class="btn btn-secondary" id="deleteKeyframeBtn" ${state.selectedKeyframeIndex === null ? 'disabled' : ''}>
-                            🗑️ Keyframe löschen
+                            🗑️ ${patternEditorText('keyframe.delete', 'Delete keyframe')}
                         </button>
                     </div>
 
@@ -100,11 +106,11 @@ class KeyframeEditor {
 
                 <div class="keyframe-editor-actions">
                     <button class="btn btn-success btn-block" id="saveKeyframePatternBtn">
-                        💾 Pattern speichern
+                        💾 ${patternEditorText('keyframe.save_pattern', 'Save pattern')}
                     </button>
                     
                     <button class="btn btn-secondary btn-block" id="exitExpertModeBtn">
-                        ← Zurück zum Parameter Editor
+                        ← ${patternEditorText('keyframe.back_to_parameters', 'Back to parameter editor')}
                     </button>
                 </div>
             </div>
@@ -122,27 +128,27 @@ class KeyframeEditor {
     _renderKeyframeDetails(keyframe, index) {
         return `
             <div class="keyframe-details">
-                <h4 class="text-lg font-semibold text-white mb-2">Keyframe ${index + 1}</h4>
+                <h4 class="text-lg font-semibold text-white mb-2">${patternEditorText('keyframe.item', 'Keyframe {index}', { index: index + 1 })}</h4>
                 
                 <div class="form-group">
-                    <label class="form-label">Zeit (ms)</label>
+                    <label class="form-label">${patternEditorText('keyframe.time', 'Time (ms)')}</label>
                     <input type="number" id="keyframeTime" class="form-input" 
                            value="${keyframe.time}" min="0" max="${this.store.getState().totalDuration}" step="10">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Intensität (%)</label>
+                    <label class="form-label">${patternEditorText('keyframe.intensity', 'Intensity (%)')}</label>
                     <input type="range" id="keyframeIntensity" class="slider" 
                            value="${keyframe.intensity}" min="0" max="100" step="1">
                     <span class="slider-value">${keyframe.intensity}%</span>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Interpolation</label>
+                    <label class="form-label">${patternEditorText('keyframe.interpolation', 'Interpolation')}</label>
                     <select id="keyframeInterpolation" class="form-select">
-                        <option value="Linear" ${keyframe.interpolation === 'Linear' ? 'selected' : ''}>Linear</option>
-                        <option value="Step" ${keyframe.interpolation === 'Step' ? 'selected' : ''}>Step (Hold)</option>
-                        <option value="Bezier" ${keyframe.interpolation === 'Bezier' ? 'selected' : ''}>Bezier (Ease)</option>
+                        <option value="Linear" ${keyframe.interpolation === 'Linear' ? 'selected' : ''}>${patternEditorText('keyframe.interpolation_linear', 'Linear')}</option>
+                        <option value="Step" ${keyframe.interpolation === 'Step' ? 'selected' : ''}>${patternEditorText('keyframe.interpolation_step', 'Step (hold)')}</option>
+                        <option value="Bezier" ${keyframe.interpolation === 'Bezier' ? 'selected' : ''}>${patternEditorText('keyframe.interpolation_bezier', 'Bezier (ease)')}</option>
                     </select>
                 </div>
             </div>
@@ -273,7 +279,7 @@ class KeyframeEditor {
 
         const keyframeIndex = this._getKeyframeAtPosition(x, y);
         if (keyframeIndex !== null) {
-            if (confirm('Keyframe löschen?')) {
+            if (confirm(patternEditorText('keyframe.delete_confirm', 'Delete this keyframe?'))) {
                 this.store.deleteKeyframe(keyframeIndex);
             }
         }
@@ -636,10 +642,10 @@ class KeyframeEditor {
         const saveBtn = this.container.querySelector('#saveKeyframePatternBtn');
         if (saveBtn) {
             saveBtn.addEventListener('click', () => {
-                const name = prompt('Pattern Name:', 'Custom Pattern');
+                const name = prompt(patternEditorText('keyframe.name_prompt', 'Pattern name:'), patternEditorText('keyframe.default_name', 'Custom pattern'));
                 if (name) {
                     this.store.saveAsUserPattern(name);
-                    alert('Pattern gespeichert!');
+                    alert(patternEditorText('keyframe.saved', 'Pattern saved!'));
                 }
             });
         }

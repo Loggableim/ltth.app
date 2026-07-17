@@ -1,0 +1,216 @@
+const fs = require('fs');
+const path = require('path');
+
+describe('docs screenshot capture viewport', () => {
+  test('focuses an anchor vertically without horizontally panning the page', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).toContain("anchor.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' })");
+    expect(source).toContain("window.scrollTo({ left: 0, top: window.scrollY, behavior: 'instant' })");
+    expect(source).toContain("SCREENSHOT_WAIT_AFTER_LOAD_MS || 1500");
+    expect(source).toContain('function screenshotClipForAnchor');
+    expect(source).toContain('const requestedWidth = crop?.width || 640;');
+    expect(source).toContain('const requestedHeight = crop?.height || 560;');
+    expect(source).toContain('const width = Math.min(viewport.clientWidth, requestedWidth);');
+    expect(source).toContain('asset.workflow.captureRule.imageCrop');
+    expect(source).toContain('x: Math.round(Math.max(0, Math.min(anchorCenterX - (width / 2), maxX)))');
+    expect(source).toContain("await page.screenshot({ path: target, type: 'png', clip: screenshotClip })");
+  });
+
+  test('defines the required 1440 by 900 product capture window for every guide action', () => {
+    const spec = require('../../scripts/docs-screenshot-spec');
+    const docs = spec.buildDocsSpec(path.join(__dirname, '..', '..'));
+
+    expect(docs.viewport).toEqual({ width: 1440, height: 900, deviceScaleFactor: 1 });
+    expect(docs.assets.every((asset) => asset.viewport.width === 1440 && asset.viewport.height === 900)).toBe(true);
+  });
+
+  test('waits for a document root before applying capture locale and theme state', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).toContain('function applyCaptureDocumentSettings(lang) {');
+    expect(source).toContain('const root = document.documentElement;');
+    expect(source).toContain("document.addEventListener('DOMContentLoaded', () => applyCaptureDocumentSettings(lang), { once: true });");
+    expect(source).toContain('await page.evaluateOnNewDocument(applyCaptureDocumentSettings, locale);');
+  });
+
+  test('captures declared selector-specific postconditions instead of only the screenshot anchor', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).toContain('const observedSelectors = [...new Set([');
+    expect(source).toContain('asset.workflow.postconditions.map((condition) => condition.selector)');
+    expect(source).toContain('controls: Object.fromEntries(selectors.map((selector) => {');
+  });
+
+  test('starts each asset with a fresh console-evidence window', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+    const captureAsset = source.slice(source.indexOf('async function captureAsset'));
+
+    expect(captureAsset).toContain('page.__docsCaptureConsoleErrors = [];');
+    expect(captureAsset.indexOf('page.__docsCaptureConsoleErrors = [];'))
+      .toBeLessThan(captureAsset.indexOf('await page.goto('));
+  });
+
+  test('keeps the browser source location with each captured console error', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).toContain('const location = message.location();');
+    expect(source).toContain('location.url ? `${message.text()} (${location.url}:${location.lineNumber})` : message.text()');
+  });
+
+  test('does not treat the deliberately blocked external request as a product console error', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).toContain('function isBlockedExternalRequestConsoleError(message) {');
+    expect(source).toContain("message.text().includes('net::ERR_BLOCKED_BY_CLIENT')");
+    expect(source).toContain('if (isBlockedExternalRequestConsoleError(message)) return;');
+  });
+
+  test('records only isolated local network requests and stores that evidence in every receipt', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).toContain('page.__docsCaptureNetwork = [];');
+    expect(source).toContain('const url = request.url();');
+    expect(source).toContain('if (!isAllowedCaptureNetworkUrl(url)) {');
+    expect(source).toContain("request.abort('blockedbyclient')");
+    expect(source).toContain('if (/^https?:/i.test(url) && isAllowedCaptureNetworkUrl(url)) {');
+    expect(source).toContain('network: page.__docsCaptureNetwork');
+    expect(source).toContain("if (COLLECTION === 'docs' && !START_APP) {");
+  });
+
+  test('uses one request handler for local evidence and external blocking', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+    const configureStart = source.indexOf('async function configurePage');
+    const configureEnd = source.indexOf('async function synchronizeCaptureLocale');
+    const interceptionStart = source.indexOf('async function attachPluginAssetRewrite');
+    const interceptionEnd = source.indexOf('function freePort');
+
+    expect(configureStart).toBeGreaterThan(-1);
+    expect(interceptionStart).toBeGreaterThan(-1);
+    expect(source.slice(configureStart, configureEnd)).not.toContain("page.on('request'");
+    const interception = source.slice(interceptionStart, interceptionEnd);
+    expect(interception).toContain('page.__docsCaptureNetwork.push({');
+    expect(interception).toContain("if (!isAllowedCaptureNetworkUrl(url)) {");
+  });
+
+  test('keeps a partial-capture receipt when its guide declares a narrower real-panel crop', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).toContain('function compatibleDocsOutput(output, expectedById) {');
+    expect(source).toContain('asset.workflow.captureRule.imageCrop?.width || 640');
+  });
+
+  test('does not rewrite shared font assets into plugin paths', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).toContain("['api', 'js', 'css', 'images', 'assets', 'fonts', 'locales']");
+  });
+
+  test('preserves the registered runtime routes for dynamic overlay dependencies', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).toContain("const RUNTIME_PLUGIN_ROUTE_PREFIXES = new Set(['flame-overlay', 'visual-fx-frame-webgpu']);");
+    expect(source).toContain('RUNTIME_PLUGIN_ROUTE_PREFIXES.has(match[1])');
+  });
+
+  test('keeps the signed-out Store capture on its real local UI without synthetic API responses', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).not.toContain('STORE_ADMIN_OPTIONAL_API_RESPONSES');
+    expect(source).toContain("asset.action.prepare === 'open-store-admin-view'");
+    expect(source).toContain("window.NavigationManager.switchView('plugins')");
+  });
+
+  test('creates a local goal before navigating to its overlay URL', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).toContain('async function prepareGoalsOverlay(page, baseUrl, asset, locale)');
+    expect(source).toContain("overlayUrl.searchParams.set('id', goalId);");
+    expect(source).toContain("asset.action.prepare === 'create-demo-goal-overlay'");
+  });
+
+  test('synchronizes the dashboard i18n client before recording locale evidence', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).toContain("if (window.i18n && typeof window.i18n.setLocale === 'function') {");
+    expect(source).toContain('await window.i18n.setLocale(lang);');
+    expect(source).toContain('window.i18n.updateDOM?.();');
+    expect(source).toContain("if (window.I18n && typeof window.I18n.load === 'function') {");
+    expect(source).toContain('await window.I18n.load(lang);');
+    expect(source).toContain('window.I18n.apply?.();');
+  });
+
+  test('waits for a page i18n client to finish initialization before changing its locale', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).toContain('async function synchronizeCaptureLocale(page, locale)');
+    expect(source).toContain("typeof window.i18n.setLocale !== 'function'");
+    expect(source).toContain('window.i18n.initialized !== false');
+    expect(source).toContain('await synchronizeCaptureLocale(page, locale);');
+  });
+
+  test('records checkbox interactions when the already-enabled control is exercised before it is restored', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).toContain('let exercised = false;');
+    expect(source).toContain('exercised = true;');
+    expect(source).toContain('changed: before.value !== after.value || before.checked !== after.checked || exercised');
+  });
+
+  test('uses the documented emoji example for the Emoji Rain input capture', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(source).toContain("'emoji-rain/choose-emojis': '💧, ✨, 🎉'");
+  });
+});

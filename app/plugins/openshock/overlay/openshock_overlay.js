@@ -24,6 +24,15 @@ let config = {
 let eventQueue = [];
 let isProcessingEvent = false;
 
+function overlayText(key, fallback, params = {}) {
+    const translationKey = `plugins.openshock.runtime.overlays.main.${key}`;
+    const translated = window.i18n?.t(translationKey, params);
+    const value = translated && translated !== translationKey ? translated : fallback;
+    return String(value).replace(/\{(\w+)\}/g, (match, name) => (
+        Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+    ));
+}
+
 // ============================================================================
 // Initialization
 // ============================================================================
@@ -147,7 +156,7 @@ function handleEmergencyStop() {
     eventQueue = [];
 
     // Show emergency warning
-    showSafetyWarning('EMERGENCY STOP ACTIVATED');
+    showSafetyWarning(overlayText('emergency_stop_activated', 'EMERGENCY STOP ACTIVATED'));
 
     // Hide warning after 5 seconds
     setTimeout(() => {
@@ -535,7 +544,11 @@ function showPatternPreview(pattern) {
                 const stepElement = document.createElement('div');
                 stepElement.className = 'pattern-step';
                 stepElement.style.height = `${step.intensity || 0}%`;
-                stepElement.title = `Step ${index + 1}: ${step.intensity}% for ${step.duration}ms`;
+                stepElement.title = overlayText('pattern_step', 'Step {step}: {intensity}% for {duration}ms', {
+                    step: index + 1,
+                    intensity: step.intensity,
+                    duration: step.duration
+                });
                 timelineElement.appendChild(stepElement);
             });
         }

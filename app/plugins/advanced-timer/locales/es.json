@@ -1,206 +1,233 @@
 {
-  "plugin": {
-    "name": "Advanced Timer",
-    "description": "Professional multi-timer system with event automation and customizable overlays"
-  },
-  "ui": {
-    "title": "Advanced Timer - Multi-Timer System",
-    "tabs": {
-      "timers": "Timers",
-      "create": "Create Timer",
-      "profiles": "Profiles",
-      "help": "Help"
-    },
-    "buttons": {
-      "newTimer": "New Timer",
-      "start": "Start",
-      "pause": "Pause",
-      "stop": "Stop",
-      "reset": "Restablecer",
-      "settings": "Configuración",
-      "delete": "Delete",
-      "save": "Guardar",
-      "cancel": "Cancel",
-      "create": "Create Timer",
-      "export": "Export",
-      "copy": "Copiar URL"
-    },
-    "labels": {
-      "timerName": "Timer Name",
-      "timerMode": "Timer Mode",
-      "initialDuration": "Initial Duration (seconds)",
-      "targetValue": "Target Value (seconds)",
-      "overlayUrl": "URL del Overlay",
-      "activityLog": "Activity Log"
-    },
-    "modes": {
-      "countdown": "Countdown - Count down from a time",
-      "countup": "Count Up - Count up to a target",
-      "stopwatch": "Stopwatch - Count up indefinitely",
-      "loop": "Loop - Repeat countdown continuously",
-      "interval": "Interval - Repeat up to target"
-    },
-    "states": {
-      "running": "Running",
-      "paused": "Paused",
-      "stopped": "Stopped",
-      "completed": "Completed"
-    },
-    "messages": {
-      "noTimers": "No timers yet",
-      "createFirst": "Create Your First Timer",
-      "timerCreated": "Timer created successfully!",
-      "timerUpdated": "Timer updated successfully!",
-      "timerDeleted": "Timer deleted successfully!",
-      "confirmDelete": "Are you sure you want to delete this timer?",
-      "urlCopied": "URL copied to clipboard!",
-      "noActivity": "No activity yet",
-      "quickStart": "Create a timer and configure events in the timer settings to add time based on TikTok events (gifts, likes, follows, etc.)"
-    },
-    "help": {
-      "modesTitle": "Timer Modes",
-      "modesCountdown": "Countdown: Counts down from a starting time to zero",
-      "modesCountup": "Count Up: Counts up from zero to a target value",
-      "modesStopwatch": "Stopwatch: Counts up indefinitely",
-      "modesLoop": "Loop: Continuously repeats countdown",
-      "modesInterval": "Interval: Counts up to target, resets and repeats",
-      "eventAutomationTitle": "Event Automation",
-      "eventAutomationDesc": "Configure timers to respond to TikTok events:",
-      "eventGifts": "Regalos - Agregar/quitar tiempo basado en el valor de monedas (segundos por moneda)",
-      "eventLikes": "Me gusta - Modificar temporizador basado en me gusta recibidos (segundos por me gusta)",
-      "eventFollows": "Follows - Reward new followers",
-      "eventShares": "Shares - Encourage sharing",
-      "eventChat": "Chat Commands - Allow viewers to interact",
-      "timerChainsTitle": "Timer Chains",
-      "timerChainsDesc": "Link timers together - when Timer A completes, automatically start/stop/reset Timer B",
-      "overlaysTitle": "Overlays",
-      "overlaysDesc": "Each timer has its own overlay URL that can be added as a Browser Source in OBS"
-    },
-    "settings": {
-      "tabs": {
-        "basic": "Basic",
-        "events": "Events",
-        "overlay": "Overlay",
-        "logs": "Logs"
+  "plugins": {
+    "advanced-timer": {
+      "form_controls": {
+        "sections_aria": "Secciones de Advanced Timer",
+        "timer_summary_aria": "Resumen del temporizador",
+        "timer_name_placeholder": "Mi temporizador"
       },
-      "eventsDesc": "Configure how TikTok events affect this timer",
-      "addEventRule": "+ Add Event Rule",
-      "overlayInfo": "Add this URL as a Browser Source in OBS to display this timer"
+      "plugin": {
+        "name": "Temporizador avanzado",
+      "description": "Sistema profesional de múltiples temporizadores con automatización de eventos y superposiciones personalizables"
+      },
+      "ui": {
+        "title": "Temporizador avanzado - Sistema de varios temporizadores",
+        "tabs": {
+          "timers": "Temporizadores",
+          "create": "Crear temporizador",
+          "profiles": "Perfiles",
+          "help": "Ayuda"
+        },
+        "buttons": {
+          "newTimer": "Nuevo temporizador",
+          "start": "Iniciar",
+          "pause": "Pausar",
+          "stop": "Detener",
+          "reset": "Restablecer",
+          "settings": "Configuración",
+          "delete": "Eliminar",
+          "save": "Guardar",
+          "cancel": "Cancelar",
+          "create": "Crear temporizador",
+          "export": "Exportar",
+          "copy": "Copiar URL"
+        },
+        "labels": {
+          "timerName": "Nombre del temporizador",
+          "timerMode": "Modo del temporizador",
+          "initialDuration": "Duración inicial (segundos)",
+          "targetValue": "Valor objetivo (segundos)",
+          "overlayUrl": "URL del Overlay",
+          "activityLog": "Registro de actividad"
+        },
+        "modes": {
+          "countdown": "Cuenta atrás - Reduce desde una duración",
+          "countup": "Cuenta ascendente - Sube hasta un objetivo",
+          "stopwatch": "Cronómetro - Sube sin límite",
+          "loop": "Bucle - Repite la cuenta atrás continuamente",
+          "interval": "Intervalo - Repite hasta el objetivo"
+        },
+        "states": {
+          "running": "En marcha",
+          "paused": "En pausa",
+          "stopped": "Detenido",
+          "completed": "Completado"
+        },
+        "stats": {
+          "total": "Total general"
+        },
+        "messages": {
+          "noTimers": "Aún no hay temporizadores",
+          "createFirst": "Crea tu primer temporizador",
+          "timerCreated": "El temporizador se creó correctamente.",
+          "timerUpdated": "El temporizador se actualizó correctamente.",
+          "timerDeleted": "El temporizador se eliminó correctamente.",
+          "confirmDelete": "¿Seguro que quieres eliminar este temporizador?",
+          "urlCopied": "La URL se copió al portapapeles.",
+          "noActivity": "Aún no hay actividad",
+          "quickStart": "Crea un temporizador y configura eventos en sus ajustes para añadir tiempo según eventos de TikTok (regalos, Me gusta, seguidores, etc.)"
+        },
+        "help": {
+          "modesTitle": "Modos de temporizador",
+          "modesCountdown": "Cuenta atrás: cuenta desde un tiempo inicial hasta cero",
+          "modesCountup": "Cuenta ascendente: sube desde cero hasta el valor objetivo",
+          "modesStopwatch": "Cronómetro: aumenta sin límite",
+          "modesLoop": "Bucle: repite la cuenta atrás continuamente",
+          "modesInterval": "Intervalo: cuenta hasta el objetivo, se restablece y se repite",
+          "eventAutomationTitle": "Automatización de eventos",
+          "eventAutomationDesc": "Configura temporizadores que respondan a eventos de TikTok:",
+          "eventGifts": "Regalos - Agregar/quitar tiempo basado en el valor de monedas (segundos por moneda)",
+          "eventLikes": "Me gusta - Modificar temporizador basado en me gusta recibidos (segundos por me gusta)",
+          "eventFollows": "Seguimientos - Premia a nuevos seguidores",
+          "eventShares": "Compartidos - Incentiva que compartan",
+          "eventChat": "Comandos de chat - Permiten interactuar a la audiencia",
+          "timerChainsTitle": "Cadenas de temporizadores",
+          "timerChainsDesc": "Vincula temporizadores: cuando el temporizador A finaliza, inicia, detiene o restablece automáticamente el temporizador B",
+          "overlaysTitle": "Superposiciones",
+          "overlaysDesc": "Cada temporizador tiene su propia URL de superposición que se puede añadir como fuente de navegador en OBS"
+        },
+        "settings": {
+          "tabs": {
+            "basic": "Básico",
+            "events": "Eventos",
+            "overlay": "Overlay",
+            "logs": "Registros"
+          },
+          "eventsDesc": "Configura cómo los eventos de TikTok afectan a este temporizador",
+          "addEventRule": "+ Añadir regla de evento",
+          "overlayInfo": "Añade esta URL como fuente de navegador en OBS para mostrar este temporizador"
+        }
+      },
+      "events": {
+        "types": {
+          "gift": "Regalo",
+          "like": "Como",
+          "follow": "Seguir",
+          "share": "Compartir",
+          "subscribe": "Suscripción",
+          "chat": "Charlar"
+        },
+        "actions": {
+          "addTime": "Añadir tiempo",
+          "removeTime": "Quitar tiempo",
+          "setValue": "Establecer valor"
+        }
+      },
+      "logs": {
+        "events": {
+          "started": "Iniciado",
+          "paused": "Pausado",
+          "stopped": "Detenido",
+          "reset": "Restablecer",
+          "completed": "Completado",
+          "time_added": "Tiempo añadido",
+          "time_removed": "Tiempo retirado",
+          "gift": "Regalo",
+          "like": "Como",
+          "follow": "Seguir",
+          "share": "Compartir",
+          "subscribe": "Suscripción",
+          "chat": "Charlar",
+          "chain_triggered": "Cadena activada",
+          "threshold_reached": "Umbral alcanzado",
+          "flow": "Flujo"
+        }
+      },
+      "rotator": {
+        "sectionTitle": "Rotador (Control deslizante de delta)",
+        "sectionDesc": "Muestra el último cambio de tiempo alrededor del temporizador (arriba/abajo/izquierda/derecha). Los regalos personalizados muestran el GIF del catálogo.",
+        "enable": "Activar rotador",
+        "position": "Posición",
+        "positionTop": "Arriba",
+        "positionBottom": "Abajo",
+        "positionLeft": "Izquierda",
+        "positionRight": "Derecha",
+        "slots": "Tragamonedas",
+        "rotationMs": "Rotación (ms)",
+        "minSeconds": "Mín. segundos para mostrar",
+        "showGiftImage": "Mostrar imagen del regalo",
+        "showGiftName": "Mostrar nombre del regalo",
+        "showTimeDelta": "Mostrar Δ de tiempo",
+        "showSourceEmoji": "Mostrar emoji de origen",
+        "fontScale": "Tamaño de fuente",
+        "fadeAlpha": "Opacidad",
+        "sourcesShown": "Fuentes mostradas:",
+        "save": "Guardar rotador"
+      },
+      "thresholdEffects": {
+        "sectionTitle": "Efectos de gran cambio",
+        "sectionDesc": "Cuando un único cambio de tiempo supera el umbral, el temporizador se envuelve en un marco/animación. Estilo integrado, subido o ambos.",
+        "enable": "Activar efectos",
+        "thresholdSeconds": "Umbral (segundos)",
+        "direction": "Dirección",
+        "directionBoth": "Ambos (+/-)",
+        "directionPositive": "Sólo positivo",
+        "directionNegative": "Sólo negativo",
+        "durationMs": "Duración del efecto (ms)",
+        "builtin": "Animación integrada",
+        "intensity": "Intensidad (0.5..2.0)",
+        "frameSlotsTitle": "Slots de marco personalizados (sube hasta 6 PNG/WebP/GIF/SVG — se muestran en rotación):",
+        "frameSlotN": "Ranura {n}",
+        "frameEmpty": "Sin marco",
+        "frameLabel": "Etiqueta (opcional)",
+        "frameUpload": "Subir",
+        "frameRemove": "Eliminar",
+        "save": "Guardar ajustes"
+      },
+      "runtime": {
+        "timer": "Temporizador", "quickAddTen": "+10 s", "quickAddThirty": "+30 s", "quickAddMinute": "+1 min", "quickAddFiveMinutes": "+5 min", "quickRemoveTen": "-10 s", "quickRemoveThirty": "-30 s",
+        "overlay": "Superposición:", "copyOverlayUrl": "Copiar URL de superposición", "expiryAction": "Acción al terminar", "expiryNone": "Ninguna", "expiryRestart": "Reiniciar", "expiryAlert": "Mostrar aviso", "expirySound": "Reproducir sonido", "expirySceneChange": "Cambiar escena", "expiryTriggerChain": "Activar cadena",
+        "interactions": "Interacciones", "interactionsHint": "Los valores positivos añaden tiempo y los negativos lo reducen. Se admiten decimales (por ejemplo, 0,05).", "perCoin": "Por moneda", "perSubscribe": "Por suscripción", "perFollow": "Por seguimiento", "perShare": "Por compartido", "perLike": "Por Me gusta", "perChat": "Por mensaje de chat", "advancedRulesLink": "Reglas avanzadas de eventos (filtros de nombre de regalo, comandos...)", "saved": "Guardado",
+        "multiplier": "Multiplicador", "multiplierDescription": "(multiplica todos los valores de interacción por este factor)", "keyboardShortcuts": "Atajos de teclado", "startPause": "Iniciar / pausar", "increase": "Aumentar", "reduce": "Reducir", "stepSeconds": "Paso (segundos)", "saveShortcuts": "Guardar atajos", "loadLogHint": "Abre esta sección para cargar el registro de actividad.", "refresh": "Actualizar",
+        "giftOverrides": "Anulaciones de regalos", "giftOverridesDescription": "Anula el valor por moneda para regalos concretos. Si hay un valor, solo se utiliza la anulación para ese regalo.", "clickToLoad": "Haz clic para cargar.", "selectGift": "Seleccionar regalo", "seconds": "Segundos", "add": "Añadir",
+        "sourceLike": "Me gusta", "sourceCoin": "Moneda / regalo", "sourceCustomGift": "Regalo personalizado", "sourceFollow": "Seguimiento", "sourceSubscribe": "Suscripción (Superfan)", "sourceShare": "Compartido", "sourceChat": "Chat", "sourceManual": "Entrada manual", "sourceFlow": "Flujo", "sourceRule": "Regla",
+        "deleteTimer": "Eliminar temporizador", "noAdvancedRules": "Aún no hay reglas avanzadas.", "advancedRulesDescription": "Estas reglas amplían los valores planos por evento. Úsalas para filtros por nombre de regalo, monedas mínimas o comandos de chat.", "close": "Cerrar", "edit": "Editar", "addEventRule": "Añadir regla de evento", "editEventRule": "Editar regla de evento", "eventType": "Tipo de evento", "action": "Acción", "valueSeconds": "Valor (segundos)",
+        "giftName": "Nombre del regalo (en blanco = cualquiera)", "giftNamePlaceholder": "por ejemplo, Rosa", "minCoins": "Monedas mínimas (0 = sin mínimo)", "minLikes": "Me gusta mínimos por evento", "commandPrefix": "Prefijo de comando (por ejemplo, !time)", "keywordContains": "La palabra clave contiene", "keywordPlaceholder": "añadir tiempo",
+        "noGiftOverrides": "Aún no hay anulaciones de regalos.", "diamonds": "diamantes", "selectGiftAlert": "Selecciona primero un regalo del catálogo.", "unknownGift": "Regalo desconocido", "failedSave": "No se pudieron guardar los cambios.", "removeGiftOverride": "¿Eliminar esta anulación de regalo?", "failedSaveRotator": "No se pudieron guardar los ajustes del rotador.", "failedSaveThreshold": "No se pudieron guardar los ajustes del umbral.", "frameAlt": "Marco personalizado", "chooseFile": "Elige primero un archivo.", "frameTooLarge": "El marco debe ocupar menos de 8 MB.", "uploadFailed": "La carga falló.", "uploadError": "Se produjo un error de carga.", "removeFrame": "¿Eliminar el marco de la ranura {n}?", "deleteFailed": "La eliminación falló.",
+        "failedCreateTimer": "No se pudo crear el temporizador.", "noSavedProfiles": "No hay perfiles guardados. Usa Guardar configuración actual para conservar los temporizadores actuales.", "apply": "Aplicar", "profileNamePrompt": "Nombre del perfil:", "applyProfileConfirm": "¿Aplicar este perfil? Los temporizadores actuales se reemplazarán.", "deleteProfileConfirm": "¿Eliminar este perfil?", "deleteEventRuleConfirm": "¿Eliminar esta regla de evento?",
+        "conditionGift": "Regalo: {value}", "conditionMinCoins": "Monedas mínimas: {value}", "conditionMinLikes": "Me gusta mínimos: {value}", "conditionCommand": "Comando: {value}", "conditionKeyword": "Palabra clave: {value}",
+        "effectFlame": "Llama", "effectLightning": "Rayo", "effectSparks": "Chispas", "effectPulseGlow": "Brillo pulsante", "effectRainbowShake": "Sacudida arcoíris", "effectGoldFlux": "Flujo dorado", "times": "×", "chevron": "▼",
+        "overlayMissingEyebrow": "Superposición de temporizador avanzado", "overlayMissingTitle": "Falta el ID del temporizador", "overlayMissingDescription": "Esta superposición necesita un parámetro de consulta timer. Ábrela desde Advanced Timer o añade un ID de temporizador para previsualizar uno activo.", "overlayMissingExample": "Ejemplo:", "overlayTimerNotFound": "No se encontró el temporizador", "overlayMostRecent": "Más reciente", "overlayPrevious": "Anterior"
+      },
+      "labels": {
+        "save_current_setup": "Guardar configuración actual",
+        "counts_down_to_zero_great_for_subathon_timers": "Cuenta regresiva hasta cero: ideal para cronometradores de sumaratones",
+        "advanced_event_rules": "Reglas avanzadas de eventos",
+        "directly_on_each_timer_card_use_positive_values": "directamente en cada tarjeta temporizadora. Utilice valores positivos para agregar tiempo y negativos para reducir.",
+        "counts_up_to_target_then_resets_and_repeats": "Cuenta hasta el objetivo, luego se reinicia y repite",
+        "x_multiplier": "multiplicador",
+        "advanced_event_rules_2e8c2b": "Reglas avanzadas de eventos",
+        "enable_the": "Habilitar el",
+        "count_up_count_up_to_a_target": "Count Up: cuenta hasta un objetivo",
+        "each_timer_card_shows_its_overlay_url_add": "Cada tarjeta de temporizador muestra su URL superpuesta. Agréguelo como fuente del navegador en OBS.",
+        "to_multiply_all_interaction_values_by_a_factor": "para multiplicar todos los valores de interacción por un factor (por ejemplo, x10 para eventos).",
+        "countdown_count_down_from_a_time": "Cuenta regresiva: cuenta regresiva desde un tiempo",
+        "counts_up_to_a_target_value": "Cuenta hasta un valor objetivo",
+        "link_on_each_timer_card_to_configure_per": "enlace en cada tarjeta de temporizador para configurar reglas por regalo y por comando.",
+        "stopwatch_count_up_indefinitely": "Cronómetro: cuenta indefinidamente",
+        "create_timer": "Crear temporizador",
+        "timer_overlay": "Superposición de temporizador",
+        "quick_setup": "Configuración rápida",
+        "quick_reference_for_modes_direct_interactions_multiplier_behavior": "Referencia rápida para modos, interacciones directas, comportamiento multiplicador y uso de superposición OBS.",
+        "control_every_active_timer_inspect_states_copy_overlay": "Controle cada temporizador activo, inspeccione estados, copie URL superpuestas y acceda a reglas de eventos avanzadas sin perder el conjunto completo de funciones.",
+        "need_gift_name_filters_or_chat_command_matching": "¿Necesita filtros de nombre de regalo o coincidencia de comandos de chat? Utilice el",
+        "obs_overlay": "Superposición de OBS",
+        "save_reapply_and_move_between_timer_setups_without": "Guarde, vuelva a aplicar y muévase entre configuraciones de temporizador sin reconstruir su estructura.",
+        "direct_interactions": "Interacciones directas",
+        "choose_the_mode_configure_the_baseline_duration_and": "Elija el modo, configure la duración de la línea de base y mantenga las interacciones directas listas para el ajuste en el lado de la transmisión.",
+        "counts_up_indefinitely": "Cuenta indefinidamente",
+        "timers_at_a_glance": "Temporizadores de un vistazo",
+        "multi_timer_control_center": "Centro de control multitemporizador",
+        "interval_repeat_up_to_target": "Intervalo: repetir hasta el objetivo",
+        "wide_screen_ready_timers_rules_rotators_profiles_stay": "Listo para pantalla ancha. Temporizadores, reglas, rotadores y perfiles permanecen disponibles.",
+        "count_up": "Cuente hacia arriba:",
+        "timer_overlay_dbe4d9": "Superposición de temporizador",
+        "after_creating_the_timer_you_can_set_per": "Después de crear el temporizador, puede configurar Por moneda, Por Me gusta, Por seguimiento, etc. directamente en la tarjeta del temporizador; no se necesitan reglas de eventos separadas para las interacciones básicas.",
+        "continuously_repeats_countdown": "Repite continuamente la cuenta regresiva",
+        "per_coin_per_follow_per_share_per_subscribe": "Por moneda, por seguimiento, por acción, por suscripción, por me gusta, por mensaje de chat",
+        "help_and_setup": "Ayuda y configuración",
+        "loop_repeat_countdown_continuously": "Bucle: repite la cuenta regresiva continuamente"
+      }
     }
-  },
-  "events": {
-    "types": {
-      "gift": "Gift",
-      "like": "Like",
-      "follow": "Follow",
-      "share": "Share",
-      "subscribe": "Subscribe",
-      "chat": "Chat"
-    },
-    "actions": {
-      "addTime": "Add Time",
-      "removeTime": "Remove Time",
-      "setValue": "Set Value"
-    }
-  },
-  "logs": {
-    "events": {
-      "started": "Started",
-      "paused": "Paused",
-      "stopped": "Stopped",
-      "reset": "Restablecer",
-      "completed": "Completed",
-      "time_added": "Time Added",
-      "time_removed": "Time Removed",
-      "gift": "Gift",
-      "like": "Like",
-      "follow": "Follow",
-      "share": "Share",
-      "subscribe": "Subscribe",
-      "chat": "Chat",
-      "chain_triggered": "Chain Triggered",
-      "threshold_reached": "Threshold Reached",
-      "flow": "Flow"
-    }
-  },
-  "rotator": {
-    "sectionTitle": "Rotador (Control deslizante de delta)",
-    "sectionDesc": "Muestra el último cambio de tiempo alrededor del temporizador (arriba/abajo/izquierda/derecha). Los regalos personalizados muestran el GIF del catálogo.",
-    "enable": "Activar rotador",
-    "position": "Posición",
-    "positionTop": "Arriba",
-    "positionBottom": "Abajo",
-    "positionLeft": "Izquierda",
-    "positionRight": "Derecha",
-    "slots": "Slots",
-    "rotationMs": "Rotación (ms)",
-    "minSeconds": "Mín. segundos para mostrar",
-    "showGiftImage": "Mostrar imagen del regalo",
-    "showGiftName": "Mostrar nombre del regalo",
-    "showTimeDelta": "Mostrar Δ de tiempo",
-    "showSourceEmoji": "Mostrar emoji de origen",
-    "fontScale": "Tamaño de fuente",
-    "fadeAlpha": "Opacidad",
-    "sourcesShown": "Fuentes mostradas:",
-    "save": "Guardar rotador"
-  },
-  "thresholdEffects": {
-    "sectionTitle": "Efectos de gran cambio",
-    "sectionDesc": "Cuando un único cambio de tiempo supera el umbral, el temporizador se envuelve en un marco/animación. Estilo integrado, subido o ambos.",
-    "enable": "Activar efectos",
-    "thresholdSeconds": "Umbral (segundos)",
-    "direction": "Dirección",
-    "directionBoth": "Ambos (+/-)",
-    "directionPositive": "Sólo positivo",
-    "directionNegative": "Sólo negativo",
-    "durationMs": "Duración del efecto (ms)",
-    "builtin": "Animación integrada",
-    "intensity": "Intensidad (0.5..2.0)",
-    "frameSlotsTitle": "Slots de marco personalizados (sube hasta 6 PNG/WebP/GIF/SVG — se muestran en rotación):",
-    "frameSlotN": "Slot {n}",
-    "frameEmpty": "Sin marco",
-    "frameLabel": "Etiqueta (opcional)",
-    "frameUpload": "Subir",
-    "frameRemove": "Eliminar",
-    "save": "Guardar ajustes"
-  },
-  "generated": {
-    "dbe4d9133c04": "Timer Overlay",
-    "7f8ab618d3d9": "Timer Overlay",
-    "c3c568c922cd": "Multi-timer control center",
-    "c7b8ec23a7ac": "Wide-screen ready. Timers, rules, rotators, profiles stay available.",
-    "c279a2a1a555": "Timers at a glance",
-    "990ecde05a91": "Control every active timer, inspect states, copy overlay URLs and jump into advanced event rules without losing the full feature set.",
-    "7e53695347bc": "Create timer",
-    "b86f46ec6bc1": "Choose the mode, configure the baseline duration and keep direct interactions ready for stream-side tuning.",
-    "4de504791293": "Countdown - count down from a time",
-    "3727e833d7fc": "Count Up - count up to a target",
-    "7949abfa845e": "Stopwatch - count up indefinitely",
-    "f804752b216c": "Loop - repeat countdown continuously",
-    "c67371171158": "Interval - repeat up to target",
-    "81be5107a3e8": "Quick Setup",
-    "dde33698cb4a": "After creating the timer you can set Per Coin, Per Like, Per Follow etc. directly on the timer card - no separate event rules needed for basic interactions.",
-    "b2f95e10b87e": "Save, reapply and move between timer setups without rebuilding your structure.",
-    "1a6372899e2b": "Save Current Setup",
-    "e85f00ba5a80": "Help and setup",
-    "83b669204be5": "Quick reference for modes, direct interactions, multiplier behavior and OBS overlay usage.",
-    "1ad6e9c6eaca": "Counts down to zero - great for subathon timers",
-    "ceaf09dc8ffc": "Count Up:",
-    "50692ddbb216": "Counts up to a target value",
-    "bf7052e8e302": "Counts up indefinitely",
-    "e2ca52006976": "Continuously repeats countdown",
-    "2826418935bb": "Counts up to target, then resets and repeats",
-    "b37ed4b61f44": "Direct Interactions",
-    "e2de78ab8955": "Per Coin, Per Follow, Per Share, Per Subscribe, Per Like, Per Chat Message",
-    "25b6639f41ec": "directly on each timer card. Use positive values to add time, negative to reduce.",
-    "32d2e97eab9a": "Enable the",
-    "2b6f7ea3eabe": "x Multiplier",
-    "420669edaed3": "to multiply all interaction values by a factor (for example, x10 for events).",
-    "1fe350d539b4": "Advanced Event Rules",
-    "a9513a9f35b8": "Need gift-name filters or chat-command matching? Use the",
-    "2e8c2bf59aba": "Advanced Event Rules",
-    "645a41f54e47": "link on each timer card to configure per-gift and per-command rules.",
-    "ae1cc5120d6d": "OBS Overlay",
-    "3b7dbecac785": "Each timer card shows its overlay URL. Add it as a Browser Source in OBS."
   }
 }

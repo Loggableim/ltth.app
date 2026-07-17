@@ -503,6 +503,10 @@ class ChatangoPlugin {
         const embedConfig = this.generateEmbedCode(type, theme);
         const scriptId = `cid${Date.now()}`;
         const containerId = `chatango-container-${scriptId}`;
+        const titleKey = type === 'dashboard'
+            ? 'plugins.chatango.chatango.embed_dashboard_title'
+            : 'plugins.chatango.chatango.embed_widget_title';
+        const titleFallback = type === 'dashboard' ? 'Chatango Dashboard' : 'Chatango Widget';
         const width = type === 'widget' 
             ? this.sanitizeSize(embedConfig.width, '200px')
             : this.sanitizeSize(embedConfig.width, '100%');
@@ -524,7 +528,8 @@ class ChatangoPlugin {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatango ${type === 'dashboard' ? 'Dashboard' : 'Widget'}</title>
+    <title data-i18n="${titleKey}">${titleFallback}</title>
+    <script src="/js/i18n-client.js"></script>
     <style>
         html, body {
             margin: 0;

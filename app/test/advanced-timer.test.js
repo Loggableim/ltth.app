@@ -362,11 +362,12 @@ describe('Advanced Timer Plugin', () => {
         test('German localization is valid JSON', () => {
             const localePath = path.join(pluginDir, 'locales', 'de.json');
             const localeData = JSON.parse(fs.readFileSync(localePath, 'utf8'));
+            const timerLocale = localeData.plugins?.['advanced-timer'];
             
-            expect(localeData.plugin).toBeDefined();
-            expect(localeData.plugin.name).toBeDefined();
-            expect(localeData.ui).toBeDefined();
-            expect(localeData.events).toBeDefined();
+            expect(timerLocale).toBeDefined();
+            expect(timerLocale.plugin.name).toBeDefined();
+            expect(timerLocale.ui).toBeDefined();
+            expect(timerLocale.events).toBeDefined();
         });
     });
 

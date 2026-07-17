@@ -9,7 +9,7 @@ const ROOT = path.resolve(__dirname, '..');
 const guides = buildGuides(ROOT);
 const spec = buildDocsSpec(ROOT);
 
-assert.match(SPEC_VERSION, /v2$/, 'the docs capture manifest must use the step-action v2 format');
+assert.match(SPEC_VERSION, /v6$/, 'the docs capture manifest must use the required 1440 by 900 workflow receipt format');
 assert.deepStrictEqual(spec.locales, LOCALES, 'the capture spec must include all four locales');
 assert.strictEqual(spec.assets.length, guides.reduce((total, guide) => total + guide.steps.length, 0), 'every named tutorial step needs exactly one capture asset');
 
@@ -24,6 +24,7 @@ for (const guide of guides) {
     assert.strictEqual(asset.route, step.capture.route, `${guide.id}/${step.id} route drifted from the tutorial source`);
     assert.strictEqual(asset.selector, step.capture.assertVisible, `${guide.id}/${step.id} selector drifted from the tutorial source`);
     assert.deepStrictEqual(asset.action, step.capture.action, `${guide.id}/${step.id} action drifted from the tutorial source`);
+    assert.deepStrictEqual(asset.workflow, step.workflow, `${guide.id}/${step.id} workflow drifted from the tutorial source`);
     assert.ok(asset.focusText && typeof asset.focusText.de === 'string', `${guide.id}/${step.id} needs localized focus text`);
     assert.ok(asset.fixture && asset.fixture.profile === `docs-${guide.id}`, `${guide.id}/${step.id} needs an isolated guide fixture`);
     assert.ok(!asset.route.includes('docsPlugin='), `${guide.id}/${step.id} must not use the ignored docsPlugin URL state`);
