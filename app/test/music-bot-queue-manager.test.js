@@ -1,4 +1,5 @@
 const QueueManager = require('../plugins/music-bot/lib/queue-manager');
+const Database = require('better-sqlite3');
 
 function createMockApi() {
   const stmt = {
@@ -92,5 +93,451 @@ describe('music-bot queue manager', () => {
       expect.stringContaining('Failed to persist queue'),
       'error'
     );
+  });
+
+  function createRealManager(queueConfig = {}, setupDatabase) {
+    const db = new Database(':memory:');
+    setupDatabase?.(db);
+    const api = {
+      getDatabase: () => db,
+      log: jest.fn()
+    };
+    const manager = new QueueManager({
+      queue: {
+        maxLength: 20,
+        maxPerUser: 20,
+        maxSongDurationSeconds: 600,
+        duplicateDetection: 'strict',
+        allowDuplicates: false,
+        cooldownPerUserSeconds: 0,
+        ...queueConfig
+      }
+    }, api);
+    return { db, api, manager };
+  }
+
+  it('deduplicates YouTube and SoundCloud URL aliases by canonical track key', () => {
+    const { db, manager } = createRealManager();
+
+    expect(manager.addSong({
+      title: 'YouTube one',
+      url: 'https://youtu.be/abc123DEF45?si=share',
+      requestedBy: 'one'
+    }).success).toBe(true);
+    expect(manager.addSong({
+      title: 'YouTube alias',
+      url: 'https://www.youtube.com/watch?v=abc123DEF45&feature=share',
+      requestedBy: 'two'
+    }).success).toBe(false);
+
+    expect(manager.addSong({
+      title: 'SoundCloud one',
+      url: 'https://soundcloud.com/Artist/Track?utm_source=test',
+      source: 'soundcloud',
+      requestedBy: 'three'
+    }).success).toBe(true);
+    expect(manager.addSong({
+      title: 'SoundCloud alias',
+      url: 'https://www.soundcloud.com/artist/track/',
+      source: 'soundcloud',
+      requestedBy: 'four'
+    }).success).toBe(false);
+
+    expect(manager.getQueue().map((track) => track.trackKey)).toEqual([
+      'youtube:abc123DEF45',
+      'soundcloud:soundcloud.com/artist/track'
+    ]);
+    db.close();
+  });
+
+  it('does not collide equal provider IDs across providers and supports duplicate-off mode', () => {
+    const { db, manager } = createRealManager({
+      duplicateDetection: 'off',
+      allowDuplicates: true
+    });
+
+    const youtube = manager.addSong({
+      title: 'YouTube',
+      url: 'https://youtube.com/watch?v=sameID12345',
+      provider: 'youtube',
+      providerId: 'same-id'
+    });
+    const soundcloud = manager.addSong({
+      title: 'SoundCloud',
+      url: 'https://soundcloud.com/a/b',
+      provider: 'soundcloud',
+      providerId: 'same-id'
+    });
+    const duplicate = manager.addSong({
+      title: 'YouTube duplicate allowed',
+      url: 'https://youtu.be/sameID12345',
+      provider: 'youtube',
+      providerId: 'same-id'
+    });
+
+    expect([youtube.success, soundcloud.success, duplicate.success]).toEqual([true, true, true]);
+    expect(manager.getQueue().map((track) => track.trackKey)).toEqual([
+      'youtube:same-id',
+      'soundcloud:same-id',
+      'youtube:same-id'
+    ]);
+    db.close();
+  });
+
+  it('restores legacy rows in stable order, backfills identity, filters once, and exposes metadata', () => {
+    const { db, manager } = createRealManager({}, (legacyDb) => {
+      legacyDb.exec(`
+        CREATE TABLE plugin_music_bot_queue (
+          id TEXT PRIMARY KEY,
+          position INTEGER NOT NULL,
+          title TEXT,
+          artist TEXT,
+          duration INTEGER,
+          thumbnail TEXT,
+          url TEXT,
+          youtubeId TEXT,
+          source TEXT,
+          requestedBy TEXT,
+          requesterAvatar TEXT,
+          isGiftRequest INTEGER DEFAULT 0,
+          addedAt INTEGER
+        )
+      `);
+    });
+    const insert = db.prepare(`
+      INSERT INTO plugin_music_bot_queue
+        (id, position, title, artist, url, youtubeId, source, requestedBy, addedAt,
+         channelId, channelName)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    insert.run('first', 0, 'First', 'Allowed Artist', 'https://youtu.be/abc123DEF45', 'abc123DEF45', 'youtube', 'a', 1, 'channel-a', 'Channel A');
+    insert.run('duplicate', 1, 'Duplicate', 'Allowed Artist', 'https://youtube.com/watch?v=abc123DEF45', 'abc123DEF45', 'youtube', 'b', 2, 'channel-a', 'Channel A');
+    insert.run('banned', 2, 'Banned', 'Blocked Artist', 'https://soundcloud.com/blocked/song', null, 'soundcloud', 'c', 3, 'channel-b', 'Channel B');
+    insert.run('last', 3, 'Last', 'Last Artist', 'https://soundcloud.com/last/song', null, 'soundcloud', 'd', 4, 'channel-c', 'Channel C');
+    const persist = jest.spyOn(manager, 'persistQueue');
+    const checked = [];
+
+    const result = manager.restoreQueue({
+      isAllowed: (track) => {
+        checked.push({
+          trackKey: track.trackKey,
+          artist: track.artist,
+          channelId: track.channelId,
+          channelName: track.channelName
+        });
+        return track.artist !== 'Blocked Artist';
+      }
+    });
+
+    expect(result).toEqual({ restored: 2, deduped: 1, banned: 1 });
+    expect(manager.getQueue().map((track) => track.id)).toEqual(['first', 'last']);
+    expect(manager.getQueue().map((track) => track.trackKey)).toEqual([
+      'youtube:abc123DEF45',
+      'soundcloud:soundcloud.com/last/song'
+    ]);
+    expect(checked).toContainEqual({
+      trackKey: 'soundcloud:soundcloud.com/blocked/song',
+      artist: 'Blocked Artist',
+      channelId: 'channel-b',
+      channelName: 'Channel B'
+    });
+    expect(persist).toHaveBeenCalledTimes(1);
+    expect(db.prepare('SELECT COUNT(*) AS count FROM plugin_music_bot_queue').get().count).toBe(2);
+    db.close();
+  });
+
+  it('sets the shared local path on every queue instance with the same track key', () => {
+    const { db, manager } = createRealManager({
+      duplicateDetection: 'off',
+      allowDuplicates: true
+    });
+    manager.addSong({ title: 'One', url: 'https://youtu.be/abc123DEF45' });
+    manager.addSong({ title: 'Two', url: 'https://youtube.com/watch?v=abc123DEF45' });
+    manager.markPlaying({ ...manager.getQueue()[0] });
+
+    expect(manager.setTrackLocalPath('youtube:abc123DEF45', 'C:\\cache\\song.webm')).toBe(true);
+    expect(manager.getQueue().map((track) => track.localPath)).toEqual([
+      'C:\\cache\\song.webm',
+      'C:\\cache\\song.webm'
+    ]);
+    expect(manager.getCurrent().localPath).toBe('C:\\cache\\song.webm');
+    db.close();
+  });
+
+  it('keeps persisted rows recoverable when the ban check throws and a new request is added', () => {
+    const { db, manager, api } = createRealManager();
+    manager.addSong({
+      title: 'Persisted',
+      url: 'https://youtu.be/abc123DEF45',
+      requestedBy: 'viewer'
+    });
+    const persistedBefore = db.prepare(
+      'SELECT id, title, trackKey FROM plugin_music_bot_queue ORDER BY position'
+    ).all();
+    const sentinel = { id: 'existing-memory', title: 'Existing memory' };
+    manager.queue = [sentinel];
+    const persist = jest.spyOn(manager, 'persistQueue');
+
+    const result = manager.restoreQueue({
+      isAllowed: () => {
+        throw new Error('ban storage unavailable');
+      }
+    });
+
+    expect(result).toEqual({
+      restored: 1,
+      deduped: 0,
+      banned: 0,
+      error: 'ban-check-failed'
+    });
+    expect(manager.getQueue()).toEqual([
+      sentinel,
+      expect.objectContaining({
+        id: persistedBefore[0].id,
+        title: 'Persisted',
+        trackKey: 'youtube:abc123DEF45'
+      })
+    ]);
+    expect(persist).not.toHaveBeenCalled();
+    expect(db.prepare(
+      'SELECT id, title, trackKey FROM plugin_music_bot_queue ORDER BY position'
+    ).all()).toEqual(persistedBefore);
+    expect(api.log).toHaveBeenCalledWith(
+      expect.stringContaining('ban storage unavailable'),
+      'error'
+    );
+
+    const added = manager.addSong({
+      title: 'New request',
+      url: 'https://soundcloud.com/new/request',
+      requestedBy: 'new-viewer'
+    });
+
+    expect(added.success).toBe(true);
+    expect(manager.getPersistenceStatus()).toMatchObject({ blocked: false });
+    expect(manager.getQueue().map((entry) => entry.id)).toEqual([
+      'existing-memory',
+      persistedBefore[0].id,
+      added.song.id
+    ]);
+    expect(db.prepare(
+      'SELECT id FROM plugin_music_bot_queue ORDER BY position'
+    ).all().map((entry) => entry.id)).toEqual([
+      'existing-memory',
+      persistedBefore[0].id,
+      added.song.id
+    ]);
+    db.close();
+  });
+
+  it('blocks destructive persistence after a restore SELECT failure until recovery hydrates old and new rows', () => {
+    const { db, manager } = createRealManager();
+    const persisted = manager.addSong({
+      title: 'Persisted before failure',
+      url: 'https://youtu.be/oldTrack123',
+      requestedBy: 'old-viewer'
+    }).song;
+    manager.queue = [];
+    manager.userLastRequest.clear();
+
+    const realDatabase = manager.db;
+    let failRestoreRead = true;
+    manager.db = {
+      prepare: (sql) => {
+        if (failRestoreRead && String(sql).startsWith('SELECT * FROM plugin_music_bot_queue')) {
+          throw new Error('queue read unavailable');
+        }
+        return realDatabase.prepare(sql);
+      },
+      transaction: realDatabase.transaction.bind(realDatabase)
+    };
+
+    expect(manager.restoreQueue()).toEqual({
+      restored: 0,
+      deduped: 0,
+      banned: 0,
+      error: 'restore-read-failed',
+      persistenceBlocked: true
+    });
+    expect(manager.getPersistenceStatus()).toMatchObject({
+      blocked: true,
+      reason: 'restore-read-failed',
+      pendingCount: 0,
+      lastError: 'queue read unavailable'
+    });
+
+    const added = manager.addSong({
+      title: 'Accepted while guarded',
+      url: 'https://soundcloud.com/new/guarded-request',
+      requestedBy: 'new-viewer'
+    });
+
+    expect(added.success).toBe(true);
+    expect(manager.persistQueue()).toMatchObject({
+      success: false,
+      blocked: true,
+      reason: 'restore-read-failed'
+    });
+    expect(manager.getPersistenceStatus()).toMatchObject({ blocked: true, pendingCount: 1 });
+    expect(db.prepare('SELECT id FROM plugin_music_bot_queue ORDER BY position').all())
+      .toEqual([{ id: persisted.id }]);
+
+    failRestoreRead = false;
+    expect(manager.restoreQueue()).toMatchObject({ restored: 2, deduped: 0, banned: 0 });
+    expect(manager.getPersistenceStatus()).toMatchObject({ blocked: false, pendingCount: 2 });
+    expect(db.prepare('SELECT id FROM plugin_music_bot_queue ORDER BY position').all())
+      .toEqual([{ id: persisted.id }, { id: added.song.id }]);
+    db.close();
+  });
+
+  it('keeps the oldest canonical track when guarded requests duplicate persisted rows', () => {
+    const { db, manager } = createRealManager();
+    const persisted = manager.addSong({
+      title: 'Persisted original',
+      url: 'https://youtu.be/AbC123xYz_-',
+      requestedBy: 'old-viewer'
+    }).song;
+    manager.queue = [];
+    manager.userLastRequest.clear();
+
+    const realDatabase = manager.db;
+    let failRestoreRead = true;
+    manager.db = {
+      prepare: (sql) => {
+        if (failRestoreRead && String(sql).startsWith('SELECT * FROM plugin_music_bot_queue')) {
+          throw new Error('queue read unavailable');
+        }
+        return realDatabase.prepare(sql);
+      },
+      transaction: realDatabase.transaction.bind(realDatabase)
+    };
+
+    expect(manager.restoreQueue()).toMatchObject({
+      error: 'restore-read-failed',
+      persistenceBlocked: true
+    });
+    const duplicate = manager.addSong({
+      title: 'Guarded duplicate',
+      url: 'https://www.youtube.com/watch?v=AbC123xYz_-',
+      requestedBy: 'new-viewer'
+    });
+    expect(duplicate.success).toBe(true);
+
+    failRestoreRead = false;
+    expect(manager.restoreQueue()).toMatchObject({ restored: 1, deduped: 1, banned: 0 });
+    expect(manager.getQueue()).toEqual([
+      expect.objectContaining({
+        id: persisted.id,
+        title: 'Persisted original',
+        trackKey: 'youtube:AbC123xYz_-'
+      })
+    ]);
+    expect(db.prepare('SELECT id FROM plugin_music_bot_queue ORDER BY position').all())
+      .toEqual([{ id: persisted.id }]);
+    db.close();
+  });
+
+  it('blocks persistence when a persisted row cannot be decoded', () => {
+    const { db, manager } = createRealManager();
+    const persisted = manager.addSong({
+      title: 'Undecodable persisted row',
+      url: 'https://youtu.be/decode12345'
+    }).song;
+    manager.queue = [];
+    manager.userLastRequest.clear();
+    jest.spyOn(manager, '_entryFromPersistedRow').mockImplementation(() => {
+      throw new Error('row decode failed');
+    });
+
+    expect(manager.restoreQueue()).toEqual({
+      restored: 0,
+      deduped: 0,
+      banned: 0,
+      error: 'restore-decode-failed',
+      persistenceBlocked: true
+    });
+    expect(manager.getPersistenceStatus()).toMatchObject({
+      blocked: true,
+      reason: 'restore-decode-failed',
+      lastError: 'row decode failed'
+    });
+
+    expect(manager.addSong({
+      title: 'Accepted after decode failure',
+      url: 'https://soundcloud.com/new/decode-failure'
+    }).success).toBe(true);
+    expect(manager.persistQueue()).toMatchObject({ success: false, blocked: true });
+    expect(db.prepare('SELECT id FROM plugin_music_bot_queue ORDER BY position').all())
+      .toEqual([{ id: persisted.id }]);
+    db.close();
+  });
+
+  it('canonicalizes YouTube live and privacy-enhanced embed URL aliases', () => {
+    const { db, manager } = createRealManager();
+    const videoId = 'AbC123xYz_-';
+
+    expect(manager.addSong({
+      title: 'Live alias',
+      url: `https://www.youtube.com/live/${videoId}?si=share`
+    }).song.trackKey).toBe(`youtube:${videoId}`);
+    expect(manager.addSong({
+      title: 'Short alias',
+      url: `https://youtu.be/${videoId}`
+    }).success).toBe(false);
+
+    manager.clear();
+    expect(manager.addSong({
+      title: 'Privacy embed',
+      url: `https://www.youtube-nocookie.com/embed/${videoId}`
+    }).song.trackKey).toBe(`youtube:${videoId}`);
+    expect(manager.addSong({
+      title: 'Watch alias',
+      url: `https://youtube.com/watch?v=${videoId}`
+    }).success).toBe(false);
+    db.close();
+  });
+
+  it('migrates legacy history and persists canonical provider and channel metadata', () => {
+    const { db, manager } = createRealManager({}, (legacyDb) => {
+      legacyDb.exec(`
+        CREATE TABLE plugin_music_bot_history (
+          id TEXT PRIMARY KEY,
+          youtubeId TEXT,
+          title TEXT,
+          artist TEXT,
+          url TEXT,
+          duration INTEGER,
+          requestedBy TEXT,
+          source TEXT,
+          thumbnail TEXT,
+          finishedAt INTEGER,
+          skipped INTEGER DEFAULT 0
+        )
+      `);
+    });
+
+    manager.addToHistory({
+      id: 'history-track',
+      title: 'History Track',
+      artist: 'History Artist',
+      url: 'https://www.youtube.com/live/AbC123xYz_-',
+      provider: 'youtube',
+      providerId: 'AbC123xYz_-',
+      trackKey: 'youtube:AbC123xYz_-',
+      channelId: 'channel-123',
+      channelName: 'History Channel'
+    });
+
+    expect(db.prepare(`
+      SELECT provider, providerId, trackKey, channelId, channelName
+      FROM plugin_music_bot_history WHERE id = ?
+    `).get('history-track')).toEqual({
+      provider: 'youtube',
+      providerId: 'AbC123xYz_-',
+      trackKey: 'youtube:AbC123xYz_-',
+      channelId: 'channel-123',
+      channelName: 'History Channel'
+    });
+    db.close();
   });
 });

@@ -33,6 +33,7 @@ class MediaCache {
       maxQueue: this._positiveNumber(this.config.maxQueuedDownloads, 100),
       spawnImpl: dependencies.spawn,
       taskkillImpl: dependencies.taskkill,
+      processKill: dependencies.processKill,
       platform: dependencies.platform || (dependencies.spawn ? 'test' : process.platform),
       logger: this.api
     });

@@ -80,6 +80,213 @@ function hydratePluginForConfigRoute(plugin) {
 }
 
 describe('music-bot POST /api/plugins/music-bot/config', () => {
+  test('rejects malformed nested sections without mutating or persisting runtime config', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    hydratePluginForConfigRoute(plugin);
+    const previousConfig = plugin.config;
+    plugin._registerRoutes();
+    const response = createResponseMock();
+
+    await api.handlers['POST:/api/plugins/music-bot/config']({ body: { queue: null } }, response);
+
+    expect(response.status).toHaveBeenCalledWith(400);
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+    expect(plugin.config).toBe(previousConfig);
+    expect(api.setConfig).not.toHaveBeenCalled();
+    expect(plugin.musicResolver.updateConfig).not.toHaveBeenCalled();
+    expect(plugin.autoDJ.updateConfig).not.toHaveBeenCalled();
+  });
+
+  test('persistence failure leaves all runtime consumers on the previous config snapshot', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    hydratePluginForConfigRoute(plugin);
+    const previousConfig = plugin.config;
+    api.setConfig.mockRejectedValueOnce(new Error('config database unavailable'));
+    plugin._registerRoutes();
+    const response = createResponseMock();
+
+    await api.handlers['POST:/api/plugins/music-bot/config']({
+      body: { queue: { maxLength: previousConfig.queue.maxLength + 10 } }
+    }, response);
+
+    expect(response.status).toHaveBeenCalledWith(500);
+    expect(plugin.config).toBe(previousConfig);
+    expect(plugin.queueManager.config).toBe(previousConfig);
+    expect(plugin.queueManager.queueConfig).toBe(previousConfig.queue);
+    expect(plugin.playbackEngine.setVolume).not.toHaveBeenCalled();
+    expect(api.setConfig).toHaveBeenCalledTimes(1);
+  });
+
+  test('treats the production setConfig false result as a failed commit', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    hydratePluginForConfigRoute(plugin);
+    const previousConfig = plugin.config;
+    api.setConfig.mockResolvedValueOnce(false);
+    plugin._registerRoutes();
+    const response = createResponseMock();
+
+    await api.handlers['POST:/api/plugins/music-bot/config']({
+      body: { queue: { maxLength: previousConfig.queue.maxLength + 10 } }
+    }, response);
+
+    expect(response.status).toHaveBeenCalledWith(500);
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: false,
+      error: expect.stringContaining('persist')
+    }));
+    expect(plugin.config).toBe(previousConfig);
+    expect(plugin.queueManager.config).toBe(previousConfig);
+    expect(plugin.playbackEngine.setVolume).not.toHaveBeenCalled();
+    expect(api.setConfig).toHaveBeenCalledTimes(1);
+  });
+
+  test('component failure rolls back the persisted and distributed config snapshot', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    hydratePluginForConfigRoute(plugin);
+    const previousConfig = plugin.config;
+    plugin.playbackEngine.updateConfig = jest.fn()
+      .mockImplementationOnce(() => { throw new Error('controller rejected config'); })
+      .mockImplementationOnce(() => {});
+    plugin._registerRoutes();
+    const response = createResponseMock();
+
+    await api.handlers['POST:/api/plugins/music-bot/config']({
+      body: { playback: { crossfadeDuration: 4321 } }
+    }, response);
+
+    expect(response.status).toHaveBeenCalledWith(500);
+    expect(plugin.config).toBe(previousConfig);
+    expect(plugin.queueManager.config).toBe(previousConfig);
+    expect(plugin.playbackEngine.updateConfig).toHaveBeenCalledTimes(2);
+    expect(api.setConfig).toHaveBeenNthCalledWith(1, 'config', expect.objectContaining({
+      playback: expect.objectContaining({ crossfadeDuration: 4321 })
+    }));
+    expect(api.setConfig).toHaveBeenNthCalledWith(2, 'config', previousConfig);
+  });
+
+  test('reports a false setConfig result while rolling back a failed runtime distribution', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    hydratePluginForConfigRoute(plugin);
+    const previousConfig = plugin.config;
+    plugin.playbackEngine.updateConfig = jest.fn()
+      .mockImplementationOnce(() => { throw new Error('controller rejected config'); })
+      .mockImplementationOnce(() => {});
+    api.setConfig
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
+    plugin._registerRoutes();
+    const response = createResponseMock();
+
+    await api.handlers['POST:/api/plugins/music-bot/config']({
+      body: { playback: { crossfadeDuration: 5432 } }
+    }, response);
+
+    expect(response.status).toHaveBeenCalledWith(500);
+    expect(api.setConfig).toHaveBeenNthCalledWith(2, 'config', previousConfig);
+    expect(api.log).toHaveBeenCalledWith(
+      expect.stringContaining('persistence rollback failed'),
+      'error'
+    );
+  });
+
+  test('serializes overlapping updates so a late A rollback cannot overwrite successful B', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    hydratePluginForConfigRoute(plugin);
+    const baselineCrossfade = plugin.config.playback.crossfadeDuration;
+    const persistedSnapshots = [];
+    api.setConfig.mockImplementation(async (_key, config) => {
+      persistedSnapshots.push(structuredClone(config));
+      return true;
+    });
+    plugin.playbackEngine.updateConfig = jest.fn();
+    let rejectFirstVolume;
+    let markFirstVolumeStarted;
+    const firstVolumeStarted = new Promise((resolve) => {
+      markFirstVolumeStarted = resolve;
+    });
+    plugin.playbackEngine.setVolume
+      .mockImplementationOnce(() => {
+        markFirstVolumeStarted();
+        return new Promise((_resolve, reject) => {
+          rejectFirstVolume = reject;
+        });
+      })
+      .mockResolvedValue(true);
+    plugin._registerRoutes();
+    const handler = api.handlers['POST:/api/plugins/music-bot/config'];
+    const responseA = createResponseMock();
+    const responseB = createResponseMock();
+
+    const requestA = handler({
+      body: { playback: { crossfadeDuration: baselineCrossfade + 111 } }
+    }, responseA);
+    await firstVolumeStarted;
+    const requestB = handler({
+      body: { queue: { maxLength: 77 } }
+    }, responseB);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(api.setConfig).toHaveBeenCalledTimes(1);
+    rejectFirstVolume(new Error('late A volume failure'));
+    await Promise.all([requestA, requestB]);
+
+    expect(responseA.status).toHaveBeenCalledWith(500);
+    expect(responseB.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    expect(api.setConfig).toHaveBeenCalledTimes(3);
+    expect(persistedSnapshots.at(-1)).toEqual(plugin.config);
+    expect(plugin.config.queue.maxLength).toBe(77);
+    expect(plugin.config.playback.crossfadeDuration).toBe(baselineCrossfade);
+    expect(plugin.queueManager.config).toBe(plugin.config);
+  });
+
+  test('rejects a queued update when the plugin lifecycle ends before its turn', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    hydratePluginForConfigRoute(plugin);
+    plugin.playbackEngine.updateConfig = jest.fn();
+    let rejectFirstVolume;
+    let markFirstVolumeStarted;
+    const firstVolumeStarted = new Promise((resolve) => {
+      markFirstVolumeStarted = resolve;
+    });
+    plugin.playbackEngine.setVolume
+      .mockImplementationOnce(() => {
+        markFirstVolumeStarted();
+        return new Promise((_resolve, reject) => {
+          rejectFirstVolume = reject;
+        });
+      })
+      .mockResolvedValue(true);
+    plugin._registerRoutes();
+    const handler = api.handlers['POST:/api/plugins/music-bot/config'];
+    const responseA = createResponseMock();
+    const responseB = createResponseMock();
+
+    const requestA = handler({
+      body: { playback: { crossfadeDuration: 4100 } }
+    }, responseA);
+    await firstVolumeStarted;
+    const requestB = handler({
+      body: { queue: { maxLength: 88 } }
+    }, responseB);
+    const destroying = plugin.destroy();
+    rejectFirstVolume(new Error('A aborted during destroy'));
+    await Promise.all([requestA, requestB, destroying]);
+
+    expect(responseA.status).toHaveBeenCalledWith(503);
+    expect(responseB.status).toHaveBeenCalledWith(503);
+    expect(responseB.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+    expect(api.setConfig).toHaveBeenCalledTimes(2);
+    expect(api.setConfig.mock.calls.some(([, config]) => config.queue.maxLength === 88)).toBe(false);
+  });
+
   test('merges arrays and persists merged config including blocked keywords, aliases and gift catalogs', async () => {
     const api = createApi();
     const plugin = new MusicBotPlugin(api);

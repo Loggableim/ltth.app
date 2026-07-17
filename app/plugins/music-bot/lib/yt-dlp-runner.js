@@ -19,6 +19,7 @@ class YtDlpRunner {
     this.maxQueue = Math.max(this.maxConcurrent, Number(options.maxQueue) || 100);
     this.spawnImpl = options.spawnImpl || childProcess.spawn;
     this.taskkillImpl = options.taskkillImpl || childProcess.spawn;
+    this.processKill = options.processKill || process.kill.bind(process);
     this.platform = options.platform || process.platform;
     this.logger = options.logger || null;
     this.queue = [];
@@ -106,7 +107,8 @@ class YtDlpRunner {
     try {
       child = this.spawnImpl(job.executable, job.args, {
         stdio: ['ignore', 'pipe', 'pipe'],
-        windowsHide: true
+        windowsHide: true,
+        ...(this.platform === 'win32' ? {} : { detached: true })
       });
     } catch (error) {
       this._settle(job, error);
@@ -187,9 +189,26 @@ class YtDlpRunner {
 
   async _killProcessTree(child) {
     if (!child) return;
-    if (this.platform !== 'win32' || !child.pid) {
+    if (!child.pid) {
       try { child.kill('SIGKILL'); } catch (_error) { /* already gone */ }
       return;
+    }
+
+    if (this.platform !== 'win32') {
+      const processGroupId = -Math.abs(Number(child.pid));
+      try {
+        this.processKill(processGroupId, 'SIGTERM');
+      } catch (error) {
+        if (error?.code === 'ESRCH') return;
+      }
+      try {
+        this.processKill(processGroupId, 'SIGKILL');
+        return;
+      } catch (error) {
+        if (error?.code === 'ESRCH') return;
+        try { child.kill('SIGKILL'); } catch (_fallbackError) { /* already gone */ }
+        return;
+      }
     }
 
     const killed = await new Promise((resolve) => {

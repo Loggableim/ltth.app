@@ -5,6 +5,7 @@ const SOUND_BOT_PROCESS_MARKER = 'ltth-soundbot-mpv-v1';
 const SOUND_BOT_IPC_PREFIX = 'ltth-soundbot-mpv-v1-';
 const MAX_CLEANUP_MS = 2000;
 const MAX_SCANNER_OUTPUT_BYTES = 1024 * 1024;
+const MAX_SCANNER_ERROR_CHARS = 512;
 const MPV_EXECUTABLE_NAMES = new Set(['mpv', 'mpv.exe', 'mpv.com']);
 
 function escapeRegExp(value) {
@@ -31,6 +32,21 @@ function isMarkedSoundbotMpv(entry = {}) {
     `(?:^|\\s)["']?--input-ipc-server=(?:\\\\\\\\\\.\\\\pipe\\\\|[^\\s"']*[\\\\/])${ipcPrefix}[a-zA-Z0-9-]+(?:\\.sock)?["']?(?=\\s|$)`
   );
   return exactIpc.test(commandLine);
+}
+
+function processScannerError(executable, result = {}) {
+  const exitCode = Number.isInteger(Number(result.code)) ? Number(result.code) : 'unknown';
+  const detail = String(result.stderr || '')
+    .replace(/[\u0000-\u001f\u007f]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_SCANNER_ERROR_CHARS);
+  const error = new Error(
+    `${executable} process scan failed with exit code ${exitCode}${detail ? `: ${detail}` : ''}`
+  );
+  error.code = 'SOUNDBOT_PROCESS_SCAN_FAILED';
+  error.exitCode = result.code;
+  return error;
 }
 
 class SoundbotProcessRegistry {
@@ -162,7 +178,8 @@ class SoundbotProcessRegistry {
         '-Command',
         script
       ], { timeoutMs });
-      if (result.code !== 0 || !result.stdout.trim()) return [];
+      if (result.code !== 0) throw processScannerError('powershell.exe', result);
+      if (!result.stdout.trim()) return [];
       const parsed = JSON.parse(result.stdout);
       return (Array.isArray(parsed) ? parsed : [parsed]).map((entry) => ({
         pid: Number(entry.ProcessId),
@@ -172,7 +189,7 @@ class SoundbotProcessRegistry {
     }
 
     const result = await this._runProcess('ps', ['-axo', 'pid=,comm=,args='], { timeoutMs });
-    if (result.code !== 0) return [];
+    if (result.code !== 0) throw processScannerError('ps', result);
     return result.stdout.split(/\r?\n/).map((line) => {
       const match = line.match(/^\s*(\d+)\s+(\S+)\s+(.+)$/);
       if (!match) return null;
