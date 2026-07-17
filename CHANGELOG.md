@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.32] - 2026-07-17
+
+### Added
+
+- **Unified Interactive Match Queue**: Connect Four and Chess now share a persistent FIFO queue for concurrent viewer matches; the active board waits for the streamer before rotation continues.
+- **Rotating OBS Boards**: The unified overlay cycles through every active match, always renders the latest board state, and labels each board as host vs. player.
+- **Host and Chat Controls**: The streamer controls host turns from the Game Engine dashboard while viewers submit their moves through chat.
+
+### Fixed
+
+- **Authoritative Viewer Clock**: The clock pauses during host turns, starts for the viewer turn, and records an automatic player loss when the configured response time expires.
+- **Queue Reliability**: Hardened restart recovery, event deduplication, board advancement, and host-control races.
+
+### Changed
+
+- **Release Metadata**: Synchronized package, launcher, download, locale, and website version surfaces to 1.3.32.
+
 ## [1.3.31] - 2026-07-17
 
 ### Added
