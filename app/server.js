@@ -2743,7 +2743,13 @@ app.get('/api/gift-catalog', apiLimiter, (req, res) => {
 app.post('/api/gift-catalog/update', apiLimiter, async (req, res) => {
     try {
         const locale = req.query.locale || req.body?.locale || req.locale || db.getSetting('language') || 'en';
-        const result = await tiktok.updateGiftCatalog({ localeCode: locale });
+        const requestedUsername = (req.body?.username || '').toString().trim().replace(/^@/, '');
+        const fallbackUsername = db.getSetting('last_connected_username');
+        const result = await tiktok.updateGiftCatalog({
+            localeCode: locale,
+            preferConnected: true,
+            username: requestedUsername || fallbackUsername || undefined
+        });
         logger.info('🎁 Gift catalog updated');
         res.json({ success: true, ...result });
     } catch (error) {

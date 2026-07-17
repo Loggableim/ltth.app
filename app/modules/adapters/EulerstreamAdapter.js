@@ -3179,14 +3179,30 @@ class EulerstreamAdapter extends BaseAdapter {
             fetchRoomId: options.fetchRoomId
         };
         const localeCode = this._normalizeLocaleCode(options.locale_code || options.localeCode);
+        const normalizeUsername = (value) => String(value || '').replace(/^@/, '').trim();
+        const preferConnected = options.preferConnected !== false;
+        const requestedUsername = normalizeUsername(options.username);
+        const connectedUsername = preferConnected && this.isConnected
+            ? normalizeUsername(this.currentUsername)
+            : '';
+        const savedUsername = normalizeUsername(this.db.getSetting('last_connected_username'));
+        const lookupUsername = requestedUsername
+            || connectedUsername
+            || normalizeUsername(this.currentUsername)
+            || savedUsername;
 
         // Fetch gift catalog from TikTok's Webcast API.
         this._mergeSessionGiftsIntoCatalog();
 
-        // Try to get room ID if we don't have it. Gift list can still be fetched without it.
-        if (!this.roomId && requestedOptions.fetchRoomId !== false && this.currentUsername) {
+        // Refresh the room ID after disconnects as well, so catalog refreshes can
+        // use the last known account without requiring a live connection.
+        if (
+            lookupUsername
+            && requestedOptions.fetchRoomId !== false
+            && !this.roomId
+        ) {
             try {
-                await this.fetchRoomId(this.currentUsername);
+                await this.fetchRoomId(lookupUsername);
             } catch (error) {
                 this.logger.warn(`Could not fetch room ID before gift catalog refresh: ${this._formatHttpError(error)}`);
             }
