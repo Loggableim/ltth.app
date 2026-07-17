@@ -144,6 +144,9 @@ async function loadRendererStatus() {
         const audioEvents = document.getElementById('webgpu-audio-events');
         const audioPeak = document.getElementById('webgpu-audio-peak');
         const timelineSync = document.getElementById('webgpu-timeline-sync');
+        const finaleActive = document.getElementById('webgpu-finale-active');
+        const finalePhase = document.getElementById('webgpu-finale-phase');
+        const finaleQueue = document.getElementById('webgpu-finale-queue');
         const visualStyle = document.getElementById('webgpu-visual-style');
         const frameTime = document.getElementById('webgpu-frame-time');
         const particles = document.getElementById('webgpu-particle-state');
@@ -177,6 +180,13 @@ async function loadRendererStatus() {
                 ? `${lastEvent.type || 'event'} ${Number.isFinite(Number(lastEvent.driftMs)) ? `${Number(lastEvent.driftMs) >= 0 ? '+' : ''}${Number(lastEvent.driftMs).toFixed(1)} ms` : lastEvent.state || ''}`.trim()
                 : 'No events';
         }
+        if (finaleActive) {
+            finaleActive.textContent = renderer.finaleActive
+                ? `${renderer.finaleStyle || 'Finale'} · ${renderer.finaleLength || 'medium'}`
+                : 'Idle';
+        }
+        if (finalePhase) finalePhase.textContent = String(renderer.finalePhase || 'idle').toUpperCase();
+        if (finaleQueue) finaleQueue.textContent = String(Number(renderer.finaleQueueLength || 0));
         if (visualStyle) visualStyle.textContent = formatVisualStyle(renderer.visualStyle || config.visualStyle);
         if (frameTime) frameTime.textContent = Number.isFinite(Number(renderer.gpuFrameMs)) ? `${Number(renderer.gpuFrameMs).toFixed(2)} ms` : '-';
         if (particles) particles.textContent = `${Number(renderer.activeParticles || 0).toLocaleString()} active · ${Number(renderer.droppedParticles || 0).toLocaleString()} dropped`;
@@ -187,6 +197,10 @@ async function loadRendererStatus() {
         if (reason && renderer.lastAudioError) {
             reason.hidden = false;
             reason.textContent = renderer.lastAudioError;
+        }
+        if (reason && renderer.finaleError) {
+            reason.hidden = false;
+            reason.textContent = renderer.finaleError;
         }
         if (data.requirements?.allowedOrigin) {
             const origin = document.getElementById('webgpu-origin');
@@ -252,13 +266,16 @@ async function triggerTest() {
 async function triggerFinale() {
     try {
         const intensity = parseFloat(document.getElementById('finale-intensity').value);
+        const style = document.getElementById('finale-style').value;
+        const length = document.getElementById('finale-length').value;
 
         await fetch('/api/webgpu-fireworks/finale', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                intensity: intensity,
-                duration: 5000
+                style: style,
+                length: length,
+                intensity: intensity
             })
         });
 
@@ -354,6 +371,8 @@ function updateUI() {
     updateToggle('finale-toggle', config.goalFinaleEnabled);
     document.getElementById('finale-intensity').value = config.goalFinaleIntensity || 3;
     document.getElementById('finale-intensity-value').textContent = (config.goalFinaleIntensity || 3) + 'x';
+    document.getElementById('finale-style').value = config.goalFinaleStyle || 'auto';
+    document.getElementById('finale-length').value = config.goalFinaleLength || 'medium';
 
     // Follower fireworks
     updateToggle('follower-toggle', config.followerFireworksEnabled);
@@ -813,6 +832,12 @@ function setupEventListeners() {
 
     setupRangeSlider('finale-intensity', 'finale-intensity-value', 'x', (val) => {
         config.goalFinaleIntensity = parseFloat(val);
+    });
+    document.getElementById('finale-style')?.addEventListener('change', function() {
+        config.goalFinaleStyle = this.value;
+    });
+    document.getElementById('finale-length')?.addEventListener('change', function() {
+        config.goalFinaleLength = this.value;
     });
 
     setupRangeSlider('follower-rocket-count', 'follower-rocket-count-value', '', (val) => {

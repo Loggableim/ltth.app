@@ -29,6 +29,7 @@ const {
 } = require('./lib/config-schema');
 const { evaluateTriggerPolicy } = require('./lib/trigger-policy');
 const { SpawnPlanner } = require('./lib/spawn-planner');
+const { FinaleShowPlanner, FINALE_STYLES } = require('./lib/finale-show-planner');
 
 const FIREWORKS_CONFIG_MIGRATION_VERSION = 1;
 
@@ -63,6 +64,9 @@ class FireworksPlugin {
         this.activeFireworkTimers = new Map();
         this.useLegacyGiftDropGuards = false;
         this.spawnPlanner = new SpawnPlanner();
+        this.finaleShowPlanner = new FinaleShowPlanner();
+        this.finaleAutoIndex = 0;
+        this.finaleIdCounter = 0;
     }
 
     async init() {
@@ -231,6 +235,15 @@ class FireworksPlugin {
                                 state: typeof event?.state === 'string' ? event.state.slice(0, 40) : null
                             }))
                             : previous.timelineEvents || [],
+                        finaleActive: data.finaleActive === true,
+                        finaleId: typeof data.finaleId === 'string' ? data.finaleId.slice(0, 160) : null,
+                        finaleStyle: typeof data.finaleStyle === 'string' ? data.finaleStyle.slice(0, 40) : null,
+                        finaleLength: typeof data.finaleLength === 'string' ? data.finaleLength.slice(0, 20) : null,
+                        finalePhase: typeof data.finalePhase === 'string' ? data.finalePhase.slice(0, 40) : 'idle',
+                        finaleQueueLength: Number.isFinite(Number(data.finaleQueueLength))
+                            ? Math.max(0, Math.floor(Number(data.finaleQueueLength)))
+                            : 0,
+                        finaleError: typeof data.finaleError === 'string' ? data.finaleError.slice(0, 300) : null,
                         visualStyle: typeof data.visualStyle === 'string' ? data.visualStyle : this.config.visualStyle,
                         reason: typeof data.reason === 'string' ? data.reason.slice(0, 300) : null,
                         updatedAt: Date.now()
@@ -321,6 +334,13 @@ class FireworksPlugin {
             missedAudioEvents: 0,
             audioPeak: null,
             timelineEvents: [],
+            finaleActive: false,
+            finaleId: null,
+            finaleStyle: null,
+            finaleLength: null,
+            finalePhase: 'idle',
+            finaleQueueLength: 0,
+            finaleError: null,
             visualStyle: this.config?.visualStyle || 'premium-hybrid',
             reason: 'No active WebGPU overlay connected'
         };
@@ -473,7 +493,9 @@ class FireworksPlugin {
             // Goal finale
             goalFinaleEnabled: true,
             goalFinaleIntensity: 3.0,
-            goalFinaleDuration: 5000, // ms
+            goalFinaleStyle: 'auto',
+            goalFinaleLength: 'medium',
+            goalFinaleDuration: 18000, // Compatibility only
 
             // Follower fireworks
             followerFireworksEnabled: false, // Enable fireworks for new followers
@@ -702,9 +724,12 @@ class FireworksPlugin {
         // Trigger finale
         this.api.registerRoute('post', '/api/webgpu-fireworks/finale', (req, res) => {
             try {
-                const { intensity, duration } = normalizeFinaleRequest(req.body || {});
-                this.triggerFinale(intensity, duration, true); // true = bypass enabled check
-                res.json({ success: true, message: 'Finale triggered' });
+                const result = this.triggerFinale({
+                    ...(req.body || {}),
+                    bypassEnabled: true
+                });
+                const { showPlan, bursts, ...metadata } = result;
+                res.json({ success: true, message: 'Finale triggered', ...metadata });
             } catch (error) {
                 res.status(500).json({ success: false, error: error.message });
             }
@@ -948,7 +973,12 @@ class FireworksPlugin {
             if (!this.config.enabled || !this.config.goalFinaleEnabled) return;
 
             this.api.log(`🎯 [FIREWORKS] Goal reached! Triggering finale...`, 'info');
-            this.triggerFinale(this.config.goalFinaleIntensity, this.config.goalFinaleDuration);
+            this.triggerFinale({
+                style: this.config.goalFinaleStyle,
+                length: this.config.goalFinaleLength,
+                intensity: this.config.goalFinaleIntensity,
+                eventId: data && (data.eventId || data.id)
+            });
         });
 
         // Follow event - new follower celebration
@@ -1456,47 +1486,112 @@ class FireworksPlugin {
     /**
      * Trigger finale show (multiple simultaneous fireworks)
      */
-    triggerFinale(intensity = 3.0, duration = 5000, bypassEnabled = false) {
-        if (!this.config.enabled && !bypassEnabled) return;
-        const finale = normalizeFinaleRequest({ intensity, duration });
-        intensity = finale.intensity;
-        duration = finale.duration;
+    triggerFinale(optionsOrIntensity, legacyDuration, legacyBypassEnabled = false) {
+        const config = this.config || normalizeConfig();
+        const isObjectCall = optionsOrIntensity !== null &&
+            typeof optionsOrIntensity === 'object' &&
+            !Array.isArray(optionsOrIntensity);
+        let request;
 
-        const burstCount = Math.min(40, Math.round(5 * intensity));
-        const seed = Math.floor(Math.random() * 0xffffffff);
-        const bursts = this.spawnPlanner.planFinale(burstCount, {
-            seed,
-            orientation: this.config.orientation
+        if (isObjectCall) {
+            const options = optionsOrIntensity;
+            const hasLegacyDuration = options.duration !== undefined && options.length === undefined;
+            request = {
+                ...options,
+                style: options.style === undefined || options.style === 'inherit'
+                    ? config.goalFinaleStyle
+                    : options.style,
+                intensity: options.intensity === undefined
+                    ? config.goalFinaleIntensity
+                    : options.intensity
+            };
+            if (!hasLegacyDuration) {
+                request.length = options.length === undefined || options.length === 'inherit'
+                    ? config.goalFinaleLength
+                    : options.length;
+            }
+        } else {
+            const hasLegacyDuration = legacyDuration !== undefined;
+            request = {
+                intensity: optionsOrIntensity === undefined
+                    ? config.goalFinaleIntensity
+                    : optionsOrIntensity,
+                style: config.goalFinaleStyle,
+                bypassEnabled: legacyBypassEnabled === true
+            };
+            if (hasLegacyDuration) {
+                request.duration = legacyDuration;
+            } else {
+                request.length = config.goalFinaleLength;
+            }
+        }
+
+        const finale = normalizeFinaleRequest(request);
+        if (!config.enabled && !finale.bypassEnabled) {
+            return { accepted: false, reason: 'disabled' };
+        }
+
+        const resolvedStyle = finale.style === 'auto'
+            ? FINALE_STYLES[this.finaleAutoIndex++ % FINALE_STYLES.length]
+            : finale.style;
+        const id = finale.id || `finale-${Date.now()}-${finale.seed}-${this.finaleIdCounter++}`;
+        const showPlan = this.finaleShowPlanner.plan({
+            id,
+            style: resolvedStyle,
+            length: finale.length,
+            orientation: config.orientation,
+            intensity: finale.intensity,
+            seed: finale.seed
         });
+        const bursts = showPlan.cues.flatMap(cue => cue.launches.map(launch => ({
+            ...launch,
+            beatAtMs: cue.beatAtMs,
+            phase: cue.phase,
+            formation: cue.formation
+        })));
 
-        this.api.log(`🎆 [FIREWORKS] FINALE! Intensity: ${intensity}, Duration: ${duration}ms`, 'info');
+        this.api.log(
+            `🎆 [FIREWORKS] FINALE! Style: ${resolvedStyle}, Length: ${finale.length}, ` +
+            `Intensity: ${finale.intensity}, Duration: ${showPlan.durationMs}ms`,
+            'info'
+        );
 
         const payload = {
-            id: 'finale-' + Date.now(),
+            accepted: true,
+            id,
+            eventId: id,
             type: 'finale',
-            intensity: intensity,
-            duration: duration,
+            style: resolvedStyle,
+            length: finale.length,
+            intensity: finale.intensity,
+            duration: showPlan.durationMs,
+            durationMs: showPlan.durationMs,
             timestamp: Date.now(),
+            seed: finale.seed,
+            bypassEnabled: finale.bypassEnabled,
+            showPlan,
 
-            // Finale-specific settings
-            burstCount,
-            burstInterval: burstCount > 1 ? Math.max(180, Math.min(500, duration / (burstCount - 1))) : 0,
+            // Legacy spatial fallback for overlays that do not yet consume showPlan.
+            burstCount: bursts.length,
+            burstInterval: bursts.length > 1 ? showPlan.durationMs / (bursts.length - 1) : 0,
             bursts,
-            seed,
-            shapes: this.getConfiguredShapes(),
-            colors: this.resolveConfiguredColors(),
-            visualStyle: this.config.visualStyle,
+            visualStyle: config.visualStyle,
 
-            // Audio
-            playSound: this.config.audioEnabled,
-            audioVolume: this.config.audioVolume,
-            crackleFrequency: this.config.crackleFrequency,
-            crackleVolume: this.config.crackleVolume,
-            rocketSound: this.config.rocketSound,
-            explosionSound: this.config.explosionSound
+            // Show presets own the sound roles; users retain mute and master volume.
+            playSound: config.audioEnabled,
+            audioVolume: config.audioVolume,
+            audioMuted: !config.audioEnabled,
+            audioMasterVolume: config.audioVolume,
+            audio: {
+                muted: !config.audioEnabled,
+                masterVolume: config.audioVolume
+            },
+            rocketSound: config.rocketSound,
+            explosionSound: config.explosionSound
         };
 
         this.api.emit('webgpu-fireworks:finale', payload);
+        return payload;
     }
 
     /**
@@ -1607,7 +1702,7 @@ class FireworksPlugin {
                     min: 1000,
                     max: 30000,
                     step: 1000,
-                    default: 5000
+                    default: 18000
                 }
             },
             execute: async (params) => {

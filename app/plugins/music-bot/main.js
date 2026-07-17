@@ -192,6 +192,7 @@ class MusicBotPlugin extends EventEmitter {
     this._pendingTrackAdvance = null;
     this._pendingSkipAdvance = null;
     this._queueAdvanceOperation = null;
+    this._autoDjAdvanceOperations = new Set();
     this._lifecycleGeneration = 1;
     this._destroyed = false;
     this._stateTransitions = [];
@@ -307,24 +308,27 @@ class MusicBotPlugin extends EventEmitter {
     this._pendingTrackAdvance = null;
     this._pendingSkipAdvance = null;
     this._cleanupDuckingHooks();
+    this.autoDJ?.deactivate?.();
 
-    await this._stopPrecacheTasks();
-    try {
-      await this.mediaCache?.destroy?.();
-    } catch (error) {
+    const pendingAutoDjAdvances = [...this._autoDjAdvanceOperations];
+    const precacheShutdown = Promise.resolve(this._stopPrecacheTasks());
+    const cacheShutdown = Promise.resolve(this.mediaCache?.destroy?.()).catch((error) => {
       this.api.log(`[music-bot] Failed to shutdown media cache: ${error.message}`, 'error');
-    }
-    try {
-      await this.musicResolver?.destroy?.();
-    } catch (error) {
+    });
+    const resolverShutdown = Promise.resolve(this.musicResolver?.destroy?.()).catch((error) => {
       this.api.log(`[music-bot] Failed to shutdown resolver: ${error.message}`, 'error');
-    }
+    });
     this.playbackEngine?.removeAllListeners?.();
-    try {
-      await this.playbackEngine?.shutdown?.();
-    } catch (error) {
+    const playbackShutdown = Promise.resolve(this.playbackEngine?.shutdown?.()).catch((error) => {
       this.api.log(`[music-bot] Failed to shutdown playback: ${error.message}`, 'error');
-    }
+    });
+    await Promise.all([
+      precacheShutdown,
+      cacheShutdown,
+      resolverShutdown,
+      playbackShutdown,
+      this._drainOperations(pendingAutoDjAdvances, 250)
+    ]);
     await configUpdateDrain;
 
     // Keep queued songs across app restarts and plugin reloads. Explicit user
@@ -1110,29 +1114,52 @@ class MusicBotPlugin extends EventEmitter {
     this._lifecycleGeneration += 1;
     this._recordTransition('locked', this.config.safety.reason);
 
-    // Persist first, but never let a storage failure block the actual kill path.
     let persistError = null;
-    try {
-      await this._persistConfigOrThrow(this.config, 'Safety Lock');
-    } catch (error) {
+    const persistence = this._persistConfigOrThrow(this.config, 'Safety Lock').catch((error) => {
       persistError = error;
-      this.api.log(`[music-bot] Failed to persist Safety Lock before stopping audio: ${error.message}`, 'error');
-    }
+      this.api.log(`[music-bot] Failed to persist Safety Lock: ${error.message}`, 'error');
+    });
     this._stopPlaybackSync();
     this._clearCrossfadeTimer();
     this._pendingTrackAdvance = null;
     this._pendingSkipAdvance = null;
-    await Promise.allSettled([
+    const backgroundCancellation = Promise.allSettled([
       Promise.resolve(this.musicResolver?.cancelAll?.()),
       Promise.resolve(this._stopPrecacheTasks?.())
     ]);
-    await this.playbackEngine?.emergencyStop?.(this.config.safety.reason);
-    this.queueManager?.markPlaying?.(null);
-    this._emitPlaybackStopped();
-    this._emitNowPlaying(null);
-    this._emitSafetyState();
+    const stopAudio = Promise.resolve(
+      this.playbackEngine?.emergencyStop?.(this.config.safety.reason)
+    ).then(() => {
+      this.queueManager?.markPlaying?.(null);
+      this._emitPlaybackStopped();
+      this._emitNowPlaying(null);
+      this._emitSafetyState();
+    });
+    const [, , stopResult] = await Promise.allSettled([
+      persistence,
+      backgroundCancellation,
+      stopAudio
+    ]);
+    if (stopResult.status === 'rejected') throw stopResult.reason;
     if (persistError) throw persistError;
     return this.config.safety;
+  }
+
+  _drainOperations(operations, timeoutMs) {
+    const pending = Array.isArray(operations) ? operations.filter(Boolean) : [];
+    if (!pending.length) return Promise.resolve();
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve();
+      };
+      const timer = setTimeout(finish, Math.max(1, Number(timeoutMs) || 1));
+      timer.unref?.();
+      Promise.allSettled(pending).then(finish);
+    });
   }
 
   async _releaseSafetyLock() {
@@ -3033,8 +3060,20 @@ class MusicBotPlugin extends EventEmitter {
     return this.queueManager.getQueue().find((item) => item.requestedBy?.toLowerCase() === lower);
   }
 
-  async _maybePlayAutoDJ(force = false, allowActiveAutoDJ = false) {
-    if (this._isSafetyLocked() || !this.autoDJ || !this.config.autoDJ?.enabled) {
+  _maybePlayAutoDJ(force = false, allowActiveAutoDJ = false) {
+    const generation = this._lifecycleGeneration;
+    const operation = this._maybePlayAutoDJInternal(force, allowActiveAutoDJ, generation);
+    this._autoDjAdvanceOperations.add(operation);
+    operation.then(
+      () => this._autoDjAdvanceOperations.delete(operation),
+      () => this._autoDjAdvanceOperations.delete(operation)
+    );
+    return operation;
+  }
+
+  async _maybePlayAutoDJInternal(force, allowActiveAutoDJ, generation) {
+    const isCurrent = () => !this._destroyed && generation === this._lifecycleGeneration;
+    if (!isCurrent() || this._isSafetyLocked() || !this.autoDJ || !this.config.autoDJ?.enabled) {
       return null;
     }
     if (this.queueManager?.getQueue?.().length > 0) return null;
@@ -3050,7 +3089,7 @@ class MusicBotPlugin extends EventEmitter {
     let track = null;
     for (let attempt = 0; attempt < 5; attempt += 1) {
       result = force ? await this.autoDJ.getNextSong(true) : await this.autoDJ.onQueueEmpty();
-      if (!result) return null;
+      if (!isCurrent() || !result) return null;
       if (
         this._isSafetyLocked()
         || this.queueManager?.getQueue?.().length > 0
@@ -3064,6 +3103,7 @@ class MusicBotPlugin extends EventEmitter {
       try {
         track = await this._prepareAutoDJTrack(selectedTrack);
       } catch (error) {
+        if (!isCurrent()) return null;
         this.autoDJ.recordFailedTrack?.(selectedTrack, 'resolve-failed');
         this.api.log(
           `[music-bot] AutoDJ could not resolve "${selectedTrack.title || selectedTrack.id}": ${error.message}`,
@@ -3073,7 +3113,8 @@ class MusicBotPlugin extends EventEmitter {
         continue;
       }
       if (
-        this._isSafetyLocked()
+        !isCurrent()
+        || this._isSafetyLocked()
         || this.queueManager?.getQueue?.().length > 0
         || (!mayReplaceActiveAutoDJ && this.playbackEngine?.isPlaying?.())
         || (mayReplaceActiveAutoDJ && this.playbackEngine?.isPlaying?.()
@@ -3090,10 +3131,12 @@ class MusicBotPlugin extends EventEmitter {
       );
       track = null;
     }
-    if (!track) return null;
+    if (!isCurrent() || !track) return null;
 
     try {
+      if (!isCurrent()) return null;
       await this.playbackEngine.play(track);
+      if (!isCurrent()) return null;
       this.autoDJ.markTrackStarted(track);
       this.queueManager.markPlaying(track);
       this._emitQueue();

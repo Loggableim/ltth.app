@@ -277,6 +277,27 @@ describe('Music Bot Safety Lock runtime integration', () => {
     expect(api.emitted).toContainEqual({ event: 'musicbot:now-playing', payload: null });
   });
 
+  test('emergency stop kills audio immediately even while Safety Lock persistence is pending', async () => {
+    const { api, plugin } = hydratePlugin();
+    let releasePersistence;
+    api.setConfig.mockImplementation(() => new Promise((resolve) => {
+      releasePersistence = resolve;
+    }));
+    const handler = api.handlers['POST:/api/plugins/music-bot/emergency-stop'];
+    const response = createResponse();
+
+    const request = handler({ body: {} }, response);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(plugin.playbackEngine.emergencyStop).toHaveBeenCalledTimes(1);
+    expect(plugin.musicResolver.cancelAll).toHaveBeenCalledTimes(1);
+    expect(response.json).not.toHaveBeenCalled();
+
+    releasePersistence(true);
+    await request;
+  });
+
   test('emergency stop still kills audio when Safety Lock persistence fails', async () => {
     const { api, plugin, queue } = hydratePlugin();
     api.setConfig.mockRejectedValueOnce(new Error('database unavailable'));
@@ -863,5 +884,42 @@ describe('Music Bot Safety Lock runtime integration', () => {
     expect(afterDestroy).toMatchObject({ success: false, locked: true });
     expect(plugin.queueManager.shiftNext).not.toHaveBeenCalled();
     expect(plugin.queueManager.persistQueue).toHaveBeenCalledTimes(1);
+  });
+
+  test('destroy invalidates a deferred AutoDJ selection before it can start playback', async () => {
+    const { plugin, queue, setNowPlaying } = hydratePlugin();
+    queue.splice(0, queue.length);
+    setNowPlaying(null);
+    let releaseSelection;
+    let releaseCacheShutdown;
+    plugin.autoDJ.getNextSong = jest.fn(() => new Promise((resolve) => {
+      releaseSelection = resolve;
+    }));
+    plugin.autoDJ.markTrackStarted = jest.fn();
+    plugin.autoDJ.markPlaybackFailed = jest.fn();
+    plugin.mediaCache = {
+      destroy: jest.fn(() => new Promise((resolve) => {
+        releaseCacheShutdown = resolve;
+      }))
+    };
+
+    const autoDjStart = plugin._maybePlayAutoDJ(true);
+    await Promise.resolve();
+    const destroying = plugin.destroy();
+    await Promise.resolve();
+    releaseSelection({
+      song: {
+        id: 'stale-autodj',
+        title: 'Stale AutoDJ',
+        requestedBy: 'AutoDJ',
+        streamUrl: 'https://media.example.test/stale.m4a'
+      }
+    });
+
+    await expect(autoDjStart).resolves.toBeNull();
+    expect(plugin.playbackEngine.play).not.toHaveBeenCalled();
+
+    releaseCacheShutdown();
+    await destroying;
   });
 });

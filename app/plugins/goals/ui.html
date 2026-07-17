@@ -1519,6 +1519,16 @@
 
                 <div class="form-group">
                     <label class="checkbox-row">
+                        <input type="checkbox" id="goal-reset-on-stream-end" checked>
+                        <span>
+                            <span class="checkbox-title">Bei Streamende zurücksetzen</span>
+                            <span class="form-help">Deaktivieren für streamübergreifende Ziele wie Marathon- oder Monatsziele.</span>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-row">
                         <input type="checkbox" id="goal-firework-enabled">
                         <span>
                             <span class="checkbox-title" data-i18n="generated.84f5e8c1f086">Feuerwerk-Finale bei Zielerreichung</span>
@@ -1535,10 +1545,27 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" data-i18n="generated.c57a6ef10158">Feuerwerk-Dauer (Sekunden)</label>
-                            <input type="number" class="form-input" id="goal-firework-duration" value="5" min="1" max="30" step="0.5">
+                            <label class="form-label" data-i18n="goals.modal.firework_finale_style_label">Finale Show Style</label>
+                            <select class="form-select" id="goal-firework-encounter">
+                                <option value="inherit" data-i18n="goals.modal.firework_finale_global_default">Use global default</option>
+                                <option value="auto" data-i18n="goals.modal.firework_finale_style_auto">Auto</option>
+                                <option value="classic-crescendo" data-i18n="goals.modal.firework_finale_style_classic_crescendo">Classic Crescendo</option>
+                                <option value="symmetric-salute" data-i18n="goals.modal.firework_finale_style_symmetric_salute">Symmetric Salute</option>
+                                <option value="sky-ballet" data-i18n="goals.modal.firework_finale_style_sky_ballet">Sky Ballet</option>
+                                <option value="thunder-finale" data-i18n="goals.modal.firework_finale_style_thunder_finale">Thunder Finale</option>
+                            </select>
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="goals.modal.firework_finale_length_label">Finale Length</label>
+                        <select class="form-select" id="goal-firework-finale-length">
+                            <option value="inherit" data-i18n="goals.modal.firework_finale_global_default">Use global default</option>
+                            <option value="short" data-i18n="goals.modal.firework_finale_length_short">Short (10 s)</option>
+                            <option value="medium" data-i18n="goals.modal.firework_finale_length_medium">Medium (18 s)</option>
+                            <option value="long" data-i18n="goals.modal.firework_finale_length_long">Long (28 s)</option>
+                        </select>
+                    </div>
+                    <input id="goal-firework-duration" type="hidden" value="5">
                     <div class="form-group">
                         <label class="checkbox-row">
                             <input type="checkbox" id="goal-firework-progress-enabled" checked>

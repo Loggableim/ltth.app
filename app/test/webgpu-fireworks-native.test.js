@@ -56,7 +56,7 @@ describe('WebGPU Fireworks native migration', () => {
     expect(rendererSource).toContain('atomicCompareExchangeWeak');
     expect(rendererSource).toContain('atomicAdd(&counters.droppedCount');
     expect(rendererSource).toContain('var result = 0xffffffffu');
-    expect(rendererSource).toContain('return result;\n}\nfn releaseParticle');
+    expect(rendererSource).toMatch(/return result;\r?\n}\r?\nfn releaseParticle/);
     expect(rendererSource).toContain('drawIndirect(this.buffers.coreIndirect');
     expect(rendererSource).toContain('drawIndirect(this.buffers.trailIndirect');
   });
@@ -137,7 +137,7 @@ describe('WebGPU Fireworks native migration', () => {
       'combined-whistle-tiny4'
     ]) expect(orchestrationSource).toContain(sound);
     expect(orchestrationSource).toContain('fitLaunchToFlight(selection, flightDuration, seed)');
-    expect(orchestrationSource).toContain('maxDuration: plan.flightDuration');
+    expect(orchestrationSource).toContain('maxDuration: launchDuration');
     expect(orchestrationSource).toContain('source.stop(stopAt)');
     expect(orchestrationSource).toContain('this.audio.play(explosion.sound.bang');
   });
@@ -149,7 +149,7 @@ describe('WebGPU Fireworks native migration', () => {
     expect(processBody).toContain('this.renderer.spawnCrackle({');
     expect(processBody).toContain('profile: plan.crackleProfile');
     expect(processBody).toContain('pulseCount: plan.cracklePulseCount');
-    expect(processBody).toContain('maxDuration: plan.crackleDuration');
+    expect(processBody).toContain('maxDuration: crackleDuration');
     expect(processBody).toContain('offset: this.audio.CRACKLE_OFFSETS[explosion.sound.crackle] || 0');
     expect(processBody).toContain("bus: 'crackle'");
     expect(processBody).toContain('void this.audio.play(explosion.sound.crackle, 1, 4');
@@ -159,15 +159,14 @@ describe('WebGPU Fireworks native migration', () => {
     expect(rendererSource).toContain('role: 8');
   });
 
-  test('forces every finale burst through a rocket flight while spacing crackling rockets', () => {
-    const finaleStart = orchestrationSource.indexOf('handleFinale(data = {})');
-    const finaleEnd = orchestrationSource.indexOf('showGiftPopup(data)', finaleStart);
-    const finaleBody = orchestrationSource.slice(finaleStart, finaleEnd);
-    expect(finaleBody).toContain('forceRocket: true');
-    expect(finaleBody).toContain("type: 'finale-launch'");
-    expect(finaleBody).toContain('const baseCrackleInterval = intensity >= 4 ? 3 : intensity >= 3 ? 4 : 5');
-    expect(finaleBody).toContain('finaleDuration / (count - 1)');
-    expect(finaleBody).toContain('crackleEnabled,');
+  test('forces planned and legacy finale bursts through timed rocket flights', () => {
+    expect(orchestrationSource).toContain('forceRocket: true');
+    expect(orchestrationSource).toContain("type: 'finale-launch'");
+    expect(orchestrationSource).toContain('plannedLaunchAt');
+    expect(orchestrationSource).toContain('plannedExplodeAt');
+    expect(orchestrationSource).toContain('const baseCrackleInterval = intensity >= 4 ? 3 : intensity >= 3 ? 4 : 5');
+    expect(orchestrationSource).toContain('finaleDuration / (count - 1)');
+    expect(orchestrationSource).toContain('crackleEnabled,');
     expect(orchestrationSource).toContain('let skipRocket = !forceRocket && combo >= 5');
     expect(orchestrationSource).toContain('this.audio.choose(tier, forceRocket ? 1 : combo, false, {');
     expect(orchestrationSource).toContain('if (sound.crackle && skipRocket)');

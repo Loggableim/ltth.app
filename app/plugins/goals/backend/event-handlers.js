@@ -9,6 +9,7 @@ const http = require('http');
 const SYNC_DELAY_ON_CONNECT_MS = 2000;  // Wait for stats to be populated after connection
 const SYNC_DELAY_ON_INIT_MS = 3000;     // Wait for server to be fully ready on init
 const API_TIMEOUT_MS = 5000;            // Timeout for API requests
+const TERMINAL_STREAM_CLOSE_CODES = new Set([1000, 4005, 4404]);
 
 class GoalsEventHandlers {
     constructor(plugin) {
@@ -16,7 +17,8 @@ class GoalsEventHandlers {
         this.api = plugin.api;
         this.db = plugin.db;
         this.stateMachineManager = plugin.stateMachineManager;
-        this.lastResetStreamIdentity = null;
+        this.lastResetSessionToken = null;
+        this.lastTerminalResetSessionToken = null;
     }
 
     /**
@@ -60,6 +62,12 @@ class GoalsEventHandlers {
             this.handleConfirmedNewStream(data);
         });
 
+        // Clear session-scoped values as soon as a confirmed LIVE ends so an
+        // offline OBS refresh cannot render progress from the previous stream.
+        this.api.registerTikTokEvent('disconnected', (data) => {
+            this.handleTerminalStreamEnd(data);
+        });
+
         this.api.log('✅ Goals TikTok event handlers registered', 'info');
     }
 
@@ -69,7 +77,7 @@ class GoalsEventHandlers {
      * Eulerstream emits streamSessionStarted before connected. On startup or
      * plugin reload, that lifecycle event can be missed while the confirmed
      * connected payload still carries the authoritative isNewStream flag.
-     * Both paths land here and are deduplicated by stream identity.
+     * Both paths land here and are deduplicated by the adapter session token.
      *
      * @param {object} data Confirmed stream-session or connected payload
      * @returns {boolean} True when goals were reset
@@ -79,17 +87,55 @@ class GoalsEventHandlers {
             return false;
         }
 
+        const sessionToken = this.getStreamSessionToken(data);
+        if (!sessionToken || sessionToken === this.lastResetSessionToken) {
+            return false;
+        }
+
+        this.lastResetSessionToken = sessionToken;
+        this.resetGoalsOnStreamEnd();
+        return true;
+    }
+
+    /**
+     * Return an adapter session generation when present, with the historical
+     * room identity retained for non-Eulerstream event sources.
+     *
+     * @param {object} data TikTok lifecycle payload
+     * @returns {string|null} Stable per-session token
+     */
+    getStreamSessionToken(data = {}) {
+        if (data.streamSessionId !== undefined && data.streamSessionId !== null) {
+            return `session:${data.streamSessionId}`;
+        }
+
         const streamIdentity = data.streamIdentity || (
             data.username && data.roomId
                 ? `${String(data.username).toLowerCase()}:${data.roomId}`
                 : null
         );
 
-        if (!streamIdentity || streamIdentity === this.lastResetStreamIdentity) {
+        return streamIdentity ? `identity:${streamIdentity}` : null;
+    }
+
+    /**
+     * Reset immediately after a terminal confirmed-LIVE disconnect. Transport
+     * failures that will reconnect keep their active stream state intact.
+     *
+     * @param {object} data TikTok disconnect payload
+     * @returns {boolean} True when goals were reset
+     */
+    handleTerminalStreamEnd(data = {}) {
+        if (data.wasLive !== true || data.isTransient || !TERMINAL_STREAM_CLOSE_CODES.has(Number(data.code))) {
             return false;
         }
 
-        this.lastResetStreamIdentity = streamIdentity;
+        const sessionToken = this.getStreamSessionToken(data) || `disconnect:${data.code}:${data.timestamp || ''}`;
+        if (sessionToken === this.lastTerminalResetSessionToken) {
+            return false;
+        }
+
+        this.lastTerminalResetSessionToken = sessionToken;
         this.resetGoalsOnStreamEnd();
         return true;
     }
@@ -322,6 +368,10 @@ class GoalsEventHandlers {
             const goals = this.db.getAllGoals();
             
             for (const goal of goals) {
+                if (Number(goal.reset_on_stream_end) === 0) {
+                    this.api.log(`Keeping stream-spanning goal "${goal.name}" unchanged at stream end`, 'debug');
+                    continue;
+                }
                 const machine = this.stateMachineManager.getMachine(goal.id);
                 
                 // For goals with 'double' or 'increment' behavior, also reset the target

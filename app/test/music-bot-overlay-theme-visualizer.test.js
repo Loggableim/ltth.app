@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-describe('Music Bot overlay theme engine', () => {
+describe('Music Bot overlay theme and layout engine', () => {
   let overlayHtml;
 
   beforeAll(() => {
@@ -31,8 +31,17 @@ describe('Music Bot overlay theme engine', () => {
     expect(overlayHtml).not.toContain('requestAnimationFrame(draw)');
   });
 
-  test('renders viewer-provided queue labels as text instead of HTML', () => {
+  test('supports all configured overlay layouts', () => {
+    expect(overlayHtml).toContain("const allowedDesigns = new Set(['compact', 'fullwidth', 'minimal', 'card'])");
+    expect(overlayHtml).toContain('id="widget-compact"');
+    expect(overlayHtml).toContain('id="widget-fullwidth"');
+    expect(overlayHtml).toContain('id="widget-minimal"');
+    expect(overlayHtml).toContain('id="widget-card"');
+  });
+
+  test('renders queued song labels through textContent instead of HTML injection', () => {
     expect(overlayHtml).toContain('function renderTrackList(container, songs, itemClass)');
+    expect(overlayHtml).toContain("const item = document.createElement('div');");
     expect(overlayHtml).toContain('item.textContent = `${i + 1}. ${label}`;');
     expect(overlayHtml).toContain('container.replaceChildren(fragment);');
     expect(overlayHtml).not.toContain('upNextItems.innerHTML');

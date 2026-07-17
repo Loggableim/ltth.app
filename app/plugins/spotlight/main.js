@@ -52,6 +52,7 @@ class SpotlightPlugin {
     };
     this.longestStreak = null;
     this.sessionId = this.createSessionId();
+    this.lastTerminalStreamSessionToken = null;
     this.chatterPersistDelayMs = 1000;
     this.pendingPersistTimers = new Map();
     this.highVolumeEventTypes = new Set(['chatter', 'like']);
@@ -671,7 +672,29 @@ class SpotlightPlugin {
       await this.resetSession();
     });
 
+    this.api.registerTikTokEvent('disconnected', async (data = {}) => {
+      if (!this.isTerminalStreamDisconnect(data)) return;
+      const sessionToken = this.getStreamSessionToken(data);
+      if (sessionToken === this.lastTerminalStreamSessionToken) return;
+
+      this.lastTerminalStreamSessionToken = sessionToken;
+      this.api.log('TikTok LIVE ended - clearing LastEvent overlay session data');
+      await this.resetSession();
+    });
+
     this.api.log('Event listeners registered');
+  }
+
+  isTerminalStreamDisconnect(data = {}) {
+    return data.wasLive === true && !data.isTransient && [1000, 4005, 4404].includes(Number(data.code));
+  }
+
+  getStreamSessionToken(data = {}) {
+    if (data.streamSessionId !== undefined && data.streamSessionId !== null) {
+      return `session:${data.streamSessionId}`;
+    }
+    if (data.streamIdentity) return `identity:${data.streamIdentity}`;
+    return `disconnect:${data.code}:${data.timestamp || ''}`;
   }
 
   /**

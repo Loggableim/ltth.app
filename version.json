@@ -1,10 +1,10 @@
 {
-  "version": "1.3.29",
-  "releaseDate": "2026-07-15",
+  "version": "1.3.31",
+  "releaseDate": "2026-07-17",
   "status": "stable",
-  "downloadVersion": "1.3.29",
-  "downloadNote": "Version 1.3.29 resets stream goals and EmojiRain overlays after a completed LIVE session, including same-room restarts.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.29",
+  "downloadVersion": "1.3.31",
+  "downloadNote": "Version 1.3.31 delivers choreographed WebGPU firework finales, hardened Music-Bot playback, and configurable SuperFan animal commands.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.31",
   "oneLineInstaller": {
     "windows": "$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))",
     "macos": "curl -fsSL https://ltth.app/install/install.sh | bash",
@@ -19,6 +19,26 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.3.31": {
+      "date": "2026-07-17",
+      "changes": [
+        "NEW: Four deterministic WebGPU finale shows with short, medium, and long choreography, synchronized cues, queueing, and live gift rockets",
+        "NEW: Music-Bot playback controller, media cache, process reconciliation, resolver diagnostics, and expanded runtime controls",
+        "FIXED: Auto-DJ continues after the playback controller retires a failed MPV slot",
+        "IMPROVED: Emoji animal commands support persisted SuperFan-only controls and plain rain payloads",
+        "IMPROVED: Public release metadata and download surfaces bumped to 1.3.31"
+      ]
+    },
+    "1.3.30": {
+      "date": "2026-07-16",
+      "changes": [
+        "FIXED: Eulerstream assigns a new local session token for a later LIVE even when TikTok reuses the same room ID",
+        "FIXED: Goals, EmojiRain, WebGPU EmojiRain, LastEvent Spotlight, and TopTier clear stale session state at confirmed stream boundaries",
+        "FIXED: A guarded TikTok LIVE-page watchdog detects a silently ended stream only after two explicit offline confirmations",
+        "NEW: Goals can opt out of stream-end resets for marathon and other stream-spanning targets",
+        "IMPROVED: Public release metadata and touched plugin manifests bumped to 1.3.30"
+      ]
+    },
     "1.3.29": {
       "date": "2026-07-15",
       "changes": [

@@ -133,6 +133,24 @@ describe('EmojiRain - Herzballons', () => {
     expect(api.emissions).toHaveLength(1);
   });
 
+  test('resets for a later session generation that reuses the same room', () => {
+    const api = new MockAPI();
+    const plugin = new EmojiRainPlugin(api);
+
+    expect(plugin.handleHeartBalloonStreamSession({
+      streamIdentity: 'streamer:room-2',
+      streamSessionId: 1
+    })).toBe(true);
+    plugin.getHeartBalloonColor('viewer-one');
+
+    expect(plugin.handleHeartBalloonStreamSession({
+      streamIdentity: 'streamer:room-2',
+      streamSessionId: 2
+    })).toBe(true);
+    expect(plugin.heartBalloonUserColors.size).toBe(0);
+    expect(api.emissions).toHaveLength(2);
+  });
+
   test('triggerHeartBalloons emits heart-balloon spawn data', () => {
     const api = new MockAPI();
     const plugin = new EmojiRainPlugin(api);

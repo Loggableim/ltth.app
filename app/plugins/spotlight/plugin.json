@@ -1,7 +1,7 @@
 {
   "id": "spotlight",
   "name": "Spotlight",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "Modern live overlays for recent viewers and event activity across OBS, LIVE Studio, and streaming dashboards.",
   "author": "Plugin System",
   "icon": "/plugins/spotlight/assets/spotlight-icon.png",

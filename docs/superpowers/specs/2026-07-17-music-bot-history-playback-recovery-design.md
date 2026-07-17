@@ -30,4 +30,3 @@ Alternatives rejected:
 - Regression tests prove the third rapid playback failure stops replacement selection.
 - Regression tests prove one `_emitError()` call produces one UI error channel.
 - Run the focused tests, all `music-bot` tests, lint, and live status/diagnostic checks.
-

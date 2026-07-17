@@ -134,6 +134,31 @@ describe('YtDlpRunner concurrency and cancellation', () => {
     expect(child.kill).toHaveBeenCalledWith('SIGKILL');
   });
 
+  test('POSIX cancellation spawns a dedicated process group and kills the full group', async () => {
+    const child = makeChild(5151);
+    const processKill = jest.fn();
+    const spawnImpl = jest.fn(() => child);
+    const runner = new YtDlpRunner({
+      platform: 'linux',
+      spawnImpl,
+      processKill
+    });
+
+    const operation = runner.run('yt-dlp', ['track'], { deadline: Date.now() + 10000 });
+    await flush();
+    const rejected = expect(operation).rejects.toMatchObject({ name: 'AbortError' });
+    await runner.destroy();
+    await rejected;
+
+    expect(spawnImpl).toHaveBeenCalledWith(
+      'yt-dlp',
+      ['track'],
+      expect.objectContaining({ detached: true })
+    );
+    expect(processKill).toHaveBeenCalledWith(-5151, 'SIGKILL');
+    expect(child.kill).not.toHaveBeenCalled();
+  });
+
   test('destroy waits for an already-running process-tree termination', async () => {
     const taskkill = new EventEmitter();
     const child = makeChild(9001);

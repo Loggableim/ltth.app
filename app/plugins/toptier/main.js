@@ -23,6 +23,7 @@ class TopTierPlugin {
     this.scoreEngine = null;
     this.decayScheduler = null;
     this.streamMonitor = null;
+    this.lastTerminalStreamSessionToken = null;
   }
 
   /**
@@ -295,7 +296,7 @@ class TopTierPlugin {
     this.api.registerTikTokEvent('streamSessionStarted', (data) => {
       const streamUsername = (data && data.username) || null;
       const config = this.api.getConfig('toptier_config') || {};
-      const streamKey = (data && data.streamIdentity) || this._getCurrentStreamKey();
+      const streamKey = this._getSessionStreamKey(data) || this._getCurrentStreamKey();
       const isNewStream = this.sessionManager.handleConnect(streamUsername, streamKey);
 
       if (!isNewStream && streamKey && !this.sessionManager.getCurrentStreamKey()) {
@@ -310,16 +311,34 @@ class TopTierPlugin {
       }
     });
 
-    this.api.registerTikTokEvent('disconnected', () => {
+    this.api.registerTikTokEvent('disconnected', (data = {}) => {
       this.decayScheduler.setConnected(false);
       const config = this.api.getConfig('toptier_config') || {};
       if (config.decay && config.decay.decayOnlyWhenConnected) {
         this.decayScheduler.stop();
       }
-      // End session on disconnect so a new stream always starts with a fresh leaderboard.
-      // Temporary reconnects within the same stream will get a new session — this is the
-      // expected behavior: every stream start = clean slate.
+      if (!this._isTerminalStreamDisconnect(data)) return;
+
+      const sessionToken = this._getSessionStreamKey(data) || `disconnect:${data.code}:${data.timestamp || ''}`;
+      if (sessionToken === this.lastTerminalStreamSessionToken) return;
+
+      this.lastTerminalStreamSessionToken = sessionToken;
+      this.sessionManager.endSession();
+      this.scoreEngine.reset();
+      this._emitEmptyBoards(null);
+      // Terminal LIVE ends clear the board; transient reconnects keep it intact.
     });
+  }
+
+  _getSessionStreamKey(data = {}) {
+    if (data.streamSessionId !== undefined && data.streamSessionId !== null) {
+      return `euler:${data.streamSessionId}`;
+    }
+    return data.streamIdentity || null;
+  }
+
+  _isTerminalStreamDisconnect(data = {}) {
+    return data.wasLive === true && !data.isTransient && [1000, 4005, 4404].includes(Number(data.code));
   }
 
   /**
@@ -412,7 +431,7 @@ class TopTierPlugin {
    * @private
    */
   _emitEmptyBoards(sessionId) {
-    const sid = sessionId || this.sessionManager.getCurrentSessionId();
+    const sid = arguments.length > 0 ? sessionId : this.sessionManager.getCurrentSessionId();
     this.api.emit('toptier:update', { board: 'likes', entries: [], sessionId: sid });
     this.api.emit('toptier:update', { board: 'gifts', entries: [], sessionId: sid });
   }

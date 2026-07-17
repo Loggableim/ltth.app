@@ -198,6 +198,30 @@ describe('Music Bot marked MPV process registry', () => {
     expect(script).toMatch(/^\$ErrorActionPreference='Stop'; Get-CimInstance/);
     expect(script).not.toContain("'Stop' | Get-CimInstance");
   });
+
+  test.each([
+    ['win32', 'powershell.exe'],
+    ['linux', 'ps']
+  ])('fails closed when the %s process scanner exits non-zero', async (platform, executable) => {
+    const scanner = Object.assign(new EventEmitter(), {
+      stdout: new EventEmitter(),
+      stderr: new EventEmitter(),
+      kill: jest.fn()
+    });
+    const registry = new SoundbotProcessRegistry({ log: jest.fn() }, {
+      platform,
+      spawn: jest.fn(() => scanner)
+    });
+    process.nextTick(() => {
+      scanner.stderr.emit('data', 'scanner unavailable\nsecond line');
+      scanner.emit('close', 7);
+    });
+
+    await expect(registry.findMarkedProcesses()).rejects.toMatchObject({
+      code: 'SOUNDBOT_PROCESS_SCAN_FAILED',
+      message: expect.stringContaining(`${executable} process scan failed with exit code 7`)
+    });
+  });
 });
 
 describe('Music Bot orphan reconciliation', () => {

@@ -105,7 +105,7 @@ class EmojiRainPlugin {
       '#ff7eb3'
     ];
     this.heartBalloonColorPool = this.createHeartBalloonColorPool();
-    this.lastHeartBalloonStreamIdentity = null;
+    this.lastHeartBalloonSessionToken = null;
   }
 
   async init() {
@@ -349,9 +349,9 @@ class EmojiRainPlugin {
         },
         {
           name: 'beans',
-          description: 'SuperFan burst effect',
+          description: 'SuperFan emoji rain effect',
           syntax: '/beans',
-          permission: 'subscriber',
+          permission: 'all',
           enabled: true,
           minArgs: 0,
           maxArgs: 0,
@@ -363,10 +363,10 @@ class EmojiRainPlugin {
           handler: async (args, context) => await this.handleBeansCommand(args, context)
         },
         ...[
-          { name: 'miau', emoji: '🐱', label: 'cat', description: 'Trigger cat emoji burst' },
-          { name: 'rawr', emoji: '🦖', label: 'dinosaur', description: 'Trigger dinosaur emoji burst' },
-          { name: 'woof', emoji: '🐶', label: 'dog', description: 'Trigger dog emoji burst' },
-          { name: 'wuff', emoji: '🐶', label: 'dog', description: 'Trigger dog emoji burst' }
+          { name: 'miau', emoji: '🐱', label: 'cat', description: 'Trigger cat emoji rain' },
+          { name: 'rawr', emoji: '🦖', label: 'dinosaur', description: 'Trigger dinosaur emoji rain' },
+          { name: 'woof', emoji: '🐶', label: 'dog', description: 'Trigger dog emoji rain' },
+          { name: 'wuff', emoji: '🐶', label: 'dog', description: 'Trigger dog emoji rain' }
         ].map(({ name, emoji, label, description }) => ({
           name,
           description,
@@ -574,6 +574,14 @@ class EmojiRainPlugin {
       };
     }
 
+    if (config.animal_commands_superfans_only !== false && !this.isAnimalCommandSuperFan(context)) {
+      return {
+        success: false,
+        message: 'This animal command is only available to SuperFans',
+        displayOverlay: true
+      };
+    }
+
     if (!this.checkAntiSpam(context.username)) {
       this.metrics.droppedEvents++;
       return {
@@ -583,13 +591,13 @@ class EmojiRainPlugin {
       };
     }
 
-    // SuperFan burst
+    // SuperFan paw emoji rain
     this.triggerEmojiRain({
       emoji: '🐾',
       count: 30,
       intensity: 1.5,
       duration: 0,
-      burst: true,
+      burst: false,
       username: context.username,
       reason: 'command',
       source: '/beans'
@@ -599,7 +607,7 @@ class EmojiRainPlugin {
 
     return {
       success: true,
-      message: `${context.username} triggered a SuperFan paw burst! 🐾`,
+      message: `${context.username} triggered a SuperFan paw emoji rain! 🐾`,
       displayOverlay: true
     };
   }
@@ -611,6 +619,14 @@ class EmojiRainPlugin {
       return {
         success: false,
         message: 'Emoji rain is currently disabled',
+        displayOverlay: true
+      };
+    }
+
+    if (config.animal_commands_superfans_only !== false && !this.isAnimalCommandSuperFan(context)) {
+      return {
+        success: false,
+        message: 'This animal command is only available to SuperFans',
         displayOverlay: true
       };
     }
@@ -629,7 +645,7 @@ class EmojiRainPlugin {
       count: 30,
       intensity: 1.5,
       duration: 0,
-      burst: true,
+      burst: false,
       username: context.username,
       reason: 'command',
       source
@@ -639,9 +655,13 @@ class EmojiRainPlugin {
 
     return {
       success: true,
-      message: `${context.username} triggered a ${label} burst! ${emoji}`,
+      message: `${context.username} triggered a ${label} emoji rain! ${emoji}`,
       displayOverlay: true
     };
+  }
+
+  isAnimalCommandSuperFan(context = {}) {
+    return Number(context?.userData?.teamMemberLevel) >= 1;
   }
 
   async handleStormCommand(args, context) {
@@ -785,12 +805,14 @@ class EmojiRainPlugin {
       return false;
     }
 
-    const streamIdentity = data.streamIdentity || (
-      data.username && data.roomId
-        ? `${String(data.username).toLowerCase()}:${data.roomId}`
-        : null
-    );
-    if (!streamIdentity || streamIdentity === this.lastHeartBalloonStreamIdentity) {
+    const sessionToken = data.streamSessionId !== undefined && data.streamSessionId !== null
+      ? `session:${data.streamSessionId}`
+      : data.streamIdentity || (
+        data.username && data.roomId
+          ? `${String(data.username).toLowerCase()}:${data.roomId}`
+          : null
+      );
+    if (!sessionToken || sessionToken === this.lastHeartBalloonSessionToken) {
       return false;
     }
 
@@ -798,7 +820,7 @@ class EmojiRainPlugin {
     this.heartBalloonColorPool = this.createHeartBalloonColorPool();
     this.heartBalloonColorIndex = 0;
     this.spawnQueue = [];
-    this.lastHeartBalloonStreamIdentity = streamIdentity;
+    this.lastHeartBalloonSessionToken = sessionToken;
     this.api.emit('emoji-rain:clear', {});
     return true;
   }

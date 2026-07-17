@@ -171,9 +171,13 @@ class TikTokConnector extends EventEmitter {
   getCurrentStreamKey() {
     if (!this._adapter) return null;
 
-    // Room ID is the only authoritative Eulerstream session identity. A start
-    // timestamp is deliberately not used because it can drift on reconnects.
+    // Prefer the adapter's local session generation. Eulerstream can reuse a
+    // room ID for a later LIVE, while this token remains stable for reconnects
+    // and changes only after LTTH confirms a new session.
     if (this._currentSource === 'eulerstream') {
+      if (this._adapter.streamSessionId !== null && this._adapter.streamSessionId !== undefined) {
+        return `euler:${this._adapter.streamSessionId}`;
+      }
       if (this._adapter.streamIdentity) return this._adapter.streamIdentity;
       if (this._adapter.roomId && this.currentUsername) {
         return `${String(this.currentUsername).toLowerCase()}:${this._adapter.roomId}`;

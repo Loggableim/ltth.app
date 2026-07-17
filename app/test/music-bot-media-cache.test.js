@@ -165,6 +165,7 @@ describe('music-bot media cache', () => {
   });
 
   it('aborts an in-flight download without publishing a cache hit', async () => {
+    const processKill = jest.fn();
     const spawn = jest.fn(() => {
       const child = new EventEmitter();
       child.pid = 2223;
@@ -174,7 +175,11 @@ describe('music-bot media cache', () => {
       child.kill = jest.fn(() => true);
       return child;
     });
-    const cache = new MediaCache({}, createApi(dataDir), { spawn });
+    const cache = new MediaCache({}, createApi(dataDir), {
+      spawn,
+      platform: 'linux',
+      processKill
+    });
     const controller = new AbortController();
     const pending = cache.getOrDownload({
       trackKey: 'youtube:aborted',
@@ -185,7 +190,8 @@ describe('music-bot media cache', () => {
 
     await expect(pending).rejects.toThrow(/aborted/i);
     expect(cache.get('youtube:aborted')).toBeNull();
-    expect(spawn.mock.results[0].value.kill).toHaveBeenCalledWith('SIGKILL');
+    expect(processKill).toHaveBeenCalledWith(-2223, 'SIGKILL');
+    expect(spawn.mock.results[0].value.kill).not.toHaveBeenCalled();
     await cache.destroy();
   });
 

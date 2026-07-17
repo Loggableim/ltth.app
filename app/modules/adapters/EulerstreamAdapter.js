@@ -75,6 +75,12 @@ class EulerstreamAdapter extends BaseAdapter {
         this._fallbackKeySessionConfirmed = false;
         this._connectionKeySelection = null;
         this._missedPongs = 0;
+        this._streamWatchdogTimer = null;
+        this._streamWatchdogCheckInFlight = false;
+        this._lastEulerstreamMessageAt = 0;
+        this._lastWatchdogProbeAt = 0;
+        this._consecutiveWatchdogOfflineChecks = 0;
+        this._streamWatchdogGeneration = 0;
 
         // Stats tracking - Load from database if available
         const savedStats = this.db.loadStreamStats();
@@ -99,6 +105,8 @@ class EulerstreamAdapter extends BaseAdapter {
             ? this._buildStreamIdentity(this.confirmedUsername, this.confirmedRoomId)
             : null;
         this.forceNewStreamOnNextConfirmation = false;
+        this.streamSessionId = null;
+        this._nextStreamSessionId = 0;
 
         // Periodic stats persistence
         this.statsPersistenceInterval = null;
@@ -692,6 +700,7 @@ class EulerstreamAdapter extends BaseAdapter {
         this.ws.on('message', async (data) => {
             try {
                 if (generation !== this._activeGeneration) return;
+                this._recordEulerstreamActivity();
                 this.isAlive = true;
                 if (this._missedPongs !== undefined) {
                     this._missedPongs = 0;
@@ -827,6 +836,7 @@ class EulerstreamAdapter extends BaseAdapter {
         else if (typeof socket.close === 'function') socket.close();
         this.ws = null;
         this._stopHeartbeat();
+        this._stopStreamWatchdog();
         this.isConnected = false;
     }
 
@@ -835,6 +845,7 @@ class EulerstreamAdapter extends BaseAdapter {
             username: this.currentUsername,
             roomId: this.roomId || null,
             streamIdentity: this.streamIdentity || null,
+            streamSessionId: this.streamSessionId,
             isNewStream: identityPending ? null : !!isNewStream,
             isReconnect: identityPending ? null : !!isReconnect,
             identityPending: !!identityPending,
@@ -885,6 +896,7 @@ class EulerstreamAdapter extends BaseAdapter {
         this._circuitReason = null;
         this._circuitOpenUntil = 0;
         this._startLiveTracking();
+        this._startStreamWatchdog();
         this._schedulePostConnectTasks(generation);
 
         const connectedPayload = this._buildConnectedPayload(
@@ -919,8 +931,12 @@ class EulerstreamAdapter extends BaseAdapter {
         const previousUsername = this.confirmedUsername;
         const previousRoomId = this.confirmedRoomId;
         const nextIdentity = this._buildStreamIdentity(this.currentUsername, roomId);
+        const confirmedStartTime = this._getConfirmedStreamStartTime(payload);
+        const hasDifferentConfirmedStart = Number.isFinite(confirmedStartTime) &&
+            Number.isFinite(this._persistedStreamStart) &&
+            confirmedStartTime !== this._persistedStreamStart;
         const isReconnect = !this.forceNewStreamOnNextConfirmation &&
-            !!previousIdentity && previousIdentity === nextIdentity;
+            !!previousIdentity && previousIdentity === nextIdentity && !hasDifferentConfirmedStart;
         const isNewStream = !isReconnect;
 
         this.roomId = roomId;
@@ -930,7 +946,10 @@ class EulerstreamAdapter extends BaseAdapter {
         this.forceNewStreamOnNextConfirmation = false;
 
         if (isNewStream) {
-            const extractedStart = this._extractStreamStartTime(payload || {});
+            const extractedStart = Number.isFinite(confirmedStartTime)
+                ? confirmedStartTime
+                : this._extractStreamStartTime(payload || {});
+            this.streamSessionId = ++this._nextStreamSessionId;
             this.streamStartTime = Number.isFinite(extractedStart) ? extractedStart : null;
             this._persistedStreamStart = this.streamStartTime;
             this._earliestEventTime = null;
@@ -955,6 +974,9 @@ class EulerstreamAdapter extends BaseAdapter {
                 username: this.confirmedUsername,
                 roomId: this.confirmedRoomId,
                 streamIdentity: this.streamIdentity,
+                streamSessionId: this.streamSessionId,
+                isNewStream: true,
+                isReconnect: false,
                 previousUsername,
                 previousRoomId,
                 previousStreamIdentity: previousIdentity,
@@ -978,7 +1000,34 @@ class EulerstreamAdapter extends BaseAdapter {
 
         this.db.setSetting('last_connected_username', this.confirmedUsername);
         this._persistStreamStats();
-        return { isNewStream, isReconnect };
+        return { isNewStream, isReconnect, streamSessionId: this.streamSessionId };
+    }
+
+    /**
+     * Read an explicit server-provided LIVE start timestamp without falling
+     * back to Date.now(). This lets a restarted LTTH instance distinguish a
+     * new same-room LIVE from a reconnect to the persisted session.
+     *
+     * @param {object} payload Eulerstream room payload
+     * @returns {number|null} Milliseconds since epoch or null
+     * @private
+     */
+    _getConfirmedStreamStartTime(payload = {}) {
+        const root = payload && typeof payload === 'object' ? payload : {};
+        const candidates = [root, root.room].filter(Boolean);
+        const fields = ['start_time', 'createTime', 'startTime', 'create_time', 'streamStartTime', 'stream_start_time'];
+
+        for (const candidate of candidates) {
+            for (const field of fields) {
+                if (candidate[field] === undefined || candidate[field] === null) continue;
+                let value = Number(candidate[field]);
+                if (!Number.isFinite(value) || value <= 0) continue;
+                if (value < 4000000000) value *= 1000;
+                return value;
+            }
+        }
+
+        return null;
     }
 
     setStreamSessionLifecycleHandler(handler) {
@@ -2403,7 +2452,7 @@ class EulerstreamAdapter extends BaseAdapter {
         }, delay);
     }
 
-    _handleSocketClose(generation, code, reason) {
+    _handleSocketClose(generation, code, reason, metadata = {}) {
         if (generation !== this._activeGeneration || this._manualDisconnect) return;
 
         const reasonText = Buffer.isBuffer(reason) ? reason.toString('utf-8') : String(reason || '');
@@ -2412,6 +2461,7 @@ class EulerstreamAdapter extends BaseAdapter {
         const mayReconnect = wasLive || this._resumeConfirmedSession;
         this.logger.info(`🔴 Eulerstream WebSocket disconnected: ${code} - ${ClientCloseCode[code] || reasonText}`);
         this._stopHeartbeat();
+        this._stopStreamWatchdog();
         this._clearConnectionTimers();
         this._pauseLiveTracking();
         this.ws = null;
@@ -2427,11 +2477,13 @@ class EulerstreamAdapter extends BaseAdapter {
                 username: savedUsername,
                 roomId: this.confirmedRoomId,
                 streamIdentity: this.streamIdentity,
+                streamSessionId: this.streamSessionId,
                 timestamp: new Date().toISOString(),
                 reason: disconnectReason || reasonText || ClientCloseCode[code] || 'Connection closed',
                 code,
                 wasLive,
-                isTransient
+                isTransient,
+                source: metadata.source || 'eulerstream-websocket'
             });
         };
 
@@ -2641,10 +2693,104 @@ class EulerstreamAdapter extends BaseAdapter {
         this._missedPongs = 0;
     }
 
+    _recordEulerstreamActivity() {
+        this._lastEulerstreamMessageAt = Date.now();
+        this._consecutiveWatchdogOfflineChecks = 0;
+    }
+
+    _isStreamWatchdogEligible() {
+        return this.isConnected &&
+            this.connectionState === 'live' &&
+            this._connectionHadLive &&
+            !!this.currentUsername;
+    }
+
+    _startStreamWatchdog() {
+        this._stopStreamWatchdog();
+        this._streamWatchdogGeneration++;
+        this._lastEulerstreamMessageAt = this._lastEulerstreamMessageAt || Date.now();
+        this._lastWatchdogProbeAt = 0;
+        this._consecutiveWatchdogOfflineChecks = 0;
+        this._streamWatchdogTimer = setInterval(() => {
+            this._runStreamWatchdogCheck().catch(error => {
+                this.logger.warn(`TikTok LIVE watchdog check failed: ${error.message}`);
+            });
+        }, EulerstreamAdapter.STREAM_WATCHDOG_INTERVAL_MS);
+    }
+
+    _stopStreamWatchdog() {
+        this._streamWatchdogGeneration++;
+        if (this._streamWatchdogTimer) {
+            clearInterval(this._streamWatchdogTimer);
+            this._streamWatchdogTimer = null;
+        }
+        this._streamWatchdogCheckInFlight = false;
+        this._consecutiveWatchdogOfflineChecks = 0;
+    }
+
+    async _runStreamWatchdogCheck() {
+        if (!this._isStreamWatchdogEligible() || this._streamWatchdogCheckInFlight) return;
+
+        const now = Date.now();
+        if (now - this._lastEulerstreamMessageAt < EulerstreamAdapter.STREAM_WATCHDOG_IDLE_MS) {
+            this._consecutiveWatchdogOfflineChecks = 0;
+            return;
+        }
+        if (now - this._lastWatchdogProbeAt < EulerstreamAdapter.STREAM_WATCHDOG_INTERVAL_MS) return;
+
+        const watchdogGeneration = this._streamWatchdogGeneration;
+        this._streamWatchdogCheckInFlight = true;
+        this._lastWatchdogProbeAt = now;
+
+        try {
+            const result = await this._checkTikTokLivePage(this.currentUsername);
+            if (watchdogGeneration !== this._streamWatchdogGeneration || !this._isStreamWatchdogEligible()) return;
+
+            if (result.status !== 'offline') {
+                this._consecutiveWatchdogOfflineChecks = 0;
+                return;
+            }
+
+            this._consecutiveWatchdogOfflineChecks++;
+            this.logger.warn(
+                `TikTok LIVE watchdog received confirmed offline result ${this._consecutiveWatchdogOfflineChecks}/` +
+                `${EulerstreamAdapter.STREAM_WATCHDOG_OFFLINE_CONFIRMATIONS} for @${this.currentUsername}`
+            );
+            if (this._consecutiveWatchdogOfflineChecks >= EulerstreamAdapter.STREAM_WATCHDOG_OFFLINE_CONFIRMATIONS) {
+                this._endStreamFromWatchdog();
+            }
+        } catch (error) {
+            this._consecutiveWatchdogOfflineChecks = 0;
+            this.logger.warn(`TikTok LIVE watchdog returned an unknown result: ${error.message}`);
+        } finally {
+            if (watchdogGeneration === this._streamWatchdogGeneration) {
+                this._streamWatchdogCheckInFlight = false;
+            }
+        }
+    }
+
+    _endStreamFromWatchdog() {
+        const socket = this.ws;
+        if (socket && typeof socket.removeAllListeners === 'function') {
+            socket.removeAllListeners();
+        }
+        this._handleSocketClose(
+            this._activeGeneration,
+            4005,
+            'TikTok LIVE page confirmed the stream is offline.',
+            { source: 'tiktok-live-watchdog' }
+        );
+        if (socket) {
+            if (typeof socket.terminate === 'function') socket.terminate();
+            else if (typeof socket.close === 'function') socket.close();
+        }
+    }
+
     disconnect() {
         this._manualDisconnect = true;
         this._activeGeneration = ++this._connectionGeneration;
         this._stopHeartbeat();
+        this._stopStreamWatchdog();
         this._clearPendingReconnectTimers();
         this._clearConnectionTimers();
         this._pauseLiveTracking();
@@ -2878,43 +3024,72 @@ class EulerstreamAdapter extends BaseAdapter {
         if (!targetUsername) {
             throw new Error('Username is required to fetch room ID');
         }
-        
+
+        this.logger.info(`📡 Fetching room ID for @${targetUsername}...`);
+        const result = await this._checkTikTokLivePage(targetUsername);
+        if (result.status === 'live' && result.roomId) {
+            this.roomId = result.roomId;
+            this.logger.info(`✅ Found room ID: ${this.roomId}`);
+            return this.roomId;
+        }
+
+        this.logger.warn(
+            result.status === 'offline'
+                ? '⚠️ TikTok LIVE page confirms that the user is offline'
+                : `⚠️ Could not determine LIVE status from TikTok page (${result.reason || 'unknown'})`
+        );
+        return null;
+    }
+
+    _extractTikTokLiveRoomId(html) {
+        if (typeof html !== 'string') return null;
+        const roomIdMatch = html.match(/"roomId"\s*:\s*"?(\d+)"?/);
+        const alternativeMatch = html.match(/room_id=(\d+)/);
+        return this._normalizeRoomId(roomIdMatch?.[1] || alternativeMatch?.[1]);
+    }
+
+    _isTikTokChallengePage(html) {
+        return typeof html === 'string' &&
+            /(?:captcha|verify to continue|verify you are human|challenge-platform|cf-chl-|security check)/i.test(html);
+    }
+
+    _isExplicitTikTokOfflinePage(html) {
+        return typeof html === 'string' && (
+            /"(?:isLive|is_live|liveStatus)"\s*:\s*(?:false|0)/i.test(html) ||
+            /(?:live(?:\s+stream)?\s+(?:has\s+ended|is\s+not\s+available|isn't\s+available|not\s+available|ended))/i.test(html)
+        );
+    }
+
+    async _checkTikTokLivePage(username) {
+        const targetUsername = this._normalizeUsername(username || this.currentUsername);
+        if (!targetUsername) return { status: 'unknown', reason: 'missing_username' };
+
         try {
-            this.logger.info(`📡 Fetching room ID for @${targetUsername}...`);
-            
             const response = await axios.get(`https://www.tiktok.com/@${targetUsername}/live`, {
-                timeout: 10000,
+                timeout: EulerstreamAdapter.TIKTOK_LIVE_PAGE_TIMEOUT_MS,
+                validateStatus: () => true,
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                     'Accept-Language': 'en-US,en;q=0.9'
                 }
             });
-            
-            const html = response.data;
-            
-            // Try to extract room_id from SIGI_STATE or other embedded data
-            const roomIdMatch = html.match(/"roomId":"(\d+)"/);
-            if (roomIdMatch && roomIdMatch[1]) {
-                this.roomId = roomIdMatch[1];
-                this.logger.info(`✅ Found room ID: ${this.roomId}`);
-                return this.roomId;
+            const statusCode = Number(response?.status);
+            const html = typeof response?.data === 'string' ? response.data : '';
+
+            if (this._isTikTokChallengePage(html)) {
+                return { status: 'unknown', reason: 'challenge' };
             }
-            
-            // Alternative pattern
-            const altMatch = html.match(/room_id=(\d+)/);
-            if (altMatch && altMatch[1]) {
-                this.roomId = altMatch[1];
-                this.logger.info(`✅ Found room ID: ${this.roomId}`);
-                return this.roomId;
+
+            const roomId = this._extractTikTokLiveRoomId(html);
+            if (roomId) return { status: 'live', roomId };
+            if ([404, 410].includes(statusCode)) return { status: 'offline', reason: `http_${statusCode}` };
+            if (statusCode >= 200 && statusCode < 400 && this._isExplicitTikTokOfflinePage(html)) {
+                return { status: 'offline', reason: 'explicit_offline_page' };
             }
-            
-            this.logger.warn('⚠️  Could not extract room ID from page - user may not be live');
-            return null;
-            
+            return { status: 'unknown', reason: `http_${statusCode || 'request'}` };
         } catch (error) {
-            this.logger.error('Error fetching room ID:', error.message);
-            return null;
+            return { status: 'unknown', reason: 'request_error' };
         }
     }
 
@@ -3325,6 +3500,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 currentUsername: this.currentUsername,
                 roomId: this.roomId,
                 streamIdentity: this.streamIdentity,
+                streamSessionId: this.streamSessionId,
                 autoReconnectCount: this.autoReconnectCount,
                 maxAutoReconnects: this.maxAutoReconnects,
                 retryAllowedAt: this._circuitOpenUntil > Date.now()
@@ -3386,6 +3562,10 @@ EulerstreamAdapter.LIVE_VALIDATION_TIMEOUT_MS = 15000;
 EulerstreamAdapter.IDENTITY_RESOLUTION_TIMEOUT_MS = 15000;
 EulerstreamAdapter.TOO_MANY_CONNECTIONS_COOLDOWN_MS = 15 * 60 * 1000;
 EulerstreamAdapter.FALLBACK_CONFIRMATION_DELAY_MS = 3000;
+EulerstreamAdapter.STREAM_WATCHDOG_IDLE_MS = 15 * 60 * 1000;
+EulerstreamAdapter.STREAM_WATCHDOG_INTERVAL_MS = 60 * 1000;
+EulerstreamAdapter.STREAM_WATCHDOG_OFFLINE_CONFIRMATIONS = 2;
+EulerstreamAdapter.TIKTOK_LIVE_PAGE_TIMEOUT_MS = 10000;
 
 module.exports = EulerstreamAdapter;
 

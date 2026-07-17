@@ -1,0 +1,9 @@
+LTTH Version 1.3.31 Release Notes
+
+Version 1.3.31 delivers choreographed WebGPU firework finales, hardened Music-Bot playback, and configurable SuperFan animal commands.
+
+- NEW: Four deterministic WebGPU finale shows with short, medium, and long choreography, synchronized cues, queueing, and live gift rockets
+- NEW: Music-Bot playback controller, media cache, process reconciliation, resolver diagnostics, and expanded runtime controls
+- FIXED: Auto-DJ continues after the playback controller retires a failed MPV slot
+- IMPROVED: Emoji animal commands support persisted SuperFan-only controls and plain rain payloads
+- IMPROVED: Public release metadata and download surfaces bumped to 1.3.31
