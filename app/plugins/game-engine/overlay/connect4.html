@@ -162,7 +162,7 @@
       height: 60px;
       border-radius: 50%;
       position: absolute;
-      animation: dropPiece 0.5s ease-out;
+      animation: dropPiece var(--interactive-animation-ms, 500ms) ease-out;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
     }
 
@@ -687,6 +687,10 @@
     
     let currentSession = null;
     let gameConfig = null;
+    let lastInteractiveDisplayRevision = -1;
+    let lastInteractiveSessionRevision = -1;
+    let latestInteractiveQueueIdle = true;
+    let interactiveSnapshotActive = false;
     const ROWS = 6;
     const COLUMNS = 7;
 
@@ -920,6 +924,7 @@
 
     // Show leaderboard rotation
     async function showLeaderboardRotation(gameType) {
+      if (!latestInteractiveQueueIdle) return;
       if (!gameConfig || !gameConfig.leaderboardEnabled) {
         return;
       }
@@ -1288,6 +1293,52 @@
       }, 5000);
     }
 
+    function applyInteractiveSnapshot(state) {
+      const display = state?.display;
+      if (!display || display.gameType !== 'connect4') return;
+      const displayRevision = Number(display.displayRevision);
+      const sessionRevision = Number(display.sessionRevision ?? display.result?.sessionRevision ?? -1);
+      if (!Number.isFinite(displayRevision)) return;
+      if (displayRevision < lastInteractiveDisplayRevision) return;
+      if (
+        displayRevision === lastInteractiveDisplayRevision &&
+        sessionRevision <= lastInteractiveSessionRevision
+      ) return;
+
+      lastInteractiveDisplayRevision = displayRevision;
+      lastInteractiveSessionRevision = sessionRevision;
+      latestInteractiveQueueIdle = (state.hostQueue?.length || 0) === 0;
+      interactiveSnapshotActive = ['playing', 'animating', 'result'].includes(display.phase);
+
+      const snapshotState = display.state || display.result?.state;
+      if (!interactiveSnapshotActive || !snapshotState) return;
+      currentSession = Number(display.displaySessionId ?? display.result?.sessionId);
+      const animationMs = Math.max(100, Math.min(2000, Number(display.config?.animationSpeed) || 500));
+      document.documentElement.style.setProperty('--interactive-animation-ms', `${animationMs}ms`);
+      applyConfig(display.config || gameConfig || {});
+      updateBoard(snapshotState);
+      updatePlayerInfo(snapshotState);
+      updateStatus(snapshotState);
+      document.getElementById('game-container').classList.add('active');
+
+      if (display.phase === 'result' && display.result) {
+        showResult({ ...display.result, state: snapshotState });
+        if (latestInteractiveQueueIdle) {
+          setTimeout(() => showLeaderboardRotation('connect4'), 5500);
+        }
+      } else {
+        document.getElementById('game-result').classList.remove('show');
+      }
+    }
+
+    window.addEventListener('message', event => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== 'game-engine:interactive-snapshot') return;
+      applyInteractiveSnapshot(event.data.payload);
+    });
+
+    socket.on('game-engine:interactive-state', applyInteractiveSnapshot);
+
     // Socket event handlers
     socket.on('game-engine:challenge-created', (data) => {
       console.log('Challenge created:', data);
@@ -1300,6 +1351,7 @@
     });
 
     socket.on('game-engine:game-started', (data) => {
+      if (data.gameType !== 'connect4' || interactiveSnapshotActive) return;
       console.log('Game started:', data);
       hideChallengeScreen(); // Hide challenge screen when game starts
       
@@ -1317,6 +1369,7 @@
     });
 
     socket.on('game-engine:move-made', (data) => {
+      if (data.gameType !== 'connect4' || interactiveSnapshotActive) return;
       console.log('Move made:', data);
       if (data.sessionId === currentSession) {
         playSound('move');
@@ -1327,6 +1380,7 @@
     });
 
     socket.on('game-engine:game-ended', (data) => {
+      if (data.gameType !== 'connect4' || interactiveSnapshotActive) return;
       console.log('Game ended:', data);
       if (data.sessionId === currentSession) {
         updateBoard(data.state);
