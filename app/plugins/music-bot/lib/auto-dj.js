@@ -421,7 +421,9 @@ class AutoDJ {
 
   async _pickFromHistory() {
     const candidates = this._loadHistoryCandidates();
-    const candidate = this._pickFromHistoryCandidates(candidates);
+    const blocks = this.getSelectionBlocks();
+    this.blockedCount = candidates.filter((candidate) => this.isTrackBlocked(candidate, blocks)).length;
+    const candidate = this._pickFromHistoryCandidates(candidates, blocks);
     if (!candidate) return this._pickRelatedToLastPlaylistTrack();
     return candidate;
   }
@@ -434,7 +436,7 @@ class AutoDJ {
         `SELECT youtubeId, title, artist, url, duration, source, thumbnail,
                 channelId, channelName, COUNT(*) as plays
          FROM plugin_music_bot_history
-         WHERE youtubeId IS NOT NULL
+         WHERE youtubeId IS NOT NULL AND COALESCE(skipped, 0) = 0
          GROUP BY youtubeId, title, artist, url, duration, source, thumbnail, channelId, channelName
          HAVING plays >= ?
          ${orderClause}
