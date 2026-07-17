@@ -509,6 +509,58 @@ class GameEngineDatabase {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Persistent state for concurrent Connect 4 and chess matches.
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS game_interactive_sessions (
+        session_id INTEGER PRIMARY KEY,
+        game_type TEXT NOT NULL CHECK(game_type IN ('connect4', 'chess')),
+        viewer_id TEXT NOT NULL,
+        viewer_display_name TEXT NOT NULL,
+        host_display_name TEXT NOT NULL,
+        state_json TEXT NOT NULL,
+        session_revision INTEGER NOT NULL DEFAULT 1,
+        display_revision INTEGER NOT NULL DEFAULT 0,
+        turn_role TEXT NOT NULL CHECK(turn_role IN ('viewer', 'host')),
+        viewer_deadline_ms INTEGER,
+        host_time_remaining_ms INTEGER,
+        time_control TEXT,
+        last_move_identity TEXT,
+        last_activity_at INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        terminal_reason TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+
+      CREATE UNIQUE INDEX IF NOT EXISTS game_interactive_active_viewer
+        ON game_interactive_sessions(viewer_id)
+        WHERE status = 'active';
+
+      CREATE TABLE IF NOT EXISTS game_interactive_queue (
+        session_id INTEGER PRIMARY KEY,
+        game_type TEXT NOT NULL CHECK(game_type IN ('connect4', 'chess')),
+        viewer_id TEXT NOT NULL,
+        viewer_display_name TEXT NOT NULL,
+        sequence INTEGER NOT NULL UNIQUE,
+        enqueued_at INTEGER NOT NULL,
+        session_revision INTEGER NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS game_interactive_queue_sequence
+        ON game_interactive_queue(sequence);
+
+      CREATE TABLE IF NOT EXISTS game_interactive_meta (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+
+      INSERT OR IGNORE INTO game_interactive_meta (key, value)
+      VALUES ('nextQueueSequence', '0');
+
+      INSERT OR IGNORE INTO game_interactive_meta (key, value)
+      VALUES ('displayRevision', '0');
+    `);
     
     // Initialize default overlay settings for all game types
     this.initializeOverlaySettings();
@@ -563,6 +615,202 @@ class GameEngineDatabase {
         use_unified_overlay = excluded.use_unified_overlay,
         updated_at = CURRENT_TIMESTAMP
     `).run(gameType, useUnified ? 1 : 0);
+  }
+
+  _mapInteractiveStateRow(row) {
+    if (!row) return null;
+    return {
+      sessionId: row.session_id,
+      gameType: row.game_type,
+      viewerId: row.viewer_id,
+      viewerDisplayName: row.viewer_display_name,
+      hostDisplayName: row.host_display_name,
+      state: JSON.parse(row.state_json),
+      sessionRevision: row.session_revision,
+      displayRevision: row.display_revision,
+      turnRole: row.turn_role,
+      viewerDeadlineMs: row.viewer_deadline_ms,
+      hostTimeRemainingMs: row.host_time_remaining_ms,
+      timeControl: row.time_control,
+      lastMoveIdentity: row.last_move_identity,
+      lastActivityAt: row.last_activity_at,
+      status: row.status,
+      terminalReason: row.terminal_reason,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  _mapInteractiveQueueRow(row) {
+    if (!row) return null;
+    return {
+      sessionId: row.session_id,
+      gameType: row.game_type,
+      viewerId: row.viewer_id,
+      viewerDisplayName: row.viewer_display_name,
+      sequence: row.sequence,
+      enqueuedAt: row.enqueued_at,
+      sessionRevision: row.session_revision
+    };
+  }
+
+  createInteractiveState(data) {
+    const now = Number(data.lastActivityAt) || Date.now();
+    this.db.prepare(`
+      INSERT INTO game_interactive_sessions (
+        session_id, game_type, viewer_id, viewer_display_name, host_display_name,
+        state_json, session_revision, display_revision, turn_role,
+        viewer_deadline_ms, host_time_remaining_ms, time_control,
+        last_move_identity, last_activity_at, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+    `).run(
+      data.sessionId,
+      data.gameType,
+      data.viewerId,
+      data.viewerDisplayName,
+      data.hostDisplayName,
+      JSON.stringify(data.state),
+      data.sessionRevision || 1,
+      data.displayRevision || 0,
+      data.turnRole,
+      data.viewerDeadlineMs ?? null,
+      data.hostTimeRemainingMs ?? null,
+      data.timeControl ?? null,
+      data.lastMoveIdentity ?? null,
+      now,
+      now,
+      now
+    );
+    return this.getInteractiveState(data.sessionId);
+  }
+
+  updateInteractiveState(sessionId, updates) {
+    const columns = {
+      gameType: 'game_type',
+      viewerId: 'viewer_id',
+      viewerDisplayName: 'viewer_display_name',
+      hostDisplayName: 'host_display_name',
+      state: 'state_json',
+      sessionRevision: 'session_revision',
+      displayRevision: 'display_revision',
+      turnRole: 'turn_role',
+      viewerDeadlineMs: 'viewer_deadline_ms',
+      hostTimeRemainingMs: 'host_time_remaining_ms',
+      timeControl: 'time_control',
+      lastMoveIdentity: 'last_move_identity',
+      lastActivityAt: 'last_activity_at',
+      status: 'status',
+      terminalReason: 'terminal_reason'
+    };
+    const fields = [];
+    const values = [];
+    for (const [key, value] of Object.entries(updates || {})) {
+      const column = columns[key];
+      if (!column) continue;
+      fields.push(`${column} = ?`);
+      values.push(key === 'state' ? JSON.stringify(value) : value);
+    }
+    if (fields.length === 0) return this.getInteractiveState(sessionId);
+    fields.push('updated_at = ?');
+    values.push(Date.now(), sessionId);
+    this.db.prepare(`
+      UPDATE game_interactive_sessions
+      SET ${fields.join(', ')}
+      WHERE session_id = ?
+    `).run(...values);
+    return this.getInteractiveState(sessionId);
+  }
+
+  getInteractiveState(sessionId) {
+    const row = this.db.prepare(`
+      SELECT * FROM game_interactive_sessions WHERE session_id = ?
+    `).get(sessionId);
+    return this._mapInteractiveStateRow(row);
+  }
+
+  getActiveInteractiveStates() {
+    return this.db.prepare(`
+      SELECT * FROM game_interactive_sessions
+      WHERE status = 'active'
+      ORDER BY created_at ASC, session_id ASC
+    `).all().map(row => this._mapInteractiveStateRow(row));
+  }
+
+  enqueueInteractiveTurn(entry) {
+    const insert = () => {
+      const existing = this.db.prepare(`
+        SELECT * FROM game_interactive_queue WHERE session_id = ?
+      `).get(entry.sessionId);
+      if (existing) {
+        return {
+          inserted: false,
+          ...this._mapInteractiveQueueRow(existing)
+        };
+      }
+
+      const current = Number(this.getInteractiveMeta('nextQueueSequence')) || 0;
+      const sequence = current + 1;
+      this.setInteractiveMeta('nextQueueSequence', String(sequence));
+      this.db.prepare(`
+        INSERT INTO game_interactive_queue (
+          session_id, game_type, viewer_id, viewer_display_name,
+          sequence, enqueued_at, session_revision
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        entry.sessionId,
+        entry.gameType,
+        entry.viewerId,
+        entry.viewerDisplayName,
+        sequence,
+        entry.enqueuedAt || Date.now(),
+        entry.sessionRevision
+      );
+      return { inserted: true, sequence };
+    };
+    return this.transaction(insert);
+  }
+
+  removeInteractiveTurn(sessionId) {
+    return this.db.prepare(`
+      DELETE FROM game_interactive_queue WHERE session_id = ?
+    `).run(sessionId).changes > 0;
+  }
+
+  getInteractiveQueue() {
+    return this.db.prepare(`
+      SELECT * FROM game_interactive_queue ORDER BY sequence ASC
+    `).all().map(row => this._mapInteractiveQueueRow(row));
+  }
+
+  completeInteractiveState(sessionId, reason) {
+    return this.transaction(() => {
+      this.removeInteractiveTurn(sessionId);
+      this.updateInteractiveState(sessionId, {
+        status: 'completed',
+        terminalReason: reason,
+        viewerDeadlineMs: null
+      });
+      return this.getInteractiveState(sessionId);
+    });
+  }
+
+  getInteractiveMeta(key) {
+    return this.db.prepare(`
+      SELECT value FROM game_interactive_meta WHERE key = ?
+    `).get(key)?.value ?? null;
+  }
+
+  setInteractiveMeta(key, value) {
+    this.db.prepare(`
+      INSERT INTO game_interactive_meta (key, value)
+      VALUES (?, ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value
+    `).run(key, String(value));
+  }
+
+  transaction(callback) {
+    if (this.db.inTransaction) return callback();
+    return this.db.transaction(callback)();
   }
 
   /**
