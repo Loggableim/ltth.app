@@ -236,6 +236,8 @@
       let queueTimer = null;
       let debugTimer = null;
       let gamificationState = null;
+      let reconnectTimer = null;
+      let hasConnectedOnce = false;
       const resizeEngine = () => engine?.updateDimensions();
 
       function weatherText(key, fallback, params = {}) {
@@ -545,6 +547,30 @@
         }
       }
 
+      function syncOverlayConnection() {
+        if (!socket?.connected) return;
+        socket.emit('weather:client-ready');
+        socket.emit('weather:request-gamification-state');
+        broadcastState();
+      }
+
+      function scheduleServerDisconnectRecovery() {
+        if (reconnectTimer || !socket || socket.connected) return;
+        updateConnectionStatus('reconnecting', weatherText('plugins.weather-control.runtime.overlay.reconnecting_after_restart', 'Reconnecting after app restart'));
+        reconnectTimer = setTimeout(() => {
+          reconnectTimer = null;
+          if (socket && !socket.connected) socket.connect();
+        }, 1000);
+      }
+
+      function handlePluginChange(payload) {
+        const weatherWasReloaded = payload && (
+          (payload.action === 'reloaded' && payload.pluginId === 'weather-control') ||
+          payload.action === 'reloaded_all'
+        );
+        if (weatherWasReloaded) syncOverlayConnection();
+      }
+
       function initSocket() {
         socket = io({
           transports: ['websocket', 'polling'],
@@ -556,19 +582,27 @@
         });
 
         socket.on('connect', () => {
-          updateConnectionStatus('connected', weatherText('plugins.weather-control.runtime.overlay.connected', 'Connected'));
-          socket.emit('weather:client-ready');
-          socket.emit('weather:request-gamification-state');
-          broadcastState();
+          if (reconnectTimer) {
+            clearTimeout(reconnectTimer);
+            reconnectTimer = null;
+          }
+          updateConnectionStatus('connected', hasConnectedOnce
+            ? weatherText('plugins.weather-control.runtime.overlay.reconnected', 'Reconnected')
+            : weatherText('plugins.weather-control.runtime.overlay.connected', 'Connected'));
+          hasConnectedOnce = true;
+          syncOverlayConnection();
         });
 
-        socket.on('disconnect', () => updateConnectionStatus('disconnected', weatherText('plugins.weather-control.runtime.overlay.disconnected', 'Disconnected')));
+        socket.on('disconnect', (reason) => {
+          updateConnectionStatus('disconnected', weatherText('plugins.weather-control.runtime.overlay.disconnected', 'Disconnected'));
+          if (reason === 'io server disconnect') scheduleServerDisconnectRecovery();
+        });
         socket.on('reconnect_attempt', (attempt) => updateConnectionStatus('reconnecting', weatherText('plugins.weather-control.runtime.overlay.reconnecting', 'Reconnecting {attempt}', { attempt })));
         socket.on('reconnect', () => {
           updateConnectionStatus('connected', weatherText('plugins.weather-control.runtime.overlay.reconnected', 'Reconnected'));
-          socket.emit('weather:client-ready');
-          socket.emit('weather:request-gamification-state');
+          syncOverlayConnection();
         });
+        socket.on('plugins:changed', handlePluginChange);
 
         socket.on('weather:trigger', (data) => {
           totalEventsReceived++;
@@ -615,6 +649,10 @@
         if (debugTimer) clearInterval(debugTimer);
         if (stateBroadcastTimer) clearInterval(stateBroadcastTimer);
         window.removeEventListener('resize', resizeEngine);
+        if (reconnectTimer) {
+          clearTimeout(reconnectTimer);
+          reconnectTimer = null;
+        }
         if (socket) socket.disconnect();
         if (engine) engine.destroy();
         if (audioContext) audioContext.close().catch(() => {});
