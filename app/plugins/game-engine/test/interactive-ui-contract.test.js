@@ -10,6 +10,7 @@ describe('interactive games admin UI contract', () => {
     expect(ui).toContain('id="interactive-board-preview"');
     expect(ui).toContain('id="interactive-host-queue"');
     expect(ui).toContain('id="interactive-background-matches"');
+    expect(ui).toContain('#interactive-connect4-controls[hidden]');
   });
 
   test('submits revisioned Connect4 and chess host moves', () => {
@@ -18,6 +19,8 @@ describe('interactive games admin UI contract', () => {
     expect(ui).toContain('displayRevision: display.displayRevision');
     expect(ui).toContain('data-interactive-column');
     expect(ui).toContain('interactiveSelectedChessSquare');
+    expect(ui).toContain('function refreshInteractiveClocks()');
+    expect(ui).not.toContain('if (latestInteractiveAdminState) renderInteractiveState(latestInteractiveAdminState);');
   });
 
   test('consumes authoritative state and persists interactive settings', () => {
@@ -28,6 +31,13 @@ describe('interactive games admin UI contract', () => {
     expect(ui).toContain('chessViewerResponseSeconds');
     expect(ui).toContain('maxConcurrentInteractiveSessions');
     expect(ui).toContain('interactiveResultDisplaySeconds');
+  });
+
+  test('uses interactive copy that cannot be overwritten by legacy Connect4 translations', () => {
+    expect(ui).toContain('<h3>Interactive Games</h3>');
+    expect(ui).toContain('<p id="game-status">Waiting for move…</p>');
+    expect(ui).not.toContain('data-i18n="game_engine.connect4_running"');
+    expect(ui).not.toContain('id="game-status" data-i18n=');
   });
 
   test('keeps every inline admin script syntactically valid', () => {
