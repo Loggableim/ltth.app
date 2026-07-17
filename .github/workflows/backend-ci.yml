@@ -52,7 +52,7 @@ jobs:
 
       - name: Run tests
         working-directory: ./app
-        run: npm test
+        run: npm test -- --runInBand --forceExit
 
       - name: Validate four-language translation contract
         working-directory: ./app

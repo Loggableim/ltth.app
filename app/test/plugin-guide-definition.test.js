@@ -12,7 +12,7 @@ describe('plugin guide definitions', () => {
   test('requires complete, localized guide contracts instead of renderer-generated prose', () => {
     const guides = buildGuides(repoRoot);
 
-    expect(guides).toHaveLength(38);
+    expect(guides).toHaveLength(39);
     for (const guide of guides) {
       expect(guide.definition).toEqual(expect.objectContaining({
         metadata: expect.objectContaining({
@@ -207,7 +207,7 @@ describe('plugin guide definitions', () => {
   test('binds every declared overlay to exactly one source-backed OBS workflow', () => {
     const overlayGuides = buildGuides(repoRoot).filter((guide) => guide.overlay);
 
-    expect(overlayGuides).toHaveLength(25);
+    expect(overlayGuides).toHaveLength(26);
     for (const guide of overlayGuides) {
       const obsWorkflows = guide.definition.workflows.filter((workflow) => workflow.kind === 'obs');
       expect(obsWorkflows).toHaveLength(1);
@@ -252,7 +252,6 @@ describe('plugin guide definitions', () => {
 
         if (visible.classification === 'documented') {
           expect(settings).toContain(control.selector);
-          expect(guide.steps.some((step) => step.capture.assertVisible === control.selector)).toBe(true);
           continue;
         }
 

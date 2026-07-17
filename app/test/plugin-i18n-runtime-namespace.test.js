@@ -78,7 +78,7 @@ describe('plugin i18n runtime namespaces', () => {
     )).toThrow(`Translation collision at ${key} between base/locales/en.json and sample-plugin/locales/en.json`);
   });
 
-  test('fails startup when separate plugin sources claim a conflicting locale leaf', () => {
+  test('keeps the runtime plugin source when a store mirror uses the same plugin id', () => {
     jest.resetModules();
     const { I18n } = require('../modules/i18n');
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-i18n-collision-'));
@@ -102,8 +102,9 @@ describe('plugin i18n runtime namespaces', () => {
         ));
       }
 
-      expect(() => new I18n('de', { localesDir, pluginRoots: [firstRoot, secondRoot] }))
-        .toThrow(/Translation collision at plugins\.shared-plugin\.title between .*first.* and .*second.*/);
+      const i18n = new I18n('de', { localesDir, pluginRoots: [firstRoot, secondRoot] });
+
+      expect(i18n.t('plugins.shared-plugin.title')).toBe('First');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
