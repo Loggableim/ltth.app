@@ -1365,20 +1365,6 @@
   "docs.hub.obsTitle": "3. Ajouter dans OBS",
   "docs.hub.obsBody": "Utilisez une URL d’overlay uniquement après un aperçu local. Vérifiez la résolution, la visibilité et l’audio dans une scène de test.",
   "docs.plugin.visual-fx-frame-webgpu.title": "Visual FX Frame WEBGPU",
-  "docs.plugin.breadcrumb.docs": "Documentation",
-  "docs.plugin.breadcrumb.label": "Fil d’Ariane",
-  "docs.plugin.definition.purpose": "Objectif et public",
-  "docs.plugin.definition.activation": "Activation et navigation",
-  "docs.plugin.definition.workflows": "Flux vérifiés",
-  "docs.plugin.definition.settings": "Référence des contrôles du flux",
-  "docs.plugin.definition.integrations": "Interfaces et intégrations",
-  "docs.plugin.definition.controls": "Inventaire de l’interface",
-  "docs.plugin.definition.defaultValue": "Valeur du profil de test",
-  "docs.plugin.definition.values": "Valeurs et limites",
-  "docs.plugin.definition.dependencies": "Dépendances",
-  "docs.plugin.definition.checks": "Vérifications",
-  "docs.plugin.definition.resolution": "Résolution",
-  "docs.plugin.definition.documentedIn": "Documenté dans",
   "website": {
     "partials": {
       "header": {
@@ -3839,5 +3825,20 @@
         "001": "Vielen Dank! - PupCid's Little TikTool Helper"
       }
     }
-  }
+  },
+  "docs.plugin.schnorrbecher.title": "Schnorrbecher",
+  "docs.plugin.breadcrumb.docs": "Documentation",
+  "docs.plugin.breadcrumb.label": "Fil d’Ariane",
+  "docs.plugin.definition.purpose": "Objectif et public",
+  "docs.plugin.definition.activation": "Activation et navigation",
+  "docs.plugin.definition.workflows": "Flux vérifiés",
+  "docs.plugin.definition.settings": "Référence des contrôles du flux",
+  "docs.plugin.definition.integrations": "Interfaces et intégrations",
+  "docs.plugin.definition.controls": "Inventaire de l’interface",
+  "docs.plugin.definition.defaultValue": "Valeur du profil de test",
+  "docs.plugin.definition.values": "Valeurs et limites",
+  "docs.plugin.definition.dependencies": "Dépendances",
+  "docs.plugin.definition.checks": "Vérifications",
+  "docs.plugin.definition.resolution": "Résolution",
+  "docs.plugin.definition.documentedIn": "Documenté dans"
 }

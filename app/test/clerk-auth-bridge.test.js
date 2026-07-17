@@ -225,6 +225,34 @@ describe('Clerk auth bridge', () => {
     assert.strictEqual(accountUrl.searchParams.get('redirect_url'), null);
   });
 
+  it('does not restore a local store session after the user explicitly signed out', async () => {
+    const storeAuthScript = readAppFile('public', 'js', 'clerk-store-auth.js');
+    const { window } = createStoreAuthDom();
+    const requests = [];
+    window.sessionStorage.setItem('ltth_store_auth_signed_out', '1');
+    window.fetch = async (url) => {
+      requests.push(String(url));
+      if (url === '/api/plugin-store/config') {
+        return jsonResponse({
+          success: true,
+          clerkEnabled: true,
+          publishableKey: 'pk_test_public',
+          authBridgeUrl: 'https://ltth.app/auth/',
+          authCallbackPath: '/auth/clerk/callback.html'
+        });
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    };
+
+    window.eval(storeAuthScript);
+    await window.StoreAuth.init();
+
+    assert.deepStrictEqual(requests, ['/api/plugin-store/config']);
+    assert.strictEqual(window.StoreAuth.isSignedIn, false);
+    assert(window.document.querySelector('[data-store-auth-mode="sign-in"]'));
+  });
+
   it('starts exactly one automatic bridge restoration when local restoration fails', async () => {
     const { window, redirects } = createStoreAuthDom();
     window.fetch = async (url) => {

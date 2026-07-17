@@ -101,7 +101,7 @@ describe('Sidekick runtime contracts', () => {
       'selectedAsrDeviceIsBlocked() && document.getElementById(\'host-asr-enabled\').checked',
       'stopHostAsrStream({ cancelRecorder: true',
       'document.getElementById(\'host-asr-enabled\').checked = false',
-      'ASR wurde gestoppt',
+      "translateUi('plugins.sidekick.ui.asr.stoppedUnsafeInput'",
       'enabled: config.asr?.enabled !== false'
     ].forEach(fragment => {
       expect(html).toContain(fragment);

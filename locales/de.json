@@ -1305,20 +1305,6 @@
   "docs.hub.obsTitle": "3. In OBS übernehmen",
   "docs.hub.obsBody": "Übernimm eine Overlay-URL erst nach einer lokalen Vorschau. Prüfe Auflösung, Sichtbarkeit und Audio in einer Testszene.",
   "docs.plugin.visual-fx-frame-webgpu.title": "Visual FX Frame WEBGPU",
-  "docs.plugin.breadcrumb.docs": "Dokumentation",
-  "docs.plugin.breadcrumb.label": "Brotkrümelnavigation",
-  "docs.plugin.definition.purpose": "Zweck und Zielgruppe",
-  "docs.plugin.definition.activation": "Aktivierung und Navigation",
-  "docs.plugin.definition.workflows": "Verifizierte Workflows",
-  "docs.plugin.definition.settings": "Referenz der Workflow-Steuerelemente",
-  "docs.plugin.definition.integrations": "Schnittstellen und Integrationen",
-  "docs.plugin.definition.controls": "UI-Inventar",
-  "docs.plugin.definition.defaultValue": "Standard im Testprofil",
-  "docs.plugin.definition.values": "Werte und Grenzen",
-  "docs.plugin.definition.dependencies": "Abhängigkeiten",
-  "docs.plugin.definition.checks": "Prüfschritte",
-  "docs.plugin.definition.resolution": "Lösung",
-  "docs.plugin.definition.documentedIn": "Dokumentiert in",
   "website": {
     "partials": {
       "header": {
@@ -3779,5 +3765,20 @@
         "001": "Vielen Dank! - PupCid's Little TikTool Helper"
       }
     }
-  }
+  },
+  "docs.plugin.schnorrbecher.title": "Schnorrbecher",
+  "docs.plugin.breadcrumb.docs": "Dokumentation",
+  "docs.plugin.breadcrumb.label": "Brotkrümelnavigation",
+  "docs.plugin.definition.purpose": "Zweck und Zielgruppe",
+  "docs.plugin.definition.activation": "Aktivierung und Navigation",
+  "docs.plugin.definition.workflows": "Verifizierte Workflows",
+  "docs.plugin.definition.settings": "Referenz der Workflow-Steuerelemente",
+  "docs.plugin.definition.integrations": "Schnittstellen und Integrationen",
+  "docs.plugin.definition.controls": "UI-Inventar",
+  "docs.plugin.definition.defaultValue": "Standard im Testprofil",
+  "docs.plugin.definition.values": "Werte und Grenzen",
+  "docs.plugin.definition.dependencies": "Abhängigkeiten",
+  "docs.plugin.definition.checks": "Prüfschritte",
+  "docs.plugin.definition.resolution": "Lösung",
+  "docs.plugin.definition.documentedIn": "Dokumentiert in"
 }

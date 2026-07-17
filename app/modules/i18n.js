@@ -79,6 +79,7 @@ class I18n {
   loadPluginTranslations() {
     try {
       const pluginsDirectories = this.pluginRoots.filter(fs.existsSync);
+      const loadedPluginIds = new Set();
 
       for (const pluginsDir of pluginsDirectories) {
         const plugins = fs.readdirSync(pluginsDir, { withFileTypes: true })
@@ -98,6 +99,11 @@ class I18n {
               console.error(`Failed to read manifest for plugin ${plugin}:`, error.message);
             }
           }
+
+          // Runtime plugin manifests take precedence over mirrored store
+          // sources. Loading both locale directories would make a valid
+          // duplicate source look like a conflicting translation namespace.
+          if (loadedPluginIds.has(pluginId)) continue;
 
           if (fs.existsSync(pluginLocalesDir)) {
             for (const locale of this.supportedLocales) {
@@ -130,6 +136,7 @@ class I18n {
                 }
               }
             }
+            loadedPluginIds.add(pluginId);
           }
         }
       }

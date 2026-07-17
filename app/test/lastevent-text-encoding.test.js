@@ -72,8 +72,8 @@ describe('LastEvent text encoding regressions', () => {
     expect(de.spotlight.overlays.open).toBe('Overlay öffnen');
     expect(de.spotlight.appearance.font_size).toBe('Schriftgröße');
     expect(es.spotlight.config.title).toBe('Configuración');
-    expect(es.spotlight.config.save).toBe('Guardar Configuración');
-    expect(fr.spotlight.config.save).toBe('Enregistrer les Paramètres');
+    expect(es.spotlight.config.save).toBe('Guardar configuración');
+    expect(fr.spotlight.config.save).toBe('Enregistrer les réglages');
   });
 
   test('STT Ticker UI has no malformed UTF-8 sequences', () => {

@@ -109,6 +109,34 @@ describe('documentation capture real workflows', () => {
     });
   });
 
+  test('keeps the requested locale while reviewing the Interactive Story language selector', () => {
+    const storyMode = step('interactive-story', 'story-mode');
+
+    expect(storyMode.capture).toMatchObject({
+      route: '/plugins/interactive-story/ui.html?demo=1',
+      assertVisible: '#languageSelect',
+      action: { type: 'open-plugin-surface' }
+    });
+    expect(storyMode.workflow.operations).toContainEqual({
+      type: 'open-plugin-surface',
+      selector: '#languageSelect'
+    });
+    expect(storyMode.workflow.captureRule.stateChange).toBe(false);
+  });
+
+  test.each(['store-card', 'official-source', 'package-status', 'store-inspection', 'store-review'])(
+    'treats the signed-out Store Admin %s capture as review-only',
+    (stepId) => {
+      const storeStep = step('store-admin', stepId);
+
+      expect(storeStep.capture.action).toMatchObject({
+        type: 'inspect-safe-store-state',
+        prepare: 'open-store-admin-view'
+      });
+      expect(storeStep.workflow.captureRule.stateChange).toBe(false);
+    }
+  );
+
   test('keeps JavaScript and localized shipped demo mode for every Interactive Story capture', () => {
     const guide = buildGuides(repoRoot).find((candidate) => candidate.id === 'interactive-story');
     const runnerSource = fs.readFileSync(path.join(repoRoot, 'scripts', 'capture-product-screenshots.js'), 'utf8');

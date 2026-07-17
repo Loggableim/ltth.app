@@ -237,7 +237,7 @@ const guide = {
           "fr": "Configurez Story Mode dans le profil de test"
         },
         "action": {
-          "type": "set-demo-value",
+          "type": "open-plugin-surface",
           "stepId": "story-mode"
         },
         "expected": {
@@ -277,7 +277,7 @@ const guide = {
             "route": "/plugins/interactive-story/ui.html?demo=1"
           },
           {
-            "type": "set-demo-value",
+            "type": "open-plugin-surface",
             "selector": "#languageSelect"
           }
         ],
@@ -309,7 +309,7 @@ const guide = {
             "width": 1440,
             "height": 900
           },
-          "stateChange": true
+          "stateChange": false
         }
       }
     },

@@ -67,6 +67,7 @@ describe('plugin tutorial workflow evidence', () => {
     ['fireworks', 'fireworks-test', '#test-btn', '#toast'],
     ['fireworks', 'fireworks-reset', '#save-btn', '#toast'],
     ['spotlight', 'chatter-preview', '#preview-test-btn', '#toast'],
+    ['schnorrbecher', 'test-gift', '#test-gift', '#total-value'],
     ['toptier', 'tier-threshold', '#test-overlay', '#toast'],
     ['webgpu-emoji-rain', 'gpu-rain-test', '#test-emoji-rain-btn', '#notification']
   ])('uses a real local result surface for %s/%s', (guideId, stepId, clickSelector, evidenceSelector) => {
@@ -90,7 +91,6 @@ describe('plugin tutorial workflow evidence', () => {
     ['openshock', 'safety-reset'],
     ['interactive-story', 'story-reset'],
     ['minecraft-connect', 'offline-message'],
-    ['minecraft-connect', 'minecraft-review'],
     ['multicam', 'scene-dry-run'],
     ['music-bot', 'queue-reset'],
     ['osc-bridge', 'loopback-check'],
@@ -123,5 +123,16 @@ describe('plugin tutorial workflow evidence', () => {
     expect(step.capture.action.type).toBe('open-plugin-surface');
     expect(step.workflow.captureRule.stateChange).toBe(false);
     expect(step.workflow.operations.some((operation) => operation.type === 'open-plugin-surface')).toBe(true);
+  });
+
+  test('uses the actual local overlay toggle for minecraft-connect', () => {
+    const guide = buildGuides(path.join(__dirname, '..', '..')).find((entry) => entry.id === 'minecraft-connect');
+    const step = guide.steps.find((entry) => entry.id === 'minecraft-overlay-settings');
+
+    expect(step.capture.action).toMatchObject({
+      type: 'set-demo-value',
+      prepare: 'open-minecraft-setup-tab'
+    });
+    expect(step.workflow.captureRule.stateChange).toBe(true);
   });
 });

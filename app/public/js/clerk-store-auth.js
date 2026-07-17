@@ -3,6 +3,7 @@
   const EXPIRY_KEY = 'ltth_store_auth_token_exp';
   const STATE_KEY = 'ltth_store_auth_state';
   const NEXT_KEY = 'ltth_store_auth_next';
+  const SIGNED_OUT_KEY = 'ltth_store_auth_signed_out';
   const DEFAULT_ACCOUNT_PORTAL_URL = 'https://ltth.app/auth/';
 
   const state = {
@@ -273,6 +274,11 @@
     state.bridgeToken = '';
   }
 
+  function clearExplicitSignedOutState() {
+    sessionStorage.removeItem(SIGNED_OUT_KEY);
+    state.signedOutExplicitly = false;
+  }
+
   function getStoredBridgeToken() {
     const token = sessionStorage.getItem(TOKEN_KEY) || '';
     if (!token) return '';
@@ -356,9 +362,7 @@
   }
 
   function beginBridgeAuth(mode = 'sign-up', options = {}) {
-    if (!options.automatic) {
-      state.signedOutExplicitly = false;
-    }
+    clearExplicitSignedOutState();
 
     const bridgeState = createBridgeState();
     const callbackUrl = getCallbackUrl();
@@ -378,6 +382,7 @@
 
   async function clearBridgeSession(shouldRender = true) {
     state.signedOutExplicitly = true;
+    sessionStorage.setItem(SIGNED_OUT_KEY, '1');
     clearStoredBridgeToken();
     state.bridgeToken = '';
     state.account = null;
@@ -413,7 +418,10 @@
       try {
         state.account = null;
         state.bridgeToken = getStoredBridgeToken();
-        await restoreBridgeSession();
+        state.signedOutExplicitly = sessionStorage.getItem(SIGNED_OUT_KEY) === '1';
+        if (!state.signedOutExplicitly) {
+          await restoreBridgeSession();
+        }
         renderState();
       } catch (error) {
         console.warn('[StoreAuth] Bridge session restore failed:', error);

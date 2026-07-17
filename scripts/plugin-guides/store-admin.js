@@ -197,7 +197,7 @@ module.exports = Object.freeze({
             "width": 1440,
             "height": 900
           },
-          "stateChange": true
+          "stateChange": false
         }
       }
     },
@@ -316,7 +316,7 @@ module.exports = Object.freeze({
             "width": 1440,
             "height": 900
           },
-          "stateChange": true
+          "stateChange": false
         }
       }
     },
@@ -435,7 +435,7 @@ module.exports = Object.freeze({
             "width": 1440,
             "height": 900
           },
-          "stateChange": true
+          "stateChange": false
         }
       }
     },
@@ -554,7 +554,7 @@ module.exports = Object.freeze({
             "width": 1440,
             "height": 900
           },
-          "stateChange": true
+          "stateChange": false
         }
       }
     },

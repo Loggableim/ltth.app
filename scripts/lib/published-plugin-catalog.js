@@ -45,9 +45,6 @@ function loadPublishedPluginCatalog(repoRoot) {
   const appById = new Map(appManifests.map((manifest) => [manifest.id, manifest]));
   const sourceById = new Map(storeSourceManifests.map((manifest) => [manifest.id, manifest]));
   for (const [id, manifest] of sourceById) {
-    if (id !== 'store-admin' && appById.has(id)) {
-      throw new Error(`Duplicate published plugin manifest id: ${id} (${appById.get(id).manifestPath}, ${manifest.manifestPath})`);
-    }
     if (!storeIds.includes(id)) {
       throw new Error(`Store source manifest ${id} is missing from plugin-store.json`);
     }
@@ -68,8 +65,9 @@ function loadPublishedPluginCatalog(repoRoot) {
     ...storeAdminMetadata
   };
 
-  const plugins = [...appManifests, ...storeSourceManifests]
-    .filter((manifest) => manifest.id !== 'store-admin')
+  const plugins = [...appManifests, ...storeSourceManifests.filter((manifest) => (
+    manifest.id !== 'store-admin' && !appById.has(manifest.id)
+  ))]
     .sort(compareById);
   const manifestIds = plugins.map((manifest) => manifest.id);
 

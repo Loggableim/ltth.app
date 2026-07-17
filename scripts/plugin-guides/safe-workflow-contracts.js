@@ -77,6 +77,9 @@ const LOCAL_ACTION_STEPS = Object.freeze({
   spotlight: {
     'chatter-preview': { clickSelector: '#preview-test-btn', evidenceSelector: '#toast' }
   },
+  schnorrbecher: {
+    'test-gift': { clickSelector: '#test-gift', evidenceSelector: '#total-value' }
+  },
   toptier: {
     'tier-threshold': { clickSelector: '#test-overlay', evidenceSelector: '#toast' }
   },

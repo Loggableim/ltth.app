@@ -792,6 +792,42 @@
     }
   },
   {
+    "id": "schnorrbecher",
+    "name": "Schnorrbecher",
+    "category": "plugin",
+    "access": "working-beta",
+    "devStatus": "working-beta",
+    "storeAvailable": false,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/schnorrbecher/coin-jar-config.png",
+      "en": "/screenshots/docs/plugins/schnorrbecher/coin-jar-config.png",
+      "es": "/screenshots/es/docs/plugins/schnorrbecher/coin-jar-config.png",
+      "fr": "/screenshots/fr/docs/plugins/schnorrbecher/coin-jar-config.png"
+    },
+    "translations": {
+      "de": {
+        "title": "Schnorrbecher",
+        "summary": "Schnorrbecher richtet Geschenkeglas, lokale Testwerte und OBS-Overlay ein, ohne eine LIVE-Szene zu verändern.",
+        "firstResult": "der Testwert erscheint im isolierten Becher, ohne eine LIVE-Szene zu verändern"
+      },
+      "en": {
+        "title": "Schnorrbecher",
+        "summary": "Schnorrbecher configures the gift jar, local test values, and OBS overlay without changing a LIVE scene.",
+        "firstResult": "the test value appears in the isolated jar without changing a LIVE scene"
+      },
+      "es": {
+        "title": "Schnorrbecher",
+        "summary": "Schnorrbecher configura el tarro de regalos, los valores de prueba locales y el overlay de OBS sin cambiar una escena LIVE.",
+        "firstResult": "el valor de prueba aparece en el tarro aislado sin cambiar una escena LIVE"
+      },
+      "fr": {
+        "title": "Schnorrbecher",
+        "summary": "Schnorrbecher configure le bocal de cadeaux, les valeurs de test locales et l’overlay OBS sans modifier une scène LIVE.",
+        "firstResult": "la valeur de test apparaît dans le bocal isolé sans modifier une scène LIVE"
+      }
+    }
+  },
+  {
     "id": "sidekick",
     "name": "Sidekick",
     "category": "plugin",

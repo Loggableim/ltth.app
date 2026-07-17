@@ -43,14 +43,14 @@ describe('ClarityHUD UI i18n', () => {
   test('routes dynamic status, dialogs, toasts, and stream fallbacks through runtime keys', () => {
     const source = fs.readFileSync(path.join(repoRoot, 'app', 'plugins', pluginId, 'ui', 'main.js'), 'utf8');
 
-    expect(source).toContain('function translateRuntime(key, fallback, params = {})');
-    expect(source).toContain("translateRuntime('status.settings_updated'");
-    expect(source).toContain("translateRuntime('toast.url_copied'");
-    expect(source).toContain("translateRuntime('toast.test_event_sent'");
-    expect(source).toContain("translateRuntime('dialog.preset_name'");
-    expect(source).toContain("translateRuntime('dialog.reset_confirm'");
-    expect(source).toContain("translateRuntime('empty.no_additional_streams'");
-    expect(source).toContain("translateRuntime('stream.fallback'");
+    expect(source).toContain('function runtimeText(key, fallback, params = {})');
+    expect(source).toContain("runtimeText('status.settings_updated'");
+    expect(source).toContain("runtimeText('toast.url_copied'");
+    expect(source).toContain("runtimeText('toast.test_event_sent'");
+    expect(source).toContain("runtimeText('dialog.preset_name'");
+    expect(source).toContain("runtimeText('dialog.reset_confirm'");
+    expect(source).toContain("runtimeText('empty.no_additional_streams'");
+    expect(source).toContain("runtimeText('stream.fallback'");
   });
 
   test('sets the local overlay URLs before asynchronous locale initialization completes', () => {

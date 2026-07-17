@@ -1365,20 +1365,6 @@
   "docs.hub.obsTitle": "3. Add it to OBS",
   "docs.hub.obsBody": "Use an overlay URL only after a local preview. Check resolution, visibility, and audio in a test scene.",
   "docs.plugin.visual-fx-frame-webgpu.title": "Visual FX Frame WEBGPU",
-  "docs.plugin.breadcrumb.docs": "Documentation",
-  "docs.plugin.breadcrumb.label": "Breadcrumb navigation",
-  "docs.plugin.definition.purpose": "Purpose and audience",
-  "docs.plugin.definition.activation": "Activation and navigation",
-  "docs.plugin.definition.workflows": "Verified workflows",
-  "docs.plugin.definition.settings": "Workflow control reference",
-  "docs.plugin.definition.integrations": "Interfaces and integrations",
-  "docs.plugin.definition.controls": "UI inventory",
-  "docs.plugin.definition.defaultValue": "Test-profile default",
-  "docs.plugin.definition.values": "Values and limits",
-  "docs.plugin.definition.dependencies": "Dependencies",
-  "docs.plugin.definition.checks": "Checks",
-  "docs.plugin.definition.resolution": "Resolution",
-  "docs.plugin.definition.documentedIn": "Documented in",
   "website": {
     "partials": {
       "header": {
@@ -3839,5 +3825,20 @@
         "001": "Vielen Dank! - PupCid's Little TikTool Helper"
       }
     }
-  }
+  },
+  "docs.plugin.schnorrbecher.title": "Schnorrbecher",
+  "docs.plugin.breadcrumb.docs": "Documentation",
+  "docs.plugin.breadcrumb.label": "Breadcrumb navigation",
+  "docs.plugin.definition.purpose": "Purpose and audience",
+  "docs.plugin.definition.activation": "Activation and navigation",
+  "docs.plugin.definition.workflows": "Verified workflows",
+  "docs.plugin.definition.settings": "Workflow control reference",
+  "docs.plugin.definition.integrations": "Interfaces and integrations",
+  "docs.plugin.definition.controls": "UI inventory",
+  "docs.plugin.definition.defaultValue": "Test-profile default",
+  "docs.plugin.definition.values": "Values and limits",
+  "docs.plugin.definition.dependencies": "Dependencies",
+  "docs.plugin.definition.checks": "Checks",
+  "docs.plugin.definition.resolution": "Resolution",
+  "docs.plugin.definition.documentedIn": "Documented in"
 }

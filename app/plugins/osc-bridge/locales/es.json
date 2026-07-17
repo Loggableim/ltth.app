@@ -117,7 +117,7 @@
               "count": "({count} regalos)",
               "empty_hint": "💡 Los regalos se detectan automáticamente cuando los espectadores los envían durante un directo. Conéctate a un directo de TikTok para completar el catálogo.",
               "empty_option": "(No hay regalos en el catálogo; conéctate al directo para detectarlos automáticamente)",
-              "option": "{name} (💎 {diamonds}) - ID: {id}",
+              "option": "{name} (💎 {diamonds}) · identificador: {id}",
               "select_or_enter": "-- Selecciona un regalo del catálogo o introdúcelo manualmente abajo --"
             },
             "loading": {

@@ -1042,6 +1042,11 @@ async function captureAsset(page, baseUrl, asset, locale) {
     ? await prepareGoalsOverlay(page, baseUrl, asset, locale)
     : null;
   const prepareStoreAdmin = asset.action && asset.action.prepare === 'open-store-admin-view';
+  if (prepareStoreAdmin) {
+    await page.evaluateOnNewDocument(() => {
+      sessionStorage.setItem('ltth_store_auth_signed_out', '1');
+    });
+  }
   const response = await page.goto(advancedTimerOverlay?.url || goalsOverlay?.url || urlFor(baseUrl, asset.route, locale), { waitUntil: 'domcontentloaded', timeout: TIMEOUT_MS });
   if (!response || response.status() >= 400) throw new Error(`HTTP ${response ? response.status() : 'no response'} for ${asset.route}`);
   // Store initialization automatically opens the external account bridge for
