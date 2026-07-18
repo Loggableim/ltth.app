@@ -390,7 +390,7 @@ class MusicBotPlugin extends EventEmitter {
         store: this.playlistStore,
         catalog: this.musicCatalog,
         runner: this.musicResolver.runner,
-        ytdlpPath: this.config.resolver?.ytdlpPath || YOUTUBE_DL_PATH,
+        ytdlpPath: this._getYtDlpPath(),
         onProgress: (payload) => this.api.emit('musicbot:playlist-import-progress', payload)
       });
     } catch (error) {
@@ -992,6 +992,7 @@ class MusicBotPlugin extends EventEmitter {
       moderation: config.moderation,
       maxDurationSeconds: config.queue.maxSongDurationSeconds
     });
+    this.playlistImports?.setYtDlpPath?.(this._getYtDlpPath());
     this.autoDJ?.updateConfig?.(config.autoDJ);
     if (this.mediaCache) {
       const ttlDays = Number(config.resolver.cacheTTLDays);
@@ -1408,7 +1409,8 @@ class MusicBotPlugin extends EventEmitter {
         return;
       }
       this.queueManager.addToHistory(info.track, info.reason === 'skip');
-      if (info.reason === 'ended' && info.track?.requestedBy && info.track.requestedBy !== 'AutoDJ') {
+      if ((info.reason === 'ended' || info.reason === 'crossfade')
+        && info.track?.requestedBy && info.track.requestedBy !== 'AutoDJ') {
         try {
           const resolved = this.musicCatalog?.resolveOrUpsert?.(info.track);
           if (resolved?.song?.id) {
@@ -1552,7 +1554,10 @@ class MusicBotPlugin extends EventEmitter {
     this.api.registerRoute('patch', '/api/plugins/music-bot/playlists/:id', async (req, res) => {
       if (!this.playlistStore) return playlistUnavailable(res);
       try {
-        const playlist = this.playlistStore.rename(req.params.id, req.body?.name, req.body?.revision);
+        const playlist = this.playlistStore.update(req.params.id, {
+          ...(Object.prototype.hasOwnProperty.call(req.body || {}, 'name') ? { name: req.body.name } : {}),
+          ...(Object.prototype.hasOwnProperty.call(req.body || {}, 'mode') ? { mode: req.body.mode } : {})
+        }, req.body?.revision);
         res.json({ success: true, playlist });
       } catch (error) {
         playlistError(res, error);
@@ -1610,7 +1615,7 @@ class MusicBotPlugin extends EventEmitter {
       if (!this.playlistImports) return playlistUnavailable(res);
       try {
         const job = this.playlistImports.start({ playlistId: req.body?.playlistId, url: req.body?.url });
-        res.json({ success: true, job });
+        res.status(202).json({ success: true, job });
       } catch (error) {
         playlistError(res, error);
       }

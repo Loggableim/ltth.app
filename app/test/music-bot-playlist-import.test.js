@@ -69,4 +69,23 @@ describe('music-bot playlist imports', () => {
     await expect(service.wait(secondJob.id)).resolves.toMatchObject({ status: 'completed' });
     db.close();
   });
+
+  it('rejects non-YouTube playlist URLs and exposes duplicate skips plus import provenance', async () => {
+    const runner = { run: jest.fn(async () => JSON.stringify({ entries: [
+      { id: 'one', title: 'One', uploader: 'Artist' },
+      { id: 'one-upload', title: 'One (Official Audio)', uploader: 'Artist' }
+    ] })) };
+    const { db, store, service } = createSubject(runner);
+    const playlist = store.create({ name: 'YouTube only' });
+
+    expect(() => service.start({ playlistId: playlist.id, url: 'https://example.com/playlist?list=nope' })).toThrow(/YouTube playlist/i);
+    const job = service.start({ playlistId: playlist.id, url: 'https://www.youtube.com/playlist?list=PL123' });
+    await expect(service.wait(job.id)).resolves.toMatchObject({
+      status: 'completed', total: 2, added: 1, duplicatesSkipped: 1
+    });
+    expect(store.get(playlist.id).importProvenance).toMatchObject({
+      sourceType: 'youtube-import', externalPlaylistId: 'PL123'
+    });
+    db.close();
+  });
 });

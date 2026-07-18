@@ -34,7 +34,7 @@ describe('music-bot playlist routes and lifecycle', () => {
       list: jest.fn(() => []),
       create: jest.fn(() => ({ id: 'mix', revision: 1 })),
       get: jest.fn(() => ({ id: 'mix', revision: 1, items: [] })),
-      rename: jest.fn(() => { const error = new Error('stale'); error.code = 'PLAYLIST_REVISION_CONFLICT'; throw error; }),
+      update: jest.fn(() => { const error = new Error('stale'); error.code = 'PLAYLIST_REVISION_CONFLICT'; throw error; }),
       delete: jest.fn(), addItem: jest.fn(), removeItem: jest.fn(), reorder: jest.fn(),
       setRadioSources: jest.fn(() => [])
     };
@@ -57,12 +57,13 @@ describe('music-bot playlist routes and lifecycle', () => {
     expect(created.json).toHaveBeenCalledWith({ success: true, playlist: { id: 'mix', revision: 1 } });
 
     const stale = response();
-    await rename({ params: { id: 'mix' }, body: { name: 'New', revision: 1 } }, stale);
+    await rename({ params: { id: 'mix' }, body: { name: 'New', mode: 'shuffle', revision: 1 } }, stale);
     expect(stale.status).toHaveBeenCalledWith(409);
 
     const started = response();
     await importRoute({ body: { playlistId: 'mix', url: 'https://youtube.com/playlist?list=one' } }, started);
     expect(plugin.playlistImports.start).toHaveBeenCalledWith({ playlistId: 'mix', url: 'https://youtube.com/playlist?list=one' });
+    expect(started.status).toHaveBeenCalledWith(202);
   });
 
   it('shuts down active playlist imports when the plugin is destroyed', async () => {
@@ -103,12 +104,33 @@ describe('music-bot playlist routes and lifecycle', () => {
     plugin._clearCrossfadeTimer = jest.fn();
     plugin._registerPlaybackEvents();
     engine.emit('track-end', { track: { title: 'Viewer song', requestedBy: 'viewer' }, reason: 'ended' });
+    engine.emit('track-end', { track: { title: 'Crossfade viewer song', requestedBy: 'viewer' }, reason: 'crossfade' });
     engine.emit('track-end', { track: { title: 'Auto song', requestedBy: 'AutoDJ' }, reason: 'ended' });
     engine.emit('track-end', { track: { title: 'Failed song', requestedBy: 'viewer' }, reason: 'error', error: 'broken' });
 
-    expect(plugin.playlistStore.recordViewerCompletion).toHaveBeenCalledTimes(1);
+    expect(plugin.playlistStore.recordViewerCompletion).toHaveBeenCalledTimes(2);
     expect(plugin.playlistStore.recordViewerCompletion).toHaveBeenCalledWith(42, {
       requestedBy: 'viewer', outcome: 'completed', error: null
     });
+  });
+
+  it('uses the resolver-resolved yt-dlp binary for imports and keeps it in sync on live config changes', () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    plugin.playlistStore = { get: jest.fn() };
+    plugin.musicCatalog = {};
+    plugin.musicResolver = {
+      runner: { run: jest.fn() },
+      config: { ytdlpPath: 'C:/bundled/yt-dlp.exe' },
+      updateConfig: jest.fn(function updateConfig(config) { this.config = { ...this.config, ytdlpPath: config.ytdlpPath }; })
+    };
+    plugin._initializePlaylistImports();
+    expect(plugin.playlistImports.ytdlpPath).toBe('C:/bundled/yt-dlp.exe');
+    plugin.playlistImports.setYtDlpPath = jest.fn();
+    plugin._distributeLiveConfig({
+      ...plugin.config,
+      resolver: { ...plugin.config.resolver, ytdlpPath: 'C:/custom/yt-dlp.exe' }
+    });
+    expect(plugin.playlistImports.setYtDlpPath).toHaveBeenCalledWith('C:/custom/yt-dlp.exe');
   });
 });

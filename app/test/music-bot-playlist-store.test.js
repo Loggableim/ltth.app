@@ -67,4 +67,52 @@ describe('music-bot playlist store', () => {
     expect(store.advanceRadioCursor(playable.id, 4)).toMatchObject({ playlistId: playable.id, cursor: 4 });
     db.close();
   });
+
+  it('keeps removed imported songs as tombstones, exposes provenance, and updates both name and mode atomically', () => {
+    const { db, catalog, store } = createStore();
+    const playlist = store.create({ name: 'Imported once' });
+    const entry = { title: 'Snapshot Track', artist: 'Artist', provider: 'youtube', providerId: 'snapshot-track' };
+    const first = store.importSnapshot(playlist.id, [entry], {
+      sourceType: 'youtube-import', sourceUrl: 'https://www.youtube.com/playlist?list=PL123', externalPlaylistId: 'PL123'
+    });
+    const song = catalog.resolveOrUpsert(entry).song;
+    const afterFirst = first.playlist;
+    store.removeItem(playlist.id, song.id, afterFirst.revision);
+    const reimported = store.importSnapshot(playlist.id, [entry], {
+      sourceType: 'youtube-import', sourceUrl: 'https://www.youtube.com/playlist?list=PL123', externalPlaylistId: 'PL123'
+    });
+
+    expect(reimported).toMatchObject({ added: 0, duplicatesSkipped: 1 });
+    expect(store.get(playlist.id)).toMatchObject({
+      items: [],
+      importProvenance: {
+        sourceType: 'youtube-import', externalPlaylistId: 'PL123', sourceUrl: 'https://www.youtube.com/playlist?list=PL123'
+      }
+    });
+    const revised = store.update(playlist.id, { name: 'Edited import', mode: 'shuffle' }, store.get(playlist.id).revision);
+    expect(revised).toMatchObject({ name: 'Edited import', mode: 'shuffle' });
+    expect(() => store.update(playlist.id, { mode: 'ordered' }, afterFirst.revision)).toThrow(
+      expect.objectContaining({ code: 'PLAYLIST_REVISION_CONFLICT' })
+    );
+    db.close();
+  });
+
+  it('selects enabled playlist sources by weight, rotates their cursors, and falls back when a source is blocked', () => {
+    const { db, catalog, store } = createStore();
+    const light = store.create({ name: 'Light' });
+    const heavy = store.create({ name: 'Heavy' });
+    const lightSong = catalog.resolveOrUpsert({ title: 'Light song', artist: 'A', provider: 'youtube', providerId: 'light' }).song;
+    const heavyOne = catalog.resolveOrUpsert({ title: 'Heavy one', artist: 'B', provider: 'youtube', providerId: 'heavy-1' }).song;
+    const heavyTwo = catalog.resolveOrUpsert({ title: 'Heavy two', artist: 'B', provider: 'youtube', providerId: 'heavy-2' }).song;
+    store.addItem(light.id, lightSong.id, light.revision);
+    store.addItem(heavy.id, heavyOne.id, heavy.revision);
+    store.addItem(heavy.id, heavyTwo.id, 2);
+    store.setRadioSources([{ playlistId: light.id, weight: 1 }, { playlistId: heavy.id, weight: 10 }]);
+
+    expect(store.chooseRadioSource({ random: () => 0.5, isAllowed: () => true })).toMatchObject({ playlistId: heavy.id, songId: heavyOne.id });
+    expect(store.chooseRadioSource({ random: () => 0.5, isAllowed: () => true })).toMatchObject({ playlistId: heavy.id, songId: heavyTwo.id });
+    expect(store.chooseRadioSource({ random: () => 0.5, isAllowed: (songId) => songId !== heavyOne.id && songId !== heavyTwo.id }))
+      .toMatchObject({ playlistId: light.id, songId: lightSong.id });
+    db.close();
+  });
 });

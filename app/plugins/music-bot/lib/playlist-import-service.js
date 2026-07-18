@@ -23,13 +23,12 @@ class PlaylistImportService {
   start({ playlistId, url } = {}) {
     if (this.destroyed) throw abortError();
     this.store.get(playlistId);
-    const sourceUrl = String(url || '').trim();
-    if (!/^https?:\/\//i.test(sourceUrl)) throw new Error('Playlist import URL must be http or https');
+    const source = this._parseYouTubePlaylistUrl(url);
     const controller = new AbortController();
     let resolve;
     const job = {
-      id: randomUUID(), playlistId, url: sourceUrl, controller, status: 'queued', progress: 0,
-      total: 0, added: 0, error: null, createdAt: Date.now(), startedAt: null, completedAt: null,
+      id: randomUUID(), playlistId, url: source.url, source, controller, status: 'queued', progress: 0,
+      total: 0, added: 0, duplicatesSkipped: 0, error: null, createdAt: Date.now(), startedAt: null, completedAt: null,
       promise: new Promise((done) => { resolve = done; }), resolve
     };
     this.jobs.set(job.id, job);
@@ -66,6 +65,10 @@ class PlaylistImportService {
     this.destroyed = true;
     [...this.jobs.values()].forEach((job) => this.abort(job.id));
     if (this.active?.promise) await this.active.promise;
+  }
+
+  setYtDlpPath(ytdlpPath) {
+    this.ytdlpPath = String(ytdlpPath || 'yt-dlp');
   }
 
   async _drain() {
@@ -107,8 +110,9 @@ class PlaylistImportService {
       job.progress = 90;
       this._publish(job);
       if (job.controller.signal.aborted) throw abortError();
-      const result = this.store.importSnapshot(job.playlistId, entries);
+      const result = this.store.importSnapshot(job.playlistId, entries, job.source);
       job.added = result.added;
+      job.duplicatesSkipped = result.duplicatesSkipped || 0;
       this._finish(job, 'completed');
     } catch (error) {
       if (job.controller.signal.aborted || error?.code === 'ABORT_ERR' || error?.name === 'AbortError') {
@@ -142,6 +146,24 @@ class PlaylistImportService {
     });
   }
 
+  _parseYouTubePlaylistUrl(value) {
+    let parsed;
+    try {
+      parsed = new URL(String(value || '').trim());
+    } catch (_error) {
+      throw new Error('Playlist import URL must be a YouTube playlist URL');
+    }
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+    if (!(host === 'youtube.com' || host === 'music.youtube.com' || host.endsWith('.youtube.com'))) {
+      throw new Error('Playlist import URL must be a YouTube playlist URL');
+    }
+    const externalPlaylistId = String(parsed.searchParams.get('list') || '').trim();
+    if (!externalPlaylistId) throw new Error('Playlist import URL must include a YouTube playlist ID');
+    return {
+      sourceType: 'youtube-import', sourceUrl: parsed.toString(), externalPlaylistId, url: parsed.toString()
+    };
+  }
+
   _finish(job, status) {
     if (this._terminal(job)) return;
     job.status = status;
@@ -158,7 +180,7 @@ class PlaylistImportService {
   _public(job) {
     return {
       id: job.id, jobId: job.id, playlistId: job.playlistId, status: job.status, progress: job.progress,
-      total: job.total, added: job.added, error: job.error, createdAt: job.createdAt,
+      total: job.total, added: job.added, duplicatesSkipped: job.duplicatesSkipped, error: job.error, createdAt: job.createdAt,
       startedAt: job.startedAt, completedAt: job.completedAt
     };
   }

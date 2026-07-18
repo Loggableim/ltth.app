@@ -60,7 +60,7 @@ class PlaylistStore {
        JOIN plugin_music_bot_songs s ON s.id = i.song_id
        WHERE i.playlist_id = ? ORDER BY i.position ASC`
     ).all(playlist.id);
-    return { ...playlist, items };
+    return { ...playlist, items, importProvenance: this._provenance(playlist.id) };
   }
 
   getViewerRadio() {
@@ -68,17 +68,25 @@ class PlaylistStore {
   }
 
   rename(id, name, revision) {
-    const cleanName = this._name(name);
+    return this.update(id, { name }, revision);
+  }
+
+  update(id, changes = {}, revision) {
+    const hasName = Object.prototype.hasOwnProperty.call(changes, 'name');
+    const hasMode = Object.prototype.hasOwnProperty.call(changes, 'mode');
+    if (!hasName && !hasMode) throw new PlaylistError('INVALID_PLAYLIST_UPDATE', 'Playlist name or mode is required');
     return this._withTransaction(() => {
       const playlist = this._playlist(id);
-      this._assertMutable(playlist);
+      if (hasName) this._assertMutable(playlist);
       this._assertRevision(playlist, revision);
+      const cleanName = hasName ? this._name(changes.name) : playlist.name;
+      const cleanMode = hasMode ? this._mode(changes.mode) : playlist.mode;
       const now = Date.now();
       try {
         this.db.prepare(
-          `UPDATE plugin_music_bot_playlists SET name = ?, normalized_name = ?, revision = revision + 1, updated_at = ?
+          `UPDATE plugin_music_bot_playlists SET name = ?, normalized_name = ?, mode = ?, revision = revision + 1, updated_at = ?
            WHERE id = ?`
-        ).run(cleanName, cleanName.toLocaleLowerCase(), now, id);
+        ).run(cleanName, cleanName.toLocaleLowerCase(), cleanMode, now, id);
       } catch (error) {
         if (/unique/i.test(error.message)) throw new PlaylistError('PLAYLIST_NAME_CONFLICT', 'Playlist name already exists');
         throw error;
@@ -93,6 +101,8 @@ class PlaylistStore {
       this._assertMutable(playlist);
       this._assertRevision(playlist, revision);
       this.db.prepare('DELETE FROM plugin_music_bot_radio_playlist_sources WHERE playlist_id = ?').run(id);
+      this.db.prepare('DELETE FROM plugin_music_bot_playlist_imported_songs WHERE playlist_id = ?').run(id);
+      this.db.prepare('DELETE FROM plugin_music_bot_playlist_import_provenance WHERE playlist_id = ?').run(id);
       this.db.prepare('DELETE FROM plugin_music_bot_playlist_items WHERE playlist_id = ?').run(id);
       this.db.prepare('DELETE FROM plugin_music_bot_playlists WHERE id = ?').run(id);
       return { id, deleted: true };
@@ -130,6 +140,10 @@ class PlaylistStore {
       ).get(id, songId);
       if (!item) throw new PlaylistError('PLAYLIST_ITEM_NOT_FOUND', 'Playlist item not found');
       this.db.prepare('DELETE FROM plugin_music_bot_playlist_items WHERE playlist_id = ? AND song_id = ?').run(id, songId);
+      this.db.prepare(
+        `UPDATE plugin_music_bot_playlist_imported_songs SET removed_at = ?
+         WHERE playlist_id = ? AND song_id = ?`
+      ).run(Date.now(), id, songId);
       this.db.prepare(
         'UPDATE plugin_music_bot_playlist_items SET position = position - 1 WHERE playlist_id = ? AND position > ?'
       ).run(id, item.position);
@@ -194,7 +208,7 @@ class PlaylistStore {
     });
   }
 
-  importSnapshot(id, entries) {
+  importSnapshot(id, entries, provenance = {}) {
     if (!Array.isArray(entries)) throw new PlaylistError('INVALID_IMPORT', 'Playlist snapshot entries must be an array');
     return this._withTransaction(() => {
       const playlist = this._playlist(id);
@@ -203,20 +217,38 @@ class PlaylistStore {
       ).all(id).map((item) => item.songId));
       let position = known.size;
       let added = 0;
+      let duplicatesSkipped = 0;
+      const seen = new Set();
       entries.forEach((entry) => {
         const resolved = this.catalog._resolveOrUpsert(entry);
-        if (known.has(resolved.song.id)) return;
+        const songId = resolved.song.id;
+        const imported = this.db.prepare(
+          `SELECT song_id FROM plugin_music_bot_playlist_imported_songs
+           WHERE playlist_id = ? AND song_id = ?`
+        ).get(id, songId);
+        if (known.has(songId) || seen.has(songId) || imported) {
+          duplicatesSkipped += 1;
+          seen.add(songId);
+          return;
+        }
         this.db.prepare(
           `INSERT INTO plugin_music_bot_playlist_items
            (playlist_id, song_id, position, request_count, last_requested_at, added_at)
            VALUES (?, ?, ?, 0, NULL, ?)`
-        ).run(id, resolved.song.id, position, Date.now());
-        known.add(resolved.song.id);
+        ).run(id, songId, position, Date.now());
+        this.db.prepare(
+          `INSERT INTO plugin_music_bot_playlist_imported_songs
+           (playlist_id, song_id, first_imported_at, last_imported_at, removed_at)
+           VALUES (?, ?, ?, ?, NULL)`
+        ).run(id, songId, Date.now(), Date.now());
+        known.add(songId);
+        seen.add(songId);
         position += 1;
         added += 1;
       });
+      this._setProvenance(id, provenance);
       if (added) this._touch(playlist.id);
-      return { added, playlist: this.get(id) };
+      return { added, duplicatesSkipped, playlist: this.get(id) };
     });
   }
 
@@ -271,6 +303,28 @@ class PlaylistStore {
     });
   }
 
+  chooseRadioSource({ random = Math.random, isAllowed = () => true } = {}) {
+    const choices = this.getRadioSources().filter((source) => source.enabled && source.itemCount > 0)
+      .map((source) => {
+        const items = this.get(source.playlistId).items;
+        const start = Number(source.cursor || 0) % items.length;
+        const ordered = [...items.slice(start), ...items.slice(0, start)];
+        const item = ordered.find((candidate) => isAllowed(candidate.songId, candidate, source));
+        return item ? { source, item, length: items.length } : null;
+      }).filter(Boolean);
+    if (!choices.length) return null;
+    const totalWeight = choices.reduce((total, choice) => total + Number(choice.source.weight), 0);
+    const roll = Math.max(0, Math.min(0.999999999, Number(random()) || 0)) * totalWeight;
+    let threshold = 0;
+    const choice = choices.find((candidate) => {
+      threshold += Number(candidate.source.weight);
+      return roll < threshold;
+    }) || choices.at(-1);
+    const nextCursor = (Number(choice.item.position) + 1) % choice.length;
+    this.advanceRadioCursor(choice.source.playlistId, nextCursor);
+    return { ...choice.item, playlistId: choice.source.playlistId, weight: choice.source.weight, cursor: nextCursor };
+  }
+
   advanceRadioCursor(playlistId, cursor) {
     this._playlist(playlistId);
     const next = Math.max(0, Math.floor(Number(cursor) || 0));
@@ -297,6 +351,14 @@ class PlaylistStore {
         playlist_id TEXT PRIMARY KEY, enabled INTEGER NOT NULL DEFAULT 0, weight INTEGER NOT NULL DEFAULT 1,
         cursor INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL
       )`,
+      `CREATE TABLE IF NOT EXISTS plugin_music_bot_playlist_imported_songs (
+        playlist_id TEXT NOT NULL, song_id INTEGER NOT NULL, first_imported_at INTEGER NOT NULL,
+        last_imported_at INTEGER NOT NULL, removed_at INTEGER, PRIMARY KEY (playlist_id, song_id)
+      )`,
+      `CREATE TABLE IF NOT EXISTS plugin_music_bot_playlist_import_provenance (
+        playlist_id TEXT PRIMARY KEY, source_type TEXT NOT NULL, source_url TEXT NOT NULL,
+        external_playlist_id TEXT, imported_at INTEGER NOT NULL
+      )`,
       'CREATE INDEX IF NOT EXISTS idx_music_bot_playlist_items_order ON plugin_music_bot_playlist_items (playlist_id, position)'
     ].forEach((sql) => this.db.prepare(sql).run());
   }
@@ -318,6 +380,27 @@ class PlaylistStore {
     ).get(id);
     if (!row) throw new PlaylistError('PLAYLIST_NOT_FOUND', 'Playlist not found');
     return { ...row, isProtected: Boolean(row.isProtected) };
+  }
+
+  _provenance(id) {
+    const row = this.db.prepare(
+      `SELECT source_type AS sourceType, source_url AS sourceUrl, external_playlist_id AS externalPlaylistId,
+       imported_at AS importedAt FROM plugin_music_bot_playlist_import_provenance WHERE playlist_id = ?`
+    ).get(id);
+    return row || null;
+  }
+
+  _setProvenance(id, provenance = {}) {
+    const sourceType = String(provenance.sourceType || '').trim();
+    const sourceUrl = String(provenance.sourceUrl || '').trim();
+    if (!sourceType || !sourceUrl) return;
+    this.db.prepare(
+      `INSERT INTO plugin_music_bot_playlist_import_provenance
+       (playlist_id, source_type, source_url, external_playlist_id, imported_at)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(playlist_id) DO UPDATE SET source_type = excluded.source_type, source_url = excluded.source_url,
+       external_playlist_id = excluded.external_playlist_id, imported_at = excluded.imported_at`
+    ).run(id, sourceType, sourceUrl, provenance.externalPlaylistId || null, Date.now());
   }
 
   _song(songId) {
