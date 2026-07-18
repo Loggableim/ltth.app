@@ -53,6 +53,7 @@ test('maps primary and scratch buffers explicitly for both solver directions', (
   const scratchResources = extractDelimitedBlock(bindGroups, 'const scratchResources =');
   const bindingsByPipeline = extractDelimitedBlock(bindGroups, 'const bindingsByPipeline =');
   const resourcesByPipeline = extractDelimitedBlock(bindGroups, 'const resourcesByPipeline =');
+  const computeBindGroups = extractSection(bindGroups, 'this.computeBindGroups =', 'this.spriteBindGroup =');
   const spriteBindGroup = extractDelimitedBlock(bindGroups, 'this.spriteBindGroup = this.device.createBindGroup(');
 
   expect(primaryResources).toMatch(/0:\s*\{\s*binding:\s*0,\s*resource:\s*\{\s*buffer:\s*this\.particleBuffer/);
@@ -67,16 +68,44 @@ test('maps primary and scratch buffers explicitly for both solver directions', (
   expect(resourcesByPipeline).toContain('buildScratch: scratchResources');
   expect(resourcesByPipeline).toContain('solveToPrimary: scratchResources');
   expect(resourcesByPipeline).toContain('compact: primaryResources');
+  expect(computeBindGroups).toContain('Object.entries(this.computePipelines).map(([name, pipeline])');
+  expect(computeBindGroups).toContain('bindingsByPipeline[name].map(binding => resourcesByPipeline[name][binding])');
   expect(spriteBindGroup).toMatch(/binding:\s*0,\s*resource:\s*\{\s*buffer:\s*this\.particleBuffer/);
 });
 
+test('maps every named compute pipeline to its intended WGSL entry point', () => {
+  const createPipelines = extractDelimitedBlock(source, '_createPipelines() {');
+  const computePipelines = extractDelimitedBlock(createPipelines, 'this.computePipelines =');
+  const entryPoints = Object.fromEntries(Array.from(
+    computePipelines.matchAll(/^\s*(\w+): .*entryPoint: '([^']+)'/gm),
+    match => [match[1], match[2]]
+  ));
+
+  expect(entryPoints).toEqual({
+    clear: 'clearGrid',
+    spawn: 'spawnParticles',
+    integrate: 'integrateParticles',
+    build: 'buildGrid',
+    solveToScratch: 'resolveCollisions',
+    clearGridOnly: 'clearGridOnly',
+    buildScratch: 'buildGrid',
+    solveToPrimary: 'resolveCollisions',
+    compact: 'compactActiveParticles',
+    finalize: 'finalizeIndirect'
+  });
+});
+
 test('copies collision-disabled particles and isolates counter mutation to compaction', () => {
+  const integrate = extractDelimitedBlock(computeShader, 'fn integrateParticles');
+  const expiry = extractDelimitedBlock(integrate, 'if (particle.life <= 0.0 || outside)');
   const resolve = extractDelimitedBlock(computeShader, 'fn resolveCollisions');
   const clearGridOnly = extractDelimitedBlock(computeShader, 'fn clearGridOnly');
   const compact = extractDelimitedBlock(computeShader, 'fn compactActiveParticles');
   const counterIncrements = computeShader.match(/atomicAdd\(&counters\[0\]/g) || [];
 
   expect(resolve).toMatch(/frame\.collisionScale <= 0\.0[\s\S]*solvedParticles\[index\] = particle;\s*return;/);
+  expect(expiry).toContain('atomicStore(&slotStates[index], 0u);');
+  expect(expiry).toMatch(/particle\.flags = particle\.flags & ~1u;[\s\S]*particles\[index\] = particle;[\s\S]*atomicStore\(&slotStates\[index\], 0u\);[\s\S]*return;/);
   expect(clearGridOnly).toContain('atomicStore(&gridHeads[index], -1);');
   expect(clearGridOnly.match(/atomicStore\(/g)).toHaveLength(1);
   expect(clearGridOnly).not.toMatch(/counters|activeIndices|indirectArgs/);
@@ -93,6 +122,24 @@ test('bounds neighbour cells without clamping and caps each cell scan at eight e
   expect(resolve).not.toMatch(/clamp\s*\(\s*i32\s*\(\s*home\./);
   expect(scanCaps).toEqual([8]);
   expect(resolve).toContain('let minDistance = radius + collisionRadius(other);');
+});
+
+test('allocates, clears, trims and releases the fixed-capacity collision scratch buffer', () => {
+  const createBuffers = extractDelimitedBlock(source, '_createBuffers() {');
+  const collisionAllocation = extractDelimitedBlock(createBuffers, 'this.collisionBuffer = this.device.createBuffer(');
+  const clear = extractDelimitedBlock(source, '    clear() {');
+  const clearCapacityTail = extractDelimitedBlock(source, '_clearCapacityTail(startIndex) {');
+  const release = extractDelimitedBlock(source, '_releaseGPUResources() {');
+  const releasedResources = extractDelimitedBlock(release, 'const resources =', '[', ']');
+
+  expect(collisionAllocation).toContain("label: 'emoji-particles-collision-scratch'");
+  expect(collisionAllocation).toContain('size: GPU_CAPACITY * PARTICLE_STRIDE');
+  expect(collisionAllocation).toContain('usage: U.STORAGE | U.COPY_DST | U.COPY_SRC');
+  expect(clear).toContain('writeBuffer(this.particleBuffer, 0, new Uint8Array(GPU_CAPACITY * PARTICLE_STRIDE))');
+  expect(clear).toContain('writeBuffer(this.collisionBuffer, 0, new Uint8Array(GPU_CAPACITY * PARTICLE_STRIDE))');
+  expect(clearCapacityTail).toContain('writeBuffer(this.particleBuffer, startIndex * PARTICLE_STRIDE, new Uint8Array(tailCount * PARTICLE_STRIDE))');
+  expect(clearCapacityTail).toContain('writeBuffer(this.collisionBuffer, startIndex * PARTICLE_STRIDE, new Uint8Array(tailCount * PARTICLE_STRIDE))');
+  expect(releasedResources).toMatch(/this\.particleBuffer,\s*this\.collisionBuffer,/);
 });
 
 test('keeps the impact ABI field zero and out of sprite geometry and fragments', () => {
