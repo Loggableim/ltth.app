@@ -734,6 +734,7 @@
     let lastInteractiveDisplayRevision = -1;
     let lastInteractiveSessionRevision = -1;
     let latestInteractiveState = null;
+    let latestInteractiveStateReceivedAt = 0;
     let latestInteractiveQueueIdle = true;
     let interactiveSnapshotActive = false;
     let resultHideTimer = null;
@@ -994,7 +995,7 @@
       countdown.classList.remove('warning');
     }
 
-    function startInteractiveViewerCountdown(state, display) {
+    function startInteractiveViewerCountdown(state, display, receivedAt = Date.now()) {
       clearInteractiveViewerCountdown();
       if (
         display?.gameType !== 'connect4' ||
@@ -1005,7 +1006,6 @@
       const deadline = Number(display.viewerDeadlineMs);
       const serverTimestamp = Number(state?.serverTimestamp ?? display.serverTimestamp);
       if (!Number.isFinite(deadline) || !Number.isFinite(serverTimestamp)) return;
-      const receivedAt = Date.now();
       const warningSeconds = Number(
         state?.configuration?.connect4ViewerWarningSeconds ??
         display.config?.roundWarningTime ??
@@ -1474,6 +1474,7 @@
         lastInteractiveDisplayRevision = displayRevision;
         lastInteractiveSessionRevision = sessionRevision;
         latestInteractiveState = state;
+        latestInteractiveStateReceivedAt = Date.now();
       }
       clearInteractivePresentation();
       if (display.gameType !== 'connect4') {
@@ -1502,7 +1503,7 @@
       updatePlayerInfo(snapshotState);
       updateStatus(snapshotState);
       maybePlayInteractiveMoveSound(display, snapshotState);
-      startInteractiveViewerCountdown(interactiveState, display);
+      startInteractiveViewerCountdown(interactiveState, display, latestInteractiveStateReceivedAt);
       document.getElementById('game-container').classList.add('active');
 
       if (display.phase === 'result' && display.result) {

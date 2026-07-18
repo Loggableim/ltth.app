@@ -117,7 +117,7 @@ describe('interactive overlay countdown DOM', () => {
       onChange: callback => { onChange = callback; },
       onLanguageChange: callback => { onLanguageChange = callback; }
     };
-    const { dom, listeners } = loadOverlay('connect4.html', i18n);
+    const { dom, listeners, advance } = loadOverlay('connect4.html', i18n);
     const countdown = dom.window.document.getElementById('interactive-viewer-countdown');
 
     listeners.get('game-engine:interactive-state')(connect4State());
@@ -129,12 +129,59 @@ describe('interactive overlay countdown DOM', () => {
     await Promise.resolve();
     expect(countdown.textContent).toContain('en:');
 
+    advance(2000);
+    expect(countdown.textContent).toContain('3');
     language = 'de';
     onChange();
     expect(countdown.textContent).toContain('de:');
+    expect(countdown.textContent).toContain('3');
     language = 'fr';
     onLanguageChange();
     expect(countdown.textContent).toContain('fr:');
+    expect(countdown.textContent).toContain('3');
+    dom.window.close();
+  });
+
+  test('direct chess language replay preserves elapsed authoritative host time', () => {
+    let onChange;
+    const i18n = {
+      initialized: true,
+      ready: new Promise(() => {}),
+      t: jest.fn(key => key),
+      onChange: callback => { onChange = callback; },
+      onLanguageChange: jest.fn()
+    };
+    const { dom, listeners, advance } = loadOverlay('chess.html', i18n);
+    const state = {
+      display: {
+        displaySessionId: 11,
+        gameType: 'chess',
+        sessionRevision: 1,
+        displayRevision: 1,
+        currentTurnRole: 'host',
+        hostTimeRemainingMs: 5000,
+        phase: 'playing',
+        config: {},
+        state: {
+          sessionId: 11,
+          fen: '8/8/8/8/8/8/8/8 w - - 0 1',
+          currentPlayer: 'white',
+          whitePlayer: { username: 'host', nickname: 'Host', role: 'streamer' },
+          blackPlayer: { username: 'viewer', nickname: 'Viewer', role: 'viewer' },
+          timers: { white: 5000, black: 5000 },
+          capturedPieces: { white: {}, black: {} },
+          lastMove: null
+        }
+      }
+    };
+
+    listeners.get('game-engine:interactive-state')(state);
+    const hostTimer = dom.window.document.getElementById('white-timer');
+    expect(hostTimer.textContent).toBe('0:05');
+    advance(2000);
+    expect(hostTimer.textContent).toBe('0:03');
+    onChange();
+    expect(hostTimer.textContent).toBe('0:03');
     dom.window.close();
   });
 

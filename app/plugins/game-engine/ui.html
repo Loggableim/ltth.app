@@ -5552,13 +5552,23 @@
       document.getElementById('active-game').classList.remove('show');
     }
 
+    function localizedAdminReplayTarget(interactiveState, legacyActiveGame) {
+      const hasActiveInteractivePresentation = Boolean(
+        interactiveState?.activeSessions?.length ||
+        ['playing', 'animating', 'result'].includes(interactiveState?.display?.phase)
+      );
+      if (hasActiveInteractivePresentation) return 'interactive';
+      if (legacyActiveGame) return 'legacy';
+      if (interactiveState) return 'idle';
+      return null;
+    }
+
     function rerenderLocalizedAdminState() {
-      if (latestLegacyActiveGame && !latestInteractiveAdminState?.activeSessions?.length) {
+      const target = localizedAdminReplayTarget(latestInteractiveAdminState, latestLegacyActiveGame);
+      if (target === 'interactive' || target === 'idle') {
+        renderInteractiveState(latestInteractiveAdminState);
+      } else if (target === 'legacy') {
         updateActiveGame(latestLegacyActiveGame);
-      }
-      const interactiveState = latestInteractiveAdminState;
-      if (interactiveState) {
-        renderInteractiveState(interactiveState);
       }
       if (latestInteractiveConfig) applyInteractiveSettings(latestInteractiveConfig);
     }

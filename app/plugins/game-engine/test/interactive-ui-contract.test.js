@@ -121,4 +121,17 @@ describe('interactive games admin UI contract', () => {
     expect(scripts.length).toBeGreaterThan(0);
     for (const [, source] of scripts) expect(() => new Function(source)).not.toThrow();
   });
+
+  test('language replay prioritizes active interactive state, then legacy game, then idle', () => {
+    const functionSource = ui.match(/    function localizedAdminReplayTarget\([\s\S]*?\n    \}/)?.[0];
+    expect(functionSource).toEqual(expect.any(String));
+    const selectTarget = new Function(`${functionSource}; return localizedAdminReplayTarget;`)();
+    const idle = { activeSessions: [], display: { phase: 'idle' } };
+    const active = { activeSessions: [{ sessionId: 1 }], display: { phase: 'playing' } };
+
+    expect(selectTarget(active, { sessionId: 9 })).toBe('interactive');
+    expect(selectTarget(idle, { sessionId: 9 })).toBe('legacy');
+    expect(selectTarget(idle, null)).toBe('idle');
+    expect(selectTarget(null, null)).toBe(null);
+  });
 });

@@ -955,14 +955,18 @@
         document.querySelectorAll('.slot-label').forEach(label => {
           const mul = label.dataset.multiplier;
           if (mul) label.textContent = `${dt.labelMultiplierPrefix}${mul}`;
-      });
+        });
+      }
     }
 
-    bindRuntimeI18nRerender(() => {
+    // Plinko i18n lifecycle: start
+    function rerenderLocalizedPlinkoState() {
       applyDisplayTexts(config.displayTexts);
       if (latestLeaderboardData) renderLeaderboard(latestLeaderboardData);
-    });
     }
+
+    bindRuntimeI18nRerender(rerenderLocalizedPlinkoState);
+    // Plinko i18n lifecycle: end
 
     socket.on('plinko:spawn-ball', (data) => {
       console.log('🎰 Received spawn-ball event', data);

@@ -511,6 +511,7 @@
     let lastInteractiveDisplayRevision = -1;
     let lastInteractiveSessionRevision = -1;
     let latestInteractiveState = null;
+    let latestInteractiveStateReceivedAt = 0;
     let interactiveSnapshotActive = false;
     let interactiveClockInterval = null;
 
@@ -732,7 +733,7 @@
       interactiveClockInterval = null;
     }
 
-    function renderInteractiveClock(display, state) {
+    function renderInteractiveClock(display, state, receivedAt = Date.now()) {
       stopInteractiveClock();
       const timers = { ...state.timers };
       const hostSide = ['white', 'black'].find(side => state[`${side}Player`]?.role === 'streamer');
@@ -750,7 +751,6 @@
         }
         updateTimers(visibleTimers);
       };
-      const receivedAt = Date.now();
       render();
       if (display.currentTurnRole === 'host' && display.phase === 'playing') {
         interactiveClockInterval = setInterval(render, 250);
@@ -874,6 +874,7 @@
         lastInteractiveDisplayRevision = displayRevision;
         lastInteractiveSessionRevision = sessionRevision;
         latestInteractiveState = state;
+        latestInteractiveStateReceivedAt = Date.now();
       }
       interactiveSnapshotActive = ['playing', 'animating', 'result', 'leaderboard'].includes(display.phase);
       if (display.phase === 'leaderboard' && display.leaderboard?.type) {
@@ -900,7 +901,7 @@
       highlightLastMove(gameState.lastMove);
       updateActivePlayer(gameState.currentPlayer);
       updateCapturedPieces(gameState.capturedPieces || { white: {}, black: {} });
-      renderInteractiveClock(display, gameState);
+      renderInteractiveClock(display, gameState, latestInteractiveStateReceivedAt);
       document.getElementById('overlay-container').classList.add('active');
 
       if (display.phase === 'result' && display.result) showInteractiveResult(display.result);

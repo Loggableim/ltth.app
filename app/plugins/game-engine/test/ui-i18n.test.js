@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { JSDOM } = require('jsdom');
 const { auditPluginLocales, flattenTranslations } = require('../../../../scripts/lib/plugin-i18n-audit');
 const { auditPluginUi } = require('../../../../scripts/lib/plugin-ui-i18n-audit');
 const { loadPublishedPluginCatalog } = require('../../../../scripts/lib/published-plugin-catalog');
@@ -91,5 +92,62 @@ describe('Game Engine UI i18n', () => {
     onChange();
     onLanguageChange();
     expect(rerender).toHaveBeenCalledTimes(3);
+  });
+
+  test('Plinko binds one lifecycle replay and rerenders configured DOM text without a ready loop', async () => {
+    const source = fs.readFileSync(
+      path.join(repoRoot, 'app', 'plugins', pluginId, 'overlay', 'plinko.html'),
+      'utf8'
+    );
+    const helperMatch = source.match(/\/\/ Runtime i18n helpers: start([\s\S]*?)\/\/ Runtime i18n helpers: end/);
+    const applyDisplayTextsMatch = source.match(/    function applyDisplayTexts\(dt\) \{[\s\S]*?\n    \}/);
+    const lifecycleMatch = source.match(/\/\/ Plinko i18n lifecycle: start([\s\S]*?)\/\/ Plinko i18n lifecycle: end/);
+    expect(helperMatch).not.toBeNull();
+    expect(applyDisplayTextsMatch).not.toBeNull();
+    expect(lifecycleMatch).not.toBeNull();
+
+    let resolveReady;
+    let onChange;
+    let onLanguageChange;
+    const i18n = {
+      initialized: false,
+      ready: new Promise(resolve => { resolveReady = resolve; }),
+      t: jest.fn(),
+      onChange: jest.fn(callback => { onChange = callback; }),
+      onLanguageChange: jest.fn(callback => { onLanguageChange = callback; })
+    };
+    const dom = new JSDOM('<div class="slot-label" data-multiplier="2">2x</div>');
+    const api = new Function(
+      'window',
+      'document',
+      `${helperMatch[1]}
+       let config = { displayTexts: {} };
+       let latestLeaderboardData = null;
+       const renderLeaderboard = () => {};
+       ${applyDisplayTextsMatch[0]}
+       ${lifecycleMatch[1]}
+       return { applyDisplayTexts };`
+    )({ i18n }, dom.window.document);
+    const label = dom.window.document.querySelector('.slot-label');
+
+    api.applyDisplayTexts({ labelMultiplierPrefix: '$' });
+    expect(label.textContent).toBe('$2');
+    expect(i18n.onChange).toHaveBeenCalledTimes(1);
+    expect(i18n.onLanguageChange).toHaveBeenCalledTimes(1);
+
+    label.textContent = 'stale';
+    i18n.initialized = true;
+    resolveReady();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(label.textContent).toBe('$2');
+    expect(i18n.onChange).toHaveBeenCalledTimes(1);
+
+    label.textContent = 'stale';
+    onChange();
+    expect(label.textContent).toBe('$2');
+    label.textContent = 'stale';
+    onLanguageChange();
+    expect(label.textContent).toBe('$2');
   });
 });
