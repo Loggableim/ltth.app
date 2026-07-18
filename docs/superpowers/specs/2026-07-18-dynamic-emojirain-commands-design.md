@@ -58,4 +58,3 @@ The editor also exposes the Teamlevel access toggle and cooldown inputs in secon
 Tests cover migration, strict validation, the 50-row limit, access decisions, counts, controlled-clock cooldowns, Classic/WebGPU parity, atomic re-registration, GCCE conflicts and pending registration, UI add/remove/asset/config round-trips, safe rendering, and four-language translation contracts.
 
 After focused tests, syntax checks, lint, CSS build, and `git diff --check`, the verified change is integrated into the active local branch. Live rollout uses only the reload endpoint for the actually active EmojiRain plugin or plugins. The LTTH server is not restarted and no synthetic chat spawn is emitted during the live stream.
-
