@@ -309,6 +309,24 @@ describe('Eulerstream quota-safe connection state', () => {
     expect(adapter._dispatchEulerstreamMessage).toHaveBeenCalledWith(message);
   });
 
+  test('maps direct Eulerstream superFan events to the canonical superfan event', () => {
+    const { adapter, logger } = createAdapter();
+    adapter.eventEmitter = new EventEmitter();
+    const superfan = jest.fn();
+    const payload = {
+      uniqueId: 's_c_o_r_p_i_o_n_pup',
+      nickname: 'Scorpion'
+    };
+    adapter.eventEmitter.on('superfan', superfan);
+
+    adapter._dispatchEulerstreamMessage({ type: 'superFan', data: payload });
+
+    expect(superfan).toHaveBeenCalledWith(payload);
+    expect(logger.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('Unknown event type: superFan')
+    );
+  });
+
   test('recognizes Eulerstream ttwid signing failures as eligible for the REST fallback', () => {
     const { adapter } = createAdapter();
 
