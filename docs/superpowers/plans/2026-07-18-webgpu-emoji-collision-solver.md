@@ -69,7 +69,7 @@ git add app/test/webgpu-emoji-rain-collision-solver.test.js
 git commit -m "test: cover stable webgpu emoji collisions"
 ```
 
-### Task 2: Implement deterministic buffered collision resolution
+### Task 2: Implement geometry-order-independent buffered collision resolution
 
 **Files:**
 - Modify: `app/plugins/webgpu-emoji-rain/gpu/webgpu-emoji-engine.js:60-486`
@@ -252,21 +252,25 @@ No commit is required when reload/status verification changes no tracked files.
 
 The final solver replaces the earlier two-cell/eight-candidate optimization.
 `FrameUniforms` uses the spare float at offset 30 for `maxCollisionRadius`,
-which JavaScript derives conservatively from the configured maximum emoji size
-after depth and intensity scaling (never below 128px). Every shader copy of
-the 128-byte frame ABI declares the same field.
+which JavaScript derives conservatively from the largest permitted Gift/API
+spawn size (2048px) after the maximum depth (1.18) and intensity (2.4) scaling
+(never below 128px). Every shader copy of the 128-byte frame ABI declares the
+same field.
 
 For each buffered solve, reach is derived from the active radius plus that
 maximum radius and is only bounded by the grid edges. The solver walks every
 linked-list candidate, accumulates corrections from immutable source state,
-and projects the final destination state back inside wall/floor constraints.
-If a boundary blocks one particle's correction direction, its movable partner
-receives the full separation. Sticker kind 5 keeps its smaller boundary radius.
+and projects the final destination state back inside applicable wall/floor
+constraints. Balloon kinds 1 and 12 are not floor-constrained during either
+integration or solving; spark kind 3 remains floor-constrained. If a boundary
+blocks one particle's correction direction, its movable partner receives the
+full separation. Sticker kind 5 keeps its smaller boundary radius.
 
 The focused regression covers three-cell 80px overlap reach, uncapped dense
-candidate traversal, immutable accumulation, floor-blocked transfer, sticker
-boundary radius, and the shared-uniform ABI in addition to the original
-primary/scratch pipeline contracts.
+candidate traversal, immutable accumulation, floor-blocked transfer, balloon
+floor freedom, spark floor regression coverage, sticker boundary radius, and
+the shared-uniform ABI in addition to the original primary/scratch pipeline
+contracts.
 
 ## Plan Self-Review
 

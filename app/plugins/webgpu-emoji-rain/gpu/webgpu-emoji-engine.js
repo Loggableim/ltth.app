@@ -4,6 +4,9 @@
   const GPU_CAPACITY = 4096;
   const PARTICLE_STRIDE = 112;
   const UNIFORM_SIZE = 128;
+  const MAX_SPAWN_SIZE = 2048;
+  const MAX_DEPTH_SIZE_SCALE = 1.18;
+  const MAX_INTENSITY_SIZE_SCALE = 2.4;
   const SPAWN_COMMAND_CAPACITY = 512;
   const MAX_PENDING_SPAWNS = GPU_CAPACITY * 2;
   const ATLAS_SIZE = 2048;
@@ -143,6 +146,10 @@ fn boundaryRadius(particle: Particle) -> f32 {
   return max(3.0, particle.size * select(0.46, 0.38, particle.kind == 5u));
 }
 
+fn isFloorConstrained(particle: Particle) -> bool {
+  return (frame.flags & 1u) != 0u && !isBalloon(particle.kind);
+}
+
 fn isCollidable(particle: Particle) -> bool {
   return particle.kind != 3u && particle.kind != 5u;
 }
@@ -156,7 +163,7 @@ fn canMoveAlongBounds(particle: Particle, radius: f32, direction: vec2<f32>) -> 
   let epsilon = 0.001;
   if (direction.x < 0.0 && particle.position.x <= frame.bounds.x + radius + epsilon) { return false; }
   if (direction.x > 0.0 && particle.position.x >= frame.bounds.z - radius - epsilon) { return false; }
-  if ((frame.flags & 1u) != 0u && direction.y > 0.0 && particle.position.y >= frame.floorY - radius - epsilon) { return false; }
+  if (isFloorConstrained(particle) && direction.y > 0.0 && particle.position.y >= frame.floorY - radius - epsilon) { return false; }
   return true;
 }
 
@@ -164,7 +171,7 @@ fn constrainToBounds(particle: Particle, position: vec2<f32>) -> vec2<f32> {
   let radius = boundaryRadius(particle);
   var constrained = position;
   constrained.x = clamp(constrained.x, frame.bounds.x + radius, frame.bounds.z - radius);
-  if ((frame.flags & 1u) != 0u) {
+  if (isFloorConstrained(particle)) {
     constrained.y = min(constrained.y, frame.floorY - radius);
   }
   return constrained;
@@ -262,7 +269,7 @@ fn integrateParticles(@builtin(global_invocation_id) gid: vec3<u32>) {
     particle.velocity.x = -abs(particle.velocity.x) * particle.params0.x;
   }
 
-  if (!balloon && (frame.flags & 1u) != 0u && particle.position.y > frame.floorY - radius) {
+  if (isFloorConstrained(particle) && particle.position.y > frame.floorY - radius) {
     particle.position.y = frame.floorY - radius;
     if ((frame.flags & 2u) != 0u) {
       particle.velocity.y = -abs(particle.velocity.y) * particle.params0.x * max(0.0, 1.0 - frame.bounceDamping);
@@ -1197,13 +1204,14 @@ struct FullscreenOutput { @builtin(position) position: vec4<f32>, @location(0) u
     _createSpawnCommand(options, textureSlot, kind, burst, index, count) {
       const intensity = clamp(options.intensity, 0.1, 10, 1);
       const minSize = clamp(options.minSize, 8, 1024, clamp(this.config.emoji_min_size_px, 8, 512, 38));
-      const maxSize = clamp(options.maxSize, minSize, 2048, clamp(this.config.emoji_max_size_px, minSize, 1024, 80));
+      const maxSize = clamp(options.maxSize, minSize, MAX_SPAWN_SIZE, clamp(this.config.emoji_max_size_px, minSize, 1024, 80));
       const baseSize = Number.isFinite(Number(options.size))
-        ? clamp(options.size, 8, 2048, minSize)
+        ? clamp(options.size, 8, MAX_SPAWN_SIZE, minSize)
         : minSize + Math.random() * (maxSize - minSize);
       const depthEnabled = this._featureEnabled('depth');
       const depth = depthEnabled ? 0.08 + Math.random() * 0.92 : 0.5;
-      const size = baseSize * (depthEnabled ? 0.78 + depth * 0.4 : 1) * Math.min(2.4, Math.max(0.65, intensity));
+      const depthScale = depthEnabled ? Math.min(MAX_DEPTH_SIZE_SCALE, 0.78 + depth * 0.4) : 1;
+      const size = baseSize * depthScale * Math.min(MAX_INTENSITY_SIZE_SCALE, Math.max(0.65, intensity));
       const balloon = kind === KIND.balloon || kind === KIND.profileBalloon;
       const angle = burst ? (index / Math.max(1, count)) * Math.PI * 2 + (Math.random() - 0.5) * 0.34 : 0;
       const burstSpeed = burst ? (140 + Math.random() * 360) * intensity : 0;
@@ -1433,8 +1441,7 @@ struct FullscreenOutput { @builtin(position) position: vec4<f32>, @location(0) u
         : clamp(this.config.physics_wind_strength, 0, 1, 0.0005) * 1000 * direction;
       const variation = this.toasterMode ? 0 : clamp(this.config.physics_wind_variation, 0, 1, 0.0003) * 100000;
       const gravity = clamp(this.config.physics_gravity_y, -2, 4, 0.88) * 980 * this.profileTuning.gravity;
-      const maxConfiguredSize = clamp(this.config.emoji_max_size_px, 8, 1024, 80);
-      const maxCollisionRadius = Math.max(128, maxConfiguredSize * 0.46 * 1.18 * 2.4);
+      const maxCollisionRadius = Math.max(128, MAX_SPAWN_SIZE * 0.46 * MAX_DEPTH_SIZE_SCALE * MAX_INTENSITY_SIZE_SCALE);
       let flags = 0;
       if (this.config.floor_enabled !== false) flags |= FRAME_FLAG.floor;
       if (this.config.bounce_enabled !== false) flags |= FRAME_FLAG.bounce;

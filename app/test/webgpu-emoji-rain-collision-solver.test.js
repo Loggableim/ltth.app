@@ -174,9 +174,12 @@ test('keeps a smaller boundary radius for non-colliding stickers', () => {
   expect(integrate).toContain('let radius = boundaryRadius(particle);');
 });
 
-test('shares maxCollisionRadius through the fixed 128-byte frame ABI', () => {
+test('shares maxCollisionRadius through the fixed 128-byte frame ABI and covers every spawn size', () => {
   const frameUniforms = source.match(/struct FrameUniforms \{[\s\S]*?\n\};/g) || [];
+  const createSpawnCommand = extractDelimitedBlock(source, '_createSpawnCommand(options, textureSlot, kind, burst, index, count) {');
   const writeUniforms = extractDelimitedBlock(source, '_writeUniforms(delta, time) {');
+  const configuredMaximumRadius = 1024 * 0.46 * 1.18 * 2.4;
+  const largestSpawnRadius = 2048 * 0.46 * 1.18 * 2.4;
 
   expect(frameUniforms).toHaveLength(4);
   for (const frameUniform of frameUniforms) {
@@ -185,8 +188,32 @@ test('shares maxCollisionRadius through the fixed 128-byte frame ABI', () => {
   }
   expect(new Set(frameUniforms.map(frameUniform => frameUniform.replace(/\s+/g, ' ').trim())).size).toBe(1);
   expect(source).toContain('const UNIFORM_SIZE = 128;');
-  expect(writeUniforms).toContain('const maxCollisionRadius = Math.max(128, maxConfiguredSize * 0.46 * 1.18 * 2.4);');
+  expect(largestSpawnRadius).toBeGreaterThan(configuredMaximumRadius);
+  expect(source).toContain('const MAX_SPAWN_SIZE = 2048;');
+  expect(source).toContain('const MAX_DEPTH_SIZE_SCALE = 1.18;');
+  expect(source).toContain('const MAX_INTENSITY_SIZE_SCALE = 2.4;');
+  expect(writeUniforms).toContain('const maxCollisionRadius = Math.max(128, MAX_SPAWN_SIZE * 0.46 * MAX_DEPTH_SIZE_SCALE * MAX_INTENSITY_SIZE_SCALE);');
+  expect(createSpawnCommand).toContain('clamp(options.size, 8, MAX_SPAWN_SIZE, minSize)');
+  expect(createSpawnCommand).toContain('Math.min(MAX_DEPTH_SIZE_SCALE, 0.78 + depth * 0.4)');
+  expect(createSpawnCommand).toContain('Math.min(MAX_INTENSITY_SIZE_SCALE, Math.max(0.65, intensity))');
+  expect(largestSpawnRadius).toBeCloseTo(2667.97056, 5);
   expect(writeUniforms).toContain('floats[30] = maxCollisionRadius;');
+});
+
+test('keeps balloon kinds outside floor constraints during integration and solve', () => {
+  const integrate = extractDelimitedBlock(computeShader, 'fn integrateParticles');
+  const canMoveAlongBounds = extractDelimitedBlock(computeShader, 'fn canMoveAlongBounds');
+  const constrainToBounds = extractDelimitedBlock(computeShader, 'fn constrainToBounds');
+  const floorConstrained = computeShader.includes('fn isFloorConstrained')
+    ? extractDelimitedBlock(computeShader, 'fn isFloorConstrained')
+    : '';
+
+  expect(computeShader).toContain('return kind == 1u || kind == 12u;');
+  expect(floorConstrained).toContain('!isBalloon(particle.kind)');
+  expect(floorConstrained).not.toContain('particle.kind != 3u');
+  expect(integrate).toContain('if (isFloorConstrained(particle) && particle.position.y > frame.floorY - radius)');
+  expect(canMoveAlongBounds).toContain('if (isFloorConstrained(particle) && direction.y > 0.0');
+  expect(constrainToBounds).toContain('if (isFloorConstrained(particle))');
 });
 
 test('allocates, clears, trims and releases the fixed-capacity collision scratch buffer', () => {

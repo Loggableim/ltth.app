@@ -5,8 +5,8 @@
 This contract supersedes the earlier adjacent-cell and per-cell candidate-cap
 wording below. The renderer uses the 128-byte shared frame ABI with
 `maxCollisionRadius` at float offset 30. JavaScript writes a conservative
-radius from the configured maximum emoji size, including the maximum depth and
-intensity scale, with a minimum of 128px.
+radius from the largest permitted Gift/API spawn size (2048px), including the
+maximum depth scale (1.18) and intensity scale (2.4), with a minimum of 128px.
 
 - Grid reach is calculated per axis from `(collisionRadius +
   maxCollisionRadius) / cellSize`; it is not capped at two cells. The bounded
@@ -14,11 +14,14 @@ intensity scale, with a minimum of 128px.
 - Every linked-list candidate in every visited cell is inspected. The solver
   reads only the source particle state while it accumulates position and
   velocity corrections, then writes one constrained result to the destination
-  buffer. Atomic insertion order therefore cannot alter later contact geometry.
+  buffer. Atomic insertion order therefore cannot alter later contact geometry;
+  this is geometry-order independent, not a promise of bitwise-identical sums.
 - Wall and enabled-floor limits participate in contact sharing. A particle
   blocked along its correction normal receives no correction, while its movable
   partner receives the full separation. The final position is projected inside
-  the walls and floor.
+  the walls and, for floor-constrained kinds only, the floor. Balloon kinds 1
+  and 12 remain outside floor constraints during both integration and solving;
+  spark kind 3 remains floor-constrained.
 - Collision radius remains `max(3, size * 0.46)`. Boundary radius retains the
   sticker exception `max(3, size * 0.38)` for non-colliding kind 5 sprites.
 - The two buffered passes remain primary-to-scratch and scratch-to-primary.
@@ -48,8 +51,9 @@ Zittern und sichtbaren Überschneidungen.
    bei Kettenkontakten und niedriger Framerate instabil.
 2. Einen getrennten, gepufferten GPU-Kollisionssolver einsetzen. Bewegung,
    Rasteraufbau und zwei symmetrische Kontaktiterationen laufen mit klaren
-   Lese-/Schreibphasen. Das ist die gewählte Lösung: stabil, deterministisch
-   und für das Limit von 256 sichtbaren Emojis günstig.
+   Lese-/Schreibphasen. Das ist die gewählte Lösung: stabil,
+   geometrie-ordnungsunabhängig und für das Limit von 256 sichtbaren Emojis
+   günstig.
 3. Auf CPU-/Matter.js-Physik wechseln. Das wäre funktional, verlagert aber
    unnötig Arbeit auf die CPU und wäre für den WebGPU-Overlay ein Rückschritt.
 
