@@ -18,6 +18,26 @@
  * - Extensible game framework
  */
 
+const path = require('path');
+
+function clearGameEngineModuleCache() {
+  const pluginRoot = path.resolve(__dirname);
+  for (const modulePath of Object.keys(require.cache)) {
+    if (modulePath === __filename) {
+      continue;
+    }
+
+    const relativePath = path.relative(pluginRoot, modulePath);
+    if (relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath))) {
+      delete require.cache[modulePath];
+    }
+  }
+}
+
+// Running app versions reload only this entry module. Clear the Game Engine's
+// cached children here so a plugin-only reload also refreshes its backend.
+clearGameEngineModuleCache();
+
 const GameEngineDatabase = require('./backend/database');
 const Connect4Game = require('./games/connect4');
 const ChessGame = require('./games/chess');
@@ -28,7 +48,6 @@ const ArenaGame = require('./games/arena');
 const UnifiedQueueManager = require('./backend/unified-queue');
 const InteractiveController = require('./backend/interactive-controller');
 const SocketAuthorization = require('./backend/socket-authorization');
-const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const net = require('net');

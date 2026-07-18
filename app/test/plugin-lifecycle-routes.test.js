@@ -65,4 +65,60 @@ describe('plugin route lifecycle', () => {
     await request(app).get('/api/route-test/ping').expect(404);
     fs.rmSync(base, { recursive: true, force: true });
   });
+
+  test('reloads modules required from the plugin directory', () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-plugin-reload-'));
+    const scriptPath = path.join(base, 'verify-reload.js');
+    const loaderPath = path.resolve(__dirname, '../modules/plugin-loader');
+
+    fs.writeFileSync(scriptPath, `
+      const fs = require('fs');
+      const path = require('path');
+      const PluginLoader = require(process.argv[2]);
+      const base = process.argv[3];
+      const pluginsDir = path.join(base, 'plugins');
+      const pluginDir = path.join(pluginsDir, 'child-reload-test');
+      const logger = { info() {}, warn() {}, error() {}, debug() {} };
+
+      fs.mkdirSync(pluginDir, { recursive: true });
+      fs.writeFileSync(path.join(pluginDir, 'plugin.json'), JSON.stringify({
+        id: 'child-reload-test',
+        name: 'Child Reload Test',
+        version: '1.0.0',
+        entry: 'main.js',
+        enabled: true
+      }));
+      fs.writeFileSync(path.join(pluginDir, 'main.js'), "const state = require('./state'); module.exports = class { constructor() { this.value = state.value; } async init() {} };\\n");
+      fs.writeFileSync(path.join(pluginDir, 'state.js'), "module.exports = { value: 'first' };\\n");
+
+      const loader = new PluginLoader(
+        pluginsDir,
+        { use() {} },
+        { on() {}, sockets: { sockets: new Map() } },
+        {},
+        logger,
+        { getPluginDataDir: () => path.join(base, 'data') },
+        'default'
+      );
+
+      (async () => {
+        await loader.loadPlugin(pluginDir);
+        fs.writeFileSync(path.join(pluginDir, 'state.js'), "module.exports = { value: 'second' };\\n");
+        await loader.reloadPlugin('child-reload-test');
+        process.stdout.write(loader.plugins.get('child-reload-test').instance.value);
+      })().catch(error => {
+        console.error(error.stack || error.message);
+        process.exitCode = 1;
+      });
+    `);
+
+    try {
+      const output = require('child_process').execFileSync(process.execPath, [scriptPath, loaderPath, base], {
+        encoding: 'utf8'
+      });
+      expect(output).toBe('second');
+    } finally {
+      fs.rmSync(base, { recursive: true, force: true });
+    }
+  });
 });

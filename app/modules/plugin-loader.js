@@ -19,6 +19,22 @@ const MUTUALLY_EXCLUSIVE_PLUGIN_GROUPS = Object.freeze([
     Object.freeze(['emoji-rain', 'webgpu-emoji-rain'])
 ]);
 
+function isPluginModule(pluginPath, modulePath) {
+    const relativePath = path.relative(pluginPath, modulePath);
+    return relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath));
+}
+
+function clearPluginRequireCache(entryPath, pluginPath) {
+    const pluginRoot = path.resolve(pluginPath);
+    const resolvedEntryPath = require.resolve(entryPath);
+
+    for (const modulePath of Object.keys(require.cache)) {
+        if (modulePath === resolvedEntryPath || isPluginModule(pluginRoot, modulePath)) {
+            delete require.cache[modulePath];
+        }
+    }
+}
+
 /**
  * PluginAPI - Bereitgestellte API für Plugins
  * Ermöglicht sicheren Zugriff auf System-Funktionen
@@ -1171,7 +1187,7 @@ class PluginLoader extends EventEmitter {
             }
 
             // Plugin laden
-            delete require.cache[require.resolve(entryPath)]; // Cache leeren für Reload
+            clearPluginRequireCache(entryPath, pluginPath);
             let PluginClass;
             try {
                 PluginClass = require(entryPath);
