@@ -640,8 +640,12 @@ class ArenaGame {
 
     this._cleanupRespawnCooldowns(config);
     const existingUsername = this._resolvePlayerUsername(viewer);
+    const existingPlayer = existingUsername ? this.players.get(existingUsername) : null;
     const pending = existingUsername ? null : this._resolvePendingSpawn(viewer);
     const cooldown = existingUsername || pending ? null : this._resolveRespawnCooldown(viewer, config);
+    if (!this._adoptViewerProfilePicture(viewer, existingPlayer, pending, cooldown)) {
+      return this._missingProfilePictureResponse();
+    }
     if (cooldown) {
       return this._respawnCooldownResponse(cooldown);
     }
@@ -706,7 +710,12 @@ class ArenaGame {
 
     this._cleanupRespawnCooldowns(config);
     const existingUsername = this._resolvePlayerUsername(viewer);
+    const existingPlayer = existingUsername ? this.players.get(existingUsername) : null;
     const pending = existingUsername ? null : this._resolvePendingSpawn(viewer);
+    const cooldown = existingUsername || pending ? null : this._resolveRespawnCooldown(viewer, config);
+    if (!this._adoptViewerProfilePicture(viewer, existingPlayer, pending, cooldown)) {
+      return this._missingProfilePictureResponse();
+    }
     if (pending) {
       const weapon = this._resolveGiftWeapon(data || {}, config);
       this._applyPendingSpawnGift(pending, viewer, weapon, data || {}, giftName, config);
@@ -727,7 +736,6 @@ class ArenaGame {
       };
     }
 
-    const cooldown = existingUsername ? null : this._resolveRespawnCooldown(viewer, config);
     if (cooldown) {
       const weapon = this._resolveGiftWeapon(data || {}, config);
       const player = this._spawnGiftRespawn(viewer, weapon, data || {}, giftName, config, now);
@@ -799,7 +807,15 @@ class ArenaGame {
       return { success: false, error: 'Missing arena command' };
     }
 
+    const existingUsername = this._resolvePlayerUsername(viewer);
+    const existingPlayer = existingUsername ? this.players.get(existingUsername) : null;
+    if (!this._adoptViewerProfilePicture(viewer, existingPlayer)) {
+      return this._missingProfilePictureResponse();
+    }
     const player = this._getOrCreatePlayer(viewer, config);
+    if (!player) {
+      return this._missingProfilePictureResponse();
+    }
     this._cleanupPlayerChatStrategy(player);
 
     if (command !== 'status') {
@@ -4196,6 +4212,15 @@ class ArenaGame {
       if (now < pending.spawnsAt) continue;
       this._removePendingSpawnAliases(pending);
       this.pendingSpawns.delete(pending.username);
+      if (!this._isSpawnableProfilePictureUrl(pending.profilePictureUrl)) {
+        this.io.emit('arena:player-spawn-skipped', {
+          username: pending.username,
+          nickname: pending.nickname,
+          reason: 'missing-profile-picture',
+          timestamp: now
+        });
+        continue;
+      }
       const existingUsername = this._resolvePlayerUsername(pending);
       if (existingUsername) {
         const player = this.players.get(existingUsername);
@@ -4239,6 +4264,10 @@ class ArenaGame {
     if (player) {
       this._refreshPlayerIdentity(player, viewer);
       return player;
+    }
+
+    if (!this._isSpawnableProfilePictureUrl(viewer && viewer.profilePictureUrl)) {
+      return null;
     }
 
     if (this.players.size >= config.maxPlayers) {
@@ -7116,8 +7145,48 @@ class ArenaGame {
     return {
       username: username ? String(username) : '',
       nickname: data.nickname || data.displayName || data.username || username || 'Anonymous',
-      profilePictureUrl: data.profilePictureUrl || data.avatar || data.profilePicture?.url || '',
+      profilePictureUrl: this._profilePictureUrl(data.profilePictureUrl || data.avatar || data.profilePicture?.url),
       identityAliases: this._viewerIdentityAliases(data, username)
+    };
+  }
+
+  _profilePictureUrl(value) {
+    const rawUrl = String(value || '').trim();
+    if (!rawUrl) return '';
+
+    try {
+      const parsed = new URL(rawUrl);
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? rawUrl : '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  _isSpawnableProfilePictureUrl(value) {
+    return Boolean(this._profilePictureUrl(value));
+  }
+
+  _adoptViewerProfilePicture(viewer, ...sources) {
+    if (!viewer) return false;
+    const candidates = [viewer.profilePictureUrl];
+    for (const source of sources) {
+      candidates.push(source && typeof source === 'object' ? source.profilePictureUrl : source);
+    }
+
+    for (const candidate of candidates) {
+      const profilePictureUrl = this._profilePictureUrl(candidate);
+      if (!profilePictureUrl) continue;
+      viewer.profilePictureUrl = profilePictureUrl;
+      return true;
+    }
+    return false;
+  }
+
+  _missingProfilePictureResponse() {
+    return {
+      success: false,
+      error: 'Profile picture required to spawn',
+      reason: 'missing-profile-picture'
     };
   }
 

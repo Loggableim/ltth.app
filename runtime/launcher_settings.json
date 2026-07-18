@@ -4,6 +4,6 @@
   "preferredPort": 3000,
   "keepLauncherOpen": true,
   "safeMode": false,
-  "updateChannel": "stable",
+  "updateChannel": "local",
   "firstRunComplete": true
 }

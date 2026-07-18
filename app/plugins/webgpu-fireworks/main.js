@@ -22,6 +22,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const {
+    normalizeCompletionNotification,
     normalizeConfig,
     normalizeFinaleRequest,
     normalizeFireworkTrigger,
@@ -30,16 +31,59 @@ const {
 const { evaluateTriggerPolicy } = require('./lib/trigger-policy');
 const { SpawnPlanner } = require('./lib/spawn-planner');
 const { FinaleShowPlanner, FINALE_STYLES } = require('./lib/finale-show-planner');
+const { SuperfanFinaleHistory, normalizeSuperfanIdentityAliases } = require('./lib/superfan-finale-history');
 
 const FIREWORKS_CONFIG_MIGRATION_VERSION = 1;
+const SUPERFAN_COMPLETION_AUTHORITY = Symbol('webgpu-fireworks-superfan-completion');
+const SUPERFAN_FINALE_TEST_CONFIG_KEYS = Object.freeze([
+    'superfanFinaleEnabled',
+    'superfanFinaleCooldownHours',
+    'superfanFinaleIntensity',
+    'superfanEndCardDuration',
+    'superfanEndCardPosition',
+    'superfanEndCardSize',
+    'superfanEndCardScale',
+    'goalFinaleStyle',
+    'goalFinaleLength'
+]);
+
+function isExplicitPaidSubscriberFlag(value) {
+    if (value === true || value === 1) return true;
+    if (typeof value !== 'string') return false;
+    return ['true', '1'].includes(value.trim().toLowerCase());
+}
+
+function hasPaidSuperfanStatus(data = {}) {
+    const user = data.user && typeof data.user === 'object' ? data.user : {};
+    const identity = data.userIdentity && typeof data.userIdentity === 'object'
+        ? data.userIdentity
+        : {};
+    return [
+        data.isSubscriber,
+        data.isSub,
+        data.isSuperFan,
+        data.isSuperfan,
+        data.superFan,
+        user.isSubscriber,
+        user.isSub,
+        user.isSuperFan,
+        user.isSuperfan,
+        user.superFan,
+        identity.isSubscriberOfAnchor
+    ].some(isExplicitPaidSubscriberFlag);
+}
 
 class FireworksPlugin {
     constructor(api) {
         this.api = api;
         // Use persistent storage in user profile directory (survives updates)
-        const pluginDataDir = api.getPluginDataDir();
-        this.uploadDir = path.join(pluginDataDir, 'uploads');
+        this.pluginDataDir = api.getPluginDataDir();
+        this.uploadDir = path.join(this.pluginDataDir, 'uploads');
         this.upload = null;
+        this.superfanFinaleHistory = new SuperfanFinaleHistory({
+            filePath: path.join(this.pluginDataDir, 'superfan-finales.json'),
+            log: message => this.api.log(message, 'warn')
+        });
 
         // Plugin state
         this.config = null;
@@ -55,6 +99,10 @@ class FireworksPlugin {
         this.benchmarkPreset = null;
         this.connectedSockets = new Set();
         this.overlayTelemetry = new Map();
+        this.pendingSuperfanFinales = new Map();
+        this.pendingSuperfanAliases = new Map();
+        this.superfanFinaleAttemptCounter = 0;
+        this.superfanFinaleAckTimeoutMs = 5000;
 
         // Combo timeout (ms) - reset combo if no gift within this time
         this.COMBO_TIMEOUT = 10000;
@@ -62,6 +110,7 @@ class FireworksPlugin {
         // Server-side active firework tracking (browser global not available server-side)
         this.activeFireworkCount = 0;
         this.activeFireworkTimers = new Map();
+        this.notificationTimers = new Set();
         this.useLegacyGiftDropGuards = false;
         this.spawnPlanner = new SpawnPlanner();
         this.finaleShowPlanner = new FinaleShowPlanner();
@@ -74,6 +123,7 @@ class FireworksPlugin {
 
         // Ensure plugin data directory exists
         this.api.ensurePluginDataDir();
+        this.superfanFinaleHistory.load();
 
         // Migrate old uploads if they exist
         await this.migrateOldData();
@@ -249,8 +299,13 @@ class FireworksPlugin {
                         updatedAt: Date.now()
                     });
                     if (state !== 'ready' && state !== 'initializing') {
+                        this.clearPendingSuperfanFinalesForSocket(socket.id, `renderer-${state}`);
                         this.api.log(`[WEBGPU FIREWORKS] Renderer ${state}: ${data.reason || 'no details'}`, 'warn');
                     }
+                });
+
+                socket.on('webgpu-fireworks:finale-ack', data => {
+                    this.handleSuperfanFinaleAck(data, socket);
                 });
 
                 socket.on('webgpu-fireworks:interactive-trigger', (data = {}) => {
@@ -276,6 +331,7 @@ class FireworksPlugin {
 
                 // Clean up on disconnect
                 socket.on('disconnect', () => {
+                    this.clearPendingSuperfanFinalesForSocket(socket.id, 'renderer-disconnected');
                     this.connectedSockets.delete(socket);
                     this.overlayTelemetry.delete(socket.id);
                     this.currentFps = this.getOverlayFps(false).fps;
@@ -496,6 +552,13 @@ class FireworksPlugin {
             goalFinaleStyle: 'auto',
             goalFinaleLength: 'medium',
             goalFinaleDuration: 18000, // Compatibility only
+            superfanFinaleEnabled: true,
+            superfanFinaleCooldownHours: 24,
+            superfanFinaleIntensity: 3,
+            superfanEndCardDuration: 3000,
+            superfanEndCardPosition: 'center',
+            superfanEndCardSize: 'medium',
+            superfanEndCardScale: 1,
 
             // Follower fireworks
             followerFireworksEnabled: false, // Enable fireworks for new followers
@@ -724,8 +787,10 @@ class FireworksPlugin {
         // Trigger finale
         this.api.registerRoute('post', '/api/webgpu-fireworks/finale', (req, res) => {
             try {
+                const finaleRequest = { ...(req.body || {}) };
+                delete finaleRequest.completionNotification;
                 const result = this.triggerFinale({
-                    ...(req.body || {}),
+                    ...finaleRequest,
                     bypassEnabled: true
                 });
                 const { showPlan, bursts, ...metadata } = result;
@@ -745,6 +810,40 @@ class FireworksPlugin {
                     profilePictureUrl: profilePictureUrl || null
                 });
                 res.json({ success: true, message: 'Follower fireworks triggered' });
+            } catch (error) {
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        // Test Superfan finale
+        this.api.registerRoute('post', '/api/webgpu-fireworks/test-superfan', (req, res) => {
+            try {
+                const requestedSettings = req.body?.settings;
+                const testConfigInput = { ...(this.config || {}) };
+                if (requestedSettings && typeof requestedSettings === 'object' && !Array.isArray(requestedSettings)) {
+                    for (const key of SUPERFAN_FINALE_TEST_CONFIG_KEYS) {
+                        if (Object.prototype.hasOwnProperty.call(requestedSettings, key)) {
+                            testConfigInput[key] = requestedSettings[key];
+                        }
+                    }
+                }
+                const normalizedTestConfig = normalizeConfig(testConfigInput);
+                const configOverride = {};
+                for (const key of SUPERFAN_FINALE_TEST_CONFIG_KEYS) {
+                    configOverride[key] = normalizedTestConfig[key];
+                }
+                const result = this.handleSuperfanEntry({
+                    userId: 'test-superfan',
+                    uniqueId: req.body?.username || 'TestSuperfan',
+                    profilePictureUrl: req.body?.profilePictureUrl || null,
+                    teamMemberLevel: 1
+                }, {
+                    authoritative: true,
+                    bypassCooldown: true,
+                    bypassEnabled: true,
+                    configOverride
+                });
+                res.json({ success: result.accepted, ...result });
             } catch (error) {
                 res.status(500).json({ success: false, error: error.message });
             }
@@ -992,6 +1091,18 @@ class FireworksPlugin {
             }
 
             this.handleFollowerEvent(data);
+        });
+
+        this.api.registerTikTokEvent('join', data => {
+            this.handleSuperfanEntry(data, { authoritative: false });
+        });
+
+        this.api.registerTikTokEvent('subscribe', data => {
+            this.handleSuperfanEntry(data, { authoritative: true });
+        });
+
+        this.api.registerTikTokEvent('superfan', data => {
+            this.handleSuperfanEntry(data, { authoritative: true });
         });
 
         // Chat event - interactive trigger
@@ -1275,6 +1386,222 @@ class FireworksPlugin {
         }
     }
 
+    handleSuperfanEntry(data = {}, options = {}) {
+        const authoritative = options.authoritative === true;
+        const bypassCooldown = options.bypassCooldown === true;
+        const effectiveConfig = options.configOverride
+            ? normalizeConfig({ ...(this.config || {}), ...options.configOverride })
+            : this.config;
+        if (!effectiveConfig.enabled && options.bypassEnabled !== true) return { accepted: false, reason: 'disabled' };
+        if (!effectiveConfig.superfanFinaleEnabled && options.bypassEnabled !== true) return { accepted: false, reason: 'feature-disabled' };
+        if (!authoritative && !hasPaidSuperfanStatus(data)) {
+            return { accepted: false, reason: 'not-superfan' };
+        }
+
+        const identities = normalizeSuperfanIdentityAliases(data);
+        if (identities.length === 0) {
+            this.api.log('[FIREWORKS] Superfan finale skipped: missing user identity', 'debug');
+            return { accepted: false, reason: 'missing-identity' };
+        }
+        const pendingEventId = identities
+            .map(alias => this.pendingSuperfanAliases.get(alias))
+            .find(Boolean);
+        if (pendingEventId) {
+            return { accepted: false, reason: 'pending', eventId: pendingEventId };
+        }
+
+        const identity = this.superfanFinaleHistory.resolve(identities, { persistMigration: true }).canonical;
+        const now = Date.now();
+        if (!bypassCooldown && !this.superfanFinaleHistory.isEligible(
+            identities,
+            effectiveConfig.superfanFinaleCooldownHours,
+            now
+        )) return { accepted: false, reason: 'cooldown', identity };
+
+        const rendererStatus = this.getRendererStatus();
+        if (rendererStatus.state !== 'ready') {
+            return { accepted: false, reason: 'renderer-not-ready', identity };
+        }
+
+        const username = data.uniqueId || data.username || data.nickname || 'Superfan';
+        const completionNotification = normalizeCompletionNotification({
+            username,
+            usernameText: `Thank you for being a Superfan, ${username}!`,
+            thankYouText: 'This firework was for you!',
+            profilePictureUrl: data.profilePictureUrl || data.userProfilePictureUrl || null,
+            duration: effectiveConfig.superfanEndCardDuration,
+            position: effectiveConfig.superfanEndCardPosition,
+            size: effectiveConfig.superfanEndCardSize,
+            scale: effectiveConfig.superfanEndCardScale,
+            style: effectiveConfig.followerAnimationStyle,
+            entrance: effectiveConfig.followerAnimationEntrance
+        });
+        const upstreamEventId = [data.eventId, data.id]
+            .map(value => String(value ?? '').trim())
+            .find(Boolean);
+        const eventId = upstreamEventId
+            ? `superfan-event:${upstreamEventId.slice(0, 140)}`
+            : `superfan:${identity}:${++this.superfanFinaleAttemptCounter}`;
+        if (this.pendingSuperfanFinales.has(eventId)) {
+            return { accepted: false, reason: 'event-id-pending', eventId };
+        }
+        const attempt = this.beginPendingSuperfanFinale({
+            eventId,
+            identities,
+            identity,
+            acceptedAt: now,
+            bypassCooldown
+        });
+
+        let finale;
+        try {
+            finale = this.triggerFinale({
+                style: effectiveConfig.goalFinaleStyle,
+                length: effectiveConfig.goalFinaleLength,
+                intensity: effectiveConfig.superfanFinaleIntensity,
+                completionNotification,
+                [SUPERFAN_COMPLETION_AUTHORITY]: true,
+                eventId,
+                bypassEnabled: options.bypassEnabled === true,
+                ackRequested: true,
+                requiresRendererReady: true
+            });
+        } catch (error) {
+            this.clearPendingSuperfanFinale(eventId, 'submission-error');
+            this.api.log(`[FIREWORKS] Superfan finale submission failed: ${error.message}`, 'warn');
+            return { accepted: false, reason: 'submission-error', identity };
+        }
+        if (!finale.accepted) {
+            this.clearPendingSuperfanFinale(eventId, finale.reason || 'finale-rejected');
+            return { accepted: false, reason: finale.reason || 'finale-rejected', identity, finale };
+        }
+
+        const notificationAccepted = this.scheduleFollowerAnimation({
+            username,
+            profilePictureUrl: data.profilePictureUrl || data.userProfilePictureUrl || null,
+            duration: effectiveConfig.followerAnimationDuration || 3000,
+            position: effectiveConfig.followerAnimationPosition || 'center',
+            size: effectiveConfig.followerAnimationSize || 'medium',
+            scale: effectiveConfig.followerAnimationScale || 1,
+            style: effectiveConfig.followerAnimationStyle || 'gradient-purple',
+            entrance: effectiveConfig.followerAnimationEntrance || 'scale',
+            thankYouText: 'Superfan joined, this firework is for you!'
+        }, 0);
+        if (!notificationAccepted) {
+            this.clearPendingSuperfanFinale(eventId, 'notification-rejected');
+            return { accepted: false, reason: 'notification-rejected', identity, finale };
+        }
+        attempt.notificationAccepted = true;
+        this.completePendingSuperfanFinale(attempt);
+        return {
+            accepted: true,
+            pending: this.pendingSuperfanFinales.has(eventId),
+            eventId,
+            identity,
+            finale
+        };
+    }
+
+    beginPendingSuperfanFinale({ eventId, identities, identity, acceptedAt, bypassCooldown }) {
+        const telemetryCutoff = Date.now() - 5000;
+        const targetSocketIds = new Set([...this.connectedSockets]
+            .filter(socket => {
+                const telemetry = this.overlayTelemetry.get(socket.id);
+                return telemetry && telemetry.updatedAt >= telemetryCutoff &&
+                    telemetry.benchmark !== true && telemetry.state === 'ready';
+            })
+            .map(socket => socket.id));
+        const attempt = {
+            eventId,
+            identities,
+            identity,
+            acceptedAt,
+            bypassCooldown,
+            notificationAccepted: false,
+            rendererAccepted: false,
+            targetSocketIds,
+            timer: null
+        };
+        attempt.timer = setTimeout(() => {
+            this.clearPendingSuperfanFinale(eventId, 'ack-timeout');
+        }, this.superfanFinaleAckTimeoutMs);
+        attempt.timer.unref?.();
+        this.pendingSuperfanFinales.set(eventId, attempt);
+        for (const alias of identities) this.pendingSuperfanAliases.set(alias, eventId);
+        return attempt;
+    }
+
+    clearPendingSuperfanFinale(eventId, reason = 'cleared') {
+        const attempt = this.pendingSuperfanFinales.get(eventId);
+        if (!attempt) return null;
+        clearTimeout(attempt.timer);
+        this.pendingSuperfanFinales.delete(eventId);
+        for (const alias of attempt.identities) {
+            if (this.pendingSuperfanAliases.get(alias) === eventId) this.pendingSuperfanAliases.delete(alias);
+        }
+        attempt.clearedReason = reason;
+        return attempt;
+    }
+
+    clearPendingSuperfanFinalesForSocket(socketId, reason) {
+        for (const attempt of [...this.pendingSuperfanFinales.values()]) {
+            if (attempt.targetSocketIds.has(socketId)) {
+                attempt.targetSocketIds.delete(socketId);
+                if (attempt.targetSocketIds.size === 0) {
+                    this.clearPendingSuperfanFinale(attempt.eventId, reason);
+                }
+            }
+        }
+    }
+
+    completePendingSuperfanFinale(attempt) {
+        if (!attempt || !attempt.notificationAccepted || !attempt.rendererAccepted) return false;
+        if (this.pendingSuperfanFinales.get(attempt.eventId) !== attempt) return false;
+        this.clearPendingSuperfanFinale(attempt.eventId, 'accepted');
+        if (!attempt.bypassCooldown) {
+            this.superfanFinaleHistory.markAccepted(attempt.identities, attempt.acceptedAt);
+        }
+        return true;
+    }
+
+    handleSuperfanFinaleAck(data = {}, socket = null) {
+        const eventId = typeof data.eventId === 'string' ? data.eventId : '';
+        const attempt = this.pendingSuperfanFinales.get(eventId);
+        if (!attempt) return false;
+        if (socket && attempt.targetSocketIds.size > 0 && !attempt.targetSocketIds.has(socket.id)) return false;
+        if (data.accepted !== true) {
+            if (socket && attempt.targetSocketIds.size > 0) {
+                attempt.targetSocketIds.delete(socket.id);
+                if (attempt.targetSocketIds.size > 0) return false;
+            }
+            this.clearPendingSuperfanFinale(eventId, data.reason || 'renderer-rejected');
+            return false;
+        }
+        attempt.rendererAccepted = true;
+        return this.completePendingSuperfanFinale(attempt);
+    }
+
+    scheduleFollowerAnimation(payload, delayMs = 0) {
+        if (delayMs <= 0) {
+            try {
+                return this.api.emit('webgpu-fireworks:follower-animation', payload) !== false;
+            } catch (error) {
+                this.api.log(`[FIREWORKS] Follower animation emit failed: ${error.message}`, 'warn');
+                return false;
+            }
+        }
+        const timer = setTimeout(() => {
+            this.notificationTimers.delete(timer);
+            try {
+                this.api.emit('webgpu-fireworks:follower-animation', payload);
+            } catch (error) {
+                this.api.log(`[FIREWORKS] Delayed follower animation emit failed: ${error.message}`, 'warn');
+            }
+        }, delayMs);
+        this.notificationTimers.add(timer);
+        return timer;
+    }
+
     /**
      * Handle follow event - celebrate new follower with fireworks
      */
@@ -1288,18 +1615,16 @@ class FireworksPlugin {
         if (this.config.followerShowAnimation) {
             const animationDelay = this.config.followerAnimationDelay || 3000;
 
-            setTimeout(() => {
-                this.api.emit('webgpu-fireworks:follower-animation', {
-                    username: username,
-                    profilePictureUrl: this.config.followerShowProfilePicture ? profilePictureUrl : null,
-                    duration: this.config.followerAnimationDuration || 3000,
-                    position: this.config.followerAnimationPosition || 'center',
-                    size: this.config.followerAnimationSize || 'medium',
-                    scale: this.config.followerAnimationScale || 1.0,
-                    style: this.config.followerAnimationStyle || 'gradient-purple',
-                    entrance: this.config.followerAnimationEntrance || 'scale',
-                    thankYouText: this.config.followerThankYouText || 'Thanks for the follow! 💙'
-                });
+            this.scheduleFollowerAnimation({
+                username: username,
+                profilePictureUrl: this.config.followerShowProfilePicture ? profilePictureUrl : null,
+                duration: this.config.followerAnimationDuration || 3000,
+                position: this.config.followerAnimationPosition || 'center',
+                size: this.config.followerAnimationSize || 'medium',
+                scale: this.config.followerAnimationScale || 1.0,
+                style: this.config.followerAnimationStyle || 'gradient-purple',
+                entrance: this.config.followerAnimationEntrance || 'scale',
+                thankYouText: this.config.followerThankYouText || 'Thanks for the follow! 💙'
             }, animationDelay);
         }
 
@@ -1496,6 +1821,9 @@ class FireworksPlugin {
         if (isObjectCall) {
             const options = optionsOrIntensity;
             const hasLegacyDuration = options.duration !== undefined && options.length === undefined;
+            const authorizedCompletionNotification = options[SUPERFAN_COMPLETION_AUTHORITY] === true
+                ? options.completionNotification
+                : null;
             request = {
                 ...options,
                 style: options.style === undefined || options.style === 'inherit'
@@ -1505,6 +1833,11 @@ class FireworksPlugin {
                     ? config.goalFinaleIntensity
                     : options.intensity
             };
+            delete request.completionNotification;
+            delete request[SUPERFAN_COMPLETION_AUTHORITY];
+            if (authorizedCompletionNotification) {
+                request.completionNotification = authorizedCompletionNotification;
+            }
             if (!hasLegacyDuration) {
                 request.length = options.length === undefined || options.length === 'inherit'
                     ? config.goalFinaleLength
@@ -1590,7 +1923,19 @@ class FireworksPlugin {
             explosionSound: config.explosionSound
         };
 
-        this.api.emit('webgpu-fireworks:finale', payload);
+        if (finale.completionNotification) {
+            payload.completionNotification = finale.completionNotification;
+        }
+
+        if (request.ackRequested === true) {
+            payload.ackRequested = true;
+            payload.requiresRendererReady = request.requiresRendererReady === true;
+        }
+
+        const submitted = this.api.emit('webgpu-fireworks:finale', payload);
+        if (submitted === false) {
+            return { ...payload, accepted: false, reason: 'submission-rejected' };
+        }
         return payload;
     }
 
@@ -1727,6 +2072,7 @@ class FireworksPlugin {
         this.api.log('   - POST   /api/webgpu-fireworks/trigger', 'info');
         this.api.log('   - POST   /api/webgpu-fireworks/finale', 'info');
         this.api.log('   - POST   /api/webgpu-fireworks/test-follower', 'info');
+        this.api.log('   - POST   /api/webgpu-fireworks/test-superfan', 'info');
         this.api.log('   - POST   /api/webgpu-fireworks/random', 'info');
         this.api.log('   - GET    /api/webgpu-fireworks/gift-mappings', 'info');
         this.api.log('   - POST   /api/webgpu-fireworks/gift-mappings', 'info');
@@ -1805,6 +2151,17 @@ class FireworksPlugin {
         this.activeFireworkTimers.clear();
         this.activeFireworkCount = 0;
 
+        // Cancel delayed follower notifications
+        for (const timer of this.notificationTimers) {
+            clearTimeout(timer);
+        }
+        this.notificationTimers.clear();
+
+        // Cancel pending Superfan acknowledgements without consuming cooldowns.
+        for (const eventId of [...this.pendingSuperfanFinales.keys()]) {
+            this.clearPendingSuperfanFinale(eventId, 'plugin-destroyed');
+        }
+
         // PluginAPI owns the connection disposer and removes it on unload.
         this.fpsUpdateHandler = null;
 
@@ -1814,6 +2171,7 @@ class FireworksPlugin {
                 socket.removeAllListeners('webgpu-fireworks:fps-update');
                 socket.removeAllListeners('webgpu-fireworks:register-overlay');
                 socket.removeAllListeners('webgpu-fireworks:renderer-status');
+                socket.removeAllListeners('webgpu-fireworks:finale-ack');
                 socket.removeAllListeners('webgpu-fireworks:active-count-response');
                 socket.removeAllListeners('webgpu-fireworks:interactive-trigger');
             });
