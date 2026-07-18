@@ -668,7 +668,8 @@ class EulerstreamAdapter extends BaseAdapter {
             'WebcastQuestionNewMessage': 'question',
             'WebcastLinkMicBattle': 'linkMicBattle',
             'WebcastLinkMicArmies': 'linkMicArmies',
-            'WebcastEmoteChatMessage': 'emote'
+            'WebcastEmoteChatMessage': 'emote',
+            'superFan': 'superfan'
         };
         
         return mapping[eulerType] || null;
