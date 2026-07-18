@@ -33,6 +33,21 @@ describe('interactive games admin UI contract', () => {
     expect(ui).toContain('interactiveResultDisplaySeconds');
   });
 
+  test('keeps one viewer-turn session cancelable when no host move is displayed', () => {
+    expect(ui).toContain('function interactiveCancelableSessionId(');
+    expect(ui).toContain('state?.activeSessions?.length === 1');
+    expect(ui).toContain('const sessionId = interactiveCancelableSessionId(state);');
+    expect(ui).toContain('interactiveCancelableSessionId(latestInteractiveAdminState)');
+  });
+
+  test('renders the sole viewer-turn session when no host move is displayed', () => {
+    expect(ui).toContain('function interactiveFallbackSession(');
+    expect(ui).toContain("display?.phase !== 'idle'");
+    expect(ui).toContain('const fallbackSession = interactiveFallbackSession(state);');
+    expect(ui).toContain('const gameType = display.gameType || fallbackSession?.gameType || null;');
+    expect(ui).toContain('interactiveTimerLabel(display, fallbackSession)');
+  });
+
   test('uses interactive copy that cannot be overwritten by legacy Connect4 translations', () => {
     expect(ui).toContain('<h3>Interactive Games</h3>');
     expect(ui).toContain('<p id="game-status">Waiting for move…</p>');

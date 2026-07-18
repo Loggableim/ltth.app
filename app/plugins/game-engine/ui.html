@@ -5099,8 +5099,24 @@
       return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
     }
 
+    function interactiveFallbackSession(state = latestInteractiveAdminState) {
+      const display = state?.display;
+      if (display?.displaySessionId != null || display?.result || display?.phase !== 'idle') return null;
+      return state?.activeSessions?.length === 1 ? state.activeSessions[0] : null;
+    }
+
     function interactiveDisplayState(state) {
-      return state?.display?.state || state?.display?.result?.state || null;
+      return state?.display?.state || state?.display?.result?.state || interactiveFallbackSession(state)?.state || null;
+    }
+
+    function interactiveCancelableSessionId(state = latestInteractiveAdminState) {
+      const display = state?.display;
+      if (display?.displaySessionId != null) return display.displaySessionId;
+      if (display?.result?.sessionId != null) return display.result.sessionId;
+
+      // Viewer turns do not enter the host queue, so there is no displayed
+      // session even though the sole interactive match remains active.
+      return interactiveFallbackSession(state)?.sessionId ?? null;
     }
 
     function canSubmitInteractiveHostMove(state = latestInteractiveAdminState) {
@@ -5180,14 +5196,18 @@
       else if (gameType === 'chess') renderInteractiveChess(container, gameState, interactive);
     }
 
-    function interactiveTimerLabel(display) {
+    function interactiveTimerLabel(display, fallbackSession = null) {
       const elapsed = Date.now() - interactiveAdminStateReceivedAt;
-      if (display?.currentTurnRole === 'viewer' && display.viewerDeadlineMs != null) {
+      const currentTurnRole = display?.currentTurnRole || fallbackSession?.turnRole;
+      const viewerDeadlineMs = display?.viewerDeadlineMs ?? fallbackSession?.viewerDeadlineMs;
+      const gameType = display?.gameType || fallbackSession?.gameType;
+      if (currentTurnRole === 'viewer' && viewerDeadlineMs != null) {
         const serverNow = Number(display.serverTimestamp) + elapsed;
-        return `Spieler: ${interactiveFormatDuration(Number(display.viewerDeadlineMs) - serverNow)}`;
+        return `Spieler: ${interactiveFormatDuration(Number(viewerDeadlineMs) - serverNow)}`;
       }
-      if (display?.gameType === 'chess' && display.currentTurnRole === 'host') {
-        return `Host: ${interactiveFormatDuration(Number(display.hostTimeRemainingMs) - elapsed)}`;
+      if (gameType === 'chess' && currentTurnRole === 'host') {
+        const hostTimeRemainingMs = display?.hostTimeRemainingMs ?? fallbackSession?.hostTimeRemainingMs;
+        return `Host: ${interactiveFormatDuration(Number(hostTimeRemainingMs) - elapsed)}`;
       }
       return display?.phase === 'result' ? 'Ergebnis wird angezeigt' : 'Uhr pausiert';
     }
@@ -5196,14 +5216,15 @@
       const display = latestInteractiveAdminState?.display;
       if (!display) return;
       const timerStatus = document.getElementById('interactive-timer-status');
-      if (timerStatus) timerStatus.textContent = interactiveTimerLabel(display);
+      if (timerStatus) timerStatus.textContent = interactiveTimerLabel(display, interactiveFallbackSession());
     }
 
     function renderInteractiveNow(state) {
       const display = state.display || {};
       const result = display.result;
-      const sessionId = display.displaySessionId ?? result?.sessionId ?? null;
-      const gameType = display.gameType;
+      const fallbackSession = interactiveFallbackSession(state);
+      const sessionId = interactiveCancelableSessionId(state);
+      const gameType = display.gameType || fallbackSession?.gameType || null;
       const gameState = interactiveDisplayState(state);
       currentSessionId = sessionId;
       document.getElementById('interactive-game-badge').textContent = gameType === 'chess'
@@ -5212,18 +5233,18 @@
           ? 'Connect 4'
           : 'Bereit';
       document.getElementById('interactive-matchup').textContent = gameType
-        ? `${display.hostDisplayName || 'Host'} vs. ${display.viewerDisplayName || 'Player'}`
+        ? `${display.hostDisplayName || fallbackSession?.hostDisplayName || 'Host'} vs. ${display.viewerDisplayName || fallbackSession?.viewerDisplayName || 'Player'}`
         : 'Aktuell kein Host-Zug auf Sendung';
       document.getElementById('interactive-turn-status').textContent = display.phase === 'result'
         ? `Ergebnis: ${result?.reason || 'beendet'}`
-        : display.currentTurnRole === 'host'
+        : (display.currentTurnRole || fallbackSession?.turnRole) === 'host'
           ? 'Host ist am Zug'
-          : display.currentTurnRole === 'viewer'
+          : (display.currentTurnRole || fallbackSession?.turnRole) === 'viewer'
             ? 'Spieler ist am Zug'
             : 'Warte auf nächsten Host-Zug';
-      document.getElementById('interactive-timer-status').textContent = interactiveTimerLabel(display);
+      document.getElementById('interactive-timer-status').textContent = interactiveTimerLabel(display, fallbackSession);
       document.getElementById('interactive-revision-status').textContent =
-        `Session r${display.sessionRevision ?? result?.sessionRevision ?? '–'} · Display r${display.displayRevision ?? '–'}`;
+        `Session r${display.sessionRevision ?? result?.sessionRevision ?? fallbackSession?.sessionRevision ?? '–'} · Display r${display.displayRevision ?? '–'}`;
 
       renderInteractiveBoard(
         document.getElementById('interactive-board-preview'),
@@ -6382,7 +6403,7 @@
     });
 
     document.getElementById('cancelInteractiveGameBtn')?.addEventListener('click', () => {
-      const sessionId = latestInteractiveAdminState?.display?.displaySessionId;
+      const sessionId = interactiveCancelableSessionId(latestInteractiveAdminState);
       if (sessionId == null) return;
       if (confirm('Angezeigte Partie wirklich abbrechen?')) {
         socket.emit('game-engine:cancel-game', { sessionId });
