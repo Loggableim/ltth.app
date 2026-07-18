@@ -488,6 +488,46 @@ describe('InteractiveController', () => {
     firstHarness.sqlite.close();
   });
 
+  test('deduplicates a delayed host chat event after an intervening viewer move', () => {
+    const harness = createHarness();
+    harness.controller.init();
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'viewer-delayed-host',
+      viewerDisplayName: 'Delayed Host Viewer'
+    });
+    let display = harness.controller.getState().display;
+    expect(harness.controller.applyHostMove({
+      sessionId: match.sessionId,
+      gameType: 'connect4',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move: { column: 'A' },
+      moveIdentity: 'chat-host-delayed-1'
+    })).toMatchObject({ success: true });
+
+    expect(harness.controller.applyViewerMove({
+      viewerId: 'viewer-delayed-host',
+      gameType: 'connect4',
+      move: { column: 'B' },
+      moveIdentity: 'chat-viewer-after-host-1'
+    })).toMatchObject({ success: true });
+
+    display = harness.controller.getState().display;
+    expect(harness.controller.applyHostMove({
+      sessionId: match.sessionId,
+      gameType: 'connect4',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move: { column: 'C' },
+      moveIdentity: 'chat-host-delayed-1'
+    })).toMatchObject({ success: true, duplicate: true });
+    expect(harness.controller.getState().activeSessions[0].moveCount).toBe(2);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
   test('persists the live chess host clock before an orderly restart', () => {
     const firstHarness = createHarness();
     firstHarness.controller.init();

@@ -62,7 +62,7 @@ describe('GameEnginePlugin interactive controller integration', () => {
     expect(plugin._resolveHostDisplayName()).toBe('Streamer');
   });
 
-  test.each(['c', '!c'])('routes a live host chat column %s through the revisioned Connect4 host move', command => {
+  test.each(['c', '!c', 'c4 c', '/c4 c'])('routes a live host chat column %s through the revisioned Connect4 host move', command => {
     const { plugin } = createPlugin();
     plugin.db = {
       getGameConfig: jest.fn(() => null),
@@ -91,7 +91,8 @@ describe('GameEnginePlugin interactive controller integration', () => {
       username: 'LiveHost',
       userId: '7421356832385664032',
       nickname: 'Cid',
-      comment: command
+      comment: command,
+      msgId: `host-${command}`
     });
 
     expect(plugin.interactiveController.applyHostMove).toHaveBeenCalledWith({
@@ -99,7 +100,8 @@ describe('GameEnginePlugin interactive controller integration', () => {
       gameType: 'connect4',
       sessionRevision: 2,
       displayRevision: 2,
-      move: { column: 'C' }
+      move: { column: 'C' },
+      moveIdentity: `chat:host-${command}`
     });
     expect(plugin.handleViewerMove).not.toHaveBeenCalled();
   });
@@ -122,7 +124,7 @@ describe('GameEnginePlugin interactive controller integration', () => {
     await plugin.handleConnect4Command(['C'], {
       username: 'Cid',
       userId: '7421356832385664032',
-      rawData: { username: 'LiveHost' }
+      rawData: { username: 'LiveHost', msgId: 'host-gcce-c' }
     });
 
     expect(plugin.interactiveController.applyHostMove).toHaveBeenCalledWith({
@@ -130,7 +132,8 @@ describe('GameEnginePlugin interactive controller integration', () => {
       gameType: 'connect4',
       sessionRevision: 2,
       displayRevision: 2,
-      move: { column: 'C' }
+      move: { column: 'C' },
+      moveIdentity: 'chat:host-gcce-c'
     });
     expect(plugin.handleViewerMove).not.toHaveBeenCalled();
   });
@@ -176,6 +179,55 @@ describe('GameEnginePlugin interactive controller integration', () => {
       move: { column: 'D' }
     }));
     expect(result).toMatchObject({ success: true, displayOverlay: true });
+  });
+
+  test('rejects invalid Connect4 configuration with a stable error code', () => {
+    const { plugin, routes } = createPlugin();
+    plugin.db = {
+      getGameConfig: jest.fn(() => null),
+      saveGameConfig: jest.fn()
+    };
+    plugin.registerRoutes();
+    const route = routes.find(item => item.method === 'POST' && item.path === '/api/game-engine/config/:gameType');
+    const res = {
+      status: jest.fn(function status(code) {
+        this.statusCode = code;
+        return this;
+      }),
+      json: jest.fn()
+    };
+
+    route.handler({ params: { gameType: 'connect4' }, body: { soundVolume: 1.5 } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'invalid_connect4_config' });
+    expect(plugin.db.saveGameConfig).not.toHaveBeenCalled();
+  });
+
+  test('normalizes invalid stored Connect4 configuration values on read', () => {
+    const { plugin } = createPlugin();
+
+    expect(plugin._getConfigWithDefaults('connect4', {
+      streamerRole: 'admin',
+      animationSpeed: 0,
+      chatCommand: 'bad command!',
+      player1Color: 'red',
+      soundVolume: 2,
+      leaderboardTypes: ['daily', 'unknown', 'daily'],
+      leaderboardDisplayTime: 99,
+      roundTimeLimit: 2,
+      roundWarningTime: 100
+    })).toMatchObject({
+      streamerRole: 'player2',
+      animationSpeed: 500,
+      chatCommand: 'c4start',
+      player1Color: '#E74C3C',
+      soundVolume: 0.5,
+      leaderboardTypes: ['daily', 'season', 'lifetime', 'elo'],
+      leaderboardDisplayTime: 3,
+      roundTimeLimit: 30,
+      roundWarningTime: 10
+    });
   });
 
   test('accepts the revisioned host envelope and enriches the legacy streamer event', () => {

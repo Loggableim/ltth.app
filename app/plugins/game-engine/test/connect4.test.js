@@ -255,6 +255,47 @@ describe('Connect4 Game', () => {
       expect(newGame.currentPlayer).toBe(savedState.currentPlayer);
       expect(newGame.board).toEqual(savedState.board);
     });
+
+    test.each([
+      ['a board with the wrong dimensions', state => { state.board = Array(6).fill([0, 0, 0, 0, 0, 0]); }],
+      ['an invalid board cell', state => { state.board[5][0] = 3; state.moveCount = 1; state.lastMove = { player: 3, column: 0, row: 5, moveNumber: 1 }; }],
+      ['players without one streamer and one viewer role', state => { state.player2.role = 'viewer'; }],
+      ['a move count that does not match board occupancy', state => { state.board[5][0] = 1; state.moveCount = 2; state.lastMove = { player: 1, column: 0, row: 5, moveNumber: 2 }; }],
+      ['an active turn that does not match board parity', state => { state.board[5][0] = 1; state.moveCount = 1; state.currentPlayer = 1; state.lastMove = { player: 1, column: 0, row: 5, moveNumber: 1 }; }],
+      ['an active board that already has a winner', state => {
+        state.board[5][0] = 1;
+        state.board[5][1] = 1;
+        state.board[5][2] = 1;
+        state.board[5][3] = 1;
+        state.board[4][0] = 2;
+        state.board[4][1] = 2;
+        state.board[4][2] = 2;
+        state.moveCount = 7;
+        state.currentPlayer = 2;
+        state.lastMove = { player: 1, column: 3, row: 5, moveNumber: 7 };
+      }],
+      ['a completed winner without winning cells', state => {
+        state.board[5][0] = 1;
+        state.board[5][1] = 1;
+        state.board[5][2] = 1;
+        state.board[5][3] = 1;
+        state.board[4][0] = 2;
+        state.board[4][1] = 2;
+        state.board[4][2] = 2;
+        state.moveCount = 7;
+        state.currentPlayer = 1;
+        state.status = 'completed';
+        state.winner = 1;
+        state.lastMove = { player: 1, column: 3, row: 5, moveNumber: 7 };
+      }],
+      ['a last move outside the board', state => { state.board[5][0] = 1; state.moveCount = 1; state.lastMove = { player: 1, column: 7, row: 5, moveNumber: 1 }; }]
+    ])('rejects recovered state with %s', (_description, corrupt) => {
+      const state = game.getState();
+      corrupt(state);
+      const recovered = new Connect4Game(1, state.player1, state.player2, mockLogger);
+
+      expect(() => recovered.restoreState(state)).toThrow('Invalid Connect4 state');
+    });
   });
 
   describe('Available Columns', () => {

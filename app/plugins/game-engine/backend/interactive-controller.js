@@ -357,6 +357,10 @@ class InteractiveController {
     const session = this.registry.get(sessionId);
     if (!session) return { success: false, error: 'session_not_found' };
     if (session.gameType !== envelope.gameType) return { success: false, error: 'wrong_game_type' };
+    const moveIdentity = envelope?.moveIdentity || null;
+    if (moveIdentity && this.database.hasInteractiveMoveIdentity(session.sessionId, moveIdentity)) {
+      return { success: true, duplicate: true, sessionId: session.sessionId };
+    }
     const head = this.queue.head();
     if (!head || head.sessionId !== sessionId) return { success: false, error: 'not_queue_head' };
     if (this.router.snapshot().displaySessionId !== sessionId) return { success: false, error: 'not_displayed' };
@@ -385,6 +389,7 @@ class InteractiveController {
       }
     }
     const previousState = session.adapter.getState();
+    const previousLastMoveIdentity = session.lastMoveIdentity;
     const result = session.adapter.applyHostMove(envelope.move);
     if (!result.success) {
       if (session.gameType === 'chess') this.timers.resumeHostChess(session);
@@ -396,6 +401,7 @@ class InteractiveController {
 
     session.sessionRevision += 1;
     session.turnRole = session.adapter.getCurrentTurnRole();
+    session.lastMoveIdentity = moveIdentity || `${session.sessionRevision - 1}:${JSON.stringify(envelope.move)}`;
     session.lastActivityAt = this.now();
     session.viewerDeadlineMs = result.gameOver || session.adapter.isComplete()
       ? null
@@ -403,6 +409,9 @@ class InteractiveController {
 
     try {
       this.database.transaction(() => {
+        if (moveIdentity && !this.database.recordInteractiveMoveIdentity(session.sessionId, moveIdentity)) {
+          throw new Error('duplicate_move_identity');
+        }
         this.queue.remove(session.sessionId);
         this.database.updateInteractiveState(session.sessionId, this._sessionRecord(session));
       });
@@ -430,6 +439,7 @@ class InteractiveController {
       }
       session.sessionRevision -= 1;
       session.turnRole = 'host';
+      session.lastMoveIdentity = previousLastMoveIdentity;
       session.viewerDeadlineMs = null;
       if (!this.queue.has(session.sessionId)) this.queue.enqueue(session);
       if (session.gameType === 'chess') this.timers.resumeHostChess(session);

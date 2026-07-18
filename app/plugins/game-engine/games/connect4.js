@@ -232,13 +232,150 @@ class Connect4Game {
    * Restore game state from saved data
    */
   restoreState(state) {
-    this.board = state.board;
-    this.currentPlayer = state.currentPlayer;
-    this.moveCount = state.moveCount;
-    this.winner = state.winner;
-    this.winningCells = state.winningCells;
-    this.status = state.status;
-    this.lastMove = state.lastMove;
+    const restored = this._validateRestoredState(state);
+    this.player1 = restored.player1;
+    this.player2 = restored.player2;
+    this.board = restored.board;
+    this.currentPlayer = restored.currentPlayer;
+    this.moveCount = restored.moveCount;
+    this.winner = restored.winner;
+    this.winningCells = restored.winningCells;
+    this.status = restored.status;
+    this.lastMove = restored.lastMove;
+  }
+
+  _validateRestoredState(state) {
+    const invalid = reason => {
+      throw new Error(`Invalid Connect4 state: ${reason}`);
+    };
+    if (!state || typeof state !== 'object' || Array.isArray(state)) invalid('state must be an object');
+
+    const players = [state.player1, state.player2];
+    if (players.some(player => !player || typeof player !== 'object' || Array.isArray(player))) {
+      invalid('players are required');
+    }
+    if (players.some(player => typeof player.username !== 'string' || !player.username.trim())) {
+      invalid('player usernames are required');
+    }
+    const roles = players.map(player => player.role);
+    if (roles.filter(role => role === 'streamer').length !== 1 || roles.filter(role => role === 'viewer').length !== 1) {
+      invalid('players must include one streamer and one viewer');
+    }
+
+    if (!Array.isArray(state.board) || state.board.length !== this.ROWS ||
+      state.board.some(row => !Array.isArray(row) || row.length !== this.COLUMNS)) {
+      invalid('board must be 6 by 7');
+    }
+
+    let player1Pieces = 0;
+    let player2Pieces = 0;
+    for (let column = 0; column < this.COLUMNS; column++) {
+      let sawEmptyBelow = false;
+      for (let row = this.ROWS - 1; row >= 0; row--) {
+        const cell = state.board[row][column];
+        if (!Number.isInteger(cell) || ![0, 1, 2].includes(cell)) invalid('board contains an invalid cell');
+        if (cell === 0) {
+          sawEmptyBelow = true;
+        } else {
+          if (sawEmptyBelow) invalid('board contains floating pieces');
+          if (cell === 1) player1Pieces += 1;
+          if (cell === 2) player2Pieces += 1;
+        }
+      }
+    }
+    const occupied = player1Pieces + player2Pieces;
+    if (!Number.isInteger(state.moveCount) || state.moveCount !== occupied) invalid('move count does not match occupancy');
+    if (player1Pieces < player2Pieces || player1Pieces > player2Pieces + 1) invalid('player move counts are invalid');
+    if (![1, 2].includes(state.currentPlayer)) invalid('current player is invalid');
+    if (!['active', 'completed'].includes(state.status)) invalid('status is invalid');
+    if (state.winner !== null && ![1, 2].includes(state.winner)) invalid('winner is invalid');
+
+    const expectedLastPlayer = player1Pieces === player2Pieces ? 2 : 1;
+    const lastMove = state.lastMove;
+    if (occupied === 0) {
+      if (state.lastMove !== null) invalid('empty games cannot have a last move');
+    } else {
+      const move = lastMove;
+      if (!move || typeof move !== 'object' || ![1, 2].includes(move.player) ||
+        !Number.isInteger(move.row) || !Number.isInteger(move.column) ||
+        !Number.isInteger(move.moveNumber) || move.moveNumber !== occupied ||
+        move.row < 0 || move.row >= this.ROWS || move.column < 0 || move.column >= this.COLUMNS ||
+        state.board[move.row][move.column] !== move.player || move.player !== expectedLastPlayer) {
+        invalid('last move is invalid');
+      }
+      for (let row = 0; row < move.row; row++) {
+        if (state.board[row][move.column] !== 0) invalid('last move is not the top piece in its column');
+      }
+    }
+
+    const winningLines = [];
+    if (occupied > 0) {
+      for (const { dr, dc } of [
+        { dr: 0, dc: 1 },
+        { dr: 1, dc: 0 },
+        { dr: 1, dc: 1 },
+        { dr: 1, dc: -1 }
+      ]) {
+        const cells = [[lastMove.row, lastMove.column]];
+        for (const direction of [1, -1]) {
+          let row = lastMove.row + (dr * direction);
+          let column = lastMove.column + (dc * direction);
+          while (row >= 0 && row < this.ROWS && column >= 0 && column < this.COLUMNS &&
+            state.board[row][column] === lastMove.player) {
+            if (direction === 1) cells.push([row, column]);
+            else cells.unshift([row, column]);
+            row += dr * direction;
+            column += dc * direction;
+          }
+        }
+        winningLines.push(cells);
+      }
+    }
+
+    if (!Array.isArray(state.winningCells) || state.winningCells.length > 7) invalid('winning cells are invalid');
+    const winningCellKeys = new Set();
+    for (const cell of state.winningCells) {
+      if (!Array.isArray(cell) || cell.length !== 2 || !Number.isInteger(cell[0]) || !Number.isInteger(cell[1]) ||
+        cell[0] < 0 || cell[0] >= this.ROWS || cell[1] < 0 || cell[1] >= this.COLUMNS) {
+        invalid('winning cells are out of bounds');
+      }
+      const key = `${cell[0]}:${cell[1]}`;
+      if (winningCellKeys.has(key)) invalid('winning cells are duplicated');
+      winningCellKeys.add(key);
+    }
+
+    if (state.status === 'active') {
+      const expectedCurrentPlayer = player1Pieces === player2Pieces ? 1 : 2;
+      if (state.winner !== null || state.winningCells.length !== 0 || state.currentPlayer !== expectedCurrentPlayer ||
+        winningLines.some(cells => cells.length >= 4)) {
+        invalid('active game state is inconsistent');
+      }
+    } else if (state.winner === null) {
+      if (occupied !== this.ROWS * this.COLUMNS || state.winningCells.length !== 0 || state.currentPlayer !== expectedLastPlayer) {
+        invalid('completed draw state is inconsistent');
+      }
+    } else {
+      const winningCellsMatch = winningLines.some(cells => cells.length >= 4 && cells.length === state.winningCells.length &&
+        cells.every(([row, column]) => winningCellKeys.has(`${row}:${column}`)));
+      if (state.currentPlayer !== state.winner || expectedLastPlayer !== state.winner ||
+        state.winningCells.length < 4 || state.winningCells.length > 7 ||
+        !winningCellKeys.has(`${state.lastMove.row}:${state.lastMove.column}`) ||
+        state.winningCells.some(([row, column]) => state.board[row][column] !== state.winner) || !winningCellsMatch) {
+        invalid('completed winner state is inconsistent');
+      }
+    }
+
+    return {
+      player1: { ...state.player1 },
+      player2: { ...state.player2 },
+      board: state.board.map(row => [...row]),
+      currentPlayer: state.currentPlayer,
+      moveCount: state.moveCount,
+      winner: state.winner,
+      winningCells: state.winningCells.map(cell => [...cell]),
+      status: state.status,
+      lastMove: state.lastMove ? { ...state.lastMove } : null
+    };
   }
 
   /**

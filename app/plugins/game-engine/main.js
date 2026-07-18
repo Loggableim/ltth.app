@@ -669,10 +669,80 @@ class GameEnginePlugin {
     const defaults = this.defaultConfigs[gameType];
     if (!defaults) return config || {};
     const merged = this._mergeConfigDefaults(defaults, config || {});
+    if (gameType === 'connect4') {
+      return this._normalizeConnect4Config(merged);
+    }
     if (gameType === 'arena') {
       return this._normalizeArenaConfigDefaults(merged, config || {});
     }
     return merged;
+  }
+
+  _normalizeConnect4Config(config) {
+    const defaults = this.defaultConfigs.connect4;
+    const normalized = { ...config };
+    const validColor = value => typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value);
+    const validInteger = (value, minimum, maximum) => Number.isInteger(value) && value >= minimum && value <= maximum;
+    const validLeaderboardTypes = ['daily', 'season', 'lifetime', 'elo'];
+    const command = this.normalizeChatCommandName(normalized.chatCommand, defaults.chatCommand);
+
+    normalized.streamerRole = ['player1', 'player2'].includes(normalized.streamerRole)
+      ? normalized.streamerRole
+      : defaults.streamerRole;
+    normalized.animationSpeed = validInteger(normalized.animationSpeed, 100, 2000)
+      ? normalized.animationSpeed
+      : defaults.animationSpeed;
+    normalized.chatCommand = /^[a-z0-9_-]+$/i.test(command) ? command : defaults.chatCommand;
+    for (const key of ['boardColor', 'player1Color', 'player2Color', 'textColor']) {
+      normalized[key] = validColor(normalized[key]) ? normalized[key].toUpperCase() : defaults[key];
+    }
+    normalized.soundVolume = typeof normalized.soundVolume === 'number' && Number.isFinite(normalized.soundVolume) &&
+      normalized.soundVolume >= 0 && normalized.soundVolume <= 1
+      ? normalized.soundVolume
+      : defaults.soundVolume;
+    normalized.leaderboardTypes = Array.isArray(normalized.leaderboardTypes) &&
+      normalized.leaderboardTypes.every(type => validLeaderboardTypes.includes(type))
+      ? [...new Set(normalized.leaderboardTypes)]
+      : [...defaults.leaderboardTypes];
+    normalized.leaderboardDisplayTime = validInteger(normalized.leaderboardDisplayTime, 1, 10)
+      ? normalized.leaderboardDisplayTime
+      : defaults.leaderboardDisplayTime;
+    normalized.roundTimeLimit = validInteger(normalized.roundTimeLimit, 5, 120)
+      ? normalized.roundTimeLimit
+      : defaults.roundTimeLimit;
+    normalized.roundWarningTime = validInteger(normalized.roundWarningTime, 3, 30) &&
+      normalized.roundWarningTime <= normalized.roundTimeLimit
+      ? normalized.roundWarningTime
+      : defaults.roundWarningTime;
+    if (normalized.roundWarningTime > normalized.roundTimeLimit) {
+      normalized.roundWarningTime = Math.min(defaults.roundWarningTime, normalized.roundTimeLimit);
+    }
+    return normalized;
+  }
+
+  _isValidConnect4Config(config) {
+    if (!config || typeof config !== 'object' || Array.isArray(config)) return false;
+    const validColor = value => typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value);
+    const validInteger = (value, minimum, maximum) => Number.isInteger(value) && value >= minimum && value <= maximum;
+    const allowedTypes = ['daily', 'season', 'lifetime', 'elo'];
+    const has = key => Object.prototype.hasOwnProperty.call(config, key);
+    if (has('streamerRole') && !['player1', 'player2'].includes(config.streamerRole)) return false;
+    if (has('animationSpeed') && !validInteger(config.animationSpeed, 100, 2000)) return false;
+    if (has('chatCommand')) {
+      const command = this.normalizeChatCommandName(config.chatCommand);
+      if (!command || !/^[a-z0-9_-]+$/i.test(command)) return false;
+    }
+    if (['boardColor', 'player1Color', 'player2Color', 'textColor'].some(key => has(key) && !validColor(config[key]))) return false;
+    if (has('soundVolume') && (typeof config.soundVolume !== 'number' || !Number.isFinite(config.soundVolume) || config.soundVolume < 0 || config.soundVolume > 1)) return false;
+    if (has('leaderboardTypes') && (!Array.isArray(config.leaderboardTypes) ||
+      config.leaderboardTypes.some(type => !allowedTypes.includes(type)) ||
+      new Set(config.leaderboardTypes).size !== config.leaderboardTypes.length)) return false;
+    if (has('leaderboardDisplayTime') && !validInteger(config.leaderboardDisplayTime, 1, 10)) return false;
+    if (has('roundTimeLimit') && !validInteger(config.roundTimeLimit, 5, 120)) return false;
+    if (has('roundWarningTime') && !validInteger(config.roundWarningTime, 3, 30)) return false;
+    const timeLimit = has('roundTimeLimit') ? config.roundTimeLimit : this.defaultConfigs.connect4.roundTimeLimit;
+    const warningTime = has('roundWarningTime') ? config.roundWarningTime : this.defaultConfigs.connect4.roundWarningTime;
+    return warningTime <= timeLimit;
   }
 
   _normalizeArenaConfigDefaults(config, stored) {
@@ -1782,6 +1852,9 @@ class GameEnginePlugin {
     this.api.registerRoute('POST', '/api/game-engine/config/:gameType', (req, res) => {
       try {
         const { gameType } = req.params;
+        if (gameType === 'connect4' && !this._isValidConnect4Config(req.body || {})) {
+          return res.status(400).json({ error: 'invalid_connect4_config' });
+        }
         const config = this._getConfigWithDefaults(gameType, req.body || {});
         
         this.db.saveGameConfig(gameType, config);
@@ -4804,7 +4877,11 @@ class GameEnginePlugin {
       const c4Match = message.match(/^\/c4\s+([a-g])$/i);
       if (c4Match) {
         const column = c4Match[1].toUpperCase();
-        this.handleViewerMove(viewerId, viewerNickname, 'connect4', column, this._getChatMoveIdentity(data));
+        if (this._isHostChatEvent(data)) {
+          this.handleInteractiveHostMove('connect4', { column }, this._getChatMoveIdentity(data));
+        } else {
+          this.handleViewerMove(viewerId, viewerNickname, 'connect4', column, this._getChatMoveIdentity(data));
+        }
         return;
       }
       
@@ -4854,7 +4931,7 @@ class GameEnginePlugin {
     if (match) {
       const column = match[1].toUpperCase();
       if (isHostChatEvent) {
-        this.handleInteractiveHostMove('connect4', { column });
+        this.handleInteractiveHostMove('connect4', { column }, this._getChatMoveIdentity(data));
         return;
       }
       this.handleViewerMove(viewerId, viewerNickname, 'connect4', column, this._getChatMoveIdentity(data));
@@ -4960,7 +5037,7 @@ class GameEnginePlugin {
       }
 
       if (this._isHostChatEvent(context.rawData || context)) {
-        return this.handleInteractiveHostMove('connect4', { column });
+        return this.handleInteractiveHostMove('connect4', { column }, this._getChatMoveIdentity(context.rawData || context));
       }
 
       return this.handleViewerMove(
@@ -5413,7 +5490,7 @@ class GameEnginePlugin {
    * Chat events do not include the revision fields required by the controller,
    * so they are captured atomically from the display before applying the move.
    */
-  handleInteractiveHostMove(gameType, move) {
+  handleInteractiveHostMove(gameType, move, moveIdentity = null) {
     if (!this.interactiveController) {
       return {
         success: false,
@@ -5431,13 +5508,15 @@ class GameEnginePlugin {
       };
     }
 
-    const result = this.interactiveController.applyHostMove({
+    const envelope = {
       sessionId: display.displaySessionId,
       gameType,
       sessionRevision: display.sessionRevision,
       displayRevision: display.displayRevision,
       move
-    });
+    };
+    if (moveIdentity) envelope.moveIdentity = moveIdentity;
+    const result = this.interactiveController.applyHostMove(envelope);
 
     if (!result.success) {
       this.io.emit('game-engine:error', {
