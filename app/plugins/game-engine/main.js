@@ -405,7 +405,7 @@ class GameEnginePlugin {
       payload.winner,
       payload.reason,
       payload.gameResult,
-      { interactive: true }
+      { interactive: true, skipAccounting: payload.skipAccounting === true }
     );
   }
 
@@ -3672,7 +3672,25 @@ class GameEnginePlugin {
 
       socket.on('game-engine:cancel-game', (data) => {
         if (!this._requireSocketRole(socket, 'game-engine:cancel-game', 'admin')) return;
-        this.cancelGame(data.sessionId);
+        const result = this.cancelGame(data);
+        if (result && !result.success) {
+          socket.emit('game-engine:error', { sessionId: data?.sessionId, error: result.error });
+          this.interactiveController?.emitState(socket);
+        }
+      });
+
+      socket.on('game-engine:interactive-skip-host-turn', (data) => {
+        if (!this._requireSocketRole(socket, 'game-engine:interactive-skip-host-turn', 'admin')) return;
+        const result = this.interactiveController?.skipHostTurn({
+          sessionId: data?.sessionId,
+          gameType: data?.gameType,
+          sessionRevision: data?.sessionRevision,
+          displayRevision: data?.displayRevision
+        }) || { success: false, error: 'interactive_controller_unavailable' };
+        if (!result.success) {
+          socket.emit('game-engine:error', { sessionId: data?.sessionId, error: result.error });
+          this.interactiveController?.emitState(socket);
+        }
       });
 
       socket.on('game-engine:accept-challenge', (data) => {
@@ -5694,25 +5712,25 @@ class GameEnginePlugin {
     // Save final game state (with null check and error handling - Bug #5 fix)
     try {
       if (game && game.getState) {
-        this.db.endSession(sessionId, winnerUsername, game.getState());
+        this.db.endSession(sessionId, winnerUsername, game.getState(), reason);
       } else {
         this.logger.warn(`Cannot save final state for session ${sessionId}: game or getState is null`);
-        this.db.endSession(sessionId, winnerUsername, null);
+        this.db.endSession(sessionId, winnerUsername, null, reason);
       }
     } catch (error) {
       this.logger.error(`Failed to end session ${sessionId} in database: ${error.message}`);
     }
 
     // Calculate and apply ELO changes if enabled
-    if (config.eloEnabled && session.player1_username !== 'streamer' && session.player2_username !== 'streamer') {
+    if (!options.skipAccounting && config.eloEnabled && session.player1_username !== 'streamer' && session.player2_username !== 'streamer') {
       eloChanges = this.calculateAndApplyELO(session, winner, reason, config);
     }
 
     // Award XP and get streak info
-    const streakData = this.awardGameXP(session, winner, reason, xpRewards);
+    const streakData = options.skipAccounting ? null : this.awardGameXP(session, winner, reason, xpRewards);
     
     // Get win streak for the winner if viewer (Bug #5 fix - added error handling)
-    if (winnerIsViewer && winnerUsername) {
+    if (!options.skipAccounting && winnerIsViewer && winnerUsername) {
       try {
         winnerStreakInfo = this.db.getDetailedPlayerStats(winnerUsername, session.game_type);
       } catch (error) {
@@ -5824,11 +5842,13 @@ class GameEnginePlugin {
   /**
    * Cancel a game
    */
-  cancelGame(sessionId) {
-    if (this.interactiveController?.registry?.get(sessionId)) {
-      return this.interactiveController.cancel(sessionId);
+  cancelGame(input) {
+    const request = typeof input === 'object' && input !== null ? input : { sessionId: input };
+    if (this.interactiveController?.registry?.get(request.sessionId)) {
+      return this.interactiveController.cancel(request);
     }
-    this.endGame(sessionId, null, 'cancelled');
+    this.endGame(request.sessionId, null, 'cancelled', null, { skipAccounting: true });
+    return { success: true };
   }
 
   /**

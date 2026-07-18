@@ -158,6 +158,7 @@ class InteractiveController {
 
   init() {
     let recovered = 0;
+    const reconciled = this.database.reconcileOrphanedInteractiveSessions?.() || 0;
     const activeRows = this.database.getActiveInteractiveStates();
     for (const row of activeRows) {
       try {
@@ -196,7 +197,7 @@ class InteractiveController {
     this.queue.restore(validQueueRows);
     this.router.sync();
     this.emitState();
-    return { recovered, queueLength: validQueueRows.length };
+    return { recovered, reconciled, queueLength: validQueueRows.length };
   }
 
   startMatch({ gameType, viewerId, viewerDisplayName, timeControl = null, triggerType = 'command', triggerValue = null }) {
@@ -448,6 +449,31 @@ class InteractiveController {
     }
   }
 
+  skipHostTurn(envelope) {
+    const sessionId = Number(envelope?.sessionId);
+    const session = this.registry.get(sessionId);
+    if (!session) return { success: false, error: 'session_not_found' };
+    if (session.gameType !== envelope?.gameType) return { success: false, error: 'wrong_game_type' };
+    const head = this.queue.head();
+    if (!head || head.sessionId !== sessionId) return { success: false, error: 'not_queue_head' };
+    if (this.router.snapshot().displaySessionId !== sessionId) return { success: false, error: 'not_displayed' };
+    if (session.sessionRevision !== Number(envelope?.sessionRevision)) {
+      return { success: false, error: 'stale_session_revision' };
+    }
+    if (this.router.displayRevision !== Number(envelope?.displayRevision)) {
+      return { success: false, error: 'stale_display_revision' };
+    }
+    if (session.turnRole !== 'host') return { success: false, error: 'not_host_turn' };
+    if (this.queue.list().length < 2) return { success: false, error: 'queue_too_short' };
+
+    const rotated = this.queue.rotateHeadToTail(sessionId);
+    if (!rotated?.moved) return { success: false, error: rotated?.error || 'queue_rotation_failed' };
+    this._logTransition('host_turn_skipped', session, { queueSequence: rotated.sequence });
+    this.router.sync();
+    this.emitState();
+    return { success: true, sessionId, displayRevision: this.router.displayRevision };
+  }
+
   _roleForWinner(session, winner) {
     if (winner == null) return null;
     const state = session.adapter.getState();
@@ -509,7 +535,12 @@ class InteractiveController {
     return true;
   }
 
-  _completeSession(session, outcome, { moveIdentity = null } = {}) {
+  _completeSession(session, outcome, {
+    moveIdentity = null,
+    skipAccounting = false,
+    resultDurationMs = null,
+    skipLeaderboard = false
+  } = {}) {
     const resultPayload = {
       sessionId: session.sessionId,
       gameType: session.gameType,
@@ -527,7 +558,8 @@ class InteractiveController {
       gameResult: outcome.gameResult,
       state: session.adapter.getState(),
       sessionRevision: session.sessionRevision,
-      leaderboard: this._leaderboardPresentation(session)
+      leaderboard: skipLeaderboard ? null : this._leaderboardPresentation(session),
+      skipAccounting
     };
     this.timers.clear(session.sessionId);
     this.database.transaction(() => {
@@ -546,21 +578,39 @@ class InteractiveController {
     }
     this.emitLegacyEvent?.('ended', resultPayload);
     this._logTransition('session_ended', session, { terminalReason: outcome.reason });
-    const resultDuration = this._settings().interactiveResultDisplaySeconds * 1000;
+    const resultDuration = resultDurationMs == null
+      ? this._settings().interactiveResultDisplaySeconds * 1000
+      : resultDurationMs;
     this.router.showResult(resultPayload, resultDuration, resultPayload.leaderboard);
     this.emitState();
     return resultPayload;
   }
 
-  cancel(sessionId) {
-    const session = this.registry.get(sessionId);
+  cancel(input) {
+    const envelope = typeof input === 'object' && input !== null
+      ? input
+      : { sessionId: input };
+    const session = this.registry.get(envelope.sessionId);
     if (!session) return { success: false, error: 'session_not_found' };
+    if (envelope.gameType != null && session.gameType !== envelope.gameType) {
+      return { success: false, error: 'wrong_game_type' };
+    }
+    if (envelope.sessionRevision != null && session.sessionRevision !== Number(envelope.sessionRevision)) {
+      return { success: false, error: 'stale_session_revision' };
+    }
+    if (envelope.displayRevision != null && this.router.displayRevision !== Number(envelope.displayRevision)) {
+      return { success: false, error: 'stale_display_revision' };
+    }
     session.sessionRevision += 1;
     const result = this._completeSession(session, {
       winner: null,
       winnerRole: null,
       reason: 'cancelled',
       gameResult: { gameOver: true, cancelled: true }
+    }, {
+      skipAccounting: true,
+      skipLeaderboard: true,
+      resultDurationMs: 1500
     });
     return { success: true, result };
   }

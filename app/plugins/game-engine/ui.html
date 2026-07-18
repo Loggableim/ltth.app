@@ -1419,6 +1419,7 @@
             <button type="button" class="interactive-column-button" data-interactive-column="G">G</button>
           </div>
           <p id="interactive-chess-help" hidden>Quelle und danach Zielfeld anklicken.</p>
+          <button type="button" id="skipInteractiveHostTurnBtn">Host-Zug ans Queue-Ende schieben</button>
           <button class="danger" id="cancelInteractiveGameBtn">Angezeigte Partie abbrechen</button>
         </section>
 
@@ -5119,6 +5120,19 @@
       return interactiveFallbackSession(state)?.sessionId ?? null;
     }
 
+    function interactiveCancellationEnvelope(state = latestInteractiveAdminState) {
+      const sessionId = interactiveCancelableSessionId(state);
+      if (sessionId == null) return null;
+      const display = state?.display || {};
+      const session = state?.activeSessions?.find(item => Number(item.sessionId) === Number(sessionId));
+      return {
+        sessionId,
+        gameType: session?.gameType || display.gameType,
+        sessionRevision: session?.sessionRevision ?? display.sessionRevision,
+        displayRevision: display.displayRevision
+      };
+    }
+
     function canSubmitInteractiveHostMove(state = latestInteractiveAdminState) {
       const display = state?.display;
       const head = state?.hostQueue?.[0];
@@ -5259,6 +5273,11 @@
       connect4Controls.querySelectorAll('button').forEach(button => { button.disabled = !canMove; });
       document.getElementById('interactive-chess-help').hidden = gameType !== 'chess';
       document.getElementById('cancelInteractiveGameBtn').disabled = sessionId == null || display.phase === 'result';
+      document.getElementById('skipInteractiveHostTurnBtn').disabled = !(
+        display.phase === 'playing' &&
+        display.displaySessionId != null &&
+        state.hostQueue?.length >= 2
+      );
     }
 
     function makeInteractiveListItem(parts, isNow = false) {
@@ -6405,9 +6424,23 @@
     document.getElementById('cancelInteractiveGameBtn')?.addEventListener('click', () => {
       const sessionId = interactiveCancelableSessionId(latestInteractiveAdminState);
       if (sessionId == null) return;
+      const envelope = interactiveCancellationEnvelope(latestInteractiveAdminState);
+      if (!envelope) return;
       if (confirm('Angezeigte Partie wirklich abbrechen?')) {
-        socket.emit('game-engine:cancel-game', { sessionId });
+        socket.emit('game-engine:cancel-game', envelope);
       }
+    });
+
+    document.getElementById('skipInteractiveHostTurnBtn')?.addEventListener('click', () => {
+      const state = latestInteractiveAdminState;
+      const display = state?.display;
+      if (!display?.displaySessionId || !display.gameType) return;
+      socket.emit('game-engine:interactive-skip-host-turn', {
+        sessionId: display.displaySessionId,
+        gameType: display.gameType,
+        sessionRevision: display.sessionRevision,
+        displayRevision: display.displayRevision
+      });
     });
 
     document.getElementById('save-interactive-settings')?.addEventListener('click', () => {

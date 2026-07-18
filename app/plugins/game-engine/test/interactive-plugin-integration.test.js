@@ -366,6 +366,90 @@ describe('GameEnginePlugin interactive controller integration', () => {
     expect(plugin.interactiveController.emitState).toHaveBeenCalledWith(admin);
   });
 
+  test('authorizes revisioned host-turn skips and reports stable controller errors to the admin socket', () => {
+    const { plugin, getConnectionHandler } = createPlugin();
+    plugin.interactiveController = {
+      skipHostTurn: jest.fn(() => ({ success: false, error: 'queue_too_short' })),
+      emitState: jest.fn()
+    };
+    plugin.registerSocketEvents();
+    const admin = socket('admin');
+    getConnectionHandler()(admin);
+
+    admin.trigger('game-engine:interactive-skip-host-turn', {
+      sessionId: 3,
+      gameType: 'chess',
+      sessionRevision: 2,
+      displayRevision: 6
+    });
+
+    expect(plugin.interactiveController.skipHostTurn).toHaveBeenCalledWith({
+      sessionId: 3,
+      gameType: 'chess',
+      sessionRevision: 2,
+      displayRevision: 6
+    });
+    expect(admin.emit).toHaveBeenCalledWith('game-engine:error', {
+      sessionId: 3,
+      error: 'queue_too_short'
+    });
+    expect(plugin.interactiveController.emitState).toHaveBeenCalledWith(admin);
+  });
+
+  test('passes revisioned cancellation envelopes to the interactive controller while preserving legacy session-only cancellation', () => {
+    const { plugin, getConnectionHandler } = createPlugin();
+    plugin.interactiveController = {
+      registry: { get: jest.fn(() => ({ sessionId: 3 })) },
+      cancel: jest.fn(() => ({ success: false, error: 'stale_display_revision' })),
+      emitState: jest.fn()
+    };
+    plugin.registerSocketEvents();
+    const admin = socket('admin');
+    getConnectionHandler()(admin);
+
+    admin.trigger('game-engine:cancel-game', {
+      sessionId: 3,
+      gameType: 'connect4',
+      sessionRevision: 2,
+      displayRevision: 6
+    });
+
+    expect(plugin.interactiveController.cancel).toHaveBeenCalledWith({
+      sessionId: 3,
+      gameType: 'connect4',
+      sessionRevision: 2,
+      displayRevision: 6
+    });
+    expect(admin.emit).toHaveBeenCalledWith('game-engine:error', {
+      sessionId: 3,
+      error: 'stale_display_revision'
+    });
+    expect(plugin.interactiveController.emitState).toHaveBeenCalledWith(admin);
+    expect(() => plugin.cancelGame(3)).not.toThrow();
+    expect(plugin.interactiveController.cancel).toHaveBeenLastCalledWith({ sessionId: 3 });
+  });
+
+  test('marks neutral interactive cancellation as non-accounting when it reaches the legacy end-game path', () => {
+    const { plugin } = createPlugin();
+    plugin.endGame = jest.fn();
+
+    plugin._finishInteractiveGame({
+      sessionId: 12,
+      winner: null,
+      reason: 'cancelled',
+      gameResult: { cancelled: true },
+      skipAccounting: true
+    });
+
+    expect(plugin.endGame).toHaveBeenCalledWith(
+      12,
+      null,
+      'cancelled',
+      { cancelled: true },
+      { interactive: true, skipAccounting: true }
+    );
+  });
+
   test('plugin destroy clears in-memory interactive timers without ending persisted matches', async () => {
     const { plugin } = createPlugin();
     const game = { timerInterval: null };

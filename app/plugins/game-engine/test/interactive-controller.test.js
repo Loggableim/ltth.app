@@ -528,6 +528,130 @@ describe('InteractiveController', () => {
     harness.sqlite.close();
   });
 
+  test('skips only the displayed FIFO head and preserves chess state while rotating it to the tail', () => {
+    const harness = createHarness();
+    harness.controller.init();
+    const first = harness.controller.startMatch({
+      gameType: 'chess',
+      viewerId: 'first-chess-viewer',
+      viewerDisplayName: 'First Chess Viewer',
+      timeControl: '5+0'
+    });
+    const second = harness.controller.startMatch({
+      gameType: 'chess',
+      viewerId: 'second-chess-viewer',
+      viewerDisplayName: 'Second Chess Viewer',
+      timeControl: '5+0'
+    });
+    const before = harness.controller.getState();
+    const firstSession = harness.controller.registry.get(first.sessionId);
+    const stateBefore = firstSession.adapter.getState();
+
+    expect(harness.controller.skipHostTurn({
+      sessionId: first.sessionId,
+      gameType: 'chess',
+      sessionRevision: before.display.sessionRevision,
+      displayRevision: before.display.displayRevision
+    })).toMatchObject({ success: true, sessionId: first.sessionId });
+
+    const after = harness.controller.getState();
+    expect(after.hostQueue.map(row => row.sessionId)).toEqual([second.sessionId, first.sessionId]);
+    expect(after.display).toMatchObject({
+      displaySessionId: second.sessionId,
+      phase: 'playing'
+    });
+    expect(after.display.displayRevision).toBeGreaterThan(before.display.displayRevision);
+    expect(firstSession.sessionRevision).toBe(before.display.sessionRevision);
+    expect(firstSession.adapter.getState()).toEqual(stateBefore);
+    expect(harness.controller.timers.hostTimers.has(first.sessionId)).toBe(false);
+    expect(harness.controller.timers.hostTimers.has(second.sessionId)).toBe(true);
+    expect(harness.database.getInteractiveQueue().map(row => row.sessionId)).toEqual([second.sessionId, first.sessionId]);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('rejects a stale or undersized host-turn skip without changing queue order', () => {
+    const harness = createHarness();
+    harness.controller.init();
+    const first = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'first', viewerDisplayName: 'First' });
+    const display = harness.controller.getState().display;
+
+    expect(harness.controller.skipHostTurn({
+      sessionId: first.sessionId,
+      gameType: 'connect4',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision
+    })).toMatchObject({ success: false, error: 'queue_too_short' });
+
+    harness.controller.startMatch({ gameType: 'connect4', viewerId: 'second', viewerDisplayName: 'Second' });
+    expect(harness.controller.skipHostTurn({
+      sessionId: first.sessionId,
+      gameType: 'connect4',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision - 1
+    })).toMatchObject({ success: false, error: 'stale_display_revision' });
+    expect(harness.controller.getState().hostQueue.map(row => row.sessionId)).toEqual([first.sessionId, 2]);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('cancels neutrally for exactly 1500ms before routing the next host board', () => {
+    const harness = createHarness();
+    harness.controller.init();
+    const first = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'cancel-first', viewerDisplayName: 'Cancel First' });
+    const second = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'cancel-second', viewerDisplayName: 'Cancel Second' });
+    const display = harness.controller.getState().display;
+
+    expect(harness.controller.cancel({
+      sessionId: first.sessionId,
+      gameType: 'connect4',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision
+    })).toMatchObject({ success: true });
+    expect(harness.finishGame).toHaveBeenCalledWith(expect.objectContaining({
+      sessionId: first.sessionId,
+      reason: 'cancelled',
+      winner: null,
+      winnerRole: null,
+      skipAccounting: true,
+      leaderboard: null
+    }));
+    expect(harness.controller.getState().hostQueue.map(row => row.sessionId)).toEqual([second.sessionId]);
+    expect(harness.database.getInteractiveState(first.sessionId)).toMatchObject({
+      status: 'completed',
+      terminalReason: 'cancelled'
+    });
+    expect(harness.controller.getState().display).toMatchObject({ phase: 'result' });
+
+    jest.advanceTimersByTime(1499);
+    expect(harness.controller.getState().display).toMatchObject({ phase: 'result' });
+    jest.advanceTimersByTime(1);
+    expect(harness.controller.getState().display).toMatchObject({
+      phase: 'playing',
+      displaySessionId: second.sessionId
+    });
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('reconciles orphaned legacy waiting and active game rows as recovery failures on init', () => {
+    const harness = createHarness();
+    const orphan = harness.database.createSession('connect4', 'orphan-viewer', 'viewer', 'command', '/c4start');
+    harness.database.addPlayer2(orphan, 'streamer', 'streamer');
+
+    expect(harness.controller.init()).toMatchObject({ reconciled: 1 });
+    expect(harness.database.getSession(orphan)).toMatchObject({
+      status: 'completed',
+      win_reason: 'recovery_failed'
+    });
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
   test('persists the live chess host clock before an orderly restart', () => {
     const firstHarness = createHarness();
     firstHarness.controller.init();

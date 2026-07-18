@@ -125,6 +125,39 @@ describe('GameEngineDatabase interactive persistence', () => {
     ]);
   });
 
+  test('rotates a persisted FIFO head to the tail without mutating its session revision', () => {
+    database.createInteractiveState(session({ turnRole: 'host', sessionRevision: 7 }));
+    database.createInteractiveState(session({
+      sessionId: 42,
+      gameType: 'chess',
+      viewerId: 'viewer-42',
+      viewerDisplayName: 'Viewer 42',
+      turnRole: 'host',
+      sessionRevision: 8
+    }));
+    database.enqueueInteractiveTurn({
+      sessionId: 41,
+      gameType: 'connect4',
+      viewerId: 'viewer-41',
+      viewerDisplayName: 'Viewer 41',
+      sessionRevision: 7
+    });
+    database.enqueueInteractiveTurn({
+      sessionId: 42,
+      gameType: 'chess',
+      viewerId: 'viewer-42',
+      viewerDisplayName: 'Viewer 42',
+      sessionRevision: 8
+    });
+
+    expect(database.rotateInteractiveTurnToTail(41)).toMatchObject({ moved: true });
+    expect(database.getInteractiveQueue().map(row => [row.sessionId, row.sessionRevision])).toEqual([
+      [42, 8],
+      [41, 7]
+    ]);
+    expect(database.getInteractiveState(41).sessionRevision).toBe(7);
+  });
+
   test('persists viewer move identities as a session-scoped deduplication ledger', () => {
     database.createInteractiveState(session());
 
@@ -207,5 +240,40 @@ describe('GameEngineDatabase interactive persistence', () => {
       terminalReason: 'viewer_timeout'
     });
     expect(database.getActiveInteractiveStates()).toEqual([]);
+  });
+
+  test('reconciles orphaned legacy rows and reports aborted games separately from completed and authoritative active games', () => {
+    const completed = database.createSession('connect4', 'winner', 'viewer', 'command', '/c4start');
+    database.addPlayer2(completed, 'streamer', 'streamer');
+    database.endSession(completed, 'winner', { board: [[1]] }, 'win');
+
+    const cancelled = database.createSession('connect4', 'cancelled', 'viewer', 'command', '/c4start');
+    database.addPlayer2(cancelled, 'streamer', 'streamer');
+    database.endSession(cancelled, null, { board: [[0]] }, 'cancelled');
+
+    const recoverable = database.createSession('connect4', 'recoverable', 'viewer', 'command', '/c4start');
+    database.addPlayer2(recoverable, 'streamer', 'streamer');
+    database.createInteractiveState(session({
+      sessionId: recoverable,
+      viewerId: 'recoverable',
+      viewerDisplayName: 'Recoverable',
+      turnRole: 'host'
+    }));
+
+    const orphan = database.createSession('connect4', 'orphan', 'viewer', 'command', '/c4start');
+    database.addPlayer2(orphan, 'streamer', 'streamer');
+
+    expect(database.reconcileOrphanedInteractiveSessions()).toBe(1);
+    expect(database.getSession(orphan)).toMatchObject({ status: 'completed', win_reason: 'recovery_failed' });
+    expect(database.getGameStats('connect4')).toMatchObject({
+      total_games: 4,
+      completed_games: 1,
+      aborted_games: 2,
+      active_games: 1
+    });
+    expect(database.getPlayerStats('cancelled')).toEqual([]);
+    expect(database.getDailyLeaderboard('connect4')).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ username: 'cancelled' })
+    ]));
   });
 });

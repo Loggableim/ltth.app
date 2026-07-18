@@ -42,6 +42,21 @@ class InteractiveTurnQueue {
     return true;
   }
 
+  rotateHeadToTail(sessionId) {
+    const normalizedId = Number(sessionId);
+    if (this.entries.length < 2 || this.entries[0]?.sessionId !== normalizedId) {
+      return { moved: false, error: 'not_queue_head' };
+    }
+    const persisted = this.database.rotateInteractiveTurnToTail(normalizedId);
+    if (!persisted?.moved) return persisted;
+    const [head] = this.entries.splice(0, 1);
+    head.sequence = persisted.sequence;
+    head.enqueuedAt = this.now();
+    this.entries.push(head);
+    this.logger?.debug?.(`[INTERACTIVE QUEUE] Rotated session ${normalizedId} to ${head.sequence}`);
+    return { moved: true, ...head };
+  }
+
   head() {
     return this.entries[0] || null;
   }

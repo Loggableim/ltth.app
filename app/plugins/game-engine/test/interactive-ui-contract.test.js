@@ -40,6 +40,14 @@ describe('interactive games admin UI contract', () => {
     expect(ui).toContain('interactiveCancelableSessionId(latestInteractiveAdminState)');
   });
 
+  test('submits revisioned cancellation and host-turn skip controls from authoritative dashboard state', () => {
+    expect(ui).toContain("socket.emit('game-engine:cancel-game'");
+    expect(ui).toContain("socket.emit('game-engine:interactive-skip-host-turn'");
+    expect(ui).toContain('gameType: display.gameType');
+    expect(ui).toContain('sessionRevision: display.sessionRevision');
+    expect(ui).toContain('displayRevision: display.displayRevision');
+  });
+
   test('renders the sole viewer-turn session when no host move is displayed', () => {
     expect(ui).toContain('function interactiveFallbackSession(');
     expect(ui).toContain("display?.phase !== 'idle'");

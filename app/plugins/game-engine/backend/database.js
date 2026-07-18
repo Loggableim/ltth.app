@@ -810,6 +810,23 @@ class GameEngineDatabase {
     `).run(sessionId).changes > 0;
   }
 
+  rotateInteractiveTurnToTail(sessionId) {
+    return this.transaction(() => {
+      const row = this.db.prepare(`
+        SELECT * FROM game_interactive_queue WHERE session_id = ?
+      `).get(sessionId);
+      if (!row) return { moved: false, error: 'queue_entry_not_found' };
+
+      const current = Number(this.getInteractiveMeta('nextQueueSequence')) || 0;
+      const sequence = current + 1;
+      this.setInteractiveMeta('nextQueueSequence', String(sequence));
+      this.db.prepare(`
+        UPDATE game_interactive_queue SET sequence = ?, enqueued_at = ? WHERE session_id = ?
+      `).run(sequence, Date.now(), sessionId);
+      return { moved: true, sequence };
+    });
+  }
+
   getInteractiveQueue() {
     return this.db.prepare(`
       SELECT * FROM game_interactive_queue ORDER BY sequence ASC
@@ -824,6 +841,11 @@ class GameEngineDatabase {
         terminalReason: reason,
         viewerDeadlineMs: null
       });
+      this.db.prepare(`
+        UPDATE game_sessions
+        SET status = 'completed', win_reason = ?, ended_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND status IN ('waiting', 'active')
+      `).run(reason, sessionId);
       return this.getInteractiveState(sessionId);
     });
   }
@@ -845,6 +867,24 @@ class GameEngineDatabase {
       `).run(sessionId);
       return interactiveChanged;
     });
+  }
+
+  reconcileOrphanedInteractiveSessions() {
+    // Some isolated legacy tests intentionally use a lightweight database
+    // facade without SQLite transaction support. There is no persisted state
+    // to reconcile in that environment.
+    if (typeof this.db.transaction !== 'function') return 0;
+    return this.transaction(() => this.db.prepare(`
+      UPDATE game_sessions
+      SET status = 'completed', win_reason = 'recovery_failed', ended_at = CURRENT_TIMESTAMP
+      WHERE game_type IN ('connect4', 'chess')
+        AND status IN ('waiting', 'active')
+        AND NOT EXISTS (
+          SELECT 1 FROM game_interactive_sessions interactive
+          WHERE interactive.session_id = game_sessions.id
+            AND interactive.status = 'active'
+        )
+    `).run().changes);
   }
 
   getInteractiveMeta(key) {
@@ -967,13 +1007,15 @@ class GameEngineDatabase {
   /**
    * End game session
    */
-  endSession(sessionId, winner, gameState) {
-    this.updateSession(sessionId, {
+  endSession(sessionId, winner, gameState, reason = null) {
+    const updates = {
       status: 'completed',
       winner: winner,
       ended_at: new Date().toISOString(),
       game_state: JSON.stringify(gameState)
-    });
+    };
+    if (reason) updates.win_reason = reason;
+    this.updateSession(sessionId, updates);
   }
 
   /**
@@ -1076,8 +1118,12 @@ class GameEngineDatabase {
       SELECT 
         game_type,
         COUNT(*) as total_games,
-        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_games,
-        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_games
+        SUM(CASE WHEN status = 'completed' AND COALESCE(win_reason, '') NOT IN ('cancelled', 'recovery_failed') THEN 1 ELSE 0 END) as completed_games,
+        SUM(CASE WHEN status = 'completed' AND win_reason IN ('cancelled', 'recovery_failed') THEN 1 ELSE 0 END) as aborted_games,
+        SUM(CASE WHEN status IN ('waiting', 'active') AND EXISTS (
+          SELECT 1 FROM game_interactive_sessions interactive
+          WHERE interactive.session_id = game_sessions.id AND interactive.status = 'active'
+        ) THEN 1 ELSE 0 END) as active_games
       FROM game_sessions
     `;
     
@@ -1106,6 +1152,7 @@ class GameEngineDatabase {
       FROM game_sessions
       WHERE (player1_username = ? OR player2_username = ?)
         AND status = 'completed'
+        AND COALESCE(win_reason, '') NOT IN ('cancelled', 'recovery_failed')
       GROUP BY game_type
     `);
     
@@ -1213,6 +1260,7 @@ class GameEngineDatabase {
         WHERE DATE(started_at) = ?
           ${gameType ? 'AND game_type = ?' : ''}
           AND status = 'completed'
+          AND COALESCE(win_reason, '') NOT IN ('cancelled', 'recovery_failed')
           AND player1_username != 'streamer'
         UNION ALL
         SELECT 
@@ -1223,6 +1271,7 @@ class GameEngineDatabase {
         WHERE DATE(started_at) = ?
           ${gameType ? 'AND game_type = ?' : ''}
           AND status = 'completed'
+          AND COALESCE(win_reason, '') NOT IN ('cancelled', 'recovery_failed')
           AND player2_username != 'streamer'
       )
       SELECT 
@@ -1260,6 +1309,7 @@ class GameEngineDatabase {
         WHERE strftime('%Y-%m', started_at) = ?
           ${gameType ? 'AND game_type = ?' : ''}
           AND status = 'completed'
+          AND COALESCE(win_reason, '') NOT IN ('cancelled', 'recovery_failed')
           AND player1_username != 'streamer'
         UNION ALL
         SELECT 
@@ -1270,6 +1320,7 @@ class GameEngineDatabase {
         WHERE strftime('%Y-%m', started_at) = ?
           ${gameType ? 'AND game_type = ?' : ''}
           AND status = 'completed'
+          AND COALESCE(win_reason, '') NOT IN ('cancelled', 'recovery_failed')
           AND player2_username != 'streamer'
       )
       SELECT 
