@@ -257,7 +257,9 @@ function getTeamMemberLevel(context = {}) {
     context?.rawData?.teamMemberLevel,
     context?.teamMemberLevel
   ];
-  const value = values.find(candidate => Number.isFinite(Number(candidate)));
+  const value = values.find(candidate => (
+    candidate !== null && candidate !== '' && Number.isFinite(Number(candidate))
+  ));
   if (value === undefined) return 0;
   return Math.min(50, Math.max(0, Math.floor(Number(value))));
 }

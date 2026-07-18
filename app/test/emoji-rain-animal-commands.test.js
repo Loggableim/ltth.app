@@ -133,6 +133,15 @@ describe('EmojiRain animal command eligibility and count', () => {
     expect(getAnimalCommandCount(context)).toBe(expectedCount);
   });
 
+  test('falls back to the raw Teamlevel when the enriched value is empty', () => {
+    const context = {
+      userData: { teamMemberLevel: null },
+      rawData: { teamMemberLevel: 12 }
+    };
+    expect(getTeamMemberLevel(context)).toBe(12);
+    expect(getAnimalCommandCount(context)).toBe(12);
+  });
+
   test('paid subscribers are always allowed and use the lower cooldown', () => {
     expect(evaluateAnimalCommandAccess({
       rawData: { isSubscriber: true },

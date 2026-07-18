@@ -1519,6 +1519,113 @@
         html[data-theme="contrast"] .hero-preview__visual {
             border-color: rgba(148, 163, 184, 0.4);
         }
+        .emoji-command-editor {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .emoji-command-editor__rows {
+            display: grid;
+            gap: 14px;
+            margin: 18px 0;
+        }
+
+        .emoji-command-editor__row {
+            display: grid;
+            grid-template-columns: minmax(110px, 0.6fr) minmax(180px, 1fr) minmax(150px, 0.8fr) minmax(220px, 1.4fr);
+            gap: 12px;
+            align-items: end;
+            padding: 16px;
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            background: var(--color-bg-tertiary);
+        }
+
+        .emoji-command-editor__label {
+            display: grid;
+            gap: 6px;
+            color: var(--color-text-secondary);
+        }
+
+        .emoji-command-editor__access {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .emoji-command-editor__access input {
+            width: auto;
+        }
+
+        .emoji-command-editor__cooldowns {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .emoji-command-editor__command-name {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .emoji-command-editor__command-name input {
+            flex: 1;
+        }
+
+        .emoji-command-editor__emoji-preview {
+            min-width: 56px;
+            font-size: 2rem;
+            text-align: center;
+        }
+
+        .emoji-command-editor__image-preview {
+            width: 56px;
+            height: 56px;
+            object-fit: contain;
+            border-radius: 8px;
+            background: var(--color-bg-secondary);
+        }
+
+        .emoji-command-editor__upload {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .emoji-command-editor__upload input {
+            min-width: 180px;
+            flex: 1;
+        }
+
+        .emoji-command-editor__remove {
+            justify-self: end;
+        }
+
+        .emoji-command-editor__status {
+            min-height: 1.2em;
+        }
+
+        @media (max-width: 1100px) {
+            .emoji-command-editor__row {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 680px) {
+            .emoji-command-editor__row {
+                grid-template-columns: 1fr;
+            }
+
+            .emoji-command-editor__remove {
+                justify-self: stretch;
+            }
+        }
+
     </style>
     <script src="/js/i18n-client.js"></script>
 </head>
@@ -2059,12 +2166,7 @@
                 </span></label>
                 <div class="help-text" data-i18n="plugins.webgpu-emoji-rain.labels.automatischer_burst_bei_superfan_events">Automatischer Burst bei SuperFan-Events</div>
             </div>
-            <div class="form-group">
-                <label for="animal_commands_superfans_only" style="display: flex; align-items: center; gap: 10px;">
-                    <input type="checkbox" id="animal_commands_superfans_only" style="width: auto;" checked><span>Tier-Befehle nur für SuperFans</span>
-                </label>
-                <div class="help-text">Gilt für !beans, !miau, !rawr, !woof und !wuff.</div>
-            </div>
+            <div id="animal-command-editor"></div>
 
             <div class="form-grid">
                 <div class="form-group">
@@ -2459,6 +2561,7 @@
     <div class="notification" id="notification"></div>
 
     <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/emoji-rain-command-editor.js"></script>
     <script src="/js/webgpu-emoji-rain-ui.js"></script>
 </body>
 </html>

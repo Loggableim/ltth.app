@@ -16,6 +16,13 @@ const requiredKeys = [
   'ui.emoji_rotation_speed',
   'ui.heart_balloon_pop_height'
 ];
+const commandEditorKeys = [
+  'title', 'description', 'add', 'enabled', 'command', 'asset_type', 'emoji', 'image',
+  'asset_value', 'gallery', 'upload', 'remove', 'allow_team_members', 'subscriber_help',
+  'team_user_cooldown_seconds', 'superfan_cooldown_seconds', 'global_cooldown_seconds',
+  'select_gallery', 'https_placeholder', 'no_images', 'upload_failed', 'max_commands',
+  'registration_pending'
+];
 
 function read(relativePath) {
   return fs.readFileSync(path.join(pluginRoot, relativePath), 'utf8');
@@ -28,6 +35,12 @@ function getLeaf(object, key) {
 describe('WebGPU Emoji Rain static UI localization', () => {
   test('loads the shared i18n client', () => {
     expect(read('ui.html')).toContain('/js/i18n-client.js');
+  });
+
+  test('loads the shared safe command editor', () => {
+    const html = read('ui.html');
+    expect(html).toContain('id="animal-command-editor"');
+    expect(html.indexOf('/js/emoji-rain-command-editor.js')).toBeLessThan(html.indexOf('/js/webgpu-emoji-rain-ui.js'));
   });
 
   test('marks every remaining static UI label with a plugin locale key', () => {
@@ -48,6 +61,10 @@ describe('WebGPU Emoji Rain static UI localization', () => {
       requiredKeys.forEach((key) => {
         expect(getLeaf(translations, key)).toEqual(expect.any(String));
         expect(getLeaf(translations, key).trim()).not.toBe('');
+      });
+      commandEditorKeys.forEach((key) => {
+        expect(getLeaf(translations, `commands_editor.${key}`)).toEqual(expect.any(String));
+        expect(getLeaf(translations, `commands_editor.${key}`).trim()).not.toBe('');
       });
     });
   });

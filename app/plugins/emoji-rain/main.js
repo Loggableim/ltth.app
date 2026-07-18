@@ -1610,7 +1610,8 @@ class EmojiRainPlugin {
       try {
         this.api.log('📥 [EmojiRain] GET /api/emoji-rain/config', 'debug');
         const db = this.api.getDatabase();
-        const config = { ...db.getEmojiRainConfig(), ...this.getAnimalCommandSettings(db.getEmojiRainConfig()) };
+        const storedConfig = db.getEmojiRainConfig();
+        const config = { ...storedConfig, ...this.getAnimalCommandSettings(storedConfig) };
         this.api.log(`📥 [EmojiRain] Config retrieved from DB`, 'debug');
         res.json({ success: true, config, commandRegistration: this.getCommandRegistrationInfo() });
       } catch (error) {

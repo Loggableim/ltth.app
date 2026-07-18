@@ -3,6 +3,7 @@ const { AnimalCommandCooldowns } = require('../../modules/emoji-rain-animal-comm
 class MockGCCE {
   constructor() {
     this.commands = new Map();
+    this.failNames = new Set();
     this.registry = {
       getCommand: name => this.commands.get(String(name).toLowerCase()) || null,
       getPluginCommands: pluginId => Array.from(this.commands.values())
@@ -18,7 +19,7 @@ class MockGCCE {
     const result = { pluginId, registered: [], failed: [] };
     definitions.forEach(definition => {
       const existing = this.commands.get(definition.name);
-      if (existing && existing.pluginId !== pluginId) {
+      if (this.failNames.has(definition.name) || (existing && existing.pluginId !== pluginId)) {
         result.failed.push(definition.name);
         return;
       }
@@ -167,6 +168,7 @@ function registerEmojiRainCommandContract({
           animal_commands: [
             animalCommand('party-cat', 'emoji', '😸'),
             animalCommand('sticker', 'image', imagePath),
+            animalCommand('remote', 'image', 'https://cdn.example.test/dog.webp'),
             animalCommand('disabled', 'emoji', '🐶', false)
           ]
         }
@@ -176,6 +178,7 @@ function registerEmojiRainCommandContract({
 
       expect(api.gcce.registry.getCommand('party-cat')).not.toBeNull();
       expect(api.gcce.registry.getCommand('sticker')).not.toBeNull();
+      expect(api.gcce.registry.getCommand('remote')).not.toBeNull();
       expect(api.gcce.registry.getCommand('disabled')).toBeNull();
 
       const response = await api.gcce.registry.getCommand('sticker').handler([], {
@@ -185,6 +188,25 @@ function registerEmojiRainCommandContract({
       });
       expect(response).toMatchObject({ success: true });
       expect(api.emissions[0].data).toMatchObject({ emoji: imagePath, count: 4, burst: false });
+
+      plugin.checkAntiSpam = jest.fn(() => true);
+      const remoteResponse = await api.gcce.registry.getCommand('remote').handler([], {
+        username: 'paid-remote',
+        rawData: { isSubscriber: true },
+        userData: { teamMemberLevel: 1 }
+      });
+      expect(remoteResponse).toMatchObject({ success: true });
+      expect(api.emissions[1].data.emoji).toBe('https://cdn.example.test/dog.webp');
+    });
+
+    test('keeps an explicitly empty command list disabled', async () => {
+      const api = new MockAPI({ config: { animal_commands: [] } });
+      const plugin = new Plugin(api);
+      await plugin.integrateWithGCCE();
+
+      expect(api.gcce.registry.getCommand('rain')).not.toBeNull();
+      expect(api.gcce.registry.getCommand('beans')).toBeNull();
+      expect(plugin.getCommandRegistrationInfo()).toEqual({ status: 'active', registered: [] });
     });
 
     test('uses raw subscription fields, always admits paid subscribers, and never admits normal viewers', async () => {
@@ -253,6 +275,24 @@ function registerEmojiRainCommandContract({
       expect(await api.gcce.registry.getCommand('rawr').handler([], memberContext)).toMatchObject({ success: true });
     });
 
+    test('does not record the dedicated cooldown when spawning fails', async () => {
+      const api = new MockAPI();
+      const plugin = new Plugin(api);
+      plugin.checkAntiSpam = jest.fn(() => true);
+      await plugin.integrateWithGCCE();
+      const originalTrigger = plugin.triggerEmojiRain.bind(plugin);
+      plugin.triggerEmojiRain = jest.fn(() => undefined);
+      const context = {
+        username: 'paid',
+        rawData: { isSubscriber: true },
+        userData: { teamMemberLevel: 0 }
+      };
+
+      expect(await api.gcce.registry.getCommand('beans').handler([], context)).toMatchObject({ success: false });
+      plugin.triggerEmojiRain = originalTrigger;
+      expect(await api.gcce.registry.getCommand('beans').handler([], context)).toMatchObject({ success: true });
+    });
+
     test('atomically replaces registration on config save and reports active names', async () => {
       const api = new MockAPI();
       const plugin = new Plugin(api);
@@ -299,6 +339,41 @@ function registerEmojiRainCommandContract({
         commands: ['taken']
       });
       expect(api.gcce.registry.getCommand('beans')).not.toBeNull();
+      expect(api.persistCalls).toEqual([]);
+    });
+
+    test('rejects an invalid target with HTTP 400 and preserves active registration', async () => {
+      const api = new MockAPI();
+      const plugin = new Plugin(api);
+      await plugin.integrateWithGCCE();
+      plugin.registerRoutes();
+      const response = createResponse();
+
+      await api.routes.get(`post ${configRoute}`)({
+        body: { config: { animal_commands: [animalCommand('unsafe', 'image', 'http://example.test/x.png')] } }
+      }, response);
+
+      expect(response.statusCode).toBe(400);
+      expect(response.body).toMatchObject({ success: false, error: 'INVALID_ANIMAL_COMMANDS' });
+      expect(api.gcce.registry.getCommand('beans')).not.toBeNull();
+      expect(api.persistCalls).toEqual([]);
+    });
+
+    test('rolls back when GCCE rejects a replacement definition', async () => {
+      const api = new MockAPI();
+      const plugin = new Plugin(api);
+      await plugin.integrateWithGCCE();
+      plugin.registerRoutes();
+      api.gcce.failNames.add('broken');
+      const response = createResponse();
+
+      await api.routes.get(`post ${configRoute}`)({
+        body: { config: { animal_commands: [animalCommand('broken', 'emoji', '🦊')] } }
+      }, response);
+
+      expect(response.statusCode).toBe(500);
+      expect(api.gcce.registry.getCommand('beans')).not.toBeNull();
+      expect(api.gcce.registry.getCommand('broken')).toBeNull();
       expect(api.persistCalls).toEqual([]);
     });
 
