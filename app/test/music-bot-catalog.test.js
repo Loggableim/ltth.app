@@ -125,6 +125,20 @@ describe('music-bot catalog', () => {
     db.close();
   });
 
+  it('projects canonical feedback with every history event for the same song', () => {
+    const { db, catalog } = createCatalog();
+    const track = { title: 'Shared vote', artist: 'Artist', provider: 'youtube', providerId: 'shared-vote' };
+    const first = catalog.recordCompleted(track, { id: 'vote-1', finishedAt: 10, duration: 100, playedSeconds: 100 });
+    catalog.recordCompleted(track, { id: 'vote-2', finishedAt: 20, duration: 100, playedSeconds: 100 });
+    catalog.setFeedback(first.song.id, 'down');
+
+    expect(catalog.getHistory({ limit: 10 }).items).toEqual([
+      expect.objectContaining({ id: 'vote-2', songId: first.song.id, feedback: 'down' }),
+      expect.objectContaining({ id: 'vote-1', songId: first.song.id, feedback: 'down' })
+    ]);
+    db.close();
+  });
+
   it('applies source cooldown policy and clears failure state on success', () => {
     const { db, catalog } = createCatalog();
     const source = catalog.resolveOrUpsert({ title: 'Source', artist: 'Artist', provider: 'youtube', providerId: 'source' }).source;

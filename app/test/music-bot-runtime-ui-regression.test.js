@@ -63,6 +63,7 @@ function bootMusicBotUi(options = {}) {
     completed: false,
     completedAt: null
   };
+  const statusPayload = options.statusPayload || {};
   const socketHandlers = {};
   const html = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/ui.html'), 'utf8');
   const js = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/assets/ui.js'), 'utf8');
@@ -85,7 +86,8 @@ function bootMusicBotUi(options = {}) {
         playbackState: 'idle',
         masterVolume: 100,
         sourceVolume: 50,
-        onboarding: statusOnboarding
+        onboarding: statusOnboarding,
+        ...statusPayload
       });
     }
     if (target.includes('/queue')) return createJsonResponse({ success: true, queue: [] });
@@ -1015,6 +1017,58 @@ describe('Music Bot runtime and UI regressions', () => {
       plugin._stopPlaybackSync();
       setIntervalSpy.mockRestore();
     }
+  });
+
+  test('adopts the current runtime playback identity, ignores stale syncs, and freezes seek previews', async () => {
+    jest.useFakeTimers();
+    try {
+      const { dom, socketHandlers } = bootMusicBotUi({
+        statusPayload: {
+          nowPlaying: {
+            id: 'old-track', playbackId: 'old-playback', title: 'Old Song', duration: 120,
+            startedAt: Date.now(), state: 'playing', seekable: true
+          },
+          runtime: { activePlaybackId: 'old-playback', transportState: 'playing', safetyLock: false }
+        }
+      });
+      doms.push(dom);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      socketHandlers['musicbot:now-playing']({
+        id: 'new-track', title: 'New Song', duration: 120, startedAt: Date.now(), state: 'playing', seekable: true
+      });
+      socketHandlers['musicbot:runtime']({ activePlaybackId: 'playback-77', transportState: 'playing', safetyLock: false });
+      socketHandlers['musicbot:playback-sync']({ playbackId: 'old-playback', position: 3, duration: 120, state: 'playing' });
+      socketHandlers['musicbot:playback-sync']({ playbackId: 'playback-77', position: 42, duration: 120, state: 'playing' });
+
+      const seek = dom.window.document.getElementById('np-seek-input');
+      expect(seek.disabled).toBe(false);
+      expect(seek.value).toBe('42');
+
+      seek.value = '55';
+      seek.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+      jest.advanceTimersByTime(1000);
+      expect(seek.value).toBe('55');
+      expect(seek.getAttribute('aria-valuetext')).toContain('0:55');
+
+      socketHandlers['musicbot:playback-advancing']({ reason: 'track-end' });
+      expect(seek.disabled).toBe(true);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('renders playlist import socket status, progress, and errors from the service payload', async () => {
+    const { dom, socketHandlers } = bootMusicBotUi();
+    doms.push(dom);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    socketHandlers['musicbot:playlist-import-progress']({ playlistId: 'mix', status: 'running', progress: 70 });
+    expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe('running (70%)');
+    socketHandlers['musicbot:playlist-import-progress']({ playlistId: 'mix', status: 'failed', progress: 100, error: 'source unavailable' });
+    expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe('source unavailable');
   });
 
   test('minimal overlay ignores a stale playback sync from a different title', () => {

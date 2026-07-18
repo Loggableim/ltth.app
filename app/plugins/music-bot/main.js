@@ -414,7 +414,12 @@ class MusicBotPlugin extends EventEmitter {
         catalog: this.musicCatalog,
         runner: this.musicResolver.runner,
         ytdlpPath: this._getYtDlpPath(),
-        onProgress: (payload) => this.api.emit('musicbot:playlist-import-progress', payload)
+        onProgress: (payload) => {
+          this.api.emit('musicbot:playlist-import-progress', payload);
+          if (['completed', 'failed', 'aborted'].includes(payload?.status)) {
+            this.api.emit('musicbot:playlist-update', { playlistId: payload.playlistId, reason: 'import' });
+          }
+        }
       });
     } catch (error) {
       this.playlistImports = null;
@@ -1631,6 +1636,7 @@ class MusicBotPlugin extends EventEmitter {
       if (!this.playlistStore) return playlistUnavailable(res);
       try {
         const playlist = this.playlistStore.create({ name: req.body?.name, mode: req.body?.mode });
+        this.api.emit('musicbot:playlist-update', { playlistId: playlist.id, reason: 'created' });
         res.json({ success: true, playlist });
       } catch (error) {
         playlistError(res, error);
@@ -1653,6 +1659,7 @@ class MusicBotPlugin extends EventEmitter {
           ...(Object.prototype.hasOwnProperty.call(req.body || {}, 'name') ? { name: req.body.name } : {}),
           ...(Object.prototype.hasOwnProperty.call(req.body || {}, 'mode') ? { mode: req.body.mode } : {})
         }, req.body?.revision);
+        this.api.emit('musicbot:playlist-update', { playlistId: playlist.id, reason: 'updated' });
         res.json({ success: true, playlist });
       } catch (error) {
         playlistError(res, error);
@@ -1663,6 +1670,7 @@ class MusicBotPlugin extends EventEmitter {
       if (!this.playlistStore) return playlistUnavailable(res);
       try {
         const result = this.playlistStore.delete(req.params.id, req.body?.revision ?? req.query?.revision);
+        this.api.emit('musicbot:playlist-update', { playlistId: req.params.id, reason: 'deleted' });
         res.json({ success: true, ...result });
       } catch (error) {
         playlistError(res, error);
@@ -1673,6 +1681,7 @@ class MusicBotPlugin extends EventEmitter {
       if (!this.playlistStore) return playlistUnavailable(res);
       try {
         const result = this.playlistStore.addItem(req.params.id, req.body?.songId, req.body?.revision);
+        this.api.emit('musicbot:playlist-update', { playlistId: req.params.id, reason: 'item-added' });
         res.json({ success: true, ...result });
       } catch (error) {
         playlistError(res, error);
@@ -1683,6 +1692,7 @@ class MusicBotPlugin extends EventEmitter {
       if (!this.playlistStore) return playlistUnavailable(res);
       try {
         const result = this.playlistStore.removeItem(req.params.id, Number(req.params.songId), req.body?.revision ?? req.query?.revision);
+        this.api.emit('musicbot:playlist-update', { playlistId: req.params.id, reason: 'item-removed' });
         res.json({ success: true, ...result });
       } catch (error) {
         playlistError(res, error);
@@ -1693,6 +1703,7 @@ class MusicBotPlugin extends EventEmitter {
       if (!this.playlistStore) return playlistUnavailable(res);
       try {
         const playlist = this.playlistStore.reorder(req.params.id, req.body?.songIds, req.body?.revision);
+        this.api.emit('musicbot:playlist-update', { playlistId: req.params.id, reason: 'reordered' });
         res.json({ success: true, playlist });
       } catch (error) {
         playlistError(res, error);
@@ -1731,7 +1742,9 @@ class MusicBotPlugin extends EventEmitter {
     this.api.registerRoute('put', '/api/plugins/music-bot/radio/playlist-sources', async (req, res) => {
       if (!this.playlistStore) return playlistUnavailable(res);
       try {
-        res.json({ success: true, sources: this.playlistStore.setRadioSources(req.body?.sources) });
+        const sources = this.playlistStore.setRadioSources(req.body?.sources);
+        this.api.emit('musicbot:playlist-update', { reason: 'radio-sources' });
+        res.json({ success: true, sources });
       } catch (error) {
         playlistError(res, error);
       }
@@ -2124,7 +2137,7 @@ class MusicBotPlugin extends EventEmitter {
           const page = this.musicCatalog.getHistory({ limit, offset });
           const history = page.items.map((item) => ({
             ...item,
-            banned: Boolean(this._checkBans({ title: item.title }, 'dashboard'))
+            banned: Boolean(this._checkBans(item, 'dashboard'))
           }));
           return res.json({ success: true, history, total: page.total, limit: page.limit, offset: page.offset });
         }
@@ -2245,12 +2258,15 @@ class MusicBotPlugin extends EventEmitter {
     this.api.registerRoute('post', '/api/plugins/music-bot/bans/from-track', async (req, res) => {
       const {
         trackId,
+        catalogEventId,
         scope = 'track',
         keyword,
         stopCurrent = true,
         removeQueued = true
       } = req.body || {};
-      const track = this._findTrackForBan(trackId);
+      const track = catalogEventId
+        ? this.musicCatalog?.getHistoryEvent(catalogEventId)
+        : this._findTrackForBan(trackId);
       if (!track) {
         res.status(404).json({ success: false, error: 'Track wurde nicht gefunden.' });
         return;
@@ -2288,6 +2304,7 @@ class MusicBotPlugin extends EventEmitter {
           this._emitNowPlaying(null);
         }
         this._emitQueue();
+        if (track.songId) this.api.emit('musicbot:history-update', { songId: track.songId, refresh: true });
         if (stoppedCurrent && !this._isSafetyLocked()) {
           await this._playNextFromQueue();
         }
@@ -3431,7 +3448,8 @@ class MusicBotPlugin extends EventEmitter {
 
   _emitNowPlaying(track) {
     const payload = arguments.length > 0 ? track : this.playbackEngine.getNowPlaying();
-    this.api.emit('musicbot:now-playing', payload);
+    const playbackId = this._buildRuntimeSnapshot().activePlaybackId;
+    this.api.emit('musicbot:now-playing', payload ? { ...payload, playbackId } : null);
   }
 
   _emitPlaybackAdvancing(reason) {
@@ -3852,7 +3870,9 @@ class MusicBotPlugin extends EventEmitter {
     const health = this._buildHealthPayload(runtime, resolver);
     return {
       success: true,
-      nowPlaying: this.playbackEngine.getNowPlaying(),
+      nowPlaying: this.playbackEngine.getNowPlaying()
+        ? { ...this.playbackEngine.getNowPlaying(), playbackId: runtime.activePlaybackId }
+        : null,
       queueLength: this.queueManager.getQueue().length,
       volume: this._computeEffectiveVolume(),
       masterVolume: this.config.audio.masterVolume,

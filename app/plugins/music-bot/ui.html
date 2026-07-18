@@ -273,9 +273,9 @@
       <button class="tab" data-tab="aliases">Aliases</button>
       <button class="tab" data-tab="moderation">Moderation</button>
       <button class="tab" data-tab="overlay">Overlay</button>
-      <button class="tab" data-tab="history">History</button>
-      <button class="tab" data-tab="catalog">Katalog</button>
-      <button class="tab" data-tab="playlists">Playlists</button>
+      <button class="tab" data-tab="history" data-i18n="music_bot.ui.catalog.historyTab">History</button>
+      <button class="tab" data-tab="catalog" data-i18n="music_bot.ui.catalog.catalogTab">Katalog</button>
+      <button class="tab" data-tab="playlists" data-i18n="music_bot.ui.catalog.playlistsTab">Playlists</button>
     </nav>
 
     <section class="card tab-content" data-tab-content="settings">
@@ -648,25 +648,25 @@
         <p data-i18n="generated.85f0ac28e97b">Noch keine History.</p>
       </div>
       <div class="actions history-pagination">
-        <button id="history-load-more" class="btn ghost" type="button">Mehr laden</button>
+        <button id="history-load-more" class="btn ghost" type="button" data-i18n="music_bot.ui.catalog.historyMore">Mehr laden</button>
         <span id="history-page-status" class="text-secondary" aria-live="polite"></span>
       </div>
     </section>
 
     <section class="card tab-content" data-tab-content="catalog">
-      <div class="card-header"><div><h2>Katalog</h2><p class="text-secondary">Historische Songs suchen, bewerten und zu Playlists hinzufügen.</p></div></div>
+      <div class="card-header"><div><h2 data-i18n="music_bot.ui.catalog.catalogTab">Katalog</h2><p class="text-secondary" data-i18n="music_bot.ui.catalog.catalogDescription">Historische Songs suchen, bewerten und zu Playlists hinzufügen.</p></div></div>
       <div class="player-search-bar">
-        <input id="catalog-search-input" type="search" autocomplete="off" placeholder="Titel suchen">
+        <input id="catalog-search-input" type="search" autocomplete="off" placeholder="Titel suchen" data-i18n-placeholder="music_bot.ui.catalog.catalogSearch" aria-label="Titel suchen" data-i18n-aria-label="music_bot.ui.catalog.catalogSearch">
       </div>
       <div id="catalog-search-results" class="list empty" aria-live="polite"></div>
     </section>
 
     <section class="card tab-content" data-tab-content="playlists">
-      <div class="card-header"><div><h2>Playlists</h2><p class="text-secondary">Eigene Quellen und Viewer Radio verwalten.</p></div></div>
+      <div class="card-header"><div><h2 data-i18n="music_bot.ui.catalog.playlistsTab">Playlists</h2><p class="text-secondary" data-i18n="music_bot.ui.catalog.playlistsDescription">Eigene Quellen und Viewer Radio verwalten.</p></div></div>
       <div class="player-search-bar">
-        <input id="playlist-create-name" type="text" maxlength="120" placeholder="Neue Playlist">
-        <select id="playlist-create-mode" aria-label="Wiedergabemodus"><option value="ordered">Geordnet</option><option value="shuffle">Zufällig</option></select>
-        <button id="playlist-create-btn" class="btn primary" type="button">Erstellen</button>
+        <input id="playlist-create-name" type="text" maxlength="120" placeholder="Neue Playlist" data-i18n-placeholder="music_bot.ui.catalog.newPlaylist" aria-label="Neue Playlist" data-i18n-aria-label="music_bot.ui.catalog.newPlaylist">
+        <select id="playlist-create-mode" aria-label="Wiedergabemodus" data-i18n-aria-label="music_bot.ui.catalog.playbackMode"><option value="ordered" data-i18n="music_bot.ui.catalog.ordered">Geordnet</option><option value="shuffle" data-i18n="music_bot.ui.catalog.shuffle">Zufällig</option></select>
+        <button id="playlist-create-btn" class="btn primary" type="button" data-i18n="music_bot.ui.catalog.create">Erstellen</button>
       </div>
       <div class="playlist-admin-layout">
         <div id="playlist-list" class="list empty" aria-live="polite"></div>
@@ -687,10 +687,10 @@
         </div>
       </div>
       <section class="playlist-radio-card" aria-labelledby="playlist-radio-title">
-        <h3 id="playlist-radio-title">Radio-Quellen</h3>
-        <p class="text-secondary">Mehrere Playlists aktivieren und mit Gewicht 1 bis 10 mischen.</p>
+        <h3 id="playlist-radio-title" data-i18n="music_bot.ui.catalog.radioSources">Radio-Quellen</h3>
+        <p class="text-secondary" data-i18n="music_bot.ui.catalog.radioDescription">Mehrere Playlists aktivieren und mit Gewicht 1 bis 10 mischen.</p>
         <div id="playlist-radio-sources"></div>
-        <button id="playlist-radio-save" class="btn ghost" type="button">Radio-Quellen speichern</button>
+        <button id="playlist-radio-save" class="btn ghost" type="button" data-i18n="music_bot.ui.catalog.saveRadioSources">Radio-Quellen speichern</button>
       </section>
     </section>
   </div>

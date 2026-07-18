@@ -219,12 +219,37 @@ class MusicCatalog {
     const items = this.db.prepare(
       `SELECT events.id, events.legacy_history_id AS legacyHistoryId, events.song_id AS songId,
        songs.title, events.outcome, events.started_at AS startedAt, events.finished_at AS finishedAt,
-       events.duration, events.played_seconds AS playedSeconds, events.requested_by AS requestedBy
+       events.duration, events.played_seconds AS playedSeconds, events.requested_by AS requestedBy,
+       sources.track_key AS trackKey, sources.url, sources.channel_id AS channelId, sources.channel_name AS channelName,
+       sources.provider, sources.provider_id AS providerId, COALESCE(feedback.state, 0) AS feedbackState,
+       (SELECT GROUP_CONCAT(artists.name, ' & ') FROM plugin_music_bot_song_artists song_artists
+        JOIN plugin_music_bot_artists artists ON artists.id = song_artists.artist_id
+        WHERE song_artists.song_id = songs.id) AS artist
        FROM plugin_music_bot_play_events events JOIN plugin_music_bot_songs songs ON songs.id = events.song_id
+       LEFT JOIN plugin_music_bot_sources sources ON sources.id = events.source_id
+       LEFT JOIN plugin_music_bot_feedback feedback ON feedback.song_id = songs.id
        ORDER BY events.finished_at DESC, events.id DESC LIMIT ? OFFSET ?`
-    ).all(safeLimit, safeOffset);
+    ).all(safeLimit, safeOffset).map((item) => ({
+      ...item,
+      feedback: item.feedbackState > 0 ? 'up' : (item.feedbackState < 0 ? 'down' : 'neutral')
+    }));
     const total = this.db.prepare('SELECT COUNT(*) AS count FROM plugin_music_bot_play_events').get().count;
     return { items, total, limit: safeLimit, offset: safeOffset };
+  }
+
+  getHistoryEvent(eventId) {
+    const id = String(eventId || '').trim();
+    if (!id) return null;
+    const item = this.db.prepare(
+      `SELECT events.id, events.song_id AS songId, songs.title, sources.track_key AS trackKey, sources.url,
+       sources.channel_id AS channelId, sources.channel_name AS channelName, sources.provider, sources.provider_id AS providerId,
+       (SELECT GROUP_CONCAT(artists.name, ' & ') FROM plugin_music_bot_song_artists song_artists
+        JOIN plugin_music_bot_artists artists ON artists.id = song_artists.artist_id
+        WHERE song_artists.song_id = songs.id) AS artist
+       FROM plugin_music_bot_play_events events JOIN plugin_music_bot_songs songs ON songs.id = events.song_id
+       LEFT JOIN plugin_music_bot_sources sources ON sources.id = events.source_id WHERE events.id = ? LIMIT 1`
+    ).get(id);
+    return item || null;
   }
 
   searchSongs(query, limit = 25) {

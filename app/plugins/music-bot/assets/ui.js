@@ -223,6 +223,8 @@
   let activePlaybackId = null;
   let lastConfirmedSeekPosition = 0;
   let seekPreviewActive = false;
+  let seekInFlight = false;
+  let seekTransitioning = false;
   let historyOffset = 0;
   let historyTotal = 0;
   const HISTORY_PAGE_SIZE = 50;
@@ -254,6 +256,7 @@
   let latestQueueTracks = [];
   let latestHistoryTracks = [];
   let trackBanTargetId = null;
+  let trackBanCatalogEventId = null;
   let trackBanScope = 'track';
   let trackBanReturnFocus = null;
 
@@ -1021,11 +1024,13 @@
 
   function openTrackBanMenu(trigger) {
     const id = String(trigger?.dataset?.trackId || '');
-    if (!id || !findClientTrack(id) || !trackBanMenu) return;
+    const catalogEventId = String(trigger?.dataset?.catalogEventId || '');
+    if (!id || (!catalogEventId && !findClientTrack(id)) || !trackBanMenu) return;
     document.querySelectorAll('[data-track-ban-trigger][aria-expanded="true"]').forEach((button) => {
       button.setAttribute('aria-expanded', 'false');
     });
     trackBanTargetId = id;
+    trackBanCatalogEventId = catalogEventId || null;
     trackBanReturnFocus = trigger;
     trigger.setAttribute('aria-expanded', 'true');
     trackBanMenu.hidden = false;
@@ -1041,6 +1046,7 @@
     trackBanReturnFocus?.setAttribute('aria-expanded', 'false');
     trackBanReturnFocus?.focus();
     trackBanTargetId = null;
+    trackBanCatalogEventId = null;
     trackBanReturnFocus = null;
   }
 
@@ -1098,6 +1104,7 @@
     setSafetyBusy(trackBanSubmit, true);
     const result = await post('/bans/from-track', {
       trackId: trackBanTargetId,
+      catalogEventId: trackBanCatalogEventId || undefined,
       scope: trackBanScope,
       keyword: trackBanScope === 'keyword' ? keyword : undefined,
       stopCurrent: trackBanStopCurrent?.checked !== false,
@@ -1251,6 +1258,9 @@
     renderNowPlaying(null);
   });
   socket.on('musicbot:playback-advancing', (payload) => {
+    seekTransitioning = true;
+    latestRuntime = { ...(latestRuntime || {}), transportState: payload?.state || 'loading' };
+    updateSeekControl();
     setSkipLoading(true, payload?.message);
   });
   socket.on('musicbot:playback-sync', (payload) => {
@@ -1275,12 +1285,29 @@
     const songId = String(payload?.songId || '');
     if (!songId) return;
     const previous = canonicalSongState.get(songId) || {};
-    canonicalSongState.set(songId, { ...previous, ...(payload.feedback || {}) });
+    canonicalSongState.set(songId, {
+      ...previous,
+      ...(payload.feedback || {}),
+      ...(payload.feedback?.state ? { feedback: payload.feedback.state } : {})
+    });
+    if (payload?.refresh) {
+      refreshHistory({ reset: true });
+      return;
+    }
     renderHistory(latestHistoryTracks);
   });
   socket.on('musicbot:playlist-import-progress', async (payload) => {
+    const status = payload?.status || 'running';
+    if (playlistImportProgress) {
+      playlistImportProgress.textContent = payload?.error
+        || `${status} ${Number.isFinite(Number(payload?.progress)) ? `(${Math.round(Number(payload.progress))}%)` : ''}`.trim();
+    }
     if (playlistImportProgress) playlistImportProgress.textContent = payload?.message || payload?.state || 'Import läuft …';
-    if (payload?.playlistId && selectedPlaylist?.id === payload.playlistId && ['completed', 'failed', 'aborted'].includes(payload?.state)) {
+    if (playlistImportProgress) {
+      playlistImportProgress.textContent = payload?.error
+        || `${status} ${Number.isFinite(Number(payload?.progress)) ? `(${Math.round(Number(payload.progress))}%)` : ''}`.trim();
+    }
+    if (payload?.playlistId && selectedPlaylist?.id === payload.playlistId && ['completed', 'failed', 'aborted'].includes(status)) {
       await selectPlaylist(payload.playlistId);
       await refreshPlaylists();
     }
@@ -1288,6 +1315,12 @@
   socket.on('musicbot:playlist-update', () => refreshPlaylists());
   socket.on('musicbot:runtime', (runtime) => {
     latestRuntime = runtime || null;
+    if (Object.prototype.hasOwnProperty.call(runtime || {}, 'activePlaybackId')) {
+      activePlaybackId = runtime.activePlaybackId || null;
+    }
+    seekTransitioning = ['loading', 'buffering', 'crossfading', 'recovering', 'stopping', 'error'].includes(
+      String(runtime?.transportState || '').toLowerCase()
+    );
     renderSafetyState(runtime || {});
     renderHealth({ ...runtime, resolver: latestResolver });
     updateSeekControl();
@@ -1609,7 +1642,8 @@
 
   function renderNowPlaying(track) {
     latestNowPlayingTrack = track || null;
-    activePlaybackId = track?.playbackId || latestRuntime?.activePlaybackId || null;
+    activePlaybackId = track?.playbackId || null;
+    seekTransitioning = false;
     if (!skipInProgress) {
       setSkipLoading(false);
     }
@@ -1820,6 +1854,7 @@
     stopProgressTimer();
     if (!progressDuration) return;
     progressTimer = setInterval(() => {
+      if (seekPreviewActive) return;
       progressCurrentPos = Math.min(progressCurrentPos + 1, progressDuration);
       updateProgressBar();
     }, 1000);
@@ -1844,6 +1879,8 @@
     const state = String(latestRuntime?.transportState || latestNowPlayingTrack?.state || '').toLowerCase();
     return Boolean(
       !musicbotSafetyLocked
+      && !seekInFlight
+      && !seekTransitioning
       && activePlaybackId
       && Number.isFinite(progressDuration) && progressDuration > 0
       && latestNowPlayingTrack?.seekable !== false
@@ -1866,6 +1903,25 @@
     const playbackId = activePlaybackId;
     const positionSeconds = Math.max(0, Math.min(progressDuration, Number(npSeekInput.value) || 0));
     seekPreviewActive = false;
+    seekInFlight = true;
+    updateSeekControl();
+    try {
+      const result = await post('/seek', { playbackId, positionSeconds });
+      if (activePlaybackId !== playbackId) return;
+      if (!result?.success || (result.playbackId && result.playbackId !== playbackId)) {
+        progressCurrentPos = lastConfirmedSeekPosition;
+        updateProgressBar();
+        return;
+      }
+      lastConfirmedSeekPosition = Number(result.position ?? positionSeconds);
+      progressCurrentPos = lastConfirmedSeekPosition;
+      if (Number.isFinite(Number(result.duration))) progressDuration = Number(result.duration);
+    } finally {
+      seekInFlight = false;
+      updateSeekControl();
+    }
+    if (window.__legacySeekFallback__) {
+    seekPreviewActive = false;
     const result = await post('/seek', { playbackId, positionSeconds });
     if (!result?.success || (result.playbackId && result.playbackId !== activePlaybackId)) {
       progressCurrentPos = lastConfirmedSeekPosition;
@@ -1877,6 +1933,7 @@
     progressCurrentPos = lastConfirmedSeekPosition;
     if (Number.isFinite(Number(result.duration))) progressDuration = Number(result.duration);
     updateSeekControl();
+    }
   }
 
   npSeekInput?.addEventListener('input', () => {
@@ -1972,7 +2029,7 @@
           ? `<img src="https://i.ytimg.com/vi/${item.youtubeId}/default.jpg" class="queue-thumb" alt="">`
           : '<span class="queue-thumb-placeholder">🎵</span>';
         const banButton = item.id
-          ? `<button class="btn danger small track-ban-trigger" type="button" data-track-ban-trigger data-track-id="${escapeHtml(item.id)}" aria-haspopup="dialog" aria-expanded="false" aria-label="Track sperren">!</button>`
+          ? `<button class="btn danger small track-ban-trigger" type="button" data-track-ban-trigger data-track-id="${escapeHtml(songId)}" data-catalog-event-id="${escapeHtml(item.id)}" aria-haspopup="dialog" aria-expanded="false" aria-label="Track sperren">!</button>`
           : '';
         const vote = (state, symbol, label) => `<button class="btn ghost small history-feedback ${canonical.feedback === state ? 'is-active' : ''}" type="button" data-history-feedback="${state}" data-song-id="${escapeHtml(songId)}" aria-pressed="${canonical.feedback === state}">${symbol}<span class="sr-only">${label}</span></button>`;
         const banBadge = canonical.banned ? '<span class="history-ban-badge" aria-label="Gesperrt">Gesperrt</span>' : '';
@@ -2146,13 +2203,13 @@
   async function refreshRadioSources() {
     const result = await get('/radio/playlist-sources');
     if (!result?.success || !playlistRadioSources) return;
-    playlistRadioSources.innerHTML = (result.sources || []).map((source) => `<label class="playlist-source"><input type="checkbox" data-radio-playlist-id="${escapeHtml(source.playlistId)}" ${source.enabled ? 'checked' : ''}><span>${escapeHtml(source.name || source.playlistId)}</span><input type="number" min="1" max="10" value="${Math.max(1, Math.min(10, Number(source.weight) || 1))}" data-radio-weight="${escapeHtml(source.playlistId)}" aria-label="Gewicht"></label>`).join('');
+    playlistRadioSources.innerHTML = (result.sources || []).map((source) => `<label class="playlist-source"><input type="checkbox" data-radio-playlist-id="${escapeHtml(source.playlistId)}" ${source.enabled ? 'checked' : ''}><span>${escapeHtml(source.name || source.playlistId)}</span><input type="number" min="1" max="10" step="1" value="${Math.max(1, Math.min(10, Math.round(Number(source.weight) || 1)))}" data-radio-weight="${escapeHtml(source.playlistId)}" aria-label="Gewicht"></label>`).join('');
   }
   playlistRadioSave?.addEventListener('click', async () => {
     const sources = Array.from(playlistRadioSources?.querySelectorAll('[data-radio-playlist-id]') || []).map((checkbox) => ({
       playlistId: checkbox.dataset.radioPlaylistId,
       enabled: checkbox.checked,
-      weight: Math.max(1, Math.min(10, Number(Array.from(playlistRadioSources.querySelectorAll('[data-radio-weight]')).find((input) => input.dataset.radioWeight === checkbox.dataset.radioPlaylistId)?.value) || 1))
+      weight: Math.max(1, Math.min(10, Math.round(Number(Array.from(playlistRadioSources.querySelectorAll('[data-radio-weight]')).find((input) => input.dataset.radioWeight === checkbox.dataset.radioPlaylistId)?.value) || 1)))
     }));
     const result = await put('/radio/playlist-sources', { sources });
     if (!result?.success) return handlePlaylistFailure(result);

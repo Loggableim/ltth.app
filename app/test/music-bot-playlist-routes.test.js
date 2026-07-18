@@ -55,6 +55,7 @@ describe('music-bot playlist routes and lifecycle', () => {
     await create({ body: { name: 'Mix', mode: 'shuffle' } }, created);
     expect(plugin.playlistStore.create).toHaveBeenCalledWith({ name: 'Mix', mode: 'shuffle' });
     expect(created.json).toHaveBeenCalledWith({ success: true, playlist: { id: 'mix', revision: 1 } });
+    expect(api.emit).toHaveBeenCalledWith('musicbot:playlist-update', { playlistId: 'mix', reason: 'created' });
 
     const stale = response();
     await rename({ params: { id: 'mix' }, body: { name: 'New', mode: 'shuffle', revision: 1 } }, stale);
@@ -79,6 +80,28 @@ describe('music-bot playlist routes and lifecycle', () => {
     expect(plugin.playlistImports.destroy).toHaveBeenCalledTimes(1);
   });
 
+  it('resolves catalog ban actions by explicit event id and refreshes canonical history badges', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    plugin.musicCatalog = {
+      getHistoryEvent: jest.fn(() => ({ songId: 9, id: 'event-9', title: 'Catalog Song', trackKey: 'youtube:abc', artist: 'Artist' }))
+    };
+    plugin.banList = { addBan: jest.fn(() => ({ id: 4 })) };
+    plugin.queueManager = { getQueue: jest.fn(() => []), markPlaying: jest.fn() };
+    plugin.playbackEngine = { getNowPlaying: jest.fn(() => null) };
+    plugin._emitQueue = jest.fn();
+    plugin._registerRoutes();
+
+    const ban = api.routes.get('post:/api/plugins/music-bot/bans/from-track');
+    const res = response();
+    await ban({ body: { catalogEventId: 'event-9', trackId: 'not-an-event-id', scope: 'track' } }, res);
+
+    expect(plugin.musicCatalog.getHistoryEvent).toHaveBeenCalledWith('event-9');
+    expect(plugin.banList.addBan).toHaveBeenCalledWith('track', 'youtube:abc', 'Admin-Ban: Catalog Song', 'dashboard');
+    expect(api.emit).toHaveBeenCalledWith('musicbot:history-update', { songId: 9, refresh: true });
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+  });
+
   it('publishes import progress through the plugin socket emitter and records only completed viewer playback', () => {
     const api = createApi();
     const plugin = new MusicBotPlugin(api);
@@ -91,6 +114,8 @@ describe('music-bot playlist routes and lifecycle', () => {
       'musicbot:playlist-import-progress',
       { jobId: 'import-1', status: 'running' }
     );
+    plugin.playlistImports.onProgress({ jobId: 'import-1', playlistId: 'mix', status: 'completed', progress: 100 });
+    expect(api.emit).toHaveBeenCalledWith('musicbot:playlist-update', { playlistId: 'mix', reason: 'import' });
 
     const engine = new EventEmitter();
     engine.getNowPlaying = jest.fn(() => null);
