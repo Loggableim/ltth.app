@@ -1922,7 +1922,7 @@
     }
     if (window.__legacySeekFallback__) {
     seekPreviewActive = false;
-    const result = await post('/seek', { playbackId, positionSeconds });
+    const result = { success: false };
     if (!result?.success || (result.playbackId && result.playbackId !== activePlaybackId)) {
       progressCurrentPos = lastConfirmedSeekPosition;
       updateProgressBar();
