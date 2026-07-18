@@ -25,7 +25,9 @@ try {
   './lib/playback-engine',
   './lib/ban-list',
   './lib/auto-dj',
-  './lib/music-catalog'
+  './lib/music-catalog',
+  './lib/playlist-store',
+  './lib/playlist-import-service'
 ].forEach((modulePath) => {
   delete require.cache[require.resolve(modulePath)];
 });
@@ -38,6 +40,8 @@ const PlaybackController = require('./lib/playback-controller');
 const BanList = require('./lib/ban-list');
 const AutoDJ = require('./lib/auto-dj');
 const MusicCatalog = require('./lib/music-catalog');
+const PlaylistStore = require('./lib/playlist-store');
+const PlaylistImportService = require('./lib/playlist-import-service');
 
 const DEFAULT_PRECACHE_LOOKAHEAD = 2;
 const MAX_PRECACHE_LOOKAHEAD = 5;
@@ -216,6 +220,8 @@ class MusicBotPlugin extends EventEmitter {
     this.commandParser = null;
     this.autoDJ = null;
     this.musicCatalog = null;
+    this.playlistStore = null;
+    this.playlistImports = null;
     this._pendingRequests = new Set();
     this._requestCredits = new Map();
     this._userLikes = new Map();
@@ -243,6 +249,7 @@ class MusicBotPlugin extends EventEmitter {
     this.cacheDir = path.join(this.pluginDataDir, 'cache');
     await fsp.mkdir(this.cacheDir, { recursive: true });
     this._initializeMusicCatalog();
+    this._initializePlaylistStore();
 
     await this._ensureYtDlp();
     await this._ensureMpv();
@@ -259,6 +266,7 @@ class MusicBotPlugin extends EventEmitter {
         onProgress: (event) => this._handleResolverProgress(event)
       }
     );
+    this._initializePlaylistImports();
     this.mediaCache = new MediaCache({
       ...this.config.resolver,
       ...this.config.preCache,
@@ -322,6 +330,9 @@ class MusicBotPlugin extends EventEmitter {
     const resolverShutdown = Promise.resolve(this.musicResolver?.destroy?.()).catch((error) => {
       this.api.log(`[music-bot] Failed to shutdown resolver: ${error.message}`, 'error');
     });
+    const playlistImportShutdown = Promise.resolve(this.playlistImports?.destroy?.()).catch((error) => {
+      this.api.log(`[music-bot] Failed to shutdown playlist imports: ${error.message}`, 'error');
+    });
     this.playbackEngine?.removeAllListeners?.();
     const playbackShutdown = Promise.resolve(this.playbackEngine?.shutdown?.()).catch((error) => {
       this.api.log(`[music-bot] Failed to shutdown playback: ${error.message}`, 'error');
@@ -330,6 +341,7 @@ class MusicBotPlugin extends EventEmitter {
       precacheShutdown,
       cacheShutdown,
       resolverShutdown,
+      playlistImportShutdown,
       playbackShutdown,
       this._drainOperations(pendingAutoDjAdvances, 250)
     ]);
@@ -358,6 +370,32 @@ class MusicBotPlugin extends EventEmitter {
     } catch (error) {
       this.musicCatalog = null;
       this.api.log(`[music-bot] Catalog initialization failed: ${error.message}`, 'error');
+    }
+  }
+
+  _initializePlaylistStore() {
+    if (!this.musicCatalog) return;
+    try {
+      this.playlistStore = new PlaylistStore(this.api, this.musicCatalog);
+    } catch (error) {
+      this.playlistStore = null;
+      this.api.log(`[music-bot] Playlist store initialization failed: ${error.message}`, 'error');
+    }
+  }
+
+  _initializePlaylistImports() {
+    if (!this.playlistStore || !this.musicCatalog || !this.musicResolver?.runner) return;
+    try {
+      this.playlistImports = new PlaylistImportService({
+        store: this.playlistStore,
+        catalog: this.musicCatalog,
+        runner: this.musicResolver.runner,
+        ytdlpPath: this.config.resolver?.ytdlpPath || YOUTUBE_DL_PATH,
+        onProgress: (payload) => this.api.emit('musicbot:playlist-import-progress', payload)
+      });
+    } catch (error) {
+      this.playlistImports = null;
+      this.api.log(`[music-bot] Playlist import initialization failed: ${error.message}`, 'error');
     }
   }
 
@@ -1370,6 +1408,20 @@ class MusicBotPlugin extends EventEmitter {
         return;
       }
       this.queueManager.addToHistory(info.track, info.reason === 'skip');
+      if (info.reason === 'ended' && info.track?.requestedBy && info.track.requestedBy !== 'AutoDJ') {
+        try {
+          const resolved = this.musicCatalog?.resolveOrUpsert?.(info.track);
+          if (resolved?.song?.id) {
+            this.playlistStore?.recordViewerCompletion?.(resolved.song.id, {
+              requestedBy: info.track.requestedBy,
+              outcome: 'completed',
+              error: null
+            });
+          }
+        } catch (error) {
+          this.api.log(`[music-bot] Viewer Radio completion was not recorded: ${error.message}`, 'warn');
+        }
+      }
       if (info.track?.requestedBy) {
         this.queueManager.removeSkipImmunity(info.track.requestedBy);
       }
@@ -1462,6 +1514,127 @@ class MusicBotPlugin extends EventEmitter {
 
     this.api.registerRoute('get', '/plugins/music-bot/overlay', async (req, res) => {
       res.sendFile(overlayPath);
+    });
+
+    const playlistUnavailable = (res) => {
+      res.status(503).json({ success: false, error: 'Playlist catalog is unavailable' });
+    };
+    const playlistError = (res, error) => {
+      const status = error?.code === 'PLAYLIST_REVISION_CONFLICT' ? 409
+        : (error?.code === 'PLAYLIST_NOT_FOUND' || error?.code === 'PLAYLIST_ITEM_NOT_FOUND' ? 404 : 400);
+      res.status(status).json({ success: false, error: error?.message || 'Playlist request failed', code: error?.code });
+    };
+
+    this.api.registerRoute('get', '/api/plugins/music-bot/playlists', async (req, res) => {
+      if (!this.playlistStore) return playlistUnavailable(res);
+      res.json({ success: true, playlists: this.playlistStore.list() });
+    });
+
+    this.api.registerRoute('post', '/api/plugins/music-bot/playlists', async (req, res) => {
+      if (!this.playlistStore) return playlistUnavailable(res);
+      try {
+        const playlist = this.playlistStore.create({ name: req.body?.name, mode: req.body?.mode });
+        res.json({ success: true, playlist });
+      } catch (error) {
+        playlistError(res, error);
+      }
+    });
+
+    this.api.registerRoute('get', '/api/plugins/music-bot/playlists/:id', async (req, res) => {
+      if (!this.playlistStore) return playlistUnavailable(res);
+      try {
+        res.json({ success: true, playlist: this.playlistStore.get(req.params.id) });
+      } catch (error) {
+        playlistError(res, error);
+      }
+    });
+
+    this.api.registerRoute('patch', '/api/plugins/music-bot/playlists/:id', async (req, res) => {
+      if (!this.playlistStore) return playlistUnavailable(res);
+      try {
+        const playlist = this.playlistStore.rename(req.params.id, req.body?.name, req.body?.revision);
+        res.json({ success: true, playlist });
+      } catch (error) {
+        playlistError(res, error);
+      }
+    });
+
+    this.api.registerRoute('delete', '/api/plugins/music-bot/playlists/:id', async (req, res) => {
+      if (!this.playlistStore) return playlistUnavailable(res);
+      try {
+        const result = this.playlistStore.delete(req.params.id, req.body?.revision ?? req.query?.revision);
+        res.json({ success: true, ...result });
+      } catch (error) {
+        playlistError(res, error);
+      }
+    });
+
+    this.api.registerRoute('post', '/api/plugins/music-bot/playlists/:id/items', async (req, res) => {
+      if (!this.playlistStore) return playlistUnavailable(res);
+      try {
+        const result = this.playlistStore.addItem(req.params.id, req.body?.songId, req.body?.revision);
+        res.json({ success: true, ...result });
+      } catch (error) {
+        playlistError(res, error);
+      }
+    });
+
+    this.api.registerRoute('delete', '/api/plugins/music-bot/playlists/:id/items/:songId', async (req, res) => {
+      if (!this.playlistStore) return playlistUnavailable(res);
+      try {
+        const result = this.playlistStore.removeItem(req.params.id, Number(req.params.songId), req.body?.revision ?? req.query?.revision);
+        res.json({ success: true, ...result });
+      } catch (error) {
+        playlistError(res, error);
+      }
+    });
+
+    this.api.registerRoute('put', '/api/plugins/music-bot/playlists/:id/items', async (req, res) => {
+      if (!this.playlistStore) return playlistUnavailable(res);
+      try {
+        const playlist = this.playlistStore.reorder(req.params.id, req.body?.songIds, req.body?.revision);
+        res.json({ success: true, playlist });
+      } catch (error) {
+        playlistError(res, error);
+      }
+    });
+
+    this.api.registerRoute('get', '/api/plugins/music-bot/playlist-imports/:jobId', async (req, res) => {
+      if (!this.playlistImports) return playlistUnavailable(res);
+      const job = this.playlistImports.get(req.params.jobId);
+      if (!job) return res.status(404).json({ success: false, error: 'Playlist import job not found' });
+      res.json({ success: true, job });
+    });
+
+    this.api.registerRoute('post', '/api/plugins/music-bot/playlist-imports', async (req, res) => {
+      if (!this.playlistImports) return playlistUnavailable(res);
+      try {
+        const job = this.playlistImports.start({ playlistId: req.body?.playlistId, url: req.body?.url });
+        res.json({ success: true, job });
+      } catch (error) {
+        playlistError(res, error);
+      }
+    });
+
+    this.api.registerRoute('delete', '/api/plugins/music-bot/playlist-imports/:jobId', async (req, res) => {
+      if (!this.playlistImports) return playlistUnavailable(res);
+      const job = this.playlistImports.abort(req.params.jobId);
+      if (!job) return res.status(404).json({ success: false, error: 'Playlist import job not found' });
+      res.json({ success: true, job });
+    });
+
+    this.api.registerRoute('get', '/api/plugins/music-bot/radio/playlist-sources', async (req, res) => {
+      if (!this.playlistStore) return playlistUnavailable(res);
+      res.json({ success: true, sources: this.playlistStore.getRadioSources() });
+    });
+
+    this.api.registerRoute('put', '/api/plugins/music-bot/radio/playlist-sources', async (req, res) => {
+      if (!this.playlistStore) return playlistUnavailable(res);
+      try {
+        res.json({ success: true, sources: this.playlistStore.setRadioSources(req.body?.sources) });
+      } catch (error) {
+        playlistError(res, error);
+      }
     });
 
     this.api.registerRoute('get', '/api/plugins/music-bot/status', async (req, res) => {
