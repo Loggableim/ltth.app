@@ -24,7 +24,8 @@ try {
   './lib/playback-controller',
   './lib/playback-engine',
   './lib/ban-list',
-  './lib/auto-dj'
+  './lib/auto-dj',
+  './lib/music-catalog'
 ].forEach((modulePath) => {
   delete require.cache[require.resolve(modulePath)];
 });
@@ -36,6 +37,7 @@ const { deriveTrackIdentity } = require('./lib/track-identity');
 const PlaybackController = require('./lib/playback-controller');
 const BanList = require('./lib/ban-list');
 const AutoDJ = require('./lib/auto-dj');
+const MusicCatalog = require('./lib/music-catalog');
 
 const DEFAULT_PRECACHE_LOOKAHEAD = 2;
 const MAX_PRECACHE_LOOKAHEAD = 5;
@@ -213,6 +215,7 @@ class MusicBotPlugin extends EventEmitter {
     this.playbackEngine = null;
     this.commandParser = null;
     this.autoDJ = null;
+    this.musicCatalog = null;
     this._pendingRequests = new Set();
     this._requestCredits = new Map();
     this._userLikes = new Map();
@@ -239,6 +242,7 @@ class MusicBotPlugin extends EventEmitter {
     this.pluginDataDir = this.api.ensurePluginDataDir();
     this.cacheDir = path.join(this.pluginDataDir, 'cache');
     await fsp.mkdir(this.cacheDir, { recursive: true });
+    this._initializeMusicCatalog();
 
     await this._ensureYtDlp();
     await this._ensureMpv();
@@ -342,6 +346,20 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   // ---------- Initialization helpers ----------
+
+  _initializeMusicCatalog() {
+    try {
+      this.musicCatalog = new MusicCatalog(this.api);
+      const result = this.musicCatalog.migrateLegacyHistory();
+      this.api.log(
+        `[music-bot] Catalog history migration: ${result.imported} imported, ${result.skipped} already linked`,
+        'info'
+      );
+    } catch (error) {
+      this.musicCatalog = null;
+      this.api.log(`[music-bot] Catalog initialization failed: ${error.message}`, 'error');
+    }
+  }
 
   _loadConfig() {
     const saved = this.api.getConfig('config');

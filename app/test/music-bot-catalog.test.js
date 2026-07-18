@@ -37,6 +37,9 @@ describe('music-bot catalog', () => {
     expect(db.prepare('SELECT * FROM plugin_music_bot_history WHERE id = ?').get('legacy-1'))
       .toMatchObject({ title: 'Song (Official Video)', artist: 'Artist' });
     expect(db.prepare('SELECT COUNT(*) AS count FROM plugin_music_bot_play_events').get().count).toBe(1);
+    expect(db.prepare(
+      'SELECT provider_id AS providerId FROM plugin_music_bot_sources WHERE provider = ?'
+    ).get('youtube')).toEqual({ providerId: 'one' });
     db.close();
   });
 
@@ -64,6 +67,23 @@ describe('music-bot catalog', () => {
     expect(new Set([live.song.id, remix.song.id, acoustic.song.id]).size).toBe(3);
     expect(unknownA.song.id).not.toBe(unknownB.song.id);
     expect(db.prepare('SELECT COUNT(*) AS count FROM plugin_music_bot_sources').get().count).toBe(7);
+    db.close();
+  });
+
+  it('does not mistake ordinary title words for version qualifiers', () => {
+    const { db, catalog } = createCatalog();
+    const titleTrack = catalog.resolveOrUpsert({
+      title: 'Live and Let Die', artist: 'Paul McCartney', provider: 'youtube', providerId: 'title-live'
+    });
+    const official = catalog.resolveOrUpsert({
+      title: 'Live and Let Die (Official Video)', artist: 'Paul McCartney', provider: 'youtube', providerId: 'title-official'
+    });
+    const liveVersion = catalog.resolveOrUpsert({
+      title: 'Live and Let Die (Live)', artist: 'Paul McCartney', provider: 'youtube', providerId: 'live-version'
+    });
+
+    expect(titleTrack.song.id).toBe(official.song.id);
+    expect(liveVersion.song.id).not.toBe(titleTrack.song.id);
     db.close();
   });
 

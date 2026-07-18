@@ -5,7 +5,7 @@ const FIFTEEN_MINUTES = 15 * 60 * 1000;
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const SEVEN_DAYS = 7 * ONE_DAY;
 const UNRELIABLE_ARTISTS = new Set(['', 'unknown', 'unknown artist', 'various artists', 'youtube']);
-const VERSION_MARKERS = /\b(live|remix|acoustic|instrumental|cover|karaoke|sped\s*up|slowed|nightcore|reverb)\b/i;
+const VERSION_QUALIFIER = '(?:live|remix|acoustic|instrumental|cover|karaoke|sped\\s*up|slowed|nightcore|reverb)';
 const NORMAL_UPLOAD_MARKERS = /(?:\s*[-–—]?\s*|\s*[\[(])(?:official\s*(?:music\s*)?(?:video|audio)|lyrics?|lyric\s*video)(?:\s*[\])])?/gi;
 
 class MusicCatalog {
@@ -33,7 +33,7 @@ class MusicCatalog {
           skipped += 1;
           return;
         }
-        const resolved = this._resolveOrUpsert(row);
+        const resolved = this._resolveOrUpsert({ ...row, id: undefined });
         this._insertPlayEvent(resolved, row, {
           id: `legacy:${row.id}`,
           legacyHistoryId: String(row.id),
@@ -283,7 +283,11 @@ class MusicCatalog {
 
   _canonicalTitle(title) {
     const normalized = normalizeText(title);
-    if (VERSION_MARKERS.test(normalized)) return normalized;
+    const explicitVersion = new RegExp(
+      `(?:[\\[(]\\s*${VERSION_QUALIFIER}\\s*[\\])]|\\s[-â€“â€”]\\s*${VERSION_QUALIFIER})\\s*$`,
+      'i'
+    );
+    if (explicitVersion.test(String(title))) return normalized;
     const stripped = normalizeText(String(title).replace(NORMAL_UPLOAD_MARKERS, ''));
     return stripped || normalized;
   }
