@@ -672,14 +672,14 @@
         <div id="playlist-list" class="list empty" aria-live="polite"></div>
         <div id="playlist-editor" class="playlist-editor" hidden>
           <div class="player-search-bar">
-            <input id="playlist-name-input" type="text" maxlength="120" aria-label="Playlistname">
-            <select id="playlist-mode-input" aria-label="Wiedergabemodus"><option value="ordered">Geordnet</option><option value="shuffle">Zufällig</option></select>
-            <button id="playlist-save-btn" class="btn ghost" type="button">Speichern</button>
-            <button id="playlist-delete-btn" class="btn danger" type="button">Löschen</button>
+            <input id="playlist-name-input" type="text" maxlength="120" aria-label="Playlistname" data-i18n-aria-label="music_bot.ui.catalog.playlistName">
+            <select id="playlist-mode-input" aria-label="Wiedergabemodus" data-i18n-aria-label="music_bot.ui.catalog.playbackMode"><option value="ordered" data-i18n="music_bot.ui.catalog.ordered">Geordnet</option><option value="shuffle" data-i18n="music_bot.ui.catalog.shuffle">Zufällig</option></select>
+            <button id="playlist-save-btn" class="btn ghost" type="button" data-i18n="music_bot.ui.catalog.save">Speichern</button>
+            <button id="playlist-delete-btn" class="btn danger" type="button" data-i18n="music_bot.ui.catalog.delete">Löschen</button>
           </div>
           <div class="player-search-bar">
-            <input id="playlist-import-url" type="url" placeholder="YouTube-Playlist URL">
-            <button id="playlist-import-btn" class="btn ghost" type="button">Importieren / erneut importieren</button>
+            <input id="playlist-import-url" type="url" placeholder="YouTube-Playlist URL" data-i18n-placeholder="music_bot.ui.catalog.importUrl" aria-label="YouTube-Playlist URL" data-i18n-aria-label="music_bot.ui.catalog.importUrl">
+            <button id="playlist-import-btn" class="btn ghost" type="button" data-i18n="music_bot.ui.catalog.import">Importieren / erneut importieren</button>
           </div>
           <p id="playlist-import-progress" class="feedback" aria-live="polite"></p>
           <p id="playlist-conflict-feedback" class="feedback" aria-live="polite"></p>

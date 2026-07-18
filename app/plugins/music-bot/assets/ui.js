@@ -1365,6 +1365,12 @@
     updateSeekControl();
   }
 
+  function catalogTr(key, fallback, params = {}) {
+    const fullKey = `plugins.music-bot.music_bot.ui.catalog.${key}`;
+    const translated = window.i18n?.t(fullKey, params);
+    return translated && translated !== fullKey ? translated : fallback;
+  }
+
   function slotLabel(slot) {
     if (!slot) return '–';
     const pid = Number(slot.pid);
@@ -1596,7 +1602,7 @@
       return;
     }
     historyTotal = Number(historyData.total) || historyData.history.length;
-    renderHistory(historyData.history, { append: !reset && historyOffset > 0 });
+    renderHistory(historyData.history, { append: !reset && historyOffset > 0, initializeCanonical: reset });
     historyOffset += historyData.history.length;
     if (historyLoadMore) historyLoadMore.disabled = historyOffset >= historyTotal || historyData.history.length === 0;
     if (historyPageStatus) historyPageStatus.textContent = `${Math.min(historyOffset, historyTotal)} / ${historyTotal}`;
@@ -1911,6 +1917,7 @@
       if (!result?.success || (result.playbackId && result.playbackId !== playbackId)) {
         progressCurrentPos = lastConfirmedSeekPosition;
         updateProgressBar();
+        showToast('warn', 'Player', result?.error || tr('seekFailed', 'Position konnte nicht geändert werden.'));
         return;
       }
       lastConfirmedSeekPosition = Number(result.position ?? positionSeconds);
@@ -1919,20 +1926,6 @@
     } finally {
       seekInFlight = false;
       updateSeekControl();
-    }
-    if (window.__legacySeekFallback__) {
-    seekPreviewActive = false;
-    const result = { success: false };
-    if (!result?.success || (result.playbackId && result.playbackId !== activePlaybackId)) {
-      progressCurrentPos = lastConfirmedSeekPosition;
-      updateProgressBar();
-      showToast('warn', 'Player', result?.error || tr('seekFailed', 'Position konnte nicht geändert werden.'));
-      return;
-    }
-    lastConfirmedSeekPosition = Number(result.position ?? positionSeconds);
-    progressCurrentPos = lastConfirmedSeekPosition;
-    if (Number.isFinite(Number(result.duration))) progressDuration = Number(result.duration);
-    updateSeekControl();
     }
   }
 
@@ -2008,32 +2001,38 @@
     return `${mins}:${secs}`;
   }
 
-  function renderHistory(history = [], { append = false } = {}) {
+  function renderHistory(history = [], { append = false, initializeCanonical = false } = {}) {
     const rows = Array.isArray(history) ? history.slice() : [];
     latestHistoryTracks = append ? latestHistoryTracks.concat(rows) : rows;
-    rows.forEach((item) => canonicalSongState.set(String(item.songId || item.id), {
-      feedback: item.feedback || canonicalSongState.get(String(item.songId || item.id))?.feedback || 'neutral',
-      banned: Boolean(item.banned)
-    }));
+    if (initializeCanonical) canonicalSongState.clear();
+    rows.forEach((item) => {
+      const songId = String(item.songId || item.id);
+      if (!canonicalSongState.has(songId)) {
+        canonicalSongState.set(songId, { feedback: item.feedback || 'neutral' });
+      }
+    });
     if (!latestHistoryTracks.length) {
       historyListEl.classList.add('empty');
-      historyListEl.innerHTML = '<p>Noch keine History.</p>';
+      historyListEl.innerHTML = `<p>${escapeHtml(catalogTr('historyEmpty', 'No history yet.'))}</p>`;
       return;
     }
     historyListEl.classList.remove('empty');
     historyListEl.innerHTML = latestHistoryTracks
       .map((item) => {
         const songId = String(item.songId || item.id || '');
-        const canonical = canonicalSongState.get(songId) || { feedback: 'neutral', banned: false };
+        const canonical = canonicalSongState.get(songId) || { feedback: 'neutral' };
         const thumb = isValidYouTubeId(item.youtubeId)
           ? `<img src="https://i.ytimg.com/vi/${item.youtubeId}/default.jpg" class="queue-thumb" alt="">`
           : '<span class="queue-thumb-placeholder">🎵</span>';
         const banButton = item.id
-          ? `<button class="btn danger small track-ban-trigger" type="button" data-track-ban-trigger data-track-id="${escapeHtml(songId)}" data-catalog-event-id="${escapeHtml(item.id)}" aria-haspopup="dialog" aria-expanded="false" aria-label="Track sperren">!</button>`
+          ? `<button class="btn danger small track-ban-trigger" type="button" data-track-ban-trigger data-track-id="${escapeHtml(songId)}" data-catalog-event-id="${escapeHtml(item.id)}" aria-haspopup="dialog" aria-expanded="false" aria-label="${escapeHtml(catalogTr('banTrack', 'Ban track'))}">!</button>`
           : '';
-        const vote = (state, symbol, label) => `<button class="btn ghost small history-feedback ${canonical.feedback === state ? 'is-active' : ''}" type="button" data-history-feedback="${state}" data-song-id="${escapeHtml(songId)}" aria-pressed="${canonical.feedback === state}">${symbol}<span class="sr-only">${label}</span></button>`;
-        const banBadge = canonical.banned ? '<span class="history-ban-badge" aria-label="Gesperrt">Gesperrt</span>' : '';
-        return `<div class="item queue-item" data-song-id="${escapeHtml(songId)}">${thumb}<span class="queue-title">${escapeHtml(item.title)}</span><span class="text-secondary queue-by">${escapeHtml(item.requestedBy || 'Viewer')}</span>${vote('up', '↑', 'Gefällt mir')}${vote('down', '↓', 'Nicht fürs Radio')}${vote('neutral', '•', 'Neutral')}${banBadge}${banButton}</div>`;
+        const vote = (state, symbol, label) => `<button class="btn ghost small history-feedback ${canonical.feedback === state ? 'is-active' : ''}" type="button" data-history-feedback="${state}" data-song-id="${escapeHtml(songId)}" aria-pressed="${canonical.feedback === state}">${symbol}<span class="sr-only">${escapeHtml(label)}</span></button>`;
+        const banBadge = item.banned ? `<span class="history-ban-badge" aria-label="${escapeHtml(catalogTr('historyBanned', 'Banned'))}">${escapeHtml(catalogTr('historyBanned', 'Banned'))}</span>` : '';
+        const upLabel = catalogTr('voteUp', 'Like');
+        const downLabel = catalogTr('voteDown', 'Not for radio');
+        const neutralLabel = catalogTr('voteNeutral', 'Neutral');
+        return `<div class="item queue-item" data-song-id="${escapeHtml(songId)}">${thumb}<span class="queue-title">${escapeHtml(item.title)}</span><span class="text-secondary queue-by">${escapeHtml(item.requestedBy || 'Viewer')}</span>${vote('up', '↑', upLabel)}${vote('down', '↓', downLabel)}${vote('neutral', '•', neutralLabel)}${banBadge}${banButton}</div>`;
       })
       .join('');
   }
@@ -2065,8 +2064,8 @@
     const songs = result?.songs || [];
     catalogSearchResults.classList.toggle('empty', songs.length === 0);
     catalogSearchResults.innerHTML = songs.length
-      ? songs.map((song) => `<div class="item playlist-item"><span class="queue-title">${escapeHtml(song.title)}</span><button class="btn ghost small" type="button" data-catalog-add-song="${escapeHtml(song.id)}">Zur Playlist</button></div>`).join('')
-      : '<p>Keine Titel gefunden.</p>';
+      ? songs.map((song) => `<div class="item playlist-item"><span class="queue-title">${escapeHtml(song.title)}</span><button class="btn ghost small" type="button" data-catalog-add-song="${escapeHtml(song.id)}">${escapeHtml(catalogTr('addToPlaylist', 'Add to playlist'))}</button></div>`).join('')
+      : `<p>${escapeHtml(catalogTr('catalogEmpty', 'No titles found.'))}</p>`;
   }
 
   const debouncedCatalogSearch = debounce(() => searchCatalog());
@@ -2099,6 +2098,10 @@
     if (!playlistList) return;
     playlistList.classList.toggle('empty', playlists.length === 0);
     playlistList.innerHTML = playlists.length
+      ? playlists.map((playlist) => `<button class="item playlist-item ${selectedPlaylist?.id === playlist.id ? 'active' : ''}" type="button" data-playlist-id="${escapeHtml(playlist.id)}"><span class="queue-title">${escapeHtml(playlist.name)}</span><span class="text-secondary">${escapeHtml(playlist.mode)} · ${playlist.itemCount || 0}${playlist.isProtected ? ` · ${escapeHtml(catalogTr('protected', 'protected'))}` : ''}</span></button>`).join('')
+      : `<p>${escapeHtml(catalogTr('playlistEmpty', 'No playlists yet.'))}</p>`;
+    return;
+    playlistList.innerHTML = playlists.length
       ? playlists.map((playlist) => `<button class="item playlist-item ${selectedPlaylist?.id === playlist.id ? 'active' : ''}" type="button" data-playlist-id="${escapeHtml(playlist.id)}"><span class="queue-title">${escapeHtml(playlist.name)}</span><span class="text-secondary">${playlist.mode} · ${playlist.itemCount || 0}${playlist.isProtected ? ' · geschützt' : ''}</span></button>`).join('')
       : '<p>Noch keine Playlists.</p>';
   }
@@ -2123,6 +2126,8 @@
     playlistSaveButton.disabled = false;
     playlistDeleteButton.disabled = protectedPlaylist;
     playlistDeleteButton.hidden = protectedPlaylist;
+    playlistItems.innerHTML = (playlist.items || []).map((item) => `<div class="item playlist-item" draggable="true" data-playlist-song-id="${escapeHtml(item.songId)}"><span class="queue-pos">☰</span><span class="queue-title">${escapeHtml(item.title)}</span><button class="btn danger small" type="button" data-playlist-remove-song="${escapeHtml(item.songId)}" aria-label="${escapeHtml(catalogTr('remove', 'Remove'))}">×</button></div>`).join('') || `<p>${escapeHtml(catalogTr('playlistItemsEmpty', 'No titles in this playlist.'))}</p>`;
+    return;
     playlistItems.innerHTML = (playlist.items || []).map((item) => `<div class="item playlist-item" draggable="true" data-playlist-song-id="${escapeHtml(item.songId)}"><span class="queue-pos">☰</span><span class="queue-title">${escapeHtml(item.title)}</span><button class="btn danger small" type="button" data-playlist-remove-song="${escapeHtml(item.songId)}">×</button></div>`).join('') || '<p>Keine Titel in dieser Playlist.</p>';
   }
 
@@ -2203,7 +2208,7 @@
   async function refreshRadioSources() {
     const result = await get('/radio/playlist-sources');
     if (!result?.success || !playlistRadioSources) return;
-    playlistRadioSources.innerHTML = (result.sources || []).map((source) => `<label class="playlist-source"><input type="checkbox" data-radio-playlist-id="${escapeHtml(source.playlistId)}" ${source.enabled ? 'checked' : ''}><span>${escapeHtml(source.name || source.playlistId)}</span><input type="number" min="1" max="10" step="1" value="${Math.max(1, Math.min(10, Math.round(Number(source.weight) || 1)))}" data-radio-weight="${escapeHtml(source.playlistId)}" aria-label="Gewicht"></label>`).join('');
+    playlistRadioSources.innerHTML = (result.sources || []).map((source) => `<label class="playlist-source"><input type="checkbox" data-radio-playlist-id="${escapeHtml(source.playlistId)}" ${source.enabled ? 'checked' : ''}><span>${escapeHtml(source.name || source.playlistId)}</span><input type="number" min="1" max="10" step="1" value="${Math.max(1, Math.min(10, Math.round(Number(source.weight) || 1)))}" data-radio-weight="${escapeHtml(source.playlistId)}" aria-label="${escapeHtml(catalogTr('radioWeight', 'Weight'))}"></label>`).join('');
   }
   playlistRadioSave?.addEventListener('click', async () => {
     const sources = Array.from(playlistRadioSources?.querySelectorAll('[data-radio-playlist-id]') || []).map((checkbox) => ({

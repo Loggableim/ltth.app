@@ -64,6 +64,12 @@ function bootMusicBotUi(options = {}) {
     completedAt: null
   };
   const statusPayload = options.statusPayload || {};
+  const historyPayload = options.historyPayload || [];
+  const playlistsPayload = options.playlistsPayload || [];
+  const playlistDetails = options.playlistDetails || {};
+  const radioSourcesPayload = options.radioSourcesPayload || [];
+  const catalogPayload = options.catalogPayload || [];
+  const translations = options.translations;
   const socketHandlers = {};
   const html = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/ui.html'), 'utf8');
   const js = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/assets/ui.js'), 'utf8');
@@ -91,7 +97,13 @@ function bootMusicBotUi(options = {}) {
       });
     }
     if (target.includes('/queue')) return createJsonResponse({ success: true, queue: [] });
-    if (target.includes('/history')) return createJsonResponse({ success: true, history: [] });
+    if (target.includes('/history')) return createJsonResponse({ success: true, history: historyPayload, total: historyPayload.length });
+    if (target.includes('/catalog/search')) return createJsonResponse({ success: true, songs: catalogPayload });
+    if (target.includes('/radio/playlist-sources')) return createJsonResponse({ success: true, sources: radioSourcesPayload });
+    if (target.includes('/playlists/') && !target.includes('/playlist-imports')) {
+      return createJsonResponse({ success: true, playlist: playlistDetails[target.split('/').pop()] });
+    }
+    if (target.includes('/playlists')) return createJsonResponse({ success: true, playlists: playlistsPayload });
     if (target.includes('/bans')) return createJsonResponse({ success: true, bans: [] });
     if (target.includes('/gift-catalog')) return createJsonResponse({ catalog: [] });
     if (target.includes('/setup-status')) return createJsonResponse({ success: true, issues: setupIssues });
@@ -141,8 +153,26 @@ function bootMusicBotUi(options = {}) {
       window.fetch = fetchMock;
       window.open = jest.fn();
       window.navigator.clipboard = { writeText: jest.fn(async () => {}) };
+      if (translations) {
+        window.i18n = { t: (key) => key.replace('plugins.music-bot.', '').split('.').reduce((value, part) => value?.[part], translations) || key };
+      }
     }
   });
+  if (translations) {
+    const lookup = (key) => key.split('.').reduce((value, part) => value?.[part], translations);
+    dom.window.document.querySelectorAll('[data-i18n]').forEach((element) => {
+      const value = lookup(element.dataset.i18n);
+      if (typeof value === 'string') element.textContent = value;
+    });
+    dom.window.document.querySelectorAll('[data-i18n-placeholder]').forEach((element) => {
+      const value = lookup(element.dataset.i18nPlaceholder);
+      if (typeof value === 'string') element.placeholder = value;
+    });
+    dom.window.document.querySelectorAll('[data-i18n-aria-label]').forEach((element) => {
+      const value = lookup(element.dataset.i18nAriaLabel);
+      if (typeof value === 'string') element.setAttribute('aria-label', value);
+    });
+  }
   dom.window.eval(js);
   return { dom, fetchMock, socketHandlers };
 }
@@ -250,6 +280,27 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(playbackEngine.restart).not.toHaveBeenCalled();
     expect(playbackEngine.play).not.toHaveBeenCalled();
     expect(plugin.queueManager.shiftNext).not.toHaveBeenCalled();
+  });
+
+  test('returns an atomic playback identity with the initial request-status event', async () => {
+    const handlers = {};
+    const api = {
+      getSocketIO: () => ({ emit: jest.fn() }), getDatabase: () => ({}), log: jest.fn(), emit: jest.fn(),
+      registerSocket: jest.fn((event, handler) => { handlers[event] = handler; })
+    };
+    const plugin = new MusicBotPlugin(api);
+    plugin.config = { audio: { masterVolume: 100, sourceVolume: 50 }, autoDJ: { enabled: false } };
+    const current = { id: 'playback-99', title: 'Initial track', duration: 120 };
+    plugin.playbackEngine = { getNowPlaying: jest.fn(() => current), getState: jest.fn(() => 'playing') };
+    plugin.queueManager = { getQueue: jest.fn(() => []) };
+    plugin._buildResolverSnapshot = jest.fn(() => ({}));
+    plugin._buildHealthPayload = jest.fn(() => ({}));
+    plugin._registerSocketEvents();
+    const socket = { emit: jest.fn() };
+
+    await handlers['musicbot:request-status'](socket);
+
+    expect(socket.emit).toHaveBeenCalledWith('musicbot:now-playing', expect.objectContaining({ id: 'playback-99', playbackId: 'playback-99' }));
   });
 
   test('cools down only the selected Auto-DJ source when its initial playback start fails', async () => {
@@ -1062,13 +1113,90 @@ describe('Music Bot runtime and UI regressions', () => {
   test('renders playlist import socket status, progress, and errors from the service payload', async () => {
     const { dom, socketHandlers } = bootMusicBotUi();
     doms.push(dom);
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 25));
     await Promise.resolve();
 
     socketHandlers['musicbot:playlist-import-progress']({ playlistId: 'mix', status: 'running', progress: 70 });
     expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe('running (70%)');
     socketHandlers['musicbot:playlist-import-progress']({ playlistId: 'mix', status: 'failed', progress: 100, error: 'source unavailable' });
     expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe('source unavailable');
+  });
+
+  test('keeps canonical votes fresh across duplicate history rows while preserving per-event bans', async () => {
+    const historyPayload = [
+      { id: 'event-new', songId: 7, title: 'Same Song', feedback: 'down', banned: true },
+      { id: 'event-old', songId: 7, title: 'Same Song', feedback: 'down', banned: false }
+    ];
+    const { dom, socketHandlers, fetchMock } = bootMusicBotUi({
+      historyPayload,
+      postHandler: async (target) => target.includes('/catalog/songs/7/feedback')
+        ? createJsonResponse({ success: true, feedback: { state: 'up' } })
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    socketHandlers['musicbot:history-update']({ songId: 7, feedback: { state: 'up' } });
+    expect(Array.from(dom.window.document.querySelectorAll('[data-history-feedback="up"].is-active'))).toHaveLength(2);
+    expect(Array.from(dom.window.document.querySelectorAll('.history-ban-badge'))).toHaveLength(1);
+
+    dom.window.document.querySelector('[data-history-feedback="up"]').click();
+    await Promise.resolve();
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/catalog/songs/7/feedback'), expect.objectContaining({ method: 'POST' }));
+    expect(Array.from(dom.window.document.querySelectorAll('[data-history-feedback="up"].is-active'))).toHaveLength(2);
+    expect(Array.from(dom.window.document.querySelectorAll('.history-ban-badge'))).toHaveLength(1);
+  });
+
+  test.each(['en', 'es', 'fr'])('renders dynamic catalog-admin surfaces through production i18n in %s', async (locale) => {
+    const translations = JSON.parse(fs.readFileSync(path.join(__dirname, `../plugins/music-bot/locales/${locale}.json`), 'utf8'));
+    const playlist = { id: 'viewer-radio', name: 'Viewer Radio', mode: 'ordered', itemCount: 1, isProtected: true };
+    const { dom } = bootMusicBotUi({
+      translations,
+      historyPayload: [{ id: 'event-1', songId: 4, title: 'History Song', feedback: 'up', banned: true }],
+      playlistsPayload: [playlist],
+      playlistDetails: { 'viewer-radio': { ...playlist, items: [{ songId: 4, title: 'History Song' }] } },
+      radioSourcesPayload: [{ playlistId: 'viewer-radio', name: 'Viewer Radio', enabled: true, weight: 3 }],
+      catalogPayload: [{ id: 4, title: 'Catalog Song' }]
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    const catalog = translations.music_bot.ui.catalog;
+
+    expect(dom.window.document.querySelector('.history-ban-badge').textContent).toBe(catalog.historyBanned);
+    expect(dom.window.document.querySelector('[data-track-ban-trigger]').getAttribute('aria-label')).toBe(catalog.banTrack);
+    expect(dom.window.document.querySelector('[data-playlist-id]').textContent).toContain(catalog.protected);
+    expect(dom.window.document.querySelector('[data-radio-weight]').getAttribute('aria-label')).toBe(catalog.radioWeight);
+
+    dom.window.document.querySelector('[data-playlist-id]').click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(dom.window.document.getElementById('playlist-save-btn').textContent).toBe(catalog.save);
+    expect(dom.window.document.querySelector('[data-playlist-remove-song]').getAttribute('aria-label')).toBe(catalog.remove);
+
+    const search = dom.window.document.getElementById('catalog-search-input');
+    search.value = 'Catalog';
+    search.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    expect(dom.window.document.querySelector('[data-catalog-add-song]').textContent).toBe(catalog.addToPlaylist);
+  });
+
+  test('rolls a failed seek back once and shows its localized error', async () => {
+    const { dom, fetchMock, socketHandlers } = bootMusicBotUi({
+      postHandler: async (target) => target.endsWith('/seek')
+        ? createJsonResponse({ success: false, error: 'Cannot seek now' })
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    socketHandlers['musicbot:now-playing']({ id: 'track', playbackId: 'p1', title: 'Seekable', duration: 120, startedAt: Date.now(), state: 'playing', seekable: true });
+    socketHandlers['musicbot:runtime']({ activePlaybackId: 'p1', transportState: 'playing', safetyLock: false });
+    socketHandlers['musicbot:playback-sync']({ playbackId: 'p1', position: 20, duration: 120, state: 'playing' });
+    const seek = dom.window.document.getElementById('np-seek-input');
+    seek.value = '55';
+    seek.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(seek.value).toBe('20');
+    expect(dom.window.document.getElementById('musicbot-toast-container').textContent).toContain('Cannot seek now');
+    expect(fetchMock.mock.calls.filter(([url, options]) => String(url).endsWith('/seek') && options?.method === 'POST')).toHaveLength(1);
   });
 
   test('minimal overlay ignores a stale playback sync from a different title', () => {

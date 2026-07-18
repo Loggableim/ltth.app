@@ -2379,7 +2379,7 @@ class MusicBotPlugin extends EventEmitter {
   _registerSocketEvents() {
     this.api.registerSocket('musicbot:request-status', async (socket) => {
       const effectiveVolume = this._computeEffectiveVolume();
-      socket.emit('musicbot:now-playing', this.playbackEngine.getNowPlaying());
+      socket.emit('musicbot:now-playing', this._buildNowPlayingPayload());
       socket.emit('musicbot:queue-update', {
         queue: this.queueManager.getQueue(),
         length: this.queueManager.getQueue().length
@@ -3391,7 +3391,7 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   _emitStatus() {
-    this.api.emit('musicbot:now-playing', this.playbackEngine.getNowPlaying());
+    this.api.emit('musicbot:now-playing', this._buildNowPlayingPayload());
     this._emitQueue();
     this._emitVolume(this._computeEffectiveVolume());
   }
@@ -3447,9 +3447,12 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   _emitNowPlaying(track) {
-    const payload = arguments.length > 0 ? track : this.playbackEngine.getNowPlaying();
+    this.api.emit('musicbot:now-playing', this._buildNowPlayingPayload(arguments.length > 0 ? track : undefined));
+  }
+
+  _buildNowPlayingPayload(track = this.playbackEngine.getNowPlaying()) {
     const playbackId = this._buildRuntimeSnapshot().activePlaybackId;
-    this.api.emit('musicbot:now-playing', payload ? { ...payload, playbackId } : null);
+    return track ? { ...track, playbackId } : null;
   }
 
   _emitPlaybackAdvancing(reason) {
