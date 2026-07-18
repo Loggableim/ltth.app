@@ -36,6 +36,25 @@ class AnimalCommandValidationError extends Error {
   }
 }
 
+class AnimalCommandConflictError extends Error {
+  constructor(commands) {
+    super(`EmojiRain command conflict: ${commands.join(', ')}`);
+    this.name = 'AnimalCommandConflictError';
+    this.code = 'COMMAND_CONFLICT';
+    this.commands = [...commands];
+  }
+}
+
+class AnimalCommandRegistrationError extends Error {
+  constructor(commands, cause = null) {
+    super(`EmojiRain command registration failed: ${commands.join(', ')}`);
+    this.name = 'AnimalCommandRegistrationError';
+    this.code = 'COMMAND_REGISTRATION_FAILED';
+    this.commands = [...commands];
+    this.cause = cause;
+  }
+}
+
 function cloneDefaultCommands() {
   return DEFAULT_ANIMAL_COMMANDS.map(entry => ({ ...entry }));
 }
@@ -314,6 +333,61 @@ class AnimalCommandCooldowns {
   }
 }
 
+function getRegisteredPluginCommands(gcce, pluginId, fallback = []) {
+  if (gcce?.registry && typeof gcce.registry.getPluginCommands === 'function') {
+    return gcce.registry.getPluginCommands(pluginId).map(command => ({ ...command }));
+  }
+  return Array.isArray(fallback) ? fallback.map(command => ({ ...command })) : [];
+}
+
+function findCommandConflicts(gcce, pluginId, definitions) {
+  if (!gcce?.registry || typeof gcce.registry.getCommand !== 'function') return [];
+  return definitions
+    .map(definition => definition.name)
+    .filter((name, index, names) => names.indexOf(name) === index)
+    .filter(name => {
+      const existing = gcce.registry.getCommand(name);
+      return existing && existing.pluginId !== pluginId;
+    });
+}
+
+function restorePluginCommands(gcce, pluginId, definitions) {
+  gcce.unregisterCommandsForPlugin(pluginId);
+  if (!definitions.length) return;
+  const restored = gcce.registerCommandsForPlugin(pluginId, definitions);
+  if (!restored || restored.failed?.length > 0) {
+    throw new AnimalCommandRegistrationError(restored?.failed || definitions.map(item => item.name));
+  }
+}
+
+function replacePluginCommands({ gcce, pluginId, definitions, fallback = [] }) {
+  const conflicts = findCommandConflicts(gcce, pluginId, definitions);
+  if (conflicts.length > 0) throw new AnimalCommandConflictError(conflicts);
+
+  const previousDefinitions = getRegisteredPluginCommands(gcce, pluginId, fallback);
+  try {
+    gcce.unregisterCommandsForPlugin(pluginId);
+    const result = gcce.registerCommandsForPlugin(pluginId, definitions);
+    const failed = Array.isArray(result?.failed) ? result.failed : [];
+    if (failed.length > 0 || !result) {
+      throw new AnimalCommandRegistrationError(
+        failed.length > 0 ? failed : definitions.map(item => item.name)
+      );
+    }
+    return {
+      previousDefinitions,
+      registered: Array.isArray(result.registered) ? [...result.registered] : []
+    };
+  } catch (error) {
+    try {
+      restorePluginCommands(gcce, pluginId, previousDefinitions);
+    } catch (rollbackError) {
+      error.rollbackError = rollbackError;
+    }
+    throw error;
+  }
+}
+
 module.exports = {
   COMMAND_NAME_PATTERN,
   DEFAULT_ANIMAL_COMMANDS,
@@ -321,6 +395,8 @@ module.exports = {
   MAX_ANIMAL_COMMANDS,
   RESERVED_ANIMAL_COMMAND_NAMES,
   AnimalCommandCooldowns,
+  AnimalCommandConflictError,
+  AnimalCommandRegistrationError,
   AnimalCommandValidationError,
   evaluateAnimalCommandAccess,
   getAnimalCommandCount,
@@ -328,5 +404,7 @@ module.exports = {
   hasPaidSuperfanStatus,
   isValidAsset,
   normalizeAnimalCommandName: normalizeCommandName,
-  normalizeAnimalCommandSettings
+  normalizeAnimalCommandSettings,
+  replacePluginCommands,
+  restorePluginCommands
 };

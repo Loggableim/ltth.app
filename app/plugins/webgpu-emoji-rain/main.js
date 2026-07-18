@@ -21,8 +21,23 @@ const fs = require('fs');
 const multer = require('multer');
 const crypto = require('crypto');
 const { createDefaultWebGPUConfig, normalizeWebGPUConfig } = require('./lib/webgpu-config');
+const {
+  AnimalCommandConflictError,
+  AnimalCommandCooldowns,
+  evaluateAnimalCommandAccess,
+  normalizeAnimalCommandSettings,
+  replacePluginCommands,
+  restorePluginCommands
+} = require('../../modules/emoji-rain-animal-commands');
 delete require.cache[require.resolve('./lib/avatar-proxy')];
 const { MAX_BYTES: AVATAR_PROXY_MAX_BYTES, fetchAllowedAvatar } = require('./lib/avatar-proxy');
+
+const WEBGPU_EMOJI_RAIN_PLUGIN_ID = 'webgpu-emoji-rain';
+const WEBGPU_EMOJI_RAIN_IMAGE_PREFIXES = Object.freeze([
+  '/webgpu-emoji-rain/uploads/',
+  '/uploads/webgpu-emoji-rain/',
+  '/plugins/webgpu-emoji-rain/uploads/'
+]);
 
 class WebGPUEmojiRainPlugin {
   constructor(api) {
@@ -47,6 +62,10 @@ class WebGPUEmojiRainPlugin {
     
     // GCCE integration
     this.gcce = null;
+    this.registeredCommandDefinitions = [];
+    this.registeredAnimalCommandNames = [];
+    this.commandRegistrationStatus = 'pending';
+    this.animalCommandCooldowns = new AnimalCommandCooldowns();
     
     // Anti-spam and rate limiting
     this.globalTriggerCount = 0;
@@ -370,25 +389,23 @@ class WebGPUEmojiRainPlugin {
   /**
    * Integrate with Global Chat Command Engine (GCCE)
    */
-  async integrateWithGCCE() {
-    try {
-      // Get GCCE instance from plugin loader
-      const pluginLoader = this.api.pluginLoader;
-      if (!pluginLoader || !pluginLoader.loadedPlugins) {
-        this.api.log('⚠️ [WebGPU Emoji Rain] Plugin loader not available, skipping GCCE integration', 'warn');
-        return;
-      }
+  getAnimalCommandSettings(config = null, strict = false) {
+    const source = config || this.getRuntimeConfig();
+    return normalizeAnimalCommandSettings(source, {
+      strict,
+      imagePathPrefixes: WEBGPU_EMOJI_RAIN_IMAGE_PREFIXES
+    });
+  }
 
-      const gccePlugin = pluginLoader.loadedPlugins.get('gcce');
-      if (!gccePlugin || !gccePlugin.instance) {
-        this.api.log('⚠️ [WebGPU Emoji Rain] GCCE plugin not found, skipping command registration', 'warn');
-        return;
-      }
+  resolveGCCE() {
+    const gccePlugin = this.api.pluginLoader?.loadedPlugins?.get('gcce');
+    this.gcce = gccePlugin?.instance || null;
+    return this.gcce;
+  }
 
-      this.gcce = gccePlugin.instance;
-
-      // Register commands
-      const commands = [
+  buildGCCECommandDefinitions(config) {
+    const settings = { ...config, ...this.getAnimalCommandSettings(config) };
+    return [
         {
           name: 'rain',
           description: 'Trigger emoji rain effect',
@@ -419,44 +436,17 @@ class WebGPUEmojiRainPlugin {
           },
           handler: async (args, context) => await this.handleEmojiCommand(args, context)
         },
-        {
-          name: 'beans',
-          description: 'SuperFan emoji rain effect',
-          syntax: '/beans',
+        ...settings.animal_commands.filter(command => command.enabled).map(command => ({
+          name: command.command,
+          description: 'Trigger configured EmojiRain command',
+          syntax: `/${command.command}`,
           permission: 'all',
           enabled: true,
           minArgs: 0,
           maxArgs: 0,
           category: 'Effects',
-          cooldown: {
-            user: 30000, // 30 seconds per user
-            global: 5000 // 5 seconds globally
-          },
-          handler: async (args, context) => await this.handleBeansCommand(args, context)
-        },
-        ...[
-          { name: 'miau', emoji: '🐱', label: 'cat', description: 'Trigger cat emoji rain' },
-          { name: 'rawr', emoji: '🦖', label: 'dinosaur', description: 'Trigger dinosaur emoji rain' },
-          { name: 'woof', emoji: '🐶', label: 'dog', description: 'Trigger dog emoji rain' },
-          { name: 'wuff', emoji: '🐶', label: 'dog', description: 'Trigger dog emoji rain' }
-        ].map(({ name, emoji, label, description }) => ({
-          name,
-          description,
-          syntax: `/${name}`,
-          permission: 'all',
-          enabled: true,
-          minArgs: 0,
-          maxArgs: 0,
-          category: 'Effects',
-          cooldown: {
-            user: 60000,
-            global: 15000
-          },
-          handler: async (args, context) => await this.handleAnimalCommand({
-            emoji,
-            source: `/${name}`,
-            label
-          }, context)
+          cooldown: { user: 0, global: 0 },
+          handler: async (args, context) => await this.handleConfiguredAnimalCommand(command, context)
         })),
         {
           name: 'storm',
@@ -504,15 +494,103 @@ class WebGPUEmojiRainPlugin {
           handler: async (args, context) => await this.handleRainStopCommand(args, context)
         }
       ];
+  }
 
-      const result = this.gcce.registerCommandsForPlugin('webgpu-emoji-rain', commands);
-      this.api.log(`✅ [WebGPU Emoji Rain] GCCE integration complete: ${result.registered.length} commands registered`, 'info');
-      
-      if (result.failed.length > 0) {
-        this.api.log(`⚠️ [WebGPU Emoji Rain] Failed to register commands: ${result.failed.join(', ')}`, 'warn');
+  getCommandRegistrationInfo() {
+    return {
+      status: this.commandRegistrationStatus,
+      registered: [...this.registeredAnimalCommandNames]
+    };
+  }
+
+  replaceGCCERegistration(config) {
+    const gcce = this.resolveGCCE();
+    if (!gcce) {
+      this.commandRegistrationStatus = 'pending';
+      this.registeredAnimalCommandNames = [];
+      return null;
+    }
+
+    const definitions = this.buildGCCECommandDefinitions(config);
+    const replacement = replacePluginCommands({
+      gcce,
+      pluginId: WEBGPU_EMOJI_RAIN_PLUGIN_ID,
+      definitions,
+      fallback: this.registeredCommandDefinitions
+    });
+    this.registeredCommandDefinitions = definitions;
+    this.registeredAnimalCommandNames = config.animal_commands
+      .filter(command => command.enabled)
+      .map(command => command.command);
+    this.commandRegistrationStatus = 'active';
+    return replacement;
+  }
+
+  restoreGCCERegistration(replacement, previousState) {
+    if (replacement && this.gcce) {
+      restorePluginCommands(this.gcce, WEBGPU_EMOJI_RAIN_PLUGIN_ID, replacement.previousDefinitions);
+    }
+    this.registeredCommandDefinitions = previousState.definitions;
+    this.registeredAnimalCommandNames = previousState.names;
+    this.commandRegistrationStatus = previousState.status;
+  }
+
+  applyConfigUpdate(config, enabled = null) {
+    const current = this.getRuntimeConfig();
+    const candidate = {
+      ...current,
+      ...(config && typeof config === 'object' ? config : {}),
+      ...(enabled === null ? {} : { enabled: Boolean(enabled) })
+    };
+    const animalSettings = this.getAnimalCommandSettings(candidate, true);
+    const next = normalizeWebGPUConfig({ ...candidate, ...animalSettings }, { strict: true });
+    const previousConfig = this.runtimeConfig;
+    const previousState = {
+      definitions: this.registeredCommandDefinitions,
+      names: this.registeredAnimalCommandNames,
+      status: this.commandRegistrationStatus
+    };
+    const replacement = this.replaceGCCERegistration(next);
+
+    try {
+      if (typeof this.api.setConfig === 'function') this.api.setConfig('v3-config', next);
+      this.runtimeConfig = next;
+      this.animalCommandCooldowns.clear();
+      return { ...next };
+    } catch (error) {
+      this.runtimeConfig = previousConfig;
+      this.restoreGCCERegistration(replacement, previousState);
+      throw error;
+    }
+  }
+
+  async integrateWithGCCE() {
+    try {
+      const config = this.getRuntimeConfig();
+      if (!this.resolveGCCE()) {
+        this.commandRegistrationStatus = 'pending';
+        this.registeredAnimalCommandNames = [];
+        this.api.log('⚠️ [WebGPU Emoji Rain] GCCE plugin not found; command registration is pending', 'warn');
+        return this.getCommandRegistrationInfo();
       }
+
+      const definitions = this.buildGCCECommandDefinitions(config);
+      const replacement = replacePluginCommands({
+        gcce: this.gcce,
+        pluginId: WEBGPU_EMOJI_RAIN_PLUGIN_ID,
+        definitions,
+        fallback: this.registeredCommandDefinitions
+      });
+      this.registeredCommandDefinitions = definitions;
+      this.registeredAnimalCommandNames = config.animal_commands
+        .filter(command => command.enabled)
+        .map(command => command.command);
+      this.commandRegistrationStatus = 'active';
+      this.api.log(`✅ [WebGPU Emoji Rain] GCCE integration complete: ${replacement.registered.length} commands registered`, 'info');
+      return this.getCommandRegistrationInfo();
     } catch (error) {
       this.api.log(`❌ [WebGPU Emoji Rain] Error integrating with GCCE: ${error.message}`, 'error');
+      return this.getCommandRegistrationInfo();
     }
   }
 
@@ -635,9 +713,9 @@ class WebGPUEmojiRainPlugin {
     };
   }
 
-  async handleBeansCommand(args, context) {
+  async handleConfiguredAnimalCommand(command, context) {
     const config = this.getRuntimeConfig();
-    
+
     if (!config.enabled) {
       return {
         success: false,
@@ -646,10 +724,26 @@ class WebGPUEmojiRainPlugin {
       };
     }
 
-    if (config.animal_commands_superfans_only !== false && !this.isAnimalCommandSuperFan(context)) {
+    const access = evaluateAnimalCommandAccess(context, config);
+    if (!access.allowed) {
       return {
         success: false,
-        message: 'This animal command is only available to SuperFans',
+        message: 'This EmojiRain command is only available to subscribers and allowed Teamlevel members',
+        displayOverlay: true
+      };
+    }
+
+    const cooldownRequest = {
+      command: command.command,
+      username: context.username,
+      userCooldownMs: access.userCooldownMs,
+      globalCooldownMs: config.animal_command_global_cooldown_ms
+    };
+    const cooldown = this.animalCommandCooldowns.check(cooldownRequest);
+    if (!cooldown.allowed) {
+      return {
+        success: false,
+        message: `Please wait ${Math.ceil(cooldown.retryAfterMs / 1000)} seconds before using this command again`,
         displayOverlay: true
       };
     }
@@ -663,77 +757,34 @@ class WebGPUEmojiRainPlugin {
       };
     }
 
-    // SuperFan paw emoji rain
-    this.triggerEmojiRain({
-      emoji: '🐾',
-      count: 30,
+    const spawn = this.triggerEmojiRain({
+      emoji: command.asset_value,
+      count: access.count,
+      exactCount: true,
       intensity: 1.5,
       duration: 0,
       burst: false,
       username: context.username,
       reason: 'command',
-      source: '/beans'
+      source: `/${command.command}`
     });
 
+    if (!spawn) {
+      return {
+        success: false,
+        message: 'Emoji rain could not be started',
+        displayOverlay: true
+      };
+    }
+
+    this.animalCommandCooldowns.record(cooldownRequest);
     this.metrics.commandTriggers++;
 
     return {
       success: true,
-      message: `${context.username} triggered a SuperFan paw emoji rain! 🐾`,
+      message: `${context.username} triggered /${command.command}! ${command.asset_value}`,
       displayOverlay: true
     };
-  }
-
-  async handleAnimalCommand({ emoji, source, label }, context) {
-    const config = this.getRuntimeConfig();
-
-    if (!config.enabled) {
-      return {
-        success: false,
-        message: 'Emoji rain is currently disabled',
-        displayOverlay: true
-      };
-    }
-
-    if (config.animal_commands_superfans_only !== false && !this.isAnimalCommandSuperFan(context)) {
-      return {
-        success: false,
-        message: 'This animal command is only available to SuperFans',
-        displayOverlay: true
-      };
-    }
-
-    if (!this.checkAntiSpam(context.username)) {
-      this.metrics.droppedEvents++;
-      return {
-        success: false,
-        message: 'Please wait before using this command again',
-        displayOverlay: true
-      };
-    }
-
-    this.triggerEmojiRain({
-      emoji,
-      count: 30,
-      intensity: 1.5,
-      duration: 0,
-      burst: false,
-      username: context.username,
-      reason: 'command',
-      source
-    });
-
-    this.metrics.commandTriggers++;
-
-    return {
-      success: true,
-      message: `${context.username} triggered a ${label} emoji rain! ${emoji}`,
-      displayOverlay: true
-    };
-  }
-
-  isAnimalCommandSuperFan(context = {}) {
-    return Number(context?.userData?.teamMemberLevel) >= 1;
   }
 
   async handleStormCommand(args, context) {
@@ -1298,7 +1349,9 @@ class WebGPUEmojiRainPlugin {
     );
 
     const spawnData = {
-      count: Math.min(params.count || 10, maxCount),
+      count: params.exactCount === true
+        ? Math.min(50, Math.max(1, Math.floor(Number(params.count) || 1)))
+        : Math.min(params.count || 10, maxCount),
       emoji: params.emoji || config.emoji_set[Math.floor(Math.random() * config.emoji_set.length)] || '💙',
       x: coordinates.x,
       y: coordinates.y,
@@ -1636,7 +1689,7 @@ class WebGPUEmojiRainPlugin {
         this.api.log('📥 [WebGPU Emoji Rain] GET /api/webgpu-emoji-rain/config', 'debug');
         const config = this.getRuntimeConfig();
         this.api.log('📥 [WebGPU Emoji Rain] v3 config retrieved', 'debug');
-        res.json({ success: true, config });
+        res.json({ success: true, config, commandRegistration: this.getCommandRegistrationInfo() });
       } catch (error) {
         this.api.log(`❌ [WebGPU Emoji Rain] Error getting config: ${error.message}`, 'error');
         res.status(500).json({ success: false, error: error.message });
@@ -1644,7 +1697,7 @@ class WebGPUEmojiRainPlugin {
     });
 
     // Update emoji rain config
-    this.api.registerRoute('post', '/api/webgpu-emoji-rain/config', (req, res) => {
+    this.api.registerRoute('post', '/api/webgpu-emoji-rain/config', async (req, res) => {
       const { config, enabled } = req.body;
 
       if (!config) {
@@ -1652,15 +1705,34 @@ class WebGPUEmojiRainPlugin {
       }
 
       try {
-        const updatedConfig = this.updateRuntimeConfig(config, enabled !== undefined ? enabled : null);
+        const updatedConfig = this.applyConfigUpdate(config, enabled !== undefined ? enabled : null);
         this.api.log('🌧️ WebGPU Emoji rain configuration updated', 'info');
 
         // Notify overlays about config change
         this.api.emit('webgpu-emoji-rain:config-update', { config: updatedConfig, enabled: updatedConfig.enabled });
 
-        res.json({ success: true, message: 'Emoji rain configuration updated' });
+        res.json({
+          success: true,
+          message: 'Emoji rain configuration updated',
+          config: updatedConfig,
+          commandRegistration: this.getCommandRegistrationInfo()
+        });
       } catch (error) {
         this.api.log(`Error updating emoji rain config: ${error.message}`, 'error');
+        if (error instanceof AnimalCommandConflictError || error.code === 'COMMAND_CONFLICT') {
+          return res.status(409).json({
+            success: false,
+            error: 'COMMAND_CONFLICT',
+            commands: error.commands || []
+          });
+        }
+        if (error.code === 'INVALID_ANIMAL_COMMANDS') {
+          return res.status(400).json({
+            success: false,
+            error: error.code,
+            issues: error.issues || []
+          });
+        }
         res.status(500).json({ success: false, error: error.message });
       }
     });
@@ -3068,11 +3140,12 @@ class WebGPUEmojiRainPlugin {
     this.durationIntervals.clear();
     this.spawnQueue.length = 0;
     this.userCooldowns.clear();
+    this.animalCommandCooldowns.clear();
     
     // Unregister GCCE commands
     if (this.gcce) {
       try {
-        this.gcce.unregisterCommandsForPlugin('webgpu-emoji-rain');
+        this.gcce.unregisterCommandsForPlugin(WEBGPU_EMOJI_RAIN_PLUGIN_ID);
         this.api.log('✅ [WebGPU Emoji Rain] GCCE commands unregistered', 'info');
       } catch (error) {
         this.api.log(`⚠️ [WebGPU Emoji Rain] Error unregistering GCCE commands: ${error.message}`, 'warn');

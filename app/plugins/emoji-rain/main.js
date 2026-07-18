@@ -20,6 +20,21 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const crypto = require('crypto');
+const {
+  AnimalCommandConflictError,
+  AnimalCommandCooldowns,
+  evaluateAnimalCommandAccess,
+  normalizeAnimalCommandSettings,
+  replacePluginCommands,
+  restorePluginCommands
+} = require('../../modules/emoji-rain-animal-commands');
+
+const EMOJI_RAIN_PLUGIN_ID = 'emoji-rain';
+const EMOJI_RAIN_IMAGE_PREFIXES = Object.freeze([
+  '/emoji-rain/uploads/',
+  '/uploads/emoji-rain/',
+  '/plugins/emoji-rain/uploads/'
+]);
 
 class EmojiRainPlugin {
   constructor(api) {
@@ -42,6 +57,10 @@ class EmojiRainPlugin {
     
     // GCCE integration
     this.gcce = null;
+    this.registeredCommandDefinitions = [];
+    this.registeredAnimalCommandNames = [];
+    this.commandRegistrationStatus = 'pending';
+    this.animalCommandCooldowns = new AnimalCommandCooldowns();
     
     // Anti-spam and rate limiting
     this.globalTriggerCount = 0;
@@ -298,25 +317,28 @@ class EmojiRainPlugin {
   /**
    * Integrate with Global Chat Command Engine (GCCE)
    */
-  async integrateWithGCCE() {
-    try {
-      // Get GCCE instance from plugin loader
-      const pluginLoader = this.api.pluginLoader;
-      if (!pluginLoader || !pluginLoader.loadedPlugins) {
-        this.api.log('⚠️ [EmojiRain] Plugin loader not available, skipping GCCE integration', 'warn');
-        return;
-      }
+  getAnimalCommandSettings(config = null, strict = false) {
+    const source = config || this.api.getDatabase().getEmojiRainConfig();
+    return normalizeAnimalCommandSettings(source, {
+      strict,
+      imagePathPrefixes: EMOJI_RAIN_IMAGE_PREFIXES
+    });
+  }
 
-      const gccePlugin = pluginLoader.loadedPlugins.get('gcce');
-      if (!gccePlugin || !gccePlugin.instance) {
-        this.api.log('⚠️ [EmojiRain] GCCE plugin not found, skipping command registration', 'warn');
-        return;
-      }
+  getPluginConfig() {
+    const config = this.api.getDatabase().getEmojiRainConfig();
+    return { ...config, ...this.getAnimalCommandSettings(config) };
+  }
 
-      this.gcce = gccePlugin.instance;
+  resolveGCCE() {
+    const gccePlugin = this.api.pluginLoader?.loadedPlugins?.get('gcce');
+    this.gcce = gccePlugin?.instance || null;
+    return this.gcce;
+  }
 
-      // Register commands
-      const commands = [
+  buildGCCECommandDefinitions(config) {
+    const settings = { ...config, ...this.getAnimalCommandSettings(config) };
+    return [
         {
           name: 'rain',
           description: 'Trigger emoji rain effect',
@@ -347,44 +369,17 @@ class EmojiRainPlugin {
           },
           handler: async (args, context) => await this.handleEmojiCommand(args, context)
         },
-        {
-          name: 'beans',
-          description: 'SuperFan emoji rain effect',
-          syntax: '/beans',
+        ...settings.animal_commands.filter(command => command.enabled).map(command => ({
+          name: command.command,
+          description: 'Trigger configured EmojiRain command',
+          syntax: `/${command.command}`,
           permission: 'all',
           enabled: true,
           minArgs: 0,
           maxArgs: 0,
           category: 'Effects',
-          cooldown: {
-            user: 30000, // 30 seconds per user
-            global: 5000 // 5 seconds globally
-          },
-          handler: async (args, context) => await this.handleBeansCommand(args, context)
-        },
-        ...[
-          { name: 'miau', emoji: '🐱', label: 'cat', description: 'Trigger cat emoji rain' },
-          { name: 'rawr', emoji: '🦖', label: 'dinosaur', description: 'Trigger dinosaur emoji rain' },
-          { name: 'woof', emoji: '🐶', label: 'dog', description: 'Trigger dog emoji rain' },
-          { name: 'wuff', emoji: '🐶', label: 'dog', description: 'Trigger dog emoji rain' }
-        ].map(({ name, emoji, label, description }) => ({
-          name,
-          description,
-          syntax: `/${name}`,
-          permission: 'all',
-          enabled: true,
-          minArgs: 0,
-          maxArgs: 0,
-          category: 'Effects',
-          cooldown: {
-            user: 60000,
-            global: 15000
-          },
-          handler: async (args, context) => await this.handleAnimalCommand({
-            emoji,
-            source: `/${name}`,
-            label
-          }, context)
+          cooldown: { user: 0, global: 0 },
+          handler: async (args, context) => await this.handleConfiguredAnimalCommand(command, context)
         })),
         {
           name: 'storm',
@@ -432,15 +427,104 @@ class EmojiRainPlugin {
           handler: async (args, context) => await this.handleRainStopCommand(args, context)
         }
       ];
+  }
 
-      const result = this.gcce.registerCommandsForPlugin('emoji-rain', commands);
-      this.api.log(`✅ [EmojiRain] GCCE integration complete: ${result.registered.length} commands registered`, 'info');
-      
-      if (result.failed.length > 0) {
-        this.api.log(`⚠️ [EmojiRain] Failed to register commands: ${result.failed.join(', ')}`, 'warn');
+  getCommandRegistrationInfo() {
+    return {
+      status: this.commandRegistrationStatus,
+      registered: [...this.registeredAnimalCommandNames]
+    };
+  }
+
+  replaceGCCERegistration(config) {
+    const gcce = this.resolveGCCE();
+    if (!gcce) {
+      this.commandRegistrationStatus = 'pending';
+      this.registeredAnimalCommandNames = [];
+      return null;
+    }
+
+    const definitions = this.buildGCCECommandDefinitions(config);
+    const replacement = replacePluginCommands({
+      gcce,
+      pluginId: EMOJI_RAIN_PLUGIN_ID,
+      definitions,
+      fallback: this.registeredCommandDefinitions
+    });
+    this.registeredCommandDefinitions = definitions;
+    this.registeredAnimalCommandNames = config.animal_commands
+      .filter(command => command.enabled)
+      .map(command => command.command);
+    this.commandRegistrationStatus = 'active';
+    return replacement;
+  }
+
+  restoreGCCERegistration(replacement, previousState) {
+    if (replacement && this.gcce) {
+      restorePluginCommands(this.gcce, EMOJI_RAIN_PLUGIN_ID, replacement.previousDefinitions);
+    }
+    this.registeredCommandDefinitions = previousState.definitions;
+    this.registeredAnimalCommandNames = previousState.names;
+    this.commandRegistrationStatus = previousState.status;
+  }
+
+  applyConfigUpdate(config, enabled = null) {
+    const current = this.getPluginConfig();
+    const candidate = {
+      ...current,
+      ...(config && typeof config === 'object' ? config : {}),
+      ...(enabled === null ? {} : { enabled: Boolean(enabled) })
+    };
+    const animalSettings = this.getAnimalCommandSettings(candidate, true);
+    const next = { ...candidate, ...animalSettings };
+    const previousState = {
+      definitions: this.registeredCommandDefinitions,
+      names: this.registeredAnimalCommandNames,
+      status: this.commandRegistrationStatus
+    };
+    const replacement = this.replaceGCCERegistration(next);
+
+    try {
+      const updated = this.api.getDatabase().updateEmojiRainConfig(
+        next,
+        enabled === null ? null : Boolean(enabled)
+      );
+      const normalizedUpdated = { ...updated, ...this.getAnimalCommandSettings(updated) };
+      this.animalCommandCooldowns.clear();
+      return normalizedUpdated;
+    } catch (error) {
+      this.restoreGCCERegistration(replacement, previousState);
+      throw error;
+    }
+  }
+
+  async integrateWithGCCE() {
+    try {
+      const config = this.getPluginConfig();
+      if (!this.resolveGCCE()) {
+        this.commandRegistrationStatus = 'pending';
+        this.registeredAnimalCommandNames = [];
+        this.api.log('⚠️ [EmojiRain] GCCE plugin not found; command registration is pending', 'warn');
+        return this.getCommandRegistrationInfo();
       }
+
+      const definitions = this.buildGCCECommandDefinitions(config);
+      const replacement = replacePluginCommands({
+        gcce: this.gcce,
+        pluginId: EMOJI_RAIN_PLUGIN_ID,
+        definitions,
+        fallback: this.registeredCommandDefinitions
+      });
+      this.registeredCommandDefinitions = definitions;
+      this.registeredAnimalCommandNames = config.animal_commands
+        .filter(command => command.enabled)
+        .map(command => command.command);
+      this.commandRegistrationStatus = 'active';
+      this.api.log(`✅ [EmojiRain] GCCE integration complete: ${replacement.registered.length} commands registered`, 'info');
+      return this.getCommandRegistrationInfo();
     } catch (error) {
       this.api.log(`❌ [EmojiRain] Error integrating with GCCE: ${error.message}`, 'error');
+      return this.getCommandRegistrationInfo();
     }
   }
 
@@ -563,9 +647,9 @@ class EmojiRainPlugin {
     };
   }
 
-  async handleBeansCommand(args, context) {
-    const config = this.api.getDatabase().getEmojiRainConfig();
-    
+  async handleConfiguredAnimalCommand(command, context) {
+    const config = this.getPluginConfig();
+
     if (!config.enabled) {
       return {
         success: false,
@@ -574,10 +658,26 @@ class EmojiRainPlugin {
       };
     }
 
-    if (config.animal_commands_superfans_only !== false && !this.isAnimalCommandSuperFan(context)) {
+    const access = evaluateAnimalCommandAccess(context, config);
+    if (!access.allowed) {
       return {
         success: false,
-        message: 'This animal command is only available to SuperFans',
+        message: 'This EmojiRain command is only available to subscribers and allowed Teamlevel members',
+        displayOverlay: true
+      };
+    }
+
+    const cooldownRequest = {
+      command: command.command,
+      username: context.username,
+      userCooldownMs: access.userCooldownMs,
+      globalCooldownMs: config.animal_command_global_cooldown_ms
+    };
+    const cooldown = this.animalCommandCooldowns.check(cooldownRequest);
+    if (!cooldown.allowed) {
+      return {
+        success: false,
+        message: `Please wait ${Math.ceil(cooldown.retryAfterMs / 1000)} seconds before using this command again`,
         displayOverlay: true
       };
     }
@@ -591,77 +691,34 @@ class EmojiRainPlugin {
       };
     }
 
-    // SuperFan paw emoji rain
-    this.triggerEmojiRain({
-      emoji: '🐾',
-      count: 30,
+    const spawn = this.triggerEmojiRain({
+      emoji: command.asset_value,
+      count: access.count,
+      exactCount: true,
       intensity: 1.5,
       duration: 0,
       burst: false,
       username: context.username,
       reason: 'command',
-      source: '/beans'
+      source: `/${command.command}`
     });
 
+    if (!spawn) {
+      return {
+        success: false,
+        message: 'Emoji rain could not be started',
+        displayOverlay: true
+      };
+    }
+
+    this.animalCommandCooldowns.record(cooldownRequest);
     this.metrics.commandTriggers++;
 
     return {
       success: true,
-      message: `${context.username} triggered a SuperFan paw emoji rain! 🐾`,
+      message: `${context.username} triggered /${command.command}! ${command.asset_value}`,
       displayOverlay: true
     };
-  }
-
-  async handleAnimalCommand({ emoji, source, label }, context) {
-    const config = this.api.getDatabase().getEmojiRainConfig();
-
-    if (!config.enabled) {
-      return {
-        success: false,
-        message: 'Emoji rain is currently disabled',
-        displayOverlay: true
-      };
-    }
-
-    if (config.animal_commands_superfans_only !== false && !this.isAnimalCommandSuperFan(context)) {
-      return {
-        success: false,
-        message: 'This animal command is only available to SuperFans',
-        displayOverlay: true
-      };
-    }
-
-    if (!this.checkAntiSpam(context.username)) {
-      this.metrics.droppedEvents++;
-      return {
-        success: false,
-        message: 'Please wait before using this command again',
-        displayOverlay: true
-      };
-    }
-
-    this.triggerEmojiRain({
-      emoji,
-      count: 30,
-      intensity: 1.5,
-      duration: 0,
-      burst: false,
-      username: context.username,
-      reason: 'command',
-      source
-    });
-
-    this.metrics.commandTriggers++;
-
-    return {
-      success: true,
-      message: `${context.username} triggered a ${label} emoji rain! ${emoji}`,
-      displayOverlay: true
-    };
-  }
-
-  isAnimalCommandSuperFan(context = {}) {
-    return Number(context?.userData?.teamMemberLevel) >= 1;
   }
 
   async handleStormCommand(args, context) {
@@ -1226,7 +1283,9 @@ class EmojiRainPlugin {
     );
 
     const spawnData = {
-      count: Math.min(params.count || 10, maxCount),
+      count: params.exactCount === true
+        ? Math.min(50, Math.max(1, Math.floor(Number(params.count) || 1)))
+        : Math.min(params.count || 10, maxCount),
       emoji: params.emoji || config.emoji_set[Math.floor(Math.random() * config.emoji_set.length)] || '💙',
       x: coordinates.x,
       y: coordinates.y,
@@ -1551,9 +1610,9 @@ class EmojiRainPlugin {
       try {
         this.api.log('📥 [EmojiRain] GET /api/emoji-rain/config', 'debug');
         const db = this.api.getDatabase();
-        const config = db.getEmojiRainConfig();
+        const config = { ...db.getEmojiRainConfig(), ...this.getAnimalCommandSettings(db.getEmojiRainConfig()) };
         this.api.log(`📥 [EmojiRain] Config retrieved from DB`, 'debug');
-        res.json({ success: true, config });
+        res.json({ success: true, config, commandRegistration: this.getCommandRegistrationInfo() });
       } catch (error) {
         this.api.log(`❌ [EmojiRain] Error getting config: ${error.message}`, 'error');
         res.status(500).json({ success: false, error: error.message });
@@ -1561,7 +1620,7 @@ class EmojiRainPlugin {
     });
 
     // Update emoji rain config
-    this.api.registerRoute('post', '/api/emoji-rain/config', (req, res) => {
+    this.api.registerRoute('post', '/api/emoji-rain/config', async (req, res) => {
       const { config, enabled } = req.body;
 
       if (!config) {
@@ -1569,16 +1628,37 @@ class EmojiRainPlugin {
       }
 
       try {
-        const db = this.api.getDatabase();
-        db.updateEmojiRainConfig(config, enabled !== undefined ? enabled : null);
-        this.api.log('🌧️ WebGPU Emoji rain configuration updated', 'info');
+        const updatedConfig = this.applyConfigUpdate(config, enabled !== undefined ? enabled : null);
+        this.api.log('🌧️ Emoji rain configuration updated', 'info');
 
         // Notify overlays about config change
-        this.api.emit('emoji-rain:config-update', { config, enabled });
+        this.api.emit('emoji-rain:config-update', {
+          config: updatedConfig,
+          enabled: updatedConfig.enabled
+        });
 
-        res.json({ success: true, message: 'Emoji rain configuration updated' });
+        res.json({
+          success: true,
+          message: 'Emoji rain configuration updated',
+          config: updatedConfig,
+          commandRegistration: this.getCommandRegistrationInfo()
+        });
       } catch (error) {
         this.api.log(`Error updating emoji rain config: ${error.message}`, 'error');
+        if (error instanceof AnimalCommandConflictError || error.code === 'COMMAND_CONFLICT') {
+          return res.status(409).json({
+            success: false,
+            error: 'COMMAND_CONFLICT',
+            commands: error.commands || []
+          });
+        }
+        if (error.code === 'INVALID_ANIMAL_COMMANDS') {
+          return res.status(400).json({
+            success: false,
+            error: error.code,
+            issues: error.issues || []
+          });
+        }
         res.status(500).json({ success: false, error: error.message });
       }
     });
@@ -2979,11 +3059,12 @@ class EmojiRainPlugin {
       clearInterval(this.globalTriggerResetInterval);
       this.globalTriggerResetInterval = null;
     }
+    this.animalCommandCooldowns.clear();
     
     // Unregister GCCE commands
     if (this.gcce) {
       try {
-        this.gcce.unregisterCommandsForPlugin('emoji-rain');
+        this.gcce.unregisterCommandsForPlugin(EMOJI_RAIN_PLUGIN_ID);
         this.api.log('✅ [EmojiRain] GCCE commands unregistered', 'info');
       } catch (error) {
         this.api.log(`⚠️ [EmojiRain] Error unregistering GCCE commands: ${error.message}`, 'warn');

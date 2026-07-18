@@ -2,6 +2,13 @@ const Database = require('better-sqlite3');
 const { safeJsonParse } = require('./error-handler');
 const fs = require('fs');
 const path = require('path');
+const { normalizeAnimalCommandSettings } = require('./emoji-rain-animal-commands');
+
+const EMOJI_RAIN_IMAGE_PREFIXES = [
+    '/emoji-rain/uploads/',
+    '/uploads/emoji-rain/',
+    '/plugins/emoji-rain/uploads/'
+];
 
 class DatabaseManager {
     constructor(dbPath, streamerId = null) {
@@ -1762,7 +1769,17 @@ class DatabaseManager {
 
             // SuperFan Burst
             superfan_burst_enabled: true,
-            animal_commands_superfans_only: true,
+            animal_commands: [
+                { command: 'beans', enabled: true, asset_type: 'emoji', asset_value: '🐾' },
+                { command: 'miau', enabled: true, asset_type: 'emoji', asset_value: '🐱' },
+                { command: 'rawr', enabled: true, asset_type: 'emoji', asset_value: '🦖' },
+                { command: 'woof', enabled: true, asset_type: 'emoji', asset_value: '🐶' },
+                { command: 'wuff', enabled: true, asset_type: 'emoji', asset_value: '🐶' }
+            ],
+            animal_commands_allow_team_members: true,
+            animal_command_user_cooldown_ms: 60000,
+            animal_command_superfan_cooldown_ms: 15000,
+            animal_command_global_cooldown_ms: 15000,
             superfan_burst_intensity: 3.8,
             superfan_burst_duration: 2000,
 
@@ -1958,7 +1975,10 @@ class DatabaseManager {
 
         const result = {
             enabled: Boolean(row.enabled),
-            ...configData
+            ...configData,
+            ...normalizeAnimalCommandSettings(configData, {
+                imagePathPrefixes: EMOJI_RAIN_IMAGE_PREFIXES
+            })
         };
 
         console.log('✅ [DATABASE] Returning config with', Object.keys(result).length, 'keys');
