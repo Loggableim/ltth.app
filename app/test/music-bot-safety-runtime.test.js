@@ -487,6 +487,34 @@ describe('Music Bot Safety Lock runtime integration', () => {
     }));
   });
 
+  test('unlock retries one transient process-scan failure before refusing release', async () => {
+    const { api, plugin } = hydratePlugin({ locked: true });
+    let processCleanup = {
+      found: [],
+      killed: [],
+      remaining: [],
+      error: 'powershell.exe timed out'
+    };
+    plugin.playbackEngine.getLastProcessCleanup.mockImplementation(() => processCleanup);
+    plugin.playbackEngine.probe.mockImplementation(async () => {
+      if (plugin.playbackEngine.probe.mock.calls.length === 2) {
+        processCleanup = { found: [], killed: [], remaining: [] };
+      }
+    });
+    const handler = api.handlers['POST:/api/plugins/music-bot/safety-lock'];
+    const response = createResponse();
+
+    await handler({ body: { locked: false } }, response);
+
+    expect(plugin.playbackEngine.probe).toHaveBeenCalledTimes(2);
+    expect(plugin.playbackEngine.releaseSafetyLock).toHaveBeenCalledTimes(1);
+    expect(api.setConfig).toHaveBeenCalledWith('config', plugin.config);
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      locked: false
+    }));
+  });
+
   test('locked bot keeps accepting viewer requests without starting playback', async () => {
     const { plugin, queue } = hydratePlugin({ locked: true });
     const requestedSong = {

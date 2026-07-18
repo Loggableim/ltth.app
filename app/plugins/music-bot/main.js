@@ -1263,7 +1263,12 @@ class MusicBotPlugin extends EventEmitter {
   async _releaseSafetyLock() {
     await this.playbackEngine?.probe?.();
     await this._controllerSafetySyncPromise;
-    const processCleanup = this.playbackEngine?.getLastProcessCleanup?.() || {};
+    let processCleanup = this.playbackEngine?.getLastProcessCleanup?.() || {};
+    if (processCleanup.error && !processCleanup.remaining?.length) {
+      await this.playbackEngine?.probe?.();
+      await this._controllerSafetySyncPromise;
+      processCleanup = this.playbackEngine?.getLastProcessCleanup?.() || {};
+    }
     if (processCleanup.error || processCleanup.remaining?.length) {
       const error = new Error(
         'Safety Lock kann nicht aufgehoben werden, solange ein Soundbot-MPV aktiv ist.'
