@@ -1,4 +1,7 @@
-const { AnimalCommandCooldowns } = require('../../modules/emoji-rain-animal-commands');
+const {
+  AnimalCommandCooldowns,
+  normalizeAnimalCommandSettings
+} = require('../../modules/emoji-rain-animal-commands');
 
 class MockGCCE {
   constructor() {
@@ -37,16 +40,18 @@ class MockGCCE {
 }
 
 class MockAPI {
-  constructor({ config = {}, gcceAvailable = true } = {}) {
+  constructor({ config = {}, gcceAvailable = true, includeAnimalSettings = true } = {}) {
     this.emissions = [];
     this.routes = new Map();
     this.persistCalls = [];
     this.failPersistence = false;
+    this.pluginEventListeners = new Map();
     this.config = {
       enabled: true,
       emoji_set: ['💙'],
       max_count_per_event: 100,
       max_intensity: 3,
+      ...(includeAnimalSettings ? normalizeAnimalCommandSettings({}) : {}),
       ...config
     };
     this.gcce = gcceAvailable ? new MockGCCE() : null;
@@ -82,9 +87,24 @@ class MockAPI {
   }
   getConfig() { return { ...this.config }; }
   setConfig(_key, next) {
-    if (this.failPersistence) throw new Error('persistence failed');
+    if (this.failPersistence) return false;
     this.config = { ...next };
     this.persistCalls.push({ ...this.config });
+    return true;
+  }
+  on(event, callback) {
+    const listeners = this.pluginEventListeners.get(event) || [];
+    listeners.push(callback);
+    this.pluginEventListeners.set(event, listeners);
+    return true;
+  }
+  removeListener(event, callback) {
+    const listeners = this.pluginEventListeners.get(event) || [];
+    this.pluginEventListeners.set(event, listeners.filter(listener => listener !== callback));
+  }
+  async emitPluginEvent(event, payload) {
+    const listeners = this.pluginEventListeners.get(event) || [];
+    await Promise.all(listeners.map(listener => listener(payload)));
   }
   registerRoute(method, path, handler) {
     this.routes.set(`${String(method).toLowerCase()} ${path}`, handler);
@@ -125,7 +145,9 @@ function registerEmojiRainCommandContract({
   pluginId,
   eventName,
   configRoute,
-  imagePath
+  imagePath,
+  imageRendererMode = 'direct',
+  usesPluginConfigStorage = false
 }) {
   describe(`${label} dynamic animal commands`, () => {
     test('migrates and registers the five defaults with dedicated plugin cooldowns', async () => {
@@ -187,7 +209,12 @@ function registerEmojiRainCommandContract({
         userData: { teamMemberLevel: 4 }
       });
       expect(response).toMatchObject({ success: true });
-      expect(api.emissions[0].data).toMatchObject({ emoji: imagePath, count: 4, burst: false });
+      expect(api.emissions[0].data).toMatchObject({
+        emoji: imageRendererMode === 'profile-picture' ? '{{profilePicture}}' : imagePath,
+        ...(imageRendererMode === 'profile-picture' ? { profilePictureUrl: imagePath } : {}),
+        count: 4,
+        burst: false
+      });
 
       plugin.checkAntiSpam = jest.fn(() => true);
       const remoteResponse = await api.gcce.registry.getCommand('remote').handler([], {
@@ -196,7 +223,14 @@ function registerEmojiRainCommandContract({
         userData: { teamMemberLevel: 1 }
       });
       expect(remoteResponse).toMatchObject({ success: true });
-      expect(api.emissions[1].data.emoji).toBe('https://cdn.example.test/dog.webp');
+      expect(api.emissions[1].data).toMatchObject({
+        emoji: imageRendererMode === 'profile-picture'
+          ? '{{profilePicture}}'
+          : 'https://cdn.example.test/dog.webp',
+        ...(imageRendererMode === 'profile-picture'
+          ? { profilePictureUrl: 'https://cdn.example.test/dog.webp' }
+          : {})
+      });
     });
 
     test('keeps an explicitly empty command list disabled', async () => {
@@ -273,6 +307,25 @@ function registerEmojiRainCommandContract({
       expect(await api.gcce.registry.getCommand('rawr').handler([], memberContext)).toMatchObject({ success: false });
       now += 45000;
       expect(await api.gcce.registry.getCommand('rawr').handler([], memberContext)).toMatchObject({ success: true });
+    });
+
+    test('keeps user cooldowns separate for viewers with the same display nickname', async () => {
+      const api = new MockAPI({
+        config: { animal_command_global_cooldown_ms: 0 }
+      });
+      const plugin = new Plugin(api);
+      plugin.checkAntiSpam = jest.fn(() => true);
+      await plugin.integrateWithGCCE();
+      const beans = api.gcce.registry.getCommand('beans');
+      const baseContext = {
+        username: 'Same Nickname',
+        rawData: { isSubscriber: true },
+        userData: { teamMemberLevel: 0 }
+      };
+
+      expect(await beans.handler([], { ...baseContext, uniqueId: 'viewer-one' })).toMatchObject({ success: true });
+      expect(await beans.handler([], { ...baseContext, uniqueId: 'viewer-two' })).toMatchObject({ success: true });
+      expect(await beans.handler([], { ...baseContext, uniqueId: 'viewer-one' })).toMatchObject({ success: false });
     });
 
     test('does not record the dedicated cooldown when spawning fails', async () => {
@@ -411,6 +464,50 @@ function registerEmojiRainCommandContract({
       });
       expect(api.config.animal_commands).toEqual([animalCommand('later', 'emoji', '🦊')]);
     });
+
+    test('registers pending commands when GCCE loads later', async () => {
+      const api = new MockAPI({ gcceAvailable: false });
+      const plugin = new Plugin(api);
+
+      await plugin.integrateWithGCCE();
+      expect(plugin.getCommandRegistrationInfo()).toEqual({ status: 'pending', registered: [] });
+
+      api.gcce = new MockGCCE();
+      api.pluginLoader.loadedPlugins.set('gcce', { instance: api.gcce });
+      await api.emitPluginEvent('plugin:loaded', { id: 'gcce', instance: api.gcce });
+
+      expect(plugin.getCommandRegistrationInfo()).toEqual({
+        status: 'active',
+        registered: ['beans', 'miau', 'rawr', 'woof', 'wuff']
+      });
+      expect(api.gcce.registry.getCommand('beans')).not.toBeNull();
+    });
+
+    if (usesPluginConfigStorage) {
+      test('durably migrates missing command fields while preserving an explicit empty list', () => {
+        const api = new MockAPI({
+          includeAnimalSettings: false,
+          config: {
+            animal_commands: [],
+            emoji_set: ['🎵']
+          }
+        });
+        const plugin = new Plugin(api);
+
+        const config = plugin.loadRuntimeConfig();
+
+        expect(config.animal_commands).toEqual([]);
+        expect(api.persistCalls).toHaveLength(1);
+        expect(api.config).toMatchObject({
+          animal_commands: [],
+          animal_commands_allow_team_members: true,
+          animal_command_user_cooldown_ms: 60000,
+          animal_command_superfan_cooldown_ms: 15000,
+          animal_command_global_cooldown_ms: 15000,
+          emoji_set: ['🎵']
+        });
+      });
+    }
   });
 }
 

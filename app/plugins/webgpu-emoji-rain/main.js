@@ -22,9 +22,11 @@ const multer = require('multer');
 const crypto = require('crypto');
 const { createDefaultWebGPUConfig, normalizeWebGPUConfig } = require('./lib/webgpu-config');
 const {
+  ANIMAL_COMMAND_SETTING_KEYS,
   AnimalCommandConflictError,
   AnimalCommandCooldowns,
   evaluateAnimalCommandAccess,
+  getAnimalCommandUserKey,
   normalizeAnimalCommandSettings,
   replacePluginCommands,
   restorePluginCommands
@@ -66,6 +68,8 @@ class WebGPUEmojiRainPlugin {
     this.registeredAnimalCommandNames = [];
     this.commandRegistrationStatus = 'pending';
     this.animalCommandCooldowns = new AnimalCommandCooldowns();
+    this.gcceLifecycleListeners = [];
+    this.gcceLifecycleListenersRegistered = false;
     
     // Anti-spam and rate limiting
     this.globalTriggerCount = 0;
@@ -207,7 +211,15 @@ class WebGPUEmojiRainPlugin {
       ? this.api.getConfig('v3-config')
       : this.api.getDatabase?.().getEmojiRainConfig?.() || null;
     const normalized = normalizeWebGPUConfig(stored || createDefaultWebGPUConfig());
-    if (!stored && typeof this.api.setConfig === 'function') this.api.setConfig('v3-config', normalized);
+    const needsMigration = !stored || ANIMAL_COMMAND_SETTING_KEYS.some(key => (
+      !Object.prototype.hasOwnProperty.call(stored, key)
+    ));
+    if (needsMigration && typeof this.api.setConfig === 'function') {
+      const persisted = this.api.setConfig('v3-config', normalized);
+      if (persisted === false) {
+        this.api.log('⚠️ [WebGPU Emoji Rain] Could not persist migrated command settings', 'warn');
+      }
+    }
     return normalized;
   }
 
@@ -222,8 +234,11 @@ class WebGPUEmojiRainPlugin {
       ...(config && typeof config === 'object' ? config : {}),
       ...(enabled === null ? {} : { enabled: Boolean(enabled) })
     });
+    if (typeof this.api.setConfig === 'function') {
+      const persisted = this.api.setConfig('v3-config', next);
+      if (persisted === false) throw new Error('Failed to persist WebGPU EmojiRain configuration');
+    }
     this.runtimeConfig = next;
-    if (typeof this.api.setConfig === 'function') this.api.setConfig('v3-config', next);
     return { ...next };
   }
 
@@ -403,6 +418,44 @@ class WebGPUEmojiRainPlugin {
     return this.gcce;
   }
 
+  setupGCCELifecycleListeners() {
+    if (this.gcceLifecycleListenersRegistered || typeof this.api.on !== 'function') return;
+
+    const registerWhenAvailable = (event, payload) => {
+      const pluginId = typeof payload === 'string' ? payload : payload?.id;
+      if (event !== 'gcce:ready' && pluginId !== 'gcce') return undefined;
+      return this.integrateWithGCCE();
+    };
+    const markPending = payload => {
+      const pluginId = typeof payload === 'string' ? payload : payload?.id;
+      if (pluginId !== 'gcce') return;
+      this.gcce = null;
+      this.commandRegistrationStatus = 'pending';
+      this.registeredAnimalCommandNames = [];
+    };
+    const listeners = [
+      ['gcce:ready', payload => registerWhenAvailable('gcce:ready', payload)],
+      ['plugin:loaded', payload => registerWhenAvailable('plugin:loaded', payload)],
+      ['plugin:enabled', payload => registerWhenAvailable('plugin:enabled', payload)],
+      ['plugin:reloaded', payload => registerWhenAvailable('plugin:reloaded', payload)],
+      ['plugin:unloaded', markPending],
+      ['plugin:disabled', markPending]
+    ];
+
+    listeners.forEach(([event, callback]) => {
+      if (this.api.on(event, callback)) this.gcceLifecycleListeners.push({ event, callback });
+    });
+    this.gcceLifecycleListenersRegistered = true;
+  }
+
+  removeGCCELifecycleListeners() {
+    this.gcceLifecycleListeners.forEach(({ event, callback }) => {
+      if (typeof this.api.removeListener === 'function') this.api.removeListener(event, callback);
+    });
+    this.gcceLifecycleListeners = [];
+    this.gcceLifecycleListenersRegistered = false;
+  }
+
   buildGCCECommandDefinitions(config) {
     const settings = { ...config, ...this.getAnimalCommandSettings(config) };
     return [
@@ -553,7 +606,10 @@ class WebGPUEmojiRainPlugin {
     const replacement = this.replaceGCCERegistration(next);
 
     try {
-      if (typeof this.api.setConfig === 'function') this.api.setConfig('v3-config', next);
+      if (typeof this.api.setConfig === 'function') {
+        const persisted = this.api.setConfig('v3-config', next);
+        if (persisted === false) throw new Error('Failed to persist WebGPU EmojiRain configuration');
+      }
       this.runtimeConfig = next;
       this.animalCommandCooldowns.clear();
       return { ...next };
@@ -565,6 +621,7 @@ class WebGPUEmojiRainPlugin {
   }
 
   async integrateWithGCCE() {
+    this.setupGCCELifecycleListeners();
     try {
       const config = this.getRuntimeConfig();
       if (!this.resolveGCCE()) {
@@ -735,7 +792,7 @@ class WebGPUEmojiRainPlugin {
 
     const cooldownRequest = {
       command: command.command,
-      username: context.username,
+      userKey: getAnimalCommandUserKey(context),
       userCooldownMs: access.userCooldownMs,
       globalCooldownMs: config.animal_command_global_cooldown_ms
     };
@@ -3124,6 +3181,7 @@ class WebGPUEmojiRainPlugin {
 
   async destroy() {
     this.api.log('🌧️ [WebGPU Emoji Rain] Shutting down plugin...', 'info');
+    this.removeGCCELifecycleListeners();
     
     // Stop spawn batch processor
     if (this.spawnBatchInterval) {

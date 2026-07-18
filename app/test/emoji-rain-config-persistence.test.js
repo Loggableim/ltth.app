@@ -232,6 +232,35 @@ describe('EmojiRain - Configuration Persistence', () => {
         expect(config.enable_depth).toBeDefined();
     });
 
+    test('should durably migrate missing animal command fields and preserve an explicit empty list', () => {
+        const legacyConfig = {
+            emoji_set: ['🎵'],
+            animal_commands: []
+        };
+        db.db.prepare(`
+            UPDATE emoji_rain_config
+            SET config_json = ?
+            WHERE id = 1
+        `).run(JSON.stringify(legacyConfig));
+        db._emojiRainConfigCache = null;
+        db._emojiRainConfigCacheTs = 0;
+
+        const migrated = db.getEmojiRainConfig();
+        const stored = JSON.parse(db.db.prepare(
+            'SELECT config_json FROM emoji_rain_config WHERE id = 1'
+        ).get().config_json);
+
+        expect(migrated.animal_commands).toEqual([]);
+        expect(stored).toMatchObject({
+            emoji_set: ['🎵'],
+            animal_commands: [],
+            animal_commands_allow_team_members: true,
+            animal_command_user_cooldown_ms: 60000,
+            animal_command_superfan_cooldown_ms: 15000,
+            animal_command_global_cooldown_ms: 15000
+        });
+    });
+
     test('should not reset ALL settings to defaults on restart', () => {
         // This is the critical test for the bug fix
         const RESTART_ITERATIONS = 5; // Number of restart cycles to test

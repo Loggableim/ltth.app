@@ -9,5 +9,6 @@ registerEmojiRainCommandContract({
   pluginId: 'emoji-rain',
   eventName: 'emoji-rain:spawn',
   configRoute: '/api/emoji-rain/config',
-  imagePath: '/emoji-rain/uploads/cat.png'
+  imagePath: '/emoji-rain/uploads/cat.png',
+  imageRendererMode: 'profile-picture'
 });

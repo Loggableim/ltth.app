@@ -24,6 +24,7 @@ const {
   AnimalCommandConflictError,
   AnimalCommandCooldowns,
   evaluateAnimalCommandAccess,
+  getAnimalCommandUserKey,
   normalizeAnimalCommandSettings,
   replacePluginCommands,
   restorePluginCommands
@@ -61,6 +62,8 @@ class EmojiRainPlugin {
     this.registeredAnimalCommandNames = [];
     this.commandRegistrationStatus = 'pending';
     this.animalCommandCooldowns = new AnimalCommandCooldowns();
+    this.gcceLifecycleListeners = [];
+    this.gcceLifecycleListenersRegistered = false;
     
     // Anti-spam and rate limiting
     this.globalTriggerCount = 0;
@@ -336,6 +339,44 @@ class EmojiRainPlugin {
     return this.gcce;
   }
 
+  setupGCCELifecycleListeners() {
+    if (this.gcceLifecycleListenersRegistered || typeof this.api.on !== 'function') return;
+
+    const registerWhenAvailable = (event, payload) => {
+      const pluginId = typeof payload === 'string' ? payload : payload?.id;
+      if (event !== 'gcce:ready' && pluginId !== 'gcce') return undefined;
+      return this.integrateWithGCCE();
+    };
+    const markPending = payload => {
+      const pluginId = typeof payload === 'string' ? payload : payload?.id;
+      if (pluginId !== 'gcce') return;
+      this.gcce = null;
+      this.commandRegistrationStatus = 'pending';
+      this.registeredAnimalCommandNames = [];
+    };
+    const listeners = [
+      ['gcce:ready', payload => registerWhenAvailable('gcce:ready', payload)],
+      ['plugin:loaded', payload => registerWhenAvailable('plugin:loaded', payload)],
+      ['plugin:enabled', payload => registerWhenAvailable('plugin:enabled', payload)],
+      ['plugin:reloaded', payload => registerWhenAvailable('plugin:reloaded', payload)],
+      ['plugin:unloaded', markPending],
+      ['plugin:disabled', markPending]
+    ];
+
+    listeners.forEach(([event, callback]) => {
+      if (this.api.on(event, callback)) this.gcceLifecycleListeners.push({ event, callback });
+    });
+    this.gcceLifecycleListenersRegistered = true;
+  }
+
+  removeGCCELifecycleListeners() {
+    this.gcceLifecycleListeners.forEach(({ event, callback }) => {
+      if (typeof this.api.removeListener === 'function') this.api.removeListener(event, callback);
+    });
+    this.gcceLifecycleListeners = [];
+    this.gcceLifecycleListenersRegistered = false;
+  }
+
   buildGCCECommandDefinitions(config) {
     const settings = { ...config, ...this.getAnimalCommandSettings(config) };
     return [
@@ -499,6 +540,7 @@ class EmojiRainPlugin {
   }
 
   async integrateWithGCCE() {
+    this.setupGCCELifecycleListeners();
     try {
       const config = this.getPluginConfig();
       if (!this.resolveGCCE()) {
@@ -669,7 +711,7 @@ class EmojiRainPlugin {
 
     const cooldownRequest = {
       command: command.command,
-      username: context.username,
+      userKey: getAnimalCommandUserKey(context),
       userCooldownMs: access.userCooldownMs,
       globalCooldownMs: config.animal_command_global_cooldown_ms
     };
@@ -691,8 +733,10 @@ class EmojiRainPlugin {
       };
     }
 
+    const imageAsset = command.asset_type === 'image';
     const spawn = this.triggerEmojiRain({
-      emoji: command.asset_value,
+      emoji: imageAsset ? '{{profilePicture}}' : command.asset_value,
+      ...(imageAsset ? { profilePictureUrl: command.asset_value } : {}),
       count: access.count,
       exactCount: true,
       intensity: 1.5,
@@ -3049,6 +3093,7 @@ class EmojiRainPlugin {
 
   async destroy() {
     this.api.log('🌧️ [EmojiRain] Shutting down plugin...', 'info');
+    this.removeGCCELifecycleListeners();
     
     // Stop spawn batch processor
     if (this.spawnBatchInterval) {

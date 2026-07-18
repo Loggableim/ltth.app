@@ -25,6 +25,14 @@ const DEFAULT_ANIMAL_COMMAND_SETTINGS = Object.freeze({
   animal_command_global_cooldown_ms: 15000
 });
 
+const ANIMAL_COMMAND_SETTING_KEYS = Object.freeze([
+  'animal_commands',
+  'animal_commands_allow_team_members',
+  'animal_command_user_cooldown_ms',
+  'animal_command_superfan_cooldown_ms',
+  'animal_command_global_cooldown_ms'
+]);
+
 const MAX_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 class AnimalCommandValidationError extends Error {
@@ -268,6 +276,10 @@ function getAnimalCommandCount(context = {}) {
   return Math.max(1, getTeamMemberLevel(context));
 }
 
+function getAnimalCommandUserKey(context = {}) {
+  return context.uniqueId || context.userId || context.username || '';
+}
+
 function evaluateAnimalCommandAccess(context = {}, settings = {}) {
   const isPaidSubscriber = hasPaidSuperfanStatus(context);
   const teamMemberLevel = getTeamMemberLevel(context);
@@ -290,12 +302,12 @@ class AnimalCommandCooldowns {
     this.globalTimestamps = new Map();
   }
 
-  check({ command, username, userCooldownMs, globalCooldownMs }) {
+  check({ command, userKey, username, userCooldownMs, globalCooldownMs }) {
     const now = this.now();
     const commandKey = normalizeCommandName(command);
-    const userKey = `${commandKey}:${String(username ?? '').trim().toLowerCase()}`;
+    const commandUserKey = `${commandKey}:${String(userKey ?? username ?? '').trim().toLowerCase()}`;
     const userRemaining = this.remaining(
-      this.userTimestamps.get(userKey),
+      this.userTimestamps.get(commandUserKey),
       userCooldownMs,
       now
     );
@@ -315,11 +327,11 @@ class AnimalCommandCooldowns {
     return { allowed: true, retryAfterMs: 0, scope: null };
   }
 
-  record({ command, username }) {
+  record({ command, userKey, username }) {
     const now = this.now();
     const commandKey = normalizeCommandName(command);
-    const userKey = `${commandKey}:${String(username ?? '').trim().toLowerCase()}`;
-    this.userTimestamps.set(userKey, now);
+    const commandUserKey = `${commandKey}:${String(userKey ?? username ?? '').trim().toLowerCase()}`;
+    this.userTimestamps.set(commandUserKey, now);
     this.globalTimestamps.set(commandKey, now);
   }
 
@@ -391,6 +403,7 @@ function replacePluginCommands({ gcce, pluginId, definitions, fallback = [] }) {
 }
 
 module.exports = {
+  ANIMAL_COMMAND_SETTING_KEYS,
   COMMAND_NAME_PATTERN,
   DEFAULT_ANIMAL_COMMANDS,
   DEFAULT_ANIMAL_COMMAND_SETTINGS,
@@ -402,6 +415,7 @@ module.exports = {
   AnimalCommandValidationError,
   evaluateAnimalCommandAccess,
   getAnimalCommandCount,
+  getAnimalCommandUserKey,
   getTeamMemberLevel,
   hasPaidSuperfanStatus,
   isValidAsset,

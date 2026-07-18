@@ -2,7 +2,10 @@ const Database = require('better-sqlite3');
 const { safeJsonParse } = require('./error-handler');
 const fs = require('fs');
 const path = require('path');
-const { normalizeAnimalCommandSettings } = require('./emoji-rain-animal-commands');
+const {
+    ANIMAL_COMMAND_SETTING_KEYS,
+    normalizeAnimalCommandSettings
+} = require('./emoji-rain-animal-commands');
 
 const EMOJI_RAIN_IMAGE_PREFIXES = [
     '/emoji-rain/uploads/',
@@ -1973,12 +1976,29 @@ class DatabaseManager {
         console.log('🔍 [DATABASE] configData.emoji_set:', configData.emoji_set);
         console.log('🔍 [DATABASE] configData.emoji_set type:', typeof configData.emoji_set, Array.isArray(configData.emoji_set));
 
+        const animalCommandSettings = normalizeAnimalCommandSettings(configData, {
+            imagePathPrefixes: EMOJI_RAIN_IMAGE_PREFIXES
+        });
+        const migratedConfigData = {
+            ...configData,
+            ...animalCommandSettings
+        };
+        const needsAnimalCommandMigration = ANIMAL_COMMAND_SETTING_KEYS.some(key => (
+            !Object.prototype.hasOwnProperty.call(configData, key)
+        ));
+
+        if (needsAnimalCommandMigration) {
+            this.db.prepare(`
+                UPDATE emoji_rain_config
+                SET config_json = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = 1
+            `).run(JSON.stringify(migratedConfigData));
+            console.log('✅ [DATABASE] Persisted missing EmojiRain command settings');
+        }
+
         const result = {
             enabled: Boolean(row.enabled),
-            ...configData,
-            ...normalizeAnimalCommandSettings(configData, {
-                imagePathPrefixes: EMOJI_RAIN_IMAGE_PREFIXES
-            })
+            ...migratedConfigData
         };
 
         console.log('✅ [DATABASE] Returning config with', Object.keys(result).length, 'keys');
