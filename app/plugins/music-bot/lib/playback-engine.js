@@ -14,6 +14,14 @@ const DEFAULT_DUCKING_TARGET_PERCENT = 35;
 const DEFAULT_NORMALIZATION_INTEGRATED_LUFS = -16;
 const DEFAULT_NORMALIZATION_TRUE_PEAK_DB = -1.5;
 const DEFAULT_NORMALIZATION_LRA = 11;
+const SEEK_ERROR_CODES = new Set([
+  'PLAYBACK_SEEK_INVALID_POSITION',
+  'PLAYBACK_SEEK_STATE',
+  'PLAYBACK_STALE_ID',
+  'PLAYBACK_UNSEEKABLE',
+  'PLAYBACK_UNKNOWN_DURATION',
+  'MPV_IPC_DISCONNECTED'
+]);
 
 function createSeekError(code, message) {
   const error = new Error(message);
@@ -237,7 +245,7 @@ class PlaybackEngine extends EventEmitter {
         state: this.state
       };
     } catch (error) {
-      if (error?.code) throw error;
+      if (SEEK_ERROR_CODES.has(error?.code)) throw error;
       throw createSeekError('MPV_IPC_DISCONNECTED', error?.message || 'mpv IPC seek failed');
     }
   }

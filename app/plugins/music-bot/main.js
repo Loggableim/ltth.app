@@ -1914,8 +1914,13 @@ class MusicBotPlugin extends EventEmitter {
       const playbackId = typeof req.body?.playbackId === 'string'
         ? req.body.playbackId.trim()
         : '';
-      const positionSeconds = Number(req.body?.positionSeconds);
-      if (!playbackId || !Number.isFinite(positionSeconds) || positionSeconds < 0) {
+      const positionSeconds = req.body?.positionSeconds;
+      if (
+        !playbackId
+        || typeof positionSeconds !== 'number'
+        || !Number.isFinite(positionSeconds)
+        || positionSeconds < 0
+      ) {
         res.status(400).json({ success: false, error: 'playbackId and a non-negative positionSeconds are required' });
         return;
       }
@@ -1936,7 +1941,7 @@ class MusicBotPlugin extends EventEmitter {
             ? 409
             : code === 'PLAYBACK_UNSEEKABLE' || code === 'PLAYBACK_UNKNOWN_DURATION'
               ? 422
-              : code === 'MPV_IPC_DISCONNECTED'
+              : code === 'MPV_IPC_DISCONNECTED' || ['EPIPE', 'ECONNRESET', 'ECONNABORTED', 'ENOTCONN'].includes(code)
                 ? 503
                 : 400;
         res.status(statusCode).json({ success: false, error: error?.message || 'Seek failed', code });

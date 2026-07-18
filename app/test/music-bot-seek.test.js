@@ -118,6 +118,18 @@ describe('Music Bot backend seek', () => {
     expect(engine._sendCommand).not.toHaveBeenCalledWith(['seek', 42, 'absolute+exact'], expect.any(Object));
   });
 
+  test('PlaybackEngine normalizes native IPC socket failures to a disconnected error', async () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    engine.socket = { destroyed: false };
+    engine.state = 'playing';
+    engine.nowPlaying = { id: 'track', duration: 120 };
+    const socketError = new Error('write EPIPE');
+    socketError.code = 'EPIPE';
+    engine._sendCommand = jest.fn(async () => { throw socketError; });
+
+    await expect(engine.seek(42)).rejects.toMatchObject({ code: 'MPV_IPC_DISCONNECTED' });
+  });
+
   test('PlaybackController seeks only the active matching playback and serializes stale IDs', async () => {
     const engine = new SeekEngine();
     const controller = createController(engine);
@@ -218,6 +230,31 @@ describe('Music Bot backend seek', () => {
       await handler({ body }, res);
       expect(res.statusCode).toBe(status);
     }
+  });
+
+  test('seek route maps a native IPC socket failure to service unavailable', async () => {
+    const { plugin, routes } = createPlugin();
+    const socketError = new Error('read ECONNRESET');
+    socketError.code = 'ECONNRESET';
+    plugin.playbackEngine = { seek: jest.fn(async () => { throw socketError; }) };
+    plugin._registerRoutes();
+
+    const res = createResponse();
+    await routes.get('post:/api/plugins/music-bot/seek')({ body: { playbackId: 'playback-1', positionSeconds: 42 } }, res);
+
+    expect(res.statusCode).toBe(503);
+  });
+
+  test.each([null, '', false, '42'])('seek route rejects a non-numeric JSON position %p without calling the engine', async (positionSeconds) => {
+    const { plugin, routes } = createPlugin();
+    plugin.playbackEngine = { seek: jest.fn() };
+    plugin._registerRoutes();
+
+    const res = createResponse();
+    await routes.get('post:/api/plugins/music-bot/seek')({ body: { playbackId: 'playback-1', positionSeconds } }, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(plugin.playbackEngine.seek).not.toHaveBeenCalled();
   });
 
   test('seek route emits an immediate authoritative sync and reschedules from the confirmed position', async () => {
