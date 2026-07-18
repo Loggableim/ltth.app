@@ -877,8 +877,11 @@ class GameEngineDatabase {
     return this.transaction(() => this.db.prepare(`
       UPDATE game_sessions
       SET status = 'completed', win_reason = 'recovery_failed', ended_at = CURRENT_TIMESTAMP
-      WHERE game_type IN ('connect4', 'chess')
-        AND status IN ('waiting', 'active')
+      WHERE status IN ('waiting', 'active')
+        AND EXISTS (
+          SELECT 1 FROM game_interactive_sessions interactive
+          WHERE interactive.session_id = game_sessions.id
+        )
         AND NOT EXISTS (
           SELECT 1 FROM game_interactive_sessions interactive
           WHERE interactive.session_id = game_sessions.id
@@ -1120,10 +1123,7 @@ class GameEngineDatabase {
         COUNT(*) as total_games,
         SUM(CASE WHEN status = 'completed' AND COALESCE(win_reason, '') NOT IN ('cancelled', 'recovery_failed') THEN 1 ELSE 0 END) as completed_games,
         SUM(CASE WHEN status = 'completed' AND win_reason IN ('cancelled', 'recovery_failed') THEN 1 ELSE 0 END) as aborted_games,
-        SUM(CASE WHEN status IN ('waiting', 'active') AND EXISTS (
-          SELECT 1 FROM game_interactive_sessions interactive
-          WHERE interactive.session_id = game_sessions.id AND interactive.status = 'active'
-        ) THEN 1 ELSE 0 END) as active_games
+        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_games
       FROM game_sessions
     `;
     

@@ -242,7 +242,7 @@ describe('GameEngineDatabase interactive persistence', () => {
     expect(database.getActiveInteractiveStates()).toEqual([]);
   });
 
-  test('reconciles orphaned legacy rows and reports aborted games separately from completed and authoritative active games', () => {
+  test('reconciles only persisted interactive orphans and preserves generic active-game accounting', () => {
     const completed = database.createSession('connect4', 'winner', 'viewer', 'command', '/c4start');
     database.addPlayer2(completed, 'streamer', 'streamer');
     database.endSession(completed, 'winner', { board: [[1]] }, 'win');
@@ -262,13 +262,34 @@ describe('GameEngineDatabase interactive persistence', () => {
 
     const orphan = database.createSession('connect4', 'orphan', 'viewer', 'command', '/c4start');
     database.addPlayer2(orphan, 'streamer', 'streamer');
+    database.createInteractiveState(session({
+      sessionId: orphan,
+      viewerId: 'orphan',
+      viewerDisplayName: 'Orphan'
+    }));
+    sqlite.prepare(`
+      UPDATE game_interactive_sessions
+      SET status = 'completed', terminal_reason = 'interrupted'
+      WHERE session_id = ?
+    `).run(orphan);
+
+    const manualConnect4 = database.createSession('connect4', 'manual-viewer', 'viewer', 'command', '/c4start');
+    database.addPlayer2(manualConnect4, 'streamer', 'streamer');
+
+    const nonInteractive = database.createSession('wheel', 'wheel-viewer', 'viewer', 'command', '/wheel');
+    database.addPlayer2(nonInteractive, 'streamer', 'streamer');
 
     expect(database.reconcileOrphanedInteractiveSessions()).toBe(1);
     expect(database.getSession(orphan)).toMatchObject({ status: 'completed', win_reason: 'recovery_failed' });
     expect(database.getGameStats('connect4')).toMatchObject({
-      total_games: 4,
+      total_games: 5,
       completed_games: 1,
       aborted_games: 2,
+      active_games: 2
+    });
+    expect(database.getSession(manualConnect4)).toMatchObject({ status: 'active' });
+    expect(database.getGameStats('wheel')).toMatchObject({
+      total_games: 1,
       active_games: 1
     });
     expect(database.getPlayerStats('cancelled')).toEqual([]);

@@ -750,6 +750,13 @@
       const reason = document.getElementById('game-over-reason');
       const winner = result.winnerDisplayName;
       hideInteractiveLeaderboard();
+      if (result.reason === 'cancelled') {
+        title.textContent = runtimeText('plugins.game-engine.runtime.common.cancelled') || 'Game cancelled';
+        winnerName.textContent = '';
+        reason.textContent = '';
+        overlay.classList.add('show');
+        return;
+      }
       title.textContent = winner ? `${winner} gewinnt!` : 'Remis';
       winnerName.textContent = winner || '';
       reason.textContent = result.reason || '';

@@ -637,16 +637,46 @@ describe('InteractiveController', () => {
     harness.sqlite.close();
   });
 
-  test('reconciles orphaned legacy waiting and active game rows as recovery failures on init', () => {
+  test('reconciles persisted interactive orphans but preserves manual game rows on init', () => {
     const harness = createHarness();
     const orphan = harness.database.createSession('connect4', 'orphan-viewer', 'viewer', 'command', '/c4start');
     harness.database.addPlayer2(orphan, 'streamer', 'streamer');
+    harness.database.createInteractiveState({
+      sessionId: orphan,
+      gameType: 'connect4',
+      viewerId: 'orphan-viewer',
+      viewerDisplayName: 'Orphan Viewer',
+      hostDisplayName: 'Host',
+      state: new Connect4Game(
+        orphan,
+        { username: 'streamer', role: 'streamer', nickname: 'Host' },
+        { username: 'orphan-viewer', role: 'viewer', nickname: 'Orphan Viewer' },
+        logger
+      ).getState(),
+      sessionRevision: 1,
+      displayRevision: 0,
+      turnRole: 'viewer',
+      viewerDeadlineMs: Date.now() + 30_000,
+      hostTimeRemainingMs: null,
+      timeControl: null,
+      lastMoveIdentity: null,
+      lastActivityAt: Date.now()
+    });
+    harness.sqlite.prepare(`
+      UPDATE game_interactive_sessions
+      SET status = 'completed', terminal_reason = 'interrupted'
+      WHERE session_id = ?
+    `).run(orphan);
+
+    const manual = harness.database.createSession('chess', 'manual-viewer', 'viewer', 'command', '/chess');
+    harness.database.addPlayer2(manual, 'streamer', 'streamer');
 
     expect(harness.controller.init()).toMatchObject({ reconciled: 1 });
     expect(harness.database.getSession(orphan)).toMatchObject({
       status: 'completed',
       win_reason: 'recovery_failed'
     });
+    expect(harness.database.getSession(manual)).toMatchObject({ status: 'active' });
 
     harness.controller.destroy();
     harness.sqlite.close();

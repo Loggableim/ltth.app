@@ -1231,7 +1231,13 @@
       const xpReward = document.getElementById('xp-reward');
       const dt = (gameConfig && gameConfig._displayTexts) || {};
 
-      if (data.winner) {
+      if (data.reason === 'cancelled') {
+        resultText.innerHTML = '';
+        const cancelledText = document.createElement('span');
+        cancelledText.className = 'draw-text';
+        cancelledText.textContent = runtimeText('plugins.game-engine.runtime.common.cancelled') || 'Game cancelled';
+        resultText.appendChild(cancelledText);
+      } else if (data.winner) {
         const winnerInfo = data.state.winner === 1 ? data.state.player1 : data.state.player2;
         const winLabel = dt.labelWin || '🏆 {player} gewinnt!';
         resultText.innerHTML = '<span class="winner-text"></span>';

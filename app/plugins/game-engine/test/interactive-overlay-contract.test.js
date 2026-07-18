@@ -89,6 +89,23 @@ describe('interactive overlay contract', () => {
     expect(html).not.toContain('interactiveLeaderboardTimer = setTimeout');
   });
 
+  test('authoritative cancellations render neutral results instead of a winner or draw', () => {
+    const connect4 = readOverlay('connect4.html');
+    const chess = readOverlay('chess.html');
+
+    expect(connect4).toContain("if (data.reason === 'cancelled')");
+    expect(connect4).toContain("runtimeText('plugins.game-engine.runtime.common.cancelled')");
+
+    const interactiveResultStart = chess.indexOf('function showInteractiveResult(result)');
+    const interactiveResultEnd = chess.indexOf('function hideInteractiveLeaderboard()', interactiveResultStart);
+    const interactiveResult = chess.slice(interactiveResultStart, interactiveResultEnd);
+
+    expect(interactiveResult).toMatch(
+      /if \(result\.reason === 'cancelled'\)[\s\S]*?winnerName\.textContent = '';[\s\S]*?return;[\s\S]*?title\.textContent = winner \?/
+    );
+    expect(interactiveResult).toContain("runtimeText('plugins.game-engine.runtime.common.cancelled')");
+  });
+
   test.each(['unified.html', 'connect4.html', 'chess.html'])(
     '%s contains syntactically valid inline scripts',
     filename => {
