@@ -1439,6 +1439,7 @@ class MusicBotPlugin extends EventEmitter {
         } else {
           this.autoDJ?.markPlaybackFailed?.(playbackError);
           this._stopPlaybackSync();
+          this._advanceAfterViewerFailure('viewer-track-error', info.track, playbackError);
         }
         this._emitError(message);
         this._emitPlaybackStopped();
@@ -1513,6 +1514,11 @@ class MusicBotPlugin extends EventEmitter {
       this._emitPlaybackStopped();
       this._emitNowPlaying(null);
       this._emitRuntimeHealth();
+      this._advanceAfterViewerFailure(
+        'viewer-mpv-crash',
+        current,
+        new Error(`mpv crashed while playing "${current?.title || current?.id || 'viewer track'}"`)
+      );
     });
 
     this.playbackEngine.on('heartbeat-failure-confirmed', (info = {}) => {
@@ -3028,6 +3034,14 @@ class MusicBotPlugin extends EventEmitter {
         context
       );
       if (!autoDJTrack) {
+        if (
+          isCurrent()
+          && !this._isSafetyLocked()
+          && !this._destroyed
+          && this.queueManager?.getQueue?.().length > 0
+        ) {
+          return this._playNextFromQueueInternal(context);
+        }
         const outgoingStillActive = Boolean(
           this.playbackEngine.isPlaying?.() && this.playbackEngine.getNowPlaying?.()
         );
@@ -3478,11 +3492,13 @@ class MusicBotPlugin extends EventEmitter {
     this._lastAutoDJFailureClass = null;
     let result = null;
     let track = null;
+    let consumedPrefetchGeneration = null;
     if (!prepareOnly && this._radioPrefetch) {
       const prefetched = await this._consumeRadioPrefetch(supervisorContext, isCurrent);
       if (prefetched) {
         track = prefetched.track;
         result = { announce: prefetched.announce };
+        consumedPrefetchGeneration = prefetched.generation;
       }
     }
     for (let attempt = 0; !track && attempt < 2; attempt += 1) {
@@ -3566,7 +3582,12 @@ class MusicBotPlugin extends EventEmitter {
     }
 
     try {
-      if (!isCurrent()) return null;
+      if (
+        !isCurrent()
+        || this.queueManager?.getQueue?.().length > 0
+        || (consumedPrefetchGeneration !== null
+          && consumedPrefetchGeneration !== this._radioPrefetchGeneration)
+      ) return null;
       await this.playbackEngine.play(track);
       if (!isCurrent()) return null;
       this.autoDJ.recordSourceSuccess?.(track);
@@ -3690,6 +3711,17 @@ class MusicBotPlugin extends EventEmitter {
       });
     }
     return this._playNextFromQueue('ipc-confirmed', { track, error, failureClass: 'ipc' });
+  }
+
+  _advanceAfterViewerFailure(reason, track, error) {
+    const payload = { track, error, failureClass: 'playback' };
+    const recovery = this.radioSupervisor?.wake
+      ? this.radioSupervisor.wake(reason, payload)
+      : this._playNextFromQueue(reason, payload);
+    Promise.resolve(recovery).catch((recoveryError) => {
+      this.api.log(`[music-bot] Viewer playback recovery failed: ${recoveryError.message}`, 'error');
+    });
+    return recovery;
   }
 
   _recordAutoDJSourceFailure(track, error, fallbackClass = 'playback') {
@@ -4024,7 +4056,11 @@ class MusicBotPlugin extends EventEmitter {
       return null;
     }
     this._radioPrefetch = null;
-    return { track: prepared, announce: entry.announce };
+    return {
+      track: prepared,
+      announce: entry.announce,
+      generation: entry.generation
+    };
   }
 
   _scheduleCrossfadeTransition(track, positionSeconds = 0) {

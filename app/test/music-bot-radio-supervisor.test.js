@@ -597,6 +597,110 @@ describe('music-bot supervisor diagnostics compatibility', () => {
     plugin.radioSupervisor.destroy();
   });
 
+  test('advances the next viewer once after a viewer track ends with a runtime error', async () => {
+    const { EventEmitter } = require('events');
+    const { plugin } = createPlugin();
+    const failed = { id: 'viewer-runtime-failed', title: 'Failed viewer', requestedBy: 'alice' };
+    const next = { id: 'viewer-runtime-next', title: 'Next viewer', requestedBy: 'bob', streamUrl: 'next.mp3' };
+    const queue = [next];
+    let current = null;
+    const playbackEngine = new EventEmitter();
+    playbackEngine.getNowPlaying = jest.fn(() => current);
+    playbackEngine.getState = jest.fn(() => current ? 'playing' : 'idle');
+    playbackEngine.isPlaying = jest.fn(() => Boolean(current));
+    playbackEngine.play = jest.fn(async (track) => {
+      current = track;
+      return track;
+    });
+    playbackEngine.clearNowPlaying = jest.fn(() => { current = null; });
+    plugin.playbackEngine = playbackEngine;
+    plugin.config.autoDJ.enabled = false;
+    plugin.queueManager = {
+      shiftNext: jest.fn(() => queue.shift() || null),
+      getQueue: jest.fn(() => queue),
+      returnToFront: jest.fn(),
+      markPlaying: jest.fn(),
+      resetVoteSkips: jest.fn(),
+      addToHistory: jest.fn(),
+      removeSkipImmunity: jest.fn()
+    };
+    plugin.autoDJ = { markPlaybackFailed: jest.fn() };
+    plugin._stopPlaybackSync = jest.fn();
+    plugin._emitRuntimeHealth = jest.fn();
+    plugin._registerPlaybackEvents();
+    plugin.radioSupervisor = new RadioSupervisor({
+      advance: (context) => plugin._advancePlayback(context),
+      isOccupied: () => plugin._isPlaybackOccupied()
+    });
+    plugin.radioSupervisor.setEnabled(false, { wake: false });
+    const wake = jest.spyOn(plugin.radioSupervisor, 'wake');
+
+    playbackEngine.emit('track-end', {
+      track: failed,
+      reason: 'error',
+      error: 'runtime decoder failure'
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(wake).toHaveBeenCalledTimes(1);
+    expect(wake).toHaveBeenCalledWith('viewer-track-error', expect.objectContaining({ track: failed }));
+    expect(playbackEngine.play).toHaveBeenCalledTimes(1);
+    expect(playbackEngine.play).toHaveBeenCalledWith(next);
+    expect(plugin.queueManager.returnToFront).not.toHaveBeenCalled();
+    plugin.radioSupervisor.destroy();
+  });
+
+  test('advances the next viewer once after mpv crashes during a viewer track', async () => {
+    const { EventEmitter } = require('events');
+    const { plugin } = createPlugin();
+    const failed = { id: 'viewer-crashed', title: 'Crashed viewer', requestedBy: 'alice' };
+    const next = { id: 'viewer-crash-next', title: 'Next after crash', requestedBy: 'bob', streamUrl: 'next.mp3' };
+    const queue = [next];
+    let current = failed;
+    const playbackEngine = new EventEmitter();
+    playbackEngine.getNowPlaying = jest.fn(() => current);
+    playbackEngine.getState = jest.fn(() => current ? 'playing' : 'idle');
+    playbackEngine.isPlaying = jest.fn(() => Boolean(current));
+    playbackEngine.play = jest.fn(async (track) => {
+      current = track;
+      return track;
+    });
+    playbackEngine.clearNowPlaying = jest.fn(() => { current = null; });
+    plugin.playbackEngine = playbackEngine;
+    plugin.config.autoDJ.enabled = false;
+    plugin.queueManager = {
+      shiftNext: jest.fn(() => queue.shift() || null),
+      getQueue: jest.fn(() => queue),
+      returnToFront: jest.fn(),
+      markPlaying: jest.fn(),
+      resetVoteSkips: jest.fn(),
+      addToHistory: jest.fn(),
+      removeSkipImmunity: jest.fn()
+    };
+    plugin.autoDJ = { markPlaybackFailed: jest.fn() };
+    plugin._stopPlaybackSync = jest.fn();
+    plugin._emitRuntimeHealth = jest.fn();
+    plugin._registerPlaybackEvents();
+    plugin.radioSupervisor = new RadioSupervisor({
+      advance: (context) => plugin._advancePlayback(context),
+      isOccupied: () => plugin._isPlaybackOccupied()
+    });
+    plugin.radioSupervisor.setEnabled(false, { wake: false });
+    const wake = jest.spyOn(plugin.radioSupervisor, 'wake');
+
+    playbackEngine.emit('crashed', { code: 1 });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(wake).toHaveBeenCalledTimes(1);
+    expect(wake).toHaveBeenCalledWith('viewer-mpv-crash', expect.objectContaining({ track: failed }));
+    expect(playbackEngine.play).toHaveBeenCalledTimes(1);
+    expect(playbackEngine.play).toHaveBeenCalledWith(next);
+    expect(plugin.queueManager.returnToFront).not.toHaveBeenCalled();
+    plugin.radioSupervisor.destroy();
+  });
+
   test('always plays a queued viewer request before selecting radio', async () => {
     const { plugin } = createPlugin();
     const viewer = { id: 'viewer', title: 'Viewer', requestedBy: 'alice', streamUrl: 'viewer.mp3' };
@@ -1097,6 +1201,60 @@ describe('music-bot supervisor diagnostics compatibility', () => {
 
     expect(plugin._radioPrefetch).toBeNull();
     expect(plugin._radioPrefetchGeneration).toBe(8);
+  });
+
+  test('lets a viewer win when it enters after prefetch consume but before radio play', async () => {
+    const { plugin } = createPlugin();
+    const outgoing = { id: 'race-outgoing', title: 'Outgoing', requestedBy: 'AutoDJ' };
+    const radio = { id: 'race-radio', title: 'Prefetched radio', requestedBy: 'AutoDJ', streamUrl: 'radio.mp3' };
+    const viewer = { id: 'race-viewer', title: 'Late viewer', requestedBy: 'alice', streamUrl: 'viewer.mp3' };
+    const queue = [];
+    plugin.queueManager = {
+      shiftNext: jest.fn(() => queue.shift() || null),
+      getQueue: jest.fn(() => queue),
+      returnToFront: jest.fn(),
+      markPlaying: jest.fn()
+    };
+    plugin.autoDJ = {
+      recordSourceSuccess: jest.fn(),
+      markTrackStarted: jest.fn(),
+      getStatus: jest.fn(() => ({ mode: 'mix' }))
+    };
+    plugin.playbackEngine = {
+      getNowPlaying: jest.fn(() => outgoing),
+      isPlaying: jest.fn(() => true),
+      play: jest.fn(async (track) => track),
+      clearNowPlaying: jest.fn()
+    };
+    plugin._radioPrefetchGeneration = 5;
+    plugin._radioPrefetch = {
+      generation: 5,
+      trackId: outgoing.id,
+      prepared: radio,
+      announce: false,
+      promise: Promise.resolve(radio)
+    };
+    const consume = plugin._consumeRadioPrefetch.bind(plugin);
+    plugin._consumeRadioPrefetch = jest.fn(async (...args) => {
+      const prefetched = await consume(...args);
+      queue.push(viewer);
+      plugin._invalidateRadioPrefetch('viewer-queue-changed');
+      return prefetched;
+    });
+
+    const result = await plugin._advancePlayback({
+      reason: 'crossfade',
+      payload: {
+        allowActiveAutoDJ: true,
+        prefetchGeneration: 5
+      },
+      isCurrent: () => true
+    });
+
+    expect(result).toMatchObject({ success: true, song: viewer });
+    expect(plugin.playbackEngine.play).toHaveBeenCalledTimes(1);
+    expect(plugin.playbackEngine.play).toHaveBeenCalledWith(viewer);
+    expect(plugin.autoDJ.markTrackStarted).not.toHaveBeenCalledWith(radio);
   });
 
   test('keeps the playback controller crossfade fixed at three seconds while accepting legacy config', () => {
