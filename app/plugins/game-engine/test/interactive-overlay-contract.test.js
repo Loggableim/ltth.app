@@ -89,25 +89,30 @@ describe('interactive overlay contract', () => {
     expect(html).not.toContain('interactiveLeaderboardTimer = setTimeout');
   });
 
-  test.each(['unified.html', 'connect4.html'])(
-    '%s owns a compact revision-cleared Connect4 viewer countdown',
-    filename => {
-      const html = readOverlay(filename);
+  test('direct Connect4 owns the sole compact revision-cleared viewer countdown', () => {
+    const direct = readOverlay('connect4.html');
+    const unified = readOverlay('unified.html');
+    const unifiedMatchup = unified.match(/function showInteractiveMatchup\([\s\S]*?function hideInteractiveMatchup/)?.[0] || '';
 
-      expect(html).toContain('id="interactive-viewer-countdown"');
-      expect(html).toContain('viewerDeadlineMs');
-      expect(html).toContain('serverTimestamp');
-      expect(html).toContain('connect4ViewerWarningSeconds');
-      expect(html).toContain('clearInteractiveViewerCountdown');
-    }
-  );
+    expect(direct).toContain('id="interactive-viewer-countdown"');
+    expect(direct).toContain('viewerDeadlineMs');
+    expect(direct).toContain('serverTimestamp');
+    expect(direct).toContain('connect4ViewerWarningSeconds');
+    expect(direct).toContain('clearInteractiveViewerCountdown');
+    expect(unified).toContain('id="frame-connect4"');
+    expect(unified).toContain('forwardInteractiveSnapshot(frame, interactiveState)');
+    expect(unified).not.toContain('id="interactive-viewer-countdown"');
+    expect(unified).not.toContain('interactiveViewerCountdownInterval');
+    expect(unified).not.toContain('startInteractiveViewerCountdown');
+    expect(unifiedMatchup).not.toContain('viewerDeadlineMs');
+  });
 
   test('direct Connect4 move audio is deduplicated by session and move number', () => {
     const html = readOverlay('connect4.html');
 
-    expect(html).toContain('lastInteractiveMoveSoundKey');
+    expect(html).toContain('highestAudibleMoveBySession');
     expect(html).toMatch(/lastMove\?\.moveNumber/);
-    expect(html).toContain('`${sessionId}:${moveNumber}`');
+    expect(html).toContain('highestAudibleMoveBySession.get(sessionId)');
   });
 
   test('authoritative cancellations render neutral results instead of a winner or draw', () => {

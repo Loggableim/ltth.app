@@ -1843,9 +1843,9 @@ class GameEnginePlugin {
     this.api.registerRoute('GET', '/api/game-engine/config/:gameType', (req, res) => {
       try {
         const { gameType } = req.params;
-        let config = this.db.getGameConfig(gameType);
-        
-        config = this._getConfigWithDefaults(gameType, config);
+        const config = gameType === 'interactive'
+          ? this._getInteractiveSettings()
+          : this._getConfigWithDefaults(gameType, this.db.getGameConfig(gameType));
         
         res.json(config || {});
       } catch (error) {
@@ -1871,7 +1871,9 @@ class GameEnginePlugin {
         // Emit config update to overlays
         this.io.emit('game-engine:config-updated', { gameType, config });
         
-        res.json({ success: true });
+        res.json(gameType === 'interactive'
+          ? { success: true, config: this._getInteractiveSettings() }
+          : { success: true });
       } catch (error) {
         this.logger.error(`Error saving game config: ${error.message}`);
         res.status(500).json({ error: error.message });

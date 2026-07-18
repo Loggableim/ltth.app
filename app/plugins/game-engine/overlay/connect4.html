@@ -725,7 +725,7 @@
     let resultHideTimer = null;
     let containerHideTimer = null;
     let interactiveViewerCountdownInterval = null;
-    let lastInteractiveMoveSoundKey = null;
+    const highestAudibleMoveBySession = new Map();
     const ROWS = 6;
     const COLUMNS = 7;
 
@@ -760,7 +760,7 @@
     }
 
     function playSound(type) {
-      if (!gameConfig || !gameConfig.soundEnabled) return;
+      if (!gameConfig || !gameConfig.soundEnabled) return false;
 
       // Map sound types to default sound files
       const defaultSounds = {
@@ -773,7 +773,7 @@
       // Use default sounds if available, otherwise fall back to oscillator
       if (defaultSounds[type]) {
         playAudioFile(defaultSounds[type]);
-        return;
+        return true;
       }
 
       // Fallback to oscillator sounds for compatibility
@@ -808,8 +808,10 @@
 
         oscillator.start();
         oscillator.stop(ctx.currentTime + 0.5);
+        return true;
       } catch (error) {
         console.warn('Audio playback failed:', error);
+        return false;
       }
     }
 
@@ -1015,10 +1017,9 @@
       const sessionId = Number(display?.displaySessionId ?? state?.sessionId);
       const moveNumber = Number(state?.lastMove?.moveNumber);
       if (!Number.isInteger(sessionId) || !Number.isInteger(moveNumber) || moveNumber < 1) return;
-      const soundKey = `${sessionId}:${moveNumber}`;
-      if (soundKey === lastInteractiveMoveSoundKey) return;
-      lastInteractiveMoveSoundKey = soundKey;
-      playSound('move');
+      const highestAudibleMove = highestAudibleMoveBySession.get(sessionId) || 0;
+      if (moveNumber <= highestAudibleMove) return;
+      if (playSound('move')) highestAudibleMoveBySession.set(sessionId, moveNumber);
     }
 
     // Show leaderboard rotation

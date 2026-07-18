@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { JSDOM } = require('jsdom');
 
 const ui = fs.readFileSync(path.join(__dirname, '..', 'ui.html'), 'utf8');
 
@@ -66,6 +67,36 @@ describe('interactive games admin UI contract', () => {
     expect(ui).toContain("runtimeText('plugins.game-engine.runtime.dashboard.no_time_limit') || 'Ohne Zeitlimit'");
     expect(ui).not.toContain("connect4ViewerResponseSeconds: Number(document.getElementById('interactive-connect4-response').value)");
     expect(ui).not.toContain("fetch('/api/game-engine/round-timer/connect4'");
+  });
+
+  test('applies server-returned canonical timer values after save and renders timed and untimed states', () => {
+    const functionSource = ui.match(/    function applyInteractiveSettings\(config\) \{[\s\S]*?\n    \}/)?.[0];
+    expect(functionSource).toEqual(expect.any(String));
+    const dom = new JSDOM(`
+      <input id="interactive-connect4-response">
+      <input id="interactive-chess-response">
+      <input id="interactive-max-sessions">
+      <input id="interactive-result-seconds">
+    `);
+    const apply = new Function(
+      'document',
+      'runtimeText',
+      `${functionSource}; return applyInteractiveSettings;`
+    )(dom.window.document, () => 'Ohne Zeitlimit');
+    const connect4 = dom.window.document.getElementById('interactive-connect4-response');
+
+    apply({
+      connect4ViewerTimeoutEnabled: true,
+      connect4ViewerResponseSeconds: 45,
+      connect4ViewerWarningSeconds: 12
+    });
+    expect(connect4.value).toContain('45s');
+    expect(connect4.value).toContain('12s');
+
+    apply({ connect4ViewerTimeoutEnabled: false });
+    expect(connect4.value).toBe('Ohne Zeitlimit');
+    expect(ui).toContain('const savedConfig = (await response.json()).config;');
+    expect(ui).toContain('applyInteractiveSettings(savedConfig);');
   });
 
   test('renders the sole viewer-turn session when no host move is displayed', () => {

@@ -5460,7 +5460,8 @@
         body: JSON.stringify(config)
       });
       if (!response.ok) throw new Error('Einstellungen konnten nicht gespeichert werden');
-      applyInteractiveSettings(config);
+      const savedConfig = (await response.json()).config;
+      applyInteractiveSettings(savedConfig);
       showMessage('Interaktive Einstellungen gespeichert.');
     }
 

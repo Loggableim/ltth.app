@@ -256,6 +256,74 @@ describe('GameEnginePlugin interactive controller integration', () => {
     });
   });
 
+  test.each([
+    [true, 45, 12],
+    [false, 30, 10]
+  ])('serves canonical Connect4 timer values through the interactive config API (%s)', (
+    roundTimerEnabled,
+    roundTimeLimit,
+    roundWarningTime
+  ) => {
+    const { plugin, routes } = createPlugin();
+    plugin.db = {
+      getGameConfig: jest.fn(gameType => gameType === 'connect4'
+        ? { roundTimerEnabled, roundTimeLimit, roundWarningTime }
+        : {
+          chessViewerResponseSeconds: 60,
+          maxConcurrentInteractiveSessions: 20,
+          interactiveResultDisplaySeconds: 3
+        })
+    };
+    plugin.registerRoutes();
+    const route = routes.find(item => item.method === 'GET' && item.path === '/api/game-engine/config/:gameType');
+    const res = { json: jest.fn(), status: jest.fn(() => res) };
+
+    route.handler({ params: { gameType: 'interactive' } }, res);
+
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      connect4ViewerTimeoutEnabled: roundTimerEnabled,
+      connect4ViewerResponseSeconds: roundTimeLimit,
+      connect4ViewerWarningSeconds: roundWarningTime
+    }));
+  });
+
+  test('returns freshly derived interactive settings after saving them', () => {
+    const { plugin, routes } = createPlugin();
+    let interactiveConfig = {};
+    plugin.db = {
+      getGameConfig: jest.fn(gameType => gameType === 'connect4'
+        ? { roundTimerEnabled: true, roundTimeLimit: 40, roundWarningTime: 8 }
+        : interactiveConfig),
+      saveGameConfig: jest.fn((gameType, config) => {
+        if (gameType === 'interactive') interactiveConfig = config;
+      })
+    };
+    plugin.registerRoutes();
+    const route = routes.find(item => item.method === 'POST' && item.path === '/api/game-engine/config/:gameType');
+    const res = { json: jest.fn(), status: jest.fn(() => res) };
+
+    route.handler({
+      params: { gameType: 'interactive' },
+      body: {
+        chessViewerResponseSeconds: 75,
+        maxConcurrentInteractiveSessions: 12,
+        interactiveResultDisplaySeconds: 4
+      }
+    }, res);
+
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      config: expect.objectContaining({
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 40,
+        connect4ViewerWarningSeconds: 8,
+        chessViewerResponseSeconds: 75,
+        maxConcurrentInteractiveSessions: 12,
+        interactiveResultDisplaySeconds: 4
+      })
+    });
+  });
+
   test('reconciles active Connect4 viewer timers after saving canonical configuration', () => {
     const { plugin, routes } = createPlugin();
     plugin.db = {

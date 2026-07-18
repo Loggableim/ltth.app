@@ -101,12 +101,9 @@ function connect4State({
 }
 
 describe('interactive overlay countdown DOM', () => {
-  test.each([
-    ['connect4.html', 'interactive-viewer-countdown'],
-    ['unified.html', 'interactive-viewer-countdown']
-  ])('%s ticks an authoritative viewer countdown, warns, and clears it on a newer phase', (name, countdownId) => {
-    const { dom, listeners, advance } = loadOverlay(name);
-    const countdown = dom.window.document.getElementById(countdownId);
+  test('direct Connect4 ticks an authoritative viewer countdown, warns, and clears it on a newer phase', () => {
+    const { dom, listeners, advance } = loadOverlay('connect4.html');
+    const countdown = dom.window.document.getElementById('interactive-viewer-countdown');
     const applyState = listeners.get('game-engine:interactive-state');
 
     applyState(connect4State());
@@ -124,34 +121,53 @@ describe('interactive overlay countdown DOM', () => {
     dom.window.close();
   });
 
-  test('direct Connect4 plays one move sound for each newly visible session and move number', () => {
+  test('direct Connect4 never replays an audible move after queue rotation, background, or stale snapshots', () => {
     const { dom, listeners, audioPlay } = loadOverlay('connect4.html');
     const applyState = listeners.get('game-engine:interactive-state');
 
-    applyState(connect4State());
-    applyState(connect4State({ displayRevision: 2 }));
-    expect(audioPlay).toHaveBeenCalledTimes(1);
-
-    applyState(connect4State({ displayRevision: 3, sessionRevision: 2, moveNumber: 2 }));
+    applyState(connect4State({ displayRevision: 1, sessionId: 7, moveNumber: 1 }));
+    applyState(connect4State({ displayRevision: 2, sessionId: 8, moveNumber: 1 }));
     expect(audioPlay).toHaveBeenCalledTimes(2);
 
-    applyState(connect4State({ displayRevision: 4, sessionRevision: 1, sessionId: 8, moveNumber: 2 }));
+    const backgroundSnapshot = connect4State({ displayRevision: 3, sessionId: 8, moveNumber: 1 });
+    backgroundSnapshot.activeSessions = [{
+      sessionId: 7,
+      gameType: 'connect4',
+      sessionRevision: 1,
+      turnRole: 'viewer',
+      state: connect4State({ sessionId: 7, moveNumber: 1 }).display.state
+    }];
+    applyState(backgroundSnapshot);
+    expect(audioPlay).toHaveBeenCalledTimes(2);
+
+    applyState(connect4State({ displayRevision: 4, sessionId: 7, moveNumber: 1 }));
+    expect(audioPlay).toHaveBeenCalledTimes(2);
+
+    applyState(connect4State({ displayRevision: 3, sessionRevision: 2, sessionId: 7, moveNumber: 2 }));
+    expect(audioPlay).toHaveBeenCalledTimes(2);
+
+    applyState(connect4State({ displayRevision: 5, sessionRevision: 2, sessionId: 7, moveNumber: 2 }));
     expect(audioPlay).toHaveBeenCalledTimes(3);
 
     dom.window.close();
   });
 
-  test('unified overlay ignores a stale session revision at the current display revision', () => {
+  test('unified delegates countdown rendering to the child and ignores a stale session revision', () => {
     const { dom, listeners } = loadOverlay('unified.html');
-    const countdown = dom.window.document.getElementById('interactive-viewer-countdown');
     const applyState = listeners.get('game-engine:interactive-state');
+    const frame = dom.window.document.getElementById('frame-connect4');
+    const postMessage = jest.fn();
+    frame.dataset.loaded = 'true';
+    frame.dataset.ready = 'true';
+    frame.contentWindow.postMessage = postMessage;
 
     applyState(connect4State({ displayRevision: 4, sessionRevision: 2, deadline: 104000 }));
-    expect(countdown.textContent).toContain('4');
+    expect(postMessage).toHaveBeenCalledTimes(1);
+    expect(postMessage.mock.calls[0][0].payload.display.viewerDeadlineMs).toBe(104000);
 
     applyState(connect4State({ displayRevision: 4, sessionRevision: 1, deadline: 120000 }));
-    expect(countdown.textContent).toContain('4');
-    expect(countdown.textContent).not.toContain('20');
+    expect(postMessage).toHaveBeenCalledTimes(1);
+    expect(dom.window.document.getElementById('interactive-viewer-countdown')).toBeNull();
 
     dom.window.close();
   });
