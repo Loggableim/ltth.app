@@ -1263,6 +1263,8 @@ class WebGPUFireworksEngine {
                 } else if (event.type === 'finale-phase') {
                     this.setFinalePhase(event.finaleId, event.phase);
                 } else if (event.type === 'finale-complete') {
+                    this.finishFinaleVisuals(event.finaleId, now);
+                } else if (event.type === 'finale-end-card-complete') {
                     this.completeFinale(event.finaleId, now);
                 } else if (event.type === 'gift-drain') {
                     this.drainGiftBacklog(now);
@@ -1838,7 +1840,9 @@ class WebGPUFireworksEngine {
             phase: 'opening',
             startedAt: startAt,
             runtimeToken: entry.runtimeToken,
-            legacy: entry.legacy
+            legacy: entry.legacy,
+            completionNotification: entry.completionNotification,
+            completionNotificationShown: false
         };
         this.finalePhase = 'opening';
         const details = entry.legacy
@@ -1855,9 +1859,27 @@ class WebGPUFireworksEngine {
         this.emitFinaleTelemetry();
     }
 
+    finishFinaleVisuals(finaleId, now = this.getRuntimeNow()) {
+        const finale = this.currentFinale;
+        if (!finale || finale.id !== finaleId) return false;
+        if (!finale.completionNotification) return this.completeFinale(finaleId, now);
+        if (finale.completionNotificationShown) return false;
+
+        finale.completionNotificationShown = true;
+        this.setFinalePhase(finaleId, 'end-card');
+        this.showFollowerAnimation(finale.completionNotification);
+        this.scheduleTimeline({
+            type: 'finale-end-card-complete',
+            due: now + finale.completionNotification.duration,
+            order: 110,
+            finaleId
+        });
+        return true;
+    }
+
     completeFinale(finaleId, now = this.getRuntimeNow()) {
         if (!this.currentFinale || this.currentFinale.id !== finaleId) return false;
-        const controlEvents = new Set(['finale-launch', 'finale-phase', 'finale-complete']);
+        const controlEvents = new Set(['finale-launch', 'finale-phase', 'finale-complete', 'finale-end-card-complete']);
         this.timelineQueue = this.timelineQueue.filter(event => event.finaleId !== finaleId || !controlEvents.has(event.type));
         this.finaleIds.delete(finaleId);
         this.currentFinale = null;
@@ -1916,7 +1938,8 @@ class WebGPUFireworksEngine {
         const showPlan = this.isValidShowPlan(data.showPlan)
             ? { ...data.showPlan, id }
             : null;
-        const entry = { id, data: { ...data, id }, showPlan, legacy: !showPlan };
+        const completionNotification = this.normalizeCompletionNotification(data.completionNotification);
+        const entry = { id, data: { ...data, id }, showPlan, legacy: !showPlan, completionNotification };
         const rendererKnownUnavailable = (
             (this.rendererStatus?.state && this.rendererStatus.state !== 'ready') ||
             this.renderer?.initialized === false
@@ -1999,7 +2022,7 @@ class WebGPUFireworksEngine {
     showFollowerAnimation(data = {}) {
         const root = document.getElementById('follower-animation');
         if (!root) return;
-        document.getElementById('follower-username').textContent = data.username || '';
+        document.getElementById('follower-username').textContent = data.usernameText || data.username || '';
         document.getElementById('thank-you-text').textContent = data.thankYouText || data.text || 'Danke für den Follow!';
         root.className = `follower-animation pos-${data.position || 'center'} size-${data.size || 'medium'} style-${data.style || 'gradient-purple'} entrance-${data.entrance || 'scale'}`;
         const scale = data.size === 'small' ? 0.8 : data.size === 'large' ? 1.25 : data.size === 'custom' ? Number(data.scale) || 1 : 1;
@@ -2012,6 +2035,39 @@ class WebGPUFireworksEngine {
         else avatar.classList.remove('show');
         root.classList.add('show');
         setTimeout(() => root.classList.remove('show'), Number(data.duration) || 3000);
+    }
+
+    normalizeCompletionNotification(value) {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+        const clamp = (input, min, max, fallback) => {
+            const number = Number(input);
+            return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
+        };
+        const text = (input, fallback, maxLength) => {
+            const normalized = typeof input === 'string' ? input.trim() : '';
+            return (normalized || fallback).slice(0, maxLength);
+        };
+        const username = text(value.username, 'Superfan', 80);
+        const profilePictureUrl = typeof value.profilePictureUrl === 'string' &&
+            /^https?:\/\//i.test(value.profilePictureUrl.trim())
+            ? value.profilePictureUrl.trim().slice(0, 2048)
+            : null;
+        const positions = ['top-left', 'top-center', 'top-right', 'center', 'bottom-left', 'bottom-center', 'bottom-right'];
+        const sizes = ['small', 'medium', 'large', 'custom'];
+        const styles = ['gradient-purple', 'gradient-blue', 'gradient-gold', 'gradient-rainbow', 'neon', 'minimal'];
+        const entrances = ['scale', 'fade', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'bounce', 'rotate'];
+        return {
+            username,
+            usernameText: text(value.usernameText, `Thank you for being a Superfan, ${username}!`, 180),
+            thankYouText: text(value.thankYouText, 'This firework was for you!', 180),
+            profilePictureUrl,
+            duration: Math.round(clamp(value.duration, 1000, 10000, 3000)),
+            position: positions.includes(value.position) ? value.position : 'center',
+            size: sizes.includes(value.size) ? value.size : 'medium',
+            scale: clamp(value.scale, 0.5, 2, 1),
+            style: styles.includes(value.style) ? value.style : 'gradient-purple',
+            entrance: entrances.includes(value.entrance) ? value.entrance : 'scale'
+        };
     }
 
     adaptQuality() {

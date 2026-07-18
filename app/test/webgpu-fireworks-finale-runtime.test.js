@@ -74,6 +74,22 @@ function tinyPlan(id, overrides = {}) {
   };
 }
 
+function completionNotification(overrides = {}) {
+  return {
+    username: 'Alpha',
+    usernameText: 'Thank you for being a Superfan, Alpha!',
+    thankYouText: 'This firework was for you!',
+    profilePictureUrl: 'https://example.test/alpha.png',
+    duration: 3000,
+    position: 'center',
+    size: 'medium',
+    scale: 1,
+    style: 'gradient-purple',
+    entrance: 'scale',
+    ...overrides
+  };
+}
+
 function mockGiftLaunches(engine) {
   engine.handleTrigger = jest.fn(data => {
     if (data.trackGiftLaunch) engine.giftLaunchTimestamps.push(engine.getRuntimeNow());
@@ -173,6 +189,132 @@ describe('WebGPU choreographed finale runtime', () => {
     expect(engine.currentFinale.startedAt).toBe(13000);
     expect(engine.finaleIds.has('first')).toBe(false);
     expect(engine.finaleIds.has('second')).toBe(true);
+  });
+
+  test('shows a Superfan end card after the true tail and holds the FIFO queue for its duration', () => {
+    let now = 10000;
+    const engine = makeRuntime(now);
+    engine.getRuntimeNow = () => now;
+    engine.showFollowerAnimation = jest.fn();
+
+    engine.handleFinale({
+      id: 'superfan-first',
+      showPlan: tinyPlan('superfan-first'),
+      completionNotification: completionNotification()
+    });
+    engine.handleFinale({ id: 'second', showPlan: tinyPlan('second') });
+
+    now = 12999;
+    engine.processTimeline(now);
+    expect(engine.showFollowerAnimation).not.toHaveBeenCalled();
+    expect(engine.currentFinale.id).toBe('superfan-first');
+
+    now = 13000;
+    engine.processTimeline(now);
+    expect(engine.showFollowerAnimation).toHaveBeenCalledTimes(1);
+    expect(engine.showFollowerAnimation).toHaveBeenCalledWith(completionNotification());
+    expect(engine.currentFinale).toMatchObject({ id: 'superfan-first', phase: 'end-card' });
+    expect(engine.finaleQueue.map(entry => entry.id)).toEqual(['second']);
+    expect(engine.timelineQueue).toContainEqual(expect.objectContaining({
+      type: 'finale-end-card-complete',
+      finaleId: 'superfan-first',
+      due: 16000
+    }));
+
+    now = 15999;
+    engine.processTimeline(now);
+    expect(engine.currentFinale.id).toBe('superfan-first');
+    now = 16000;
+    engine.processTimeline(now);
+    expect(engine.currentFinale).toMatchObject({ id: 'second', startedAt: 16000 });
+    expect(engine.finaleIds.has('superfan-first')).toBe(false);
+  });
+
+  test('shows a completion notification at most once for duplicate tail events', () => {
+    const engine = makeRuntime(10000);
+    engine.showFollowerAnimation = jest.fn();
+    engine.handleFinale({
+      id: 'duplicate-tail',
+      showPlan: tinyPlan('duplicate-tail'),
+      completionNotification: completionNotification()
+    });
+    engine.scheduleTimeline({ type: 'finale-complete', due: 13000, order: 101, finaleId: 'duplicate-tail' });
+
+    engine.processTimeline(13000);
+
+    expect(engine.showFollowerAnimation).toHaveBeenCalledTimes(1);
+    expect(engine.timelineQueue.filter(event =>
+      event.type === 'finale-end-card-complete' && event.finaleId === 'duplicate-tail'
+    )).toHaveLength(1);
+  });
+
+  test('failure clears a pending completion card without displaying it', () => {
+    const engine = makeRuntime(10000);
+    engine.showFollowerAnimation = jest.fn();
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+    engine.handleFinale({
+      id: 'failed-superfan',
+      showPlan: tinyPlan('failed-superfan'),
+      completionNotification: completionNotification()
+    });
+
+    try {
+      engine.failFinale('failed-superfan', new Error('device lost'), 11000);
+      engine.processTimeline(20000);
+
+      expect(engine.showFollowerAnimation).not.toHaveBeenCalled();
+      expect(engine.currentFinale).toBeNull();
+      expect(engine.timelineQueue.some(event => event.finaleId === 'failed-superfan')).toBe(false);
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  test('discards non-object completion descriptors when queueing a finale', () => {
+    const engine = makeRuntime(10000);
+
+    engine.handleFinale({
+      id: 'invalid-card',
+      showPlan: tinyPlan('invalid-card'),
+      completionNotification: 'not-an-object'
+    });
+
+    expect(engine.currentFinale).toMatchObject({
+      id: 'invalid-card',
+      completionNotification: null
+    });
+  });
+
+  test('renders a closing username line while preserving ordinary opening usernames', () => {
+    jest.useFakeTimers();
+    const originalDocument = global.document;
+    const classList = { add: jest.fn(), remove: jest.fn() };
+    const elements = {
+      'follower-animation': {
+        className: '',
+        classList,
+        style: { setProperty: jest.fn() },
+        querySelector: jest.fn(() => ({ style: {} }))
+      },
+      'follower-username': { textContent: '' },
+      'thank-you-text': { textContent: '' },
+      'follower-avatar': { src: '', classList: { add: jest.fn(), remove: jest.fn() } }
+    };
+    global.document = { getElementById: jest.fn(id => elements[id] || null) };
+    try {
+      const engine = makeRuntime(10000);
+      engine.showFollowerAnimation(completionNotification());
+      expect(elements['follower-username'].textContent).toBe('Thank you for being a Superfan, Alpha!');
+      expect(elements['thank-you-text'].textContent).toBe('This firework was for you!');
+
+      engine.showFollowerAnimation({ username: 'NewFollower', thankYouText: 'Thanks for the follow!' });
+      expect(elements['follower-username'].textContent).toBe('NewFollower');
+      expect(elements['thank-you-text'].textContent).toBe('Thanks for the follow!');
+    } finally {
+      jest.runOnlyPendingTimers();
+      jest.useRealTimers();
+      global.document = originalDocument;
+    }
   });
 
   test.each([
