@@ -879,36 +879,42 @@ class PlaybackController extends EventEmitter {
       if (!Number.isFinite(position) || position < 0) {
         throw createSeekError('PLAYBACK_SEEK_INVALID_POSITION', 'Seek position must be a non-negative number');
       }
-      if (this.safetyLock) {
-        throw createSeekError('PLAYBACK_SAFETY_LOCKED', 'Playback safety lock is engaged');
-      }
-      if (this.lifecycle !== 'active') {
-        throw createSeekError('PLAYBACK_SEEK_STATE', `Playback controller is ${this.lifecycle}`);
-      }
-      if (this._crossfade || !['playing', 'paused'].includes(this.transportState)) {
-        throw createSeekError('PLAYBACK_SEEK_STATE', `Cannot seek while playback is ${this.transportState}`);
-      }
-
-      const slot = this._getActiveSlot();
-      if (!slot || slot.retired || !slot.engine?.seek || !slot.playbackId) {
-        throw createSeekError('PLAYBACK_SEEK_STATE', 'No active playback is available for seeking');
-      }
-      if (!playbackId || playbackId !== this.activePlaybackId || playbackId !== slot.playbackId) {
-        throw createSeekError('PLAYBACK_STALE_ID', 'Playback ID no longer matches the active track');
-      }
+      const slot = this._assertSeekCurrent(playbackId);
 
       const result = await slot.engine.seek(position);
-      if (
-        slot.retired
-        || this._getActiveSlot() !== slot
-        || this.activePlaybackId !== playbackId
-        || slot.playbackId !== playbackId
-      ) {
-        throw createSeekError('PLAYBACK_STALE_ID', 'Playback changed while seeking');
-      }
+      this._assertSeekCurrent(playbackId, slot);
       slot.state = this.transportState;
       return { ...result, playbackId, state: this.transportState };
     });
+  }
+
+  _assertSeekCurrent(playbackId, expectedSlot = null) {
+    if (this.safetyLock) {
+      throw createSeekError('PLAYBACK_SAFETY_LOCKED', 'Playback safety lock is engaged');
+    }
+    if (this.lifecycle !== 'active') {
+      throw createSeekError('PLAYBACK_SEEK_STATE', `Playback controller is ${this.lifecycle}`);
+    }
+    if (this._crossfade || !['playing', 'paused'].includes(this.transportState)) {
+      throw createSeekError('PLAYBACK_SEEK_STATE', `Cannot seek while playback is ${this.transportState}`);
+    }
+
+    const slot = this._getActiveSlot();
+    if (!slot || slot.retired || !slot.engine?.seek || !slot.playbackId) {
+      throw createSeekError('PLAYBACK_SEEK_STATE', 'No active playback is available for seeking');
+    }
+    if (expectedSlot && slot !== expectedSlot) {
+      throw createSeekError('PLAYBACK_STALE_ID', 'Playback changed while seeking');
+    }
+    if (!playbackId || playbackId !== this.activePlaybackId || playbackId !== slot.playbackId) {
+      throw createSeekError('PLAYBACK_STALE_ID', 'Playback ID no longer matches the active track');
+    }
+    const slotState = String(slot.state || slot.engine.getState?.() || '').toLowerCase();
+    const engineState = String(slot.engine.getState?.() || slotState).toLowerCase();
+    if (!['playing', 'paused'].includes(slotState) || !['playing', 'paused'].includes(engineState)) {
+      throw createSeekError('PLAYBACK_SEEK_STATE', 'Active playback changed state while seeking');
+    }
+    return slot;
   }
 
   _emitTrackEndOnce(slot, info = {}) {

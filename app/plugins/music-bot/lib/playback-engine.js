@@ -181,7 +181,9 @@ class PlaybackEngine extends EventEmitter {
     if (!Number.isFinite(target) || target < 0) {
       throw createSeekError('PLAYBACK_SEEK_INVALID_POSITION', 'Seek position must be a non-negative number');
     }
-    if (!this.nowPlaying) {
+    const activeTrack = this.nowPlaying;
+    const activeTrackId = activeTrack?.id;
+    if (!activeTrack || !['playing', 'paused'].includes(this.state)) {
       throw createSeekError('PLAYBACK_SEEK_STATE', 'No active track is available for seeking');
     }
     if (!this.socket || this.socket.destroyed) {
@@ -206,10 +208,12 @@ class PlaybackEngine extends EventEmitter {
       if (!Number.isFinite(initialDuration) || initialDuration <= 0) {
         throw createSeekError('PLAYBACK_UNKNOWN_DURATION', 'The active track has no known duration');
       }
+      this._assertSeekTargetCurrent(activeTrack, activeTrackId);
       await this._sendCommand(['seek', target, 'absolute+exact'], {
         waitForResponse: true,
         timeoutMs
       });
+      this._assertSeekTargetCurrent(activeTrack, activeTrackId);
       const [positionResult, durationResult] = await Promise.all([
         this._sendCommand(['get_property', 'time-pos'], { waitForResponse: true, timeoutMs }),
         this._sendCommand(['get_property', 'duration'], { waitForResponse: true, timeoutMs })
@@ -222,10 +226,11 @@ class PlaybackEngine extends EventEmitter {
       if (!Number.isFinite(position)) {
         throw createSeekError('MPV_IPC_DISCONNECTED', 'mpv did not confirm the seek position');
       }
-      this.nowPlaying.duration = duration;
-      this.nowPlaying.startedAt = Date.now() - Math.round(position * 1000);
+      this._assertSeekTargetCurrent(activeTrack, activeTrackId);
+      activeTrack.duration = duration;
+      activeTrack.startedAt = Date.now() - Math.round(position * 1000);
       return {
-        track: this.nowPlaying,
+        track: activeTrack,
         position: Math.max(0, position),
         duration,
         seekable: true,
@@ -234,6 +239,15 @@ class PlaybackEngine extends EventEmitter {
     } catch (error) {
       if (error?.code) throw error;
       throw createSeekError('MPV_IPC_DISCONNECTED', error?.message || 'mpv IPC seek failed');
+    }
+  }
+
+  _assertSeekTargetCurrent(activeTrack, activeTrackId) {
+    if (this.nowPlaying !== activeTrack || this.nowPlaying?.id !== activeTrackId) {
+      throw createSeekError('PLAYBACK_STALE_ID', 'The active track changed while seeking');
+    }
+    if (!['playing', 'paused'].includes(this.state)) {
+      throw createSeekError('PLAYBACK_SEEK_STATE', 'Playback changed state while seeking');
     }
   }
 

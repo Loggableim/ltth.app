@@ -132,6 +132,36 @@ describe('Music Bot backend seek', () => {
     expect(engine.seek).toHaveBeenCalledTimes(1);
   });
 
+  test('PlaybackController rejects a seek when a safety lock is engaged during MPV confirmation', async () => {
+    let releaseSeek;
+    const engine = new SeekEngine();
+    engine.seek.mockImplementation(() => new Promise((resolve) => { releaseSeek = resolve; }));
+    const controller = createController(engine);
+    activate(controller, engine, 'live-id');
+
+    const pending = controller.seek(50, { playbackId: 'live-id' });
+    await Promise.resolve();
+    controller.safetyLock = true;
+    releaseSeek({ position: 50, duration: 120, seekable: true, state: 'playing', track: engine.nowPlaying });
+
+    await expect(pending).rejects.toMatchObject({ code: 'PLAYBACK_SAFETY_LOCKED' });
+  });
+
+  test('PlaybackController rejects a seek when shutdown starts during MPV confirmation', async () => {
+    let releaseSeek;
+    const engine = new SeekEngine();
+    engine.seek.mockImplementation(() => new Promise((resolve) => { releaseSeek = resolve; }));
+    const controller = createController(engine);
+    activate(controller, engine, 'live-id');
+
+    const pending = controller.seek(50, { playbackId: 'live-id' });
+    await Promise.resolve();
+    controller.lifecycle = 'destroying';
+    releaseSeek({ position: 50, duration: 120, seekable: true, state: 'playing', track: engine.nowPlaying });
+
+    await expect(pending).rejects.toMatchObject({ code: 'PLAYBACK_SEEK_STATE' });
+  });
+
   test.each(['idle', 'loading', 'crossfading', 'recovering', 'stopping', 'error'])(
     'PlaybackController rejects seek while transport is %s',
     async (state) => {
@@ -210,6 +240,45 @@ describe('Music Bot backend seek', () => {
       playbackId: 'playback-1', position: 117, duration: 120, seekable: true
     }));
     expect(plugin._rescheduleCrossfadeTransition).toHaveBeenCalledWith(track, 117, expect.any(Object));
+  });
+
+  test('seek route emits neither sync nor transition scheduling when the controller rejects after confirmation', async () => {
+    const { plugin, api, routes } = createPlugin();
+    const error = new Error('Playback safety lock is engaged');
+    error.code = 'PLAYBACK_SAFETY_LOCKED';
+    plugin.playbackEngine = { seek: jest.fn(async () => { throw error; }) };
+    plugin._rescheduleCrossfadeTransition = jest.fn();
+    plugin._registerRoutes();
+
+    const res = createResponse();
+    await routes.get('post:/api/plugins/music-bot/seek')({ body: { playbackId: 'playback-1', positionSeconds: 42 } }, res);
+
+    expect(res.statusCode).toBe(423);
+    expect(api.emit).not.toHaveBeenCalledWith('musicbot:playback-sync', expect.anything());
+    expect(plugin._rescheduleCrossfadeTransition).not.toHaveBeenCalled();
+  });
+
+  test.each(['ended', 'switched'])('PlaybackEngine rejects a %s track while confirming a seek', async (change) => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const original = { id: 'track-1', duration: 120, startedAt: Date.now() };
+    const replacement = { id: 'track-2', duration: 240, startedAt: Date.now() };
+    engine.socket = { destroyed: false };
+    engine.state = 'playing';
+    engine.nowPlaying = original;
+    engine._sendCommand = jest.fn(async (command) => {
+      if (command[1] === 'seekable') return { data: true };
+      if (command[1] === 'duration') return { data: 120 };
+      if (command[1] === 'time-pos') {
+        engine.nowPlaying = change === 'ended' ? null : replacement;
+        engine.state = change === 'ended' ? 'idle' : 'playing';
+        return { data: 42 };
+      }
+      return { data: null };
+    });
+
+    await expect(engine.seek(42)).rejects.toMatchObject({ code: 'PLAYBACK_STALE_ID' });
+    expect(replacement.startedAt).not.toBeLessThan(Date.now() - 1000);
+    expect(original.duration).toBe(120);
   });
 
   test('reschedules exactly one crossfade supervisor advance from a seek position and cancels it while paused', () => {
