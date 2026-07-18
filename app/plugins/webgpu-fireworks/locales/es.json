@@ -162,7 +162,22 @@
     "superfan_finale_intensity": "Intensidad del final",
     "test_superfan_finale": "Probar final de Superfan",
     "superfan_finale_test_success": "¡Final de Superfan activado!",
-    "superfan_finale_test_failed": "No se pudo activar el final de Superfan"
+    "superfan_finale_test_failed": "No se pudo activar el final de Superfan",
+    "superfan_end_card_duration": "Duración de la tarjeta final (segundos)",
+    "superfan_end_card_position": "Posición de la tarjeta final",
+    "superfan_end_card_position_top_left": "Arriba a la izquierda",
+    "superfan_end_card_position_top_center": "Arriba al centro",
+    "superfan_end_card_position_top_right": "Arriba a la derecha",
+    "superfan_end_card_position_center": "Centro",
+    "superfan_end_card_position_bottom_left": "Abajo a la izquierda",
+    "superfan_end_card_position_bottom_center": "Abajo al centro",
+    "superfan_end_card_position_bottom_right": "Abajo a la derecha",
+    "superfan_end_card_size": "Tamaño de la tarjeta final",
+    "superfan_end_card_size_small": "Pequeño",
+    "superfan_end_card_size_medium": "Mediano",
+    "superfan_end_card_size_large": "Grande",
+    "superfan_end_card_size_custom": "Personalizado",
+    "superfan_end_card_scale": "Escala personalizada de la tarjeta final"
   },
   "generated": {
     "70047a182210": "WebGPU Fireworks Overlay - TikTok Stream Tool",

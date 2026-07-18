@@ -42,6 +42,8 @@ When a paid subscriber enters (`isSubscriber` or an explicit Superfan flag), or 
 
 The default is enabled, once per Superfan every 24 hours, at 3x intensity. Available cooldowns are 6, 12, 24, 72, and 168 hours; intensity ranges from 1x to 10x. Show style and length inherit the global finale settings. The settings test button never reads or updates real Superfan cooldown history.
 
+After a successfully completed paid-Superfan finale, the overlay displays `This firework was for you!` and `Thank you for being a Superfan, {username}!`. The closing card begins only after the full visual and audio tail, defaults to 3 seconds, and keeps the next queued finale waiting until it disappears. Its duration, position, size, and custom scale are configurable. Visual style and entrance animation inherit the follower-notification settings. Rejected, failed, ordinary goal, manual, API, and legacy finales do not display this card.
+
 ### API
 - **Plugin API**: Exposed methods for other plugins
 - **REST API**: HTTP endpoints for automation

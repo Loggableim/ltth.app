@@ -455,25 +455,37 @@ describe('WebGPU Superfan finale settings', () => {
       'Superfan Finale', 'Enable Superfan Finales', 'Repeat per Superfan',
       'Every 6 hours', 'Every 12 hours', 'Every 24 hours', 'Every 3 days', 'Every 7 days',
       'Finale intensity', 'Test Superfan Finale', 'Superfan finale triggered!',
-      'Failed to trigger Superfan finale'
+      'Failed to trigger Superfan finale', 'End card duration (seconds)', 'End card position',
+      'Top left', 'Top center', 'Top right', 'Center', 'Bottom left', 'Bottom center', 'Bottom right',
+      'End card size', 'Small', 'Medium', 'Large', 'Custom', 'Custom end card scale'
     ],
     de: [
       'Superfan-Finale', 'Superfan-Finales aktivieren', 'Wiederholung pro Superfan',
       'Alle 6 Stunden', 'Alle 12 Stunden', 'Alle 24 Stunden', 'Alle 3 Tage', 'Alle 7 Tage',
       'Finale-Intensität', 'Superfan-Finale testen', 'Superfan-Finale ausgelöst!',
-      'Superfan-Finale konnte nicht ausgelöst werden'
+      'Superfan-Finale konnte nicht ausgelöst werden', 'Dauer der Abschlussanzeige (Sekunden)',
+      'Position der Abschlussanzeige', 'Oben links', 'Oben mittig', 'Oben rechts', 'Mitte',
+      'Unten links', 'Unten mittig', 'Unten rechts', 'Größe der Abschlussanzeige',
+      'Klein', 'Mittel', 'Groß', 'Benutzerdefiniert', 'Benutzerdefinierte Skalierung der Abschlussanzeige'
     ],
     es: [
       'Final de Superfan', 'Activar finales de Superfan', 'Repetición por Superfan',
       'Cada 6 horas', 'Cada 12 horas', 'Cada 24 horas', 'Cada 3 días', 'Cada 7 días',
       'Intensidad del final', 'Probar final de Superfan', '¡Final de Superfan activado!',
-      'No se pudo activar el final de Superfan'
+      'No se pudo activar el final de Superfan', 'Duración de la tarjeta final (segundos)',
+      'Posición de la tarjeta final', 'Arriba a la izquierda', 'Arriba al centro', 'Arriba a la derecha',
+      'Centro', 'Abajo a la izquierda', 'Abajo al centro', 'Abajo a la derecha',
+      'Tamaño de la tarjeta final', 'Pequeño', 'Mediano', 'Grande', 'Personalizado',
+      'Escala personalizada de la tarjeta final'
     ],
     fr: [
       'Finale Superfan', 'Activer les finales Superfan', 'Répétition par Superfan',
       'Toutes les 6 heures', 'Toutes les 12 heures', 'Toutes les 24 heures', 'Tous les 3 jours', 'Tous les 7 jours',
       'Intensité de la finale', 'Tester la finale Superfan', 'Finale Superfan déclenchée !',
-      'Échec du déclenchement de la finale Superfan'
+      'Échec du déclenchement de la finale Superfan', 'Durée de la carte de fin (secondes)',
+      'Position de la carte de fin', 'En haut à gauche', 'En haut au centre', 'En haut à droite',
+      'Centre', 'En bas à gauche', 'En bas au centre', 'En bas à droite', 'Taille de la carte de fin',
+      'Petite', 'Moyenne', 'Grande', 'Personnalisée', 'Échelle personnalisée de la carte de fin'
     ]
   };
 
@@ -483,7 +495,14 @@ describe('WebGPU Superfan finale settings', () => {
       'superfan_finale', 'enable_superfan_finale', 'superfan_finale_cooldown',
       'superfan_finale_every_6h', 'superfan_finale_every_12h', 'superfan_finale_every_24h',
       'superfan_finale_every_3d', 'superfan_finale_every_7d', 'superfan_finale_intensity',
-      'test_superfan_finale', 'superfan_finale_test_success', 'superfan_finale_test_failed'
+      'test_superfan_finale', 'superfan_finale_test_success', 'superfan_finale_test_failed',
+      'superfan_end_card_duration', 'superfan_end_card_position',
+      'superfan_end_card_position_top_left', 'superfan_end_card_position_top_center',
+      'superfan_end_card_position_top_right', 'superfan_end_card_position_center',
+      'superfan_end_card_position_bottom_left', 'superfan_end_card_position_bottom_center',
+      'superfan_end_card_position_bottom_right', 'superfan_end_card_size',
+      'superfan_end_card_size_small', 'superfan_end_card_size_medium',
+      'superfan_end_card_size_large', 'superfan_end_card_size_custom', 'superfan_end_card_scale'
     ];
     expect(keys.map(key => messages.webgpu_fireworks[key])).toEqual(localeMessages[locale]);
   });

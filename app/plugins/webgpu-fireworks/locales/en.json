@@ -162,7 +162,22 @@
     "superfan_finale_intensity": "Finale intensity",
     "test_superfan_finale": "Test Superfan Finale",
     "superfan_finale_test_success": "Superfan finale triggered!",
-    "superfan_finale_test_failed": "Failed to trigger Superfan finale"
+    "superfan_finale_test_failed": "Failed to trigger Superfan finale",
+    "superfan_end_card_duration": "End card duration (seconds)",
+    "superfan_end_card_position": "End card position",
+    "superfan_end_card_position_top_left": "Top left",
+    "superfan_end_card_position_top_center": "Top center",
+    "superfan_end_card_position_top_right": "Top right",
+    "superfan_end_card_position_center": "Center",
+    "superfan_end_card_position_bottom_left": "Bottom left",
+    "superfan_end_card_position_bottom_center": "Bottom center",
+    "superfan_end_card_position_bottom_right": "Bottom right",
+    "superfan_end_card_size": "End card size",
+    "superfan_end_card_size_small": "Small",
+    "superfan_end_card_size_medium": "Medium",
+    "superfan_end_card_size_large": "Large",
+    "superfan_end_card_size_custom": "Custom",
+    "superfan_end_card_scale": "Custom end card scale"
   },
   "generated": {
     "70047a182210": "WebGPU Fireworks Overlay - TikTok Stream Tool",
