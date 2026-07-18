@@ -507,7 +507,7 @@ describe('WebGPU Superfan finale foundation', () => {
     }));
   });
 
-  test('emits a normalized completion descriptor while generic finales omit it', () => {
+  test('emits a normalized completion descriptor only from the paid-Superfan path', () => {
     const { api, plugin } = createPlugin();
 
     const generic = plugin.triggerFinale({ style: 'classic-crescendo', length: 'short' });
@@ -517,7 +517,7 @@ describe('WebGPU Superfan finale foundation', () => {
       expect.not.objectContaining({ completionNotification: expect.anything() })
     );
 
-    const withCard = plugin.triggerFinale({
+    const injected = plugin.triggerFinale({
       style: 'classic-crescendo',
       length: 'short',
       completionNotification: {
@@ -530,19 +530,29 @@ describe('WebGPU Superfan finale foundation', () => {
         entrance: 'fade'
       }
     });
-    expect(withCard.completionNotification).toMatchObject({
-      username: 'Alpha',
-      duration: 10000,
-      position: 'top-left',
-      size: 'large',
-      scale: 1.5,
-      style: 'minimal',
-      entrance: 'fade'
-    });
+    expect(injected).not.toHaveProperty('completionNotification');
     expect(api.emit).toHaveBeenLastCalledWith(
       'webgpu-fireworks:finale',
-      expect.objectContaining({ completionNotification: withCard.completionNotification })
+      expect.not.objectContaining({ completionNotification: expect.anything() })
     );
+
+    api.emit.mockClear();
+    expect(plugin.handleSuperfanEntry({
+      userId: 'paid-alpha',
+      uniqueId: 'Alpha',
+      profilePictureUrl: 'https://example.test/alpha.png'
+    }, { authoritative: true })).toMatchObject({ accepted: true });
+    const completionPayload = api.emit.mock.calls.find(([event]) => event === 'webgpu-fireworks:finale')[1];
+    expect(completionPayload.completionNotification).toMatchObject({
+      username: 'Alpha',
+      profilePictureUrl: 'https://example.test/alpha.png',
+      duration: 3000,
+      position: 'center',
+      size: 'medium',
+      scale: 1,
+      style: 'gradient-purple',
+      entrance: 'scale'
+    });
   });
 
   test('manual finale route strips completion notification input', () => {

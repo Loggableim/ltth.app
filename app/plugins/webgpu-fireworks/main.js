@@ -34,6 +34,7 @@ const { FinaleShowPlanner, FINALE_STYLES } = require('./lib/finale-show-planner'
 const { SuperfanFinaleHistory, normalizeSuperfanIdentityAliases } = require('./lib/superfan-finale-history');
 
 const FIREWORKS_CONFIG_MIGRATION_VERSION = 1;
+const SUPERFAN_COMPLETION_AUTHORITY = Symbol('webgpu-fireworks-superfan-completion');
 const SUPERFAN_FINALE_TEST_CONFIG_KEYS = Object.freeze([
     'superfanFinaleEnabled',
     'superfanFinaleCooldownHours',
@@ -1459,6 +1460,7 @@ class FireworksPlugin {
                 length: effectiveConfig.goalFinaleLength,
                 intensity: effectiveConfig.superfanFinaleIntensity,
                 completionNotification,
+                [SUPERFAN_COMPLETION_AUTHORITY]: true,
                 eventId,
                 bypassEnabled: options.bypassEnabled === true,
                 ackRequested: true,
@@ -1819,6 +1821,9 @@ class FireworksPlugin {
         if (isObjectCall) {
             const options = optionsOrIntensity;
             const hasLegacyDuration = options.duration !== undefined && options.length === undefined;
+            const authorizedCompletionNotification = options[SUPERFAN_COMPLETION_AUTHORITY] === true
+                ? options.completionNotification
+                : null;
             request = {
                 ...options,
                 style: options.style === undefined || options.style === 'inherit'
@@ -1828,6 +1833,11 @@ class FireworksPlugin {
                     ? config.goalFinaleIntensity
                     : options.intensity
             };
+            delete request.completionNotification;
+            delete request[SUPERFAN_COMPLETION_AUTHORITY];
+            if (authorizedCompletionNotification) {
+                request.completionNotification = authorizedCompletionNotification;
+            }
             if (!hasLegacyDuration) {
                 request.length = options.length === undefined || options.length === 'inherit'
                     ? config.goalFinaleLength

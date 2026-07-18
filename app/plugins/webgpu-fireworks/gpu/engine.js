@@ -823,6 +823,10 @@ class WebGPUFireworksEngine {
         this.finalePhase = 'idle';
         this.finaleGeneration = 0;
         this.failingFinaleIds = new Set();
+        this.followerAnimationGeneration = 0;
+        this.followerAnimationTimer = null;
+        this.endCardOwnerId = null;
+        this.deferredFollowerAnimation = null;
         this.transientFrameError = false;
         this.giftLaunchTimestamps = [];
         this.giftBacklog = new Map();
@@ -1867,7 +1871,7 @@ class WebGPUFireworksEngine {
 
         finale.completionNotificationShown = true;
         this.setFinalePhase(finaleId, 'end-card');
-        this.showFollowerAnimation(finale.completionNotification);
+        this.showFollowerAnimation(finale.completionNotification, { endCard: true, finaleId });
         this.scheduleTimeline({
             type: 'finale-end-card-complete',
             due: now + finale.completionNotification.duration,
@@ -1881,6 +1885,7 @@ class WebGPUFireworksEngine {
         if (!this.currentFinale || this.currentFinale.id !== finaleId) return false;
         const controlEvents = new Set(['finale-launch', 'finale-phase', 'finale-complete', 'finale-end-card-complete']);
         this.timelineQueue = this.timelineQueue.filter(event => event.finaleId !== finaleId || !controlEvents.has(event.type));
+        this.releaseFinaleEndCard(finaleId, { flushDeferred: true });
         this.finaleIds.delete(finaleId);
         this.currentFinale = null;
         this.finalePhase = 'idle';
@@ -1910,6 +1915,7 @@ class WebGPUFireworksEngine {
         try {
             const message = error?.message || String(error || 'Unknown finale renderer error');
             console.error(`[WebGPU Fireworks] Finale ${finaleId || 'unknown'} failed:`, error);
+            this.releaseFinaleEndCard(finaleId, { flushDeferred: true });
             this.timelineQueue = this.timelineQueue.filter(event => event.finaleId !== finaleId);
             for (const [effectId, plan] of this.effectPlans.entries()) {
                 if (plan.finaleId !== finaleId) continue;
@@ -2019,9 +2025,46 @@ class WebGPUFireworksEngine {
         setTimeout(() => popup.remove(), 2500);
     }
 
-    showFollowerAnimation(data = {}) {
+    ensureFollowerAnimationState() {
+        if (!Number.isInteger(this.followerAnimationGeneration)) this.followerAnimationGeneration = 0;
+        if (this.followerAnimationTimer === undefined) this.followerAnimationTimer = null;
+        if (this.endCardOwnerId === undefined) this.endCardOwnerId = null;
+        if (this.deferredFollowerAnimation === undefined) this.deferredFollowerAnimation = null;
+    }
+
+    clearFollowerAnimation() {
+        this.ensureFollowerAnimationState();
+        this.followerAnimationGeneration++;
+        if (this.followerAnimationTimer !== null) clearTimeout(this.followerAnimationTimer);
+        this.followerAnimationTimer = null;
+        if (typeof document !== 'undefined') {
+            document.getElementById('follower-animation')?.classList.remove('show');
+        }
+    }
+
+    releaseFinaleEndCard(finaleId, options = {}) {
+        this.ensureFollowerAnimationState();
+        if (!finaleId || this.endCardOwnerId !== finaleId) return false;
+        this.endCardOwnerId = null;
+        this.clearFollowerAnimation();
+        const deferred = this.deferredFollowerAnimation;
+        this.deferredFollowerAnimation = null;
+        if (options.flushDeferred === true && deferred) this.showFollowerAnimation(deferred);
+        return true;
+    }
+
+    showFollowerAnimation(data = {}, options = {}) {
+        this.ensureFollowerAnimationState();
+        const isEndCard = options.endCard === true && typeof options.finaleId === 'string' && options.finaleId;
+        if (!isEndCard && this.endCardOwnerId) {
+            this.deferredFollowerAnimation = { ...data };
+            return false;
+        }
+
+        this.clearFollowerAnimation();
+        if (isEndCard) this.endCardOwnerId = options.finaleId;
         const root = document.getElementById('follower-animation');
-        if (!root) return;
+        if (!root) return false;
         document.getElementById('follower-username').textContent = data.usernameText || data.username || '';
         document.getElementById('thank-you-text').textContent = data.thankYouText || data.text || 'Danke für den Follow!';
         root.className = `follower-animation pos-${data.position || 'center'} size-${data.size || 'medium'} style-${data.style || 'gradient-purple'} entrance-${data.entrance || 'scale'}`;
@@ -2034,7 +2077,13 @@ class WebGPUFireworksEngine {
         if (data.profilePictureUrl) { avatar.src = data.profilePictureUrl; avatar.classList.add('show'); }
         else avatar.classList.remove('show');
         root.classList.add('show');
-        setTimeout(() => root.classList.remove('show'), Number(data.duration) || 3000);
+        const generation = ++this.followerAnimationGeneration;
+        this.followerAnimationTimer = setTimeout(() => {
+            if (generation !== this.followerAnimationGeneration) return;
+            root.classList.remove('show');
+            this.followerAnimationTimer = null;
+        }, Number(data.duration) || 3000);
+        return true;
     }
 
     normalizeCompletionNotification(value) {
@@ -2141,6 +2190,9 @@ class WebGPUFireworksEngine {
 
     destroy() {
         this.running = false;
+        this.clearFollowerAnimation();
+        this.endCardOwnerId = null;
+        this.deferredFollowerAnimation = null;
         if (this.animationFrame !== null && this.animationFrame !== undefined && typeof cancelAnimationFrame === 'function') {
             cancelAnimationFrame(this.animationFrame);
         }
