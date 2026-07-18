@@ -1298,14 +1298,15 @@
   });
   socket.on('musicbot:playlist-import-progress', async (payload) => {
     const status = payload?.status || 'running';
+    const statusKey = {
+      running: 'importRunning', completed: 'importCompleted', failed: 'importFailed', aborted: 'importAborted'
+    }[status] || 'importRunning';
     if (playlistImportProgress) {
+      const label = catalogTr(statusKey, status);
+      const progress = Number.isFinite(Number(payload?.progress)) ? ` (${Math.round(Number(payload.progress))}%)` : '';
       playlistImportProgress.textContent = payload?.error
-        || `${status} ${Number.isFinite(Number(payload?.progress)) ? `(${Math.round(Number(payload.progress))}%)` : ''}`.trim();
-    }
-    if (playlistImportProgress) playlistImportProgress.textContent = payload?.message || payload?.state || 'Import läuft …';
-    if (playlistImportProgress) {
-      playlistImportProgress.textContent = payload?.error
-        || `${status} ${Number.isFinite(Number(payload?.progress)) ? `(${Math.round(Number(payload.progress))}%)` : ''}`.trim();
+        ? catalogTr('importError', 'Import error: {error}', { error: payload.error })
+        : `${label}${progress}`;
     }
     if (payload?.playlistId && selectedPlaylist?.id === payload.playlistId && ['completed', 'failed', 'aborted'].includes(status)) {
       await selectPlaylist(payload.playlistId);
@@ -1368,7 +1369,8 @@
   function catalogTr(key, fallback, params = {}) {
     const fullKey = `plugins.music-bot.music_bot.ui.catalog.${key}`;
     const translated = window.i18n?.t(fullKey, params);
-    return translated && translated !== fullKey ? translated : fallback;
+    const value = translated && translated !== fullKey ? translated : fallback;
+    return String(value).replace(/\{(\w+)\}/g, (_match, name) => params[name] ?? `{${name}}`);
   }
 
   function slotLabel(slot) {
@@ -1613,7 +1615,7 @@
       const res = await fetch(`/api/plugins/music-bot${path}`);
       return { ...(await res.json()), httpStatus: res.status };
     } catch (error) {
-      showToast('error', 'Netzwerk', 'GET-Anfrage fehlgeschlagen.');
+      showToast('error', catalogTr('networkTitle', 'Network'), catalogTr('getFailed', 'GET request failed.'));
       return null;
     }
   }
@@ -1627,8 +1629,8 @@
       });
       return await res.json();
     } catch (error) {
-      showToast('error', 'Netzwerk', 'POST-Anfrage fehlgeschlagen.');
-      return null;
+      showToast('error', catalogTr('networkTitle', 'Network'), catalogTr('postFailed', 'POST request failed.'));
+      return { success: false, networkError: true };
     }
   }
 
@@ -1641,7 +1643,7 @@
       });
       return { ...(await res.json()), httpStatus: res.status };
     } catch (error) {
-      showToast('error', 'Netzwerk', 'DELETE-Anfrage fehlgeschlagen.');
+      showToast('error', catalogTr('networkTitle', 'Network'), catalogTr('deleteFailed', 'DELETE request failed.'));
       return null;
     }
   }
@@ -1708,7 +1710,7 @@
       const payload = await res.json();
       return { ...payload, httpStatus: res.status };
     } catch (_error) {
-      showToast('error', 'Netzwerk', `${method}-Anfrage fehlgeschlagen.`);
+      showToast('error', catalogTr('networkTitle', 'Network'), catalogTr('requestFailed', '{method} request failed.', { method }));
       return null;
     }
   }
@@ -1878,7 +1880,9 @@
     if (!npElapsed) return;
     npElapsed.textContent = formatDuration(progressCurrentPos);
     if (!seekPreviewActive && npSeekInput) npSeekInput.value = String(Math.min(progressCurrentPos, progressDuration || 0));
-    if (npSeekInput) npSeekInput.setAttribute('aria-valuetext', `${formatDuration(progressCurrentPos)} von ${formatDuration(progressDuration)}`);
+    if (npSeekInput) npSeekInput.setAttribute('aria-valuetext', catalogTr('seekAria', '{current} of {duration}', {
+      current: formatDuration(progressCurrentPos), duration: formatDuration(progressDuration)
+    }));
   }
 
   function isSeekAvailable() {
@@ -1917,7 +1921,7 @@
       if (!result?.success || (result.playbackId && result.playbackId !== playbackId)) {
         progressCurrentPos = lastConfirmedSeekPosition;
         updateProgressBar();
-        showToast('warn', 'Player', result?.error || tr('seekFailed', 'Position konnte nicht geändert werden.'));
+        if (!result?.networkError) showToast('warn', 'Player', result?.error || tr('seekFailed', 'Position konnte nicht geändert werden.'));
         return;
       }
       lastConfirmedSeekPosition = Number(result.position ?? positionSeconds);
@@ -2098,12 +2102,8 @@
     if (!playlistList) return;
     playlistList.classList.toggle('empty', playlists.length === 0);
     playlistList.innerHTML = playlists.length
-      ? playlists.map((playlist) => `<button class="item playlist-item ${selectedPlaylist?.id === playlist.id ? 'active' : ''}" type="button" data-playlist-id="${escapeHtml(playlist.id)}"><span class="queue-title">${escapeHtml(playlist.name)}</span><span class="text-secondary">${escapeHtml(playlist.mode)} · ${playlist.itemCount || 0}${playlist.isProtected ? ` · ${escapeHtml(catalogTr('protected', 'protected'))}` : ''}</span></button>`).join('')
+      ? playlists.map((playlist) => `<button class="item playlist-item ${selectedPlaylist?.id === playlist.id ? 'active' : ''}" type="button" data-playlist-id="${escapeHtml(playlist.id)}"><span class="queue-title">${escapeHtml(playlist.name)}</span><span class="text-secondary">${escapeHtml(catalogTr(playlist.mode === 'shuffle' ? 'shuffle' : 'ordered', playlist.mode))} · ${playlist.itemCount || 0}${playlist.isProtected ? ` · ${escapeHtml(catalogTr('protected', 'protected'))}` : ''}</span></button>`).join('')
       : `<p>${escapeHtml(catalogTr('playlistEmpty', 'No playlists yet.'))}</p>`;
-    return;
-    playlistList.innerHTML = playlists.length
-      ? playlists.map((playlist) => `<button class="item playlist-item ${selectedPlaylist?.id === playlist.id ? 'active' : ''}" type="button" data-playlist-id="${escapeHtml(playlist.id)}"><span class="queue-title">${escapeHtml(playlist.name)}</span><span class="text-secondary">${playlist.mode} · ${playlist.itemCount || 0}${playlist.isProtected ? ' · geschützt' : ''}</span></button>`).join('')
-      : '<p>Noch keine Playlists.</p>';
   }
 
   async function selectPlaylist(playlistId) {
@@ -2127,8 +2127,6 @@
     playlistDeleteButton.disabled = protectedPlaylist;
     playlistDeleteButton.hidden = protectedPlaylist;
     playlistItems.innerHTML = (playlist.items || []).map((item) => `<div class="item playlist-item" draggable="true" data-playlist-song-id="${escapeHtml(item.songId)}"><span class="queue-pos">☰</span><span class="queue-title">${escapeHtml(item.title)}</span><button class="btn danger small" type="button" data-playlist-remove-song="${escapeHtml(item.songId)}" aria-label="${escapeHtml(catalogTr('remove', 'Remove'))}">×</button></div>`).join('') || `<p>${escapeHtml(catalogTr('playlistItemsEmpty', 'No titles in this playlist.'))}</p>`;
-    return;
-    playlistItems.innerHTML = (playlist.items || []).map((item) => `<div class="item playlist-item" draggable="true" data-playlist-song-id="${escapeHtml(item.songId)}"><span class="queue-pos">☰</span><span class="queue-title">${escapeHtml(item.title)}</span><button class="btn danger small" type="button" data-playlist-remove-song="${escapeHtml(item.songId)}">×</button></div>`).join('') || '<p>Keine Titel in dieser Playlist.</p>';
   }
 
   async function handlePlaylistFailure(result) {

@@ -4,7 +4,7 @@ const { JSDOM } = require('jsdom');
 
 const locales = ['de', 'en', 'es', 'fr'];
 const runtimeKeys = ['seekUnavailable', 'seekFailed', 'historyLoadFailed', 'playlistSaveFailed', 'playlistConflict', 'importRunning'];
-const staticCatalogKeys = ['historyTab', 'catalogTab', 'playlistsTab', 'catalogDescription', 'playlistsDescription', 'newPlaylist', 'playbackMode', 'ordered', 'shuffle', 'create', 'radioDescription', 'saveRadioSources', 'playlistName', 'save', 'delete', 'importUrl', 'import', 'historyEmpty', 'banTrack', 'voteUp', 'voteDown', 'voteNeutral', 'addToPlaylist', 'catalogEmpty', 'protected', 'playlistEmpty', 'playlistItemsEmpty', 'remove', 'radioWeight'];
+const staticCatalogKeys = ['historyTab', 'catalogTab', 'playlistsTab', 'catalogDescription', 'playlistsDescription', 'newPlaylist', 'playbackMode', 'ordered', 'shuffle', 'create', 'radioDescription', 'saveRadioSources', 'playlistName', 'save', 'delete', 'importUrl', 'import', 'historyEmpty', 'banTrack', 'voteUp', 'voteDown', 'voteNeutral', 'addToPlaylist', 'catalogEmpty', 'protected', 'playlistEmpty', 'playlistItemsEmpty', 'remove', 'radioWeight', 'seekAria', 'importCompleted', 'importFailed', 'importAborted', 'importError', 'networkTitle', 'postFailed', 'getFailed', 'deleteFailed', 'requestFailed'];
 
 describe('Music Bot catalog admin i18n contract', () => {
   const root = path.join(__dirname, '..', 'plugins', 'music-bot');
