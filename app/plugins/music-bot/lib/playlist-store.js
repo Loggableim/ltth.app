@@ -16,8 +16,10 @@ class PlaylistStore {
     this.api = api;
     this.db = api.getDatabase();
     this.catalog = catalog;
-    this._ensureTables();
-    this._ensureViewerRadio();
+    this._withTransaction(() => {
+      this._ensureTables();
+      this._ensureViewerRadio();
+    });
   }
 
   create({ name, mode = 'ordered' } = {}) {
@@ -179,7 +181,8 @@ class PlaylistStore {
 
   recordViewerCompletion(songId, details = {}) {
     const requestedBy = String(details.requestedBy || '').toLowerCase();
-    if (requestedBy === 'autodj' || details.outcome !== 'completed' || details.error) return null;
+    if (!requestedBy || ['autodj', 'fallback', 'system'].includes(requestedBy)
+      || details.outcome !== 'completed' || details.error) return null;
     return this._withTransaction(() => {
       this._song(songId);
       const current = this._playlist(VIEWER_RADIO_ID);

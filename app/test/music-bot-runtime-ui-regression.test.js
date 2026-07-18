@@ -25,6 +25,7 @@ function createPluginWithQueue(queue) {
     preCache: { enabled: false }
   };
   plugin._mpvAvailable = false;
+  plugin._ensureMpv = jest.fn(async () => {});
   plugin.queueManager = {
     getQueue: jest.fn(() => queue),
     shiftNext: jest.fn(() => queue.shift()),
@@ -225,6 +226,7 @@ describe('Music Bot runtime and UI regressions', () => {
     const result = await plugin._playNextFromQueue();
 
     expect(result.success).toBe(false);
+    expect(plugin._ensureMpv).toHaveBeenCalledTimes(1);
     expect(queue).toHaveLength(1);
     expect(plugin.queueManager.shiftNext).not.toHaveBeenCalled();
     expect(plugin.playbackEngine.play).not.toHaveBeenCalled();

@@ -198,6 +198,8 @@ class MusicBotPlugin extends EventEmitter {
     this._radioPrefetch = null;
     this._radioPrefetchGeneration = 0;
     this._autoDjRecoveryTracks = new WeakSet();
+    this._catalogPlaybackStarts = new WeakMap();
+    this._catalogTerminalTracks = new WeakSet();
     this._pendingTrackAdvance = null;
     this._pendingSkipAdvance = null;
     this._queueAdvanceOperation = null;
@@ -1413,6 +1415,7 @@ class MusicBotPlugin extends EventEmitter {
       this.queueManager.markPlaying(track);
       this.queueManager.resetVoteSkips();
       this.autoDJ?.setPlaybackSeed?.(track);
+      this._rememberCatalogPlaybackStart(track);
       this._emitNowPlaying(track);
       this._startPlaybackSync();
       this._scheduleCrossfadeTransition(track);
@@ -1431,6 +1434,7 @@ class MusicBotPlugin extends EventEmitter {
       if (info.reason !== 'crossfade') {
         this._clearCrossfadeTimer();
       }
+      const catalogResult = this._recordCatalogTrackEnd(info);
       if (info.reason === 'error') {
         const detail = info.error || `MPV end-file reason: ${info.mpvReason || 'unknown'}`;
         const message = `MPV konnte "${info.track?.title || 'den Titel'}" nicht abspielen: ${detail}`;
@@ -1453,9 +1457,9 @@ class MusicBotPlugin extends EventEmitter {
       }
       this.queueManager.addToHistory(info.track, info.reason === 'skip');
       if ((info.reason === 'ended' || info.reason === 'crossfade')
-        && info.track?.requestedBy && info.track.requestedBy !== 'AutoDJ') {
+        && this._isViewerRequestedTrack(info.track)) {
         try {
-          const resolved = this.musicCatalog?.resolveOrUpsert?.(info.track);
+          const resolved = catalogResult || this.musicCatalog?.resolveOrUpsert?.(info.track);
           if (resolved?.song?.id) {
             this.playlistStore?.recordViewerCompletion?.(resolved.song.id, {
               requestedBy: info.track.requestedBy,
@@ -1575,6 +1579,65 @@ class MusicBotPlugin extends EventEmitter {
           this.api.log(`[music-bot] Failed to persist controller safety state: ${error.message}`, 'error');
         });
     });
+  }
+
+  _rememberCatalogPlaybackStart(track) {
+    if (!track || typeof track !== 'object') return null;
+    const playbackId = this.playbackEngine?.getSnapshot?.().activePlaybackId || null;
+    const startedAt = Number(track.startedAt) || Date.now();
+    const start = { playbackId, startedAt };
+    this._catalogPlaybackStarts.set(track, start);
+    return start;
+  }
+
+  _recordCatalogTrackEnd(info = {}) {
+    const track = info.track;
+    if (!track || typeof track !== 'object' || !this.musicCatalog) return null;
+    if (this._catalogTerminalTracks.has(track)) return null;
+    const start = this._catalogPlaybackStarts.get(track) || {};
+    const startedAt = Number(start.startedAt || track.startedAt) || null;
+    const finishedAt = Number(info.finishedAt) || Date.now();
+    const duration = Number(info.duration ?? track.duration);
+    const explicitPosition = Number(info.positionSeconds ?? info.position);
+    const elapsedSeconds = startedAt ? Math.max(0, (finishedAt - startedAt) / 1000) : 0;
+    const rawPlayedSeconds = Number.isFinite(explicitPosition) ? explicitPosition : elapsedSeconds;
+    const playedSeconds = Number.isFinite(duration) && duration > 0
+      ? Math.min(duration, Math.max(0, rawPlayedSeconds))
+      : Math.max(0, rawPlayedSeconds);
+    const details = {
+      id: start.playbackId ? `playback:${start.playbackId}` : undefined,
+      startedAt,
+      finishedAt,
+      duration: Number.isFinite(duration) && duration > 0 ? duration : null,
+      playedSeconds,
+      requestedBy: track.requestedBy || 'viewer',
+      source: track.source || track.provider || null,
+      error: info.error || null
+    };
+    try {
+      let result;
+      if (info.reason === 'error') {
+        result = this.musicCatalog.recordFailed?.(track, details);
+      } else if (info.reason === 'skip') {
+        result = this.musicCatalog.recordSkipped?.(track, details);
+      } else if (info.reason === 'ended' || info.reason === 'crossfade') {
+        result = this.musicCatalog.recordCompleted?.(track, details);
+      }
+      if (!result) return null;
+      this._catalogTerminalTracks.add(track);
+      if (result.song?.id) {
+        this.api.emit('musicbot:history-update', { songId: result.song.id, refresh: true });
+      }
+      return result;
+    } catch (error) {
+      this.api.log(`[music-bot] Catalog playback event was not recorded: ${error.message}`, 'warn');
+      return null;
+    }
+  }
+
+  _isViewerRequestedTrack(track) {
+    const requestedBy = String(track?.requestedBy || '').trim().toLowerCase();
+    return Boolean(requestedBy) && !['autodj', 'fallback', 'system'].includes(requestedBy);
   }
 
   _registerRoutes() {
@@ -3092,6 +3155,12 @@ class MusicBotPlugin extends EventEmitter {
       });
       return prepared;
     } catch (error) {
+      this._recordCatalogTrackEnd({
+        track: alternative,
+        reason: 'error',
+        positionSeconds: 0,
+        error: error.message
+      });
       this._lastAutoDJFailureClass = this._recordAutoDJSourceFailure(
         alternative,
         error,
@@ -3114,7 +3183,11 @@ class MusicBotPlugin extends EventEmitter {
       return this._lockedResult();
     }
     if (this._mpvAvailable === false) {
-      return this._handlePlaybackUnavailable();
+      await this._ensureMpv();
+      if (!isCurrent() || this._isSafetyLocked() || this._destroyed) {
+        return this._lockedResult();
+      }
+      if (this._mpvAvailable === false) return this._handlePlaybackUnavailable();
     }
     let next = this.queueManager.shiftNext();
     while (next) {
@@ -3181,6 +3254,12 @@ class MusicBotPlugin extends EventEmitter {
           () => this.playbackEngine?.resetPlayer?.({ remainLocked: false })
         );
       }
+      this._recordCatalogTrackEnd({
+        track: next,
+        reason: 'error',
+        positionSeconds: 0,
+        error: error.message
+      });
       this.queueManager.markPlaying?.(null);
       this.queueManager.addToHistory?.({
         ...next,
@@ -3709,6 +3788,12 @@ class MusicBotPlugin extends EventEmitter {
       }
       return track;
     } catch (error) {
+      this._recordCatalogTrackEnd({
+        track,
+        reason: 'error',
+        positionSeconds: 0,
+        error: error.message
+      });
       this._lastAutoDJFailureClass = this._recordAutoDJSourceFailure(
         track,
         error,
@@ -3750,6 +3835,12 @@ class MusicBotPlugin extends EventEmitter {
           });
           return preparedAlternative;
         } catch (alternativeError) {
+          this._recordCatalogTrackEnd({
+            track: alternative,
+            reason: 'error',
+            positionSeconds: 0,
+            error: alternativeError.message
+          });
           this._lastAutoDJFailureClass = this._recordAutoDJSourceFailure(
             alternative,
             alternativeError,
@@ -3796,6 +3887,7 @@ class MusicBotPlugin extends EventEmitter {
 
   _handleConfirmedIpcFailure(track, error) {
     if (this._destroyed || this._isSafetyLocked()) return this._lockedResult();
+    this._recordCatalogTrackEnd({ track, reason: 'error', error: error?.message || error });
     this._stopPlaybackSync();
     this.playbackEngine?.clearNowPlaying?.();
     this.queueManager?.markPlaying?.(null);
@@ -3820,6 +3912,7 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   _advanceAfterViewerFailure(reason, track, error) {
+    this._recordCatalogTrackEnd({ track, reason: 'error', error: error?.message || error });
     const payload = { track, error, failureClass: 'playback' };
     const recovery = this.radioSupervisor?.wake
       ? this.radioSupervisor.wake(reason, payload)
@@ -3844,6 +3937,7 @@ class MusicBotPlugin extends EventEmitter {
     }
     if (this._autoDjRecoveryTracks.has(track)) return null;
     this._autoDjRecoveryTracks.add(track);
+    this._recordCatalogTrackEnd({ track, reason: 'error', error: error?.message || error });
     this._stopPlaybackSync();
     this._lastAutoDJFailureClass = this._recordAutoDJSourceFailure(
       track,

@@ -88,4 +88,29 @@ describe('music-bot playlist imports', () => {
     });
     db.close();
   });
+
+  it('destroy aborts the active import, settles queued jobs, and leaves no import work behind', async () => {
+    const runner = {
+      run: jest.fn((_command, _args, options) => new Promise((_resolve, reject) => {
+        options.signal.addEventListener('abort', () => {
+          reject(Object.assign(new Error('aborted'), { code: 'ABORT_ERR' }));
+        }, { once: true });
+      }))
+    };
+    const { db, store, service } = createSubject(runner);
+    const first = store.create({ name: 'Destroy active' });
+    const second = store.create({ name: 'Destroy queued' });
+    const active = service.start({ playlistId: first.id, url: 'https://youtube.com/playlist?list=active' });
+    const queued = service.start({ playlistId: second.id, url: 'https://youtube.com/playlist?list=queued' });
+
+    await service.destroy();
+
+    await expect(service.wait(active.id)).resolves.toMatchObject({ status: 'aborted' });
+    await expect(service.wait(queued.id)).resolves.toMatchObject({ status: 'aborted' });
+    expect(runner.run).toHaveBeenCalledTimes(1);
+    expect(service.active).toBeNull();
+    expect(service.queue).toEqual([]);
+    expect(service.destroyed).toBe(true);
+    db.close();
+  });
 });

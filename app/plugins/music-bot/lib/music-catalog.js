@@ -4,6 +4,7 @@ const { deriveTrackIdentity, normalizeText } = require('./track-identity');
 const FIFTEEN_MINUTES = 15 * 60 * 1000;
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const SEVEN_DAYS = 7 * ONE_DAY;
+const LEGACY_DUAL_WRITE_WINDOW_MS = 1000;
 const UNRELIABLE_ARTISTS = new Set(['', 'unknown', 'unknown artist', 'various artists', 'youtube']);
 const VERSION_QUALIFIER = '(?:live|remix|acoustic|instrumental|cover|karaoke|sped\\s*up|slowed|nightcore|reverb)';
 const NORMAL_UPLOAD_MARKERS = /(?:\s*[-–—]?\s*|\s*[\[(])(?:official\s*(?:music\s*)?(?:video|audio)|lyrics?|lyric\s*video)(?:\s*[\])])?/gi;
@@ -12,7 +13,7 @@ class MusicCatalog {
   constructor(api) {
     this.api = api;
     this.db = api.getDatabase();
-    this._ensureTables();
+    this._withTransaction(() => this._ensureTables());
   }
 
   resolveOrUpsert(track = {}) {
@@ -28,18 +29,41 @@ class MusicCatalog {
       const exists = this.db.prepare(
         'SELECT 1 FROM plugin_music_bot_play_events WHERE legacy_history_id = ? LIMIT 1'
       );
+      const equivalentRuntimeEvents = this.db.prepare(
+        `SELECT outcome FROM plugin_music_bot_play_events
+         WHERE legacy_history_id IS NULL AND song_id = ? AND source_id = ? AND requested_by = ?
+         AND COALESCE(duration, -1) = ? AND ABS(finished_at - ?) <= ?`
+      );
       rows.forEach((row) => {
         if (!row.id || exists.get(String(row.id))) {
           skipped += 1;
           return;
         }
         const resolved = this._resolveOrUpsert({ ...row, id: undefined });
+        const finishedAt = Number(row.finishedAt);
+        const duration = Number(row.duration) || null;
+        const duplicateOutcomes = row.skipped
+          ? new Set(['early_skip', 'skipped', 'failed'])
+          : new Set(['completed']);
+        const isRuntimeDualWrite = Number.isFinite(finishedAt) && finishedAt > 0
+          && equivalentRuntimeEvents.all(
+            resolved.song.id,
+            resolved.source.id,
+            row.requestedBy || 'viewer',
+            duration ?? -1,
+            finishedAt,
+            LEGACY_DUAL_WRITE_WINDOW_MS
+          ).some((event) => duplicateOutcomes.has(event.outcome));
+        if (isRuntimeDualWrite) {
+          skipped += 1;
+          return;
+        }
         this._insertPlayEvent(resolved, row, {
           id: `legacy:${row.id}`,
           legacyHistoryId: String(row.id),
-          finishedAt: Number(row.finishedAt) || Date.now(),
-          duration: Number(row.duration) || null,
-          playedSeconds: row.skipped ? 0 : (Number(row.duration) || null),
+          finishedAt: finishedAt || Date.now(),
+          duration,
+          playedSeconds: row.skipped ? 0 : duration,
           outcome: row.skipped ? 'early_skip' : 'completed',
           requestedBy: row.requestedBy || 'viewer',
           source: row.source || null
@@ -318,7 +342,8 @@ class MusicCatalog {
 
   _insertPlayEvent(resolved, track, details = {}) {
     const duration = Number(details.duration ?? track.duration) || null;
-    const playedSeconds = Number(details.playedSeconds ?? details.positionSeconds) || null;
+    const playedSecondsValue = Number(details.playedSeconds ?? details.positionSeconds);
+    const playedSeconds = Number.isFinite(playedSecondsValue) ? playedSecondsValue : null;
     const id = details.id || randomUUID();
     const result = this.db.prepare(
       `INSERT OR IGNORE INTO plugin_music_bot_play_events
