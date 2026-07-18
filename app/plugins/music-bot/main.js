@@ -1602,6 +1602,26 @@ class MusicBotPlugin extends EventEmitter {
       res.status(status).json({ success: false, error: error?.message || 'Playlist request failed', code: error?.code });
     };
 
+    this.api.registerRoute('get', '/api/plugins/music-bot/catalog/search', async (req, res) => {
+      if (!this.musicCatalog) return res.status(503).json({ success: false, error: 'Music catalog is unavailable' });
+      const query = String(req.query?.q || '').trim();
+      if (!query) return res.json({ success: true, songs: [] });
+      res.json({ success: true, songs: this.musicCatalog.searchSongs(query, req.query?.limit) });
+    });
+
+    this.api.registerRoute('post', '/api/plugins/music-bot/catalog/songs/:songId/feedback', async (req, res) => {
+      if (!this.musicCatalog) return res.status(503).json({ success: false, error: 'Music catalog is unavailable' });
+      const songId = Number(req.params.songId);
+      if (!Number.isInteger(songId) || songId <= 0) return res.status(400).json({ success: false, error: 'Invalid song ID' });
+      try {
+        const feedback = this.musicCatalog.setFeedback(songId, req.body?.state);
+        this.api.emit('musicbot:history-update', { songId, feedback });
+        res.json({ success: true, feedback });
+      } catch (error) {
+        res.status(400).json({ success: false, error: error.message });
+      }
+    });
+
     this.api.registerRoute('get', '/api/plugins/music-bot/playlists', async (req, res) => {
       if (!this.playlistStore) return playlistUnavailable(res);
       res.json({ success: true, playlists: this.playlistStore.list() });
@@ -2100,6 +2120,14 @@ class MusicBotPlugin extends EventEmitter {
       const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
       const offset = Math.max(Number(req.query.offset) || 0, 0);
       try {
+        if (this.musicCatalog) {
+          const page = this.musicCatalog.getHistory({ limit, offset });
+          const history = page.items.map((item) => ({
+            ...item,
+            banned: Boolean(this._checkBans({ title: item.title }, 'dashboard'))
+          }));
+          return res.json({ success: true, history, total: page.total, limit: page.limit, offset: page.offset });
+        }
         const rows = this.db
           .prepare('SELECT * FROM plugin_music_bot_history ORDER BY finishedAt DESC LIMIT ? OFFSET ?')
           .all(limit, offset);

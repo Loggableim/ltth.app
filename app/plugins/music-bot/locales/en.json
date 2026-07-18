@@ -55,6 +55,34 @@
         "artist": "Ban artist",
         "channel": "Ban channel",
         "keyword": "Ban title keyword"
+      },
+      "catalog": {
+        "seek": "Playback position",
+        "historyMore": "Load more",
+        "historyBanned": "Banned",
+        "catalogSearch": "Search titles",
+        "playlistConflict": "Playlist changed elsewhere. Refreshing the view.",
+        "viewerRadio": "Viewer Radio",
+        "radioSources": "Radio sources",
+        "importRunning": "Import is running …"
+      },
+      "controls": {
+        "runtime": {
+          "seekUnavailable": "This playback cannot be seeked right now.",
+          "seekFailed": "Could not change the position.",
+          "historyLoadFailed": "Could not load history.",
+          "playlistSaveFailed": "Could not save playlist.",
+          "playlistConflict": "Playlist was updated. Please try again.",
+          "importRunning": "Import is running …"
+        },
+        "overlay": {
+          "songSkipping": "Skipping song",
+          "voteSkip": "Vote to skip",
+          "requestedBy": "Requested by",
+          "unknownTitle": "Unknown title",
+          "queueCount": "Songs in queue",
+          "waitingForMusic": "Waiting for music"
+        }
       }
     }
   },

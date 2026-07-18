@@ -158,9 +158,29 @@
   const setupIssuesBanner = document.getElementById('setup-issues-banner');
   const setupIssuesList = document.getElementById('setup-issues-list');
   const npProgressWrapper = document.getElementById('np-progress-wrapper');
-  const npProgressFill = document.getElementById('np-progress-fill');
+  const npSeekInput = document.getElementById('np-seek-input');
   const npElapsed = document.getElementById('np-elapsed');
   const npDuration = document.getElementById('np-duration');
+  const historyLoadMore = document.getElementById('history-load-more');
+  const historyPageStatus = document.getElementById('history-page-status');
+  const catalogSearchInput = document.getElementById('catalog-search-input');
+  const catalogSearchResults = document.getElementById('catalog-search-results');
+  const playlistCreateName = document.getElementById('playlist-create-name');
+  const playlistCreateMode = document.getElementById('playlist-create-mode');
+  const playlistCreateButton = document.getElementById('playlist-create-btn');
+  const playlistList = document.getElementById('playlist-list');
+  const playlistEditor = document.getElementById('playlist-editor');
+  const playlistNameInput = document.getElementById('playlist-name-input');
+  const playlistModeInput = document.getElementById('playlist-mode-input');
+  const playlistSaveButton = document.getElementById('playlist-save-btn');
+  const playlistDeleteButton = document.getElementById('playlist-delete-btn');
+  const playlistItems = document.getElementById('playlist-items');
+  const playlistImportUrl = document.getElementById('playlist-import-url');
+  const playlistImportButton = document.getElementById('playlist-import-btn');
+  const playlistImportProgress = document.getElementById('playlist-import-progress');
+  const playlistConflictFeedback = document.getElementById('playlist-conflict-feedback');
+  const playlistRadioSources = document.getElementById('playlist-radio-sources');
+  const playlistRadioSave = document.getElementById('playlist-radio-save');
   const toastContainer = document.getElementById('musicbot-toast-container');
   const onboardingPanel = document.getElementById('musicbot-onboarding');
   const onboardingStatus = document.getElementById('musicbot-onboarding-status');
@@ -200,6 +220,16 @@
   let progressTimer = null;
   let progressCurrentPos = 0;
   let progressDuration = 0;
+  let activePlaybackId = null;
+  let lastConfirmedSeekPosition = 0;
+  let seekPreviewActive = false;
+  let historyOffset = 0;
+  let historyTotal = 0;
+  const HISTORY_PAGE_SIZE = 50;
+  const canonicalSongState = new Map();
+  let selectedPlaylist = null;
+  let playlists = [];
+  let playlistDragSongId = null;
   let draggedQueueIndex = null;
   let draggedQueueSongId = null;
   let giftCatalogTargetField = null;
@@ -1165,7 +1195,7 @@
         searchInput.value = payload.url || '';
       }
     }
-    refreshHistory();
+    refreshHistory({ reset: true });
   });
 
   socket.on('musicbot:queue-update', ({ queue, length }) => {
@@ -1224,20 +1254,43 @@
     setSkipLoading(true, payload?.message);
   });
   socket.on('musicbot:playback-sync', (payload) => {
+    if (payload?.playbackId && activePlaybackId && payload.playbackId !== activePlaybackId) return;
+    if (payload?.playbackId) activePlaybackId = payload.playbackId;
     if (typeof payload.position === 'number') {
       progressCurrentPos = payload.position;
+      lastConfirmedSeekPosition = payload.position;
+      seekPreviewActive = false;
       updateProgressBar();
     }
     if (typeof payload.duration === 'number') {
       progressDuration = payload.duration;
       if (npDuration) npDuration.textContent = formatDuration(payload.duration);
     }
+    if (payload?.seekable !== undefined && latestNowPlayingTrack) latestNowPlayingTrack.seekable = Boolean(payload.seekable);
+    if (payload?.state && latestNowPlayingTrack) latestNowPlayingTrack.state = payload.state;
+    updateSeekControl();
   });
-  socket.on('musicbot:song-skipped', () => refreshHistory());
+  socket.on('musicbot:song-skipped', () => refreshHistory({ reset: true }));
+  socket.on('musicbot:history-update', (payload) => {
+    const songId = String(payload?.songId || '');
+    if (!songId) return;
+    const previous = canonicalSongState.get(songId) || {};
+    canonicalSongState.set(songId, { ...previous, ...(payload.feedback || {}) });
+    renderHistory(latestHistoryTracks);
+  });
+  socket.on('musicbot:playlist-import-progress', async (payload) => {
+    if (playlistImportProgress) playlistImportProgress.textContent = payload?.message || payload?.state || 'Import läuft …';
+    if (payload?.playlistId && selectedPlaylist?.id === payload.playlistId && ['completed', 'failed', 'aborted'].includes(payload?.state)) {
+      await selectPlaylist(payload.playlistId);
+      await refreshPlaylists();
+    }
+  });
+  socket.on('musicbot:playlist-update', () => refreshPlaylists());
   socket.on('musicbot:runtime', (runtime) => {
     latestRuntime = runtime || null;
     renderSafetyState(runtime || {});
     renderHealth({ ...runtime, resolver: latestResolver });
+    updateSeekControl();
   });
   socket.on('musicbot:resolver', (resolver) => {
     latestResolver = resolver || null;
@@ -1276,6 +1329,7 @@
       control.disabled = locked;
       control.setAttribute('aria-disabled', String(locked));
     });
+    updateSeekControl();
   }
 
   function slotLabel(slot) {
@@ -1390,18 +1444,17 @@
       }
       renderOnboarding(status.onboarding || {}, currentSetupIssues);
       latestRuntime = status.runtime || null;
+      activePlaybackId = status.runtime?.activePlaybackId || activePlaybackId;
       latestResolver = status.resolver || null;
       renderSafetyState(status.runtime || { safetyLock: status.health?.locked });
       renderHealth({ ...status.health, players: status.players, resolver: status.resolver });
+      updateSeekControl();
     }
     const queueData = await get('/queue');
     if (queueData?.queue) {
       renderQueue(queueData.queue, queueData.queue.length);
     }
-    const historyData = await get('/history');
-    if (historyData?.history) {
-      renderHistory(historyData.history);
-    }
+    await refreshHistory({ reset: true });
 
     const configData = await get('/config');
     const crossfadeMs = configData?.config?.playback?.crossfadeDuration;
@@ -1499,19 +1552,27 @@
     await refreshAutoDjStatus();
     await refreshBans();
     await refreshGiftCatalog();
+    await refreshPlaylists();
   }
 
-  async function refreshHistory() {
-    const historyData = await get('/history');
-    if (historyData?.history) {
-      renderHistory(historyData.history);
+  async function refreshHistory({ reset = false } = {}) {
+    if (reset) historyOffset = 0;
+    const historyData = await get(`/history?limit=${HISTORY_PAGE_SIZE}&offset=${historyOffset}`);
+    if (!historyData?.history) {
+      showToast('warn', 'History', tr('historyLoadFailed', 'History konnte nicht geladen werden.'));
+      return;
     }
+    historyTotal = Number(historyData.total) || historyData.history.length;
+    renderHistory(historyData.history, { append: !reset && historyOffset > 0 });
+    historyOffset += historyData.history.length;
+    if (historyLoadMore) historyLoadMore.disabled = historyOffset >= historyTotal || historyData.history.length === 0;
+    if (historyPageStatus) historyPageStatus.textContent = `${Math.min(historyOffset, historyTotal)} / ${historyTotal}`;
   }
 
   async function get(path) {
     try {
       const res = await fetch(`/api/plugins/music-bot${path}`);
-      return await res.json();
+      return { ...(await res.json()), httpStatus: res.status };
     } catch (error) {
       showToast('error', 'Netzwerk', 'GET-Anfrage fehlgeschlagen.');
       return null;
@@ -1532,12 +1593,14 @@
     }
   }
 
-  async function del(path) {
+  async function del(path, body) {
     try {
       const res = await fetch(`/api/plugins/music-bot${path}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+        body: body === undefined ? undefined : JSON.stringify(body)
       });
-      return await res.json();
+      return { ...(await res.json()), httpStatus: res.status };
     } catch (error) {
       showToast('error', 'Netzwerk', 'DELETE-Anfrage fehlgeschlagen.');
       return null;
@@ -1546,6 +1609,7 @@
 
   function renderNowPlaying(track) {
     latestNowPlayingTrack = track || null;
+    activePlaybackId = track?.playbackId || latestRuntime?.activePlaybackId || null;
     if (!skipInProgress) {
       setSkipLoading(false);
     }
@@ -1555,6 +1619,7 @@
       updateState('Idle');
       stopProgressTimer();
       if (npProgressWrapper) npProgressWrapper.style.display = 'none';
+      updateSeekControl();
       return;
     }
     nowPlayingEl.classList.remove('empty');
@@ -1570,16 +1635,41 @@
     const actualState = track.state || 'playing';
     updateState(actualState === 'paused' ? 'Pausiert' : 'Wiedergabe');
 
-    if (npProgressWrapper && track.duration) {
+    if (npProgressWrapper) {
       npProgressWrapper.style.display = 'block';
-      progressDuration = track.duration;
+      progressDuration = Number(track.duration) || 0;
       progressCurrentPos = track.startedAt
         ? Math.max(0, Math.floor((Date.now() - track.startedAt) / 1000))
         : 0;
-      if (npDuration) npDuration.textContent = formatDuration(track.duration);
+      lastConfirmedSeekPosition = progressCurrentPos;
+      if (npDuration) npDuration.textContent = formatDuration(progressDuration);
       if (actualState !== 'paused') {
         startProgressTimer();
       }
+      updateSeekControl();
+    }
+  }
+
+  async function patch(path, body) {
+    return request(path, 'PATCH', body);
+  }
+
+  async function put(path, body) {
+    return request(path, 'PUT', body);
+  }
+
+  async function request(path, method, body) {
+    try {
+      const res = await fetch(`/api/plugins/music-bot${path}`, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: body === undefined ? undefined : JSON.stringify(body)
+      });
+      const payload = await res.json();
+      return { ...payload, httpStatus: res.status };
+    } catch (_error) {
+      showToast('error', 'Netzwerk', `${method}-Anfrage fehlgeschlagen.`);
+      return null;
     }
   }
 
@@ -1744,11 +1834,58 @@
   }
 
   function updateProgressBar() {
-    if (!npProgressFill || !npElapsed) return;
-    const pct = progressDuration > 0 ? Math.min(100, (progressCurrentPos / progressDuration) * 100) : 0;
-    npProgressFill.style.width = `${pct}%`;
+    if (!npElapsed) return;
     npElapsed.textContent = formatDuration(progressCurrentPos);
+    if (!seekPreviewActive && npSeekInput) npSeekInput.value = String(Math.min(progressCurrentPos, progressDuration || 0));
+    if (npSeekInput) npSeekInput.setAttribute('aria-valuetext', `${formatDuration(progressCurrentPos)} von ${formatDuration(progressDuration)}`);
   }
+
+  function isSeekAvailable() {
+    const state = String(latestRuntime?.transportState || latestNowPlayingTrack?.state || '').toLowerCase();
+    return Boolean(
+      !musicbotSafetyLocked
+      && activePlaybackId
+      && Number.isFinite(progressDuration) && progressDuration > 0
+      && latestNowPlayingTrack?.seekable !== false
+      && ['playing', 'paused'].includes(state)
+    );
+  }
+
+  function updateSeekControl() {
+    if (!npSeekInput) return;
+    const enabled = isSeekAvailable();
+    npSeekInput.max = String(Math.max(0, progressDuration || 0));
+    npSeekInput.disabled = !enabled;
+    npSeekInput.setAttribute('aria-disabled', String(!enabled));
+    npSeekInput.title = enabled ? '' : tr('seekUnavailable', 'Diese Wiedergabe kann derzeit nicht gespult werden.');
+    updateProgressBar();
+  }
+
+  async function confirmSeek() {
+    if (!npSeekInput || !isSeekAvailable()) return;
+    const playbackId = activePlaybackId;
+    const positionSeconds = Math.max(0, Math.min(progressDuration, Number(npSeekInput.value) || 0));
+    seekPreviewActive = false;
+    const result = await post('/seek', { playbackId, positionSeconds });
+    if (!result?.success || (result.playbackId && result.playbackId !== activePlaybackId)) {
+      progressCurrentPos = lastConfirmedSeekPosition;
+      updateProgressBar();
+      showToast('warn', 'Player', result?.error || tr('seekFailed', 'Position konnte nicht geändert werden.'));
+      return;
+    }
+    lastConfirmedSeekPosition = Number(result.position ?? positionSeconds);
+    progressCurrentPos = lastConfirmedSeekPosition;
+    if (Number.isFinite(Number(result.duration))) progressDuration = Number(result.duration);
+    updateSeekControl();
+  }
+
+  npSeekInput?.addEventListener('input', () => {
+    if (!isSeekAvailable()) return;
+    seekPreviewActive = true;
+    progressCurrentPos = Number(npSeekInput.value) || 0;
+    updateProgressBar();
+  });
+  npSeekInput?.addEventListener('change', confirmSeek);
 
   function showFeedback(el, message) {
     if (!el) return;
@@ -1814,28 +1951,213 @@
     return `${mins}:${secs}`;
   }
 
-  function renderHistory(history = []) {
-    latestHistoryTracks = Array.isArray(history) ? history.slice() : [];
-    if (!history.length) {
+  function renderHistory(history = [], { append = false } = {}) {
+    const rows = Array.isArray(history) ? history.slice() : [];
+    latestHistoryTracks = append ? latestHistoryTracks.concat(rows) : rows;
+    rows.forEach((item) => canonicalSongState.set(String(item.songId || item.id), {
+      feedback: item.feedback || canonicalSongState.get(String(item.songId || item.id))?.feedback || 'neutral',
+      banned: Boolean(item.banned)
+    }));
+    if (!latestHistoryTracks.length) {
       historyListEl.classList.add('empty');
       historyListEl.innerHTML = '<p>Noch keine History.</p>';
       return;
     }
     historyListEl.classList.remove('empty');
-    historyListEl.innerHTML = history
-      .slice(-10)
-      .reverse()
+    historyListEl.innerHTML = latestHistoryTracks
       .map((item) => {
+        const songId = String(item.songId || item.id || '');
+        const canonical = canonicalSongState.get(songId) || { feedback: 'neutral', banned: false };
         const thumb = isValidYouTubeId(item.youtubeId)
           ? `<img src="https://i.ytimg.com/vi/${item.youtubeId}/default.jpg" class="queue-thumb" alt="">`
           : '<span class="queue-thumb-placeholder">🎵</span>';
         const banButton = item.id
           ? `<button class="btn danger small track-ban-trigger" type="button" data-track-ban-trigger data-track-id="${escapeHtml(item.id)}" aria-haspopup="dialog" aria-expanded="false" aria-label="Track sperren">!</button>`
           : '';
-        return `<div class="item queue-item">${thumb}<span class="queue-title">${escapeHtml(item.title)}</span><span class="text-secondary queue-by">${escapeHtml(item.requestedBy || 'Viewer')}</span>${banButton}</div>`;
+        const vote = (state, symbol, label) => `<button class="btn ghost small history-feedback ${canonical.feedback === state ? 'is-active' : ''}" type="button" data-history-feedback="${state}" data-song-id="${escapeHtml(songId)}" aria-pressed="${canonical.feedback === state}">${symbol}<span class="sr-only">${label}</span></button>`;
+        const banBadge = canonical.banned ? '<span class="history-ban-badge" aria-label="Gesperrt">Gesperrt</span>' : '';
+        return `<div class="item queue-item" data-song-id="${escapeHtml(songId)}">${thumb}<span class="queue-title">${escapeHtml(item.title)}</span><span class="text-secondary queue-by">${escapeHtml(item.requestedBy || 'Viewer')}</span>${vote('up', '↑', 'Gefällt mir')}${vote('down', '↓', 'Nicht fürs Radio')}${vote('neutral', '•', 'Neutral')}${banBadge}${banButton}</div>`;
       })
       .join('');
   }
+
+  historyLoadMore?.addEventListener('click', () => refreshHistory());
+  historyListEl?.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-history-feedback]');
+    if (!button) return;
+    const songId = button.dataset.songId;
+    const state = button.dataset.historyFeedback;
+    const result = await post(`/catalog/songs/${songId}/feedback`, { state });
+    if (!result?.success) {
+      showToast('warn', 'History', result?.error || 'Bewertung konnte nicht gespeichert werden.');
+      return;
+    }
+    const previous = canonicalSongState.get(songId) || {};
+    canonicalSongState.set(songId, { ...previous, feedback: result.feedback?.state || result.state || 'neutral' });
+    renderHistory(latestHistoryTracks);
+  });
+
+  async function searchCatalog(query = catalogSearchInput?.value || '') {
+    if (!catalogSearchResults) return;
+    if (!query.trim()) {
+      catalogSearchResults.classList.add('empty');
+      catalogSearchResults.textContent = '';
+      return;
+    }
+    const result = await get(`/catalog/search?q=${encodeURIComponent(query)}`);
+    const songs = result?.songs || [];
+    catalogSearchResults.classList.toggle('empty', songs.length === 0);
+    catalogSearchResults.innerHTML = songs.length
+      ? songs.map((song) => `<div class="item playlist-item"><span class="queue-title">${escapeHtml(song.title)}</span><button class="btn ghost small" type="button" data-catalog-add-song="${escapeHtml(song.id)}">Zur Playlist</button></div>`).join('')
+      : '<p>Keine Titel gefunden.</p>';
+  }
+
+  const debouncedCatalogSearch = debounce(() => searchCatalog());
+  catalogSearchInput?.addEventListener('input', debouncedCatalogSearch);
+  catalogSearchResults?.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-catalog-add-song]');
+    if (!button || !selectedPlaylist) return;
+    const result = await post(`/playlists/${selectedPlaylist.id}/items`, {
+      songId: Number(button.dataset.catalogAddSong), revision: selectedPlaylist.revision
+    });
+    if (!result?.success) return handlePlaylistFailure(result);
+    selectedPlaylist = result.playlist;
+    renderPlaylistEditor();
+    await refreshPlaylists();
+  });
+
+  async function refreshPlaylists({ keepSelection = true } = {}) {
+    const result = await get('/playlists');
+    if (!result?.success) return;
+    playlists = result.playlists || [];
+    if (keepSelection && selectedPlaylist) {
+      const current = playlists.find((playlist) => playlist.id === selectedPlaylist.id);
+      if (!current) selectedPlaylist = null;
+    }
+    renderPlaylistList();
+    await refreshRadioSources();
+  }
+
+  function renderPlaylistList() {
+    if (!playlistList) return;
+    playlistList.classList.toggle('empty', playlists.length === 0);
+    playlistList.innerHTML = playlists.length
+      ? playlists.map((playlist) => `<button class="item playlist-item ${selectedPlaylist?.id === playlist.id ? 'active' : ''}" type="button" data-playlist-id="${escapeHtml(playlist.id)}"><span class="queue-title">${escapeHtml(playlist.name)}</span><span class="text-secondary">${playlist.mode} · ${playlist.itemCount || 0}${playlist.isProtected ? ' · geschützt' : ''}</span></button>`).join('')
+      : '<p>Noch keine Playlists.</p>';
+  }
+
+  async function selectPlaylist(playlistId) {
+    const result = await get(`/playlists/${playlistId}`);
+    if (!result?.success) return;
+    selectedPlaylist = result.playlist;
+    renderPlaylistList();
+    renderPlaylistEditor();
+  }
+
+  function renderPlaylistEditor() {
+    if (!playlistEditor) return;
+    const playlist = selectedPlaylist;
+    playlistEditor.hidden = !playlist;
+    if (!playlist) return;
+    const protectedPlaylist = Boolean(playlist.isProtected);
+    playlistNameInput.value = playlist.name || '';
+    playlistNameInput.disabled = protectedPlaylist;
+    playlistModeInput.value = playlist.mode || 'ordered';
+    playlistSaveButton.disabled = false;
+    playlistDeleteButton.disabled = protectedPlaylist;
+    playlistDeleteButton.hidden = protectedPlaylist;
+    playlistItems.innerHTML = (playlist.items || []).map((item) => `<div class="item playlist-item" draggable="true" data-playlist-song-id="${escapeHtml(item.songId)}"><span class="queue-pos">☰</span><span class="queue-title">${escapeHtml(item.title)}</span><button class="btn danger small" type="button" data-playlist-remove-song="${escapeHtml(item.songId)}">×</button></div>`).join('') || '<p>Keine Titel in dieser Playlist.</p>';
+  }
+
+  async function handlePlaylistFailure(result) {
+    if (result?.httpStatus === 409 || result?.code === 'PLAYLIST_REVISION_CONFLICT') {
+      if (playlistConflictFeedback) playlistConflictFeedback.textContent = tr('playlistConflict', 'Playlist wurde anderswo geändert. Ansicht wird aktualisiert.');
+      if (selectedPlaylist) await selectPlaylist(selectedPlaylist.id);
+      await refreshPlaylists();
+      return;
+    }
+    if (playlistConflictFeedback) playlistConflictFeedback.textContent = result?.error || tr('playlistSaveFailed', 'Playlist konnte nicht gespeichert werden.');
+  }
+
+  playlistCreateButton?.addEventListener('click', async () => {
+    const name = playlistCreateName?.value?.trim();
+    if (!name) return;
+    const result = await post('/playlists', { name, mode: playlistCreateMode?.value || 'ordered' });
+    if (!result?.success) return handlePlaylistFailure(result);
+    playlistCreateName.value = '';
+    await refreshPlaylists({ keepSelection: false });
+    await selectPlaylist(result.playlist.id);
+  });
+  playlistList?.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-playlist-id]');
+    if (button) selectPlaylist(button.dataset.playlistId);
+  });
+  playlistSaveButton?.addEventListener('click', async () => {
+    if (!selectedPlaylist) return;
+    const changes = { mode: playlistModeInput.value, revision: selectedPlaylist.revision };
+    if (!selectedPlaylist.isProtected) changes.name = playlistNameInput.value;
+    const result = await patch(`/playlists/${selectedPlaylist.id}`, changes);
+    if (!result?.success) return handlePlaylistFailure(result);
+    selectedPlaylist = result.playlist;
+    renderPlaylistEditor();
+    await refreshPlaylists();
+  });
+  playlistDeleteButton?.addEventListener('click', async () => {
+    if (!selectedPlaylist || selectedPlaylist.isProtected) return;
+    const result = await del(`/playlists/${selectedPlaylist.id}`, { revision: selectedPlaylist.revision });
+    if (!result?.success) return handlePlaylistFailure(result);
+    selectedPlaylist = null;
+    renderPlaylistEditor();
+    await refreshPlaylists({ keepSelection: false });
+  });
+  playlistItems?.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-playlist-remove-song]');
+    if (!button || !selectedPlaylist) return;
+    const result = await del(`/playlists/${selectedPlaylist.id}/items/${button.dataset.playlistRemoveSong}`, { revision: selectedPlaylist.revision });
+    if (!result?.success) return handlePlaylistFailure(result);
+    selectedPlaylist = result.playlist;
+    renderPlaylistEditor();
+    await refreshPlaylists();
+  });
+  playlistItems?.addEventListener('dragstart', (event) => { playlistDragSongId = event.target.closest('[data-playlist-song-id]')?.dataset.playlistSongId || null; });
+  playlistItems?.addEventListener('dragover', (event) => event.preventDefault());
+  playlistItems?.addEventListener('drop', async (event) => {
+    event.preventDefault();
+    const target = event.target.closest('[data-playlist-song-id]');
+    if (!target || !selectedPlaylist || !playlistDragSongId || playlistDragSongId === target.dataset.playlistSongId) return;
+    const songIds = selectedPlaylist.items.map((item) => String(item.songId));
+    const from = songIds.indexOf(playlistDragSongId);
+    const to = songIds.indexOf(target.dataset.playlistSongId);
+    songIds.splice(to, 0, songIds.splice(from, 1)[0]);
+    const result = await put(`/playlists/${selectedPlaylist.id}/items`, { songIds, revision: selectedPlaylist.revision });
+    playlistDragSongId = null;
+    if (!result?.success) return handlePlaylistFailure(result);
+    selectedPlaylist = result.playlist;
+    renderPlaylistEditor();
+    await refreshPlaylists();
+  });
+  playlistImportButton?.addEventListener('click', async () => {
+    if (!selectedPlaylist || !playlistImportUrl?.value?.trim()) return;
+    const result = await post('/playlist-imports', { playlistId: selectedPlaylist.id, url: playlistImportUrl.value.trim() });
+    if (!result?.success) return handlePlaylistFailure(result);
+    if (playlistImportProgress) playlistImportProgress.textContent = tr('importRunning', 'Import läuft …');
+  });
+
+  async function refreshRadioSources() {
+    const result = await get('/radio/playlist-sources');
+    if (!result?.success || !playlistRadioSources) return;
+    playlistRadioSources.innerHTML = (result.sources || []).map((source) => `<label class="playlist-source"><input type="checkbox" data-radio-playlist-id="${escapeHtml(source.playlistId)}" ${source.enabled ? 'checked' : ''}><span>${escapeHtml(source.name || source.playlistId)}</span><input type="number" min="1" max="10" value="${Math.max(1, Math.min(10, Number(source.weight) || 1))}" data-radio-weight="${escapeHtml(source.playlistId)}" aria-label="Gewicht"></label>`).join('');
+  }
+  playlistRadioSave?.addEventListener('click', async () => {
+    const sources = Array.from(playlistRadioSources?.querySelectorAll('[data-radio-playlist-id]') || []).map((checkbox) => ({
+      playlistId: checkbox.dataset.radioPlaylistId,
+      enabled: checkbox.checked,
+      weight: Math.max(1, Math.min(10, Number(Array.from(playlistRadioSources.querySelectorAll('[data-radio-weight]')).find((input) => input.dataset.radioWeight === checkbox.dataset.radioPlaylistId)?.value) || 1))
+    }));
+    const result = await put('/radio/playlist-sources', { sources });
+    if (!result?.success) return handlePlaylistFailure(result);
+    await refreshRadioSources();
+  });
 
   function updateState(state) {
     stateEl.textContent = state || 'Idle';

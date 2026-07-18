@@ -55,6 +55,34 @@
         "artist": "Bloquear artista",
         "channel": "Bloquear canal",
         "keyword": "Bloquear palabra del título"
+      },
+      "catalog": {
+        "seek": "Posicion de reproduccion",
+        "historyMore": "Cargar mas",
+        "historyBanned": "Bloqueado",
+        "catalogSearch": "Buscar titulos",
+        "playlistConflict": "La lista cambio en otro lugar. Actualizando la vista.",
+        "viewerRadio": "Radio de espectadores",
+        "radioSources": "Fuentes de radio",
+        "importRunning": "La importacion esta en curso..."
+      },
+      "controls": {
+        "runtime": {
+          "seekUnavailable": "No se puede avanzar esta reproduccion ahora.",
+          "seekFailed": "No se pudo cambiar la posicion.",
+          "historyLoadFailed": "No se pudo cargar el historial.",
+          "playlistSaveFailed": "No se pudo guardar la lista.",
+          "playlistConflict": "La lista se actualizo. Intentalo de nuevo.",
+          "importRunning": "La importacion esta en curso..."
+        },
+        "overlay": {
+          "songSkipping": "Saltando canción",
+          "voteSkip": "Votar para saltar",
+          "requestedBy": "Solicitado por",
+          "unknownTitle": "Título desconocido",
+          "queueCount": "Canciones en cola",
+          "waitingForMusic": "Esperando música"
+        }
       }
     }
   },

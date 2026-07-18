@@ -55,6 +55,34 @@
         "artist": "Künstler sperren",
         "channel": "Kanal sperren",
         "keyword": "Titelbegriff sperren"
+      },
+      "catalog": {
+        "seek": "Wiedergabeposition",
+        "historyMore": "Mehr laden",
+        "historyBanned": "Gesperrt",
+        "catalogSearch": "Titel suchen",
+        "playlistConflict": "Playlist wurde anderswo geändert. Ansicht wird aktualisiert.",
+        "viewerRadio": "Viewer Radio",
+        "radioSources": "Radio-Quellen",
+        "importRunning": "Import läuft …"
+      },
+      "controls": {
+        "runtime": {
+          "seekUnavailable": "Diese Wiedergabe kann derzeit nicht gespult werden.",
+          "seekFailed": "Position konnte nicht geändert werden.",
+          "historyLoadFailed": "History konnte nicht geladen werden.",
+          "playlistSaveFailed": "Playlist konnte nicht gespeichert werden.",
+          "playlistConflict": "Playlist wurde aktualisiert. Bitte erneut versuchen.",
+          "importRunning": "Import läuft …"
+        },
+        "overlay": {
+          "songSkipping": "Titel wird übersprungen",
+          "voteSkip": "Zum Überspringen abstimmen",
+          "requestedBy": "Angefragt von",
+          "unknownTitle": "Unbekannter Titel",
+          "queueCount": "Titel in der Queue",
+          "waitingForMusic": "Warten auf Musik"
+        }
       }
     }
   },
