@@ -192,6 +192,19 @@ class GameEnginePlugin {
     return activeProfile || 'Streamer';
   }
 
+  _normalizeTikTokUsername(value) {
+    return String(value || '').trim().replace(/^@/, '').toLowerCase();
+  }
+
+  _isHostChatEvent(data = {}) {
+    const hostUsername = this._normalizeTikTokUsername(this._resolveHostDisplayName());
+    if (!hostUsername) return false;
+
+    const user = data.user && typeof data.user === 'object' ? data.user : {};
+    return [data.uniqueId, data.username, user.uniqueId, user.username]
+      .some(candidate => this._normalizeTikTokUsername(candidate) === hostUsername);
+  }
+
   _getChatMoveIdentity(data) {
     const identity = data?.msgId ?? data?.messageId ?? data?.id ?? data?.eventId;
     return identity == null || identity === '' ? null : `chat:${identity}`;
@@ -4811,11 +4824,20 @@ class GameEnginePlugin {
     }
 
     // Check for Connect4 moves (simple patterns for non-GCCE mode)
-    // Patterns: !c4 A, !c4A, c4 A, c4A, just A (single letter)
-    const match = messageLower.match(/^!?c4\s*([a-g])$/i) || messageLower.match(/^([a-g])$/i);
+    // Patterns: !c4 A, !c4A, c4 A, c4A, just A (single letter).
+    // A leading ! on a bare letter is host-only, so it does not take over
+    // potential viewer commands owned by another plugin.
+    const isHostChatEvent = this._isHostChatEvent(data);
+    const match = messageLower.match(/^!?c4\s*([a-g])$/i) ||
+      messageLower.match(/^([a-g])$/i) ||
+      (isHostChatEvent ? messageLower.match(/^!([a-g])$/i) : null);
     
     if (match) {
       const column = match[1].toUpperCase();
+      if (isHostChatEvent) {
+        this.handleInteractiveHostMove('connect4', { column });
+        return;
+      }
       this.handleViewerMove(viewerId, viewerNickname, 'connect4', column, this._getChatMoveIdentity(data));
     }
   }
@@ -4916,6 +4938,10 @@ class GameEnginePlugin {
           message: 'Please use columns A-G',
           displayOverlay: true
         };
+      }
+
+      if (this._isHostChatEvent(context.rawData || context)) {
+        return this.handleInteractiveHostMove('connect4', { column });
       }
 
       return this.handleViewerMove(
@@ -5359,6 +5385,51 @@ class GameEnginePlugin {
       message: result.gameOver ? 
         (result.draw ? 'Game ended in a draw!' : 'You won!') : 
         'Move made successfully!',
+      displayOverlay: true
+    };
+  }
+
+  /**
+   * Apply a live host move using the currently displayed interactive session.
+   * Chat events do not include the revision fields required by the controller,
+   * so they are captured atomically from the display before applying the move.
+   */
+  handleInteractiveHostMove(gameType, move) {
+    if (!this.interactiveController) {
+      return {
+        success: false,
+        error: 'interactive_controller_unavailable',
+        displayOverlay: true
+      };
+    }
+
+    const display = this.interactiveController.getState()?.display;
+    if (!display || display.displaySessionId == null || display.gameType !== gameType) {
+      return {
+        success: false,
+        error: 'no_active_host_session',
+        displayOverlay: true
+      };
+    }
+
+    const result = this.interactiveController.applyHostMove({
+      sessionId: display.displaySessionId,
+      gameType,
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move
+    });
+
+    if (!result.success) {
+      this.io.emit('game-engine:error', {
+        sessionId: display.displaySessionId,
+        error: result.error
+      });
+    }
+
+    return {
+      ...result,
+      message: result.success ? 'Move made successfully!' : result.error,
       displayOverlay: true
     };
   }

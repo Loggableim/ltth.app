@@ -62,6 +62,79 @@ describe('GameEnginePlugin interactive controller integration', () => {
     expect(plugin._resolveHostDisplayName()).toBe('Streamer');
   });
 
+  test.each(['c', '!c'])('routes a live host chat column %s through the revisioned Connect4 host move', command => {
+    const { plugin } = createPlugin();
+    plugin.db = {
+      getGameConfig: jest.fn(() => null),
+      getTriggers: jest.fn(() => [])
+    };
+    plugin.wheelGame = {
+      findWheelByChatCommand: jest.fn(() => null)
+    };
+    plugin.slotGame = {
+      findMachineByChatCommand: jest.fn(() => null)
+    };
+    plugin.interactiveController = {
+      getState: jest.fn(() => ({
+        display: {
+          displaySessionId: 11,
+          gameType: 'connect4',
+          sessionRevision: 2,
+          displayRevision: 2
+        }
+      })),
+      applyHostMove: jest.fn(() => ({ success: true, sessionId: 11 }))
+    };
+    plugin.handleViewerMove = jest.fn();
+
+    plugin.handleChatCommand({
+      username: 'LiveHost',
+      userId: '7421356832385664032',
+      nickname: 'Cid',
+      comment: command
+    });
+
+    expect(plugin.interactiveController.applyHostMove).toHaveBeenCalledWith({
+      sessionId: 11,
+      gameType: 'connect4',
+      sessionRevision: 2,
+      displayRevision: 2,
+      move: { column: 'C' }
+    });
+    expect(plugin.handleViewerMove).not.toHaveBeenCalled();
+  });
+
+  test('routes a GCCE Connect4 command from the live host through the host move path', async () => {
+    const { plugin } = createPlugin();
+    plugin.interactiveController = {
+      getState: jest.fn(() => ({
+        display: {
+          displaySessionId: 11,
+          gameType: 'connect4',
+          sessionRevision: 2,
+          displayRevision: 2
+        }
+      })),
+      applyHostMove: jest.fn(() => ({ success: true, sessionId: 11 }))
+    };
+    plugin.handleViewerMove = jest.fn();
+
+    await plugin.handleConnect4Command(['C'], {
+      username: 'Cid',
+      userId: '7421356832385664032',
+      rawData: { username: 'LiveHost' }
+    });
+
+    expect(plugin.interactiveController.applyHostMove).toHaveBeenCalledWith({
+      sessionId: 11,
+      gameType: 'connect4',
+      sessionRevision: 2,
+      displayRevision: 2,
+      move: { column: 'C' }
+    });
+    expect(plugin.handleViewerMove).not.toHaveBeenCalled();
+  });
+
   test('discards an orphaned legacy game instance after failed interactive recovery', () => {
     const { plugin } = createPlugin();
     plugin.activeSessions.set(17, { status: 'active' });
