@@ -115,6 +115,7 @@ struct FrameUniforms {
 @group(0) @binding(7) var<storage, read> spawnCommands: array<Particle>;
 @group(0) @binding(8) var<storage, read_write> slotStates: array<atomic<u32>>;
 @group(0) @binding(9) var<storage, read_write> spawnMeta: array<atomic<u32>>;
+@group(0) @binding(10) var<storage, read_write> solvedParticles: array<Particle>;
 
 fn cellFor(position: vec2<f32>) -> vec2<u32> {
   let relative = clamp(position - frame.bounds.xy, vec2<f32>(0.0), max(frame.bounds.zw - frame.bounds.xy - vec2<f32>(1.0), vec2<f32>(1.0)));
@@ -133,6 +134,19 @@ fn isBalloon(kind: u32) -> bool {
   return kind == 1u || kind == 12u;
 }
 
+fn collisionRadius(particle: Particle) -> f32 {
+  return max(3.0, particle.size * 0.46);
+}
+
+fn isCollidable(particle: Particle) -> bool {
+  return particle.kind != 3u && particle.kind != 5u;
+}
+
+fn contactNormal(delta: vec2<f32>, distance: f32, index: u32, otherIndex: u32) -> vec2<f32> {
+  if (distance > 0.001) { return delta / distance; }
+  return select(vec2<f32>(-1.0, 0.0), vec2<f32>(1.0, 0.0), index < otherIndex);
+}
+
 @compute @workgroup_size(64)
 fn clearGrid(@builtin(global_invocation_id) gid: vec3<u32>) {
   let index = gid.x;
@@ -146,6 +160,14 @@ fn clearGrid(@builtin(global_invocation_id) gid: vec3<u32>) {
     indirectArgs[1] = 0u;
     indirectArgs[2] = 0u;
     indirectArgs[3] = 0u;
+  }
+}
+
+@compute @workgroup_size(64)
+fn clearGridOnly(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let index = gid.x;
+  if (index < arrayLength(&gridHeads)) {
+    atomicStore(&gridHeads[index], -1);
   }
 }
 
@@ -176,19 +198,12 @@ fn spawnParticles(@builtin(global_invocation_id) gid: vec3<u32>) {
 }
 
 @compute @workgroup_size(64)
-fn buildGrid(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let index = gid.x;
-  if (index >= frame.logicalLimit || (particles[index].flags & 1u) == 0u) { return; }
-  let cell = cellIndex(cellFor(particles[index].position));
-  nextIndices[index] = atomicExchange(&gridHeads[cell], i32(index));
-}
-
-@compute @workgroup_size(64)
-fn simulate(@builtin(global_invocation_id) gid: vec3<u32>) {
+fn integrateParticles(@builtin(global_invocation_id) gid: vec3<u32>) {
   let index = gid.x;
   if (index >= frame.logicalLimit) { return; }
   var particle = particles[index];
   if ((particle.flags & 1u) == 0u) { return; }
+  particle.params0.w = 0.0;
 
   let dt = min(frame.deltaTime * frame.speed, 0.05);
   let noise = hashNoise(particle.seed + f32(index));
@@ -215,7 +230,7 @@ fn simulate(@builtin(global_invocation_id) gid: vec3<u32>) {
     particle.velocity = vec2<f32>(0.0);
   }
 
-  let radius = max(3.0, particle.size * select(0.46, 0.38, particle.kind == 5u));
+  let radius = collisionRadius(particle);
   if (particle.position.x < frame.bounds.x + radius) {
     particle.position.x = frame.bounds.x + radius;
     particle.velocity.x = abs(particle.velocity.x) * particle.params0.x;
@@ -225,7 +240,6 @@ fn simulate(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   if (!balloon && (frame.flags & 1u) != 0u && particle.position.y > frame.floorY - radius) {
-    let impactSpeed = abs(particle.velocity.y);
     particle.position.y = frame.floorY - radius;
     if ((frame.flags & 2u) != 0u) {
       particle.velocity.y = -abs(particle.velocity.y) * particle.params0.x * max(0.0, 1.0 - frame.bounceDamping);
@@ -233,45 +247,6 @@ fn simulate(@builtin(global_invocation_id) gid: vec3<u32>) {
       particle.velocity.y = 0.0;
     }
     particle.velocity.x *= max(0.0, 1.0 - frame.friction);
-    if ((particle.flags & 32u) != 0u && impactSpeed > 90.0) {
-      particle.params0.w = clamp(impactSpeed / 520.0, 0.18, 1.0);
-    }
-  }
-
-  particle.params0.w = max(0.0, particle.params0.w - dt * 2.8);
-
-  if (frame.collisionScale > 0.0 && particle.kind != 3u && particle.kind != 5u) {
-    let home = cellFor(particle.position);
-    for (var oy: i32 = -1; oy <= 1; oy = oy + 1) {
-      for (var ox: i32 = -1; ox <= 1; ox = ox + 1) {
-        let nx = clamp(i32(home.x) + ox, 0, i32(frame.gridSize.x) - 1);
-        let ny = clamp(i32(home.y) + oy, 0, i32(frame.gridSize.y) - 1);
-        var neighbour = atomicLoad(&gridHeads[cellIndex(vec2<u32>(u32(nx), u32(ny)))]);
-        var checked = 0;
-        loop {
-          if (neighbour < 0 || checked >= 14) { break; }
-          let otherIndex = u32(neighbour);
-          if (otherIndex != index && (particles[otherIndex].flags & 1u) != 0u) {
-            let other = particles[otherIndex];
-            let delta = particle.position - other.position;
-            let distanceSquared = max(dot(delta, delta), 0.001);
-            let minDistance = radius + max(3.0, other.size * 0.43);
-            if (distanceSquared < minDistance * minDistance) {
-              let distance = sqrt(distanceSquared);
-              let normal = delta / distance;
-              let penetration = minDistance - distance;
-              particle.position += normal * penetration * 0.5 * frame.collisionScale;
-              let separating = dot(particle.velocity - other.velocity, normal);
-              if (separating < 0.0) {
-                particle.velocity -= normal * separating * (1.0 + particle.params0.x) * 0.5;
-              }
-            }
-          }
-          neighbour = nextIndices[otherIndex];
-          checked = checked + 1;
-        }
-      }
-    }
   }
 
   particle.life -= dt;
@@ -285,6 +260,59 @@ fn simulate(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   particles[index] = particle;
+}
+
+@compute @workgroup_size(64)
+fn buildGrid(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let index = gid.x;
+  if (index >= frame.logicalLimit || (particles[index].flags & 1u) == 0u) { return; }
+  let cell = cellIndex(cellFor(particles[index].position));
+  nextIndices[index] = atomicExchange(&gridHeads[cell], i32(index));
+}
+
+@compute @workgroup_size(64)
+fn resolveCollisions(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let index = gid.x;
+  if (index >= frame.logicalLimit) { return; }
+  var particle = particles[index];
+  if ((particle.flags & 1u) == 0u || frame.collisionScale <= 0.0 || !isCollidable(particle)) {
+    solvedParticles[index] = particle;
+    return;
+  }
+  let home = cellFor(particle.position);
+  let radius = collisionRadius(particle);
+  let reach = vec2<i32>(
+    min(2, max(1, i32(ceil((radius * 2.0) / frame.cellSize.x)))),
+    min(2, max(1, i32(ceil((radius * 2.0) / frame.cellSize.y))))
+  );
+  for (var oy: i32 = max(-reach.y, -i32(home.y)); oy <= min(reach.y, i32(frame.gridSize.y) - 1 - i32(home.y)); oy++) {
+    for (var ox: i32 = max(-reach.x, -i32(home.x)); ox <= min(reach.x, i32(frame.gridSize.x) - 1 - i32(home.x)); ox++) {
+      var neighbour = atomicLoad(&gridHeads[cellIndex(vec2<u32>(u32(i32(home.x) + ox), u32(i32(home.y) + oy)))]);
+      for (var checked: u32 = 0u; neighbour >= 0 && checked < 8u; checked = checked + 1u) {
+        let otherIndex = u32(neighbour);
+        let other = particles[otherIndex];
+        neighbour = nextIndices[otherIndex];
+        if (otherIndex == index || (other.flags & 1u) == 0u || !isCollidable(other)) { continue; }
+        let delta = particle.position - other.position;
+        let distance = sqrt(max(dot(delta, delta), 0.0));
+        let minDistance = radius + collisionRadius(other);
+        if (distance >= minDistance) { continue; }
+        let normal = contactNormal(delta, distance, index, otherIndex);
+        particle.position += normal * (minDistance - distance) * 0.5;
+        let closingSpeed = dot(particle.velocity - other.velocity, normal);
+        if (closingSpeed < 0.0) {
+          particle.velocity -= normal * closingSpeed * (1.0 + min(particle.params0.x, other.params0.x)) * 0.5;
+        }
+      }
+    }
+  }
+  solvedParticles[index] = particle;
+}
+
+@compute @workgroup_size(64)
+fn compactActiveParticles(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let index = gid.x;
+  if (index >= frame.logicalLimit || (particles[index].flags & 1u) == 0u) { return; }
   let compactedIndex = atomicAdd(&counters[0], 1u);
   if (compactedIndex < arrayLength(&activeIndices)) {
     activeIndices[compactedIndex] = index;
@@ -327,7 +355,6 @@ struct VertexOutput {
   @location(6) @interpolate(flat) kind: u32,
   @location(7) @interpolate(flat) flags: u32,
   @location(8) @interpolate(flat) material: u32,
-  @location(9) impact: f32,
 };
 @group(0) @binding(0) var<storage, read> particles: array<Particle>;
 @group(0) @binding(1) var<storage, read> activeIndices: array<u32>;
@@ -353,7 +380,7 @@ fn vertexMain(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) 
   let particle = particles[activeIndices[instanceIndex]];
   let balloon = particle.kind == 1u || particle.kind == 12u;
   let depthScale = select(1.0, mix(0.72, 1.2, particle.params1.w), (particle.flags & 64u) != 0u);
-  let pulse = 1.0 + sin((particle.maxLife - particle.life) * 5.0 + particle.seed) * select(0.025, 0.065, frame.profile > 1.5) + particle.params0.w * 0.14;
+  let pulse = 1.0 + sin((particle.maxLife - particle.life) * 5.0 + particle.seed) * select(0.025, 0.065, frame.profile > 1.5);
   let geometryScale = select(vec2<f32>(1.0), vec2<f32>(1.0, 1.48), balloon);
   let local = corners[vertexIndex] * geometryScale;
   let sized = local * particle.size * pulse * depthScale;
@@ -384,7 +411,6 @@ fn vertexMain(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) 
   output.kind = particle.kind;
   output.flags = particle.flags;
   output.material = particle.material;
-  output.impact = particle.params0.w;
   return output;
 }
 
@@ -459,15 +485,6 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4<f32> {
     let ring = smoothstep(0.54, 0.45, radial) - smoothstep(0.39, 0.3, radial);
     rgb += input.color.rgb * ring * (0.5 + 0.5 * sin(input.age * 10.0));
     alpha = max(alpha, ring * 0.8);
-  }
-
-  if (input.impact > 0.001 && (input.flags & 32u) != 0u) {
-    let impactAngle = atan2(input.local.y, input.local.x);
-    let impactRays = pow(abs(cos(impactAngle * 9.0 + input.seed)), 20.0);
-    let impactRing = smoothstep(0.56, 0.38, radial) * smoothstep(0.2, 0.34, radial);
-    let impactAlpha = impactRays * impactRing * input.impact;
-    rgb += input.color.rgb * impactAlpha * (1.2 + input.glow * 0.35);
-    alpha = max(alpha, impactAlpha);
   }
 
   let shadow = select(0.0, smoothstep(0.58, 0.25, length(input.local - vec2<f32>(0.055, 0.075))) * (1.0 - alpha) * 0.34, shadowEnabled);
@@ -773,6 +790,11 @@ struct FullscreenOutput { @builtin(position) position: vec4<f32>, @location(0) u
     _createBuffers() {
       const U = GPUBufferUsage;
       this.particleBuffer = this.device.createBuffer({ label: 'emoji-particles-fixed-capacity', size: GPU_CAPACITY * PARTICLE_STRIDE, usage: U.STORAGE | U.COPY_DST | U.COPY_SRC });
+      this.collisionBuffer = this.device.createBuffer({
+        label: 'emoji-particles-collision-scratch',
+        size: GPU_CAPACITY * PARTICLE_STRIDE,
+        usage: U.STORAGE | U.COPY_DST | U.COPY_SRC
+      });
       this.spawnCommandBuffer = this.device.createBuffer({ label: 'emoji-gpu-spawn-commands', size: SPAWN_COMMAND_CAPACITY * PARTICLE_STRIDE, usage: U.STORAGE | U.COPY_DST });
       this.spawnMetaBuffer = this.device.createBuffer({ label: 'emoji-spawn-meta', size: 16, usage: U.STORAGE | U.COPY_DST });
       this.slotStateBuffer = this.device.createBuffer({ label: 'emoji-atomic-free-slots', size: GPU_CAPACITY * 4, usage: U.STORAGE | U.COPY_DST });
@@ -807,8 +829,13 @@ struct FullscreenOutput { @builtin(position) position: vec4<f32>, @location(0) u
       this.computePipelines = {
         clear: this.device.createComputePipeline({ layout: 'auto', compute: { module: computeModule, entryPoint: 'clearGrid' } }),
         spawn: this.device.createComputePipeline({ layout: 'auto', compute: { module: computeModule, entryPoint: 'spawnParticles' } }),
+        integrate: this.device.createComputePipeline({ layout: 'auto', compute: { module: computeModule, entryPoint: 'integrateParticles' } }),
         build: this.device.createComputePipeline({ layout: 'auto', compute: { module: computeModule, entryPoint: 'buildGrid' } }),
-        simulate: this.device.createComputePipeline({ layout: 'auto', compute: { module: computeModule, entryPoint: 'simulate' } }),
+        solveToScratch: this.device.createComputePipeline({ layout: 'auto', compute: { module: computeModule, entryPoint: 'resolveCollisions' } }),
+        clearGridOnly: this.device.createComputePipeline({ layout: 'auto', compute: { module: computeModule, entryPoint: 'clearGridOnly' } }),
+        buildScratch: this.device.createComputePipeline({ layout: 'auto', compute: { module: computeModule, entryPoint: 'buildGrid' } }),
+        solveToPrimary: this.device.createComputePipeline({ layout: 'auto', compute: { module: computeModule, entryPoint: 'resolveCollisions' } }),
+        compact: this.device.createComputePipeline({ layout: 'auto', compute: { module: computeModule, entryPoint: 'compactActiveParticles' } }),
         finalize: this.device.createComputePipeline({ layout: 'auto', compute: { module: computeModule, entryPoint: 'finalizeIndirect' } })
       };
       this.spritePipeline = this.device.createRenderPipeline({
@@ -906,7 +933,7 @@ struct FullscreenOutput { @builtin(position) position: vec4<f32>, @location(0) u
 
     _createBindGroups() {
       if (!this.computePipelines || !this.atlasTexture || !this.sceneTexture) return;
-      const resources = {
+      const primaryResources = {
         0: { binding: 0, resource: { buffer: this.particleBuffer } },
         1: { binding: 1, resource: { buffer: this.uniformBuffer } },
         2: { binding: 2, resource: { buffer: this.gridHeadsBuffer } },
@@ -916,20 +943,43 @@ struct FullscreenOutput { @builtin(position) position: vec4<f32>, @location(0) u
         6: { binding: 6, resource: { buffer: this.indirectBuffer } },
         7: { binding: 7, resource: { buffer: this.spawnCommandBuffer } },
         8: { binding: 8, resource: { buffer: this.slotStateBuffer } },
-        9: { binding: 9, resource: { buffer: this.spawnMetaBuffer } }
+        9: { binding: 9, resource: { buffer: this.spawnMetaBuffer } },
+        10: { binding: 10, resource: { buffer: this.collisionBuffer } }
+      };
+      const scratchResources = {
+        ...primaryResources,
+        0: { binding: 0, resource: { buffer: this.collisionBuffer } },
+        10: { binding: 10, resource: { buffer: this.particleBuffer } }
       };
       const bindingsByPipeline = {
         clear: [2, 5, 6],
         spawn: [0, 1, 5, 7, 8, 9],
+        integrate: [0, 1, 8],
         build: [0, 1, 2, 3],
-        simulate: [0, 1, 2, 3, 4, 5, 8],
+        solveToScratch: [0, 1, 2, 3, 10],
+        clearGridOnly: [2],
+        buildScratch: [0, 1, 2, 3],
+        solveToPrimary: [0, 1, 2, 3, 10],
+        compact: [0, 1, 4, 5],
         finalize: [1, 5, 6]
+      };
+      const resourcesByPipeline = {
+        clear: primaryResources,
+        spawn: primaryResources,
+        integrate: primaryResources,
+        build: primaryResources,
+        solveToScratch: primaryResources,
+        clearGridOnly: primaryResources,
+        buildScratch: scratchResources,
+        solveToPrimary: scratchResources,
+        compact: primaryResources,
+        finalize: primaryResources
       };
       this.computeBindGroups = Object.fromEntries(Object.entries(this.computePipelines).map(([name, pipeline]) => [
         name,
         this.device.createBindGroup({
           layout: pipeline.getBindGroupLayout(0),
-          entries: bindingsByPipeline[name].map(binding => resources[binding])
+          entries: bindingsByPipeline[name].map(binding => resourcesByPipeline[name][binding])
         })
       ]));
       this.spriteBindGroup = this.device.createBindGroup({
@@ -1188,10 +1238,8 @@ struct FullscreenOutput { @builtin(position) position: vec4<f32>, @location(0) u
       floats[8] = particle.restitution;
       floats[9] = particle.air;
       floats[10] = particle.glow;
-      // params0.w is the transient floor-impact pulse used by the shader.
-      // The stable random seed lives at float 26; duplicating it here turns a
-      // normal sprite into an enormous pulse on its first rendered frame.
-      floats[11] = clamp(particle.impact, 0, 1, 0);
+      // Keep params0.w reserved and zeroed so the particle ABI stays stable.
+      floats[11] = 0;
       floats[12] = particle.popY;
       floats[13] = particle.windStrength;
       floats[14] = particle.hue;
@@ -1324,6 +1372,7 @@ struct FullscreenOutput { @builtin(position) position: vec4<f32>, @location(0) u
       this.pendingSpawnCommands.length = 0;
       if (!this.device) return;
       this.device.queue.writeBuffer(this.particleBuffer, 0, new Uint8Array(GPU_CAPACITY * PARTICLE_STRIDE));
+      this.device.queue.writeBuffer(this.collisionBuffer, 0, new Uint8Array(GPU_CAPACITY * PARTICLE_STRIDE));
       this.device.queue.writeBuffer(this.slotStateBuffer, 0, new Uint32Array(GPU_CAPACITY));
       this.device.queue.writeBuffer(this.counterBuffer, 0, new Uint32Array(4));
       this.device.queue.writeBuffer(this.spawnMetaBuffer, 0, new Uint32Array(4));
@@ -1335,6 +1384,7 @@ struct FullscreenOutput { @builtin(position) position: vec4<f32>, @location(0) u
       if (!this.device || startIndex >= GPU_CAPACITY) return;
       const tailCount = GPU_CAPACITY - Math.max(0, startIndex);
       this.device.queue.writeBuffer(this.particleBuffer, startIndex * PARTICLE_STRIDE, new Uint8Array(tailCount * PARTICLE_STRIDE));
+      this.device.queue.writeBuffer(this.collisionBuffer, startIndex * PARTICLE_STRIDE, new Uint8Array(tailCount * PARTICLE_STRIDE));
       this.device.queue.writeBuffer(this.slotStateBuffer, startIndex * 4, new Uint32Array(tailCount));
     }
 
@@ -1431,11 +1481,17 @@ struct FullscreenOutput { @builtin(position) position: vec4<f32>, @location(0) u
         };
       }
       const compute = encoder.beginComputePass(computeDescriptor);
+      const particleDispatch = Math.ceil(GPU_CAPACITY / 64);
       const computeDispatches = [
         ['clear', Math.ceil(GRID_CELLS / 64)],
         ['spawn', Math.ceil(spawnCount / 64)],
-        ['build', Math.ceil(GPU_CAPACITY / 64)],
-        ['simulate', Math.ceil(GPU_CAPACITY / 64)],
+        ['integrate', particleDispatch],
+        ['build', particleDispatch],
+        ['solveToScratch', particleDispatch],
+        ['clearGridOnly', Math.ceil(GRID_CELLS / 64)],
+        ['buildScratch', particleDispatch],
+        ['solveToPrimary', particleDispatch],
+        ['compact', particleDispatch],
         ['finalize', 1]
       ];
       for (const [name, dispatch] of computeDispatches) {
@@ -1653,6 +1709,7 @@ struct FullscreenOutput { @builtin(position) position: vec4<f32>, @location(0) u
     _releaseGPUResources() {
       const resources = [
         this.particleBuffer,
+        this.collisionBuffer,
         this.spawnCommandBuffer,
         this.spawnMetaBuffer,
         this.slotStateBuffer,
