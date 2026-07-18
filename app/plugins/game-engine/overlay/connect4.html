@@ -5,12 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="plugins.game-engine.labels.connect4_overlay_ltth_game_engine">Connect4 Overlay - LTTH Game Engine</title>
   <script>
-    function runtimeText(key, params = {}) {
-      if (!window.i18n?.initialized) return '';
+    // Runtime i18n helpers: start
+    function runtimeText(key, params = {}, fallback = '') {
       const normalizedKey = key.replace(/^plugins\.game-engine\.runtime\./, 'plugins.game-engine.ui.runtime.');
+      const readableFallback = String(fallback || normalizedKey.split('.').pop().replace(/_/g, ' '))
+        .replace(/\{(\w+)\}/g, (match, name) => params[name] == null ? match : String(params[name]));
+      if (!window.i18n?.initialized) return readableFallback;
       const translated = window.i18n?.t?.(normalizedKey, params);
-      return translated && translated !== normalizedKey ? translated : '';
+      return translated && translated !== normalizedKey ? translated : readableFallback;
     }
+
+    function bindRuntimeI18nRerender(rerender) {
+      const i18n = window.i18n;
+      if (!i18n) return;
+      i18n.ready?.then(rerender);
+      i18n.onChange?.(rerender);
+      i18n.onLanguageChange?.(rerender);
+    }
+    // Runtime i18n helpers: end
 
     (function () {
       const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
@@ -721,6 +733,7 @@
     let gameConfig = null;
     let lastInteractiveDisplayRevision = -1;
     let lastInteractiveSessionRevision = -1;
+    let latestInteractiveState = null;
     let latestInteractiveQueueIdle = true;
     let interactiveSnapshotActive = false;
     let resultHideTimer = null;
@@ -1444,21 +1457,24 @@
       };
     }
 
-    function applyInteractiveSnapshot(state) {
+    function applyInteractiveSnapshot(state, { force = false } = {}) {
       const interactiveState = interactiveConnect4Presentation(state);
       const display = interactiveState?.display;
       if (!display) return;
       const displayRevision = Number(display.displayRevision);
       const sessionRevision = Number(display.sessionRevision ?? display.result?.sessionRevision ?? -1);
       if (!Number.isFinite(displayRevision)) return;
-      if (displayRevision < lastInteractiveDisplayRevision) return;
-      if (
+      if (!force && displayRevision < lastInteractiveDisplayRevision) return;
+      if (!force &&
         displayRevision === lastInteractiveDisplayRevision &&
         sessionRevision <= lastInteractiveSessionRevision
       ) return;
 
-      lastInteractiveDisplayRevision = displayRevision;
-      lastInteractiveSessionRevision = sessionRevision;
+      if (!force) {
+        lastInteractiveDisplayRevision = displayRevision;
+        lastInteractiveSessionRevision = sessionRevision;
+        latestInteractiveState = state;
+      }
       clearInteractivePresentation();
       if (display.gameType !== 'connect4') {
         interactiveSnapshotActive = false;
@@ -1493,6 +1509,10 @@
         showResult({ ...display.result, state: snapshotState }, { authoritative: true });
       }
     }
+
+    bindRuntimeI18nRerender(() => {
+      if (latestInteractiveState) applyInteractiveSnapshot(latestInteractiveState, { force: true });
+    });
 
     window.addEventListener('message', event => {
       if (event.origin !== window.location.origin) return;

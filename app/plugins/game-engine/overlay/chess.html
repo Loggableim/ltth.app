@@ -473,12 +473,24 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    function runtimeText(key, params = {}) {
-      if (!window.i18n?.initialized) return '';
+    // Runtime i18n helpers: start
+    function runtimeText(key, params = {}, fallback = '') {
       const normalizedKey = key.replace(/^plugins\.game-engine\.runtime\./, 'plugins.game-engine.ui.runtime.');
+      const readableFallback = String(fallback || normalizedKey.split('.').pop().replace(/_/g, ' '))
+        .replace(/\{(\w+)\}/g, (match, name) => params[name] == null ? match : String(params[name]));
+      if (!window.i18n?.initialized) return readableFallback;
       const translated = window.i18n?.t?.(normalizedKey, params);
-      return translated && translated !== normalizedKey ? translated : '';
+      return translated && translated !== normalizedKey ? translated : readableFallback;
     }
+
+    function bindRuntimeI18nRerender(rerender) {
+      const i18n = window.i18n;
+      if (!i18n) return;
+      i18n.ready?.then(rerender);
+      i18n.onChange?.(rerender);
+      i18n.onLanguageChange?.(rerender);
+    }
+    // Runtime i18n helpers: end
 
     const socket = io({ auth: { role: 'overlay' } });
 
@@ -498,6 +510,7 @@
     let lastMoveSquares = [];
     let lastInteractiveDisplayRevision = -1;
     let lastInteractiveSessionRevision = -1;
+    let latestInteractiveState = null;
     let interactiveSnapshotActive = false;
     let interactiveClockInterval = null;
 
@@ -845,20 +858,23 @@
       }
     }
 
-    function applyInteractiveSnapshot(state) {
+    function applyInteractiveSnapshot(state, { force = false } = {}) {
       const display = state?.display;
       if (!display || display.gameType !== 'chess') return;
       const displayRevision = Number(display.displayRevision);
       const sessionRevision = Number(display.sessionRevision ?? display.result?.sessionRevision ?? -1);
       if (!Number.isFinite(displayRevision)) return;
-      if (displayRevision < lastInteractiveDisplayRevision) return;
-      if (
+      if (!force && displayRevision < lastInteractiveDisplayRevision) return;
+      if (!force &&
         displayRevision === lastInteractiveDisplayRevision &&
         sessionRevision <= lastInteractiveSessionRevision
       ) return;
 
-      lastInteractiveDisplayRevision = displayRevision;
-      lastInteractiveSessionRevision = sessionRevision;
+      if (!force) {
+        lastInteractiveDisplayRevision = displayRevision;
+        lastInteractiveSessionRevision = sessionRevision;
+        latestInteractiveState = state;
+      }
       interactiveSnapshotActive = ['playing', 'animating', 'result', 'leaderboard'].includes(display.phase);
       if (display.phase === 'leaderboard' && display.leaderboard?.type) {
         stopInteractiveClock();
@@ -893,6 +909,14 @@
         document.getElementById('game-over-overlay').classList.remove('show');
       }
     }
+
+    bindRuntimeI18nRerender(() => {
+      if (latestInteractiveState) applyInteractiveSnapshot(latestInteractiveState, { force: true });
+      else if (gameState) {
+        applyDisplayTexts(config.displayTexts);
+        updateActivePlayer(gameState.currentPlayer);
+      }
+    });
 
     window.addEventListener('message', event => {
       if (event.origin !== window.location.origin) return;

@@ -944,12 +944,24 @@
   <div id="empty-state" data-i18n="plugins.game-engine.labels.waiting_for_live_activity">Waiting for live activity</div>
 
   <script>
-    function runtimeText(key, params = {}) {
-      if (!window.i18n?.initialized) return '';
+    // Runtime i18n helpers: start
+    function runtimeText(key, params = {}, fallback = '') {
       const normalizedKey = key.replace(/^plugins\.game-engine\.runtime\./, 'plugins.game-engine.ui.runtime.');
+      const readableFallback = String(fallback || normalizedKey.split('.').pop().replace(/_/g, ' '))
+        .replace(/\{(\w+)\}/g, (match, name) => params[name] == null ? match : String(params[name]));
+      if (!window.i18n?.initialized) return readableFallback;
       const translated = window.i18n?.t?.(normalizedKey, params);
-      return translated && translated !== normalizedKey ? translated : '';
+      return translated && translated !== normalizedKey ? translated : readableFallback;
     }
+
+    function bindRuntimeI18nRerender(rerender) {
+      const i18n = window.i18n;
+      if (!i18n) return;
+      i18n.ready?.then(rerender);
+      i18n.onChange?.(rerender);
+      i18n.onLanguageChange?.(rerender);
+    }
+    // Runtime i18n helpers: end
 
     const socket = io({ auth: { role: 'overlay' } });
     const canvas = document.getElementById('arena-canvas');
@@ -3393,6 +3405,8 @@
       }
       updateHud();
     }
+
+    bindRuntimeI18nRerender(() => applyState(state));
 
     socket.on('arena:state', applyState);
     socket.on('arena:player-removed', data => {

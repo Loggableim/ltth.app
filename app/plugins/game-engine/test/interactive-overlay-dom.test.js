@@ -4,7 +4,7 @@ const { JSDOM } = require('jsdom');
 
 const overlayDir = path.join(__dirname, '..', 'overlay');
 
-function loadOverlay(name) {
+function loadOverlay(name, i18n = null) {
   const listeners = new Map();
   const audioPlay = jest.fn(() => Promise.resolve());
   const socket = {
@@ -22,7 +22,7 @@ function loadOverlay(name) {
     pretendToBeVisual: true,
     beforeParse(window) {
       window.io = () => socket;
-      window.i18n = {
+      window.i18n = i18n || {
         initialized: true,
         t: (key, params = {}) => params.seconds == null ? key : `Viewer: ${params.seconds}s`
       };
@@ -105,6 +105,39 @@ function connect4State({
 }
 
 describe('interactive overlay countdown DOM', () => {
+  test('direct Connect4 replays held authoritative text after i18n ready and language changes', async () => {
+    let resolveReady;
+    let onChange;
+    let onLanguageChange;
+    let language = 'en';
+    const i18n = {
+      initialized: false,
+      ready: new Promise(resolve => { resolveReady = resolve; }),
+      t: jest.fn((key, params = {}) => `${language}: ${params.seconds ?? key}`),
+      onChange: callback => { onChange = callback; },
+      onLanguageChange: callback => { onLanguageChange = callback; }
+    };
+    const { dom, listeners } = loadOverlay('connect4.html', i18n);
+    const countdown = dom.window.document.getElementById('interactive-viewer-countdown');
+
+    listeners.get('game-engine:interactive-state')(connect4State());
+    expect(countdown.textContent).not.toBe('');
+    expect(i18n.t).not.toHaveBeenCalled();
+
+    i18n.initialized = true;
+    resolveReady();
+    await Promise.resolve();
+    expect(countdown.textContent).toContain('en:');
+
+    language = 'de';
+    onChange();
+    expect(countdown.textContent).toContain('de:');
+    language = 'fr';
+    onLanguageChange();
+    expect(countdown.textContent).toContain('fr:');
+    dom.window.close();
+  });
+
   test('direct Connect4 ticks an authoritative viewer countdown, warns, and clears it on a newer phase', () => {
     const { dom, listeners, advance } = loadOverlay('connect4.html');
     const countdown = dom.window.document.getElementById('interactive-viewer-countdown');
@@ -173,6 +206,37 @@ describe('interactive overlay countdown DOM', () => {
     expect(postMessage).toHaveBeenCalledTimes(1);
     expect(dom.window.document.getElementById('interactive-viewer-countdown')).toBeNull();
 
+    dom.window.close();
+  });
+
+  test('unified rerenders its held matchup after i18n ready and language changes', async () => {
+    let resolveReady;
+    let onChange;
+    let onLanguageChange;
+    let language = 'en';
+    const i18n = {
+      initialized: false,
+      ready: new Promise(resolve => { resolveReady = resolve; }),
+      t: jest.fn((key, params = {}) => `${language}: ${params.host || params.game || key}`),
+      onChange: callback => { onChange = callback; },
+      onLanguageChange: callback => { onLanguageChange = callback; }
+    };
+    const { dom, listeners } = loadOverlay('unified.html', i18n);
+    const matchup = dom.window.document.getElementById('interactive-matchup-names');
+    listeners.get('game-engine:interactive-state')(connect4State());
+    expect(matchup.textContent).not.toBe('');
+    expect(i18n.t).not.toHaveBeenCalled();
+
+    i18n.initialized = true;
+    resolveReady();
+    await Promise.resolve();
+    expect(matchup.textContent).toContain('en:');
+    language = 'de';
+    onChange();
+    expect(matchup.textContent).toContain('de:');
+    language = 'fr';
+    onLanguageChange();
+    expect(matchup.textContent).toContain('fr:');
     dom.window.close();
   });
 });

@@ -9,6 +9,12 @@ const { loadPublishedPluginCatalog } = require('../../../../scripts/lib/publishe
 const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
 const pluginId = 'game-engine';
 
+function runtimeI18nApi(source, i18n) {
+  const match = source.match(/\/\/ Runtime i18n helpers: start([\s\S]*?)\/\/ Runtime i18n helpers: end/);
+  if (!match) throw new Error('Runtime i18n helper block is missing');
+  return new Function('window', `${match[1]}; return { runtimeText, bindRuntimeI18nRerender };`)({ i18n });
+}
+
 describe('Game Engine UI i18n', () => {
   test('keeps every visible Game Engine surface on namespaced translation keys', () => {
     const catalog = loadPublishedPluginCatalog(repoRoot);
@@ -42,8 +48,9 @@ describe('Game Engine UI i18n', () => {
     );
 
     expect(sources[0]).toContain('function setLocalizedHtml(element, markup)');
-    expect(sources.every((source) => source.includes('function runtimeText(key, params = {})'))).toBe(true);
-    expect(sources.every((source) => source.includes("if (!window.i18n?.initialized) return '';"))).toBe(true);
+    expect(sources.every((source) => source.includes('function runtimeText(key, params = {}, fallback ='))).toBe(true);
+    expect(sources.every((source) => (source.match(/bindRuntimeI18nRerender\(/g) || []).length >= 2)).toBe(true);
+    expect(sources.every((source) => !source.includes("if (!window.i18n?.initialized) return '';"))).toBe(true);
     expect(runtimeKeys).toContain('plugins.game-engine.ui.runtime.dashboard.current_turn');
     expect(runtimeKeys).toContain('plugins.game-engine.runtime.connect4.current_turn');
 
@@ -55,5 +62,34 @@ describe('Game Engine UI i18n', () => {
         expect(values[localeKey]).not.toBe('');
       }
     }
+  });
+
+  test('dashboard runtime text stays readable before init and rerenders for ready and language changes', async () => {
+    const source = fs.readFileSync(path.join(repoRoot, 'app', 'plugins', pluginId, 'ui.html'), 'utf8');
+    let resolveReady;
+    let onChange;
+    let onLanguageChange;
+    const i18n = {
+      initialized: false,
+      ready: new Promise(resolve => { resolveReady = resolve; }),
+      t: jest.fn(() => 'translated'),
+      onChange: jest.fn(callback => { onChange = callback; }),
+      onLanguageChange: jest.fn(callback => { onLanguageChange = callback; })
+    };
+    const { runtimeText, bindRuntimeI18nRerender } = runtimeI18nApi(source, i18n);
+
+    expect(runtimeText('plugins.game-engine.ui.runtime.dashboard.current_turn', { player: 'A' }, 'Turn: {player}'))
+      .toBe('Turn: A');
+    expect(i18n.t).not.toHaveBeenCalled();
+
+    const rerender = jest.fn();
+    bindRuntimeI18nRerender(rerender);
+    i18n.initialized = true;
+    resolveReady();
+    await Promise.resolve();
+    expect(rerender).toHaveBeenCalledTimes(1);
+    onChange();
+    onLanguageChange();
+    expect(rerender).toHaveBeenCalledTimes(3);
   });
 });

@@ -519,12 +519,24 @@
   <audio id="lost-sound" preload="auto"></audio>
 
   <script>
-    function runtimeText(key, params = {}) {
-      if (!window.i18n?.initialized) return '';
+    // Runtime i18n helpers: start
+    function runtimeText(key, params = {}, fallback = '') {
       const normalizedKey = key.replace(/^plugins\.game-engine\.runtime\./, 'plugins.game-engine.ui.runtime.');
+      const readableFallback = String(fallback || normalizedKey.split('.').pop().replace(/_/g, ' '))
+        .replace(/\{(\w+)\}/g, (match, name) => params[name] == null ? match : String(params[name]));
+      if (!window.i18n?.initialized) return readableFallback;
       const translated = window.i18n?.t?.(normalizedKey, params);
-      return translated && translated !== normalizedKey ? translated : '';
+      return translated && translated !== normalizedKey ? translated : readableFallback;
     }
+
+    function bindRuntimeI18nRerender(rerender) {
+      const i18n = window.i18n;
+      if (!i18n) return;
+      i18n.ready?.then(rerender);
+      i18n.onChange?.(rerender);
+      i18n.onLanguageChange?.(rerender);
+    }
+    // Runtime i18n helpers: end
 
     // Configuration
     let config = {
@@ -1347,6 +1359,12 @@
       idleMessageTitle.textContent = settings.idleMessageTitle || runtimeText('plugins.game-engine.runtime.wheel.waiting_for_player');
       idleMessageSubtitle.textContent = settings.idleMessageSubtitle || runtimeText('plugins.game-engine.runtime.wheel.send_gift');
     }
+
+    bindRuntimeI18nRerender(() => {
+      applyDisplayTexts(config.settings?.displayTexts);
+      updateIdleMessage();
+      updateQueueDisplay();
+    });
 
     /**
      * Apply display text tokens from settings.displayTexts to overlay elements

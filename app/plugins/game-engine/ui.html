@@ -4327,6 +4327,8 @@
     const socket = io({ auth: { role: 'admin' } });
     let currentSessionId = null;
     let latestInteractiveAdminState = null;
+    let latestInteractiveConfig = null;
+    let latestLegacyActiveGame = null;
     let interactiveSelectedChessSquare = null;
     let interactiveAdminStateReceivedAt = 0;
 
@@ -4393,11 +4395,23 @@
       if (window.i18n?.initialized) window.i18n.updateDOM();
     }
 
-    function runtimeText(key, params = {}) {
-      if (!window.i18n?.initialized) return '';
+    // Runtime i18n helpers: start
+    function runtimeText(key, params = {}, fallback = '') {
+      const readableFallback = String(fallback || key.split('.').pop().replace(/_/g, ' '))
+        .replace(/\{(\w+)\}/g, (match, name) => params[name] == null ? match : String(params[name]));
+      if (!window.i18n?.initialized) return readableFallback;
       const translated = window.i18n?.t?.(key, params);
-      return translated && translated !== key ? translated : '';
+      return translated && translated !== key ? translated : readableFallback;
     }
+
+    function bindRuntimeI18nRerender(rerender) {
+      const i18n = window.i18n;
+      if (!i18n) return;
+      i18n.ready?.then(rerender);
+      i18n.onChange?.(rerender);
+      i18n.onLanguageChange?.(rerender);
+    }
+    // Runtime i18n helpers: end
 
     // Color picker preview updates
     ['board', 'player1', 'player2', 'text'].forEach(prefix => {
@@ -5029,6 +5043,7 @@
 
     // Update active game display
     function updateActiveGame(data) {
+      latestLegacyActiveGame = data;
       currentSessionId = data.sessionId;
       document.getElementById('no-game').style.display = 'none';
       document.getElementById('active-game').classList.add('show');
@@ -5488,6 +5503,7 @@
     }
 
     function applyInteractiveSettings(config) {
+      latestInteractiveConfig = config;
       const noTimeLimit = runtimeText('plugins.game-engine.runtime.dashboard.no_time_limit');
       document.getElementById('interactive-connect4-response').value = config.connect4ViewerTimeoutEnabled
         ? runtimeText('plugins.game-engine.runtime.dashboard.timer_enabled_summary', {
@@ -5530,10 +5546,24 @@
 
     // Clear active game display
     function clearActiveGame() {
+      latestLegacyActiveGame = null;
       currentSessionId = null;
       document.getElementById('no-game').style.display = 'block';
       document.getElementById('active-game').classList.remove('show');
     }
+
+    function rerenderLocalizedAdminState() {
+      if (latestLegacyActiveGame && !latestInteractiveAdminState?.activeSessions?.length) {
+        updateActiveGame(latestLegacyActiveGame);
+      }
+      const interactiveState = latestInteractiveAdminState;
+      if (interactiveState) {
+        renderInteractiveState(interactiveState);
+      }
+      if (latestInteractiveConfig) applyInteractiveSettings(latestInteractiveConfig);
+    }
+
+    bindRuntimeI18nRerender(rerenderLocalizedAdminState);
 
     // Socket events
     socket.on('game-engine:interactive-state', state => {
