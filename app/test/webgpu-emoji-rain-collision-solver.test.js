@@ -113,15 +113,80 @@ test('copies collision-disabled particles and isolates counter mutation to compa
   expect(compact).toContain('atomicAdd(&counters[0], 1u)');
 });
 
-test('bounds neighbour cells without clamping and caps each cell scan at eight entries', () => {
+test('derives uncapped neighbour reach from the particle and configured maximum radii', () => {
   const resolve = extractDelimitedBlock(computeShader, 'fn resolveCollisions');
-  const scanCaps = Array.from(resolve.matchAll(/checked\s*<\s*(\d+)u/g), match => Number(match[1]));
 
+  expect(resolve).toContain('radius + frame.maxCollisionRadius');
+  expect(resolve).not.toMatch(/min\s*\(\s*2,/);
   expect(resolve).toMatch(/var oy: i32 = max\(-reach\.y, -i32\(home\.y\)\); oy <= min\(reach\.y,/);
   expect(resolve).toMatch(/var ox: i32 = max\(-reach\.x, -i32\(home\.x\)\); ox <= min\(reach\.x,/);
   expect(resolve).not.toMatch(/clamp\s*\(\s*i32\s*\(\s*home\./);
-  expect(scanCaps).toEqual([8]);
+  expect(resolve).not.toMatch(/checked\s*</);
+  expect(resolve).not.toContain('for (var checked:');
   expect(resolve).toContain('let minDistance = radius + collisionRadius(other);');
+});
+
+test('covers normal 80px emoji contacts that span three 30px cells', () => {
+  const radius = 80 * 0.46;
+  const requiredReach = Math.ceil((radius + radius) / 30);
+  const conservativeReach = Math.ceil((radius + Math.max(128, radius)) / 30);
+
+  expect(requiredReach).toBe(3);
+  expect(conservativeReach).toBeGreaterThanOrEqual(requiredReach);
+});
+
+test('accumulates every collision from immutable source state before constraining the result', () => {
+  const resolve = extractDelimitedBlock(computeShader, 'fn resolveCollisions');
+
+  expect(resolve).toContain('var positionCorrection = vec2<f32>(0.0);');
+  expect(resolve).toContain('var velocityCorrection = vec2<f32>(0.0);');
+  expect(resolve).not.toContain('particle.position +=');
+  expect(resolve).not.toContain('particle.velocity -=');
+  expect(resolve).toContain('particle.position = constrainToBounds(particle, particle.position + positionCorrection);');
+  expect(resolve).toContain('particle.velocity += velocityCorrection;');
+});
+
+test('gives a floor-blocked particle full separation to its movable partner', () => {
+  const resolve = extractDelimitedBlock(computeShader, 'fn resolveCollisions');
+  const lowerCanMoveDown = false;
+  const upperCanMoveUp = true;
+  const penetration = 12;
+  const upperShare = upperCanMoveUp && !lowerCanMoveDown ? 1 : 0.5;
+  const lowerShare = !lowerCanMoveDown && upperCanMoveUp ? 0 : 0.5;
+
+  expect(upperShare).toBe(1);
+  expect(lowerShare).toBe(0);
+  expect(-penetration * upperShare).toBe(-12);
+  expect(penetration * lowerShare).toBe(0);
+  expect(resolve).toContain('let selfCanMove = canMoveAlongBounds(particle, radius, normal);');
+  expect(resolve).toContain('let otherCanMove = canMoveAlongBounds(other, collisionRadius(other), -normal);');
+  expect(resolve).toContain('if (selfCanMove && !otherCanMove) { correctionShare = 1.0; }');
+  expect(resolve).toContain('constrainToBounds(particle, particle.position + positionCorrection)');
+});
+
+test('keeps a smaller boundary radius for non-colliding stickers', () => {
+  const integrate = extractDelimitedBlock(computeShader, 'fn integrateParticles');
+  const boundaryRadius = computeShader.includes('fn boundaryRadius')
+    ? extractDelimitedBlock(computeShader, 'fn boundaryRadius')
+    : '';
+
+  expect(boundaryRadius).toContain('particle.size * select(0.46, 0.38, particle.kind == 5u)');
+  expect(integrate).toContain('let radius = boundaryRadius(particle);');
+});
+
+test('shares maxCollisionRadius through the fixed 128-byte frame ABI', () => {
+  const frameUniforms = source.match(/struct FrameUniforms \{[\s\S]*?\n\};/g) || [];
+  const writeUniforms = extractDelimitedBlock(source, '_writeUniforms(delta, time) {');
+
+  expect(frameUniforms).toHaveLength(4);
+  for (const frameUniform of frameUniforms) {
+    expect(frameUniform).toContain('maxCollisionRadius: f32');
+    expect(frameUniform).toContain('padding: f32');
+  }
+  expect(new Set(frameUniforms.map(frameUniform => frameUniform.replace(/\s+/g, ' ').trim())).size).toBe(1);
+  expect(source).toContain('const UNIFORM_SIZE = 128;');
+  expect(writeUniforms).toContain('const maxCollisionRadius = Math.max(128, maxConfiguredSize * 0.46 * 1.18 * 2.4);');
+  expect(writeUniforms).toContain('floats[30] = maxCollisionRadius;');
 });
 
 test('allocates, clears, trims and releases the fixed-capacity collision scratch buffer', () => {

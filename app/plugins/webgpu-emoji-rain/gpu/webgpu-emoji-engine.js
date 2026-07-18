@@ -102,7 +102,8 @@ struct FrameUniforms {
   logicalLimit: u32,
   postLevel: f32,
   targetFrameMs: f32,
-  padding: vec2<f32>,
+  maxCollisionRadius: f32,
+  padding: f32,
 };
 
 @group(0) @binding(0) var<storage, read_write> particles: array<Particle>;
@@ -138,6 +139,10 @@ fn collisionRadius(particle: Particle) -> f32 {
   return max(3.0, particle.size * 0.46);
 }
 
+fn boundaryRadius(particle: Particle) -> f32 {
+  return max(3.0, particle.size * select(0.46, 0.38, particle.kind == 5u));
+}
+
 fn isCollidable(particle: Particle) -> bool {
   return particle.kind != 3u && particle.kind != 5u;
 }
@@ -145,6 +150,24 @@ fn isCollidable(particle: Particle) -> bool {
 fn contactNormal(delta: vec2<f32>, distance: f32, index: u32, otherIndex: u32) -> vec2<f32> {
   if (distance > 0.001) { return delta / distance; }
   return select(vec2<f32>(-1.0, 0.0), vec2<f32>(1.0, 0.0), index < otherIndex);
+}
+
+fn canMoveAlongBounds(particle: Particle, radius: f32, direction: vec2<f32>) -> bool {
+  let epsilon = 0.001;
+  if (direction.x < 0.0 && particle.position.x <= frame.bounds.x + radius + epsilon) { return false; }
+  if (direction.x > 0.0 && particle.position.x >= frame.bounds.z - radius - epsilon) { return false; }
+  if ((frame.flags & 1u) != 0u && direction.y > 0.0 && particle.position.y >= frame.floorY - radius - epsilon) { return false; }
+  return true;
+}
+
+fn constrainToBounds(particle: Particle, position: vec2<f32>) -> vec2<f32> {
+  let radius = boundaryRadius(particle);
+  var constrained = position;
+  constrained.x = clamp(constrained.x, frame.bounds.x + radius, frame.bounds.z - radius);
+  if ((frame.flags & 1u) != 0u) {
+    constrained.y = min(constrained.y, frame.floorY - radius);
+  }
+  return constrained;
 }
 
 @compute @workgroup_size(64)
@@ -230,7 +253,7 @@ fn integrateParticles(@builtin(global_invocation_id) gid: vec3<u32>) {
     particle.velocity = vec2<f32>(0.0);
   }
 
-  let radius = collisionRadius(particle);
+  let radius = boundaryRadius(particle);
   if (particle.position.x < frame.bounds.x + radius) {
     particle.position.x = frame.bounds.x + radius;
     particle.velocity.x = abs(particle.velocity.x) * particle.params0.x;
@@ -282,13 +305,16 @@ fn resolveCollisions(@builtin(global_invocation_id) gid: vec3<u32>) {
   let home = cellFor(particle.position);
   let radius = collisionRadius(particle);
   let reach = vec2<i32>(
-    min(2, max(1, i32(ceil((radius * 2.0) / frame.cellSize.x)))),
-    min(2, max(1, i32(ceil((radius * 2.0) / frame.cellSize.y))))
+    max(1, i32(ceil((radius + frame.maxCollisionRadius) / frame.cellSize.x))),
+    max(1, i32(ceil((radius + frame.maxCollisionRadius) / frame.cellSize.y)))
   );
+  var positionCorrection = vec2<f32>(0.0);
+  var velocityCorrection = vec2<f32>(0.0);
   for (var oy: i32 = max(-reach.y, -i32(home.y)); oy <= min(reach.y, i32(frame.gridSize.y) - 1 - i32(home.y)); oy++) {
     for (var ox: i32 = max(-reach.x, -i32(home.x)); ox <= min(reach.x, i32(frame.gridSize.x) - 1 - i32(home.x)); ox++) {
       var neighbour = atomicLoad(&gridHeads[cellIndex(vec2<u32>(u32(i32(home.x) + ox), u32(i32(home.y) + oy)))]);
-      for (var checked: u32 = 0u; neighbour >= 0 && checked < 8u; checked = checked + 1u) {
+      loop {
+        if (neighbour < 0) { break; }
         let otherIndex = u32(neighbour);
         let other = particles[otherIndex];
         neighbour = nextIndices[otherIndex];
@@ -298,14 +324,22 @@ fn resolveCollisions(@builtin(global_invocation_id) gid: vec3<u32>) {
         let minDistance = radius + collisionRadius(other);
         if (distance >= minDistance) { continue; }
         let normal = contactNormal(delta, distance, index, otherIndex);
-        particle.position += normal * (minDistance - distance) * 0.5;
+        let selfCanMove = canMoveAlongBounds(particle, radius, normal);
+        let otherCanMove = canMoveAlongBounds(other, collisionRadius(other), -normal);
+        var correctionShare = 0.5;
+        if (!selfCanMove && otherCanMove) { correctionShare = 0.0; }
+        if (selfCanMove && !otherCanMove) { correctionShare = 1.0; }
+        if (!selfCanMove && !otherCanMove) { correctionShare = 0.0; }
+        positionCorrection += normal * (minDistance - distance) * correctionShare;
         let closingSpeed = dot(particle.velocity - other.velocity, normal);
         if (closingSpeed < 0.0) {
-          particle.velocity -= normal * closingSpeed * (1.0 + min(particle.params0.x, other.params0.x)) * 0.5;
+          velocityCorrection -= normal * closingSpeed * (1.0 + min(particle.params0.x, other.params0.x)) * correctionShare;
         }
       }
     }
   }
+  particle.position = constrainToBounds(particle, particle.position + positionCorrection);
+  particle.velocity += velocityCorrection;
   solvedParticles[index] = particle;
 }
 
@@ -342,7 +376,7 @@ struct FrameUniforms {
   friction: f32, bounceDamping: f32, bounds: vec4<f32>,
   gridSize: vec2<u32>, cellSize: vec2<f32>, rainbowSpeed: f32,
   pixelSize: f32, flags: u32, logicalLimit: u32, postLevel: f32,
-  targetFrameMs: f32, padding: vec2<f32>,
+  targetFrameMs: f32, maxCollisionRadius: f32, padding: f32,
 };
 struct VertexOutput {
   @builtin(position) position: vec4<f32>,
@@ -506,7 +540,7 @@ struct FrameUniforms {
   friction: f32, bounceDamping: f32, bounds: vec4<f32>,
   gridSize: vec2<u32>, cellSize: vec2<f32>, rainbowSpeed: f32,
   pixelSize: f32, flags: u32, logicalLimit: u32, postLevel: f32,
-  targetFrameMs: f32, padding: vec2<f32>,
+  targetFrameMs: f32, maxCollisionRadius: f32, padding: f32,
 };
 struct FullscreenOutput { @builtin(position) position: vec4<f32>, @location(0) uv: vec2<f32> };
 @vertex fn fullscreen(@builtin(vertex_index) index: u32) -> FullscreenOutput {
@@ -550,7 +584,7 @@ struct FrameUniforms {
   friction: f32, bounceDamping: f32, bounds: vec4<f32>,
   gridSize: vec2<u32>, cellSize: vec2<f32>, rainbowSpeed: f32,
   pixelSize: f32, flags: u32, logicalLimit: u32, postLevel: f32,
-  targetFrameMs: f32, padding: vec2<f32>,
+  targetFrameMs: f32, maxCollisionRadius: f32, padding: f32,
 };
 struct FullscreenOutput { @builtin(position) position: vec4<f32>, @location(0) uv: vec2<f32> };
 @vertex fn fullscreen(@builtin(vertex_index) index: u32) -> FullscreenOutput {
@@ -1399,6 +1433,8 @@ struct FullscreenOutput { @builtin(position) position: vec4<f32>, @location(0) u
         : clamp(this.config.physics_wind_strength, 0, 1, 0.0005) * 1000 * direction;
       const variation = this.toasterMode ? 0 : clamp(this.config.physics_wind_variation, 0, 1, 0.0003) * 100000;
       const gravity = clamp(this.config.physics_gravity_y, -2, 4, 0.88) * 980 * this.profileTuning.gravity;
+      const maxConfiguredSize = clamp(this.config.emoji_max_size_px, 8, 1024, 80);
+      const maxCollisionRadius = Math.max(128, maxConfiguredSize * 0.46 * 1.18 * 2.4);
       let flags = 0;
       if (this.config.floor_enabled !== false) flags |= FRAME_FLAG.floor;
       if (this.config.bounce_enabled !== false) flags |= FRAME_FLAG.bounce;
@@ -1438,6 +1474,8 @@ struct FullscreenOutput { @builtin(position) position: vec4<f32>, @location(0) u
       uints[27] = this.particleLimit;
       floats[28] = this.adaptivePostLevel;
       floats[29] = this.targetFrameMs;
+      floats[30] = maxCollisionRadius;
+      floats[31] = 0;
       this.device.queue.writeBuffer(this.uniformBuffer, 0, data);
     }
 

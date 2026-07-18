@@ -111,7 +111,7 @@ fn contactNormal(delta: vec2<f32>, distance: f32, index: u32, otherIndex: u32) -
 fn resolveCollisions(@builtin(global_invocation_id) gid: vec3<u32>) {
   let index = gid.x;
   if (index >= frame.logicalLimit) { return; }
-  let particle = particles[index];
+  var particle = particles[index];
   if ((particle.flags & 1u) == 0u || frame.collisionScale <= 0.0 || !isCollidable(particle)) {
     solvedParticles[index] = particle;
     return;
@@ -119,13 +119,16 @@ fn resolveCollisions(@builtin(global_invocation_id) gid: vec3<u32>) {
   let home = cellFor(particle.position);
   let radius = collisionRadius(particle);
   let reach = vec2<i32>(
-    min(2, max(1, i32(ceil((radius * 2.0) / frame.cellSize.x)))),
-    min(2, max(1, i32(ceil((radius * 2.0) / frame.cellSize.y))))
+    max(1, i32(ceil((radius + frame.maxCollisionRadius) / frame.cellSize.x))),
+    max(1, i32(ceil((radius + frame.maxCollisionRadius) / frame.cellSize.y)))
   );
+  var positionCorrection = vec2<f32>(0.0);
+  var velocityCorrection = vec2<f32>(0.0);
   for (var oy: i32 = max(-reach.y, -i32(home.y)); oy <= min(reach.y, i32(frame.gridSize.y) - 1 - i32(home.y)); oy++) {
     for (var ox: i32 = max(-reach.x, -i32(home.x)); ox <= min(reach.x, i32(frame.gridSize.x) - 1 - i32(home.x)); ox++) {
       var neighbour = atomicLoad(&gridHeads[cellIndex(vec2<u32>(u32(i32(home.x) + ox), u32(i32(home.y) + oy)))]);
-      for (var checked: u32 = 0u; neighbour >= 0 && checked < 8u; checked = checked + 1u) {
+      loop {
+        if (neighbour < 0) { break; }
         let otherIndex = u32(neighbour);
         let other = particles[otherIndex];
         neighbour = nextIndices[otherIndex];
@@ -135,21 +138,29 @@ fn resolveCollisions(@builtin(global_invocation_id) gid: vec3<u32>) {
         let minDistance = radius + collisionRadius(other);
         if (distance >= minDistance) { continue; }
         let normal = contactNormal(delta, distance, index, otherIndex);
-        particle.position += normal * (minDistance - distance) * 0.5;
+        let selfCanMove = canMoveAlongBounds(particle, radius, normal);
+        let otherCanMove = canMoveAlongBounds(other, collisionRadius(other), -normal);
+        var correctionShare = 0.5;
+        if (!selfCanMove && otherCanMove) { correctionShare = 0.0; }
+        if (selfCanMove && !otherCanMove) { correctionShare = 1.0; }
+        if (!selfCanMove && !otherCanMove) { correctionShare = 0.0; }
+        positionCorrection += normal * (minDistance - distance) * correctionShare;
         let closingSpeed = dot(particle.velocity - other.velocity, normal);
         if (closingSpeed < 0.0) {
-          particle.velocity -= normal * closingSpeed * (1.0 + min(particle.params0.x, other.params0.x)) * 0.5;
+          velocityCorrection -= normal * closingSpeed * (1.0 + min(particle.params0.x, other.params0.x)) * correctionShare;
         }
       }
     }
   }
+  particle.position = constrainToBounds(particle, particle.position + positionCorrection);
+  particle.velocity += velocityCorrection;
   solvedParticles[index] = particle;
 }
 ```
 
 `integrateParticles` owns gravity, wind, boundaries, floor bounce, lifetime expiry, and `particle.params0.w = 0.0`. `compactActiveParticles` is the only pass that increments `counters[0]` and fills `activeIndices`. Use a single `collisionRadius` function for both contact partners, skip out-of-range cells instead of clamping them, and choose an index-order normal when two positions coincide.
 
-Keep the existing 64-by-36 grid, but use the radius-derived two-cell search shown above and scan at most eight linked-list entries per visited cell. This covers regular and burst emoji sizes while capping contact work per particle.
+Keep the existing 64-by-36 grid, but derive reach from the active collision radius plus the shared conservative maximum collision radius. Visit every linked-list entry in the bounded grid range while accumulating corrections from immutable source state; the final review contract below supersedes the historical two-cell/eight-entry sketch in this task.
 
 - [ ] **Step 3: Add the scratch buffer and explicit bind groups**
 
@@ -236,6 +247,26 @@ Expected: renderer `backend` is `webgpu`, `state` is `ready`, and `droppedPartic
 - [ ] **Step 4: Commit runtime verification evidence only if a code/doc change was needed**
 
 No commit is required when reload/status verification changes no tracked files.
+
+## Final review completion contract
+
+The final solver replaces the earlier two-cell/eight-candidate optimization.
+`FrameUniforms` uses the spare float at offset 30 for `maxCollisionRadius`,
+which JavaScript derives conservatively from the configured maximum emoji size
+after depth and intensity scaling (never below 128px). Every shader copy of
+the 128-byte frame ABI declares the same field.
+
+For each buffered solve, reach is derived from the active radius plus that
+maximum radius and is only bounded by the grid edges. The solver walks every
+linked-list candidate, accumulates corrections from immutable source state,
+and projects the final destination state back inside wall/floor constraints.
+If a boundary blocks one particle's correction direction, its movable partner
+receives the full separation. Sticker kind 5 keeps its smaller boundary radius.
+
+The focused regression covers three-cell 80px overlap reach, uncapped dense
+candidate traversal, immutable accumulation, floor-blocked transfer, sticker
+boundary radius, and the shared-uniform ABI in addition to the original
+primary/scratch pipeline contracts.
 
 ## Plan Self-Review
 
