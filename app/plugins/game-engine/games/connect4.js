@@ -244,6 +244,31 @@ class Connect4Game {
     this.lastMove = restored.lastMove;
   }
 
+  _getBoardWinningPlayers(board) {
+    const winners = new Set();
+    const directions = [
+      { dr: 0, dc: 1 },
+      { dr: 1, dc: 0 },
+      { dr: 1, dc: 1 },
+      { dr: 1, dc: -1 }
+    ];
+    for (let row = 0; row < this.ROWS; row++) {
+      for (let column = 0; column < this.COLUMNS; column++) {
+        const player = board[row][column];
+        if (player === 0) continue;
+        for (const { dr, dc } of directions) {
+          const endRow = row + (dr * 3);
+          const endColumn = column + (dc * 3);
+          if (endRow < 0 || endRow >= this.ROWS || endColumn < 0 || endColumn >= this.COLUMNS) continue;
+          if ([1, 2, 3].every(step => board[row + (dr * step)][column + (dc * step)] === player)) {
+            winners.add(player);
+          }
+        }
+      }
+    }
+    return winners;
+  }
+
   _validateRestoredState(state) {
     const invalid = reason => {
       throw new Error(`Invalid Connect4 state: ${reason}`);
@@ -284,6 +309,7 @@ class Connect4Game {
       }
     }
     const occupied = player1Pieces + player2Pieces;
+    const boardWinners = this._getBoardWinningPlayers(state.board);
     if (!Number.isInteger(state.moveCount) || state.moveCount !== occupied) invalid('move count does not match occupancy');
     if (player1Pieces < player2Pieces || player1Pieces > player2Pieces + 1) invalid('player move counts are invalid');
     if (![1, 2].includes(state.currentPlayer)) invalid('current player is invalid');
@@ -347,17 +373,19 @@ class Connect4Game {
     if (state.status === 'active') {
       const expectedCurrentPlayer = player1Pieces === player2Pieces ? 1 : 2;
       if (state.winner !== null || state.winningCells.length !== 0 || state.currentPlayer !== expectedCurrentPlayer ||
-        winningLines.some(cells => cells.length >= 4)) {
+        boardWinners.size !== 0 || winningLines.some(cells => cells.length >= 4)) {
         invalid('active game state is inconsistent');
       }
     } else if (state.winner === null) {
-      if (occupied !== this.ROWS * this.COLUMNS || state.winningCells.length !== 0 || state.currentPlayer !== expectedLastPlayer) {
+      if (occupied !== this.ROWS * this.COLUMNS || state.winningCells.length !== 0 || state.currentPlayer !== expectedLastPlayer ||
+        boardWinners.size !== 0) {
         invalid('completed draw state is inconsistent');
       }
     } else {
       const winningCellsMatch = winningLines.some(cells => cells.length >= 4 && cells.length === state.winningCells.length &&
         cells.every(([row, column]) => winningCellKeys.has(`${row}:${column}`)));
       if (state.currentPlayer !== state.winner || expectedLastPlayer !== state.winner ||
+        boardWinners.size !== 1 || !boardWinners.has(state.winner) ||
         state.winningCells.length < 4 || state.winningCells.length > 7 ||
         !winningCellKeys.has(`${state.lastMove.row}:${state.lastMove.column}`) ||
         state.winningCells.some(([row, column]) => state.board[row][column] !== state.winner) || !winningCellsMatch) {

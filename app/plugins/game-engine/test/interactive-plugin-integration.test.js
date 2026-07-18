@@ -230,6 +230,43 @@ describe('GameEnginePlugin interactive controller integration', () => {
     });
   });
 
+  test.each([
+    { streamerRole: 'host' },
+    { chatCommand: 'bad command!' },
+    { player2Color: '#GG0000' },
+    { roundTimeLimit: 5, roundWarningTime: 10 }
+  ])('rejects invalid Connect4 configuration field combinations: %o', body => {
+    const { plugin, routes } = createPlugin();
+    plugin.db = {
+      getGameConfig: jest.fn(() => null),
+      saveGameConfig: jest.fn()
+    };
+    plugin.registerRoutes();
+    const route = routes.find(item => item.method === 'POST' && item.path === '/api/game-engine/config/:gameType');
+    const res = {
+      status: jest.fn(function status(code) {
+        this.statusCode = code;
+        return this;
+      }),
+      json: jest.fn()
+    };
+
+    route.handler({ params: { gameType: 'connect4' }, body }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'invalid_connect4_config' });
+    expect(plugin.db.saveGameConfig).not.toHaveBeenCalled();
+  });
+
+  test('falls back to the default Connect4 command when stored configuration is invalid', () => {
+    const { plugin } = createPlugin();
+    plugin.db = {
+      getGameConfig: jest.fn(() => ({ chatCommand: 'invalid command!' }))
+    };
+
+    expect(plugin.getConnect4StartCommandName()).toBe('c4start');
+  });
+
   test('accepts the revisioned host envelope and enriches the legacy streamer event', () => {
     const { plugin } = createPlugin();
     plugin.interactiveController = {
@@ -244,7 +281,14 @@ describe('GameEnginePlugin interactive controller integration', () => {
       applyHostMove: jest.fn(() => ({ success: true }))
     };
 
-    plugin.handleStreamerMove({ sessionId: 9, column: 'C' });
+    plugin.handleStreamerMove({
+      sessionId: 9,
+      gameType: 'connect4',
+      sessionRevision: 4,
+      displayRevision: 11,
+      move: { column: 'C' },
+      moveIdentity: 'forged-dashboard-identity'
+    });
 
     expect(plugin.interactiveController.applyHostMove).toHaveBeenCalledWith({
       sessionId: 9,
@@ -302,13 +346,20 @@ describe('GameEnginePlugin interactive controller integration', () => {
       gameType: 'chess',
       sessionRevision: 2,
       displayRevision: 6,
-      move: { move: 'e4' }
+      move: { move: 'e4' },
+      moveIdentity: 'forged-socket-identity'
     };
 
     admin.trigger('game-engine:interactive-host-move', envelope);
     admin.trigger('game-engine:request-state');
 
-    expect(plugin.interactiveController.applyHostMove).toHaveBeenCalledWith(envelope);
+    expect(plugin.interactiveController.applyHostMove).toHaveBeenCalledWith({
+      sessionId: 3,
+      gameType: 'chess',
+      sessionRevision: 2,
+      displayRevision: 6,
+      move: { move: 'e4' }
+    });
     expect(plugin.interactiveController.emitState).toHaveBeenCalledWith(admin);
   });
 

@@ -3651,7 +3651,13 @@ class GameEnginePlugin {
 
       socket.on('game-engine:interactive-host-move', (data) => {
         if (!this._requireSocketRole(socket, 'game-engine:interactive-host-move', 'admin')) return;
-        const result = this.interactiveController?.applyHostMove(data) || {
+        const result = this.interactiveController?.applyHostMove({
+          sessionId: data?.sessionId,
+          gameType: data?.gameType,
+          sessionRevision: data?.sessionRevision,
+          displayRevision: data?.displayRevision,
+          move: data?.move
+        }) || {
           success: false,
           error: 'interactive_controller_unavailable'
         };
@@ -3868,10 +3874,8 @@ class GameEnginePlugin {
    * @returns {string} Command name without prefix
    */
   getConnect4StartCommandName() {
-    let connect4Config = this.db?.getGameConfig ? this.db.getGameConfig('connect4') : null;
-    if (!connect4Config && this.defaultConfigs.connect4) {
-      connect4Config = this.defaultConfigs.connect4;
-    }
+    const storedConfig = this.db?.getGameConfig ? this.db.getGameConfig('connect4') : null;
+    const connect4Config = this._getConfigWithDefaults('connect4', storedConfig);
     return this.normalizeChatCommandName(connect4Config?.chatCommand, 'c4start') || 'c4start';
   }
 
@@ -5539,7 +5543,13 @@ class GameEnginePlugin {
     if (this.interactiveController) {
       const display = this.interactiveController.getState().display;
       const envelope = data?.gameType && data?.sessionRevision != null && data?.displayRevision != null
-        ? data
+        ? {
+          sessionId: data.sessionId,
+          gameType: data.gameType,
+          sessionRevision: data.sessionRevision,
+          displayRevision: data.displayRevision,
+          move: data.move
+        }
         : {
           sessionId: data?.sessionId,
           gameType: display.gameType,

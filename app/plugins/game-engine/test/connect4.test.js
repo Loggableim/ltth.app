@@ -274,6 +274,46 @@ describe('Connect4 Game', () => {
         state.currentPlayer = 2;
         state.lastMove = { player: 1, column: 3, row: 5, moveNumber: 7 };
       }],
+      ['an active board with an earlier winner away from the last move', state => {
+        state.board[5][0] = 1;
+        state.board[5][1] = 1;
+        state.board[5][2] = 1;
+        state.board[5][3] = 1;
+        state.board[5][4] = 2;
+        state.board[4][4] = 2;
+        state.board[5][5] = 2;
+        state.board[5][6] = 2;
+        state.moveCount = 8;
+        state.currentPlayer = 1;
+        state.lastMove = { player: 2, column: 6, row: 5, moveNumber: 8 };
+      }],
+      ['a completed draw that contains a winner away from the last move', state => {
+        state.board = Array.from({ length: 6 }, (_, row) => Array.from(
+          { length: 7 },
+          (_, column) => (row + column) % 2 === 0 ? 1 : 2
+        ));
+        state.moveCount = 42;
+        state.currentPlayer = 2;
+        state.status = 'completed';
+        state.lastMove = { player: 2, column: 1, row: 0, moveNumber: 42 };
+      }],
+      ['a completed winner while the opponent also has a winning line', state => {
+        state.board[5][0] = 1;
+        state.board[5][1] = 1;
+        state.board[5][2] = 1;
+        state.board[5][3] = 1;
+        state.board[5][4] = 2;
+        state.board[4][4] = 2;
+        state.board[3][4] = 2;
+        state.board[2][4] = 2;
+        state.board[5][5] = 1;
+        state.moveCount = 9;
+        state.currentPlayer = 1;
+        state.status = 'completed';
+        state.winner = 1;
+        state.winningCells = [[5, 0], [5, 1], [5, 2], [5, 3]];
+        state.lastMove = { player: 1, column: 3, row: 5, moveNumber: 9 };
+      }],
       ['a completed winner without winning cells', state => {
         state.board[5][0] = 1;
         state.board[5][1] = 1;
