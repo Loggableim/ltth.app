@@ -369,6 +369,10 @@ async function testSuperfanFinale() {
                     superfanFinaleEnabled: document.getElementById('superfan-finale-toggle').classList.contains('active'),
                     superfanFinaleCooldownHours: Number(document.getElementById('superfan-finale-cooldown').value),
                     superfanFinaleIntensity: Number(document.getElementById('superfan-finale-intensity').value),
+                    superfanEndCardDuration: Math.round(Number(document.getElementById('superfan-end-card-duration').value) * 1000),
+                    superfanEndCardPosition: document.getElementById('superfan-end-card-position').value,
+                    superfanEndCardSize: document.getElementById('superfan-end-card-size').value,
+                    superfanEndCardScale: Number(document.getElementById('superfan-end-card-scale').value),
                     goalFinaleStyle: document.getElementById('finale-style').value,
                     goalFinaleLength: document.getElementById('finale-length').value
                 }
@@ -482,6 +486,18 @@ function updateUI() {
     document.getElementById('superfan-finale-cooldown').value = String(config.superfanFinaleCooldownHours ?? 24);
     document.getElementById('superfan-finale-intensity').value = config.superfanFinaleIntensity ?? 3;
     document.getElementById('superfan-finale-intensity-value').textContent = `${config.superfanFinaleIntensity ?? 3}x`;
+    const superfanEndCardDuration = config.superfanEndCardDuration ?? 3000;
+    const superfanEndCardSize = config.superfanEndCardSize ?? 'medium';
+    const superfanEndCardScale = config.superfanEndCardScale ?? 1;
+    document.getElementById('superfan-end-card-duration').value = String(superfanEndCardDuration / 1000);
+    document.getElementById('superfan-end-card-duration-value').textContent = `${superfanEndCardDuration / 1000}s`;
+    document.getElementById('superfan-end-card-position').value = config.superfanEndCardPosition ?? 'center';
+    document.getElementById('superfan-end-card-size').value = superfanEndCardSize;
+    document.getElementById('superfan-end-card-scale').value = String(superfanEndCardScale);
+    document.getElementById('superfan-end-card-scale-value').textContent = `${superfanEndCardScale}x`;
+    document.getElementById('superfan-end-card-scale-container').style.display = superfanEndCardSize === 'custom'
+        ? 'block'
+        : 'none';
 
     // Follower fireworks
     updateToggle('follower-toggle', config.followerFireworksEnabled);
@@ -954,6 +970,21 @@ function setupEventListeners() {
     });
     setupRangeSlider('superfan-finale-intensity', 'superfan-finale-intensity-value', 'x', value => {
         config.superfanFinaleIntensity = Number(value);
+    });
+    setupRangeSlider('superfan-end-card-duration', 'superfan-end-card-duration-value', 's', value => {
+        config.superfanEndCardDuration = Math.round(Number(value) * 1000);
+    });
+    document.getElementById('superfan-end-card-position')?.addEventListener('change', function() {
+        config.superfanEndCardPosition = this.value;
+    });
+    document.getElementById('superfan-end-card-size')?.addEventListener('change', function() {
+        config.superfanEndCardSize = this.value;
+        document.getElementById('superfan-end-card-scale-container').style.display = this.value === 'custom'
+            ? 'block'
+            : 'none';
+    });
+    setupRangeSlider('superfan-end-card-scale', 'superfan-end-card-scale-value', 'x', value => {
+        config.superfanEndCardScale = Number(value);
     });
 
     setupRangeSlider('follower-rocket-count', 'follower-rocket-count-value', '', (val) => {

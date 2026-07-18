@@ -1532,6 +1532,49 @@
                             </div>
                         </div>
 
+                        <div>
+                            <label class="block mb-2" for="superfan-end-card-duration" data-i18n="webgpu_fireworks.superfan_end_card_duration">End card duration (seconds)</label>
+                            <input type="range" id="superfan-end-card-duration" min="1" max="10" step="0.5" value="3" class="w-full">
+                            <div class="flex justify-between text-sm text-gray-400">
+                                <span>1s</span>
+                                <span id="superfan-end-card-duration-value">3s</span>
+                                <span>10s</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block mb-2" for="superfan-end-card-position" data-i18n="webgpu_fireworks.superfan_end_card_position">End card position</label>
+                            <select id="superfan-end-card-position" class="w-full bg-gray-700 text-white p-2 rounded-lg">
+                                <option value="top-left" data-i18n="webgpu_fireworks.superfan_end_card_position_top_left">Top Left</option>
+                                <option value="top-center" data-i18n="webgpu_fireworks.superfan_end_card_position_top_center">Top Center</option>
+                                <option value="top-right" data-i18n="webgpu_fireworks.superfan_end_card_position_top_right">Top Right</option>
+                                <option value="center" selected data-i18n="webgpu_fireworks.superfan_end_card_position_center">Center</option>
+                                <option value="bottom-left" data-i18n="webgpu_fireworks.superfan_end_card_position_bottom_left">Bottom Left</option>
+                                <option value="bottom-center" data-i18n="webgpu_fireworks.superfan_end_card_position_bottom_center">Bottom Center</option>
+                                <option value="bottom-right" data-i18n="webgpu_fireworks.superfan_end_card_position_bottom_right">Bottom Right</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block mb-2" for="superfan-end-card-size" data-i18n="webgpu_fireworks.superfan_end_card_size">End card size</label>
+                            <select id="superfan-end-card-size" class="w-full bg-gray-700 text-white p-2 rounded-lg">
+                                <option value="small" data-i18n="webgpu_fireworks.superfan_end_card_size_small">Small</option>
+                                <option value="medium" selected data-i18n="webgpu_fireworks.superfan_end_card_size_medium">Medium</option>
+                                <option value="large" data-i18n="webgpu_fireworks.superfan_end_card_size_large">Large</option>
+                                <option value="custom" data-i18n="webgpu_fireworks.superfan_end_card_size_custom">Custom</option>
+                            </select>
+                        </div>
+
+                        <div id="superfan-end-card-scale-container" style="display: none;">
+                            <label class="block mb-2" for="superfan-end-card-scale" data-i18n="webgpu_fireworks.superfan_end_card_scale">Custom end card scale</label>
+                            <input type="range" id="superfan-end-card-scale" min="0.5" max="2.0" step="0.1" value="1.0" class="w-full">
+                            <div class="flex justify-between text-sm text-gray-400">
+                                <span>0.5x</span>
+                                <span id="superfan-end-card-scale-value">1x</span>
+                                <span>2x</span>
+                            </div>
+                        </div>
+
                         <button id="test-superfan-finale-btn" class="w-full btn-primary py-3 rounded-lg font-bold" data-i18n="webgpu_fireworks.test_superfan_finale">
                             &#x2B50; Test Superfan Finale
                         </button>

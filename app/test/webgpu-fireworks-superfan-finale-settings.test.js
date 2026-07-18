@@ -131,6 +131,10 @@ describe('WebGPU Superfan finale settings', () => {
     for (const id of [
       'superfan-finale-toggle', 'superfan-finale-cooldown',
       'superfan-finale-intensity', 'superfan-finale-intensity-value',
+      'superfan-end-card-duration', 'superfan-end-card-duration-value',
+      'superfan-end-card-position', 'superfan-end-card-size',
+      'superfan-end-card-scale-container', 'superfan-end-card-scale',
+      'superfan-end-card-scale-value',
       'test-superfan-finale-btn'
     ]) expect(html).toContain(`id="${id}"`);
     for (const value of ['6', '12', '24', '72', '168']) {
@@ -141,6 +145,54 @@ describe('WebGPU Superfan finale settings', () => {
     expect(html).toMatch(/id="superfan-finale-intensity"[^>]*min="1"[^>]*max="10"[^>]*step="0\.5"[^>]*value="3"/);
     expect(html).not.toContain('id="superfan-finale-style"');
     expect(html).not.toContain('id="superfan-finale-length"');
+  });
+
+  test('loads, saves, and toggles custom Superfan end card controls', async () => {
+    const { window, fetchMock } = await bootSettings({
+      initialConfig: {
+        superfanEndCardDuration: 4500,
+        superfanEndCardPosition: 'top-right',
+        superfanEndCardSize: 'custom',
+        superfanEndCardScale: 1.4
+      }
+    });
+    const document = window.document;
+    const duration = document.getElementById('superfan-end-card-duration');
+    const position = document.getElementById('superfan-end-card-position');
+    const size = document.getElementById('superfan-end-card-size');
+    const scale = document.getElementById('superfan-end-card-scale');
+    const scaleContainer = document.getElementById('superfan-end-card-scale-container');
+
+    expect(duration.value).toBe('4.5');
+    expect(document.getElementById('superfan-end-card-duration-value').textContent).toBe('4.5s');
+    expect(position.value).toBe('top-right');
+    expect(size.value).toBe('custom');
+    expect(scale.value).toBe('1.4');
+    expect(document.getElementById('superfan-end-card-scale-value').textContent).toBe('1.4x');
+    expect(scaleContainer.style.display).toBe('block');
+
+    size.value = 'medium';
+    size.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(scaleContainer.style.display).toBe('none');
+    size.value = 'custom';
+    size.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(scaleContainer.style.display).toBe('block');
+    duration.value = '6.5';
+    duration.dispatchEvent(new window.Event('input', { bubbles: true }));
+    position.value = 'bottom-left';
+    position.dispatchEvent(new window.Event('change', { bubbles: true }));
+    scale.value = '1.7';
+    scale.dispatchEvent(new window.Event('input', { bubbles: true }));
+
+    document.getElementById('save-btn').click();
+    await waitFor(() => expect(findRequest(fetchMock, '/api/webgpu-fireworks/config')).toBeDefined());
+    const saved = JSON.parse(findRequest(fetchMock, '/api/webgpu-fireworks/config')[1].body);
+    expect(saved).toMatchObject({
+      superfanEndCardDuration: 6500,
+      superfanEndCardPosition: 'bottom-left',
+      superfanEndCardSize: 'custom',
+      superfanEndCardScale: 1.7
+    });
   });
 
   test('loads and saves false and low Superfan values without replacing them with defaults', async () => {
@@ -188,6 +240,18 @@ describe('WebGPU Superfan finale settings', () => {
     const intensity = document.getElementById('superfan-finale-intensity');
     intensity.value = '8.5';
     intensity.dispatchEvent(new window.Event('input', { bubbles: true }));
+    const endCardDuration = document.getElementById('superfan-end-card-duration');
+    endCardDuration.value = '4.5';
+    endCardDuration.dispatchEvent(new window.Event('input', { bubbles: true }));
+    const endCardPosition = document.getElementById('superfan-end-card-position');
+    endCardPosition.value = 'bottom-right';
+    endCardPosition.dispatchEvent(new window.Event('change', { bubbles: true }));
+    const endCardSize = document.getElementById('superfan-end-card-size');
+    endCardSize.value = 'custom';
+    endCardSize.dispatchEvent(new window.Event('change', { bubbles: true }));
+    const endCardScale = document.getElementById('superfan-end-card-scale');
+    endCardScale.value = '1.6';
+    endCardScale.dispatchEvent(new window.Event('input', { bubbles: true }));
 
     document.getElementById('save-btn').click();
     await waitFor(() => expect(findRequest(fetchMock, '/api/webgpu-fireworks/config')).toBeDefined());
@@ -332,6 +396,18 @@ describe('WebGPU Superfan finale settings', () => {
     const intensity = document.getElementById('superfan-finale-intensity');
     intensity.value = '7.5';
     intensity.dispatchEvent(new window.Event('input', { bubbles: true }));
+    const endCardDuration = document.getElementById('superfan-end-card-duration');
+    endCardDuration.value = '4.5';
+    endCardDuration.dispatchEvent(new window.Event('input', { bubbles: true }));
+    const endCardPosition = document.getElementById('superfan-end-card-position');
+    endCardPosition.value = 'bottom-right';
+    endCardPosition.dispatchEvent(new window.Event('change', { bubbles: true }));
+    const endCardSize = document.getElementById('superfan-end-card-size');
+    endCardSize.value = 'custom';
+    endCardSize.dispatchEvent(new window.Event('change', { bubbles: true }));
+    const endCardScale = document.getElementById('superfan-end-card-scale');
+    endCardScale.value = '1.6';
+    endCardScale.dispatchEvent(new window.Event('input', { bubbles: true }));
     const style = document.getElementById('finale-style');
     style.value = 'sky-ballet';
     style.dispatchEvent(new window.Event('change', { bubbles: true }));
@@ -346,6 +422,10 @@ describe('WebGPU Superfan finale settings', () => {
       superfanFinaleEnabled: false,
       superfanFinaleCooldownHours: 168,
       superfanFinaleIntensity: 7.5,
+      superfanEndCardDuration: 4500,
+      superfanEndCardPosition: 'bottom-right',
+      superfanEndCardSize: 'custom',
+      superfanEndCardScale: 1.6,
       goalFinaleStyle: 'sky-ballet',
       goalFinaleLength: 'short'
     });
