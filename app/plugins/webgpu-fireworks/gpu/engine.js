@@ -6,7 +6,7 @@
 const DEBUG = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === 'true';
 
 function t(key, fallback, params = {}) {
-    const translated = window.i18n?.t?.(key, params);
+    const translated = typeof window !== 'undefined' ? window.i18n?.t?.(key, params) : null;
     if (translated && translated !== key) return translated;
     return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
         Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
@@ -831,6 +831,10 @@ class WebGPUFireworksEngine {
         this.finalePhase = 'idle';
         this.finaleGeneration = 0;
         this.failingFinaleIds = new Set();
+        this.followerAnimationGeneration = 0;
+        this.followerAnimationTimer = null;
+        this.endCardOwnerId = null;
+        this.deferredFollowerAnimation = null;
         this.transientFrameError = false;
         this.giftLaunchTimestamps = [];
         this.giftBacklog = new Map();
@@ -916,7 +920,7 @@ class WebGPUFireworksEngine {
             this.audio.ensureContext();
         });
         this.socket.on('webgpu-fireworks:trigger', data => this.handleIncomingTrigger(data));
-        this.socket.on('webgpu-fireworks:finale', data => this.handleFinale(data));
+        this.socket.on('webgpu-fireworks:finale', data => this.handleFinaleSocketEvent(data));
         this.socket.on('webgpu-fireworks:follower-animation', data => this.showFollowerAnimation(data));
         this.socket.on('webgpu-fireworks:get-active-count', () => {
             const metrics = this.renderer?.getMetrics() || {};
@@ -1275,6 +1279,8 @@ class WebGPUFireworksEngine {
                 } else if (event.type === 'finale-phase') {
                     this.setFinalePhase(event.finaleId, event.phase);
                 } else if (event.type === 'finale-complete') {
+                    this.finishFinaleVisuals(event.finaleId, now);
+                } else if (event.type === 'finale-end-card-complete') {
                     this.completeFinale(event.finaleId, now);
                 } else if (event.type === 'gift-drain') {
                     this.drainGiftBacklog(now);
@@ -1850,7 +1856,9 @@ class WebGPUFireworksEngine {
             phase: 'opening',
             startedAt: startAt,
             runtimeToken: entry.runtimeToken,
-            legacy: entry.legacy
+            legacy: entry.legacy,
+            completionNotification: entry.completionNotification,
+            completionNotificationShown: false
         };
         this.finalePhase = 'opening';
         const details = entry.legacy
@@ -1867,10 +1875,29 @@ class WebGPUFireworksEngine {
         this.emitFinaleTelemetry();
     }
 
+    finishFinaleVisuals(finaleId, now = this.getRuntimeNow()) {
+        const finale = this.currentFinale;
+        if (!finale || finale.id !== finaleId) return false;
+        if (!finale.completionNotification) return this.completeFinale(finaleId, now);
+        if (finale.completionNotificationShown) return false;
+
+        finale.completionNotificationShown = true;
+        this.setFinalePhase(finaleId, 'end-card');
+        this.showFollowerAnimation(finale.completionNotification, { endCard: true, finaleId });
+        this.scheduleTimeline({
+            type: 'finale-end-card-complete',
+            due: now + finale.completionNotification.duration,
+            order: 110,
+            finaleId
+        });
+        return true;
+    }
+
     completeFinale(finaleId, now = this.getRuntimeNow()) {
         if (!this.currentFinale || this.currentFinale.id !== finaleId) return false;
-        const controlEvents = new Set(['finale-launch', 'finale-phase', 'finale-complete']);
+        const controlEvents = new Set(['finale-launch', 'finale-phase', 'finale-complete', 'finale-end-card-complete']);
         this.timelineQueue = this.timelineQueue.filter(event => event.finaleId !== finaleId || !controlEvents.has(event.type));
+        this.releaseFinaleEndCard(finaleId, { flushDeferred: true });
         this.finaleIds.delete(finaleId);
         this.currentFinale = null;
         this.finalePhase = 'idle';
@@ -1900,6 +1927,7 @@ class WebGPUFireworksEngine {
         try {
             const message = error?.message || String(error || 'Unknown finale renderer error');
             console.error(`[WebGPU Fireworks] Finale ${finaleId || 'unknown'} failed:`, error);
+            this.releaseFinaleEndCard(finaleId, { flushDeferred: true });
             this.timelineQueue = this.timelineQueue.filter(event => event.finaleId !== finaleId);
             for (const [effectId, plan] of this.effectPlans.entries()) {
                 if (plan.finaleId !== finaleId) continue;
@@ -1923,16 +1951,25 @@ class WebGPUFireworksEngine {
         this.ensureFinaleRuntimeState();
         const id = this.finaleIdentity(data);
         if (this.finaleIds.has(id)) {
-            return { accepted: false, duplicate: true, id, queueLength: this.finaleQueue.length };
+            return { accepted: false, duplicate: true, reason: 'duplicate', id, queueLength: this.finaleQueue.length };
         }
         const showPlan = this.isValidShowPlan(data.showPlan)
             ? { ...data.showPlan, id }
             : null;
-        const entry = { id, data: { ...data, id }, showPlan, legacy: !showPlan };
+        const completionNotification = this.normalizeCompletionNotification(data.completionNotification);
+        const entry = { id, data: { ...data, id }, showPlan, legacy: !showPlan, completionNotification };
         const rendererKnownUnavailable = (
             (this.rendererStatus?.state && this.rendererStatus.state !== 'ready') ||
             this.renderer?.initialized === false
         );
+        if (data.requiresRendererReady === true && rendererKnownUnavailable) {
+            return {
+                accepted: false,
+                reason: 'renderer-not-ready',
+                id,
+                queueLength: this.finaleQueue.length
+            };
+        }
         const queued = Boolean(this.currentFinale || rendererKnownUnavailable);
         this.finaleIds.add(id);
         let details;
@@ -1954,6 +1991,28 @@ class WebGPUFireworksEngine {
             seededPhase: details.seededPhase,
             frequency: details.frequency
         };
+    }
+
+    handleFinaleSocketEvent(data = {}) {
+        const rawEventId = data.eventId ?? data.id;
+        const eventId = (typeof rawEventId === 'string' || typeof rawEventId === 'number')
+            ? String(rawEventId).trim().slice(0, 160)
+            : '';
+        let result;
+        try {
+            result = this.handleFinale(data);
+        } catch (error) {
+            console.error('[WebGPU Fireworks] Finale queue rejected:', error);
+            result = { accepted: false, reason: 'renderer-error', id: eventId || null };
+        }
+        if (data.ackRequested === true && eventId) {
+            this.socket?.emit('webgpu-fireworks:finale-ack', {
+                eventId,
+                accepted: result.accepted === true,
+                ...(result.accepted === true ? {} : { reason: result.reason || 'queue-rejected' })
+            });
+        }
+        return result;
     }
 
     showGiftPopup(data) {
@@ -1986,10 +2045,47 @@ class WebGPUFireworksEngine {
         setTimeout(() => popup.remove(), 2500);
     }
 
-    showFollowerAnimation(data = {}) {
+    ensureFollowerAnimationState() {
+        if (!Number.isInteger(this.followerAnimationGeneration)) this.followerAnimationGeneration = 0;
+        if (this.followerAnimationTimer === undefined) this.followerAnimationTimer = null;
+        if (this.endCardOwnerId === undefined) this.endCardOwnerId = null;
+        if (this.deferredFollowerAnimation === undefined) this.deferredFollowerAnimation = null;
+    }
+
+    clearFollowerAnimation() {
+        this.ensureFollowerAnimationState();
+        this.followerAnimationGeneration++;
+        if (this.followerAnimationTimer !== null) clearTimeout(this.followerAnimationTimer);
+        this.followerAnimationTimer = null;
+        if (typeof document !== 'undefined') {
+            document.getElementById('follower-animation')?.classList.remove('show');
+        }
+    }
+
+    releaseFinaleEndCard(finaleId, options = {}) {
+        this.ensureFollowerAnimationState();
+        if (!finaleId || this.endCardOwnerId !== finaleId) return false;
+        this.endCardOwnerId = null;
+        this.clearFollowerAnimation();
+        const deferred = this.deferredFollowerAnimation;
+        this.deferredFollowerAnimation = null;
+        if (options.flushDeferred === true && deferred) this.showFollowerAnimation(deferred);
+        return true;
+    }
+
+    showFollowerAnimation(data = {}, options = {}) {
+        this.ensureFollowerAnimationState();
+        const isEndCard = options.endCard === true && typeof options.finaleId === 'string' && options.finaleId;
+        if (!isEndCard && this.endCardOwnerId) {
+            this.deferredFollowerAnimation = { ...data };
+            return false;
+        }
+
+        this.clearFollowerAnimation();
+        if (isEndCard) this.endCardOwnerId = options.finaleId;
         const root = document.getElementById('follower-animation');
-        if (!root) return;
-        document.getElementById('follower-username').textContent = data.username || '';
+        if (!root) return false;
+        document.getElementById('follower-username').textContent = data.usernameText || data.username || '';
         document.getElementById('thank-you-text').textContent = data.thankYouText || data.text || t(
             'plugins.webgpu-fireworks.runtime.follow_thanks',
             'Thanks for the follow!'
@@ -2004,7 +2100,46 @@ class WebGPUFireworksEngine {
         if (data.profilePictureUrl) { avatar.src = data.profilePictureUrl; avatar.classList.add('show'); }
         else avatar.classList.remove('show');
         root.classList.add('show');
-        setTimeout(() => root.classList.remove('show'), Number(data.duration) || 3000);
+        const generation = ++this.followerAnimationGeneration;
+        this.followerAnimationTimer = setTimeout(() => {
+            if (generation !== this.followerAnimationGeneration) return;
+            root.classList.remove('show');
+            this.followerAnimationTimer = null;
+        }, Number(data.duration) || 3000);
+        return true;
+    }
+
+    normalizeCompletionNotification(value) {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+        const clamp = (input, min, max, fallback) => {
+            const number = Number(input);
+            return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
+        };
+        const text = (input, fallback, maxLength) => {
+            const normalized = typeof input === 'string' ? input.trim() : '';
+            return (normalized || fallback).slice(0, maxLength);
+        };
+        const username = text(value.username, 'Superfan', 80);
+        const profilePictureUrl = typeof value.profilePictureUrl === 'string' &&
+            /^https?:\/\//i.test(value.profilePictureUrl.trim())
+            ? value.profilePictureUrl.trim().slice(0, 2048)
+            : null;
+        const positions = ['top-left', 'top-center', 'top-right', 'center', 'bottom-left', 'bottom-center', 'bottom-right'];
+        const sizes = ['small', 'medium', 'large', 'custom'];
+        const styles = ['gradient-purple', 'gradient-blue', 'gradient-gold', 'gradient-rainbow', 'neon', 'minimal'];
+        const entrances = ['scale', 'fade', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'bounce', 'rotate'];
+        return {
+            username,
+            usernameText: text(value.usernameText, `Thank you for being a Superfan, ${username}!`, 180),
+            thankYouText: text(value.thankYouText, 'This firework was for you!', 180),
+            profilePictureUrl,
+            duration: Math.round(clamp(value.duration, 1000, 10000, 3000)),
+            position: positions.includes(value.position) ? value.position : 'center',
+            size: sizes.includes(value.size) ? value.size : 'medium',
+            scale: clamp(value.scale, 0.5, 2, 1),
+            style: styles.includes(value.style) ? value.style : 'gradient-purple',
+            entrance: entrances.includes(value.entrance) ? value.entrance : 'scale'
+        };
     }
 
     adaptQuality() {
@@ -2089,6 +2224,9 @@ class WebGPUFireworksEngine {
 
     destroy() {
         this.running = false;
+        this.clearFollowerAnimation();
+        this.endCardOwnerId = null;
+        this.deferredFollowerAnimation = null;
         if (this.animationFrame !== null && this.animationFrame !== undefined && typeof cancelAnimationFrame === 'function') {
             cancelAnimationFrame(this.animationFrame);
         }

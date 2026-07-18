@@ -23,14 +23,14 @@ describe('native WebGPU EmojiRain contract', () => {
     const classic = JSON.parse(read('plugins/emoji-rain/plugin.json'));
     const webgpu = JSON.parse(read('plugins/webgpu-emoji-rain/plugin.json'));
     expect(classic).toEqual(expect.objectContaining({ id: 'emoji-rain', name: 'EmojiRain', version: '2.1.2', enabled: true }));
-    expect(webgpu).toEqual(expect.objectContaining({ id: 'webgpu-emoji-rain', name: 'WebGPU EmojiRain', version: '3.0.4', enabled: true }));
+    expect(webgpu).toEqual(expect.objectContaining({ id: 'webgpu-emoji-rain', name: 'WebGPU EmojiRain', version: '3.0.5', enabled: true }));
   });
 
   test('WebGPU overlays load only the native plugin-local renderer', () => {
     for (const file of ['plugins/webgpu-emoji-rain/overlay.html', 'plugins/webgpu-emoji-rain/obs-hud.html']) {
       const html = read(file);
-      expect(html).toContain('/plugins/webgpu-emoji-rain/gpu/webgpu-emoji-engine.js?v=3.0.3');
-      expect(html).toContain('/plugins/webgpu-emoji-rain/gpu/engine.js?v=3.0.3');
+      expect(html).toContain('/plugins/webgpu-emoji-rain/gpu/webgpu-emoji-engine.js?v=3.0.5');
+      expect(html).toContain('/plugins/webgpu-emoji-rain/gpu/engine.js?v=3.0.5');
       expect(html).not.toMatch(/matter(?:\.min)?\.js/i);
       expect(html).not.toContain('webgpu-emoji-rain-engine.js');
     }

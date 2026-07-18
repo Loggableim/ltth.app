@@ -10,6 +10,7 @@ const { FINALE_STYLES, FINALE_LENGTHS } = require('./finale-show-planner');
 
 const ALLOWED_FINALE_STYLES = Object.freeze(['auto', ...FINALE_STYLES]);
 const ALLOWED_FINALE_LENGTHS = Object.freeze([...FINALE_LENGTHS]);
+const SUPERFAN_FINALE_COOLDOWN_HOURS = Object.freeze([6, 12, 24, 72, 168]);
 const FINALE_DURATION_BY_LENGTH = Object.freeze({
   short: 10000,
   medium: 18000,
@@ -61,6 +62,13 @@ const DEFAULT_FIREWORKS_CONFIG = {
   goalFinaleStyle: 'auto',
   goalFinaleLength: 'medium',
   goalFinaleDuration: 18000,
+  superfanFinaleEnabled: true,
+  superfanFinaleCooldownHours: 24,
+  superfanFinaleIntensity: 3,
+  superfanEndCardDuration: 3000,
+  superfanEndCardPosition: 'center',
+  superfanEndCardSize: 'medium',
+  superfanEndCardScale: 1,
   followerFireworksEnabled: false,
   followerRocketCount: 3,
   followerShowAnimation: true,
@@ -128,6 +136,38 @@ function clampInteger(value, min, max, fallback) {
 function normalizeBoolean(value, fallback) {
   if (typeof value === 'boolean') return value;
   return fallback;
+}
+
+function normalizeDisplayText(value, fallback, maxLength) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  return (text || fallback).slice(0, maxLength);
+}
+
+function normalizeOptionalImageUrl(value) {
+  if (typeof value !== 'string') return null;
+  const url = value.trim().slice(0, 2048);
+  return /^https?:\/\//i.test(url) ? url : null;
+}
+
+function normalizeCompletionNotification(value) {
+  if (!isPlainObject(value)) return null;
+  const username = normalizeDisplayText(value.username, 'Superfan', 80);
+  return {
+    username,
+    usernameText: normalizeDisplayText(
+      value.usernameText,
+      `Thank you for being a Superfan, ${username}!`,
+      180
+    ),
+    thankYouText: normalizeDisplayText(value.thankYouText, 'This firework was for you!', 180),
+    profilePictureUrl: normalizeOptionalImageUrl(value.profilePictureUrl),
+    duration: clampInteger(value.duration, 1000, 10000, 3000),
+    position: VALID_FOLLOWER_POSITIONS.includes(value.position) ? value.position : 'center',
+    size: ['small', 'medium', 'large', 'custom'].includes(value.size) ? value.size : 'medium',
+    scale: clampNumber(value.scale, 0.5, 2, 1),
+    style: VALID_FOLLOWER_STYLES.includes(value.style) ? value.style : 'gradient-purple',
+    entrance: VALID_FOLLOWER_ENTRANCES.includes(value.entrance) ? value.entrance : 'scale'
+  };
 }
 
 function normalizeShape(value, fallback = DEFAULT_FIREWORKS_CONFIG.defaultShape) {
@@ -288,6 +328,19 @@ function normalizeConfig(config = {}) {
     goalFinaleStyle: normalizeFinaleStyle(source.goalFinaleStyle, defaults.goalFinaleStyle),
     goalFinaleLength: normalizeFinaleLength(source.goalFinaleLength, defaults.goalFinaleLength),
     goalFinaleDuration: clampInteger(source.goalFinaleDuration, 250, 30000, defaults.goalFinaleDuration),
+    superfanFinaleEnabled: normalizeBoolean(source.superfanFinaleEnabled, defaults.superfanFinaleEnabled),
+    superfanFinaleCooldownHours: SUPERFAN_FINALE_COOLDOWN_HOURS.includes(Number(source.superfanFinaleCooldownHours))
+      ? Number(source.superfanFinaleCooldownHours)
+      : defaults.superfanFinaleCooldownHours,
+    superfanFinaleIntensity: clampNumber(source.superfanFinaleIntensity, 1, 10, defaults.superfanFinaleIntensity),
+    superfanEndCardDuration: clampInteger(source.superfanEndCardDuration, 1000, 10000, defaults.superfanEndCardDuration),
+    superfanEndCardPosition: VALID_FOLLOWER_POSITIONS.includes(source.superfanEndCardPosition)
+      ? source.superfanEndCardPosition
+      : defaults.superfanEndCardPosition,
+    superfanEndCardSize: ['small', 'medium', 'large', 'custom'].includes(source.superfanEndCardSize)
+      ? source.superfanEndCardSize
+      : defaults.superfanEndCardSize,
+    superfanEndCardScale: clampNumber(source.superfanEndCardScale, 0.5, 2, defaults.superfanEndCardScale),
     followerFireworksEnabled: normalizeBoolean(source.followerFireworksEnabled, defaults.followerFireworksEnabled),
     followerRocketCount: clampInteger(source.followerRocketCount, 1, 10, defaults.followerRocketCount),
     followerShowAnimation: normalizeBoolean(source.followerShowAnimation, defaults.followerShowAnimation),
@@ -395,7 +448,7 @@ function normalizeFinaleRequest(body = {}) {
     ? (Math.trunc(seedValue) >>> 0)
     : (Math.floor(Math.random() * 0x100000000) >>> 0);
   const durationMs = FINALE_DURATION_BY_LENGTH[length];
-  return {
+  const normalized = {
     style: normalizeFinaleStyle(source.style),
     length,
     intensity: clampNumber(source.intensity, 0.1, 10, 3.0),
@@ -406,6 +459,9 @@ function normalizeFinaleRequest(body = {}) {
     duration: durationMs,
     durationMs
   };
+  const completionNotification = normalizeCompletionNotification(source.completionNotification);
+  if (completionNotification) normalized.completionNotification = completionNotification;
+  return normalized;
 }
 
 function normalizeGiftMapping(body = {}) {
@@ -434,9 +490,11 @@ module.exports = {
   ALLOWED_VISUAL_STYLES,
   DEFAULT_FIREWORKS_CONFIG,
   FINALE_DURATION_BY_LENGTH,
+  SUPERFAN_FINALE_COOLDOWN_HOURS,
   clampInteger,
   clampNumber,
   finaleLengthFromDuration,
+  normalizeCompletionNotification,
   normalizeConfig,
   normalizeFinaleLength,
   normalizeFinaleRequest,

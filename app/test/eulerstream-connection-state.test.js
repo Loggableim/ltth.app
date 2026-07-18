@@ -308,4 +308,18 @@ describe('Eulerstream quota-safe connection state', () => {
     });
     expect(adapter._dispatchEulerstreamMessage).toHaveBeenCalledWith(message);
   });
+
+  test('recognizes Eulerstream ttwid signing failures as eligible for the REST fallback', () => {
+    const { adapter } = createAdapter();
+
+    expect(adapter._isEulerstreamRestFallbackError({
+      code: 1011,
+      message: 'WS State Error - Fail /webcast/room_info: Failed to fetch ttwid for signing: status=2 code=503 message'
+    })).toBe(true);
+
+    expect(adapter._isEulerstreamRestFallbackError({
+      code: 4401,
+      message: 'Eulerstream authentication failed.'
+    })).toBe(false);
+  });
 });

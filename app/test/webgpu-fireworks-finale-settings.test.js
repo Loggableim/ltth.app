@@ -24,7 +24,7 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
 
   test('binds finale selectors to config and sends the exact selected object from the test button', () => {
     const source = read('ui/settings.js');
-    const triggerSource = source.slice(source.indexOf('async function triggerFinale()'), source.indexOf('async function testFollowerFireworks()'));
+    const triggerSource = source.slice(source.indexOf('async function triggerFinale()'), source.indexOf('async function testSuperfanFinale()'));
 
     expect(source).toContain("document.getElementById('finale-style').value = config.goalFinaleStyle || 'auto'");
     expect(source).toContain("document.getElementById('finale-length').value = config.goalFinaleLength || 'medium'");

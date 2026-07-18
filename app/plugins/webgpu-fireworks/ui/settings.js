@@ -4,7 +4,12 @@
  */
 
 // State
-let config = {};
+let configRevision = 0;
+let localConfigDirty = false;
+let applyingRemoteConfig = false;
+let activeSaveRequests = 0;
+let latestSaveRequestId = 0;
+let config = createTrackedConfig({});
 let socket = null;
 let rendererStatusTimer = null;
 let paletteSaveTimer = null;
@@ -16,6 +21,60 @@ function t(key, fallback, params = {}) {
     return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
         Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
     ));
+}
+
+function markLocalConfigChange() {
+    if (applyingRemoteConfig) return;
+    configRevision += 1;
+    localConfigDirty = true;
+}
+
+function createTrackedConfig(value) {
+    const proxies = new WeakMap();
+
+    const wrap = target => {
+        if (!target || typeof target !== 'object') return target;
+        if (proxies.has(target)) return proxies.get(target);
+
+        const proxy = new Proxy(target, {
+            get(object, property) {
+                return wrap(Reflect.get(object, property));
+            },
+            set(object, property, nextValue) {
+                const previousValue = Reflect.get(object, property);
+                const changed = !Object.is(previousValue, nextValue);
+                const updated = Reflect.set(object, property, nextValue);
+                if (updated && changed) markLocalConfigChange();
+                return updated;
+            },
+            deleteProperty(object, property) {
+                const existed = Object.prototype.hasOwnProperty.call(object, property);
+                const deleted = Reflect.deleteProperty(object, property);
+                if (deleted && existed) markLocalConfigChange();
+                return deleted;
+            }
+        });
+        proxies.set(target, proxy);
+        return proxy;
+    };
+
+    return wrap(value && typeof value === 'object' ? value : {});
+}
+
+function applyRemoteConfig(nextConfig) {
+    applyingRemoteConfig = true;
+    try {
+        config = createTrackedConfig(nextConfig);
+        updateUI();
+        configRevision += 1;
+        localConfigDirty = false;
+    } finally {
+        applyingRemoteConfig = false;
+    }
+}
+
+function canApplyRemoteConfig() {
+    return !localConfigDirty && activeSaveRequests === 0;
 }
 
 // Benchmark configuration constants
@@ -108,9 +167,8 @@ function connectSocket() {
         });
 
         socket.on('webgpu-fireworks:config-update', (data) => {
-            if (data.config) {
-                config = data.config;
-                updateUI();
+            if (data.config && canApplyRemoteConfig()) {
+                applyRemoteConfig(data.config);
             }
         });
     } catch (e) {
@@ -123,13 +181,13 @@ function connectSocket() {
 // ============================================================================
 
 async function loadConfig() {
+    const requestedAtRevision = configRevision;
     try {
         const response = await fetch('/api/webgpu-fireworks/config');
         const data = await response.json();
 
-        if (data.success) {
-            config = data.config;
-            updateUI();
+        if (data.success && requestedAtRevision === configRevision && canApplyRemoteConfig()) {
+            applyRemoteConfig(data.config);
         }
     } catch (e) {
         console.error('[Fireworks Settings] Failed to load config:', e);
@@ -233,30 +291,43 @@ async function loadRendererStatus() {
 }
 
 async function saveConfig(showSuccessToast = true) {
+    normalizeInternalResolutionBounds();
+    const requestId = ++latestSaveRequestId;
+    const requestedAtRevision = configRevision;
+    const serializedConfig = JSON.stringify(config);
+    activeSaveRequests += 1;
+
     try {
-        normalizeInternalResolutionBounds();
         const response = await fetch('/api/webgpu-fireworks/config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(config)
+            body: serializedConfig
         });
 
         const data = await response.json();
+        const isCurrentRequest = requestId === latestSaveRequestId
+            && requestedAtRevision === configRevision;
 
         if (data.success) {
+            if (!isCurrentRequest) return;
             if (data.config) {
-                config = data.config;
-                updateUI();
+                applyRemoteConfig(data.config);
+            } else {
+                localConfigDirty = false;
             }
             if (showSuccessToast) {
                 showToast(t('plugins.webgpu-fireworks.ui.settings_saved', 'Settings saved successfully!'), 'success');
             }
-        } else {
+        } else if (requestId === latestSaveRequestId) {
             showToast(t('plugins.webgpu-fireworks.ui.settings_save_failed', 'Failed to save settings'), 'error');
         }
     } catch (e) {
-        console.error('[Fireworks Settings] Failed to save config:', e);
-        showToast(t('plugins.webgpu-fireworks.ui.settings_save_failed', 'Failed to save settings'), 'error');
+        if (requestId === latestSaveRequestId) {
+            console.error('[Fireworks Settings] Failed to save config:', e);
+            showToast(t('plugins.webgpu-fireworks.ui.settings_save_failed', 'Failed to save settings'), 'error');
+        }
+    } finally {
+        activeSaveRequests = Math.max(0, activeSaveRequests - 1);
     }
 }
 
@@ -304,6 +375,42 @@ async function triggerFinale() {
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger finale:', e);
         showToast(t('plugins.webgpu-fireworks.ui.finale_trigger_failed', 'Failed to trigger finale'), 'error');
+    }
+}
+
+async function testSuperfanFinale() {
+    try {
+        const response = await fetch('/api/webgpu-fireworks/test-superfan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: 'TestSuperfan',
+                profilePictureUrl: 'https://www.gravatar.com/avatar/?d=mp&s=200',
+                settings: {
+                    superfanFinaleEnabled: document.getElementById('superfan-finale-toggle').classList.contains('active'),
+                    superfanFinaleCooldownHours: Number(document.getElementById('superfan-finale-cooldown').value),
+                    superfanFinaleIntensity: Number(document.getElementById('superfan-finale-intensity').value),
+                    superfanEndCardDuration: Math.round(Number(document.getElementById('superfan-end-card-duration').value) * 1000),
+                    superfanEndCardPosition: document.getElementById('superfan-end-card-position').value,
+                    superfanEndCardSize: document.getElementById('superfan-end-card-size').value,
+                    superfanEndCardScale: Number(document.getElementById('superfan-end-card-scale').value),
+                    goalFinaleStyle: document.getElementById('finale-style').value,
+                    goalFinaleLength: document.getElementById('finale-length').value
+                }
+            })
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.accepted) {
+            const backendReason = [payload.reason, payload.error]
+                .find(value => typeof value === 'string' && value.trim());
+            throw new Error(backendReason ? backendReason.trim().slice(0, 160) : 'Finale rejected');
+        }
+        showToast(window.i18n?.t('webgpu_fireworks.superfan_finale_test_success') || 'Superfan finale triggered!', 'success');
+    } catch (error) {
+        console.error('[Fireworks Settings] Failed to trigger Superfan finale:', error);
+        const message = window.i18n?.t('webgpu_fireworks.superfan_finale_test_failed') || 'Failed to trigger Superfan finale';
+        const detail = typeof error?.message === 'string' ? error.message.trim().slice(0, 160) : '';
+        showToast(detail ? `${message}: ${detail}` : message, 'error');
     }
 }
 
@@ -394,6 +501,24 @@ function updateUI() {
     document.getElementById('finale-intensity-value').textContent = (config.goalFinaleIntensity || 3) + 'x';
     document.getElementById('finale-style').value = config.goalFinaleStyle || 'auto';
     document.getElementById('finale-length').value = config.goalFinaleLength || 'medium';
+
+    // Superfan finale
+    updateToggle('superfan-finale-toggle', config.superfanFinaleEnabled !== false);
+    document.getElementById('superfan-finale-cooldown').value = String(config.superfanFinaleCooldownHours ?? 24);
+    document.getElementById('superfan-finale-intensity').value = config.superfanFinaleIntensity ?? 3;
+    document.getElementById('superfan-finale-intensity-value').textContent = `${config.superfanFinaleIntensity ?? 3}x`;
+    const superfanEndCardDuration = config.superfanEndCardDuration ?? 3000;
+    const superfanEndCardSize = config.superfanEndCardSize ?? 'medium';
+    const superfanEndCardScale = config.superfanEndCardScale ?? 1;
+    document.getElementById('superfan-end-card-duration').value = String(superfanEndCardDuration / 1000);
+    document.getElementById('superfan-end-card-duration-value').textContent = `${superfanEndCardDuration / 1000}s`;
+    document.getElementById('superfan-end-card-position').value = config.superfanEndCardPosition ?? 'center';
+    document.getElementById('superfan-end-card-size').value = superfanEndCardSize;
+    document.getElementById('superfan-end-card-scale').value = String(superfanEndCardScale);
+    document.getElementById('superfan-end-card-scale-value').textContent = `${superfanEndCardScale}x`;
+    document.getElementById('superfan-end-card-scale-container').style.display = superfanEndCardSize === 'custom'
+        ? 'block'
+        : 'none';
 
     // Follower fireworks
     updateToggle('follower-toggle', config.followerFireworksEnabled);
@@ -765,6 +890,7 @@ function setupEventListeners() {
     // Test buttons
     document.getElementById('test-btn').addEventListener('click', triggerTest);
     document.getElementById('test-finale-btn').addEventListener('click', triggerFinale);
+    document.getElementById('test-superfan-finale-btn')?.addEventListener('click', testSuperfanFinale);
     document.getElementById('test-follower-btn')?.addEventListener('click', testFollowerFireworks);
     document.getElementById('test-gift-btn')?.addEventListener('click', () => triggerTestShape('burst', 1.0));
     document.getElementById('test-combo-btn')?.addEventListener('click', () => triggerTestShape('burst', 3.0));
@@ -859,6 +985,27 @@ function setupEventListeners() {
     });
     document.getElementById('finale-length')?.addEventListener('change', function() {
         config.goalFinaleLength = this.value;
+    });
+    document.getElementById('superfan-finale-cooldown')?.addEventListener('change', function() {
+        config.superfanFinaleCooldownHours = Number(this.value);
+    });
+    setupRangeSlider('superfan-finale-intensity', 'superfan-finale-intensity-value', 'x', value => {
+        config.superfanFinaleIntensity = Number(value);
+    });
+    setupRangeSlider('superfan-end-card-duration', 'superfan-end-card-duration-value', 's', value => {
+        config.superfanEndCardDuration = Math.round(Number(value) * 1000);
+    });
+    document.getElementById('superfan-end-card-position')?.addEventListener('change', function() {
+        config.superfanEndCardPosition = this.value;
+    });
+    document.getElementById('superfan-end-card-size')?.addEventListener('change', function() {
+        config.superfanEndCardSize = this.value;
+        document.getElementById('superfan-end-card-scale-container').style.display = this.value === 'custom'
+            ? 'block'
+            : 'none';
+    });
+    setupRangeSlider('superfan-end-card-scale', 'superfan-end-card-scale-value', 'x', value => {
+        config.superfanEndCardScale = Number(value);
     });
 
     setupRangeSlider('follower-rocket-count', 'follower-rocket-count-value', '', (val) => {
