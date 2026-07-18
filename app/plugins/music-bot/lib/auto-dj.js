@@ -103,7 +103,9 @@ class AutoDJ {
       return null;
     }
 
-    this._setResult('selected', `Ausgewaehlt: ${track.title || 'Unbekannter Titel'}`);
+    this._setResult('selected', `Ausgewaehlt: ${track.title || 'Unbekannter Titel'}`, {
+      title: track.title || 'Unbekannter Titel'
+    });
     return {
       song: {
         ...track,
@@ -132,7 +134,9 @@ class AutoDJ {
     }
     const songId = Number(track?.catalogSongId ?? track?.songId);
     if (Number.isInteger(songId) && songId > 0) this.playedSongIds.add(songId);
-    this._setResult('playing', `Spielt: ${track?.title || 'Unbekannter Titel'}`);
+    this._setResult('playing', `Spielt: ${track?.title || 'Unbekannter Titel'}`, {
+      title: track?.title || 'Unbekannter Titel'
+    });
   }
 
   setPlaybackSeed(track) {
@@ -142,7 +146,8 @@ class AutoDJ {
   }
 
   markPlaybackFailed(error) {
-    this._setResult('error', `Wiedergabe fehlgeschlagen: ${error?.message || error || 'Unbekannter Fehler'}`);
+    const detail = error?.message || error || 'Unbekannter Fehler';
+    this._setResult('error', `Wiedergabe fehlgeschlagen: ${detail}`, { error: detail });
   }
 
   getSelectionBlocks(now = Date.now()) {
@@ -258,7 +263,7 @@ class AutoDJ {
       }
     } catch (error) {
       this.api.log?.(`[music-bot] AutoDJ selection failed: ${error.message}`, 'error');
-      this._setResult('error', `Auswahl fehlgeschlagen: ${error.message}`);
+      this._setResult('error', `Auswahl fehlgeschlagen: ${error.message}`, { error: error.message });
       return null;
     }
   }
@@ -508,6 +513,20 @@ class AutoDJ {
     if (candidate.lastPlayedAt !== null && candidate.lastPlayedAt !== undefined
       && Number(candidate.lastPlayedAt) >= cooldownStartedAt) return false;
     return this._eligibleCatalogSources(candidate, now).length > 0;
+  }
+
+  isTrackHardEligible(track, now = this.now()) {
+    if (!track || this.isBanned(track)) return false;
+    if (track.youtubeId && this.playedInSession.has(track.youtubeId)) return false;
+    const songId = Number(track.catalogSongId ?? track.songId);
+    if (!Number.isInteger(songId) || songId <= 0 || !this.catalog?.getRadioCandidates) return true;
+    const candidate = this.catalog.getRadioCandidates([songId], { now })
+      .find((entry) => Number(entry.songId) === songId);
+    if (!this._isCatalogCandidateHardEligible(candidate, now)) return false;
+    const sourceId = Number(track.sourceId);
+    if (!Number.isInteger(sourceId) || sourceId <= 0) return true;
+    return this._eligibleCatalogSources(candidate, now)
+      .some((source) => Number(source.id) === sourceId);
   }
 
   _isArtistSpaced(candidate, now) {
@@ -763,10 +782,11 @@ class AutoDJ {
     };
   }
 
-  _setResult(state, message) {
+  _setResult(state, message, params = {}) {
     this.lastResult = {
       state,
       message,
+      params,
       updatedAt: Date.now()
     };
   }

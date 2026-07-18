@@ -1,5 +1,6 @@
 const Database = require('better-sqlite3');
 const MusicCatalog = require('../plugins/music-bot/lib/music-catalog');
+const PlaylistStore = require('../plugins/music-bot/lib/playlist-store');
 
 function createCatalog(setup) {
   const db = new Database(':memory:');
@@ -98,6 +99,54 @@ describe('music-bot catalog', () => {
     db.close();
   });
 
+  it('retains one canonical song when a provider source gains reliable artist metadata', () => {
+    const { db, catalog, api } = createCatalog();
+    const playlists = new PlaylistStore(api, catalog);
+    const flatTrack = {
+      title: 'Imported Song',
+      artist: 'Unknown',
+      provider: 'youtube',
+      providerId: 'stable-provider-id',
+      trackKey: 'youtube:stable-provider-id',
+      url: 'https://www.youtube.com/watch?v=stable-provider-id'
+    };
+    const initial = catalog.resolveOrUpsert(flatTrack);
+    const playlist = playlists.create({ name: 'Stable catalog identity' });
+    playlists.addItem(playlist.id, initial.song.id, playlist.revision);
+    playlists.setRadioSources([{ playlistId: playlist.id, enabled: true, weight: 1 }]);
+    catalog.recordCompleted(flatTrack, {
+      id: 'before-enrichment',
+      duration: 100,
+      playedSeconds: 100,
+      finishedAt: 100,
+      requestedBy: 'AutoDJ'
+    });
+    catalog.setFeedback(initial.song.id, 'up');
+
+    const enriched = catalog.resolveOrUpsert({ ...flatTrack, artist: 'Actual Artist' });
+
+    expect(enriched.song.id).toBe(initial.song.id);
+    expect(enriched.source.songId).toBe(initial.song.id);
+    expect(playlists.get(playlist.id).items).toEqual([
+      expect.objectContaining({ songId: initial.song.id, title: 'Imported Song' })
+    ]);
+    expect(catalog.getRadioCandidates([initial.song.id])).toEqual([
+      expect.objectContaining({
+        songId: initial.song.id,
+        feedback: 'up',
+        sources: [expect.objectContaining({ providerId: 'stable-provider-id' })]
+      })
+    ]);
+    expect(catalog.getHistory({ limit: 10 }).items).toEqual([
+      expect.objectContaining({ id: 'before-enrichment', songId: initial.song.id, feedback: 'up' })
+    ]);
+    expect(catalog.getSongArtists(initial.song.id)).toEqual([
+      expect.objectContaining({ name: 'Actual Artist' })
+    ]);
+    expect(db.prepare('SELECT COUNT(*) AS count FROM plugin_music_bot_songs').get().count).toBe(1);
+    db.close();
+  });
+
   it('toggles feedback, shares it across history, and exposes radio scoring and artist affinity', () => {
     const { db, catalog } = createCatalog();
     const track = { title: 'Rated Song', artist: 'One & Two', provider: 'youtube', providerId: 'rating' };
@@ -112,6 +161,17 @@ describe('music-bot catalog', () => {
     expect(catalog.setFeedback(first.song.id, 'down')).toMatchObject({ state: 'down' });
     expect(catalog.getScoringInputs(first.song.id)).toMatchObject({ songFactor: 0, radioAllowed: false, requestAllowed: true });
     expect(db.prepare('SELECT COUNT(DISTINCT song_id) AS count FROM plugin_music_bot_play_events').get().count).toBe(1);
+    db.close();
+  });
+
+  it('rejects feedback for an unknown canonical song without creating an orphan row', () => {
+    const { db, catalog } = createCatalog();
+
+    expect(() => catalog.setFeedback(404, 'up')).toThrow(expect.objectContaining({
+      name: 'MusicCatalogError',
+      code: 'CATALOG_SONG_NOT_FOUND'
+    }));
+    expect(db.prepare('SELECT COUNT(*) AS count FROM plugin_music_bot_feedback').get().count).toBe(0);
     db.close();
   });
 

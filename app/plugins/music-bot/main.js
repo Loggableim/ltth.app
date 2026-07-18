@@ -1583,7 +1583,9 @@ class MusicBotPlugin extends EventEmitter {
 
   _rememberCatalogPlaybackStart(track) {
     if (!track || typeof track !== 'object') return null;
-    const playbackId = this.playbackEngine?.getSnapshot?.().activePlaybackId || null;
+    const playbackId = track.playbackId
+      || this.playbackEngine?.getSnapshot?.().activePlaybackId
+      || null;
     const startedAt = Number(track.startedAt) || Date.now();
     const start = { playbackId, startedAt };
     this._catalogPlaybackStarts.set(track, start);
@@ -1605,7 +1607,9 @@ class MusicBotPlugin extends EventEmitter {
       ? Math.min(duration, Math.max(0, rawPlayedSeconds))
       : Math.max(0, rawPlayedSeconds);
     const details = {
-      id: start.playbackId ? `playback:${start.playbackId}` : undefined,
+      id: (start.playbackId || track.playbackId)
+        ? `playback:${start.playbackId || track.playbackId}`
+        : undefined,
       startedAt,
       finishedAt,
       duration: Number.isFinite(duration) && duration > 0 ? duration : null,
@@ -1686,7 +1690,8 @@ class MusicBotPlugin extends EventEmitter {
         this.api.emit('musicbot:history-update', { songId, feedback });
         res.json({ success: true, feedback });
       } catch (error) {
-        res.status(400).json({ success: false, error: error.message });
+        const status = error?.code === 'CATALOG_SONG_NOT_FOUND' ? 404 : 400;
+        res.status(status).json({ success: false, error: error.message, code: error?.code });
       }
     });
 
@@ -3530,14 +3535,15 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   _buildNowPlayingPayload(track = this.playbackEngine.getNowPlaying()) {
-    const playbackId = this._buildRuntimeSnapshot().activePlaybackId;
+    const playbackId = track?.playbackId || this._buildRuntimeSnapshot().activePlaybackId;
     return track ? { ...track, playbackId } : null;
   }
 
   _emitPlaybackAdvancing(reason) {
     this.api.emit('musicbot:playback-advancing', {
       reason: reason || 'track-end',
-      message: 'Lädt den nächsten Titel …'
+      message: 'Lädt den nächsten Titel …',
+      messageKey: 'playbackAdvancing'
     });
   }
 
@@ -4271,6 +4277,14 @@ class MusicBotPlugin extends EventEmitter {
         'warn'
       );
       this._invalidateRadioPrefetch('prefetch-banned');
+      return null;
+    }
+    if (this.autoDJ?.isTrackHardEligible?.(prepared) === false) {
+      this.api.log(
+        `[music-bot] AutoDJ rejected prefetched track "${prepared.title || prepared.id}": eligibility changed`,
+        'warn'
+      );
+      this._invalidateRadioPrefetch('prefetch-ineligible');
       return null;
     }
     this._radioPrefetch = null;

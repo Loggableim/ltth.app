@@ -5,6 +5,25 @@ const MusicBotPlugin = require('../plugins/music-bot/main');
 const MusicResolver = require('../plugins/music-bot/lib/music-resolver');
 const PlaybackEngine = require('../plugins/music-bot/lib/playback-engine');
 const PlaybackController = require('../plugins/music-bot/lib/playback-controller');
+const productionI18n = require('../modules/i18n');
+
+const productionCatalogs = Object.fromEntries(
+  ['en', 'es', 'fr'].map((locale) => [locale, productionI18n.getAllTranslations(locale)])
+);
+
+function installProductionI18nClient(window, locale, translations) {
+  const source = fs.readFileSync(path.join(__dirname, '../public/js/i18n-client.js'), 'utf8');
+  const cutoff = source.indexOf('// Create global instance');
+  window.eval(`${cutoff >= 0 ? source.slice(0, cutoff) : source}\nwindow.__MusicBotI18nClient = I18nClient;`);
+  const client = new window.__MusicBotI18nClient();
+  client.initialized = true;
+  client.currentLocale = locale;
+  client.defaultLocale = locale;
+  client.translations = translations[locale]?.plugins
+    ? translations
+    : { [locale]: translations };
+  window.i18n = client;
+}
 
 const windowsTest = process.platform === 'win32' ? test : test.skip;
 
@@ -71,6 +90,7 @@ function bootMusicBotUi(options = {}) {
   const radioSourcesPayload = options.radioSourcesPayload || [];
   const catalogPayload = options.catalogPayload || [];
   const translations = options.translations;
+  const productionLocale = options.productionLocale;
   const socketHandlers = {};
   const html = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/ui.html'), 'utf8');
   const js = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/assets/ui.js'), 'utf8');
@@ -154,7 +174,9 @@ function bootMusicBotUi(options = {}) {
       window.fetch = fetchMock;
       window.open = jest.fn();
       window.navigator.clipboard = { writeText: jest.fn(async () => {}) };
-      if (translations) {
+      if (productionLocale && translations) {
+        installProductionI18nClient(window, productionLocale, translations);
+      } else if (translations) {
         window.i18n = { t: (key, params = {}) => {
           const value = key.replace('plugins.music-bot.', '').split('.').reduce((current, part) => current?.[part], translations);
           return typeof value === 'string' ? value.replace(/\{(\w+)\}/g, (_match, name) => params[name] ?? `{${name}}`) : key;
@@ -162,7 +184,9 @@ function bootMusicBotUi(options = {}) {
       }
     }
   });
-  if (translations) {
+  if (productionLocale && translations) {
+    dom.window.i18n.updateDOM();
+  } else if (translations) {
     const lookup = (key) => key.split('.').reduce((value, part) => value?.[part], translations);
     dom.window.document.querySelectorAll('[data-i18n]').forEach((element) => {
       const value = lookup(element.dataset.i18n);
@@ -1195,6 +1219,109 @@ describe('Music Bot runtime and UI regressions', () => {
     socketHandlers['musicbot:runtime']({ activePlaybackId: 'seek-1', transportState: 'playing', safetyLock: false });
     socketHandlers['musicbot:playback-sync']({ playbackId: 'seek-1', position: 20, duration: 120, state: 'playing' });
     expect(dom.window.document.getElementById('np-seek-input').getAttribute('aria-valuetext')).toBe(catalog.seekAria.replace('{current}', '0:20').replace('{duration}', '2:00'));
+  });
+
+  test('localizes normal, empty, error and runtime surfaces with the production merged catalogs', async () => {
+    const { dom, socketHandlers } = bootMusicBotUi({
+      translations: productionCatalogs,
+      productionLocale: 'en',
+      autoDjStatus: {
+        enabled: true,
+        mode: 'mix',
+        lastResult: { state: 'selected', message: 'Ausgewaehlt: Runtime Song', params: { title: 'Runtime Song' } }
+      }
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    for (const locale of ['en', 'es', 'fr']) {
+      const runtime = productionCatalogs[locale].plugins['music-bot'].music_bot.ui.controls.runtime;
+      dom.window.i18n.currentLocale = locale;
+      dom.window.i18n.defaultLocale = locale;
+      dom.window.i18n.updateDOM();
+      dom.window.document.getElementById('auto-dj-save').click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      dom.window.document.getElementById('musicbot-toast-container').replaceChildren();
+
+      socketHandlers['musicbot:now-playing'](null);
+      socketHandlers['musicbot:queue-update']({ queue: [], length: 0 });
+      socketHandlers.connect_error();
+      socketHandlers['musicbot:error']({});
+      socketHandlers['musicbot:paused']();
+      socketHandlers['musicbot:resumed']();
+      socketHandlers['musicbot:playback-advancing']({
+        message: 'Lädt den nächsten Titel …',
+        messageKey: 'playbackAdvancing'
+      });
+      socketHandlers['musicbot:resolver']({ progress: { state: 'validating' } });
+      socketHandlers['musicbot:health']({
+        mpvAvailable: false,
+        controllerHealthy: true,
+        cache: { bytes: 0, files: 2 },
+        lastError: null,
+        players: {}
+      });
+
+      expect(dom.window.document.getElementById('now-playing').textContent).toContain(runtime.nowPlayingEmpty);
+      expect(dom.window.document.getElementById('queue-list').textContent).toContain(runtime.queueEmptyTitle);
+      expect(dom.window.document.getElementById('playback-state').textContent).toBe(runtime.playbackAdvancing);
+      expect(dom.window.document.getElementById('skip-btn').textContent).toBe(runtime.loading);
+      expect(dom.window.document.getElementById('search-feedback').textContent).toBe(runtime.resolverValidating);
+      expect(dom.window.document.getElementById('health-mpv').textContent).toBe(runtime.unavailable);
+      expect(dom.window.document.getElementById('health-cache').textContent).toContain(runtime.files.replace('{count}', '2'));
+      expect(dom.window.document.getElementById('health-last-error').textContent).toBe(runtime.none);
+      expect(dom.window.document.getElementById('auto-dj-status').textContent).toBe(runtime.autoDjActive);
+      expect(dom.window.document.getElementById('auto-dj-detail').textContent).toContain(
+        runtime.autoDjSelected.replace('{title}', 'Runtime Song')
+      );
+      expect(dom.window.document.getElementById('musicbot-toast-container').textContent).toContain(runtime.networkTitle);
+      expect(dom.window.document.getElementById('musicbot-toast-container').textContent).toContain(runtime.unknownError);
+
+      const dynamicSurface = [
+        'now-playing', 'queue-list', 'playback-state', 'skip-btn', 'search-feedback',
+        'health-mpv', 'health-cache', 'health-last-error', 'auto-dj-status', 'auto-dj-detail',
+        'musicbot-toast-container'
+      ].map((id) => dom.window.document.getElementById(id)?.textContent || '').join(' ');
+      expect(dynamicSurface).not.toMatch(/Aktuell|Warteschlange|Lädt|Pausiert|Wiedergabe|Netzwerk|Verbindung|nicht verfügbar|Dateien|Keiner|Ausgewaehlt/i);
+    }
+  });
+
+  test('ships correct Spanish and French catalog/runtime orthography', () => {
+    const es = JSON.parse(fs.readFileSync(path.join(__dirname, '../plugins/music-bot/locales/es.json'), 'utf8')).music_bot.ui;
+    const fr = JSON.parse(fs.readFileSync(path.join(__dirname, '../plugins/music-bot/locales/fr.json'), 'utf8')).music_bot.ui;
+
+    expect(es.catalog).toMatchObject({
+      seek: 'Posición de reproducción',
+      historyMore: 'Cargar más',
+      catalogSearch: 'Buscar títulos',
+      catalogTab: 'Catálogo',
+      catalogDescription: 'Busca, valora y añade canciones históricas a listas.',
+      importCompleted: 'Importación completada',
+      importError: 'Error de importación: {error}',
+      playlistConflict: 'La lista cambió en otro lugar. Actualizando la vista.'
+    });
+    expect(es.controls.runtime).toMatchObject({
+      seekUnavailable: 'No se puede avanzar esta reproducción ahora.',
+      seekFailed: 'No se pudo cambiar la posición.',
+      playlistConflict: 'La lista se actualizó. Inténtalo de nuevo.'
+    });
+    expect(fr.catalog).toMatchObject({
+      playlistsDescription: 'Gérez vos sources et la radio des spectateurs.',
+      ordered: 'Dans l’ordre',
+      shuffle: 'Aléatoire',
+      create: 'Créer',
+      radioDescription: 'Activez plusieurs listes et mélangez-les avec des poids de 1 à 10.',
+      historyEmpty: 'Pas encore d’historique.',
+      voteUp: 'J’aime',
+      addToPlaylist: 'Ajouter à la liste',
+      importCompleted: 'Import terminé',
+      importError: 'Erreur d’import : {error}',
+      networkTitle: 'Réseau'
+    });
+    expect(fr.controls.runtime).toMatchObject({
+      seekUnavailable: 'Cette lecture ne peut pas être déplacée maintenant.',
+      playlistConflict: 'La playlist a été mise à jour. Réessayez.'
+    });
   });
 
   test.each(['en', 'es', 'fr'])('renders generic POST failures once in %s', async (locale) => {

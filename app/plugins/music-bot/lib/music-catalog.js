@@ -9,6 +9,14 @@ const UNRELIABLE_ARTISTS = new Set(['', 'unknown', 'unknown artist', 'various ar
 const VERSION_QUALIFIER = '(?:live|remix|acoustic|instrumental|cover|karaoke|sped\\s*up|slowed|nightcore|reverb)';
 const NORMAL_UPLOAD_MARKERS = /(?:\s*[-–—]?\s*|\s*[\[(])(?:official\s*(?:music\s*)?(?:video|audio)|lyrics?|lyric\s*video)(?:\s*[\])])?/gi;
 
+class MusicCatalogError extends Error {
+  constructor(code, message) {
+    super(message);
+    this.name = 'MusicCatalogError';
+    this.code = code;
+  }
+}
+
 class MusicCatalog {
   constructor(api) {
     this.api = api;
@@ -92,6 +100,8 @@ class MusicCatalog {
   setFeedback(songId, requestedState) {
     const state = this._feedbackState(requestedState);
     return this._withTransaction(() => {
+      const song = this.db.prepare('SELECT id FROM plugin_music_bot_songs WHERE id = ?').get(songId);
+      if (!song) throw new MusicCatalogError('CATALOG_SONG_NOT_FOUND', 'Catalog song not found');
       const previous = this.db.prepare(
         'SELECT state FROM plugin_music_bot_feedback WHERE song_id = ?'
       ).get(songId);
@@ -302,8 +312,34 @@ class MusicCatalog {
       ? `meta:${artists.map((artist) => artist.normalized).join('|')}:${normalizedTitle}`
       : `provider:${identity.provider}:${identity.providerId}`;
     let song = this.db.prepare(
-      'SELECT id, canonical_key AS canonicalKey, title, normalized_title AS normalizedTitle FROM plugin_music_bot_songs WHERE canonical_key = ?'
-    ).get(canonicalKey);
+      `SELECT songs.id, songs.canonical_key AS canonicalKey, songs.title,
+       songs.normalized_title AS normalizedTitle, songs.artist_reliable AS artistReliable
+       FROM plugin_music_bot_sources sources
+       JOIN plugin_music_bot_songs songs ON songs.id = sources.song_id
+       WHERE sources.provider = ? AND sources.provider_id = ?`
+    ).get(identity.provider, identity.providerId);
+    if (song && reliableArtist && !song.artistReliable) {
+      const canonicalOwner = this.db.prepare(
+        'SELECT id FROM plugin_music_bot_songs WHERE canonical_key = ?'
+      ).get(canonicalKey);
+      const enrichedCanonicalKey = !canonicalOwner || Number(canonicalOwner.id) === Number(song.id)
+        ? canonicalKey
+        : song.canonicalKey;
+      this.db.prepare(
+        `UPDATE plugin_music_bot_songs SET canonical_key = ?, title = ?, normalized_title = ?, artist_reliable = 1
+         WHERE id = ?`
+      ).run(enrichedCanonicalKey, title, normalizedTitle, song.id);
+      song = this.db.prepare(
+        `SELECT id, canonical_key AS canonicalKey, title, normalized_title AS normalizedTitle,
+         artist_reliable AS artistReliable FROM plugin_music_bot_songs WHERE id = ?`
+      ).get(song.id);
+    }
+    if (!song) {
+      song = this.db.prepare(
+        `SELECT id, canonical_key AS canonicalKey, title, normalized_title AS normalizedTitle,
+         artist_reliable AS artistReliable FROM plugin_music_bot_songs WHERE canonical_key = ?`
+      ).get(canonicalKey);
+    }
     if (!song) {
       const info = this.db.prepare(
         `INSERT INTO plugin_music_bot_songs (canonical_key, title, normalized_title, artist_reliable, created_at)
@@ -332,9 +368,9 @@ class MusicCatalog {
       source = this.db.prepare('SELECT * FROM plugin_music_bot_sources WHERE id = ?').get(info.lastInsertRowid);
     } else {
       this.db.prepare(
-        `UPDATE plugin_music_bot_sources SET song_id = ?, track_key = ?, url = COALESCE(?, url),
+        `UPDATE plugin_music_bot_sources SET track_key = ?, url = COALESCE(?, url),
          channel_id = COALESCE(?, channel_id), channel_name = COALESCE(?, channel_name) WHERE id = ?`
-      ).run(songId, identity.trackKey, track.url || null, track.channelId || null, track.channelName || null, source.id);
+      ).run(identity.trackKey, track.url || null, track.channelId || null, track.channelName || null, source.id);
       source = this.db.prepare('SELECT * FROM plugin_music_bot_sources WHERE id = ?').get(source.id);
     }
     return this._mapSource(source);

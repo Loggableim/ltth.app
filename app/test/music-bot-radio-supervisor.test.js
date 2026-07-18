@@ -1,6 +1,8 @@
 const AutoDJ = require('../plugins/music-bot/lib/auto-dj');
 const PlaybackController = require('../plugins/music-bot/lib/playback-controller');
 const PlaybackEngine = require('../plugins/music-bot/lib/playback-engine');
+const Database = require('better-sqlite3');
+const MusicCatalog = require('../plugins/music-bot/lib/music-catalog');
 
 let RadioSupervisor = null;
 try {
@@ -1201,6 +1203,58 @@ describe('music-bot supervisor diagnostics compatibility', () => {
 
     expect(plugin._radioPrefetch).toBeNull();
     expect(plugin._radioPrefetchGeneration).toBe(8);
+  });
+
+  test('rejects a prefetched radio song that is downvoted before consumption', async () => {
+    const { plugin } = createPlugin();
+    const db = new Database(':memory:');
+    const catalogApi = { getDatabase: () => db, log: jest.fn() };
+    const catalog = new MusicCatalog(catalogApi);
+    const resolved = catalog.resolveOrUpsert({
+      title: 'Late downvote',
+      artist: 'Catalog Artist',
+      provider: 'youtube',
+      providerId: 'late-downvote',
+      youtubeId: 'late-downvote',
+      url: 'https://www.youtube.com/watch?v=late-downvote'
+    });
+    const prepared = {
+      id: 'prefetched-downvote',
+      title: 'Late downvote',
+      artist: 'Catalog Artist',
+      requestedBy: 'AutoDJ',
+      catalogSongId: resolved.song.id,
+      sourceId: resolved.source.id,
+      provider: 'youtube',
+      providerId: 'late-downvote',
+      youtubeId: 'late-downvote',
+      streamUrl: 'late-downvote.mp3'
+    };
+    plugin.autoDJ = new AutoDJ(
+      { enabled: true, mode: 'mix', repeatCooldownHours: 12 },
+      {},
+      db,
+      catalogApi,
+      { catalog, now: () => 10_000_000, isBanned: () => false }
+    );
+    plugin.queueManager = { getQueue: jest.fn(() => []) };
+    plugin.playbackEngine = { getNowPlaying: jest.fn(() => ({ id: 'outgoing-radio' })) };
+    plugin._checkBans = jest.fn(() => null);
+    plugin._radioPrefetchGeneration = 7;
+    plugin._radioPrefetch = {
+      generation: 7,
+      trackId: 'outgoing-radio',
+      prepared,
+      announce: false,
+      promise: Promise.resolve(prepared)
+    };
+    catalog.setFeedback(resolved.song.id, 'down');
+
+    await expect(plugin._consumeRadioPrefetch(null, () => true)).resolves.toBeNull();
+
+    expect(plugin._radioPrefetch).toBeNull();
+    expect(plugin._radioPrefetchGeneration).toBe(8);
+    db.close();
   });
 
   test('lets a viewer win when it enters after prefetch consume but before radio play', async () => {

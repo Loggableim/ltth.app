@@ -4,6 +4,7 @@ const MusicBotPlugin = require('../plugins/music-bot/main');
 const MusicCatalog = require('../plugins/music-bot/lib/music-catalog');
 const PlaylistStore = require('../plugins/music-bot/lib/playlist-store');
 const PlaybackEngine = require('../plugins/music-bot/lib/playback-engine');
+const PlaybackController = require('../plugins/music-bot/lib/playback-controller');
 const BanList = require('../plugins/music-bot/lib/ban-list');
 
 function createApi(db = new Database(':memory:')) {
@@ -85,6 +86,116 @@ function createPlaybackHarness() {
       engine.emit('track-end', { track, reason, ...extra });
     }
   };
+}
+
+class IntegratedPlaybackEngine extends EventEmitter {
+  constructor() {
+    super();
+    this.nowPlaying = null;
+    this.state = 'idle';
+    this.position = 0;
+  }
+
+  async play(track) {
+    this.position = 0;
+    this.nowPlaying = { ...track, startedAt: Date.now() };
+    this.state = 'playing';
+    this.emit('track-start', this.nowPlaying);
+    return this.nowPlaying;
+  }
+
+  async setVolume() {}
+
+  async shutdown() {
+    this.nowPlaying = null;
+    this.state = 'idle';
+  }
+
+  async seek(position) {
+    this.position = Number(position);
+    if (this.nowPlaying) this.nowPlaying.startedAt = Date.now() - (this.position * 1000);
+    return {
+      track: this.nowPlaying,
+      position: this.position,
+      duration: this.nowPlaying?.duration,
+      seekable: true,
+      state: this.state
+    };
+  }
+
+  async getPosition() {
+    return this.position;
+  }
+
+  async pause() {
+    this.state = 'paused';
+    this.emit('paused');
+  }
+
+  async resume() {
+    this.state = 'playing';
+    this.emit('resumed');
+  }
+
+  async skip() {
+    const track = this.nowPlaying;
+    this.nowPlaying = null;
+    this.state = 'idle';
+    if (track) this.emit('track-end', { track, reason: 'skip' });
+  }
+
+  finish(reason = 'ended') {
+    const track = this.nowPlaying;
+    this.nowPlaying = null;
+    this.state = 'idle';
+    if (track) this.emit('track-end', { track, reason });
+  }
+
+  getNowPlaying() {
+    return this.nowPlaying;
+  }
+
+  getState() {
+    return this.state;
+  }
+
+  isPlaying() {
+    return this.state === 'playing';
+  }
+}
+
+function createIntegratedControllerHarness({ crossfadeDuration = 0 } = {}) {
+  const api = createApi();
+  const plugin = new MusicBotPlugin(api);
+  const engines = [];
+  const controller = new PlaybackController({ defaultVolume: 50, crossfadeDuration }, api, {
+    engineFactory: () => {
+      const engine = new IntegratedPlaybackEngine();
+      engines.push(engine);
+      return engine;
+    }
+  });
+  plugin.playbackEngine = controller;
+  plugin.musicCatalog = new MusicCatalog(api);
+  plugin.playlistStore = new PlaylistStore(api, plugin.musicCatalog);
+  plugin.queueManager = {
+    addToHistory: jest.fn(), markPlaying: jest.fn(), removeSkipImmunity: jest.fn(),
+    resetVoteSkips: jest.fn(), getQueue: jest.fn(() => []), getHistory: jest.fn(() => [])
+  };
+  plugin.autoDJ = { setPlaybackSeed: jest.fn(), markPlaybackFailed: jest.fn() };
+  plugin._emitQueue = jest.fn();
+  plugin._startPlaybackSync = jest.fn();
+  plugin._stopPlaybackSync = jest.fn();
+  plugin._scheduleCrossfadeTransition = jest.fn();
+  plugin._schedulePreCache = jest.fn();
+  plugin._clearCrossfadeTimer = jest.fn();
+  plugin._emitPlaybackStopped = jest.fn();
+  plugin._emitPlaybackAdvancing = jest.fn();
+  plugin._emitRuntimeHealth = jest.fn();
+  plugin._emitError = jest.fn();
+  plugin._playNextFromQueue = jest.fn(async () => ({ success: false }));
+  plugin._registerPlaybackEvents();
+  return { api, plugin, controller, engines };
 }
 
 describe('music-bot combined catalog playback acceptance', () => {
@@ -344,6 +455,16 @@ describe('music-bot combined catalog playback acceptance', () => {
     });
     expect(plugin._checkBans(track, 'alice')).toBeNull();
 
+    const missingVoteResponse = createResponse();
+    await vote({ params: { songId: '999999' }, body: { state: 'up' } }, missingVoteResponse);
+    expect(missingVoteResponse.status).toHaveBeenCalledWith(404);
+    expect(missingVoteResponse.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'Catalog song not found',
+      code: 'CATALOG_SONG_NOT_FOUND'
+    });
+    expect(api.emit).toHaveBeenCalledTimes(1);
+
     const history = api.routes.get('get:/api/plugins/music-bot/history');
     const firstPage = createResponse();
     await history({ query: { limit: 1, offset: 0 } }, firstPage);
@@ -390,6 +511,88 @@ describe('music-bot combined catalog playback acceptance', () => {
     expect(history.items[0]).toMatchObject({ id: 'playback:load-playback-99', outcome: 'completed' });
     expect(history.items[99]).toMatchObject({ id: 'playback:load-playback-0', outcome: 'completed' });
     expect(harness.plugin.playlistStore.getViewerRadio().items).toEqual([]);
+    harness.api.db.close();
+    jest.useRealTimers();
+  });
+
+  test('keeps incoming crossfade identity atomic from controller through UI and catalog', async () => {
+    const harness = createIntegratedControllerHarness({ crossfadeDuration: 1 });
+    const first = {
+      id: 'crossfade-a', title: 'Crossfade A', artist: 'Artist A', requestedBy: 'alice',
+      provider: 'youtube', providerId: 'crossfade-a', url: 'https://youtu.be/crossfade-a', duration: 100
+    };
+    const second = {
+      id: 'crossfade-b', title: 'Crossfade B', artist: 'Artist B', requestedBy: 'AutoDJ',
+      provider: 'youtube', providerId: 'crossfade-b', url: 'https://youtu.be/crossfade-b', duration: 100
+    };
+
+    await harness.controller.play(first);
+    const firstPlaybackId = harness.controller.getSnapshot().activePlaybackId;
+    await harness.controller.play(second);
+    const secondPlaybackId = harness.controller.getSnapshot().activePlaybackId;
+
+    expect(secondPlaybackId).not.toBe(firstPlaybackId);
+    expect(harness.api.emit).toHaveBeenCalledWith('musicbot:now-playing', expect.objectContaining({
+      id: 'crossfade-b', playbackId: secondPlaybackId
+    }));
+    await expect(harness.controller.seek(80, { playbackId: secondPlaybackId })).resolves.toMatchObject({
+      playbackId: secondPlaybackId, position: 80
+    });
+    harness.engines[1].finish('ended');
+
+    expect(harness.plugin.musicCatalog.getHistory({ limit: 10 }).items).toEqual([
+      expect.objectContaining({ id: `playback:${secondPlaybackId}`, providerId: 'crossfade-b' }),
+      expect.objectContaining({ id: `playback:${firstPlaybackId}`, providerId: 'crossfade-a' })
+    ]);
+    await harness.controller.shutdown();
+    harness.api.db.close();
+  });
+
+  test.each([
+    ['forward seek', [80], 80, 'skipped'],
+    ['backward seek', [80, 20], 20, 'early_skip']
+  ])('records authoritative played seconds after %s', async (_label, positions, expectedPosition, outcome) => {
+    jest.useFakeTimers({ now: 2_000_000 });
+    const harness = createIntegratedControllerHarness();
+    const track = {
+      id: 'seek-terminal', title: 'Seek terminal', artist: 'Artist', requestedBy: 'alice',
+      provider: 'youtube', providerId: `seek-${expectedPosition}`, url: `https://youtu.be/seek-${expectedPosition}`,
+      duration: 100
+    };
+    await harness.controller.play(track);
+    const playbackId = harness.controller.getSnapshot().activePlaybackId;
+    for (const position of positions) {
+      await harness.controller.seek(position, { playbackId });
+    }
+    await harness.controller.skip();
+
+    expect(harness.plugin.musicCatalog.getHistory({ limit: 1 }).items[0]).toMatchObject({
+      id: `playback:${playbackId}`, playedSeconds: expectedPosition, outcome
+    });
+    await harness.controller.shutdown();
+    harness.api.db.close();
+    jest.useRealTimers();
+  });
+
+  test('does not count wall-clock time spent paused as played seconds', async () => {
+    jest.useFakeTimers({ now: 3_000_000 });
+    const harness = createIntegratedControllerHarness();
+    const track = {
+      id: 'paused-terminal', title: 'Paused terminal', artist: 'Artist', requestedBy: 'alice',
+      provider: 'youtube', providerId: 'paused-terminal', url: 'https://youtu.be/paused-terminal',
+      duration: 100
+    };
+    await harness.controller.play(track);
+    const playbackId = harness.controller.getSnapshot().activePlaybackId;
+    await harness.controller.seek(40, { playbackId });
+    await harness.controller.pause();
+    jest.setSystemTime(3_060_000);
+    await harness.controller.skip();
+
+    expect(harness.plugin.musicCatalog.getHistory({ limit: 1 }).items[0]).toMatchObject({
+      id: `playback:${playbackId}`, playedSeconds: 40, outcome: 'early_skip'
+    });
+    await harness.controller.shutdown();
     harness.api.db.close();
     jest.useRealTimers();
   });
