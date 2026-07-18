@@ -7,6 +7,7 @@ class RadioSupervisor {
     }
     this.advance = options.advance;
     this.isPlaying = typeof options.isPlaying === 'function' ? options.isPlaying : () => false;
+    this.isOccupied = typeof options.isOccupied === 'function' ? options.isOccupied : this.isPlaying;
     this.onStateChange = typeof options.onStateChange === 'function' ? options.onStateChange : () => {};
     const timing = options.timing || {};
     this.timing = {
@@ -18,6 +19,7 @@ class RadioSupervisor {
     };
     this.watchdogIntervalMs = Math.max(250, Number(options.watchdogIntervalMs) || 1000);
     this.enabled = false;
+    this.armed = false;
     this.locked = false;
     this.destroyed = false;
     this.generation = 0;
@@ -35,10 +37,11 @@ class RadioSupervisor {
   setEnabled(enabled, { wake = true } = {}) {
     const next = Boolean(enabled);
     if (this.enabled === next && !this.destroyed) {
-      if (next && !this.locked) this._ensureWatchdog();
+      if (next && !this.locked && this.armed) this._ensureWatchdog();
       return wake && next && !this.locked ? this.wake('enabled') : null;
     }
     this.enabled = next;
+    this.armed = next && !this.locked;
     this.generation += 1;
     this._cancelScheduledWork();
     if (next && !this.locked && !this.destroyed) {
@@ -54,10 +57,11 @@ class RadioSupervisor {
     const next = Boolean(locked);
     if (this.locked === next || this.destroyed) return null;
     this.locked = next;
+    if (next) this.armed = false;
     this.generation += 1;
     this._cancelScheduledWork();
     if (!next && this.enabled) {
-      this._ensureWatchdog();
+      if (this.armed) this._ensureWatchdog();
       this._notify();
       return wake ? this.wake('unlocked') : null;
     }
@@ -67,7 +71,11 @@ class RadioSupervisor {
 
   wake(reason = 'unknown', payload = {}) {
     this.lastWakeReason = String(reason || 'unknown');
-    if (!this._wantsPlayback()) {
+    if (this.enabled && !this.locked && !this.destroyed && !['retry', 'watchdog', 'unlocked'].includes(this.lastWakeReason)) {
+      this.armed = true;
+      this._ensureWatchdog();
+    }
+    if (!this._canAdvance() || (['retry', 'watchdog', 'unlocked'].includes(this.lastWakeReason) && !this._wantsPlayback())) {
       this._notify();
       return Promise.resolve({ success: false, inactive: true });
     }
@@ -85,7 +93,7 @@ class RadioSupervisor {
       generation,
       reason: this.lastWakeReason,
       payload,
-      isCurrent: () => this._wantsPlayback() && generation === this.generation,
+      isCurrent: () => this._canAdvance() && generation === this.generation,
       resetPlayerOnce: async (reset) => {
         if (resetPerformed || typeof reset !== 'function') return false;
         resetPerformed = true;
@@ -106,14 +114,14 @@ class RadioSupervisor {
           this._resetBackoff();
         } else {
           this.failureClass = normalized.failureClass || 'unknown';
-          this._scheduleRetry(generation);
+          if (this._wantsPlayback()) this._scheduleRetry(generation);
         }
         this._notify();
         return normalized;
       }, (error) => {
         if (context.isCurrent()) {
           this.failureClass = error?.failureClass || error?.code || 'unexpected';
-          this._scheduleRetry(generation);
+          if (this._wantsPlayback()) this._scheduleRetry(generation);
           this._notify();
         }
         return {
@@ -133,6 +141,7 @@ class RadioSupervisor {
   getSnapshot() {
     return {
       desiredPlayback: this._wantsPlayback(),
+      armed: this.armed,
       generation: this.generation,
       advanceId: this.advanceId,
       retryAt: this.retryAt,
@@ -146,13 +155,18 @@ class RadioSupervisor {
     if (this.destroyed) return;
     this.destroyed = true;
     this.enabled = false;
+    this.armed = false;
     this.generation += 1;
     this._cancelScheduledWork();
     this._notify();
   }
 
   _wantsPlayback() {
-    return this.enabled && !this.locked && !this.destroyed;
+    return this.enabled && this.armed && this._canAdvance();
+  }
+
+  _canAdvance() {
+    return !this.locked && !this.destroyed;
   }
 
   _scheduleRetry(generation) {
@@ -178,7 +192,7 @@ class RadioSupervisor {
     if (this._watchdogTimer || !this._wantsPlayback()) return;
     const timer = this.timing.setInterval(() => {
       if (!this._wantsPlayback()) return;
-      if (this._advanceOperation || this._retryTimer || this.isPlaying()) return;
+      if (this._advanceOperation || this._retryTimer || this.isOccupied()) return;
       this.wake('watchdog').catch(() => {});
     }, this.watchdogIntervalMs);
     timer?.unref?.();

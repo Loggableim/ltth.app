@@ -1010,7 +1010,7 @@ describe('Music Bot playback engine lifecycle hardening', () => {
     expect(engine.play).not.toHaveBeenCalled();
   });
 
-  test('recovers exactly once on failure two and safety-locks on failure three within 60 seconds', async () => {
+  test('reports failure two without replaying the retained track and safety-locks on failure three', async () => {
     let now = 1000;
     const engine = new PlaybackEngine(
       { defaultVolume: 50 },
@@ -1018,7 +1018,9 @@ describe('Music Bot playback engine lifecycle hardening', () => {
       { timing: { now: () => now } }
     );
     const heartbeatLock = jest.fn();
+    const confirmedFailure = jest.fn();
     engine.on('heartbeat-lock', heartbeatLock);
+    engine.on('heartbeat-failure-confirmed', confirmedFailure);
     const track = { id: 'active', title: 'Active', url: 'active.mp3' };
     engine.process = { exitCode: null, pid: 100 };
     engine.socket = { destroyed: false, destroy: jest.fn() };
@@ -1036,15 +1038,17 @@ describe('Music Bot playback engine lifecycle hardening', () => {
     }));
     now += 1000;
     await expect(engine.heartbeat()).resolves.toEqual(expect.objectContaining({
-      action: 'recovered',
+      ok: false,
+      action: 'confirmed',
       failures: 2
     }));
     now += 1000;
     await expect(engine.heartbeat()).rejects.toThrow('heartbeat safety lock');
 
-    expect(engine.restart).toHaveBeenCalledTimes(1);
-    expect(engine.play).toHaveBeenCalledTimes(1);
-    expect(engine.play).toHaveBeenCalledWith(track);
+    expect(engine.restart).not.toHaveBeenCalled();
+    expect(engine.play).not.toHaveBeenCalled();
+    expect(confirmedFailure).toHaveBeenCalledTimes(1);
+    expect(confirmedFailure).toHaveBeenCalledWith(expect.objectContaining({ track, failures: 2 }));
     expect(heartbeatLock).toHaveBeenCalledTimes(1);
     expect(heartbeatLock).toHaveBeenCalledWith(expect.objectContaining({
       reason: 'heartbeat-lock',
@@ -1072,14 +1076,14 @@ describe('Music Bot playback engine lifecycle hardening', () => {
 
     await expect(engine.heartbeat()).resolves.toMatchObject({ action: 'counted', failures: 1 });
     now = 59000;
-    await expect(engine.heartbeat()).resolves.toMatchObject({ action: 'recovered', failures: 2 });
+    await expect(engine.heartbeat()).resolves.toMatchObject({ action: 'confirmed', failures: 2 });
     now = 61000;
     await expect(engine.heartbeat()).rejects.toMatchObject({
       code: 'MPV_HEARTBEAT_SAFETY_LOCK'
     });
   });
 
-  test('keeps heartbeat recovery state across controller slot generations', async () => {
+  test('forwards confirmed heartbeat failure across controller slot generations without engine replay', async () => {
     let nextPid = 100;
     const engines = [];
     const controller = new PlaybackController(
@@ -1114,13 +1118,19 @@ describe('Music Bot playback engine lifecycle hardening', () => {
         }
       }
     );
+    const confirmedFailure = jest.fn();
+    controller.on('heartbeat-failure-confirmed', confirmedFailure);
 
     await controller.play({ id: 'one', title: 'One', url: 'one.mp3' });
     await expect(controller.heartbeat()).resolves.toMatchObject({ action: 'counted', failures: 1 });
 
     await controller.play({ id: 'two', title: 'Two', url: 'two.mp3' });
-    await expect(controller.heartbeat()).resolves.toMatchObject({ action: 'recovered', failures: 2 });
-    expect(engines[1].restart).toHaveBeenCalledTimes(1);
+    await expect(controller.heartbeat()).resolves.toMatchObject({ action: 'confirmed', failures: 2 });
+    expect(engines[1].restart).not.toHaveBeenCalled();
+    expect(confirmedFailure).toHaveBeenCalledWith(expect.objectContaining({
+      track: expect.objectContaining({ id: 'two' }),
+      failures: 2
+    }));
 
     await controller.play({ id: 'three', title: 'Three', url: 'three.mp3' });
     await expect(controller.heartbeat()).rejects.toMatchObject({

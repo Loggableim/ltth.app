@@ -249,7 +249,7 @@ class AutoDJ {
         case 'random':
           return this._pickRelatedToLastPlaylistTrack();
         case 'mix':
-          return this.catalog && this.playlistStore
+          return this.catalog && this.playlistStore && this._hasConfiguredCatalogRadioSources()
             ? this._pickFromCatalogRadio()
             : this._pickFromMix();
         case 'history':
@@ -361,6 +361,11 @@ class AutoDJ {
     const familiar = this._pickCatalogFamiliar();
     if (familiar) this.selectionSource = 'familiar-fallback';
     return familiar;
+  }
+
+  _hasConfiguredCatalogRadioSources() {
+    const sources = this.playlistStore?.getRadioSources?.() || [];
+    return sources.some((source) => source?.enabled);
   }
 
   _loadCatalogPool() {
@@ -502,12 +507,7 @@ class AutoDJ {
     const cooldownStartedAt = now - this._getRepeatCooldownMs();
     if (candidate.lastPlayedAt !== null && candidate.lastPlayedAt !== undefined
       && Number(candidate.lastPlayedAt) >= cooldownStartedAt) return false;
-    const sources = (candidate.sources || []).filter((source) => (
-      !Number(source.cooldownUntil) || Number(source.cooldownUntil) <= now
-    ));
-    if (!sources.length) return false;
-    const track = this._catalogCandidateToTrack({ ...candidate, sources });
-    return !this.isBanned({ ...candidate, ...track });
+    return this._eligibleCatalogSources(candidate, now).length > 0;
   }
 
   _isArtistSpaced(candidate, now) {
@@ -538,9 +538,7 @@ class AutoDJ {
 
   _catalogCandidateToTrack(candidate) {
     const now = this.now();
-    const sources = (candidate?.sources || []).filter((source) => (
-      !Number(source.cooldownUntil) || Number(source.cooldownUntil) <= now
-    ));
+    const sources = this._eligibleCatalogSources(candidate, now);
     if (!candidate || !sources.length) return null;
     const primary = sources[0];
     const alternatives = sources.slice(1, 2).map((source) => this._sourceToTrack(source));
@@ -563,10 +561,19 @@ class AutoDJ {
       source: provider,
       trackKey: source?.trackKey || `${provider}:${source?.providerId}`,
       url: source?.url,
+      channelId: source?.channelId || null,
+      channelName: source?.channelName || null,
       streamUrl: source?.streamUrl,
       localPath: source?.localPath,
       youtubeId: provider === 'youtube' ? source?.providerId : undefined
     };
+  }
+
+  _eligibleCatalogSources(candidate, now) {
+    return (candidate?.sources || []).filter((source) => {
+      if (Number(source.cooldownUntil) > now) return false;
+      return !this.isBanned({ ...candidate, ...this._sourceToTrack(source) });
+    });
   }
 
   getAlternativeSource(track) {

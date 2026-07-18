@@ -225,7 +225,7 @@ describe('Music Bot runtime and UI regressions', () => {
     }
   });
 
-  test('recovers the stalled player on the second heartbeat without advancing the queue', async () => {
+  test('confirms the stalled player on the second heartbeat without replaying retained media', async () => {
     const current = { id: 'current', title: 'Current Song', url: 'https://example.test/current.mp3' };
     const { plugin } = createPluginWithQueue([{ id: 'requested', title: 'Requested Song' }]);
     const playbackEngine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
@@ -244,13 +244,13 @@ describe('Music Bot runtime and UI regressions', () => {
     );
 
     expect(first).toMatchObject({ ok: false, action: 'counted', failures: 1 });
-    expect(second).toMatchObject({ ok: true, action: 'recovered', failures: 2 });
-    expect(playbackEngine.restart).toHaveBeenCalledTimes(1);
-    expect(playbackEngine.play).toHaveBeenCalledWith(current);
+    expect(second).toMatchObject({ ok: false, action: 'confirmed', failures: 2 });
+    expect(playbackEngine.restart).not.toHaveBeenCalled();
+    expect(playbackEngine.play).not.toHaveBeenCalled();
     expect(plugin.queueManager.shiftNext).not.toHaveBeenCalled();
   });
 
-  test('records the selected Auto-DJ track when its initial playback start fails', async () => {
+  test('cools down only the selected Auto-DJ source when its initial playback start fails', async () => {
     const track = {
       id: 'start-failed',
       title: 'Broken stream',
@@ -263,6 +263,7 @@ describe('Music Bot runtime and UI regressions', () => {
     plugin.autoDJ = {
       getNextSong: jest.fn(async () => ({ song: track })),
       recordFailedTrack: jest.fn(),
+      recordSourceFailure: jest.fn(() => ({ failureClass: 'transient' })),
       markPlaybackFailed: jest.fn()
     };
     plugin.playbackEngine = { play: jest.fn(async () => { throw new Error('loadfile failed'); }) };
@@ -270,17 +271,18 @@ describe('Music Bot runtime and UI regressions', () => {
     const result = await plugin._maybePlayAutoDJ(true);
 
     expect(result).toBeNull();
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledWith(
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenCalledWith(
       expect.objectContaining({
         id: track.id,
         title: track.title,
         requestedBy: track.requestedBy,
         trackKey: expect.any(String)
       }),
-      'start-failed'
+      expect.any(Error)
     );
+    expect(plugin.autoDJ.recordFailedTrack).not.toHaveBeenCalled();
     expect(plugin.autoDJ.markPlaybackFailed).toHaveBeenCalledTimes(1);
-    expect(plugin.autoDJ.recordFailedTrack.mock.invocationCallOrder[0])
+    expect(plugin.autoDJ.recordSourceFailure.mock.invocationCallOrder[0])
       .toBeLessThan(plugin.autoDJ.markPlaybackFailed.mock.invocationCallOrder[0]);
     expect(plugin.autoDJ.getNextSong).toHaveBeenCalledTimes(1);
   });
@@ -487,6 +489,7 @@ describe('Music Bot runtime and UI regressions', () => {
         .mockResolvedValueOnce({ song: brokenTrack })
         .mockResolvedValueOnce({ song: playableTrack }),
       recordFailedTrack: jest.fn(),
+      recordSourceFailure: jest.fn(() => ({ failureClass: 'long' })),
       markTrackStarted: jest.fn(),
       getStatus: jest.fn(() => ({ mode: 'mix' }))
     };
@@ -499,10 +502,11 @@ describe('Music Bot runtime and UI regressions', () => {
 
     const result = await plugin._maybePlayAutoDJ(true);
 
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledWith(
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenCalledWith(
       expect.objectContaining({ youtubeId: brokenTrack.youtubeId }),
-      'resolve-failed'
+      expect.any(Error)
     );
+    expect(plugin.autoDJ.recordFailedTrack).not.toHaveBeenCalled();
     expect(plugin.autoDJ.getNextSong).toHaveBeenCalledTimes(2);
     expect(plugin.playbackEngine.play).toHaveBeenCalledTimes(1);
     expect(result.streamUrl).toBe(playableTrack.streamUrl);
@@ -580,6 +584,7 @@ describe('Music Bot runtime and UI regressions', () => {
     const { plugin } = createPluginWithQueue([]);
     plugin.autoDJ = {
       recordFailedTrack: jest.fn(),
+      recordSourceFailure: jest.fn(() => ({ failureClass: 'transient' })),
       markPlaybackFailed: jest.fn()
     };
     plugin.playbackEngine = {
@@ -596,8 +601,9 @@ describe('Music Bot runtime and UI regressions', () => {
       plugin._handleAutoDJPlaybackFailure(failedTrack, 'ipc-confirmed', new Error('MPV unavailable'))
     ]);
 
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledTimes(1);
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledWith(failedTrack, 'ipc-confirmed');
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenCalledTimes(1);
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenCalledWith(failedTrack, expect.any(Error));
+    expect(plugin.autoDJ.recordFailedTrack).not.toHaveBeenCalled();
     expect(plugin.autoDJ.markPlaybackFailed).toHaveBeenCalledTimes(1);
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(1);
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledWith(true);
@@ -612,6 +618,7 @@ describe('Music Bot runtime and UI regressions', () => {
     let activeTrack = firstPlayback;
     plugin.autoDJ = {
       recordFailedTrack: jest.fn(),
+      recordSourceFailure: jest.fn(() => ({ failureClass: 'transient' })),
       markPlaybackFailed: jest.fn()
     };
     plugin.playbackEngine = {
@@ -627,7 +634,8 @@ describe('Music Bot runtime and UI regressions', () => {
     activeTrack = secondPlayback;
     await plugin._handleAutoDJPlaybackFailure(secondPlayback, 'ipc-confirmed', new Error('second failure'));
 
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledTimes(2);
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenCalledTimes(2);
+    expect(plugin.autoDJ.recordFailedTrack).not.toHaveBeenCalled();
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(2);
   });
 
@@ -641,6 +649,7 @@ describe('Music Bot runtime and UI regressions', () => {
     let activeTrack = tracks[0];
     plugin.autoDJ = {
       recordFailedTrack: jest.fn(),
+      recordSourceFailure: jest.fn(() => ({ failureClass: 'transient' })),
       markPlaybackFailed: jest.fn(),
       deactivate: jest.fn()
     };
@@ -696,6 +705,7 @@ describe('Music Bot runtime and UI regressions', () => {
     plugin.playbackEngine = playbackEngine;
     plugin.autoDJ = {
       recordFailedTrack: jest.fn(),
+      recordSourceFailure: jest.fn(() => ({ failureClass: 'transient' })),
       markPlaybackFailed: jest.fn(),
       setPlaybackSeed: jest.fn()
     };
@@ -722,7 +732,8 @@ describe('Music Bot runtime and UI regressions', () => {
       new Error('watchdog timed out')
     );
     expect(playbackEngine.getNowPlaying()).toBe(replacementTrack);
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledTimes(1);
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenCalledTimes(1);
+    expect(plugin.autoDJ.recordFailedTrack).not.toHaveBeenCalled();
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(1);
     const crossfadeTimerClearCount = plugin._clearCrossfadeTimer.mock.calls.length;
     expect(playbackEngine._replacementOutgoingTrack).toBe(failedTrack);
@@ -734,7 +745,8 @@ describe('Music Bot runtime and UI regressions', () => {
     }));
 
     expect(playbackEngine.getNowPlaying()).toBe(replacementTrack);
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledTimes(1);
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenCalledTimes(1);
+    expect(plugin.autoDJ.recordFailedTrack).not.toHaveBeenCalled();
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(1);
     expect(plugin._clearCrossfadeTimer).toHaveBeenCalledTimes(crossfadeTimerClearCount);
     expect(api.emit).not.toHaveBeenCalledWith('musicbot:error', expect.anything());
@@ -752,6 +764,7 @@ describe('Music Bot runtime and UI regressions', () => {
     plugin.playbackEngine = playbackEngine;
     plugin.autoDJ = {
       recordFailedTrack: jest.fn(),
+      recordSourceFailure: jest.fn(() => ({ failureClass: 'transient' })),
       markPlaybackFailed: jest.fn(),
       setPlaybackSeed: jest.fn()
     };
@@ -789,8 +802,9 @@ describe('Music Bot runtime and UI regressions', () => {
     }));
     await new Promise((resolve) => setImmediate(resolve));
 
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenNthCalledWith(1, firstTrack, 'mpv-track-end');
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenNthCalledWith(2, secondTrack, 'mpv-track-end');
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenNthCalledWith(1, firstTrack, expect.any(Error));
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenNthCalledWith(2, secondTrack, expect.any(Error));
+    expect(plugin.autoDJ.recordFailedTrack).not.toHaveBeenCalled();
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(2);
     expect(playbackEngine.getNowPlaying()).toBe(thirdTrack);
     expect(api.emit).toHaveBeenCalledWith('musicbot:error', expect.objectContaining({
@@ -897,7 +911,7 @@ describe('Music Bot runtime and UI regressions', () => {
     }));
   });
 
-  test('returns a requested song to the front when MPV rejects its start command', async () => {
+  test('records and drops a requested song when MPV rejects its start command', async () => {
     const queued = [{ id: 'requested', title: 'Requested Song', url: 'https://example.test/requested.mp3' }];
     const { plugin } = createPluginWithQueue(queued);
     plugin._mpvAvailable = true;
@@ -906,13 +920,17 @@ describe('Music Bot runtime and UI regressions', () => {
     });
     plugin._emitError = jest.fn();
     plugin._emitQueue = jest.fn();
+    plugin.queueManager.addToHistory = jest.fn();
 
     const result = await plugin._playNextFromQueue();
 
     expect(result.success).toBe(false);
-    expect(plugin.queueManager.returnToFront).toHaveBeenCalledWith(expect.objectContaining({ id: 'requested' }));
-    expect(queued).toHaveLength(1);
-    expect(queued[0].id).toBe('requested');
+    expect(plugin.queueManager.returnToFront).not.toHaveBeenCalled();
+    expect(plugin.queueManager.addToHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'requested', playbackFailed: true }),
+      true
+    );
+    expect(queued).toHaveLength(0);
   });
 
   test('keeps music ducked for the full TTS playback and ignores duplicate start events', async () => {
@@ -1149,7 +1167,9 @@ describe('Music Bot runtime and UI regressions', () => {
       jest.advanceTimersByTime(1);
       expect(plugin._maybePlayAutoDJ).not.toHaveBeenCalled();
       expect(plugin._playNextFromQueue).toHaveBeenCalledWith('crossfade', {
-        allowActiveAutoDJ: true
+        allowActiveAutoDJ: true,
+        allowActiveViewerAtBoundary: true,
+        prefetchGeneration: expect.any(Number)
       });
     } finally {
       jest.useRealTimers();
@@ -1264,6 +1284,7 @@ describe('Music Bot runtime and UI regressions', () => {
     };
     plugin.autoDJ = {
       recordFailedTrack: jest.fn(),
+      recordSourceFailure: jest.fn(() => ({ failureClass: 'transient' })),
       markPlaybackFailed: jest.fn(),
       setPlaybackSeed: jest.fn()
     };
@@ -1284,7 +1305,8 @@ describe('Music Bot runtime and UI regressions', () => {
     await new Promise((resolve) => setImmediate(resolve));
     await new Promise((resolve) => setImmediate(resolve));
 
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledWith(failedTrack, 'mpv-track-end');
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenCalledWith(failedTrack, expect.any(Error));
+    expect(plugin.autoDJ.recordFailedTrack).not.toHaveBeenCalled();
     expect(plugin.autoDJ.markPlaybackFailed).toHaveBeenCalledTimes(1);
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledWith(true);
   });

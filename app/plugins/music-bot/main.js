@@ -195,6 +195,8 @@ class MusicBotPlugin extends EventEmitter {
     this.db = api.getDatabase();
     this.playbackSyncTimer = null;
     this.crossfadeTimer = null;
+    this._radioPrefetch = null;
+    this._radioPrefetchGeneration = 0;
     this._autoDjRecoveryTracks = new WeakSet();
     this._pendingTrackAdvance = null;
     this._pendingSkipAdvance = null;
@@ -298,6 +300,7 @@ class MusicBotPlugin extends EventEmitter {
     this.radioSupervisor = new RadioSupervisor({
       advance: (context) => this._advancePlayback(context),
       isPlaying: () => Boolean(this.playbackEngine?.isPlaying?.()),
+      isOccupied: () => this._isPlaybackOccupied(),
       onStateChange: () => {
         if (!this._destroyed) this._emitRuntimeHealth();
       }
@@ -335,6 +338,7 @@ class MusicBotPlugin extends EventEmitter {
     this._recordTransition('destroyed', 'plugin-destroy');
     this._stopPlaybackSync();
     this._clearCrossfadeTimer();
+    this._invalidateRadioPrefetch('destroy');
     this._pendingTrackAdvance = null;
     this._pendingSkipAdvance = null;
     this._cleanupDuckingHooks();
@@ -1021,6 +1025,7 @@ class MusicBotPlugin extends EventEmitter {
     this.autoDJ?.updateConfig?.(config.autoDJ);
     this.radioSupervisor?.setLocked?.(this._isSafetyLocked(), { wake: false });
     this.radioSupervisor?.setEnabled?.(Boolean(config.autoDJ?.enabled), { wake: false });
+    if (!config.autoDJ?.enabled) this._invalidateRadioPrefetch('radio-disabled');
     if (this.mediaCache) {
       const ttlDays = Number(config.resolver.cacheTTLDays);
       const maxSizeMB = Number(config.resolver.maxCacheSizeMB);
@@ -1198,6 +1203,7 @@ class MusicBotPlugin extends EventEmitter {
     this._lifecycleGeneration += 1;
     this._recordTransition('locked', this.config.safety.reason);
     this.radioSupervisor?.setLocked?.(true, { wake: false });
+    this._invalidateRadioPrefetch('safety-lock');
 
     let persistError = null;
     const persistence = this._persistConfigOrThrow(this.config, 'Safety Lock').catch((error) => {
@@ -1294,6 +1300,7 @@ class MusicBotPlugin extends EventEmitter {
     this._lifecycleGeneration += 1;
     this._recordTransition(locked ? 'locked' : 'idle', reason || 'controller-safety-release');
     this.radioSupervisor?.setLocked?.(locked, { wake: false });
+    if (locked) this._invalidateRadioPrefetch('controller-safety-lock');
     let persistError = null;
     try {
       await this._persistConfigOrThrow(this.config, 'controller Safety Lock');
@@ -1506,6 +1513,19 @@ class MusicBotPlugin extends EventEmitter {
       this._emitPlaybackStopped();
       this._emitNowPlaying(null);
       this._emitRuntimeHealth();
+    });
+
+    this.playbackEngine.on('heartbeat-failure-confirmed', (info = {}) => {
+      const track = info.track || this.playbackEngine.getNowPlaying?.();
+      const error = info.error instanceof Error
+        ? info.error
+        : new Error(info.error?.message || 'mpv IPC heartbeat failed twice');
+      const recovery = track?.requestedBy === 'AutoDJ'
+        ? this._handleAutoDJPlaybackFailure(track, 'ipc-confirmed', error)
+        : this._handleConfirmedIpcFailure(track, error);
+      Promise.resolve(recovery).catch((recoveryError) => {
+        this.api.log(`[music-bot] Supervised IPC recovery failed: ${recoveryError.message}`, 'error');
+      });
     });
 
     this.playbackEngine.on('transition', (transition) => {
@@ -2558,6 +2578,7 @@ class MusicBotPlugin extends EventEmitter {
         this._emitToast('warn', 'Song-Request abgelehnt', added.error || 'Song konnte nicht hinzugefügt werden.');
         return added;
       }
+      this._invalidateRadioPrefetch('viewer-queue-changed');
       this._schedulePreCache();
       this.autoDJ?.onSongRequested();
       this._emitSongAdded(added.song, added.position);
@@ -2638,6 +2659,7 @@ class MusicBotPlugin extends EventEmitter {
         this._emitToast('warn', 'Song-Request abgelehnt', addResult.error || 'Song konnte nicht hinzugefügt werden.');
         return;
       }
+      this._invalidateRadioPrefetch('viewer-queue-changed');
       if (this.config.monetization?.payToPlayEnabled) {
         this._consumeRequestCredit(username);
       }
@@ -2899,6 +2921,12 @@ class MusicBotPlugin extends EventEmitter {
     }
   }
 
+  _isPlaybackOccupied() {
+    const state = String(this.playbackEngine?.getState?.() || '').toLowerCase();
+    return ['loading', 'buffering', 'playing', 'paused', 'crossfading', 'recovery'].includes(state)
+      || Boolean(this.playbackEngine?.getNowPlaying?.());
+  }
+
   async _advancePlayback(context = {}) {
     const isCurrent = typeof context.isCurrent === 'function'
       ? context.isCurrent
@@ -2909,8 +2937,65 @@ class MusicBotPlugin extends EventEmitter {
     if (context.reason === 'ipc-confirmed' && typeof context.resetPlayerOnce === 'function') {
       await context.resetPlayerOnce(() => this.playbackEngine?.resetPlayer?.({ remainLocked: false }));
       if (!isCurrent()) return { success: false, stale: true };
+      const retainedAlternative = await this._playRetainedAutoDJAlternative(
+        context.payload?.track,
+        context
+      );
+      if (retainedAlternative) {
+        return { success: true, song: retainedAlternative };
+      }
+      if (!isCurrent()) return { success: false, stale: true };
     }
     return this._playNextFromQueueInternal(context);
+  }
+
+  async _playRetainedAutoDJAlternative(track, context = {}) {
+    if (!track || track.requestedBy !== 'AutoDJ' || !this.autoDJ) return null;
+    const isCurrent = typeof context.isCurrent === 'function'
+      ? context.isCurrent
+      : () => !this._destroyed;
+    const alternative = this.autoDJ.getAlternativeSource?.(track);
+    if (!alternative || !isCurrent()) return null;
+
+    try {
+      const prepared = await this._prepareAutoDJTrack(alternative);
+      if (
+        !isCurrent()
+        || this._isSafetyLocked()
+        || this.queueManager?.getQueue?.().length > 0
+      ) return null;
+      const banMessage = this._checkBans(prepared, 'AutoDJ');
+      if (banMessage) {
+        this.api.log(
+          `[music-bot] AutoDJ rejected retained alternative "${prepared.title || prepared.id}": ${banMessage}`,
+          'warn'
+        );
+        return null;
+      }
+      await this.playbackEngine.play(prepared);
+      if (!isCurrent()) return null;
+      this.autoDJ.recordSourceSuccess?.(prepared);
+      this.autoDJ.markTrackStarted?.(prepared);
+      this.queueManager?.markPlaying?.(prepared);
+      this._emitQueue();
+      this.api.emit('musicbot:auto-dj-playing', {
+        title: prepared.title,
+        mode: this.autoDJ.getStatus?.().mode
+      });
+      return prepared;
+    } catch (error) {
+      this._lastAutoDJFailureClass = this._recordAutoDJSourceFailure(
+        alternative,
+        error,
+        /ipc|socket|pipe/i.test(error.message) ? 'ipc' : 'playback'
+      );
+      this.autoDJ.markPlaybackFailed?.(error);
+      this.api.log(
+        `[music-bot] AutoDJ retained alternative failed "${alternative.title || alternative.id}": ${error.message}`,
+        'warn'
+      );
+      return null;
+    }
   }
 
   async _playNextFromQueueInternal(context = {}) {
@@ -2974,14 +3059,21 @@ class MusicBotPlugin extends EventEmitter {
       if (this._isMpvUnavailableError(error)) {
         return this._handlePlaybackUnavailable(next, error);
       }
-      this.queueManager.returnToFront?.(next);
+      const failureClass = /ipc|socket|pipe/i.test(error.message) ? 'ipc' : 'playback';
+      if (failureClass === 'ipc' && typeof context.resetPlayerOnce === 'function') {
+        await context.resetPlayerOnce(
+          () => this.playbackEngine?.resetPlayer?.({ remainLocked: false })
+        );
+      }
+      this.queueManager.markPlaying?.(null);
+      this.queueManager.addToHistory?.({
+        ...next,
+        playbackFailed: true,
+        playbackError: error.message
+      }, true);
       this._emitError(error.message);
       this._emitQueue();
-      return {
-        success: false,
-        error: error.message,
-        failureClass: /ipc|socket|pipe/i.test(error.message) ? 'ipc' : 'playback'
-      };
+      return this._playNextFromQueueInternal(context);
     }
   }
 
@@ -3362,6 +3454,9 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   async _maybePlayAutoDJInternal(force, allowActiveAutoDJ, generation, supervisorContext = null) {
+    const prepareOnly = Boolean(supervisorContext?.payload?.prepareOnly);
+    const allowActiveViewerAtBoundary = prepareOnly
+      || Boolean(supervisorContext?.payload?.allowActiveViewerAtBoundary);
     const isCurrent = () => (
       !this._destroyed
       && generation === this._lifecycleGeneration
@@ -3377,17 +3472,25 @@ class MusicBotPlugin extends EventEmitter {
       mayReplaceActiveAutoDJ
       && activeBeforeResolve
       && activeBeforeResolve.requestedBy !== 'AutoDJ'
+      && !allowActiveViewerAtBoundary
     ) return null;
 
     this._lastAutoDJFailureClass = null;
     let result = null;
     let track = null;
-    for (let attempt = 0; attempt < 2; attempt += 1) {
+    if (!prepareOnly && this._radioPrefetch) {
+      const prefetched = await this._consumeRadioPrefetch(supervisorContext, isCurrent);
+      if (prefetched) {
+        track = prefetched.track;
+        result = { announce: prefetched.announce };
+      }
+    }
+    for (let attempt = 0; !track && attempt < 2; attempt += 1) {
       result = force
         ? await this.autoDJ.getNextSong(true)
         : await this.autoDJ.onQueueEmpty();
       if (!isCurrent() || !result) {
-        this._lastAutoDJFailureClass = 'empty-pool';
+        this._lastAutoDJFailureClass ||= 'empty-pool';
         return null;
       }
       if (
@@ -3395,7 +3498,8 @@ class MusicBotPlugin extends EventEmitter {
         || this.queueManager?.getQueue?.().length > 0
         || (!mayReplaceActiveAutoDJ && this.playbackEngine?.isPlaying?.())
         || (mayReplaceActiveAutoDJ && this.playbackEngine?.isPlaying?.()
-          && this.playbackEngine?.getNowPlaying?.()?.requestedBy !== 'AutoDJ')
+          && this.playbackEngine?.getNowPlaying?.()?.requestedBy !== 'AutoDJ'
+          && !allowActiveViewerAtBoundary)
       ) {
         return null;
       }
@@ -3404,10 +3508,11 @@ class MusicBotPlugin extends EventEmitter {
         track = await this._prepareAutoDJTrack(selectedTrack);
       } catch (error) {
         if (!isCurrent()) return null;
-        this.autoDJ.recordSourceFailure?.(selectedTrack, error);
-        this._lastAutoDJFailureClass = /unavailable|private|removed|format/i.test(error.message)
-          ? 'source-unavailable'
-          : 'resolve';
+        this._lastAutoDJFailureClass = this._recordAutoDJSourceFailure(
+          selectedTrack,
+          error,
+          'resolve'
+        );
         this.api.log(
           `[music-bot] AutoDJ could not resolve "${selectedTrack.title || selectedTrack.id}": ${error.message}`,
           'warn'
@@ -3418,20 +3523,18 @@ class MusicBotPlugin extends EventEmitter {
           try {
             track = await this._prepareAutoDJTrack(alternative);
           } catch (alternativeError) {
-            this.autoDJ.recordSourceFailure?.(alternative, alternativeError);
-            this._lastAutoDJFailureClass = /unavailable|private|removed|format/i.test(alternativeError.message)
-              ? 'source-unavailable'
-              : 'resolve';
+            this._lastAutoDJFailureClass = this._recordAutoDJSourceFailure(
+              alternative,
+              alternativeError,
+              'resolve'
+            );
             this.api.log(
               `[music-bot] AutoDJ alternative source could not resolve "${alternative.title || alternative.id}": ${alternativeError.message}`,
               'warn'
             );
           }
         }
-        if (!track) {
-          this.autoDJ.recordFailedTrack?.(selectedTrack, 'resolve-failed');
-          continue;
-        }
+        if (!track) continue;
       }
       if (
         !isCurrent()
@@ -3439,7 +3542,8 @@ class MusicBotPlugin extends EventEmitter {
         || this.queueManager?.getQueue?.().length > 0
         || (!mayReplaceActiveAutoDJ && this.playbackEngine?.isPlaying?.())
         || (mayReplaceActiveAutoDJ && this.playbackEngine?.isPlaying?.()
-          && this.playbackEngine?.getNowPlaying?.()?.requestedBy !== 'AutoDJ')
+          && this.playbackEngine?.getNowPlaying?.()?.requestedBy !== 'AutoDJ'
+          && !allowActiveViewerAtBoundary)
       ) {
         return null;
       }
@@ -3453,6 +3557,13 @@ class MusicBotPlugin extends EventEmitter {
       track = null;
     }
     if (!isCurrent() || !track) return null;
+    if (prepareOnly) {
+      return {
+        prefetched: true,
+        track,
+        announce: Boolean(result?.announce)
+      };
+    }
 
     try {
       if (!isCurrent()) return null;
@@ -3471,8 +3582,11 @@ class MusicBotPlugin extends EventEmitter {
       }
       return track;
     } catch (error) {
-      this.autoDJ.recordSourceFailure?.(track, error);
-      this._lastAutoDJFailureClass = /ipc|socket|pipe/i.test(error.message) ? 'ipc' : 'playback';
+      this._lastAutoDJFailureClass = this._recordAutoDJSourceFailure(
+        track,
+        error,
+        /ipc|socket|pipe/i.test(error.message) ? 'ipc' : 'playback'
+      );
       const outgoingStillActive = Boolean(this.playbackEngine?.getNowPlaying?.());
       if (
         this._lastAutoDJFailureClass === 'ipc'
@@ -3488,6 +3602,15 @@ class MusicBotPlugin extends EventEmitter {
         try {
           const preparedAlternative = await this._prepareAutoDJTrack(alternative);
           if (!isCurrent() || this.queueManager?.getQueue?.().length > 0) return null;
+          const alternativeBan = this._checkBans(preparedAlternative, 'AutoDJ');
+          if (alternativeBan) {
+            this.api.log(
+              `[music-bot] AutoDJ rejected prepared alternative "${preparedAlternative.title || preparedAlternative.id}": ${alternativeBan}`,
+              'warn'
+            );
+            this.autoDJ.markPlaybackFailed(error);
+            return null;
+          }
           await this.playbackEngine.play(preparedAlternative);
           if (!isCurrent()) return null;
           this.autoDJ.recordSourceSuccess?.(preparedAlternative);
@@ -3500,14 +3623,14 @@ class MusicBotPlugin extends EventEmitter {
           });
           return preparedAlternative;
         } catch (alternativeError) {
-          this.autoDJ.recordSourceFailure?.(alternative, alternativeError);
-          this._lastAutoDJFailureClass = /ipc|socket|pipe/i.test(alternativeError.message)
-            ? 'ipc'
-            : 'playback';
+          this._lastAutoDJFailureClass = this._recordAutoDJSourceFailure(
+            alternative,
+            alternativeError,
+            /ipc|socket|pipe/i.test(alternativeError.message) ? 'ipc' : 'playback'
+          );
           error = alternativeError;
         }
       }
-      this.autoDJ.recordFailedTrack?.(track, 'start-failed');
       this.autoDJ.markPlaybackFailed(error);
       this.api.log(`[music-bot] AutoDJ playback failed: ${error.message}`, 'error');
       return null;
@@ -3544,6 +3667,36 @@ class MusicBotPlugin extends EventEmitter {
     });
   }
 
+  _handleConfirmedIpcFailure(track, error) {
+    if (this._destroyed || this._isSafetyLocked()) return this._lockedResult();
+    this._stopPlaybackSync();
+    this.playbackEngine?.clearNowPlaying?.();
+    this.queueManager?.markPlaying?.(null);
+    if (track) {
+      this.queueManager?.addToHistory?.({
+        ...track,
+        playbackFailed: true,
+        playbackError: error?.message || String(error || '')
+      }, true);
+    }
+    this._emitPlaybackStopped();
+    this._emitNowPlaying(null);
+    this._emitRuntimeHealth();
+    if (this.radioSupervisor?.wake) {
+      return this.radioSupervisor.wake('ipc-confirmed', {
+        track,
+        error,
+        failureClass: 'ipc'
+      });
+    }
+    return this._playNextFromQueue('ipc-confirmed', { track, error, failureClass: 'ipc' });
+  }
+
+  _recordAutoDJSourceFailure(track, error, fallbackClass = 'playback') {
+    const result = this.autoDJ?.recordSourceFailure?.(track, error);
+    return result?.failureClass || fallbackClass;
+  }
+
   async _handleAutoDJPlaybackFailure(track, reason, error) {
     if (!track || typeof track !== 'object') return null;
     const activeTrack = this.playbackEngine?.getNowPlaying?.();
@@ -3554,8 +3707,11 @@ class MusicBotPlugin extends EventEmitter {
     if (this._autoDjRecoveryTracks.has(track)) return null;
     this._autoDjRecoveryTracks.add(track);
     this._stopPlaybackSync();
-    this.autoDJ && this.autoDJ.recordFailedTrack && this.autoDJ.recordFailedTrack(track, reason);
-    this.autoDJ && this.autoDJ.recordSourceFailure && this.autoDJ.recordSourceFailure(track, error);
+    this._lastAutoDJFailureClass = this._recordAutoDJSourceFailure(
+      track,
+      error,
+      /ipc|socket|pipe/i.test(error?.message || '') ? 'ipc' : 'playback'
+    );
     this.autoDJ && this.autoDJ.markPlaybackFailed && this.autoDJ.markPlaybackFailed(error);
     const preserveReplacementOutgoing = reason === 'ipc-confirmed'
       && this.playbackEngine.rememberReplacementOutgoing?.(track);
@@ -3567,7 +3723,7 @@ class MusicBotPlugin extends EventEmitter {
       return this.radioSupervisor.wake(reason, {
         track,
         error,
-        failureClass: /ipc|socket|pipe/i.test(error?.message || '') ? 'ipc' : 'playback'
+        failureClass: this._lastAutoDJFailureClass
       });
     }
     return await this._maybePlayAutoDJ(true);
@@ -3777,7 +3933,102 @@ class MusicBotPlugin extends EventEmitter {
     }
   }
 
+  _invalidateRadioPrefetch(_reason = 'invalidated') {
+    this._radioPrefetchGeneration += 1;
+    this._radioPrefetch = null;
+    return this._radioPrefetchGeneration;
+  }
+
+  _startRadioPrefetch(track) {
+    const generation = this._invalidateRadioPrefetch('track-change');
+    const durationSeconds = Number(track?.duration);
+    if (
+      this._destroyed
+      || this._isSafetyLocked()
+      || !this.config.autoDJ?.enabled
+      || !this.autoDJ
+      || !Number.isFinite(durationSeconds)
+      || durationSeconds * 1000 <= RADIO_CROSSFADE_MS
+      || this.queueManager?.getQueue?.().length > 0
+    ) return null;
+
+    const trackId = track?.id;
+    const lifecycleGeneration = this._lifecycleGeneration;
+    const isCurrent = () => (
+      !this._destroyed
+      && !this._isSafetyLocked()
+      && lifecycleGeneration === this._lifecycleGeneration
+      && generation === this._radioPrefetchGeneration
+      && this._radioPrefetch?.generation === generation
+      && this._radioPrefetch?.trackId === trackId
+      && this.queueManager?.getQueue?.().length === 0
+    );
+    const entry = {
+      generation,
+      trackId,
+      prepared: null,
+      announce: false,
+      promise: null
+    };
+    this._radioPrefetch = entry;
+    const operation = this._maybePlayAutoDJ(false, true, {
+      reason: 'prefetch',
+      payload: {
+        prepareOnly: true,
+        allowActiveViewerAtBoundary: true,
+        prefetchGeneration: generation
+      },
+      isCurrent
+    });
+    entry.promise = Promise.resolve(operation).then((result) => {
+      if (!isCurrent() || !result?.prefetched || !result.track) return null;
+      entry.prepared = result.track;
+      entry.announce = Boolean(result.announce);
+      return entry.prepared;
+    }).catch((error) => {
+      if (isCurrent()) {
+        this.api.log(`[music-bot] Radio prefetch failed: ${error.message}`, 'warn');
+        this._invalidateRadioPrefetch('prefetch-failed');
+      }
+      return null;
+    });
+    return entry.promise;
+  }
+
+  async _consumeRadioPrefetch(supervisorContext = null, isCurrent = () => true) {
+    const entry = this._radioPrefetch;
+    if (!entry) return null;
+    const expectedGeneration = Number(supervisorContext?.payload?.prefetchGeneration);
+    if (Number.isFinite(expectedGeneration) && expectedGeneration !== entry.generation) return null;
+    const active = this.playbackEngine?.getNowPlaying?.();
+    if (active?.id && active.id !== entry.trackId) {
+      this._invalidateRadioPrefetch('track-mismatch');
+      return null;
+    }
+    const prepared = entry.prepared || await entry.promise;
+    if (
+      !prepared
+      || !isCurrent()
+      || this._radioPrefetch !== entry
+      || entry.generation !== this._radioPrefetchGeneration
+      || this._isSafetyLocked()
+      || this.queueManager?.getQueue?.().length > 0
+    ) return null;
+    const banMessage = this._checkBans(prepared, 'AutoDJ');
+    if (banMessage) {
+      this.api.log(
+        `[music-bot] AutoDJ rejected prefetched track "${prepared.title || prepared.id}": ${banMessage}`,
+        'warn'
+      );
+      this._invalidateRadioPrefetch('prefetch-banned');
+      return null;
+    }
+    this._radioPrefetch = null;
+    return { track: prepared, announce: entry.announce };
+  }
+
   _scheduleCrossfadeTransition(track, positionSeconds = 0) {
+    this._startRadioPrefetch(track);
     return this._rescheduleCrossfadeTransition(track, positionSeconds);
   }
 
@@ -3795,7 +4046,9 @@ class MusicBotPlugin extends EventEmitter {
       const current = this.playbackEngine?.getNowPlaying?.();
       if (!trackId || current?.id !== trackId || !this.playbackEngine?.isPlaying?.()) return;
       const advance = this._playNextFromQueue('crossfade', {
-        allowActiveAutoDJ: current.requestedBy === 'AutoDJ'
+        allowActiveAutoDJ: true,
+        allowActiveViewerAtBoundary: true,
+        prefetchGeneration: this._radioPrefetchGeneration
       });
       Promise.resolve(advance).catch((error) => {
         this.api.log(`[music-bot] Crossfade transition failed: ${error.message}`, 'warn');

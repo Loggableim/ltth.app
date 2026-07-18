@@ -857,6 +857,14 @@ class PlaybackController extends EventEmitter {
           this.api.log?.(`[music-bot] Failed to engage heartbeat safety lock: ${error.message}`, 'error');
         });
     });
+    slot.engine.on('heartbeat-failure-confirmed', (info = {}) => {
+      if (!isCurrent() || slot.kind === 'test-tone') return;
+      this.emit('heartbeat-failure-confirmed', {
+        ...info,
+        track: info.track || slot.engine.getNowPlaying?.() || null,
+        playbackId: slot.playbackId
+      });
+    });
   }
 
   _emitTrackEndOnce(slot, info = {}) {

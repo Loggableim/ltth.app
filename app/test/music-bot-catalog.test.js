@@ -144,10 +144,10 @@ describe('music-bot catalog', () => {
     const { db, catalog } = createCatalog();
     const track = { title: 'Radio score', artist: 'One & Two', provider: 'youtube', providerId: 'radio-score' };
     const completed = catalog.recordCompleted(track, {
-      id: 'radio-completed', finishedAt: 100, duration: 100, playedSeconds: 100
+      id: 'radio-completed', finishedAt: 100, duration: 100, playedSeconds: 100, requestedBy: 'AutoDJ'
     });
     catalog.recordSkipped(track, {
-      id: 'radio-skipped', finishedAt: 90, duration: 100, playedSeconds: 10
+      id: 'radio-skipped', finishedAt: 90, duration: 100, playedSeconds: 10, requestedBy: 'AutoDJ'
     });
     const alternate = catalog.resolveOrUpsert({
       ...track,
@@ -173,6 +173,34 @@ describe('music-bot catalog', () => {
           expect.objectContaining({ provider: 'youtube', cooldownUntil: null }),
           expect.objectContaining({ provider: 'soundcloud', cooldownUntil: 1_900_000 })
         ])
+      })
+    ]);
+    db.close();
+  });
+
+  it('excludes viewer events from implicit taste while keeping AutoDJ events and explicit votes', () => {
+    const { db, catalog } = createCatalog();
+    const track = { title: 'Taste boundary', artist: 'Taste Artist', provider: 'youtube', providerId: 'taste-boundary' };
+    const resolved = catalog.recordCompleted(track, {
+      id: 'viewer-complete', finishedAt: 10, duration: 100, playedSeconds: 100, requestedBy: 'viewer-one'
+    });
+    catalog.recordSkipped(track, {
+      id: 'viewer-skip', finishedAt: 20, duration: 100, playedSeconds: 10, requestedBy: 'viewer-two'
+    });
+    catalog.recordCompleted(track, {
+      id: 'autodj-complete', finishedAt: 30, duration: 100, playedSeconds: 100, requestedBy: 'AutoDJ'
+    });
+    catalog.recordSkipped(track, {
+      id: 'autodj-skip', finishedAt: 40, duration: 100, playedSeconds: 10, requestedBy: 'AutoDJ'
+    });
+    catalog.setFeedback(resolved.song.id, 'up');
+
+    expect(catalog.getRadioCandidates([resolved.song.id], { now: 1000 })).toEqual([
+      expect.objectContaining({
+        feedback: 'up',
+        completePlays: 1,
+        earlySkips: 1,
+        artists: [expect.objectContaining({ name: 'Taste Artist', affinity: 1 })]
       })
     ]);
     db.close();

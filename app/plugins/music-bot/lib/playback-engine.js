@@ -687,21 +687,17 @@ class PlaybackEngine extends EventEmitter {
       // attempt, regardless of how long ago the first failure happened.
       this._heartbeatWindowStartedAt = failureAt;
       const retainedTrack = this.nowPlaying;
-      this.api.log?.(`[music-bot] MPV IPC heartbeat failed (2/3); recovering player: ${error.message}`, 'warn');
-      this._heartbeatRecoveryInProgress = true;
-      try {
-        await this.restart();
-        if (resumePlayback && retainedTrack) {
-          await this.play(retainedTrack);
-        } else if (!resumePlayback) {
-          await this._startProcess();
-        }
-      } finally {
-        this._heartbeatRecoveryInProgress = false;
-      }
+      this.api.log?.(`[music-bot] MPV IPC heartbeat failed (2/3); requesting supervised recovery: ${error.message}`, 'warn');
+      this.emit('heartbeat-failure-confirmed', {
+        track: retainedTrack,
+        error,
+        failures,
+        resumePlayback: Boolean(resumePlayback),
+        failureClass: 'ipc'
+      });
       return {
-        ok: true,
-        action: 'recovered',
+        ok: false,
+        action: 'confirmed',
         failures,
         position: 0,
         diagnostics: this.getDiagnostics()

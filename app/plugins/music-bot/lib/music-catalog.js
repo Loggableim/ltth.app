@@ -130,8 +130,10 @@ class MusicCatalog {
       `SELECT songs.id AS songId, songs.canonical_key AS canonicalKey, songs.title,
        CASE WHEN COALESCE(feedback.state, 0) > 0 THEN 'up'
             WHEN COALESCE(feedback.state, 0) < 0 THEN 'down' ELSE 'neutral' END AS feedback,
-       COALESCE(SUM(CASE WHEN events.outcome = 'completed' THEN 1 ELSE 0 END), 0) AS completePlays,
-       COALESCE(SUM(CASE WHEN events.outcome = 'early_skip' THEN 1 ELSE 0 END), 0) AS earlySkips,
+       COALESCE(SUM(CASE WHEN events.outcome = 'completed'
+         AND LOWER(COALESCE(events.requested_by, '')) = 'autodj' THEN 1 ELSE 0 END), 0) AS completePlays,
+       COALESCE(SUM(CASE WHEN events.outcome = 'early_skip'
+         AND LOWER(COALESCE(events.requested_by, '')) = 'autodj' THEN 1 ELSE 0 END), 0) AS earlySkips,
        MAX(CASE WHEN events.outcome != 'failed' THEN events.finished_at ELSE NULL END) AS lastPlayedAt
        FROM plugin_music_bot_songs songs
        LEFT JOIN plugin_music_bot_feedback feedback ON feedback.song_id = songs.id
