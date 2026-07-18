@@ -373,7 +373,7 @@ class Connect4Game {
     if (state.status === 'active') {
       const expectedCurrentPlayer = player1Pieces === player2Pieces ? 1 : 2;
       if (state.winner !== null || state.winningCells.length !== 0 || state.currentPlayer !== expectedCurrentPlayer ||
-        boardWinners.size !== 0 || winningLines.some(cells => cells.length >= 4)) {
+        occupied === this.ROWS * this.COLUMNS || boardWinners.size !== 0 || winningLines.some(cells => cells.length >= 4)) {
         invalid('active game state is inconsistent');
       }
     } else if (state.winner === null) {

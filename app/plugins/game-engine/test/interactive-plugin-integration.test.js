@@ -234,7 +234,10 @@ describe('GameEnginePlugin interactive controller integration', () => {
     { streamerRole: 'host' },
     { chatCommand: 'bad command!' },
     { player2Color: '#GG0000' },
-    { roundTimeLimit: 5, roundWarningTime: 10 }
+    { roundTimeLimit: 5, roundWarningTime: 10 },
+    { animationSpeed: 50 },
+    { leaderboardTypes: ['daily', 'unknown'] },
+    { leaderboardDisplayTime: 11 }
   ])('rejects invalid Connect4 configuration field combinations: %o', body => {
     const { plugin, routes } = createPlugin();
     plugin.db = {

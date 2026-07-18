@@ -297,6 +297,19 @@ describe('Connect4 Game', () => {
         state.status = 'completed';
         state.lastMove = { player: 2, column: 1, row: 0, moveNumber: 42 };
       }],
+      ['a full no-winner board that is incorrectly marked active', state => {
+        state.board = [
+          [2, 1, 1, 2, 2, 2, 1],
+          [1, 2, 2, 1, 1, 2, 2],
+          [2, 1, 1, 2, 2, 1, 2],
+          [2, 1, 2, 2, 1, 1, 1],
+          [2, 1, 1, 2, 1, 2, 2],
+          [1, 2, 1, 1, 1, 2, 1]
+        ];
+        state.moveCount = 42;
+        state.currentPlayer = 1;
+        state.lastMove = { player: 2, column: 0, row: 0, moveNumber: 42 };
+      }],
       ['a completed winner while the opponent also has a winning line', state => {
         state.board[5][0] = 1;
         state.board[5][1] = 1;
