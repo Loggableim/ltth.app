@@ -14,6 +14,20 @@ const DEFAULT_DUCKING_TARGET_PERCENT = 35;
 const DEFAULT_NORMALIZATION_INTEGRATED_LUFS = -16;
 const DEFAULT_NORMALIZATION_TRUE_PEAK_DB = -1.5;
 const DEFAULT_NORMALIZATION_LRA = 11;
+const SEEK_ERROR_CODES = new Set([
+  'PLAYBACK_SEEK_INVALID_POSITION',
+  'PLAYBACK_SEEK_STATE',
+  'PLAYBACK_STALE_ID',
+  'PLAYBACK_UNSEEKABLE',
+  'PLAYBACK_UNKNOWN_DURATION',
+  'MPV_IPC_DISCONNECTED'
+]);
+
+function createSeekError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
 
 class PlaybackEngine extends EventEmitter {
   constructor(config, api, options = {}) {
@@ -119,7 +133,17 @@ class PlaybackEngine extends EventEmitter {
       thumbnail: track.thumbnail || null,
       requestedBy: track.requestedBy || 'viewer',
       requesterAvatar: track.requesterAvatar || null,
-      source: track.source || 'youtube',
+      source: track.source || track.provider || 'youtube',
+      provider: track.provider || track.source || null,
+      providerId: track.providerId || null,
+      trackKey: track.trackKey || null,
+      sourceId: track.sourceId || null,
+      catalogSongId: track.catalogSongId || null,
+      canonicalKey: track.canonicalKey || null,
+      artists: Array.isArray(track.artists) ? [...track.artists] : null,
+      channelId: track.channelId || null,
+      channelName: track.channelName || null,
+      playlistId: track.playlistId || null,
       url: track.url || playbackUrl,
       localPath: track.localPath || null,
       streamUrl: track.streamUrl || null,
@@ -168,6 +192,81 @@ class PlaybackEngine extends EventEmitter {
     await this._sendCommand(['set_property', 'pause', false]);
     this.state = 'playing';
     this.emit('resumed');
+  }
+
+  async seek(positionSeconds, { timeoutMs = 1500 } = {}) {
+    const target = Number(positionSeconds);
+    if (!Number.isFinite(target) || target < 0) {
+      throw createSeekError('PLAYBACK_SEEK_INVALID_POSITION', 'Seek position must be a non-negative number');
+    }
+    const activeTrack = this.nowPlaying;
+    const activeTrackId = activeTrack?.id;
+    if (!activeTrack || !['playing', 'paused'].includes(this.state)) {
+      throw createSeekError('PLAYBACK_SEEK_STATE', 'No active track is available for seeking');
+    }
+    if (!this.socket || this.socket.destroyed) {
+      throw createSeekError('MPV_IPC_DISCONNECTED', 'mpv IPC is not connected');
+    }
+
+    try {
+      const [seekableResult, initialDurationResult] = await Promise.all([
+        this._sendCommand(['get_property', 'seekable'], {
+          waitForResponse: true,
+          timeoutMs
+        }),
+        this._sendCommand(['get_property', 'duration'], {
+          waitForResponse: true,
+          timeoutMs
+        })
+      ]);
+      if (seekableResult?.data !== true) {
+        throw createSeekError('PLAYBACK_UNSEEKABLE', 'The active track is not seekable');
+      }
+      const initialDuration = Number(initialDurationResult?.data);
+      if (!Number.isFinite(initialDuration) || initialDuration <= 0) {
+        throw createSeekError('PLAYBACK_UNKNOWN_DURATION', 'The active track has no known duration');
+      }
+      this._assertSeekTargetCurrent(activeTrack, activeTrackId);
+      await this._sendCommand(['seek', target, 'absolute+exact'], {
+        waitForResponse: true,
+        timeoutMs
+      });
+      this._assertSeekTargetCurrent(activeTrack, activeTrackId);
+      const [positionResult, durationResult] = await Promise.all([
+        this._sendCommand(['get_property', 'time-pos'], { waitForResponse: true, timeoutMs }),
+        this._sendCommand(['get_property', 'duration'], { waitForResponse: true, timeoutMs })
+      ]);
+      const position = Number(positionResult?.data);
+      const duration = Number(durationResult?.data);
+      if (!Number.isFinite(duration) || duration <= 0) {
+        throw createSeekError('PLAYBACK_UNKNOWN_DURATION', 'The active track has no known duration');
+      }
+      if (!Number.isFinite(position)) {
+        throw createSeekError('MPV_IPC_DISCONNECTED', 'mpv did not confirm the seek position');
+      }
+      this._assertSeekTargetCurrent(activeTrack, activeTrackId);
+      activeTrack.duration = duration;
+      activeTrack.startedAt = Date.now() - Math.round(position * 1000);
+      return {
+        track: activeTrack,
+        position: Math.max(0, position),
+        duration,
+        seekable: true,
+        state: this.state
+      };
+    } catch (error) {
+      if (SEEK_ERROR_CODES.has(error?.code)) throw error;
+      throw createSeekError('MPV_IPC_DISCONNECTED', error?.message || 'mpv IPC seek failed');
+    }
+  }
+
+  _assertSeekTargetCurrent(activeTrack, activeTrackId) {
+    if (this.nowPlaying !== activeTrack || this.nowPlaying?.id !== activeTrackId) {
+      throw createSeekError('PLAYBACK_STALE_ID', 'The active track changed while seeking');
+    }
+    if (!['playing', 'paused'].includes(this.state)) {
+      throw createSeekError('PLAYBACK_SEEK_STATE', 'Playback changed state while seeking');
+    }
   }
 
   async stop() {
@@ -687,21 +786,17 @@ class PlaybackEngine extends EventEmitter {
       // attempt, regardless of how long ago the first failure happened.
       this._heartbeatWindowStartedAt = failureAt;
       const retainedTrack = this.nowPlaying;
-      this.api.log?.(`[music-bot] MPV IPC heartbeat failed (2/3); recovering player: ${error.message}`, 'warn');
-      this._heartbeatRecoveryInProgress = true;
-      try {
-        await this.restart();
-        if (resumePlayback && retainedTrack) {
-          await this.play(retainedTrack);
-        } else if (!resumePlayback) {
-          await this._startProcess();
-        }
-      } finally {
-        this._heartbeatRecoveryInProgress = false;
-      }
+      this.api.log?.(`[music-bot] MPV IPC heartbeat failed (2/3); requesting supervised recovery: ${error.message}`, 'warn');
+      this.emit('heartbeat-failure-confirmed', {
+        track: retainedTrack,
+        error,
+        failures,
+        resumePlayback: Boolean(resumePlayback),
+        failureClass: 'ipc'
+      });
       return {
-        ok: true,
-        action: 'recovered',
+        ok: false,
+        action: 'confirmed',
         failures,
         position: 0,
         diagnostics: this.getDiagnostics()

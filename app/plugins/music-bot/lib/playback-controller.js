@@ -5,6 +5,12 @@ const { SoundbotProcessRegistry } = require('./soundbot-process-registry');
 
 const RAMP_STEP_MS = 50;
 
+function createSeekError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
+
 class TransitionAbortedError extends Error {
   constructor(reason) {
     super(`Playback transition aborted by ${reason}`);
@@ -101,6 +107,7 @@ class PlaybackController extends EventEmitter {
     return this._enqueueIntent('pause', async () => {
       const slot = this._getActiveSlot();
       if (!slot) return;
+      await this._captureSlotPosition(slot);
       await slot.engine.pause();
       if (!slot.retired) {
         slot.state = 'paused';
@@ -159,6 +166,7 @@ class PlaybackController extends EventEmitter {
     const interruptedTrack = interruptedSlot?.engine.getNowPlaying?.() || null;
     this._abortActiveTransition('skip');
     return this._enqueueIntent('skip', async () => {
+      await this._captureSlotPosition(interruptedSlot || this._getActiveSlot());
       if (interruptedTransition) {
         if (interruptedSlot && interruptedTrack) {
           this._emitTrackEndOnce(interruptedSlot, { track: interruptedTrack, reason: 'skip' });
@@ -201,7 +209,9 @@ class PlaybackController extends EventEmitter {
   async getPosition(options) {
     const slot = this._getActiveSlot();
     if (!slot?.engine.getPosition) return 0;
-    return slot.engine.getPosition(options);
+    const position = await slot.engine.getPosition(options);
+    this._rememberSlotPosition(slot, position);
+    return position;
   }
 
   heartbeat(options = {}) {
@@ -226,10 +236,13 @@ class PlaybackController extends EventEmitter {
         position: Number(position) || 0
       }));
     const tracked = Promise.resolve(operation)
-      .then((result) => ({
-        ...result,
-        diagnostics: this.getSnapshot()
-      }))
+      .then((result) => {
+        this._rememberSlotPosition(slot, result?.position);
+        return {
+          ...result,
+          diagnostics: this.getSnapshot()
+        };
+      })
       .finally(() => {
         if (this._heartbeatPromise === tracked) {
           this._heartbeatPromise = null;
@@ -735,6 +748,7 @@ class PlaybackController extends EventEmitter {
       retirePromise: null,
       crashed: false,
       lastError: null,
+      positionSeconds: 0,
       startedPlaybackIds: new Set(),
       terminalPlaybackIds: new Set(),
       suppressedPlaybackIds: new Set(),
@@ -777,10 +791,15 @@ class PlaybackController extends EventEmitter {
       const playbackId = slot.playbackId;
       if (playbackId && slot.startedPlaybackIds.has(playbackId)) return;
       if (playbackId) slot.startedPlaybackIds.add(playbackId);
+      slot.positionSeconds = 0;
       slot.state = 'playing';
       if (this.activeSlot === slot.name) {
         this.activePlaybackId = slot.playbackId;
         this.transportState = 'playing';
+      }
+      if (track && typeof track === 'object') {
+        track.playbackId = playbackId;
+        track.playbackSlot = slot.name;
       }
       this.emit('track-start', track);
     });
@@ -793,9 +812,12 @@ class PlaybackController extends EventEmitter {
         return;
       }
       const isOutgoingCrossfade = this._crossfade?.outgoing === slot;
-      const terminalInfo = isOutgoingCrossfade
-        ? { ...info, reason: 'crossfade' }
-        : info;
+      const explicitPosition = Number(info?.positionSeconds ?? info?.position);
+      const terminalInfo = {
+        ...info,
+        reason: isOutgoingCrossfade ? 'crossfade' : info.reason,
+        positionSeconds: Number.isFinite(explicitPosition) ? explicitPosition : slot.positionSeconds
+      };
       if (!isOutgoingCrossfade && this.activeSlot === slot.name) {
         slot.state = 'idle';
         this.activePlaybackId = null;
@@ -857,6 +879,59 @@ class PlaybackController extends EventEmitter {
           this.api.log?.(`[music-bot] Failed to engage heartbeat safety lock: ${error.message}`, 'error');
         });
     });
+    slot.engine.on('heartbeat-failure-confirmed', (info = {}) => {
+      if (!isCurrent() || slot.kind === 'test-tone') return;
+      this.emit('heartbeat-failure-confirmed', {
+        ...info,
+        track: info.track || slot.engine.getNowPlaying?.() || null,
+        playbackId: slot.playbackId
+      });
+    });
+  }
+
+  seek(positionSeconds, { playbackId } = {}) {
+    return this._enqueueIntent('seek', async () => {
+      const position = Number(positionSeconds);
+      if (!Number.isFinite(position) || position < 0) {
+        throw createSeekError('PLAYBACK_SEEK_INVALID_POSITION', 'Seek position must be a non-negative number');
+      }
+      const slot = this._assertSeekCurrent(playbackId);
+
+      const result = await slot.engine.seek(position);
+      this._assertSeekCurrent(playbackId, slot);
+      this._rememberSlotPosition(slot, result?.position ?? position);
+      slot.state = this.transportState;
+      return { ...result, playbackId, state: this.transportState };
+    });
+  }
+
+  _assertSeekCurrent(playbackId, expectedSlot = null) {
+    if (this.safetyLock) {
+      throw createSeekError('PLAYBACK_SAFETY_LOCKED', 'Playback safety lock is engaged');
+    }
+    if (this.lifecycle !== 'active') {
+      throw createSeekError('PLAYBACK_SEEK_STATE', `Playback controller is ${this.lifecycle}`);
+    }
+    if (this._crossfade || !['playing', 'paused'].includes(this.transportState)) {
+      throw createSeekError('PLAYBACK_SEEK_STATE', `Cannot seek while playback is ${this.transportState}`);
+    }
+
+    const slot = this._getActiveSlot();
+    if (!slot || slot.retired || !slot.engine?.seek || !slot.playbackId) {
+      throw createSeekError('PLAYBACK_SEEK_STATE', 'No active playback is available for seeking');
+    }
+    if (expectedSlot && slot !== expectedSlot) {
+      throw createSeekError('PLAYBACK_STALE_ID', 'Playback changed while seeking');
+    }
+    if (!playbackId || playbackId !== this.activePlaybackId || playbackId !== slot.playbackId) {
+      throw createSeekError('PLAYBACK_STALE_ID', 'Playback ID no longer matches the active track');
+    }
+    const slotState = String(slot.state || slot.engine.getState?.() || '').toLowerCase();
+    const engineState = String(slot.engine.getState?.() || slotState).toLowerCase();
+    if (!['playing', 'paused'].includes(slotState) || !['playing', 'paused'].includes(engineState)) {
+      throw createSeekError('PLAYBACK_SEEK_STATE', 'Active playback changed state while seeking');
+    }
+    return slot;
   }
 
   _emitTrackEndOnce(slot, info = {}) {
@@ -871,6 +946,27 @@ class PlaybackController extends EventEmitter {
     if (slot.terminalPlaybackIds.has(playbackId)) return false;
     slot.terminalPlaybackIds.add(playbackId);
     this.emit('track-end', info);
+    return true;
+  }
+
+  async _captureSlotPosition(slot) {
+    if (!slot || slot.retired || typeof slot.engine?.getPosition !== 'function') {
+      return slot?.positionSeconds || 0;
+    }
+    const playbackId = slot.playbackId;
+    try {
+      const position = await slot.engine.getPosition({ timeoutMs: 500 });
+      if (!slot.retired && slot.playbackId === playbackId) {
+        this._rememberSlotPosition(slot, position);
+      }
+    } catch (_) { /* retain the latest authoritative snapshot */ }
+    return slot.positionSeconds;
+  }
+
+  _rememberSlotPosition(slot, value) {
+    const position = Number(value);
+    if (!slot || slot.retired || !Number.isFinite(position) || position < 0) return false;
+    slot.positionSeconds = position;
     return true;
   }
 

@@ -1,19 +1,26 @@
 const { randomUUID } = require('crypto');
 
 class AutoDJ {
-  constructor(config, musicResolver, db, api) {
+  constructor(config, musicResolver, db, api, options = {}) {
     this.api = api;
     this.db = db;
     this.musicResolver = musicResolver;
+    this.catalog = options.catalog || null;
+    this.playlistStore = options.playlistStore || null;
+    this.random = typeof options.random === 'function' ? options.random : () => Math.random();
+    this.now = typeof options.now === 'function' ? options.now : Date.now;
+    this.isBanned = typeof options.isBanned === 'function' ? options.isBanned : () => false;
     this.playlistIndex = 0;
     this.playlistTrackIndices = new Map();
     this.relatedTrackIndices = new Map();
     this.mixSeedIndex = 0;
     this.lastPlaylistTrack = null;
     this.playedInSession = new Set();
+    this.playedSongIds = new Set();
     this.consecutiveCount = 0;
     this.selectionSource = null;
     this.blockedCount = 0;
+    this.lastSelection = null;
     this.lastResult = { state: 'idle', message: 'Auto-DJ bereit.' };
     this.updateConfig(config);
     this.isActive = this.config.enabled;
@@ -66,7 +73,6 @@ class AutoDJ {
 
   onSongRequested() {
     this.deactivate();
-    this.playedInSession.clear();
   }
 
   async onQueueEmpty() {
@@ -89,11 +95,6 @@ class AutoDJ {
       return null;
     }
 
-    if (!force && this.consecutiveCount >= this.config.maxConsecutiveAutoDJ) {
-      this._setResult('limit-reached', `Auto-DJ-Limit von ${this.config.maxConsecutiveAutoDJ} Titeln erreicht.`);
-      return null;
-    }
-
     const track = await this._selectTrack();
     if (!track) {
       if (this.lastResult.state !== 'error' && this.lastResult.state !== 'no-playlist-context') {
@@ -102,19 +103,23 @@ class AutoDJ {
       return null;
     }
 
-    this._setResult('selected', `Ausgewaehlt: ${track.title || 'Unbekannter Titel'}`);
+    this._setResult('selected', `Ausgewaehlt: ${track.title || 'Unbekannter Titel'}`, {
+      title: track.title || 'Unbekannter Titel'
+    });
     return {
       song: {
         ...track,
         requestedBy: 'AutoDJ'
       },
-      announce: this.config.announceAutoDJ
+      announce: this.config.announceAutoDJ,
+      selectionSource: this.selectionSource
     };
   }
 
   reset() {
     this.consecutiveCount = 0;
     this.playedInSession.clear();
+    this.playedSongIds.clear();
     this.playlistTrackIndices.clear();
     this.relatedTrackIndices.clear();
     this.mixSeedIndex = 0;
@@ -127,7 +132,11 @@ class AutoDJ {
     if (track?.youtubeId) {
       this.playedInSession.add(track.youtubeId);
     }
-    this._setResult('playing', `Spielt: ${track?.title || 'Unbekannter Titel'}`);
+    const songId = Number(track?.catalogSongId ?? track?.songId);
+    if (Number.isInteger(songId) && songId > 0) this.playedSongIds.add(songId);
+    this._setResult('playing', `Spielt: ${track?.title || 'Unbekannter Titel'}`, {
+      title: track?.title || 'Unbekannter Titel'
+    });
   }
 
   setPlaybackSeed(track) {
@@ -137,7 +146,8 @@ class AutoDJ {
   }
 
   markPlaybackFailed(error) {
-    this._setResult('error', `Wiedergabe fehlgeschlagen: ${error?.message || error || 'Unbekannter Fehler'}`);
+    const detail = error?.message || error || 'Unbekannter Fehler';
+    this._setResult('error', `Wiedergabe fehlgeschlagen: ${detail}`, { error: detail });
   }
 
   getSelectionBlocks(now = Date.now()) {
@@ -216,12 +226,12 @@ class AutoDJ {
       mode: this.config.mode,
       isActive: this.isActive,
       consecutiveCount: this.consecutiveCount,
-      maxConsecutiveAutoDJ: this.config.maxConsecutiveAutoDJ,
       historyMinPlays: this.config.historyMinPlays,
       mixHistoryPercent: this.config.mixHistoryPercent,
       repeatCooldownHours: this.config.repeatCooldownHours,
       selectionSource: this.selectionSource,
       blockedCount: this.blockedCount,
+      lastSelection: this.lastSelection,
       announceAutoDJ: this.config.announceAutoDJ,
       playlistUrls: this.config.playlistUrls,
       playlistFallbackToRandom: this.config.playlistFallbackToRandom,
@@ -244,14 +254,16 @@ class AutoDJ {
         case 'random':
           return this._pickRelatedToLastPlaylistTrack();
         case 'mix':
-          return this._pickFromMix();
+          return this.catalog && this.playlistStore && this._hasConfiguredCatalogRadioSources()
+            ? this._pickFromCatalogRadio()
+            : this._pickFromMix();
         case 'history':
         default:
           return this._pickFromHistory();
       }
     } catch (error) {
       this.api.log?.(`[music-bot] AutoDJ selection failed: ${error.message}`, 'error');
-      this._setResult('error', `Auswahl fehlgeschlagen: ${error.message}`);
+      this._setResult('error', `Auswahl fehlgeschlagen: ${error.message}`, { error: error.message });
       return null;
     }
   }
@@ -331,6 +343,293 @@ class AutoDJ {
     return fallback;
   }
 
+  async _pickFromCatalogRadio() {
+    this.selectionSource = null;
+    this.lastSelection = null;
+    const familiarFirst = this.random() < 0.6;
+    if (familiarFirst) {
+      const familiar = this._pickCatalogFamiliar();
+      if (familiar) {
+        this.selectionSource = 'familiar';
+        return familiar;
+      }
+      const discovery = await this._pickCatalogDiscovery();
+      if (discovery) this.selectionSource = 'discovery-fallback';
+      return discovery;
+    }
+
+    const discovery = await this._pickCatalogDiscovery();
+    if (discovery) {
+      this.selectionSource = 'discovery';
+      return discovery;
+    }
+    const familiar = this._pickCatalogFamiliar();
+    if (familiar) this.selectionSource = 'familiar-fallback';
+    return familiar;
+  }
+
+  _hasConfiguredCatalogRadioSources() {
+    const sources = this.playlistStore?.getRadioSources?.() || [];
+    return sources.some((source) => source?.enabled);
+  }
+
+  _loadCatalogPool() {
+    const items = this.playlistStore?.getRadioCandidates?.() || [];
+    const songIds = [...new Set(items.map((item) => Number(item.songId)).filter(Number.isInteger))];
+    if (!songIds.length) {
+      this.blockedCount = 0;
+      return { items: [], candidates: [], eligible: [], artistSpacingRelaxed: false };
+    }
+    const now = this.now();
+    const candidates = this.catalog?.getRadioCandidates?.(songIds, { now }) || [];
+    const bySongId = new Map(candidates.map((candidate) => [Number(candidate.songId), candidate]));
+    const hardEligible = candidates.filter((candidate) => this._isCatalogCandidateHardEligible(candidate, now));
+    this.blockedCount = candidates.length - hardEligible.length;
+    const artistEligible = hardEligible.filter((candidate) => !this._isArtistSpaced(candidate, now));
+    const artistSpacingRelaxed = artistEligible.length === 0 && hardEligible.length > 0;
+    const eligible = artistSpacingRelaxed ? hardEligible : artistEligible;
+    const eligibleIds = new Set(eligible.map((candidate) => Number(candidate.songId)));
+    return {
+      items: items.filter((item) => eligibleIds.has(Number(item.songId))),
+      candidates,
+      eligible,
+      bySongId,
+      artistSpacingRelaxed
+    };
+  }
+
+  _pickCatalogFamiliar() {
+    const pool = this._loadCatalogPool();
+    if (!pool.items.length) {
+      this.lastSelection = {
+        type: 'familiar',
+        artistSpacingRelaxed: pool.artistSpacingRelaxed,
+        candidates: []
+      };
+      return null;
+    }
+
+    const groups = new Map();
+    pool.items.forEach((item) => {
+      const playlistId = String(item.playlistId || '');
+      if (!groups.has(playlistId)) {
+        groups.set(playlistId, {
+          playlistId,
+          weight: Math.max(1, Number(item.weight) || 1),
+          mode: item.mode === 'shuffle' ? 'shuffle' : 'ordered',
+          items: []
+        });
+      }
+      groups.get(playlistId).items.push(item);
+    });
+    const group = this._chooseWeighted([...groups.values()], (entry) => entry.weight);
+    if (!group) return null;
+
+    const scored = group.items.map((item) => {
+      const candidate = pool.bySongId.get(Number(item.songId));
+      return { item, candidate, ...this._scoreCatalogCandidate(candidate) };
+    }).filter((entry) => entry.candidate);
+    const selected = group.mode === 'shuffle'
+      ? this._chooseWeighted(scored, (entry) => entry.score)
+      : scored[0];
+    if (!selected) return null;
+
+    if (group.mode === 'ordered') {
+      const length = Math.max(1, Number(selected.item.itemCount) || group.items.length);
+      const nextCursor = (Number(selected.item.position) + 1) % length;
+      this.playlistStore.advanceRadioCursor?.(group.playlistId, nextCursor);
+    }
+    this.lastSelection = {
+      type: 'familiar',
+      playlistId: group.playlistId,
+      playlistMode: group.mode,
+      playlistWeight: group.weight,
+      artistSpacingRelaxed: pool.artistSpacingRelaxed,
+      candidates: scored.map((entry) => ({
+        songId: Number(entry.candidate.songId),
+        explicitSongFactor: entry.explicitSongFactor,
+        implicitSongFactor: entry.implicitSongFactor,
+        songFactor: entry.songFactor,
+        artistFactor: entry.artistFactor,
+        score: entry.score
+      }))
+    };
+    return this._catalogCandidateToTrack(selected.candidate);
+  }
+
+  async _pickCatalogDiscovery() {
+    const pool = this._loadCatalogPool();
+    if (!pool.eligible.length) return null;
+    const seedEntry = this._chooseWeighted(
+      pool.eligible.map((candidate) => ({ candidate, ...this._scoreCatalogCandidate(candidate) })),
+      (entry) => entry.score
+    );
+    if (!seedEntry) return null;
+    const seed = this._catalogCandidateToTrack(seedEntry.candidate);
+    let discovered = await this._pickRelatedToSeed(seed, this.getSelectionBlocks(this.now()));
+    if (!discovered && this.musicResolver?.resolve) {
+      const query = [seed.artist, seed.title].filter(Boolean).join(' ');
+      if (query) {
+        try {
+          const resolved = await this.musicResolver.resolve(query);
+          discovered = resolved?.success ? resolved.song : null;
+        } catch (error) {
+          this.api.log?.(`[music-bot] AutoDJ discovery lookup failed: ${error.message}`, 'warn');
+        }
+      }
+    }
+    if (!discovered || this.isBanned(discovered)) return null;
+    if (discovered.youtubeId && this.playedInSession.has(discovered.youtubeId)) return null;
+
+    try {
+      const resolved = this.catalog.resolveOrUpsert(discovered);
+      const songId = Number(resolved?.song?.id);
+      const canonical = Number.isInteger(songId)
+        ? this.catalog.getRadioCandidates?.([songId], { now: this.now() })?.find((candidate) => Number(candidate.songId) === songId)
+        : null;
+      if (canonical && !this._isCatalogCandidateHardEligible(canonical, this.now())) return null;
+      discovered = {
+        ...discovered,
+        catalogSongId: Number.isInteger(songId) ? songId : undefined,
+        sourceId: resolved?.source?.id || discovered.sourceId
+      };
+    } catch (error) {
+      this.api.log?.(`[music-bot] AutoDJ discovery catalog lookup failed: ${error.message}`, 'warn');
+    }
+    this.lastSelection = {
+      type: 'discovery',
+      seedSongId: Number(seedEntry.candidate.songId),
+      artistSpacingRelaxed: pool.artistSpacingRelaxed,
+      candidates: []
+    };
+    return discovered;
+  }
+
+  _isCatalogCandidateHardEligible(candidate, now) {
+    if (!candidate || candidate.feedback === 'down') return false;
+    const songId = Number(candidate.songId);
+    if (this.playedSongIds.has(songId)) return false;
+    const cooldownStartedAt = now - this._getRepeatCooldownMs();
+    if (candidate.lastPlayedAt !== null && candidate.lastPlayedAt !== undefined
+      && Number(candidate.lastPlayedAt) >= cooldownStartedAt) return false;
+    return this._eligibleCatalogSources(candidate, now).length > 0;
+  }
+
+  isTrackHardEligible(track, now = this.now()) {
+    if (!track || this.isBanned(track)) return false;
+    if (track.youtubeId && this.playedInSession.has(track.youtubeId)) return false;
+    const songId = Number(track.catalogSongId ?? track.songId);
+    if (!Number.isInteger(songId) || songId <= 0 || !this.catalog?.getRadioCandidates) return true;
+    const candidate = this.catalog.getRadioCandidates([songId], { now })
+      .find((entry) => Number(entry.songId) === songId);
+    if (!this._isCatalogCandidateHardEligible(candidate, now)) return false;
+    const sourceId = Number(track.sourceId);
+    if (!Number.isInteger(sourceId) || sourceId <= 0) return true;
+    return this._eligibleCatalogSources(candidate, now)
+      .some((source) => Number(source.id) === sourceId);
+  }
+
+  _isArtistSpaced(candidate, now) {
+    const cutoff = now - (90 * 60 * 1000);
+    return (candidate?.artists || []).some((artist) => (
+      artist.lastPlayedAt !== null && artist.lastPlayedAt !== undefined
+      && Number(artist.lastPlayedAt) >= cutoff
+    ));
+  }
+
+  _scoreCatalogCandidate(candidate) {
+    const completePlays = Math.max(0, Number(candidate?.completePlays) || 0);
+    const earlySkips = Math.max(0, Number(candidate?.earlySkips) || 0);
+    const implicitSongFactor = this._clamp(0.5, 1.5, 1 + (completePlays * 0.03) - (earlySkips * 0.10));
+    const explicitSongFactor = candidate?.feedback === 'up' ? 3 : 1;
+    const songFactor = explicitSongFactor * implicitSongFactor;
+    const affinities = (candidate?.artists || []).map((artist) => Number(artist.affinity) || 0);
+    const affinity = affinities.length ? Math.max(...affinities) : 0;
+    const artistFactor = this._clamp(0.4, 2.5, 1 + (affinity * 0.25));
+    return {
+      explicitSongFactor,
+      implicitSongFactor,
+      songFactor,
+      artistFactor,
+      score: songFactor * artistFactor
+    };
+  }
+
+  _catalogCandidateToTrack(candidate) {
+    const now = this.now();
+    const sources = this._eligibleCatalogSources(candidate, now);
+    if (!candidate || !sources.length) return null;
+    const primary = sources[0];
+    const alternatives = sources.slice(1, 2).map((source) => this._sourceToTrack(source));
+    return {
+      title: candidate.title,
+      artist: (candidate.artists || []).map((artist) => artist.name).filter(Boolean).join(', '),
+      canonicalKey: candidate.canonicalKey,
+      catalogSongId: Number(candidate.songId),
+      ...this._sourceToTrack(primary),
+      alternativeSources: alternatives
+    };
+  }
+
+  _sourceToTrack(source) {
+    const provider = source?.provider || 'youtube';
+    return {
+      sourceId: source?.id,
+      provider,
+      providerId: source?.providerId,
+      source: provider,
+      trackKey: source?.trackKey || `${provider}:${source?.providerId}`,
+      url: source?.url,
+      channelId: source?.channelId || null,
+      channelName: source?.channelName || null,
+      streamUrl: source?.streamUrl,
+      localPath: source?.localPath,
+      youtubeId: provider === 'youtube' ? source?.providerId : undefined
+    };
+  }
+
+  _eligibleCatalogSources(candidate, now) {
+    return (candidate?.sources || []).filter((source) => {
+      if (Number(source.cooldownUntil) > now) return false;
+      return !this.isBanned({ ...candidate, ...this._sourceToTrack(source) });
+    });
+  }
+
+  getAlternativeSource(track) {
+    const source = Array.isArray(track?.alternativeSources) ? track.alternativeSources[0] : null;
+    if (!source) return null;
+    const { alternativeSources, ...base } = track;
+    return { ...base, ...source, alternativeSources: [] };
+  }
+
+  recordSourceFailure(track, error, now = this.now()) {
+    if (!track?.sourceId || !this.catalog?.recordSourceFailure) return null;
+    return this.catalog.recordSourceFailure(track.sourceId, error, now);
+  }
+
+  recordSourceSuccess(track) {
+    if (!track?.sourceId || !this.catalog?.recordSourceSuccess) return null;
+    return this.catalog.recordSourceSuccess(track.sourceId);
+  }
+
+  _chooseWeighted(items, weightOf) {
+    if (!items.length) return null;
+    const weights = items.map((item) => Math.max(0, Number(weightOf(item)) || 0));
+    const total = weights.reduce((sum, weight) => sum + weight, 0);
+    if (total <= 0) return items[0];
+    const roll = this._clamp(0, 0.999999999, Number(this.random()) || 0) * total;
+    let threshold = 0;
+    for (let index = 0; index < items.length; index += 1) {
+      threshold += weights[index];
+      if (roll < threshold) return items[index];
+    }
+    return items.at(-1);
+  }
+
+  _clamp(min, max, value) {
+    return Math.min(max, Math.max(min, value));
+  }
+
   async _pickFromMix() {
     const candidates = this._loadHistoryCandidates();
     const blocks = this.getSelectionBlocks();
@@ -343,7 +642,7 @@ class AutoDJ {
       return seed ? this._pickRelatedToSeed(seed, blocks) : null;
     };
 
-    if (Math.random() * 100 < this.config.mixHistoryPercent) {
+    if (this.random() * 100 < this.config.mixHistoryPercent) {
       const history = pickHistory();
       if (history) {
         this.selectionSource = 'history';
@@ -483,10 +782,11 @@ class AutoDJ {
     };
   }
 
-  _setResult(state, message) {
+  _setResult(state, message, params = {}) {
     this.lastResult = {
       state,
       message,
+      params,
       updatedAt: Date.now()
     };
   }

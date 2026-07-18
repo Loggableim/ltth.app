@@ -677,19 +677,24 @@ html[data-musicbot-locked] [data-playback-action] {
 }
 
 .np-progress-bar {
-  height: 7px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--musicbot-muted) 24%, transparent);
+  width: 100%;
+  accent-color: var(--musicbot-accent);
+  cursor: pointer;
 }
 
-.np-progress-fill {
-  width: 0%;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--musicbot-accent), var(--musicbot-accent-2), var(--musicbot-accent-3));
-  transition: width 1s linear;
+.np-progress-bar:disabled {
+  cursor: not-allowed;
+  opacity: .58;
 }
+
+.playlist-admin-layout { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(0, 1.4fr); gap: 16px; }
+.playlist-editor, .playlist-radio-card { border: 1px solid var(--musicbot-border); border-radius: 10px; padding: 14px; background: var(--musicbot-surface-2); }
+.playlist-radio-card { margin-top: 16px; }
+.playlist-item, .playlist-source { display: flex; align-items: center; gap: 8px; padding: 9px; border-bottom: 1px solid var(--musicbot-border); }
+.playlist-item[draggable="true"] { cursor: grab; }
+.history-feedback.is-active { outline: 2px solid var(--musicbot-accent); }
+.history-ban-badge { color: var(--musicbot-danger, #e85d75); font-weight: 700; }
+@media (max-width: 760px) { .playlist-admin-layout { grid-template-columns: 1fr; } }
 
 .np-time {
   display: flex;

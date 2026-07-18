@@ -90,6 +90,25 @@ integrationTest('plays, heartbeats, and fully cleans up real MPV with null audio
       position: expect.any(Number)
     }));
 
+    const playbackId = controller.getSnapshot().activePlaybackId;
+    const forwardSeek = await controller.seek(6, { playbackId });
+    expect(forwardSeek).toEqual(expect.objectContaining({
+      playbackId,
+      duration: expect.any(Number),
+      seekable: true,
+      state: 'playing'
+    }));
+    expect(forwardSeek.position).toBeGreaterThanOrEqual(5.5);
+
+    await controller.pause();
+    const pausedSeek = await controller.seek(2, { playbackId });
+    expect(pausedSeek).toEqual(expect.objectContaining({
+      playbackId,
+      state: 'paused'
+    }));
+    expect(pausedSeek.position).toBeGreaterThanOrEqual(1.5);
+    await controller.resume();
+
     await controller.stop();
     expect(controller.getSnapshot()).toEqual(expect.objectContaining({
       activeSlot: null,

@@ -7,7 +7,19 @@
   function tr(key, fallback, params = {}) {
     const fullKey = `${I18N_PREFIX}.${key}`;
     const translated = window.i18n?.t(fullKey, params);
-    return translated && translated !== fullKey ? translated : fallback;
+    const value = translated && translated !== fullKey ? translated : fallback;
+    return String(value).replace(/\{(\w+)\}/g, (_match, name) => params[name] ?? `{${name}}`);
+  }
+
+  function runtimeStateLabel(state) {
+    const normalized = String(state || 'idle').toLowerCase();
+    if (normalized === 'paused' || normalized === 'pausiert') return tr('statePaused', 'Pausiert');
+    if (['playing', 'playback', 'wiedergabe'].includes(normalized)) return tr('statePlaying', 'Wiedergabe');
+    if (['loading', 'buffering', 'crossfading', 'recovering'].includes(normalized)) {
+      return tr('playbackAdvancing', 'Lädt den nächsten Titel …');
+    }
+    if (normalized === 'idle') return tr('stateIdle', 'Bereit');
+    return state;
   }
 
   function debounce(fn, delay = 200) {
@@ -158,9 +170,29 @@
   const setupIssuesBanner = document.getElementById('setup-issues-banner');
   const setupIssuesList = document.getElementById('setup-issues-list');
   const npProgressWrapper = document.getElementById('np-progress-wrapper');
-  const npProgressFill = document.getElementById('np-progress-fill');
+  const npSeekInput = document.getElementById('np-seek-input');
   const npElapsed = document.getElementById('np-elapsed');
   const npDuration = document.getElementById('np-duration');
+  const historyLoadMore = document.getElementById('history-load-more');
+  const historyPageStatus = document.getElementById('history-page-status');
+  const catalogSearchInput = document.getElementById('catalog-search-input');
+  const catalogSearchResults = document.getElementById('catalog-search-results');
+  const playlistCreateName = document.getElementById('playlist-create-name');
+  const playlistCreateMode = document.getElementById('playlist-create-mode');
+  const playlistCreateButton = document.getElementById('playlist-create-btn');
+  const playlistList = document.getElementById('playlist-list');
+  const playlistEditor = document.getElementById('playlist-editor');
+  const playlistNameInput = document.getElementById('playlist-name-input');
+  const playlistModeInput = document.getElementById('playlist-mode-input');
+  const playlistSaveButton = document.getElementById('playlist-save-btn');
+  const playlistDeleteButton = document.getElementById('playlist-delete-btn');
+  const playlistItems = document.getElementById('playlist-items');
+  const playlistImportUrl = document.getElementById('playlist-import-url');
+  const playlistImportButton = document.getElementById('playlist-import-btn');
+  const playlistImportProgress = document.getElementById('playlist-import-progress');
+  const playlistConflictFeedback = document.getElementById('playlist-conflict-feedback');
+  const playlistRadioSources = document.getElementById('playlist-radio-sources');
+  const playlistRadioSave = document.getElementById('playlist-radio-save');
   const toastContainer = document.getElementById('musicbot-toast-container');
   const onboardingPanel = document.getElementById('musicbot-onboarding');
   const onboardingStatus = document.getElementById('musicbot-onboarding-status');
@@ -200,6 +232,18 @@
   let progressTimer = null;
   let progressCurrentPos = 0;
   let progressDuration = 0;
+  let activePlaybackId = null;
+  let lastConfirmedSeekPosition = 0;
+  let seekPreviewActive = false;
+  let seekInFlight = false;
+  let seekTransitioning = false;
+  let historyOffset = 0;
+  let historyTotal = 0;
+  const HISTORY_PAGE_SIZE = 50;
+  const canonicalSongState = new Map();
+  let selectedPlaylist = null;
+  let playlists = [];
+  let playlistDragSongId = null;
   let draggedQueueIndex = null;
   let draggedQueueSongId = null;
   let giftCatalogTargetField = null;
@@ -224,6 +268,7 @@
   let latestQueueTracks = [];
   let latestHistoryTracks = [];
   let trackBanTargetId = null;
+  let trackBanCatalogEventId = null;
   let trackBanScope = 'track';
   let trackBanReturnFocus = null;
 
@@ -495,19 +540,23 @@
   document.getElementById('pause-btn').addEventListener('click', async () => {
     const result = await post('/pause');
     if (result?.success) {
-      updateState('Pausiert');
+      updateState('paused');
       stopProgressTimer();
     } else {
-      showToast('warn', 'Pause', result?.error || 'Aktuell läuft kein Titel.');
+      showToast('warn', tr('pauseTitle', 'Pause'), result?.error || tr('noActiveTrack', 'Aktuell läuft kein Titel.'));
     }
   });
   document.getElementById('resume-btn').addEventListener('click', async () => {
     const result = await post('/resume');
     if (result?.success && result.track) {
       renderNowPlaying(result.track);
-      showToast('success', result.resumed ? 'Wiedergabe fortgesetzt' : 'Wiedergabe gestartet', result.track.title || 'Nächster Titel läuft.');
+      showToast(
+        'success',
+        result.resumed ? tr('playbackResumed', 'Wiedergabe fortgesetzt') : tr('playbackStarted', 'Wiedergabe gestartet'),
+        result.track.title || tr('nextTrackPlaying', 'Nächster Titel läuft.')
+      );
     } else if (!result?.success) {
-      showToast('warn', 'Resume', result?.error || 'Queue und Auto-DJ enthalten keinen startbaren Titel.');
+      showToast('warn', tr('resumeTitle', 'Fortsetzen'), result?.error || tr('noStartableTrack', 'Queue und Auto-DJ enthalten keinen startbaren Titel.'));
     }
   });
   skipButton?.addEventListener('click', async () => {
@@ -518,12 +567,14 @@
     const result = await post('/skip');
     if (result?.success && result.next) {
       renderNowPlaying(result.next);
-      showToast('success', 'Überspringen', `Spielt jetzt: ${result.next.title || 'nächster Titel'}`);
+      showToast('success', tr('skipTitle', 'Überspringen'), tr('playingNow', 'Spielt jetzt: {title}', {
+        title: result.next.title || tr('selectedTitle', 'Ausgewählter Titel')
+      }));
     } else if (result?.success && result.nextError) {
       showToast('warn', 'Auto-DJ', result.nextError);
     }
     if (!result?.success) {
-      showToast('warn', 'Überspringen', result?.error || 'Aktuell läuft kein Titel.');
+      showToast('warn', tr('skipTitle', 'Überspringen'), result?.error || tr('noActiveTrack', 'Aktuell läuft kein Titel.'));
     }
     } finally {
       skipInProgress = false;
@@ -556,9 +607,9 @@
     const ytId = extractYouTubeId(query);
     if (ytId) {
       setPreviewVideo(ytId);
-      searchFeedback.textContent = '⏳ Lade Informationen...';
+      searchFeedback.textContent = `⏳ ${tr('searchLoading', 'Lade Informationen…')}`;
     } else {
-      searchFeedback.textContent = '🔍 Suche...';
+      searchFeedback.textContent = `🔍 ${tr('searching', 'Suche…')}`;
     }
 
     const res = await get(`/resolve?q=${encodeURIComponent(query)}`);
@@ -570,7 +621,7 @@
         updatePreviewFrame(res.song);
       }
     } else {
-      searchFeedback.textContent = `⚠️ ${res?.error || 'Kein Ergebnis.'}`;
+      searchFeedback.textContent = `⚠️ ${res?.error || tr('noResult', 'Kein Ergebnis.')}`;
       if (!ytId) {
         clearPreview();
       }
@@ -588,15 +639,15 @@
   requestBtn?.addEventListener('click', async () => {
     const query = searchInput.value.trim();
     if (!query) return;
-    requestFeedback.textContent = '⏳ Wird zur Queue hinzugefügt...';
+    requestFeedback.textContent = `⏳ ${tr('queueAdding', 'Wird zur Queue hinzugefügt…')}`;
     const result = await post('/request', { query });
     if (result?.success) {
-      requestFeedback.textContent = `✅ Hinzugefügt: ${result.song.title}`;
+      requestFeedback.textContent = `✅ ${tr('queueAdded', 'Hinzugefügt: {title}', { title: result.song.title })}`;
       renderQueueFromServer();
-      showToast('success', 'Song hinzugefügt', result.song.title);
+      showToast('success', tr('songAddedTitle', 'Song hinzugefügt'), result.song.title);
     } else {
-      requestFeedback.textContent = `⚠️ ${result?.error || 'Fehler beim Request.'}`;
-      showToast('warn', 'Song-Request abgelehnt', result?.error || 'Fehler beim Request.');
+      requestFeedback.textContent = `⚠️ ${result?.error || tr('requestFailed', 'Fehler beim Request.')}`;
+      showToast('warn', tr('requestRejectedTitle', 'Song-Request abgelehnt'), result?.error || tr('requestFailed', 'Fehler beim Request.'));
     }
   });
 
@@ -605,7 +656,7 @@
   const postMasterVolume = debounce(async (vol) => {
     const result = await post('/volume', { masterVolume: vol });
     if (!result?.success) {
-      showToast('error', 'Master-Lautstärke', result?.error || 'Lautstärke konnte nicht gesetzt werden.');
+      showToast('error', tr('masterVolumeTitle', 'Master-Lautstärke'), result?.error || tr('volumeSetFailed', 'Lautstärke konnte nicht gesetzt werden.'));
     }
   });
   masterVolumeInput?.addEventListener('input', () => {
@@ -617,7 +668,7 @@
   const postSourceVolume = debounce(async (vol) => {
     const result = await post('/volume', { sourceVolume: vol });
     if (!result?.success) {
-      showToast('error', 'Quell-Lautstärke', result?.error || 'Lautstärke konnte nicht gesetzt werden.');
+      showToast('error', tr('sourceVolumeTitle', 'Quell-Lautstärke'), result?.error || tr('volumeSetFailed', 'Lautstärke konnte nicht gesetzt werden.'));
     }
   });
   volumeInput.addEventListener('input', () => {
@@ -629,7 +680,7 @@
   const postCrossfade = debounce(async (ms) => {
     const result = await post('/config', { playback: { crossfadeDuration: ms } });
     if (!result?.success) {
-      showToast('error', 'Crossfade', result?.error || 'Crossfade konnte nicht gespeichert werden.');
+      showToast('error', 'Crossfade', result?.error || tr('crossfadeSaveFailed', 'Crossfade konnte nicht gespeichert werden.'));
     }
   });
   crossfadeInput.addEventListener('input', () => {
@@ -811,7 +862,7 @@
         setTimeout(() => { overlayCopy.textContent = orig; }, 2000);
       }).catch(() => {
         if (overlayUrl) { overlayUrl.select(); }
-        alert('URL in die Zwischenablage kopieren fehlgeschlagen. Bitte manuell kopieren.');
+        alert(tr('copyFailed', 'URL konnte nicht kopiert werden. Bitte manuell kopieren.'));
       });
     } else {
       if (overlayUrl) { overlayUrl.select(); }
@@ -851,9 +902,9 @@
     };
     const result = await post('/auto-dj/toggle', payload);
     if (result?.track) {
-      showToast('success', 'Auto-DJ gestartet', result.track.title || 'Nächster Titel läuft.');
+      showToast('success', tr('autoDjStarted', 'Auto-DJ gestartet'), result.track.title || tr('nextTrackPlaying', 'Nächster Titel läuft.'));
     } else if (payload.enabled) {
-      showToast('warn', 'Auto-DJ wartet', result?.status?.lastResult?.message || 'Kein Titel verfügbar.');
+      showToast('warn', tr('autoDjWaiting', 'Auto-DJ wartet'), tr('noTrackAvailable', 'Kein Titel verfügbar.'));
     }
     await refreshAutoDjStatus();
   });
@@ -861,9 +912,9 @@
   autoDjSkip.addEventListener('click', async () => {
     const result = await post('/auto-dj/skip');
     if (result?.success) {
-      showToast('success', 'Auto-DJ', result.track?.title || 'Nächster Titel läuft.');
+      showToast('success', 'Auto-DJ', result.track?.title || tr('nextTrackPlaying', 'Nächster Titel läuft.'));
     } else {
-      showToast('warn', 'Auto-DJ', result?.status?.lastResult?.message || 'Kein Titel verfügbar.');
+      showToast('warn', 'Auto-DJ', tr('noTrackAvailable', 'Kein Titel verfügbar.'));
     }
     await refreshAutoDjStatus();
   });
@@ -913,7 +964,7 @@
       }
     };
     const result = await post('/config', payload);
-    showFeedback(settingsFeedback, result?.success ? '✅ Gespeichert' : '❌ Fehler');
+    showFeedback(settingsFeedback, result?.success ? `✅ ${tr('saved', 'Gespeichert')}` : `❌ ${tr('error', 'Fehler')}`);
   });
 
   rejectAge?.addEventListener('change', async () => {
@@ -938,7 +989,7 @@
         blockedKeywords: keywords
       }
     });
-    showFeedback(moderationFeedback, result?.success ? '✅ Gespeichert' : '❌ Fehler');
+    showFeedback(moderationFeedback, result?.success ? `✅ ${tr('saved', 'Gespeichert')}` : `❌ ${tr('error', 'Fehler')}`);
   });
 
   banAdd?.addEventListener('click', async () => {
@@ -947,17 +998,17 @@
     const value = banValue.value.trim();
     const reason = banReason?.value?.trim();
     if (!value) {
-      showBanFeedback('Bitte einen Wert eingeben.', true);
+      showBanFeedback(tr('enterValue', 'Bitte einen Wert eingeben.'), true);
       return;
     }
     const result = await post('/bans', { type, value, reason });
     if (result?.success) {
-      showBanFeedback('Ban hinzugefügt.', false);
+      showBanFeedback(tr('banAdded', 'Ban hinzugefügt.'), false);
       banValue.value = '';
       if (banReason) banReason.value = '';
       await refreshBans();
     } else {
-      showBanFeedback(result?.error || 'Ban konnte nicht hinzugefügt werden.', true);
+      showBanFeedback(result?.error || tr('banAddFailed', 'Ban konnte nicht hinzugefügt werden.'), true);
     }
   });
 
@@ -969,7 +1020,7 @@
     if (result?.success) {
       await refreshBans();
     } else {
-      showBanFeedback('Ban konnte nicht entfernt werden.', true);
+      showBanFeedback(tr('banRemoveFailed', 'Ban konnte nicht entfernt werden.'), true);
     }
   });
 
@@ -991,11 +1042,13 @@
 
   function openTrackBanMenu(trigger) {
     const id = String(trigger?.dataset?.trackId || '');
-    if (!id || !findClientTrack(id) || !trackBanMenu) return;
+    const catalogEventId = String(trigger?.dataset?.catalogEventId || '');
+    if (!id || (!catalogEventId && !findClientTrack(id)) || !trackBanMenu) return;
     document.querySelectorAll('[data-track-ban-trigger][aria-expanded="true"]').forEach((button) => {
       button.setAttribute('aria-expanded', 'false');
     });
     trackBanTargetId = id;
+    trackBanCatalogEventId = catalogEventId || null;
     trackBanReturnFocus = trigger;
     trigger.setAttribute('aria-expanded', 'true');
     trackBanMenu.hidden = false;
@@ -1011,6 +1064,7 @@
     trackBanReturnFocus?.setAttribute('aria-expanded', 'false');
     trackBanReturnFocus?.focus();
     trackBanTargetId = null;
+    trackBanCatalogEventId = null;
     trackBanReturnFocus = null;
   }
 
@@ -1062,12 +1116,13 @@
     if (!trackBanTargetId) return;
     const keyword = trackBanKeyword?.value?.trim() || '';
     if (trackBanScope === 'keyword' && !keyword) {
-      if (trackBanFeedback) trackBanFeedback.textContent = 'Bitte einen Titelbegriff eingeben.';
+      if (trackBanFeedback) trackBanFeedback.textContent = tr('enterTitleKeyword', 'Bitte einen Titelbegriff eingeben.');
       return;
     }
     setSafetyBusy(trackBanSubmit, true);
     const result = await post('/bans/from-track', {
       trackId: trackBanTargetId,
+      catalogEventId: trackBanCatalogEventId || undefined,
       scope: trackBanScope,
       keyword: trackBanScope === 'keyword' ? keyword : undefined,
       stopCurrent: trackBanStopCurrent?.checked !== false,
@@ -1075,12 +1130,14 @@
     });
     setSafetyBusy(trackBanSubmit, false);
     if (!result?.success) {
-      if (trackBanFeedback) trackBanFeedback.textContent = result?.error || 'Ban fehlgeschlagen.';
+      if (trackBanFeedback) trackBanFeedback.textContent = result?.error || tr('banFailed', 'Ban fehlgeschlagen.');
       return;
     }
     closeTrackBanMenu();
     await Promise.all([renderQueueFromServer(), refreshHistory(), refreshBans()]);
-    showToast('success', 'Moderation', `${result.removedQueued || 0} Queue-Treffer entfernt.`);
+    showToast('success', tr('moderationTitle', 'Moderation'), tr('queueMatchesRemoved', '{count} Queue-Treffer entfernt.', {
+      count: result.removedQueued || 0
+    }));
   });
 
   emergencyStopButton?.addEventListener('click', async () => {
@@ -1090,10 +1147,10 @@
     if (result?.success) {
       renderSafetyState({ safetyLock: true });
       renderHealth(result.health || { locked: true, state: 'locked' });
-      showSafetyFeedback('Not-Aus ausgeführt. Die Queue bleibt erhalten.');
+      showSafetyFeedback(tr('emergencyDone', 'Not-Aus ausgeführt. Die Queue bleibt erhalten.'));
       renderNowPlaying(null);
     } else {
-      showSafetyFeedback(result?.error || 'Not-Aus fehlgeschlagen.', true);
+      showSafetyFeedback(result?.error || tr('emergencyFailed', 'Not-Aus fehlgeschlagen.'), true);
     }
   });
 
@@ -1104,9 +1161,9 @@
     if (result?.success) {
       renderSafetyState({ safetyLock: false });
       renderHealth(result.health || { locked: false, state: 'idle' });
-      showSafetyFeedback('Safety-Lock gelöst. Wiedergabe startet erst nach einer separaten Aktion.');
+      showSafetyFeedback(tr('safetyUnlocked', 'Safety-Lock gelöst. Wiedergabe startet erst nach einer separaten Aktion.'));
     } else {
-      showSafetyFeedback(result?.error || 'Entsperren fehlgeschlagen.', true);
+      showSafetyFeedback(result?.error || tr('unlockFailed', 'Entsperren fehlgeschlagen.'), true);
     }
   });
 
@@ -1117,9 +1174,9 @@
     if (result?.success) {
       renderNowPlaying(null);
       renderHealth(result.health || {});
-      showSafetyFeedback('Soundbot-Player wurde zurückgesetzt.');
+      showSafetyFeedback(tr('playerReset', 'Soundbot-Player wurde zurückgesetzt.'));
     } else {
-      showSafetyFeedback(result?.error || 'Player-Reset fehlgeschlagen.', true);
+      showSafetyFeedback(result?.error || tr('playerResetFailed', 'Player-Reset fehlgeschlagen.'), true);
     }
   });
 
@@ -1137,7 +1194,7 @@
   diagnosticsExportButton?.addEventListener('click', async () => {
     const diagnostics = await get('/diagnostics');
     if (!diagnostics?.success) {
-      showSafetyFeedback(diagnostics?.error || 'Diagnoseexport fehlgeschlagen.', true);
+      showSafetyFeedback(diagnostics?.error || tr('diagnosticsExportFailed', 'Diagnoseexport fehlgeschlagen.'), true);
       return;
     }
     const blob = new Blob([JSON.stringify(diagnostics, null, 2)], { type: 'application/json' });
@@ -1147,7 +1204,7 @@
     anchor.download = `musicbot-diagnostics-${Date.now()}.json`;
     anchor.click();
     URL.revokeObjectURL(href);
-    showSafetyFeedback('Diagnose wurde exportiert.');
+    showSafetyFeedback(tr('diagnosticsExported', 'Diagnose wurde exportiert.'));
   });
 
   socket.on('connect', () => {
@@ -1165,7 +1222,7 @@
         searchInput.value = payload.url || '';
       }
     }
-    refreshHistory();
+    refreshHistory({ reset: true });
   });
 
   socket.on('musicbot:queue-update', ({ queue, length }) => {
@@ -1200,44 +1257,97 @@
     renderOnboarding(payload || { completed: true }, currentSetupIssues);
   });
   socket.on('musicbot:error', (payload) => {
-    showToast('error', 'API-Fehler', payload?.message || 'Unbekannter Fehler');
+    showToast('error', tr('apiError', 'API-Fehler'), payload?.message || tr('unknownError', 'Unbekannter Fehler'));
   });
   socket.on('connect_error', () => {
-    showToast('error', 'Netzwerk', 'Verbindung zum Music Bot unterbrochen.');
+    showToast('error', tr('networkTitle', 'Netzwerk'), tr('connectionLost', 'Verbindung zum Music Bot unterbrochen.'));
   });
   socket.on('disconnect', () => {
-    showToast('warn', 'Netzwerk', 'Socket-Verbindung getrennt.');
+    showToast('warn', tr('networkTitle', 'Netzwerk'), tr('socketDisconnected', 'Socket-Verbindung getrennt.'));
   });
 
   socket.on('musicbot:paused', () => {
-    updateState('Pausiert');
+    updateState('paused');
     stopProgressTimer();
   });
   socket.on('musicbot:resumed', () => {
-    updateState('Wiedergabe');
+    updateState('playing');
     startProgressTimer();
   });
   socket.on('musicbot:playback-stopped', () => {
     renderNowPlaying(null);
   });
   socket.on('musicbot:playback-advancing', (payload) => {
-    setSkipLoading(true, payload?.message);
+    seekTransitioning = true;
+    latestRuntime = { ...(latestRuntime || {}), transportState: payload?.state || 'loading' };
+    updateSeekControl();
+    const message = payload?.messageKey
+      ? tr(payload.messageKey, payload?.message || tr('playbackAdvancing', 'Lädt den nächsten Titel …'))
+      : payload?.message;
+    setSkipLoading(true, message);
   });
   socket.on('musicbot:playback-sync', (payload) => {
+    if (payload?.playbackId && activePlaybackId && payload.playbackId !== activePlaybackId) return;
+    if (payload?.playbackId) activePlaybackId = payload.playbackId;
     if (typeof payload.position === 'number') {
       progressCurrentPos = payload.position;
+      lastConfirmedSeekPosition = payload.position;
+      seekPreviewActive = false;
       updateProgressBar();
     }
     if (typeof payload.duration === 'number') {
       progressDuration = payload.duration;
       if (npDuration) npDuration.textContent = formatDuration(payload.duration);
     }
+    if (payload?.seekable !== undefined && latestNowPlayingTrack) latestNowPlayingTrack.seekable = Boolean(payload.seekable);
+    if (payload?.state && latestNowPlayingTrack) latestNowPlayingTrack.state = payload.state;
+    updateSeekControl();
   });
-  socket.on('musicbot:song-skipped', () => refreshHistory());
+  socket.on('musicbot:song-skipped', () => refreshHistory({ reset: true }));
+  socket.on('musicbot:history-update', (payload) => {
+    const songId = String(payload?.songId || '');
+    if (!songId) return;
+    const previous = canonicalSongState.get(songId) || {};
+    canonicalSongState.set(songId, {
+      ...previous,
+      ...(payload.feedback || {}),
+      ...(payload.feedback?.state ? { feedback: payload.feedback.state } : {})
+    });
+    if (payload?.refresh) {
+      refreshHistory({ reset: true });
+      return;
+    }
+    renderHistory(latestHistoryTracks);
+  });
+  socket.on('musicbot:playlist-import-progress', async (payload) => {
+    const status = payload?.status || 'running';
+    const statusKey = {
+      running: 'importRunning', completed: 'importCompleted', failed: 'importFailed', aborted: 'importAborted'
+    }[status] || 'importRunning';
+    if (playlistImportProgress) {
+      const label = catalogTr(statusKey, status);
+      const progress = Number.isFinite(Number(payload?.progress)) ? ` (${Math.round(Number(payload.progress))}%)` : '';
+      playlistImportProgress.textContent = payload?.error
+        ? catalogTr('importError', 'Import error: {error}', { error: payload.error })
+        : `${label}${progress}`;
+    }
+    if (payload?.playlistId && selectedPlaylist?.id === payload.playlistId && ['completed', 'failed', 'aborted'].includes(status)) {
+      await selectPlaylist(payload.playlistId);
+      await refreshPlaylists();
+    }
+  });
+  socket.on('musicbot:playlist-update', () => refreshPlaylists());
   socket.on('musicbot:runtime', (runtime) => {
     latestRuntime = runtime || null;
+    if (Object.prototype.hasOwnProperty.call(runtime || {}, 'activePlaybackId')) {
+      activePlaybackId = runtime.activePlaybackId || null;
+    }
+    seekTransitioning = ['loading', 'buffering', 'crossfading', 'recovering', 'stopping', 'error'].includes(
+      String(runtime?.transportState || '').toLowerCase()
+    );
     renderSafetyState(runtime || {});
     renderHealth({ ...runtime, resolver: latestResolver });
+    updateSeekControl();
   });
   socket.on('musicbot:resolver', (resolver) => {
     latestResolver = resolver || null;
@@ -1269,19 +1379,29 @@
     safetyLockStatus?.classList.toggle('is-locked', locked);
     safetyLockStatus?.classList.toggle('is-ready', !locked);
     if (safetyLockStatus) {
-      safetyLockStatus.textContent = locked ? 'Safety-Lock aktiv' : 'Entsperrt – wartet auf Start';
+      safetyLockStatus.textContent = locked
+        ? tr('safetyLocked', 'Safety-Lock aktiv')
+        : tr('safetyReady', 'Entsperrt – wartet auf Start');
     }
     if (safetyUnlockButton) safetyUnlockButton.disabled = !locked;
     document.querySelectorAll('[data-playback-action]').forEach((control) => {
       control.disabled = locked;
       control.setAttribute('aria-disabled', String(locked));
     });
+    updateSeekControl();
+  }
+
+  function catalogTr(key, fallback, params = {}) {
+    const fullKey = `plugins.music-bot.music_bot.ui.catalog.${key}`;
+    const translated = window.i18n?.t(fullKey, params);
+    const value = translated && translated !== fullKey ? translated : fallback;
+    return String(value).replace(/\{(\w+)\}/g, (_match, name) => params[name] ?? `{${name}}`);
   }
 
   function slotLabel(slot) {
     if (!slot) return '–';
     const pid = Number(slot.pid);
-    const state = String(slot.state || slot.transportState || 'aktiv');
+    const state = runtimeStateLabel(slot.state || slot.transportState || 'playing');
     return Number.isFinite(pid) && pid > 0 ? `${state} (PID ${pid})` : state;
   }
 
@@ -1299,15 +1419,17 @@
     const active = Number(resolver.active ?? resolver.runner?.active ?? 0);
     const queued = Number(resolver.queued ?? resolver.runner?.queued ?? 0);
     const progress = resolver.progress?.state ? ` · ${resolver.progress.state}` : '';
-    healthResolver.textContent = `${active} aktiv / ${queued} wartend${progress}`;
+    healthResolver.textContent = tr('resolverActiveQueued', '{active} aktiv / {queued} wartend{progress}', {
+      active, queued, progress
+    });
     if (searchFeedback && resolver.progress?.state) {
       const labels = {
-        queued: 'Request wartet …',
-        'searching-youtube': 'Suche auf YouTube …',
-        'searching-soundcloud': 'Suche auf SoundCloud …',
-        validating: 'Treffer werden geprüft …',
-        ready: 'Treffer bereit.',
-        failed: 'Suche fehlgeschlagen.'
+        queued: tr('resolverQueued', 'Request wartet …'),
+        'searching-youtube': tr('resolverYoutube', 'Suche auf YouTube …'),
+        'searching-soundcloud': tr('resolverSoundCloud', 'Suche auf SoundCloud …'),
+        validating: tr('resolverValidating', 'Treffer werden geprüft …'),
+        ready: tr('resolverReady', 'Treffer bereit.'),
+        failed: tr('resolverFailed', 'Suche fehlgeschlagen.')
       };
       searchFeedback.textContent = labels[resolver.progress.state] || resolver.progress.state;
     }
@@ -1316,10 +1438,12 @@
   function renderHealth(health = {}) {
     const runtime = health.runtime || latestRuntime || health;
     const slots = health.players || runtime?.slots || {};
-    if (healthState) healthState.textContent = String(health.state || runtime?.transportState || (musicbotSafetyLocked ? 'locked' : 'idle'));
+    if (healthState) healthState.textContent = runtimeStateLabel(health.state || runtime?.transportState || (musicbotSafetyLocked ? 'locked' : 'idle'));
     if (healthPlayers) healthPlayers.textContent = `${slotLabel(slots.A)} / ${slotLabel(slots.B)}`;
     if (healthMpv) {
-      const mpv = health.mpvAvailable === false ? 'nicht verfügbar' : (health.controllerHealthy === false ? 'IPC gestört' : 'bereit');
+      const mpv = health.mpvAvailable === false
+        ? tr('unavailable', 'nicht verfügbar')
+        : (health.controllerHealthy === false ? tr('ipcDegraded', 'IPC gestört') : tr('ready', 'bereit'));
       healthMpv.textContent = mpv;
     }
     const slotEntries = Object.entries(slots).filter(([, slot]) => Boolean(slot));
@@ -1341,9 +1465,9 @@
     renderResolverHealth(health.resolver || latestResolver || {});
     if (healthCache) {
       const cache = health.cache || {};
-      healthCache.textContent = `${formatBytes(cache.bytes)} / ${Number(cache.files) || 0} Dateien`;
+      healthCache.textContent = `${formatBytes(cache.bytes)} / ${tr('files', '{count} Dateien', { count: Number(cache.files) || 0 })}`;
     }
-    if (healthLastError) healthLastError.textContent = String(health.lastError?.message || health.lastError || 'Keiner');
+    if (healthLastError) healthLastError.textContent = String(health.lastError?.message || health.lastError || tr('none', 'Keiner'));
     if (healthCheckedAt) {
       const checkedAt = Number(health.checkedAt || Date.now());
       healthCheckedAt.textContent = new Date(checkedAt).toLocaleTimeString();
@@ -1356,7 +1480,7 @@
     const diagnostics = await get('/diagnostics');
     setSafetyBusy(healthRefreshButton, false);
     if (!diagnostics?.success) {
-      showSafetyFeedback(diagnostics?.error || 'Health konnte nicht geladen werden.', true);
+      showSafetyFeedback(diagnostics?.error || tr('healthLoadFailed', 'Health konnte nicht geladen werden.'), true);
       return null;
     }
     latestRuntime = diagnostics.runtime || null;
@@ -1390,18 +1514,17 @@
       }
       renderOnboarding(status.onboarding || {}, currentSetupIssues);
       latestRuntime = status.runtime || null;
+      activePlaybackId = status.runtime?.activePlaybackId || activePlaybackId;
       latestResolver = status.resolver || null;
       renderSafetyState(status.runtime || { safetyLock: status.health?.locked });
       renderHealth({ ...status.health, players: status.players, resolver: status.resolver });
+      updateSeekControl();
     }
     const queueData = await get('/queue');
     if (queueData?.queue) {
       renderQueue(queueData.queue, queueData.queue.length);
     }
-    const historyData = await get('/history');
-    if (historyData?.history) {
-      renderHistory(historyData.history);
-    }
+    await refreshHistory({ reset: true });
 
     const configData = await get('/config');
     const crossfadeMs = configData?.config?.playback?.crossfadeDuration;
@@ -1499,21 +1622,29 @@
     await refreshAutoDjStatus();
     await refreshBans();
     await refreshGiftCatalog();
+    await refreshPlaylists();
   }
 
-  async function refreshHistory() {
-    const historyData = await get('/history');
-    if (historyData?.history) {
-      renderHistory(historyData.history);
+  async function refreshHistory({ reset = false } = {}) {
+    if (reset) historyOffset = 0;
+    const historyData = await get(`/history?limit=${HISTORY_PAGE_SIZE}&offset=${historyOffset}`);
+    if (!historyData?.history) {
+      showToast('warn', 'History', tr('historyLoadFailed', 'History konnte nicht geladen werden.'));
+      return;
     }
+    historyTotal = Number(historyData.total) || historyData.history.length;
+    renderHistory(historyData.history, { append: !reset && historyOffset > 0, initializeCanonical: reset });
+    historyOffset += historyData.history.length;
+    if (historyLoadMore) historyLoadMore.disabled = historyOffset >= historyTotal || historyData.history.length === 0;
+    if (historyPageStatus) historyPageStatus.textContent = `${Math.min(historyOffset, historyTotal)} / ${historyTotal}`;
   }
 
   async function get(path) {
     try {
       const res = await fetch(`/api/plugins/music-bot${path}`);
-      return await res.json();
+      return { ...(await res.json()), httpStatus: res.status };
     } catch (error) {
-      showToast('error', 'Netzwerk', 'GET-Anfrage fehlgeschlagen.');
+      showToast('error', catalogTr('networkTitle', 'Network'), catalogTr('getFailed', 'GET request failed.'));
       return null;
     }
   }
@@ -1527,59 +1658,89 @@
       });
       return await res.json();
     } catch (error) {
-      showToast('error', 'Netzwerk', 'POST-Anfrage fehlgeschlagen.');
-      return null;
+      showToast('error', catalogTr('networkTitle', 'Network'), catalogTr('postFailed', 'POST request failed.'));
+      return { success: false, networkError: true };
     }
   }
 
-  async function del(path) {
+  async function del(path, body) {
     try {
       const res = await fetch(`/api/plugins/music-bot${path}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+        body: body === undefined ? undefined : JSON.stringify(body)
       });
-      return await res.json();
+      return { ...(await res.json()), httpStatus: res.status };
     } catch (error) {
-      showToast('error', 'Netzwerk', 'DELETE-Anfrage fehlgeschlagen.');
+      showToast('error', catalogTr('networkTitle', 'Network'), catalogTr('deleteFailed', 'DELETE request failed.'));
       return null;
     }
   }
 
   function renderNowPlaying(track) {
     latestNowPlayingTrack = track || null;
+    activePlaybackId = track?.playbackId || null;
+    seekTransitioning = false;
     if (!skipInProgress) {
       setSkipLoading(false);
     }
     if (!track) {
       nowPlayingEl.classList.add('empty');
-      nowPlayingEl.innerHTML = '<p>Aktuell läuft nichts.</p>';
-      updateState('Idle');
+      nowPlayingEl.innerHTML = `<p>${escapeHtml(tr('nowPlayingEmpty', 'Aktuell läuft nichts.'))}</p>`;
+      updateState('idle');
       stopProgressTimer();
       if (npProgressWrapper) npProgressWrapper.style.display = 'none';
+      updateSeekControl();
       return;
     }
     nowPlayingEl.classList.remove('empty');
     const dur = formatDuration(track.duration);
     const banButton = track.id
-      ? `<button class="btn danger small track-ban-trigger" type="button" data-track-ban-trigger data-track-id="${escapeHtml(track.id)}" aria-haspopup="dialog" aria-expanded="false">Sperren</button>`
+      ? `<button class="btn danger small track-ban-trigger" type="button" data-track-ban-trigger data-track-id="${escapeHtml(track.id)}" aria-haspopup="dialog" aria-expanded="false">${escapeHtml(tr('banLabel', 'Sperren'))}</button>`
       : '';
     nowPlayingEl.innerHTML = `
       <p class="title">🎵 ${escapeHtml(track.title)}</p>
-      <p class="meta">${escapeHtml(track.artist || '')} • Angefragt von <strong>${escapeHtml(track.requestedBy || 'Viewer')}</strong>${dur !== '—' ? ' • ' + dur : ''}</p>
+      <p class="meta">${escapeHtml(track.artist || '')} • ${escapeHtml(tr('requestedBy', 'Angefragt von'))} <strong>${escapeHtml(track.requestedBy || 'Viewer')}</strong>${dur !== '—' ? ' • ' + dur : ''}</p>
       ${banButton}
     `;
     const actualState = track.state || 'playing';
-    updateState(actualState === 'paused' ? 'Pausiert' : 'Wiedergabe');
+    updateState(actualState);
 
-    if (npProgressWrapper && track.duration) {
+    if (npProgressWrapper) {
       npProgressWrapper.style.display = 'block';
-      progressDuration = track.duration;
+      progressDuration = Number(track.duration) || 0;
       progressCurrentPos = track.startedAt
         ? Math.max(0, Math.floor((Date.now() - track.startedAt) / 1000))
         : 0;
-      if (npDuration) npDuration.textContent = formatDuration(track.duration);
+      lastConfirmedSeekPosition = progressCurrentPos;
+      if (npDuration) npDuration.textContent = formatDuration(progressDuration);
       if (actualState !== 'paused') {
         startProgressTimer();
       }
+      updateSeekControl();
+    }
+  }
+
+  async function patch(path, body) {
+    return request(path, 'PATCH', body);
+  }
+
+  async function put(path, body) {
+    return request(path, 'PUT', body);
+  }
+
+  async function request(path, method, body) {
+    try {
+      const res = await fetch(`/api/plugins/music-bot${path}`, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: body === undefined ? undefined : JSON.stringify(body)
+      });
+      const payload = await res.json();
+      return { ...payload, httpStatus: res.status };
+    } catch (_error) {
+      showToast('error', catalogTr('networkTitle', 'Network'), catalogTr('requestFailed', '{method} request failed.', { method }));
+      return null;
     }
   }
 
@@ -1592,8 +1753,8 @@
       queueListEl.innerHTML = `
         <div class="queue-empty-state">
           <img src="/plugins/music-bot/assets/soundbot.png" alt="" aria-hidden="true">
-          <strong>Die Warteschlange ist leer</strong>
-          <p>Sei der/die Erste und fordere einen Song an.</p>
+          <strong>${escapeHtml(tr('queueEmptyTitle', 'Die Warteschlange ist leer'))}</strong>
+          <p>${escapeHtml(tr('queueEmptyHint', 'Sei die erste Person und fordere einen Song an.'))}</p>
         </div>
       `;
       return;
@@ -1617,11 +1778,11 @@
             <span class="queue-meta">${escapeHtml(item.requestedBy || 'Viewer')}${dur}</span>
           </div>
           <div class="queue-actions">
-            <button class="btn danger small track-ban-trigger" type="button" data-track-ban-trigger data-track-id="${songId}" aria-haspopup="dialog" aria-expanded="false" title="Sperren" aria-label="Track sperren">!</button>
-            <button class="btn primary small" data-playback-action data-queue-action="play" data-idx="${idx}" data-song-id="${songId}" title="Jetzt spielen" aria-label="Jetzt spielen" ${musicbotSafetyLocked ? 'disabled aria-disabled="true"' : ''}>▶</button>
-            <button class="btn ghost small" data-queue-action="move-up" data-idx="${idx}" data-song-id="${songId}" data-target-song-id="${previousSongId}" title="Nach oben" aria-label="Nach oben" ${idx === 0 ? 'disabled' : ''}>↑</button>
-            <button class="btn ghost small" data-queue-action="move-down" data-idx="${idx}" data-song-id="${songId}" data-target-song-id="${nextSongId}" title="Nach unten" aria-label="Nach unten" ${idx === queue.length - 1 ? 'disabled' : ''}>↓</button>
-            <button class="btn danger small" data-queue-action="remove" data-idx="${idx}" title="Entfernen" aria-label="Entfernen">✕</button>
+            <button class="btn danger small track-ban-trigger" type="button" data-track-ban-trigger data-track-id="${songId}" aria-haspopup="dialog" aria-expanded="false" title="${escapeHtml(tr('banLabel', 'Sperren'))}" aria-label="${escapeHtml(tr('trackBanLabel', 'Track sperren'))}">!</button>
+            <button class="btn primary small" data-playback-action data-queue-action="play" data-idx="${idx}" data-song-id="${songId}" title="${escapeHtml(tr('playNow', 'Jetzt spielen'))}" aria-label="${escapeHtml(tr('playNow', 'Jetzt spielen'))}" ${musicbotSafetyLocked ? 'disabled aria-disabled="true"' : ''}>▶</button>
+            <button class="btn ghost small" data-queue-action="move-up" data-idx="${idx}" data-song-id="${songId}" data-target-song-id="${previousSongId}" title="${escapeHtml(tr('moveUp', 'Nach oben'))}" aria-label="${escapeHtml(tr('moveUp', 'Nach oben'))}" ${idx === 0 ? 'disabled' : ''}>↑</button>
+            <button class="btn ghost small" data-queue-action="move-down" data-idx="${idx}" data-song-id="${songId}" data-target-song-id="${nextSongId}" title="${escapeHtml(tr('moveDown', 'Nach unten'))}" aria-label="${escapeHtml(tr('moveDown', 'Nach unten'))}" ${idx === queue.length - 1 ? 'disabled' : ''}>↓</button>
+            <button class="btn danger small" data-queue-action="remove" data-idx="${idx}" title="${escapeHtml(catalogTr('remove', 'Entfernen'))}" aria-label="${escapeHtml(catalogTr('remove', 'Entfernen'))}">✕</button>
           </div>
         </div>`;
       })
@@ -1647,13 +1808,14 @@
       const result = await post(`/queue/${idx}/play`, { songId });
       if (result?.success && result.track) {
         renderNowPlaying(result.track);
+        const selectedTitle = result.track.title || tr('selectedTitle', 'Ausgewählter Titel');
         if (result.alreadyPlaying) {
-          showToast('info', 'Queue', `Läuft bereits: ${result.track.title || 'Ausgewählter Titel'}`);
+          showToast('info', tr('queueTitle', 'Queue'), tr('alreadyPlaying', 'Läuft bereits: {title}', { title: selectedTitle }));
         } else {
-          showToast('success', 'Queue', `Spielt jetzt: ${result.track.title || 'Ausgewählter Titel'}`);
+          showToast('success', tr('queueTitle', 'Queue'), tr('playingNow', 'Spielt jetzt: {title}', { title: selectedTitle }));
         }
       } else if (!result?.success) {
-        showToast('warn', 'Queue', result?.error || 'Titel konnte nicht gestartet werden.');
+        showToast('warn', tr('queueTitle', 'Queue'), result?.error || tr('titleStartFailed', 'Titel konnte nicht gestartet werden.'));
       }
       await renderQueueFromServer();
       return;
@@ -1667,9 +1829,9 @@
         targetSongId: btn.dataset.targetSongId
       });
       if (result?.success) {
-        showToast('success', 'Queue', 'Reihenfolge aktualisiert.');
+        showToast('success', tr('queueTitle', 'Queue'), tr('orderUpdated', 'Reihenfolge aktualisiert.'));
       } else {
-        showToast('warn', 'Queue', result?.error || 'Queue wurde aktualisiert. Bitte versuche es erneut.');
+        showToast('warn', tr('queueTitle', 'Queue'), result?.error || tr('queueRefreshRetry', 'Queue wurde aktualisiert. Bitte versuche es erneut.'));
       }
       await renderQueueFromServer();
       return;
@@ -1677,7 +1839,7 @@
     if (action === 'remove') {
       await del(`/queue/${idx}`);
       await renderQueueFromServer();
-      showToast('info', 'Queue', 'Track wurde entfernt.');
+      showToast('info', tr('queueTitle', 'Queue'), tr('trackRemoved', 'Track wurde entfernt.'));
     }
   });
 
@@ -1720,9 +1882,12 @@
     });
     await renderQueueFromServer();
     if (result?.success) {
-      showToast('success', 'Queue', `Track #${draggedQueueIndex + 1} wurde an Position #${toIndex + 1} verschoben.`);
+      showToast('success', tr('queueTitle', 'Queue'), tr('trackMoved', 'Track #{from} wurde an Position #{to} verschoben.', {
+        from: draggedQueueIndex + 1,
+        to: toIndex + 1
+      }));
     } else {
-      showToast('warn', 'Queue', result?.error || 'Queue wurde aktualisiert. Bitte versuche es erneut.');
+      showToast('warn', tr('queueTitle', 'Queue'), result?.error || tr('queueRefreshRetry', 'Queue wurde aktualisiert. Bitte versuche es erneut.'));
     }
   });
 
@@ -1730,6 +1895,7 @@
     stopProgressTimer();
     if (!progressDuration) return;
     progressTimer = setInterval(() => {
+      if (seekPreviewActive) return;
       progressCurrentPos = Math.min(progressCurrentPos + 1, progressDuration);
       updateProgressBar();
     }, 1000);
@@ -1744,11 +1910,69 @@
   }
 
   function updateProgressBar() {
-    if (!npProgressFill || !npElapsed) return;
-    const pct = progressDuration > 0 ? Math.min(100, (progressCurrentPos / progressDuration) * 100) : 0;
-    npProgressFill.style.width = `${pct}%`;
+    if (!npElapsed) return;
     npElapsed.textContent = formatDuration(progressCurrentPos);
+    if (!seekPreviewActive && npSeekInput) npSeekInput.value = String(Math.min(progressCurrentPos, progressDuration || 0));
+    if (npSeekInput) npSeekInput.setAttribute('aria-valuetext', catalogTr('seekAria', '{current} of {duration}', {
+      current: formatDuration(progressCurrentPos), duration: formatDuration(progressDuration)
+    }));
   }
+
+  function isSeekAvailable() {
+    const state = String(latestRuntime?.transportState || latestNowPlayingTrack?.state || '').toLowerCase();
+    return Boolean(
+      !musicbotSafetyLocked
+      && !seekInFlight
+      && !seekTransitioning
+      && activePlaybackId
+      && Number.isFinite(progressDuration) && progressDuration > 0
+      && latestNowPlayingTrack?.seekable !== false
+      && ['playing', 'paused'].includes(state)
+    );
+  }
+
+  function updateSeekControl() {
+    if (!npSeekInput) return;
+    const enabled = isSeekAvailable();
+    npSeekInput.max = String(Math.max(0, progressDuration || 0));
+    npSeekInput.disabled = !enabled;
+    npSeekInput.setAttribute('aria-disabled', String(!enabled));
+    npSeekInput.title = enabled ? '' : tr('seekUnavailable', 'Diese Wiedergabe kann derzeit nicht gespult werden.');
+    updateProgressBar();
+  }
+
+  async function confirmSeek() {
+    if (!npSeekInput || !isSeekAvailable()) return;
+    const playbackId = activePlaybackId;
+    const positionSeconds = Math.max(0, Math.min(progressDuration, Number(npSeekInput.value) || 0));
+    seekPreviewActive = false;
+    seekInFlight = true;
+    updateSeekControl();
+    try {
+      const result = await post('/seek', { playbackId, positionSeconds });
+      if (activePlaybackId !== playbackId) return;
+      if (!result?.success || (result.playbackId && result.playbackId !== playbackId)) {
+        progressCurrentPos = lastConfirmedSeekPosition;
+        updateProgressBar();
+        if (!result?.networkError) showToast('warn', 'Player', result?.error || tr('seekFailed', 'Position konnte nicht geändert werden.'));
+        return;
+      }
+      lastConfirmedSeekPosition = Number(result.position ?? positionSeconds);
+      progressCurrentPos = lastConfirmedSeekPosition;
+      if (Number.isFinite(Number(result.duration))) progressDuration = Number(result.duration);
+    } finally {
+      seekInFlight = false;
+      updateSeekControl();
+    }
+  }
+
+  npSeekInput?.addEventListener('input', () => {
+    if (!isSeekAvailable()) return;
+    seekPreviewActive = true;
+    progressCurrentPos = Number(npSeekInput.value) || 0;
+    updateProgressBar();
+  });
+  npSeekInput?.addEventListener('change', confirmSeek);
 
   function showFeedback(el, message) {
     if (!el) return;
@@ -1814,41 +2038,232 @@
     return `${mins}:${secs}`;
   }
 
-  function renderHistory(history = []) {
-    latestHistoryTracks = Array.isArray(history) ? history.slice() : [];
-    if (!history.length) {
+  function renderHistory(history = [], { append = false, initializeCanonical = false } = {}) {
+    const rows = Array.isArray(history) ? history.slice() : [];
+    latestHistoryTracks = append ? latestHistoryTracks.concat(rows) : rows;
+    if (initializeCanonical) canonicalSongState.clear();
+    rows.forEach((item) => {
+      const songId = String(item.songId || item.id);
+      if (!canonicalSongState.has(songId)) {
+        canonicalSongState.set(songId, { feedback: item.feedback || 'neutral' });
+      }
+    });
+    if (!latestHistoryTracks.length) {
       historyListEl.classList.add('empty');
-      historyListEl.innerHTML = '<p>Noch keine History.</p>';
+      historyListEl.innerHTML = `<p>${escapeHtml(catalogTr('historyEmpty', 'No history yet.'))}</p>`;
       return;
     }
     historyListEl.classList.remove('empty');
-    historyListEl.innerHTML = history
-      .slice(-10)
-      .reverse()
+    historyListEl.innerHTML = latestHistoryTracks
       .map((item) => {
+        const songId = String(item.songId || item.id || '');
+        const canonical = canonicalSongState.get(songId) || { feedback: 'neutral' };
         const thumb = isValidYouTubeId(item.youtubeId)
           ? `<img src="https://i.ytimg.com/vi/${item.youtubeId}/default.jpg" class="queue-thumb" alt="">`
           : '<span class="queue-thumb-placeholder">🎵</span>';
         const banButton = item.id
-          ? `<button class="btn danger small track-ban-trigger" type="button" data-track-ban-trigger data-track-id="${escapeHtml(item.id)}" aria-haspopup="dialog" aria-expanded="false" aria-label="Track sperren">!</button>`
+          ? `<button class="btn danger small track-ban-trigger" type="button" data-track-ban-trigger data-track-id="${escapeHtml(songId)}" data-catalog-event-id="${escapeHtml(item.id)}" aria-haspopup="dialog" aria-expanded="false" aria-label="${escapeHtml(catalogTr('banTrack', 'Ban track'))}">!</button>`
           : '';
-        return `<div class="item queue-item">${thumb}<span class="queue-title">${escapeHtml(item.title)}</span><span class="text-secondary queue-by">${escapeHtml(item.requestedBy || 'Viewer')}</span>${banButton}</div>`;
+        const vote = (state, symbol, label) => `<button class="btn ghost small history-feedback ${canonical.feedback === state ? 'is-active' : ''}" type="button" data-history-feedback="${state}" data-song-id="${escapeHtml(songId)}" aria-pressed="${canonical.feedback === state}">${symbol}<span class="sr-only">${escapeHtml(label)}</span></button>`;
+        const banBadge = item.banned ? `<span class="history-ban-badge" aria-label="${escapeHtml(catalogTr('historyBanned', 'Banned'))}">${escapeHtml(catalogTr('historyBanned', 'Banned'))}</span>` : '';
+        const upLabel = catalogTr('voteUp', 'Like');
+        const downLabel = catalogTr('voteDown', 'Not for radio');
+        const neutralLabel = catalogTr('voteNeutral', 'Neutral');
+        return `<div class="item queue-item" data-song-id="${escapeHtml(songId)}">${thumb}<span class="queue-title">${escapeHtml(item.title)}</span><span class="text-secondary queue-by">${escapeHtml(item.requestedBy || 'Viewer')}</span>${vote('up', '↑', upLabel)}${vote('down', '↓', downLabel)}${vote('neutral', '•', neutralLabel)}${banBadge}${banButton}</div>`;
       })
       .join('');
   }
 
+  historyLoadMore?.addEventListener('click', () => refreshHistory());
+  historyListEl?.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-history-feedback]');
+    if (!button) return;
+    const songId = button.dataset.songId;
+    const state = button.dataset.historyFeedback;
+    const result = await post(`/catalog/songs/${songId}/feedback`, { state });
+    if (!result?.success) {
+      showToast('warn', 'History', result?.error || tr('historyFeedbackFailed', 'Bewertung konnte nicht gespeichert werden.'));
+      return;
+    }
+    const previous = canonicalSongState.get(songId) || {};
+    canonicalSongState.set(songId, { ...previous, feedback: result.feedback?.state || result.state || 'neutral' });
+    renderHistory(latestHistoryTracks);
+  });
+
+  async function searchCatalog(query = catalogSearchInput?.value || '') {
+    if (!catalogSearchResults) return;
+    if (!query.trim()) {
+      catalogSearchResults.classList.add('empty');
+      catalogSearchResults.textContent = '';
+      return;
+    }
+    const result = await get(`/catalog/search?q=${encodeURIComponent(query)}`);
+    const songs = result?.songs || [];
+    catalogSearchResults.classList.toggle('empty', songs.length === 0);
+    catalogSearchResults.innerHTML = songs.length
+      ? songs.map((song) => `<div class="item playlist-item"><span class="queue-title">${escapeHtml(song.title)}</span><button class="btn ghost small" type="button" data-catalog-add-song="${escapeHtml(song.id)}">${escapeHtml(catalogTr('addToPlaylist', 'Add to playlist'))}</button></div>`).join('')
+      : `<p>${escapeHtml(catalogTr('catalogEmpty', 'No titles found.'))}</p>`;
+  }
+
+  const debouncedCatalogSearch = debounce(() => searchCatalog());
+  catalogSearchInput?.addEventListener('input', debouncedCatalogSearch);
+  catalogSearchResults?.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-catalog-add-song]');
+    if (!button || !selectedPlaylist) return;
+    const result = await post(`/playlists/${selectedPlaylist.id}/items`, {
+      songId: Number(button.dataset.catalogAddSong), revision: selectedPlaylist.revision
+    });
+    if (!result?.success) return handlePlaylistFailure(result);
+    selectedPlaylist = result.playlist;
+    renderPlaylistEditor();
+    await refreshPlaylists();
+  });
+
+  async function refreshPlaylists({ keepSelection = true } = {}) {
+    const result = await get('/playlists');
+    if (!result?.success) return;
+    playlists = result.playlists || [];
+    if (keepSelection && selectedPlaylist) {
+      const current = playlists.find((playlist) => playlist.id === selectedPlaylist.id);
+      if (!current) selectedPlaylist = null;
+    }
+    renderPlaylistList();
+    await refreshRadioSources();
+  }
+
+  function renderPlaylistList() {
+    if (!playlistList) return;
+    playlistList.classList.toggle('empty', playlists.length === 0);
+    playlistList.innerHTML = playlists.length
+      ? playlists.map((playlist) => `<button class="item playlist-item ${selectedPlaylist?.id === playlist.id ? 'active' : ''}" type="button" data-playlist-id="${escapeHtml(playlist.id)}"><span class="queue-title">${escapeHtml(playlist.name)}</span><span class="text-secondary">${escapeHtml(catalogTr(playlist.mode === 'shuffle' ? 'shuffle' : 'ordered', playlist.mode))} · ${playlist.itemCount || 0}${playlist.isProtected ? ` · ${escapeHtml(catalogTr('protected', 'protected'))}` : ''}</span></button>`).join('')
+      : `<p>${escapeHtml(catalogTr('playlistEmpty', 'No playlists yet.'))}</p>`;
+  }
+
+  async function selectPlaylist(playlistId) {
+    const result = await get(`/playlists/${playlistId}`);
+    if (!result?.success) return;
+    selectedPlaylist = result.playlist;
+    renderPlaylistList();
+    renderPlaylistEditor();
+  }
+
+  function renderPlaylistEditor() {
+    if (!playlistEditor) return;
+    const playlist = selectedPlaylist;
+    playlistEditor.hidden = !playlist;
+    if (!playlist) return;
+    const protectedPlaylist = Boolean(playlist.isProtected);
+    playlistNameInput.value = playlist.name || '';
+    playlistNameInput.disabled = protectedPlaylist;
+    playlistModeInput.value = playlist.mode || 'ordered';
+    playlistSaveButton.disabled = false;
+    playlistDeleteButton.disabled = protectedPlaylist;
+    playlistDeleteButton.hidden = protectedPlaylist;
+    playlistItems.innerHTML = (playlist.items || []).map((item) => `<div class="item playlist-item" draggable="true" data-playlist-song-id="${escapeHtml(item.songId)}"><span class="queue-pos">☰</span><span class="queue-title">${escapeHtml(item.title)}</span><button class="btn danger small" type="button" data-playlist-remove-song="${escapeHtml(item.songId)}" aria-label="${escapeHtml(catalogTr('remove', 'Remove'))}">×</button></div>`).join('') || `<p>${escapeHtml(catalogTr('playlistItemsEmpty', 'No titles in this playlist.'))}</p>`;
+  }
+
+  async function handlePlaylistFailure(result) {
+    if (result?.httpStatus === 409 || result?.code === 'PLAYLIST_REVISION_CONFLICT') {
+      if (playlistConflictFeedback) playlistConflictFeedback.textContent = tr('playlistConflict', 'Playlist wurde anderswo geändert. Ansicht wird aktualisiert.');
+      if (selectedPlaylist) await selectPlaylist(selectedPlaylist.id);
+      await refreshPlaylists();
+      return;
+    }
+    if (playlistConflictFeedback) playlistConflictFeedback.textContent = result?.error || tr('playlistSaveFailed', 'Playlist konnte nicht gespeichert werden.');
+  }
+
+  playlistCreateButton?.addEventListener('click', async () => {
+    const name = playlistCreateName?.value?.trim();
+    if (!name) return;
+    const result = await post('/playlists', { name, mode: playlistCreateMode?.value || 'ordered' });
+    if (!result?.success) return handlePlaylistFailure(result);
+    playlistCreateName.value = '';
+    await refreshPlaylists({ keepSelection: false });
+    await selectPlaylist(result.playlist.id);
+  });
+  playlistList?.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-playlist-id]');
+    if (button) selectPlaylist(button.dataset.playlistId);
+  });
+  playlistSaveButton?.addEventListener('click', async () => {
+    if (!selectedPlaylist) return;
+    const changes = { mode: playlistModeInput.value, revision: selectedPlaylist.revision };
+    if (!selectedPlaylist.isProtected) changes.name = playlistNameInput.value;
+    const result = await patch(`/playlists/${selectedPlaylist.id}`, changes);
+    if (!result?.success) return handlePlaylistFailure(result);
+    selectedPlaylist = result.playlist;
+    renderPlaylistEditor();
+    await refreshPlaylists();
+  });
+  playlistDeleteButton?.addEventListener('click', async () => {
+    if (!selectedPlaylist || selectedPlaylist.isProtected) return;
+    const result = await del(`/playlists/${selectedPlaylist.id}`, { revision: selectedPlaylist.revision });
+    if (!result?.success) return handlePlaylistFailure(result);
+    selectedPlaylist = null;
+    renderPlaylistEditor();
+    await refreshPlaylists({ keepSelection: false });
+  });
+  playlistItems?.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-playlist-remove-song]');
+    if (!button || !selectedPlaylist) return;
+    const result = await del(`/playlists/${selectedPlaylist.id}/items/${button.dataset.playlistRemoveSong}`, { revision: selectedPlaylist.revision });
+    if (!result?.success) return handlePlaylistFailure(result);
+    selectedPlaylist = result.playlist;
+    renderPlaylistEditor();
+    await refreshPlaylists();
+  });
+  playlistItems?.addEventListener('dragstart', (event) => { playlistDragSongId = event.target.closest('[data-playlist-song-id]')?.dataset.playlistSongId || null; });
+  playlistItems?.addEventListener('dragover', (event) => event.preventDefault());
+  playlistItems?.addEventListener('drop', async (event) => {
+    event.preventDefault();
+    const target = event.target.closest('[data-playlist-song-id]');
+    if (!target || !selectedPlaylist || !playlistDragSongId || playlistDragSongId === target.dataset.playlistSongId) return;
+    const songIds = selectedPlaylist.items.map((item) => String(item.songId));
+    const from = songIds.indexOf(playlistDragSongId);
+    const to = songIds.indexOf(target.dataset.playlistSongId);
+    songIds.splice(to, 0, songIds.splice(from, 1)[0]);
+    const result = await put(`/playlists/${selectedPlaylist.id}/items`, { songIds, revision: selectedPlaylist.revision });
+    playlistDragSongId = null;
+    if (!result?.success) return handlePlaylistFailure(result);
+    selectedPlaylist = result.playlist;
+    renderPlaylistEditor();
+    await refreshPlaylists();
+  });
+  playlistImportButton?.addEventListener('click', async () => {
+    if (!selectedPlaylist || !playlistImportUrl?.value?.trim()) return;
+    const result = await post('/playlist-imports', { playlistId: selectedPlaylist.id, url: playlistImportUrl.value.trim() });
+    if (!result?.success) return handlePlaylistFailure(result);
+    if (playlistImportProgress) playlistImportProgress.textContent = tr('importRunning', 'Import läuft …');
+  });
+
+  async function refreshRadioSources() {
+    const result = await get('/radio/playlist-sources');
+    if (!result?.success || !playlistRadioSources) return;
+    playlistRadioSources.innerHTML = (result.sources || []).map((source) => `<label class="playlist-source"><input type="checkbox" data-radio-playlist-id="${escapeHtml(source.playlistId)}" ${source.enabled ? 'checked' : ''}><span>${escapeHtml(source.name || source.playlistId)}</span><input type="number" min="1" max="10" step="1" value="${Math.max(1, Math.min(10, Math.round(Number(source.weight) || 1)))}" data-radio-weight="${escapeHtml(source.playlistId)}" aria-label="${escapeHtml(catalogTr('radioWeight', 'Weight'))}"></label>`).join('');
+  }
+  playlistRadioSave?.addEventListener('click', async () => {
+    const sources = Array.from(playlistRadioSources?.querySelectorAll('[data-radio-playlist-id]') || []).map((checkbox) => ({
+      playlistId: checkbox.dataset.radioPlaylistId,
+      enabled: checkbox.checked,
+      weight: Math.max(1, Math.min(10, Math.round(Number(Array.from(playlistRadioSources.querySelectorAll('[data-radio-weight]')).find((input) => input.dataset.radioWeight === checkbox.dataset.radioPlaylistId)?.value) || 1)))
+    }));
+    const result = await put('/radio/playlist-sources', { sources });
+    if (!result?.success) return handlePlaylistFailure(result);
+    await refreshRadioSources();
+  });
+
   function updateState(state) {
-    stateEl.textContent = state || 'Idle';
+    stateEl.textContent = runtimeStateLabel(state);
   }
 
   function setSkipLoading(active, message) {
     if (skipButton) {
       skipButton.disabled = Boolean(active);
       skipButton.setAttribute('aria-busy', String(Boolean(active)));
-      skipButton.textContent = active ? 'Lädt …' : 'Überspringen';
+      skipButton.textContent = active ? tr('loading', 'Lädt …') : tr('skip', 'Überspringen');
     }
     if (active) {
-      updateState(message || 'Lädt den nächsten Titel …');
+      updateState(message || 'loading');
     }
   }
 
@@ -1864,15 +2279,21 @@
     autoDjMaxConsecutive.value = status.maxConsecutiveAutoDJ || 1;
     autoDjAnnounce.checked = Boolean(status.announceAutoDJ);
     if (autoDjPlaylistUrls) autoDjPlaylistUrls.value = (status.playlistUrls || []).join('\n');
-    autoDjStatus.textContent = status.enabled ? (status.lastResult?.state === 'playing' ? 'Spielt' : 'Aktiv') : 'Deaktiviert';
-    autoDjStatus.title = status.lastResult?.message || '';
+    const legacyAutoDjTitle = String(status.lastResult?.message || '').split(':').slice(1).join(':').trim();
+    const autoDjMessage = status.lastResult?.state === 'selected'
+      ? tr('autoDjSelected', 'Ausgewählt: {title}', { title: status.lastResult?.params?.title || legacyAutoDjTitle })
+      : '';
+    autoDjStatus.textContent = status.enabled
+      ? (status.lastResult?.state === 'playing' ? tr('autoDjPlaying', 'Spielt') : tr('autoDjActive', 'Aktiv'))
+      : tr('autoDjDisabled', 'Deaktiviert');
+    autoDjStatus.title = autoDjMessage;
     if (autoDjDetail) {
       const diagnostics = [];
-      if (status.selectionSource) diagnostics.push(`Quelle: ${status.selectionSource}`);
-      if (typeof status.blockedCount === 'number') diagnostics.push(`Gesperrt: ${status.blockedCount}`);
-      autoDjDetail.textContent = [status.lastResult?.message, diagnostics.join(' · ')].filter(Boolean).join(' · ');
+      if (status.selectionSource) diagnostics.push(tr('autoDjSource', 'Quelle: {source}', { source: status.selectionSource }));
+      if (typeof status.blockedCount === 'number') diagnostics.push(tr('autoDjBlocked', 'Gesperrt: {count}', { count: status.blockedCount }));
+      autoDjDetail.textContent = [autoDjMessage, diagnostics.join(' · ')].filter(Boolean).join(' · ');
     }
-    if (heroAutodjStatus) heroAutodjStatus.textContent = status.enabled ? 'Ein' : 'Aus';
+    if (heroAutodjStatus) heroAutodjStatus.textContent = status.enabled ? tr('autoDjOn', 'Ein') : tr('autoDjOff', 'Aus');
   }
 
   function parseList(value = '', keepNewLinesOnly = false) {
@@ -1947,14 +2368,14 @@
     const localeText = giftCatalogMeta.locales.length ? `Locales: ${giftCatalogMeta.locales.join(', ')}` : 'Locales: default';
     const regionText = giftCatalogMeta.region ? `Region: ${giftCatalogMeta.region}` : null;
     const updatedText = giftCatalogMeta.lastUpdate
-      ? `Aktualisiert: ${new Date(giftCatalogMeta.lastUpdate).toLocaleString()}`
+      ? tr('giftUpdatedAt', 'Aktualisiert: {date}', { date: new Date(giftCatalogMeta.lastUpdate).toLocaleString() })
       : null;
     const countText = apiCount !== uniqueCount
-      ? `${uniqueCount} Gifts geladen (${apiCount} API-Einträge)`
-      : `${uniqueCount} Gifts geladen`;
+      ? tr('giftLoadedApi', '{count} Gifts geladen ({apiCount} API-Einträge)', { count: uniqueCount, apiCount })
+      : tr('giftLoaded', '{count} Gifts geladen', { count: uniqueCount });
 
     return [
-      `${visible}/${uniqueCount} Gifts sichtbar`,
+      tr('giftVisible', '{visible}/{total} Gifts sichtbar', { visible, total: uniqueCount }),
       countText,
       localeText,
       regionText,
@@ -1974,14 +2395,14 @@
       ? visibleCatalog
         .map((gift) => `<option value="${escapeHtml(gift.name)}">${escapeHtml(gift.name)} (${gift.diamond_count}💎)</option>`)
         .join('')
-      : '<option value="" disabled>Keine Gifts gefunden</option>';
+      : `<option value="" disabled>${escapeHtml(tr('giftNoResults', 'Keine Gifts gefunden'))}</option>`;
 
     Array.from(giftCatalogList.options).forEach((option) => {
       option.selected = giftCatalogSelectedValues.has(option.value);
     });
 
     if (giftCatalogCount) {
-      giftCatalogCount.textContent = `${giftCatalogEntries.length} Gifts`;
+      giftCatalogCount.textContent = tr('giftsCount', '{count} Gifts', { count: giftCatalogEntries.length });
     }
 
     if (giftCatalogStatus) {
@@ -1999,7 +2420,7 @@
     const selected = collectGiftCatalogSelection();
     if (!selected.length) {
       if (giftCatalogStatus) {
-        giftCatalogStatus.textContent = 'Bitte zuerst Gifts auswählen.';
+        giftCatalogStatus.textContent = tr('giftSelectFirst', 'Bitte zuerst Gifts auswählen.');
       }
       return;
     }
@@ -2010,16 +2431,19 @@
     const response = await post('/config', configBody);
     if (response?.success === false) {
       if (giftCatalogStatus) {
-        giftCatalogStatus.textContent = `${label} konnte nicht gespeichert werden.`;
+        giftCatalogStatus.textContent = tr('giftSaveFailed', '{label} konnte nicht gespeichert werden.', { label });
       }
       return;
     }
 
     if (giftCatalogStatus) {
-      giftCatalogStatus.textContent = `${selected.length} Gifts in ${label} übernommen.`;
+      giftCatalogStatus.textContent = tr('giftApplied', '{count} Gifts in {label} übernommen.', {
+        count: selected.length,
+        label
+      });
     }
     if (typeof showToast === 'function') {
-      showToast('success', 'Geschenkekatalog', `${label} aktualisiert.`);
+      showToast('success', tr('giftCatalogTitle', 'Geschenkekatalog'), tr('giftUpdated', '{label} aktualisiert.', { label }));
     }
   }
 
@@ -2027,7 +2451,7 @@
     if (!giftCatalogList) return;
     try {
       if (giftCatalogStatus) {
-        giftCatalogStatus.textContent = 'Geschenkekatalog wird geladen...';
+        giftCatalogStatus.textContent = tr('giftLoading', 'Geschenkekatalog wird geladen…');
       }
 
       const res = await fetch('/api/gift-catalog');
@@ -2056,10 +2480,10 @@
         giftCatalogList.innerHTML = '';
       }
       if (giftCatalogStatus) {
-        giftCatalogStatus.textContent = 'Geschenkekatalog konnte nicht geladen werden.';
+        giftCatalogStatus.textContent = tr('giftLoadFailed', 'Geschenkekatalog konnte nicht geladen werden.');
       }
       if (giftCatalogCount) {
-        giftCatalogCount.textContent = '0 Gifts';
+        giftCatalogCount.textContent = tr('giftsCount', '{count} Gifts', { count: 0 });
       }
     }
   }
@@ -2103,7 +2527,7 @@
     const tbody = banTable.querySelector('tbody');
     if (!tbody) return;
     if (!bans.length) {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-secondary">Keine Einträge.</td></tr>';
+      tbody.innerHTML = `<tr><td colspan="4" class="text-secondary">${escapeHtml(tr('noEntries', 'Keine Einträge.'))}</td></tr>`;
       return;
     }
     tbody.innerHTML = bans
@@ -2113,7 +2537,7 @@
           <td>${escapeHtml(ban.type)}</td>
           <td>${escapeHtml(ban.value)}</td>
           <td>${escapeHtml(ban.reason || '')}</td>
-          <td><button class="btn ghost small" data-ban-id="${escapeHtml(ban.id)}">Löschen</button></td>
+          <td><button class="btn ghost small" data-ban-id="${escapeHtml(ban.id)}">${escapeHtml(catalogTr('delete', 'Löschen'))}</button></td>
         </tr>`
       )
       .join('');

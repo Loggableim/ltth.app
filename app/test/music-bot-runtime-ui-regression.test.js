@@ -5,6 +5,25 @@ const MusicBotPlugin = require('../plugins/music-bot/main');
 const MusicResolver = require('../plugins/music-bot/lib/music-resolver');
 const PlaybackEngine = require('../plugins/music-bot/lib/playback-engine');
 const PlaybackController = require('../plugins/music-bot/lib/playback-controller');
+const productionI18n = require('../modules/i18n');
+
+const productionCatalogs = Object.fromEntries(
+  ['en', 'es', 'fr'].map((locale) => [locale, productionI18n.getAllTranslations(locale)])
+);
+
+function installProductionI18nClient(window, locale, translations) {
+  const source = fs.readFileSync(path.join(__dirname, '../public/js/i18n-client.js'), 'utf8');
+  const cutoff = source.indexOf('// Create global instance');
+  window.eval(`${cutoff >= 0 ? source.slice(0, cutoff) : source}\nwindow.__MusicBotI18nClient = I18nClient;`);
+  const client = new window.__MusicBotI18nClient();
+  client.initialized = true;
+  client.currentLocale = locale;
+  client.defaultLocale = locale;
+  client.translations = translations[locale]?.plugins
+    ? translations
+    : { [locale]: translations };
+  window.i18n = client;
+}
 
 const windowsTest = process.platform === 'win32' ? test : test.skip;
 
@@ -25,6 +44,7 @@ function createPluginWithQueue(queue) {
     preCache: { enabled: false }
   };
   plugin._mpvAvailable = false;
+  plugin._ensureMpv = jest.fn(async () => {});
   plugin.queueManager = {
     getQueue: jest.fn(() => queue),
     shiftNext: jest.fn(() => queue.shift()),
@@ -63,6 +83,14 @@ function bootMusicBotUi(options = {}) {
     completed: false,
     completedAt: null
   };
+  const statusPayload = options.statusPayload || {};
+  const historyPayload = options.historyPayload || [];
+  const playlistsPayload = options.playlistsPayload || [];
+  const playlistDetails = options.playlistDetails || {};
+  const radioSourcesPayload = options.radioSourcesPayload || [];
+  const catalogPayload = options.catalogPayload || [];
+  const translations = options.translations;
+  const productionLocale = options.productionLocale;
   const socketHandlers = {};
   const html = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/ui.html'), 'utf8');
   const js = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/assets/ui.js'), 'utf8');
@@ -85,11 +113,18 @@ function bootMusicBotUi(options = {}) {
         playbackState: 'idle',
         masterVolume: 100,
         sourceVolume: 50,
-        onboarding: statusOnboarding
+        onboarding: statusOnboarding,
+        ...statusPayload
       });
     }
     if (target.includes('/queue')) return createJsonResponse({ success: true, queue: [] });
-    if (target.includes('/history')) return createJsonResponse({ success: true, history: [] });
+    if (target.includes('/history')) return createJsonResponse({ success: true, history: historyPayload, total: historyPayload.length });
+    if (target.includes('/catalog/search')) return createJsonResponse({ success: true, songs: catalogPayload });
+    if (target.includes('/radio/playlist-sources')) return createJsonResponse({ success: true, sources: radioSourcesPayload });
+    if (target.includes('/playlists/') && !target.includes('/playlist-imports')) {
+      return createJsonResponse({ success: true, playlist: playlistDetails[target.split('/').pop()] });
+    }
+    if (target.includes('/playlists')) return createJsonResponse({ success: true, playlists: playlistsPayload });
     if (target.includes('/bans')) return createJsonResponse({ success: true, bans: [] });
     if (target.includes('/gift-catalog')) return createJsonResponse({ catalog: [] });
     if (target.includes('/setup-status')) return createJsonResponse({ success: true, issues: setupIssues });
@@ -139,8 +174,33 @@ function bootMusicBotUi(options = {}) {
       window.fetch = fetchMock;
       window.open = jest.fn();
       window.navigator.clipboard = { writeText: jest.fn(async () => {}) };
+      if (productionLocale && translations) {
+        installProductionI18nClient(window, productionLocale, translations);
+      } else if (translations) {
+        window.i18n = { t: (key, params = {}) => {
+          const value = key.replace('plugins.music-bot.', '').split('.').reduce((current, part) => current?.[part], translations);
+          return typeof value === 'string' ? value.replace(/\{(\w+)\}/g, (_match, name) => params[name] ?? `{${name}}`) : key;
+        } };
+      }
     }
   });
+  if (productionLocale && translations) {
+    dom.window.i18n.updateDOM();
+  } else if (translations) {
+    const lookup = (key) => key.split('.').reduce((value, part) => value?.[part], translations);
+    dom.window.document.querySelectorAll('[data-i18n]').forEach((element) => {
+      const value = lookup(element.dataset.i18n);
+      if (typeof value === 'string') element.textContent = value;
+    });
+    dom.window.document.querySelectorAll('[data-i18n-placeholder]').forEach((element) => {
+      const value = lookup(element.dataset.i18nPlaceholder);
+      if (typeof value === 'string') element.placeholder = value;
+    });
+    dom.window.document.querySelectorAll('[data-i18n-aria-label]').forEach((element) => {
+      const value = lookup(element.dataset.i18nAriaLabel);
+      if (typeof value === 'string') element.setAttribute('aria-label', value);
+    });
+  }
   dom.window.eval(js);
   return { dom, fetchMock, socketHandlers };
 }
@@ -190,6 +250,7 @@ describe('Music Bot runtime and UI regressions', () => {
     const result = await plugin._playNextFromQueue();
 
     expect(result.success).toBe(false);
+    expect(plugin._ensureMpv).toHaveBeenCalledTimes(1);
     expect(queue).toHaveLength(1);
     expect(plugin.queueManager.shiftNext).not.toHaveBeenCalled();
     expect(plugin.playbackEngine.play).not.toHaveBeenCalled();
@@ -225,7 +286,7 @@ describe('Music Bot runtime and UI regressions', () => {
     }
   });
 
-  test('recovers the stalled player on the second heartbeat without advancing the queue', async () => {
+  test('confirms the stalled player on the second heartbeat without replaying retained media', async () => {
     const current = { id: 'current', title: 'Current Song', url: 'https://example.test/current.mp3' };
     const { plugin } = createPluginWithQueue([{ id: 'requested', title: 'Requested Song' }]);
     const playbackEngine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
@@ -244,13 +305,34 @@ describe('Music Bot runtime and UI regressions', () => {
     );
 
     expect(first).toMatchObject({ ok: false, action: 'counted', failures: 1 });
-    expect(second).toMatchObject({ ok: true, action: 'recovered', failures: 2 });
-    expect(playbackEngine.restart).toHaveBeenCalledTimes(1);
-    expect(playbackEngine.play).toHaveBeenCalledWith(current);
+    expect(second).toMatchObject({ ok: false, action: 'confirmed', failures: 2 });
+    expect(playbackEngine.restart).not.toHaveBeenCalled();
+    expect(playbackEngine.play).not.toHaveBeenCalled();
     expect(plugin.queueManager.shiftNext).not.toHaveBeenCalled();
   });
 
-  test('records the selected Auto-DJ track when its initial playback start fails', async () => {
+  test('returns an atomic playback identity with the initial request-status event', async () => {
+    const handlers = {};
+    const api = {
+      getSocketIO: () => ({ emit: jest.fn() }), getDatabase: () => ({}), log: jest.fn(), emit: jest.fn(),
+      registerSocket: jest.fn((event, handler) => { handlers[event] = handler; })
+    };
+    const plugin = new MusicBotPlugin(api);
+    plugin.config = { audio: { masterVolume: 100, sourceVolume: 50 }, autoDJ: { enabled: false } };
+    const current = { id: 'playback-99', title: 'Initial track', duration: 120 };
+    plugin.playbackEngine = { getNowPlaying: jest.fn(() => current), getState: jest.fn(() => 'playing') };
+    plugin.queueManager = { getQueue: jest.fn(() => []) };
+    plugin._buildResolverSnapshot = jest.fn(() => ({}));
+    plugin._buildHealthPayload = jest.fn(() => ({}));
+    plugin._registerSocketEvents();
+    const socket = { emit: jest.fn() };
+
+    await handlers['musicbot:request-status'](socket);
+
+    expect(socket.emit).toHaveBeenCalledWith('musicbot:now-playing', expect.objectContaining({ id: 'playback-99', playbackId: 'playback-99' }));
+  });
+
+  test('cools down only the selected Auto-DJ source when its initial playback start fails', async () => {
     const track = {
       id: 'start-failed',
       title: 'Broken stream',
@@ -263,6 +345,7 @@ describe('Music Bot runtime and UI regressions', () => {
     plugin.autoDJ = {
       getNextSong: jest.fn(async () => ({ song: track })),
       recordFailedTrack: jest.fn(),
+      recordSourceFailure: jest.fn(() => ({ failureClass: 'transient' })),
       markPlaybackFailed: jest.fn()
     };
     plugin.playbackEngine = { play: jest.fn(async () => { throw new Error('loadfile failed'); }) };
@@ -270,17 +353,18 @@ describe('Music Bot runtime and UI regressions', () => {
     const result = await plugin._maybePlayAutoDJ(true);
 
     expect(result).toBeNull();
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledWith(
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenCalledWith(
       expect.objectContaining({
         id: track.id,
         title: track.title,
         requestedBy: track.requestedBy,
         trackKey: expect.any(String)
       }),
-      'start-failed'
+      expect.any(Error)
     );
+    expect(plugin.autoDJ.recordFailedTrack).not.toHaveBeenCalled();
     expect(plugin.autoDJ.markPlaybackFailed).toHaveBeenCalledTimes(1);
-    expect(plugin.autoDJ.recordFailedTrack.mock.invocationCallOrder[0])
+    expect(plugin.autoDJ.recordSourceFailure.mock.invocationCallOrder[0])
       .toBeLessThan(plugin.autoDJ.markPlaybackFailed.mock.invocationCallOrder[0]);
     expect(plugin.autoDJ.getNextSong).toHaveBeenCalledTimes(1);
   });
@@ -487,6 +571,7 @@ describe('Music Bot runtime and UI regressions', () => {
         .mockResolvedValueOnce({ song: brokenTrack })
         .mockResolvedValueOnce({ song: playableTrack }),
       recordFailedTrack: jest.fn(),
+      recordSourceFailure: jest.fn(() => ({ failureClass: 'long' })),
       markTrackStarted: jest.fn(),
       getStatus: jest.fn(() => ({ mode: 'mix' }))
     };
@@ -499,10 +584,11 @@ describe('Music Bot runtime and UI regressions', () => {
 
     const result = await plugin._maybePlayAutoDJ(true);
 
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledWith(
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenCalledWith(
       expect.objectContaining({ youtubeId: brokenTrack.youtubeId }),
-      'resolve-failed'
+      expect.any(Error)
     );
+    expect(plugin.autoDJ.recordFailedTrack).not.toHaveBeenCalled();
     expect(plugin.autoDJ.getNextSong).toHaveBeenCalledTimes(2);
     expect(plugin.playbackEngine.play).toHaveBeenCalledTimes(1);
     expect(result.streamUrl).toBe(playableTrack.streamUrl);
@@ -580,6 +666,7 @@ describe('Music Bot runtime and UI regressions', () => {
     const { plugin } = createPluginWithQueue([]);
     plugin.autoDJ = {
       recordFailedTrack: jest.fn(),
+      recordSourceFailure: jest.fn(() => ({ failureClass: 'transient' })),
       markPlaybackFailed: jest.fn()
     };
     plugin.playbackEngine = {
@@ -596,8 +683,9 @@ describe('Music Bot runtime and UI regressions', () => {
       plugin._handleAutoDJPlaybackFailure(failedTrack, 'ipc-confirmed', new Error('MPV unavailable'))
     ]);
 
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledTimes(1);
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledWith(failedTrack, 'ipc-confirmed');
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenCalledTimes(1);
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenCalledWith(failedTrack, expect.any(Error));
+    expect(plugin.autoDJ.recordFailedTrack).not.toHaveBeenCalled();
     expect(plugin.autoDJ.markPlaybackFailed).toHaveBeenCalledTimes(1);
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(1);
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledWith(true);
@@ -612,6 +700,7 @@ describe('Music Bot runtime and UI regressions', () => {
     let activeTrack = firstPlayback;
     plugin.autoDJ = {
       recordFailedTrack: jest.fn(),
+      recordSourceFailure: jest.fn(() => ({ failureClass: 'transient' })),
       markPlaybackFailed: jest.fn()
     };
     plugin.playbackEngine = {
@@ -627,11 +716,12 @@ describe('Music Bot runtime and UI regressions', () => {
     activeTrack = secondPlayback;
     await plugin._handleAutoDJPlaybackFailure(secondPlayback, 'ipc-confirmed', new Error('second failure'));
 
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledTimes(2);
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenCalledTimes(2);
+    expect(plugin.autoDJ.recordFailedTrack).not.toHaveBeenCalled();
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(2);
   });
 
-  test('stops immediate Auto-DJ replacement after three playback failures in 60 seconds', async () => {
+  test('keeps Auto-DJ supervised after repeated playback failures instead of deactivating it', async () => {
     const tracks = [1, 2, 3].map((index) => ({
       id: `rapid-failure-${index}`,
       title: `Rapid failure ${index}`,
@@ -641,6 +731,7 @@ describe('Music Bot runtime and UI regressions', () => {
     let activeTrack = tracks[0];
     plugin.autoDJ = {
       recordFailedTrack: jest.fn(),
+      recordSourceFailure: jest.fn(() => ({ failureClass: 'transient' })),
       markPlaybackFailed: jest.fn(),
       deactivate: jest.fn()
     };
@@ -650,6 +741,7 @@ describe('Music Bot runtime and UI regressions', () => {
     };
     plugin._stopPlaybackSync = jest.fn();
     plugin._maybePlayAutoDJ = jest.fn(async () => null);
+    plugin.radioSupervisor = { wake: jest.fn(async () => ({ success: false })) };
     plugin._emitToast = jest.fn();
     plugin._emitPlaybackStopped = jest.fn();
     plugin._emitNowPlaying = jest.fn();
@@ -662,18 +754,12 @@ describe('Music Bot runtime and UI regressions', () => {
       await plugin._handleAutoDJPlaybackFailure(track, 'mpv-track-end', new Error('unrecognized file format'));
     }
 
-    expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(2);
-    expect(plugin.autoDJ.deactivate).toHaveBeenCalledTimes(1);
-    expect(plugin._emitToast).toHaveBeenCalledWith(
-      'error',
-      'AutoDJ pausiert',
-      expect.stringContaining('3')
-    );
-    expect(plugin.queueManager.markPlaying).toHaveBeenCalledWith(null);
-    expect(plugin.queueManager.resetVoteSkips).toHaveBeenCalledTimes(1);
-    expect(plugin._emitPlaybackStopped).toHaveBeenCalledTimes(1);
-    expect(plugin._emitNowPlaying).toHaveBeenCalledWith(null);
-    expect(plugin._emitRuntimeHealth).toHaveBeenCalledTimes(1);
+    expect(plugin._maybePlayAutoDJ).not.toHaveBeenCalled();
+    expect(plugin.radioSupervisor.wake).toHaveBeenCalledTimes(3);
+    expect(plugin.autoDJ.deactivate).not.toHaveBeenCalled();
+    expect(plugin._emitToast).not.toHaveBeenCalled();
+    expect(plugin.queueManager.markPlaying).toHaveBeenCalledTimes(3);
+    expect(plugin.queueManager.resetVoteSkips).toHaveBeenCalledTimes(3);
   });
 
   test('emits playback errors through one UI channel', () => {
@@ -701,6 +787,7 @@ describe('Music Bot runtime and UI regressions', () => {
     plugin.playbackEngine = playbackEngine;
     plugin.autoDJ = {
       recordFailedTrack: jest.fn(),
+      recordSourceFailure: jest.fn(() => ({ failureClass: 'transient' })),
       markPlaybackFailed: jest.fn(),
       setPlaybackSeed: jest.fn()
     };
@@ -727,7 +814,8 @@ describe('Music Bot runtime and UI regressions', () => {
       new Error('watchdog timed out')
     );
     expect(playbackEngine.getNowPlaying()).toBe(replacementTrack);
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledTimes(1);
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenCalledTimes(1);
+    expect(plugin.autoDJ.recordFailedTrack).not.toHaveBeenCalled();
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(1);
     const crossfadeTimerClearCount = plugin._clearCrossfadeTimer.mock.calls.length;
     expect(playbackEngine._replacementOutgoingTrack).toBe(failedTrack);
@@ -739,7 +827,8 @@ describe('Music Bot runtime and UI regressions', () => {
     }));
 
     expect(playbackEngine.getNowPlaying()).toBe(replacementTrack);
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledTimes(1);
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenCalledTimes(1);
+    expect(plugin.autoDJ.recordFailedTrack).not.toHaveBeenCalled();
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(1);
     expect(plugin._clearCrossfadeTimer).toHaveBeenCalledTimes(crossfadeTimerClearCount);
     expect(api.emit).not.toHaveBeenCalledWith('musicbot:error', expect.anything());
@@ -757,6 +846,7 @@ describe('Music Bot runtime and UI regressions', () => {
     plugin.playbackEngine = playbackEngine;
     plugin.autoDJ = {
       recordFailedTrack: jest.fn(),
+      recordSourceFailure: jest.fn(() => ({ failureClass: 'transient' })),
       markPlaybackFailed: jest.fn(),
       setPlaybackSeed: jest.fn()
     };
@@ -794,8 +884,9 @@ describe('Music Bot runtime and UI regressions', () => {
     }));
     await new Promise((resolve) => setImmediate(resolve));
 
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenNthCalledWith(1, firstTrack, 'mpv-track-end');
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenNthCalledWith(2, secondTrack, 'mpv-track-end');
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenNthCalledWith(1, firstTrack, expect.any(Error));
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenNthCalledWith(2, secondTrack, expect.any(Error));
+    expect(plugin.autoDJ.recordFailedTrack).not.toHaveBeenCalled();
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(2);
     expect(playbackEngine.getNowPlaying()).toBe(thirdTrack);
     expect(api.emit).toHaveBeenCalledWith('musicbot:error', expect.objectContaining({
@@ -902,7 +993,7 @@ describe('Music Bot runtime and UI regressions', () => {
     }));
   });
 
-  test('returns a requested song to the front when MPV rejects its start command', async () => {
+  test('records and drops a requested song when MPV rejects its start command', async () => {
     const queued = [{ id: 'requested', title: 'Requested Song', url: 'https://example.test/requested.mp3' }];
     const { plugin } = createPluginWithQueue(queued);
     plugin._mpvAvailable = true;
@@ -911,13 +1002,17 @@ describe('Music Bot runtime and UI regressions', () => {
     });
     plugin._emitError = jest.fn();
     plugin._emitQueue = jest.fn();
+    plugin.queueManager.addToHistory = jest.fn();
 
     const result = await plugin._playNextFromQueue();
 
     expect(result.success).toBe(false);
-    expect(plugin.queueManager.returnToFront).toHaveBeenCalledWith(expect.objectContaining({ id: 'requested' }));
-    expect(queued).toHaveLength(1);
-    expect(queued[0].id).toBe('requested');
+    expect(plugin.queueManager.returnToFront).not.toHaveBeenCalled();
+    expect(plugin.queueManager.addToHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'requested', playbackFailed: true }),
+      true
+    );
+    expect(queued).toHaveLength(0);
   });
 
   test('keeps music ducked for the full TTS playback and ignores duplicate start events', async () => {
@@ -1002,6 +1097,265 @@ describe('Music Bot runtime and UI regressions', () => {
       plugin._stopPlaybackSync();
       setIntervalSpy.mockRestore();
     }
+  });
+
+  test('adopts the current runtime playback identity, ignores stale syncs, and freezes seek previews', async () => {
+    jest.useFakeTimers();
+    try {
+      const { dom, socketHandlers } = bootMusicBotUi({
+        statusPayload: {
+          nowPlaying: {
+            id: 'old-track', playbackId: 'old-playback', title: 'Old Song', duration: 120,
+            startedAt: Date.now(), state: 'playing', seekable: true
+          },
+          runtime: { activePlaybackId: 'old-playback', transportState: 'playing', safetyLock: false }
+        }
+      });
+      doms.push(dom);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      socketHandlers['musicbot:now-playing']({
+        id: 'new-track', title: 'New Song', duration: 120, startedAt: Date.now(), state: 'playing', seekable: true
+      });
+      socketHandlers['musicbot:runtime']({ activePlaybackId: 'playback-77', transportState: 'playing', safetyLock: false });
+      socketHandlers['musicbot:playback-sync']({ playbackId: 'old-playback', position: 3, duration: 120, state: 'playing' });
+      socketHandlers['musicbot:playback-sync']({ playbackId: 'playback-77', position: 42, duration: 120, state: 'playing' });
+
+      const seek = dom.window.document.getElementById('np-seek-input');
+      expect(seek.disabled).toBe(false);
+      expect(seek.value).toBe('42');
+
+      seek.value = '55';
+      seek.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+      jest.advanceTimersByTime(1000);
+      expect(seek.value).toBe('55');
+      expect(seek.getAttribute('aria-valuetext')).toContain('0:55');
+
+      socketHandlers['musicbot:playback-advancing']({ reason: 'track-end' });
+      expect(seek.disabled).toBe(true);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('renders playlist import socket status, progress, and errors from the service payload', async () => {
+    const { dom, socketHandlers } = bootMusicBotUi();
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    await Promise.resolve();
+
+    socketHandlers['musicbot:playlist-import-progress']({ playlistId: 'mix', status: 'running', progress: 70 });
+    expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe('running (70%)');
+    socketHandlers['musicbot:playlist-import-progress']({ playlistId: 'mix', status: 'failed', progress: 100, error: 'source unavailable' });
+    expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe('Import error: source unavailable');
+  });
+
+  test('keeps canonical votes fresh across duplicate history rows while preserving per-event bans', async () => {
+    const historyPayload = [
+      { id: 'event-new', songId: 7, title: 'Same Song', feedback: 'down', banned: true },
+      { id: 'event-old', songId: 7, title: 'Same Song', feedback: 'down', banned: false }
+    ];
+    const { dom, socketHandlers, fetchMock } = bootMusicBotUi({
+      historyPayload,
+      postHandler: async (target) => target.includes('/catalog/songs/7/feedback')
+        ? createJsonResponse({ success: true, feedback: { state: 'up' } })
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    socketHandlers['musicbot:history-update']({ songId: 7, feedback: { state: 'up' } });
+    expect(Array.from(dom.window.document.querySelectorAll('[data-history-feedback="up"].is-active'))).toHaveLength(2);
+    expect(Array.from(dom.window.document.querySelectorAll('.history-ban-badge'))).toHaveLength(1);
+
+    dom.window.document.querySelector('[data-history-feedback="up"]').click();
+    await Promise.resolve();
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/catalog/songs/7/feedback'), expect.objectContaining({ method: 'POST' }));
+    expect(Array.from(dom.window.document.querySelectorAll('[data-history-feedback="up"].is-active'))).toHaveLength(2);
+    expect(Array.from(dom.window.document.querySelectorAll('.history-ban-badge'))).toHaveLength(1);
+  });
+
+  test.each(['en', 'es', 'fr'])('renders dynamic catalog-admin surfaces through production i18n in %s', async (locale) => {
+    const translations = JSON.parse(fs.readFileSync(path.join(__dirname, `../plugins/music-bot/locales/${locale}.json`), 'utf8'));
+    const playlist = { id: 'viewer-radio', name: 'Viewer Radio', mode: 'ordered', itemCount: 1, isProtected: true };
+    const { dom, socketHandlers } = bootMusicBotUi({
+      translations,
+      historyPayload: [{ id: 'event-1', songId: 4, title: 'History Song', feedback: 'up', banned: true }],
+      playlistsPayload: [playlist],
+      playlistDetails: { 'viewer-radio': { ...playlist, items: [{ songId: 4, title: 'History Song' }] } },
+      radioSourcesPayload: [{ playlistId: 'viewer-radio', name: 'Viewer Radio', enabled: true, weight: 3 }],
+      catalogPayload: [{ id: 4, title: 'Catalog Song' }]
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    const catalog = translations.music_bot.ui.catalog;
+
+    expect(dom.window.document.querySelector('.history-ban-badge').textContent).toBe(catalog.historyBanned);
+    expect(dom.window.document.querySelector('[data-track-ban-trigger]').getAttribute('aria-label')).toBe(catalog.banTrack);
+    expect(dom.window.document.querySelector('[data-playlist-id]').textContent).toContain(catalog.protected);
+    expect(dom.window.document.querySelector('[data-playlist-id]').textContent).toContain(catalog.ordered);
+    expect(dom.window.document.querySelector('[data-radio-weight]').getAttribute('aria-label')).toBe(catalog.radioWeight);
+
+    dom.window.document.querySelector('[data-playlist-id]').click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(dom.window.document.getElementById('playlist-save-btn').textContent).toBe(catalog.save);
+    expect(dom.window.document.querySelector('[data-playlist-remove-song]').getAttribute('aria-label')).toBe(catalog.remove);
+
+    const search = dom.window.document.getElementById('catalog-search-input');
+    search.value = 'Catalog';
+    search.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    expect(dom.window.document.querySelector('[data-catalog-add-song]').textContent).toBe(catalog.addToPlaylist);
+    socketHandlers['musicbot:playlist-import-progress']({ playlistId: 'viewer-radio', status: 'running', progress: 70 });
+    expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe(`${catalog.importRunning} (70%)`);
+    socketHandlers['musicbot:playlist-import-progress']({ playlistId: 'viewer-radio', status: 'completed', progress: 100 });
+    expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe(`${catalog.importCompleted} (100%)`);
+    socketHandlers['musicbot:playlist-import-progress']({ playlistId: 'viewer-radio', status: 'aborted', progress: 100 });
+    expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe(`${catalog.importAborted} (100%)`);
+    socketHandlers['musicbot:playlist-import-progress']({ playlistId: 'viewer-radio', status: 'failed', error: 'offline' });
+    expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe(catalog.importError.replace('{error}', 'offline'));
+    socketHandlers['musicbot:now-playing']({ id: 'seek', playbackId: 'seek-1', title: 'Seek', duration: 120, startedAt: Date.now(), state: 'playing', seekable: true });
+    socketHandlers['musicbot:runtime']({ activePlaybackId: 'seek-1', transportState: 'playing', safetyLock: false });
+    socketHandlers['musicbot:playback-sync']({ playbackId: 'seek-1', position: 20, duration: 120, state: 'playing' });
+    expect(dom.window.document.getElementById('np-seek-input').getAttribute('aria-valuetext')).toBe(catalog.seekAria.replace('{current}', '0:20').replace('{duration}', '2:00'));
+  });
+
+  test('localizes normal, empty, error and runtime surfaces with the production merged catalogs', async () => {
+    const { dom, socketHandlers } = bootMusicBotUi({
+      translations: productionCatalogs,
+      productionLocale: 'en',
+      autoDjStatus: {
+        enabled: true,
+        mode: 'mix',
+        lastResult: { state: 'selected', message: 'Ausgewaehlt: Runtime Song', params: { title: 'Runtime Song' } }
+      }
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    for (const locale of ['en', 'es', 'fr']) {
+      const runtime = productionCatalogs[locale].plugins['music-bot'].music_bot.ui.controls.runtime;
+      dom.window.i18n.currentLocale = locale;
+      dom.window.i18n.defaultLocale = locale;
+      dom.window.i18n.updateDOM();
+      dom.window.document.getElementById('auto-dj-save').click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      dom.window.document.getElementById('musicbot-toast-container').replaceChildren();
+
+      socketHandlers['musicbot:now-playing'](null);
+      socketHandlers['musicbot:queue-update']({ queue: [], length: 0 });
+      socketHandlers.connect_error();
+      socketHandlers['musicbot:error']({});
+      socketHandlers['musicbot:paused']();
+      socketHandlers['musicbot:resumed']();
+      socketHandlers['musicbot:playback-advancing']({
+        message: 'Lädt den nächsten Titel …',
+        messageKey: 'playbackAdvancing'
+      });
+      socketHandlers['musicbot:resolver']({ progress: { state: 'validating' } });
+      socketHandlers['musicbot:health']({
+        mpvAvailable: false,
+        controllerHealthy: true,
+        cache: { bytes: 0, files: 2 },
+        lastError: null,
+        players: {}
+      });
+
+      expect(dom.window.document.getElementById('now-playing').textContent).toContain(runtime.nowPlayingEmpty);
+      expect(dom.window.document.getElementById('queue-list').textContent).toContain(runtime.queueEmptyTitle);
+      expect(dom.window.document.getElementById('playback-state').textContent).toBe(runtime.playbackAdvancing);
+      expect(dom.window.document.getElementById('skip-btn').textContent).toBe(runtime.loading);
+      expect(dom.window.document.getElementById('search-feedback').textContent).toBe(runtime.resolverValidating);
+      expect(dom.window.document.getElementById('health-mpv').textContent).toBe(runtime.unavailable);
+      expect(dom.window.document.getElementById('health-cache').textContent).toContain(runtime.files.replace('{count}', '2'));
+      expect(dom.window.document.getElementById('health-last-error').textContent).toBe(runtime.none);
+      expect(dom.window.document.getElementById('auto-dj-status').textContent).toBe(runtime.autoDjActive);
+      expect(dom.window.document.getElementById('auto-dj-detail').textContent).toContain(
+        runtime.autoDjSelected.replace('{title}', 'Runtime Song')
+      );
+      expect(dom.window.document.getElementById('musicbot-toast-container').textContent).toContain(runtime.networkTitle);
+      expect(dom.window.document.getElementById('musicbot-toast-container').textContent).toContain(runtime.unknownError);
+
+      const dynamicSurface = [
+        'now-playing', 'queue-list', 'playback-state', 'skip-btn', 'search-feedback',
+        'health-mpv', 'health-cache', 'health-last-error', 'auto-dj-status', 'auto-dj-detail',
+        'musicbot-toast-container'
+      ].map((id) => dom.window.document.getElementById(id)?.textContent || '').join(' ');
+      expect(dynamicSurface).not.toMatch(/Aktuell|Warteschlange|Lädt|Pausiert|Wiedergabe|Netzwerk|Verbindung|nicht verfügbar|Dateien|Keiner|Ausgewaehlt/i);
+    }
+  });
+
+  test('ships correct Spanish and French catalog/runtime orthography', () => {
+    const es = JSON.parse(fs.readFileSync(path.join(__dirname, '../plugins/music-bot/locales/es.json'), 'utf8')).music_bot.ui;
+    const fr = JSON.parse(fs.readFileSync(path.join(__dirname, '../plugins/music-bot/locales/fr.json'), 'utf8')).music_bot.ui;
+
+    expect(es.catalog).toMatchObject({
+      seek: 'Posición de reproducción',
+      historyMore: 'Cargar más',
+      catalogSearch: 'Buscar títulos',
+      catalogTab: 'Catálogo',
+      catalogDescription: 'Busca, valora y añade canciones históricas a listas.',
+      importCompleted: 'Importación completada',
+      importError: 'Error de importación: {error}',
+      playlistConflict: 'La lista cambió en otro lugar. Actualizando la vista.'
+    });
+    expect(es.controls.runtime).toMatchObject({
+      seekUnavailable: 'No se puede avanzar esta reproducción ahora.',
+      seekFailed: 'No se pudo cambiar la posición.',
+      playlistConflict: 'La lista se actualizó. Inténtalo de nuevo.'
+    });
+    expect(fr.catalog).toMatchObject({
+      playlistsDescription: 'Gérez vos sources et la radio des spectateurs.',
+      ordered: 'Dans l’ordre',
+      shuffle: 'Aléatoire',
+      create: 'Créer',
+      radioDescription: 'Activez plusieurs listes et mélangez-les avec des poids de 1 à 10.',
+      historyEmpty: 'Pas encore d’historique.',
+      voteUp: 'J’aime',
+      addToPlaylist: 'Ajouter à la liste',
+      importCompleted: 'Import terminé',
+      importError: 'Erreur d’import : {error}',
+      networkTitle: 'Réseau'
+    });
+    expect(fr.controls.runtime).toMatchObject({
+      seekUnavailable: 'Cette lecture ne peut pas être déplacée maintenant.',
+      playlistConflict: 'La playlist a été mise à jour. Réessayez.'
+    });
+  });
+
+  test.each(['en', 'es', 'fr'])('renders generic POST failures once in %s', async (locale) => {
+    const translations = JSON.parse(fs.readFileSync(path.join(__dirname, `../plugins/music-bot/locales/${locale}.json`), 'utf8'));
+    const { dom } = bootMusicBotUi({ translations, postHandler: async () => { throw new Error('offline'); } });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    const name = dom.window.document.getElementById('playlist-create-name');
+    name.value = 'Network test';
+    dom.window.document.getElementById('playlist-create-btn').click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const toast = dom.window.document.getElementById('musicbot-toast-container').textContent;
+    expect(toast).toContain(translations.music_bot.ui.catalog.networkTitle);
+    expect(toast).toContain(translations.music_bot.ui.catalog.postFailed);
+  });
+
+  test('rolls a failed seek back once and shows its localized error', async () => {
+    const { dom, fetchMock, socketHandlers } = bootMusicBotUi({
+      postHandler: async (target) => target.endsWith('/seek')
+        ? createJsonResponse({ success: false, error: 'Cannot seek now' })
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    socketHandlers['musicbot:now-playing']({ id: 'track', playbackId: 'p1', title: 'Seekable', duration: 120, startedAt: Date.now(), state: 'playing', seekable: true });
+    socketHandlers['musicbot:runtime']({ activePlaybackId: 'p1', transportState: 'playing', safetyLock: false });
+    socketHandlers['musicbot:playback-sync']({ playbackId: 'p1', position: 20, duration: 120, state: 'playing' });
+    const seek = dom.window.document.getElementById('np-seek-input');
+    seek.value = '55';
+    seek.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(seek.value).toBe('20');
+    expect(dom.window.document.getElementById('musicbot-toast-container').textContent).toContain('Cannot seek now');
+    expect(fetchMock.mock.calls.filter(([url, options]) => String(url).endsWith('/seek') && options?.method === 'POST')).toHaveLength(1);
   });
 
   test('minimal overlay ignores a stale playback sync from a different title', () => {
@@ -1135,7 +1489,7 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(plugin.queueManager.clear).not.toHaveBeenCalled();
   });
 
-  test('starts the next song in the final configured crossfade interval', () => {
+  test('wakes the supervisor in the fixed final three-second crossfade interval', () => {
     jest.useFakeTimers();
     try {
       const { plugin } = createPluginWithQueue([]);
@@ -1149,11 +1503,15 @@ describe('Music Bot runtime and UI regressions', () => {
 
       plugin._scheduleCrossfadeTransition({ id: 'current', duration: 120 });
       jest.advanceTimersByTime(116999);
-      expect(plugin._maybePlayAutoDJ).not.toHaveBeenCalled();
+      expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
 
       jest.advanceTimersByTime(1);
-      expect(plugin._maybePlayAutoDJ).toHaveBeenCalledWith(false, true);
-      expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
+      expect(plugin._maybePlayAutoDJ).not.toHaveBeenCalled();
+      expect(plugin._playNextFromQueue).toHaveBeenCalledWith('crossfade', {
+        allowActiveAutoDJ: true,
+        allowActiveViewerAtBoundary: true,
+        prefetchGeneration: expect.any(Number)
+      });
     } finally {
       jest.useRealTimers();
     }
@@ -1267,6 +1625,7 @@ describe('Music Bot runtime and UI regressions', () => {
     };
     plugin.autoDJ = {
       recordFailedTrack: jest.fn(),
+      recordSourceFailure: jest.fn(() => ({ failureClass: 'transient' })),
       markPlaybackFailed: jest.fn(),
       setPlaybackSeed: jest.fn()
     };
@@ -1287,7 +1646,8 @@ describe('Music Bot runtime and UI regressions', () => {
     await new Promise((resolve) => setImmediate(resolve));
     await new Promise((resolve) => setImmediate(resolve));
 
-    expect(plugin.autoDJ.recordFailedTrack).toHaveBeenCalledWith(failedTrack, 'mpv-track-end');
+    expect(plugin.autoDJ.recordSourceFailure).toHaveBeenCalledWith(failedTrack, expect.any(Error));
+    expect(plugin.autoDJ.recordFailedTrack).not.toHaveBeenCalled();
     expect(plugin.autoDJ.markPlaybackFailed).toHaveBeenCalledTimes(1);
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledWith(true);
   });

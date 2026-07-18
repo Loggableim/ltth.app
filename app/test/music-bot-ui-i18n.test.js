@@ -10,25 +10,8 @@ function getPath(object, keyPath) {
 
 describe('Music Bot runtime i18n', () => {
   const uiRuntimeKeys = [
-    'pause', 'noTrackPlaying', 'playbackResumed', 'playbackStarted',
-    'nextTrackPlaying', 'resume', 'noPlayableTrack', 'skip', 'playingNow', 'nextTitle', 'autoDj',
-    'searchLoadingInfo', 'searchLoading',
-    'noSearchResult', 'queueAdding', 'queueAdded', 'requestFailed', 'songAdded',
-    'requestRejected', 'masterVolume', 'sourceVolume', 'volumeUpdateFailed',
-    'crossfade', 'crossfadeSaveFailed', 'copied', 'copyFailed', 'autoDjStarted', 'autoDjWaiting',
-    'noTrackAvailable', 'saveSuccess', 'saveFailure', 'enterBanValue', 'banAdded',
-    'banAddFailed', 'banRemoveFailed', 'network', 'getFailed', 'postFailed',
-    'deleteFailed', 'apiError', 'unknownError', 'connectionInterrupted',
-    'socketDisconnected', 'nothingPlaying', 'requestedBy', 'viewer', 'queueEmptyTitle',
-    'queueEmptyDescription', 'historyEmpty', 'idle', 'skipLoading', 'skip', 'playing',
-    'active', 'disabled', 'enabled', 'selectionSource', 'blockedCount', 'giftsCount',
-    'noGiftsFound', 'selectGiftsFirst', 'saveTargetFailed', 'giftsApplied',
-    'giftCatalogUpdated', 'giftCatalog', 'giftCatalogLoading', 'giftCatalogLoadFailed',
-    'noEntries', 'delete', 'queueOrderUpdated', 'queueUpdateFailed', 'trackRemoved',
-    'trackAlreadyPlaying', 'selectedTrack', 'trackStartFailed', 'trackMoved', 'paused',
-    'loadingNextTrack', 'disabledState', 'catalogLocales', 'catalogLocalesDefault',
-    'catalogRegion', 'catalogUpdated', 'catalogLoadedWithApiCount', 'catalogLoaded',
-    'catalogVisible'
+    'seekUnavailable', 'seekFailed', 'historyLoadFailed', 'playlistSaveFailed',
+    'playlistConflict', 'importRunning'
   ];
   const overlayKeys = [
     'songSkipping', 'voteSkip', 'requestedBy', 'unknownTitle', 'queueCount', 'waitingForMusic'
@@ -52,11 +35,11 @@ describe('Music Bot runtime i18n', () => {
 
   test.each(locales)('provides complete non-empty UI and overlay runtime translations for %s', (locale) => {
     const data = JSON.parse(fs.readFileSync(path.join(pluginRoot, `locales/${locale}.json`), 'utf8'));
-    const base = data.plugins['music-bot'].music_bot.ui;
+    const base = data.music_bot.ui;
 
     uiRuntimeKeys.forEach((key) => {
-      expect(getPath(base, `controls.runtimeMessages.${key}`)).toEqual(expect.any(String));
-      expect(getPath(base, `controls.runtimeMessages.${key}`).trim()).not.toBe('');
+      expect(getPath(base, `controls.runtime.${key}`)).toEqual(expect.any(String));
+      expect(getPath(base, `controls.runtime.${key}`).trim()).not.toBe('');
     });
     overlayKeys.forEach((key) => {
       expect(getPath(base, `controls.overlay.${key}`)).toEqual(expect.any(String));
