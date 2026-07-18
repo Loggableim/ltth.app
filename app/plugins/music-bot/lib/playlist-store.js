@@ -227,6 +227,7 @@ class PlaylistStore {
            WHERE playlist_id = ? AND song_id = ?`
         ).get(id, songId);
         if (known.has(songId) || seen.has(songId) || imported) {
+          this._markImportedSong(id, songId);
           duplicatesSkipped += 1;
           seen.add(songId);
           return;
@@ -236,11 +237,7 @@ class PlaylistStore {
            (playlist_id, song_id, position, request_count, last_requested_at, added_at)
            VALUES (?, ?, ?, 0, NULL, ?)`
         ).run(id, songId, position, Date.now());
-        this.db.prepare(
-          `INSERT INTO plugin_music_bot_playlist_imported_songs
-           (playlist_id, song_id, first_imported_at, last_imported_at, removed_at)
-           VALUES (?, ?, ?, ?, NULL)`
-        ).run(id, songId, Date.now(), Date.now());
+        this._markImportedSong(id, songId);
         known.add(songId);
         seen.add(songId);
         position += 1;
@@ -401,6 +398,16 @@ class PlaylistStore {
        ON CONFLICT(playlist_id) DO UPDATE SET source_type = excluded.source_type, source_url = excluded.source_url,
        external_playlist_id = excluded.external_playlist_id, imported_at = excluded.imported_at`
     ).run(id, sourceType, sourceUrl, provenance.externalPlaylistId || null, Date.now());
+  }
+
+  _markImportedSong(playlistId, songId) {
+    const now = Date.now();
+    this.db.prepare(
+      `INSERT INTO plugin_music_bot_playlist_imported_songs
+       (playlist_id, song_id, first_imported_at, last_imported_at, removed_at)
+       VALUES (?, ?, ?, ?, NULL)
+       ON CONFLICT(playlist_id, song_id) DO UPDATE SET last_imported_at = excluded.last_imported_at`
+    ).run(playlistId, songId, now, now);
   }
 
   _song(songId) {

@@ -97,6 +97,25 @@ describe('music-bot playlist store', () => {
     db.close();
   });
 
+  it('marks a matching manual item as imported so removal remains a tombstone on later reimport', () => {
+    const { db, catalog, store } = createStore();
+    const playlist = store.create({ name: 'Manual then import' });
+    const entry = { title: 'Manual match', artist: 'Artist', provider: 'youtube', providerId: 'manual-match' };
+    const song = catalog.resolveOrUpsert(entry).song;
+    const added = store.addItem(playlist.id, song.id, playlist.revision).playlist;
+
+    expect(store.importSnapshot(playlist.id, [entry], {
+      sourceType: 'youtube-import', sourceUrl: 'https://www.youtube.com/playlist?list=PLMANUAL', externalPlaylistId: 'PLMANUAL'
+    })).toMatchObject({ added: 0, duplicatesSkipped: 1 });
+    const removed = store.removeItem(playlist.id, song.id, added.revision);
+    expect(store.importSnapshot(playlist.id, [entry], {
+      sourceType: 'youtube-import', sourceUrl: 'https://www.youtube.com/playlist?list=PLMANUAL', externalPlaylistId: 'PLMANUAL'
+    })).toMatchObject({ added: 0, duplicatesSkipped: 1 });
+    expect(store.get(playlist.id).items).toEqual([]);
+    expect(removed.removed).toBe(true);
+    db.close();
+  });
+
   it('selects enabled playlist sources by weight, rotates their cursors, and falls back when a source is blocked', () => {
     const { db, catalog, store } = createStore();
     const light = store.create({ name: 'Light' });
