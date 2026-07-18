@@ -34,6 +34,44 @@ describe('WebGPU Superfan finale foundation', () => {
       });
   });
 
+  test('normalizes Superfan end card defaults, bounds, positions, and sizes', () => {
+    expect(DEFAULT_FIREWORKS_CONFIG).toMatchObject({
+      superfanEndCardDuration: 3000,
+      superfanEndCardPosition: 'center',
+      superfanEndCardSize: 'medium',
+      superfanEndCardScale: 1
+    });
+    expect(normalizeConfig({
+      superfanEndCardDuration: 250,
+      superfanEndCardPosition: 'invalid',
+      superfanEndCardSize: 'giant',
+      superfanEndCardScale: 9
+    })).toMatchObject({
+      superfanEndCardDuration: 1000,
+      superfanEndCardPosition: 'center',
+      superfanEndCardSize: 'medium',
+      superfanEndCardScale: 2
+    });
+    expect(normalizeConfig({
+      superfanEndCardDuration: 20000,
+      superfanEndCardPosition: 'bottom-right',
+      superfanEndCardSize: 'custom',
+      superfanEndCardScale: 0.1
+    })).toMatchObject({
+      superfanEndCardDuration: 10000,
+      superfanEndCardPosition: 'bottom-right',
+      superfanEndCardSize: 'custom',
+      superfanEndCardScale: 0.5
+    });
+
+    for (const position of ['top-left', 'top-center', 'top-right', 'center', 'bottom-left', 'bottom-center', 'bottom-right']) {
+      expect(normalizeConfig({ superfanEndCardPosition: position }).superfanEndCardPosition).toBe(position);
+    }
+    for (const size of ['small', 'medium', 'large', 'custom']) {
+      expect(normalizeConfig({ superfanEndCardSize: size }).superfanEndCardSize).toBe(size);
+    }
+  });
+
   test('prefers stable user id and normalizes handle fallbacks', () => {
     expect(normalizeSuperfanIdentity({ userId: 42, uniqueId: 'Ignored' })).toBe('id:42');
     expect(normalizeSuperfanIdentity({ uniqueId: '  Fan.Name  ' })).toBe('user:fan.name');

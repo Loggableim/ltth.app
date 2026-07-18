@@ -65,6 +65,10 @@ const DEFAULT_FIREWORKS_CONFIG = {
   superfanFinaleEnabled: true,
   superfanFinaleCooldownHours: 24,
   superfanFinaleIntensity: 3,
+  superfanEndCardDuration: 3000,
+  superfanEndCardPosition: 'center',
+  superfanEndCardSize: 'medium',
+  superfanEndCardScale: 1,
   followerFireworksEnabled: false,
   followerRocketCount: 3,
   followerShowAnimation: true,
@@ -297,6 +301,14 @@ function normalizeConfig(config = {}) {
       ? Number(source.superfanFinaleCooldownHours)
       : defaults.superfanFinaleCooldownHours,
     superfanFinaleIntensity: clampNumber(source.superfanFinaleIntensity, 1, 10, defaults.superfanFinaleIntensity),
+    superfanEndCardDuration: clampInteger(source.superfanEndCardDuration, 1000, 10000, defaults.superfanEndCardDuration),
+    superfanEndCardPosition: VALID_FOLLOWER_POSITIONS.includes(source.superfanEndCardPosition)
+      ? source.superfanEndCardPosition
+      : defaults.superfanEndCardPosition,
+    superfanEndCardSize: ['small', 'medium', 'large', 'custom'].includes(source.superfanEndCardSize)
+      ? source.superfanEndCardSize
+      : defaults.superfanEndCardSize,
+    superfanEndCardScale: clampNumber(source.superfanEndCardScale, 0.5, 2, defaults.superfanEndCardScale),
     followerFireworksEnabled: normalizeBoolean(source.followerFireworksEnabled, defaults.followerFireworksEnabled),
     followerRocketCount: clampInteger(source.followerRocketCount, 1, 10, defaults.followerRocketCount),
     followerShowAnimation: normalizeBoolean(source.followerShowAnimation, defaults.followerShowAnimation),
