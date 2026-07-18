@@ -89,6 +89,27 @@ describe('interactive overlay contract', () => {
     expect(html).not.toContain('interactiveLeaderboardTimer = setTimeout');
   });
 
+  test.each(['unified.html', 'connect4.html'])(
+    '%s owns a compact revision-cleared Connect4 viewer countdown',
+    filename => {
+      const html = readOverlay(filename);
+
+      expect(html).toContain('id="interactive-viewer-countdown"');
+      expect(html).toContain('viewerDeadlineMs');
+      expect(html).toContain('serverTimestamp');
+      expect(html).toContain('connect4ViewerWarningSeconds');
+      expect(html).toContain('clearInteractiveViewerCountdown');
+    }
+  );
+
+  test('direct Connect4 move audio is deduplicated by session and move number', () => {
+    const html = readOverlay('connect4.html');
+
+    expect(html).toContain('lastInteractiveMoveSoundKey');
+    expect(html).toMatch(/lastMove\?\.moveNumber/);
+    expect(html).toContain('`${sessionId}:${moveNumber}`');
+  });
+
   test('authoritative cancellations render neutral results instead of a winner or draw', () => {
     const connect4 = readOverlay('connect4.html');
     const chess = readOverlay('chess.html');

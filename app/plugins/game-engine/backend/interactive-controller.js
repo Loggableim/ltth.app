@@ -5,7 +5,9 @@ const InteractiveDisplayRouter = require('./interactive-display-router');
 const { createInteractiveAdapter } = require('./interactive-game-adapters');
 
 const DEFAULT_SETTINGS = Object.freeze({
+  connect4ViewerTimeoutEnabled: false,
   connect4ViewerResponseSeconds: 30,
+  connect4ViewerWarningSeconds: 10,
   chessViewerResponseSeconds: 60,
   maxConcurrentInteractiveSessions: 20,
   interactiveResultDisplaySeconds: 3
@@ -69,12 +71,23 @@ class InteractiveController {
 
   _settings() {
     const configured = this.getSettings?.() || {};
+    const connect4ViewerResponseSeconds = this._bounded(
+      configured.connect4ViewerResponseSeconds,
+      DEFAULT_SETTINGS.connect4ViewerResponseSeconds,
+      5,
+      120
+    );
     return {
-      connect4ViewerResponseSeconds: this._bounded(
-        configured.connect4ViewerResponseSeconds,
-        DEFAULT_SETTINGS.connect4ViewerResponseSeconds,
-        5,
-        300
+      connect4ViewerTimeoutEnabled: configured.connect4ViewerTimeoutEnabled === true,
+      connect4ViewerResponseSeconds,
+      connect4ViewerWarningSeconds: Math.min(
+        connect4ViewerResponseSeconds,
+        this._bounded(
+          configured.connect4ViewerWarningSeconds,
+          DEFAULT_SETTINGS.connect4ViewerWarningSeconds,
+          3,
+          30
+        )
       ),
       chessViewerResponseSeconds: this._bounded(
         configured.chessViewerResponseSeconds,
@@ -102,6 +115,10 @@ class InteractiveController {
     return gameType === 'chess'
       ? settings.chessViewerResponseSeconds
       : settings.connect4ViewerResponseSeconds;
+  }
+
+  _viewerTimeoutEnabled(gameType) {
+    return gameType === 'chess' || this._settings().connect4ViewerTimeoutEnabled;
   }
 
   _hostTimeFromState(gameType, state) {
@@ -144,6 +161,71 @@ class InteractiveController {
     };
   }
 
+  refreshConnect4TimerConfiguration(config = {}) {
+    const enabled = config.roundTimerEnabled === true;
+    const responseSeconds = this._bounded(
+      config.roundTimeLimit,
+      DEFAULT_SETTINGS.connect4ViewerResponseSeconds,
+      5,
+      120
+    );
+    const warningSeconds = Math.min(
+      responseSeconds,
+      this._bounded(
+        config.roundWarningTime,
+        DEFAULT_SETTINGS.connect4ViewerWarningSeconds,
+        3,
+        30
+      )
+    );
+    let updatedSessions = 0;
+
+    for (const session of this.registry.list()) {
+      if (session.gameType !== 'connect4' || session.status !== 'active') continue;
+      const previousEnabled = session.config?.roundTimerEnabled === true;
+      const previousResponseSeconds = this._bounded(
+        session.config?.roundTimeLimit,
+        DEFAULT_SETTINGS.connect4ViewerResponseSeconds,
+        5,
+        120
+      );
+      const previousWarningSeconds = Math.min(
+        previousResponseSeconds,
+        this._bounded(
+          session.config?.roundWarningTime,
+          DEFAULT_SETTINGS.connect4ViewerWarningSeconds,
+          3,
+          30
+        )
+      );
+      const scheduleChanged = previousEnabled !== enabled || previousResponseSeconds !== responseSeconds;
+      const presentationChanged = scheduleChanged || previousWarningSeconds !== warningSeconds;
+      if (!presentationChanged) continue;
+
+      if (scheduleChanged && session.turnRole === 'viewer') {
+        this.timers.clearViewer(session.sessionId, { persist: false });
+      }
+      session.config = {
+        ...session.config,
+        roundTimerEnabled: enabled,
+        roundTimeLimit: responseSeconds,
+        roundWarningTime: warningSeconds
+      };
+      session.sessionRevision += 1;
+      if (scheduleChanged && session.turnRole === 'viewer' && enabled) {
+        this.timers.startViewer(session, responseSeconds, { persist: false });
+      }
+      this.database.updateInteractiveState(session.sessionId, this._sessionRecord(session));
+      updatedSessions += 1;
+    }
+
+    if (updatedSessions > 0) {
+      this.router.sync();
+      this.emitState();
+    }
+    return { updatedSessions };
+  }
+
   _logTransition(transition, session, extra = {}) {
     this.logger?.info?.(`[INTERACTIVE] ${JSON.stringify({
       transition,
@@ -173,6 +255,14 @@ class InteractiveController {
           timeControl: row.timeControl || restored.timeControl,
           status: 'active'
         });
+        if (
+          session.turnRole === 'viewer' &&
+          session.viewerDeadlineMs != null &&
+          !this._viewerTimeoutEnabled(session.gameType)
+        ) {
+          session.viewerDeadlineMs = null;
+          this.database.updateInteractiveState(session.sessionId, { viewerDeadlineMs: null });
+        }
         this.timers.restore(session);
         recovered += 1;
         this._logTransition('session_recovered', session);
@@ -256,7 +346,7 @@ class InteractiveController {
         sessionRevision: 1,
         displayRevision: this.router.displayRevision,
         turnRole,
-        viewerDeadlineMs: turnRole === 'viewer'
+        viewerDeadlineMs: turnRole === 'viewer' && this._viewerTimeoutEnabled(gameType)
           ? now + (this._viewerResponseSeconds(gameType) * 1000)
           : null,
         hostTimeRemainingMs: this._hostTimeFromState(gameType, state),
@@ -404,7 +494,8 @@ class InteractiveController {
     session.turnRole = session.adapter.getCurrentTurnRole();
     session.lastMoveIdentity = moveIdentity || `${session.sessionRevision - 1}:${JSON.stringify(envelope.move)}`;
     session.lastActivityAt = this.now();
-    session.viewerDeadlineMs = result.gameOver || session.adapter.isComplete()
+    session.viewerDeadlineMs = result.gameOver || session.adapter.isComplete() ||
+      !this._viewerTimeoutEnabled(session.gameType)
       ? null
       : this.now() + (this._viewerResponseSeconds(session.gameType) * 1000);
 

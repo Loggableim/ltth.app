@@ -1419,8 +1419,9 @@
             <button type="button" class="interactive-column-button" data-interactive-column="G">G</button>
           </div>
           <p id="interactive-chess-help" hidden>Quelle und danach Zielfeld anklicken.</p>
-          <button type="button" id="skipInteractiveHostTurnBtn">Host-Zug ans Queue-Ende schieben</button>
-          <button class="danger" id="cancelInteractiveGameBtn">Angezeigte Partie abbrechen</button>
+          <p id="interactive-host-action-label" hidden></p>
+          <button type="button" id="skipInteractiveHostTurnBtn" hidden>Host-Zug ans Queue-Ende schieben</button>
+          <button class="danger" id="cancelInteractiveGameBtn" hidden>Angezeigte Partie abbrechen</button>
         </section>
 
         <section class="card" id="interactive-host-queue-card">
@@ -1439,7 +1440,7 @@
           <div class="interactive-settings-grid">
             <div class="form-group">
               <label for="interactive-connect4-response">Connect 4: Spieler-Zugzeit (Sekunden)</label>
-              <input id="interactive-connect4-response" type="number" min="5" max="300" value="30">
+              <input id="interactive-connect4-response" type="text" readonly value="Ohne Zeitlimit">
             </div>
             <div class="form-group">
               <label for="interactive-chess-response">Schach: Spieler-Zugzeit (Sekunden)</label>
@@ -4466,9 +4467,6 @@
         if (res.ok) {
           showMessage('Einstellungen gespeichert!');
 
-          // Also save round timer config
-          await saveRoundTimerConfig();
-
           // Trigger GCCE command re-registration by emitting socket event
           socket.emit('game-engine:config-updated', { gameType: 'connect4' });
         } else {
@@ -4476,25 +4474,6 @@
         }
       } catch (error) {
         showMessage('Fehler: ' + error.message, 'error');
-      }
-    }
-
-    // Save round timer configuration separately
-    async function saveRoundTimerConfig() {
-      const timerConfig = {
-        enabled: document.getElementById('roundTimerEnabled').checked,
-        timeLimitSeconds: parseInt(document.getElementById('roundTimeLimit').value),
-        warningTimeSeconds: parseInt(document.getElementById('roundWarningTime').value)
-      };
-
-      try {
-        await fetch('/api/game-engine/round-timer/connect4', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(timerConfig)
-        });
-      } catch (error) {
-        console.error('Failed to save round timer config:', error);
       }
     }
 
@@ -5120,8 +5099,8 @@
       return interactiveFallbackSession(state)?.sessionId ?? null;
     }
 
-    function interactiveCancellationEnvelope(state = latestInteractiveAdminState) {
-      const sessionId = interactiveCancelableSessionId(state);
+    function interactiveCancellationEnvelope(state = latestInteractiveAdminState, requestedSessionId = null) {
+      const sessionId = requestedSessionId ?? interactiveCancelableSessionId(state);
       if (sessionId == null) return null;
       const display = state?.display || {};
       const session = state?.activeSessions?.find(item => Number(item.sessionId) === Number(sessionId));
@@ -5131,6 +5110,38 @@
         sessionRevision: session?.sessionRevision ?? display.sessionRevision,
         displayRevision: display.displayRevision
       };
+    }
+
+    function interactiveStreamerRoleLabel(gameType, config = {}, gameState = {}) {
+      const streamerRole = config?.streamerRole;
+      if (gameType === 'connect4') {
+        if (streamerRole === 'player1' || gameState?.player1?.role === 'streamer') return 'Streamer (Spieler 1)';
+        return 'Streamer (Spieler 2)';
+      }
+      if (gameType === 'chess') {
+        if (streamerRole === 'white' || gameState?.whitePlayer?.role === 'streamer') return 'Streamer (WeiÃŸ)';
+        return 'Streamer (Schwarz)';
+      }
+      return 'Streamer';
+    }
+
+    function interactiveCancelButton(state, session) {
+      const button = interactiveElement('button', 'danger interactive-session-cancel');
+      button.type = 'button';
+      button.textContent = runtimeText(
+        'plugins.game-engine.runtime.dashboard.cancel_session',
+        { player: session.viewerDisplayName }
+      ) || `${session.viewerDisplayName} abbrechen`;
+      button.addEventListener('click', () => {
+        const envelope = interactiveCancellationEnvelope(state, session.sessionId);
+        if (!envelope) return;
+        const confirmation = runtimeText(
+          'plugins.game-engine.runtime.dashboard.cancel_confirm',
+          { player: session.viewerDisplayName }
+        ) || `Partie gegen ${session.viewerDisplayName} wirklich abbrechen?`;
+        if (confirm(confirmation)) socket.emit('game-engine:cancel-game', envelope);
+      });
+      return button;
     }
 
     function canSubmitInteractiveHostMove(state = latestInteractiveAdminState) {
@@ -5219,6 +5230,9 @@
         const serverNow = Number(display.serverTimestamp) + elapsed;
         return `Spieler: ${interactiveFormatDuration(Number(viewerDeadlineMs) - serverNow)}`;
       }
+      if (gameType === 'connect4' && currentTurnRole === 'viewer') {
+        return runtimeText('plugins.game-engine.runtime.dashboard.no_time_limit') || 'Ohne Zeitlimit';
+      }
       if (gameType === 'chess' && currentTurnRole === 'host') {
         const hostTimeRemainingMs = display?.hostTimeRemainingMs ?? fallbackSession?.hostTimeRemainingMs;
         return `Host: ${interactiveFormatDuration(Number(hostTimeRemainingMs) - elapsed)}`;
@@ -5268,16 +5282,34 @@
       );
 
       const canMove = canSubmitInteractiveHostMove(state);
+      const streamerRoleLabel = interactiveStreamerRoleLabel(gameType, display.config || {}, gameState || {});
       const connect4Controls = document.getElementById('interactive-connect4-controls');
-      connect4Controls.hidden = gameType !== 'connect4';
+      connect4Controls.hidden = gameType !== 'connect4' || !canMove;
       connect4Controls.querySelectorAll('button').forEach(button => { button.disabled = !canMove; });
-      document.getElementById('interactive-chess-help').hidden = gameType !== 'chess';
-      document.getElementById('cancelInteractiveGameBtn').disabled = sessionId == null || display.phase === 'result';
-      document.getElementById('skipInteractiveHostTurnBtn').disabled = !(
-        display.phase === 'playing' &&
+      document.getElementById('interactive-chess-help').hidden = gameType !== 'chess' || !canMove;
+      const actionLabel = document.getElementById('interactive-host-action-label');
+      actionLabel.hidden = !canMove;
+      actionLabel.textContent = canMove
+        ? (runtimeText('plugins.game-engine.runtime.dashboard.host_move_as', { role: streamerRoleLabel }) || `${streamerRoleLabel} ist am Zug`)
+        : '';
+      const cancelButton = document.getElementById('cancelInteractiveGameBtn');
+      cancelButton.hidden = sessionId == null || display.phase === 'result';
+      cancelButton.disabled = cancelButton.hidden;
+      cancelButton.textContent = runtimeText(
+        'plugins.game-engine.runtime.dashboard.cancel_current',
+        { player: display.viewerDisplayName || fallbackSession?.viewerDisplayName || '' }
+      ) || `Partie gegen ${display.viewerDisplayName || fallbackSession?.viewerDisplayName || 'Spieler'} abbrechen`;
+      const skipButton = document.getElementById('skipInteractiveHostTurnBtn');
+      skipButton.hidden = !(
+        canMove &&
         display.displaySessionId != null &&
         state.hostQueue?.length >= 2
       );
+      skipButton.disabled = skipButton.hidden;
+      skipButton.textContent = runtimeText(
+        'plugins.game-engine.runtime.dashboard.skip_host_turn',
+        { role: streamerRoleLabel }
+      ) || `${streamerRoleLabel}-Zug ans Queue-Ende schieben`;
     }
 
     function makeInteractiveListItem(parts, isNow = false) {
@@ -5295,12 +5327,15 @@
         return;
       }
       state.hostQueue.forEach((entry, index) => {
-        container.appendChild(makeInteractiveListItem([
+        const item = makeInteractiveListItem([
           `#${index + 1}`,
           `${entry.gameType === 'chess' ? 'Schach' : 'Connect 4'} · ${entry.viewerDisplayName}`,
           `wartet ${interactiveFormatDuration(now - Number(entry.enqueuedAt))}`,
           index === 0 ? 'Jetzt auf Sendung' : 'wartet'
-        ], index === 0 && Number(entry.sessionId) === Number(state.display?.displaySessionId)));
+        ], index === 0 && Number(entry.sessionId) === Number(state.display?.displaySessionId));
+        const session = state.activeSessions?.find(row => Number(row.sessionId) === Number(entry.sessionId));
+        if (session) item.appendChild(interactiveCancelButton(state, session));
+        container.appendChild(item);
       });
     }
 
@@ -5315,8 +5350,10 @@
       }
       for (const session of background) {
         const details = interactiveElement('details', 'interactive-list-item');
-        const timer = session.turnRole === 'viewer'
+        const timer = session.turnRole === 'viewer' && session.viewerTimeRemainingMs != null
           ? `Spieler ${interactiveFormatDuration(Number(session.viewerTimeRemainingMs) - (Date.now() - interactiveAdminStateReceivedAt))}`
+          : session.turnRole === 'viewer' && session.gameType === 'connect4'
+            ? (runtimeText('plugins.game-engine.runtime.dashboard.no_time_limit') || 'Ohne Zeitlimit')
           : session.gameType === 'chess'
             ? `Host ${interactiveFormatDuration(session.hostTimeRemainingMs)}`
             : 'Host-Zug wartet';
@@ -5329,6 +5366,7 @@
         const board = interactiveElement('div');
         renderInteractiveBoard(board, session.gameType, session.state, false);
         details.appendChild(board);
+        details.appendChild(interactiveCancelButton(state, session));
         container.appendChild(details);
       }
     }
@@ -5392,7 +5430,10 @@
     }
 
     function applyInteractiveSettings(config) {
-      document.getElementById('interactive-connect4-response').value = config.connect4ViewerResponseSeconds ?? 30;
+      const noTimeLimit = runtimeText('plugins.game-engine.runtime.dashboard.no_time_limit') || 'Ohne Zeitlimit';
+      document.getElementById('interactive-connect4-response').value = config.connect4ViewerTimeoutEnabled
+        ? `${config.connect4ViewerResponseSeconds ?? 30}s Â· Warnung ${config.connect4ViewerWarningSeconds ?? 10}s`
+        : noTimeLimit;
       document.getElementById('interactive-chess-response').value = config.chessViewerResponseSeconds ?? 60;
       document.getElementById('interactive-max-sessions').value = config.maxConcurrentInteractiveSessions ?? 20;
       document.getElementById('interactive-result-seconds').value = config.interactiveResultDisplaySeconds ?? 3;
@@ -5409,7 +5450,6 @@
 
     async function saveInteractiveSettings() {
       const config = {
-        connect4ViewerResponseSeconds: Number(document.getElementById('interactive-connect4-response').value),
         chessViewerResponseSeconds: Number(document.getElementById('interactive-chess-response').value),
         maxConcurrentInteractiveSessions: Number(document.getElementById('interactive-max-sessions').value),
         interactiveResultDisplaySeconds: Number(document.getElementById('interactive-result-seconds').value)
@@ -6426,7 +6466,14 @@
       if (sessionId == null) return;
       const envelope = interactiveCancellationEnvelope(latestInteractiveAdminState);
       if (!envelope) return;
-      if (confirm('Angezeigte Partie wirklich abbrechen?')) {
+      const player = latestInteractiveAdminState?.activeSessions?.find(
+        session => Number(session.sessionId) === Number(sessionId)
+      )?.viewerDisplayName || '';
+      const confirmation = runtimeText(
+        'plugins.game-engine.runtime.dashboard.cancel_confirm',
+        { player }
+      ) || `Partie gegen ${player || 'diesen Spieler'} wirklich abbrechen?`;
+      if (confirm(confirmation)) {
         socket.emit('game-engine:cancel-game', envelope);
       }
     });
@@ -6435,6 +6482,11 @@
       const state = latestInteractiveAdminState;
       const display = state?.display;
       if (!display?.displaySessionId || !display.gameType) return;
+      const confirmation = runtimeText(
+        'plugins.game-engine.runtime.dashboard.skip_confirm',
+        { player: display.viewerDisplayName || '' }
+      ) || `Host-Zug gegen ${display.viewerDisplayName || 'diesen Spieler'} ans Queue-Ende schieben?`;
+      if (!confirm(confirmation)) return;
       socket.emit('game-engine:interactive-skip-host-turn', {
         sessionId: display.displaySessionId,
         gameType: display.gameType,

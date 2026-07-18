@@ -80,6 +80,7 @@ class InteractiveSessionRegistry {
         viewerId: session.viewerId,
         viewerDisplayName: session.viewerDisplayName,
         hostDisplayName: session.hostDisplayName,
+        config: session.config ? { ...session.config } : null,
         sessionRevision: session.sessionRevision,
         turnRole: session.turnRole,
         viewerDeadlineMs: session.viewerDeadlineMs ?? null,

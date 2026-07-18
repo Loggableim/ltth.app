@@ -215,6 +215,7 @@ describe('GameEnginePlugin interactive controller integration', () => {
       soundVolume: 2,
       leaderboardTypes: ['daily', 'unknown', 'daily'],
       leaderboardDisplayTime: 99,
+      roundTimerEnabled: 'yes',
       roundTimeLimit: 2,
       roundWarningTime: 100
     })).toMatchObject({
@@ -225,15 +226,78 @@ describe('GameEnginePlugin interactive controller integration', () => {
       soundVolume: 0.5,
       leaderboardTypes: ['daily', 'season', 'lifetime', 'elo'],
       leaderboardDisplayTime: 3,
+      roundTimerEnabled: false,
       roundTimeLimit: 30,
       roundWarningTime: 10
     });
+  });
+
+  test('derives interactive Connect4 timer settings from the canonical Connect4 configuration', () => {
+    const { plugin } = createPlugin();
+    plugin.db = {
+      getGameConfig: jest.fn(gameType => gameType === 'connect4'
+        ? {
+          roundTimerEnabled: true,
+          roundTimeLimit: 45,
+          roundWarningTime: 12
+        }
+        : {
+          connect4ViewerResponseSeconds: 99,
+          chessViewerResponseSeconds: 60,
+          maxConcurrentInteractiveSessions: 20,
+          interactiveResultDisplaySeconds: 3
+        })
+    };
+
+    expect(plugin._getInteractiveSettings()).toMatchObject({
+      connect4ViewerTimeoutEnabled: true,
+      connect4ViewerResponseSeconds: 45,
+      connect4ViewerWarningSeconds: 12
+    });
+  });
+
+  test('reconciles active Connect4 viewer timers after saving canonical configuration', () => {
+    const { plugin, routes } = createPlugin();
+    plugin.db = {
+      saveGameConfig: jest.fn()
+    };
+    plugin.interactiveController = {
+      refreshConnect4TimerConfiguration: jest.fn(() => ({ updatedSessions: 1 }))
+    };
+    plugin.registerRoutes();
+    const route = routes.find(item => item.method === 'POST' && item.path === '/api/game-engine/config/:gameType');
+    const res = {
+      status: jest.fn(function status(code) {
+        this.statusCode = code;
+        return this;
+      }),
+      json: jest.fn()
+    };
+
+    route.handler({
+      params: { gameType: 'connect4' },
+      body: {
+        roundTimerEnabled: false,
+        roundTimeLimit: 30,
+        roundWarningTime: 10
+      }
+    }, res);
+
+    expect(plugin.interactiveController.refreshConnect4TimerConfiguration).toHaveBeenCalledWith(
+      expect.objectContaining({
+        roundTimerEnabled: false,
+        roundTimeLimit: 30,
+        roundWarningTime: 10
+      })
+    );
+    expect(res.json).toHaveBeenCalledWith({ success: true });
   });
 
   test.each([
     { streamerRole: 'host' },
     { chatCommand: 'bad command!' },
     { player2Color: '#GG0000' },
+    { roundTimerEnabled: 'yes' },
     { roundTimeLimit: 5, roundWarningTime: 10 },
     { animationSpeed: 50 },
     { leaderboardTypes: ['daily', 'unknown'] },

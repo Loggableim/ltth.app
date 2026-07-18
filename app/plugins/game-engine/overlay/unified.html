@@ -140,6 +140,24 @@
       font-size: 12px;
       font-weight: 500;
     }
+
+    #interactive-viewer-countdown {
+      display: inline-block;
+      margin-top: 7px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(33, 150, 243, 0.24);
+      color: #d9efff;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    #interactive-viewer-countdown[hidden] { display: none; }
+
+    #interactive-viewer-countdown.warning {
+      background: rgba(244, 67, 54, 0.34);
+      color: #fff1f0;
+    }
     </style>
     <script src="/js/i18n-client.js"></script>
 </head>
@@ -155,6 +173,7 @@
     <div id="interactive-matchup" aria-live="polite">
       <span id="interactive-matchup-names"></span>
       <span id="interactive-status"></span>
+      <span id="interactive-viewer-countdown" aria-live="polite" hidden></span>
     </div>
     
     <!-- Idle state -->
@@ -182,7 +201,9 @@
     let currentGame = null;
     let latestInteractiveState = null;
     let lastInteractiveDisplayRevision = -1;
+    let lastInteractiveSessionRevision = -1;
     let interactiveStatusInterval = null;
+    let interactiveViewerCountdownInterval = null;
     let interactiveStateReceivedAt = 0;
 
     // Game switched event
@@ -286,6 +307,7 @@
           currentTurnRole: viewerTurnSession.turnRole,
           viewerDeadlineMs: viewerTurnSession.viewerDeadlineMs,
           hostTimeRemainingMs: viewerTurnSession.hostTimeRemainingMs,
+          config: viewerTurnSession.config || display.config,
           phase: 'playing'
         }
       };
@@ -294,8 +316,18 @@
     socket.on('game-engine:interactive-state', (state) => {
       const display = state?.display;
       if (!display || !Number.isFinite(Number(display.displayRevision))) return;
-      if (Number(display.displayRevision) < lastInteractiveDisplayRevision) return;
-      lastInteractiveDisplayRevision = Number(display.displayRevision);
+      const incomingDisplayRevision = Number(display.displayRevision);
+      const incomingSessionRevision = Number.isFinite(Number(display.sessionRevision))
+        ? Number(display.sessionRevision)
+        : -1;
+      if (incomingDisplayRevision < lastInteractiveDisplayRevision) return;
+      if (
+        incomingDisplayRevision === lastInteractiveDisplayRevision &&
+        incomingSessionRevision <= lastInteractiveSessionRevision
+      ) return;
+      lastInteractiveDisplayRevision = incomingDisplayRevision;
+      lastInteractiveSessionRevision = incomingSessionRevision;
+      clearInteractiveViewerCountdown();
 
       const interactiveState = interactiveOverlayPresentation(state);
       latestInteractiveState = interactiveState || state;
@@ -314,7 +346,7 @@
       if (presentationDisplay.phase === 'leaderboard') {
         hideInteractiveMatchup();
       } else {
-        showInteractiveMatchup(presentationDisplay, state.hostQueue?.length || 0);
+        showInteractiveMatchup(presentationDisplay, state.hostQueue?.length || 0, interactiveState);
       }
       switchToGame(presentationDisplay.gameType, interactiveState);
       updateQueueIndicator(state.hostQueue?.length || 0);
@@ -359,7 +391,7 @@
       currentGame = null;
     }
 
-    function showInteractiveMatchup(display, queueLength) {
+    function showInteractiveMatchup(display, queueLength, state) {
       const matchup = document.getElementById('interactive-matchup');
       document.getElementById('interactive-matchup-names').textContent =
         `${display.hostDisplayName || 'Host'} vs. ${display.viewerDisplayName || 'Player'}`;
@@ -391,13 +423,56 @@
       };
       renderStatus();
       if (display.phase === 'playing') interactiveStatusInterval = setInterval(renderStatus, 250);
+      startInteractiveViewerCountdown(state, display);
       matchup.classList.add('visible');
     }
 
     function hideInteractiveMatchup() {
       if (interactiveStatusInterval) clearInterval(interactiveStatusInterval);
       interactiveStatusInterval = null;
+      clearInteractiveViewerCountdown();
       document.getElementById('interactive-matchup').classList.remove('visible');
+    }
+
+    function clearInteractiveViewerCountdown() {
+      if (interactiveViewerCountdownInterval) clearInterval(interactiveViewerCountdownInterval);
+      interactiveViewerCountdownInterval = null;
+      const countdown = document.getElementById('interactive-viewer-countdown');
+      countdown.hidden = true;
+      countdown.textContent = '';
+      countdown.classList.remove('warning');
+    }
+
+    function startInteractiveViewerCountdown(state, display) {
+      clearInteractiveViewerCountdown();
+      if (
+        display?.gameType !== 'connect4' ||
+        !['playing', 'animating'].includes(display.phase) ||
+        display.currentTurnRole !== 'viewer' ||
+        display.viewerDeadlineMs == null
+      ) return;
+      const deadline = Number(display.viewerDeadlineMs);
+      const serverTimestamp = Number(state?.serverTimestamp ?? display.serverTimestamp);
+      if (!Number.isFinite(deadline) || !Number.isFinite(serverTimestamp)) return;
+      const receivedAt = Date.now();
+      const warningSeconds = Number(
+        state?.configuration?.connect4ViewerWarningSeconds ??
+        display.config?.roundWarningTime ??
+        10
+      );
+      const countdown = document.getElementById('interactive-viewer-countdown');
+      const render = () => {
+        const serverNow = serverTimestamp + (Date.now() - receivedAt);
+        const seconds = Math.max(0, Math.ceil((deadline - serverNow) / 1000));
+        countdown.textContent = runtimeText(
+          'plugins.game-engine.runtime.overlay.viewer_countdown',
+          { seconds }
+        ) || `Spieler: ${seconds}s`;
+        countdown.hidden = false;
+        countdown.classList.toggle('warning', seconds <= warningSeconds);
+      };
+      render();
+      interactiveViewerCountdownInterval = setInterval(render, 1000);
     }
 
     function formatClock(milliseconds) {

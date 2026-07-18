@@ -27,7 +27,9 @@ describe('interactive games admin UI contract', () => {
     expect(ui).toContain("socket.on('game-engine:interactive-state'");
     expect(ui).toContain("fetch('/api/game-engine/interactive/state')");
     expect(ui).toContain("fetch('/api/game-engine/config/interactive'");
+    expect(ui).toContain('connect4ViewerTimeoutEnabled');
     expect(ui).toContain('connect4ViewerResponseSeconds');
+    expect(ui).toContain('connect4ViewerWarningSeconds');
     expect(ui).toContain('chessViewerResponseSeconds');
     expect(ui).toContain('maxConcurrentInteractiveSessions');
     expect(ui).toContain('interactiveResultDisplaySeconds');
@@ -46,6 +48,24 @@ describe('interactive games admin UI contract', () => {
     expect(ui).toContain('gameType: display.gameType');
     expect(ui).toContain('sessionRevision: display.sessionRevision');
     expect(ui).toContain('displayRevision: display.displayRevision');
+    expect(ui).toContain('interactiveCancellationEnvelope(state, session.sessionId)');
+    expect(ui).toContain("'plugins.game-engine.runtime.dashboard.cancel_confirm'");
+    expect(ui).toContain("'plugins.game-engine.runtime.dashboard.skip_confirm'");
+  });
+
+  test('shows only applicable admin controls and labels the streamer side dynamically', () => {
+    expect(ui).toContain('function interactiveStreamerRoleLabel(');
+    expect(ui).toContain("streamerRole === 'player1'");
+    expect(ui).toContain("streamerRole === 'white'");
+    expect(ui).toContain('cancelButton.hidden =');
+    expect(ui).toContain('skipButton.hidden =');
+  });
+
+  test('renders canonical Connect4 timer settings read-only and shows the untimed label', () => {
+    expect(ui).toContain('id="interactive-connect4-response" type="text" readonly');
+    expect(ui).toContain("runtimeText('plugins.game-engine.runtime.dashboard.no_time_limit') || 'Ohne Zeitlimit'");
+    expect(ui).not.toContain("connect4ViewerResponseSeconds: Number(document.getElementById('interactive-connect4-response').value)");
+    expect(ui).not.toContain("fetch('/api/game-engine/round-timer/connect4'");
   });
 
   test('renders the sole viewer-turn session when no host move is displayed', () => {

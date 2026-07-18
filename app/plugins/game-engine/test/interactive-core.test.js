@@ -18,6 +18,7 @@ function makeSession(overrides = {}) {
     viewerId: 'viewer-1',
     viewerDisplayName: 'Viewer One',
     hostDisplayName: 'Host',
+    config: { streamerRole: 'player1', soundEnabled: true, roundWarningTime: 10 },
     adapter: { getState: () => ({ moveCount: 2 }) },
     sessionRevision: 1,
     displayRevision: 0,
@@ -68,6 +69,7 @@ describe('InteractiveSessionRegistry', () => {
         viewerTimeRemainingMs: 5000,
         moveCount: 4,
         lastActivityAt: 1000,
+        config: { streamerRole: 'player1', soundEnabled: true, roundWarningTime: 10 },
         state: { moveCount: 4, board: [[0]] }
       })
     ]);

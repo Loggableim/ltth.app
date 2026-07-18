@@ -28,7 +28,9 @@ function createHarness(options = {}) {
   const emitLegacyEvent = jest.fn();
   const discardRestoredGame = jest.fn();
   const settings = {
+    connect4ViewerTimeoutEnabled: false,
     connect4ViewerResponseSeconds: 30,
+    connect4ViewerWarningSeconds: 10,
     chessViewerResponseSeconds: 60,
     maxConcurrentInteractiveSessions: 20,
     interactiveResultDisplaySeconds: 3,
@@ -101,7 +103,10 @@ function createHarness(options = {}) {
         animationSpeed: 500,
         leaderboardEnabled: true,
         leaderboardTypes: ['daily', 'elo'],
-        leaderboardDisplayTime: 3
+        leaderboardDisplayTime: 3,
+        roundTimerEnabled: settings.connect4ViewerTimeoutEnabled,
+        roundTimeLimit: settings.connect4ViewerResponseSeconds,
+        roundWarningTime: settings.connect4ViewerWarningSeconds
       }
       : {
         streamerRole: options.chessHostStarts === false ? 'black' : 'white',
@@ -124,7 +129,8 @@ function createHarness(options = {}) {
     emitLegacyEvent,
     createGame,
     restoreGame,
-    discardRestoredGame
+    discardRestoredGame,
+    settings
   };
 }
 
@@ -371,7 +377,11 @@ describe('InteractiveController', () => {
   test('applies viewer timeout as one automatic loss and shows a background result', () => {
     const harness = createHarness({
       connect4HostStarts: false,
-      settings: { connect4ViewerResponseSeconds: 5, interactiveResultDisplaySeconds: 3 }
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 5,
+        interactiveResultDisplaySeconds: 3
+      }
     });
     harness.controller.init();
     const waitingViewer = harness.controller.startMatch({
@@ -440,7 +450,11 @@ describe('InteractiveController', () => {
 
   test('suspends and resumes the same host board for a background viewer timeout result', () => {
     const harness = createHarness({
-      settings: { connect4ViewerResponseSeconds: 5, interactiveResultDisplaySeconds: 3 }
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 5,
+        interactiveResultDisplaySeconds: 3
+      }
     });
     harness.controller.init();
     const hostBoard = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'host-wait', viewerDisplayName: 'Host Wait' });
@@ -488,6 +502,39 @@ describe('InteractiveController', () => {
     firstHarness.sqlite.close();
   });
 
+  test('clears a persisted Connect4 viewer deadline when the canonical timer is disabled before restart', () => {
+    const firstHarness = createHarness({
+      connect4HostStarts: false,
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 30
+      }
+    });
+    firstHarness.controller.init();
+    const match = firstHarness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'disabled-after-restart',
+      viewerDisplayName: 'Disabled After Restart'
+    });
+    expect(firstHarness.database.getInteractiveState(match.sessionId).viewerDeadlineMs).toBe(Date.now() + 30000);
+    firstHarness.controller.destroy();
+
+    const secondHarness = createHarness({
+      dbContext: firstHarness.dbContext,
+      nextSessionId: 100,
+      connect4HostStarts: false,
+      settings: { connect4ViewerTimeoutEnabled: false }
+    });
+    secondHarness.controller.init();
+
+    expect(secondHarness.controller.getState().activeSessions[0].viewerDeadlineMs).toBeNull();
+    expect(secondHarness.database.getInteractiveState(match.sessionId).viewerDeadlineMs).toBeNull();
+    expect(secondHarness.controller.timers.viewerTimers.size).toBe(0);
+
+    secondHarness.controller.destroy();
+    firstHarness.sqlite.close();
+  });
+
   test('deduplicates a delayed host chat event after an intervening viewer move', () => {
     const harness = createHarness();
     harness.controller.init();
@@ -523,6 +570,112 @@ describe('InteractiveController', () => {
       moveIdentity: 'chat-host-delayed-1'
     })).toMatchObject({ success: true, duplicate: true });
     expect(harness.controller.getState().activeSessions[0].moveCount).toBe(2);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('keeps Connect4 viewer turns untimed when the canonical round timer is disabled', () => {
+    const harness = createHarness({ connect4HostStarts: false });
+    harness.controller.init();
+
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'untimed-viewer',
+      viewerDisplayName: 'Untimed Viewer'
+    });
+
+    expect(harness.controller.getState()).toMatchObject({
+      configuration: {
+        connect4ViewerTimeoutEnabled: false,
+        connect4ViewerResponseSeconds: 30,
+        connect4ViewerWarningSeconds: 10
+      },
+      activeSessions: [{
+        sessionId: match.sessionId,
+        viewerDeadlineMs: null,
+        viewerTimeRemainingMs: null
+      }]
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(0);
+
+    jest.advanceTimersByTime(120000);
+    expect(harness.finishGame).not.toHaveBeenCalled();
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('reconciles an active Connect4 viewer timer immediately when canonical settings change', () => {
+    const harness = createHarness({
+      connect4HostStarts: false,
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 30,
+        connect4ViewerWarningSeconds: 10
+      }
+    });
+    harness.controller.init();
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'live-config-viewer',
+      viewerDisplayName: 'Live Config Viewer'
+    });
+
+    harness.settings.connect4ViewerTimeoutEnabled = false;
+    expect(harness.controller.refreshConnect4TimerConfiguration({
+      roundTimerEnabled: false,
+      roundTimeLimit: 30,
+      roundWarningTime: 10
+    })).toMatchObject({ updatedSessions: 1 });
+    expect(harness.controller.getState().activeSessions[0].viewerDeadlineMs).toBeNull();
+    expect(harness.database.getInteractiveState(match.sessionId).viewerDeadlineMs).toBeNull();
+    expect(harness.controller.timers.viewerTimers.size).toBe(0);
+
+    harness.settings.connect4ViewerTimeoutEnabled = true;
+    harness.settings.connect4ViewerResponseSeconds = 45;
+    expect(harness.controller.refreshConnect4TimerConfiguration({
+      roundTimerEnabled: true,
+      roundTimeLimit: 45,
+      roundWarningTime: 10
+    })).toMatchObject({ updatedSessions: 1 });
+    expect(harness.controller.getState().activeSessions[0].viewerDeadlineMs).toBe(Date.now() + 45000);
+    expect(harness.database.getInteractiveState(match.sessionId).viewerDeadlineMs).toBe(Date.now() + 45000);
+    expect(harness.controller.timers.viewerTimers.size).toBe(1);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('starts the canonical Connect4 viewer deadline only after a host move when enabled', () => {
+    const harness = createHarness({
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 45,
+        connect4ViewerWarningSeconds: 12
+      }
+    });
+    harness.controller.init();
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'timed-viewer',
+      viewerDisplayName: 'Timed Viewer'
+    });
+    const display = harness.controller.getState().display;
+
+    expect(harness.controller.applyHostMove({
+      sessionId: match.sessionId,
+      gameType: 'connect4',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move: { column: 'D' }
+    })).toMatchObject({ success: true });
+
+    expect(harness.controller.getState().activeSessions[0]).toMatchObject({
+      viewerDeadlineMs: Date.now() + 45000,
+      viewerTimeRemainingMs: 45000
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(1);
 
     harness.controller.destroy();
     harness.sqlite.close();

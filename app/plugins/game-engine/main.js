@@ -195,7 +195,6 @@ class GameEnginePlugin {
         }
       },
       interactive: {
-        connect4ViewerResponseSeconds: 30,
         chessViewerResponseSeconds: 60,
         maxConcurrentInteractiveSessions: 20,
         interactiveResultDisplaySeconds: 3
@@ -232,10 +231,13 @@ class GameEnginePlugin {
   _getInteractiveSettings() {
     const stored = this.db?.getGameConfig?.('interactive') || {};
     const settings = this._getConfigWithDefaults('interactive', stored);
-    if (stored.connect4ViewerResponseSeconds == null && this.db?.getRoundTimer) {
-      const legacyTimer = this.db.getRoundTimer('connect4');
-      settings.connect4ViewerResponseSeconds = Number(legacyTimer?.time_limit_seconds) || 30;
-    }
+    const connect4 = this._getConfigWithDefaults(
+      'connect4',
+      this.db?.getGameConfig?.('connect4') || {}
+    );
+    settings.connect4ViewerTimeoutEnabled = Boolean(connect4.roundTimerEnabled);
+    settings.connect4ViewerResponseSeconds = connect4.roundTimeLimit;
+    settings.connect4ViewerWarningSeconds = connect4.roundWarningTime;
     return settings;
   }
 
@@ -707,6 +709,9 @@ class GameEnginePlugin {
     normalized.leaderboardDisplayTime = validInteger(normalized.leaderboardDisplayTime, 1, 10)
       ? normalized.leaderboardDisplayTime
       : defaults.leaderboardDisplayTime;
+    normalized.roundTimerEnabled = typeof normalized.roundTimerEnabled === 'boolean'
+      ? normalized.roundTimerEnabled
+      : defaults.roundTimerEnabled;
     normalized.roundTimeLimit = validInteger(normalized.roundTimeLimit, 5, 120)
       ? normalized.roundTimeLimit
       : defaults.roundTimeLimit;
@@ -738,6 +743,7 @@ class GameEnginePlugin {
       config.leaderboardTypes.some(type => !allowedTypes.includes(type)) ||
       new Set(config.leaderboardTypes).size !== config.leaderboardTypes.length)) return false;
     if (has('leaderboardDisplayTime') && !validInteger(config.leaderboardDisplayTime, 1, 10)) return false;
+    if (has('roundTimerEnabled') && typeof config.roundTimerEnabled !== 'boolean') return false;
     if (has('roundTimeLimit') && !validInteger(config.roundTimeLimit, 5, 120)) return false;
     if (has('roundWarningTime') && !validInteger(config.roundWarningTime, 3, 30)) return false;
     const timeLimit = has('roundTimeLimit') ? config.roundTimeLimit : this.defaultConfigs.connect4.roundTimeLimit;
@@ -1858,6 +1864,9 @@ class GameEnginePlugin {
         const config = this._getConfigWithDefaults(gameType, req.body || {});
         
         this.db.saveGameConfig(gameType, config);
+        if (gameType === 'connect4') {
+          this.interactiveController?.refreshConnect4TimerConfiguration?.(config);
+        }
         
         // Emit config update to overlays
         this.io.emit('game-engine:config-updated', { gameType, config });

@@ -118,6 +118,30 @@
       display: inline-block;
     }
 
+    #interactive-viewer-countdown {
+      display: block;
+      width: max-content;
+      margin: 8px auto 0;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: rgba(33, 150, 243, 0.22);
+      color: #d9efff;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    #interactive-viewer-countdown[hidden] { display: none; }
+
+    #interactive-viewer-countdown.warning {
+      background: rgba(244, 67, 54, 0.3);
+      color: #fff1f0;
+      animation: countdownWarningPulse 700ms ease-in-out infinite alternate;
+    }
+
+    @keyframes countdownWarningPulse {
+      to { transform: scale(1.06); }
+    }
+
     #game-board {
       display: inline-block;
       background: var(--board-color, #2C3E50);
@@ -627,6 +651,7 @@
     <div id="game-header">
       <div id="game-title">Vier Gewinnt / Connect4</div>
       <div id="game-status">Warte auf Spiel...</div>
+      <div id="interactive-viewer-countdown" aria-live="polite" hidden></div>
     </div>
 
     <div id="game-board">
@@ -699,6 +724,8 @@
     let interactiveSnapshotActive = false;
     let resultHideTimer = null;
     let containerHideTimer = null;
+    let interactiveViewerCountdownInterval = null;
+    let lastInteractiveMoveSoundKey = null;
     const ROWS = 6;
     const COLUMNS = 7;
 
@@ -937,8 +964,61 @@
       resultHideTimer = null;
       containerHideTimer = null;
       leaderboardRotationInterval = null;
+      clearInteractiveViewerCountdown();
       document.getElementById('game-result').classList.remove('show');
       hideLeaderboard();
+    }
+
+    function clearInteractiveViewerCountdown() {
+      if (interactiveViewerCountdownInterval) clearInterval(interactiveViewerCountdownInterval);
+      interactiveViewerCountdownInterval = null;
+      const countdown = document.getElementById('interactive-viewer-countdown');
+      countdown.hidden = true;
+      countdown.textContent = '';
+      countdown.classList.remove('warning');
+    }
+
+    function startInteractiveViewerCountdown(state, display) {
+      clearInteractiveViewerCountdown();
+      if (
+        display?.gameType !== 'connect4' ||
+        !['playing', 'animating'].includes(display.phase) ||
+        display.currentTurnRole !== 'viewer' ||
+        display.viewerDeadlineMs == null
+      ) return;
+      const deadline = Number(display.viewerDeadlineMs);
+      const serverTimestamp = Number(state?.serverTimestamp ?? display.serverTimestamp);
+      if (!Number.isFinite(deadline) || !Number.isFinite(serverTimestamp)) return;
+      const receivedAt = Date.now();
+      const warningSeconds = Number(
+        state?.configuration?.connect4ViewerWarningSeconds ??
+        display.config?.roundWarningTime ??
+        gameConfig?.roundWarningTime ??
+        10
+      );
+      const countdown = document.getElementById('interactive-viewer-countdown');
+      const render = () => {
+        const serverNow = serverTimestamp + (Date.now() - receivedAt);
+        const seconds = Math.max(0, Math.ceil((deadline - serverNow) / 1000));
+        countdown.textContent = runtimeText(
+          'plugins.game-engine.runtime.overlay.viewer_countdown',
+          { seconds }
+        ) || `Spieler: ${seconds}s`;
+        countdown.hidden = false;
+        countdown.classList.toggle('warning', seconds <= warningSeconds);
+      };
+      render();
+      interactiveViewerCountdownInterval = setInterval(render, 1000);
+    }
+
+    function maybePlayInteractiveMoveSound(display, state) {
+      const sessionId = Number(display?.displaySessionId ?? state?.sessionId);
+      const moveNumber = Number(state?.lastMove?.moveNumber);
+      if (!Number.isInteger(sessionId) || !Number.isInteger(moveNumber) || moveNumber < 1) return;
+      const soundKey = `${sessionId}:${moveNumber}`;
+      if (soundKey === lastInteractiveMoveSoundKey) return;
+      lastInteractiveMoveSoundKey = soundKey;
+      playSound('move');
     }
 
     // Show leaderboard rotation
@@ -1356,6 +1436,7 @@
           currentTurnRole: viewerTurnSession.turnRole,
           viewerDeadlineMs: viewerTurnSession.viewerDeadlineMs,
           hostTimeRemainingMs: viewerTurnSession.hostTimeRemainingMs,
+          config: viewerTurnSession.config || display.config,
           phase: 'playing'
         }
       };
@@ -1402,6 +1483,8 @@
       updateBoard(snapshotState);
       updatePlayerInfo(snapshotState);
       updateStatus(snapshotState);
+      maybePlayInteractiveMoveSound(display, snapshotState);
+      startInteractiveViewerCountdown(interactiveState, display);
       document.getElementById('game-container').classList.add('active');
 
       if (display.phase === 'result' && display.result) {
