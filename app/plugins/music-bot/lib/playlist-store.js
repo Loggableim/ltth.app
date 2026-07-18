@@ -278,7 +278,7 @@ class PlaylistStore {
 
   getRadioSources() {
     return this.db.prepare(
-      `SELECT p.id AS playlistId, p.name, p.is_protected AS isProtected,
+      `SELECT p.id AS playlistId, p.name, p.mode, p.is_protected AS isProtected,
        COALESCE(s.enabled, 0) AS enabled, COALESCE(s.weight, 1) AS weight, COALESCE(s.cursor, 0) AS cursor,
        COUNT(i.song_id) AS itemCount
        FROM plugin_music_bot_playlists p
@@ -296,7 +296,14 @@ class PlaylistStore {
       const start = Number(source.cursor || 0) % items.length;
       return [...items.slice(start), ...items.slice(0, start)]
         .filter((item) => isAllowed(item.songId, item, source))
-        .map((item) => ({ ...item, playlistId: source.playlistId, weight: source.weight }));
+        .map((item) => ({
+          ...item,
+          playlistId: source.playlistId,
+          weight: source.weight,
+          mode: source.mode,
+          cursor: source.cursor,
+          itemCount: items.length
+        }));
     });
   }
 

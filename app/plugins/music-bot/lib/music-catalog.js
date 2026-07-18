@@ -122,6 +122,60 @@ class MusicCatalog {
     return Object.fromEntries(rows.map((row) => [row.name, row.score]));
   }
 
+  getRadioCandidates(songIds, { now = Date.now() } = {}) {
+    const ids = [...new Set((songIds || []).map(Number).filter((id) => Number.isInteger(id) && id > 0))];
+    if (!ids.length) return [];
+    const placeholders = ids.map(() => '?').join(', ');
+    const songs = this.db.prepare(
+      `SELECT songs.id AS songId, songs.canonical_key AS canonicalKey, songs.title,
+       CASE WHEN COALESCE(feedback.state, 0) > 0 THEN 'up'
+            WHEN COALESCE(feedback.state, 0) < 0 THEN 'down' ELSE 'neutral' END AS feedback,
+       COALESCE(SUM(CASE WHEN events.outcome = 'completed' THEN 1 ELSE 0 END), 0) AS completePlays,
+       COALESCE(SUM(CASE WHEN events.outcome = 'early_skip' THEN 1 ELSE 0 END), 0) AS earlySkips,
+       MAX(CASE WHEN events.outcome != 'failed' THEN events.finished_at ELSE NULL END) AS lastPlayedAt
+       FROM plugin_music_bot_songs songs
+       LEFT JOIN plugin_music_bot_feedback feedback ON feedback.song_id = songs.id
+       LEFT JOIN plugin_music_bot_play_events events ON events.song_id = songs.id
+       WHERE songs.id IN (${placeholders})
+       GROUP BY songs.id, feedback.state`
+    ).all(...ids);
+    const sources = this.db.prepare(
+      `SELECT id, song_id AS songId, provider, provider_id AS providerId, track_key AS trackKey,
+       url, channel_id AS channelId, channel_name AS channelName, failure_count AS failureCount,
+       failure_class AS failureClass, cooldown_until AS cooldownUntil
+       FROM plugin_music_bot_sources WHERE song_id IN (${placeholders})
+       ORDER BY song_id ASC, CASE WHEN cooldown_until IS NULL OR cooldown_until <= ? THEN 0 ELSE 1 END ASC,
+       failure_count ASC, id ASC`
+    ).all(...ids, now);
+    const artists = this.db.prepare(
+      `SELECT links.song_id AS songId, artists.id, artists.name,
+       COALESCE(affinity.score, 0) AS affinity,
+       (SELECT MAX(events.finished_at)
+        FROM plugin_music_bot_song_artists played_links
+        JOIN plugin_music_bot_play_events events ON events.song_id = played_links.song_id
+        WHERE played_links.artist_id = artists.id AND events.outcome != 'failed') AS lastPlayedAt
+       FROM plugin_music_bot_song_artists links
+       JOIN plugin_music_bot_artists artists ON artists.id = links.artist_id
+       LEFT JOIN plugin_music_bot_artist_affinity affinity ON affinity.artist_id = artists.id
+       WHERE links.song_id IN (${placeholders})
+       ORDER BY links.song_id ASC, artists.normalized_name ASC`
+    ).all(...ids);
+    return songs.map((song) => ({
+      ...song,
+      completePlays: Number(song.completePlays) || 0,
+      earlySkips: Number(song.earlySkips) || 0,
+      lastPlayedAt: song.lastPlayedAt || null,
+      sources: sources.filter((source) => Number(source.songId) === Number(song.songId)),
+      artists: artists.filter((artist) => Number(artist.songId) === Number(song.songId))
+        .map((artist) => ({
+          id: artist.id,
+          name: artist.name,
+          affinity: Number(artist.affinity) || 0,
+          lastPlayedAt: artist.lastPlayedAt || null
+        }))
+    }));
+  }
+
   getSongArtists(songId) {
     return this.db.prepare(
       `SELECT a.id, a.name FROM plugin_music_bot_song_artists links

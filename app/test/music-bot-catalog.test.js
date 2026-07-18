@@ -140,6 +140,44 @@ describe('music-bot catalog', () => {
     db.close();
   });
 
+  it('loads canonical radio scoring inputs, linked artist spacing, and provider cooldowns together', () => {
+    const { db, catalog } = createCatalog();
+    const track = { title: 'Radio score', artist: 'One & Two', provider: 'youtube', providerId: 'radio-score' };
+    const completed = catalog.recordCompleted(track, {
+      id: 'radio-completed', finishedAt: 100, duration: 100, playedSeconds: 100
+    });
+    catalog.recordSkipped(track, {
+      id: 'radio-skipped', finishedAt: 90, duration: 100, playedSeconds: 10
+    });
+    const alternate = catalog.resolveOrUpsert({
+      ...track,
+      provider: 'soundcloud',
+      providerId: 'radio-score-sc',
+      url: 'https://soundcloud.com/example/radio-score'
+    });
+    catalog.setFeedback(completed.song.id, 'up');
+    catalog.recordSourceFailure(alternate.source.id, 'network', 1_000_000);
+
+    expect(catalog.getRadioCandidates([completed.song.id], { now: 1_000_001 })).toEqual([
+      expect.objectContaining({
+        songId: completed.song.id,
+        feedback: 'up',
+        completePlays: 1,
+        earlySkips: 1,
+        lastPlayedAt: 100,
+        artists: [
+          expect.objectContaining({ name: 'One', affinity: 1, lastPlayedAt: 100 }),
+          expect.objectContaining({ name: 'Two', affinity: 1, lastPlayedAt: 100 })
+        ],
+        sources: expect.arrayContaining([
+          expect.objectContaining({ provider: 'youtube', cooldownUntil: null }),
+          expect.objectContaining({ provider: 'soundcloud', cooldownUntil: 1_900_000 })
+        ])
+      })
+    ]);
+    db.close();
+  });
+
   it('keeps immutable history without a retention limit and paginates newest first', () => {
     const { db, catalog } = createCatalog();
     for (let index = 0; index < 3; index += 1) {

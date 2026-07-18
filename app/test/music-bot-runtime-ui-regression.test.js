@@ -631,7 +631,7 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(2);
   });
 
-  test('stops immediate Auto-DJ replacement after three playback failures in 60 seconds', async () => {
+  test('keeps Auto-DJ supervised after repeated playback failures instead of deactivating it', async () => {
     const tracks = [1, 2, 3].map((index) => ({
       id: `rapid-failure-${index}`,
       title: `Rapid failure ${index}`,
@@ -650,6 +650,7 @@ describe('Music Bot runtime and UI regressions', () => {
     };
     plugin._stopPlaybackSync = jest.fn();
     plugin._maybePlayAutoDJ = jest.fn(async () => null);
+    plugin.radioSupervisor = { wake: jest.fn(async () => ({ success: false })) };
     plugin._emitToast = jest.fn();
     plugin._emitPlaybackStopped = jest.fn();
     plugin._emitNowPlaying = jest.fn();
@@ -662,18 +663,12 @@ describe('Music Bot runtime and UI regressions', () => {
       await plugin._handleAutoDJPlaybackFailure(track, 'mpv-track-end', new Error('unrecognized file format'));
     }
 
-    expect(plugin._maybePlayAutoDJ).toHaveBeenCalledTimes(2);
-    expect(plugin.autoDJ.deactivate).toHaveBeenCalledTimes(1);
-    expect(plugin._emitToast).toHaveBeenCalledWith(
-      'error',
-      'AutoDJ pausiert',
-      expect.stringContaining('3')
-    );
-    expect(plugin.queueManager.markPlaying).toHaveBeenCalledWith(null);
-    expect(plugin.queueManager.resetVoteSkips).toHaveBeenCalledTimes(1);
-    expect(plugin._emitPlaybackStopped).toHaveBeenCalledTimes(1);
-    expect(plugin._emitNowPlaying).toHaveBeenCalledWith(null);
-    expect(plugin._emitRuntimeHealth).toHaveBeenCalledTimes(1);
+    expect(plugin._maybePlayAutoDJ).not.toHaveBeenCalled();
+    expect(plugin.radioSupervisor.wake).toHaveBeenCalledTimes(3);
+    expect(plugin.autoDJ.deactivate).not.toHaveBeenCalled();
+    expect(plugin._emitToast).not.toHaveBeenCalled();
+    expect(plugin.queueManager.markPlaying).toHaveBeenCalledTimes(3);
+    expect(plugin.queueManager.resetVoteSkips).toHaveBeenCalledTimes(3);
   });
 
   test('emits playback errors through one UI channel', () => {
@@ -1135,7 +1130,7 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(plugin.queueManager.clear).not.toHaveBeenCalled();
   });
 
-  test('starts the next song in the final configured crossfade interval', () => {
+  test('wakes the supervisor in the fixed final three-second crossfade interval', () => {
     jest.useFakeTimers();
     try {
       const { plugin } = createPluginWithQueue([]);
@@ -1149,11 +1144,13 @@ describe('Music Bot runtime and UI regressions', () => {
 
       plugin._scheduleCrossfadeTransition({ id: 'current', duration: 120 });
       jest.advanceTimersByTime(116999);
-      expect(plugin._maybePlayAutoDJ).not.toHaveBeenCalled();
+      expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
 
       jest.advanceTimersByTime(1);
-      expect(plugin._maybePlayAutoDJ).toHaveBeenCalledWith(false, true);
-      expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
+      expect(plugin._maybePlayAutoDJ).not.toHaveBeenCalled();
+      expect(plugin._playNextFromQueue).toHaveBeenCalledWith('crossfade', {
+        allowActiveAutoDJ: true
+      });
     } finally {
       jest.useRealTimers();
     }
