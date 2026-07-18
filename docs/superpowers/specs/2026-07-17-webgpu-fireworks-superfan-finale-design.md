@@ -8,8 +8,9 @@ Celebrate a Superfan entering the LIVE with a personalized notification and a ch
 
 The WebGPU Fireworks plugin will route both supported event shapes into one Superfan handler:
 
-- A `join` event is eligible only when `teamMemberLevel > 0`.
-- A dedicated `superfan` event is authoritative even when it does not carry a team-member level.
+- A `join` event is eligible only with explicit paid-subscriber status such as `isSubscriber` or a dedicated Superfan flag.
+- `teamMemberLevel` is fan-team progress and never qualifies a viewer as a paid Superfan on its own.
+- A `subscribe` event, or a dedicated `superfan` event from a compatible source, is authoritative even when it carries no subscriber flag.
 
 The handler identifies a person by stable TikTok `userId` first. If it is unavailable, it falls back to a normalized `uniqueId`, `username`, or nickname. Receiving both event shapes for the same person must still produce only one celebration.
 

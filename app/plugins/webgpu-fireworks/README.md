@@ -38,7 +38,7 @@ This edition requires the [Loggableim OBS WebGPU build](https://github.com/Logga
 
 ## Superfan finales
 
-When a viewer enters with `teamMemberLevel > 0`, or an authoritative `superfan` event arrives, WebGPU Fireworks can show `Superfan joined, this firework is for you!` and enqueue a choreographed finale. Cooldowns are stored per TikTok user ID, with normalized username fallback, in the plugin data directory and survive reloads.
+When a paid subscriber enters (`isSubscriber` or an explicit Superfan flag), or an authoritative `subscribe`/`superfan` event arrives, WebGPU Fireworks can show `Superfan joined, this firework is for you!` and enqueue a choreographed finale. Fan-team `teamMemberLevel` never qualifies on its own. Cooldowns are stored per TikTok user ID, with normalized username fallback, in the plugin data directory and survive reloads.
 
 The default is enabled, once per Superfan every 24 hours, at 3x intensity. Available cooldowns are 6, 12, 24, 72, and 168 hours; intensity ranges from 1x to 10x. Show style and length inherit the global finale settings. The settings test button never reads or updates real Superfan cooldown history.
 

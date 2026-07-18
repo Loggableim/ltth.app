@@ -4,13 +4,13 @@
 
 **Goal:** Celebrate each entering Superfan with the requested notification and a configurable choreographed finale no more than once per selected cooldown per person.
 
-**Architecture:** Keep detection and orchestration inside `webgpu-fireworks`: normalize `join` and authoritative `superfan` events into one handler, use a small persistent history component for per-person cooldowns, and submit accepted celebrations to the existing follower-animation channel and finale FIFO. Add only three normalized settings (enabled, cooldown hours, intensity); show style and length continue to inherit the global finale settings.
+**Architecture:** Keep detection and orchestration inside `webgpu-fireworks`: normalize paid-subscriber `join` events and authoritative `subscribe`/`superfan` events into one handler, use a small persistent history component for per-person cooldowns, and submit accepted celebrations to the existing follower-animation channel and finale FIFO. Add only three normalized settings (enabled, cooldown hours, intensity); show style and length continue to inherit the global finale settings.
 
 **Tech Stack:** CommonJS Node.js, plugin data directory JSON persistence, Jest, static HTML/JavaScript settings UI, Socket.IO emissions through `PluginAPI`.
 
 ## Global Constraints
 
-- `join` qualifies only when `teamMemberLevel > 0`; a dedicated `superfan` event is authoritative.
+- `join` qualifies only with explicit paid-subscriber status; `teamMemberLevel` alone never qualifies. `subscribe` and dedicated `superfan` events are authoritative.
 - Cooldown identity order is stable `userId`, then normalized `uniqueId`, `username`, or nickname.
 - Cooldown choices are exactly 6, 12, 24, 72, and 168 hours; default is 24.
 - Finale intensity is clamped to 1 through 10; default is 3.
@@ -314,7 +314,7 @@ function createPlugin(config = {}, now = 1_000_000) {
 Then cover the behavior:
 
 ```js
-test('routes eligible joins and authoritative events through one per-user cooldown', () => {
+test('routes paid subscriber joins and authoritative subscription events through one per-user cooldown', () => {
   const { api, plugin, history } = createPlugin({
     superfanFinaleEnabled: true,
     superfanFinaleCooldownHours: 24,
@@ -325,10 +325,10 @@ test('routes eligible joins and authoritative events through one per-user cooldo
   plugin.triggerFinale = jest.fn(request => ({ accepted: true, ...request }));
   plugin.registerTikTokEventHandlers();
 
-  api.events.get('join')({ userId: 'a', uniqueId: 'Alpha', teamMemberLevel: 0 });
+  api.events.get('join')({ userId: 'a', uniqueId: 'Alpha', teamMemberLevel: 50, isSubscriber: false });
   expect(plugin.triggerFinale).not.toHaveBeenCalled();
 
-  api.events.get('join')({ userId: 'a', uniqueId: 'Alpha', teamMemberLevel: 2, profilePictureUrl: '/a.png' });
+  api.events.get('join')({ userId: 'a', uniqueId: 'Alpha', teamMemberLevel: 0, isSubscriber: true, profilePictureUrl: '/a.png' });
   expect(plugin.triggerFinale).toHaveBeenCalledWith(expect.objectContaining({
     style: 'sky-ballet', length: 'short', intensity: 4
   }));
@@ -457,6 +457,10 @@ Add event bindings:
 this.api.registerTikTokEvent('join', data => {
   this.handleSuperfanEntry(data, { authoritative: false });
 });
+this.api.registerTikTokEvent('subscribe', data => {
+  this.handleSuperfanEntry(data, { authoritative: true });
+});
+
 this.api.registerTikTokEvent('superfan', data => {
   this.handleSuperfanEntry(data, { authoritative: true });
 });
@@ -470,7 +474,7 @@ handleSuperfanEntry(data = {}, options = {}) {
   const bypassCooldown = options.bypassCooldown === true;
   if (!this.config.enabled && options.bypassEnabled !== true) return { accepted: false, reason: 'disabled' };
   if (!this.config.superfanFinaleEnabled && options.bypassEnabled !== true) return { accepted: false, reason: 'feature-disabled' };
-  if (!authoritative && Number(data.teamMemberLevel) <= 0) return { accepted: false, reason: 'not-superfan' };
+  if (!authoritative && !hasPaidSuperfanStatus(data)) return { accepted: false, reason: 'not-superfan' };
 
   const identity = normalizeSuperfanIdentity(data);
   if (!identity) {
@@ -527,7 +531,7 @@ const result = this.handleSuperfanEntry({
   userId: 'test-superfan',
   uniqueId: req.body?.username || 'TestSuperfan',
   profilePictureUrl: req.body?.profilePictureUrl || null,
-  teamMemberLevel: 1
+  isSubscriber: true
 }, { authoritative: true, bypassCooldown: true, bypassEnabled: true });
 res.json({ success: result.accepted, ...result });
 ```
@@ -707,7 +711,7 @@ Do not translate the overlay sentence because the product requirement fixes its 
 ```markdown
 ## Superfan finales
 
-When a viewer enters with `teamMemberLevel > 0`, or an authoritative `superfan` event arrives, WebGPU Fireworks can show `Superfan joined, this firework is for you!` and enqueue a choreographed finale. Cooldowns are stored per TikTok user ID, with normalized username fallback, in the plugin data directory and survive reloads.
+When a paid subscriber enters (`isSubscriber` or an explicit Superfan flag), or an authoritative `subscribe`/`superfan` event arrives, WebGPU Fireworks can show `Superfan joined, this firework is for you!` and enqueue a choreographed finale. Fan-team `teamMemberLevel` never qualifies on its own. Cooldowns are stored per TikTok user ID, with normalized username fallback, in the plugin data directory and survive reloads.
 
 The default is enabled, once per Superfan every 24 hours, at 3x intensity. Available cooldowns are 6, 12, 24, 72, and 168 hours; intensity ranges from 1x to 10x. Show style and length inherit the global finale settings. The settings test button never reads or updates real Superfan cooldown history.
 ```

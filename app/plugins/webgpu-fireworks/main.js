@@ -41,6 +41,32 @@ const SUPERFAN_FINALE_TEST_CONFIG_KEYS = Object.freeze([
     'goalFinaleLength'
 ]);
 
+function isExplicitPaidSubscriberFlag(value) {
+    if (value === true || value === 1) return true;
+    if (typeof value !== 'string') return false;
+    return ['true', '1'].includes(value.trim().toLowerCase());
+}
+
+function hasPaidSuperfanStatus(data = {}) {
+    const user = data.user && typeof data.user === 'object' ? data.user : {};
+    const identity = data.userIdentity && typeof data.userIdentity === 'object'
+        ? data.userIdentity
+        : {};
+    return [
+        data.isSubscriber,
+        data.isSub,
+        data.isSuperFan,
+        data.isSuperfan,
+        data.superFan,
+        user.isSubscriber,
+        user.isSub,
+        user.isSuperFan,
+        user.isSuperfan,
+        user.superFan,
+        identity.isSubscriberOfAnchor
+    ].some(isExplicitPaidSubscriberFlag);
+}
+
 class FireworksPlugin {
     constructor(api) {
         this.api = api;
@@ -1059,6 +1085,10 @@ class FireworksPlugin {
             this.handleSuperfanEntry(data, { authoritative: false });
         });
 
+        this.api.registerTikTokEvent('subscribe', data => {
+            this.handleSuperfanEntry(data, { authoritative: true });
+        });
+
         this.api.registerTikTokEvent('superfan', data => {
             this.handleSuperfanEntry(data, { authoritative: true });
         });
@@ -1352,8 +1382,7 @@ class FireworksPlugin {
             : this.config;
         if (!effectiveConfig.enabled && options.bypassEnabled !== true) return { accepted: false, reason: 'disabled' };
         if (!effectiveConfig.superfanFinaleEnabled && options.bypassEnabled !== true) return { accepted: false, reason: 'feature-disabled' };
-        const teamMemberLevel = Number(data.teamMemberLevel);
-        if (!authoritative && (!Number.isFinite(teamMemberLevel) || teamMemberLevel <= 0)) {
+        if (!authoritative && !hasPaidSuperfanStatus(data)) {
             return { accepted: false, reason: 'not-superfan' };
         }
 

@@ -323,7 +323,7 @@ describe('WebGPU Superfan finale foundation', () => {
     expect(lifecycle).toEqual(['ensure-data-dir', 'load-history', 'register-events']);
   });
 
-  test('routes eligible joins and authoritative events through one per-user cooldown', () => {
+  test('routes only paid subscriber joins and authoritative subscription events through one per-user cooldown', () => {
     const { api, plugin, history } = createPlugin({
       superfanFinaleEnabled: true,
       superfanFinaleCooldownHours: 24,
@@ -334,10 +334,16 @@ describe('WebGPU Superfan finale foundation', () => {
     plugin.triggerFinale = jest.fn(request => ({ accepted: true, ...request }));
     plugin.registerTikTokEventHandlers();
 
-    api.events.get('join')({ userId: 'a', uniqueId: 'Alpha', teamMemberLevel: 0 });
+    api.events.get('join')({ userId: 'a', uniqueId: 'Alpha', teamMemberLevel: 50, isSubscriber: false });
     expect(plugin.triggerFinale).not.toHaveBeenCalled();
 
-    api.events.get('join')({ userId: 'a', uniqueId: 'Alpha', teamMemberLevel: 2, profilePictureUrl: '/a.png' });
+    api.events.get('join')({
+      userId: 'a',
+      uniqueId: 'Alpha',
+      teamMemberLevel: 0,
+      isSubscriber: true,
+      profilePictureUrl: '/a.png'
+    });
     expect(plugin.triggerFinale).toHaveBeenCalledWith(expect.objectContaining({
       style: 'sky-ballet', length: 'short', intensity: 4
     }));
@@ -353,11 +359,28 @@ describe('WebGPU Superfan finale foundation', () => {
     });
     expect(history.getLastAcceptedAt('id:a')).not.toBeNull();
 
-    api.events.get('superfan')({ userId: 'a', uniqueId: 'Alpha' });
+    api.events.get('subscribe')({ userId: 'a', uniqueId: 'Alpha', isSubscriber: true });
     expect(plugin.triggerFinale).toHaveBeenCalledTimes(1);
-    api.events.get('superfan')({ userId: 'b', uniqueId: 'Beta' });
+    api.events.get('subscribe')({ userId: 'b', uniqueId: 'Beta', isSubscriber: true });
     expect(plugin.triggerFinale).toHaveBeenCalledTimes(2);
   });
+
+  test.each([1, 2, 10, 50])(
+    'does not treat fan-team level %s as a paid Superfan subscription',
+    teamMemberLevel => {
+      const { plugin, history } = createPlugin();
+      plugin.triggerFinale = jest.fn(() => ({ accepted: true }));
+
+      expect(plugin.handleSuperfanEntry({
+        userId: `team-${teamMemberLevel}`,
+        uniqueId: `TeamMember${teamMemberLevel}`,
+        teamMemberLevel,
+        isSubscriber: false
+      }, { authoritative: false })).toEqual({ accepted: false, reason: 'not-superfan' });
+      expect(plugin.triggerFinale).not.toHaveBeenCalled();
+      expect(history.snapshot()).toEqual({});
+    }
+  );
 
   test.each([
     ['missing', undefined],
