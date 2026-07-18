@@ -647,6 +647,45 @@ describe('InteractiveController', () => {
     harness.sqlite.close();
   });
 
+  test('keeps the original Connect4 viewer deadline live after only the warning time changes', () => {
+    const harness = createHarness({
+      connect4HostStarts: false,
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 30,
+        connect4ViewerWarningSeconds: 10
+      }
+    });
+    harness.controller.init();
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'warning-only-viewer',
+      viewerDisplayName: 'Warning Only Viewer'
+    });
+    const originalDeadline = harness.controller.getState().activeSessions[0].viewerDeadlineMs;
+
+    jest.advanceTimersByTime(10000);
+    harness.settings.connect4ViewerWarningSeconds = 5;
+    expect(harness.controller.refreshConnect4TimerConfiguration({
+      roundTimerEnabled: true,
+      roundTimeLimit: 30,
+      roundWarningTime: 5
+    })).toMatchObject({ updatedSessions: 1 });
+    expect(harness.controller.getState().activeSessions[0]).toMatchObject({
+      viewerDeadlineMs: originalDeadline,
+      viewerTimeRemainingMs: 20000
+    });
+
+    jest.advanceTimersByTime(20000);
+    expect(harness.finishGame).toHaveBeenCalledWith(expect.objectContaining({
+      sessionId: match.sessionId,
+      reason: 'viewer_timeout'
+    }));
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
   test('starts the canonical Connect4 viewer deadline only after a host move when enabled', () => {
     const harness = createHarness({
       settings: {

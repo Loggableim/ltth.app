@@ -13,7 +13,9 @@ function loadOverlay(name, i18n = null) {
   };
   let now = 100000;
   let nextIntervalId = 1;
+  let nextTimeoutId = 1;
   const intervals = new Map();
+  const timeouts = new Map();
   const source = fs.readFileSync(path.join(overlayDir, name), 'utf8')
     .replace(/<script[^>]+src=[^>]*><\/script>/gi, '');
   const dom = new JSDOM(source, {
@@ -34,6 +36,12 @@ function loadOverlay(name, i18n = null) {
         return id;
       };
       window.clearInterval = id => intervals.delete(id);
+      window.setTimeout = (callback, delay = 0) => {
+        const id = nextTimeoutId++;
+        timeouts.set(id, { callback, delay });
+        return id;
+      };
+      window.clearTimeout = id => timeouts.delete(id);
       window.Audio = class Audio {
         play() {
           return audioPlay();
@@ -45,6 +53,7 @@ function loadOverlay(name, i18n = null) {
     dom,
     listeners,
     audioPlay,
+    pendingTimeoutCount: () => timeouts.size,
     advance(milliseconds) {
       now += milliseconds;
       for (const callback of [...intervals.values()]) callback();
@@ -139,6 +148,64 @@ describe('interactive overlay countdown DOM', () => {
     onLanguageChange();
     expect(countdown.textContent).toContain('fr:');
     expect(countdown.textContent).toContain('3');
+    dom.window.close();
+  });
+
+  test('direct Connect4 replays a localized winner result without repeating audio or confetti effects', async () => {
+    let resolveReady;
+    let onChange;
+    let onLanguageChange;
+    let language = 'en';
+    const i18n = {
+      initialized: false,
+      ready: new Promise(resolve => { resolveReady = resolve; }),
+      t: jest.fn(key => key),
+      onChange: callback => { onChange = callback; },
+      onLanguageChange: callback => { onLanguageChange = callback; }
+    };
+    const { dom, listeners, audioPlay, pendingTimeoutCount } = loadOverlay('connect4.html', i18n);
+    const resultState = connect4State({ phase: 'result', deadline: null, moveNumber: 0 });
+    resultState.display.config.celebrationEnabled = true;
+    resultState.display.config.displayTexts = {};
+    Object.defineProperty(resultState.display.config.displayTexts, 'labelWin', {
+      enumerable: true,
+      get: () => `${language}: {player} wins`
+    });
+    resultState.display.state.status = 'completed';
+    resultState.display.state.winner = 1;
+    resultState.display.result = {
+      sessionId: resultState.display.displaySessionId,
+      winner: 1,
+      winnerRole: 'host',
+      reason: 'win'
+    };
+    const applyState = listeners.get('game-engine:interactive-state');
+    const resultText = dom.window.document.getElementById('result-text');
+
+    applyState(resultState);
+    expect(resultText.textContent).toContain('en: Host wins');
+    expect(audioPlay).toHaveBeenCalledTimes(1);
+    const initialConfettiTimeouts = pendingTimeoutCount();
+    expect(initialConfettiTimeouts).toBeGreaterThan(0);
+
+    i18n.initialized = true;
+    resolveReady();
+    await Promise.resolve();
+    expect(resultText.textContent).toContain('en: Host wins');
+    expect(audioPlay).toHaveBeenCalledTimes(1);
+    expect(pendingTimeoutCount()).toBe(initialConfettiTimeouts);
+
+    language = 'de';
+    onChange();
+    expect(resultText.textContent).toContain('de: Host wins');
+    expect(audioPlay).toHaveBeenCalledTimes(1);
+    expect(pendingTimeoutCount()).toBe(initialConfettiTimeouts);
+
+    language = 'fr';
+    onLanguageChange();
+    expect(resultText.textContent).toContain('fr: Host wins');
+    expect(audioPlay).toHaveBeenCalledTimes(1);
+    expect(pendingTimeoutCount()).toBe(initialConfettiTimeouts);
     dom.window.close();
   });
 

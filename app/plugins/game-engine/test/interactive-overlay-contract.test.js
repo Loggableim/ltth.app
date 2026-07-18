@@ -84,7 +84,9 @@ describe('interactive overlay contract', () => {
 
     expect(html).toContain('function clearInteractivePresentation()');
     expect(html).toContain('clearInteractivePresentation();');
-    expect(html).toContain('showResult({ ...display.result, state: snapshotState }, { authoritative: true })');
+    expect(html).toContain('function showResult(data, { authoritative = false, suppressEffects = false } = {})');
+    expect(html).toContain('{ authoritative: true, suppressEffects }');
+    expect(html).toContain('applyInteractiveSnapshot(latestInteractiveState, { force: true, suppressEffects: true })');
     expect(html).toContain('if (!authoritative)');
     expect(html).not.toContain('interactiveLeaderboardTimer = setTimeout');
   });

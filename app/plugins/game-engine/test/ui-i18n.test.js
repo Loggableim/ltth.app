@@ -65,6 +65,34 @@ describe('Game Engine UI i18n', () => {
     }
   });
 
+  test('dashboard resolves aliased runtime keys through every localized UI runtime leaf', () => {
+    const pluginRoot = path.join(repoRoot, 'app', 'plugins', pluginId);
+    const source = fs.readFileSync(path.join(pluginRoot, 'ui.html'), 'utf8');
+    const aliasedKey = 'plugins.game-engine.runtime.dashboard.current_turn';
+    const localeKey = 'plugins.game-engine.ui.runtime.dashboard.current_turn';
+    const params = { player: 'Viewer', role: 'viewer' };
+
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      const values = flattenTranslations(JSON.parse(
+        fs.readFileSync(path.join(pluginRoot, 'locales', `${locale}.json`), 'utf8')
+      ));
+      const i18n = {
+        initialized: true,
+        t: jest.fn((key, replacements = {}) => String(values[key] || key)
+          .replace(/\{(\w+)\}/g, (match, name) => replacements[name] == null
+            ? match
+            : String(replacements[name])))
+      };
+      const { runtimeText } = runtimeI18nApi(source, i18n);
+      const expected = values[localeKey]
+        .replace('{player}', params.player)
+        .replace('{role}', params.role);
+
+      expect(runtimeText(aliasedKey, params)).toBe(expected);
+      expect(i18n.t).toHaveBeenCalledWith(localeKey, params);
+    }
+  });
+
   test('dashboard runtime text stays readable before init and rerenders for ready and language changes', async () => {
     const source = fs.readFileSync(path.join(repoRoot, 'app', 'plugins', pluginId, 'ui.html'), 'utf8');
     let resolveReady;

@@ -4397,11 +4397,12 @@
 
     // Runtime i18n helpers: start
     function runtimeText(key, params = {}, fallback = '') {
-      const readableFallback = String(fallback || key.split('.').pop().replace(/_/g, ' '))
+      const normalizedKey = key.replace(/^plugins\.game-engine\.runtime\./, 'plugins.game-engine.ui.runtime.');
+      const readableFallback = String(fallback || normalizedKey.split('.').pop().replace(/_/g, ' '))
         .replace(/\{(\w+)\}/g, (match, name) => params[name] == null ? match : String(params[name]));
       if (!window.i18n?.initialized) return readableFallback;
-      const translated = window.i18n?.t?.(key, params);
-      return translated && translated !== key ? translated : readableFallback;
+      const translated = window.i18n?.t?.(normalizedKey, params);
+      return translated && translated !== normalizedKey ? translated : readableFallback;
     }
 
     function bindRuntimeI18nRerender(rerender) {

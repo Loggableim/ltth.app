@@ -202,7 +202,11 @@ class InteractiveController {
       const presentationChanged = scheduleChanged || previousWarningSeconds !== warningSeconds;
       if (!presentationChanged) continue;
 
-      if (scheduleChanged && session.turnRole === 'viewer') {
+      const viewerTurn = session.turnRole === 'viewer';
+      const preservedViewerDeadlineMs = viewerTurn && enabled && !scheduleChanged
+        ? session.viewerDeadlineMs
+        : null;
+      if (viewerTurn && (scheduleChanged || preservedViewerDeadlineMs != null)) {
         this.timers.clearViewer(session.sessionId, { persist: false });
       }
       session.config = {
@@ -212,8 +216,13 @@ class InteractiveController {
         roundWarningTime: warningSeconds
       };
       session.sessionRevision += 1;
-      if (scheduleChanged && session.turnRole === 'viewer' && enabled) {
-        this.timers.startViewer(session, responseSeconds, { persist: false });
+      if (viewerTurn && enabled) {
+        if (scheduleChanged) {
+          this.timers.startViewer(session, responseSeconds, { persist: false });
+        } else if (preservedViewerDeadlineMs != null) {
+          session.viewerDeadlineMs = preservedViewerDeadlineMs;
+          this.timers.restore(session);
+        }
       }
       this.database.updateInteractiveState(session.sessionId, this._sessionRecord(session));
       updatedSessions += 1;

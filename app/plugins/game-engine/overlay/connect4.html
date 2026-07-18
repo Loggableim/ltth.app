@@ -1320,7 +1320,7 @@
     }
 
     // Show game result
-    function showResult(data, { authoritative = false } = {}) {
+    function showResult(data, { authoritative = false, suppressEffects = false } = {}) {
       const resultDiv = document.getElementById('game-result');
       const resultText = document.getElementById('result-text');
       const xpReward = document.getElementById('xp-reward');
@@ -1341,20 +1341,21 @@
           winnerText.textContent = winLabel.replace('{player}', winnerInfo.nickname || winnerInfo.username || '');
         }
 
-        // Play appropriate win sound based on which player won
-        const winSound = data.state.winner === 1
-          ? '/game-engine/sounds/default/player-1-wins.mp3'
-          : '/game-engine/sounds/default/player-2-wins.mp3';
-        playAudioFile(winSound);
-
-        celebrateWin();
+        if (!suppressEffects) {
+          // Play appropriate win sound based on which player won
+          const winSound = data.state.winner === 1
+            ? '/game-engine/sounds/default/player-1-wins.mp3'
+            : '/game-engine/sounds/default/player-2-wins.mp3';
+          playAudioFile(winSound);
+          celebrateWin();
+        }
       } else if (data.reason === 'draw') {
         resultText.innerHTML = '';
         const drawText = document.createElement('span');
         drawText.className = 'draw-text';
         drawText.textContent = dt.labelDraw || runtimeText('plugins.game-engine.runtime.connect4.draw');
         resultText.appendChild(drawText);
-        playAudioFile('/game-engine/sounds/default/game over.mp3');
+        if (!suppressEffects) playAudioFile('/game-engine/sounds/default/game over.mp3');
       } else {
         resultText.innerHTML = `<span>${runtimeText('plugins.game-engine.runtime.common.game_finished')}</span>`;
       }
@@ -1457,7 +1458,7 @@
       };
     }
 
-    function applyInteractiveSnapshot(state, { force = false } = {}) {
+    function applyInteractiveSnapshot(state, { force = false, suppressEffects = false } = {}) {
       const interactiveState = interactiveConnect4Presentation(state);
       const display = interactiveState?.display;
       if (!display) return;
@@ -1507,12 +1508,17 @@
       document.getElementById('game-container').classList.add('active');
 
       if (display.phase === 'result' && display.result) {
-        showResult({ ...display.result, state: snapshotState }, { authoritative: true });
+        showResult(
+          { ...display.result, state: snapshotState },
+          { authoritative: true, suppressEffects }
+        );
       }
     }
 
     bindRuntimeI18nRerender(() => {
-      if (latestInteractiveState) applyInteractiveSnapshot(latestInteractiveState, { force: true });
+      if (latestInteractiveState) {
+        applyInteractiveSnapshot(latestInteractiveState, { force: true, suppressEffects: true });
+      }
     });
 
     window.addEventListener('message', event => {
