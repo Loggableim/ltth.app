@@ -22,6 +22,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const {
+    normalizeCompletionNotification,
     normalizeConfig,
     normalizeFinaleRequest,
     normalizeFireworkTrigger,
@@ -37,6 +38,10 @@ const SUPERFAN_FINALE_TEST_CONFIG_KEYS = Object.freeze([
     'superfanFinaleEnabled',
     'superfanFinaleCooldownHours',
     'superfanFinaleIntensity',
+    'superfanEndCardDuration',
+    'superfanEndCardPosition',
+    'superfanEndCardSize',
+    'superfanEndCardScale',
     'goalFinaleStyle',
     'goalFinaleLength'
 ]);
@@ -549,6 +554,10 @@ class FireworksPlugin {
             superfanFinaleEnabled: true,
             superfanFinaleCooldownHours: 24,
             superfanFinaleIntensity: 3,
+            superfanEndCardDuration: 3000,
+            superfanEndCardPosition: 'center',
+            superfanEndCardSize: 'medium',
+            superfanEndCardScale: 1,
 
             // Follower fireworks
             followerFireworksEnabled: false, // Enable fireworks for new followers
@@ -777,8 +786,10 @@ class FireworksPlugin {
         // Trigger finale
         this.api.registerRoute('post', '/api/webgpu-fireworks/finale', (req, res) => {
             try {
+                const finaleRequest = { ...(req.body || {}) };
+                delete finaleRequest.completionNotification;
                 const result = this.triggerFinale({
-                    ...(req.body || {}),
+                    ...finaleRequest,
                     bypassEnabled: true
                 });
                 const { showPlan, bursts, ...metadata } = result;
@@ -1412,6 +1423,18 @@ class FireworksPlugin {
         }
 
         const username = data.uniqueId || data.username || data.nickname || 'Superfan';
+        const completionNotification = normalizeCompletionNotification({
+            username,
+            usernameText: `Thank you for being a Superfan, ${username}!`,
+            thankYouText: 'This firework was for you!',
+            profilePictureUrl: data.profilePictureUrl || data.userProfilePictureUrl || null,
+            duration: effectiveConfig.superfanEndCardDuration,
+            position: effectiveConfig.superfanEndCardPosition,
+            size: effectiveConfig.superfanEndCardSize,
+            scale: effectiveConfig.superfanEndCardScale,
+            style: effectiveConfig.followerAnimationStyle,
+            entrance: effectiveConfig.followerAnimationEntrance
+        });
         const upstreamEventId = [data.eventId, data.id]
             .map(value => String(value ?? '').trim())
             .find(Boolean);
@@ -1435,6 +1458,7 @@ class FireworksPlugin {
                 style: effectiveConfig.goalFinaleStyle,
                 length: effectiveConfig.goalFinaleLength,
                 intensity: effectiveConfig.superfanFinaleIntensity,
+                completionNotification,
                 eventId,
                 bypassEnabled: options.bypassEnabled === true,
                 ackRequested: true,
@@ -1888,6 +1912,10 @@ class FireworksPlugin {
             rocketSound: config.rocketSound,
             explosionSound: config.explosionSound
         };
+
+        if (finale.completionNotification) {
+            payload.completionNotification = finale.completionNotification;
+        }
 
         if (request.ackRequested === true) {
             payload.ackRequested = true;

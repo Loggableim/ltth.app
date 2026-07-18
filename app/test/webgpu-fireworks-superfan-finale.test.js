@@ -5,7 +5,9 @@ const path = require('path');
 const {
   DEFAULT_FIREWORKS_CONFIG,
   SUPERFAN_FINALE_COOLDOWN_HOURS,
-  normalizeConfig
+  normalizeCompletionNotification,
+  normalizeConfig,
+  normalizeFinaleRequest
 } = require('../plugins/webgpu-fireworks/lib/config-schema');
 const {
   SuperfanFinaleHistory,
@@ -70,6 +72,61 @@ describe('WebGPU Superfan finale foundation', () => {
     for (const size of ['small', 'medium', 'large', 'custom']) {
       expect(normalizeConfig({ superfanEndCardSize: size }).superfanEndCardSize).toBe(size);
     }
+  });
+
+  test('normalizes and bounds completion notification payloads', () => {
+    const normalized = normalizeCompletionNotification({
+      username: `  ${'A'.repeat(100)}  `,
+      usernameText: '  Custom closing username line  ',
+      thankYouText: '  This firework was for you!  ',
+      profilePictureUrl: 'https://example.test/avatar.png',
+      duration: 25000,
+      position: 'bottom-right',
+      size: 'custom',
+      scale: 0.1,
+      style: 'gradient-gold',
+      entrance: 'bounce'
+    });
+
+    expect(normalized).toMatchObject({
+      username: 'A'.repeat(80),
+      usernameText: 'Custom closing username line',
+      thankYouText: 'This firework was for you!',
+      profilePictureUrl: 'https://example.test/avatar.png',
+      duration: 10000,
+      position: 'bottom-right',
+      size: 'custom',
+      scale: 0.5,
+      style: 'gradient-gold',
+      entrance: 'bounce'
+    });
+    expect(normalizeCompletionNotification({
+      username: ' ',
+      profilePictureUrl: 'javascript:alert(1)',
+      duration: 1,
+      position: 'invalid',
+      size: 'invalid',
+      scale: 99,
+      style: 'invalid',
+      entrance: 'invalid'
+    })).toEqual({
+      username: 'Superfan',
+      usernameText: 'Thank you for being a Superfan, Superfan!',
+      thankYouText: 'This firework was for you!',
+      profilePictureUrl: null,
+      duration: 1000,
+      position: 'center',
+      size: 'medium',
+      scale: 2,
+      style: 'gradient-purple',
+      entrance: 'scale'
+    });
+    expect(normalizeCompletionNotification(null)).toBeNull();
+    expect(normalizeFinaleRequest({})).not.toHaveProperty('completionNotification');
+    expect(normalizeFinaleRequest({ completionNotification: normalized })).toHaveProperty(
+      'completionNotification',
+      normalized
+    );
   });
 
   test('prefers stable user id and normalizes handle fallbacks', () => {
@@ -403,6 +460,110 @@ describe('WebGPU Superfan finale foundation', () => {
     expect(plugin.triggerFinale).toHaveBeenCalledTimes(2);
   });
 
+  test('attaches the personalized completion card only to a Superfan finale request', () => {
+    const { plugin } = createPlugin({
+      superfanEndCardDuration: 4500,
+      superfanEndCardPosition: 'top-right',
+      superfanEndCardSize: 'custom',
+      superfanEndCardScale: 1.4,
+      followerAnimationStyle: 'neon',
+      followerAnimationEntrance: 'slide-up'
+    });
+    plugin.triggerFinale = jest.fn(request => ({ accepted: true, id: request.eventId }));
+
+    expect(plugin.handleSuperfanEntry({
+      userId: 'paid-1',
+      uniqueId: 'Alpha',
+      profilePictureUrl: 'https://example.test/alpha.png'
+    }, { authoritative: true })).toMatchObject({ accepted: true });
+
+    expect(plugin.triggerFinale).toHaveBeenCalledWith(expect.objectContaining({
+      completionNotification: {
+        username: 'Alpha',
+        usernameText: 'Thank you for being a Superfan, Alpha!',
+        thankYouText: 'This firework was for you!',
+        profilePictureUrl: 'https://example.test/alpha.png',
+        duration: 4500,
+        position: 'top-right',
+        size: 'custom',
+        scale: 1.4,
+        style: 'neon',
+        entrance: 'slide-up'
+      }
+    }));
+  });
+
+  test('falls back to Superfan in the personalized completion copy', () => {
+    const { plugin } = createPlugin();
+    plugin.triggerFinale = jest.fn(request => ({ accepted: true, id: request.eventId }));
+
+    plugin.handleSuperfanEntry({ userId: 'paid-2' }, { authoritative: true });
+
+    expect(plugin.triggerFinale).toHaveBeenCalledWith(expect.objectContaining({
+      completionNotification: expect.objectContaining({
+        username: 'Superfan',
+        usernameText: 'Thank you for being a Superfan, Superfan!'
+      })
+    }));
+  });
+
+  test('emits a normalized completion descriptor while generic finales omit it', () => {
+    const { api, plugin } = createPlugin();
+
+    const generic = plugin.triggerFinale({ style: 'classic-crescendo', length: 'short' });
+    expect(generic).not.toHaveProperty('completionNotification');
+    expect(api.emit).toHaveBeenLastCalledWith(
+      'webgpu-fireworks:finale',
+      expect.not.objectContaining({ completionNotification: expect.anything() })
+    );
+
+    const withCard = plugin.triggerFinale({
+      style: 'classic-crescendo',
+      length: 'short',
+      completionNotification: {
+        username: 'Alpha',
+        duration: 90000,
+        position: 'top-left',
+        size: 'large',
+        scale: 1.5,
+        style: 'minimal',
+        entrance: 'fade'
+      }
+    });
+    expect(withCard.completionNotification).toMatchObject({
+      username: 'Alpha',
+      duration: 10000,
+      position: 'top-left',
+      size: 'large',
+      scale: 1.5,
+      style: 'minimal',
+      entrance: 'fade'
+    });
+    expect(api.emit).toHaveBeenLastCalledWith(
+      'webgpu-fireworks:finale',
+      expect.objectContaining({ completionNotification: withCard.completionNotification })
+    );
+  });
+
+  test('manual finale route strips completion notification input', () => {
+    const { api, plugin } = createPlugin();
+    plugin.registerRoutes();
+    plugin.triggerFinale = jest.fn(() => ({ accepted: true }));
+    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+    api.routes.get('post:/api/webgpu-fireworks/finale')({
+      body: {
+        style: 'classic-crescendo',
+        length: 'short',
+        completionNotification: { username: 'Injected' }
+      }
+    }, res);
+
+    expect(plugin.triggerFinale).toHaveBeenCalledWith(expect.not.objectContaining({
+      completionNotification: expect.anything()
+    }));
+  });
+
   test.each([1, 2, 10, 50])(
     'does not treat fan-team level %s as a paid Superfan subscription',
     teamMemberLevel => {
@@ -656,6 +817,10 @@ describe('WebGPU Superfan finale foundation', () => {
           superfanFinaleEnabled: false,
           superfanFinaleCooldownHours: 168,
           superfanFinaleIntensity: 7.5,
+          superfanEndCardDuration: 4500,
+          superfanEndCardPosition: 'bottom-left',
+          superfanEndCardSize: 'custom',
+          superfanEndCardScale: 1.6,
           goalFinaleStyle: 'sky-ballet',
           goalFinaleLength: 'short',
           enabled: false,
@@ -676,6 +841,10 @@ describe('WebGPU Superfan finale foundation', () => {
       superfanFinaleEnabled: false,
       superfanFinaleCooldownHours: 168,
       superfanFinaleIntensity: 7.5,
+      superfanEndCardDuration: 4500,
+      superfanEndCardPosition: 'bottom-left',
+      superfanEndCardSize: 'custom',
+      superfanEndCardScale: 1.6,
       goalFinaleStyle: 'sky-ballet',
       goalFinaleLength: 'short'
     });
@@ -686,7 +855,13 @@ describe('WebGPU Superfan finale foundation', () => {
       intensity: 7.5,
       style: 'sky-ballet',
       length: 'short',
-      bypassEnabled: true
+      bypassEnabled: true,
+      completionNotification: expect.objectContaining({
+        duration: 4500,
+        position: 'bottom-left',
+        size: 'custom',
+        scale: 1.6
+      })
     }));
     expect(plugin.config).toEqual(persistedConfig);
     expect(api.setConfig).not.toHaveBeenCalled();

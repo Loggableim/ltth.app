@@ -138,6 +138,38 @@ function normalizeBoolean(value, fallback) {
   return fallback;
 }
 
+function normalizeDisplayText(value, fallback, maxLength) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  return (text || fallback).slice(0, maxLength);
+}
+
+function normalizeOptionalImageUrl(value) {
+  if (typeof value !== 'string') return null;
+  const url = value.trim().slice(0, 2048);
+  return /^https?:\/\//i.test(url) ? url : null;
+}
+
+function normalizeCompletionNotification(value) {
+  if (!isPlainObject(value)) return null;
+  const username = normalizeDisplayText(value.username, 'Superfan', 80);
+  return {
+    username,
+    usernameText: normalizeDisplayText(
+      value.usernameText,
+      `Thank you for being a Superfan, ${username}!`,
+      180
+    ),
+    thankYouText: normalizeDisplayText(value.thankYouText, 'This firework was for you!', 180),
+    profilePictureUrl: normalizeOptionalImageUrl(value.profilePictureUrl),
+    duration: clampInteger(value.duration, 1000, 10000, 3000),
+    position: VALID_FOLLOWER_POSITIONS.includes(value.position) ? value.position : 'center',
+    size: ['small', 'medium', 'large', 'custom'].includes(value.size) ? value.size : 'medium',
+    scale: clampNumber(value.scale, 0.5, 2, 1),
+    style: VALID_FOLLOWER_STYLES.includes(value.style) ? value.style : 'gradient-purple',
+    entrance: VALID_FOLLOWER_ENTRANCES.includes(value.entrance) ? value.entrance : 'scale'
+  };
+}
+
 function normalizeShape(value, fallback = DEFAULT_FIREWORKS_CONFIG.defaultShape) {
   return ALLOWED_SHAPES.includes(value) ? value : fallback;
 }
@@ -416,7 +448,7 @@ function normalizeFinaleRequest(body = {}) {
     ? (Math.trunc(seedValue) >>> 0)
     : (Math.floor(Math.random() * 0x100000000) >>> 0);
   const durationMs = FINALE_DURATION_BY_LENGTH[length];
-  return {
+  const normalized = {
     style: normalizeFinaleStyle(source.style),
     length,
     intensity: clampNumber(source.intensity, 0.1, 10, 3.0),
@@ -427,6 +459,9 @@ function normalizeFinaleRequest(body = {}) {
     duration: durationMs,
     durationMs
   };
+  const completionNotification = normalizeCompletionNotification(source.completionNotification);
+  if (completionNotification) normalized.completionNotification = completionNotification;
+  return normalized;
 }
 
 function normalizeGiftMapping(body = {}) {
@@ -459,6 +494,7 @@ module.exports = {
   clampInteger,
   clampNumber,
   finaleLengthFromDuration,
+  normalizeCompletionNotification,
   normalizeConfig,
   normalizeFinaleLength,
   normalizeFinaleRequest,
