@@ -1015,6 +1015,24 @@
           "default": "Par défaut",
           "reset": "Réinitialiser"
         },
+        "interactive": {
+          "background_title": "Parties actives en arrière-plan",
+          "cancel_current": "Annuler la partie affichée",
+          "chess_help": "Sélectionnez la case de départ, puis la case d’arrivée.",
+          "chess_viewer_time_label": "Temps de réflexion du spectateur aux échecs (secondes)",
+          "connect4_viewer_time_label": "Temps de réflexion du spectateur à Puissance 4",
+          "host_queue_description": "Seules les parties attendant le coup de l’hôte figurent ici. Leur ordre fait foi.",
+          "host_queue_title": "File des tours de l’hôte",
+          "max_sessions_label": "Nombre maximal de parties simultanées",
+          "no_board_live": "Aucun plateau n’est actuellement à l’antenne",
+          "ready": "Prêt",
+          "result_duration_label": "Durée d’affichage du résultat (secondes)",
+          "save_settings": "Enregistrer les réglages",
+          "settings_title": "Commandes des parties interactives",
+          "skip_host_turn": "Placer le tour de l’hôte en fin de file",
+          "title": "Parties interactives",
+          "waiting_for_move": "En attente d’un coup…"
+        },
         "connect4": {
           "game_finished": "Partie terminée",
           "board_color": "Couleur du plateau :",
@@ -1222,6 +1240,7 @@
         },
         "runtime": {
           "common": {
+            "cancelled": "Partie annulée",
             "error": "❌ Erreur",
             "game_finished": "Partie terminée",
             "load_error": "Impossible de charger les données",
@@ -1233,6 +1252,9 @@
           "chess": {
             "black": "Noirs",
             "draw": "🤝 Nulle !",
+            "leaderboard_player": "Joueur",
+            "leaderboard_rank": "Rang",
+            "leaderboard_rating": "Classement",
             "test_mode_notice": "Utilisez l’interface d’administration (game-engine/ui) pour démarrer des parties d’échecs manuelles. Ce mode de test de l’overlay est actuellement entièrement pris en charge uniquement pour Connect4, Plinko et la roue.",
             "white": "Blancs",
             "winner": "🏆 {player} gagne !"
@@ -1260,8 +1282,16 @@
           "plinko": {
             "slot_hits": "Case {slot} : {count}x"
           },
+          "overlay": {
+            "viewer_countdown": "Spectateur : encore {seconds} s"
+          },
           "unified": {
-            "queue_count": "{count} partie(s) en attente"
+            "matchup": "{host} contre {player}",
+            "phase_host_turn": "À l’hôte de jouer",
+            "phase_result": "Résultat",
+            "phase_viewer_turn": "Au spectateur de jouer",
+            "queue_count": "{count} partie(s) en attente",
+            "status": "{game} · {phase} · tours de l’hôte en attente : {count}"
           },
           "wheel": {
             "info_screen": "Pour récupérer votre gain, rendez-vous sur discord.gg/votreserveur",
@@ -1277,6 +1307,48 @@
           },
           "dashboard": {
             "add_gift": "Ajouter {gift}",
+            "active_summary": "Parties actives : {sessions} · tours de l’hôte en attente : {hostTurns}",
+            "background_summary": "{game} · {host} contre {player} · {timer} · coups : {moves} · active il y a {age}",
+            "board_unavailable": "Aucun plateau n’est disponible pour cet affichage.",
+            "cancel_confirm": "Annuler la partie contre {player} ?",
+            "cancel_current": "Annuler la partie avec {player}",
+            "cancel_session": "Annuler la partie de {player}",
+            "clock_paused": "Pendule en pause",
+            "ended": "terminée",
+            "game_chess": "Échecs",
+            "game_connect4": "Puissance 4",
+            "host": "Hôte",
+            "host_move_as": "À {role} de jouer",
+            "host_timer": "Hôte : {time}",
+            "host_turn": "À l’hôte de jouer",
+            "host_turn_waiting": "Tour de l’hôte en attente",
+            "matchup": "{host} contre {player}",
+            "no_background_matches": "Aucune autre partie active.",
+            "no_board_live": "Aucun plateau de l’hôte n’est actuellement à l’antenne",
+            "no_host_turns": "Aucun tour de l’hôte n’est en attente.",
+            "no_time_limit": "Sans limite de temps",
+            "now_live": "À l’antenne",
+            "paused": "en pause",
+            "player": "Joueur",
+            "queue_match": "{game} · {player}",
+            "ready": "Prêt",
+            "result_displaying": "Affichage du résultat",
+            "result_status": "Résultat : {reason}",
+            "revision_status": "Session r{sessionRevision} · affichage r{displayRevision}",
+            "settings_save_failed": "Impossible d’enregistrer les réglages interactifs",
+            "settings_saved": "Réglages interactifs enregistrés.",
+            "skip_confirm": "Placer le tour de l’hôte contre {player} en fin de file ?",
+            "skip_host_turn": "Placer le tour de {role} en fin de file",
+            "streamer_black": "Streamer (Noirs)",
+            "streamer_player_one": "Streamer (Joueur 1)",
+            "streamer_player_two": "Streamer (Joueur 2)",
+            "streamer_white": "Streamer (Blancs)",
+            "timer_enabled_summary": "{seconds} s · alerte à {warningSeconds} s",
+            "viewer_timer": "Spectateur : {time}",
+            "viewer_turn": "Au spectateur de jouer",
+            "waiting": "en attente",
+            "waiting_duration": "en attente depuis {time}",
+            "waiting_host_turn": "En attente du prochain tour de l’hôte",
             "cancel_game_confirm": "Voulez-vous vraiment annuler la partie ?",
             "catalog_available": "✅ {count} cadeaux disponibles",
             "catalog_empty_connect": "⚠️ Aucun cadeau dans le catalogue. Connectez-vous à un live TikTok pour le remplir.",

@@ -110,12 +110,14 @@ Queue invariants:
 
 It manages:
 
-- A per-turn viewer deadline for Connect 4.
+- An optional per-turn viewer deadline for Connect 4.
 - A separate per-turn viewer deadline for chess.
 - Remaining host chess time while the board is visible.
 - Scheduled timeout callbacks keyed by session and state revision.
 
-Default viewer response limits are 30 seconds for Connect 4 and 60 seconds for chess. Both are configurable from 5 through 300 seconds.
+The Connect 4 viewer timeout is disabled by default. In that state, viewer turns have no deadline and cannot become automatic losses. Enabling the existing Connect 4 round timer supplies a 5-through-120-second response limit (30 seconds by default) plus a 3-through-30-second warning threshold capped at the response limit. Chess viewer timeouts remain enabled, default to 60 seconds, and accept 5 through 300 seconds.
+
+The Connect 4 child renderer derives its countdown from the authoritative server deadline and timestamp. It enters the warning style at the configured threshold. The unified overlay embeds that child countdown and must not render a second competing countdown in its parent frame.
 
 Absolute UTC deadlines are persisted. A timeout callback must re-read the session revision, turn owner, and deadline before applying a loss. This prevents a late callback from ending a game after a valid move.
 
@@ -215,7 +217,7 @@ For every chat move:
 
 Invalid, duplicate, late, or out-of-turn chat messages do not mutate state or queue order. The command response should explain the rejection without exposing internal session data.
 
-A viewer win or viewer timeout can happen while another host board is locked on screen. Such a terminal result enters a FIFO transient-result channel for the configured result duration. The current interactive board and its host chess clock are suspended during the result, then the same board resumes. Multiple background results are presented in terminal-event order and never reorder the host-turn queue.
+A viewer win or viewer timeout can happen while another host board is locked on screen. The current terminal result is shown for the configured duration and suspends the visible board and its host chess clock. When that duration expires, a waiting host board resumes immediately and every queued background-result burst is discarded. If no host board is waiting, queued results may continue in terminal-event order. Results never reorder the host-turn queue.
 
 ### Host move
 
@@ -230,6 +232,12 @@ The server must confirm that:
 - The move is legal.
 
 After a valid move, the server pauses the host chess clock if applicable, persists state, removes the queue entry, and lets the overlay complete the move animation. If the match continues, it starts the viewer deadline and advances to the next queue head. If the match ends, it enters the result phase before advancing.
+
+### Cancellation and host-turn skip
+
+An admin may cancel the displayed session or an active background session by sending the current session and display revision envelope. Cancellation completes the session with terminal reason `cancelled`, clears timers and queue membership, and uses a short neutral result. It skips win/loss accounting, XP/ELO changes, and leaderboard presentation.
+
+The skip action is not a move and does not end or mutate the game. It is accepted only for the authorized, currently displayed queue head while the host is at turn, with matching session/display revisions and at least one other host turn waiting. The queue rotates that entry to a fresh tail position and immediately displays the next head. A stale, background, viewer-turn, or single-entry request is rejected.
 
 ### Timeout and game end
 
@@ -264,7 +272,7 @@ Move controls are enabled only when the session is the queue head, the host is a
 
 ### Host queue
 
-The queue list shows order, game type, viewer name, enqueue time, and waiting duration. It is read-only in the first release. The displayed session is visibly marked as `Now on stream`.
+The queue list shows order, game type, viewer name, enqueue time, and waiting duration. The displayed session is visibly marked as `Now on stream`. Its host turn may be moved to the tail only through the guarded skip action described above; arbitrary reordering is not supported.
 
 ### Active background matches
 
@@ -272,7 +280,7 @@ Background sessions show game type, viewer name, current turn, viewer time remai
 
 Settings add:
 
-- Connect 4 viewer response seconds.
+- Read-only Connect 4 timeout status derived from the existing round-timer settings (`No time limit` when disabled; response and warning seconds when enabled).
 - Chess viewer response seconds.
 - Maximum concurrent interactive sessions.
 - Result display seconds.

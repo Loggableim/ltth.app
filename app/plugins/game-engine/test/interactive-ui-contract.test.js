@@ -64,7 +64,8 @@ describe('interactive games admin UI contract', () => {
 
   test('renders canonical Connect4 timer settings read-only and shows the untimed label', () => {
     expect(ui).toContain('id="interactive-connect4-response" type="text" readonly');
-    expect(ui).toContain("runtimeText('plugins.game-engine.runtime.dashboard.no_time_limit') || 'Ohne Zeitlimit'");
+    expect(ui).toContain("runtimeText('plugins.game-engine.runtime.dashboard.no_time_limit')");
+    expect(ui).not.toContain("runtimeText('plugins.game-engine.runtime.dashboard.no_time_limit') ||");
     expect(ui).not.toContain("connect4ViewerResponseSeconds: Number(document.getElementById('interactive-connect4-response').value)");
     expect(ui).not.toContain("fetch('/api/game-engine/round-timer/connect4'");
   });
@@ -82,7 +83,9 @@ describe('interactive games admin UI contract', () => {
       'document',
       'runtimeText',
       `${functionSource}; return applyInteractiveSettings;`
-    )(dom.window.document, () => 'Ohne Zeitlimit');
+    )(dom.window.document, (key, params = {}) => key.endsWith('no_time_limit')
+      ? 'No time limit'
+      : `${params.seconds}s · ${params.warningSeconds}s`);
     const connect4 = dom.window.document.getElementById('interactive-connect4-response');
 
     apply({
@@ -94,7 +97,7 @@ describe('interactive games admin UI contract', () => {
     expect(connect4.value).toContain('12s');
 
     apply({ connect4ViewerTimeoutEnabled: false });
-    expect(connect4.value).toBe('Ohne Zeitlimit');
+    expect(connect4.value).toBe('No time limit');
     expect(ui).toContain('const savedConfig = (await response.json()).config;');
     expect(ui).toContain('applyInteractiveSettings(savedConfig);');
   });
@@ -107,11 +110,10 @@ describe('interactive games admin UI contract', () => {
     expect(ui).toContain('interactiveTimerLabel(display, fallbackSession)');
   });
 
-  test('uses interactive copy that cannot be overwritten by legacy Connect4 translations', () => {
-    expect(ui).toContain('<h3>Interactive Games</h3>');
-    expect(ui).toContain('<p id="game-status">Waiting for move…</p>');
+  test('uses dedicated namespaced interactive copy instead of legacy Connect4 translations', () => {
+    expect(ui).toContain('data-i18n="plugins.game-engine.ui.interactive.title">Interactive Games</h3>');
+    expect(ui).toContain('id="game-status" data-i18n="plugins.game-engine.ui.interactive.waiting_for_move"');
     expect(ui).not.toContain('data-i18n="game_engine.connect4_running"');
-    expect(ui).not.toContain('id="game-status" data-i18n=');
   });
 
   test('keeps every inline admin script syntactically valid', () => {

@@ -520,6 +520,7 @@
 
   <script>
     function runtimeText(key, params = {}) {
+      if (!window.i18n?.initialized) return '';
       const normalizedKey = key.replace(/^plugins\.game-engine\.runtime\./, 'plugins.game-engine.ui.runtime.');
       const translated = window.i18n?.t?.(normalizedKey, params);
       return translated && translated !== normalizedKey ? translated : '';

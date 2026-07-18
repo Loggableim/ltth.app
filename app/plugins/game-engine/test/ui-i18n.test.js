@@ -38,11 +38,12 @@ describe('Game Engine UI i18n', () => {
       'overlay/wheel.html'
     ].map((relativePath) => fs.readFileSync(path.join(pluginRoot, relativePath), 'utf8'));
     const runtimeKeys = new Set(
-      sources.flatMap((source) => [...source.matchAll(/runtimeText\('([^']+)'/g)].map((match) => match[1]))
+      sources.flatMap((source) => [...source.matchAll(/runtimeText\(\s*'([^']+)'/g)].map((match) => match[1]))
     );
 
     expect(sources[0]).toContain('function setLocalizedHtml(element, markup)');
     expect(sources.every((source) => source.includes('function runtimeText(key, params = {})'))).toBe(true);
+    expect(sources.every((source) => source.includes("if (!window.i18n?.initialized) return '';"))).toBe(true);
     expect(runtimeKeys).toContain('plugins.game-engine.ui.runtime.dashboard.current_turn');
     expect(runtimeKeys).toContain('plugins.game-engine.runtime.connect4.current_turn');
 

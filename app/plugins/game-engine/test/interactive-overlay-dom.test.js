@@ -22,6 +22,10 @@ function loadOverlay(name) {
     pretendToBeVisual: true,
     beforeParse(window) {
       window.io = () => socket;
+      window.i18n = {
+        initialized: true,
+        t: (key, params = {}) => params.seconds == null ? key : `Viewer: ${params.seconds}s`
+      };
       window.fetch = jest.fn(() => new Promise(() => {}));
       window.Date.now = () => now;
       window.setInterval = callback => {

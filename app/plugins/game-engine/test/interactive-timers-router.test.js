@@ -245,7 +245,7 @@ describe('InteractiveDisplayRouter', () => {
     });
   });
 
-  test('presents background results FIFO and then resumes the same queue head', () => {
+  test('resumes a waiting host board after the current result and suppresses queued background results', () => {
     registryRows.set(1, session({ turnRole: 'host' }));
     queueRows.push({ sessionId: 1, sequence: 1 });
     router.sync();
@@ -255,8 +255,16 @@ describe('InteractiveDisplayRouter', () => {
     expect(router.snapshot()).toMatchObject({ phase: 'result', result: { sessionId: 8 } });
 
     jest.advanceTimersByTime(1000);
-    expect(router.snapshot()).toMatchObject({ phase: 'result', result: { sessionId: 9 } });
+    expect(router.snapshot()).toMatchObject({
+      displaySessionId: 1,
+      phase: 'playing',
+      result: null
+    });
     jest.advanceTimersByTime(1000);
-    expect(router.snapshot()).toMatchObject({ displaySessionId: 1, phase: 'playing' });
+    expect(router.snapshot()).toMatchObject({
+      displaySessionId: 1,
+      phase: 'playing',
+      result: null
+    });
   });
 });

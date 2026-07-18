@@ -1015,6 +1015,24 @@
           "default": "Standard",
           "reset": "Zurücksetzen"
         },
+        "interactive": {
+          "background_title": "Aktive Partien im Hintergrund",
+          "cancel_current": "Angezeigte Partie abbrechen",
+          "chess_help": "Quellfeld und danach Zielfeld anklicken.",
+          "chess_viewer_time_label": "Schach: Zugzeit des Zuschauers (Sekunden)",
+          "connect4_viewer_time_label": "Vier gewinnt: Zugzeit des Zuschauers",
+          "host_queue_description": "Hier stehen nur Partien, in denen der Host am Zug ist. Die Reihenfolge ist verbindlich.",
+          "host_queue_title": "Warteschlange der Host-Züge",
+          "max_sessions_label": "Maximal gleichzeitige Partien",
+          "no_board_live": "Aktuell ist kein Spielbrett auf Sendung",
+          "ready": "Bereit",
+          "result_duration_label": "Anzeigedauer des Ergebnisses (Sekunden)",
+          "save_settings": "Einstellungen speichern",
+          "settings_title": "Steuerung interaktiver Spiele",
+          "skip_host_turn": "Host-Zug ans Ende der Warteschlange verschieben",
+          "title": "Interaktive Spiele",
+          "waiting_for_move": "Warte auf einen Spielzug …"
+        },
         "connect4": {
           "game_finished": "Spiel beendet",
           "board_color": "Spielfeld-Farbe:",
@@ -1222,6 +1240,7 @@
         },
         "runtime": {
           "common": {
+            "cancelled": "Partie abgebrochen",
             "error": "❌ Fehler",
             "game_finished": "Spiel beendet",
             "load_error": "Die Daten konnten nicht geladen werden",
@@ -1233,6 +1252,9 @@
           "chess": {
             "black": "Schwarz",
             "draw": "🤝 Remis!",
+            "leaderboard_player": "Spieler",
+            "leaderboard_rank": "Rang",
+            "leaderboard_rating": "Wertung",
             "test_mode_notice": "Starte manuelle Schachpartien über die Admin-Oberfläche (game-engine/ui). Dieser Overlay-Testmodus wird derzeit nur für Connect4, Plinko und Glücksrad vollständig unterstützt.",
             "white": "Weiß",
             "winner": "🏆 {player} gewinnt!"
@@ -1260,8 +1282,16 @@
           "plinko": {
             "slot_hits": "Fach {slot}: {count}x"
           },
+          "overlay": {
+            "viewer_countdown": "Zuschauer: noch {seconds} s"
+          },
           "unified": {
-            "queue_count": "{count} Spiel(e) in der Warteschlange"
+            "matchup": "{host} gegen {player}",
+            "phase_host_turn": "Host ist am Zug",
+            "phase_result": "Ergebnis",
+            "phase_viewer_turn": "Zuschauer ist am Zug",
+            "queue_count": "{count} Spiel(e) in der Warteschlange",
+            "status": "{game} · {phase} · Host-Züge in der Queue: {count}"
           },
           "wheel": {
             "info_screen": "Um deinen Gewinn abzuholen, besuche discord.gg/deinserver",
@@ -1277,6 +1307,48 @@
           },
           "dashboard": {
             "add_gift": "{gift} hinzufügen",
+            "active_summary": "Aktive Partien: {sessions} · Host-Züge in der Queue: {hostTurns}",
+            "background_summary": "{game} · {host} gegen {player} · {timer} · Züge: {moves} · aktiv vor {age}",
+            "board_unavailable": "Für diese Anzeige ist kein Spielbrett verfügbar.",
+            "cancel_confirm": "Partie gegen {player} wirklich abbrechen?",
+            "cancel_current": "Partie mit {player} abbrechen",
+            "cancel_session": "{player}: Partie abbrechen",
+            "clock_paused": "Uhr pausiert",
+            "ended": "beendet",
+            "game_chess": "Schach",
+            "game_connect4": "Vier gewinnt",
+            "host": "Spielleitung",
+            "host_move_as": "{role} ist am Zug",
+            "host_timer": "Spielleitung: {time}",
+            "host_turn": "Host ist am Zug",
+            "host_turn_waiting": "Host-Zug wartet",
+            "matchup": "{host} gegen {player}",
+            "no_background_matches": "Keine weiteren aktiven Partien.",
+            "no_board_live": "Aktuell ist kein Host-Spielbrett auf Sendung",
+            "no_host_turns": "Keine Host-Züge warten.",
+            "no_time_limit": "Ohne Zeitlimit",
+            "now_live": "Jetzt auf Sendung",
+            "paused": "pausiert",
+            "player": "Spieler",
+            "queue_match": "{game} · {player}",
+            "ready": "Bereit",
+            "result_displaying": "Ergebnis wird angezeigt",
+            "result_status": "Ergebnis: {reason}",
+            "revision_status": "Sitzung r{sessionRevision} · Anzeige r{displayRevision}",
+            "settings_save_failed": "Die interaktiven Einstellungen konnten nicht gespeichert werden",
+            "settings_saved": "Interaktive Einstellungen gespeichert.",
+            "skip_confirm": "Host-Zug gegen {player} ans Queue-Ende verschieben?",
+            "skip_host_turn": "{role}: Zug ans Ende der Warteschlange verschieben",
+            "streamer_black": "Streamer (Schwarz)",
+            "streamer_player_one": "Streamer (Spieler 1)",
+            "streamer_player_two": "Streamer (Spieler 2)",
+            "streamer_white": "Streamer (Weiß)",
+            "timer_enabled_summary": "{seconds} s · Warnung bei {warningSeconds} s",
+            "viewer_timer": "Zuschauer: {time}",
+            "viewer_turn": "Zuschauer ist am Zug",
+            "waiting": "wartet",
+            "waiting_duration": "wartet seit {time}",
+            "waiting_host_turn": "Warte auf den nächsten Host-Zug",
             "cancel_game_confirm": "Möchtest du das Spiel wirklich abbrechen?",
             "catalog_available": "✅ {count} Geschenke verfügbar",
             "catalog_empty_connect": "⚠️ Keine Geschenke im Katalog. Verbinde mit einem TikTok-Stream, um ihn zu füllen.",

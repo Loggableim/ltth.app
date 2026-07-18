@@ -1015,6 +1015,24 @@
           "default": "Predeterminado",
           "reset": "Restablecer"
         },
+        "interactive": {
+          "background_title": "Partidas activas en segundo plano",
+          "cancel_current": "Cancelar la partida mostrada",
+          "chess_help": "Selecciona la casilla de origen y después la de destino.",
+          "chess_viewer_time_label": "Tiempo de jugada del espectador en ajedrez (segundos)",
+          "connect4_viewer_time_label": "Tiempo de jugada del espectador en Cuatro en raya",
+          "host_queue_description": "Aquí solo aparecen partidas que esperan la jugada del anfitrión. El orden es autoritativo.",
+          "host_queue_title": "Cola de turnos del anfitrión",
+          "max_sessions_label": "Máximo de partidas simultáneas",
+          "no_board_live": "Ahora mismo no hay ningún tablero en emisión",
+          "ready": "Listo",
+          "result_duration_label": "Duración de la pantalla de resultado (segundos)",
+          "save_settings": "Guardar ajustes",
+          "settings_title": "Controles de partidas interactivas",
+          "skip_host_turn": "Mover el turno del anfitrión al final de la cola",
+          "title": "Partidas interactivas",
+          "waiting_for_move": "Esperando una jugada…"
+        },
         "connect4": {
           "game_finished": "Partida terminada",
           "board_color": "Color del tablero:",
@@ -1222,6 +1240,7 @@
         },
         "runtime": {
           "common": {
+            "cancelled": "Partida cancelada",
             "error": "❌ Se produjo un error",
             "game_finished": "Partida finalizada",
             "load_error": "No se pudieron cargar los datos",
@@ -1233,6 +1252,9 @@
           "chess": {
             "black": "Negras",
             "draw": "🤝 ¡Tablas!",
+            "leaderboard_player": "Jugador",
+            "leaderboard_rank": "Puesto",
+            "leaderboard_rating": "Puntuación",
             "test_mode_notice": "Usa la interfaz de administración (game-engine/ui) para iniciar partidas de ajedrez manuales. Este modo de prueba de la superposición solo es totalmente compatible con Connect4, Plinko y la ruleta.",
             "white": "Blancas",
             "winner": "🏆 ¡{player} gana!"
@@ -1260,8 +1282,16 @@
           "plinko": {
             "slot_hits": "Casilla {slot}: {count}x"
           },
+          "overlay": {
+            "viewer_countdown": "Espectador: quedan {seconds} s"
+          },
           "unified": {
-            "queue_count": "{count} partida(s) en cola"
+            "matchup": "{host} contra {player}",
+            "phase_host_turn": "Juega el anfitrión",
+            "phase_result": "Resultado",
+            "phase_viewer_turn": "Juega el espectador",
+            "queue_count": "{count} partida(s) en cola",
+            "status": "{game} · {phase} · turnos del anfitrión en cola: {count}"
           },
           "wheel": {
             "info_screen": "Para recoger tu premio, visita discord.gg/tuservidor",
@@ -1277,6 +1307,48 @@
           },
           "dashboard": {
             "add_gift": "Añadir {gift}",
+            "active_summary": "Partidas activas: {sessions} · turnos del anfitrión en cola: {hostTurns}",
+            "background_summary": "{game} · {host} contra {player} · {timer} · jugadas: {moves} · activa hace {age}",
+            "board_unavailable": "No hay ningún tablero disponible para esta vista.",
+            "cancel_confirm": "¿Cancelar la partida contra {player}?",
+            "cancel_current": "Cancelar la partida con {player}",
+            "cancel_session": "Cancelar la partida de {player}",
+            "clock_paused": "Reloj en pausa",
+            "ended": "finalizada",
+            "game_chess": "Ajedrez",
+            "game_connect4": "Cuatro en raya",
+            "host": "Anfitrión",
+            "host_move_as": "Juega {role}",
+            "host_timer": "Anfitrión: {time}",
+            "host_turn": "Juega el anfitrión",
+            "host_turn_waiting": "Turno del anfitrión en espera",
+            "matchup": "{host} contra {player}",
+            "no_background_matches": "No hay más partidas activas.",
+            "no_board_live": "No hay ningún tablero del anfitrión en emisión",
+            "no_host_turns": "No hay turnos del anfitrión en espera.",
+            "no_time_limit": "Sin límite de tiempo",
+            "now_live": "Ahora en emisión",
+            "paused": "en pausa",
+            "player": "Jugador",
+            "queue_match": "{game} · {player}",
+            "ready": "Listo",
+            "result_displaying": "Mostrando el resultado",
+            "result_status": "Resultado: {reason}",
+            "revision_status": "Sesión r{sessionRevision} · vista r{displayRevision}",
+            "settings_save_failed": "No se pudieron guardar los ajustes interactivos",
+            "settings_saved": "Ajustes interactivos guardados.",
+            "skip_confirm": "¿Mover al final de la cola el turno del anfitrión contra {player}?",
+            "skip_host_turn": "Mover el turno de {role} al final de la cola",
+            "streamer_black": "Streamer (negras)",
+            "streamer_player_one": "Streamer (jugador 1)",
+            "streamer_player_two": "Streamer (jugador 2)",
+            "streamer_white": "Streamer (blancas)",
+            "timer_enabled_summary": "{seconds} s · aviso a {warningSeconds} s",
+            "viewer_timer": "Espectador: {time}",
+            "viewer_turn": "Juega el espectador",
+            "waiting": "en espera",
+            "waiting_duration": "esperando desde hace {time}",
+            "waiting_host_turn": "Esperando el siguiente turno del anfitrión",
             "cancel_game_confirm": "¿De verdad quieres cancelar la partida?",
             "catalog_available": "✅ {count} regalos disponibles",
             "catalog_empty_connect": "⚠️ No hay regalos en el catálogo. Conéctate a una transmisión de TikTok para llenarlo.",

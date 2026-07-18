@@ -6,6 +6,7 @@
   <title data-i18n="plugins.game-engine.labels.connect4_overlay_ltth_game_engine">Connect4 Overlay - LTTH Game Engine</title>
   <script>
     function runtimeText(key, params = {}) {
+      if (!window.i18n?.initialized) return '';
       const normalizedKey = key.replace(/^plugins\.game-engine\.runtime\./, 'plugins.game-engine.ui.runtime.');
       const translated = window.i18n?.t?.(normalizedKey, params);
       return translated && translated !== normalizedKey ? translated : '';
@@ -670,11 +671,11 @@
     <div id="game-info">
       <div class="player-info" id="player1-info">
         <span class="player-color" id="player1-color"></span>
-        <span id="player1-name">Player 1</span>
+        <span id="player1-name"></span>
       </div>
       <div class="player-info" id="player2-info">
         <span class="player-color" id="player2-color"></span>
-        <span id="player2-name">Player 2</span>
+        <span id="player2-name"></span>
       </div>
     </div>
   </div>
@@ -1005,7 +1006,7 @@
         countdown.textContent = runtimeText(
           'plugins.game-engine.runtime.overlay.viewer_countdown',
           { seconds }
-        ) || `Spieler: ${seconds}s`;
+        );
         countdown.hidden = false;
         countdown.classList.toggle('warning', seconds <= warningSeconds);
       };
@@ -1316,7 +1317,7 @@
         resultText.innerHTML = '';
         const cancelledText = document.createElement('span');
         cancelledText.className = 'draw-text';
-        cancelledText.textContent = runtimeText('plugins.game-engine.runtime.common.cancelled') || 'Game cancelled';
+        cancelledText.textContent = runtimeText('plugins.game-engine.runtime.common.cancelled');
         resultText.appendChild(cancelledText);
       } else if (data.winner) {
         const winnerInfo = data.state.winner === 1 ? data.state.player1 : data.state.player2;

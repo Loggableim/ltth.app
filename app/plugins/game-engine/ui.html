@@ -1374,8 +1374,8 @@
 
       <div id="active-game">
         <div class="status-bar">
-          <h3>Interactive Games</h3>
-          <p id="game-status">Waiting for move…</p>
+          <h3 data-i18n="plugins.game-engine.ui.interactive.title">Interactive Games</h3>
+          <p id="game-status" data-i18n="plugins.game-engine.ui.interactive.waiting_for_move">Waiting for move…</p>
         </div>
 
         <div class="card">
@@ -1401,8 +1401,8 @@
         </div>
 
         <section class="card" id="interactive-now-on-stream">
-          <span class="interactive-badge" id="interactive-game-badge">Bereit</span>
-          <h3 id="interactive-matchup">Noch kein Board auf Sendung</h3>
+          <span class="interactive-badge" id="interactive-game-badge" data-i18n="plugins.game-engine.ui.interactive.ready">Bereit</span>
+          <h3 id="interactive-matchup" data-i18n="plugins.game-engine.ui.interactive.no_board_live">Noch kein Board auf Sendung</h3>
           <div class="interactive-meta-row">
             <span id="interactive-turn-status">–</span>
             <span id="interactive-timer-status">–</span>
@@ -1418,44 +1418,44 @@
             <button type="button" class="interactive-column-button" data-interactive-column="F">F</button>
             <button type="button" class="interactive-column-button" data-interactive-column="G">G</button>
           </div>
-          <p id="interactive-chess-help" hidden>Quelle und danach Zielfeld anklicken.</p>
+          <p id="interactive-chess-help" hidden data-i18n="plugins.game-engine.ui.interactive.chess_help">Quelle und danach Zielfeld anklicken.</p>
           <p id="interactive-host-action-label" hidden></p>
-          <button type="button" id="skipInteractiveHostTurnBtn" hidden>Host-Zug ans Queue-Ende schieben</button>
-          <button class="danger" id="cancelInteractiveGameBtn" hidden>Angezeigte Partie abbrechen</button>
+          <button type="button" id="skipInteractiveHostTurnBtn" hidden data-i18n="plugins.game-engine.ui.interactive.skip_host_turn">Host-Zug ans Queue-Ende schieben</button>
+          <button class="danger" id="cancelInteractiveGameBtn" hidden data-i18n="plugins.game-engine.ui.interactive.cancel_current">Angezeigte Partie abbrechen</button>
         </section>
 
         <section class="card" id="interactive-host-queue-card">
-          <h3>Host-Zug-Queue</h3>
-          <p>Nur Partien, in denen der Host am Zug ist. Die Reihenfolge ist autoritativ.</p>
+          <h3 data-i18n="plugins.game-engine.ui.interactive.host_queue_title">Host-Zug-Queue</h3>
+          <p data-i18n="plugins.game-engine.ui.interactive.host_queue_description">Nur Partien, in denen der Host am Zug ist. Die Reihenfolge ist autoritativ.</p>
           <div id="interactive-host-queue"></div>
         </section>
 
         <section class="card" id="interactive-background-card">
-          <h3>Aktive Partien im Hintergrund</h3>
+          <h3 data-i18n="plugins.game-engine.ui.interactive.background_title">Aktive Partien im Hintergrund</h3>
           <div id="interactive-background-matches"></div>
         </section>
 
         <section class="card" id="interactive-settings-card">
-          <h3>Interaktive Spielsteuerung</h3>
+          <h3 data-i18n="plugins.game-engine.ui.interactive.settings_title">Interaktive Spielsteuerung</h3>
           <div class="interactive-settings-grid">
             <div class="form-group">
-              <label for="interactive-connect4-response">Connect 4: Spieler-Zugzeit (Sekunden)</label>
-              <input id="interactive-connect4-response" type="text" readonly value="Ohne Zeitlimit">
+              <label for="interactive-connect4-response" data-i18n="plugins.game-engine.ui.interactive.connect4_viewer_time_label">Connect 4: Spieler-Zugzeit (Sekunden)</label>
+              <input id="interactive-connect4-response" type="text" readonly value="">
             </div>
             <div class="form-group">
-              <label for="interactive-chess-response">Schach: Spieler-Zugzeit (Sekunden)</label>
+              <label for="interactive-chess-response" data-i18n="plugins.game-engine.ui.interactive.chess_viewer_time_label">Schach: Spieler-Zugzeit (Sekunden)</label>
               <input id="interactive-chess-response" type="number" min="5" max="300" value="60">
             </div>
             <div class="form-group">
-              <label for="interactive-max-sessions">Maximal parallele Partien</label>
+              <label for="interactive-max-sessions" data-i18n="plugins.game-engine.ui.interactive.max_sessions_label">Maximal parallele Partien</label>
               <input id="interactive-max-sessions" type="number" min="1" max="50" value="20">
             </div>
             <div class="form-group">
-              <label for="interactive-result-seconds">Ergebnis-Anzeige (Sekunden)</label>
+              <label for="interactive-result-seconds" data-i18n="plugins.game-engine.ui.interactive.result_duration_label">Ergebnis-Anzeige (Sekunden)</label>
               <input id="interactive-result-seconds" type="number" min="1" max="10" value="3">
             </div>
           </div>
-          <button type="button" id="save-interactive-settings">Einstellungen speichern</button>
+          <button type="button" id="save-interactive-settings" data-i18n="plugins.game-engine.ui.interactive.save_settings">Einstellungen speichern</button>
         </section>
       </div>
     </div>
@@ -4394,6 +4394,7 @@
     }
 
     function runtimeText(key, params = {}) {
+      if (!window.i18n?.initialized) return '';
       const translated = window.i18n?.t?.(key, params);
       return translated && translated !== key ? translated : '';
     }
@@ -5074,7 +5075,9 @@
     }
 
     function interactiveFormatDuration(milliseconds) {
-      if (milliseconds == null || !Number.isFinite(Number(milliseconds))) return 'pausiert';
+      if (milliseconds == null || !Number.isFinite(Number(milliseconds))) {
+        return runtimeText('plugins.game-engine.runtime.dashboard.paused');
+      }
       const seconds = Math.max(0, Math.ceil(Number(milliseconds) / 1000));
       return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
     }
@@ -5115,14 +5118,18 @@
     function interactiveStreamerRoleLabel(gameType, config = {}, gameState = {}) {
       const streamerRole = config?.streamerRole;
       if (gameType === 'connect4') {
-        if (streamerRole === 'player1' || gameState?.player1?.role === 'streamer') return 'Streamer (Spieler 1)';
-        return 'Streamer (Spieler 2)';
+        if (streamerRole === 'player1' || gameState?.player1?.role === 'streamer') {
+          return runtimeText('plugins.game-engine.runtime.dashboard.streamer_player_one');
+        }
+        return runtimeText('plugins.game-engine.runtime.dashboard.streamer_player_two');
       }
       if (gameType === 'chess') {
-        if (streamerRole === 'white' || gameState?.whitePlayer?.role === 'streamer') return 'Streamer (WeiÃŸ)';
-        return 'Streamer (Schwarz)';
+        if (streamerRole === 'white' || gameState?.whitePlayer?.role === 'streamer') {
+          return runtimeText('plugins.game-engine.runtime.dashboard.streamer_white');
+        }
+        return runtimeText('plugins.game-engine.runtime.dashboard.streamer_black');
       }
-      return 'Streamer';
+      return runtimeText('plugins.game-engine.runtime.dashboard.host');
     }
 
     function interactiveCancelButton(state, session) {
@@ -5131,14 +5138,14 @@
       button.textContent = runtimeText(
         'plugins.game-engine.runtime.dashboard.cancel_session',
         { player: session.viewerDisplayName }
-      ) || `${session.viewerDisplayName} abbrechen`;
+      );
       button.addEventListener('click', () => {
         const envelope = interactiveCancellationEnvelope(state, session.sessionId);
         if (!envelope) return;
         const confirmation = runtimeText(
           'plugins.game-engine.runtime.dashboard.cancel_confirm',
           { player: session.viewerDisplayName }
-        ) || `Partie gegen ${session.viewerDisplayName} wirklich abbrechen?`;
+        );
         if (confirm(confirmation)) socket.emit('game-engine:cancel-game', envelope);
       });
       return button;
@@ -5214,7 +5221,11 @@
     function renderInteractiveBoard(container, gameType, gameState, interactive = false) {
       container.replaceChildren();
       if (!gameState) {
-        container.appendChild(interactiveElement('p', '', 'Kein Brett für diese Anzeige verfügbar.'));
+        container.appendChild(interactiveElement(
+          'p',
+          '',
+          runtimeText('plugins.game-engine.runtime.dashboard.board_unavailable')
+        ));
         return;
       }
       if (gameType === 'connect4') renderInteractiveConnect4(container, gameState);
@@ -5228,16 +5239,22 @@
       const gameType = display?.gameType || fallbackSession?.gameType;
       if (currentTurnRole === 'viewer' && viewerDeadlineMs != null) {
         const serverNow = Number(display.serverTimestamp) + elapsed;
-        return `Spieler: ${interactiveFormatDuration(Number(viewerDeadlineMs) - serverNow)}`;
+        return runtimeText('plugins.game-engine.runtime.dashboard.viewer_timer', {
+          time: interactiveFormatDuration(Number(viewerDeadlineMs) - serverNow)
+        });
       }
       if (gameType === 'connect4' && currentTurnRole === 'viewer') {
-        return runtimeText('plugins.game-engine.runtime.dashboard.no_time_limit') || 'Ohne Zeitlimit';
+        return runtimeText('plugins.game-engine.runtime.dashboard.no_time_limit');
       }
       if (gameType === 'chess' && currentTurnRole === 'host') {
         const hostTimeRemainingMs = display?.hostTimeRemainingMs ?? fallbackSession?.hostTimeRemainingMs;
-        return `Host: ${interactiveFormatDuration(Number(hostTimeRemainingMs) - elapsed)}`;
+        return runtimeText('plugins.game-engine.runtime.dashboard.host_timer', {
+          time: interactiveFormatDuration(Number(hostTimeRemainingMs) - elapsed)
+        });
       }
-      return display?.phase === 'result' ? 'Ergebnis wird angezeigt' : 'Uhr pausiert';
+      return display?.phase === 'result'
+        ? runtimeText('plugins.game-engine.runtime.dashboard.result_displaying')
+        : runtimeText('plugins.game-engine.runtime.dashboard.clock_paused');
     }
 
     function refreshInteractiveClocks() {
@@ -5256,23 +5273,31 @@
       const gameState = interactiveDisplayState(state);
       currentSessionId = sessionId;
       document.getElementById('interactive-game-badge').textContent = gameType === 'chess'
-        ? 'Schach'
+        ? runtimeText('plugins.game-engine.runtime.dashboard.game_chess')
         : gameType === 'connect4'
-          ? 'Connect 4'
-          : 'Bereit';
+          ? runtimeText('plugins.game-engine.runtime.dashboard.game_connect4')
+          : runtimeText('plugins.game-engine.runtime.dashboard.ready');
       document.getElementById('interactive-matchup').textContent = gameType
-        ? `${display.hostDisplayName || fallbackSession?.hostDisplayName || 'Host'} vs. ${display.viewerDisplayName || fallbackSession?.viewerDisplayName || 'Player'}`
-        : 'Aktuell kein Host-Zug auf Sendung';
+        ? runtimeText('plugins.game-engine.runtime.dashboard.matchup', {
+          host: display.hostDisplayName || fallbackSession?.hostDisplayName || runtimeText('plugins.game-engine.runtime.dashboard.host'),
+          player: display.viewerDisplayName || fallbackSession?.viewerDisplayName || runtimeText('plugins.game-engine.runtime.dashboard.player')
+        })
+        : runtimeText('plugins.game-engine.runtime.dashboard.no_board_live');
       document.getElementById('interactive-turn-status').textContent = display.phase === 'result'
-        ? `Ergebnis: ${result?.reason || 'beendet'}`
+        ? runtimeText('plugins.game-engine.runtime.dashboard.result_status', {
+          reason: result?.reason || runtimeText('plugins.game-engine.runtime.dashboard.ended')
+        })
         : (display.currentTurnRole || fallbackSession?.turnRole) === 'host'
-          ? 'Host ist am Zug'
+          ? runtimeText('plugins.game-engine.runtime.dashboard.host_turn')
           : (display.currentTurnRole || fallbackSession?.turnRole) === 'viewer'
-            ? 'Spieler ist am Zug'
-            : 'Warte auf nächsten Host-Zug';
+            ? runtimeText('plugins.game-engine.runtime.dashboard.viewer_turn')
+            : runtimeText('plugins.game-engine.runtime.dashboard.waiting_host_turn');
       document.getElementById('interactive-timer-status').textContent = interactiveTimerLabel(display, fallbackSession);
       document.getElementById('interactive-revision-status').textContent =
-        `Session r${display.sessionRevision ?? result?.sessionRevision ?? fallbackSession?.sessionRevision ?? '–'} · Display r${display.displayRevision ?? '–'}`;
+        runtimeText('plugins.game-engine.runtime.dashboard.revision_status', {
+          sessionRevision: display.sessionRevision ?? result?.sessionRevision ?? fallbackSession?.sessionRevision ?? '–',
+          displayRevision: display.displayRevision ?? '–'
+        });
 
       renderInteractiveBoard(
         document.getElementById('interactive-board-preview'),
@@ -5290,7 +5315,7 @@
       const actionLabel = document.getElementById('interactive-host-action-label');
       actionLabel.hidden = !canMove;
       actionLabel.textContent = canMove
-        ? (runtimeText('plugins.game-engine.runtime.dashboard.host_move_as', { role: streamerRoleLabel }) || `${streamerRoleLabel} ist am Zug`)
+        ? runtimeText('plugins.game-engine.runtime.dashboard.host_move_as', { role: streamerRoleLabel })
         : '';
       const cancelButton = document.getElementById('cancelInteractiveGameBtn');
       cancelButton.hidden = sessionId == null || display.phase === 'result';
@@ -5298,7 +5323,7 @@
       cancelButton.textContent = runtimeText(
         'plugins.game-engine.runtime.dashboard.cancel_current',
         { player: display.viewerDisplayName || fallbackSession?.viewerDisplayName || '' }
-      ) || `Partie gegen ${display.viewerDisplayName || fallbackSession?.viewerDisplayName || 'Spieler'} abbrechen`;
+      );
       const skipButton = document.getElementById('skipInteractiveHostTurnBtn');
       skipButton.hidden = !(
         canMove &&
@@ -5309,7 +5334,7 @@
       skipButton.textContent = runtimeText(
         'plugins.game-engine.runtime.dashboard.skip_host_turn',
         { role: streamerRoleLabel }
-      ) || `${streamerRoleLabel}-Zug ans Queue-Ende schieben`;
+      );
     }
 
     function makeInteractiveListItem(parts, isNow = false) {
@@ -5323,15 +5348,28 @@
       container.replaceChildren();
       const now = Number(state.serverTimestamp) + (Date.now() - interactiveAdminStateReceivedAt);
       if (!state.hostQueue?.length) {
-        container.appendChild(interactiveElement('p', '', 'Keine Host-Züge warten.'));
+        container.appendChild(interactiveElement(
+          'p',
+          '',
+          runtimeText('plugins.game-engine.runtime.dashboard.no_host_turns')
+        ));
         return;
       }
       state.hostQueue.forEach((entry, index) => {
         const item = makeInteractiveListItem([
           `#${index + 1}`,
-          `${entry.gameType === 'chess' ? 'Schach' : 'Connect 4'} · ${entry.viewerDisplayName}`,
-          `wartet ${interactiveFormatDuration(now - Number(entry.enqueuedAt))}`,
-          index === 0 ? 'Jetzt auf Sendung' : 'wartet'
+          runtimeText('plugins.game-engine.runtime.dashboard.queue_match', {
+            game: entry.gameType === 'chess'
+              ? runtimeText('plugins.game-engine.runtime.dashboard.game_chess')
+              : runtimeText('plugins.game-engine.runtime.dashboard.game_connect4'),
+            player: entry.viewerDisplayName
+          }),
+          runtimeText('plugins.game-engine.runtime.dashboard.waiting_duration', {
+            time: interactiveFormatDuration(now - Number(entry.enqueuedAt))
+          }),
+          index === 0
+            ? runtimeText('plugins.game-engine.runtime.dashboard.now_live')
+            : runtimeText('plugins.game-engine.runtime.dashboard.waiting')
         ], index === 0 && Number(entry.sessionId) === Number(state.display?.displaySessionId));
         const session = state.activeSessions?.find(row => Number(row.sessionId) === Number(entry.sessionId));
         if (session) item.appendChild(interactiveCancelButton(state, session));
@@ -5345,22 +5383,39 @@
       const displayedId = Number(state.display?.displaySessionId);
       const background = (state.activeSessions || []).filter(session => Number(session.sessionId) !== displayedId);
       if (!background.length) {
-        container.appendChild(interactiveElement('p', '', 'Keine weiteren aktiven Partien.'));
+        container.appendChild(interactiveElement(
+          'p',
+          '',
+          runtimeText('plugins.game-engine.runtime.dashboard.no_background_matches')
+        ));
         return;
       }
       for (const session of background) {
         const details = interactiveElement('details', 'interactive-list-item');
         const timer = session.turnRole === 'viewer' && session.viewerTimeRemainingMs != null
-          ? `Spieler ${interactiveFormatDuration(Number(session.viewerTimeRemainingMs) - (Date.now() - interactiveAdminStateReceivedAt))}`
+          ? runtimeText('plugins.game-engine.runtime.dashboard.viewer_timer', {
+            time: interactiveFormatDuration(Number(session.viewerTimeRemainingMs) - (Date.now() - interactiveAdminStateReceivedAt))
+          })
           : session.turnRole === 'viewer' && session.gameType === 'connect4'
-            ? (runtimeText('plugins.game-engine.runtime.dashboard.no_time_limit') || 'Ohne Zeitlimit')
+            ? runtimeText('plugins.game-engine.runtime.dashboard.no_time_limit')
           : session.gameType === 'chess'
-            ? `Host ${interactiveFormatDuration(session.hostTimeRemainingMs)}`
-            : 'Host-Zug wartet';
+            ? runtimeText('plugins.game-engine.runtime.dashboard.host_timer', {
+              time: interactiveFormatDuration(session.hostTimeRemainingMs)
+            })
+            : runtimeText('plugins.game-engine.runtime.dashboard.host_turn_waiting');
         const summary = interactiveElement(
           'summary',
           '',
-          `${session.gameType === 'chess' ? 'Schach' : 'Connect 4'} · ${session.hostDisplayName} vs. ${session.viewerDisplayName} · ${timer} · ${session.moveCount} Züge · aktiv vor ${interactiveFormatDuration(Number(state.serverTimestamp) - Number(session.lastActivityAt))}`
+          runtimeText('plugins.game-engine.runtime.dashboard.background_summary', {
+            game: session.gameType === 'chess'
+              ? runtimeText('plugins.game-engine.runtime.dashboard.game_chess')
+              : runtimeText('plugins.game-engine.runtime.dashboard.game_connect4'),
+            host: session.hostDisplayName,
+            player: session.viewerDisplayName,
+            timer,
+            moves: session.moveCount,
+            age: interactiveFormatDuration(Number(state.serverTimestamp) - Number(session.lastActivityAt))
+          })
         );
         details.appendChild(summary);
         const board = interactiveElement('div');
@@ -5384,7 +5439,10 @@
         return;
       }
       document.getElementById('game-status').textContent =
-        `${state.activeSessions.length} aktive Partie${state.activeSessions.length === 1 ? '' : 'n'} · ${state.hostQueue.length} Host-Zug${state.hostQueue.length === 1 ? '' : 'e'} in der Queue`;
+        runtimeText('plugins.game-engine.runtime.dashboard.active_summary', {
+          sessions: state.activeSessions.length,
+          hostTurns: state.hostQueue.length
+        });
       renderInteractiveNow(state);
       renderInteractiveQueue(state);
       renderInteractiveBackground(state);
@@ -5430,9 +5488,12 @@
     }
 
     function applyInteractiveSettings(config) {
-      const noTimeLimit = runtimeText('plugins.game-engine.runtime.dashboard.no_time_limit') || 'Ohne Zeitlimit';
+      const noTimeLimit = runtimeText('plugins.game-engine.runtime.dashboard.no_time_limit');
       document.getElementById('interactive-connect4-response').value = config.connect4ViewerTimeoutEnabled
-        ? `${config.connect4ViewerResponseSeconds ?? 30}s Â· Warnung ${config.connect4ViewerWarningSeconds ?? 10}s`
+        ? runtimeText('plugins.game-engine.runtime.dashboard.timer_enabled_summary', {
+          seconds: config.connect4ViewerResponseSeconds ?? 30,
+          warningSeconds: config.connect4ViewerWarningSeconds ?? 10
+        })
         : noTimeLimit;
       document.getElementById('interactive-chess-response').value = config.chessViewerResponseSeconds ?? 60;
       document.getElementById('interactive-max-sessions').value = config.maxConcurrentInteractiveSessions ?? 20;
@@ -5459,10 +5520,12 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
       });
-      if (!response.ok) throw new Error('Einstellungen konnten nicht gespeichert werden');
+      if (!response.ok) {
+        throw new Error(runtimeText('plugins.game-engine.runtime.dashboard.settings_save_failed'));
+      }
       const savedConfig = (await response.json()).config;
       applyInteractiveSettings(savedConfig);
-      showMessage('Interaktive Einstellungen gespeichert.');
+      showMessage(runtimeText('plugins.game-engine.runtime.dashboard.settings_saved'));
     }
 
     // Clear active game display
@@ -6473,7 +6536,7 @@
       const confirmation = runtimeText(
         'plugins.game-engine.runtime.dashboard.cancel_confirm',
         { player }
-      ) || `Partie gegen ${player || 'diesen Spieler'} wirklich abbrechen?`;
+      );
       if (confirm(confirmation)) {
         socket.emit('game-engine:cancel-game', envelope);
       }
@@ -6486,7 +6549,7 @@
       const confirmation = runtimeText(
         'plugins.game-engine.runtime.dashboard.skip_confirm',
         { player: display.viewerDisplayName || '' }
-      ) || `Host-Zug gegen ${display.viewerDisplayName || 'diesen Spieler'} ans Queue-Ende schieben?`;
+      );
       if (!confirm(confirmation)) return;
       socket.emit('game-engine:interactive-skip-host-turn', {
         sessionId: display.displaySessionId,

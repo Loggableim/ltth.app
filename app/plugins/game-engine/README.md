@@ -173,7 +173,17 @@ Konfiguriere XP-Vergabe für Zuschauer:
 
 #### Spiel beenden:
 - Spiel endet automatisch bei Sieg, Niederlage oder Unentschieden
-- Manuell abbrechen: "Spiel abbrechen" Button im Backend
+- Manuell abbrechen: Im Bereich „Interaktive Spiele“ kann die angezeigte oder eine aktive Hintergrundpartie abgebrochen werden. Ein Abbruch ist neutral: Er zählt nicht als Sieg oder Niederlage, verändert keine XP-/ELO-Wertung und startet keine Ranglistenrotation.
+
+#### Host-Zug-Warteschlange:
+- Connect 4 und Schach teilen sich eine verbindliche Warteschlange für Partien, in denen der Streamer am Zug ist. Nur das erste Board ist spielbar und auf Sendung.
+- „Host-Zug ans Ende der Warteschlange verschieben“ ist nur beim aktuell angezeigten Host-Zug und erst ab zwei wartenden Boards verfügbar. Die Partie bleibt unverändert aktiv; lediglich ihr Host-Zug wird hinter die anderen wartenden Host-Züge verschoben.
+- Nach der konfigurierten Ergebnis-Anzeigedauer hat ein wartendes Host-Board immer Vorrang. Weitere währenddessen eingetroffene Hintergrund-Ergebnisse werden verworfen, damit der Streamer nicht durch eine Ergebnisserie blockiert wird. Ohne wartendes Host-Board dürfen Ergebnisse weiterhin nacheinander erscheinen.
+
+#### Zugzeiten und Countdown:
+- Der Connect-4-Zuschauer-Timer ist standardmäßig deaktiviert. „Ohne Zeitlimit“ bedeutet, dass ein wartender Zuschauerzug nicht automatisch als Niederlage beendet wird.
+- Wird der vorhandene Connect-4-Runden-Timer aktiviert, gilt dessen Zugzeit (5–120 Sekunden). Das Connect-4-Board zeigt einen serverbasierten Countdown; ab der eingestellten Warnschwelle wechselt er in den Warnzustand. Im Unified Overlay erscheint dieser Countdown nur im eingebetteten Connect-4-Board, nicht doppelt im Rahmen.
+- Beim Schach bleibt die Zuschauer-Zugzeit aktiv (Standard: 60 Sekunden, einstellbar von 5–300 Sekunden). Die Host-Schachuhr läuft nur, solange genau dieses Host-Board sichtbar ist, und pausiert in der Warteschlange sowie während einer Ergebnisanzeige.
 
 ### Für Zuschauer
 

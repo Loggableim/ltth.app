@@ -174,6 +174,7 @@
 
   <script>
     function runtimeText(key, params = {}) {
+      if (!window.i18n?.initialized) return '';
       const normalizedKey = key.replace(/^plugins\.game-engine\.runtime\./, 'plugins.game-engine.ui.runtime.');
       const translated = window.i18n?.t?.(normalizedKey, params);
       return translated && translated !== normalizedKey ? translated : '';
@@ -374,15 +375,18 @@
     function showInteractiveMatchup(display, queueLength) {
       const matchup = document.getElementById('interactive-matchup');
       document.getElementById('interactive-matchup-names').textContent =
-        `${display.hostDisplayName || 'Host'} vs. ${display.viewerDisplayName || 'Player'}`;
+        runtimeText('plugins.game-engine.runtime.unified.matchup', {
+          host: display.hostDisplayName || runtimeText('plugins.game-engine.runtime.dashboard.host'),
+          player: display.viewerDisplayName || runtimeText('plugins.game-engine.runtime.dashboard.player')
+        });
       if (interactiveStatusInterval) clearInterval(interactiveStatusInterval);
       const renderStatus = () => {
         const elapsedMs = Date.now() - interactiveStateReceivedAt;
         let phaseLabel = display.phase === 'result'
-          ? 'Ergebnis'
+          ? runtimeText('plugins.game-engine.runtime.unified.phase_result')
           : display.currentTurnRole === 'host'
-            ? 'Host ist am Zug'
-            : 'Spieler ist am Zug';
+            ? runtimeText('plugins.game-engine.runtime.unified.phase_host_turn')
+            : runtimeText('plugins.game-engine.runtime.unified.phase_viewer_turn');
         if (
           display.gameType === 'chess' &&
           display.currentTurnRole === 'host' &&
@@ -392,7 +396,13 @@
           phaseLabel += ` · ${formatClock(Number(display.hostTimeRemainingMs) - elapsedMs)}`;
         }
         document.getElementById('interactive-status').textContent =
-          `${display.gameType === 'chess' ? 'Schach' : 'Connect 4'} · ${phaseLabel} · ${queueLength} Host-Zug${queueLength === 1 ? '' : 'e'}`;
+          runtimeText('plugins.game-engine.runtime.unified.status', {
+            game: display.gameType === 'chess'
+              ? runtimeText('plugins.game-engine.runtime.dashboard.game_chess')
+              : runtimeText('plugins.game-engine.runtime.dashboard.game_connect4'),
+            phase: phaseLabel,
+            count: queueLength
+          });
       };
       renderStatus();
       if (display.phase === 'playing') interactiveStatusInterval = setInterval(renderStatus, 250);

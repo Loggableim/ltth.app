@@ -474,6 +474,7 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     function runtimeText(key, params = {}) {
+      if (!window.i18n?.initialized) return '';
       const normalizedKey = key.replace(/^plugins\.game-engine\.runtime\./, 'plugins.game-engine.ui.runtime.');
       const translated = window.i18n?.t?.(normalizedKey, params);
       return translated && translated !== normalizedKey ? translated : '';
@@ -751,13 +752,16 @@
       const winner = result.winnerDisplayName;
       hideInteractiveLeaderboard();
       if (result.reason === 'cancelled') {
-        title.textContent = runtimeText('plugins.game-engine.runtime.common.cancelled') || 'Game cancelled';
+        title.textContent = runtimeText('plugins.game-engine.runtime.common.cancelled');
         winnerName.textContent = '';
         reason.textContent = '';
         overlay.classList.add('show');
         return;
       }
-      title.textContent = winner ? `${winner} gewinnt!` : 'Remis';
+      title.textContent = winner ? runtimeText(
+        'plugins.game-engine.runtime.chess.winner',
+        { player: winner }
+      ) : runtimeText('plugins.game-engine.runtime.chess.draw');
       winnerName.textContent = winner || '';
       reason.textContent = result.reason || '';
       overlay.classList.add('show');
@@ -809,7 +813,18 @@
         const table = document.createElement('table');
         table.className = 'interactive-leaderboard-table';
         const head = document.createElement('thead');
-        head.innerHTML = '<tr><th>Rang</th><th>Spieler</th><th>Wertung</th></tr>';
+        const headRow = document.createElement('tr');
+        const headings = [
+          runtimeText('plugins.game-engine.runtime.chess.leaderboard_rank'),
+          runtimeText('plugins.game-engine.runtime.chess.leaderboard_player'),
+          runtimeText('plugins.game-engine.runtime.chess.leaderboard_rating')
+        ];
+        for (const label of headings) {
+          const cell = document.createElement('th');
+          cell.textContent = label;
+          headRow.appendChild(cell);
+        }
+        head.appendChild(headRow);
         const body = document.createElement('tbody');
         data.forEach((player, index) => {
           const row = document.createElement('tr');
