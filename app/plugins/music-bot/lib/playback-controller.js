@@ -5,6 +5,12 @@ const { SoundbotProcessRegistry } = require('./soundbot-process-registry');
 
 const RAMP_STEP_MS = 50;
 
+function createSeekError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
+
 class TransitionAbortedError extends Error {
   constructor(reason) {
     super(`Playback transition aborted by ${reason}`);
@@ -864,6 +870,44 @@ class PlaybackController extends EventEmitter {
         track: info.track || slot.engine.getNowPlaying?.() || null,
         playbackId: slot.playbackId
       });
+    });
+  }
+
+  seek(positionSeconds, { playbackId } = {}) {
+    return this._enqueueIntent('seek', async () => {
+      const position = Number(positionSeconds);
+      if (!Number.isFinite(position) || position < 0) {
+        throw createSeekError('PLAYBACK_SEEK_INVALID_POSITION', 'Seek position must be a non-negative number');
+      }
+      if (this.safetyLock) {
+        throw createSeekError('PLAYBACK_SAFETY_LOCKED', 'Playback safety lock is engaged');
+      }
+      if (this.lifecycle !== 'active') {
+        throw createSeekError('PLAYBACK_SEEK_STATE', `Playback controller is ${this.lifecycle}`);
+      }
+      if (this._crossfade || !['playing', 'paused'].includes(this.transportState)) {
+        throw createSeekError('PLAYBACK_SEEK_STATE', `Cannot seek while playback is ${this.transportState}`);
+      }
+
+      const slot = this._getActiveSlot();
+      if (!slot || slot.retired || !slot.engine?.seek || !slot.playbackId) {
+        throw createSeekError('PLAYBACK_SEEK_STATE', 'No active playback is available for seeking');
+      }
+      if (!playbackId || playbackId !== this.activePlaybackId || playbackId !== slot.playbackId) {
+        throw createSeekError('PLAYBACK_STALE_ID', 'Playback ID no longer matches the active track');
+      }
+
+      const result = await slot.engine.seek(position);
+      if (
+        slot.retired
+        || this._getActiveSlot() !== slot
+        || this.activePlaybackId !== playbackId
+        || slot.playbackId !== playbackId
+      ) {
+        throw createSeekError('PLAYBACK_STALE_ID', 'Playback changed while seeking');
+      }
+      slot.state = this.transportState;
+      return { ...result, playbackId, state: this.transportState };
     });
   }
 

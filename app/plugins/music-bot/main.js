@@ -1493,6 +1493,25 @@ class MusicBotPlugin extends EventEmitter {
       this._emitVolume(volume);
     });
 
+    this.playbackEngine.on('paused', () => {
+      this._clearCrossfadeTimer();
+    });
+
+    this.playbackEngine.on('resumed', () => {
+      const track = this.playbackEngine.getNowPlaying?.();
+      const playbackId = this.playbackEngine.getSnapshot?.().activePlaybackId || null;
+      if (!track || !playbackId) return;
+      Promise.resolve(this.playbackEngine.getPosition?.())
+        .then((position) => {
+          if (this.playbackEngine.getNowPlaying?.() !== track) return;
+          if (this.playbackEngine.getSnapshot?.().activePlaybackId !== playbackId) return;
+          this._rescheduleCrossfadeTransition(track, position, { playbackId });
+        })
+        .catch((error) => {
+          this.api.log(`[music-bot] Could not reschedule after resume: ${error.message}`, 'warn');
+        });
+    });
+
     this.playbackEngine.on('error', (error) => {
       this._emitError(error.message || error);
     });
@@ -1889,6 +1908,39 @@ class MusicBotPlugin extends EventEmitter {
       }
       const skipped = await this._skipCurrent('dashboard');
       res.status(skipped.success ? 200 : 400).json(skipped);
+    });
+
+    this.api.registerRoute('post', '/api/plugins/music-bot/seek', async (req, res) => {
+      const playbackId = typeof req.body?.playbackId === 'string'
+        ? req.body.playbackId.trim()
+        : '';
+      const positionSeconds = Number(req.body?.positionSeconds);
+      if (!playbackId || !Number.isFinite(positionSeconds) || positionSeconds < 0) {
+        res.status(400).json({ success: false, error: 'playbackId and a non-negative positionSeconds are required' });
+        return;
+      }
+      try {
+        const result = await this.playbackEngine.seek(positionSeconds, { playbackId });
+        const track = result.track || this.playbackEngine.getNowPlaying?.();
+        this._emitPlaybackSync({ ...result, track, playbackId });
+        this._rescheduleCrossfadeTransition(track, result.position, {
+          paused: result.state === 'paused',
+          playbackId
+        });
+        res.json({ success: true, ...result, playbackId });
+      } catch (error) {
+        const code = error?.code;
+        const statusCode = code === 'PLAYBACK_SAFETY_LOCKED'
+          ? 423
+          : code === 'PLAYBACK_STALE_ID' || code === 'PLAYBACK_SEEK_STATE'
+            ? 409
+            : code === 'PLAYBACK_UNSEEKABLE' || code === 'PLAYBACK_UNKNOWN_DURATION'
+              ? 422
+              : code === 'MPV_IPC_DISCONNECTED'
+                ? 503
+                : 400;
+        res.status(statusCode).json({ success: false, error: error?.message || 'Seek failed', code });
+      }
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/volume', async (req, res) => {
@@ -3922,6 +3974,7 @@ class MusicBotPlugin extends EventEmitter {
     this.playbackSyncTimer = setInterval(async () => {
       const nowPlaying = this.playbackEngine.getNowPlaying();
       if (!nowPlaying) return;
+      const playbackId = this.playbackEngine.getSnapshot?.().activePlaybackId || null;
       let position = 0;
       try {
         const heartbeat = await this.playbackEngine.heartbeat({ timeoutMs: 2000 });
@@ -3936,19 +3989,34 @@ class MusicBotPlugin extends EventEmitter {
       }
       const latestTrack = this.playbackEngine.getNowPlaying();
       if (latestTrack !== nowPlaying) return;
-      this.api.emit('musicbot:playback-sync', {
-        id: nowPlaying.id,
-        title: nowPlaying.title,
-        artist: nowPlaying.artist,
-        requestedBy: nowPlaying.requestedBy,
-        requesterAvatar: nowPlaying.requesterAvatar || null,
-        thumbnail: nowPlaying.thumbnail,
-        duration: nowPlaying.duration,
-        position,
-        startedAt: nowPlaying.startedAt,
-        state: this.playbackEngine.getState()
-      });
+      this._emitPlaybackSync({ nowPlaying, playbackId, position });
     }, 5000);
+  }
+
+  _emitPlaybackSync({ track, nowPlaying, playbackId, position, duration, seekable, state } = {}) {
+    const activeTrack = track || nowPlaying || this.playbackEngine?.getNowPlaying?.();
+    if (!activeTrack) return false;
+    const activePlaybackId = this.playbackEngine?.getSnapshot?.().activePlaybackId || null;
+    const expectedPlaybackId = playbackId || activePlaybackId;
+    if (this.playbackEngine?.getNowPlaying?.() !== activeTrack) return false;
+    if (expectedPlaybackId && activePlaybackId && expectedPlaybackId !== activePlaybackId) return false;
+    const resolvedDuration = Number.isFinite(Number(duration)) ? Number(duration) : activeTrack.duration;
+    const resolvedPosition = Number.isFinite(Number(position)) ? Number(position) : 0;
+    this.api.emit('musicbot:playback-sync', {
+      id: activeTrack.id,
+      playbackId: expectedPlaybackId,
+      title: activeTrack.title,
+      artist: activeTrack.artist,
+      requestedBy: activeTrack.requestedBy,
+      requesterAvatar: activeTrack.requesterAvatar || null,
+      thumbnail: activeTrack.thumbnail,
+      duration: resolvedDuration,
+      position: resolvedPosition,
+      startedAt: activeTrack.startedAt,
+      seekable: seekable === undefined ? Number.isFinite(Number(resolvedDuration)) : Boolean(seekable),
+      state: state || this.playbackEngine.getState?.()
+    });
+    return true;
   }
 
   _stopPlaybackSync() {
@@ -4068,19 +4136,25 @@ class MusicBotPlugin extends EventEmitter {
     return this._rescheduleCrossfadeTransition(track, positionSeconds);
   }
 
-  _rescheduleCrossfadeTransition(track, positionSeconds = 0, { paused = false } = {}) {
+  _rescheduleCrossfadeTransition(track, positionSeconds = 0, { paused = false, playbackId = null } = {}) {
     this._clearCrossfadeTimer();
     if (paused) return null;
     const durationMs = Math.round(Number(track?.duration) * 1000);
     const positionMs = Math.max(0, Math.round(Number(positionSeconds) * 1000) || 0);
     const remainingMs = durationMs - positionMs;
-    if (!Number.isFinite(durationMs) || remainingMs <= RADIO_CROSSFADE_MS) return null;
+    if (!Number.isFinite(durationMs) || remainingMs <= 0) return null;
 
     const trackId = track?.id;
     this.crossfadeTimer = setTimeout(() => {
       this.crossfadeTimer = null;
       const current = this.playbackEngine?.getNowPlaying?.();
-      if (!trackId || current?.id !== trackId || !this.playbackEngine?.isPlaying?.()) return;
+      const activePlaybackId = this.playbackEngine?.getSnapshot?.().activePlaybackId || null;
+      if (
+        !trackId
+        || current?.id !== trackId
+        || (playbackId && activePlaybackId && activePlaybackId !== playbackId)
+        || !this.playbackEngine?.isPlaying?.()
+      ) return;
       const advance = this._playNextFromQueue('crossfade', {
         allowActiveAutoDJ: true,
         allowActiveViewerAtBoundary: true,
@@ -4089,7 +4163,7 @@ class MusicBotPlugin extends EventEmitter {
       Promise.resolve(advance).catch((error) => {
         this.api.log(`[music-bot] Crossfade transition failed: ${error.message}`, 'warn');
       });
-    }, remainingMs - RADIO_CROSSFADE_MS);
+    }, Math.max(0, remainingMs - RADIO_CROSSFADE_MS));
     this.crossfadeTimer.unref?.();
     return this.crossfadeTimer;
   }

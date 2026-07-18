@@ -15,6 +15,12 @@ const DEFAULT_NORMALIZATION_INTEGRATED_LUFS = -16;
 const DEFAULT_NORMALIZATION_TRUE_PEAK_DB = -1.5;
 const DEFAULT_NORMALIZATION_LRA = 11;
 
+function createSeekError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
+
 class PlaybackEngine extends EventEmitter {
   constructor(config, api, options = {}) {
     super();
@@ -168,6 +174,67 @@ class PlaybackEngine extends EventEmitter {
     await this._sendCommand(['set_property', 'pause', false]);
     this.state = 'playing';
     this.emit('resumed');
+  }
+
+  async seek(positionSeconds, { timeoutMs = 1500 } = {}) {
+    const target = Number(positionSeconds);
+    if (!Number.isFinite(target) || target < 0) {
+      throw createSeekError('PLAYBACK_SEEK_INVALID_POSITION', 'Seek position must be a non-negative number');
+    }
+    if (!this.nowPlaying) {
+      throw createSeekError('PLAYBACK_SEEK_STATE', 'No active track is available for seeking');
+    }
+    if (!this.socket || this.socket.destroyed) {
+      throw createSeekError('MPV_IPC_DISCONNECTED', 'mpv IPC is not connected');
+    }
+
+    try {
+      const [seekableResult, initialDurationResult] = await Promise.all([
+        this._sendCommand(['get_property', 'seekable'], {
+          waitForResponse: true,
+          timeoutMs
+        }),
+        this._sendCommand(['get_property', 'duration'], {
+          waitForResponse: true,
+          timeoutMs
+        })
+      ]);
+      if (seekableResult?.data !== true) {
+        throw createSeekError('PLAYBACK_UNSEEKABLE', 'The active track is not seekable');
+      }
+      const initialDuration = Number(initialDurationResult?.data);
+      if (!Number.isFinite(initialDuration) || initialDuration <= 0) {
+        throw createSeekError('PLAYBACK_UNKNOWN_DURATION', 'The active track has no known duration');
+      }
+      await this._sendCommand(['seek', target, 'absolute+exact'], {
+        waitForResponse: true,
+        timeoutMs
+      });
+      const [positionResult, durationResult] = await Promise.all([
+        this._sendCommand(['get_property', 'time-pos'], { waitForResponse: true, timeoutMs }),
+        this._sendCommand(['get_property', 'duration'], { waitForResponse: true, timeoutMs })
+      ]);
+      const position = Number(positionResult?.data);
+      const duration = Number(durationResult?.data);
+      if (!Number.isFinite(duration) || duration <= 0) {
+        throw createSeekError('PLAYBACK_UNKNOWN_DURATION', 'The active track has no known duration');
+      }
+      if (!Number.isFinite(position)) {
+        throw createSeekError('MPV_IPC_DISCONNECTED', 'mpv did not confirm the seek position');
+      }
+      this.nowPlaying.duration = duration;
+      this.nowPlaying.startedAt = Date.now() - Math.round(position * 1000);
+      return {
+        track: this.nowPlaying,
+        position: Math.max(0, position),
+        duration,
+        seekable: true,
+        state: this.state
+      };
+    } catch (error) {
+      if (error?.code) throw error;
+      throw createSeekError('MPV_IPC_DISCONNECTED', error?.message || 'mpv IPC seek failed');
+    }
   }
 
   async stop() {
