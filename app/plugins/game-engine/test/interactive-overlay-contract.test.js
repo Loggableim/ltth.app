@@ -46,6 +46,31 @@ describe('interactive overlay contract', () => {
     expect(html).toContain('if (!latestInteractiveQueueIdle) return;');
   });
 
+  test('overlays render a sole viewer-turn session outside the host queue', () => {
+    const unified = readOverlay('unified.html');
+    const connect4 = readOverlay('connect4.html');
+
+    expect(unified).toContain('function interactiveOverlayPresentation(');
+    expect(unified).toContain('state?.activeSessions?.length === 1');
+    expect(unified).toContain('switchToGame(presentationDisplay.gameType, interactiveState);');
+    expect(connect4).toContain('function interactiveConnect4Presentation(');
+    expect(connect4).toContain('state?.activeSessions?.length === 1');
+    expect(connect4).toContain("socket.emit('game-engine:request-state');");
+  });
+
+  test('overlays render the authoritative leaderboard phase and clear it for newer boards', () => {
+    const unified = readOverlay('unified.html');
+    const connect4 = readOverlay('connect4.html');
+    const chess = readOverlay('chess.html');
+
+    expect(unified).toContain("'leaderboard'");
+    expect(unified).toContain("presentationDisplay.phase === 'leaderboard'");
+    expect(connect4).toContain("display.phase === 'leaderboard'");
+    expect(connect4).toContain('showLeaderboard(display.gameType, display.leaderboard.type, displayRevision);');
+    expect(chess).toContain("display.phase === 'leaderboard'");
+    expect(chess).toContain("socket.emit('game-engine:request-state');");
+  });
+
   test('live player names and status text are not overwritten by translations', () => {
     const connect4 = readOverlay('connect4.html');
     const chess = readOverlay('chess.html');

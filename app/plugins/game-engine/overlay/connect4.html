@@ -978,7 +978,7 @@
     }
 
     // Show specific leaderboard
-    async function showLeaderboard(gameType, type) {
+    async function showLeaderboard(gameType, type, interactiveRevision = null) {
       const leaderboardScreen = document.getElementById('leaderboard-screen');
       const typeDiv = document.getElementById('leaderboard-type');
       const contentDiv = document.getElementById('leaderboard-content');
@@ -996,6 +996,7 @@
       try {
         const response = await fetch(`/api/game-engine/${type}-leaderboard/${gameType}?limit=10`);
         const data = await response.json();
+        if (interactiveRevision != null && interactiveRevision !== lastInteractiveDisplayRevision) return;
 
         if (!data || data.length === 0) {
           contentDiv.innerHTML = `<div class="leaderboard-empty">${runtimeText('plugins.game-engine.runtime.common.no_data')}</div>`;
@@ -1003,12 +1004,15 @@
           contentDiv.replaceChildren(renderLeaderboardTable(data, type));
         }
       } catch (error) {
+        if (interactiveRevision != null && interactiveRevision !== lastInteractiveDisplayRevision) return;
         console.error('Failed to load leaderboard:', error);
         contentDiv.innerHTML = `<div class="leaderboard-empty">${runtimeText('plugins.game-engine.runtime.common.load_error')}</div>`;
       }
 
       // Show leaderboard
-      leaderboardScreen.classList.add('show');
+      if (interactiveRevision == null || interactiveRevision === lastInteractiveDisplayRevision) {
+        leaderboardScreen.classList.add('show');
+      }
     }
 
     // Hide leaderboard
@@ -1320,8 +1324,40 @@
       }
     }
 
-    function applyInteractiveSnapshot(state) {
+    function interactiveConnect4Presentation(state) {
       const display = state?.display;
+      if (!display) return state;
+
+      const ownsDisplay = ['playing', 'animating', 'result', 'leaderboard'].includes(display.phase) &&
+        display.gameType === 'connect4';
+      if (ownsDisplay) return state;
+
+      const viewerTurnSession = display.phase === 'idle' && state?.activeSessions?.length === 1
+        ? state.activeSessions[0]
+        : null;
+      if (!viewerTurnSession || viewerTurnSession.gameType !== 'connect4') return state;
+
+      return {
+        ...state,
+        display: {
+          ...display,
+          displaySessionId: viewerTurnSession.sessionId,
+          gameType: viewerTurnSession.gameType,
+          sessionRevision: viewerTurnSession.sessionRevision,
+          hostDisplayName: viewerTurnSession.hostDisplayName,
+          viewerDisplayName: viewerTurnSession.viewerDisplayName,
+          state: viewerTurnSession.state,
+          currentTurnRole: viewerTurnSession.turnRole,
+          viewerDeadlineMs: viewerTurnSession.viewerDeadlineMs,
+          hostTimeRemainingMs: viewerTurnSession.hostTimeRemainingMs,
+          phase: 'playing'
+        }
+      };
+    }
+
+    function applyInteractiveSnapshot(state) {
+      const interactiveState = interactiveConnect4Presentation(state);
+      const display = interactiveState?.display;
       if (!display) return;
       const displayRevision = Number(display.displayRevision);
       const sessionRevision = Number(display.sessionRevision ?? display.result?.sessionRevision ?? -1);
@@ -1341,8 +1377,15 @@
         document.getElementById('game-container').classList.remove('active');
         return;
       }
-      latestInteractiveQueueIdle = (state.hostQueue?.length || 0) === 0;
-      interactiveSnapshotActive = ['playing', 'animating', 'result'].includes(display.phase);
+      latestInteractiveQueueIdle = (interactiveState.hostQueue?.length || 0) === 0;
+      interactiveSnapshotActive = ['playing', 'animating', 'result', 'leaderboard'].includes(display.phase);
+
+      if (display.phase === 'leaderboard' && display.leaderboard?.type) {
+        currentSession = null;
+        applyConfig(display.config || gameConfig || {});
+        void showLeaderboard(display.gameType, display.leaderboard.type, displayRevision);
+        return;
+      }
 
       const snapshotState = display.state || display.result?.state;
       if (!interactiveSnapshotActive || !snapshotState) return;
@@ -1367,6 +1410,7 @@
     });
 
     socket.on('game-engine:interactive-state', applyInteractiveSnapshot);
+    socket.emit('game-engine:request-state');
 
     // Socket event handlers
     socket.on('game-engine:challenge-created', (data) => {

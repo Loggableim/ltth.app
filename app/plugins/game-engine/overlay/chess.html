@@ -275,6 +275,34 @@
       margin: 20px 0;
     }
 
+    #interactive-leaderboard-content {
+      display: none;
+      min-width: min(1100px, 90vw);
+      max-height: 72vh;
+      overflow: auto;
+    }
+
+    #interactive-leaderboard-content.show {
+      display: block;
+    }
+
+    .interactive-leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 24px;
+    }
+
+    .interactive-leaderboard-table th,
+    .interactive-leaderboard-table td {
+      padding: 12px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      text-align: left;
+    }
+
+    .interactive-leaderboard-table th {
+      color: #facc15;
+    }
+
     /* Confetti */
     .confetti {
       position: fixed;
@@ -437,6 +465,7 @@
       <div class="game-over-title" id="game-over-title">Game Over!</div>
       <div class="winner-name" id="winner-name"></div>
       <div class="game-over-reason" id="game-over-reason"></div>
+      <div id="interactive-leaderboard-content"></div>
     </div>
   </div>
 
@@ -720,10 +749,78 @@
       const winnerName = document.getElementById('winner-name');
       const reason = document.getElementById('game-over-reason');
       const winner = result.winnerDisplayName;
+      hideInteractiveLeaderboard();
       title.textContent = winner ? `${winner} gewinnt!` : 'Remis';
       winnerName.textContent = winner || '';
       reason.textContent = result.reason || '';
       overlay.classList.add('show');
+    }
+
+    function hideInteractiveLeaderboard() {
+      const content = document.getElementById('interactive-leaderboard-content');
+      content.classList.remove('show');
+      content.replaceChildren();
+    }
+
+    function interactiveLeaderboardValue(player, type) {
+      if (type === 'daily') return `${player.wins_today || 0} Siege · ${player.games_today || 0} Spiele`;
+      if (type === 'season') return `${player.wins_season || 0} Siege · ${player.games_season || 0} Spiele`;
+      if (type === 'lifetime') return `${player.wins || 0} Siege · ${player.total_games || 0} Spiele`;
+      return `${player.elo_rating || 1000} ELO · Peak ${player.peak_elo || 1000}`;
+    }
+
+    async function showInteractiveLeaderboard(display, displayRevision) {
+      const overlay = document.getElementById('game-over-overlay');
+      const title = document.getElementById('game-over-title');
+      const winnerName = document.getElementById('winner-name');
+      const reason = document.getElementById('game-over-reason');
+      const content = document.getElementById('interactive-leaderboard-content');
+      const type = display.leaderboard.type;
+      const typeNames = {
+        daily: 'Heute / Today',
+        season: 'Diese Saison / This Season',
+        lifetime: 'Allzeit / All Time',
+        elo: 'ELO Rangliste / ELO Ranking'
+      };
+
+      title.textContent = `🏆 ${typeNames[type] || type}`;
+      winnerName.textContent = '';
+      reason.textContent = '';
+      content.replaceChildren();
+      overlay.classList.add('show');
+      content.classList.add('show');
+
+      try {
+        const response = await fetch(`/api/game-engine/${type}-leaderboard/chess?limit=10`);
+        const data = await response.json();
+        if (displayRevision !== lastInteractiveDisplayRevision) return;
+
+        if (!Array.isArray(data) || data.length === 0) {
+          content.textContent = runtimeText('plugins.game-engine.runtime.common.no_data');
+          return;
+        }
+        const table = document.createElement('table');
+        table.className = 'interactive-leaderboard-table';
+        const head = document.createElement('thead');
+        head.innerHTML = '<tr><th>Rang</th><th>Spieler</th><th>Wertung</th></tr>';
+        const body = document.createElement('tbody');
+        data.forEach((player, index) => {
+          const row = document.createElement('tr');
+          const rank = document.createElement('td');
+          const name = document.createElement('td');
+          const value = document.createElement('td');
+          rank.textContent = String(index + 1);
+          name.textContent = player.username || '';
+          value.textContent = interactiveLeaderboardValue(player, type);
+          row.append(rank, name, value);
+          body.appendChild(row);
+        });
+        table.append(head, body);
+        content.replaceChildren(table);
+      } catch (error) {
+        if (displayRevision !== lastInteractiveDisplayRevision) return;
+        content.textContent = runtimeText('plugins.game-engine.runtime.common.load_error');
+      }
     }
 
     function applyInteractiveSnapshot(state) {
@@ -740,7 +837,12 @@
 
       lastInteractiveDisplayRevision = displayRevision;
       lastInteractiveSessionRevision = sessionRevision;
-      interactiveSnapshotActive = ['playing', 'animating', 'result'].includes(display.phase);
+      interactiveSnapshotActive = ['playing', 'animating', 'result', 'leaderboard'].includes(display.phase);
+      if (display.phase === 'leaderboard' && display.leaderboard?.type) {
+        stopInteractiveClock();
+        void showInteractiveLeaderboard(display, displayRevision);
+        return;
+      }
       const snapshotState = display.state || display.result?.state;
       if (!interactiveSnapshotActive || !snapshotState) {
         stopInteractiveClock();
@@ -764,7 +866,10 @@
       document.getElementById('overlay-container').classList.add('active');
 
       if (display.phase === 'result' && display.result) showInteractiveResult(display.result);
-      else document.getElementById('game-over-overlay').classList.remove('show');
+      else {
+        hideInteractiveLeaderboard();
+        document.getElementById('game-over-overlay').classList.remove('show');
+      }
     }
 
     window.addEventListener('message', event => {
@@ -774,6 +879,7 @@
     });
 
     socket.on('game-engine:interactive-state', applyInteractiveSnapshot);
+    socket.emit('game-engine:request-state');
 
     // Socket events
     socket.on('game-engine:game-started', (data) => {

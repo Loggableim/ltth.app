@@ -260,29 +260,63 @@
       showIdleState();
     });
 
+    function interactiveOverlayPresentation(state) {
+      const display = state?.display;
+      if (!display) return null;
+
+      const ownsDisplay = ['playing', 'animating', 'result', 'leaderboard'].includes(display.phase) &&
+        (display.gameType === 'connect4' || display.gameType === 'chess');
+      if (ownsDisplay) return state;
+
+      const viewerTurnSession = display.phase === 'idle' && state?.activeSessions?.length === 1
+        ? state.activeSessions[0]
+        : null;
+      if (!viewerTurnSession || !['connect4', 'chess'].includes(viewerTurnSession.gameType)) return null;
+
+      return {
+        ...state,
+        display: {
+          ...display,
+          displaySessionId: viewerTurnSession.sessionId,
+          gameType: viewerTurnSession.gameType,
+          sessionRevision: viewerTurnSession.sessionRevision,
+          hostDisplayName: viewerTurnSession.hostDisplayName,
+          viewerDisplayName: viewerTurnSession.viewerDisplayName,
+          state: viewerTurnSession.state,
+          currentTurnRole: viewerTurnSession.turnRole,
+          viewerDeadlineMs: viewerTurnSession.viewerDeadlineMs,
+          hostTimeRemainingMs: viewerTurnSession.hostTimeRemainingMs,
+          phase: 'playing'
+        }
+      };
+    }
+
     socket.on('game-engine:interactive-state', (state) => {
       const display = state?.display;
       if (!display || !Number.isFinite(Number(display.displayRevision))) return;
       if (Number(display.displayRevision) < lastInteractiveDisplayRevision) return;
       lastInteractiveDisplayRevision = Number(display.displayRevision);
-      latestInteractiveState = state;
+
+      const interactiveState = interactiveOverlayPresentation(state);
+      latestInteractiveState = interactiveState || state;
       interactiveStateReceivedAt = Date.now();
 
-      const gameType = display.gameType;
-      const ownsDisplay = ['playing', 'animating', 'result'].includes(display.phase) &&
-        (gameType === 'connect4' || gameType === 'chess');
-
-      if (!ownsDisplay) {
+      if (!interactiveState) {
         hideInteractiveMatchup();
         if (currentGame === 'connect4' || currentGame === 'chess') showIdleState();
         updateQueueIndicator(state.hostQueue?.length || 0);
         return;
       }
 
-      const animationMs = Math.max(100, Math.min(2000, Number(display.config?.animationSpeed) || 500));
+      const presentationDisplay = interactiveState.display;
+      const animationMs = Math.max(100, Math.min(2000, Number(presentationDisplay.config?.animationSpeed) || 500));
       document.documentElement.style.setProperty('--interactive-animation-ms', `${animationMs}ms`);
-      showInteractiveMatchup(display, state.hostQueue?.length || 0);
-      switchToGame(gameType, state);
+      if (presentationDisplay.phase === 'leaderboard') {
+        hideInteractiveMatchup();
+      } else {
+        showInteractiveMatchup(presentationDisplay, state.hostQueue?.length || 0);
+      }
+      switchToGame(presentationDisplay.gameType, interactiveState);
       updateQueueIndicator(state.hostQueue?.length || 0);
     });
 
