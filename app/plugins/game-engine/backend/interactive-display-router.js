@@ -20,6 +20,7 @@ class InteractiveDisplayRouter {
     this.displaySessionId = null;
     this.phase = 'idle';
     this.result = null;
+    this.leaderboard = null;
     this.resultQueue = [];
     this.suspendedReason = null;
     this.displayRevision = Number(database.getInteractiveMeta('displayRevision')) || 0;
@@ -63,6 +64,11 @@ class InteractiveDisplayRouter {
   sync({ force = false } = {}) {
     if (this.suspendedReason || (!force && ['animating', 'result'].includes(this.phase))) {
       return this.snapshot();
+    }
+    if (this.phase === 'leaderboard') {
+      this._clearTransition();
+      this.leaderboard = null;
+      this.resultQueue = [];
     }
     const head = this.queue.head();
     const nextSessionId = head?.sessionId ?? null;
@@ -114,33 +120,97 @@ class InteractiveDisplayRouter {
     return snapshot;
   }
 
-  showResult(result, durationMs) {
+  showResult(result, durationMs, leaderboard = null) {
+    const entry = { result, durationMs, leaderboard };
     if (this.phase === 'result') {
-      this.resultQueue.push({ result, durationMs });
+      this.resultQueue.push(entry);
       return this.snapshot();
     }
-    this._activateResult(result, durationMs);
+    if (this.phase === 'leaderboard') {
+      this._clearTransition();
+      this.leaderboard = null;
+    }
+    this._activateResult(entry);
     return this.snapshot();
   }
 
-  _activateResult(result, durationMs) {
+  _activateResult(entry) {
     this._clearTransition();
     this._pauseDisplayedHost();
-    this.result = result;
+    this.result = entry.result;
+    this.leaderboard = null;
     this.phase = 'result';
     this._advanceRevision();
     this._publish();
-    this._scheduleTransition(durationMs, () => {
-      const next = this.resultQueue.shift();
-      if (next) {
-        this._activateResult(next.result, next.durationMs);
+    this._scheduleTransition(entry.durationMs, () => this._advanceAfterResult(entry));
+  }
+
+  _advanceAfterResult(entry) {
+    if (this.queue.head()) {
+      this.resultQueue = [];
+      return this._advanceToNextPresentation();
+    }
+    if (entry.leaderboard?.enabled && entry.leaderboard.types.length) {
+      return this._activateLeaderboard(entry, 0);
+    }
+    return this._advanceToNextPresentation();
+  }
+
+  _activateLeaderboard(entry, index) {
+    const types = entry.leaderboard?.types || [];
+    if (!types[index]) return this._advanceToNextPresentation();
+    this._clearTransition();
+    this._pauseDisplayedHost();
+    this.result = null;
+    this.displaySessionId = null;
+    this.phase = 'leaderboard';
+    this.leaderboard = {
+      gameType: entry.result.gameType,
+      hostDisplayName: entry.result.hostDisplayName,
+      viewerDisplayName: entry.result.viewerDisplayName,
+      type: types[index],
+      index,
+      total: types.length
+    };
+    this._advanceRevision();
+    this._publish();
+    this._scheduleTransition(entry.leaderboard.displayTimeMs, () => {
+      if (this.queue.head()) {
+        this.resultQueue = [];
+        this._advanceToNextPresentation();
         return;
       }
-      this.result = null;
-      this.displaySessionId = null;
-      this.phase = 'idle';
-      this.sync({ force: true });
+      this._activateLeaderboard(entry, index + 1);
     });
+  }
+
+  dismissLeaderboard() {
+    if (this.phase !== 'leaderboard') return this.snapshot();
+    this._clearTransition();
+    this.result = null;
+    this.leaderboard = null;
+    this.resultQueue = [];
+    this.displaySessionId = null;
+    this.phase = 'idle';
+    this._advanceRevision();
+    return this._publish();
+  }
+
+  _advanceToNextPresentation() {
+    const next = this.resultQueue.shift();
+    if (next && !this.queue.head()) {
+      this._activateResult(next);
+      return this.snapshot();
+    }
+    this.result = null;
+    this.leaderboard = null;
+    this.displaySessionId = null;
+    this.phase = 'idle';
+    if (!this.queue.head()) {
+      this._advanceRevision();
+      return this._publish();
+    }
+    return this.sync({ force: true });
   }
 
   suspend(reason) {
@@ -173,17 +243,22 @@ class InteractiveDisplayRouter {
   snapshot() {
     const session = this._displaySession();
     const queue = this.queue.list();
+    const leaderboard = this.leaderboard;
     const state = session?.adapter?.getState?.() || null;
     const hostRemaining = session?.gameType === 'chess'
       ? this.timers.getHostRemaining?.(session) ?? session.hostTimeRemainingMs
       : null;
     return {
       displaySessionId: this.displaySessionId,
-      gameType: this.phase === 'result' ? this.result?.gameType || session?.gameType || null : session?.gameType || null,
+      gameType: this.phase === 'result'
+        ? this.result?.gameType || session?.gameType || null
+        : this.phase === 'leaderboard'
+          ? leaderboard?.gameType || null
+          : session?.gameType || null,
       sessionRevision: session?.sessionRevision ?? null,
       displayRevision: this.displayRevision,
-      hostDisplayName: session?.hostDisplayName || this.result?.hostDisplayName || null,
-      viewerDisplayName: session?.viewerDisplayName || this.result?.viewerDisplayName || null,
+      hostDisplayName: session?.hostDisplayName || this.result?.hostDisplayName || leaderboard?.hostDisplayName || null,
+      viewerDisplayName: session?.viewerDisplayName || this.result?.viewerDisplayName || leaderboard?.viewerDisplayName || null,
       state,
       currentTurnRole: session?.turnRole || null,
       viewerDeadlineMs: session?.viewerDeadlineMs ?? null,
@@ -192,6 +267,9 @@ class InteractiveDisplayRouter {
       activeSessionCount: this.registry.list().length,
       phase: this.phase,
       result: this.result,
+      leaderboard: leaderboard
+        ? { type: leaderboard.type, index: leaderboard.index, total: leaderboard.total }
+        : null,
       suspendedReason: this.suspendedReason,
       config: session?.config || null,
       serverTimestamp: this.now()

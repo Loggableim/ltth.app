@@ -110,6 +110,19 @@ class InteractiveController {
     return host?.side ? Number(state.timers?.[host.side]) || 0 : 0;
   }
 
+  _leaderboardPresentation(session) {
+    const config = session?.config || {};
+    const supportedTypes = new Set(['daily', 'season', 'lifetime', 'elo']);
+    const types = Array.isArray(config.leaderboardTypes)
+      ? config.leaderboardTypes.filter(type => supportedTypes.has(type))
+      : [];
+    return {
+      enabled: Boolean(config.leaderboardEnabled) && types.length > 0,
+      types,
+      displayTimeMs: this._bounded(config.leaderboardDisplayTime, 3, 1, 10) * 1000
+    };
+  }
+
   _sessionRecord(session) {
     return {
       sessionId: session.sessionId,
@@ -503,7 +516,8 @@ class InteractiveController {
       reason: outcome.reason,
       gameResult: outcome.gameResult,
       state: session.adapter.getState(),
-      sessionRevision: session.sessionRevision
+      sessionRevision: session.sessionRevision,
+      leaderboard: this._leaderboardPresentation(session)
     };
     this.timers.clear(session.sessionId);
     this.database.transaction(() => {
@@ -523,7 +537,7 @@ class InteractiveController {
     this.emitLegacyEvent?.('ended', resultPayload);
     this._logTransition('session_ended', session, { terminalReason: outcome.reason });
     const resultDuration = this._settings().interactiveResultDisplaySeconds * 1000;
-    this.router.showResult(resultPayload, resultDuration);
+    this.router.showResult(resultPayload, resultDuration, resultPayload.leaderboard);
     this.emitState();
     return resultPayload;
   }

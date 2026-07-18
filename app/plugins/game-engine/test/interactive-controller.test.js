@@ -96,8 +96,20 @@ function createHarness(options = {}) {
     emitLegacyEvent,
     resolveHostName: () => 'RealHost',
     getConfig: gameType => gameType === 'connect4'
-      ? { streamerRole: options.connect4HostStarts === false ? 'player2' : 'player1', animationSpeed: 500 }
-      : { streamerRole: options.chessHostStarts === false ? 'black' : 'white', animationSpeed: 300 },
+      ? {
+        streamerRole: options.connect4HostStarts === false ? 'player2' : 'player1',
+        animationSpeed: 500,
+        leaderboardEnabled: true,
+        leaderboardTypes: ['daily', 'elo'],
+        leaderboardDisplayTime: 3
+      }
+      : {
+        streamerRole: options.chessHostStarts === false ? 'black' : 'white',
+        animationSpeed: 300,
+        leaderboardEnabled: true,
+        leaderboardTypes: ['daily', 'elo'],
+        leaderboardDisplayTime: 3
+      },
     getSettings: () => settings,
     now: () => Date.now()
   });
@@ -379,7 +391,47 @@ describe('InteractiveController', () => {
     }));
     expect(harness.controller.getState().activeSessions).toEqual([]);
     expect(harness.controller.getState().display).toMatchObject({
-      phase: 'idle'
+      phase: 'leaderboard',
+      gameType: 'connect4',
+      leaderboard: { type: 'daily', index: 0, total: 2 }
+    });
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('rotates a completed game leaderboard only until a host board needs the overlay', () => {
+    const harness = createHarness();
+    harness.controller.init();
+    const completed = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'leaderboard-viewer',
+      viewerDisplayName: 'Leaderboard Viewer'
+    });
+
+    expect(harness.controller.end(completed.sessionId, {
+      winner: 1,
+      winnerRole: 'host',
+      reason: 'win',
+      gameResult: { gameOver: true, winner: 1 }
+    })).toMatchObject({ success: true });
+    jest.advanceTimersByTime(3000);
+
+    expect(harness.controller.getState().display).toMatchObject({
+      phase: 'leaderboard',
+      gameType: 'connect4',
+      leaderboard: { type: 'daily', index: 0, total: 2 }
+    });
+
+    const next = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'next-viewer',
+      viewerDisplayName: 'Next Viewer'
+    });
+    expect(harness.controller.getState().display).toMatchObject({
+      phase: 'playing',
+      displaySessionId: next.sessionId,
+      gameType: 'connect4'
     });
 
     harness.controller.destroy();
