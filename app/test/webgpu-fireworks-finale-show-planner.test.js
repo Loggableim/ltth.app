@@ -87,28 +87,35 @@ function launchCount(plan) {
 }
 
 function withoutIntensityFields(plan) {
+  const stableShell = launch => {
+    const value = { ...launch };
+    delete value.powerScale;
+    delete value.particleScale;
+    delete value.tier;
+    return value;
+  };
   return {
     ...plan,
     cues: plan.cues.map(cue => ({
       ...cue,
-      launches: cue.launches.map(launch => {
-        const stableLaunch = { ...launch };
-        delete stableLaunch.powerScale;
-        delete stableLaunch.particleScale;
-        delete stableLaunch.tier;
-        return stableLaunch;
-      })
+      shells: cue.shells.map(stableShell),
+      launches: cue.launches.map(stableShell)
     }))
   };
 }
 
 describe('WebGPU Fireworks finale show planner', () => {
-  test('exports the four curated styles and three supported lengths', () => {
+  test('exports the nine curated styles and three supported lengths', () => {
     expect(FINALE_STYLES).toEqual([
       'classic-crescendo',
       'symmetric-salute',
       'sky-ballet',
-      'thunder-finale'
+      'thunder-finale',
+      'nishiki-kamuro',
+      'aurora-cathedral',
+      'royal-brocade',
+      'phoenix-ascension',
+      'furry-celebration'
     ]);
     expect(FINALE_LENGTHS).toEqual(['short', 'medium', 'long']);
   });
@@ -124,21 +131,30 @@ describe('WebGPU Fireworks finale show planner', () => {
       seed: 12345
     });
 
-    expect(Object.keys(plan)).toEqual(['planVersion', 'id', 'style', 'length', 'durationMs', 'seed', 'cues']);
     expect(plan).toMatchObject({
-      planVersion: 1,
+      planVersion: 2,
       id: `${style}-${length}`,
+      definitionId: style,
       style,
+      variant: length,
       length,
       durationMs: LENGTHS[length].durationMs,
-      seed: 12345
+      seed: 12345,
+      materialProfile: 'classic',
+      autoEligible: true
     });
     expect(launchCount(plan)).toBe(count);
     expect(plan.cues.length).toBeGreaterThan(0);
 
     for (const cue of plan.cues) {
       const [phaseStart, phaseEnd] = LENGTHS[length].phases[cue.phase];
-      expect(Object.keys(cue)).toEqual(['beatAtMs', 'phase', 'formation', 'launches']);
+      expect(cue).toMatchObject({
+        id: expect.any(String),
+        timeMs: cue.beatAtMs,
+        phase: cue.phase,
+        formation: cue.formation,
+        shells: cue.launches
+      });
       expect(cue.beatAtMs).toBeGreaterThanOrEqual(phaseStart);
       expect(cue.beatAtMs).toBeLessThanOrEqual(phaseEnd);
       expect(cue.launches.length).toBeGreaterThan(0);
@@ -148,10 +164,6 @@ describe('WebGPU Fireworks finale show planner', () => {
       expect(cue.beatAtMs < breathStart || cue.beatAtMs >= breathEnd).toBe(true);
 
       for (const launch of cue.launches) {
-        expect(Object.keys(launch)).toEqual([
-          'id', 'seed', 'position', 'origin', 'shape', 'colors', 'powerScale',
-          'particleScale', 'tier', 'soundRole', 'crackleEnabled'
-        ]);
         expect(launch.id).toEqual(expect.any(String));
         expect(launch.seed).toEqual(expect.any(Number));
         expect(SUPPORTED_SHAPES).toContain(launch.shape);
@@ -184,7 +196,7 @@ describe('WebGPU Fireworks finale show planner', () => {
     }
   });
 
-  test.each(FINALE_STYLES)('keeps the %s palette, shapes, formations and sound roles curated', style => {
+  test.each(Object.keys(PRESETS))('keeps the %s palette, shapes, formations and sound roles curated', style => {
     const plan = new FinaleShowPlanner().plan({ style, length: 'short', orientation: 'landscape', intensity: 5, seed: 42 });
     const launches = plan.cues.flatMap(cue => cue.launches);
     expect([...new Set(launches.map(launch => launch.shape))].sort()).toEqual([...PRESETS[style].shapes].sort());

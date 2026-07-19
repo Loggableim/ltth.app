@@ -41,7 +41,12 @@ describe('WebGPU finale backend contract', () => {
       'classic-crescendo',
       'symmetric-salute',
       'sky-ballet',
-      'thunder-finale'
+      'thunder-finale',
+      'nishiki-kamuro',
+      'aurora-cathedral',
+      'royal-brocade',
+      'phoenix-ascension',
+      'furry-celebration'
     ]);
     expect(ALLOWED_FINALE_LENGTHS).toEqual(['short', 'medium', 'long']);
     expect(DEFAULT_FIREWORKS_CONFIG).toMatchObject({
@@ -130,7 +135,7 @@ describe('WebGPU finale backend contract', () => {
       seed: 1234
     });
     expect(result.showPlan).toMatchObject({
-      planVersion: 1,
+      planVersion: 2,
       id: 'goal-123',
       style: 'sky-ballet',
       length: 'short',
@@ -153,7 +158,7 @@ describe('WebGPU finale backend contract', () => {
     expect(repeat.showPlan).toEqual(result.showPlan);
   });
 
-  test('rotates auto finales locally per plugin instance and starts with Classic Crescendo after restart', () => {
+  test('rotates auto finales across all built-ins and starts with Classic Crescendo after restart', () => {
     const first = createPlugin().plugin;
     const second = createPlugin().plugin;
     const styles = Array.from({ length: 5 }, (_, index) => first.triggerFinale({
@@ -165,7 +170,7 @@ describe('WebGPU finale backend contract', () => {
       'symmetric-salute',
       'sky-ballet',
       'thunder-finale',
-      'classic-crescendo'
+      'nishiki-kamuro'
     ]);
     expect(second.triggerFinale({ style: 'auto', seed: 77, id: 'new-instance' }).style)
       .toBe('classic-crescendo');
