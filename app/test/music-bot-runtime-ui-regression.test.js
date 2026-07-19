@@ -89,6 +89,7 @@ function bootMusicBotUi(options = {}) {
   const playlistDetails = options.playlistDetails || {};
   const radioSourcesPayload = options.radioSourcesPayload || [];
   const catalogPayload = options.catalogPayload || [];
+  const giftCatalogPayload = options.giftCatalogPayload || { catalog: [] };
   const translations = options.translations;
   const productionLocale = options.productionLocale;
   const i18nReady = options.i18nReady;
@@ -128,7 +129,7 @@ function bootMusicBotUi(options = {}) {
     }
     if (target.includes('/playlists')) return createJsonResponse({ success: true, playlists: playlistsPayload });
     if (target.includes('/bans')) return createJsonResponse({ success: true, bans: [] });
-    if (target.includes('/gift-catalog')) return createJsonResponse({ catalog: [] });
+    if (target.includes('/gift-catalog')) return createJsonResponse(giftCatalogPayload);
     if (target.includes('/setup-status')) return createJsonResponse({ success: true, issues: setupIssues });
     if (target.includes('/config')) {
       return createJsonResponse({
@@ -1161,7 +1162,7 @@ describe('Music Bot runtime and UI regressions', () => {
     await Promise.resolve();
 
     socketHandlers['musicbot:playlist-import-progress']({ playlistId: 'mix', status: 'running', progress: 70 });
-    expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe('running (70%)');
+    expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe('Import läuft … (70%)');
     socketHandlers['musicbot:playlist-import-progress']({ playlistId: 'mix', status: 'failed', progress: 100, error: 'source unavailable' });
     expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe('Import error: source unavailable');
   });
@@ -1301,13 +1302,42 @@ describe('Music Bot runtime and UI regressions', () => {
     }
   });
 
+  test.each(['de', 'en', 'es', 'fr'])('renders the live gift count and metadata from placeholders in %s', async (locale) => {
+    const translations = JSON.parse(fs.readFileSync(path.join(__dirname, `../plugins/music-bot/locales/${locale}.json`), 'utf8'));
+    const { dom } = bootMusicBotUi({
+      translations,
+      giftCatalogPayload: {
+        catalog: [
+          { name: 'Rose', diamond_count: 1 },
+          { name: 'Heart', diamond_count: 5 },
+          { name: 'Crown', diamond_count: 100 }
+        ],
+        locales: ['en', 'de'],
+        region: 'EU'
+      }
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const ui = translations.music_bot.ui;
+    expect(ui.settings.giftsCount).toContain('{count}');
+    expect(ui.settings.giftLocales).toEqual(expect.any(String));
+    expect(ui.settings.giftRegion).toEqual(expect.any(String));
+    expect(dom.window.document.getElementById('gift-catalog-count').textContent)
+      .toBe(ui.settings.giftsCount.replace('{count}', '3'));
+    expect(dom.window.document.getElementById('gift-catalog-status').textContent)
+      .toContain(ui.settings.giftLocales.replace('{locales}', 'en, de'));
+    expect(dom.window.document.getElementById('gift-catalog-status').textContent)
+      .toContain(ui.settings.giftRegion.replace('{region}', 'EU'));
+  });
+
   test('ships correct Spanish and French sectioned admin orthography', () => {
     const es = JSON.parse(fs.readFileSync(path.join(__dirname, '../plugins/music-bot/locales/es.json'), 'utf8')).music_bot.ui;
     const fr = JSON.parse(fs.readFileSync(path.join(__dirname, '../plugins/music-bot/locales/fr.json'), 'utf8')).music_bot.ui;
 
     expect(es.player).toMatchObject({
       seek: 'Posición de reproducción',
-      seekUnavailable: 'No se puede avanzar esta reproducción ahora.',
+      seekUnavailable: 'No se puede cambiar la posición en este momento.',
       seekFailed: 'No se pudo cambiar la posición.'
     });
     expect(es.history.loadMore).toBe('Cargar más');
@@ -1339,7 +1369,7 @@ describe('Music Bot runtime and UI regressions', () => {
       addToPlaylist: 'Ajouter à la liste',
       networkTitle: 'Réseau'
     });
-    expect(fr.player.seekUnavailable).toBe('Cette lecture ne peut pas être déplacée maintenant.');
+    expect(fr.player.seekUnavailable).toBe('Le déplacement dans le morceau est actuellement indisponible.');
   });
 
   test.each(['en', 'es', 'fr'])('renders generic POST failures once in %s', async (locale) => {
@@ -1921,7 +1951,7 @@ describe('Music Bot runtime and UI regressions', () => {
 
     const detail = dom.window.document.getElementById('auto-dj-detail').textContent;
     expect(detail).toContain('Ausgewählt: Frischer Titel');
-    expect(detail).toContain('Quelle: radio');
+    expect(detail).toContain('Quelle: Radio');
     expect(detail).toContain('Gesperrt: 3');
   });
 

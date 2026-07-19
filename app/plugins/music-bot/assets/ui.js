@@ -4,16 +4,16 @@
   const DEFAULT_SONG_DURATION_LIMIT_SECONDS = 360;
   const I18N_PREFIX = 'plugins.music-bot.music_bot.ui';
   const RUNTIME_I18N_SECTIONS = Object.fromEntries(Object.entries({
-    shell: 'networkTitle connectionLost socketDisconnected apiError unknownError saved error onboardingSettingsTitle onboardingSettingsMeta onboardingOverlayTitle onboardingOverlayMeta onboardingPlayerTitle onboardingPlayerMeta setupHint setupOpen onboardingHelpWithIssues onboardingHelpReady mpvNotInstalled install mpvInstallation mpvReady installationFailed installationSlow statusCheckFailed installing installationStarted installationStartFailed installMpv assistantCompleted assistantCompletedMessage setup onboardingSaveFailed',
-    player: 'seekUnavailable seekFailed nowPlayingEmpty stateIdle statePaused statePlaying playbackAdvancing loading skip pauseTitle noActiveTrack playbackResumed playbackStarted nextTrackPlaying resumeTitle noStartableTrack skipTitle playingNow searchLoading searching noResult queueAdding queueAdded songAddedTitle requestFailed requestRejectedTitle masterVolumeTitle sourceVolumeTitle volumeSetFailed crossfadeSaveFailed requestedBy selectedTitle',
+    shell: 'networkTitle connectionLost socketDisconnected apiError unknownError saved error onboardingSettingsTitle onboardingSettingsMeta onboardingOverlayTitle onboardingOverlayMeta onboardingPlayerTitle onboardingPlayerMeta setupHint setupOpen onboardingHelpWithIssues onboardingHelpReady mpvNotInstalled install mpvInstallation mpvReady installationFailed installationSlow statusCheckFailed installing installationStarted installationStartFailed installMpv assistantCompleted assistantCompletedMessage setup onboardingSaveFailed viewerFallback toastDefaultTitle',
+    player: 'seekUnavailable seekFailed nowPlayingEmpty stateIdle statePaused statePlaying stateUnknown playbackAdvancing loading skip pauseTitle noActiveTrack playbackResumed playbackStarted nextTrackPlaying resumeTitle noStartableTrack skipTitle playingNow searchLoading searching noResult queueAdding queueAdded songAddedTitle requestFailed requestRejectedTitle masterVolumeTitle sourceVolumeTitle volumeSetFailed crossfadeSaveFailed requestedBy selectedTitle playerToastTitle sourceYoutube sourceSoundCloud sourceOther',
     queue: 'queueEmptyTitle queueEmptyHint playNow moveUp moveDown queueUpdated trackRemoved queueTitle alreadyPlaying titleStartFailed orderUpdated queueRefreshRetry trackMoved remove',
-    autoDj: 'autoDjPlaying autoDjActive autoDjDisabled autoDjOn autoDjOff autoDjSelected autoDjSource autoDjBlocked autoDjStarted autoDjWaiting noTrackAvailable',
-    moderation: 'banAdded banAddFailed banRemoveFailed enterTitleKeyword banFailed moderationTitle queueMatchesRemoved banLabel trackBanLabel enterValue noEntries delete',
-    history: 'historyLoadFailed historyFeedbackFailed',
+    autoDj: 'autoDjPlaying autoDjActive autoDjDisabled autoDjOn autoDjOff autoDjSelected autoDjSource autoDjBlocked autoDjStarted autoDjWaiting noTrackAvailable autoDjToastTitle sourceFamiliar sourceDiscoveryFallback sourceDiscovery sourceFamiliarFallback sourceHistory sourceRadio sourceHistoryFallback sourceUnknown',
+    moderation: 'banAdded banAddFailed banRemoveFailed enterTitleKeyword banFailed moderationTitle queueMatchesRemoved banLabel trackBanLabel enterValue noEntries delete url keyword channel user artist exactTrack titleKeyword unknownBanType',
+    history: 'historyLoadFailed historyFeedbackFailed historyToastTitle',
     playlists: 'playlistSaveFailed playlistConflict importRunning',
-    settings: 'giftNoResults giftsCount giftSelectFirst giftSaveFailed giftApplied giftCatalogTitle giftUpdated giftLoading giftLoadFailed giftVisible giftLoaded giftLoadedApi giftUpdatedAt',
-    safety: 'emergencyDone safetyUnlocked emergencyFailed unlockFailed playerReset playerResetFailed diagnosticsExportFailed diagnosticsExported safetyLocked safetyReady',
-    health: 'unavailable ipcDegraded ready files none resolverActiveQueued resolverQueued resolverYoutube resolverSoundCloud resolverValidating resolverReady resolverFailed healthLoadFailed',
+    settings: 'giftNoResults giftsCount giftSelectFirst giftSaveFailed giftApplied giftCatalogTitle giftUpdated giftLoading giftLoadFailed giftVisible giftLoaded giftLoadedApi giftUpdatedAt giftLocales giftLocalesDefault giftRegion crossfadeTitle',
+    safety: 'emergencyDone safetyUnlocked emergencyFailed unlockFailed playerReset playerResetFailed diagnosticsExportFailed diagnosticsExported safetyLocked safetyReady testToneCompleted testToneFailed',
+    health: 'unavailable ipcDegraded ready files none resolverActiveQueued resolverQueued resolverYoutube resolverSoundCloud resolverValidating resolverReady resolverFailed resolverUnknownState healthLoadFailed',
     overlay: 'copyFailed'
   }).flatMap(([section, keys]) => keys.split(' ').map((key) => [key, section])));
   const CATALOG_I18N_SECTIONS = Object.fromEntries(Object.entries({
@@ -31,6 +31,12 @@
     return String(value).replace(/\{(\w+)\}/g, (_match, name) => params[name] ?? `{${name}}`);
   }
 
+  function translateRuntimeMessageKey(messageKey, fallback, params = {}) {
+    const key = String(messageKey || '');
+    if (!Object.prototype.hasOwnProperty.call(RUNTIME_I18N_SECTIONS, key)) return fallback;
+    return tr(key, fallback, params);
+  }
+
   function runtimeStateLabel(state) {
     const normalized = String(state || 'idle').toLowerCase();
     if (normalized === 'paused' || normalized === 'pausiert') return tr('statePaused', 'Pausiert');
@@ -39,7 +45,55 @@
       return tr('playbackAdvancing', 'Lädt den nächsten Titel …');
     }
     if (normalized === 'idle') return tr('stateIdle', 'Bereit');
-    return state;
+    return tr('stateUnknown', 'Unbekannter Status');
+  }
+
+  function mediaSourceLabel(source) {
+    const normalized = String(source || 'youtube').toLowerCase();
+    if (normalized === 'youtube') return tr('sourceYoutube', 'YouTube');
+    if (normalized === 'soundcloud') return tr('sourceSoundCloud', 'SoundCloud');
+    return tr('sourceOther', 'Andere Quelle');
+  }
+
+  function autoDjSourceLabel(source) {
+    const labels = {
+      familiar: () => tr('sourceFamiliar', 'Vertraute Titel'),
+      'discovery-fallback': () => tr('sourceDiscoveryFallback', 'Entdeckungen (Fallback)'),
+      discovery: () => tr('sourceDiscovery', 'Entdeckungen'),
+      'familiar-fallback': () => tr('sourceFamiliarFallback', 'Vertraute Titel (Fallback)'),
+      history: () => tr('sourceHistory', 'Verlauf'),
+      radio: () => tr('sourceRadio', 'Radio'),
+      'history-fallback': () => tr('sourceHistoryFallback', 'Verlauf (Fallback)')
+    };
+    return labels[String(source || '').toLowerCase()]?.() || tr('sourceUnknown', 'Unbekannte Quelle');
+  }
+
+  function banTypeLabel(type) {
+    const labels = {
+      url: () => tr('url', 'URL'),
+      keyword: () => tr('keyword', 'Schlüsselwort'),
+      channel: () => tr('channel', 'Kanal'),
+      user: () => tr('user', 'Nutzer'),
+      artist: () => tr('artist', 'Künstler'),
+      'exact-track': () => tr('exactTrack', 'Exakter Titel'),
+      exacttrack: () => tr('exactTrack', 'Exakter Titel'),
+      title: () => tr('titleKeyword', 'Titelbegriff'),
+      'title-keyword': () => tr('titleKeyword', 'Titelbegriff')
+    };
+    return labels[String(type || '').toLowerCase()]?.() || tr('unknownBanType', 'Unbekannter Typ');
+  }
+
+  function playlistModeLabel(mode) {
+    return mode === 'shuffle'
+      ? catalogTr('shuffle', 'Zufällig')
+      : catalogTr('ordered', 'Geordnet');
+  }
+
+  function playlistImportStatusLabel(status) {
+    if (status === 'completed') return catalogTr('importCompleted', 'Import abgeschlossen');
+    if (status === 'failed') return catalogTr('importFailed', 'Import fehlgeschlagen');
+    if (status === 'aborted') return catalogTr('importAborted', 'Import abgebrochen');
+    return catalogTr('importRunning', 'Import läuft …');
   }
 
   function debounce(fn, delay = 200) {
@@ -336,7 +390,7 @@
     previewFrame.onload = () => setPreviewVolume(previewVolumeInput?.value);
     previewFrame.src = `https://www.youtube.com/embed/${youtubeId}?${params.toString()}`;
     playerFrameBox?.classList.add('has-video');
-    previewSource.textContent = 'YouTube';
+    previewSource.textContent = tr('sourceYoutube', 'YouTube');
   }
 
   function setPreviewVolume(value) {
@@ -354,7 +408,7 @@
     if (!previewFrame) return;
     previewFrame.src = '';
     playerFrameBox?.classList.remove('has-video');
-    previewSource.textContent = 'YouTube';
+    previewSource.textContent = tr('sourceYoutube', 'YouTube');
   }
 
   function buildOnboardingSteps(issues = []) {
@@ -600,7 +654,7 @@
         title: result.next.title || tr('selectedTitle', 'Ausgewählter Titel')
       }));
     } else if (result?.success && result.nextError) {
-      showToast('warn', 'Auto-DJ', result.nextError);
+      showToast('warn', tr('autoDjToastTitle', 'Auto-DJ'), result.nextError);
     }
     if (!result?.success) {
       showToast('warn', tr('skipTitle', 'Überspringen'), result?.error || tr('noActiveTrack', 'Aktuell läuft kein Titel.'));
@@ -709,7 +763,7 @@
   const postCrossfade = debounce(async (ms) => {
     const result = await post('/config', { playback: { crossfadeDuration: ms } });
     if (!result?.success) {
-      showToast('error', 'Crossfade', result?.error || tr('crossfadeSaveFailed', 'Crossfade konnte nicht gespeichert werden.'));
+      showToast('error', tr('crossfadeTitle', 'Crossfade'), result?.error || tr('crossfadeSaveFailed', 'Crossfade konnte nicht gespeichert werden.'));
     }
   });
   crossfadeInput.addEventListener('input', () => {
@@ -941,9 +995,9 @@
   autoDjSkip.addEventListener('click', async () => {
     const result = await post('/auto-dj/skip');
     if (result?.success) {
-      showToast('success', 'Auto-DJ', result.track?.title || tr('nextTrackPlaying', 'Nächster Titel läuft.'));
+      showToast('success', tr('autoDjToastTitle', 'Auto-DJ'), result.track?.title || tr('nextTrackPlaying', 'Nächster Titel läuft.'));
     } else {
-      showToast('warn', 'Auto-DJ', tr('noTrackAvailable', 'Kein Titel verfügbar.'));
+      showToast('warn', tr('autoDjToastTitle', 'Auto-DJ'), tr('noTrackAvailable', 'Kein Titel verfügbar.'));
     }
     await refreshAutoDjStatus();
   });
@@ -1214,7 +1268,7 @@
     const result = await post('/player/test-tone', {});
     setSafetyBusy(testToneButton, false);
     showSafetyFeedback(
-      result?.success ? 'Testton abgeschlossen.' : (result?.error || 'Testton fehlgeschlagen.'),
+      result?.success ? tr('testToneCompleted', 'Testton abgeschlossen.') : (result?.error || tr('testToneFailed', 'Testton fehlgeschlagen.')),
       !result?.success
     );
   });
@@ -1274,7 +1328,8 @@
     }
   });
   socket.on('musicbot:status-toast', (payload) => {
-    showToast(payload?.type || 'info', payload?.title || 'Music Bot', payload?.message || '');
+    // Server-originated title/message fields may contain runtime or user-authored data and stay verbatim.
+    showToast(payload?.type || 'info', payload?.title || tr('toastDefaultTitle', 'Musik-Bot'), payload?.message || '');
   });
   socket.on('music-bot:setup-status', (payload) => {
     const installStatus = applySetupStatus(payload);
@@ -1311,7 +1366,7 @@
     latestRuntime = { ...(latestRuntime || {}), transportState: payload?.state || 'loading' };
     updateSeekControl();
     const message = payload?.messageKey
-      ? tr(payload.messageKey, payload?.message || tr('playbackAdvancing', 'Lädt den nächsten Titel …'))
+      ? translateRuntimeMessageKey(payload?.messageKey, payload?.message || tr('playbackAdvancing', 'Lädt den nächsten Titel …'))
       : payload?.message;
     setSkipLoading(true, message);
   });
@@ -1350,11 +1405,8 @@
   });
   socket.on('musicbot:playlist-import-progress', async (payload) => {
     const status = payload?.status || 'running';
-    const statusKey = {
-      running: 'importRunning', completed: 'importCompleted', failed: 'importFailed', aborted: 'importAborted'
-    }[status] || 'importRunning';
     if (playlistImportProgress) {
-      const label = catalogTr(statusKey, status);
+      const label = playlistImportStatusLabel(status);
       const progress = Number.isFinite(Number(payload?.progress)) ? ` (${Math.round(Number(payload.progress))}%)` : '';
       playlistImportProgress.textContent = payload?.error
         ? catalogTr('importError', 'Import error: {error}', { error: payload.error })
@@ -1448,20 +1500,24 @@
     if (!healthResolver) return;
     const active = Number(resolver.active ?? resolver.runner?.active ?? 0);
     const queued = Number(resolver.queued ?? resolver.runner?.queued ?? 0);
-    const progress = resolver.progress?.state ? ` · ${resolver.progress.state}` : '';
+    const resolverStateLabels = {
+      queued: () => tr('resolverQueued', 'Request wartet …'),
+      'searching-youtube': () => tr('resolverYoutube', 'Suche auf YouTube …'),
+      'searching-soundcloud': () => tr('resolverSoundCloud', 'Suche auf SoundCloud …'),
+      validating: () => tr('resolverValidating', 'Treffer werden geprüft …'),
+      ready: () => tr('resolverReady', 'Treffer bereit.'),
+      failed: () => tr('resolverFailed', 'Suche fehlgeschlagen.')
+    };
+    const progressState = String(resolver.progress?.state || '').toLowerCase();
+    const progressLabel = progressState
+      ? (resolverStateLabels[progressState]?.() || tr('resolverUnknownState', 'Unbekannter Resolver-Status'))
+      : '';
+    const progress = progressLabel ? ` · ${progressLabel}` : '';
     healthResolver.textContent = tr('resolverActiveQueued', '{active} aktiv / {queued} wartend{progress}', {
       active, queued, progress
     });
-    if (searchFeedback && resolver.progress?.state) {
-      const labels = {
-        queued: tr('resolverQueued', 'Request wartet …'),
-        'searching-youtube': tr('resolverYoutube', 'Suche auf YouTube …'),
-        'searching-soundcloud': tr('resolverSoundCloud', 'Suche auf SoundCloud …'),
-        validating: tr('resolverValidating', 'Treffer werden geprüft …'),
-        ready: tr('resolverReady', 'Treffer bereit.'),
-        failed: tr('resolverFailed', 'Suche fehlgeschlagen.')
-      };
-      searchFeedback.textContent = labels[resolver.progress.state] || resolver.progress.state;
+    if (searchFeedback && progressState) {
+      searchFeedback.textContent = progressLabel;
     }
   }
 
@@ -1659,7 +1715,7 @@
     if (reset) historyOffset = 0;
     const historyData = await get(`/history?limit=${HISTORY_PAGE_SIZE}&offset=${historyOffset}`);
     if (!historyData?.history) {
-      showToast('warn', 'History', tr('historyLoadFailed', 'History konnte nicht geladen werden.'));
+      showToast('warn', tr('historyToastTitle', 'Verlauf'), tr('historyLoadFailed', 'History konnte nicht geladen werden.'));
       return;
     }
     historyTotal = Number(historyData.total) || historyData.history.length;
@@ -1730,7 +1786,7 @@
       : '';
     nowPlayingEl.innerHTML = `
       <p class="title">🎵 ${escapeHtml(track.title)}</p>
-      <p class="meta">${escapeHtml(track.artist || '')} • ${escapeHtml(tr('requestedBy', 'Angefragt von'))} <strong>${escapeHtml(track.requestedBy || 'Viewer')}</strong>${dur !== '—' ? ' • ' + dur : ''}</p>
+      <p class="meta">${escapeHtml(track.artist || '')} • ${escapeHtml(tr('requestedBy', 'Angefragt von'))} <strong>${escapeHtml(track.requestedBy || tr('viewerFallback', 'Zuschauer'))}</strong>${dur !== '—' ? ' • ' + dur : ''}</p>
       ${banButton}
     `;
     const actualState = track.state || 'playing';
@@ -1805,7 +1861,7 @@
           ${thumb}
           <div class="queue-info">
             <span class="queue-title"><strong>${escapeHtml(item.title)}</strong>${giftBadge}</span>
-            <span class="queue-meta">${escapeHtml(item.requestedBy || 'Viewer')}${dur}</span>
+            <span class="queue-meta">${escapeHtml(item.requestedBy || tr('viewerFallback', 'Zuschauer'))}${dur}</span>
           </div>
           <div class="queue-actions">
             <button class="btn danger small track-ban-trigger" type="button" data-track-ban-trigger data-track-id="${songId}" aria-haspopup="dialog" aria-expanded="false" title="${escapeHtml(tr('banLabel', 'Sperren'))}" aria-label="${escapeHtml(tr('trackBanLabel', 'Track sperren'))}">!</button>
@@ -1984,7 +2040,7 @@
       if (!result?.success || (result.playbackId && result.playbackId !== playbackId)) {
         progressCurrentPos = lastConfirmedSeekPosition;
         updateProgressBar();
-        if (!result?.networkError) showToast('warn', 'Player', result?.error || tr('seekFailed', 'Position konnte nicht geändert werden.'));
+        if (!result?.networkError) showToast('warn', tr('playerToastTitle', 'Wiedergabe'), result?.error || tr('seekFailed', 'Position konnte nicht geändert werden.'));
         return;
       }
       lastConfirmedSeekPosition = Number(result.position ?? positionSeconds);
@@ -2010,12 +2066,13 @@
     setTimeout(() => { el.textContent = ''; }, 4000);
   }
 
-  function showToast(type = 'info', title = 'Music Bot', message = '') {
+  function showToast(type = 'info', title = '', message = '') {
     if (!toastContainer) return;
+    const resolvedTitle = title || tr('toastDefaultTitle', 'Musik-Bot');
     const toast = document.createElement('div');
     toast.className = `musicbot-toast ${type}`;
     toast.innerHTML = `
-      <div class="musicbot-toast-title">${escapeHtml(title)}</div>
+      <div class="musicbot-toast-title">${escapeHtml(resolvedTitle)}</div>
       <div class="musicbot-toast-message">${escapeHtml(message)}</div>
     `;
     toastContainer.appendChild(toast);
@@ -2035,7 +2092,7 @@
       previewFrame.src = embedUrl;
       playerFrameBox?.classList.add('has-video');
     }
-    previewSource.textContent = song.source || 'YouTube';
+    previewSource.textContent = mediaSourceLabel(song.source);
   }
 
   function buildEmbedUrl(song) {
@@ -2099,7 +2156,7 @@
         const upLabel = catalogTr('voteUp', 'Like');
         const downLabel = catalogTr('voteDown', 'Not for radio');
         const neutralLabel = catalogTr('voteNeutral', 'Neutral');
-        return `<div class="item queue-item" data-song-id="${escapeHtml(songId)}">${thumb}<span class="queue-title">${escapeHtml(item.title)}</span><span class="text-secondary queue-by">${escapeHtml(item.requestedBy || 'Viewer')}</span>${vote('up', '↑', upLabel)}${vote('down', '↓', downLabel)}${vote('neutral', '•', neutralLabel)}${banBadge}${banButton}</div>`;
+        return `<div class="item queue-item" data-song-id="${escapeHtml(songId)}">${thumb}<span class="queue-title">${escapeHtml(item.title)}</span><span class="text-secondary queue-by">${escapeHtml(item.requestedBy || tr('viewerFallback', 'Zuschauer'))}</span>${vote('up', '↑', upLabel)}${vote('down', '↓', downLabel)}${vote('neutral', '•', neutralLabel)}${banBadge}${banButton}</div>`;
       })
       .join('');
   }
@@ -2112,7 +2169,7 @@
     const state = button.dataset.historyFeedback;
     const result = await post(`/catalog/songs/${songId}/feedback`, { state });
     if (!result?.success) {
-      showToast('warn', 'History', result?.error || tr('historyFeedbackFailed', 'Bewertung konnte nicht gespeichert werden.'));
+      showToast('warn', tr('historyToastTitle', 'Verlauf'), result?.error || tr('historyFeedbackFailed', 'Bewertung konnte nicht gespeichert werden.'));
       return;
     }
     const previous = canonicalSongState.get(songId) || {};
@@ -2165,7 +2222,7 @@
     if (!playlistList) return;
     playlistList.classList.toggle('empty', playlists.length === 0);
     playlistList.innerHTML = playlists.length
-      ? playlists.map((playlist) => `<button class="item playlist-item ${selectedPlaylist?.id === playlist.id ? 'active' : ''}" type="button" data-playlist-id="${escapeHtml(playlist.id)}"><span class="queue-title">${escapeHtml(playlist.name)}</span><span class="text-secondary">${escapeHtml(catalogTr(playlist.mode === 'shuffle' ? 'shuffle' : 'ordered', playlist.mode))} · ${playlist.itemCount || 0}${playlist.isProtected ? ` · ${escapeHtml(catalogTr('protected', 'protected'))}` : ''}</span></button>`).join('')
+      ? playlists.map((playlist) => `<button class="item playlist-item ${selectedPlaylist?.id === playlist.id ? 'active' : ''}" type="button" data-playlist-id="${escapeHtml(playlist.id)}"><span class="queue-title">${escapeHtml(playlist.name)}</span><span class="text-secondary">${escapeHtml(playlistModeLabel(playlist.mode))} · ${playlist.itemCount || 0}${playlist.isProtected ? ` · ${escapeHtml(catalogTr('protected', 'protected'))}` : ''}</span></button>`).join('')
       : `<p>${escapeHtml(catalogTr('playlistEmpty', 'No playlists yet.'))}</p>`;
   }
 
@@ -2293,7 +2350,7 @@
       skipButton.textContent = active ? tr('loading', 'Lädt …') : tr('skip', 'Überspringen');
     }
     if (active) {
-      updateState(message || 'loading');
+      stateEl.textContent = message || runtimeStateLabel('loading');
     }
   }
 
@@ -2319,7 +2376,7 @@
     autoDjStatus.title = autoDjMessage;
     if (autoDjDetail) {
       const diagnostics = [];
-      if (status.selectionSource) diagnostics.push(tr('autoDjSource', 'Quelle: {source}', { source: status.selectionSource }));
+      if (status.selectionSource) diagnostics.push(tr('autoDjSource', 'Quelle: {source}', { source: autoDjSourceLabel(status.selectionSource) }));
       if (typeof status.blockedCount === 'number') diagnostics.push(tr('autoDjBlocked', 'Gesperrt: {count}', { count: status.blockedCount }));
       autoDjDetail.textContent = [autoDjMessage, diagnostics.join(' · ')].filter(Boolean).join(' · ');
     }
@@ -2395,8 +2452,12 @@
     const visible = giftCatalogFilter
       ? giftCatalogEntries.filter((gift) => gift.name.toLowerCase().includes(giftCatalogFilter.toLowerCase())).length
       : uniqueCount;
-    const localeText = giftCatalogMeta.locales.length ? `Locales: ${giftCatalogMeta.locales.join(', ')}` : 'Locales: default';
-    const regionText = giftCatalogMeta.region ? `Region: ${giftCatalogMeta.region}` : null;
+    const localeText = giftCatalogMeta.locales.length
+      ? tr('giftLocales', 'Katalogsprachen: {locales}', { locales: giftCatalogMeta.locales.join(', ') })
+      : tr('giftLocalesDefault', 'Katalogsprache: automatisch');
+    const regionText = giftCatalogMeta.region
+      ? tr('giftRegion', 'Region: {region}', { region: giftCatalogMeta.region })
+      : null;
     const updatedText = giftCatalogMeta.lastUpdate
       ? tr('giftUpdatedAt', 'Aktualisiert: {date}', { date: new Date(giftCatalogMeta.lastUpdate).toLocaleString() })
       : null;
@@ -2564,7 +2625,7 @@
       .map(
         (ban) => `
         <tr>
-          <td>${escapeHtml(ban.type)}</td>
+          <td>${escapeHtml(banTypeLabel(ban.type))}</td>
           <td>${escapeHtml(ban.value)}</td>
           <td>${escapeHtml(ban.reason || '')}</td>
           <td><button class="btn ghost small" data-ban-id="${escapeHtml(ban.id)}">${escapeHtml(tr('delete', 'Löschen'))}</button></td>

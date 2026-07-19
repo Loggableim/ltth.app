@@ -188,6 +188,20 @@ describe('Music Bot catalog admin i18n contract', () => {
     }
   });
 
+  test('uses natural seek-unavailable wording in every locale', () => {
+    const expected = {
+      de: 'Diese Wiedergabe kann derzeit nicht gespult werden.',
+      en: 'Seeking is currently unavailable.',
+      es: 'No se puede cambiar la posición en este momento.',
+      fr: 'Le déplacement dans le morceau est actuellement indisponible.'
+    };
+
+    for (const locale of locales) {
+      const translations = JSON.parse(fs.readFileSync(path.join(root, 'locales', `${locale}.json`), 'utf8'));
+      expect(translations.music_bot.ui.player.seekUnavailable).toBe(expected[locale]);
+    }
+  });
+
   test.each(['en', 'es', 'fr'])('does not copy German admin fallback strings into %s', (locale) => {
     const html = fs.readFileSync(path.join(root, 'ui.html'), 'utf8');
     const keys = adminKeysFromHtml(html);
