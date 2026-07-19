@@ -1204,36 +1204,36 @@ describe('Music Bot runtime and UI regressions', () => {
     });
     doms.push(dom);
     await new Promise((resolve) => setTimeout(resolve, 25));
-    const catalog = translations.music_bot.ui.catalog;
+    const ui = translations.music_bot.ui;
 
-    expect(dom.window.document.querySelector('.history-ban-badge').textContent).toBe(catalog.historyBanned);
-    expect(dom.window.document.querySelector('[data-track-ban-trigger]').getAttribute('aria-label')).toBe(catalog.banTrack);
-    expect(dom.window.document.querySelector('[data-playlist-id]').textContent).toContain(catalog.protected);
-    expect(dom.window.document.querySelector('[data-playlist-id]').textContent).toContain(catalog.ordered);
-    expect(dom.window.document.querySelector('[data-radio-weight]').getAttribute('aria-label')).toBe(catalog.radioWeight);
+    expect(dom.window.document.querySelector('.history-ban-badge').textContent).toBe(ui.history.historyBanned);
+    expect(dom.window.document.querySelector('[data-track-ban-trigger]').getAttribute('aria-label')).toBe(ui.history.banTrack);
+    expect(dom.window.document.querySelector('[data-playlist-id]').textContent).toContain(ui.playlists.protected);
+    expect(dom.window.document.querySelector('[data-playlist-id]').textContent).toContain(ui.playlists.ordered);
+    expect(dom.window.document.querySelector('[data-radio-weight]').getAttribute('aria-label')).toBe(ui.playlists.radioWeight);
 
     dom.window.document.querySelector('[data-playlist-id]').click();
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(dom.window.document.getElementById('playlist-save-btn').textContent).toBe(catalog.save);
-    expect(dom.window.document.querySelector('[data-playlist-remove-song]').getAttribute('aria-label')).toBe(catalog.remove);
+    expect(dom.window.document.getElementById('playlist-save-btn').textContent).toBe(ui.playlists.save);
+    expect(dom.window.document.querySelector('[data-playlist-remove-song]').getAttribute('aria-label')).toBe(ui.playlists.remove);
 
     const search = dom.window.document.getElementById('catalog-search-input');
     search.value = 'Catalog';
     search.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
     await new Promise((resolve) => setTimeout(resolve, 250));
-    expect(dom.window.document.querySelector('[data-catalog-add-song]').textContent).toBe(catalog.addToPlaylist);
+    expect(dom.window.document.querySelector('[data-catalog-add-song]').textContent).toBe(ui.catalog.addToPlaylist);
     socketHandlers['musicbot:playlist-import-progress']({ playlistId: 'viewer-radio', status: 'running', progress: 70 });
-    expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe(`${catalog.importRunning} (70%)`);
+    expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe(`${ui.playlists.importRunning} (70%)`);
     socketHandlers['musicbot:playlist-import-progress']({ playlistId: 'viewer-radio', status: 'completed', progress: 100 });
-    expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe(`${catalog.importCompleted} (100%)`);
+    expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe(`${ui.playlists.importCompleted} (100%)`);
     socketHandlers['musicbot:playlist-import-progress']({ playlistId: 'viewer-radio', status: 'aborted', progress: 100 });
-    expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe(`${catalog.importAborted} (100%)`);
+    expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe(`${ui.playlists.importAborted} (100%)`);
     socketHandlers['musicbot:playlist-import-progress']({ playlistId: 'viewer-radio', status: 'failed', error: 'offline' });
-    expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe(catalog.importError.replace('{error}', 'offline'));
+    expect(dom.window.document.getElementById('playlist-import-progress').textContent).toBe(ui.playlists.importError.replace('{error}', 'offline'));
     socketHandlers['musicbot:now-playing']({ id: 'seek', playbackId: 'seek-1', title: 'Seek', duration: 120, startedAt: Date.now(), state: 'playing', seekable: true });
     socketHandlers['musicbot:runtime']({ activePlaybackId: 'seek-1', transportState: 'playing', safetyLock: false });
     socketHandlers['musicbot:playback-sync']({ playbackId: 'seek-1', position: 20, duration: 120, state: 'playing' });
-    expect(dom.window.document.getElementById('np-seek-input').getAttribute('aria-valuetext')).toBe(catalog.seekAria.replace('{current}', '0:20').replace('{duration}', '2:00'));
+    expect(dom.window.document.getElementById('np-seek-input').getAttribute('aria-valuetext')).toBe(ui.player.seekAria.replace('{current}', '0:20').replace('{duration}', '2:00'));
   });
 
   test('localizes normal, empty, error and runtime surfaces with the production merged catalogs', async () => {
@@ -1250,7 +1250,7 @@ describe('Music Bot runtime and UI regressions', () => {
     await new Promise((resolve) => setTimeout(resolve, 25));
 
     for (const locale of ['en', 'es', 'fr']) {
-      const runtime = productionCatalogs[locale].plugins['music-bot'].music_bot.ui.controls.runtime;
+      const ui = productionCatalogs[locale].plugins['music-bot'].music_bot.ui;
       dom.window.i18n.currentLocale = locale;
       dom.window.i18n.defaultLocale = locale;
       dom.window.i18n.updateDOM();
@@ -1277,20 +1277,20 @@ describe('Music Bot runtime and UI regressions', () => {
         players: {}
       });
 
-      expect(dom.window.document.getElementById('now-playing').textContent).toContain(runtime.nowPlayingEmpty);
-      expect(dom.window.document.getElementById('queue-list').textContent).toContain(runtime.queueEmptyTitle);
-      expect(dom.window.document.getElementById('playback-state').textContent).toBe(runtime.playbackAdvancing);
-      expect(dom.window.document.getElementById('skip-btn').textContent).toBe(runtime.loading);
-      expect(dom.window.document.getElementById('search-feedback').textContent).toBe(runtime.resolverValidating);
-      expect(dom.window.document.getElementById('health-mpv').textContent).toBe(runtime.unavailable);
-      expect(dom.window.document.getElementById('health-cache').textContent).toContain(runtime.files.replace('{count}', '2'));
-      expect(dom.window.document.getElementById('health-last-error').textContent).toBe(runtime.none);
-      expect(dom.window.document.getElementById('auto-dj-status').textContent).toBe(runtime.autoDjActive);
+      expect(dom.window.document.getElementById('now-playing').textContent).toContain(ui.player.nowPlayingEmpty);
+      expect(dom.window.document.getElementById('queue-list').textContent).toContain(ui.queue.queueEmptyTitle);
+      expect(dom.window.document.getElementById('playback-state').textContent).toBe(ui.player.playbackAdvancing);
+      expect(dom.window.document.getElementById('skip-btn').textContent).toBe(ui.player.loading);
+      expect(dom.window.document.getElementById('search-feedback').textContent).toBe(ui.health.resolverValidating);
+      expect(dom.window.document.getElementById('health-mpv').textContent).toBe(ui.health.unavailable);
+      expect(dom.window.document.getElementById('health-cache').textContent).toContain(ui.health.files.replace('{count}', '2'));
+      expect(dom.window.document.getElementById('health-last-error').textContent).toBe(ui.health.none);
+      expect(dom.window.document.getElementById('auto-dj-status').textContent).toBe(ui.autoDj.autoDjActive);
       expect(dom.window.document.getElementById('auto-dj-detail').textContent).toContain(
-        runtime.autoDjSelected.replace('{title}', 'Runtime Song')
+        ui.autoDj.autoDjSelected.replace('{title}', 'Runtime Song')
       );
-      expect(dom.window.document.getElementById('musicbot-toast-container').textContent).toContain(runtime.networkTitle);
-      expect(dom.window.document.getElementById('musicbot-toast-container').textContent).toContain(runtime.unknownError);
+      expect(dom.window.document.getElementById('musicbot-toast-container').textContent).toContain(ui.shell.networkTitle);
+      expect(dom.window.document.getElementById('musicbot-toast-container').textContent).toContain(ui.shell.unknownError);
 
       const dynamicSurface = [
         'now-playing', 'queue-list', 'playback-state', 'skip-btn', 'search-feedback',
@@ -1301,42 +1301,45 @@ describe('Music Bot runtime and UI regressions', () => {
     }
   });
 
-  test('ships correct Spanish and French catalog/runtime orthography', () => {
+  test('ships correct Spanish and French sectioned admin orthography', () => {
     const es = JSON.parse(fs.readFileSync(path.join(__dirname, '../plugins/music-bot/locales/es.json'), 'utf8')).music_bot.ui;
     const fr = JSON.parse(fs.readFileSync(path.join(__dirname, '../plugins/music-bot/locales/fr.json'), 'utf8')).music_bot.ui;
 
-    expect(es.catalog).toMatchObject({
+    expect(es.player).toMatchObject({
       seek: 'Posición de reproducción',
-      historyMore: 'Cargar más',
-      catalogSearch: 'Buscar títulos',
-      catalogTab: 'Catálogo',
-      catalogDescription: 'Busca, valora y añade canciones históricas a listas.',
+      seekUnavailable: 'No se puede avanzar esta reproducción ahora.',
+      seekFailed: 'No se pudo cambiar la posición.'
+    });
+    expect(es.history.loadMore).toBe('Cargar más');
+    expect(es.tabs.catalog).toBe('Catálogo');
+    expect(es.catalog).toMatchObject({
+      search: 'Buscar pistas',
+      description: 'Busca y valora canciones anteriores o añádelas a listas.'
+    });
+    expect(es.playlists).toMatchObject({
       importCompleted: 'Importación completada',
       importError: 'Error de importación: {error}',
       playlistConflict: 'La lista cambió en otro lugar. Actualizando la vista.'
     });
-    expect(es.controls.runtime).toMatchObject({
-      seekUnavailable: 'No se puede avanzar esta reproducción ahora.',
-      seekFailed: 'No se pudo cambiar la posición.',
-      playlistConflict: 'La lista se actualizó. Inténtalo de nuevo.'
-    });
-    expect(fr.catalog).toMatchObject({
-      playlistsDescription: 'Gérez vos sources et la radio des spectateurs.',
+    expect(fr.playlists).toMatchObject({
+      description: 'Gérez vos sources et la radio des spectateurs.',
       ordered: 'Dans l’ordre',
       shuffle: 'Aléatoire',
       create: 'Créer',
-      radioDescription: 'Activez plusieurs listes et mélangez-les avec des poids de 1 à 10.',
-      historyEmpty: 'Pas encore d’historique.',
-      voteUp: 'J’aime',
-      addToPlaylist: 'Ajouter à la liste',
+      radioDescription: 'Activez plusieurs playlists et mélangez-les avec des poids de 1 à 10.',
       importCompleted: 'Import terminé',
       importError: 'Erreur d’import : {error}',
+      playlistConflict: 'La playlist a changé ailleurs. Actualisation de la vue.'
+    });
+    expect(fr.history).toMatchObject({
+      historyEmpty: 'Pas encore d’historique.',
+      voteUp: 'J’aime'
+    });
+    expect(fr.catalog).toMatchObject({
+      addToPlaylist: 'Ajouter à la liste',
       networkTitle: 'Réseau'
     });
-    expect(fr.controls.runtime).toMatchObject({
-      seekUnavailable: 'Cette lecture ne peut pas être déplacée maintenant.',
-      playlistConflict: 'La playlist a été mise à jour. Réessayez.'
-    });
+    expect(fr.player.seekUnavailable).toBe('Cette lecture ne peut pas être déplacée maintenant.');
   });
 
   test.each(['en', 'es', 'fr'])('renders generic POST failures once in %s', async (locale) => {

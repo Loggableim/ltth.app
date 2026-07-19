@@ -2,10 +2,30 @@
   const MIN_SONG_DURATION_LIMIT_SECONDS = 30;
   const MAX_SONG_DURATION_LIMIT_SECONDS = 7200;
   const DEFAULT_SONG_DURATION_LIMIT_SECONDS = 360;
-  const I18N_PREFIX = 'plugins.music-bot.music_bot.ui.controls.runtime';
+  const I18N_PREFIX = 'plugins.music-bot.music_bot.ui';
+  const RUNTIME_I18N_SECTIONS = Object.fromEntries(Object.entries({
+    shell: 'networkTitle connectionLost socketDisconnected apiError unknownError saved error onboardingSettingsTitle onboardingSettingsMeta onboardingOverlayTitle onboardingOverlayMeta onboardingPlayerTitle onboardingPlayerMeta setupHint setupOpen onboardingHelpWithIssues onboardingHelpReady mpvNotInstalled install mpvInstallation mpvReady installationFailed installationSlow statusCheckFailed installing installationStarted installationStartFailed installMpv assistantCompleted assistantCompletedMessage setup onboardingSaveFailed',
+    player: 'seekUnavailable seekFailed nowPlayingEmpty stateIdle statePaused statePlaying playbackAdvancing loading skip pauseTitle noActiveTrack playbackResumed playbackStarted nextTrackPlaying resumeTitle noStartableTrack skipTitle playingNow searchLoading searching noResult queueAdding queueAdded songAddedTitle requestFailed requestRejectedTitle masterVolumeTitle sourceVolumeTitle volumeSetFailed crossfadeSaveFailed requestedBy selectedTitle',
+    queue: 'queueEmptyTitle queueEmptyHint playNow moveUp moveDown queueUpdated trackRemoved queueTitle alreadyPlaying titleStartFailed orderUpdated queueRefreshRetry trackMoved remove',
+    autoDj: 'autoDjPlaying autoDjActive autoDjDisabled autoDjOn autoDjOff autoDjSelected autoDjSource autoDjBlocked autoDjStarted autoDjWaiting noTrackAvailable',
+    moderation: 'banAdded banAddFailed banRemoveFailed enterTitleKeyword banFailed moderationTitle queueMatchesRemoved banLabel trackBanLabel enterValue noEntries delete',
+    history: 'historyLoadFailed historyFeedbackFailed',
+    playlists: 'playlistSaveFailed playlistConflict importRunning',
+    settings: 'giftNoResults giftsCount giftSelectFirst giftSaveFailed giftApplied giftCatalogTitle giftUpdated giftLoading giftLoadFailed giftVisible giftLoaded giftLoadedApi giftUpdatedAt',
+    safety: 'emergencyDone safetyUnlocked emergencyFailed unlockFailed playerReset playerResetFailed diagnosticsExportFailed diagnosticsExported safetyLocked safetyReady',
+    health: 'unavailable ipcDegraded ready files none resolverActiveQueued resolverQueued resolverYoutube resolverSoundCloud resolverValidating resolverReady resolverFailed healthLoadFailed',
+    overlay: 'copyFailed'
+  }).flatMap(([section, keys]) => keys.split(' ').map((key) => [key, section])));
+  const CATALOG_I18N_SECTIONS = Object.fromEntries(Object.entries({
+    player: 'seek seekAria',
+    history: 'historyMore historyBanned historyEmpty banTrack voteUp voteDown voteNeutral',
+    catalog: 'catalogSearch catalogDescription addToPlaylist catalogEmpty networkTitle postFailed getFailed deleteFailed requestFailed',
+    playlists: 'playlistsDescription newPlaylist playbackMode ordered shuffle create radioDescription saveRadioSources playlistName save delete importUrl import protected playlistEmpty playlistItemsEmpty remove radioWeight importCompleted importFailed importAborted importError playlistConflict viewerRadio radioSources importRunning'
+  }).flatMap(([section, keys]) => keys.split(' ').map((key) => [key, section])));
 
   function tr(key, fallback, params = {}) {
-    const fullKey = `${I18N_PREFIX}.${key}`;
+    const section = RUNTIME_I18N_SECTIONS[key] || 'shell';
+    const fullKey = `${I18N_PREFIX}.${section}.${key}`;
     const translated = window.i18n?.t(fullKey, params);
     const value = translated && translated !== fullKey ? translated : fallback;
     return String(value).replace(/\{(\w+)\}/g, (_match, name) => params[name] ?? `{${name}}`);
@@ -1401,7 +1421,8 @@
   }
 
   function catalogTr(key, fallback, params = {}) {
-    const fullKey = `plugins.music-bot.music_bot.ui.catalog.${key}`;
+    const section = CATALOG_I18N_SECTIONS[key] || 'catalog';
+    const fullKey = `${I18N_PREFIX}.${section}.${key}`;
     const translated = window.i18n?.t(fullKey, params);
     const value = translated && translated !== fullKey ? translated : fallback;
     return String(value).replace(/\{(\w+)\}/g, (_match, name) => params[name] ?? `{${name}}`);
@@ -1791,7 +1812,7 @@
             <button class="btn primary small" data-playback-action data-queue-action="play" data-idx="${idx}" data-song-id="${songId}" title="${escapeHtml(tr('playNow', 'Jetzt spielen'))}" aria-label="${escapeHtml(tr('playNow', 'Jetzt spielen'))}" ${musicbotSafetyLocked ? 'disabled aria-disabled="true"' : ''}>▶</button>
             <button class="btn ghost small" data-queue-action="move-up" data-idx="${idx}" data-song-id="${songId}" data-target-song-id="${previousSongId}" title="${escapeHtml(tr('moveUp', 'Nach oben'))}" aria-label="${escapeHtml(tr('moveUp', 'Nach oben'))}" ${idx === 0 ? 'disabled' : ''}>↑</button>
             <button class="btn ghost small" data-queue-action="move-down" data-idx="${idx}" data-song-id="${songId}" data-target-song-id="${nextSongId}" title="${escapeHtml(tr('moveDown', 'Nach unten'))}" aria-label="${escapeHtml(tr('moveDown', 'Nach unten'))}" ${idx === queue.length - 1 ? 'disabled' : ''}>↓</button>
-            <button class="btn danger small" data-queue-action="remove" data-idx="${idx}" title="${escapeHtml(catalogTr('remove', 'Entfernen'))}" aria-label="${escapeHtml(catalogTr('remove', 'Entfernen'))}">✕</button>
+            <button class="btn danger small" data-queue-action="remove" data-idx="${idx}" title="${escapeHtml(tr('remove', 'Entfernen'))}" aria-label="${escapeHtml(tr('remove', 'Entfernen'))}">✕</button>
           </div>
         </div>`;
       })
@@ -2546,7 +2567,7 @@
           <td>${escapeHtml(ban.type)}</td>
           <td>${escapeHtml(ban.value)}</td>
           <td>${escapeHtml(ban.reason || '')}</td>
-          <td><button class="btn ghost small" data-ban-id="${escapeHtml(ban.id)}">${escapeHtml(catalogTr('delete', 'Löschen'))}</button></td>
+          <td><button class="btn ghost small" data-ban-id="${escapeHtml(ban.id)}">${escapeHtml(tr('delete', 'Löschen'))}</button></td>
         </tr>`
       )
       .join('');
