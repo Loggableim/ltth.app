@@ -1924,6 +1924,7 @@ class WebGPUFireworksEngine {
             priority: 'core',
             required: true,
             beatId: event.beatId,
+            admissionBatchId: event.admissionBatchId,
             origin: event.origin,
             target: event.target,
             renderHints: event.renderHints,
@@ -1941,15 +1942,21 @@ class WebGPUFireworksEngine {
 
     processV2Layer(event, plannedAt, actualAt) {
         if (!this.isV2EventCurrent(event)) return false;
-        const remainingMs = Math.floor(Number(event.finaleEndsAt) - actualAt);
-        if (remainingMs <= 0) {
+        const latenessMs = Math.max(0, Number(actualAt) - Number(plannedAt));
+        const remainingNaturalLifetimeMs = Math.floor(Number(event.layer.lifetimeMs) - latenessMs);
+        if (remainingNaturalLifetimeMs <= 0) {
+            this.audio.recordTimelineEvent(event.layer.id, 'v2-layer-visual', plannedAt, actualAt, 'skipped-layer-expired');
+            return false;
+        }
+        const remainingFinaleMs = Math.floor(Number(event.finaleEndsAt) - actualAt);
+        if (remainingFinaleMs <= 0) {
             this.audio.recordTimelineEvent(event.layer.id, 'v2-layer-visual', plannedAt, actualAt, 'skipped-finale-ended');
             return false;
         }
         const layer = {
             ...event.layer,
             colors: [...event.layer.colors],
-            lifetimeMs: Math.min(event.layer.lifetimeMs, remainingMs)
+            lifetimeMs: Math.min(remainingNaturalLifetimeMs, remainingFinaleMs)
         };
         const context = {
             ...event.context,

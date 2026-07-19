@@ -65,6 +65,12 @@
     requiredCoreFailures: 0
   });
 
+  const normalizeAdmissionBatchId = value => (
+    value !== null && value !== undefined && Number.isFinite(Number(value))
+      ? Number(value)
+      : null
+  );
+
   const normalizeCommandMetadata = command => {
     const laneWasExplicit = LANES.has(command?.lane);
     const priorityWasExplicit = PRIORITIES.has(command?.priority);
@@ -73,6 +79,7 @@
       priority: priorityWasExplicit ? command.priority : 'core',
       required: command?.required === true,
       beatId: command?.beatId ?? null,
+      admissionBatchId: normalizeAdmissionBatchId(command?.admissionBatchId),
       correlationId: command?.correlationId ?? command?.effectId ?? null,
       admissionManaged: typeof command?.admissionManaged === 'boolean'
         ? command.admissionManaged
@@ -81,9 +88,9 @@
   };
 
   const commandOrder = (left, right) => {
+    if (left.required !== right.required) return left.required ? -1 : 1;
     const priority = PRIORITY_ORDER[left.priority] - PRIORITY_ORDER[right.priority];
     if (priority) return priority;
-    if (left.required !== right.required) return left.required ? -1 : 1;
     if (left.lane !== right.lane && left.lane !== 'show' && right.lane !== 'show') {
       return left.lane === 'gift' ? -1 : 1;
     }

@@ -3,6 +3,10 @@
 const { SHOW_PLAN_VERSION, VARIANT_PRESETS } = require('./constants');
 const { cloneNormalizedShowDefinition, cloneValue } = require('./normalize');
 const { validateShowDefinition, isRange } = require('./validate');
+const {
+  MAX_REQUIRED_SHOW_COMMANDS,
+  analyzeShowPlanV2CommandDemand
+} = require('../../gpu/show-plan-v2-runtime');
 
 const round = value => Number(value.toFixed(6));
 
@@ -128,7 +132,7 @@ function compileShowDefinition(source, options = {}) {
     };
   });
 
-  return {
+  const compiled = {
     planVersion: SHOW_PLAN_VERSION,
     id: `${definition.id}:${variantName}`,
     definitionId: definition.id,
@@ -143,6 +147,26 @@ function compileShowDefinition(source, options = {}) {
     cues,
     diagnostics: cloneValue(validation.diagnostics.variants[variantName])
   };
+  const commandDemand = analyzeShowPlanV2CommandDemand(compiled);
+  compiled.diagnostics = { ...compiled.diagnostics, ...cloneValue(commandDemand) };
+  if (commandDemand.peakRequiredCommands > MAX_REQUIRED_SHOW_COMMANDS) {
+    const diagnostics = cloneValue(validation.diagnostics);
+    diagnostics.variants[variantName] = cloneValue(compiled.diagnostics);
+    throw new PyroDSLValidationError([{
+      code: 'spawn_command_budget_exceeded',
+      path: `variants.${variantName}.cues`,
+      message: 'Required show commands exceed the reserved per-beat budget.',
+      details: {
+        timeMs: commandDemand.peakRequiredCommandsAtMs,
+        max: MAX_REQUIRED_SHOW_COMMANDS,
+        actual: commandDemand.peakRequiredCommands,
+        optional: commandDemand.commandsAtRequiredPeak.optional,
+        total: commandDemand.commandsAtRequiredPeak.total,
+        reservedGiftCommands: 4
+      }
+    }], diagnostics);
+  }
+  return compiled;
 }
 
 module.exports = {

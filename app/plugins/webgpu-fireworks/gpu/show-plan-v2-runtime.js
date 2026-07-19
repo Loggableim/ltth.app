@@ -29,6 +29,7 @@
     burstDepth: 0,
     glyphScale: 1
   });
+  const MAX_REQUIRED_SHOW_COMMANDS = 28;
   const TIER_RANK = Object.freeze({ small: 0, medium: 1, big: 2, massive: 3 });
   const ROLE_ALIASES = Object.freeze({
     'baroque-wall': 'brocade',
@@ -225,6 +226,71 @@
     return Math.round((0.55 + Math.hypot(travel, depthTravel) * 1.25) * 1000);
   }
 
+  function analyzeShowPlanV2CommandDemand(showPlan) {
+    assertShowPlanV2(showPlan);
+    const commandsByTime = new Map();
+    const addDemand = (timeMs, required, optional) => {
+      const demand = commandsByTime.get(timeMs) || { timeMs, required: 0, optional: 0, total: 0 };
+      demand.required += required;
+      demand.optional += optional;
+      demand.total += required + optional;
+      commandsByTime.set(timeMs, demand);
+    };
+
+    for (const cue of showPlan.cues) {
+      const cueDue = Number(cue.beatAtMs);
+      for (const shell of cue.shells) {
+        if (shell.launchMode === 'rocket') {
+          const renderHints = normalizeRenderHints(shell.renderHints);
+          const naturalFlightDurationMs = calculateRocketFlightMs(shell.target, renderHints);
+          const flightDurationMs = Math.min(naturalFlightDurationMs, Math.max(0, cueDue));
+          addDemand(cueDue - flightDurationMs, 1, 1);
+        }
+        for (const layer of shell.layers) {
+          addDemand(cueDue + Number(layer.delayMs), layer.core === true ? 1 : 0, layer.core === true ? 0 : 1);
+        }
+      }
+    }
+
+    const timeline = [...commandsByTime.values()].sort((left, right) => left.timeMs - right.timeMs);
+    const peakFor = key => timeline.reduce((peak, demand) => (
+      demand[key] > peak[key] ? demand : peak
+    ), { timeMs: null, required: 0, optional: 0, total: 0 });
+    const requiredPeak = peakFor('required');
+    const optionalPeak = peakFor('optional');
+    const totalPeak = peakFor('total');
+    return {
+      peakRequiredCommands: requiredPeak.required,
+      peakRequiredCommandsAtMs: requiredPeak.timeMs,
+      peakOptionalCommands: optionalPeak.optional,
+      peakOptionalCommandsAtMs: optionalPeak.timeMs,
+      peakTotalCommands: totalPeak.total,
+      peakTotalCommandsAtMs: totalPeak.timeMs,
+      commandsAtRequiredPeak: {
+        required: requiredPeak.required,
+        optional: requiredPeak.optional,
+        total: requiredPeak.total
+      }
+    };
+  }
+
+  function assertShowPlanV2CommandBudget(showPlan) {
+    const demand = analyzeShowPlanV2CommandDemand(showPlan);
+    if (demand.peakRequiredCommands <= MAX_REQUIRED_SHOW_COMMANDS) return demand;
+    const error = new RangeError('ShowPlanV2 required spawn commands exceed the reserved per-beat budget.');
+    error.code = 'spawn_command_budget_exceeded';
+    error.details = {
+      timeMs: demand.peakRequiredCommandsAtMs,
+      max: MAX_REQUIRED_SHOW_COMMANDS,
+      actual: demand.peakRequiredCommands,
+      optional: demand.commandsAtRequiredPeak.optional,
+      total: demand.commandsAtRequiredPeak.total,
+      reservedGiftCommands: 4
+    };
+    error.diagnostics = demand;
+    throw error;
+  }
+
   function groupRocketLaunches(rocketEvents, windowMs = 50) {
     const groups = [];
     for (const event of rocketEvents) {
@@ -240,7 +306,7 @@
   }
 
   function buildShowPlanV2Runtime(showPlan, options = {}) {
-    assertShowPlanV2(showPlan);
+    const commandDemand = assertShowPlanV2CommandBudget(showPlan);
     const startAt = finite(options.startAt) ? Number(options.startAt) : 0;
     const width = Math.max(1, Number(options.width) || 1920);
     const height = Math.max(1, Number(options.height) || 1080);
@@ -280,9 +346,10 @@
         if (shell.launchMode === 'rocket') {
           const naturalFlightDurationMs = calculateRocketFlightMs(shell.target, renderHints);
           const flightDurationMs = Math.min(naturalFlightDurationMs, Math.max(0, Number(cue.beatAtMs)));
+          const due = cueDue - flightDurationMs;
           const event = {
             type: 'finale-v2-rocket',
-            due: cueDue - flightDurationMs,
+            due,
             order: 0,
             finaleId: showPlan.id,
             cueId,
@@ -292,6 +359,7 @@
             target,
             renderHints,
             flightDurationMs,
+            admissionBatchId: due,
             beatId,
             materialProfile,
             visualStyle: options.visualStyle,
@@ -320,6 +388,7 @@
           push({
             type: 'finale-v2-layer',
             due,
+            admissionBatchId: due,
             order: 20 + layerIndex,
             finaleId: showPlan.id,
             cueId,
@@ -339,6 +408,7 @@
               priority: sourceLayer.priority,
               required: sourceLayer.core === true,
               beatId,
+              admissionBatchId: due,
               activeLayerLoad: null,
               renderHints
             }
@@ -422,6 +492,7 @@
       rocketCount: rocketEvents.length,
       commandCount: layerCount + rocketEvents.length * 2,
       maxLayerCommandsAtBeat: Math.max(0, ...commandsByBeat.values()),
+      ...commandDemand,
       audioGroups,
       events: cleanedEvents
     };
@@ -429,7 +500,10 @@
 
   return Object.freeze({
     PLAN_VERSION,
+    MAX_REQUIRED_SHOW_COMMANDS,
+    analyzeShowPlanV2CommandDemand,
     assertShowPlanV2,
+    assertShowPlanV2CommandBudget,
     buildShowPlanV2Runtime,
     calculateRocketFlightMs,
     normalizeRenderHints,

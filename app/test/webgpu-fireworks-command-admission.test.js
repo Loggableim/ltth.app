@@ -45,6 +45,7 @@ const queueCommand = (engine, {
   priority = 'decorative',
   required = false,
   beatId = 'beat:0',
+  admissionBatchId = null,
   effectId = `effect:${seed}`
 }) => engine._queueSpawn({
   origin: { x: seed, y: 0 },
@@ -56,7 +57,8 @@ const queueCommand = (engine, {
   lane,
   priority,
   required,
-  beatId
+  beatId,
+  admissionBatchId
 });
 
 const uploadedSeeds = raw => {
@@ -135,6 +137,112 @@ describe('WebGPU Fireworks spawn command lane admission', () => {
     expect(uploadedSeeds(reverse.uploads[0])).toEqual(
       Array.from({ length: 28 }, (_, index) => index + 1)
     );
+  });
+
+  test('admits required accent before optional core when the show lane is saturated', () => {
+    const { engine, uploads } = makeEngine();
+    for (let seed = 1; seed <= 28; seed++) {
+      queueCommand(engine, { seed, priority: 'core', required: false });
+    }
+    queueCommand(engine, {
+      seed: 90,
+      priority: 'accent',
+      required: true,
+      beatId: 'beat:required-accent'
+    });
+
+    expect(engine._uploadSpawnCommands()).toEqual({ count: 28, maxParticles: 1 });
+    expect(uploadedSeeds(uploads[0])).toContain(90);
+    expect(uploadedSeeds(uploads[0])).not.toContain(28);
+    expect(engine.getMetrics().commandAdmission.current).toMatchObject({
+      selectedShowCommands: 28,
+      droppedShowCommands: 1,
+      requiredCoreFailures: 0
+    });
+  });
+
+  test('splits exact 700ms and 701ms show batches after a stalled frame without loss or overflow', () => {
+    const { engine, uploads } = makeEngine();
+    for (let seed = 1; seed <= 28; seed++) {
+      queueCommand(engine, {
+        seed,
+        priority: 'core',
+        required: true,
+        beatId: 'beat:700',
+        admissionBatchId: 700
+      });
+    }
+    for (let seed = 29; seed <= 56; seed++) {
+      queueCommand(engine, {
+        seed,
+        priority: 'core',
+        required: true,
+        beatId: 'beat:701',
+        admissionBatchId: 701
+      });
+    }
+    for (let seed = 101; seed <= 104; seed++) {
+      queueCommand(engine, { seed, lane: 'gift', priority: 'core', required: true });
+    }
+
+    expect(engine._uploadSpawnCommands()).toEqual({ count: 32, maxParticles: 1 });
+    expect(uploadedSeeds(uploads[0])).toEqual(expect.arrayContaining([
+      ...Array.from({ length: 28 }, (_, index) => index + 1),
+      101, 102, 103, 104
+    ]));
+    expect(engine.spawnQueue).toHaveLength(28);
+    expect(engine.spawnQueue.every(command => command.admissionBatchId === 701)).toBe(true);
+    expect(engine.getMetrics().commandAdmission.current).toMatchObject({
+      selectedShowCommands: 28,
+      droppedShowCommands: 0,
+      selectedGiftCommands: 4,
+      requiredCoreFailures: 0
+    });
+
+    expect(engine._uploadSpawnCommands()).toEqual({ count: 28, maxParticles: 1 });
+    expect(uploadedSeeds(uploads[1]).sort((left, right) => left - right)).toEqual(
+      Array.from({ length: 28 }, (_, index) => index + 29)
+    );
+    expect(engine.spawnQueue).toHaveLength(0);
+    expect(engine.getMetrics().commandAdmission).toMatchObject({
+      current: {
+        selectedShowCommands: 28,
+        droppedShowCommands: 0,
+        requiredCoreFailures: 0
+      },
+      cumulative: {
+        selectedShowCommands: 56,
+        droppedShowCommands: 0,
+        selectedGiftCommands: 4,
+        requiredCoreFailures: 0
+      }
+    });
+  });
+
+  test('clears a deferred managed show batch and its telemetry on renderer destroy', () => {
+    const { engine } = makeEngine();
+    queueCommand(engine, { seed: 1, required: true, admissionBatchId: 700 });
+    queueCommand(engine, { seed: 2, required: true, admissionBatchId: 701 });
+
+    expect(engine._uploadSpawnCommands()).toEqual({ count: 1, maxParticles: 1 });
+    expect(engine.spawnQueue).toHaveLength(1);
+    expect(engine.getMetrics().commandAdmission.cumulative.selectedShowCommands).toBe(1);
+
+    engine.destroy();
+
+    expect(engine.spawnQueue).toHaveLength(0);
+    expect(engine.getMetrics().commandAdmission).toEqual({
+      current: expect.objectContaining({
+        selectedShowCommands: 0,
+        droppedShowCommands: 0,
+        requiredCoreFailures: 0
+      }),
+      cumulative: expect.objectContaining({
+        selectedShowCommands: 0,
+        droppedShowCommands: 0,
+        requiredCoreFailures: 0
+      })
+    });
   });
 
   test('uploads reserved realtime fallback and returns a correlated error on required show overflow', () => {

@@ -61,7 +61,96 @@ function plan(cues, overrides = {}) {
   };
 }
 
+function commandBudgetPlan(requiredLayerCount) {
+  const layerShells = Array.from({ length: Math.ceil(requiredLayerCount / 4) }, (_, shellIndex) => {
+    const count = Math.min(4, requiredLayerCount - shellIndex * 4);
+    const launchMode = shellIndex % 2 === 0 ? 'airburst' : 'ground';
+    return shell(`budget-layer-shell-${shellIndex + 1}`, launchMode, {
+      layers: Array.from({ length: count }, (_, layerIndex) => (
+        layer(`budget-layer-${shellIndex + 1}-${layerIndex + 1}`)
+      ))
+    });
+  });
+  const rocketTarget = { x: 0.5, y: 0.4 };
+  return plan([
+    {
+      id: 'budget-layers',
+      beatAtMs: 700,
+      phase: 'opening',
+      formation: 'wall',
+      importance: 'essential',
+      shells: layerShells
+    },
+    {
+      id: 'budget-rocket',
+      beatAtMs: 2000,
+      phase: 'finale',
+      formation: 'single',
+      importance: 'final-wave',
+      shells: [shell('budget-rocket', 'rocket', { target: rocketTarget, position: rocketTarget })]
+    }
+  ]);
+}
+
 describe('ShowPlanV2 pure overlay runtime', () => {
+  test('stamps rocket and layer commands with their exact planned due batch', () => {
+    const showPlan = plan([
+      {
+        id: 'batch-rocket', beatAtMs: 700, phase: 'opening', formation: 'single', importance: 'standard',
+        shells: [shell('batch-rocket-shell', 'rocket')]
+      },
+      {
+        id: 'batch-layer', beatAtMs: 701, phase: 'build', formation: 'single', importance: 'standard',
+        shells: [shell('batch-layer-shell', 'airburst')]
+      }
+    ]);
+
+    const runtime = buildShowPlanV2Runtime(showPlan, { startAt: 1000, playSound: false });
+    const rocket = runtime.events.find(event => event.type === 'finale-v2-rocket');
+    const layers = runtime.events.filter(event => event.type === 'finale-v2-layer');
+
+    expect(rocket.admissionBatchId).toBe(1000);
+    expect(layers.map(event => [event.due, event.admissionBatchId, event.context.admissionBatchId]))
+      .toEqual([
+        [1700, 1700, 1700],
+        [1701, 1701, 1701]
+      ]);
+  });
+
+  test('rejects 29 coincident required commands before GPU admission', () => {
+    let error;
+    try {
+      buildShowPlanV2Runtime(commandBudgetPlan(28), { playSound: false });
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(error).toMatchObject({
+      code: 'spawn_command_budget_exceeded',
+      details: expect.objectContaining({
+        timeMs: 700,
+        max: 28,
+        actual: 29,
+        optional: 1,
+        total: 30
+      })
+    });
+  });
+
+  test('admits 28 required commands plus optional exhaust and reports exact peaks', () => {
+    const runtime = buildShowPlanV2Runtime(commandBudgetPlan(27), { playSound: false });
+
+    expect(runtime).toMatchObject({
+      maxLayerCommandsAtBeat: 27,
+      peakRequiredCommands: 28,
+      peakRequiredCommandsAtMs: 700,
+      peakOptionalCommands: 1,
+      peakOptionalCommandsAtMs: 700,
+      peakTotalCommands: 29,
+      peakTotalCommandsAtMs: 700
+    });
+  });
+
   test('validates optional render hints and normalizes omitted hints to the flat renderer contract', () => {
     const flatPlan = plan([{
       id: 'flat', beatAtMs: 2000, phase: 'opening', formation: 'single', importance: 'standard',

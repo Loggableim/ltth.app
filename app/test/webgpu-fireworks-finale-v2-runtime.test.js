@@ -94,6 +94,11 @@ function makeRuntime(now = 10000) {
   return engine;
 }
 
+function scheduleSingleV2Layer(engine, id) {
+  engine.handleFinale({ id, showPlan: v2Plan(id), playSound: false });
+  return engine.timelineQueue.find(event => event.type === 'finale-v2-layer');
+}
+
 describe('ShowPlanV2 overlay dispatch', () => {
   test('dispatches V2 shells directly while preserving the V1 planned path and legacy path', () => {
     const v2 = makeRuntime();
@@ -155,6 +160,7 @@ describe('ShowPlanV2 overlay dispatch', () => {
       expect.objectContaining({
         origin: { x: 1200, y: 300 }, target: { x: 1200, y: 300 },
         materialProfile: 'premium-realistic', lane: 'show', required: true,
+        admissionBatchId: 11000,
         degradationPolicy: expect.objectContaining({ tier: 0 })
       })
     );
@@ -168,6 +174,77 @@ describe('ShowPlanV2 overlay dispatch', () => {
       finaleAudioGroups: { launch: 0, bang: 1, crackle: 0 },
       finaleAudioGroupsPlayed: { launch: 0, bang: 1, crackle: 0 }
     });
+  });
+
+  test('skips a fully expired late V2 layer with explicit timeline telemetry', () => {
+    const engine = makeRuntime();
+    const event = scheduleSingleV2Layer(engine, 'expired-layer');
+
+    expect(engine.processV2Layer(event, event.due, event.due + event.layer.lifetimeMs)).toBe(false);
+
+    expect(engine.renderer.spawnLayer).not.toHaveBeenCalled();
+    expect(engine.currentFinale.layersSubmitted).toBe(0);
+    expect(engine.audio.timelineEvents.at(-1)).toMatchObject({
+      effectId: event.layer.id,
+      type: 'v2-layer-visual',
+      state: 'skipped-layer-expired'
+    });
+  });
+
+  test('shortens a partially late V2 layer by its wall-clock lateness', () => {
+    const engine = makeRuntime();
+    const event = scheduleSingleV2Layer(engine, 'partially-late-layer');
+
+    expect(engine.processV2Layer(event, event.due, event.due + 250)).toBe(true);
+
+    expect(engine.renderer.spawnLayer).toHaveBeenCalledWith(
+      expect.objectContaining({ id: event.layer.id, lifetimeMs: 350 }),
+      expect.objectContaining({ degradationPolicy: expect.objectContaining({ tier: 0 }) })
+    );
+    expect(engine.currentFinale.layersSubmitted).toBe(1);
+    expect(engine.audio.timelineEvents.at(-1)).toMatchObject({ state: 'rendered' });
+  });
+
+  test.each([
+    ['early', -75],
+    ['on-time', 0]
+  ])('keeps the natural lifetime for an %s V2 layer', (_timing, offsetMs) => {
+    const engine = makeRuntime();
+    const event = scheduleSingleV2Layer(engine, `natural-lifetime-${offsetMs}`);
+
+    engine.processV2Layer(event, event.due, event.due + offsetMs);
+
+    expect(engine.renderer.spawnLayer).toHaveBeenCalledWith(
+      expect.objectContaining({ lifetimeMs: event.layer.lifetimeMs }),
+      expect.any(Object)
+    );
+  });
+
+  test('keeps the scheduled V2 event immutable while deriving a late layer', () => {
+    const engine = makeRuntime();
+    const event = scheduleSingleV2Layer(engine, 'immutable-late-layer');
+    const snapshot = JSON.parse(JSON.stringify(event));
+
+    engine.processV2Layer(event, event.due, event.due + 125);
+
+    expect(event).toEqual(snapshot);
+    expect(engine.renderer.spawnLayer).toHaveBeenCalledWith(
+      expect.objectContaining({ lifetimeMs: 475 }),
+      expect.any(Object)
+    );
+  });
+
+  test('keeps the finale tail as the upper bound for a late V2 layer', () => {
+    const engine = makeRuntime();
+    const scheduledEvent = scheduleSingleV2Layer(engine, 'finale-tail-layer');
+    const event = { ...scheduledEvent, finaleEndsAt: scheduledEvent.due + 300 };
+
+    engine.processV2Layer(event, event.due, event.due + 100);
+
+    expect(engine.renderer.spawnLayer).toHaveBeenCalledWith(
+      expect.objectContaining({ lifetimeMs: 200 }),
+      expect.any(Object)
+    );
   });
 
   test('waits for a delayed core layer before playing the cue bang with mixed layers', () => {
@@ -224,7 +301,10 @@ describe('ShowPlanV2 overlay dispatch', () => {
 
     now = 10400;
     engine.processTimeline(now);
-    expect(engine.renderer.spawnRocket).toHaveBeenCalledWith(expect.objectContaining({ duration: 0.6 }));
+    expect(engine.renderer.spawnRocket).toHaveBeenCalledWith(expect.objectContaining({
+      duration: 0.6,
+      admissionBatchId: 10000
+    }));
     expect(engine.audio.play).toHaveBeenCalledWith(expect.any(String), 0.82, 1, expect.objectContaining({
       bus: 'launch',
       maxLatenessMs: 1000,

@@ -107,6 +107,41 @@ function validDefinition() {
   };
 }
 
+function commandBudgetDefinition(layerCount, layerOverrides = {}) {
+  const definition = validDefinition();
+  const long = definition.variants.long;
+  long.cues.splice(2, 0, cue(10000, 'build'));
+  const collisionAtMs = 19700;
+  let remaining = layerCount;
+
+  for (const targetCue of long.cues.slice(0, 5)) {
+    if (remaining <= 0) break;
+    const capacity = PHASE_CONCURRENCY_CAPS[targetCue.phase] * MAX_LAYERS_PER_SHELL;
+    const scheduled = Math.min(remaining, capacity);
+    targetCue.shells = Array.from({ length: Math.ceil(scheduled / MAX_LAYERS_PER_SHELL) }, (_, shellIndex) => {
+      const count = Math.min(MAX_LAYERS_PER_SHELL, scheduled - shellIndex * MAX_LAYERS_PER_SHELL);
+      return shell({
+        launchMode: 'airburst',
+        layers: Array.from({ length: count }, () => layer({
+          delayMs: collisionAtMs - targetCue.timeMs,
+          ...layerOverrides
+        }))
+      });
+    });
+    remaining -= scheduled;
+  }
+  for (const targetCue of long.cues.slice(0, -1)) {
+    for (const targetShell of targetCue.shells) targetShell.launchMode = 'airburst';
+  }
+
+  const finale = long.cues.find(item => item.phase === 'finale');
+  finale.shells = [shell({
+    launchMode: 'rocket',
+    target: { x: 0.5, y: { min: 0.4, max: 0.4 } }
+  })];
+  return definition;
+}
+
 function errorCodes(result) {
   return result.errors.map(error => error.code);
 }
@@ -468,6 +503,19 @@ describe('PyroDSL validation', () => {
     expect(errorCodes(validateShowDefinition(definition))).toContain('spawn_command_budget_exceeded');
   });
 
+  test('does not reject optional layer demand above the required command reserve', () => {
+    const definition = commandBudgetDefinition(29, { priority: 'decorative', core: false });
+    const result = validateShowDefinition(definition);
+
+    expect(result.valid).toBe(true);
+    expect(errorCodes(result)).not.toContain('spawn_command_budget_exceeded');
+    expect(result.diagnostics.variants.long).toMatchObject({
+      peakRequiredCommands: 1,
+      peakOptionalCommands: 29,
+      peakTotalCommands: 29
+    });
+  });
+
   test('rejects overlapping core particles above 70% and reports decorative load without rejecting it', () => {
     const overloaded = validDefinition();
     const finale = overloaded.variants.long.cues.find(item => item.phase === 'finale');
@@ -602,6 +650,50 @@ describe('PyroDSL validation', () => {
 });
 
 describe('PyroDSL deterministic compilation', () => {
+  test('rejects 28 required layers coincident with a required rocket body after ranges resolve', () => {
+    const definition = commandBudgetDefinition(28);
+    expect(validateShowDefinition(definition).valid).toBe(true);
+
+    let error;
+    try {
+      compileShowDefinition(definition, { variant: 'long', seed: 2026 });
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(error).toBeInstanceOf(PyroDSLValidationError);
+    expect(error.errors).toContainEqual(expect.objectContaining({
+      code: 'spawn_command_budget_exceeded',
+      path: 'variants.long.cues',
+      details: expect.objectContaining({
+        timeMs: 19700,
+        max: 28,
+        actual: 29,
+        optional: 1,
+        total: 30
+      })
+    }));
+    expect(error.diagnostics.variants.long).toMatchObject({
+      peakRequiredCommands: 29,
+      peakRequiredCommandsAtMs: 19700,
+      peakOptionalCommands: 1,
+      peakTotalCommands: 30
+    });
+  });
+
+  test('compiles 27 required layers with a required rocket body and optional exhaust', () => {
+    const compiled = compileShowDefinition(commandBudgetDefinition(27), { variant: 'long', seed: 2026 });
+
+    expect(compiled.diagnostics).toMatchObject({
+      peakRequiredCommands: 28,
+      peakRequiredCommandsAtMs: 19700,
+      peakOptionalCommands: 1,
+      peakOptionalCommandsAtMs: 19700,
+      peakTotalCommands: 29,
+      peakTotalCommandsAtMs: 19700
+    });
+  });
+
   test('compiles a deterministic ShowPlanV2 with stable IDs, order, defaults, and v1 fallback fields', () => {
     const definition = validDefinition();
     const first = compileShowDefinition(definition, { variant: 'long', seed: 2026 });

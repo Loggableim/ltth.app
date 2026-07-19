@@ -353,7 +353,10 @@ function validateVariant(errors, variant, name, diagnostics) {
       peakAtMs: 0,
       poolSize: PARTICLE_POOL_SIZE,
       coreLimit: CORE_PARTICLE_LIMIT,
-      peakShowCommands: 0
+      peakShowCommands: 0,
+      peakRequiredCommands: 0,
+      peakOptionalCommands: 0,
+      peakTotalCommands: 0
     };
     return;
   }
@@ -418,7 +421,11 @@ function validateVariant(errors, variant, name, diagnostics) {
       for (const layer of shell.layers) {
         if (!Number.isFinite(cue.timeMs) || !Number.isFinite(layer.delayMs)) continue;
         const beat = cue.timeMs + layer.delayMs;
-        commands.set(beat, (commands.get(beat) || 0) + 1);
+        const demand = commands.get(beat) || { required: 0, optional: 0, total: 0 };
+        if (layer.core === true) demand.required++;
+        else demand.optional++;
+        demand.total++;
+        commands.set(beat, demand);
       }
     });
   });
@@ -430,23 +437,30 @@ function validateVariant(errors, variant, name, diagnostics) {
       }));
     }
   }
-  for (const [timeMs, count] of commands) {
-    if (count > MAX_SHOW_COMMANDS_PER_BEAT) {
-      errors.push(error('spawn_command_budget_exceeded', `${path}.cues`, 'Show layer spawns exceed the reserved per-beat budget.', {
+  for (const [timeMs, demand] of commands) {
+    if (demand.required > MAX_SHOW_COMMANDS_PER_BEAT) {
+      errors.push(error('spawn_command_budget_exceeded', `${path}.cues`, 'Required show layer spawns exceed the reserved per-beat budget.', {
         timeMs,
         max: MAX_SHOW_COMMANDS_PER_BEAT,
-        actual: count,
+        actual: demand.required,
+        optional: demand.optional,
+        total: demand.total,
         reservedGiftCommands: 4
       }));
     }
   }
   const particleLoad = simulateParticleLoad(variant.cues);
-  const peakShowCommands = Math.max(0, ...commands.values());
+  const peakRequiredCommands = Math.max(0, ...[...commands.values()].map(demand => demand.required));
+  const peakOptionalCommands = Math.max(0, ...[...commands.values()].map(demand => demand.optional));
+  const peakTotalCommands = Math.max(0, ...[...commands.values()].map(demand => demand.total));
   diagnostics[name] = {
     ...particleLoad,
     poolSize: PARTICLE_POOL_SIZE,
     coreLimit: CORE_PARTICLE_LIMIT,
-    peakShowCommands
+    peakShowCommands: peakTotalCommands,
+    peakRequiredCommands,
+    peakOptionalCommands,
+    peakTotalCommands
   };
   if (particleLoad.peakCoreParticles > CORE_PARTICLE_LIMIT) {
     errors.push(error('core_particle_budget_exceeded', `${path}.cues`, 'Overlapping core layers exceed 70% of the particle pool.', {

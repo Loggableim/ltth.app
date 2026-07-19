@@ -723,6 +723,7 @@ class WebGPUParticleEngine {
             priority: effectiveLayer.priority,
             required: context.required === undefined ? effectiveLayer.core === true : context.required === true,
             beatId: context.beatId ?? null,
+            admissionBatchId: context.admissionBatchId ?? null,
             correlationId: context.correlationId ?? effectiveLayer.id,
             origin: context.origin || context.position || { x: 0, y: 0 },
             target: context.target || context.origin || context.position || { x: 0, y: 0 },
@@ -1021,7 +1022,32 @@ class WebGPUParticleEngine {
     }
 
     _uploadSpawnCommands() {
-        const pending = this.spawnQueue.splice(0);
+        const queued = this.spawnQueue.splice(0);
+        const managedShowCommands = queued.filter(command => (
+            command.admissionManaged &&
+            command.lane === 'show' &&
+            command.admissionBatchId !== null
+        ));
+        let pending = queued;
+        if (managedShowCommands.length > 0) {
+            const earliestBatchId = managedShowCommands.reduce((earliest, command) => {
+                const candidate = Number(command.admissionBatchId);
+                const current = Number(earliest);
+                return Number.isFinite(candidate) && Number.isFinite(current) && candidate < current
+                    ? command.admissionBatchId
+                    : earliest;
+            }, managedShowCommands[0].admissionBatchId);
+            const deferred = [];
+            pending = queued.filter(command => {
+                const isLaterShowBatch = command.admissionManaged &&
+                    command.lane === 'show' &&
+                    command.admissionBatchId !== null &&
+                    command.admissionBatchId !== earliestBatchId;
+                if (isLaterShowBatch) deferred.push(command);
+                return !isLaterShowBatch;
+            });
+            this.spawnQueue.push(...deferred);
+        }
         let admission;
         let admissionError = null;
         try {
