@@ -704,3 +704,160 @@ describe('RevisionedShowRepository 3A2a lifecycle', () => {
     expect(repository.getPublishedDefinition(created.id).metadata.name).toBe('Custom Finale');
   });
 });
+
+describe('RevisionedShowRepository 3A2b1 duplicate and derive', () => {
+  let tempDir;
+  let now;
+  let nextId;
+  let repository;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-show-interchange-'));
+    now = 3_000;
+    nextId = 3;
+    repository = new RevisionedShowRepository({
+      dataDir: tempDir,
+      now: () => now++,
+      idFactory: () => `00000000-0000-4000-8000-${String(nextId++).padStart(12, '0')}`
+    });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  test('duplicates a built-in into a safe unpublished non-auto custom draft without changing the source', () => {
+    const sourceBefore = repository.get('classic-crescendo');
+    const duplicated = repository.duplicate('classic-crescendo');
+
+    expect(duplicated).toMatchObject({
+      id: 'custom:00000000-0000-4000-8000-000000000003',
+      builtIn: false,
+      revision: 1,
+      definition: {
+        id: 'custom:00000000-0000-4000-8000-000000000003',
+        metadata: { name: `${sourceBefore.definition.metadata.name} Copy` },
+        autoEligible: false
+      },
+      validation: null,
+      validatedRevision: null,
+      publishedDefinition: null,
+      publishedRevision: null
+    });
+    expect(repository.get('classic-crescendo')).toEqual(sourceBefore);
+    expect(repository.getSelectableStyles().some(style => style.id === duplicated.id)).toBe(false);
+  });
+
+  test('duplicates the current custom definition with an explicit name and defensive isolation', () => {
+    const source = repository.create(makeDefinition('Custom Source'));
+    const sourceBefore = repository.get(source.id);
+    const duplicated = repository.duplicate(source.id, { name: 'Safe Variant Copy' });
+
+    expect(duplicated.definition).toEqual({
+      ...source.definition,
+      id: duplicated.id,
+      metadata: { ...source.definition.metadata, name: 'Safe Variant Copy' },
+      autoEligible: false
+    });
+    duplicated.definition.metadata.name = 'Caller Mutation';
+    expect(repository.get(duplicated.id).definition.metadata.name).toBe('Safe Variant Copy');
+    expect(repository.get(source.id)).toEqual(sourceBefore);
+  });
+
+  test('rejects duplicate sources that cannot produce a valid PyroDSL definition', () => {
+    const invalid = makeDefinition('Invalid Source');
+    invalid.repositoryOnly = true;
+    const source = repository.create(invalid);
+
+    expect(() => repository.duplicate(source.id)).toThrow(expect.objectContaining({
+      code: 'DUPLICATE_VALIDATION_FAILED',
+      status: 422,
+      details: expect.objectContaining({
+        sourceId: source.id,
+        errors: expect.arrayContaining([
+          expect.objectContaining({ code: 'unknown_property', path: 'repositoryOnly' })
+        ])
+      })
+    }));
+    expect(repository.list().filter(record => !record.builtIn)).toHaveLength(1);
+  });
+
+  test('derives selected ratios into one guarded draft revision while preserving existing variants by default', () => {
+    const definition = makeDefinition('Derivation Source');
+    const originalShort = clone(definition.variants.short);
+    const originalMedium = clone(definition.variants.medium);
+    const created = repository.create(definition);
+
+    const preserved = repository.derive(created.id, {
+      expectedRevision: 1,
+      variants: ['short', 'medium'],
+      seed: 7
+    });
+    expect(preserved).toMatchObject({
+      revision: 2,
+      validation: null,
+      validatedRevision: null
+    });
+    expect(preserved.definition.variants.short).toEqual(originalShort);
+    expect(preserved.definition.variants.medium).toEqual(originalMedium);
+
+    const overwritten = repository.derive(created.id, 2, {
+      variants: ['short', 'medium'], seed: 7, overwrite: true
+    });
+    expect(overwritten.revision).toBe(3);
+    expect(overwritten.definition.variants.short).not.toEqual(originalShort);
+    expect(overwritten.definition.variants.medium).not.toEqual(originalMedium);
+    expect(overwritten.definition.variants.short.durationMs).toBe(10_000);
+    expect(overwritten.definition.variants.medium.durationMs).toBe(18_000);
+    expect(overwritten.definition.variants.short.cues).toHaveLength(7);
+    expect(overwritten.definition.variants.medium.cues).toHaveLength(9);
+  });
+
+  test('derive keeps the published snapshot isolated and uses saveDraft conflict semantics', () => {
+    const created = repository.create(makeDefinition('Published Source'));
+    repository.validate(created.id, 1);
+    repository.publish(created.id, 1);
+
+    expect(() => repository.derive(created.id, 0, { variants: ['short'] })).toThrow(
+      expect.objectContaining({
+        code: 'REVISION_CONFLICT',
+        status: 409,
+        details: { id: created.id, expectedRevision: 0, currentRevision: 1 }
+      })
+    );
+    const derived = repository.derive(created.id, 1, {
+      variants: ['short'], seed: 17, overwrite: true
+    });
+    expect(derived).toMatchObject({
+      revision: 2,
+      validation: null,
+      validatedRevision: null,
+      publishedRevision: 1,
+      publishedDefinition: { metadata: { name: 'Published Source' } }
+    });
+    expect(repository.getPublishedDefinition(created.id)).toEqual(created.definition);
+  });
+
+  test('derive rejects built-ins and maps PyroDSL failures to typed structured repository errors', () => {
+    expect(() => repository.derive('classic-crescendo', 0, { variants: ['short'] })).toThrow(
+      expect.objectContaining({ code: 'BUILT_IN_IMMUTABLE', status: 409 })
+    );
+    const created = repository.create(makeDefinition('Structured Failure'));
+    expect(() => repository.derive(created.id, 1, { variants: ['long'] })).toThrow(
+      expect.objectContaining({
+        code: 'DERIVATION_FAILED',
+        status: 422,
+        details: expect.objectContaining({
+          id: created.id,
+          currentRevision: 1,
+          errors: expect.arrayContaining([
+            expect.objectContaining({ code: 'invalid_derivation_target', path: 'variants' })
+          ]),
+          diagnostics: expect.any(Object)
+        })
+      })
+    );
+    expect(repository.get(created.id).revision).toBe(1);
+  });
+});

@@ -5,7 +5,11 @@ const fs = require('fs');
 const path = require('path');
 
 const { BUILT_IN_SHOW_DEFINITIONS } = require('./built-in-shows');
-const { validateShowDefinition } = require('./pyrodsl');
+const {
+  deriveShowVariants,
+  PyroDSLValidationError,
+  validateShowDefinition
+} = require('./pyrodsl');
 const {
   assertCurrentDefinitionProvenance,
   assertValidPersistedLifecycle,
@@ -138,28 +142,80 @@ class RevisionedShowRepository {
 
     const id = this._nextCustomId();
     const ownedDefinition = this._ownedDefinition(definition, id);
-    const timestamp = this.now();
-    const snapshot = {
-      revision: 1,
-      savedAt: timestamp,
-      definition: cloneJson(ownedDefinition)
-    };
-    const record = {
-      id,
-      builtIn: false,
-      revision: 1,
-      definition: cloneJson(ownedDefinition),
-      revisions: [snapshot],
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      ...lifecycleDefaults()
-    };
+    return this._createCustomRecord(id, ownedDefinition);
+  }
 
-    this.records[id] = record;
-    this._persistOrRollback(() => {
-      delete this.records[id];
-    });
-    return cloneJson(record);
+  duplicate(sourceId, options = {}) {
+    this._ensureLoaded();
+    const duplicateOptions = isObject(options) ? options : {};
+    const source = this.get(sourceId);
+    const id = this._nextCustomId();
+    const definition = this._ownedDefinition(source.definition, id);
+    const sourceName = isObject(definition.metadata) && typeof definition.metadata.name === 'string'
+      ? definition.metadata.name
+      : 'Untitled Show';
+    if (!isObject(definition.metadata)) definition.metadata = {};
+    definition.metadata.name = hasOwn(duplicateOptions, 'name')
+      ? duplicateOptions.name
+      : `${sourceName} Copy`;
+    definition.autoEligible = false;
+
+    const validation = validateShowDefinition(definition);
+    if (!validation.valid) {
+      throw new ShowRepositoryError(
+        'DUPLICATE_VALIDATION_FAILED',
+        422,
+        'The duplicated show definition did not pass PyroDSL validation.',
+        {
+          sourceId,
+          errors: validation.errors,
+          diagnostics: validation.diagnostics
+        }
+      );
+    }
+    return this._createCustomRecord(id, definition);
+  }
+
+  derive(id, expectedRevision, options = {}) {
+    this._ensureLoaded();
+    if (isObject(expectedRevision)) {
+      options = expectedRevision;
+      expectedRevision = options.expectedRevision;
+    }
+    if (!isObject(options)) options = {};
+    if (hasOwn(this.builtIns, id)) {
+      throw new ShowRepositoryError(
+        'BUILT_IN_IMMUTABLE',
+        409,
+        'Built-in show definitions are immutable.',
+        { id }
+      );
+    }
+
+    const current = this._customRecord(id);
+    this._assertExpectedRevision(current, expectedRevision);
+    let definition;
+    try {
+      definition = deriveShowVariants(current.definition, {
+        variants: options.variants,
+        seed: options.seed,
+        overwrite: options.overwrite
+      });
+    } catch (error) {
+      if (!(error instanceof PyroDSLValidationError)) throw error;
+      throw new ShowRepositoryError(
+        'DERIVATION_FAILED',
+        422,
+        'The custom show variants could not be derived.',
+        {
+          id,
+          currentRevision: current.revision,
+          errors: error.errors,
+          diagnostics: error.diagnostics
+        }
+      );
+    }
+    return this.saveDraft(id, definition, expectedRevision);
   }
 
   saveDraft(id, definition, expectedRevision) {
@@ -496,6 +552,30 @@ class RevisionedShowRepository {
     }
     cloned.id = id;
     return cloned;
+  }
+
+  _createCustomRecord(id, ownedDefinition) {
+    const timestamp = this.now();
+    const record = {
+      id,
+      builtIn: false,
+      revision: 1,
+      definition: cloneJson(ownedDefinition),
+      revisions: [{
+        revision: 1,
+        savedAt: timestamp,
+        definition: cloneJson(ownedDefinition)
+      }],
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      ...lifecycleDefaults()
+    };
+
+    this.records[id] = record;
+    this._persistOrRollback(() => {
+      delete this.records[id];
+    });
+    return cloneJson(record);
   }
 
   _snapshotStore() {
