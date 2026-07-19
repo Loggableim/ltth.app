@@ -1067,6 +1067,70 @@ describe('WebGPU Superfan finale foundation', () => {
     expect(history.snapshot()).toEqual({});
   });
 
+  test.each([
+    {
+      label: 'missing',
+      customStyle: 'custom:00000000-0000-4000-8000-000000000509',
+      prepare: () => {}
+    },
+    {
+      label: 'unpublished',
+      customStyle: 'custom:00000000-0000-4000-8000-000000000510',
+      prepare: repository => {
+        repository.idFactory = () => '00000000-0000-4000-8000-000000000510';
+        repository.create(clone(BUILT_IN_SHOW_DEFINITIONS['nishiki-kamuro']));
+      }
+    },
+    {
+      label: 'archived',
+      customStyle: 'custom:00000000-0000-4000-8000-000000000511',
+      prepare: repository => {
+        const archivedStyle = publishCustom(repository, '00000000-0000-4000-8000-000000000511');
+        repository.archive(archivedStyle, 1);
+      }
+    }
+  ])('test route falls back from a $label Superfan Custom override to its effective global style', ({
+    customStyle,
+    prepare
+  }) => {
+    const repository = new RevisionedShowRepository({ dataDir: tempDir });
+    repository.load();
+    prepare(repository);
+    const { api, plugin } = createPlugin({
+      goalFinaleStyle: 'classic-crescendo',
+      goalFinaleLength: 'short'
+    });
+    plugin.showRepository = repository;
+    plugin.showRepositoryLoadError = null;
+    plugin.registerRoutes();
+    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+    api.routes.get('post:/api/webgpu-fireworks/test-superfan')({
+      body: {
+        username: 'EffectiveFallbackFan',
+        settings: {
+          superfanFinaleStyle: customStyle,
+          superfanFinaleLength: 'inherit',
+          goalFinaleStyle: 'royal-brocade',
+          goalFinaleLength: 'long'
+        }
+      }
+    }, res);
+
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      accepted: true,
+      finale: expect.objectContaining({
+        style: 'royal-brocade',
+        length: 'long'
+      })
+    }));
+    expect(plugin.config).toMatchObject({
+      goalFinaleStyle: 'classic-crescendo',
+      goalFinaleLength: 'short'
+    });
+  });
+
   test('test route normalizes invalid overrides before planning the finale', () => {
     const { api, plugin, history } = createPlugin();
     plugin.registerRoutes();

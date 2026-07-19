@@ -40,6 +40,7 @@ const { SuperfanFinaleHistory, normalizeSuperfanIdentityAliases } = require('./l
 
 const FIREWORKS_CONFIG_MIGRATION_VERSION = 1;
 const SUPERFAN_COMPLETION_AUTHORITY = Symbol('webgpu-fireworks-superfan-completion');
+const INTERNAL_FINALE_FALLBACK_STYLE = Symbol('webgpu-fireworks-internal-finale-fallback-style');
 const SUPERFAN_FINALE_TEST_CONFIG_KEYS = Object.freeze([
     'superfanFinaleEnabled',
     'superfanFinaleCooldownHours',
@@ -1526,6 +1527,7 @@ class FireworksPlugin {
                 intensity: effectiveConfig.superfanFinaleIntensity,
                 completionNotification,
                 [SUPERFAN_COMPLETION_AUTHORITY]: true,
+                [INTERNAL_FINALE_FALLBACK_STYLE]: effectiveConfig.goalFinaleStyle,
                 eventId,
                 bypassEnabled: options.bypassEnabled === true,
                 ackRequested: true,
@@ -1896,11 +1898,15 @@ class FireworksPlugin {
         const isObjectCall = optionsOrIntensity !== null &&
             typeof optionsOrIntensity === 'object' &&
             !Array.isArray(optionsOrIntensity);
+        let configuredFallbackStyle = config.goalFinaleStyle;
         let request;
 
         if (isObjectCall) {
             const options = optionsOrIntensity;
             const hasLegacyDuration = options.duration !== undefined && options.length === undefined;
+            if (typeof options[INTERNAL_FINALE_FALLBACK_STYLE] === 'string') {
+                configuredFallbackStyle = options[INTERNAL_FINALE_FALLBACK_STYLE];
+            }
             const authorizedCompletionNotification = options[SUPERFAN_COMPLETION_AUTHORITY] === true
                 ? options.completionNotification
                 : null;
@@ -1915,6 +1921,7 @@ class FireworksPlugin {
             };
             delete request.completionNotification;
             delete request[SUPERFAN_COMPLETION_AUTHORITY];
+            delete request[INTERNAL_FINALE_FALLBACK_STYLE];
             if (authorizedCompletionNotification) {
                 request.completionNotification = authorizedCompletionNotification;
             }
@@ -1946,7 +1953,7 @@ class FireworksPlugin {
 
         const selection = resolveFinaleSelection({
             requestedStyle: finale.style,
-            configuredStyle: config.goalFinaleStyle,
+            configuredStyle: configuredFallbackStyle,
             builtInStyles: FINALE_STYLES,
             isCustomStyle: isCustomFinaleStyleId,
             drawAuto: () => this.finaleShuffleBag.draw(),
