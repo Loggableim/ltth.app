@@ -13,24 +13,25 @@
   const PRIORITY_ORDER = Object.freeze({ core: 0, accent: 1, decorative: 2 });
   const DEGRADATION_KEYS = Object.freeze([
     'strobeDisabled',
-    'splitReduced',
-    'decorativeReduced',
-    'decorativeOmitted',
     'accentReduced',
     'accentOmitted',
+    'decorativeReduced',
+    'decorativeOmitted',
+    'splitReduced',
     'coreDensityReduced'
   ]);
   const PERFORMANCE_TIERS = Object.freeze({ normal: 0, reduced: 2, minimal: 5, toaster: 6 });
-  const PARTICLE_THRESHOLDS = Object.freeze([0.5, 0.65, 0.75, 0.84, 0.92, 0.97]);
-  const LAYER_THRESHOLDS = Object.freeze([10, 14, 18, 22, 26, 29]);
+  const PARTICLE_THRESHOLDS = Object.freeze([0.5, 0.65, 0.75, 0.84, 0.92, 0.97, 0.995]);
+  const LAYER_THRESHOLDS = Object.freeze([10, 14, 18, 22, 26, 29, 31]);
   const TIER_POLICIES = Object.freeze([
     Object.freeze({ tier: 0, strobeEnabled: true, splitQuality: 3, decorativeDensityScale: 1, accentDensityScale: 1, coreDensityScale: 1 }),
     Object.freeze({ tier: 1, strobeEnabled: false, splitQuality: 3, decorativeDensityScale: 1, accentDensityScale: 1, coreDensityScale: 1 }),
-    Object.freeze({ tier: 2, strobeEnabled: false, splitQuality: 1, decorativeDensityScale: 1, accentDensityScale: 1, coreDensityScale: 1 }),
-    Object.freeze({ tier: 3, strobeEnabled: false, splitQuality: 1, decorativeDensityScale: 0.5, accentDensityScale: 1, coreDensityScale: 1 }),
-    Object.freeze({ tier: 4, strobeEnabled: false, splitQuality: 1, decorativeDensityScale: 0, accentDensityScale: 0.65, coreDensityScale: 1 }),
-    Object.freeze({ tier: 5, strobeEnabled: false, splitQuality: 1, decorativeDensityScale: 0, accentDensityScale: 0, coreDensityScale: 1 }),
-    Object.freeze({ tier: 6, strobeEnabled: false, splitQuality: 1, decorativeDensityScale: 0, accentDensityScale: 0, coreDensityScale: 0.7 })
+    Object.freeze({ tier: 2, strobeEnabled: false, splitQuality: 3, decorativeDensityScale: 1, accentDensityScale: 0.65, coreDensityScale: 1 }),
+    Object.freeze({ tier: 3, strobeEnabled: false, splitQuality: 3, decorativeDensityScale: 1, accentDensityScale: 0, coreDensityScale: 1 }),
+    Object.freeze({ tier: 4, strobeEnabled: false, splitQuality: 3, decorativeDensityScale: 0.5, accentDensityScale: 0, coreDensityScale: 1 }),
+    Object.freeze({ tier: 5, strobeEnabled: false, splitQuality: 3, decorativeDensityScale: 0, accentDensityScale: 0, coreDensityScale: 1 }),
+    Object.freeze({ tier: 6, strobeEnabled: false, splitQuality: 1, decorativeDensityScale: 0, accentDensityScale: 0, coreDensityScale: 1 }),
+    Object.freeze({ tier: 7, strobeEnabled: false, splitQuality: 1, decorativeDensityScale: 0, accentDensityScale: 0, coreDensityScale: 0.7 })
   ]);
 
   class RequiredCoreAdmissionError extends Error {
@@ -194,7 +195,7 @@
 
   const degradeLayerForPolicy = (layer, policyInput = {}) => {
     const policy = Number.isInteger(policyInput.tier)
-      ? { ...TIER_POLICIES[Math.max(0, Math.min(6, policyInput.tier))], ...policyInput }
+      ? { ...TIER_POLICIES[Math.max(0, Math.min(TIER_POLICIES.length - 1, policyInput.tier))], ...policyInput }
       : deriveAdaptiveDegradationPolicy(policyInput);
     const changes = [];
     const degraded = { ...layer, colors: Array.isArray(layer?.colors) ? [...layer.colors] : layer?.colors };
@@ -202,9 +203,6 @@
       degraded.strobe = false;
       changes.push('strobeDisabled');
     }
-    const splitQuality = degraded.split === true ? policy.splitQuality : 0;
-    if (degraded.split === true && splitQuality < 3) changes.push('splitReduced');
-
     const scale = degraded.priority === 'decorative'
       ? policy.decorativeDensityScale
       : degraded.priority === 'accent'
@@ -218,9 +216,16 @@
     const omission = degraded.priority === 'decorative' ? 'decorativeOmitted' : 'accentOmitted';
     if (scale <= 0 && degraded.priority !== 'core') {
       changes.push(omission);
+      const splitQuality = degraded.split === true ? policy.splitQuality : 0;
       return { layer: null, splitQuality, changes };
     }
-    if (scale < 1) {
+    if (scale < 1 && degraded.priority !== 'core') {
+      degraded.density = Math.max(1, Math.round(Number(degraded.density) * scale));
+      changes.push(reduction);
+    }
+    const splitQuality = degraded.split === true ? policy.splitQuality : 0;
+    if (degraded.split === true && splitQuality < 3) changes.push('splitReduced');
+    if (scale < 1 && degraded.priority === 'core') {
       degraded.density = Math.max(1, Math.round(Number(degraded.density) * scale));
       changes.push(reduction);
     }

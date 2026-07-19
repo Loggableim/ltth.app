@@ -426,6 +426,60 @@ describe('PyroDSL validation', () => {
     expect(errorCodes(result)).toContain('core_particle_budget_exceeded');
     expect(result.diagnostics.variants.long.peakCoreParticles).toBe(6000);
   });
+
+  test('counts V2 split children alongside their live parent in core and total peaks', () => {
+    const definition = validDefinition();
+    const finale = definition.variants.long.cues.find(item => item.phase === 'finale');
+    finale.shells = [shell({
+      layers: [layer({ density: 2000, lifetimeMs: 1000, split: true })]
+    })];
+
+    const result = validateShowDefinition(definition);
+
+    expect(errorCodes(result)).toContain('core_particle_budget_exceeded');
+    expect(result.diagnostics.variants.long).toMatchObject({
+      peakCoreParticles: 10000,
+      peakTotalParticles: 10000,
+      peakAtMs: 21480
+    });
+    expect(result.errors).toContainEqual(expect.objectContaining({
+      code: 'core_particle_budget_exceeded',
+      details: expect.objectContaining({ actual: 10000, peakAtMs: 21480 })
+    }));
+
+    finale.shells[0].layers[0].priority = 'decorative';
+    finale.shells[0].layers[0].core = false;
+    const decorativeResult = validateShowDefinition(definition);
+
+    expect(decorativeResult.valid).toBe(true);
+    expect(decorativeResult.diagnostics.variants.long).toMatchObject({
+      peakCoreParticles: 120,
+      peakTotalParticles: 10000,
+      peakAtMs: 21480
+    });
+  });
+
+  test('keeps split children live through the latest possible seeded split tail', () => {
+    const definition = validDefinition();
+    const finale = definition.variants.long.cues.find(item => item.phase === 'finale');
+    finale.shells = [shell({
+      layers: [layer({ density: 1000, lifetimeMs: 1000, split: true })]
+    })];
+    definition.variants.long.cues.push(cue(22100, 'finale', {
+      formation: 'finale-wave-2',
+      importance: 'final-wave',
+      shells: [shell({ layers: [layer({ density: 2000, lifetimeMs: 1000 })] })]
+    }));
+
+    const result = validateShowDefinition(definition);
+
+    expect(errorCodes(result)).toContain('core_particle_budget_exceeded');
+    expect(result.diagnostics.variants.long).toMatchObject({
+      peakCoreParticles: 6000,
+      peakTotalParticles: 6000,
+      peakAtMs: 22100
+    });
+  });
 });
 
 describe('PyroDSL deterministic compilation', () => {

@@ -288,6 +288,10 @@ function validateShell(errors, shell, path, variantDuration, cueTime) {
 }
 
 function simulateParticleLoad(cues) {
+  const splitChildCount = 4;
+  const earliestSplitRatio = 0.48;
+  const latestSplitRatio = 0.68;
+  const splitChildLifetimeRatio = 0.46;
   const events = [];
   for (const cue of cues) {
     if (!Number.isFinite(cue.timeMs)) continue;
@@ -300,6 +304,14 @@ function simulateParticleLoad(cues) {
         const coreDensity = layer.core === true ? layer.density : 0;
         events.push({ timeMs: startMs, total: layer.density, core: coreDensity, order: 1 });
         events.push({ timeMs: endMs, total: -layer.density, core: -coreDensity, order: 0 });
+        if (layer.split === true) {
+          const splitDensity = layer.density * splitChildCount;
+          const coreSplitDensity = layer.core === true ? splitDensity : 0;
+          const splitStartMs = startMs + layer.lifetimeMs * earliestSplitRatio;
+          const splitEndMs = startMs + layer.lifetimeMs * (latestSplitRatio + splitChildLifetimeRatio);
+          events.push({ timeMs: splitStartMs, total: splitDensity, core: coreSplitDensity, order: 1 });
+          events.push({ timeMs: splitEndMs, total: -splitDensity, core: -coreSplitDensity, order: 0 });
+        }
       }
     }
   }

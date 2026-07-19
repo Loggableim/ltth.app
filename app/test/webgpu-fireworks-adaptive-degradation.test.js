@@ -1,6 +1,7 @@
 'use strict';
 
 const {
+  DEGRADATION_KEYS,
   deriveAdaptiveDegradationPolicy,
   degradeLayerForPolicy
 } = require('../plugins/webgpu-fireworks/gpu/spawn-command-policy');
@@ -27,11 +28,12 @@ const layer = overrides => ({
 const expectedPolicy = [
   { tier: 0, strobeEnabled: true, splitQuality: 3, decorativeDensityScale: 1, accentDensityScale: 1, coreDensityScale: 1 },
   { tier: 1, strobeEnabled: false, splitQuality: 3, decorativeDensityScale: 1, accentDensityScale: 1, coreDensityScale: 1 },
-  { tier: 2, strobeEnabled: false, splitQuality: 1, decorativeDensityScale: 1, accentDensityScale: 1, coreDensityScale: 1 },
-  { tier: 3, strobeEnabled: false, splitQuality: 1, decorativeDensityScale: 0.5, accentDensityScale: 1, coreDensityScale: 1 },
-  { tier: 4, strobeEnabled: false, splitQuality: 1, decorativeDensityScale: 0, accentDensityScale: 0.65, coreDensityScale: 1 },
-  { tier: 5, strobeEnabled: false, splitQuality: 1, decorativeDensityScale: 0, accentDensityScale: 0, coreDensityScale: 1 },
-  { tier: 6, strobeEnabled: false, splitQuality: 1, decorativeDensityScale: 0, accentDensityScale: 0, coreDensityScale: 0.7 }
+  { tier: 2, strobeEnabled: false, splitQuality: 3, decorativeDensityScale: 1, accentDensityScale: 0.65, coreDensityScale: 1 },
+  { tier: 3, strobeEnabled: false, splitQuality: 3, decorativeDensityScale: 1, accentDensityScale: 0, coreDensityScale: 1 },
+  { tier: 4, strobeEnabled: false, splitQuality: 3, decorativeDensityScale: 0.5, accentDensityScale: 0, coreDensityScale: 1 },
+  { tier: 5, strobeEnabled: false, splitQuality: 3, decorativeDensityScale: 0, accentDensityScale: 0, coreDensityScale: 1 },
+  { tier: 6, strobeEnabled: false, splitQuality: 1, decorativeDensityScale: 0, accentDensityScale: 0, coreDensityScale: 1 },
+  { tier: 7, strobeEnabled: false, splitQuality: 1, decorativeDensityScale: 0, accentDensityScale: 0, coreDensityScale: 0.7 }
 ];
 
 describe('WebGPU Fireworks adaptive layer degradation', () => {
@@ -43,6 +45,7 @@ describe('WebGPU Fireworks adaptive layer degradation', () => {
     [4, 'normal', 0.84, 4],
     [5, 'normal', 0.92, 4],
     [6, 'normal', 0.97, 4],
+    [7, 'normal', 0.995, 4],
     [2, 'reduced', 0.20, 4],
     [5, 'minimal', 0.20, 4],
     [6, 'toaster', 0.20, 4],
@@ -51,7 +54,8 @@ describe('WebGPU Fireworks adaptive layer degradation', () => {
     [3, 'normal', 0.20, 18],
     [4, 'normal', 0.20, 22],
     [5, 'normal', 0.20, 26],
-    [6, 'normal', 0.20, 29]
+    [6, 'normal', 0.20, 29],
+    [7, 'normal', 0.20, 31]
   ])('maps mode/load pressure to deterministic tier %i', (tier, performanceMode, activeParticleRatio, activeLayerLoad) => {
     expect(deriveAdaptiveDegradationPolicy({
       performanceMode,
@@ -66,10 +70,14 @@ describe('WebGPU Fireworks adaptive layer degradation', () => {
 
     expect(results[0]).toMatchObject({ layer: { density: 100, strobe: true }, splitQuality: 3, changes: [] });
     expect(results[1]).toMatchObject({ layer: { density: 100, strobe: false }, splitQuality: 3, changes: ['strobeDisabled'] });
-    expect(results[2]).toMatchObject({ layer: { density: 100, strobe: false }, splitQuality: 1 });
-    expect(results[2].changes).toEqual(['strobeDisabled', 'splitReduced']);
-    expect(results[6]).toMatchObject({ layer: { density: 70, strobe: false }, splitQuality: 1 });
-    expect(results[6].changes).toEqual(expect.arrayContaining(['coreDensityReduced']));
+    expect(results[2]).toMatchObject({ layer: { density: 100, strobe: false }, splitQuality: 3 });
+    expect(results[2].changes).toEqual(['strobeDisabled']);
+    expect(results[5]).toMatchObject({ layer: { density: 100, strobe: false }, splitQuality: 3 });
+    expect(results[5].changes).toEqual(['strobeDisabled']);
+    expect(results[6]).toMatchObject({ layer: { density: 100, strobe: false }, splitQuality: 1 });
+    expect(results[6].changes).toEqual(['strobeDisabled', 'splitReduced']);
+    expect(results[7]).toMatchObject({ layer: { density: 70, strobe: false }, splitQuality: 1 });
+    expect(results[7].changes).toEqual(['strobeDisabled', 'splitReduced', 'coreDensityReduced']);
 
     for (const result of results) {
       expect(result.layer).not.toBeNull();
@@ -88,31 +96,47 @@ describe('WebGPU Fireworks adaptive layer degradation', () => {
     }
   });
 
-  test('reduces then omits decorative and accent layers before core density', () => {
+  test('reduces accent then decorative layers before reducing split density', () => {
     const decorative = layer({ priority: 'decorative', core: false, density: 40 });
     const accent = layer({ priority: 'accent', core: false, density: 40 });
 
-    expect(degradeLayerForPolicy(decorative, expectedPolicy[2]).layer.density).toBe(40);
-    expect(degradeLayerForPolicy(decorative, expectedPolicy[3])).toMatchObject({
-      layer: { density: 20 },
-      changes: expect.arrayContaining(['decorativeReduced'])
-    });
-    expect(degradeLayerForPolicy(decorative, expectedPolicy[4])).toMatchObject({
-      layer: null,
-      changes: expect.arrayContaining(['decorativeOmitted'])
-    });
-    expect(degradeLayerForPolicy(accent, expectedPolicy[4])).toMatchObject({
+    expect(degradeLayerForPolicy(accent, expectedPolicy[2])).toMatchObject({
       layer: { density: 26 },
-      changes: expect.arrayContaining(['accentReduced'])
+      splitQuality: 3,
+      changes: ['strobeDisabled', 'accentReduced']
     });
-    expect(degradeLayerForPolicy(accent, expectedPolicy[5])).toMatchObject({
+    expect(degradeLayerForPolicy(accent, expectedPolicy[3])).toMatchObject({
       layer: null,
-      changes: expect.arrayContaining(['accentOmitted'])
+      splitQuality: 3,
+      changes: ['strobeDisabled', 'accentOmitted']
+    });
+    expect(degradeLayerForPolicy(decorative, expectedPolicy[3]).layer.density).toBe(40);
+    expect(degradeLayerForPolicy(decorative, expectedPolicy[4])).toMatchObject({
+      layer: { density: 20 },
+      splitQuality: 3,
+      changes: ['strobeDisabled', 'decorativeReduced']
+    });
+    expect(degradeLayerForPolicy(decorative, expectedPolicy[5])).toMatchObject({
+      layer: null,
+      splitQuality: 3,
+      changes: ['strobeDisabled', 'decorativeOmitted']
     });
   });
 
+  test('reports degradation telemetry in the configured quality-loss order', () => {
+    expect(DEGRADATION_KEYS).toEqual([
+      'strobeDisabled',
+      'accentReduced',
+      'accentOmitted',
+      'decorativeReduced',
+      'decorativeOmitted',
+      'splitReduced',
+      'coreDensityReduced'
+    ]);
+  });
+
   test('never removes a core shell command even at maximum pressure', () => {
-    const result = degradeLayerForPolicy(layer({ density: 1 }), expectedPolicy[6]);
+    const result = degradeLayerForPolicy(layer({ density: 1 }), expectedPolicy[7]);
     expect(result.layer).toMatchObject({ density: 1, priority: 'core' });
     expect(result.layer).not.toBeNull();
   });
