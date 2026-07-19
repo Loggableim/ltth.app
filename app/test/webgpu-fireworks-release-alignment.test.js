@@ -15,6 +15,11 @@ function readJson(relativePath) {
   return JSON.parse(read(relativePath));
 }
 
+function pluginAssetUrls(source) {
+  return [...source.matchAll(/(?:src|href)="(\/plugins\/webgpu-fireworks\/[^"?]+\.(?:css|js)(?:\?[^"#]+)?)"/g)]
+    .map(match => match[1]);
+}
+
 describe('WebGPU Fireworks 3.0.0 release alignment', () => {
   test('aligns app and public release metadata to LTTH 1.3.34', () => {
     const rootPackage = readJson('package.json');
@@ -75,18 +80,36 @@ describe('WebGPU Fireworks 3.0.0 release alignment', () => {
     }
   });
 
-  test('aligns the plugin manifest and runtime cache keys to 3.0.0', () => {
+  test('aligns the plugin manifest and every active plugin asset cache key to 3.0.0', () => {
     const manifest = readJson('app/plugins/webgpu-fireworks/plugin.json');
-    const overlay = read('app/plugins/webgpu-fireworks/overlay.html');
-    const settings = read('app/plugins/webgpu-fireworks/ui/settings.html');
-    const overlayCacheKeys = [...overlay.matchAll(/<script src="\/plugins\/webgpu-fireworks\/[^"?]+\?v=([^"&]+)"/g)]
-      .map(match => match[1]);
+    const surfaces = {
+      'app/plugins/webgpu-fireworks/overlay.html': [
+        '/plugins/webgpu-fireworks/gpu/engine.js',
+        '/plugins/webgpu-fireworks/gpu/show-plan-v2-runtime.js',
+        '/plugins/webgpu-fireworks/gpu/spawn-command-policy.js',
+        '/plugins/webgpu-fireworks/gpu/webgpu-particle-engine.js'
+      ],
+      'app/plugins/webgpu-fireworks/ui/settings.html': [
+        '/plugins/webgpu-fireworks/ui/settings.js',
+        '/plugins/webgpu-fireworks/ui/show-style-options.js'
+      ],
+      'app/plugins/webgpu-fireworks/ui/designer.html': [
+        '/plugins/webgpu-fireworks/ui/designer.css',
+        '/plugins/webgpu-fireworks/ui/show-designer-api.js',
+        '/plugins/webgpu-fireworks/ui/show-designer-model.js',
+        '/plugins/webgpu-fireworks/ui/show-designer-view.js',
+        '/plugins/webgpu-fireworks/ui/show-designer.js'
+      ]
+    };
 
     expect(manifest.version).toBe(PLUGIN_VERSION);
-    expect(overlayCacheKeys).toHaveLength(4);
-    expect(overlayCacheKeys.every(key => key.startsWith(`${PLUGIN_VERSION}-`))).toBe(true);
-    expect(settings).toContain(`settings.js?v=${PLUGIN_VERSION}-avatar-head-1`);
-    expect(overlay).not.toContain('?v=2.2.1-');
-    expect(settings).not.toContain('?v=2.2.1-');
+    for (const [relativePath, expectedAssets] of Object.entries(surfaces)) {
+      const assetUrls = pluginAssetUrls(read(relativePath));
+      const assetPaths = assetUrls.map(url => url.split('?')[0]).sort();
+
+      expect(assetPaths).toEqual([...expectedAssets].sort());
+      expect(assetUrls.every(url => new RegExp(`\\?v=${PLUGIN_VERSION.replace(/\\./g, '\\\\.')}($|-[a-z0-9.-]+$)`, 'i').test(url)))
+        .toBe(true);
+    }
   });
 });
