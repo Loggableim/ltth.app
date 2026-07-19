@@ -56,8 +56,36 @@
         "settingsLink": "Go to settings",
         "overlayLink": "Go to OBS overlay",
         "onboardingDone": "I am done",
-        "setupWarning": "Warning: Music Bot setup required"
+        "setupWarning": "Warning: Music Bot setup required",
+        "setupYtdlpMissingTitle": "yt-dlp not found",
+        "setupYtdlpMissingDescription": "yt-dlp is required for YouTube search and song downloads. Without it, only the limited oEmbed fallback is available.",
+        "setupYtdlpInstallNpm": "Run npm install youtube-dl-exec in the app/ directory",
+        "setupYtdlpInstallManual": "Download yt-dlp manually from github.com/yt-dlp/yt-dlp/releases",
+        "setupYtdlpConfigurePath": "Set the yt-dlp path under Settings > Resolver",
+        "setupMpvMissingTitle": "mpv media player not found",
+        "setupMpvMissingDescription": "Music Bot needs mpv for audio playback. No music can play without mpv.",
+        "setupMpvInstallWindows": "Windows: use winget, scoop, or choco",
+        "setupMpvInstallLinux": "Linux: run sudo apt install mpv",
+        "setupMpvInstallMacos": "macOS: run brew install mpv",
+        "setupMpvConfigurePath": "Set the mpv path under Settings > Playback",
+        "mpvInstallIdle": "MPV installation is waiting.",
+        "mpvAlreadyAvailable": "mpv is already available.",
+        "mpvInstalledReady": "mpv was installed and is ready.",
+        "mpvInstallFailed": "MPV installation failed.",
+        "mpvPackageManagerUnavailable": "No supported package manager was found. Install winget, scoop, choco, brew, or a Linux package manager and try again.",
+        "mpvInstallTimedOut": "MPV installation timed out. Confirm the administrator dialog and try again.",
+        "mpvInstallWindowsPrompt": "Windows is opening an administrator dialog for the MPV installation. Confirm it; the status will be checked automatically afterwards.",
+        "mpvInstallStartFailed": "Could not start MPV installation: {error}",
+        "mpvInstallChocolateyLock": "Chocolatey could not continue because its lock file is in use: {path}",
+        "mpvInstallAdminConfirmation": "Chocolatey is waiting for an administrator or confirmation prompt. Install again and confirm the dialog.",
+        "mpvInstallPermissionDenied": "The package manager reported insufficient permissions. Start LTTH as administrator or install mpv manually.",
+        "mpvInstallCommandUnavailable": "The package manager could not run the install command. Install a package manager or set the mpv path manually.",
+        "mpvInstallExited": "MPV installation failed with exit code {code}.",
+        "mpvInstallMissingAfterExit": "MPV installation ended with exit code {code}, but mpv was not found."
       },
+      "actions": { "save": "Save" },
+      "status": { "ready": "Ready" },
+      "messages": { "saved": "Saved" },
       "tabs": {
         "ariaLabel": "Soundbot sections",
         "player": "Player",
@@ -97,6 +125,17 @@
         "queueAdding": "Adding to the queue…",
         "queueAdded": "Added: {title}",
         "songAddedTitle": "Song added",
+        "requestAdded": "Added: {title} (#{position})",
+        "requestRequired": "Please provide a song.",
+        "requestUserBlocked": "@{username} is blocked from song requests.",
+        "requestLikesRequired": "@{username}: {likes}/{requiredLikes} likes.",
+        "requestGiftRequired": "@{username} has not sent a valid request gift.",
+        "songBlockedTitle": "Song blocked",
+        "songSkipped": "{title} was skipped ({reason}).",
+        "payToPlayTitle": "Pay to play",
+        "payToPlayCredits": "@{username} received {credits} request credit(s) ({totalCredits} available).",
+        "payToSkipTitle": "Pay to skip",
+        "payToSkipGift": "Song was skipped by gift “{giftName}”.",
         "requestFailed": "Song request failed.",
         "requestRejectedTitle": "Song request rejected",
         "masterVolumeTitle": "Master volume",
@@ -469,6 +508,18 @@
           "unknownTitle": "Unknown title",
           "queueCount": "Songs in queue",
           "waitingForMusic": "Waiting for music"
+        }
+      }
+    }
+  },
+  "plugins": {
+    "music-bot": {
+      "music_bot": {
+        "plugin": { "description": "Let viewers request, skip and manage music in TikTok LIVE through chat commands." },
+        "ui": {
+          "actions": { "save": "Save" },
+          "status": { "ready": "Ready" },
+          "messages": { "saved": "Saved" }
         }
       }
     }

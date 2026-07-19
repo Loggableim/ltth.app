@@ -4,8 +4,8 @@
   const DEFAULT_SONG_DURATION_LIMIT_SECONDS = 360;
   const I18N_PREFIX = 'plugins.music-bot.music_bot.ui';
   const RUNTIME_I18N_SECTIONS = Object.fromEntries(Object.entries({
-    shell: 'networkTitle connectionLost socketDisconnected apiError unknownError saved error onboardingSettingsTitle onboardingSettingsMeta onboardingOverlayTitle onboardingOverlayMeta onboardingPlayerTitle onboardingPlayerMeta setupHint setupOpen onboardingHelpWithIssues onboardingHelpReady mpvNotInstalled install mpvInstallation mpvReady installationFailed installationSlow statusCheckFailed installing installationStarted installationStartFailed installMpv assistantCompleted assistantCompletedMessage setup onboardingSaveFailed viewerFallback toastDefaultTitle',
-    player: 'seekUnavailable seekFailed nowPlayingEmpty stateIdle statePaused statePlaying stateUnknown playbackAdvancing loading skip pauseTitle noActiveTrack playbackResumed playbackStarted nextTrackPlaying resumeTitle noStartableTrack skipTitle playingNow searchLoading searching noResult queueAdding queueAdded songAddedTitle requestFailed requestRejectedTitle masterVolumeTitle sourceVolumeTitle volumeSetFailed crossfadeSaveFailed requestedBy selectedTitle playerToastTitle sourceYoutube sourceSoundCloud sourceOther',
+    shell: 'networkTitle connectionLost socketDisconnected apiError unknownError saved error onboardingSettingsTitle onboardingSettingsMeta onboardingOverlayTitle onboardingOverlayMeta onboardingPlayerTitle onboardingPlayerMeta setupHint setupOpen onboardingHelpWithIssues onboardingHelpReady mpvNotInstalled install mpvInstallation mpvReady installationFailed installationSlow statusCheckFailed installing installationStarted installationStartFailed installMpv assistantCompleted assistantCompletedMessage setup onboardingSaveFailed viewerFallback toastDefaultTitle setupYtdlpMissingTitle setupYtdlpMissingDescription setupYtdlpInstallNpm setupYtdlpInstallManual setupYtdlpConfigurePath setupMpvMissingTitle setupMpvMissingDescription setupMpvInstallWindows setupMpvInstallLinux setupMpvInstallMacos setupMpvConfigurePath mpvInstallIdle mpvAlreadyAvailable mpvInstalledReady mpvInstallFailed mpvPackageManagerUnavailable mpvInstallTimedOut mpvInstallWindowsPrompt mpvInstallStartFailed mpvInstallChocolateyLock mpvInstallAdminConfirmation mpvInstallPermissionDenied mpvInstallCommandUnavailable mpvInstallExited mpvInstallMissingAfterExit',
+    player: 'seekUnavailable seekFailed nowPlayingEmpty stateIdle statePaused statePlaying stateUnknown playbackAdvancing loading skip pauseTitle noActiveTrack playbackResumed playbackStarted nextTrackPlaying resumeTitle noStartableTrack skipTitle playingNow searchLoading searching noResult queueAdding queueAdded songAddedTitle requestAdded requestFailed requestRejectedTitle requestRequired requestUserBlocked requestLikesRequired requestGiftRequired songBlockedTitle songSkipped payToPlayTitle payToPlayCredits payToSkipTitle payToSkipGift masterVolumeTitle sourceVolumeTitle volumeSetFailed crossfadeSaveFailed requestedBy selectedTitle playerToastTitle sourceYoutube sourceSoundCloud sourceOther',
     queue: 'queueEmptyTitle queueEmptyHint playNow moveUp moveDown queueUpdated trackRemoved queueTitle alreadyPlaying titleStartFailed orderUpdated queueRefreshRetry trackMoved remove',
     autoDj: 'autoDjPlaying autoDjActive autoDjDisabled autoDjOn autoDjOff autoDjSelected autoDjSource autoDjBlocked autoDjStarted autoDjWaiting noTrackAvailable autoDjToastTitle sourceFamiliar sourceDiscoveryFallback sourceDiscovery sourceFamiliarFallback sourceHistory sourceRadio sourceHistoryFallback sourceUnknown',
     moderation: 'banAdded banAddFailed banRemoveFailed enterTitleKeyword banFailed moderationTitle queueMatchesRemoved banLabel trackBanLabel enterValue noEntries delete url keyword channel user artist exactTrack titleKeyword unknownBanType',
@@ -35,6 +35,16 @@
     const key = String(messageKey || '');
     if (!Object.prototype.hasOwnProperty.call(RUNTIME_I18N_SECTIONS, key)) return fallback;
     return tr(key, fallback, params);
+  }
+
+  function localizedProducerText(payload, field, fallback = '') {
+    const source = payload || {};
+    const key = source[`${field}Key`];
+    if (key) {
+      const translated = translateRuntimeMessageKey(key, fallback || source[field] || '', source.params || {});
+      return source.params?.detail ? `${translated} ${source.params.detail}` : translated;
+    }
+    return source[field] || fallback;
   }
 
   function runtimeStateLabel(state) {
@@ -351,7 +361,11 @@
   let latestResolver = null;
   let latestNowPlayingTrack = null;
   let latestQueueTracks = [];
+  let latestQueueLength = 0;
   let latestHistoryTracks = [];
+  let latestAutoDjStatus = null;
+  let latestRadioSources = [];
+  let latestHealth = null;
   let trackBanTargetId = null;
   let trackBanCatalogEventId = null;
   let trackBanScope = 'track';
@@ -488,25 +502,28 @@
     setupIssuesList.innerHTML = list
       .map((issue) => {
         const icon = issue?.severity === 'error' ? '❌' : '⚠️';
-        const instructions = Array.isArray(issue?.installInstructions) ? issue.installInstructions : [];
+        const instructions = Array.isArray(issue?.installInstructionKeys)
+          ? issue.installInstructionKeys.map((key) => translateRuntimeMessageKey(key, key))
+          : (Array.isArray(issue?.installInstructions) ? issue.installInstructions : []);
         const instructionsHtml = instructions.length
           ? `<ul>${instructions.map((instr) => `<li><code>${escapeHtml(instr)}</code></li>`).join('')}</ul>`
           : '';
         const installStatus = issue?.installStatus;
-        const installStatusHtml = installStatus?.message
-          ? `<p class="setup-install-status ${escapeHtml(installStatus.state || 'info')}">${escapeHtml(installStatus.message)}${installStatus.command ? ` <code>${escapeHtml(installStatus.command)}</code>` : ''}</p>`
+        const installStatusMessage = localizedProducerText(installStatus, 'message');
+        const installStatusHtml = installStatusMessage
+          ? `<p class="setup-install-status ${escapeHtml(installStatus.state || 'info')}">${escapeHtml(installStatusMessage)}${installStatus.command ? ` <code>${escapeHtml(installStatus.command)}</code>` : ''}</p>`
           : '';
         const installButtonHtml = issue?.oneClickInstall && issue?.installAction === 'mpv'
           ? `<div class="setup-issue-actions">
               <button class="btn primary small" type="button" data-setup-action="install-mpv" ${installStatus?.state === 'installing' ? 'disabled' : ''}>
-                ${escapeHtml(issue.installButtonLabel || tr('install', 'Installieren'))}
+                ${escapeHtml(localizedProducerText(issue, 'installButton', tr('install', 'Installieren')))}
               </button>
             </div>`
           : '';
         return `
           <div class="setup-issue ${issue?.severity === 'error' ? 'error' : 'warning'}">
-            <strong>${icon} ${escapeHtml(issue?.title || tr('setupHint', 'Setup-Hinweis'))}</strong><br>
-            <span style="font-size:0.9em;">${escapeHtml(issue?.description || '')}</span>
+            <strong>${icon} ${escapeHtml(localizedProducerText(issue, 'title', tr('setupHint', 'Setup-Hinweis')))}</strong><br>
+            <span style="font-size:0.9em;">${escapeHtml(localizedProducerText(issue, 'description', ''))}</span>
             ${installButtonHtml}
             ${installStatusHtml}
             ${instructionsHtml}
@@ -552,7 +569,7 @@
 
     if (installStatus?.state === 'failed' || installStatus?.state === 'unavailable') {
       stopMpvInstallPolling();
-      showToast('error', tr('mpvInstallation', 'MPV Installation'), installStatus.message || tr('installationFailed', 'Installation fehlgeschlagen.'));
+      showToast('error', tr('mpvInstallation', 'MPV Installation'), localizedProducerText(installStatus, 'message', tr('installationFailed', 'Installation fehlgeschlagen.')));
       return;
     }
 
@@ -586,17 +603,17 @@
     }
 
     if (result?.mpvAvailable || status.state === 'installed') {
-      showToast('success', tr('mpvInstallation', 'MPV Installation'), status.message || tr('mpvReady', 'mpv ist bereit.'));
+      showToast('success', tr('mpvInstallation', 'MPV Installation'), localizedProducerText(status, 'message', tr('mpvReady', 'mpv ist bereit.')));
       return;
     }
 
     if (status.state === 'installing' || result?.pending) {
-      showToast('info', tr('mpvInstallation', 'MPV Installation'), status.message || tr('installationStarted', 'Installation wurde gestartet. Status wird automatisch geprueft.'));
+      showToast('info', tr('mpvInstallation', 'MPV Installation'), localizedProducerText(status, 'message', tr('installationStarted', 'Installation wurde gestartet. Status wird automatisch geprueft.')));
       startMpvInstallPolling();
       return;
     }
 
-    showToast('error', tr('mpvInstallation', 'MPV Installation'), result?.error || status.message || tr('installationStartFailed', 'Installation konnte nicht gestartet werden.'));
+    showToast('error', tr('mpvInstallation', 'MPV Installation'), result?.error || localizedProducerText(status, 'message', tr('installationStartFailed', 'Installation konnte nicht gestartet werden.')));
     if (button) {
       button.disabled = false;
       button.textContent = tr('installMpv', 'MPV installieren');
@@ -1330,8 +1347,11 @@
     }
   });
   socket.on('musicbot:status-toast', (payload) => {
-    // Server-originated title/message fields may contain runtime or user-authored data and stay verbatim.
-    showToast(payload?.type || 'info', payload?.title || tr('toastDefaultTitle', 'Musik-Bot'), payload?.message || '');
+    showToast(
+      payload?.type || 'info',
+      localizedProducerText(payload, 'title', tr('toastDefaultTitle', 'Musik-Bot')),
+      localizedProducerText(payload, 'message', '')
+    );
   });
   socket.on('music-bot:setup-status', (payload) => {
     const installStatus = applySetupStatus(payload);
@@ -1524,6 +1544,7 @@
   }
 
   function renderHealth(health = {}) {
+    latestHealth = health;
     const runtime = health.runtime || latestRuntime || health;
     const slots = health.players || runtime?.slots || {};
     if (healthState) healthState.textContent = runtimeStateLabel(health.state || runtime?.transportState || (musicbotSafetyLocked ? 'locked' : 'idle'));
@@ -1834,6 +1855,7 @@
 
   function renderQueue(queue = [], length = 0) {
     latestQueueTracks = Array.isArray(queue) ? queue.slice() : [];
+    latestQueueLength = Number(length ?? queue.length) || 0;
     queueLengthEl.textContent = length ?? queue.length;
     if (heroQueueCount) heroQueueCount.textContent = length ?? queue.length;
     if (!queue || queue.length === 0) {
@@ -2328,7 +2350,13 @@
   async function refreshRadioSources() {
     const result = await get('/radio/playlist-sources');
     if (!result?.success || !playlistRadioSources) return;
-    playlistRadioSources.innerHTML = (result.sources || []).map((source) => `<label class="playlist-source"><input type="checkbox" data-radio-playlist-id="${escapeHtml(source.playlistId)}" ${source.enabled ? 'checked' : ''}><span>${escapeHtml(source.name || source.playlistId)}</span><input type="number" min="1" max="10" step="1" value="${Math.max(1, Math.min(10, Math.round(Number(source.weight) || 1)))}" data-radio-weight="${escapeHtml(source.playlistId)}" aria-label="${escapeHtml(catalogTr('radioWeight', 'Weight'))}"></label>`).join('');
+    latestRadioSources = Array.isArray(result.sources) ? result.sources.slice() : [];
+    renderRadioSources(latestRadioSources);
+  }
+
+  function renderRadioSources(sources = []) {
+    if (!playlistRadioSources) return;
+    playlistRadioSources.innerHTML = sources.map((source) => `<label class="playlist-source"><input type="checkbox" data-radio-playlist-id="${escapeHtml(source.playlistId)}" ${source.enabled ? 'checked' : ''}><span>${escapeHtml(source.name || source.playlistId)}</span><input type="number" min="1" max="10" step="1" value="${Math.max(1, Math.min(10, Math.round(Number(source.weight) || 1)))}" data-radio-weight="${escapeHtml(source.playlistId)}" aria-label="${escapeHtml(catalogTr('radioWeight', 'Weight'))}"></label>`).join('');
   }
   playlistRadioSave?.addEventListener('click', async () => {
     const sources = Array.from(playlistRadioSources?.querySelectorAll('[data-radio-playlist-id]') || []).map((checkbox) => ({
@@ -2360,6 +2388,11 @@
     const statusRes = await get('/auto-dj/status');
     const status = statusRes?.status;
     if (!status) return;
+    latestAutoDjStatus = status;
+    renderAutoDjStatus(status);
+  }
+
+  function renderAutoDjStatus(status = {}) {
     autoDjEnabled.checked = Boolean(status.enabled);
     autoDjMode.value = status.mode || 'history';
     autoDjHistoryPlays.value = status.historyMinPlays || 1;
@@ -2650,6 +2683,25 @@
     banFeedback.textContent = message;
     banFeedback.style.color = isError ? '#ef4444' : 'var(--color-text-secondary)';
   }
+
+  function rerenderLocalizedDynamicSurfaces() {
+    window.i18n?.updateDOM?.();
+    renderSetupIssues(currentSetupIssues);
+    renderOnboarding(currentOnboarding, currentSetupIssues);
+    renderNowPlaying(latestNowPlayingTrack);
+    renderQueue(latestQueueTracks, latestQueueLength);
+    renderHistory(latestHistoryTracks);
+    renderPlaylistList();
+    renderPlaylistEditor();
+    renderRadioSources(latestRadioSources);
+    if (latestAutoDjStatus) renderAutoDjStatus(latestAutoDjStatus);
+    if (latestResolver) renderResolverHealth(latestResolver);
+    if (latestHealth) renderHealth(latestHealth);
+    renderGiftCatalogList();
+  }
+
+  window.i18n?.onLanguageChange?.(rerenderLocalizedDynamicSurfaces);
+  window.i18n?.onChange?.(rerenderLocalizedDynamicSurfaces);
 
   async function boot() {
     if (window.i18n?.ready) await window.i18n.ready;

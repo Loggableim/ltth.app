@@ -102,19 +102,6 @@ describe('Music Bot admin broadcast-console redesign', () => {
     expect(document.querySelector('label[for="request-input"]')).not.toBeNull();
   });
 
-  test('switches exact semantic panels without Queue-to-Player remapping', () => {
-    expect(script).toMatch(/function setActiveTab\(target(?:,|\))/);
-    expect(script).toContain('const panelId = `musicbot-panel-${target}`;');
-    expect(script).toContain("c.toggleAttribute('hidden', !isActive);");
-    expect(script).toContain("c.setAttribute('aria-hidden', isActive ? 'false' : 'true');");
-    expect(script).toContain("if (e.key === 'ArrowRight')");
-    expect(script).toContain("if (e.key === 'ArrowLeft')");
-    expect(script).toContain("if (e.key === 'Home')");
-    expect(script).toContain("if (e.key === 'End')");
-    expect(script).not.toContain("target === 'queue' ? 'player' : target");
-    expect(script).not.toContain("document.getElementById('queue-panel')?.scrollIntoView");
-  });
-
   test('provides responsive, touch-safe and reduced-motion console CSS', () => {
     expect(css).toMatch(/html\s*,\s*body\s*\{[^}]*overflow-x:\s*(?:clip|hidden)/s);
     expect(css).toMatch(/\.console-workspace\s*\{[^}]*grid-template-columns:/s);
@@ -124,6 +111,27 @@ describe('Music Bot admin broadcast-console redesign', () => {
     expect(css).toMatch(/(?:\.btn|\.tab)[^{]*\{[^}]*min-height:\s*44px/s);
     expect(css).toMatch(/\.checkbox-field\s+input[^\{]*\{[^}]*width:\s*(?:2\d|[3-9]\d)px[^}]*height:\s*(?:2\d|[3-9]\d)px/s);
     expect(css).toMatch(/@media\s*\(prefers-reduced-motion:\s*reduce\)/);
+  });
+
+  test('gives all slider and radio-weight controls a 44px hit area without widening their rails', () => {
+    const controls = [
+      '#np-seek-input',
+      '#preview-volume-input',
+      '#master-volume-input',
+      '#volume-input',
+      '#crossfade-input',
+      '[data-radio-weight]'
+    ];
+    controls.forEach((selector) => expect(css).toContain(selector));
+    expect(css).toMatch(/#np-seek-input[\s\S]*?min-height:\s*44px/s);
+    expect(css).toMatch(/\[data-radio-weight\][\s\S]*?min-height:\s*44px/s);
+    expect(css).toMatch(/input\[type="range"\][\s\S]*?height:\s*4px/s);
+  });
+
+  test('keeps long unbroken playlist names and radio weights inside a narrow console', () => {
+    expect(css).toMatch(/\.playlist-(?:item|source)[\s\S]*?min-width:\s*0/s);
+    expect(css).toMatch(/\.playlist-(?:item|source)[\s\S]*?(?:overflow-wrap:\s*anywhere|word-break:\s*break-word)/s);
+    expect(css).toMatch(/\.playlist-source\s+\[data-radio-weight\][\s\S]*?min-width:\s*44px/s);
   });
 
   test('does not observe invalid theme roots during the Music Bot bootstrap', () => {

@@ -56,8 +56,36 @@
         "settingsLink": "Zu den Einstellungen",
         "overlayLink": "Zum OBS-Overlay",
         "onboardingDone": "Ich bin fertig",
-        "setupWarning": "Warnung: Einrichtung des Musik-Bots erforderlich"
+        "setupWarning": "Warnung: Einrichtung des Musik-Bots erforderlich",
+        "setupYtdlpMissingTitle": "yt-dlp nicht gefunden",
+        "setupYtdlpMissingDescription": "yt-dlp wird für die YouTube-Suche und Song-Downloads benötigt. Ohne yt-dlp steht nur der eingeschränkte oEmbed-Fallback zur Verfügung.",
+        "setupYtdlpInstallNpm": "Im Verzeichnis app/ npm install youtube-dl-exec ausführen",
+        "setupYtdlpInstallManual": "yt-dlp manuell von github.com/yt-dlp/yt-dlp/releases herunterladen",
+        "setupYtdlpConfigurePath": "Den yt-dlp-Pfad unter Einstellungen > Resolver setzen",
+        "setupMpvMissingTitle": "mpv Media Player nicht gefunden",
+        "setupMpvMissingDescription": "Der Musik-Bot benötigt mpv für die Audio-Wiedergabe. Ohne mpv wird keine Musik abgespielt.",
+        "setupMpvInstallWindows": "Windows: winget, scoop oder choco verwenden",
+        "setupMpvInstallLinux": "Linux: sudo apt install mpv ausführen",
+        "setupMpvInstallMacos": "macOS: brew install mpv ausführen",
+        "setupMpvConfigurePath": "Den mpv-Pfad unter Einstellungen > Wiedergabe setzen",
+        "mpvInstallIdle": "MPV-Installation wartet.",
+        "mpvAlreadyAvailable": "mpv ist bereits verfügbar.",
+        "mpvInstalledReady": "mpv wurde installiert und ist bereit.",
+        "mpvInstallFailed": "MPV-Installation fehlgeschlagen.",
+        "mpvPackageManagerUnavailable": "Kein unterstützter Paketmanager gefunden. Installiere winget, scoop, choco, brew oder einen Linux-Paketmanager und versuche es erneut.",
+        "mpvInstallTimedOut": "Die MPV-Installation wurde wegen Zeitüberschreitung abgebrochen. Bestätige den Administrator-Dialog und versuche es erneut.",
+        "mpvInstallWindowsPrompt": "Windows öffnet einen Administrator-Dialog für die MPV-Installation. Bitte bestätigen; danach wird automatisch erneut geprüft.",
+        "mpvInstallStartFailed": "Die MPV-Installation konnte nicht gestartet werden: {error}",
+        "mpvInstallChocolateyLock": "Chocolatey konnte wegen einer gesperrten Lockdatei nicht fortfahren: {path}",
+        "mpvInstallAdminConfirmation": "Chocolatey wartet auf eine Administrator- oder Bestätigungsabfrage. Bitte erneut installieren und den Dialog bestätigen.",
+        "mpvInstallPermissionDenied": "Der Paketmanager meldet fehlende Rechte. Starte LTTH als Administrator oder installiere mpv manuell.",
+        "mpvInstallCommandUnavailable": "Der Paketmanager konnte den Installationsbefehl nicht ausführen. Installiere einen Paketmanager oder setze den mpv-Pfad manuell.",
+        "mpvInstallExited": "Die MPV-Installation ist mit Exit-Code {code} fehlgeschlagen.",
+        "mpvInstallMissingAfterExit": "Die MPV-Installation endete mit Exit-Code {code}, aber mpv wurde nicht gefunden."
       },
+      "actions": { "save": "Speichern" },
+      "status": { "ready": "Bereit" },
+      "messages": { "saved": "Gespeichert" },
       "tabs": {
         "ariaLabel": "Soundbot-Bereiche",
         "player": "Wiedergabe",
@@ -97,6 +125,17 @@
         "queueAdding": "Wird zur Queue hinzugefügt…",
         "queueAdded": "Hinzugefügt: {title}",
         "songAddedTitle": "Song hinzugefügt",
+        "requestAdded": "Hinzugefügt: {title} (#{position})",
+        "requestRequired": "Bitte gib einen Song an.",
+        "requestUserBlocked": "@{username} ist für Song-Requests gesperrt.",
+        "requestLikesRequired": "@{username}: {likes}/{requiredLikes} Likes.",
+        "requestGiftRequired": "@{username} hat kein gültiges Request-Gift gesendet.",
+        "songBlockedTitle": "Song geblockt",
+        "songSkipped": "{title} wurde übersprungen ({reason}).",
+        "payToPlayTitle": "Pay-to-Play",
+        "payToPlayCredits": "@{username} hat {credits} Request-Credit(s) erhalten ({totalCredits} verfügbar).",
+        "payToSkipTitle": "Pay-to-Skip",
+        "payToSkipGift": "Song wurde per Gift „{giftName}“ übersprungen.",
         "requestFailed": "Fehler beim Request.",
         "requestRejectedTitle": "Song-Request abgelehnt",
         "masterVolumeTitle": "Master-Lautstärke",
@@ -469,6 +508,18 @@
           "unknownTitle": "Unbekannter Titel",
           "queueCount": "Titel in der Queue",
           "waitingForMusic": "Warten auf Musik"
+        }
+      }
+    }
+  },
+  "plugins": {
+    "music-bot": {
+      "music_bot": {
+        "plugin": { "description": "Zuschauer können Musik im TikTok-LIVE-Chat anfordern, überspringen und verwalten." },
+        "ui": {
+          "actions": { "save": "Speichern" },
+          "status": { "ready": "Bereit" },
+          "messages": { "saved": "Gespeichert" }
         }
       }
     }

@@ -40,6 +40,7 @@ function installProductionI18nClient(window, locale, translations) {
   client.translations = translations[locale]?.plugins
     ? translations
     : { [locale]: translations };
+  client._readyResolve();
   window.i18n = client;
 }
 
@@ -1319,6 +1320,158 @@ describe('Music Bot runtime and UI regressions', () => {
       ].map((id) => dom.window.document.getElementById(id)?.textContent || '').join(' ');
       expect(dynamicSurface).not.toMatch(/Aktuell|Warteschlange|Lädt|Pausiert|Wiedergabe|Netzwerk|Verbindung|nicht verfügbar|Dateien|Keiner|Ausgewaehlt/i);
     }
+  });
+
+  test('redacts scheme-less signed fragments from health and diagnostics payloads without losing normal ampersands', () => {
+    const { plugin } = createPluginWithQueue([]);
+    plugin.playbackEngine = {
+      getState: jest.fn(() => 'error'),
+      getNowPlaying: jest.fn(() => ({ id: 'current', title: 'Artist & Title' })),
+      getSnapshot: jest.fn(() => ({
+        slots: {
+          A: {
+            state: 'error',
+            media: { title: 'Artist & Title' },
+            lastError: { message: 'decoder failed: sig=SECRET&expire=999&x-amz-signature=AWS_SECRET' }
+          }
+        },
+        lastError: { message: 'stream token=TOP_SECRET ip=127.0.0.1' }
+      }))
+    };
+    plugin.musicResolver = {
+      getSnapshot: jest.fn(() => ({
+        progress: { error: 'videoplayback&signature=OTHER_SECRET&key=KEY_SECRET' }
+      }))
+    };
+    plugin._stateTransitions = [{ details: 'retry lsig=LSIG_SECRET credential=CREDENTIAL_SECRET' }];
+
+    const diagnostics = plugin._buildDiagnosticsPayload();
+    const health = plugin._buildHealthPayload(diagnostics.runtime, diagnostics.resolver);
+    const serialized = JSON.stringify({ diagnostics, health });
+
+    expect(serialized).toContain('Artist & Title');
+    expect(serialized).not.toMatch(/SECRET|127\.0\.0\.1|CREDENTIAL/i);
+  });
+
+  test('rerenders retained dynamic surfaces after the active language changes', async () => {
+    const { dom, socketHandlers } = bootMusicBotUi({
+      translations: productionCatalogs,
+      productionLocale: 'en',
+      setupIssues: [{
+        id: 'mpv-missing',
+        severity: 'error',
+        titleKey: 'setupMpvMissingTitle',
+        descriptionKey: 'setupMpvMissingDescription',
+        oneClickInstall: true,
+        installAction: 'mpv',
+        installButtonKey: 'installMpv',
+        installStatus: { state: 'failed', messageKey: 'mpvInstallFailed' }
+      }],
+      historyPayload: [{ id: 'event-1', songId: 'song-1', title: 'History title', requestedBy: 'Viewer', feedback: 'up' }],
+      playlistsPayload: [{ id: 'playlist-1', name: 'Playlist', mode: 'ordered', itemCount: 1 }],
+      playlistDetails: { 'playlist-1': { id: 'playlist-1', name: 'Playlist', mode: 'ordered', revision: 1, items: [] } },
+      radioSourcesPayload: [{ playlistId: 'playlist-1', name: 'Playlist', enabled: true, weight: 3 }],
+      autoDjStatus: { enabled: true, mode: 'history', lastResult: { state: 'playing' } }
+    });
+    doms.push(dom);
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (dom.window.document.getElementById('history-list').textContent.includes('History title')) break;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    expect(dom.window.document.getElementById('history-list').textContent).toContain('History title');
+
+    socketHandlers['musicbot:queue-update']({ queue: [{ id: 'queue-1', title: 'Queue title' }], length: 1 });
+    socketHandlers['musicbot:health']({ state: 'playing', mpvAvailable: true, controllerHealthy: true, players: {} });
+    await dom.window.i18n.setLocale('es');
+
+    expect(dom.window.document.getElementById('queue-list').textContent).toContain('Espectador');
+    expect(dom.window.document.getElementById('history-list').textContent).toContain('Me gusta');
+    expect(dom.window.document.getElementById('playlist-list').textContent).toContain('En orden');
+    expect(dom.window.document.getElementById('auto-dj-status').textContent).toBe('Reproduciendo');
+    expect(dom.window.document.getElementById('health-mpv').textContent).toBe('listo');
+    expect(dom.window.document.getElementById('setup-issues-list').textContent).not.toContain('mpv Media Player nicht gefunden');
+  });
+
+  test('uses roving tab focus and semantic panel visibility for keyboard navigation', async () => {
+    const { dom } = bootMusicBotUi();
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const document = dom.window.document;
+    const player = document.getElementById('musicbot-tab-player');
+    const queue = document.getElementById('musicbot-tab-queue');
+    const overlay = document.getElementById('musicbot-tab-overlay');
+    const playerPanel = document.getElementById('musicbot-panel-player');
+    const queuePanel = document.getElementById('musicbot-panel-queue');
+    const overlayPanel = document.getElementById('musicbot-panel-overlay');
+
+    player.focus();
+    player.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(document.activeElement).toBe(queue);
+    expect(queue.getAttribute('tabindex')).toBe('0');
+    expect(queue.getAttribute('aria-selected')).toBe('true');
+    expect(queuePanel.hidden).toBe(false);
+    expect(queuePanel.getAttribute('aria-hidden')).toBe('false');
+    expect(playerPanel.hidden).toBe(true);
+
+    queue.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+    expect(document.activeElement).toBe(overlay);
+    expect(overlay.getAttribute('tabindex')).toBe('0');
+    expect(overlay.getAttribute('aria-selected')).toBe('true');
+    expect(overlayPanel.hidden).toBe(false);
+
+    overlay.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+    expect(document.activeElement).toBe(player);
+    expect(player.getAttribute('tabindex')).toBe('0');
+    expect(player.getAttribute('aria-selected')).toBe('true');
+    expect(playerPanel.hidden).toBe(false);
+  });
+
+  test('emits semantic setup issue and MPV status codes instead of German UI text', () => {
+    const { plugin } = createPluginWithQueue([]);
+    plugin._ytdlpAvailable = false;
+    plugin._mpvAvailable = false;
+    plugin._mpvInstallStatus = {
+      state: 'failed',
+      message: 'Installation fehlgeschlagen.',
+      command: 'winget install mpv'
+    };
+
+    const issues = plugin._getSetupIssues();
+    const mpvIssue = issues.find((issue) => issue.id === 'mpv-missing');
+    const ytdlpIssue = issues.find((issue) => issue.id === 'ytdlp-missing');
+
+    expect(mpvIssue).toEqual(expect.objectContaining({
+      titleKey: 'setupMpvMissingTitle',
+      descriptionKey: 'setupMpvMissingDescription',
+      installButtonKey: 'installMpv',
+      installStatus: expect.objectContaining({ messageKey: 'mpvInstallFailed' })
+    }));
+    expect(ytdlpIssue).toEqual(expect.objectContaining({
+      titleKey: 'setupYtdlpMissingTitle',
+      descriptionKey: 'setupYtdlpMissingDescription'
+    }));
+    expect(mpvIssue.title).toBeUndefined();
+    expect(ytdlpIssue.description).toBeUndefined();
+  });
+
+  test('preserves user data while emitting producer-owned toast copy as semantic keys', () => {
+    const { plugin, emitted } = createPluginWithQueue([]);
+
+    plugin._emitToast('success', {
+      titleKey: 'songAddedTitle',
+      messageKey: 'requestAdded',
+      params: { title: 'Viewer supplied & title', position: 1 }
+    });
+
+    const toast = emitted.find((entry) => entry.event === 'musicbot:status-toast')?.payload;
+    expect(toast).toEqual(expect.objectContaining({
+      titleKey: 'songAddedTitle',
+      messageKey: 'requestAdded',
+      params: { title: 'Viewer supplied & title', position: 1 }
+    }));
+    expect(toast.title).toBeUndefined();
+    expect(toast.message).toBeUndefined();
   });
 
   test.each(['de', 'en', 'es', 'fr'])('renders the live gift count and metadata from placeholders in %s', async (locale) => {

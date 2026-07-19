@@ -56,8 +56,36 @@
         "settingsLink": "Ir a los ajustes",
         "overlayLink": "Ir a la superposición de OBS",
         "onboardingDone": "He terminado",
-        "setupWarning": "Aviso: debes configurar el bot de música"
+        "setupWarning": "Aviso: debes configurar el bot de música",
+        "setupYtdlpMissingTitle": "yt-dlp no encontrado",
+        "setupYtdlpMissingDescription": "yt-dlp es necesario para buscar en YouTube y descargar canciones. Sin él solo está disponible la alternativa limitada de oEmbed.",
+        "setupYtdlpInstallNpm": "Ejecuta npm install youtube-dl-exec en el directorio app/",
+        "setupYtdlpInstallManual": "Descarga yt-dlp manualmente desde github.com/yt-dlp/yt-dlp/releases",
+        "setupYtdlpConfigurePath": "Configura la ruta de yt-dlp en Ajustes > Resolver",
+        "setupMpvMissingTitle": "Reproductor multimedia mpv no encontrado",
+        "setupMpvMissingDescription": "El bot de música necesita mpv para reproducir audio. Sin mpv no se puede reproducir música.",
+        "setupMpvInstallWindows": "Windows: usa winget, scoop o choco",
+        "setupMpvInstallLinux": "Linux: ejecuta sudo apt install mpv",
+        "setupMpvInstallMacos": "macOS: ejecuta brew install mpv",
+        "setupMpvConfigurePath": "Configura la ruta de mpv en Ajustes > Reproducción",
+        "mpvInstallIdle": "La instalación de MPV está en espera.",
+        "mpvAlreadyAvailable": "mpv ya está disponible.",
+        "mpvInstalledReady": "mpv se instaló y está listo.",
+        "mpvInstallFailed": "La instalación de MPV falló.",
+        "mpvPackageManagerUnavailable": "No se encontró un gestor de paquetes compatible. Instala winget, scoop, choco, brew o un gestor de paquetes de Linux e inténtalo de nuevo.",
+        "mpvInstallTimedOut": "La instalación de MPV agotó el tiempo. Confirma el diálogo de administrador e inténtalo de nuevo.",
+        "mpvInstallWindowsPrompt": "Windows está abriendo un diálogo de administrador para instalar MPV. Confírmalo; después se comprobará el estado automáticamente.",
+        "mpvInstallStartFailed": "No se pudo iniciar la instalación de MPV: {error}",
+        "mpvInstallChocolateyLock": "Chocolatey no pudo continuar porque su archivo de bloqueo está en uso: {path}",
+        "mpvInstallAdminConfirmation": "Chocolatey espera una confirmación o permisos de administrador. Instala de nuevo y confirma el diálogo.",
+        "mpvInstallPermissionDenied": "El gestor de paquetes informó permisos insuficientes. Inicia LTTH como administrador o instala mpv manualmente.",
+        "mpvInstallCommandUnavailable": "El gestor de paquetes no pudo ejecutar el comando de instalación. Instala un gestor de paquetes o configura manualmente la ruta de mpv.",
+        "mpvInstallExited": "La instalación de MPV falló con el código de salida {code}.",
+        "mpvInstallMissingAfterExit": "La instalación de MPV terminó con el código de salida {code}, pero no se encontró mpv."
       },
+      "actions": { "save": "Guardar" },
+      "status": { "ready": "Listo" },
+      "messages": { "saved": "Guardado" },
       "tabs": {
         "ariaLabel": "Secciones del Soundbot",
         "player": "Reproductor",
@@ -97,6 +125,17 @@
         "queueAdding": "Añadiendo a la cola…",
         "queueAdded": "Añadida: {title}",
         "songAddedTitle": "Canción añadida",
+        "requestAdded": "Añadida: {title} (#{position})",
+        "requestRequired": "Indica una canción.",
+        "requestUserBlocked": "@{username} está bloqueado para solicitar canciones.",
+        "requestLikesRequired": "@{username}: {likes}/{requiredLikes} me gusta.",
+        "requestGiftRequired": "@{username} no ha enviado un regalo de solicitud válido.",
+        "songBlockedTitle": "Canción bloqueada",
+        "songSkipped": "Se omitió {title} ({reason}).",
+        "payToPlayTitle": "Pago por reproducción",
+        "payToPlayCredits": "@{username} recibió {credits} crédito(s) de solicitud ({totalCredits} disponibles).",
+        "payToSkipTitle": "Pago por salto",
+        "payToSkipGift": "La canción se omitió con el regalo “{giftName}”.",
         "requestFailed": "Error al solicitar la canción.",
         "requestRejectedTitle": "Solicitud de canción rechazada",
         "masterVolumeTitle": "Volumen maestro",
@@ -469,6 +508,18 @@
           "unknownTitle": "Título desconocido",
           "queueCount": "Canciones en cola",
           "waitingForMusic": "Esperando música"
+        }
+      }
+    }
+  },
+  "plugins": {
+    "music-bot": {
+      "music_bot": {
+        "plugin": { "description": "Permite que los espectadores soliciten, salten y gestionen música en TikTok LIVE mediante comandos de chat." },
+        "ui": {
+          "actions": { "save": "Guardar" },
+          "status": { "ready": "Listo" },
+          "messages": { "saved": "Guardado" }
         }
       }
     }

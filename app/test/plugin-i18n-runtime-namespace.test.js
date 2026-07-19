@@ -109,4 +109,36 @@ describe('plugin i18n runtime namespaces', () => {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
+
+  test('keeps a complete legacy catalog when it also exposes namespaced compatibility metadata', () => {
+    jest.resetModules();
+    const { I18n } = require('../modules/i18n');
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-i18n-hybrid-catalog-'));
+    const localesDir = path.join(root, 'locales');
+    const pluginRoot = path.join(root, 'plugins');
+    const pluginDir = path.join(pluginRoot, 'hybrid');
+    const locales = ['de', 'en', 'es', 'fr'];
+
+    try {
+      fs.mkdirSync(localesDir, { recursive: true });
+      fs.mkdirSync(path.join(pluginDir, 'locales'), { recursive: true });
+      fs.writeFileSync(path.join(pluginDir, 'plugin.json'), JSON.stringify({ id: 'hybrid-plugin' }), 'utf8');
+      locales.forEach((locale) => {
+        fs.writeFileSync(path.join(localesDir, `${locale}.json`), '{}', 'utf8');
+        fs.writeFileSync(path.join(pluginDir, 'locales', `${locale}.json`), JSON.stringify({
+          legacy: { labels: { complete: 'Complete catalog label' } },
+          plugins: { 'hybrid-plugin': { contract: { ready: 'Compatibility metadata' } } }
+        }), 'utf8');
+      });
+
+      const i18n = new I18n('en', { localesDir, pluginRoots: [pluginRoot] });
+
+      expect(i18n.t('plugins.hybrid-plugin.legacy.labels.complete', {}, 'en'))
+        .toBe('Complete catalog label');
+      expect(i18n.t('plugins.hybrid-plugin.plugins.hybrid-plugin.contract.ready', {}, 'en'))
+        .toBe('Compatibility metadata');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

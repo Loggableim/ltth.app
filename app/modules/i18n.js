@@ -118,8 +118,14 @@ class I18n {
                     this.translations[locale] = {};
                   }
 
-                  const namespacedTranslations = pluginTranslations.plugins
-                    && pluginTranslations.plugins[pluginId]
+                  const hasNamespacedPlugin = pluginTranslations.plugins
+                    && pluginTranslations.plugins[pluginId];
+                  const hasLegacyPluginRoot = Object.keys(pluginTranslations)
+                    .some((key) => key !== 'plugins');
+                  // Some legacy catalogs expose their own root alongside a
+                  // compact `plugins.<id>` compatibility contract. Keep the
+                  // complete legacy root instead of discarding UI namespaces.
+                  const namespacedTranslations = hasNamespacedPlugin && !hasLegacyPluginRoot
                     ? pluginTranslations
                     : { plugins: { [pluginId]: pluginTranslations } };
 

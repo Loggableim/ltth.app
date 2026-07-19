@@ -75,6 +75,18 @@ describe('Music Bot runtime i18n', () => {
     });
   });
 
+  test.each(locales)('preserves the shared generated-plugin locale contract for %s', (locale) => {
+    const base = JSON.parse(fs.readFileSync(path.join(pluginRoot, `locales/${locale}.json`), 'utf8')).music_bot;
+    expect(base.plugin.description).toEqual(expect.any(String));
+    expect(base.ui.actions.save).toEqual(expect.any(String));
+    expect(base.ui.status.ready).toEqual(expect.any(String));
+    expect(base.ui.messages.saved).toEqual(expect.any(String));
+    expect(base.plugin.description.trim()).not.toBe('');
+    expect(base.ui.actions.save.trim()).not.toBe('');
+    expect(base.ui.status.ready.trim()).not.toBe('');
+    expect(base.ui.messages.saved.trim()).not.toBe('');
+  });
+
   test.each(locales)('resolves every literal dynamic admin key from a meaningful section in %s', (locale) => {
     const source = fs.readFileSync(path.join(pluginRoot, 'assets/ui.js'), 'utf8');
     const base = JSON.parse(fs.readFileSync(path.join(pluginRoot, `locales/${locale}.json`), 'utf8')).music_bot.ui;
