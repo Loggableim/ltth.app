@@ -2,7 +2,7 @@
 
 ## Status and decision
 
-This design was approved on 2026-07-19. The selected approach is contract-first hardening of the existing plugin. The renderer will not be rewritten, and the work will not stop at production-only hotfixes.
+The original design was approved on 2026-07-19. The C6/C7 visual amendment for Boykisser fidelity and complete rendered bounds was added from subsequent user feedback and awaits renewed approval before implementation planning resumes. The selected approach is contract-first hardening of the existing plugin. The renderer will not be rewritten, and the work will not stop at production-only hotfixes.
 
 The completed plugin will be released as `3.1.1` with `devStatus: "stable"` and `enabled: false`. It remains opt-in because it requires the Loggableim OBS WebGPU build. Standard OBS remains unsupported.
 
@@ -26,7 +26,7 @@ The existing baseline proves:
 - The real OBS WebGPU source previously reported renderer protocol 3, `depth3d-v1`, `boykisser-v1`, 20 loaded sounds, zero failed sounds, and a successful Furry finale in portrait and landscape.
 - The broad application Jest suite already has unrelated baseline failures in guide/workflow and AnimazingPal areas. Those failures must not be attributed to this plugin, and this work must not add new broad-suite failures.
 
-These passes do not prove completion because the audit reproduced 25 uncovered defects and several runtime gaps.
+These passes do not prove completion because the audit reproduced 27 uncovered defects and several runtime gaps.
 
 ## Approaches considered
 
@@ -114,6 +114,14 @@ Decoded images are released after upload. The outer load-promise cache is bounde
 
 Adaptive pressure includes allocated delayed particles and recent cumulative drops. Idle behavior and bloom-disabled allocation will be measured in Chrome and OBS; any measured violation of the configured minimum FPS or unbounded growth is treated as a defect before release.
 
+### Visible bounds cover the rendered envelope, not only its center
+
+Every submitted command is fitted at actual GPU admission against the current logical viewport after resolution, orientation, and depth are known. A single shape-envelope registry covers all current renderable IDs 0 through 26: every legacy shape, standard and avatar-headed rockets, every V2 primitive, and every V2 glyph. Adding a new renderable shape without an envelope profile fails a contract test.
+
+The conservative envelope includes the shape's maximum particle displacement over its visible lifetime, gravity/drag/turbulence, perspective scale, rotated particle or rocket quad, trail width, split children, glow, and bloom radius. If an envelope would cross the viewport, the complete correlated effect group is translated into the safe region first and, only when translation cannot fit it, uniformly reduced with one shared intensity/size transform so its proportions, formation spacing, and rocket path remain intact. Individual vertices and particles are never clamped at the clip edge because that would deform stars, rings, glyphs, and rocket bodies.
+
+The standard rocket body, flame, optional avatar head, and decal remain fully visible through the upper end of their swept path. A launch origin or exhaust trail may intentionally begin below the bottom edge, but no rocket nose, burst, particle sprite, glow, or bloom may be cut by the top edge. The same full-envelope rule applies to side and bottom edges once a burst is onscreen.
+
 ### Choreography uses visible and audible time, not only explosion beats
 
 The show planner/runtime exposes or derives an activity interval for each rocket, layer, split child, bang, and crackle. A declared rest/breath window is valid only when none of those intervals overlaps it.
@@ -126,9 +134,15 @@ Multi-shell `chrysanthemum`, `willow`, and `cathedral` cues receive deterministi
 - `willow`: a broad descending canopy with distinct columns and depth progression.
 - `cathedral`: symmetric side towers plus a higher central arch/apex pattern.
 
-For any multi-shell spatial formation, targets are distinct, remain inside the existing safe render bounds, and keep a normalized minimum center separation of 0.06. Portrait layouts use the narrower safe width without clipping; landscape layouts use the available width while preserving symmetry.
+For any multi-shell spatial formation, targets are distinct, remain inside full-envelope-safe render bounds, and keep a normalized minimum center separation of 0.06. Portrait layouts use the narrower safe width without clipping; landscape layouts use the available width while preserving symmetry.
 
 Furry Celebration retains its centered readable Boykisser hero, controlled depth, Pride accents, and real 600/1,000/1,500 ms reveal gaps for short/medium/long shows.
+
+### Boykisser is a semantic character contract
+
+The hero is not accepted merely because a generic animal-head glyph is centered. One deterministic geometry source samples points and semantic roles for tests and generates the WGSL representation, so the verified landmark model cannot drift from the shader. Its procedural geometry uses explicit semantic feature bands for a rounded white cat head, a small forehead tuft, two prominent triangular cat ears, separately readable pink inner ears, two symmetric high-contrast closed/crescent eyes, a tiny centered nose, the characteristic curved W-shaped smile with a visible pink tongue, and bilateral pink blush. Cheek fluff stays short and symmetric. The lower face remains broad and rounded; an elongated muzzle, narrow wolf jaw, oversized side spikes, or wolf-like ear silhouette is a failure.
+
+Feature roles own their colors independently of incidental particle-index cycling: white/silver for the head, a high-contrast facial-mark color for eyes/nose/mouth, and pink accents for inner ears, tongue, and blush. Low-density fallback geometry retains every identifying landmark instead of dropping facial features first. A deterministic landmark contract verifies feature allocation, symmetry, containment, and relative placement, while real Chrome and OBS captures at portrait and landscape stream sizes verify that the rendered result reads immediately as the Boykisser meme rather than a fox or wolf.
 
 ### Settings and designer are keyboard complete
 
@@ -177,6 +191,8 @@ Manifest version, README version text, overlay asset cache keys, settings/design
 | C3 | Timing | Declared rest windows contain rockets, tails, bangs, or crackle. | Rest windows are visibly and audibly empty. |
 | C4 | Accessibility | Active-shape controls are pointer-only `<div>` elements. | Focus, role/name/state, Enter, and Space are supported. |
 | C5 | Designer | SVG handles advertise button semantics but cannot activate by keyboard. | Enter/Space selects the focused handle identically to click. |
+| C6 | Character fidelity | The procedural Boykisser reads as a generic wolf-like head and lacks sufficiently distinct semantic landmarks. | Rounded cat geometry, iconic face, inner ears, tongue, and blush remain immediately recognizable at stream size. |
+| C7 | Visible bounds | Star, ring, standard rockets, and potentially other effects are admitted by center point while their rendered extent is cut at the top. | Every registered shape and rocket variant fits its complete particle/sprite/trail/glow/bloom envelope without deformation. |
 
 ## Error handling and lifecycle invariants
 
@@ -187,6 +203,7 @@ Manifest version, README version text, overlay asset cache keys, settings/design
 - No invalid configuration can be acknowledged with a value different from the value the runtime actually uses.
 - No failed image load remains permanently cached.
 - No accepted upload can be served until extension, MIME, and signature validation all pass.
+- No render command can bypass a current-generation, current-viewport envelope fit; every supported shape ID has one conservative profile.
 - Renderer and route errors return stable machine-readable codes and log one actionable message without flooding per frame.
 
 ## Verification strategy
@@ -203,6 +220,7 @@ For all nine styles, three lengths, two orientations, intensities 1/5/10, and 64
 
 - plan and runtime validation succeed;
 - events stay within show bounds and canvas safe bounds;
+- every command's complete visible envelope stays inside the viewport, with only documented below-canvas launch origins exempted;
 - multi-shell spatial targets are distinct with at least 0.06 normalized spacing;
 - declared rest intervals contain no visual or audio activity interval;
 - every show has launch and explosion audio plus a deliberate opening/build/highlight/finale progression;
@@ -223,6 +241,8 @@ Using installed Chrome/D3D WebGPU:
 - prove stale readback completion and queued commands cannot alter the recovered generation;
 - stall admission past deadlines and prove overdue batches are dropped;
 - resize portrait to landscape during an active V2 show and prove future targets remain visible;
+- enumerate every legacy shape, rocket variant, V2 primitive, and V2 glyph at 540p, 1080p, and 4K in both orientations and at depth -1/0/+1; verify transparent guard pixels around the top and all non-exempt edges throughout each visible lifetime;
+- explicitly exercise star, ring, and the standard rocket at upper safe-bound targets and prove their particle/sprite/trail/glow/bloom envelopes remain complete and undistorted;
 - verify no atlas-neighbor bleed at the chosen sampling level.
 
 ### Real OBS WebGPU acceptance
@@ -235,9 +255,9 @@ Before live testing, snapshot plugin configuration, OBS source dimensions/orient
 - 20 loaded sounds and zero failed sounds;
 - no new renderer, WGSL, device, socket, or audio errors.
 
-Run all 54 style/length/orientation combinations once. Capture telemetry and representative opening/highlight/finale frames. Require no clipping, collapsed targets, important action outside safe areas, unexplained dead holding time, or activity inside declared rest windows.
+Run all 54 style/length/orientation combinations once. Capture telemetry and representative opening/highlight/finale frames. Require no clipping, collapsed targets, important action outside safe areas, unexplained dead holding time, or activity inside declared rest windows. Inspect the transparent top guard band throughout representative star, ring, standard-rocket, and high-intensity sequences rather than accepting center-point coordinates as proof.
 
-For Furry Celebration, require a centered readable unclipped hero in both aspects, visible depth progression, Pride accents, and genuine 600/1,000/1,500 ms reveal gaps.
+For Furry Celebration, require a centered readable unclipped hero in both aspects, visible depth progression, Pride accents, and genuine 600/1,000/1,500 ms reveal gaps. Captures must clearly show the rounded cat silhouette, paired inner ears, eyes, nose, W-smile, tongue, and blush at actual OBS output size; a wolf/fox reading fails acceptance.
 
 Run a long 4K stress show with adaptive performance enabled and disabled. With adaptive enabled, p95 overlay FPS must remain at or above the normalized minimum FPS after warm-up, render scale must stay inside configured bounds, and renderer/device errors and command drops must remain zero. With adaptive disabled, the renderer must honor the opt-out and report truthful pressure without silently changing quality.
 
@@ -263,6 +283,6 @@ In a real browser:
 
 ## Completion gate
 
-The plugin is complete only when every B/G/C defect row has a red-to-green regression, all deterministic and runtime gates pass, the real OBS 54-combination matrix and stress run pass, documentation/version/cache surfaces agree on 3.1.1 stable opt-in, and a final whole-branch review has no unresolved correctness, safety, lifecycle, accessibility, or visual-quality finding.
+The plugin is complete only when all 27 B/G/C defect rows have a red-to-green regression, all deterministic and runtime gates pass, the real OBS 54-combination matrix and stress run pass, documentation/version/cache surfaces agree on 3.1.1 stable opt-in, and a final whole-branch review has no unresolved correctness, safety, lifecycle, accessibility, clipping, character-fidelity, or visual-quality finding.
 
 Passing the pre-existing 938 tests alone, a single attractive screenshot, or one successful Furry finale is not sufficient evidence.
