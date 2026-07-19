@@ -170,4 +170,41 @@ describe('plugin i18n runtime namespaces', () => {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
+
+  test('drops nested prototype keys from pure and hybrid catalogs and ignores unsafe plugin ids', () => {
+    jest.resetModules();
+    const { I18n } = require('../modules/i18n');
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-i18n-safe-catalog-'));
+    const localesDir = path.join(root, 'locales');
+    const pluginRoot = path.join(root, 'plugins');
+    const writePlugin = (directory, id, json) => {
+      const pluginDir = path.join(pluginRoot, directory);
+      fs.mkdirSync(path.join(pluginDir, 'locales'), { recursive: true });
+      fs.writeFileSync(path.join(pluginDir, 'plugin.json'), JSON.stringify({ id }), 'utf8');
+      ['de', 'en', 'es', 'fr'].forEach((locale) => {
+        fs.writeFileSync(path.join(pluginDir, 'locales', `${locale}.json`), json, 'utf8');
+      });
+    };
+
+    try {
+      fs.mkdirSync(localesDir, { recursive: true });
+      ['de', 'en', 'es', 'fr'].forEach((locale) => fs.writeFileSync(path.join(localesDir, `${locale}.json`), '{}', 'utf8'));
+      writePlugin('pure', 'pure-plugin', '{"safe":{"label":"Pure"},"nested":{"__proto__":{"polluted":"yes"}}}');
+      writePlugin('hybrid', 'hybrid-plugin', '{"legacy":{"label":"Legacy"},"plugins":{"hybrid-plugin":{"contract":{"ready":"Ready"},"nested":{"constructor":{"polluted":"yes"}}}},"__proto__":{"polluted":"yes"}}');
+      writePlugin('unsafe', '__proto__', '{"safe":{"label":"Unsafe"}}');
+      const error = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const i18n = new I18n('en', { localesDir, pluginRoots: [pluginRoot] });
+      error.mockRestore();
+
+      expect(i18n.t('plugins.pure-plugin.safe.label', {}, 'en')).toBe('Pure');
+      expect(i18n.t('plugins.hybrid-plugin.legacy.label', {}, 'en')).toBe('Legacy');
+      expect(i18n.t('plugins.hybrid-plugin.contract.ready', {}, 'en')).toBe('Ready');
+      expect(i18n.t('plugins.__proto__.safe.label', {}, 'en')).toBe('plugins.__proto__.safe.label');
+      expect({}.polluted).toBeUndefined();
+      Object.setPrototypeOf(i18n.translations.en.plugins['pure-plugin'], { inherited: 'nope' });
+      expect(i18n.t('plugins.pure-plugin.inherited', {}, 'en')).toBe('plugins.pure-plugin.inherited');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

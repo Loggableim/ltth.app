@@ -47,6 +47,10 @@
     return source[field] || fallback;
   }
 
+  function localizedApiError(payload, fallback = '') {
+    return localizedProducerText(payload, 'message', payload?.error || fallback);
+  }
+
   function runtimeStateLabel(state) {
     const normalized = String(state || 'idle').toLowerCase();
     if (normalized === 'paused' || normalized === 'pausiert') return tr('statePaused', 'Pausiert');
@@ -749,8 +753,9 @@
       renderQueueFromServer();
       showToast('success', tr('songAddedTitle', 'Song hinzugefügt'), result.song.title);
     } else {
-      requestFeedback.textContent = `⚠️ ${result?.error || tr('requestFailed', 'Fehler beim Request.')}`;
-      showToast('warn', tr('requestRejectedTitle', 'Song-Request abgelehnt'), result?.error || tr('requestFailed', 'Fehler beim Request.'));
+      const errorMessage = localizedApiError(result, tr('requestFailed', 'Fehler beim Request.'));
+      requestFeedback.textContent = `⚠️ ${errorMessage}`;
+      showToast('warn', tr('requestRejectedTitle', 'Song-Request abgelehnt'), errorMessage);
     }
   });
 
@@ -2708,7 +2713,7 @@
       const id = checkbox.dataset.radioPlaylistId;
       const escapedId = String(id).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
       const weight = playlistRadioSources.querySelector(`[data-radio-weight="${escapedId}"]`);
-      return [id, { enabled: checkbox.checked, weight: weight?.value || '1' }];
+      return [id, { enabled: checkbox.checked, ...(weight ? { weight: weight.value } : {}) }];
     }));
     return {
       playlist: selectedPlaylist ? {
@@ -2741,15 +2746,15 @@
       const checkbox = playlistRadioSources?.querySelector(`[data-radio-playlist-id="${escapedId}"]`);
       const weight = playlistRadioSources?.querySelector(`[data-radio-weight="${escapedId}"]`);
       if (checkbox) checkbox.checked = Boolean(source.enabled);
-      if (weight) weight.value = source.weight;
+      if (weight && Object.hasOwn(source, 'weight')) weight.value = source.weight;
     });
     const autoDj = snapshot.autoDj || {};
     if (autoDjEnabled && typeof autoDj.enabled === 'boolean') autoDjEnabled.checked = autoDj.enabled;
-    if (autoDjMode && autoDj.mode) autoDjMode.value = autoDj.mode;
-    if (autoDjHistoryPlays && autoDj.historyPlays) autoDjHistoryPlays.value = autoDj.historyPlays;
-    if (autoDjMixHistoryPercent && autoDj.mixHistoryPercent) autoDjMixHistoryPercent.value = autoDj.mixHistoryPercent;
-    if (autoDjRepeatCooldownHours && autoDj.repeatCooldownHours) autoDjRepeatCooldownHours.value = autoDj.repeatCooldownHours;
-    if (autoDjMaxConsecutive && autoDj.maxConsecutive) autoDjMaxConsecutive.value = autoDj.maxConsecutive;
+    if (autoDjMode && Object.hasOwn(autoDj, 'mode')) autoDjMode.value = autoDj.mode;
+    if (autoDjHistoryPlays && Object.hasOwn(autoDj, 'historyPlays')) autoDjHistoryPlays.value = autoDj.historyPlays;
+    if (autoDjMixHistoryPercent && Object.hasOwn(autoDj, 'mixHistoryPercent')) autoDjMixHistoryPercent.value = autoDj.mixHistoryPercent;
+    if (autoDjRepeatCooldownHours && Object.hasOwn(autoDj, 'repeatCooldownHours')) autoDjRepeatCooldownHours.value = autoDj.repeatCooldownHours;
+    if (autoDjMaxConsecutive && Object.hasOwn(autoDj, 'maxConsecutive')) autoDjMaxConsecutive.value = autoDj.maxConsecutive;
     if (autoDjAnnounce && typeof autoDj.announce === 'boolean') autoDjAnnounce.checked = autoDj.announce;
     if (autoDjPlaylistUrls && typeof autoDj.playlistUrls === 'string') autoDjPlaylistUrls.value = autoDj.playlistUrls;
   }

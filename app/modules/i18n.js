@@ -52,7 +52,7 @@ class I18n {
 
       if (fs.existsSync(filePath)) {
         try {
-          this.translations[locale] = readJsonFile(filePath);
+          this.translations[locale] = this.cloneSafeTranslationCatalog(readJsonFile(filePath));
           this.recordTranslationOrigins(locale, this.translations[locale], filePath);
         } catch (error) {
           console.error(`Failed to load ${locale} translations:`, error.message);
@@ -100,6 +100,11 @@ class I18n {
             }
           }
 
+          if (!this.isSafePluginId(pluginId)) {
+            console.error(`Ignoring plugin with unsafe translation id: ${pluginId}`);
+            continue;
+          }
+
           // Runtime plugin manifests take precedence over mirrored store
           // sources. Loading both locale directories would make a valid
           // duplicate source look like a conflicting translation namespace.
@@ -111,7 +116,7 @@ class I18n {
 
               if (fs.existsSync(pluginLocalePath)) {
                 try {
-                  const pluginTranslations = readJsonFile(pluginLocalePath);
+                  const pluginTranslations = this.cloneSafeTranslationCatalog(readJsonFile(pluginLocalePath));
 
                   // Merge plugin translations into main translations
                   if (!this.translations[locale]) {
@@ -154,8 +159,8 @@ class I18n {
   }
 
   normalizePluginTranslationCatalog(pluginTranslations, pluginId, sourcePath, hasNamespacedPlugin, hasLegacyPluginRoot) {
-    if (hasNamespacedPlugin && !hasLegacyPluginRoot) return pluginTranslations;
-    if (!hasNamespacedPlugin) return { plugins: { [pluginId]: pluginTranslations } };
+    if (hasNamespacedPlugin && !hasLegacyPluginRoot) return this.cloneSafeTranslationCatalog(pluginTranslations);
+    if (!hasNamespacedPlugin) return { plugins: { [pluginId]: this.cloneSafeTranslationCatalog(pluginTranslations) } };
 
     const legacyCatalog = Object.fromEntries(
       Object.entries(pluginTranslations).filter(([key]) => key !== 'plugins')
@@ -173,14 +178,32 @@ class I18n {
     };
   }
 
+  isSafeTranslationKey(key) {
+    return !['__proto__', 'prototype', 'constructor'].includes(String(key));
+  }
+
+  isSafePluginId(pluginId) {
+    return /^[a-z0-9_][a-z0-9._-]*$/i.test(String(pluginId || ''))
+      && this.isSafeTranslationKey(pluginId);
+  }
+
+  cloneSafeTranslationCatalog(value) {
+    if (Array.isArray(value)) return value.map((entry) => this.cloneSafeTranslationCatalog(entry));
+    if (!this.isObject(value)) return value;
+    const output = {};
+    Object.entries(value).forEach(([key, entry]) => {
+      if (!this.isSafeTranslationKey(key)) return;
+      output[key] = this.cloneSafeTranslationCatalog(entry);
+    });
+    return output;
+  }
+
   mergePluginTranslationCatalogs(legacyCatalog, compatibilityCatalog, prefix, sourcePath) {
     const unsafeKeys = new Set(['__proto__', 'prototype', 'constructor']);
     const output = {};
     const merge = (target, source, pathPrefix) => {
       Object.entries(source || {}).forEach(([key, value]) => {
-        if (unsafeKeys.has(key)) {
-          throw new Error(`Unsafe translation key at ${pathPrefix}.${key} in ${sourcePath}`);
-        }
+        if (unsafeKeys.has(key)) return;
         const keyPath = `${pathPrefix}.${key}`;
         if (!Object.hasOwn(target, key)) {
           target[key] = value;
@@ -209,8 +232,9 @@ class I18n {
 
     if (this.isObject(target) && this.isObject(source)) {
       Object.keys(source).forEach(key => {
+        if (!this.isSafeTranslationKey(key)) return;
         if (this.isObject(source[key])) {
-          if (!(key in target)) {
+          if (!Object.hasOwn(target, key)) {
             Object.assign(output, { [key]: source[key] });
           } else {
             output[key] = this.deepMerge(target[key], source[key]);
@@ -224,7 +248,7 @@ class I18n {
     return output;
   }
 
-  translationLeaves(value, prefix = '', leaves = {}) {
+  translationLeaves(value, prefix = '', leaves = Object.create(null)) {
     if (!this.isObject(value)) {
       leaves[prefix] = value;
       return leaves;
@@ -325,7 +349,7 @@ class I18n {
 
     // Traverse the translation object
     for (const k of keys) {
-      if (translation && typeof translation === 'object' && k in translation) {
+      if (translation && typeof translation === 'object' && Object.hasOwn(translation, k)) {
         translation = translation[k];
       } else {
         // Supported locales must not silently borrow another language. The
@@ -350,7 +374,7 @@ class I18n {
    */
   interpolate(str, params) {
     return str.replace(/\{(\w+)\}/g, (match, key) => {
-      return key in params ? params[key] : match;
+      return Object.hasOwn(params, key) ? params[key] : match;
     });
   }
 

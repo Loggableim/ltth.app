@@ -1157,7 +1157,7 @@ class MusicBotPlugin extends EventEmitter {
       .replace(/https?:\/\/[^\s"'<>]+/gi, '[redacted]')
       .replace(/\\\\\.\\pipe\\[^\s"'<>]+/gi, '[redacted]')
       .replace(/[a-z]:\\[^\s"'<>]+/gi, '[redacted]')
-      .replace(/(^|[?&\s,;:\(\[\{])((?:x-amz-[a-z-]+|sig(?:nature)?|lsig|token|expire(?:s)?|ip|key|credential)\s*=\s*)([^&#\s,;\]\)\}]+)/gi, '$1$2[redacted]');
+      .replace(/(^|[^a-z0-9_])((?:x-amz-[a-z-]+|sig(?:nature)?|lsig|token|expire(?:s)?|ip|key|credential)\s*=\s*)([^&#\s,;\]\)\}"'|/>]+)/gi, '$1$2[redacted]');
   }
 
   _isSensitiveDiagnosticString(value, field = '') {
@@ -1995,7 +1995,11 @@ class MusicBotPlugin extends EventEmitter {
 
         const banRejection = this._getBanRejection(resolved.song, 'dashboard');
         if (banRejection) {
-          res.status(400).json({ success: false, ...banRejection });
+          res.status(400).json({
+            success: false,
+            error: this._formatBanRejectionForChat(banRejection),
+            ...banRejection
+          });
           return;
         }
 
@@ -2785,14 +2789,14 @@ class MusicBotPlugin extends EventEmitter {
       const banRejection = this._getBanRejection(resolved.song, username);
       if (banRejection) {
         this._emitToast('warn', { titleKey: 'songBlockedTitle', ...banRejection });
-        return { success: false, ...banRejection };
+        return { success: false, error: this._formatBanRejectionForChat(banRejection), ...banRejection };
       }
 
       const added = this.queueManager.addSong({ ...resolved.song, requestedBy: username, requesterAvatar });
       if (!added.success) {
         const rejection = this._queueRejectionPayload(added);
         this._emitToast('warn', { titleKey: 'requestRejectedTitle', ...rejection });
-        return { success: false, ...rejection };
+        return { success: false, error: added.error || '', ...rejection };
       }
       this._invalidateRadioPrefetch('viewer-queue-changed');
       this._schedulePreCache();

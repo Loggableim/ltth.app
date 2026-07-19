@@ -1332,7 +1332,7 @@ describe('Music Bot runtime and UI regressions', () => {
           A: {
             state: 'error',
             media: { title: 'Artist & Title' },
-            lastError: { message: 'decoder(sig=SECRET) decoder:signature=OTHER_SECRET [token=TOP_SECRET] stream?expire=999&x-amz-signature=AWS_SECRET' }
+            lastError: { message: 'decoder(sig=SECRET) decoder:signature=OTHER_SECRET [token=TOP_SECRET] "sig=QUOTED_SECRET"|/token=PIPE_SECRET>signature=ANGLE_SECRET stream?expire=999&x-amz-signature=AWS_SECRET' }
           }
         },
         lastError: { message: 'stream token=TOP_SECRET ip=127.0.0.1' }
@@ -1357,11 +1357,12 @@ describe('Music Bot runtime and UI regressions', () => {
     });
 
     expect(serialized).toContain('Artist & Title');
-    ['AWS_SECRET', 'OTHER_SECRET', 'TOP_SECRET', 'LSIG_SECRET', 'CREDENTIAL_SECRET', '127.0.0.1']
+    ['AWS_SECRET', 'OTHER_SECRET', 'TOP_SECRET', 'QUOTED_SECRET', 'PIPE_SECRET', 'ANGLE_SECRET', 'LSIG_SECRET', 'CREDENTIAL_SECRET', '127.0.0.1']
       .forEach((secret) => expect(serialized).not.toContain(secret));
     expect(serialized).toContain('decoder(sig=[redacted])');
     expect(serialized).toContain('decoder:signature=[redacted]');
     expect(serialized).toContain('[token=[redacted]]');
+    expect(serialized).toContain('\\"sig=[redacted]\\"|/token=[redacted]>signature=[redacted]');
     expect(ordinary).toEqual({
       title: 'Key=Love',
       artist: 'Token = Love',
@@ -1417,10 +1418,10 @@ describe('Music Bot runtime and UI regressions', () => {
     const radioEnabled = document.querySelector('[data-radio-playlist-id="playlist-1"]');
     const radioWeight = document.querySelector('[data-radio-weight="playlist-1"]');
     radioEnabled.checked = false;
-    radioWeight.value = '9';
+    radioWeight.value = '';
     document.getElementById('auto-dj-enabled').checked = false;
     document.getElementById('auto-dj-mode').value = 'random';
-    document.getElementById('auto-dj-max-consecutive').value = '7';
+    document.getElementById('auto-dj-max-consecutive').value = '';
     await dom.window.i18n.setLocale('es');
 
     expect(dom.window.document.getElementById('queue-list').textContent).toContain('Espectador');
@@ -1432,10 +1433,10 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(document.getElementById('playlist-name-input').value).toBe('Unsaved playlist name');
     expect(document.getElementById('playlist-mode-input').value).toBe('shuffle');
     expect(document.querySelector('[data-radio-playlist-id="playlist-1"]').checked).toBe(false);
-    expect(document.querySelector('[data-radio-weight="playlist-1"]').value).toBe('9');
+    expect(document.querySelector('[data-radio-weight="playlist-1"]').value).toBe('');
     expect(document.getElementById('auto-dj-enabled').checked).toBe(false);
     expect(document.getElementById('auto-dj-mode').value).toBe('random');
-    expect(document.getElementById('auto-dj-max-consecutive').value).toBe('7');
+    expect(document.getElementById('auto-dj-max-consecutive').value).toBe('');
     expect(document.getElementById('musicbot-toast-container').textContent).toContain('Canción añadida');
     expect(document.getElementById('musicbot-toast-container').textContent).toContain('Toast title');
   });
@@ -1502,7 +1503,7 @@ describe('Music Bot runtime and UI regressions', () => {
       messageKey: 'banSong',
       params: expect.any(Object)
     }));
-    expect(dashboard.error).toBeUndefined();
+    expect(dashboard.error).toBe('Dieser Song ist gesperrt.');
     expect(emitted.find((entry) => entry.event === 'musicbot:status-toast')?.payload)
       .toEqual(expect.objectContaining({ titleKey: 'songBlockedTitle', messageKey: 'banSong' }));
 
@@ -1517,6 +1518,24 @@ describe('Music Bot runtime and UI regressions', () => {
     await plugin._handleRequest('queue full', 'viewer');
     expect(emitted.find((entry) => entry.event === 'musicbot:status-toast')?.payload)
       .toEqual(expect.objectContaining({ titleKey: 'requestRejectedTitle', messageKey: 'queueFull', params: { maxLength: 10 } }));
+  });
+
+  test('prefers a semantic dashboard rejection over its legacy error text', async () => {
+    const { dom } = bootMusicBotUi({
+      translations: productionCatalogs,
+      productionLocale: 'es',
+      postHandler: (target) => target.endsWith('/request')
+        ? createJsonResponse({ success: false, error: 'Dieser Song ist gesperrt.', messageKey: 'banSong', params: {} })
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    dom.window.document.getElementById('search-input').value = 'blocked';
+    dom.window.document.getElementById('request-btn').click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(dom.window.document.getElementById('request-feedback').textContent).toContain('Esta canción está bloqueada.');
+    expect(dom.window.document.getElementById('request-feedback').textContent).not.toContain('Dieser Song ist gesperrt.');
   });
 
   test('emits semantic setup issue and MPV status codes instead of German UI text', () => {
