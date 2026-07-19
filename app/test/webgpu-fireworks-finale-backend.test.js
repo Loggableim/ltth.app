@@ -344,13 +344,16 @@ describe('WebGPU finale backend contract', () => {
     try {
       const seeded = new RevisionedShowRepository({ dataDir: tempDir });
       const customId = publishCustom(seeded, '00000000-0000-4000-8000-000000000401');
-      const { plugin } = createPlugin({}, tempDir);
+      const { api, plugin } = createPlugin({}, tempDir);
       isolateInit(plugin);
+      plugin.registerRoutes = FireworksPlugin.prototype.registerRoutes.bind(plugin);
 
       await plugin.init();
 
       expect(plugin.showRepository).toBeInstanceOf(RevisionedShowRepository);
       expect(plugin.showRepositoryLoadError).toBeNull();
+      expect(plugin.showApiController).toBeTruthy();
+      expect(api.routes.has('get:/api/webgpu-fireworks/shows')).toBe(true);
       expect(plugin.showRepository.getPublishedDefinition(customId).id).toBe(customId);
       const storeBeforeDestroy = fs.readFileSync(path.join(tempDir, 'custom-shows.json'), 'utf8');
 
@@ -358,6 +361,7 @@ describe('WebGPU finale backend contract', () => {
 
       expect(plugin.showRepository).toBeNull();
       expect(plugin.showRepositoryLoadError).toBeNull();
+      expect(plugin.showApiController).toBeNull();
       expect(fs.readFileSync(path.join(tempDir, 'custom-shows.json'), 'utf8')).toBe(storeBeforeDestroy);
     } finally {
       fs.rmSync(tempDir, { recursive: true, force: true });

@@ -35,6 +35,7 @@ const { FinaleShowPlanner, FINALE_STYLES } = require('./lib/finale-show-planner'
 const { FinaleShuffleBag } = require('./lib/finale-shuffle-bag');
 const { resolveFinaleSelection } = require('./lib/finale-runtime-resolver');
 const { RevisionedShowRepository } = require('./lib/show-repository');
+const { ShowApiController } = require('./lib/show-api-controller');
 const { SuperfanFinaleHistory, normalizeSuperfanIdentityAliases } = require('./lib/superfan-finale-history');
 
 const FIREWORKS_CONFIG_MIGRATION_VERSION = 1;
@@ -122,6 +123,7 @@ class FireworksPlugin {
         this.finaleIdCounter = 0;
         this.showRepository = null;
         this.showRepositoryLoadError = null;
+        this.showApiController = null;
     }
 
     async init() {
@@ -710,6 +712,13 @@ class FireworksPlugin {
      * Register all HTTP routes
      */
     registerRoutes() {
+        this.showApiController = new ShowApiController({
+            getRepository: () => this.showRepository,
+            getRepositoryError: () => this.showRepositoryLoadError,
+            log: (message, level) => this.api.log(message, level)
+        });
+        this.showApiController.registerRoutes(this.api);
+
         // Serve plugin UI (settings page)
         this.api.registerRoute('get', '/webgpu-fireworks/ui', (req, res) => {
             const uiPath = path.join(__dirname, 'ui', 'settings.html');
@@ -2254,6 +2263,7 @@ class FireworksPlugin {
         // Repository persistence outlives the plugin instance; clear only runtime references.
         this.showRepository = null;
         this.showRepositoryLoadError = null;
+        this.showApiController = null;
 
         this.api.log('🎆 [FIREWORKS] Fireworks Superplugin destroyed', 'info');
     }

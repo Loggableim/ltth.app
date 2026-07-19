@@ -113,18 +113,36 @@ class RevisionedShowRepository {
 
   list() {
     this._ensureLoaded();
-    const builtIns = Object.entries(this.builtIns).map(([id, definition]) => (
-      this._builtInRecord(id, definition)
-    ));
+    const builtIns = this.listBuiltIns();
     const custom = Object.keys(this.records).sort().map(id => cloneJson(this.records[id]));
     return cloneJson([...builtIns, ...custom]);
   }
 
-  get(id) {
-    this._ensureLoaded();
-    if (hasOwn(this.builtIns, id)) {
-      return cloneJson(this._builtInRecord(id, this.builtIns[id]));
+  listBuiltIns() {
+    return Object.entries(this.builtIns).map(([id, definition]) => (
+      cloneJson(this._builtInRecord(id, definition))
+    ));
+  }
+
+  isBuiltIn(id) {
+    return typeof id === 'string' && hasOwn(this.builtIns, id);
+  }
+
+  getBuiltIn(id) {
+    if (!this.isBuiltIn(id)) {
+      throw new ShowRepositoryError(
+        'SHOW_NOT_FOUND',
+        404,
+        'Show definition was not found.',
+        { id }
+      );
     }
+    return cloneJson(this._builtInRecord(id, this.builtIns[id]));
+  }
+
+  get(id) {
+    if (this.isBuiltIn(id)) return this.getBuiltIn(id);
+    this._ensureLoaded();
     if (!hasOwn(this.records, id)) {
       throw new ShowRepositoryError(
         'SHOW_NOT_FOUND',
@@ -378,13 +396,13 @@ class RevisionedShowRepository {
   }
 
   validate(id, expectedRevision) {
-    this._ensureLoaded();
-    if (hasOwn(this.builtIns, id)) {
-      const record = this._builtInRecord(id, this.builtIns[id]);
+    if (this.isBuiltIn(id)) {
+      const record = this.getBuiltIn(id);
       record.validation = validateShowDefinition(record.definition);
       record.validatedRevision = 0;
       return cloneJson(record);
     }
+    this._ensureLoaded();
 
     const current = this._customRecord(id);
     this._assertExpectedRevision(current, expectedRevision);
