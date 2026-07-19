@@ -44,6 +44,8 @@ const SUPERFAN_FINALE_TEST_CONFIG_KEYS = Object.freeze([
     'superfanFinaleEnabled',
     'superfanFinaleCooldownHours',
     'superfanFinaleIntensity',
+    'superfanFinaleStyle',
+    'superfanFinaleLength',
     'superfanEndCardDuration',
     'superfanEndCardPosition',
     'superfanEndCardSize',
@@ -599,6 +601,8 @@ class FireworksPlugin {
             superfanFinaleEnabled: true,
             superfanFinaleCooldownHours: 24,
             superfanFinaleIntensity: 3,
+            superfanFinaleStyle: 'inherit',
+            superfanFinaleLength: 'inherit',
             superfanEndCardDuration: 3000,
             superfanEndCardPosition: 'center',
             superfanEndCardSize: 'medium',
@@ -1510,9 +1514,15 @@ class FireworksPlugin {
 
         let finale;
         try {
+            const finaleStyle = effectiveConfig.superfanFinaleStyle === 'inherit'
+                ? effectiveConfig.goalFinaleStyle
+                : effectiveConfig.superfanFinaleStyle;
+            const finaleLength = effectiveConfig.superfanFinaleLength === 'inherit'
+                ? effectiveConfig.goalFinaleLength
+                : effectiveConfig.superfanFinaleLength;
             finale = this.triggerFinale({
-                style: effectiveConfig.goalFinaleStyle,
-                length: effectiveConfig.goalFinaleLength,
+                style: finaleStyle,
+                length: finaleLength,
                 intensity: effectiveConfig.superfanFinaleIntensity,
                 completionNotification,
                 [SUPERFAN_COMPLETION_AUTHORITY]: true,

@@ -278,6 +278,101 @@ describe('Goals firework finale integration', () => {
     }));
   });
 
+  test('forwards all built-ins, strict Custom UUIDs and inherited selectors without rewriting stored intent', () => {
+    const sqlite = new Database(':memory:');
+    const webgpuFireworks = { triggerFinale: jest.fn() };
+    const plugin = new GoalsPlugin(createApi(sqlite, new Map([['webgpu-fireworks', webgpuFireworks]])));
+    const customStyle = 'custom:00000000-0000-4000-8000-000000000503';
+    const cases = [
+      ['classic-crescendo', 'classic-crescendo'],
+      ['symmetric-salute', 'symmetric-salute'],
+      ['sky-ballet', 'sky-ballet'],
+      ['thunder-finale', 'thunder-finale'],
+      ['nishiki-kamuro', 'nishiki-kamuro'],
+      ['aurora-cathedral', 'aurora-cathedral'],
+      ['royal-brocade', 'royal-brocade'],
+      ['phoenix-ascension', 'phoenix-ascension'],
+      ['furry-celebration', 'furry-celebration'],
+      [customStyle, customStyle],
+      ['custom:00000000-0000-4000-8000-00000000050A', 'custom:00000000-0000-4000-8000-00000000050a'],
+      ['inherit', 'inherit'],
+      ['finale', 'inherit']
+    ];
+
+    plugin.db.initialize();
+    cases.forEach(([storedStyle, expectedStyle], index) => {
+      const goal = plugin.db.createGoal({
+        id: `goal_style_${index}`,
+        name: `Style ${index}`,
+        goal_type: 'coin',
+        target_value: 100 + index,
+        firework_enabled: 1,
+        firework_encounter_mode: storedStyle,
+        firework_finale_length: index % 2 === 0 ? 'short' : 'inherit'
+      });
+
+      expect(goal.firework_encounter_mode).toBe(storedStyle);
+      expect(plugin.triggerGoalFireworkFinale(goal.id)).toBe(true);
+      expect(webgpuFireworks.triggerFinale).toHaveBeenLastCalledWith(expect.objectContaining({
+        style: expectedStyle,
+        length: index % 2 === 0 ? 'short' : 'inherit'
+      }));
+    });
+  });
+
+  test('keeps an already stored Auto goal override for backward compatibility', () => {
+    const sqlite = new Database(':memory:');
+    const webgpuFireworks = { triggerFinale: jest.fn() };
+    const plugin = new GoalsPlugin(createApi(sqlite, new Map([['webgpu-fireworks', webgpuFireworks]])));
+
+    plugin.db.initialize();
+    const goal = plugin.db.createGoal({
+      id: 'goal_legacy_auto',
+      name: 'Legacy Auto',
+      goal_type: 'likes',
+      target_value: 100,
+      firework_enabled: 1,
+      firework_encounter_mode: 'auto',
+      firework_finale_length: 'medium'
+    });
+
+    expect(plugin.triggerGoalFireworkFinale(goal.id)).toBe(true);
+    expect(webgpuFireworks.triggerFinale).toHaveBeenCalledWith(expect.objectContaining({
+      style: 'auto',
+      length: 'medium'
+    }));
+  });
+
+  test('rejects malformed Custom goal IDs at trigger time without changing storage', () => {
+    const sqlite = new Database(':memory:');
+    const webgpuFireworks = { triggerFinale: jest.fn() };
+    const plugin = new GoalsPlugin(createApi(sqlite, new Map([['webgpu-fireworks', webgpuFireworks]])));
+    const invalidStyles = [
+      'custom:not-a-uuid',
+      'custom:00000000-0000-0000-0000-000000000504'
+    ];
+
+    plugin.db.initialize();
+    invalidStyles.forEach((storedStyle, index) => {
+      const goal = plugin.db.createGoal({
+        id: `goal_invalid_custom_${index}`,
+        name: `Invalid Custom ${index}`,
+        goal_type: 'coin',
+        target_value: 10 + index,
+        firework_enabled: 1,
+        firework_encounter_mode: storedStyle,
+        firework_finale_length: 'long'
+      });
+
+      expect(goal.firework_encounter_mode).toBe(storedStyle);
+      expect(plugin.triggerGoalFireworkFinale(goal.id)).toBe(true);
+      expect(webgpuFireworks.triggerFinale).toHaveBeenLastCalledWith(expect.objectContaining({
+        style: 'inherit',
+        length: 'long'
+      }));
+    });
+  });
+
   test('maps invalid and legacy goal finale selectors to global WebGPU defaults without using duration', () => {
     const sqlite = new Database(':memory:');
     const webgpuFireworks = { triggerFinale: jest.fn() };

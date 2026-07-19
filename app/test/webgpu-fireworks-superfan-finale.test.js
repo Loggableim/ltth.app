@@ -15,6 +15,22 @@ const {
   normalizeSuperfanIdentityAliases
 } = require('../plugins/webgpu-fireworks/lib/superfan-finale-history');
 const FireworksPlugin = require('../plugins/webgpu-fireworks/main');
+const { BUILT_IN_SHOW_DEFINITIONS } = require('../plugins/webgpu-fireworks/lib/built-in-shows');
+const { RevisionedShowRepository } = require('../plugins/webgpu-fireworks/lib/show-repository');
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function publishCustom(repository, uuid, name = 'Superfan Custom') {
+  repository.idFactory = () => uuid;
+  const definition = clone(BUILT_IN_SHOW_DEFINITIONS['nishiki-kamuro']);
+  definition.metadata.name = name;
+  const created = repository.create(definition);
+  repository.validate(created.id, created.revision);
+  repository.publish(created.id, created.revision);
+  return created.id;
+}
 
 describe('WebGPU Superfan finale foundation', () => {
   let tempDir;
@@ -34,6 +50,50 @@ describe('WebGPU Superfan finale foundation', () => {
         superfanFinaleCooldownHours: DEFAULT_FIREWORKS_CONFIG.superfanFinaleCooldownHours,
         superfanFinaleIntensity: 1
       });
+  });
+
+  test('defaults Superfan show overrides to inherit and normalizes only concrete override selectors', () => {
+    const customStyle = 'custom:00000000-0000-4000-8000-000000000501';
+    const builtInStyles = [
+      'classic-crescendo',
+      'symmetric-salute',
+      'sky-ballet',
+      'thunder-finale',
+      'nishiki-kamuro',
+      'aurora-cathedral',
+      'royal-brocade',
+      'phoenix-ascension',
+      'furry-celebration'
+    ];
+
+    expect(DEFAULT_FIREWORKS_CONFIG).toMatchObject({
+      superfanFinaleStyle: 'inherit',
+      superfanFinaleLength: 'inherit'
+    });
+    expect(normalizeConfig()).toMatchObject({
+      superfanFinaleStyle: 'inherit',
+      superfanFinaleLength: 'inherit'
+    });
+    for (const style of ['inherit', ...builtInStyles, customStyle]) {
+      expect(normalizeConfig({ superfanFinaleStyle: style }).superfanFinaleStyle).toBe(style);
+    }
+    for (const length of ['inherit', 'short', 'medium', 'long']) {
+      expect(normalizeConfig({ superfanFinaleLength: length }).superfanFinaleLength).toBe(length);
+    }
+    expect(normalizeConfig({
+      superfanFinaleStyle: 'custom:00000000-0000-0000-0000-000000000501',
+      superfanFinaleLength: 'huge'
+    })).toMatchObject({
+      superfanFinaleStyle: 'inherit',
+      superfanFinaleLength: 'inherit'
+    });
+    expect(normalizeConfig({
+      superfanFinaleStyle: 'custom:00000000-0000-4000-8000-00000000050A'
+    }).superfanFinaleStyle).toBe('custom:00000000-0000-4000-8000-00000000050a');
+  });
+
+  test('maps a previously stored Superfan auto override to inherit instead of creating a second Auto selector', () => {
+    expect(normalizeConfig({ superfanFinaleStyle: 'auto' }).superfanFinaleStyle).toBe('inherit');
   });
 
   test('normalizes Superfan end card defaults, bounds, positions, and sizes', () => {
@@ -460,6 +520,131 @@ describe('WebGPU Superfan finale foundation', () => {
     expect(plugin.triggerFinale).toHaveBeenCalledTimes(2);
   });
 
+  test.each([
+    {
+      label: 'style only',
+      overrides: { superfanFinaleStyle: 'nishiki-kamuro' },
+      expected: { style: 'nishiki-kamuro', length: 'medium' }
+    },
+    {
+      label: 'length only',
+      overrides: { superfanFinaleLength: 'long' },
+      expected: { style: 'classic-crescendo', length: 'long' }
+    },
+    {
+      label: 'style and length',
+      overrides: {
+        superfanFinaleStyle: 'custom:00000000-0000-4000-8000-000000000502',
+        superfanFinaleLength: 'short'
+      },
+      expected: {
+        style: 'custom:00000000-0000-4000-8000-000000000502',
+        length: 'short'
+      }
+    }
+  ])('resolves Superfan $label overrides independently from global finale settings', ({ overrides, expected }) => {
+    const { plugin } = createPlugin({
+      goalFinaleStyle: 'classic-crescendo',
+      goalFinaleLength: 'medium',
+      ...overrides
+    });
+    plugin.triggerFinale = jest.fn(request => ({ accepted: true, id: request.eventId }));
+
+    expect(plugin.handleSuperfanEntry({
+      userId: `paid-${expected.style}-${expected.length}`,
+      uniqueId: 'OverrideFan'
+    }, { authoritative: true })).toMatchObject({ accepted: true });
+
+    expect(plugin.triggerFinale).toHaveBeenCalledWith(expect.objectContaining(expected));
+  });
+
+  test('compiles a published custom Superfan override into the accepted finale snapshot', () => {
+    const repository = new RevisionedShowRepository({ dataDir: tempDir });
+    repository.load();
+    const customStyle = publishCustom(repository, '00000000-0000-4000-8000-000000000505');
+    const { plugin } = createPlugin({
+      goalFinaleStyle: 'classic-crescendo',
+      goalFinaleLength: 'medium',
+      superfanFinaleStyle: customStyle,
+      superfanFinaleLength: 'short'
+    });
+    plugin.showRepository = repository;
+    plugin.showRepositoryLoadError = null;
+
+    const result = plugin.handleSuperfanEntry({
+      userId: 'custom-superfan',
+      uniqueId: 'CustomFan'
+    }, { authoritative: true });
+
+    expect(result).toMatchObject({
+      accepted: true,
+      finale: {
+        style: customStyle,
+        length: 'short',
+        showPlan: {
+          style: customStyle,
+          definitionId: customStyle,
+          metadata: { name: 'Superfan Custom' }
+        }
+      }
+    });
+  });
+
+  test.each([
+    {
+      label: 'missing',
+      customStyle: 'custom:00000000-0000-4000-8000-000000000506',
+      reason: 'SHOW_NOT_FOUND',
+      prepare: () => {}
+    },
+    {
+      label: 'unpublished',
+      customStyle: 'custom:00000000-0000-4000-8000-000000000507',
+      reason: 'SHOW_NOT_PUBLISHED',
+      prepare: repository => {
+        repository.idFactory = () => '00000000-0000-4000-8000-000000000507';
+        repository.create(clone(BUILT_IN_SHOW_DEFINITIONS['nishiki-kamuro']));
+      }
+    },
+    {
+      label: 'archived',
+      customStyle: 'custom:00000000-0000-4000-8000-000000000508',
+      reason: 'SHOW_ARCHIVED',
+      prepare: repository => {
+        const archivedStyle = publishCustom(repository, '00000000-0000-4000-8000-000000000508');
+        repository.archive(archivedStyle, 1);
+      }
+    }
+  ])('retains an unavailable $label Superfan override while warning and falling back at trigger time', ({
+    customStyle,
+    reason,
+    prepare
+  }) => {
+    const repository = new RevisionedShowRepository({ dataDir: tempDir });
+    repository.load();
+    prepare(repository);
+    const { api, plugin } = createPlugin({
+      goalFinaleStyle: 'royal-brocade',
+      superfanFinaleStyle: customStyle,
+      superfanFinaleLength: 'long'
+    });
+    plugin.showRepository = repository;
+    plugin.showRepositoryLoadError = null;
+
+    const result = plugin.handleSuperfanEntry({
+      userId: 'archived-superfan',
+      uniqueId: 'ArchivedFan'
+    }, { authoritative: true });
+
+    expect(plugin.config.superfanFinaleStyle).toBe(customStyle);
+    expect(result).toMatchObject({
+      accepted: true,
+      finale: { style: 'royal-brocade', length: 'long' }
+    });
+    expect(api.log).toHaveBeenCalledWith(expect.stringContaining(customStyle), 'warn');
+    expect(api.log).toHaveBeenCalledWith(expect.stringContaining(reason), 'warn');
+  });
+
   test('attaches the personalized completion card only to a Superfan finale request', () => {
     const { plugin } = createPlugin({
       superfanEndCardDuration: 4500,
@@ -827,6 +1012,8 @@ describe('WebGPU Superfan finale foundation', () => {
           superfanFinaleEnabled: false,
           superfanFinaleCooldownHours: 168,
           superfanFinaleIntensity: 7.5,
+          superfanFinaleStyle: 'royal-brocade',
+          superfanFinaleLength: 'long',
           superfanEndCardDuration: 4500,
           superfanEndCardPosition: 'bottom-left',
           superfanEndCardSize: 'custom',
@@ -851,6 +1038,8 @@ describe('WebGPU Superfan finale foundation', () => {
       superfanFinaleEnabled: false,
       superfanFinaleCooldownHours: 168,
       superfanFinaleIntensity: 7.5,
+      superfanFinaleStyle: 'royal-brocade',
+      superfanFinaleLength: 'long',
       superfanEndCardDuration: 4500,
       superfanEndCardPosition: 'bottom-left',
       superfanEndCardSize: 'custom',
@@ -863,8 +1052,8 @@ describe('WebGPU Superfan finale foundation', () => {
     expect(options.configOverride).not.toHaveProperty('unknownKey');
     expect(plugin.triggerFinale).toHaveBeenCalledWith(expect.objectContaining({
       intensity: 7.5,
-      style: 'sky-ballet',
-      length: 'short',
+      style: 'royal-brocade',
+      length: 'long',
       bypassEnabled: true,
       completionNotification: expect.objectContaining({
         duration: 4500,
@@ -892,6 +1081,8 @@ describe('WebGPU Superfan finale foundation', () => {
           superfanFinaleEnabled: 'false',
           superfanFinaleCooldownHours: 13,
           superfanFinaleIntensity: 99,
+          superfanFinaleStyle: 'not-a-style',
+          superfanFinaleLength: 'huge',
           goalFinaleStyle: 'not-a-style',
           goalFinaleLength: 'huge'
         }
@@ -904,6 +1095,8 @@ describe('WebGPU Superfan finale foundation', () => {
         superfanFinaleEnabled: true,
         superfanFinaleCooldownHours: 24,
         superfanFinaleIntensity: 10,
+        superfanFinaleStyle: 'inherit',
+        superfanFinaleLength: 'inherit',
         goalFinaleStyle: 'auto',
         goalFinaleLength: 'medium'
       })
@@ -922,12 +1115,20 @@ describe('WebGPU Superfan finale foundation', () => {
     plugin.registerRoutes();
     const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
     api.routes.get('post:/api/webgpu-fireworks/config')({
-      body: { superfanFinaleEnabled: false, superfanFinaleCooldownHours: 168, superfanFinaleIntensity: 7.5 }
+      body: {
+        superfanFinaleEnabled: false,
+        superfanFinaleCooldownHours: 168,
+        superfanFinaleIntensity: 7.5,
+        superfanFinaleStyle: 'furry-celebration',
+        superfanFinaleLength: 'short'
+      }
     }, res);
     expect(plugin.config).toMatchObject({
       superfanFinaleEnabled: false,
       superfanFinaleCooldownHours: 168,
-      superfanFinaleIntensity: 7.5
+      superfanFinaleIntensity: 7.5,
+      superfanFinaleStyle: 'furry-celebration',
+      superfanFinaleLength: 'short'
     });
     expect(api.setConfig).toHaveBeenCalledWith('settings', expect.objectContaining({
       superfanFinaleCooldownHours: 168

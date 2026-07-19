@@ -66,6 +66,8 @@ const DEFAULT_FIREWORKS_CONFIG = {
   superfanFinaleEnabled: true,
   superfanFinaleCooldownHours: 24,
   superfanFinaleIntensity: 3,
+  superfanFinaleStyle: 'inherit',
+  superfanFinaleLength: 'inherit',
   superfanEndCardDuration: 3000,
   superfanEndCardPosition: 'center',
   superfanEndCardSize: 'medium',
@@ -190,6 +192,16 @@ function isCustomFinaleStyleId(value) {
 
 function normalizeFinaleLength(value, fallback = DEFAULT_FIREWORKS_CONFIG.goalFinaleLength) {
   return ALLOWED_FINALE_LENGTHS.includes(value) ? value : fallback;
+}
+
+function normalizeSuperfanFinaleStyle(value, fallback = DEFAULT_FIREWORKS_CONFIG.superfanFinaleStyle) {
+  if (value === 'inherit' || FINALE_STYLES.includes(value)) return value;
+  if (isCustomFinaleStyleId(value)) return value.toLowerCase();
+  return fallback;
+}
+
+function normalizeSuperfanFinaleLength(value, fallback = DEFAULT_FIREWORKS_CONFIG.superfanFinaleLength) {
+  return value === 'inherit' || ALLOWED_FINALE_LENGTHS.includes(value) ? value : fallback;
 }
 
 function finaleLengthFromDuration(value) {
@@ -339,6 +351,8 @@ function normalizeConfig(config = {}) {
       ? Number(source.superfanFinaleCooldownHours)
       : defaults.superfanFinaleCooldownHours,
     superfanFinaleIntensity: clampNumber(source.superfanFinaleIntensity, 1, 10, defaults.superfanFinaleIntensity),
+    superfanFinaleStyle: normalizeSuperfanFinaleStyle(source.superfanFinaleStyle, defaults.superfanFinaleStyle),
+    superfanFinaleLength: normalizeSuperfanFinaleLength(source.superfanFinaleLength, defaults.superfanFinaleLength),
     superfanEndCardDuration: clampInteger(source.superfanEndCardDuration, 1000, 10000, defaults.superfanEndCardDuration),
     superfanEndCardPosition: VALID_FOLLOWER_POSITIONS.includes(source.superfanEndCardPosition)
       ? source.superfanEndCardPosition
@@ -506,6 +520,8 @@ module.exports = {
   normalizeFinaleLength,
   normalizeFinaleRequest,
   normalizeFinaleStyle,
+  normalizeSuperfanFinaleLength,
+  normalizeSuperfanFinaleStyle,
   normalizeFireworkTrigger,
   normalizeGiftMapping,
   normalizePosition,

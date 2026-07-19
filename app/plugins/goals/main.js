@@ -26,9 +26,26 @@ const WEBGPU_FINALE_STYLES = new Set([
     'classic-crescendo',
     'symmetric-salute',
     'sky-ballet',
-    'thunder-finale'
+    'thunder-finale',
+    'nishiki-kamuro',
+    'aurora-cathedral',
+    'royal-brocade',
+    'phoenix-ascension',
+    'furry-celebration'
 ]);
 const WEBGPU_FINALE_LENGTHS = new Set(['short', 'medium', 'long']);
+const CUSTOM_FINALE_STYLE_PATTERN = /^custom:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function normalizeGoalFinaleStyle(value) {
+    if (value === 'inherit' || value === 'finale') return 'inherit';
+    if (WEBGPU_FINALE_STYLES.has(value)) return value;
+    if (typeof value === 'string' && CUSTOM_FINALE_STYLE_PATTERN.test(value)) return value.toLowerCase();
+    return 'inherit';
+}
+
+function normalizeGoalFinaleLength(value) {
+    return WEBGPU_FINALE_LENGTHS.has(value) ? value : 'inherit';
+}
 
 class GoalsPlugin extends EventEmitter {
     constructor(api) {
@@ -509,12 +526,8 @@ class GoalsPlugin extends EventEmitter {
 
             this.fireworkFinaleMilestones.add(milestoneKey);
             if (pluginId === 'webgpu-fireworks') {
-                const style = WEBGPU_FINALE_STYLES.has(goal.firework_encounter_mode)
-                    ? goal.firework_encounter_mode
-                    : 'inherit';
-                const length = WEBGPU_FINALE_LENGTHS.has(goal.firework_finale_length)
-                    ? goal.firework_finale_length
-                    : 'inherit';
+                const style = normalizeGoalFinaleStyle(goal.firework_encounter_mode);
+                const length = normalizeGoalFinaleLength(goal.firework_finale_length);
                 const eventId = `goal:${milestoneKey}`;
                 fireworks.triggerFinale({ intensity, style, length, eventId });
                 this.api.log(
