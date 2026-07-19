@@ -6,6 +6,11 @@ const path = require('path');
 
 const { BUILT_IN_SHOW_DEFINITIONS } = require('./built-in-shows');
 const { validateShowDefinition } = require('./pyrodsl');
+const {
+  assertValidPersistedLifecycle,
+  lifecycleDefaults,
+  normalizeLifecycleRecord
+} = require('./show-repository-lifecycle');
 
 const STORE_VERSION = 1;
 const STORE_FILE_NAME = 'custom-shows.json';
@@ -146,7 +151,7 @@ class RevisionedShowRepository {
       revisions: [snapshot],
       createdAt: timestamp,
       updatedAt: timestamp,
-      ...this._lifecycleDefaults()
+      ...lifecycleDefaults()
     };
 
     this.records[id] = record;
@@ -272,12 +277,17 @@ class RevisionedShowRepository {
         { id, validatedRevision: current.validatedRevision, currentRevision: current.revision }
       );
     }
-    if (current.validation.valid !== true) {
+    const freshValidation = validateShowDefinition(current.definition);
+    if (current.validation.valid !== true || freshValidation.valid !== true) {
       throw new ShowRepositoryError(
         'DRAFT_VALIDATION_FAILED',
         422,
         'The current custom show draft did not pass PyroDSL validation.',
-        { id, currentRevision: current.revision, errors: current.validation.errors }
+        {
+          id,
+          currentRevision: current.revision,
+          errors: freshValidation.valid ? current.validation.errors : freshValidation.errors
+        }
       );
     }
 
@@ -365,27 +375,6 @@ class RevisionedShowRepository {
       revision: 0,
       definition: ownedDefinition,
       revisions: []
-    };
-  }
-
-  _lifecycleDefaults() {
-    return {
-      validation: null,
-      validatedRevision: null,
-      publishedDefinition: null,
-      publishedRevision: null,
-      publishedAt: null,
-      archived: false,
-      archivedAt: null,
-      restoredAt: null
-    };
-  }
-
-  _normalizeRecord(record) {
-    return {
-      ...record,
-      ...Object.fromEntries(Object.entries(this._lifecycleDefaults())
-        .filter(([key]) => !hasOwn(record, key)))
     };
   }
 
@@ -581,7 +570,7 @@ class RevisionedShowRepository {
       throw new Error(`Expected custom show store version ${STORE_VERSION}.`);
     }
     for (const [id, rawRecord] of Object.entries(store.records)) {
-      const record = this._normalizeRecord(rawRecord);
+      const record = normalizeLifecycleRecord(rawRecord);
       const validRecord = id.startsWith('custom:')
         && UUID_PATTERN.test(id.slice(7))
         && isObject(record)
@@ -601,55 +590,9 @@ class RevisionedShowRepository {
           && snapshot.definition.id === id;
         if (!validSnapshot) throw new Error(`Invalid custom show revision: ${id}@${index + 1}`);
       });
-      this._assertValidLifecycle(record);
+      assertValidPersistedLifecycle(record);
       store.records[id] = record;
     }
-  }
-
-  _assertValidLifecycle(record) {
-    const hasValidation = record.validation !== null;
-    const validationValid = !hasValidation || (
-      isObject(record.validation)
-      && typeof record.validation.valid === 'boolean'
-      && Array.isArray(record.validation.errors)
-      && isObject(record.validation.diagnostics)
-    );
-    const validatedRevisionValid = record.validatedRevision === null || (
-      Number.isInteger(record.validatedRevision)
-      && record.validatedRevision >= 1
-      && record.validatedRevision <= record.revision
-    );
-    if (!validationValid || !validatedRevisionValid
-      || hasValidation !== (record.validatedRevision !== null)) {
-      throw new Error(`Invalid custom show validation lifecycle: ${record.id}`);
-    }
-
-    const hasPublishedDefinition = record.publishedDefinition !== null;
-    const publishedRevisionValid = record.publishedRevision === null || (
-      Number.isInteger(record.publishedRevision)
-      && record.publishedRevision >= 1
-      && record.publishedRevision <= record.revision
-    );
-    const publishedAtValid = record.publishedAt === null || Number.isFinite(record.publishedAt);
-    if (!publishedRevisionValid || !publishedAtValid
-      || hasPublishedDefinition !== (record.publishedRevision !== null)
-      || hasPublishedDefinition !== (record.publishedAt !== null)) {
-      throw new Error(`Invalid custom show publication lifecycle: ${record.id}`);
-    }
-    if (hasPublishedDefinition) {
-      const snapshot = record.revisions[record.publishedRevision - 1];
-      const publishedValid = isObject(record.publishedDefinition)
-        && record.publishedDefinition.id === record.id
-        && JSON.stringify(record.publishedDefinition) === JSON.stringify(snapshot.definition)
-        && validateShowDefinition(record.publishedDefinition).valid;
-      if (!publishedValid) throw new Error(`Invalid published custom show snapshot: ${record.id}`);
-    }
-
-    const archiveValid = typeof record.archived === 'boolean'
-      && (record.archivedAt === null || Number.isFinite(record.archivedAt))
-      && (record.restoredAt === null || Number.isFinite(record.restoredAt))
-      && (!record.archived || record.archivedAt !== null);
-    if (!archiveValid) throw new Error(`Invalid custom show archive lifecycle: ${record.id}`);
   }
 
   _warn(message) {

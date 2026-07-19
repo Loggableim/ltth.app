@@ -18,6 +18,10 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function reverseObjectKeys(value) {
+  return Object.fromEntries(Object.entries(value).reverse());
+}
+
 function makeDefinition(name = 'Custom Finale') {
   const definition = clone(BUILT_IN_SHOW_DEFINITIONS['classic-crescendo']);
   definition.id = 'external:must-not-survive';
@@ -374,6 +378,89 @@ describe('RevisionedShowRepository 3A2a lifecycle', () => {
     expect(() => reloaded.load()).toThrow(expect.objectContaining({
       code: 'STORE_CORRUPT', status: 500
     }));
+  });
+
+  test('rejects forged persisted validation that does not match the referenced revision', () => {
+    const invalidDefinition = makeDefinition();
+    invalidDefinition.metadata.name = '';
+    const created = repository.create(invalidDefinition);
+    const store = JSON.parse(fs.readFileSync(repository.filePath, 'utf8'));
+    store.records[created.id].validatedRevision = 1;
+    store.records[created.id].validation = {
+      valid: true,
+      errors: [],
+      diagnostics: { variants: {} }
+    };
+    fs.writeFileSync(repository.filePath, JSON.stringify(store), 'utf8');
+    fs.rmSync(repository.backupPath, { force: true });
+
+    const reloaded = new RevisionedShowRepository({ dataDir: tempDir });
+    expect(() => reloaded.load()).toThrow(expect.objectContaining({
+      code: 'STORE_CORRUPT', status: 500
+    }));
+  });
+
+  test('recovers from a forged primary by falling back to the last valid backup', () => {
+    const created = repository.create(makeDefinition('Backup Revision'));
+    const invalidDefinition = makeDefinition('Forged Primary');
+    invalidDefinition.metadata.name = '';
+    repository.saveDraft(created.id, invalidDefinition, 1);
+    const primary = JSON.parse(fs.readFileSync(repository.filePath, 'utf8'));
+    primary.records[created.id].validatedRevision = 2;
+    primary.records[created.id].validation = {
+      valid: true,
+      errors: [],
+      diagnostics: { variants: {} }
+    };
+    fs.writeFileSync(repository.filePath, JSON.stringify(primary), 'utf8');
+
+    const recovered = new RevisionedShowRepository({ dataDir: tempDir });
+    const record = recovered.load().find(candidate => candidate.id === created.id);
+    expect(record).toMatchObject({ revision: 1, definition: { metadata: { name: 'Backup Revision' } } });
+    expect(JSON.parse(fs.readFileSync(recovered.filePath, 'utf8')).records[created.id].revision).toBe(1);
+  });
+
+  test('revalidates the current definition inside publish and never snapshots an invalid forged draft', () => {
+    const invalidDefinition = makeDefinition();
+    invalidDefinition.metadata.name = '';
+    const created = repository.create(invalidDefinition);
+    repository.records[created.id].validatedRevision = 1;
+    repository.records[created.id].validation = {
+      valid: true,
+      errors: [],
+      diagnostics: { variants: {} }
+    };
+
+    expect(() => repository.publish(created.id, 1)).toThrow(expect.objectContaining({
+      code: 'DRAFT_VALIDATION_FAILED',
+      status: 422,
+      details: expect.objectContaining({
+        id: created.id,
+        currentRevision: 1,
+        errors: expect.arrayContaining([expect.objectContaining({ code: 'name_required' })])
+      })
+    }));
+    expect(repository.get(created.id).publishedDefinition).toBeNull();
+    expect(() => repository.getPublishedDefinition(created.id)).toThrow(expect.objectContaining({
+      code: 'SHOW_NOT_PUBLISHED'
+    }));
+  });
+
+  test('loads a published snapshot whose JSON object keys are reordered but semantically equal', () => {
+    const created = repository.create(makeDefinition());
+    repository.validate(created.id, 1);
+    repository.publish(created.id, 1);
+    const store = JSON.parse(fs.readFileSync(repository.filePath, 'utf8'));
+    store.records[created.id].publishedDefinition = reverseObjectKeys(
+      store.records[created.id].publishedDefinition
+    );
+    fs.writeFileSync(repository.filePath, JSON.stringify(store), 'utf8');
+    fs.rmSync(repository.backupPath, { force: true });
+
+    const reloaded = new RevisionedShowRepository({ dataDir: tempDir });
+    const loaded = reloaded.load().find(record => record.id === created.id);
+    expect(loaded).toMatchObject({ publishedRevision: 1 });
+    expect(reloaded.getPublishedDefinition(created.id)).toEqual(created.definition);
   });
 
   test('validates only the expected current revision and persists the structured PyroDSL result', () => {
