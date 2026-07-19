@@ -2700,7 +2700,11 @@ describe('Music Bot runtime and UI regressions', () => {
       const { dom, fetchMock } = bootMusicBotUi({
         productionLocale: 'en',
         translations: staleServerCatalog,
-        staticLocalePayload: fullCatalog
+        staticLocalePayload: fullCatalog,
+        statusPayload: {
+          health: { state: 'locked', locked: true, healthy: true },
+          runtime: { transportState: 'idle', safetyLock: true }
+        }
       });
       doms.push(dom);
 
@@ -2712,6 +2716,8 @@ describe('Music Bot runtime and UI regressions', () => {
       expect(dom.window.document.querySelector('[data-i18n="music_bot.ui.tabs.settings"]')?.textContent).toBe('Settings');
       expect(dom.window.document.querySelector('#now-playing p')?.textContent)
         .toBe(fullCatalog.music_bot.ui.player.nowPlayingEmpty);
+      expect(dom.window.document.querySelector('#health-state')?.textContent)
+        .toBe(fullCatalog.music_bot.ui.safety.safetyLocked);
     });
   });
 });
