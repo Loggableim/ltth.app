@@ -303,7 +303,12 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
   test('benchmark starts a server session before opening its unique overlay and binds every request to that session', async () => {
     const sessionId = '11111111-1111-4111-8111-111111111111';
     const overlayUrl = `http://localhost:3000/webgpu-fireworks/overlay?benchmark=true&benchmarkSessionId=${sessionId}`;
-    const popup = { closed: false, close: jest.fn(function close() { this.closed = true; }) };
+    const popup = {
+      closed: false,
+      name: '',
+      location: { replace: jest.fn() },
+      close: jest.fn(function close() { this.closed = true; })
+    };
     const openWindow = jest.fn(() => popup);
     const presetFailure = 'benchmark preset explicitly rejected';
     const { window, fetchMock } = await bootSettings({
@@ -337,10 +342,12 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
     expect(fetchMock.mock.invocationCallOrder[fetchMock.mock.calls.indexOf(startCalls[0])])
       .toBeLessThan(openWindow.mock.invocationCallOrder[0]);
     expect(openWindow).toHaveBeenCalledWith(
-      overlayUrl,
-      `FireworksBenchmark-${sessionId}`,
+      'about:blank',
+      'FireworksBenchmark-Pending-1',
       'width=1920,height=1080'
     );
+    expect(popup.location.replace).toHaveBeenCalledWith(overlayUrl);
+    expect(popup.name).toBe(`FireworksBenchmark-${sessionId}`);
 
     const presetCall = callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/benchmark/set-preset')[0];
     expect(JSON.parse(presetCall[1].body)).toMatchObject({
@@ -379,8 +386,8 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
     await window.startBenchmark();
 
     expect(openWindow).toHaveBeenCalledWith(
-      overlayUrl,
-      `FireworksBenchmark-${sessionId}`,
+      'about:blank',
+      'FireworksBenchmark-Pending-1',
       'width=1920,height=1080'
     );
     expect(callsFor(fetchMock, 'GET', `/api/webgpu-fireworks/benchmark/fps?sessionId=${sessionId}`)).toHaveLength(0);
@@ -389,7 +396,7 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
     expect(JSON.parse(restoreCalls[0][1].body)).toEqual({ sessionId });
   });
 
-  test('pagehide keepalive, stop, and finally share one captured idempotent restore', async () => {
+  test('pagehide silently stops the run, closes its popup, and shares one keepalive restore with finally', async () => {
     const sessionId = '33333333-3333-4333-8333-333333333333';
     const overlayUrl = `http://localhost:3000/webgpu-fireworks/overlay?benchmark=true&benchmarkSessionId=${sessionId}`;
     let resolvePreset;
@@ -420,7 +427,7 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
     await waitFor(() => {
       expect(callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/benchmark/restore')).toHaveLength(1);
     });
-    window.stopBenchmark();
+    expect(popup.close).toHaveBeenCalledTimes(1);
     resolvePreset({ success: true, accepted: false, reason: 'stopped benchmark' });
     await benchmarkPromise;
 
@@ -429,6 +436,58 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
     expect(restoreCalls[0][1]).toMatchObject({ keepalive: true });
     expect(JSON.parse(restoreCalls[0][1].body)).toEqual({ sessionId });
     expect(popup.close).toHaveBeenCalledTimes(1);
+
+    await window.restoreBenchmarkPreset(sessionId);
+    expect(callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/benchmark/restore')).toHaveLength(2);
+  });
+
+  test('pagehide keepalive can upgrade an in-flight normal restore request', async () => {
+    const sessionId = '99999999-9999-4999-8999-999999999999';
+    let resolveNormalRestore;
+    const normalRestore = new Promise(resolve => { resolveNormalRestore = resolve; });
+    const { window, fetchMock } = await bootSettings({
+      requestHandlers: {
+        'POST /api/webgpu-fireworks/benchmark/restore': async ({ options }) => {
+          if (options.keepalive === true) {
+            return { body: { success: true, sessionId, restored: false } };
+          }
+          return normalRestore;
+        }
+      }
+    });
+
+    const normalRequest = window.restoreBenchmarkPreset(sessionId);
+    const keepaliveRequest = window.restoreBenchmarkPreset(sessionId, { keepalive: true });
+    await keepaliveRequest;
+
+    const restoreCalls = callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/benchmark/restore');
+    expect(restoreCalls).toHaveLength(2);
+    expect(restoreCalls[0][1].keepalive).toBe(false);
+    expect(restoreCalls[1][1].keepalive).toBe(true);
+
+    resolveNormalRestore({ body: { success: true, sessionId, restored: true } });
+    await normalRequest;
+  });
+
+  test('a failed benchmark restore can be retried instead of caching a rejected promise', async () => {
+    const sessionId = '88888888-8888-4888-8888-888888888888';
+    const failure = 'temporary restore delivery failure';
+    const { window, fetchMock } = await bootSettings({
+      requestResponses: {
+        'POST /api/webgpu-fireworks/benchmark/restore': [
+          {
+            ok: false,
+            status: 503,
+            body: { success: false, code: 'BENCHMARK_CONFIG_DELIVERY_FAILED', error: failure }
+          },
+          { body: { success: true, sessionId, restored: true } }
+        ]
+      }
+    });
+
+    await expect(window.restoreBenchmarkPreset(sessionId)).rejects.toThrow(failure);
+    await expect(window.restoreBenchmarkPreset(sessionId)).resolves.toMatchObject({ restored: true });
+    expect(callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/benchmark/restore')).toHaveLength(2);
   });
 
   test('benchmark measurement uses the isolated trigger endpoint and propagates explicit rejection', async () => {

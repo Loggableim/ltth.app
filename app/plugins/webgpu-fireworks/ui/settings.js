@@ -255,12 +255,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 window.addEventListener('pagehide', () => {
-    const sessionId = benchmarkSessionId;
-    if (sessionId) {
-        void restoreBenchmarkPreset(sessionId, { keepalive: true }).catch(error => {
-            console.error('Failed to restore benchmark session during pagehide:', error);
-        });
-    }
+    void stopBenchmarkRun({ keepalive: true }).catch(error => {
+        console.error('Failed to stop benchmark session during pagehide:', error);
+    });
     if (rendererStatusTimer !== null) window.clearInterval(rendererStatusTimer);
     if (paletteSaveTimer !== null) window.clearTimeout(paletteSaveTimer);
     if (palettePreviewTimer !== null) window.clearTimeout(palettePreviewTimer);
@@ -1928,6 +1925,7 @@ async function startBenchmark() {
     benchmarkResults = [];
     let sessionId = null;
     let runWindow = null;
+    let popupError = null;
 
     const startBtn = document.getElementById('start-benchmark');
     const stopBtn = document.getElementById('stop-benchmark');
@@ -1940,11 +1938,26 @@ async function startBenchmark() {
     if (resultsDiv) resultsDiv.style.display = 'none';
 
     try {
-        const session = await requestJson('/api/webgpu-fireworks/benchmark/start', {
+        // Start the request first, then reserve a blank popup synchronously while
+        // the click still owns browser user activation. The actual benchmark URL
+        // is only loaded after the server has issued its isolated session.
+        const sessionRequest = requestJson('/api/webgpu-fireworks/benchmark/start', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({})
         });
+        try {
+            runWindow = window.open(
+                'about:blank',
+                `FireworksBenchmark-Pending-${runId}`,
+                'width=1920,height=1080'
+            );
+        } catch (error) {
+            popupError = error;
+        }
+        benchmarkWindow = runWindow;
+
+        const session = await sessionRequest;
         sessionId = typeof session.sessionId === 'string' ? session.sessionId : null;
         const overlayUrl = typeof session.overlayUrl === 'string' ? session.overlayUrl : null;
         if (!sessionId || !overlayUrl) {
@@ -1953,17 +1966,21 @@ async function startBenchmark() {
         if (!benchmarkRunning || activeBenchmarkRunId !== runId) return;
 
         benchmarkSessionId = sessionId;
-        runWindow = window.open(
-            overlayUrl,
-            `FireworksBenchmark-${sessionId}`,
-            'width=1920,height=1080'
-        );
-        benchmarkWindow = runWindow;
 
-        if (!runWindow) {
+        if (!runWindow || runWindow.closed) {
+            if (popupError) console.error('Failed to reserve benchmark popup:', popupError);
             const msg = window.i18n ? window.i18n.t('plugins.webgpu-fireworks.webgpu_fireworks.benchmark.popup_blocked') : 'Could not open benchmark window. Please allow pop-ups.';
             showToast(msg, 'error');
             return;
+        }
+
+        runWindow.name = `FireworksBenchmark-${sessionId}`;
+        if (typeof runWindow.location?.replace === 'function') {
+            runWindow.location.replace(overlayUrl);
+        } else if (runWindow.location && typeof runWindow.location === 'object') {
+            runWindow.location.href = overlayUrl;
+        } else {
+            runWindow.location = overlayUrl;
         }
 
         const rendererReady = await waitForBenchmarkRenderer(sessionId);
@@ -2013,6 +2030,7 @@ async function startBenchmark() {
             }
         }
         closeBenchmarkWindow(runWindow);
+        if (sessionId) benchmarkRestoreRequests.delete(sessionId);
         if (activeBenchmarkRunId === runId) {
             activeBenchmarkRunId = 0;
             benchmarkRunning = false;
@@ -2022,7 +2040,7 @@ async function startBenchmark() {
     }
 }
 
-function stopBenchmark() {
+function stopBenchmarkRun({ keepalive = false } = {}) {
     const sessionId = benchmarkSessionId;
     const runWindow = benchmarkWindow;
     benchmarkRunning = false;
@@ -2039,7 +2057,12 @@ function stopBenchmark() {
     }
     closeBenchmarkWindow(runWindow);
     resetBenchmarkUi();
-    void restoreBenchmarkPreset(sessionId).catch(error => {
+
+    return restoreBenchmarkPreset(sessionId, { keepalive });
+}
+
+function stopBenchmark() {
+    void stopBenchmarkRun().catch(error => {
         console.error('Failed to restore stopped benchmark session:', error);
         showToast(requestFailureMessage(error, 'Failed to restore benchmark session'), 'error');
     });
@@ -2069,15 +2092,23 @@ function resetBenchmarkUi() {
 function restoreBenchmarkPreset(sessionId, { keepalive = false } = {}) {
     if (!sessionId) return Promise.resolve(null);
     const existing = benchmarkRestoreRequests.get(sessionId);
-    if (existing) return existing;
+    if (existing && (!keepalive || existing.keepalive)) return existing.promise;
+
+    const record = { keepalive, promise: null };
     const request = requestJson('/api/webgpu-fireworks/benchmark/restore', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId }),
         keepalive
     });
-    benchmarkRestoreRequests.set(sessionId, request);
-    return request;
+    record.promise = request.catch(error => {
+        if (benchmarkRestoreRequests.get(sessionId) === record) {
+            benchmarkRestoreRequests.delete(sessionId);
+        }
+        throw error;
+    });
+    benchmarkRestoreRequests.set(sessionId, record);
+    return record.promise;
 }
 
 function waitForBenchmarkPollDelay(delayMs) {
