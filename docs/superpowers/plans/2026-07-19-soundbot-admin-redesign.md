@@ -322,4 +322,3 @@ After an independent whole-branch review has no open Critical or Important findi
 3. Reload only `music-bot`.
 4. Open `/dashboard.html`, navigate to Music Bot through the integrated Browser, and verify Player, Queue, seek, pause/resume, History vote-neutral cycle, Catalog search, temporary Playlist CRUD cleanup, localization, diagnostic title safety, and browser console.
 5. Leave the bot in the user's prior playback state; never auto-unlock or auto-start after a Safety Lock.
-

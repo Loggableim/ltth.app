@@ -51,4 +51,3 @@ Die vorhandenen Funktionsbereiche bleiben erhalten, werden aber neu gruppiert un
 - Kein sichtbarer signierter Medien-URL-Teil erscheint in Health oder Diagnoseexport.
 - DE/EN/ES/FR werden vollständig und ohne Mischsprache gerendert.
 - Alle Music-Bot-Suites, Lint, CSS-Build und `git diff --check` bestehen; bekannte globale Baselinefehler werden separat ausgewiesen.
-
