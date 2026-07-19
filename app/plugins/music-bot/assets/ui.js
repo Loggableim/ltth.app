@@ -2759,6 +2759,40 @@
     if (autoDjPlaylistUrls && typeof autoDj.playlistUrls === 'string') autoDjPlaylistUrls.value = autoDj.playlistUrls;
   }
 
+  const UNSAFE_LOCALE_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+
+  function cloneStaticLocaleNode(value) {
+    if (Array.isArray(value)) return value.map(cloneStaticLocaleNode);
+    if (!value || typeof value !== 'object') return value;
+    const clone = {};
+    Object.keys(value).forEach((key) => {
+      if (!UNSAFE_LOCALE_KEYS.has(key)) clone[key] = cloneStaticLocaleNode(value[key]);
+    });
+    return clone;
+  }
+
+  async function hydrateStaticPluginLocale() {
+    const i18n = window.i18n;
+    const locale = String(i18n?.currentLocale || document.documentElement.lang || 'de').toLowerCase();
+    if (!i18n?.translations || !/^(de|en|es|fr)$/.test(locale)) return false;
+    try {
+      const response = await fetch(`/plugins/music-bot/locales/${locale}.json`, { cache: 'no-store' });
+      if (!response || response.ok === false) return false;
+      const catalog = await response.json();
+      if (!catalog?.music_bot || typeof catalog.music_bot !== 'object') return false;
+      const legacyCatalog = cloneStaticLocaleNode(catalog.music_bot);
+      const localeCatalog = i18n.translations[locale] ||= {};
+      const pluginsCatalog = localeCatalog.plugins ||= {};
+      const pluginCatalog = pluginsCatalog['music-bot'] ||= {};
+      localeCatalog.music_bot = legacyCatalog;
+      pluginCatalog.music_bot = legacyCatalog;
+      return true;
+    } catch (error) {
+      console.warn('[music-bot] Static locale hydration failed', error);
+      return false;
+    }
+  }
+
   function rerenderLocalizedDynamicSurfaces() {
     const transientState = captureLocalizedTransientState();
     window.i18n?.updateDOM?.();
@@ -2778,11 +2812,17 @@
     activeToastRecords.forEach(renderToastRecord);
   }
 
-  window.i18n?.onLanguageChange?.(rerenderLocalizedDynamicSurfaces);
+  async function handleLanguageChange() {
+    await hydrateStaticPluginLocale();
+    rerenderLocalizedDynamicSurfaces();
+  }
+
+  window.i18n?.onLanguageChange?.(handleLanguageChange);
   window.i18n?.onChange?.(rerenderLocalizedDynamicSurfaces);
 
   async function boot() {
     if (window.i18n?.ready) await window.i18n.ready;
+    await hydrateStaticPluginLocale();
     window.i18n?.updateDOM?.();
     await init();
   }

@@ -114,11 +114,15 @@ function bootMusicBotUi(options = {}) {
   const productionLocale = options.productionLocale;
   const i18nReady = options.i18nReady;
   const i18nWarn = options.i18nWarn;
+  const staticLocalePayload = options.staticLocalePayload;
   const socketHandlers = {};
   const html = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/ui.html'), 'utf8');
   const js = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/assets/ui.js'), 'utf8');
   const fetchMock = jest.fn(async (url, options = {}) => {
     const target = String(url);
+    if (target.includes('/plugins/music-bot/locales/')) {
+      return createJsonResponse(staticLocalePayload || {});
+    }
     if (options.method === 'POST') {
       if (typeof postHandler === 'function') {
         return postHandler(target, options);
@@ -2679,6 +2683,35 @@ describe('Music Bot runtime and UI regressions', () => {
       expect(dom.window.i18n.updateDOM).toHaveBeenCalledTimes(1);
       expect(fetchMock).toHaveBeenCalledWith('/api/plugins/music-bot/status');
       expect(i18nWarn).not.toHaveBeenCalled();
+    });
+
+    test('hydrates the complete plugin locale after a plugin-only reload with a stale server i18n loader', async () => {
+      const fullCatalog = JSON.parse(fs.readFileSync(path.join(__dirname, '../plugins/music-bot/locales/en.json'), 'utf8'));
+      const staleServerCatalog = {
+        en: {
+          plugins: {
+            'music-bot': {
+              plugin: fullCatalog.plugin,
+              ui: fullCatalog.ui
+            }
+          }
+        }
+      };
+      const { dom, fetchMock } = bootMusicBotUi({
+        productionLocale: 'en',
+        translations: staleServerCatalog,
+        staticLocalePayload: fullCatalog
+      });
+      doms.push(dom);
+
+      await new Promise((resolve) => setTimeout(resolve, 40));
+
+      expect(fetchMock).toHaveBeenCalledWith('/plugins/music-bot/locales/en.json', { cache: 'no-store' });
+      expect(dom.window.document.querySelector('[data-i18n="music_bot.ui.health.state"]')?.textContent).toBe('State');
+      expect(dom.window.document.querySelector('[data-i18n="music_bot.ui.tabs.catalog"]')?.textContent).toBe('Catalog');
+      expect(dom.window.document.querySelector('[data-i18n="music_bot.ui.tabs.settings"]')?.textContent).toBe('Settings');
+      expect(dom.window.document.querySelector('#now-playing p')?.textContent)
+        .toBe(fullCatalog.music_bot.ui.player.nowPlayingEmpty);
     });
   });
 });
