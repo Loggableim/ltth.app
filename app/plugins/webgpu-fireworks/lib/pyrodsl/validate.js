@@ -292,6 +292,7 @@ function simulateParticleLoad(cues) {
   const earliestSplitRatio = 0.48;
   const latestSplitRatio = 0.68;
   const splitChildLifetimeRatio = 0.46;
+  const minimumSplitChildLifetimeMs = 80;
   const events = [];
   for (const cue of cues) {
     if (!Number.isFinite(cue.timeMs)) continue;
@@ -308,7 +309,11 @@ function simulateParticleLoad(cues) {
           const splitDensity = layer.density * splitChildCount;
           const coreSplitDensity = layer.core === true ? splitDensity : 0;
           const splitStartMs = startMs + layer.lifetimeMs * earliestSplitRatio;
-          const splitEndMs = startMs + layer.lifetimeMs * (latestSplitRatio + splitChildLifetimeRatio);
+          const splitChildLifetimeMs = Math.max(
+            minimumSplitChildLifetimeMs,
+            layer.lifetimeMs * splitChildLifetimeRatio
+          );
+          const splitEndMs = startMs + layer.lifetimeMs * latestSplitRatio + splitChildLifetimeMs;
           events.push({ timeMs: splitStartMs, total: splitDensity, core: coreSplitDensity, order: 1 });
           events.push({ timeMs: splitEndMs, total: -splitDensity, core: -coreSplitDensity, order: 0 });
         }

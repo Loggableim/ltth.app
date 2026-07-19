@@ -480,6 +480,49 @@ describe('PyroDSL validation', () => {
       peakAtMs: 22100
     });
   });
+
+  test('uses the WGSL 80ms minimum child lifetime for short split layers', () => {
+    const definition = validDefinition();
+    const opening = definition.variants.long.cues.find(item => item.phase === 'opening');
+    opening.shells = [shell({
+      layers: [layer({ density: 1000, lifetimeMs: 100, split: true })]
+    })];
+    definition.variants.long.cues.splice(1, 0, cue(2120, 'opening', {
+      shells: [shell({ layers: [layer({ density: 1800, lifetimeMs: 100 })] })]
+    }));
+
+    const result = validateShowDefinition(definition);
+
+    expect(errorCodes(result)).toContain('core_particle_budget_exceeded');
+    expect(result.diagnostics.variants.long).toMatchObject({
+      peakCoreParticles: 5800,
+      peakTotalParticles: 5800,
+      peakAtMs: 2120
+    });
+  });
+
+  test.each([
+    [173, true, 5000, 2083.04],
+    [174, false, 5800, 2198]
+  ])('switches from the 80ms floor at the integer boundary near 173.913ms (lifetime %ims)',
+    (lifetimeMs, expectedValid, expectedPeak, expectedPeakAtMs) => {
+      const definition = validDefinition();
+      const opening = definition.variants.long.cues.find(item => item.phase === 'opening');
+      opening.shells = [shell({
+        layers: [layer({ density: 1000, lifetimeMs, split: true })]
+      })];
+      definition.variants.long.cues.splice(1, 0, cue(2198, 'opening', {
+        shells: [shell({ layers: [layer({ density: 1800, lifetimeMs: 100 })] })]
+      }));
+
+      const result = validateShowDefinition(definition);
+
+      expect(result.valid).toBe(expectedValid);
+      expect(errorCodes(result).includes('core_particle_budget_exceeded')).toBe(!expectedValid);
+      expect(result.diagnostics.variants.long.peakCoreParticles).toBe(expectedPeak);
+      expect(result.diagnostics.variants.long.peakTotalParticles).toBe(expectedPeak);
+      expect(result.diagnostics.variants.long.peakAtMs).toBeCloseTo(expectedPeakAtMs, 5);
+    });
 });
 
 describe('PyroDSL deterministic compilation', () => {
