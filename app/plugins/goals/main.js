@@ -504,13 +504,14 @@ class GoalsPlugin extends EventEmitter {
      * Trigger a Fireworks finale for goals that explicitly opted in.
      */
     triggerGoalFireworkFinale(goalId) {
+        let milestoneKey = null;
         try {
             const goal = this.db.getGoal(goalId);
             if (!goal || !goal.firework_enabled) {
                 return false;
             }
 
-            const milestoneKey = this.getFireworkMilestoneKey(goal);
+            milestoneKey = this.getFireworkMilestoneKey(goal);
             if (this.fireworkFinaleMilestones.has(milestoneKey)) {
                 return false;
             }
@@ -529,7 +530,15 @@ class GoalsPlugin extends EventEmitter {
                 const style = normalizeGoalFinaleStyle(goal.firework_encounter_mode);
                 const length = normalizeGoalFinaleLength(goal.firework_finale_length);
                 const eventId = `goal:${milestoneKey}`;
-                fireworks.triggerFinale({ intensity, style, length, eventId });
+                const result = fireworks.triggerFinale({ intensity, style, length, eventId });
+                if (result && result.accepted === false) {
+                    this.fireworkFinaleMilestones.delete(milestoneKey);
+                    this.api.log(
+                        `WebGPU firework finale for goal "${goal.name}" was rejected (${result.reason || 'unknown'})`,
+                        'warn'
+                    );
+                    return false;
+                }
                 this.api.log(
                     `Triggered WebGPU firework finale for goal "${goal.name}" ` +
                     `(${intensity}x, style=${style}, length=${length})`,
@@ -542,6 +551,9 @@ class GoalsPlugin extends EventEmitter {
             }
             return true;
         } catch (error) {
+            if (milestoneKey) {
+                this.fireworkFinaleMilestones.delete(milestoneKey);
+            }
             this.api.log(`Error triggering goal firework finale: ${error.message}`, 'error');
             return false;
         }

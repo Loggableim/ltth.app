@@ -246,6 +246,59 @@ describe('Goals firework finale integration', () => {
     expect(legacyFireworks.triggerFinale).not.toHaveBeenCalled();
   });
 
+  test('retries a WebGPU finale after renderer rejection without consuming the goal milestone', () => {
+    const sqlite = new Database(':memory:');
+    const webgpuFireworks = {
+      triggerFinale: jest.fn()
+        .mockReturnValueOnce({ accepted: false, reason: 'renderer-not-ready' })
+        .mockReturnValueOnce({ accepted: true })
+    };
+    const plugin = new GoalsPlugin(createApi(sqlite, new Map([['webgpu-fireworks', webgpuFireworks]])));
+
+    plugin.db.initialize();
+    const goal = plugin.db.createGoal({
+      id: 'goal_webgpu_retry',
+      name: 'WebGPU Retry',
+      goal_type: 'coin',
+      target_value: 100,
+      firework_enabled: 1
+    });
+
+    expect(plugin.triggerGoalFireworkFinale(goal.id)).toBe(false);
+    expect(plugin.triggerGoalFireworkFinale(goal.id)).toBe(true);
+    expect(plugin.triggerGoalFireworkFinale(goal.id)).toBe(false);
+    expect(webgpuFireworks.triggerFinale).toHaveBeenCalledTimes(2);
+  });
+
+  test('deduplicates a synchronous reentrant WebGPU finale trigger', () => {
+    const sqlite = new Database(':memory:');
+    let plugin;
+    let goal;
+    let nestedResult;
+    const webgpuFireworks = {
+      triggerFinale: jest.fn()
+        .mockImplementationOnce(() => {
+          nestedResult = plugin.triggerGoalFireworkFinale(goal.id);
+          return { accepted: true };
+        })
+        .mockReturnValue({ accepted: true })
+    };
+    plugin = new GoalsPlugin(createApi(sqlite, new Map([['webgpu-fireworks', webgpuFireworks]])));
+
+    plugin.db.initialize();
+    goal = plugin.db.createGoal({
+      id: 'goal_webgpu_reentrant',
+      name: 'WebGPU Reentrant',
+      goal_type: 'coin',
+      target_value: 100,
+      firework_enabled: 1
+    });
+
+    expect(plugin.triggerGoalFireworkFinale(goal.id)).toBe(true);
+    expect(nestedResult).toBe(false);
+    expect(webgpuFireworks.triggerFinale).toHaveBeenCalledTimes(1);
+  });
+
   test('passes curated per-goal style and length overrides to WebGPU with a stable event id', () => {
     const sqlite = new Database(':memory:');
     const webgpuFireworks = { triggerFinale: jest.fn() };
