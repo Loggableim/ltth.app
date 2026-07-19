@@ -5,6 +5,30 @@
  * generation, physics, lifetime management, trail history, active compaction
  * and indirect draw counts are produced by WGSL compute passes.
  */
+const V2_TRAIL = 1 << 0;
+const V2_SPLIT_REQUESTED = 1 << 1;
+const V2_STROBE = 1 << 3;
+const V2_MARKER = 1 << 15;
+const V2_PRIMITIVE_IDS = Object.freeze({
+    radial: 10,
+    ring: 11,
+    spiral: 12,
+    palm: 13,
+    crossette: 14,
+    comet: 15,
+    mine: 16
+});
+const V2_GLYPH_IDS = Object.freeze({
+    paw: 17,
+    heart: 18,
+    star: 19,
+    'fox-head': 20,
+    'wolf-head': 21,
+    dragon: 22,
+    'dragon-wing': 23,
+    tail: 24
+});
+
 class WebGPUParticleEngine {
     constructor(canvas, options = {}) {
         this.canvas = canvas;
@@ -615,6 +639,96 @@ class WebGPUParticleEngine {
         }
     }
 
+    spawnLayer(layer = {}, context = {}) {
+        this._validateV2Layer(layer, context);
+        const shape = this._v2ShapeId(layer);
+        const packedColors = layer.colors.map(color => this._packColor(color));
+        const scale = this._v2ViewportScale();
+        const style = context.materialProfile === 'premium-realistic'
+            ? this._styleId('premium-realistic')
+            : this._styleId(context.visualStyle || this.style);
+        const splitQuality = context.splitQuality === undefined ? (layer.split ? 3 : 0) : context.splitQuality;
+        const materialRole = layer.priority === 'decorative' ? 2 : layer.priority === 'accent' ? 1 : 0;
+        const flags = V2_MARKER | (layer.trail ? V2_TRAIL : 0) |
+            (layer.split ? V2_SPLIT_REQUESTED : 0) | (layer.strobe ? V2_STROBE : 0) |
+            ((splitQuality & 3) << 4) | ((materialRole & 15) << 8) | ((style & 3) << 12);
+
+        return this._queueSpawn({
+            origin: context.origin || context.position || { x: 0, y: 0 },
+            target: context.target || context.origin || context.position || { x: 0, y: 0 },
+            kind: 2,
+            count: layer.density,
+            shape,
+            packedColors,
+            colorCount: packedColors.length,
+            flags,
+            intensity: (context.powerScale ?? 1) * scale,
+            particleDuration: layer.lifetimeMs / 1000,
+            size: layer.size * 6 * scale,
+            gravity: layer.gravity * 105 * scale,
+            drag: layer.drag,
+            secondary: false,
+            seed: context.seed,
+            effectId: context.effectId ?? layer.id,
+            globalCount: layer.density
+        });
+    }
+
+    _validateV2Layer(layer, context) {
+        if (!layer || typeof layer !== 'object' || Array.isArray(layer) || this._v2ShapeId(layer) === null) {
+            throw new TypeError('Unsupported ShowPlanV2 layer primitive or glyph.');
+        }
+        if (!Array.isArray(layer.colors) || layer.colors.length < 1 || layer.colors.length > 4) {
+            throw new RangeError('ShowPlanV2 layers require between one and four colors.');
+        }
+        if (!Number.isInteger(layer.density) || layer.density < 1 || layer.density > this.maxParticles) {
+            throw new RangeError(`ShowPlanV2 layer density must be an integer between 1 and ${this.maxParticles}.`);
+        }
+        if (!Number.isFinite(layer.size) || layer.size < 0.05 || layer.size > 10) {
+            throw new RangeError('ShowPlanV2 layer size must be between 0.05 and 10.');
+        }
+        if (!Number.isInteger(layer.lifetimeMs) || layer.lifetimeMs < 1 || layer.lifetimeMs > 10000) {
+            throw new RangeError('ShowPlanV2 layer lifetimeMs must be an integer between 1 and 10000.');
+        }
+        if (!Number.isFinite(layer.gravity) || layer.gravity < -10 || layer.gravity > 10) {
+            throw new RangeError('ShowPlanV2 layer gravity must be between -10 and 10.');
+        }
+        if (!Number.isFinite(layer.drag) || layer.drag < 0 || layer.drag > 1) {
+            throw new RangeError('ShowPlanV2 layer drag must be between 0 and 1.');
+        }
+        if (!Number.isInteger(layer.delayMs) || layer.delayMs < 0) {
+            throw new RangeError('ShowPlanV2 layer delayMs must be a non-negative integer.');
+        }
+        for (const property of ['trail', 'split', 'strobe', 'core']) {
+            if (typeof layer[property] !== 'boolean') throw new TypeError(`ShowPlanV2 layer ${property} must be boolean.`);
+        }
+        if (!['core', 'accent', 'decorative'].includes(layer.priority)) {
+            throw new TypeError('ShowPlanV2 layer priority is unsupported.');
+        }
+        if (layer.priority === 'decorative' && layer.core) {
+            throw new TypeError('Decorative ShowPlanV2 layers cannot be core.');
+        }
+        layer.colors.forEach(color => this._packColor(color));
+        if (context.materialProfile !== undefined && !['classic', 'premium-realistic'].includes(context.materialProfile)) {
+            throw new TypeError('ShowPlanV2 material profile is unsupported.');
+        }
+        if (context.visualStyle !== undefined && !['premium-hybrid', 'realistic', 'stylized-neon'].includes(context.visualStyle)) {
+            throw new TypeError('ShowPlanV2 visual style is unsupported.');
+        }
+        if (context.splitQuality !== undefined && (!Number.isInteger(context.splitQuality)
+            || context.splitQuality < 0 || context.splitQuality > 3)) {
+            throw new RangeError('ShowPlanV2 splitQuality must be an integer between 0 and 3.');
+        }
+        if (context.powerScale !== undefined && (!Number.isFinite(context.powerScale) || context.powerScale <= 0)) {
+            throw new RangeError('ShowPlanV2 powerScale must be positive.');
+        }
+        for (const point of [context.origin || context.position, context.target]) {
+            if (point !== undefined && (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y))) {
+                throw new TypeError('ShowPlanV2 layer context positions must contain finite x and y values.');
+            }
+        }
+    }
+
     spawnCrackle(options = {}) {
         const style = this._styleId(options.style);
         const colors = Array.isArray(options.colors) && options.colors.length ? options.colors : ['#fff4b0'];
@@ -652,8 +766,17 @@ class WebGPUParticleEngine {
         return { burst: 0, heart: 1, paws: 2, paw: 2, star: 3, ring: 4, spiral: 5, image: 6, sparkle: 7, rocket: 8, smoke: 9 }[shape] ?? 0;
     }
 
+    _v2ShapeId(layer = {}) {
+        if (layer.primitive === 'glyph') return V2_GLYPH_IDS[layer.glyph] ?? null;
+        return V2_PRIMITIVE_IDS[layer.primitive] ?? null;
+    }
+
     _styleId(style) {
-        return { 'premium-hybrid': 0, realistic: 1, 'stylized-neon': 2 }[style] ?? 0;
+        return { 'premium-hybrid': 0, realistic: 1, 'stylized-neon': 2, 'premium-realistic': 3 }[style] ?? 0;
+    }
+
+    _v2ViewportScale() {
+        return Math.max(0.75, Math.min(1.75, Math.min(this.logicalWidth, this.logicalHeight) / 1080));
     }
 
     _flags({ secondary = false, nativeColor = false, role = 0, style = 0, pulseCount = 0, rocketAvatarHead = false } = {}) {
@@ -687,6 +810,8 @@ class WebGPUParticleEngine {
     _queueSpawn(command) {
         if (!this.initialized || this.spawnQueue.length >= this.maxSpawnCommands) return false;
         const seed = this._resolveSeed(command);
+        const flags = command.flags || 0;
+        const isV2 = (flags & V2_MARKER) !== 0;
         this.spawnQueue.push({
             origin: command.origin || { x: command.x || 0, y: command.y || 0 },
             target: command.target || command.origin || { x: command.x || 0, y: command.y || 0 },
@@ -694,14 +819,16 @@ class WebGPUParticleEngine {
             count: Math.max(1, Math.floor(command.count || 1)),
             shape: this._shapeId(command.shape),
             kind: command.kind || 2,
-            flags: command.flags || 0,
+            flags,
             intensity: Math.max(0.1, Number(command.intensity) || 1),
             duration: Math.max(0.05, Number(command.duration) || 1.2),
-            particleDuration: Math.max(0.05, Number(command.particleDuration) || Number(command.duration) || 1.2),
+            particleDuration: isV2
+                ? Number(command.particleDuration)
+                : Math.max(0.05, Number(command.particleDuration) || Number(command.duration) || 1.2),
             textureIndex: Math.max(0, Number(command.textureIndex) || 0),
             seed,
             effectId: this._hashValue(command.effectId ?? seed),
-            size: Math.max(1, Number(command.size) || 6),
+            size: isV2 ? Number(command.size) : Math.max(1, Number(command.size) || 6),
             gravity: Number.isFinite(command.gravity) ? command.gravity : 90,
             drag: Number.isFinite(command.drag) ? command.drag : 0.985,
             secondary: command.secondary !== false ? 1 : 0,
@@ -711,7 +838,9 @@ class WebGPUParticleEngine {
             emissionSpread: Math.max(0, Number(command.emissionSpread) || 0),
             globalIndexBase: Math.max(0, Math.floor(Number(command.globalIndexBase) || 0)),
             globalCount: Math.max(1, Math.floor(Number(command.globalCount) || Number(command.count) || 1)),
-            pulseCount: Math.max(0, Math.min(7, Math.floor(Number(command.pulseCount) || 0)))
+            pulseCount: Math.max(0, Math.min(7, Math.floor(Number(command.pulseCount) || 0))),
+            packedColors: isV2 ? [...command.packedColors] : null,
+            colorCount: isV2 ? command.colorCount : 0
         });
         return true;
     }
@@ -744,6 +873,16 @@ class WebGPUParticleEngine {
         return [f(0), f(8), f(4), 1];
     }
 
+    _packColor(color) {
+        const match = /^#([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})?$/i.exec(String(color));
+        if (!match) throw new TypeError('ShowPlanV2 colors must use #RRGGBB or #RRGGBBAA.');
+        const red = parseInt(match[1], 16);
+        const green = parseInt(match[2], 16);
+        const blue = parseInt(match[3], 16);
+        const alpha = match[4] ? parseInt(match[4], 16) : 255;
+        return (red | (green << 8) | (blue << 16) | (alpha << 24)) >>> 0;
+    }
+
     _uploadSpawnCommands() {
         const commands = this.spawnQueue.splice(0, this.maxSpawnCommands);
         if (!commands.length) return { count: 0, maxParticles: 0 };
@@ -755,7 +894,13 @@ class WebGPUParticleEngine {
             const base = index * 28;
             f32[base] = command.origin.x; f32[base + 1] = command.origin.y;
             f32[base + 2] = command.target.x; f32[base + 3] = command.target.y;
-            f32.set(command.color, base + 4);
+            if ((command.flags & V2_MARKER) !== 0) {
+                for (let colorIndex = 0; colorIndex < 4; colorIndex++) {
+                    u32[base + 4 + colorIndex] = command.packedColors[colorIndex] || 0;
+                }
+            } else {
+                f32.set(command.color, base + 4);
+            }
             u32[base + 8] = command.count; u32[base + 9] = command.shape;
             u32[base + 10] = command.kind; u32[base + 11] = command.flags;
             f32[base + 12] = command.intensity; f32[base + 13] = command.particleDuration;
@@ -765,7 +910,8 @@ class WebGPUParticleEngine {
             f32[base + 20] = command.wind; f32[base + 21] = command.curve;
             f32[base + 22] = command.emissionDelay; f32[base + 23] = command.emissionSpread;
             u32[base + 24] = command.globalIndexBase; u32[base + 25] = command.globalCount;
-            u32[base + 26] = command.effectId; u32[base + 27] = command.pulseCount;
+            u32[base + 26] = command.effectId;
+            u32[base + 27] = (command.flags & V2_MARKER) !== 0 ? command.colorCount : command.pulseCount;
             maxParticles = Math.max(maxParticles, command.count);
         });
         this.device.queue.writeBuffer(this.buffers.commands, 0, raw);
@@ -1010,12 +1156,12 @@ struct Particle {
   flags: u32, seed: u32, textureIndex: u32, alive: u32,
 };
 struct SpawnCommand {
-  origin: vec2f, destination: vec2f, color: vec4f,
+  origin: vec2f, destination: vec2f, colorWords: vec4u,
   count: u32, shape: u32, kind: u32, flags: u32,
   intensity: f32, duration: f32, textureIndex: u32, seed: u32,
   size: f32, gravity: f32, drag: f32, secondary: u32,
   wind: f32, curve: f32, emissionDelay: f32, emissionSpread: f32,
-  globalIndexBase: u32, globalCount: u32, effectId: u32, pulseCount: u32,
+  globalIndexBase: u32, globalCount: u32, effectId: u32, colorCount: u32,
 };
 struct Counters { freeCount: atomic<u32>, activeCount: atomic<u32>, droppedCount: atomic<u32>, secondaryCount: atomic<u32> };
 struct Uniforms {
@@ -1034,7 +1180,27 @@ struct Uniforms {
 @group(0) @binding(8) var<uniform> uniforms: Uniforms;
 @group(0) @binding(9) var<storage, read_write> secondaryIndices: array<u32>;
 
+const V2_TRAIL = 1u;
+const V2_SPLIT_REQUESTED = 2u;
+const V2_SPLIT_EMITTED = 4u;
+const V2_STROBE = 8u;
+const V2_MARKER = 32768u;
+
 fn hash(value: u32) -> f32 { var x = value; x = ((x >> 16u) ^ x) * 0x45d9f3bu; x = ((x >> 16u) ^ x) * 0x45d9f3bu; x = (x >> 16u) ^ x; return f32(x) / 4294967295.0; }
+fn isV2(flags: u32) -> bool { return (flags & V2_MARKER) != 0u; }
+fn unpackRgba8(packed: u32) -> vec4f {
+  return vec4f(
+    f32(packed & 255u)/255.0,
+    f32((packed >> 8u) & 255u)/255.0,
+    f32((packed >> 16u) & 255u)/255.0,
+    f32((packed >> 24u) & 255u)/255.0
+  );
+}
+fn commandColor(command: SpawnCommand, globalIndex: u32) -> vec4f {
+  if (!isV2(command.flags)) { return bitcast<vec4f>(command.colorWords); }
+  let colorIndex = globalIndex % min(command.colorCount, 4u);
+  return unpackRgba8(command.colorWords[colorIndex]);
+}
 fn allocateParticle() -> u32 {
   var result = 0xffffffffu;
   loop {
@@ -1046,9 +1212,119 @@ fn allocateParticle() -> u32 {
   return result;
 }
 fn releaseParticle(index: u32) { let slot = atomicAdd(&counters.freeCount, 1u); freeIndices[slot] = index; }
+fn glyphPoint(shape: u32, t: f32, seed: u32) -> vec2f {
+  var point = vec2f(0.0);
+  if (shape == 17u) {
+    let section = min(4u, u32(floor(t * 5.0)));
+    let angle = fract(t * 5.0) * 6.2831853;
+    if (section == 0u) {
+      point = vec2f(cos(angle) * 0.42, 0.24 + sin(angle) * 0.34);
+    } else {
+      let centers = array<vec2f, 4>(
+        vec2f(-0.48, -0.28), vec2f(-0.17, -0.48),
+        vec2f(0.17, -0.48), vec2f(0.48, -0.28)
+      );
+      point = centers[section - 1u] + vec2f(cos(angle) * 0.16, sin(angle) * 0.2);
+    }
+  } else if (shape == 18u) {
+    let angle = t * 6.2831853;
+    point = vec2f(
+      16.0 * pow(sin(angle), 3.0) / 18.0,
+      -(13.0*cos(angle)-5.0*cos(2.0*angle)-2.0*cos(3.0*angle)-cos(4.0*angle)) / 18.0
+    );
+  } else if (shape == 19u) {
+    let edge = t * 10.0;
+    let vertex = u32(floor(edge)) % 10u;
+    let local = fract(edge);
+    let angle0 = -1.5707963 + f32(vertex) * 0.6283185;
+    let angle1 = -1.5707963 + f32((vertex + 1u) % 10u) * 0.6283185;
+    let radius0 = select(0.42, 0.94, vertex % 2u == 0u);
+    let radius1 = select(0.42, 0.94, (vertex + 1u) % 2u == 0u);
+    point = mix(vec2f(cos(angle0), sin(angle0))*radius0, vec2f(cos(angle1), sin(angle1))*radius1, local);
+  } else if (shape == 20u) {
+    let points = array<vec2f, 9>(
+      vec2f(-0.82,0.46), vec2f(-0.67,-0.72), vec2f(-0.28,-0.4),
+      vec2f(0.0,-0.68), vec2f(0.28,-0.4), vec2f(0.67,-0.72),
+      vec2f(0.82,0.46), vec2f(0.38,0.78), vec2f(-0.38,0.78)
+    );
+    let edge = t * 9.0; let index = u32(floor(edge)) % 9u;
+    point = mix(points[index], points[(index + 1u) % 9u], fract(edge));
+  } else if (shape == 21u) {
+    let points = array<vec2f, 10>(
+      vec2f(-0.78,0.58), vec2f(-0.62,-0.82), vec2f(-0.24,-0.48),
+      vec2f(0.0,-0.78), vec2f(0.24,-0.48), vec2f(0.62,-0.82),
+      vec2f(0.78,0.58), vec2f(0.42,0.82), vec2f(0.0,0.68), vec2f(-0.42,0.82)
+    );
+    let edge = t * 10.0; let index = u32(floor(edge)) % 10u;
+    point = mix(points[index], points[(index + 1u) % 10u], fract(edge));
+  } else if (shape == 22u) {
+    let points = array<vec2f, 12>(
+      vec2f(-0.9,0.42), vec2f(-0.66,0.02), vec2f(-0.8,-0.38),
+      vec2f(-0.34,-0.2), vec2f(-0.08,-0.68), vec2f(0.12,-0.18),
+      vec2f(0.62,-0.48), vec2f(0.48,-0.02), vec2f(0.9,0.18),
+      vec2f(0.38,0.38), vec2f(0.04,0.76), vec2f(-0.36,0.34)
+    );
+    let edge = t * 12.0; let index = u32(floor(edge)) % 12u;
+    point = mix(points[index], points[(index + 1u) % 12u], fract(edge));
+  } else if (shape == 23u) {
+    let points = array<vec2f, 9>(
+      vec2f(-0.88,0.5), vec2f(-0.42,-0.7), vec2f(-0.12,-0.18),
+      vec2f(0.24,-0.88), vec2f(0.3,-0.16), vec2f(0.84,-0.5),
+      vec2f(0.48,0.22), vec2f(0.9,0.62), vec2f(0.0,0.46)
+    );
+    let edge = t * 9.0; let index = u32(floor(edge)) % 9u;
+    point = mix(points[index], points[(index + 1u) % 9u], fract(edge));
+  } else if (shape == 24u) {
+    let x = -0.9 + t * 1.8;
+    let envelope = 1.0 - 0.42 * t;
+    point = vec2f(x, sin(t * 8.6) * 0.58 * envelope + (t - 0.5) * 0.28);
+  }
+  point *= 0.992 + hash(seed + u32(t * 65535.0)) * 0.016;
+  return clamp(point, vec2f(-1.0), vec2f(1.0));
+}
 fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) -> vec2f {
   let t = f32(index) / max(1.0, f32(count));
   let jitter = (hash(seed + index * 17u) - 0.5) * 0.16;
+  if (shape == 10u) {
+    let angle = t * 6.2831853 + jitter;
+    let speed = 175.0 + hash(seed + index * 23u) * 105.0;
+    return vec2f(cos(angle), sin(angle)) * speed * intensity;
+  }
+  if (shape == 11u) {
+    let angle = t * 6.2831853 + jitter * 0.18;
+    return vec2f(cos(angle), sin(angle)) * 228.0 * intensity;
+  }
+  if (shape == 12u) {
+    let angle = t * 15.707963 + f32(index % 2u) * 3.1415926;
+    let radial = vec2f(cos(angle), sin(angle)) * (72.0 + t * 170.0);
+    let tangent = vec2f(-sin(angle), cos(angle)) * 92.0;
+    return (radial + tangent) * intensity;
+  }
+  if (shape == 13u) {
+    let frond = f32(index % 7u) - 3.0;
+    let angle = -1.5707963 + frond * 0.235 + jitter * 0.3;
+    let speed = 172.0 + hash(seed + index * 31u) * 98.0;
+    return vec2f(cos(angle) * speed, sin(angle) * speed * 1.08) * intensity;
+  }
+  if (shape == 14u) {
+    let arm = index % 4u;
+    let angle = f32(arm) * 1.5707963 + jitter * 0.34;
+    let speed = 152.0 + hash(seed + index * 37u) * 76.0;
+    return vec2f(cos(angle), sin(angle)) * speed * intensity;
+  }
+  if (shape == 15u) {
+    let angle = -1.5707963 + (t - 0.5) * 0.52 + jitter * 0.18;
+    let speed = 142.0 + hash(seed + index * 41u) * 82.0;
+    return vec2f(cos(angle), sin(angle)) * speed * intensity;
+  }
+  if (shape == 16u) {
+    let angle = -2.72 + t * 2.3 + jitter * 0.25;
+    let speed = 205.0 + hash(seed + index * 43u) * 92.0;
+    return vec2f(cos(angle), sin(angle)) * speed * intensity;
+  }
+  if (shape >= 17u && shape <= 24u) {
+    return glyphPoint(shape, t, seed) * 218.0 * intensity;
+  }
   if (shape == 1u) {
     let a = t * 6.2831853;
     let x = 16.0 * pow(sin(a), 3.0);
@@ -1101,7 +1377,7 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
   let slot = allocateParticle(); if (slot == 0xffffffffu) { return; }
   let globalIndex = command.globalIndexBase + gid.x;
   let globalCount = max(1u, command.globalCount);
-  var p: Particle; p.position = command.origin; p.color = command.color; p.life = -command.emissionDelay; p.maxLife = command.duration;
+  var p: Particle; p.position = command.origin; p.color = commandColor(command, globalIndex); p.life = -command.emissionDelay; p.maxLife = command.duration;
   p.rotation = hash(command.seed + globalIndex * 13u) * 6.2831853; p.angularVelocity = (hash(command.seed + globalIndex * 29u)-0.5)*4.0;
   p.gravity = command.gravity; p.drag = command.drag; p.shape = command.shape;
   p.flags = command.flags | ((globalIndex & 0xffffu) << 16u); p.seed = command.seed ^ command.effectId ^ globalIndex;
@@ -1115,11 +1391,12 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
     p.velocity = shapeVelocity(command.shape, globalIndex, globalCount, command.intensity, command.seed ^ command.effectId);
     p.velocity.x += command.wind;
     let role = (command.flags >> 8u) & 15u;
+    let pulseCount = (command.flags >> 3u) & 7u;
     if (command.emissionSpread > 0.0) {
-      if (role == 8u && command.pulseCount > 1u) {
-        let pulse = globalIndex % command.pulseCount;
-        let localIndex = globalIndex / command.pulseCount;
-        let pulsePhase = f32(pulse) / f32(command.pulseCount - 1u);
+      if (role == 8u && pulseCount > 1u) {
+        let pulse = globalIndex % pulseCount;
+        let localIndex = globalIndex / pulseCount;
+        let pulsePhase = f32(pulse) / f32(pulseCount - 1u);
         let jitter = select(hash(p.seed + 0x68bc21ebu) * 0.016, 0.0, localIndex == 0u);
         p.life -= command.emissionSpread * pulsePhase + jitter;
         if (localIndex == 0u) { p.flags = p.flags | 128u; p.size *= 2.25; p.velocity *= 0.08; }
@@ -1147,7 +1424,7 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
     } else if (command.shape == 5u) {
       p.position += p.velocity * 0.1;
     }
-    if ((p.flags & 2u) != 0u) {
+    if (!isV2(p.flags) && (p.flags & 2u) != 0u) {
       let keepChance = select(0.14, 0.32, command.shape == 5u);
       if (hash(p.seed + 0x27d4eb2fu) > keepChance) { p.flags = p.flags & 0xfffffffdu; }
     }
@@ -1163,7 +1440,7 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
   if (p.life < 0.0) { particles[index] = p; return; }
   if (p.life >= p.maxLife) { p.alive = 0u; particles[index] = p; releaseParticle(index); return; }
   let role = (p.flags >> 8u) & 15u;
-  if (role == 1u || role == 2u) {
+  if (!isV2(p.flags) && (role == 1u || role == 2u)) {
     let progress = clamp(p.life / p.maxLife, 0.0, 1.0);
     let curveVelocity = p.angularVelocity * 3.1415926 / p.maxLife * cos(progress * 3.1415926);
     p.position += vec2f(p.velocity.x + curveVelocity, p.velocity.y) * uniforms.dt;
@@ -1173,17 +1450,21 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
     var noise = vec2f(sin(phase), cos(phase * 0.83 + 1.7)) * uniforms.turbulence * 60.0;
     if (role == 7u) { noise += vec2f(cos(phase * 0.47), -abs(sin(phase * 0.31))) * 18.0; }
     p.velocity += vec2f(noise.x, p.gravity + noise.y) * uniforms.dt;
-    p.velocity *= pow(p.drag, uniforms.dt * 60.0);
+    let legacyRetention = pow(p.drag, uniforms.dt * 60.0);
+    let v2Resistance = exp(-p.drag * uniforms.dt * 60.0);
+    p.velocity *= select(legacyRetention, v2Resistance, isV2(p.flags));
     p.position += p.velocity * uniforms.dt;
     p.rotation += p.angularVelocity * uniforms.dt;
   }
   let secondaryAt = 0.48 + hash(p.seed + 0x165667b1u) * 0.2;
-  if ((p.flags & 2u) != 0u && (p.flags & 4u) == 0u && previousLife < p.maxLife * secondaryAt && p.life >= p.maxLife * secondaryAt) {
+  let splitQuality = (p.flags >> 4u) & 3u;
+  let splitEnabled = !isV2(p.flags) || splitQuality > 0u;
+  if ((p.flags & V2_SPLIT_REQUESTED) != 0u && (p.flags & V2_SPLIT_EMITTED) == 0u && splitEnabled && previousLife < p.maxLife * secondaryAt && p.life >= p.maxLife * secondaryAt) {
     let secondary = atomicAdd(&counters.secondaryCount, 1u);
     secondaryIndices[secondary] = index;
-    p.flags = p.flags | 4u;
+    p.flags = p.flags | V2_SPLIT_EMITTED;
   }
-  if (role == 1u && previousLife >= 0.0) {
+  if (!isV2(p.flags) && role == 1u && previousLife >= 0.0) {
     let previousBucket = u32(previousLife * 15.0);
     let currentBucket = u32(p.life * 15.0);
     if (currentBucket != previousBucket) {
@@ -1205,6 +1486,26 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
   let source = particles[secondaryIndices[sourceNumber]];
   let sourceRole = (source.flags >> 8u) & 15u;
   let styleBits = source.flags & (3u << 12u);
+  if (isV2(source.flags)) {
+    let splitQuality = (source.flags >> 4u) & 3u;
+    let childCount = splitQuality + 1u;
+    for (var child = 0u; child < childCount; child++) {
+      let slot = allocateParticle();
+      if (slot == 0xffffffffu) { return; }
+      var p = source;
+      let angle = f32(child) / f32(childCount) * 6.2831853 + hash(source.seed + child * 31u) * 0.36;
+      let speed = 78.0 + hash(source.seed + child * 47u) * 86.0;
+      p.position = source.position;
+      p.velocity = source.velocity * 0.22 + vec2f(cos(angle), sin(angle)) * speed;
+      p.life = 0.0; p.maxLife = max(0.08, source.maxLife * 0.46);
+      p.size = source.size * (0.54 + 0.08 * f32(splitQuality));
+      p.flags = (source.flags & ~V2_SPLIT_REQUESTED) | V2_SPLIT_EMITTED;
+      p.seed = source.seed + child * 101u; p.alive = 1u;
+      particles[slot] = p;
+      for (var sample = 0u; sample < uniforms.maxTrailSamples; sample++) { history[slot * uniforms.maxTrailSamples + sample] = source.position; }
+    }
+    return;
+  }
   if (sourceRole == 1u) {
     let style = (source.flags >> 12u) & 3u;
     let direction = normalize(source.velocity + vec2f(0.0001));
@@ -1268,6 +1569,9 @@ struct Uniforms {
 @group(0) @binding(3) var<uniform> uniforms: Uniforms;
 @group(0) @binding(4) var atlas: texture_2d<f32>;
 @group(0) @binding(5) var atlasSampler: sampler;
+const V2_TRAIL = 1u;
+const V2_STROBE = 8u;
+const V2_MARKER = 32768u;
 struct Out {
   @builtin(position) position: vec4f,
   @location(0) uv: vec2f,
@@ -1282,6 +1586,12 @@ struct Out {
 };
 fn quadVertex(vertex: u32) -> vec2f { let vertices = array<vec2f,6>(vec2f(-1,-1),vec2f(1,-1),vec2f(-1,1),vec2f(-1,1),vec2f(1,-1),vec2f(1,1)); return vertices[vertex]; }
 fn clip(position: vec2f) -> vec4f { return vec4f(position.x/uniforms.width*2.0-1.0, 1.0-position.y/uniforms.height*2.0, 0.0, 1.0); }
+fn isV2(flags:u32)->bool{return (flags&V2_MARKER)!=0u;}
+fn v2Strobe(flags:u32,t:f32,seed:u32)->f32{
+  if(!isV2(flags)||(flags&V2_STROBE)==0u){return 1.0;}
+  let beat=floor(t*18.0);let pulse=fract(sin((f32(seed&1023u)+beat*91.7)*12.9898)*43758.5453);
+  return select(0.08,1.0,pulse>0.38);
+}
 fn fadeEnvelope(role:u32,shape:u32,t:f32,flags:u32)->f32{
   if(shape==8u||(flags&64u)!=0u){return 1.0-smoothstep(0.9,1.0,t);}
   if(role==2u&&shape==0u){return 1.0-smoothstep(0.0,1.0,t);}
@@ -1303,7 +1613,7 @@ fn fadeEnvelope(role:u32,shape:u32,t:f32,flags:u32)->f32{
   let scaledQ=q*scale;
   let rotated = vec2f(c*scaledQ.x-s*scaledQ.y,s*scaledQ.x+c*scaledQ.y) * p.size;
   var out: Out; out.position=clip(p.position+rotated); out.uv=q*0.5+0.5; out.color=p.color; out.shape=p.shape; out.textureIndex=p.textureIndex; out.flags=p.flags; out.rotation=p.rotation;
-  out.normalizedLife=t; out.seed=p.seed; out.fade=fadeEnvelope(role,p.shape,t,p.flags); return out;
+  out.normalizedLife=t; out.seed=p.seed; out.fade=fadeEnvelope(role,p.shape,t,p.flags)*v2Strobe(p.flags,t,p.seed); return out;
 }
 @vertex fn trailVertex(@builtin(vertex_index) vertex: u32, @builtin(instance_index) instance: u32) -> Out {
   let segments=max(1u,uniforms.trailSamples-1u); let particleListIndex=instance/segments; let segment=instance%segments; let index=activeIndices[particleListIndex]; let p=particles[index]; let base=index*uniforms.maxTrailSamples;
@@ -1311,7 +1621,8 @@ fn fadeEnvelope(role:u32,shape:u32,t:f32,flags:u32)->f32{
   let along=mix(b,a,q.x*0.5+0.5); let width=p.size*(0.38-f32(segment)/f32(segments)*0.29);
   var out:Out; out.position=clip(along+normal*q.y*width); out.uv=q*0.5+0.5; out.color=p.color; out.shape=p.shape; out.textureIndex=0u; out.flags=p.flags; out.rotation=p.rotation;
   let role=(p.flags>>8u)&15u;let t=clamp(p.life/p.maxLife,0.0,1.0);let shapeTrail=select(0.44,0.1,p.shape>=1u&&p.shape<=5u);
-  out.fade=(1.0-f32(segment)/f32(segments))*fadeEnvelope(role,p.shape,t,p.flags)*shapeTrail;out.normalizedLife=t;out.seed=p.seed;return out;
+  out.fade=(1.0-f32(segment)/f32(segments))*fadeEnvelope(role,p.shape,t,p.flags)*shapeTrail*v2Strobe(p.flags,t,p.seed);
+  if(isV2(p.flags)&&(p.flags & V2_TRAIL) == 0u){out.fade=0.0;}out.normalizedLife=t;out.seed=p.seed;return out;
 }
 fn sdCircle(p:vec2f)->f32{return length(p-0.5)-0.42;}
 fn sdEllipse(p:vec2f,r:vec2f)->f32{return (length(p/max(r,vec2f(0.001)))-1.0)*min(r.x,r.y);}
@@ -1349,7 +1660,16 @@ fn rocketCoverage(uv:vec2f,time:f32,seed:u32)->vec3f{
   return vec3f(max(fuselage,max(nose,fins)),nozzle,flame);
 }
 fn atlasSample(uv:vec2f,index:u32,uvDx:vec2f,uvDy:vec2f)->vec4f{let slot=f32(max(1u,index)-1u);let cell=vec2f(fract(slot/8.0),floor(slot/8.0)/8.0);let atlasScale=vec2f(116.0/1024.0);let inner=vec2f(6.0/1024.0)+uv*atlasScale;return textureSampleGrad(atlas,atlasSampler,cell+inner,uvDx*atlasScale,uvDy*atlasScale);}
+fn premiumRealisticMaterial(base:vec3f,role:u32,t:f32,seed:u32)->vec3f{
+  let ignition=vec3f(1.0,0.985,0.88);let gold=vec3f(1.0,0.64,0.16);let ember=vec3f(0.92,0.075,0.012);
+  var color=mix(ignition,base,smoothstep(0.035,0.26,t));
+  color=mix(color,gold,smoothstep(0.62,0.82,t)*0.34);
+  color=mix(color,ember,smoothstep(0.78,1.0,t)*select(0.42,0.68,role==2u));
+  let grain=0.93+0.07*sin(uniforms.time*(24.0+f32(seed&7u))+f32(seed&255u)*0.31);
+  return color*grain;
+}
 fn materialColor(base:vec3f,role:u32,style:u32,t:f32,seed:u32)->vec3f{
+  if(style==3u){return premiumRealisticMaterial(base,role,t,seed);}
   if(role==7u){return mix(vec3f(0.38,0.4,0.44),base,0.18);}
   let whiteHot=vec3f(1.0,0.965,0.78);let ember=vec3f(1.0,0.2,0.025);
   var color=mix(whiteHot,base,smoothstep(0.02,0.22,t));
@@ -1397,9 +1717,9 @@ fn materialColor(base:vec3f,role:u32,style:u32,t:f32,seed:u32)->vec3f{
 }
 @fragment fn glowFragment(in:Out)->@location(0) vec4f {
   let uvDx=dpdx(in.uv);let uvDy=dpdy(in.uv);let role=(in.flags>>8u)&15u;if(role==7u){discard;}var coverage=0.0;if(in.shape==6u){coverage=atlasSample(in.uv,in.textureIndex,uvDx,uvDy).a;}else if(in.shape==8u){let parts=rocketCoverage(in.uv,uniforms.time,in.seed);coverage=max(parts.x*0.62,max(parts.y,parts.z));}else{let d=shapeDistance(in.uv,in.shape);coverage=exp(-max(0.0,d)*select(11.0,7.5,(in.flags&128u)!=0u))*(1.0-smoothstep(0.08,0.7,length(in.uv-0.5)));}
-  let style=(in.flags>>12u)&3u;let styleGlow=select(1.0,select(0.72,1.38,style==2u),style!=0u);let pulse=select(1.0,0.72+0.28*sin(uniforms.time*44.0+f32(in.seed&31u)),role==8u);let alpha=coverage*in.fade*in.color.a*0.18*uniforms.glowScale*styleGlow*pulse;let rgb=materialColor(in.color.rgb,role,style,in.normalizedLife,in.seed);return vec4f(rgb*alpha,alpha);
+  let style=(in.flags>>12u)&3u;var styleGlow=select(1.0,select(0.72,1.38,style==2u),style!=0u);if(style==3u){styleGlow=1.18;}let pulse=select(1.0,0.72+0.28*sin(uniforms.time*44.0+f32(in.seed&31u)),role==8u);let alpha=coverage*in.fade*in.color.a*0.18*uniforms.glowScale*styleGlow*pulse;let rgb=materialColor(in.color.rgb,role,style,in.normalizedLife,in.seed);return vec4f(rgb*alpha,alpha);
 }
-@fragment fn trailFragment(in:Out)->@location(0) vec4f {let role=(in.flags>>8u)&15u;if((in.shape>=1u&&in.shape<=6u)||in.shape==9u||role==2u||role==7u){discard;}let edge=exp(-pow(abs(in.uv.y-0.5)*3.8,2.0));let alpha=edge*in.fade*in.color.a;let style=(in.flags>>12u)&3u;let rgb=materialColor(in.color.rgb,role,style,in.normalizedLife,in.seed);return vec4f(rgb*alpha,alpha);}
+@fragment fn trailFragment(in:Out)->@location(0) vec4f {let role=(in.flags>>8u)&15u;if(isV2(in.flags)&&(in.flags&V2_TRAIL)==0u){discard;}if(!isV2(in.flags)&&((in.shape>=1u&&in.shape<=6u)||in.shape==9u||role==2u||role==7u)){discard;}let edge=exp(-pow(abs(in.uv.y-0.5)*3.8,2.0));let alpha=edge*in.fade*in.color.a;let style=(in.flags>>12u)&3u;let rgb=materialColor(in.color.rgb,role,style,in.normalizedLife,in.seed);return vec4f(rgb*alpha,alpha);}
 `;
     }
 
