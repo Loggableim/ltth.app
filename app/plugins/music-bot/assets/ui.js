@@ -2567,5 +2567,13 @@
     banFeedback.style.color = isError ? '#ef4444' : 'var(--color-text-secondary)';
   }
 
-  init();
+  async function boot() {
+    if (window.i18n?.ready) await window.i18n.ready;
+    window.i18n?.updateDOM?.();
+    await init();
+  }
+
+  boot().catch((error) => {
+    console.error('[music-bot] UI initialization failed', error);
+  });
 })();

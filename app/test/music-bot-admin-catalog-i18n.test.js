@@ -45,4 +45,46 @@ describe('Music Bot catalog admin i18n contract', () => {
     expect(dom.window.document.getElementById('playlist-create-btn').textContent).toBe(translations.music_bot.ui.catalog.create);
     expect(dom.window.document.getElementById('playlist-radio-save').textContent).toBe(translations.music_bot.ui.catalog.saveRadioSources);
   });
+
+  test('uses named, complete UI keys for every static admin label', () => {
+    const html = fs.readFileSync(path.join(root, 'ui.html'), 'utf8');
+    const dom = new JSDOM(html);
+
+    expect(html).not.toMatch(/data-i18n="generated\./);
+
+    for (const locale of locales) {
+      const translations = JSON.parse(fs.readFileSync(path.join(root, 'locales', `${locale}.json`), 'utf8'));
+      const lookup = (key) => key.split('.').reduce((value, part) => value?.[part], translations);
+
+      for (const attribute of ['data-i18n', 'data-i18n-placeholder', 'data-i18n-aria-label']) {
+        dom.window.document.querySelectorAll(`[${attribute}]`).forEach((element) => {
+          const key = element.getAttribute(attribute);
+          const value = lookup(key);
+          expect(value).toEqual(expect.any(String));
+          expect(value.trim()).not.toBe('');
+        });
+      }
+    }
+  });
+
+  test('does not keep audited German labels when English is applied', () => {
+    const html = fs.readFileSync(path.join(root, 'ui.html'), 'utf8');
+    const translations = JSON.parse(fs.readFileSync(path.join(root, 'locales', 'en.json'), 'utf8'));
+    const dom = new JSDOM(html);
+    const lookup = (key) => key.split('.').reduce((value, part) => value?.[part], translations);
+
+    for (const attribute of ['data-i18n', 'data-i18n-placeholder', 'data-i18n-aria-label']) {
+      dom.window.document.querySelectorAll(`[${attribute}]`).forEach((element) => {
+        const value = lookup(element.getAttribute(attribute));
+        if (attribute === 'data-i18n') element.textContent = value;
+        if (attribute === 'data-i18n-placeholder') element.placeholder = value;
+        if (attribute === 'data-i18n-aria-label') element.setAttribute('aria-label', value);
+      });
+    }
+
+    const output = dom.window.document.body.textContent;
+    ['Musik Bot', 'Song anfordern', 'Queue leeren', 'Einstellungen'].forEach((label) => {
+      expect(output).not.toContain(label);
+    });
+  });
 });

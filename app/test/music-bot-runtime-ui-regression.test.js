@@ -91,6 +91,8 @@ function bootMusicBotUi(options = {}) {
   const catalogPayload = options.catalogPayload || [];
   const translations = options.translations;
   const productionLocale = options.productionLocale;
+  const i18nReady = options.i18nReady;
+  const i18nWarn = options.i18nWarn;
   const socketHandlers = {};
   const html = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/ui.html'), 'utf8');
   const js = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/assets/ui.js'), 'utf8');
@@ -174,7 +176,20 @@ function bootMusicBotUi(options = {}) {
       window.fetch = fetchMock;
       window.open = jest.fn();
       window.navigator.clipboard = { writeText: jest.fn(async () => {}) };
-      if (productionLocale && translations) {
+      if (i18nReady) {
+        let i18nInitialized = false;
+        i18nReady.then(() => {
+          i18nInitialized = true;
+        });
+        window.i18n = {
+          ready: i18nReady,
+          t: jest.fn(() => {
+            if (!i18nInitialized) i18nWarn?.('[i18n] Not initialized yet, returning key');
+            return 'music-bot.i18n-key';
+          }),
+          updateDOM: jest.fn()
+        };
+      } else if (productionLocale && translations) {
         installProductionI18nClient(window, productionLocale, translations);
       } else if (translations) {
         window.i18n = { t: (key, params = {}) => {
@@ -2264,6 +2279,26 @@ describe('Music Bot runtime and UI regressions', () => {
       expect(aliasPayload.commandAliases.request).toEqual(['sr']);
       expect(playPayload.monetization.payToPlayGiftCatalog).toEqual(['rose', 'gg']);
       expect(skipPayload.monetization.payToSkipGiftCatalog).toEqual(['hearts']);
+    });
+
+    test('waits for i18n readiness before initializing without i18n warnings', async () => {
+      let resolveI18n;
+      const ready = new Promise((resolve) => {
+        resolveI18n = resolve;
+      });
+      const i18nWarn = jest.fn();
+      const { dom, fetchMock } = bootMusicBotUi({ i18nReady: ready, i18nWarn });
+      doms.push(dom);
+
+      await Promise.resolve();
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(i18nWarn).not.toHaveBeenCalled();
+
+      resolveI18n();
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      expect(dom.window.i18n.updateDOM).toHaveBeenCalledTimes(1);
+      expect(fetchMock).toHaveBeenCalledWith('/api/plugins/music-bot/status');
+      expect(i18nWarn).not.toHaveBeenCalled();
     });
   });
 });
