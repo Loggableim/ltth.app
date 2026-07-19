@@ -625,10 +625,8 @@ class PlaybackEngine extends EventEmitter {
   _isUnsafeMediaTitle(value) {
     const normalized = String(value || '').trim();
     if (!normalized) return false;
-    if (/(?:^|[?&])(?:sig|signature|lsig|token|expire|ip|key)=/i.test(normalized)) {
-      return true;
-    }
-    return /^(?:videoplayback|webm|mp4|m4a|mp3|audio|video|media|stream|manifest|dash|hls|chunk|segment|[^\s/?&]+\.(?:webm|mp4|m4a|mp3|mkv|ogg|opus|aac|ts))(?:[?&][^=&\s]+=[^&\s]*)+$/i.test(normalized);
+    const hasQueryParameter = /[?&][^=&\s]+=[^&\s]+/.test(normalized);
+    return hasQueryParameter && (normalized.includes('?') || !/\s/.test(normalized));
   }
 
   _safeMediaBasename(value) {
