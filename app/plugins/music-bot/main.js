@@ -542,13 +542,12 @@ class MusicBotPlugin extends EventEmitter {
       issues.push({
         id: 'ytdlp-missing',
         severity: 'warning',
-        title: 'yt-dlp nicht gefunden',
-        description: 'Für YouTube-Suche und Song-Downloads wird yt-dlp benötigt. ' +
-          'Ohne yt-dlp funktioniert nur der oEmbed-Fallback (eingeschränkte Metadaten, kein Suchfeld).',
-        installInstructions: [
-          'npm install youtube-dl-exec (im app/ Verzeichnis)',
-          'Oder: yt-dlp manuell von https://github.com/yt-dlp/yt-dlp/releases herunterladen',
-          'Oder: Pfad in Music Bot Einstellungen → Resolver → yt-dlp Pfad setzen'
+        titleKey: 'setupYtdlpMissingTitle',
+        descriptionKey: 'setupYtdlpMissingDescription',
+        installInstructionKeys: [
+          'setupYtdlpInstallNpm',
+          'setupYtdlpInstallManual',
+          'setupYtdlpConfigurePath'
         ]
       });
     }
@@ -556,22 +555,41 @@ class MusicBotPlugin extends EventEmitter {
       issues.push({
         id: 'mpv-missing',
         severity: 'error',
-        title: 'mpv Media Player nicht gefunden',
+        titleKey: 'setupMpvMissingTitle',
         oneClickInstall: true,
         installAction: 'mpv',
-        installButtonLabel: this._mpvInstallStatus.state === 'installing' ? 'Installation laeuft...' : 'MPV installieren',
-        installStatus: this._mpvInstallStatus,
-        description: 'Der Music Bot braucht mpv (https://mpv.io) für die Audio-Wiedergabe. ' +
-          'Ohne mpv wird keine Musik abgespielt.',
-        installInstructions: [
-          'Windows: winget, scoop oder choco',
-          'Linux: sudo apt install mpv',
-          'macOS: brew install mpv',
-          'Pfad in Music Bot Einstellungen → Playback → mpv Pfad setzen'
+        installButtonKey: this._mpvInstallStatus.state === 'installing' ? 'installing' : 'installMpv',
+        installStatus: this._normalizeMpvInstallStatus(this._mpvInstallStatus),
+        descriptionKey: 'setupMpvMissingDescription',
+        installInstructionKeys: [
+          'setupMpvInstallWindows',
+          'setupMpvInstallLinux',
+          'setupMpvInstallMacos',
+          'setupMpvConfigurePath'
         ]
       });
     }
     return issues;
+  }
+
+  _normalizeMpvInstallStatus(status = {}) {
+    const state = String(status.state || 'idle');
+    const defaultMessageKeys = {
+      installed: 'mpvInstalledReady',
+      installing: 'mpvInstallStarted',
+      failed: 'mpvInstallFailed',
+      unavailable: 'mpvPackageManagerUnavailable',
+      idle: 'mpvInstallIdle'
+    };
+    const params = { ...(status.params || {}) };
+    if (status.message && !params.detail) params.detail = String(status.message);
+    return {
+      state,
+      messageKey: status.messageKey || defaultMessageKeys[state] || 'mpvInstallFailed',
+      params,
+      command: status.command || null,
+      updatedAt: status.updatedAt || null
+    };
   }
 
   _emitSetupStatus() {
@@ -579,7 +597,7 @@ class MusicBotPlugin extends EventEmitter {
     this.io.emit('music-bot:setup-status', {
       ytdlpAvailable: this._ytdlpAvailable || false,
       mpvAvailable: this._mpvAvailable || false,
-      mpvInstallStatus: this._mpvInstallStatus,
+      mpvInstallStatus: this._normalizeMpvInstallStatus(this._mpvInstallStatus),
       issues
     });
   }
@@ -679,21 +697,21 @@ class MusicBotPlugin extends EventEmitter {
     const text = String(output || '').replace(/\s+/g, ' ').trim();
     const lockMatch = text.match(/Unable to obtain lock file access on '([^']+)'/i);
     if (lockMatch) {
-      return `Chocolatey konnte die Installation wegen einer gesperrten Lockdatei nicht abschliessen: ${lockMatch[1]}. Schliesse andere Chocolatey-Installationen oder entferne die Lockdatei und klicke erneut auf Installieren.`;
+      return { messageKey: 'mpvInstallChocolateyLock', params: { path: lockMatch[1] } };
     }
     if (/do you want to continue|not running from an elevated|non.?elevated/i.test(text)) {
-      return 'Chocolatey wartet auf eine Administrator-/Bestaetigungsabfrage. Klicke erneut auf Installieren und bestaetige den Windows-Administrator-Dialog.';
+      return { messageKey: 'mpvInstallAdminConfirmation', params: {} };
     }
     if (/access is denied|permission|administrator|elevat/i.test(text)) {
-      return 'Der Paketmanager hat fehlende Rechte gemeldet. Starte LTTH als Administrator oder installiere mpv manuell und klicke danach erneut auf Aktualisieren/Installieren.';
+      return { messageKey: 'mpvInstallPermissionDenied', params: {} };
     }
     if (/not recognized|not found|no such file/i.test(text)) {
-      return 'Der Paketmanager konnte den Installationsbefehl nicht ausfuehren. Installiere winget, scoop oder choco oder setze den mpv Pfad manuell.';
+      return { messageKey: 'mpvInstallCommandUnavailable', params: {} };
     }
     if (text) {
-      return `mpv Installation fehlgeschlagen (Exit-Code ${code ?? 'unbekannt'}): ${text.slice(-900)}`;
+      return { messageKey: 'mpvInstallExited', params: { code: code ?? 'unknown', detail: text.slice(-900) } };
     }
-    return `mpv Installation beendet, aber mpv wurde nicht gefunden (Exit-Code ${code ?? 'unbekannt'}).`;
+    return { messageKey: 'mpvInstallMissingAfterExit', params: { code: code ?? 'unknown' } };
   }
 
   _buildWindowsElevatedCommand(executablePath, args = []) {
@@ -774,7 +792,8 @@ class MusicBotPlugin extends EventEmitter {
     if (this._mpvAvailable) {
       this._mpvInstallStatus = {
         state: 'installed',
-        message: 'mpv ist bereits verfuegbar.',
+        messageKey: 'mpvAlreadyAvailable',
+        params: {},
         command: null,
         updatedAt: new Date().toISOString()
       };
@@ -786,7 +805,8 @@ class MusicBotPlugin extends EventEmitter {
       if (Number.isFinite(startedAt) && Date.now() - startedAt > MPV_INSTALL_TIMEOUT_MS) {
         this._mpvInstallStatus = {
           state: 'failed',
-          message: 'mpv Installation wurde abgebrochen: Der Installer hat zu lange nicht geantwortet. Bitte klicke erneut und bestaetige den Windows-Administrator-Dialog.',
+          messageKey: 'mpvInstallTimedOut',
+          params: {},
           command: this._mpvInstallStatus.command,
           updatedAt: new Date().toISOString()
         };
@@ -808,7 +828,8 @@ class MusicBotPlugin extends EventEmitter {
     if (!installCommand) {
       this._mpvInstallStatus = {
         state: 'unavailable',
-        message: 'Kein unterstuetzter Paketmanager gefunden. Installiere winget, scoop, choco, brew oder apt/dnf/pacman/zypper und versuche es erneut.',
+        messageKey: 'mpvPackageManagerUnavailable',
+        params: {},
         command: null,
         updatedAt: new Date().toISOString()
       };
@@ -817,9 +838,8 @@ class MusicBotPlugin extends EventEmitter {
 
     this._mpvInstallStatus = {
       state: 'installing',
-      message: installCommand.opensWindow
-        ? 'Windows oeffnet jetzt einen Administrator-Dialog fuer die mpv Installation. Bitte bestaetigen; danach wird automatisch erneut geprueft.'
-        : 'mpv Installation wurde gestartet. Je nach System kann ein Installer- oder Rechte-Dialog erscheinen.',
+      messageKey: installCommand.opensWindow ? 'mpvInstallWindowsPrompt' : 'mpvInstallStarted',
+      params: {},
       command: installCommand.label,
       updatedAt: new Date().toISOString()
     };
@@ -835,7 +855,7 @@ class MusicBotPlugin extends EventEmitter {
 
     let installOutput = '';
     let settled = false;
-    const settleInstall = async (state, message, code = null) => {
+    const settleInstall = async (state, result, code = null) => {
       if (settled) return;
       settled = true;
       if (this._mpvInstallTimer) {
@@ -847,7 +867,8 @@ class MusicBotPlugin extends EventEmitter {
       const installed = this._mpvAvailable === true;
       this._mpvInstallStatus = {
         state: installed ? 'installed' : state,
-        message: installed ? 'mpv wurde installiert und ist bereit.' : message,
+        messageKey: installed ? 'mpvInstalledReady' : (result?.messageKey || 'mpvInstallFailed'),
+        params: installed ? {} : { ...(result?.params || {}) },
         command: installCommand.label,
         updatedAt: new Date().toISOString()
       };
@@ -864,7 +885,7 @@ class MusicBotPlugin extends EventEmitter {
       } catch (_error) {}
       settleInstall(
         'failed',
-        'mpv Installation wurde abgebrochen: Der Installer hat zu lange nicht geantwortet. Bitte klicke erneut und bestaetige den Windows-Administrator-Dialog.',
+        { messageKey: 'mpvInstallTimedOut', params: {} },
         'timeout'
       ).catch((error) => {
         this.api.log(`[music-bot] Failed to settle timed-out mpv install: ${error.message}`, 'error');
@@ -880,7 +901,7 @@ class MusicBotPlugin extends EventEmitter {
 
     child.on('error', (error) => {
       this.api.log(`[music-bot] mpv install failed to start: ${error.message}`, 'error');
-      settleInstall('failed', `mpv Installation konnte nicht gestartet werden: ${error.message}`).catch((settleError) => {
+      settleInstall('failed', { messageKey: 'mpvInstallStartFailed', params: { error: error.message } }).catch((settleError) => {
         this.api.log(`[music-bot] Failed to settle mpv install start error: ${settleError.message}`, 'error');
       });
     });
@@ -1109,16 +1130,13 @@ class MusicBotPlugin extends EventEmitter {
     return snapshot;
   }
 
-  _sanitizeDiagnosticValue(value, depth = 0) {
+  _sanitizeDiagnosticValue(value, depth = 0, field = '') {
     if (depth > 4) return '[truncated]';
     if (Array.isArray(value)) {
-      return value.slice(0, 100).map((entry) => this._sanitizeDiagnosticValue(entry, depth + 1));
+      return value.slice(0, 100).map((entry) => this._sanitizeDiagnosticValue(entry, depth + 1, field));
     }
     if (!value || typeof value !== 'object') {
-      if (typeof value === 'string' && /(?:https?:\/\/|\\\\\.\\pipe\\|[a-z]:\\)/i.test(value)) {
-        return '[redacted]';
-      }
-      return value;
+      return typeof value === 'string' ? this._sanitizeDiagnosticString(value, field) : value;
     }
     const output = {};
     Object.entries(value).forEach(([key, entry]) => {
@@ -1126,9 +1144,24 @@ class MusicBotPlugin extends EventEmitter {
         output[key] = '[redacted]';
         return;
       }
-      output[key] = this._sanitizeDiagnosticValue(entry, depth + 1);
+      output[key] = this._sanitizeDiagnosticValue(entry, depth + 1, key);
     });
     return output;
+  }
+
+  _sanitizeDiagnosticString(value, field = '') {
+    const normalized = String(value || '');
+    const inspectContent = !field || /(?:error|message|detail|progress|reason|stderr|output)/i.test(field);
+    if (!inspectContent) return normalized;
+    return normalized
+      .replace(/https?:\/\/[^\s"'<>]+/gi, '[redacted]')
+      .replace(/\\\\\.\\pipe\\[^\s"'<>]+/gi, '[redacted]')
+      .replace(/[a-z]:\\[^\s"'<>]+/gi, '[redacted]')
+      .replace(/(^|[^a-z0-9_])((?:x-amz-[a-z-]+|sig(?:nature)?|lsig|token|expire(?:s)?|ip|key|credential)\s*=\s*)([^&#\s,;\]\)\}"'|/>]+)/gi, '$1$2[redacted]');
+  }
+
+  _isSensitiveDiagnosticString(value, field = '') {
+    return this._sanitizeDiagnosticString(value, field) !== String(value || '');
   }
 
   _isSafetyLocked() {
@@ -1911,7 +1944,7 @@ class MusicBotPlugin extends EventEmitter {
         success: true,
         ytdlpAvailable: this._ytdlpAvailable || false,
         mpvAvailable: this._mpvAvailable || false,
-        mpvInstallStatus: this._mpvInstallStatus,
+        mpvInstallStatus: this._normalizeMpvInstallStatus(this._mpvInstallStatus),
         issues: this._getSetupIssues()
       });
     });
@@ -1925,13 +1958,14 @@ class MusicBotPlugin extends EventEmitter {
           pending: status.state === 'installing',
           installed: status.state === 'installed',
           mpvAvailable: this._mpvAvailable || false,
-          installStatus: status,
+          installStatus: this._normalizeMpvInstallStatus(status),
           issues: this._getSetupIssues()
         });
       } catch (error) {
         this._mpvInstallStatus = {
           state: 'failed',
-          message: error.message,
+          messageKey: 'mpvInstallStartFailed',
+          params: { error: error.message },
           command: null,
           updatedAt: new Date().toISOString()
         };
@@ -1939,7 +1973,7 @@ class MusicBotPlugin extends EventEmitter {
         res.status(500).json({
           success: false,
           error: error.message,
-          installStatus: this._mpvInstallStatus,
+          installStatus: this._normalizeMpvInstallStatus(this._mpvInstallStatus),
           issues: this._getSetupIssues()
         });
       }
@@ -1959,9 +1993,13 @@ class MusicBotPlugin extends EventEmitter {
           return;
         }
 
-        const banMessage = this._checkBans(resolved.song, 'dashboard');
-        if (banMessage) {
-          res.status(400).json({ success: false, error: banMessage });
+        const banRejection = this._getBanRejection(resolved.song, 'dashboard');
+        if (banRejection) {
+          res.status(400).json({
+            success: false,
+            error: this._formatBanRejectionForChat(banRejection),
+            ...banRejection
+          });
           return;
         }
 
@@ -2744,33 +2782,34 @@ class MusicBotPlugin extends EventEmitter {
     try {
       const resolved = await this.musicResolver.resolve(query, { signal: options.signal });
       if (!resolved?.success) {
-        this._emitToast('error', 'API-Fehler', resolved?.message || 'Song konnte nicht geladen werden.');
+        this._emitToast('error', { titleKey: 'apiError', message: resolved?.message || '' });
         return { success: false, error: resolved?.message || 'Song konnte nicht geladen werden.' };
       }
 
-      const banMessage = this._checkBans(resolved.song, username);
-      if (banMessage) {
-        this._emitToast('warn', 'Song geblockt', banMessage);
-        return { success: false, error: banMessage };
+      const banRejection = this._getBanRejection(resolved.song, username);
+      if (banRejection) {
+        this._emitToast('warn', { titleKey: 'songBlockedTitle', ...banRejection });
+        return { success: false, error: this._formatBanRejectionForChat(banRejection), ...banRejection };
       }
 
       const added = this.queueManager.addSong({ ...resolved.song, requestedBy: username, requesterAvatar });
       if (!added.success) {
-        this._emitToast('warn', 'Song-Request abgelehnt', added.error || 'Song konnte nicht hinzugefügt werden.');
-        return added;
+        const rejection = this._queueRejectionPayload(added);
+        this._emitToast('warn', { titleKey: 'requestRejectedTitle', ...rejection });
+        return { success: false, error: added.error || '', ...rejection };
       }
       this._invalidateRadioPrefetch('viewer-queue-changed');
       this._schedulePreCache();
       this.autoDJ?.onSongRequested();
       this._emitSongAdded(added.song, added.position);
-      if (!this.playbackEngine.isPlaying() && this.config.playback.autoPlay) {
+      if (!this._isPlaybackOccupied() && this.config.playback.autoPlay) {
         await this._playNextFromQueue();
       }
-      this._emitToast('success', 'Song hinzugefügt', `${resolved.song.title} (#${added.position})`);
+      this._emitToast('success', { titleKey: 'songAddedTitle', messageKey: 'requestAdded', params: { title: resolved.song.title, position: added.position } });
       return { success: true, song: added.song, position: added.position };
     } catch (error) {
       this.api.log(`[music-bot] Failed to request song: ${error.message}`, 'error');
-      this._emitToast('error', 'API-Fehler', error.message || 'Song konnte nicht geladen werden.');
+      this._emitToast('error', { titleKey: 'apiError', message: error.message || '' });
       return { success: false, error: error.message };
     }
   }
@@ -2778,7 +2817,7 @@ class MusicBotPlugin extends EventEmitter {
   async _handleRequest(query, username, chatData = {}) {
     if (!query) {
       this._emitChatResponse('Bitte gib einen Song an.', username);
-      this._emitToast('warn', 'Song-Request abgelehnt', 'Bitte gib einen Song an.');
+      this._emitToast('warn', { titleKey: 'requestRejectedTitle', messageKey: 'requestRequired' });
       return;
     }
 
@@ -2791,7 +2830,7 @@ class MusicBotPlugin extends EventEmitter {
     const userBan = this.banList?.isUserBanned(username);
     if (userBan?.banned) {
       this._emitChatResponse('Dieser Nutzer darf keine Songs anfragen.', username);
-      this._emitToast('warn', 'Song geblockt', `@${username} ist für Song-Requests gesperrt.`);
+      this._emitToast('warn', { titleKey: 'songBlockedTitle', messageKey: 'requestUserBlocked', params: { username } });
       return;
     }
 
@@ -2800,7 +2839,7 @@ class MusicBotPlugin extends EventEmitter {
       const requiredLikes = Math.max(1, Number(this.config.monetization?.minLikesPerUser) || 1);
       if (likes < requiredLikes) {
         this._emitChatResponse(`Du brauchst mindestens ${requiredLikes} Likes für !sr. Aktuell: ${likes}.`, username);
-        this._emitToast('warn', 'Song-Request abgelehnt', `@${username}: ${likes}/${requiredLikes} Likes.`);
+        this._emitToast('warn', { titleKey: 'requestRejectedTitle', messageKey: 'requestLikesRequired', params: { username, likes, requiredLikes } });
         return;
       }
     }
@@ -2809,7 +2848,7 @@ class MusicBotPlugin extends EventEmitter {
       const availableCredits = this._getRequestCredits(username);
       if (availableCredits < 1) {
         this._emitChatResponse('Für !sr benötigst du ein konfiguriertes Gift bzw. genügend Coins.', username);
-        this._emitToast('warn', 'Song-Request abgelehnt', `@${username} hat kein gültiges Request-Gift gesendet.`);
+        this._emitToast('warn', { titleKey: 'requestRejectedTitle', messageKey: 'requestGiftRequired', params: { username } });
         return;
       }
     }
@@ -2819,14 +2858,14 @@ class MusicBotPlugin extends EventEmitter {
       const resolved = await this.musicResolver.resolve(query);
       if (!resolved?.success) {
         this._emitChatResponse(resolved?.message || 'Song konnte nicht geladen werden.', username);
-        this._emitToast('error', 'API-Fehler', resolved?.message || 'Song konnte nicht geladen werden.');
+        this._emitToast('error', { titleKey: 'apiError', message: resolved?.message || '' });
         return;
       }
 
-      const banMessage = this._checkBans(resolved.song, username);
-      if (banMessage) {
-        this._emitChatResponse(banMessage, username);
-        this._emitToast('warn', 'Song geblockt', banMessage);
+      const banRejection = this._getBanRejection(resolved.song, username);
+      if (banRejection) {
+        this._emitChatResponse(this._formatBanRejectionForChat(banRejection), username);
+        this._emitToast('warn', { titleKey: 'songBlockedTitle', ...banRejection });
         return;
       }
 
@@ -2837,7 +2876,7 @@ class MusicBotPlugin extends EventEmitter {
       });
       if (!addResult.success) {
         this._emitChatResponse(addResult.error || 'Song konnte nicht hinzugefügt werden.', username);
-        this._emitToast('warn', 'Song-Request abgelehnt', addResult.error || 'Song konnte nicht hinzugefügt werden.');
+        this._emitToast('warn', { titleKey: 'requestRejectedTitle', ...this._queueRejectionPayload(addResult) });
         return;
       }
       this._invalidateRadioPrefetch('viewer-queue-changed');
@@ -2848,17 +2887,17 @@ class MusicBotPlugin extends EventEmitter {
       this.autoDJ?.onSongRequested();
       this._emitSongAdded(addResult.song, addResult.position);
 
-      if (!this.playbackEngine.isPlaying() && this.config.playback.autoPlay) {
+      if (!this._isPlaybackOccupied() && this.config.playback.autoPlay) {
         await this._playNextFromQueue();
       }
 
       const artist = resolved.song.artist ? ` von ${resolved.song.artist}` : '';
       this._emitChatResponse(`Hinzugefügt: ${resolved.song.title}${artist} (#${addResult.position})`, username);
-      this._emitToast('success', 'Song hinzugefügt', `${resolved.song.title} (#${addResult.position})`);
+      this._emitToast('success', { titleKey: 'songAddedTitle', messageKey: 'requestAdded', params: { title: resolved.song.title, position: addResult.position } });
     } catch (error) {
       this.api.log(`[music-bot] request failed: ${error.message}`, 'error');
       this._emitChatResponse('Song konnte nicht geladen werden.', username);
-      this._emitToast('error', 'API-Fehler', error.message || 'Song konnte nicht geladen werden.');
+      this._emitToast('error', { titleKey: 'apiError', message: error.message || '' });
     } finally {
       this._pendingRequests.delete(lowerUser);
     }
@@ -2899,6 +2938,53 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   _checkBans(song, username) {
+    const rejection = this._getBanRejection(song, username);
+    return rejection ? this._formatBanRejectionForChat(rejection) : null;
+  }
+
+  _getBanRejection(song, username) {
+    if (!song) return null;
+    if (this.banList?.isUserBanned(username)?.banned) {
+      return { messageKey: 'requestUserBlocked', params: { username } };
+    }
+    if (this.banList?.isUrlBanned(song.url, song.youtubeId)?.banned
+      || this.banList?.isTrackBanned?.(song.trackKey)?.banned) {
+      return { messageKey: 'banSong', params: {} };
+    }
+    if (this.banList?.isArtistBanned?.(song.artist)?.banned) {
+      return { messageKey: 'banArtist', params: { artist: song.artist || '' } };
+    }
+    const titleKeyword = this.banList?.isKeywordBanned(song.title || '');
+    const channelKeyword = this.banList?.isKeywordBanned(song.channelName || '');
+    const keywordBan = titleKeyword?.banned ? titleKeyword : channelKeyword;
+    if (keywordBan?.banned) {
+      return { messageKey: 'banKeyword', params: { keyword: keywordBan.keyword || '' } };
+    }
+    if (this.banList?.isChannelBanned(song.channelId, song.channelName)?.banned) {
+      return { messageKey: 'banChannel', params: { channel: song.channelName || '' } };
+    }
+    return null;
+  }
+
+  _formatBanRejectionForChat(rejection = {}) {
+    const params = rejection.params || {};
+    switch (rejection.messageKey) {
+      case 'requestUserBlocked': return 'Dieser Nutzer darf keine Songs anfragen.';
+      case 'banArtist': return 'Dieser Künstler ist gesperrt.';
+      case 'banKeyword': return `Dieser Song ist geblockt (Keyword: ${params.keyword || ''}).`;
+      case 'banChannel': return 'Dieser Kanal ist gesperrt.';
+      default: return 'Dieser Song ist gesperrt.';
+    }
+  }
+
+  _queueRejectionPayload(result = {}) {
+    return {
+      messageKey: result.messageKey || 'requestFailed',
+      params: result.params && typeof result.params === 'object' ? { ...result.params } : {}
+    };
+  }
+
+  _legacyCheckBans(song, username) {
     if (!song) return null;
     const userBan = this.banList?.isUserBanned(username);
     if (userBan?.banned) {
@@ -3508,7 +3594,7 @@ class MusicBotPlugin extends EventEmitter {
       title,
       reason
     });
-    this._emitToast('info', 'Song übersprungen', `${title} (${reason})`);
+    this._emitToast('info', { titleKey: 'skipTitle', messageKey: 'songSkipped', params: { title, reason } });
   }
 
   _emitVolume(volume) {
@@ -3568,12 +3654,23 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   _emitToast(type, title, message) {
-    this.api.emit('musicbot:status-toast', {
-      type: String(type || 'info'),
-      title: String(title || 'Music Bot'),
-      message: String(message || ''),
-      timestamp: Date.now()
-    });
+    const semantic = title && typeof title === 'object' && !Array.isArray(title) ? title : null;
+    this.api.emit('musicbot:status-toast', semantic
+      ? {
+        type: String(type || 'info'),
+        ...(semantic.titleKey ? { titleKey: String(semantic.titleKey) } : {}),
+        ...(semantic.messageKey ? { messageKey: String(semantic.messageKey) } : {}),
+        ...(semantic.title ? { title: String(semantic.title) } : {}),
+        ...(semantic.message ? { message: String(semantic.message) } : {}),
+        ...(semantic.params && typeof semantic.params === 'object' ? { params: { ...semantic.params } } : {}),
+        timestamp: Date.now()
+      }
+      : {
+        type: String(type || 'info'),
+        title: String(title || 'Music Bot'),
+        message: String(message || ''),
+        timestamp: Date.now()
+      });
   }
 
   _handleChatResponse(payload) {
@@ -3605,7 +3702,7 @@ class MusicBotPlugin extends EventEmitter {
       }
       if (credits > 0) {
         const totalCredits = this._addRequestCredits(username, credits);
-        this._emitToast('success', 'Pay-to-Play', `@${username} hat ${credits} Request-Credit(s) erhalten (${totalCredits} verfügbar).`);
+        this._emitToast('success', { titleKey: 'payToPlayTitle', messageKey: 'payToPlayCredits', params: { username, credits, totalCredits } });
       }
     }
 
@@ -3615,7 +3712,7 @@ class MusicBotPlugin extends EventEmitter {
       if (skipCatalog.includes(giftName)) {
         const skipped = await this._skipCurrent(`gift:${giftNameRaw}`);
         if (skipped.success) {
-          this._emitToast('info', 'Pay-to-Skip', `Song wurde per Gift "${giftNameRaw}" übersprungen.`);
+          this._emitToast('info', { titleKey: 'payToSkipTitle', messageKey: 'payToSkipGift', params: { giftName: giftNameRaw } });
         }
       }
     }

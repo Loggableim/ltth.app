@@ -8,11 +8,39 @@ function getPath(object, keyPath) {
   return keyPath.split('.').reduce((value, key) => value?.[key], object);
 }
 
+function readSectionMap(source, constantName) {
+  const block = source.match(new RegExp(`const ${constantName} = Object\\.fromEntries\\(Object\\.entries\\(\\{([\\s\\S]*?)\\}\\)\\.flatMap`));
+  expect(block).not.toBeNull();
+  const mapping = {};
+  for (const match of block[1].matchAll(/(\w+):\s*'([^']*)'/g)) {
+    match[2].split(' ').forEach((key) => { mapping[key] = match[1]; });
+  }
+  return mapping;
+}
+
+function placeholders(value) {
+  return [...new Set(Array.from(String(value).matchAll(/\{(\w+)\}/g), (match) => match[1]))].sort();
+}
+
+function literalTranslationCalls(source, callee) {
+  const prefix = callee === 'tr' ? '(?<![A-Za-z])tr' : 'catalogTr';
+  const pattern = new RegExp(`${prefix}\\(\\s*'([^']+)'\\s*,\\s*'((?:\\\\.|[^'])*)'(?:\\s*,\\s*\\{([^{}]*)\\})?\\s*\\)`, 'g');
+  return Array.from(source.matchAll(pattern), (match) => ({
+    key: match[1],
+    fallback: match[2],
+    params: (match[3] || '').split(',').map((part) => part.trim()).filter(Boolean).map((part) => part.split(':')[0].trim())
+  }));
+}
+
 describe('Music Bot runtime i18n', () => {
-  const uiRuntimeKeys = [
-    'seekUnavailable', 'seekFailed', 'historyLoadFailed', 'playlistSaveFailed',
-    'playlistConflict', 'importRunning'
-  ];
+  const uiRuntimePaths = {
+    seekUnavailable: 'player.seekUnavailable',
+    seekFailed: 'player.seekFailed',
+    historyLoadFailed: 'history.historyLoadFailed',
+    playlistSaveFailed: 'playlists.playlistSaveFailed',
+    playlistConflict: 'playlists.playlistConflict',
+    importRunning: 'playlists.importRunning'
+  };
   const overlayKeys = [
     'songSkipping', 'voteSkip', 'requestedBy', 'unknownTitle', 'queueCount', 'waitingForMusic'
   ];
@@ -20,7 +48,7 @@ describe('Music Bot runtime i18n', () => {
   test('keeps every dynamic UI message in the Music Bot locale namespace', () => {
     const source = fs.readFileSync(path.join(pluginRoot, 'assets/ui.js'), 'utf8');
 
-    uiRuntimeKeys.forEach((key) => {
+    Object.keys(uiRuntimePaths).forEach((key) => {
       expect(source).toContain(`tr('${key}'`);
     });
   });
@@ -37,13 +65,190 @@ describe('Music Bot runtime i18n', () => {
     const data = JSON.parse(fs.readFileSync(path.join(pluginRoot, `locales/${locale}.json`), 'utf8'));
     const base = data.music_bot.ui;
 
-    uiRuntimeKeys.forEach((key) => {
-      expect(getPath(base, `controls.runtime.${key}`)).toEqual(expect.any(String));
-      expect(getPath(base, `controls.runtime.${key}`).trim()).not.toBe('');
+    Object.values(uiRuntimePaths).forEach((keyPath) => {
+      expect(getPath(base, keyPath)).toEqual(expect.any(String));
+      expect(getPath(base, keyPath).trim()).not.toBe('');
     });
     overlayKeys.forEach((key) => {
       expect(getPath(base, `controls.overlay.${key}`)).toEqual(expect.any(String));
       expect(getPath(base, `controls.overlay.${key}`).trim()).not.toBe('');
     });
+  });
+
+  test.each(locales)('preserves the shared generated-plugin locale contract for %s', (locale) => {
+    const base = JSON.parse(fs.readFileSync(path.join(pluginRoot, `locales/${locale}.json`), 'utf8')).music_bot;
+    expect(base.plugin.description).toEqual(expect.any(String));
+    expect(base.ui.actions.save).toEqual(expect.any(String));
+    expect(base.ui.status.ready).toEqual(expect.any(String));
+    expect(base.ui.messages.saved).toEqual(expect.any(String));
+    expect(base.plugin.description.trim()).not.toBe('');
+    expect(base.ui.actions.save.trim()).not.toBe('');
+    expect(base.ui.status.ready.trim()).not.toBe('');
+    expect(base.ui.messages.saved.trim()).not.toBe('');
+  });
+
+  test.each(locales)('resolves every literal dynamic admin key from a meaningful section in %s', (locale) => {
+    const source = fs.readFileSync(path.join(pluginRoot, 'assets/ui.js'), 'utf8');
+    const base = JSON.parse(fs.readFileSync(path.join(pluginRoot, `locales/${locale}.json`), 'utf8')).music_bot.ui;
+    const runtimeSections = readSectionMap(source, 'RUNTIME_I18N_SECTIONS');
+    const catalogSections = readSectionMap(source, 'CATALOG_I18N_SECTIONS');
+    const runtimeKeys = [...new Set(Array.from(source.matchAll(/(?<![A-Za-z])tr\('([^']+)'/g), (match) => match[1]))];
+    const catalogKeys = [...new Set(Array.from(source.matchAll(/catalogTr\('([^']+)'/g), (match) => match[1]))];
+
+    runtimeKeys.forEach((key) => {
+      expect(runtimeSections[key]).toEqual(expect.any(String));
+      expect(getPath(base, `${runtimeSections[key]}.${key}`)).toEqual(expect.any(String));
+      expect(getPath(base, `${runtimeSections[key]}.${key}`).trim()).not.toBe('');
+    });
+    catalogKeys.forEach((key) => {
+      expect(catalogSections[key]).toEqual(expect.any(String));
+      expect(getPath(base, `${catalogSections[key]}.${key}`)).toEqual(expect.any(String));
+      expect(getPath(base, `${catalogSections[key]}.${key}`).trim()).not.toBe('');
+    });
+  });
+
+  test.each(locales)('keeps every literal dynamic callsite placeholder-compatible with %s', (locale) => {
+    const source = fs.readFileSync(path.join(pluginRoot, 'assets/ui.js'), 'utf8');
+    const base = JSON.parse(fs.readFileSync(path.join(pluginRoot, `locales/${locale}.json`), 'utf8')).music_bot.ui;
+    const maps = {
+      tr: readSectionMap(source, 'RUNTIME_I18N_SECTIONS'),
+      catalogTr: readSectionMap(source, 'CATALOG_I18N_SECTIONS')
+    };
+
+    for (const callee of ['tr', 'catalogTr']) {
+      for (const call of literalTranslationCalls(source, callee)) {
+        const section = maps[callee][call.key];
+        const catalogValue = getPath(base, `${section}.${call.key}`);
+        expect(placeholders(catalogValue)).toEqual(placeholders(call.fallback));
+        placeholders(call.fallback).forEach((placeholder) => {
+          expect(call.params).toContain(placeholder);
+        });
+      }
+    }
+  });
+
+  test('constrains payload message keys to the declared runtime map and localized catalogs', () => {
+    const source = fs.readFileSync(path.join(pluginRoot, 'assets/ui.js'), 'utf8');
+    const backend = fs.readFileSync(path.join(pluginRoot, 'main.js'), 'utf8');
+    const runtimeSections = readSectionMap(source, 'RUNTIME_I18N_SECTIONS');
+    const emittedKeys = [...new Set(Array.from(backend.matchAll(/messageKey:\s*'([^']+)'/g), (match) => match[1]))];
+
+    expect(emittedKeys.length).toBeGreaterThan(0);
+    expect(source).not.toContain('tr(payload.messageKey');
+    expect(source).toContain('translateRuntimeMessageKey(payload?.messageKey');
+    expect(source).toMatch(/function translateRuntimeMessageKey[\s\S]*Object\.prototype\.hasOwnProperty\.call\(RUNTIME_I18N_SECTIONS, key\)/);
+
+    emittedKeys.forEach((key) => {
+      expect(runtimeSections[key]).toEqual(expect.any(String));
+      locales.forEach((locale) => {
+        const base = JSON.parse(fs.readFileSync(path.join(pluginRoot, `locales/${locale}.json`), 'utf8')).music_bot.ui;
+        expect(getPath(base, `${runtimeSections[key]}.${key}`)).toEqual(expect.any(String));
+      });
+    });
+  });
+
+  test('routes visible dynamic fallbacks and titles through semantic translations', () => {
+    const source = fs.readFileSync(path.join(pluginRoot, 'assets/ui.js'), 'utf8');
+    const forbidden = [
+      /labels\[resolver\.progress\.state\]\s*\|\|\s*resolver\.progress\.state/,
+      /return state;\s*\n\s*}/,
+      /requestedBy\s*\|\|\s*'Viewer'/,
+      /showToast\('warn',\s*'History'/,
+      /showToast\('warn',\s*'Player'/,
+      /showToast\('(?:success|warn)',\s*'Auto-DJ'/,
+      /showToast\('error',\s*'Crossfade'/,
+      /title\s*=\s*'Music Bot'/,
+      /\?\s*'Testton abgeschlossen\.'/,
+      /\|\|\s*'Testton fehlgeschlagen\.'/,
+      /`Locales:/,
+      /'Locales: default'/,
+      /`Region:/,
+      /source:\s*status\.selectionSource/,
+      /previewSource\.textContent\s*=\s*song\.source\s*\|\|\s*'YouTube'/,
+      /catalogTr\(playlist\.mode/,
+      /escapeHtml\(ban\.type\)/
+    ];
+
+    forbidden.forEach((pattern) => expect(source).not.toMatch(pattern));
+  });
+
+  test('allows only the map-validated runtime expression for nonliteral translation keys', () => {
+    const source = fs.readFileSync(path.join(pluginRoot, 'assets/ui.js'), 'utf8')
+      .replace(/function (?:tr|catalogTr)\([^)]*\)/g, '');
+    const runtimeExpressions = Array.from(source.matchAll(/(?<![A-Za-z])tr\(\s*(?!')([^,\n)]+)/g), (match) => match[1].trim());
+    const catalogExpressions = Array.from(source.matchAll(/catalogTr\(\s*(?!')([^,\n)]+)/g), (match) => match[1].trim());
+    const safeRuntimeReasons = {
+      key: 'translateRuntimeMessageKey checks the key against RUNTIME_I18N_SECTIONS before calling tr.'
+    };
+
+    expect(catalogExpressions).toEqual([]);
+    expect([...new Set(runtimeExpressions)]).toEqual(Object.keys(safeRuntimeReasons));
+    Object.values(safeRuntimeReasons).forEach((reason) => expect(reason.length).toBeGreaterThan(40));
+  });
+
+  test.each(['en', 'es', 'fr'])('does not copy German dynamic translations into %s without a documented neutral reason', (locale) => {
+    const source = fs.readFileSync(path.join(pluginRoot, 'assets/ui.js'), 'utf8');
+    const runtimeSections = readSectionMap(source, 'RUNTIME_I18N_SECTIONS');
+    const catalogSections = readSectionMap(source, 'CATALOG_I18N_SECTIONS');
+    const german = JSON.parse(fs.readFileSync(path.join(pluginRoot, 'locales/de.json'), 'utf8')).music_bot.ui;
+    const translated = JSON.parse(fs.readFileSync(path.join(pluginRoot, `locales/${locale}.json`), 'utf8')).music_bot.ui;
+    const dynamicPaths = new Set([
+      ...Array.from(source.matchAll(/(?<![A-Za-z])tr\('([^']+)'/g), (match) => `${runtimeSections[match[1]]}.${match[1]}`),
+      ...Array.from(source.matchAll(/catalogTr\('([^']+)'/g), (match) => `${catalogSections[match[1]]}.${match[1]}`)
+    ]);
+    const neutralReasons = {
+      'player.pauseTitle': 'Pause is the same word in these languages.',
+      'moderation.moderationTitle': 'Moderation is the same word in these languages.',
+      'moderation.url': 'URL is a language-neutral technical abbreviation.',
+      'queue.queueTitle': 'Queue is established product terminology.',
+      'history.voteNeutral': 'Neutral is the same word in these languages.',
+      'settings.crossfadeTitle': 'Crossfade is an established technical term.',
+      'settings.giftRegion': 'Region is the same metadata label in German and English.',
+      'autoDj.autoDjToastTitle': 'Auto-DJ is the product feature name.',
+      'autoDj.sourceRadio': 'Radio is the same source name in these languages.',
+      'player.sourceYoutube': 'YouTube is a proper product name.',
+      'player.sourceSoundCloud': 'SoundCloud is a proper product name.'
+    };
+
+    Object.values(neutralReasons).forEach((reason) => expect(reason.length).toBeGreaterThan(20));
+    dynamicPaths.forEach((keyPath) => {
+      if (getPath(translated, keyPath) === getPath(german, keyPath)) {
+        expect(neutralReasons[keyPath]).toEqual(expect.any(String));
+      }
+    });
+  });
+
+  test.each([
+    ['de', {
+      'shell.viewerFallback': 'Zuschauer', 'player.playerToastTitle': 'Wiedergabe',
+      'history.historyToastTitle': 'Verlauf', 'settings.giftsCount': '{count} Geschenke',
+      'settings.giftLocalesDefault': 'Katalogsprache: automatisch',
+      'health.resolverUnknownState': 'Unbekannter Resolver-Status',
+      'safety.testToneCompleted': 'Testton abgeschlossen.'
+    }],
+    ['en', {
+      'shell.viewerFallback': 'Viewer', 'player.playerToastTitle': 'Player',
+      'history.historyToastTitle': 'History', 'settings.giftsCount': '{count} gifts',
+      'settings.giftLocalesDefault': 'Catalog language: automatic',
+      'health.resolverUnknownState': 'Unknown resolver status',
+      'safety.testToneCompleted': 'Test tone completed.'
+    }],
+    ['es', {
+      'shell.viewerFallback': 'Espectador', 'player.playerToastTitle': 'Reproductor',
+      'history.historyToastTitle': 'Historial', 'settings.giftsCount': '{count} regalos',
+      'settings.giftLocalesDefault': 'Idioma del catálogo: automático',
+      'health.resolverUnknownState': 'Estado desconocido del resolutor',
+      'safety.testToneCompleted': 'Tono de prueba completado.'
+    }],
+    ['fr', {
+      'shell.viewerFallback': 'Spectateur', 'player.playerToastTitle': 'Lecteur',
+      'history.historyToastTitle': 'Historique', 'settings.giftsCount': '{count} cadeaux',
+      'settings.giftLocalesDefault': 'Langue du catalogue : automatique',
+      'health.resolverUnknownState': 'État inconnu du résolveur',
+      'safety.testToneCompleted': 'Test sonore terminé.'
+    }]
+  ])('uses reviewed language-native dynamic copy in %s', (locale, expected) => {
+    const base = JSON.parse(fs.readFileSync(path.join(pluginRoot, `locales/${locale}.json`), 'utf8')).music_bot.ui;
+    Object.entries(expected).forEach(([keyPath, value]) => expect(getPath(base, keyPath)).toBe(value));
   });
 });

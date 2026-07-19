@@ -2,13 +2,53 @@
   const MIN_SONG_DURATION_LIMIT_SECONDS = 30;
   const MAX_SONG_DURATION_LIMIT_SECONDS = 7200;
   const DEFAULT_SONG_DURATION_LIMIT_SECONDS = 360;
-  const I18N_PREFIX = 'plugins.music-bot.music_bot.ui.controls.runtime';
+  const I18N_PREFIX = 'plugins.music-bot.music_bot.ui';
+  const RUNTIME_I18N_SECTIONS = Object.fromEntries(Object.entries({
+    shell: 'networkTitle connectionLost socketDisconnected apiError unknownError saved error onboardingSettingsTitle onboardingSettingsMeta onboardingOverlayTitle onboardingOverlayMeta onboardingPlayerTitle onboardingPlayerMeta setupHint setupOpen onboardingHelpWithIssues onboardingHelpReady mpvNotInstalled install mpvInstallation mpvReady installationFailed installationSlow statusCheckFailed installing installationStarted installationStartFailed installMpv assistantCompleted assistantCompletedMessage setup onboardingSaveFailed viewerFallback toastDefaultTitle setupYtdlpMissingTitle setupYtdlpMissingDescription setupYtdlpInstallNpm setupYtdlpInstallManual setupYtdlpConfigurePath setupMpvMissingTitle setupMpvMissingDescription setupMpvInstallWindows setupMpvInstallLinux setupMpvInstallMacos setupMpvConfigurePath mpvInstallIdle mpvAlreadyAvailable mpvInstalledReady mpvInstallFailed mpvPackageManagerUnavailable mpvInstallTimedOut mpvInstallWindowsPrompt mpvInstallStartFailed mpvInstallChocolateyLock mpvInstallAdminConfirmation mpvInstallPermissionDenied mpvInstallCommandUnavailable mpvInstallExited mpvInstallMissingAfterExit',
+    player: 'seekUnavailable seekFailed nowPlayingEmpty stateIdle statePaused statePlaying stateUnknown playbackAdvancing loading skip pauseTitle noActiveTrack playbackResumed playbackStarted nextTrackPlaying resumeTitle noStartableTrack skipTitle playingNow searchLoading searching noResult queueAdding queueAdded songAddedTitle requestAdded requestFailed requestRejectedTitle requestRequired requestUserBlocked requestLikesRequired requestGiftRequired songBlockedTitle songSkipped banSong banArtist banKeyword banChannel queueInvalidSong queueFull queueDurationUnknown queueDurationTooLong queueDuplicate queueUserLimit queueCooldown payToPlayTitle payToPlayCredits payToSkipTitle payToSkipGift masterVolumeTitle sourceVolumeTitle volumeSetFailed crossfadeSaveFailed requestedBy selectedTitle playerToastTitle sourceYoutube sourceSoundCloud sourceOther',
+    queue: 'queueEmptyTitle queueEmptyHint playNow moveUp moveDown queueUpdated trackRemoved queueTitle alreadyPlaying titleStartFailed orderUpdated queueRefreshRetry trackMoved remove',
+    autoDj: 'autoDjPlaying autoDjActive autoDjDisabled autoDjOn autoDjOff autoDjSelected autoDjSource autoDjBlocked autoDjStarted autoDjWaiting noTrackAvailable autoDjToastTitle sourceFamiliar sourceDiscoveryFallback sourceDiscovery sourceFamiliarFallback sourceHistory sourceRadio sourceHistoryFallback sourceUnknown',
+    moderation: 'banAdded banAddFailed banRemoveFailed enterTitleKeyword banFailed moderationTitle queueMatchesRemoved banLabel trackBanLabel enterValue noEntries delete url keyword channel user artist exactTrack titleKeyword unknownBanType',
+    history: 'historyLoadFailed historyFeedbackFailed historyToastTitle',
+    playlists: 'playlistSaveFailed playlistConflict importRunning',
+    settings: 'giftNoResults giftsCount giftSelectFirst giftSaveFailed giftApplied giftCatalogTitle giftUpdated giftLoading giftLoadFailed giftVisible giftLoaded giftLoadedApi giftUpdatedAt giftLocales giftLocalesDefault giftRegion crossfadeTitle',
+    safety: 'emergencyDone safetyUnlocked emergencyFailed unlockFailed playerReset playerResetFailed diagnosticsExportFailed diagnosticsExported safetyLocked safetyReady testToneCompleted testToneFailed',
+    health: 'unavailable ipcDegraded ready files none resolverActiveQueued resolverQueued resolverYoutube resolverSoundCloud resolverValidating resolverReady resolverFailed resolverUnknownState healthLoadFailed',
+    overlay: 'copyFailed copySuccess'
+  }).flatMap(([section, keys]) => keys.split(' ').map((key) => [key, section])));
+  const CATALOG_I18N_SECTIONS = Object.fromEntries(Object.entries({
+    player: 'seek seekAria',
+    history: 'historyMore historyBanned historyEmpty banTrack voteUp voteDown voteNeutral',
+    catalog: 'catalogSearch catalogDescription addToPlaylist catalogEmpty networkTitle postFailed getFailed deleteFailed requestFailed',
+    playlists: 'playlistsDescription newPlaylist playbackMode ordered shuffle create radioDescription saveRadioSources playlistName save delete importUrl import protected playlistEmpty playlistItemsEmpty remove radioWeight importQueued importCompleted importFailed importAborted importError playlistConflict viewerRadio radioSources importRunning'
+  }).flatMap(([section, keys]) => keys.split(' ').map((key) => [key, section])));
 
   function tr(key, fallback, params = {}) {
-    const fullKey = `${I18N_PREFIX}.${key}`;
+    const section = RUNTIME_I18N_SECTIONS[key] || 'shell';
+    const fullKey = `${I18N_PREFIX}.${section}.${key}`;
     const translated = window.i18n?.t(fullKey, params);
     const value = translated && translated !== fullKey ? translated : fallback;
     return String(value).replace(/\{(\w+)\}/g, (_match, name) => params[name] ?? `{${name}}`);
+  }
+
+  function translateRuntimeMessageKey(messageKey, fallback, params = {}) {
+    const key = String(messageKey || '');
+    if (!Object.prototype.hasOwnProperty.call(RUNTIME_I18N_SECTIONS, key)) return fallback;
+    return tr(key, fallback, params);
+  }
+
+  function localizedProducerText(payload, field, fallback = '') {
+    const source = payload || {};
+    const key = source[`${field}Key`];
+    if (key) {
+      const translated = translateRuntimeMessageKey(key, fallback || source[field] || '', source.params || {});
+      return source.params?.detail ? `${translated} ${source.params.detail}` : translated;
+    }
+    return source[field] || fallback;
+  }
+
+  function localizedApiError(payload, fallback = '') {
+    return localizedProducerText(payload, 'message', payload?.error || fallback);
   }
 
   function runtimeStateLabel(state) {
@@ -19,7 +59,57 @@
       return tr('playbackAdvancing', 'Lädt den nächsten Titel …');
     }
     if (normalized === 'idle') return tr('stateIdle', 'Bereit');
-    return state;
+    return tr('stateUnknown', 'Unbekannter Status');
+  }
+
+  function mediaSourceLabel(source) {
+    const normalized = String(source || 'youtube').toLowerCase();
+    if (normalized === 'youtube') return tr('sourceYoutube', 'YouTube');
+    if (normalized === 'soundcloud') return tr('sourceSoundCloud', 'SoundCloud');
+    return tr('sourceOther', 'Andere Quelle');
+  }
+
+  function autoDjSourceLabel(source) {
+    const labels = {
+      familiar: () => tr('sourceFamiliar', 'Vertraute Titel'),
+      'discovery-fallback': () => tr('sourceDiscoveryFallback', 'Entdeckungen (Fallback)'),
+      discovery: () => tr('sourceDiscovery', 'Entdeckungen'),
+      'familiar-fallback': () => tr('sourceFamiliarFallback', 'Vertraute Titel (Fallback)'),
+      history: () => tr('sourceHistory', 'Verlauf'),
+      radio: () => tr('sourceRadio', 'Radio'),
+      'history-fallback': () => tr('sourceHistoryFallback', 'Verlauf (Fallback)')
+    };
+    return labels[String(source || '').toLowerCase()]?.() || tr('sourceUnknown', 'Unbekannte Quelle');
+  }
+
+  function banTypeLabel(type) {
+    const labels = {
+      url: () => tr('url', 'URL'),
+      keyword: () => tr('keyword', 'Schlüsselwort'),
+      channel: () => tr('channel', 'Kanal'),
+      user: () => tr('user', 'Nutzer'),
+      artist: () => tr('artist', 'Künstler'),
+      track: () => tr('exactTrack', 'Exakter Titel'),
+      'exact-track': () => tr('exactTrack', 'Exakter Titel'),
+      exacttrack: () => tr('exactTrack', 'Exakter Titel'),
+      title: () => tr('titleKeyword', 'Titelbegriff'),
+      'title-keyword': () => tr('titleKeyword', 'Titelbegriff')
+    };
+    return labels[String(type || '').toLowerCase()]?.() || tr('unknownBanType', 'Unbekannter Typ');
+  }
+
+  function playlistModeLabel(mode) {
+    return mode === 'shuffle'
+      ? catalogTr('shuffle', 'Zufällig')
+      : catalogTr('ordered', 'Geordnet');
+  }
+
+  function playlistImportStatusLabel(status) {
+    if (status === 'queued') return catalogTr('importQueued', 'Import wartet …');
+    if (status === 'completed') return catalogTr('importCompleted', 'Import abgeschlossen');
+    if (status === 'failed') return catalogTr('importFailed', 'Import fehlgeschlagen');
+    if (status === 'aborted') return catalogTr('importAborted', 'Import abgebrochen');
+    return catalogTr('importRunning', 'Import läuft …');
   }
 
   function debounce(fn, delay = 200) {
@@ -30,9 +120,9 @@
     };
   }
 
-  function setActiveTab(target) {
+  function setActiveTab(target, { focusPanel = true } = {}) {
     if (!target) return;
-    const contentTarget = target === 'queue' ? 'player' : target;
+    const panelId = `musicbot-panel-${target}`;
     document.querySelectorAll('.tab').forEach((t) => {
       const isActive = t.getAttribute('data-tab') === target;
       t.classList.toggle('active', isActive);
@@ -40,12 +130,16 @@
       t.setAttribute('tabindex', isActive ? '0' : '-1');
     });
     document.querySelectorAll('.tab-content').forEach((c) => {
-      const isActive = c.getAttribute('data-tab-content') === contentTarget;
+      const isActive = c.id === panelId;
       c.classList.toggle('active', isActive);
       c.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+      c.toggleAttribute('hidden', !isActive);
     });
-    if (target === 'queue') {
-      document.getElementById('queue-panel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    const activePanel = document.getElementById(panelId);
+    activePanel?.scrollIntoView?.({ behavior: 'auto', block: 'start' });
+    if (focusPanel) {
+      activePanel?.focus({ preventScroll: true });
     }
   }
 
@@ -57,12 +151,13 @@
   document.querySelectorAll('.tab').forEach((tab) => {
     const target = tab.getAttribute('data-tab');
     const isActive = tab.classList.contains('active');
+    tab.setAttribute('id', `musicbot-tab-${target}`);
     tab.setAttribute('role', 'tab');
     tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
-    tab.setAttribute('aria-controls', `tab-content-${target === 'queue' ? 'player' : target}`);
+    tab.setAttribute('aria-controls', `musicbot-panel-${target}`);
     tab.setAttribute('tabindex', isActive ? '0' : '-1');
     tab.addEventListener('click', () => {
-      setActiveTab(target);
+      setActiveTab(target, { focusPanel: false });
     });
     tab.addEventListener('keydown', (e) => {
       const tabs = Array.from(document.querySelectorAll('.tab'));
@@ -75,14 +170,18 @@
       if (next) {
         e.preventDefault();
         next.focus();
-        setActiveTab(next.getAttribute('data-tab'));
+        setActiveTab(next.getAttribute('data-tab'), { focusPanel: false });
       }
     });
   });
   document.querySelectorAll('[data-tab-content]').forEach((panel) => {
+    const target = panel.getAttribute('data-tab-content');
+    const isActive = panel.classList.contains('active');
     panel.setAttribute('role', 'tabpanel');
-    panel.setAttribute('id', `tab-content-${panel.getAttribute('data-tab-content')}`);
-    panel.setAttribute('aria-hidden', panel.classList.contains('active') ? 'false' : 'true');
+    panel.setAttribute('id', `musicbot-panel-${target}`);
+    panel.setAttribute('aria-labelledby', `musicbot-tab-${target}`);
+    panel.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+    panel.toggleAttribute('hidden', !isActive);
   });
 
   const socket = io();
@@ -266,7 +365,12 @@
   let latestResolver = null;
   let latestNowPlayingTrack = null;
   let latestQueueTracks = [];
+  let latestQueueLength = 0;
   let latestHistoryTracks = [];
+  let latestAutoDjStatus = null;
+  let latestRadioSources = [];
+  let latestHealth = null;
+  const activeToastRecords = [];
   let trackBanTargetId = null;
   let trackBanCatalogEventId = null;
   let trackBanScope = 'track';
@@ -307,7 +411,7 @@
     previewFrame.onload = () => setPreviewVolume(previewVolumeInput?.value);
     previewFrame.src = `https://www.youtube.com/embed/${youtubeId}?${params.toString()}`;
     playerFrameBox?.classList.add('has-video');
-    previewSource.textContent = 'YouTube';
+    previewSource.textContent = tr('sourceYoutube', 'YouTube');
   }
 
   function setPreviewVolume(value) {
@@ -325,7 +429,7 @@
     if (!previewFrame) return;
     previewFrame.src = '';
     playerFrameBox?.classList.remove('has-video');
-    previewSource.textContent = 'YouTube';
+    previewSource.textContent = tr('sourceYoutube', 'YouTube');
   }
 
   function buildOnboardingSteps(issues = []) {
@@ -403,25 +507,28 @@
     setupIssuesList.innerHTML = list
       .map((issue) => {
         const icon = issue?.severity === 'error' ? '❌' : '⚠️';
-        const instructions = Array.isArray(issue?.installInstructions) ? issue.installInstructions : [];
+        const instructions = Array.isArray(issue?.installInstructionKeys)
+          ? issue.installInstructionKeys.map((key) => translateRuntimeMessageKey(key, key))
+          : (Array.isArray(issue?.installInstructions) ? issue.installInstructions : []);
         const instructionsHtml = instructions.length
           ? `<ul>${instructions.map((instr) => `<li><code>${escapeHtml(instr)}</code></li>`).join('')}</ul>`
           : '';
         const installStatus = issue?.installStatus;
-        const installStatusHtml = installStatus?.message
-          ? `<p class="setup-install-status ${escapeHtml(installStatus.state || 'info')}">${escapeHtml(installStatus.message)}${installStatus.command ? ` <code>${escapeHtml(installStatus.command)}</code>` : ''}</p>`
+        const installStatusMessage = localizedProducerText(installStatus, 'message');
+        const installStatusHtml = installStatusMessage
+          ? `<p class="setup-install-status ${escapeHtml(installStatus.state || 'info')}">${escapeHtml(installStatusMessage)}${installStatus.command ? ` <code>${escapeHtml(installStatus.command)}</code>` : ''}</p>`
           : '';
         const installButtonHtml = issue?.oneClickInstall && issue?.installAction === 'mpv'
           ? `<div class="setup-issue-actions">
               <button class="btn primary small" type="button" data-setup-action="install-mpv" ${installStatus?.state === 'installing' ? 'disabled' : ''}>
-                ${escapeHtml(issue.installButtonLabel || tr('install', 'Installieren'))}
+                ${escapeHtml(localizedProducerText(issue, 'installButton', tr('install', 'Installieren')))}
               </button>
             </div>`
           : '';
         return `
           <div class="setup-issue ${issue?.severity === 'error' ? 'error' : 'warning'}">
-            <strong>${icon} ${escapeHtml(issue?.title || tr('setupHint', 'Setup-Hinweis'))}</strong><br>
-            <span style="font-size:0.9em;">${escapeHtml(issue?.description || '')}</span>
+            <strong>${icon} ${escapeHtml(localizedProducerText(issue, 'title', tr('setupHint', 'Setup-Hinweis')))}</strong><br>
+            <span style="font-size:0.9em;">${escapeHtml(localizedProducerText(issue, 'description', ''))}</span>
             ${installButtonHtml}
             ${installStatusHtml}
             ${instructionsHtml}
@@ -467,7 +574,7 @@
 
     if (installStatus?.state === 'failed' || installStatus?.state === 'unavailable') {
       stopMpvInstallPolling();
-      showToast('error', tr('mpvInstallation', 'MPV Installation'), installStatus.message || tr('installationFailed', 'Installation fehlgeschlagen.'));
+      showToast('error', tr('mpvInstallation', 'MPV Installation'), localizedProducerText(installStatus, 'message', tr('installationFailed', 'Installation fehlgeschlagen.')));
       return;
     }
 
@@ -501,17 +608,17 @@
     }
 
     if (result?.mpvAvailable || status.state === 'installed') {
-      showToast('success', tr('mpvInstallation', 'MPV Installation'), status.message || tr('mpvReady', 'mpv ist bereit.'));
+      showToast('success', tr('mpvInstallation', 'MPV Installation'), localizedProducerText(status, 'message', tr('mpvReady', 'mpv ist bereit.')));
       return;
     }
 
     if (status.state === 'installing' || result?.pending) {
-      showToast('info', tr('mpvInstallation', 'MPV Installation'), status.message || tr('installationStarted', 'Installation wurde gestartet. Status wird automatisch geprueft.'));
+      showToast('info', tr('mpvInstallation', 'MPV Installation'), localizedProducerText(status, 'message', tr('installationStarted', 'Installation wurde gestartet. Status wird automatisch geprueft.')));
       startMpvInstallPolling();
       return;
     }
 
-    showToast('error', tr('mpvInstallation', 'MPV Installation'), result?.error || status.message || tr('installationStartFailed', 'Installation konnte nicht gestartet werden.'));
+    showToast('error', tr('mpvInstallation', 'MPV Installation'), result?.error || localizedProducerText(status, 'message', tr('installationStartFailed', 'Installation konnte nicht gestartet werden.')));
     if (button) {
       button.disabled = false;
       button.textContent = tr('installMpv', 'MPV installieren');
@@ -571,7 +678,7 @@
         title: result.next.title || tr('selectedTitle', 'Ausgewählter Titel')
       }));
     } else if (result?.success && result.nextError) {
-      showToast('warn', 'Auto-DJ', result.nextError);
+      showToast('warn', tr('autoDjToastTitle', 'Auto-DJ'), result.nextError);
     }
     if (!result?.success) {
       showToast('warn', tr('skipTitle', 'Überspringen'), result?.error || tr('noActiveTrack', 'Aktuell läuft kein Titel.'));
@@ -646,8 +753,9 @@
       renderQueueFromServer();
       showToast('success', tr('songAddedTitle', 'Song hinzugefügt'), result.song.title);
     } else {
-      requestFeedback.textContent = `⚠️ ${result?.error || tr('requestFailed', 'Fehler beim Request.')}`;
-      showToast('warn', tr('requestRejectedTitle', 'Song-Request abgelehnt'), result?.error || tr('requestFailed', 'Fehler beim Request.'));
+      const errorMessage = localizedApiError(result, tr('requestFailed', 'Fehler beim Request.'));
+      requestFeedback.textContent = `⚠️ ${errorMessage}`;
+      showToast('warn', tr('requestRejectedTitle', 'Song-Request abgelehnt'), errorMessage);
     }
   });
 
@@ -680,7 +788,7 @@
   const postCrossfade = debounce(async (ms) => {
     const result = await post('/config', { playback: { crossfadeDuration: ms } });
     if (!result?.success) {
-      showToast('error', 'Crossfade', result?.error || tr('crossfadeSaveFailed', 'Crossfade konnte nicht gespeichert werden.'));
+      showToast('error', tr('crossfadeTitle', 'Crossfade'), result?.error || tr('crossfadeSaveFailed', 'Crossfade konnte nicht gespeichert werden.'));
     }
   });
   crossfadeInput.addEventListener('input', () => {
@@ -858,7 +966,7 @@
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url).then(() => {
         const orig = overlayCopy.textContent;
-        overlayCopy.textContent = '✅ Kopiert!';
+        overlayCopy.textContent = tr('copySuccess', '✅ Kopiert!');
         setTimeout(() => { overlayCopy.textContent = orig; }, 2000);
       }).catch(() => {
         if (overlayUrl) { overlayUrl.select(); }
@@ -912,9 +1020,9 @@
   autoDjSkip.addEventListener('click', async () => {
     const result = await post('/auto-dj/skip');
     if (result?.success) {
-      showToast('success', 'Auto-DJ', result.track?.title || tr('nextTrackPlaying', 'Nächster Titel läuft.'));
+      showToast('success', tr('autoDjToastTitle', 'Auto-DJ'), result.track?.title || tr('nextTrackPlaying', 'Nächster Titel läuft.'));
     } else {
-      showToast('warn', 'Auto-DJ', tr('noTrackAvailable', 'Kein Titel verfügbar.'));
+      showToast('warn', tr('autoDjToastTitle', 'Auto-DJ'), tr('noTrackAvailable', 'Kein Titel verfügbar.'));
     }
     await refreshAutoDjStatus();
   });
@@ -1185,7 +1293,7 @@
     const result = await post('/player/test-tone', {});
     setSafetyBusy(testToneButton, false);
     showSafetyFeedback(
-      result?.success ? 'Testton abgeschlossen.' : (result?.error || 'Testton fehlgeschlagen.'),
+      result?.success ? tr('testToneCompleted', 'Testton abgeschlossen.') : (result?.error || tr('testToneFailed', 'Testton fehlgeschlagen.')),
       !result?.success
     );
   });
@@ -1245,7 +1353,12 @@
     }
   });
   socket.on('musicbot:status-toast', (payload) => {
-    showToast(payload?.type || 'info', payload?.title || 'Music Bot', payload?.message || '');
+    showToast(
+      payload?.type || 'info',
+      localizedProducerText(payload, 'title', tr('toastDefaultTitle', 'Musik-Bot')),
+      localizedProducerText(payload, 'message', ''),
+      payload
+    );
   });
   socket.on('music-bot:setup-status', (payload) => {
     const installStatus = applySetupStatus(payload);
@@ -1282,7 +1395,7 @@
     latestRuntime = { ...(latestRuntime || {}), transportState: payload?.state || 'loading' };
     updateSeekControl();
     const message = payload?.messageKey
-      ? tr(payload.messageKey, payload?.message || tr('playbackAdvancing', 'Lädt den nächsten Titel …'))
+      ? translateRuntimeMessageKey(payload?.messageKey, payload?.message || tr('playbackAdvancing', 'Lädt den nächsten Titel …'))
       : payload?.message;
     setSkipLoading(true, message);
   });
@@ -1321,11 +1434,8 @@
   });
   socket.on('musicbot:playlist-import-progress', async (payload) => {
     const status = payload?.status || 'running';
-    const statusKey = {
-      running: 'importRunning', completed: 'importCompleted', failed: 'importFailed', aborted: 'importAborted'
-    }[status] || 'importRunning';
     if (playlistImportProgress) {
-      const label = catalogTr(statusKey, status);
+      const label = playlistImportStatusLabel(status);
       const progress = Number.isFinite(Number(payload?.progress)) ? ` (${Math.round(Number(payload.progress))}%)` : '';
       playlistImportProgress.textContent = payload?.error
         ? catalogTr('importError', 'Import error: {error}', { error: payload.error })
@@ -1392,7 +1502,8 @@
   }
 
   function catalogTr(key, fallback, params = {}) {
-    const fullKey = `plugins.music-bot.music_bot.ui.catalog.${key}`;
+    const section = CATALOG_I18N_SECTIONS[key] || 'catalog';
+    const fullKey = `${I18N_PREFIX}.${section}.${key}`;
     const translated = window.i18n?.t(fullKey, params);
     const value = translated && translated !== fullKey ? translated : fallback;
     return String(value).replace(/\{(\w+)\}/g, (_match, name) => params[name] ?? `{${name}}`);
@@ -1418,24 +1529,29 @@
     if (!healthResolver) return;
     const active = Number(resolver.active ?? resolver.runner?.active ?? 0);
     const queued = Number(resolver.queued ?? resolver.runner?.queued ?? 0);
-    const progress = resolver.progress?.state ? ` · ${resolver.progress.state}` : '';
+    const resolverStateLabels = {
+      queued: () => tr('resolverQueued', 'Request wartet …'),
+      'searching-youtube': () => tr('resolverYoutube', 'Suche auf YouTube …'),
+      'searching-soundcloud': () => tr('resolverSoundCloud', 'Suche auf SoundCloud …'),
+      validating: () => tr('resolverValidating', 'Treffer werden geprüft …'),
+      ready: () => tr('resolverReady', 'Treffer bereit.'),
+      failed: () => tr('resolverFailed', 'Suche fehlgeschlagen.')
+    };
+    const progressState = String(resolver.progress?.state || '').toLowerCase();
+    const progressLabel = progressState
+      ? (resolverStateLabels[progressState]?.() || tr('resolverUnknownState', 'Unbekannter Resolver-Status'))
+      : '';
+    const progress = progressLabel ? ` · ${progressLabel}` : '';
     healthResolver.textContent = tr('resolverActiveQueued', '{active} aktiv / {queued} wartend{progress}', {
       active, queued, progress
     });
-    if (searchFeedback && resolver.progress?.state) {
-      const labels = {
-        queued: tr('resolverQueued', 'Request wartet …'),
-        'searching-youtube': tr('resolverYoutube', 'Suche auf YouTube …'),
-        'searching-soundcloud': tr('resolverSoundCloud', 'Suche auf SoundCloud …'),
-        validating: tr('resolverValidating', 'Treffer werden geprüft …'),
-        ready: tr('resolverReady', 'Treffer bereit.'),
-        failed: tr('resolverFailed', 'Suche fehlgeschlagen.')
-      };
-      searchFeedback.textContent = labels[resolver.progress.state] || resolver.progress.state;
+    if (searchFeedback && progressState) {
+      searchFeedback.textContent = progressLabel;
     }
   }
 
   function renderHealth(health = {}) {
+    latestHealth = health;
     const runtime = health.runtime || latestRuntime || health;
     const slots = health.players || runtime?.slots || {};
     if (healthState) healthState.textContent = runtimeStateLabel(health.state || runtime?.transportState || (musicbotSafetyLocked ? 'locked' : 'idle'));
@@ -1629,7 +1745,7 @@
     if (reset) historyOffset = 0;
     const historyData = await get(`/history?limit=${HISTORY_PAGE_SIZE}&offset=${historyOffset}`);
     if (!historyData?.history) {
-      showToast('warn', 'History', tr('historyLoadFailed', 'History konnte nicht geladen werden.'));
+      showToast('warn', tr('historyToastTitle', 'Verlauf'), tr('historyLoadFailed', 'History konnte nicht geladen werden.'));
       return;
     }
     historyTotal = Number(historyData.total) || historyData.history.length;
@@ -1700,7 +1816,7 @@
       : '';
     nowPlayingEl.innerHTML = `
       <p class="title">🎵 ${escapeHtml(track.title)}</p>
-      <p class="meta">${escapeHtml(track.artist || '')} • ${escapeHtml(tr('requestedBy', 'Angefragt von'))} <strong>${escapeHtml(track.requestedBy || 'Viewer')}</strong>${dur !== '—' ? ' • ' + dur : ''}</p>
+      <p class="meta">${escapeHtml(track.artist || '')} • ${escapeHtml(tr('requestedBy', 'Angefragt von'))} <strong>${escapeHtml(track.requestedBy || tr('viewerFallback', 'Zuschauer'))}</strong>${dur !== '—' ? ' • ' + dur : ''}</p>
       ${banButton}
     `;
     const actualState = track.state || 'playing';
@@ -1746,6 +1862,7 @@
 
   function renderQueue(queue = [], length = 0) {
     latestQueueTracks = Array.isArray(queue) ? queue.slice() : [];
+    latestQueueLength = Number(length ?? queue.length) || 0;
     queueLengthEl.textContent = length ?? queue.length;
     if (heroQueueCount) heroQueueCount.textContent = length ?? queue.length;
     if (!queue || queue.length === 0) {
@@ -1775,14 +1892,14 @@
           ${thumb}
           <div class="queue-info">
             <span class="queue-title"><strong>${escapeHtml(item.title)}</strong>${giftBadge}</span>
-            <span class="queue-meta">${escapeHtml(item.requestedBy || 'Viewer')}${dur}</span>
+            <span class="queue-meta">${escapeHtml(item.requestedBy || tr('viewerFallback', 'Zuschauer'))}${dur}</span>
           </div>
           <div class="queue-actions">
             <button class="btn danger small track-ban-trigger" type="button" data-track-ban-trigger data-track-id="${songId}" aria-haspopup="dialog" aria-expanded="false" title="${escapeHtml(tr('banLabel', 'Sperren'))}" aria-label="${escapeHtml(tr('trackBanLabel', 'Track sperren'))}">!</button>
             <button class="btn primary small" data-playback-action data-queue-action="play" data-idx="${idx}" data-song-id="${songId}" title="${escapeHtml(tr('playNow', 'Jetzt spielen'))}" aria-label="${escapeHtml(tr('playNow', 'Jetzt spielen'))}" ${musicbotSafetyLocked ? 'disabled aria-disabled="true"' : ''}>▶</button>
             <button class="btn ghost small" data-queue-action="move-up" data-idx="${idx}" data-song-id="${songId}" data-target-song-id="${previousSongId}" title="${escapeHtml(tr('moveUp', 'Nach oben'))}" aria-label="${escapeHtml(tr('moveUp', 'Nach oben'))}" ${idx === 0 ? 'disabled' : ''}>↑</button>
             <button class="btn ghost small" data-queue-action="move-down" data-idx="${idx}" data-song-id="${songId}" data-target-song-id="${nextSongId}" title="${escapeHtml(tr('moveDown', 'Nach unten'))}" aria-label="${escapeHtml(tr('moveDown', 'Nach unten'))}" ${idx === queue.length - 1 ? 'disabled' : ''}>↓</button>
-            <button class="btn danger small" data-queue-action="remove" data-idx="${idx}" title="${escapeHtml(catalogTr('remove', 'Entfernen'))}" aria-label="${escapeHtml(catalogTr('remove', 'Entfernen'))}">✕</button>
+            <button class="btn danger small" data-queue-action="remove" data-idx="${idx}" title="${escapeHtml(tr('remove', 'Entfernen'))}" aria-label="${escapeHtml(tr('remove', 'Entfernen'))}">✕</button>
           </div>
         </div>`;
       })
@@ -1954,7 +2071,7 @@
       if (!result?.success || (result.playbackId && result.playbackId !== playbackId)) {
         progressCurrentPos = lastConfirmedSeekPosition;
         updateProgressBar();
-        if (!result?.networkError) showToast('warn', 'Player', result?.error || tr('seekFailed', 'Position konnte nicht geändert werden.'));
+        if (!result?.networkError) showToast('warn', tr('playerToastTitle', 'Wiedergabe'), result?.error || tr('seekFailed', 'Position konnte nicht geändert werden.'));
         return;
       }
       lastConfirmedSeekPosition = Number(result.position ?? positionSeconds);
@@ -1980,18 +2097,34 @@
     setTimeout(() => { el.textContent = ''; }, 4000);
   }
 
-  function showToast(type = 'info', title = 'Music Bot', message = '') {
+  function renderToastRecord(record) {
+    if (!record?.element) return;
+    const payload = record.semanticPayload;
+    const title = payload
+      ? localizedProducerText(payload, 'title', record.title)
+      : record.title;
+    const message = payload
+      ? localizedProducerText(payload, 'message', record.message)
+      : record.message;
+    record.element.className = `musicbot-toast ${record.type}`;
+    record.element.innerHTML = `
+      <div class="musicbot-toast-title">${escapeHtml(title || tr('toastDefaultTitle', 'Musik-Bot'))}</div>
+      <div class="musicbot-toast-message">${escapeHtml(message || '')}</div>
+    `;
+  }
+
+  function showToast(type = 'info', title = '', message = '', semanticPayload = null) {
     if (!toastContainer) return;
     const toast = document.createElement('div');
-    toast.className = `musicbot-toast ${type}`;
-    toast.innerHTML = `
-      <div class="musicbot-toast-title">${escapeHtml(title)}</div>
-      <div class="musicbot-toast-message">${escapeHtml(message)}</div>
-    `;
+    const record = { type, title, message, semanticPayload, element: toast };
+    renderToastRecord(record);
     toastContainer.appendChild(toast);
     setTimeout(() => {
       toast.remove();
+      const index = activeToastRecords.indexOf(record);
+      if (index >= 0) activeToastRecords.splice(index, 1);
     }, 4500);
+    activeToastRecords.push(record);
   }
 
   function updatePreviewFrame(song) {
@@ -2005,7 +2138,7 @@
       previewFrame.src = embedUrl;
       playerFrameBox?.classList.add('has-video');
     }
-    previewSource.textContent = song.source || 'YouTube';
+    previewSource.textContent = mediaSourceLabel(song.source);
   }
 
   function buildEmbedUrl(song) {
@@ -2069,7 +2202,7 @@
         const upLabel = catalogTr('voteUp', 'Like');
         const downLabel = catalogTr('voteDown', 'Not for radio');
         const neutralLabel = catalogTr('voteNeutral', 'Neutral');
-        return `<div class="item queue-item" data-song-id="${escapeHtml(songId)}">${thumb}<span class="queue-title">${escapeHtml(item.title)}</span><span class="text-secondary queue-by">${escapeHtml(item.requestedBy || 'Viewer')}</span>${vote('up', '↑', upLabel)}${vote('down', '↓', downLabel)}${vote('neutral', '•', neutralLabel)}${banBadge}${banButton}</div>`;
+        return `<div class="item queue-item" data-song-id="${escapeHtml(songId)}">${thumb}<span class="queue-title">${escapeHtml(item.title)}</span><span class="text-secondary queue-by">${escapeHtml(item.requestedBy || tr('viewerFallback', 'Zuschauer'))}</span>${vote('up', '↑', upLabel)}${vote('down', '↓', downLabel)}${vote('neutral', '•', neutralLabel)}${banBadge}${banButton}</div>`;
       })
       .join('');
   }
@@ -2082,7 +2215,7 @@
     const state = button.dataset.historyFeedback;
     const result = await post(`/catalog/songs/${songId}/feedback`, { state });
     if (!result?.success) {
-      showToast('warn', 'History', result?.error || tr('historyFeedbackFailed', 'Bewertung konnte nicht gespeichert werden.'));
+      showToast('warn', tr('historyToastTitle', 'Verlauf'), result?.error || tr('historyFeedbackFailed', 'Bewertung konnte nicht gespeichert werden.'));
       return;
     }
     const previous = canonicalSongState.get(songId) || {};
@@ -2135,7 +2268,7 @@
     if (!playlistList) return;
     playlistList.classList.toggle('empty', playlists.length === 0);
     playlistList.innerHTML = playlists.length
-      ? playlists.map((playlist) => `<button class="item playlist-item ${selectedPlaylist?.id === playlist.id ? 'active' : ''}" type="button" data-playlist-id="${escapeHtml(playlist.id)}"><span class="queue-title">${escapeHtml(playlist.name)}</span><span class="text-secondary">${escapeHtml(catalogTr(playlist.mode === 'shuffle' ? 'shuffle' : 'ordered', playlist.mode))} · ${playlist.itemCount || 0}${playlist.isProtected ? ` · ${escapeHtml(catalogTr('protected', 'protected'))}` : ''}</span></button>`).join('')
+      ? playlists.map((playlist) => `<button class="item playlist-item ${selectedPlaylist?.id === playlist.id ? 'active' : ''}" type="button" data-playlist-id="${escapeHtml(playlist.id)}"><span class="queue-title">${escapeHtml(playlist.name)}</span><span class="text-secondary">${escapeHtml(playlistModeLabel(playlist.mode))} · ${playlist.itemCount || 0}${playlist.isProtected ? ` · ${escapeHtml(catalogTr('protected', 'protected'))}` : ''}</span></button>`).join('')
       : `<p>${escapeHtml(catalogTr('playlistEmpty', 'No playlists yet.'))}</p>`;
   }
 
@@ -2239,7 +2372,13 @@
   async function refreshRadioSources() {
     const result = await get('/radio/playlist-sources');
     if (!result?.success || !playlistRadioSources) return;
-    playlistRadioSources.innerHTML = (result.sources || []).map((source) => `<label class="playlist-source"><input type="checkbox" data-radio-playlist-id="${escapeHtml(source.playlistId)}" ${source.enabled ? 'checked' : ''}><span>${escapeHtml(source.name || source.playlistId)}</span><input type="number" min="1" max="10" step="1" value="${Math.max(1, Math.min(10, Math.round(Number(source.weight) || 1)))}" data-radio-weight="${escapeHtml(source.playlistId)}" aria-label="${escapeHtml(catalogTr('radioWeight', 'Weight'))}"></label>`).join('');
+    latestRadioSources = Array.isArray(result.sources) ? result.sources.slice() : [];
+    renderRadioSources(latestRadioSources);
+  }
+
+  function renderRadioSources(sources = []) {
+    if (!playlistRadioSources) return;
+    playlistRadioSources.innerHTML = sources.map((source) => `<label class="playlist-source"><input type="checkbox" data-radio-playlist-id="${escapeHtml(source.playlistId)}" ${source.enabled ? 'checked' : ''}><span>${escapeHtml(source.name || source.playlistId)}</span><input type="number" min="1" max="10" step="1" value="${Math.max(1, Math.min(10, Math.round(Number(source.weight) || 1)))}" data-radio-weight="${escapeHtml(source.playlistId)}" aria-label="${escapeHtml(catalogTr('radioWeight', 'Weight'))}"></label>`).join('');
   }
   playlistRadioSave?.addEventListener('click', async () => {
     const sources = Array.from(playlistRadioSources?.querySelectorAll('[data-radio-playlist-id]') || []).map((checkbox) => ({
@@ -2263,7 +2402,7 @@
       skipButton.textContent = active ? tr('loading', 'Lädt …') : tr('skip', 'Überspringen');
     }
     if (active) {
-      updateState(message || 'loading');
+      stateEl.textContent = message || runtimeStateLabel('loading');
     }
   }
 
@@ -2271,6 +2410,11 @@
     const statusRes = await get('/auto-dj/status');
     const status = statusRes?.status;
     if (!status) return;
+    latestAutoDjStatus = status;
+    renderAutoDjStatus(status);
+  }
+
+  function renderAutoDjStatus(status = {}) {
     autoDjEnabled.checked = Boolean(status.enabled);
     autoDjMode.value = status.mode || 'history';
     autoDjHistoryPlays.value = status.historyMinPlays || 1;
@@ -2289,7 +2433,7 @@
     autoDjStatus.title = autoDjMessage;
     if (autoDjDetail) {
       const diagnostics = [];
-      if (status.selectionSource) diagnostics.push(tr('autoDjSource', 'Quelle: {source}', { source: status.selectionSource }));
+      if (status.selectionSource) diagnostics.push(tr('autoDjSource', 'Quelle: {source}', { source: autoDjSourceLabel(status.selectionSource) }));
       if (typeof status.blockedCount === 'number') diagnostics.push(tr('autoDjBlocked', 'Gesperrt: {count}', { count: status.blockedCount }));
       autoDjDetail.textContent = [autoDjMessage, diagnostics.join(' · ')].filter(Boolean).join(' · ');
     }
@@ -2365,8 +2509,12 @@
     const visible = giftCatalogFilter
       ? giftCatalogEntries.filter((gift) => gift.name.toLowerCase().includes(giftCatalogFilter.toLowerCase())).length
       : uniqueCount;
-    const localeText = giftCatalogMeta.locales.length ? `Locales: ${giftCatalogMeta.locales.join(', ')}` : 'Locales: default';
-    const regionText = giftCatalogMeta.region ? `Region: ${giftCatalogMeta.region}` : null;
+    const localeText = giftCatalogMeta.locales.length
+      ? tr('giftLocales', 'Katalogsprachen: {locales}', { locales: giftCatalogMeta.locales.join(', ') })
+      : tr('giftLocalesDefault', 'Katalogsprache: automatisch');
+    const regionText = giftCatalogMeta.region
+      ? tr('giftRegion', 'Region: {region}', { region: giftCatalogMeta.region })
+      : null;
     const updatedText = giftCatalogMeta.lastUpdate
       ? tr('giftUpdatedAt', 'Aktualisiert: {date}', { date: new Date(giftCatalogMeta.lastUpdate).toLocaleString() })
       : null;
@@ -2534,10 +2682,10 @@
       .map(
         (ban) => `
         <tr>
-          <td>${escapeHtml(ban.type)}</td>
+          <td>${escapeHtml(banTypeLabel(ban.type))}</td>
           <td>${escapeHtml(ban.value)}</td>
           <td>${escapeHtml(ban.reason || '')}</td>
-          <td><button class="btn ghost small" data-ban-id="${escapeHtml(ban.id)}">${escapeHtml(catalogTr('delete', 'Löschen'))}</button></td>
+          <td><button class="btn ghost small" data-ban-id="${escapeHtml(ban.id)}">${escapeHtml(tr('delete', 'Löschen'))}</button></td>
         </tr>`
       )
       .join('');
@@ -2558,5 +2706,128 @@
     banFeedback.style.color = isError ? '#ef4444' : 'var(--color-text-secondary)';
   }
 
-  init();
+  function captureLocalizedTransientState() {
+    const radioSources = Object.fromEntries(Array.from(
+      playlistRadioSources?.querySelectorAll('[data-radio-playlist-id]') || []
+    ).map((checkbox) => {
+      const id = checkbox.dataset.radioPlaylistId;
+      const escapedId = String(id).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      const weight = playlistRadioSources.querySelector(`[data-radio-weight="${escapedId}"]`);
+      return [id, { enabled: checkbox.checked, ...(weight ? { weight: weight.value } : {}) }];
+    }));
+    return {
+      playlist: selectedPlaylist ? {
+        id: String(selectedPlaylist.id),
+        name: playlistNameInput?.value,
+        mode: playlistModeInput?.value
+      } : null,
+      radioSources,
+      autoDj: {
+        enabled: autoDjEnabled?.checked,
+        mode: autoDjMode?.value,
+        historyPlays: autoDjHistoryPlays?.value,
+        mixHistoryPercent: autoDjMixHistoryPercent?.value,
+        repeatCooldownHours: autoDjRepeatCooldownHours?.value,
+        maxConsecutive: autoDjMaxConsecutive?.value,
+        announce: autoDjAnnounce?.checked,
+        playlistUrls: autoDjPlaylistUrls?.value
+      }
+    };
+  }
+
+  function restoreLocalizedTransientState(snapshot) {
+    if (!snapshot) return;
+    if (snapshot.playlist && String(selectedPlaylist?.id || '') === snapshot.playlist.id) {
+      if (playlistNameInput && !playlistNameInput.disabled) playlistNameInput.value = snapshot.playlist.name || '';
+      if (playlistModeInput && snapshot.playlist.mode) playlistModeInput.value = snapshot.playlist.mode;
+    }
+    Object.entries(snapshot.radioSources || {}).forEach(([id, source]) => {
+      const escapedId = String(id).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      const checkbox = playlistRadioSources?.querySelector(`[data-radio-playlist-id="${escapedId}"]`);
+      const weight = playlistRadioSources?.querySelector(`[data-radio-weight="${escapedId}"]`);
+      if (checkbox) checkbox.checked = Boolean(source.enabled);
+      if (weight && Object.hasOwn(source, 'weight')) weight.value = source.weight;
+    });
+    const autoDj = snapshot.autoDj || {};
+    if (autoDjEnabled && typeof autoDj.enabled === 'boolean') autoDjEnabled.checked = autoDj.enabled;
+    if (autoDjMode && Object.hasOwn(autoDj, 'mode')) autoDjMode.value = autoDj.mode;
+    if (autoDjHistoryPlays && Object.hasOwn(autoDj, 'historyPlays')) autoDjHistoryPlays.value = autoDj.historyPlays;
+    if (autoDjMixHistoryPercent && Object.hasOwn(autoDj, 'mixHistoryPercent')) autoDjMixHistoryPercent.value = autoDj.mixHistoryPercent;
+    if (autoDjRepeatCooldownHours && Object.hasOwn(autoDj, 'repeatCooldownHours')) autoDjRepeatCooldownHours.value = autoDj.repeatCooldownHours;
+    if (autoDjMaxConsecutive && Object.hasOwn(autoDj, 'maxConsecutive')) autoDjMaxConsecutive.value = autoDj.maxConsecutive;
+    if (autoDjAnnounce && typeof autoDj.announce === 'boolean') autoDjAnnounce.checked = autoDj.announce;
+    if (autoDjPlaylistUrls && typeof autoDj.playlistUrls === 'string') autoDjPlaylistUrls.value = autoDj.playlistUrls;
+  }
+
+  const UNSAFE_LOCALE_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+
+  function cloneStaticLocaleNode(value) {
+    if (Array.isArray(value)) return value.map(cloneStaticLocaleNode);
+    if (!value || typeof value !== 'object') return value;
+    const clone = {};
+    Object.keys(value).forEach((key) => {
+      if (!UNSAFE_LOCALE_KEYS.has(key)) clone[key] = cloneStaticLocaleNode(value[key]);
+    });
+    return clone;
+  }
+
+  async function hydrateStaticPluginLocale() {
+    const i18n = window.i18n;
+    const locale = String(i18n?.currentLocale || document.documentElement.lang || 'de').toLowerCase();
+    if (!i18n?.translations || !/^(de|en|es|fr)$/.test(locale)) return false;
+    try {
+      const response = await fetch(`/plugins/music-bot/locales/${locale}.json`, { cache: 'no-store' });
+      if (!response || response.ok === false) return false;
+      const catalog = await response.json();
+      if (!catalog?.music_bot || typeof catalog.music_bot !== 'object') return false;
+      const legacyCatalog = cloneStaticLocaleNode(catalog.music_bot);
+      const localeCatalog = i18n.translations[locale] ||= {};
+      const pluginsCatalog = localeCatalog.plugins ||= {};
+      const pluginCatalog = pluginsCatalog['music-bot'] ||= {};
+      localeCatalog.music_bot = legacyCatalog;
+      pluginCatalog.music_bot = legacyCatalog;
+      return true;
+    } catch (error) {
+      console.warn('[music-bot] Static locale hydration failed', error);
+      return false;
+    }
+  }
+
+  function rerenderLocalizedDynamicSurfaces() {
+    const transientState = captureLocalizedTransientState();
+    window.i18n?.updateDOM?.();
+    renderSetupIssues(currentSetupIssues);
+    renderOnboarding(currentOnboarding, currentSetupIssues);
+    renderNowPlaying(latestNowPlayingTrack);
+    renderQueue(latestQueueTracks, latestQueueLength);
+    renderHistory(latestHistoryTracks);
+    renderPlaylistList();
+    renderPlaylistEditor();
+    renderRadioSources(latestRadioSources);
+    if (latestAutoDjStatus) renderAutoDjStatus(latestAutoDjStatus);
+    if (latestResolver) renderResolverHealth(latestResolver);
+    if (latestHealth) renderHealth(latestHealth);
+    renderGiftCatalogList();
+    restoreLocalizedTransientState(transientState);
+    activeToastRecords.forEach(renderToastRecord);
+  }
+
+  async function handleLanguageChange() {
+    await hydrateStaticPluginLocale();
+    rerenderLocalizedDynamicSurfaces();
+  }
+
+  window.i18n?.onLanguageChange?.(handleLanguageChange);
+  window.i18n?.onChange?.(rerenderLocalizedDynamicSurfaces);
+
+  async function boot() {
+    if (window.i18n?.ready) await window.i18n.ready;
+    await hydrateStaticPluginLocale();
+    window.i18n?.updateDOM?.();
+    await init();
+  }
+
+  boot().catch((error) => {
+    console.error('[music-bot] UI initialization failed', error);
+  });
 })();

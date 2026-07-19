@@ -1,6 +1,7 @@
 const QueueManager = require('../plugins/music-bot/lib/queue-manager');
 const PlaybackEngine = require('../plugins/music-bot/lib/playback-engine');
 const AutoDJ = require('../plugins/music-bot/lib/auto-dj');
+const MusicBotPlugin = require('../plugins/music-bot/main');
 
 function createDbMock() {
   return {
@@ -39,7 +40,77 @@ function createApiMock(db) {
   };
 }
 
+function createRequestPlugin({ state = 'paused', nowPlaying = { id: 'current-track', title: 'Current track' } } = {}) {
+  const api = {
+    getSocketIO: jest.fn(() => ({ emit: jest.fn() })),
+    getDatabase: jest.fn(() => ({})),
+    emit: jest.fn(),
+    log: jest.fn()
+  };
+  const plugin = new MusicBotPlugin(api);
+  const queued = [];
+  const requestedSong = {
+    id: 'requested-track',
+    title: 'Requested track',
+    url: 'https://example.test/requested-track'
+  };
+  plugin.config = {
+    ...plugin.config,
+    playback: { ...plugin.config.playback, autoPlay: true }
+  };
+  plugin.musicResolver = {
+    resolve: jest.fn(async () => ({ success: true, song: requestedSong }))
+  };
+  plugin.queueManager = {
+    addSong: jest.fn((song) => {
+      queued.push(song);
+      return { success: true, song, position: queued.length };
+    })
+  };
+  plugin.playbackEngine = {
+    getState: jest.fn(() => state),
+    getNowPlaying: jest.fn(() => nowPlaying),
+    isPlaying: jest.fn(() => false)
+  };
+  plugin.autoDJ = { onSongRequested: jest.fn() };
+  plugin._invalidateRadioPrefetch = jest.fn();
+  plugin._schedulePreCache = jest.fn();
+  plugin._emitSongAdded = jest.fn();
+  plugin._emitToast = jest.fn();
+  plugin._emitChatResponse = jest.fn();
+  plugin._playNextFromQueue = jest.fn(async () => null);
+  return { plugin, queued, requestedSong };
+}
+
 describe('Music Bot core features', () => {
+  test('keeps dashboard requests queued while paused playback is occupied', async () => {
+    const { plugin, queued, requestedSong } = createRequestPlugin();
+
+    const result = await plugin._handleDashboardRequest('requested track', 'dashboard-user');
+
+    expect(result).toMatchObject({ success: true, position: 1 });
+    expect(queued).toEqual([expect.objectContaining(requestedSong)]);
+    expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
+  });
+
+  test('keeps chat requests queued while paused playback is occupied', async () => {
+    const { plugin, queued, requestedSong } = createRequestPlugin();
+
+    await plugin._handleRequest('requested track', 'chat-user');
+
+    expect(queued).toEqual([expect.objectContaining(requestedSong)]);
+    expect(plugin._emitSongAdded).toHaveBeenCalledWith(expect.objectContaining(requestedSong), 1);
+    expect(plugin._playNextFromQueue).not.toHaveBeenCalled();
+  });
+
+  test('starts an idle dashboard request when AutoPlay is enabled', async () => {
+    const { plugin } = createRequestPlugin({ state: 'idle', nowPlaying: null });
+
+    await plugin._handleDashboardRequest('requested track', 'dashboard-user');
+
+    expect(plugin._playNextFromQueue).toHaveBeenCalledTimes(1);
+  });
+
   test('enforces max requests per user case-insensitively', () => {
     const db = createDbMock();
     const api = createApiMock(db);

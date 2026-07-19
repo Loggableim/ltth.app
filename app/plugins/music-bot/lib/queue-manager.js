@@ -312,11 +312,11 @@ class QueueManager {
 
   _validateSong(song) {
     if (!song || !song.title || !song.url) {
-      return { success: false, error: 'Invalid song data' };
+      return { success: false, error: 'Invalid song data', messageKey: 'queueInvalidSong', params: {} };
     }
 
     if (this.queue.length >= this.queueConfig.maxLength) {
-      return { success: false, error: 'Queue is full' };
+      return { success: false, error: 'Queue is full', messageKey: 'queueFull', params: { maxLength: this.queueConfig.maxLength } };
     }
 
     const configuredMaxSongDuration = Number(this.queueConfig.maxSongDurationSeconds);
@@ -332,12 +332,16 @@ class QueueManager {
     if (hasDuration && (!Number.isFinite(duration) || duration <= 0)) {
       return {
         success: false,
+        messageKey: 'queueDurationUnknown',
+        params: {},
         error: 'Songdauer konnte nicht ermittelt werden. Bitte einen anderen Song wählen.'
       };
     }
     if (hasDuration && duration > maxSongDurationSeconds) {
       return {
         success: false,
+        messageKey: 'queueDurationTooLong',
+        params: { duration: Math.ceil(duration), maxDuration: maxSongDurationSeconds },
         error: `Song ist zu lang (${Math.ceil(duration)}s). Maximum: ${maxSongDurationSeconds}s.`
       };
     }
@@ -349,6 +353,8 @@ class QueueManager {
       if (duplicate) {
         return {
           success: false,
+          messageKey: 'queueDuplicate',
+          params: { position: duplicate.position, title: duplicate.entry.title },
           error: `Song bereits in der Queue (#${duplicate.position} – ${duplicate.entry.title})`,
           duplicate
         };
@@ -364,6 +370,8 @@ class QueueManager {
       if (count >= this.queueConfig.maxPerUser) {
         return {
           success: false,
+          messageKey: 'queueUserLimit',
+          params: { maxPerUser: this.queueConfig.maxPerUser },
           error: `Maximal ${this.queueConfig.maxPerUser} aktive Requests pro User erlaubt.`
         };
       }
@@ -379,6 +387,8 @@ class QueueManager {
           const remaining = Math.ceil(cooldownSeconds - diffSeconds);
           return {
             success: false,
+            messageKey: 'queueCooldown',
+            params: { username: song.requestedBy, remaining },
             error: `@${song.requestedBy}, du kannst in ${remaining} Sekunden wieder requesten.`
           };
         }

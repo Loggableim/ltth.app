@@ -1393,4 +1393,36 @@ describe('Music Bot playback engine lifecycle hardening', () => {
     expect(serialized).not.toContain('cdn.example');
     expect(serialized).not.toContain('token');
   });
+
+  test.each([
+    'webm&rqh=1&expire=999&sig=SECRET',
+    'videoplayback?expire=999&ip=127.0.0.1&signature=SECRET',
+    'media.m3u8?X-Amz-Signature=SECRET&X-Amz-Credential=ACCESS&X-Amz-Expires=999',
+    'recording.flac?session=SECRET',
+    'MPV label &sig=SECRET',
+    'Current media &token=SECRET'
+  ])('uses the canonical title for token-bearing MPV labels: %s', async (mediaTitle) => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    engine.process = { pid: 8484, exitCode: null };
+    engine._ownedPids.add(8484);
+    engine.socket = { destroyed: false };
+    engine.nowPlaying = { title: 'Canonical current track', url: 'https://private.invalid' };
+    engine.state = 'playing';
+    engine._sendCommand = jest.fn(async ([, property]) => ({
+      data: property === 'media-title' ? mediaTitle : 'safe-track.mp3'
+    }));
+
+    const diagnostics = await engine.probe();
+    const serialized = JSON.stringify(diagnostics);
+
+    expect(diagnostics.media.title).toBe('Canonical current track');
+    expect(serialized).not.toContain('SECRET');
+    expect(serialized).not.toContain('expire=999');
+  });
+
+  test('keeps a human song title containing an ampersand', () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+
+    expect(engine._safeMediaTitle('Two Hearts & One Song')).toBe('Two Hearts & One Song');
+  });
 });

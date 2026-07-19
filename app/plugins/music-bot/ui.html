@@ -64,10 +64,13 @@
 
       try {
         if (window.parent && window.parent !== window) {
-          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
-            attributes: true,
-            attributeFilter: ['data-theme']
-          });
+          const parentThemeRoot = window.parent.document?.documentElement;
+          if (parentThemeRoot?.nodeType === 1) {
+            new MutationObserver(syncTheme).observe(parentThemeRoot, {
+              attributes: true,
+              attributeFilter: ['data-theme']
+            });
+          }
         }
       } catch (error) {}
     })();
@@ -75,24 +78,24 @@
     <script src="/js/i18n-client.js"></script>
 </head>
   <body>
-  <div class="container">
-    <header class="header">
+  <div class="musicbot-shell container">
+    <header class="console-header header">
       <div class="hero-art" aria-hidden="true">
         <img class="hero-icon" src="/plugins/music-bot/assets/soundbot.png" alt="">
       </div>
       <div class="header-brand">
         <div class="hero-title-row">
-          <h1 data-i18n="generated.633be8f98e2b">Musik Bot</h1>
-          <div class="status" id="playback-state">Idle</div>
+          <h1 data-i18n="music_bot.ui.shell.title">Musik Bot</h1>
+          <div class="status" id="playback-state" data-i18n="music_bot.ui.player.stateIdle">Bereit</div>
         </div>
-        <p class="subtitle" data-i18n="generated.557a14e79747">Viewer-gesteuerte Musikwiedergabe via TikTok Chat</p>
-        <div class="hero-metrics" aria-label="Music Bot Status">
-          <span class="metric-chip"><strong data-i18n="generated.1497665d7546">MPV Status</strong><em id="hero-mpv-status" data-i18n="generated.cb15f1b7313b">Wird geprueft</em></span>
-          <span class="metric-chip"><strong>Warteschlange</strong><em><span id="hero-queue-count">0</span> Titel</em></span>
-          <span class="metric-chip"><strong>Auto-DJ</strong><em id="hero-autodj-status">Aus</em></span>
+        <p class="subtitle" data-i18n="music_bot.ui.shell.subtitle">Viewer-gesteuerte Musikwiedergabe via TikTok Chat</p>
+        <div class="hero-metrics" aria-label="Music Bot Status" data-i18n-aria-label="music_bot.ui.shell.statusAria">
+          <span class="metric-chip"><strong data-i18n="music_bot.ui.shell.mpvStatus">MPV Status</strong><em id="hero-mpv-status" data-i18n="music_bot.ui.shell.mpvChecking">Wird geprueft</em></span>
+          <span class="metric-chip"><strong data-i18n="music_bot.ui.shell.queueMetric">Warteschlange</strong><em><span id="hero-queue-count">0</span> <span data-i18n="music_bot.ui.shell.tracksUnit">Titel</span></em></span>
+          <span class="metric-chip"><strong data-i18n="music_bot.ui.shell.autoDjMetric">Auto-DJ</strong><em id="hero-autodj-status" data-i18n="music_bot.ui.autoDj.autoDjOff">Aus</em></span>
         </div>
       </div>
-      <div class="header-logo-panel" aria-label="LTTH Music Bot">
+      <div class="header-logo-panel" aria-label="LTTH Music Bot" data-i18n-aria-label="music_bot.ui.shell.logoAria">
         <img class="header-logo" data-brand-logo src="/plugins/music-bot/assets/musicbotlogo.png" alt="LTTH Music Bot">
       </div>
     </header>
@@ -109,35 +112,35 @@
       <div class="onboarding-copy">
         <div class="card-header onboarding-head">
           <div>
-            <p class="eyebrow" data-i18n="generated.a440effc7e4f">First run assistant</p>
-            <h2 data-i18n="generated.28a9a35354c0">Clip richtet deinen Music Bot ein</h2>
-            <p class="text-secondary" data-i18n="generated.ca5a8016868f">Ich zeige dir, wo du die wichtigen Stellen findest und was zuerst erledigt werden sollte.</p>
+            <p class="eyebrow" data-i18n="music_bot.ui.shell.onboardingKicker">First run assistant</p>
+            <h2 data-i18n="music_bot.ui.shell.onboardingTitle">Clip richtet deinen Music Bot ein</h2>
+            <p class="text-secondary" data-i18n="music_bot.ui.shell.onboardingDescription">Ich zeige dir, wo du die wichtigen Stellen findest und was zuerst erledigt werden sollte.</p>
           </div>
-          <span class="pill" id="musicbot-onboarding-status">Erststart</span>
+          <span class="pill" id="musicbot-onboarding-status" data-i18n="music_bot.ui.shell.firstRun">Erststart</span>
         </div>
         <ol class="onboarding-steps" id="musicbot-onboarding-steps"></ol>
         <div class="onboarding-help" id="musicbot-onboarding-help"></div>
         <div class="actions onboarding-actions">
-          <button id="musicbot-onboarding-settings" class="btn primary" type="button" data-i18n="generated.4f1f190d420e">Zu den Einstellungen</button>
-          <button id="musicbot-onboarding-overlay" class="btn ghost" type="button" data-i18n="generated.6ccca3622ad2">OBS Overlay</button>
-          <button id="musicbot-onboarding-complete" class="btn ghost" type="button" data-i18n="generated.2a7f693d9b80">Ich bin fertig</button>
+          <button id="musicbot-onboarding-settings" class="btn primary" type="button" data-i18n="music_bot.ui.shell.settingsLink">Zu den Einstellungen</button>
+          <button id="musicbot-onboarding-overlay" class="btn ghost" type="button" data-i18n="music_bot.ui.shell.overlayLink">OBS Overlay</button>
+          <button id="musicbot-onboarding-complete" class="btn ghost" type="button" data-i18n="music_bot.ui.shell.onboardingDone">Ich bin fertig</button>
         </div>
       </div>
     </section>
 
     <div id="setup-issues-banner" class="setup-banner" style="display:none;">
-      <h3 data-i18n="generated.33ba86e65182">Warnung: Music Bot - Einrichtung erforderlich</h3>
+      <h3 data-i18n="music_bot.ui.shell.setupWarning">Warnung: Music Bot - Einrichtung erforderlich</h3>
       <div id="setup-issues-list"></div>
     </div>
 
-    <section id="musicbot-safety-panel" class="card safety-panel" aria-labelledby="safety-panel-title">
+    <section id="musicbot-safety-panel" class="safety-strip card safety-panel" aria-labelledby="safety-panel-title">
       <div class="card-header">
         <div>
           <p class="section-kicker" data-i18n="music_bot.ui.safety.kicker">Live-Sicherheit</p>
           <h2 id="safety-panel-title" data-i18n="music_bot.ui.safety.title">Soundbot-Kontrolle</h2>
           <p class="text-secondary" data-i18n="music_bot.ui.safety.description">Not-Aus stoppt ausschließlich Soundbot-Prozesse. Die LTTH-App und die Queue bleiben aktiv.</p>
         </div>
-        <span id="safety-lock-status" class="pill safety-status" role="status" aria-live="polite">Status wird geladen</span>
+        <span id="safety-lock-status" class="pill safety-status" role="status" aria-live="polite" data-i18n="music_bot.ui.safety.statusLoading">Status wird geladen</span>
       </div>
       <div class="safety-actions">
         <button id="emergency-stop-btn" class="btn danger" type="button" data-i18n="music_bot.ui.safety.emergencyStop">Not-Aus</button>
@@ -147,58 +150,74 @@
         <button id="health-refresh-btn" class="btn ghost" type="button" data-i18n="music_bot.ui.health.refresh">Health aktualisieren</button>
         <button id="diagnostics-export-btn" class="btn ghost" type="button" data-i18n="music_bot.ui.health.export">Diagnose exportieren</button>
       </div>
-      <div class="health-grid" aria-label="Soundbot Health">
-        <div><span data-i18n="music_bot.ui.health.state">Zustand</span><strong id="health-state">Unbekannt</strong></div>
+      <div class="health-grid" aria-label="Soundbot Health" data-i18n-aria-label="music_bot.ui.health.ariaLabel">
+        <div><span data-i18n="music_bot.ui.health.state">Zustand</span><strong id="health-state" data-i18n="music_bot.ui.health.unknown">Unbekannt</strong></div>
         <div><span data-i18n="music_bot.ui.health.players">Player A/B</span><strong id="health-players">– / –</strong></div>
-        <div><span data-i18n="music_bot.ui.health.mpv">MPV / IPC</span><strong id="health-mpv">Unbekannt</strong></div>
+        <div><span data-i18n="music_bot.ui.health.mpv">MPV / IPC</span><strong id="health-mpv" data-i18n="music_bot.ui.health.unknown">Unbekannt</strong></div>
         <div><span data-i18n="music_bot.ui.health.ipcLatency">IPC-Latenz</span><strong id="health-ipc-latency">–</strong></div>
         <div><span data-i18n="music_bot.ui.health.mediaTitle">Tatsächlicher MPV-Titel</span><strong id="health-media-title">–</strong></div>
-        <div><span data-i18n="music_bot.ui.health.resolver">Resolver</span><strong id="health-resolver">0 aktiv / 0 wartend</strong></div>
-        <div><span data-i18n="music_bot.ui.health.cache">Cache</span><strong id="health-cache">0 B / 0 Dateien</strong></div>
-        <div><span data-i18n="music_bot.ui.health.lastError">Letzter Fehler</span><strong id="health-last-error">Keiner</strong></div>
+        <div><span data-i18n="music_bot.ui.health.resolver">Resolver</span><strong id="health-resolver" data-i18n="music_bot.ui.health.resolverIdle">0 aktiv / 0 wartend</strong></div>
+        <div><span data-i18n="music_bot.ui.health.cache">Cache</span><strong id="health-cache" data-i18n="music_bot.ui.health.cacheEmpty">0 B / 0 Dateien</strong></div>
+        <div><span data-i18n="music_bot.ui.health.lastError">Letzter Fehler</span><strong id="health-last-error" data-i18n="music_bot.ui.health.none">Keiner</strong></div>
         <div><span data-i18n="music_bot.ui.health.checkedAt">Prüfzeit</span><strong id="health-checked-at">–</strong></div>
       </div>
       <p id="safety-feedback" class="feedback" aria-live="polite"></p>
     </section>
 
-    <section class="musicbot-stage tab-content active" data-tab-content="player">
-      <section class="card player-card">
+    <div class="console-workspace">
+      <nav class="console-nav tab-bar" id="tab-bar" role="tablist" aria-label="Soundbot sections" data-i18n-aria-label="music_bot.ui.tabs.ariaLabel">
+        <button id="musicbot-tab-player" class="tab active" type="button" role="tab" data-tab="player" aria-controls="musicbot-panel-player" aria-selected="true" tabindex="0" data-i18n="music_bot.ui.tabs.player">Player</button>
+        <button id="musicbot-tab-queue" class="tab" type="button" role="tab" data-tab="queue" aria-controls="musicbot-panel-queue" aria-selected="false" tabindex="-1" data-i18n="music_bot.ui.tabs.queue">Queue</button>
+        <button id="musicbot-tab-autodj" class="tab" type="button" role="tab" data-tab="autodj" aria-controls="musicbot-panel-autodj" aria-selected="false" tabindex="-1" data-i18n="music_bot.ui.tabs.autoDj">Auto-DJ</button>
+        <button id="musicbot-tab-history" class="tab" type="button" role="tab" data-tab="history" aria-controls="musicbot-panel-history" aria-selected="false" tabindex="-1" data-i18n="music_bot.ui.tabs.history">History</button>
+        <button id="musicbot-tab-catalog" class="tab" type="button" role="tab" data-tab="catalog" aria-controls="musicbot-panel-catalog" aria-selected="false" tabindex="-1" data-i18n="music_bot.ui.tabs.catalog">Katalog</button>
+        <button id="musicbot-tab-playlists" class="tab" type="button" role="tab" data-tab="playlists" aria-controls="musicbot-panel-playlists" aria-selected="false" tabindex="-1" data-i18n="music_bot.ui.tabs.playlists">Playlists</button>
+        <button id="musicbot-tab-settings" class="tab" type="button" role="tab" data-tab="settings" aria-controls="musicbot-panel-settings" aria-selected="false" tabindex="-1" data-i18n="music_bot.ui.tabs.settings">Einstellungen</button>
+        <button id="musicbot-tab-aliases" class="tab" type="button" role="tab" data-tab="aliases" aria-controls="musicbot-panel-aliases" aria-selected="false" tabindex="-1" data-i18n="music_bot.ui.tabs.aliases">Aliases</button>
+        <button id="musicbot-tab-moderation" class="tab" type="button" role="tab" data-tab="moderation" aria-controls="musicbot-panel-moderation" aria-selected="false" tabindex="-1" data-i18n="music_bot.ui.tabs.moderation">Moderation</button>
+        <button id="musicbot-tab-overlay" class="tab" type="button" role="tab" data-tab="overlay" aria-controls="musicbot-panel-overlay" aria-selected="false" tabindex="-1" data-i18n="music_bot.ui.tabs.overlay">Overlay</button>
+      </nav>
+
+      <main class="console-main">
+        <section id="musicbot-panel-player" class="musicbot-stage tab-content active" data-tab-content="player" role="tabpanel" aria-labelledby="musicbot-tab-player" aria-hidden="false" tabindex="0">
+          <section class="card player-card">
         <div class="card-header">
           <div>
-            <p class="section-kicker" data-i18n="generated.c42bdd1ca923">Aktuelle Wiedergabe</p>
-            <h2 data-i18n="generated.54de251bd32d">Player &amp; Suche</h2>
-            <p class="text-secondary" data-i18n="generated.b787d1a146d7">YouTube-Link einfuegen oder Stichwort suchen</p>
+            <p class="section-kicker" data-i18n="music_bot.ui.player.kicker">Aktuelle Wiedergabe</p>
+            <h2 data-i18n="music_bot.ui.player.title">Player &amp; Suche</h2>
+            <p class="text-secondary" data-i18n="music_bot.ui.player.description">YouTube-Link einfuegen oder Stichwort suchen</p>
           </div>
           <div class="pill" id="preview-source">YouTube</div>
         </div>
 
-        <div class="player-search-bar">
-          <input type="text" id="search-input" placeholder="YouTube-Link einfuegen oder Suchwort eingeben..." autocomplete="off">
-          <button id="search-btn" class="btn ghost" type="button">Suchen</button>
-          <button id="request-btn" class="btn primary" type="button" data-i18n="generated.3511e8d6a5b1">Song anfordern</button>
-        </div>
+            <div class="player-search-bar">
+              <label class="sr-only" for="search-input" data-i18n="music_bot.ui.player.searchLabel">YouTube-Link oder Suchbegriff</label>
+              <input type="text" id="search-input" placeholder="YouTube-Link einfuegen oder Suchwort eingeben..." data-i18n-placeholder="music_bot.ui.player.searchPlaceholder" autocomplete="off">
+              <button id="search-btn" class="btn ghost" type="button" data-i18n="music_bot.ui.player.search">Suchen</button>
+              <button id="request-btn" class="btn primary" type="button" data-i18n="music_bot.ui.player.requestSong">Song anfordern</button>
+            </div>
         <div id="search-feedback" class="feedback"></div>
 
         <div class="player-main">
           <div class="player-embed-wrapper">
             <div class="player-frame" id="player-frame-box">
               <div class="player-placeholder" id="player-placeholder">
-                <span data-i18n="generated.20724e32dc2f">YouTube-Link einfuegen oder oben suchen</span>
+                <span data-i18n="music_bot.ui.player.previewPlaceholder">YouTube-Link einfuegen oder oben suchen</span>
               </div>
-              <iframe id="preview-frame" title="YouTube Vorschau" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+              <iframe id="preview-frame" title="YouTube Vorschau" data-i18n-title="music_bot.ui.player.previewTitle" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
             </div>
             <label class="preview-volume-control" for="preview-volume-input">
-              <span data-i18n="generated.1045242d1313">Vorschau-Lautstärke</span>
-              <input type="range" id="preview-volume-input" min="0" max="100" value="50" aria-label="Vorschau-Lautstärke">
+              <span data-i18n="music_bot.ui.player.previewVolume">Vorschau-Lautstärke</span>
+              <input type="range" id="preview-volume-input" min="0" max="100" value="50" aria-label="Vorschau-Lautstärke" data-i18n-aria-label="music_bot.ui.player.previewVolume">
               <output id="preview-volume-value" for="preview-volume-input">50</output>
             </label>
           </div>
           <div class="player-info">
             <div id="now-playing" class="now-playing empty">
-              <p data-i18n="generated.4c8f3a1cc8d9">Aktuell laeuft nichts.</p>
+              <p data-i18n="music_bot.ui.player.nowPlayingEmpty">Aktuell laeuft nichts.</p>
             </div>
             <div class="np-progress-wrapper" id="np-progress-wrapper" style="display:none">
-              <label class="sr-only" for="np-seek-input" data-i18n="music_bot.ui.catalog.seek">Wiedergabeposition</label>
+              <label class="sr-only" for="np-seek-input" data-i18n="music_bot.ui.player.seek">Wiedergabeposition</label>
               <input class="np-progress-bar" id="np-seek-input" type="range" min="0" max="0" step="1" value="0" disabled aria-valuetext="0:00 von 0:00">
               <div class="np-time">
                 <span id="np-elapsed">0:00</span>
@@ -206,10 +225,10 @@
               </div>
             </div>
             <div class="player-controls">
-              <button id="pause-btn" class="btn icon-btn ghost" data-playback-action title="Pause" aria-label="Pause">Pause</button>
-              <button id="resume-btn" class="btn icon-btn primary" data-playback-action title="Resume" aria-label="Resume">Resume</button>
-              <button id="skip-btn" class="btn icon-btn ghost" data-playback-action title="Skip" aria-label="Skip">Skip</button>
-              <button id="clear-btn" class="btn danger" data-i18n="generated.824ced1897ed">Queue leeren</button>
+              <button id="pause-btn" class="btn icon-btn ghost" data-playback-action title="Pause" data-i18n-title="music_bot.ui.player.pause" aria-label="Pause" data-i18n-aria-label="music_bot.ui.player.pause" data-i18n="music_bot.ui.player.pause">Pause</button>
+              <button id="resume-btn" class="btn icon-btn primary" data-playback-action title="Resume" data-i18n-title="music_bot.ui.player.resume" aria-label="Resume" data-i18n-aria-label="music_bot.ui.player.resume" data-i18n="music_bot.ui.player.resume">Fortsetzen</button>
+              <button id="skip-btn" class="btn icon-btn ghost" data-playback-action title="Skip" data-i18n-title="music_bot.ui.player.skip" aria-label="Skip" data-i18n-aria-label="music_bot.ui.player.skip" data-i18n="music_bot.ui.player.skip">Überspringen</button>
+              <button id="clear-btn" class="btn danger" data-i18n="music_bot.ui.queue.clear">Queue leeren</button>
             </div>
           </div>
         </div>
@@ -217,21 +236,21 @@
         <div class="player-bottom">
           <div class="player-sliders">
             <div class="slider-group">
-              <label for="master-volume-input" data-i18n="generated.50b5a15b91a8">Master-Lautstärke (Music Bot)</label>
+              <label for="master-volume-input" data-i18n="music_bot.ui.player.masterVolume">Master-Lautstärke (Music Bot)</label>
               <div class="slider-row">
                 <input type="range" id="master-volume-input" min="0" max="100" value="100">
                 <span id="master-volume-value">100</span>
               </div>
             </div>
             <div class="slider-group">
-              <label for="volume-input" data-i18n="generated.ec983dd49341">Quell-Lautstärke (Music Bot)</label>
+              <label for="volume-input" data-i18n="music_bot.ui.player.sourceVolume">Quell-Lautstärke (Music Bot)</label>
               <div class="slider-row">
                 <input type="range" id="volume-input" min="0" max="100" value="50">
                 <span id="volume-value">50</span>
               </div>
             </div>
             <div class="slider-group">
-              <label for="crossfade-input" data-i18n="generated.8404561914dd">Crossfade (Sek.)</label>
+              <label for="crossfade-input" data-i18n="music_bot.ui.player.crossfadeSeconds">Crossfade (Sek.)</label>
               <div class="slider-row">
                 <input type="range" id="crossfade-input" min="0" max="10" value="3" step="1">
                 <span id="crossfade-value">3s</span>
@@ -241,48 +260,38 @@
         </div>
 
         <div id="request-feedback" class="feedback"></div>
-        <form id="request-form" style="display:none">
-          <input type="text" id="request-input">
-        </form>
-      </section>
+            <form id="request-form" style="display:none">
+              <label class="sr-only" for="request-input" data-i18n="music_bot.ui.player.requestLabel">Song-Anfrage</label>
+              <input type="text" id="request-input">
+            </form>
+          </section>
+        </section>
 
-      <section class="card queue-side-card" id="queue-panel">
-        <div class="card-header">
-          <div>
-            <p class="section-kicker">Warteschlange</p>
-            <h2>Queue</h2>
-            <p class="text-secondary" data-i18n="generated.37be34ffafaf">Aktuelle Warteschlange (Drag &amp; Drop zum Sortieren)</p>
-          </div>
-          <span id="queue-length" class="pill">0</span>
-        </div>
-        <div id="queue-list" class="list empty">
-          <div class="queue-empty-state">
-            <img src="/plugins/music-bot/assets/soundbot.png" alt="" aria-hidden="true">
-            <strong data-i18n="generated.8cd67ecb851b">Die Warteschlange ist leer</strong>
-            <p data-i18n="generated.0cc885128306">Sei der/die Erste und fordere einen Song an.</p>
-          </div>
-        </div>
-      </section>
-    </section>
+        <section id="musicbot-panel-queue" class="tab-content" data-tab-content="queue" role="tabpanel" aria-labelledby="musicbot-tab-queue" aria-hidden="true" tabindex="0" hidden>
+          <section class="card queue-side-card" id="queue-panel">
+            <div class="card-header">
+              <div>
+                <p class="section-kicker" data-i18n="music_bot.ui.queue.kicker">Warteschlange</p>
+                <h2 data-i18n="music_bot.ui.queue.title">Queue</h2>
+                <p class="text-secondary" data-i18n="music_bot.ui.queue.description">Aktuelle Warteschlange (Drag &amp; Drop zum Sortieren)</p>
+              </div>
+              <span id="queue-length" class="pill">0</span>
+            </div>
+            <div id="queue-list" class="list empty">
+              <div class="queue-empty-state">
+                <img src="/plugins/music-bot/assets/soundbot.png" alt="" aria-hidden="true">
+                <strong data-i18n="music_bot.ui.queue.emptyTitle">Die Warteschlange ist leer</strong>
+                <p data-i18n="music_bot.ui.queue.emptyHint">Sei der/die Erste und fordere einen Song an.</p>
+              </div>
+            </div>
+          </section>
+        </section>
 
-    <nav class="tab-bar" id="tab-bar">
-      <button class="tab active" data-tab="player">Player</button>
-      <button class="tab" data-tab="queue">Queue</button>
-      <button class="tab" data-tab="settings">Einstellungen</button>
-      <button class="tab" data-tab="autodj">Auto-DJ</button>
-      <button class="tab" data-tab="aliases">Aliases</button>
-      <button class="tab" data-tab="moderation">Moderation</button>
-      <button class="tab" data-tab="overlay">Overlay</button>
-      <button class="tab" data-tab="history" data-i18n="music_bot.ui.catalog.historyTab">History</button>
-      <button class="tab" data-tab="catalog" data-i18n="music_bot.ui.catalog.catalogTab">Katalog</button>
-      <button class="tab" data-tab="playlists" data-i18n="music_bot.ui.catalog.playlistsTab">Playlists</button>
-    </nav>
-
-    <section class="card tab-content" data-tab-content="settings">
+        <section id="musicbot-panel-settings" class="card tab-content" data-tab-content="settings" role="tabpanel" aria-labelledby="musicbot-tab-settings" aria-hidden="true" tabindex="0" hidden>
       <div class="card-header">
         <div>
-          <h2>Einstellungen</h2>
-          <p class="text-secondary" data-i18n="generated.b7ff172a8bc6">System, Requests und giftbasierte Regeln in getrennten Bereichen</p>
+          <h2 data-i18n="music_bot.ui.settings.title">Einstellungen</h2>
+          <p class="text-secondary" data-i18n="music_bot.ui.settings.description">System, Requests und giftbasierte Regeln in getrennten Bereichen</p>
         </div>
       </div>
 
@@ -291,37 +300,37 @@
           <section class="settings-card">
             <div class="settings-section-header">
               <div>
-                <h3 data-i18n="generated.b03f1cac82a9">System &amp; Playback</h3>
-                <p class="text-secondary" data-i18n="generated.b56b25fccc21">Erkennung, Limits und lokale Player-Pfade</p>
+                <h3 data-i18n="music_bot.ui.settings.systemTitle">System &amp; Playback</h3>
+                <p class="text-secondary" data-i18n="music_bot.ui.settings.systemDescription">Erkennung, Limits und lokale Player-Pfade</p>
               </div>
             </div>
             <div class="settings-grid">
               <label class="field">
-                <span data-i18n="generated.6e827b2f3e77">Duplicate Detection</span>
+                <span data-i18n="music_bot.ui.settings.duplicateDetection">Duplicate Detection</span>
                 <select id="duplicate-detection">
-                  <option value="strict">Strict</option>
-                  <option value="fuzzy">Fuzzy</option>
-                  <option value="off">Off</option>
+                  <option value="strict" data-i18n="music_bot.ui.settings.strict">Strict</option>
+                  <option value="fuzzy" data-i18n="music_bot.ui.settings.fuzzy">Fuzzy</option>
+                  <option value="off" data-i18n="music_bot.ui.settings.off">Off</option>
                 </select>
               </label>
               <label class="field">
-                <span data-i18n="generated.8c665abaeea6">Cooldown (Sekunden)</span>
+                <span data-i18n="music_bot.ui.settings.cooldownSeconds">Cooldown (Sekunden)</span>
                 <input type="number" id="cooldown-seconds" min="0" value="30">
               </label>
               <label class="field">
-                <span data-i18n="generated.b437f3a83349">Maximale Songlänge (Sekunden)</span>
+                <span data-i18n="music_bot.ui.settings.maxSongDuration">Maximale Songlänge (Sekunden)</span>
                 <input type="number" id="max-song-duration-seconds" min="30" max="7200" value="360">
-                <small class="text-secondary" data-i18n="generated.427b41fec4d0">Blockiert zu lange Songs vor dem Queue-Add.</small>
+                <small class="text-secondary" data-i18n="music_bot.ui.settings.maxSongDurationHint">Blockiert zu lange Songs vor dem Queue-Add.</small>
               </label>
               <label class="field">
-                <span data-i18n="generated.bd7ce5862361">yt-dlp Pfad</span>
-                <input type="text" id="ytdlp-path" placeholder="z.B. /usr/local/bin/yt-dlp">
-                <small class="text-secondary" data-i18n="generated.56eae40249fe">Benötigt für YouTube/SoundCloud. Standard: yt-dlp</small>
+                <span data-i18n="music_bot.ui.settings.ytdlpPath">yt-dlp Pfad</span>
+                <input type="text" id="ytdlp-path" placeholder="z.B. /usr/local/bin/yt-dlp" data-i18n-placeholder="music_bot.ui.settings.ytdlpPlaceholder">
+                <small class="text-secondary" data-i18n="music_bot.ui.settings.ytdlpHint">Benötigt für YouTube/SoundCloud. Standard: yt-dlp</small>
               </label>
               <label class="field">
-                <span data-i18n="generated.320d0e62330e">mpv Pfad</span>
-                <input type="text" id="mpv-path" placeholder="z.B. C:\tools\mpv\mpv.exe oder /usr/bin/mpv">
-                <small class="text-secondary" data-i18n="generated.96c9702085df">Benötigt für die Audio-Wiedergabe. Standard: mpv</small>
+                <span data-i18n="music_bot.ui.settings.mpvPath">mpv Pfad</span>
+                <input type="text" id="mpv-path" placeholder="z.B. C:\tools\mpv\mpv.exe oder /usr/bin/mpv" data-i18n-placeholder="music_bot.ui.settings.mpvPlaceholder">
+                <small class="text-secondary" data-i18n="music_bot.ui.settings.mpvHint">Benötigt für die Audio-Wiedergabe. Standard: mpv</small>
               </label>
             </div>
           </section>
@@ -329,50 +338,50 @@
           <section class="settings-card">
             <div class="settings-section-header">
               <div>
-                <h3>Gift-Regeln</h3>
-                <p class="text-secondary" data-i18n="generated.96935960ec0d">Regeln, die direkt an Gifts gebunden sind</p>
+                <h3 data-i18n="music_bot.ui.settings.giftRulesTitle">Gift-Regeln</h3>
+                <p class="text-secondary" data-i18n="music_bot.ui.settings.giftRulesDescription">Regeln, die direkt an Gifts gebunden sind</p>
               </div>
             </div>
             <div class="settings-grid">
               <label class="checkbox-field span-2">
                 <input type="checkbox" id="cooldown-bypass-gifts">
-                <span data-i18n="generated.cd5004efcfb2">Cooldown für Gifts überspringen</span>
+                <span data-i18n="music_bot.ui.settings.cooldownGiftBypass">Cooldown für Gifts überspringen</span>
               </label>
               <label class="field span-2">
-                <span data-i18n="generated.e157e7241ba5">Skip-Immunity Gifts (Komma oder Zeile)</span>
-                <textarea id="skip-immunity-gifts" rows="2" placeholder="Rose, Garnele"></textarea>
+                <span data-i18n="music_bot.ui.settings.skipImmunityGifts">Skip-Immunity Gifts (Komma oder Zeile)</span>
+                <textarea id="skip-immunity-gifts" rows="2" placeholder="Rose, Garnele" data-i18n-placeholder="music_bot.ui.settings.skipImmunityPlaceholder"></textarea>
               </label>
               <label class="checkbox-field">
                 <input type="checkbox" id="require-superfan">
-                <span data-i18n="generated.e41c9aa2ef99">Nur Superfans dürfen Songs anfragen 🎵</span>
+                <span data-i18n="music_bot.ui.settings.superfansOnly">Nur Superfans dürfen Songs anfragen 🎵</span>
               </label>
               <label class="checkbox-field">
                 <input type="checkbox" id="like-gate-enabled">
-                <span data-i18n="generated.7c0fefe8a2bf">Like-Gating für !sr aktivieren</span>
+                <span data-i18n="music_bot.ui.settings.likeGate">Like-Gating für !sr aktivieren</span>
               </label>
               <label class="field">
-                <span data-i18n="generated.e87db0d6d793">Mindestanzahl Likes pro User</span>
+                <span data-i18n="music_bot.ui.settings.minLikes">Mindestanzahl Likes pro User</span>
                 <input type="number" id="min-likes-per-user" min="1" value="1">
               </label>
               <label class="checkbox-field">
                 <input type="checkbox" id="pay-to-play-enabled">
-                <span data-i18n="generated.db73ec9bb77f">Pay-to-Play aktivieren (Gift/Coin Pflicht für !sr)</span>
+                <span data-i18n="music_bot.ui.settings.payToPlay">Pay-to-Play aktivieren (Gift/Coin Pflicht für !sr)</span>
               </label>
               <label class="field span-2">
-                <span data-i18n="generated.f695bcb02956">Pay-to-Play Gifts (Komma oder Zeile)</span>
-                <textarea id="pay-to-play-gifts" rows="2" placeholder="Rose, GG"></textarea>
+                <span data-i18n="music_bot.ui.settings.payToPlayGifts">Pay-to-Play Gifts (Komma oder Zeile)</span>
+                <textarea id="pay-to-play-gifts" rows="2" placeholder="Rose, GG" data-i18n-placeholder="music_bot.ui.settings.payToPlayPlaceholder"></textarea>
               </label>
               <label class="field">
-                <span data-i18n="generated.8d6bc6fd81b5">Pay-to-Play Mindestcoins pro Request</span>
+                <span data-i18n="music_bot.ui.settings.payToPlayMinCoins">Pay-to-Play Mindestcoins pro Request</span>
                 <input type="number" id="pay-to-play-min-coins" min="0" value="0">
               </label>
               <label class="checkbox-field">
                 <input type="checkbox" id="pay-to-skip-enabled">
-                <span data-i18n="generated.3540f7cfb31a">Pay-to-Skip aktivieren</span>
+                <span data-i18n="music_bot.ui.settings.payToSkip">Pay-to-Skip aktivieren</span>
               </label>
               <label class="field span-2">
-                <span data-i18n="generated.0c876e25a3e3">Pay-to-Skip Gifts (Komma oder Zeile)</span>
-                <textarea id="pay-to-skip-gifts" rows="2" placeholder="GG"></textarea>
+                <span data-i18n="music_bot.ui.settings.payToSkipGifts">Pay-to-Skip Gifts (Komma oder Zeile)</span>
+                <textarea id="pay-to-skip-gifts" rows="2" placeholder="GG" data-i18n-placeholder="music_bot.ui.settings.payToSkipPlaceholder"></textarea>
               </label>
             </div>
           </section>
@@ -381,255 +390,255 @@
         <aside class="settings-card gift-catalog-card">
           <div class="settings-section-header">
             <div>
-              <h3>Geschenkekatalog</h3>
-              <p class="text-secondary" data-i18n="generated.180cbedec72b">Wähle Gifts aus und übernimm sie gezielt in die Regeln links</p>
+              <h3 data-i18n="music_bot.ui.settings.giftCatalogTitle">Geschenkekatalog</h3>
+              <p class="text-secondary" data-i18n="music_bot.ui.settings.giftCatalogDescription">Wähle Gifts aus und übernimm sie gezielt in die Regeln links</p>
             </div>
             <div class="catalog-meta">
-              <span id="gift-catalog-count" class="pill" data-i18n="generated.0fa7f85f99d5">0 Gifts</span>
-              <button id="gift-catalog-refresh" type="button" class="btn ghost small" data-i18n="music_bot.ui.actions.refresh">Aktualisieren</button>
+              <span id="gift-catalog-count" class="pill" data-i18n="music_bot.ui.settings.giftsCount">0 Gifts</span>
+              <button id="gift-catalog-refresh" type="button" class="btn ghost small" data-i18n="music_bot.ui.settings.refresh">Aktualisieren</button>
             </div>
           </div>
 
           <div class="catalog-controls">
             <label class="field catalog-search">
-              <span>Filter</span>
-              <input type="search" id="gift-catalog-search" placeholder="Gift-Namen filtern">
+              <span data-i18n="music_bot.ui.settings.filter">Filter</span>
+              <input type="search" id="gift-catalog-search" placeholder="Gift-Namen filtern" data-i18n-placeholder="music_bot.ui.settings.giftFilterPlaceholder">
             </label>
             <div class="catalog-actions">
-              <button id="gift-catalog-apply-pay-to-play" type="button" class="btn small" data-i18n="generated.ee2536f07ce4">In Pay-to-Play</button>
-              <button id="gift-catalog-apply-pay-to-skip" type="button" class="btn small" data-i18n="generated.bf7c283a0336">In Pay-to-Skip</button>
-              <button id="gift-catalog-apply-skip-immunity" type="button" class="btn small" data-i18n="generated.4f0b233ae79c">In Skip-Immunity</button>
+              <button id="gift-catalog-apply-pay-to-play" type="button" class="btn small" data-i18n="music_bot.ui.settings.applyPayToPlay">In Pay-to-Play</button>
+              <button id="gift-catalog-apply-pay-to-skip" type="button" class="btn small" data-i18n="music_bot.ui.settings.applyPayToSkip">In Pay-to-Skip</button>
+              <button id="gift-catalog-apply-skip-immunity" type="button" class="btn small" data-i18n="music_bot.ui.settings.applySkipImmunity">In Skip-Immunity</button>
             </div>
-            <p id="gift-catalog-status" class="text-secondary catalog-status" data-i18n="generated.53b9be95b2fa">Noch nicht geladen.</p>
+            <p id="gift-catalog-status" class="text-secondary catalog-status" data-i18n="music_bot.ui.settings.notLoaded">Noch nicht geladen.</p>
           </div>
 
           <label class="field catalog-list-field">
-            <span data-i18n="generated.100549dc29ba">Geschenkekatalog (Mehrfachauswahl)</span>
+            <span data-i18n="music_bot.ui.settings.multiSelectLabel">Geschenkekatalog (Mehrfachauswahl)</span>
             <select id="gift-catalog-list" size="12" multiple></select>
-            <small class="text-secondary" data-i18n="generated.d4b3fb427f29">Mehrfachauswahl funktioniert mit Strg/Shift. Die Buttons übernehmen die Auswahl in die passende Regel.</small>
+            <small class="text-secondary" data-i18n="music_bot.ui.settings.multiSelectHint">Mehrfachauswahl funktioniert mit Strg/Shift. Die Buttons übernehmen die Auswahl in die passende Regel.</small>
           </label>
         </aside>
       </div>
 
       <div class="actions settings-actions">
-        <button id="settings-save" class="btn primary" data-i18n="generated.2b34fd077560">Einstellungen speichern</button>
+        <button id="settings-save" class="btn primary" data-i18n="music_bot.ui.settings.save">Einstellungen speichern</button>
         <div id="settings-feedback" class="feedback"></div>
       </div>
     </section>
 
-    <section class="card tab-content" data-tab-content="overlay">
+        <section id="musicbot-panel-overlay" class="card tab-content" data-tab-content="overlay" role="tabpanel" aria-labelledby="musicbot-tab-overlay" aria-hidden="true" tabindex="0" hidden>
       <div class="card-header">
         <div>
-          <h2 data-i18n="generated.2e66eee70634">OBS Overlay</h2>
-          <p class="text-secondary" data-i18n="generated.2aaaa1ffb283">Browser Source URL fuer OBS / Streamlabs</p>
+          <h2 data-i18n="music_bot.ui.overlay.title">OBS Overlay</h2>
+          <p class="text-secondary" data-i18n="music_bot.ui.overlay.description">Browser Source URL fuer OBS / Streamlabs</p>
         </div>
       </div>
       <div class="form-grid">
         <label class="field">
-          <span>Design</span>
+          <span data-i18n="music_bot.ui.overlay.design">Design</span>
           <select id="overlay-design">
-            <option value="compact" data-i18n="generated.62852e45b7ad">Compact (Standard)</option>
-            <option value="fullwidth" data-i18n="generated.3d1442efef86">Fullwidth (Banner)</option>
-            <option value="minimal" data-i18n="generated.6af8b4c6d663">Minimal (Text)</option>
-            <option value="card" data-i18n="generated.1e763beef841">Card (Grosses Widget)</option>
+            <option value="compact" data-i18n="music_bot.ui.overlay.compact">Compact (Standard)</option>
+            <option value="fullwidth" data-i18n="music_bot.ui.overlay.fullwidth">Fullwidth (Banner)</option>
+            <option value="minimal" data-i18n="music_bot.ui.overlay.minimalDesign">Minimal (Text)</option>
+            <option value="card" data-i18n="music_bot.ui.overlay.card">Card (Grosses Widget)</option>
           </select>
         </label>
         <label class="field">
-          <span>Theme</span>
+          <span data-i18n="music_bot.ui.overlay.theme">Theme</span>
           <select id="overlay-theme">
-            <option value="default" data-i18n="generated.fc5257d82e62">Default (Standard)</option>
-            <option value="cyberpunk">Cyberpunk</option>
-            <option value="minimal">Minimal</option>
-            <option value="neon">Neon</option>
+            <option value="default" data-i18n="music_bot.ui.overlay.defaultTheme">Default (Standard)</option>
+            <option value="cyberpunk" data-i18n="music_bot.ui.overlay.cyberpunk">Cyberpunk</option>
+            <option value="minimal" data-i18n="music_bot.ui.overlay.minimal">Minimal</option>
+            <option value="neon" data-i18n="music_bot.ui.overlay.neon">Neon</option>
           </select>
         </label>
         <label class="field">
-          <span>Position</span>
+          <span data-i18n="music_bot.ui.overlay.position">Position</span>
           <select id="overlay-position">
-            <option value="bottom-left" data-i18n="generated.91348f4c2a2b">Bottom Left</option>
-            <option value="bottom-right" data-i18n="generated.fa7748226534">Bottom Right</option>
-            <option value="bottom-center" data-i18n="generated.a0984a8ca429">Bottom Center</option>
-            <option value="top-left" data-i18n="generated.bedba235250e">Top Left</option>
-            <option value="top-right" data-i18n="generated.bd2e2289ec45">Top Right</option>
-            <option value="top-center" data-i18n="generated.a85278ed43b5">Top Center</option>
+            <option value="bottom-left" data-i18n="music_bot.ui.overlay.bottomLeft">Bottom Left</option>
+            <option value="bottom-right" data-i18n="music_bot.ui.overlay.bottomRight">Bottom Right</option>
+            <option value="bottom-center" data-i18n="music_bot.ui.overlay.bottomCenter">Bottom Center</option>
+            <option value="top-left" data-i18n="music_bot.ui.overlay.topLeft">Top Left</option>
+            <option value="top-right" data-i18n="music_bot.ui.overlay.topRight">Top Right</option>
+            <option value="top-center" data-i18n="music_bot.ui.overlay.topCenter">Top Center</option>
           </select>
         </label>
         <label class="field">
-          <span>Overlay-URL</span>
+          <span data-i18n="music_bot.ui.overlay.url">Overlay-URL</span>
           <div style="display:flex;gap:8px;align-items:center">
             <input type="text" id="overlay-url" readonly style="flex:1;font-size:12px">
-            <button id="overlay-copy" class="btn ghost" type="button">Kopieren</button>
-            <button id="overlay-open" class="btn ghost" type="button">Oeffnen</button>
+            <button id="overlay-copy" class="btn ghost" type="button" data-i18n="music_bot.ui.overlay.copy">Kopieren</button>
+            <button id="overlay-open" class="btn ghost" type="button" data-i18n="music_bot.ui.overlay.open">Öffnen</button>
           </div>
         </label>
       </div>
     </section>
 
-    <section class="card tab-content" data-tab-content="autodj">
+        <section id="musicbot-panel-autodj" class="card tab-content" data-tab-content="autodj" role="tabpanel" aria-labelledby="musicbot-tab-autodj" aria-hidden="true" tabindex="0" hidden>
       <div class="card-header">
         <div>
-          <h2>Auto-DJ</h2>
-          <p class="text-secondary" data-i18n="generated.c385ebc60c9c">Startet bei freier Queue automatisch und bevorzugt deine History.</p>
+          <h2 data-i18n="music_bot.ui.autoDj.title">Auto-DJ</h2>
+          <p class="text-secondary" data-i18n="music_bot.ui.autoDj.description">Startet bei freier Queue automatisch und bevorzugt deine History.</p>
         </div>
-        <span id="auto-dj-status" class="pill">Deaktiviert</span>
+        <span id="auto-dj-status" class="pill" data-i18n="music_bot.ui.autoDj.autoDjDisabled">Deaktiviert</span>
       </div>
       <div class="form-grid">
         <label class="checkbox-field">
           <input type="checkbox" id="auto-dj-enabled">
-          <span data-i18n="generated.833614ab6561">Auto-DJ aktivieren</span>
+          <span data-i18n="music_bot.ui.autoDj.enable">Auto-DJ aktivieren</span>
         </label>
         <label class="field">
-          <span>Modus</span>
+          <span data-i18n="music_bot.ui.autoDj.mode">Modus</span>
           <select id="auto-dj-mode">
-            <option value="history">History</option>
-            <option value="playlist">Playlist</option>
-            <option value="random" data-i18n="generated.2c844c8435e7">Aehnliche Titel</option>
-            <option value="mix">Radio-Mix</option>
+            <option value="history" data-i18n="music_bot.ui.autoDj.historyMode">Verlauf</option>
+            <option value="playlist" data-i18n="music_bot.ui.autoDj.playlistMode">Playlist</option>
+            <option value="random" data-i18n="music_bot.ui.autoDj.similarMode">Aehnliche Titel</option>
+            <option value="mix" data-i18n="music_bot.ui.autoDj.radioMixMode">Radio-Mix</option>
           </select>
         </label>
         <label class="field">
-          <span data-i18n="generated.1ac81dffc72d">Min. Plays in History</span>
+          <span data-i18n="music_bot.ui.autoDj.minHistoryPlays">Min. Plays in History</span>
           <input type="number" id="auto-dj-history-plays" min="1" value="2">
         </label>
         <label class="field">
-          <span>History-Anteil im Radio-Mix (%)</span>
+          <span data-i18n="music_bot.ui.autoDj.historyShare">Verlaufsanteil im Radio-Mix (%)</span>
           <input type="number" id="auto-dj-mix-history-percent" min="0" max="100" value="80">
         </label>
         <label class="field">
-          <span>Wiederholungs-Sperre (Stunden)</span>
+          <span data-i18n="music_bot.ui.autoDj.repeatCooldown">Wiederholungssperre (Stunden)</span>
           <input type="number" id="auto-dj-repeat-cooldown-hours" min="1" max="168" value="12">
         </label>
         <label class="field">
-          <span data-i18n="generated.f4b80de26677">Max. aufeinanderfolgende Tracks</span>
+          <span data-i18n="music_bot.ui.autoDj.maxConsecutive">Max. aufeinanderfolgende Tracks</span>
           <input type="number" id="auto-dj-max-consecutive" min="1" value="10">
         </label>
         <label class="checkbox-field">
           <input type="checkbox" id="auto-dj-announce">
-          <span data-i18n="generated.1f8b74aa4a59">Chat-Ansage fuer Auto-DJ</span>
+          <span data-i18n="music_bot.ui.autoDj.announce">Chat-Ansage fuer Auto-DJ</span>
         </label>
         <label class="field span-2">
-          <span data-i18n="generated.a0bb887dc8ab">Playlist-Links (einer pro Zeile oder kommagetrennt; danach folgt das passende Playlist-Radio)</span>
-          <textarea id="auto-dj-playlist-urls" rows="3" placeholder="https://www.youtube.com/watch?v=..."></textarea>
+          <span data-i18n="music_bot.ui.autoDj.playlistLinks">Playlist-Links (einer pro Zeile oder kommagetrennt; danach folgt das passende Playlist-Radio)</span>
+          <textarea id="auto-dj-playlist-urls" rows="3" placeholder="https://www.youtube.com/watch?v=..." data-i18n-placeholder="music_bot.ui.autoDj.playlistPlaceholder"></textarea>
         </label>
       </div>
       <p id="auto-dj-detail" class="feedback" aria-live="polite"></p>
       <div class="actions">
-        <button id="auto-dj-save" class="btn primary" data-i18n="music_bot.ui.actions.save">Speichern</button>
-        <button id="auto-dj-skip" class="btn ghost" data-i18n="generated.ec22dfdf0f2d">Naechster Auto-DJ Track</button>
+        <button id="auto-dj-save" class="btn primary" data-i18n="music_bot.ui.autoDj.save">Speichern</button>
+        <button id="auto-dj-skip" class="btn ghost" data-i18n="music_bot.ui.autoDj.next">Naechster Auto-DJ Track</button>
       </div>
     </section>
 
-    <section class="card tab-content" data-tab-content="aliases">
+        <section id="musicbot-panel-aliases" class="card tab-content" data-tab-content="aliases" role="tabpanel" aria-labelledby="musicbot-tab-aliases" aria-hidden="true" tabindex="0" hidden>
       <div class="card-header">
         <div>
-          <h2 data-i18n="generated.e515b8821952">Command Aliases</h2>
-          <p class="text-secondary"><span data-i18n="generated.8889d11a2793">Kommagetrennt, z.B. </span><em data-i18n="generated.de2f802cf6cc">play, song</em></p>
+          <h2 data-i18n="music_bot.ui.aliases.title">Command Aliases</h2>
+          <p class="text-secondary"><span data-i18n="music_bot.ui.aliases.description">Kommagetrennt, z.B. </span><em data-i18n="music_bot.ui.aliases.example">play, song</em></p>
         </div>
       </div>
       <div class="form-grid" id="alias-grid">
         <label class="field">
-          <span>Request</span>
-          <input type="text" data-command="request" class="alias-input" placeholder="play, song">
+          <span data-i18n="music_bot.ui.aliases.request">Anfordern</span>
+          <input type="text" data-command="request" class="alias-input" placeholder="play, song" data-i18n-placeholder="music_bot.ui.aliases.requestPlaceholder">
         </label>
         <label class="field">
-          <span>Skip</span>
-          <input type="text" data-command="skip" class="alias-input" placeholder="skip">
+          <span data-i18n="music_bot.ui.aliases.skip">Überspringen</span>
+          <input type="text" data-command="skip" class="alias-input" placeholder="skip" data-i18n-placeholder="music_bot.ui.aliases.skipPlaceholder">
         </label>
         <label class="field">
-          <span>Queue</span>
-          <input type="text" data-command="queue" class="alias-input" placeholder="q, list">
+          <span data-i18n="music_bot.ui.aliases.queue">Warteschlange</span>
+          <input type="text" data-command="queue" class="alias-input" placeholder="q, list" data-i18n-placeholder="music_bot.ui.aliases.queuePlaceholder">
         </label>
         <label class="field">
-          <span data-i18n="generated.6f88de460d47">Now Playing</span>
-          <input type="text" data-command="nowPlaying" class="alias-input" placeholder="now, current">
+          <span data-i18n="music_bot.ui.aliases.nowPlaying">Now Playing</span>
+          <input type="text" data-command="nowPlaying" class="alias-input" placeholder="now, current" data-i18n-placeholder="music_bot.ui.aliases.nowPlayingPlaceholder">
         </label>
         <label class="field">
-          <span>Volume</span>
-          <input type="text" data-command="volume" class="alias-input" placeholder="v, volume">
+          <span data-i18n="music_bot.ui.aliases.volume">Lautstärke</span>
+          <input type="text" data-command="volume" class="alias-input" placeholder="v, volume" data-i18n-placeholder="music_bot.ui.aliases.volumePlaceholder">
         </label>
         <label class="field">
-          <span>Pause</span>
-          <input type="text" data-command="pause" class="alias-input" placeholder="stop">
+          <span data-i18n="music_bot.ui.aliases.pause">Pause</span>
+          <input type="text" data-command="pause" class="alias-input" placeholder="stop" data-i18n-placeholder="music_bot.ui.aliases.pausePlaceholder">
         </label>
         <label class="field">
-          <span>Resume</span>
-          <input type="text" data-command="resume" class="alias-input" placeholder="continue">
+          <span data-i18n="music_bot.ui.aliases.resume">Fortsetzen</span>
+          <input type="text" data-command="resume" class="alias-input" placeholder="continue" data-i18n-placeholder="music_bot.ui.aliases.resumePlaceholder">
         </label>
         <label class="field">
-          <span data-i18n="music_bot.ui.actions.clear">Clear</span>
+          <span data-i18n="music_bot.ui.aliases.clear">Clear</span>
           <input type="text" data-command="clear" class="alias-input" placeholder="">
         </label>
       </div>
       <div class="actions">
-        <button id="alias-save" class="btn primary" data-i18n="generated.00bbdfd1d204">Aliases speichern</button>
+        <button id="alias-save" class="btn primary" data-i18n="music_bot.ui.aliases.save">Aliases speichern</button>
       </div>
     </section>
 
-    <section class="card tab-content" data-tab-content="moderation">
+        <section id="musicbot-panel-moderation" class="card tab-content" data-tab-content="moderation" role="tabpanel" aria-labelledby="musicbot-tab-moderation" aria-hidden="true" tabindex="0" hidden>
       <div class="card-header">
         <div>
-          <h2>Moderation</h2>
-          <p class="text-secondary" data-i18n="generated.d45bdbac07da">NSFW / Keywords &amp; Ban-Liste</p>
+          <h2 data-i18n="music_bot.ui.moderation.title">Moderation</h2>
+          <p class="text-secondary" data-i18n="music_bot.ui.moderation.description">NSFW / Keywords &amp; Ban-Liste</p>
         </div>
       </div>
       <div class="form-grid">
         <label class="checkbox-field">
           <input type="checkbox" id="reject-age" checked>
-          <span data-i18n="generated.ee794feb51d0">NSFW/Age-Restricted Videos ablehnen</span>
+          <span data-i18n="music_bot.ui.moderation.rejectAgeRestricted">NSFW/Age-Restricted Videos ablehnen</span>
         </label>
         <label class="checkbox-field">
           <input type="checkbox" id="reject-explicit">
-          <span data-i18n="generated.2bb539ffb0f3">Explicit-Metadaten ablehnen</span>
+          <span data-i18n="music_bot.ui.moderation.rejectExplicit">Explicit-Metadaten ablehnen</span>
         </label>
         <label class="field">
-          <span data-i18n="generated.b25f22ff9c27">Geblockte Keywords (eine Zeile pro Keyword)</span>
-          <textarea id="blocked-keywords" rows="3" placeholder="keyword1&#10;keyword2"></textarea>
+          <span data-i18n="music_bot.ui.moderation.blockedKeywords">Geblockte Keywords (eine Zeile pro Keyword)</span>
+          <textarea id="blocked-keywords" rows="3" placeholder="keyword1&#10;keyword2" data-i18n-placeholder="music_bot.ui.moderation.blockedKeywordsPlaceholder"></textarea>
         </label>
       </div>
       <div class="actions">
-        <button id="moderation-save" class="btn primary" data-i18n="generated.c7b1f8d8d9c9">Moderation speichern</button>
+        <button id="moderation-save" class="btn primary" data-i18n="music_bot.ui.moderation.save">Moderation speichern</button>
         <div id="moderation-feedback" class="feedback"></div>
       </div>
 
       <div class="card-header">
         <div>
-          <h3>Ban-Liste</h3>
-          <p class="text-secondary" data-i18n="generated.0f3a052ce7dd">URLs, Keywords, Channels oder User sperren</p>
+          <h3 data-i18n="music_bot.ui.moderation.banListTitle">Sperrliste</h3>
+          <p class="text-secondary" data-i18n="music_bot.ui.moderation.banListDescription">URLs, Keywords, Channels oder User sperren</p>
         </div>
       </div>
       <div class="form-grid">
         <label class="field">
-          <span>Typ</span>
+          <span data-i18n="music_bot.ui.moderation.type">Typ</span>
           <select id="ban-type">
-            <option value="url">URL</option>
-            <option value="keyword">Keyword</option>
-            <option value="channel">Channel</option>
-            <option value="user">User</option>
-            <option value="artist">Artist</option>
-            <option value="track">Exact Track</option>
+            <option value="url" data-i18n="music_bot.ui.moderation.url">URL</option>
+            <option value="keyword" data-i18n="music_bot.ui.moderation.keyword">Schlüsselwort</option>
+            <option value="channel" data-i18n="music_bot.ui.moderation.channel">Kanal</option>
+            <option value="user" data-i18n="music_bot.ui.moderation.user">Nutzer</option>
+            <option value="artist" data-i18n="music_bot.ui.moderation.artist">Künstler</option>
+            <option value="track" data-i18n="music_bot.ui.moderation.exactTrack">Exakter Titel</option>
           </select>
         </label>
         <label class="field">
-          <span>Wert</span>
-          <input type="text" id="ban-value" placeholder="https://... oder Keyword">
+          <span data-i18n="music_bot.ui.moderation.value">Wert</span>
+          <input type="text" id="ban-value" placeholder="https://... oder Keyword" data-i18n-placeholder="music_bot.ui.moderation.valuePlaceholder">
         </label>
         <label class="field">
-          <span>Reason</span>
-          <input type="text" id="ban-reason" placeholder="Optional">
+          <span data-i18n="music_bot.ui.moderation.reason">Grund</span>
+          <input type="text" id="ban-reason" placeholder="Optional" data-i18n-placeholder="music_bot.ui.moderation.optional">
         </label>
       </div>
       <div class="actions">
-        <button id="ban-add" class="btn primary" type="button" data-i18n="generated.a43e7aad5422">Ban hinzufuegen</button>
+        <button id="ban-add" class="btn primary" type="button" data-i18n="music_bot.ui.moderation.addBan">Ban hinzufuegen</button>
         <div id="ban-feedback" class="feedback"></div>
       </div>
       <div class="table-wrapper">
         <table class="table" id="ban-table">
           <thead>
             <tr>
-              <th>Typ</th>
-              <th>Wert</th>
-              <th>Reason</th>
-              <th>Aktion</th>
+              <th data-i18n="music_bot.ui.moderation.type">Typ</th>
+              <th data-i18n="music_bot.ui.moderation.value">Wert</th>
+              <th data-i18n="music_bot.ui.moderation.reason">Grund</th>
+              <th data-i18n="music_bot.ui.moderation.action">Aktion</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -637,49 +646,49 @@
       </div>
     </section>
 
-    <section class="card tab-content" data-tab-content="history">
+        <section id="musicbot-panel-history" class="card tab-content" data-tab-content="history" role="tabpanel" aria-labelledby="musicbot-tab-history" aria-hidden="true" tabindex="0" hidden>
       <div class="card-header">
         <div>
-          <h2>History</h2>
-          <p class="text-secondary" data-i18n="generated.0f354657e59e">Letzte gespielte Songs</p>
+          <h2 data-i18n="music_bot.ui.history.title">Verlauf</h2>
+          <p class="text-secondary" data-i18n="music_bot.ui.history.description">Letzte gespielte Songs</p>
         </div>
       </div>
       <div id="history-list" class="list empty">
-        <p data-i18n="generated.85f0ac28e97b">Noch keine History.</p>
+        <p data-i18n="music_bot.ui.history.empty">Noch keine History.</p>
       </div>
       <div class="actions history-pagination">
-        <button id="history-load-more" class="btn ghost" type="button" data-i18n="music_bot.ui.catalog.historyMore">Mehr laden</button>
+        <button id="history-load-more" class="btn ghost" type="button" data-i18n="music_bot.ui.history.loadMore">Mehr laden</button>
         <span id="history-page-status" class="text-secondary" aria-live="polite"></span>
       </div>
     </section>
 
-    <section class="card tab-content" data-tab-content="catalog">
-      <div class="card-header"><div><h2 data-i18n="music_bot.ui.catalog.catalogTab">Katalog</h2><p class="text-secondary" data-i18n="music_bot.ui.catalog.catalogDescription">Historische Songs suchen, bewerten und zu Playlists hinzufügen.</p></div></div>
+        <section id="musicbot-panel-catalog" class="card tab-content" data-tab-content="catalog" role="tabpanel" aria-labelledby="musicbot-tab-catalog" aria-hidden="true" tabindex="0" hidden>
+      <div class="card-header"><div><h2 data-i18n="music_bot.ui.catalog.title">Katalog</h2><p class="text-secondary" data-i18n="music_bot.ui.catalog.description">Historische Songs suchen, bewerten und zu Playlists hinzufügen.</p></div></div>
       <div class="player-search-bar">
-        <input id="catalog-search-input" type="search" autocomplete="off" placeholder="Titel suchen" data-i18n-placeholder="music_bot.ui.catalog.catalogSearch" aria-label="Titel suchen" data-i18n-aria-label="music_bot.ui.catalog.catalogSearch">
+        <input id="catalog-search-input" type="search" autocomplete="off" placeholder="Titel suchen" data-i18n-placeholder="music_bot.ui.catalog.search" aria-label="Titel suchen" data-i18n-aria-label="music_bot.ui.catalog.search">
       </div>
       <div id="catalog-search-results" class="list empty" aria-live="polite"></div>
     </section>
 
-    <section class="card tab-content" data-tab-content="playlists">
-      <div class="card-header"><div><h2 data-i18n="music_bot.ui.catalog.playlistsTab">Playlists</h2><p class="text-secondary" data-i18n="music_bot.ui.catalog.playlistsDescription">Eigene Quellen und Viewer Radio verwalten.</p></div></div>
+        <section id="musicbot-panel-playlists" class="card tab-content" data-tab-content="playlists" role="tabpanel" aria-labelledby="musicbot-tab-playlists" aria-hidden="true" tabindex="0" hidden>
+      <div class="card-header"><div><h2 data-i18n="music_bot.ui.playlists.title">Playlists</h2><p class="text-secondary" data-i18n="music_bot.ui.playlists.description">Eigene Quellen und Viewer Radio verwalten.</p></div></div>
       <div class="player-search-bar">
-        <input id="playlist-create-name" type="text" maxlength="120" placeholder="Neue Playlist" data-i18n-placeholder="music_bot.ui.catalog.newPlaylist" aria-label="Neue Playlist" data-i18n-aria-label="music_bot.ui.catalog.newPlaylist">
-        <select id="playlist-create-mode" aria-label="Wiedergabemodus" data-i18n-aria-label="music_bot.ui.catalog.playbackMode"><option value="ordered" data-i18n="music_bot.ui.catalog.ordered">Geordnet</option><option value="shuffle" data-i18n="music_bot.ui.catalog.shuffle">Zufällig</option></select>
-        <button id="playlist-create-btn" class="btn primary" type="button" data-i18n="music_bot.ui.catalog.create">Erstellen</button>
+        <input id="playlist-create-name" type="text" maxlength="120" placeholder="Neue Playlist" data-i18n-placeholder="music_bot.ui.playlists.newPlaylist" aria-label="Neue Playlist" data-i18n-aria-label="music_bot.ui.playlists.newPlaylist">
+        <select id="playlist-create-mode" aria-label="Wiedergabemodus" data-i18n-aria-label="music_bot.ui.playlists.playbackMode"><option value="ordered" data-i18n="music_bot.ui.playlists.ordered">Geordnet</option><option value="shuffle" data-i18n="music_bot.ui.playlists.shuffle">Zufällig</option></select>
+        <button id="playlist-create-btn" class="btn primary" type="button" data-i18n="music_bot.ui.playlists.create">Erstellen</button>
       </div>
       <div class="playlist-admin-layout">
         <div id="playlist-list" class="list empty" aria-live="polite"></div>
         <div id="playlist-editor" class="playlist-editor" hidden>
           <div class="player-search-bar">
-            <input id="playlist-name-input" type="text" maxlength="120" aria-label="Playlistname" data-i18n-aria-label="music_bot.ui.catalog.playlistName">
-            <select id="playlist-mode-input" aria-label="Wiedergabemodus" data-i18n-aria-label="music_bot.ui.catalog.playbackMode"><option value="ordered" data-i18n="music_bot.ui.catalog.ordered">Geordnet</option><option value="shuffle" data-i18n="music_bot.ui.catalog.shuffle">Zufällig</option></select>
-            <button id="playlist-save-btn" class="btn ghost" type="button" data-i18n="music_bot.ui.catalog.save">Speichern</button>
-            <button id="playlist-delete-btn" class="btn danger" type="button" data-i18n="music_bot.ui.catalog.delete">Löschen</button>
+            <input id="playlist-name-input" type="text" maxlength="120" aria-label="Playlistname" data-i18n-aria-label="music_bot.ui.playlists.playlistName">
+            <select id="playlist-mode-input" aria-label="Wiedergabemodus" data-i18n-aria-label="music_bot.ui.playlists.playbackMode"><option value="ordered" data-i18n="music_bot.ui.playlists.ordered">Geordnet</option><option value="shuffle" data-i18n="music_bot.ui.playlists.shuffle">Zufällig</option></select>
+            <button id="playlist-save-btn" class="btn ghost" type="button" data-i18n="music_bot.ui.playlists.save">Speichern</button>
+            <button id="playlist-delete-btn" class="btn danger" type="button" data-i18n="music_bot.ui.playlists.delete">Löschen</button>
           </div>
           <div class="player-search-bar">
-            <input id="playlist-import-url" type="url" placeholder="YouTube-Playlist URL" data-i18n-placeholder="music_bot.ui.catalog.importUrl" aria-label="YouTube-Playlist URL" data-i18n-aria-label="music_bot.ui.catalog.importUrl">
-            <button id="playlist-import-btn" class="btn ghost" type="button" data-i18n="music_bot.ui.catalog.import">Importieren / erneut importieren</button>
+            <input id="playlist-import-url" type="url" placeholder="YouTube-Playlist URL" data-i18n-placeholder="music_bot.ui.playlists.importUrl" aria-label="YouTube-Playlist URL" data-i18n-aria-label="music_bot.ui.playlists.importUrl">
+            <button id="playlist-import-btn" class="btn ghost" type="button" data-i18n="music_bot.ui.playlists.import">Importieren / erneut importieren</button>
           </div>
           <p id="playlist-import-progress" class="feedback" aria-live="polite"></p>
           <p id="playlist-conflict-feedback" class="feedback" aria-live="polite"></p>
@@ -687,32 +696,34 @@
         </div>
       </div>
       <section class="playlist-radio-card" aria-labelledby="playlist-radio-title">
-        <h3 id="playlist-radio-title" data-i18n="music_bot.ui.catalog.radioSources">Radio-Quellen</h3>
-        <p class="text-secondary" data-i18n="music_bot.ui.catalog.radioDescription">Mehrere Playlists aktivieren und mit Gewicht 1 bis 10 mischen.</p>
+        <h3 id="playlist-radio-title" data-i18n="music_bot.ui.playlists.radioSources">Radio-Quellen</h3>
+        <p class="text-secondary" data-i18n="music_bot.ui.playlists.radioDescription">Mehrere Playlists aktivieren und mit Gewicht 1 bis 10 mischen.</p>
         <div id="playlist-radio-sources"></div>
-        <button id="playlist-radio-save" class="btn ghost" type="button" data-i18n="music_bot.ui.catalog.saveRadioSources">Radio-Quellen speichern</button>
+        <button id="playlist-radio-save" class="btn ghost" type="button" data-i18n="music_bot.ui.playlists.saveRadioSources">Radio-Quellen speichern</button>
       </section>
-    </section>
+        </section>
+      </main>
+    </div>
   </div>
   <div id="musicbot-toast-container" class="musicbot-toast-container" aria-live="polite" aria-atomic="true"></div>
   <div id="track-ban-menu" class="track-ban-menu" role="dialog" aria-modal="false" aria-labelledby="track-ban-menu-title" hidden tabindex="-1">
     <div class="track-ban-menu-head">
-      <strong id="track-ban-menu-title" data-i18n="music_bot.ui.banMenu.title">Titel sperren</strong>
-      <button id="track-ban-menu-close" class="btn ghost small" type="button" aria-label="Schließen">✕</button>
+      <strong id="track-ban-menu-title" data-i18n="music_bot.ui.moderation.banTrackTitle">Titel sperren</strong>
+      <button id="track-ban-menu-close" class="btn ghost small" type="button" aria-label="Schließen" data-i18n-aria-label="music_bot.ui.moderation.close">✕</button>
     </div>
-    <div class="track-ban-scope-options" role="radiogroup" aria-label="Ban-Typ">
-      <button type="button" role="radio" aria-checked="true" data-track-ban-scope="track" data-i18n="music_bot.ui.banMenu.track">Diesen Song sperren</button>
-      <button type="button" role="radio" aria-checked="false" data-track-ban-scope="artist" data-i18n="music_bot.ui.banMenu.artist">Künstler sperren</button>
-      <button type="button" role="radio" aria-checked="false" data-track-ban-scope="channel" data-i18n="music_bot.ui.banMenu.channel">Kanal sperren</button>
-      <button type="button" role="radio" aria-checked="false" data-track-ban-scope="keyword" data-i18n="music_bot.ui.banMenu.keyword">Titelbegriff sperren</button>
+    <div class="track-ban-scope-options" role="radiogroup" aria-label="Ban-Typ" data-i18n-aria-label="music_bot.ui.moderation.banTypeAria">
+      <button type="button" role="radio" aria-checked="true" data-track-ban-scope="track" data-i18n="music_bot.ui.moderation.banTrack">Diesen Song sperren</button>
+      <button type="button" role="radio" aria-checked="false" data-track-ban-scope="artist" data-i18n="music_bot.ui.moderation.banArtist">Künstler sperren</button>
+      <button type="button" role="radio" aria-checked="false" data-track-ban-scope="channel" data-i18n="music_bot.ui.moderation.banChannel">Kanal sperren</button>
+      <button type="button" role="radio" aria-checked="false" data-track-ban-scope="keyword" data-i18n="music_bot.ui.moderation.banTitleKeyword">Titelbegriff sperren</button>
     </div>
     <label id="track-ban-keyword-field" class="field" hidden>
-      <span>Titelbegriff</span>
+      <span data-i18n="music_bot.ui.moderation.titleKeyword">Titelbegriff</span>
       <input id="track-ban-keyword" type="text" maxlength="120">
     </label>
-    <label class="checkbox-field"><input id="track-ban-stop-current" type="checkbox" checked> Laufenden Treffer sofort stoppen</label>
-    <label class="checkbox-field"><input id="track-ban-remove-queued" type="checkbox" checked> Treffer aus Queue entfernen</label>
-    <button id="track-ban-submit" class="btn danger" type="button">Ban anwenden</button>
+    <label class="checkbox-field"><input id="track-ban-stop-current" type="checkbox" checked><span data-i18n="music_bot.ui.moderation.stopCurrent">Laufenden Treffer sofort stoppen</span></label>
+    <label class="checkbox-field"><input id="track-ban-remove-queued" type="checkbox" checked><span data-i18n="music_bot.ui.moderation.removeQueued">Treffer aus Queue entfernen</span></label>
+    <button id="track-ban-submit" class="btn danger" type="button" data-i18n="music_bot.ui.moderation.applyBan">Sperre anwenden</button>
     <p id="track-ban-feedback" class="feedback" aria-live="polite"></p>
   </div>
 
