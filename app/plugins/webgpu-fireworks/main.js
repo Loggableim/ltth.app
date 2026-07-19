@@ -31,6 +31,7 @@ const {
 const { evaluateTriggerPolicy } = require('./lib/trigger-policy');
 const { SpawnPlanner } = require('./lib/spawn-planner');
 const { FinaleShowPlanner, FINALE_STYLES } = require('./lib/finale-show-planner');
+const { FinaleShuffleBag } = require('./lib/finale-shuffle-bag');
 const { SuperfanFinaleHistory, normalizeSuperfanIdentityAliases } = require('./lib/superfan-finale-history');
 
 const FIREWORKS_CONFIG_MIGRATION_VERSION = 1;
@@ -114,7 +115,7 @@ class FireworksPlugin {
         this.useLegacyGiftDropGuards = false;
         this.spawnPlanner = new SpawnPlanner();
         this.finaleShowPlanner = new FinaleShowPlanner();
-        this.finaleAutoIndex = 0;
+        this.finaleShuffleBag = new FinaleShuffleBag(() => this.getAutoEligibleFinaleStyleIds());
         this.finaleIdCounter = 0;
     }
 
@@ -1865,7 +1866,7 @@ class FireworksPlugin {
         }
 
         const resolvedStyle = finale.style === 'auto'
-            ? FINALE_STYLES[this.finaleAutoIndex++ % FINALE_STYLES.length]
+            ? this.finaleShuffleBag.draw()
             : finale.style;
         const id = finale.id || `finale-${Date.now()}-${finale.seed}-${this.finaleIdCounter++}`;
         const showPlan = this.finaleShowPlanner.plan({
@@ -1937,6 +1938,10 @@ class FireworksPlugin {
             return { ...payload, accepted: false, reason: 'submission-rejected' };
         }
         return payload;
+    }
+
+    getAutoEligibleFinaleStyleIds() {
+        return [...FINALE_STYLES];
     }
 
     /**

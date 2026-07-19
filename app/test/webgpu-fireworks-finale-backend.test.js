@@ -1,6 +1,8 @@
 const path = require('path');
 
 const FireworksPlugin = require('../plugins/webgpu-fireworks/main');
+const { FinaleShuffleBag } = require('../plugins/webgpu-fireworks/lib/finale-shuffle-bag');
+const { FINALE_STYLES } = require('../plugins/webgpu-fireworks/lib/finale-show-planner');
 const {
   ALLOWED_FINALE_LENGTHS,
   ALLOWED_FINALE_STYLES,
@@ -158,22 +160,41 @@ describe('WebGPU finale backend contract', () => {
     expect(repeat.showPlan).toEqual(result.showPlan);
   });
 
-  test('rotates auto finales across all built-ins and starts with Classic Crescendo after restart', () => {
+  test('provides all nine built-ins to an injectable runtime-local Auto shuffle bag', () => {
     const first = createPlugin().plugin;
     const second = createPlugin().plugin;
-    const styles = Array.from({ length: 5 }, (_, index) => first.triggerFinale({
+    first.finaleShuffleBag = new FinaleShuffleBag(
+      () => first.getAutoEligibleFinaleStyleIds(),
+      () => 0.999999
+    );
+    second.finaleShuffleBag = new FinaleShuffleBag(
+      () => second.getAutoEligibleFinaleStyleIds(),
+      () => 0.999999
+    );
+    const styles = Array.from({ length: FINALE_STYLES.length }, (_, index) => first.triggerFinale({
       style: 'auto', length: 'short', seed: index + 1, id: `auto-${index}`
     }).style);
 
-    expect(styles).toEqual([
-      'classic-crescendo',
-      'symmetric-salute',
-      'sky-ballet',
-      'thunder-finale',
-      'nishiki-kamuro'
-    ]);
+    expect(first.getAutoEligibleFinaleStyleIds()).toEqual(FINALE_STYLES);
+    expect(new Set(styles)).toEqual(new Set(FINALE_STYLES));
     expect(second.triggerFinale({ style: 'auto', seed: 77, id: 'new-instance' }).style)
-      .toBe('classic-crescendo');
+      .toBe(styles[0]);
+  });
+
+  test('uses the Auto bag for Auto, bypasses it for explicit styles, and keeps legacy payloads compatible', () => {
+    const { plugin } = createPlugin();
+    plugin.finaleShuffleBag = { draw: jest.fn(() => 'sky-ballet') };
+
+    expect(plugin.triggerFinale({ style: 'auto', seed: 1, id: 'auto' }).style).toBe('sky-ballet');
+    expect(plugin.triggerFinale({ style: 'thunder-finale', seed: 2, id: 'explicit' }).style)
+      .toBe('thunder-finale');
+    expect(plugin.triggerFinale(5, 14000, true)).toMatchObject({
+      accepted: true,
+      intensity: 5,
+      length: 'short',
+      durationMs: 10000
+    });
+    expect(plugin.finaleShuffleBag.draw).toHaveBeenCalledTimes(2);
   });
 
   test('generates unique IDs for same-millisecond finales that reuse an explicit seed', () => {
@@ -214,11 +235,14 @@ describe('WebGPU finale backend contract', () => {
 
   test('does not consume auto rotation while disabled unless bypassed', () => {
     const { api, plugin } = createPlugin({ enabled: false });
+    plugin.finaleShuffleBag = { draw: jest.fn(() => 'classic-crescendo') };
     expect(plugin.triggerFinale({ style: 'auto', seed: 1, id: 'blocked' }))
       .toEqual({ accepted: false, reason: 'disabled' });
     expect(api.emit).not.toHaveBeenCalled();
+    expect(plugin.finaleShuffleBag.draw).not.toHaveBeenCalled();
     expect(plugin.triggerFinale({ style: 'auto', seed: 2, id: 'allowed', bypassEnabled: true }).style)
       .toBe('classic-crescendo');
+    expect(plugin.finaleShuffleBag.draw).toHaveBeenCalledTimes(1);
   });
 
   test('API normalizes object and legacy duration requests and returns resolved queue metadata', () => {
