@@ -202,7 +202,7 @@ describe('WebGPU Fireworks native migration', () => {
     expect(mainSource).toContain("socket.on('webgpu-fireworks:renderer-status'");
     expect(mainSource).toContain("fallback: 'none'");
     expect(orchestrationSource).toContain("this.socket.emit('webgpu-fireworks:renderer-status'");
-    expect(settingsSource).toContain("fetch('/api/webgpu-fireworks/status'");
+    expect(settingsSource).toContain("requestJson('/api/webgpu-fireworks/status'");
     expect(settingsHtml).toContain('id="webgpu-runtime-state"');
     expect(settingsHtml).toContain('id="webgpu-origin"');
   });

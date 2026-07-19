@@ -24,6 +24,45 @@ function t(key, fallback, params = {}) {
     ));
 }
 
+function requestDetail(value) {
+    return typeof value === 'string' && value.trim()
+        ? value.trim().slice(0, 240)
+        : '';
+}
+
+function requestFailureMessage(error, fallback) {
+    const detail = requestDetail(error?.message);
+    return detail && detail !== fallback ? `${fallback}: ${detail}` : fallback;
+}
+
+async function requestJson(url, options = {}) {
+    const response = await fetch(url, options);
+    let payload;
+    try {
+        payload = await response.json();
+    } catch (cause) {
+        const error = new Error(requestDetail(cause?.message) || 'Invalid JSON response');
+        error.cause = cause;
+        error.status = response.status;
+        throw error;
+    }
+
+    if (!response.ok || payload?.success !== true || payload.accepted === false) {
+        const detail = [payload?.reason, payload?.error, payload?.message]
+            .map(requestDetail)
+            .find(Boolean);
+        const statusDetail = Number.isFinite(Number(response.status))
+            ? `HTTP ${Number(response.status)}${response.statusText ? ` ${response.statusText}` : ''}`
+            : '';
+        const error = new Error(detail || statusDetail || 'Request was not confirmed by the server');
+        error.code = payload?.code;
+        error.status = response.status;
+        error.payload = payload;
+        throw error;
+    }
+    return payload;
+}
+
 function finaleSelectorLabels() {
     return {
         auto: t('webgpu_fireworks.finale_style_auto', 'Auto'),
@@ -252,23 +291,47 @@ function connectSocket() {
 async function loadConfig() {
     const requestedAtRevision = configRevision;
     try {
-        const response = await fetch('/api/webgpu-fireworks/config');
-        const data = await response.json();
+        const data = await requestJson('/api/webgpu-fireworks/config');
 
-        if (data.success && requestedAtRevision === configRevision && canApplyRemoteConfig()) {
+        if (requestedAtRevision === configRevision && canApplyRemoteConfig()) {
             applyRemoteConfig(data.config);
         }
     } catch (e) {
         console.error('[Fireworks Settings] Failed to load config:', e);
-        showToast(t('plugins.webgpu-fireworks.ui.configuration_load_failed', 'Failed to load configuration'), 'error');
+        const fallback = t('plugins.webgpu-fireworks.ui.configuration_load_failed', 'Failed to load configuration');
+        showToast(requestFailureMessage(e, fallback), 'error');
+    }
+}
+
+function markRendererStatusUnavailable(error) {
+    const unavailable = t('plugins.webgpu-fireworks.ui.unavailable', 'Unavailable');
+    const state = document.getElementById('webgpu-runtime-state');
+    if (state) {
+        state.textContent = `${t('plugins.webgpu-fireworks.ui.renderer_state_offline', 'OFFLINE')} · WEBGPU`;
+        state.className = 'text-red-300';
+    }
+    for (const id of [
+        'webgpu-adapter-state', 'webgpu-audio-state', 'webgpu-audio-backend',
+        'webgpu-audio-library', 'webgpu-audio-last-played', 'webgpu-crackle-state',
+        'webgpu-audio-profile', 'webgpu-audio-voices', 'webgpu-audio-events',
+        'webgpu-audio-peak', 'webgpu-timeline-sync', 'webgpu-finale-active',
+        'webgpu-finale-phase', 'webgpu-finale-queue', 'webgpu-visual-style',
+        'webgpu-frame-time', 'webgpu-particle-state'
+    ]) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = unavailable;
+    }
+    const reason = document.getElementById('webgpu-runtime-reason');
+    if (reason) {
+        const fallback = t('plugins.webgpu-fireworks.ui.renderer_status_unavailable', 'Renderer status unavailable');
+        reason.hidden = false;
+        reason.textContent = requestFailureMessage(error, fallback);
     }
 }
 
 async function loadRendererStatus() {
     try {
-        const response = await fetch('/api/webgpu-fireworks/status', { cache: 'no-store' });
-        const data = await response.json();
-        if (!data.success) return;
+        const data = await requestJson('/api/webgpu-fireworks/status', { cache: 'no-store' });
         const renderer = data.renderer || {};
         const showOptions = window.WebGpuFireworksShowOptions;
         const showCatalog = showOptions?.loadCatalog
@@ -374,6 +437,7 @@ async function loadRendererStatus() {
         }
     } catch (error) {
         console.warn('[WebGPU Fireworks Settings] Status unavailable:', error.message);
+        markRendererStatusUnavailable(error);
     }
 }
 
@@ -385,34 +449,31 @@ async function saveConfig(showSuccessToast = true) {
     activeSaveRequests += 1;
 
     try {
-        const response = await fetch('/api/webgpu-fireworks/config', {
+        const data = await requestJson('/api/webgpu-fireworks/config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: serializedConfig
         });
-
-        const data = await response.json();
         const isCurrentRequest = requestId === latestSaveRequestId
             && requestedAtRevision === configRevision;
 
-        if (data.success) {
-            if (!isCurrentRequest) return;
-            if (data.config) {
-                applyRemoteConfig(data.config);
-            } else {
-                localConfigDirty = false;
-            }
-            if (showSuccessToast) {
-                showToast(t('plugins.webgpu-fireworks.ui.settings_saved', 'Settings saved successfully!'), 'success');
-            }
-        } else if (requestId === latestSaveRequestId) {
-            showToast(t('plugins.webgpu-fireworks.ui.settings_save_failed', 'Failed to save settings'), 'error');
+        if (!isCurrentRequest) return false;
+        if (data.config) {
+            applyRemoteConfig(data.config);
+        } else {
+            localConfigDirty = false;
         }
+        if (showSuccessToast) {
+            showToast(t('plugins.webgpu-fireworks.ui.settings_saved', 'Settings saved successfully!'), 'success');
+        }
+        return true;
     } catch (e) {
         if (requestId === latestSaveRequestId) {
             console.error('[Fireworks Settings] Failed to save config:', e);
-            showToast(t('plugins.webgpu-fireworks.ui.settings_save_failed', 'Failed to save settings'), 'error');
+            const fallback = t('plugins.webgpu-fireworks.ui.settings_save_failed', 'Failed to save settings');
+            showToast(requestFailureMessage(e, fallback), 'error');
         }
+        return false;
     } finally {
         activeSaveRequests = Math.max(0, activeSaveRequests - 1);
     }
@@ -423,7 +484,7 @@ async function triggerTest() {
         const selectedShape = document.querySelector('.shape-preview.active-shape, .shape-preview.selected');
         const shape = selectedShape ? selectedShape.dataset.shape : (config.defaultShape || 'burst');
 
-        await fetch('/api/webgpu-fireworks/trigger', {
+        await requestJson('/api/webgpu-fireworks/trigger', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -438,7 +499,8 @@ async function triggerTest() {
         showToast(t('plugins.webgpu-fireworks.ui.firework_triggered', 'Firework triggered'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger test:', e);
-        showToast(t('plugins.webgpu-fireworks.ui.test_trigger_failed', 'Failed to trigger test'), 'error');
+        const fallback = t('plugins.webgpu-fireworks.ui.test_trigger_failed', 'Failed to trigger test');
+        showToast(requestFailureMessage(e, fallback), 'error');
     }
 }
 
@@ -448,7 +510,7 @@ async function triggerFinale() {
         const style = document.getElementById('finale-style').value;
         const length = document.getElementById('finale-length').value;
 
-        const response = await fetch('/api/webgpu-fireworks/finale', {
+        await requestJson('/api/webgpu-fireworks/finale', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -458,29 +520,22 @@ async function triggerFinale() {
                 testRequest: true
             })
         });
-        const data = await response.json();
-        if (!response.ok || data.success !== true) {
-            const fallback = data.code === 'RENDERER_UPGRADE_REQUIRED'
-                ? t(
-                    'plugins.webgpu-fireworks.ui.renderer_upgrade_required',
-                    'This OBS overlay is outdated. Refresh the OBS browser source.'
-                )
-                : data.error || t('plugins.webgpu-fireworks.ui.finale_trigger_failed', 'Failed to trigger finale');
-            const error = new Error(fallback);
-            error.userMessage = fallback;
-            throw error;
-        }
-
         showToast(t('plugins.webgpu-fireworks.ui.finale_triggered', 'Finale triggered!'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger finale:', e);
-        showToast(e.userMessage || t('plugins.webgpu-fireworks.ui.finale_trigger_failed', 'Failed to trigger finale'), 'error');
+        const fallback = e.code === 'RENDERER_UPGRADE_REQUIRED'
+            ? t(
+                'plugins.webgpu-fireworks.ui.renderer_upgrade_required',
+                'This OBS overlay is outdated. Refresh the OBS browser source.'
+            )
+            : t('plugins.webgpu-fireworks.ui.finale_trigger_failed', 'Failed to trigger finale');
+        showToast(e.code === 'RENDERER_UPGRADE_REQUIRED' ? fallback : requestFailureMessage(e, fallback), 'error');
     }
 }
 
 async function testSuperfanFinale() {
     try {
-        const response = await fetch('/api/webgpu-fireworks/test-superfan', {
+        await requestJson('/api/webgpu-fireworks/test-superfan', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -501,12 +556,6 @@ async function testSuperfanFinale() {
                 }
             })
         });
-        const payload = await response.json();
-        if (!response.ok || !payload.accepted) {
-            const backendReason = [payload.reason, payload.error]
-                .find(value => typeof value === 'string' && value.trim());
-            throw new Error(backendReason ? backendReason.trim().slice(0, 160) : 'Finale rejected');
-        }
         showToast(window.i18n?.t('webgpu_fireworks.superfan_finale_test_success') || 'Superfan finale triggered!', 'success');
     } catch (error) {
         console.error('[Fireworks Settings] Failed to trigger Superfan finale:', error);
@@ -518,7 +567,7 @@ async function testSuperfanFinale() {
 
 async function testFollowerFireworks() {
     try {
-        await fetch('/api/webgpu-fireworks/test-follower', {
+        await requestJson('/api/webgpu-fireworks/test-follower', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -530,7 +579,8 @@ async function testFollowerFireworks() {
         showToast(t('plugins.webgpu-fireworks.ui.follower_triggered', 'Follower fireworks triggered!'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger follower test:', e);
-        showToast(t('plugins.webgpu-fireworks.ui.follower_trigger_failed', 'Failed to trigger follower test'), 'error');
+        const fallback = t('plugins.webgpu-fireworks.ui.follower_trigger_failed', 'Failed to trigger follower test');
+        showToast(requestFailureMessage(e, fallback), 'error');
     }
 }
 
@@ -1056,7 +1106,10 @@ function setupEventListeners() {
         });
     });
     document.getElementById('save-gift-style')?.addEventListener('click', () => {
-        saveGiftStyleMapping().catch(error => showToast(error.message, 'error'));
+        saveGiftStyleMapping().catch(error => {
+            const fallback = t('plugins.webgpu-fireworks.ui.gift_mapping_save_failed', 'Gift mapping could not be saved');
+            showToast(requestFailureMessage(error, fallback), 'error');
+        });
     });
     document.getElementById('test-audio-btn')?.addEventListener('click', () => triggerTestShape('burst', 1.25));
     document.getElementById('test-crackle-btn')?.addEventListener('click', triggerTestCrackle);
@@ -1414,7 +1467,7 @@ function schedulePaletteUpdate(preview = false) {
     palettePreviewTimer = window.setTimeout(async () => {
         palettePreviewTimer = null;
         try {
-            await fetch('/api/webgpu-fireworks/trigger', {
+            await requestJson('/api/webgpu-fireworks/trigger', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1496,7 +1549,7 @@ function updateActiveShapes() {
  */
 async function triggerTestShape(shape, intensity = 1.5) {
     try {
-        await fetch('/api/webgpu-fireworks/trigger', {
+        await requestJson('/api/webgpu-fireworks/trigger', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1511,7 +1564,8 @@ async function triggerTestShape(shape, intensity = 1.5) {
         showToast(`${shape}: ${t('plugins.webgpu-fireworks.ui.firework_triggered', 'Firework triggered')}`, 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger test:', e);
-        showToast(t('plugins.webgpu-fireworks.ui.test_trigger_failed', 'Failed to trigger test'), 'error');
+        const fallback = t('plugins.webgpu-fireworks.ui.test_trigger_failed', 'Failed to trigger test');
+        showToast(requestFailureMessage(e, fallback), 'error');
     }
 }
 
@@ -1520,7 +1574,7 @@ async function triggerTestShape(shape, intensity = 1.5) {
  */
 async function triggerTestCrackle() {
     try {
-        const response = await fetch('/api/webgpu-fireworks/trigger', {
+        await requestJson('/api/webgpu-fireworks/trigger', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1536,12 +1590,11 @@ async function triggerTestCrackle() {
                 colors: getConfiguredPreviewColors()
             })
         });
-        const result = await response.json();
-        if (!response.ok || !result.success) throw new Error(result.error || 'Crackling test failed');
         showToast(t('plugins.webgpu-fireworks.ui.crackling_rocket_triggered', 'Complete crackling rocket triggered!'), 'success');
     } catch (error) {
         console.error('[Fireworks Settings] Failed to trigger crackling test:', error);
-        showToast(t('plugins.webgpu-fireworks.ui.crackling_rocket_failed', 'Failed to trigger crackling rocket'), 'error');
+        const fallback = t('plugins.webgpu-fireworks.ui.crackling_rocket_failed', 'Failed to trigger crackling rocket');
+        showToast(requestFailureMessage(error, fallback), 'error');
     }
 }
 
@@ -1564,7 +1617,7 @@ async function triggerTestTier(tier) {
     };
 
     try {
-        await fetch('/api/webgpu-fireworks/trigger', {
+        await requestJson('/api/webgpu-fireworks/trigger', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1581,7 +1634,8 @@ async function triggerTestTier(tier) {
         showToast(`${tier}: ${t('plugins.webgpu-fireworks.ui.firework_triggered', 'Firework triggered')}`, 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger tier test:', e);
-        showToast(t('plugins.webgpu-fireworks.ui.tier_test_failed', 'Failed to trigger tier test'), 'error');
+        const fallback = t('plugins.webgpu-fireworks.ui.tier_test_failed', 'Failed to trigger tier test');
+        showToast(requestFailureMessage(e, fallback), 'error');
     }
 }
 
@@ -1590,7 +1644,7 @@ async function triggerTestTier(tier) {
  */
 async function triggerTestRandom() {
     try {
-        await fetch('/api/webgpu-fireworks/random', {
+        await requestJson('/api/webgpu-fireworks/random', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
@@ -1598,7 +1652,8 @@ async function triggerTestRandom() {
         showToast(t('plugins.webgpu-fireworks.ui.random_firework_triggered', 'Random firework triggered!'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger random:', e);
-        showToast(t('plugins.webgpu-fireworks.ui.random_firework_failed', 'Failed to trigger random'), 'error');
+        const fallback = t('plugins.webgpu-fireworks.ui.random_firework_failed', 'Failed to trigger random');
+        showToast(requestFailureMessage(e, fallback), 'error');
     }
 }
 
@@ -1619,7 +1674,7 @@ async function triggerTestAvatar() {
         avatarUrl = URL.createObjectURL(new Blob([avatarSvg], { type: 'image/svg+xml' }));
 
         // Trigger with the test avatar
-        await fetch('/api/webgpu-fireworks/trigger', {
+        await requestJson('/api/webgpu-fireworks/trigger', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1635,7 +1690,8 @@ async function triggerTestAvatar() {
         showToast(t('plugins.webgpu-fireworks.ui.avatar_test_triggered', 'Avatar firework test triggered!'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger avatar test:', e);
-        showToast(t('plugins.webgpu-fireworks.ui.avatar_test_failed', 'Failed to trigger avatar test'), 'error');
+        const fallback = t('plugins.webgpu-fireworks.ui.avatar_test_failed', 'Failed to trigger avatar test');
+        showToast(requestFailureMessage(e, fallback), 'error');
     } finally {
         if (avatarUrl) {
             setTimeout(() => URL.revokeObjectURL(avatarUrl), 60000);
@@ -1818,7 +1874,8 @@ async function applyPreset(presetName) {
     updateUI();
 
     // Save config
-    await saveConfig();
+    const saved = await saveConfig(false);
+    if (!saved) return;
 
     const msg = window.i18n ? window.i18n.t('plugins.webgpu-fireworks.webgpu_fireworks.presets.applied') : 'Preset applied!';
     showToast(`${msg} (${presetName.toUpperCase()})`, 'success');
@@ -2208,7 +2265,12 @@ function renderGiftStyleMappings() {
         remove.type = 'button';
         remove.className = 'text-red-300 font-bold';
         remove.textContent = t('plugins.webgpu-fireworks.ui.remove', 'Remove');
-        remove.addEventListener('click', () => removeGiftStyleMapping(giftId));
+        remove.addEventListener('click', () => {
+            removeGiftStyleMapping(giftId).catch(error => {
+                const fallback = t('plugins.webgpu-fireworks.ui.gift_mapping_remove_failed', 'Gift mapping could not be removed');
+                showToast(requestFailureMessage(error, fallback), 'error');
+            });
+        });
         row.append(label, remove);
         root.appendChild(row);
     }
@@ -2222,7 +2284,7 @@ async function saveGiftStyleMapping() {
         return;
     }
     const existing = config.giftShapeMappings?.[giftId] || {};
-    const response = await fetch('/api/webgpu-fireworks/gift-mappings', {
+    await requestJson('/api/webgpu-fireworks/gift-mappings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2233,8 +2295,6 @@ async function saveGiftStyleMapping() {
             intensity: existing.intensity || 1
         })
     });
-    const data = await response.json();
-    if (!data.success) throw new Error(data.error || t('plugins.webgpu-fireworks.ui.gift_mapping_save_failed', 'Gift mapping could not be saved'));
     config.giftShapeMappings = {
         ...(config.giftShapeMappings || {}),
         [giftId]: {
@@ -2248,9 +2308,7 @@ async function saveGiftStyleMapping() {
 }
 
 async function removeGiftStyleMapping(giftId) {
-    const response = await fetch(`/api/webgpu-fireworks/gift-mappings/${encodeURIComponent(giftId)}`, { method: 'DELETE' });
-    const data = await response.json();
-    if (!data.success) throw new Error(data.error || t('plugins.webgpu-fireworks.ui.gift_mapping_remove_failed', 'Gift mapping could not be removed'));
+    await requestJson(`/api/webgpu-fireworks/gift-mappings/${encodeURIComponent(giftId)}`, { method: 'DELETE' });
     delete config.giftShapeMappings[giftId];
     renderGiftStyleMappings();
 }

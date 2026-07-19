@@ -38,6 +38,7 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
   test('binds finale selectors to config and sends the exact selected object from the test button', () => {
     const source = read('ui/settings.js');
     const triggerSource = source.slice(source.indexOf('async function triggerFinale()'), source.indexOf('async function testSuperfanFinale()'));
+    const requestSource = source.slice(source.indexOf('async function requestJson('), source.indexOf('function finaleSelectorLabels()'));
 
     expect(source).toContain("document.getElementById('finale-style').value = config.goalFinaleStyle || 'auto'");
     expect(source).toContain("document.getElementById('finale-length').value = config.goalFinaleLength || 'medium'");
@@ -50,7 +51,10 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
     expect(triggerSource).toContain('length: length');
     expect(triggerSource).toContain('intensity: intensity');
     expect(triggerSource).toContain('testRequest: true');
-    expect(triggerSource).toContain('response.ok');
+    expect(triggerSource).toContain("requestJson('/api/webgpu-fireworks/finale'");
+    expect(requestSource).toContain('!response.ok');
+    expect(requestSource).toContain('payload?.success !== true');
+    expect(requestSource).toContain('payload.accepted === false');
     expect(triggerSource).toContain('renderer_upgrade_required');
     expect(triggerSource).not.toContain('duration');
   });
