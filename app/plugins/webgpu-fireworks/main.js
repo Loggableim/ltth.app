@@ -26,12 +26,15 @@ const {
     normalizeConfig,
     normalizeFinaleRequest,
     normalizeFireworkTrigger,
-    normalizeGiftMapping
+    normalizeGiftMapping,
+    isCustomFinaleStyleId
 } = require('./lib/config-schema');
 const { evaluateTriggerPolicy } = require('./lib/trigger-policy');
 const { SpawnPlanner } = require('./lib/spawn-planner');
 const { FinaleShowPlanner, FINALE_STYLES } = require('./lib/finale-show-planner');
 const { FinaleShuffleBag } = require('./lib/finale-shuffle-bag');
+const { resolveFinaleSelection } = require('./lib/finale-runtime-resolver');
+const { RevisionedShowRepository } = require('./lib/show-repository');
 const { SuperfanFinaleHistory, normalizeSuperfanIdentityAliases } = require('./lib/superfan-finale-history');
 
 const FIREWORKS_CONFIG_MIGRATION_VERSION = 1;
@@ -117,6 +120,8 @@ class FireworksPlugin {
         this.finaleShowPlanner = new FinaleShowPlanner();
         this.finaleShuffleBag = new FinaleShuffleBag(() => this.getAutoEligibleFinaleStyleIds());
         this.finaleIdCounter = 0;
+        this.showRepository = null;
+        this.showRepositoryLoadError = null;
     }
 
     async init() {
@@ -124,6 +129,7 @@ class FireworksPlugin {
 
         // Ensure plugin data directory exists
         this.api.ensurePluginDataDir();
+        this.initializeShowRepository();
         this.superfanFinaleHistory.load();
 
         // Migrate old uploads if they exist
@@ -188,6 +194,25 @@ class FireworksPlugin {
 
         this.api.log('✅ [FIREWORKS] Fireworks Superplugin initialized successfully', 'info');
         this.logRoutes();
+    }
+
+    initializeShowRepository() {
+        this.showRepository = new RevisionedShowRepository({
+            dataDir: this.pluginDataDir,
+            logger: message => this.api.log(message, 'warn')
+        });
+        this.showRepositoryLoadError = null;
+        try {
+            this.showRepository.load();
+        } catch (error) {
+            this.showRepositoryLoadError = error;
+            const reason = error?.code || error?.message || 'UNKNOWN_ERROR';
+            this.api.log(
+                `[FIREWORKS] Show repository load failed (${reason}): ${error?.message || reason}. ` +
+                'Built-in finales remain available; repository files were left untouched.',
+                'error'
+            );
+        }
     }
 
     /**
@@ -1812,6 +1837,21 @@ class FireworksPlugin {
     /**
      * Trigger finale show (multiple simultaneous fireworks)
      */
+    getPublishedCustomFinale(style, length) {
+        if (!this.showRepository || this.showRepositoryLoadError) {
+            const error = new Error('The custom show repository is unavailable.');
+            error.code = this.showRepositoryLoadError?.code || 'REPOSITORY_UNAVAILABLE';
+            throw error;
+        }
+        const definition = this.showRepository.getPublishedDefinition(style);
+        if (!definition.variants || !Object.prototype.hasOwnProperty.call(definition.variants, length)) {
+            const error = new Error(`The custom show does not define the ${length} variant.`);
+            error.code = 'CUSTOM_VARIANT_UNAVAILABLE';
+            throw error;
+        }
+        return definition;
+    }
+
     triggerFinale(optionsOrIntensity, legacyDuration, legacyBypassEnabled = false) {
         const config = this.config || normalizeConfig();
         const isObjectCall = optionsOrIntensity !== null &&
@@ -1865,18 +1905,34 @@ class FireworksPlugin {
             return { accepted: false, reason: 'disabled' };
         }
 
-        const resolvedStyle = finale.style === 'auto'
-            ? this.finaleShuffleBag.draw() || FINALE_STYLES[0]
-            : finale.style;
+        const selection = resolveFinaleSelection({
+            requestedStyle: finale.style,
+            configuredStyle: config.goalFinaleStyle,
+            builtInStyles: FINALE_STYLES,
+            isCustomStyle: isCustomFinaleStyleId,
+            drawAuto: () => this.finaleShuffleBag.draw(),
+            loadCustom: style => this.getPublishedCustomFinale(style, finale.length),
+            warnUnavailable: (style, error) => {
+                const reason = error?.code || error?.message || 'UNKNOWN_ERROR';
+                this.api.log(
+                    `[FIREWORKS] Custom finale ${style} is unavailable (${reason}); applying configured fallback.`,
+                    'warn'
+                );
+            }
+        });
+        const resolvedStyle = selection.style;
         const id = finale.id || `finale-${Date.now()}-${finale.seed}-${this.finaleIdCounter++}`;
-        const showPlan = this.finaleShowPlanner.plan({
+        const planOptions = {
             id,
             style: resolvedStyle,
             length: finale.length,
             orientation: config.orientation,
             intensity: finale.intensity,
             seed: finale.seed
-        });
+        };
+        const showPlan = selection.definition
+            ? this.finaleShowPlanner.planDefinition(selection.definition, planOptions)
+            : this.finaleShowPlanner.plan(planOptions);
         const bursts = showPlan.cues.flatMap(cue => cue.launches.map(launch => ({
             ...launch,
             beatAtMs: cue.beatAtMs,
@@ -1941,6 +1997,17 @@ class FireworksPlugin {
     }
 
     getAutoEligibleFinaleStyleIds() {
+        if (this.showRepository && !this.showRepositoryLoadError) {
+            try {
+                return this.showRepository.getAutoEligibleStyleIds();
+            } catch (error) {
+                this.api.log(
+                    `[FIREWORKS] Auto style repository lookup failed (${error?.code || error?.message || 'UNKNOWN_ERROR'}); ` +
+                    'using built-in finales.',
+                    'warn'
+                );
+            }
+        }
         return [...FINALE_STYLES];
     }
 
@@ -2183,6 +2250,10 @@ class FireworksPlugin {
             this.connectedSockets.clear();
         }
         this.overlayTelemetry.clear();
+
+        // Repository persistence outlives the plugin instance; clear only runtime references.
+        this.showRepository = null;
+        this.showRepositoryLoadError = null;
 
         this.api.log('🎆 [FIREWORKS] Fireworks Superplugin destroyed', 'info');
     }

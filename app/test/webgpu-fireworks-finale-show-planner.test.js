@@ -3,6 +3,7 @@ const {
   FINALE_STYLES,
   FINALE_LENGTHS
 } = require('../plugins/webgpu-fireworks/lib/finale-show-planner');
+const { BUILT_IN_SHOW_DEFINITIONS } = require('../plugins/webgpu-fireworks/lib/built-in-shows');
 
 const COUNTS = {
   'classic-crescendo': { short: 14, medium: 24, long: 36 },
@@ -278,5 +279,66 @@ describe('WebGPU Fireworks finale show planner', () => {
     expect(highTiers.every((tier, index) => tier >= lowTiers[index])).toBe(true);
     expect(highTiers.some((tier, index) => tier > lowTiers[index])).toBe(true);
     expect(withoutIntensityFields(high)).toEqual(withoutIntensityFields(low));
+  });
+
+  test('compiles a supplied custom definition as a deterministic isolated V2 event snapshot', () => {
+    const definition = JSON.parse(JSON.stringify(BUILT_IN_SHOW_DEFINITIONS['classic-crescendo']));
+    definition.id = 'custom:00000000-0000-4000-8000-000000000321';
+    definition.metadata.name = 'Repository Snapshot';
+    const before = JSON.parse(JSON.stringify(definition));
+    const options = {
+      id: 'event-custom-321',
+      style: definition.id,
+      length: 'short',
+      intensity: 6,
+      seed: 321
+    };
+
+    const planner = new FinaleShowPlanner();
+    const first = planner.planDefinition(definition, options);
+    const repeat = planner.planDefinition(definition, options);
+
+    expect(first).toEqual(repeat);
+    expect(first).toMatchObject({
+      planVersion: 2,
+      id: 'event-custom-321',
+      definitionId: definition.id,
+      style: definition.id,
+      length: 'short',
+      variant: 'short',
+      seed: 321
+    });
+    expect(definition).toEqual(before);
+    for (const cue of first.cues) {
+      expect(cue).toMatchObject({
+        id: expect.stringContaining('event-custom-321-cue-'),
+        beatAtMs: cue.timeMs,
+        shells: cue.launches
+      });
+      for (const launch of cue.launches) {
+        expect(launch).toMatchObject({
+          id: expect.stringContaining(`${cue.id}-launch-`),
+          seed: expect.any(Number),
+          powerScale: expect.any(Number),
+          particleScale: expect.any(Number),
+          soundRole: expect.any(String)
+        });
+      }
+    }
+  });
+
+  test('custom intensity changes only tier and visual scales', () => {
+    const definition = JSON.parse(JSON.stringify(BUILT_IN_SHOW_DEFINITIONS['sky-ballet']));
+    definition.id = 'custom:00000000-0000-4000-8000-000000000322';
+    const options = { id: 'custom-intensity', style: definition.id, length: 'medium', seed: 44 };
+    const planner = new FinaleShowPlanner();
+    const low = planner.planDefinition(definition, { ...options, intensity: 1 });
+    const high = planner.planDefinition(definition, { ...options, intensity: 10 });
+
+    expect(withoutIntensityFields(high)).toEqual(withoutIntensityFields(low));
+    expect(new Set(low.cues.flatMap(cue => cue.launches).map(launch => launch.powerScale)))
+      .toEqual(new Set([0.75]));
+    expect(new Set(high.cues.flatMap(cue => cue.launches).map(launch => launch.particleScale)))
+      .toEqual(new Set([1.4]));
   });
 });

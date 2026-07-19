@@ -10,6 +10,7 @@ const { FINALE_STYLES, FINALE_LENGTHS } = require('./finale-show-planner');
 
 const ALLOWED_FINALE_STYLES = Object.freeze(['auto', ...FINALE_STYLES]);
 const ALLOWED_FINALE_LENGTHS = Object.freeze([...FINALE_LENGTHS]);
+const CUSTOM_FINALE_STYLE_PATTERN = /^custom:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SUPERFAN_FINALE_COOLDOWN_HOURS = Object.freeze([6, 12, 24, 72, 168]);
 const FINALE_DURATION_BY_LENGTH = Object.freeze({
   short: 10000,
@@ -179,7 +180,12 @@ function normalizeVisualStyle(value, fallback = DEFAULT_FIREWORKS_CONFIG.visualS
 }
 
 function normalizeFinaleStyle(value, fallback = DEFAULT_FIREWORKS_CONFIG.goalFinaleStyle) {
-  return ALLOWED_FINALE_STYLES.includes(value) ? value : fallback;
+  if (ALLOWED_FINALE_STYLES.includes(value)) return value;
+  return isCustomFinaleStyleId(value) ? value.toLowerCase() : fallback;
+}
+
+function isCustomFinaleStyleId(value) {
+  return typeof value === 'string' && CUSTOM_FINALE_STYLE_PATTERN.test(value);
 }
 
 function normalizeFinaleLength(value, fallback = DEFAULT_FIREWORKS_CONFIG.goalFinaleLength) {
@@ -494,6 +500,7 @@ module.exports = {
   clampInteger,
   clampNumber,
   finaleLengthFromDuration,
+  isCustomFinaleStyleId,
   normalizeCompletionNotification,
   normalizeConfig,
   normalizeFinaleLength,

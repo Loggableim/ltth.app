@@ -93,6 +93,23 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function intensityScales(intensityValue) {
+  const intensity = clamp(Number(intensityValue) || 1, 1, 10);
+  return {
+    intensity,
+    powerScale: round(0.75 + ((intensity - 1) / 9) * 0.6),
+    particleScale: round(0.7 + ((intensity - 1) / 9) * 0.7)
+  };
+}
+
+function customSoundRole(phase, tier, primitive) {
+  if (phase === 'finale') return primitive === 'glyph' ? 'crown' : 'wave';
+  if (tier === 'massive') return 'heavy';
+  if (phase === 'highlight' || tier === 'big') return 'accent';
+  if (phase === 'build') return ['comet', 'crossette', 'palm'].includes(primitive) ? 'volley' : 'pair';
+  return primitive === 'mine' ? 'heavy' : 'single';
+}
+
 class FinaleShowPlanner {
   plan(options = {}) {
     const style = FINALE_STYLES.includes(options.style) ? options.style : FINALE_STYLES[0];
@@ -100,9 +117,7 @@ class FinaleShowPlanner {
     const orientation = options.orientation === 'portrait' ? 'portrait' : 'landscape';
     const seed = Number(options.seed) >>> 0;
     const id = options.id === undefined || options.id === null ? `finale-${seed}` : String(options.id);
-    const intensity = clamp(Number(options.intensity) || 1, 1, 10);
-    const powerScale = round(0.75 + ((intensity - 1) / 9) * 0.6);
-    const particleScale = round(0.7 + ((intensity - 1) / 9) * 0.7);
+    const { intensity, powerScale, particleScale } = intensityScales(options.intensity);
     const definition = clone(BUILT_IN_SHOW_DEFINITIONS[style]);
     const blueprint = getBuiltInShowBlueprint(style);
     const variant = definition.variants[length];
@@ -156,6 +171,47 @@ class FinaleShowPlanner {
       return {
         ...cue,
         id: `${id}-cue-${index + 1}`,
+        beatAtMs: cue.timeMs,
+        shells,
+        launches: shells
+      };
+    });
+
+    return {
+      ...compiled,
+      id,
+      style,
+      variant: length,
+      length,
+      cues
+    };
+  }
+
+  planDefinition(definition, options = {}) {
+    const length = FINALE_LENGTHS.includes(options.length) ? options.length : 'medium';
+    const seed = Number(options.seed) >>> 0;
+    const id = options.id === undefined || options.id === null ? `finale-${seed}` : String(options.id);
+    const style = String(options.style || definition?.id || FINALE_STYLES[0]);
+    const { intensity, powerScale, particleScale } = intensityScales(options.intensity);
+    const compiled = compileShowDefinition(definition, { variant: length, seed });
+    const cues = compiled.cues.map((cue, cueIndex) => {
+      const cueId = `${id}-cue-${cueIndex + 1}`;
+      const shells = cue.shells.map((shell, launchIndex) => {
+        const primaryPrimitive = shell.layers[0]?.primitive || shell.shape || 'radial';
+        return {
+          ...shell,
+          id: `${cueId}-launch-${launchIndex + 1}`,
+          seed: mixSeed(seed, cueIndex, launchIndex),
+          tier: resolveTier(shell.tier, intensity),
+          powerScale,
+          particleScale,
+          soundRole: customSoundRole(cue.phase, shell.tier, primaryPrimitive),
+          crackleEnabled: false
+        };
+      });
+      return {
+        ...cue,
+        id: cueId,
         beatAtMs: cue.timeMs,
         shells,
         launches: shells
