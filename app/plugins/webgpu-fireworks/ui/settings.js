@@ -1799,6 +1799,8 @@ const PRESETS = {
     },
     toaster: {
         resolutionPreset: '540p',
+        internalMinResolutionPreset: '360p',
+        internalMaxResolutionPreset: '540p',
         maxParticles: 500,
         targetFps: 30,
         minFps: 24,
@@ -1809,6 +1811,8 @@ const PRESETS = {
     },
     potato: {
         resolutionPreset: '360p',
+        internalMinResolutionPreset: '360p',
+        internalMaxResolutionPreset: '360p',
         maxParticles: 300,
         targetFps: 24,
         minFps: 15,

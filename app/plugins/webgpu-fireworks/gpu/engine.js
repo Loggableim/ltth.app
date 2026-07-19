@@ -1089,7 +1089,7 @@ class WebGPUFireworksEngine {
         return { id: 'premium-hybrid', sizeScale: 1.08, glowScale: 1, trailScale: 1, turbulence: 0.12, smoke: 0.45 };
     }
 
-    getResolution() {
+    getResolution(preset = this.config.resolutionPreset) {
         const sizes = {
             '360p': [640, 360],
             '480p': [854, 480],
@@ -1099,7 +1099,7 @@ class WebGPUFireworksEngine {
             '1440p': [2560, 1440],
             '4k': [3840, 2160]
         };
-        let [width, height] = sizes[this.config.resolutionPreset] || sizes['1080p'];
+        let [width, height] = sizes[preset] || sizes['1080p'];
         if (this.config.orientation === 'portrait') [width, height] = [height, width];
         return { width, height };
     }
@@ -1122,13 +1122,31 @@ class WebGPUFireworksEngine {
 
     resize() {
         const size = this.getResolution();
+        const configuredMinimumSize = this.getResolution(this.config.internalMinResolutionPreset || '540p');
+        const configuredMaximumSize = this.getResolution(this.config.internalMaxResolutionPreset || '4k');
+        // Internal resolution bounds control downscaling only. A floor or ceiling
+        // above the logical OBS source must never turn into accidental supersampling.
+        const minimumSize = {
+            width: Math.min(size.width, configuredMinimumSize.width),
+            height: Math.min(size.height, configuredMinimumSize.height)
+        };
+        const maximumSize = {
+            width: Math.min(size.width, configuredMaximumSize.width),
+            height: Math.min(size.height, configuredMaximumSize.height)
+        };
         this.baseWidth = size.width;
         this.baseHeight = size.height;
-        const toasterScale = this.config.toasterMode ? 0.65 : 1;
-        const adaptiveScale = this.config.adaptivePerformance === false ? 1 : this.renderScale;
-        const scale = this.config.adaptiveRenderScaleEnabled === false ? 1 : Math.max(this.config.minRenderScale || 0.55, Math.min(toasterScale, adaptiveScale));
-        const width = Math.max(320, Math.round(size.width * scale));
-        const height = Math.max(180, Math.round(size.height * scale));
+        let desiredScale = 1;
+        if (this.config.adaptiveRenderScaleEnabled !== false) {
+            const toasterScale = this.config.toasterMode ? 0.65 : 1;
+            const adaptiveScale = this.config.adaptivePerformance === false ? 1 : this.renderScale;
+            desiredScale = Math.max(this.config.minRenderScale || 0.55, Math.min(toasterScale, adaptiveScale));
+        }
+        const minimumScale = Math.max(minimumSize.width / size.width, minimumSize.height / size.height);
+        const maximumScale = Math.min(maximumSize.width / size.width, maximumSize.height / size.height);
+        const scale = Math.max(minimumScale, Math.min(maximumScale, desiredScale));
+        const width = Math.max(minimumSize.width, Math.min(maximumSize.width, Math.round(size.width * scale)));
+        const height = Math.max(minimumSize.height, Math.min(maximumSize.height, Math.round(size.height * scale)));
         this.canvas.style.width = this.config.orientation === 'portrait' ? 'auto' : '100%';
         this.canvas.style.height = '100%';
         this.renderer?.resize(width, height);

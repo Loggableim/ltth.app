@@ -300,6 +300,32 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
     expect(list.textContent).toContain(giftId);
   });
 
+  test('low-end presets persist matching internal resolution ranges that never upscale', async () => {
+    const { window, fetchMock } = await bootSettings();
+
+    await window.applyPreset('toaster');
+    let configCalls = callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/config');
+    let saved = JSON.parse(configCalls.at(-1)[1].body);
+    expect(saved).toMatchObject({
+      resolutionPreset: '540p',
+      internalMinResolutionPreset: '360p',
+      internalMaxResolutionPreset: '540p'
+    });
+    expect(window.document.getElementById('internal-min-resolution').value).toBe('360p');
+    expect(window.document.getElementById('internal-max-resolution').value).toBe('540p');
+
+    await window.applyPreset('potato');
+    configCalls = callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/config');
+    saved = JSON.parse(configCalls.at(-1)[1].body);
+    expect(saved).toMatchObject({
+      resolutionPreset: '360p',
+      internalMinResolutionPreset: '360p',
+      internalMaxResolutionPreset: '360p'
+    });
+    expect(window.document.getElementById('internal-min-resolution').value).toBe('360p');
+    expect(window.document.getElementById('internal-max-resolution').value).toBe('360p');
+  });
+
   test('benchmark starts a server session before opening its unique overlay and binds every request to that session', async () => {
     const sessionId = '11111111-1111-4111-8111-111111111111';
     const overlayUrl = `http://localhost:3000/webgpu-fireworks/overlay?benchmark=true&benchmarkSessionId=${sessionId}`;

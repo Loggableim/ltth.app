@@ -308,6 +308,10 @@ function normalizeGiftShapeMappings(value) {
 function normalizeConfig(config = {}) {
   const source = isPlainObject(config) ? config : {};
   const defaults = DEFAULT_FIREWORKS_CONFIG;
+  const requestedInternalMin = normalizePreset(source.internalMinResolutionPreset, defaults.internalMinResolutionPreset);
+  const requestedInternalMax = normalizePreset(source.internalMaxResolutionPreset, defaults.internalMaxResolutionPreset);
+  const internalBounds = [requestedInternalMin, requestedInternalMax]
+    .sort((a, b) => VALID_RESOLUTION_PRESETS.indexOf(a) - VALID_RESOLUTION_PRESETS.indexOf(b));
 
   return {
     ...defaults,
@@ -396,8 +400,8 @@ function normalizeConfig(config = {}) {
       : [...defaults.particleSizeRange],
     resolution: clampNumber(source.resolution, 0.25, 2, defaults.resolution),
     resolutionPreset: normalizePreset(source.resolutionPreset, defaults.resolutionPreset),
-    internalMaxResolutionPreset: normalizePreset(source.internalMaxResolutionPreset, defaults.internalMaxResolutionPreset),
-    internalMinResolutionPreset: normalizePreset(source.internalMinResolutionPreset, defaults.internalMinResolutionPreset),
+    internalMaxResolutionPreset: internalBounds[1],
+    internalMinResolutionPreset: internalBounds[0],
     orientation: VALID_ORIENTATIONS.includes(source.orientation) ? source.orientation : defaults.orientation,
     adaptiveRenderScaleEnabled: normalizeBoolean(source.adaptiveRenderScaleEnabled, defaults.adaptiveRenderScaleEnabled),
     minRenderScale: clampNumber(source.minRenderScale, 0.25, 1, defaults.minRenderScale),
