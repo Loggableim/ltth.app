@@ -956,17 +956,26 @@ class WebGPUParticleEngine {
     _uploadSpawnCommands() {
         const pending = this.spawnQueue.splice(0);
         let admission;
+        let admissionError = null;
         try {
             admission = SpawnCommandPolicy.admitSpawnCommands(pending, {
                 maxCommands: this.maxSpawnCommands
             });
         } catch (error) {
-            this._recordCommandAdmission(error.telemetry || SpawnCommandPolicy.emptyCommandTelemetry());
-            throw error;
+            if (!error.admission) {
+                this._recordCommandAdmission(error.telemetry || SpawnCommandPolicy.emptyCommandTelemetry());
+                throw error;
+            }
+            admission = error.admission;
+            admissionError = error;
         }
         this._recordCommandAdmission(admission.telemetry);
         const commands = admission.selected;
-        if (!commands.length) return { count: 0, maxParticles: 0 };
+        if (!commands.length) {
+            return admissionError
+                ? { count: 0, maxParticles: 0, admissionError }
+                : { count: 0, maxParticles: 0 };
+        }
         const raw = new ArrayBuffer(commands.length * 112);
         const f32 = new Float32Array(raw);
         const u32 = new Uint32Array(raw);
@@ -996,7 +1005,9 @@ class WebGPUParticleEngine {
             maxParticles = Math.max(maxParticles, command.count);
         });
         this.device.queue.writeBuffer(this.buffers.commands, 0, raw);
-        return { count: commands.length, maxParticles };
+        const spawn = { count: commands.length, maxParticles };
+        if (admissionError) spawn.admissionError = admissionError;
+        return spawn;
     }
 
     _recordCommandAdmission(current) {
@@ -1081,6 +1092,8 @@ class WebGPUParticleEngine {
             this.simulationAccumulator = Math.max(0, this.simulationAccumulator - simulationSteps * this.fixedStepSeconds);
             this.simulationStarted = true;
         }
+
+        if (spawn.admissionError) throw spawn.admissionError;
 
         // Simulation and queued spawns continue even when adaptive quality
         // skips an expensive presentation frame.

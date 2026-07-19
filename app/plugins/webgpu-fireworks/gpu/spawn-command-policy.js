@@ -34,7 +34,7 @@
   ]);
 
   class RequiredCoreAdmissionError extends Error {
-    constructor(command, telemetry) {
+    constructor(command, admission) {
       const correlationId = command.correlationId ?? command.effectId ?? null;
       const beatId = command.beatId ?? null;
       super(`Required core show command ${String(correlationId || 'unknown')} could not be admitted` +
@@ -44,7 +44,10 @@
       this.lane = 'show';
       this.beatId = beatId;
       this.correlationId = correlationId;
-      this.telemetry = telemetry;
+      this.admission = admission;
+      this.selectedFallback = admission.selected;
+      this.dropped = admission.dropped;
+      this.telemetry = admission.telemetry;
     }
   }
 
@@ -128,16 +131,24 @@
     }
 
     const show = normalized.filter(command => command.lane === 'show').sort(commandOrder);
+    const giftLive = normalized.filter(command => command.lane !== 'show').sort(commandOrder);
     const selectedShow = show.slice(0, maxShowCommands);
     const rejectedRequired = show.slice(maxShowCommands).find(command => command.required);
     if (rejectedRequired) {
-      const telemetry = emptyCommandTelemetry();
+      const selected = giftLive.slice(0, Math.max(0, Math.min(maxGiftLiveCommands, maxCommands)));
+      const selectedIndexes = new Set(selected.map(command => command.index));
+      const dropped = normalized.filter(command => !selectedIndexes.has(command.index));
+      const telemetry = summarizeSelection(selected, dropped);
       telemetry.requiredCoreFailures = 1;
-      telemetry.droppedShowCommands = show.length;
-      throw new RequiredCoreAdmissionError(rejectedRequired, telemetry);
+      const admission = {
+        selected: selected.map(({ index, ...command }) => command),
+        dropped: dropped.map(({ index, ...command }) => command),
+        telemetry,
+        legacy: false
+      };
+      throw new RequiredCoreAdmissionError(rejectedRequired, admission);
     }
 
-    const giftLive = normalized.filter(command => command.lane !== 'show').sort(commandOrder);
     const selected = [
       ...selectedShow,
       ...giftLive.slice(0, maxGiftLiveCommands)

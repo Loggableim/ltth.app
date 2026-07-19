@@ -15,6 +15,30 @@ const makeEngine = () => {
   return { engine, uploads };
 };
 
+const enableComputeRender = engine => {
+  const pass = {
+    setBindGroup: jest.fn(),
+    setPipeline: jest.fn(),
+    dispatchWorkgroups: jest.fn(),
+    end: jest.fn()
+  };
+  const encoder = {
+    beginComputePass: jest.fn(() => pass),
+    finish: jest.fn(() => ({ kind: 'compute' }))
+  };
+  engine.device.createCommandEncoder = jest.fn(() => encoder);
+  engine.device.queue.submit = jest.fn();
+  engine.buffers.uniforms = {};
+  engine.computeBindGroup = {};
+  engine.pipelines = {
+    reset: {},
+    spawn: {},
+    update: {},
+    secondary: {}
+  };
+  return { pass, encoder };
+};
+
 const queueCommand = (engine, {
   seed,
   lane = 'show',
@@ -113,8 +137,8 @@ describe('WebGPU Fireworks spawn command lane admission', () => {
     );
   });
 
-  test('throws a correlated renderer error instead of silently truncating required core overflow', () => {
-    const { engine } = makeEngine();
+  test('uploads reserved realtime fallback and returns a correlated error on required show overflow', () => {
+    const { engine, uploads } = makeEngine();
     for (let seed = 1; seed <= 29; seed++) {
       queueCommand(engine, {
         seed,
@@ -124,10 +148,80 @@ describe('WebGPU Fireworks spawn command lane admission', () => {
         effectId: `show:correlated:layer:${seed}`
       });
     }
+    for (let seed = 101; seed <= 105; seed++) {
+      queueCommand(engine, { seed, lane: 'gift', priority: 'core' });
+    }
+    for (let seed = 201; seed <= 202; seed++) {
+      queueCommand(engine, { seed, lane: 'live', priority: 'core' });
+    }
+
+    const spawn = engine._uploadSpawnCommands();
+    expect(spawn).toMatchObject({
+      count: 4,
+      maxParticles: 1,
+      admissionError: {
+        name: 'RequiredCoreAdmissionError',
+        code: 'REQUIRED_CORE_COMMAND_OVERFLOW',
+        lane: 'show',
+        beatId: 'beat:29',
+        correlationId: 'show:correlated:layer:29'
+      }
+    });
+    expect(uploadedSeeds(uploads[0])).toEqual([101, 102, 103, 104]);
+    expect(engine.spawnQueue).toHaveLength(0);
+    expect(engine.getMetrics().commandAdmission.current).toMatchObject({
+      selectedShowCommands: 0,
+      droppedShowCommands: 29,
+      selectedGiftCommands: 4,
+      droppedGiftCommands: 1,
+      selectedLiveCommands: 0,
+      droppedLiveCommands: 2,
+      requiredCoreFailures: 1
+    });
+
+    expect(engine._uploadSpawnCommands()).toEqual({ count: 0, maxParticles: 0 });
+    expect(uploads).toHaveLength(1);
+    expect(engine.getMetrics().commandAdmission).toMatchObject({
+      current: {
+        selectedShowCommands: 0,
+        droppedShowCommands: 0,
+        selectedGiftCommands: 0,
+        droppedGiftCommands: 0,
+        selectedLiveCommands: 0,
+        droppedLiveCommands: 0,
+        requiredCoreFailures: 0
+      },
+      cumulative: {
+        selectedShowCommands: 0,
+        droppedShowCommands: 29,
+        selectedGiftCommands: 4,
+        droppedGiftCommands: 1,
+        selectedLiveCommands: 0,
+        droppedLiveCommands: 2,
+        requiredCoreFailures: 1
+      }
+    });
+  });
+
+  test('submits gift fallback compute work before throwing required-show overflow from render', () => {
+    const { engine, uploads } = makeEngine();
+    const { encoder } = enableComputeRender(engine);
+    for (let seed = 1; seed <= 29; seed++) {
+      queueCommand(engine, {
+        seed,
+        priority: 'core',
+        required: true,
+        beatId: `beat:${seed}`,
+        effectId: `show:render:layer:${seed}`
+      });
+    }
+    for (let seed = 101; seed <= 104; seed++) {
+      queueCommand(engine, { seed, lane: 'gift', priority: 'core', required: true });
+    }
 
     let failure;
     try {
-      engine._uploadSpawnCommands();
+      engine.render(1 / 60, 1, { present: false });
     } catch (error) {
       failure = error;
     }
@@ -135,12 +229,15 @@ describe('WebGPU Fireworks spawn command lane admission', () => {
     expect(failure).toMatchObject({
       name: 'RequiredCoreAdmissionError',
       code: 'REQUIRED_CORE_COMMAND_OVERFLOW',
-      lane: 'show',
       beatId: 'beat:29',
-      correlationId: 'show:correlated:layer:29'
+      correlationId: 'show:render:layer:29'
     });
+    expect(uploadedSeeds(uploads[0])).toEqual([101, 102, 103, 104]);
+    expect(engine.device.queue.submit).toHaveBeenCalledWith([{ kind: 'compute' }]);
+    expect(engine.device.createCommandEncoder).toHaveBeenCalledTimes(1);
+    expect(engine.device.createCommandEncoder).toHaveBeenCalledWith({ label: 'fireworks-compute-frame' });
+    expect(encoder.finish).toHaveBeenCalledTimes(1);
     expect(engine.spawnQueue).toHaveLength(0);
-    expect(engine.getMetrics().commandAdmission.current.requiredCoreFailures).toBe(1);
   });
 
   test('preserves source correlation through multi-command show helpers', () => {
@@ -159,13 +256,8 @@ describe('WebGPU Fireworks spawn command lane admission', () => {
       });
     }
 
-    let failure;
-    try {
-      engine._uploadSpawnCommands();
-    } catch (error) {
-      failure = error;
-    }
-    expect(failure).toMatchObject({
+    const spawn = engine._uploadSpawnCommands();
+    expect(spawn.admissionError).toMatchObject({
       code: 'REQUIRED_CORE_COMMAND_OVERFLOW',
       beatId: 'cue:wall',
       correlationId: 'show:wall:shell:3'
