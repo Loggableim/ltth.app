@@ -60,6 +60,19 @@ function record(options = {}) {
   };
 }
 
+function recordWithCueTimes(times) {
+  const editable = record();
+  const source = editable.definition.variants.long.cues[0];
+  editable.definition.variants.long.cues = times.map((timeMs, index) => {
+    const cue = JSON.parse(JSON.stringify(source));
+    cue.timeMs = timeMs;
+    cue.shells[0].target.x = (index + 1) / 10;
+    cue.shells[0].layers[0].colors = [`#00000${index + 1}`];
+    return cue;
+  });
+  return editable;
+}
+
 describe('WebGPU Fireworks Show Designer model', () => {
   test('snaps timeline and stage values while Alt-style bypass remains exact', () => {
     expect(snapTime(1549)).toBe(1500);
@@ -124,6 +137,98 @@ describe('WebGPU Fireworks Show Designer model', () => {
     store.moveSelectedCues(100);
     expect(store.getState().definition.variants.long.cues.map(cue => cue.timeMs))
       .toEqual([2600, 3600]);
+  });
+
+  test('remaps shell and layer selections by object identity after a cue drag reorders cues', () => {
+    const store = new ShowDesignerStore();
+    store.loadShow(recordWithCueTimes([1000, 2000, 3000]));
+    store.selectLayer(0, 0, 0);
+
+    store.moveSelectedCues(2500);
+
+    const state = store.getState();
+    expect(state.definition.variants.long.cues.map(cue => cue.timeMs))
+      .toEqual([2000, 3000, 3500]);
+    expect(state.definition.variants.long.cues[2].shells[0].target.x).toBe(0.1);
+    expect(state.selection).toEqual({
+      cueIndexes: [2],
+      primaryCueIndex: 2,
+      shells: [{ cueIndex: 2, shellIndex: 0 }],
+      primaryShell: { cueIndex: 2, shellIndex: 0 },
+      layer: { cueIndex: 2, shellIndex: 0, layerIndex: 0 }
+    });
+  });
+
+  test('remaps shell selections spanning multiple reordered cues', () => {
+    const store = new ShowDesignerStore();
+    store.loadShow(recordWithCueTimes([1000, 2000, 2500]));
+    store.selectShell(0, 0);
+    store.selectShell(1, 0, { additive: true });
+
+    store.moveSelectedCues(2000);
+
+    const state = store.getState();
+    expect(state.definition.variants.long.cues.map(cue => cue.timeMs))
+      .toEqual([2500, 3000, 4000]);
+    expect(state.definition.variants.long.cues.map(cue => cue.shells[0].target.x))
+      .toEqual([0.3, 0.1, 0.2]);
+    expect(state.selection).toEqual({
+      cueIndexes: [1, 2],
+      primaryCueIndex: 2,
+      shells: [
+        { cueIndex: 1, shellIndex: 0 },
+        { cueIndex: 2, shellIndex: 0 }
+      ],
+      primaryShell: { cueIndex: 2, shellIndex: 0 },
+      layer: null
+    });
+  });
+
+  test('clamps one shared multi-cue drag delta at both timeline bounds without compressing spacing', () => {
+    const leftStore = new ShowDesignerStore();
+    leftStore.loadShow(recordWithCueTimes([100, 500]));
+    leftStore.selectCue(0);
+    leftStore.selectCue(1, { additive: true });
+    leftStore.moveSelectedCues(-300);
+    expect(leftStore.getState().definition.variants.long.cues.map(cue => cue.timeMs))
+      .toEqual([0, 400]);
+    expect(leftStore.undo()).toBe(true);
+    expect(leftStore.getState().definition.variants.long.cues.map(cue => cue.timeMs))
+      .toEqual([100, 500]);
+    expect(leftStore.undo()).toBe(false);
+
+    const rightStore = new ShowDesignerStore();
+    rightStore.loadShow(recordWithCueTimes([27500, 27900]));
+    rightStore.selectCue(0);
+    rightStore.selectCue(1, { additive: true });
+    rightStore.moveSelectedCues(500);
+    expect(rightStore.getState().definition.variants.long.cues.map(cue => cue.timeMs))
+      .toEqual([27600, 28000]);
+    expect(rightStore.getState().selection.cueIndexes).toEqual([0, 1]);
+  });
+
+  test('sorts direct cue time edits and remaps the full selection in one undoable mutation', () => {
+    const store = new ShowDesignerStore();
+    store.loadShow(recordWithCueTimes([1000, 2000, 3000]));
+    store.selectLayer(0, 0, 0);
+
+    store.setCueField(0, 'timeMs', 3500);
+
+    const state = store.getState();
+    expect(state.definition.variants.long.cues.map(cue => cue.timeMs))
+      .toEqual([2000, 3000, 3500]);
+    expect(state.definition.variants.long.cues[2].shells[0].target.x).toBe(0.1);
+    expect(state.selection).toEqual({
+      cueIndexes: [2],
+      primaryCueIndex: 2,
+      shells: [{ cueIndex: 2, shellIndex: 0 }],
+      primaryShell: { cueIndex: 2, shellIndex: 0 },
+      layer: { cueIndex: 2, shellIndex: 0, layerIndex: 0 }
+    });
+    expect(store.undo()).toBe(true);
+    expect(store.getState().definition.variants.long.cues.map(cue => cue.timeMs))
+      .toEqual([1000, 2000, 3000]);
+    expect(store.undo()).toBe(false);
   });
 
   test('undo and redo restore complete editable snapshots and transactions coalesce', () => {

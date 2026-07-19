@@ -298,6 +298,61 @@
       return cue;
     }
 
+    _captureSelectionReferences(cues = this._cues()) {
+      const shellReference = selected => {
+        const cue = cues[selected?.cueIndex];
+        const shell = cue?.shells?.[selected?.shellIndex];
+        return cue && shell ? { cue, shell } : null;
+      };
+      const layerSelection = this.state.selection.layer;
+      const layerCue = cues[layerSelection?.cueIndex];
+      const layerShell = layerCue?.shells?.[layerSelection?.shellIndex];
+      const layer = layerShell?.layers?.[layerSelection?.layerIndex];
+      return {
+        cues: this.state.selection.cueIndexes
+          .map(cueIndex => cues[cueIndex])
+          .filter(Boolean),
+        primaryCue: cues[this.state.selection.primaryCueIndex] || null,
+        shells: this.state.selection.shells.map(shellReference).filter(Boolean),
+        primaryShell: shellReference(this.state.selection.primaryShell),
+        layer: layerCue && layerShell && layer
+          ? { cue: layerCue, shell: layerShell, layer }
+          : null
+      };
+    }
+
+    _restoreSelectionReferences(references, cues = this._cues()) {
+      const cueIndex = cue => cues.indexOf(cue);
+      const shellPosition = reference => {
+        if (!reference) return null;
+        const nextCueIndex = cueIndex(reference.cue);
+        const nextShellIndex = reference.cue?.shells?.indexOf(reference.shell) ?? -1;
+        return nextCueIndex >= 0 && nextShellIndex >= 0
+          ? { cueIndex: nextCueIndex, shellIndex: nextShellIndex }
+          : null;
+      };
+      const cueIndexes = references.cues
+        .map(cueIndex)
+        .filter(index => index >= 0)
+        .sort((left, right) => left - right);
+      const primaryCueIndex = cueIndex(references.primaryCue);
+      const shells = references.shells.map(shellPosition).filter(Boolean);
+      const primaryShell = shellPosition(references.primaryShell);
+      let layer = null;
+      if (references.layer) {
+        const layerShell = shellPosition(references.layer);
+        const layerIndex = references.layer.shell?.layers?.indexOf(references.layer.layer) ?? -1;
+        if (layerShell && layerIndex >= 0) layer = { ...layerShell, layerIndex };
+      }
+      this.state.selection = {
+        cueIndexes,
+        primaryCueIndex: primaryCueIndex >= 0 ? primaryCueIndex : null,
+        shells,
+        primaryShell,
+        layer
+      };
+    }
+
     selectCue(cueIndex, options = {}) {
       this._cue(cueIndex);
       const selected = options.additive === true
@@ -351,24 +406,47 @@
         ? this.state.selection.cueIndexes
         : [this.state.selection.primaryCueIndex].filter(Number.isInteger);
       const selectedCues = indexes.map(cueIndex => cues[cueIndex]).filter(Boolean);
-      const primaryCue = cues[this.state.selection.primaryCueIndex] || null;
+      const selectionReferences = this._captureSelectionReferences(cues);
+      const times = selectedCues.map(cue => Number(cue.timeMs)).filter(Number.isFinite);
+      const earliest = times.length ? Math.min(...times) : 0;
+      const latest = times.length ? Math.max(...times) : 0;
+      const duration = Number(
+        this.state.definition?.variants?.[this.state.selectedVariant]?.durationMs
+      );
+      const requestedDelta = Number(deltaMs);
+      const minimumDelta = -earliest;
+      const maximumDelta = Number.isFinite(duration) ? duration - latest : Infinity;
+      const boundedDelta = clamp(
+        Number.isFinite(requestedDelta) ? requestedDelta : 0,
+        minimumDelta,
+        maximumDelta
+      );
+      const snappedDelta = options.bypass === true
+        ? boundedDelta
+        : snapTime(earliest + boundedDelta) - earliest;
+      const effectiveDelta = clamp(snappedDelta, minimumDelta, maximumDelta);
       for (const cueIndex of indexes) {
         const cue = this._cue(cueIndex);
-        cue.timeMs = snapTime(cue.timeMs + Number(deltaMs || 0), options);
+        cue.timeMs = Number(cue.timeMs) + effectiveDelta;
       }
       cues.sort((left, right) => left.timeMs - right.timeMs);
-      this.state.selection.cueIndexes = selectedCues
-        .map(cue => cues.indexOf(cue))
-        .filter(cueIndex => cueIndex >= 0)
-        .sort((left, right) => left - right);
-      this.state.selection.primaryCueIndex = primaryCue ? cues.indexOf(primaryCue) : null;
+      this._restoreSelectionReferences(selectionReferences, cues);
       this._markDirty('timeline');
     }
 
     setCueField(cueIndex, field, value, options = {}) {
       this._beforeMutation();
-      const cue = this._cue(cueIndex);
+      const cues = this._cues();
+      const cue = cues[cueIndex];
+      if (!cue) throw new RangeError(`Cue ${cueIndex} does not exist.`);
+      const selectionReferences = field === 'timeMs'
+        ? this._captureSelectionReferences(cues)
+        : null;
       cue[field] = field === 'timeMs' ? snapTime(value, options) : clone(value);
+      if (field === 'timeMs') {
+        cues.sort((left, right) => left.timeMs - right.timeMs);
+        this._restoreSelectionReferences(selectionReferences, cues);
+      }
       this._markDirty('cue');
     }
 
