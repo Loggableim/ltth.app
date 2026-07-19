@@ -12,7 +12,18 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
 
     expect(html).toContain('id="finale-style"');
     expect(html).toContain('id="finale-length"');
-    for (const style of ['auto', 'classic-crescendo', 'symmetric-salute', 'sky-ballet', 'thunder-finale']) {
+    for (const style of [
+      'auto',
+      'classic-crescendo',
+      'symmetric-salute',
+      'sky-ballet',
+      'thunder-finale',
+      'nishiki-kamuro',
+      'aurora-cathedral',
+      'royal-brocade',
+      'phoenix-ascension',
+      'furry-celebration'
+    ]) {
       expect(html).toContain(`<option value="${style}"`);
     }
     for (const length of ['short', 'medium', 'long']) {
@@ -20,6 +31,8 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
     }
     expect(html).toMatch(/<option value="auto"[^>]*selected/);
     expect(html).toMatch(/<option value="medium"[^>]*selected/);
+    expect(html).toContain('/plugins/webgpu-fireworks/ui/show-style-options.js');
+    expect(html).toContain('href="/webgpu-fireworks/designer"');
   });
 
   test('binds finale selectors to config and sends the exact selected object from the test button', () => {
@@ -30,6 +43,7 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
     expect(source).toContain("document.getElementById('finale-length').value = config.goalFinaleLength || 'medium'");
     expect(source).toContain('config.goalFinaleStyle = this.value');
     expect(source).toContain('config.goalFinaleLength = this.value');
+    expect(source).toContain('refreshFinaleShowSelectors');
     expect(triggerSource).toContain("document.getElementById('finale-style').value");
     expect(triggerSource).toContain("document.getElementById('finale-length').value");
     expect(triggerSource).toContain('style: style');

@@ -1479,10 +1479,17 @@
                             <label class="block mb-2" for="finale-style" data-i18n="webgpu_fireworks.finale_style">Show Style</label>
                             <select id="finale-style" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="goalFinaleStyle">
                                 <option value="auto" selected data-i18n="webgpu_fireworks.finale_style_auto">Auto (rotating)</option>
-                                <option value="classic-crescendo" data-i18n="webgpu_fireworks.finale_style_classic_crescendo">Classic Crescendo</option>
-                                <option value="symmetric-salute" data-i18n="webgpu_fireworks.finale_style_symmetric_salute">Symmetric Salute</option>
-                                <option value="sky-ballet" data-i18n="webgpu_fireworks.finale_style_sky_ballet">Sky Ballet</option>
-                                <option value="thunder-finale" data-i18n="webgpu_fireworks.finale_style_thunder_finale">Thunder Finale</option>
+                                <optgroup label="Built-in shows">
+                                    <option value="classic-crescendo" data-i18n="webgpu_fireworks.finale_style_classic_crescendo">Classic Crescendo</option>
+                                    <option value="symmetric-salute" data-i18n="webgpu_fireworks.finale_style_symmetric_salute">Symmetric Salute</option>
+                                    <option value="sky-ballet" data-i18n="webgpu_fireworks.finale_style_sky_ballet">Sky Ballet</option>
+                                    <option value="thunder-finale" data-i18n="webgpu_fireworks.finale_style_thunder_finale">Thunder Finale</option>
+                                    <option value="nishiki-kamuro">Nishiki Kamuro</option>
+                                    <option value="aurora-cathedral">Aurora Cathedral</option>
+                                    <option value="royal-brocade">Royal Brocade</option>
+                                    <option value="phoenix-ascension">Phoenix Ascension</option>
+                                    <option value="furry-celebration">Furry Celebration</option>
+                                </optgroup>
                             </select>
                         </div>
 
@@ -1498,6 +1505,10 @@
                         <button id="test-finale-btn" class="w-full btn-primary py-3 rounded-lg font-bold" data-i18n="webgpu_fireworks.test_finale">
                             &#x1F389; Test Finale
                         </button>
+
+                        <a id="show-designer-link" href="/webgpu-fireworks/designer" class="block w-full text-center bg-black/30 hover:bg-black/40 py-3 rounded-lg font-semibold">
+                            Open Show Designer
+                        </a>
                     </div>
                 </div>
 
@@ -1530,6 +1541,34 @@
                                 <span id="superfan-finale-intensity-value">3x</span>
                                 <span>10x</span>
                             </div>
+                        </div>
+
+                        <div>
+                            <label class="block mb-2" for="superfan-finale-style">Show Style</label>
+                            <select id="superfan-finale-style" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="superfanFinaleStyle">
+                                <option value="inherit" selected>Use global default</option>
+                                <optgroup label="Built-in shows">
+                                    <option value="classic-crescendo">Classic Crescendo</option>
+                                    <option value="symmetric-salute">Symmetric Salute</option>
+                                    <option value="sky-ballet">Sky Ballet</option>
+                                    <option value="thunder-finale">Thunder Finale</option>
+                                    <option value="nishiki-kamuro">Nishiki Kamuro</option>
+                                    <option value="aurora-cathedral">Aurora Cathedral</option>
+                                    <option value="royal-brocade">Royal Brocade</option>
+                                    <option value="phoenix-ascension">Phoenix Ascension</option>
+                                    <option value="furry-celebration">Furry Celebration</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block mb-2" for="superfan-finale-length">Show Length</label>
+                            <select id="superfan-finale-length" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="superfanFinaleLength">
+                                <option value="inherit" selected>Use global default</option>
+                                <option value="short">Short (10 s)</option>
+                                <option value="medium">Medium (18 s)</option>
+                                <option value="long">Long (28 s)</option>
+                            </select>
                         </div>
 
                         <div>
@@ -1925,6 +1964,7 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/i18n-client.js"></script>
+    <script src="/plugins/webgpu-fireworks/ui/show-style-options.js"></script>
     <script src="/plugins/webgpu-fireworks/ui/settings.js?v=2.2.1-avatar-head-1"></script>
 
 <style id="final-fireworks-night-card-contrast">

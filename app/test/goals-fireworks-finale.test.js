@@ -456,9 +456,21 @@ describe('Goals firework finale integration', () => {
     expect(uiHtml).toContain('data-i18n="goals.modal.firework_finale_style_label"');
     expect(uiHtml).toContain('data-i18n="goals.modal.firework_finale_length_label"');
     expect(uiHtml.match(/data-i18n="goals\.modal\.firework_finale_global_default"/g)).toHaveLength(2);
-    for (const style of ['auto', 'classic-crescendo', 'symmetric-salute', 'sky-ballet', 'thunder-finale']) {
+    for (const style of [
+      'classic-crescendo',
+      'symmetric-salute',
+      'sky-ballet',
+      'thunder-finale',
+      'nishiki-kamuro',
+      'aurora-cathedral',
+      'royal-brocade',
+      'phoenix-ascension',
+      'furry-celebration'
+    ]) {
       expect(uiHtml).toContain(`<option value="${style}"`);
     }
+    expect(uiHtml).not.toContain('<option value="auto"');
+    expect(uiHtml).toContain('/plugins/webgpu-fireworks/ui/show-style-options.js');
     for (const length of ['short', 'medium', 'long']) {
       expect(uiHtml).toContain(`<option value="${length}"`);
     }
@@ -472,6 +484,7 @@ describe('Goals firework finale integration', () => {
     expect(uiJs).toContain('firework_encounter_mode');
     expect(uiJs).toContain('firework_finale_length');
     expect(uiJs).toContain("goal.firework_encounter_mode === 'finale'");
+    expect(uiJs).toContain('refreshGoalFinaleShowOptions');
     expect(uiJs).toContain('firework_progress_enabled');
     expect(uiJs).toContain('firework_progress_milestones');
   });

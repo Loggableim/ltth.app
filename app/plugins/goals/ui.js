@@ -4,6 +4,7 @@ let multigoals = [];
 let editingGoalId = null;
 let editingMultiGoalId = null;
 let previewUpdateTimer = null;
+const CUSTOM_FINALE_STYLE_PATTERN = /^custom:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function t(key, fallback, params = {}) {
     const translated = window.i18n?.t?.(key, params);
@@ -14,6 +15,40 @@ function t(key, fallback, params = {}) {
     return String(fallback).replace(/\{(\w+)\}/g, (match, name) => (
         Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
     ));
+}
+
+function goalFinaleSelectorLabels() {
+    return {
+        inherit: t('goals.modal.firework_finale_global_default', 'Use global default'),
+        builtIns: t('goals.modal.firework_finale_built_in_shows', 'Built-in shows'),
+        custom: t('goals.modal.firework_finale_custom_shows', 'Custom shows'),
+        unavailable: t('goals.modal.firework_finale_unavailable', 'Unavailable'),
+        short: t('goals.modal.firework_finale_length_short', 'Short (10 s)'),
+        medium: t('goals.modal.firework_finale_length_medium', 'Medium (18 s)'),
+        long: t('goals.modal.firework_finale_length_long', 'Long (28 s)')
+    };
+}
+
+async function refreshGoalFinaleShowOptions(selectedStyle) {
+    const showOptions = window.WebGpuFireworksShowOptions;
+    const styleSelect = document.getElementById('goal-firework-encounter');
+    if (!showOptions || !styleSelect) return null;
+    const labels = goalFinaleSelectorLabels();
+    const normalizedStyle = normalizeGoalFireworkStyle(selectedStyle ?? styleSelect.value);
+    if (selectedStyle !== undefined) styleSelect.value = normalizedStyle;
+    const lengthSelect = document.getElementById('goal-firework-finale-length');
+    if (lengthSelect) {
+        showOptions.renderLengthSelect(lengthSelect, {
+            surface: 'inherited',
+            selectedValue: lengthSelect.value || 'inherit',
+            labels
+        });
+    }
+    return showOptions.refreshStyleSelect(styleSelect, {
+        surface: 'inherited',
+        selectedValue: normalizedStyle,
+        labels
+    });
 }
 
 function updateLocalizedAccessibilityText() {
@@ -27,12 +62,14 @@ window.i18n?.ready?.then(() => {
     updateLocalizedAccessibilityText();
     renderGoals();
     renderMultiGoals();
+    refreshGoalFinaleShowOptions();
 });
 
 window.i18n?.onLanguageChange?.(() => {
     updateLocalizedAccessibilityText();
     renderGoals();
     renderMultiGoals();
+    refreshGoalFinaleShowOptions();
 });
 
 (function injectGoalSelectorStyles() {
@@ -46,6 +83,7 @@ window.i18n?.onLanguageChange?.(() => {
 // Initialize
 function init() {
     socket = io();
+    refreshGoalFinaleShowOptions();
 
     socket.on('connect', () => {
         console.log('Connected');
@@ -221,6 +259,7 @@ function openCreateModal() {
     setOptionalInputValue('goal-firework-hud-label', '');
     document.getElementById('goal-firework-progress-enabled').checked = true;
     document.getElementById('goal-firework-progress-milestones').value = '25,50,75';
+    refreshGoalFinaleShowOptions('inherit');
     toggleGoalFireworkOptions();
 
     document.getElementById('goal-modal').classList.add('active');
@@ -258,12 +297,10 @@ function editGoal(id) {
     document.getElementById('goal-firework-enabled').checked = Number(goal.firework_enabled) === 1;
     document.getElementById('goal-firework-intensity').value = clampNumber(goal.firework_intensity, 1, 10, 3);
     document.getElementById('goal-firework-duration').value = clampNumber((goal.firework_duration || 5000) / 1000, 1, 30, 5);
-    setOptionalInputValue(
-        'goal-firework-encounter',
-        goal.firework_encounter_mode === 'finale'
-            ? 'inherit'
-            : normalizeGoalFireworkStyle(goal.firework_encounter_mode)
-    );
+    const finaleStyle = goal.firework_encounter_mode === 'finale'
+        ? 'inherit'
+        : normalizeGoalFireworkStyle(goal.firework_encounter_mode);
+    setOptionalInputValue('goal-firework-encounter', finaleStyle);
     setOptionalInputValue('goal-firework-finale-length', normalizeGoalFireworkLength(goal.firework_finale_length));
     document.getElementById('goal-firework-progress-enabled').checked = Number(goal.firework_progress_enabled) !== 0;
     document.getElementById('goal-firework-progress-milestones').value = goal.firework_progress_milestones || '25,50,75';
@@ -275,6 +312,7 @@ function editGoal(id) {
     document.getElementById('goal-bg-color').value = cssColorToHex(theme.bgColor) || '#0f172a';
     document.getElementById('goal-font-family').value = theme.fontFamily || "'Impact', 'Haettenschweiler', 'Arial Narrow Bold', sans-serif";
     document.getElementById('goal-font-size').value = theme.fontSize || '20';
+    refreshGoalFinaleShowOptions(finaleStyle);
 
     document.getElementById('increment-amount-group').style.display =
         goal.on_reach_action === 'increment' ? 'block' : 'none';
@@ -423,12 +461,23 @@ function setOptionalInputValue(id, value) {
 }
 
 function normalizeGoalFireworkStyle(value) {
+    if (value === 'finale' || value === 'inherit' || value === undefined || value === null || value === '') {
+        return 'inherit';
+    }
+    if (value === 'auto') return 'auto';
+    const showOptions = window.WebGpuFireworksShowOptions;
+    if (showOptions?.isSelectableStyleId?.(value)) return value;
+    if (typeof value === 'string' && CUSTOM_FINALE_STYLE_PATTERN.test(value)) return value;
     const allowed = new Set([
-        'auto',
         'classic-crescendo',
         'symmetric-salute',
         'sky-ballet',
-        'thunder-finale'
+        'thunder-finale',
+        'nishiki-kamuro',
+        'aurora-cathedral',
+        'royal-brocade',
+        'phoenix-ascension',
+        'furry-celebration'
     ]);
     return allowed.has(value) ? value : 'inherit';
 }

@@ -23,6 +23,61 @@ function t(key, fallback, params = {}) {
     ));
 }
 
+function finaleSelectorLabels() {
+    return {
+        auto: t('webgpu_fireworks.finale_style_auto', 'Auto'),
+        inherit: t('webgpu_fireworks.finale_global_default', 'Use global default'),
+        builtIns: t('webgpu_fireworks.finale_built_in_shows', 'Built-in shows'),
+        custom: t('webgpu_fireworks.finale_custom_shows', 'Custom shows'),
+        unavailable: t('webgpu_fireworks.finale_unavailable', 'Unavailable'),
+        short: t('webgpu_fireworks.finale_length_short', 'Short (10 s)'),
+        medium: t('webgpu_fireworks.finale_length_medium', 'Medium (18 s)'),
+        long: t('webgpu_fireworks.finale_length_long', 'Long (28 s)')
+    };
+}
+
+async function refreshFinaleShowSelectors() {
+    const showOptions = window.WebGpuFireworksShowOptions;
+    if (!showOptions) return [];
+    const labels = finaleSelectorLabels();
+    const globalStyle = document.getElementById('finale-style');
+    const globalLength = document.getElementById('finale-length');
+    const superfanStyle = document.getElementById('superfan-finale-style');
+    const superfanLength = document.getElementById('superfan-finale-length');
+
+    if (globalLength) {
+        showOptions.renderLengthSelect(globalLength, {
+            surface: 'global',
+            selectedValue: config.goalFinaleLength || 'medium',
+            labels
+        });
+    }
+    if (superfanLength) {
+        showOptions.renderLengthSelect(superfanLength, {
+            surface: 'inherited',
+            selectedValue: config.superfanFinaleLength || 'inherit',
+            labels
+        });
+    }
+
+    const refreshes = [];
+    if (globalStyle) {
+        refreshes.push(showOptions.refreshStyleSelect(globalStyle, {
+            surface: 'global',
+            selectedValue: config.goalFinaleStyle || 'auto',
+            labels
+        }));
+    }
+    if (superfanStyle) {
+        refreshes.push(showOptions.refreshStyleSelect(superfanStyle, {
+            surface: 'inherited',
+            selectedValue: config.superfanFinaleStyle || 'inherit',
+            labels
+        }));
+    }
+    return Promise.all(refreshes);
+}
+
 function markLocalConfigChange() {
     if (applyingRemoteConfig) return;
     configRevision += 1;
@@ -102,6 +157,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateOverviewSummary();
             loadRendererStatus();
             renderGiftStyleMappings();
+            refreshFinaleShowSelectors();
         });
     }
 
@@ -390,6 +446,8 @@ async function testSuperfanFinale() {
                     superfanFinaleEnabled: document.getElementById('superfan-finale-toggle').classList.contains('active'),
                     superfanFinaleCooldownHours: Number(document.getElementById('superfan-finale-cooldown').value),
                     superfanFinaleIntensity: Number(document.getElementById('superfan-finale-intensity').value),
+                    superfanFinaleStyle: document.getElementById('superfan-finale-style').value,
+                    superfanFinaleLength: document.getElementById('superfan-finale-length').value,
                     superfanEndCardDuration: Math.round(Number(document.getElementById('superfan-end-card-duration').value) * 1000),
                     superfanEndCardPosition: document.getElementById('superfan-end-card-position').value,
                     superfanEndCardSize: document.getElementById('superfan-end-card-size').value,
@@ -507,6 +565,8 @@ function updateUI() {
     document.getElementById('superfan-finale-cooldown').value = String(config.superfanFinaleCooldownHours ?? 24);
     document.getElementById('superfan-finale-intensity').value = config.superfanFinaleIntensity ?? 3;
     document.getElementById('superfan-finale-intensity-value').textContent = `${config.superfanFinaleIntensity ?? 3}x`;
+    document.getElementById('superfan-finale-style').value = config.superfanFinaleStyle || 'inherit';
+    document.getElementById('superfan-finale-length').value = config.superfanFinaleLength || 'inherit';
     const superfanEndCardDuration = config.superfanEndCardDuration ?? 3000;
     const superfanEndCardSize = config.superfanEndCardSize ?? 'medium';
     const superfanEndCardScale = config.superfanEndCardScale ?? 1;
@@ -519,6 +579,7 @@ function updateUI() {
     document.getElementById('superfan-end-card-scale-container').style.display = superfanEndCardSize === 'custom'
         ? 'block'
         : 'none';
+    refreshFinaleShowSelectors();
 
     // Follower fireworks
     updateToggle('follower-toggle', config.followerFireworksEnabled);
@@ -991,6 +1052,12 @@ function setupEventListeners() {
     });
     setupRangeSlider('superfan-finale-intensity', 'superfan-finale-intensity-value', 'x', value => {
         config.superfanFinaleIntensity = Number(value);
+    });
+    document.getElementById('superfan-finale-style')?.addEventListener('change', function() {
+        config.superfanFinaleStyle = this.value;
+    });
+    document.getElementById('superfan-finale-length')?.addEventListener('change', function() {
+        config.superfanFinaleLength = this.value;
     });
     setupRangeSlider('superfan-end-card-duration', 'superfan-end-card-duration-value', 's', value => {
         config.superfanEndCardDuration = Math.round(Number(value) * 1000);

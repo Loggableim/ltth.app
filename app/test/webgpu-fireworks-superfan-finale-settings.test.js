@@ -6,7 +6,9 @@ const { normalizeConfig } = require('../plugins/webgpu-fireworks/lib/config-sche
 describe('WebGPU Superfan finale settings', () => {
   const pluginDir = path.join(__dirname, '..', 'plugins', 'webgpu-fireworks');
   const html = fs.readFileSync(path.join(pluginDir, 'ui', 'settings.html'), 'utf8');
+  const showOptionsScript = fs.readFileSync(path.join(pluginDir, 'ui', 'show-style-options.js'), 'utf8');
   const script = fs.readFileSync(path.join(pluginDir, 'ui', 'settings.js'), 'utf8');
+  const customStyle = 'custom:00000000-0000-4000-8000-000000000611';
   let dom;
 
   afterEach(() => {
@@ -61,7 +63,16 @@ describe('WebGPU Superfan finale settings', () => {
     return JSON.parse(requests[requests.length - 1][1].body).settings;
   }
 
-  async function bootSettings({ initialConfig = {}, saveResponses = [], testResponse, translations = {} } = {}) {
+  async function bootSettings({
+    initialConfig = {},
+    saveResponses = [],
+    testResponse,
+    translations = {},
+    showCatalog = {
+      success: true,
+      selectableStyles: [{ id: customStyle, name: 'Streamer Signature', builtIn: false }]
+    }
+  } = {}) {
     const loadedConfig = normalizeConfig(initialConfig);
     dom = new JSDOM(html, {
       runScripts: 'outside-only',
@@ -102,6 +113,9 @@ describe('WebGPU Superfan finale settings', () => {
       if (requestUrl === '/api/webgpu-fireworks/status') {
         return jsonResponse({ success: false });
       }
+      if (requestUrl === '/api/webgpu-fireworks/shows') {
+        return jsonResponse(showCatalog);
+      }
       if (requestUrl === '/api/webgpu-fireworks/config' && options.method === 'POST') {
         if (saveResponses.length > 0) return saveResponses.shift();
         return jsonResponse({
@@ -113,10 +127,14 @@ describe('WebGPU Superfan finale settings', () => {
         const response = testResponse || { ok: true, body: { success: true, accepted: true } };
         return jsonResponse(response.body, response.ok);
       }
+      if (requestUrl === '/api/webgpu-fireworks/finale' && options.method === 'POST') {
+        return jsonResponse({ success: true, accepted: true });
+      }
       throw new Error(`Unexpected request: ${requestUrl}`);
     });
     window.fetch = fetchMock;
 
+    window.eval(showOptionsScript);
     window.eval(script);
     await ready;
     await waitFor(() => {
@@ -131,6 +149,7 @@ describe('WebGPU Superfan finale settings', () => {
     for (const id of [
       'superfan-finale-toggle', 'superfan-finale-cooldown',
       'superfan-finale-intensity', 'superfan-finale-intensity-value',
+      'superfan-finale-style', 'superfan-finale-length',
       'superfan-end-card-duration', 'superfan-end-card-duration-value',
       'superfan-end-card-position', 'superfan-end-card-size',
       'superfan-end-card-scale-container', 'superfan-end-card-scale',
@@ -143,8 +162,34 @@ describe('WebGPU Superfan finale settings', () => {
     expect(html).toMatch(/id="superfan-finale-toggle"[^>]*class="[^"]*active[^"]*"[^>]*data-config="superfanFinaleEnabled"/);
     expect(html).toMatch(/<option value="24"[^>]*selected/);
     expect(html).toMatch(/id="superfan-finale-intensity"[^>]*min="1"[^>]*max="10"[^>]*step="0\.5"[^>]*value="3"/);
-    expect(html).not.toContain('id="superfan-finale-style"');
-    expect(html).not.toContain('id="superfan-finale-length"');
+    expect(html).toContain('id="superfan-finale-style"');
+    expect(html).toContain('id="superfan-finale-length"');
+    expect(html).toContain('href="/webgpu-fireworks/designer"');
+  });
+
+  test('loads and saves exact Superfan style and length overrides', async () => {
+    const { window, fetchMock } = await bootSettings({
+      initialConfig: {
+        superfanFinaleStyle: customStyle,
+        superfanFinaleLength: 'long'
+      }
+    });
+    const document = window.document;
+    await waitFor(() => expect(document.getElementById('superfan-finale-style').value).toBe(customStyle));
+    expect(document.getElementById('superfan-finale-length').value).toBe('long');
+
+    const style = document.getElementById('superfan-finale-style');
+    style.value = 'nishiki-kamuro';
+    style.dispatchEvent(new window.Event('change', { bubbles: true }));
+    const length = document.getElementById('superfan-finale-length');
+    length.value = 'short';
+    length.dispatchEvent(new window.Event('change', { bubbles: true }));
+
+    document.getElementById('save-btn').click();
+    await waitFor(() => expect(findRequest(fetchMock, '/api/webgpu-fireworks/config')).toBeDefined());
+    const saved = JSON.parse(findRequest(fetchMock, '/api/webgpu-fireworks/config')[1].body);
+    expect(saved.superfanFinaleStyle).toBe('nishiki-kamuro');
+    expect(saved.superfanFinaleLength).toBe('short');
   });
 
   test('loads, saves, and toggles custom Superfan end card controls', async () => {
@@ -414,6 +459,12 @@ describe('WebGPU Superfan finale settings', () => {
     const length = document.getElementById('finale-length');
     length.value = 'short';
     length.dispatchEvent(new window.Event('change', { bubbles: true }));
+    const superfanStyle = document.getElementById('superfan-finale-style');
+    superfanStyle.value = customStyle;
+    superfanStyle.dispatchEvent(new window.Event('change', { bubbles: true }));
+    const superfanLength = document.getElementById('superfan-finale-length');
+    superfanLength.value = 'long';
+    superfanLength.dispatchEvent(new window.Event('change', { bubbles: true }));
 
     document.getElementById('test-superfan-finale-btn').click();
     await waitFor(() => expect(findRequest(fetchMock, '/api/webgpu-fireworks/test-superfan')).toBeDefined());
@@ -422,6 +473,8 @@ describe('WebGPU Superfan finale settings', () => {
       superfanFinaleEnabled: false,
       superfanFinaleCooldownHours: 168,
       superfanFinaleIntensity: 7.5,
+      superfanFinaleStyle: customStyle,
+      superfanFinaleLength: 'long',
       superfanEndCardDuration: 4500,
       superfanEndCardPosition: 'bottom-right',
       superfanEndCardSize: 'custom',
@@ -432,6 +485,26 @@ describe('WebGPU Superfan finale settings', () => {
     expect(findRequest(fetchMock, '/api/webgpu-fireworks/config')).toBeUndefined();
     await waitFor(() => expect(document.getElementById('toast').textContent).toBe(successText));
     expect(document.getElementById('toast').classList.contains('success')).toBe(true);
+  });
+
+  test('global test button sends the exact selected dynamic style, length, and intensity', async () => {
+    const { window, fetchMock } = await bootSettings({
+      initialConfig: {
+        goalFinaleStyle: customStyle,
+        goalFinaleLength: 'long',
+        goalFinaleIntensity: 4.5
+      }
+    });
+    const document = window.document;
+    await waitFor(() => expect(document.getElementById('finale-style').value).toBe(customStyle));
+
+    document.getElementById('test-finale-btn').click();
+    await waitFor(() => expect(findRequest(fetchMock, '/api/webgpu-fireworks/finale')).toBeDefined());
+    expect(JSON.parse(findRequest(fetchMock, '/api/webgpu-fireworks/finale')[1].body)).toEqual({
+      style: customStyle,
+      length: 'long',
+      intensity: 4.5
+    });
   });
 
   test('test button shows localized failure text with a safe backend reason', async () => {
