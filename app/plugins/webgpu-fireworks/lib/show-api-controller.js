@@ -1,11 +1,17 @@
 'use strict';
 
+const { randomUUID } = require('crypto');
 const { ShowRepositoryError } = require('./show-repository');
+const {
+  ShowPreviewPlanError,
+  createShowPreviewPlan
+} = require('./show-preview-plan');
 
 const DERIVABLE_VARIANTS = Object.freeze(['medium', 'short']);
 const PUBLISH_VARIANTS = Object.freeze(['medium', 'short', 'long']);
 const CUSTOM_ID_PATTERN = /^custom:([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
 const BUILT_IN_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const PREVIEW_VARIANTS = Object.freeze(['short', 'medium', 'long']);
 
 function isObject(value) {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
@@ -16,10 +22,25 @@ function hasVariants(definition, variants) {
     && variants.every(variant => isObject(definition.variants[variant]));
 }
 
+function deepFreeze(value) {
+  Object.freeze(value);
+  for (const child of Object.values(value)) {
+    if (child && typeof child === 'object' && !Object.isFrozen(child)) deepFreeze(child);
+  }
+  return value;
+}
+
 class ShowApiController {
   constructor(options = {}) {
     this.getRepository = options.getRepository;
     this.getRepositoryError = options.getRepositoryError;
+    this.getPreviewRendererStatus = options.getPreviewRendererStatus;
+    this.getConfig = options.getConfig;
+    this.finaleShowPlanner = options.finaleShowPlanner;
+    this.emitPreview = options.emitPreview;
+    this.createPreviewRequestId = typeof options.createPreviewRequestId === 'function'
+      ? options.createPreviewRequestId
+      : () => `preview:${randomUUID()}`;
     this.log = typeof options.log === 'function' ? options.log : () => {};
   }
 
@@ -38,6 +59,7 @@ class ShowApiController {
     route('post', '/api/webgpu-fireworks/shows/:id/publish', (req, res) => this.publish(req, res));
     route('post', '/api/webgpu-fireworks/shows/:id/duplicate', (req, res) => this.duplicate(req, res));
     route('post', '/api/webgpu-fireworks/shows/:id/derive', (req, res) => this.derive(req, res));
+    route('post', '/api/webgpu-fireworks/shows/:id/preview', (req, res) => this.preview(req, res));
     route('post', '/api/webgpu-fireworks/shows/:id/archive', (req, res) => this.archive(req, res));
     route('post', '/api/webgpu-fireworks/shows/:id/restore', (req, res) => this.restore(req, res));
   }
@@ -210,6 +232,148 @@ class ShowApiController {
     return res.json({ success: true, show });
   }
 
+  preview(req, res) {
+    const id = this._routeId(req.params.id);
+    const body = isObject(req.body) ? req.body : {};
+    if (!PREVIEW_VARIANTS.includes(body.variant)) {
+      throw new ShowRepositoryError(
+        'INVALID_PREVIEW_VARIANT',
+        400,
+        'variant must be short, medium, or long.',
+        { variant: body.variant, supportedVariants: [...PREVIEW_VARIANTS] }
+      );
+    }
+
+    const repository = this._repository({ allowUnavailable: !id.startsWith('custom:') });
+    const show = this._repositoryError()
+      ? repository.getBuiltIn(id)
+      : repository.get(id);
+    if (!show.builtIn) this._assertExpectedRevision(show, body.expectedRevision);
+
+    const config = typeof this.getConfig === 'function' ? this.getConfig() || {} : {};
+    const intensityInput = body.intensity === undefined ? config.goalFinaleIntensity : body.intensity;
+    const intensityNumber = Number(intensityInput);
+    const intensity = Number.isFinite(intensityNumber)
+      ? Math.min(10, Math.max(1, intensityNumber))
+      : 3;
+    const seedNumber = Number(body.seed);
+    const seed = Number.isFinite(seedNumber)
+      ? (Math.trunc(seedNumber) >>> 0)
+      : (Math.floor(Math.random() * 0x100000000) >>> 0);
+    const requestId = String(this.createPreviewRequestId());
+    const planOptions = {
+      id: requestId,
+      style: id,
+      length: body.variant,
+      orientation: config.orientation,
+      intensity,
+      seed
+    };
+    let sourcePlan;
+    try {
+      sourcePlan = show.builtIn
+        ? this.finaleShowPlanner.plan(planOptions)
+        : this.finaleShowPlanner.planDefinition(show.definition, planOptions);
+    } catch (error) {
+      if (error?.code !== 'PYRODSL_VALIDATION_FAILED') throw error;
+      throw new ShowRepositoryError(
+        'PREVIEW_DRAFT_INVALID',
+        422,
+        'The current custom show draft cannot be previewed.',
+        { id, currentRevision: show.revision, errors: error.errors || [] }
+      );
+    }
+    const showPlan = createShowPreviewPlan(sourcePlan, {
+      scope: body.scope,
+      cueIndex: body.cueIndex,
+      phase: body.phase
+    });
+
+    const renderer = typeof this.getPreviewRendererStatus === 'function'
+      ? this.getPreviewRendererStatus()
+      : { freshRendererCount: 0, readyRendererCount: 0, busyRendererCount: 0 };
+    if (!renderer || renderer.readyRendererCount < 1) {
+      throw new ShowRepositoryError(
+        'RENDERER_NOT_READY',
+        503,
+        'A fresh ready WebGPU renderer is required for preview.',
+        {
+          freshRendererCount: renderer?.freshRendererCount || 0,
+          readyRendererCount: renderer?.readyRendererCount || 0
+        }
+      );
+    }
+    if (renderer.busyRendererCount > 0) {
+      throw new ShowRepositoryError(
+        'FINALE_BUSY',
+        409,
+        'A finale is active or queued on a WebGPU renderer.',
+        {
+          readyRendererCount: renderer.readyRendererCount,
+          busyRendererCount: renderer.busyRendererCount
+        }
+      );
+    }
+
+    const metadata = JSON.parse(JSON.stringify(show.definition?.metadata || {}));
+    const payload = {
+      accepted: true,
+      id: requestId,
+      requestId,
+      eventId: requestId,
+      type: 'preview',
+      preview: {
+        scope: body.scope,
+        cueIndex: body.scope === 'cue' ? body.cueIndex : null,
+        phase: body.scope === 'phase' ? body.phase : null,
+        sourceId: id,
+        sourceRevision: show.revision,
+        builtIn: show.builtIn === true,
+        metadata
+      },
+      scope: body.scope,
+      cueIndex: body.scope === 'cue' ? body.cueIndex : null,
+      phase: body.scope === 'phase' ? body.phase : null,
+      sourceId: id,
+      sourceRevision: show.revision,
+      builtIn: show.builtIn === true,
+      metadata,
+      style: id,
+      variant: body.variant,
+      length: body.variant,
+      intensity,
+      seed,
+      materialProfile: showPlan.materialProfile,
+      duration: showPlan.durationMs,
+      durationMs: showPlan.durationMs,
+      timestamp: Date.now(),
+      showPlan,
+      visualStyle: config.visualStyle,
+      playSound: config.audioEnabled === true,
+      audioVolume: config.audioVolume,
+      audioMuted: config.audioEnabled !== true,
+      audioMasterVolume: config.audioVolume,
+      audio: {
+        muted: config.audioEnabled !== true,
+        masterVolume: config.audioVolume
+      },
+      rocketSound: config.rocketSound,
+      explosionSound: config.explosionSound
+    };
+    const snapshot = deepFreeze(JSON.parse(JSON.stringify(payload)));
+    if (typeof this.emitPreview === 'function') this.emitPreview(snapshot);
+    return res.json({
+      success: true,
+      id: requestId,
+      requestId,
+      duration: snapshot.duration,
+      durationMs: snapshot.durationMs,
+      scope: snapshot.scope,
+      sourceId: snapshot.sourceId,
+      sourceRevision: snapshot.sourceRevision
+    });
+  }
+
   archive(req, res) {
     const id = this._routeId(req.params.id);
     const repository = this._repository();
@@ -320,7 +484,7 @@ class ShowApiController {
     try {
       return handler(req, res);
     } catch (error) {
-      const typed = error instanceof ShowRepositoryError
+      const typed = (error instanceof ShowRepositoryError || error instanceof ShowPreviewPlanError)
         && Number.isInteger(error.status)
         && typeof error.code === 'string';
       const status = typed ? error.status : 500;

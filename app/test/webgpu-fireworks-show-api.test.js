@@ -20,6 +20,7 @@ const SHOW_ROUTES = [
   ['post', '/api/webgpu-fireworks/shows/:id/publish'],
   ['post', '/api/webgpu-fireworks/shows/:id/duplicate'],
   ['post', '/api/webgpu-fireworks/shows/:id/derive'],
+  ['post', '/api/webgpu-fireworks/shows/:id/preview'],
   ['post', '/api/webgpu-fireworks/shows/:id/archive'],
   ['post', '/api/webgpu-fireworks/shows/:id/restore']
 ];

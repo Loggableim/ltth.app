@@ -430,6 +430,22 @@ class FireworksPlugin {
         };
     }
 
+    getPreviewRendererStatus() {
+        const cutoff = Date.now() - 5000;
+        const fresh = [...this.overlayTelemetry.values()].filter(item => (
+            item && item.updatedAt >= cutoff && item.benchmark !== true
+        ));
+        const ready = fresh.filter(item => item.state === 'ready');
+        const busy = fresh.filter(item => (
+            item.finaleActive === true || Number(item.finaleQueueLength) > 0
+        ));
+        return {
+            freshRendererCount: fresh.length,
+            readyRendererCount: ready.length,
+            busyRendererCount: busy.length
+        };
+    }
+
     /**
      * Migrate old data from app directory to user profile directory
      */
@@ -715,6 +731,10 @@ class FireworksPlugin {
         this.showApiController = new ShowApiController({
             getRepository: () => this.showRepository,
             getRepositoryError: () => this.showRepositoryLoadError,
+            getPreviewRendererStatus: () => this.getPreviewRendererStatus(),
+            getConfig: () => this.config,
+            finaleShowPlanner: this.finaleShowPlanner,
+            emitPreview: payload => this.api.emit('webgpu-fireworks:preview', payload),
             log: (message, level) => this.api.log(message, level)
         });
         this.showApiController.registerRoutes(this.api);
