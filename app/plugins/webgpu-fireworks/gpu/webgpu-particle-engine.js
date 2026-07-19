@@ -203,10 +203,13 @@ class WebGPUParticleEngine {
         const U = globalThis.GPUBufferUsage;
         const T = globalThis.GPUTextureUsage;
         const particleStride = 96;
+        const activeIndexBucketBytes = this.maxParticles * 4;
+        const storageOffsetAlignment = Math.max(4, Number(this.device.limits?.minStorageBufferOffsetAlignment) || 256);
+        this.activeIndexBucketStrideBytes = Math.ceil(activeIndexBucketBytes / storageOffsetAlignment) * storageOffsetAlignment;
         this.buffers = {
             particles: this._createBuffer('fireworks-particles', this.maxParticles * particleStride, U.STORAGE | U.COPY_DST | U.COPY_SRC),
             history: this._createBuffer('fireworks-trail-history', this.maxParticles * this.maxTrailSamples * 16, U.STORAGE | U.COPY_DST),
-            activeIndices: this._createBuffer('fireworks-active-indices', this.maxParticles * DEPTH_BUCKET_COUNT * 4, U.STORAGE | U.COPY_SRC),
+            activeIndices: this._createBuffer('fireworks-active-indices', this.activeIndexBucketStrideBytes * DEPTH_BUCKET_COUNT, U.STORAGE | U.COPY_SRC),
             secondaryIndices: this._createBuffer('fireworks-secondary-indices', this.maxParticles * 4, U.STORAGE),
             freeIndices: this._createBuffer('fireworks-free-indices', this.maxParticles * 4, U.STORAGE | U.COPY_DST),
             counters: this._createBuffer('fireworks-counters', 32, U.STORAGE | U.COPY_SRC | U.COPY_DST),
@@ -230,9 +233,7 @@ class WebGPUParticleEngine {
         const trailIndirect = new Uint32Array(DEPTH_BUCKET_COUNT * 4);
         for (let bucket = 0; bucket < DEPTH_BUCKET_COUNT; bucket++) {
             coreIndirect[bucket * 4] = 6;
-            coreIndirect[bucket * 4 + 3] = bucket * this.maxParticles;
             trailIndirect[bucket * 4] = 6;
-            trailIndirect[bucket * 4 + 3] = bucket * this.maxParticles * Math.max(1, this.trailSamples - 1);
         }
         this.device.queue.writeBuffer(this.buffers.coreIndirect, 0, coreIndirect);
         this.device.queue.writeBuffer(this.buffers.trailIndirect, 0, trailIndirect);
@@ -375,14 +376,21 @@ class WebGPUParticleEngine {
             { binding: 8, resource: { buffer: this.buffers.uniforms } },
             { binding: 9, resource: { buffer: this.buffers.secondaryIndices } }
         ]});
-        this.renderBindGroup = this.device.createBindGroup({ layout: renderLayout, entries: [
-            { binding: 0, resource: { buffer: this.buffers.particles } },
-            { binding: 1, resource: { buffer: this.buffers.activeIndices } },
-            { binding: 2, resource: { buffer: this.buffers.history } },
-            { binding: 3, resource: { buffer: this.buffers.uniforms } },
-            { binding: 4, resource: this.atlasTexture.createView() },
-            { binding: 5, resource: this.atlasSampler }
-        ]});
+        const activeIndexBucketBytes = this.maxParticles * 4;
+        this.renderBindGroups = Array.from({ length: DEPTH_BUCKET_COUNT }, (_, bucket) =>
+            this.device.createBindGroup({ layout: renderLayout, entries: [
+                { binding: 0, resource: { buffer: this.buffers.particles } },
+                { binding: 1, resource: {
+                    buffer: this.buffers.activeIndices,
+                    offset: bucket * this.activeIndexBucketStrideBytes,
+                    size: activeIndexBucketBytes
+                } },
+                { binding: 2, resource: { buffer: this.buffers.history } },
+                { binding: 3, resource: { buffer: this.buffers.uniforms } },
+                { binding: 4, resource: this.atlasTexture.createView() },
+                { binding: 5, resource: this.atlasSampler }
+            ]})
+        );
         this._createFrameBindGroups(postLayout);
     }
 
@@ -1171,7 +1179,6 @@ class WebGPUParticleEngine {
         const scenePass = encoder.beginRenderPass({ colorAttachments: [{
             view: this.sceneTexture.createView(), clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store'
         }]});
-        scenePass.setBindGroup(0, this.renderBindGroup);
         this._drawDepthBuckets(scenePass);
         scenePass.end();
 
@@ -1230,6 +1237,7 @@ class WebGPUParticleEngine {
     _drawDepthBuckets(scenePass) {
         for (let bucket = 0; bucket < DEPTH_BUCKET_COUNT; bucket++) {
             const offset = bucket * 16;
+            scenePass.setBindGroup(0, this.renderBindGroups[bucket]);
             if (this.trailsEnabled) {
                 scenePass.setPipeline(this.pipelines.trail);
                 scenePass.drawIndirect(this.buffers.trailIndirect, offset);
@@ -1722,9 +1730,9 @@ fn depthBucket(z: f32) -> u32 {
   for (var bucket = 0u; bucket < 3u; bucket++) {
     let offset = bucket * 4u;
     atomicStore(&coreIndirect[offset], 6u); atomicStore(&coreIndirect[offset + 1u], 0u); atomicStore(&coreIndirect[offset + 2u], 0u);
-    atomicStore(&coreIndirect[offset + 3u], bucket * arrayLength(&particles));
+    atomicStore(&coreIndirect[offset + 3u], 0u);
     atomicStore(&trailIndirect[offset], 6u); atomicStore(&trailIndirect[offset + 1u], 0u); atomicStore(&trailIndirect[offset + 2u], 0u);
-    atomicStore(&trailIndirect[offset + 3u], bucket * arrayLength(&particles) * max(1u, uniforms.trailSamples - 1u));
+    atomicStore(&trailIndirect[offset + 3u], 0u);
   }
 }
 @compute @workgroup_size(64) fn spawnParticles(@builtin(global_invocation_id) gid: vec3u) {
@@ -1840,7 +1848,8 @@ fn depthBucket(z: f32) -> u32 {
   if (bucket == 0u) { bucketSlot = atomicAdd(&counters.farCount, 1u); }
   else if (bucket == 1u) { bucketSlot = atomicAdd(&counters.midCount, 1u); }
   else { bucketSlot = atomicAdd(&counters.nearCount, 1u); }
-  activeIndices[bucket * arrayLength(&particles) + bucketSlot] = index;
+  let bucketStride = arrayLength(&activeIndices) / 3u;
+  activeIndices[bucket * bucketStride + bucketSlot] = index;
   let indirectOffset = bucket * 4u + 1u;
   atomicAdd(&coreIndirect[indirectOffset], 1u);
   atomicAdd(&trailIndirect[indirectOffset], max(1u, uniforms.trailSamples - 1u));

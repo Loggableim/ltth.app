@@ -71,7 +71,7 @@ function makeRendererHarness(options = {}) {
     createCommandEncoder
   };
   engine.computeBindGroup = {};
-  engine.renderBindGroup = {};
+  engine.renderBindGroups = [{}, {}, {}];
   engine.pipelines = {
     reset: 'reset', spawn: 'spawn', update: 'update', secondary: 'secondary',
     trail: 'trail', glow: 'glow', core: 'core', composite: 'composite'

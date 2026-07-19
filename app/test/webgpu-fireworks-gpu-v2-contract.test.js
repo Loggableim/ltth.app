@@ -179,20 +179,113 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
     expect(particle).toContain('max(2.0, CAMERA_DISTANCE - z)');
   });
 
-  test('draws transparent depth buckets far to mid to near without a depth buffer', () => {
+  test('allocates aligned bucket-local active-index ranges with zero-based indirect arguments', async () => {
+    const engine = makeEngine();
+    engine.maxParticles = 257;
+    const bufferDescriptors = [];
+    const restoreGlobals = {
+      GPUBufferUsage: globalThis.GPUBufferUsage,
+      GPUTextureUsage: globalThis.GPUTextureUsage,
+      GPUShaderStage: globalThis.GPUShaderStage
+    };
+    globalThis.GPUBufferUsage = {
+      STORAGE: 1, COPY_SRC: 2, COPY_DST: 4, INDIRECT: 8,
+      MAP_READ: 16, UNIFORM: 32, QUERY_RESOLVE: 64
+    };
+    globalThis.GPUTextureUsage = { TEXTURE_BINDING: 1, COPY_DST: 2, RENDER_ATTACHMENT: 4 };
+    globalThis.GPUShaderStage = { COMPUTE: 1, VERTEX: 2, FRAGMENT: 4 };
+
+    const makeTexture = () => ({ createView: jest.fn(() => ({})), destroy: jest.fn() });
+    engine.device = {
+      limits: { minStorageBufferOffsetAlignment: 256 },
+      queue: { writeBuffer: jest.fn() },
+      createBuffer: jest.fn(descriptor => {
+        const buffer = { label: descriptor.label };
+        bufferDescriptors.push({ ...descriptor, buffer });
+        return buffer;
+      }),
+      createTexture: jest.fn(makeTexture),
+      createSampler: jest.fn(() => ({})),
+      createShaderModule: jest.fn(() => ({})),
+      createBindGroupLayout: jest.fn(() => ({})),
+      createPipelineLayout: jest.fn(() => ({})),
+      createComputePipelineAsync: jest.fn(descriptor => descriptor.compute.entryPoint),
+      createRenderPipelineAsync: jest.fn(descriptor => descriptor.fragment.entryPoint),
+      createBindGroup: jest.fn(descriptor => ({ descriptor }))
+    };
+    engine._createFrameTextures = jest.fn();
+    engine._createFrameBindGroups = jest.fn();
+
+    try {
+      engine._createResources();
+      const activeBuffer = bufferDescriptors.find(entry => entry.label === 'fireworks-active-indices');
+      expect(activeBuffer.size).toBe(3 * 1280);
+
+      const coreWrite = engine.device.queue.writeBuffer.mock.calls
+        .find(([buffer]) => buffer === engine.buffers.coreIndirect);
+      const trailWrite = engine.device.queue.writeBuffer.mock.calls
+        .find(([buffer]) => buffer === engine.buffers.trailIndirect);
+      expect([0, 1, 2].map(bucket => coreWrite[2][bucket * 4 + 3])).toEqual([0, 0, 0]);
+      expect([0, 1, 2].map(bucket => trailWrite[2][bucket * 4 + 3])).toEqual([0, 0, 0]);
+
+      await engine._createPipelines();
+      const renderBindings = engine.device.createBindGroup.mock.calls
+        .map(([descriptor]) => descriptor)
+        .filter(descriptor => descriptor.entries.some(entry =>
+          entry.binding === 1 && entry.resource.buffer === engine.buffers.activeIndices
+        ));
+      expect(renderBindings).toHaveLength(3);
+      expect(renderBindings.map(descriptor => {
+        const resource = descriptor.entries.find(entry => entry.binding === 1).resource;
+        return { offset: resource.offset, size: resource.size };
+      })).toEqual([
+        { offset: 0, size: 1028 },
+        { offset: 1280, size: 1028 },
+        { offset: 2560, size: 1028 }
+      ]);
+
+      const compute = engine._computeShader();
+      expect(compute).toContain('let bucketStride = arrayLength(&activeIndices) / 3u;');
+      expect(compute).toContain('activeIndices[bucket * bucketStride + bucketSlot] = index;');
+      expect(compute).toContain('atomicStore(&coreIndirect[offset + 3u], 0u);');
+      expect(compute).toContain('atomicStore(&trailIndirect[offset + 3u], 0u);');
+    } finally {
+      for (const [name, value] of Object.entries(restoreGlobals)) {
+        if (value === undefined) delete globalThis[name];
+        else globalThis[name] = value;
+      }
+    }
+  });
+
+  test('draws transparent depth buckets far to mid to near with their local bind groups', () => {
     const engine = makeEngine();
     engine.trailsEnabled = true;
     engine.glowEnabled = true;
     engine.pipelines = { trail: 'trail', glow: 'glow', core: 'core' };
     engine.buffers = { trailIndirect: 'trail-indirect', coreIndirect: 'core-indirect' };
-    const pass = { setPipeline: jest.fn(), drawIndirect: jest.fn() };
+    engine.renderBindGroups = ['far-bind-group', 'mid-bind-group', 'near-bind-group'];
+    const events = [];
+    const pass = {
+      setBindGroup: jest.fn((slot, group) => events.push(['bind', slot, group])),
+      setPipeline: jest.fn(pipeline => events.push(['pipeline', pipeline])),
+      drawIndirect: jest.fn((buffer, offset) => events.push(['draw', buffer, offset]))
+    };
 
     engine._drawDepthBuckets(pass);
 
-    expect(pass.drawIndirect.mock.calls).toEqual([
-      ['trail-indirect', 0], ['core-indirect', 0], ['core-indirect', 0],
-      ['trail-indirect', 16], ['core-indirect', 16], ['core-indirect', 16],
-      ['trail-indirect', 32], ['core-indirect', 32], ['core-indirect', 32]
+    expect(events).toEqual([
+      ['bind', 0, 'far-bind-group'],
+      ['pipeline', 'trail'], ['draw', 'trail-indirect', 0],
+      ['pipeline', 'glow'], ['draw', 'core-indirect', 0],
+      ['pipeline', 'core'], ['draw', 'core-indirect', 0],
+      ['bind', 0, 'mid-bind-group'],
+      ['pipeline', 'trail'], ['draw', 'trail-indirect', 16],
+      ['pipeline', 'glow'], ['draw', 'core-indirect', 16],
+      ['pipeline', 'core'], ['draw', 'core-indirect', 16],
+      ['bind', 0, 'near-bind-group'],
+      ['pipeline', 'trail'], ['draw', 'trail-indirect', 32],
+      ['pipeline', 'glow'], ['draw', 'core-indirect', 32],
+      ['pipeline', 'core'], ['draw', 'core-indirect', 32]
     ]);
     expect(engine._createPipelines.toString()).not.toContain('depthStencil');
     expect(engine._computeShader()).toContain('fn depthBucket(z: f32) -> u32');
