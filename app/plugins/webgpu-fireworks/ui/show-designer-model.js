@@ -216,8 +216,9 @@
     _markDirty(reason = 'edit') {
       this.editGeneration += 1;
       this.state.persistence.dirty = true;
-      this.state.persistence.status = 'dirty';
-      this.state.persistence.conflict = null;
+      const conflicted = this.state.persistence.status === 'conflict';
+      this.state.persistence.status = conflicted ? 'conflict' : 'dirty';
+      if (!conflicted) this.state.persistence.conflict = null;
       this.state.persistence.error = null;
       this._emit(reason);
     }
@@ -345,14 +346,22 @@
 
     moveSelectedCues(deltaMs, options = {}) {
       this._beforeMutation();
+      const cues = this._cues();
       const indexes = this.state.selection.cueIndexes.length
         ? this.state.selection.cueIndexes
         : [this.state.selection.primaryCueIndex].filter(Number.isInteger);
+      const selectedCues = indexes.map(cueIndex => cues[cueIndex]).filter(Boolean);
+      const primaryCue = cues[this.state.selection.primaryCueIndex] || null;
       for (const cueIndex of indexes) {
         const cue = this._cue(cueIndex);
         cue.timeMs = snapTime(cue.timeMs + Number(deltaMs || 0), options);
       }
-      this._cues().sort((left, right) => left.timeMs - right.timeMs);
+      cues.sort((left, right) => left.timeMs - right.timeMs);
+      this.state.selection.cueIndexes = selectedCues
+        .map(cue => cues.indexOf(cue))
+        .filter(cueIndex => cueIndex >= 0)
+        .sort((left, right) => left - right);
+      this.state.selection.primaryCueIndex = primaryCue ? cues.indexOf(primaryCue) : null;
       this._markDirty('timeline');
     }
 

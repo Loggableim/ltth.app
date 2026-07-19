@@ -105,6 +105,27 @@ describe('WebGPU Fireworks Show Designer model', () => {
       .toEqual({ x: 0.38, y: 0.44 });
   });
 
+  test('keeps cue selection attached to dragged cues when their chronological order changes', () => {
+    const store = new ShowDesignerStore();
+    const editable = record();
+    editable.definition.variants.long.cues.push({
+      ...editable.definition.variants.long.cues[0],
+      timeMs: 2600,
+      shells: JSON.parse(JSON.stringify(editable.definition.variants.long.cues[0].shells))
+    });
+    store.loadShow(editable);
+
+    store.selectCue(0);
+    store.moveSelectedCues(2000);
+    expect(store.getState().selection).toEqual(expect.objectContaining({
+      cueIndexes: [1],
+      primaryCueIndex: 1
+    }));
+    store.moveSelectedCues(100);
+    expect(store.getState().definition.variants.long.cues.map(cue => cue.timeMs))
+      .toEqual([2600, 3600]);
+  });
+
   test('undo and redo restore complete editable snapshots and transactions coalesce', () => {
     const store = new ShowDesignerStore({ historyLimit: 4 });
     store.loadShow(record());
@@ -152,5 +173,12 @@ describe('WebGPU Fireworks Show Designer model', () => {
     expect(store.getState().persistence.status).toBe('conflict');
     expect(store.getState().persistence.conflict.currentRevision).toBe(7);
     expect(store.getState().definition.metadata.description).toBe('Edited during save');
+
+    store.updateMetadata({ description: 'Still local after conflict' });
+    expect(store.getState().persistence).toEqual(expect.objectContaining({
+      dirty: true,
+      status: 'conflict',
+      conflict: { currentRevision: 7 }
+    }));
   });
 });
