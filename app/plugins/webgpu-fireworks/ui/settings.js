@@ -811,7 +811,9 @@ function updateUI() {
 function updateToggle(id, value) {
     const toggle = document.getElementById(id);
     if (toggle) {
-        toggle.classList.toggle('active', value !== false);
+        const enabled = value !== false;
+        toggle.classList.toggle('active', enabled);
+        toggle.setAttribute('aria-checked', String(enabled));
     }
 }
 
@@ -1018,16 +1020,18 @@ function setupEventListeners() {
 
     // Master toggle
     document.getElementById('master-toggle').addEventListener('click', function() {
-        this.classList.toggle('active');
-        config.enabled = this.classList.contains('active');
+        const enabled = this.classList.toggle('active');
+        this.setAttribute('aria-checked', String(enabled));
+        config.enabled = enabled;
     });
 
     // All toggle switches
     document.querySelectorAll('.toggle-switch[data-config]').forEach(toggle => {
         toggle.addEventListener('click', function() {
-            this.classList.toggle('active');
+            const enabled = this.classList.toggle('active');
+            this.setAttribute('aria-checked', String(enabled));
             const configKey = this.dataset.config;
-            config[configKey] = this.classList.contains('active');
+            config[configKey] = enabled;
         });
     });
 
@@ -1267,17 +1271,6 @@ function setupEventListeners() {
 
     setupRangeSlider('min-target-fps', 'min-target-fps-value', '', (val) => {
         config.minTargetFps = parseInt(val);
-    });
-
-    // Performance Toggles (NEW)
-    document.getElementById('adaptive-toggle')?.addEventListener('click', function() {
-        this.classList.toggle('active');
-        config.adaptivePerformance = this.classList.contains('active');
-    });
-
-    document.getElementById('frame-skip-toggle')?.addEventListener('click', function() {
-        this.classList.toggle('active');
-        config.frameSkipEnabled = this.classList.contains('active');
     });
 
     // Number inputs

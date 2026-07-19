@@ -97,6 +97,9 @@
             position: relative;
             width: 50px;
             height: 26px;
+            flex: 0 0 50px;
+            padding: 0;
+            border: 0;
             background: #333;
             border-radius: 13px;
             cursor: pointer;
@@ -121,6 +124,11 @@
 
         .toggle-switch.active::after {
             transform: translateX(24px);
+        }
+
+        .toggle-switch:focus-visible {
+            outline: 3px solid #67e8f9;
+            outline-offset: 3px;
         }
 
         .btn-primary {
@@ -767,10 +775,10 @@
             <div class="card rounded-xl p-6 mb-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <h2 class="text-xl font-bold" data-i18n="webgpu_fireworks.enable_fireworks">Enable Fireworks</h2>
+                    <h2 class="text-xl font-bold"><label for="master-toggle" data-i18n="webgpu_fireworks.enable_fireworks">Enable Fireworks</label></h2>
                     <p class="text-gray-400" data-i18n="webgpu_fireworks.toggle_the_entire_fireworks_system_on_off">Toggle the entire fireworks system on/off</p>
                 </div>
-                <div id="master-toggle" class="toggle-switch active"></div>
+                <button id="master-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active"></button>
             </div>
         </div>
 
@@ -783,8 +791,8 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.enable_gift_triggers">Enable Gift Triggers</label>
-                            <div id="gift-toggle" class="toggle-switch active" data-config="giftTriggersEnabled"></div>
+                            <label for="gift-toggle" data-i18n="webgpu_fireworks.enable_gift_triggers">Enable Gift Triggers</label>
+                            <button id="gift-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="giftTriggersEnabled"></button>
                         </div>
 
                         <div>
@@ -804,8 +812,8 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.enable_combo_streaks">Enable Combo Streaks</label>
-                            <div id="combo-toggle" class="toggle-switch active" data-config="comboEnabled"></div>
+                            <label for="combo-toggle" data-i18n="webgpu_fireworks.enable_combo_streaks">Enable Combo Streaks</label>
+                            <button id="combo-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="comboEnabled"></button>
                         </div>
 
                         <div>
@@ -840,8 +848,8 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.enable_escalation">Enable Escalation</label>
-                            <div id="escalation-toggle" class="toggle-switch active" data-config="escalationEnabled"></div>
+                            <label for="escalation-toggle" data-i18n="webgpu_fireworks.enable_escalation">Enable Escalation</label>
+                            <button id="escalation-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="escalationEnabled"></button>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
@@ -905,8 +913,8 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.enable_sounds">Enable Sounds</label>
-                            <div id="audio-toggle" class="toggle-switch active" data-config="audioEnabled"></div>
+                            <label for="audio-toggle" data-i18n="webgpu_fireworks.enable_sounds">Enable Sounds</label>
+                            <button id="audio-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="audioEnabled"></button>
                         </div>
 
                         <div>
@@ -953,8 +961,8 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between mb-2">
-                            <label data-i18n="webgpu_fireworks.random_shape_rotation">Random Shape Rotation</label>
-                            <div id="random-shape-toggle" class="toggle-switch" data-config="randomShapeEnabled"></div>
+                            <label for="random-shape-toggle" data-i18n="webgpu_fireworks.random_shape_rotation">Random Shape Rotation</label>
+                            <button id="random-shape-toggle" type="button" role="switch" aria-checked="false" class="toggle-switch" data-config="randomShapeEnabled"></button>
                         </div>
 
                         <p class="text-sm text-gray-400 mb-2" data-i18n="webgpu_fireworks.click_shapes_to_activate_deactivate_for_random_selection_selected_shapes_have_gold_border">
@@ -1085,13 +1093,13 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.particle_trails">Particle Trails</label>
-                            <div id="trails-toggle" class="toggle-switch active" data-config="trailsEnabled"></div>
+                            <label for="trails-toggle" data-i18n="webgpu_fireworks.particle_trails">Particle Trails</label>
+                            <button id="trails-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="trailsEnabled"></button>
                         </div>
 
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.glow_effect">Glow Effect</label>
-                            <div id="glow-toggle" class="toggle-switch active" data-config="glowEnabled"></div>
+                            <label for="glow-toggle" data-i18n="webgpu_fireworks.glow_effect">Glow Effect</label>
+                            <button id="glow-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="glowEnabled"></button>
                         </div>
 
                         <div>
@@ -1121,10 +1129,10 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label for="toaster_mode" style="display: flex; align-items: center; gap: 10px;">
+                            <label for="toaster-toggle" style="display: flex; align-items: center; gap: 10px;">
                                 <strong data-i18n="webgpu_fireworks.toaster_mode.enabled">Enable Toaster Mode</strong>
                             </label>
-                            <div id="toaster-toggle" class="toggle-switch" data-config="toasterMode"></div>
+                            <button id="toaster-toggle" type="button" role="switch" aria-checked="false" class="toggle-switch" data-config="toasterMode"></button>
                         </div>
 
                         <p class="text-sm text-gray-400" data-i18n="generated.1c31a273f2a9">Keeps WebGPU active while reducing render scale, trails, bloom and turbulence.</p>
@@ -1281,8 +1289,8 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.enable_queue">Enable Queue System</label>
-                            <div id="queue-enabled-toggle" class="toggle-switch" data-config="queueEnabled"></div>
+                            <label for="queue-enabled-toggle" data-i18n="webgpu_fireworks.enable_queue">Enable Queue System</label>
+                            <button id="queue-enabled-toggle" type="button" role="switch" aria-checked="false" class="toggle-switch" data-config="queueEnabled"></button>
                         </div>
 
                         <p class="text-sm text-gray-400" data-i18n="generated.42eaecbe2bd2">
@@ -1359,8 +1367,8 @@
                         <hr class="border-gray-700">
 
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.adaptive_performance">Adaptive Performance</label>
-                            <div id="adaptive-toggle" class="toggle-switch active" data-config="adaptivePerformance"></div>
+                            <label for="adaptive-toggle" data-i18n="webgpu_fireworks.adaptive_performance">Adaptive Performance</label>
+                            <button id="adaptive-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="adaptivePerformance"></button>
                         </div>
 
                         <div>
@@ -1377,8 +1385,8 @@
                         </div>
 
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.enable_frame_skip">Frame Skip aktivieren</label>
-                            <div id="frame-skip-toggle" class="toggle-switch active" data-config="frameSkipEnabled"></div>
+                            <label for="frame-skip-toggle" data-i18n="webgpu_fireworks.enable_frame_skip">Frame Skip aktivieren</label>
+                            <button id="frame-skip-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="frameSkipEnabled"></button>
                         </div>
                     </div>
                 </div>
@@ -1389,8 +1397,8 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.use_user_avatars">Use User Avatars</label>
-                            <div id="avatar-toggle" class="toggle-switch" data-config="userAvatarEnabled"></div>
+                            <label for="avatar-toggle" data-i18n="webgpu_fireworks.use_user_avatars">Use User Avatars</label>
+                            <button id="avatar-toggle" type="button" role="switch" aria-checked="false" class="toggle-switch" data-config="userAvatarEnabled"></button>
                         </div>
 
                         <p class="text-sm text-gray-400" data-i18n="webgpu_fireworks.when_enabled_user_profile_pictures_will_be_mixed_with_gift_images_as_particles">
@@ -1422,8 +1430,8 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label><strong data-i18n="generated.b1ef0edeb7a0">Show Gift Text</strong></label>
-                            <div id="gift-popup-enabled-toggle" class="toggle-switch active" data-config="giftPopupEnabled"></div>
+                            <label for="gift-popup-enabled-toggle"><strong data-i18n="generated.b1ef0edeb7a0">Show Gift Text</strong></label>
+                            <button id="gift-popup-enabled-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="giftPopupEnabled"></button>
                         </div>
 
                         <p class="text-sm text-gray-400" data-i18n="generated.de2fadfd711d">
@@ -1461,8 +1469,8 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.enable_goal_finales">Enable Goal Finales</label>
-                            <div id="finale-toggle" class="toggle-switch active" data-config="goalFinaleEnabled"></div>
+                            <label for="finale-toggle" data-i18n="webgpu_fireworks.enable_goal_finales">Enable Goal Finales</label>
+                            <button id="finale-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="goalFinaleEnabled"></button>
                         </div>
 
                         <div>
@@ -1518,8 +1526,8 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.enable_superfan_finale">Enable Superfan Finales</label>
-                            <div id="superfan-finale-toggle" class="toggle-switch active" data-config="superfanFinaleEnabled"></div>
+                            <label for="superfan-finale-toggle" data-i18n="webgpu_fireworks.enable_superfan_finale">Enable Superfan Finales</label>
+                            <button id="superfan-finale-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="superfanFinaleEnabled"></button>
                         </div>
 
                         <div>
@@ -1626,8 +1634,8 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="generated.c7ee1559d8a6">Enable Follower Fireworks</label>
-                            <div id="follower-toggle" class="toggle-switch" data-config="followerFireworksEnabled"></div>
+                            <label for="follower-toggle" data-i18n="generated.c7ee1559d8a6">Enable Follower Fireworks</label>
+                            <button id="follower-toggle" type="button" role="switch" aria-checked="false" class="toggle-switch" data-config="followerFireworksEnabled"></button>
                         </div>
 
                         <div>
@@ -1641,13 +1649,13 @@
                         </div>
 
                         <div class="flex items-center justify-between">
-                            <label data-i18n="generated.e39dbe203fb0">Show Thank You Animation</label>
-                            <div id="follower-animation-toggle" class="toggle-switch active" data-config="followerShowAnimation"></div>
+                            <label for="follower-animation-toggle" data-i18n="generated.e39dbe203fb0">Show Thank You Animation</label>
+                            <button id="follower-animation-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="followerShowAnimation"></button>
                         </div>
 
                         <div class="flex items-center justify-between">
-                            <label data-i18n="generated.09d7a96ca18e">Show Profile Picture</label>
-                            <div id="follower-profile-toggle" class="toggle-switch active" data-config="followerShowProfilePicture"></div>
+                            <label for="follower-profile-toggle" data-i18n="generated.09d7a96ca18e">Show Profile Picture</label>
+                            <button id="follower-profile-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="followerShowProfilePicture"></button>
                         </div>
 
                         <div>
