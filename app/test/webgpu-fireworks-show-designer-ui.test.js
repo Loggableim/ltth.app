@@ -69,6 +69,8 @@ describe('WebGPU Fireworks standalone Show Designer UI', () => {
   let api;
   let app;
   let records;
+  let translations;
+  let i18nHandlers;
 
   beforeEach(async () => {
     dom = new JSDOM(html, {
@@ -80,6 +82,36 @@ describe('WebGPU Fireworks standalone Show Designer UI', () => {
     dom.window.alert = jest.fn();
     dom.window.URL.createObjectURL = jest.fn(() => 'blob:test');
     dom.window.URL.revokeObjectURL = jest.fn();
+    translations = {
+      'plugins.webgpu-fireworks.designer.create': 'Create EN',
+      'plugins.webgpu-fireworks.designer.options.phase.opening': 'Opening EN',
+      'plugins.webgpu-fireworks.designer.options.formation.single': 'Single EN',
+      'plugins.webgpu-fireworks.designer.fields.phase': 'Phase EN',
+      'plugins.webgpu-fireworks.designer.aria.shell_handle': 'Shell EN {count}',
+      'plugins.webgpu-fireworks.designer.unsaved_changes': 'Unsaved EN'
+    };
+    i18nHandlers = { change: [], languageChange: [] };
+    dom.window.i18n = {
+      init: jest.fn(async () => {}),
+      t: jest.fn(key => translations[key] || key),
+      updateDOM: jest.fn(() => {
+        for (const element of dom.window.document.querySelectorAll('[data-i18n]')) {
+          const key = element.getAttribute('data-i18n');
+          if (translations[key]) element.textContent = translations[key];
+        }
+        for (const element of dom.window.document.querySelectorAll('[data-i18n-aria-label]')) {
+          const key = element.getAttribute('data-i18n-aria-label');
+          if (translations[key]) element.setAttribute('aria-label', translations[key]);
+        }
+        for (const element of dom.window.document.querySelectorAll('[data-i18n-title]')) {
+          const key = element.getAttribute('data-i18n-title');
+          if (translations[key]) element.title = translations[key];
+        }
+      }),
+      onChange: jest.fn(handler => i18nHandlers.change.push(handler)),
+      onLanguageChange: jest.fn(handler => i18nHandlers.languageChange.push(handler)),
+      offChange: jest.fn()
+    };
     records = [builtInRecord(), customRecord()];
     api = {
       listShows: jest.fn(async () => ({
@@ -123,7 +155,12 @@ describe('WebGPU Fireworks standalone Show Designer UI', () => {
       }))
     };
     const store = new ShowDesignerStore();
-    const view = new ShowDesignerView(dom.window.document);
+    const view = new ShowDesignerView(dom.window.document, {
+      translate: (key, fallback, params) => {
+        const translated = dom.window.i18n.t(key, params);
+        return translated === key ? fallback : translated;
+      }
+    });
     app = new ShowDesignerApp({
       window: dom.window,
       document: dom.window.document,
@@ -309,6 +346,69 @@ describe('WebGPU Fireworks standalone Show Designer UI', () => {
     expect(document.activeElement.dataset.field).toBe('metadata.name');
     expect(document.activeElement.selectionStart).toBe(3);
     expect(app.store.getState().definition.metadata.name).toBe('Focused Study');
+  });
+
+  test('rerenders a live language switch without reload, state loss or duplicate callbacks', async () => {
+    const document = dom.window.document;
+    expect(dom.window.i18n.init).toHaveBeenCalledTimes(1);
+    expect(i18nHandlers.change).toHaveLength(1);
+    expect(i18nHandlers.languageChange).toHaveLength(1);
+
+    document.querySelector('[data-show-id^="custom:"]').click();
+    await tick();
+    document.querySelector('.cue-marker[data-cue-index="0"]').click();
+    document.querySelector('.shell-handle[data-shell-index="0"]')
+      .dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+    const name = document.querySelector('[data-field="metadata.name"]');
+    name.focus();
+    name.value = 'User-authored Pyro Name';
+    name.setSelectionRange(7, 7);
+    name.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    const before = app.store.getState();
+    const apiCalls = { list: api.listShows.mock.calls.length, get: api.getShow.mock.calls.length };
+
+    Object.assign(translations, {
+      'plugins.webgpu-fireworks.designer.create': 'Show erstellen',
+      'plugins.webgpu-fireworks.designer.options.phase.opening': 'Eröffnung',
+      'plugins.webgpu-fireworks.designer.options.formation.single': 'Einzeln',
+      'plugins.webgpu-fireworks.designer.fields.phase': 'Phase',
+      'plugins.webgpu-fireworks.designer.aria.shell_handle': 'Feuerwerkskörper {count}',
+      'plugins.webgpu-fireworks.designer.unsaved_changes': 'Ungespeicherte Änderungen'
+    });
+    i18nHandlers.languageChange[0]('de');
+    await tick();
+
+    expect(document.querySelector('[data-action="create"]').textContent).toBe('Show erstellen');
+    expect(document.querySelector('[data-field="phase"] option[value="opening"]').textContent).toBe('Eröffnung');
+    expect(document.querySelector('.cue-phase').textContent).toBe('Eröffnung');
+    expect(document.querySelector('.shell-handle').getAttribute('aria-label')).toBe('Feuerwerkskörper 1');
+    expect(document.getElementById('designer-save-status').textContent).toBe('Ungespeicherte Änderungen');
+    expect(document.querySelector('[data-field="metadata.name"]').value).toBe('User-authored Pyro Name');
+    expect(app.store.getState()).toMatchObject({
+      selectedShowId: before.selectedShowId,
+      selectedVariant: before.selectedVariant,
+      selection: before.selection,
+      persistence: { dirty: true }
+    });
+    expect(document.activeElement.dataset.field).toBe('metadata.name');
+    expect(document.activeElement.selectionStart).toBe(7);
+    expect(api.listShows).toHaveBeenCalledTimes(apiCalls.list);
+    expect(api.getShow).toHaveBeenCalledTimes(apiCalls.get);
+
+    Object.assign(translations, {
+      'plugins.webgpu-fireworks.designer.create': 'Créer un show',
+      'plugins.webgpu-fireworks.designer.options.phase.opening': 'Ouverture'
+    });
+    const render = jest.spyOn(app.view, 'render');
+    const rendersBefore = render.mock.calls.length;
+    i18nHandlers.change[0]('fr');
+    i18nHandlers.languageChange[0]('fr');
+    await tick();
+    expect(render).toHaveBeenCalledTimes(rendersBefore + 1);
+    expect(document.querySelector('[data-action="create"]').textContent).toBe('Créer un show');
+    expect(document.querySelector('.cue-phase').textContent).toBe('Ouverture');
+    expect(api.listShows).toHaveBeenCalledTimes(apiCalls.list);
+    expect(api.getShow).toHaveBeenCalledTimes(apiCalls.get);
   });
 
   test('stops conflict retries and offers reload-server or save-local-as-new resolution', async () => {

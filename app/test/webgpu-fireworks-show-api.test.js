@@ -156,6 +156,22 @@ describe('WebGPU Fireworks show API', () => {
       .toBeLessThan(registered.findIndex(([, routePath]) => routePath === '/api/webgpu-fireworks/shows/:id'));
   });
 
+  test('serves the standalone Show Designer through its public plugin route', async () => {
+    const { api, dataDir } = createHarness();
+    dataDirs.push(dataDir);
+
+    const response = await invoke(route(api, 'get', '/webgpu-fireworks/designer'));
+
+    expect(response.sendFile).toHaveBeenCalledWith(path.join(
+      __dirname,
+      '..',
+      'plugins',
+      'webgpu-fireworks',
+      'ui',
+      'designer.html'
+    ));
+  });
+
   test('creates a custom draft and reads it back through the API', async () => {
     const { api, dataDir } = createHarness();
     dataDirs.push(dataDir);

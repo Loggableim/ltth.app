@@ -54,6 +54,15 @@
     return String(value);
   }
 
+  function keySegment(value) {
+    return String(value || '').trim().toLowerCase().replace(/-/g, '_');
+  }
+
+  function humanizeIdentifier(value, fallback = '') {
+    const label = String(value || fallback).trim().replace(/[-_]+/g, ' ');
+    return label ? label.charAt(0).toUpperCase() + label.slice(1) : fallback;
+  }
+
   function button(document, label, attributes = {}) {
     const element = document.createElement('button');
     element.type = 'button';
@@ -98,6 +107,13 @@
     t(key, fallback, params = {}) {
       const translated = this.translate(key, fallback, params);
       return interpolate(translated || fallback, params);
+    }
+
+    optionLabel(group, value, fallback) {
+      return this.t(
+        `plugins.webgpu-fireworks.designer.options.${group}.${keySegment(value)}`,
+        fallback || humanizeIdentifier(value)
+      );
     }
 
     setBusy(busy) {
@@ -188,7 +204,11 @@
             : Number.isInteger(show.publishedRevision)
               ? this.t('plugins.webgpu-fireworks.designer.status_published', 'Published')
               : this.t('plugins.webgpu-fireworks.designer.status_draft', 'Draft');
-        meta.append(dot, this.document.createTextNode(`${stateLabel} · r${show.revision ?? 0}`));
+        meta.append(dot, this.document.createTextNode(this.t(
+          'plugins.webgpu-fireworks.designer.status_revision',
+          '{status} · r{revision}',
+          { status: stateLabel, revision: show.revision ?? 0 }
+        )));
         card.append(name, meta);
         container.appendChild(card);
       }
@@ -288,7 +308,11 @@
         group.dataset.shellIndex = String(shellIndex);
         group.setAttribute('role', 'button');
         group.setAttribute('tabindex', '0');
-        group.setAttribute('aria-label', `Shell ${shellIndex + 1}`);
+        group.setAttribute('aria-label', this.t(
+          'plugins.webgpu-fireworks.designer.aria.shell_handle',
+          'Shell {count}',
+          { count: shellIndex + 1 }
+        ));
         if (selected.has(`${cueIndex}:${shellIndex}`)) group.classList.add('is-selected');
         const circle = this.document.createElementNS(SVG_NAMESPACE, 'circle');
         circle.setAttribute('r', '22');
@@ -313,7 +337,11 @@
         tick.className = 'ruler-tick';
         tick.style.left = `${index * 10}%`;
         const label = this.document.createElement('span');
-        label.textContent = `${Math.round((duration * index / 10) / 100) / 10}s`;
+        label.textContent = this.t(
+          'plugins.webgpu-fireworks.designer.time_seconds',
+          '{seconds} s',
+          { seconds: Math.round((duration * index / 10) / 100) / 10 }
+        );
         tick.appendChild(label);
         ruler.appendChild(tick);
       }
@@ -329,13 +357,24 @@
         if (selected.has(cueIndex)) marker.classList.add('is-selected');
         const time = this.document.createElement('span');
         time.className = 'cue-time';
-        time.textContent = `${(Number(cue.timeMs) / 1000).toFixed(1)} s`;
+        time.textContent = this.t(
+          'plugins.webgpu-fireworks.designer.time_seconds',
+          '{seconds} s',
+          { seconds: (Number(cue.timeMs) / 1000).toFixed(1) }
+        );
         const phase = this.document.createElement('span');
         phase.className = 'cue-phase';
-        phase.textContent = cue.phase || 'phase';
+        phase.textContent = this.optionLabel('phase', cue.phase || 'build');
         const formation = this.document.createElement('span');
         formation.className = 'cue-formation';
-        formation.textContent = `${cue.formation || 'single'} · ${(cue.shells || []).length}`;
+        formation.textContent = this.t(
+          'plugins.webgpu-fireworks.designer.cue_summary',
+          '{formation} · {count} shells',
+          {
+            formation: this.optionLabel('formation', cue.formation || 'single'),
+            count: (cue.shells || []).length
+          }
+        );
         marker.append(time, phase, formation);
         track.appendChild(marker);
       });
@@ -357,7 +396,9 @@
         for (const value of options.values || []) {
           const option = this.document.createElement('option');
           option.value = value;
-          option.textContent = value;
+          option.textContent = options.optionGroup
+            ? this.optionLabel(options.optionGroup, value)
+            : humanizeIdentifier(value);
           input.appendChild(option);
         }
         input.value = fieldValue(options.value);
@@ -407,23 +448,23 @@
         return;
       }
       const disabled = state.readOnly === true;
-      const metadata = this.inspectorSection(this.t('plugins.webgpu-fireworks.designer.metadata', 'Show'));
+      const metadata = this.inspectorSection(this.t('plugins.webgpu-fireworks.designer.sections.show', 'Show'));
       this.appendField(metadata.fields, {
-        label: this.t('plugins.webgpu-fireworks.designer.name', 'Name'),
+        label: this.t('plugins.webgpu-fireworks.designer.fields.name', 'Name'),
         scope: 'metadata', field: 'metadata.name', value: state.definition.metadata?.name, disabled, wide: true
       });
       this.appendField(metadata.fields, {
-        label: this.t('plugins.webgpu-fireworks.designer.description', 'Description'),
+        label: this.t('plugins.webgpu-fireworks.designer.fields.description', 'Description'),
         scope: 'metadata', field: 'metadata.description', value: state.definition.metadata?.description,
         type: 'textarea', disabled, wide: true
       });
       this.appendField(metadata.fields, {
-        label: this.t('plugins.webgpu-fireworks.designer.material', 'Material'),
+        label: this.t('plugins.webgpu-fireworks.designer.fields.material', 'Material'),
         scope: 'definition', field: 'materialProfile', value: state.definition.materialProfile,
-        type: 'select', values: ['classic', 'premium-realistic'], disabled
+        type: 'select', values: ['classic', 'premium-realistic'], optionGroup: 'material', disabled
       });
       this.appendField(metadata.fields, {
-        label: this.t('plugins.webgpu-fireworks.designer.auto_eligible', 'Auto eligible'),
+        label: this.t('plugins.webgpu-fireworks.designer.fields.auto_eligible', 'Auto eligible'),
         scope: 'definition', field: 'autoEligible', value: state.definition.autoEligible,
         type: 'checkbox', disabled
       });
@@ -433,22 +474,30 @@
       const cueIndex = state.selection.primaryCueIndex;
       const cue = Number.isInteger(cueIndex) ? cues[cueIndex] : null;
       if (!cue) return;
-      const cueSection = this.inspectorSection(this.t('plugins.webgpu-fireworks.designer.cue', `Cue ${cueIndex + 1}`, { count: cueIndex + 1 }));
+      const cueSection = this.inspectorSection(this.t(
+        'plugins.webgpu-fireworks.designer.sections.cue',
+        'Cue {count}',
+        { count: cueIndex + 1 }
+      ));
       this.appendField(cueSection.fields, {
-        label: 'Time (ms)', scope: 'cue', field: 'timeMs', value: cue.timeMs,
+        label: this.t('plugins.webgpu-fireworks.designer.fields.time_ms', 'Time (ms)'),
+        scope: 'cue', field: 'timeMs', value: cue.timeMs,
         type: 'number', min: 0, step: 100, disabled, cueIndex
       });
       this.appendField(cueSection.fields, {
-        label: 'Phase', scope: 'cue', field: 'phase', value: cue.phase,
-        type: 'select', values: PHASES, disabled, cueIndex
+        label: this.t('plugins.webgpu-fireworks.designer.fields.phase', 'Phase'),
+        scope: 'cue', field: 'phase', value: cue.phase,
+        type: 'select', values: PHASES, optionGroup: 'phase', disabled, cueIndex
       });
       this.appendField(cueSection.fields, {
-        label: 'Formation', scope: 'cue', field: 'formation', value: cue.formation,
-        type: 'select', values: FORMATIONS, disabled, cueIndex, wide: true
+        label: this.t('plugins.webgpu-fireworks.designer.fields.formation', 'Formation'),
+        scope: 'cue', field: 'formation', value: cue.formation,
+        type: 'select', values: FORMATIONS, optionGroup: 'formation', disabled, cueIndex, wide: true
       });
       this.appendField(cueSection.fields, {
-        label: 'Importance', scope: 'cue', field: 'importance', value: cue.importance,
-        type: 'select', values: IMPORTANCE, disabled, cueIndex, wide: true
+        label: this.t('plugins.webgpu-fireworks.designer.fields.importance', 'Importance'),
+        scope: 'cue', field: 'importance', value: cue.importance,
+        type: 'select', values: IMPORTANCE, optionGroup: 'importance', disabled, cueIndex, wide: true
       });
       container.appendChild(cueSection.section);
 
@@ -457,36 +506,44 @@
         ? cues[primaryShell.cueIndex]?.shells?.[primaryShell.shellIndex]
         : null;
       if (!shell) return;
-      const shellSection = this.inspectorSection(this.t('plugins.webgpu-fireworks.designer.shell', `Shell ${primaryShell.shellIndex + 1}`, { count: primaryShell.shellIndex + 1 }));
-      for (const [field, label, value] of [
-        ['origin.x', 'Origin X', coordinateNumber(shell.origin?.x, 0.5)],
-        ['origin.y', 'Origin Y', coordinateNumber(shell.origin?.y, 1)],
-        ['target.x', 'Target X', coordinateNumber(shell.target?.x, 0.5)],
-        ['target.y', 'Target Y', coordinateNumber(shell.target?.y, 0.4)]
+      const shellSection = this.inspectorSection(this.t(
+        'plugins.webgpu-fireworks.designer.sections.shell',
+        'Shell {count}',
+        { count: primaryShell.shellIndex + 1 }
+      ));
+      for (const [field, labelKey, fallback, value] of [
+        ['origin.x', 'origin_x', 'Origin X', coordinateNumber(shell.origin?.x, 0.5)],
+        ['origin.y', 'origin_y', 'Origin Y', coordinateNumber(shell.origin?.y, 1)],
+        ['target.x', 'target_x', 'Target X', coordinateNumber(shell.target?.x, 0.5)],
+        ['target.y', 'target_y', 'Target Y', coordinateNumber(shell.target?.y, 0.4)]
       ]) {
         this.appendField(shellSection.fields, {
-          label, scope: 'shell-coordinate', field, value, type: 'number',
+          label: this.t(`plugins.webgpu-fireworks.designer.fields.${labelKey}`, fallback),
+          scope: 'shell-coordinate', field, value, type: 'number',
           min: 0, max: 1, step: 0.01, disabled,
           cueIndex: primaryShell.cueIndex, shellIndex: primaryShell.shellIndex
         });
       }
       this.appendField(shellSection.fields, {
-        label: 'Launch', scope: 'shell', field: 'launchMode', value: shell.launchMode,
-        type: 'select', values: LAUNCH_MODES, disabled,
+        label: this.t('plugins.webgpu-fireworks.designer.fields.launch', 'Launch'),
+        scope: 'shell', field: 'launchMode', value: shell.launchMode,
+        type: 'select', values: LAUNCH_MODES, optionGroup: 'launch_mode', disabled,
         cueIndex: primaryShell.cueIndex, shellIndex: primaryShell.shellIndex
       });
       this.appendField(shellSection.fields, {
-        label: 'Tier', scope: 'shell', field: 'tier', value: shell.tier,
-        type: 'select', values: TIERS, disabled,
+        label: this.t('plugins.webgpu-fireworks.designer.fields.tier', 'Tier'),
+        scope: 'shell', field: 'tier', value: shell.tier,
+        type: 'select', values: TIERS, optionGroup: 'tier', disabled,
         cueIndex: primaryShell.cueIndex, shellIndex: primaryShell.shellIndex
       });
       this.appendField(shellSection.fields, {
-        label: 'Palette', scope: 'shell-array', field: 'palette', value: shell.palette,
+        label: this.t('plugins.webgpu-fireworks.designer.fields.palette', 'Palette'),
+        scope: 'shell-array', field: 'palette', value: shell.palette,
         disabled, wide: true, cueIndex: primaryShell.cueIndex, shellIndex: primaryShell.shellIndex
       });
       container.appendChild(shellSection.section);
 
-      const layerSection = this.inspectorSection(this.t('plugins.webgpu-fireworks.designer.layers', 'Layers'));
+      const layerSection = this.inspectorSection(this.t('plugins.webgpu-fireworks.designer.sections.layers', 'Layers'));
       const layerTabs = this.document.createElement('div');
       layerTabs.className = 'layer-tabs';
       const selectedLayer = state.selection.layer?.layerIndex ?? 0;
@@ -499,11 +556,13 @@
         layerTabs.appendChild(layerButton);
       });
       const addLayer = button(this.document, '+', { action: 'add-layer' });
-      addLayer.title = 'Add layer';
+      addLayer.title = this.t('plugins.webgpu-fireworks.designer.actions.add_layer', 'Add layer');
+      addLayer.setAttribute('aria-label', addLayer.title);
       addLayer.disabled = disabled || shell.layers.length >= 4;
       layerTabs.appendChild(addLayer);
       const removeLayer = button(this.document, '−', { action: 'remove-layer' });
-      removeLayer.title = 'Remove layer';
+      removeLayer.title = this.t('plugins.webgpu-fireworks.designer.actions.remove_layer', 'Remove layer');
+      removeLayer.setAttribute('aria-label', removeLayer.title);
       removeLayer.disabled = disabled || shell.layers.length <= 1;
       layerTabs.appendChild(removeLayer);
       layerSection.section.insertBefore(layerTabs, layerSection.fields);
@@ -514,35 +573,42 @@
           layerIndex: selectedLayer, scope: 'layer'
         };
         this.appendField(layerSection.fields, {
-          ...shared, label: 'Primitive', field: 'primitive', value: layer.primitive,
-          type: 'select', values: PRIMITIVES
+          ...shared, label: this.t('plugins.webgpu-fireworks.designer.fields.primitive', 'Primitive'),
+          field: 'primitive', value: layer.primitive,
+          type: 'select', values: PRIMITIVES, optionGroup: 'primitive'
         });
         if (layer.primitive === 'glyph') {
           this.appendField(layerSection.fields, {
-            ...shared, label: 'Glyph', field: 'glyph', value: layer.glyph || 'star',
-            type: 'select', values: GLYPHS
+            ...shared, label: this.t('plugins.webgpu-fireworks.designer.fields.glyph', 'Glyph'),
+            field: 'glyph', value: layer.glyph || 'star',
+            type: 'select', values: GLYPHS, optionGroup: 'glyph'
           });
         }
-        for (const [field, label, step] of [
-          ['delayMs', 'Delay (ms)', 10], ['density', 'Density', 1],
-          ['size', 'Size', 0.05], ['lifetimeMs', 'Lifetime (ms)', 10],
-          ['gravity', 'Gravity', 0.05], ['drag', 'Drag', 0.01]
+        for (const [field, labelKey, fallback, step] of [
+          ['delayMs', 'delay_ms', 'Delay (ms)', 10], ['density', 'density', 'Density', 1],
+          ['size', 'size', 'Size', 0.05], ['lifetimeMs', 'lifetime_ms', 'Lifetime (ms)', 10],
+          ['gravity', 'gravity', 'Gravity', 0.05], ['drag', 'drag', 'Drag', 0.01]
         ]) {
           this.appendField(layerSection.fields, {
-            ...shared, label, field, value: layer[field] ?? 0, type: 'number', step
+            ...shared,
+            label: this.t(`plugins.webgpu-fireworks.designer.fields.${labelKey}`, fallback),
+            field, value: layer[field] ?? 0, type: 'number', step
           });
         }
         this.appendField(layerSection.fields, {
-          ...shared, label: 'Priority', field: 'priority', value: layer.priority || 'core',
-          type: 'select', values: PRIORITIES
+          ...shared, label: this.t('plugins.webgpu-fireworks.designer.fields.priority', 'Priority'),
+          field: 'priority', value: layer.priority || 'core',
+          type: 'select', values: PRIORITIES, optionGroup: 'priority'
         });
         this.appendField(layerSection.fields, {
-          ...shared, label: 'Colors', scope: 'layer-array', field: 'colors', value: layer.colors,
+          ...shared, label: this.t('plugins.webgpu-fireworks.designer.fields.colors', 'Colors'),
+          scope: 'layer-array', field: 'colors', value: layer.colors,
           wide: true
         });
         for (const field of ['trail', 'split', 'strobe', 'core']) {
           this.appendField(layerSection.fields, {
-            ...shared, label: field, field, value: layer[field] === true, type: 'checkbox'
+            ...shared, label: this.optionLabel('boolean', field),
+            field, value: layer[field] === true, type: 'checkbox'
           });
         }
       }
@@ -562,7 +628,22 @@
         return;
       }
       errors.forEach((issue, index) => {
-        const item = button(this.document, `${issue.message || issue.code || 'Validation issue'} · ${issue.path || 'show'}`, {
+        const message = this.t(
+          `plugins.webgpu-fireworks.designer.validation_codes.${keySegment(issue.code)}`,
+          issue.message || this.t(
+            'plugins.webgpu-fireworks.designer.validation_issue_fallback',
+            'Validation issue'
+          )
+        );
+        const path = issue.path || this.t(
+          'plugins.webgpu-fireworks.designer.validation_show_path',
+          'show'
+        );
+        const item = button(this.document, this.t(
+          'plugins.webgpu-fireworks.designer.validation_issue',
+          '{message} · {path}',
+          { message, path }
+        ), {
           issueIndex: index
         });
         item.className = 'validation-issue';
@@ -577,7 +658,7 @@
         dirty: this.t('plugins.webgpu-fireworks.designer.unsaved_changes', 'Unsaved changes'),
         saving: this.t('plugins.webgpu-fireworks.designer.status_saving', 'Saving…'),
         saved: this.t('plugins.webgpu-fireworks.designer.status_saved', `Saved · r${state.revision}`, { revision: state.revision }),
-        conflict: this.t('plugins.webgpu-fireworks.api.revision_conflict', 'Revision conflict'),
+        conflict: this.t('plugins.webgpu-fireworks.designer.errors.revision_conflict', 'Revision conflict'),
         error: this.t('plugins.webgpu-fireworks.designer.status_error', 'Save failed')
       };
       this.elements.status.dataset.status = status;

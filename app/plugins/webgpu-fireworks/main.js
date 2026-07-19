@@ -939,6 +939,12 @@ class FireworksPlugin {
             res.sendFile(uiPath);
         });
 
+        // Serve the standalone visual Show Designer.
+        this.api.registerRoute('get', '/webgpu-fireworks/designer', (req, res) => {
+            const designerPath = path.join(__dirname, 'ui', 'designer.html');
+            res.sendFile(designerPath);
+        });
+
         // Serve overlay
         this.api.registerRoute('get', '/webgpu-fireworks/overlay', (req, res) => {
             const overlayPath = path.join(__dirname, 'overlay.html');
@@ -2371,6 +2377,7 @@ class FireworksPlugin {
     logRoutes() {
         this.api.log('📍 [FIREWORKS] Routes registered:', 'info');
         this.api.log('   - GET    /webgpu-fireworks/ui', 'info');
+        this.api.log('   - GET    /webgpu-fireworks/designer', 'info');
         this.api.log('   - GET    /webgpu-fireworks/overlay', 'info');
         this.api.log('   - GET    /api/webgpu-fireworks/config', 'info');
         this.api.log('   - POST   /api/webgpu-fireworks/config', 'info');

@@ -4,136 +4,136 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' ws: wss:; object-src 'none'; base-uri 'none'; form-action 'self'">
-  <title data-i18n="plugins.webgpu-fireworks.designer.title">Show Designer · WebGPU Fireworks</title>
-  <link rel="stylesheet" href="/plugins/webgpu-fireworks/ui/designer.css">
+  <title data-i18n="plugins.webgpu-fireworks.designer.page_title">Show Designer · WebGPU Fireworks</title>
+  <link rel="stylesheet" href="/plugins/webgpu-fireworks/ui/designer.css?v=3.0.0-designer">
 </head>
 <body>
   <div class="designer-shell">
     <header class="designer-header">
       <div class="designer-heading">
-        <a class="icon-button back-link" href="/webgpu-fireworks/ui" aria-label="Back to Fireworks settings">←</a>
+        <a class="icon-button back-link" href="/webgpu-fireworks/ui" aria-label="Back to Fireworks settings" data-i18n-aria-label="plugins.webgpu-fireworks.designer.back_to_settings"><span aria-hidden="true">←</span></a>
         <div>
-          <p class="eyebrow">WebGPU Fireworks</p>
+          <p class="eyebrow" data-i18n="plugins.webgpu-fireworks.designer.product_name">WebGPU Fireworks</p>
           <h1 data-i18n="plugins.webgpu-fireworks.designer.title">Show Designer</h1>
         </div>
       </div>
-      <div class="designer-toolbar" aria-label="Show actions">
+      <div class="designer-toolbar" aria-label="Show actions" data-i18n-aria-label="plugins.webgpu-fireworks.designer.aria.show_actions">
         <button type="button" data-action="create" data-i18n="plugins.webgpu-fireworks.designer.create">Create show</button>
         <button type="button" data-action="duplicate" data-i18n="plugins.webgpu-fireworks.designer.duplicate">Duplicate</button>
         <button type="button" data-action="import" data-i18n="plugins.webgpu-fireworks.designer.import">Import show</button>
         <input id="show-import-file" type="file" accept="application/json,.json" hidden>
         <button type="button" data-action="export" data-i18n="plugins.webgpu-fireworks.designer.export">Export show</button>
         <span class="toolbar-divider" aria-hidden="true"></span>
-        <button type="button" data-action="undo" aria-label="Undo" title="Undo (Ctrl+Z)">↶</button>
-        <button type="button" data-action="redo" aria-label="Redo" title="Redo (Ctrl+Shift+Z)">↷</button>
+        <button type="button" data-action="undo" aria-label="Undo" data-i18n-aria-label="plugins.webgpu-fireworks.designer.actions.undo" title="Undo (Ctrl+Z)" data-i18n-title="plugins.webgpu-fireworks.designer.tooltips.undo"><span aria-hidden="true">↶</span></button>
+        <button type="button" data-action="redo" aria-label="Redo" data-i18n-aria-label="plugins.webgpu-fireworks.designer.actions.redo" title="Redo (Ctrl+Shift+Z)" data-i18n-title="plugins.webgpu-fireworks.designer.tooltips.redo"><span aria-hidden="true">↷</span></button>
       </div>
-      <div class="designer-lifecycle" aria-label="Validation and publishing">
+      <div class="designer-lifecycle" aria-label="Validation and publishing" data-i18n-aria-label="plugins.webgpu-fireworks.designer.aria.validation_publishing">
         <button type="button" data-action="validate" data-i18n="plugins.webgpu-fireworks.designer.validate">Validate</button>
         <button type="button" data-action="derive" data-i18n="plugins.webgpu-fireworks.designer.derive_lengths">Derive lengths</button>
         <button class="primary-button" type="button" data-action="publish" data-i18n="plugins.webgpu-fireworks.designer.publish">Publish</button>
         <button type="button" data-action="archive" data-i18n="plugins.webgpu-fireworks.designer.archive">Archive</button>
         <button type="button" data-action="restore" data-i18n="plugins.webgpu-fireworks.designer.restore">Restore</button>
-        <output id="designer-save-status" class="save-status" data-status="idle" aria-live="polite">Idle</output>
+        <output id="designer-save-status" class="save-status" data-status="idle" aria-live="polite" data-i18n="plugins.webgpu-fireworks.designer.status_idle">Idle</output>
       </div>
     </header>
 
     <div id="designer-notice" class="designer-notice" role="status" aria-live="polite" hidden></div>
     <section id="designer-conflict" class="conflict-banner" role="alert" hidden>
       <div>
-        <strong>Revision conflict</strong>
-        <p>The server has a newer revision. Your local edits are still safe.</p>
+        <strong data-i18n="plugins.webgpu-fireworks.designer.conflict.title">Revision conflict</strong>
+        <p data-i18n="plugins.webgpu-fireworks.designer.conflict.description">The server has a newer revision. Your local edits are still safe.</p>
       </div>
       <div class="button-row">
-        <button type="button" data-action="conflict-reload">Load server version</button>
-        <button type="button" data-action="conflict-copy">Save local as new show</button>
+        <button type="button" data-action="conflict-reload" data-i18n="plugins.webgpu-fireworks.designer.conflict.load_server">Load server version</button>
+        <button type="button" data-action="conflict-copy" data-i18n="plugins.webgpu-fireworks.designer.conflict.save_local_copy">Save local as new show</button>
       </div>
     </section>
 
     <main id="show-designer" class="designer-grid" aria-busy="true">
-      <aside id="show-library" class="panel library-panel" aria-label="Show library">
+      <aside id="show-library" class="panel library-panel" aria-label="Show library" data-i18n-aria-label="plugins.webgpu-fireworks.designer.aria.show_library">
         <div class="panel-heading">
           <div>
-            <p class="eyebrow">Library</p>
-            <h2>Shows</h2>
+            <p class="eyebrow" data-i18n="plugins.webgpu-fireworks.designer.panels.library">Library</p>
+            <h2 data-i18n="plugins.webgpu-fireworks.designer.panels.shows">Shows</h2>
           </div>
-          <button class="icon-button" type="button" data-action="refresh" aria-label="Refresh show library">↻</button>
+          <button class="icon-button" type="button" data-action="refresh" aria-label="Refresh show library" data-i18n-aria-label="plugins.webgpu-fireworks.designer.aria.refresh_library"><span aria-hidden="true">↻</span></button>
         </div>
-        <div class="library-filters" role="group" aria-label="Library filters">
-          <button type="button" class="is-active" data-library-filter="all">All</button>
-          <button type="button" data-library-filter="built-in">Built-in</button>
-          <button type="button" data-library-filter="custom">Custom</button>
-          <button type="button" data-library-filter="archived">Archived</button>
+        <div class="library-filters" role="group" aria-label="Library filters" data-i18n-aria-label="plugins.webgpu-fireworks.designer.aria.library_filters">
+          <button type="button" class="is-active" data-library-filter="all" data-i18n="plugins.webgpu-fireworks.designer.filters.all">All</button>
+          <button type="button" data-library-filter="built-in" data-i18n="plugins.webgpu-fireworks.designer.filters.built_in">Built-in</button>
+          <button type="button" data-library-filter="custom" data-i18n="plugins.webgpu-fireworks.designer.filters.custom">Custom</button>
+          <button type="button" data-library-filter="archived" data-i18n="plugins.webgpu-fireworks.designer.filters.archived">Archived</button>
         </div>
-        <div id="show-library-list" class="show-library-list" role="listbox" aria-label="Available shows"></div>
+        <div id="show-library-list" class="show-library-list" role="listbox" aria-label="Available shows" data-i18n-aria-label="plugins.webgpu-fireworks.designer.aria.available_shows"></div>
       </aside>
 
-      <section id="show-stage" class="panel stage-panel" aria-label="Fireworks stage">
+      <section id="show-stage" class="panel stage-panel" aria-label="Fireworks stage" data-i18n-aria-label="plugins.webgpu-fireworks.designer.aria.fireworks_stage">
         <div class="panel-heading stage-heading">
           <div>
-            <p class="eyebrow">Stage</p>
-            <h2 id="designer-show-title">Select a show</h2>
+            <p class="eyebrow" data-i18n="plugins.webgpu-fireworks.designer.panels.stage">Stage</p>
+            <h2 id="designer-show-title" data-i18n="plugins.webgpu-fireworks.designer.select_show">Select a show</h2>
           </div>
-          <div id="variant-switcher" class="segmented-control" role="group" aria-label="Show length">
-            <button type="button" data-variant="long">Long · 28 s</button>
-            <button type="button" data-variant="medium">Medium · 18 s</button>
-            <button type="button" data-variant="short">Short · 10 s</button>
+          <div id="variant-switcher" class="segmented-control" role="group" aria-label="Show length" data-i18n-aria-label="plugins.webgpu-fireworks.designer.aria.show_length">
+            <button type="button" data-variant="long" data-i18n="plugins.webgpu-fireworks.designer.variants.long">Long · 28 s</button>
+            <button type="button" data-variant="medium" data-i18n="plugins.webgpu-fireworks.designer.variants.medium">Medium · 18 s</button>
+            <button type="button" data-variant="short" data-i18n="plugins.webgpu-fireworks.designer.variants.short">Short · 10 s</button>
           </div>
         </div>
-        <div id="designer-readonly-notice" class="readonly-notice" hidden>
+        <div id="designer-readonly-notice" class="readonly-notice" hidden data-i18n="plugins.webgpu-fireworks.designer.readonly_notice">
           Built-in shows are read-only. Duplicate this show to edit it.
         </div>
-        <div id="stage-canvas" class="stage-canvas" tabindex="0" aria-label="Shell target stage">
+        <div id="stage-canvas" class="stage-canvas" tabindex="0" aria-label="Shell target stage" data-i18n-aria-label="plugins.webgpu-fireworks.designer.aria.shell_target_stage">
           <div class="stage-grid" aria-hidden="true"></div>
-          <svg id="stage-svg" viewBox="0 0 1000 560" preserveAspectRatio="none" aria-label="Shell launch paths">
+          <svg id="stage-svg" viewBox="0 0 1000 560" preserveAspectRatio="none" aria-label="Shell launch paths" data-i18n-aria-label="plugins.webgpu-fireworks.designer.aria.shell_launch_paths">
             <g id="stage-paths"></g>
             <g id="stage-shells"></g>
           </svg>
-          <div class="stage-horizon" aria-hidden="true"><span>Launch line</span></div>
-          <div id="stage-empty" class="empty-state">Select a cue to arrange its shells.</div>
+          <div class="stage-horizon" aria-hidden="true"><span data-i18n="plugins.webgpu-fireworks.designer.launch_line">Launch line</span></div>
+          <div id="stage-empty" class="empty-state" data-i18n="plugins.webgpu-fireworks.designer.stage_empty">Select a cue to arrange its shells.</div>
         </div>
         <div class="stage-actions button-row">
-          <button type="button" data-action="add-shell">Add shell</button>
-          <button type="button" data-action="remove-shell">Remove shell</button>
+          <button type="button" data-action="add-shell" data-i18n="plugins.webgpu-fireworks.designer.actions.add_shell">Add shell</button>
+          <button type="button" data-action="remove-shell" data-i18n="plugins.webgpu-fireworks.designer.actions.remove_shell">Remove shell</button>
           <span class="spacer"></span>
-          <button type="button" data-action="preview-cue">Test cue</button>
-          <button type="button" data-action="preview-phase">Test phase</button>
-          <button class="primary-button" type="button" data-action="preview-show">Test show</button>
+          <button type="button" data-action="preview-cue" data-i18n="plugins.webgpu-fireworks.designer.actions.preview_cue">Test cue</button>
+          <button type="button" data-action="preview-phase" data-i18n="plugins.webgpu-fireworks.designer.actions.preview_phase">Test phase</button>
+          <button class="primary-button" type="button" data-action="preview-show" data-i18n="plugins.webgpu-fireworks.designer.actions.preview_show">Test show</button>
         </div>
       </section>
 
-      <aside id="layer-inspector" class="panel inspector-panel" aria-label="Layer inspector">
+      <aside id="layer-inspector" class="panel inspector-panel" aria-label="Layer inspector" data-i18n-aria-label="plugins.webgpu-fireworks.designer.aria.layer_inspector">
         <div class="panel-heading">
           <div>
-            <p class="eyebrow">Inspector</p>
-            <h2>Properties</h2>
+            <p class="eyebrow" data-i18n="plugins.webgpu-fireworks.designer.panels.inspector">Inspector</p>
+            <h2 data-i18n="plugins.webgpu-fireworks.designer.panels.properties">Properties</h2>
           </div>
         </div>
         <div id="inspector-content" class="inspector-content"></div>
       </aside>
 
-      <section id="cue-timeline" class="panel timeline-panel" aria-label="Cue timeline">
+      <section id="cue-timeline" class="panel timeline-panel" aria-label="Cue timeline" data-i18n-aria-label="plugins.webgpu-fireworks.designer.aria.cue_timeline">
         <div class="panel-heading timeline-heading">
           <div>
-            <p class="eyebrow">Timeline</p>
-            <h2>Cues</h2>
+            <p class="eyebrow" data-i18n="plugins.webgpu-fireworks.designer.panels.timeline">Timeline</p>
+            <h2 data-i18n="plugins.webgpu-fireworks.designer.panels.cues">Cues</h2>
           </div>
           <div class="button-row">
-            <span class="snap-hint">100 ms / 1% snap · hold Alt to bypass</span>
-            <button type="button" data-action="add-cue">Add cue</button>
-            <button type="button" data-action="remove-cue">Remove cue</button>
+            <span class="snap-hint" data-i18n="plugins.webgpu-fireworks.designer.snap_hint">100 ms / 1% snap · hold Alt to bypass</span>
+            <button type="button" data-action="add-cue" data-i18n="plugins.webgpu-fireworks.designer.actions.add_cue">Add cue</button>
+            <button type="button" data-action="remove-cue" data-i18n="plugins.webgpu-fireworks.designer.actions.remove_cue">Remove cue</button>
           </div>
         </div>
         <div id="timeline-ruler" class="timeline-ruler" aria-hidden="true"></div>
-        <div id="timeline-track" class="timeline-track" role="listbox" aria-label="Show cues"></div>
+        <div id="timeline-track" class="timeline-track" role="listbox" aria-label="Show cues" data-i18n-aria-label="plugins.webgpu-fireworks.designer.aria.show_cues"></div>
         <div id="validation-issues" class="validation-issues" aria-live="polite"></div>
       </section>
     </main>
   </div>
 
   <script src="/js/i18n-client.js"></script>
-  <script src="/plugins/webgpu-fireworks/ui/show-designer-model.js"></script>
-  <script src="/plugins/webgpu-fireworks/ui/show-designer-api.js"></script>
-  <script src="/plugins/webgpu-fireworks/ui/show-designer-view.js"></script>
-  <script src="/plugins/webgpu-fireworks/ui/show-designer.js"></script>
+  <script src="/plugins/webgpu-fireworks/ui/show-designer-model.js?v=3.0.0-designer-model"></script>
+  <script src="/plugins/webgpu-fireworks/ui/show-designer-api.js?v=3.0.0-designer-api"></script>
+  <script src="/plugins/webgpu-fireworks/ui/show-designer-view.js?v=3.0.0-designer-view"></script>
+  <script src="/plugins/webgpu-fireworks/ui/show-designer.js?v=3.0.0-designer-app"></script>
 </body>
 </html>

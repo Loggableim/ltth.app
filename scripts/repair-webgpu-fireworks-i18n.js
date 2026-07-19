@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const designerTranslations = require('./webgpu-fireworks-designer-i18n');
 
 const PLUGIN_ID = 'webgpu-fireworks';
 const languages = ['en', 'de', 'es', 'fr'];
@@ -159,7 +160,7 @@ function additionsFor(language) {
       intensity: source.superfan[3], test: source.superfan[4], test_success: source.superfan[5],
       test_failed: source.superfan[6], global_default: source.superfan[7]
     },
-    designer: {
+    designer: deepMerge({
       title: source.designer[0], navigation: source.designer[1], create: source.designer[2],
       save_draft: source.designer[3], validate: source.designer[4], publish: source.designer[5],
       duplicate: source.designer[6], derive_lengths: source.designer[7], archive: source.designer[8],
@@ -167,7 +168,7 @@ function additionsFor(language) {
       unsaved_changes: source.designer[12], status_draft: source.designer[13],
       status_validated: source.designer[14], status_published: source.designer[15],
       status_archived: source.designer[16]
-    },
+    }, designerTranslations[language]),
     preview: {
       starting: source.preview[0], queued: source.preview[1], running: source.preview[2],
       complete: source.preview[3], stopped: source.preview[4], failed: source.preview[5],

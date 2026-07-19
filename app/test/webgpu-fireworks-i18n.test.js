@@ -1,8 +1,19 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { JSDOM } = require('jsdom');
 
 const { I18n } = require('../modules/i18n');
+const {
+  FORMATIONS,
+  GLYPHS,
+  IMPORTANCE,
+  LAUNCH_MODES,
+  PHASES,
+  PRIMITIVES,
+  PRIORITIES,
+  TIERS
+} = require('../plugins/webgpu-fireworks/ui/show-designer-view');
 
 const appRoot = path.join(__dirname, '..');
 const repositoryRoot = path.join(appRoot, '..');
@@ -22,6 +33,12 @@ const builtInIds = [
   'furry-celebration'
 ];
 const actualPhaseIds = ['idle', 'opening', 'build', 'highlight', 'calm', 'bridge', 'breath', 'finale'];
+const designerPrefix = 'plugins.webgpu-fireworks.designer.';
+const designerSources = [
+  read('ui/designer.html'),
+  read('ui/show-designer.js'),
+  read('ui/show-designer-view.js')
+];
 
 function pluginMessages(locale) {
   return JSON.parse(read(`locales/${locale}.json`)).plugins['webgpu-fireworks'];
@@ -46,6 +63,91 @@ function flattenKeys(value, prefix = '', output = []) {
 function copyTree(source, destination) {
   fs.mkdirSync(path.dirname(destination), { recursive: true });
   fs.cpSync(source, destination, { recursive: true });
+}
+
+function designerLocalePath(fullKey) {
+  return fullKey.replace(/^plugins\.webgpu-fireworks\./, '');
+}
+
+function keySegment(value) {
+  return String(value).replace(/-/g, '_');
+}
+
+function extractedDesignerKeys() {
+  const keys = new Set();
+  for (const source of designerSources) {
+    for (const match of source.matchAll(/plugins\.webgpu-fireworks\.designer(?:\.[a-z0-9_-]+)+/gi)) {
+      const suffix = source.slice(match.index + match[0].length, match.index + match[0].length + 3);
+      if (suffix !== '.${') keys.add(match[0]);
+    }
+  }
+  const optionGroups = {
+    phase: PHASES,
+    formation: FORMATIONS,
+    importance: IMPORTANCE,
+    launch_mode: LAUNCH_MODES,
+    tier: TIERS,
+    primitive: PRIMITIVES,
+    glyph: GLYPHS,
+    priority: PRIORITIES,
+    material: ['classic', 'premium-realistic'],
+    boolean: ['trail', 'split', 'strobe', 'core']
+  };
+  for (const [group, values] of Object.entries(optionGroups)) {
+    values.forEach(value => keys.add(`${designerPrefix}options.${group}.${keySegment(value)}`));
+  }
+  for (const field of [
+    'name', 'description', 'material', 'auto_eligible', 'time_ms', 'phase',
+    'formation', 'importance', 'origin_x', 'origin_y', 'target_x', 'target_y',
+    'launch', 'tier', 'palette', 'primitive', 'glyph', 'delay_ms', 'density',
+    'size', 'lifetime_ms', 'gravity', 'drag', 'priority', 'colors'
+  ]) keys.add(`${designerPrefix}fields.${field}`);
+  for (const variant of ['long', 'medium', 'short']) {
+    keys.add(`${designerPrefix}variants.${variant}`);
+  }
+  const validator = read('lib/pyrodsl/validate.js');
+  for (const match of validator.matchAll(/error\('([a-z0-9_]+)'/g)) {
+    keys.add(`${designerPrefix}validation_codes.${match[1]}`);
+  }
+  for (const code of [
+    'action_failed', 'network_error', 'invalid_response', 'request_failed',
+    'finale_busy', 'renderer_not_ready', 'preview_draft_invalid', 'revision_conflict',
+    'load_library', 'load_show', 'import_failed', 'preview_failed', 'invalid_json'
+  ]) keys.add(`${designerPrefix}errors.${code}`);
+  for (const notice of ['published', 'archived', 'restored']) {
+    keys.add(`${designerPrefix}notices.${notice}`);
+  }
+  return [...keys].sort();
+}
+
+function unresolvedStaticDesignerCopy() {
+  const dom = new JSDOM(designerSources[0]);
+  const { document, NodeFilter } = dom.window;
+  const unresolved = [];
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+  while (node) {
+    const text = node.nodeValue.replace(/\s+/g, ' ').trim();
+    const visibleText = text.replace(/[←↶↷↻+−]/g, '').trim();
+    const parent = node.parentElement;
+    if (visibleText && parent && !parent.closest('[data-i18n]') && !parent.closest('[aria-hidden="true"]')) {
+      unresolved.push(`text:${visibleText}`);
+    }
+    node = walker.nextNode();
+  }
+  for (const [attribute, keyAttribute] of [
+    ['aria-label', 'data-i18n-aria-label'],
+    ['title', 'data-i18n-title'],
+    ['placeholder', 'data-i18n-placeholder']
+  ]) {
+    for (const element of document.querySelectorAll(`[${attribute}]`)) {
+      if (!element.hasAttribute(keyAttribute)) {
+        unresolved.push(`${attribute}:${element.getAttribute(attribute)}`);
+      }
+    }
+  }
+  dom.window.close();
+  return unresolved;
 }
 
 describe('WebGPU Fireworks user-facing i18n', () => {
@@ -132,6 +234,45 @@ describe('WebGPU Fireworks user-facing i18n', () => {
     ];
     requiredKeys.push(...actualPhaseIds.map(phase => `status.phases.${phase}`));
     requiredKeys.forEach(key => expect(valueAt(messages, key)).toEqual(expect.any(String)));
+  });
+
+  test('covers every real Designer HTML and JavaScript key with complete locale values', () => {
+    const keys = extractedDesignerKeys();
+    expect(keys.length).toBeGreaterThan(100);
+    for (const locale of locales) {
+      const messages = pluginMessages(locale);
+      for (const key of keys) {
+        const value = valueAt(messages, designerLocalePath(key));
+        expect({ locale, key, value }).toEqual({
+          locale,
+          key,
+          value: expect.stringMatching(/\S/)
+        });
+      }
+    }
+  });
+
+  test('leaves no static visible Designer copy, tooltip or ARIA label outside canonical keys', () => {
+    expect(unresolvedStaticDesignerCopy()).toEqual([]);
+    const appSource = designerSources[1];
+    const viewSource = designerSources[2];
+    expect(appSource).not.toMatch(/this\.notice\(\s*['"`][A-Za-z]/);
+    expect(appSource).not.toMatch(/this\.window\.confirm\(\s*['"`][A-Za-z]/);
+    expect(appSource).not.toMatch(/this\.handleError\([^,]+,\s*['"`](?:Could|The|Preview)/);
+    expect(viewSource).not.toMatch(/label:\s*['"`](?:Time|Phase|Formation|Importance|Origin|Target|Launch|Tier|Palette|Primitive|Glyph|Delay|Density|Size|Lifetime|Gravity|Drag|Priority|Colors|trail|split|strobe|core)/);
+    expect(viewSource).not.toMatch(/\.title\s*=\s*['"`][A-Za-z]/);
+    expect(viewSource).not.toContain('option.textContent = value');
+    expect(viewSource).not.toContain("phase.textContent = cue.phase || 'phase'");
+  });
+
+  test('ships reviewed representative Designer terminology in DE/EN/ES/FR', () => {
+    expect(pluginMessages('en').designer.panels.library).toBe('Library');
+    expect(pluginMessages('de').designer.panels.library).toBe('Bibliothek');
+    expect(pluginMessages('es').designer.panels.library).toBe('Biblioteca');
+    expect(pluginMessages('fr').designer.panels.library).toBe('Bibliothèque');
+    expect(pluginMessages('de').designer.options.phase.opening).toBe('Eröffnung');
+    expect(pluginMessages('es').designer.options.primitive.crossette).toBe('Crossette');
+    expect(pluginMessages('fr').designer.actions.preview_show).toBe('Tester le show');
   });
 
   test.each(locales)('%s resolves every Settings and Goals finale fixture key', locale => {

@@ -10,6 +10,16 @@
     return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
   }
 
+  function interpolate(value, params = {}) {
+    return String(value).replace(/\{(\w+)\}/g, (match, key) => (
+      Object.prototype.hasOwnProperty.call(params, key) ? params[key] : match
+    ));
+  }
+
+  function keySegment(value) {
+    return String(value || '').trim().toLowerCase().replace(/-/g, '_');
+  }
+
   function modelModule() {
     if (root?.WebGpuFireworksShowDesignerModel) return root.WebGpuFireworksShowDesignerModel;
     if (typeof require === 'function') return require('./show-designer-model');
@@ -140,7 +150,13 @@
       const { ShowDesignerView } = viewModule();
       this.store = options.store || new ShowDesignerStore();
       this.api = options.api || new ShowDesignerApi();
-      this.view = options.view || new ShowDesignerView(this.document);
+      this.translate = typeof options.translate === 'function'
+        ? options.translate
+        : (key, fallback, params) => {
+          const translated = this.window?.i18n?.t?.(key, params);
+          return translated && translated !== key ? translated : fallback;
+        };
+      this.view = options.view || new ShowDesignerView(this.document, { translate: this.translate });
       this.autosaveDelayMs = Number.isFinite(options.autosaveDelayMs)
         ? Math.max(0, options.autosaveDelayMs)
         : 1200;
@@ -148,6 +164,8 @@
       this.savePromise = null;
       this.destroyed = false;
       this.initialized = false;
+      this.i18nBound = false;
+      this.localizedRenderScheduled = false;
       this.drag = null;
       this.lastNoticeTimer = null;
       this.unsubscribe = this.store.subscribe((state, reason) => this.onStateChange(state, reason));
@@ -162,13 +180,21 @@
         pointerdown: event => this.onPointerDown(event),
         pointermove: event => this.onPointerMove(event),
         pointerup: event => this.onPointerUp(event),
-        beforeunload: event => this.onBeforeUnload(event)
+        beforeunload: event => this.onBeforeUnload(event),
+        languageChange: () => this.scheduleLocalizedRerender()
       };
+    }
+
+    t(key, fallback, params = {}) {
+      return interpolate(this.translate(key, fallback, params) || fallback, params);
     }
 
     async init() {
       if (this.initialized) return this;
       this.initialized = true;
+      await this.window?.i18n?.init?.();
+      this.window?.i18n?.updateDOM?.();
+      this.bindI18n();
       this.bindEvents();
       this.view.setBusy(true);
       try {
@@ -180,7 +206,7 @@
         if (first) await this.loadShow(first.id, { skipFlush: true });
         else this.view.render(this.store.getState());
       } catch (error) {
-        this.handleError(error, 'Could not load the show library.');
+        this.handleError(error, 'load_library', 'Could not load the show library.');
         this.view.render(this.store.getState());
       }
       return this;
@@ -200,6 +226,24 @@
       this.window.addEventListener('beforeunload', this.bound.beforeunload);
     }
 
+    bindI18n() {
+      if (this.i18nBound) return;
+      this.i18nBound = true;
+      this.window?.i18n?.onChange?.(this.bound.languageChange);
+      this.window?.i18n?.onLanguageChange?.(this.bound.languageChange);
+    }
+
+    scheduleLocalizedRerender() {
+      if (this.destroyed || this.localizedRenderScheduled) return;
+      this.localizedRenderScheduled = true;
+      Promise.resolve().then(() => {
+        this.localizedRenderScheduled = false;
+        if (this.destroyed) return;
+        this.window?.i18n?.updateDOM?.();
+        this.view.render(this.store.getState());
+      });
+    }
+
     destroy() {
       if (this.destroyed) return;
       this.destroyed = true;
@@ -217,6 +261,7 @@
       this.window.removeEventListener('pointermove', this.bound.pointermove);
       this.window.removeEventListener('pointerup', this.bound.pointerup);
       this.window.removeEventListener('beforeunload', this.bound.beforeunload);
+      this.window?.i18n?.offChange?.(this.bound.languageChange);
     }
 
     onStateChange(state, reason) {
@@ -315,7 +360,7 @@
         this.store.loadShow(response.show);
         return true;
       } catch (error) {
-        this.handleError(error, 'Could not load this show.');
+        this.handleError(error, 'load_show', 'Could not load this show.');
         return false;
       } finally {
         this.view.setBusy(false);
@@ -333,8 +378,20 @@
       }
     }
 
-    handleError(error, fallback) {
-      const message = error?.message || fallback || 'The show action failed.';
+    errorMessage(error, fallbackKey = 'action_failed', fallback = 'The show action failed.') {
+      const code = keySegment(error?.code);
+      const knownCodes = new Set([
+        'network_error', 'invalid_response', 'request_failed', 'finale_busy',
+        'renderer_not_ready', 'preview_draft_invalid', 'revision_conflict', 'invalid_json'
+      ]);
+      return this.t(
+        `plugins.webgpu-fireworks.designer.errors.${knownCodes.has(code) ? code : fallbackKey}`,
+        fallback
+      );
+    }
+
+    handleError(error, fallbackKey = 'action_failed', fallback = 'The show action failed.') {
+      const message = this.errorMessage(error, fallbackKey, fallback);
       this.notice(message, 'error', 8000);
     }
 
@@ -439,7 +496,10 @@
           await this.lifecycleAction('publish');
           break;
         case 'archive':
-          if (this.window.confirm('Archive this show? It can be restored later.')) {
+          if (this.window.confirm(this.t(
+            'plugins.webgpu-fireworks.designer.prompts.archive',
+            'Archive this show? It can be restored later.'
+          ))) {
             await this.lifecycleAction('archive');
           }
           break;
@@ -476,7 +536,10 @@
       if (!(await this.flushSave())) return;
       const response = await this.api.createShow(createStarterDefinition());
       this.adoptShow(response.show, { variant: 'long' });
-      this.notice('New 28-second master show created.');
+      this.notice(this.t(
+        'plugins.webgpu-fireworks.designer.notices.created',
+        'New 28-second master show created.'
+      ));
     }
 
     async duplicateSelected() {
@@ -485,7 +548,10 @@
       if (!state.selectedShowId) return;
       const response = await this.api.duplicate(state.selectedShowId, state.revision, undefined);
       this.adoptShow(response.show, { variant: state.selectedVariant });
-      this.notice('Editable copy created with the original show geometry.');
+      this.notice(this.t(
+        'plugins.webgpu-fireworks.designer.notices.duplicated',
+        'Editable copy created with the original show geometry.'
+      ));
     }
 
     addCue() {
@@ -547,17 +613,34 @@
       this.adoptShow(response.show, { variant: state.selectedVariant });
       const valid = response.show.validation?.valid !== false;
       if (response.autoDerived) {
-        this.notice(`Validation passed. ${response.derivedVariants.join(' and ')} were derived from the long master.`);
+        const variants = (response.derivedVariants || []).map(variant => this.t(
+          `plugins.webgpu-fireworks.designer.variants.${keySegment(variant)}`,
+          variant
+        )).join(', ');
+        this.notice(this.t(
+          'plugins.webgpu-fireworks.designer.notices.validation_auto_derived',
+          'Validation passed. {variants} were derived from the long master.',
+          { variants }
+        ));
       } else if (valid) {
-        this.notice('Validation passed.');
+        this.notice(this.t(
+          'plugins.webgpu-fireworks.designer.notices.validation_passed',
+          'Validation passed.'
+        ));
       } else {
-        this.notice('Validation found issues. Select an issue to navigate to it.', 'error', 8000);
+        this.notice(this.t(
+          'plugins.webgpu-fireworks.designer.notices.validation_issues',
+          'Validation found issues. Select an issue to navigate to it.'
+        ), 'error', 8000);
       }
     }
 
     async deriveSelected() {
       if (!(await this.flushSave())) return;
-      if (!this.window.confirm('Regenerate Medium and Short from Long? Existing variants will be overwritten.')) return;
+      if (!this.window.confirm(this.t(
+        'plugins.webgpu-fireworks.designer.prompts.derive_overwrite',
+        'Regenerate Medium and Short from Long? Existing variants will be overwritten.'
+      ))) return;
       const state = this.store.getState();
       const response = await this.api.derive(state.selectedShowId, state.revision, {
         variants: ['medium', 'short'],
@@ -566,7 +649,10 @@
         confirmOverwrite: true
       });
       this.adoptShow(response.show, { variant: state.selectedVariant });
-      this.notice('Medium and Short were regenerated from the Long master.');
+      this.notice(this.t(
+        'plugins.webgpu-fireworks.designer.notices.derived',
+        'Medium and Short were regenerated from the Long master.'
+      ));
     }
 
     async lifecycleAction(action) {
@@ -574,7 +660,15 @@
       const state = this.store.getState();
       const response = await this.api[action](state.selectedShowId, state.revision);
       this.adoptShow(response.show, { variant: state.selectedVariant });
-      this.notice({ publish: 'Show published.', archive: 'Show archived.', restore: 'Show restored.' }[action]);
+      const lifecycle = {
+        publish: ['published', 'Show published.'],
+        archive: ['archived', 'Show archived.'],
+        restore: ['restored', 'Show restored.']
+      }[action];
+      this.notice(this.t(
+        `plugins.webgpu-fireworks.designer.notices.${lifecycle[0]}`,
+        lifecycle[1]
+      ));
     }
 
     async preview(scope) {
@@ -597,9 +691,12 @@
       try {
         const response = await this.api.preview(state.selectedShowId, state.revision, options);
         this.store.setPreview('success', { requestId: response.requestId });
-        this.notice('Preview accepted by the connected WebGPU overlay.');
+        this.notice(this.t(
+          'plugins.webgpu-fireworks.designer.notices.preview_accepted',
+          'Preview accepted by the connected WebGPU overlay.'
+        ));
       } catch (error) {
-        this.store.setPreview('error', { error: error?.message || String(error) });
+        this.store.setPreview('error', { error: this.errorMessage(error, 'preview_failed', 'Preview failed.') });
         throw error;
       }
     }
@@ -624,7 +721,10 @@
       const definition = clone(this.store.getState().definition);
       const response = await this.api.createShow(definition);
       this.adoptShow(response.show, { variant: this.store.getState().selectedVariant });
-      this.notice('Local edits were saved as a new show.');
+      this.notice(this.t(
+        'plugins.webgpu-fireworks.designer.notices.conflict_copy',
+        'Local edits were saved as a new show.'
+      ));
     }
 
     async importText(text) {
@@ -632,12 +732,17 @@
       try {
         definition = JSON.parse(text);
       } catch {
-        throw new Error('The selected file is not valid JSON.');
+        const error = new Error('The selected file is not valid JSON.');
+        error.code = 'INVALID_JSON';
+        throw error;
       }
       if (!(await this.flushSave())) return false;
       const response = await this.api.importDefinition(definition);
       this.adoptShow(response.show, { variant: 'long' });
-      this.notice('Validated show imported.');
+      this.notice(this.t(
+        'plugins.webgpu-fireworks.designer.notices.imported',
+        'Validated show imported.'
+      ));
       return true;
     }
 
@@ -679,7 +784,7 @@
         try {
           await this.importText(await file.text());
         } catch (error) {
-          this.handleError(error, 'Could not import this show.');
+          this.handleError(error, 'import_failed', 'Could not import this show.');
         } finally {
           input.value = '';
         }
@@ -821,9 +926,13 @@
 
     onBeforeUnload(event) {
       if (!this.store.getState().persistence.dirty) return undefined;
+      const message = this.t(
+        'plugins.webgpu-fireworks.designer.beforeunload',
+        'This show has unsaved changes.'
+      );
       event.preventDefault();
-      event.returnValue = '';
-      return '';
+      event.returnValue = message;
+      return message;
     }
   }
 
