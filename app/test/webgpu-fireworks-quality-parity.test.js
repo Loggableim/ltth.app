@@ -295,7 +295,7 @@ describe('WebGPU Fireworks quality parity', () => {
     plugin.config.colorMode = 'random';
     expect(plugin.resolveConfiguredColors()).toHaveLength(3);
     const main = read('main.js');
-    expect(main).toContain('colors: this.resolveConfiguredColors(options.colors)');
+    expect(main).toContain('colors: this.resolveConfiguredColors(options.colors, effectiveConfig)');
     expect(main).not.toContain('colors: this.generateRandomColors(');
     expect(main).not.toContain('colors: this.config.themeColors');
   });
@@ -317,6 +317,10 @@ describe('WebGPU Fireworks quality parity', () => {
     expect(source).toContain("origin: { x: Math.random() * 0.84 + 0.08, y: 1.04 }");
     expect(source).toContain("positionMode: 'exact'");
     expect(source).toContain('playSound: false');
+    expect(source).toContain('particleSizeRange: [3, 10]');
+    expect(source).toContain('particleSizeRange: [1, 4]');
+    expect(source).not.toContain('particleSizeMin:');
+    expect(source).not.toContain('particleSizeMax:');
   });
 
   test('keeps the canvas clickable while OBS audio still needs unlocking', () => {

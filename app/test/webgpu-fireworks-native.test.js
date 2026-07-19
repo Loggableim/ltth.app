@@ -26,8 +26,9 @@ describe('WebGPU Fireworks native migration', () => {
     expect(fs.existsSync(path.join(pluginRoot, 'gpu', 'webgl-particle-engine.js'))).toBe(false);
     expect(fs.existsSync(path.join(pluginRoot, 'gpu', 'particle-system-soa.js'))).toBe(false);
     expect(overlaySource).toContain('webgpu-particle-engine.js?v=3.1.0-depth3d-1');
+    expect(overlaySource).toContain('engine.js?v=3.1.0-benchmark-session-1');
     expect(settingsHtml).toContain('show-style-options.js?v=3.1.0-depth3d-1');
-    expect(settingsHtml).toContain('settings.js?v=3.1.0-depth3d-1');
+    expect(settingsHtml).toContain('settings.js?v=3.1.0-benchmark-session-1');
     expect(overlaySource).not.toContain('webgl-particle-engine');
   });
 
@@ -49,7 +50,7 @@ describe('WebGPU Fireworks native migration', () => {
       expect(config).not.toHaveProperty('gpuAcceleration');
     }
     expect(normalizeConfig({ avatarParticleChance: 0 }).avatarParticleChance).toBe(0);
-    expect(mainSource).toContain('avatarParticleChance: this.config.avatarParticleChance ?? 0.3');
+    expect(mainSource).toContain('avatarParticleChance: effectiveConfig.avatarParticleChance ?? 0.3');
   });
 
   test('contains native WebGPU capability and premultiplied-alpha setup', () => {

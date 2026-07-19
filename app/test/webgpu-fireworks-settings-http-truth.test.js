@@ -82,7 +82,10 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
 
   async function bootSettings({
     configResponse,
+    openWindow = jest.fn(() => ({ closed: false, close: jest.fn() })),
+    requestHandlers = {},
     requestResponses = {},
+    runTimeouts = false,
     statusResponses = []
   } = {}) {
     dom = new JSDOM(html, {
@@ -108,11 +111,17 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
     window.io = jest.fn(() => ({ on: jest.fn(), emit: jest.fn() }));
     window.setInterval = jest.fn(() => 1);
     window.clearInterval = jest.fn();
-    window.setTimeout = jest.fn(() => 1);
+    window.setTimeout = jest.fn((callback, delay) => {
+      if (runTimeouts === true || (typeof runTimeouts === 'function' && runTimeouts(delay))) {
+        Promise.resolve().then(callback);
+      }
+      return 1;
+    });
     window.clearTimeout = jest.fn();
     window.navigator.clipboard = { writeText: jest.fn(async () => {}) };
     window.URL.createObjectURL = jest.fn(() => 'blob:http-truth-avatar');
     window.URL.revokeObjectURL = jest.fn();
+    window.open = openWindow;
 
     const responseQueues = Object.fromEntries(Object.entries(requestResponses).map(([key, value]) => (
       [key, Array.isArray(value) ? [...value] : [value]]
@@ -122,6 +131,9 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
       const requestUrl = String(url);
       const method = options.method || 'GET';
       const key = `${method} ${requestUrl}`;
+      if (requestHandlers[key]) {
+        return materialize(await requestHandlers[key]({ options, requestUrl }));
+      }
       if (responseQueues[key]?.length) return materialize(responseQueues[key].shift());
       if (requestUrl === '/api/webgpu-fireworks/config' && method === 'GET') {
         return materialize(configResponse || {
@@ -159,7 +171,13 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
       expect(fetchMock.mock.calls.some(([url]) => String(url) === '/api/webgpu-fireworks/status')).toBe(true);
     });
     await new Promise(resolve => setImmediate(resolve));
-    return { window, fetchMock };
+    return { window, fetchMock, openWindow };
+  }
+
+  function callsFor(fetchMock, method, url) {
+    return fetchMock.mock.calls.filter(([requestUrl, options = {}]) => (
+      String(requestUrl) === url && (options.method || 'GET') === method
+    ));
   }
 
   test.each([
@@ -280,6 +298,294 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
     await waitFor(() => expect(window.document.getElementById('toast').textContent).toContain(reason));
     expect(window.document.getElementById('toast').classList.contains('error')).toBe(true);
     expect(list.textContent).toContain(giftId);
+  });
+
+  test('benchmark starts a server session before opening its unique overlay and binds every request to that session', async () => {
+    const sessionId = '11111111-1111-4111-8111-111111111111';
+    const overlayUrl = `http://localhost:3000/webgpu-fireworks/overlay?benchmark=true&benchmarkSessionId=${sessionId}`;
+    const popup = { closed: false, close: jest.fn(function close() { this.closed = true; }) };
+    const openWindow = jest.fn(() => popup);
+    const presetFailure = 'benchmark preset explicitly rejected';
+    const { window, fetchMock } = await bootSettings({
+      openWindow,
+      runTimeouts: true,
+      requestResponses: {
+        'POST /api/webgpu-fireworks/benchmark/start': {
+          body: { success: true, sessionId, overlayUrl }
+        },
+        [`GET /api/webgpu-fireworks/benchmark/fps?sessionId=${sessionId}`]: [
+          {
+            ok: false,
+            status: 503,
+            body: { success: false, code: 'BENCHMARK_RENDERER_NOT_READY', error: 'renderer warming up' }
+          },
+          { body: { success: true, sessionId, fps: 0, sampleCount: 1 } }
+        ],
+        'POST /api/webgpu-fireworks/benchmark/set-preset': {
+          body: { success: true, accepted: false, reason: presetFailure }
+        },
+        'POST /api/webgpu-fireworks/benchmark/restore': {
+          body: { success: true, sessionId, restored: true }
+        }
+      }
+    });
+
+    await window.startBenchmark();
+
+    const startCalls = callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/benchmark/start');
+    expect(startCalls).toHaveLength(1);
+    expect(fetchMock.mock.invocationCallOrder[fetchMock.mock.calls.indexOf(startCalls[0])])
+      .toBeLessThan(openWindow.mock.invocationCallOrder[0]);
+    expect(openWindow).toHaveBeenCalledWith(
+      overlayUrl,
+      `FireworksBenchmark-${sessionId}`,
+      'width=1920,height=1080'
+    );
+
+    const presetCall = callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/benchmark/set-preset')[0];
+    expect(JSON.parse(presetCall[1].body)).toMatchObject({
+      sessionId,
+      preset: { particleSizeRange: [3, 10] }
+    });
+    const fpsCalls = callsFor(fetchMock, 'GET', `/api/webgpu-fireworks/benchmark/fps?sessionId=${sessionId}`);
+    expect(fpsCalls).toHaveLength(2);
+    expect(fetchMock.mock.invocationCallOrder[fetchMock.mock.calls.indexOf(fpsCalls[1])])
+      .toBeLessThan(fetchMock.mock.invocationCallOrder[fetchMock.mock.calls.indexOf(presetCall)]);
+    expect(callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/benchmark/trigger')).toHaveLength(0);
+    const restoreCalls = callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/benchmark/restore');
+    expect(restoreCalls).toHaveLength(1);
+    expect(JSON.parse(restoreCalls[0][1].body)).toEqual({ sessionId });
+    expect(window.document.getElementById('toast').textContent).toContain(presetFailure);
+    expect(popup.close).toHaveBeenCalledTimes(1);
+  });
+
+  test('a blocked benchmark popup restores the just-created session without polling or running tests', async () => {
+    const sessionId = '22222222-2222-4222-8222-222222222222';
+    const overlayUrl = `http://localhost:3000/webgpu-fireworks/overlay?benchmark=true&benchmarkSessionId=${sessionId}`;
+    const openWindow = jest.fn(() => null);
+    const { window, fetchMock } = await bootSettings({
+      openWindow,
+      runTimeouts: true,
+      requestResponses: {
+        'POST /api/webgpu-fireworks/benchmark/start': {
+          body: { success: true, sessionId, overlayUrl }
+        },
+        'POST /api/webgpu-fireworks/benchmark/restore': {
+          body: { success: true, sessionId, restored: true }
+        }
+      }
+    });
+
+    await window.startBenchmark();
+
+    expect(openWindow).toHaveBeenCalledWith(
+      overlayUrl,
+      `FireworksBenchmark-${sessionId}`,
+      'width=1920,height=1080'
+    );
+    expect(callsFor(fetchMock, 'GET', `/api/webgpu-fireworks/benchmark/fps?sessionId=${sessionId}`)).toHaveLength(0);
+    const restoreCalls = callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/benchmark/restore');
+    expect(restoreCalls).toHaveLength(1);
+    expect(JSON.parse(restoreCalls[0][1].body)).toEqual({ sessionId });
+  });
+
+  test('pagehide keepalive, stop, and finally share one captured idempotent restore', async () => {
+    const sessionId = '33333333-3333-4333-8333-333333333333';
+    const overlayUrl = `http://localhost:3000/webgpu-fireworks/overlay?benchmark=true&benchmarkSessionId=${sessionId}`;
+    let resolvePreset;
+    const pendingPreset = new Promise(resolve => { resolvePreset = resolve; });
+    const popup = { closed: false, close: jest.fn(function close() { this.closed = true; }) };
+    const { window, fetchMock } = await bootSettings({
+      openWindow: jest.fn(() => popup),
+      runTimeouts: true,
+      requestResponses: {
+        'POST /api/webgpu-fireworks/benchmark/start': {
+          body: { success: true, sessionId, overlayUrl }
+        },
+        [`GET /api/webgpu-fireworks/benchmark/fps?sessionId=${sessionId}`]: {
+          body: { success: true, sessionId, fps: 60, sampleCount: 1 }
+        },
+        'POST /api/webgpu-fireworks/benchmark/set-preset': pendingPreset,
+        'POST /api/webgpu-fireworks/benchmark/restore': {
+          body: { success: true, sessionId, restored: true }
+        }
+      }
+    });
+
+    const benchmarkPromise = window.startBenchmark();
+    await waitFor(() => {
+      expect(callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/benchmark/set-preset')).toHaveLength(1);
+    });
+    window.dispatchEvent(new window.Event('pagehide'));
+    await waitFor(() => {
+      expect(callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/benchmark/restore')).toHaveLength(1);
+    });
+    window.stopBenchmark();
+    resolvePreset({ success: true, accepted: false, reason: 'stopped benchmark' });
+    await benchmarkPromise;
+
+    const restoreCalls = callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/benchmark/restore');
+    expect(restoreCalls).toHaveLength(1);
+    expect(restoreCalls[0][1]).toMatchObject({ keepalive: true });
+    expect(JSON.parse(restoreCalls[0][1].body)).toEqual({ sessionId });
+    expect(popup.close).toHaveBeenCalledTimes(1);
+  });
+
+  test('benchmark measurement uses the isolated trigger endpoint and propagates explicit rejection', async () => {
+    const sessionId = '44444444-4444-4444-8444-444444444444';
+    const rejection = 'benchmark trigger rejected';
+    const { window, fetchMock } = await bootSettings({
+      runTimeouts: true,
+      requestResponses: {
+        'POST /api/webgpu-fireworks/benchmark/trigger': {
+          body: { success: true, accepted: false, reason: rejection }
+        }
+      }
+    });
+
+    await expect(window.measureFPS(sessionId)).rejects.toThrow(rejection);
+
+    const triggerCalls = callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/benchmark/trigger');
+    expect(triggerCalls).toHaveLength(1);
+    expect(JSON.parse(triggerCalls[0][1].body)).toMatchObject({
+      sessionId,
+      shape: 'burst',
+      playSound: false
+    });
+    expect(callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/trigger')).toHaveLength(0);
+  });
+
+  test('an old stopped run cannot resume against its session after a new run has started', async () => {
+    const firstId = '55555555-5555-4555-8555-555555555555';
+    const secondId = '66666666-6666-4666-8666-666666666666';
+    let resolveSecondPreset;
+    const secondPreset = new Promise(resolve => { resolveSecondPreset = resolve; });
+    const popup = () => ({ closed: false, close: jest.fn(function close() { this.closed = true; }) });
+    const { window, fetchMock } = await bootSettings({
+      openWindow: jest.fn(popup),
+      runTimeouts: delay => delay !== 10000,
+      requestHandlers: {
+        'POST /api/webgpu-fireworks/benchmark/set-preset': async ({ options }) => {
+          const { sessionId } = JSON.parse(options.body);
+          if (sessionId === firstId) return { body: { success: true, sessionId } };
+          return secondPreset;
+        }
+      },
+      requestResponses: {
+        'POST /api/webgpu-fireworks/benchmark/start': [
+          {
+            body: {
+              success: true,
+              sessionId: firstId,
+              overlayUrl: `http://localhost:3000/overlay?benchmark=true&benchmarkSessionId=${firstId}`
+            }
+          },
+          {
+            body: {
+              success: true,
+              sessionId: secondId,
+              overlayUrl: `http://localhost:3000/overlay?benchmark=true&benchmarkSessionId=${secondId}`
+            }
+          }
+        ],
+        [`GET /api/webgpu-fireworks/benchmark/fps?sessionId=${firstId}`]: {
+          body: { success: true, sessionId: firstId, fps: 60 }
+        },
+        [`GET /api/webgpu-fireworks/benchmark/fps?sessionId=${secondId}`]: {
+          body: { success: true, sessionId: secondId, fps: 60 }
+        }
+      }
+    });
+
+    const firstRun = window.startBenchmark();
+    await waitFor(() => {
+      const triggers = callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/benchmark/trigger');
+      expect(triggers.some(([, options]) => JSON.parse(options.body).sessionId === firstId)).toBe(true);
+    });
+    window.stopBenchmark();
+    const secondRun = window.startBenchmark();
+    await waitFor(() => {
+      const presets = callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/benchmark/set-preset');
+      expect(presets.some(([, options]) => JSON.parse(options.body).sessionId === secondId)).toBe(true);
+    });
+    await new Promise(resolve => setImmediate(resolve));
+
+    const firstPresetCalls = callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/benchmark/set-preset')
+      .filter(([, options]) => JSON.parse(options.body).sessionId === firstId);
+    expect(firstPresetCalls).toHaveLength(1);
+
+    window.stopBenchmark();
+    resolveSecondPreset({ body: { success: true, accepted: false, reason: 'second run stopped' } });
+    await Promise.all([firstRun, secondRun]);
+  });
+
+  test('a stopped run cannot arm measurement timers after its pending trigger resolves', async () => {
+    const firstId = '77777777-7777-4777-8777-777777777777';
+    const secondId = '88888888-8888-4888-8888-888888888888';
+    let resolveFirstTrigger;
+    let resolveSecondPreset;
+    const firstTrigger = new Promise(resolve => { resolveFirstTrigger = resolve; });
+    const secondPreset = new Promise(resolve => { resolveSecondPreset = resolve; });
+    const { window, fetchMock } = await bootSettings({
+      openWindow: jest.fn(() => ({ closed: false, close: jest.fn(function close() { this.closed = true; }) })),
+      requestHandlers: {
+        'POST /api/webgpu-fireworks/benchmark/set-preset': async ({ options }) => {
+          const { sessionId } = JSON.parse(options.body);
+          if (sessionId === firstId) return { body: { success: true, sessionId } };
+          return secondPreset;
+        },
+        'POST /api/webgpu-fireworks/benchmark/trigger': async ({ options }) => {
+          const { sessionId } = JSON.parse(options.body);
+          if (sessionId === firstId) return firstTrigger;
+          return { body: { success: true, accepted: true, sessionId } };
+        }
+      },
+      requestResponses: {
+        'POST /api/webgpu-fireworks/benchmark/start': [
+          {
+            body: {
+              success: true,
+              sessionId: firstId,
+              overlayUrl: `http://localhost:3000/overlay?benchmark=true&benchmarkSessionId=${firstId}`
+            }
+          },
+          {
+            body: {
+              success: true,
+              sessionId: secondId,
+              overlayUrl: `http://localhost:3000/overlay?benchmark=true&benchmarkSessionId=${secondId}`
+            }
+          }
+        ],
+        [`GET /api/webgpu-fireworks/benchmark/fps?sessionId=${firstId}`]: {
+          body: { success: true, sessionId: firstId, fps: 60 }
+        },
+        [`GET /api/webgpu-fireworks/benchmark/fps?sessionId=${secondId}`]: {
+          body: { success: true, sessionId: secondId, fps: 60 }
+        }
+      }
+    });
+
+    const firstRun = window.startBenchmark();
+    await waitFor(() => {
+      const triggers = callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/benchmark/trigger');
+      expect(triggers.some(([, options]) => JSON.parse(options.body).sessionId === firstId)).toBe(true);
+    });
+    window.stopBenchmark();
+    const secondRun = window.startBenchmark();
+    await waitFor(() => {
+      const presets = callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/benchmark/set-preset');
+      expect(presets.some(([, options]) => JSON.parse(options.body).sessionId === secondId)).toBe(true);
+    });
+
+    const intervalCountBeforeOldTrigger = window.setInterval.mock.calls.length;
+    resolveFirstTrigger({ body: { success: true, accepted: true, sessionId: firstId } });
+    await new Promise(resolve => setImmediate(resolve));
+    expect(window.setInterval).toHaveBeenCalledTimes(intervalCountBeforeOldTrigger);
+
+    window.stopBenchmark();
+    resolveSecondPreset({ body: { success: true, accepted: false, reason: 'second run stopped' } });
+    await Promise.all([firstRun, secondRun]);
   });
 
   test.each([

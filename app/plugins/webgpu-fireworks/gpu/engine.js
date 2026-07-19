@@ -860,7 +860,11 @@ class WebGPUFireworksEngine {
         this.giftBacklog = new Map();
         this.giftDrainDue = null;
         this.imageCache = new Map();
-        this.isBenchmark = new URLSearchParams(window.location.search).get('benchmark') === 'true';
+        const query = new URLSearchParams(window.location.search);
+        this.isBenchmark = query.get('benchmark') === 'true';
+        this.benchmarkSessionId = this.isBenchmark
+            ? (query.get('benchmarkSessionId') || null)
+            : null;
         this.debug = DEBUG;
         this.config = {
             renderer: 'webgpu', enabled: true, visualStyle: 'premium-hybrid', audioEnabled: true, audioVolume: 0.7,
@@ -885,7 +889,7 @@ class WebGPUFireworksEngine {
                 this.applyInteractiveMode();
                 this.setStatus({ audioStatus: 'ready' });
             });
-            if (!this.config.interactiveEnabled || !this.config.clickTriggerEnabled || !this.socket?.connected) return;
+            if (this.isBenchmark || !this.config.interactiveEnabled || !this.config.clickTriggerEnabled || !this.socket?.connected) return;
             const bounds = this.canvas.getBoundingClientRect();
             this.socket.emit('webgpu-fireworks:interactive-trigger', {
                 position: {
@@ -935,6 +939,7 @@ class WebGPUFireworksEngine {
         this.socket.on('connect', () => {
             this.socket.emit('webgpu-fireworks:register-overlay', {
                 benchmark: this.isBenchmark,
+                ...this.benchmarkSessionMetadata(),
                 visible: document.visibilityState !== 'hidden',
                 backend: 'webgpu',
                 rendererProtocol: RENDERER_PROTOCOL_VERSION,
@@ -944,10 +949,18 @@ class WebGPUFireworksEngine {
             this.startNextFinaleIfReady(this.getRuntimeNow());
             this.audio.ensureContext();
         });
-        this.socket.on('webgpu-fireworks:trigger', data => this.handleIncomingTrigger(data));
-        this.socket.on('webgpu-fireworks:finale', data => this.handleFinaleSocketEvent(data));
-        this.socket.on('webgpu-fireworks:preview', data => this.handlePreviewSocketEvent(data));
-        this.socket.on('webgpu-fireworks:follower-animation', data => this.showFollowerAnimation(data));
+        this.socket.on('webgpu-fireworks:trigger', data => {
+            if (this.acceptsScopedSocketEvent(data)) this.handleIncomingTrigger(data);
+        });
+        this.socket.on('webgpu-fireworks:finale', data => {
+            if (!this.isBenchmark && this.acceptsScopedSocketEvent(data)) this.handleFinaleSocketEvent(data);
+        });
+        this.socket.on('webgpu-fireworks:preview', data => {
+            if (!this.isBenchmark && this.acceptsScopedSocketEvent(data)) this.handlePreviewSocketEvent(data);
+        });
+        this.socket.on('webgpu-fireworks:follower-animation', data => {
+            if (!this.isBenchmark && this.acceptsScopedSocketEvent(data)) this.showFollowerAnimation(data);
+        });
         this.socket.on('disconnect', () => {
             if (this.currentPreview) {
                 this.failPreview(
@@ -965,7 +978,7 @@ class WebGPUFireworksEngine {
             });
         });
         this.socket.on('webgpu-fireworks:config-update', data => {
-            if (!data || !data.config) return;
+            if (!data || !data.config || !this.acceptsScopedSocketEvent(data)) return;
             this.config = { ...this.config, ...data.config, renderer: 'webgpu' };
             this.resetAdaptivePerformanceState();
             this.audio.setEnabled(this.config.audioEnabled);
@@ -977,6 +990,19 @@ class WebGPUFireworksEngine {
             this.applyQuality();
             this.applyInteractiveMode();
         });
+    }
+
+    benchmarkSessionMetadata() {
+        return this.isBenchmark && this.benchmarkSessionId
+            ? { benchmarkSessionId: this.benchmarkSessionId }
+            : {};
+    }
+
+    acceptsScopedSocketEvent(data) {
+        const sessionMarked = data && typeof data === 'object' &&
+            data.benchmarkSessionId !== null && data.benchmarkSessionId !== undefined;
+        if (!this.isBenchmark) return !sessionMarked;
+        return Boolean(this.benchmarkSessionId) && data?.benchmarkSessionId === this.benchmarkSessionId;
     }
 
     setStatus(status, options = {}) {
@@ -1022,6 +1048,7 @@ class WebGPUFireworksEngine {
             rendererProtocol: RENDERER_PROTOCOL_VERSION,
             capabilities: RENDERER_CAPABILITIES,
             visible: document.visibilityState !== 'hidden', benchmark: this.isBenchmark,
+            ...this.benchmarkSessionMetadata(),
             timestamp: Date.now()
         });
     }
@@ -2833,7 +2860,13 @@ class WebGPUFireworksEngine {
             if (this.fpsHistory.length > 5) this.fpsHistory.shift();
             if (!this.isBenchmark) this.adaptQuality();
             this.updateDebugPanel();
-            this.socket?.emit('webgpu-fireworks:fps-update', { fps: this.fps, benchmark: this.isBenchmark, visible: document.visibilityState !== 'hidden', timestamp: Date.now() });
+            this.socket?.emit('webgpu-fireworks:fps-update', {
+                fps: this.fps,
+                benchmark: this.isBenchmark,
+                ...this.benchmarkSessionMetadata(),
+                visible: document.visibilityState !== 'hidden',
+                timestamp: Date.now()
+            });
             this.emitStatus();
         }
         this.animationFrame = requestAnimationFrame(() => this.render());

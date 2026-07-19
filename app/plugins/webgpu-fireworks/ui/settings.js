@@ -191,7 +191,8 @@ function canApplyRemoteConfig() {
 
 // Benchmark configuration constants
 const BENCHMARK_CONFIG = {
-    WINDOW_LOAD_DELAY: 2000,      // Wait 2s for overlay window to fully load
+    RENDERER_READY_TIMEOUT: 15000,
+    RENDERER_READY_POLL_INTERVAL: 250,
     TEST_DURATION: 10000,          // Each preset tested for 10 seconds
     FIREWORK_INTERVAL: 500,        // Trigger firework every 500ms
     FPS_SAMPLE_INTERVAL: 1000,     // Sample FPS every second
@@ -254,6 +255,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 window.addEventListener('pagehide', () => {
+    const sessionId = benchmarkSessionId;
+    if (sessionId) {
+        void restoreBenchmarkPreset(sessionId, { keepalive: true }).catch(error => {
+            console.error('Failed to restore benchmark session during pagehide:', error);
+        });
+    }
     if (rendererStatusTimer !== null) window.clearInterval(rendererStatusTimer);
     if (paletteSaveTimer !== null) window.clearTimeout(paletteSaveTimer);
     if (palettePreviewTimer !== null) window.clearTimeout(palettePreviewTimer);
@@ -1761,8 +1768,7 @@ const PRESETS = {
         trailsEnabled: true,
         glowEnabled: true,
         toasterMode: false,
-        particleSizeMin: 3,
-        particleSizeMax: 10
+        particleSizeRange: [3, 10]
     },
     high: {
         resolutionPreset: '1440p',
@@ -1772,8 +1778,7 @@ const PRESETS = {
         trailsEnabled: true,
         glowEnabled: true,
         toasterMode: false,
-        particleSizeMin: 3,
-        particleSizeMax: 10
+        particleSizeRange: [3, 10]
     },
     medium: {
         resolutionPreset: '1080p',
@@ -1783,8 +1788,7 @@ const PRESETS = {
         trailsEnabled: true,
         glowEnabled: true,
         toasterMode: false,
-        particleSizeMin: 3,
-        particleSizeMax: 8
+        particleSizeRange: [3, 8]
     },
     low: {
         resolutionPreset: '720p',
@@ -1794,8 +1798,7 @@ const PRESETS = {
         trailsEnabled: true,
         glowEnabled: false,
         toasterMode: false,
-        particleSizeMin: 2,
-        particleSizeMax: 6
+        particleSizeRange: [2, 6]
     },
     toaster: {
         resolutionPreset: '540p',
@@ -1805,8 +1808,7 @@ const PRESETS = {
         trailsEnabled: false,
         glowEnabled: false,
         toasterMode: true,
-        particleSizeMin: 2,
-        particleSizeMax: 5
+        particleSizeRange: [2, 5]
     },
     potato: {
         resolutionPreset: '360p',
@@ -1816,8 +1818,7 @@ const PRESETS = {
         trailsEnabled: false,
         glowEnabled: false,
         toasterMode: true,
-        particleSizeMin: 1,
-        particleSizeMax: 4
+        particleSizeRange: [1, 4]
     }
 };
 
@@ -1892,6 +1893,11 @@ let benchmarkWindow = null;
 let benchmarkRunning = false;
 let benchmarkResults = [];
 let cancelActiveBenchmarkMeasurement = null;
+let cancelBenchmarkReadinessWait = null;
+let benchmarkSessionId = null;
+let benchmarkRunSequence = 0;
+let activeBenchmarkRunId = 0;
+const benchmarkRestoreRequests = new Map();
 
 function initializeBenchmark() {
     const startBtn = document.getElementById('start-benchmark');
@@ -1909,37 +1915,59 @@ function initializeBenchmark() {
     loadBenchmarkResults();
 }
 
+function isBenchmarkRunActive(runId, sessionId) {
+    return benchmarkRunning && activeBenchmarkRunId === runId && benchmarkSessionId === sessionId;
+}
+
 async function startBenchmark() {
     if (benchmarkRunning) return;
 
+    const runId = ++benchmarkRunSequence;
+    activeBenchmarkRunId = runId;
     benchmarkRunning = true;
     benchmarkResults = [];
+    let sessionId = null;
+    let runWindow = null;
 
     const startBtn = document.getElementById('start-benchmark');
     const stopBtn = document.getElementById('stop-benchmark');
     const progressDiv = document.getElementById('benchmark-progress');
     const resultsDiv = document.getElementById('benchmark-results');
 
-    startBtn.style.display = 'none';
-    stopBtn.style.display = 'block';
-    progressDiv.style.display = 'block';
-    resultsDiv.style.display = 'none';
-
-    // Open overlay window for benchmark
-    const overlayUrl = `${window.location.origin}/webgpu-fireworks/overlay?benchmark=true`;
-    benchmarkWindow = window.open(overlayUrl, 'FireworksBenchmark', 'width=1920,height=1080');
-
-    if (!benchmarkWindow) {
-        const msg = window.i18n ? window.i18n.t('plugins.webgpu-fireworks.webgpu_fireworks.benchmark.popup_blocked') : 'Could not open benchmark window. Please allow pop-ups.';
-        showToast(msg, 'error');
-        benchmarkRunning = false;
-        resetBenchmarkUi();
-        return;
-    }
+    if (startBtn) startBtn.style.display = 'none';
+    if (stopBtn) stopBtn.style.display = 'block';
+    if (progressDiv) progressDiv.style.display = 'block';
+    if (resultsDiv) resultsDiv.style.display = 'none';
 
     try {
-        // Wait for window to load
-        await new Promise(resolve => setTimeout(resolve, BENCHMARK_CONFIG.WINDOW_LOAD_DELAY));
+        const session = await requestJson('/api/webgpu-fireworks/benchmark/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+        sessionId = typeof session.sessionId === 'string' ? session.sessionId : null;
+        const overlayUrl = typeof session.overlayUrl === 'string' ? session.overlayUrl : null;
+        if (!sessionId || !overlayUrl) {
+            throw new Error('Benchmark start response did not include sessionId and overlayUrl');
+        }
+        if (!benchmarkRunning || activeBenchmarkRunId !== runId) return;
+
+        benchmarkSessionId = sessionId;
+        runWindow = window.open(
+            overlayUrl,
+            `FireworksBenchmark-${sessionId}`,
+            'width=1920,height=1080'
+        );
+        benchmarkWindow = runWindow;
+
+        if (!runWindow) {
+            const msg = window.i18n ? window.i18n.t('plugins.webgpu-fireworks.webgpu_fireworks.benchmark.popup_blocked') : 'Could not open benchmark window. Please allow pop-ups.';
+            showToast(msg, 'error');
+            return;
+        }
+
+        const rendererReady = await waitForBenchmarkRenderer(sessionId);
+        if (!rendererReady || !isBenchmarkRunActive(runId, sessionId)) return;
 
         // Run benchmark for each preset
         const presets = ['ultra', 'high', 'medium', 'low', 'toaster', 'potato'];
@@ -1947,55 +1975,85 @@ async function startBenchmark() {
 
         document.getElementById('benchmark-total').textContent = totalSteps;
 
-        for (let i = 0; i < presets.length && benchmarkRunning; i++) {
+        for (let i = 0; i < presets.length && isBenchmarkRunActive(runId, sessionId); i++) {
             const presetName = presets[i];
 
             document.getElementById('current-test-name').textContent = presetName.toUpperCase();
             document.getElementById('benchmark-step').textContent = i + 1;
             document.getElementById('benchmark-progress-bar').style.width = `${((i + 1) / totalSteps) * 100}%`;
 
-            const result = await runBenchmarkTest(presetName);
+            const result = await runBenchmarkTest(presetName, sessionId, runId);
+            if (!isBenchmarkRunActive(runId, sessionId)) break;
             if (result) benchmarkResults.push(result);
 
             // Wait between tests
-            await new Promise(resolve => setTimeout(resolve, BENCHMARK_CONFIG.INTER_TEST_DELAY));
+            if (i < presets.length - 1) {
+                const keepRunning = await waitForBenchmarkPollDelay(BENCHMARK_CONFIG.INTER_TEST_DELAY);
+                if (!keepRunning) break;
+            }
         }
 
-        if (benchmarkRunning && benchmarkResults.length > 0) {
+        if (isBenchmarkRunActive(runId, sessionId) && benchmarkResults.length > 0) {
             displayBenchmarkResults();
             saveBenchmarkResults();
         }
     } catch (e) {
         console.error('Benchmark failed:', e);
-        showToast(t('plugins.webgpu-fireworks.ui.benchmark_failed', 'Benchmark failed'), 'error');
+        if (benchmarkRunning && activeBenchmarkRunId === runId) {
+            const fallback = t('plugins.webgpu-fireworks.ui.benchmark_failed', 'Benchmark failed');
+            showToast(requestFailureMessage(e, fallback), 'error');
+        }
     } finally {
-        await restoreBenchmarkPreset();
-        closeBenchmarkWindow();
-        benchmarkRunning = false;
-        resetBenchmarkUi();
+        try {
+            await restoreBenchmarkPreset(sessionId);
+        } catch (error) {
+            console.error('Failed to restore benchmark session:', error);
+            if (activeBenchmarkRunId === runId) {
+                showToast(requestFailureMessage(error, 'Failed to restore benchmark session'), 'error');
+            }
+        }
+        closeBenchmarkWindow(runWindow);
+        if (activeBenchmarkRunId === runId) {
+            activeBenchmarkRunId = 0;
+            benchmarkRunning = false;
+            if (benchmarkSessionId === sessionId) benchmarkSessionId = null;
+            resetBenchmarkUi();
+        }
     }
 }
 
 function stopBenchmark() {
+    const sessionId = benchmarkSessionId;
+    const runWindow = benchmarkWindow;
     benchmarkRunning = false;
+    activeBenchmarkRunId = 0;
+    benchmarkSessionId = null;
+    benchmarkWindow = null;
+    if (cancelBenchmarkReadinessWait) {
+        cancelBenchmarkReadinessWait();
+        cancelBenchmarkReadinessWait = null;
+    }
     if (cancelActiveBenchmarkMeasurement) {
         cancelActiveBenchmarkMeasurement();
         cancelActiveBenchmarkMeasurement = null;
     }
-    closeBenchmarkWindow();
+    closeBenchmarkWindow(runWindow);
     resetBenchmarkUi();
-    restoreBenchmarkPreset();
+    void restoreBenchmarkPreset(sessionId).catch(error => {
+        console.error('Failed to restore stopped benchmark session:', error);
+        showToast(requestFailureMessage(error, 'Failed to restore benchmark session'), 'error');
+    });
 
     const msg = window.i18n ? window.i18n.t('plugins.webgpu-fireworks.webgpu_fireworks.benchmark.cancelled') : 'Benchmark cancelled';
     showToast(msg, 'error');
 }
 
-function closeBenchmarkWindow() {
-    if (benchmarkWindow && !benchmarkWindow.closed) {
-        benchmarkWindow.close();
+function closeBenchmarkWindow(windowToClose = benchmarkWindow) {
+    if (windowToClose && !windowToClose.closed) {
+        windowToClose.close();
     }
 
-    benchmarkWindow = null;
+    if (benchmarkWindow === windowToClose) benchmarkWindow = null;
 }
 
 function resetBenchmarkUi() {
@@ -2008,39 +2066,79 @@ function resetBenchmarkUi() {
     if (progressDiv) progressDiv.style.display = 'none';
 }
 
-async function restoreBenchmarkPreset() {
-    try {
-        const response = await fetch('/api/webgpu-fireworks/benchmark/restore', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Restore failed with status ${response.status}`);
-        }
-    } catch (e) {
-        console.error('Failed to restore benchmark preset:', e);
-    }
+function restoreBenchmarkPreset(sessionId, { keepalive = false } = {}) {
+    if (!sessionId) return Promise.resolve(null);
+    const existing = benchmarkRestoreRequests.get(sessionId);
+    if (existing) return existing;
+    const request = requestJson('/api/webgpu-fireworks/benchmark/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+        keepalive
+    });
+    benchmarkRestoreRequests.set(sessionId, request);
+    return request;
 }
 
-async function runBenchmarkTest(presetName) {
+function waitForBenchmarkPollDelay(delayMs) {
+    return new Promise(resolve => {
+        let settled = false;
+        let timer = null;
+        const finish = keepRunning => {
+            if (settled) return;
+            settled = true;
+            if (cancelBenchmarkReadinessWait === cancel) cancelBenchmarkReadinessWait = null;
+            resolve(keepRunning);
+        };
+        const cancel = () => {
+            if (timer !== null) window.clearTimeout(timer);
+            finish(false);
+        };
+        timer = window.setTimeout(() => finish(true), delayMs);
+        cancelBenchmarkReadinessWait = cancel;
+    });
+}
+
+async function waitForBenchmarkRenderer(sessionId) {
+    const fpsUrl = `/api/webgpu-fireworks/benchmark/fps?sessionId=${encodeURIComponent(sessionId)}`;
+    const maxAttempts = Math.max(
+        1,
+        Math.ceil(BENCHMARK_CONFIG.RENDERER_READY_TIMEOUT / BENCHMARK_CONFIG.RENDERER_READY_POLL_INTERVAL)
+    );
+    let lastError = null;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        if (!benchmarkRunning || benchmarkSessionId !== sessionId) return false;
+        try {
+            await requestJson(fpsUrl, { cache: 'no-store' });
+            return true;
+        } catch (error) {
+            lastError = error;
+            if (error.status !== 503) throw error;
+        }
+        if (attempt < maxAttempts - 1) {
+            const keepRunning = await waitForBenchmarkPollDelay(BENCHMARK_CONFIG.RENDERER_READY_POLL_INTERVAL);
+            if (!keepRunning) return false;
+        }
+    }
+
+    throw lastError || new Error('Benchmark renderer did not become ready');
+}
+
+async function runBenchmarkTest(presetName, sessionId, runId) {
     const preset = PRESETS[presetName];
 
     // Apply preset temporarily via API
-    const response = await fetch('/api/webgpu-fireworks/benchmark/set-preset', {
+    await requestJson('/api/webgpu-fireworks/benchmark/set-preset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ preset })
+        body: JSON.stringify({ sessionId, preset })
     });
-
-    if (!response.ok) {
-        throw new Error(`Failed to apply benchmark preset: ${response.status}`);
-    }
-    if (!benchmarkRunning) return null;
+    if (!isBenchmarkRunActive(runId, sessionId)) return null;
 
     // Trigger test fireworks and measure FPS
-    const fpsData = await measureFPS();
-    if (!benchmarkRunning) return null;
+    const fpsData = await measureFPS(sessionId, runId);
+    if (!isBenchmarkRunActive(runId, sessionId)) return null;
 
     return {
         preset: presetName,
@@ -2051,65 +2149,77 @@ async function runBenchmarkTest(presetName) {
     };
 }
 
-async function measureFPS() {
+async function measureFPS(sessionId, runId = null) {
     // Trigger multiple fireworks to stress test
     const testDuration = BENCHMARK_CONFIG.TEST_DURATION;
     const fireworkInterval = BENCHMARK_CONFIG.FIREWORK_INTERVAL;
 
-    let fpsReadings = [];
-
-    // Start FPS measurement
-    const measureStart = Date.now();
+    const fpsReadings = [];
+    const runIsCurrent = () => runId === null || isBenchmarkRunActive(runId, sessionId);
 
     // Trigger one immediately so the benchmark window never looks idle while
     // the first interval is pending, then keep the visual load consistent.
     const triggerBenchmarkFirework = async () => {
-        try {
-            await fetch('/api/webgpu-fireworks/trigger', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    shape: 'burst',
-                    intensity: 1.5,
-                    positionMode: 'exact',
-                    position: { x: Math.random() * 0.76 + 0.12, y: Math.random() * 0.4 + 0.18 },
-                    origin: { x: Math.random() * 0.84 + 0.08, y: 1.04 },
-                    playSound: false
-                })
-            });
-        } catch (e) {
-            console.error('Failed to trigger benchmark firework:', e);
-        }
+        if (!runIsCurrent()) return null;
+        return requestJson('/api/webgpu-fireworks/benchmark/trigger', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                sessionId,
+                shape: 'burst',
+                intensity: 1.5,
+                positionMode: 'exact',
+                position: { x: Math.random() * 0.76 + 0.12, y: Math.random() * 0.4 + 0.18 },
+                origin: { x: Math.random() * 0.84 + 0.08, y: 1.04 },
+                playSound: false
+            })
+        });
     };
-    triggerBenchmarkFirework();
-    const fireworkTimer = setInterval(triggerBenchmarkFirework, fireworkInterval);
+    const readBenchmarkFps = async () => {
+        if (!runIsCurrent()) return;
+        const data = await requestJson(
+            `/api/webgpu-fireworks/benchmark/fps?sessionId=${encodeURIComponent(sessionId)}`,
+            { cache: 'no-store' }
+        );
+        if (!runIsCurrent()) return;
+        const fps = Number(data.fps);
+        if (Number.isFinite(fps) && fps >= 0) fpsReadings.push(fps);
+    };
 
-    // Collect FPS readings
-    const fpsTimer = setInterval(async () => {
-        try {
-            const response = await fetch('/api/webgpu-fireworks/benchmark/fps');
-            const data = await response.json();
-            if (data.success && data.fps) {
-                fpsReadings.push(data.fps);
-            }
-        } catch (e) {
-            console.error('Failed to read FPS:', e);
-        }
-    }, BENCHMARK_CONFIG.FPS_SAMPLE_INTERVAL);
-
-    await new Promise(resolve => {
+    if (!runIsCurrent()) return { avgFps: 0, minFps: 0, maxFps: 0 };
+    await triggerBenchmarkFirework();
+    if (!runIsCurrent()) return { avgFps: 0, minFps: 0, maxFps: 0 };
+    await new Promise((resolve, reject) => {
         let finished = false;
-        const finish = () => {
+        let fireworkTimer = null;
+        let fpsTimer = null;
+        let durationTimer = null;
+        const finish = error => {
             if (finished) return;
             finished = true;
-            clearInterval(fireworkTimer);
-            clearInterval(fpsTimer);
-            clearTimeout(durationTimer);
+            if (fireworkTimer !== null) window.clearInterval(fireworkTimer);
+            if (fpsTimer !== null) window.clearInterval(fpsTimer);
+            if (durationTimer !== null) window.clearTimeout(durationTimer);
             cancelActiveBenchmarkMeasurement = null;
-            resolve();
+            if (error) reject(error);
+            else resolve();
         };
-        const durationTimer = setTimeout(finish, testDuration);
-        cancelActiveBenchmarkMeasurement = finish;
+        fireworkTimer = window.setInterval(() => {
+            if (!runIsCurrent()) {
+                finish();
+                return;
+            }
+            void triggerBenchmarkFirework().catch(finish);
+        }, fireworkInterval);
+        fpsTimer = window.setInterval(() => {
+            if (!runIsCurrent()) {
+                finish();
+                return;
+            }
+            void readBenchmarkFps().catch(finish);
+        }, BENCHMARK_CONFIG.FPS_SAMPLE_INTERVAL);
+        durationTimer = window.setTimeout(() => finish(), testDuration);
+        cancelActiveBenchmarkMeasurement = () => finish();
     });
 
     // Calculate statistics
