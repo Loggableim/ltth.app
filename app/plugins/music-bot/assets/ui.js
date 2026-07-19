@@ -5,7 +5,7 @@
   const I18N_PREFIX = 'plugins.music-bot.music_bot.ui';
   const RUNTIME_I18N_SECTIONS = Object.fromEntries(Object.entries({
     shell: 'networkTitle connectionLost socketDisconnected apiError unknownError saved error onboardingSettingsTitle onboardingSettingsMeta onboardingOverlayTitle onboardingOverlayMeta onboardingPlayerTitle onboardingPlayerMeta setupHint setupOpen onboardingHelpWithIssues onboardingHelpReady mpvNotInstalled install mpvInstallation mpvReady installationFailed installationSlow statusCheckFailed installing installationStarted installationStartFailed installMpv assistantCompleted assistantCompletedMessage setup onboardingSaveFailed viewerFallback toastDefaultTitle setupYtdlpMissingTitle setupYtdlpMissingDescription setupYtdlpInstallNpm setupYtdlpInstallManual setupYtdlpConfigurePath setupMpvMissingTitle setupMpvMissingDescription setupMpvInstallWindows setupMpvInstallLinux setupMpvInstallMacos setupMpvConfigurePath mpvInstallIdle mpvAlreadyAvailable mpvInstalledReady mpvInstallFailed mpvPackageManagerUnavailable mpvInstallTimedOut mpvInstallWindowsPrompt mpvInstallStartFailed mpvInstallChocolateyLock mpvInstallAdminConfirmation mpvInstallPermissionDenied mpvInstallCommandUnavailable mpvInstallExited mpvInstallMissingAfterExit',
-    player: 'seekUnavailable seekFailed nowPlayingEmpty stateIdle statePaused statePlaying stateUnknown playbackAdvancing loading skip pauseTitle noActiveTrack playbackResumed playbackStarted nextTrackPlaying resumeTitle noStartableTrack skipTitle playingNow searchLoading searching noResult queueAdding queueAdded songAddedTitle requestAdded requestFailed requestRejectedTitle requestRequired requestUserBlocked requestLikesRequired requestGiftRequired songBlockedTitle songSkipped payToPlayTitle payToPlayCredits payToSkipTitle payToSkipGift masterVolumeTitle sourceVolumeTitle volumeSetFailed crossfadeSaveFailed requestedBy selectedTitle playerToastTitle sourceYoutube sourceSoundCloud sourceOther',
+    player: 'seekUnavailable seekFailed nowPlayingEmpty stateIdle statePaused statePlaying stateUnknown playbackAdvancing loading skip pauseTitle noActiveTrack playbackResumed playbackStarted nextTrackPlaying resumeTitle noStartableTrack skipTitle playingNow searchLoading searching noResult queueAdding queueAdded songAddedTitle requestAdded requestFailed requestRejectedTitle requestRequired requestUserBlocked requestLikesRequired requestGiftRequired songBlockedTitle songSkipped banSong banArtist banKeyword banChannel queueInvalidSong queueFull queueDurationUnknown queueDurationTooLong queueDuplicate queueUserLimit queueCooldown payToPlayTitle payToPlayCredits payToSkipTitle payToSkipGift masterVolumeTitle sourceVolumeTitle volumeSetFailed crossfadeSaveFailed requestedBy selectedTitle playerToastTitle sourceYoutube sourceSoundCloud sourceOther',
     queue: 'queueEmptyTitle queueEmptyHint playNow moveUp moveDown queueUpdated trackRemoved queueTitle alreadyPlaying titleStartFailed orderUpdated queueRefreshRetry trackMoved remove',
     autoDj: 'autoDjPlaying autoDjActive autoDjDisabled autoDjOn autoDjOff autoDjSelected autoDjSource autoDjBlocked autoDjStarted autoDjWaiting noTrackAvailable autoDjToastTitle sourceFamiliar sourceDiscoveryFallback sourceDiscovery sourceFamiliarFallback sourceHistory sourceRadio sourceHistoryFallback sourceUnknown',
     moderation: 'banAdded banAddFailed banRemoveFailed enterTitleKeyword banFailed moderationTitle queueMatchesRemoved banLabel trackBanLabel enterValue noEntries delete url keyword channel user artist exactTrack titleKeyword unknownBanType',
@@ -366,6 +366,7 @@
   let latestAutoDjStatus = null;
   let latestRadioSources = [];
   let latestHealth = null;
+  const activeToastRecords = [];
   let trackBanTargetId = null;
   let trackBanCatalogEventId = null;
   let trackBanScope = 'track';
@@ -1350,7 +1351,8 @@
     showToast(
       payload?.type || 'info',
       localizedProducerText(payload, 'title', tr('toastDefaultTitle', 'Musik-Bot')),
-      localizedProducerText(payload, 'message', '')
+      localizedProducerText(payload, 'message', ''),
+      payload
     );
   });
   socket.on('music-bot:setup-status', (payload) => {
@@ -2090,19 +2092,34 @@
     setTimeout(() => { el.textContent = ''; }, 4000);
   }
 
-  function showToast(type = 'info', title = '', message = '') {
-    if (!toastContainer) return;
-    const resolvedTitle = title || tr('toastDefaultTitle', 'Musik-Bot');
-    const toast = document.createElement('div');
-    toast.className = `musicbot-toast ${type}`;
-    toast.innerHTML = `
-      <div class="musicbot-toast-title">${escapeHtml(resolvedTitle)}</div>
-      <div class="musicbot-toast-message">${escapeHtml(message)}</div>
+  function renderToastRecord(record) {
+    if (!record?.element) return;
+    const payload = record.semanticPayload;
+    const title = payload
+      ? localizedProducerText(payload, 'title', record.title)
+      : record.title;
+    const message = payload
+      ? localizedProducerText(payload, 'message', record.message)
+      : record.message;
+    record.element.className = `musicbot-toast ${record.type}`;
+    record.element.innerHTML = `
+      <div class="musicbot-toast-title">${escapeHtml(title || tr('toastDefaultTitle', 'Musik-Bot'))}</div>
+      <div class="musicbot-toast-message">${escapeHtml(message || '')}</div>
     `;
+  }
+
+  function showToast(type = 'info', title = '', message = '', semanticPayload = null) {
+    if (!toastContainer) return;
+    const toast = document.createElement('div');
+    const record = { type, title, message, semanticPayload, element: toast };
+    renderToastRecord(record);
     toastContainer.appendChild(toast);
     setTimeout(() => {
       toast.remove();
+      const index = activeToastRecords.indexOf(record);
+      if (index >= 0) activeToastRecords.splice(index, 1);
     }, 4500);
+    activeToastRecords.push(record);
   }
 
   function updatePreviewFrame(song) {
@@ -2684,7 +2701,61 @@
     banFeedback.style.color = isError ? '#ef4444' : 'var(--color-text-secondary)';
   }
 
+  function captureLocalizedTransientState() {
+    const radioSources = Object.fromEntries(Array.from(
+      playlistRadioSources?.querySelectorAll('[data-radio-playlist-id]') || []
+    ).map((checkbox) => {
+      const id = checkbox.dataset.radioPlaylistId;
+      const escapedId = String(id).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      const weight = playlistRadioSources.querySelector(`[data-radio-weight="${escapedId}"]`);
+      return [id, { enabled: checkbox.checked, weight: weight?.value || '1' }];
+    }));
+    return {
+      playlist: selectedPlaylist ? {
+        id: String(selectedPlaylist.id),
+        name: playlistNameInput?.value,
+        mode: playlistModeInput?.value
+      } : null,
+      radioSources,
+      autoDj: {
+        enabled: autoDjEnabled?.checked,
+        mode: autoDjMode?.value,
+        historyPlays: autoDjHistoryPlays?.value,
+        mixHistoryPercent: autoDjMixHistoryPercent?.value,
+        repeatCooldownHours: autoDjRepeatCooldownHours?.value,
+        maxConsecutive: autoDjMaxConsecutive?.value,
+        announce: autoDjAnnounce?.checked,
+        playlistUrls: autoDjPlaylistUrls?.value
+      }
+    };
+  }
+
+  function restoreLocalizedTransientState(snapshot) {
+    if (!snapshot) return;
+    if (snapshot.playlist && String(selectedPlaylist?.id || '') === snapshot.playlist.id) {
+      if (playlistNameInput && !playlistNameInput.disabled) playlistNameInput.value = snapshot.playlist.name || '';
+      if (playlistModeInput && snapshot.playlist.mode) playlistModeInput.value = snapshot.playlist.mode;
+    }
+    Object.entries(snapshot.radioSources || {}).forEach(([id, source]) => {
+      const escapedId = String(id).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      const checkbox = playlistRadioSources?.querySelector(`[data-radio-playlist-id="${escapedId}"]`);
+      const weight = playlistRadioSources?.querySelector(`[data-radio-weight="${escapedId}"]`);
+      if (checkbox) checkbox.checked = Boolean(source.enabled);
+      if (weight) weight.value = source.weight;
+    });
+    const autoDj = snapshot.autoDj || {};
+    if (autoDjEnabled && typeof autoDj.enabled === 'boolean') autoDjEnabled.checked = autoDj.enabled;
+    if (autoDjMode && autoDj.mode) autoDjMode.value = autoDj.mode;
+    if (autoDjHistoryPlays && autoDj.historyPlays) autoDjHistoryPlays.value = autoDj.historyPlays;
+    if (autoDjMixHistoryPercent && autoDj.mixHistoryPercent) autoDjMixHistoryPercent.value = autoDj.mixHistoryPercent;
+    if (autoDjRepeatCooldownHours && autoDj.repeatCooldownHours) autoDjRepeatCooldownHours.value = autoDj.repeatCooldownHours;
+    if (autoDjMaxConsecutive && autoDj.maxConsecutive) autoDjMaxConsecutive.value = autoDj.maxConsecutive;
+    if (autoDjAnnounce && typeof autoDj.announce === 'boolean') autoDjAnnounce.checked = autoDj.announce;
+    if (autoDjPlaylistUrls && typeof autoDj.playlistUrls === 'string') autoDjPlaylistUrls.value = autoDj.playlistUrls;
+  }
+
   function rerenderLocalizedDynamicSurfaces() {
+    const transientState = captureLocalizedTransientState();
     window.i18n?.updateDOM?.();
     renderSetupIssues(currentSetupIssues);
     renderOnboarding(currentOnboarding, currentSetupIssues);
@@ -2698,6 +2769,8 @@
     if (latestResolver) renderResolverHealth(latestResolver);
     if (latestHealth) renderHealth(latestHealth);
     renderGiftCatalogList();
+    restoreLocalizedTransientState(transientState);
+    activeToastRecords.forEach(renderToastRecord);
   }
 
   window.i18n?.onLanguageChange?.(rerenderLocalizedDynamicSurfaces);

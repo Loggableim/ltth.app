@@ -118,16 +118,17 @@ class I18n {
                     this.translations[locale] = {};
                   }
 
-                  const hasNamespacedPlugin = pluginTranslations.plugins
-                    && pluginTranslations.plugins[pluginId];
+                  const hasNamespacedPlugin = this.isObject(pluginTranslations.plugins)
+                    && Object.hasOwn(pluginTranslations.plugins, pluginId);
                   const hasLegacyPluginRoot = Object.keys(pluginTranslations)
                     .some((key) => key !== 'plugins');
-                  // Some legacy catalogs expose their own root alongside a
-                  // compact `plugins.<id>` compatibility contract. Keep the
-                  // complete legacy root instead of discarding UI namespaces.
-                  const namespacedTranslations = hasNamespacedPlugin && !hasLegacyPluginRoot
-                    ? pluginTranslations
-                    : { plugins: { [pluginId]: pluginTranslations } };
+                  const namespacedTranslations = this.normalizePluginTranslationCatalog(
+                    pluginTranslations,
+                    pluginId,
+                    pluginLocalePath,
+                    hasNamespacedPlugin,
+                    hasLegacyPluginRoot
+                  );
 
                   this.translations[locale] = this.mergeTranslationSource(
                     locale,
@@ -150,6 +151,54 @@ class I18n {
       if (error.message.startsWith('Translation collision at ')) throw error;
       console.error('Error loading plugin translations:', error.message);
     }
+  }
+
+  normalizePluginTranslationCatalog(pluginTranslations, pluginId, sourcePath, hasNamespacedPlugin, hasLegacyPluginRoot) {
+    if (hasNamespacedPlugin && !hasLegacyPluginRoot) return pluginTranslations;
+    if (!hasNamespacedPlugin) return { plugins: { [pluginId]: pluginTranslations } };
+
+    const legacyCatalog = Object.fromEntries(
+      Object.entries(pluginTranslations).filter(([key]) => key !== 'plugins')
+    );
+    const compatibilityCatalog = pluginTranslations.plugins[pluginId];
+    return {
+      plugins: {
+        [pluginId]: this.mergePluginTranslationCatalogs(
+          legacyCatalog,
+          compatibilityCatalog,
+          `plugins.${pluginId}`,
+          sourcePath
+        )
+      }
+    };
+  }
+
+  mergePluginTranslationCatalogs(legacyCatalog, compatibilityCatalog, prefix, sourcePath) {
+    const unsafeKeys = new Set(['__proto__', 'prototype', 'constructor']);
+    const output = {};
+    const merge = (target, source, pathPrefix) => {
+      Object.entries(source || {}).forEach(([key, value]) => {
+        if (unsafeKeys.has(key)) {
+          throw new Error(`Unsafe translation key at ${pathPrefix}.${key} in ${sourcePath}`);
+        }
+        const keyPath = `${pathPrefix}.${key}`;
+        if (!Object.hasOwn(target, key)) {
+          target[key] = value;
+          return;
+        }
+        if (this.isObject(target[key]) && this.isObject(value)) {
+          merge(target[key], value, keyPath);
+          return;
+        }
+        // Compatibility metadata is an explicit public contract. If it
+        // intentionally overlaps an older catalog, let that direct contract
+        // win while keeping every non-overlapping legacy key.
+        target[key] = value;
+      });
+    };
+    merge(output, legacyCatalog, prefix);
+    merge(output, compatibilityCatalog, prefix);
+    return output;
   }
 
   /**

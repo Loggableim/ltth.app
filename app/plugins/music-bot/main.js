@@ -1130,16 +1130,13 @@ class MusicBotPlugin extends EventEmitter {
     return snapshot;
   }
 
-  _sanitizeDiagnosticValue(value, depth = 0) {
+  _sanitizeDiagnosticValue(value, depth = 0, field = '') {
     if (depth > 4) return '[truncated]';
     if (Array.isArray(value)) {
-      return value.slice(0, 100).map((entry) => this._sanitizeDiagnosticValue(entry, depth + 1));
+      return value.slice(0, 100).map((entry) => this._sanitizeDiagnosticValue(entry, depth + 1, field));
     }
     if (!value || typeof value !== 'object') {
-      if (typeof value === 'string' && this._isSensitiveDiagnosticString(value)) {
-        return '[redacted]';
-      }
-      return value;
+      return typeof value === 'string' ? this._sanitizeDiagnosticString(value, field) : value;
     }
     const output = {};
     Object.entries(value).forEach(([key, entry]) => {
@@ -1147,15 +1144,24 @@ class MusicBotPlugin extends EventEmitter {
         output[key] = '[redacted]';
         return;
       }
-      output[key] = this._sanitizeDiagnosticValue(entry, depth + 1);
+      output[key] = this._sanitizeDiagnosticValue(entry, depth + 1, key);
     });
     return output;
   }
 
-  _isSensitiveDiagnosticString(value) {
+  _sanitizeDiagnosticString(value, field = '') {
     const normalized = String(value || '');
-    if (/(?:https?:\/\/|\\\\\.\\pipe\\|[a-z]:\\)/i.test(normalized)) return true;
-    return /(?:^|[?&\s,;])(?:x-amz-[a-z-]+|sig(?:nature)?|lsig|token|expire(?:s)?|ip|key|credential)\s*=/i.test(normalized);
+    const inspectContent = !field || /(?:error|message|detail|progress|reason|stderr|output)/i.test(field);
+    if (!inspectContent) return normalized;
+    return normalized
+      .replace(/https?:\/\/[^\s"'<>]+/gi, '[redacted]')
+      .replace(/\\\\\.\\pipe\\[^\s"'<>]+/gi, '[redacted]')
+      .replace(/[a-z]:\\[^\s"'<>]+/gi, '[redacted]')
+      .replace(/(^|[?&\s,;:\(\[\{])((?:x-amz-[a-z-]+|sig(?:nature)?|lsig|token|expire(?:s)?|ip|key|credential)\s*=\s*)([^&#\s,;\]\)\}]+)/gi, '$1$2[redacted]');
+  }
+
+  _isSensitiveDiagnosticString(value, field = '') {
+    return this._sanitizeDiagnosticString(value, field) !== String(value || '');
   }
 
   _isSafetyLocked() {
@@ -1987,9 +1993,9 @@ class MusicBotPlugin extends EventEmitter {
           return;
         }
 
-        const banMessage = this._checkBans(resolved.song, 'dashboard');
-        if (banMessage) {
-          res.status(400).json({ success: false, error: banMessage });
+        const banRejection = this._getBanRejection(resolved.song, 'dashboard');
+        if (banRejection) {
+          res.status(400).json({ success: false, ...banRejection });
           return;
         }
 
@@ -2776,16 +2782,17 @@ class MusicBotPlugin extends EventEmitter {
         return { success: false, error: resolved?.message || 'Song konnte nicht geladen werden.' };
       }
 
-      const banMessage = this._checkBans(resolved.song, username);
-      if (banMessage) {
-        this._emitToast('warn', { titleKey: 'songBlockedTitle', message: banMessage });
-        return { success: false, error: banMessage };
+      const banRejection = this._getBanRejection(resolved.song, username);
+      if (banRejection) {
+        this._emitToast('warn', { titleKey: 'songBlockedTitle', ...banRejection });
+        return { success: false, ...banRejection };
       }
 
       const added = this.queueManager.addSong({ ...resolved.song, requestedBy: username, requesterAvatar });
       if (!added.success) {
-        this._emitToast('warn', { titleKey: 'requestRejectedTitle', message: added.error || '' });
-        return added;
+        const rejection = this._queueRejectionPayload(added);
+        this._emitToast('warn', { titleKey: 'requestRejectedTitle', ...rejection });
+        return { success: false, ...rejection };
       }
       this._invalidateRadioPrefetch('viewer-queue-changed');
       this._schedulePreCache();
@@ -2851,10 +2858,10 @@ class MusicBotPlugin extends EventEmitter {
         return;
       }
 
-      const banMessage = this._checkBans(resolved.song, username);
-      if (banMessage) {
-        this._emitChatResponse(banMessage, username);
-        this._emitToast('warn', { titleKey: 'songBlockedTitle', message: banMessage });
+      const banRejection = this._getBanRejection(resolved.song, username);
+      if (banRejection) {
+        this._emitChatResponse(this._formatBanRejectionForChat(banRejection), username);
+        this._emitToast('warn', { titleKey: 'songBlockedTitle', ...banRejection });
         return;
       }
 
@@ -2865,7 +2872,7 @@ class MusicBotPlugin extends EventEmitter {
       });
       if (!addResult.success) {
         this._emitChatResponse(addResult.error || 'Song konnte nicht hinzugefügt werden.', username);
-        this._emitToast('warn', { titleKey: 'requestRejectedTitle', message: addResult.error || '' });
+        this._emitToast('warn', { titleKey: 'requestRejectedTitle', ...this._queueRejectionPayload(addResult) });
         return;
       }
       this._invalidateRadioPrefetch('viewer-queue-changed');
@@ -2927,6 +2934,53 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   _checkBans(song, username) {
+    const rejection = this._getBanRejection(song, username);
+    return rejection ? this._formatBanRejectionForChat(rejection) : null;
+  }
+
+  _getBanRejection(song, username) {
+    if (!song) return null;
+    if (this.banList?.isUserBanned(username)?.banned) {
+      return { messageKey: 'requestUserBlocked', params: { username } };
+    }
+    if (this.banList?.isUrlBanned(song.url, song.youtubeId)?.banned
+      || this.banList?.isTrackBanned?.(song.trackKey)?.banned) {
+      return { messageKey: 'banSong', params: {} };
+    }
+    if (this.banList?.isArtistBanned?.(song.artist)?.banned) {
+      return { messageKey: 'banArtist', params: { artist: song.artist || '' } };
+    }
+    const titleKeyword = this.banList?.isKeywordBanned(song.title || '');
+    const channelKeyword = this.banList?.isKeywordBanned(song.channelName || '');
+    const keywordBan = titleKeyword?.banned ? titleKeyword : channelKeyword;
+    if (keywordBan?.banned) {
+      return { messageKey: 'banKeyword', params: { keyword: keywordBan.keyword || '' } };
+    }
+    if (this.banList?.isChannelBanned(song.channelId, song.channelName)?.banned) {
+      return { messageKey: 'banChannel', params: { channel: song.channelName || '' } };
+    }
+    return null;
+  }
+
+  _formatBanRejectionForChat(rejection = {}) {
+    const params = rejection.params || {};
+    switch (rejection.messageKey) {
+      case 'requestUserBlocked': return 'Dieser Nutzer darf keine Songs anfragen.';
+      case 'banArtist': return 'Dieser Künstler ist gesperrt.';
+      case 'banKeyword': return `Dieser Song ist geblockt (Keyword: ${params.keyword || ''}).`;
+      case 'banChannel': return 'Dieser Kanal ist gesperrt.';
+      default: return 'Dieser Song ist gesperrt.';
+    }
+  }
+
+  _queueRejectionPayload(result = {}) {
+    return {
+      messageKey: result.messageKey || 'requestFailed',
+      params: result.params && typeof result.params === 'object' ? { ...result.params } : {}
+    };
+  }
+
+  _legacyCheckBans(song, username) {
     if (!song) return null;
     const userBan = this.banList?.isUserBanned(username);
     if (userBan?.banned) {

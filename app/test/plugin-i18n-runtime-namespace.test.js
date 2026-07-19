@@ -135,8 +135,37 @@ describe('plugin i18n runtime namespaces', () => {
 
       expect(i18n.t('plugins.hybrid-plugin.legacy.labels.complete', {}, 'en'))
         .toBe('Complete catalog label');
-      expect(i18n.t('plugins.hybrid-plugin.plugins.hybrid-plugin.contract.ready', {}, 'en'))
+      expect(i18n.t('plugins.hybrid-plugin.contract.ready', {}, 'en'))
         .toBe('Compatibility metadata');
+      expect(i18n.t('plugins.hybrid-plugin.plugins.hybrid-plugin.contract.ready', {}, 'en'))
+        .toBe('plugins.hybrid-plugin.plugins.hybrid-plugin.contract.ready');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('uses direct compatibility metadata deterministically when it overlaps a legacy catalog', () => {
+    jest.resetModules();
+    const { I18n } = require('../modules/i18n');
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-i18n-hybrid-collision-'));
+    const localesDir = path.join(root, 'locales');
+    const pluginRoot = path.join(root, 'plugins');
+    const pluginDir = path.join(pluginRoot, 'hybrid');
+
+    try {
+      fs.mkdirSync(localesDir, { recursive: true });
+      fs.mkdirSync(path.join(pluginDir, 'locales'), { recursive: true });
+      fs.writeFileSync(path.join(pluginDir, 'plugin.json'), JSON.stringify({ id: 'hybrid-plugin' }), 'utf8');
+      ['de', 'en', 'es', 'fr'].forEach((locale) => {
+        fs.writeFileSync(path.join(localesDir, `${locale}.json`), '{}', 'utf8');
+        fs.writeFileSync(path.join(pluginDir, 'locales', `${locale}.json`), JSON.stringify({
+          contract: { ready: 'Legacy value' },
+          plugins: { 'hybrid-plugin': { contract: { ready: 'Compatibility value' } } }
+        }), 'utf8');
+      });
+
+      const i18n = new I18n('en', { localesDir, pluginRoots: [pluginRoot] });
+      expect(i18n.t('plugins.hybrid-plugin.contract.ready', {}, 'en')).toBe('Compatibility value');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
