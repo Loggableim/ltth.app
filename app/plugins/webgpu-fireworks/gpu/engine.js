@@ -3,6 +3,9 @@
  * TikTok/socket events and audio remain on the CPU. All visible particle
  * simulation and rendering is delegated to WebGPUParticleEngine.
  */
+const SpawnCommandPolicy = typeof module !== 'undefined' && module.exports
+    ? require('./spawn-command-policy')
+    : globalThis.WebGPUFireworksSpawnCommandPolicy;
 const DEBUG = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === 'true';
 
 function t(key, fallback, params = {}) {
@@ -1180,6 +1183,7 @@ class WebGPUFireworksEngine {
     launchGiftNow(data, now = this.getRuntimeNow()) {
         Promise.resolve(this.handleTrigger({
             ...data,
+            lane: 'gift',
             deferAssets: true,
             trackGiftLaunch: true,
             forceRocket: true
@@ -1230,6 +1234,17 @@ class WebGPUFireworksEngine {
         if (this.config.toasterMode || this.performanceMode === 'minimal') return 0.5;
         if (this.performanceMode === 'reduced') return 0.75;
         return 1;
+    }
+
+    getAdaptiveLayerPolicy(activeLayerLoad = 0) {
+        const metrics = this.renderer?.getMetrics?.() || {};
+        const particleCapacity = Math.max(1, Number(this.renderer?.maxParticles) || Number(this.config.maxTotalParticles) || 1);
+        const activeParticleRatio = Math.max(0, Math.min(1, Number(metrics.activeParticles) / particleCapacity || 0));
+        return SpawnCommandPolicy.deriveAdaptiveDegradationPolicy({
+            performanceMode: this.config.toasterMode ? 'toaster' : this.performanceMode,
+            activeParticleRatio,
+            activeLayerLoad
+        });
     }
 
     isFinaleRuntimeTokenValid(finaleId, runtimeToken) {
@@ -1352,6 +1367,10 @@ class WebGPUFireworksEngine {
         return {
             id: explosion.id,
             finaleId: launch.finaleId || explosion.finaleId || null,
+            lane: explosion.lane,
+            priority: explosion.priority,
+            required: explosion.required,
+            beatId: explosion.beatId,
             seed: launch.seed,
             createdAt,
             launchAt: createdAt,
@@ -1397,6 +1416,21 @@ class WebGPUFireworksEngine {
             const avatarTexture = Number(explosion.assets.avatarTexture) || 0;
             this.renderer.spawnRocket({
                 effectId: plan.id,
+                lane: plan.lane,
+                priority: plan.priority,
+                required: plan.required,
+                beatId: plan.beatId,
+                username: explosion.username,
+                userId: explosion.userId,
+                uniqueId: explosion.uniqueId,
+                giftId: explosion.giftId,
+                giftName: explosion.giftName,
+                giftImage: explosion.giftImage,
+                coins: explosion.coins,
+                value: explosion.value,
+                combo: explosion.combo,
+                bundleCount: explosion.bundleCount,
+                giftBundleKey: explosion.giftBundleKey,
                 origin: launch.origin,
                 target: launch.target,
                 duration: launchDuration,
@@ -1445,6 +1479,21 @@ class WebGPUFireworksEngine {
         const crackleDuration = Math.min(plan.crackleDuration, remainingShowSeconds);
         this.renderer.spawnCrackle({
             effectId: plan.id,
+            lane: plan.lane,
+            priority: 'accent',
+            required: false,
+            beatId: plan.beatId,
+            username: explosion.username,
+            userId: explosion.userId,
+            uniqueId: explosion.uniqueId,
+            giftId: explosion.giftId,
+            giftName: explosion.giftName,
+            giftImage: explosion.giftImage,
+            coins: explosion.coins,
+            value: explosion.value,
+            combo: explosion.combo,
+            bundleCount: explosion.bundleCount,
+            giftBundleKey: explosion.giftBundleKey,
             profile: plan.crackleProfile,
             pulseCount: plan.cracklePulseCount,
             origin: { x: explosion.x, y: explosion.y },
@@ -1482,6 +1531,14 @@ class WebGPUFireworksEngine {
         }
         const finaleId = data.finaleId || null;
         const runtimeToken = data.runtimeToken || null;
+        const lane = ['show', 'gift', 'live'].includes(data.lane)
+            ? data.lane
+            : this.isGiftTrigger(data)
+                ? 'gift'
+                : finaleId
+                    ? 'show'
+                    : 'live';
+        const beatId = data.beatId ?? data.cueId ?? null;
         const shape = ['burst', 'heart', 'paws', 'star', 'ring', 'spiral'].includes(data.shape) ? data.shape : 'burst';
         const intensity = Math.max(0.1, Math.min(5, Number(data.intensity) || 1));
         const combo = Math.max(1, Number(data.combo) || 1);
@@ -1556,6 +1613,10 @@ class WebGPUFireworksEngine {
         }
         const explosion = {
             id, x, y: targetY, shape, intensity, count, colors, assets, visualStyle, style,
+            lane,
+            priority: 'core',
+            required: true,
+            beatId,
             playSound: data.playSound !== false, sound, tier,
             finaleId: data.finaleId || null,
             finaleEndsAt: Number.isFinite(Number(data.finaleEndsAt)) ? Number(data.finaleEndsAt) : null,
@@ -1567,6 +1628,7 @@ class WebGPUFireworksEngine {
             username: data.username, userId: data.userId, uniqueId: data.uniqueId,
             giftId: data.giftId, giftName: data.giftName, giftImage: data.giftImage,
             coins: data.coins, value: data.value, combo, bundleCount: data.bundleCount,
+            giftBundleKey: data.giftBundleKey,
             gravity: Number(data.gravity ?? this.config.gravity),
             friction: Number(data.friction ?? this.config.friction),
             wind: data.windEnabled ? Number(data.windStrength ?? this.config.windStrength) : 0,
@@ -1666,14 +1728,29 @@ class WebGPUFireworksEngine {
             Math.min(sizeProfile.max, sizeProfile.base * requestedScale * explosion.style.sizeScale)
         );
         const common = {
+            lane: explosion.lane,
+            priority: explosion.priority,
+            required: explosion.required,
+            beatId: explosion.beatId,
+            username: explosion.username,
+            userId: explosion.userId,
+            uniqueId: explosion.uniqueId,
+            giftId: explosion.giftId,
+            giftName: explosion.giftName,
+            giftImage: explosion.giftImage,
+            coins: explosion.coins,
+            value: explosion.value,
+            combo: explosion.combo,
+            bundleCount: explosion.bundleCount,
+            giftBundleKey: explosion.giftBundleKey,
             origin: { x: explosion.x, y: explosion.y }, intensity: explosion.intensity,
             duration, gravity: explosion.gravity * 850, drag: explosion.friction,
             wind: explosion.wind * 420, size: semanticSize,
             style: explosion.visualStyle
         };
         this.renderer.spawnExplosion({ ...common, effectId, shape: explosion.shape, colors: explosion.colors, count: baseCount });
-        if (avatarCount) this.renderer.spawnExplosion({ ...common, effectId, shape: 'image', colors: ['#ffffff'], count: avatarCount, textureIndex: explosion.assets.avatarTexture, size: 18 * explosion.style.sizeScale, nativeColor: true });
-        if (giftCount) this.renderer.spawnExplosion({ ...common, effectId, shape: 'image', colors: ['#ffffff'], count: giftCount, textureIndex: explosion.assets.giftTexture, size: 18 * explosion.style.sizeScale, nativeColor: true });
+        if (avatarCount) this.renderer.spawnExplosion({ ...common, effectId, priority: 'core', required: true, shape: 'image', colors: ['#ffffff'], count: avatarCount, textureIndex: explosion.assets.avatarTexture, size: 18 * explosion.style.sizeScale, nativeColor: true });
+        if (giftCount) this.renderer.spawnExplosion({ ...common, effectId, priority: 'core', required: true, shape: 'image', colors: ['#ffffff'], count: giftCount, textureIndex: explosion.assets.giftTexture, size: 18 * explosion.style.sizeScale, nativeColor: true });
         this.audio.recordTimelineEvent(effectId, 'explosion-visual', plannedAt, actualAt, 'rendered');
         if (explosion.playSound) {
             const bangDurations = { small: 0.7, medium: 0.9, big: 1.2, massive: 1.5 };

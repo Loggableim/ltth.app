@@ -5,6 +5,9 @@
  * generation, physics, lifetime management, trail history, active compaction
  * and indirect draw counts are produced by WGSL compute passes.
  */
+const SpawnCommandPolicy = typeof module !== 'undefined' && module.exports
+    ? require('./spawn-command-policy')
+    : globalThis.WebGPUFireworksSpawnCommandPolicy;
 const V2_TRAIL = 1 << 0;
 const V2_SPLIT_REQUESTED = 1 << 1;
 const V2_STROBE = 1 << 3;
@@ -57,6 +60,7 @@ class WebGPUParticleEngine {
         this.destroyed = false;
         this.deviceRecoveryAttempted = false;
         this.spawnQueue = [];
+        this.pendingDegradedLayerCounts = SpawnCommandPolicy.emptyDegradedLayerCounts();
         this.atlasSlots = new Map();
         this.atlasSources = new Map();
         this.nextAtlasSlot = 1; // Slot zero is the neutral paw sprite.
@@ -80,7 +84,11 @@ class WebGPUParticleEngine {
             droppedParticles: 0,
             gpuFrameMs: null,
             adapter: null,
-            format: null
+            format: null,
+            commandAdmission: {
+                current: SpawnCommandPolicy.emptyCommandTelemetry(),
+                cumulative: SpawnCommandPolicy.emptyCommandTelemetry()
+            }
         };
     }
 
@@ -495,12 +503,15 @@ class WebGPUParticleEngine {
         const style = this._styleId(options.style);
         const seed = this._resolveSeed(options);
         const effectId = this._hashValue(options.effectId ?? seed);
+        const correlationId = options.correlationId ?? options.effectId ?? seed;
         const resolutionScale = Math.max(0.75, Math.min(1.75, this.logicalHeight / 1080));
         const rocketSize = Math.max(28, (Number(options.rocketSize) || 32) * resolutionScale);
         const headTextureIndex = Math.max(0, Number(options.headTextureIndex) || 0);
         const decalTextureIndex = headTextureIndex > 0 ? 0 : Math.max(0, Number(options.textureIndex) || 0);
         this._queueSpawn({
             ...options,
+            priority: options.priority || 'core',
+            required: options.required === true,
             kind: 1,
             count: 1,
             shape: 'rocket',
@@ -508,11 +519,14 @@ class WebGPUParticleEngine {
             size: rocketSize,
             seed,
             effectId,
+            correlationId,
             flags: this._flags({ role: 1, style, rocketAvatarHead: headTextureIndex > 0 }),
             curve: options.curve || 0
         });
         this._queueSpawn({
             ...options,
+            priority: 'accent',
+            required: false,
             kind: 1,
             count: 1,
             shape: 'rocket',
@@ -521,12 +535,15 @@ class WebGPUParticleEngine {
             color: '#fff4d6',
             seed: seed ^ 0x9e3779b9,
             effectId,
+            correlationId,
             flags: this._flags({ role: 2, style }),
             curve: options.curve || 0
         });
         if (decalTextureIndex > 0) {
             this._queueSpawn({
                 ...options,
+                priority: 'core',
+                required: true,
                 kind: 1,
                 count: 1,
                 shape: 'image',
@@ -535,6 +552,7 @@ class WebGPUParticleEngine {
                 color: '#ffffff',
                 seed: seed ^ 0x85ebca6b,
                 effectId,
+                correlationId,
                 flags: this._flags({ role: 6, style, nativeColor: true }) | 64,
                 curve: options.curve || 0
             });
@@ -554,6 +572,7 @@ class WebGPUParticleEngine {
         const style = this._styleId(options.style);
         const seed = this._resolveSeed(options);
         const effectId = this._hashValue(options.effectId ?? seed);
+        const correlationId = options.correlationId ?? options.effectId ?? seed;
         const requestedSize = Number(options.size) || 0;
         const shapeSize = shape >= 1 && shape <= 5
             ? Math.max(requestedSize, this._shapeSize(shape, style))
@@ -566,6 +585,8 @@ class WebGPUParticleEngine {
             const slice = Math.ceil(remaining / commandsLeft);
             this._queueSpawn({
                 ...options,
+                priority: options.priority || 'core',
+                required: options.required === true,
                 kind: 2,
                 count: slice,
                 shape,
@@ -573,6 +594,7 @@ class WebGPUParticleEngine {
                 color: palette[i],
                 seed,
                 effectId,
+                correlationId,
                 globalIndexBase,
                 globalCount: count,
                 emissionDelay: Number(options.emissionDelay) || 0,
@@ -591,6 +613,8 @@ class WebGPUParticleEngine {
         if (shape === 0) {
             this._queueSpawn({
                 ...options,
+                priority: 'decorative',
+                required: false,
                 kind: 2,
                 count: 1,
                 shape: 0,
@@ -602,10 +626,13 @@ class WebGPUParticleEngine {
                 color: '#ffffff',
                 seed: seed ^ 0xc2b2ae35,
                 effectId,
+                correlationId,
                 flags: this._flags({ role: 2, style })
             });
             this._queueSpawn({
                 ...options,
+                priority: 'accent',
+                required: false,
                 kind: 2,
                 count: Math.max(8, Math.round(count * 0.12)),
                 shape: 'sparkle',
@@ -614,6 +641,7 @@ class WebGPUParticleEngine {
                 color: '#ffffff',
                 seed: seed ^ 0x27d4eb2f,
                 effectId,
+                correlationId,
                 emissionSpread: 0.09,
                 flags: this._flags({ role: 5, style })
             });
@@ -623,6 +651,8 @@ class WebGPUParticleEngine {
         if (smokeCount > 0 && this.smokeScale > 0.1 && shape === 0) {
             this._queueSpawn({
                 ...options,
+                priority: 'decorative',
+                required: false,
                 kind: 2,
                 count: Math.max(2, Math.round(smokeCount * this.smokeScale)),
                 shape: 9,
@@ -633,6 +663,7 @@ class WebGPUParticleEngine {
                 color: '#7c84912c',
                 seed: seed ^ 0x165667b1,
                 effectId,
+                correlationId,
                 emissionSpread: 0.14,
                 flags: this._flags({ role: 7, style })
             });
@@ -641,37 +672,57 @@ class WebGPUParticleEngine {
 
     spawnLayer(layer = {}, context = {}) {
         this._validateV2Layer(layer, context);
-        const shape = this._v2ShapeId(layer);
-        const packedColors = layer.colors.map(color => this._packColor(color));
+        const degradation = SpawnCommandPolicy.degradeLayerForPolicy(
+            layer,
+            context.degradationPolicy || { tier: 0 }
+        );
+        this._recordPendingDegradation(degradation.changes);
+        if (!degradation.layer) return false;
+        const effectiveLayer = degradation.layer;
+        const shape = this._v2ShapeId(effectiveLayer);
+        const packedColors = effectiveLayer.colors.map(color => this._packColor(color));
         const scale = this._v2ViewportScale();
         const style = context.materialProfile === 'premium-realistic'
             ? this._styleId('premium-realistic')
             : this._styleId(context.visualStyle || this.style);
-        const splitQuality = context.splitQuality === undefined ? (layer.split ? 3 : 0) : context.splitQuality;
-        const materialRole = layer.priority === 'decorative' ? 2 : layer.priority === 'accent' ? 1 : 0;
-        const flags = V2_MARKER | (layer.trail ? V2_TRAIL : 0) |
-            (layer.split ? V2_SPLIT_REQUESTED : 0) | (layer.strobe ? V2_STROBE : 0) |
+        const splitQuality = context.splitQuality === undefined ? degradation.splitQuality : context.splitQuality;
+        const materialRole = effectiveLayer.priority === 'decorative' ? 2 : effectiveLayer.priority === 'accent' ? 1 : 0;
+        const flags = V2_MARKER | (effectiveLayer.trail ? V2_TRAIL : 0) |
+            (effectiveLayer.split ? V2_SPLIT_REQUESTED : 0) | (effectiveLayer.strobe ? V2_STROBE : 0) |
             ((splitQuality & 3) << 4) | ((materialRole & 15) << 8) | ((style & 3) << 12);
 
         return this._queueSpawn({
+            lane: context.lane || 'show',
+            priority: effectiveLayer.priority,
+            required: context.required === undefined ? effectiveLayer.core === true : context.required === true,
+            beatId: context.beatId ?? null,
+            correlationId: context.correlationId ?? effectiveLayer.id,
             origin: context.origin || context.position || { x: 0, y: 0 },
             target: context.target || context.origin || context.position || { x: 0, y: 0 },
             kind: 2,
-            count: layer.density,
+            count: effectiveLayer.density,
             shape,
             packedColors,
             colorCount: packedColors.length,
             flags,
             intensity: (context.powerScale ?? 1) * scale,
-            particleDuration: layer.lifetimeMs / 1000,
-            size: layer.size * 6 * scale,
-            gravity: layer.gravity * 105 * scale,
-            drag: layer.drag,
+            particleDuration: effectiveLayer.lifetimeMs / 1000,
+            size: effectiveLayer.size * 6 * scale,
+            gravity: effectiveLayer.gravity * 105 * scale,
+            drag: effectiveLayer.drag,
             secondary: false,
             seed: context.seed,
-            effectId: context.effectId ?? layer.id,
-            globalCount: layer.density
+            effectId: context.effectId ?? effectiveLayer.id,
+            globalCount: effectiveLayer.density
         });
+    }
+
+    _recordPendingDegradation(changes = []) {
+        for (const change of changes) {
+            if (Object.prototype.hasOwnProperty.call(this.pendingDegradedLayerCounts, change)) {
+                this.pendingDegradedLayerCounts[change]++;
+            }
+        }
     }
 
     _validateV2Layer(layer, context) {
@@ -740,8 +791,11 @@ class WebGPUParticleEngine {
         const count = pulseCount * (splitterCount + 1);
         const pulseLife = Math.max(0.12, Math.min(0.24, totalDuration * 0.24));
         const seed = this._resolveSeed(options);
+        const correlationId = options.correlationId ?? options.effectId ?? seed;
         this._queueSpawn({
             ...options,
+            priority: options.priority || 'accent',
+            required: false,
             kind: 2,
             count,
             globalCount: count,
@@ -752,6 +806,7 @@ class WebGPUParticleEngine {
             color: colors[0],
             seed,
             effectId: this._hashValue(options.effectId ?? seed),
+            correlationId,
             emissionDelay: Math.max(0, Number(options.emissionDelay) || 0),
             emissionSpread: Math.max(0, totalDuration - pulseLife),
             secondary: false,
@@ -808,7 +863,10 @@ class WebGPUParticleEngine {
     }
 
     _queueSpawn(command) {
-        if (!this.initialized || this.spawnQueue.length >= this.maxSpawnCommands) return false;
+        if (!this.initialized) return false;
+        const metadata = SpawnCommandPolicy.normalizeCommandMetadata(command);
+        const managedQueue = metadata.admissionManaged || this.spawnQueue.some(item => item.admissionManaged);
+        if (!managedQueue && this.spawnQueue.length >= this.maxSpawnCommands) return false;
         const seed = this._resolveSeed(command);
         const flags = command.flags || 0;
         const isV2 = (flags & V2_MARKER) !== 0;
@@ -840,7 +898,19 @@ class WebGPUParticleEngine {
             globalCount: Math.max(1, Math.floor(Number(command.globalCount) || Number(command.count) || 1)),
             pulseCount: Math.max(0, Math.min(7, Math.floor(Number(command.pulseCount) || 0))),
             packedColors: isV2 ? [...command.packedColors] : null,
-            colorCount: isV2 ? command.colorCount : 0
+            colorCount: isV2 ? command.colorCount : 0,
+            username: command.username ?? null,
+            userId: command.userId ?? null,
+            uniqueId: command.uniqueId ?? null,
+            giftId: command.giftId ?? null,
+            giftName: command.giftName ?? null,
+            giftImage: command.giftImage ?? null,
+            coins: command.coins ?? null,
+            value: command.value ?? null,
+            combo: command.combo ?? null,
+            bundleCount: command.bundleCount ?? null,
+            giftBundleKey: command.giftBundleKey ?? null,
+            ...metadata
         });
         return true;
     }
@@ -884,7 +954,18 @@ class WebGPUParticleEngine {
     }
 
     _uploadSpawnCommands() {
-        const commands = this.spawnQueue.splice(0, this.maxSpawnCommands);
+        const pending = this.spawnQueue.splice(0);
+        let admission;
+        try {
+            admission = SpawnCommandPolicy.admitSpawnCommands(pending, {
+                maxCommands: this.maxSpawnCommands
+            });
+        } catch (error) {
+            this._recordCommandAdmission(error.telemetry || SpawnCommandPolicy.emptyCommandTelemetry());
+            throw error;
+        }
+        this._recordCommandAdmission(admission.telemetry);
+        const commands = admission.selected;
         if (!commands.length) return { count: 0, maxParticles: 0 };
         const raw = new ArrayBuffer(commands.length * 112);
         const f32 = new Float32Array(raw);
@@ -916,6 +997,24 @@ class WebGPUParticleEngine {
         });
         this.device.queue.writeBuffer(this.buffers.commands, 0, raw);
         return { count: commands.length, maxParticles };
+    }
+
+    _recordCommandAdmission(current) {
+        const previous = this.metrics.commandAdmission?.cumulative || SpawnCommandPolicy.emptyCommandTelemetry();
+        const cumulative = SpawnCommandPolicy.emptyCommandTelemetry();
+        const next = {
+            ...current,
+            degradedLayerCounts: { ...this.pendingDegradedLayerCounts }
+        };
+        this.pendingDegradedLayerCounts = SpawnCommandPolicy.emptyDegradedLayerCounts();
+        for (const key of Object.keys(cumulative).filter(key => key !== 'degradedLayerCounts')) {
+            cumulative[key] = Number(previous[key] || 0) + Number(current[key] || 0);
+        }
+        for (const key of SpawnCommandPolicy.DEGRADATION_KEYS) {
+            cumulative.degradedLayerCounts[key] = Number(previous.degradedLayerCounts?.[key] || 0) +
+                Number(next.degradedLayerCounts[key] || 0);
+        }
+        this.metrics.commandAdmission = { current: next, cumulative };
     }
 
     render(deltaSeconds, timeSeconds = performance.now() / 1000, options = {}) {
@@ -1124,7 +1223,21 @@ class WebGPUParticleEngine {
         this.smokeScale = this.style === 'realistic' ? 1 : this.style === 'stylized-neon' ? 0.15 : 0.45;
     }
 
-    getMetrics() { return { ...this.metrics }; }
+    getMetrics() {
+        return {
+            ...this.metrics,
+            commandAdmission: {
+                current: {
+                    ...this.metrics.commandAdmission.current,
+                    degradedLayerCounts: { ...this.metrics.commandAdmission.current.degradedLayerCounts }
+                },
+                cumulative: {
+                    ...this.metrics.commandAdmission.cumulative,
+                    degradedLayerCounts: { ...this.metrics.commandAdmission.cumulative.degradedLayerCounts }
+                }
+            }
+        };
+    }
 
     _destroyResources() {
         if (this.buffers) Object.values(this.buffers).forEach(buffer => buffer?.destroy?.());
@@ -1140,6 +1253,11 @@ class WebGPUParticleEngine {
         this.destroyed = true;
         this.initialized = false;
         this.spawnQueue.length = 0;
+        this.pendingDegradedLayerCounts = SpawnCommandPolicy.emptyDegradedLayerCounts();
+        this.metrics.commandAdmission = {
+            current: SpawnCommandPolicy.emptyCommandTelemetry(),
+            cumulative: SpawnCommandPolicy.emptyCommandTelemetry()
+        };
         this._destroyResources();
         try { this.context?.unconfigure(); } catch (_) {}
         this.context = null;
