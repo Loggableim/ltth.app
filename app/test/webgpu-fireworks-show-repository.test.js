@@ -4,7 +4,10 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { BUILT_IN_SHOW_DEFINITIONS } = require('../plugins/webgpu-fireworks/lib/built-in-shows');
+const {
+  BUILT_IN_SHOW_DEFINITIONS,
+  FINALE_STYLE_METADATA
+} = require('../plugins/webgpu-fireworks/lib/built-in-shows');
 const {
   RevisionedShowRepository,
   ShowRepositoryError,
@@ -298,5 +301,280 @@ describe('RevisionedShowRepository 3A1', () => {
       code: 'STORE_CORRUPT',
       status: 500
     }));
+  });
+});
+
+describe('RevisionedShowRepository 3A2a lifecycle', () => {
+  let tempDir;
+  let now;
+  let repository;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-show-lifecycle-'));
+    now = 2_000;
+    repository = new RevisionedShowRepository({
+      dataDir: tempDir,
+      now: () => now++,
+      idFactory: () => '00000000-0000-4000-8000-000000000002'
+    });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  test('normalizes lifecycle defaults for new drafts and backward-compatible 3A1 records', () => {
+    const created = repository.create(makeDefinition());
+    expect(created).toMatchObject({
+      validation: null,
+      validatedRevision: null,
+      publishedDefinition: null,
+      publishedRevision: null,
+      publishedAt: null,
+      archived: false,
+      archivedAt: null,
+      restoredAt: null
+    });
+
+    const store = JSON.parse(fs.readFileSync(repository.filePath, 'utf8'));
+    const legacy = clone(store.records[created.id]);
+    for (const key of [
+      'validation', 'validatedRevision', 'publishedDefinition', 'publishedRevision',
+      'publishedAt', 'archived', 'archivedAt', 'restoredAt'
+    ]) delete legacy[key];
+    fs.writeFileSync(repository.filePath, JSON.stringify({ version: STORE_VERSION, records: {
+      [created.id]: legacy
+    } }), 'utf8');
+    fs.rmSync(repository.backupPath, { force: true });
+
+    const reloaded = new RevisionedShowRepository({ dataDir: tempDir });
+    expect(reloaded.load().find(record => record.id === created.id)).toMatchObject({
+      revision: 1,
+      validation: null,
+      validatedRevision: null,
+      publishedDefinition: null,
+      publishedRevision: null,
+      publishedAt: null,
+      archived: false,
+      archivedAt: null,
+      restoredAt: null
+    });
+  });
+
+  test('rejects malformed persisted lifecycle fields instead of normalizing partial publication state', () => {
+    const created = repository.create(makeDefinition());
+    const store = JSON.parse(fs.readFileSync(repository.filePath, 'utf8'));
+    store.records[created.id].publishedRevision = 1;
+    store.records[created.id].publishedAt = 2_001;
+    fs.writeFileSync(repository.filePath, JSON.stringify(store), 'utf8');
+    fs.rmSync(repository.backupPath, { force: true });
+
+    const reloaded = new RevisionedShowRepository({ dataDir: tempDir });
+    expect(() => reloaded.load()).toThrow(expect.objectContaining({
+      code: 'STORE_CORRUPT', status: 500
+    }));
+  });
+
+  test('validates only the expected current revision and persists the structured PyroDSL result', () => {
+    const created = repository.create(makeDefinition());
+    expect(() => repository.validate(created.id)).toThrow(expect.objectContaining({
+      code: 'EXPECTED_REVISION_REQUIRED', status: 400
+    }));
+    expect(() => repository.validate(created.id, 0)).toThrow(expect.objectContaining({
+      code: 'REVISION_CONFLICT', status: 409,
+      details: { id: created.id, expectedRevision: 0, currentRevision: 1 }
+    }));
+
+    const validated = repository.validate(created.id, 1);
+    expect(validated).toMatchObject({
+      revision: 1,
+      validatedRevision: 1,
+      validation: { valid: true, errors: [], diagnostics: { variants: expect.any(Object) } }
+    });
+    expect(JSON.parse(fs.readFileSync(repository.filePath, 'utf8')).records[created.id])
+      .toMatchObject({ validatedRevision: 1, validation: { valid: true, errors: [] } });
+
+    const invalidDraft = makeDefinition('Invalid');
+    invalidDraft.metadata.name = '';
+    repository.saveDraft(created.id, invalidDraft, 1);
+    const invalid = repository.validate(created.id, 2);
+    expect(invalid.validation).toMatchObject({
+      valid: false,
+      errors: expect.arrayContaining([expect.objectContaining({ code: 'name_required', path: 'metadata.name' })])
+    });
+  });
+
+  test('validates built-ins read-only and keeps lifecycle mutations immutable', () => {
+    const validated = repository.validate('classic-crescendo');
+    expect(validated).toMatchObject({
+      id: 'classic-crescendo',
+      builtIn: true,
+      revision: 0,
+      validatedRevision: 0,
+      validation: { valid: true, errors: [] }
+    });
+    expect(fs.existsSync(repository.filePath)).toBe(false);
+    expect(() => repository.publish('classic-crescendo', 0)).toThrow(expect.objectContaining({
+      code: 'BUILT_IN_IMMUTABLE', status: 409
+    }));
+    expect(() => repository.archive('classic-crescendo', 0)).toThrow(expect.objectContaining({
+      code: 'BUILT_IN_IMMUTABLE', status: 409
+    }));
+    expect(() => repository.restore('classic-crescendo', 0)).toThrow(expect.objectContaining({
+      code: 'BUILT_IN_IMMUTABLE', status: 409
+    }));
+  });
+
+  test('publishes only a valid current validation and returns typed gate errors', () => {
+    const created = repository.create(makeDefinition());
+    expect(() => repository.publish(created.id, 1)).toThrow(expect.objectContaining({
+      code: 'DRAFT_NOT_VALIDATED', status: 409,
+      details: { id: created.id, currentRevision: 1 }
+    }));
+
+    const invalidDraft = makeDefinition();
+    invalidDraft.metadata.name = '';
+    repository.saveDraft(created.id, invalidDraft, 1);
+    repository.validate(created.id, 2);
+    expect(() => repository.publish(created.id, 2)).toThrow(expect.objectContaining({
+      code: 'DRAFT_VALIDATION_FAILED', status: 422,
+      details: expect.objectContaining({ id: created.id, currentRevision: 2, errors: expect.any(Array) })
+    }));
+
+    repository.saveDraft(created.id, makeDefinition('Valid Again'), 2);
+    repository.records[created.id].validation = { valid: true, errors: [], diagnostics: { variants: {} } };
+    repository.records[created.id].validatedRevision = 2;
+    expect(() => repository.publish(created.id, 3)).toThrow(expect.objectContaining({
+      code: 'DRAFT_VALIDATION_STALE', status: 409,
+      details: { id: created.id, validatedRevision: 2, currentRevision: 3 }
+    }));
+  });
+
+  test('snapshots the published revision while later draft saves clear only draft validation', () => {
+    const created = repository.create(makeDefinition('Published Name'));
+    repository.validate(created.id, 1);
+    const published = repository.publish(created.id, 1);
+    expect(published).toMatchObject({
+      revision: 1,
+      validatedRevision: 1,
+      validation: { valid: true },
+      publishedRevision: 1,
+      publishedAt: 2_002,
+      publishedDefinition: { id: created.id, metadata: { name: 'Published Name' } }
+    });
+
+    const edited = makeDefinition('Mutable Draft Name');
+    edited.autoEligible = false;
+    const saved = repository.saveDraft(created.id, edited, 1);
+    expect(saved).toMatchObject({
+      revision: 2,
+      validation: null,
+      validatedRevision: null,
+      publishedRevision: 1,
+      publishedDefinition: { metadata: { name: 'Published Name' }, autoEligible: true }
+    });
+    expect(repository.getPublishedDefinition(created.id).metadata.name).toBe('Published Name');
+
+    const selectable = repository.getSelectableStyles().find(style => style.id === created.id);
+    expect(selectable).toMatchObject({
+      id: created.id,
+      name: 'Published Name',
+      autoEligible: true,
+      builtIn: false,
+      publishedRevision: 1
+    });
+    expect(selectable.name).not.toBe('Mutable Draft Name');
+    expect(repository.getAutoEligibleStyleIds()).toContain(created.id);
+  });
+
+  test('returns published built-in snapshots and typed unavailable custom errors', () => {
+    const builtIn = repository.getPublishedDefinition('classic-crescendo');
+    builtIn.metadata.name = 'Caller Mutation';
+    expect(repository.getPublishedDefinition('classic-crescendo').metadata.name).not.toBe('Caller Mutation');
+
+    const created = repository.create(makeDefinition());
+    expect(() => repository.getPublishedDefinition(created.id)).toThrow(expect.objectContaining({
+      code: 'SHOW_NOT_PUBLISHED', status: 404, details: { id: created.id }
+    }));
+    repository.validate(created.id, 1);
+    repository.publish(created.id, 1);
+    repository.archive(created.id, 1);
+    expect(() => repository.getPublishedDefinition(created.id)).toThrow(expect.objectContaining({
+      code: 'SHOW_ARCHIVED', status: 409, details: { id: created.id }
+    }));
+  });
+
+  test('selectors are stable, deduplicated, and expose only published unarchived custom metadata', () => {
+    const created = repository.create(makeDefinition('Selector Custom'));
+    expect(repository.getSelectableStyles()).toEqual(FINALE_STYLE_METADATA);
+    expect(repository.getAutoEligibleStyleIds()).toEqual(Object.keys(BUILT_IN_SHOW_DEFINITIONS));
+
+    repository.validate(created.id, 1);
+    repository.publish(created.id, 1);
+    expect(repository.getSelectableStyles()).toHaveLength(10);
+    expect(repository.getAutoEligibleStyleIds()).toEqual([
+      ...Object.keys(BUILT_IN_SHOW_DEFINITIONS), created.id
+    ]);
+
+    const first = repository.getSelectableStyles();
+    first.find(style => style.id === created.id).name = 'Caller Mutation';
+    expect(repository.getSelectableStyles().find(style => style.id === created.id).name).toBe('Selector Custom');
+  });
+
+  test('archives and restores without incrementing the guarded draft revision or deleting snapshots', () => {
+    const created = repository.create(makeDefinition());
+    repository.validate(created.id, 1);
+    repository.publish(created.id, 1);
+
+    expect(() => repository.archive(created.id, 0)).toThrow(expect.objectContaining({
+      code: 'REVISION_CONFLICT', status: 409
+    }));
+    const archived = repository.archive(created.id, 1);
+    expect(archived).toMatchObject({
+      revision: 1,
+      archived: true,
+      archivedAt: 2_003,
+      publishedRevision: 1,
+      publishedDefinition: expect.any(Object),
+      revisions: [expect.any(Object)]
+    });
+    expect(repository.getSelectableStyles().some(style => style.id === created.id)).toBe(false);
+    expect(repository.getAutoEligibleStyleIds()).not.toContain(created.id);
+
+    const restored = repository.restore(created.id, 1);
+    expect(restored).toMatchObject({
+      revision: 1,
+      archived: false,
+      archivedAt: 2_003,
+      restoredAt: 2_004,
+      publishedRevision: 1
+    });
+    expect(repository.getSelectableStyles().some(style => style.id === created.id)).toBe(true);
+  });
+
+  test('rolls lifecycle memory back when persistence fails and returns defensive clones', () => {
+    const created = repository.create(makeDefinition());
+    const originalRename = fs.renameSync;
+    jest.spyOn(fs, 'renameSync').mockImplementation((source, target) => {
+      if (source === repository.tempPath && target === repository.filePath) {
+        throw new Error('injected lifecycle persistence failure');
+      }
+      return originalRename(source, target);
+    });
+
+    expect(() => repository.validate(created.id, 1)).toThrow(expect.objectContaining({
+      code: 'STORE_WRITE_FAILED', status: 500
+    }));
+    expect(repository.get(created.id)).toMatchObject({ validation: null, validatedRevision: null });
+    jest.restoreAllMocks();
+
+    const validated = repository.validate(created.id, 1);
+    validated.validation.valid = false;
+    const published = repository.publish(created.id, 1);
+    published.publishedDefinition.metadata.name = 'Caller Mutation';
+    const fetched = repository.get(created.id);
+    fetched.publishedDefinition.metadata.name = 'Second Mutation';
+    expect(repository.getPublishedDefinition(created.id).metadata.name).toBe('Custom Finale');
   });
 });

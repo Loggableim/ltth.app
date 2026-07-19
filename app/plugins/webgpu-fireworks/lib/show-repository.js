@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { BUILT_IN_SHOW_DEFINITIONS } = require('./built-in-shows');
+const { validateShowDefinition } = require('./pyrodsl');
 
 const STORE_VERSION = 1;
 const STORE_FILE_NAME = 'custom-shows.json';
@@ -144,7 +145,8 @@ class RevisionedShowRepository {
       definition: cloneJson(ownedDefinition),
       revisions: [snapshot],
       createdAt: timestamp,
-      updatedAt: timestamp
+      updatedAt: timestamp,
+      ...this._lifecycleDefaults()
     };
 
     this.records[id] = record;
@@ -211,11 +213,144 @@ class RevisionedShowRepository {
       definition: cloneJson(ownedDefinition)
     });
     current.updatedAt = timestamp;
+    current.validation = null;
+    current.validatedRevision = null;
 
     this._persistOrRollback(() => {
       this.records[id] = previous;
     });
     return cloneJson(current);
+  }
+
+  validate(id, expectedRevision) {
+    this._ensureLoaded();
+    if (hasOwn(this.builtIns, id)) {
+      const record = this._builtInRecord(id, this.builtIns[id]);
+      record.validation = validateShowDefinition(record.definition);
+      record.validatedRevision = 0;
+      return cloneJson(record);
+    }
+
+    const current = this._customRecord(id);
+    this._assertExpectedRevision(current, expectedRevision);
+    const previous = cloneJson(current);
+    current.validation = validateShowDefinition(current.definition);
+    current.validatedRevision = current.revision;
+    current.updatedAt = this.now();
+    this._persistOrRollback(() => {
+      this.records[id] = previous;
+    });
+    return cloneJson(current);
+  }
+
+  publish(id, expectedRevision) {
+    this._ensureLoaded();
+    if (hasOwn(this.builtIns, id)) {
+      throw new ShowRepositoryError(
+        'BUILT_IN_IMMUTABLE',
+        409,
+        'Built-in show definitions are already published and immutable.',
+        { id }
+      );
+    }
+
+    const current = this._customRecord(id);
+    this._assertExpectedRevision(current, expectedRevision);
+    if (!current.validation || current.validatedRevision === null) {
+      throw new ShowRepositoryError(
+        'DRAFT_NOT_VALIDATED',
+        409,
+        'The current custom show draft has not been validated.',
+        { id, currentRevision: current.revision }
+      );
+    }
+    if (current.validatedRevision !== current.revision) {
+      throw new ShowRepositoryError(
+        'DRAFT_VALIDATION_STALE',
+        409,
+        'The saved validation does not match the current custom show revision.',
+        { id, validatedRevision: current.validatedRevision, currentRevision: current.revision }
+      );
+    }
+    if (current.validation.valid !== true) {
+      throw new ShowRepositoryError(
+        'DRAFT_VALIDATION_FAILED',
+        422,
+        'The current custom show draft did not pass PyroDSL validation.',
+        { id, currentRevision: current.revision, errors: current.validation.errors }
+      );
+    }
+
+    const previous = cloneJson(current);
+    const timestamp = this.now();
+    current.publishedDefinition = cloneJson(current.definition);
+    current.publishedRevision = current.revision;
+    current.publishedAt = timestamp;
+    current.updatedAt = timestamp;
+    this._persistOrRollback(() => {
+      this.records[id] = previous;
+    });
+    return cloneJson(current);
+  }
+
+  getPublishedDefinition(id) {
+    this._ensureLoaded();
+    if (hasOwn(this.builtIns, id)) return cloneJson(this.builtIns[id]);
+    const current = this._customRecord(id);
+    if (current.archived) {
+      throw new ShowRepositoryError(
+        'SHOW_ARCHIVED',
+        409,
+        'The requested custom show is archived.',
+        { id }
+      );
+    }
+    if (!current.publishedDefinition) {
+      throw new ShowRepositoryError(
+        'SHOW_NOT_PUBLISHED',
+        404,
+        'The requested custom show has not been published.',
+        { id }
+      );
+    }
+    return cloneJson(current.publishedDefinition);
+  }
+
+  getSelectableStyles() {
+    this._ensureLoaded();
+    const selectable = Object.entries(this.builtIns).map(([id, definition]) => (
+      this._styleMetadata(id, definition, true, 0)
+    ));
+    for (const id of Object.keys(this.records).sort()) {
+      const record = this.records[id];
+      if (record.archived || !record.publishedDefinition) continue;
+      selectable.push(this._styleMetadata(
+        id,
+        record.publishedDefinition,
+        false,
+        record.publishedRevision
+      ));
+    }
+    return cloneJson(selectable);
+  }
+
+  getAutoEligibleStyleIds() {
+    const seen = new Set();
+    const result = [];
+    for (const style of this.getSelectableStyles()) {
+      if (style.autoEligible !== true || seen.has(style.id)) continue;
+      seen.add(style.id);
+      result.push(style.id);
+    }
+    return result;
+  }
+
+  archive(id, expectedRevision) {
+    return this._setArchived(id, expectedRevision, true);
+  }
+
+  restore(id, expectedRevision) {
+    return this._setArchived(id, expectedRevision, false);
   }
 
   _ensureLoaded() {
@@ -231,6 +366,98 @@ class RevisionedShowRepository {
       definition: ownedDefinition,
       revisions: []
     };
+  }
+
+  _lifecycleDefaults() {
+    return {
+      validation: null,
+      validatedRevision: null,
+      publishedDefinition: null,
+      publishedRevision: null,
+      publishedAt: null,
+      archived: false,
+      archivedAt: null,
+      restoredAt: null
+    };
+  }
+
+  _normalizeRecord(record) {
+    return {
+      ...record,
+      ...Object.fromEntries(Object.entries(this._lifecycleDefaults())
+        .filter(([key]) => !hasOwn(record, key)))
+    };
+  }
+
+  _customRecord(id) {
+    if (!hasOwn(this.records, id)) {
+      throw new ShowRepositoryError(
+        'SHOW_NOT_FOUND',
+        404,
+        'Show definition was not found.',
+        { id }
+      );
+    }
+    return this.records[id];
+  }
+
+  _assertExpectedRevision(record, expectedRevision) {
+    const id = record.id;
+    if (!Number.isInteger(expectedRevision)) {
+      throw new ShowRepositoryError(
+        'EXPECTED_REVISION_REQUIRED',
+        400,
+        'expectedRevision must be an integer.',
+        { id, currentRevision: record.revision }
+      );
+    }
+    if (expectedRevision !== record.revision) {
+      throw new ShowRepositoryError(
+        'REVISION_CONFLICT',
+        409,
+        'The custom show draft was changed by another writer.',
+        { id, expectedRevision, currentRevision: record.revision }
+      );
+    }
+  }
+
+  _styleMetadata(id, definition, builtIn, publishedRevision) {
+    const metadata = {
+      id,
+      name: definition.metadata.name,
+      description: definition.metadata.description,
+      materialProfile: definition.materialProfile,
+      autoEligible: definition.autoEligible === true,
+      builtIn
+    };
+    if (!builtIn) metadata.publishedRevision = publishedRevision;
+    return metadata;
+  }
+
+  _setArchived(id, expectedRevision, archived) {
+    this._ensureLoaded();
+    if (hasOwn(this.builtIns, id)) {
+      throw new ShowRepositoryError(
+        'BUILT_IN_IMMUTABLE',
+        409,
+        'Built-in show definitions are immutable.',
+        { id }
+      );
+    }
+    const current = this._customRecord(id);
+    this._assertExpectedRevision(current, expectedRevision);
+    if (current.archived === archived) return cloneJson(current);
+
+    const previous = cloneJson(current);
+    const timestamp = this.now();
+    current.archived = archived;
+    if (archived) current.archivedAt = timestamp;
+    else current.restoredAt = timestamp;
+    current.updatedAt = timestamp;
+    this._persistOrRollback(() => {
+      this.records[id] = previous;
+    });
+    return cloneJson(current);
   }
 
   _nextCustomId() {
@@ -353,7 +580,8 @@ class RevisionedShowRepository {
     if (!isObject(store) || store.version !== STORE_VERSION || !isObject(store.records)) {
       throw new Error(`Expected custom show store version ${STORE_VERSION}.`);
     }
-    for (const [id, record] of Object.entries(store.records)) {
+    for (const [id, rawRecord] of Object.entries(store.records)) {
+      const record = this._normalizeRecord(rawRecord);
       const validRecord = id.startsWith('custom:')
         && UUID_PATTERN.test(id.slice(7))
         && isObject(record)
@@ -373,7 +601,55 @@ class RevisionedShowRepository {
           && snapshot.definition.id === id;
         if (!validSnapshot) throw new Error(`Invalid custom show revision: ${id}@${index + 1}`);
       });
+      this._assertValidLifecycle(record);
+      store.records[id] = record;
     }
+  }
+
+  _assertValidLifecycle(record) {
+    const hasValidation = record.validation !== null;
+    const validationValid = !hasValidation || (
+      isObject(record.validation)
+      && typeof record.validation.valid === 'boolean'
+      && Array.isArray(record.validation.errors)
+      && isObject(record.validation.diagnostics)
+    );
+    const validatedRevisionValid = record.validatedRevision === null || (
+      Number.isInteger(record.validatedRevision)
+      && record.validatedRevision >= 1
+      && record.validatedRevision <= record.revision
+    );
+    if (!validationValid || !validatedRevisionValid
+      || hasValidation !== (record.validatedRevision !== null)) {
+      throw new Error(`Invalid custom show validation lifecycle: ${record.id}`);
+    }
+
+    const hasPublishedDefinition = record.publishedDefinition !== null;
+    const publishedRevisionValid = record.publishedRevision === null || (
+      Number.isInteger(record.publishedRevision)
+      && record.publishedRevision >= 1
+      && record.publishedRevision <= record.revision
+    );
+    const publishedAtValid = record.publishedAt === null || Number.isFinite(record.publishedAt);
+    if (!publishedRevisionValid || !publishedAtValid
+      || hasPublishedDefinition !== (record.publishedRevision !== null)
+      || hasPublishedDefinition !== (record.publishedAt !== null)) {
+      throw new Error(`Invalid custom show publication lifecycle: ${record.id}`);
+    }
+    if (hasPublishedDefinition) {
+      const snapshot = record.revisions[record.publishedRevision - 1];
+      const publishedValid = isObject(record.publishedDefinition)
+        && record.publishedDefinition.id === record.id
+        && JSON.stringify(record.publishedDefinition) === JSON.stringify(snapshot.definition)
+        && validateShowDefinition(record.publishedDefinition).valid;
+      if (!publishedValid) throw new Error(`Invalid published custom show snapshot: ${record.id}`);
+    }
+
+    const archiveValid = typeof record.archived === 'boolean'
+      && (record.archivedAt === null || Number.isFinite(record.archivedAt))
+      && (record.restoredAt === null || Number.isFinite(record.restoredAt))
+      && (!record.archived || record.archivedAt !== null);
+    if (!archiveValid) throw new Error(`Invalid custom show archive lifecycle: ${record.id}`);
   }
 
   _warn(message) {
