@@ -166,6 +166,62 @@ describe('ShowPlanV2 pure overlay runtime', () => {
       .toBeLessThan(runtime.events.indexOf(bangAudio[0]));
   });
 
+  test('anchors one bang group to the first delayed core layer and falls back to the first layer without a core', () => {
+    const mixedPlan = plan([{
+      id: 'mixed', beatAtMs: 800, timeMs: 800, phase: 'highlight', formation: 'mixed', importance: 'essential',
+      shells: [shell('mixed-shell', 'airburst', {
+        layers: [
+          layer('mixed:decorative', { delayMs: 200, priority: 'decorative', core: false }),
+          layer('mixed:accent', { delayMs: 300, priority: 'accent', core: false }),
+          layer('mixed:core', { delayMs: 400 })
+        ]
+      })]
+    }]);
+    const mixedRuntime = buildShowPlanV2Runtime(mixedPlan, { startAt: 1000, playSound: true });
+    const mixedBang = mixedRuntime.events.filter(event => event.type === 'finale-v2-bang-audio');
+    const mixedCore = mixedRuntime.events.find(event => event.type === 'finale-v2-layer' && event.layer.id === 'mixed:core');
+
+    expect(mixedBang).toHaveLength(1);
+    expect(mixedBang[0].due).toBe(2200);
+    expect(mixedCore.due).toBe(mixedBang[0].due);
+    expect(mixedRuntime.events.indexOf(mixedCore)).toBeLessThan(mixedRuntime.events.indexOf(mixedBang[0]));
+
+    const noCorePlan = plan([{
+      id: 'no-core', beatAtMs: 900, timeMs: 900, phase: 'highlight', formation: 'mixed', importance: 'standard',
+      shells: [shell('no-core-shell', 'airburst', {
+        layers: [
+          layer('no-core:late', { delayMs: 600, priority: 'decorative', core: false }),
+          layer('no-core:first', { delayMs: 400, priority: 'accent', core: false })
+        ]
+      })]
+    }]);
+    const noCoreRuntime = buildShowPlanV2Runtime(noCorePlan, { startAt: 1000, playSound: true });
+    const noCoreBang = noCoreRuntime.events.filter(event => event.type === 'finale-v2-bang-audio');
+    const firstLayer = noCoreRuntime.events.find(event => event.type === 'finale-v2-layer' && event.layer.id === 'no-core:first');
+
+    expect(noCoreBang).toHaveLength(1);
+    expect(noCoreBang[0].due).toBe(2300);
+    expect(firstLayer.due).toBe(noCoreBang[0].due);
+    expect(noCoreRuntime.events.indexOf(firstLayer)).toBeLessThan(noCoreRuntime.events.indexOf(noCoreBang[0]));
+  });
+
+  test.each([
+    'nishiki-kamuro',
+    'aurora-cathedral',
+    'royal-brocade',
+    'phoenix-ascension',
+    'furry-celebration'
+  ])('forces premium-realistic runtime material for a manipulated %s snapshot', style => {
+    const showPlan = plan([{
+      id: `${style}:opening`, beatAtMs: 1000, timeMs: 1000, phase: 'opening', formation: 'single', importance: 'standard',
+      shells: [shell(`${style}:shell`, 'rocket')]
+    }], { style, materialProfile: 'classic' });
+    const runtime = buildShowPlanV2Runtime(showPlan, { startAt: 1000, playSound: false, visualStyle: 'stylized-neon' });
+
+    expect(runtime.events.find(event => event.type === 'finale-v2-rocket').materialProfile).toBe('premium-realistic');
+    expect(runtime.events.find(event => event.type === 'finale-v2-layer').context.materialProfile).toBe('premium-realistic');
+  });
+
   test.each([
     ['peony', 'peony'],
     ['chrysanthemum', 'chrysanthemum'],

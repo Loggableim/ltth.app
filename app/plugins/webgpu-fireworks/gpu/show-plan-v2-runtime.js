@@ -12,6 +12,13 @@
   const PHASES = new Set(['opening', 'build', 'highlight', 'calm', 'bridge', 'breath', 'finale']);
   const TIERS = new Set(['small', 'medium', 'big', 'massive']);
   const PRIORITIES = new Set(['core', 'accent', 'decorative']);
+  const PREMIUM_BUILT_IN_STYLES = new Set([
+    'nishiki-kamuro',
+    'aurora-cathedral',
+    'royal-brocade',
+    'phoenix-ascension',
+    'furry-celebration'
+  ]);
   const COLOR_PATTERN = /^#[0-9a-f]{6}([0-9a-f]{2})?$/i;
   const TIER_RANK = Object.freeze({ small: 0, medium: 1, big: 2, massive: 3 });
   const ROLE_ALIASES = Object.freeze({
@@ -197,6 +204,9 @@
     const height = Math.max(1, Number(options.height) || 1080);
     const durationMs = Number(showPlan.durationMs);
     const completeAt = startAt + durationMs;
+    const materialProfile = PREMIUM_BUILT_IN_STYLES.has(showPlan.style)
+      ? 'premium-realistic'
+      : showPlan.materialProfile;
     const events = [];
     const rocketEvents = [];
     const commandsByBeat = new Map();
@@ -213,6 +223,7 @@
       const cueId = cue.id || `${showPlan.id || 'show'}:cue:${cueIndex + 1}`;
       const cueDue = startAt + Number(cue.beatAtMs);
       const beatId = `${showPlan.id || 'show'}:${Number(cue.beatAtMs)}`;
+      const cueLayerSchedule = [];
       if (cue.phase !== lastPhase) {
         push({ type: 'finale-v2-phase', due: cueDue, order: -20, finaleId: showPlan.id, phase: cue.phase });
         lastPhase = cue.phase;
@@ -238,7 +249,7 @@
             target,
             flightDurationMs,
             beatId,
-            materialProfile: showPlan.materialProfile,
+            materialProfile,
             visualStyle: options.visualStyle,
             seed: Number(shell.seed ?? showPlan.seed) >>> 0
           };
@@ -260,6 +271,7 @@
           const contextTarget = ground ? target : target;
           const activeLayerLoad = (commandsByBeat.get(due) || 0) + 1;
           commandsByBeat.set(due, activeLayerLoad);
+          cueLayerSchedule.push({ due, core: sourceLayer.core === true });
           layerCount++;
           push({
             type: 'finale-v2-layer',
@@ -273,7 +285,7 @@
               origin: contextOrigin,
               target: contextTarget,
               launchMode: shell.launchMode,
-              materialProfile: showPlan.materialProfile,
+              materialProfile,
               visualStyle: options.visualStyle,
               powerScale: Number(shell.powerScale) || 1,
               seed: layerSeed(showPlan.seed, shell, sourceLayer),
@@ -291,15 +303,18 @@
 
       if (options.playSound !== false) {
         const profile = resolveCueAudioProfile(cue);
+        const coreLayerSchedule = cueLayerSchedule.filter(item => item.core);
+        const bangSchedule = coreLayerSchedule.length ? coreLayerSchedule : cueLayerSchedule;
+        const bangDue = Math.min(...bangSchedule.map(item => item.due));
         push({
           type: 'finale-v2-bang-audio',
-          due: cueDue,
+          due: bangDue,
           order: 80,
           finaleId: showPlan.id,
           cueId,
           ...profile
         });
-        const crackleDue = cueDue + 180;
+        const crackleDue = bangDue + 180;
         if (profile.crackle && crackleDue < completeAt) {
           push({
             type: 'finale-v2-crackle-audio',
@@ -356,6 +371,7 @@
       finaleId: showPlan.id,
       durationMs,
       completeAt,
+      materialProfile,
       shellCount,
       layerCount,
       rocketCount: rocketEvents.length,

@@ -1831,12 +1831,17 @@ class WebGPUFireworksEngine {
 
     processV2Rocket(event, plannedAt, actualAt) {
         if (!this.isV2EventCurrent(event)) return false;
+        const remainingPreRollMs = Math.max(0, Number(plannedAt) + Number(event.flightDurationMs) - actualAt);
+        if (remainingPreRollMs <= 0) {
+            this.audio.recordTimelineEvent(event.shellId, 'v2-rocket-visual', plannedAt, actualAt, 'skipped-burst-reached');
+            return false;
+        }
         const remainingSeconds = Math.max(0, (Number(event.finaleEndsAt) - actualAt) / 1000);
         if (remainingSeconds <= 0) {
             this.audio.recordTimelineEvent(event.shellId, 'v2-rocket-visual', plannedAt, actualAt, 'skipped-finale-ended');
             return false;
         }
-        const duration = Math.min(Number(event.flightDurationMs) / 1000, remainingSeconds);
+        const duration = Math.min(remainingPreRollMs / 1000, remainingSeconds);
         this.renderer.spawnRocket({
             effectId: event.shellId,
             correlationId: event.shellId,
@@ -1886,23 +1891,29 @@ class WebGPUFireworksEngine {
 
     processV2LaunchAudio(event, plannedAt, actualAt) {
         if (!this.isV2EventCurrent(event) || this.config.audioEnabled === false) return false;
+        const flightDurationMs = Math.max(0, Number(event.flightDurationMs) || 0);
+        const remainingPreRollMs = Math.max(0, Number(plannedAt) + flightDurationMs - actualAt);
+        if (remainingPreRollMs <= 0) {
+            this.audio.recordTimelineEvent(event.cueId, 'v2-launch-audio', plannedAt, actualAt, 'skipped-burst-reached');
+            return false;
+        }
         const remainingSeconds = Math.max(0, (Number(event.finaleEndsAt) - actualAt) / 1000);
         if (remainingSeconds <= 0) return false;
+        const flightSeconds = remainingPreRollMs / 1000;
         const seed = this.v2AudioSeed(event, event.shellIds?.length || 0);
         let selection = this.audio.chooseForRole(event.role, event.tier, seed);
-        selection = this.audio.fitLaunchToFlight(selection, Number(event.flightDurationMs) / 1000, seed);
+        selection = this.audio.fitLaunchToFlight(selection, flightSeconds, seed);
         if (!selection.launch) return false;
         const cue = this.audio.CUE_MANIFEST[selection.launch] || {};
-        const sourceWindow = Number(selection.launchWindow || cue.embeddedBangAt || event.flightDurationMs / 1000);
-        const flightSeconds = Math.max(0.05, Number(event.flightDurationMs) / 1000);
+        const sourceWindow = Number(selection.launchWindow || cue.embeddedBangAt || flightSeconds);
         this.incrementV2AudioGroup('launch');
         void this.audio.play(selection.launch, 0.82, 1, {
             effectId: event.cueId,
             eventType: 'v2-launch-audio',
             plannedAt,
-            maxLatenessMs: 250,
+            maxLatenessMs: Math.max(250, flightDurationMs),
             bus: 'launch',
-            playbackRate: Math.max(0.9, Math.min(1.1, sourceWindow / flightSeconds)),
+            playbackRate: Math.max(0.9, Math.min(1.1, sourceWindow / Math.max(0.05, flightSeconds))),
             maxDuration: Math.min(flightSeconds, remainingSeconds),
             fadeOutDuration: 0.06
         });

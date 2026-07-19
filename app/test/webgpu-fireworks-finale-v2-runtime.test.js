@@ -170,6 +170,104 @@ describe('ShowPlanV2 overlay dispatch', () => {
     });
   });
 
+  test('waits for a delayed core layer before playing the cue bang with mixed layers', () => {
+    let now = 10000;
+    const engine = makeRuntime(now);
+    engine.getRuntimeNow = () => now;
+    const order = [];
+    engine.renderer.spawnLayer.mockImplementation(layer => {
+      order.push(`visual:${layer.id}`);
+      return true;
+    });
+    engine.audio.play.mockImplementation((name, volume, priority, options) => {
+      if (options.bus === 'bang') order.push(`bang:${name}`);
+      return Promise.resolve(true);
+    });
+    const showPlan = v2Plan('delayed-bang', {
+      cues: [{
+        id: 'delayed-bang:cue', beatAtMs: 1000, timeMs: 1000, phase: 'highlight', formation: 'mixed', importance: 'essential',
+        shells: [v2Shell('delayed-bang:shell', 'airburst', {
+          layers: [
+            v2Layer('delayed-bang:decorative', { delayMs: 200, priority: 'decorative', core: false }),
+            v2Layer('delayed-bang:core', { delayMs: 400 })
+          ]
+        })]
+      }]
+    });
+
+    engine.handleFinale({ id: 'delayed-bang', showPlan });
+    now = 11200;
+    engine.processTimeline(now);
+    expect(order).toEqual(['visual:delayed-bang:decorative']);
+    now = 11400;
+    engine.processTimeline(now);
+
+    expect(order).toEqual([
+      'visual:delayed-bang:decorative',
+      'visual:delayed-bang:core',
+      expect.stringMatching(/^bang:explosion-/)
+    ]);
+    expect(engine.getFinaleTelemetry().finaleAudioGroupsPlayed.bang).toBe(1);
+  });
+
+  test('shortens late rocket and launch audio pre-roll and drops both at the burst beat', () => {
+    let now = 10000;
+    const engine = makeRuntime(now);
+    engine.getRuntimeNow = () => now;
+    const showPlan = v2Plan('late-preroll', {
+      cues: [{
+        id: 'late-preroll:cue', beatAtMs: 1000, timeMs: 1000, phase: 'opening', formation: 'single', importance: 'standard',
+        shells: [v2Shell('late-preroll:rocket', 'rocket')]
+      }]
+    });
+    engine.handleFinale({ id: 'late-preroll', showPlan });
+
+    now = 10400;
+    engine.processTimeline(now);
+    expect(engine.renderer.spawnRocket).toHaveBeenCalledWith(expect.objectContaining({ duration: 0.6 }));
+    expect(engine.audio.play).toHaveBeenCalledWith(expect.any(String), 0.82, 1, expect.objectContaining({
+      bus: 'launch',
+      maxLatenessMs: 1000,
+      maxDuration: 0.6
+    }));
+
+    const skipped = makeRuntime(10000);
+    skipped.handleFinale({ id: 'skipped-preroll', showPlan: v2Plan('skipped-preroll', {
+      cues: [{
+        id: 'skipped-preroll:cue', beatAtMs: 1000, timeMs: 1000, phase: 'opening', formation: 'single', importance: 'standard',
+        shells: [v2Shell('skipped-preroll:rocket', 'rocket')]
+      }]
+    }) });
+    skipped.processTimeline(11000);
+
+    expect(skipped.renderer.spawnRocket).not.toHaveBeenCalled();
+    expect(skipped.audio.play.mock.calls.some(call => call[3]?.bus === 'launch')).toBe(false);
+  });
+
+  test.each([
+    'nishiki-kamuro',
+    'aurora-cathedral',
+    'royal-brocade',
+    'phoenix-ascension',
+    'furry-celebration'
+  ])('renders a manipulated %s snapshot with premium-realistic material', style => {
+    let now = 10000;
+    const engine = makeRuntime(now);
+    engine.getRuntimeNow = () => now;
+    engine.handleFinale({
+      id: `premium-${style}`,
+      showPlan: v2Plan(`premium-${style}`, { style, materialProfile: 'classic' }),
+      playSound: false
+    });
+    now = 11000;
+    engine.processTimeline(now);
+
+    expect(engine.renderer.spawnLayer).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ materialProfile: 'premium-realistic' })
+    );
+  });
+
   test('keeps rocket, airburst and ground launch semantics distinct', () => {
     let now = 10000;
     const engine = makeRuntime(now);
