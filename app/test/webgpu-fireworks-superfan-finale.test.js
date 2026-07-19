@@ -833,7 +833,7 @@ describe('WebGPU Superfan finale foundation', () => {
 
   test('commits cooldown exactly once only after the correlated browser queue ACK', () => {
     const { api, plugin, history } = createPlugin();
-    connectSocket(plugin, api);
+    const socket = connectSocket(plugin, api);
     const markAccepted = jest.spyOn(history, 'markAccepted');
 
     const result = plugin.handleSuperfanEntry({
@@ -842,11 +842,12 @@ describe('WebGPU Superfan finale foundation', () => {
 
     expect(result).toMatchObject({ accepted: true, pending: true, eventId: 'superfan-event:join-upstream-7' });
     expect(history.snapshot()).toEqual({});
-    expect(api.emit).toHaveBeenCalledWith('webgpu-fireworks:finale', expect.objectContaining({
+    expect(socket.emit).toHaveBeenCalledWith('webgpu-fireworks:finale', expect.objectContaining({
       id: 'superfan-event:join-upstream-7',
       ackRequested: true,
       requiresRendererReady: true
     }));
+    expect(api.emit).not.toHaveBeenCalledWith('webgpu-fireworks:finale', expect.anything());
 
     expect(plugin.handleSuperfanFinaleAck({ eventId: result.eventId, accepted: true })).toBe(true);
     expect(history.snapshot()).toEqual({ 'id:a': expect.any(Number) });

@@ -546,6 +546,95 @@ class FireworksPlugin {
         };
     }
 
+    getReadyRendererTelemetry() {
+        const cutoff = Date.now() - 5000;
+        return [...this.overlayTelemetry.values()].filter(telemetry => (
+            telemetry && telemetry.updatedAt >= cutoff && telemetry.benchmark !== true &&
+            telemetry.state === 'ready'
+        ));
+    }
+
+    getFinaleRendererTargets({ readyOnly = false, requiredCapabilities = [] } = {}) {
+        const cutoff = Date.now() - 5000;
+        const socketsById = new Map([...this.connectedSockets].map(socket => [socket.id, socket]));
+        return [...this.overlayTelemetry.entries()]
+            .map(([rendererId, telemetry]) => ({ rendererId, telemetry, socket: socketsById.get(rendererId) }))
+            .filter(target => (
+                target.socket && target.socket.connected !== false && target.telemetry?.benchmark !== true &&
+                (!readyOnly || (
+                    target.telemetry?.state === 'ready' && target.telemetry?.updatedAt >= cutoff
+                )) &&
+                (requiredCapabilities.length === 0 ||
+                    rendererSupportsCapabilities(target.telemetry, requiredCapabilities))
+            ))
+            .sort((left, right) => (
+                Number(right.telemetry.updatedAt) - Number(left.telemetry.updatedAt) ||
+                String(left.rendererId).localeCompare(String(right.rendererId))
+            ));
+    }
+
+    createLegacyRendererFinalePayload(payload) {
+        return {
+            ...payload,
+            showPlan: null,
+            rendererFallback: 'legacy-outdated-overlay'
+        };
+    }
+
+    dispatchFinalePayload(payload, options = {}) {
+        const requiresFurryRenderer = options.requiresFurryRenderer === true;
+        const testRequest = options.testRequest === true;
+        let targets = this.getFinaleRendererTargets({
+            readyOnly: testRequest || options.requiresRendererReady === true
+        });
+        if (testRequest) {
+            if (requiresFurryRenderer) {
+                targets = targets.filter(target => rendererSupportsCapabilities(target.telemetry));
+            }
+            targets = targets.slice(0, 1);
+        }
+
+        if (targets.length > 0) {
+            // PluginAPI.emit broadcasts globally. Direct socket delivery is exclusive here so
+            // each registered overlay receives exactly one capability-matched payload.
+            const deliveredPayloads = [];
+            let usedLegacyFallback = false;
+            for (const target of targets) {
+                const targetNeedsLegacyFallback = requiresFurryRenderer &&
+                    !rendererSupportsCapabilities(target.telemetry);
+                const targetPayload = targetNeedsLegacyFallback
+                    ? this.createLegacyRendererFinalePayload(payload)
+                    : payload;
+                usedLegacyFallback ||= targetNeedsLegacyFallback;
+                try {
+                    if (target.socket.emit('webgpu-fireworks:finale', targetPayload) !== false) {
+                        deliveredPayloads.push(targetPayload);
+                    }
+                } catch (error) {
+                    this.api.log(
+                        `[WEBGPU FIREWORKS] Finale dispatch to renderer ${target.rendererId} failed: ${error.message}`,
+                        'warn'
+                    );
+                }
+            }
+            const returnPayload = deliveredPayloads.find(item => item.showPlan) || deliveredPayloads[0] || payload;
+            return { submitted: deliveredPayloads.length > 0, payload: returnPayload, usedLegacyFallback };
+        }
+
+        const readyTelemetry = this.getReadyRendererTelemetry();
+        const useGlobalLegacyFallback = !testRequest && requiresFurryRenderer &&
+            readyTelemetry.length > 0 &&
+            !readyTelemetry.some(telemetry => rendererSupportsCapabilities(telemetry));
+        const globalPayload = useGlobalLegacyFallback
+            ? this.createLegacyRendererFinalePayload(payload)
+            : payload;
+        return {
+            submitted: this.api.emit('webgpu-fireworks:finale', globalPayload) !== false,
+            payload: globalPayload,
+            usedLegacyFallback: useGlobalLegacyFallback
+        };
+    }
+
     getPreviewRendererStatus() {
         const cutoff = Date.now() - 5000;
         const fresh = [...this.overlayTelemetry.values()].filter(item => (
@@ -2276,10 +2365,11 @@ class FireworksPlugin {
         })));
 
         const requiresFurryRenderer = resolvedStyle === 'furry-celebration';
-        const rendererStatus = this.getRendererStatus();
-        const readyRendererConnected = rendererStatus.state === 'ready';
-        const furryRendererReady = readyRendererConnected && rendererSupportsCapabilities(rendererStatus);
-        if (isTestRequest && !readyRendererConnected) {
+        const readyRendererTelemetry = this.getReadyRendererTelemetry();
+        const furryRendererReady = readyRendererTelemetry.some(telemetry => (
+            rendererSupportsCapabilities(telemetry)
+        ));
+        if (isTestRequest && readyRendererTelemetry.length === 0) {
             return {
                 accepted: false,
                 reason: 'renderer-not-ready',
@@ -2295,8 +2385,6 @@ class FireworksPlugin {
                 error: RENDERER_UPGRADE_MESSAGE
             };
         }
-        const useLegacyRendererFallback = !isTestRequest && requiresFurryRenderer &&
-            readyRendererConnected && !furryRendererReady;
 
         this.api.log(
             `🎆 [FIREWORKS] FINALE! Style: ${resolvedStyle}, Length: ${finale.length}, ` +
@@ -2317,7 +2405,7 @@ class FireworksPlugin {
             timestamp: Date.now(),
             seed: finale.seed,
             bypassEnabled: finale.bypassEnabled,
-            showPlan: useLegacyRendererFallback ? null : showPlan,
+            showPlan,
 
             // Legacy spatial fallback for overlays that do not yet consume showPlan.
             burstCount: bursts.length,
@@ -2338,14 +2426,6 @@ class FireworksPlugin {
             explosionSound: config.explosionSound
         };
 
-        if (useLegacyRendererFallback) {
-            payload.rendererFallback = 'legacy-outdated-overlay';
-            this.api.log(
-                `[WEBGPU FIREWORKS] ${RENDERER_UPGRADE_MESSAGE} Playing the legacy burst fallback for ${id}.`,
-                'warn'
-            );
-        }
-
         if (finale.completionNotification) {
             payload.completionNotification = finale.completionNotification;
         }
@@ -2355,11 +2435,21 @@ class FireworksPlugin {
             payload.requiresRendererReady = request.requiresRendererReady === true;
         }
 
-        const submitted = this.api.emit('webgpu-fireworks:finale', payload);
-        if (submitted === false) {
-            return { ...payload, accepted: false, reason: 'submission-rejected' };
+        const dispatch = this.dispatchFinalePayload(payload, {
+            testRequest: isTestRequest,
+            requiresFurryRenderer,
+            requiresRendererReady: request.requiresRendererReady === true
+        });
+        if (dispatch.usedLegacyFallback) {
+            this.api.log(
+                `[WEBGPU FIREWORKS] ${RENDERER_UPGRADE_MESSAGE} Playing the legacy burst fallback for ${id}.`,
+                'warn'
+            );
         }
-        return payload;
+        if (!dispatch.submitted) {
+            return { ...dispatch.payload, accepted: false, reason: 'submission-rejected' };
+        }
+        return dispatch.payload;
     }
 
     getAutoEligibleFinaleStyleIds() {
