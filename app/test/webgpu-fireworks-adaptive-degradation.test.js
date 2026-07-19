@@ -190,4 +190,49 @@ describe('WebGPU Fireworks adaptive layer degradation', () => {
     runtime.config.toasterMode = true;
     expect(runtime.getAdaptiveLayerPolicy(4)).toMatchObject(expectedPolicy[6]);
   });
+
+  test('keeps finale layers at full quality when adaptive performance is disabled', () => {
+    const runtime = Object.create(WebGPUFireworksEngine.prototype);
+    runtime.config = {
+      adaptivePerformance: false,
+      toasterMode: false,
+      maxTotalParticles: 1000
+    };
+    runtime.performanceMode = 'minimal';
+    runtime.renderer = {
+      getMetrics: jest.fn(() => ({ activeParticles: 999 })),
+      setQuality: jest.fn()
+    };
+    runtime.skippedFrame = false;
+
+    expect(runtime.getAdaptiveLayerPolicy(31)).toMatchObject(expectedPolicy[0]);
+    expect(runtime.getEffectivePerformanceMode()).toBe('normal');
+    expect(runtime.getFinaleQualityScale()).toBe(1);
+    expect(runtime.shouldSkipCurrentFrame()).toBe(false);
+    expect(runtime.skippedFrame).toBe(false);
+
+    runtime.config = {
+      ...runtime.config,
+      trailsEnabled: true,
+      glowEnabled: true,
+      trailLength: 8,
+      visualStyle: 'premium-hybrid'
+    };
+    runtime.applyQuality();
+    expect(runtime.renderer.setQuality).toHaveBeenLastCalledWith(expect.objectContaining({
+      trailSamples: 8,
+      bloomEnabled: true,
+      glowScale: 1
+    }));
+
+    runtime.config.toasterMode = true;
+    expect(runtime.getAdaptiveLayerPolicy(31)).toMatchObject(expectedPolicy[6]);
+    expect(runtime.getEffectivePerformanceMode()).toBe('toaster');
+
+    runtime.config.toasterMode = false;
+    runtime.config.adaptivePerformance = true;
+    expect(runtime.getEffectivePerformanceMode()).toBe('minimal');
+    expect(runtime.shouldSkipCurrentFrame()).toBe(true);
+    expect(runtime.shouldSkipCurrentFrame()).toBe(false);
+  });
 });

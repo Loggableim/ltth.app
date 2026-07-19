@@ -967,6 +967,7 @@ class WebGPUFireworksEngine {
         this.socket.on('webgpu-fireworks:config-update', data => {
             if (!data || !data.config) return;
             this.config = { ...this.config, ...data.config, renderer: 'webgpu' };
+            this.resetAdaptivePerformanceState();
             this.audio.setEnabled(this.config.audioEnabled);
             this.audio.setVolume(this.config.audioVolume);
             this.audio.setCrackleVolume(this.config.crackleVolume);
@@ -1076,12 +1077,29 @@ class WebGPUFireworksEngine {
         return { width, height };
     }
 
+    getEffectivePerformanceMode() {
+        if (this.config.toasterMode) return 'toaster';
+        if (this.config.adaptivePerformance === false) return 'normal';
+        return ['normal', 'reduced', 'minimal'].includes(this.performanceMode)
+            ? this.performanceMode
+            : 'normal';
+    }
+
+    resetAdaptivePerformanceState() {
+        if (this.config.adaptivePerformance !== false) return false;
+        const changed = this.performanceMode !== 'normal' || this.renderScale !== 1;
+        this.performanceMode = 'normal';
+        this.renderScale = 1;
+        return changed;
+    }
+
     resize() {
         const size = this.getResolution();
         this.baseWidth = size.width;
         this.baseHeight = size.height;
         const toasterScale = this.config.toasterMode ? 0.65 : 1;
-        const scale = this.config.adaptiveRenderScaleEnabled === false ? 1 : Math.max(this.config.minRenderScale || 0.55, Math.min(toasterScale, this.renderScale));
+        const adaptiveScale = this.config.adaptivePerformance === false ? 1 : this.renderScale;
+        const scale = this.config.adaptiveRenderScaleEnabled === false ? 1 : Math.max(this.config.minRenderScale || 0.55, Math.min(toasterScale, adaptiveScale));
         const width = Math.max(320, Math.round(size.width * scale));
         const height = Math.max(180, Math.round(size.height * scale));
         this.canvas.style.width = this.config.orientation === 'portrait' ? 'auto' : '100%';
@@ -1102,8 +1120,9 @@ class WebGPUFireworksEngine {
             this.renderer.setQuality({ ...visibility, trailSamples: Math.min(3, configuredTrails), bloomEnabled: false, turbulence: 0.04, style: style.id, glowScale: 0.5 });
             return;
         }
-        if (this.performanceMode === 'minimal') this.renderer.setQuality({ ...visibility, trailSamples: Math.min(3, configuredTrails), bloomEnabled: false, turbulence: 0.06, style: style.id, glowScale: 0.58 });
-        else if (this.performanceMode === 'reduced') this.renderer.setQuality({ ...visibility, trailSamples: Math.min(5, configuredTrails), bloomEnabled: this.config.glowEnabled !== false, turbulence: Math.min(style.turbulence, 0.09), style: style.id, glowScale: style.glowScale * 0.78 });
+        const performanceMode = this.getEffectivePerformanceMode();
+        if (performanceMode === 'minimal') this.renderer.setQuality({ ...visibility, trailSamples: Math.min(3, configuredTrails), bloomEnabled: false, turbulence: 0.06, style: style.id, glowScale: 0.58 });
+        else if (performanceMode === 'reduced') this.renderer.setQuality({ ...visibility, trailSamples: Math.min(5, configuredTrails), bloomEnabled: this.config.glowEnabled !== false, turbulence: Math.min(style.turbulence, 0.09), style: style.id, glowScale: style.glowScale * 0.78 });
         else this.renderer.setQuality({ ...visibility, trailSamples: configuredTrails, bloomEnabled: this.config.glowEnabled !== false, turbulence: style.turbulence, style: style.id, glowScale: style.glowScale });
     }
 
@@ -1309,17 +1328,25 @@ class WebGPUFireworksEngine {
     }
 
     getFinaleQualityScale() {
-        if (this.config.toasterMode || this.performanceMode === 'minimal') return 0.5;
-        if (this.performanceMode === 'reduced') return 0.75;
+        const performanceMode = this.getEffectivePerformanceMode();
+        if (performanceMode === 'toaster' || performanceMode === 'minimal') return 0.5;
+        if (performanceMode === 'reduced') return 0.75;
         return 1;
     }
 
     getAdaptiveLayerPolicy(activeLayerLoad = 0) {
+        if (this.config.adaptivePerformance === false) {
+            return OrchestrationSpawnCommandPolicy.deriveAdaptiveDegradationPolicy({
+                performanceMode: this.config.toasterMode ? 'toaster' : 'normal',
+                activeParticleRatio: 0,
+                activeLayerLoad: 0
+            });
+        }
         const metrics = this.renderer?.getMetrics?.() || {};
         const particleCapacity = Math.max(1, Number(this.renderer?.maxParticles) || Number(this.config.maxTotalParticles) || 1);
         const activeParticleRatio = Math.max(0, Math.min(1, Number(metrics.activeParticles) / particleCapacity || 0));
         return OrchestrationSpawnCommandPolicy.deriveAdaptiveDegradationPolicy({
-            performanceMode: this.config.toasterMode ? 'toaster' : this.performanceMode,
+            performanceMode: this.getEffectivePerformanceMode(),
             activeParticleRatio,
             activeLayerLoad
         });
@@ -1340,9 +1367,10 @@ class WebGPUFireworksEngine {
         const sizeScale = Math.sqrt(qualityScale);
         const baseSize = Array.isArray(payload.baseParticleSizeRange) ? payload.baseParticleSizeRange : [4, 12];
         const ordinal = Math.max(0, Number(payload.finaleOrdinal) || 0);
-        const crackleEnabled = this.config.toasterMode || this.performanceMode === 'minimal'
+        const performanceMode = this.getEffectivePerformanceMode();
+        const crackleEnabled = performanceMode === 'toaster' || performanceMode === 'minimal'
             ? false
-            : payload.presetCrackleEnabled === true && (this.performanceMode !== 'reduced' || ordinal % 2 === 0);
+            : payload.presetCrackleEnabled === true && (performanceMode !== 'reduced' || ordinal % 2 === 0);
         return {
             ...payload,
             particleCount: Math.max(1, Math.round(Number(payload.baseParticleCount) * qualityScale)),
@@ -1798,7 +1826,7 @@ class WebGPUFireworksEngine {
         baseCount = Math.max(1, baseCount - avatarCount - giftCount);
         const naturalDuration = 1.15 + explosion.intensity * 0.28;
         const pressureFade = Math.max(0.25, Math.min(4, explosion.despawnFadeDuration || naturalDuration));
-        const performanceDuration = this.performanceMode === 'minimal' ? Math.min(naturalDuration, pressureFade) : naturalDuration;
+        const performanceDuration = this.getEffectivePerformanceMode() === 'minimal' ? Math.min(naturalDuration, pressureFade) : naturalDuration;
         const finaleTailDuration = explosion.finaleEndsAt ? remainingShowSeconds : performanceDuration;
         const duration = Math.min(performanceDuration, finaleTailDuration);
         const minSize = Math.max(2, Number(explosion.particleSizeRange?.[0]) || 4);
@@ -2733,7 +2761,13 @@ class WebGPUFireworksEngine {
     }
 
     adaptQuality() {
-        if (this.config.adaptivePerformance === false) return;
+        if (this.config.adaptivePerformance === false) {
+            if (this.resetAdaptivePerformanceState()) {
+                this.resize();
+                this.applyQuality();
+            }
+            return;
+        }
         const average = this.fpsHistory.length ? this.fpsHistory.reduce((sum, fps) => sum + fps, 0) / this.fpsHistory.length : this.fps;
         const minimumFps = Math.max(Number(this.config.minFps) || 24, Number(this.config.minTargetFps) || 24);
         const nextMode = average < minimumFps ? 'minimal' : average < (this.config.targetFps || 60) * 0.82 ? 'reduced' : 'normal';
@@ -2746,13 +2780,19 @@ class WebGPUFireworksEngine {
         this.applyQuality();
     }
 
+    shouldSkipCurrentFrame() {
+        return this.config.frameSkipEnabled !== false &&
+            this.getEffectivePerformanceMode() === 'minimal' &&
+            (this.skippedFrame = !this.skippedFrame);
+    }
+
     render() {
         if (!this.running) return;
         const now = performance.now();
         const delta = Math.min(0.05, Math.max(0.001, (now - this.lastFrameAt) / 1000));
         this.lastFrameAt = now;
         this.processTimeline(now);
-        const shouldSkip = this.config.frameSkipEnabled !== false && this.performanceMode === 'minimal' && (this.skippedFrame = !this.skippedFrame);
+        const shouldSkip = this.shouldSkipCurrentFrame();
         let renderSucceeded = false;
         try {
             if (typeof this.renderer?.render === 'function') {
@@ -2801,7 +2841,7 @@ class WebGPUFireworksEngine {
         if (particles) particles.textContent = metrics.activeParticles || 0;
         if (renderer) {
             const rendererState = this.rendererStatus.state || 'initializing';
-            const performanceMode = this.performanceMode || 'normal';
+            const performanceMode = this.getEffectivePerformanceMode();
             renderer.textContent = t(
                 'plugins.webgpu-fireworks.runtime.renderer_debug',
                 'WEBGPU · {state} · {mode}',
