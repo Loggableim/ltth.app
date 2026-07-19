@@ -34,7 +34,7 @@ const { SpawnPlanner } = require('./lib/spawn-planner');
 const { FinaleShowPlanner, FINALE_STYLES } = require('./lib/finale-show-planner');
 const { FinaleShuffleBag } = require('./lib/finale-shuffle-bag');
 const { resolveFinaleSelection } = require('./lib/finale-runtime-resolver');
-const { RevisionedShowRepository } = require('./lib/show-repository');
+const { RevisionedShowRepository, ShowRepositoryError } = require('./lib/show-repository');
 const { ShowApiController } = require('./lib/show-api-controller');
 const { SuperfanFinaleHistory, normalizeSuperfanIdentityAliases } = require('./lib/superfan-finale-history');
 
@@ -107,6 +107,8 @@ class FireworksPlugin {
         this.benchmarkPreset = null;
         this.connectedSockets = new Set();
         this.overlayTelemetry = new Map();
+        this.pendingPreviewRequests = new Map();
+        this.previewAckTimeoutMs = 1500;
         this.pendingSuperfanFinales = new Map();
         this.pendingSuperfanAliases = new Map();
         this.superfanFinaleAttemptCounter = 0;
@@ -325,18 +327,34 @@ class FireworksPlugin {
                             ? Math.max(0, Math.floor(Number(data.finaleQueueLength)))
                             : 0,
                         finaleError: typeof data.finaleError === 'string' ? data.finaleError.slice(0, 300) : null,
+                        previewActive: data.previewActive === true,
+                        previewRequestId: typeof data.previewRequestId === 'string'
+                            ? data.previewRequestId.slice(0, 160)
+                            : null,
+                        previewScope: typeof data.previewScope === 'string' ? data.previewScope.slice(0, 20) : null,
+                        previewState: typeof data.previewState === 'string' ? data.previewState.slice(0, 20) : null,
+                        previewError: typeof data.previewError === 'string' ? data.previewError.slice(0, 300) : null,
                         visualStyle: typeof data.visualStyle === 'string' ? data.visualStyle : this.config.visualStyle,
                         reason: typeof data.reason === 'string' ? data.reason.slice(0, 300) : null,
                         updatedAt: Date.now()
                     });
                     if (state !== 'ready' && state !== 'initializing') {
                         this.clearPendingSuperfanFinalesForSocket(socket.id, `renderer-${state}`);
+                        this.clearPendingPreviewsForSocket(socket.id);
                         this.api.log(`[WEBGPU FIREWORKS] Renderer ${state}: ${data.reason || 'no details'}`, 'warn');
                     }
                 });
 
                 socket.on('webgpu-fireworks:finale-ack', data => {
                     this.handleSuperfanFinaleAck(data, socket);
+                });
+
+                socket.on('webgpu-fireworks:preview-ack', data => {
+                    this.handlePreviewAck(data, socket);
+                });
+
+                socket.on('webgpu-fireworks:preview-status', data => {
+                    this.handlePreviewStatus(data, socket);
                 });
 
                 socket.on('webgpu-fireworks:interactive-trigger', (data = {}) => {
@@ -363,6 +381,7 @@ class FireworksPlugin {
                 // Clean up on disconnect
                 socket.on('disconnect', () => {
                     this.clearPendingSuperfanFinalesForSocket(socket.id, 'renderer-disconnected');
+                    this.clearPendingPreviewsForSocket(socket.id);
                     this.connectedSockets.delete(socket);
                     this.overlayTelemetry.delete(socket.id);
                     this.currentFps = this.getOverlayFps(false).fps;
@@ -428,6 +447,11 @@ class FireworksPlugin {
             finalePhase: 'idle',
             finaleQueueLength: 0,
             finaleError: null,
+            previewActive: false,
+            previewRequestId: null,
+            previewScope: null,
+            previewState: null,
+            previewError: null,
             visualStyle: this.config?.visualStyle || 'premium-hybrid',
             reason: 'No active WebGPU overlay connected'
         };
@@ -440,13 +464,153 @@ class FireworksPlugin {
         ));
         const ready = fresh.filter(item => item.state === 'ready');
         const busy = fresh.filter(item => (
-            item.finaleActive === true || Number(item.finaleQueueLength) > 0
+            item.finaleActive === true || item.previewActive === true || Number(item.finaleQueueLength) > 0
         ));
         return {
             freshRendererCount: fresh.length,
             readyRendererCount: ready.length,
             busyRendererCount: busy.length
         };
+    }
+
+    selectPreviewRenderer() {
+        const cutoff = Date.now() - 5000;
+        const socketsById = new Map([...this.connectedSockets].map(socket => [socket.id, socket]));
+        const candidates = [...this.overlayTelemetry.entries()]
+            .map(([rendererId, telemetry]) => ({ rendererId, telemetry, socket: socketsById.get(rendererId) }))
+            .filter(candidate => (
+                candidate.socket && candidate.socket.connected !== false &&
+                candidate.telemetry?.updatedAt >= cutoff &&
+                candidate.telemetry?.benchmark !== true &&
+                candidate.telemetry?.state === 'ready'
+            ))
+            .sort((left, right) => (
+                Number(right.telemetry.updatedAt) - Number(left.telemetry.updatedAt) ||
+                String(left.rendererId).localeCompare(String(right.rendererId))
+            ));
+        return candidates[0] || null;
+    }
+
+    previewDispatchError(code) {
+        const definitions = {
+            RENDERER_NOT_READY: [503, 'A fresh ready WebGPU renderer is required for preview.'],
+            FINALE_BUSY: [409, 'A finale or preview is active or queued on the selected renderer.'],
+            INVALID_PREVIEW: [422, 'The renderer rejected the preview payload.'],
+            PREVIEW_ACK_TIMEOUT: [503, 'The WebGPU renderer did not acknowledge the preview in time.']
+        };
+        const [status, message] = definitions[code] || definitions.INVALID_PREVIEW;
+        return new ShowRepositoryError(code, status, message, {});
+    }
+
+    settlePendingPreview(requestId, outcome = {}) {
+        const pending = this.pendingPreviewRequests.get(requestId);
+        if (!pending) return false;
+        clearTimeout(pending.timer);
+        this.pendingPreviewRequests.delete(requestId);
+        if (outcome.error) pending.reject(outcome.error);
+        else pending.resolve(outcome.result);
+        return true;
+    }
+
+    dispatchPreview(payload = {}) {
+        const target = this.selectPreviewRenderer();
+        if (!target) return Promise.reject(this.previewDispatchError('RENDERER_NOT_READY'));
+        if (
+            target.telemetry.finaleActive === true ||
+            target.telemetry.previewActive === true ||
+            Number(target.telemetry.finaleQueueLength) > 0
+        ) {
+            return Promise.reject(this.previewDispatchError('FINALE_BUSY'));
+        }
+        const requestId = typeof payload.requestId === 'string' ? payload.requestId : '';
+        if (!requestId || this.pendingPreviewRequests.has(requestId)) {
+            return Promise.reject(this.previewDispatchError('INVALID_PREVIEW'));
+        }
+
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => {
+                this.settlePendingPreview(requestId, {
+                    error: this.previewDispatchError('PREVIEW_ACK_TIMEOUT')
+                });
+            }, this.previewAckTimeoutMs);
+            timer.unref?.();
+            this.pendingPreviewRequests.set(requestId, {
+                requestId,
+                rendererId: target.rendererId,
+                socket: target.socket,
+                timer,
+                resolve,
+                reject
+            });
+            const emitted = target.socket.emit('webgpu-fireworks:preview', {
+                ...payload,
+                rendererId: target.rendererId
+            });
+            if (emitted === false) {
+                this.settlePendingPreview(requestId, {
+                    error: this.previewDispatchError('RENDERER_NOT_READY')
+                });
+            }
+        });
+    }
+
+    handlePreviewAck(data = {}, socket) {
+        const requestId = typeof data.requestId === 'string' ? data.requestId : '';
+        const pending = this.pendingPreviewRequests.get(requestId);
+        if (!pending || !socket || pending.socket !== socket) return false;
+        if (data.rendererId !== pending.rendererId || socket.id !== pending.rendererId) return false;
+        const telemetry = this.overlayTelemetry.get(pending.rendererId);
+        if (
+            !telemetry || telemetry.updatedAt < Date.now() - 5000 ||
+            telemetry.benchmark === true || telemetry.state !== 'ready'
+        ) return false;
+
+        if (data.accepted === true) {
+            return this.settlePendingPreview(requestId, {
+                result: { accepted: true, requestId, rendererId: pending.rendererId }
+            });
+        }
+        const reason = ['RENDERER_NOT_READY', 'FINALE_BUSY', 'INVALID_PREVIEW'].includes(data.reason)
+            ? data.reason
+            : 'INVALID_PREVIEW';
+        return this.settlePendingPreview(requestId, {
+            error: this.previewDispatchError(reason)
+        });
+    }
+
+    handlePreviewStatus(data = {}, socket) {
+        if (!socket || data.rendererId !== socket.id || typeof data.requestId !== 'string') return false;
+        const telemetry = this.overlayTelemetry.get(socket.id);
+        if (!telemetry || telemetry.benchmark === true) return false;
+        const state = ['running', 'completed', 'failed'].includes(data.state) ? data.state : null;
+        if (!state) return false;
+        this.overlayTelemetry.set(socket.id, {
+            ...telemetry,
+            previewActive: state === 'running',
+            previewRequestId: state === 'running' ? data.requestId.slice(0, 160) : null,
+            previewScope: state === 'running' && typeof data.scope === 'string' ? data.scope.slice(0, 20) : null,
+            previewState: state,
+            previewError: state === 'failed' && typeof data.error === 'string' ? data.error.slice(0, 300) : null,
+            updatedAt: Date.now()
+        });
+        return true;
+    }
+
+    clearPendingPreviewsForSocket(socketId) {
+        for (const pending of [...this.pendingPreviewRequests.values()]) {
+            if (pending.rendererId !== socketId) continue;
+            this.settlePendingPreview(pending.requestId, {
+                error: this.previewDispatchError('RENDERER_NOT_READY')
+            });
+        }
+    }
+
+    clearAllPendingPreviews() {
+        for (const pending of [...this.pendingPreviewRequests.values()]) {
+            this.settlePendingPreview(pending.requestId, {
+                error: this.previewDispatchError('RENDERER_NOT_READY')
+            });
+        }
     }
 
     /**
@@ -739,7 +903,7 @@ class FireworksPlugin {
             getPreviewRendererStatus: () => this.getPreviewRendererStatus(),
             getConfig: () => this.config,
             finaleShowPlanner: this.finaleShowPlanner,
-            emitPreview: payload => this.api.emit('webgpu-fireworks:preview', payload),
+            dispatchPreview: payload => this.dispatchPreview(payload),
             log: (message, level) => this.api.log(message, level)
         });
         this.showApiController.registerRoutes(this.api);
@@ -2279,6 +2443,7 @@ class FireworksPlugin {
         for (const eventId of [...this.pendingSuperfanFinales.keys()]) {
             this.clearPendingSuperfanFinale(eventId, 'plugin-destroyed');
         }
+        this.clearAllPendingPreviews();
 
         // PluginAPI owns the connection disposer and removes it on unload.
         this.fpsUpdateHandler = null;
@@ -2290,6 +2455,8 @@ class FireworksPlugin {
                 socket.removeAllListeners('webgpu-fireworks:register-overlay');
                 socket.removeAllListeners('webgpu-fireworks:renderer-status');
                 socket.removeAllListeners('webgpu-fireworks:finale-ack');
+                socket.removeAllListeners('webgpu-fireworks:preview-ack');
+                socket.removeAllListeners('webgpu-fireworks:preview-status');
                 socket.removeAllListeners('webgpu-fireworks:active-count-response');
                 socket.removeAllListeners('webgpu-fireworks:interactive-trigger');
             });

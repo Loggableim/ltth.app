@@ -89,22 +89,46 @@ function createHarness() {
 }
 
 function setTelemetry(plugin, values) {
-  plugin.overlayTelemetry = new Map(values.map((value, index) => [
-    `renderer-${index + 1}`,
-    {
+  const sockets = [];
+  plugin.overlayTelemetry = new Map(values.map((value, index) => {
+    const rendererId = `renderer-${index + 1}`;
+    const socket = {
+      id: rendererId,
+      connected: true,
+      emit: jest.fn((event, payload) => {
+        if (event === 'webgpu-fireworks:preview') {
+          plugin.handlePreviewAck({
+            requestId: payload.requestId,
+            rendererId,
+            accepted: true
+          }, socket);
+        }
+        return true;
+      })
+    };
+    sockets.push(socket);
+    return [rendererId, {
       benchmark: false,
       state: 'ready',
       finaleActive: false,
+      previewActive: false,
       finaleQueueLength: 0,
       updatedAt: Date.now(),
       ...value
-    }
-  ]));
+    }];
+  }));
+  plugin.connectedSockets = new Set(sockets);
+  plugin.api.__previewSockets = sockets;
+}
+
+function emittedPreviews(api) {
+  return (api.__previewSockets || []).flatMap(socket => socket.emit.mock.calls
+    .filter(([event]) => event === 'webgpu-fireworks:preview')
+    .map(([, payload]) => payload));
 }
 
 function emittedPreview(api) {
-  const call = api.emit.mock.calls.find(([event]) => event === 'webgpu-fireworks:preview');
-  return call && call[1];
+  return emittedPreviews(api)[0];
 }
 
 describe('WebGPU Fireworks explicit show preview', () => {
@@ -172,8 +196,8 @@ describe('WebGPU Fireworks explicit show preview', () => {
       id: expect.any(String)
     });
     expect(response.body.id).toBe(response.body.requestId);
-    expect(api.emit).toHaveBeenCalledTimes(1);
-    expect(api.emit).toHaveBeenCalledWith('webgpu-fireworks:preview', expect.any(Object));
+    expect(emittedPreviews(api)).toHaveLength(1);
+    expect(api.emit).not.toHaveBeenCalledWith('webgpu-fireworks:preview', expect.anything());
     expect(api.emit).not.toHaveBeenCalledWith('webgpu-fireworks:finale', expect.anything());
     expect(triggerFinale).not.toHaveBeenCalled();
     expect(plugin.queueTimestamps).toEqual([101, 202]);
@@ -324,9 +348,7 @@ describe('WebGPU Fireworks explicit show preview', () => {
     await invokePreview(api, { seed: 42, intensity: 7 });
     await invokePreview(api, { seed: 42, intensity: 7 });
 
-    const previews = api.emit.mock.calls
-      .filter(([event]) => event === 'webgpu-fireworks:preview')
-      .map(([, payload]) => payload);
+    const previews = emittedPreviews(api);
     expect(previews).toHaveLength(2);
     expect(previews[0]).toMatchObject({
       id: expect.any(String),
@@ -363,9 +385,7 @@ describe('WebGPU Fireworks explicit show preview', () => {
     await invokePreview(api, { intensity: 0.2 });
     await invokePreview(api, { intensity: 99 });
 
-    const previews = api.emit.mock.calls
-      .filter(([event]) => event === 'webgpu-fireworks:preview')
-      .map(([, payload]) => payload);
+    const previews = emittedPreviews(api);
     expect(previews.map(payload => payload.intensity)).toEqual([1, 10]);
   });
 

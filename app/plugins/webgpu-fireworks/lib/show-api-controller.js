@@ -37,7 +37,7 @@ class ShowApiController {
     this.getPreviewRendererStatus = options.getPreviewRendererStatus;
     this.getConfig = options.getConfig;
     this.finaleShowPlanner = options.finaleShowPlanner;
-    this.emitPreview = options.emitPreview;
+    this.dispatchPreview = options.dispatchPreview;
     this.createPreviewRequestId = typeof options.createPreviewRequestId === 'function'
       ? options.createPreviewRequestId
       : () => `preview:${randomUUID()}`;
@@ -232,7 +232,7 @@ class ShowApiController {
     return res.json({ success: true, show });
   }
 
-  preview(req, res) {
+  async preview(req, res) {
     const id = this._routeId(req.params.id);
     const body = isObject(req.body) ? req.body : {};
     if (!PREVIEW_VARIANTS.includes(body.variant)) {
@@ -326,7 +326,6 @@ class ShowApiController {
 
     const metadata = JSON.parse(JSON.stringify(show.definition?.metadata || {}));
     const payload = {
-      accepted: true,
       id: requestId,
       requestId,
       eventId: requestId,
@@ -370,11 +369,20 @@ class ShowApiController {
       explosionSound: config.explosionSound
     };
     const snapshot = deepFreeze(JSON.parse(JSON.stringify(payload)));
-    if (typeof this.emitPreview === 'function') this.emitPreview(snapshot);
+    if (typeof this.dispatchPreview !== 'function') {
+      throw new ShowRepositoryError(
+        'RENDERER_NOT_READY',
+        503,
+        'A fresh ready WebGPU renderer is required for preview.',
+        {}
+      );
+    }
+    const acknowledgement = await this.dispatchPreview(snapshot);
     return res.json({
       success: true,
       id: requestId,
       requestId,
+      rendererId: acknowledgement.rendererId,
       duration: snapshot.duration,
       durationMs: snapshot.durationMs,
       scope: snapshot.scope,
@@ -489,9 +497,9 @@ class ShowApiController {
     return repository;
   }
 
-  _handle(handler, req, res) {
+  async _handle(handler, req, res) {
     try {
-      return handler(req, res);
+      return await handler(req, res);
     } catch (error) {
       const typed = (error instanceof ShowRepositoryError || error instanceof ShowPreviewPlanError)
         && Number.isInteger(error.status)

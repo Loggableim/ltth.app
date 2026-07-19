@@ -843,9 +843,12 @@ class WebGPUFireworksEngine {
         this.finaleQueue = [];
         this.finaleIds = new Set();
         this.currentFinale = null;
+        this.currentPreview = null;
         this.finalePhase = 'idle';
         this.finaleGeneration = 0;
+        this.previewGeneration = 0;
         this.failingFinaleIds = new Set();
+        this.failingPreviewIds = new Set();
         this.followerAnimationGeneration = 0;
         this.followerAnimationTimer = null;
         this.endCardOwnerId = null;
@@ -936,7 +939,18 @@ class WebGPUFireworksEngine {
         });
         this.socket.on('webgpu-fireworks:trigger', data => this.handleIncomingTrigger(data));
         this.socket.on('webgpu-fireworks:finale', data => this.handleFinaleSocketEvent(data));
+        this.socket.on('webgpu-fireworks:preview', data => this.handlePreviewSocketEvent(data));
         this.socket.on('webgpu-fireworks:follower-animation', data => this.showFollowerAnimation(data));
+        this.socket.on('disconnect', () => {
+            if (this.currentPreview) {
+                this.failPreview(
+                    this.currentPreview.requestId,
+                    new Error('Preview renderer disconnected.'),
+                    this.getRuntimeNow(),
+                    { reason: 'renderer-disconnected', startNext: false }
+                );
+            }
+        });
         this.socket.on('webgpu-fireworks:get-active-count', () => {
             const metrics = this.renderer?.getMetrics() || {};
             this.socket.emit('webgpu-fireworks:active-count-response', {
@@ -981,7 +995,11 @@ class WebGPUFireworksEngine {
             const message = status.reason || `Renderer entered ${status.state}`;
             this.failFinale(this.currentFinale.id, new Error(message), this.getRuntimeNow());
         }
-        if (status.state === 'ready' && !this.currentFinale) {
+        if (entersRendererFailure && this.currentPreview) {
+            const message = status.reason || `Renderer entered ${status.state}`;
+            this.failPreview(this.currentPreview.requestId, new Error(message), this.getRuntimeNow());
+        }
+        if (status.state === 'ready' && !this.currentFinale && !this.currentPreview) {
             this.startNextFinaleIfReady(this.getRuntimeNow());
         }
     }
@@ -1084,13 +1102,16 @@ class WebGPUFireworksEngine {
         if (!Array.isArray(this.finaleQueue)) this.finaleQueue = [];
         if (!(this.finaleIds instanceof Set)) this.finaleIds = new Set();
         if (!Object.prototype.hasOwnProperty.call(this, 'currentFinale')) this.currentFinale = null;
+        if (!Object.prototype.hasOwnProperty.call(this, 'currentPreview')) this.currentPreview = null;
         if (typeof this.finalePhase !== 'string') this.finalePhase = 'idle';
         if (!Array.isArray(this.giftLaunchTimestamps)) this.giftLaunchTimestamps = [];
         if (!(this.giftBacklog instanceof Map)) this.giftBacklog = new Map();
         if (!Object.prototype.hasOwnProperty.call(this, 'giftDrainDue')) this.giftDrainDue = null;
         if (!Number.isFinite(this.finaleSequence)) this.finaleSequence = 0;
         if (!Number.isFinite(this.finaleGeneration)) this.finaleGeneration = 0;
+        if (!Number.isFinite(this.previewGeneration)) this.previewGeneration = 0;
         if (!(this.failingFinaleIds instanceof Set)) this.failingFinaleIds = new Set();
+        if (!(this.failingPreviewIds instanceof Set)) this.failingPreviewIds = new Set();
         if (typeof this.transientFrameError !== 'boolean') this.transientFrameError = false;
     }
 
@@ -1114,7 +1135,12 @@ class WebGPUFireworksEngine {
             finaleLayersSubmitted: this.currentFinale?.layersSubmitted || 0,
             finaleCommandCount: this.currentFinale?.commandCount || 0,
             finaleAudioGroups: { ...plannedAudioGroups },
-            finaleAudioGroupsPlayed: { ...playedAudioGroups }
+            finaleAudioGroupsPlayed: { ...playedAudioGroups },
+            previewActive: Boolean(this.currentPreview),
+            previewRequestId: this.currentPreview?.requestId || null,
+            previewScope: this.currentPreview?.scope || null,
+            previewState: this.currentPreview?.state || null,
+            previewError: this.currentPreview?.error || null
         };
     }
 
@@ -1344,9 +1370,11 @@ class WebGPUFireworksEngine {
                     const payload = this.materializeFinalePayload(event.payload);
                     Promise.resolve(this.handleTrigger(payload)).catch(error => this.failFinale(event.finaleId, error, now));
                 } else if (event.type === 'finale-phase' || event.type === 'finale-v2-phase') {
-                    this.setFinalePhase(event.finaleId, event.phase);
+                    if (event.runtimeKind === 'preview') this.setPreviewPhase(event.previewRequestId, event.phase);
+                    else this.setFinalePhase(event.finaleId, event.phase);
                 } else if (event.type === 'finale-complete') {
-                    this.finishFinaleVisuals(event.finaleId, now);
+                    if (event.runtimeKind === 'preview') this.completePreview(event.previewRequestId, now);
+                    else this.finishFinaleVisuals(event.finaleId, now);
                 } else if (event.type === 'finale-end-card-complete') {
                     this.completeFinale(event.finaleId, now);
                 } else if (event.type === 'gift-drain') {
@@ -1365,7 +1393,8 @@ class WebGPUFireworksEngine {
                     this.audio.updateDucking();
                 }
             } catch (error) {
-                if (event.finaleId || event.plan?.finaleId) this.failFinale(event.finaleId || event.plan.finaleId, error, now);
+                if (event.runtimeKind === 'preview') this.failPreview(event.previewRequestId, error, now);
+                else if (event.finaleId || event.plan?.finaleId) this.failFinale(event.finaleId || event.plan.finaleId, error, now);
                 else {
                     console.error('[WebGPU Fireworks] Timeline event failed:', error);
                     this.setStatus({ timelineError: error.message || String(error) });
@@ -1821,12 +1850,20 @@ class WebGPUFireworksEngine {
     }
 
     isV2EventCurrent(event) {
+        if (event.runtimeKind === 'preview') {
+            return Boolean(
+                event.runtimeToken &&
+                this.currentPreview?.requestId === event.previewRequestId &&
+                this.currentPreview.runtimeToken === event.runtimeToken
+            );
+        }
         return this.isFinaleRuntimeTokenValid(event.finaleId, event.runtimeToken);
     }
 
     incrementV2AudioGroup(group) {
-        if (!this.currentFinale || !['launch', 'bang', 'crackle'].includes(group)) return;
-        this.currentFinale.audioGroupsPlayed[group]++;
+        const owner = this.currentPreview || this.currentFinale;
+        if (!owner || !['launch', 'bang', 'crackle'].includes(group)) return;
+        owner.audioGroupsPlayed[group]++;
     }
 
     processV2Rocket(event, plannedAt, actualAt) {
@@ -1880,7 +1917,8 @@ class WebGPUFireworksEngine {
             degradationPolicy: this.getAdaptiveLayerPolicy(event.context.activeLayerLoad)
         };
         const spawned = this.renderer.spawnLayer(layer, context);
-        if (spawned !== false && this.currentFinale?.id === event.finaleId) this.currentFinale.layersSubmitted++;
+        const owner = event.runtimeKind === 'preview' ? this.currentPreview : this.currentFinale;
+        if (spawned !== false && owner?.runtimeToken === event.runtimeToken) owner.layersSubmitted++;
         this.audio.recordTimelineEvent(event.layer.id, 'v2-layer-visual', plannedAt, actualAt, spawned === false ? 'degraded-omitted' : 'rendered');
         return spawned;
     }
@@ -2065,6 +2103,8 @@ class WebGPUFireworksEngine {
                 ...event,
                 finaleId: entry.id,
                 runtimeToken: entry.runtimeToken,
+                runtimeKind: entry.runtimeKind || 'finale',
+                previewRequestId: entry.runtimeKind === 'preview' ? entry.id : null,
                 finaleEndsAt: runtime.completeAt
             });
         }
@@ -2074,6 +2114,209 @@ class WebGPUFireworksEngine {
             commandCount: runtime.commandCount,
             audioGroups: runtime.audioGroups,
             durationMs: runtime.durationMs
+        };
+    }
+
+    validatePreviewPayload(data = {}) {
+        const requestId = typeof data.requestId === 'string' ? data.requestId : '';
+        if (!requestId || requestId !== requestId.trim() || requestId.length > 160) {
+            throw new TypeError('Preview requestId is invalid.');
+        }
+        if (data.id !== requestId || data.eventId !== requestId || data.showPlan?.id !== requestId) {
+            throw new TypeError('Preview request identity is inconsistent.');
+        }
+        if (data.type !== 'preview' || data.rendererId !== this.socket?.id) {
+            throw new TypeError('Preview renderer target is invalid.');
+        }
+        if (!data.preview || typeof data.preview !== 'object' || Array.isArray(data.preview)) {
+            throw new TypeError('Preview metadata is required.');
+        }
+        const scope = data.scope;
+        if (!['cue', 'phase', 'show'].includes(scope) || data.preview.scope !== scope) {
+            throw new TypeError('Preview scope is invalid.');
+        }
+        if (scope === 'cue' && (
+            !Number.isInteger(data.cueIndex) || data.cueIndex < 0 ||
+            data.preview.cueIndex !== data.cueIndex
+        )) throw new TypeError('Preview cue metadata is invalid.');
+        if (scope === 'phase' && (
+            typeof data.phase !== 'string' || !data.phase || data.preview.phase !== data.phase
+        )) throw new TypeError('Preview phase metadata is invalid.');
+        if (
+            typeof data.preview.sourceId !== 'string' || !data.preview.sourceId ||
+            !Number.isInteger(data.preview.sourceRevision) ||
+            typeof data.preview.builtIn !== 'boolean' ||
+            !data.preview.metadata || typeof data.preview.metadata !== 'object' ||
+            Array.isArray(data.preview.metadata)
+        ) throw new TypeError('Preview source metadata is invalid.');
+        if (Number(data.showPlan?.planVersion) !== 2) {
+            throw new TypeError('Preview requires ShowPlanV2.');
+        }
+        ShowPlanV2Runtime.assertShowPlanV2(data.showPlan);
+        return {
+            id: requestId,
+            runtimeKind: 'preview',
+            data: { ...data, id: requestId },
+            showPlan: data.showPlan,
+            scope,
+            requestId,
+            rendererId: data.rendererId
+        };
+    }
+
+    emitPreviewAck(requestId, accepted, reason = null) {
+        const rendererId = this.socket?.id || null;
+        this.socket?.emit('webgpu-fireworks:preview-ack', {
+            requestId,
+            rendererId,
+            accepted: accepted === true,
+            ...(accepted === true ? {} : { reason: reason || 'INVALID_PREVIEW' })
+        });
+    }
+
+    emitPreviewStatus(preview, state, extra = {}) {
+        if (!preview?.requestId) return false;
+        this.socket?.emit('webgpu-fireworks:preview-status', {
+            requestId: preview.requestId,
+            rendererId: preview.rendererId || this.socket?.id || null,
+            scope: preview.scope,
+            state,
+            ...extra
+        });
+        return true;
+    }
+
+    startPreviewEntry(entry, startAt = this.getRuntimeNow()) {
+        const details = this.startShowPlanV2Finale(entry, startAt);
+        Object.assign(this.currentPreview, {
+            state: 'running',
+            startedAt: startAt,
+            layerCount: details.layerCount || 0,
+            commandCount: details.commandCount || 0,
+            audioGroups: { ...details.audioGroups }
+        });
+        this.emitPreviewStatus(this.currentPreview, 'running', {
+            durationMs: details.durationMs
+        });
+        this.emitFinaleTelemetry({ previewError: null });
+        return details;
+    }
+
+    setPreviewPhase(requestId, phase) {
+        if (!this.currentPreview || this.currentPreview.requestId !== requestId) return false;
+        this.currentPreview.phase = phase;
+        this.emitFinaleTelemetry();
+        return true;
+    }
+
+    completePreview(requestId, now = this.getRuntimeNow()) {
+        const preview = this.currentPreview;
+        if (!preview || preview.requestId !== requestId) return false;
+        this.timelineQueue = this.timelineQueue.filter(event => !(
+            event.runtimeKind === 'preview' && event.previewRequestId === requestId
+        ));
+        this.currentPreview = null;
+        this.emitPreviewStatus(preview, 'completed', {
+            completedAt: now,
+            durationMs: Number(preview.showPlan?.durationMs) || 0
+        });
+        this.emitFinaleTelemetry({ previewError: null });
+        this.startNextFinaleIfReady(now);
+        return true;
+    }
+
+    failPreview(requestId, error, now = this.getRuntimeNow(), options = {}) {
+        this.ensureFinaleRuntimeState();
+        if (!requestId || this.failingPreviewIds.has(requestId)) return false;
+        const preview = this.currentPreview;
+        if (!preview || preview.requestId !== requestId) return false;
+        this.failingPreviewIds.add(requestId);
+        try {
+            const message = error?.message || String(error || 'Unknown preview renderer error');
+            console.error(`[WebGPU Fireworks] Preview ${requestId} failed:`, error);
+            this.timelineQueue = this.timelineQueue.filter(event => !(
+                event.runtimeKind === 'preview' && event.previewRequestId === requestId
+            ));
+            this.currentPreview = null;
+            const reason = options.reason || 'renderer-error';
+            this.emitPreviewStatus(preview, 'failed', {
+                failedAt: now,
+                reason,
+                error: String(message).slice(0, 300)
+            });
+            this.emitFinaleTelemetry({ previewError: String(message).slice(0, 300) });
+            if (options.startNext !== false) this.startNextFinaleIfReady(now);
+            return false;
+        } finally {
+            this.failingPreviewIds.delete(requestId);
+        }
+    }
+
+    handlePreviewSocketEvent(data = {}) {
+        this.ensureFinaleRuntimeState();
+        if (typeof data.rendererId === 'string' && data.rendererId !== this.socket?.id) {
+            return { accepted: false, ignored: true, reason: 'wrong-renderer' };
+        }
+        const rawRequestId = typeof data.requestId === 'string' ? data.requestId : '';
+        let entry;
+        try {
+            entry = this.validatePreviewPayload(data);
+        } catch (error) {
+            this.emitPreviewAck(rawRequestId, false, 'INVALID_PREVIEW');
+            return { accepted: false, reason: 'INVALID_PREVIEW', requestId: rawRequestId || null };
+        }
+
+        const rendererReady = (
+            this.rendererStatus?.state === 'ready' &&
+            this.renderer?.initialized === true &&
+            this.isBenchmark !== true
+        );
+        if (!rendererReady) {
+            this.emitPreviewAck(entry.requestId, false, 'RENDERER_NOT_READY');
+            return {
+                accepted: false,
+                reason: 'RENDERER_NOT_READY',
+                requestId: entry.requestId,
+                rendererId: entry.rendererId
+            };
+        }
+        if (this.currentFinale || this.currentPreview || this.finaleQueue.length > 0) {
+            this.emitPreviewAck(entry.requestId, false, 'FINALE_BUSY');
+            return {
+                accepted: false,
+                reason: 'FINALE_BUSY',
+                requestId: entry.requestId,
+                rendererId: entry.rendererId
+            };
+        }
+
+        this.previewGeneration++;
+        entry.runtimeToken = `${entry.requestId}:preview:${this.previewGeneration}`;
+        const firstCue = entry.showPlan.cues
+            .slice()
+            .sort((left, right) => Number(left.beatAtMs) - Number(right.beatAtMs))[0];
+        this.currentPreview = {
+            id: entry.requestId,
+            requestId: entry.requestId,
+            rendererId: entry.rendererId,
+            scope: entry.scope,
+            phase: firstCue?.phase || 'opening',
+            state: 'reserved',
+            runtimeToken: entry.runtimeToken,
+            showPlan: entry.showPlan,
+            layersSubmitted: 0,
+            audioGroupsPlayed: { launch: 0, bang: 0, crackle: 0 }
+        };
+        this.emitPreviewAck(entry.requestId, true);
+        try {
+            this.startPreviewEntry(entry, this.getRuntimeNow());
+        } catch (error) {
+            this.failPreview(entry.requestId, error, this.getRuntimeNow());
+        }
+        return {
+            accepted: true,
+            requestId: entry.requestId,
+            rendererId: entry.rendererId
         };
     }
 
@@ -2234,7 +2477,7 @@ class WebGPUFireworksEngine {
 
     startNextFinaleIfReady(now = this.getRuntimeNow()) {
         this.ensureFinaleRuntimeState();
-        if (this.currentFinale || this.rendererStatus?.state !== 'ready' || !this.renderer?.initialized) {
+        if (this.currentFinale || this.currentPreview || this.rendererStatus?.state !== 'ready' || !this.renderer?.initialized) {
             this.emitFinaleTelemetry();
             return false;
         }
@@ -2296,7 +2539,7 @@ class WebGPUFireworksEngine {
                 queueLength: this.finaleQueue.length
             };
         }
-        const queued = Boolean(this.currentFinale || rendererKnownUnavailable);
+        const queued = Boolean(this.currentFinale || this.currentPreview || rendererKnownUnavailable);
         this.finaleIds.add(id);
         let details;
         if (queued) {
@@ -2503,12 +2746,16 @@ class WebGPUFireworksEngine {
         } catch (error) {
             console.error('[WebGPU Fireworks] Renderer frame failed:', error);
             const failedFinaleId = this.currentFinale?.id || null;
+            const failedPreviewId = this.currentPreview?.requestId || null;
             this.setStatus(
                 { state: 'error', reason: error?.message || String(error) },
                 { transientFrameError: true }
             );
             if (failedFinaleId && this.currentFinale?.id === failedFinaleId) {
                 this.failFinale(failedFinaleId, error, now);
+            }
+            if (failedPreviewId && this.currentPreview?.requestId === failedPreviewId) {
+                this.failPreview(failedPreviewId, error, now);
             }
         }
         if (renderSucceeded && this.transientFrameError && this.rendererStatus.state === 'error') {
@@ -2555,6 +2802,14 @@ class WebGPUFireworksEngine {
 
     destroy() {
         this.running = false;
+        if (this.currentPreview) {
+            this.failPreview(
+                this.currentPreview.requestId,
+                new Error('Preview renderer destroyed.'),
+                this.getRuntimeNow(),
+                { reason: 'renderer-destroyed', startNext: false }
+            );
+        }
         this.clearFollowerAnimation();
         this.endCardOwnerId = null;
         this.deferredFollowerAnimation = null;
@@ -2573,9 +2828,12 @@ class WebGPUFireworksEngine {
         this.finaleQueue.length = 0;
         this.finaleIds.clear();
         this.currentFinale = null;
+        this.currentPreview = null;
         this.finalePhase = 'idle';
         this.finaleGeneration = 0;
+        this.previewGeneration = 0;
         this.failingFinaleIds.clear();
+        this.failingPreviewIds.clear();
         this.transientFrameError = false;
         this.giftBacklog.clear();
         this.giftLaunchTimestamps.length = 0;
