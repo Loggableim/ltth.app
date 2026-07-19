@@ -62,10 +62,10 @@ function createClient(search = '') {
     connect() {
       handlers.get('connect')();
     },
-    receive(event, payload) {
+    receive(event, payload, acknowledge) {
       const handler = handlers.get(event);
       expect(handler).toBeDefined();
-      return handler(payload);
+      return handler(payload, acknowledge);
     },
     restore() {
       for (const [name, value] of Object.entries(previous)) {
@@ -224,6 +224,75 @@ describe('WebGPU Fireworks benchmark overlay client isolation', () => {
     } finally {
       second.restore();
       first.restore();
+    }
+  });
+
+  test('acknowledges scoped config only after apply and scoped triggers only after renderer admission', async () => {
+    const client = createClient(`?benchmark=true&benchmarkSessionId=${FIRST_SESSION}`);
+    try {
+      client.connect();
+      client.engine.handleIncomingTrigger.mockResolvedValue({ id: 'accepted-plan' });
+      const configAck = jest.fn();
+      const triggerAck = jest.fn();
+
+      client.receive('webgpu-fireworks:config-update', {
+        config: { targetFps: 30 },
+        benchmarkSessionId: FIRST_SESSION
+      }, configAck);
+      expect(client.engine.config.targetFps).toBe(30);
+      expect(configAck).toHaveBeenCalledWith({
+        accepted: true,
+        benchmarkSessionId: FIRST_SESSION,
+        applied: true
+      });
+
+      await client.receive('webgpu-fireworks:trigger', {
+        shape: 'burst',
+        benchmarkSessionId: FIRST_SESSION
+      }, triggerAck);
+      expect(triggerAck).toHaveBeenCalledWith({
+        accepted: true,
+        benchmarkSessionId: FIRST_SESSION,
+        admitted: true
+      });
+
+      const rejectedAck = jest.fn();
+      client.engine.handleIncomingTrigger.mockResolvedValue(null);
+      await client.receive('webgpu-fireworks:trigger', {
+        shape: 'burst',
+        benchmarkSessionId: FIRST_SESSION
+      }, rejectedAck);
+      expect(rejectedAck).toHaveBeenCalledWith(expect.objectContaining({
+        accepted: false,
+        benchmarkSessionId: FIRST_SESSION,
+        reason: 'renderer-rejected'
+      }));
+    } finally {
+      client.restore();
+    }
+  });
+
+  test('rejects an expired benchmark admission before invoking the renderer', async () => {
+    const client = createClient(`?benchmark=true&benchmarkSessionId=${FIRST_SESSION}`);
+    try {
+      client.connect();
+      client.engine.handleIncomingTrigger.mockClear();
+      const acknowledge = jest.fn();
+
+      await client.receive('webgpu-fireworks:trigger', {
+        shape: 'burst',
+        benchmarkSessionId: FIRST_SESSION,
+        benchmarkAdmissionDeadline: Date.now() - 1
+      }, acknowledge);
+
+      expect(client.engine.handleIncomingTrigger).not.toHaveBeenCalled();
+      expect(acknowledge).toHaveBeenCalledWith({
+        accepted: false,
+        benchmarkSessionId: FIRST_SESSION,
+        reason: 'admission-expired'
+      });
+    } finally {
+      client.restore();
     }
   });
 });

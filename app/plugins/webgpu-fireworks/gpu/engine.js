@@ -949,8 +949,41 @@ class WebGPUFireworksEngine {
             this.startNextFinaleIfReady(this.getRuntimeNow());
             this.audio.ensureContext();
         });
-        this.socket.on('webgpu-fireworks:trigger', data => {
-            if (this.acceptsScopedSocketEvent(data)) this.handleIncomingTrigger(data);
+        this.socket.on('webgpu-fireworks:trigger', async (data, acknowledge) => {
+            if (!this.acceptsScopedSocketEvent(data)) {
+                if (typeof acknowledge === 'function') acknowledge({
+                    accepted: false,
+                    benchmarkSessionId: this.benchmarkSessionId,
+                    reason: 'scope-mismatch'
+                });
+                return;
+            }
+            if (this.isBenchmarkAdmissionExpired(data)) {
+                if (typeof acknowledge === 'function') acknowledge({
+                    accepted: false,
+                    benchmarkSessionId: this.benchmarkSessionId,
+                    reason: 'admission-expired'
+                });
+                return;
+            }
+            try {
+                const result = await this.handleIncomingTrigger(data);
+                const admitted = Boolean(
+                    result && result.accepted !== false && result.cancelled !== true
+                );
+                if (typeof acknowledge === 'function') acknowledge({
+                    accepted: admitted,
+                    benchmarkSessionId: this.benchmarkSessionId,
+                    ...(admitted ? { admitted: true } : { reason: 'renderer-rejected' })
+                });
+            } catch (error) {
+                console.error('[WebGPU Fireworks] Trigger admission failed:', error);
+                if (typeof acknowledge === 'function') acknowledge({
+                    accepted: false,
+                    benchmarkSessionId: this.benchmarkSessionId,
+                    reason: 'renderer-error'
+                });
+            }
         });
         this.socket.on('webgpu-fireworks:finale', data => {
             if (!this.isBenchmark && this.acceptsScopedSocketEvent(data)) this.handleFinaleSocketEvent(data);
@@ -977,18 +1010,39 @@ class WebGPUFireworksEngine {
                 count: this.activeShows.size, particles: metrics.activeParticles || 0
             });
         });
-        this.socket.on('webgpu-fireworks:config-update', data => {
-            if (!data || !data.config || !this.acceptsScopedSocketEvent(data)) return;
-            this.config = { ...this.config, ...data.config, renderer: 'webgpu' };
-            this.resetAdaptivePerformanceState();
-            this.audio.setEnabled(this.config.audioEnabled);
-            this.audio.setVolume(this.config.audioVolume);
-            this.audio.setCrackleVolume(this.config.crackleVolume);
-            this.audio.useUrl(this.config.rocketSound, 'launch');
-            this.audio.useUrl(this.config.explosionSound, 'bang');
-            this.resize();
-            this.applyQuality();
-            this.applyInteractiveMode();
+        this.socket.on('webgpu-fireworks:config-update', (data, acknowledge) => {
+            if (!data || !data.config || !this.acceptsScopedSocketEvent(data)) {
+                if (typeof acknowledge === 'function') acknowledge({
+                    accepted: false,
+                    benchmarkSessionId: this.benchmarkSessionId,
+                    reason: 'scope-mismatch'
+                });
+                return;
+            }
+            try {
+                this.config = { ...this.config, ...data.config, renderer: 'webgpu' };
+                this.resetAdaptivePerformanceState();
+                this.audio.setEnabled(this.config.audioEnabled);
+                this.audio.setVolume(this.config.audioVolume);
+                this.audio.setCrackleVolume(this.config.crackleVolume);
+                this.audio.useUrl(this.config.rocketSound, 'launch');
+                this.audio.useUrl(this.config.explosionSound, 'bang');
+                this.resize();
+                this.applyQuality();
+                this.applyInteractiveMode();
+                if (typeof acknowledge === 'function') acknowledge({
+                    accepted: true,
+                    benchmarkSessionId: this.benchmarkSessionId,
+                    applied: true
+                });
+            } catch (error) {
+                console.error('[WebGPU Fireworks] Config apply failed:', error);
+                if (typeof acknowledge === 'function') acknowledge({
+                    accepted: false,
+                    benchmarkSessionId: this.benchmarkSessionId,
+                    reason: 'config-apply-failed'
+                });
+            }
         });
     }
 
@@ -1003,6 +1057,13 @@ class WebGPUFireworksEngine {
             data.benchmarkSessionId !== null && data.benchmarkSessionId !== undefined;
         if (!this.isBenchmark) return !sessionMarked;
         return Boolean(this.benchmarkSessionId) && data?.benchmarkSessionId === this.benchmarkSessionId;
+    }
+
+    isBenchmarkAdmissionExpired(data, now = Date.now()) {
+        const deadline = Number(data?.benchmarkAdmissionDeadline);
+        return Boolean(
+            data?.benchmarkSessionId && Number.isFinite(deadline) && deadline <= now
+        );
     }
 
     setStatus(status, options = {}) {
@@ -1689,6 +1750,9 @@ class WebGPUFireworksEngine {
     }
 
     async handleTrigger(data = {}) {
+        if (this.isBenchmarkAdmissionExpired(data)) {
+            return { cancelled: true, reason: 'admission-expired' };
+        }
         if (!this.renderer?.initialized || this.rendererStatus.state !== 'ready') {
             if (data.finaleId) throw new Error(`WebGPU renderer is not ready for finale ${data.finaleId}`);
             return;
@@ -1812,6 +1876,9 @@ class WebGPUFireworksEngine {
             finaleId: data.finaleId || null,
             trackGiftLaunch: data.trackGiftLaunch === true
         });
+        if (this.isBenchmarkAdmissionExpired(data)) {
+            return { cancelled: true, reason: 'admission-expired' };
+        }
         this.enqueueEffectPlan(plan);
         if (assetPreparation) {
             Promise.resolve(assetPreparation).then(preparedAssets => {

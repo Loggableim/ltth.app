@@ -678,6 +678,35 @@ describe('WebGPU choreographed finale runtime', () => {
     expect(engine.timelineQueue.filter(event => event.plan === plan).every(event => event.finaleId === 'show')).toBe(true);
   });
 
+  test('does not enqueue a benchmark trigger whose admission expires during preparation', async () => {
+    const engine = makeRuntime(10000);
+    const dateNow = jest.spyOn(Date, 'now').mockReturnValue(1000);
+    let finishPreparation;
+    engine.prepareImages = jest.fn(() => new Promise(resolve => {
+      finishPreparation = resolve;
+    }));
+    try {
+      const admission = engine.handleTrigger({
+        id: 'late-benchmark',
+        benchmarkSessionId: '11111111-1111-4111-8111-111111111111',
+        benchmarkAdmissionDeadline: 1001,
+        position: { x: 0.5, y: 0.25 },
+        origin: { x: 0.5, y: 1.02 }
+      });
+      dateNow.mockReturnValue(1002);
+      finishPreparation({ giftTexture: 0, avatarTexture: 0, avatarChance: 0.3 });
+
+      await expect(admission).resolves.toMatchObject({
+        cancelled: true,
+        reason: 'admission-expired'
+      });
+      expect(engine.timelineQueue).toHaveLength(0);
+      expect(engine.effectPlans.size).toBe(0);
+    } finally {
+      dateNow.mockRestore();
+    }
+  });
+
   test('caps the last planned particle lifetime at the finale tail boundary', async () => {
     const engine = makeRuntime(10000);
     engine.prepareImages = jest.fn().mockResolvedValue({ giftTexture: 0, avatarTexture: 0, avatarChance: 0.3 });

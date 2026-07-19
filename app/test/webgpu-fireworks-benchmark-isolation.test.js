@@ -12,16 +12,48 @@ class FakeSocket {
     this.connected = true;
     this.handlers = new Map();
     this.emitted = [];
-    this.emitResult = true;
+    this.ackEnabled = true;
+    this.ackResponse = null;
+    this.ackDelayMs = 0;
+    this.ackTimeoutMs = null;
+    this.pendingAcks = new Set();
   }
 
   on(event, handler) {
     this.handlers.set(event, handler);
   }
 
-  emit(event, payload) {
+  timeout(timeoutMs) {
+    this.ackTimeoutMs = timeoutMs;
+    return this;
+  }
+
+  emit(event, payload, acknowledge) {
+    const timeoutMs = this.ackTimeoutMs;
+    this.ackTimeoutMs = null;
     this.emitted.push([event, payload]);
-    return this.emitResult;
+    if (typeof acknowledge === 'function') {
+      if (this.ackEnabled) {
+        const response = this.ackResponse || {
+          accepted: true,
+          benchmarkSessionId: payload?.benchmarkSessionId
+        };
+        if (this.ackDelayMs > 0) {
+          const timer = setTimeout(() => {
+            this.pendingAcks.delete(timer);
+            acknowledge(null, response);
+          }, this.ackDelayMs);
+          this.pendingAcks.add(timer);
+        } else acknowledge(null, response);
+      } else if (Number.isFinite(timeoutMs)) {
+        const timer = setTimeout(() => {
+          this.pendingAcks.delete(timer);
+          acknowledge(new Error('operation has timed out'));
+        }, timeoutMs);
+        this.pendingAcks.add(timer);
+      }
+    }
+    return true;
   }
 
   receive(event, payload) {
@@ -304,7 +336,11 @@ describe('WebGPU Fireworks benchmark session isolation', () => {
     registerBenchmarkRenderer(socket, sessionInfo.sessionId);
     const session = harness.plugin.benchmarkSessions.get(sessionInfo.sessionId);
     const before = JSON.parse(JSON.stringify(session.config));
-    socket.emitResult = false;
+    socket.ackResponse = {
+      accepted: false,
+      benchmarkSessionId: sessionInfo.sessionId,
+      reason: 'renderer-rejected-config'
+    };
 
     const response = harness.callRoute(
       'post',
@@ -322,6 +358,34 @@ describe('WebGPU Fireworks benchmark session isolation', () => {
     expect(session.config).toEqual(before);
     expect(harness.plugin.config.targetFps).toBe(45);
     expect(harness.api.emit).not.toHaveBeenCalled();
+  });
+
+  test('times out a preset delivery that never receives a renderer acknowledgement', () => {
+    jest.useFakeTimers();
+    const harness = createHarness({ targetFps: 45 });
+    const sessionInfo = startSession(harness);
+    const socket = harness.connect('benchmark-timeout');
+    registerBenchmarkRenderer(socket, sessionInfo.sessionId);
+    socket.ackEnabled = false;
+    harness.plugin.benchmarkDeliveryAckTimeoutMs = 25;
+    const before = { ...harness.plugin.benchmarkSessions.get(sessionInfo.sessionId).config };
+
+    const response = harness.callRoute(
+      'post',
+      '/api/webgpu-fireworks/benchmark/set-preset',
+      harness.request({ body: { sessionId: sessionInfo.sessionId, preset: { targetFps: 30 } } })
+    );
+    expect(response.body).toBeNull();
+    jest.advanceTimersByTime(25);
+
+    expect(response.statusCode).toBe(503);
+    expect(response.body).toMatchObject({
+      success: false,
+      code: 'BENCHMARK_CONFIG_DELIVERY_FAILED',
+      reason: 'ack-timeout'
+    });
+    expect(harness.plugin.benchmarkSessions.get(sessionInfo.sessionId).config).toEqual(before);
+    expect(socket.pendingAcks.size).toBe(0);
   });
 
   test('dispatches a benchmark trigger only to its ready session socket without live-load tracking', () => {
@@ -351,6 +415,8 @@ describe('WebGPU Fireworks benchmark session isolation', () => {
           sessionId: first.sessionId,
           shape: 'heart',
           intensity: 1.5,
+          giftImage: 'https://example.test/gift.png',
+          userAvatar: 'https://example.test/avatar.png',
           playSound: true,
           reason: 'gift',
           trackLiveLoad: true,
@@ -375,7 +441,10 @@ describe('WebGPU Fireworks benchmark session isolation', () => {
         intensity: 1.5,
         playSound: false,
         reason: 'benchmark',
-        benchmarkSessionId: first.sessionId
+        benchmarkSessionId: first.sessionId,
+        benchmarkAdmissionDeadline: expect.any(Number),
+        giftImage: null,
+        userAvatar: null
       }
     });
     expect(firstSocket.payloads('webgpu-fireworks:trigger')).toEqual([response.body.payload]);
@@ -421,6 +490,33 @@ describe('WebGPU Fireworks benchmark session isolation', () => {
     expect(result.payload).not.toHaveProperty('dispatchContext');
     jest.clearAllTimers();
     jest.useRealTimers();
+  });
+
+  test('reports a targeted benchmark trigger as failed when its renderer rejects admission', () => {
+    const harness = createHarness();
+    const session = startSession(harness);
+    const socket = harness.connect('benchmark-rejected-trigger');
+    registerBenchmarkRenderer(socket, session.sessionId);
+    socket.ackResponse = {
+      accepted: false,
+      benchmarkSessionId: session.sessionId,
+      reason: 'renderer-not-ready'
+    };
+
+    const response = harness.callRoute(
+      'post',
+      '/api/webgpu-fireworks/benchmark/trigger',
+      harness.request({ body: { sessionId: session.sessionId, shape: 'burst' } })
+    );
+
+    expect(response.statusCode).toBe(503);
+    expect(response.body).toMatchObject({
+      success: false,
+      accepted: false,
+      code: 'BENCHMARK_TRIGGER_DELIVERY_FAILED',
+      reason: 'renderer-not-ready'
+    });
+    expect(harness.plugin.activeFireworkCount).toBe(0);
   });
 
   test.each([
@@ -782,7 +878,11 @@ describe('WebGPU Fireworks benchmark session isolation', () => {
     const session = harness.plugin.benchmarkSessions.get(sessionInfo.sessionId);
     const benchmarkConfig = normalizeConfig({ ...session.baseConfig, targetFps: 30 });
     session.config = benchmarkConfig;
-    socket.emitResult = false;
+    socket.ackResponse = {
+      accepted: false,
+      benchmarkSessionId: sessionInfo.sessionId,
+      reason: 'renderer-rejected-config'
+    };
 
     const failed = harness.callRoute(
       'post',
@@ -800,7 +900,7 @@ describe('WebGPU Fireworks benchmark session isolation', () => {
     expect(session.socket).toBe(socket);
     expect(harness.plugin.benchmarkSocketSessions.get(socket.id)).toBe(sessionInfo.sessionId);
 
-    socket.emitResult = true;
+    socket.ackResponse = null;
     const retried = harness.callRoute(
       'post',
       '/api/webgpu-fireworks/benchmark/restore',
@@ -809,6 +909,120 @@ describe('WebGPU Fireworks benchmark session isolation', () => {
     expect(retried.statusCode).toBe(200);
     expect(retried.body).toMatchObject({ success: true, restored: true });
     expect(session.restored).toBe(true);
+  });
+
+  test('serializes restore against preset, trigger, and duplicate restore deliveries', () => {
+    jest.useFakeTimers();
+    const harness = createHarness({ targetFps: 45 });
+    const sessionInfo = startSession(harness);
+    const socket = harness.connect('benchmark-restore-race');
+    registerBenchmarkRenderer(socket, sessionInfo.sessionId);
+    socket.emitted = [];
+    socket.ackDelayMs = 50;
+
+    const restoring = harness.callRoute(
+      'post',
+      '/api/webgpu-fireworks/benchmark/restore',
+      harness.request({ body: { sessionId: sessionInfo.sessionId } })
+    );
+    expect(restoring.body).toBeNull();
+
+    for (const [route, body] of [
+      ['/api/webgpu-fireworks/benchmark/set-preset', {
+        sessionId: sessionInfo.sessionId,
+        preset: { targetFps: 30 }
+      }],
+      ['/api/webgpu-fireworks/benchmark/trigger', {
+        sessionId: sessionInfo.sessionId,
+        shape: 'burst'
+      }],
+      ['/api/webgpu-fireworks/benchmark/restore', { sessionId: sessionInfo.sessionId }]
+    ]) {
+      const blocked = harness.callRoute('post', route, harness.request({ body }));
+      expect(blocked.statusCode).toBe(409);
+      expect(blocked.body).toMatchObject({
+        success: false,
+        code: 'BENCHMARK_SESSION_BUSY',
+        operation: 'restore'
+      });
+    }
+
+    jest.advanceTimersByTime(50);
+    const session = harness.plugin.benchmarkSessions.get(sessionInfo.sessionId);
+    expect(restoring.statusCode).toBe(200);
+    expect(session.restored).toBe(true);
+    expect(session.config).toEqual(session.baseConfig);
+    expect(socket.payloads('webgpu-fireworks:config-update')).toHaveLength(1);
+    expect(socket.payloads('webgpu-fireworks:trigger')).toHaveLength(0);
+  });
+
+  test('does not let restore overtake an in-flight preset delivery', () => {
+    jest.useFakeTimers();
+    const harness = createHarness({ targetFps: 45 });
+    const sessionInfo = startSession(harness);
+    const socket = harness.connect('benchmark-preset-race');
+    registerBenchmarkRenderer(socket, sessionInfo.sessionId);
+    socket.ackDelayMs = 50;
+
+    const preset = harness.callRoute(
+      'post',
+      '/api/webgpu-fireworks/benchmark/set-preset',
+      harness.request({ body: {
+        sessionId: sessionInfo.sessionId,
+        preset: { targetFps: 30 }
+      } })
+    );
+    expect(preset.body).toBeNull();
+
+    const blockedRestore = harness.callRoute(
+      'post',
+      '/api/webgpu-fireworks/benchmark/restore',
+      harness.request({ body: { sessionId: sessionInfo.sessionId } })
+    );
+    expect(blockedRestore.statusCode).toBe(409);
+    expect(blockedRestore.body).toMatchObject({
+      success: false,
+      code: 'BENCHMARK_SESSION_BUSY',
+      operation: 'set-preset'
+    });
+
+    jest.advanceTimersByTime(50);
+    expect(preset.statusCode).toBe(200);
+    expect(harness.plugin.benchmarkSessions.get(sessionInfo.sessionId).config.targetFps).toBe(30);
+
+    socket.ackDelayMs = 0;
+    const restored = harness.callRoute(
+      'post',
+      '/api/webgpu-fireworks/benchmark/restore',
+      harness.request({ body: { sessionId: sessionInfo.sessionId } })
+    );
+    expect(restored.statusCode).toBe(200);
+    expect(harness.plugin.benchmarkSessions.get(sessionInfo.sessionId).config.targetFps).toBe(45);
+  });
+
+  test('benchmark-only or rejected registrations never count as a live finale renderer', () => {
+    const harness = createHarness();
+    const session = startSession(harness);
+    const benchmarkSocket = harness.connect('benchmark-only');
+    registerBenchmarkRenderer(benchmarkSocket, session.sessionId);
+
+    expect(harness.plugin.hasRegisteredRendererSocket()).toBe(false);
+    const payload = { id: 'live-finale', style: 'crescendo', showPlan: { id: 'show' } };
+    const dispatch = harness.plugin.dispatchFinalePayload(payload);
+    expect(dispatch).toMatchObject({ submitted: true, payload });
+    expect(harness.api.emit).toHaveBeenCalledWith('webgpu-fireworks:finale', payload);
+
+    const rejectedSocket = harness.connect('rejected-benchmark');
+    rejectedSocket.receive('webgpu-fireworks:register-overlay', {
+      benchmark: true,
+      benchmarkSessionId: randomUUID(),
+      visible: true
+    });
+    expect(harness.plugin.overlayTelemetry.get(rejectedSocket.id)).toMatchObject({
+      registered: false,
+      benchmark: true
+    });
+    expect(harness.plugin.hasRegisteredRendererSocket()).toBe(false);
   });
 
   test.each([

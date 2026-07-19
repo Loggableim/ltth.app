@@ -59,7 +59,8 @@ function createBenchmarkDispatchContext(session, socket) {
         config: session.config,
         socket,
         playSound: false,
-        trackLiveLoad: false
+        trackLiveLoad: false,
+        deferDelivery: true
     });
 }
 const SUPERFAN_FINALE_TEST_CONFIG_KEYS = Object.freeze([
@@ -222,6 +223,7 @@ class FireworksPlugin {
         this.benchmarkSessionTtlMs = 15 * 60 * 1000;
         this.benchmarkSessionCleanupIntervalMs = 60 * 1000;
         this.benchmarkSessionCleanupTimer = null;
+        this.benchmarkDeliveryAckTimeoutMs = 1500;
         this.connectedSockets = new Set();
         this.overlayTelemetry = new Map();
         this.pendingPreviewRequests = new Map();
@@ -260,6 +262,7 @@ class FireworksPlugin {
             socket: null,
             socketId: null,
             restored: false,
+            pendingOperation: null,
             createdAt: now,
             updatedAt: now,
             expiresAt: now + this.benchmarkSessionTtlMs
@@ -407,6 +410,60 @@ class FireworksPlugin {
             telemetry.visible === false || telemetry.state !== 'ready'
         ) return null;
         return { socket, telemetry };
+    }
+
+    beginBenchmarkSessionOperation(session, operation, res) {
+        if (session.pendingOperation) {
+            res.status(409).json({
+                success: false,
+                accepted: false,
+                code: 'BENCHMARK_SESSION_BUSY',
+                operation: session.pendingOperation.operation,
+                error: `Benchmark session is busy with ${session.pendingOperation.operation}`
+            });
+            return null;
+        }
+        const token = Object.freeze({ operation });
+        session.pendingOperation = token;
+        this.touchBenchmarkSession(session);
+        return token;
+    }
+
+    finishBenchmarkSessionOperation(session, token) {
+        if (session.pendingOperation !== token) return false;
+        session.pendingOperation = null;
+        this.touchBenchmarkSession(session);
+        return true;
+    }
+
+    deliverBenchmarkSocketEvent(socket, event, payload, onComplete) {
+        let settled = false;
+        const finish = (accepted, reason, response = null) => {
+            if (settled) return;
+            settled = true;
+            onComplete({ accepted, reason, response });
+        };
+        const acknowledge = (error, response) => {
+            if (error) {
+                finish(false, 'ack-timeout');
+                return;
+            }
+            const exactSession = response?.benchmarkSessionId === payload?.benchmarkSessionId;
+            const accepted = exactSession && response?.accepted === true;
+            const reason = exactSession
+                ? (response?.reason || (accepted ? 'acknowledged' : 'renderer-rejected'))
+                : 'ack-session-mismatch';
+            finish(accepted, reason, response);
+        };
+
+        try {
+            const emitted = socket.timeout(this.benchmarkDeliveryAckTimeoutMs)
+                .emit(event, payload, acknowledge);
+            if (emitted === false) finish(false, 'emit-failed');
+        } catch (error) {
+            this.api.log(`[FIREWORKS] Benchmark delivery failed: ${error.message}`, 'warn');
+            finish(false, 'emit-failed');
+        }
     }
 
     async init() {
@@ -822,9 +879,13 @@ class FireworksPlugin {
     }
 
     hasRegisteredRendererSocket() {
-        return [...this.connectedSockets].some(socket => (
-            socket && this.overlayTelemetry.has(socket.id)
-        ));
+        return [...this.connectedSockets].some(socket => {
+            const telemetry = socket ? this.overlayTelemetry.get(socket.id) : null;
+            return Boolean(
+                socket && socket.connected !== false && telemetry?.registered === true &&
+                telemetry.benchmark !== true
+            );
+        });
     }
 
     getReadyRendererTelemetry() {
@@ -1783,30 +1844,29 @@ class FireworksPlugin {
                 }
                 const socket = renderer.socket;
                 const config = normalizeConfig({ ...session.baseConfig, ...preset });
-                let emitted;
-                try {
-                    emitted = socket.emit('webgpu-fireworks:config-update', {
-                        config,
-                        benchmarkSessionId: session.id
+                const operation = this.beginBenchmarkSessionOperation(session, 'set-preset', res);
+                if (!operation) return;
+                return this.deliverBenchmarkSocketEvent(socket, 'webgpu-fireworks:config-update', {
+                    config,
+                    benchmarkSessionId: session.id
+                }, delivery => {
+                    if (!delivery.accepted) {
+                        this.finishBenchmarkSessionOperation(session, operation);
+                        return res.status(503).json({
+                            success: false,
+                            code: 'BENCHMARK_CONFIG_DELIVERY_FAILED',
+                            error: 'Benchmark config delivery failed',
+                            reason: delivery.reason
+                        });
+                    }
+                    session.config = config;
+                    this.finishBenchmarkSessionOperation(session, operation);
+                    return res.json({
+                        success: true,
+                        sessionId: session.id,
+                        message: 'Preset applied for benchmark',
+                        config: session.config
                     });
-                } catch (error) {
-                    this.api.log(`[FIREWORKS] Benchmark config delivery failed: ${error.message}`, 'warn');
-                    emitted = false;
-                }
-                if (emitted === false) {
-                    return res.status(503).json({
-                        success: false,
-                        code: 'BENCHMARK_CONFIG_DELIVERY_FAILED',
-                        error: 'Benchmark config delivery failed'
-                    });
-                }
-                session.config = config;
-                this.touchBenchmarkSession(session);
-                return res.json({
-                    success: true,
-                    sessionId: session.id,
-                    message: 'Preset applied for benchmark',
-                    config: session.config
                 });
             } catch (error) {
                 this.api.log(`❌ [FIREWORKS] Error setting benchmark preset: ${error.message}`, 'error');
@@ -1843,14 +1903,38 @@ class FireworksPlugin {
                         sessionId: session.id
                     });
                 }
-                this.touchBenchmarkSession(session);
-                return res.json({
-                    success: true,
-                    accepted: true,
-                    reason: result.reason,
-                    sessionId: session.id,
-                    message: 'Benchmark firework submitted',
-                    payload: result.payload
+                Object.assign(result.payload, {
+                    giftId: null,
+                    giftImage: null,
+                    userAvatar: null,
+                    benchmarkAdmissionDeadline: Date.now() + Math.max(
+                        100,
+                        this.benchmarkDeliveryAckTimeoutMs - 250
+                    )
+                });
+                const operation = this.beginBenchmarkSessionOperation(session, 'trigger', res);
+                if (!operation) return;
+                return this.deliverBenchmarkSocketEvent(renderer.socket, 'webgpu-fireworks:trigger', result.payload, delivery => {
+                    if (!delivery.accepted) {
+                        this.finishBenchmarkSessionOperation(session, operation);
+                        return res.status(503).json({
+                            success: false,
+                            accepted: false,
+                            code: 'BENCHMARK_TRIGGER_DELIVERY_FAILED',
+                            reason: delivery.reason,
+                            sessionId: session.id,
+                            error: 'Benchmark trigger delivery failed'
+                        });
+                    }
+                    this.finishBenchmarkSessionOperation(session, operation);
+                    return res.json({
+                        success: true,
+                        accepted: true,
+                        reason: 'submitted',
+                        sessionId: session.id,
+                        message: 'Benchmark firework submitted',
+                        payload: result.payload
+                    });
                 });
             } catch (error) {
                 this.api.log(`[FIREWORKS] Error triggering benchmark firework: ${error.message}`, 'error');
@@ -1906,35 +1990,36 @@ class FireworksPlugin {
                 }
                 const socket = this.getConnectedBenchmarkSocket(session);
                 const config = normalizeConfig(session.baseConfig);
-                if (socket) {
-                    let emitted;
-                    try {
-                        emitted = socket.emit('webgpu-fireworks:config-update', {
-                            config,
-                            benchmarkSessionId: session.id
-                        });
-                    } catch (error) {
-                        this.api.log(`[FIREWORKS] Benchmark restore delivery failed: ${error.message}`, 'warn');
-                        emitted = false;
-                    }
-                    if (emitted === false) {
+                const operation = this.beginBenchmarkSessionOperation(session, 'restore', res);
+                if (!operation) return;
+                const completeRestore = () => {
+                    session.config = config;
+                    session.restored = true;
+                    session.restoredAt = Date.now();
+                    this.finishBenchmarkSessionOperation(session, operation);
+                    if (socket) this.unbindBenchmarkSocket(socket);
+                    return res.json({
+                        success: true,
+                        sessionId: session.id,
+                        restored: true,
+                        message: 'Benchmark session restored'
+                    });
+                };
+                if (!socket) return completeRestore();
+                return this.deliverBenchmarkSocketEvent(socket, 'webgpu-fireworks:config-update', {
+                    config,
+                    benchmarkSessionId: session.id
+                }, delivery => {
+                    if (!delivery.accepted) {
+                        this.finishBenchmarkSessionOperation(session, operation);
                         return res.status(503).json({
                             success: false,
                             code: 'BENCHMARK_CONFIG_DELIVERY_FAILED',
-                            error: 'Benchmark config delivery failed'
+                            error: 'Benchmark config delivery failed',
+                            reason: delivery.reason
                         });
                     }
-                }
-                session.config = config;
-                session.restored = true;
-                session.restoredAt = Date.now();
-                this.touchBenchmarkSession(session, session.restoredAt);
-                if (socket) this.unbindBenchmarkSocket(socket);
-                return res.json({
-                    success: true,
-                    sessionId: session.id,
-                    restored: true,
-                    message: 'Benchmark session restored'
+                    return completeRestore();
                 });
             } catch (error) {
                 this.api.log(`❌ [FIREWORKS] Error restoring config: ${error.message}`, 'error');
@@ -2702,6 +2787,10 @@ class FireworksPlugin {
         };
 
         if (dispatchContext) payload.benchmarkSessionId = dispatchContext.benchmarkSessionId;
+
+        if (dispatchContext?.deferDelivery === true) {
+            return { accepted: true, reason: 'prepared', payload };
+        }
 
         try {
             const emitted = dispatchContext
