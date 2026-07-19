@@ -287,9 +287,8 @@
   }
 
   function customTitle(styleId, renderer, catalog) {
-    if (typeof renderer?.finaleName === 'string' && renderer.finaleName.trim()) {
-      return renderer.finaleName.trim();
-    }
+    const runtimeName = normalizedName(renderer?.finaleName, null);
+    if (runtimeName) return runtimeName;
     const styles = Array.isArray(catalog?.custom) ? catalog.custom : [];
     return styles.find(style => style.id === styleId)?.name || null;
   }

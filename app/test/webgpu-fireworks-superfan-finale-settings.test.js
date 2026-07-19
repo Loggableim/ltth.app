@@ -79,6 +79,7 @@ describe('WebGPU Superfan finale settings', () => {
       url: 'http://localhost:3000/webgpu-fireworks/ui'
     });
     const { window } = dom;
+    const i18nHandlers = { change: [], languageChange: [] };
     const ready = new Promise(resolve => {
       window.document.addEventListener('DOMContentLoaded', resolve, { once: true });
     });
@@ -91,7 +92,8 @@ describe('WebGPU Superfan finale settings', () => {
     window.i18n = {
       init: jest.fn(async () => {}),
       updateDOM: jest.fn(),
-      onChange: jest.fn(),
+      onChange: jest.fn(handler => i18nHandlers.change.push(handler)),
+      onLanguageChange: jest.fn(handler => i18nHandlers.languageChange.push(handler)),
       t: jest.fn(key => translations[key] || key)
     };
     const socketHandlers = new Map();
@@ -142,7 +144,7 @@ describe('WebGPU Superfan finale settings', () => {
     });
     await new Promise(resolve => setImmediate(resolve));
 
-    return { window, fetchMock, socketHandlers };
+    return { window, fetchMock, socketHandlers, i18nHandlers };
   }
 
   test('exposes enabled, cooldown, intensity, and inherited finale controls', () => {
@@ -505,6 +507,67 @@ describe('WebGPU Superfan finale settings', () => {
       length: 'long',
       intensity: 4.5
     });
+  });
+
+  test('live language changes refresh programmatic options and status once across both i18n events', async () => {
+    const translations = {
+      'webgpu_fireworks.finale_style_auto': 'Auto EN',
+      'webgpu_fireworks.finale_global_default': 'Global EN',
+      'webgpu_fireworks.finale_length_short': 'Short EN',
+      'plugins.webgpu-fireworks.shows.classic-crescendo.title': 'Classic EN'
+    };
+    const { window, fetchMock, i18nHandlers } = await bootSettings({ translations });
+    const document = window.document;
+    const optionText = (selectId, value) => document
+      .getElementById(selectId)
+      .querySelector(`option[value="${value}"]`)
+      ?.textContent;
+
+    await waitFor(() => expect(optionText('finale-style', 'auto')).toBe('Auto EN'));
+    expect(optionText('superfan-finale-style', 'inherit')).toBe('Global EN');
+    expect(optionText('finale-length', 'short')).toBe('Short EN');
+    expect(optionText('finale-style', 'classic-crescendo')).toBe('Classic EN');
+    expect(i18nHandlers.change).toHaveLength(1);
+    expect(i18nHandlers.languageChange).toHaveLength(1);
+
+    Object.assign(translations, {
+      'webgpu_fireworks.finale_style_auto': 'Auto DE',
+      'webgpu_fireworks.finale_global_default': 'Global DE',
+      'webgpu_fireworks.finale_length_short': 'Kurz DE',
+      'plugins.webgpu-fireworks.shows.classic-crescendo.title': 'Klassisch DE'
+    });
+    const statusRequestsBefore = fetchMock.mock.calls
+      .filter(([url]) => String(url) === '/api/webgpu-fireworks/status').length;
+
+    i18nHandlers.languageChange[0]();
+
+    await waitFor(() => expect(optionText('finale-style', 'auto')).toBe('Auto DE'));
+    expect(optionText('superfan-finale-style', 'inherit')).toBe('Global DE');
+    expect(optionText('finale-length', 'short')).toBe('Kurz DE');
+    expect(optionText('finale-style', 'classic-crescendo')).toBe('Klassisch DE');
+    expect(fetchMock.mock.calls.filter(([url]) => String(url) === '/api/webgpu-fireworks/status'))
+      .toHaveLength(statusRequestsBefore + 1);
+
+    Object.assign(translations, {
+      'webgpu_fireworks.finale_style_auto': 'Auto FR',
+      'webgpu_fireworks.finale_global_default': 'Global FR',
+      'webgpu_fireworks.finale_length_short': 'Court FR',
+      'plugins.webgpu-fireworks.shows.classic-crescendo.title': 'Classique FR'
+    });
+    const duplicateStatusRequestsBefore = fetchMock.mock.calls
+      .filter(([url]) => String(url) === '/api/webgpu-fireworks/status').length;
+    const updateDomCallsBefore = window.i18n.updateDOM.mock.calls.length;
+
+    i18nHandlers.change[0]();
+    i18nHandlers.languageChange[0]();
+
+    await waitFor(() => expect(optionText('finale-style', 'auto')).toBe('Auto FR'));
+    expect(optionText('superfan-finale-style', 'inherit')).toBe('Global FR');
+    expect(optionText('finale-length', 'short')).toBe('Court FR');
+    expect(optionText('finale-style', 'classic-crescendo')).toBe('Classique FR');
+    expect(window.i18n.updateDOM).toHaveBeenCalledTimes(updateDomCallsBefore + 1);
+    expect(fetchMock.mock.calls.filter(([url]) => String(url) === '/api/webgpu-fireworks/status'))
+      .toHaveLength(duplicateStatusRequestsBefore + 1);
   });
 
   test('test button shows localized failure text with a safe backend reason', async () => {

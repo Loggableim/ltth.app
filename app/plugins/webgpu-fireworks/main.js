@@ -41,6 +41,8 @@ const { SuperfanFinaleHistory, normalizeSuperfanIdentityAliases } = require('./l
 const FIREWORKS_CONFIG_MIGRATION_VERSION = 1;
 const SUPERFAN_COMPLETION_AUTHORITY = Symbol('webgpu-fireworks-superfan-completion');
 const INTERNAL_FINALE_FALLBACK_STYLE = Symbol('webgpu-fireworks-internal-finale-fallback-style');
+const MAX_RENDERER_FINALE_STYLE_LENGTH = 64;
+const MAX_RENDERER_FINALE_NAME_LENGTH = 200;
 const SUPERFAN_FINALE_TEST_CONFIG_KEYS = Object.freeze([
     'superfanFinaleEnabled',
     'superfanFinaleCooldownHours',
@@ -54,6 +56,20 @@ const SUPERFAN_FINALE_TEST_CONFIG_KEYS = Object.freeze([
     'goalFinaleStyle',
     'goalFinaleLength'
 ]);
+
+function sanitizeRendererFinaleStyle(value) {
+    if (typeof value !== 'string') return null;
+    const style = value.trim();
+    if (!style || style.length > MAX_RENDERER_FINALE_STYLE_LENGTH) return null;
+    if (style === 'legacy' || FINALE_STYLES.includes(style)) return style;
+    return isCustomFinaleStyleId(style) ? style.toLowerCase() : null;
+}
+
+function sanitizeRendererFinaleName(value) {
+    if (typeof value !== 'string') return null;
+    const name = value.trim();
+    return name ? name.slice(0, MAX_RENDERER_FINALE_NAME_LENGTH) : null;
+}
 
 function isExplicitPaidSubscriberFlag(value) {
     if (value === true || value === 1) return true;
@@ -320,7 +336,8 @@ class FireworksPlugin {
                             : previous.timelineEvents || [],
                         finaleActive: data.finaleActive === true,
                         finaleId: typeof data.finaleId === 'string' ? data.finaleId.slice(0, 160) : null,
-                        finaleStyle: typeof data.finaleStyle === 'string' ? data.finaleStyle.slice(0, 40) : null,
+                        finaleStyle: sanitizeRendererFinaleStyle(data.finaleStyle),
+                        finaleName: sanitizeRendererFinaleName(data.finaleName),
                         finaleLength: typeof data.finaleLength === 'string' ? data.finaleLength.slice(0, 20) : null,
                         finalePhase: typeof data.finalePhase === 'string' ? data.finalePhase.slice(0, 40) : 'idle',
                         finaleQueueLength: Number.isFinite(Number(data.finaleQueueLength))
@@ -443,6 +460,7 @@ class FireworksPlugin {
             finaleActive: false,
             finaleId: null,
             finaleStyle: null,
+            finaleName: null,
             finaleLength: null,
             finalePhase: 'idle',
             finaleQueueLength: 0,

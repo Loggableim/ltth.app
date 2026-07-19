@@ -14,6 +14,7 @@ let socket = null;
 let rendererStatusTimer = null;
 let paletteSaveTimer = null;
 let palettePreviewTimer = null;
+let localizedDynamicRefreshScheduled = false;
 
 function t(key, fallback, params = {}) {
     const translated = window.i18n?.t?.(key, params);
@@ -34,6 +35,23 @@ function finaleSelectorLabels() {
         medium: t('webgpu_fireworks.finale_length_medium', 'Medium (18 s)'),
         long: t('webgpu_fireworks.finale_length_long', 'Long (28 s)')
     };
+}
+
+function scheduleLocalizedDynamicUiRefresh() {
+    if (localizedDynamicRefreshScheduled) return;
+    localizedDynamicRefreshScheduled = true;
+    Promise.resolve().then(() => {
+        localizedDynamicRefreshScheduled = false;
+        updateOverviewSummary();
+        loadRendererStatus();
+        renderGiftStyleMappings();
+        refreshFinaleShowSelectors();
+    });
+}
+
+function refreshLocalizedUiFromI18nChange() {
+    window.i18n?.updateDOM?.();
+    scheduleLocalizedDynamicUiRefresh();
 }
 
 async function refreshFinaleShowSelectors() {
@@ -151,14 +169,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         await window.i18n.init();
         window.i18n.updateDOM();
 
-        // Listen for language changes from main app
-        window.i18n.onChange(() => {
-            window.i18n.updateDOM();
-            updateOverviewSummary();
-            loadRendererStatus();
-            renderGiftStyleMappings();
-            refreshFinaleShowSelectors();
-        });
+        // Listen for both translation updates and explicit language switches.
+        window.i18n.onChange?.(refreshLocalizedUiFromI18nChange);
+        window.i18n.onLanguageChange?.(scheduleLocalizedDynamicUiRefresh);
     }
 
     // Connect to socket

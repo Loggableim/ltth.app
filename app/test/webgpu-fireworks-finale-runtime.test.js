@@ -60,6 +60,7 @@ function tinyPlan(id, overrides = {}) {
     style: overrides.style || 'classic-crescendo',
     length: 'short',
     durationMs: overrides.durationMs || 3000,
+    metadata: overrides.metadata,
     seed: 1,
     cues: overrides.cues || [{
       beatAtMs: 1500,
@@ -477,6 +478,25 @@ describe('WebGPU choreographed finale runtime', () => {
       expect(event.due + event.flightDurationMs).toBeCloseTo(engine.currentFinale.startedAt + cue.beatAtMs, 6);
       expect(event.finaleId).toBe(style);
     }
+  });
+
+  test('keeps the compiled custom show name snapshot in active finale telemetry', () => {
+    const engine = makeRuntime(10000);
+    const customStyle = 'custom:00000000-0000-4000-8000-000000000504';
+    const showPlan = tinyPlan('custom-runtime-name', {
+      style: customStyle,
+      metadata: { name: 'Published Runtime Name' }
+    });
+
+    expect(engine.handleFinale({ id: 'custom-runtime-name', showPlan }))
+      .toMatchObject({ accepted: true, queued: false });
+    showPlan.metadata.name = 'Later Catalog Name';
+
+    expect(engine.currentFinale.name).toBe('Published Runtime Name');
+    expect(engine.getFinaleTelemetry()).toMatchObject({
+      finaleStyle: customStyle,
+      finaleName: 'Published Runtime Name'
+    });
   });
 
   test('uses different launch times for different target heights but one exact explodeAt', () => {

@@ -314,6 +314,16 @@ describe('WebGPU Fireworks dynamic show style options', () => {
       queue: '0 en file'
     });
 
+    expect(api.formatRuntimeFinaleStatus({
+      finaleActive: true,
+      finaleStyle: CUSTOM_ID,
+      finaleName: `  ${'Snapshot '.repeat(30)}  `,
+      finaleLength: 'long',
+      finalePhase: 'bridge',
+      finaleQueueLength: 0
+    }, { catalog: api.fallbackCatalog(), translate }).activeShow)
+      .toBe(`${'Snapshot '.repeat(30).trim().slice(0, 200)} \u00b7 Longue (28 s)`);
+
     expect(api.formatRuntimeFinaleStatus({ finaleActive: false }, { catalog, translate }).activeShow)
       .toBe('Inactif');
     dom.window.close();

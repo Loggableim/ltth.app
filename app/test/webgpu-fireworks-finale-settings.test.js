@@ -70,6 +70,8 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
   });
 
   test('sanitizes finale renderer telemetry and exposes idle offline defaults', () => {
+    const customStyle = 'custom:00000000-0000-4000-8000-000000000503';
+    const finaleName = `  ${'Runtime custom show '.repeat(20)}  `;
     let connectionHandler;
     const api = {
       getPluginDataDir: () => __dirname,
@@ -91,7 +93,8 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
       state: 'ready',
       finaleActive: true,
       finaleId: 'goal:likes:100',
-      finaleStyle: 'sky-ballet',
+      finaleStyle: customStyle,
+      finaleName,
       finaleLength: 'long',
       finalePhase: 'highlight',
       finaleQueueLength: 7.9,
@@ -101,18 +104,27 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
     expect(plugin.getRendererStatus()).toMatchObject({
       finaleActive: true,
       finaleId: 'goal:likes:100',
-      finaleStyle: 'sky-ballet',
+      finaleStyle: customStyle,
+      finaleName: finaleName.trim().slice(0, 200),
       finaleLength: 'long',
       finalePhase: 'highlight',
       finaleQueueLength: 7,
       finaleError: 'recoverable renderer fault'
     });
 
+    handlers.get('webgpu-fireworks:renderer-status')({
+      state: 'ready',
+      finaleStyle: 'x'.repeat(65),
+      finaleName: '   '
+    });
+    expect(plugin.getRendererStatus()).toMatchObject({ finaleStyle: null, finaleName: null });
+
     plugin.overlayTelemetry.clear();
     expect(plugin.getRendererStatus()).toMatchObject({
       finaleActive: false,
       finaleId: null,
       finaleStyle: null,
+      finaleName: null,
       finaleLength: null,
       finalePhase: 'idle',
       finaleQueueLength: 0,

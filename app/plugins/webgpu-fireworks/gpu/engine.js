@@ -1128,6 +1128,7 @@ class WebGPUFireworksEngine {
             finaleActive: Boolean(this.currentFinale),
             finaleId: this.currentFinale?.id || null,
             finaleStyle: this.currentFinale?.style || null,
+            finaleName: this.currentFinale?.name || null,
             finaleLength: this.currentFinale?.length || null,
             finalePhase: this.currentFinale?.phase || 'idle',
             finaleQueueLength: this.finaleQueue.length,
@@ -2410,6 +2411,9 @@ class WebGPUFireworksEngine {
             id: entry.id,
             eventId: entry.data.eventId || null,
             style,
+            name: typeof entry.showPlan?.metadata?.name === 'string'
+                ? entry.showPlan.metadata.name
+                : null,
             length,
             phase: firstPhase,
             startedAt: startAt,
