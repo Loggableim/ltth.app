@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.34] - 2026-07-19
+
+### Added
+
+- **Five Premium Finales**: Nishiki Kamuro, Aurora Cathedral, Royal Brocade, Phoenix Ascension, and Furry Celebration expand WebGPU Fireworks to nine built-in shows with 27 curated short, medium, and long variants.
+- **PyroDSL and Show Designer**: Added a validated layered show format, deterministic compilation, a visual four-panel editor, variant derivation, autosave, undo/redo, import/export, and explicit cue, phase, and show previews.
+- **Revisioned Custom Shows**: Added atomic draft storage, validation, publishing, duplication, derivation, archive/restore, revision conflicts, and snapshot-safe playback through the Custom Show API.
+- **Professional GPU Effects**: Added radial, ring, spiral, palm, crossette, comet, mine, and curated glyph primitives with layered palettes, splits, strobes, trails, and adaptive particle budgeting.
+
+### Changed
+
+- **Finale Integrations**: Goal and Superfan finales can select built-in or published custom shows while preserving inherited defaults, queue order, live gifts, and deterministic preview behavior.
+- **Localized Show Surfaces**: Added German, English, Spanish, and French copy for show titles, selectors, runtime status, and the Show Designer.
+- **WebGPU Fireworks 3.0.0**: Advanced the plugin version and aligned active package, launcher, download, locale, and website release surfaces to LTTH 1.3.34.
+
 ## [1.3.33] - 2026-07-17
 
 ### Fixed
