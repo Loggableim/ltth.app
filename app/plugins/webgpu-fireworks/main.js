@@ -546,24 +546,31 @@ class FireworksPlugin {
         };
     }
 
-    getReadyRendererTelemetry() {
-        const cutoff = Date.now() - 5000;
-        return [...this.overlayTelemetry.values()].filter(telemetry => (
-            telemetry && telemetry.updatedAt >= cutoff && telemetry.benchmark !== true &&
-            telemetry.state === 'ready'
+    isRendererDeliveryEligible(socket, telemetry, cutoff = Date.now() - 5000) {
+        return Boolean(
+            socket && socket.connected !== false && telemetry &&
+            telemetry.updatedAt >= cutoff && telemetry.benchmark !== true &&
+            telemetry.visible !== false && telemetry.state === 'ready'
+        );
+    }
+
+    hasRegisteredRendererSocket() {
+        return [...this.connectedSockets].some(socket => (
+            socket && this.overlayTelemetry.has(socket.id)
         ));
     }
 
-    getFinaleRendererTargets({ readyOnly = false, requiredCapabilities = [] } = {}) {
+    getReadyRendererTelemetry() {
+        return this.getFinaleRendererTargets().map(target => target.telemetry);
+    }
+
+    getFinaleRendererTargets({ requiredCapabilities = [] } = {}) {
         const cutoff = Date.now() - 5000;
         const socketsById = new Map([...this.connectedSockets].map(socket => [socket.id, socket]));
         return [...this.overlayTelemetry.entries()]
             .map(([rendererId, telemetry]) => ({ rendererId, telemetry, socket: socketsById.get(rendererId) }))
             .filter(target => (
-                target.socket && target.socket.connected !== false && target.telemetry?.benchmark !== true &&
-                (!readyOnly || (
-                    target.telemetry?.state === 'ready' && target.telemetry?.updatedAt >= cutoff
-                )) &&
+                this.isRendererDeliveryEligible(target.socket, target.telemetry, cutoff) &&
                 (requiredCapabilities.length === 0 ||
                     rendererSupportsCapabilities(target.telemetry, requiredCapabilities))
             ))
@@ -584,9 +591,7 @@ class FireworksPlugin {
     dispatchFinalePayload(payload, options = {}) {
         const requiresFurryRenderer = options.requiresFurryRenderer === true;
         const testRequest = options.testRequest === true;
-        let targets = this.getFinaleRendererTargets({
-            readyOnly: testRequest || options.requiresRendererReady === true
-        });
+        let targets = this.getFinaleRendererTargets();
         if (testRequest) {
             if (requiresFurryRenderer) {
                 targets = targets.filter(target => rendererSupportsCapabilities(target.telemetry));
@@ -621,10 +626,19 @@ class FireworksPlugin {
             return { submitted: deliveredPayloads.length > 0, payload: returnPayload, usedLegacyFallback };
         }
 
-        const readyTelemetry = this.getReadyRendererTelemetry();
+        if (testRequest || this.hasRegisteredRendererSocket()) {
+            return {
+                submitted: false,
+                payload,
+                usedLegacyFallback: false,
+                reason: 'renderer-not-ready',
+                code: 'RENDERER_NOT_READY'
+            };
+        }
+
+        const rendererStatus = this.getRendererStatus();
         const useGlobalLegacyFallback = !testRequest && requiresFurryRenderer &&
-            readyTelemetry.length > 0 &&
-            !readyTelemetry.some(telemetry => rendererSupportsCapabilities(telemetry));
+            rendererStatus.state === 'ready' && !rendererSupportsCapabilities(rendererStatus);
         const globalPayload = useGlobalLegacyFallback
             ? this.createLegacyRendererFinalePayload(payload)
             : payload;
@@ -1947,14 +1961,9 @@ class FireworksPlugin {
     }
 
     beginPendingSuperfanFinale({ eventId, identities, identity, acceptedAt, bypassCooldown }) {
-        const telemetryCutoff = Date.now() - 5000;
-        const targetSocketIds = new Set([...this.connectedSockets]
-            .filter(socket => {
-                const telemetry = this.overlayTelemetry.get(socket.id);
-                return telemetry && telemetry.updatedAt >= telemetryCutoff &&
-                    telemetry.benchmark !== true && telemetry.state === 'ready';
-            })
-            .map(socket => socket.id));
+        const targetSocketIds = new Set(
+            this.getFinaleRendererTargets().map(target => target.rendererId)
+        );
         const attempt = {
             eventId,
             identities,
@@ -2365,7 +2374,13 @@ class FireworksPlugin {
         })));
 
         const requiresFurryRenderer = resolvedStyle === 'furry-celebration';
-        const readyRendererTelemetry = this.getReadyRendererTelemetry();
+        const connectedReadyRendererTelemetry = this.getReadyRendererTelemetry();
+        const unregisteredRendererStatus = this.hasRegisteredRendererSocket()
+            ? null
+            : this.getRendererStatus();
+        const readyRendererTelemetry = connectedReadyRendererTelemetry.length > 0
+            ? connectedReadyRendererTelemetry
+            : unregisteredRendererStatus?.state === 'ready' ? [unregisteredRendererStatus] : [];
         const furryRendererReady = readyRendererTelemetry.some(telemetry => (
             rendererSupportsCapabilities(telemetry)
         ));
@@ -2447,7 +2462,12 @@ class FireworksPlugin {
             );
         }
         if (!dispatch.submitted) {
-            return { ...dispatch.payload, accepted: false, reason: 'submission-rejected' };
+            return {
+                ...dispatch.payload,
+                accepted: false,
+                reason: dispatch.reason || 'submission-rejected',
+                ...(dispatch.code ? { code: dispatch.code } : {})
+            };
         }
         return dispatch.payload;
     }

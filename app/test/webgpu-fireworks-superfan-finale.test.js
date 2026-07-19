@@ -425,10 +425,11 @@ describe('WebGPU Superfan finale foundation', () => {
     };
   }
 
-  function connectSocket(plugin, api, id = 'overlay-1') {
+  function connectSocket(plugin, api, id = 'overlay-1', options = {}) {
     const handlers = new Map();
     const socket = {
       id,
+      connected: options.connected !== false,
       handlers,
       emit: jest.fn(),
       on: jest.fn((event, handler) => handlers.set(event, handler)),
@@ -437,6 +438,7 @@ describe('WebGPU Superfan finale foundation', () => {
     plugin.registerSocketHandlers();
     api.socketConnections[0](socket);
     handlers.get('webgpu-fireworks:renderer-status')({ state: 'ready' });
+    plugin.overlayTelemetry.get(id).visible = options.visible !== false;
     return socket;
   }
 
@@ -932,6 +934,43 @@ describe('WebGPU Superfan finale foundation', () => {
     expect(plugin.handleSuperfanFinaleAck({ eventId: result.eventId, accepted: true }, secondSocket)).toBe(true);
     expect(history.snapshot()).toEqual({ 'id:a': expect.any(Number) });
   });
+
+  test.each(['rejects', 'disconnects'])(
+    'ignores hidden and disconnected ACK targets when the actual receiver %s',
+    failure => {
+      const { api, plugin, history } = createPlugin();
+      const receiver = connectSocket(plugin, api, 'receiver');
+      const hidden = connectSocket(plugin, api, 'hidden', { visible: false });
+      const disconnected = connectSocket(plugin, api, 'disconnected', { connected: false });
+
+      const result = plugin.handleSuperfanEntry({
+        userId: `ack-target-${failure}`,
+        uniqueId: 'AckTargetFan'
+      }, { authoritative: true });
+
+      expect(plugin.pendingSuperfanFinales.get(result.eventId).targetSocketIds)
+        .toEqual(new Set(['receiver']));
+      expect(receiver.emit).toHaveBeenCalledWith(
+        'webgpu-fireworks:finale',
+        expect.objectContaining({ eventId: result.eventId })
+      );
+      expect(hidden.emit).not.toHaveBeenCalledWith('webgpu-fireworks:finale', expect.anything());
+      expect(disconnected.emit).not.toHaveBeenCalledWith('webgpu-fireworks:finale', expect.anything());
+
+      if (failure === 'rejects') {
+        plugin.handleSuperfanFinaleAck({
+          eventId: result.eventId,
+          accepted: false,
+          reason: 'renderer-rejected'
+        }, receiver);
+      } else {
+        receiver.handlers.get('disconnect')();
+      }
+
+      expect(plugin.pendingSuperfanFinales.size).toBe(0);
+      expect(history.snapshot()).toEqual({});
+    }
+  );
 
   test('does not overwrite pending state when different users reuse an upstream event ID', () => {
     const { plugin } = createPlugin();
