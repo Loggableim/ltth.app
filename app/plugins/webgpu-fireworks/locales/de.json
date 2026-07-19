@@ -420,7 +420,7 @@
         },
         "furry-celebration": {
           "title": "Flauschige Feier",
-          "description": "Pfoten, Herzen, Fuchs, Wolf, Drachenflügel, Drache, Schweif und eine Regenbogenkrone."
+          "description": "Boykisser-Cameos in echter 3D-Tiefe, begleitet von Pfoten, Herzen sowie dezenten Regenbogen- und Trans-Akzenten."
         }
       },
       "selector": {
@@ -728,6 +728,7 @@
           "request_failed": "Die Show-Anfrage ist fehlgeschlagen.",
           "finale_busy": "Der Feuerwerk-Renderer ist beschäftigt.",
           "renderer_not_ready": "Der Feuerwerk-Renderer ist nicht bereit.",
+          "renderer_upgrade_required": "Das OBS-Overlay ist veraltet. Aktualisiere den Browser-Quellencache in OBS.",
           "preview_draft_invalid": "Validiere den Entwurf vor der Vorschau.",
           "revision_conflict": "Revisionskonflikt"
         },
@@ -803,6 +804,7 @@
         "performance_mode_minimal": "Minimal"
       },
       "ui": {
+        "renderer_upgrade_required": "Dieses OBS-Overlay ist veraltet. Aktualisiere den Browser-Quellencache in OBS, um Furry Celebration 3D zu aktivieren.",
         "audio_voices": "S{launch} / K{bang} / C{crackle} ({total} {totalLabel})",
         "remove_palette_color": "{color} entfernen",
         "renderer_state_ready": "Bereit",

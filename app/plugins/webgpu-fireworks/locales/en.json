@@ -420,7 +420,7 @@
         },
         "furry-celebration": {
           "title": "Furry Celebration",
-          "description": "Paws, hearts, fox, wolf, dragon wings, dragon, tail, and a rainbow crown."
+          "description": "Boykisser cameos in true 3D depth, accompanied by paws, hearts, and subtle rainbow and trans accents."
         }
       },
       "selector": {
@@ -728,6 +728,7 @@
           "request_failed": "The show request failed.",
           "finale_busy": "The fireworks renderer is busy.",
           "renderer_not_ready": "The fireworks renderer is not ready.",
+          "renderer_upgrade_required": "The OBS overlay is outdated. Refresh the OBS browser source cache.",
           "preview_draft_invalid": "Validate the draft before previewing it.",
           "revision_conflict": "Revision conflict"
         },
@@ -803,6 +804,7 @@
         "performance_mode_minimal": "Minimal"
       },
       "ui": {
+        "renderer_upgrade_required": "This OBS overlay is outdated. Refresh the OBS browser source cache to enable Furry Celebration 3D.",
         "audio_voices": "L{launch} / B{bang} / C{crackle} ({total} {totalLabel})",
         "remove_palette_color": "Remove {color}",
         "renderer_state_ready": "Ready",

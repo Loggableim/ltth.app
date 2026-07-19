@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.35] - 2026-07-19
+
+### Added
+
+- **Controlled 3D Depth**: Furry Celebration now stages shells across far, mid, and near WebGPU particle volumes with fixed-camera perspective, camera-facing glyphs, and depth-aware flight timing.
+- **Boykisser Choreography**: A procedural Boykisser/Silly Cat glyph appears throughout the redesigned Furry finale and closes as one centered Hero cat framed by subtle rainbow and trans-color halos.
+
+### Changed
+
+- **Renderer Capability Handshake**: Renderer protocol 3 advertises `depth3d-v1` and `boykisser-v1`; outdated OBS sources receive actionable refresh guidance and normal Furry events keep a playable legacy fallback.
+- **WebGPU Fireworks 3.1.0**: Advanced the plugin version and aligned active package, launcher, download, locale, and website release surfaces to LTTH 1.3.35.
+
 ## [1.3.34] - 2026-07-19
 
 ### Added

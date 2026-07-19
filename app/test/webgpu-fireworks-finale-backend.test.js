@@ -320,6 +320,29 @@ describe('WebGPU finale backend contract', () => {
     }));
   });
 
+  test('API returns an actionable upgrade response for a Furry test on an old ready overlay', () => {
+    const { api, plugin } = createPlugin();
+    plugin.overlayTelemetry.set('old-overlay', {
+      state: 'ready', rendererProtocol: 2, capabilities: [], benchmark: false, updatedAt: Date.now()
+    });
+    plugin.registerRoutes();
+    const handler = api.routes.get('post:/api/webgpu-fireworks/finale');
+    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+    handler({
+      body: { style: 'furry-celebration', length: 'short', seed: 45, testRequest: true }
+    }, res);
+
+    expect(res.status).toHaveBeenCalledWith(426);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: false,
+      accepted: false,
+      code: 'RENDERER_UPGRADE_REQUIRED',
+      error: expect.stringMatching(/refresh.*OBS browser source/i)
+    }));
+    expect(api.emit).not.toHaveBeenCalled();
+  });
+
   test('generic goal events use configured global show values through the object contract', () => {
     const { api, plugin } = createPlugin({
       goalFinaleStyle: 'classic-crescendo',

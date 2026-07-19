@@ -299,9 +299,12 @@ async function loadRendererStatus() {
         const frameTime = document.getElementById('webgpu-frame-time');
         const particles = document.getElementById('webgpu-particle-state');
         const reason = document.getElementById('webgpu-runtime-reason');
+        const rendererUpgradeRequired = renderer.upgradeRequired === true;
         if (state) {
             state.textContent = `${t(`plugins.webgpu-fireworks.ui.renderer_state_${String(renderer.state || 'offline').toLowerCase()}`, String(renderer.state || 'offline').toUpperCase())} · WEBGPU`;
-            state.className = renderer.state === 'ready' ? 'text-green-300' : renderer.state === 'initializing' ? 'text-yellow-200' : 'text-red-300';
+            state.className = rendererUpgradeRequired || renderer.state === 'initializing'
+                ? 'text-yellow-200'
+                : renderer.state === 'ready' ? 'text-green-300' : 'text-red-300';
         }
         if (adapter) {
             const info = renderer.adapter || {};
@@ -348,8 +351,14 @@ async function loadRendererStatus() {
         if (frameTime) frameTime.textContent = Number.isFinite(Number(renderer.gpuFrameMs)) ? `${Number(renderer.gpuFrameMs).toFixed(2)} ms` : '-';
         if (particles) particles.textContent = `${Number(renderer.activeParticles || 0).toLocaleString()} ${t('plugins.webgpu-fireworks.ui.active', 'active')} · ${Number(renderer.droppedParticles || 0).toLocaleString()} ${t('plugins.webgpu-fireworks.ui.dropped', 'dropped')}`;
         if (reason) {
-            reason.hidden = !renderer.reason || renderer.state === 'ready';
-            reason.textContent = renderer.reason || '';
+            const upgradeReason = rendererUpgradeRequired
+                ? t(
+                    'plugins.webgpu-fireworks.ui.renderer_upgrade_required',
+                    renderer.upgradeReason || 'This OBS overlay is outdated. Refresh the OBS browser source.'
+                )
+                : '';
+            reason.hidden = !upgradeReason && (!renderer.reason || renderer.state === 'ready');
+            reason.textContent = upgradeReason || renderer.reason || '';
         }
         if (reason && renderer.lastAudioError) {
             reason.hidden = false;
@@ -439,20 +448,33 @@ async function triggerFinale() {
         const style = document.getElementById('finale-style').value;
         const length = document.getElementById('finale-length').value;
 
-        await fetch('/api/webgpu-fireworks/finale', {
+        const response = await fetch('/api/webgpu-fireworks/finale', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 style: style,
                 length: length,
-                intensity: intensity
+                intensity: intensity,
+                testRequest: true
             })
         });
+        const data = await response.json();
+        if (!response.ok || data.success !== true) {
+            const fallback = data.code === 'RENDERER_UPGRADE_REQUIRED'
+                ? t(
+                    'plugins.webgpu-fireworks.ui.renderer_upgrade_required',
+                    'This OBS overlay is outdated. Refresh the OBS browser source.'
+                )
+                : data.error || t('plugins.webgpu-fireworks.ui.finale_trigger_failed', 'Failed to trigger finale');
+            const error = new Error(fallback);
+            error.userMessage = fallback;
+            throw error;
+        }
 
         showToast(t('plugins.webgpu-fireworks.ui.finale_triggered', 'Finale triggered!'), 'success');
     } catch (e) {
         console.error('[Fireworks Settings] Failed to trigger finale:', e);
-        showToast(t('plugins.webgpu-fireworks.ui.finale_trigger_failed', 'Failed to trigger finale'), 'error');
+        showToast(e.userMessage || t('plugins.webgpu-fireworks.ui.finale_trigger_failed', 'Failed to trigger finale'), 'error');
     }
 }
 

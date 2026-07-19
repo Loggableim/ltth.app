@@ -420,7 +420,7 @@
         },
         "furry-celebration": {
           "title": "Celebración peluda",
-          "description": "Huellas, corazones, zorro, lobo, alas de dragón, dragón, cola y una corona arcoíris."
+          "description": "Apariciones de Boykisser con profundidad 3D real, acompañadas de huellas, corazones y sutiles detalles arcoíris y trans."
         }
       },
       "selector": {
@@ -728,6 +728,7 @@
           "request_failed": "La solicitud del show ha fallado.",
           "finale_busy": "El renderizador de fuegos artificiales está ocupado.",
           "renderer_not_ready": "El renderizador de fuegos artificiales no está listo.",
+          "renderer_upgrade_required": "La superposición de OBS está desactualizada. Actualiza la caché de la fuente del navegador en OBS.",
           "preview_draft_invalid": "Valida el borrador antes de previsualizarlo.",
           "revision_conflict": "Conflicto de revisión"
         },
@@ -803,6 +804,7 @@
         "performance_mode_minimal": "Mínimo"
       },
       "ui": {
+        "renderer_upgrade_required": "Esta superposición de OBS está desactualizada. Actualiza la caché de la fuente del navegador en OBS para activar Furry Celebration 3D.",
         "audio_voices": "L{launch} / E{bang} / C{crackle} ({total} {totalLabel})",
         "remove_palette_color": "Eliminar {color}",
         "renderer_state_ready": "Listo",

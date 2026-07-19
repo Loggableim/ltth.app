@@ -420,7 +420,7 @@
         },
         "furry-celebration": {
           "title": "Célébration furry",
-          "description": "Pattes, cœurs, renard, loup, ailes de dragon, dragon, queue et couronne arc-en-ciel."
+          "description": "Des apparitions de Boykisser en vraie profondeur 3D, accompagnées de pattes, de cœurs et de subtils accents arc-en-ciel et trans."
         }
       },
       "selector": {
@@ -728,6 +728,7 @@
           "request_failed": "La requête du show a échoué.",
           "finale_busy": "Le moteur de feux d’artifice est occupé.",
           "renderer_not_ready": "Le moteur de feux d’artifice n’est pas prêt.",
+          "renderer_upgrade_required": "La source OBS est obsolète. Actualisez le cache de la source navigateur dans OBS.",
           "preview_draft_invalid": "Validez le brouillon avant de le prévisualiser.",
           "revision_conflict": "Conflit de révision"
         },
@@ -803,6 +804,7 @@
         "performance_mode_minimal": "Minimal"
       },
       "ui": {
+        "renderer_upgrade_required": "Cette source OBS est obsolète. Actualisez le cache de la source navigateur dans OBS pour activer Furry Celebration 3D.",
         "audio_voices": "L{launch} / E{bang} / C{crackle} ({total} {totalLabel})",
         "remove_palette_color": "Supprimer {color}",
         "renderer_state_ready": "Prêt",

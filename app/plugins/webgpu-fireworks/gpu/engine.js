@@ -10,6 +10,8 @@ const ShowPlanV2Runtime = typeof module !== 'undefined' && module.exports
     ? require('./show-plan-v2-runtime')
     : globalThis.WebGPUFireworksShowPlanV2Runtime;
 const DEBUG = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === 'true';
+const RENDERER_PROTOCOL_VERSION = 3;
+const RENDERER_CAPABILITIES = Object.freeze(['depth3d-v1', 'boykisser-v1']);
 
 function t(key, fallback, params = {}) {
     const translated = typeof window !== 'undefined' ? window.i18n?.t?.(key, params) : null;
@@ -932,7 +934,11 @@ class WebGPUFireworksEngine {
         this.socket = io({ transports: ['websocket', 'polling'], reconnection: true, reconnectionDelay: 1000 });
         this.socket.on('connect', () => {
             this.socket.emit('webgpu-fireworks:register-overlay', {
-                benchmark: this.isBenchmark, visible: document.visibilityState !== 'hidden', backend: 'webgpu'
+                benchmark: this.isBenchmark,
+                visible: document.visibilityState !== 'hidden',
+                backend: 'webgpu',
+                rendererProtocol: RENDERER_PROTOCOL_VERSION,
+                capabilities: RENDERER_CAPABILITIES
             });
             this.emitStatus();
             this.startNextFinaleIfReady(this.getRuntimeNow());
@@ -1012,6 +1018,8 @@ class WebGPUFireworksEngine {
             ...this.audio.getTelemetry(),
             ...this.getFinaleTelemetry(),
             backend: 'webgpu', fps: this.fps, visualStyle: this.config.visualStyle,
+            rendererProtocol: RENDERER_PROTOCOL_VERSION,
+            capabilities: RENDERER_CAPABILITIES,
             visible: document.visibilityState !== 'hidden', benchmark: this.isBenchmark,
             timestamp: Date.now()
         });

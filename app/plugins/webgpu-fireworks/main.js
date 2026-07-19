@@ -43,6 +43,10 @@ const SUPERFAN_COMPLETION_AUTHORITY = Symbol('webgpu-fireworks-superfan-completi
 const INTERNAL_FINALE_FALLBACK_STYLE = Symbol('webgpu-fireworks-internal-finale-fallback-style');
 const MAX_RENDERER_FINALE_STYLE_LENGTH = 64;
 const MAX_RENDERER_FINALE_NAME_LENGTH = 200;
+const RENDERER_PROTOCOL_VERSION = 3;
+const RENDERER_CAPABILITIES = Object.freeze(['depth3d-v1', 'boykisser-v1']);
+const RENDERER_UPGRADE_MESSAGE =
+    'This OBS overlay is outdated. Refresh the OBS browser source to enable Furry Celebration 3D.';
 const SUPERFAN_FINALE_TEST_CONFIG_KEYS = Object.freeze([
     'superfanFinaleEnabled',
     'superfanFinaleCooldownHours',
@@ -69,6 +73,48 @@ function sanitizeRendererFinaleName(value) {
     if (typeof value !== 'string') return null;
     const name = value.trim();
     return name ? name.slice(0, MAX_RENDERER_FINALE_NAME_LENGTH) : null;
+}
+
+function sanitizeRendererProtocol(value) {
+    const protocol = Number(value);
+    return Number.isInteger(protocol) && protocol >= 0 && protocol <= 1000 ? protocol : 0;
+}
+
+function sanitizeRendererCapabilities(value) {
+    if (!Array.isArray(value)) return [];
+    return [...new Set(value
+        .filter(item => typeof item === 'string' && /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/.test(item))
+        .map(item => item.slice(0, 64)))]
+        .slice(0, 16);
+}
+
+function missingRendererCapabilities(telemetry, required = RENDERER_CAPABILITIES) {
+    const available = new Set(sanitizeRendererCapabilities(telemetry?.capabilities));
+    return required.filter(capability => !available.has(capability));
+}
+
+function rendererSupportsCapabilities(telemetry, required = RENDERER_CAPABILITIES) {
+    return sanitizeRendererProtocol(telemetry?.rendererProtocol) >= RENDERER_PROTOCOL_VERSION &&
+        missingRendererCapabilities(telemetry, required).length === 0;
+}
+
+function previewRequiredRendererCapabilities(payload = {}) {
+    if (payload.style === 'furry-celebration' || payload.sourceId === 'furry-celebration') {
+        return [...RENDERER_CAPABILITIES];
+    }
+    const cues = Array.isArray(payload.showPlan?.cues) ? payload.showPlan.cues : [];
+    const advanced = cues.some(cue => {
+        const shells = Array.isArray(cue?.shells)
+            ? cue.shells
+            : Array.isArray(cue?.launches) ? cue.launches : [];
+        return shells.some(shell => (
+            shell?.renderHints?.depthEnabled === true ||
+            (Array.isArray(shell?.layers) && shell.layers.some(layer => (
+                layer?.glyph === 'boykisser' || layer?.glyph === 'trans-flag'
+            )))
+        ));
+    });
+    return advanced ? [...RENDERER_CAPABILITIES] : [];
 }
 
 function isExplicitPaidSubscriberFlag(value) {
@@ -260,6 +306,8 @@ class FireworksPlugin {
                     this.overlayTelemetry.set(socket.id, {
                         benchmark: data.benchmark === true,
                         visible: data.visible !== false,
+                        rendererProtocol: sanitizeRendererProtocol(data.rendererProtocol),
+                        capabilities: sanitizeRendererCapabilities(data.capabilities),
                         fps: 0,
                         updatedAt: Date.now()
                     });
@@ -291,6 +339,12 @@ class FireworksPlugin {
                         ...previous,
                         backend: 'webgpu',
                         state,
+                        rendererProtocol: Object.prototype.hasOwnProperty.call(data, 'rendererProtocol')
+                            ? sanitizeRendererProtocol(data.rendererProtocol)
+                            : sanitizeRendererProtocol(previous.rendererProtocol),
+                        capabilities: Object.prototype.hasOwnProperty.call(data, 'capabilities')
+                            ? sanitizeRendererCapabilities(data.capabilities)
+                            : sanitizeRendererCapabilities(previous.capabilities),
                         adapter: data.adapter || previous.adapter || null,
                         format: typeof data.format === 'string' ? data.format : previous.format || null,
                         gpuFrameMs: Number.isFinite(Number(data.gpuFrameMs)) ? Number(data.gpuFrameMs) : null,
@@ -436,9 +490,26 @@ class FireworksPlugin {
         const current = [...this.overlayTelemetry.values()]
             .filter(item => item && item.updatedAt >= cutoff && item.benchmark !== true)
             .sort((a, b) => b.updatedAt - a.updatedAt)[0];
-        return current || {
+        if (current) {
+            const missingCapabilities = missingRendererCapabilities(current);
+            const upgradeRequired = current.state === 'ready' && !rendererSupportsCapabilities(current);
+            return {
+                ...current,
+                rendererProtocol: sanitizeRendererProtocol(current.rendererProtocol),
+                capabilities: sanitizeRendererCapabilities(current.capabilities),
+                missingCapabilities,
+                upgradeRequired,
+                upgradeReason: upgradeRequired ? RENDERER_UPGRADE_MESSAGE : null
+            };
+        }
+        return {
             backend: 'webgpu',
             state: 'offline',
+            rendererProtocol: 0,
+            capabilities: [],
+            missingCapabilities: [...RENDERER_CAPABILITIES],
+            upgradeRequired: false,
+            upgradeReason: null,
             adapter: null,
             format: null,
             gpuFrameMs: null,
@@ -492,6 +563,10 @@ class FireworksPlugin {
     }
 
     selectPreviewRenderer() {
+        return this.selectPreviewRendererWithCapabilities([]);
+    }
+
+    selectPreviewRendererWithCapabilities(requiredCapabilities = []) {
         const cutoff = Date.now() - 5000;
         const socketsById = new Map([...this.connectedSockets].map(socket => [socket.id, socket]));
         const candidates = [...this.overlayTelemetry.entries()]
@@ -500,7 +575,9 @@ class FireworksPlugin {
                 candidate.socket && candidate.socket.connected !== false &&
                 candidate.telemetry?.updatedAt >= cutoff &&
                 candidate.telemetry?.benchmark !== true &&
-                candidate.telemetry?.state === 'ready'
+                candidate.telemetry?.state === 'ready' &&
+                (requiredCapabilities.length === 0 ||
+                    rendererSupportsCapabilities(candidate.telemetry, requiredCapabilities))
             ))
             .sort((left, right) => (
                 Number(right.telemetry.updatedAt) - Number(left.telemetry.updatedAt) ||
@@ -512,6 +589,7 @@ class FireworksPlugin {
     previewDispatchError(code) {
         const definitions = {
             RENDERER_NOT_READY: [503, 'A fresh ready WebGPU renderer is required for preview.'],
+            RENDERER_UPGRADE_REQUIRED: [426, RENDERER_UPGRADE_MESSAGE],
             FINALE_BUSY: [409, 'A finale or preview is active or queued on the selected renderer.'],
             INVALID_PREVIEW: [422, 'The renderer rejected the preview payload.'],
             PREVIEW_ACK_TIMEOUT: [503, 'The WebGPU renderer did not acknowledge the preview in time.']
@@ -531,7 +609,11 @@ class FireworksPlugin {
     }
 
     dispatchPreview(payload = {}) {
-        const target = this.selectPreviewRenderer();
+        const requiredCapabilities = previewRequiredRendererCapabilities(payload);
+        const target = this.selectPreviewRendererWithCapabilities(requiredCapabilities);
+        if (!target && requiredCapabilities.length > 0 && this.selectPreviewRenderer()) {
+            return Promise.reject(this.previewDispatchError('RENDERER_UPGRADE_REQUIRED'));
+        }
         if (!target) return Promise.reject(this.previewDispatchError('RENDERER_NOT_READY'));
         if (
             target.telemetry.finaleActive === true ||
@@ -1048,10 +1130,21 @@ class FireworksPlugin {
                     ...finaleRequest,
                     bypassEnabled: true
                 });
+                if (result.accepted !== true) {
+                    const status = result.code === 'RENDERER_UPGRADE_REQUIRED'
+                        ? 426
+                        : result.reason === 'renderer-not-ready' ? 503 : 409;
+                    return res.status(status).json({
+                        success: false,
+                        accepted: false,
+                        code: result.code || 'FINALE_REJECTED',
+                        error: result.error || result.reason || 'Finale rejected'
+                    });
+                }
                 const { showPlan, bursts, ...metadata } = result;
-                res.json({ success: true, message: 'Finale triggered', ...metadata });
+                return res.json({ success: true, message: 'Finale triggered', ...metadata });
             } catch (error) {
-                res.status(500).json({ success: false, error: error.message });
+                return res.status(500).json({ success: false, error: error.message });
             }
         });
 
@@ -2095,6 +2188,7 @@ class FireworksPlugin {
             !Array.isArray(optionsOrIntensity);
         let configuredFallbackStyle = config.goalFinaleStyle;
         let request;
+        const isTestRequest = isObjectCall && optionsOrIntensity.testRequest === true;
 
         if (isObjectCall) {
             const options = optionsOrIntensity;
@@ -2181,6 +2275,29 @@ class FireworksPlugin {
             formation: cue.formation
         })));
 
+        const requiresFurryRenderer = resolvedStyle === 'furry-celebration';
+        const rendererStatus = this.getRendererStatus();
+        const readyRendererConnected = rendererStatus.state === 'ready';
+        const furryRendererReady = readyRendererConnected && rendererSupportsCapabilities(rendererStatus);
+        if (isTestRequest && !readyRendererConnected) {
+            return {
+                accepted: false,
+                reason: 'renderer-not-ready',
+                code: 'RENDERER_NOT_READY',
+                error: 'A fresh ready WebGPU renderer is required. Open or refresh the OBS browser source.'
+            };
+        }
+        if (isTestRequest && requiresFurryRenderer && !furryRendererReady) {
+            return {
+                accepted: false,
+                reason: 'renderer-upgrade-required',
+                code: 'RENDERER_UPGRADE_REQUIRED',
+                error: RENDERER_UPGRADE_MESSAGE
+            };
+        }
+        const useLegacyRendererFallback = !isTestRequest && requiresFurryRenderer &&
+            readyRendererConnected && !furryRendererReady;
+
         this.api.log(
             `🎆 [FIREWORKS] FINALE! Style: ${resolvedStyle}, Length: ${finale.length}, ` +
             `Intensity: ${finale.intensity}, Duration: ${showPlan.durationMs}ms`,
@@ -2200,7 +2317,7 @@ class FireworksPlugin {
             timestamp: Date.now(),
             seed: finale.seed,
             bypassEnabled: finale.bypassEnabled,
-            showPlan,
+            showPlan: useLegacyRendererFallback ? null : showPlan,
 
             // Legacy spatial fallback for overlays that do not yet consume showPlan.
             burstCount: bursts.length,
@@ -2220,6 +2337,14 @@ class FireworksPlugin {
             rocketSound: config.rocketSound,
             explosionSound: config.explosionSound
         };
+
+        if (useLegacyRendererFallback) {
+            payload.rendererFallback = 'legacy-outdated-overlay';
+            this.api.log(
+                `[WEBGPU FIREWORKS] ${RENDERER_UPGRADE_MESSAGE} Playing the legacy burst fallback for ${id}.`,
+                'warn'
+            );
+        }
 
         if (finale.completionNotification) {
             payload.completionNotification = finale.completionNotification;

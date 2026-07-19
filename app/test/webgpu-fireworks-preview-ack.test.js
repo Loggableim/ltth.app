@@ -109,11 +109,11 @@ function createHarness() {
     return socket;
   };
 
-  const invoke = async (body = {}) => {
+  const invoke = async (body = {}, id = 'classic-crescendo') => {
     const route = api.routes.find(candidate => candidate.method === 'post' && candidate.route === PREVIEW_ROUTE);
     const res = response();
     await route.handler({
-      params: { id: 'classic-crescendo' },
+      params: { id },
       body: { scope: 'cue', cueIndex: 0, variant: 'short', seed: 123, ...body }
     }, res);
     return res;
@@ -216,6 +216,44 @@ describe('WebGPU preview acknowledgement routing', () => {
 
     expect(res).toMatchObject({ statusCode: 422, body: { success: false, code: 'INVALID_PREVIEW' } });
     expect(harness.plugin.pendingPreviewRequests.size).toBe(0);
+  });
+
+  test('rejects a Furry preview on an outdated renderer with actionable refresh guidance', async () => {
+    const harness = createHarness();
+    dataDirs.push(harness.dataDir);
+    const target = harness.connect('renderer-outdated');
+
+    const res = await harness.invoke({}, 'furry-celebration');
+
+    expect(res).toMatchObject({
+      statusCode: 426,
+      body: {
+        success: false,
+        code: 'RENDERER_UPGRADE_REQUIRED',
+        error: expect.stringMatching(/refresh.*OBS browser source/i)
+      }
+    });
+    expect(target.emitted.some(([event]) => event === 'webgpu-fireworks:preview')).toBe(false);
+    expect(harness.plugin.pendingPreviewRequests.size).toBe(0);
+  });
+
+  test('detects advanced capability requirements from preview plan hints, not only the style ID', async () => {
+    const harness = createHarness();
+    dataDirs.push(harness.dataDir);
+    const target = harness.connect('renderer-outdated-custom');
+
+    await expect(harness.plugin.dispatchPreview({
+      requestId: 'preview:custom-depth',
+      style: 'custom:00000000-0000-4000-8000-000000000901',
+      showPlan: {
+        cues: [{ shells: [{ renderHints: { depthEnabled: true }, layers: [] }] }]
+      }
+    })).rejects.toMatchObject({
+      code: 'RENDERER_UPGRADE_REQUIRED',
+      status: 426,
+      message: expect.stringMatching(/refresh.*OBS browser source/i)
+    });
+    expect(target.emitted.some(([event]) => event === 'webgpu-fireworks:preview')).toBe(false);
   });
 
   test('ignores a matching request ACK from the wrong socket before accepting the target renderer ACK', async () => {

@@ -49,6 +49,9 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
     expect(triggerSource).toContain('style: style');
     expect(triggerSource).toContain('length: length');
     expect(triggerSource).toContain('intensity: intensity');
+    expect(triggerSource).toContain('testRequest: true');
+    expect(triggerSource).toContain('response.ok');
+    expect(triggerSource).toContain('renderer_upgrade_required');
     expect(triggerSource).not.toContain('duration');
   });
 
@@ -144,6 +147,14 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
       expect(typeof translations[key]).toBe('string');
       expect(translations[key].trim()).not.toBe('');
     }
+  });
+
+  test('keeps the OBS refresh warning visible for a ready but outdated renderer', () => {
+    const source = read('ui/settings.js');
+
+    expect(source).toContain('renderer.upgradeRequired === true');
+    expect(source).toContain('renderer.upgradeReason');
+    expect(source).toContain('renderer_upgrade_required');
   });
 
   test('uses accurate German finale labels', () => {

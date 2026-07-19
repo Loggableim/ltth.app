@@ -11,6 +11,7 @@ This edition requires the [Loggableim OBS WebGPU build](https://github.com/Logga
 - **Combo Streak System**: Consecutive gifts from the same user create bigger effects
 - **Gift Escalation**: Small → Medium → Big → Massive tiers based on coin value
 - **Native WebGPU Engine**: WGSL compute simulation, indirect rendering, SDF shapes, GPU trails and HDR bloom
+- **Controlled 3D Depth**: Furry Celebration uses fixed-camera perspective with far, mid, and near particle volumes while every other show remains pixel-compatible and flat
 - **Custom Explosion Shapes**: Burst, Heart, Star, Ring, Spiral, Paws
 - **Three Visual Styles**: Premium Hybrid, Realistic, and Stylized Neon globally or per gift
 - **Distributed Spawn Planner**: Automatic rockets use distinct launch origins and separated explosion zones
@@ -43,6 +44,12 @@ When a paid subscriber enters (`isSubscriber` or an explicit Superfan flag), or 
 The default is enabled, once per Superfan every 24 hours, at 3x intensity. Available cooldowns are 6, 12, 24, 72, and 168 hours; intensity ranges from 1x to 10x. Show style and length inherit the global finale settings. The settings test button never reads or updates real Superfan cooldown history.
 
 After a successfully completed paid-Superfan finale, the overlay displays `This firework was for you!` and `Thank you for being a Superfan, {username}!`. The closing card begins only after the full visual and audio tail, defaults to 3 seconds, and keeps the next queued finale waiting until it disappears. Its duration, position, size, and custom scale are configurable. Visual style and entrance animation inherit the follower-notification settings. Rejected, failed, ordinary goal, manual, API, and legacy finales do not display this card.
+
+## Furry Celebration 3D and character credit
+
+Furry Celebration stages playful Boykisser cameos across far, mid, and near depth, pauses for a false ending, and closes with one centered Hero cat framed by subtle rainbow and trans-color halos. The character is drawn procedurally by the WebGPU shader; the reference PNGs are not bundled or rendered by the plugin.
+
+The procedural firework glyph is based on Mauzymice's **Silly Cat**, widely known as **Boykisser**. The [Boykisser context page on SiIvaGunner Wiki](https://siivagunner.fandom.com/wiki/Boykisser) documents the name, alias, and creator attribution; it is context, not the original artwork source.
 
 ### API
 - **Plugin API**: Exposed methods for other plugins
@@ -207,6 +214,7 @@ Finales always keep the visible rocket ascent, even at combo levels that normall
 1. Check if plugin is enabled
 2. Verify overlay URL is correct
 3. Check browser console for errors
+4. After plugin updates, refresh the OBS Browser Source cache. Renderer protocol 3 advertises `depth3d-v1` and `boykisser-v1`; settings show an explicit refresh warning for an older connected overlay.
 
 ### Low FPS
 1. Reduce max particles

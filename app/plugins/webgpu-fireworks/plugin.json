@@ -1,7 +1,7 @@
 {
   "id": "webgpu-fireworks",
   "name": "WebGPU Fireworks",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Dedicated Fireworks edition for the Loggableim OBS WebGPU build. Requires https://github.com/Loggableim/obs-studio-webgpu.",
   "author": "Pup Cid",
   "icon": "/plugins/webgpu-fireworks/assets/fireworks-icon.png",
@@ -40,6 +40,8 @@
     "follower-fireworks",
     "performance-limits",
     "queue-rate-limiting",
-    "user-avatar-particles"
+    "user-avatar-particles",
+    "controlled-3d-depth",
+    "boykisser-firework-glyph"
   ]
 }

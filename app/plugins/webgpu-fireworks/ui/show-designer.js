@@ -382,7 +382,7 @@
       const code = keySegment(error?.code);
       const knownCodes = new Set([
         'network_error', 'invalid_response', 'request_failed', 'finale_busy',
-        'renderer_not_ready', 'preview_draft_invalid', 'revision_conflict', 'invalid_json'
+        'renderer_not_ready', 'renderer_upgrade_required', 'preview_draft_invalid', 'revision_conflict', 'invalid_json'
       ]);
       return this.t(
         `plugins.webgpu-fireworks.designer.errors.${knownCodes.has(code) ? code : fallbackKey}`,

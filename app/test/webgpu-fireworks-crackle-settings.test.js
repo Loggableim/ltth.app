@@ -79,12 +79,11 @@ describe('WebGPU Fireworks crackling settings contract', () => {
   });
 
   test('cache-busts every updated overlay and settings script', () => {
-    const existingVersion = '2.2.1-avatar-head-1';
-    const runtimeVersion = '2.2.1-show-plan-v2-runtime-1';
+    const releaseVersion = '3.1.0-depth3d-1';
     const overlay = read('overlay.html');
     const settingsHtml = read('ui/settings.html');
-    expect(overlay).toContain(`webgpu-particle-engine.js?v=${existingVersion}`);
-    expect(overlay.match(new RegExp(`v=${runtimeVersion}`, 'g'))).toHaveLength(2);
-    expect(settingsHtml).toContain(`ui/settings.js?v=${existingVersion}`);
+    expect(overlay).toContain(`webgpu-particle-engine.js?v=${releaseVersion}`);
+    expect(overlay.match(new RegExp(`v=${releaseVersion}`, 'g'))).toHaveLength(4);
+    expect(settingsHtml).toContain(`ui/settings.js?v=${releaseVersion}`);
   });
 });

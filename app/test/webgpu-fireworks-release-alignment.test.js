@@ -3,8 +3,8 @@ const path = require('path');
 
 const appRoot = path.join(__dirname, '..');
 const repoRoot = path.join(appRoot, '..');
-const APP_VERSION = '1.3.34';
-const PLUGIN_VERSION = '3.0.0';
+const APP_VERSION = '1.3.35';
+const PLUGIN_VERSION = '3.1.0';
 const RELEASE_DATE = '2026-07-19';
 
 function read(relativePath) {
@@ -20,8 +20,8 @@ function pluginAssetUrls(source) {
     .map(match => match[1]);
 }
 
-describe('WebGPU Fireworks 3.0.0 release alignment', () => {
-  test('aligns app and public release metadata to LTTH 1.3.34', () => {
+describe('WebGPU Fireworks 3.1.0 release alignment', () => {
+  test('aligns app and public release metadata to LTTH 1.3.35', () => {
     const rootPackage = readJson('package.json');
     const appPackage = readJson('app/package.json');
     const appLock = readJson('app/package-lock.json');
@@ -36,7 +36,7 @@ describe('WebGPU Fireworks 3.0.0 release alignment', () => {
 
     expect(currentRelease.version).toBe(APP_VERSION);
     expect(currentRelease.updated_at.startsWith(RELEASE_DATE)).toBe(true);
-    expect(currentRelease.notes).toContain('WebGPU Fireworks 3.0.0');
+    expect(currentRelease.notes).toContain('WebGPU Fireworks 3.1.0');
 
     expect(publicRelease).toEqual(expect.objectContaining({
       version: APP_VERSION,
@@ -44,12 +44,12 @@ describe('WebGPU Fireworks 3.0.0 release alignment', () => {
       downloadVersion: APP_VERSION,
       downloadUrl: `https://github.com/Loggableim/ltth.app/releases/tag/v${APP_VERSION}`
     }));
-    expect(publicRelease.downloadNote).toContain('WebGPU Fireworks 3.0.0');
+    expect(publicRelease.downloadNote).toContain('WebGPU Fireworks 3.1.0');
     expect(publicRelease.changelog[APP_VERSION]).toEqual(expect.objectContaining({
       date: RELEASE_DATE,
       changes: expect.any(Array)
     }));
-    expect(publicRelease.changelog[APP_VERSION].changes.join('\n')).toContain('27');
+    expect(publicRelease.changelog[APP_VERSION].changes.join('\n')).toContain('depth3d-v1');
   });
 
   test('aligns active download, website, locale, and changelog surfaces', () => {
@@ -62,25 +62,25 @@ describe('WebGPU Fireworks 3.0.0 release alignment', () => {
     for (const relativePath of activeSurfaces) {
       const source = read(relativePath);
       expect(source).toContain(APP_VERSION);
-      expect(source).not.toContain('1.3.33');
+      expect(source).not.toContain('1.3.34');
     }
 
     for (const locale of ['de', 'en', 'es', 'fr']) {
       const translations = readJson(`locales/${locale}.json`);
       expect(translations.beta.notice.compact).toContain(APP_VERSION);
-      expect(translations.beta.notice.compact).not.toContain('1.3.33');
+      expect(translations.beta.notice.compact).not.toContain('1.3.34');
     }
 
     for (const relativePath of ['CHANGELOG.md', 'app/CHANGELOG.md']) {
       const changelog = read(relativePath);
       expect(changelog).toContain(`## [${APP_VERSION}] - ${RELEASE_DATE}`);
-      expect(changelog).toContain('PyroDSL');
-      expect(changelog).toContain('Show Designer');
-      expect(changelog).toContain('WebGPU Fireworks 3.0.0');
+      expect(changelog).toContain('Controlled 3D Depth');
+      expect(changelog).toContain('Boykisser');
+      expect(changelog).toContain('WebGPU Fireworks 3.1.0');
     }
   });
 
-  test('aligns the plugin manifest and every active plugin asset cache key to 3.0.0', () => {
+  test('aligns the plugin manifest and every active plugin asset cache key to 3.1.0', () => {
     const manifest = readJson('app/plugins/webgpu-fireworks/plugin.json');
     const surfaces = {
       'app/plugins/webgpu-fireworks/overlay.html': [

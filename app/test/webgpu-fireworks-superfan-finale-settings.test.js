@@ -505,7 +505,8 @@ describe('WebGPU Superfan finale settings', () => {
     expect(JSON.parse(findRequest(fetchMock, '/api/webgpu-fireworks/finale')[1].body)).toEqual({
       style: customStyle,
       length: 'long',
-      intensity: 4.5
+      intensity: 4.5,
+      testRequest: true
     });
   });
 
