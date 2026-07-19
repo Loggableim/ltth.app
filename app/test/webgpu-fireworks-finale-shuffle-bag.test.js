@@ -55,6 +55,18 @@ describe('FinaleShuffleBag', () => {
     expect([bag.draw(), bag.draw(), bag.draw()]).not.toContain('alpha');
   });
 
+  test('avoids repeating the last draw when a membership refresh keeps that style eligible', () => {
+    let members = ['alpha', 'beta', 'gamma'];
+    const bag = new FinaleShuffleBag(() => members, () => 0.999999);
+
+    expect(bag.draw()).toBe('alpha');
+    members = ['alpha', 'beta', 'delta'];
+
+    const refreshedRound = [bag.draw(), bag.draw(), bag.draw()];
+    expect(refreshedRound[0]).toBe('beta');
+    expect(new Set(refreshedRound)).toEqual(new Set(members));
+  });
+
   test('does not rebuild a round when provider ordering changes without membership changes', () => {
     let members = ['alpha', 'beta', 'gamma'];
     const bag = new FinaleShuffleBag(() => members, () => 0.999999);

@@ -197,6 +197,16 @@ describe('WebGPU finale backend contract', () => {
     expect(plugin.finaleShuffleBag.draw).toHaveBeenCalledTimes(2);
   });
 
+  test('falls back to a valid built-in when the Auto style provider is empty', () => {
+    const { plugin } = createPlugin();
+    plugin.getAutoEligibleFinaleStyleIds = () => [];
+
+    const finale = plugin.triggerFinale({ style: 'auto', seed: 3, id: 'empty-provider' });
+
+    expect(finale.style).toBe(FINALE_STYLES[0]);
+    expect(finale.showPlan.style).toBe(FINALE_STYLES[0]);
+  });
+
   test('generates unique IDs for same-millisecond finales that reuse an explicit seed', () => {
     const now = jest.spyOn(Date, 'now').mockReturnValue(1720000000000);
     try {

@@ -1866,7 +1866,7 @@ class FireworksPlugin {
         }
 
         const resolvedStyle = finale.style === 'auto'
-            ? this.finaleShuffleBag.draw()
+            ? this.finaleShuffleBag.draw() || FINALE_STYLES[0]
             : finale.style;
         const id = finale.id || `finale-${Date.now()}-${finale.seed}-${this.finaleIdCounter++}`;
         const showPlan = this.finaleShowPlanner.plan({
