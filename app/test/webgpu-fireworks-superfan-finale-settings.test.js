@@ -563,7 +563,9 @@ describe('WebGPU Superfan finale settings', () => {
   };
 
   test.each(['de', 'en', 'es', 'fr'])('ships all Superfan finale labels in %s', locale => {
-    const messages = JSON.parse(fs.readFileSync(path.join(pluginDir, 'locales', `${locale}.json`), 'utf8'));
+    const messages = JSON.parse(
+      fs.readFileSync(path.join(pluginDir, 'locales', `${locale}.json`), 'utf8')
+    ).plugins['webgpu-fireworks'];
     const keys = [
       'superfan_finale', 'enable_superfan_finale', 'superfan_finale_cooldown',
       'superfan_finale_every_6h', 'superfan_finale_every_12h', 'superfan_finale_every_24h',

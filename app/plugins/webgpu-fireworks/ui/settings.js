@@ -257,6 +257,16 @@ async function loadRendererStatus() {
         const data = await response.json();
         if (!data.success) return;
         const renderer = data.renderer || {};
+        const showOptions = window.WebGpuFireworksShowOptions;
+        const showCatalog = showOptions?.loadCatalog
+            ? await showOptions.loadCatalog()
+            : null;
+        const finaleStatus = showOptions?.formatRuntimeFinaleStatus
+            ? showOptions.formatRuntimeFinaleStatus(renderer, {
+                catalog: showCatalog,
+                translate: t
+            })
+            : null;
         const state = document.getElementById('webgpu-runtime-state');
         const adapter = document.getElementById('webgpu-adapter-state');
         const audio = document.getElementById('webgpu-audio-state');
@@ -316,12 +326,11 @@ async function loadRendererStatus() {
                 : t('plugins.webgpu-fireworks.ui.no_events', 'No events');
         }
         if (finaleActive) {
-            finaleActive.textContent = renderer.finaleActive
-                ? `${renderer.finaleStyle || 'Finale'} · ${renderer.finaleLength || 'medium'}`
-                : 'Idle';
+            finaleActive.textContent = finaleStatus?.activeShow
+                || t('plugins.webgpu-fireworks.status.idle', 'Idle');
         }
-        if (finalePhase) finalePhase.textContent = String(renderer.finalePhase || 'idle').toUpperCase();
-        if (finaleQueue) finaleQueue.textContent = String(Number(renderer.finaleQueueLength || 0));
+        if (finalePhase) finalePhase.textContent = finaleStatus?.phase || String(renderer.finalePhase || 'idle').toUpperCase();
+        if (finaleQueue) finaleQueue.textContent = finaleStatus?.queue || String(Number(renderer.finaleQueueLength || 0));
         if (visualStyle) visualStyle.textContent = formatVisualStyle(renderer.visualStyle || config.visualStyle);
         if (frameTime) frameTime.textContent = Number.isFinite(Number(renderer.gpuFrameMs)) ? `${Number(renderer.gpuFrameMs).toFixed(2)} ms` : '-';
         if (particles) particles.textContent = `${Number(renderer.activeParticles || 0).toLocaleString()} ${t('plugins.webgpu-fireworks.ui.active', 'active')} · ${Number(renderer.droppedParticles || 0).toLocaleString()} ${t('plugins.webgpu-fireworks.ui.dropped', 'dropped')}`;

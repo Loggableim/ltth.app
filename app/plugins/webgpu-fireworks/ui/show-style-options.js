@@ -34,6 +34,16 @@
     medium: 'Medium (18 s)',
     long: 'Long (28 s)'
   });
+  const PHASE_IDS = new Set([
+    'idle',
+    'opening',
+    'build',
+    'highlight',
+    'calm',
+    'bridge',
+    'breath',
+    'finale'
+  ]);
 
   const refreshGenerations = new WeakMap();
   let catalogPromise = null;
@@ -123,6 +133,33 @@
     return { ...DEFAULT_LABELS, ...(overrides || {}) };
   }
 
+  function interpolate(value, params = {}) {
+    return String(value).replace(/\{(\w+)\}/g, (match, name) => (
+      Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+    ));
+  }
+
+  function localize(key, fallback, params = {}, options = {}) {
+    let translated;
+    if (typeof options.translate === 'function') {
+      translated = options.translate(key, fallback, params);
+    } else {
+      translated = root?.i18n?.t?.(key, params);
+    }
+    return translated && translated !== key
+      ? interpolate(translated, params)
+      : interpolate(fallback, params);
+  }
+
+  function builtInTitle(style, options = {}) {
+    return localize(
+      `plugins.webgpu-fireworks.shows.${style.id}.title`,
+      style.name,
+      {},
+      options
+    );
+  }
+
   function clearSelect(select) {
     while (select.firstChild) select.removeChild(select.firstChild);
   }
@@ -137,11 +174,13 @@
     return option;
   }
 
-  function appendGroup(select, label, styles) {
+  function appendGroup(select, label, styles, options = {}) {
     if (styles.length === 0) return null;
     const group = select.ownerDocument.createElement('optgroup');
     group.label = label;
-    for (const style of styles) appendOption(group, style.id, style.name);
+    for (const style of styles) {
+      appendOption(group, style.id, style.builtIn === true ? builtInTitle(style, options) : style.name);
+    }
     select.appendChild(group);
     return group;
   }
@@ -183,8 +222,8 @@
     } else {
       appendOption(select, 'inherit', labels.inherit);
     }
-    appendGroup(select, labels.builtIns, Array.isArray(catalog.builtIns) ? catalog.builtIns : []);
-    appendGroup(select, labels.custom, Array.isArray(catalog.custom) ? catalog.custom : []);
+    appendGroup(select, labels.builtIns, Array.isArray(catalog.builtIns) ? catalog.builtIns : [], options);
+    appendGroup(select, labels.custom, Array.isArray(catalog.custom) ? catalog.custom : [], options);
 
     const fallbackValue = surface === 'global' ? 'auto' : 'inherit';
     const selectedValue = typeof options.selectedValue === 'string'
@@ -241,11 +280,75 @@
     return BUILT_IN_IDS.has(value) || isCustomStyleId(value);
   }
 
+  function humanizeIdentifier(value, fallback) {
+    const normalized = String(value || '').trim().replace(/^custom:/i, '').replace(/[-_]+/g, ' ');
+    if (!normalized) return fallback;
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  }
+
+  function customTitle(styleId, renderer, catalog) {
+    if (typeof renderer?.finaleName === 'string' && renderer.finaleName.trim()) {
+      return renderer.finaleName.trim();
+    }
+    const styles = Array.isArray(catalog?.custom) ? catalog.custom : [];
+    return styles.find(style => style.id === styleId)?.name || null;
+  }
+
+  function showTitle(styleId, renderer, options = {}) {
+    const builtIn = BUILT_IN_SHOWS.find(style => style.id === styleId);
+    if (builtIn) return builtInTitle(builtIn, options);
+    if (isCustomStyleId(styleId)) {
+      return customTitle(styleId, renderer, options.catalog)
+        || humanizeIdentifier(styleId, DEFAULT_LABELS.unavailable);
+    }
+    return humanizeIdentifier(styleId, 'Finale');
+  }
+
+  function lengthTitle(length, options = {}) {
+    const normalized = LENGTHS.find(candidate => candidate.id === length) || LENGTHS[1];
+    return localize(
+      `plugins.webgpu-fireworks.selector.length_${normalized.id}`,
+      normalized.label,
+      {},
+      options
+    );
+  }
+
+  function phaseTitle(phase, options = {}) {
+    const normalized = String(phase || 'idle').trim().toLowerCase();
+    if (!PHASE_IDS.has(normalized)) return humanizeIdentifier(normalized, 'Idle');
+    return localize(
+      `plugins.webgpu-fireworks.status.phases.${normalized}`,
+      humanizeIdentifier(normalized, 'Idle'),
+      {},
+      options
+    );
+  }
+
+  function formatRuntimeFinaleStatus(renderer = {}, options = {}) {
+    const active = renderer.finaleActive === true;
+    const activeShow = active
+      ? `${showTitle(renderer.finaleStyle, renderer, options)} · ${lengthTitle(renderer.finaleLength, options)}`
+      : localize('plugins.webgpu-fireworks.status.idle', 'Idle', {}, options);
+    const phase = phaseTitle(renderer.finalePhase, options);
+    const count = Number.isFinite(Number(renderer.finaleQueueLength))
+      ? Math.max(0, Math.floor(Number(renderer.finaleQueueLength)))
+      : 0;
+    const queue = localize(
+      'plugins.webgpu-fireworks.status.queue_count',
+      '{count} queued',
+      { count },
+      options
+    );
+    return { activeShow, phase, queue };
+  }
+
   return Object.freeze({
     BUILT_IN_SHOWS,
     SHOWS_ENDPOINT,
     clearCatalogCache,
     fallbackCatalog,
+    formatRuntimeFinaleStatus,
     isCustomStyleId,
     isSelectableStyleId,
     loadCatalog,

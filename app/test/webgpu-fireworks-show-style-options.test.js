@@ -252,4 +252,70 @@ describe('WebGPU Fireworks dynamic show style options', () => {
 
     dom.window.close();
   });
+
+  test('localizes Built-in titles while preserving Custom metadata names as user text', async () => {
+    const { dom, api, select, window } = createHarness();
+    window.i18n = {
+      t: jest.fn((key) => ({
+        'plugins.webgpu-fireworks.shows.classic-crescendo.title': 'Klassisches Crescendo'
+      })[key] || key)
+    };
+
+    await api.refreshStyleSelect(select, {
+      surface: 'global',
+      selectedValue: CUSTOM_ID,
+      fetchImpl: jest.fn(async () => jsonResponse(publishedCatalog('Mein eigenes Finale'))),
+      force: true
+    });
+
+    expect(select.querySelector('option[value="classic-crescendo"]').textContent)
+      .toBe('Klassisches Crescendo');
+    expect(select.querySelector(`option[value="${CUSTOM_ID}"]`).textContent)
+      .toBe('Mein eigenes Finale');
+
+    dom.window.close();
+  });
+
+  test('formats localized active show, actual V2 phase and queue with a safe unknown fallback', () => {
+    const { dom, api } = createHarness();
+    const translate = (key, fallback, params = {}) => {
+      const translated = {
+        'plugins.webgpu-fireworks.shows.classic-crescendo.title': 'Crescendo classique',
+        'plugins.webgpu-fireworks.selector.length_long': 'Longue (28 s)',
+        'plugins.webgpu-fireworks.status.phases.bridge': 'Transition',
+        'plugins.webgpu-fireworks.status.queue_count': '{count} en file',
+        'plugins.webgpu-fireworks.status.idle': 'Inactif'
+      }[key];
+      return String(translated || fallback).replace(/\{(\w+)\}/g, (match, name) => params[name] ?? match);
+    };
+    const catalog = api.normalizeCatalog(publishedCatalog('Finale personnel'));
+
+    expect(api.formatRuntimeFinaleStatus({
+      finaleActive: true,
+      finaleStyle: 'classic-crescendo',
+      finaleLength: 'long',
+      finalePhase: 'bridge',
+      finaleQueueLength: 2
+    }, { catalog, translate })).toEqual({
+      activeShow: 'Crescendo classique · Longue (28 s)',
+      phase: 'Transition',
+      queue: '2 en file'
+    });
+
+    expect(api.formatRuntimeFinaleStatus({
+      finaleActive: true,
+      finaleStyle: CUSTOM_ID,
+      finaleLength: 'long',
+      finalePhase: 'mystery-phase',
+      finaleQueueLength: 0
+    }, { catalog, translate })).toEqual({
+      activeShow: 'Finale personnel · Longue (28 s)',
+      phase: 'Mystery phase',
+      queue: '0 en file'
+    });
+
+    expect(api.formatRuntimeFinaleStatus({ finaleActive: false }, { catalog, translate }).activeShow)
+      .toBe('Inactif');
+    dom.window.close();
+  });
 });

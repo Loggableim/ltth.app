@@ -55,6 +55,7 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
   test('renders active finale, phase and queue telemetry in the runtime card', () => {
     const html = read('ui/settings.html');
     const source = read('ui/settings.js');
+    const helper = read('ui/show-style-options.js');
 
     expect(html).toContain('id="webgpu-finale-active"');
     expect(html).toContain('id="webgpu-finale-phase"');
@@ -62,9 +63,10 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
     expect(source).toContain("document.getElementById('webgpu-finale-active')");
     expect(source).toContain("document.getElementById('webgpu-finale-phase')");
     expect(source).toContain("document.getElementById('webgpu-finale-queue')");
-    expect(source).toContain('renderer.finaleStyle');
-    expect(source).toContain('renderer.finalePhase');
-    expect(source).toContain('renderer.finaleQueueLength');
+    expect(source).toContain('showOptions.formatRuntimeFinaleStatus(renderer');
+    expect(helper).toContain('renderer.finaleStyle');
+    expect(helper).toContain('renderer.finalePhase');
+    expect(helper).toContain('renderer.finaleQueueLength');
   });
 
   test('sanitizes finale renderer telemetry and exposes idle offline defaults', () => {
@@ -120,7 +122,7 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
 
   test.each(['de', 'en', 'es', 'fr'])('%s locale defines finale choreography labels', locale => {
     const parsed = JSON.parse(read(`locales/${locale}.json`));
-    const translations = parsed.webgpu_fireworks;
+    const translations = parsed.plugins['webgpu-fireworks'].webgpu_fireworks;
     for (const key of [
       'finale_style', 'finale_length', 'finale_style_auto', 'finale_style_classic_crescendo',
       'finale_style_symmetric_salute', 'finale_style_sky_ballet', 'finale_style_thunder_finale',
@@ -133,7 +135,7 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
   });
 
   test('uses accurate German finale labels', () => {
-    const de = JSON.parse(read('locales/de.json')).webgpu_fireworks;
+    const de = JSON.parse(read('locales/de.json')).plugins['webgpu-fireworks'].webgpu_fireworks;
     expect(de).toMatchObject({
       finale_style: 'Showstil',
       finale_length: 'Showlänge',

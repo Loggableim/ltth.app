@@ -528,12 +528,12 @@ describe('Goals firework finale integration', () => {
         firework_finale_length_long: 'Longue (28 s)'
       }
     };
-    const showNames = [
-      'Classic Crescendo',
-      'Symmetric Salute',
-      'Sky Ballet',
-      'Thunder Finale'
-    ];
+    const showNames = {
+      de: ['Klassisches Crescendo', 'Symmetrischer Salut', 'Himmelsballett', 'Donnerfinale'],
+      en: ['Classic Crescendo', 'Symmetric Salute', 'Sky Ballet', 'Thunder Finale'],
+      es: ['Crescendo clásico', 'Saludo simétrico', 'Ballet celeste', 'Final de trueno'],
+      fr: ['Crescendo classique', 'Salut symétrique', 'Ballet céleste', 'Final tonnerre']
+    };
 
     for (const [locale, localizedValues] of Object.entries(expected)) {
       const translations = JSON.parse(
@@ -545,7 +545,7 @@ describe('Goals firework finale integration', () => {
         translations.firework_finale_style_symmetric_salute,
         translations.firework_finale_style_sky_ballet,
         translations.firework_finale_style_thunder_finale
-      ]).toEqual(showNames);
+      ]).toEqual(showNames[locale]);
     }
   });
 
