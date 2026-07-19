@@ -370,6 +370,29 @@ describe('WebGPU Fireworks explicit show preview', () => {
   });
 
   test.each([
+    ['string', '7'],
+    ['null', null],
+    ['boolean', true],
+    ['object', {}],
+    ['NaN', Number.NaN],
+    ['Infinity', Number.POSITIVE_INFINITY]
+  ])('rejects an explicit %s intensity with a typed 400', async (_label, intensity) => {
+    const { api, dataDir, plugin } = createHarness();
+    dataDirs.push(dataDir);
+    setTelemetry(plugin, [{}]);
+
+    const response = await invokePreview(api, { intensity });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toMatchObject({
+      success: false,
+      code: 'INVALID_PREVIEW_INTENSITY',
+      details: { receivedType: typeof intensity }
+    });
+    expect(api.emit).not.toHaveBeenCalledWith('webgpu-fireworks:preview', expect.anything());
+  });
+
+  test.each([
     ['empty shells', { shells: [] }],
     ['empty layers', { shells: [{ layers: [] }] }]
   ])('rejects a malformed selected cue with %s instead of producing an invalid tail', (_label, cueShape) => {
@@ -418,5 +441,27 @@ describe('WebGPU Fireworks explicit show preview', () => {
       statusCode: 503,
       body: { code: 'RENDERER_NOT_READY', details: { readyRendererCount: 0 } }
     });
+  });
+
+  test('fresh active or queued finale takes precedence when no renderer is ready', async () => {
+    const { api, dataDir, plugin } = createHarness();
+    dataDirs.push(dataDir);
+    setTelemetry(plugin, [{
+      state: 'initializing',
+      finaleActive: true,
+      finaleQueueLength: 1
+    }]);
+
+    const response = await invokePreview(api);
+
+    expect(response).toMatchObject({
+      statusCode: 409,
+      body: {
+        success: false,
+        code: 'FINALE_BUSY',
+        details: { readyRendererCount: 0, busyRendererCount: 1 }
+      }
+    });
+    expect(api.emit).not.toHaveBeenCalledWith('webgpu-fireworks:preview', expect.anything());
   });
 });

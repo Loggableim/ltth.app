@@ -251,7 +251,16 @@ class ShowApiController {
     if (!show.builtIn) this._assertExpectedRevision(show, body.expectedRevision);
 
     const config = typeof this.getConfig === 'function' ? this.getConfig() || {} : {};
-    const intensityInput = body.intensity === undefined ? config.goalFinaleIntensity : body.intensity;
+    const hasIntensity = Object.prototype.hasOwnProperty.call(body, 'intensity');
+    if (hasIntensity && (typeof body.intensity !== 'number' || !Number.isFinite(body.intensity))) {
+      throw new ShowRepositoryError(
+        'INVALID_PREVIEW_INTENSITY',
+        400,
+        'intensity must be a finite number when provided.',
+        { receivedType: typeof body.intensity }
+      );
+    }
+    const intensityInput = hasIntensity ? body.intensity : config.goalFinaleIntensity;
     const intensityNumber = Number(intensityInput);
     const intensity = Number.isFinite(intensityNumber)
       ? Math.min(10, Math.max(1, intensityNumber))
@@ -292,6 +301,17 @@ class ShowApiController {
     const renderer = typeof this.getPreviewRendererStatus === 'function'
       ? this.getPreviewRendererStatus()
       : { freshRendererCount: 0, readyRendererCount: 0, busyRendererCount: 0 };
+    if (renderer && renderer.busyRendererCount > 0) {
+      throw new ShowRepositoryError(
+        'FINALE_BUSY',
+        409,
+        'A finale is active or queued on a WebGPU renderer.',
+        {
+          readyRendererCount: renderer.readyRendererCount,
+          busyRendererCount: renderer.busyRendererCount
+        }
+      );
+    }
     if (!renderer || renderer.readyRendererCount < 1) {
       throw new ShowRepositoryError(
         'RENDERER_NOT_READY',
@@ -300,17 +320,6 @@ class ShowApiController {
         {
           freshRendererCount: renderer?.freshRendererCount || 0,
           readyRendererCount: renderer?.readyRendererCount || 0
-        }
-      );
-    }
-    if (renderer.busyRendererCount > 0) {
-      throw new ShowRepositoryError(
-        'FINALE_BUSY',
-        409,
-        'A finale is active or queued on a WebGPU renderer.',
-        {
-          readyRendererCount: renderer.readyRendererCount,
-          busyRendererCount: renderer.busyRendererCount
         }
       );
     }
