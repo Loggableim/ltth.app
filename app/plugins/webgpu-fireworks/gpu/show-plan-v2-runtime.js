@@ -100,6 +100,10 @@
     if (!Number.isFinite(renderHints.glyphScale) || renderHints.glyphScale < 0.5 || renderHints.glyphScale > 2) {
       fail(`${path}.glyphScale must be finite and between 0.5 and 2`);
     }
+    if (renderHints.glyphExtent !== undefined && (!Number.isFinite(renderHints.glyphExtent)
+      || renderHints.glyphExtent <= 0 || renderHints.glyphExtent > 1)) {
+      fail(`${path}.glyphExtent must be finite and greater than zero through one`);
+    }
   }
 
   function normalizeRenderHints(renderHints) {
@@ -108,7 +112,8 @@
       depthEnabled: renderHints.depthEnabled,
       launchDepth: Number(renderHints.launchDepth),
       burstDepth: Number(renderHints.burstDepth),
-      glyphScale: Number(renderHints.glyphScale)
+      glyphScale: Number(renderHints.glyphScale),
+      ...(renderHints.glyphExtent === undefined ? {} : { glyphExtent: Number(renderHints.glyphExtent) })
     };
   }
 

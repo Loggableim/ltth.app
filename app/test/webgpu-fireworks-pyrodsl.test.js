@@ -188,7 +188,7 @@ describe('PyroDSL contract and normalization', () => {
     expect(glyphSection).not.toContain('uniforms.time');
   });
 
-  test('samples Boykisser WGSL anchors with ears and curl above the face', () => {
+  test('ships semantic Boykisser paths in detailed and simplified LODs', () => {
     const engine = new WebGPUParticleEngine({ width: 1920, height: 1080 });
     const shader = engine._computeShader();
     const boykisser = shader.slice(shader.indexOf('fn boykisserPoint'), shader.indexOf('fn transFlagPoint'));
@@ -198,24 +198,31 @@ describe('PyroDSL contract and normalization', () => {
       return [...match[1].matchAll(/vec2f\((-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)\)/g)]
         .map(([, x, y]) => ({ x: Number(x), y: Number(y) }));
     };
-    const detailed = parseArray('outline', 18);
-    const simplified = parseArray('outline', 10);
+    const detailed = parseArray('detailedOutline', 22);
+    const simplified = parseArray('simplifiedOutline', 14);
+    const detailedForelock = parseArray('detailedForelock', 6);
+    const simplifiedForelock = parseArray('simplifiedForelock', 4);
+    const nose = parseArray('nose', 4);
     const mouth = parseArray('mouth', 5);
-    const eyeAnchor = boykisser.match(/point = vec2f\(side \* (-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)\)/);
 
-    expect(detailed).toHaveLength(18);
-    expect(simplified).toHaveLength(10);
-    expect(eyeAnchor).not.toBeNull();
-    const eyeY = Number(eyeAnchor[2]);
     for (const outline of [detailed, simplified]) {
-      expect(outline.some(point => point.x <= -0.4 && point.y <= -0.65)).toBe(true);
-      expect(outline.some(point => point.x >= 0.4 && point.y <= -0.65)).toBe(true);
-      expect(outline.some(point => Math.abs(point.x) <= 0.16 && point.y <= -0.65)).toBe(true);
-      expect(outline.some(point => point.x <= -0.8 && point.y >= -0.2 && point.y <= 0.35)).toBe(true);
-      expect(outline.some(point => point.x >= 0.8 && point.y >= -0.2 && point.y <= 0.35)).toBe(true);
-      expect(outline.some(point => Math.abs(point.x) >= 0.55 && point.y > 0.65)).toBe(false);
+      expect(Math.min(...outline.map(point => point.x))).toBe(-0.9);
+      expect(Math.max(...outline.map(point => point.x))).toBe(0.9);
+      expect(outline.some(point => point.x < -0.5 && point.y < -0.65)).toBe(true);
+      expect(outline.some(point => point.x > 0.5 && point.y < -0.65)).toBe(true);
+      expect(outline.some(point => Math.abs(point.x) > 0.75 && Math.abs(point.y) < 0.25)).toBe(true);
+      expect(outline.some(point => Math.abs(point.x) > 0.3 && point.y > 0.65)).toBe(true);
     }
-    expect(mouth.every(point => point.y > eyeY)).toBe(true);
+    expect(detailedForelock.every(point => point.y < -0.2)).toBe(true);
+    expect(simplifiedForelock.every(point => point.y < -0.2)).toBe(true);
+    expect(boykisser).toContain('let eyeArc = ((eyeLocal - 0.35) / 0.65) * 3.1415926;');
+    expect(boykisser).toContain('let eyeLid = mix(vec2f(-0.15,-0.12), vec2f(0.15,-0.12)');
+    expect(boykisser).not.toContain('let angle = u * 6.2831853;');
+    expect(Math.max(...nose.map(point => point.y))).toBeLessThan(Math.min(...mouth.map(point => point.y)));
+    expect(Math.min(...nose.map(point => point.y))).toBeGreaterThan(-0.12);
+    expect(mouth.map(point => point.y)).toEqual([0.18, 0.29, 0.18, 0.29, 0.18]);
+    expect(boykisser).toContain('let cheekCenter = vec2f(side * 0.5, 0.18);');
+    expect(boykisser).toContain('if (detailed)');
   });
 
   test('clones into a stable normalized contract with resolved defaults and no shared references', () => {

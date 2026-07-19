@@ -702,6 +702,10 @@ class WebGPUParticleEngine {
         const renderHints = context.renderHints || {};
         const depthEnabled = renderHints.depthEnabled === true;
         const glyphScale = effectiveLayer.primitive === 'glyph' ? Number(renderHints.glyphScale) || 1 : 1;
+        const particleSize = effectiveLayer.size * 6 * scale;
+        const extentIntensity = effectiveLayer.primitive === 'glyph' && Number.isFinite(renderHints.glyphExtent)
+            ? this._v2GlyphExtentIntensity(effectiveLayer, renderHints, particleSize)
+            : null;
         const flags = V2_MARKER | (effectiveLayer.trail ? V2_TRAIL : 0) |
             (effectiveLayer.split ? V2_SPLIT_REQUESTED : 0) | (effectiveLayer.strobe ? V2_STROBE : 0) |
             ((splitQuality & 3) << 4) | ((materialRole & 15) << 8) | ((style & 3) << 12);
@@ -720,9 +724,9 @@ class WebGPUParticleEngine {
             packedColors,
             colorCount: packedColors.length,
             flags,
-            intensity: (context.powerScale ?? 1) * scale * glyphScale,
+            intensity: extentIntensity ?? ((context.powerScale ?? 1) * scale * glyphScale),
             particleDuration: effectiveLayer.lifetimeMs / 1000,
-            size: effectiveLayer.size * 6 * scale,
+            size: particleSize,
             gravity: effectiveLayer.gravity * 105 * scale,
             drag: effectiveLayer.drag,
             secondary: false,
@@ -804,6 +808,10 @@ class WebGPUParticleEngine {
             if (!Number.isFinite(hints.glyphScale) || hints.glyphScale < 0.5 || hints.glyphScale > 2) {
                 throw new RangeError('ShowPlanV2 renderHints glyphScale must be between 0.5 and 2.');
             }
+            if (hints.glyphExtent !== undefined && (!Number.isFinite(hints.glyphExtent)
+                || hints.glyphExtent <= 0 || hints.glyphExtent > 1)) {
+                throw new RangeError('ShowPlanV2 renderHints glyphExtent must be greater than zero through one.');
+            }
         }
         for (const point of [context.origin || context.position, context.target]) {
             if (point !== undefined && (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y))) {
@@ -864,6 +872,20 @@ class WebGPUParticleEngine {
 
     _v2ViewportScale() {
         return Math.max(0.75, Math.min(1.75, Math.min(this.logicalWidth, this.logicalHeight) / 1080));
+    }
+
+    _v2GlyphExtentIntensity(layer, renderHints, particleSize) {
+        const extentPixels = this.logicalWidth * renderHints.glyphExtent;
+        const burstDepth = Math.max(-1, Math.min(1, Number(renderHints.burstDepth) || 0));
+        const perspective = 4 / Math.max(2, 4 - burstDepth);
+        const midpointSeconds = Number(layer.lifetimeMs) / 2000;
+        const decay = Number(layer.drag) * 60;
+        const displacement = decay > 1e-6
+            ? (1 - Math.exp(-decay * midpointSeconds)) / decay
+            : midpointSeconds;
+        const particleDiameter = particleSize * perspective * 2;
+        const velocityWidth = Math.max(1, extentPixels - particleDiameter);
+        return velocityWidth / (1.8 * 218 * displacement * perspective);
     }
 
     _flags({ secondary = false, nativeColor = false, role = 0, style = 0, pulseCount = 0, rocketAvatarHead = false } = {}) {
@@ -1386,7 +1408,17 @@ fn commandColor(command: SpawnCommand, globalIndex: u32) -> vec4f {
   var colorIndex = globalIndex % min(command.colorCount & 7u, 4u);
   let glyphT = f32(globalIndex) / max(1.0, f32(command.globalCount));
   if (command.shape == 25u) {
-    colorIndex = select(select(select(3u, 2u, glyphT < 0.9), 1u, glyphT < 0.82), 0u, glyphT < 0.56);
+    if (glyphT < 0.54) {
+      colorIndex = 0u;
+    } else if (glyphT < 0.72) {
+      colorIndex = 1u;
+    } else if (glyphT < 0.76) {
+      colorIndex = 2u;
+    } else if (glyphT < 0.86) {
+      colorIndex = 1u;
+    } else {
+      colorIndex = 3u;
+    }
   } else if (command.shape == 26u) {
     let band = min(4u, u32(floor(glyphT * 5.0)));
     colorIndex = select(select(0u, 1u, band == 1u || band == 3u), 2u, band == 2u);
@@ -1482,63 +1514,98 @@ fn boykisserPoint(index: u32, count: u32, seed: u32) -> vec2f {
   let t = f32(index) / max(1.0, f32(count));
   let detailed = count >= 96u;
   var point = vec2f(0.0);
-  if (t < 0.56) {
-    let local = t / 0.56;
+  if (t < 0.46) {
+    let local = t / 0.46;
     if (detailed) {
-      let outline = array<vec2f, 18>(
-        vec2f(0.0,0.88), vec2f(-0.42,0.78), vec2f(-0.72,0.48),
-        vec2f(-0.9,0.18), vec2f(-0.72,0.08), vec2f(-0.62,-0.28),
-        vec2f(-0.56,-0.84), vec2f(-0.26,-0.5), vec2f(-0.12,-0.62),
-        vec2f(0.0,-0.78), vec2f(0.15,-0.58), vec2f(0.3,-0.5),
-        vec2f(0.58,-0.84), vec2f(0.64,-0.27), vec2f(0.74,0.08),
-        vec2f(0.9,0.18), vec2f(0.46,0.76), vec2f(0.0,0.88)
+      let detailedOutline = array<vec2f, 22>(
+        vec2f(-0.15,-0.5), vec2f(-0.5,-0.67), vec2f(-0.65,-0.84),
+        vec2f(-0.78,-0.55), vec2f(-0.82,-0.22), vec2f(-0.9,-0.12),
+        vec2f(-0.76,0.03), vec2f(-0.88,0.15), vec2f(-0.6,0.2),
+        vec2f(-0.5,0.52), vec2f(-0.42,0.82), vec2f(0.0,0.74),
+        vec2f(0.42,0.82), vec2f(0.5,0.52), vec2f(0.6,0.2),
+        vec2f(0.88,0.15), vec2f(0.76,0.03), vec2f(0.9,-0.12),
+        vec2f(0.82,-0.22), vec2f(0.78,-0.55), vec2f(0.65,-0.84),
+        vec2f(0.5,-0.67)
       );
-      let edge = local * 17.0;
-      let segment = min(16u, u32(floor(edge)));
-      point = mix(outline[segment], outline[segment + 1u], fract(edge));
+      let edge = local * 22.0;
+      let segment = u32(floor(edge)) % 22u;
+      point = mix(detailedOutline[segment], detailedOutline[(segment + 1u) % 22u], fract(edge));
     } else {
-      let outline = array<vec2f, 10>(
-        vec2f(0.0,0.86), vec2f(-0.62,0.64), vec2f(-0.84,0.12),
-        vec2f(-0.6,-0.78), vec2f(-0.18,-0.5), vec2f(0.0,-0.72),
-        vec2f(0.2,-0.5), vec2f(0.6,-0.78), vec2f(0.84,0.12), vec2f(0.0,0.86)
+      let simplifiedOutline = array<vec2f, 14>(
+        vec2f(-0.15,-0.5), vec2f(-0.58,-0.7), vec2f(-0.66,-0.82),
+        vec2f(-0.8,-0.2), vec2f(-0.9,-0.1), vec2f(-0.72,0.12),
+        vec2f(-0.45,0.8), vec2f(0.0,0.72), vec2f(0.45,0.8),
+        vec2f(0.72,0.12), vec2f(0.9,-0.1), vec2f(0.8,-0.2),
+        vec2f(0.66,-0.82), vec2f(0.58,-0.7)
       );
-      let edge = local * 9.0;
-      let segment = min(8u, u32(floor(edge)));
-      point = mix(outline[segment], outline[segment + 1u], fract(edge));
+      let edge = local * 14.0;
+      let segment = u32(floor(edge)) % 14u;
+      point = mix(simplifiedOutline[segment], simplifiedOutline[(segment + 1u) % 14u], fract(edge));
     }
-  } else if (t < 0.82) {
-    let local = (t - 0.56) / 0.26;
-    let section = min(2u, u32(floor(local * 3.0)));
-    let u = fract(local * 3.0);
-    if (section < 2u) {
-      let side = select(-1.0, 1.0, section == 1u);
-      let angle = u * 6.2831853;
-      let eyeScale = select(vec2f(0.1, 0.16), vec2f(0.13, 0.2), detailed);
-      point = vec2f(side * 0.27, -0.12) + vec2f(cos(angle), sin(angle)) * eyeScale;
+  } else if (t < 0.54) {
+    let local = (t - 0.46) / 0.08;
+    if (detailed) {
+      let detailedForelock = array<vec2f, 6>(
+        vec2f(-0.27,-0.43), vec2f(-0.1,-0.62), vec2f(-0.14,-0.39),
+        vec2f(0.12,-0.46), vec2f(0.06,-0.3), vec2f(0.3,-0.34)
+      );
+      let edge = local * 5.0;
+      let segment = min(4u, u32(floor(edge)));
+      point = mix(detailedForelock[segment], detailedForelock[segment + 1u], fract(edge));
     } else {
-      let mouth = array<vec2f, 5>(
-        vec2f(-0.24,0.2), vec2f(-0.08,0.32), vec2f(0.0,0.2),
-        vec2f(0.08,0.32), vec2f(0.24,0.2)
+      let simplifiedForelock = array<vec2f, 4>(
+        vec2f(-0.23,-0.43), vec2f(-0.08,-0.57),
+        vec2f(-0.12,-0.35), vec2f(0.25,-0.35)
       );
-      let edge = u * 4.0;
-      let segment = min(3u, u32(floor(edge)));
-      point = mix(mouth[segment], mouth[segment + 1u], fract(edge));
+      let edge = local * 3.0;
+      let segment = min(2u, u32(floor(edge)));
+      point = mix(simplifiedForelock[segment], simplifiedForelock[segment + 1u], fract(edge));
     }
-  } else if (t < 0.9) {
-    let local = (t - 0.82) / 0.08;
-    let highlight = array<vec2f, 5>(
-      vec2f(-0.52,-0.54), vec2f(-0.28,-0.72), vec2f(0.0,-0.78),
-      vec2f(0.28,-0.7), vec2f(0.48,-0.5)
+  } else if (t < 0.72) {
+    let local = (t - 0.54) / 0.18;
+    let eye = min(1u, u32(floor(local * 2.0)));
+    let eyeLocal = fract(local * 2.0);
+    let side = select(-1.0, 1.0, eye == 1u);
+    let eyeCenter = vec2f(side * 0.29, 0.0);
+    if (eyeLocal < 0.35) {
+      let eyeLid = mix(vec2f(-0.15,-0.12), vec2f(0.15,-0.12), eyeLocal / 0.35);
+      point = eyeCenter + eyeLid;
+    } else {
+      let eyeArc = ((eyeLocal - 0.35) / 0.65) * 3.1415926;
+      let arcScale = select(vec2f(0.13,0.08), vec2f(0.15,0.1), detailed);
+      point = eyeCenter + vec2f(cos(eyeArc), sin(eyeArc)) * arcScale + vec2f(0.0,-0.12);
+    }
+  } else if (t < 0.76) {
+    let local = (t - 0.72) / 0.04;
+    let nose = array<vec2f, 4>(
+      vec2f(-0.035,0.015), vec2f(0.0,0.055),
+      vec2f(0.035,0.015), vec2f(0.0,0.075)
+    );
+    let edge = local * 3.0;
+    let segment = min(2u, u32(floor(edge)));
+    point = mix(nose[segment], nose[segment + 1u], fract(edge));
+  } else if (t < 0.86) {
+    let local = (t - 0.76) / 0.1;
+    let mouth = array<vec2f, 5>(
+      vec2f(-0.24,0.18), vec2f(-0.08,0.29), vec2f(0.0,0.18),
+      vec2f(0.08,0.29), vec2f(0.24,0.18)
     );
     let edge = local * 4.0;
     let segment = min(3u, u32(floor(edge)));
-    point = mix(highlight[segment], highlight[segment + 1u], fract(edge));
+    point = mix(mouth[segment], mouth[segment + 1u], fract(edge));
   } else {
-    let local = (t - 0.9) / 0.1;
+    let local = (t - 0.86) / 0.14;
     let cheek = min(1u, u32(floor(local * 2.0)));
-    let angle = fract(local * 2.0) * 6.2831853;
+    let cheekLocal = fract(local * 2.0);
     let side = select(-1.0, 1.0, cheek == 1u);
-    point = vec2f(side * 0.48, 0.2) + vec2f(cos(angle) * 0.12, sin(angle) * 0.075);
+    let cheekCenter = vec2f(side * 0.5, 0.18);
+    let cheekLine = array<vec2f, 4>(
+      vec2f(-0.11,0.02), vec2f(-0.035,-0.045),
+      vec2f(0.035,0.045), vec2f(0.11,-0.02)
+    );
+    let edge = cheekLocal * 3.0;
+    let segment = min(2u, u32(floor(edge)));
+    point = cheekCenter + mix(cheekLine[segment], cheekLine[segment + 1u], fract(edge));
   }
   point *= 0.994 + hash(seed + index * 71u) * 0.012;
   return clamp(point, vec2f(-1.0), vec2f(1.0));

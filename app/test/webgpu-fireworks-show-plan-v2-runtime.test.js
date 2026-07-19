@@ -90,7 +90,9 @@ describe('ShowPlanV2 pure overlay runtime', () => {
       { depthEnabled: true, launchDepth: 0, burstDepth: 1.01, glyphScale: 1 },
       { depthEnabled: true, launchDepth: 0, burstDepth: 0, glyphScale: 0.49 },
       { depthEnabled: true, launchDepth: 0, burstDepth: 0, glyphScale: '1' },
-      { depthEnabled: true, launchDepth: 0, burstDepth: 0, glyphScale: 2.01 }
+      { depthEnabled: true, launchDepth: 0, burstDepth: 0, glyphScale: 2.01 },
+      { depthEnabled: true, launchDepth: 0, burstDepth: 0, glyphScale: 1, glyphExtent: 0 },
+      { depthEnabled: true, launchDepth: 0, burstDepth: 0, glyphScale: 1, glyphExtent: 1.01 }
     ];
     for (const renderHints of invalidHints) {
       const malformed = plan([{
@@ -99,6 +101,29 @@ describe('ShowPlanV2 pure overlay runtime', () => {
       }]);
       expect(() => assertShowPlanV2(malformed)).toThrow(/renderHints|depth|glyphScale/i);
     }
+  });
+
+  test('preserves an optional normalized glyph extent without changing flat defaults', () => {
+    const renderHints = {
+      depthEnabled: true,
+      launchDepth: 0,
+      burstDepth: 0.82,
+      glyphScale: 2,
+      glyphExtent: 0.52
+    };
+    const showPlan = plan([{
+      id: 'extent', beatAtMs: 1000, phase: 'finale', formation: 'hero', importance: 'final-wave',
+      shells: [shell('extent-shell', 'airburst', { renderHints })]
+    }]);
+
+    const runtime = buildShowPlanV2Runtime(showPlan, {
+      width: 1920,
+      height: 1080,
+      playSound: false
+    });
+
+    expect(runtime.events.find(event => event.type === 'finale-v2-layer').context.renderHints)
+      .toEqual(renderHints);
   });
 
   test('accounts for deterministic depth travel while keeping the burst on the exact planned beat', () => {

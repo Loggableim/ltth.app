@@ -2,6 +2,8 @@
 
 const crypto = require('crypto');
 const WebGPUParticleEngine = require('../plugins/webgpu-fireworks/gpu/webgpu-particle-engine');
+const { FinaleShowPlanner } = require('../plugins/webgpu-fireworks/lib/finale-show-planner');
+const { buildShowPlanV2Runtime } = require('../plugins/webgpu-fireworks/gpu/show-plan-v2-runtime');
 
 const makeEngine = (width = 1920, height = 1080) => {
   const engine = new WebGPUParticleEngine({ width, height }, {});
@@ -114,6 +116,49 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
       burstDepth: 0.5
     });
   });
+
+  test.each([[1920, 1080], [1080, 1920]])(
+    'sizes the queued Furry hero to the safe viewport extent at %ix%i independently of finale intensity',
+    (width, height) => {
+      const commands = [1, 5, 10].map(intensity => {
+        const showPlan = new FinaleShowPlanner().plan({
+          id: `hero-${width}-${height}-${intensity}`,
+          style: 'furry-celebration',
+          length: 'medium',
+          orientation: width > height ? 'landscape' : 'portrait',
+          intensity,
+          seed: 417
+        });
+        const runtime = buildShowPlanV2Runtime(showPlan, { width, height, playSound: false });
+        const heroEvent = runtime.events.filter(event => event.type === 'finale-v2-layer')
+          .findLast(event => event.layer.glyph === 'boykisser');
+        const engine = makeEngine(width, height);
+        expect(engine.spawnLayer(heroEvent.layer, heroEvent.context)).toBe(true);
+        return engine.spawnQueue[0];
+      });
+
+      expect(new Set(commands.map(command => command.intensity)).size).toBe(1);
+      for (const command of commands) {
+        expect(command.origin).toEqual({ x: width / 2, y: height / 2 });
+        expect(command.burstDepth).toBe(0.82);
+        const midpointSeconds = command.particleDuration * 0.5;
+        const decay = command.drag * 60;
+        const displacement = (1 - Math.exp(-decay * midpointSeconds)) / decay;
+        const perspective = 4 / (4 - command.burstDepth);
+        const particleRadius = command.size * perspective;
+        const xRadius = 0.9 * 218 * command.intensity * displacement * perspective;
+        const visibleWidth = xRadius * 2 + particleRadius * 2;
+        expect(visibleWidth / width).toBeGreaterThanOrEqual(0.5);
+        expect(visibleWidth / width).toBeLessThanOrEqual(0.65);
+
+        const yRadius = 0.86 * 218 * command.intensity * displacement * perspective;
+        const gravityDisplacement = command.gravity / decay * (midpointSeconds - displacement);
+        const projectedCenterY = height / 2 + gravityDisplacement * perspective;
+        expect(projectedCenterY - yRadius - particleRadius).toBeGreaterThanOrEqual(0);
+        expect(projectedCenterY + yRadius + particleRadius).toBeLessThanOrEqual(height);
+      }
+    }
+  );
 
   test('uses alignment-safe XYZ particle and trail layouts with calibrated projection and planar glyphs', () => {
     const engine = makeEngine();

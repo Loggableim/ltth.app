@@ -374,13 +374,14 @@ describe('WebGPU Fireworks finale show planner', () => {
           phase: 'finale',
           shells: [expect.objectContaining({
             launchMode: 'airburst',
-            target: { x: 0.5, y: 0.42 },
-            position: { x: 0.5, y: 0.42 },
+            target: { x: 0.5, y: 0.5 },
+            position: { x: 0.5, y: 0.5 },
             renderHints: {
               depthEnabled: true,
               launchDepth: 0,
               burstDepth: 0.82,
-              glyphScale: 2
+              glyphScale: 2,
+              glyphExtent: 0.52
             }
           })]
         });

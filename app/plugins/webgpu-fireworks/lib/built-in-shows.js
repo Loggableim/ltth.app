@@ -67,8 +67,14 @@ const BOYKISSER_COLORS = Object.freeze(['#D7DEE8', '#F8FBFF', '#FFF4D6', '#FF5C8
 const TRANS_COLORS = Object.freeze(['#5BCEFA', '#F5A9B8', '#FFFFFF']);
 const RAINBOW_COLORS = Object.freeze(['#E40303', '#FF8C00', '#FFED00', '#008026', '#24408E', '#732982']);
 
-function renderHints(burstDepth, glyphScale = 1, launchDepth = 0) {
-  return { depthEnabled: true, launchDepth, burstDepth, glyphScale };
+function renderHints(burstDepth, glyphScale = 1, launchDepth = 0, glyphExtent) {
+  return {
+    depthEnabled: true,
+    launchDepth,
+    burstDepth,
+    glyphScale,
+    ...(glyphExtent === undefined ? {} : { glyphExtent })
+  };
 }
 
 function shellVariant(shape, soundRole, layers, hints, options = {}) {
@@ -338,10 +344,10 @@ const BLUEPRINTS = {
           supportGlyph('fox-head', ['#FF8C00', '#FFED00'], renderHints(0.1, 0.9), { soundRole: 'fox-wave', lifetimeMs: 600 }),
           supportGlyph('wolf-head', ['#5BCEFA', '#24408E'], renderHints(-0.1, 0.9), { soundRole: 'wolf-wave', lifetimeMs: 600 })
         ], { cat: { density: 132, lifetimeMs: 600 }, crackleEnabled: false }),
-        furryCue('gold-crown', 'boykisser-hero', 'massive', renderHints(0.82, 2), [], {
+        furryCue('gold-crown', 'boykisser-hero', 'massive', renderHints(0.82, 2, 0, 0.52), [], {
           cat: { density: 180, lifetimeMs: 1200, gravity: 0.08 },
           launchMode: 'airburst',
-          exactTarget: { x: 0.5, y: 0.42 },
+          exactTarget: { x: 0.5, y: 0.5 },
           exactOrigin: { x: 0.5, y: 1.02 },
           accents: [
             layer('ring', RAINBOW_COLORS.slice(0, 4), { density: 42, lifetimeMs: 900, strobe: true, priority: 'decorative', core: false }),
