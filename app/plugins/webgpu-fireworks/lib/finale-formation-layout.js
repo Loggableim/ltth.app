@@ -100,12 +100,15 @@ function materializeBuiltInVariantGeometry(variant, blueprint, options = {}) {
       const origins = createFormationOrigins(cueDescriptor.formation, positions, bounds);
 
       cue.shells.forEach((shell, shellIndex) => {
+        const shellDescriptor = cueDescriptor.shellVariants?.[
+          shellIndex % cueDescriptor.shellVariants.length
+        ] || cueDescriptor;
         const spatialPlan = spawnPlanner.plan({
           seed: mixSeed(seed, cueOrdinal, shellIndex),
           orientation,
           positionMode: 'exact',
-          position: positions[shellIndex],
-          origin: origins?.[shellIndex]
+          position: shellDescriptor.exactTarget || positions[shellIndex],
+          origin: shellDescriptor.exactOrigin || origins?.[shellIndex]
         });
         shell.target = { x: round(spatialPlan.position.x), y: round(spatialPlan.position.y) };
         shell.origin = { x: round(spatialPlan.origin.x), y: round(spatialPlan.origin.y) };

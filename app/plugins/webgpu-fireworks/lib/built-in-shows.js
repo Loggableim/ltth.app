@@ -58,8 +58,71 @@ function descriptor(formation, shape, soundRole, tier, options = {}) {
     tier,
     crackleEnabled: options.crackleEnabled === true,
     launchMode: options.launchMode || 'rocket',
-    layers: options.layers
+    layers: options.layers,
+    shellVariants: options.shellVariants
   };
+}
+
+const BOYKISSER_COLORS = Object.freeze(['#D7DEE8', '#F8FBFF', '#FFF4D6', '#FF5C8A']);
+const TRANS_COLORS = Object.freeze(['#5BCEFA', '#F5A9B8', '#FFFFFF']);
+const RAINBOW_COLORS = Object.freeze(['#E40303', '#FF8C00', '#FFED00', '#008026', '#24408E', '#732982']);
+
+function renderHints(burstDepth, glyphScale = 1, launchDepth = 0) {
+  return { depthEnabled: true, launchDepth, burstDepth, glyphScale };
+}
+
+function shellVariant(shape, soundRole, layers, hints, options = {}) {
+  return {
+    shape,
+    soundRole,
+    tier: options.tier,
+    crackleEnabled: options.crackleEnabled,
+    layers,
+    renderHints: hints,
+    exactTarget: options.exactTarget,
+    exactOrigin: options.exactOrigin
+  };
+}
+
+function boykisserLayer(options = {}) {
+  return layer('glyph', BOYKISSER_COLORS, {
+    glyph: 'boykisser',
+    density: options.density || 72,
+    size: options.size || 1,
+    lifetimeMs: options.lifetimeMs || 900,
+    gravity: options.gravity === undefined ? 0.15 : options.gravity,
+    drag: options.drag === undefined ? 0.035 : options.drag,
+    priority: 'core',
+    core: true
+  });
+}
+
+function supportGlyph(glyph, colors, hints, options = {}) {
+  return shellVariant(glyph, options.soundRole || glyph, [
+    layer('glyph', colors, {
+      glyph,
+      density: options.density || 64,
+      lifetimeMs: options.lifetimeMs || 760,
+      trail: options.trail === true
+    }),
+    ...(options.accents || [])
+  ], hints, options);
+}
+
+function furryCue(formation, soundRole, tier, catHints, supports = [], options = {}) {
+  const cat = shellVariant('boykisser', soundRole, [
+    boykisserLayer(options.cat || {}),
+    ...(options.accents || [])
+  ], catHints, {
+    tier,
+    crackleEnabled: options.crackleEnabled,
+    exactTarget: options.exactTarget,
+    exactOrigin: options.exactOrigin
+  });
+  return descriptor(formation, 'boykisser', soundRole, tier, {
+    crackleEnabled: options.crackleEnabled,
+    shellVariants: [cat, ...supports]
+  });
 }
 
 const BLUEPRINTS = {
@@ -201,19 +264,88 @@ const BLUEPRINTS = {
   },
   'furry-celebration': {
     name: 'Furry Celebration',
-    description: 'Paws, hearts, fox, wolf, dragon wings, dragon, tail, and a rainbow crown.',
+    description: 'A Boykisser-led 3D celebration with playful furry call-and-response and Pride accents.',
     materialProfile: 'premium-realistic',
-    palette: ['#ef4444', '#f97316', '#facc15', '#22c55e', '#38bdf8', '#8b5cf6'],
+    palette: [...RAINBOW_COLORS],
     counts: {
-      short: { opening: [1], build: [2, 2], highlight: [3], finale: [3, 4] },
-      medium: { opening: [1, 1], build: [2, 2, 2], highlight: [3, 3], finale: [5, 6] },
-      long: { opening: [1, 1, 1], build: [2, 2, 2, 2, 2], highlight: [3, 3, 3], finale: [5, 5, 6] }
+      short: { opening: [1], build: [2, 2], highlight: [3], finale: [2, 2, 2, 1] },
+      medium: { opening: [1, 1], build: [2, 2, 2], highlight: [3, 3], finale: [3, 3, 4, 1] },
+      long: { opening: [1, 1, 1], build: [2, 2, 2, 2, 2], highlight: [3, 3, 3], finale: [5, 5, 5, 1] }
+    },
+    timings: {
+      short: { opening: [1600], build: [3000, 4400], highlight: [5700], finale: [6200, 6900, 7500, 8700] },
+      medium: { opening: [1800, 3000], build: [4500, 5900, 7300], highlight: [8800, 10200], finale: [11400, 13200, 14600, 16300] },
+      long: { opening: [1900, 3200, 4500], build: [6000, 7500, 9000, 10500, 12000], highlight: [13500, 14900, 16300], finale: [18500, 21000, 23500, 26000] }
     },
     cues: {
-      opening: [descriptor('paw-fan', 'paws', 'paw', 'medium', { layers: [layer('glyph', ['#f97316', '#facc15'], { glyph: 'paw' }), layer('glyph', ['#ef4444'], { glyph: 'heart', density: 34, priority: 'accent' }), layer('glyph', ['#f97316', '#facc15'], { glyph: 'fox-head', density: 30, priority: 'decorative', core: false })] }), descriptor('glyph-crown', 'heart', 'heart', 'medium', { layers: [layer('glyph', ['#ef4444', '#f97316'], { glyph: 'heart' })] }), descriptor('glyph-crown', 'paws', 'fox', 'big', { layers: [layer('glyph', ['#f97316', '#facc15'], { glyph: 'fox-head' })] })],
-      build: [descriptor('paw-fan', 'paws', 'wolf', 'big', { layers: [layer('glyph', ['#38bdf8', '#8b5cf6'], { glyph: 'wolf-head' }), layer('comet', ['#facc15'], { trail: true, density: 32, priority: 'decorative', core: false })] }), descriptor('wing-fan', 'burst', 'wings', 'big', { layers: [layer('glyph', ['#ef4444', '#8b5cf6'], { glyph: 'dragon-wing' }), layer('palm', ['#f97316'], { trail: true, density: 42 })] }), descriptor('arc', 'spiral', 'tail', 'big', { layers: [layer('glyph', ['#f97316', '#facc15'], { glyph: 'tail' }), layer('spiral', ['#38bdf8'], { trail: true, density: 36, priority: 'accent' })] })],
-      highlight: [descriptor('glyph-crown', 'star', 'dragon', 'massive', { layers: [layer('glyph', ['#22c55e', '#38bdf8'], { glyph: 'dragon' }), layer('glyph', ['#ef4444', '#8b5cf6'], { glyph: 'dragon-wing', density: 42, priority: 'accent' }), layer('ring', ['#facc15'], { strobe: true, density: 28, priority: 'decorative', core: false })] })],
-      finale: [descriptor('glyph-crown', 'star', 'celebration', 'massive', { crackleEnabled: true, layers: [layer('glyph', ['#f97316', '#facc15'], { glyph: 'tail' }), layer('glyph', ['#ef4444'], { glyph: 'heart', density: 36, priority: 'accent' }), layer('ring', ['#22c55e', '#38bdf8', '#8b5cf6'], { strobe: true, density: 32, priority: 'decorative', core: false })] }), descriptor('gold-crown', 'star', 'rainbow', 'massive', { crackleEnabled: true, layers: [layer('ring', ['#ef4444', '#f97316', '#facc15', '#22c55e'], { split: true }), layer('spiral', ['#38bdf8', '#8b5cf6'], { trail: true }), layer('glyph', ['#facc15'], { glyph: 'paw', density: 28, priority: 'decorative', core: false })] })]
+      opening: [
+        furryCue('glyph-crown', 'cat-cameo', 'medium', renderHints(-0.65, 0.65), [], {
+          cat: { density: 56, lifetimeMs: 760 },
+          accents: [layer('glyph', TRANS_COLORS, { glyph: 'trans-flag', density: 36, lifetimeMs: 620, priority: 'decorative', core: false })]
+        }),
+        furryCue('call', 'cat-call', 'medium', renderHints(-0.55, 0.72), [], { cat: { density: 60, lifetimeMs: 760 } }),
+        furryCue('response', 'cat-response', 'big', renderHints(-0.45, 0.78), [], { cat: { density: 64, lifetimeMs: 780 } })
+      ],
+      build: [
+        furryCue('paw-fan', 'paw-call', 'big', renderHints(-0.55, 0.8), [
+          supportGlyph('paw', ['#FF8C00', '#FFED00'], renderHints(-0.7, 0.7), { soundRole: 'paw-response' })
+        ]),
+        furryCue('mirrored-pair', 'heart-call', 'big', renderHints(-0.3, 0.88), [
+          supportGlyph('heart', ['#E40303', '#FF5C8A'], renderHints(-0.4, 0.78), { soundRole: 'heart-response' })
+        ]),
+        furryCue('diagonal-pair', 'fox-call', 'big', renderHints(-0.1, 0.94), [
+          supportGlyph('fox-head', ['#FF8C00', '#FFED00'], renderHints(-0.25, 0.82), { soundRole: 'fox-response' })
+        ]),
+        furryCue('cross-pair', 'wolf-call', 'big', renderHints(0.1, 1), [
+          supportGlyph('wolf-head', ['#5BCEFA', '#24408E'], renderHints(-0.05, 0.86), { soundRole: 'wolf-response' })
+        ]),
+        furryCue('wing-fan', 'wing-call', 'massive', renderHints(0.25, 1.05), [
+          supportGlyph('dragon-wing', ['#E40303', '#732982'], renderHints(0.15, 0.9), { soundRole: 'wing-response' })
+        ])
+      ],
+      highlight: [
+        furryCue('triple-salute', 'fox-wolf-close-pass', 'massive', renderHints(0.45, 1.22), [
+          supportGlyph('fox-head', ['#FF8C00', '#FFED00'], renderHints(0.38, 1.02), { soundRole: 'fox-pass' }),
+          supportGlyph('wolf-head', ['#5BCEFA', '#24408E'], renderHints(0.15, 0.94), { soundRole: 'wolf-pass' })
+        ], { cat: { density: 112, lifetimeMs: 860 } }),
+        furryCue('glyph-crown', 'wing-heart-close-pass', 'massive', renderHints(0.52, 1.3), [
+          supportGlyph('dragon-wing', ['#E40303', '#732982'], renderHints(0.4, 1.05), { soundRole: 'wing-pass' }),
+          supportGlyph('heart', ['#E40303', '#FF5C8A'], renderHints(0.2, 0.92), { soundRole: 'heart-pass' })
+        ], { cat: { density: 120, lifetimeMs: 880 } }),
+        furryCue('glyph-crown', 'dragon-paw-close-pass', 'massive', renderHints(0.58, 1.36), [
+          supportGlyph('dragon', ['#008026', '#24408E'], renderHints(0.42, 1.08), { soundRole: 'dragon-pass' }),
+          supportGlyph('paw', ['#FF8C00', '#FFED00'], renderHints(0.24, 0.94), { soundRole: 'paw-pass' })
+        ], { cat: { density: 128, lifetimeMs: 900 } })
+      ],
+      finale: [
+        furryCue('finale-wave-1', 'false-finale-far', 'massive', renderHints(-0.45, 0.9), [
+          supportGlyph('dragon-wing', ['#E40303', '#732982'], renderHints(-0.6, 0.82), { soundRole: 'wing-wave' }),
+          supportGlyph('heart', ['#E40303', '#FF5C8A'], renderHints(-0.35, 0.8), { soundRole: 'heart-wave' }),
+          supportGlyph('paw', ['#FF8C00', '#FFED00'], renderHints(-0.2, 0.78), { soundRole: 'paw-wave' }),
+          supportGlyph('fox-head', ['#FF8C00', '#FFED00'], renderHints(-0.05, 0.82), { soundRole: 'fox-wave' })
+        ], { crackleEnabled: true }),
+        furryCue('finale-wave-2', 'false-finale-mid', 'massive', renderHints(0.1, 1.15), [
+          supportGlyph('dragon', ['#008026', '#24408E'], renderHints(-0.1, 0.96), { soundRole: 'dragon-wave' }),
+          supportGlyph('wolf-head', ['#5BCEFA', '#24408E'], renderHints(0.2, 0.92), { soundRole: 'wolf-wave' }),
+          supportGlyph('heart', ['#E40303', '#FF5C8A'], renderHints(0.28, 0.9), { soundRole: 'heart-wave' }),
+          supportGlyph('paw', ['#FF8C00', '#FFED00'], renderHints(0.05, 0.88), { soundRole: 'paw-wave' })
+        ], { crackleEnabled: true }),
+        furryCue('finale-wave-3', 'false-finale-near', 'massive', renderHints(0.55, 1.45), [
+          supportGlyph('tail', ['#FF8C00', '#FFED00'], renderHints(0.45, 1.12), { soundRole: 'tail-wave', lifetimeMs: 600 }),
+          supportGlyph('paw', ['#FF8C00', '#FFED00'], renderHints(0.3, 0.92), { soundRole: 'paw-wave', lifetimeMs: 600 }),
+          supportGlyph('fox-head', ['#FF8C00', '#FFED00'], renderHints(0.1, 0.9), { soundRole: 'fox-wave', lifetimeMs: 600 }),
+          supportGlyph('wolf-head', ['#5BCEFA', '#24408E'], renderHints(-0.1, 0.9), { soundRole: 'wolf-wave', lifetimeMs: 600 })
+        ], { cat: { density: 132, lifetimeMs: 600 }, crackleEnabled: true }),
+        furryCue('gold-crown', 'boykisser-hero', 'massive', renderHints(0.82, 2), [], {
+          cat: { density: 180, lifetimeMs: 1200, gravity: 0.08 },
+          exactTarget: { x: 0.5, y: 0.42 },
+          exactOrigin: { x: 0.5, y: 1.02 },
+          accents: [
+            layer('ring', RAINBOW_COLORS.slice(0, 4), { density: 42, lifetimeMs: 900, strobe: true, priority: 'decorative', core: false }),
+            layer('spiral', RAINBOW_COLORS.slice(4), { density: 32, lifetimeMs: 850, trail: true, priority: 'decorative', core: false })
+          ]
+        })
+      ]
     }
   }
 };
@@ -233,23 +365,30 @@ function createDefinition(id, blueprint) {
     const cues = [];
     for (const phase of PHASE_ORDER) {
       const counts = blueprint.counts[length][phase];
-      const times = spreadEvenly(...LENGTH_PRESETS[length].windows[phase], counts.length);
+      const times = blueprint.timings?.[length]?.[phase]
+        || spreadEvenly(...LENGTH_PRESETS[length].windows[phase], counts.length);
       counts.forEach((shellCount, cueIndex) => {
         const cueDescriptor = blueprint.cues[phase][cueIndex % blueprint.cues[phase].length];
-        const layers = cueDescriptor.layers || legacyLayers(cueDescriptor.shape, blueprint.palette);
         cues.push({
           timeMs: times[cueIndex],
           phase,
           formation: cueDescriptor.formation,
           importance: phase === 'finale' ? 'final-wave' : phase === 'highlight' ? 'essential' : 'standard',
-          shells: Array.from({ length: shellCount }, () => ({
-            origin: { x: 0.5, y: 1.02 },
-            target: { x: 0.5, y: 0.4 },
-            launchMode: cueDescriptor.launchMode,
-            tier: cueDescriptor.tier,
-            palette: [...blueprint.palette],
-            layers: clone(layers)
-          }))
+          shells: Array.from({ length: shellCount }, (_, shellIndex) => {
+            const shellDescriptor = cueDescriptor.shellVariants?.[
+              shellIndex % cueDescriptor.shellVariants.length
+            ] || cueDescriptor;
+            const layers = shellDescriptor.layers || cueDescriptor.layers
+              || legacyLayers(shellDescriptor.shape || cueDescriptor.shape, blueprint.palette);
+            return {
+              origin: clone(shellDescriptor.exactOrigin || { x: 0.5, y: 1.02 }),
+              target: clone(shellDescriptor.exactTarget || { x: 0.5, y: 0.4 }),
+              launchMode: shellDescriptor.launchMode || cueDescriptor.launchMode,
+              tier: shellDescriptor.tier || cueDescriptor.tier,
+              palette: [...blueprint.palette],
+              layers: clone(layers)
+            };
+          })
         });
       });
     }

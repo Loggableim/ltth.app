@@ -8,7 +8,10 @@
   const PLAN_VERSION = 2;
   const LAUNCH_MODES = new Set(['rocket', 'airburst', 'ground']);
   const PRIMITIVES = new Set(['radial', 'ring', 'spiral', 'palm', 'crossette', 'comet', 'mine', 'glyph']);
-  const GLYPHS = new Set(['paw', 'heart', 'star', 'fox-head', 'wolf-head', 'dragon', 'dragon-wing', 'tail']);
+  const GLYPHS = new Set([
+    'paw', 'heart', 'star', 'fox-head', 'wolf-head', 'dragon', 'dragon-wing', 'tail',
+    'boykisser', 'trans-flag'
+  ]);
   const PHASES = new Set(['opening', 'build', 'highlight', 'calm', 'bridge', 'breath', 'finale']);
   const TIERS = new Set(['small', 'medium', 'big', 'massive']);
   const PRIORITIES = new Set(['core', 'accent', 'decorative']);

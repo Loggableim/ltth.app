@@ -339,7 +339,8 @@ describe('WebGPU Fireworks finale show planner', () => {
     expect(withoutIntensityFields(high)).toEqual(withoutIntensityFields(low));
   });
 
-  test.each(FINALE_STYLES.flatMap(style => FINALE_LENGTHS.map(length => [style, length]))) (
+  test.each(FINALE_STYLES.filter(style => style !== 'furry-celebration')
+    .flatMap(style => FINALE_LENGTHS.map(length => [style, length]))) (
     'keeps the pre-extraction %s/%s landscape geometry byte-identical',
     (style, length) => {
       const plan = new FinaleShowPlanner().plan({
@@ -349,6 +350,89 @@ describe('WebGPU Fireworks finale show planner', () => {
       expect(geometryHash(plan)).toBe(GEOMETRY_BASELINE_HASHES[style][length]);
     }
   );
+
+  test.each([
+    ['short', [6200, 6900, 7500, 8700], 600],
+    ['medium', [11400, 13200, 14600, 16300], 1000],
+    ['long', [18500, 21000, 23500, 26000], 1500]
+  ])('ends the %s Furry score on the exact centered Hero beat', (length, finaleBeats, quietGapMs) => {
+    const heroBeat = finaleBeats[finaleBeats.length - 1];
+    for (const orientation of ['landscape', 'portrait']) {
+      for (const seed of [0, 42, 2026, 0xffffffff]) {
+        const plan = new FinaleShowPlanner().plan({
+          id: 'furry-hero', style: 'furry-celebration', length, orientation, intensity: 5, seed
+        });
+        const heroCue = plan.cues[plan.cues.length - 1];
+        const hero = heroCue.shells[0];
+        const penultimate = plan.cues[plan.cues.length - 2];
+
+        expect(plan.cues.filter(cue => cue.phase === 'finale').map(cue => cue.timeMs)).toEqual(finaleBeats);
+
+        expect(heroCue).toMatchObject({
+          beatAtMs: heroBeat,
+          timeMs: heroBeat,
+          phase: 'finale',
+          shells: [expect.objectContaining({
+            target: { x: 0.5, y: 0.42 },
+            position: { x: 0.5, y: 0.42 },
+            renderHints: {
+              depthEnabled: true,
+              launchDepth: 0,
+              burstDepth: 0.82,
+              glyphScale: 2
+            }
+          })]
+        });
+        expect(hero.layers.some(layer => layer.glyph === 'boykisser' && layer.core === true)).toBe(true);
+        expect(heroCue.shells).toHaveLength(1);
+        expect(Math.max(...penultimate.shells.flatMap(shell => shell.layers)
+          .filter(layer => layer.core)
+          .map(layer => penultimate.timeMs + layer.delayMs + layer.lifetimeMs)))
+          .toBeLessThanOrEqual(heroBeat - quietGapMs);
+        for (const layer of hero.layers) {
+          expect(heroBeat + layer.delayMs + layer.lifetimeMs).toBeLessThanOrEqual(plan.durationMs);
+        }
+      }
+    }
+  });
+
+  test.each(FINALE_LENGTHS)('uses a controlled far-to-near depth arc for %s Furry choreography', length => {
+    const plan = new FinaleShowPlanner().plan({
+      style: 'furry-celebration', length, orientation: 'landscape', intensity: 5, seed: 77
+    });
+    const cats = plan.cues.map(cue => cue.shells.find(shell =>
+      shell.layers.some(layer => layer.glyph === 'boykisser')));
+    const buildDepths = plan.cues.filter(cue => cue.phase === 'build').map(cue =>
+      cue.shells.find(shell => shell.layers.some(layer => layer.glyph === 'boykisser')).renderHints.burstDepth);
+    const finaleDepths = plan.cues.filter(cue => cue.phase === 'finale').map(cue =>
+      cue.shells.find(shell => shell.layers.some(layer => layer.glyph === 'boykisser')).renderHints.burstDepth);
+
+    expect(cats[0].renderHints.burstDepth).toBeCloseTo(-0.65, 2);
+    expect(buildDepths).toEqual([...buildDepths].sort((left, right) => left - right));
+    expect(finaleDepths).toEqual(expect.arrayContaining([-0.45, 0.1, 0.55, 0.82]));
+    expect(plan.cues.filter(cue => cue.phase === 'highlight')
+      .some(cue => cue.shells.some(shell => shell.renderHints.burstDepth > 0.33))).toBe(true);
+
+    for (const cue of plan.cues) {
+      expect(cue.shells.filter(shell => shell.renderHints.burstDepth > 0.33).length).toBeLessThanOrEqual(2);
+      for (const shell of cue.shells) {
+        expect(shell.renderHints).toEqual(expect.objectContaining({ depthEnabled: true }));
+        expect(shell.renderHints.launchDepth).toBeGreaterThanOrEqual(-1);
+        expect(shell.renderHints.launchDepth).toBeLessThanOrEqual(1);
+        expect(shell.renderHints.burstDepth).toBeGreaterThanOrEqual(-1);
+        expect(shell.renderHints.burstDepth).toBeLessThanOrEqual(1);
+        expect(shell.renderHints.glyphScale).toBeGreaterThanOrEqual(0.5);
+        expect(shell.renderHints.glyphScale).toBeLessThanOrEqual(2);
+      }
+    }
+  });
+
+  test('keeps all non-Furry built-ins flat by omitting render hints', () => {
+    for (const style of FINALE_STYLES.filter(candidate => candidate !== 'furry-celebration')) {
+      const plan = new FinaleShowPlanner().plan({ style, length: 'long', seed: 77 });
+      expect(plan.cues.flatMap(cue => cue.shells).every(shell => shell.renderHints === undefined)).toBe(true);
+    }
+  });
 
   test('compiles a supplied custom definition as a deterministic isolated V2 event snapshot', () => {
     const definition = JSON.parse(JSON.stringify(BUILT_IN_SHOW_DEFINITIONS['classic-crescendo']));

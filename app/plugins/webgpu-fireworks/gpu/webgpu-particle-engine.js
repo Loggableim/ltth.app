@@ -31,7 +31,9 @@ const V2_GLYPH_IDS = Object.freeze({
     'wolf-head': 21,
     dragon: 22,
     'dragon-wing': 23,
-    tail: 24
+    tail: 24,
+    boykisser: 25,
+    'trans-flag': 26
 });
 
 class WebGPUParticleEngine {
@@ -1381,7 +1383,14 @@ fn unpackRgba8(packed: u32) -> vec4f {
 }
 fn commandColor(command: SpawnCommand, globalIndex: u32) -> vec4f {
   if (!isV2(command.flags)) { return bitcast<vec4f>(command.colorWords); }
-  let colorIndex = globalIndex % min(command.colorCount & 7u, 4u);
+  var colorIndex = globalIndex % min(command.colorCount & 7u, 4u);
+  let glyphT = f32(globalIndex) / max(1.0, f32(command.globalCount));
+  if (command.shape == 25u) {
+    colorIndex = select(select(select(3u, 2u, glyphT < 0.9), 1u, glyphT < 0.82), 0u, glyphT < 0.56);
+  } else if (command.shape == 26u) {
+    let band = min(4u, u32(floor(glyphT * 5.0)));
+    colorIndex = select(select(0u, 1u, band == 1u || band == 3u), 2u, band == 2u);
+  }
   return unpackRgba8(command.colorWords[colorIndex]);
 }
 fn depthEnabled(command: SpawnCommand) -> bool { return (command.colorCount & DEPTH_METADATA_MARKER) != 0u; }
@@ -1469,6 +1478,79 @@ fn glyphPoint(shape: u32, t: f32, seed: u32) -> vec2f {
   point *= 0.992 + hash(seed + u32(t * 65535.0)) * 0.016;
   return clamp(point, vec2f(-1.0), vec2f(1.0));
 }
+fn boykisserPoint(index: u32, count: u32, seed: u32) -> vec2f {
+  let t = f32(index) / max(1.0, f32(count));
+  let detailed = count >= 96u;
+  var point = vec2f(0.0);
+  if (t < 0.56) {
+    let local = t / 0.56;
+    if (detailed) {
+      let outline = array<vec2f, 18>(
+        vec2f(-0.82,0.26), vec2f(-0.72,-0.38), vec2f(-0.48,-0.82),
+        vec2f(-0.18,-0.94), vec2f(0.18,-0.94), vec2f(0.5,-0.78),
+        vec2f(0.76,-0.34), vec2f(0.82,0.24), vec2f(0.66,0.58),
+        vec2f(0.72,0.92), vec2f(0.28,0.72), vec2f(0.06,0.84),
+        vec2f(-0.18,0.72), vec2f(-0.7,0.94), vec2f(-0.64,0.54),
+        vec2f(-0.84,0.44), vec2f(-0.82,0.26), vec2f(-0.82,0.26)
+      );
+      let edge = local * 17.0;
+      let segment = min(16u, u32(floor(edge)));
+      point = mix(outline[segment], outline[segment + 1u], fract(edge));
+    } else {
+      let outline = array<vec2f, 10>(
+        vec2f(-0.78,0.28), vec2f(-0.58,-0.68), vec2f(0.0,-0.9),
+        vec2f(0.58,-0.68), vec2f(0.78,0.28), vec2f(0.64,0.86),
+        vec2f(0.2,0.68), vec2f(-0.12,0.78), vec2f(-0.68,0.9), vec2f(-0.78,0.28)
+      );
+      let edge = local * 9.0;
+      let segment = min(8u, u32(floor(edge)));
+      point = mix(outline[segment], outline[segment + 1u], fract(edge));
+    }
+  } else if (t < 0.82) {
+    let local = (t - 0.56) / 0.26;
+    let section = min(2u, u32(floor(local * 3.0)));
+    let u = fract(local * 3.0);
+    if (section < 2u) {
+      let side = select(-1.0, 1.0, section == 1u);
+      let angle = u * 6.2831853;
+      let eyeScale = select(vec2f(0.1, 0.16), vec2f(0.13, 0.2), detailed);
+      point = vec2f(side * 0.27, -0.12) + vec2f(cos(angle), sin(angle)) * eyeScale;
+    } else {
+      let mouth = array<vec2f, 5>(
+        vec2f(-0.24,0.2), vec2f(-0.08,0.32), vec2f(0.0,0.2),
+        vec2f(0.08,0.32), vec2f(0.24,0.2)
+      );
+      let edge = u * 4.0;
+      let segment = min(3u, u32(floor(edge)));
+      point = mix(mouth[segment], mouth[segment + 1u], fract(edge));
+    }
+  } else if (t < 0.9) {
+    let local = (t - 0.82) / 0.08;
+    let highlight = array<vec2f, 5>(
+      vec2f(-0.52,-0.54), vec2f(-0.28,-0.72), vec2f(0.0,-0.78),
+      vec2f(0.28,-0.7), vec2f(0.48,-0.5)
+    );
+    let edge = local * 4.0;
+    let segment = min(3u, u32(floor(edge)));
+    point = mix(highlight[segment], highlight[segment + 1u], fract(edge));
+  } else {
+    let local = (t - 0.9) / 0.1;
+    let cheek = min(1u, u32(floor(local * 2.0)));
+    let angle = fract(local * 2.0) * 6.2831853;
+    let side = select(-1.0, 1.0, cheek == 1u);
+    point = vec2f(side * 0.48, 0.2) + vec2f(cos(angle) * 0.12, sin(angle) * 0.075);
+  }
+  point *= 0.994 + hash(seed + index * 71u) * 0.012;
+  return clamp(point, vec2f(-1.0), vec2f(1.0));
+}
+fn transFlagPoint(t: f32) -> vec2f {
+  let band = min(4u, u32(floor(t * 5.0)));
+  let local = fract(t * 5.0);
+  let x = -0.9 + local * 1.8;
+  let bandY = (f32(band) - 2.0) * 0.22;
+  let wave = sin(local * 6.2831853 + f32(band) * 0.34) * 0.08;
+  return clamp(vec2f(x, bandY + wave), vec2f(-1.0), vec2f(1.0));
+}
 fn shapeVelocity2(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) -> vec2f {
   let t = f32(index) / max(1.0, f32(count));
   let jitter = (hash(seed + index * 17u) - 0.5) * 0.16;
@@ -1509,7 +1591,9 @@ fn shapeVelocity2(shape: u32, index: u32, count: u32, intensity: f32, seed: u32)
     let speed = 205.0 + hash(seed + index * 43u) * 92.0;
     return vec2f(cos(angle), sin(angle)) * speed * intensity;
   }
-  if (shape >= 17u && shape <= 24u) {
+  if (shape >= 17u && shape <= 26u) {
+    if (shape == 25u) { return boykisserPoint(index, count, seed) * 218.0 * intensity; }
+    if (shape == 26u) { return transFlagPoint(t) * 218.0 * intensity; }
     return glyphPoint(shape, t, seed) * 218.0 * intensity;
   }
   if (shape == 1u) {
@@ -1555,7 +1639,8 @@ fn shapeVelocity2(shape: u32, index: u32, count: u32, intensity: f32, seed: u32)
 }
 fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32, depthEnabled: bool) -> vec3f {
   let planar = shapeVelocity2(shape, index, count, intensity, seed);
-  let volumetric = depthEnabled && shape != 11u && (shape < 17u || shape > 24u);
+  let volumetric = depthEnabled && shape != 11u && (shape < 17u || shape > 24u)
+    && (shape < 17u || shape > 26u);
   let depthVelocity = (hash(seed + index * 59u + 0x9e3779b9u) - 0.5) * 1.8 * intensity;
   return vec3f(planar, select(0.0, depthVelocity, volumetric));
 }
@@ -1709,7 +1794,7 @@ fn depthBucket(z: f32) -> u32 {
       var p = source;
       let angle = f32(child) / f32(childCount) * 6.2831853 + hash(source.seed + child * 31u) * 0.36;
       let speed = 78.0 + hash(source.seed + child * 47u) * 86.0;
-      let volumetric = (source.flags & V2_DEPTH) != 0u && source.shape != 11u && (source.shape < 17u || source.shape > 24u);
+      let volumetric = (source.flags & V2_DEPTH) != 0u && source.shape != 11u && (source.shape < 17u || source.shape > 26u);
       let childDepthVelocity = (hash(source.seed + child * 67u) - 0.5) * 1.4;
       p.position = source.position;
       p.velocity = source.velocity * 0.22 + vec3f(cos(angle) * speed, sin(angle) * speed, select(0.0, childDepthVelocity, volumetric));

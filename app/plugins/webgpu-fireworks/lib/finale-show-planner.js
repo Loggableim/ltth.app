@@ -69,8 +69,11 @@ class FinaleShowPlanner {
       phaseCounts.forEach((_, phaseCueIndex) => {
         const cue = variant.cues[cueOrdinal];
         const cueDescriptor = descriptors[phaseCueIndex % descriptors.length];
-        cue.shells.forEach(shell => {
-          shell.tier = resolveTier(cueDescriptor.tier, intensity);
+        cue.shells.forEach((shell, shellIndex) => {
+          const shellDescriptor = cueDescriptor.shellVariants?.[
+            shellIndex % cueDescriptor.shellVariants.length
+          ] || cueDescriptor;
+          shell.tier = resolveTier(shellDescriptor.tier || cueDescriptor.tier, intensity);
         });
         cueOrdinal++;
       });
@@ -82,16 +85,23 @@ class FinaleShowPlanner {
       const cueDescriptor = blueprint.cues[cue.phase][phaseCueIndex % blueprint.cues[cue.phase].length];
       const shells = cue.shells.map((shell, launchIndex) => {
         const launchSeed = mixSeed(seed, index, launchIndex);
-        const soundRoles = cueDescriptor.soundRoles || [cueDescriptor.soundRole];
+        const shellDescriptor = cueDescriptor.shellVariants?.[
+          launchIndex % cueDescriptor.shellVariants.length
+        ] || cueDescriptor;
+        const soundRoles = shellDescriptor.soundRoles || cueDescriptor.soundRoles
+          || [shellDescriptor.soundRole || cueDescriptor.soundRole];
         return {
           ...shell,
           id: `${id}-cue-${index + 1}-launch-${launchIndex + 1}`,
           seed: launchSeed,
-          shape: cueDescriptor.shape,
+          shape: shellDescriptor.shape || cueDescriptor.shape,
           powerScale,
           particleScale,
           soundRole: soundRoles[launchIndex % soundRoles.length],
-          crackleEnabled: cueDescriptor.crackleEnabled
+          crackleEnabled: shellDescriptor.crackleEnabled ?? cueDescriptor.crackleEnabled,
+          ...(style === 'furry-celebration' && shellDescriptor.renderHints
+            ? { renderHints: clone(shellDescriptor.renderHints) }
+            : {})
         };
       });
       return {

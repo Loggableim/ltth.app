@@ -19,6 +19,7 @@ const {
   deriveShowVariants,
   PyroDSLValidationError
 } = require('../plugins/webgpu-fireworks/lib/pyrodsl');
+const WebGPUParticleEngine = require('../plugins/webgpu-fireworks/gpu/webgpu-particle-engine');
 
 const COLOR = '#ffd166';
 
@@ -117,7 +118,10 @@ describe('PyroDSL contract and normalization', () => {
     expect(Object.isFrozen(VARIANT_PRESETS)).toBe(true);
     expect(PHASE_CONCURRENCY_CAPS).toMatchObject({ opening: 1, build: 2, highlight: 3, finale: 6, calm: 1, bridge: 1 });
     expect(PRIMITIVES).toEqual(['radial', 'ring', 'spiral', 'palm', 'crossette', 'comet', 'mine', 'glyph']);
-    expect(CURATED_GLYPHS).toEqual(['paw', 'heart', 'star', 'fox-head', 'wolf-head', 'dragon', 'dragon-wing', 'tail']);
+    expect(CURATED_GLYPHS).toEqual([
+      'paw', 'heart', 'star', 'fox-head', 'wolf-head', 'dragon', 'dragon-wing', 'tail',
+      'boykisser', 'trans-flag'
+    ]);
     expect(MAX_LAYERS_PER_SHELL).toBe(4);
     expect(MAX_COLORS_PER_LAYER).toBe(4);
     expect(MAX_SHOW_COMMANDS_PER_BEAT).toBe(28);
@@ -147,6 +151,41 @@ describe('PyroDSL contract and normalization', () => {
     const definition = validDefinition();
     definition.variants.long.cues[0].shells[0].layers[0] = layer({ primitive: 'glyph', glyph });
     expect(validateShowDefinition(definition).valid).toBe(true);
+  });
+
+  test('keeps curated GPU glyph IDs stable and appends compound furry glyphs', () => {
+    const engine = new WebGPUParticleEngine({ width: 1920, height: 1080 });
+    const expectedIds = {
+      paw: 17,
+      heart: 18,
+      star: 19,
+      'fox-head': 20,
+      'wolf-head': 21,
+      dragon: 22,
+      'dragon-wing': 23,
+      tail: 24,
+      boykisser: 25,
+      'trans-flag': 26
+    };
+
+    for (const [glyph, id] of Object.entries(expectedIds)) {
+      expect(engine._v2ShapeId({ primitive: 'glyph', glyph })).toBe(id);
+    }
+  });
+
+  test('ships bounded deterministic Boykisser and five-band trans ribbon GPU paths', () => {
+    const engine = new WebGPUParticleEngine({ width: 1920, height: 1080 });
+    const shader = engine._computeShader();
+    const glyphSection = shader.slice(shader.indexOf('fn glyphPoint'), shader.indexOf('fn shapeVelocity'));
+
+    expect(glyphSection).toContain('fn boykisserPoint(index: u32, count: u32, seed: u32) -> vec2f');
+    expect(glyphSection).toContain('let detailed = count >= 96u;');
+    expect(glyphSection).toContain('fn transFlagPoint(t: f32) -> vec2f');
+    expect(glyphSection).toContain('let band = min(4u, u32(floor(t * 5.0)));');
+    expect(glyphSection).toContain('return clamp(point, vec2f(-1.0), vec2f(1.0));');
+    expect(shader).toContain('shape >= 17u && shape <= 26u');
+    expect(shader).toContain('(shape < 17u || shape > 26u)');
+    expect(glyphSection).not.toContain('uniforms.time');
   });
 
   test('clones into a stable normalized contract with resolved defaults and no shared references', () => {

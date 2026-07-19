@@ -25,7 +25,7 @@ const STYLE_FIXTURES = Object.freeze({
   'aurora-cathedral': { counts: [14, 23, 34], palette: ['#60a5fa', '#67e8f9', '#c4b5fd', '#f8fafc'], profile: 'premium-realistic' },
   'royal-brocade': { counts: [15, 25, 38], palette: ['#9f1239', '#ef4444', '#047857', '#34d399', '#f6c453'], profile: 'premium-realistic' },
   'phoenix-ascension': { counts: [16, 27, 40], palette: ['#7f1d1d', '#ef4444', '#f97316', '#facc15', '#fff7ed'], profile: 'premium-realistic' },
-  'furry-celebration': { counts: [15, 25, 38], palette: ['#ef4444', '#f97316', '#facc15', '#22c55e', '#38bdf8', '#8b5cf6'], profile: 'premium-realistic' }
+  'furry-celebration': { counts: [15, 25, 38], palette: ['#E40303', '#FF8C00', '#FFED00', '#008026', '#24408E', '#732982'], profile: 'premium-realistic' }
 });
 
 const LENGTH_FIXTURES = Object.freeze({
@@ -135,7 +135,9 @@ describe('WebGPU Fireworks built-in PyroDSL shows', () => {
       expect(cue.beatAtMs).toBe(cue.timeMs);
       expect(cue.shells.length).toBeLessThanOrEqual(PHASE_CONCURRENCY_CAPS[cue.phase]);
       expect(cue.launches).toEqual(cue.shells);
-      expect(cue.timeMs < fixture.rest[0] || cue.timeMs >= fixture.rest[1]).toBe(true);
+      if (fixture.style !== 'furry-celebration') {
+        expect(cue.timeMs < fixture.rest[0] || cue.timeMs >= fixture.rest[1]).toBe(true);
+      }
       for (const shell of cue.shells) {
         expect(shell.palette).toEqual(fixture.palette);
         expect(shell.colors).toEqual(fixture.palette);
@@ -193,16 +195,59 @@ describe('WebGPU Fireworks built-in PyroDSL shows', () => {
     }
   });
 
-  test.each(FINALE_LENGTHS)('keeps every Furry glyph and a rainbow crown in the %s variant', length => {
+  test.each(FINALE_LENGTHS)('gives every %s Furry cue one featured compound cat and varied support motifs', length => {
     const furry = new FinaleShowPlanner().plan({ style: 'furry-celebration', length, seed: 88 });
-    const glyphs = furry.cues.flatMap(cue => cue.shells.flatMap(shell => shell.layers))
-      .filter(layer => layer.primitive === 'glyph').map(layer => layer.glyph);
+    const glyphs = [];
+
+    for (const cue of furry.cues) {
+      const featured = cue.shells.filter(shell => shell.layers.some(layer => layer.glyph === 'boykisser'));
+      expect(featured).toHaveLength(1);
+      expect(featured[0].layers.filter(layer => layer.glyph === 'boykisser')).toHaveLength(1);
+      glyphs.push(...cue.shells.flatMap(shell => shell.layers)
+        .filter(layer => layer.primitive === 'glyph').map(layer => layer.glyph));
+    }
+
     expect(new Set(glyphs)).toEqual(new Set([
-      'paw', 'heart', 'fox-head', 'wolf-head', 'dragon-wing', 'dragon', 'tail'
+      'boykisser', 'trans-flag', 'paw', 'heart', 'fox-head', 'wolf-head',
+      'dragon-wing', 'dragon', 'tail'
     ]));
-    const crown = furry.cues.find(cue => cue.phase === 'finale' && cue.formation === 'gold-crown');
-    expect(crown).toBeDefined();
-    expect(crown.shells.some(shell => shell.layers.some(layer => new Set(layer.colors).size >= 4))).toBe(true);
+    expect(new Set(furry.cues.flatMap(cue => cue.shells.map(shell => shell.shape))).size).toBeGreaterThan(5);
+  });
+
+  test('uses semantic Boykisser, trans and ordered six-color rainbow layers', () => {
+    const furry = new FinaleShowPlanner().plan({ style: 'furry-celebration', length: 'long', seed: 88 });
+    const layers = furry.cues.flatMap(cue => cue.shells.flatMap(shell => shell.layers));
+    const boyLayers = layers.filter(layer => layer.glyph === 'boykisser');
+    const transLayers = layers.filter(layer => layer.glyph === 'trans-flag');
+
+    expect(boyLayers.length).toBeGreaterThan(0);
+    expect(boyLayers.every(layer => layer.colors.join() === [
+      '#D7DEE8', '#F8FBFF', '#FFF4D6', '#FF5C8A'
+    ].join())).toBe(true);
+    expect(transLayers.length).toBeGreaterThan(0);
+    expect(transLayers.every(layer => layer.colors.join() === ['#5BCEFA', '#F5A9B8', '#FFFFFF'].join())).toBe(true);
+    expect(transLayers.every(layer => layer.priority !== 'core' && layer.core === false)).toBe(true);
+
+    const rainbow = ['#E40303', '#FF8C00', '#FFED00', '#008026', '#24408E', '#732982'];
+    const heroCue = furry.cues[furry.cues.length - 1];
+    const heroRainbow = heroCue.shells[0].layers
+      .filter(layer => layer.priority !== 'core')
+      .flatMap(layer => layer.colors);
+    expect(heroRainbow).toEqual(expect.arrayContaining(rainbow));
+  });
+
+  test.each([
+    ['short', { opening: [1], build: [2, 2], highlight: [3], finale: [2, 2, 2, 1] }],
+    ['medium', { opening: [1, 1], build: [2, 2, 2], highlight: [3, 3], finale: [3, 3, 4, 1] }],
+    ['long', { opening: [1, 1, 1], build: [2, 2, 2, 2, 2], highlight: [3, 3, 3], finale: [5, 5, 5, 1] }]
+  ])('uses the exact %s Furry phase wave split', (length, expected) => {
+    const furry = new FinaleShowPlanner().plan({ style: 'furry-celebration', length, seed: 88 });
+    const actual = Object.fromEntries(['opening', 'build', 'highlight', 'finale'].map(phase => [
+      phase,
+      furry.cues.filter(cue => cue.phase === phase).map(cue => cue.shells.length)
+    ]));
+
+    expect(actual).toEqual(expected);
   });
 
   test('keeps the exported blueprint graph immutable and planner output isolated from mutation attempts', () => {

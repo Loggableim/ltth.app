@@ -13,7 +13,8 @@ const PRIMITIVES = Object.freeze([
   'radial', 'ring', 'spiral', 'palm', 'crossette', 'comet', 'mine', 'glyph'
 ]);
 const CURATED_GLYPHS = Object.freeze([
-  'paw', 'heart', 'star', 'fox-head', 'wolf-head', 'dragon', 'dragon-wing', 'tail'
+  'paw', 'heart', 'star', 'fox-head', 'wolf-head', 'dragon', 'dragon-wing', 'tail',
+  'boykisser', 'trans-flag'
 ]);
 const MATERIAL_PROFILES = Object.freeze(['classic', 'premium-realistic']);
 const PHASES = Object.freeze(['opening', 'build', 'highlight', 'calm', 'bridge', 'breath', 'finale']);
