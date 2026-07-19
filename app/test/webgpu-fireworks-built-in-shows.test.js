@@ -3,7 +3,8 @@
 const crypto = require('crypto');
 const {
   BUILT_IN_SHOW_DEFINITIONS,
-  FINALE_STYLE_METADATA
+  FINALE_STYLE_METADATA,
+  getBuiltInShowBlueprint
 } = require('../plugins/webgpu-fireworks/lib/built-in-shows');
 const {
   FinaleShowPlanner,
@@ -182,7 +183,7 @@ describe('WebGPU Fireworks built-in PyroDSL shows', () => {
     }
   });
 
-  test('gives every premium show curated layer semantics and all furry glyphs', () => {
+  test('gives every premium show curated layer semantics', () => {
     for (const style of FINALE_STYLES.slice(4)) {
       const plan = new FinaleShowPlanner().plan({ style, length: 'long', seed: 77, intensity: 5 });
       const layers = plan.cues.flatMap(cue => cue.shells.flatMap(shell => shell.layers));
@@ -190,12 +191,37 @@ describe('WebGPU Fireworks built-in PyroDSL shows', () => {
       expect(new Set(layers.map(layer => layer.primitive)).size).toBeGreaterThan(1);
       expect(layers.some(layer => layer.trail || layer.split || layer.strobe)).toBe(true);
     }
-    const furry = new FinaleShowPlanner().plan({ style: 'furry-celebration', length: 'long', seed: 88 });
+  });
+
+  test.each(FINALE_LENGTHS)('keeps every Furry glyph and a rainbow crown in the %s variant', length => {
+    const furry = new FinaleShowPlanner().plan({ style: 'furry-celebration', length, seed: 88 });
     const glyphs = furry.cues.flatMap(cue => cue.shells.flatMap(shell => shell.layers))
       .filter(layer => layer.primitive === 'glyph').map(layer => layer.glyph);
     expect(new Set(glyphs)).toEqual(new Set([
       'paw', 'heart', 'fox-head', 'wolf-head', 'dragon-wing', 'dragon', 'tail'
     ]));
+    const crown = furry.cues.find(cue => cue.phase === 'finale' && cue.formation === 'gold-crown');
+    expect(crown).toBeDefined();
+    expect(crown.shells.some(shell => shell.layers.some(layer => new Set(layer.colors).size >= 4))).toBe(true);
+  });
+
+  test('keeps the exported blueprint graph immutable and planner output isolated from mutation attempts', () => {
+    const blueprint = getBuiltInShowBlueprint('furry-celebration');
+    const before = new FinaleShowPlanner().plan({ style: 'furry-celebration', length: 'short', seed: 91 });
+    const originalFormation = blueprint.cues.opening[0].formation;
+    let mutated = false;
+    try {
+      expect(() => {
+        blueprint.cues.opening[0].formation = 'single';
+        mutated = true;
+      }).toThrow(TypeError);
+      expect(Object.isFrozen(blueprint)).toBe(true);
+      expect(Object.isFrozen(blueprint.cues.opening[0].layers)).toBe(true);
+    } finally {
+      if (mutated) blueprint.cues.opening[0].formation = originalFormation;
+    }
+    expect(getBuiltInShowBlueprint('furry-celebration').cues.opening[0].formation).toBe(originalFormation);
+    expect(new FinaleShowPlanner().plan({ style: 'furry-celebration', length: 'short', seed: 91 })).toEqual(before);
   });
 
   test.each(FINALE_STYLES)('%s is deterministic and intensity changes only tier/visual scales', style => {

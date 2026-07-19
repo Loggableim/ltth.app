@@ -210,7 +210,7 @@ const BLUEPRINTS = {
       long: { opening: [1, 1, 1], build: [2, 2, 2, 2, 2], highlight: [3, 3, 3], finale: [5, 5, 6] }
     },
     cues: {
-      opening: [descriptor('paw-fan', 'paws', 'paw', 'medium', { layers: [layer('glyph', ['#f97316', '#facc15'], { glyph: 'paw' }), layer('glyph', ['#ef4444'], { glyph: 'heart', density: 34, priority: 'accent' })] }), descriptor('glyph-crown', 'heart', 'heart', 'medium', { layers: [layer('glyph', ['#ef4444', '#f97316'], { glyph: 'heart' })] }), descriptor('glyph-crown', 'paws', 'fox', 'big', { layers: [layer('glyph', ['#f97316', '#facc15'], { glyph: 'fox-head' })] })],
+      opening: [descriptor('paw-fan', 'paws', 'paw', 'medium', { layers: [layer('glyph', ['#f97316', '#facc15'], { glyph: 'paw' }), layer('glyph', ['#ef4444'], { glyph: 'heart', density: 34, priority: 'accent' }), layer('glyph', ['#f97316', '#facc15'], { glyph: 'fox-head', density: 30, priority: 'decorative', core: false })] }), descriptor('glyph-crown', 'heart', 'heart', 'medium', { layers: [layer('glyph', ['#ef4444', '#f97316'], { glyph: 'heart' })] }), descriptor('glyph-crown', 'paws', 'fox', 'big', { layers: [layer('glyph', ['#f97316', '#facc15'], { glyph: 'fox-head' })] })],
       build: [descriptor('paw-fan', 'paws', 'wolf', 'big', { layers: [layer('glyph', ['#38bdf8', '#8b5cf6'], { glyph: 'wolf-head' }), layer('comet', ['#facc15'], { trail: true, density: 32, priority: 'decorative', core: false })] }), descriptor('wing-fan', 'burst', 'wings', 'big', { layers: [layer('glyph', ['#ef4444', '#8b5cf6'], { glyph: 'dragon-wing' }), layer('palm', ['#f97316'], { trail: true, density: 42 })] }), descriptor('arc', 'spiral', 'tail', 'big', { layers: [layer('glyph', ['#f97316', '#facc15'], { glyph: 'tail' }), layer('spiral', ['#38bdf8'], { trail: true, density: 36, priority: 'accent' })] })],
       highlight: [descriptor('glyph-crown', 'star', 'dragon', 'massive', { layers: [layer('glyph', ['#22c55e', '#38bdf8'], { glyph: 'dragon' }), layer('glyph', ['#ef4444', '#8b5cf6'], { glyph: 'dragon-wing', density: 42, priority: 'accent' }), layer('ring', ['#facc15'], { strobe: true, density: 28, priority: 'decorative', core: false })] })],
       finale: [descriptor('glyph-crown', 'star', 'celebration', 'massive', { crackleEnabled: true, layers: [layer('glyph', ['#f97316', '#facc15'], { glyph: 'tail' }), layer('glyph', ['#ef4444'], { glyph: 'heart', density: 36, priority: 'accent' }), layer('ring', ['#22c55e', '#38bdf8', '#8b5cf6'], { strobe: true, density: 32, priority: 'decorative', core: false })] }), descriptor('gold-crown', 'star', 'rainbow', 'massive', { crackleEnabled: true, layers: [layer('ring', ['#ef4444', '#f97316', '#facc15', '#22c55e'], { split: true }), layer('spiral', ['#38bdf8', '#8b5cf6'], { trail: true }), layer('glyph', ['#facc15'], { glyph: 'paw', density: 28, priority: 'decorative', core: false })] })]
@@ -278,6 +278,7 @@ function deepFreeze(value) {
   return value;
 }
 
+deepFreeze(BLUEPRINTS);
 const BUILT_IN_SHOW_DEFINITIONS = deepFreeze(Object.fromEntries(
   Object.entries(BLUEPRINTS).map(([id, blueprint]) => [id, createDefinition(id, blueprint)])
 ));
