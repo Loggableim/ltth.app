@@ -186,18 +186,24 @@
             });
 
             try {
-                new MutationObserver(syncLogos).observe(document.documentElement, {
-                    attributes: true,
-                    attributeFilter: ['data-theme']
-                });
+                const localThemeRoot = document.documentElement;
+                if (localThemeRoot?.nodeType === 1) {
+                    new MutationObserver(syncLogos).observe(localThemeRoot, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
             } catch (error) {}
 
             try {
                 if (window.parent && window.parent !== window) {
-                    new MutationObserver(syncLogos).observe(window.parent.document.documentElement, {
-                        attributes: true,
-                        attributeFilter: ['data-theme']
-                    });
+                    const parentThemeRoot = window.parent.document?.documentElement;
+                    if (parentThemeRoot?.nodeType === 1) {
+                        new MutationObserver(syncLogos).observe(parentThemeRoot, {
+                            attributes: true,
+                            attributeFilter: ['data-theme']
+                        });
+                    }
                 }
             } catch (error) {}
         })();

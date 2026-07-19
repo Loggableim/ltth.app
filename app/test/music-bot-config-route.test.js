@@ -502,7 +502,7 @@ describe('music-bot Auto-DJ routes', () => {
     };
     plugin.queueManager = { addSong: jest.fn(() => ({ success: true, song: { id: 'requested-song' }, position: 1 })) };
     plugin.autoDJ = { onSongRequested: jest.fn() };
-    plugin.playbackEngine = { isPlaying: jest.fn(() => true) };
+    plugin.playbackEngine = { getState: jest.fn(() => 'playing') };
     plugin._schedulePreCache = jest.fn();
     plugin._emitSongAdded = jest.fn();
     plugin._emitChatResponse = jest.fn();

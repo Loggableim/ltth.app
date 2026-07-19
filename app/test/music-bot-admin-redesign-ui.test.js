@@ -1,6 +1,40 @@
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 const { JSDOM } = require('jsdom');
+
+function runThemeBootstrapWithInvalidRoots(htmlPath, documentElement, parentDocumentElement) {
+  const html = fs.readFileSync(htmlPath, 'utf8');
+  const [, source] = html.match(/<script>\s*([\s\S]*?)<\/script>/);
+  const observedRoots = [];
+  const document = {
+    documentElement,
+    hidden: true,
+    addEventListener: jest.fn(),
+    querySelector: jest.fn(() => null)
+  };
+  const window = {
+    parent: { document: { documentElement: parentDocumentElement } },
+    addEventListener: jest.fn()
+  };
+
+  vm.runInNewContext(source, {
+    MutationObserver: class MutationObserver {
+      constructor() {}
+      observe(root) {
+        observedRoots.push(root);
+      }
+    },
+    Promise,
+    Set,
+    Map,
+    document,
+    window,
+    localStorage: { getItem: jest.fn(() => null) }
+  });
+
+  return observedRoots;
+}
 
 describe('Music Bot admin broadcast-console redesign', () => {
   let document;
@@ -90,5 +124,25 @@ describe('Music Bot admin broadcast-console redesign', () => {
     expect(css).toMatch(/(?:\.btn|\.tab)[^{]*\{[^}]*min-height:\s*44px/s);
     expect(css).toMatch(/\.checkbox-field\s+input[^\{]*\{[^}]*width:\s*(?:2\d|[3-9]\d)px[^}]*height:\s*(?:2\d|[3-9]\d)px/s);
     expect(css).toMatch(/@media\s*\(prefers-reduced-motion:\s*reduce\)/);
+  });
+
+  test('does not observe invalid theme roots during the Music Bot bootstrap', () => {
+    const roots = runThemeBootstrapWithInvalidRoots(
+      path.join(__dirname, '..', 'plugins', 'music-bot', 'ui.html'),
+      { nodeType: 9, style: {}, setAttribute: jest.fn() },
+      { nodeType: 9 }
+    );
+
+    expect(roots).toEqual([]);
+  });
+
+  test('does not observe invalid local or parent theme roots during the dashboard bootstrap', () => {
+    const roots = runThemeBootstrapWithInvalidRoots(
+      path.join(__dirname, '..', 'public', 'dashboard.html'),
+      { nodeType: 9, dataset: {}, getAttribute: jest.fn(() => null) },
+      { nodeType: 9 }
+    );
+
+    expect(roots).toEqual([]);
   });
 });

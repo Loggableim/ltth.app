@@ -75,11 +75,11 @@ describe('Music Bot admin safety UI', () => {
         mediaTitle: expect.any(String),
         cache: expect.any(String)
       }));
-      expect(translations.music_bot.ui.banMenu).toEqual(expect.objectContaining({
-        track: expect.any(String),
-        artist: expect.any(String),
-        channel: expect.any(String),
-        keyword: expect.any(String)
+      expect(translations.music_bot.ui.moderation).toEqual(expect.objectContaining({
+        banTrack: expect.any(String),
+        banArtist: expect.any(String),
+        banChannel: expect.any(String),
+        banTitleKeyword: expect.any(String)
       }));
     }
   });

@@ -64,10 +64,13 @@
 
       try {
         if (window.parent && window.parent !== window) {
-          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
-            attributes: true,
-            attributeFilter: ['data-theme']
-          });
+          const parentThemeRoot = window.parent.document?.documentElement;
+          if (parentThemeRoot?.nodeType === 1) {
+            new MutationObserver(syncTheme).observe(parentThemeRoot, {
+              attributes: true,
+              attributeFilter: ['data-theme']
+            });
+          }
         }
       } catch (error) {}
     })();
