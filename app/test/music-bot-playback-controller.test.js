@@ -1398,7 +1398,9 @@ describe('Music Bot playback engine lifecycle hardening', () => {
     'webm&rqh=1&expire=999&sig=SECRET',
     'videoplayback?expire=999&ip=127.0.0.1&signature=SECRET',
     'media.m3u8?X-Amz-Signature=SECRET&X-Amz-Credential=ACCESS&X-Amz-Expires=999',
-    'recording.flac?session=SECRET'
+    'recording.flac?session=SECRET',
+    'MPV label &sig=SECRET',
+    'Current media &token=SECRET'
   ])('uses the canonical title for token-bearing MPV labels: %s', async (mediaTitle) => {
     const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
     engine.process = { pid: 8484, exitCode: null };

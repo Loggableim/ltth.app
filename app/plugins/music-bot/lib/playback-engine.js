@@ -625,6 +625,8 @@ class PlaybackEngine extends EventEmitter {
   _isUnsafeMediaTitle(value) {
     const normalized = String(value || '').trim();
     if (!normalized) return false;
+    const hasSensitiveParameter = /(?:^|[?&])(?:x-amz-)?(?:sig(?:nature)?|lsig|token|expire(?:s)?|ip|key|credential)=/i.test(normalized);
+    if (hasSensitiveParameter) return true;
     const hasQueryParameter = /[?&][^=&\s]+=[^&\s]+/.test(normalized);
     return hasQueryParameter && (normalized.includes('?') || !/\s/.test(normalized));
   }
