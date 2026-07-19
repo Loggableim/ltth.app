@@ -524,8 +524,13 @@ class WebGPUParticleEngine {
         const seed = this._resolveSeed(options);
         const effectId = this._hashValue(options.effectId ?? seed);
         const correlationId = options.correlationId ?? options.effectId ?? seed;
-        const resolutionScale = Math.max(0.75, Math.min(1.75, this.logicalHeight / 1080));
-        const rocketSize = Math.max(28, (Number(options.rocketSize) || 32) * resolutionScale);
+        const resolutionScale = Math.max(0.75, Math.min(1.75,
+            Math.min(this.logicalWidth, this.logicalHeight) / 1080));
+        const depthRocket = options.renderHints?.depthEnabled === true;
+        const defaultRocketSize = depthRocket ? 22 : 32;
+        const minimumRocketSize = depthRocket ? 18 : 28;
+        const rocketSize = Math.max(minimumRocketSize,
+            (Number(options.rocketSize) || defaultRocketSize) * resolutionScale);
         const headTextureIndex = Math.max(0, Number(options.headTextureIndex) || 0);
         const decalTextureIndex = headTextureIndex > 0 ? 0 : Math.max(0, Number(options.textureIndex) || 0);
         this._queueSpawn({
@@ -2009,6 +2014,7 @@ fn fadeEnvelope(role:u32,shape:u32,t:f32,flags:u32)->f32{
   if(role==7u){return smoothstep(0.0,0.16,t)*(1.0-smoothstep(0.38,1.0,t));}
   if(role==8u){return smoothstep(0.0,0.07,t)*(1.0-smoothstep(0.32,1.0,t));}
   if(role==10u){return pow(1.0-t,1.65);}
+  if(shape>=17u&&shape<=26u){return smoothstep(0.0,0.08,t)*(1.0-smoothstep(0.64,1.0,t));}
   if(role==4u||shape==2u){return smoothstep(0.0,0.08,t)*(1.0-smoothstep(0.68,1.0,t));}
   return pow(1.0-t,select(1.2,0.82,shape>=1u&&shape<=6u));
 }
@@ -2017,7 +2023,7 @@ fn fadeEnvelope(role:u32,shape:u32,t:f32,flags:u32)->f32{
   let rotation=select(p.rotation,0.0,p.shape==6u&&(p.flags&64u)!=0u); let c = cos(rotation); let s = sin(rotation);
   let streak=(p.shape==0u&&role==3u)||(p.shape==7u&&(p.flags&128u)==0u);
   var scale=select(vec2f(1.0),vec2f(2.6,0.42),streak);
-  if(p.shape==8u){scale=select(vec2f(1.42,0.64),vec2f(1.58,0.5),role==2u);}
+  if(p.shape==8u){scale=select(vec2f(1.42,0.48),vec2f(1.58,0.32),role==2u);}
   if(role==7u){scale*=1.0+t*1.75;}
   if(role==10u){scale*=max(0.32,1.0-t*0.68);}
   if(role==4u||p.shape==2u){scale*=0.84+0.16*smoothstep(0.0,0.16,t);}
@@ -2030,7 +2036,7 @@ fn fadeEnvelope(role:u32,shape:u32,t:f32,flags:u32)->f32{
   let segments=max(1u,uniforms.trailSamples-1u); let particleListIndex=instance/segments; let segment=instance%segments; let index=activeIndices[particleListIndex]; let p=particles[index]; let base=index*uniforms.maxTrailSamples;
   let a=history[base+segment]; let b=history[base+segment+1u]; let projectedA=projectToPixels(a); let projectedB=projectToPixels(b);
   let direction=normalize(projectedA-projectedB+vec2f(0.0001)); let normal=vec2f(-direction.y,direction.x); let q=quadVertex(vertex);
-  let along=mix(projectedB,projectedA,q.x*0.5+0.5); let depth=mix(b.z,a.z,q.x*0.5+0.5); let width=p.size*perspectiveScale(depth)*(0.38-f32(segment)/f32(segments)*0.29);
+  let along=mix(projectedB,projectedA,q.x*0.5+0.5); let depth=mix(b.z,a.z,q.x*0.5+0.5); let trailWidthScale=select(1.0,0.62,p.shape==8u); let width=p.size*perspectiveScale(depth)*(0.38-f32(segment)/f32(segments)*0.29)*trailWidthScale;
   var out:Out; out.position=clipPixels(along+normal*q.y*width); out.uv=q*0.5+0.5; out.color=p.color; out.shape=p.shape; out.textureIndex=0u; out.flags=p.flags; out.rotation=p.rotation;
   let role=(p.flags>>8u)&15u;let t=clamp(p.life/p.maxLife,0.0,1.0);let shapeTrail=select(0.44,0.1,p.shape>=1u&&p.shape<=5u);
   out.fade=(1.0-f32(segment)/f32(segments))*fadeEnvelope(role,p.shape,t,p.flags)*shapeTrail*v2Strobe(p.flags,t,p.seed);
@@ -2063,12 +2069,12 @@ fn shapeDistance(uv:vec2f,shape:u32)->f32{if(shape==1u){return sdHeart(uv);}if(s
 fn sdCapsule(p:vec2f,a:vec2f,b:vec2f,r:f32)->f32{let pa=p-a;let ba=b-a;let h=clamp(dot(pa,ba)/dot(ba,ba),0.0,1.0);return length(pa-ba*h)-r;}
 fn rocketCoverage(uv:vec2f,time:f32,seed:u32)->vec3f{
   let p=uv*2.0-1.0;let aa=0.025;
-  let fuselage=1.0-smoothstep(-aa,aa,sdCapsule(p,vec2f(-0.48,0.0),vec2f(0.43,0.0),0.22));
-  let noseWidth=max(0.0,(0.94-p.x)*0.44);let nose=step(0.38,p.x)*step(p.x,0.94)*(1.0-smoothstep(noseWidth,noseWidth+aa,abs(p.y)));
-  let finWidth=max(0.0,(p.x+0.68)*0.5);let fins=step(-0.68,p.x)*step(p.x,-0.18)*smoothstep(0.16,0.25,abs(p.y))*(1.0-smoothstep(0.46,0.46+finWidth+aa,abs(p.y)));
-  let nozzle=step(-0.68,p.x)*step(p.x,-0.43)*(1.0-smoothstep(0.16,0.23,abs(p.y)));
+  let fuselage=1.0-smoothstep(-aa,aa,sdCapsule(p,vec2f(-0.48,0.0),vec2f(0.43,0.0),0.16));
+  let noseWidth=max(0.0,(0.94-p.x)*0.34);let nose=step(0.38,p.x)*step(p.x,0.94)*(1.0-smoothstep(noseWidth,noseWidth+aa,abs(p.y)));
+  let finWidth=max(0.0,(p.x+0.68)*0.38);let fins=step(-0.68,p.x)*step(p.x,-0.18)*smoothstep(0.12,0.19,abs(p.y))*(1.0-smoothstep(0.34,0.34+finWidth+aa,abs(p.y)));
+  let nozzle=step(-0.68,p.x)*step(p.x,-0.43)*(1.0-smoothstep(0.11,0.17,abs(p.y)));
   let flicker=0.08*sin(time*37.0+f32(seed&255u)*0.17)+0.04*sin(time*71.0);
-  let flameStart=-0.98-flicker;let flameWidth=max(0.0,(p.x-flameStart)*0.31);let flame=step(flameStart,p.x)*step(p.x,-0.56)*(1.0-smoothstep(flameWidth,flameWidth+0.07,abs(p.y)));
+  let flameStart=-0.98-flicker;let flameWidth=max(0.0,(p.x-flameStart)*0.22);let flame=step(flameStart,p.x)*step(p.x,-0.56)*(1.0-smoothstep(flameWidth,flameWidth+0.05,abs(p.y)));
   return vec3f(max(fuselage,max(nose,fins)),nozzle,flame);
 }
 fn atlasSample(uv:vec2f,index:u32,uvDx:vec2f,uvDy:vec2f)->vec4f{let slot=f32(max(1u,index)-1u);let cell=vec2f(fract(slot/8.0),floor(slot/8.0)/8.0);let atlasScale=vec2f(116.0/1024.0);let inner=vec2f(6.0/1024.0)+uv*atlasScale;return textureSampleGrad(atlas,atlasSampler,cell+inner,uvDx*atlasScale,uvDy*atlasScale);}
@@ -2090,6 +2096,10 @@ fn materialColor(base:vec3f,role:u32,style:u32,t:f32,seed:u32)->vec3f{
   let flicker=0.88+0.12*sin(uniforms.time*(21.0+f32(seed&7u))+f32(seed&255u));
   return color*select(1.0,flicker,role==8u||role==10u);
 }
+fn glyphMaterialColor(base:vec3f,t:f32)->vec3f{
+  let chroma=smoothstep(0.14,0.72,t);
+  return mix(mix(vec3f(1.0),base,0.34),base,chroma*0.66);
+}
 @fragment fn particleFragment(in:Out)->@location(0) vec4f {
   let uvDx=dpdx(in.uv);let uvDy=dpdy(in.uv);let d=shapeDistance(in.uv,in.shape);let aa=max(0.0035,fwidth(d)*0.9);
   let role=(in.flags>>8u)&15u;let style=(in.flags>>12u)&3u;
@@ -2101,8 +2111,8 @@ fn materialColor(base:vec3f,role:u32,style:u32,t:f32,seed:u32)->vec3f{
     var coverage=select(parts.x,max(parts.y,parts.z),role==2u);
     var rgb=select(bodyColor,flameColor,role==2u);
     if((in.flags&16384u)!=0u&&in.textureIndex>0u&&role==1u){
-      let local=(in.uv*2.0-1.0-vec2f(0.56,0.0))*vec2f(1.42,0.64);
-      let localDx=uvDx*2.0*vec2f(1.42,0.64);let localDy=uvDy*2.0*vec2f(1.42,0.64);
+      let local=(in.uv*2.0-1.0-vec2f(0.56,0.0))*vec2f(1.42,0.48);
+      let localDx=uvDx*2.0*vec2f(1.42,0.48);let localDy=uvDy*2.0*vec2f(1.42,0.48);
       let c=cos(in.rotation);let s=sin(in.rotation);
       let upright=vec2f(c*local.x-s*local.y,s*local.x+c*local.y);
       let uprightDx=vec2f(c*localDx.x-s*localDx.y,s*localDx.x+c*localDx.y);
@@ -2124,12 +2134,13 @@ fn materialColor(base:vec3f,role:u32,style:u32,t:f32,seed:u32)->vec3f{
   if(in.shape==7u){if((in.flags&128u)!=0u){coverage=1.0-smoothstep(0.18,0.46,length(in.uv-0.5));}else{let p=abs(in.uv-0.5);coverage=1.0-smoothstep(0.12,0.42,min(max(p.x,p.y)*0.78,p.x+p.y));}}
   if(in.shape==9u){let radius=length(in.uv-0.5);let curl=0.08*sin(atan2(in.uv.y-0.5,in.uv.x-0.5)*5.0+uniforms.time*0.8+f32(in.seed&63u));coverage=pow(1.0-smoothstep(0.04,0.5+curl,radius),1.65)*0.31;}
   let alpha=coverage*in.fade*in.color.a;var rgb=materialColor(in.color.rgb,role,style,in.normalizedLife,in.seed);
+  if(in.shape>=17u&&in.shape<=26u){rgb=glyphMaterialColor(in.color.rgb,in.normalizedLife);}
   if(in.shape==0u||in.shape==7u){let heat=pow(max(0.0,1.0-length(in.uv-0.5)*2.0),3.0);rgb=mix(rgb,vec3f(1.0,0.96,0.76),heat*0.86);}
   return vec4f(rgb*alpha,alpha);
 }
 @fragment fn glowFragment(in:Out)->@location(0) vec4f {
   let uvDx=dpdx(in.uv);let uvDy=dpdy(in.uv);let role=(in.flags>>8u)&15u;if(role==7u){discard;}var coverage=0.0;if(in.shape==6u){coverage=atlasSample(in.uv,in.textureIndex,uvDx,uvDy).a;}else if(in.shape==8u){let parts=rocketCoverage(in.uv,uniforms.time,in.seed);coverage=max(parts.x*0.62,max(parts.y,parts.z));}else{let d=shapeDistance(in.uv,in.shape);coverage=exp(-max(0.0,d)*select(11.0,7.5,(in.flags&128u)!=0u))*(1.0-smoothstep(0.08,0.7,length(in.uv-0.5)));}
-  let style=(in.flags>>12u)&3u;var styleGlow=select(1.0,select(0.72,1.38,style==2u),style!=0u);if(style==3u){styleGlow=1.18;}let pulse=select(1.0,0.72+0.28*sin(uniforms.time*44.0+f32(in.seed&31u)),role==8u);let alpha=coverage*in.fade*in.color.a*0.18*uniforms.glowScale*styleGlow*pulse;let rgb=materialColor(in.color.rgb,role,style,in.normalizedLife,in.seed);return vec4f(rgb*alpha,alpha);
+  let style=(in.flags>>12u)&3u;var styleGlow=select(1.0,select(0.72,1.38,style==2u),style!=0u);if(style==3u){styleGlow=1.18;}let pulse=select(1.0,0.72+0.28*sin(uniforms.time*44.0+f32(in.seed&31u)),role==8u);let glyphGlow=select(1.0,1.3,in.shape>=17u&&in.shape<=26u);let alpha=coverage*in.fade*in.color.a*0.18*uniforms.glowScale*styleGlow*pulse*glyphGlow;var rgb=materialColor(in.color.rgb,role,style,in.normalizedLife,in.seed);if(in.shape>=17u&&in.shape<=26u){rgb=glyphMaterialColor(in.color.rgb,in.normalizedLife);}return vec4f(rgb*alpha,alpha);
 }
 @fragment fn trailFragment(in:Out)->@location(0) vec4f {let role=(in.flags>>8u)&15u;if(isV2(in.flags)&&(in.flags&V2_TRAIL)==0u){discard;}if(!isV2(in.flags)&&((in.shape>=1u&&in.shape<=6u)||in.shape==9u||role==2u||role==7u)){discard;}let edge=exp(-pow(abs(in.uv.y-0.5)*3.8,2.0));let alpha=edge*in.fade*in.color.a;let style=(in.flags>>12u)&3u;let rgb=materialColor(in.color.rgb,role,style,in.normalizedLife,in.seed);return vec4f(rgb*alpha,alpha);}
 `;

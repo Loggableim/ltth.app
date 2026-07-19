@@ -440,6 +440,64 @@ describe('ShowPlanV2 built-in scheduling matrix', () => {
   };
 
   test.each([
+    ['short', 15, 21, 1600],
+    ['medium', 25, 31, 2350],
+    ['long', 38, 44, 3350]
+  ])('keeps the %s Furry score inside its visible choreography budget',
+    (length, shellCount, layerCount, particleBudget) => {
+      const showPlan = new FinaleShowPlanner().plan({
+        style: 'furry-celebration', length, id: `furry-budget-${length}`, seed: 441, intensity: 7
+      });
+      const runtime = buildShowPlanV2Runtime(showPlan, {
+        startAt: 0, width: 1920, height: 1080, playSound: false
+      });
+      const particleCount = runtime.events.filter(event => event.type === 'finale-v2-layer')
+        .reduce((total, event) => total + event.layer.density, 0);
+
+      expect(runtime.shellCount).toBe(shellCount);
+      expect(runtime.layerCount).toBe(layerCount);
+      expect(particleCount).toBeLessThanOrEqual(particleBudget);
+      expect(runtime.maxLayerCommandsAtBeat).toBeLessThanOrEqual(6);
+    });
+
+  test.each([0, 15, 31, 441, 0xffffffff])(
+    'selects seeded Furry rocket colors with finale variety for seed %i', seed => {
+      const showPlan = new FinaleShowPlanner().plan({
+        style: 'furry-celebration', length: 'short', id: 'furry-rocket-colors', seed, intensity: 7
+      });
+      const runtime = buildShowPlanV2Runtime(showPlan, {
+        startAt: 0, width: 1920, height: 1080, playSound: false
+      });
+      const rockets = runtime.events.filter(event => event.type === 'finale-v2-rocket');
+      const finaleShellIds = new Set(showPlan.cues.filter(cue => cue.phase === 'finale')
+        .flatMap(cue => cue.shells.map(shellEntry => shellEntry.id)));
+
+      for (const rocket of rockets) {
+        expect(rocket.shell.colors[0]).toBe(rocket.shell.palette[rocket.seed % rocket.shell.palette.length]);
+      }
+      expect(new Set(rockets.filter(rocket => finaleShellIds.has(rocket.shellId))
+        .map(rocket => rocket.shell.colors[0])).size).toBeGreaterThanOrEqual(3);
+    }
+  );
+
+  test('preserves the authored rocket color order outside Furry Celebration', () => {
+    const authoredColors = ['#112233', '#445566'];
+    const showPlan = plan([{
+      id: 'authored-color', beatAtMs: 2000, phase: 'opening', formation: 'single', importance: 'standard',
+      shells: [shell('authored-color:rocket', 'rocket', {
+        seed: 14,
+        palette: ['#E40303', '#FF8C00', '#FFED00'],
+        colors: [...authoredColors]
+      })]
+    }], { style: 'classic-crescendo' });
+
+    const runtime = buildShowPlanV2Runtime(showPlan, { playSound: false });
+    const rocket = runtime.events.find(event => event.type === 'finale-v2-rocket');
+
+    expect(rocket.shell.colors).toEqual(authoredColors);
+  });
+
+  test.each([
     ['short', 600],
     ['medium', 1000],
     ['long', 1500]

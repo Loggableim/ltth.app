@@ -25,10 +25,11 @@ describe('WebGPU Fireworks native migration', () => {
     ]));
     expect(fs.existsSync(path.join(pluginRoot, 'gpu', 'webgl-particle-engine.js'))).toBe(false);
     expect(fs.existsSync(path.join(pluginRoot, 'gpu', 'particle-system-soa.js'))).toBe(false);
-    expect(overlaySource).toContain('webgpu-particle-engine.js?v=3.1.0-depth3d-1');
-    expect(overlaySource).toContain('engine.js?v=3.1.0-benchmark-session-1');
+    expect(overlaySource).toContain('webgpu-particle-engine.js?v=3.1.0-furry-visual-1');
+    expect(overlaySource).toContain('show-plan-v2-runtime.js?v=3.1.0-furry-visual-1');
+    expect(overlaySource).toContain('engine.js?v=3.1.0-benchmark-session-2');
     expect(settingsHtml).toContain('show-style-options.js?v=3.1.0-depth3d-1');
-    expect(settingsHtml).toContain('settings.js?v=3.1.0-benchmark-session-1');
+    expect(settingsHtml).toContain('settings.js?v=3.1.0-benchmark-session-2');
     expect(overlaySource).not.toContain('webgl-particle-engine');
   });
 
@@ -197,6 +198,12 @@ describe('WebGPU Fireworks native migration', () => {
     expect(rendererSource).toContain('let fins=');
     expect(rendererSource).toContain('let flame=');
     expect(rendererSource).toContain('p.rotation = atan2(p.velocity.y, p.velocity.x + curveVelocity)');
+    expect(rendererSource).toContain('Math.min(this.logicalWidth, this.logicalHeight) / 1080');
+    expect(rendererSource).toContain('const defaultRocketSize = depthRocket ? 22 : 32');
+    expect(rendererSource).toContain('const minimumRocketSize = depthRocket ? 18 : 28');
+    expect(rendererSource).toContain('let trailWidthScale=select(1.0,0.62,p.shape==8u);');
+    expect(rendererSource).toContain('let fuselage=1.0-smoothstep(-aa,aa,sdCapsule(p,vec2f(-0.48,0.0),vec2f(0.43,0.0),0.16));');
+    expect(rendererSource).toContain('let local=(in.uv*2.0-1.0-vec2f(0.56,0.0))*vec2f(1.42,0.48);');
   });
 
   test('reports renderer status through socket, API and settings', () => {

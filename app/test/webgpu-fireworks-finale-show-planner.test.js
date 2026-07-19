@@ -430,6 +430,45 @@ describe('WebGPU Fireworks finale show planner', () => {
     }
   });
 
+  test.each(FINALE_LENGTHS)('normalizes %s Furry glyphs and stages the Pride and Hero reveals', length => {
+    const plan = new FinaleShowPlanner().plan({
+      style: 'furry-celebration', length, orientation: 'landscape', intensity: 5, seed: 77
+    });
+    const heroCue = plan.cues.at(-1);
+    const ordinaryShells = plan.cues.slice(0, -1).flatMap(cue => cue.shells);
+    const boykisserLayers = plan.cues.flatMap(cue => cue.shells)
+      .flatMap(shell => shell.layers)
+      .filter(layer => layer.glyph === 'boykisser');
+
+    for (const shell of ordinaryShells) {
+      const expectedExtent = Math.min(0.18, Math.max(0.07, shell.renderHints.glyphScale * 0.11));
+      expect(shell.renderHints.glyphExtent).toBeCloseTo(expectedExtent, 6);
+    }
+    expect(boykisserLayers.length).toBeGreaterThan(0);
+    expect(boykisserLayers.every(layer => layer.density >= 96)).toBe(true);
+
+    const transRibbon = plan.cues[0].shells[0].layers
+      .find(layer => layer.glyph === 'trans-flag');
+    expect(transRibbon).toMatchObject({ delayMs: 100, density: 36 });
+
+    const falseFinales = plan.cues.filter(cue => /^finale-wave-[123]$/.test(cue.formation));
+    expect(falseFinales).toHaveLength(3);
+    falseFinales.forEach((cue, index) => {
+      const decorativeGlyph = cue.shells.flatMap(shell => shell.layers)
+        .find(layer => layer.primitive === 'glyph' && layer.priority === 'decorative');
+      expect(decorativeGlyph).toMatchObject({
+        density: 32,
+        core: false,
+        delayMs: 100 + index * 20
+      });
+    });
+
+    const heroLayers = heroCue.shells[0].layers;
+    expect(heroCue.shells[0].renderHints.glyphExtent).toBe(0.52);
+    expect(heroLayers.filter(layer => layer.primitive === 'ring').map(layer => layer.delayMs))
+      .toEqual([90, 180]);
+  });
+
   test('keeps all non-Furry built-ins flat by omitting render hints', () => {
     for (const style of FINALE_STYLES.filter(candidate => candidate !== 'furry-celebration')) {
       const plan = new FinaleShowPlanner().plan({ style, length: 'long', seed: 77 });

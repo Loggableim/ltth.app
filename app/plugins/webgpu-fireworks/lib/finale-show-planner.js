@@ -37,6 +37,12 @@ function intensityScales(intensityValue) {
   };
 }
 
+function alignSeedModulo(seed, modulo, remainder) {
+  const alignedBase = seed - (seed % modulo);
+  const adjusted = alignedBase + remainder;
+  return (adjusted > 0xffffffff ? adjusted - modulo : adjusted) >>> 0;
+}
+
 function customSoundRole(phase, tier, primitive) {
   if (phase === 'finale') return primitive === 'glyph' ? 'crown' : 'wave';
   if (tier === 'massive') return 'heavy';
@@ -80,11 +86,20 @@ class FinaleShowPlanner {
     }
 
     const compiled = compileShowDefinition(definition, { variant: length, seed });
+    let furryFinaleRocketOrdinal = 0;
     const cues = compiled.cues.map((cue, index) => {
       const phaseCueIndex = compiled.cues.slice(0, index).filter(candidate => candidate.phase === cue.phase).length;
       const cueDescriptor = blueprint.cues[cue.phase][phaseCueIndex % blueprint.cues[cue.phase].length];
       const shells = cue.shells.map((shell, launchIndex) => {
-        const launchSeed = mixSeed(seed, index, launchIndex);
+        let launchSeed = mixSeed(seed, index, launchIndex);
+        if (style === 'furry-celebration' && cue.phase === 'finale' && shell.launchMode === 'rocket') {
+          const colorCount = Array.isArray(shell.palette) ? shell.palette.length : 0;
+          if (colorCount > 0) {
+            const desiredColorIndex = (seed + furryFinaleRocketOrdinal) % colorCount;
+            launchSeed = alignSeedModulo(launchSeed, colorCount, desiredColorIndex);
+          }
+          furryFinaleRocketOrdinal++;
+        }
         const shellDescriptor = cueDescriptor.shellVariants?.[
           launchIndex % cueDescriptor.shellVariants.length
         ] || cueDescriptor;

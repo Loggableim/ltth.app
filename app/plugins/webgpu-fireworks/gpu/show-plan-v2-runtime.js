@@ -171,6 +171,18 @@
     return ((Number(shell.seed ?? showSeed) >>> 0) ^ hashString(layer.id || layer.primitive)) >>> 0;
   }
 
+  function withSeededRocketColor(shell, seed) {
+    const palette = Array.isArray(shell?.palette) && shell.palette.length
+      ? shell.palette
+      : shell?.colors;
+    if (!Array.isArray(palette) || palette.length < 1) return shell;
+    const colorIndex = (Number(seed) >>> 0) % palette.length;
+    return {
+      ...shell,
+      colors: [...palette.slice(colorIndex), ...palette.slice(0, colorIndex)]
+    };
+  }
+
   function normalizeRole(value) {
     const role = String(value || '').trim().toLowerCase();
     if (ROLE_ALIASES[role]) return ROLE_ALIASES[role];
@@ -344,6 +356,7 @@
         const target = toPixels(shell.target, width, height);
         const renderHints = normalizeRenderHints(shell.renderHints);
         if (shell.launchMode === 'rocket') {
+          const rocketSeed = Number(shell.seed ?? showPlan.seed) >>> 0;
           const naturalFlightDurationMs = calculateRocketFlightMs(shell.target, renderHints);
           const flightDurationMs = Math.min(naturalFlightDurationMs, Math.max(0, Number(cue.beatAtMs)));
           const due = cueDue - flightDurationMs;
@@ -354,7 +367,9 @@
             finaleId: showPlan.id,
             cueId,
             shellId,
-            shell,
+            shell: showPlan.style === 'furry-celebration'
+              ? withSeededRocketColor(shell, rocketSeed)
+              : shell,
             origin,
             target,
             renderHints,
@@ -363,7 +378,7 @@
             beatId,
             materialProfile,
             visualStyle: options.visualStyle,
-            seed: Number(shell.seed ?? showPlan.seed) >>> 0
+            seed: rocketSeed
           };
           rocketEvents.push(event);
           push(event);

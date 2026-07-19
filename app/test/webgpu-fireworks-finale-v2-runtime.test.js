@@ -407,6 +407,33 @@ describe('ShowPlanV2 overlay dispatch', () => {
     );
   });
 
+  test('dispatches the deterministic seeded palette color for V2 rockets', () => {
+    let now = 10000;
+    const engine = makeRuntime(now);
+    engine.getRuntimeNow = () => now;
+    const palette = ['#E40303', '#FF8C00', '#FFED00', '#008026', '#24408E', '#732982'];
+    const showPlan = v2Plan('seeded-color', {
+      style: 'furry-celebration',
+      durationMs: 5000,
+      cues: [{
+        id: 'seeded-color:opening', beatAtMs: 3000, timeMs: 3000,
+        phase: 'opening', formation: 'single', importance: 'standard',
+        shells: [v2Shell('seeded-color:rocket', 'rocket', {
+          seed: 14, palette, colors: [...palette]
+        })]
+      }]
+    });
+    engine.handleFinale({ id: 'seeded-color', showPlan, playSound: false });
+
+    const rocketEvent = engine.timelineQueue.find(event => event.type === 'finale-v2-rocket');
+    now = rocketEvent.due;
+    engine.processTimeline(now);
+
+    expect(engine.renderer.spawnRocket).toHaveBeenCalledWith(expect.objectContaining({
+      color: palette[14 % palette.length]
+    }));
+  });
+
   test('uses quality degradation only at submission time without changing the planned choreography', () => {
     let now = 10000;
     const engine = makeRuntime(now);

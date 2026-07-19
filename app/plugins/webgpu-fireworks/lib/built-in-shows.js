@@ -4,6 +4,7 @@ const { SHOW_DEFINITION_VERSION, VARIANT_PRESETS } = require('./pyrodsl');
 
 const FINALE_LENGTHS = Object.freeze(['short', 'medium', 'long']);
 const PHASE_ORDER = Object.freeze(['opening', 'build', 'highlight', 'finale']);
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const LENGTH_PRESETS = Object.freeze(Object.fromEntries(FINALE_LENGTHS.map(length => [length, {
   durationMs: VARIANT_PRESETS[length].durationMs,
@@ -73,7 +74,9 @@ function renderHints(burstDepth, glyphScale = 1, launchDepth = 0, glyphExtent) {
     launchDepth,
     burstDepth,
     glyphScale,
-    ...(glyphExtent === undefined ? {} : { glyphExtent })
+    glyphExtent: glyphExtent === undefined
+      ? clamp(glyphScale * 0.11, 0.07, 0.18)
+      : glyphExtent
   };
 }
 
@@ -94,7 +97,7 @@ function shellVariant(shape, soundRole, layers, hints, options = {}) {
 function boykisserLayer(options = {}) {
   return layer('glyph', BOYKISSER_COLORS, {
     glyph: 'boykisser',
-    density: options.density || 72,
+    density: Math.max(96, Number(options.density) || 96),
     size: options.size || 1,
     lifetimeMs: options.lifetimeMs || 900,
     gravity: options.gravity === undefined ? 0.15 : options.gravity,
@@ -289,7 +292,7 @@ const BLUEPRINTS = {
       opening: [
         furryCue('glyph-crown', 'cat-cameo', 'medium', renderHints(-0.65, 0.65), [], {
           cat: { density: 56, lifetimeMs: 760 },
-          accents: [layer('glyph', TRANS_COLORS, { glyph: 'trans-flag', density: 36, lifetimeMs: 620, priority: 'decorative', core: false })]
+          accents: [layer('glyph', TRANS_COLORS, { glyph: 'trans-flag', delayMs: 100, density: 36, lifetimeMs: 620, priority: 'decorative', core: false })]
         }),
         furryCue('call', 'cat-call', 'medium', renderHints(-0.55, 0.72), [], { cat: { density: 60, lifetimeMs: 760 } }),
         furryCue('response', 'cat-response', 'big', renderHints(-0.45, 0.78), [], { cat: { density: 64, lifetimeMs: 780 } })
@@ -331,27 +334,37 @@ const BLUEPRINTS = {
           supportGlyph('heart', ['#E40303', '#FF5C8A'], renderHints(-0.35, 0.8), { soundRole: 'heart-wave' }),
           supportGlyph('paw', ['#FF8C00', '#FFED00'], renderHints(-0.2, 0.78), { soundRole: 'paw-wave' }),
           supportGlyph('fox-head', ['#FF8C00', '#FFED00'], renderHints(-0.05, 0.82), { soundRole: 'fox-wave' })
-        ], { crackleEnabled: true }),
+        ], {
+          crackleEnabled: true,
+          accents: [layer('glyph', TRANS_COLORS, { glyph: 'trans-flag', delayMs: 100, density: 32, lifetimeMs: 540, priority: 'decorative', core: false })]
+        }),
         furryCue('finale-wave-2', 'false-finale-mid', 'massive', renderHints(0.1, 1.15), [
           supportGlyph('dragon', ['#008026', '#24408E'], renderHints(-0.1, 0.96), { soundRole: 'dragon-wave' }),
           supportGlyph('wolf-head', ['#5BCEFA', '#24408E'], renderHints(0.2, 0.92), { soundRole: 'wolf-wave' }),
           supportGlyph('heart', ['#E40303', '#FF5C8A'], renderHints(0.28, 0.9), { soundRole: 'heart-wave' }),
           supportGlyph('paw', ['#FF8C00', '#FFED00'], renderHints(0.05, 0.88), { soundRole: 'paw-wave' })
-        ], { crackleEnabled: true }),
+        ], {
+          crackleEnabled: true,
+          accents: [layer('glyph', RAINBOW_COLORS.slice(0, 4), { glyph: 'heart', delayMs: 120, density: 32, lifetimeMs: 520, priority: 'decorative', core: false })]
+        }),
         furryCue('finale-wave-3', 'false-finale-near', 'massive', renderHints(0.55, 1.45), [
           supportGlyph('tail', ['#FF8C00', '#FFED00'], renderHints(0.45, 1.12), { soundRole: 'tail-wave', lifetimeMs: 600 }),
           supportGlyph('paw', ['#FF8C00', '#FFED00'], renderHints(0.3, 0.92), { soundRole: 'paw-wave', lifetimeMs: 600 }),
           supportGlyph('fox-head', ['#FF8C00', '#FFED00'], renderHints(0.1, 0.9), { soundRole: 'fox-wave', lifetimeMs: 600 }),
           supportGlyph('wolf-head', ['#5BCEFA', '#24408E'], renderHints(-0.1, 0.9), { soundRole: 'wolf-wave', lifetimeMs: 600 })
-        ], { cat: { density: 132, lifetimeMs: 600 }, crackleEnabled: false }),
+        ], {
+          cat: { density: 132, lifetimeMs: 600 },
+          crackleEnabled: false,
+          accents: [layer('glyph', TRANS_COLORS, { glyph: 'trans-flag', delayMs: 140, density: 32, lifetimeMs: 460, priority: 'decorative', core: false })]
+        }),
         furryCue('gold-crown', 'boykisser-hero', 'massive', renderHints(0.82, 2, 0, 0.52), [], {
           cat: { density: 180, lifetimeMs: 1200, gravity: 0.08 },
           launchMode: 'airburst',
           exactTarget: { x: 0.5, y: 0.5 },
           exactOrigin: { x: 0.5, y: 1.02 },
           accents: [
-            layer('ring', RAINBOW_COLORS.slice(0, 4), { density: 42, lifetimeMs: 900, strobe: true, priority: 'decorative', core: false }),
-            layer('spiral', RAINBOW_COLORS.slice(4), { density: 32, lifetimeMs: 850, trail: true, priority: 'decorative', core: false })
+            layer('ring', RAINBOW_COLORS.slice(0, 4), { delayMs: 90, density: 42, lifetimeMs: 900, strobe: true, priority: 'decorative', core: false }),
+            layer('ring', RAINBOW_COLORS.slice(4), { delayMs: 180, density: 32, lifetimeMs: 850, priority: 'decorative', core: false })
           ]
         })
       ]

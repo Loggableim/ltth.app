@@ -160,6 +160,65 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
     }
   );
 
+  test.each([[1920, 1080], [1080, 1920]])(
+    'sizes ordinary Furry glyphs by normalized viewport extent at %ix%i',
+    (width, height) => {
+      const showPlan = new FinaleShowPlanner().plan({
+        id: `ordinary-glyph-${width}-${height}`,
+        style: 'furry-celebration',
+        length: 'short',
+        orientation: width > height ? 'landscape' : 'portrait',
+        intensity: 5,
+        seed: 417
+      });
+      const runtime = buildShowPlanV2Runtime(showPlan, { width, height, playSound: false });
+      const glyphEvent = runtime.events.find(event =>
+        event.type === 'finale-v2-layer' && event.layer.glyph === 'boykisser');
+      const engine = makeEngine(width, height);
+
+      expect(engine.spawnLayer(glyphEvent.layer, glyphEvent.context)).toBe(true);
+      const command = engine.spawnQueue[0];
+      const midpointSeconds = command.particleDuration * 0.5;
+      const decay = command.drag * 60;
+      const displacement = (1 - Math.exp(-decay * midpointSeconds)) / decay;
+      const perspective = 4 / (4 - command.burstDepth);
+      const particleRadius = command.size * perspective;
+      const xRadius = 0.9 * 218 * command.intensity * displacement * perspective;
+      const visibleWidth = xRadius * 2 + particleRadius * 2;
+
+      expect(glyphEvent.context.renderHints.glyphExtent).toBeCloseTo(0.0715, 6);
+      expect(visibleWidth / width).toBeGreaterThanOrEqual(0.07);
+      expect(visibleWidth / width).toBeLessThanOrEqual(0.08);
+    }
+  );
+
+  test('scales depth rockets from the shorter viewport edge while preserving the 32px standard default', () => {
+    const rocketSize = (width, height, renderHints, options = {}) => {
+      const engine = makeEngine(width, height);
+      engine.spawnRocket({
+        origin: { x: width / 2, y: height }, target: { x: width / 2, y: height / 3 },
+        duration: 1, renderHints, seed: 77, ...options
+      });
+      return engine.spawnQueue[0].size;
+    };
+
+    expect(rocketSize(1920, 1080, { depthEnabled: true })).toBe(22);
+    expect(rocketSize(1080, 1920, { depthEnabled: true })).toBe(22);
+    expect(rocketSize(1280, 720, { depthEnabled: true })).toBe(18);
+    expect(rocketSize(720, 1280, { depthEnabled: true })).toBe(18);
+    expect(rocketSize(1920, 1080, undefined)).toBe(32);
+    expect(rocketSize(1080, 1920, undefined, { headTextureIndex: 2 })).toBe(32);
+  });
+
+  test('holds curated glyphs on screen with brighter chroma and a 30 percent glow lift', () => {
+    const shader = makeEngine()._particleShader();
+
+    expect(shader).toContain('if(shape>=17u&&shape<=26u){return smoothstep(0.0,0.08,t)*(1.0-smoothstep(0.64,1.0,t));}');
+    expect(shader).toContain('fn glyphMaterialColor(base:vec3f,t:f32)->vec3f');
+    expect(shader).toContain('in.shape>=17u&&in.shape<=26u');
+    expect(shader).toContain('let glyphGlow=select(1.0,1.3,in.shape>=17u&&in.shape<=26u);');
+  });
+
   test('uses alignment-safe XYZ particle and trail layouts with calibrated projection and planar glyphs', () => {
     const engine = makeEngine();
     const resources = engine._createResources.toString();
