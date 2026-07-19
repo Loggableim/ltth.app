@@ -2,7 +2,7 @@
 
 ## Status and decision
 
-The original design was approved on 2026-07-19. The C6/C7 visual amendment for Boykisser fidelity and complete rendered bounds was added from subsequent user feedback and awaits renewed approval before implementation planning resumes. The selected approach is contract-first hardening of the existing plugin. The renderer will not be rewritten, and the work will not stop at production-only hotfixes.
+The original design and the subsequent C6/C7 visual amendment for Boykisser fidelity and complete rendered bounds were approved on 2026-07-19. The selected approach is contract-first hardening of the existing plugin. The renderer will not be rewritten, and the work will not stop at production-only hotfixes.
 
 The completed plugin will be released as `3.1.1` with `devStatus: "stable"` and `enabled: false`. It remains opt-in because it requires the Loggableim OBS WebGPU build. Standard OBS remains unsupported.
 
@@ -116,7 +116,7 @@ Adaptive pressure includes allocated delayed particles and recent cumulative dro
 
 ### Visible bounds cover the rendered envelope, not only its center
 
-Every submitted command is fitted at actual GPU admission against the current logical viewport after resolution, orientation, and depth are known. A single shape-envelope registry covers all current renderable IDs 0 through 26: every legacy shape, standard and avatar-headed rockets, every V2 primitive, and every V2 glyph. Adding a new renderable shape without an envelope profile fails a contract test.
+Every submitted command is fitted at actual GPU admission against the current logical viewport after resolution, orientation, and depth are known. A single shape-envelope registry covers all current renderable IDs 0 through 26 plus the three real rocket variants: every legacy shape, standard, avatar-headed, and decal/image rockets, every V2 primitive, and every V2 glyph. Adding a new renderable shape or rocket variant without an envelope profile fails a contract test.
 
 The conservative envelope includes the shape's maximum particle displacement over its visible lifetime, gravity/drag/turbulence, perspective scale, rotated particle or rocket quad, trail width, split children, glow, and bloom radius. If an envelope would cross the viewport, the complete correlated effect group is translated into the safe region first and, only when translation cannot fit it, uniformly reduced with one shared intensity/size transform so its proportions, formation spacing, and rocket path remain intact. Individual vertices and particles are never clamped at the clip edge because that would deform stars, rings, glyphs, and rocket bodies.
 
@@ -177,7 +177,7 @@ Manifest version, README version text, overlay asset cache keys, settings/design
 | B9 | Chat | An empty keyword matches every message. | Empty keywords are discarded and cannot trigger. |
 | B10 | Follower API | Empty request bodies cause 500 and handler rejection is reported as success. | Defaults work; status/body reflect the handler result. |
 | B11 | Performance config | Minimum FPS values can exceed target FPS. | Relational normalization produces a coherent configuration. |
-| B12 | Flow | Finale Flow discards the `triggerFinale()` result. | Flow returns the structured execution result. |
+| B12 | Flow | The real PluginAPI invokes Flow descriptor objects as functions, and Finale Flow also discards the `triggerFinale()` result. | Function/descriptor registration remains compatible and both Flow actions return their structured execution result. |
 | B13 | Upload | Substring filtering accepts extensions such as `.mp3evil`. | Extension, MIME, and signature validation reject disguised files with 4xx. |
 | G1 | Image atlas | The atlas exhausts after 63 images and both image/promise caches grow without bound. | Safe eviction, bounded caches, timeout/retry, and post-63 reuse work. |
 | G2 | GPU capacity | `maxTotalParticles` and benchmark presets do not resize the live pool. | Allocated GPU capacity always matches acknowledged config. |
@@ -247,7 +247,7 @@ Using installed Chrome/D3D WebGPU:
 
 ### Real OBS WebGPU acceptance
 
-Before live testing, snapshot plugin configuration, OBS source dimensions/orientation, and active source state. Refresh the exact `fireworks` browser source served by the authoritative worktree, then restore the snapshot after the matrix. Require fresh telemetry with:
+Before runtime testing, require both OBS streaming and recording inactive, then snapshot plugin configuration, OBS source dimensions/orientation, and active source state. Refresh the exact `fireworks` browser source served by the authoritative worktree, then restore and verify the snapshot after the matrix. Subscribe to output-state changes and guard every mutation/capture. If an output becomes active mid-run, stop all further OBS mutations, restore HTTP-only plugin config, persist the immutable OBS recovery snapshot with a failed/unrestored report, and require an explicit non-live recovery run before acceptance can pass; mutating the source during an active output is never an acceptable way to satisfy restoration. Require fresh telemetry with:
 
 - `state=ready`;
 - `rendererProtocol=3`;
@@ -257,7 +257,7 @@ Before live testing, snapshot plugin configuration, OBS source dimensions/orient
 
 Run all 54 style/length/orientation combinations once. Capture telemetry and representative opening/highlight/finale frames. Require no clipping, collapsed targets, important action outside safe areas, unexplained dead holding time, or activity inside declared rest windows. Inspect the transparent top guard band throughout representative star, ring, standard-rocket, and high-intensity sequences rather than accepting center-point coordinates as proof.
 
-For Furry Celebration, require a centered readable unclipped hero in both aspects, visible depth progression, Pride accents, and genuine 600/1,000/1,500 ms reveal gaps. Captures must clearly show the rounded cat silhouette, paired inner ears, eyes, nose, W-smile, tongue, and blush at actual OBS output size; a wolf/fox reading fails acceptance.
+For Furry Celebration, require a centered readable unclipped hero in both aspects, visible depth progression, Pride accents, and genuine 600/1,000/1,500 ms reveal gaps. Captures must clearly show the rounded cat silhouette, paired inner ears, eyes, nose, W-smile, tongue, and blush at actual OBS output size; a wolf/fox reading fails acceptance. Automated geometry/color/guard checks are necessary but not sufficient: the six report-linked hero PNGs require an explicit hash-bound human approval, performed offline without reconnecting to OBS.
 
 Run a long 4K stress show with adaptive performance enabled and disabled. With adaptive enabled, p95 overlay FPS must remain at or above the normalized minimum FPS after warm-up, render scale must stay inside configured bounds, and renderer/device errors and command drops must remain zero. With adaptive disabled, the renderer must honor the opt-out and report truthful pressure without silently changing quality.
 
