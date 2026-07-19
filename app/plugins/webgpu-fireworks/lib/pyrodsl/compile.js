@@ -94,7 +94,7 @@ function compileShell(shell, seed, path, id) {
 
 function compileShowDefinition(source, options = {}) {
   const definition = cloneNormalizedShowDefinition(source);
-  const validation = validateShowDefinition(definition);
+  const validation = validateShowDefinition(source);
   const variantName = options.variant || 'long';
   const supportedVariant = Object.prototype.hasOwnProperty.call(VARIANT_PRESETS, variantName);
   const availableVariant = Object.prototype.hasOwnProperty.call(definition.variants, variantName);
@@ -130,7 +130,7 @@ function compileShowDefinition(source, options = {}) {
 
   return {
     planVersion: SHOW_PLAN_VERSION,
-    id: `${definition.id}:${variantName}:${seed}`,
+    id: `${definition.id}:${variantName}`,
     definitionId: definition.id,
     metadata: cloneValue(definition.metadata),
     style: definition.id,

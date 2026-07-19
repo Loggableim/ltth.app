@@ -52,33 +52,53 @@ function selectCueIndexes(cues, targetVariant, seed) {
 
 function deriveVariant(longVariant, targetVariant, seed) {
   const indexes = selectCueIndexes(longVariant.cues, targetVariant, seed);
-  const cues = indexes.map(index => {
+  const scheduledCues = indexes.map(index => {
     const cue = cloneValue(longVariant.cues[index]);
     const mappedTime = transferTime(cue.timeMs, cue.phase, targetVariant);
     const tailMs = Math.max(0, ...cue.shells.flatMap(shell => (
       shell.layers.map(layer => layer.delayMs + layer.lifetimeMs)
     )));
-    cue.timeMs = Math.min(mappedTime, VARIANT_PRESETS[targetVariant].durationMs - tailMs);
-    return cue;
+    const window = VARIANT_PRESETS[targetVariant].windows[phaseWindowKey(cue.phase)];
+    const latestTime = VARIANT_PRESETS[targetVariant].durationMs - tailMs;
+    cue.timeMs = Math.min(mappedTime, latestTime);
+    return { cue, earliestTime: window ? window[0] : 0, latestTime, tailMs };
   });
-  cues.sort((left, right) => left.timeMs - right.timeMs);
-  for (let index = 1; index < cues.length; index++) {
-    if (cues[index].timeMs <= cues[index - 1].timeMs) cues[index].timeMs = cues[index - 1].timeMs + 1;
+
+  for (let index = scheduledCues.length - 2; index >= 0; index--) {
+    const current = scheduledCues[index];
+    const next = scheduledCues[index + 1];
+    current.cue.timeMs = Math.min(current.cue.timeMs, next.cue.timeMs - 1, current.latestTime);
+  }
+  for (let index = 0; index < scheduledCues.length; index++) {
+    const current = scheduledCues[index];
+    const previous = scheduledCues[index - 1];
+    const impossible = current.cue.timeMs < current.earliestTime
+      || current.cue.timeMs < 0
+      || current.cue.timeMs > current.latestTime
+      || (previous && current.cue.timeMs <= previous.cue.timeMs);
+    if (impossible) {
+      throw new PyroDSLValidationError([{
+        code: 'derivation_schedule_impossible',
+        path: `variants.${targetVariant}.cues.${index}.timeMs`,
+        message: 'Derived cue timing cannot preserve ordering, phase window, and layer tail.',
+        details: {
+          earliestTimeMs: current.earliestTime,
+          latestTimeMs: current.latestTime,
+          tailMs: current.tailMs
+        }
+      }], { variants: {} });
+    }
   }
   return {
     durationMs: VARIANT_PRESETS[targetVariant].durationMs,
-    cues
+    cues: scheduledCues.map(entry => entry.cue)
   };
 }
 
 function deriveShowVariants(source, options = {}) {
-  const definition = cloneNormalizedShowDefinition(source);
-  const masterOnly = {
-    ...definition,
-    variants: definition.variants.long ? { long: definition.variants.long } : {}
-  };
-  const validation = validateShowDefinition(masterOnly);
+  const validation = validateShowDefinition(source);
   if (!validation.valid) throw new PyroDSLValidationError(validation.errors, validation.diagnostics);
+  const definition = cloneNormalizedShowDefinition(source);
 
   const requested = options.variants === undefined ? ['medium', 'short'] : options.variants;
   if (!Array.isArray(requested) || requested.some(name => !['medium', 'short'].includes(name))) {
@@ -93,7 +113,12 @@ function deriveShowVariants(source, options = {}) {
     if (definition.variants[targetVariant] && options.overwrite !== true) continue;
     definition.variants[targetVariant] = deriveVariant(definition.variants.long, targetVariant, seed);
   }
-  return cloneNormalizedShowDefinition(definition);
+  const derived = cloneNormalizedShowDefinition(definition);
+  const derivedValidation = validateShowDefinition(derived);
+  if (!derivedValidation.valid) {
+    throw new PyroDSLValidationError(derivedValidation.errors, derivedValidation.diagnostics);
+  }
+  return derived;
 }
 
 module.exports = { deriveShowVariants, transferTime, selectCueIndexes };

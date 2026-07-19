@@ -25,11 +25,93 @@ const { cloneNormalizedShowDefinition } = require('./normalize');
 
 const COLOR_PATTERN = /^#[0-9a-f]{6}([0-9a-f]{2})?$/i;
 const ID_PATTERN = /^[a-z0-9][a-z0-9:_-]{0,127}$/i;
+const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value || {}, key);
+const isObject = value => Boolean(value && typeof value === 'object' && !Array.isArray(value));
 
 function error(code, path, message, details) {
   const result = { code, path, message };
   if (details !== undefined) result.details = details;
   return result;
+}
+
+function inspectRawObject(errors, value, path, allowed, required = []) {
+  if (!isObject(value)) return;
+  for (const key of Object.keys(value)) {
+    if (!allowed.includes(key)) {
+      const propertyPath = path ? `${path}.${key}` : key;
+      errors.push(error('unknown_property', propertyPath, 'Property is not part of ShowDefinitionV1.', {
+        property: key
+      }));
+    }
+  }
+  for (const key of required) {
+    if (!hasOwn(value, key)) {
+      const propertyPath = path ? `${path}.${key}` : key;
+      errors.push(error('required_property_missing', propertyPath, 'Required ShowDefinitionV1 property is missing.', {
+        property: key
+      }));
+    }
+  }
+}
+
+function inspectRawDefinition(errors, source) {
+  inspectRawObject(errors, source, '',
+    ['schemaVersion', 'id', 'metadata', 'materialProfile', 'autoEligible', 'variants'],
+    ['schemaVersion', 'id', 'metadata', 'materialProfile', 'autoEligible', 'variants']);
+
+  inspectRawObject(errors, source.metadata, 'metadata',
+    ['name', 'description', 'author', 'tags'], ['name']);
+  inspectRawObject(errors, source.variants, 'variants',
+    ['short', 'medium', 'long'], ['long']);
+
+  if (!isObject(source.variants)) return;
+  for (const variantName of ['short', 'medium', 'long']) {
+    const variant = source.variants[variantName];
+    if (!isObject(variant)) continue;
+    const variantPath = `variants.${variantName}`;
+    inspectRawObject(errors, variant, variantPath, ['durationMs', 'cues'], ['durationMs', 'cues']);
+    if (!Array.isArray(variant.cues)) continue;
+    variant.cues.forEach((cue, cueIndex) => {
+      if (!isObject(cue)) return;
+      const cuePath = `${variantPath}.cues.${cueIndex}`;
+      inspectRawObject(errors, cue, cuePath,
+        ['timeMs', 'phase', 'formation', 'importance', 'shells'],
+        ['timeMs', 'phase', 'formation', 'importance', 'shells']);
+      if (!Array.isArray(cue.shells)) return;
+      cue.shells.forEach((shell, shellIndex) => {
+        if (!isObject(shell)) return;
+        const shellPath = `${cuePath}.shells.${shellIndex}`;
+        inspectRawObject(errors, shell, shellPath,
+          ['origin', 'target', 'launchMode', 'tier', 'palette', 'layers'],
+          ['origin', 'target', 'launchMode', 'tier', 'palette', 'layers']);
+        for (const coordinateName of ['origin', 'target']) {
+          const coordinatePath = `${shellPath}.${coordinateName}`;
+          inspectRawObject(errors, shell[coordinateName], coordinatePath, ['x', 'y'], ['x', 'y']);
+          if (isObject(shell[coordinateName])) {
+            for (const axis of ['x', 'y']) {
+              inspectRawObject(errors, shell[coordinateName][axis], `${coordinatePath}.${axis}`,
+                ['min', 'max'], ['min', 'max']);
+            }
+          }
+        }
+        if (!Array.isArray(shell.layers)) return;
+        shell.layers.forEach((layer, layerIndex) => {
+          if (!isObject(layer)) return;
+          inspectRawObject(errors, layer, `${shellPath}.layers.${layerIndex}`, [
+            'primitive', 'delayMs', 'density', 'size', 'lifetimeMs', 'gravity', 'drag',
+            'trail', 'split', 'strobe', 'colors', 'priority', 'core', 'glyph'
+          ], [
+            'primitive', 'density', 'size', 'lifetimeMs', 'gravity', 'drag',
+            'trail', 'split', 'strobe', 'colors'
+          ]);
+          for (const property of ['size', 'gravity', 'drag']) {
+            inspectRawObject(errors, layer[property], `${shellPath}.layers.${layerIndex}.${property}`,
+              ['min', 'max'], ['min', 'max']);
+          }
+        });
+      });
+    });
+  }
 }
 
 function isRange(value) {
@@ -354,6 +436,7 @@ function validateShowDefinition(source) {
       diagnostics
     };
   }
+  inspectRawDefinition(errors, source);
   const definition = cloneNormalizedShowDefinition(source);
   if (definition.schemaVersion !== SHOW_DEFINITION_VERSION) {
     errors.push(error('unsupported_schema_version', 'schemaVersion', `Only ShowDefinitionV${SHOW_DEFINITION_VERSION} is supported.`, {

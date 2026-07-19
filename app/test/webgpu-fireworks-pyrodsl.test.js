@@ -173,6 +173,55 @@ describe('PyroDSL contract and normalization', () => {
 });
 
 describe('PyroDSL validation', () => {
+  test('enforces required raw contract fields before applying defaults', () => {
+    const definition = validDefinition();
+    delete definition.schemaVersion;
+    delete definition.autoEligible;
+
+    const result = validateShowDefinition(definition);
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'required_property_missing', path: 'schemaVersion' }),
+      expect.objectContaining({ code: 'required_property_missing', path: 'autoEligible' })
+    ]));
+  });
+
+  test('rejects unknown top-level and nested shader/SVG-like properties', () => {
+    const definition = validDefinition();
+    const targetCue = definition.variants.long.cues[0];
+    const targetShell = targetCue.shells[0];
+    const targetLayer = targetShell.layers[0];
+    definition.customShader = 'fn main() {}';
+    targetCue.customSvg = '<svg><path /></svg>';
+    targetShell.svgPath = 'M0 0 L1 1';
+    targetShell.target.z = 0.5;
+    targetLayer.customShader = '@fragment fn main() {}';
+    targetLayer.size = { min: 0.8, max: 1.2, customShader: 'range payload' };
+
+    const result = validateShowDefinition(definition);
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'unknown_property', path: 'customShader' }),
+      expect.objectContaining({ code: 'unknown_property', path: 'variants.long.cues.0.customSvg' }),
+      expect.objectContaining({ code: 'unknown_property', path: 'variants.long.cues.0.shells.0.svgPath' }),
+      expect.objectContaining({ code: 'unknown_property', path: 'variants.long.cues.0.shells.0.target.z' }),
+      expect.objectContaining({ code: 'unknown_property', path: 'variants.long.cues.0.shells.0.layers.0.customShader' }),
+      expect.objectContaining({ code: 'unknown_property', path: 'variants.long.cues.0.shells.0.layers.0.size.customShader' })
+    ]));
+  });
+
+  test('keeps documented layer defaults optional in raw definitions', () => {
+    const definition = validDefinition();
+    const targetLayer = definition.variants.long.cues[0].shells[0].layers[0];
+    delete targetLayer.delayMs;
+    delete targetLayer.priority;
+    delete targetLayer.core;
+
+    expect(validateShowDefinition(definition)).toMatchObject({ valid: true, errors: [] });
+  });
+
   test('never throws for malformed nested values and returns structured errors', () => {
     const malformed = validDefinition();
     malformed.metadata = null;
@@ -405,6 +454,19 @@ describe('PyroDSL deterministic compilation', () => {
     expect(reseeded.cues[0].shells[0].layers[0].size).not.toBe(first.cues[0].shells[0].layers[0].size);
   });
 
+  test('keeps structural plan and child IDs stable across seeds without stochastic fields', () => {
+    const definition = validDefinition();
+    const first = compileShowDefinition(definition, { variant: 'long', seed: 1 });
+    const reseeded = compileShowDefinition(definition, { variant: 'long', seed: 2 });
+
+    expect(reseeded.id).toBe(first.id);
+    expect(reseeded.cues.map(item => item.id)).toEqual(first.cues.map(item => item.id));
+    expect(reseeded.cues.flatMap(item => item.shells.map(entry => entry.id)))
+      .toEqual(first.cues.flatMap(item => item.shells.map(entry => entry.id)));
+    expect(reseeded.cues.flatMap(item => item.shells.flatMap(entry => entry.layers.map(layerEntry => layerEntry.id))))
+      .toEqual(first.cues.flatMap(item => item.shells.flatMap(entry => entry.layers.map(layerEntry => layerEntry.id))));
+  });
+
   test('throws a structured validation error instead of compiling invalid input', () => {
     const definition = validDefinition();
     definition.variants.long.durationMs = 1;
@@ -497,5 +559,56 @@ describe('PyroDSL variant derivation', () => {
 
     const overwritten = deriveShowVariants(definition, { variants: ['short'], seed: 1, overwrite: true });
     expect(overwritten.variants.short).not.toEqual(definition.variants.short);
+  });
+
+  test('deduplicates compressed finale waves without pushing either tail past the duration', () => {
+    const definition = validDefinition();
+    delete definition.variants.short;
+    delete definition.variants.medium;
+    definition.variants.long.cues = [
+      cue(2000, 'opening'),
+      cue(7000, 'build'),
+      cue(14000, 'highlight'),
+      cue(23000, 'finale', {
+        formation: 'finale-wave-1',
+        importance: 'final-wave',
+        shells: [shell({ layers: [layer({ lifetimeMs: 2000 })] })]
+      }),
+      cue(24000, 'finale', {
+        formation: 'finale-wave-2',
+        importance: 'final-wave',
+        shells: [shell({ layers: [layer({ lifetimeMs: 2000 })] })]
+      })
+    ];
+
+    const derived = deriveShowVariants(definition, { variants: ['short'], seed: 5 });
+    const finaleTimes = derived.variants.short.cues
+      .filter(item => item.phase === 'finale')
+      .map(item => item.timeMs);
+
+    expect(finaleTimes).toEqual([7999, 8000]);
+    expect(validateShowDefinition(derived).valid).toBe(true);
+    for (const finaleCue of derived.variants.short.cues.filter(item => item.phase === 'finale')) {
+      expect(finaleCue.timeMs + finaleCue.shells[0].layers[0].lifetimeMs).toBeLessThanOrEqual(10000);
+    }
+  });
+
+  test('throws a structured derivation error when a tail cannot fit its target phase window', () => {
+    const definition = validDefinition();
+    delete definition.variants.short;
+    delete definition.variants.medium;
+    definition.variants.long.cues[0].timeMs = 1500;
+    definition.variants.long.cues[0].shells[0].layers[0].lifetimeMs = 10000;
+
+    expect(() => deriveShowVariants(definition, { variants: ['short'], seed: 5 }))
+      .toThrow(PyroDSLValidationError);
+    try {
+      deriveShowVariants(definition, { variants: ['short'], seed: 5 });
+    } catch (error) {
+      expect(error.errors).toContainEqual(expect.objectContaining({
+        code: 'derivation_schedule_impossible',
+        path: expect.stringMatching(/^variants\.short\.cues\./)
+      }));
+    }
   });
 });

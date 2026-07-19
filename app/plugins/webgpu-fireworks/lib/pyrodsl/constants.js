@@ -134,8 +134,8 @@ const SHOW_DEFINITION_V1_SCHEMA = deepFreeze({
       type: 'object',
       additionalProperties: false,
       required: [
-        'primitive', 'delayMs', 'density', 'size', 'lifetimeMs', 'gravity', 'drag',
-        'trail', 'split', 'strobe', 'colors', 'priority', 'core'
+        'primitive', 'density', 'size', 'lifetimeMs', 'gravity', 'drag',
+        'trail', 'split', 'strobe', 'colors'
       ],
       properties: {
         primitive: { enum: [...PRIMITIVES] },
