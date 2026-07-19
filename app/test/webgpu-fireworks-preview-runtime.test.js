@@ -150,6 +150,37 @@ function previewEvents(engine, event) {
   return engine.socket.emit.mock.calls.filter(([name, body]) => name === event && body.requestId);
 }
 
+function attachSocketLifecycle(engine) {
+  const previousIo = global.io;
+  const previousDocument = global.document;
+  const handlers = new Map();
+  const socket = {
+    id: 'renderer-1',
+    connected: true,
+    emit: jest.fn(),
+    on: jest.fn((event, handler) => handlers.set(event, handler)),
+    disconnect: jest.fn()
+  };
+  global.io = jest.fn(() => socket);
+  global.document = { visibilityState: 'visible' };
+  engine.audio.ensureContext = jest.fn().mockResolvedValue(true);
+  engine.connectSocket();
+  return {
+    socket,
+    receive(event) {
+      const handler = handlers.get(event);
+      expect(handler).toBeDefined();
+      return handler();
+    },
+    restore() {
+      if (previousIo === undefined) delete global.io;
+      else global.io = previousIo;
+      if (previousDocument === undefined) delete global.document;
+      else global.document = previousDocument;
+    }
+  };
+}
+
 describe('WebGPU non-queued preview runtime', () => {
   test('atomically reserves a ready renderer, ACKs it, and executes the supplied V2 timing and tail', () => {
     const engine = makeRuntime();
@@ -245,6 +276,36 @@ describe('WebGPU non-queued preview runtime', () => {
     });
     expect(engine.finaleQueue.map(entry => entry.id)).toEqual(['real-next']);
     expect(engine.finaleIds).toEqual(new Set(['real-next']));
+  });
+
+  test('preview disconnect preserves FIFO and reconnect starts the oldest queued finale first', () => {
+    const engine = makeRuntime();
+    const lifecycle = attachSocketLifecycle(engine);
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      lifecycle.receive('connect');
+      engine.handlePreviewSocketEvent(payload('preview:disconnect'));
+      engine.handleFinale({ id: 'real-first', showPlan: plan('real-first') });
+
+      lifecycle.socket.connected = false;
+      lifecycle.receive('disconnect');
+      expect(engine.currentPreview).toBeNull();
+      expect(engine.currentFinale).toBeNull();
+      expect(engine.finaleQueue.map(entry => entry.id)).toEqual(['real-first']);
+
+      expect(engine.handleFinale({ id: 'real-later', showPlan: plan('real-later') }))
+        .toMatchObject({ accepted: true, queued: true });
+      expect(engine.currentFinale).toBeNull();
+      expect(engine.finaleQueue.map(entry => entry.id)).toEqual(['real-first', 'real-later']);
+
+      lifecycle.socket.connected = true;
+      lifecycle.receive('connect');
+      expect(engine.currentFinale).toMatchObject({ id: 'real-first' });
+      expect(engine.finaleQueue.map(entry => entry.id)).toEqual(['real-later']);
+    } finally {
+      lifecycle.restore();
+      consoleError.mockRestore();
+    }
   });
 
   test('a preview exception reports failed, cleans only preview state, and starts the next real finale', () => {

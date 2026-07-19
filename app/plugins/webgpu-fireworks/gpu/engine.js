@@ -935,6 +935,7 @@ class WebGPUFireworksEngine {
                 benchmark: this.isBenchmark, visible: document.visibilityState !== 'hidden', backend: 'webgpu'
             });
             this.emitStatus();
+            this.startNextFinaleIfReady(this.getRuntimeNow());
             this.audio.ensureContext();
         });
         this.socket.on('webgpu-fireworks:trigger', data => this.handleIncomingTrigger(data));
@@ -2539,7 +2540,9 @@ class WebGPUFireworksEngine {
                 queueLength: this.finaleQueue.length
             };
         }
-        const queued = Boolean(this.currentFinale || this.currentPreview || rendererKnownUnavailable);
+        const queued = Boolean(
+            this.currentFinale || this.currentPreview || this.finaleQueue.length > 0 || rendererKnownUnavailable
+        );
         this.finaleIds.add(id);
         let details;
         if (queued) {

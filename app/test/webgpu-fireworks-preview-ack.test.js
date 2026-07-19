@@ -173,6 +173,34 @@ describe('WebGPU preview acknowledgement routing', () => {
     expect(harness.plugin.pendingPreviewRequests.size).toBe(0);
   });
 
+  test('settles a correlated renderer-not-ready rejection after telemetry leaves ready', async () => {
+    const harness = createHarness();
+    dataDirs.push(harness.dataDir);
+    const target = harness.connect('renderer-transitioning');
+    target.onPreview = payload => {
+      target.receive('webgpu-fireworks:renderer-status', {
+        state: 'initializing',
+        finaleActive: false,
+        finaleQueueLength: 0,
+        benchmark: false
+      });
+      target.receive('webgpu-fireworks:preview-ack', {
+        requestId: payload.requestId,
+        rendererId: target.id,
+        accepted: false,
+        reason: 'RENDERER_NOT_READY'
+      });
+    };
+
+    const res = await harness.invoke();
+
+    expect(res).toMatchObject({
+      statusCode: 503,
+      body: { success: false, code: 'RENDERER_NOT_READY' }
+    });
+    expect(harness.plugin.pendingPreviewRequests.size).toBe(0);
+  });
+
   test('maps a correlated invalid-preview renderer rejection to a typed HTTP 422', async () => {
     const harness = createHarness();
     dataDirs.push(harness.dataDir);

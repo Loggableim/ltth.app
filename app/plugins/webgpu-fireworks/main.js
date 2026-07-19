@@ -562,8 +562,15 @@ class FireworksPlugin {
         const telemetry = this.overlayTelemetry.get(pending.rendererId);
         if (
             !telemetry || telemetry.updatedAt < Date.now() - 5000 ||
-            telemetry.benchmark === true || telemetry.state !== 'ready'
+            telemetry.benchmark === true
         ) return false;
+
+        if (data.accepted !== true && data.reason === 'RENDERER_NOT_READY') {
+            return this.settlePendingPreview(requestId, {
+                error: this.previewDispatchError('RENDERER_NOT_READY')
+            });
+        }
+        if (telemetry.state !== 'ready') return false;
 
         if (data.accepted === true) {
             return this.settlePendingPreview(requestId, {
