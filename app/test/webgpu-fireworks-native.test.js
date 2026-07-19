@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 
 const pluginRoot = path.join(__dirname, '..', 'plugins', 'webgpu-fireworks');
 const read = relative => fs.readFileSync(path.join(pluginRoot, relative), 'utf8');
@@ -28,6 +29,16 @@ describe('WebGPU Fireworks native migration', () => {
     expect(settingsHtml).toContain('show-style-options.js?v=3.0.0-style-options-1');
     expect(settingsHtml).toContain('settings.js?v=3.0.0-avatar-head-1');
     expect(overlaySource).not.toContain('webgl-particle-engine');
+  });
+
+  test('loads renderer and orchestration as consecutive classic scripts', () => {
+    const browserContext = vm.createContext({
+      WebGPUFireworksSpawnCommandPolicy: {},
+      WebGPUFireworksShowPlanV2Runtime: {}
+    });
+
+    expect(() => new vm.Script(rendererSource).runInContext(browserContext)).not.toThrow();
+    expect(() => new vm.Script(orchestrationSource).runInContext(browserContext)).not.toThrow();
   });
 
   test('migrates all legacy renderer values to webgpu', () => {

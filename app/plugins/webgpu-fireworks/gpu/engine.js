@@ -3,7 +3,7 @@
  * TikTok/socket events and audio remain on the CPU. All visible particle
  * simulation and rendering is delegated to WebGPUParticleEngine.
  */
-const SpawnCommandPolicy = typeof module !== 'undefined' && module.exports
+const OrchestrationSpawnCommandPolicy = typeof module !== 'undefined' && module.exports
     ? require('./spawn-command-policy')
     : globalThis.WebGPUFireworksSpawnCommandPolicy;
 const ShowPlanV2Runtime = typeof module !== 'undefined' && module.exports
@@ -1310,7 +1310,7 @@ class WebGPUFireworksEngine {
         const metrics = this.renderer?.getMetrics?.() || {};
         const particleCapacity = Math.max(1, Number(this.renderer?.maxParticles) || Number(this.config.maxTotalParticles) || 1);
         const activeParticleRatio = Math.max(0, Math.min(1, Number(metrics.activeParticles) / particleCapacity || 0));
-        return SpawnCommandPolicy.deriveAdaptiveDegradationPolicy({
+        return OrchestrationSpawnCommandPolicy.deriveAdaptiveDegradationPolicy({
             performanceMode: this.config.toasterMode ? 'toaster' : this.performanceMode,
             activeParticleRatio,
             activeLayerLoad
