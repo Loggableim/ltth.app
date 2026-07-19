@@ -299,6 +299,34 @@ describe('ShowPlanV2 overlay dispatch', () => {
     });
   });
 
+  test('forwards controlled depth hints to both the rocket flight and burst layer', () => {
+    let now = 10000;
+    const engine = makeRuntime(now);
+    engine.getRuntimeNow = () => now;
+    const renderHints = { depthEnabled: true, launchDepth: -0.6, burstDepth: 0.7, glyphScale: 1.4 };
+    const showPlan = v2Plan('depth-dispatch', {
+      durationMs: 5000,
+      cues: [{
+        id: 'depth-dispatch:opening', beatAtMs: 3000, timeMs: 3000,
+        phase: 'opening', formation: 'single', importance: 'standard',
+        shells: [v2Shell('depth-dispatch:rocket', 'rocket', { renderHints })]
+      }]
+    });
+    engine.handleFinale({ id: 'depth-dispatch', showPlan, playSound: false });
+
+    const rocketEvent = engine.timelineQueue.find(event => event.type === 'finale-v2-rocket');
+    now = rocketEvent.due;
+    engine.processTimeline(now);
+    expect(engine.renderer.spawnRocket).toHaveBeenCalledWith(expect.objectContaining({ renderHints }));
+
+    now = 13000;
+    engine.processTimeline(now);
+    expect(engine.renderer.spawnLayer).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ renderHints })
+    );
+  });
+
   test('uses quality degradation only at submission time without changing the planned choreography', () => {
     let now = 10000;
     const engine = makeRuntime(now);

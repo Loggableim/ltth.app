@@ -20,6 +20,12 @@
     'furry-celebration'
   ]);
   const COLOR_PATTERN = /^#[0-9a-f]{6}([0-9a-f]{2})?$/i;
+  const DEFAULT_RENDER_HINTS = Object.freeze({
+    depthEnabled: false,
+    launchDepth: 0,
+    burstDepth: 0,
+    glyphScale: 1
+  });
   const TIER_RANK = Object.freeze({ small: 0, medium: 1, big: 2, massive: 3 });
   const ROLE_ALIASES = Object.freeze({
     'baroque-wall': 'brocade',
@@ -78,6 +84,31 @@
     }
   }
 
+  function assertRenderHints(renderHints, path) {
+    if (!renderHints || typeof renderHints !== 'object' || Array.isArray(renderHints)) {
+      fail(`${path} must be an object`);
+    }
+    if (typeof renderHints.depthEnabled !== 'boolean') fail(`${path}.depthEnabled must be boolean`);
+    for (const property of ['launchDepth', 'burstDepth']) {
+      if (!Number.isFinite(renderHints[property]) || renderHints[property] < -1 || renderHints[property] > 1) {
+        fail(`${path}.${property} must be finite and between -1 and 1`);
+      }
+    }
+    if (!Number.isFinite(renderHints.glyphScale) || renderHints.glyphScale < 0.5 || renderHints.glyphScale > 2) {
+      fail(`${path}.glyphScale must be finite and between 0.5 and 2`);
+    }
+  }
+
+  function normalizeRenderHints(renderHints) {
+    if (renderHints === undefined) return { ...DEFAULT_RENDER_HINTS };
+    return {
+      depthEnabled: renderHints.depthEnabled,
+      launchDepth: Number(renderHints.launchDepth),
+      burstDepth: Number(renderHints.burstDepth),
+      glyphScale: Number(renderHints.glyphScale)
+    };
+  }
+
   function assertShowPlanV2(showPlan) {
     const version = Number(showPlan?.planVersion);
     if (version !== PLAN_VERSION) throw new TypeError(`Unsupported ShowPlan version ${String(showPlan?.planVersion)}.`);
@@ -98,6 +129,7 @@
         const shellPath = `${cuePath}.shells.${shellIndex}`;
         if (!shell || typeof shell !== 'object' || Array.isArray(shell)) fail(`${shellPath} must be an object`);
         if (!LAUNCH_MODES.has(shell.launchMode)) fail(`${shellPath} launch mode is unsupported`);
+        if (shell.renderHints !== undefined) assertRenderHints(shell.renderHints, `${shellPath}.renderHints`);
         assertPoint(shell.origin, `${shellPath}.origin`, 1.1);
         assertPoint(shell.target, `${shellPath}.target`, 1);
         if (!TIERS.has(shell.tier)) fail(`${shellPath}.tier is unsupported`);
@@ -178,9 +210,11 @@
     return { x: Number(point.x) * width, y: Number(point.y) * height };
   }
 
-  function calculateRocketFlightMs(target) {
+  function calculateRocketFlightMs(target, renderHints = DEFAULT_RENDER_HINTS) {
     const travel = 1 - clamp(Number(target?.y) || 0, 0, 1);
-    return Math.round((0.55 + travel * 1.25) * 1000);
+    if (renderHints.depthEnabled !== true) return Math.round((0.55 + travel * 1.25) * 1000);
+    const depthTravel = Number(renderHints.burstDepth) - Number(renderHints.launchDepth);
+    return Math.round((0.55 + Math.hypot(travel, depthTravel) * 1.25) * 1000);
   }
 
   function groupRocketLaunches(rocketEvents, windowMs = 50) {
@@ -234,8 +268,9 @@
         const shellId = shell.id || `${cueId}:shell:${shellIndex + 1}`;
         const origin = toPixels(shell.origin, width, height);
         const target = toPixels(shell.target, width, height);
+        const renderHints = normalizeRenderHints(shell.renderHints);
         if (shell.launchMode === 'rocket') {
-          const naturalFlightDurationMs = calculateRocketFlightMs(shell.target);
+          const naturalFlightDurationMs = calculateRocketFlightMs(shell.target, renderHints);
           const flightDurationMs = Math.min(naturalFlightDurationMs, Math.max(0, Number(cue.beatAtMs)));
           const event = {
             type: 'finale-v2-rocket',
@@ -247,6 +282,7 @@
             shell,
             origin,
             target,
+            renderHints,
             flightDurationMs,
             beatId,
             materialProfile,
@@ -295,7 +331,8 @@
               priority: sourceLayer.priority,
               required: sourceLayer.core === true,
               beatId,
-              activeLayerLoad: null
+              activeLayerLoad: null,
+              renderHints
             }
           });
         });
@@ -387,6 +424,7 @@
     assertShowPlanV2,
     buildShowPlanV2Runtime,
     calculateRocketFlightMs,
+    normalizeRenderHints,
     resolveCueAudioProfile
   });
 });

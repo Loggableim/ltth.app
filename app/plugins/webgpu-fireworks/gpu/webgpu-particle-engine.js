@@ -12,6 +12,8 @@ const V2_TRAIL = 1 << 0;
 const V2_SPLIT_REQUESTED = 1 << 1;
 const V2_STROBE = 1 << 3;
 const V2_MARKER = 1 << 15;
+const DEPTH_METADATA_MARKER = 1 << 3;
+const DEPTH_BUCKET_COUNT = 3;
 const V2_PRIMITIVE_IDS = Object.freeze({
     radial: 10,
     ring: 11,
@@ -198,18 +200,18 @@ class WebGPUParticleEngine {
     _createResources() {
         const U = globalThis.GPUBufferUsage;
         const T = globalThis.GPUTextureUsage;
-        const particleStride = 80;
+        const particleStride = 96;
         this.buffers = {
             particles: this._createBuffer('fireworks-particles', this.maxParticles * particleStride, U.STORAGE | U.COPY_DST | U.COPY_SRC),
-            history: this._createBuffer('fireworks-trail-history', this.maxParticles * this.maxTrailSamples * 8, U.STORAGE | U.COPY_DST),
-            activeIndices: this._createBuffer('fireworks-active-indices', this.maxParticles * 4, U.STORAGE | U.COPY_SRC),
+            history: this._createBuffer('fireworks-trail-history', this.maxParticles * this.maxTrailSamples * 16, U.STORAGE | U.COPY_DST),
+            activeIndices: this._createBuffer('fireworks-active-indices', this.maxParticles * DEPTH_BUCKET_COUNT * 4, U.STORAGE | U.COPY_SRC),
             secondaryIndices: this._createBuffer('fireworks-secondary-indices', this.maxParticles * 4, U.STORAGE),
             freeIndices: this._createBuffer('fireworks-free-indices', this.maxParticles * 4, U.STORAGE | U.COPY_DST),
-            counters: this._createBuffer('fireworks-counters', 16, U.STORAGE | U.COPY_SRC | U.COPY_DST),
+            counters: this._createBuffer('fireworks-counters', 32, U.STORAGE | U.COPY_SRC | U.COPY_DST),
             commands: this._createBuffer('fireworks-spawn-commands', this.maxSpawnCommands * 112, U.STORAGE | U.COPY_DST),
             uniforms: this._createBuffer('fireworks-uniforms', 48, U.UNIFORM | U.COPY_DST),
-            coreIndirect: this._createBuffer('fireworks-core-indirect', 16, U.STORAGE | U.INDIRECT | U.COPY_DST | U.COPY_SRC),
-            trailIndirect: this._createBuffer('fireworks-trail-indirect', 16, U.STORAGE | U.INDIRECT | U.COPY_DST | U.COPY_SRC),
+            coreIndirect: this._createBuffer('fireworks-core-indirect', DEPTH_BUCKET_COUNT * 16, U.STORAGE | U.INDIRECT | U.COPY_DST | U.COPY_SRC),
+            trailIndirect: this._createBuffer('fireworks-trail-indirect', DEPTH_BUCKET_COUNT * 16, U.STORAGE | U.INDIRECT | U.COPY_DST | U.COPY_SRC),
             readback: this._createBuffer('fireworks-counter-readback', 16, U.MAP_READ | U.COPY_DST)
         };
         if (this.timestampEnabled) {
@@ -221,9 +223,17 @@ class WebGPUParticleEngine {
         const freeIndices = new Uint32Array(this.maxParticles);
         for (let i = 0; i < this.maxParticles; i++) freeIndices[i] = i;
         this.device.queue.writeBuffer(this.buffers.freeIndices, 0, freeIndices);
-        this.device.queue.writeBuffer(this.buffers.counters, 0, new Uint32Array([this.maxParticles, 0, 0, 0]));
-        this.device.queue.writeBuffer(this.buffers.coreIndirect, 0, new Uint32Array([6, 0, 0, 0]));
-        this.device.queue.writeBuffer(this.buffers.trailIndirect, 0, new Uint32Array([6, 0, 0, 0]));
+        this.device.queue.writeBuffer(this.buffers.counters, 0, new Uint32Array([this.maxParticles, 0, 0, 0, 0, 0, 0, 0]));
+        const coreIndirect = new Uint32Array(DEPTH_BUCKET_COUNT * 4);
+        const trailIndirect = new Uint32Array(DEPTH_BUCKET_COUNT * 4);
+        for (let bucket = 0; bucket < DEPTH_BUCKET_COUNT; bucket++) {
+            coreIndirect[bucket * 4] = 6;
+            coreIndirect[bucket * 4 + 3] = bucket * this.maxParticles;
+            trailIndirect[bucket * 4] = 6;
+            trailIndirect[bucket * 4 + 3] = bucket * this.maxParticles * Math.max(1, this.trailSamples - 1);
+        }
+        this.device.queue.writeBuffer(this.buffers.coreIndirect, 0, coreIndirect);
+        this.device.queue.writeBuffer(this.buffers.trailIndirect, 0, trailIndirect);
 
         this.atlasTexture = this.device.createTexture({
             label: 'fireworks-atlas',
@@ -687,6 +697,9 @@ class WebGPUParticleEngine {
             : this._styleId(context.visualStyle || this.style);
         const splitQuality = context.splitQuality === undefined ? degradation.splitQuality : context.splitQuality;
         const materialRole = effectiveLayer.priority === 'decorative' ? 2 : effectiveLayer.priority === 'accent' ? 1 : 0;
+        const renderHints = context.renderHints || {};
+        const depthEnabled = renderHints.depthEnabled === true;
+        const glyphScale = effectiveLayer.primitive === 'glyph' ? Number(renderHints.glyphScale) || 1 : 1;
         const flags = V2_MARKER | (effectiveLayer.trail ? V2_TRAIL : 0) |
             (effectiveLayer.split ? V2_SPLIT_REQUESTED : 0) | (effectiveLayer.strobe ? V2_STROBE : 0) |
             ((splitQuality & 3) << 4) | ((materialRole & 15) << 8) | ((style & 3) << 12);
@@ -705,7 +718,7 @@ class WebGPUParticleEngine {
             packedColors,
             colorCount: packedColors.length,
             flags,
-            intensity: (context.powerScale ?? 1) * scale,
+            intensity: (context.powerScale ?? 1) * scale * glyphScale,
             particleDuration: effectiveLayer.lifetimeMs / 1000,
             size: effectiveLayer.size * 6 * scale,
             gravity: effectiveLayer.gravity * 105 * scale,
@@ -713,7 +726,10 @@ class WebGPUParticleEngine {
             secondary: false,
             seed: context.seed,
             effectId: context.effectId ?? effectiveLayer.id,
-            globalCount: effectiveLayer.density
+            globalCount: effectiveLayer.density,
+            depthEnabled,
+            launchDepth: depthEnabled ? Number(renderHints.launchDepth) : 0,
+            burstDepth: depthEnabled ? Number(renderHints.burstDepth) : 0
         });
     }
 
@@ -772,6 +788,20 @@ class WebGPUParticleEngine {
         }
         if (context.powerScale !== undefined && (!Number.isFinite(context.powerScale) || context.powerScale <= 0)) {
             throw new RangeError('ShowPlanV2 powerScale must be positive.');
+        }
+        if (context.renderHints !== undefined) {
+            const hints = context.renderHints;
+            if (!hints || typeof hints !== 'object' || Array.isArray(hints) || typeof hints.depthEnabled !== 'boolean') {
+                throw new TypeError('ShowPlanV2 renderHints must contain a boolean depthEnabled.');
+            }
+            for (const property of ['launchDepth', 'burstDepth']) {
+                if (!Number.isFinite(hints[property]) || hints[property] < -1 || hints[property] > 1) {
+                    throw new RangeError(`ShowPlanV2 renderHints ${property} must be between -1 and 1.`);
+                }
+            }
+            if (!Number.isFinite(hints.glyphScale) || hints.glyphScale < 0.5 || hints.glyphScale > 2) {
+                throw new RangeError('ShowPlanV2 renderHints glyphScale must be between 0.5 and 2.');
+            }
         }
         for (const point of [context.origin || context.position, context.target]) {
             if (point !== undefined && (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y))) {
@@ -870,6 +900,8 @@ class WebGPUParticleEngine {
         const seed = this._resolveSeed(command);
         const flags = command.flags || 0;
         const isV2 = (flags & V2_MARKER) !== 0;
+        const renderHints = command.renderHints || {};
+        const depthEnabled = command.depthEnabled === true || renderHints.depthEnabled === true;
         this.spawnQueue.push({
             origin: command.origin || { x: command.x || 0, y: command.y || 0 },
             target: command.target || command.origin || { x: command.x || 0, y: command.y || 0 },
@@ -899,6 +931,9 @@ class WebGPUParticleEngine {
             pulseCount: Math.max(0, Math.min(7, Math.floor(Number(command.pulseCount) || 0))),
             packedColors: isV2 ? [...command.packedColors] : null,
             colorCount: isV2 ? command.colorCount : 0,
+            depthEnabled,
+            launchDepth: depthEnabled ? Number(command.launchDepth ?? renderHints.launchDepth) : 0,
+            burstDepth: depthEnabled ? Number(command.burstDepth ?? renderHints.burstDepth) : 0,
             username: command.username ?? null,
             userId: command.userId ?? null,
             uniqueId: command.uniqueId ?? null,
@@ -980,6 +1015,7 @@ class WebGPUParticleEngine {
         const f32 = new Float32Array(raw);
         const u32 = new Uint32Array(raw);
         let maxParticles = 0;
+        const quantizeDepth = value => Math.round((Math.max(-1, Math.min(1, value)) + 1) * 127.5 + 1e-7);
         commands.forEach((command, index) => {
             const base = index * 28;
             f32[base] = command.origin.x; f32[base + 1] = command.origin.y;
@@ -1001,7 +1037,11 @@ class WebGPUParticleEngine {
             f32[base + 22] = command.emissionDelay; f32[base + 23] = command.emissionSpread;
             u32[base + 24] = command.globalIndexBase; u32[base + 25] = command.globalCount;
             u32[base + 26] = command.effectId;
-            u32[base + 27] = (command.flags & V2_MARKER) !== 0 ? command.colorCount : command.pulseCount;
+            const lowBits = (command.flags & V2_MARKER) !== 0 ? command.colorCount : command.pulseCount;
+            u32[base + 27] = command.depthEnabled
+                ? (lowBits | DEPTH_METADATA_MARKER | (quantizeDepth(command.launchDepth) << 8) |
+                    (quantizeDepth(command.burstDepth) << 16)) >>> 0
+                : lowBits;
             maxParticles = Math.max(maxParticles, command.count);
         });
         this.device.queue.writeBuffer(this.buffers.commands, 0, raw);
@@ -1108,16 +1148,7 @@ class WebGPUParticleEngine {
             view: this.sceneTexture.createView(), clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store'
         }]});
         scenePass.setBindGroup(0, this.renderBindGroup);
-        if (this.trailsEnabled) {
-            scenePass.setPipeline(this.pipelines.trail);
-            scenePass.drawIndirect(this.buffers.trailIndirect, 0);
-        }
-        if (this.glowEnabled) {
-            scenePass.setPipeline(this.pipelines.glow);
-            scenePass.drawIndirect(this.buffers.coreIndirect, 0);
-        }
-        scenePass.setPipeline(this.pipelines.core);
-        scenePass.drawIndirect(this.buffers.coreIndirect, 0);
+        this._drawDepthBuckets(scenePass);
         scenePass.end();
 
         if (this.bloomEnabled) {
@@ -1170,6 +1201,22 @@ class WebGPUParticleEngine {
         }
         this.device.queue.submit([encoder.finish()]);
         if (this.readbackPending) this._consumeReadback();
+    }
+
+    _drawDepthBuckets(scenePass) {
+        for (let bucket = 0; bucket < DEPTH_BUCKET_COUNT; bucket++) {
+            const offset = bucket * 16;
+            if (this.trailsEnabled) {
+                scenePass.setPipeline(this.pipelines.trail);
+                scenePass.drawIndirect(this.buffers.trailIndirect, offset);
+            }
+            if (this.glowEnabled) {
+                scenePass.setPipeline(this.pipelines.glow);
+                scenePass.drawIndirect(this.buffers.coreIndirect, offset);
+            }
+            scenePass.setPipeline(this.pipelines.core);
+            scenePass.drawIndirect(this.buffers.coreIndirect, offset);
+        }
     }
 
     async _consumeReadback() {
@@ -1281,7 +1328,7 @@ class WebGPUParticleEngine {
     _computeShader() {
         return `
 struct Particle {
-  position: vec2f, velocity: vec2f, color: vec4f,
+  position: vec3f, velocity: vec3f, color: vec4f,
   life: f32, maxLife: f32, size: f32, rotation: f32,
   angularVelocity: f32, gravity: f32, drag: f32, shape: u32,
   flags: u32, seed: u32, textureIndex: u32, alive: u32,
@@ -1294,14 +1341,17 @@ struct SpawnCommand {
   wind: f32, curve: f32, emissionDelay: f32, emissionSpread: f32,
   globalIndexBase: u32, globalCount: u32, effectId: u32, colorCount: u32,
 };
-struct Counters { freeCount: atomic<u32>, activeCount: atomic<u32>, droppedCount: atomic<u32>, secondaryCount: atomic<u32> };
+struct Counters {
+  freeCount: atomic<u32>, activeCount: atomic<u32>, droppedCount: atomic<u32>, secondaryCount: atomic<u32>,
+  farCount: atomic<u32>, midCount: atomic<u32>, nearCount: atomic<u32>, pad0: atomic<u32>,
+};
 struct Uniforms {
   dt: f32, time: f32, width: f32, height: f32,
   trailSamples: u32, turbulence: f32, commandCount: u32, maxTrailSamples: u32,
   glowScale: f32, bloomLevels: u32, pad0: vec2u,
 };
 @group(0) @binding(0) var<storage, read_write> particles: array<Particle>;
-@group(0) @binding(1) var<storage, read_write> history: array<vec2f>;
+@group(0) @binding(1) var<storage, read_write> history: array<vec3f>;
 @group(0) @binding(2) var<storage, read_write> activeIndices: array<u32>;
 @group(0) @binding(3) var<storage, read_write> freeIndices: array<u32>;
 @group(0) @binding(4) var<storage, read_write> counters: Counters;
@@ -1315,7 +1365,9 @@ const V2_TRAIL = 1u;
 const V2_SPLIT_REQUESTED = 2u;
 const V2_SPLIT_EMITTED = 4u;
 const V2_STROBE = 8u;
+const V2_DEPTH = 16384u;
 const V2_MARKER = 32768u;
+const DEPTH_METADATA_MARKER = 8u;
 
 fn hash(value: u32) -> f32 { var x = value; x = ((x >> 16u) ^ x) * 0x45d9f3bu; x = ((x >> 16u) ^ x) * 0x45d9f3bu; x = (x >> 16u) ^ x; return f32(x) / 4294967295.0; }
 fn isV2(flags: u32) -> bool { return (flags & V2_MARKER) != 0u; }
@@ -1329,9 +1381,13 @@ fn unpackRgba8(packed: u32) -> vec4f {
 }
 fn commandColor(command: SpawnCommand, globalIndex: u32) -> vec4f {
   if (!isV2(command.flags)) { return bitcast<vec4f>(command.colorWords); }
-  let colorIndex = globalIndex % min(command.colorCount, 4u);
+  let colorIndex = globalIndex % min(command.colorCount & 7u, 4u);
   return unpackRgba8(command.colorWords[colorIndex]);
 }
+fn depthEnabled(command: SpawnCommand) -> bool { return (command.colorCount & DEPTH_METADATA_MARKER) != 0u; }
+fn unpackDepth(value: u32) -> f32 { return f32(value) / 127.5 - 1.0; }
+fn launchDepth(command: SpawnCommand) -> f32 { return select(0.0, unpackDepth((command.colorCount >> 8u) & 255u), depthEnabled(command)); }
+fn burstDepth(command: SpawnCommand) -> f32 { return select(0.0, unpackDepth((command.colorCount >> 16u) & 255u), depthEnabled(command)); }
 fn allocateParticle() -> u32 {
   var result = 0xffffffffu;
   loop {
@@ -1413,7 +1469,7 @@ fn glyphPoint(shape: u32, t: f32, seed: u32) -> vec2f {
   point *= 0.992 + hash(seed + u32(t * 65535.0)) * 0.016;
   return clamp(point, vec2f(-1.0), vec2f(1.0));
 }
-fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) -> vec2f {
+fn shapeVelocity2(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) -> vec2f {
   let t = f32(index) / max(1.0, f32(count));
   let jitter = (hash(seed + index * 17u) - 0.5) * 0.16;
   if (shape == 10u) {
@@ -1497,10 +1553,27 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
   let ring = 0.62 + f32(index % 3u) * 0.22;
   return vec2f(cos(angle), sin(angle)) * (160.0 + hash(seed+index)*170.0) * ring * intensity;
 }
+fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32, depthEnabled: bool) -> vec3f {
+  let planar = shapeVelocity2(shape, index, count, intensity, seed);
+  let volumetric = depthEnabled && shape != 11u && (shape < 17u || shape > 24u);
+  let depthVelocity = (hash(seed + index * 59u + 0x9e3779b9u) - 0.5) * 1.8 * intensity;
+  return vec3f(planar, select(0.0, depthVelocity, volumetric));
+}
+fn depthBucket(z: f32) -> u32 {
+  if (z < -0.3333333) { return 0u; }
+  if (z > 0.3333333) { return 2u; }
+  return 1u;
+}
 @compute @workgroup_size(1) fn resetCounters() {
   atomicStore(&counters.activeCount, 0u); atomicStore(&counters.secondaryCount, 0u);
-  atomicStore(&coreIndirect[0], 6u); atomicStore(&coreIndirect[1], 0u); atomicStore(&coreIndirect[2], 0u); atomicStore(&coreIndirect[3], 0u);
-  atomicStore(&trailIndirect[0], 6u); atomicStore(&trailIndirect[1], 0u); atomicStore(&trailIndirect[2], 0u); atomicStore(&trailIndirect[3], 0u);
+  atomicStore(&counters.farCount, 0u); atomicStore(&counters.midCount, 0u); atomicStore(&counters.nearCount, 0u);
+  for (var bucket = 0u; bucket < 3u; bucket++) {
+    let offset = bucket * 4u;
+    atomicStore(&coreIndirect[offset], 6u); atomicStore(&coreIndirect[offset + 1u], 0u); atomicStore(&coreIndirect[offset + 2u], 0u);
+    atomicStore(&coreIndirect[offset + 3u], bucket * arrayLength(&particles));
+    atomicStore(&trailIndirect[offset], 6u); atomicStore(&trailIndirect[offset + 1u], 0u); atomicStore(&trailIndirect[offset + 2u], 0u);
+    atomicStore(&trailIndirect[offset + 3u], bucket * arrayLength(&particles) * max(1u, uniforms.trailSamples - 1u));
+  }
 }
 @compute @workgroup_size(64) fn spawnParticles(@builtin(global_invocation_id) gid: vec3u) {
   if (gid.y >= uniforms.commandCount) { return; }
@@ -1508,18 +1581,20 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
   let slot = allocateParticle(); if (slot == 0xffffffffu) { return; }
   let globalIndex = command.globalIndexBase + gid.x;
   let globalCount = max(1u, command.globalCount);
-  var p: Particle; p.position = command.origin; p.color = commandColor(command, globalIndex); p.life = -command.emissionDelay; p.maxLife = command.duration;
+  let commandDepthEnabled = depthEnabled(command);
+  var p: Particle; p.position = vec3f(command.origin, burstDepth(command)); p.color = commandColor(command, globalIndex); p.life = -command.emissionDelay; p.maxLife = command.duration;
   p.rotation = hash(command.seed + globalIndex * 13u) * 6.2831853; p.angularVelocity = (hash(command.seed + globalIndex * 29u)-0.5)*4.0;
   p.gravity = command.gravity; p.drag = command.drag; p.shape = command.shape;
-  p.flags = command.flags | ((globalIndex & 0xffffu) << 16u); p.seed = command.seed ^ command.effectId ^ globalIndex;
+  p.flags = command.flags | ((globalIndex & 0xffffu) << 16u) | select(0u, V2_DEPTH, commandDepthEnabled); p.seed = command.seed ^ command.effectId ^ globalIndex;
   p.textureIndex = command.textureIndex; p.alive = 1u; p.size = command.size;
   if (command.kind == 1u) {
-    p.velocity = (command.destination-command.origin) / command.duration;
+    p.position = vec3f(command.origin, launchDepth(command));
+    p.velocity = (vec3f(command.destination, burstDepth(command))-p.position) / command.duration;
     p.gravity = 0.0; p.drag = 1.0; p.shape = command.shape;
     p.rotation = atan2(p.velocity.y, p.velocity.x);
     p.angularVelocity = command.curve;
   } else {
-    p.velocity = shapeVelocity(command.shape, globalIndex, globalCount, command.intensity, command.seed ^ command.effectId);
+    p.velocity = shapeVelocity(command.shape, globalIndex, globalCount, command.intensity, command.seed ^ command.effectId, commandDepthEnabled);
     p.velocity.x += command.wind;
     let role = (command.flags >> 8u) & 15u;
     let pulseCount = (command.flags >> 3u) & 7u;
@@ -1561,7 +1636,7 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
     }
   }
   particles[slot] = p;
-  for (var sample = 0u; sample < uniforms.maxTrailSamples; sample++) { history[slot * uniforms.maxTrailSamples + sample] = command.origin; }
+  for (var sample = 0u; sample < uniforms.maxTrailSamples; sample++) { history[slot * uniforms.maxTrailSamples + sample] = p.position; }
 }
 @compute @workgroup_size(64) fn updateParticles(@builtin(global_invocation_id) gid: vec3u) {
   let index = gid.x; if (index >= arrayLength(&particles)) { return; }
@@ -1574,13 +1649,13 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
   if (!isV2(p.flags) && (role == 1u || role == 2u)) {
     let progress = clamp(p.life / p.maxLife, 0.0, 1.0);
     let curveVelocity = p.angularVelocity * 3.1415926 / p.maxLife * cos(progress * 3.1415926);
-    p.position += vec2f(p.velocity.x + curveVelocity, p.velocity.y) * uniforms.dt;
+    p.position += vec3f(p.velocity.x + curveVelocity, p.velocity.y, p.velocity.z) * uniforms.dt;
     p.rotation = atan2(p.velocity.y, p.velocity.x + curveVelocity);
   } else {
     let phase = uniforms.time * (1.7 + hash(p.seed + 71u) * 2.1) + hash(p.seed + 19u) * 6.2831853;
     var noise = vec2f(sin(phase), cos(phase * 0.83 + 1.7)) * uniforms.turbulence * 60.0;
     if (role == 7u) { noise += vec2f(cos(phase * 0.47), -abs(sin(phase * 0.31))) * 18.0; }
-    p.velocity += vec2f(noise.x, p.gravity + noise.y) * uniforms.dt;
+    p.velocity += vec3f(noise.x, p.gravity + noise.y, 0.0) * uniforms.dt;
     let legacyRetention = pow(p.drag, uniforms.dt * 60.0);
     let v2Resistance = exp(-p.drag * uniforms.dt * 60.0);
     p.velocity *= select(legacyRetention, v2Resistance, isV2(p.flags));
@@ -1607,8 +1682,16 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
   for (var sample = uniforms.trailSamples - 1u; sample > 0u; sample--) { history[historyBase + sample] = history[historyBase + sample - 1u]; }
   history[historyBase] = p.position;
   particles[index] = p;
-  let activeSlot = atomicAdd(&counters.activeCount, 1u); activeIndices[activeSlot] = index;
-  atomicAdd(&coreIndirect[1], 1u); atomicAdd(&trailIndirect[1], max(1u, uniforms.trailSamples - 1u));
+  atomicAdd(&counters.activeCount, 1u);
+  let bucket = depthBucket(p.position.z);
+  var bucketSlot = 0u;
+  if (bucket == 0u) { bucketSlot = atomicAdd(&counters.farCount, 1u); }
+  else if (bucket == 1u) { bucketSlot = atomicAdd(&counters.midCount, 1u); }
+  else { bucketSlot = atomicAdd(&counters.nearCount, 1u); }
+  activeIndices[bucket * arrayLength(&particles) + bucketSlot] = index;
+  let indirectOffset = bucket * 4u + 1u;
+  atomicAdd(&coreIndirect[indirectOffset], 1u);
+  atomicAdd(&trailIndirect[indirectOffset], max(1u, uniforms.trailSamples - 1u));
 }
 @compute @workgroup_size(64) fn spawnSecondary(@builtin(global_invocation_id) gid: vec3u) {
   let sourceNumber = gid.x;
@@ -1626,8 +1709,10 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
       var p = source;
       let angle = f32(child) / f32(childCount) * 6.2831853 + hash(source.seed + child * 31u) * 0.36;
       let speed = 78.0 + hash(source.seed + child * 47u) * 86.0;
+      let volumetric = (source.flags & V2_DEPTH) != 0u && source.shape != 11u && (source.shape < 17u || source.shape > 24u);
+      let childDepthVelocity = (hash(source.seed + child * 67u) - 0.5) * 1.4;
       p.position = source.position;
-      p.velocity = source.velocity * 0.22 + vec2f(cos(angle), sin(angle)) * speed;
+      p.velocity = source.velocity * 0.22 + vec3f(cos(angle) * speed, sin(angle) * speed, select(0.0, childDepthVelocity, volumetric));
       p.life = 0.0; p.maxLife = max(0.08, source.maxLife * 0.46);
       p.size = source.size * (0.54 + 0.08 * f32(splitQuality));
       p.flags = (source.flags & ~V2_SPLIT_REQUESTED) | V2_SPLIT_EMITTED;
@@ -1639,7 +1724,7 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
   }
   if (sourceRole == 1u) {
     let style = (source.flags >> 12u) & 3u;
-    let direction = normalize(source.velocity + vec2f(0.0001));
+    let direction = normalize(source.velocity.xy + vec2f(0.0001));
     let normal = vec2f(-direction.y, direction.x);
     let childCount = select(2u, 3u, style == 1u || (style == 0u && hash(source.seed + u32(source.life * 91.0)) < 0.32));
     for (var child = 0u; child < childCount; child++) {
@@ -1647,17 +1732,17 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
       if (slot == 0xffffffffu) { return; }
       var p = source;
       let random = hash(source.seed + child * 101u + u32(source.life * 997.0));
-      p.position = source.position - direction * source.size * (0.5 + random * 0.45) + normal * (random - 0.5) * source.size * 0.28;
+      p.position = source.position + vec3f(-direction * source.size * (0.5 + random * 0.45) + normal * (random - 0.5) * source.size * 0.28, 0.0);
       p.life = 0.0; p.seed = source.seed + child * 131u + u32(source.life * 1301.0); p.textureIndex = 0u;
       p.rotation = atan2(-direction.y, -direction.x); p.angularVelocity = 0.0; p.alive = 1u;
       if (child == 2u) {
         p.shape = 9u; p.flags = styleBits | (7u << 8u); p.maxLife = 0.6 + random * 0.28;
         p.size = source.size * 0.38; p.color = vec4f(0.26, 0.29, 0.34, 0.18); p.gravity = -8.0; p.drag = 0.986;
-        p.velocity = -direction * (12.0 + random * 16.0) + normal * (random - 0.5) * 24.0;
+        p.velocity = vec3f(-direction * (12.0 + random * 16.0) + normal * (random - 0.5) * 24.0, 0.0);
       } else {
         p.shape = 7u; p.flags = styleBits | (10u << 8u); p.maxLife = 0.24 + random * 0.22;
         p.size = source.size * (0.09 + random * 0.08); p.color = mix(source.color, vec4f(1.0, 0.48, 0.08, 1.0), 0.62);
-        p.gravity = 72.0; p.drag = 0.955; p.velocity = -direction * (38.0 + random * 58.0) + normal * (random - 0.5) * 55.0;
+        p.gravity = 72.0; p.drag = 0.955; p.velocity = vec3f(-direction * (38.0 + random * 58.0) + normal * (random - 0.5) * 55.0, 0.0);
       }
       particles[slot] = p;
       for (var sample = 0u; sample < uniforms.maxTrailSamples; sample++) { history[slot * uniforms.maxTrailSamples + sample] = p.position; }
@@ -1671,7 +1756,8 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
     var p = source;
     let angle = f32(child) / f32(childCount) * 6.2831853 + hash(source.seed + child * 31u);
     p.position = source.position;
-    p.velocity = source.velocity * 0.18 + vec2f(cos(angle), sin(angle)) * (90.0 + hash(source.seed + child) * 90.0);
+    let childSpeed = 90.0 + hash(source.seed + child) * 90.0;
+    p.velocity = source.velocity * 0.18 + vec3f(cos(angle) * childSpeed, sin(angle) * childSpeed, 0.0);
     p.life = 0.0;
     p.maxLife = source.maxLife * 0.42;
     p.size = source.size * 0.62;
@@ -1688,7 +1774,7 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
 
     _particleShader() {
         return `
-struct Particle { position: vec2f, velocity: vec2f, color: vec4f, life: f32, maxLife: f32, size: f32, rotation: f32, angularVelocity: f32, gravity: f32, drag: f32, shape: u32, flags: u32, seed: u32, textureIndex: u32, alive: u32 };
+struct Particle { position: vec3f, velocity: vec3f, color: vec4f, life: f32, maxLife: f32, size: f32, rotation: f32, angularVelocity: f32, gravity: f32, drag: f32, shape: u32, flags: u32, seed: u32, textureIndex: u32, alive: u32 };
 struct Uniforms {
   dt: f32, time: f32, width: f32, height: f32,
   trailSamples: u32, turbulence: f32, commandCount: u32, maxTrailSamples: u32,
@@ -1696,7 +1782,7 @@ struct Uniforms {
 };
 @group(0) @binding(0) var<storage, read> particles: array<Particle>;
 @group(0) @binding(1) var<storage, read> activeIndices: array<u32>;
-@group(0) @binding(2) var<storage, read> history: array<vec2f>;
+@group(0) @binding(2) var<storage, read> history: array<vec3f>;
 @group(0) @binding(3) var<uniform> uniforms: Uniforms;
 @group(0) @binding(4) var atlas: texture_2d<f32>;
 @group(0) @binding(5) var atlasSampler: sampler;
@@ -1716,7 +1802,14 @@ struct Out {
   @location(8) @interpolate(flat) rotation: f32,
 };
 fn quadVertex(vertex: u32) -> vec2f { let vertices = array<vec2f,6>(vec2f(-1,-1),vec2f(1,-1),vec2f(-1,1),vec2f(-1,1),vec2f(1,-1),vec2f(1,1)); return vertices[vertex]; }
-fn clip(position: vec2f) -> vec4f { return vec4f(position.x/uniforms.width*2.0-1.0, 1.0-position.y/uniforms.height*2.0, 0.0, 1.0); }
+const CAMERA_DISTANCE = 4.0;
+fn perspectiveScale(z: f32) -> f32 { return CAMERA_DISTANCE / max(2.0, CAMERA_DISTANCE - z); }
+fn projectToPixels(position: vec3f) -> vec2f {
+  let center = vec2f(uniforms.width, uniforms.height) * 0.5;
+  return center + (position.xy - center) * perspectiveScale(position.z);
+}
+fn clipPixels(position: vec2f) -> vec4f { return vec4f(position.x/uniforms.width*2.0-1.0, 1.0-position.y/uniforms.height*2.0, 0.0, 1.0); }
+fn clip(position: vec3f) -> vec4f { return clipPixels(projectToPixels(position)); }
 fn isV2(flags:u32)->bool{return (flags&V2_MARKER)!=0u;}
 fn v2Strobe(flags:u32,t:f32,seed:u32)->f32{
   if(!isV2(flags)||(flags&V2_STROBE)==0u){return 1.0;}
@@ -1742,15 +1835,16 @@ fn fadeEnvelope(role:u32,shape:u32,t:f32,flags:u32)->f32{
   if(role==10u){scale*=max(0.32,1.0-t*0.68);}
   if(role==4u||p.shape==2u){scale*=0.84+0.16*smoothstep(0.0,0.16,t);}
   let scaledQ=q*scale;
-  let rotated = vec2f(c*scaledQ.x-s*scaledQ.y,s*scaledQ.x+c*scaledQ.y) * p.size;
-  var out: Out; out.position=clip(p.position+rotated); out.uv=q*0.5+0.5; out.color=p.color; out.shape=p.shape; out.textureIndex=p.textureIndex; out.flags=p.flags; out.rotation=p.rotation;
+  let rotated = vec2f(c*scaledQ.x-s*scaledQ.y,s*scaledQ.x+c*scaledQ.y) * p.size * perspectiveScale(p.position.z);
+  var out: Out; out.position=clipPixels(projectToPixels(p.position)+rotated); out.uv=q*0.5+0.5; out.color=p.color; out.shape=p.shape; out.textureIndex=p.textureIndex; out.flags=p.flags; out.rotation=p.rotation;
   out.normalizedLife=t; out.seed=p.seed; out.fade=fadeEnvelope(role,p.shape,t,p.flags)*v2Strobe(p.flags,t,p.seed); return out;
 }
 @vertex fn trailVertex(@builtin(vertex_index) vertex: u32, @builtin(instance_index) instance: u32) -> Out {
   let segments=max(1u,uniforms.trailSamples-1u); let particleListIndex=instance/segments; let segment=instance%segments; let index=activeIndices[particleListIndex]; let p=particles[index]; let base=index*uniforms.maxTrailSamples;
-  let a=history[base+segment]; let b=history[base+segment+1u]; let direction=normalize(a-b+vec2f(0.0001)); let normal=vec2f(-direction.y,direction.x); let q=quadVertex(vertex);
-  let along=mix(b,a,q.x*0.5+0.5); let width=p.size*(0.38-f32(segment)/f32(segments)*0.29);
-  var out:Out; out.position=clip(along+normal*q.y*width); out.uv=q*0.5+0.5; out.color=p.color; out.shape=p.shape; out.textureIndex=0u; out.flags=p.flags; out.rotation=p.rotation;
+  let a=history[base+segment]; let b=history[base+segment+1u]; let projectedA=projectToPixels(a); let projectedB=projectToPixels(b);
+  let direction=normalize(projectedA-projectedB+vec2f(0.0001)); let normal=vec2f(-direction.y,direction.x); let q=quadVertex(vertex);
+  let along=mix(projectedB,projectedA,q.x*0.5+0.5); let depth=mix(b.z,a.z,q.x*0.5+0.5); let width=p.size*perspectiveScale(depth)*(0.38-f32(segment)/f32(segments)*0.29);
+  var out:Out; out.position=clipPixels(along+normal*q.y*width); out.uv=q*0.5+0.5; out.color=p.color; out.shape=p.shape; out.textureIndex=0u; out.flags=p.flags; out.rotation=p.rotation;
   let role=(p.flags>>8u)&15u;let t=clamp(p.life/p.maxLife,0.0,1.0);let shapeTrail=select(0.44,0.1,p.shape>=1u&&p.shape<=5u);
   out.fade=(1.0-f32(segment)/f32(segments))*fadeEnvelope(role,p.shape,t,p.flags)*shapeTrail*v2Strobe(p.flags,t,p.seed);
   if(isV2(p.flags)&&(p.flags & V2_TRAIL) == 0u){out.fade=0.0;}out.normalizedLife=t;out.seed=p.seed;return out;

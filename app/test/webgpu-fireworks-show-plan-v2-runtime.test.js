@@ -62,6 +62,68 @@ function plan(cues, overrides = {}) {
 }
 
 describe('ShowPlanV2 pure overlay runtime', () => {
+  test('validates optional render hints and normalizes omitted hints to the flat renderer contract', () => {
+    const flatPlan = plan([{
+      id: 'flat', beatAtMs: 2000, phase: 'opening', formation: 'single', importance: 'standard',
+      shells: [shell('flat-shell', 'rocket')]
+    }]);
+    const runtime = buildShowPlanV2Runtime(flatPlan, { startAt: 1000, width: 1000, height: 1000, playSound: false });
+
+    expect(runtime.events.find(event => event.type === 'finale-v2-rocket').renderHints).toEqual({
+      depthEnabled: false,
+      launchDepth: 0,
+      burstDepth: 0,
+      glyphScale: 1
+    });
+    expect(runtime.events.find(event => event.type === 'finale-v2-layer').context.renderHints).toEqual({
+      depthEnabled: false,
+      launchDepth: 0,
+      burstDepth: 0,
+      glyphScale: 1
+    });
+
+    const invalidHints = [
+      { depthEnabled: 1, launchDepth: 0, burstDepth: 0, glyphScale: 1 },
+      { depthEnabled: true, launchDepth: Number.NaN, burstDepth: 0, glyphScale: 1 },
+      { depthEnabled: true, launchDepth: '0', burstDepth: 0, glyphScale: 1 },
+      { depthEnabled: true, launchDepth: -1.01, burstDepth: 0, glyphScale: 1 },
+      { depthEnabled: true, launchDepth: 0, burstDepth: 1.01, glyphScale: 1 },
+      { depthEnabled: true, launchDepth: 0, burstDepth: 0, glyphScale: 0.49 },
+      { depthEnabled: true, launchDepth: 0, burstDepth: 0, glyphScale: '1' },
+      { depthEnabled: true, launchDepth: 0, burstDepth: 0, glyphScale: 2.01 }
+    ];
+    for (const renderHints of invalidHints) {
+      const malformed = plan([{
+        id: 'bad-depth', beatAtMs: 1000, phase: 'opening', formation: 'single', importance: 'standard',
+        shells: [shell('bad-depth-shell', 'airburst', { renderHints })]
+      }]);
+      expect(() => assertShowPlanV2(malformed)).toThrow(/renderHints|depth|glyphScale/i);
+    }
+  });
+
+  test('accounts for deterministic depth travel while keeping the burst on the exact planned beat', () => {
+    const showPlan = plan([{
+      id: 'depth-flight', beatAtMs: 3000, phase: 'opening', formation: 'single', importance: 'standard',
+      shells: [shell('depth-rocket', 'rocket', {
+        renderHints: { depthEnabled: true, launchDepth: -0.8, burstDepth: 0.8, glyphScale: 1.25 }
+      })]
+    }], { durationMs: 5000 });
+
+    const first = buildShowPlanV2Runtime(showPlan, { startAt: 1000, width: 1000, height: 1000, playSound: false });
+    const second = buildShowPlanV2Runtime(showPlan, { startAt: 1000, width: 1000, height: 1000, playSound: false });
+    const rocket = first.events.find(event => event.type === 'finale-v2-rocket');
+    const burst = first.events.find(event => event.type === 'finale-v2-layer');
+
+    expect(second).toEqual(first);
+    expect(rocket).toMatchObject({
+      due: 1241,
+      flightDurationMs: 2759,
+      renderHints: { depthEnabled: true, launchDepth: -0.8, burstDepth: 0.8, glyphScale: 1.25 }
+    });
+    expect(rocket.due + rocket.flightDurationMs).toBe(4000);
+    expect(burst.due).toBe(4000);
+  });
+
   test('rejects unsupported and malformed plans instead of permitting legacy reinterpretation', () => {
     expect(() => assertShowPlanV2({ planVersion: 3, durationMs: 1000, cues: [] }))
       .toThrow(/unsupported ShowPlan version 3/i);

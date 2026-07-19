@@ -83,6 +83,76 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
     expect(words[27]).toBe(4);
   });
 
+  test('packs deterministic launch and burst depth into word 27 without changing the 112-byte ABI', () => {
+    const engine = makeEngine();
+    engine.spawnLayer(layer(), {
+      origin: { x: 960, y: 320 }, seed: 77, materialProfile: 'classic',
+      renderHints: { depthEnabled: true, launchDepth: -0.8, burstDepth: 0.8, glyphScale: 1 }
+    });
+
+    const { uploaded, words } = uploadCommands(engine);
+    expect(uploaded.byteLength).toBe(112);
+    expect(words[27]).toBe((4 | (1 << 3) | (26 << 8) | (230 << 16)) >>> 0);
+    expect(engine.spawnQueue).toHaveLength(0);
+  });
+
+  test('applies glyphScale on CPU geometry without scaling non-glyph primitives', () => {
+    const hints = { depthEnabled: true, launchDepth: 0, burstDepth: 0.5, glyphScale: 1.5 };
+    const glyph = makeEngine();
+    glyph.spawnLayer(layer({ primitive: 'glyph', glyph: 'paw' }), {
+      origin: { x: 960, y: 320 }, seed: 77, materialProfile: 'classic', renderHints: hints
+    });
+    const radial = makeEngine();
+    radial.spawnLayer(layer(), {
+      origin: { x: 960, y: 320 }, seed: 77, materialProfile: 'classic', renderHints: hints
+    });
+
+    expect(glyph.spawnQueue[0].intensity).toBe(radial.spawnQueue[0].intensity * 1.5);
+    expect(glyph.spawnQueue[0]).toMatchObject({
+      depthEnabled: true,
+      launchDepth: 0,
+      burstDepth: 0.5
+    });
+  });
+
+  test('uses alignment-safe XYZ particle and trail layouts with calibrated projection and planar glyphs', () => {
+    const engine = makeEngine();
+    const resources = engine._createResources.toString();
+    const compute = engine._computeShader();
+    const particle = engine._particleShader();
+
+    expect(resources).toContain('const particleStride = 96');
+    expect(resources).toContain('this.maxTrailSamples * 16');
+    expect(compute).toContain('position: vec3f, velocity: vec3f');
+    expect(compute).toContain('history: array<vec3f>');
+    expect(compute).toContain('fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32, depthEnabled: bool) -> vec3f');
+    expect(compute).toContain('let volumetric = depthEnabled && shape != 11u && (shape < 17u || shape > 24u)');
+    expect(particle).toContain('position: vec3f, velocity: vec3f');
+    expect(particle).toContain('history: array<vec3f>');
+    expect(particle).toContain('const CAMERA_DISTANCE = 4.0');
+    expect(particle).toContain('fn perspectiveScale(z: f32) -> f32');
+    expect(particle).toContain('max(2.0, CAMERA_DISTANCE - z)');
+  });
+
+  test('draws transparent depth buckets far to mid to near without a depth buffer', () => {
+    const engine = makeEngine();
+    engine.trailsEnabled = true;
+    engine.glowEnabled = true;
+    engine.pipelines = { trail: 'trail', glow: 'glow', core: 'core' };
+    engine.buffers = { trailIndirect: 'trail-indirect', coreIndirect: 'core-indirect' };
+    const pass = { setPipeline: jest.fn(), drawIndirect: jest.fn() };
+
+    engine._drawDepthBuckets(pass);
+
+    expect(pass.drawIndirect.mock.calls).toEqual([
+      ['trail-indirect', 0], ['core-indirect', 0], ['core-indirect', 0],
+      ['trail-indirect', 16], ['core-indirect', 16], ['core-indirect', 16],
+      ['trail-indirect', 32], ['core-indirect', 32], ['core-indirect', 32]
+    ]);
+    expect(engine._createPipelines.toString()).not.toContain('depthStencil');
+    expect(engine._computeShader()).toContain('fn depthBucket(z: f32) -> u32');
+  });
+
   test('forces premium-realistic V2 material to style ID 3 without renumbering legacy styles', () => {
     const engine = makeEngine();
     expect(['premium-hybrid', 'realistic', 'stylized-neon'].map(style => engine._styleId(style)))
@@ -158,7 +228,7 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
     const shader = engine._computeShader();
     expect(shader).toContain('colorWords: vec4u');
     expect(shader).toContain('fn unpackRgba8');
-    expect(shader).toContain('globalIndex % min(command.colorCount, 4u)');
+    expect(shader).toContain('globalIndex % min(command.colorCount & 7u, 4u)');
     expect(shader).toMatch(/f32\(packed\s*&\s*255u\)\/255\.0/);
     expect(shader).toMatch(/f32\(\(packed\s*>>\s*24u\)\s*&\s*255u\)\/255\.0/);
     expect(shader).toContain('bitcast<vec4f>(command.colorWords)');

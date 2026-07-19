@@ -1890,6 +1890,7 @@ class WebGPUFireworksEngine {
             beatId: event.beatId,
             origin: event.origin,
             target: event.target,
+            renderHints: event.renderHints,
             duration,
             color: event.shell.colors?.[0] || event.shell.palette?.[0] || '#ffffff',
             seed: event.seed,
