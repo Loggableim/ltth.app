@@ -11,6 +11,24 @@ const productionCatalogs = Object.fromEntries(
   ['en', 'es', 'fr'].map((locale) => [locale, productionI18n.getAllTranslations(locale)])
 );
 
+function readCanonicalBanTypes() {
+  const source = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/lib/ban-list.js'), 'utf8');
+  const declaration = source.match(/const VALID_TYPES = \[([^\]]+)\]/);
+  if (!declaration) throw new Error('ban-list VALID_TYPES declaration not found');
+  return Array.from(declaration[1].matchAll(/'([^']+)'/g), (match) => match[1]);
+}
+
+function readProducedPlaylistImportStatuses() {
+  const source = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/lib/playlist-import-service.js'), 'utf8');
+  return [...new Set([
+    ...Array.from(source.matchAll(/\bstatus:\s*'([^']+)'/g), (match) => match[1]),
+    ...Array.from(source.matchAll(/job\.status\s*=\s*'([^']+)'/g), (match) => match[1]),
+    ...Array.from(source.matchAll(/_finish\(job,\s*'([^']+)'\)/g), (match) => match[1]),
+    ...Array.from(source.matchAll(/return \[([^\]]+)\]\.includes\(job\.status\)/g), (match) =>
+      Array.from(match[1].matchAll(/'([^']+)'/g), (value) => value[1])).flat()
+  ])];
+}
+
 function installProductionI18nClient(window, locale, translations) {
   const source = fs.readFileSync(path.join(__dirname, '../public/js/i18n-client.js'), 'utf8');
   const cutoff = source.indexOf('// Create global instance');
@@ -90,6 +108,7 @@ function bootMusicBotUi(options = {}) {
   const radioSourcesPayload = options.radioSourcesPayload || [];
   const catalogPayload = options.catalogPayload || [];
   const giftCatalogPayload = options.giftCatalogPayload || { catalog: [] };
+  const bansPayload = options.bansPayload || [];
   const translations = options.translations;
   const productionLocale = options.productionLocale;
   const i18nReady = options.i18nReady;
@@ -128,7 +147,7 @@ function bootMusicBotUi(options = {}) {
       return createJsonResponse({ success: true, playlist: playlistDetails[target.split('/').pop()] });
     }
     if (target.includes('/playlists')) return createJsonResponse({ success: true, playlists: playlistsPayload });
-    if (target.includes('/bans')) return createJsonResponse({ success: true, bans: [] });
+    if (target.includes('/bans')) return createJsonResponse({ success: true, bans: bansPayload });
     if (target.includes('/gift-catalog')) return createJsonResponse(giftCatalogPayload);
     if (target.includes('/setup-status')) return createJsonResponse({ success: true, issues: setupIssues });
     if (target.includes('/config')) {
@@ -1329,6 +1348,70 @@ describe('Music Bot runtime and UI regressions', () => {
       .toContain(ui.settings.giftLocales.replace('{locales}', 'en, de'));
     expect(dom.window.document.getElementById('gift-catalog-status').textContent)
       .toContain(ui.settings.giftRegion.replace('{region}', 'EU'));
+  });
+
+  test.each(['de', 'en', 'es', 'fr'])('renders overlay copy success through the %s locale catalog', async (locale) => {
+    const expectedCopy = {
+      de: '✅ Kopiert!',
+      en: '✅ Copied!',
+      es: '✅ ¡Copiado!',
+      fr: '✅ Copié !'
+    };
+    const translations = JSON.parse(fs.readFileSync(path.join(__dirname, `../plugins/music-bot/locales/${locale}.json`), 'utf8'));
+    const { dom } = bootMusicBotUi({ translations });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const copyButton = dom.window.document.getElementById('overlay-copy');
+    copyButton.click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(translations.music_bot.ui.overlay.copySuccess).toBe(expectedCopy[locale]);
+    expect(copyButton.textContent).toBe(expectedCopy[locale]);
+  });
+
+  test.each(['de', 'en', 'es', 'fr'])('reconciles every canonical ban type with localized %s UI output', async (locale) => {
+    const typeToKey = {
+      url: 'url', keyword: 'keyword', channel: 'channel', user: 'user', artist: 'artist', track: 'exactTrack'
+    };
+    const canonicalTypes = readCanonicalBanTypes();
+    expect([...canonicalTypes].sort()).toEqual(Object.keys(typeToKey).sort());
+    const translations = JSON.parse(fs.readFileSync(path.join(__dirname, `../plugins/music-bot/locales/${locale}.json`), 'utf8'));
+    const { dom } = bootMusicBotUi({
+      translations,
+      bansPayload: canonicalTypes.map((type, index) => ({ id: index + 1, type, value: `${type}:value`, reason: '' }))
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const labels = Array.from(dom.window.document.querySelectorAll('#ban-table tbody tr td:first-child'), (cell) => cell.textContent);
+    expect(labels).toEqual(canonicalTypes.map((type) => translations.music_bot.ui.moderation[typeToKey[type]]));
+  });
+
+  test.each(['de', 'en', 'es', 'fr'])('reconciles every produced playlist-import status with localized %s UI output', async (locale) => {
+    const expectedQueued = {
+      de: 'Import wartet …',
+      en: 'Import queued …',
+      es: 'Importación en espera …',
+      fr: 'Import en attente…'
+    };
+    const statusToKey = {
+      queued: 'importQueued', running: 'importRunning', completed: 'importCompleted', aborted: 'importAborted', failed: 'importFailed'
+    };
+    const producedStatuses = readProducedPlaylistImportStatuses();
+    expect([...producedStatuses].sort()).toEqual(Object.keys(statusToKey).sort());
+    const translations = JSON.parse(fs.readFileSync(path.join(__dirname, `../plugins/music-bot/locales/${locale}.json`), 'utf8'));
+    expect(translations.music_bot.ui.playlists.importQueued).toBe(expectedQueued[locale]);
+    const { dom, socketHandlers } = bootMusicBotUi({ translations });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    for (const status of producedStatuses) {
+      socketHandlers['musicbot:playlist-import-progress']({ status });
+      expect(dom.window.document.getElementById('playlist-import-progress').textContent)
+        .toBe(translations.music_bot.ui.playlists[statusToKey[status]]);
+    }
   });
 
   test('ships correct Spanish and French sectioned admin orthography', () => {

@@ -322,6 +322,7 @@
       },
       "overlay": {
         "copyFailed": "Could not copy the URL. Please copy it manually.",
+        "copySuccess": "✅ Copied!",
         "title": "OBS overlay",
         "description": "Browser source URL for OBS or Streamlabs",
         "design": "Design",
@@ -379,6 +380,7 @@
         "playlistSaveFailed": "Could not save playlist.",
         "playlistConflict": "Playlist changed elsewhere. Refreshing the view.",
         "importRunning": "Import is running …",
+        "importQueued": "Import queued …",
         "playlistsDescription": "Manage your sources and Viewer Radio.",
         "newPlaylist": "New playlist",
         "playbackMode": "Playback mode",

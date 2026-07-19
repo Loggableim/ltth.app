@@ -322,6 +322,7 @@
       },
       "overlay": {
         "copyFailed": "No se pudo copiar la URL. Cópiala manualmente.",
+        "copySuccess": "✅ ¡Copiado!",
         "title": "Superposición de OBS",
         "description": "URL de fuente de navegador para OBS o Streamlabs",
         "design": "Diseño",
@@ -379,6 +380,7 @@
         "playlistSaveFailed": "No se pudo guardar la lista.",
         "playlistConflict": "La lista cambió en otro lugar. Actualizando la vista.",
         "importRunning": "La importación está en curso…",
+        "importQueued": "Importación en espera …",
         "playlistsDescription": "Gestiona tus fuentes y la radio de espectadores.",
         "newPlaylist": "Nueva lista",
         "playbackMode": "Modo de reproducción",

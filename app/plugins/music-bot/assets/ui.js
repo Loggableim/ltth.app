@@ -14,13 +14,13 @@
     settings: 'giftNoResults giftsCount giftSelectFirst giftSaveFailed giftApplied giftCatalogTitle giftUpdated giftLoading giftLoadFailed giftVisible giftLoaded giftLoadedApi giftUpdatedAt giftLocales giftLocalesDefault giftRegion crossfadeTitle',
     safety: 'emergencyDone safetyUnlocked emergencyFailed unlockFailed playerReset playerResetFailed diagnosticsExportFailed diagnosticsExported safetyLocked safetyReady testToneCompleted testToneFailed',
     health: 'unavailable ipcDegraded ready files none resolverActiveQueued resolverQueued resolverYoutube resolverSoundCloud resolverValidating resolverReady resolverFailed resolverUnknownState healthLoadFailed',
-    overlay: 'copyFailed'
+    overlay: 'copyFailed copySuccess'
   }).flatMap(([section, keys]) => keys.split(' ').map((key) => [key, section])));
   const CATALOG_I18N_SECTIONS = Object.fromEntries(Object.entries({
     player: 'seek seekAria',
     history: 'historyMore historyBanned historyEmpty banTrack voteUp voteDown voteNeutral',
     catalog: 'catalogSearch catalogDescription addToPlaylist catalogEmpty networkTitle postFailed getFailed deleteFailed requestFailed',
-    playlists: 'playlistsDescription newPlaylist playbackMode ordered shuffle create radioDescription saveRadioSources playlistName save delete importUrl import protected playlistEmpty playlistItemsEmpty remove radioWeight importCompleted importFailed importAborted importError playlistConflict viewerRadio radioSources importRunning'
+    playlists: 'playlistsDescription newPlaylist playbackMode ordered shuffle create radioDescription saveRadioSources playlistName save delete importUrl import protected playlistEmpty playlistItemsEmpty remove radioWeight importQueued importCompleted importFailed importAborted importError playlistConflict viewerRadio radioSources importRunning'
   }).flatMap(([section, keys]) => keys.split(' ').map((key) => [key, section])));
 
   function tr(key, fallback, params = {}) {
@@ -75,6 +75,7 @@
       channel: () => tr('channel', 'Kanal'),
       user: () => tr('user', 'Nutzer'),
       artist: () => tr('artist', 'Künstler'),
+      track: () => tr('exactTrack', 'Exakter Titel'),
       'exact-track': () => tr('exactTrack', 'Exakter Titel'),
       exacttrack: () => tr('exactTrack', 'Exakter Titel'),
       title: () => tr('titleKeyword', 'Titelbegriff'),
@@ -90,6 +91,7 @@
   }
 
   function playlistImportStatusLabel(status) {
+    if (status === 'queued') return catalogTr('importQueued', 'Import wartet …');
     if (status === 'completed') return catalogTr('importCompleted', 'Import abgeschlossen');
     if (status === 'failed') return catalogTr('importFailed', 'Import fehlgeschlagen');
     if (status === 'aborted') return catalogTr('importAborted', 'Import abgebrochen');
@@ -941,7 +943,7 @@
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url).then(() => {
         const orig = overlayCopy.textContent;
-        overlayCopy.textContent = '✅ Kopiert!';
+        overlayCopy.textContent = tr('copySuccess', '✅ Kopiert!');
         setTimeout(() => { overlayCopy.textContent = orig; }, 2000);
       }).catch(() => {
         if (overlayUrl) { overlayUrl.select(); }
