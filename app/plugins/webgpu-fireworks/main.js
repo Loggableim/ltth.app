@@ -60,6 +60,42 @@ const SUPERFAN_FINALE_TEST_CONFIG_KEYS = Object.freeze([
     'goalFinaleStyle',
     'goalFinaleLength'
 ]);
+const MANUAL_FIREWORK_TRIGGER_FIELDS = Object.freeze([
+    'type',
+    'intensity',
+    'shape',
+    'colors',
+    'positionMode',
+    'position',
+    'origin',
+    'seed',
+    'visualStyle',
+    'particleCount',
+    'duration',
+    'tier',
+    'combo',
+    'coins',
+    'crackleEnabled',
+    'giftId',
+    'giftImage',
+    'userAvatar',
+    'username',
+    'forceRocket',
+    'playSound'
+]);
+
+function sanitizeManualFireworkTrigger(value) {
+    const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    return Object.fromEntries(MANUAL_FIREWORK_TRIGGER_FIELDS
+        .filter(field => Object.prototype.hasOwnProperty.call(source, field))
+        .map(field => [field, source[field]]));
+}
+
+function triggerRejectionHttpStatus(reason) {
+    if (reason === 'rate-limit') return 429;
+    if (reason === 'emit-failed') return 503;
+    return 409;
+}
 
 function sanitizeRendererFinaleStyle(value) {
     if (typeof value !== 'string') return null;
@@ -1210,17 +1246,39 @@ class FireworksPlugin {
         // Trigger fireworks manually
         this.api.registerRoute('post', '/api/webgpu-fireworks/trigger', (req, res) => {
             try {
-                const triggerOptions = normalizeFireworkTrigger(req.body || {}, this.config);
+                const triggerOptions = normalizeFireworkTrigger(
+                    sanitizeManualFireworkTrigger(req.body),
+                    this.config
+                );
 
-                this.triggerFirework({
+                const result = this.triggerFirework({
                     ...triggerOptions,
                     reason: 'manual',
                     bypassEnabled: true  // Allow test triggers even when disabled
                 });
 
-                res.json({ success: true, message: 'Firework triggered' });
+                if (result.accepted !== true) {
+                    return res.status(triggerRejectionHttpStatus(result.reason)).json({
+                        success: false,
+                        accepted: false,
+                        reason: result.reason
+                    });
+                }
+
+                return res.json({
+                    success: true,
+                    accepted: true,
+                    reason: result.reason,
+                    message: 'Firework submitted',
+                    payload: result.payload
+                });
             } catch (error) {
-                res.status(500).json({ success: false, error: error.message });
+                return res.status(500).json({
+                    success: false,
+                    accepted: false,
+                    reason: 'internal-error',
+                    error: error.message
+                });
             }
         });
 
@@ -1303,10 +1361,30 @@ class FireworksPlugin {
         // Trigger random firework
         this.api.registerRoute('post', '/api/webgpu-fireworks/random', (req, res) => {
             try {
-                this.triggerRandomFirework(true); // true = bypass enabled check
-                res.json({ success: true, message: 'Random firework triggered' });
+                const result = this.triggerRandomFirework(true); // true = bypass enabled check
+
+                if (result.accepted !== true) {
+                    return res.status(triggerRejectionHttpStatus(result.reason)).json({
+                        success: false,
+                        accepted: false,
+                        reason: result.reason
+                    });
+                }
+
+                return res.json({
+                    success: true,
+                    accepted: true,
+                    reason: result.reason,
+                    message: 'Random firework submitted',
+                    payload: result.payload
+                });
             } catch (error) {
-                res.status(500).json({ success: false, error: error.message });
+                return res.status(500).json({
+                    success: false,
+                    accepted: false,
+                    reason: 'internal-error',
+                    error: error.message
+                });
             }
         });
 
@@ -1657,7 +1735,7 @@ class FireworksPlugin {
         );
 
         // Trigger the firework
-        this.triggerFirework({
+        return this.triggerFirework({
             type: 'gift',
             intensity: finalIntensity,
             shape: shape,
@@ -1823,7 +1901,7 @@ class FireworksPlugin {
 
         for (const keyword of this.config.chatTriggerKeywords) {
             if (message.includes(keyword.toLowerCase())) {
-                this.triggerFirework({
+                return this.triggerFirework({
                     type: 'chat',
                     intensity: 0.5,
                     shape: 'burst',
@@ -1832,7 +1910,6 @@ class FireworksPlugin {
                     username: data.uniqueId || data.username,
                     reason: 'chat'
                 });
-                break;
             }
         }
     }
@@ -2154,11 +2231,13 @@ class FireworksPlugin {
         options = normalizeFireworkTrigger(options || {}, this.config);
 
         // Allow bypass of enabled check for manual triggers (tests, API calls)
-        if (!this.config.enabled && !options.bypassEnabled) return;
+        if (!this.config.enabled && !options.bypassEnabled) {
+            return { accepted: false, reason: 'disabled' };
+        }
 
         // Check queue rate limiting (unless bypass is enabled)
         if (!options.bypassEnabled && !this.shouldAllowFirework()) {
-            return;
+            return { accepted: false, reason: 'rate-limit' };
         }
 
         const policyDecision = evaluateTriggerPolicy({
@@ -2169,7 +2248,7 @@ class FireworksPlugin {
 
         if (!policyDecision.allowed) {
             this.api.log(`[FIREWORKS] Trigger dropped by stability policy: ${policyDecision.reason}`, 'debug');
-            return;
+            return { accepted: false, reason: policyDecision.reason };
         }
 
         const plan = this.spawnPlanner.plan({
@@ -2240,7 +2319,18 @@ class FireworksPlugin {
             giftPopupPosition: this.config.giftPopupPosition || 'bottom'
         };
 
-        // Server-side tracking: increment counter and auto-decrement after estimated lifetime.
+        try {
+            const emitted = this.api.emit('webgpu-fireworks:trigger', payload);
+            if (emitted === false) {
+                this.api.log('[FIREWORKS] Trigger emit was rejected by the dispatcher', 'warn');
+                return { accepted: false, reason: 'emit-failed' };
+            }
+        } catch (error) {
+            this.api.log(`[FIREWORKS] Trigger emit failed: ${error.message}`, 'warn');
+            return { accepted: false, reason: 'emit-failed' };
+        }
+
+        // Server-side tracking starts only after the dispatcher accepted the effect.
         // Base lifetime: 3000ms minimum. Intensity multiplier: +2000ms per intensity unit.
         // Capped at 8000ms to avoid counter staying high for unusually long fireworks.
         this.activeFireworkCount++;
@@ -2252,13 +2342,13 @@ class FireworksPlugin {
         }, estimatedLifetime);
         this.activeFireworkTimers.set(fireworkId, timer);
 
-        this.api.emit('webgpu-fireworks:trigger', payload);
-
         this.api.log(
             `🎆 [FIREWORKS] Triggered: ${payload.shape} @ (${payload.position.x.toFixed(2)}, ${payload.position.y.toFixed(2)}) ` +
             `intensity=${payload.intensity.toFixed(2)} particles=${payload.particleCount}${policyDecision.reduced ? ' reduced=true' : ''}`,
             'debug'
         );
+
+        return { accepted: true, reason: 'submitted', payload };
     }
 
     /**
@@ -2495,7 +2585,7 @@ class FireworksPlugin {
         const intensity = this.config.randomMinIntensity +
             Math.random() * (this.config.randomMaxIntensity - this.config.randomMinIntensity);
 
-        this.triggerFirework({
+        return this.triggerFirework({
             type: 'random',
             intensity: intensity,
             shape: shapes[Math.floor(Math.random() * shapes.length)],
@@ -2563,7 +2653,7 @@ class FireworksPlugin {
                     ? params.colors.split(',').map(c => c.trim())
                     : null;
 
-                this.triggerFirework({
+                return this.triggerFirework({
                     shape: params.shape,
                     visualStyle: params.visualStyle || this.config.visualStyle,
                     intensity: params.intensity,
@@ -2644,7 +2734,7 @@ class FireworksPlugin {
      * @param {Object} payload - Trigger options
      */
     trigger(type, payload = {}) {
-        this.triggerFirework({
+        return this.triggerFirework({
             type: type,
             ...payload
         });
@@ -2659,7 +2749,7 @@ class FireworksPlugin {
         const giftInfo = this.getGiftInfo(giftId);
         const giftSettings = this.config.giftShapeMappings[giftId] || {};
 
-        this.triggerFirework({
+        return this.triggerFirework({
             type: 'gift',
             shape: giftSettings.shape || this.config.defaultShape,
             colors: giftSettings.colors || null,
