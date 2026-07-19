@@ -2763,7 +2763,7 @@ class MusicBotPlugin extends EventEmitter {
       this._schedulePreCache();
       this.autoDJ?.onSongRequested();
       this._emitSongAdded(added.song, added.position);
-      if (!this.playbackEngine.isPlaying() && this.config.playback.autoPlay) {
+      if (!this._isPlaybackOccupied() && this.config.playback.autoPlay) {
         await this._playNextFromQueue();
       }
       this._emitToast('success', 'Song hinzugefügt', `${resolved.song.title} (#${added.position})`);
@@ -2848,7 +2848,7 @@ class MusicBotPlugin extends EventEmitter {
       this.autoDJ?.onSongRequested();
       this._emitSongAdded(addResult.song, addResult.position);
 
-      if (!this.playbackEngine.isPlaying() && this.config.playback.autoPlay) {
+      if (!this._isPlaybackOccupied() && this.config.playback.autoPlay) {
         await this._playNextFromQueue();
       }
 

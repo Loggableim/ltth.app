@@ -615,10 +615,20 @@ class PlaybackEngine extends EventEmitter {
     if (value === null || value === undefined) return null;
     const normalized = String(value).replace(/[\r\n\t]+/g, ' ').trim();
     if (!normalized) return null;
+    if (this._isUnsafeMediaTitle(normalized)) return null;
     if (/^[a-z][a-z\d+.-]*:\/\//i.test(normalized)) {
       return this._safeMediaBasename(normalized);
     }
     return normalized.slice(0, 256);
+  }
+
+  _isUnsafeMediaTitle(value) {
+    const normalized = String(value || '').trim();
+    if (!normalized) return false;
+    if (/(?:^|[?&])(?:sig|signature|lsig|token|expire|ip|key)=/i.test(normalized)) {
+      return true;
+    }
+    return /^(?:videoplayback|webm|mp4|m4a|mp3|audio|video|media|stream|manifest|dash|hls|chunk|segment|[^\s/?&]+\.(?:webm|mp4|m4a|mp3|mkv|ogg|opus|aac|ts))(?:[?&][^=&\s]+=[^&\s]*)+$/i.test(normalized);
   }
 
   _safeMediaBasename(value) {
