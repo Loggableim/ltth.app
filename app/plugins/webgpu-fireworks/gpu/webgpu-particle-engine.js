@@ -1486,21 +1486,21 @@ fn boykisserPoint(index: u32, count: u32, seed: u32) -> vec2f {
     let local = t / 0.56;
     if (detailed) {
       let outline = array<vec2f, 18>(
-        vec2f(-0.82,0.26), vec2f(-0.72,-0.38), vec2f(-0.48,-0.82),
-        vec2f(-0.18,-0.94), vec2f(0.18,-0.94), vec2f(0.5,-0.78),
-        vec2f(0.76,-0.34), vec2f(0.82,0.24), vec2f(0.66,0.58),
-        vec2f(0.72,0.92), vec2f(0.28,0.72), vec2f(0.06,0.84),
-        vec2f(-0.18,0.72), vec2f(-0.7,0.94), vec2f(-0.64,0.54),
-        vec2f(-0.84,0.44), vec2f(-0.82,0.26), vec2f(-0.82,0.26)
+        vec2f(0.0,0.88), vec2f(-0.42,0.78), vec2f(-0.72,0.48),
+        vec2f(-0.9,0.18), vec2f(-0.72,0.08), vec2f(-0.62,-0.28),
+        vec2f(-0.56,-0.84), vec2f(-0.26,-0.5), vec2f(-0.12,-0.62),
+        vec2f(0.0,-0.78), vec2f(0.15,-0.58), vec2f(0.3,-0.5),
+        vec2f(0.58,-0.84), vec2f(0.64,-0.27), vec2f(0.74,0.08),
+        vec2f(0.9,0.18), vec2f(0.46,0.76), vec2f(0.0,0.88)
       );
       let edge = local * 17.0;
       let segment = min(16u, u32(floor(edge)));
       point = mix(outline[segment], outline[segment + 1u], fract(edge));
     } else {
       let outline = array<vec2f, 10>(
-        vec2f(-0.78,0.28), vec2f(-0.58,-0.68), vec2f(0.0,-0.9),
-        vec2f(0.58,-0.68), vec2f(0.78,0.28), vec2f(0.64,0.86),
-        vec2f(0.2,0.68), vec2f(-0.12,0.78), vec2f(-0.68,0.9), vec2f(-0.78,0.28)
+        vec2f(0.0,0.86), vec2f(-0.62,0.64), vec2f(-0.84,0.12),
+        vec2f(-0.6,-0.78), vec2f(-0.18,-0.5), vec2f(0.0,-0.72),
+        vec2f(0.2,-0.5), vec2f(0.6,-0.78), vec2f(0.84,0.12), vec2f(0.0,0.86)
       );
       let edge = local * 9.0;
       let segment = min(8u, u32(floor(edge)));

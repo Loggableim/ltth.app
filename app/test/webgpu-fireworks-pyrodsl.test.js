@@ -188,6 +188,36 @@ describe('PyroDSL contract and normalization', () => {
     expect(glyphSection).not.toContain('uniforms.time');
   });
 
+  test('samples Boykisser WGSL anchors with ears and curl above the face', () => {
+    const engine = new WebGPUParticleEngine({ width: 1920, height: 1080 });
+    const shader = engine._computeShader();
+    const boykisser = shader.slice(shader.indexOf('fn boykisserPoint'), shader.indexOf('fn transFlagPoint'));
+    const parseArray = (name, size) => {
+      const match = boykisser.match(new RegExp(`let ${name} = array<vec2f, ${size}>\\(([\\s\\S]*?)\\);`));
+      expect(match).not.toBeNull();
+      return [...match[1].matchAll(/vec2f\((-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)\)/g)]
+        .map(([, x, y]) => ({ x: Number(x), y: Number(y) }));
+    };
+    const detailed = parseArray('outline', 18);
+    const simplified = parseArray('outline', 10);
+    const mouth = parseArray('mouth', 5);
+    const eyeAnchor = boykisser.match(/point = vec2f\(side \* (-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)\)/);
+
+    expect(detailed).toHaveLength(18);
+    expect(simplified).toHaveLength(10);
+    expect(eyeAnchor).not.toBeNull();
+    const eyeY = Number(eyeAnchor[2]);
+    for (const outline of [detailed, simplified]) {
+      expect(outline.some(point => point.x <= -0.4 && point.y <= -0.65)).toBe(true);
+      expect(outline.some(point => point.x >= 0.4 && point.y <= -0.65)).toBe(true);
+      expect(outline.some(point => Math.abs(point.x) <= 0.16 && point.y <= -0.65)).toBe(true);
+      expect(outline.some(point => point.x <= -0.8 && point.y >= -0.2 && point.y <= 0.35)).toBe(true);
+      expect(outline.some(point => point.x >= 0.8 && point.y >= -0.2 && point.y <= 0.35)).toBe(true);
+      expect(outline.some(point => Math.abs(point.x) >= 0.55 && point.y > 0.65)).toBe(false);
+    }
+    expect(mouth.every(point => point.y > eyeY)).toBe(true);
+  });
+
   test('clones into a stable normalized contract with resolved defaults and no shared references', () => {
     const source = validDefinition();
     delete source.autoEligible;

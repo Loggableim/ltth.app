@@ -325,6 +325,50 @@ describe('ShowPlanV2 built-in scheduling matrix', () => {
     'furry-celebration': [15, 25, 38]
   };
 
+  test.each([
+    ['short', 600],
+    ['medium', 1000],
+    ['long', 1500]
+  ])('keeps the real %s Furry runtime silent before the Hero reveal', (length, quietGapMs) => {
+    const showPlan = new FinaleShowPlanner().plan({
+      style: 'furry-celebration', length, id: `furry-quiet-${length}`, seed: 441, intensity: 7
+    });
+    const runtime = buildShowPlanV2Runtime(showPlan, {
+      startAt: 0, width: 1920, height: 1080, playSound: true
+    });
+    const heroCue = showPlan.cues.at(-1);
+    const heroAt = heroCue.beatAtMs;
+    const quietStart = heroAt - quietGapMs;
+    const heroShellIds = new Set(heroCue.shells.map(shellEntry => shellEntry.id));
+    const heroLaunchEvents = runtime.events.filter(event =>
+      (event.type === 'finale-v2-rocket' && heroShellIds.has(event.shellId))
+      || (event.type === 'finale-v2-launch-audio'
+        && event.shellIds.some(shellId => heroShellIds.has(shellId))));
+    const forbiddenTypes = new Set([
+      'finale-v2-rocket',
+      'finale-v2-launch-audio',
+      'finale-v2-bang-audio',
+      'finale-v2-crackle-audio',
+      'finale-v2-layer'
+    ]);
+    const activeEnd = event => {
+      if (event.type === 'finale-v2-rocket') return event.due + event.flightDurationMs;
+      if (event.type === 'finale-v2-layer') return event.due + event.layer.lifetimeMs;
+      if (event.type === 'finale-v2-crackle-audio') return event.due + event.maxDurationMs;
+      return event.due;
+    };
+    const quietIntervalActivity = runtime.events.filter(event => forbiddenTypes.has(event.type))
+      .filter(event => (
+        (event.due >= quietStart && event.due < heroAt)
+        || (event.due < heroAt && activeEnd(event) > quietStart)
+      ));
+
+    expect(heroCue.shells).toHaveLength(1);
+    expect(heroCue.shells[0].launchMode).toBe('airburst');
+    expect(heroLaunchEvents).toEqual([]);
+    expect(quietIntervalActivity).toEqual([]);
+  });
+
   test.each(FINALE_STYLES.flatMap(style => FINALE_LENGTHS.map((length, index) => [style, length, index]))) (
     '%s/%s schedules deterministically with exact shell count, duration and command budget',
     (style, length, lengthIndex) => {

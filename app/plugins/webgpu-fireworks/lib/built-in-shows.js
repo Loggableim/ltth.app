@@ -76,6 +76,7 @@ function shellVariant(shape, soundRole, layers, hints, options = {}) {
     shape,
     soundRole,
     tier: options.tier,
+    launchMode: options.launchMode,
     crackleEnabled: options.crackleEnabled,
     layers,
     renderHints: hints,
@@ -115,6 +116,7 @@ function furryCue(formation, soundRole, tier, catHints, supports = [], options =
     ...(options.accents || [])
   ], catHints, {
     tier,
+    launchMode: options.launchMode,
     crackleEnabled: options.crackleEnabled,
     exactTarget: options.exactTarget,
     exactOrigin: options.exactOrigin
@@ -335,9 +337,10 @@ const BLUEPRINTS = {
           supportGlyph('paw', ['#FF8C00', '#FFED00'], renderHints(0.3, 0.92), { soundRole: 'paw-wave', lifetimeMs: 600 }),
           supportGlyph('fox-head', ['#FF8C00', '#FFED00'], renderHints(0.1, 0.9), { soundRole: 'fox-wave', lifetimeMs: 600 }),
           supportGlyph('wolf-head', ['#5BCEFA', '#24408E'], renderHints(-0.1, 0.9), { soundRole: 'wolf-wave', lifetimeMs: 600 })
-        ], { cat: { density: 132, lifetimeMs: 600 }, crackleEnabled: true }),
+        ], { cat: { density: 132, lifetimeMs: 600 }, crackleEnabled: false }),
         furryCue('gold-crown', 'boykisser-hero', 'massive', renderHints(0.82, 2), [], {
           cat: { density: 180, lifetimeMs: 1200, gravity: 0.08 },
+          launchMode: 'airburst',
           exactTarget: { x: 0.5, y: 0.42 },
           exactOrigin: { x: 0.5, y: 1.02 },
           accents: [

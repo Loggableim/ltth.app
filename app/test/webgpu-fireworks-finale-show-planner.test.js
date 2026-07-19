@@ -373,6 +373,7 @@ describe('WebGPU Fireworks finale show planner', () => {
           timeMs: heroBeat,
           phase: 'finale',
           shells: [expect.objectContaining({
+            launchMode: 'airburst',
             target: { x: 0.5, y: 0.42 },
             position: { x: 0.5, y: 0.42 },
             renderHints: {
@@ -385,6 +386,7 @@ describe('WebGPU Fireworks finale show planner', () => {
         });
         expect(hero.layers.some(layer => layer.glyph === 'boykisser' && layer.core === true)).toBe(true);
         expect(heroCue.shells).toHaveLength(1);
+        expect(penultimate.shells.every(shell => shell.crackleEnabled === false)).toBe(true);
         expect(Math.max(...penultimate.shells.flatMap(shell => shell.layers)
           .filter(layer => layer.core)
           .map(layer => penultimate.timeMs + layer.delayMs + layer.lifetimeMs)))
