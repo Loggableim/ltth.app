@@ -222,6 +222,28 @@ describe('PyroDSL validation', () => {
     expect(validateShowDefinition(definition)).toMatchObject({ valid: true, errors: [] });
   });
 
+  test.each([
+    ['metadata', definition => { definition.metadata = null; }, 'metadata', 'invalid_object'],
+    ['variants', definition => { definition.variants = null; }, 'variants', 'invalid_object'],
+    ['variant', definition => { definition.variants.long = null; }, 'variants.long', 'invalid_object'],
+    ['cues array', definition => { definition.variants.long.cues = null; }, 'variants.long.cues', 'invalid_array'],
+    ['cue item', definition => { definition.variants.long.cues[0] = null; }, 'variants.long.cues.0', 'invalid_object'],
+    ['shells array', definition => { definition.variants.long.cues[0].shells = null; }, 'variants.long.cues.0.shells', 'invalid_array'],
+    ['shell item', definition => { definition.variants.long.cues[0].shells[0] = null; }, 'variants.long.cues.0.shells.0', 'invalid_object'],
+    ['origin', definition => { definition.variants.long.cues[0].shells[0].origin = null; }, 'variants.long.cues.0.shells.0.origin', 'invalid_object'],
+    ['target', definition => { definition.variants.long.cues[0].shells[0].target = null; }, 'variants.long.cues.0.shells.0.target', 'invalid_object'],
+    ['layers array', definition => { definition.variants.long.cues[0].shells[0].layers = null; }, 'variants.long.cues.0.shells.0.layers', 'invalid_array'],
+    ['layer item', definition => { definition.variants.long.cues[0].shells[0].layers[0] = null; }, 'variants.long.cues.0.shells.0.layers.0', 'invalid_object']
+  ])('rejects non-structural %s values before normalization', (label, mutate, path, code) => {
+    const definition = validDefinition();
+    mutate(definition);
+
+    const result = validateShowDefinition(definition);
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContainEqual(expect.objectContaining({ code, path, message: expect.any(String) }));
+  });
+
   test('never throws for malformed nested values and returns structured errors', () => {
     const malformed = validDefinition();
     malformed.metadata = null;
@@ -482,6 +504,22 @@ describe('PyroDSL deterministic compilation', () => {
     const definition = validDefinition();
     expect(() => compileShowDefinition(definition, { variant: '__proto__', seed: 1 }))
       .toThrow(PyroDSLValidationError);
+  });
+
+  test('compiler rejects null layer items instead of compiling normalized defaults', () => {
+    const definition = validDefinition();
+    definition.variants.long.cues[0].shells[0].layers[0] = null;
+
+    expect(() => compileShowDefinition(definition, { variant: 'long', seed: 1 }))
+      .toThrow(PyroDSLValidationError);
+    try {
+      compileShowDefinition(definition, { variant: 'long', seed: 1 });
+    } catch (error) {
+      expect(error.errors).toContainEqual(expect.objectContaining({
+        code: 'invalid_object',
+        path: 'variants.long.cues.0.shells.0.layers.0'
+      }));
+    }
   });
 });
 

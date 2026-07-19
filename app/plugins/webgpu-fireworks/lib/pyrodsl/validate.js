@@ -54,50 +54,65 @@ function inspectRawObject(errors, value, path, allowed, required = []) {
   }
 }
 
+function requireRawObject(errors, value, path) {
+  if (isObject(value)) return true;
+  errors.push(error('invalid_object', path, 'ShowDefinitionV1 requires an object at this path.'));
+  return false;
+}
+
+function requireRawArray(errors, value, path) {
+  if (Array.isArray(value)) return true;
+  errors.push(error('invalid_array', path, 'ShowDefinitionV1 requires an array at this path.'));
+  return false;
+}
+
 function inspectRawDefinition(errors, source) {
   inspectRawObject(errors, source, '',
     ['schemaVersion', 'id', 'metadata', 'materialProfile', 'autoEligible', 'variants'],
     ['schemaVersion', 'id', 'metadata', 'materialProfile', 'autoEligible', 'variants']);
 
-  inspectRawObject(errors, source.metadata, 'metadata',
-    ['name', 'description', 'author', 'tags'], ['name']);
-  inspectRawObject(errors, source.variants, 'variants',
-    ['short', 'medium', 'long'], ['long']);
+  if (hasOwn(source, 'metadata') && requireRawObject(errors, source.metadata, 'metadata')) {
+    inspectRawObject(errors, source.metadata, 'metadata',
+      ['name', 'description', 'author', 'tags'], ['name']);
+  }
+  if (!hasOwn(source, 'variants') || !requireRawObject(errors, source.variants, 'variants')) return;
+  inspectRawObject(errors, source.variants, 'variants', ['short', 'medium', 'long'], ['long']);
 
-  if (!isObject(source.variants)) return;
   for (const variantName of ['short', 'medium', 'long']) {
     const variant = source.variants[variantName];
-    if (!isObject(variant)) continue;
     const variantPath = `variants.${variantName}`;
+    if (!hasOwn(source.variants, variantName)) continue;
+    if (!requireRawObject(errors, variant, variantPath)) continue;
     inspectRawObject(errors, variant, variantPath, ['durationMs', 'cues'], ['durationMs', 'cues']);
-    if (!Array.isArray(variant.cues)) continue;
+    if (!hasOwn(variant, 'cues') || !requireRawArray(errors, variant.cues, `${variantPath}.cues`)) continue;
     variant.cues.forEach((cue, cueIndex) => {
-      if (!isObject(cue)) return;
       const cuePath = `${variantPath}.cues.${cueIndex}`;
+      if (!requireRawObject(errors, cue, cuePath)) return;
       inspectRawObject(errors, cue, cuePath,
         ['timeMs', 'phase', 'formation', 'importance', 'shells'],
         ['timeMs', 'phase', 'formation', 'importance', 'shells']);
-      if (!Array.isArray(cue.shells)) return;
+      if (!hasOwn(cue, 'shells') || !requireRawArray(errors, cue.shells, `${cuePath}.shells`)) return;
       cue.shells.forEach((shell, shellIndex) => {
-        if (!isObject(shell)) return;
         const shellPath = `${cuePath}.shells.${shellIndex}`;
+        if (!requireRawObject(errors, shell, shellPath)) return;
         inspectRawObject(errors, shell, shellPath,
           ['origin', 'target', 'launchMode', 'tier', 'palette', 'layers'],
           ['origin', 'target', 'launchMode', 'tier', 'palette', 'layers']);
         for (const coordinateName of ['origin', 'target']) {
           const coordinatePath = `${shellPath}.${coordinateName}`;
+          if (!hasOwn(shell, coordinateName)) continue;
+          if (!requireRawObject(errors, shell[coordinateName], coordinatePath)) continue;
           inspectRawObject(errors, shell[coordinateName], coordinatePath, ['x', 'y'], ['x', 'y']);
-          if (isObject(shell[coordinateName])) {
-            for (const axis of ['x', 'y']) {
-              inspectRawObject(errors, shell[coordinateName][axis], `${coordinatePath}.${axis}`,
-                ['min', 'max'], ['min', 'max']);
-            }
+          for (const axis of ['x', 'y']) {
+            inspectRawObject(errors, shell[coordinateName][axis], `${coordinatePath}.${axis}`,
+              ['min', 'max'], ['min', 'max']);
           }
         }
-        if (!Array.isArray(shell.layers)) return;
+        if (!hasOwn(shell, 'layers') || !requireRawArray(errors, shell.layers, `${shellPath}.layers`)) return;
         shell.layers.forEach((layer, layerIndex) => {
-          if (!isObject(layer)) return;
-          inspectRawObject(errors, layer, `${shellPath}.layers.${layerIndex}`, [
+          const layerPath = `${shellPath}.layers.${layerIndex}`;
+          if (!requireRawObject(errors, layer, layerPath)) return;
+          inspectRawObject(errors, layer, layerPath, [
             'primitive', 'delayMs', 'density', 'size', 'lifetimeMs', 'gravity', 'drag',
             'trail', 'split', 'strobe', 'colors', 'priority', 'core', 'glyph'
           ], [
@@ -105,7 +120,7 @@ function inspectRawDefinition(errors, source) {
             'trail', 'split', 'strobe', 'colors'
           ]);
           for (const property of ['size', 'gravity', 'drag']) {
-            inspectRawObject(errors, layer[property], `${shellPath}.layers.${layerIndex}.${property}`,
+            inspectRawObject(errors, layer[property], `${layerPath}.${property}`,
               ['min', 'max'], ['min', 'max']);
           }
         });
