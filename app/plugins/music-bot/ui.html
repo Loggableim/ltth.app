@@ -75,8 +75,8 @@
     <script src="/js/i18n-client.js"></script>
 </head>
   <body>
-  <div class="container">
-    <header class="header">
+  <div class="musicbot-shell container">
+    <header class="console-header header">
       <div class="hero-art" aria-hidden="true">
         <img class="hero-icon" src="/plugins/music-bot/assets/soundbot.png" alt="">
       </div>
@@ -130,7 +130,7 @@
       <div id="setup-issues-list"></div>
     </div>
 
-    <section id="musicbot-safety-panel" class="card safety-panel" aria-labelledby="safety-panel-title">
+    <section id="musicbot-safety-panel" class="safety-strip card safety-panel" aria-labelledby="safety-panel-title">
       <div class="card-header">
         <div>
           <p class="section-kicker" data-i18n="music_bot.ui.safety.kicker">Live-Sicherheit</p>
@@ -161,8 +161,23 @@
       <p id="safety-feedback" class="feedback" aria-live="polite"></p>
     </section>
 
-    <section class="musicbot-stage tab-content active" data-tab-content="player">
-      <section class="card player-card">
+    <div class="console-workspace">
+      <nav class="console-nav tab-bar" id="tab-bar" role="tablist" aria-label="Soundbot sections">
+        <button id="musicbot-tab-player" class="tab active" type="button" role="tab" data-tab="player" aria-controls="musicbot-panel-player" aria-selected="true" tabindex="0">Player</button>
+        <button id="musicbot-tab-queue" class="tab" type="button" role="tab" data-tab="queue" aria-controls="musicbot-panel-queue" aria-selected="false" tabindex="-1">Queue</button>
+        <button id="musicbot-tab-autodj" class="tab" type="button" role="tab" data-tab="autodj" aria-controls="musicbot-panel-autodj" aria-selected="false" tabindex="-1">Auto-DJ</button>
+        <button id="musicbot-tab-history" class="tab" type="button" role="tab" data-tab="history" aria-controls="musicbot-panel-history" aria-selected="false" tabindex="-1" data-i18n="music_bot.ui.catalog.historyTab">History</button>
+        <button id="musicbot-tab-catalog" class="tab" type="button" role="tab" data-tab="catalog" aria-controls="musicbot-panel-catalog" aria-selected="false" tabindex="-1" data-i18n="music_bot.ui.catalog.catalogTab">Katalog</button>
+        <button id="musicbot-tab-playlists" class="tab" type="button" role="tab" data-tab="playlists" aria-controls="musicbot-panel-playlists" aria-selected="false" tabindex="-1" data-i18n="music_bot.ui.catalog.playlistsTab">Playlists</button>
+        <button id="musicbot-tab-settings" class="tab" type="button" role="tab" data-tab="settings" aria-controls="musicbot-panel-settings" aria-selected="false" tabindex="-1">Einstellungen</button>
+        <button id="musicbot-tab-aliases" class="tab" type="button" role="tab" data-tab="aliases" aria-controls="musicbot-panel-aliases" aria-selected="false" tabindex="-1">Aliases</button>
+        <button id="musicbot-tab-moderation" class="tab" type="button" role="tab" data-tab="moderation" aria-controls="musicbot-panel-moderation" aria-selected="false" tabindex="-1">Moderation</button>
+        <button id="musicbot-tab-overlay" class="tab" type="button" role="tab" data-tab="overlay" aria-controls="musicbot-panel-overlay" aria-selected="false" tabindex="-1">Overlay</button>
+      </nav>
+
+      <main class="console-main">
+        <section id="musicbot-panel-player" class="musicbot-stage tab-content active" data-tab-content="player" role="tabpanel" aria-labelledby="musicbot-tab-player" aria-hidden="false" tabindex="0">
+          <section class="card player-card">
         <div class="card-header">
           <div>
             <p class="section-kicker" data-i18n="generated.c42bdd1ca923">Aktuelle Wiedergabe</p>
@@ -172,11 +187,12 @@
           <div class="pill" id="preview-source">YouTube</div>
         </div>
 
-        <div class="player-search-bar">
-          <input type="text" id="search-input" placeholder="YouTube-Link einfuegen oder Suchwort eingeben..." autocomplete="off">
-          <button id="search-btn" class="btn ghost" type="button">Suchen</button>
-          <button id="request-btn" class="btn primary" type="button" data-i18n="generated.3511e8d6a5b1">Song anfordern</button>
-        </div>
+            <div class="player-search-bar">
+              <label class="sr-only" for="search-input">YouTube-Link oder Suchbegriff</label>
+              <input type="text" id="search-input" placeholder="YouTube-Link einfuegen oder Suchwort eingeben..." autocomplete="off">
+              <button id="search-btn" class="btn ghost" type="button">Suchen</button>
+              <button id="request-btn" class="btn primary" type="button" data-i18n="generated.3511e8d6a5b1">Song anfordern</button>
+            </div>
         <div id="search-feedback" class="feedback"></div>
 
         <div class="player-main">
@@ -241,44 +257,34 @@
         </div>
 
         <div id="request-feedback" class="feedback"></div>
-        <form id="request-form" style="display:none">
-          <input type="text" id="request-input">
-        </form>
-      </section>
+            <form id="request-form" style="display:none">
+              <label class="sr-only" for="request-input">Song-Anfrage</label>
+              <input type="text" id="request-input">
+            </form>
+          </section>
+        </section>
 
-      <section class="card queue-side-card" id="queue-panel">
-        <div class="card-header">
-          <div>
-            <p class="section-kicker">Warteschlange</p>
-            <h2>Queue</h2>
-            <p class="text-secondary" data-i18n="generated.37be34ffafaf">Aktuelle Warteschlange (Drag &amp; Drop zum Sortieren)</p>
-          </div>
-          <span id="queue-length" class="pill">0</span>
-        </div>
-        <div id="queue-list" class="list empty">
-          <div class="queue-empty-state">
-            <img src="/plugins/music-bot/assets/soundbot.png" alt="" aria-hidden="true">
-            <strong data-i18n="generated.8cd67ecb851b">Die Warteschlange ist leer</strong>
-            <p data-i18n="generated.0cc885128306">Sei der/die Erste und fordere einen Song an.</p>
-          </div>
-        </div>
-      </section>
-    </section>
+        <section id="musicbot-panel-queue" class="tab-content" data-tab-content="queue" role="tabpanel" aria-labelledby="musicbot-tab-queue" aria-hidden="true" tabindex="0" hidden>
+          <section class="card queue-side-card" id="queue-panel">
+            <div class="card-header">
+              <div>
+                <p class="section-kicker">Warteschlange</p>
+                <h2>Queue</h2>
+                <p class="text-secondary" data-i18n="generated.37be34ffafaf">Aktuelle Warteschlange (Drag &amp; Drop zum Sortieren)</p>
+              </div>
+              <span id="queue-length" class="pill">0</span>
+            </div>
+            <div id="queue-list" class="list empty">
+              <div class="queue-empty-state">
+                <img src="/plugins/music-bot/assets/soundbot.png" alt="" aria-hidden="true">
+                <strong data-i18n="generated.8cd67ecb851b">Die Warteschlange ist leer</strong>
+                <p data-i18n="generated.0cc885128306">Sei der/die Erste und fordere einen Song an.</p>
+              </div>
+            </div>
+          </section>
+        </section>
 
-    <nav class="tab-bar" id="tab-bar">
-      <button class="tab active" data-tab="player">Player</button>
-      <button class="tab" data-tab="queue">Queue</button>
-      <button class="tab" data-tab="settings">Einstellungen</button>
-      <button class="tab" data-tab="autodj">Auto-DJ</button>
-      <button class="tab" data-tab="aliases">Aliases</button>
-      <button class="tab" data-tab="moderation">Moderation</button>
-      <button class="tab" data-tab="overlay">Overlay</button>
-      <button class="tab" data-tab="history" data-i18n="music_bot.ui.catalog.historyTab">History</button>
-      <button class="tab" data-tab="catalog" data-i18n="music_bot.ui.catalog.catalogTab">Katalog</button>
-      <button class="tab" data-tab="playlists" data-i18n="music_bot.ui.catalog.playlistsTab">Playlists</button>
-    </nav>
-
-    <section class="card tab-content" data-tab-content="settings">
+        <section id="musicbot-panel-settings" class="card tab-content" data-tab-content="settings" role="tabpanel" aria-labelledby="musicbot-tab-settings" aria-hidden="true" tabindex="0" hidden>
       <div class="card-header">
         <div>
           <h2>Einstellungen</h2>
@@ -417,7 +423,7 @@
       </div>
     </section>
 
-    <section class="card tab-content" data-tab-content="overlay">
+        <section id="musicbot-panel-overlay" class="card tab-content" data-tab-content="overlay" role="tabpanel" aria-labelledby="musicbot-tab-overlay" aria-hidden="true" tabindex="0" hidden>
       <div class="card-header">
         <div>
           <h2 data-i18n="generated.2e66eee70634">OBS Overlay</h2>
@@ -465,7 +471,7 @@
       </div>
     </section>
 
-    <section class="card tab-content" data-tab-content="autodj">
+        <section id="musicbot-panel-autodj" class="card tab-content" data-tab-content="autodj" role="tabpanel" aria-labelledby="musicbot-tab-autodj" aria-hidden="true" tabindex="0" hidden>
       <div class="card-header">
         <div>
           <h2>Auto-DJ</h2>
@@ -519,7 +525,7 @@
       </div>
     </section>
 
-    <section class="card tab-content" data-tab-content="aliases">
+        <section id="musicbot-panel-aliases" class="card tab-content" data-tab-content="aliases" role="tabpanel" aria-labelledby="musicbot-tab-aliases" aria-hidden="true" tabindex="0" hidden>
       <div class="card-header">
         <div>
           <h2 data-i18n="generated.e515b8821952">Command Aliases</h2>
@@ -565,7 +571,7 @@
       </div>
     </section>
 
-    <section class="card tab-content" data-tab-content="moderation">
+        <section id="musicbot-panel-moderation" class="card tab-content" data-tab-content="moderation" role="tabpanel" aria-labelledby="musicbot-tab-moderation" aria-hidden="true" tabindex="0" hidden>
       <div class="card-header">
         <div>
           <h2>Moderation</h2>
@@ -637,7 +643,7 @@
       </div>
     </section>
 
-    <section class="card tab-content" data-tab-content="history">
+        <section id="musicbot-panel-history" class="card tab-content" data-tab-content="history" role="tabpanel" aria-labelledby="musicbot-tab-history" aria-hidden="true" tabindex="0" hidden>
       <div class="card-header">
         <div>
           <h2>History</h2>
@@ -653,7 +659,7 @@
       </div>
     </section>
 
-    <section class="card tab-content" data-tab-content="catalog">
+        <section id="musicbot-panel-catalog" class="card tab-content" data-tab-content="catalog" role="tabpanel" aria-labelledby="musicbot-tab-catalog" aria-hidden="true" tabindex="0" hidden>
       <div class="card-header"><div><h2 data-i18n="music_bot.ui.catalog.catalogTab">Katalog</h2><p class="text-secondary" data-i18n="music_bot.ui.catalog.catalogDescription">Historische Songs suchen, bewerten und zu Playlists hinzufügen.</p></div></div>
       <div class="player-search-bar">
         <input id="catalog-search-input" type="search" autocomplete="off" placeholder="Titel suchen" data-i18n-placeholder="music_bot.ui.catalog.catalogSearch" aria-label="Titel suchen" data-i18n-aria-label="music_bot.ui.catalog.catalogSearch">
@@ -661,7 +667,7 @@
       <div id="catalog-search-results" class="list empty" aria-live="polite"></div>
     </section>
 
-    <section class="card tab-content" data-tab-content="playlists">
+        <section id="musicbot-panel-playlists" class="card tab-content" data-tab-content="playlists" role="tabpanel" aria-labelledby="musicbot-tab-playlists" aria-hidden="true" tabindex="0" hidden>
       <div class="card-header"><div><h2 data-i18n="music_bot.ui.catalog.playlistsTab">Playlists</h2><p class="text-secondary" data-i18n="music_bot.ui.catalog.playlistsDescription">Eigene Quellen und Viewer Radio verwalten.</p></div></div>
       <div class="player-search-bar">
         <input id="playlist-create-name" type="text" maxlength="120" placeholder="Neue Playlist" data-i18n-placeholder="music_bot.ui.catalog.newPlaylist" aria-label="Neue Playlist" data-i18n-aria-label="music_bot.ui.catalog.newPlaylist">
@@ -692,7 +698,9 @@
         <div id="playlist-radio-sources"></div>
         <button id="playlist-radio-save" class="btn ghost" type="button" data-i18n="music_bot.ui.catalog.saveRadioSources">Radio-Quellen speichern</button>
       </section>
-    </section>
+        </section>
+      </main>
+    </div>
   </div>
   <div id="musicbot-toast-container" class="musicbot-toast-container" aria-live="polite" aria-atomic="true"></div>
   <div id="track-ban-menu" class="track-ban-menu" role="dialog" aria-modal="false" aria-labelledby="track-ban-menu-title" hidden tabindex="-1">

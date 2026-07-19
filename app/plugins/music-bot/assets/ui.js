@@ -30,9 +30,9 @@
     };
   }
 
-  function setActiveTab(target) {
+  function setActiveTab(target, { focusPanel = true } = {}) {
     if (!target) return;
-    const contentTarget = target === 'queue' ? 'player' : target;
+    const panelId = `musicbot-panel-${target}`;
     document.querySelectorAll('.tab').forEach((t) => {
       const isActive = t.getAttribute('data-tab') === target;
       t.classList.toggle('active', isActive);
@@ -40,12 +40,16 @@
       t.setAttribute('tabindex', isActive ? '0' : '-1');
     });
     document.querySelectorAll('.tab-content').forEach((c) => {
-      const isActive = c.getAttribute('data-tab-content') === contentTarget;
+      const isActive = c.id === panelId;
       c.classList.toggle('active', isActive);
       c.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+      c.toggleAttribute('hidden', !isActive);
     });
-    if (target === 'queue') {
-      document.getElementById('queue-panel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    const activePanel = document.getElementById(panelId);
+    activePanel?.scrollIntoView?.({ behavior: 'auto', block: 'start' });
+    if (focusPanel) {
+      activePanel?.focus({ preventScroll: true });
     }
   }
 
@@ -57,12 +61,13 @@
   document.querySelectorAll('.tab').forEach((tab) => {
     const target = tab.getAttribute('data-tab');
     const isActive = tab.classList.contains('active');
+    tab.setAttribute('id', `musicbot-tab-${target}`);
     tab.setAttribute('role', 'tab');
     tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
-    tab.setAttribute('aria-controls', `tab-content-${target === 'queue' ? 'player' : target}`);
+    tab.setAttribute('aria-controls', `musicbot-panel-${target}`);
     tab.setAttribute('tabindex', isActive ? '0' : '-1');
     tab.addEventListener('click', () => {
-      setActiveTab(target);
+      setActiveTab(target, { focusPanel: false });
     });
     tab.addEventListener('keydown', (e) => {
       const tabs = Array.from(document.querySelectorAll('.tab'));
@@ -75,14 +80,18 @@
       if (next) {
         e.preventDefault();
         next.focus();
-        setActiveTab(next.getAttribute('data-tab'));
+        setActiveTab(next.getAttribute('data-tab'), { focusPanel: false });
       }
     });
   });
   document.querySelectorAll('[data-tab-content]').forEach((panel) => {
+    const target = panel.getAttribute('data-tab-content');
+    const isActive = panel.classList.contains('active');
     panel.setAttribute('role', 'tabpanel');
-    panel.setAttribute('id', `tab-content-${panel.getAttribute('data-tab-content')}`);
-    panel.setAttribute('aria-hidden', panel.classList.contains('active') ? 'false' : 'true');
+    panel.setAttribute('id', `musicbot-panel-${target}`);
+    panel.setAttribute('aria-labelledby', `musicbot-tab-${target}`);
+    panel.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+    panel.toggleAttribute('hidden', !isActive);
   });
 
   const socket = io();
