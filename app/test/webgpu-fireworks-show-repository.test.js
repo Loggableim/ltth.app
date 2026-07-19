@@ -37,7 +37,10 @@ describe('RevisionedShowRepository 3A1', () => {
     });
   });
 
-  afterEach(() => fs.rmSync(tempDir, { recursive: true, force: true }));
+  afterEach(() => {
+    jest.restoreAllMocks();
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
 
   test('creates a versioned store and atomically updates immutable revision history', () => {
     const created = repository.create(makeDefinition());
@@ -104,6 +107,41 @@ describe('RevisionedShowRepository 3A1', () => {
     }));
   });
 
+  test.each(['__proto__', 'constructor', 'toString'])(
+    'returns typed not-found errors when get receives inherited key %s',
+    id => {
+      expect(() => repository.get(id)).toThrow(expect.objectContaining({
+        name: 'ShowRepositoryError',
+        code: 'SHOW_NOT_FOUND',
+        status: 404,
+        details: { id }
+      }));
+    }
+  );
+
+  test.each(['__proto__', 'constructor', 'toString'])(
+    'returns typed not-found errors when saveDraft receives inherited key %s',
+    id => {
+      expect(() => repository.saveDraft(id, makeDefinition(), 0)).toThrow(expect.objectContaining({
+        name: 'ShowRepositoryError',
+        code: 'SHOW_NOT_FOUND',
+        status: 404,
+        details: { id }
+      }));
+    }
+  );
+
+  test('isolates injected built-ins from later mutation of the source catalog', () => {
+    const injectedDefinition = makeDefinition('Injected Original');
+    injectedDefinition.id = 'injected-show';
+    const catalog = { 'injected-show': injectedDefinition };
+    const isolated = new RevisionedShowRepository({ dataDir: tempDir, builtIns: catalog });
+
+    catalog['injected-show'].metadata.name = 'External Mutation';
+
+    expect(isolated.get('injected-show').definition.metadata.name).toBe('Injected Original');
+  });
+
   test('returns defensive clones from create, save, get, list, and load', () => {
     const created = repository.create(makeDefinition());
     created.definition.metadata.name = 'Mutated create result';
@@ -152,6 +190,32 @@ describe('RevisionedShowRepository 3A1', () => {
     expect(fs.existsSync(recovered.tempPath)).toBe(false);
   });
 
+  test('preserves the only valid temp when promotion to primary fails', () => {
+    const created = repository.create(makeDefinition());
+    fs.renameSync(repository.filePath, repository.tempPath);
+    const tempText = fs.readFileSync(repository.tempPath, 'utf8');
+    const originalRename = fs.renameSync;
+    jest.spyOn(fs, 'renameSync').mockImplementation((source, target) => {
+      if (source === repository.tempPath && target === repository.filePath) {
+        const error = new Error('injected temp promotion failure');
+        error.code = 'EIO';
+        throw error;
+      }
+      return originalRename(source, target);
+    });
+
+    const recovered = new RevisionedShowRepository({ dataDir: tempDir });
+
+    expect(() => recovered.load()).toThrow(expect.objectContaining({
+      code: 'STORE_WRITE_FAILED',
+      status: 500
+    }));
+    expect(fs.existsSync(recovered.filePath)).toBe(false);
+    expect(fs.existsSync(recovered.backupPath)).toBe(false);
+    expect(fs.readFileSync(recovered.tempPath, 'utf8')).toBe(tempText);
+    expect(JSON.parse(fs.readFileSync(recovered.tempPath, 'utf8')).records[created.id].revision).toBe(1);
+  });
+
   test('keeps a valid primary and discards an orphaned temp', () => {
     const created = repository.create(makeDefinition());
     fs.writeFileSync(repository.tempPath, JSON.stringify({ version: STORE_VERSION, records: {} }), 'utf8');
@@ -180,6 +244,27 @@ describe('RevisionedShowRepository 3A1', () => {
     expect(backup.records[created.id].revision).toBe(1);
     expect(backup.records[created.id].definition.metadata.name).toBe('Good Copy');
     expect(recovered.get(created.id).revision).toBe(2);
+  });
+
+  test('cleans a new temp and rolls memory back when an ordinary save promotion fails', () => {
+    const created = repository.create(makeDefinition('Before Failed Save'));
+    const originalRename = fs.renameSync;
+    jest.spyOn(fs, 'renameSync').mockImplementation((source, target) => {
+      if (source === repository.tempPath && target === repository.filePath) {
+        const error = new Error('injected save promotion failure');
+        error.code = 'EIO';
+        throw error;
+      }
+      return originalRename(source, target);
+    });
+
+    expect(() => repository.saveDraft(created.id, makeDefinition('Must Roll Back'), 1)).toThrow(
+      expect.objectContaining({ code: 'STORE_WRITE_FAILED', status: 500 })
+    );
+    expect(fs.existsSync(repository.tempPath)).toBe(false);
+    expect(JSON.parse(fs.readFileSync(repository.filePath, 'utf8')).records[created.id].revision).toBe(1);
+    expect(repository.get(created.id).definition.metadata.name).toBe('Before Failed Save');
+    expect(repository.get(created.id).revision).toBe(1);
   });
 
   test('throws a structured storage error when no valid recovery candidate exists', () => {

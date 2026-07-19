@@ -9,6 +9,7 @@ const { BUILT_IN_SHOW_DEFINITIONS } = require('./built-in-shows');
 const STORE_VERSION = 1;
 const STORE_FILE_NAME = 'custom-shows.json';
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
 
 function isObject(value) {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
@@ -16,6 +17,14 @@ function isObject(value) {
 
 function cloneJson(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function deepFreeze(value) {
+  Object.freeze(value);
+  for (const child of Object.values(value)) {
+    if (child && typeof child === 'object' && !Object.isFrozen(child)) deepFreeze(child);
+  }
+  return value;
 }
 
 class ShowRepositoryError extends Error {
@@ -45,7 +54,9 @@ class RevisionedShowRepository {
     this.now = typeof options.now === 'function' ? options.now : () => Date.now();
     this.idFactory = typeof options.idFactory === 'function' ? options.idFactory : () => crypto.randomUUID();
     this.logger = options.logger || (() => {});
-    this.builtIns = isObject(options.builtIns) ? options.builtIns : BUILT_IN_SHOW_DEFINITIONS;
+    this.builtIns = isObject(options.builtIns)
+      ? deepFreeze(cloneJson(options.builtIns))
+      : BUILT_IN_SHOW_DEFINITIONS;
     this.records = {};
     this.loaded = false;
   }
@@ -72,8 +83,13 @@ class RevisionedShowRepository {
 
     this.records = cloneJson(selected.value.records);
     this.loaded = true;
-    if (selected.path !== this.filePath) this._writeStore(this._snapshotStore());
-    else fs.rmSync(this.tempPath, { force: true });
+    if (selected.path !== this.filePath) {
+      this._writeStore(this._snapshotStore(), {
+        preserveTempOnFailure: selected.path === this.tempPath
+      });
+    } else {
+      fs.rmSync(this.tempPath, { force: true });
+    }
     return this.list();
   }
 
@@ -88,11 +104,10 @@ class RevisionedShowRepository {
 
   get(id) {
     this._ensureLoaded();
-    if (Object.prototype.hasOwnProperty.call(this.builtIns, id)) {
+    if (hasOwn(this.builtIns, id)) {
       return cloneJson(this._builtInRecord(id, this.builtIns[id]));
     }
-    const record = this.records[id];
-    if (!record) {
+    if (!hasOwn(this.records, id)) {
       throw new ShowRepositoryError(
         'SHOW_NOT_FOUND',
         404,
@@ -100,6 +115,7 @@ class RevisionedShowRepository {
         { id }
       );
     }
+    const record = this.records[id];
     return cloneJson(record);
   }
 
@@ -140,7 +156,7 @@ class RevisionedShowRepository {
 
   saveDraft(id, definition, expectedRevision) {
     this._ensureLoaded();
-    if (Object.prototype.hasOwnProperty.call(this.builtIns, id)) {
+    if (hasOwn(this.builtIns, id)) {
       throw new ShowRepositoryError(
         'BUILT_IN_IMMUTABLE',
         409,
@@ -149,8 +165,7 @@ class RevisionedShowRepository {
       );
     }
 
-    const current = this.records[id];
-    if (!current) {
+    if (!hasOwn(this.records, id)) {
       throw new ShowRepositoryError(
         'SHOW_NOT_FOUND',
         404,
@@ -158,6 +173,7 @@ class RevisionedShowRepository {
         { id }
       );
     }
+    const current = this.records[id];
     if (!Number.isInteger(expectedRevision)) {
       throw new ShowRepositoryError(
         'EXPECTED_REVISION_REQUIRED',
@@ -230,7 +246,7 @@ class RevisionedShowRepository {
         );
       }
       const id = `custom:${uuid.toLowerCase()}`;
-      if (!this.records[id] && !Object.prototype.hasOwnProperty.call(this.builtIns, id)) return id;
+      if (!hasOwn(this.records, id) && !hasOwn(this.builtIns, id)) return id;
     }
     throw new ShowRepositoryError(
       'CUSTOM_ID_COLLISION',
@@ -270,13 +286,15 @@ class RevisionedShowRepository {
     }
   }
 
-  _writeStore(store) {
+  _writeStore(store, { preserveTempOnFailure = false } = {}) {
     fs.mkdirSync(this.dataDir, { recursive: true });
     const serialized = `${JSON.stringify(store, null, 2)}\n`;
     let primaryRotated = false;
+    let committed = false;
 
     try {
-      fs.writeFileSync(this.tempPath, serialized, 'utf8');
+      const reusableTemp = preserveTempOnFailure && this._readCandidate(this.tempPath).valid;
+      if (!reusableTemp) fs.writeFileSync(this.tempPath, serialized, 'utf8');
       const primary = this._readCandidate(this.filePath);
       if (primary.exists && primary.valid) {
         fs.rmSync(this.backupPath, { force: true });
@@ -288,6 +306,7 @@ class RevisionedShowRepository {
 
       try {
         fs.renameSync(this.tempPath, this.filePath);
+        committed = true;
       } catch (error) {
         if (primaryRotated && fs.existsSync(this.backupPath)) {
           try {
@@ -308,7 +327,11 @@ class RevisionedShowRepository {
         { reason: error.message }
       );
     } finally {
-      fs.rmSync(this.tempPath, { force: true });
+      const durableCopyExists = !committed && preserveTempOnFailure
+        && (this._readCandidate(this.filePath).valid || this._readCandidate(this.backupPath).valid);
+      if (!preserveTempOnFailure || committed || durableCopyExists) {
+        fs.rmSync(this.tempPath, { force: true });
+      }
     }
   }
 
