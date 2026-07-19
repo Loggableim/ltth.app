@@ -1,3 +1,5 @@
+const crypto = require('crypto');
+
 const {
   FinaleShowPlanner,
   FINALE_STYLES,
@@ -83,6 +85,54 @@ const CASES = Object.keys(COUNTS).flatMap(style =>
   Object.keys(COUNTS[style]).map(length => [style, length, COUNTS[style][length]])
 );
 
+const GEOMETRY_BASELINE_HASHES = {
+  'classic-crescendo': {
+    short: '2296ccf6ab399ec62c7d7d8f8e64387a1a5d57d8abed7b694a96635aaab90f4a',
+    medium: '5ad90ab4cee054eecb549f4137e896b6df1e4b3125cf76e676b2cd190eb7b832',
+    long: '2fea375fb214798753db9836ef8fd8d88f24b74857afdd377b699a23427d8142'
+  },
+  'symmetric-salute': {
+    short: '19c4e2239e5913b0081f3f5b9cf7903bb063512d39d1db2d3be83e48a78c3766',
+    medium: '836f08fdb34033f8480057a5a5e48d10174a5772fef7e5f323dc39ff091080fb',
+    long: '9befe7328464b498d973f28090d61c7dc2accf3434487fc4a66443a6fd634a26'
+  },
+  'sky-ballet': {
+    short: 'ea179f7cbc97de3154abc0ca23c74daec09bd078781a2f463d996446e7d5ef04',
+    medium: '33d262cc01f3ddedb4a7aabd78a4e46ea6a380e66d8592903368123291e7ff86',
+    long: '00c77f759b4e54aa03008480cbb52f4f338e6e97044e9b4a7349fb0c0427aa89'
+  },
+  'thunder-finale': {
+    short: 'afbca303f9e50aba43fa53da82966844c6d6895d2cf53147fa91c834cf374442',
+    medium: 'e20b5ee2634839827224cf02cf6f4331baa0b1e39fa561d92a042d49c3120df7',
+    long: 'b7882db5c4509d8492e46ba931e9c1baa6fe49e8f5c994c4beaf89330550dc77'
+  },
+  'nishiki-kamuro': {
+    short: 'd5dc61dc263383c6cf19db59c211e5ec2b935391f314bf7afac08fdffaa5c260',
+    medium: '41aacdb241fdbdc644483567c6e8ed05a9f49df18438e646fb26bde3c5cc0aee',
+    long: '43d1687189f344d4823f759a0448cf1e06b25d52b36b334ffcc9487c0b3c2a07'
+  },
+  'aurora-cathedral': {
+    short: '0de0cc6649c8b5108c2f288e4ebc78cb7e3e07f0add494602634377d4ccd543e',
+    medium: '9add33f9ad6c3a242eef0b39149050cf5107e7869a1f4f09b7710b1186ed3816',
+    long: 'dcf0d7c86e7b1e5f267ab377843112d9d83ebc64e6fce3e2836fd4ef884f2794'
+  },
+  'royal-brocade': {
+    short: '8c1bcc7fd491963950514af53fa123df2dc7c204c23587ef91ab8e0acf26d99d',
+    medium: '8bc4d5a128fe2051344ca76b6f39bf3568462af8de2019c8e42b183dd2c0de94',
+    long: '5ebbd9a2b07670c8dab145d65849580d37f63a63d2acf432f64d62f0a7568ae5'
+  },
+  'phoenix-ascension': {
+    short: '0be0db2b3507ccbeea0f56774f9519356bd26c01fe5d2a199d8e18bd09b90079',
+    medium: '71914d98a3a503c9edf949add0c587c4122920c2ee7ece07e825b7dc09a71b4a',
+    long: '6ee607fa07e58471e936cd01bced7163fb2bdf31f2289b99c01c913122385609'
+  },
+  'furry-celebration': {
+    short: 'e4f6dae5e0d5b96c7eb7937a218dc49cd3fc9ed698ca11861010bde1dcd1f0e8',
+    medium: 'd51ae3fec4b82cdfdab79da3eae4824edbcb4e8bd448623ce9fa156a90922f0b',
+    long: 'a41d22dfd3357db101870fc7040286e22cf0cd6834b68055c2079c0627a04049'
+  }
+};
+
 function launchCount(plan) {
   return plan.cues.reduce((total, cue) => total + cue.launches.length, 0);
 }
@@ -103,6 +153,14 @@ function withoutIntensityFields(plan) {
       launches: cue.launches.map(stableShell)
     }))
   };
+}
+
+function geometryHash(plan) {
+  const geometry = plan.cues.map(cue => ({
+    formation: cue.formation,
+    shells: cue.shells.map(shell => ({ origin: shell.origin, target: shell.target }))
+  }));
+  return crypto.createHash('sha256').update(JSON.stringify(geometry)).digest('hex');
 }
 
 describe('WebGPU Fireworks finale show planner', () => {
@@ -280,6 +338,17 @@ describe('WebGPU Fireworks finale show planner', () => {
     expect(highTiers.some((tier, index) => tier > lowTiers[index])).toBe(true);
     expect(withoutIntensityFields(high)).toEqual(withoutIntensityFields(low));
   });
+
+  test.each(FINALE_STYLES.flatMap(style => FINALE_LENGTHS.map(length => [style, length]))) (
+    'keeps the pre-extraction %s/%s landscape geometry byte-identical',
+    (style, length) => {
+      const plan = new FinaleShowPlanner().plan({
+        id: 'geometry-baseline', style, length, orientation: 'landscape', intensity: 5, seed: 2026
+      });
+
+      expect(geometryHash(plan)).toBe(GEOMETRY_BASELINE_HASHES[style][length]);
+    }
+  );
 
   test('compiles a supplied custom definition as a deterministic isolated V2 event snapshot', () => {
     const definition = JSON.parse(JSON.stringify(BUILT_IN_SHOW_DEFINITIONS['classic-crescendo']));

@@ -416,6 +416,10 @@ describe('WebGPU Fireworks show API', () => {
         definition: { metadata: { name: 'Built-in Copy' }, autoEligible: false }
       }
     });
+    const duplicatedFan = duplicate.body.show.definition.variants.short.cues
+      .find(cue => cue.formation === 'fan');
+    expect(new Set(duplicatedFan.shells.map(shell => shell.target.x)).size).toBeGreaterThan(1);
+    expect(duplicatedFan.shells.some(shell => shell.origin.x !== 0.5)).toBe(true);
 
     const defaultNamedDuplicate = await invoke(
       route(api, 'post', '/api/webgpu-fireworks/shows/:id/duplicate'),

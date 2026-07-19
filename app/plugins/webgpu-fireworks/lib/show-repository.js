@@ -4,7 +4,16 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const { BUILT_IN_SHOW_DEFINITIONS } = require('./built-in-shows');
+const {
+  BUILT_IN_SHOW_DEFINITIONS,
+  FINALE_LENGTHS,
+  PHASE_ORDER,
+  getBuiltInShowBlueprint
+} = require('./built-in-shows');
+const {
+  BUILT_IN_DUPLICATE_LAYOUT_SEED,
+  materializeBuiltInDefinitionGeometry
+} = require('./finale-formation-layout');
 const {
   deriveShowVariants,
   PyroDSLValidationError,
@@ -175,7 +184,16 @@ class RevisionedShowRepository {
     const duplicateOptions = isObject(options) ? options : {};
     const source = this.get(sourceId);
     const id = this._nextCustomId();
-    const definition = this._ownedDefinition(source.definition, id);
+    const blueprint = source.builtIn ? getBuiltInShowBlueprint(sourceId) : null;
+    const sourceDefinition = blueprint
+      ? materializeBuiltInDefinitionGeometry(source.definition, blueprint, {
+        lengths: FINALE_LENGTHS,
+        phaseOrder: PHASE_ORDER,
+        orientation: 'landscape',
+        seed: BUILT_IN_DUPLICATE_LAYOUT_SEED
+      })
+      : source.definition;
+    const definition = this._ownedDefinition(sourceDefinition, id);
     const sourceName = isObject(definition.metadata) && typeof definition.metadata.name === 'string'
       ? definition.metadata.name
       : 'Untitled Show';

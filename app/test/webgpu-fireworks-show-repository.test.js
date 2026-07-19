@@ -13,6 +13,11 @@ const {
   ShowRepositoryError,
   STORE_VERSION
 } = require('../plugins/webgpu-fireworks/lib/show-repository');
+const {
+  FinaleShowPlanner,
+  FINALE_LENGTHS,
+  FINALE_STYLES
+} = require('../plugins/webgpu-fireworks/lib/finale-show-planner');
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -754,6 +759,52 @@ describe('RevisionedShowRepository 3A2b1 duplicate and derive', () => {
     });
     expect(repository.get('classic-crescendo')).toEqual(sourceBefore);
     expect(repository.getSelectableStyles().some(style => style.id === duplicated.id)).toBe(false);
+  });
+
+  test('materializes every built-in duplicate with deterministic landscape geometry that custom planning preserves', () => {
+    const planner = new FinaleShowPlanner();
+    const duplicates = new Map();
+
+    for (const style of FINALE_STYLES) {
+      const duplicated = repository.duplicate(style);
+      duplicates.set(style, duplicated);
+
+      for (const length of FINALE_LENGTHS) {
+        const builtInPlan = planner.plan({
+          id: `${style}-${length}-source`, style, length,
+          orientation: 'landscape', intensity: 5, seed: 2026
+        });
+        const storedVariant = duplicated.definition.variants[length];
+        const storedGeometry = storedVariant.cues.map(cue => cue.shells.map(shell => ({
+          origin: shell.origin,
+          target: shell.target
+        })));
+        const builtInGeometry = builtInPlan.cues.map(cue => cue.shells.map(shell => ({
+          origin: shell.origin,
+          target: shell.target
+        })));
+        expect(storedGeometry).toEqual(builtInGeometry);
+
+        const customPlan = planner.planDefinition(duplicated.definition, {
+          id: `${style}-${length}-custom`, style: duplicated.id, length,
+          orientation: 'portrait', intensity: 9, seed: 99999
+        });
+        expect(customPlan.cues.map(cue => cue.shells.map(shell => ({
+          origin: shell.origin,
+          target: shell.target
+        })))).toEqual(storedGeometry);
+      }
+    }
+
+    const classicShort = duplicates.get('classic-crescendo').definition.variants.short;
+    const fan = classicShort.cues.find(cue => cue.formation === 'fan');
+    expect(new Set(fan.shells.map(shell => shell.target.x)).size).toBeGreaterThan(1);
+
+    const saluteShort = duplicates.get('symmetric-salute').definition.variants.short;
+    for (const formation of ['mirrored-pair', 'symmetric-final-wall']) {
+      const cue = saluteShort.cues.find(candidate => candidate.formation === formation);
+      expect(new Set(cue.shells.map(shell => shell.target.x)).size).toBeGreaterThan(1);
+    }
   });
 
   test('duplicates the current custom definition with an explicit name and defensive isolation', () => {
