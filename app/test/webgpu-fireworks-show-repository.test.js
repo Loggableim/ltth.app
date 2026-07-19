@@ -22,6 +22,13 @@ function reverseObjectKeys(value) {
   return Object.fromEntries(Object.entries(value).reverse());
 }
 
+function canonicalizeForTest(value) {
+  if (Array.isArray(value)) return value.map(canonicalizeForTest);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(Object.keys(value).sort()
+    .map(key => [key, canonicalizeForTest(value[key])]));
+}
+
 function makeDefinition(name = 'Custom Finale') {
   const definition = clone(BUILT_IN_SHOW_DEFINITIONS['classic-crescendo']);
   definition.id = 'external:must-not-survive';
@@ -859,5 +866,205 @@ describe('RevisionedShowRepository 3A2b1 duplicate and derive', () => {
       })
     );
     expect(repository.get(created.id).revision).toBe(1);
+  });
+});
+
+describe('RevisionedShowRepository 3A2b2 validated canonical import/export', () => {
+  let tempDir;
+  let now;
+  let nextId;
+  let repository;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-show-import-export-'));
+    now = 4_000;
+    nextId = 4;
+    repository = new RevisionedShowRepository({
+      dataDir: tempDir,
+      now: () => now++,
+      idFactory: () => `00000000-0000-4000-8000-${String(nextId++).padStart(12, '0')}`
+    });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  test('import rejects malformed JSON and non-object inputs with typed safe 400 errors', () => {
+    expect(() => repository.importDefinition('{"schemaVersion":'))
+      .toThrow(expect.objectContaining({
+        code: 'IMPORT_JSON_INVALID',
+        status: 400,
+        details: { inputType: 'string' }
+      }));
+
+    for (const [input, actualType] of [[null, 'null'], [[], 'array'], ['[]', 'array']]) {
+      expect(() => repository.importDefinition(input)).toThrow(expect.objectContaining({
+        code: 'IMPORT_DEFINITION_REQUIRED',
+        status: 400,
+        details: { actualType }
+      }));
+    }
+    expect(repository.list().filter(record => !record.builtIn)).toHaveLength(0);
+  });
+
+  test('import rewrites external or missing IDs before strict PyroDSL validation', () => {
+    const external = makeDefinition('External Identity');
+    external.id = 'not valid whitespace id';
+    const first = repository.importDefinition(external);
+    expect(first.definition.id).toBe('custom:00000000-0000-4000-8000-000000000004');
+
+    const missing = makeDefinition('Missing Identity');
+    delete missing.id;
+    const second = repository.importDefinition(missing);
+    expect(second.definition.id).toBe('custom:00000000-0000-4000-8000-000000000005');
+
+    const invalid = makeDefinition('');
+    invalid.repositoryOnly = true;
+    expect(() => repository.importDefinition(invalid)).toThrow(expect.objectContaining({
+      code: 'IMPORT_VALIDATION_FAILED',
+      status: 400,
+      details: expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({ code: 'unknown_property', path: 'repositoryOnly' }),
+          expect.objectContaining({ code: 'name_required', path: 'metadata.name' })
+        ]),
+        diagnostics: expect.any(Object)
+      })
+    }));
+    expect(repository.list().filter(record => !record.builtIn)).toHaveLength(2);
+  });
+
+  test('import persists revision one as validated, unpublished, unarchived, and definition-only', () => {
+    const source = makeDefinition('Authored Import');
+    source.metadata.author = 'Pyro Author';
+    source.metadata.tags = ['authored', 'canonical'];
+    source.materialProfile = 'premium-realistic';
+    source.autoEligible = true;
+
+    const imported = repository.importDefinition(JSON.stringify(source));
+
+    expect(imported).toMatchObject({
+      builtIn: false,
+      revision: 1,
+      validation: { valid: true, errors: [], diagnostics: { variants: expect.any(Object) } },
+      validatedRevision: 1,
+      publishedDefinition: null,
+      publishedRevision: null,
+      publishedAt: null,
+      archived: false,
+      archivedAt: null,
+      restoredAt: null,
+      definition: {
+        metadata: {
+          name: 'Authored Import',
+          author: 'Pyro Author',
+          tags: ['authored', 'canonical']
+        },
+        materialProfile: 'premium-realistic',
+        autoEligible: true,
+        variants: source.variants
+      }
+    });
+    expect(JSON.parse(fs.readFileSync(repository.filePath, 'utf8')).records[imported.id])
+      .toMatchObject({ revision: 1, validatedRevision: 1, validation: { valid: true } });
+  });
+
+  test('import performs exactly one persistence mutation and rolls it back completely on failure', () => {
+    const writeStore = jest.spyOn(repository, '_writeStore');
+    const originalRename = fs.renameSync;
+    jest.spyOn(fs, 'renameSync').mockImplementation((source, target) => {
+      if (source === repository.tempPath && target === repository.filePath) {
+        throw new Error('injected import persistence failure');
+      }
+      return originalRename(source, target);
+    });
+
+    expect(() => repository.importDefinition(makeDefinition('Atomic Import')))
+      .toThrow(expect.objectContaining({ code: 'STORE_WRITE_FAILED', status: 500 }));
+    expect(writeStore).toHaveBeenCalledTimes(1);
+    expect(repository.records).toEqual({});
+    expect(repository.list().filter(record => !record.builtIn)).toHaveLength(0);
+    expect(fs.existsSync(repository.filePath)).toBe(false);
+    expect(fs.existsSync(repository.tempPath)).toBe(false);
+  });
+
+  test('exports built-ins and current custom drafts as clean deterministic canonical JSON', () => {
+    const custom = repository.create(makeDefinition('Canonical Draft'));
+    const reversed = reverseObjectKeys(custom.definition);
+    repository.saveDraft(custom.id, reversed, 1);
+
+    for (const id of ['classic-crescendo', custom.id]) {
+      const definition = repository.get(id).definition;
+      const exported = repository.exportJson(id);
+      expect(exported).toBe(`${JSON.stringify(canonicalizeForTest(definition), null, 2)}\n`);
+      expect(exported.endsWith('\n')).toBe(true);
+      expect(JSON.parse(exported)).toEqual(definition);
+      expect(JSON.parse(exported)).not.toEqual(expect.objectContaining({
+        revision: expect.anything(),
+        validation: expect.anything(),
+        publishedDefinition: expect.anything(),
+        archived: expect.anything()
+      }));
+    }
+  });
+
+  test('exportDefinition returns defensive built-in and custom definition clones', () => {
+    const custom = repository.create(makeDefinition('Defensive Export'));
+    const builtInExport = repository.exportDefinition('classic-crescendo');
+    const customExport = repository.exportDefinition(custom.id);
+    builtInExport.metadata.name = 'Mutated Built-in Export';
+    customExport.metadata.name = 'Mutated Custom Export';
+
+    expect(repository.exportDefinition('classic-crescendo').metadata.name)
+      .toBe(BUILT_IN_SHOW_DEFINITIONS['classic-crescendo'].metadata.name);
+    expect(repository.exportDefinition(custom.id).metadata.name).toBe('Defensive Export');
+  });
+
+  test('export freshly validates and rejects invalid current drafts with structured typed errors', () => {
+    const invalid = makeDefinition('Invalid Export');
+    invalid.metadata.name = '';
+    invalid.repositoryOnly = true;
+    const custom = repository.create(invalid);
+
+    for (const exportMethod of ['exportDefinition', 'exportJson']) {
+      expect(() => repository[exportMethod](custom.id)).toThrow(expect.objectContaining({
+        code: 'EXPORT_VALIDATION_FAILED',
+        status: 422,
+        details: expect.objectContaining({
+          id: custom.id,
+          errors: expect.arrayContaining([
+            expect.objectContaining({ code: 'unknown_property', path: 'repositoryOnly' }),
+            expect.objectContaining({ code: 'name_required', path: 'metadata.name' })
+          ]),
+          diagnostics: expect.any(Object)
+        })
+      }));
+    }
+  });
+
+  test('export to import roundtrip preserves semantic content except the rewritten ID and lifecycle', () => {
+    const source = makeDefinition('Roundtrip Authored Show');
+    source.metadata.author = 'Roundtrip Author';
+    source.metadata.tags = ['roundtrip'];
+    source.autoEligible = false;
+    const created = repository.create(source);
+    const exportedJson = repository.exportJson(created.id);
+    const imported = repository.importDefinition(exportedJson);
+
+    expect(imported.id).not.toBe(created.id);
+    expect(imported.definition).toEqual({
+      ...created.definition,
+      id: imported.id
+    });
+    expect(imported).toMatchObject({
+      revision: 1,
+      validatedRevision: 1,
+      validation: { valid: true },
+      publishedDefinition: null,
+      publishedRevision: null,
+      archived: false
+    });
   });
 });

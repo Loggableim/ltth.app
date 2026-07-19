@@ -13,6 +13,7 @@ const {
 const {
   assertCurrentDefinitionProvenance,
   assertValidPersistedLifecycle,
+  canonicalJson,
   lifecycleDefaults,
   normalizeLifecycleRecord
 } = require('./show-repository-lifecycle');
@@ -24,6 +25,12 @@ const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
 
 function isObject(value) {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function jsonType(value) {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  return typeof value;
 }
 
 function cloneJson(value) {
@@ -216,6 +223,92 @@ class RevisionedShowRepository {
       );
     }
     return this.saveDraft(id, definition, expectedRevision);
+  }
+
+  importDefinition(input) {
+    this._ensureLoaded();
+    let definition = input;
+    if (typeof input === 'string') {
+      try {
+        definition = JSON.parse(input);
+      } catch {
+        throw new ShowRepositoryError(
+          'IMPORT_JSON_INVALID',
+          400,
+          'The imported show is not valid JSON.',
+          { inputType: 'string' }
+        );
+      }
+    }
+    if (!isObject(definition)) {
+      throw new ShowRepositoryError(
+        'IMPORT_DEFINITION_REQUIRED',
+        400,
+        'The imported show definition must be a JSON object.',
+        { actualType: jsonType(definition) }
+      );
+    }
+
+    let importedDefinition;
+    try {
+      importedDefinition = cloneJson(definition);
+    } catch {
+      throw new ShowRepositoryError(
+        'IMPORT_DEFINITION_INVALID',
+        400,
+        'The imported show definition must be JSON serializable.',
+        { inputType: 'object' }
+      );
+    }
+    if (!isObject(importedDefinition)) {
+      throw new ShowRepositoryError(
+        'IMPORT_DEFINITION_REQUIRED',
+        400,
+        'The imported show definition must be a JSON object.',
+        { actualType: jsonType(importedDefinition) }
+      );
+    }
+
+    const id = this._nextCustomId();
+    const ownedDefinition = this._ownedDefinition(importedDefinition, id);
+    const validation = validateShowDefinition(ownedDefinition);
+    if (!validation.valid) {
+      throw new ShowRepositoryError(
+        'IMPORT_VALIDATION_FAILED',
+        400,
+        'The imported show definition did not pass PyroDSL validation.',
+        {
+          errors: validation.errors,
+          diagnostics: validation.diagnostics
+        }
+      );
+    }
+    return this._createCustomRecord(id, ownedDefinition, {
+      validation,
+      validatedRevision: 1
+    });
+  }
+
+  exportDefinition(id) {
+    const definition = this.get(id).definition;
+    const validation = validateShowDefinition(definition);
+    if (!validation.valid) {
+      throw new ShowRepositoryError(
+        'EXPORT_VALIDATION_FAILED',
+        422,
+        'The show definition did not pass PyroDSL validation and cannot be exported.',
+        {
+          id,
+          errors: validation.errors,
+          diagnostics: validation.diagnostics
+        }
+      );
+    }
+    return cloneJson(definition);
+  }
+
+  exportJson(id) {
+    return `${JSON.stringify(canonicalJson(this.exportDefinition(id)), null, 2)}\n`;
   }
 
   saveDraft(id, definition, expectedRevision) {
@@ -554,7 +647,10 @@ class RevisionedShowRepository {
     return cloned;
   }
 
-  _createCustomRecord(id, ownedDefinition) {
+  _createCustomRecord(id, ownedDefinition, {
+    validation = null,
+    validatedRevision = null
+  } = {}) {
     const timestamp = this.now();
     const record = {
       id,
@@ -568,7 +664,9 @@ class RevisionedShowRepository {
       }],
       createdAt: timestamp,
       updatedAt: timestamp,
-      ...lifecycleDefaults()
+      ...lifecycleDefaults(),
+      validation: validation === null ? null : cloneJson(validation),
+      validatedRevision
     };
 
     this.records[id] = record;
