@@ -7,6 +7,7 @@ const path = require('path');
 const { BUILT_IN_SHOW_DEFINITIONS } = require('./built-in-shows');
 const { validateShowDefinition } = require('./pyrodsl');
 const {
+  assertCurrentDefinitionProvenance,
   assertValidPersistedLifecycle,
   lifecycleDefaults,
   normalizeLifecycleRecord
@@ -261,6 +262,16 @@ class RevisionedShowRepository {
 
     const current = this._customRecord(id);
     this._assertExpectedRevision(current, expectedRevision);
+    try {
+      assertCurrentDefinitionProvenance(current);
+    } catch {
+      throw new ShowRepositoryError(
+        'DRAFT_PROVENANCE_MISMATCH',
+        409,
+        'The current custom show draft is detached from its revision history.',
+        { id, currentRevision: current.revision }
+      );
+    }
     if (!current.validation || current.validatedRevision === null) {
       throw new ShowRepositoryError(
         'DRAFT_NOT_VALIDATED',

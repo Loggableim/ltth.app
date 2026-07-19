@@ -36,7 +36,15 @@ function normalizeLifecycleRecord(record) {
   };
 }
 
+function assertCurrentDefinitionProvenance(record) {
+  const currentSnapshot = record.revisions[record.revision - 1];
+  if (!currentSnapshot || !jsonDeepEqual(record.definition, currentSnapshot.definition)) {
+    throw new Error(`Current custom show definition is detached from revision history: ${record.id}`);
+  }
+}
+
 function assertValidPersistedLifecycle(record) {
+  assertCurrentDefinitionProvenance(record);
   const hasValidation = record.validation !== null;
   const validationValid = !hasValidation || (
     isObject(record.validation)
@@ -91,6 +99,7 @@ function assertValidPersistedLifecycle(record) {
 }
 
 module.exports = {
+  assertCurrentDefinitionProvenance,
   assertValidPersistedLifecycle,
   canonicalJson,
   jsonDeepEqual,

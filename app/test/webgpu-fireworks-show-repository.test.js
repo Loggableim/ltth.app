@@ -420,6 +420,27 @@ describe('RevisionedShowRepository 3A2a lifecycle', () => {
     expect(JSON.parse(fs.readFileSync(recovered.filePath, 'utf8')).records[created.id].revision).toBe(1);
   });
 
+  test('recovers when the current definition is detached from its latest valid revision snapshot', () => {
+    const created = repository.create(makeDefinition('Revision Snapshot A'));
+    repository.validate(created.id, 1);
+    const primary = JSON.parse(fs.readFileSync(repository.filePath, 'utf8'));
+    const detachedDefinition = makeDefinition('Detached Definition B');
+    detachedDefinition.id = created.id;
+    primary.records[created.id].definition = detachedDefinition;
+    fs.writeFileSync(repository.filePath, JSON.stringify(primary), 'utf8');
+
+    const recovered = new RevisionedShowRepository({ dataDir: tempDir });
+    const record = recovered.load().find(candidate => candidate.id === created.id);
+    expect(record).toMatchObject({
+      revision: 1,
+      definition: { metadata: { name: 'Revision Snapshot A' } },
+      validation: null,
+      validatedRevision: null
+    });
+    expect(JSON.parse(fs.readFileSync(recovered.filePath, 'utf8')).records[created.id]
+      .definition.metadata.name).toBe('Revision Snapshot A');
+  });
+
   test('revalidates the current definition inside publish and never snapshots an invalid forged draft', () => {
     const invalidDefinition = makeDefinition();
     invalidDefinition.metadata.name = '';
@@ -439,6 +460,24 @@ describe('RevisionedShowRepository 3A2a lifecycle', () => {
         currentRevision: 1,
         errors: expect.arrayContaining([expect.objectContaining({ code: 'name_required' })])
       })
+    }));
+    expect(repository.get(created.id).publishedDefinition).toBeNull();
+    expect(() => repository.getPublishedDefinition(created.id)).toThrow(expect.objectContaining({
+      code: 'SHOW_NOT_PUBLISHED'
+    }));
+  });
+
+  test('rejects a valid in-memory definition detached from the validated revision before publish', () => {
+    const created = repository.create(makeDefinition('Validated Snapshot A'));
+    repository.validate(created.id, 1);
+    const detachedDefinition = makeDefinition('Detached Valid Definition B');
+    detachedDefinition.id = created.id;
+    repository.records[created.id].definition = detachedDefinition;
+
+    expect(() => repository.publish(created.id, 1)).toThrow(expect.objectContaining({
+      code: 'DRAFT_PROVENANCE_MISMATCH',
+      status: 409,
+      details: { id: created.id, currentRevision: 1 }
     }));
     expect(repository.get(created.id).publishedDefinition).toBeNull();
     expect(() => repository.getPublishedDefinition(created.id)).toThrow(expect.objectContaining({
