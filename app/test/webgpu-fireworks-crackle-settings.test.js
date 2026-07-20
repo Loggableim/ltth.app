@@ -82,9 +82,10 @@ describe('WebGPU Fireworks crackling settings contract', () => {
     const overlay = read('overlay.html');
     const settingsHtml = read('ui/settings.html');
     expect(overlay).toContain('spawn-command-policy.js?v=3.1.0-depth3d-1');
-    expect(overlay).toContain('webgpu-particle-engine.js?v=3.1.0-furry-visual-1');
-    expect(overlay).toContain('show-plan-v2-runtime.js?v=3.1.0-furry-visual-1');
-    expect(overlay).toContain('engine.js?v=3.1.0-benchmark-session-2');
+    expect(overlay).toContain('boykisser-geometry.js?v=3.1.0-particle-rocket-1');
+    expect(overlay).toContain('webgpu-particle-engine.js?v=3.1.0-particle-rocket-1');
+    expect(overlay).toContain('show-plan-v2-runtime.js?v=3.1.0-particle-rocket-1');
+    expect(overlay).toContain('engine.js?v=3.1.0-particle-rocket-1');
     expect(settingsHtml).toContain('show-style-options.js?v=3.1.0-depth3d-1');
     expect(settingsHtml).toContain('settings.js?v=3.1.0-benchmark-session-2');
   });
