@@ -187,6 +187,7 @@ function registerEmojiRainCommandContract({
     test('registers arbitrary enabled emoji and image commands and omits disabled rows', async () => {
       const api = new MockAPI({
         config: {
+          animal_command_despawn_ms: 12000,
           animal_commands: [
             animalCommand('party-cat', 'emoji', '😸'),
             animalCommand('sticker', 'image', imagePath),
@@ -213,7 +214,8 @@ function registerEmojiRainCommandContract({
         emoji: imageRendererMode === 'profile-picture' ? '{{profilePicture}}' : imagePath,
         ...(imageRendererMode === 'profile-picture' ? { profilePictureUrl: imagePath } : {}),
         count: 4,
-        burst: false
+        burst: false,
+        lifetimeMs: 12000
       });
 
       plugin.checkAntiSpam = jest.fn(() => true);
@@ -231,6 +233,12 @@ function registerEmojiRainCommandContract({
           ? { profilePictureUrl: 'https://cdn.example.test/dog.webp' }
           : {})
       });
+
+      const builtInResponse = await api.gcce.registry.getCommand('emoji').handler(['🐱', '1'], {
+        username: 'built-in-command'
+      });
+      expect(builtInResponse).toMatchObject({ success: true });
+      expect(api.emissions[2].data).not.toHaveProperty('lifetimeMs');
     });
 
     test('keeps an explicitly empty command list disabled', async () => {

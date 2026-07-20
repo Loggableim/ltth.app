@@ -20,6 +20,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const crypto = require('crypto');
+delete require.cache[require.resolve('../../modules/emoji-rain-animal-commands')];
 const {
   AnimalCommandConflictError,
   AnimalCommandCooldowns,
@@ -740,6 +741,7 @@ class EmojiRainPlugin {
       count: access.count,
       exactCount: true,
       intensity: 1.5,
+      lifetimeMs: config.animal_command_despawn_ms,
       duration: 0,
       burst: false,
       username: context.username,
@@ -1339,6 +1341,9 @@ class EmojiRainPlugin {
       source: params.source || 'manual',
       burst: params.burst || false,
       intensity: Math.min(params.intensity || 1.0, maxIntensity),
+      ...(Number.isFinite(Number(params.lifetimeMs))
+        ? { lifetimeMs: Number(params.lifetimeMs) }
+        : {}),
       ...(coordinates.spawnAreaPreset && { spawnAreaPreset: coordinates.spawnAreaPreset })
     };
 

@@ -257,8 +257,21 @@ describe('EmojiRain - Configuration Persistence', () => {
             animal_commands_allow_team_members: true,
             animal_command_user_cooldown_ms: 60000,
             animal_command_superfan_cooldown_ms: 15000,
-            animal_command_global_cooldown_ms: 15000
+            animal_command_global_cooldown_ms: 15000,
+            animal_command_despawn_ms: 8000
         });
+    });
+
+    test('should persist command emoji despawn duration after database reload', () => {
+        const updated = {
+            ...db.getEmojiRainConfig(),
+            animal_command_despawn_ms: 12000
+        };
+        db.updateEmojiRainConfig(updated, true);
+        db.close();
+        db = new Database(testDbPath, 'test_user');
+
+        expect(db.getEmojiRainConfig().animal_command_despawn_ms).toBe(12000);
     });
 
     test('should not reset ALL settings to defaults on restart', () => {

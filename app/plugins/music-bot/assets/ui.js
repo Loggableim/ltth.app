@@ -58,6 +58,7 @@
     if (['loading', 'buffering', 'crossfading', 'recovering'].includes(normalized)) {
       return tr('playbackAdvancing', 'Lädt den nächsten Titel …');
     }
+    if (normalized === 'locked') return tr('safetyLocked', 'Safety-Lock aktiv');
     if (normalized === 'idle') return tr('stateIdle', 'Bereit');
     return tr('stateUnknown', 'Unbekannter Status');
   }

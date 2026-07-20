@@ -1,5 +1,7 @@
 'use strict';
 
+const WebGPUParticleEngine = require('../plugins/webgpu-fireworks/gpu/webgpu-particle-engine');
+
 const {
   SHAPE_IDS,
   V2_PRIMITIVE_IDS,
@@ -142,6 +144,41 @@ describe('WebGPU Fireworks visible-envelope contract', () => {
     expect(bounds.components).toEqual(expect.arrayContaining(['body', 'flame', 'trail', 'glow', 'bloom']));
     expect(bounds.top).toBeGreaterThanOrEqual(2 - 1e-5);
   });
+
+  test.each(RESOLUTIONS)(
+    'keeps a correlated rocket and star/ring burst at least eight-percent-class below the top at $width x $height',
+    viewport => {
+      const engine = new WebGPUParticleEngine({ width: viewport.width, height: viewport.height });
+      const target = { x: viewport.width * 0.5, y: viewport.height * 0.1 };
+      const rocketBody = rocketCommand('standard', {
+        origin: { x: viewport.width * 0.5, y: viewport.height * 1.02 },
+        target,
+        launchDepth: 0.8,
+        burstDepth: 0.8,
+        size: 22,
+      });
+      const rocketFlame = rocketCommand('standard', {
+        ...rocketBody,
+        size: 16.72,
+        flags: 2 << 8,
+      });
+      const bursts = [3, 4].map(shape => shapeCommand(shape, viewport, 0.8));
+      bursts.forEach(command => {
+        command.origin = { ...target };
+        command.target = { ...target };
+        command.particleDuration = 0.65;
+        command.intensity = 0.5;
+      });
+      const commands = [rocketBody, rocketFlame, ...bursts];
+      const padding = engine._visibleEnvelopePaddingPx(commands);
+      const fitted = fitCorrelatedCommands(commands, viewport, { paddingPx: padding });
+
+      expect(padding / viewport.height).toBeGreaterThanOrEqual(0.075);
+      expect(fitted.bounds.top).toBeGreaterThanOrEqual(padding - 1e-5);
+      expect(fitted.commands).toHaveLength(commands.length);
+      expect(fitted.vertexClampApplied).toBe(false);
+    }
+  );
 
   test('fits rocket side guards across the complete below-canvas launch path', () => {
     const viewport = { width: 540, height: 960 };

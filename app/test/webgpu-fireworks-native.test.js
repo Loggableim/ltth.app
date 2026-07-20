@@ -34,9 +34,10 @@ describe('WebGPU Fireworks native migration', () => {
     ]));
     expect(fs.existsSync(path.join(pluginRoot, 'gpu', 'webgl-particle-engine.js'))).toBe(false);
     expect(fs.existsSync(path.join(pluginRoot, 'gpu', 'particle-system-soa.js'))).toBe(false);
-    expect(overlaySource).toContain('webgpu-particle-engine.js?v=3.1.0-furry-visual-1');
-    expect(overlaySource).toContain('show-plan-v2-runtime.js?v=3.1.0-furry-visual-1');
-    expect(overlaySource).toContain('engine.js?v=3.1.0-benchmark-session-2');
+    expect(overlaySource).toContain('boykisser-geometry.js?v=3.1.0-particle-rocket-1');
+    expect(overlaySource).toContain('webgpu-particle-engine.js?v=3.1.0-particle-rocket-1');
+    expect(overlaySource).toContain('show-plan-v2-runtime.js?v=3.1.0-particle-rocket-1');
+    expect(overlaySource).toContain('engine.js?v=3.1.0-particle-rocket-1');
     expect(settingsHtml).toContain('show-style-options.js?v=3.1.0-depth3d-1');
     expect(settingsHtml).toContain('settings.js?v=3.1.0-benchmark-session-2');
     expect(overlaySource).not.toContain('webgl-particle-engine');
@@ -250,7 +251,8 @@ describe('WebGPU Fireworks native migration', () => {
     expect(orchestrationSource).toContain("paws: { base: 43, min: 36, max: 56 }");
     expect(rendererSource).toContain('vec2f(2.6,0.42)');
     expect(rendererSource).toContain('p.rotation = atan2(p.velocity.y, p.velocity.x)');
-    expect(rendererSource).toContain("color: '#fff4d6'");
+    expect(rendererSource).toContain("const rocketTrail = normalizeRocketTrail(options.rocketTrail)");
+    expect(rendererSource).toContain(": ['#fff4d6']");
     expect(rendererSource).toContain('1.0-position.y/uniforms.height*2.0');
     expect(rendererSource).toContain('0.5-p[index].y*0.5');
     expect(rendererSource).toContain('fn rocketCoverage(uv:vec2f,time:f32,seed:u32)');

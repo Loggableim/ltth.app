@@ -53,13 +53,30 @@ const V2_SPLIT_REQUESTED = ENVELOPE_FLAG_BITS.SPLIT_REQUESTED;
 const V2_STROBE = ENVELOPE_FLAG_BITS.STROBE;
 const V2_VECTOR_HERO = ENVELOPE_FLAG_BITS.VECTOR_HERO || (1 << 7);
 const V2_MARKER = ENVELOPE_FLAG_BITS.V2_MARKER;
-const V2_VECTOR_HERO_MIN_GLYPH_EXTENT = 0.5;
 const DEPTH_METADATA_MARKER = 1 << 3;
 const DEPTH_BUCKET_COUNT = 3;
 const ATLAS_SLOT_COUNT = 64;
 const EXTERNAL_ATLAS_SLOT_COUNT = ATLAS_SLOT_COUNT - 1;
 const ATLAS_RELEASE_GRACE_MS = 1_000;
 const MAX_INACTIVE_SPAWN_OWNERS = 4_096;
+
+function normalizeRocketTrail(rocketTrail) {
+    const authored = rocketTrail && typeof rocketTrail === 'object' && !Array.isArray(rocketTrail) &&
+        Array.isArray(rocketTrail.colors) && rocketTrail.colors.length > 0;
+    const style = authored && ['comet', 'spiral', 'braided'].includes(rocketTrail.style)
+        ? rocketTrail.style
+        : 'comet';
+    const colors = authored
+        ? rocketTrail.colors.slice(0, 4)
+        : ['#fff4d6'];
+    return { authored, style, colors };
+}
+
+function rocketTrailCurveOffset(style, index, count) {
+    if (count <= 1) return 0;
+    const spread = style === 'spiral' ? 14 : style === 'braided' ? 9 : 4;
+    return (index - (count - 1) * 0.5) * spread;
+}
 
 function clampColorComponent(value) {
     const component = Number(value);
@@ -1156,6 +1173,8 @@ class WebGPUParticleEngine {
         const rocketSize = Math.max(minimumRocketSize, rocketBaseSize * resolutionScale);
         const headTextureIndex = Math.max(0, Number(options.headTextureIndex) || 0);
         const decalTextureIndex = headTextureIndex > 0 ? 0 : Math.max(0, Number(options.textureIndex) || 0);
+        const rocketTrail = normalizeRocketTrail(options.rocketTrail);
+        const baseCurve = Number(options.curve) || 0;
         const commands = [{
             ...options,
             priority: options.priority || 'core',
@@ -1171,32 +1190,43 @@ class WebGPUParticleEngine {
             envelopeCommandId: options.envelopeCommandIds?.[0] ?? options.envelopeCommandId ??
                 `${correlationId}:rocket:body`,
             flags: this._flags({ role: 1, style, rocketAvatarHead: headTextureIndex > 0 }),
-            curve: options.curve || 0,
+            curve: baseCurve,
             viewportResponsive: true,
             viewportMaterialization: {
                 kind: 'rocket', baseSize: rocketBaseSize, minimumSize: minimumRocketSize, multiplier: 1
             }
-        }, {
-            ...options,
-            priority: 'accent',
-            required: false,
-            kind: 1,
-            count: 1,
-            shape: 'rocket',
-            textureIndex: 0,
-            size: rocketSize * 0.76,
-            color: '#fff4d6',
-            seed: seed ^ 0x9e3779b9,
-            effectId,
-            correlationId,
-            envelopeCommandId: options.envelopeCommandIds?.[1] ?? `${correlationId}:rocket:flame`,
-            flags: this._flags({ role: 2, style }),
-            curve: options.curve || 0,
-            viewportResponsive: true,
-            viewportMaterialization: {
-                kind: 'rocket', baseSize: rocketBaseSize, minimumSize: minimumRocketSize, multiplier: 0.76
-            }
-        }];
+        }, ...rocketTrail.colors.map((color, trailIndex) => {
+            const multiplier = Math.max(0.58, 0.76 - trailIndex * 0.04);
+            return {
+                ...options,
+                priority: 'accent',
+                required: false,
+                kind: 1,
+                count: 1,
+                shape: 'rocket',
+                textureIndex: 0,
+                size: rocketSize * multiplier,
+                color,
+                seed: seed ^ Math.imul(trailIndex + 1, 0x9e3779b9),
+                effectId,
+                correlationId,
+                envelopeCommandId: options.envelopeCommandIds?.[trailIndex + 1] ?? (
+                    rocketTrail.authored
+                        ? `${correlationId}:rocket:trail:${trailIndex + 1}`
+                        : `${correlationId}:rocket:flame`
+                ),
+                flags: this._flags({ role: 2, style }),
+                curve: baseCurve + rocketTrailCurveOffset(
+                    rocketTrail.style,
+                    trailIndex,
+                    rocketTrail.colors.length
+                ),
+                viewportResponsive: true,
+                viewportMaterialization: {
+                    kind: 'rocket', baseSize: rocketBaseSize, minimumSize: minimumRocketSize, multiplier
+                }
+            };
+        })];
         if (decalTextureIndex > 0) {
             commands.push({
                 ...options,
@@ -1211,9 +1241,10 @@ class WebGPUParticleEngine {
                 seed: seed ^ 0x85ebca6b,
                 effectId,
                 correlationId,
-                envelopeCommandId: options.envelopeCommandIds?.[2] ?? `${correlationId}:rocket:decal`,
+                envelopeCommandId: options.envelopeCommandIds?.[rocketTrail.colors.length + 1] ??
+                    `${correlationId}:rocket:decal`,
                 flags: this._flags({ role: 6, style, nativeColor: true }) | 64,
-                curve: options.curve || 0,
+                curve: baseCurve,
                 viewportResponsive: true,
                 viewportMaterialization: {
                     kind: 'scaled-size',
@@ -1366,8 +1397,9 @@ class WebGPUParticleEngine {
         const renderHints = context.renderHints || {};
         const depthEnabled = renderHints.depthEnabled === true;
         const glyphScale = effectiveLayer.primitive === 'glyph' ? Number(renderHints.glyphScale) || 1 : 1;
-        const vectorHero = shape === V2_GLYPH_IDS.boykisser && effectiveLayer.core === true &&
-            Number(renderHints.glyphExtent) >= V2_VECTOR_HERO_MIN_GLYPH_EXTENT;
+        // Legacy VECTOR_HERO commands remain renderable for cached/older plans,
+        // but new ShowPlanV2 layers always materialize as real particles.
+        const vectorHero = false;
         const particleSize = effectiveLayer.size * 6 * scale;
         const extentIntensity = !vectorHero && effectiveLayer.primitive === 'glyph' &&
             Number.isFinite(renderHints.glyphExtent)
@@ -1962,8 +1994,8 @@ class WebGPUParticleEngine {
             [0, 3, 4, V2_PRIMITIVE_IDS.ring, V2_GLYPH_IDS.star].includes(Number(command.shape)));
         if (!needsTipGuard) return 2;
         return Math.min(
-            48,
-            Math.max(12, Math.min(this.logicalWidth, this.logicalHeight) * 0.025)
+            320,
+            Math.max(24, Math.min(this.logicalHeight * 0.08, this.logicalWidth * 0.14))
         );
     }
 
@@ -2812,7 +2844,10 @@ fn shapeVelocity2(shape: u32, index: u32, count: u32, intensity: f32, seed: u32)
     return vec2f(cos(angle), sin(angle)) * speed * intensity;
   }
   if (shape >= 17u && shape <= 26u) {
-    if (shape == 25u) { return boykisserPoint(index, count, seed) * 218.0 * intensity; }
+    if (shape == 25u) {
+      let boykisser = boykisserPoint(index, count, seed);
+      return vec2f(boykisser.x * ${BOYKISSER_VECTOR.aspectRatio.toFixed(6)}, boykisser.y) * 218.0 * intensity;
+    }
     if (shape == 26u) { return transFlagPoint(t) * 218.0 * intensity; }
     return glyphPoint(shape, t, seed) * 218.0 * intensity;
   }

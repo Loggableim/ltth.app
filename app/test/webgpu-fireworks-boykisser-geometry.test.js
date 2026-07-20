@@ -5,6 +5,7 @@ const {
   BOYKISSER_ROLES,
   BOYKISSER_COLORS,
   BOYKISSER_VECTOR,
+  BOYKISSER_PARTICLE_LOD,
   sampleBoykisser,
   sampleBoykisserSet,
   buildBoykisserWgsl,
@@ -24,6 +25,17 @@ const REQUIRED_FEATURES = [
 
 const featureCenterX = feature => feature.points
   .reduce((sum, [x]) => sum + x, 0) / feature.points.length;
+
+const polygonContains = (point, polygon) => {
+  let inside = false;
+  for (let current = 0, previous = polygon.length - 1; current < polygon.length; previous = current++) {
+    const [ax, ay] = polygon[current];
+    const [bx, by] = polygon[previous];
+    if (((ay > point.y) !== (by > point.y)) &&
+      point.x < ((bx - ax) * (point.y - ay)) / (by - ay) + ax) inside = !inside;
+  }
+  return inside;
+};
 
 describe('WebGPU Fireworks semantic Boykisser geometry', () => {
   test('defines every approved landmark with an explicit semantic color role', () => {
@@ -61,7 +73,29 @@ describe('WebGPU Fireworks semantic Boykisser geometry', () => {
   test.each([8, 16, 32])('retains every landmark at low density %i', count => {
     const samples = sampleBoykisserSet(count, 12345);
     expect(samples).toHaveLength(count);
-    expect(new Set(samples.map(sample => sample.feature))).toEqual(new Set(REQUIRED_FEATURES));
+    expect(REQUIRED_FEATURES.every(feature => samples.some(sample => sample.feature === feature))).toBe(true);
+  });
+
+  test.each([
+    ['cameo', 220],
+    ['standard', 320],
+    ['hero', 880],
+  ])('fills the traced silhouette at the %s particle LOD', (lod, count) => {
+    expect(BOYKISSER_PARTICLE_LOD[lod]).toBe(count);
+    const samples = sampleBoykisserSet(count, 417);
+    const fill = samples.filter(sample => sample.feature === 'silhouette-fill');
+    const roleCounts = samples.reduce((totals, sample) => {
+      totals[sample.role] = (totals[sample.role] || 0) + 1;
+      return totals;
+    }, {});
+
+    expect(fill.length).toBeGreaterThanOrEqual(Math.floor(count * 0.25));
+    expect(fill.every(sample => polygonContains(sample, BOYKISSER_VECTOR.silhouette))).toBe(true);
+    expect(roleCounts[BOYKISSER_ROLES.HEAD]).toBeGreaterThanOrEqual(Math.floor(count * 0.4));
+    expect(roleCounts[BOYKISSER_ROLES.FACE]).toBeGreaterThanOrEqual(Math.floor(count * 0.25));
+    expect(roleCounts[BOYKISSER_ROLES.ACCENT]).toBeGreaterThanOrEqual(Math.floor(count * 0.07));
+    expect(new Set(samples.slice(0, REQUIRED_FEATURES.length).map(sample => sample.feature)))
+      .toEqual(new Set(REQUIRED_FEATURES));
   });
 
   test('preserves the reference asymmetry while keeping the face balanced', () => {
@@ -83,6 +117,7 @@ describe('WebGPU Fireworks semantic Boykisser geometry', () => {
     expect(wgsl).toContain('fn boykisserCanonicalColor(role: u32) -> vec3f');
     expect(wgsl).toContain('fn boykisserVectorColor(uv: vec2f) -> vec4f');
     expect(wgsl).toContain('fn boykisserSilhouetteContains(point: vec2f) -> bool');
+    expect(wgsl).toContain('fn boykisserFillPoint(index: u32, count: u32, seed: u32, feature: u32) -> vec2f');
     expect(wgsl).toContain('fn boykisserBlackCoverage(point: vec2f) -> f32');
     expect(wgsl).toContain('fn boykisserRedCoverage(point: vec2f) -> f32');
     for (const featureName of REQUIRED_FEATURES) {
