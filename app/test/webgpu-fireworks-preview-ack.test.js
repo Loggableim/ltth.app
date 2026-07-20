@@ -97,13 +97,14 @@ function createHarness() {
     api.connectionHandlers[0](socket);
     socket.receive('webgpu-fireworks:register-overlay', {
       benchmark: telemetry.benchmark === true,
-      visible: true
+      visible: telemetry.visible !== false
     });
     socket.receive('webgpu-fireworks:renderer-status', {
       state: telemetry.state || 'ready',
       finaleActive: telemetry.finaleActive === true,
       finaleQueueLength: telemetry.finaleQueueLength || 0,
-      benchmark: telemetry.benchmark === true
+      benchmark: telemetry.benchmark === true,
+      visible: telemetry.visible !== false
     });
     if (telemetry.updatedAt) plugin.overlayTelemetry.get(id).statusUpdatedAt = telemetry.updatedAt;
     return socket;
@@ -254,6 +255,48 @@ describe('WebGPU preview acknowledgement routing', () => {
       message: expect.stringMatching(/refresh.*OBS browser source/i)
     });
     expect(target.emitted.some(([event]) => event === 'webgpu-fireworks:preview')).toBe(false);
+  });
+
+  test('does not count or select a fresh hidden renderer for preview', () => {
+    const harness = createHarness();
+    dataDirs.push(harness.dataDir);
+    const hidden = harness.connect('renderer-hidden', { visible: false });
+
+    expect(harness.plugin.getPreviewRendererStatus()).toEqual({
+      freshRendererCount: 0,
+      readyRendererCount: 0,
+      busyRendererCount: 0
+    });
+    expect(harness.plugin.selectPreviewRenderer()).toBeNull();
+    expect(hidden.emitted.some(([event]) => event === 'webgpu-fireworks:preview')).toBe(false);
+  });
+
+  test('ignores an ACK after the selected renderer becomes hidden', async () => {
+    jest.useFakeTimers();
+    const harness = createHarness();
+    dataDirs.push(harness.dataDir);
+    const target = harness.connect('renderer-hidden-after-dispatch');
+    target.onPreview = payload => {
+      target.receive('webgpu-fireworks:renderer-status', {
+        state: 'ready',
+        visible: false
+      });
+      target.receive('webgpu-fireworks:preview-ack', {
+        requestId: payload.requestId,
+        rendererId: target.id,
+        accepted: true
+      });
+    };
+
+    const pending = harness.invoke();
+    await Promise.resolve();
+    expect(harness.plugin.pendingPreviewRequests.size).toBe(1);
+    jest.advanceTimersByTime(26);
+    const res = await pending;
+
+    expect(res).toMatchObject({ statusCode: 503, body: { success: false, code: 'PREVIEW_ACK_TIMEOUT' } });
+    expect(harness.plugin.pendingPreviewRequests.size).toBe(0);
+    expect(jest.getTimerCount()).toBe(0);
   });
 
   test('ignores a matching request ACK from the wrong socket before accepting the target renderer ACK', async () => {

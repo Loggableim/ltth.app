@@ -995,7 +995,8 @@ class FireworksPlugin {
     getPreviewRendererStatus() {
         const cutoff = Date.now() - RENDERER_TELEMETRY_TTL_MS;
         const fresh = [...this.overlayTelemetry.values()].filter(item => (
-            isFreshTelemetry(item, 'statusUpdatedAt', cutoff) && item.benchmark !== true
+            isFreshTelemetry(item, 'statusUpdatedAt', cutoff) &&
+            item.benchmark !== true && item.visible !== false
         ));
         const ready = fresh.filter(item => item.state === 'ready');
         const busy = fresh.filter(item => (
@@ -1021,6 +1022,7 @@ class FireworksPlugin {
                 candidate.socket && candidate.socket.connected !== false &&
                 isFreshTelemetry(candidate.telemetry, 'statusUpdatedAt', cutoff) &&
                 candidate.telemetry?.benchmark !== true &&
+                candidate.telemetry?.visible !== false &&
                 candidate.telemetry?.state === 'ready' &&
                 (requiredCapabilities.length === 0 ||
                     rendererSupportsCapabilities(candidate.telemetry, requiredCapabilities))
@@ -1108,7 +1110,7 @@ class FireworksPlugin {
         const telemetry = this.overlayTelemetry.get(pending.rendererId);
         if (
             !isFreshTelemetry(telemetry, 'statusUpdatedAt', Date.now() - RENDERER_TELEMETRY_TTL_MS) ||
-            telemetry.benchmark === true
+            telemetry.benchmark === true || telemetry.visible === false
         ) return false;
 
         if (data.accepted !== true && data.reason === 'RENDERER_NOT_READY') {
