@@ -35,7 +35,6 @@
         'game-engine': '#6366f1',
         'milestone-leaderboard': '#0ea5e9',
         'viewer-leaderboard': '#0ea5e9',
-        'viewer-profiles': '#14b8a6',
         'gift-milestone': '#f43f5e',
         toptier: '#4ade80',
         vdoninja: '#7c3aed',

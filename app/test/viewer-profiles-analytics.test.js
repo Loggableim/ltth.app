@@ -150,6 +150,17 @@ describe('Viewer Profiles analytics dashboard', () => {
     }
   });
 
+  test('keeps the viewer profiles UI available as a hidden direct route', () => {
+    const route = findRoute(api, 'GET', '/viewer-profiles/ui');
+    expect(route).toBeDefined();
+
+    const res = createResponse();
+    route.handler({}, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.sentFile).toContain(path.join('viewer-leaderboard', 'viewer-profiles-ui.html'));
+  });
+
   test('overview insights endpoint returns segment intelligence and top signals', () => {
     seedViewer(db, 'vip_candidate', {
       total_visits: 35,
