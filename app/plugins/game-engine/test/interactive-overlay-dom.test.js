@@ -4,9 +4,10 @@ const { JSDOM } = require('jsdom');
 
 const overlayDir = path.join(__dirname, '..', 'overlay');
 
-function loadOverlay(name, i18n = null) {
+function loadOverlay(name, i18n = null, options = {}) {
   const listeners = new Map();
   const audioPlay = jest.fn(() => Promise.resolve());
+  const audioSources = [];
   const socket = {
     on: jest.fn((event, handler) => listeners.set(event, handler)),
     emit: jest.fn()
@@ -28,7 +29,7 @@ function loadOverlay(name, i18n = null) {
         initialized: true,
         t: (key, params = {}) => params.seconds == null ? key : `Viewer: ${params.seconds}s`
       };
-      window.fetch = jest.fn(() => new Promise(() => {}));
+      window.fetch = options.fetch || jest.fn(() => new Promise(() => {}));
       window.Date.now = () => now;
       window.setInterval = callback => {
         const id = nextIntervalId++;
@@ -43,6 +44,11 @@ function loadOverlay(name, i18n = null) {
       };
       window.clearTimeout = id => timeouts.delete(id);
       window.Audio = class Audio {
+        constructor(src) {
+          this.src = src;
+          audioSources.push(src);
+        }
+
         play() {
           return audioPlay();
         }
@@ -53,6 +59,7 @@ function loadOverlay(name, i18n = null) {
     dom,
     listeners,
     audioPlay,
+    audioSources,
     pendingTimeoutCount: () => timeouts.size,
     advance(milliseconds) {
       now += milliseconds;
@@ -300,6 +307,63 @@ describe('interactive overlay countdown DOM', () => {
     applyState(connect4State({ displayRevision: 5, sessionRevision: 2, sessionId: 7, moveNumber: 2 }));
     expect(audioPlay).toHaveBeenCalledTimes(3);
 
+    dom.window.close();
+  });
+
+  test('direct Connect4 uses custom audio for moves, timer warning, and the winning player', async () => {
+    let media = [
+      { media_event: 'piece_drop', url: '/game-engine/media/connect4/piece_drop?v=1' },
+      { media_event: 'timer_warning', url: '/game-engine/media/connect4/timer_warning?v=2' },
+      { media_event: 'player_2_wins', url: '/game-engine/media/connect4/player_2_wins?v=3' }
+    ];
+    const fetch = jest.fn(url => {
+      if (url === '/api/game-engine/media/connect4') {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(media) });
+      }
+      return new Promise(() => {});
+    });
+    const { dom, listeners, audioSources, advance } = loadOverlay('connect4.html', null, { fetch });
+    await new Promise(resolve => setImmediate(resolve));
+    expect(fetch).toHaveBeenCalledWith('/api/game-engine/media/connect4', { cache: 'no-store' });
+    const applyState = listeners.get('game-engine:interactive-state');
+
+    applyState(connect4State({ displayRevision: 1, moveNumber: 1 }));
+    expect(audioSources).toContain('/game-engine/media/connect4/piece_drop?v=1');
+
+    advance(2000);
+    expect(audioSources).toContain('/game-engine/media/connect4/timer_warning?v=2');
+    const warningCount = audioSources.filter(src => src.includes('/timer_warning')).length;
+    advance(1000);
+    expect(audioSources.filter(src => src.includes('/timer_warning'))).toHaveLength(warningCount);
+
+    media = [
+      { media_event: 'piece_drop', url: '/game-engine/media/connect4/piece_drop?v=4' },
+      { media_event: 'timer_warning', url: '/game-engine/media/connect4/timer_warning?v=2' },
+      { media_event: 'player_2_wins', url: '/game-engine/media/connect4/player_2_wins?v=3' }
+    ];
+    listeners.get('game-engine:media-updated')({ gameType: 'connect4', mediaEvent: 'piece_drop' });
+    await new Promise(resolve => setImmediate(resolve));
+    applyState(connect4State({ displayRevision: 2, sessionRevision: 2, moveNumber: 2 }));
+    expect(audioSources).toContain('/game-engine/media/connect4/piece_drop?v=4');
+
+    const result = connect4State({
+      displayRevision: 3,
+      sessionRevision: 3,
+      phase: 'result',
+      deadline: null,
+      moveNumber: 0
+    });
+    result.display.state.status = 'completed';
+    result.display.state.winner = 2;
+    result.display.result = {
+      sessionId: result.display.displaySessionId,
+      winner: 2,
+      winnerRole: 'viewer',
+      reason: 'win'
+    };
+    applyState(result);
+
+    expect(audioSources).toContain('/game-engine/media/connect4/player_2_wins?v=3');
     dom.window.close();
   });
 

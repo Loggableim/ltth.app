@@ -741,6 +741,8 @@
     let containerHideTimer = null;
     let interactiveViewerCountdownInterval = null;
     const highestAudibleMoveBySession = new Map();
+    const warnedViewerDeadlines = new Set();
+    const customAudioByEvent = new Map();
     const ROWS = 6;
     const COLUMNS = 7;
 
@@ -760,36 +762,74 @@
     }
 
     // Play audio file (MP3/WAV)
-    function playAudioFile(filePath, volume = null) {
-      if (!gameConfig || !gameConfig.soundEnabled) return;
+    function playAudioFile(filePath, volume = null, fallbackPath = null) {
+      if (!gameConfig || !gameConfig.soundEnabled || !filePath) return false;
 
+      let fallbackStarted = false;
+      const playFallback = () => {
+        if (fallbackStarted || !fallbackPath || fallbackPath === filePath) return;
+        fallbackStarted = true;
+        playAudioFile(fallbackPath, volume);
+      };
       try {
         const audio = new Audio(filePath);
         audio.volume = volume !== null ? volume : (gameConfig.soundVolume || 0.5);
+        audio.onerror = playFallback;
         audio.play().catch(err => {
           console.warn('Audio playback failed:', err);
+          playFallback();
         });
+        return true;
       } catch (error) {
         console.warn('Failed to load audio:', error);
+        playFallback();
+        return Boolean(fallbackPath);
       }
+    }
+
+    const defaultSoundsByEvent = {
+      new_challenger: '/game-engine/sounds/default/new-challenger-alert.mp3',
+      challenge_accepted: '/game-engine/sounds/default/challenge accepted.mp3',
+      piece_drop: '/game-engine/sounds/default/game start.mp3',
+      player_1_wins: '/game-engine/sounds/default/player-1-wins.mp3',
+      player_2_wins: '/game-engine/sounds/default/player-2-wins.mp3',
+      game_over: '/game-engine/sounds/default/game over.mp3',
+      timer_warning: '/game-engine/sounds/default/ten-sec-timer.mp3'
+    };
+
+    async function loadCustomAudio() {
+      try {
+        const response = await fetch('/api/game-engine/media/connect4', { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const media = await response.json();
+        customAudioByEvent.clear();
+        for (const item of Array.isArray(media) ? media : []) {
+          if (item && typeof item.media_event === 'string' && typeof item.url === 'string') {
+            customAudioByEvent.set(item.media_event, item.url);
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to load custom Connect4 audio:', error);
+      }
+    }
+
+    function playEventSound(mediaEvent) {
+      const defaultPath = defaultSoundsByEvent[mediaEvent];
+      const customPath = customAudioByEvent.get(mediaEvent);
+      return playAudioFile(customPath || defaultPath, null, customPath ? defaultPath : null);
     }
 
     function playSound(type) {
       if (!gameConfig || !gameConfig.soundEnabled) return false;
 
-      // Map sound types to default sound files
-      const defaultSounds = {
-        'move': '/game-engine/sounds/default/game start.mp3',
-        'win': '/game-engine/sounds/default/player-1-wins.mp3',
-        'draw': '/game-engine/sounds/default/game over.mp3',
-        'timer_warning': '/game-engine/sounds/default/ten-sec-timer.mp3'
+      const soundEvents = {
+        move: 'piece_drop',
+        win: 'player_1_wins',
+        draw: 'game_over',
+        timer_warning: 'timer_warning'
       };
 
-      // Use default sounds if available, otherwise fall back to oscillator
-      if (defaultSounds[type]) {
-        playAudioFile(defaultSounds[type]);
-        return true;
-      }
+      if (soundEvents[type]) return playEventSound(soundEvents[type]);
 
       // Fallback to oscillator sounds for compatibility
       try {
@@ -869,35 +909,10 @@
     let challengeTimerInterval = null;
 
     // Media playback function
-    function playMedia(mediaInfo) {
-      if (!mediaInfo || !mediaInfo.file_path) return;
-
-      try {
-        const element = mediaInfo.media_type === 'audio'
-          ? document.createElement('audio')
-          : document.createElement('video');
-
-        element.src = mediaInfo.file_path;
-        element.volume = (gameConfig && gameConfig.soundVolume) ? gameConfig.soundVolume : 0.5;
-        element.style.display = 'none';
-
-        document.body.appendChild(element);
-
-        element.play().catch(err => {
-          console.warn('Media playback failed:', err);
-        });
-
-        element.onended = () => {
-          document.body.removeChild(element);
-        };
-
-        element.onerror = () => {
-          console.error('Failed to load media:', mediaInfo.file_path);
-          document.body.removeChild(element);
-        };
-      } catch (error) {
-        console.error('Error playing media:', error);
-      }
+    function playMedia(mediaInfo, mediaEvent) {
+      if (mediaEvent) return playEventSound(mediaEvent);
+      if (mediaInfo && mediaInfo.url) return playAudioFile(mediaInfo.url);
+      return false;
     }
 
     // Show challenge screen
@@ -910,7 +925,7 @@
 
       // Play challenge media if available
       if (data.media) {
-        playMedia(data.media);
+        playMedia(data.media, 'new_challenger');
       }
 
       // Set challenger name
@@ -1022,6 +1037,13 @@
         );
         countdown.hidden = false;
         countdown.classList.toggle('warning', seconds <= warningSeconds);
+        if (seconds > 0 && seconds <= warningSeconds) {
+          const sessionId = Number(display.displaySessionId ?? display.state?.sessionId);
+          const warningKey = `${sessionId}:${deadline}`;
+          if (!warnedViewerDeadlines.has(warningKey) && playSound('timer_warning')) {
+            warnedViewerDeadlines.add(warningKey);
+          }
+        }
       };
       render();
       interactiveViewerCountdownInterval = setInterval(render, 1000);
@@ -1342,11 +1364,7 @@
         }
 
         if (!suppressEffects) {
-          // Play appropriate win sound based on which player won
-          const winSound = data.state.winner === 1
-            ? '/game-engine/sounds/default/player-1-wins.mp3'
-            : '/game-engine/sounds/default/player-2-wins.mp3';
-          playAudioFile(winSound);
+          playEventSound(data.state.winner === 1 ? 'player_1_wins' : 'player_2_wins');
           celebrateWin();
         }
       } else if (data.reason === 'draw') {
@@ -1355,7 +1373,7 @@
         drawText.className = 'draw-text';
         drawText.textContent = dt.labelDraw || runtimeText('plugins.game-engine.runtime.connect4.draw');
         resultText.appendChild(drawText);
-        if (!suppressEffects) playAudioFile('/game-engine/sounds/default/game over.mp3');
+        if (!suppressEffects) playEventSound('game_over');
       } else {
         resultText.innerHTML = `<span>${runtimeText('plugins.game-engine.runtime.common.game_finished')}</span>`;
       }
@@ -1548,7 +1566,7 @@
 
       // Play challenge accepted media if available
       if (data.media) {
-        playMedia(data.media);
+        playMedia(data.media, 'challenge_accepted');
       }
 
       currentSession = data.sessionId;
@@ -1592,6 +1610,12 @@
         applyConfig(data.config);
       }
     });
+
+    socket.on('game-engine:media-updated', data => {
+      if (data?.gameType === 'connect4') loadCustomAudio();
+    });
+
+    loadCustomAudio();
 
     // Load initial configuration
     fetch('/api/game-engine/config/connect4')
