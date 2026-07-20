@@ -132,6 +132,12 @@
             this.updateAddButton();
         }
 
+        retranslate() {
+            const currentConfig = this.serialize();
+            this.renderShell();
+            this.load(currentConfig);
+        }
+
         setSeconds(setting, milliseconds, fallback) {
             const numeric = Number(milliseconds);
             const safeMilliseconds = Number.isFinite(numeric) && numeric >= 0 ? numeric : fallback;

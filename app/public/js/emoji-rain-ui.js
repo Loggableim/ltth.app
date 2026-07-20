@@ -20,6 +20,9 @@ function initializeAnimalCommandEditor() {
         uploadEndpoint: '/api/emoji-rain/upload',
         translate: (key, fallback) => pluginText(`emoji_rain.commands_editor.${key}`, fallback)
     });
+    if (window.i18n && typeof window.i18n.onLanguageChange === 'function') {
+        window.i18n.onLanguageChange(() => animalCommandEditor.retranslate());
+    }
     animalCommandEditor.refreshGallery();
 }
 
@@ -1118,9 +1121,10 @@ function updatePerformanceDisplay(fps, activeEmojis, mode) {
 // ========== INITIALIZATION ==========
 
 // Initialize everything when DOM is ready
-function initializeEmojiRainUI() {
+async function initializeEmojiRainUI() {
     console.log('?? [EMOJI RAIN UI] Initializing Emoji Rain UI...');
 
+    if (window.i18n && window.i18n.ready) await window.i18n.ready;
     initializeAnimalCommandEditor();
     loadConfig();
     loadUploadedImages();

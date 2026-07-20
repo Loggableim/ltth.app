@@ -41,6 +41,20 @@ describe('WebGPU Emoji Rain static UI localization', () => {
     const html = read('ui.html');
     expect(html).toContain('id="animal-command-editor"');
     expect(html.indexOf('/js/emoji-rain-command-editor.js')).toBeLessThan(html.indexOf('/js/webgpu-emoji-rain-ui.js'));
+    expect(html).toContain('/js/emoji-rain-command-editor.js?v=3.0.5');
+    expect(html).toContain('/js/webgpu-emoji-rain-ui.js?v=3.0.5');
+  });
+
+  test('waits for i18n before constructing the dynamic command editor', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'webgpu-emoji-rain-ui.js'), 'utf8');
+    const initializeStart = source.indexOf('async function initializeEmojiRainUI()');
+    const readyIndex = source.indexOf('await window.i18n.ready;', initializeStart);
+    const editorIndex = source.indexOf('initializeAnimalCommandEditor();', initializeStart);
+
+    expect(initializeStart).toBeGreaterThanOrEqual(0);
+    expect(readyIndex).toBeGreaterThan(initializeStart);
+    expect(editorIndex).toBeGreaterThan(readyIndex);
+    expect(source).toContain('animalCommandEditor.retranslate()');
   });
 
   test('marks every remaining static UI label with a plugin locale key', () => {

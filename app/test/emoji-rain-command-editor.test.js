@@ -31,6 +31,29 @@ function command(name, type = 'emoji', value = '🐾', enabled = true) {
 }
 
 describe('shared EmojiRain command editor', () => {
+  test('retranslates the editor without losing unsaved command settings', () => {
+    let locale = 'en';
+    const translations = {
+      en: { title: 'Emoji commands', command: 'Command' },
+      de: { title: 'Emoji-Kommandos', command: 'Kommando' }
+    };
+    const dom = new JSDOM('<!doctype html><div id="editor"></div>');
+    const editor = new EmojiRainCommandEditor({
+      root: dom.window.document.getElementById('editor'),
+      document: dom.window.document,
+      translate: (key, fallback) => translations[locale][key] || fallback
+    });
+    editor.load(config([command('beans')]));
+    editor.root.querySelector('[data-role="command-name"]').value = 'pfoten';
+
+    locale = 'de';
+    editor.retranslate();
+
+    expect(editor.root.querySelector('h2').textContent).toBe('Emoji-Kommandos');
+    expect(editor.root.querySelectorAll('[data-command-row] label > span')[1].textContent).toBe('Kommando');
+    expect(editor.serialize().animal_commands[0].command).toBe('pfoten');
+  });
+
   test('loads and serializes commands, Teamlevel access, and cooldown seconds', () => {
     const { editor } = createEditor();
     editor.load(config([

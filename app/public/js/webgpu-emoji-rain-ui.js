@@ -20,6 +20,9 @@ function initializeAnimalCommandEditor() {
         uploadEndpoint: '/api/webgpu-emoji-rain/upload',
         translate: commandEditorText
     });
+    if (window.i18n && typeof window.i18n.onLanguageChange === 'function') {
+        window.i18n.onLanguageChange(() => animalCommandEditor.retranslate());
+    }
     animalCommandEditor.refreshGallery();
 }
 
@@ -1317,9 +1320,10 @@ async function loadRendererStatus() {
 // ========== INITIALIZATION ==========
 
 // Initialize everything when DOM is ready
-function initializeEmojiRainUI() {
+async function initializeEmojiRainUI() {
     console.log('?? [EMOJI RAIN UI] Initializing Emoji Rain UI...');
 
+    if (window.i18n && window.i18n.ready) await window.i18n.ready;
     initializeAnimalCommandEditor();
     loadConfig();
     loadUploadedImages();

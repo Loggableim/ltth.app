@@ -19,7 +19,7 @@
           "enabled": "Aktiv",
           "command": "Kommando",
           "asset_type": "Zieltyp",
-          "emoji": "Emoji",
+          "emoji": "Emoji-Symbol",
           "image": "Bild",
           "asset_value": "Ziel",
           "gallery": "Galerie",

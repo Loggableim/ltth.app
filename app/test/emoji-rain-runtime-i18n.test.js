@@ -53,6 +53,20 @@ describe('Emoji Rain runtime i18n', () => {
     const html = fs.readFileSync(path.join(pluginRoot, 'ui.html'), 'utf8');
     expect(html).toContain('id="animal-command-editor"');
     expect(html.indexOf('/js/emoji-rain-command-editor.js')).toBeLessThan(html.indexOf('/js/emoji-rain-ui.js'));
+    expect(html).toContain('/js/emoji-rain-command-editor.js?v=2.1.2');
+    expect(html).toContain('/js/emoji-rain-ui.js?v=2.1.2');
+  });
+
+  test('waits for i18n before constructing the dynamic command editor', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'emoji-rain-ui.js'), 'utf8');
+    const initializeStart = source.indexOf('async function initializeEmojiRainUI()');
+    const readyIndex = source.indexOf('await window.i18n.ready;', initializeStart);
+    const editorIndex = source.indexOf('initializeAnimalCommandEditor();', initializeStart);
+
+    expect(initializeStart).toBeGreaterThanOrEqual(0);
+    expect(readyIndex).toBeGreaterThan(initializeStart);
+    expect(editorIndex).toBeGreaterThan(readyIndex);
+    expect(source).toContain('animalCommandEditor.retranslate()');
   });
 
   test('provides runtime and command-editor copy in every supported language', () => {

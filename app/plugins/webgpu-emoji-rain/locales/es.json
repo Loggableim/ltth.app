@@ -19,7 +19,7 @@
           "enabled": "Activo",
           "command": "Comando",
           "asset_type": "Tipo de destino",
-          "emoji": "Emoji",
+          "emoji": "Símbolo emoji",
           "image": "Imagen",
           "asset_value": "Destino",
           "gallery": "Galería",
