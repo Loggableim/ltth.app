@@ -243,9 +243,6 @@ class FireworksPlugin {
         this.superfanFinaleAttemptCounter = 0;
         this.superfanFinaleAckTimeoutMs = 5000;
 
-        // Combo timeout (ms) - reset combo if no gift within this time
-        this.COMBO_TIMEOUT = 10000;
-
         // Server-side active firework tracking (browser global not available server-side)
         this.activeFireworkCount = 0;
         this.activeFireworkTimers = new Map();
@@ -1231,7 +1228,7 @@ class FireworksPlugin {
                         imported[key] = imported[key].replace('/plugins/fireworks/', '/plugins/webgpu-fireworks/');
                     }
                 }
-                this.config = normalizeConfig({ ...this.config, ...imported, renderer: 'webgpu' });
+                this.applyRuntimeConfig({ ...this.config, ...imported, renderer: 'webgpu' });
                 this.saveConfig();
             }
 
@@ -1400,12 +1397,15 @@ class FireworksPlugin {
             windStrength: 0.02
         };
 
-        this.config = normalizeConfig({
+        this.applyRuntimeConfig({
             ...defaultConfig,
             ...(savedConfig || {})
         });
+    }
 
-        this.COMBO_TIMEOUT = this.config.comboTimeout;
+    applyRuntimeConfig(input) {
+        this.config = normalizeConfig(input);
+        return this.config;
     }
 
     /**
@@ -1501,7 +1501,7 @@ class FireworksPlugin {
         this.api.registerRoute('post', '/api/webgpu-fireworks/config', (req, res) => {
             try {
                 const updates = req.body || {};
-                this.config = normalizeConfig({ ...this.config, ...updates });
+                this.applyRuntimeConfig({ ...this.config, ...updates });
                 this.saveConfig();
 
                 // Restart random timer if relevant settings changed
@@ -2305,7 +2305,7 @@ class FireworksPlugin {
         this.lastGiftTime.set(userId, now);
 
         // Check if combo is still active
-        if (timeSinceLastGift > this.COMBO_TIMEOUT) {
+        if (timeSinceLastGift > this.config.comboTimeout) {
             // Reset combo
             this.comboState.set(userId, 1);
             return 1.0;
@@ -2421,6 +2421,7 @@ class FireworksPlugin {
                 });
             }
         }
+        return false;
     }
 
     handleSuperfanEntry(data = {}, options = {}) {

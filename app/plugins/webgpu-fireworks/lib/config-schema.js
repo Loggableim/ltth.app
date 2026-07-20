@@ -17,6 +17,11 @@ const FINALE_DURATION_BY_LENGTH = Object.freeze({
   medium: 18000,
   long: 28000
 });
+const CONFIG_LIMITS = Object.freeze({
+  targetFps: Object.freeze({ min: 24, max: 120 }),
+  minFps: Object.freeze({ min: 15, max: 60 }),
+  minTargetFps: Object.freeze({ min: 20, max: 50 })
+});
 
 const DEFAULT_FIREWORKS_CONFIG = {
   enabled: true,
@@ -139,6 +144,21 @@ function clampInteger(value, min, max, fallback) {
 function normalizeBoolean(value, fallback) {
   if (typeof value === 'boolean') return value;
   return fallback;
+}
+
+function normalizeChatKeywords(value, fallback = DEFAULT_FIREWORKS_CONFIG.chatTriggerKeywords) {
+  const input = Array.isArray(value) ? value : fallback;
+  const seen = new Set();
+  const keywords = [];
+  for (const item of input) {
+    const keyword = typeof item === 'string' ? item.trim() : '';
+    const identity = keyword.toLocaleLowerCase('en-US');
+    if (!keyword || seen.has(identity)) continue;
+    seen.add(identity);
+    keywords.push(keyword);
+    if (keywords.length === 20) break;
+  }
+  return keywords;
 }
 
 function normalizeDisplayText(value, fallback, maxLength) {
@@ -308,6 +328,24 @@ function normalizeGiftShapeMappings(value) {
 function normalizeConfig(config = {}) {
   const source = isPlainObject(config) ? config : {};
   const defaults = DEFAULT_FIREWORKS_CONFIG;
+  const targetFps = clampInteger(
+    source.targetFps,
+    CONFIG_LIMITS.targetFps.min,
+    CONFIG_LIMITS.targetFps.max,
+    defaults.targetFps
+  );
+  const minFps = Math.min(targetFps, clampInteger(
+    source.minFps,
+    CONFIG_LIMITS.minFps.min,
+    CONFIG_LIMITS.minFps.max,
+    defaults.minFps
+  ));
+  const minTargetFps = Math.min(targetFps, clampInteger(
+    source.minTargetFps,
+    CONFIG_LIMITS.minTargetFps.min,
+    CONFIG_LIMITS.minTargetFps.max,
+    defaults.minTargetFps
+  ));
   const requestedInternalMin = normalizePreset(source.internalMinResolutionPreset, defaults.internalMinResolutionPreset);
   const requestedInternalMax = normalizePreset(source.internalMaxResolutionPreset, defaults.internalMaxResolutionPreset);
   const internalBounds = [requestedInternalMin, requestedInternalMax]
@@ -320,7 +358,7 @@ function normalizeConfig(config = {}) {
     renderer: 'webgpu',
     visualStyle: normalizeVisualStyle(source.visualStyle, defaults.visualStyle),
     maxParticles: clampInteger(source.maxParticles, 200, 3000, defaults.maxParticles),
-    targetFps: clampInteger(source.targetFps, 24, 120, defaults.targetFps),
+    targetFps,
     giftTriggersEnabled: normalizeBoolean(source.giftTriggersEnabled, defaults.giftTriggersEnabled),
     minGiftCoins: clampInteger(source.minGiftCoins, 0, 1000000, defaults.minGiftCoins),
     comboEnabled: normalizeBoolean(source.comboEnabled, defaults.comboEnabled),
@@ -380,7 +418,7 @@ function normalizeConfig(config = {}) {
     interactiveEnabled: normalizeBoolean(source.interactiveEnabled, defaults.interactiveEnabled),
     clickTriggerEnabled: normalizeBoolean(source.clickTriggerEnabled, defaults.clickTriggerEnabled),
     chatTriggerEnabled: normalizeBoolean(source.chatTriggerEnabled, defaults.chatTriggerEnabled),
-    chatTriggerKeywords: Array.isArray(source.chatTriggerKeywords) ? source.chatTriggerKeywords.filter((item) => typeof item === 'string').slice(0, 20) : [...defaults.chatTriggerKeywords],
+    chatTriggerKeywords: normalizeChatKeywords(source.chatTriggerKeywords),
     randomEnabled: normalizeBoolean(source.randomEnabled, defaults.randomEnabled),
     randomInterval: clampInteger(source.randomInterval, 1000, 3600000, defaults.randomInterval),
     randomMinIntensity: clampNumber(source.randomMinIntensity, 0.1, 10, defaults.randomMinIntensity),
@@ -405,7 +443,7 @@ function normalizeConfig(config = {}) {
     orientation: VALID_ORIENTATIONS.includes(source.orientation) ? source.orientation : defaults.orientation,
     adaptiveRenderScaleEnabled: normalizeBoolean(source.adaptiveRenderScaleEnabled, defaults.adaptiveRenderScaleEnabled),
     minRenderScale: clampNumber(source.minRenderScale, 0.25, 1, defaults.minRenderScale),
-    minFps: clampInteger(source.minFps, 15, 60, defaults.minFps),
+    minFps,
     despawnFadeDuration: clampNumber(source.despawnFadeDuration, 0.25, 10, defaults.despawnFadeDuration),
     giftPopupEnabled: normalizeBoolean(source.giftPopupEnabled, defaults.giftPopupEnabled),
     giftPopupPosition: VALID_GIFT_POPUP_POSITIONS.includes(source.giftPopupPosition) ? source.giftPopupPosition : defaults.giftPopupPosition,
@@ -415,7 +453,7 @@ function normalizeConfig(config = {}) {
     maxTotalParticles: clampInteger(source.maxTotalParticles, 512, 16384, defaults.maxTotalParticles),
     emergencyCleanupThreshold: clampInteger(source.emergencyCleanupThreshold, 1024, 16384, defaults.emergencyCleanupThreshold),
     adaptivePerformance: normalizeBoolean(source.adaptivePerformance, defaults.adaptivePerformance),
-    minTargetFps: clampInteger(source.minTargetFps, 20, 50, defaults.minTargetFps),
+    minTargetFps,
     frameSkipEnabled: normalizeBoolean(source.frameSkipEnabled, defaults.frameSkipEnabled),
     gravity: clampNumber(source.gravity, -1, 2, defaults.gravity),
     friction: clampNumber(source.friction, 0.5, 1, defaults.friction),
@@ -512,6 +550,7 @@ module.exports = {
   ALLOWED_FINALE_STYLES,
   ALLOWED_SHAPES,
   ALLOWED_VISUAL_STYLES,
+  CONFIG_LIMITS,
   DEFAULT_FIREWORKS_CONFIG,
   FINALE_DURATION_BY_LENGTH,
   SUPERFAN_FINALE_COOLDOWN_HOURS,
@@ -520,6 +559,7 @@ module.exports = {
   finaleLengthFromDuration,
   isCustomFinaleStyleId,
   normalizeCompletionNotification,
+  normalizeChatKeywords,
   normalizeConfig,
   normalizeFinaleLength,
   normalizeFinaleRequest,

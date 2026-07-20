@@ -36,6 +36,60 @@ const V2_GLYPH_IDS = Object.freeze({
     'trans-flag': 26
 });
 
+function clampColorComponent(value) {
+    const component = Number(value);
+    if (!Number.isFinite(component)) return 0;
+    return Math.max(0, Math.min(1, component));
+}
+
+function parseColor(color) {
+    if (Array.isArray(color) && color.length >= 3) {
+        return [
+            clampColorComponent(color[0]),
+            clampColorComponent(color[1]),
+            clampColorComponent(color[2]),
+            color.length > 3 ? clampColorComponent(color[3]) : 1
+        ];
+    }
+
+    const value = String(color);
+    const shortHex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i.exec(value);
+    if (shortHex) {
+        return [
+            parseInt(shortHex[1] + shortHex[1], 16) / 255,
+            parseInt(shortHex[2] + shortHex[2], 16) / 255,
+            parseInt(shortHex[3] + shortHex[3], 16) / 255,
+            1
+        ];
+    }
+
+    const hex = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})?$/i.exec(value);
+    if (hex) {
+        return [
+            parseInt(hex[1], 16) / 255,
+            parseInt(hex[2], 16) / 255,
+            parseInt(hex[3], 16) / 255,
+            hex[4] ? parseInt(hex[4], 16) / 255 : 1
+        ];
+    }
+
+    const hsl = /^hsl\(\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))\s*,\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))%\s*,\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))%\s*\)$/i.exec(value);
+    const hsla = /^hsla\(\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))\s*,\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))%\s*,\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))%\s*,\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))\s*\)$/i.exec(value);
+    const match = hsl || hsla;
+    if (!match) return [1, 1, 1, 1];
+
+    const hue = Number(match[1]);
+    if (!Number.isFinite(hue)) return [1, 1, 1, 1];
+    const h = ((hue % 360) + 360) % 360 / 360;
+    const s = clampColorComponent(Number(match[2]) / 100);
+    const l = clampColorComponent(Number(match[3]) / 100);
+    const f = n => {
+        const k = (n + h * 12) % 12;
+        return l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    };
+    return [f(0), f(8), f(4), hsla ? clampColorComponent(match[4]) : 1];
+}
+
 class WebGPUParticleEngine {
     constructor(canvas, options = {}) {
         this.canvas = canvas;
@@ -989,31 +1043,7 @@ class WebGPUParticleEngine {
     }
 
     _parseColor(color) {
-        if (Array.isArray(color) && color.length >= 3) {
-            return [
-                Math.max(0, Math.min(1, Number(color[0]) || 0)),
-                Math.max(0, Math.min(1, Number(color[1]) || 0)),
-                Math.max(0, Math.min(1, Number(color[2]) || 0)),
-                Math.max(0, Math.min(1, color.length > 3 ? Number(color[3]) : 1))
-            ];
-        }
-        const hex = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(String(color));
-        if (hex) return [parseInt(hex[1], 16) / 255, parseInt(hex[2], 16) / 255, parseInt(hex[3], 16) / 255, 1];
-        const hexAlpha = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(String(color));
-        if (hexAlpha) return [
-            parseInt(hexAlpha[1], 16) / 255,
-            parseInt(hexAlpha[2], 16) / 255,
-            parseInt(hexAlpha[3], 16) / 255,
-            parseInt(hexAlpha[4], 16) / 255
-        ];
-        const hsl = /^hsl\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*\)$/i.exec(String(color));
-        if (!hsl) return [1, 1, 1, 1];
-        const h = Number(hsl[1]) / 360, s = Number(hsl[2]) / 100, l = Number(hsl[3]) / 100;
-        const f = n => {
-            const k = (n + h * 12) % 12;
-            return l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1));
-        };
-        return [f(0), f(8), f(4), 1];
+        return parseColor(color);
     }
 
     _packColor(color) {
@@ -2167,4 +2197,7 @@ fn aces(color:vec3f)->vec3f{let a=2.51;let b=0.03;let c=2.43;let d=0.59;let e=0.
 }
 
 if (typeof window !== 'undefined') window.WebGPUParticleEngine = WebGPUParticleEngine;
-if (typeof module !== 'undefined' && module.exports) module.exports = WebGPUParticleEngine;
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = WebGPUParticleEngine;
+    module.exports.parseColor = parseColor;
+}

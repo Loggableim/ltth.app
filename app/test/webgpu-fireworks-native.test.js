@@ -4,6 +4,7 @@ const vm = require('vm');
 
 const pluginRoot = path.join(__dirname, '..', 'plugins', 'webgpu-fireworks');
 const read = relative => fs.readFileSync(path.join(pluginRoot, relative), 'utf8');
+const WebGPUParticleEngine = require('../plugins/webgpu-fireworks/gpu/webgpu-particle-engine');
 
 describe('WebGPU Fireworks native migration', () => {
   const rendererSource = read('gpu/webgpu-particle-engine.js');
@@ -52,6 +53,20 @@ describe('WebGPU Fireworks native migration', () => {
     }
     expect(normalizeConfig({ avatarParticleChance: 0 }).avatarParticleChance).toBe(0);
     expect(mainSource).toContain('avatarParticleChance: effectiveConfig.avatarParticleChance ?? 0.3');
+  });
+
+  test.each([
+    ['#abc', [170 / 255, 187 / 255, 204 / 255, 1]],
+    ['#112233', [17 / 255, 34 / 255, 51 / 255, 1]],
+    ['#11223380', [17 / 255, 34 / 255, 51 / 255, 128 / 255]],
+    ['hsl(120, 100%, 25%)', [0, 0.5, 0, 1]],
+    ['hsla(240, 100%, 50%, 0.25)', [0, 0, 1, 0.25]],
+    [[1.4, -0.2, 0.5, 2], [1, 0, 0.5, 1]]
+  ])('parses accepted color %p as RGBA', (input, expected) => {
+    expect(WebGPUParticleEngine.parseColor(input)).toHaveLength(4);
+    WebGPUParticleEngine.parseColor(input).forEach((component, index) => {
+      expect(component).toBeCloseTo(expected[index], 6);
+    });
   });
 
   test('contains native WebGPU capability and premultiplied-alpha setup', () => {

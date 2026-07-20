@@ -58,6 +58,45 @@ describe('WebGPU Fireworks trigger truth contract', () => {
     jest.useRealTimers();
   });
 
+  test('normalizes performance minimums against the normalized target FPS', () => {
+    expect(normalizeConfig({ targetFps: 24, minFps: 60, minTargetFps: 50 })).toMatchObject({
+      targetFps: 24,
+      minFps: 24,
+      minTargetFps: 24
+    });
+  });
+
+  test('trims, removes, and deduplicates chat trigger keywords', () => {
+    const config = normalizeConfig({
+      chatTriggerEnabled: true,
+      chatTriggerKeywords: ['', '   ', 'boom', ' boom ', 'BOOM']
+    });
+
+    expect(config.chatTriggerKeywords).toEqual(['boom']);
+    const { plugin } = createPlugin(config);
+    plugin.triggerFirework = jest.fn(() => ({ accepted: true, reason: 'submitted' }));
+    expect(plugin.handleChatTrigger({ comment: 'ordinary chat message' })).toBe(false);
+    expect(plugin.triggerFirework).not.toHaveBeenCalled();
+  });
+
+  test('uses a newly saved combo timeout without plugin restart', () => {
+    jest.setSystemTime(new Date('2026-07-19T10:00:00.000Z'));
+    const { api, plugin } = createPlugin({ comboEnabled: true, comboTimeout: 10_000 });
+    plugin.registerRoutes();
+    const response = createResponse();
+
+    api.routes.get('post:/api/webgpu-fireworks/config')({
+      body: { comboTimeout: 1000 }
+    }, response);
+    expect(response.statusCode).toBe(200);
+    expect(response.body.config.comboTimeout).toBe(1000);
+
+    expect(plugin.updateComboState('combo-user', 'Combo User')).toBe(1);
+    jest.advanceTimersByTime(1001);
+    expect(plugin.updateComboState('combo-user', 'Combo User')).toBe(1);
+    expect(plugin.comboState.get('combo-user')).toBe(1);
+  });
+
   test('returns structured rejection reasons before dispatch', () => {
     const disabled = createPlugin({ enabled: false });
     expect(disabled.plugin.triggerFirework({ reason: 'gift' })).toEqual({
