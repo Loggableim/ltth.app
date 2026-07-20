@@ -615,6 +615,53 @@ describe('WebGPU Fireworks benchmark session isolation', () => {
   });
 
   test.each([
+    ['hidden', (socket, _harness, sessionId) => socket.receive('webgpu-fireworks:renderer-status', {
+      benchmark: true,
+      benchmarkSessionId: sessionId,
+      state: 'ready',
+      visible: false
+    })],
+    ['non-ready', (socket, _harness, sessionId) => socket.receive('webgpu-fireworks:renderer-status', {
+      benchmark: true,
+      benchmarkSessionId: sessionId,
+      state: 'initializing',
+      visible: true
+    })],
+    ['stale', (socket, harness) => {
+      harness.plugin.overlayTelemetry.get(socket.id).statusUpdatedAt = Date.now() - 6000;
+    }]
+  ])('discards the benchmark planner candidate when the renderer becomes %s before ACK', (_label, makeRendererUnready) => {
+    jest.useFakeTimers();
+    const harness = createHarness();
+    const started = startSession(harness);
+    const socket = harness.connect(`benchmark-${_label}-ack-race`);
+    registerBenchmarkRenderer(socket, started.sessionId);
+    socket.ackDelayMs = 50;
+    const session = harness.plugin.benchmarkSessions.get(started.sessionId);
+    const initialPlanner = session.spawnPlanner;
+
+    const response = harness.callRoute(
+      'post',
+      '/api/webgpu-fireworks/benchmark/trigger',
+      harness.request({ body: { sessionId: started.sessionId, seed: 203 } })
+    );
+    makeRendererUnready(socket, harness, started.sessionId);
+    jest.advanceTimersByTime(50);
+
+    expect(response.statusCode).toBe(503);
+    expect(response.body).toMatchObject({
+      success: false,
+      accepted: false,
+      code: 'BENCHMARK_TRIGGER_DELIVERY_FAILED',
+      reason: 'renderer-not-ready'
+    });
+    expect(session.spawnPlanner).toBe(initialPlanner);
+    expect(session.spawnPlanner.targets).toHaveLength(0);
+    expect(session.spawnPlanner.origins).toHaveLength(0);
+    expect(harness.plugin.spawnPlanner.plan).not.toHaveBeenCalled();
+  });
+
+  test.each([
     ['missing session id', {}, 400, 'BENCHMARK_SESSION_ID_REQUIRED'],
     ['invalid session id', { sessionId: 'invalid' }, 400, 'INVALID_BENCHMARK_SESSION_ID'],
     ['unknown session id', { sessionId: randomUUID() }, 404, 'BENCHMARK_SESSION_NOT_FOUND']

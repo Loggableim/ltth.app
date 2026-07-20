@@ -1959,13 +1959,14 @@ class FireworksPlugin {
                         });
                     }
                     const operationFinished = this.finishBenchmarkSessionOperation(session, operation);
-                    const rendererStillBound = this.getConnectedBenchmarkSocket(session) === renderer.socket;
+                    const currentRenderer = this.getReadyBenchmarkRenderer(session);
+                    const rendererStillBound = currentRenderer?.socket === renderer.socket;
                     if (!operationFinished || !rendererStillBound) {
                         return res.status(503).json({
                             success: false,
                             accepted: false,
                             code: 'BENCHMARK_TRIGGER_DELIVERY_FAILED',
-                            reason: 'renderer-disconnected',
+                            reason: operationFinished ? 'renderer-not-ready' : 'renderer-disconnected',
                             sessionId: session.id,
                             error: 'Benchmark trigger delivery failed'
                         });
