@@ -5,6 +5,10 @@
   if (typeof module !== 'undefined' && module.exports) module.exports = runtime;
   if (root) root.WebGPUFireworksShowPlanV2Runtime = runtime;
 })(typeof globalThis !== 'undefined' ? globalThis : this, () => {
+  const VisibleEnvelope = typeof module !== 'undefined' && module.exports
+    ? require('./visible-envelope')
+    : globalThis.WebGPUFireworksVisibleEnvelope;
+  const { V2_PRIMITIVE_IDS, V2_GLYPH_IDS, ENVELOPE_FLAG_BITS } = VisibleEnvelope;
   const PLAN_VERSION = 2;
   const LAUNCH_MODES = new Set(['rocket', 'airburst', 'ground']);
   const PRIMITIVES = new Set(['radial', 'ring', 'spiral', 'palm', 'crossette', 'comet', 'mine', 'glyph']);
@@ -51,6 +55,15 @@
 
   const finite = value => Number.isFinite(Number(value));
   const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
+  const deepFreeze = value => {
+    if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
+    Object.getOwnPropertyNames(value).forEach(key => deepFreeze(value[key]));
+    return Object.freeze(value);
+  };
+
+  const envelopeShapeId = layer => layer.primitive === 'glyph'
+    ? V2_GLYPH_IDS[layer.glyph]
+    : V2_PRIMITIVE_IDS[layer.primitive];
 
   function fail(message) {
     throw new TypeError(`Invalid ShowPlanV2: ${message}`);
@@ -341,9 +354,124 @@
 
     for (const { cue, index: cueIndex } of cues) {
       const cueId = cue.id || `${showPlan.id || 'show'}:cue:${cueIndex + 1}`;
+      const cueCorrelationId = `${showPlan.id || 'show'}:cue:${cueIndex + 1}:${cueId}`;
       const cueDue = startAt + Number(cue.beatAtMs);
       const beatId = `${showPlan.id || 'show'}:${Number(cue.beatAtMs)}`;
       const cueLayerSchedule = [];
+      const viewportScale = Math.max(0.75, Math.min(1.75, Math.min(width, height) / 1080));
+      const manifestCommands = [];
+      cue.shells.forEach((shell, shellIndex) => {
+        const shellId = shell.id || `${cueId}:shell:${shellIndex + 1}`;
+        const envelopeShellId = `${cueCorrelationId}:shell:${shellIndex + 1}`;
+        const renderHints = normalizeRenderHints(shell.renderHints);
+        if (shell.launchMode === 'rocket') {
+          const flightSeconds = calculateRocketFlightMs(shell.target, renderHints) / 1000;
+          const depthRocket = renderHints.depthEnabled === true;
+          const rocketBaseSize = depthRocket ? 22 : 32;
+          const minimumRocketSize = depthRocket ? 18 : 28;
+          const rocketSize = Math.max(minimumRocketSize, rocketBaseSize * viewportScale);
+          const rocketSeed = Number(shell.seed ?? showPlan.seed) >>> 0;
+          const base = {
+            shellId,
+            kind: 1,
+            shape: 8,
+            textureIndex: 0,
+            normalizedOrigin: { ...shell.origin },
+            normalizedTarget: { ...shell.target },
+            origin: toPixels(shell.origin, width, height),
+            target: toPixels(shell.target, width, height),
+            particleDuration: flightSeconds,
+            duration: flightSeconds,
+            emissionDelay: 0,
+            launchDepth: renderHints.depthEnabled ? renderHints.launchDepth : 0,
+            burstDepth: renderHints.depthEnabled ? renderHints.burstDepth : 0,
+            depthEnabled: renderHints.depthEnabled,
+            curve: (rocketSeed % 2 === 0 ? 1 : -1) * 48,
+            viewportResponsive: true,
+            queuedViewportMinimum: Math.min(width, height),
+          };
+          manifestCommands.push({
+            ...base,
+            envelopeCommandId: `${envelopeShellId}:rocket:body`,
+            flags: 1 << 8,
+            size: rocketSize,
+            viewportMaterialization: {
+              kind: 'rocket', baseSize: rocketBaseSize, minimumSize: minimumRocketSize, multiplier: 1,
+            },
+          }, {
+            ...base,
+            envelopeCommandId: `${envelopeShellId}:rocket:flame`,
+            flags: 2 << 8,
+            size: rocketSize * 0.76,
+            viewportMaterialization: {
+              kind: 'rocket', baseSize: rocketBaseSize, minimumSize: minimumRocketSize, multiplier: 0.76,
+            },
+          });
+          if (Number(shell.textureIndex) > 0) {
+            manifestCommands.push({
+              ...base,
+              envelopeCommandId: `${envelopeShellId}:rocket:decal`,
+              shape: 6,
+              textureIndex: Number(shell.textureIndex),
+              flags: (6 << 8) | 64,
+              size: 18 * viewportScale,
+              viewportMaterialization: {
+                kind: 'scaled-size', baseSize: 18, multiplier: 1,
+              },
+            });
+          }
+        }
+        shell.layers.forEach((layer, layerIndex) => {
+          const ground = shell.launchMode === 'ground';
+          const normalizedOrigin = ground ? shell.origin : shell.target;
+          const normalizedTarget = shell.target;
+          const renderFlags = ENVELOPE_FLAG_BITS.V2_MARKER |
+            (layer.trail ? ENVELOPE_FLAG_BITS.TRAIL : 0) |
+            (layer.split ? ENVELOPE_FLAG_BITS.SPLIT_REQUESTED : 0) |
+            (layer.strobe ? ENVELOPE_FLAG_BITS.STROBE : 0);
+          const effectId = layer.id || `${shellId}:layer:${layerIndex + 1}`;
+          manifestCommands.push({
+            shellId,
+            effectId,
+            envelopeCommandId: `${envelopeShellId}:layer:${layerIndex + 1}:gpu`,
+            kind: 2,
+            shape: envelopeShapeId(layer),
+            flags: renderFlags,
+            textureIndex: 0,
+            normalizedOrigin: { ...normalizedOrigin },
+            normalizedTarget: { ...normalizedTarget },
+            origin: toPixels(normalizedOrigin, width, height),
+            target: toPixels(normalizedTarget, width, height),
+            size: Number(layer.size) * 6 * viewportScale,
+            intensity: (Number(shell.powerScale) || 1) * viewportScale * Number(renderHints.glyphScale || 1),
+            particleDuration: Number(layer.lifetimeMs) / 1000,
+            emissionDelay: Number(layer.delayMs) / 1000,
+            gravity: Number(layer.gravity) * 105 * viewportScale,
+            drag: Number(layer.drag),
+            depthEnabled: renderHints.depthEnabled,
+            launchDepth: renderHints.depthEnabled ? renderHints.launchDepth : 0,
+            burstDepth: renderHints.depthEnabled ? renderHints.burstDepth : 0,
+            viewportResponsive: true,
+            viewportMaterialization: {
+              kind: 'v2-layer',
+              authoredSize: Number(layer.size),
+              authoredGravity: Number(layer.gravity),
+              powerScale: Number(shell.powerScale) || 1,
+              glyphScale: layer.primitive === 'glyph' ? Number(renderHints.glyphScale) || 1 : 1,
+              glyphExtent: layer.primitive === 'glyph' && finite(renderHints.glyphExtent)
+                ? Number(renderHints.glyphExtent)
+                : null,
+              lifetimeMs: Number(layer.lifetimeMs),
+              drag: Number(layer.drag),
+            },
+            queuedViewportMinimum: Math.min(width, height),
+          });
+        });
+      });
+      const correlationManifest = deepFreeze({
+        correlationId: cueCorrelationId,
+        commands: manifestCommands.map(command => deepFreeze(command)),
+      });
       if (cue.phase !== lastPhase) {
         push({ type: 'finale-v2-phase', due: cueDue, order: -20, finaleId: showPlan.id, phase: cue.phase });
         lastPhase = cue.phase;
@@ -352,6 +480,7 @@
       cue.shells.forEach((shell, shellIndex) => {
         shellCount++;
         const shellId = shell.id || `${cueId}:shell:${shellIndex + 1}`;
+        const envelopeShellId = `${cueCorrelationId}:shell:${shellIndex + 1}`;
         const origin = toPixels(shell.origin, width, height);
         const target = toPixels(shell.target, width, height);
         const renderHints = normalizeRenderHints(shell.renderHints);
@@ -372,6 +501,16 @@
               : shell,
             origin,
             target,
+            normalizedOrigin: { ...shell.origin },
+            normalizedTarget: { ...shell.target },
+            correlationId: cueCorrelationId,
+            envelopeCommandId: `${envelopeShellId}:rocket:body`,
+            envelopeCommandIds: [
+              `${envelopeShellId}:rocket:body`,
+              `${envelopeShellId}:rocket:flame`,
+              ...(Number(shell.textureIndex) > 0 ? [`${envelopeShellId}:rocket:decal`] : []),
+            ],
+            correlationManifest,
             renderHints,
             flightDurationMs,
             admissionBatchId: due,
@@ -396,6 +535,8 @@
           const ground = shell.launchMode === 'ground';
           const contextOrigin = ground ? origin : target;
           const contextTarget = ground ? target : target;
+          const normalizedContextOrigin = ground ? shell.origin : shell.target;
+          const normalizedContextTarget = shell.target;
           const activeLayerLoad = (commandsByBeat.get(due) || 0) + 1;
           commandsByBeat.set(due, activeLayerLoad);
           cueLayerSchedule.push({ due, core: sourceLayer.core === true });
@@ -412,13 +553,17 @@
             context: {
               origin: contextOrigin,
               target: contextTarget,
+              normalizedOrigin: { ...normalizedContextOrigin },
+              normalizedTarget: { ...normalizedContextTarget },
               launchMode: shell.launchMode,
               materialProfile,
               visualStyle: options.visualStyle,
               powerScale: Number(shell.powerScale) || 1,
               seed: layerSeed(showPlan.seed, shell, sourceLayer),
               effectId: sourceLayer.id || `${shellId}:layer:${layerIndex + 1}`,
-              correlationId: shellId,
+              correlationId: cueCorrelationId,
+              envelopeCommandId: `${envelopeShellId}:layer:${layerIndex + 1}:gpu`,
+              correlationManifest,
               lane: 'show',
               priority: sourceLayer.priority,
               required: sourceLayer.core === true,

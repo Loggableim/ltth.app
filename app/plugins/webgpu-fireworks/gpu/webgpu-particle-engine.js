@@ -8,36 +8,45 @@
 const SpawnCommandPolicy = typeof module !== 'undefined' && module.exports
     ? require('./spawn-command-policy')
     : globalThis.WebGPUFireworksSpawnCommandPolicy;
-const V2_TRAIL = 1 << 0;
-const V2_SPLIT_REQUESTED = 1 << 1;
-const V2_STROBE = 1 << 3;
-const V2_MARKER = 1 << 15;
+const VisibleEnvelope = typeof module !== 'undefined' && module.exports
+    ? require('./visible-envelope')
+    : globalThis.WebGPUFireworksVisibleEnvelope;
+const missingVisibleEnvelope = () => {
+    throw new Error('visible-envelope.js must load before WebGPUParticleEngine is used.');
+};
+const {
+    V2_PRIMITIVE_IDS,
+    V2_GLYPH_IDS,
+    ENVELOPE_FLAG_BITS,
+    ENVELOPE_PROFILES,
+    fitCorrelatedCommands,
+    applyCorrelationTransform
+} = VisibleEnvelope || {
+    V2_PRIMITIVE_IDS: Object.freeze({}),
+    V2_GLYPH_IDS: Object.freeze({}),
+    ENVELOPE_FLAG_BITS: Object.freeze({
+        TRAIL: 1 << 0,
+        SPLIT_REQUESTED: 1 << 1,
+        STROBE: 1 << 3,
+        ROCKET_AVATAR_HEAD: 1 << 14,
+        V2_MARKER: 1 << 15
+    }),
+    ENVELOPE_PROFILES: Object.freeze({
+        projection: Object.freeze({ cameraDistance: 4, minimumDenominator: 2, velocityUnit: 218 })
+    }),
+    fitCorrelatedCommands: missingVisibleEnvelope,
+    applyCorrelationTransform: missingVisibleEnvelope
+};
+const V2_TRAIL = ENVELOPE_FLAG_BITS.TRAIL;
+const V2_SPLIT_REQUESTED = ENVELOPE_FLAG_BITS.SPLIT_REQUESTED;
+const V2_STROBE = ENVELOPE_FLAG_BITS.STROBE;
+const V2_MARKER = ENVELOPE_FLAG_BITS.V2_MARKER;
 const DEPTH_METADATA_MARKER = 1 << 3;
 const DEPTH_BUCKET_COUNT = 3;
 const ATLAS_SLOT_COUNT = 64;
 const EXTERNAL_ATLAS_SLOT_COUNT = ATLAS_SLOT_COUNT - 1;
 const ATLAS_RELEASE_GRACE_MS = 1_000;
-const V2_PRIMITIVE_IDS = Object.freeze({
-    radial: 10,
-    ring: 11,
-    spiral: 12,
-    palm: 13,
-    crossette: 14,
-    comet: 15,
-    mine: 16
-});
-const V2_GLYPH_IDS = Object.freeze({
-    paw: 17,
-    heart: 18,
-    star: 19,
-    'fox-head': 20,
-    'wolf-head': 21,
-    dragon: 22,
-    'dragon-wing': 23,
-    tail: 24,
-    boykisser: 25,
-    'trans-flag': 26
-});
+const MAX_INACTIVE_SPAWN_OWNERS = 4_096;
 
 function clampColorComponent(value) {
     const component = Number(value);
@@ -48,6 +57,24 @@ function clampColorComponent(value) {
 function nonnegativeFinite(value) {
     const number = Number(value);
     return Number.isFinite(number) ? Math.max(0, number) : 0;
+}
+
+function finiteOrZero(value) {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : 0;
+}
+
+function deeplyFreeze(value) {
+    if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
+    Object.getOwnPropertyNames(value).forEach(key => deeplyFreeze(value[key]));
+    return Object.freeze(value);
+}
+
+function isDeeplyFrozen(value, seen = new Set()) {
+    if (!value || typeof value !== 'object' || seen.has(value)) return true;
+    if (!Object.isFrozen(value)) return false;
+    seen.add(value);
+    return Object.getOwnPropertyNames(value).every(key => isDeeplyFrozen(value[key], seen));
 }
 
 function parseColor(color) {
@@ -139,11 +166,18 @@ class WebGPUParticleEngine {
         this.onOwnerInvalidated = typeof options.onOwnerInvalidated === 'function'
             ? options.onOwnerInvalidated
             : () => {};
+        this.isOwnerActive = typeof options.isOwnerActive === 'function'
+            ? options.isOwnerActive
+            : () => true;
         this.deviceLossWatches = new WeakMap();
         this.deviceErrorWatches = new WeakSet();
         this.deviceLifecycleEpoch = 0;
         this.spawnQueue = [];
         this.inactiveSpawnOwners = new Set();
+        this.viewportRevision = 0;
+        this.correlationFitCache = new Map();
+        this.correlationManifestRegistry = new Map();
+        this.spawnCorrelationSequence = 0;
         this.spawnTelemetry = {
             droppedByReason: {
                 staleGeneration: 0,
@@ -227,7 +261,9 @@ class WebGPUParticleEngine {
             this.context.configure({
                 device: this.device,
                 format: this.format,
-                alphaMode: 'premultiplied'
+                alphaMode: 'premultiplied',
+                usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC |
+                    GPUTextureUsage.TEXTURE_BINDING
             });
 
             this._createResources();
@@ -288,6 +324,15 @@ class WebGPUParticleEngine {
         device.lost.then(info => this._handleDeviceLost(info, device, deviceEpoch));
     }
 
+    _markSpawnOwnerInactive(ownerToken) {
+        if (typeof ownerToken !== 'string' || !ownerToken) return;
+        this.inactiveSpawnOwners.delete(ownerToken);
+        this.inactiveSpawnOwners.add(ownerToken);
+        while (this.inactiveSpawnOwners.size > MAX_INACTIVE_SPAWN_OWNERS) {
+            this.inactiveSpawnOwners.delete(this.inactiveSpawnOwners.values().next().value);
+        }
+    }
+
     _invalidateQueuedGeneration(generation) {
         const owners = new Set();
         const retained = [];
@@ -300,7 +345,7 @@ class WebGPUParticleEngine {
             dropped += 1;
             if (command.ownerToken) {
                 owners.add(command.ownerToken);
-                this.inactiveSpawnOwners.add(command.ownerToken);
+                this._markSpawnOwnerInactive(command.ownerToken);
             }
         }
         this.spawnQueue = retained;
@@ -649,6 +694,8 @@ class WebGPUParticleEngine {
                 this.renderBindGroups = bindGroups.renderBindGroups;
                 this.maxParticles = maxParticles;
                 this.resourceGeneration += 1;
+                this.correlationFitCache.clear();
+                this.correlationManifestRegistry.clear();
                 replacement.generation = this.resourceGeneration;
                 this._activateCapacityBufferAliases(replacement);
                 this.metrics.activeParticles = 0;
@@ -804,6 +851,8 @@ class WebGPUParticleEngine {
         this.computeBindGroup = capacityBindGroups.computeBindGroup;
         this.renderBindGroups = capacityBindGroups.renderBindGroups;
         this.resourceGeneration += 1;
+        this.correlationFitCache.clear();
+        this.correlationManifestRegistry.clear();
         this.capacityResources.generation = this.resourceGeneration;
     }
 
@@ -1090,11 +1139,11 @@ class WebGPUParticleEngine {
         const depthRocket = options.renderHints?.depthEnabled === true;
         const defaultRocketSize = depthRocket ? 22 : 32;
         const minimumRocketSize = depthRocket ? 18 : 28;
-        const rocketSize = Math.max(minimumRocketSize,
-            (Number(options.rocketSize) || defaultRocketSize) * resolutionScale);
+        const rocketBaseSize = Number(options.rocketSize) || defaultRocketSize;
+        const rocketSize = Math.max(minimumRocketSize, rocketBaseSize * resolutionScale);
         const headTextureIndex = Math.max(0, Number(options.headTextureIndex) || 0);
         const decalTextureIndex = headTextureIndex > 0 ? 0 : Math.max(0, Number(options.textureIndex) || 0);
-        this._queueSpawn({
+        const commands = [{
             ...options,
             priority: options.priority || 'core',
             required: options.required === true,
@@ -1106,10 +1155,15 @@ class WebGPUParticleEngine {
             seed,
             effectId,
             correlationId,
+            envelopeCommandId: options.envelopeCommandIds?.[0] ?? options.envelopeCommandId ??
+                `${correlationId}:rocket:body`,
             flags: this._flags({ role: 1, style, rocketAvatarHead: headTextureIndex > 0 }),
-            curve: options.curve || 0
-        });
-        this._queueSpawn({
+            curve: options.curve || 0,
+            viewportResponsive: true,
+            viewportMaterialization: {
+                kind: 'rocket', baseSize: rocketBaseSize, minimumSize: minimumRocketSize, multiplier: 1
+            }
+        }, {
             ...options,
             priority: 'accent',
             required: false,
@@ -1122,11 +1176,16 @@ class WebGPUParticleEngine {
             seed: seed ^ 0x9e3779b9,
             effectId,
             correlationId,
+            envelopeCommandId: options.envelopeCommandIds?.[1] ?? `${correlationId}:rocket:flame`,
             flags: this._flags({ role: 2, style }),
-            curve: options.curve || 0
-        });
+            curve: options.curve || 0,
+            viewportResponsive: true,
+            viewportMaterialization: {
+                kind: 'rocket', baseSize: rocketBaseSize, minimumSize: minimumRocketSize, multiplier: 0.76
+            }
+        }];
         if (decalTextureIndex > 0) {
-            this._queueSpawn({
+            commands.push({
                 ...options,
                 priority: 'core',
                 required: true,
@@ -1139,10 +1198,21 @@ class WebGPUParticleEngine {
                 seed: seed ^ 0x85ebca6b,
                 effectId,
                 correlationId,
+                envelopeCommandId: options.envelopeCommandIds?.[2] ?? `${correlationId}:rocket:decal`,
                 flags: this._flags({ role: 6, style, nativeColor: true }) | 64,
-                curve: options.curve || 0
+                curve: options.curve || 0,
+                viewportResponsive: true,
+                viewportMaterialization: {
+                    kind: 'scaled-size',
+                    baseSize: Math.max(16, Number(options.size) || 18),
+                    multiplier: 1
+                }
             });
         }
+        return this._queueSpawnGroup(commands, {
+            correlationId,
+            correlationManifest: options.correlationManifest
+        });
     }
 
     spawnExplosion(options = {}) {
@@ -1165,11 +1235,12 @@ class WebGPUParticleEngine {
             : (requestedSize || this._shapeSize(shape, style));
         let remaining = count;
         let globalIndexBase = 0;
+        const commands = [];
         const defaultEmissionSpread = shape === 5 ? 0.2 : shape >= 1 && shape <= 4 ? 0.1 : 0.055;
         for (let i = 0; i < palette.length && remaining > 0; i++) {
             const commandsLeft = palette.length - i;
             const slice = Math.ceil(remaining / commandsLeft);
-            this._queueSpawn({
+            commands.push({
                 ...options,
                 priority: options.priority || 'core',
                 required: options.required === true,
@@ -1190,14 +1261,15 @@ class WebGPUParticleEngine {
                     style,
                     secondary: shape === 0 || shape === 5,
                     nativeColor: options.nativeColor === true
-                })
+                }),
+                viewportResponsive: options.viewportResponsive === true
             });
             remaining -= slice;
             globalIndexBase += slice;
         }
 
         if (shape === 0) {
-            this._queueSpawn({
+            commands.push({
                 ...options,
                 priority: 'decorative',
                 required: false,
@@ -1215,7 +1287,7 @@ class WebGPUParticleEngine {
                 correlationId,
                 flags: this._flags({ role: 2, style })
             });
-            this._queueSpawn({
+            commands.push({
                 ...options,
                 priority: 'accent',
                 required: false,
@@ -1235,7 +1307,7 @@ class WebGPUParticleEngine {
 
         const smokeCount = style === 1 ? 10 : style === 0 ? 5 : 0;
         if (smokeCount > 0 && this.smokeScale > 0.1 && shape === 0) {
-            this._queueSpawn({
+            commands.push({
                 ...options,
                 priority: 'decorative',
                 required: false,
@@ -1254,6 +1326,11 @@ class WebGPUParticleEngine {
                 flags: this._flags({ role: 7, style })
             });
         }
+        return this._queueSpawnGroup(commands, {
+            correlationId,
+            correlationManifest: options.correlationManifest,
+            envelopeCommandId: options.envelopeCommandId
+        });
     }
 
     spawnLayer(layer = {}, context = {}) {
@@ -1284,7 +1361,7 @@ class WebGPUParticleEngine {
             (effectiveLayer.split ? V2_SPLIT_REQUESTED : 0) | (effectiveLayer.strobe ? V2_STROBE : 0) |
             ((splitQuality & 3) << 4) | ((materialRole & 15) << 8) | ((style & 3) << 12);
 
-        return this._queueSpawn({
+        return this._queueSpawnGroup([{
             ownerToken: context.ownerToken,
             expiresAtMs: context.expiresAtMs,
             lane: context.lane || 'show',
@@ -1293,6 +1370,8 @@ class WebGPUParticleEngine {
             beatId: context.beatId ?? null,
             admissionBatchId: context.admissionBatchId ?? null,
             correlationId: context.correlationId ?? effectiveLayer.id,
+            envelopeCommandId: context.envelopeCommandId,
+            correlationManifest: context.correlationManifest,
             origin: context.origin || context.position || { x: 0, y: 0 },
             target: context.target || context.origin || context.position || { x: 0, y: 0 },
             kind: 2,
@@ -1312,7 +1391,24 @@ class WebGPUParticleEngine {
             globalCount: effectiveLayer.density,
             depthEnabled,
             launchDepth: depthEnabled ? Number(renderHints.launchDepth) : 0,
-            burstDepth: depthEnabled ? Number(renderHints.burstDepth) : 0
+            burstDepth: depthEnabled ? Number(renderHints.burstDepth) : 0,
+            viewportResponsive: true,
+            viewportMaterialization: {
+                kind: 'v2-layer',
+                authoredSize: Number(effectiveLayer.size),
+                authoredGravity: Number(effectiveLayer.gravity),
+                powerScale: Number(context.powerScale) || 1,
+                glyphScale,
+                glyphExtent: effectiveLayer.primitive === 'glyph' && Number.isFinite(renderHints.glyphExtent)
+                    ? Number(renderHints.glyphExtent)
+                    : null,
+                lifetimeMs: Number(effectiveLayer.lifetimeMs),
+                drag: Number(effectiveLayer.drag)
+            }
+        }], {
+            correlationId: context.correlationId ?? effectiveLayer.id,
+            correlationManifest: context.correlationManifest,
+            envelopeCommandId: context.envelopeCommandId
         });
     }
 
@@ -1409,7 +1505,7 @@ class WebGPUParticleEngine {
         const pulseLife = Math.max(0.12, Math.min(0.24, totalDuration * 0.24));
         const seed = this._resolveSeed(options);
         const correlationId = options.correlationId ?? options.effectId ?? seed;
-        this._queueSpawn({
+        this._queueSpawnGroup([{
             ...options,
             priority: options.priority || 'accent',
             required: false,
@@ -1429,6 +1525,10 @@ class WebGPUParticleEngine {
             secondary: false,
             pulseCount,
             flags: this._flags({ role: 8, style, pulseCount })
+        }], {
+            correlationId,
+            correlationManifest: options.correlationManifest,
+            envelopeCommandId: options.envelopeCommandId
         });
         return totalDuration;
     }
@@ -1454,7 +1554,11 @@ class WebGPUParticleEngine {
     _v2GlyphExtentIntensity(layer, renderHints, particleSize) {
         const extentPixels = this.logicalWidth * renderHints.glyphExtent;
         const burstDepth = Math.max(-1, Math.min(1, Number(renderHints.burstDepth) || 0));
-        const perspective = 4 / Math.max(2, 4 - burstDepth);
+        const projection = ENVELOPE_PROFILES.projection;
+        const perspective = projection.cameraDistance / Math.max(
+            projection.minimumDenominator,
+            projection.cameraDistance - burstDepth
+        );
         const midpointSeconds = Number(layer.lifetimeMs) / 2000;
         const decay = Number(layer.drag) * 60;
         const displacement = decay > 1e-6
@@ -1462,7 +1566,7 @@ class WebGPUParticleEngine {
             : midpointSeconds;
         const particleDiameter = particleSize * perspective * 2;
         const velocityWidth = Math.max(1, extentPixels - particleDiameter);
-        return velocityWidth / (1.8 * 218 * displacement * perspective);
+        return velocityWidth / (1.8 * projection.velocityUnit * displacement * perspective);
     }
 
     _flags({ secondary = false, nativeColor = false, role = 0, style = 0, pulseCount = 0, rocketAvatarHead = false } = {}) {
@@ -1493,18 +1597,11 @@ class WebGPUParticleEngine {
         return base * styleScale * resolutionScale;
     }
 
-    _queueSpawn(command) {
-        if (!this.initialized) return false;
+    _normalizeSpawnEntry(command) {
         const ownerToken = typeof command.ownerToken === 'string' && command.ownerToken
             ? command.ownerToken
             : null;
-        if (ownerToken && this.inactiveSpawnOwners.has(ownerToken)) {
-            this.spawnTelemetry.droppedByReason.inactiveOwner += 1;
-            return false;
-        }
         const metadata = SpawnCommandPolicy.normalizeCommandMetadata(command);
-        const managedQueue = metadata.admissionManaged || this.spawnQueue.some(item => item.admissionManaged);
-        if (!managedQueue && this.spawnQueue.length >= this.maxSpawnCommands) return false;
         const seed = this._resolveSeed(command);
         const flags = command.flags || 0;
         const isV2 = (flags & V2_MARKER) !== 0;
@@ -1525,9 +1622,21 @@ class WebGPUParticleEngine {
             command.expiresAtMs !== '' && Number.isFinite(Number(command.expiresAtMs))
             ? Number(command.expiresAtMs)
             : Number.POSITIVE_INFINITY;
-        this.spawnQueue.push({
-            origin: command.origin || { x: command.x || 0, y: command.y || 0 },
-            target: command.target || command.origin || { x: command.x || 0, y: command.y || 0 },
+        const origin = command.origin || { x: command.x || 0, y: command.y || 0 };
+        const target = command.target || command.origin || { x: command.x || 0, y: command.y || 0 };
+        const normalizedOrigin = command.normalizedOrigin && Number.isFinite(command.normalizedOrigin.x) &&
+            Number.isFinite(command.normalizedOrigin.y)
+            ? { x: Number(command.normalizedOrigin.x), y: Number(command.normalizedOrigin.y) }
+            : null;
+        const normalizedTarget = command.normalizedTarget && Number.isFinite(command.normalizedTarget.x) &&
+            Number.isFinite(command.normalizedTarget.y)
+            ? { x: Number(command.normalizedTarget.x), y: Number(command.normalizedTarget.y) }
+            : null;
+        return {
+            origin: { x: Number(origin.x) || 0, y: Number(origin.y) || 0 },
+            target: { x: Number(target.x) || 0, y: Number(target.y) || 0 },
+            normalizedOrigin,
+            normalizedTarget,
             color: this._parseColor(command.color || '#ffffff'),
             count: Math.max(1, Math.floor(command.count || 1)),
             shape: this._shapeId(command.shape),
@@ -1570,11 +1679,52 @@ class WebGPUParticleEngine {
             resourceGeneration: this.resourceGeneration,
             ownerToken,
             queuedAtMs,
-            expiresAtMs
+            expiresAtMs,
+            originalEmissionDelaySeconds: emissionDelay,
+            originalParticleDurationSeconds: particleDuration,
+            originalEmissionSpreadSeconds: emissionSpread,
+            correlationId: command.correlationId ?? metadata.correlationId ?? command.effectId ?? seed,
+            sourceCorrelationId: command.sourceCorrelationId ?? command.correlationId ??
+                metadata.correlationId ?? command.effectId ?? seed,
+            envelopeCorrelationId: command.envelopeCorrelationId ?? command.correlationId ??
+                metadata.correlationId ?? command.effectId ?? seed,
+            envelopeCommandId: command.envelopeCommandId ?? null,
+            correlationManifest: command.correlationManifest ?? null,
+            viewportResponsive: command.viewportResponsive === true,
+            viewportMaterialization: command.viewportMaterialization &&
+                typeof command.viewportMaterialization === 'object'
+                ? { ...command.viewportMaterialization }
+                : null,
+            queuedViewportMinimum: Math.max(1, Math.min(this.logicalWidth, this.logicalHeight))
+        };
+    }
+
+    _manifestCommand(entry) {
+        const { correlationManifest, ...snapshot } = entry;
+        return deeplyFreeze({
+            ...snapshot,
+            origin: deeplyFreeze({ ...snapshot.origin }),
+            target: deeplyFreeze({ ...snapshot.target }),
+            normalizedOrigin: snapshot.normalizedOrigin ? deeplyFreeze({ ...snapshot.normalizedOrigin }) : null,
+            normalizedTarget: snapshot.normalizedTarget ? deeplyFreeze({ ...snapshot.normalizedTarget }) : null,
+            color: deeplyFreeze([...(snapshot.color || [])]),
+            packedColors: snapshot.packedColors ? deeplyFreeze([...snapshot.packedColors]) : null
         });
+    }
+
+    _queueNormalizedEntry(entry) {
+        const ownerToken = entry.ownerToken;
+        if (ownerToken && (this.inactiveSpawnOwners.has(ownerToken) || !this.isOwnerActive(ownerToken))) {
+            this.spawnTelemetry.droppedByReason.inactiveOwner += 1;
+            return false;
+        }
+        const managedQueue = entry.admissionManaged || this.spawnQueue.some(item => item.admissionManaged);
+        if (!managedQueue && this.spawnQueue.length >= this.maxSpawnCommands) return false;
+        this.spawnQueue.push(entry);
+        const textureIndex = entry.textureIndex;
         if (textureIndex > 0) {
-            const queuedAtMs = this._atlasNow();
-            const visibleSeconds = emissionDelay + nonnegativeFinite(particleDuration) + emissionSpread;
+            const queuedAtMs = entry.queuedAtMs;
+            const visibleSeconds = entry.emissionDelay + nonnegativeFinite(entry.particleDuration) + entry.emissionSpread;
             this._markAtlasTextureUsed(textureIndex, {
                 nowMs: queuedAtMs,
                 visibleUntilMs: queuedAtMs + visibleSeconds * 1_000 + ATLAS_RELEASE_GRACE_MS
@@ -1583,14 +1733,76 @@ class WebGPUParticleEngine {
         return true;
     }
 
+    _queueSpawnGroup(commands, metadata = {}) {
+        if (!this.initialized || !Array.isArray(commands) || commands.length === 0) return false;
+        const groupSequence = ++this.spawnCorrelationSequence;
+        const providedManifest = metadata.correlationManifest ??
+            commands.find(command => command.correlationManifest)?.correlationManifest ?? null;
+        const requestedCorrelationId = metadata.correlationId ?? commands[0]?.correlationId ??
+            commands[0]?.effectId ?? 'runtime';
+        const envelopeCorrelationId = providedManifest
+            ? providedManifest.correlationId ?? requestedCorrelationId
+            : `${String(requestedCorrelationId)}:runtime:${this.resourceGeneration}:${groupSequence}`;
+        const normalized = commands.map((command, index) => this._normalizeSpawnEntry({
+            ...metadata,
+            ...command,
+            correlationId: requestedCorrelationId,
+            sourceCorrelationId: command.sourceCorrelationId ?? metadata.sourceCorrelationId ??
+                requestedCorrelationId,
+            envelopeCorrelationId,
+            envelopeCommandId: command.envelopeCommandId ?? metadata.envelopeCommandIds?.[index] ??
+                metadata.envelopeCommandId ?? `${envelopeCorrelationId}:command:${index + 1}`,
+            correlationManifest: metadata.correlationManifest ?? command.correlationManifest ?? null
+        }));
+        let manifest = providedManifest ?? normalized[0].correlationManifest;
+        if (!manifest) {
+            manifest = deeplyFreeze({
+                correlationId: envelopeCorrelationId,
+                commands: deeplyFreeze(normalized.map(entry => this._manifestCommand(entry)))
+            });
+        }
+        for (const entry of normalized) entry.correlationManifest = manifest;
+        let queued = false;
+        for (const entry of normalized) queued = this._queueNormalizedEntry(entry) || queued;
+        return queued;
+    }
+
+    _queueSpawn(command) {
+        if (!this.initialized) return false;
+        if (command.correlationManifest) return this._queueSpawnGroup([command], command);
+        const sequence = ++this.spawnCorrelationSequence;
+        const requestedCorrelationId = command.correlationId ?? command.effectId ?? 'runtime';
+        const envelopeCorrelationId = `${String(requestedCorrelationId)}:runtime:${this.resourceGeneration}:${sequence}`;
+        const envelopeCommandId = command.envelopeCommandId ?? `${envelopeCorrelationId}:command:1`;
+        const entry = this._normalizeSpawnEntry({
+            ...command,
+            correlationId: requestedCorrelationId,
+            sourceCorrelationId: command.sourceCorrelationId ?? requestedCorrelationId,
+            envelopeCorrelationId,
+            envelopeCommandId
+        });
+        const manifest = deeplyFreeze({
+            correlationId: envelopeCorrelationId,
+            commands: deeplyFreeze([this._manifestCommand(entry)])
+        });
+        entry.correlationManifest = manifest;
+        return this._queueNormalizedEntry(entry);
+    }
+
     cancelQueuedOwner(ownerToken, reason = 'owner-cancelled') {
         if (typeof ownerToken !== 'string' || !ownerToken) return 0;
-        this.inactiveSpawnOwners.add(ownerToken);
+        this._markSpawnOwnerInactive(ownerToken);
         const before = this.spawnQueue.length;
         this.spawnQueue = this.spawnQueue.filter(command => command.ownerToken !== ownerToken);
         const dropped = before - this.spawnQueue.length;
         if (dropped > 0 && reason !== 'device-lost') {
             this.spawnTelemetry.droppedByReason.inactiveOwner += dropped;
+        }
+        for (const key of [...this.correlationFitCache.keys()]) {
+            if (JSON.parse(key)[1] === ownerToken) this.correlationFitCache.delete(key);
+        }
+        for (const key of [...this.correlationManifestRegistry.keys()]) {
+            if (JSON.parse(key)[1] === ownerToken) this.correlationManifestRegistry.delete(key);
         }
         return dropped;
     }
@@ -1609,6 +1821,143 @@ class WebGPUParticleEngine {
         return (red | (green << 8) | (blue << 16) | (alpha << 24)) >>> 0;
     }
 
+    _materializeCommandForAdmission(queueEntry, nowMs, { preserveFullLife = false } = {}) {
+        const command = {
+            ...queueEntry,
+            origin: queueEntry.normalizedOrigin
+                ? {
+                    x: queueEntry.normalizedOrigin.x * this.logicalWidth,
+                    y: queueEntry.normalizedOrigin.y * this.logicalHeight
+                }
+                : { ...queueEntry.origin },
+            target: queueEntry.normalizedTarget
+                ? {
+                    x: queueEntry.normalizedTarget.x * this.logicalWidth,
+                    y: queueEntry.normalizedTarget.y * this.logicalHeight
+                }
+                : { ...queueEntry.target }
+        };
+        const viewportMaterialization = queueEntry.viewportMaterialization;
+        if (viewportMaterialization?.kind === 'rocket') {
+            command.size = Math.max(
+                nonnegativeFinite(viewportMaterialization.minimumSize),
+                nonnegativeFinite(viewportMaterialization.baseSize) * this._v2ViewportScale()
+            ) * nonnegativeFinite(viewportMaterialization.multiplier || 1);
+        } else if (viewportMaterialization?.kind === 'scaled-size') {
+            command.size = nonnegativeFinite(viewportMaterialization.baseSize) *
+                this._v2ViewportScale() * nonnegativeFinite(viewportMaterialization.multiplier || 1);
+        } else if (viewportMaterialization?.kind === 'v2-layer') {
+            const currentScale = this._v2ViewportScale();
+            command.size = nonnegativeFinite(viewportMaterialization.authoredSize) * 6 * currentScale;
+            command.gravity = finiteOrZero(viewportMaterialization.authoredGravity) * 105 * currentScale;
+            command.intensity = Number.isFinite(viewportMaterialization.glyphExtent)
+                ? this._v2GlyphExtentIntensity({
+                    lifetimeMs: viewportMaterialization.lifetimeMs,
+                    drag: viewportMaterialization.drag
+                }, {
+                    glyphExtent: viewportMaterialization.glyphExtent,
+                    burstDepth: command.burstDepth
+                }, command.size)
+                : finiteOrZero(viewportMaterialization.powerScale || 1) * currentScale *
+                    nonnegativeFinite(viewportMaterialization.glyphScale || 1);
+        } else if (queueEntry.viewportResponsive) {
+            const currentMinimum = Math.max(1, Math.min(this.logicalWidth, this.logicalHeight));
+            const ratio = currentMinimum / Math.max(1, queueEntry.queuedViewportMinimum || currentMinimum);
+            command.size *= ratio;
+            command.intensity *= ratio;
+            command.gravity *= ratio;
+            command.wind *= ratio;
+        }
+        const originalDelay = nonnegativeFinite(
+            queueEntry.originalEmissionDelaySeconds ?? queueEntry.emissionDelay
+        );
+        const originalDuration = nonnegativeFinite(
+            queueEntry.originalParticleDurationSeconds ?? queueEntry.particleDuration
+        );
+        const originalSpread = nonnegativeFinite(
+            queueEntry.originalEmissionSpreadSeconds ?? queueEntry.emissionSpread
+        );
+        if (preserveFullLife) {
+            command.emissionDelay = originalDelay;
+            command.particleDuration = originalDuration;
+            command.emissionSpread = originalSpread;
+            return { command };
+        }
+        const deferredSeconds = Math.max(0, Number(nowMs) - Number(queueEntry.queuedAtMs)) / 1_000;
+        if (deferredSeconds < originalDelay) {
+            command.emissionDelay = originalDelay - deferredSeconds;
+            command.particleDuration = originalDuration;
+            command.emissionSpread = originalSpread;
+            return { command };
+        }
+        command.emissionDelay = 0;
+        const remainingVisibleWindow = originalDuration + originalSpread -
+            (deferredSeconds - originalDelay);
+        if (!(remainingVisibleWindow > 0)) return { command: null, dropReason: 'lifeExhausted' };
+        command.particleDuration = Math.min(originalDuration, remainingVisibleWindow);
+        command.emissionSpread = Math.max(0, remainingVisibleWindow - command.particleDuration);
+        return { command };
+    }
+
+    _correlationCacheKey(entry) {
+        return JSON.stringify([
+            entry.resourceGeneration,
+            entry.ownerToken ?? null,
+            String(entry.envelopeCorrelationId ?? entry.correlationId),
+            this.viewportRevision
+        ]);
+    }
+
+    _manifestMismatch(message) {
+        const error = new Error(message);
+        error.code = 'CORRELATION_MANIFEST_MISMATCH';
+        return error;
+    }
+
+    _getOrCreateCorrelationFit(queueEntry, nowMs) {
+        const manifest = queueEntry.correlationManifest;
+        const envelopeCorrelationId = queueEntry.envelopeCorrelationId ?? queueEntry.correlationId;
+        if (!manifest || !isDeeplyFrozen(manifest) || manifest.correlationId !== envelopeCorrelationId ||
+            !Array.isArray(manifest.commands)) {
+            throw this._manifestMismatch('Correlation manifest is absent, mutable, or has a mismatched id.');
+        }
+        const members = manifest.commands.filter(command => command.envelopeCommandId === queueEntry.envelopeCommandId);
+        if (members.length !== 1) {
+            throw this._manifestMismatch('Correlation manifest does not contain exactly one queue command member.');
+        }
+        const memberIds = new Set(manifest.commands.map(command => command.envelopeCommandId));
+        if (memberIds.size !== manifest.commands.length) {
+            throw this._manifestMismatch('Correlation manifest contains duplicate queue command ids.');
+        }
+        const key = this._correlationCacheKey(queueEntry);
+        const registered = this.correlationManifestRegistry.get(key);
+        if (registered && registered !== manifest) {
+            throw this._manifestMismatch('A different correlation manifest is already registered for this tuple.');
+        }
+        const cached = this.correlationFitCache.get(key);
+        if (cached) {
+            if (cached.manifest !== manifest) {
+                throw this._manifestMismatch('Cached correlation fit belongs to a different manifest.');
+            }
+            return cached.fit;
+        }
+        const commands = manifest.commands.map(command => {
+            const materialized = this._materializeCommandForAdmission(command, nowMs, {
+                preserveFullLife: true
+            }).command;
+            return materialized;
+        });
+        const fit = fitCorrelatedCommands(commands, {
+            width: this.logicalWidth,
+            height: this.logicalHeight,
+            renderMinimum: Math.min(this.canvas.width || this.logicalWidth, this.canvas.height || this.logicalHeight),
+            renderMaximum: Math.max(this.canvas.width || this.logicalWidth, this.canvas.height || this.logicalHeight)
+        }, { paddingPx: 2 });
+        this.correlationManifestRegistry.set(key, manifest);
+        this.correlationFitCache.set(key, { manifest, fit });
+        return fit;
+    }
+
     _uploadSpawnCommands(nowMs = this._atlasNow()) {
         nowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : this._atlasNow();
         const queued = [];
@@ -1621,7 +1970,8 @@ class WebGPUParticleEngine {
                 this.spawnTelemetry.droppedByReason.expired += 1;
                 continue;
             }
-            if (command.ownerToken && this.inactiveSpawnOwners.has(command.ownerToken)) {
+            if (command.ownerToken && (this.inactiveSpawnOwners.has(command.ownerToken) ||
+                !this.isOwnerActive(command.ownerToken))) {
                 this.spawnTelemetry.droppedByReason.inactiveOwner += 1;
                 continue;
             }
@@ -1652,10 +2002,68 @@ class WebGPUParticleEngine {
             });
             this.spawnQueue.push(...deferred);
         }
+        const materialized = [];
+        const groups = new Map();
+        for (const entry of pending) {
+            const result = this._materializeCommandForAdmission(entry, nowMs);
+            if (!result.command) {
+                this.spawnTelemetry.droppedByReason[result.dropReason] += 1;
+                continue;
+            }
+            const key = JSON.stringify([
+                entry.resourceGeneration,
+                entry.ownerToken ?? null,
+                String(entry.envelopeCorrelationId ?? entry.correlationId)
+            ]);
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push({ entry, command: result.command });
+        }
+        for (const group of groups.values()) {
+            const groupOwner = group[0].entry.ownerToken;
+            if (groupOwner && this.inactiveSpawnOwners.has(groupOwner)) {
+                this.spawnTelemetry.droppedByReason.inactiveOwner += group.length;
+                continue;
+            }
+            let fit;
+            try {
+                fit = this._getOrCreateCorrelationFit(group[0].entry, nowMs);
+                for (let index = 1; index < group.length; index++) {
+                    if (group[index].entry.correlationManifest !== group[0].entry.correlationManifest) {
+                        throw this._manifestMismatch(
+                            'A correlated upload group contains more than one manifest identity.'
+                        );
+                    }
+                    this._getOrCreateCorrelationFit(group[index].entry, nowMs);
+                }
+                const transformed = applyCorrelationTransform(group.map(item => item.command), fit);
+                transformed.forEach((command, index) => materialized.push({
+                    ...command,
+                    correlationId: group[index].entry.sourceCorrelationId ?? command.correlationId
+                }));
+            } catch (error) {
+                const reason = error?.code === 'CORRELATION_MANIFEST_MISMATCH' ||
+                    error?.code === 'UNREGISTERED_VISIBLE_ENVELOPE'
+                    ? 'unregisteredEnvelope'
+                    : 'envelopeCannotFit';
+                this.spawnTelemetry.droppedByReason[reason] += group.length;
+                if (group.some(item => item.entry.required) && group[0].entry.ownerToken) {
+                    const ownerToken = group[0].entry.ownerToken;
+                    this.cancelQueuedOwner(ownerToken, reason);
+                    let removed = 0;
+                    for (let index = materialized.length - 1; index >= 0; index--) {
+                        if (materialized[index].ownerToken !== ownerToken) continue;
+                        materialized.splice(index, 1);
+                        removed += 1;
+                    }
+                    this.spawnTelemetry.droppedByReason.inactiveOwner += removed;
+                    this._notifyInvalidatedOwners(new Set([ownerToken]), reason);
+                }
+            }
+        }
         let admission;
         let admissionError = null;
         try {
-            admission = SpawnCommandPolicy.admitSpawnCommands(pending, {
+            admission = SpawnCommandPolicy.admitSpawnCommands(materialized, {
                 maxCommands: this.maxSpawnCommands
             });
         } catch (error) {
@@ -2034,13 +2442,25 @@ class WebGPUParticleEngine {
         if (this.canvas.width === nextWidth && this.canvas.height === nextHeight) return;
         this.canvas.width = nextWidth;
         this.canvas.height = nextHeight;
-        if (this.context && this.device) this.context.configure({ device: this.device, format: this.format, alphaMode: 'premultiplied' });
+        if (this.context && this.device) this.context.configure({
+            device: this.device,
+            format: this.format,
+            alphaMode: 'premultiplied',
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC |
+                GPUTextureUsage.TEXTURE_BINDING
+        });
         if (this.initialized) this._createFrameTextures();
     }
 
     setLogicalSize(width, height) {
-        this.logicalWidth = Math.max(1, width);
-        this.logicalHeight = Math.max(1, height);
+        const nextWidth = Math.max(1, width);
+        const nextHeight = Math.max(1, height);
+        if (nextWidth === this.logicalWidth && nextHeight === this.logicalHeight) return;
+        this.logicalWidth = nextWidth;
+        this.logicalHeight = nextHeight;
+        this.viewportRevision += 1;
+        this.correlationFitCache.clear();
+        this.correlationManifestRegistry.clear();
     }
 
     setQuality(options = {}) {
@@ -2105,6 +2525,8 @@ class WebGPUParticleEngine {
         this.initialized = false;
         this.spawnQueue.length = 0;
         this.inactiveSpawnOwners.clear();
+        this.correlationFitCache.clear();
+        this.correlationManifestRegistry.clear();
         this.pendingDegradedLayerCounts = SpawnCommandPolicy.emptyDegradedLayerCounts();
         this.metrics.commandAdmission = {
             current: SpawnCommandPolicy.emptyCommandTelemetry(),
@@ -2153,12 +2575,12 @@ struct Uniforms {
 @group(0) @binding(8) var<uniform> uniforms: Uniforms;
 @group(0) @binding(9) var<storage, read_write> secondaryIndices: array<u32>;
 
-const V2_TRAIL = 1u;
-const V2_SPLIT_REQUESTED = 2u;
+const V2_TRAIL = ${V2_TRAIL}u;
+const V2_SPLIT_REQUESTED = ${V2_SPLIT_REQUESTED}u;
 const V2_SPLIT_EMITTED = 4u;
-const V2_STROBE = 8u;
+const V2_STROBE = ${V2_STROBE}u;
 const V2_DEPTH = 16384u;
-const V2_MARKER = 32768u;
+const V2_MARKER = ${V2_MARKER}u;
 const DEPTH_METADATA_MARKER = 8u;
 
 fn hash(value: u32) -> f32 { var x = value; x = ((x >> 16u) ^ x) * 0x45d9f3bu; x = ((x >> 16u) ^ x) * 0x45d9f3bu; x = (x >> 16u) ^ x; return f32(x) / 4294967295.0; }
@@ -2707,9 +3129,9 @@ struct Uniforms {
 @group(0) @binding(3) var<uniform> uniforms: Uniforms;
 @group(0) @binding(4) var atlasTexture: texture_2d<f32>;
 @group(0) @binding(5) var atlasSampler: sampler;
-const V2_TRAIL = 1u;
-const V2_STROBE = 8u;
-const V2_MARKER = 32768u;
+const V2_TRAIL = ${V2_TRAIL}u;
+const V2_STROBE = ${V2_STROBE}u;
+const V2_MARKER = ${V2_MARKER}u;
 struct Out {
   @builtin(position) position: vec4f,
   @location(0) uv: vec2f,
@@ -2723,8 +3145,8 @@ struct Out {
   @location(8) @interpolate(flat) rotation: f32,
 };
 fn quadVertex(vertex: u32) -> vec2f { let vertices = array<vec2f,6>(vec2f(-1,-1),vec2f(1,-1),vec2f(-1,1),vec2f(-1,1),vec2f(1,-1),vec2f(1,1)); return vertices[vertex]; }
-const CAMERA_DISTANCE = 4.0;
-fn perspectiveScale(z: f32) -> f32 { return CAMERA_DISTANCE / max(2.0, CAMERA_DISTANCE - z); }
+const CAMERA_DISTANCE = ${ENVELOPE_PROFILES.projection.cameraDistance.toFixed(1)};
+fn perspectiveScale(z: f32) -> f32 { return CAMERA_DISTANCE / max(${ENVELOPE_PROFILES.projection.minimumDenominator.toFixed(1)}, CAMERA_DISTANCE - z); }
 fn projectToPixels(position: vec3f) -> vec2f {
   let center = vec2f(uniforms.width, uniforms.height) * 0.5;
   return center + (position.xy - center) * perspectiveScale(position.z);

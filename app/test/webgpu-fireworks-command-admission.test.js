@@ -2,9 +2,9 @@
 
 const WebGPUParticleEngine = require('../plugins/webgpu-fireworks/gpu/webgpu-particle-engine');
 
-const makeEngine = () => {
+const makeEngine = ({ width = 1920, height = 1080, nowMs = 1000, isOwnerActive = () => true } = {}) => {
   const uploads = [];
-  const engine = new WebGPUParticleEngine({ width: 1920, height: 1080 }, {});
+  const engine = new WebGPUParticleEngine({ width, height }, { now: () => nowMs, isOwnerActive });
   engine.initialized = true;
   engine.device = {
     queue: {
@@ -46,10 +46,21 @@ const queueCommand = (engine, {
   required = false,
   beatId = 'beat:0',
   admissionBatchId = null,
-  effectId = `effect:${seed}`
+  effectId = `effect:${seed}`,
+  emissionDelay,
+  emissionSpread,
+  particleDuration,
+  ownerToken,
+  expiresAtMs,
+  normalizedOrigin,
+  normalizedTarget,
+  origin,
+  target,
 }) => engine._queueSpawn({
-  origin: { x: seed, y: 0 },
-  target: { x: seed, y: 1 },
+  origin: origin || { x: seed, y: 0 },
+  target: target || { x: seed, y: 1 },
+  normalizedOrigin,
+  normalizedTarget,
   count: 1,
   shape: 'sparkle',
   seed,
@@ -58,7 +69,12 @@ const queueCommand = (engine, {
   priority,
   required,
   beatId,
-  admissionBatchId
+  admissionBatchId,
+  emissionDelay,
+  emissionSpread,
+  particleDuration,
+  ownerToken,
+  expiresAtMs,
 });
 
 const uploadedSeeds = raw => {
@@ -67,6 +83,290 @@ const uploadedSeeds = raw => {
 };
 
 describe('WebGPU Fireworks spawn command lane admission', () => {
+  test('re-ages deferred delay and visible life from immutable queue timing', () => {
+    const { engine, uploads } = makeEngine({ nowMs: 1000 });
+    queueCommand(engine, { seed: 700, admissionBatchId: 700, emissionDelay: 0, particleDuration: 1 });
+    queueCommand(engine, {
+      seed: 701,
+      admissionBatchId: 701,
+      emissionDelay: 0.5,
+      particleDuration: 2,
+      ownerToken: 'finale:1',
+      expiresAtMs: 4000,
+    });
+
+    engine._uploadSpawnCommands(1300);
+    expect(engine.spawnQueue[0].emissionDelay).toBe(0.5);
+    engine._uploadSpawnCommands(1700);
+
+    const uploaded = new Float32Array(uploads[1]);
+    expect(uploaded[22]).toBe(0);
+    expect(uploaded[13]).toBeCloseTo(1.8, 5);
+  });
+
+  test('retains future spread emissions after baseline particle life is exhausted', () => {
+    const { engine, uploads } = makeEngine({ nowMs: 1000 });
+    queueCommand(engine, {
+      seed: 702,
+      emissionDelay: 0,
+      emissionSpread: 1,
+      particleDuration: 0.2,
+    });
+
+    expect(engine._uploadSpawnCommands(1500)).toEqual({ count: 1, maxParticles: 1 });
+    const uploaded = new Float32Array(uploads[0]);
+    expect(uploaded[13]).toBeCloseTo(0.2, 5);
+    expect(uploaded[23]).toBeCloseTo(0.5, 5);
+  });
+
+  test('drops only after particle life and the full emission spread are exhausted', () => {
+    const { engine, uploads } = makeEngine({ nowMs: 1000 });
+    queueCommand(engine, {
+      seed: 703,
+      emissionDelay: 0,
+      emissionSpread: 1,
+      particleDuration: 0.2,
+    });
+
+    expect(engine._uploadSpawnCommands(2200)).toEqual({ count: 0, maxParticles: 0 });
+    expect(uploads).toEqual([]);
+    expect(engine.spawnTelemetry.droppedByReason.lifeExhausted).toBe(1);
+  });
+
+  test.each([
+    { nowMs: 1600, expiresAtMs: 1500, isOwnerActive: () => true, reason: 'expired' },
+    { nowMs: 1200, expiresAtMs: 1500, isOwnerActive: () => false, reason: 'inactiveOwner' },
+  ])('drops a deferred command when $reason', ({ nowMs, expiresAtMs, isOwnerActive, reason }) => {
+    const { engine, uploads } = makeEngine({ nowMs: 1000, isOwnerActive });
+    queueCommand(engine, { seed: 1, ownerToken: 'preview:gone', expiresAtMs });
+    engine._uploadSpawnCommands(nowMs);
+    expect(uploads).toEqual([]);
+    expect(engine.spawnTelemetry.droppedByReason[reason]).toBe(1);
+  });
+
+  test('resolves normalized V2 points against the viewport active at admission', () => {
+    const { engine, uploads } = makeEngine({ width: 1080, height: 1920 });
+    queueCommand(engine, {
+      seed: 1,
+      normalizedOrigin: { x: 0.5, y: 0.12 },
+      normalizedTarget: { x: 0.75, y: 0.25 },
+      origin: { x: 540, y: 230.4 },
+      target: { x: 810, y: 480 },
+    });
+    engine.setLogicalSize(1920, 1080);
+    const materialized = engine._materializeCommandForAdmission(engine.spawnQueue[0], 1000).command;
+    expect(materialized.origin).toEqual({ x: 960, y: 129.6 });
+    expect(materialized.target).toEqual({ x: 1440, y: 270 });
+    engine._uploadSpawnCommands(1000);
+    const uploaded = new Float32Array(uploads[0]);
+    expect(uploaded[0]).toBeCloseTo(960, 5);
+    expect(uploaded[1]).toBeGreaterThanOrEqual(0);
+    expect(uploaded[2] - uploaded[0]).toBeCloseTo(480, 5);
+    expect(uploaded[3] - uploaded[1]).toBeCloseTo(140.4, 4);
+  });
+
+  test('caches cue fit by generation, owner, correlation, and viewport revision', () => {
+    const { engine } = makeEngine({ width: 1080, height: 1920 });
+    const makeCommand = (envelopeCommandId, x) => Object.freeze({
+      envelopeCommandId,
+      kind: 2,
+      shape: 3,
+      flags: 0,
+      textureIndex: 0,
+      normalizedOrigin: Object.freeze({ x, y: 0.1 }),
+      normalizedTarget: Object.freeze({ x, y: 0.1 }),
+      origin: Object.freeze({ x: x * 1080, y: 192 }),
+      target: Object.freeze({ x: x * 1080, y: 192 }),
+      size: 28,
+      intensity: 1,
+      particleDuration: 1.2,
+      emissionDelay: 0,
+      gravity: 90,
+      drag: 0.985,
+      burstDepth: 1,
+    });
+    const manifest = Object.freeze({
+      correlationId: 'cue:1',
+      commands: Object.freeze([makeCommand('left', 0.08), makeCommand('right', 0.92)]),
+    });
+    const entry = {
+      resourceGeneration: engine.resourceGeneration,
+      ownerToken: 'finale:11',
+      correlationId: 'cue:1',
+      envelopeCommandId: 'left',
+      correlationManifest: manifest,
+    };
+    const first = engine._getOrCreateCorrelationFit(entry, 1000);
+    expect(engine._getOrCreateCorrelationFit({ ...entry }, 1200)).toBe(first);
+    let mismatch;
+    try {
+      engine._getOrCreateCorrelationFit({ ...entry, envelopeCommandId: 'missing' }, 1200);
+    } catch (error) {
+      mismatch = error;
+    }
+    expect(mismatch).toMatchObject({ code: 'CORRELATION_MANIFEST_MISMATCH' });
+    engine.setLogicalSize(1920, 1080);
+    const resized = engine._getOrCreateCorrelationFit({ ...entry }, 1300);
+    expect(resized).not.toBe(first);
+    const otherOwner = engine._getOrCreateCorrelationFit({ ...entry, ownerToken: 'preview:11' }, 1300);
+    expect(otherOwner).not.toBe(resized);
+    engine.resourceGeneration += 1;
+    const nextGeneration = engine._getOrCreateCorrelationFit({
+      ...entry,
+      resourceGeneration: engine.resourceGeneration,
+    }, 1400);
+    expect(nextGeneration).not.toBe(resized);
+  });
+
+  test('keeps tuple cache identity when owners and correlations contain separators', () => {
+    const { engine } = makeEngine({ width: 1080, height: 1920 });
+    const makeEntry = (ownerToken, correlationId) => {
+      const envelopeCommandId = `${correlationId}:member`;
+      const command = Object.freeze({
+        envelopeCommandId,
+        kind: 2,
+        shape: 3,
+        flags: 0,
+        textureIndex: 0,
+        origin: Object.freeze({ x: 540, y: 192 }),
+        target: Object.freeze({ x: 540, y: 192 }),
+        size: 28,
+        intensity: 1,
+        particleDuration: 1.2,
+        emissionDelay: 0,
+        gravity: 90,
+        drag: 0.985,
+        burstDepth: 1,
+      });
+      const correlationManifest = Object.freeze({
+        correlationId,
+        commands: Object.freeze([command]),
+      });
+      return {
+        resourceGeneration: engine.resourceGeneration,
+        ownerToken,
+        correlationId,
+        envelopeCommandId,
+        correlationManifest,
+      };
+    };
+    const separatorOwner = makeEntry('owner|a', 'cue');
+    const separatorCorrelation = makeEntry('owner', 'a|cue');
+
+    const ownerFit = engine._getOrCreateCorrelationFit(separatorOwner, 1000);
+    const correlationFit = engine._getOrCreateCorrelationFit(separatorCorrelation, 1000);
+    expect(correlationFit).not.toBe(ownerFit);
+    expect(engine.correlationFitCache.size).toBe(2);
+
+    engine.cancelQueuedOwner('owner|a');
+    expect(engine.correlationFitCache.size).toBe(1);
+    expect(engine._getOrCreateCorrelationFit(separatorCorrelation, 1200)).toBe(correlationFit);
+  });
+
+  test('bounds inactive owner tombstones during long standalone sessions', () => {
+    const { engine } = makeEngine();
+    for (let index = 0; index <= 4096; index++) {
+      engine.cancelQueuedOwner(`standalone:${index}`);
+    }
+
+    expect(engine.inactiveSpawnOwners.size).toBe(4096);
+    expect(engine.inactiveSpawnOwners.has('standalone:4096')).toBe(true);
+  });
+
+  test('fails a required owner when one tuple receives distinct manifest identities', () => {
+    const { engine, uploads } = makeEngine();
+    engine.onOwnerInvalidated = jest.fn();
+    const makeManifestCommand = (envelopeCommandId, x) => Object.freeze({
+      envelopeCommandId,
+      kind: 2,
+      shape: 3,
+      flags: 0,
+      textureIndex: 0,
+      origin: Object.freeze({ x, y: 120 }),
+      target: Object.freeze({ x, y: 120 }),
+      size: 8,
+      intensity: 0.1,
+      particleDuration: 0.2,
+      emissionDelay: 0,
+      gravity: 10,
+      drag: 0.985,
+      burstDepth: 0,
+    });
+    const queueMember = (envelopeCommandId, x) => {
+      const command = makeManifestCommand(envelopeCommandId, x);
+      const correlationManifest = Object.freeze({
+        correlationId: 'shared-correlation',
+        commands: Object.freeze([command]),
+      });
+      engine._queueSpawn({
+        ...command,
+        ownerToken: 'standalone:manifest-mismatch',
+        correlationId: 'shared-correlation',
+        correlationManifest,
+        required: true,
+      });
+    };
+    engine._queueSpawn({
+      kind: 2,
+      shape: 3,
+      count: 1,
+      origin: { x: 960, y: 240 },
+      target: { x: 960, y: 240 },
+      ownerToken: 'standalone:manifest-mismatch',
+      effectId: 'valid-before-required-mismatch',
+    });
+    queueMember('member:a', 800);
+    queueMember('member:b', 1120);
+
+    expect(engine._uploadSpawnCommands(1000)).toEqual({ count: 0, maxParticles: 0 });
+    expect(uploads).toEqual([]);
+    expect(engine.spawnTelemetry.droppedByReason.unregisteredEnvelope).toBe(2);
+    expect(engine.inactiveSpawnOwners.has('standalone:manifest-mismatch')).toBe(true);
+    expect(engine.onOwnerInvalidated).toHaveBeenCalledWith(
+      'standalone:manifest-mismatch',
+      'unregisteredEnvelope'
+    );
+  });
+
+  test('assigns distinct automatic correlations to rocket and explosion phases', () => {
+    const { engine } = makeEngine();
+    engine.spawnRocket({
+      effectId: 'plan:1',
+      ownerToken: 'standalone:plan:1',
+      origin: { x: 960, y: 1100 },
+      target: { x: 960, y: 180 },
+      duration: 0.6,
+    });
+    const rocketCorrelation = engine.spawnQueue[0].envelopeCorrelationId;
+    expect(engine.spawnQueue[0].correlationId).toBe('plan:1');
+    expect(engine._uploadSpawnCommands(1000).count).toBeGreaterThan(0);
+
+    engine.spawnExplosion({
+      effectId: 'plan:1',
+      ownerToken: 'standalone:plan:1',
+      origin: { x: 960, y: 180 },
+      target: { x: 960, y: 180 },
+      shape: 'star',
+      count: 12,
+      duration: 0.6,
+    });
+    const explosionCorrelation = engine.spawnQueue[0].envelopeCorrelationId;
+    expect(engine.spawnQueue[0].correlationId).toBe('plan:1');
+    expect(explosionCorrelation).not.toBe(rocketCorrelation);
+    expect(engine._uploadSpawnCommands(1000).count).toBeGreaterThan(0);
+  });
+
+  test('creates a deeply frozen singleton manifest for direct queue commands', () => {
+    const { engine } = makeEngine();
+    queueCommand(engine, { seed: 900, effectId: 'standalone:900' });
+    const [entry] = engine.spawnQueue;
+    expect(Object.isFrozen(entry.correlationManifest)).toBe(true);
+    expect(Object.isFrozen(entry.correlationManifest.commands)).toBe(true);
+    expect(entry.correlationManifest.commands.every(command => Object.isFrozen(command))).toBe(true);
+    expect(entry.correlationManifest.correlationId).toBe(entry.envelopeCorrelationId);
+    expect(entry.correlationManifest.commands.map(command => command.envelopeCommandId))
+      .toContain(entry.envelopeCommandId);
+  });
   test('treats a null owner expiry as unbounded for ordinary live effects', () => {
     const { engine, uploads } = makeEngine();
     expect(engine._queueSpawn({

@@ -2,6 +2,12 @@
 
 const { WebGPUFireworksEngine } = require('../plugins/webgpu-fireworks/gpu/engine');
 const { normalizeConfig } = require('../plugins/webgpu-fireworks/lib/config-schema');
+const {
+  SHAPE_IDS,
+  ENVELOPE_FLAG_BITS,
+  fitCorrelatedCommands,
+  projectVisualEnvelope,
+} = require('../plugins/webgpu-fireworks/gpu/visible-envelope');
 
 const PRESET_SIZES = {
   '360p': [640, 360],
@@ -54,6 +60,39 @@ function createEngine(config, renderScale = 1) {
 }
 
 describe('WebGPU Fireworks internal resolution bounds', () => {
+  test.each(['landscape', 'portrait'])('fits final materialized shape envelopes in %s', orientation => {
+    const [width, height] = orientedSize('1080p', orientation);
+    for (const depth of [-1, 0, 1]) {
+      for (const shape of SHAPE_IDS) {
+        const command = {
+          kind: 2,
+          shape,
+          flags: shape >= 10 ? ENVELOPE_FLAG_BITS.V2_MARKER : 0,
+          textureIndex: 0,
+          origin: { x: width / 2, y: height * 0.05 },
+          target: { x: width / 2, y: height * 0.05 },
+          size: 18,
+          intensity: 0.35,
+          particleDuration: 0.8,
+          gravity: 45,
+          drag: 0.985,
+          burstDepth: depth,
+        };
+        const fit = fitCorrelatedCommands([command], { width, height }, { paddingPx: 2 });
+        const bounds = projectVisualEnvelope(fit.commands[0], { width, height });
+        expect(bounds).toMatchObject({
+          left: expect.any(Number),
+          top: expect.any(Number),
+          right: expect.any(Number),
+          bottom: expect.any(Number),
+        });
+        expect(bounds.left).toBeGreaterThanOrEqual(2 - 1e-5);
+        expect(bounds.top).toBeGreaterThanOrEqual(2 - 1e-5);
+        expect(bounds.right).toBeLessThanOrEqual(width - 2 + 1e-5);
+        expect(bounds.bottom).toBeLessThanOrEqual(height - 2 + 1e-5);
+      }
+    }
+  });
   test('normalizes reversed internal preset bounds from low to high', () => {
     expect(normalizeConfig({
       internalMinResolutionPreset: '4k',

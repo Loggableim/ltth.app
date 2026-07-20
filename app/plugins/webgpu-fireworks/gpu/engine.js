@@ -850,6 +850,8 @@ class WebGPUFireworksEngine {
         this.finalePhase = 'idle';
         this.finaleGeneration = 0;
         this.previewGeneration = 0;
+        this.gpuOwnerGeneration = 0;
+        this.activeGpuOwners = new Set();
         this.failingFinaleIds = new Set();
         this.failingPreviewIds = new Set();
         this.followerAnimationGeneration = 0;
@@ -920,6 +922,7 @@ class WebGPUFireworksEngine {
             trailsEnabled: this.config.trailsEnabled !== false,
             glowEnabled: this.config.glowEnabled !== false,
             onStatus: status => this.setStatus(status),
+            isOwnerActive: ownerToken => this.isGpuOwnerActive(ownerToken),
             onOwnerInvalidated: (ownerToken, reason) => {
                 this.handleGpuOwnerInvalidated(ownerToken, reason);
             }
@@ -1139,7 +1142,21 @@ class WebGPUFireworksEngine {
 
     cancelGpuOwner(ownerToken, reason) {
         if (typeof ownerToken !== 'string' || !ownerToken) return 0;
+        this.activeGpuOwners?.delete(ownerToken);
         return this.renderer?.cancelQueuedOwner?.(ownerToken, reason) || 0;
+    }
+
+    registerGpuOwner(ownerToken) {
+        if (typeof ownerToken !== 'string' || !ownerToken) return null;
+        this.ensureFinaleRuntimeState();
+        this.activeGpuOwners.add(ownerToken);
+        return ownerToken;
+    }
+
+    isGpuOwnerActive(ownerToken) {
+        if (typeof ownerToken !== 'string' || !ownerToken) return true;
+        this.ensureFinaleRuntimeState();
+        return this.activeGpuOwners.has(ownerToken);
     }
 
     handleGpuOwnerInvalidated(ownerToken, reason = 'device-lost') {
@@ -1161,6 +1178,10 @@ class WebGPUFireworksEngine {
                 now,
                 { reason }
             );
+            return true;
+        }
+        if (this.activeGpuOwners?.has(ownerToken)) {
+            this.cancelGpuOwner(ownerToken, reason);
             return true;
         }
         return false;
@@ -1354,6 +1375,8 @@ class WebGPUFireworksEngine {
         if (!Number.isFinite(this.finaleSequence)) this.finaleSequence = 0;
         if (!Number.isFinite(this.finaleGeneration)) this.finaleGeneration = 0;
         if (!Number.isFinite(this.previewGeneration)) this.previewGeneration = 0;
+        if (!Number.isFinite(this.gpuOwnerGeneration)) this.gpuOwnerGeneration = 0;
+        if (!(this.activeGpuOwners instanceof Set)) this.activeGpuOwners = new Set();
         if (!(this.failingFinaleIds instanceof Set)) this.failingFinaleIds = new Set();
         if (!(this.failingPreviewIds instanceof Set)) this.failingPreviewIds = new Set();
         if (typeof this.transientFrameError !== 'boolean') this.transientFrameError = false;
@@ -1642,6 +1665,9 @@ class WebGPUFireworksEngine {
                 } else if (event.type === 'crackle-end') {
                     this.audio.updateDucking();
                 } else if (event.type === 'cleanup') {
+                    if (event.plan.explosion?.standaloneGpuOwner) {
+                        this.cancelGpuOwner(event.plan.explosion.ownerToken, 'effect-completed');
+                    }
                     this.activeShows.delete(event.plan.id);
                     this.effectPlans.delete(event.plan.id);
                     this.audio.updateDucking();
@@ -1918,6 +1944,10 @@ class WebGPUFireworksEngine {
             return { cancelled: true, finaleId, reason: 'stale-finale-generation' };
         }
         const id = data.id || `${Date.now()}-${Math.random()}`;
+        const standaloneGpuOwner = !runtimeToken;
+        const effectOwnerToken = runtimeToken ||
+            `${this.isBenchmark ? 'benchmark' : 'standalone'}:${++this.gpuOwnerGeneration}:${id}`;
+        this.registerGpuOwner(effectOwnerToken);
         const seed = Number.isFinite(Number(data.seed)) ? Number(data.seed) : (parseInt(this.audio.hash(id), 36) >>> 0);
         // Choose the complete tier profile before applying the combo shortcut.
         // If this becomes a crackling effect it must remain a real rocket.
@@ -1959,7 +1989,8 @@ class WebGPUFireworksEngine {
             priority: 'core',
             required: true,
             beatId,
-            ownerToken: runtimeToken,
+            ownerToken: runtimeToken || effectOwnerToken,
+            standaloneGpuOwner,
             playSound: data.playSound !== false, sound, tier,
             finaleId: data.finaleId || null,
             finaleEndsAt: Number.isFinite(Number(data.finaleEndsAt)) ? Number(data.finaleEndsAt) : null,
@@ -1992,6 +2023,7 @@ class WebGPUFireworksEngine {
             trackGiftLaunch: data.trackGiftLaunch === true
         });
         if (this.isBenchmarkAdmissionExpired(data)) {
+            if (standaloneGpuOwner) this.cancelGpuOwner(effectOwnerToken, 'admission-expired');
             return { cancelled: true, reason: 'admission-expired' };
         }
         this.enqueueEffectPlan(plan);
@@ -2252,7 +2284,10 @@ class WebGPUFireworksEngine {
         const duration = Math.min(remainingPreRollMs / 1000, remainingSeconds);
         this.renderer.spawnRocket({
             effectId: event.shellId,
-            correlationId: event.shellId,
+            correlationId: event.correlationId,
+            envelopeCommandId: event.envelopeCommandId,
+            envelopeCommandIds: event.envelopeCommandIds,
+            correlationManifest: event.correlationManifest,
             ownerToken: event.runtimeToken,
             expiresAtMs: event.finaleEndsAt,
             lane: 'show',
@@ -2262,6 +2297,8 @@ class WebGPUFireworksEngine {
             admissionBatchId: event.admissionBatchId,
             origin: event.origin,
             target: event.target,
+            normalizedOrigin: event.normalizedOrigin,
+            normalizedTarget: event.normalizedTarget,
             renderHints: event.renderHints,
             duration,
             color: event.shell.colors?.[0] || event.shell.palette?.[0] || '#ffffff',
@@ -2677,6 +2714,7 @@ class WebGPUFireworksEngine {
 
         this.previewGeneration++;
         entry.runtimeToken = `${entry.requestId}:preview:${this.previewGeneration}`;
+        this.registerGpuOwner(entry.runtimeToken);
         const firstCue = entry.showPlan.cues
             .slice()
             .sort((left, right) => Number(left.beatAtMs) - Number(right.beatAtMs))[0];
@@ -2787,6 +2825,7 @@ class WebGPUFireworksEngine {
         const planVersion = entry.showPlan ? Number(entry.showPlan.planVersion) : null;
         this.finaleGeneration++;
         entry.runtimeToken = `${entry.id}:${this.finaleGeneration}`;
+        this.registerGpuOwner(entry.runtimeToken);
         const firstPhase = entry.showPlan?.cues
             ?.slice()
             .sort((left, right) => Number(left.beatAtMs) - Number(right.beatAtMs))[0]?.phase || 'opening';
@@ -3234,6 +3273,9 @@ class WebGPUFireworksEngine {
         if (typeof window !== 'undefined') window.removeEventListener('resize', this.resizeHandler);
         this.canvas?.removeEventListener('pointerdown', this.clickHandler);
         this.socket?.disconnect();
+        for (const ownerToken of [...(this.activeGpuOwners || [])]) {
+            this.cancelGpuOwner(ownerToken, 'renderer-destroyed');
+        }
         this.renderer?.destroy();
         this.audio.destroy();
         this.timelineQueue.length = 0;
@@ -3248,6 +3290,8 @@ class WebGPUFireworksEngine {
         this.finalePhase = 'idle';
         this.finaleGeneration = 0;
         this.previewGeneration = 0;
+        this.gpuOwnerGeneration = 0;
+        this.activeGpuOwners?.clear();
         this.failingFinaleIds.clear();
         this.failingPreviewIds.clear();
         this.transientFrameError = false;

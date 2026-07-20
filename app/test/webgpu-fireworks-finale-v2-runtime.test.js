@@ -1,6 +1,7 @@
 'use strict';
 
 const { AudioManager, WebGPUFireworksEngine } = require('../plugins/webgpu-fireworks/gpu/engine');
+const WebGPUParticleEngine = require('../plugins/webgpu-fireworks/gpu/webgpu-particle-engine');
 
 function v2Layer(id, overrides = {}) {
   return {
@@ -503,6 +504,169 @@ describe('ShowPlanV2 overlay dispatch', () => {
     } finally {
       consoleError.mockRestore();
     }
+  });
+
+  test('retains normalized origin and target intent on every scheduled GPU event', () => {
+    const engine = makeRuntime();
+    engine.baseWidth = 1080;
+    engine.baseHeight = 1920;
+    const plan = v2Plan('normalized-events');
+    plan.cues[0].shells = [v2Shell('normalized-shell', 'rocket', {
+      origin: { x: 0.25, y: 0.8 },
+      target: { x: 0.75, y: 0.2 },
+    })];
+    engine.handleFinale({ id: 'normalized-events', showPlan: plan, playSound: false });
+    const rocket = engine.timelineQueue.find(event => event.type === 'finale-v2-rocket');
+    const layerEvent = engine.timelineQueue.find(event => event.type === 'finale-v2-layer');
+    expect(rocket.normalizedOrigin).toEqual({ x: 0.25, y: 0.8 });
+    expect(rocket.normalizedTarget).toEqual({ x: 0.75, y: 0.2 });
+    expect(layerEvent.context.normalizedOrigin).toEqual({ x: 0.75, y: 0.2 });
+    expect(layerEvent.context.normalizedTarget).toEqual({ x: 0.75, y: 0.2 });
+  });
+
+  test('rematerializes cue manifest geometry for the current clamped viewport after resize', () => {
+    const engine = makeRuntime();
+    engine.baseWidth = 1920;
+    engine.baseHeight = 1080;
+    const plan = v2Plan('resize-manifest');
+    plan.cues[0].shells = [v2Shell('resize-shell', 'rocket', {
+      renderHints: {
+        depthEnabled: true,
+        launchDepth: -1,
+        burstDepth: 1,
+        glyphScale: 1.2,
+        glyphExtent: 0.34,
+      },
+      layers: [v2Layer('resize-glyph', {
+        primitive: 'glyph',
+        glyph: 'star',
+        size: 1.4,
+        gravity: 0.6,
+      })],
+    })];
+    engine.handleFinale({ id: 'resize-manifest', showPlan: plan, playSound: false });
+    const rocket = engine.timelineQueue.find(event => event.type === 'finale-v2-rocket');
+    const layerEvent = engine.timelineQueue.find(event => event.type === 'finale-v2-layer');
+    const renderer = new WebGPUParticleEngine({ width: 540, height: 960 }, { now: () => 1000 });
+    renderer.initialized = true;
+
+    renderer.spawnRocket({
+      effectId: rocket.shellId,
+      correlationId: rocket.correlationId,
+      envelopeCommandIds: rocket.envelopeCommandIds,
+      correlationManifest: rocket.correlationManifest,
+      origin: rocket.origin,
+      target: rocket.target,
+      normalizedOrigin: rocket.normalizedOrigin,
+      normalizedTarget: rocket.normalizedTarget,
+      renderHints: rocket.renderHints,
+      duration: rocket.flightDurationMs / 1000,
+      color: '#ffffff',
+      seed: rocket.seed,
+      style: 'premium-realistic',
+      curve: 48,
+    });
+    renderer.spawnLayer(layerEvent.layer, layerEvent.context);
+
+    expect(renderer.spawnQueue).toHaveLength(3);
+    for (const entry of renderer.spawnQueue) {
+      const manifestMember = entry.correlationManifest.commands.find(command => (
+        command.envelopeCommandId === entry.envelopeCommandId
+      ));
+      const actual = renderer._materializeCommandForAdmission(entry, 1000, {
+        preserveFullLife: true,
+      }).command;
+      const fitted = renderer._materializeCommandForAdmission(manifestMember, 1000, {
+        preserveFullLife: true,
+      }).command;
+      expect(fitted.size).toBeCloseTo(actual.size, 7);
+      if (entry.kind === 2) {
+        expect(fitted.intensity).toBeCloseTo(actual.intensity, 7);
+        expect(fitted.gravity).toBeCloseTo(actual.gravity, 7);
+      }
+    }
+  });
+
+  test('keeps all shell and layer members in one cue-level formation correlation group', () => {
+    const engine = makeRuntime();
+    const plan = v2Plan('correlated-cue');
+    plan.cues[0].shells = [
+      v2Shell('left-shell', 'rocket', { target: { x: 0.15, y: 0.2 } }),
+      v2Shell('right-shell', 'rocket', { target: { x: 0.85, y: 0.2 } }),
+    ];
+    engine.handleFinale({ id: 'correlated-cue', showPlan: plan, playSound: false });
+    const commands = engine.timelineQueue.filter(event => (
+      event.type === 'finale-v2-rocket' || event.type === 'finale-v2-layer'
+    ));
+    const ids = commands.map(event => event.type === 'finale-v2-layer'
+      ? event.context.correlationId
+      : event.correlationId);
+    const manifests = commands.map(event => event.type === 'finale-v2-layer'
+      ? event.context.correlationManifest
+      : event.correlationManifest);
+    expect(new Set(ids).size).toBe(1);
+    expect(manifests.every(manifest => manifest === manifests[0])).toBe(true);
+    expect(Object.isFrozen(manifests[0])).toBe(true);
+    expect(manifests[0].commands.map(command => command.shellId))
+      .toEqual(expect.arrayContaining(['left-shell', 'right-shell']));
+  });
+
+  test('does not share a cue fit when authored cue ids repeat in one owner', () => {
+    const engine = makeRuntime();
+    const plan = v2Plan('duplicate-cues');
+    const template = plan.cues[0];
+    plan.cues = [
+      { ...template, id: 'duplicate', beatAtMs: 800, shells: [v2Shell('first-shell')] },
+      { ...template, id: 'duplicate', beatAtMs: 1600, phase: 'build', shells: [v2Shell('second-shell')] },
+    ];
+    engine.handleFinale({ id: 'duplicate-cues', showPlan: plan, playSound: false });
+    const layers = engine.timelineQueue.filter(event => event.type === 'finale-v2-layer');
+    expect(new Set(layers.map(event => event.context.correlationId)).size).toBe(2);
+    expect(layers[0].context.correlationManifest).not.toBe(layers[1].context.correlationManifest);
+  });
+
+  test('keeps envelope members unique when authored shell and layer ids repeat', () => {
+    const engine = makeRuntime();
+    const plan = v2Plan('duplicate-members');
+    plan.cues[0].shells = [
+      v2Shell('duplicate-shell', 'rocket', {
+        layers: [v2Layer('duplicate-layer'), v2Layer('duplicate-layer', { delayMs: 50 })],
+      }),
+      v2Shell('duplicate-shell', 'rocket', {
+        layers: [v2Layer('duplicate-layer')],
+      }),
+    ];
+    engine.handleFinale({ id: 'duplicate-members', showPlan: plan, playSound: false });
+    const gpuEvents = engine.timelineQueue.filter(event => (
+      event.type === 'finale-v2-rocket' || event.type === 'finale-v2-layer'
+    ));
+    const manifest = gpuEvents[0].type === 'finale-v2-rocket'
+      ? gpuEvents[0].correlationManifest
+      : gpuEvents[0].context.correlationManifest;
+    const manifestIds = manifest.commands.map(command => command.envelopeCommandId);
+    const queuedIds = gpuEvents.flatMap(event => event.type === 'finale-v2-rocket'
+      ? event.envelopeCommandIds
+      : [event.context.envelopeCommandId]);
+
+    expect(new Set(manifestIds).size).toBe(manifestIds.length);
+    expect(new Set(queuedIds).size).toBe(queuedIds.length);
+    expect(queuedIds).toEqual(expect.arrayContaining(manifestIds));
+  });
+
+  test('deactivates a standalone GPU owner after required envelope invalidation', () => {
+    const engine = makeRuntime();
+    engine.renderer.cancelQueuedOwner = jest.fn();
+    engine.registerGpuOwner('standalone:required-envelope');
+
+    expect(engine.handleGpuOwnerInvalidated(
+      'standalone:required-envelope',
+      'unregisteredEnvelope'
+    )).toBe(true);
+    expect(engine.isGpuOwnerActive('standalone:required-envelope')).toBe(false);
+    expect(engine.renderer.cancelQueuedOwner).toHaveBeenCalledWith(
+      'standalone:required-envelope',
+      'unregisteredEnvelope'
+    );
   });
 });
 

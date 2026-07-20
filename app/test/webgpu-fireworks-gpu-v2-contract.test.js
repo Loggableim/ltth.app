@@ -4,9 +4,17 @@ const crypto = require('crypto');
 const WebGPUParticleEngine = require('../plugins/webgpu-fireworks/gpu/webgpu-particle-engine');
 const { FinaleShowPlanner } = require('../plugins/webgpu-fireworks/lib/finale-show-planner');
 const { buildShowPlanV2Runtime } = require('../plugins/webgpu-fireworks/gpu/show-plan-v2-runtime');
+const {
+  SHAPE_IDS,
+  V2_PRIMITIVE_IDS,
+  V2_GLYPH_IDS,
+  ENVELOPE_FLAG_BITS,
+  fitCorrelatedCommands,
+  projectVisualEnvelope,
+} = require('../plugins/webgpu-fireworks/gpu/visible-envelope');
 
 const makeEngine = (width = 1920, height = 1080) => {
-  const engine = new WebGPUParticleEngine({ width, height }, {});
+  const engine = new WebGPUParticleEngine({ width, height }, { now: () => 1000 });
   engine.initialized = true;
   return engine;
 };
@@ -38,6 +46,44 @@ const uploadCommands = engine => {
 };
 
 describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
+  test('shares the complete 0-26 registry and numeric WGSL constants', () => {
+    const engine = makeEngine();
+    const shader = engine._particleShader();
+    expect(SHAPE_IDS).toEqual(Array.from({ length: 27 }, (_, index) => index));
+    expect(Object.values(V2_PRIMITIVE_IDS)).toEqual([10, 11, 12, 13, 14, 15, 16]);
+    expect(Object.values(V2_GLYPH_IDS)).toEqual([17, 18, 19, 20, 21, 22, 23, 24, 25, 26]);
+    expect(shader).toContain('const CAMERA_DISTANCE = 4.0;');
+    expect(shader).toContain(`const V2_TRAIL = ${ENVELOPE_FLAG_BITS.TRAIL}u;`);
+    expect(shader).toContain(`const V2_STROBE = ${ENVELOPE_FLAG_BITS.STROBE}u;`);
+    expect(shader).toContain(`const V2_MARKER = ${ENVELOPE_FLAG_BITS.V2_MARKER}u;`);
+  });
+
+  test.each([[1920, 1080], [1080, 1920]])('fits final commands, not center-only bounds, at %i x %i', (width, height) => {
+    for (const depth of [-1, 0, 1]) {
+      for (const shape of SHAPE_IDS) {
+        const command = {
+          kind: 2,
+          shape,
+          flags: shape >= 10 ? ENVELOPE_FLAG_BITS.V2_MARKER : 0,
+          textureIndex: 0,
+          origin: { x: width / 2, y: height * 0.05 },
+          target: { x: width / 2, y: height * 0.05 },
+          size: 20,
+          intensity: 0.3,
+          particleDuration: 0.9,
+          gravity: 60,
+          drag: 0.985,
+          burstDepth: depth,
+        };
+        const fit = fitCorrelatedCommands([command], { width, height }, { paddingPx: 2 });
+        const bounds = projectVisualEnvelope(fit.commands[0], { width, height });
+        expect(bounds.left).toBeGreaterThanOrEqual(2 - 1e-5);
+        expect(bounds.top).toBeGreaterThanOrEqual(2 - 1e-5);
+        expect(bounds.right).toBeLessThanOrEqual(width - 2 + 1e-5);
+        expect(bounds.bottom).toBeLessThanOrEqual(height - 2 + 1e-5);
+      }
+    }
+  });
   test('queues one compact command for a four-color V2 layer', () => {
     const engine = makeEngine();
 
@@ -373,9 +419,9 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
       ring: 4, spiral: 5, image: 6, sparkle: 7, rocket: 8, smoke: 9
     };
     const expectedUploads = [
-      { colors: ['#11223344'], bytes: 112, hash: '9858dd44d1e682b90506ffe69102d33fbe090e39ecbad9cd133b88c28537acdc' },
-      { colors: ['#11223344', '#55667788'], bytes: 224, hash: 'c083b48c37b67b8628f80474c2c46d0342e3326e762136cbab28bba825a9c414' },
-      { colors: ['#11223344', '#55667788', '#99aabbcc', '#ddeeff00'], bytes: 448, hash: '72ded2afb49a4d344847b2e347b11d999b8bf3a36bf1c3028ee6a91b094fd7a8' }
+      { colors: ['#11223344'], bytes: 112, hash: 'd8658b4f9f17061a9c9b4c2f3d147a3a9ee4bf863e4a8b8fdd98635450f5bdf3' },
+      { colors: ['#11223344', '#55667788'], bytes: 224, hash: '120adc58675d7c13e492098cd3608071e442816a715112f4bc48f26e955e1b3e' },
+      { colors: ['#11223344', '#55667788', '#99aabbcc', '#ddeeff00'], bytes: 448, hash: '1cad09998ca9304a131e70c9688b1f9c1c6469a86462716e55a193789ac0b603' }
     ];
 
     for (const [name, id] of Object.entries(expectedShapes)) {
@@ -407,7 +453,7 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
     const { uploaded, words } = uploadCommands(engine);
     expect(uploaded.byteLength).toBe(112);
     expect(Array.from(words)).toEqual([
-      1148190720, 1134559232, 1148190720, 1134559232,
+      1148190720, 1136322743, 1148190720, 1136322743,
       1032358025, 1040746633, 1045220557, 1049135241,
       36, 1, 2, 5120, 1065353216, 1067450368, 0, 123,
       1102577664, 1118306304, 1065051226, 1, 0, 0, 0,

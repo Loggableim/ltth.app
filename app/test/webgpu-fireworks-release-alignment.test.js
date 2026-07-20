@@ -87,6 +87,7 @@ describe('WebGPU Fireworks 3.1.0 release alignment', () => {
         '/plugins/webgpu-fireworks/gpu/engine.js',
         '/plugins/webgpu-fireworks/gpu/show-plan-v2-runtime.js',
         '/plugins/webgpu-fireworks/gpu/spawn-command-policy.js',
+        '/plugins/webgpu-fireworks/gpu/visible-envelope.js',
         '/plugins/webgpu-fireworks/gpu/webgpu-particle-engine.js'
       ],
       'app/plugins/webgpu-fireworks/ui/settings.html': [

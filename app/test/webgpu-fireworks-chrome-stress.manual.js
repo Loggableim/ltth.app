@@ -18,6 +18,7 @@ const FIXTURE_PATH = path.join(__dirname, 'fixtures', 'webgpu-fireworks-chrome-h
 const APP_ROOT = path.resolve(__dirname, '..');
 const PLUGIN_ROOT = path.join(APP_ROOT, 'plugins', 'webgpu-fireworks');
 const POLICY_SCRIPT_PATH = '/plugins/webgpu-fireworks/gpu/spawn-command-policy.js';
+const ENVELOPE_SCRIPT_PATH = '/plugins/webgpu-fireworks/gpu/visible-envelope.js';
 const SCRIPT_PATH = '/plugins/webgpu-fireworks/gpu/webgpu-particle-engine.js';
 
 function requireCaseName(argv) {
@@ -264,6 +265,53 @@ function assertRecoveryResult(result) {
   if (result.cleanupComplete !== true) throw new Error('recovery renderer cleanup did not complete');
 }
 
+function assertAdmissionEnvelopeResult(result) {
+  if (!result || result.skipped === true) throw new Error('admission-envelope case is missing or skipped');
+  const exact = {
+    shapeIds: 27,
+    rocketVariants: 3,
+    resolutions: 6,
+    depths: 3,
+    testedCases: 540,
+    visibleCases: 540,
+    guardViolations: 0,
+    staleViewportUses: 0,
+    crossOwnerFitUses: 0,
+    vertexClampUses: 0,
+    phaseIsolationPasses: 54
+  };
+  for (const [key, expected] of Object.entries(exact)) {
+    if (result[key] !== expected) {
+      const diagnostics = key === 'guardViolations'
+        ? result.coverage?.filter(row => row.guardPixels)
+        : result;
+      throw new Error(`admission-envelope ${key} must be ${expected}, got ${result[key]}: ${JSON.stringify(diagnostics)}`);
+    }
+  }
+  if (!Array.isArray(result.coverage) || result.coverage.length !== 18) {
+    throw new Error(`admission-envelope coverage must contain 18 resolution/depth rows, got ${result.coverage?.length}`);
+  }
+  const keys = new Set();
+  for (const row of result.coverage) {
+    keys.add(`${row.width}x${row.height}:${row.depth}`);
+    if (row.shapes !== 27 || row.rockets !== 3 || row.testedCases !== 30 ||
+        row.visibleCases !== 30 || row.failedCases?.length !== 0 ||
+        !(row.visiblePixels > 0) || row.guardPixels !== 0) {
+      throw new Error(`admission-envelope hardware coverage mismatch: ${JSON.stringify(row)}`);
+    }
+  }
+  if (keys.size !== 18) throw new Error('admission-envelope coverage rows are not unique');
+  if (!(result.visiblePixels > 0)) throw new Error('admission-envelope rendered no visible hardware pixels');
+  if (!(result.minimumAlphaFreeGuardWidth >= 2)) {
+    throw new Error(`admission-envelope minimum alpha-free guard is ${result.minimumAlphaFreeGuardWidth}`);
+  }
+  if (!Number.isFinite(result.maximumSharedScaleReduction) ||
+      result.maximumSharedScaleReduction < 0 || result.maximumSharedScaleReduction >= 1) {
+    throw new Error(`admission-envelope scale reduction is invalid: ${result.maximumSharedScaleReduction}`);
+  }
+  if (result.cleanupComplete !== true) throw new Error('admission-envelope renderer cleanup did not complete');
+}
+
 async function collectCleanupFailure(failures, label, cleanup) {
   try {
     await cleanup();
@@ -311,6 +359,7 @@ async function main() {
     const address = server.address();
     const fixtureUrl = new URL(`http://127.0.0.1:${address.port}/webgpu-fireworks-chrome-harness.html`);
     fixtureUrl.searchParams.append('script', POLICY_SCRIPT_PATH);
+    fixtureUrl.searchParams.append('script', ENVELOPE_SCRIPT_PATH);
     fixtureUrl.searchParams.append('script', SCRIPT_PATH);
     await page.goto(fixtureUrl.href, { waitUntil: 'load' });
     const pageEvidence = await page.evaluate(name => window.runWebGpuFireworksCase(name), caseName);
@@ -351,11 +400,13 @@ async function main() {
       assertAtlasResult(cases.atlas);
       assertCapacityResult(cases.capacity);
       assertRecoveryResult(cases.recovery);
+      assertAdmissionEnvelopeResult(cases['admission-envelope']);
       payload = { hardware, cases };
     } else {
       if (caseName === 'atlas') assertAtlasResult(pageEvidence.result);
       if (caseName === 'capacity') assertCapacityResult(pageEvidence.result);
       if (caseName === 'recovery') assertRecoveryResult(pageEvidence.result);
+      if (caseName === 'admission-envelope') assertAdmissionEnvelopeResult(pageEvidence.result);
       payload = { hardware, result: pageEvidence.result };
     }
     terminalPassLine = `PASS ${caseName} ${JSON.stringify(payload)}`;

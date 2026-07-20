@@ -511,7 +511,436 @@
       }
       return result;
     }
-    async function runAdmissionEnvelopeCase() { return { skipped: true, owner: 'Task 4' }; }
+    async function createGuardReducer(device) {
+      const module = device.createShaderModule({
+        label: 'fireworks-admission-envelope-guard-reducer-wgsl',
+        code: `
+struct Params { width: u32, height: u32, ignoreBottom: u32, pad: u32 };
+@group(0) @binding(0) var frame: texture_2d<f32>;
+@group(0) @binding(1) var<storage, read_write> counters: array<atomic<u32>>;
+@group(0) @binding(2) var<uniform> params: Params;
+@compute @workgroup_size(16, 16) fn reduce(@builtin(global_invocation_id) gid: vec3u) {
+  if (gid.x >= params.width || gid.y >= params.height) { return; }
+  let alpha = textureLoad(frame, vec2i(gid.xy), 0).a;
+  if (alpha <= (1.0 / 255.0)) { return; }
+  atomicAdd(&counters[1], 1u);
+  let right = params.width - 1u - gid.x;
+  let bottom = params.height - 1u - gid.y;
+  let distance = min(min(gid.x, right), min(gid.y, bottom));
+  atomicMin(&counters[2], distance);
+  let inTop = gid.y < 2u;
+  let inLeft = gid.x < 2u;
+  let inRight = right < 2u;
+  let inSide = inLeft || inRight;
+  let inBottom = params.ignoreBottom == 0u && bottom < 2u;
+  if (inTop) { atomicAdd(&counters[3], 1u); }
+  if (inLeft) { atomicAdd(&counters[4], 1u); }
+  if (inRight) { atomicAdd(&counters[5], 1u); }
+  if (inBottom) { atomicAdd(&counters[6], 1u); }
+  if (inTop || inSide || inBottom) { atomicAdd(&counters[0], 1u); }
+}`
+      });
+      const compilation = await module.getCompilationInfo();
+      const errors = compilation.messages.filter(message => message.type === 'error');
+      if (errors.length) throw new Error(`guard reducer WGSL: ${errors.map(error => error.message).join('; ')}`);
+      const pipeline = await device.createComputePipelineAsync({
+        label: 'fireworks-admission-envelope-guard-reducer',
+        layout: 'auto',
+        compute: { module, entryPoint: 'reduce' }
+      });
+
+      return async function reduceGuard(texture, width, height, ignoreBottom) {
+        const counters = device.createBuffer({
+          label: 'fireworks-admission-envelope-guard-counters',
+          size: 32,
+          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
+        });
+        const params = device.createBuffer({
+          label: 'fireworks-admission-envelope-guard-params',
+          size: 32,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        const readback = device.createBuffer({
+          label: 'fireworks-admission-envelope-guard-readback',
+          size: 32,
+          usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+        });
+        try {
+          device.queue.writeBuffer(counters, 0, new Uint32Array([0, 0, Math.min(width, height), 0, 0, 0, 0, 0]));
+          device.queue.writeBuffer(params, 0, new Uint32Array([width, height, ignoreBottom ? 1 : 0, 0]));
+          const bindGroup = device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(0),
+            entries: [
+              { binding: 0, resource: texture.createView() },
+              { binding: 1, resource: { buffer: counters } },
+              { binding: 2, resource: { buffer: params } }
+            ]
+          });
+          const encoder = device.createCommandEncoder({ label: 'fireworks-admission-envelope-guard-encoder' });
+          const pass = encoder.beginComputePass({ label: 'fireworks-admission-envelope-guard-pass' });
+          pass.setPipeline(pipeline);
+          pass.setBindGroup(0, bindGroup);
+          pass.dispatchWorkgroups(Math.ceil(width / 16), Math.ceil(height / 16));
+          pass.end();
+          encoder.copyBufferToBuffer(counters, 0, readback, 0, 32);
+          device.queue.submit([encoder.finish()]);
+          await readback.mapAsync(GPUMapMode.READ);
+          const words = new Uint32Array(readback.getMappedRange().slice(0));
+          return {
+            guardPixels: words[0], visiblePixels: words[1], minimumGuardWidth: words[2],
+            top: words[3], left: words[4], right: words[5], bottom: words[6]
+          };
+        } finally {
+          if (readback.mapState === 'mapped') readback.unmap();
+          counters.destroy();
+          params.destroy();
+          readback.destroy();
+        }
+      };
+    }
+
+    async function runAdmissionEnvelopeCase() {
+      const resolutions = [
+        [960, 540], [1920, 1080], [3840, 2160],
+        [540, 960], [1080, 1920], [2160, 3840]
+      ];
+      const depths = [-1, 0, 1];
+      const canvas = document.createElement('canvas');
+      canvas.width = 960;
+      canvas.height = 540;
+      let nowMs = 1_000;
+      const renderer = new WebGPUParticleEngine(canvas, {
+        now: () => nowMs,
+        maxParticles: 4_096,
+        trailsEnabled: true,
+        glowEnabled: true,
+        bloomEnabled: true,
+        trailSamples: 8,
+        turbulence: 0.12
+      });
+      let result = null;
+      try {
+        if (!await renderer.init()) {
+          throw new Error(`admission-envelope renderer failed to initialize: ${JSON.stringify(renderer.getMetrics())}`);
+        }
+        const reduceGuard = await createGuardReducer(renderer.device);
+        let guardViolations = 0;
+        let visiblePixels = 0;
+        let minimumAlphaFreeGuardWidth = Number.POSITIVE_INFINITY;
+        let maximumSharedScaleReduction = 0;
+        let staleViewportUses = 0;
+        let crossOwnerFitUses = 0;
+        let vertexClampUses = 0;
+        let phaseIsolationPasses = 0;
+        let testedCases = 0;
+        let visibleCases = 0;
+        const coverage = [];
+        const envelope = WebGPUFireworksVisibleEnvelope;
+        const variants = envelope.ROCKET_VARIANTS.map(name => ({
+          name,
+          ...(name === 'avatar-head' ? { headTextureIndex: 1 } : {}),
+          ...(name === 'decal' ? { textureIndex: 1 } : {})
+        }));
+
+        const capture = async (width, height, ignoreBottom) => {
+          const frame = renderer.context.getCurrentTexture();
+          const sample = await reduceGuard(frame, width, height, ignoreBottom);
+          guardViolations += sample.guardPixels;
+          visiblePixels += sample.visiblePixels;
+          if (sample.visiblePixels > 0 && !ignoreBottom) {
+            minimumAlphaFreeGuardWidth = Math.min(minimumAlphaFreeGuardWidth, sample.minimumGuardWidth);
+          }
+          return sample;
+        };
+
+        for (const [width, height] of resolutions) {
+          renderer.resize(width, height);
+          renderer.setLogicalSize(width, height);
+          await renderer.device.queue.onSubmittedWorkDone();
+          for (const depth of depths) {
+            const coverageEntry = {
+              width,
+              height,
+              depth,
+              shapes: 0,
+              rockets: 0,
+              testedCases: 0,
+              visibleCases: 0,
+              visiblePixels: 0,
+              guardPixels: 0,
+              shapeGuardPixels: 0,
+              rocketGuardPixels: 0,
+              edges: { top: 0, left: 0, right: 0, bottom: 0 },
+              violatingFrames: [],
+              failedCases: []
+            };
+            const cacheKeysBefore = new Set(renderer.correlationFitCache.keys());
+            for (const shape of envelope.SHAPE_IDS) {
+              const caseId = `shape:${shape}`;
+              const flags = shape >= 10
+                ? envelope.ENVELOPE_FLAG_BITS.V2_MARKER | envelope.ENVELOPE_FLAG_BITS.TRAIL
+                : 0;
+              if (!renderer._queueSpawn({
+                correlationId: `bounds:${width}x${height}:${depth}:shape:${shape}`,
+                envelopeCommandId: `shape:${shape}`,
+                kind: 2,
+                shape,
+                flags,
+                packedColors: flags ? [0xffffffff] : undefined,
+                colorCount: flags ? 1 : 0,
+                count: 1,
+                origin: { x: width * 0.5, y: height * 0.12 },
+                target: { x: width * 0.5, y: height * 0.12 },
+                size: 9,
+                intensity: 0.16,
+                particleDuration: 0.18,
+                duration: 0.18,
+                gravity: 24,
+                drag: (flags & WebGPUFireworksVisibleEnvelope.ENVELOPE_FLAG_BITS.V2_MARKER) !== 0 ? 0.04 : 0.985,
+                depthEnabled: true,
+                burstDepth: depth,
+                launchDepth: depth,
+                seed: shape + 1,
+                effectId: `bounds-shape-${shape}`
+              })) throw new Error(`shape ${shape} was rejected at ${width}x${height} depth ${depth}`);
+              let caseVisiblePixels = 0;
+              let caseGuardPixels = 0;
+              testedCases += 1;
+              coverageEntry.testedCases += 1;
+              coverageEntry.shapes += 1;
+              for (let frame = 0; frame < 4; frame += 1) {
+                nowMs += 50;
+                renderer.render(0.05, nowMs / 1000);
+                const sample = await capture(width, height, false);
+                caseVisiblePixels += sample.visiblePixels;
+                caseGuardPixels += sample.guardPixels;
+                coverageEntry.visiblePixels += sample.visiblePixels;
+                coverageEntry.guardPixels += sample.guardPixels;
+                coverageEntry.shapeGuardPixels += sample.guardPixels;
+                for (const edge of ['top', 'left', 'right', 'bottom']) coverageEntry.edges[edge] += sample[edge];
+                if (sample.guardPixels) {
+                  coverageEntry.violatingFrames.push({ caseId, phase: 'shape', frame, ...sample });
+                }
+              }
+              if (caseVisiblePixels > 0) {
+                visibleCases += 1;
+                coverageEntry.visibleCases += 1;
+              } else {
+                coverageEntry.failedCases.push({ caseId, reason: 'not-visible' });
+              }
+              if (caseGuardPixels > 0) {
+                coverageEntry.failedCases.push({ caseId, reason: 'guard-pixels', caseGuardPixels });
+              }
+              for (let frame = 0; frame < 3; frame += 1) {
+                nowMs += 50;
+                renderer.render(0.05, nowMs / 1000);
+              }
+              const isolated = await capture(width, height, false);
+              if (isolated.visiblePixels !== 0 || isolated.guardPixels !== 0) {
+                throw new Error(
+                  `shape isolation failed for ${caseId} at ${width}x${height} depth ${depth}: ` +
+                  JSON.stringify(isolated)
+                );
+              }
+            }
+
+            for (const [index, variant] of variants.entries()) {
+              const caseId = `rocket:${variant.name}`;
+              const origin = { x: width * [0.08, 0.5, 0.92][index], y: height * 1.02 };
+              const target = { x: width * [0.42, 0.5, 0.58][index], y: height * 0.12 };
+              if (!renderer.spawnRocket({
+                correlationId: `bounds:${width}x${height}:${depth}:rocket:${variant.name}`,
+                origin,
+                target,
+                duration: 0.3,
+                particleDuration: 0.3,
+                renderHints: { depthEnabled: true, launchDepth: depth, burstDepth: depth },
+                headTextureIndex: variant.headTextureIndex,
+                textureIndex: variant.textureIndex,
+                seed: 100 + index,
+                effectId: `bounds-rocket-${variant.name}`,
+                color: '#ffffff',
+                curve: index % 2 === 0 ? 48 : -48
+              })) throw new Error(`rocket ${variant.name} was rejected at ${width}x${height} depth ${depth}`);
+              let ascentVisiblePixels = 0;
+              for (let frame = 0; frame < 7; frame += 1) {
+                nowMs += 50;
+                renderer.render(0.05, nowMs / 1000);
+                const sample = await capture(width, height, true);
+                ascentVisiblePixels += sample.visiblePixels;
+                coverageEntry.visiblePixels += sample.visiblePixels;
+                coverageEntry.guardPixels += sample.guardPixels;
+                coverageEntry.rocketGuardPixels += sample.guardPixels;
+                for (const edge of ['top', 'left', 'right', 'bottom']) coverageEntry.edges[edge] += sample[edge];
+                if (sample.guardPixels) {
+                  coverageEntry.violatingFrames.push({ caseId, phase: 'ascent', frame, ...sample });
+                }
+              }
+
+              // Exhaust children outlive the body. Prove an empty composite
+              // before the independent all-edge upper-state oracle.
+              for (let frame = 0; frame < 24; frame += 1) {
+                nowMs += 50;
+                renderer.render(0.05, nowMs / 1000);
+              }
+              await renderer.device.queue.onSubmittedWorkDone();
+              let isolated = await capture(width, height, false);
+              if (isolated.visiblePixels !== 0 || isolated.guardPixels !== 0) {
+                throw new Error(
+                  `rocket phase isolation failed for ${caseId} at ${width}x${height} depth ${depth}: ` +
+                  JSON.stringify(isolated)
+                );
+              }
+              phaseIsolationPasses += 1;
+
+              if (!renderer.spawnRocket({
+                correlationId: `bounds:${width}x${height}:${depth}:upper:${variant.name}`,
+                origin: target,
+                target,
+                duration: 0.18,
+                particleDuration: 0.18,
+                renderHints: { depthEnabled: true, launchDepth: depth, burstDepth: depth },
+                headTextureIndex: variant.headTextureIndex,
+                textureIndex: variant.textureIndex,
+                seed: 200 + index,
+                effectId: `bounds-upper-${variant.name}`,
+                color: '#ffffff',
+                curve: index % 2 === 0 ? 48 : -48
+              })) throw new Error(`upper rocket ${variant.name} was rejected at ${width}x${height} depth ${depth}`);
+              let upperVisiblePixels = 0;
+              for (let frame = 0; frame < 4; frame += 1) {
+                nowMs += 50;
+                renderer.render(0.05, nowMs / 1000);
+                const sample = await capture(width, height, false);
+                upperVisiblePixels += sample.visiblePixels;
+                coverageEntry.visiblePixels += sample.visiblePixels;
+                coverageEntry.guardPixels += sample.guardPixels;
+                coverageEntry.rocketGuardPixels += sample.guardPixels;
+                for (const edge of ['top', 'left', 'right', 'bottom']) coverageEntry.edges[edge] += sample[edge];
+                if (sample.guardPixels) {
+                  coverageEntry.violatingFrames.push({ caseId, phase: 'upper', frame, ...sample });
+                }
+              }
+              testedCases += 1;
+              coverageEntry.testedCases += 1;
+              coverageEntry.rockets += 1;
+              if (ascentVisiblePixels > 0 && upperVisiblePixels > 0) {
+                visibleCases += 1;
+                coverageEntry.visibleCases += 1;
+              } else {
+                coverageEntry.failedCases.push({
+                  caseId,
+                  reason: 'not-visible',
+                  ascentVisiblePixels,
+                  upperVisiblePixels
+                });
+              }
+
+              for (let frame = 0; frame < 24; frame += 1) {
+                nowMs += 50;
+                renderer.render(0.05, nowMs / 1000);
+              }
+              isolated = await capture(width, height, false);
+              if (isolated.visiblePixels !== 0 || isolated.guardPixels !== 0) {
+                throw new Error(
+                  `rocket case isolation failed for ${caseId} at ${width}x${height} depth ${depth}: ` +
+                  JSON.stringify(isolated)
+                );
+              }
+            }
+
+            for (const [key, cached] of renderer.correlationFitCache.entries()) {
+              if (cacheKeysBefore.has(key)) continue;
+              maximumSharedScaleReduction = Math.max(
+                maximumSharedScaleReduction,
+                1 - Number(cached.fit.scale)
+              );
+              if (cached.fit.vertexClampApplied) vertexClampUses += 1;
+            }
+            if (coverageEntry.testedCases !== 30 || coverageEntry.visibleCases !== 30 ||
+                coverageEntry.failedCases.length !== 0) {
+              throw new Error(`incomplete hardware cases at ${width}x${height} depth ${depth}: ${JSON.stringify(coverageEntry)}`);
+            }
+            coverage.push(coverageEntry);
+          }
+        }
+
+        renderer.resize(1080, 1920);
+        renderer.setLogicalSize(1080, 1920);
+        const resizeProbe = renderer._normalizeSpawnEntry({
+          kind: 2, shape: 3, flags: 0, textureIndex: 0, count: 1,
+          normalizedOrigin: { x: 0.5, y: 0.12 },
+          normalizedTarget: { x: 0.75, y: 0.25 },
+          origin: { x: 540, y: 230.4 }, target: { x: 810, y: 480 },
+          particleDuration: 0.2, size: 8, intensity: 0.1, gravity: 10, drag: 0.985
+        });
+        renderer.resize(1920, 1080);
+        renderer.setLogicalSize(1920, 1080);
+        const resized = renderer._materializeCommandForAdmission(resizeProbe, nowMs).command;
+        if (resized.origin.x !== 960 || Math.abs(resized.origin.y - 129.6) > 1e-7 ||
+            resized.target.x !== 1440 || resized.target.y !== 270) staleViewportUses += 1;
+
+        const manifestCommand = id => Object.freeze({
+          envelopeCommandId: id,
+          kind: 2, shape: 3, flags: 0, textureIndex: 0,
+          origin: Object.freeze({ x: 960, y: 120 }),
+          target: Object.freeze({ x: 960, y: 120 }),
+          size: 8, intensity: 0.1, particleDuration: 0.2, emissionDelay: 0,
+          gravity: 10, drag: 0.985, burstDepth: 0
+        });
+        const manifest = Object.freeze({
+          correlationId: 'shared-cue',
+          commands: Object.freeze([manifestCommand('left'), manifestCommand('right')])
+        });
+        const baseEntry = {
+          resourceGeneration: renderer.resourceGeneration,
+          ownerToken: 'finale:shared',
+          correlationId: 'shared-cue',
+          envelopeCommandId: 'left',
+          correlationManifest: manifest
+        };
+        const first = renderer._getOrCreateCorrelationFit(baseEntry, nowMs);
+        const later = renderer._getOrCreateCorrelationFit({ ...baseEntry }, nowMs + 200);
+        if (first !== later) crossOwnerFitUses += 1;
+        const otherOwner = renderer._getOrCreateCorrelationFit({ ...baseEntry, ownerToken: 'preview:shared' }, nowMs);
+        const otherGeneration = renderer._getOrCreateCorrelationFit({
+          ...baseEntry,
+          resourceGeneration: renderer.resourceGeneration + 1
+        }, nowMs);
+        if (otherOwner === first || otherGeneration === first) crossOwnerFitUses += 1;
+        if (first.vertexClampApplied || otherOwner.vertexClampApplied || otherGeneration.vertexClampApplied) {
+          vertexClampUses += 1;
+        }
+        if (envelope.SHAPE_IDS.length !== 27 || envelope.ROCKET_VARIANTS.length !== 3) {
+          throw new Error('browser visible-envelope registry is incomplete');
+        }
+
+        result = {
+          shapeIds: envelope.SHAPE_IDS.length,
+          rocketVariants: envelope.ROCKET_VARIANTS.length,
+          resolutions: 6,
+          depths: 3,
+          testedCases,
+          visibleCases,
+          coverage,
+          guardViolations,
+          visiblePixels,
+          staleViewportUses,
+          crossOwnerFitUses,
+          vertexClampUses,
+          phaseIsolationPasses,
+          minimumAlphaFreeGuardWidth: Number.isFinite(minimumAlphaFreeGuardWidth)
+            ? minimumAlphaFreeGuardWidth
+            : 0,
+          maximumSharedScaleReduction,
+          cleanupComplete: false
+        };
+      } finally {
+        renderer.destroy();
+        if (result) result.cleanupComplete = true;
+      }
+      return result;
+    }
     async function runTelemetryAdaptiveCase() { return { skipped: true, owner: 'Task 5' }; }
     async function runBoykisserCase() { return { skipped: true, owner: 'Task 6' }; }
 
