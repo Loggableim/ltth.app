@@ -96,6 +96,11 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
       on: jest.fn((event, handler) => handlers.set(event, handler))
     };
     connectionHandler(socket);
+    plugin.overlayTelemetry.set(socket.id, {
+      registered: true,
+      benchmark: false,
+      statusUpdatedAt: Date.now()
+    });
     handlers.get('webgpu-fireworks:renderer-status')({
       state: 'ready',
       finaleActive: true,

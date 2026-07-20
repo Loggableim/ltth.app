@@ -75,8 +75,9 @@ describe('WebGPU Fireworks 3D release contract', () => {
       state: 'ready',
       rendererProtocol: 3,
       capabilities: ['boykisser-v1', 'depth3d-v1'],
+      registered: true,
       benchmark: false,
-      updatedAt: Date.now()
+      statusUpdatedAt: Date.now()
     });
 
     expect(plugin.getRendererStatus()).toMatchObject({
@@ -90,7 +91,7 @@ describe('WebGPU Fireworks 3D release contract', () => {
   test('falls back normal Furry finales to legacy bursts on an old fresh renderer', () => {
     const { api, plugin } = createPlugin();
     plugin.overlayTelemetry.set('renderer-old', {
-      state: 'ready', rendererProtocol: 2, capabilities: [], benchmark: false, updatedAt: Date.now()
+      state: 'ready', rendererProtocol: 2, capabilities: [], registered: true, benchmark: false, statusUpdatedAt: Date.now()
     });
 
     const result = plugin.triggerFinale({
@@ -111,8 +112,9 @@ describe('WebGPU Fireworks 3D release contract', () => {
   test('rejects a Furry test request on an old renderer with an actionable typed error', () => {
     const { api, plugin } = createPlugin();
     plugin.overlayTelemetry.set('renderer-old', {
-      state: 'ready', rendererProtocol: 2, capabilities: [], benchmark: false, updatedAt: Date.now()
+      state: 'ready', rendererProtocol: 2, capabilities: [], registered: true, benchmark: false, statusUpdatedAt: Date.now()
     });
+    plugin.connectedSockets.add({ id: 'renderer-old', connected: true, emit: jest.fn() });
 
     const result = plugin.triggerFinale({
       style: 'furry-celebration', length: 'short', seed: 136, testRequest: true
