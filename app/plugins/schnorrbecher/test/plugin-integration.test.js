@@ -131,7 +131,7 @@ describe('Schnorrbecher plugin integration', () => {
       .post('/api/coin-jar/config')
       .send({ maxPhysicalIcons: 99999, jarLabel: 'My Jar' })
       .expect(200)
-      .expect(response => expect(response.body.config.maxPhysicalIcons).toBe(600));
+      .expect(response => expect(response.body.config.maxPhysicalIcons).toBe(3000));
 
     api.socketEvents.get('coinJar.telemetry')({}, { physicalCoinCount: 200, pendingSpawns: 7 });
     expect(plugin.getStatus()).toMatchObject({ physicalCoinCount: 200, pendingSpawns: 7 });

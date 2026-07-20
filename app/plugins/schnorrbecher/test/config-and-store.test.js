@@ -21,13 +21,17 @@ describe('Schnorrbecher configuration and store', () => {
       jarWidth: -3,
       jarHeight: 99999,
       maxPhysicalIcons: 99999,
+      giftSize1: 0,
+      giftSize1000To1999: 99999,
       spawnDelayMs: 0,
       persistenceMode: 'invalid',
       soundVolume: 5
     })).toMatchObject({
       jarWidth: 160,
       jarHeight: 1400,
-      maxPhysicalIcons: 600,
+      maxPhysicalIcons: 3000,
+      giftSize1: 16,
+      giftSize1000To1999: 240,
       spawnDelayMs: 20,
       persistenceMode: 'session',
       soundVolume: 1

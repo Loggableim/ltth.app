@@ -1,3 +1,16 @@
+const DEFAULT_GIFT_SIZES = Object.freeze({
+  giftSize1: 32,
+  giftSize2To10: 40,
+  giftSize11To29: 50,
+  giftSize30To99: 62,
+  giftSize100To199: 76,
+  giftSize200To499: 92,
+  giftSize500To999: 110,
+  giftSize1000To1999: 132,
+  giftSize2000To4999: 158,
+  giftSize5000Plus: 180
+});
+
 const DEFAULT_CONFIG = Object.freeze({
   enabled: true,
   jarStyle: 'classic',
@@ -6,6 +19,7 @@ const DEFAULT_CONFIG = Object.freeze({
   jarX: 50,
   jarY: 82,
   iconScale: 1,
+  ...DEFAULT_GIFT_SIZES,
   maxPhysicalIcons: 300,
   spawnMultiplier: 1,
   spawnDelayMs: 80,
@@ -75,9 +89,12 @@ function normalizeRecentGifts(value) {
 }
 
 function normalizeConfig(input = {}) {
+  const giftSizes = Object.fromEntries(Object.entries(DEFAULT_GIFT_SIZES)
+    .map(([key, fallback]) => [key, Math.round(clamp(input[key], fallback, 16, 240))]));
   return {
     ...DEFAULT_CONFIG,
     ...input,
+    ...giftSizes,
     enabled: normalizeBoolean(input.enabled, DEFAULT_CONFIG.enabled),
     jarStyle: normalizeJarStyle(input.jarStyle),
     jarWidth: Math.round(clamp(input.jarWidth, DEFAULT_CONFIG.jarWidth, 160, 1600)),
@@ -85,7 +102,7 @@ function normalizeConfig(input = {}) {
     jarX: clamp(input.jarX, DEFAULT_CONFIG.jarX, 0, 100),
     jarY: clamp(input.jarY, DEFAULT_CONFIG.jarY, 0, 100),
     iconScale: clamp(input.iconScale, DEFAULT_CONFIG.iconScale, 0.25, 3),
-    maxPhysicalIcons: Math.round(clamp(input.maxPhysicalIcons, DEFAULT_CONFIG.maxPhysicalIcons, 20, 600)),
+    maxPhysicalIcons: Math.round(clamp(input.maxPhysicalIcons, DEFAULT_CONFIG.maxPhysicalIcons, 20, 3000)),
     spawnMultiplier: clamp(input.spawnMultiplier, DEFAULT_CONFIG.spawnMultiplier, 0.1, 5),
     spawnDelayMs: Math.round(clamp(input.spawnDelayMs, DEFAULT_CONFIG.spawnDelayMs, 20, 1000)),
     showCounter: normalizeBoolean(input.showCounter, DEFAULT_CONFIG.showCounter),
@@ -123,6 +140,7 @@ function normalizeState(input = {}) {
 }
 
 module.exports = {
+  DEFAULT_GIFT_SIZES,
   DEFAULT_CONFIG,
   DEFAULT_STATE,
   normalizeConfig,
