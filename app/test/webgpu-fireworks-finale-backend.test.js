@@ -323,8 +323,15 @@ describe('WebGPU finale backend contract', () => {
   test('API returns an actionable upgrade response for a Furry test on an old ready overlay', () => {
     const { api, plugin } = createPlugin();
     plugin.overlayTelemetry.set('old-overlay', {
-      state: 'ready', rendererProtocol: 2, capabilities: [], benchmark: false, updatedAt: Date.now()
+      registered: true,
+      state: 'ready',
+      visible: true,
+      rendererProtocol: 2,
+      capabilities: [],
+      benchmark: false,
+      statusUpdatedAt: Date.now()
     });
+    plugin.connectedSockets.add({ id: 'old-overlay', connected: true, emit: jest.fn() });
     plugin.registerRoutes();
     const handler = api.routes.get('post:/api/webgpu-fireworks/finale');
     const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
