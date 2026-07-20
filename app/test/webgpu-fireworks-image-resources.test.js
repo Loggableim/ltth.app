@@ -274,4 +274,33 @@ describe('WebGPU Fireworks image resource lifecycle', () => {
     expect(drawables[1].close).toHaveBeenCalledTimes(1);
     expect(source.close).not.toHaveBeenCalled();
   });
+
+  test('aborts an async replacement when its reserved owner is re-pinned before publication', async () => {
+    let nowMs = 1_000;
+    const renderer = makeRenderer(createFakeGpu(), { now: () => nowMs });
+    await renderer.init();
+    const textureIndices = [];
+    for (let index = 0; index < 63; index += 1) {
+      const textureIndex = await renderer.uploadImage(`used-${index}`, { key: `used-${index}` });
+      textureIndices.push(textureIndex);
+      renderer._markAtlasTextureUsed(textureIndex, { nowMs, visibleUntilMs: nowMs + 10 });
+    }
+    nowMs += 11;
+    const copy = createDeferred();
+    renderer._writeAtlasImage = jest.fn(() => copy.promise);
+
+    const replacement = renderer.uploadImage('replacement', { key: 'replacement' });
+    await Promise.resolve();
+    const reservedTextureIndex = textureIndices[0];
+    renderer._markAtlasTextureUsed(reservedTextureIndex, {
+      nowMs,
+      visibleUntilMs: nowMs + 10_000
+    });
+    copy.resolve();
+
+    await expect(replacement).resolves.toBe(0);
+    expect(renderer.atlasEntries.get('used-0').textureIndex).toBe(reservedTextureIndex);
+    expect(renderer.atlasSlotOwners[reservedTextureIndex - 1]).toBe('used-0');
+    expect(renderer.atlasEntries.has('replacement')).toBe(false);
+  });
 });

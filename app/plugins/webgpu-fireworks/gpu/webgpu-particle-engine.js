@@ -134,6 +134,8 @@ class WebGPUParticleEngine {
         this.atlasSlotReservations = Array(EXTERNAL_ATLAS_SLOT_COUNT + 1).fill(null);
         this.pendingAtlasUploads = new Map();
         this.atlasOwnershipGeneration = 0;
+        this.atlasEntryVersions = new WeakMap();
+        this.atlasEntryVersionCounter = 0;
         this.now = typeof options.now === 'function'
             ? options.now
             : () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
@@ -502,6 +504,8 @@ class WebGPUParticleEngine {
         this.atlasAwaitingFirstUse.clear();
         this.atlasSlotReservations.fill(null);
         this.pendingAtlasUploads.clear();
+        this.atlasEntryVersions = new WeakMap();
+        this.atlasEntryVersionCounter = 0;
         const canvas = typeof OffscreenCanvas !== 'undefined'
             ? new OffscreenCanvas(this.atlasSlotSize, this.atlasSlotSize)
             : Object.assign(document.createElement('canvas'), { width: this.atlasSlotSize, height: this.atlasSlotSize });
@@ -515,7 +519,7 @@ class WebGPUParticleEngine {
         for (const [x, y, r] of [[30, 44, 12], [51, 31, 12], [77, 31, 12], [98, 44, 12]]) {
             ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
         }
-        await this._copyAtlasCanvas(canvas, [0, 0]);
+        this._copyAtlasCanvas(canvas, [0, 0]);
     }
 
     async uploadImage(key, image) {
@@ -538,6 +542,7 @@ class WebGPUParticleEngine {
         const existing = this.atlasEntries.get(key);
         if (existing) {
             existing.lastUsedAtMs = nowMs;
+            this._touchAtlasEntry(existing);
             return existing.textureIndex;
         }
         const reservation = this._reserveAtlasSlot(nowMs);
@@ -546,8 +551,10 @@ class WebGPUParticleEngine {
             return 0;
         }
         try {
-            await this._writeAtlasImage(reservation.slot, key, image);
+            const copyResult = this._writeAtlasImage(reservation.slot, key, image);
+            if (copyResult && typeof copyResult.then === 'function') await copyResult;
             if (generation !== this.atlasOwnershipGeneration) return 0;
+            if (!this._isAtlasReservationValid(reservation)) return 0;
             const entry = this._acquireAtlasSlot(key, {
                 nowMs,
                 inUseUntilMs: nowMs + ATLAS_RELEASE_GRACE_MS,
@@ -565,6 +572,7 @@ class WebGPUParticleEngine {
     _reserveAtlasSlot(nowMs) {
         let slot = -1;
         let ownerKey = null;
+        let ownerEntry = null;
         for (let candidateSlot = 1; candidateSlot < ATLAS_SLOT_COUNT; candidateSlot += 1) {
             if (this.atlasSlotOwners[candidateSlot] === null && !this.atlasSlotReservations[candidateSlot]) {
                 slot = candidateSlot;
@@ -586,11 +594,38 @@ class WebGPUParticleEngine {
             if (!candidate) return null;
             slot = candidate.slot;
             ownerKey = candidate.key;
+            ownerEntry = candidate;
         }
 
         const token = Symbol('atlas-slot-reservation');
         this.atlasSlotReservations[slot] = token;
-        return { token, slot, ownerKey };
+        return {
+            token,
+            slot,
+            ownerKey,
+            ownerEntry,
+            ownerVersion: ownerEntry ? (this.atlasEntryVersions.get(ownerEntry) || 0) : 0,
+            ownerLastUsedAtMs: ownerEntry ? ownerEntry.lastUsedAtMs : null,
+            ownerInUseUntilMs: ownerEntry ? ownerEntry.inUseUntilMs : null,
+            ownerAwaitingFirstUse: ownerEntry ? this.atlasAwaitingFirstUse.has(ownerEntry.key) : false
+        };
+    }
+
+    _isAtlasReservationValid(reservation) {
+        if (this.atlasSlotReservations[reservation.slot] !== reservation.token) return false;
+        if (this.atlasSlotOwners[reservation.slot] !== reservation.ownerKey) return false;
+        if (reservation.ownerKey === null) return true;
+        const ownerEntry = this.atlasEntries.get(reservation.ownerKey);
+        return ownerEntry === reservation.ownerEntry &&
+            (this.atlasEntryVersions.get(ownerEntry) || 0) === reservation.ownerVersion &&
+            ownerEntry.lastUsedAtMs === reservation.ownerLastUsedAtMs &&
+            ownerEntry.inUseUntilMs === reservation.ownerInUseUntilMs &&
+            this.atlasAwaitingFirstUse.has(reservation.ownerKey) === reservation.ownerAwaitingFirstUse;
+    }
+
+    _touchAtlasEntry(entry) {
+        this.atlasEntryVersionCounter += 1;
+        this.atlasEntryVersions.set(entry, this.atlasEntryVersionCounter);
     }
 
     _acquireAtlasSlot(key, {
@@ -605,6 +640,7 @@ class WebGPUParticleEngine {
         if (existing) {
             existing.lastUsedAtMs = nowMs;
             existing.inUseUntilMs = Math.max(existing.inUseUntilMs, inUseUntilMs);
+            this._touchAtlasEntry(existing);
             return existing;
         }
 
@@ -638,6 +674,7 @@ class WebGPUParticleEngine {
         this.atlasEntries.set(key, entry);
         this.atlasSlotOwners[slot] = key;
         this.atlasAwaitingFirstUse.add(key);
+        this._touchAtlasEntry(entry);
         if (directReservation && this.atlasSlotReservations[slot] === directReservation.token) {
             this.atlasSlotReservations[slot] = null;
         }
@@ -655,6 +692,7 @@ class WebGPUParticleEngine {
         entry.lastUsedAtMs = nowMs;
         if (this.atlasAwaitingFirstUse.delete(owner)) entry.inUseUntilMs = Math.max(nowMs, visibleUntilMs);
         else entry.inUseUntilMs = Math.max(entry.inUseUntilMs, visibleUntilMs);
+        this._touchAtlasEntry(entry);
     }
 
     _atlasNow() {
@@ -662,7 +700,7 @@ class WebGPUParticleEngine {
         return Number.isFinite(nowMs) ? nowMs : 0;
     }
 
-    async _writeAtlasImage(slot, key, image) {
+    _writeAtlasImage(slot, key, image) {
         const canvas = typeof OffscreenCanvas !== 'undefined'
             ? new OffscreenCanvas(this.atlasSlotSize, this.atlasSlotSize)
             : Object.assign(document.createElement('canvas'), { width: this.atlasSlotSize, height: this.atlasSlotSize });
@@ -687,16 +725,15 @@ class WebGPUParticleEngine {
         if (isAvatar) ctx.restore();
         const x = (slot % this.atlasSlotsPerRow) * this.atlasSlotSize;
         const y = Math.floor(slot / this.atlasSlotsPerRow) * this.atlasSlotSize;
-        await this._copyAtlasCanvas(canvas, [x, y]);
+        this._copyAtlasCanvas(canvas, [x, y]);
     }
 
-    async _copyAtlasCanvas(canvas, origin) {
+    _copyAtlasCanvas(canvas, origin) {
         this.device.queue.copyExternalImageToTexture(
             { source: canvas },
             { texture: this.atlasTexture, origin },
             [this.atlasSlotSize, this.atlasSlotSize]
         );
-        await this.device.queue.onSubmittedWorkDone();
     }
 
     spawnRocket(options = {}) {
