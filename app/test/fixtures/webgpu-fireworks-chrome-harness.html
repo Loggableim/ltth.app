@@ -391,7 +391,126 @@
       }
       return result;
     }
-    async function runRecoveryCase() { return { skipped: true, owner: 'Task 3' }; }
+    async function waitForRecoveredDevice(renderer, lostDevice, timeoutMs = 15_000) {
+      const deadline = performance.now() + timeoutMs;
+      while (performance.now() < deadline) {
+        if (renderer.device !== lostDevice && renderer.initialized &&
+            renderer.getMetrics().state === 'ready') {
+          return renderer.device;
+        }
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      throw new Error(`renderer did not recover within ${timeoutMs}ms`);
+    }
+
+    async function runRecoveryCase() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 360;
+      const ownerInvalidations = [];
+      const renderer = new WebGPUParticleEngine(canvas, {
+        maxParticles: 2_048,
+        trailsEnabled: false,
+        glowEnabled: false,
+        bloomEnabled: false,
+        recoveryDelayMs: 0,
+        onOwnerInvalidated: (ownerToken, reason) => {
+          ownerInvalidations.push({ ownerToken, reason });
+        }
+      });
+      const devices = [];
+      const generations = [];
+      const pendingReadbacksAtLoss = [];
+      const oldReadbacks = [];
+      let staleCommandsUploaded = 0;
+      let staleReadbacksApplied = 0;
+      let result = null;
+
+      try {
+        if (!await renderer.init()) {
+          throw new Error(`recovery renderer failed to initialize: ${JSON.stringify(renderer.getMetrics())}`);
+        }
+        devices.push(renderer.device);
+        generations.push(renderer.resourceGeneration);
+
+        for (let recoveryIndex = 0; recoveryIndex < 2; recoveryIndex += 1) {
+          const ownerToken = `recovery-owner:${recoveryIndex + 1}`;
+          const lostDevice = renderer.device;
+          const lostGeneration = renderer.resourceGeneration;
+          const expiresAtMs = performance.now() + 60_000;
+          for (let batch = 1; batch <= 2; batch += 1) {
+            if (!renderer._queueSpawn({
+              shape: 'sparkle',
+              count: 1,
+              seed: recoveryIndex * 10 + batch,
+              effectId: `${ownerToken}:batch:${batch}`,
+              ownerToken,
+              expiresAtMs,
+              lane: 'show',
+              priority: 'core',
+              required: true,
+              beatId: `${ownerToken}:beat`,
+              admissionBatchId: batch
+            })) throw new Error(`recovery command ${ownerToken}:${batch} was rejected`);
+          }
+
+          renderer.lastReadbackAt = performance.now() - 2_000;
+          renderer.render(1 / 60, performance.now() / 1_000);
+          const oldRequest = renderer.capacityResources.readbackRequest;
+          const oldReadback = oldRequest?.promise || renderer.readbackPromise;
+          oldReadbacks.push(oldReadback);
+          pendingReadbacksAtLoss.push(Boolean(
+            oldRequest && oldReadback && renderer.capacityResources.readbackPending
+          ));
+          if (renderer.spawnQueue.length !== 1 ||
+              renderer.spawnQueue[0].resourceGeneration !== lostGeneration ||
+              renderer.spawnQueue[0].ownerToken !== ownerToken) {
+            throw new Error(`owned lost-generation command was not retained: ${ownerToken}`);
+          }
+
+          lostDevice.destroy();
+          const recoveredDevice = await waitForRecoveredDevice(renderer, lostDevice);
+          devices.push(recoveredDevice);
+          generations.push(renderer.resourceGeneration);
+          const metricsAtRecovery = {
+            activeParticles: renderer.metrics.activeParticles,
+            droppedParticles: renderer.metrics.droppedParticles,
+            gpuFrameMs: renderer.metrics.gpuFrameMs
+          };
+          if (oldReadback) await Promise.allSettled([oldReadback]);
+          if (renderer.metrics.activeParticles !== metricsAtRecovery.activeParticles ||
+              renderer.metrics.droppedParticles !== metricsAtRecovery.droppedParticles ||
+              renderer.metrics.gpuFrameMs !== metricsAtRecovery.gpuFrameMs) {
+            staleReadbacksApplied += 1;
+          }
+          const recoveredUpload = renderer._uploadSpawnCommands(performance.now());
+          staleCommandsUploaded += recoveredUpload.count;
+        }
+
+        await Promise.allSettled(oldReadbacks.filter(Boolean));
+        result = {
+          deviceCount: devices.length,
+          deviceIdentities: devices.map((device, index) => ({
+            id: `device-${index + 1}`,
+            distinctFromPrevious: index === 0 || device !== devices[index - 1]
+          })),
+          distinctDeviceCount: new Set(devices).size,
+          generations,
+          recoveredGenerations: generations.slice(1),
+          recoveries: devices.length - 1,
+          staleReadbacksApplied,
+          staleCommandsUploaded,
+          staleCommandsDropped: renderer.spawnTelemetry.droppedByReason.staleGeneration,
+          ownerInvalidations,
+          pendingReadbacksAtLoss,
+          cleanupComplete: false
+        };
+      } finally {
+        renderer.destroy();
+        if (result) result.cleanupComplete = true;
+      }
+      return result;
+    }
     async function runAdmissionEnvelopeCase() { return { skipped: true, owner: 'Task 4' }; }
     async function runTelemetryAdaptiveCase() { return { skipped: true, owner: 'Task 5' }; }
     async function runBoykisserCase() { return { skipped: true, owner: 'Task 6' }; }

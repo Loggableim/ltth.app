@@ -131,8 +131,29 @@ class WebGPUParticleEngine {
         this.adapterInfo = null;
         this.initialized = false;
         this.destroyed = false;
-        this.deviceRecoveryAttempted = false;
+        this.recoveryPromise = null;
+        this.recoveringDevice = null;
+        this.recoveryDelayMs = Number.isFinite(Number(options.recoveryDelayMs))
+            ? Math.max(0, Number(options.recoveryDelayMs))
+            : 1_000;
+        this.onOwnerInvalidated = typeof options.onOwnerInvalidated === 'function'
+            ? options.onOwnerInvalidated
+            : () => {};
+        this.deviceLossWatches = new WeakMap();
+        this.deviceErrorWatches = new WeakSet();
+        this.deviceLifecycleEpoch = 0;
         this.spawnQueue = [];
+        this.inactiveSpawnOwners = new Set();
+        this.spawnTelemetry = {
+            droppedByReason: {
+                staleGeneration: 0,
+                expired: 0,
+                inactiveOwner: 0,
+                lifeExhausted: 0,
+                unregisteredEnvelope: 0,
+                envelopeCannotFit: 0
+            }
+        };
         this.pendingDegradedLayerCounts = SpawnCommandPolicy.emptyDegradedLayerCounts();
         this.atlasEntries = new Map();
         this.atlasSlotOwners = Array(EXTERNAL_ATLAS_SLOT_COUNT + 1).fill(null);
@@ -153,6 +174,7 @@ class WebGPUParticleEngine {
         this.logicalHeight = canvas.height || 1080;
         this.lastReadbackAt = 0;
         this.readbackPending = false;
+        this.readbackPromise = null;
         this.fixedStepSeconds = 1 / 60;
         this.simulationAccumulator = 0;
         this.simulationTimeSeconds = null;
@@ -211,7 +233,8 @@ class WebGPUParticleEngine {
             this._createResources();
             await this._createPipelines();
             await this._initializeAtlas();
-            this._watchDevice();
+            this.deviceLifecycleEpoch += 1;
+            this._watchDevice(this.device, this.deviceLifecycleEpoch);
             this.initialized = true;
             this._emitStatus('ready', {
                 adapter: this.adapterInfo,
@@ -243,25 +266,95 @@ class WebGPUParticleEngine {
         return { vendor: 'unknown', architecture: 'unknown', device: 'unknown', description: 'WebGPU adapter' };
     }
 
-    _watchDevice() {
-        if (!this.device) return;
-        this.device.addEventListener?.('uncapturederror', event => {
-            const message = event && event.error ? event.error.message : 'Uncaptured WebGPU validation error';
-            this._emitStatus('error', { reason: message });
-        });
-        this.device.lost.then(info => this._handleDeviceLost(info));
+    _watchDevice(device = this.device, deviceEpoch = this.deviceLifecycleEpoch) {
+        if (!device) return;
+        if (!this.deviceErrorWatches.has(device)) {
+            this.deviceErrorWatches.add(device);
+            device.addEventListener?.('uncapturederror', event => {
+                if (device !== this.device || this.destroyed) return;
+                const message = event && event.error
+                    ? event.error.message
+                    : 'Uncaptured WebGPU validation error';
+                this._emitStatus('error', { reason: message });
+            });
+        }
+        let watchedEpochs = this.deviceLossWatches.get(device);
+        if (!watchedEpochs) {
+            watchedEpochs = new Set();
+            this.deviceLossWatches.set(device, watchedEpochs);
+        }
+        if (watchedEpochs.size > 0) return;
+        watchedEpochs.add(deviceEpoch);
+        device.lost.then(info => this._handleDeviceLost(info, device, deviceEpoch));
     }
 
-    async _handleDeviceLost(info) {
-        if (this.destroyed) return;
+    _invalidateQueuedGeneration(generation) {
+        const owners = new Set();
+        const retained = [];
+        let dropped = 0;
+        for (const command of this.spawnQueue) {
+            if (command.resourceGeneration !== generation) {
+                retained.push(command);
+                continue;
+            }
+            dropped += 1;
+            if (command.ownerToken) {
+                owners.add(command.ownerToken);
+                this.inactiveSpawnOwners.add(command.ownerToken);
+            }
+        }
+        this.spawnQueue = retained;
+        this.spawnTelemetry.droppedByReason.staleGeneration += dropped;
+        return { dropped, owners: [...owners] };
+    }
+
+    _notifyInvalidatedOwners(ownerTokens, reason) {
+        for (const ownerToken of ownerTokens) {
+            try {
+                this.onOwnerInvalidated(ownerToken, reason);
+            } catch (_) {}
+        }
+    }
+
+    _handleDeviceLost(info, device = this.device, deviceEpoch = this.deviceLifecycleEpoch) {
+        if (this.destroyed || device !== this.device || deviceEpoch !== this.deviceLifecycleEpoch) {
+            return Promise.resolve(false);
+        }
+        if (this.recoveryPromise && this.recoveringDevice === device) {
+            return this.recoveryPromise;
+        }
+
+        const lostResourceGeneration = this.resourceGeneration;
         this.initialized = false;
-        this._emitStatus('device-lost', { reason: info && info.message ? info.message : 'WebGPU device lost' });
-        if (this.deviceRecoveryAttempted) return;
-        this.deviceRecoveryAttempted = true;
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        if (this.destroyed) return;
-        this._destroyResources();
-        await this.init();
+        this.recoveringDevice = device;
+        const invalidated = this._invalidateQueuedGeneration(lostResourceGeneration);
+        this._emitStatus('device-lost', {
+            reason: info && info.message ? info.message : 'WebGPU device lost'
+        });
+        this._notifyInvalidatedOwners(invalidated.owners, 'device-lost');
+
+        const recover = async () => {
+            if (this.recoveryDelayMs > 0) {
+                await new Promise(resolve => setTimeout(resolve, this.recoveryDelayMs));
+            } else {
+                await Promise.resolve();
+            }
+            if (this.destroyed || this.device !== device ||
+                this.deviceLifecycleEpoch !== deviceEpoch) {
+                return false;
+            }
+            this._destroyResources();
+            return this.init();
+        };
+        let trackedPromise;
+        trackedPromise = recover().finally(() => {
+            if (this.recoveryPromise === trackedPromise) {
+                this.recoveryPromise = null;
+                this.recoveringDevice = null;
+            }
+        });
+        this.recoveryPromise = trackedPromise;
+        return trackedPromise;
     }
 
     _emitStatus(state, extra = {}) {
@@ -291,8 +384,6 @@ class WebGPUParticleEngine {
         };
         if (this.timestampEnabled) {
             this.timestampQuerySet = this.device.createQuerySet({ type: 'timestamp', count: 2 });
-            this.deviceResources.timestampResolve = this._createBuffer('fireworks-timestamp-resolve', 16, U.QUERY_RESOLVE | U.COPY_SRC);
-            this.deviceResources.timestampReadback = this._createBuffer('fireworks-timestamp-readback', 16, U.MAP_READ | U.COPY_DST);
         }
         this.buffers = { ...this.deviceResources };
         this.pendingCapacityResources = this._createCapacityResources(
@@ -335,8 +426,10 @@ class WebGPUParticleEngine {
             activeIndexBucketBytes,
             activeIndexBucketStrideBytes,
             generation: 0,
+            inFlightReadbacks: 0,
             readbackPending: false,
             readbackPromise: null,
+            readbackRequest: null,
             readbackLeases: 0,
             retired: false,
             destroyed: false
@@ -406,6 +499,26 @@ class WebGPUParticleEngine {
                 null,
                 device
             );
+            resources.counterSourceBuffer = resources.countersBuffer;
+            resources.counterReadbackBuffer = resources.readback;
+            resources.timestampSourceBuffer = null;
+            resources.timestampReadbackBuffer = null;
+            if (this.timestampEnabled) {
+                resources.timestampSourceBuffer = this._createBuffer(
+                    'fireworks-timestamp-resolve',
+                    16,
+                    U.QUERY_RESOLVE | U.COPY_SRC,
+                    null,
+                    device
+                );
+                resources.timestampReadbackBuffer = this._createBuffer(
+                    'fireworks-timestamp-readback',
+                    16,
+                    U.MAP_READ | U.COPY_DST,
+                    null,
+                    device
+                );
+            }
 
             const freeIndices = new Uint32Array(maxParticles);
             for (let i = 0; i < maxParticles; i++) freeIndices[i] = i;
@@ -441,7 +554,9 @@ class WebGPUParticleEngine {
             counters: resources.countersBuffer,
             coreIndirect: resources.coreIndirectBuffer,
             trailIndirect: resources.trailIndirectBuffer,
-            readback: resources.readback
+            readback: resources.counterReadbackBuffer,
+            timestampResolve: resources.timestampSourceBuffer,
+            timestampReadback: resources.timestampReadbackBuffer
         });
     }
 
@@ -452,11 +567,12 @@ class WebGPUParticleEngine {
     _destroyCapacityResources(resources) {
         if (!resources || resources.destroyed) return;
         resources.retired = true;
-        if (resources.readbackLeases > 0) return;
+        if (resources.inFlightReadbacks > 0) return;
         for (const key of [
             'particleBuffer', 'historyBuffer', 'activeIndicesBuffer',
             'secondaryIndicesBuffer', 'freeIndicesBuffer', 'countersBuffer',
-            'coreIndirectBuffer', 'trailIndirectBuffer', 'readback'
+            'coreIndirectBuffer', 'trailIndirectBuffer', 'readback',
+            'timestampSourceBuffer', 'timestampReadbackBuffer'
         ]) resources[key]?.destroy?.();
         resources.destroyed = true;
     }
@@ -1169,6 +1285,8 @@ class WebGPUParticleEngine {
             ((splitQuality & 3) << 4) | ((materialRole & 15) << 8) | ((style & 3) << 12);
 
         return this._queueSpawn({
+            ownerToken: context.ownerToken,
+            expiresAtMs: context.expiresAtMs,
             lane: context.lane || 'show',
             priority: effectiveLayer.priority,
             required: context.required === undefined ? effectiveLayer.core === true : context.required === true,
@@ -1377,6 +1495,13 @@ class WebGPUParticleEngine {
 
     _queueSpawn(command) {
         if (!this.initialized) return false;
+        const ownerToken = typeof command.ownerToken === 'string' && command.ownerToken
+            ? command.ownerToken
+            : null;
+        if (ownerToken && this.inactiveSpawnOwners.has(ownerToken)) {
+            this.spawnTelemetry.droppedByReason.inactiveOwner += 1;
+            return false;
+        }
         const metadata = SpawnCommandPolicy.normalizeCommandMetadata(command);
         const managedQueue = metadata.admissionManaged || this.spawnQueue.some(item => item.admissionManaged);
         if (!managedQueue && this.spawnQueue.length >= this.maxSpawnCommands) return false;
@@ -1391,6 +1516,15 @@ class WebGPUParticleEngine {
         const textureIndex = Math.max(0, Number(command.textureIndex) || 0);
         const emissionDelay = nonnegativeFinite(command.emissionDelay);
         const emissionSpread = nonnegativeFinite(command.emissionSpread);
+        const nowMs = this._atlasNow();
+        const queuedAtMs = command.queuedAtMs !== null && command.queuedAtMs !== undefined &&
+            command.queuedAtMs !== '' && Number.isFinite(Number(command.queuedAtMs))
+            ? Number(command.queuedAtMs)
+            : nowMs;
+        const expiresAtMs = command.expiresAtMs !== null && command.expiresAtMs !== undefined &&
+            command.expiresAtMs !== '' && Number.isFinite(Number(command.expiresAtMs))
+            ? Number(command.expiresAtMs)
+            : Number.POSITIVE_INFINITY;
         this.spawnQueue.push({
             origin: command.origin || { x: command.x || 0, y: command.y || 0 },
             target: command.target || command.origin || { x: command.x || 0, y: command.y || 0 },
@@ -1432,7 +1566,11 @@ class WebGPUParticleEngine {
             combo: command.combo ?? null,
             bundleCount: command.bundleCount ?? null,
             giftBundleKey: command.giftBundleKey ?? null,
-            ...metadata
+            ...metadata,
+            resourceGeneration: this.resourceGeneration,
+            ownerToken,
+            queuedAtMs,
+            expiresAtMs
         });
         if (textureIndex > 0) {
             const queuedAtMs = this._atlasNow();
@@ -1443,6 +1581,18 @@ class WebGPUParticleEngine {
             });
         }
         return true;
+    }
+
+    cancelQueuedOwner(ownerToken, reason = 'owner-cancelled') {
+        if (typeof ownerToken !== 'string' || !ownerToken) return 0;
+        this.inactiveSpawnOwners.add(ownerToken);
+        const before = this.spawnQueue.length;
+        this.spawnQueue = this.spawnQueue.filter(command => command.ownerToken !== ownerToken);
+        const dropped = before - this.spawnQueue.length;
+        if (dropped > 0 && reason !== 'device-lost') {
+            this.spawnTelemetry.droppedByReason.inactiveOwner += dropped;
+        }
+        return dropped;
     }
 
     _parseColor(color) {
@@ -1459,8 +1609,24 @@ class WebGPUParticleEngine {
         return (red | (green << 8) | (blue << 16) | (alpha << 24)) >>> 0;
     }
 
-    _uploadSpawnCommands() {
-        const queued = this.spawnQueue.splice(0);
+    _uploadSpawnCommands(nowMs = this._atlasNow()) {
+        nowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : this._atlasNow();
+        const queued = [];
+        for (const command of this.spawnQueue.splice(0)) {
+            if (command.resourceGeneration !== this.resourceGeneration) {
+                this.spawnTelemetry.droppedByReason.staleGeneration += 1;
+                continue;
+            }
+            if (command.expiresAtMs <= nowMs) {
+                this.spawnTelemetry.droppedByReason.expired += 1;
+                continue;
+            }
+            if (command.ownerToken && this.inactiveSpawnOwners.has(command.ownerToken)) {
+                this.spawnTelemetry.droppedByReason.inactiveOwner += 1;
+                continue;
+            }
+            queued.push(command);
+        }
         const managedShowCommands = queued.filter(command => (
             command.admissionManaged &&
             command.lane === 'show' &&
@@ -1686,27 +1852,37 @@ class WebGPUParticleEngine {
         composite.setPipeline(this.pipelines.composite); composite.setBindGroup(0, this.postBindGroups.composite); composite.draw(3); composite.end();
 
         const frameCapacityResources = this.capacityResources;
-        if (frameCapacityResources && !this.readbackPromise && !frameCapacityResources.readbackPending &&
+        let frameReadbackRequest = null;
+        if (frameCapacityResources && !frameCapacityResources.readbackPending &&
             performance.now() - this.lastReadbackAt > 1000) {
+            frameReadbackRequest = this._captureReadbackRequest(frameCapacityResources);
             encoder.copyBufferToBuffer(
-                frameCapacityResources.countersBuffer,
+                frameReadbackRequest.counterSource,
                 0,
-                frameCapacityResources.readback,
+                frameReadbackRequest.counterReadback,
                 0,
                 16
             );
-            if (this.timestampEnabled) {
-                encoder.resolveQuerySet(this.timestampQuerySet, 0, 2, this.buffers.timestampResolve, 0);
-                encoder.copyBufferToBuffer(this.buffers.timestampResolve, 0, this.buffers.timestampReadback, 0, 16);
+            if (this.timestampEnabled && frameReadbackRequest.timestampSource &&
+                frameReadbackRequest.timestampReadback) {
+                encoder.resolveQuerySet(this.timestampQuerySet, 0, 2, frameReadbackRequest.timestampSource, 0);
+                encoder.copyBufferToBuffer(
+                    frameReadbackRequest.timestampSource,
+                    0,
+                    frameReadbackRequest.timestampReadback,
+                    0,
+                    16
+                );
             }
-            frameCapacityResources.readbackPending = true;
-            this.readbackPending = true;
             this.lastReadbackAt = performance.now();
         }
-        this.device.queue.submit([encoder.finish()]);
-        if (frameCapacityResources?.readbackPending && !frameCapacityResources.readbackPromise) {
-            this._consumeReadback(frameCapacityResources);
+        try {
+            this.device.queue.submit([encoder.finish()]);
+        } catch (error) {
+            frameReadbackRequest?.release();
+            throw error;
         }
+        if (frameReadbackRequest) this._consumeReadback(frameReadbackRequest);
     }
 
     _drawDepthBuckets(scenePass) {
@@ -1726,60 +1902,128 @@ class WebGPUParticleEngine {
         }
     }
 
-    _consumeReadback(capacityResources = this.capacityResources) {
-        if (this.readbackPromise) return this.readbackPromise;
-        if (!capacityResources || capacityResources.destroyed) return;
-        const readback = capacityResources.readback;
-        const timestampReadback = this.deviceResources?.timestampReadback;
-        capacityResources.readbackLeases += 1;
-        capacityResources.readbackPending = true;
+    _captureReadbackRequest(capacityBundle = this.capacityResources) {
+        if (!capacityBundle || capacityBundle.destroyed || capacityBundle.retired) return null;
+        if (capacityBundle.readbackRequest) return capacityBundle.readbackRequest;
+        const request = {
+            generation: capacityBundle.generation,
+            capacityBundle,
+            counterSource: capacityBundle.counterSourceBuffer || capacityBundle.countersBuffer,
+            counterReadback: capacityBundle.counterReadbackBuffer || capacityBundle.readback,
+            timestampSource: this.timestampEnabled
+                ? capacityBundle.timestampSourceBuffer || null
+                : null,
+            timestampReadback: this.timestampEnabled
+                ? capacityBundle.timestampReadbackBuffer || null
+                : null,
+            device: this.device,
+            promise: null,
+            release: null
+        };
+        let released = false;
+        request.release = () => {
+            if (released) return;
+            released = true;
+            capacityBundle.inFlightReadbacks = Math.max(0, capacityBundle.inFlightReadbacks - 1);
+            capacityBundle.readbackLeases = capacityBundle.inFlightReadbacks;
+            if (capacityBundle.readbackRequest === request) {
+                capacityBundle.readbackRequest = null;
+                capacityBundle.readbackPromise = null;
+                capacityBundle.readbackPending = false;
+            }
+            if (this.readbackPromise === request.promise) this.readbackPromise = null;
+            this.readbackPending = Boolean(this.capacityResources?.readbackPending);
+            if (capacityBundle.retired) this._destroyCapacityResources(capacityBundle);
+        };
+        capacityBundle.inFlightReadbacks += 1;
+        capacityBundle.readbackLeases = capacityBundle.inFlightReadbacks;
+        capacityBundle.readbackPending = true;
+        capacityBundle.readbackRequest = request;
         this.readbackPending = true;
-        let activeParticles = 0;
-        let droppedParticles = 0;
-        let promise;
-        promise = readback.mapAsync(GPUMapMode.READ).then(() => {
-            const values = new Uint32Array(readback.getMappedRange().slice(0));
-            readback.unmap();
-            activeParticles = values[1];
-            droppedParticles = values[2];
-            return this.timestampEnabled && timestampReadback
-                ? timestampReadback.mapAsync(GPUMapMode.READ).then(() => {
-                    const timestamps = new BigUint64Array(timestampReadback.getMappedRange().slice(0));
-                    timestampReadback.unmap();
-                    const milliseconds = timestamps[1] > timestamps[0]
-                        ? Number(timestamps[1] - timestamps[0]) / 1e6
-                        : NaN;
-                    return Number.isFinite(milliseconds) && milliseconds >= 0 && milliseconds <= 250
-                        ? milliseconds
-                        : null;
-                })
-                : null;
-        }).then(gpuFrameMs => {
-            if (this.capacityResources !== capacityResources ||
-                this.resourceGeneration !== capacityResources.generation) return;
-            this.metrics.activeParticles = activeParticles;
-            this.metrics.droppedParticles = droppedParticles;
-            if (this.timestampEnabled) this.metrics.gpuFrameMs = gpuFrameMs;
-            this._emitStatus('ready', {
-                activeParticles, droppedParticles, gpuFrameMs: this.metrics.gpuFrameMs,
-                adapter: this.adapterInfo, format: this.format
-            });
-        }).catch(error => {
-            if (this.capacityResources === capacityResources &&
-                this.resourceGeneration === capacityResources.generation) {
-                this._emitStatus('error', { reason: error.message });
+        return request;
+    }
+
+    _isReadbackRequestCurrent(request) {
+        return Boolean(
+            this.initialized &&
+            !this.destroyed &&
+            this.device === request.device &&
+            this.capacityResources === request.capacityBundle &&
+            this.resourceGeneration === request.generation &&
+            !request.capacityBundle.destroyed
+        );
+    }
+
+    _consumeReadback(capacityResourcesOrRequest = this.capacityResources) {
+        const request = capacityResourcesOrRequest?.capacityBundle
+            ? capacityResourcesOrRequest
+            : capacityResourcesOrRequest?.readbackRequest ||
+                this._captureReadbackRequest(capacityResourcesOrRequest);
+        if (!request) return undefined;
+        if (request.promise) return request.promise;
+
+        const consume = async () => {
+            let activeParticles = 0;
+            let droppedParticles = 0;
+            let gpuFrameMs = null;
+            try {
+                await request.counterReadback.mapAsync(GPUMapMode.READ);
+                try {
+                    const values = new Uint32Array(request.counterReadback.getMappedRange().slice(0));
+                    activeParticles = values[1];
+                    droppedParticles = values[2];
+                } finally {
+                    request.counterReadback.unmap();
+                }
+                if (!this._isReadbackRequestCurrent(request)) return;
+
+                if (request.timestampSource && request.timestampReadback) {
+                    await request.timestampReadback.mapAsync(GPUMapMode.READ);
+                    try {
+                        const timestamps = new BigUint64Array(
+                            request.timestampReadback.getMappedRange().slice(0)
+                        );
+                        const milliseconds = timestamps[1] > timestamps[0]
+                            ? Number(timestamps[1] - timestamps[0]) / 1e6
+                            : NaN;
+                        gpuFrameMs = Number.isFinite(milliseconds) && milliseconds >= 0 &&
+                            milliseconds <= 250
+                            ? milliseconds
+                            : null;
+                    } finally {
+                        request.timestampReadback.unmap();
+                    }
+                    if (!this._isReadbackRequestCurrent(request)) return;
+                }
+
+                this.metrics.activeParticles = activeParticles;
+                this.metrics.droppedParticles = droppedParticles;
+                if (this.timestampEnabled) this.metrics.gpuFrameMs = gpuFrameMs;
+                this._emitStatus('ready', {
+                    activeParticles,
+                    droppedParticles,
+                    gpuFrameMs: this.metrics.gpuFrameMs,
+                    adapter: this.adapterInfo,
+                    format: this.format
+                });
+            } catch (error) {
+                let deviceLost = false;
+                if (this._isReadbackRequestCurrent(request) && request.device?.lost) {
+                    deviceLost = await Promise.race([
+                        request.device.lost.then(() => true, () => true),
+                        new Promise(resolve => setTimeout(() => resolve(false), 0))
+                    ]);
+                }
+                if (!deviceLost && this._isReadbackRequestCurrent(request)) {
+                    this._emitStatus('error', {
+                        reason: error && error.message ? error.message : String(error)
+                    });
+                }
             }
-        }).finally(() => {
-            capacityResources.readbackPending = false;
-            capacityResources.readbackLeases = Math.max(0, capacityResources.readbackLeases - 1);
-            if (capacityResources.retired) this._destroyCapacityResources(capacityResources);
-            if (capacityResources.readbackPromise === promise) capacityResources.readbackPromise = null;
-            if (this.readbackPromise === promise) {
-                this.readbackPromise = null;
-                this.readbackPending = false;
-            }
-        });
-        capacityResources.readbackPromise = promise;
+        };
+        const promise = consume().finally(() => request.release());
+        request.promise = promise;
+        request.capacityBundle.readbackPromise = promise;
         this.readbackPromise = promise;
         return promise;
     }
@@ -1816,6 +2060,9 @@ class WebGPUParticleEngine {
     getMetrics() {
         return {
             ...this.metrics,
+            spawnTelemetry: {
+                droppedByReason: { ...this.spawnTelemetry.droppedByReason }
+            },
             commandAdmission: {
                 current: {
                     ...this.metrics.commandAdmission.current,
@@ -1857,6 +2104,7 @@ class WebGPUParticleEngine {
         this.destroyed = true;
         this.initialized = false;
         this.spawnQueue.length = 0;
+        this.inactiveSpawnOwners.clear();
         this.pendingDegradedLayerCounts = SpawnCommandPolicy.emptyDegradedLayerCounts();
         this.metrics.commandAdmission = {
             current: SpawnCommandPolicy.emptyCommandTelemetry(),

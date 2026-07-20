@@ -919,7 +919,10 @@ class WebGPUFireworksEngine {
             bloomEnabled: this.config.glowEnabled,
             trailsEnabled: this.config.trailsEnabled !== false,
             glowEnabled: this.config.glowEnabled !== false,
-            onStatus: status => this.setStatus(status)
+            onStatus: status => this.setStatus(status),
+            onOwnerInvalidated: (ownerToken, reason) => {
+                this.handleGpuOwnerInvalidated(ownerToken, reason);
+            }
         });
         const initializingRenderer = this.renderer;
         this.rendererReadyPromise = initializingRenderer.init();
@@ -1134,6 +1137,35 @@ class WebGPUFireworksEngine {
         );
     }
 
+    cancelGpuOwner(ownerToken, reason) {
+        if (typeof ownerToken !== 'string' || !ownerToken) return 0;
+        return this.renderer?.cancelQueuedOwner?.(ownerToken, reason) || 0;
+    }
+
+    handleGpuOwnerInvalidated(ownerToken, reason = 'device-lost') {
+        if (typeof ownerToken !== 'string' || !ownerToken) return false;
+        const now = this.getRuntimeNow();
+        if (this.currentFinale?.runtimeToken === ownerToken) {
+            this.failFinale(
+                this.currentFinale.id,
+                new Error(`GPU owner invalidated: ${reason}`),
+                now,
+                { reason }
+            );
+            return true;
+        }
+        if (this.currentPreview?.runtimeToken === ownerToken) {
+            this.failPreview(
+                this.currentPreview.requestId,
+                new Error(`GPU owner invalidated: ${reason}`),
+                now,
+                { reason }
+            );
+            return true;
+        }
+        return false;
+    }
+
     setStatus(status, options = {}) {
         const previousState = this.rendererStatus?.state;
         if (options.transientFrameError === true) this.transientFrameError = true;
@@ -1156,11 +1188,21 @@ class WebGPUFireworksEngine {
         else this.hideDiagnostic();
         if (entersRendererFailure && this.currentFinale) {
             const message = status.reason || `Renderer entered ${status.state}`;
-            this.failFinale(this.currentFinale.id, new Error(message), this.getRuntimeNow());
+            this.failFinale(
+                this.currentFinale.id,
+                new Error(message),
+                this.getRuntimeNow(),
+                { reason: status.state === 'device-lost' ? 'device-lost' : 'renderer-error' }
+            );
         }
         if (entersRendererFailure && this.currentPreview) {
             const message = status.reason || `Renderer entered ${status.state}`;
-            this.failPreview(this.currentPreview.requestId, new Error(message), this.getRuntimeNow());
+            this.failPreview(
+                this.currentPreview.requestId,
+                new Error(message),
+                this.getRuntimeNow(),
+                { reason: status.state === 'device-lost' ? 'device-lost' : 'renderer-error' }
+            );
         }
         if (status.state === 'ready' && !this.currentFinale && !this.currentPreview) {
             this.startNextFinaleIfReady(this.getRuntimeNow());
@@ -1709,6 +1751,8 @@ class WebGPUFireworksEngine {
             const avatarTexture = Number(explosion.assets.avatarTexture) || 0;
             this.renderer.spawnRocket({
                 effectId: plan.id,
+                ownerToken: explosion.ownerToken,
+                expiresAtMs: explosion.finaleEndsAt,
                 lane: plan.lane,
                 priority: plan.priority,
                 required: plan.required,
@@ -1772,6 +1816,8 @@ class WebGPUFireworksEngine {
         const crackleDuration = Math.min(plan.crackleDuration, remainingShowSeconds);
         this.renderer.spawnCrackle({
             effectId: plan.id,
+            ownerToken: explosion.ownerToken,
+            expiresAtMs: explosion.finaleEndsAt,
             lane: plan.lane,
             priority: 'accent',
             required: false,
@@ -1913,6 +1959,7 @@ class WebGPUFireworksEngine {
             priority: 'core',
             required: true,
             beatId,
+            ownerToken: runtimeToken,
             playSound: data.playSound !== false, sound, tier,
             finaleId: data.finaleId || null,
             finaleEndsAt: Number.isFinite(Number(data.finaleEndsAt)) ? Number(data.finaleEndsAt) : null,
@@ -2131,6 +2178,8 @@ class WebGPUFireworksEngine {
             Math.min(sizeProfile.max, sizeProfile.base * requestedScale * explosion.style.sizeScale)
         );
         const common = {
+            ownerToken: explosion.ownerToken,
+            expiresAtMs: explosion.finaleEndsAt,
             lane: explosion.lane,
             priority: explosion.priority,
             required: explosion.required,
@@ -2204,6 +2253,8 @@ class WebGPUFireworksEngine {
         this.renderer.spawnRocket({
             effectId: event.shellId,
             correlationId: event.shellId,
+            ownerToken: event.runtimeToken,
+            expiresAtMs: event.finaleEndsAt,
             lane: 'show',
             priority: 'core',
             required: true,
@@ -2244,6 +2295,8 @@ class WebGPUFireworksEngine {
         };
         const context = {
             ...event.context,
+            ownerToken: event.runtimeToken,
+            expiresAtMs: event.finaleEndsAt,
             degradationPolicy: this.getAdaptiveLayerPolicy(event.context.activeLayerLoad)
         };
         const spawned = this.renderer.spawnLayer(layer, context);
@@ -2542,6 +2595,7 @@ class WebGPUFireworksEngine {
     completePreview(requestId, now = this.getRuntimeNow()) {
         const preview = this.currentPreview;
         if (!preview || preview.requestId !== requestId) return false;
+        this.cancelGpuOwner(preview.runtimeToken, 'preview-completed');
         this.timelineQueue = this.timelineQueue.filter(event => !(
             event.runtimeKind === 'preview' && event.previewRequestId === requestId
         ));
@@ -2564,6 +2618,7 @@ class WebGPUFireworksEngine {
         try {
             const message = error?.message || String(error || 'Unknown preview renderer error');
             console.error(`[WebGPU Fireworks] Preview ${requestId} failed:`, error);
+            this.cancelGpuOwner(preview.runtimeToken, options.reason || 'preview-failed');
             this.timelineQueue = this.timelineQueue.filter(event => !(
                 event.runtimeKind === 'preview' && event.previewRequestId === requestId
             ));
@@ -2796,6 +2851,7 @@ class WebGPUFireworksEngine {
 
     completeFinale(finaleId, now = this.getRuntimeNow()) {
         if (!this.currentFinale || this.currentFinale.id !== finaleId) return false;
+        this.cancelGpuOwner(this.currentFinale.runtimeToken, 'finale-completed');
         const controlEvents = new Set(['finale-launch', 'finale-phase', 'finale-complete', 'finale-end-card-complete']);
         this.timelineQueue = this.timelineQueue.filter(event => (
             event.finaleId !== finaleId || (!controlEvents.has(event.type) && !event.type.startsWith('finale-v2-'))
@@ -2823,13 +2879,19 @@ class WebGPUFireworksEngine {
         return true;
     }
 
-    failFinale(finaleId, error, now = this.getRuntimeNow()) {
+    failFinale(finaleId, error, now = this.getRuntimeNow(), options = {}) {
         this.ensureFinaleRuntimeState();
         if (!finaleId || this.failingFinaleIds.has(finaleId)) return false;
         this.failingFinaleIds.add(finaleId);
         try {
             const message = error?.message || String(error || 'Unknown finale renderer error');
             console.error(`[WebGPU Fireworks] Finale ${finaleId || 'unknown'} failed:`, error);
+            if (this.currentFinale?.id === finaleId) {
+                this.cancelGpuOwner(
+                    this.currentFinale.runtimeToken,
+                    options.reason || 'finale-failed'
+                );
+            }
             this.releaseFinaleEndCard(finaleId, { flushDeferred: true });
             this.timelineQueue = this.timelineQueue.filter(event => event.finaleId !== finaleId);
             for (const [effectId, plan] of this.effectPlans.entries()) {

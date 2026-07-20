@@ -5,6 +5,14 @@ const vm = require('vm');
 const pluginRoot = path.join(__dirname, '..', 'plugins', 'webgpu-fireworks');
 const read = relative => fs.readFileSync(path.join(pluginRoot, relative), 'utf8');
 const WebGPUParticleEngine = require('../plugins/webgpu-fireworks/gpu/webgpu-particle-engine');
+const {
+  createFakeGpu,
+  makeRenderer,
+  restoreGpuGlobals,
+  waitForRecovery,
+} = require('./helpers/webgpu-fireworks-gpu-harness');
+
+afterEach(() => restoreGpuGlobals());
 
 describe('WebGPU Fireworks native migration', () => {
   const rendererSource = read('gpu/webgpu-particle-engine.js');
@@ -147,6 +155,38 @@ describe('WebGPU Fireworks native migration', () => {
     engine._emitStatus('ready');
     expect(statuses.at(-1)).toMatchObject({ state: 'ready', backend: 'webgpu' });
     expect(statuses.at(-1)).not.toHaveProperty('reason');
+  });
+
+  test('resets the recovery latch after each successful device replacement', async () => {
+    const gpu = createFakeGpu();
+    const statuses = [];
+    const engine = makeRenderer(gpu, {
+      recoveryDelayMs: 0,
+      onStatus: status => statuses.push(status.state)
+    });
+    await engine.init();
+
+    gpu.loseDevice(0, { reason: 'unknown', message: 'first device loss' });
+    await waitForRecovery(engine);
+    expect(engine.recoveryPromise).toBeNull();
+    expect(engine.recoveringDevice).toBeNull();
+
+    gpu.loseDevice(1, { reason: 'unknown', message: 'second device loss' });
+    await waitForRecovery(engine);
+
+    expect(statuses.filter(state => state === 'device-lost')).toHaveLength(2);
+    expect(statuses.filter(state => state === 'ready')).toHaveLength(3);
+    expect(engine.device).toBe(gpu.devices[2]);
+  });
+
+  test('threads finale and preview runtime ownership into every queued GPU spawn family', () => {
+    expect(orchestrationSource).toContain('onOwnerInvalidated: (ownerToken, reason) =>');
+    expect(orchestrationSource).toContain('ownerToken: runtimeToken');
+    expect(orchestrationSource).toContain('ownerToken: explosion.ownerToken');
+    expect(orchestrationSource).toContain('ownerToken: event.runtimeToken');
+    expect(rendererSource).toContain('ownerToken: context.ownerToken');
+    expect(orchestrationSource).toContain("this.cancelGpuOwner(preview.runtimeToken, 'preview-completed')");
+    expect(orchestrationSource).toContain("this.cancelGpuOwner(this.currentFinale.runtimeToken, 'finale-completed')");
   });
 
   test('orchestrates visual explosion and audio in the same CPU frame', () => {

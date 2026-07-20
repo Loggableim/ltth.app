@@ -215,6 +215,55 @@ function assertCapacityResult(result) {
   if (result.cleanupComplete !== true) throw new Error('capacity renderer cleanup did not complete');
 }
 
+function assertRecoveryResult(result) {
+  if (!result || result.skipped === true) throw new Error('recovery case is missing or skipped');
+  if (result.deviceCount !== 3 || result.distinctDeviceCount !== 3) {
+    throw new Error(
+      `recovery must observe three distinct devices, got ${result.deviceCount}/${result.distinctDeviceCount}`
+    );
+  }
+  if (result.recoveries !== 2) {
+    throw new Error(`recovery count must be 2, got ${result.recoveries}`);
+  }
+  if (!Array.isArray(result.deviceIdentities) || result.deviceIdentities.length !== 3 ||
+      result.deviceIdentities.some(entry => !entry?.id || entry.distinctFromPrevious !== true)) {
+    throw new Error(`recovery device identities are incomplete: ${JSON.stringify(result.deviceIdentities)}`);
+  }
+  if (!Array.isArray(result.generations) || result.generations.length !== 3 ||
+      result.generations.some((generation, index) => (
+        !Number.isInteger(generation) || (index > 0 && generation <= result.generations[index - 1])
+      ))) {
+    throw new Error(`recovery generations are not strictly increasing: ${JSON.stringify(result.generations)}`);
+  }
+  if (!Array.isArray(result.recoveredGenerations) ||
+      JSON.stringify(result.recoveredGenerations) !== JSON.stringify(result.generations.slice(1))) {
+    throw new Error(
+      `recovered generation evidence mismatch: ${JSON.stringify(result.recoveredGenerations)}`
+    );
+  }
+  if (result.staleReadbacksApplied !== 0) {
+    throw new Error(`recovery applied ${result.staleReadbacksApplied} stale readbacks`);
+  }
+  if (result.staleCommandsUploaded !== 0) {
+    throw new Error(`recovery uploaded ${result.staleCommandsUploaded} stale commands`);
+  }
+  if (result.staleCommandsDropped !== 2) {
+    throw new Error(`recovery must drop exactly two stale commands, got ${result.staleCommandsDropped}`);
+  }
+  if (!Array.isArray(result.ownerInvalidations) || result.ownerInvalidations.length !== 2 ||
+      new Set(result.ownerInvalidations.map(entry => entry.ownerToken)).size !== 2 ||
+      result.ownerInvalidations.some(entry => entry.reason !== 'device-lost')) {
+    throw new Error(`recovery owner invalidations mismatch: ${JSON.stringify(result.ownerInvalidations)}`);
+  }
+  if (!Array.isArray(result.pendingReadbacksAtLoss) ||
+      JSON.stringify(result.pendingReadbacksAtLoss) !== JSON.stringify([true, true])) {
+    throw new Error(
+      `recovery did not observe a pending native readback at both losses: ${JSON.stringify(result.pendingReadbacksAtLoss)}`
+    );
+  }
+  if (result.cleanupComplete !== true) throw new Error('recovery renderer cleanup did not complete');
+}
+
 async function collectCleanupFailure(failures, label, cleanup) {
   try {
     await cleanup();
@@ -301,10 +350,12 @@ async function main() {
       if (skippedCase) throw new Error(`all cannot pass while ${skippedCase} is skipped`);
       assertAtlasResult(cases.atlas);
       assertCapacityResult(cases.capacity);
+      assertRecoveryResult(cases.recovery);
       payload = { hardware, cases };
     } else {
       if (caseName === 'atlas') assertAtlasResult(pageEvidence.result);
       if (caseName === 'capacity') assertCapacityResult(pageEvidence.result);
+      if (caseName === 'recovery') assertRecoveryResult(pageEvidence.result);
       payload = { hardware, result: pageEvidence.result };
     }
     terminalPassLine = `PASS ${caseName} ${JSON.stringify(payload)}`;

@@ -67,6 +67,32 @@ const uploadedSeeds = raw => {
 };
 
 describe('WebGPU Fireworks spawn command lane admission', () => {
+  test('treats a null owner expiry as unbounded for ordinary live effects', () => {
+    const { engine, uploads } = makeEngine();
+    expect(engine._queueSpawn({
+      shape: 'sparkle',
+      count: 1,
+      seed: 77,
+      effectId: 'live:null-expiry',
+      expiresAtMs: null,
+    })).toBe(true);
+
+    expect(engine._uploadSpawnCommands(1_000)).toEqual({ count: 1, maxParticles: 1 });
+    expect(uploadedSeeds(uploads[0])).toEqual([77]);
+    expect(engine.spawnTelemetry.droppedByReason.expired).toBe(0);
+  });
+
+  test('drops a stale-generation entry before admitting an otherwise current command', () => {
+    const { engine, uploads } = makeEngine();
+    queueCommand(engine, { seed: 1, admissionBatchId: 100 });
+    queueCommand(engine, { seed: 2, admissionBatchId: 200 });
+    engine.spawnQueue[0].resourceGeneration = engine.resourceGeneration - 1;
+
+    expect(engine._uploadSpawnCommands(1_000)).toEqual({ count: 1, maxParticles: 1 });
+    expect(uploadedSeeds(uploads[0])).toEqual([2]);
+    expect(engine.spawnTelemetry.droppedByReason.staleGeneration).toBe(1);
+  });
+
   test('uploads exactly 28 show commands plus four reserved gift commands', () => {
     const { engine, uploads } = makeEngine();
     for (let seed = 1; seed <= 28; seed++) queueCommand(engine, { seed });
