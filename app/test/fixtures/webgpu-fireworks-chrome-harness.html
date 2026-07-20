@@ -60,7 +60,255 @@
 
     const ready = Promise.all([loadScripts(), initializeWebGpu()]).then(([, gpu]) => gpu);
 
-    async function runAtlasCase() { return { skipped: true, owner: 'Task 1' }; }
+    function atlasColor(index) {
+      const low = index & 255;
+      const high = (index >> 8) & 255;
+      return [
+        (low * 73 + 31) & 255,
+        (high * 67 + 83) & 255,
+        ((low ^ high) * 109 + 47) & 255
+      ];
+    }
+
+    async function makeSolidImage(index) {
+      const color = atlasColor(index);
+      const pixels = new Uint8ClampedArray(8 * 8 * 4);
+      for (let offset = 0; offset < pixels.length; offset += 4) {
+        pixels[offset] = color[0];
+        pixels[offset + 1] = color[1];
+        pixels[offset + 2] = color[2];
+        pixels[offset + 3] = 255;
+      }
+      return { color, image: await createImageBitmap(new ImageData(pixels, 8, 8)) };
+    }
+
+    async function createAtlasSampler(renderer) {
+      const device = renderer.device;
+      const module = device.createShaderModule({
+        label: 'fireworks-atlas-stress-sampler-wgsl',
+        code: `
+@group(0) @binding(0) var atlasTexture: texture_2d<f32>;
+@group(0) @binding(1) var atlasSampler: sampler;
+@group(0) @binding(2) var<storage, read> sampleUvs: array<vec2f>;
+@vertex fn sampleVertex(@builtin(vertex_index) id: u32) -> @builtin(position) vec4f {
+  let positions = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));
+  return vec4f(positions[id], 0.0, 1.0);
+}
+@fragment fn sampleFragment(@builtin(position) position: vec4f) -> @location(0) vec4f {
+  return textureSampleLevel(atlasTexture, atlasSampler, sampleUvs[u32(position.x)], 0.0);
+}`
+      });
+      const compilation = await module.getCompilationInfo();
+      const errors = compilation.messages.filter(message => message.type === 'error');
+      if (errors.length) throw new Error(`atlas sampler WGSL: ${errors.map(error => error.message).join('; ')}`);
+      const pipeline = await device.createRenderPipelineAsync({
+        label: 'fireworks-atlas-stress-sampler',
+        layout: 'auto',
+        vertex: { module, entryPoint: 'sampleVertex' },
+        fragment: { module, entryPoint: 'sampleFragment', targets: [{ format: 'rgba8unorm' }] },
+        primitive: { topology: 'triangle-list' }
+      });
+
+      return async function sampleAtlas(entries) {
+        const positions = [];
+        for (const entry of entries) {
+          const slot = entry.textureIndex - 1;
+          const x = (slot % 8) * 128;
+          const y = Math.floor(slot / 8) * 128;
+          for (const [sampleX, sampleY] of [
+            [64, 64], [6.5, 64], [121.5, 64], [64, 6.5], [64, 121.5]
+          ]) {
+            positions.push((x + sampleX) / 1024, (y + sampleY) / 1024);
+          }
+        }
+
+        const sampleCount = positions.length / 2;
+        const inputSize = positions.length * Float32Array.BYTES_PER_ELEMENT;
+        const bytesPerRow = Math.ceil(sampleCount * 4 / 256) * 256;
+        const input = device.createBuffer({
+          label: 'fireworks-atlas-stress-sample-uvs',
+          size: inputSize,
+          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        });
+        const output = device.createTexture({
+          label: 'fireworks-atlas-stress-sample-output',
+          size: [sampleCount, 1],
+          format: 'rgba8unorm',
+          usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC
+        });
+        const readback = device.createBuffer({
+          label: 'fireworks-atlas-stress-sample-readback',
+          size: bytesPerRow,
+          usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+        });
+        try {
+          device.queue.writeBuffer(input, 0, new Float32Array(positions));
+          const bindGroup = device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(0),
+            entries: [
+              { binding: 0, resource: renderer.atlasTexture.createView() },
+              { binding: 1, resource: renderer.atlasSampler },
+              { binding: 2, resource: { buffer: input } }
+            ]
+          });
+          const encoder = device.createCommandEncoder({ label: 'fireworks-atlas-stress-sample-encoder' });
+          const pass = encoder.beginRenderPass({
+            label: 'fireworks-atlas-stress-sample-pass',
+            colorAttachments: [{
+              view: output.createView(),
+              clearValue: { r: 0, g: 0, b: 0, a: 0 },
+              loadOp: 'clear',
+              storeOp: 'store'
+            }]
+          });
+          pass.setPipeline(pipeline);
+          pass.setBindGroup(0, bindGroup);
+          pass.draw(3);
+          pass.end();
+          encoder.copyTextureToBuffer(
+            { texture: output },
+            { buffer: readback, bytesPerRow, rowsPerImage: 1 },
+            [sampleCount, 1]
+          );
+          device.queue.submit([encoder.finish()]);
+          await readback.mapAsync(GPUMapMode.READ);
+          return new Uint8Array(readback.getMappedRange().slice(0), 0, sampleCount * 4);
+        } finally {
+          if (readback.mapState === 'mapped') readback.unmap();
+          input.destroy();
+          output.destroy();
+          readback.destroy();
+        }
+      };
+    }
+
+    async function runAtlasCase() {
+      const uniqueUrls = new Set();
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 360;
+      let nowMs = 1_000;
+      const renderer = new WebGPUParticleEngine(canvas, {
+        now: () => nowMs,
+        maxParticles: 256,
+        trailsEnabled: false,
+        glowEnabled: false,
+        bloomEnabled: false
+      });
+      let result = null;
+      try {
+        if (!await renderer.init()) throw new Error(`atlas renderer failed to initialize: ${JSON.stringify(renderer.getMetrics())}`);
+        const sampleAtlas = await createAtlasSampler(renderer);
+        let maxLiveSlots = 0;
+        let fallbackWhilePinned = 0;
+        let reusedSlots = 0;
+        let releasedPins = 0;
+        let centerSamples = 0;
+        let edgeSamples = 0;
+        let neighborBleedPixels = 0;
+
+        const upload = async index => {
+          const key = `atlas-solid-${index}`;
+          uniqueUrls.add(key);
+          const { color, image } = await makeSolidImage(index);
+          try {
+            const previousOwners = new Map(
+              [...renderer.atlasEntries.values()].map(entry => [entry.textureIndex, entry.key])
+            );
+            const textureIndex = await renderer.uploadImage(key, image);
+            if (textureIndex > 0 && previousOwners.has(textureIndex) && previousOwners.get(textureIndex) !== key) {
+              reusedSlots += 1;
+            }
+            maxLiveSlots = Math.max(maxLiveSlots, renderer.atlasEntries.size);
+            if (renderer.atlasEntries.size > 63) throw new Error('atlas exceeded 63 live external mappings');
+            return { key, color, textureIndex };
+          } finally {
+            image.close();
+          }
+        };
+
+        const renderQueued = async entries => {
+          for (let index = 0; index < entries.length; index += 1) {
+            const entry = entries[index];
+            if (!renderer._queueSpawn({
+              shape: 'image', count: 1, textureIndex: entry.textureIndex,
+              duration: 0.05, particleDuration: 0.05, secondary: false,
+              seed: index + 1, effectId: entry.key
+            })) throw new Error(`atlas image command was rejected for ${entry.key}`);
+            if ((index + 1) % 32 === 0) renderer.render(1 / 60, nowMs / 1_000);
+          }
+          renderer.render(1 / 60, nowMs / 1_000);
+          await renderer.device.queue.onSubmittedWorkDone();
+        };
+
+        const releasePins = async () => {
+          const releaseAt = Math.max(...[...renderer.atlasEntries.values()].map(entry => entry.inUseUntilMs));
+          while (nowMs <= releaseAt) {
+            nowMs += 50;
+            renderer.render(0.05, nowMs / 1_000);
+          }
+          await renderer.device.queue.onSubmittedWorkDone();
+          const stillPinned = [...renderer.atlasEntries.values()].filter(entry => entry.inUseUntilMs > nowMs);
+          if (stillPinned.length) throw new Error(`${stillPinned.length} atlas slots remained pinned after release rendering`);
+          releasedPins += renderer.atlasEntries.size;
+        };
+
+        const verifySamples = async entries => {
+          const samples = await sampleAtlas(entries);
+          entries.forEach((entry, entryIndex) => {
+            const expected = entry.color;
+            for (let sampleIndex = 0; sampleIndex < 5; sampleIndex += 1) {
+              const offset = (entryIndex * 5 + sampleIndex) * 4;
+              const matches = samples[offset + 3] >= 240 && expected.every((value, channel) => (
+                Math.abs(samples[offset + channel] - value) <= 15
+              ));
+              if (!matches) neighborBleedPixels += 1;
+              if (sampleIndex === 0) centerSamples += 1;
+              else edgeSamples += 1;
+            }
+          });
+        };
+
+        const initial = [];
+        for (let index = 0; index < 63; index += 1) initial.push(await upload(index));
+        await renderQueued(initial);
+
+        const pinnedOverflow = await upload(63);
+        if (pinnedOverflow.textureIndex === 0) fallbackWhilePinned += 1;
+        else throw new Error('atlas overwrote a slot while all 63 external mappings were pinned');
+        await releasePins();
+
+        let reusedBatch = [];
+        for (let index = 63; index < 1_000; index += 1) {
+          nowMs += 1;
+          const entry = await upload(index);
+          if (entry.textureIndex === 0) throw new Error(`atlas did not reuse a released slot for ${entry.key}`);
+          reusedBatch.push(entry);
+          if (reusedBatch.length === 63 || index === 999) {
+            await renderQueued(reusedBatch);
+            await verifySamples(reusedBatch);
+            await releasePins();
+            reusedBatch = [];
+          }
+        }
+
+        result = {
+          uniqueUrls: uniqueUrls.size,
+          maxLiveSlots,
+          fallbackWhilePinned,
+          reusedSlots,
+          releasedPins,
+          centerSamples,
+          edgeSamples,
+          neighborBleedPixels,
+          cleanupComplete: false
+        };
+      } finally {
+        renderer.destroy();
+        if (result) result.cleanupComplete = true;
+      }
+      return result;
+    }
     async function runCapacityCase() { return { skipped: true, owner: 'Task 2' }; }
     async function runRecoveryCase() { return { skipped: true, owner: 'Task 3' }; }
     async function runAdmissionEnvelopeCase() { return { skipped: true, owner: 'Task 4' }; }

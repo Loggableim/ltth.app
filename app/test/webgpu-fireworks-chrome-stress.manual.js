@@ -17,6 +17,7 @@ const ACCEPTED_CASES = new Set([...CASE_NAMES, 'all']);
 const FIXTURE_PATH = path.join(__dirname, 'fixtures', 'webgpu-fireworks-chrome-harness.html');
 const APP_ROOT = path.resolve(__dirname, '..');
 const PLUGIN_ROOT = path.join(APP_ROOT, 'plugins', 'webgpu-fireworks');
+const POLICY_SCRIPT_PATH = '/plugins/webgpu-fireworks/gpu/spawn-command-policy.js';
 const SCRIPT_PATH = '/plugins/webgpu-fireworks/gpu/webgpu-particle-engine.js';
 
 function requireCaseName(argv) {
@@ -138,6 +139,22 @@ function assertAdapter(adapterInfo) {
   }
 }
 
+function assertAtlasResult(result) {
+  if (!result || result.skipped === true) throw new Error('atlas case is missing or skipped');
+  if (result.uniqueUrls !== 1000) throw new Error(`atlas uniqueUrls must be 1000, got ${result.uniqueUrls}`);
+  if (result.maxLiveSlots !== 63) throw new Error(`atlas maxLiveSlots must be 63, got ${result.maxLiveSlots}`);
+  if (!(result.fallbackWhilePinned > 0)) throw new Error('atlas did not prove pinned fallback behavior');
+  if (!(result.reusedSlots > 0)) throw new Error('atlas did not prove released-slot reuse');
+  if (!(result.releasedPins > 0)) throw new Error('atlas did not render long enough to release pins');
+  if (!(result.centerSamples > 0 && result.edgeSamples > 0)) {
+    throw new Error('atlas did not sample both tile centers and inner edges');
+  }
+  if (result.neighborBleedPixels !== 0) {
+    throw new Error(`atlas detected ${result.neighborBleedPixels} neighbor-contaminated samples`);
+  }
+  if (result.cleanupComplete !== true) throw new Error('atlas renderer cleanup did not complete');
+}
+
 async function collectCleanupFailure(failures, label, cleanup) {
   try {
     await cleanup();
@@ -184,6 +201,7 @@ async function main() {
 
     const address = server.address();
     const fixtureUrl = new URL(`http://127.0.0.1:${address.port}/webgpu-fireworks-chrome-harness.html`);
+    fixtureUrl.searchParams.append('script', POLICY_SCRIPT_PATH);
     fixtureUrl.searchParams.append('script', SCRIPT_PATH);
     await page.goto(fixtureUrl.href, { waitUntil: 'load' });
     const pageEvidence = await page.evaluate(name => window.runWebGpuFireworksCase(name), caseName);
@@ -223,6 +241,7 @@ async function main() {
       if (skippedCase) throw new Error(`all cannot pass while ${skippedCase} is skipped`);
       payload = { hardware, cases };
     } else {
+      if (caseName === 'atlas') assertAtlasResult(pageEvidence.result);
       payload = { hardware, result: pageEvidence.result };
     }
     terminalPassLine = `PASS ${caseName} ${JSON.stringify(payload)}`;
@@ -266,5 +285,8 @@ async function main() {
 
 main().catch(error => {
   console.error(error && error.stack ? error.stack : error);
+  if (error instanceof AggregateError) {
+    for (const inner of error.errors) console.error(inner && inner.stack ? inner.stack : inner);
+  }
   process.exitCode = 1;
 });

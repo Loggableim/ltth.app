@@ -860,6 +860,9 @@ class WebGPUFireworksEngine {
         this.giftBacklog = new Map();
         this.giftDrainDue = null;
         this.imageCache = new Map();
+        this.imageCacheLimit = 64;
+        this.imageLoadTimeoutMs = 5_000;
+        this.failedImageWarnings = new Set();
         const query = new URLSearchParams(window.location.search);
         this.isBenchmark = query.get('benchmark') === 'true';
         this.benchmarkSessionId = this.isBenchmark
@@ -1896,28 +1899,132 @@ class WebGPUFireworksEngine {
     async prepareImages(data) {
         const result = { giftTexture: 0, avatarTexture: 0, avatarChance: Math.max(0, Math.min(1, Number(data.avatarParticleChance ?? this.config.avatarParticleChance ?? 0.3))) };
         if (data.giftImage) {
-            const image = await this.loadImage(data.giftImage);
-            if (image) result.giftTexture = await this.renderer.uploadImage(`gift:${data.giftImage}`, image);
+            let image = null;
+            try {
+                const source = await this.loadImage(data.giftImage);
+                if (source) {
+                    image = source.width || source.naturalWidth || source.videoWidth
+                        ? source
+                        : await this._decodeImageSource(source);
+                    if (!image) throw new Error('image decode returned no drawable');
+                    result.giftTexture = await this.renderer.uploadImage(`gift:${data.giftImage}`, image);
+                }
+            } catch (error) {
+                this._warnImageFailure(data.giftImage, error);
+            } finally {
+                image?.close?.();
+            }
         }
         if (data.userAvatar) {
-            const image = await this.loadImage(data.userAvatar);
-            if (image) result.avatarTexture = await this.renderer.uploadImage(`avatar:${data.userAvatar}`, image);
+            let image = null;
+            try {
+                const source = await this.loadImage(data.userAvatar);
+                if (source) {
+                    image = source.width || source.naturalWidth || source.videoWidth
+                        ? source
+                        : await this._decodeImageSource(source);
+                    if (!image) throw new Error('image decode returned no drawable');
+                    result.avatarTexture = await this.renderer.uploadImage(`avatar:${data.userAvatar}`, image);
+                }
+            } catch (error) {
+                this._warnImageFailure(data.userAvatar, error);
+            } finally {
+                image?.close?.();
+            }
         }
         return result;
     }
 
-    async loadImage(url) {
+    _warnImageFailure(url, error) {
+        if (!this.failedImageWarnings) this.failedImageWarnings = new Set();
+        if (!this.failedImageWarnings.has(url)) {
+            this.failedImageWarnings.add(url);
+            const reason = error && error.message ? error.message : String(error);
+            console.warn(`[WebGPU Fireworks] Image "${url}" could not be loaded (${reason}). Using the built-in fallback.`);
+        }
+    }
+
+    loadImage(url, { timeoutMs = this.imageLoadTimeoutMs } = {}) {
         if (!url || /^(javascript|data|vbscript|file|about):/i.test(url)) return null;
-        if (this.imageCache.has(url)) return this.imageCache.get(url);
-        const promise = new Promise(resolve => {
-            const image = new Image();
-            image.crossOrigin = 'anonymous';
-            image.onload = () => resolve(image);
-            image.onerror = () => resolve(null);
-            image.src = url;
+        if (!this.imageCache) this.imageCache = new Map();
+        const nowMs = Date.now();
+        const cached = this.imageCache.get(url);
+        if (cached) {
+            cached.lastUsedAtMs = nowMs;
+            return cached.sourcePromise;
+        }
+
+        const cacheLimit = Math.max(1, Number(this.imageCacheLimit) || 64);
+        let shouldCache = true;
+        if (this.imageCache.size >= cacheLimit) {
+            let lruUrl = null;
+            let lruRecord = null;
+            for (const [cachedUrl, record] of this.imageCache) {
+                if (record.state !== 'fulfilled') continue;
+                if (!lruRecord || record.lastUsedAtMs < lruRecord.lastUsedAtMs) {
+                    lruUrl = cachedUrl;
+                    lruRecord = record;
+                }
+            }
+            if (lruUrl !== null) this.imageCache.delete(lruUrl);
+            else shouldCache = false;
+        }
+
+        const sourcePromise = this._fetchImageSourceWithTimeout(url, timeoutMs);
+        if (!shouldCache) return sourcePromise;
+
+        const record = { sourcePromise, state: 'pending', lastUsedAtMs: nowMs };
+        this.imageCache.set(url, record);
+        sourcePromise.then(
+            () => { record.state = 'fulfilled'; },
+            () => {
+                const current = this.imageCache.get(url);
+                if (current && current.sourcePromise === sourcePromise) this.imageCache.delete(url);
+            }
+        );
+        return sourcePromise;
+    }
+
+    _fetchImageSourceWithTimeout(url, timeoutMs) {
+        const durationMs = Math.max(1, Number(timeoutMs) || Number(this.imageLoadTimeoutMs) || 5_000);
+        return new Promise((resolve, reject) => {
+            let settled = false;
+            const settle = (handler, value) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                handler(value);
+            };
+            const timer = setTimeout(() => {
+                settle(reject, new Error(`Image source request timed out after ${durationMs}ms: ${url}`));
+            }, durationMs);
+            Promise.resolve()
+                .then(() => this._fetchImageSource(url))
+                .then(
+                    source => {
+                        if (!source) {
+                            settle(reject, new Error(`Image source request returned no data: ${url}`));
+                            return;
+                        }
+                        settle(resolve, source);
+                    },
+                    error => settle(reject, error)
+                );
         });
-        this.imageCache.set(url, promise);
-        return promise;
+    }
+
+    async _fetchImageSource(url) {
+        const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
+        if (!response.ok) throw new Error(`Image request failed with HTTP ${response.status}: ${url}`);
+        return response.blob();
+    }
+
+    _decodeImageSource(source) {
+        if (source && (source.width || source.naturalWidth || source.videoWidth)) return source;
+        if (typeof createImageBitmap !== 'function') {
+            throw new Error('createImageBitmap is unavailable for image decoding');
+        }
+        return createImageBitmap(source);
     }
 
     processExplosion(explosion, plan = null, plannedAt = performance.now(), actualAt = performance.now()) {
@@ -3006,6 +3113,7 @@ class WebGPUFireworksEngine {
         this.effectPlans.clear();
         this.activeShows.clear();
         this.imageCache.clear();
+        this.failedImageWarnings?.clear();
         this.finaleQueue.length = 0;
         this.finaleIds.clear();
         this.currentFinale = null;

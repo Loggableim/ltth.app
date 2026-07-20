@@ -14,6 +14,9 @@ const V2_STROBE = 1 << 3;
 const V2_MARKER = 1 << 15;
 const DEPTH_METADATA_MARKER = 1 << 3;
 const DEPTH_BUCKET_COUNT = 3;
+const ATLAS_SLOT_COUNT = 64;
+const EXTERNAL_ATLAS_SLOT_COUNT = ATLAS_SLOT_COUNT - 1;
+const ATLAS_RELEASE_GRACE_MS = 1_000;
 const V2_PRIMITIVE_IDS = Object.freeze({
     radial: 10,
     ring: 11,
@@ -40,6 +43,11 @@ function clampColorComponent(value) {
     const component = Number(value);
     if (!Number.isFinite(component)) return 0;
     return Math.max(0, Math.min(1, component));
+}
+
+function nonnegativeFinite(value) {
+    const number = Number(value);
+    return Number.isFinite(number) ? Math.max(0, number) : 0;
 }
 
 function parseColor(color) {
@@ -120,13 +128,15 @@ class WebGPUParticleEngine {
         this.deviceRecoveryAttempted = false;
         this.spawnQueue = [];
         this.pendingDegradedLayerCounts = SpawnCommandPolicy.emptyDegradedLayerCounts();
-        this.atlasSlots = new Map();
-        this.atlasSources = new Map();
-        this.nextAtlasSlot = 1; // Slot zero is the neutral paw sprite.
+        this.atlasEntries = new Map();
+        this.atlasSlotOwners = Array(EXTERNAL_ATLAS_SLOT_COUNT + 1).fill(null);
+        this.atlasAwaitingFirstUse = new Set();
+        this.now = typeof options.now === 'function'
+            ? options.now
+            : () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
         this.atlasSize = 1024;
         this.atlasSlotSize = 128;
         this.atlasGutter = 6;
-        this.atlasMipLevels = Math.floor(Math.log2(this.atlasSize)) + 1;
         this.atlasSlotsPerRow = this.atlasSize / this.atlasSlotSize;
         this.logicalWidth = canvas.width || 1920;
         this.logicalHeight = canvas.height || 1080;
@@ -296,12 +306,12 @@ class WebGPUParticleEngine {
         this.atlasTexture = this.device.createTexture({
             label: 'fireworks-atlas',
             size: [this.atlasSize, this.atlasSize, 1],
-            mipLevelCount: this.atlasMipLevels,
+            mipLevelCount: 1,
             format: 'rgba8unorm',
             usage: T.TEXTURE_BINDING | T.COPY_DST | T.RENDER_ATTACHMENT
         });
         this.atlasSampler = this.device.createSampler({
-            magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear',
+            magFilter: 'linear', minFilter: 'linear',
             addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge'
         });
         this._createFrameTextures();
@@ -416,7 +426,6 @@ class WebGPUParticleEngine {
             color: { srcFactor: 'one', dstFactor: 'one', operation: 'add' },
             alpha: { srcFactor: 'one', dstFactor: 'one', operation: 'add' }
         });
-        this.pipelines.atlasMipmap = await makePost('atlasDownsample', 'rgba8unorm');
         this.pipelines.composite = await makePost('composite', this.format);
 
         this.computeBindGroup = this.device.createBindGroup({ layout: computeLayout, entries: [
@@ -483,8 +492,10 @@ class WebGPUParticleEngine {
     }
 
     async _initializeAtlas() {
-        this.atlasSlots.clear();
-        this.nextAtlasSlot = 1;
+        this.atlasEntries.clear();
+        this.atlasSlotOwners.fill(null);
+        this.atlasSlotOwners[0] = 'shape:paw';
+        this.atlasAwaitingFirstUse.clear();
         const canvas = typeof OffscreenCanvas !== 'undefined'
             ? new OffscreenCanvas(this.atlasSlotSize, this.atlasSlotSize)
             : Object.assign(document.createElement('canvas'), { width: this.atlasSlotSize, height: this.atlasSlotSize });
@@ -498,28 +509,97 @@ class WebGPUParticleEngine {
         for (const [x, y, r] of [[30, 44, 12], [51, 31, 12], [77, 31, 12], [98, 44, 12]]) {
             ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
         }
-        this.device.queue.copyExternalImageToTexture({ source: canvas }, { texture: this.atlasTexture, origin: [0, 0] }, [this.atlasSlotSize, this.atlasSlotSize]);
-        this.atlasSlots.set('shape:paw', 0);
-        for (const [key, image] of this.atlasSources) this._writeAtlasImage(key, image);
-        this._generateAtlasMipmaps();
+        await this._copyAtlasCanvas(canvas, [0, 0]);
     }
 
     async uploadImage(key, image) {
         if (!this.initialized || !key || !image) return 0;
-        if (this.atlasSlots.has(key)) return this.atlasSlots.get(key) + 1;
-        this.atlasSources.set(key, image);
-        const result = this._writeAtlasImage(key, image);
-        if (result) this._generateAtlasMipmaps();
-        return result;
-    }
-
-    _writeAtlasImage(key, image) {
-        const maxSlots = this.atlasSlotsPerRow * this.atlasSlotsPerRow;
-        if (this.nextAtlasSlot >= maxSlots) {
-            this._emitStatus('ready', { reason: 'Texture atlas full; image particle skipped' });
+        const nowMs = this._atlasNow();
+        const existing = this.atlasEntries.get(key);
+        if (existing) {
+            existing.lastUsedAtMs = nowMs;
+            return existing.textureIndex;
+        }
+        const entriesBefore = new Map(this.atlasEntries);
+        const ownersBefore = this.atlasSlotOwners.slice();
+        const awaitingBefore = new Set(this.atlasAwaitingFirstUse);
+        const entry = this._acquireAtlasSlot(key, {
+            nowMs,
+            inUseUntilMs: nowMs + ATLAS_RELEASE_GRACE_MS
+        });
+        if (!entry) {
+            this._emitStatus('ready', { reason: 'Texture atlas full; visible image particle used fallback' });
             return 0;
         }
-        const slot = this.nextAtlasSlot++;
+        try {
+            await this._writeAtlasImage(entry.slot, key, image);
+        } catch (error) {
+            this.atlasEntries = entriesBefore;
+            this.atlasSlotOwners = ownersBefore;
+            this.atlasAwaitingFirstUse = awaitingBefore;
+            throw error;
+        }
+        return entry.textureIndex;
+    }
+
+    _acquireAtlasSlot(key, { nowMs = this.now(), inUseUntilMs = nowMs } = {}) {
+        nowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : this._atlasNow();
+        inUseUntilMs = Number.isFinite(Number(inUseUntilMs)) ? Number(inUseUntilMs) : nowMs;
+        const existing = this.atlasEntries.get(key);
+        if (existing) {
+            existing.lastUsedAtMs = nowMs;
+            existing.inUseUntilMs = Math.max(existing.inUseUntilMs, inUseUntilMs);
+            return existing;
+        }
+
+        let slot = this.atlasSlotOwners.indexOf(null, 1);
+        if (slot < 1 || slot >= ATLAS_SLOT_COUNT) {
+            let candidate = null;
+            for (const entry of this.atlasEntries.values()) {
+                if (entry.inUseUntilMs > nowMs) continue;
+                if (!candidate || entry.lastUsedAtMs < candidate.lastUsedAtMs ||
+                    (entry.lastUsedAtMs === candidate.lastUsedAtMs && entry.slot < candidate.slot)) {
+                    candidate = entry;
+                }
+            }
+            if (!candidate) return null;
+            slot = candidate.slot;
+            this.atlasEntries.delete(candidate.key);
+            this.atlasAwaitingFirstUse.delete(candidate.key);
+        }
+
+        const entry = {
+            key,
+            slot,
+            textureIndex: slot + 1,
+            lastUsedAtMs: nowMs,
+            inUseUntilMs
+        };
+        this.atlasEntries.set(key, entry);
+        this.atlasSlotOwners[slot] = key;
+        this.atlasAwaitingFirstUse.add(key);
+        return entry;
+    }
+
+    _markAtlasTextureUsed(textureIndex, { nowMs = this.now(), visibleUntilMs = nowMs } = {}) {
+        nowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : this._atlasNow();
+        visibleUntilMs = Number.isFinite(Number(visibleUntilMs)) ? Number(visibleUntilMs) : nowMs;
+        const slot = Math.floor(Number(textureIndex)) - 1;
+        if (slot < 1 || slot >= ATLAS_SLOT_COUNT) return;
+        const owner = this.atlasSlotOwners[slot];
+        const entry = owner ? this.atlasEntries.get(owner) : null;
+        if (!entry || entry.slot !== slot) return;
+        entry.lastUsedAtMs = nowMs;
+        if (this.atlasAwaitingFirstUse.delete(owner)) entry.inUseUntilMs = Math.max(nowMs, visibleUntilMs);
+        else entry.inUseUntilMs = Math.max(entry.inUseUntilMs, visibleUntilMs);
+    }
+
+    _atlasNow() {
+        const nowMs = Number(this.now());
+        return Number.isFinite(nowMs) ? nowMs : 0;
+    }
+
+    async _writeAtlasImage(slot, key, image) {
         const canvas = typeof OffscreenCanvas !== 'undefined'
             ? new OffscreenCanvas(this.atlasSlotSize, this.atlasSlotSize)
             : Object.assign(document.createElement('canvas'), { width: this.atlasSlotSize, height: this.atlasSlotSize });
@@ -544,34 +624,16 @@ class WebGPUParticleEngine {
         if (isAvatar) ctx.restore();
         const x = (slot % this.atlasSlotsPerRow) * this.atlasSlotSize;
         const y = Math.floor(slot / this.atlasSlotsPerRow) * this.atlasSlotSize;
-        this.device.queue.copyExternalImageToTexture({ source: canvas }, { texture: this.atlasTexture, origin: [x, y] }, [this.atlasSlotSize, this.atlasSlotSize]);
-        this.atlasSlots.set(key, slot);
-        return slot + 1;
+        await this._copyAtlasCanvas(canvas, [x, y]);
     }
 
-    _generateAtlasMipmaps() {
-        if (!this.pipelines?.atlasMipmap || !this.postBindGroupLayout || !this.atlasTexture) return;
-        const encoder = this.device.createCommandEncoder({ label: 'fireworks-atlas-mipmaps' });
-        for (let level = 1; level < this.atlasMipLevels; level++) {
-            const sourceView = this.atlasTexture.createView({ baseMipLevel: level - 1, mipLevelCount: 1 });
-            const targetView = this.atlasTexture.createView({ baseMipLevel: level, mipLevelCount: 1 });
-            const bindGroup = this.device.createBindGroup({ layout: this.postBindGroupLayout, entries: [
-                { binding: 0, resource: sourceView },
-                { binding: 1, resource: sourceView },
-                { binding: 2, resource: this.atlasSampler },
-                { binding: 3, resource: { buffer: this.buffers.uniforms } }
-            ]});
-            const pass = encoder.beginRenderPass({ colorAttachments: [{
-                view: targetView,
-                clearValue: { r: 0, g: 0, b: 0, a: 0 },
-                loadOp: 'clear', storeOp: 'store'
-            }]});
-            pass.setPipeline(this.pipelines.atlasMipmap);
-            pass.setBindGroup(0, bindGroup);
-            pass.draw(3);
-            pass.end();
-        }
-        this.device.queue.submit([encoder.finish()]);
+    async _copyAtlasCanvas(canvas, origin) {
+        this.device.queue.copyExternalImageToTexture(
+            { source: canvas },
+            { texture: this.atlasTexture, origin },
+            [this.atlasSlotSize, this.atlasSlotSize]
+        );
+        await this.device.queue.onSubmittedWorkDone();
     }
 
     spawnRocket(options = {}) {
@@ -995,6 +1057,12 @@ class WebGPUParticleEngine {
         const isV2 = (flags & V2_MARKER) !== 0;
         const renderHints = command.renderHints || {};
         const depthEnabled = command.depthEnabled === true || renderHints.depthEnabled === true;
+        const particleDuration = isV2
+            ? nonnegativeFinite(command.particleDuration)
+            : Math.max(0.05, Number(command.particleDuration) || Number(command.duration) || 1.2);
+        const textureIndex = Math.max(0, Number(command.textureIndex) || 0);
+        const emissionDelay = nonnegativeFinite(command.emissionDelay);
+        const emissionSpread = nonnegativeFinite(command.emissionSpread);
         this.spawnQueue.push({
             origin: command.origin || { x: command.x || 0, y: command.y || 0 },
             target: command.target || command.origin || { x: command.x || 0, y: command.y || 0 },
@@ -1005,10 +1073,8 @@ class WebGPUParticleEngine {
             flags,
             intensity: Math.max(0.1, Number(command.intensity) || 1),
             duration: Math.max(0.05, Number(command.duration) || 1.2),
-            particleDuration: isV2
-                ? Number(command.particleDuration)
-                : Math.max(0.05, Number(command.particleDuration) || Number(command.duration) || 1.2),
-            textureIndex: Math.max(0, Number(command.textureIndex) || 0),
+            particleDuration,
+            textureIndex,
             seed,
             effectId: this._hashValue(command.effectId ?? seed),
             size: isV2 ? Number(command.size) : Math.max(1, Number(command.size) || 6),
@@ -1017,8 +1083,8 @@ class WebGPUParticleEngine {
             secondary: command.secondary !== false ? 1 : 0,
             wind: Number.isFinite(command.wind) ? command.wind : 0,
             curve: Number.isFinite(command.curve) ? command.curve : 0,
-            emissionDelay: Math.max(0, Number(command.emissionDelay) || 0),
-            emissionSpread: Math.max(0, Number(command.emissionSpread) || 0),
+            emissionDelay,
+            emissionSpread,
             globalIndexBase: Math.max(0, Math.floor(Number(command.globalIndexBase) || 0)),
             globalCount: Math.max(1, Math.floor(Number(command.globalCount) || Number(command.count) || 1)),
             pulseCount: Math.max(0, Math.min(7, Math.floor(Number(command.pulseCount) || 0))),
@@ -1040,6 +1106,14 @@ class WebGPUParticleEngine {
             giftBundleKey: command.giftBundleKey ?? null,
             ...metadata
         });
+        if (textureIndex > 0) {
+            const queuedAtMs = this._atlasNow();
+            const visibleSeconds = emissionDelay + nonnegativeFinite(particleDuration) + emissionSpread;
+            this._markAtlasTextureUsed(textureIndex, {
+                nowMs: queuedAtMs,
+                visibleUntilMs: queuedAtMs + visibleSeconds * 1_000 + ATLAS_RELEASE_GRACE_MS
+            });
+        }
         return true;
     }
 
@@ -2007,7 +2081,7 @@ struct Uniforms {
 @group(0) @binding(1) var<storage, read> activeIndices: array<u32>;
 @group(0) @binding(2) var<storage, read> history: array<vec3f>;
 @group(0) @binding(3) var<uniform> uniforms: Uniforms;
-@group(0) @binding(4) var atlas: texture_2d<f32>;
+@group(0) @binding(4) var atlasTexture: texture_2d<f32>;
 @group(0) @binding(5) var atlasSampler: sampler;
 const V2_TRAIL = 1u;
 const V2_STROBE = 8u;
@@ -2108,7 +2182,7 @@ fn rocketCoverage(uv:vec2f,time:f32,seed:u32)->vec3f{
   let flameStart=-0.98-flicker;let flameWidth=max(0.0,(p.x-flameStart)*0.22);let flame=step(flameStart,p.x)*step(p.x,-0.56)*(1.0-smoothstep(flameWidth,flameWidth+0.05,abs(p.y)));
   return vec3f(max(fuselage,max(nose,fins)),nozzle,flame);
 }
-fn atlasSample(uv:vec2f,index:u32,uvDx:vec2f,uvDy:vec2f)->vec4f{let slot=f32(max(1u,index)-1u);let cell=vec2f(fract(slot/8.0),floor(slot/8.0)/8.0);let atlasScale=vec2f(116.0/1024.0);let inner=vec2f(6.0/1024.0)+uv*atlasScale;return textureSampleGrad(atlas,atlasSampler,cell+inner,uvDx*atlasScale,uvDy*atlasScale);}
+fn atlasSample(uv:vec2f,index:u32)->vec4f{let slot=f32(max(1u,index)-1u);let cell=vec2f(fract(slot/8.0),floor(slot/8.0)/8.0);let atlasScale=vec2f(116.0/1024.0);let atlasUv=cell+vec2f(6.0/1024.0)+uv*atlasScale;return textureSampleLevel(atlasTexture, atlasSampler, atlasUv, 0.0);}
 fn premiumRealisticMaterial(base:vec3f,role:u32,t:f32,seed:u32)->vec3f{
   let ignition=vec3f(1.0,0.985,0.88);let gold=vec3f(1.0,0.64,0.16);let ember=vec3f(0.92,0.075,0.012);
   var color=mix(ignition,base,smoothstep(0.035,0.26,t));
@@ -2132,9 +2206,9 @@ fn glyphMaterialColor(base:vec3f,t:f32)->vec3f{
   return mix(mix(vec3f(1.0),base,0.34),base,chroma*0.66);
 }
 @fragment fn particleFragment(in:Out)->@location(0) vec4f {
-  let uvDx=dpdx(in.uv);let uvDy=dpdy(in.uv);let d=shapeDistance(in.uv,in.shape);let aa=max(0.0035,fwidth(d)*0.9);
+  let d=shapeDistance(in.uv,in.shape);let aa=max(0.0035,fwidth(d)*0.9);
   let role=(in.flags>>8u)&15u;let style=(in.flags>>12u)&3u;
-  if(in.shape==6u){let tex=atlasSample(in.uv,in.textureIndex,uvDx,uvDy);let alpha=tex.a*in.fade*in.color.a;if((in.flags&1u)!=0u){return vec4f(tex.rgb*alpha,alpha);}return vec4f(in.color.rgb*alpha,alpha);}
+  if(in.shape==6u){let tex=atlasSample(in.uv,in.textureIndex);let alpha=tex.a*in.fade*in.color.a;if((in.flags&1u)!=0u){return vec4f(tex.rgb*alpha,alpha);}return vec4f(in.color.rgb*alpha,alpha);}
   if(in.shape==8u){
     let parts=rocketCoverage(in.uv,uniforms.time,in.seed);
     let bodyColor=mix(in.color.rgb,vec3f(0.96,0.98,1.0),0.2+0.22*smoothstep(0.0,1.0,in.uv.y));
@@ -2143,13 +2217,10 @@ fn glyphMaterialColor(base:vec3f,t:f32)->vec3f{
     var rgb=select(bodyColor,flameColor,role==2u);
     if((in.flags&16384u)!=0u&&in.textureIndex>0u&&role==1u){
       let local=(in.uv*2.0-1.0-vec2f(0.56,0.0))*vec2f(1.42,0.48);
-      let localDx=uvDx*2.0*vec2f(1.42,0.48);let localDy=uvDy*2.0*vec2f(1.42,0.48);
       let c=cos(in.rotation);let s=sin(in.rotation);
       let upright=vec2f(c*local.x-s*local.y,s*local.x+c*local.y);
-      let uprightDx=vec2f(c*localDx.x-s*localDx.y,s*localDx.x+c*localDx.y);
-      let uprightDy=vec2f(c*localDy.x-s*localDy.y,s*localDy.x+c*localDy.y);
       let radius=0.43;let avatarUv=upright/(radius*2.0)+0.5;
-      let avatar=atlasSample(clamp(avatarUv,vec2f(0.0),vec2f(1.0)),in.textureIndex,uprightDx/(radius*2.0),uprightDy/(radius*2.0));
+      let avatar=atlasSample(clamp(avatarUv,vec2f(0.0),vec2f(1.0)),in.textureIndex);
       let normalized=length(upright)/radius;
       let disc=1.0-smoothstep(0.9,0.99,normalized);
       let outer=1.0-smoothstep(0.97,1.04,normalized);let inner=1.0-smoothstep(0.8,0.88,normalized);let rim=max(0.0,outer-inner);
@@ -2170,7 +2241,7 @@ fn glyphMaterialColor(base:vec3f,t:f32)->vec3f{
   return vec4f(rgb*alpha,alpha);
 }
 @fragment fn glowFragment(in:Out)->@location(0) vec4f {
-  let uvDx=dpdx(in.uv);let uvDy=dpdy(in.uv);let role=(in.flags>>8u)&15u;if(role==7u){discard;}var coverage=0.0;if(in.shape==6u){coverage=atlasSample(in.uv,in.textureIndex,uvDx,uvDy).a;}else if(in.shape==8u){let parts=rocketCoverage(in.uv,uniforms.time,in.seed);coverage=max(parts.x*0.62,max(parts.y,parts.z));}else{let d=shapeDistance(in.uv,in.shape);coverage=exp(-max(0.0,d)*select(11.0,7.5,(in.flags&128u)!=0u))*(1.0-smoothstep(0.08,0.7,length(in.uv-0.5)));}
+  let role=(in.flags>>8u)&15u;if(role==7u){discard;}var coverage=0.0;if(in.shape==6u){coverage=atlasSample(in.uv,in.textureIndex).a;}else if(in.shape==8u){let parts=rocketCoverage(in.uv,uniforms.time,in.seed);coverage=max(parts.x*0.62,max(parts.y,parts.z));}else{let d=shapeDistance(in.uv,in.shape);coverage=exp(-max(0.0,d)*select(11.0,7.5,(in.flags&128u)!=0u))*(1.0-smoothstep(0.08,0.7,length(in.uv-0.5)));}
   let style=(in.flags>>12u)&3u;var styleGlow=select(1.0,select(0.72,1.38,style==2u),style!=0u);if(style==3u){styleGlow=1.18;}let pulse=select(1.0,0.72+0.28*sin(uniforms.time*44.0+f32(in.seed&31u)),role==8u);let glyphGlow=select(1.0,1.3,in.shape>=17u&&in.shape<=26u);let alpha=coverage*in.fade*in.color.a*0.18*uniforms.glowScale*styleGlow*pulse*glyphGlow;var rgb=materialColor(in.color.rgb,role,style,in.normalizedLife,in.seed);if(in.shape>=17u&&in.shape<=26u){rgb=glyphMaterialColor(in.color.rgb,in.normalizedLife);}return vec4f(rgb*alpha,alpha);
 }
 @fragment fn trailFragment(in:Out)->@location(0) vec4f {let role=(in.flags>>8u)&15u;if(isV2(in.flags)&&(in.flags&V2_TRAIL)==0u){discard;}if(!isV2(in.flags)&&((in.shape>=1u&&in.shape<=6u)||in.shape==9u||role==2u||role==7u)){discard;}let edge=exp(-pow(abs(in.uv.y-0.5)*3.8,2.0));let alpha=edge*in.fade*in.color.a;let style=(in.flags>>12u)&3u;let rgb=materialColor(in.color.rgb,role,style,in.normalizedLife,in.seed);return vec4f(rgb*alpha,alpha);}
@@ -2190,7 +2261,6 @@ struct Out{@builtin(position) position:vec4f,@location(0) uv:vec2f};
 @fragment fn kawaseBlur(in:Out)->@location(0) vec4f{let dim=vec2f(textureDimensions(firstTexture));let px=1.5/dim;var color=textureSample(firstTexture,linearSampler,in.uv)*0.2;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(px.x,px.y))*0.2;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(-px.x,px.y))*0.2;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(px.x,-px.y))*0.2;color+=textureSample(firstTexture,linearSampler,in.uv-vec2f(px.x,px.y))*0.2;return color;}
 @fragment fn bloomCopy(in:Out)->@location(0) vec4f{return textureSample(firstTexture,linearSampler,in.uv);}
 @fragment fn bloomUpsample(in:Out)->@location(0) vec4f{let dim=vec2f(textureDimensions(firstTexture));let px=1.0/dim;var color=textureSample(firstTexture,linearSampler,in.uv)*0.25;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(px.x,0.0))*0.125;color+=textureSample(firstTexture,linearSampler,in.uv-vec2f(px.x,0.0))*0.125;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(0.0,px.y))*0.125;color+=textureSample(firstTexture,linearSampler,in.uv-vec2f(0.0,px.y))*0.125;color+=textureSample(firstTexture,linearSampler,in.uv+px)*0.0625;color+=textureSample(firstTexture,linearSampler,in.uv-px)*0.0625;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(px.x,-px.y))*0.0625;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(-px.x,px.y))*0.0625;return color*0.68;}
-@fragment fn atlasDownsample(in:Out)->@location(0) vec4f{let dim=vec2f(textureDimensions(firstTexture));let px=0.5/dim;let a=textureSampleLevel(firstTexture,linearSampler,in.uv+vec2f(-px.x,-px.y),0.0);let b=textureSampleLevel(firstTexture,linearSampler,in.uv+vec2f(px.x,-px.y),0.0);let c=textureSampleLevel(firstTexture,linearSampler,in.uv+vec2f(-px.x,px.y),0.0);let d=textureSampleLevel(firstTexture,linearSampler,in.uv+vec2f(px.x,px.y),0.0);let alpha=(a.a+b.a+c.a+d.a)*0.25;let premul=(a.rgb*a.a+b.rgb*b.a+c.rgb*c.a+d.rgb*d.a)*0.25;return vec4f(select(vec3f(0.0),premul/max(alpha,0.0001),alpha>0.0001),alpha);}
 fn aces(color:vec3f)->vec3f{let a=2.51;let b=0.03;let c=2.43;let d=0.59;let e=0.14;return clamp((color*(a*color+b))/(color*(c*color+d)+e),vec3f(0.0),vec3f(1.0));}
 @fragment fn composite(in:Out)->@location(0) vec4f{let scene=textureSample(firstTexture,linearSampler,in.uv);let bloom=textureSample(secondTexture,linearSampler,in.uv);let bloomStrength=0.5+uniforms.glowScale*0.24;let bloomLight=max(bloom.r,max(bloom.g,bloom.b));let bloomAlpha=clamp(bloom.a*0.42+bloomLight*0.14*uniforms.glowScale,0.0,0.68);let alpha=clamp(max(scene.a,bloomAlpha),0.0,1.0);let radiance=scene.rgb+bloom.rgb*bloomStrength;let straight=aces(radiance/max(alpha,0.001));let rgb=select(vec3f(0.0),min(vec3f(alpha),straight*alpha),alpha>0.0001);return vec4f(rgb,alpha);}
 `;
