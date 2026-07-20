@@ -24,6 +24,7 @@
           "end_match_confirm": "¿Seguro que quieres terminar la partida actual?",
           "reset_settings_confirm": "¿Restablecer todos los ajustes a los valores predeterminados?",
           "end_pyramid_confirm": "¿Seguro que quieres terminar la ronda de pirámide?",
+          "stop_koth_confirm": "¿Terminar King of the Hill?",
           "delete_user_confirm": "¿Seguro que quieres eliminar a {nickname} de todas las clasificaciones? Esta acción no se puede deshacer."
         },
         "aria": { "overlay_width": "Ancho del overlay", "overlay_height": "Alto del overlay" },
@@ -32,6 +33,7 @@
           "red_team": "EQUIPO ROJO",
           "blue_team": "EQUIPO AZUL",
           "unknown_player": "Desconocido",
+          "draw": "Empate",
           "no_data": "No hay datos disponibles",
           "achievement_unlocked": "¡Logro desbloqueado!",
           "team_wins": "¡EL EQUIPO {team} GANA!",
@@ -79,7 +81,7 @@
           "reset_confirm": "¿Restablecer el diseño a su valor predeterminado?",
           "layout_reset": "Diseño restablecido"
         },
-        "status": { "active": "Activo", "paused": "En pausa", "inactive": "Inactivo" },
+        "status": { "active": "Activo", "paused": "En pausa", "inactive": "Inactivo", "current_king": "Rey actual" },
         "action": { "pause": "⏸️ Pausar", "resume": "▶️ Reanudar", "delete": "Eliminar" },
         "table": {
           "rank": "Puesto",
@@ -138,6 +140,8 @@
           "multiplier_activated_for": "¡Multiplicador {multiplier}x activado durante {seconds} segundos!",
           "multiplier_ended": "Multiplicador terminado",
           "pyramid_started": "¡Ronda de pirámide iniciada!",
+          "koth_started": "¡KOTH iniciado!",
+          "koth_ended": "KOTH terminado.",
           "pyramid_ended": "¡Ronda de pirámide terminada!",
           "pyramid_leader": "🥊 ¡{nickname} toma la delantera!",
           "pyramid_extended": "Pirámide extendida {seconds}s",
@@ -357,6 +361,9 @@
         "mittel_200x200": "Medio (200x200)",
         "koth_king_badge": "👑 Insignia del Rey KOTH",
         "gameplay_settings": "Configuración de juego",
+        "start_koth": "Iniciar KOTH",
+        "stop_koth": "Detener KOTH",
+        "show_koth_overlay": "Mostrar overlay KOTH",
         "standard_1280x720": "Estándar 1280x720",
         "auto_extension_on_close_match": "Extensión automática en coincidencia cercana",
         "high_contrast": "Alto contraste",

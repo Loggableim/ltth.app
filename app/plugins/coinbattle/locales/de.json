@@ -24,6 +24,7 @@
           "end_match_confirm": "Möchtest du das aktuelle Match wirklich beenden?",
           "reset_settings_confirm": "Alle Einstellungen auf die Standardwerte zurücksetzen?",
           "end_pyramid_confirm": "Möchtest du die Pyramidenrunde wirklich beenden?",
+          "stop_koth_confirm": "King of the Hill beenden?",
           "delete_user_confirm": "Möchtest du {nickname} wirklich aus allen Leaderboards löschen? Dies kann nicht rückgängig gemacht werden."
         },
         "aria": { "overlay_width": "Overlay-Breite", "overlay_height": "Overlay-Höhe" },
@@ -32,6 +33,7 @@
           "red_team": "ROTES TEAM",
           "blue_team": "BLAUES TEAM",
           "unknown_player": "Unbekannt",
+          "draw": "Unentschieden",
           "no_data": "Keine Daten verfügbar",
           "achievement_unlocked": "Erfolg freigeschaltet!",
           "team_wins": "{team}-TEAM GEWINNT!",
@@ -79,7 +81,7 @@
           "reset_confirm": "Layout auf den Standard zurücksetzen?",
           "layout_reset": "Layout zurückgesetzt"
         },
-        "status": { "active": "Aktiv", "paused": "Pausiert", "inactive": "Inaktiv" },
+        "status": { "active": "Aktiv", "paused": "Pausiert", "inactive": "Inaktiv", "current_king": "Aktueller König" },
         "action": { "pause": "Anhalten", "resume": "▶️ Fortsetzen", "delete": "Löschen" },
         "table": {
           "rank": "Rang",
@@ -138,6 +140,8 @@
           "multiplier_activated_for": "{multiplier}x-Multiplikator für {seconds} Sekunden aktiviert!",
           "multiplier_ended": "Multiplikator beendet",
           "pyramid_started": "Pyramidenrunde gestartet!",
+          "koth_started": "KOTH gestartet!",
+          "koth_ended": "KOTH beendet.",
           "pyramid_ended": "Pyramidenrunde beendet!",
           "pyramid_leader": "🥊 {nickname} übernimmt die Führung!",
           "pyramid_extended": "Pyramide um {seconds}s verlängert",
@@ -357,6 +361,9 @@
         "mittel_200x200": "Mittlere Groesse (200 x 200)",
         "koth_king_badge": "👑 KOTH-Königsabzeichen",
         "gameplay_settings": "Gameplay Settings",
+        "start_koth": "KOTH starten",
+        "stop_koth": "KOTH beenden",
+        "show_koth_overlay": "KOTH-Overlay anzeigen",
         "standard_1280x720": "Standardformat 1280 x 720",
         "auto_extension_on_close_match": "Automatische Erweiterung bei enger Übereinstimmung",
         "high_contrast": "Hoher Kontrast",

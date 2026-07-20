@@ -24,6 +24,7 @@
           "end_match_confirm": "Voulez-vous vraiment terminer le match en cours ?",
           "reset_settings_confirm": "Réinitialiser tous les réglages par défaut ?",
           "end_pyramid_confirm": "Voulez-vous vraiment terminer la manche pyramide ?",
+          "stop_koth_confirm": "Arrêter King of the Hill ?",
           "delete_user_confirm": "Voulez-vous vraiment supprimer {nickname} de tous les classements ? Cette action est irréversible."
         },
         "aria": { "overlay_width": "Largeur de l’overlay", "overlay_height": "Hauteur de l’overlay" },
@@ -32,6 +33,7 @@
           "red_team": "ÉQUIPE ROUGE",
           "blue_team": "ÉQUIPE BLEUE",
           "unknown_player": "Inconnu",
+          "draw": "Match nul",
           "no_data": "Aucune donnée disponible",
           "achievement_unlocked": "Succès débloqué !",
           "team_wins": "L’ÉQUIPE {team} GAGNE !",
@@ -79,7 +81,7 @@
           "reset_confirm": "Réinitialiser la mise en page par défaut ?",
           "layout_reset": "Mise en page réinitialisée"
         },
-        "status": { "active": "Actif", "paused": "En pause", "inactive": "Inactif" },
+        "status": { "active": "Actif", "paused": "En pause", "inactive": "Inactif", "current_king": "Roi actuel" },
         "action": { "pause": "⏸️ Mettre en pause", "resume": "▶️ Reprendre", "delete": "Supprimer" },
         "table": {
           "rank": "Rang",
@@ -138,6 +140,8 @@
           "multiplier_activated_for": "Multiplicateur x{multiplier} activé pendant {seconds} secondes !",
           "multiplier_ended": "Multiplicateur terminé",
           "pyramid_started": "Manche pyramide commencée !",
+          "koth_started": "KOTH démarré !",
+          "koth_ended": "KOTH arrêté.",
           "pyramid_ended": "Manche pyramide terminée !",
           "pyramid_leader": "🥊 {nickname} prend la tête !",
           "pyramid_extended": "Pyramide prolongée de {seconds}s",
@@ -357,6 +361,9 @@
         "mittel_200x200": "Moyen (200x200)",
         "koth_king_badge": "👑 Insigne du Roi KOTH",
         "gameplay_settings": "Paramètres de jeu",
+        "start_koth": "Démarrer KOTH",
+        "stop_koth": "Arrêter KOTH",
+        "show_koth_overlay": "Afficher l’overlay KOTH",
         "standard_1280x720": "Norme 1280x720",
         "auto_extension_on_close_match": "Extension automatique en cas de match serré",
         "high_contrast": "Contraste élevé",

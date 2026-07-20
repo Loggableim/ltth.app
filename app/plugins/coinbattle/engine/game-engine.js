@@ -34,6 +34,7 @@ class CoinBattleEngine {
     this.activeMultiplier = 1.0;
     this.multiplierTimer = null;
     this.multiplierEndTime = null;
+    this.multiplierPausedRemainingMs = null;
 
     /**
      * Optional callback to augment match state before emission
@@ -58,6 +59,7 @@ class CoinBattleEngine {
     // Offline simulation
     this.simulationInterval = null;
     this.simulationPlayers = [];
+    this.simulationOwnsMatch = false;
 
     // Atomic operation locks for race condition prevention
     this.matchEndLock = false;
@@ -121,6 +123,10 @@ class CoinBattleEngine {
       const matchMode = mode || this.config.mode;
       const matchDuration = duration || this.config.matchDuration;
 
+      if (matchMode === 'pyramid') {
+        throw new Error('Pyramid is managed by PyramidMode and cannot start in the normal engine');
+      }
+
       // Create match in database
       const matchUuid = randomUUID();
       const matchId = this.db.createMatch({ match_uuid: matchUuid, mode: matchMode });
@@ -163,7 +169,7 @@ class CoinBattleEngine {
   /**
    * End current match with atomic locking
    */
-  endMatch() {
+  endMatch(options = {}) {
     // Atomic lock to prevent concurrent calls
     if (this.matchEndLock) {
       this.logger.warn('Match end already in progress');
@@ -179,32 +185,36 @@ class CoinBattleEngine {
       this.stopTimer();
       this.clearMultiplierTimer();
 
+      const endedMatch = { ...this.currentMatch };
+
       // Calculate winner
-      const leaderboard = this.db.getMatchLeaderboard(this.currentMatch.id, 100);
-      const teamScores = this.currentMatch.mode === 'team' ? this.db.getTeamScores(this.currentMatch.id) : null;
+      const leaderboard = this.db.getMatchLeaderboard(endedMatch.id, 100);
+      const teamScores = endedMatch.mode === 'team' ? this.db.getTeamScores(endedMatch.id) : null;
 
       let winnerData = {
         total_coins: leaderboard.reduce((sum, p) => sum + p.coins, 0)
       };
 
-      if (this.currentMatch.mode === 'team') {
+      if (endedMatch.mode === 'team') {
         winnerData.team_red_score = teamScores.red;
         winnerData.team_blue_score = teamScores.blue;
-        winnerData.winner_team = teamScores.red > teamScores.blue ? 'red' : 'blue';
+        const isDraw = teamScores.red === teamScores.blue;
+        winnerData.winner_team = isDraw ? null : (teamScores.red > teamScores.blue ? 'red' : 'blue');
+        winnerData.is_draw = isDraw;
       } else {
         winnerData.winner_player_id = leaderboard[0]?.user_id || null;
       }
 
       // End match in database
-      this.db.endMatch(this.currentMatch.id, winnerData);
+      this.db.endMatch(endedMatch.id, winnerData);
 
       // Update player lifetime stats
       for (const participant of leaderboard) {
-        const isWinner = this.currentMatch.mode === 'team' 
-          ? participant.team === winnerData.winner_team
+        const isWinner = endedMatch.mode === 'team'
+          ? Boolean(winnerData.winner_team) && participant.team === winnerData.winner_team
           : participant.user_id === winnerData.winner_player_id;
         
-        const isTeamMatch = this.currentMatch.mode === 'team';
+        const isTeamMatch = endedMatch.mode === 'team';
         
         this.db.updatePlayerLifetimeStats(
           participant.player_id,
@@ -225,14 +235,14 @@ class CoinBattleEngine {
       }
 
       // Update match stats
-      this.db.updateMatchStats(this.currentMatch.id);
+      this.db.updateMatchStats(endedMatch.id);
 
       // Calculate XP rewards for winners
-      const winnersWithXP = this.calculateMatchXPRewards(leaderboard, this.currentMatch.mode, winnerData);
+      const winnersWithXP = this.calculateMatchXPRewards(leaderboard, endedMatch.mode, winnerData);
 
       const matchEndedPayload = {
-        matchId: this.currentMatch.id,
-        mode: this.currentMatch.mode,
+        matchId: endedMatch.id,
+        mode: endedMatch.mode,
         winner: winnerData,
         leaderboard: leaderboard.slice(0, 10),
         teamScores,
@@ -246,16 +256,18 @@ class CoinBattleEngine {
       // Emit post-match event for overlay display
       if (this.config.postMatch?.showLeaderboard || this.config.postMatch?.showWinnerCredits) {
         this.io.emit('coinbattle:post-match', {
-          matchId: this.currentMatch.id,
-          mode: this.currentMatch.mode,
+          matchId: endedMatch.id,
+          mode: endedMatch.mode,
           winnersWithXP,
           leaderboard: leaderboard.slice(0, 10),
           config: this.config.postMatch
         });
       }
 
-      const matchId = this.currentMatch.id;
+      const matchId = endedMatch.id;
+      const simulationMatch = this.simulationOwnsMatch;
       this.currentMatch = null;
+      this.simulationOwnsMatch = false;
 
       // Emit updated match state to all clients
       this.emitMatchState();
@@ -263,7 +275,8 @@ class CoinBattleEngine {
       this.logger.info(`Match ended: ${matchId}`);
 
       // Auto-reset if enabled
-      if (this.config.autoReset) {
+      const skipAutoReset = options.skipAutoReset || simulationMatch;
+      if (this.config.autoReset && !skipAutoReset) {
         // Calculate post-match display duration
         const postMatchDuration = this.calculatePostMatchDuration();
         // Add a small buffer for transitions and safety
@@ -275,7 +288,7 @@ class CoinBattleEngine {
           this.autoResetTimeout = null;
           this.logger.info('Auto-reset triggered, starting new match');
           try {
-            this.startMatch();
+            this.startMatch(endedMatch.mode, endedMatch.duration);
           } catch (error) {
             this.logger.error(`Auto-reset failed for match ${matchId}: ${error.message}`);
           }
@@ -299,6 +312,13 @@ class CoinBattleEngine {
     this.isPaused = true;
     this.pauseStartTime = Date.now();
     this.stopTimer();
+
+    if (this.multiplierTimer && this.multiplierEndTime) {
+      this.multiplierPausedRemainingMs = Math.max(0, this.multiplierEndTime - Date.now());
+      clearTimeout(this.multiplierTimer);
+      this.multiplierTimer = null;
+      this.multiplierEndTime = null;
+    }
 
     this.io.emit('coinbattle:match-paused', {
       matchId: this.currentMatch.id,
@@ -326,6 +346,10 @@ class CoinBattleEngine {
     this.pauseStartTime = null;
 
     this.startTimer();
+
+    if (this.multiplierPausedRemainingMs > 0) {
+      this.scheduleMultiplierEnd(this.multiplierPausedRemainingMs);
+    }
 
     this.io.emit('coinbattle:match-resumed', {
       matchId: this.currentMatch.id,
@@ -427,6 +451,7 @@ class CoinBattleEngine {
 
     this.activeMultiplier = 1.0;
     this.multiplierEndTime = null;
+    this.multiplierPausedRemainingMs = null;
   }
 
   /**
@@ -515,9 +540,6 @@ class CoinBattleEngine {
       return { duplicate: true, eventId: generatedEventId };
     }
 
-    // Mark event as being processed (atomic operation)
-    this.db.markEventProcessed(generatedEventId, idempotencyKey, this.currentMatch.id, userData.userId, 3600);
-
     try {
       // Get or create player
       const player = this.db.getOrCreatePlayer({
@@ -562,6 +584,10 @@ class CoinBattleEngine {
         return { duplicate: true, eventId: generatedEventId };
       }
 
+      // Mark only after the transactional score write succeeded. A failed
+      // player/participant/database operation must remain retryable.
+      this.db.markEventProcessed(generatedEventId, idempotencyKey, this.currentMatch.id, userData.userId, 3600);
+
       // Update in-memory player data
       if (!this.players.has(userData.userId)) {
         this.players.set(userData.userId, {
@@ -592,7 +618,6 @@ class CoinBattleEngine {
       return { player: playerData, coins: multipliedCoins, eventId: generatedEventId, duplicate: false };
     } catch (error) {
       this.logger.error(`Error processing gift: ${error.message}`);
-      // Event failed to process, but cache entry prevents retry
       throw error;
     }
   }
@@ -608,6 +633,7 @@ class CoinBattleEngine {
     `).get(this.currentMatch.id, playerId);
 
     if (participant && participant.team) {
+      this.setPlayerTeam(userId, participant.team);
       return participant.team;
     }
 
@@ -619,11 +645,32 @@ class CoinBattleEngine {
       case 'alternate':
         team = this.teams.red.size <= this.teams.blue.size ? 'red' : 'blue';
         break;
+      case 'manual':
+        throw new Error('Manual team assignment required before the first gift');
       default:
-        team = 'red'; // Default
+        throw new Error(`Unsupported team assignment mode: ${this.config.teamAssignment}`);
     }
 
+    this.setPlayerTeam(userId, team);
+    return team;
+  }
+
+  /**
+   * Synchronize a player's team in all current-match in-memory collections.
+   */
+  setPlayerTeam(userId, team) {
+    if (!['red', 'blue'].includes(team)) {
+      throw new Error('Team must be red or blue');
+    }
+
+    this.teams.red.delete(userId);
+    this.teams.blue.delete(userId);
     this.teams[team].add(userId);
+
+    const player = this.players.get(userId);
+    if (player) {
+      player.team = team;
+    }
     return team;
   }
 
@@ -640,26 +687,12 @@ class CoinBattleEngine {
     }
 
     this.activeMultiplier = multiplier;
-    this.multiplierEndTime = Date.now() + (duration * 1000);
+    this.multiplierPausedRemainingMs = null;
 
     // Record in database
     this.db.recordMultiplierEvent(this.currentMatch.id, multiplier, duration, activatedBy);
 
-    // Clear existing timer
-    if (this.multiplierTimer) {
-      clearTimeout(this.multiplierTimer);
-    }
-
-    // Set timer to reset multiplier
-    const matchId = this.currentMatch.id;
-    this.multiplierTimer = setTimeout(() => {
-      this.activeMultiplier = 1.0;
-      this.multiplierEndTime = null;
-      this.multiplierTimer = null;
-      this.io.emit('coinbattle:multiplier-ended', {
-        matchId
-      });
-    }, duration * 1000);
+    this.scheduleMultiplierEnd(duration * 1000);
 
     // Emit multiplier event
     this.io.emit('coinbattle:multiplier-activated', {
@@ -672,6 +705,25 @@ class CoinBattleEngine {
 
     this.logger.info(`Multiplier activated: ${multiplier}x for ${duration}s`);
     return true;
+  }
+
+  /**
+   * Schedule expiry for the active multiplier.
+   */
+  scheduleMultiplierEnd(durationMs) {
+    if (this.multiplierTimer) {
+      clearTimeout(this.multiplierTimer);
+    }
+
+    const matchId = this.currentMatch?.id;
+    this.multiplierEndTime = Date.now() + durationMs;
+    this.multiplierTimer = setTimeout(() => {
+      this.activeMultiplier = 1.0;
+      this.multiplierEndTime = null;
+      this.multiplierPausedRemainingMs = null;
+      this.multiplierTimer = null;
+      this.io.emit('coinbattle:multiplier-ended', { matchId });
+    }, durationMs);
   }
 
   /**
@@ -746,7 +798,9 @@ class CoinBattleEngine {
       multiplier: {
         active: this.activeMultiplier > 1.0,
         value: this.activeMultiplier,
-        endTime: this.multiplierEndTime
+        endTime: this.multiplierEndTime,
+        remainingMs: this.isPaused ? this.multiplierPausedRemainingMs : null,
+        paused: this.isPaused && this.activeMultiplier > 1.0
       },
       config: this.config
     };
@@ -757,6 +811,10 @@ class CoinBattleEngine {
    * Start offline simulation mode
    */
   startSimulation() {
+    if (this.currentMatch) {
+      throw new Error('Cannot start offline simulation while a match is active');
+    }
+
     if (this.simulationInterval) {
       this.stopSimulation();
     }
@@ -770,10 +828,8 @@ class CoinBattleEngine {
       { userId: 'sim_5', uniqueId: 'simuser5', nickname: 'SimPlayer5', profilePictureUrl: null }
     ];
 
-    // Start match if not active
-    if (!this.currentMatch) {
-      this.startMatch();
-    }
+    this.startMatch();
+    this.simulationOwnsMatch = true;
 
     // Generate random gifts
     this.simulationInterval = setInterval(() => {
@@ -799,13 +855,18 @@ class CoinBattleEngine {
   /**
    * Stop offline simulation
    */
-  stopSimulation() {
+  stopSimulation({ endMatch = true } = {}) {
     if (this.simulationInterval) {
       clearInterval(this.simulationInterval);
       this.simulationInterval = null;
     }
     this.config.enableOfflineSimulation = false;
     this.logger.info('Offline simulation stopped');
+
+    if (endMatch && this.simulationOwnsMatch && this.currentMatch) {
+      this.endMatch({ skipAutoReset: true });
+    }
+    this.simulationOwnsMatch = false;
     
     // Emit state update to notify UI
     this.emitMatchState();
@@ -836,6 +897,9 @@ class CoinBattleEngine {
     if (mode === 'team') {
       // In team mode, all members of winning team get XP based on their contribution
       const winningTeam = winnerData.winner_team;
+      if (!winningTeam || winnerData.is_draw) {
+        return winnersWithXP;
+      }
       
       // Get winning team members sorted by coins
       const winningTeamMembers = leaderboard.filter(p => p.team === winningTeam);
@@ -912,7 +976,7 @@ class CoinBattleEngine {
    */
   destroy() {
     this.stopTimer();
-    this.stopSimulation();
+    this.stopSimulation({ endMatch: false });
     if (this.multiplierTimer) {
       clearTimeout(this.multiplierTimer);
       this.multiplierTimer = null;

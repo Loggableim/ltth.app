@@ -474,30 +474,36 @@ class CoinBattleDatabase {
     const finalIdempotencyKey = idempotencyKey || `gift_${userId}_${giftData.giftId}_${Date.now()}`;
 
     try {
-      this.db.prepare(`
-        INSERT INTO coinbattle_gift_events 
-        (match_id, player_id, user_id, gift_id, gift_name, coins, multiplier, team, event_id, idempotency_key)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        matchId,
-        playerId,
-        userId,
-        giftData.giftId,
-        giftData.giftName,
-        giftData.coins,
-        multiplier,
-        team,
-        finalEventId,
-        finalIdempotencyKey
-      );
+      const transaction = this.db.transaction(() => {
+        this.db.prepare(`
+          INSERT INTO coinbattle_gift_events
+          (match_id, player_id, user_id, gift_id, gift_name, coins, multiplier, team, event_id, idempotency_key)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          matchId,
+          playerId,
+          userId,
+          giftData.giftId,
+          giftData.giftName,
+          giftData.coins,
+          multiplier,
+          team,
+          finalEventId,
+          finalIdempotencyKey
+        );
 
-      // Update participant coins
-      this.db.prepare(`
-        UPDATE coinbattle_match_participants
-        SET coins = coins + ?, gifts = gifts + 1
-        WHERE match_id = ? AND player_id = ?
-      `).run(Math.floor(giftData.coins * multiplier), matchId, playerId);
+        const updateResult = this.db.prepare(`
+          UPDATE coinbattle_match_participants
+          SET coins = coins + ?, gifts = gifts + 1
+          WHERE match_id = ? AND player_id = ?
+        `).run(Math.floor(giftData.coins * multiplier), matchId, playerId);
 
+        if (updateResult.changes !== 1) {
+          throw new Error(`Gift participant ${playerId} not found for match ${matchId}`);
+        }
+      });
+
+      transaction();
       return true;
     } catch (error) {
       // Check if it's a duplicate (UNIQUE constraint violation)
@@ -579,7 +585,7 @@ class CoinBattleDatabase {
       FROM coinbattle_match_participants mp
       JOIN coinbattle_players p ON mp.player_id = p.id
       WHERE mp.match_id = ?
-      ORDER BY mp.coins DESC
+      ORDER BY mp.coins DESC, mp.joined_at ASC, mp.id ASC
       LIMIT ?
     `).all(matchId, limit);
   }
@@ -604,13 +610,25 @@ class CoinBattleDatabase {
   }
 
   /**
+   * Add non-gift score to a participant, such as a KOTH bonus.
+   */
+  addMatchParticipantCoins(matchId, userId, coins) {
+    const result = this.db.prepare(`
+      UPDATE coinbattle_match_participants
+      SET coins = coins + ?
+      WHERE match_id = ? AND user_id = ?
+    `).run(Math.floor(coins), matchId, userId);
+    return result.changes;
+  }
+
+  /**
    * Get lifetime leaderboard
    */
   getLifetimeLeaderboard(limit = 10) {
     return this.db.prepare(`
       SELECT *
       FROM coinbattle_players
-      ORDER BY total_coins DESC
+      ORDER BY total_coins DESC, id ASC
       LIMIT ?
     `).all(limit);
   }
@@ -922,8 +940,9 @@ class CoinBattleDatabase {
       JOIN coinbattle_match_participants mp ON p.id = mp.player_id
       JOIN coinbattle_matches m ON mp.match_id = m.id
       WHERE m.start_time >= ?
+        AND m.status = 'completed'
       GROUP BY p.id
-      ORDER BY total_coins DESC
+      ORDER BY total_coins DESC, p.id ASC
       LIMIT ?
     `).all(weekAgo, limit);
   }
@@ -954,8 +973,9 @@ class CoinBattleDatabase {
       JOIN coinbattle_match_participants mp ON p.id = mp.player_id
       JOIN coinbattle_matches m ON mp.match_id = m.id
       WHERE m.start_time >= ? AND m.start_time <= ?
+        AND m.status = 'completed'
       GROUP BY p.id
-      ORDER BY total_coins DESC
+      ORDER BY total_coins DESC, p.id ASC
       LIMIT ?
     `).all(activeSeason.start_date, activeSeason.end_date, limit);
   }
@@ -965,18 +985,39 @@ class CoinBattleDatabase {
    */
   createOrUpdateSeason(seasonName, startDate, endDate) {
     try {
+      if (!seasonName || !Number.isFinite(Number(startDate)) || !Number.isFinite(Number(endDate)) || Number(endDate) <= Number(startDate)) {
+        return { success: false, error: 'Season end date must be after start date' };
+      }
+
+      const existing = this.db.prepare(`
+        SELECT id FROM coinbattle_seasons
+        WHERE season_name = ? AND is_active = 1
+        ORDER BY id DESC
+        LIMIT 1
+      `).get(seasonName);
+
       // Deactivate all other seasons first
       this.db.prepare(`
         UPDATE coinbattle_seasons SET is_active = 0
       `).run();
 
-      // Create or update the new season
-      const result = this.db.prepare(`
-        INSERT INTO coinbattle_seasons (season_name, start_date, end_date, is_active)
-        VALUES (?, ?, ?, 1)
-      `).run(seasonName, startDate, endDate);
+      let seasonId;
+      if (existing) {
+        this.db.prepare(`
+          UPDATE coinbattle_seasons
+          SET start_date = ?, end_date = ?, is_active = 1
+          WHERE id = ?
+        `).run(startDate, endDate, existing.id);
+        seasonId = existing.id;
+      } else {
+        const result = this.db.prepare(`
+          INSERT INTO coinbattle_seasons (season_name, start_date, end_date, is_active)
+          VALUES (?, ?, ?, 1)
+        `).run(seasonName, startDate, endDate);
+        seasonId = result.lastInsertRowid;
+      }
 
-      return { success: true, seasonId: result.lastInsertRowid };
+      return { success: true, seasonId };
     } catch (error) {
       this.logger.error(`Failed to create/update season: ${error.message}`);
       return { success: false, error: error.message };

@@ -880,6 +880,16 @@
                 </div>
             </div>
 
+            <div class="card" id="koth-control-card">
+                <div class="card-title" data-i18n="plugins.coinbattle.labels.king_of_the_hill">👑 KING OF THE HILL</div>
+                <div class="stat-value" id="koth-status" data-i18n="plugins.coinbattle.multiplier.inactive">Inactive</div>
+                <div class="form-help" id="koth-king"></div>
+                <div class="btn-group">
+                    <button class="btn btn-success" id="btn-start-koth" data-i18n="plugins.coinbattle.labels.start_koth">Start KOTH</button>
+                    <button class="btn btn-danger" id="btn-stop-koth" disabled data-i18n="plugins.coinbattle.labels.stop_koth">Stop KOTH</button>
+                </div>
+            </div>
+
             <div class="card" id="multiplier-card" style="display: none;">
                 <div class="card-title" data-i18n="plugins.coinbattle.labels.active_multiplier">Active Multiplier</div>
                 <div class="multiplier-indicator">
@@ -1199,6 +1209,12 @@
                         <label class="form-checkbox">
                             <input type="checkbox" id="setting-toaster-mode">
                             <span data-i18n="plugins.coinbattle.labels.toaster_mode_performance">Toaster mode (performance)</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="setting-koth-overlay">
+                            <span data-i18n="plugins.coinbattle.labels.show_koth_overlay">Show KOTH overlay</span>
                         </label>
                     </div>
                 </div>
