@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WebGPU Fireworks isolated Chrome harness</title>
+  <style>
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+    canvas { display: block; width: 100%; height: 100%; background: transparent; }
+  </style>
+</head>
+<body>
+  <canvas id="fireworks" width="640" height="360"></canvas>
+  <script>
+    'use strict';
+
+    function jsonSafeAdapterInfo(info) {
+      if (!info) return null;
+      const normalized = {};
+      for (const key of [
+        'vendor', 'architecture', 'device', 'description', 'backendType',
+        'driverType', 'subgroupMinSize', 'subgroupMaxSize', 'isFallbackAdapter'
+      ]) {
+        const value = info[key];
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+          normalized[key] = value;
+        }
+      }
+      return normalized;
+    }
+
+    async function loadScripts() {
+      const scripts = new URLSearchParams(location.search).getAll('script');
+      for (const source of scripts) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = source;
+          script.onload = resolve;
+          script.onerror = () => reject(new Error(`failed to load harness script: ${source}`));
+          document.head.appendChild(script);
+        });
+      }
+    }
+
+    async function initializeWebGpu() {
+      if (!navigator.gpu) throw new Error('navigator.gpu is unavailable');
+      const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+      if (!adapter) throw new Error('WebGPU returned no adapter');
+      const device = await adapter.requestDevice();
+      const canvas = document.getElementById('fireworks');
+      const context = canvas.getContext('webgpu');
+      if (!context) throw new Error('transparent WebGPU canvas context is unavailable');
+      context.configure({
+        device,
+        format: navigator.gpu.getPreferredCanvasFormat(),
+        alphaMode: 'premultiplied'
+      });
+      return { adapter, adapterInfo: jsonSafeAdapterInfo(adapter.info), canvas, context, device };
+    }
+
+    const ready = Promise.all([loadScripts(), initializeWebGpu()]).then(([, gpu]) => gpu);
+
+    async function runAtlasCase() { return { skipped: true, owner: 'Task 1' }; }
+    async function runCapacityCase() { return { skipped: true, owner: 'Task 2' }; }
+    async function runRecoveryCase() { return { skipped: true, owner: 'Task 3' }; }
+    async function runAdmissionEnvelopeCase() { return { skipped: true, owner: 'Task 4' }; }
+    async function runTelemetryAdaptiveCase() { return { skipped: true, owner: 'Task 5' }; }
+    async function runBoykisserCase() { return { skipped: true, owner: 'Task 6' }; }
+
+    const CASE_RUNNERS = Object.freeze({
+      atlas: runAtlasCase,
+      capacity: runCapacityCase,
+      recovery: runRecoveryCase,
+      'admission-envelope': runAdmissionEnvelopeCase,
+      'telemetry-adaptive': runTelemetryAdaptiveCase,
+      boykisser: runBoykisserCase
+    });
+
+    async function runNamedCase(name) {
+      await ready;
+      const runner = CASE_RUNNERS[name];
+      if (!runner) throw new Error(`unsupported WebGPU Fireworks case: ${name}`);
+      return runner();
+    }
+
+    window.runWebGpuFireworksCase = async function runWebGpuFireworksCase(name) {
+      const gpu = await ready;
+      if (name === 'all') {
+        const cases = {};
+        for (const caseName of Object.keys(CASE_RUNNERS)) cases[caseName] = await runNamedCase(caseName);
+        return { adapterInfo: gpu.adapterInfo, cases };
+      }
+      return { adapterInfo: gpu.adapterInfo, result: await runNamedCase(name) };
+    };
+  </script>
+</body>
+</html>
