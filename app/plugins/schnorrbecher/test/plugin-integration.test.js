@@ -131,7 +131,7 @@ describe('Schnorrbecher plugin integration', () => {
       .post('/api/coin-jar/config')
       .send({ maxPhysicalIcons: 99999, jarLabel: 'My Jar' })
       .expect(200)
-      .expect(response => expect(response.body.config.maxPhysicalIcons).toBe(600));
+      .expect(response => expect(response.body.config.maxPhysicalIcons).toBe(3000));
 
     api.socketEvents.get('coinJar.telemetry')({}, { physicalCoinCount: 200, pendingSpawns: 7 });
     expect(plugin.getStatus()).toMatchObject({ physicalCoinCount: 200, pendingSpawns: 7 });
@@ -155,6 +155,7 @@ describe('Schnorrbecher plugin integration', () => {
     const pluginRoot = path.join(__dirname, '..');
     const manifest = JSON.parse(fs.readFileSync(path.join(pluginRoot, 'plugin.json'), 'utf8'));
     const dashboardHtml = fs.readFileSync(path.join(pluginRoot, '..', '..', 'public', 'dashboard.html'), 'utf8');
+    const readme = fs.readFileSync(path.join(pluginRoot, 'README.md'), 'utf8');
 
     expect(manifest.icon).toBe('/plugins/schnorrbecher/assets/branding/schnorrbecher-icon.png');
     expect(manifest.logo).toBe('/plugins/schnorrbecher/assets/branding/schnorrbecher-logo.png');
@@ -170,5 +171,7 @@ describe('Schnorrbecher plugin integration', () => {
     expect(dashboardHtml).toContain('data-view="schnorrbecher"');
     expect(dashboardHtml).toContain('data-plugin="schnorrbecher"');
     expect(dashboardHtml).toContain('data-src="/schnorrbecher/ui"');
+    expect(readme).toContain('maxCoins=<20-3000>');
+    expect(readme).toContain('5000+ Coins');
   });
 });

@@ -53,9 +53,10 @@ describe('native WebGPU EmojiRain contract', () => {
     expect(source).not.toContain('Matter.');
   });
 
-  test('reloads the avatar proxy helper with the plugin entry', () => {
+  test('reloads changed plugin-local helpers with the plugin entry', () => {
     const source = read('plugins/webgpu-emoji-rain/main.js');
 
+    expect(source).toContain("delete require.cache[require.resolve('./lib/webgpu-config')]");
     expect(source).toContain("delete require.cache[require.resolve('./lib/avatar-proxy')]");
   });
 

@@ -1,6 +1,19 @@
 (function (root) {
   'use strict';
 
+  const DEFAULT_GIFT_SIZES = Object.freeze({
+    giftSize1: 32,
+    giftSize2To10: 40,
+    giftSize11To29: 50,
+    giftSize30To99: 62,
+    giftSize100To199: 76,
+    giftSize200To499: 92,
+    giftSize500To999: 110,
+    giftSize1000To1999: 132,
+    giftSize2000To4999: 158,
+    giftSize5000Plus: 180
+  });
+
   const DEFAULT_RENDER_CONFIG = {
     enabled: true,
     jarStyle: 'classic',
@@ -9,6 +22,7 @@
     jarX: 50,
     jarY: 82,
     iconScale: 1,
+    ...DEFAULT_GIFT_SIZES,
     maxPhysicalIcons: 300,
     spawnMultiplier: 1,
     spawnDelayMs: 80,
@@ -41,6 +55,7 @@
     mason: Object.freeze({ opening: [0.23, 0.77, 0.12], floor: [0.20, 0.80, 0.83] }),
     arcade: Object.freeze({ opening: [0.22, 0.78, 0.20], floor: [0.18, 0.82, 0.785] })
   });
+  const JAR_FILL_DENSITY = 0.55;
 
   function clamp(value, minimum, maximum) {
     return Math.max(minimum, Math.min(maximum, value));
@@ -99,29 +114,96 @@
     };
   }
 
-  function calculateJarWallSegments(physicsBounds, guardHeight = 160) {
-    const height = Math.max(0, finiteNumber(guardHeight, 160));
-    const leftOpening = physicsBounds.leftWall.start;
-    const rightOpening = physicsBounds.rightWall.start;
+  function calculateJarWallSegments(physicsBounds) {
     return {
-      leftGuard: {
-        start: { x: leftOpening.x, y: leftOpening.y - height },
-        end: { x: leftOpening.x, y: leftOpening.y }
-      },
       leftWall: physicsBounds.leftWall,
-      rightWall: physicsBounds.rightWall,
-      rightGuard: {
-        start: { x: rightOpening.x, y: rightOpening.y - height },
-        end: { x: rightOpening.x, y: rightOpening.y }
-      }
+      rightWall: physicsBounds.rightWall
     };
   }
 
-  function calculateCoinSize(value, scale) {
+  function calculateGiftSize(value, config = {}) {
     const safeValue = Math.max(1, finiteNumber(value, 1));
-    const safeScale = clamp(finiteNumber(scale, 1), 0.25, 3);
-    const base = 34 + Math.log10(safeValue) * 18;
-    return Math.round(clamp(base * safeScale, 34, 180));
+    let sizeKey = 'giftSize5000Plus';
+    if (safeValue === 1) sizeKey = 'giftSize1';
+    else if (safeValue <= 10) sizeKey = 'giftSize2To10';
+    else if (safeValue <= 29) sizeKey = 'giftSize11To29';
+    else if (safeValue <= 99) sizeKey = 'giftSize30To99';
+    else if (safeValue <= 199) sizeKey = 'giftSize100To199';
+    else if (safeValue <= 499) sizeKey = 'giftSize200To499';
+    else if (safeValue <= 999) sizeKey = 'giftSize500To999';
+    else if (safeValue <= 1999) sizeKey = 'giftSize1000To1999';
+    else if (safeValue <= 4999) sizeKey = 'giftSize2000To4999';
+    const baseSize = clamp(finiteNumber(config[sizeKey], DEFAULT_GIFT_SIZES[sizeKey]), 16, 240);
+    const scale = clamp(finiteNumber(config.iconScale, DEFAULT_RENDER_CONFIG.iconScale), 0.25, 3);
+    return Math.round(clamp(baseSize * scale, 16, 240));
+  }
+
+  function calculateJarInteriorBounds(physicsBounds, y) {
+    const opening = physicsBounds?.opening;
+    const floor = physicsBounds?.floor;
+    if (!opening || !floor) return { left: 0, right: 0 };
+    const height = Math.max(1, floor.y - opening.y);
+    const progress = clamp((finiteNumber(y, opening.y) - opening.y) / height, 0, 1);
+    return {
+      left: opening.left + (floor.left - opening.left) * progress,
+      right: opening.right + (floor.right - opening.right) * progress
+    };
+  }
+
+  function calculateJarFillRatio(bodies, physicsBounds, incomingSize = 0) {
+    const opening = physicsBounds?.opening;
+    const floor = physicsBounds?.floor;
+    if (!opening || !floor) return 0;
+    const interiorHeight = Math.max(1, floor.y - opening.y);
+    const interiorArea = Math.max(1, (
+      Math.max(1, opening.right - opening.left) + Math.max(1, floor.right - floor.left)
+    ) * interiorHeight / 2);
+    const occupiedArea = (Array.isArray(bodies) ? bodies : [])
+      .filter(body => body?.plugin?.overflow !== true)
+      .reduce((area, body) => {
+        const radius = Math.max(0, finiteNumber(body.circleRadius, 0));
+        return area + Math.PI * radius * radius;
+      }, 0);
+    const incomingRadius = Math.max(0, finiteNumber(incomingSize, 0)) / 2;
+    return (occupiedArea + Math.PI * incomingRadius * incomingRadius) / (interiorArea * JAR_FILL_DENSITY);
+  }
+
+  function shouldOverflowJar(bodies, physicsBounds, incomingSize = 0) {
+    const openingWidth = Math.max(0, finiteNumber(physicsBounds?.opening?.right, 0) - finiteNumber(physicsBounds?.opening?.left, 0));
+    const safeIncomingSize = Math.max(0, finiteNumber(incomingSize, 0));
+    const cannotPassOpening = safeIncomingSize > 0 && safeIncomingSize >= Math.max(1, openingWidth - 12);
+    return cannotPassOpening || calculateJarFillRatio(bodies, physicsBounds, safeIncomingSize) >= 1;
+  }
+
+  function calculateJarContainmentPosition(position, radius, physicsBounds) {
+    const opening = physicsBounds?.opening;
+    const floor = physicsBounds?.floor;
+    if (!opening || !floor) return { x: 0, y: 0 };
+    const safeRadius = Math.max(0, finiteNumber(radius, 0));
+    const minimumY = opening.y + safeRadius;
+    const maximumY = floor.y - safeRadius;
+    const y = minimumY <= maximumY
+      ? clamp(finiteNumber(position?.y, minimumY), minimumY, maximumY)
+      : (opening.y + floor.y) / 2;
+    const interior = calculateJarInteriorBounds(physicsBounds, y);
+    const minimumX = interior.left + safeRadius;
+    const maximumX = interior.right - safeRadius;
+    return {
+      x: minimumX <= maximumX
+        ? clamp(finiteNumber(position?.x, minimumX), minimumX, maximumX)
+        : (interior.left + interior.right) / 2,
+      y
+    };
+  }
+
+  function isOutsideJarInterior(position, radius, physicsBounds) {
+    const opening = physicsBounds?.opening;
+    const floor = physicsBounds?.floor;
+    const y = finiteNumber(position?.y, NaN);
+    const x = finiteNumber(position?.x, NaN);
+    if (!opening || !floor || !Number.isFinite(x) || !Number.isFinite(y) || y < opening.y) return false;
+    const interior = calculateJarInteriorBounds(physicsBounds, y);
+    return y > floor.y || x < interior.left || x > interior.right;
   }
 
   function calculateSpillBounds(viewport, thickness = 24) {
@@ -269,10 +351,8 @@
       const spill = calculateSpillBounds(this._viewport(), thickness);
       const segments = calculateJarWallSegments(this.physicsBounds);
       this.walls = [
-        this._createSlopedWall(Bodies, segments.leftGuard.start, segments.leftGuard.end, 'left', thickness),
         this._createSlopedWall(Bodies, segments.leftWall.start, segments.leftWall.end, 'left', thickness),
         this._createSlopedWall(Bodies, segments.rightWall.start, segments.rightWall.end, 'right', thickness),
-        this._createSlopedWall(Bodies, segments.rightGuard.start, segments.rightGuard.end, 'right', thickness),
         Bodies.rectangle(
           (this.physicsBounds.floor.left + this.physicsBounds.floor.right) / 2,
           this.physicsBounds.floor.y + thickness / 2,
@@ -289,8 +369,11 @@
 
     applyConfig(config = {}) {
       this.config = { ...this.config, ...(config || {}) };
-      this.config.maxPhysicalIcons = Math.floor(clamp(finiteNumber(this.config.maxPhysicalIcons, 300), 20, 600));
+      this.config.maxPhysicalIcons = Math.floor(clamp(finiteNumber(this.config.maxPhysicalIcons, 300), 20, 3000));
       this.config.iconScale = clamp(finiteNumber(this.config.iconScale, 1), 0.25, 3);
+      for (const [key, fallback] of Object.entries(DEFAULT_GIFT_SIZES)) {
+        this.config[key] = Math.round(clamp(finiteNumber(this.config[key], fallback), 16, 240));
+      }
       this.config.spawnMultiplier = clamp(finiteNumber(this.config.spawnMultiplier, 1), 0.1, 5);
       this.config.spawnDelayMs = Math.floor(clamp(finiteNumber(this.config.spawnDelayMs, 80), 20, 1000));
       this.config.jarOpacity = clamp(finiteNumber(this.config.jarOpacity, 0.22), 0, 1);
@@ -339,14 +422,19 @@
       for (let index = 0; index < count; index += 1) {
         const gift = recentGifts[index % Math.max(1, recentGifts.length)];
         if (!gift) break;
+        const totalValue = Math.max(1, finiteNumber(payload.totalCoinValue, 1) / Math.max(1, count));
         this._createCoin({
-          totalValue: Math.max(1, finiteNumber(payload.totalCoinValue, 1) / Math.max(1, count)),
+          totalValue,
           giftId: gift.giftId,
           giftName: gift.giftName,
           giftImage: gift.giftImage,
           visualCoins: 1,
           generation: this.generation
-        }, { settled: true, overflow: false, tier: index > 180 ? 1 : 0 });
+        }, {
+          settled: true,
+          overflow: this._isJarFull(calculateGiftSize(totalValue, this.config)),
+          tier: index > 180 ? 1 : 0
+        });
       }
       this._emitTelemetry();
     }
@@ -362,7 +450,7 @@
       this._compactFor(requested);
       const plan = planVisualCoins(payload, this.config, this.bodies.length);
       const count = Math.min(requested, Math.max(0, this.config.maxPhysicalIcons - this.bodies.length));
-      const overflow = plan.overflow || this._isJarFull();
+      const overflow = plan.overflow || this._isJarFull(calculateGiftSize(payload.totalValue, this.config));
       for (let index = 0; index < count; index += 1) {
         this.queue.push({ payload, generation: this.generation, overflow, tier: 0 });
       }
@@ -404,9 +492,8 @@
       return true;
     }
 
-    _isJarFull() {
-      const inJar = this.bodies.filter(body => !body.plugin?.overflow).length;
-      return inJar >= Math.max(24, Math.floor(this.config.maxPhysicalIcons * 0.8));
+    _isJarFull(incomingSize = 0) {
+      return shouldOverflowJar(this.bodies, this.physicsBounds, incomingSize);
     }
 
     _scheduleSpawn() {
@@ -415,7 +502,10 @@
       const delay = Math.round((40 + this.random() * 80) * this.config.spawnMultiplier);
       this.spawnTimer = this.setTimeoutFn(() => {
         this.spawnTimer = null;
-        if (item.generation === this.generation) this._createCoin(item.payload, item);
+        if (item.generation === this.generation) {
+          const overflow = item.overflow || this._isJarFull(calculateGiftSize(item.payload.totalValue, this.config));
+          this._createCoin(item.payload, { ...item, overflow });
+        }
         this._emitTelemetry();
         this._scheduleSpawn();
       }, delay);
@@ -426,7 +516,7 @@
       if (!this.engine || !this.Matter || !this.bounds || !this.physicsBounds || !giftImage || this.bodies.length >= this.config.maxPhysicalIcons) return null;
       const { Bodies, Body, Composite } = this.Matter;
       const tier = options.tier || 0;
-      const size = calculateCoinSize(payload.totalValue, this.config.iconScale) * (1 + tier * 0.35);
+      const size = calculateGiftSize(payload.totalValue, this.config);
       const overflow = options.overflow === true;
       const side = this.random() < 0.5 ? -1 : 1;
       const openingWidth = this.physicsBounds.opening.right - this.physicsBounds.opening.left;
@@ -498,6 +588,19 @@
           this.Matter.Body.setVelocity(body, {
             x: body.velocity.x / speed * maximumSpeed,
             y: body.velocity.y / speed * maximumSpeed
+          });
+        }
+        if (body.plugin?.overflow !== true && this.physicsBounds
+          && isOutsideJarInterior(body.position, body.circleRadius, this.physicsBounds)
+          && this.Matter?.Body) {
+          this.Matter.Body.setPosition(body, calculateJarContainmentPosition(
+            body.position,
+            body.circleRadius,
+            this.physicsBounds
+          ));
+          this.Matter.Body.setVelocity(body, {
+            x: body.velocity.x * 0.2,
+            y: Math.max(0, Math.min(1.5, body.velocity.y))
           });
         }
         if (body.position.x < -margin || body.position.x > this._viewport().width + margin || body.position.y > this._viewport().height + margin) {
@@ -616,7 +719,19 @@
     }
   }
 
-  const exports = { calculateJarBounds, calculateJarPhysicsBounds, calculateJarWallSegments, calculateCoinSize, calculateSpillBounds, planVisualCoins, CoinJarOverlay };
+  const exports = {
+    calculateJarBounds,
+    calculateJarPhysicsBounds,
+    calculateJarWallSegments,
+    calculateJarInteriorBounds,
+    calculateJarContainmentPosition,
+    calculateGiftSize,
+    calculateJarFillRatio,
+    isOutsideJarInterior,
+    calculateSpillBounds,
+    planVisualCoins,
+    CoinJarOverlay
+  };
   if (typeof module !== 'undefined' && module.exports) module.exports = exports;
   root.CoinJarOverlay = CoinJarOverlay;
   root.CoinJarOverlayHelpers = exports;

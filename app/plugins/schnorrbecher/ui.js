@@ -3,7 +3,10 @@
 
   const NUMBER_FIELDS = new Set([
     'jarWidth', 'jarHeight', 'jarX', 'jarY', 'iconScale', 'maxPhysicalIcons',
-    'spawnMultiplier', 'spawnDelayMs', 'soundVolume', 'jarOpacity', 'counterFontSize'
+    'giftSize1', 'giftSize2To10', 'giftSize11To29', 'giftSize30To99', 'giftSize100To199',
+    'giftSize200To499', 'giftSize500To999', 'giftSize1000To1999', 'giftSize2000To4999',
+    'giftSize5000Plus', 'spawnMultiplier', 'spawnDelayMs', 'soundVolume', 'jarOpacity',
+    'counterFontSize'
   ]);
 
   class SchnorrbecherAdmin {

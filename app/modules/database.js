@@ -2,6 +2,16 @@ const Database = require('better-sqlite3');
 const { safeJsonParse } = require('./error-handler');
 const fs = require('fs');
 const path = require('path');
+const {
+    ANIMAL_COMMAND_SETTING_KEYS,
+    normalizeAnimalCommandSettings
+} = require('./emoji-rain-animal-commands');
+
+const EMOJI_RAIN_IMAGE_PREFIXES = [
+    '/emoji-rain/uploads/',
+    '/uploads/emoji-rain/',
+    '/plugins/emoji-rain/uploads/'
+];
 
 class DatabaseManager {
     constructor(dbPath, streamerId = null) {
@@ -1762,7 +1772,17 @@ class DatabaseManager {
 
             // SuperFan Burst
             superfan_burst_enabled: true,
-            animal_commands_superfans_only: true,
+            animal_commands: [
+                { command: 'beans', enabled: true, asset_type: 'emoji', asset_value: '🐾' },
+                { command: 'miau', enabled: true, asset_type: 'emoji', asset_value: '🐱' },
+                { command: 'rawr', enabled: true, asset_type: 'emoji', asset_value: '🦖' },
+                { command: 'woof', enabled: true, asset_type: 'emoji', asset_value: '🐶' },
+                { command: 'wuff', enabled: true, asset_type: 'emoji', asset_value: '🐶' }
+            ],
+            animal_commands_allow_team_members: true,
+            animal_command_user_cooldown_ms: 60000,
+            animal_command_superfan_cooldown_ms: 15000,
+            animal_command_global_cooldown_ms: 15000,
             superfan_burst_intensity: 3.8,
             superfan_burst_duration: 2000,
 
@@ -1956,9 +1976,29 @@ class DatabaseManager {
         console.log('🔍 [DATABASE] configData.emoji_set:', configData.emoji_set);
         console.log('🔍 [DATABASE] configData.emoji_set type:', typeof configData.emoji_set, Array.isArray(configData.emoji_set));
 
+        const animalCommandSettings = normalizeAnimalCommandSettings(configData, {
+            imagePathPrefixes: EMOJI_RAIN_IMAGE_PREFIXES
+        });
+        const migratedConfigData = {
+            ...configData,
+            ...animalCommandSettings
+        };
+        const needsAnimalCommandMigration = ANIMAL_COMMAND_SETTING_KEYS.some(key => (
+            !Object.prototype.hasOwnProperty.call(configData, key)
+        ));
+
+        if (needsAnimalCommandMigration) {
+            this.db.prepare(`
+                UPDATE emoji_rain_config
+                SET config_json = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = 1
+            `).run(JSON.stringify(migratedConfigData));
+            console.log('✅ [DATABASE] Persisted missing EmojiRain command settings');
+        }
+
         const result = {
             enabled: Boolean(row.enabled),
-            ...configData
+            ...migratedConfigData
         };
 
         console.log('✅ [DATABASE] Returning config with', Object.keys(result).length, 'keys');

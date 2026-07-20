@@ -1,5 +1,16 @@
 'use strict';
 
+const {
+  DEFAULT_ANIMAL_COMMANDS,
+  normalizeAnimalCommandSettings
+} = require('../../../modules/emoji-rain-animal-commands');
+
+const WEBGPU_EMOJI_RAIN_IMAGE_PREFIXES = [
+  '/webgpu-emoji-rain/uploads/',
+  '/uploads/webgpu-emoji-rain/',
+  '/plugins/webgpu-emoji-rain/uploads/'
+];
+
 const DEFAULT_WEBGPU_CONFIG = Object.freeze({
   enabled: true,
   obs_hud_enabled: true,
@@ -47,7 +58,11 @@ const DEFAULT_WEBGPU_CONFIG = Object.freeze({
   pixel_enabled: false,
   pixel_size: 4,
   superfan_burst_enabled: true,
-  animal_commands_superfans_only: true,
+  animal_commands: DEFAULT_ANIMAL_COMMANDS,
+  animal_commands_allow_team_members: true,
+  animal_command_user_cooldown_ms: 60000,
+  animal_command_superfan_cooldown_ms: 15000,
+  animal_command_global_cooldown_ms: 15000,
   superfan_burst_intensity: 3.8,
   superfan_burst_duration: 2000,
   fps_optimization_enabled: true,
@@ -117,8 +132,13 @@ function clamp(value, min, max, fallback) {
   return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
 }
 
-function normalizeWebGPUConfig(input = {}) {
-  const config = { ...DEFAULT_WEBGPU_CONFIG, ...(input && typeof input === 'object' ? input : {}) };
+function normalizeWebGPUConfig(input = {}, options = {}) {
+  const source = input && typeof input === 'object' ? input : {};
+  const config = { ...DEFAULT_WEBGPU_CONFIG, ...source };
+  Object.assign(config, normalizeAnimalCommandSettings(source, {
+    strict: options.strict === true,
+    imagePathPrefixes: WEBGPU_EMOJI_RAIN_IMAGE_PREFIXES
+  }));
   config.renderer_profile = PROFILES.has(config.renderer_profile) ? config.renderer_profile : 'hybrid';
   config.quality_preset = QUALITY_PRESETS.has(config.quality_preset) ? config.quality_preset : 'auto';
   config.effect_intensity = clamp(config.effect_intensity, 0, 100, 72);
@@ -164,7 +184,7 @@ function normalizeWebGPUConfig(input = {}) {
     'enable_depth', 'enable_bloom', 'enable_trails', 'enable_soft_shadows',
     'gpu_collisions_enabled', 'use_custom_images', 'toaster_mode', 'wind_enabled',
     'floor_enabled', 'bounce_enabled', 'rainbow_enabled', 'pixel_enabled',
-    'superfan_burst_enabled', 'animal_commands_superfans_only', 'fps_optimization_enabled', 'adaptive_resolution_enabled',
+    'superfan_burst_enabled', 'fps_optimization_enabled', 'adaptive_resolution_enabled',
     'rate_limit_enabled', 'gift_balls_enabled', 'gift_ball_tier_thresholds_enabled',
     'heart_balloons_enabled', 'sticker_enabled', 'sticker_superfan_burst_enabled'
   ]) {
