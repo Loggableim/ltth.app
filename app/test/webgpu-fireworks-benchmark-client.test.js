@@ -1,6 +1,7 @@
 'use strict';
 
 const { WebGPUFireworksEngine } = require('../plugins/webgpu-fireworks/gpu/engine');
+const { createDeferred } = require('./helpers/webgpu-fireworks-gpu-harness');
 
 const FIRST_SESSION = '11111111-1111-4111-8111-111111111111';
 const SECOND_SESSION = '22222222-2222-4222-8222-222222222222';
@@ -77,6 +78,172 @@ function createClient(search = '') {
 }
 
 describe('WebGPU Fireworks benchmark overlay client isolation', () => {
+  test('acknowledges maxTotalParticles only after the renderer uses that capacity', async () => {
+    const pending = createDeferred();
+    const renderer = {
+      initialized: true,
+      maxParticles: 2_048,
+      reconfigureCapacity: jest.fn(() => pending.promise),
+    };
+    const client = createClient('');
+    try {
+      client.engine.renderer = renderer;
+      client.engine.config.maxTotalParticles = 2_048;
+      const acknowledge = jest.fn();
+
+      const invocation = client.receive('webgpu-fireworks:config-update', {
+        config: { maxTotalParticles: 8_192 },
+      }, acknowledge);
+      await Promise.resolve();
+      expect(acknowledge).not.toHaveBeenCalled();
+      expect(client.engine.config.maxTotalParticles).toBe(2_048);
+      expect(renderer.reconfigureCapacity).toHaveBeenCalledWith(8_192);
+
+      renderer.maxParticles = 8_192;
+      pending.resolve({ changed: true, generation: 2, maxParticles: 8_192 });
+      await invocation;
+
+      expect(client.engine.config.maxTotalParticles).toBe(8_192);
+      expect(acknowledge).toHaveBeenCalledWith({
+        accepted: true,
+        benchmarkSessionId: null,
+        applied: true,
+      });
+    } finally {
+      client.restore();
+    }
+  });
+
+  test('returns a stable error and preserves config when capacity replacement fails', async () => {
+    const renderer = {
+      initialized: true,
+      maxParticles: 2_048,
+      reconfigureCapacity: jest.fn().mockRejectedValue(Object.assign(new Error('allocation failed'), {
+        code: 'GPU_CAPACITY_REALLOCATION_FAILED',
+      })),
+    };
+    const client = createClient('');
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      client.engine.renderer = renderer;
+      client.engine.config.maxTotalParticles = 2_048;
+      const acknowledge = jest.fn();
+
+      await client.receive('webgpu-fireworks:config-update', {
+        config: { maxTotalParticles: 8_192 },
+      }, acknowledge);
+
+      expect(client.engine.config.maxTotalParticles).toBe(2_048);
+      expect(acknowledge).toHaveBeenCalledWith({
+        accepted: false,
+        benchmarkSessionId: null,
+        reason: 'gpu-capacity-reallocation-failed',
+      });
+      expect(consoleError).toHaveBeenCalledTimes(1);
+      expect(consoleError).toHaveBeenCalledWith(
+        '[WebGPU Fireworks] Config apply failed:',
+        expect.objectContaining({ code: 'GPU_CAPACITY_REALLOCATION_FAILED' })
+      );
+    } finally {
+      consoleError.mockRestore();
+      client.restore();
+    }
+  });
+
+  test('serializes complete config applies without stale merges after a pending resize', async () => {
+    const pending = createDeferred();
+    const renderer = {
+      initialized: true,
+      maxParticles: 2_048,
+      reconfigureCapacity: jest.fn(() => pending.promise),
+    };
+    const client = createClient('');
+    try {
+      client.engine.renderer = renderer;
+      client.engine.config.maxTotalParticles = 2_048;
+      const firstAck = jest.fn();
+      const secondAck = jest.fn();
+
+      const first = client.receive('webgpu-fireworks:config-update', {
+        config: { maxTotalParticles: 4_096, audioVolume: 0.25 },
+      }, firstAck);
+      await Promise.resolve();
+      const second = client.receive('webgpu-fireworks:config-update', {
+        config: { targetFps: 30 },
+      }, secondAck);
+      await Promise.resolve();
+
+      expect(firstAck).not.toHaveBeenCalled();
+      expect(secondAck).not.toHaveBeenCalled();
+      expect(client.engine.config.maxTotalParticles).toBe(2_048);
+
+      renderer.maxParticles = 4_096;
+      pending.resolve({ changed: true, generation: 2, maxParticles: 4_096 });
+      await Promise.all([first, second]);
+
+      expect(renderer.reconfigureCapacity).toHaveBeenCalledTimes(1);
+      expect(client.engine.config).toEqual(expect.objectContaining({
+        maxTotalParticles: 4_096,
+        audioVolume: 0.25,
+        targetFps: 30,
+      }));
+      expect(firstAck).toHaveBeenCalledWith({
+        accepted: true,
+        benchmarkSessionId: null,
+        applied: true,
+      });
+      expect(secondAck).toHaveBeenCalledWith({
+        accepted: true,
+        benchmarkSessionId: null,
+        applied: true,
+      });
+    } finally {
+      client.restore();
+    }
+  });
+
+  test('waits for renderer startup before applying or acknowledging an explicit capacity', async () => {
+    const ready = createDeferred();
+    const renderer = {
+      initialized: false,
+      maxParticles: 2_048,
+      reconfigureCapacity: jest.fn(async capacity => {
+        renderer.maxParticles = capacity;
+        return { changed: true, generation: 2, maxParticles: capacity };
+      }),
+    };
+    const client = createClient('');
+    try {
+      client.engine.renderer = renderer;
+      client.engine.rendererReadyPromise = ready.promise;
+      client.engine.config.maxTotalParticles = 2_048;
+      const acknowledge = jest.fn();
+
+      const invocation = client.receive('webgpu-fireworks:config-update', {
+        config: { maxTotalParticles: 4_096 },
+      }, acknowledge);
+      await Promise.resolve();
+
+      expect(renderer.reconfigureCapacity).not.toHaveBeenCalled();
+      expect(client.engine.config.maxTotalParticles).toBe(2_048);
+      expect(acknowledge).not.toHaveBeenCalled();
+
+      renderer.initialized = true;
+      ready.resolve(true);
+      await invocation;
+
+      expect(renderer.reconfigureCapacity).toHaveBeenCalledWith(4_096);
+      expect(client.engine.config.maxTotalParticles).toBe(4_096);
+      expect(acknowledge).toHaveBeenCalledWith({
+        accepted: true,
+        benchmarkSessionId: null,
+        applied: true,
+      });
+    } finally {
+      client.restore();
+    }
+  });
+
   test('reads a session only in benchmark mode and publishes it with registration, status, and FPS', () => {
     const benchmark = createClient(`?benchmark=true&benchmarkSessionId=${FIRST_SESSION}`);
     try {
@@ -136,13 +303,13 @@ describe('WebGPU Fireworks benchmark overlay client isolation', () => {
         expect.objectContaining({ shape: 'burst', benchmarkSessionId: FIRST_SESSION })
       );
 
-      client.receive('webgpu-fireworks:config-update', {
+      await client.receive('webgpu-fireworks:config-update', {
         config: { targetFps: 30 }, benchmarkSessionId: FIRST_SESSION
       });
-      client.receive('webgpu-fireworks:config-update', {
+      await client.receive('webgpu-fireworks:config-update', {
         config: { targetFps: 20 }, benchmarkSessionId: SECOND_SESSION
       });
-      client.receive('webgpu-fireworks:config-update', { config: { targetFps: 10 } });
+      await client.receive('webgpu-fireworks:config-update', { config: { targetFps: 10 } });
       expect(client.engine.config.targetFps).toBe(30);
 
       for (const event of [
@@ -170,7 +337,7 @@ describe('WebGPU Fireworks benchmark overlay client isolation', () => {
     }
   });
 
-  test('live clients accept global events and reject every session-marked benchmark event', () => {
+  test('live clients accept global events and reject every session-marked benchmark event', async () => {
     const client = createClient('');
     try {
       client.connect();
@@ -181,8 +348,8 @@ describe('WebGPU Fireworks benchmark overlay client isolation', () => {
       expect(client.engine.handleIncomingTrigger).toHaveBeenCalledTimes(1);
       expect(client.engine.handleIncomingTrigger).toHaveBeenCalledWith({ shape: 'heart' });
 
-      client.receive('webgpu-fireworks:config-update', { config: { targetFps: 48 } });
-      client.receive('webgpu-fireworks:config-update', {
+      await client.receive('webgpu-fireworks:config-update', { config: { targetFps: 48 } });
+      await client.receive('webgpu-fireworks:config-update', {
         config: { targetFps: 12 }, benchmarkSessionId: FIRST_SESSION
       });
       expect(client.engine.config.targetFps).toBe(48);
@@ -235,7 +402,7 @@ describe('WebGPU Fireworks benchmark overlay client isolation', () => {
       const configAck = jest.fn();
       const triggerAck = jest.fn();
 
-      client.receive('webgpu-fireworks:config-update', {
+      await client.receive('webgpu-fireworks:config-update', {
         config: { targetFps: 30 },
         benchmarkSessionId: FIRST_SESSION
       }, configAck);

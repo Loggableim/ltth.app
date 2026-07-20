@@ -103,6 +103,12 @@ class WebGPUParticleEngine {
     constructor(canvas, options = {}) {
         this.canvas = canvas;
         this.maxParticles = Math.max(256, Number(options.maxParticles) || 8192);
+        this.particleStride = 96;
+        this.resourceGeneration = 0;
+        this.capacityResources = null;
+        this.pendingCapacityResources = null;
+        this.capacityChangePromise = Promise.resolve();
+        this.capacityResourceEpoch = 0;
         this.maxSpawnCommands = 32;
         this.maxTrailSamples = 12;
         this.trailSamples = Math.max(2, Math.min(this.maxTrailSamples, Number(options.trailSamples) || 8));
@@ -167,6 +173,7 @@ class WebGPUParticleEngine {
     }
 
     async init() {
+        const generationAtStart = this.resourceGeneration;
         this.destroyed = false;
         this._emitStatus('initializing');
         if (!globalThis.navigator || !navigator.gpu) {
@@ -214,6 +221,8 @@ class WebGPUParticleEngine {
             return true;
         } catch (error) {
             this.initialized = false;
+            this._destroyResources();
+            this.resourceGeneration = generationAtStart;
             this._emitStatus('error', { reason: error && error.message ? error.message : String(error) });
             return false;
         }
@@ -263,9 +272,9 @@ class WebGPUParticleEngine {
         this.onStatus({ ...this.metrics });
     }
 
-    _createBuffer(label, size, usage, initialData = null) {
-        const buffer = this.device.createBuffer({ label, size: Math.max(4, Math.ceil(size / 4) * 4), usage });
-        if (initialData) this.device.queue.writeBuffer(buffer, 0, initialData);
+    _createBuffer(label, size, usage, initialData = null, device = this.device) {
+        const buffer = device.createBuffer({ label, size: Math.max(4, Math.ceil(size / 4) * 4), usage });
+        if (initialData) device.queue.writeBuffer(buffer, 0, initialData);
         return buffer;
     }
 
@@ -273,40 +282,25 @@ class WebGPUParticleEngine {
         const U = globalThis.GPUBufferUsage;
         const T = globalThis.GPUTextureUsage;
         const particleStride = 96;
-        const activeIndexBucketBytes = this.maxParticles * 4;
-        const storageOffsetAlignment = Math.max(4, Number(this.device.limits?.minStorageBufferOffsetAlignment) || 256);
-        this.activeIndexBucketStrideBytes = Math.ceil(activeIndexBucketBytes / storageOffsetAlignment) * storageOffsetAlignment;
-        this.buffers = {
-            particles: this._createBuffer('fireworks-particles', this.maxParticles * particleStride, U.STORAGE | U.COPY_DST | U.COPY_SRC),
-            history: this._createBuffer('fireworks-trail-history', this.maxParticles * this.maxTrailSamples * 16, U.STORAGE | U.COPY_DST),
-            activeIndices: this._createBuffer('fireworks-active-indices', this.activeIndexBucketStrideBytes * DEPTH_BUCKET_COUNT, U.STORAGE | U.COPY_SRC),
-            secondaryIndices: this._createBuffer('fireworks-secondary-indices', this.maxParticles * 4, U.STORAGE),
-            freeIndices: this._createBuffer('fireworks-free-indices', this.maxParticles * 4, U.STORAGE | U.COPY_DST),
-            counters: this._createBuffer('fireworks-counters', 32, U.STORAGE | U.COPY_SRC | U.COPY_DST),
+        const trailHistoryStride = this.maxTrailSamples * 16;
+        this.particleStride = particleStride;
+        this.capacityResourceEpoch += 1;
+        this.deviceResources = {
             commands: this._createBuffer('fireworks-spawn-commands', this.maxSpawnCommands * 112, U.STORAGE | U.COPY_DST),
-            uniforms: this._createBuffer('fireworks-uniforms', 48, U.UNIFORM | U.COPY_DST),
-            coreIndirect: this._createBuffer('fireworks-core-indirect', DEPTH_BUCKET_COUNT * 16, U.STORAGE | U.INDIRECT | U.COPY_DST | U.COPY_SRC),
-            trailIndirect: this._createBuffer('fireworks-trail-indirect', DEPTH_BUCKET_COUNT * 16, U.STORAGE | U.INDIRECT | U.COPY_DST | U.COPY_SRC),
-            readback: this._createBuffer('fireworks-counter-readback', 16, U.MAP_READ | U.COPY_DST)
+            uniforms: this._createBuffer('fireworks-uniforms', 48, U.UNIFORM | U.COPY_DST)
         };
         if (this.timestampEnabled) {
             this.timestampQuerySet = this.device.createQuerySet({ type: 'timestamp', count: 2 });
-            this.buffers.timestampResolve = this._createBuffer('fireworks-timestamp-resolve', 16, U.QUERY_RESOLVE | U.COPY_SRC);
-            this.buffers.timestampReadback = this._createBuffer('fireworks-timestamp-readback', 16, U.MAP_READ | U.COPY_DST);
+            this.deviceResources.timestampResolve = this._createBuffer('fireworks-timestamp-resolve', 16, U.QUERY_RESOLVE | U.COPY_SRC);
+            this.deviceResources.timestampReadback = this._createBuffer('fireworks-timestamp-readback', 16, U.MAP_READ | U.COPY_DST);
         }
-
-        const freeIndices = new Uint32Array(this.maxParticles);
-        for (let i = 0; i < this.maxParticles; i++) freeIndices[i] = i;
-        this.device.queue.writeBuffer(this.buffers.freeIndices, 0, freeIndices);
-        this.device.queue.writeBuffer(this.buffers.counters, 0, new Uint32Array([this.maxParticles, 0, 0, 0, 0, 0, 0, 0]));
-        const coreIndirect = new Uint32Array(DEPTH_BUCKET_COUNT * 4);
-        const trailIndirect = new Uint32Array(DEPTH_BUCKET_COUNT * 4);
-        for (let bucket = 0; bucket < DEPTH_BUCKET_COUNT; bucket++) {
-            coreIndirect[bucket * 4] = 6;
-            trailIndirect[bucket * 4] = 6;
-        }
-        this.device.queue.writeBuffer(this.buffers.coreIndirect, 0, coreIndirect);
-        this.device.queue.writeBuffer(this.buffers.trailIndirect, 0, trailIndirect);
+        this.buffers = { ...this.deviceResources };
+        this.pendingCapacityResources = this._createCapacityResources(
+            this.maxParticles,
+            this.device,
+            trailHistoryStride
+        );
+        this._activateCapacityBufferAliases(this.pendingCapacityResources);
 
         this.atlasTexture = this.device.createTexture({
             label: 'fireworks-atlas',
@@ -320,6 +314,255 @@ class WebGPUParticleEngine {
             addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge'
         });
         this._createFrameTextures();
+    }
+
+    _createCapacityResources(
+        maxParticles,
+        device = this.device,
+        trailHistoryStride = this.maxTrailSamples * 16
+    ) {
+        const U = globalThis.GPUBufferUsage;
+        const activeIndexBucketBytes = maxParticles * Uint32Array.BYTES_PER_ELEMENT;
+        const storageOffsetAlignment = Math.max(
+            4,
+            Number(device.limits?.minStorageBufferOffsetAlignment) || 256
+        );
+        const activeIndexBucketStrideBytes = Math.ceil(
+            activeIndexBucketBytes / storageOffsetAlignment
+        ) * storageOffsetAlignment;
+        const resources = {
+            maxParticles,
+            activeIndexBucketBytes,
+            activeIndexBucketStrideBytes,
+            generation: 0,
+            readbackPending: false,
+            readbackPromise: null,
+            readbackLeases: 0,
+            retired: false,
+            destroyed: false
+        };
+
+        try {
+            resources.particleBuffer = this._createBuffer(
+                'fireworks-particles',
+                maxParticles * this.particleStride,
+                U.STORAGE | U.COPY_DST | U.COPY_SRC,
+                null,
+                device
+            );
+            resources.historyBuffer = this._createBuffer(
+                'fireworks-trail-history',
+                maxParticles * trailHistoryStride,
+                U.STORAGE | U.COPY_DST,
+                null,
+                device
+            );
+            resources.activeIndicesBuffer = this._createBuffer(
+                'fireworks-active-indices',
+                activeIndexBucketStrideBytes * DEPTH_BUCKET_COUNT,
+                U.STORAGE | U.COPY_SRC,
+                null,
+                device
+            );
+            resources.secondaryIndicesBuffer = this._createBuffer(
+                'fireworks-secondary-indices',
+                maxParticles * Uint32Array.BYTES_PER_ELEMENT,
+                U.STORAGE,
+                null,
+                device
+            );
+            resources.freeIndicesBuffer = this._createBuffer(
+                'fireworks-free-indices',
+                maxParticles * Uint32Array.BYTES_PER_ELEMENT,
+                U.STORAGE | U.COPY_DST,
+                null,
+                device
+            );
+            resources.countersBuffer = this._createBuffer(
+                'fireworks-counters',
+                32,
+                U.STORAGE | U.COPY_SRC | U.COPY_DST,
+                null,
+                device
+            );
+            resources.coreIndirectBuffer = this._createBuffer(
+                'fireworks-core-indirect',
+                DEPTH_BUCKET_COUNT * 16,
+                U.STORAGE | U.INDIRECT | U.COPY_DST | U.COPY_SRC,
+                null,
+                device
+            );
+            resources.trailIndirectBuffer = this._createBuffer(
+                'fireworks-trail-indirect',
+                DEPTH_BUCKET_COUNT * 16,
+                U.STORAGE | U.INDIRECT | U.COPY_DST | U.COPY_SRC,
+                null,
+                device
+            );
+            resources.readback = this._createBuffer(
+                'fireworks-counter-readback',
+                16,
+                U.MAP_READ | U.COPY_DST,
+                null,
+                device
+            );
+
+            const freeIndices = new Uint32Array(maxParticles);
+            for (let i = 0; i < maxParticles; i++) freeIndices[i] = i;
+            device.queue.writeBuffer(resources.freeIndicesBuffer, 0, freeIndices);
+            device.queue.writeBuffer(
+                resources.countersBuffer,
+                0,
+                new Uint32Array([maxParticles, 0, 0, 0, 0, 0, 0, 0])
+            );
+            const coreIndirect = new Uint32Array(DEPTH_BUCKET_COUNT * 4);
+            const trailIndirect = new Uint32Array(DEPTH_BUCKET_COUNT * 4);
+            for (let bucket = 0; bucket < DEPTH_BUCKET_COUNT; bucket++) {
+                coreIndirect[bucket * 4] = 6;
+                trailIndirect[bucket * 4] = 6;
+            }
+            device.queue.writeBuffer(resources.coreIndirectBuffer, 0, coreIndirect);
+            device.queue.writeBuffer(resources.trailIndirectBuffer, 0, trailIndirect);
+            return resources;
+        } catch (error) {
+            this._destroyCapacityResources(resources);
+            throw error;
+        }
+    }
+
+    _activateCapacityBufferAliases(resources) {
+        this.activeIndexBucketStrideBytes = resources.activeIndexBucketStrideBytes;
+        Object.assign(this.buffers, {
+            particles: resources.particleBuffer,
+            history: resources.historyBuffer,
+            activeIndices: resources.activeIndicesBuffer,
+            secondaryIndices: resources.secondaryIndicesBuffer,
+            freeIndices: resources.freeIndicesBuffer,
+            counters: resources.countersBuffer,
+            coreIndirect: resources.coreIndirectBuffer,
+            trailIndirect: resources.trailIndirectBuffer,
+            readback: resources.readback
+        });
+    }
+
+    _captureCapacityResources() {
+        return this.capacityResources;
+    }
+
+    _destroyCapacityResources(resources) {
+        if (!resources || resources.destroyed) return;
+        resources.retired = true;
+        if (resources.readbackLeases > 0) return;
+        for (const key of [
+            'particleBuffer', 'historyBuffer', 'activeIndicesBuffer',
+            'secondaryIndicesBuffer', 'freeIndicesBuffer', 'countersBuffer',
+            'coreIndirectBuffer', 'trailIndirectBuffer', 'readback'
+        ]) resources[key]?.destroy?.();
+        resources.destroyed = true;
+    }
+
+    _createCapacityBindGroups(resources, device = this.device) {
+        const computeBindGroup = device.createBindGroup({
+            layout: this.computeBindGroupLayout,
+            entries: [
+                { binding: 0, resource: { buffer: resources.particleBuffer } },
+                { binding: 1, resource: { buffer: resources.historyBuffer } },
+                { binding: 2, resource: { buffer: resources.activeIndicesBuffer } },
+                { binding: 3, resource: { buffer: resources.freeIndicesBuffer } },
+                { binding: 4, resource: { buffer: resources.countersBuffer } },
+                { binding: 5, resource: { buffer: this.deviceResources.commands } },
+                { binding: 6, resource: { buffer: resources.coreIndirectBuffer } },
+                { binding: 7, resource: { buffer: resources.trailIndirectBuffer } },
+                { binding: 8, resource: { buffer: this.deviceResources.uniforms } },
+                { binding: 9, resource: { buffer: resources.secondaryIndicesBuffer } }
+            ]
+        });
+        const renderBindGroups = Array.from({ length: DEPTH_BUCKET_COUNT }, (_, bucket) =>
+            device.createBindGroup({ layout: this.renderBindGroupLayout, entries: [
+                { binding: 0, resource: { buffer: resources.particleBuffer } },
+                { binding: 1, resource: {
+                    buffer: resources.activeIndicesBuffer,
+                    offset: bucket * resources.activeIndexBucketStrideBytes,
+                    size: resources.activeIndexBucketBytes
+                } },
+                { binding: 2, resource: { buffer: resources.historyBuffer } },
+                { binding: 3, resource: { buffer: this.deviceResources.uniforms } },
+                { binding: 4, resource: this.atlasTexture.createView() },
+                { binding: 5, resource: this.atlasSampler }
+            ]})
+        );
+        return { computeBindGroup, renderBindGroups };
+    }
+
+    async reconfigureCapacity(value) {
+        const maxParticles = Number(value);
+        if (!Number.isInteger(maxParticles) || maxParticles < 512 || maxParticles > 16_384) {
+            const error = new RangeError('Particle capacity must be an integer between 512 and 16384.');
+            error.code = 'INVALID_PARTICLE_CAPACITY';
+            throw error;
+        }
+
+        const change = async () => {
+            if (!this.initialized || this.destroyed || !this.device || !this.capacityResources) {
+                const error = new Error('The WebGPU renderer is not ready for capacity replacement.');
+                error.code = 'GPU_CAPACITY_REALLOCATION_FAILED';
+                throw error;
+            }
+            if (maxParticles === this.maxParticles) {
+                return {
+                    changed: false,
+                    generation: this.resourceGeneration,
+                    maxParticles: this.maxParticles
+                };
+            }
+
+            let replacement = null;
+            const device = this.device;
+            const epoch = this.capacityResourceEpoch;
+            try {
+                replacement = await this._createCapacityResources(maxParticles, device);
+                if (this.device !== device || this.capacityResourceEpoch !== epoch ||
+                    !this.initialized || this.destroyed) {
+                    throw new Error('The WebGPU device changed during particle capacity replacement.');
+                }
+                const bindGroups = this._createCapacityBindGroups(replacement, device);
+                const previous = this.capacityResources;
+
+                this.capacityResources = replacement;
+                this.computeBindGroup = bindGroups.computeBindGroup;
+                this.renderBindGroups = bindGroups.renderBindGroups;
+                this.maxParticles = maxParticles;
+                this.resourceGeneration += 1;
+                replacement.generation = this.resourceGeneration;
+                this._activateCapacityBufferAliases(replacement);
+                this.metrics.activeParticles = 0;
+                this.metrics.droppedParticles = 0;
+                this.metrics.gpuFrameMs = null;
+                this.lastReadbackAt = 0;
+                this._destroyCapacityResources(previous);
+
+                return {
+                    changed: true,
+                    generation: this.resourceGeneration,
+                    maxParticles: this.maxParticles
+                };
+            } catch (error) {
+                if (replacement && replacement !== this.capacityResources) {
+                    this._destroyCapacityResources(replacement);
+                }
+                if (error?.code === 'GPU_CAPACITY_REALLOCATION_FAILED') throw error;
+                const failure = new Error(
+                    error && error.message ? error.message : String(error),
+                    { cause: error }
+                );
+                failure.code = 'GPU_CAPACITY_REALLOCATION_FAILED';
+                throw failure;
+            }
+        };
+
+        const operation = this.capacityChangePromise.then(change, change);
+        this.capacityChangePromise = operation.catch(() => undefined);
+        return operation;
     }
 
     _createFrameTextures() {
@@ -353,7 +596,7 @@ class WebGPUParticleEngine {
         await this._assertShader(particleModule, 'particle');
         await this._assertShader(postModule, 'post');
 
-        const computeLayout = this.device.createBindGroupLayout({ entries: [
+        this.computeBindGroupLayout = this.device.createBindGroupLayout({ entries: [
             { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'storage' } },
             { binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'storage' } },
             { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'storage' } },
@@ -365,9 +608,11 @@ class WebGPUParticleEngine {
             { binding: 8, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'uniform' } },
             { binding: 9, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'storage' } }
         ]});
-        const computePipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [computeLayout] });
+        const computePipelineLayout = this.device.createPipelineLayout({
+            bindGroupLayouts: [this.computeBindGroupLayout]
+        });
 
-        const renderLayout = this.device.createBindGroupLayout({ entries: [
+        this.renderBindGroupLayout = this.device.createBindGroupLayout({ entries: [
             { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: 'read-only-storage' } },
             { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: 'read-only-storage' } },
             { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: 'read-only-storage' } },
@@ -375,7 +620,9 @@ class WebGPUParticleEngine {
             { binding: 4, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
             { binding: 5, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } }
         ]});
-        const renderPipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [renderLayout] });
+        const renderPipelineLayout = this.device.createPipelineLayout({
+            bindGroupLayouts: [this.renderBindGroupLayout]
+        });
 
         const premultipliedBlend = {
             color: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
@@ -433,34 +680,15 @@ class WebGPUParticleEngine {
         });
         this.pipelines.composite = await makePost('composite', this.format);
 
-        this.computeBindGroup = this.device.createBindGroup({ layout: computeLayout, entries: [
-            { binding: 0, resource: { buffer: this.buffers.particles } },
-            { binding: 1, resource: { buffer: this.buffers.history } },
-            { binding: 2, resource: { buffer: this.buffers.activeIndices } },
-            { binding: 3, resource: { buffer: this.buffers.freeIndices } },
-            { binding: 4, resource: { buffer: this.buffers.counters } },
-            { binding: 5, resource: { buffer: this.buffers.commands } },
-            { binding: 6, resource: { buffer: this.buffers.coreIndirect } },
-            { binding: 7, resource: { buffer: this.buffers.trailIndirect } },
-            { binding: 8, resource: { buffer: this.buffers.uniforms } },
-            { binding: 9, resource: { buffer: this.buffers.secondaryIndices } }
-        ]});
-        const activeIndexBucketBytes = this.maxParticles * 4;
-        this.renderBindGroups = Array.from({ length: DEPTH_BUCKET_COUNT }, (_, bucket) =>
-            this.device.createBindGroup({ layout: renderLayout, entries: [
-                { binding: 0, resource: { buffer: this.buffers.particles } },
-                { binding: 1, resource: {
-                    buffer: this.buffers.activeIndices,
-                    offset: bucket * this.activeIndexBucketStrideBytes,
-                    size: activeIndexBucketBytes
-                } },
-                { binding: 2, resource: { buffer: this.buffers.history } },
-                { binding: 3, resource: { buffer: this.buffers.uniforms } },
-                { binding: 4, resource: this.atlasTexture.createView() },
-                { binding: 5, resource: this.atlasSampler }
-            ]})
-        );
+        const initialCapacityResources = this.pendingCapacityResources;
+        const capacityBindGroups = this._createCapacityBindGroups(initialCapacityResources);
         this._createFrameBindGroups(postLayout);
+        this.capacityResources = initialCapacityResources;
+        this.pendingCapacityResources = null;
+        this.computeBindGroup = capacityBindGroups.computeBindGroup;
+        this.renderBindGroups = capacityBindGroups.renderBindGroups;
+        this.resourceGeneration += 1;
+        this.capacityResources.generation = this.resourceGeneration;
     }
 
     _createFrameBindGroups(layout = null) {
@@ -1457,17 +1685,28 @@ class WebGPUParticleEngine {
         const composite = encoder.beginRenderPass({ colorAttachments: [{ view: output, clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store' }]});
         composite.setPipeline(this.pipelines.composite); composite.setBindGroup(0, this.postBindGroups.composite); composite.draw(3); composite.end();
 
-        if (!this.readbackPending && performance.now() - this.lastReadbackAt > 1000) {
-            encoder.copyBufferToBuffer(this.buffers.counters, 0, this.buffers.readback, 0, 16);
+        const frameCapacityResources = this.capacityResources;
+        if (frameCapacityResources && !this.readbackPromise && !frameCapacityResources.readbackPending &&
+            performance.now() - this.lastReadbackAt > 1000) {
+            encoder.copyBufferToBuffer(
+                frameCapacityResources.countersBuffer,
+                0,
+                frameCapacityResources.readback,
+                0,
+                16
+            );
             if (this.timestampEnabled) {
                 encoder.resolveQuerySet(this.timestampQuerySet, 0, 2, this.buffers.timestampResolve, 0);
                 encoder.copyBufferToBuffer(this.buffers.timestampResolve, 0, this.buffers.timestampReadback, 0, 16);
             }
+            frameCapacityResources.readbackPending = true;
             this.readbackPending = true;
             this.lastReadbackAt = performance.now();
         }
         this.device.queue.submit([encoder.finish()]);
-        if (this.readbackPending) this._consumeReadback();
+        if (frameCapacityResources?.readbackPending && !frameCapacityResources.readbackPromise) {
+            this._consumeReadback(frameCapacityResources);
+        }
     }
 
     _drawDepthBuckets(scenePass) {
@@ -1487,39 +1726,62 @@ class WebGPUParticleEngine {
         }
     }
 
-    async _consumeReadback() {
-        if (this.readbackPromise) return;
+    _consumeReadback(capacityResources = this.capacityResources) {
+        if (this.readbackPromise) return this.readbackPromise;
+        if (!capacityResources || capacityResources.destroyed) return;
+        const readback = capacityResources.readback;
+        const timestampReadback = this.deviceResources?.timestampReadback;
+        capacityResources.readbackLeases += 1;
+        capacityResources.readbackPending = true;
+        this.readbackPending = true;
         let activeParticles = 0;
         let droppedParticles = 0;
-        this.readbackPromise = this.buffers.readback.mapAsync(GPUMapMode.READ).then(() => {
-            const values = new Uint32Array(this.buffers.readback.getMappedRange().slice(0));
-            this.buffers.readback.unmap();
+        let promise;
+        promise = readback.mapAsync(GPUMapMode.READ).then(() => {
+            const values = new Uint32Array(readback.getMappedRange().slice(0));
+            readback.unmap();
             activeParticles = values[1];
             droppedParticles = values[2];
-            this.metrics.activeParticles = activeParticles;
-            this.metrics.droppedParticles = droppedParticles;
-            return this.timestampEnabled
-                ? this.buffers.timestampReadback.mapAsync(GPUMapMode.READ).then(() => {
-                    const timestamps = new BigUint64Array(this.buffers.timestampReadback.getMappedRange().slice(0));
-                    this.buffers.timestampReadback.unmap();
+            return this.timestampEnabled && timestampReadback
+                ? timestampReadback.mapAsync(GPUMapMode.READ).then(() => {
+                    const timestamps = new BigUint64Array(timestampReadback.getMappedRange().slice(0));
+                    timestampReadback.unmap();
                     const milliseconds = timestamps[1] > timestamps[0]
                         ? Number(timestamps[1] - timestamps[0]) / 1e6
                         : NaN;
-                    this.metrics.gpuFrameMs = Number.isFinite(milliseconds) && milliseconds >= 0 && milliseconds <= 250
+                    return Number.isFinite(milliseconds) && milliseconds >= 0 && milliseconds <= 250
                         ? milliseconds
                         : null;
                 })
                 : null;
-        }).then(() => {
-            this.readbackPending = false;
+        }).then(gpuFrameMs => {
+            if (this.capacityResources !== capacityResources ||
+                this.resourceGeneration !== capacityResources.generation) return;
+            this.metrics.activeParticles = activeParticles;
+            this.metrics.droppedParticles = droppedParticles;
+            if (this.timestampEnabled) this.metrics.gpuFrameMs = gpuFrameMs;
             this._emitStatus('ready', {
                 activeParticles, droppedParticles, gpuFrameMs: this.metrics.gpuFrameMs,
                 adapter: this.adapterInfo, format: this.format
             });
         }).catch(error => {
-            this.readbackPending = false;
-            this._emitStatus('error', { reason: error.message });
-        }).finally(() => { this.readbackPromise = null; });
+            if (this.capacityResources === capacityResources &&
+                this.resourceGeneration === capacityResources.generation) {
+                this._emitStatus('error', { reason: error.message });
+            }
+        }).finally(() => {
+            capacityResources.readbackPending = false;
+            capacityResources.readbackLeases = Math.max(0, capacityResources.readbackLeases - 1);
+            if (capacityResources.retired) this._destroyCapacityResources(capacityResources);
+            if (capacityResources.readbackPromise === promise) capacityResources.readbackPromise = null;
+            if (this.readbackPromise === promise) {
+                this.readbackPromise = null;
+                this.readbackPending = false;
+            }
+        });
+        capacityResources.readbackPromise = promise;
+        this.readbackPromise = promise;
+        return promise;
     }
 
     resize(width, height) {
@@ -1568,13 +1830,27 @@ class WebGPUParticleEngine {
     }
 
     _destroyResources() {
-        if (this.buffers) Object.values(this.buffers).forEach(buffer => buffer?.destroy?.());
+        this.capacityResourceEpoch += 1;
+        this._destroyCapacityResources(this.capacityResources);
+        this._destroyCapacityResources(this.pendingCapacityResources);
+        if (this.deviceResources) {
+            Object.values(this.deviceResources).forEach(buffer => buffer?.destroy?.());
+        }
+        this.timestampQuerySet?.destroy?.();
         for (const texture of [
             this.atlasTexture, this.sceneTexture, this.bloomTextureA, this.bloomTextureB,
             this.bloomQuarterA, this.bloomQuarterB, this.bloomEighthA, this.bloomEighthB
         ]) texture?.destroy?.();
+        this.capacityResources = null;
+        this.pendingCapacityResources = null;
+        this.deviceResources = null;
         this.buffers = null;
         this.pipelines = null;
+        this.computeBindGroup = null;
+        this.renderBindGroups = null;
+        this.computeBindGroupLayout = null;
+        this.renderBindGroupLayout = null;
+        this.timestampQuerySet = null;
     }
 
     destroy() {

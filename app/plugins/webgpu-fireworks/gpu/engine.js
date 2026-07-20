@@ -823,6 +823,7 @@ class WebGPUFireworksEngine {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
         this.renderer = null;
+        this.rendererReadyPromise = null;
         this.rendererStatus = { state: 'initializing', backend: 'webgpu' };
         this.audio = new AudioManager(() => {
             this.applyInteractiveMode();
@@ -863,6 +864,7 @@ class WebGPUFireworksEngine {
         this.imageCacheLimit = 64;
         this.imageLoadTimeoutMs = 5_000;
         this.failedImageWarnings = new Set();
+        this.runtimeConfigChangePromise = Promise.resolve();
         const query = new URLSearchParams(window.location.search);
         this.isBenchmark = query.get('benchmark') === 'true';
         this.benchmarkSessionId = this.isBenchmark
@@ -910,7 +912,6 @@ class WebGPUFireworksEngine {
             return false;
         }
         this.audio.init();
-        this.connectSocket();
         this.resize();
         this.renderer = new WebGPUParticleEngine(this.canvas, {
             maxParticles: this.config.maxTotalParticles,
@@ -920,7 +921,11 @@ class WebGPUFireworksEngine {
             glowEnabled: this.config.glowEnabled !== false,
             onStatus: status => this.setStatus(status)
         });
-        const ready = await this.renderer.init();
+        const initializingRenderer = this.renderer;
+        this.rendererReadyPromise = initializingRenderer.init();
+        this.connectSocket();
+        const ready = await this.rendererReadyPromise;
+        if (this.renderer === initializingRenderer) this.rendererReadyPromise = null;
         if (!ready) return false;
         // The renderer only owns a configured WebGPU canvas after init. Resize
         // once more so the backing texture and the logical orientation always
@@ -1013,7 +1018,7 @@ class WebGPUFireworksEngine {
                 count: this.activeShows.size, particles: metrics.activeParticles || 0
             });
         });
-        this.socket.on('webgpu-fireworks:config-update', (data, acknowledge) => {
+        this.socket.on('webgpu-fireworks:config-update', async (data, acknowledge) => {
             if (!data || !data.config || !this.acceptsScopedSocketEvent(data)) {
                 if (typeof acknowledge === 'function') acknowledge({
                     accepted: false,
@@ -1023,16 +1028,7 @@ class WebGPUFireworksEngine {
                 return;
             }
             try {
-                this.config = { ...this.config, ...data.config, renderer: 'webgpu' };
-                this.resetAdaptivePerformanceState();
-                this.audio.setEnabled(this.config.audioEnabled);
-                this.audio.setVolume(this.config.audioVolume);
-                this.audio.setCrackleVolume(this.config.crackleVolume);
-                this.audio.useUrl(this.config.rocketSound, 'launch');
-                this.audio.useUrl(this.config.explosionSound, 'bang');
-                this.resize();
-                this.applyQuality();
-                this.applyInteractiveMode();
+                await this.applyRuntimeConfig(data.config);
                 if (typeof acknowledge === 'function') acknowledge({
                     accepted: true,
                     benchmarkSessionId: this.benchmarkSessionId,
@@ -1043,10 +1039,79 @@ class WebGPUFireworksEngine {
                 if (typeof acknowledge === 'function') acknowledge({
                     accepted: false,
                     benchmarkSessionId: this.benchmarkSessionId,
-                    reason: 'config-apply-failed'
+                    reason: error?.code === 'GPU_CAPACITY_REALLOCATION_FAILED'
+                        ? 'gpu-capacity-reallocation-failed'
+                        : 'config-apply-failed'
                 });
             }
         });
+    }
+
+    async applyRuntimeConfig(nextConfig) {
+        const configPatch = { ...nextConfig };
+        const apply = async () => {
+            const normalizedConfig = { ...this.config, ...configPatch, renderer: 'webgpu' };
+            const maxTotalParticles = Number(normalizedConfig.maxTotalParticles);
+            if (!Number.isInteger(maxTotalParticles) || maxTotalParticles < 512 || maxTotalParticles > 16_384) {
+                const error = new RangeError('maxTotalParticles must be an integer between 512 and 16384.');
+                error.code = 'INVALID_PARTICLE_CAPACITY';
+                throw error;
+            }
+            normalizedConfig.maxTotalParticles = maxTotalParticles;
+
+            const capacityWasExplicit = Object.prototype.hasOwnProperty.call(
+                configPatch,
+                'maxTotalParticles'
+            );
+            if (capacityWasExplicit && !this.renderer) {
+                const error = new Error('No WebGPU renderer exists to apply the requested particle capacity.');
+                error.code = 'GPU_CAPACITY_REALLOCATION_FAILED';
+                throw error;
+            }
+            if (capacityWasExplicit && this.renderer && !this.renderer.initialized) {
+                if (!this.rendererReadyPromise) {
+                    const error = new Error('The WebGPU renderer is not ready to apply particle capacity.');
+                    error.code = 'GPU_CAPACITY_REALLOCATION_FAILED';
+                    throw error;
+                }
+                const ready = await this.rendererReadyPromise;
+                if (!ready || !this.renderer.initialized) {
+                    const error = new Error('The WebGPU renderer failed before particle capacity could be applied.');
+                    error.code = 'GPU_CAPACITY_REALLOCATION_FAILED';
+                    throw error;
+                }
+            }
+
+            if (this.renderer && this.renderer.maxParticles !== maxTotalParticles) {
+                if (typeof this.renderer.reconfigureCapacity !== 'function') {
+                    const error = new Error('The active WebGPU renderer cannot replace its particle capacity.');
+                    error.code = 'GPU_CAPACITY_REALLOCATION_FAILED';
+                    throw error;
+                }
+                const result = await this.renderer.reconfigureCapacity(maxTotalParticles);
+                if (result?.maxParticles !== maxTotalParticles || this.renderer.maxParticles !== maxTotalParticles) {
+                    const error = new Error('The WebGPU renderer reported a capacity that differs from its active pool.');
+                    error.code = 'GPU_CAPACITY_REALLOCATION_FAILED';
+                    throw error;
+                }
+            }
+
+            this.config = normalizedConfig;
+            this.resetAdaptivePerformanceState();
+            this.audio.setEnabled(this.config.audioEnabled);
+            this.audio.setVolume(this.config.audioVolume);
+            this.audio.setCrackleVolume(this.config.crackleVolume);
+            this.audio.useUrl(this.config.rocketSound, 'launch');
+            this.audio.useUrl(this.config.explosionSound, 'bang');
+            this.resize();
+            this.applyQuality();
+            this.applyInteractiveMode();
+            return this.config;
+        };
+
+        const operation = this.runtimeConfigChangePromise.then(apply, apply);
+        this.runtimeConfigChangePromise = operation.catch(() => undefined);
+        return operation;
     }
 
     benchmarkSessionMetadata() {

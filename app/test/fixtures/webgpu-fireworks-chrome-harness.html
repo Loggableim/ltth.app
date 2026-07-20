@@ -190,7 +190,7 @@
       let nowMs = 1_000;
       const renderer = new WebGPUParticleEngine(canvas, {
         now: () => nowMs,
-        maxParticles: 256,
+        maxParticles: 512,
         trailsEnabled: false,
         glowEnabled: false,
         bloomEnabled: false
@@ -309,7 +309,88 @@
       }
       return result;
     }
-    async function runCapacityCase() { return { skipped: true, owner: 'Task 2' }; }
+
+    async function runCapacityCase() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 360;
+      const renderer = new WebGPUParticleEngine(canvas, {
+        maxParticles: 2_048,
+        trailsEnabled: false,
+        glowEnabled: false,
+        bloomEnabled: false
+      });
+      let result = null;
+      try {
+        if (!await renderer.init()) {
+          throw new Error(`capacity renderer failed to initialize: ${JSON.stringify(renderer.getMetrics())}`);
+        }
+        const device = renderer.device;
+        const transitions = [];
+        for (const capacity of [512, 16_384]) {
+          const acknowledgement = await renderer.reconfigureCapacity(capacity);
+          if (acknowledgement.maxParticles !== renderer.maxParticles ||
+              acknowledgement.maxParticles !== capacity) {
+            throw new Error(
+              `capacity acknowledgement mismatch: ${JSON.stringify(acknowledgement)} active=${renderer.maxParticles}`
+            );
+          }
+          renderer.lastReadbackAt = performance.now() - 2_000;
+          renderer.render(1 / 60, performance.now() / 1_000);
+          const readback = renderer.readbackPromise;
+          if (!readback) throw new Error(`capacity ${capacity} did not start a counter readback`);
+          await readback;
+          await device.queue.onSubmittedWorkDone();
+          transitions.push({
+            requestedCapacity: capacity,
+            acknowledgedCapacity: acknowledgement.maxParticles,
+            activeCapacity: renderer.maxParticles,
+            generation: renderer.resourceGeneration,
+            particleBufferBytes: renderer.capacityResources.particleBuffer.size,
+            activeIndexBucketStrideBytes: renderer.capacityResources.activeIndexBucketStrideBytes,
+            counters: {
+              activeParticles: renderer.getMetrics().activeParticles,
+              droppedParticles: renderer.getMetrics().droppedParticles
+            }
+          });
+        }
+
+        const activeResources = renderer.capacityResources;
+        const activeGeneration = renderer.resourceGeneration;
+        const validationErrors = [];
+        for (const invalidCapacity of [511, 16_385]) {
+          try {
+            await renderer.reconfigureCapacity(invalidCapacity);
+            throw new Error(`invalid capacity ${invalidCapacity} was accepted`);
+          } catch (error) {
+            if (error.code !== 'INVALID_PARTICLE_CAPACITY') throw error;
+            validationErrors.push({ capacity: invalidCapacity, code: error.code });
+          }
+          if (renderer.capacityResources !== activeResources ||
+              renderer.resourceGeneration !== activeGeneration ||
+              renderer.maxParticles !== 16_384) {
+            throw new Error(`invalid capacity ${invalidCapacity} changed the active renderer state`);
+          }
+        }
+
+        result = {
+          particleStride: renderer.particleStride,
+          capacities: transitions.map(entry => entry.requestedCapacity),
+          generations: transitions.map(entry => entry.generation),
+          activeCapacities: transitions.map(entry => entry.activeCapacity),
+          bufferByteSizes: transitions.map(entry => entry.particleBufferBytes),
+          transitions,
+          validationErrors,
+          validationPreserved: true,
+          deviceIdentityStable: renderer.device === device,
+          cleanupComplete: false
+        };
+      } finally {
+        renderer.destroy();
+        if (result) result.cleanupComplete = true;
+      }
+      return result;
+    }
     async function runRecoveryCase() { return { skipped: true, owner: 'Task 3' }; }
     async function runAdmissionEnvelopeCase() { return { skipped: true, owner: 'Task 4' }; }
     async function runTelemetryAdaptiveCase() { return { skipped: true, owner: 'Task 5' }; }

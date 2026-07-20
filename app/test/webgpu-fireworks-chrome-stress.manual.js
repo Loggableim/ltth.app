@@ -167,6 +167,54 @@ function assertAtlasResult(result) {
   if (result.cleanupComplete !== true) throw new Error('atlas renderer cleanup did not complete');
 }
 
+function assertCapacityResult(result) {
+  if (!result || result.skipped === true) throw new Error('capacity case is missing or skipped');
+  const expectedCapacities = [512, 16_384];
+  if (!Number.isInteger(result.particleStride) || result.particleStride <= 0) {
+    throw new Error(`capacity result has no valid particle stride: ${result.particleStride}`);
+  }
+  const expectedBufferBytes = expectedCapacities.map(capacity => capacity * result.particleStride);
+  if (JSON.stringify(result.capacities) !== JSON.stringify(expectedCapacities)) {
+    throw new Error(`capacity requests mismatch: ${JSON.stringify(result.capacities)}`);
+  }
+  if (JSON.stringify(result.activeCapacities) !== JSON.stringify(expectedCapacities)) {
+    throw new Error(`capacity active values mismatch: ${JSON.stringify(result.activeCapacities)}`);
+  }
+  if (JSON.stringify(result.bufferByteSizes) !== JSON.stringify(expectedBufferBytes)) {
+    throw new Error(`capacity buffer byte sizes mismatch: ${JSON.stringify(result.bufferByteSizes)}`);
+  }
+  if (!Array.isArray(result.generations) || result.generations.length !== 2 ||
+      result.generations[0] === result.generations[1] ||
+      !(result.generations[1] > result.generations[0])) {
+    throw new Error(`capacity generations are not distinct and increasing: ${JSON.stringify(result.generations)}`);
+  }
+  if (!Array.isArray(result.transitions) || result.transitions.length !== 2) {
+    throw new Error('capacity transitions must contain two hardware observations');
+  }
+  for (const [index, transition] of result.transitions.entries()) {
+    const expectedCapacity = expectedCapacities[index];
+    if (transition.requestedCapacity !== expectedCapacity ||
+        transition.acknowledgedCapacity !== expectedCapacity ||
+        transition.activeCapacity !== expectedCapacity) {
+      throw new Error(`capacity acknowledgement mismatch at transition ${index}: ${JSON.stringify(transition)}`);
+    }
+    if (!transition.counters || !Number.isInteger(transition.counters.activeParticles) ||
+        !Number.isInteger(transition.counters.droppedParticles)) {
+      throw new Error(`capacity transition ${index} contains no counter readback`);
+    }
+  }
+  const expectedValidation = [511, 16_385];
+  if (!Array.isArray(result.validationErrors) || result.validationErrors.length !== 2 ||
+      result.validationErrors.some((entry, index) => (
+        entry.capacity !== expectedValidation[index] || entry.code !== 'INVALID_PARTICLE_CAPACITY'
+      ))) {
+    throw new Error(`capacity validation evidence mismatch: ${JSON.stringify(result.validationErrors)}`);
+  }
+  if (result.validationPreserved !== true) throw new Error('invalid capacity changed the active renderer');
+  if (result.deviceIdentityStable !== true) throw new Error('capacity case changed the WebGPU device');
+  if (result.cleanupComplete !== true) throw new Error('capacity renderer cleanup did not complete');
+}
+
 async function collectCleanupFailure(failures, label, cleanup) {
   try {
     await cleanup();
@@ -251,9 +299,12 @@ async function main() {
       }
       const skippedCase = CASE_NAMES.find(name => cases[name]?.skipped === true);
       if (skippedCase) throw new Error(`all cannot pass while ${skippedCase} is skipped`);
+      assertAtlasResult(cases.atlas);
+      assertCapacityResult(cases.capacity);
       payload = { hardware, cases };
     } else {
       if (caseName === 'atlas') assertAtlasResult(pageEvidence.result);
+      if (caseName === 'capacity') assertCapacityResult(pageEvidence.result);
       payload = { hardware, result: pageEvidence.result };
     }
     terminalPassLine = `PASS ${caseName} ${JSON.stringify(payload)}`;
