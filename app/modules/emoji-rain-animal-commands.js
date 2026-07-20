@@ -1,6 +1,8 @@
 'use strict';
 
 const MAX_ANIMAL_COMMANDS = 50;
+const MIN_ANIMAL_COMMAND_DESPAWN_MS = 1000;
+const MAX_ANIMAL_COMMAND_DESPAWN_MS = 120000;
 const COMMAND_NAME_PATTERN = /^[a-z0-9_-]{1,32}$/;
 const RESERVED_ANIMAL_COMMAND_NAMES = new Set([
   'rain',
@@ -22,7 +24,8 @@ const DEFAULT_ANIMAL_COMMAND_SETTINGS = Object.freeze({
   animal_commands_allow_team_members: true,
   animal_command_user_cooldown_ms: 60000,
   animal_command_superfan_cooldown_ms: 15000,
-  animal_command_global_cooldown_ms: 15000
+  animal_command_global_cooldown_ms: 15000,
+  animal_command_despawn_ms: 8000
 });
 
 const ANIMAL_COMMAND_SETTING_KEYS = Object.freeze([
@@ -30,7 +33,8 @@ const ANIMAL_COMMAND_SETTING_KEYS = Object.freeze([
   'animal_commands_allow_team_members',
   'animal_command_user_cooldown_ms',
   'animal_command_superfan_cooldown_ms',
-  'animal_command_global_cooldown_ms'
+  'animal_command_global_cooldown_ms',
+  'animal_command_despawn_ms'
 ]);
 
 const MAX_COOLDOWN_MS = 24 * 60 * 60 * 1000;
@@ -128,6 +132,22 @@ function normalizeCooldown(value, fallback, field, strict, issues) {
   return Math.floor(numeric);
 }
 
+function normalizeCommandDespawn(value, strict, issues) {
+  if (value === undefined || value === null || value === '') {
+    return DEFAULT_ANIMAL_COMMAND_SETTINGS.animal_command_despawn_ms;
+  }
+  const numeric = Number(value);
+  if (!Number.isInteger(numeric)
+      || numeric < MIN_ANIMAL_COMMAND_DESPAWN_MS
+      || numeric > MAX_ANIMAL_COMMAND_DESPAWN_MS) {
+    if (strict) {
+      issues.push({ field: 'animal_command_despawn_ms', code: 'invalid_despawn' });
+    }
+    return DEFAULT_ANIMAL_COMMAND_SETTINGS.animal_command_despawn_ms;
+  }
+  return numeric;
+}
+
 function normalizeAnimalCommandSettings(input = {}, options = {}) {
   const source = input && typeof input === 'object' ? input : {};
   const strict = options.strict === true;
@@ -213,6 +233,11 @@ function normalizeAnimalCommandSettings(input = {}, options = {}) {
       source.animal_command_global_cooldown_ms,
       DEFAULT_ANIMAL_COMMAND_SETTINGS.animal_command_global_cooldown_ms,
       'animal_command_global_cooldown_ms',
+      strict,
+      issues
+    ),
+    animal_command_despawn_ms: normalizeCommandDespawn(
+      source.animal_command_despawn_ms,
       strict,
       issues
     )

@@ -22,7 +22,8 @@ function config(commands = []) {
     animal_commands_allow_team_members: true,
     animal_command_user_cooldown_ms: 60000,
     animal_command_superfan_cooldown_ms: 15000,
-    animal_command_global_cooldown_ms: 15000
+    animal_command_global_cooldown_ms: 15000,
+    animal_command_despawn_ms: 8000
   };
 }
 
@@ -75,6 +76,21 @@ describe('shared EmojiRain command editor', () => {
       animal_command_superfan_cooldown_ms: 9000,
       animal_command_global_cooldown_ms: 7000
     });
+  });
+
+  test('round-trips one shared command despawn duration in seconds', () => {
+    const { editor } = createEditor();
+    editor.load(config([]));
+    const input = editor.root.querySelector('[data-setting="command-despawn"]');
+
+    expect(input).not.toBeNull();
+    expect(input.value).toBe('8');
+    expect(input.min).toBe('1');
+    expect(input.max).toBe('120');
+    expect(input.step).toBe('1');
+
+    input.value = '12';
+    expect(editor.serialize().animal_command_despawn_ms).toBe(12000);
   });
 
   test('adds and removes rows without using HTML interpolation', () => {

@@ -29,6 +29,7 @@
           "team_user_cooldown_seconds": "Team member cooldown (seconds)",
           "superfan_cooldown_seconds": "Subscriber cooldown (seconds)",
           "global_cooldown_seconds": "Global cooldown (seconds)",
+          "command_despawn_seconds": "Command emoji despawn duration (seconds)",
           "select_gallery": "Select gallery image",
           "https_placeholder": "HTTPS URL or gallery image",
           "no_images": "No gallery images",

@@ -1783,6 +1783,7 @@ class DatabaseManager {
             animal_command_user_cooldown_ms: 60000,
             animal_command_superfan_cooldown_ms: 15000,
             animal_command_global_cooldown_ms: 15000,
+            animal_command_despawn_ms: 8000,
             superfan_burst_intensity: 3.8,
             superfan_burst_duration: 2000,
 

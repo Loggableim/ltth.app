@@ -1723,7 +1723,7 @@ function updateLoop(currentTime) {
         }
 
         // Check lifetime
-        const lifetimeMs = emoji.despawnMs || config.emoji_lifetime_ms;
+                const lifetimeMs = emoji.despawnMs || emoji.lifetimeMs || config.emoji_lifetime_ms;
         if (emoji.spawnTime && lifetimeMs > 0) {
             const age = currentTime - emoji.spawnTime;
             if (age > lifetimeMs && !emoji.fading) {
@@ -1834,7 +1834,8 @@ function showFreezeWarning() {
 /**
  * Spawn emoji
  */
-function spawnEmoji(emoji, x, y, size, username = null, profilePictureUrl = null, color = null, spawnKind = 'default', isBurst = false) {
+function spawnEmoji(emoji, x, y, size, username = null, profilePictureUrl = null, color = null, spawnKind = 'default', isBurst = false, lifetimeMs = null) {
+    const normalizedLifetimeMs = Number(lifetimeMs);
     // Check for user-specific emoji (try multiple username formats)
     if (username) {
         // Try exact match first
@@ -2019,6 +2020,9 @@ function spawnEmoji(emoji, x, y, size, username = null, profilePictureUrl = null
         lastColorUpdate: performance.now(), // Track when color was last updated
         spawnKind: spawnKind,
         isBurst: isBurst,
+        lifetimeMs: Number.isFinite(normalizedLifetimeMs) && normalizedLifetimeMs > 0
+            ? normalizedLifetimeMs
+            : null,
         stageScale: stageProfile.scale,
         impactScale: 1,
         visualProfile: stageProfile
@@ -2133,6 +2137,7 @@ function handleSpawnEvent(data) {
     const isBurst = data.burst || false;
     const color = data.color || null;
     const spawnKind = determineSpawnKind(data, isBurst);
+    const lifetimeMs = data.lifetimeMs;
 
     console.log(`🌧️ [SPAWN EVENT] count=${count}, emoji=${emoji}, username=${username}, burst=${isBurst}, color=${color}, profilePictureUrl=${profilePictureUrl ? 'present' : 'none'}`);
 
@@ -2151,7 +2156,7 @@ function handleSpawnEvent(data) {
     
     // If we're spawning too quickly, queue the event
     if (timeSinceLastSpawn < MIN_SPAWN_INTERVAL_MS) {
-        spawnQueue.push({ emoji, x, y, actualCount, username, profilePictureUrl, color, isBurst, spawnKind });
+        spawnQueue.push({ emoji, x, y, actualCount, username, profilePictureUrl, color, isBurst, spawnKind, lifetimeMs });
         // Only log queue size every 10 events to reduce console spam
         if (spawnQueue.length % 10 === 0 || debugMode) {
             console.log(`⏸️ [SPAWN] Queued spawn event (queue size: ${spawnQueue.length})`);
@@ -2160,7 +2165,7 @@ function handleSpawnEvent(data) {
     }
 
     // Process this spawn immediately
-    processSpawn(emoji, x, y, actualCount, username, profilePictureUrl, color, isBurst, spawnKind);
+    processSpawn(emoji, x, y, actualCount, username, profilePictureUrl, color, isBurst, spawnKind, lifetimeMs);
     lastSpawnTime = now;
 }
 
@@ -2176,7 +2181,7 @@ function processSpawnQueue() {
     // Only process queue if enough time has passed
     if (timeSinceLastSpawn >= MIN_SPAWN_INTERVAL_MS) {
         const event = spawnQueue.shift();
-        processSpawn(event.emoji, event.x, event.y, event.actualCount, event.username, event.profilePictureUrl, event.color, event.isBurst, event.spawnKind);
+        processSpawn(event.emoji, event.x, event.y, event.actualCount, event.username, event.profilePictureUrl, event.color, event.isBurst, event.spawnKind, event.lifetimeMs);
         lastSpawnTime = now;
     }
 }
@@ -2199,7 +2204,7 @@ function calculateOffsetX(x) {
 /**
  * Process a single spawn event
  */
-function processSpawn(emoji, x, y, actualCount, username, profilePictureUrl, color, isBurst, spawnKind = 'default') {
+function processSpawn(emoji, x, y, actualCount, username, profilePictureUrl, color, isBurst, spawnKind = 'default', lifetimeMs = null) {
     // If rate limiting is enabled, add individual emojis to the rate limit queue
     if (config.rate_limit_enabled && config.rate_limit_emojis_per_second > 0) {
         // BUG 11 fix: enforce max queue size to prevent unbounded memory growth
@@ -2222,7 +2227,8 @@ function processSpawn(emoji, x, y, actualCount, username, profilePictureUrl, col
                 profilePictureUrl,
                 color,
                 spawnKind,
-                isBurst
+                isBurst,
+                lifetimeMs
             });
         }
         
@@ -2236,7 +2242,7 @@ function processSpawn(emoji, x, y, actualCount, username, profilePictureUrl, col
             const offsetX = calculateOffsetX(x);
             const offsetY = calculateOffsetY(y, i, size);
 
-            spawnEmoji(emoji, offsetX, offsetY, size, username, profilePictureUrl, color, spawnKind, isBurst);
+            spawnEmoji(emoji, offsetX, offsetY, size, username, profilePictureUrl, color, spawnKind, isBurst, lifetimeMs);
         }
 
         console.log(`🌧️ Spawned ${actualCount}x ${emoji} at (${x.toFixed(2)}, ${y})${isBurst ? ' [BURST]' : ''}${username ? ' for ' + username : ''}`);
@@ -2297,7 +2303,8 @@ function processRateLimitQueue() {
             emojiData.profilePictureUrl,
             emojiData.color,
             emojiData.spawnKind,
-            emojiData.isBurst
+            emojiData.isBurst,
+            emojiData.lifetimeMs
         );
         emojisSpawnedThisSecond++;
     }
