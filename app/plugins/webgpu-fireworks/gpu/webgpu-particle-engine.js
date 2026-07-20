@@ -53,7 +53,6 @@ const V2_SPLIT_REQUESTED = ENVELOPE_FLAG_BITS.SPLIT_REQUESTED;
 const V2_STROBE = ENVELOPE_FLAG_BITS.STROBE;
 const V2_VECTOR_HERO = ENVELOPE_FLAG_BITS.VECTOR_HERO || (1 << 7);
 const V2_MARKER = ENVELOPE_FLAG_BITS.V2_MARKER;
-const V2_VECTOR_HERO_MIN_GLYPH_EXTENT = 0.5;
 const DEPTH_METADATA_MARKER = 1 << 3;
 const DEPTH_BUCKET_COUNT = 3;
 const ATLAS_SLOT_COUNT = 64;
@@ -1366,8 +1365,9 @@ class WebGPUParticleEngine {
         const renderHints = context.renderHints || {};
         const depthEnabled = renderHints.depthEnabled === true;
         const glyphScale = effectiveLayer.primitive === 'glyph' ? Number(renderHints.glyphScale) || 1 : 1;
-        const vectorHero = shape === V2_GLYPH_IDS.boykisser && effectiveLayer.core === true &&
-            Number(renderHints.glyphExtent) >= V2_VECTOR_HERO_MIN_GLYPH_EXTENT;
+        // Legacy VECTOR_HERO commands remain renderable for cached/older plans,
+        // but new ShowPlanV2 layers always materialize as real particles.
+        const vectorHero = false;
         const particleSize = effectiveLayer.size * 6 * scale;
         const extentIntensity = !vectorHero && effectiveLayer.primitive === 'glyph' &&
             Number.isFinite(renderHints.glyphExtent)

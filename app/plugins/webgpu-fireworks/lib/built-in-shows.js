@@ -1,7 +1,10 @@
 'use strict';
 
 const { SHOW_DEFINITION_VERSION, VARIANT_PRESETS } = require('./pyrodsl');
-const { BOYKISSER_COLORS } = require('../gpu/boykisser-geometry');
+const {
+  BOYKISSER_COLORS,
+  BOYKISSER_PARTICLE_LOD,
+} = require('../gpu/boykisser-geometry');
 
 const FINALE_LENGTHS = Object.freeze(['short', 'medium', 'long']);
 const PHASE_ORDER = Object.freeze(['opening', 'build', 'highlight', 'finale']);
@@ -105,7 +108,10 @@ function shellVariant(shape, soundRole, layers, hints, options = {}) {
 function boykisserLayer(options = {}) {
   return layer('glyph', BOYKISSER_ROLE_PALETTE, {
     glyph: 'boykisser',
-    density: Math.max(96, Number(options.density) || 96),
+    density: Math.max(
+      BOYKISSER_PARTICLE_LOD.cameo,
+      Number(options.density) || BOYKISSER_PARTICLE_LOD.standard
+    ),
     size: options.size || 1,
     lifetimeMs: options.lifetimeMs || 900,
     gravity: options.gravity === undefined ? 0.15 : options.gravity,
@@ -366,10 +372,10 @@ const BLUEPRINTS = {
           accents: [layer('glyph', TRANS_COLORS, { glyph: 'trans-flag', delayMs: 140, density: 32, lifetimeMs: 460, priority: 'decorative', core: false })]
         }),
         furryCue('gold-crown', 'boykisser-hero', 'massive', renderHints(0.82, 2, 0, 0.52), [], {
-          cat: { density: 180, lifetimeMs: 1200, gravity: 0.08 },
-          launchMode: 'airburst',
-          exactTarget: { x: 0.5, y: 0.5 },
-          exactOrigin: { x: 0.5, y: 1.02 },
+          cat: { density: BOYKISSER_PARTICLE_LOD.hero, lifetimeMs: 1200, gravity: 0.08 },
+          launchMode: 'rocket',
+          exactTarget: { x: 0.5, y: 0.38 },
+          exactOrigin: { x: 0.5, y: 1.04 },
           accents: [
             layer('ring', RAINBOW_COLORS.slice(0, 4), { delayMs: 90, density: 42, lifetimeMs: 900, strobe: true, priority: 'decorative', core: false }),
             layer('ring', RAINBOW_COLORS.slice(4), { delayMs: 180, density: 32, lifetimeMs: 850, priority: 'decorative', core: false })

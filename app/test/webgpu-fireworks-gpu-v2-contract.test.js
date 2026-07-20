@@ -3,7 +3,7 @@
 const crypto = require('crypto');
 const WebGPUParticleEngine = require('../plugins/webgpu-fireworks/gpu/webgpu-particle-engine');
 const {
-  BOYKISSER_VECTOR,
+  BOYKISSER_PARTICLE_LOD,
   geometrySignature,
 } = require('../plugins/webgpu-fireworks/gpu/boykisser-geometry');
 const { FinaleShowPlanner } = require('../plugins/webgpu-fireworks/lib/finale-show-planner');
@@ -191,7 +191,7 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
   });
 
   test.each([[1920, 1080], [1080, 1920]])(
-    'sizes the queued Furry hero to the safe viewport extent at %ix%i independently of finale intensity',
+    'queues the Furry hero as a dense particle sculpture at %ix%i independently of finale intensity',
     (width, height) => {
       const commands = [1, 5, 10].map(intensity => {
         const showPlan = new FinaleShowPlanner().plan({
@@ -212,24 +212,19 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
 
       expect(new Set(commands.map(command => command.intensity)).size).toBe(1);
       for (const command of commands) {
-        expect(command.origin).toEqual({ x: width / 2, y: height / 2 });
+        expect(command.origin).toEqual({ x: width / 2, y: height * 0.38 });
         expect(command.burstDepth).toBe(0.82);
-        expect(command.count).toBe(1);
-        expect(command.globalCount).toBe(1);
-        expect(command.flags & ENVELOPE_FLAG_BITS.VECTOR_HERO).toBe(ENVELOPE_FLAG_BITS.VECTOR_HERO);
+        expect(command.count).toBe(BOYKISSER_PARTICLE_LOD.hero);
+        expect(command.globalCount).toBe(BOYKISSER_PARTICLE_LOD.hero);
+        expect(command.flags & ENVELOPE_FLAG_BITS.VECTOR_HERO).toBe(0);
         expect(command.flags & ENVELOPE_FLAG_BITS.TRAIL).toBe(0);
-        expect(command.gravity).toBe(0);
-        const perspective = 4 / (4 - command.burstDepth);
-        const visibleHeight = command.size * perspective * 2;
-        const visibleWidth = visibleHeight * BOYKISSER_VECTOR.aspectRatio;
-        expect(visibleWidth).toBeLessThanOrEqual(width * 0.84 + 1e-5);
-        expect(visibleHeight).toBeLessThanOrEqual(height * 0.84 + 1e-5);
-        expect(Math.max(visibleWidth / width, visibleHeight / height)).toBeCloseTo(0.84, 6);
+        expect(command.gravity).toBeGreaterThan(0);
+        expect(command.viewportMaterialization).toMatchObject({ kind: 'v2-layer', glyphExtent: 0.52 });
       }
     }
   );
 
-  test('uses one stationary vector billboard only for the core Boykisser hero', () => {
+  test('keeps every core Boykisser glyph on the particle path while retaining legacy shader parsing', () => {
     const engine = makeEngine();
     const context = {
       origin: { x: 960, y: 540 },
@@ -240,15 +235,15 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
     };
 
     expect(engine.spawnLayer(layer({
-      primitive: 'glyph', glyph: 'boykisser', density: 192,
+      primitive: 'glyph', glyph: 'boykisser', density: 192, trail: false,
     }), context)).toBe(true);
     expect(engine.spawnLayer(layer({
       primitive: 'glyph', glyph: 'boykisser', density: 96, core: false, priority: 'accent',
     }), context)).toBe(true);
 
     const [hero, buildGlyph] = engine.spawnQueue;
-    expect(hero).toMatchObject({ count: 1, globalCount: 1, gravity: 0, drag: 1 });
-    expect(hero.flags & ENVELOPE_FLAG_BITS.VECTOR_HERO).toBe(ENVELOPE_FLAG_BITS.VECTOR_HERO);
+    expect(hero).toMatchObject({ count: 192, globalCount: 192 });
+    expect(hero.flags & ENVELOPE_FLAG_BITS.VECTOR_HERO).toBe(0);
     expect(hero.flags & ENVELOPE_FLAG_BITS.TRAIL).toBe(0);
     expect(buildGlyph).toMatchObject({ count: 96, globalCount: 96 });
     expect(buildGlyph.flags & ENVELOPE_FLAG_BITS.VECTOR_HERO).toBe(0);
@@ -262,7 +257,7 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
     expect(particle).toContain('if(in.shape==25u&&(in.flags&V2_VECTOR_HERO)!=0u){discard;}');
   });
 
-  test('materializes the vector hero from the complete finale correlation manifest', () => {
+  test('materializes the particle hero from the complete finale correlation manifest', () => {
     const width = 1920;
     const height = 1080;
     const showPlan = new FinaleShowPlanner().plan({
@@ -279,19 +274,19 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
     const manifestHero = heroEvent.context.correlationManifest.commands.find(command => (
       command.envelopeCommandId === heroEvent.context.envelopeCommandId
     ));
-    expect(manifestHero.flags & ENVELOPE_FLAG_BITS.VECTOR_HERO).toBe(ENVELOPE_FLAG_BITS.VECTOR_HERO);
+    expect(manifestHero.flags & ENVELOPE_FLAG_BITS.VECTOR_HERO).toBe(0);
     expect(manifestHero.viewportMaterialization).toMatchObject({
-      kind: 'v2-vector-hero',
-      aspectRatio: BOYKISSER_VECTOR.aspectRatio,
+      kind: 'v2-layer',
+      glyphExtent: 0.52,
     });
 
     const engine = makeEngine(width, height);
     expect(engine.spawnLayer(heroEvent.layer, heroEvent.context)).toBe(true);
     const uploaded = uploadCommands(engine);
-    expect(uploaded.result).toMatchObject({ count: 1, maxParticles: 1 });
-    expect(uploaded.words[8]).toBe(1);
+    expect(uploaded.result).toMatchObject({ count: 1, maxParticles: BOYKISSER_PARTICLE_LOD.hero });
+    expect(uploaded.words[8]).toBe(BOYKISSER_PARTICLE_LOD.hero);
     expect(uploaded.words[11] & ENVELOPE_FLAG_BITS.VECTOR_HERO)
-      .toBe(ENVELOPE_FLAG_BITS.VECTOR_HERO);
+      .toBe(0);
   });
 
   test.each([[1920, 1080], [1080, 1920]])(

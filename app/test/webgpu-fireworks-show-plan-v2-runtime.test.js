@@ -440,9 +440,9 @@ describe('ShowPlanV2 built-in scheduling matrix', () => {
   };
 
   test.each([
-    ['short', 15, 21, 1600],
-    ['medium', 25, 31, 2350],
-    ['long', 38, 44, 3350]
+    ['short', 15, 21, 4000],
+    ['medium', 25, 31, 5200],
+    ['long', 38, 44, 7000]
   ])('keeps the %s Furry score inside its visible choreography budget',
     (length, shellCount, layerCount, particleBudget) => {
       const showPlan = new FinaleShowPlanner().plan({
@@ -530,14 +530,23 @@ describe('ShowPlanV2 built-in scheduling matrix', () => {
       return event.due;
     };
     const quietIntervalActivity = runtime.events.filter(event => forbiddenTypes.has(event.type))
+      .filter(event => !(
+        (event.type === 'finale-v2-rocket' && heroShellIds.has(event.shellId))
+        || (event.type === 'finale-v2-launch-audio'
+          && event.shellIds.some(shellId => heroShellIds.has(shellId)))
+      ))
       .filter(event => (
         (event.due >= quietStart && event.due < heroAt)
         || (event.due < heroAt && activeEnd(event) > quietStart)
       ));
 
     expect(heroCue.shells).toHaveLength(1);
-    expect(heroCue.shells[0].launchMode).toBe('airburst');
-    expect(heroLaunchEvents).toEqual([]);
+    expect(heroCue.shells[0].launchMode).toBe('rocket');
+    expect(heroLaunchEvents.map(event => event.type)).toEqual([
+      'finale-v2-rocket',
+      'finale-v2-launch-audio'
+    ]);
+    expect(heroLaunchEvents[0].due + heroLaunchEvents[0].flightDurationMs).toBe(heroAt);
     expect(quietIntervalActivity).toEqual([]);
   });
 

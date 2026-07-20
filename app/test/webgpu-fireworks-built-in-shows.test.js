@@ -17,7 +17,10 @@ const {
   PHASE_CONCURRENCY_CAPS,
   validateShowDefinition
 } = require('../plugins/webgpu-fireworks/lib/pyrodsl');
-const { BOYKISSER_COLORS } = require('../plugins/webgpu-fireworks/gpu/boykisser-geometry');
+const {
+  BOYKISSER_COLORS,
+  BOYKISSER_PARTICLE_LOD,
+} = require('../plugins/webgpu-fireworks/gpu/boykisser-geometry');
 
 const roleHex = rgb => `#${rgb.map(component => (
   Math.round(component * 255).toString(16).padStart(2, '0')
@@ -228,6 +231,7 @@ describe('WebGPU Fireworks built-in PyroDSL shows', () => {
     const transLayers = layers.filter(layer => layer.glyph === 'trans-flag');
 
     expect(boyLayers.length).toBeGreaterThan(0);
+    expect(boyLayers.every(layer => layer.density >= BOYKISSER_PARTICLE_LOD.cameo)).toBe(true);
     const semanticPalette = [
       roleHex(BOYKISSER_COLORS.HEAD),
       roleHex(BOYKISSER_COLORS.FACE),
@@ -260,10 +264,11 @@ describe('WebGPU Fireworks built-in PyroDSL shows', () => {
       roleHex(BOYKISSER_COLORS.PINK)
     ]);
     expect(hero.shells[0]).toMatchObject({
-      launchMode: 'airburst',
-      target: { x: 0.5, y: 0.5 },
+      launchMode: 'rocket',
+      target: { x: 0.5, y: 0.38 },
       renderHints: { depthEnabled: true }
     });
+    expect(boyLayers[0].density).toBe(BOYKISSER_PARTICLE_LOD.hero);
     expect(hero.shells[0].layers.some(layer => ['fox-head', 'wolf-head'].includes(layer.glyph))).toBe(false);
   });
 
