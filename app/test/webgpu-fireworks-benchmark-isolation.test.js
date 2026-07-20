@@ -243,14 +243,14 @@ describe('WebGPU Fireworks benchmark session isolation', () => {
       success: true,
       sessionId: first.sessionId,
       message: 'Preset applied for benchmark',
-      config: expectedConfig
+      ...harness.plugin.createConfigPayload(expectedConfig)
     });
     expect(harness.plugin.config).toEqual(liveConfig);
     expect(harness.plugin.benchmarkSessions.get(first.sessionId).config).toEqual(expectedConfig);
     expect(harness.plugin.benchmarkSessions.get(first.sessionId).baseConfig).toEqual(liveConfig);
     expect(harness.plugin.benchmarkSessions.get(second.sessionId).config).toEqual(liveConfig);
     expect(firstSocket.payloads('webgpu-fireworks:config-update')).toEqual([{
-      config: expectedConfig,
+      ...harness.plugin.createConfigPayload(expectedConfig),
       benchmarkSessionId: first.sessionId
     }]);
     expect(secondSocket.payloads('webgpu-fireworks:config-update')).toHaveLength(0);
@@ -1001,7 +1001,7 @@ describe('WebGPU Fireworks benchmark session isolation', () => {
     expect(session.socketId).toBeNull();
     expect(harness.plugin.benchmarkSocketSessions.has(socket.id)).toBe(false);
     expect(socket.payloads('webgpu-fireworks:config-update')).toEqual([{
-      config: baseConfig,
+      ...harness.plugin.createConfigPayload(baseConfig),
       benchmarkSessionId: sessionInfo.sessionId
     }]);
     expect(harness.plugin.config.targetFps).toBe(45);

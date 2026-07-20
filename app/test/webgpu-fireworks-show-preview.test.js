@@ -108,12 +108,13 @@ function setTelemetry(plugin, values) {
     };
     sockets.push(socket);
     return [rendererId, {
+      registered: true,
       benchmark: false,
       state: 'ready',
       finaleActive: false,
       previewActive: false,
       finaleQueueLength: 0,
-      updatedAt: Date.now(),
+      statusUpdatedAt: Date.now(),
       ...value
     }];
   }));
@@ -144,7 +145,7 @@ describe('WebGPU Fireworks explicit show preview', () => {
     ['offline', []],
     ['initializing', [{ state: 'initializing' }]],
     ['error', [{ state: 'error' }]],
-    ['stale', [{ state: 'ready', updatedAt: Date.now() - 5001 }]]
+    ['stale', [{ state: 'ready', statusUpdatedAt: Date.now() - 5001 }]]
   ])('rejects an %s renderer with structured readiness details', async (_label, telemetry) => {
     const { api, dataDir, plugin } = createHarness();
     dataDirs.push(dataDir);
@@ -439,7 +440,7 @@ describe('WebGPU Fireworks explicit show preview', () => {
     setTelemetry(plugin, [
       { state: 'ready' },
       { state: 'ready', benchmark: true, finaleActive: true, finaleQueueLength: 5 },
-      { state: 'ready', finaleActive: true, updatedAt: Date.now() - 5001 }
+      { state: 'ready', finaleActive: true, statusUpdatedAt: Date.now() - 5001 }
     ]);
 
     const accepted = await invokePreview(api);

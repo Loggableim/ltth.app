@@ -83,7 +83,9 @@ npm run lint
 
 ## Status
 
-- Version shown in package manifests: `1.3.24`
+- Current LTTH release: `1.3.37`
+- Current WebGPU Fireworks plugin release: `3.1.1`
+- Fireworks 3.1.1 keeps star, ring, standard, and special rockets inside one shared visible envelope so each burst opens at the exact rendered rocket endpoint without top-edge clipping.
 - Current changelog: [CHANGELOG.md](CHANGELOG.md)
 - Active app changelog: [app/CHANGELOG.md](app/CHANGELOG.md)
 - License: [LICENSE](LICENSE)

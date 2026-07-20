@@ -1,10 +1,10 @@
 {
-  "version": "1.3.36",
+  "version": "1.3.37",
   "releaseDate": "2026-07-20",
   "status": "stable",
-  "downloadVersion": "1.3.36",
-  "downloadNote": "Version 1.3.36 completes the Boykisser particle rocket and Superfan finale, adds Pride trails, prevents clipped shells, and publishes the current Emoji Rain, game, dashboard, Schnorrbecher, and guide improvements.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.36",
+  "downloadVersion": "1.3.37",
+  "downloadNote": "Version 1.3.37 publishes WebGPU Fireworks 3.1.1 with exact rocket-to-burst alignment, preserved top headroom, and synchronized renderer and UI contracts.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.37",
   "oneLineInstaller": {
     "windows": "$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))",
     "macos": "curl -fsSL https://ltth.app/install/install.sh | bash",
@@ -19,6 +19,16 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.3.37": {
+      "date": "2026-07-20",
+      "changes": [
+        "FIXED: Star, ring, standard, and special rockets share one immutable visible-envelope fit with their explosions",
+        "FIXED: Bursts open at the exact visual rocket endpoint without top-edge clipping or spawn offset",
+        "IMPROVED: Preview freshness validates registered renderers through authenticated statusUpdatedAt telemetry",
+        "IMPROVED: Show-style catalogs, benchmark payloads, and crackle controls follow their current server contracts",
+        "IMPROVED: WebGPU Fireworks advanced to 3.1.1 and active package, README, changelog, download, locale, website, and release-test surfaces aligned to LTTH 1.3.37"
+      ]
+    },
     "1.3.36": {
       "date": "2026-07-20",
       "changes": [

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
+const { CONFIG_ENUMS } = require('../plugins/webgpu-fireworks/lib/config-schema');
 
 const helperPath = path.join(
   __dirname,
@@ -41,6 +42,7 @@ function createHarness(markup = '<select id="style"></select>') {
     url: 'http://localhost:3000/plugins/webgpu-fireworks/ui'
   });
   dom.window.eval(helperSource);
+  dom.window.WebGpuFireworksShowOptions.setCustomStyleContract(CONFIG_ENUMS.finaleStyle);
   return {
     dom,
     window: dom.window,

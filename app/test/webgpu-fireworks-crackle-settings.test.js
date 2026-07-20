@@ -8,6 +8,7 @@ const {
   normalizeConfig,
   normalizeFireworkTrigger
 } = require('../plugins/webgpu-fireworks/lib/config-schema');
+const settingsContract = require('../plugins/webgpu-fireworks/ui/settings-contract');
 
 describe('WebGPU Fireworks crackling settings contract', () => {
   test('adds compatible defaults and clamps persisted values', () => {
@@ -48,8 +49,10 @@ describe('WebGPU Fireworks crackling settings contract', () => {
     expect(settingsHtml).toContain('id="crackle-frequency"');
     expect(settingsHtml).toContain('id="crackle-volume"');
     expect(settingsHtml).toContain('id="test-crackle-btn"');
-    expect(settingsSource).toContain('config.crackleFrequency = val / 100');
-    expect(settingsSource).toContain('config.crackleVolume = val / 100');
+    expect(settingsContract.RANGE_CONTROLS).toMatchObject({
+      'crackle-frequency': 'crackleFrequency',
+      'crackle-volume': 'crackleVolume'
+    });
     expect(settingsSource).toContain('async function triggerTestCrackle()');
     expect(settingsSource).toContain('crackleEnabled: true');
     expect(settingsSource).toContain('forceRocket: true');
@@ -81,13 +84,13 @@ describe('WebGPU Fireworks crackling settings contract', () => {
   test('cache-busts every updated overlay and settings script', () => {
     const overlay = read('overlay.html');
     const settingsHtml = read('ui/settings.html');
-    expect(overlay).toContain('spawn-command-policy.js?v=3.1.0-depth3d-1');
-    expect(overlay).toContain('visible-envelope.js?v=3.1.0-glyph-envelope-1');
-    expect(overlay).toContain('boykisser-geometry.js?v=3.1.0-particle-rocket-1');
-    expect(overlay).toContain('webgpu-particle-engine.js?v=3.1.0-particle-rocket-1');
-    expect(overlay).toContain('show-plan-v2-runtime.js?v=3.1.0-particle-rocket-1');
-    expect(overlay).toContain('engine.js?v=3.1.0-particle-rocket-1');
-    expect(settingsHtml).toContain('show-style-options.js?v=3.1.0-depth3d-1');
-    expect(settingsHtml).toContain('settings.js?v=3.1.0-benchmark-session-2');
+    expect(overlay).toContain('spawn-command-policy.js?v=3.1.1-depth3d-1');
+    expect(overlay).toContain('visible-envelope.js?v=3.1.1-glyph-envelope-1');
+    expect(overlay).toContain('boykisser-geometry.js?v=3.1.1-particle-rocket-1');
+    expect(overlay).toContain('webgpu-particle-engine.js?v=3.1.1-particle-rocket-1');
+    expect(overlay).toContain('show-plan-v2-runtime.js?v=3.1.1-particle-rocket-1');
+    expect(overlay).toContain('engine.js?v=3.1.1-particle-rocket-1');
+    expect(settingsHtml).toContain('show-style-options.js?v=3.1.1-depth3d-1');
+    expect(settingsHtml).toContain('settings.js?v=3.1.1-benchmark-session-2');
   });
 });
