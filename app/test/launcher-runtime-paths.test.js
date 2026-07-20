@@ -26,22 +26,38 @@ function createQuietLauncher(projectRoot) {
   return launcher;
 }
 
-function writeCriticalDependencyDirs(projectRoot) {
-  const criticalDeps = [
-    'dotenv',
-    'express',
-    'socket.io',
-    'better-sqlite3',
-    'winston',
-    '@eulerstream/euler-websocket-sdk',
-    'jsonwebtoken',
-    'axios',
-    'ws'
-  ];
+const BOOT_CRITICAL_DEPENDENCIES = [
+  'dotenv',
+  'express',
+  'socket.io',
+  'better-sqlite3',
+  'winston',
+  '@eulerstream/euler-websocket-sdk',
+  'jsonwebtoken',
+  'axios',
+  'ws',
+  '@deepgram/sdk'
+];
 
-  for (const dep of criticalDeps) {
-    fs.mkdirSync(path.join(projectRoot, 'node_modules', dep), { recursive: true });
+function writeLoadableDependency(projectRoot, dep, source = 'module.exports = {};') {
+  const depPath = path.join(projectRoot, 'node_modules', dep);
+  fs.mkdirSync(depPath, { recursive: true });
+  fs.writeFileSync(path.join(depPath, 'package.json'), JSON.stringify({ main: 'index.js' }));
+  fs.writeFileSync(path.join(depPath, 'index.js'), source);
+}
+
+function writeCriticalDependencyDirs(projectRoot) {
+  for (const dep of BOOT_CRITICAL_DEPENDENCIES) {
+    writeLoadableDependency(projectRoot, dep);
   }
+}
+
+function writeDependencyPackageJson(projectRoot, dependencies) {
+  fs.writeFileSync(path.join(projectRoot, 'package.json'), JSON.stringify({ dependencies }));
+}
+
+function writeDependencyLockfile(projectRoot) {
+  fs.writeFileSync(path.join(projectRoot, 'package-lock.json'), JSON.stringify({ lockfileVersion: 3 }));
 }
 
 describe('launcher runtime toolchain', () => {
@@ -106,6 +122,80 @@ describe('launcher runtime toolchain', () => {
     await launcher.checkDependencies();
 
     expect(launcher.installDependencies).toHaveBeenCalledTimes(1);
+  });
+
+  test('detects a declared scoped dependency that is missing from node_modules', () => {
+    const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-launcher-scoped-deps-'));
+    fs.mkdirSync(path.join(projectRoot, 'node_modules'), { recursive: true });
+    writeDependencyPackageJson(projectRoot, {
+      express: '^4.0.0',
+      '@deepgram/sdk': '5.5.0'
+    });
+    writeDependencyLockfile(projectRoot);
+    writeLoadableDependency(projectRoot, 'express');
+
+    const verification = createQuietLauncher(projectRoot).verifyCriticalDependencies();
+
+    expect(verification.valid).toBe(false);
+    expect(verification.missing).toContain('@deepgram/sdk');
+  });
+
+  test('detects a boot-critical package whose nested module is missing', () => {
+    const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-launcher-broken-sdk-'));
+    fs.mkdirSync(path.join(projectRoot, 'node_modules'), { recursive: true });
+    writeDependencyPackageJson(projectRoot, { '@deepgram/sdk': '5.5.0' });
+    writeDependencyLockfile(projectRoot);
+    writeCriticalDependencyDirs(projectRoot);
+    fs.writeFileSync(
+      path.join(projectRoot, 'node_modules', '@deepgram', 'sdk', 'index.js'),
+      "require('./api/index.js'); module.exports = {};"
+    );
+
+    const verification = createQuietLauncher(projectRoot).verifyCriticalDependencies();
+    const details = [
+      ...(verification.missing || []),
+      ...(verification.errors || [])
+    ].join(' ');
+
+    expect(verification.valid).toBe(false);
+    expect(details).toContain('@deepgram/sdk');
+    expect(details).toContain('api/index.js');
+  });
+
+  test('re-verifies dependencies after reinstalling', async () => {
+    const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-launcher-reverify-'));
+    fs.mkdirSync(path.join(projectRoot, 'node_modules'), { recursive: true });
+    writeDependencyPackageJson(projectRoot, {});
+    writeDependencyLockfile(projectRoot);
+
+    const launcher = createQuietLauncher(projectRoot);
+    launcher.verifyCriticalDependencies = jest
+      .fn()
+      .mockReturnValueOnce({ valid: false, missing: ['@deepgram/sdk'], errors: [] })
+      .mockReturnValueOnce({ valid: true, missing: [], errors: [] });
+    launcher.installDependencies = jest.fn(async () => {});
+
+    await launcher.checkDependencies();
+
+    expect(launcher.installDependencies).toHaveBeenCalledTimes(1);
+    expect(launcher.verifyCriticalDependencies).toHaveBeenCalledTimes(2);
+  });
+
+  test('throws when dependency verification still fails after reinstalling', async () => {
+    const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-launcher-reverify-fail-'));
+    fs.mkdirSync(path.join(projectRoot, 'node_modules'), { recursive: true });
+    writeDependencyPackageJson(projectRoot, {});
+    writeDependencyLockfile(projectRoot);
+
+    const launcher = createQuietLauncher(projectRoot);
+    launcher.verifyCriticalDependencies = jest.fn(() => ({
+      valid: false,
+      missing: ['@deepgram/sdk'],
+      errors: ['@deepgram/sdk: Cannot find module ./api/index.js']
+    }));
+    launcher.installDependencies = jest.fn(async () => {});
+
+    await expect(launcher.checkDependencies()).rejects.toThrow('Dependency verification failed after installation');
   });
 
   test('repairs missing native binding with dependency install before rebuild', async () => {

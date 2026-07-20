@@ -271,8 +271,18 @@ class Launcher {
     /**
      * Prüft ob kritische Dependencies installiert sind
      */
+    getDeclaredProductionDependencies() {
+        const packageJsonPath = path.join(this.projectRoot, 'package.json');
+        try {
+            const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+            return Object.keys(packageJson.dependencies || {});
+        } catch (error) {
+            return { error };
+        }
+    }
+
     verifyCriticalDependencies() {
-        const criticalDeps = [
+        const bootCriticalDeps = [
             'dotenv',
             'express',
             'socket.io',
@@ -281,21 +291,47 @@ class Launcher {
             '@eulerstream/euler-websocket-sdk',
             'jsonwebtoken',
             'axios',
-            'ws'
+            'ws',
+            '@deepgram/sdk'
         ];
-
+        const declaredDepsResult = this.getDeclaredProductionDependencies();
         const missingDeps = [];
-        
-        for (const dep of criticalDeps) {
+        const errors = [];
+
+        if (declaredDepsResult.error) {
+            errors.push(`package.json: ${declaredDepsResult.error.message}`);
+            return { valid: false, missing: missingDeps, errors };
+        }
+
+        for (const dep of declaredDepsResult) {
             const depPath = path.join(this.projectRoot, 'node_modules', dep);
             if (!fs.existsSync(depPath)) {
                 missingDeps.push(dep);
             }
         }
 
+        for (const dep of bootCriticalDeps) {
+            const depPath = path.join(this.projectRoot, 'node_modules', dep);
+            if (!fs.existsSync(depPath)) {
+                if (!missingDeps.includes(dep)) {
+                    missingDeps.push(dep);
+                }
+                continue;
+            }
+
+            try {
+                const entryPath = require.resolve(dep, { paths: [this.projectRoot] });
+                delete require.cache[entryPath];
+                require(entryPath);
+            } catch (error) {
+                errors.push(`${dep}: ${error.message}`);
+            }
+        }
+
         return {
-            valid: missingDeps.length === 0,
-            missing: missingDeps
+            valid: missingDeps.length === 0 && errors.length === 0,
+            missing: missingDeps,
+            errors
         };
     }
 
@@ -348,6 +384,20 @@ class Launcher {
     /**
      * Prüft und installiert Dependencies
      */
+    async reinstallAndVerifyDependencies(successMessage) {
+        await this.installDependencies();
+        const verification = this.verifyCriticalDependencies();
+        if (!verification.valid) {
+            const details = [...verification.missing, ...verification.errors].join('; ');
+            this.log.error(`Dependency verification failed after installation: ${details}`);
+            throw new Error(`Dependency verification failed after installation: ${details}`);
+        }
+
+        this.writeDependencyState();
+        this.log.newLine();
+        this.log.success(successMessage);
+    }
+
     async checkDependencies() {
         const nodeModulesPath = path.join(this.projectRoot, 'node_modules');
         const packageLockPath = path.join(this.projectRoot, 'package-lock.json');
@@ -357,26 +407,19 @@ class Launcher {
             this.log.warn('Dependencies nicht gefunden. Installiere...');
             this.log.newLine();
 
-            await this.installDependencies();
-            this.writeDependencyState();
-
-            this.log.newLine();
-            this.log.success('Dependencies erfolgreich installiert!');
+            await this.reinstallAndVerifyDependencies('Dependencies erfolgreich installiert!');
             return;
         }
 
         // Prüfe ob kritische Dependencies vorhanden sind
         const verification = this.verifyCriticalDependencies();
         if (!verification.valid) {
-            this.log.warn(`Fehlende Dependencies erkannt: ${verification.missing.join(', ')}`);
+            const details = [...verification.missing, ...verification.errors].join('; ');
+            this.log.warn(`Fehlende oder fehlerhafte Dependencies erkannt: ${details}`);
             this.log.warn('Reinstalliere Dependencies...');
             this.log.newLine();
 
-            await this.installDependencies();
-            this.writeDependencyState();
-
-            this.log.newLine();
-            this.log.success('Dependencies erfolgreich installiert!');
+            await this.reinstallAndVerifyDependencies('Dependencies erfolgreich installiert!');
             return;
         }
 
@@ -391,11 +434,7 @@ class Launcher {
             this.log.warn('package.json oder package-lock.json wurde geändert. Reinstalliere Dependencies...');
             this.log.newLine();
 
-            await this.installDependencies();
-            this.writeDependencyState();
-
-            this.log.newLine();
-            this.log.success('Dependencies aktualisiert!');
+            await this.reinstallAndVerifyDependencies('Dependencies aktualisiert!');
         } else {
             this.log.success('Dependencies bereits installiert');
         }
