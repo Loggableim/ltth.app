@@ -138,6 +138,15 @@ function assertAdapter(adapterInfo) {
   }
 }
 
+async function collectCleanupFailure(failures, label, cleanup) {
+  try {
+    await cleanup();
+  } catch (error) {
+    const message = error && error.message ? error.message : String(error);
+    failures.push(new Error(`${label} failed: ${message}`, { cause: error }));
+  }
+}
+
 async function main() {
   const caseName = requireCaseName(process.argv);
   const executablePath = requireInstalledChrome();
@@ -148,6 +157,10 @@ async function main() {
   let page;
   let server;
   let profilePath;
+  let cdp;
+  let runFailure;
+  let terminalPassLine;
+  let diagnostics;
   const consoleErrors = [];
 
   try {
@@ -174,11 +187,9 @@ async function main() {
     fixtureUrl.searchParams.append('script', SCRIPT_PATH);
     await page.goto(fixtureUrl.href, { waitUntil: 'load' });
     const pageEvidence = await page.evaluate(name => window.runWebGpuFireworksCase(name), caseName);
-    if (consoleErrors.length) throw new Error(consoleErrors.join('\n'));
 
-    const cdp = await browser.newBrowserCDPSession();
+    cdp = await browser.newBrowserCDPSession();
     const systemInfo = await cdp.send('SystemInfo.getInfo');
-    await cdp.detach();
     assertAdapter(pageEvidence.adapterInfo);
     const cdpDevice = choosePrimaryDevice(systemInfo.gpu);
     const webgpuFeatureStatus = chooseWebGpuFeatureStatus(systemInfo.gpu?.featureStatus);
@@ -193,11 +204,13 @@ async function main() {
       verdict: 'hardware-d3d'
     };
 
-    console.log(`Chrome executable: ${executablePath}`);
-    console.log(`GPUAdapter.info: ${JSON.stringify(pageEvidence.adapterInfo)}`);
-    console.log(`CDP primary GPU device: ${JSON.stringify(cdpDevice)}`);
-    console.log(`CDP WebGPU feature status: ${JSON.stringify(webgpuFeatureStatus)}`);
-    console.log(`CDP D3D backend evidence: ${backend}`);
+    diagnostics = [
+      `Chrome executable: ${executablePath}`,
+      `GPUAdapter.info: ${JSON.stringify(pageEvidence.adapterInfo)}`,
+      `CDP primary GPU device: ${JSON.stringify(cdpDevice)}`,
+      `CDP WebGPU feature status: ${JSON.stringify(webgpuFeatureStatus)}`,
+      `CDP D3D backend evidence: ${backend}`,
+    ];
 
     let payload;
     if (caseName === 'all') {
@@ -212,14 +225,43 @@ async function main() {
     } else {
       payload = { hardware, result: pageEvidence.result };
     }
-    console.log(`PASS ${caseName} ${JSON.stringify(payload)}`);
-  } finally {
-    if (page && !page.isClosed()) await page.close().catch(() => {});
-    if (browser) await browser.close().catch(() => {});
-    else if (context) await context.close().catch(() => {});
-    await closeServer(server).catch(() => {});
-    if (profilePath) fs.rmSync(profilePath, { recursive: true, force: true });
+    terminalPassLine = `PASS ${caseName} ${JSON.stringify(payload)}`;
+  } catch (error) {
+    runFailure = error;
   }
+
+  const cleanupFailures = [];
+  if (page && !page.isClosed()) {
+    await collectCleanupFailure(cleanupFailures, 'page close', () => page.close());
+  }
+  if (cdp) {
+    const session = cdp;
+    cdp = undefined;
+    await collectCleanupFailure(cleanupFailures, 'CDP detach', () => session.detach());
+  }
+  if (browser) {
+    await collectCleanupFailure(cleanupFailures, 'browser close', () => browser.close());
+  } else if (context) {
+    await collectCleanupFailure(cleanupFailures, 'browser context close', () => context.close());
+  }
+  await collectCleanupFailure(cleanupFailures, 'server close', () => closeServer(server));
+  if (profilePath) {
+    await collectCleanupFailure(cleanupFailures, 'temporary profile removal', () => {
+      fs.rmSync(profilePath, { recursive: true, force: true });
+    });
+  }
+  await Promise.resolve();
+  if (consoleErrors.length) {
+    cleanupFailures.push(new Error(consoleErrors.join('\n')));
+  }
+
+  const failures = [runFailure, ...cleanupFailures].filter(Boolean);
+  if (failures.length) {
+    throw new AggregateError(failures, `WebGPU Fireworks ${caseName} failed before terminal acceptance`);
+  }
+
+  for (const diagnostic of diagnostics) console.log(diagnostic);
+  console.log(terminalPassLine);
 }
 
 main().catch(error => {
