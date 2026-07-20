@@ -142,6 +142,24 @@
       min-width: 350px;
     }
 
+    #interactive-viewer-countdown {
+      min-height: 34px;
+      margin-bottom: 14px;
+      color: #facc15;
+      font-size: 24px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    #interactive-viewer-countdown[hidden] {
+      display: none;
+    }
+
+    #interactive-viewer-countdown.warning {
+      color: #f44336;
+      animation: timerPulse 0.75s ease-in-out infinite;
+    }
+
     /* Player info cards */
     .player-card {
       background: rgba(255, 255, 255, 0.05);
@@ -436,6 +454,7 @@
 
   <div id="overlay-container">
     <div class="glass-container">
+      <div id="interactive-viewer-countdown" aria-live="polite" hidden></div>
       <div id="game-board">
         <div id="board-container">
           <div id="chessboard"></div>
@@ -514,6 +533,8 @@
     let latestInteractiveStateReceivedAt = 0;
     let interactiveSnapshotActive = false;
     let interactiveClockInterval = null;
+    let interactiveViewerCountdownInterval = null;
+    let lastInteractiveResultKey = null;
 
     // Initialize board
     function initBoard() {
@@ -530,6 +551,61 @@
           board.appendChild(square);
         }
       }
+    }
+
+    function renderBoardCoordinates() {
+      const squares = document.querySelectorAll('.square');
+      squares.forEach(square => {
+        square.querySelectorAll('.coord-row, .coord-col').forEach(label => label.remove());
+      });
+      if (config.showCoordinates === false) return;
+
+      squares.forEach(square => {
+        const row = Number(square.dataset.row);
+        const col = Number(square.dataset.col);
+        if (col === 0) {
+          const rank = document.createElement('span');
+          rank.className = 'coord-row';
+          rank.textContent = String(8 - row);
+          square.appendChild(rank);
+        }
+        if (row === 7) {
+          const file = document.createElement('span');
+          file.className = 'coord-col';
+          file.textContent = String.fromCharCode(97 + col);
+          square.appendChild(file);
+        }
+      });
+    }
+
+    function applyChessVisualConfig() {
+      const board = document.getElementById('chessboard');
+      const glass = document.querySelector('.glass-container');
+      if (!board || !glass) return;
+
+      const themes = {
+        dark: { light: '#f0d9b5', dark: '#b58863' },
+        light: { light: '#f7f7f7', dark: '#bdbdbd' },
+        wood: { light: '#f0d9b5', dark: '#8b5a2b' }
+      };
+      const theme = themes[config.boardTheme] || themes.dark;
+      board.querySelectorAll('.square').forEach(square => {
+        square.style.backgroundColor = square.classList.contains('light') ? theme.light : theme.dark;
+      });
+      if (config.backgroundColor) glass.style.backgroundColor = config.backgroundColor;
+      if (config.fontFamily) document.body.style.fontFamily = config.fontFamily;
+
+      const whiteColor = config.whiteColor || '#4CAF50';
+      const blackColor = config.blackColor || '#2196F3';
+      const whiteCard = document.getElementById('white-player');
+      const blackCard = document.getElementById('black-player');
+      const whiteName = document.getElementById('white-name');
+      const blackName = document.getElementById('black-name');
+      whiteCard.style.borderLeftColor = whiteColor;
+      blackCard.style.borderLeftColor = blackColor;
+      whiteName.style.color = whiteColor;
+      blackName.style.color = blackColor;
+      renderBoardCoordinates();
     }
 
     // Parse FEN and update board
@@ -561,17 +637,18 @@
           }
         }
       }
+      renderBoardCoordinates();
     }
 
     // Highlight last move
     function highlightLastMove(move) {
-      if (!move || !move.from || !move.to) return;
+      lastMoveSquares.forEach(sq => sq.classList.remove('last-move'));
+      lastMoveSquares = [];
+
+      if (config.highlightLastMove === false || !move || !move.from || !move.to) return;
 
       const fromSquare = document.querySelector(`[data-square="${move.from}"]`);
       const toSquare = document.querySelector(`[data-square="${move.to}"]`);
-
-      lastMoveSquares.forEach(sq => sq.classList.remove('last-move'));
-      lastMoveSquares = [];
 
       if (fromSquare) {
         fromSquare.classList.add('last-move');
@@ -587,7 +664,7 @@
     function highlightCheck(inCheck, currentPlayer) {
       document.querySelectorAll('.square').forEach(sq => sq.classList.remove('check'));
 
-      if (!inCheck) return;
+      if (config.highlightCheck === false || !inCheck) return;
 
       // Find king position
       const squares = document.querySelectorAll('.square');
@@ -608,6 +685,11 @@
 
       whiteCaptured.innerHTML = '';
       blackCaptured.innerHTML = '';
+      if (config.showCapturedPieces === false) return;
+
+      captured = captured || { white: {}, black: {} };
+      captured.white = captured.white || {};
+      captured.black = captured.black || {};
 
       // White's captures (black pieces)
       ['p', 'n', 'b', 'r', 'q'].forEach(piece => {
@@ -645,6 +727,8 @@
       const whiteTimer = document.getElementById('white-timer');
       const blackTimer = document.getElementById('black-timer');
 
+      timers = timers || { white: 0, black: 0 };
+
       whiteTimer.textContent = formatTime(timers.white);
       blackTimer.textContent = formatTime(timers.black);
 
@@ -652,8 +736,12 @@
       whiteTimer.classList.remove('warning', 'critical');
       blackTimer.classList.remove('warning', 'critical');
 
-      if (timers.white < 30000) whiteTimer.classList.add(timers.white < 10000 ? 'critical' : 'warning');
-      if (timers.black < 30000) blackTimer.classList.add(timers.black < 10000 ? 'critical' : 'warning');
+      const warningMs = Number.isFinite(Number(config.timerWarningTime))
+        ? Math.max(0, Number(config.timerWarningTime) * 1000)
+        : 30000;
+      const criticalMs = Math.min(10000, warningMs / 3);
+      if (timers.white < warningMs) whiteTimer.classList.add(timers.white < criticalMs ? 'critical' : 'warning');
+      if (timers.black < warningMs) blackTimer.classList.add(timers.black < criticalMs ? 'critical' : 'warning');
     }
 
     // Update active player
@@ -707,7 +795,18 @@
     // Load initial chess config for display texts (best-effort)
     fetch('/api/game-engine/config/chess')
       .then(res => res.json())
-      .then(cfg => { if (cfg) { config = cfg; applyDisplayTexts(cfg.displayTexts); } })
+      .then(cfg => {
+        if (cfg) {
+          config = cfg;
+          applyChessVisualConfig();
+          applyDisplayTexts(cfg.displayTexts);
+          if (gameState) {
+            updateBoardFromFEN(gameState.fen);
+            updateTimers(gameState.timers);
+            updateCapturedPieces(gameState.capturedPieces);
+          }
+        }
+      })
       .catch(() => {});
 
     /**
@@ -731,6 +830,67 @@
     function stopInteractiveClock() {
       if (interactiveClockInterval) clearInterval(interactiveClockInterval);
       interactiveClockInterval = null;
+    }
+
+    function clearInteractiveViewerCountdown() {
+      if (interactiveViewerCountdownInterval) clearInterval(interactiveViewerCountdownInterval);
+      interactiveViewerCountdownInterval = null;
+      const countdown = document.getElementById('interactive-viewer-countdown');
+      if (!countdown) return;
+      countdown.hidden = true;
+      countdown.textContent = '';
+      countdown.classList.remove('warning');
+    }
+
+    function renderInteractiveViewerCountdown(state, display, receivedAt = Date.now()) {
+      clearInteractiveViewerCountdown();
+      if (
+        !display ||
+        !['playing', 'animating'].includes(display.phase) ||
+        display.currentTurnRole !== 'viewer' ||
+        display.viewerDeadlineMs == null
+      ) return;
+
+      const deadline = Number(display.viewerDeadlineMs);
+      const serverTimestamp = Number(state?.serverTimestamp ?? display.serverTimestamp);
+      if (!Number.isFinite(deadline) || !Number.isFinite(serverTimestamp)) return;
+      const warningSeconds = Math.max(1, Number(config.timerWarningTime) || 10);
+      const countdown = document.getElementById('interactive-viewer-countdown');
+      if (!countdown) return;
+      const render = () => {
+        const serverNow = serverTimestamp + (Date.now() - receivedAt);
+        const seconds = Math.max(0, Math.ceil((deadline - serverNow) / 1000));
+        countdown.textContent = runtimeText(
+          'plugins.game-engine.runtime.overlay.viewer_countdown',
+          { seconds },
+          `Viewer: ${seconds}s`
+        );
+        countdown.hidden = false;
+        countdown.classList.toggle('warning', seconds <= warningSeconds);
+      };
+      render();
+      interactiveViewerCountdownInterval = setInterval(render, 1000);
+    }
+
+    function interactiveReasonLabel(reason) {
+      const dt = config._displayTexts || {};
+      const labels = {
+        checkmate: dt.labelCheckmate || '♚ Checkmate!',
+        timeout: dt.labelTimeout || 'by Timeout',
+        host_timeout: dt.labelTimeout || 'by Timeout',
+        viewer_timeout: dt.labelTimeout || 'by Timeout',
+        resignation: dt.labelResignation || 'by Resignation',
+        stalemate: dt.labelStalemate || 'Stalemate',
+        repetition: dt.labelRepetition || 'by Threefold Repetition',
+        insufficient_material: dt.labelInsufficientMaterial || 'Insufficient Material',
+        fifty_move_rule: dt.labelFiftyMoveRule || 'by Fifty-Move Rule',
+        draw_agreement: dt.labelDraw || runtimeText('plugins.game-engine.runtime.chess.draw')
+      };
+      return labels[reason] || runtimeText(
+        'plugins.game-engine.runtime.chess.result',
+        { reason },
+        'Game finished'
+      );
     }
 
     function renderInteractiveClock(display, state, receivedAt = Date.now()) {
@@ -776,7 +936,12 @@
         { player: winner }
       ) : runtimeText('plugins.game-engine.runtime.chess.draw');
       winnerName.textContent = winner || '';
-      reason.textContent = result.reason || '';
+      reason.textContent = interactiveReasonLabel(result.reason);
+      const resultKey = `${result.sessionId || ''}:${result.winner || ''}:${result.reason || ''}`;
+      if (config.celebrationEnabled && resultKey !== lastInteractiveResultKey && winner) {
+        showConfetti();
+      }
+      lastInteractiveResultKey = resultKey;
       overlay.classList.add('show');
     }
 
@@ -879,17 +1044,20 @@
       interactiveSnapshotActive = ['playing', 'animating', 'result', 'leaderboard'].includes(display.phase);
       if (display.phase === 'leaderboard' && display.leaderboard?.type) {
         stopInteractiveClock();
+        clearInteractiveViewerCountdown();
         void showInteractiveLeaderboard(display, displayRevision);
         return;
       }
       const snapshotState = display.state || display.result?.state;
       if (!interactiveSnapshotActive || !snapshotState) {
         stopInteractiveClock();
+        clearInteractiveViewerCountdown();
         return;
       }
 
       gameState = snapshotState;
       config = display.config || config || {};
+      applyChessVisualConfig();
       applyDisplayTexts(config.displayTexts);
       const animationMs = Math.max(100, Math.min(2000, Number(config.animationSpeed) || 500));
       document.documentElement.style.setProperty('--interactive-animation-ms', `${animationMs}ms`);
@@ -899,13 +1067,16 @@
         gameState.blackPlayer.nickname || gameState.blackPlayer.username;
       updateBoardFromFEN(gameState.fen);
       highlightLastMove(gameState.lastMove);
+      highlightCheck(gameState.inCheck, gameState.currentPlayer);
       updateActivePlayer(gameState.currentPlayer);
       updateCapturedPieces(gameState.capturedPieces || { white: {}, black: {} });
       renderInteractiveClock(display, gameState, latestInteractiveStateReceivedAt);
+      renderInteractiveViewerCountdown(state, display, latestInteractiveStateReceivedAt);
       document.getElementById('overlay-container').classList.add('active');
 
       if (display.phase === 'result' && display.result) showInteractiveResult(display.result);
       else {
+        lastInteractiveResultKey = null;
         hideInteractiveLeaderboard();
         document.getElementById('game-over-overlay').classList.remove('show');
       }
@@ -936,6 +1107,7 @@
       config = data.config;
 
       // Apply display texts if present in config
+      applyChessVisualConfig();
       applyDisplayTexts(config.displayTexts);
 
       // Update player names
@@ -1030,7 +1202,13 @@
     socket.on('game-engine:config-updated', (data) => {
       if (data.gameType === 'chess') {
         config = data.config;
+        applyChessVisualConfig();
         applyDisplayTexts(config.displayTexts);
+        if (gameState) {
+          updateBoardFromFEN(gameState.fen);
+          updateTimers(gameState.timers);
+          updateCapturedPieces(gameState.capturedPieces);
+        }
       }
     });
 

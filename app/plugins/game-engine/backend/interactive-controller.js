@@ -715,6 +715,41 @@ class InteractiveController {
     return { success: true, result };
   }
 
+  resignHost(input) {
+    const envelope = typeof input === 'object' && input !== null
+      ? input
+      : { sessionId: input };
+    const session = this.registry.get(envelope.sessionId);
+    if (!session) return { success: false, error: 'session_not_found' };
+    if (session.gameType !== 'chess') return { success: false, error: 'wrong_game_type' };
+    if (envelope.sessionRevision != null && session.sessionRevision !== Number(envelope.sessionRevision)) {
+      return { success: false, error: 'stale_session_revision' };
+    }
+    if (envelope.displayRevision != null && this.router.displayRevision !== Number(envelope.displayRevision)) {
+      return { success: false, error: 'stale_display_revision' };
+    }
+
+    const state = session.adapter.getState();
+    const host = [state.whitePlayer, state.blackPlayer].find(player => player?.role === 'streamer');
+    if (!host?.username) return { success: false, error: 'host_not_found' };
+
+    const resignation = session.adapter.game.resign(host.username);
+    if (!resignation.success) return { success: false, error: resignation.error };
+
+    session.sessionRevision += 1;
+    session.lastActivityAt = this.now();
+    this._logTransition('host_resignation', session, { terminalReason: 'resignation' });
+    return {
+      success: true,
+      result: this._completeSession(session, {
+        winner: resignation.winner,
+        winnerRole: 'viewer',
+        reason: 'resignation',
+        gameResult: resignation
+      })
+    };
+  }
+
   end(sessionId, outcome) {
     const session = this.registry.get(sessionId);
     if (!session) return { success: false, error: 'session_not_found' };
