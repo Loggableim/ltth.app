@@ -71,7 +71,7 @@ function makeRendererHarness(options = {}) {
     createCommandEncoder
   };
   engine.computeBindGroup = {};
-  engine.renderBindGroup = {};
+  engine.renderBindGroups = [{}, {}, {}];
   engine.pipelines = {
     reset: 'reset', spawn: 'spawn', update: 'update', secondary: 'secondary',
     trail: 'trail', glow: 'glow', core: 'core', composite: 'composite'
@@ -125,6 +125,8 @@ describe('WebGPU Fireworks premium graphics and synchronized crackling', () => {
       const api = { getPluginDataDir: () => pluginRoot, emit: jest.fn(), log: jest.fn() };
       const plugin = new FireworksPlugin(api);
       plugin.config = {
+        enabled: true,
+        followerFireworksEnabled: true,
         followerRocketCount: 2,
         followerShowAnimation: false,
         followerShowProfilePicture: true,

@@ -1,0 +1,1429 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WebGPU Fireworks isolated Chrome harness</title>
+  <style>
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+    canvas { display: block; width: 100%; height: 100%; background: transparent; }
+  </style>
+</head>
+<body>
+  <canvas id="fireworks" width="640" height="360"></canvas>
+  <script>
+    'use strict';
+
+    function jsonSafeAdapterInfo(info) {
+      if (!info) return null;
+      const normalized = {};
+      for (const key of [
+        'vendor', 'architecture', 'device', 'description', 'backendType',
+        'driverType', 'subgroupMinSize', 'subgroupMaxSize', 'isFallbackAdapter'
+      ]) {
+        const value = info[key];
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+          normalized[key] = value;
+        }
+      }
+      return normalized;
+    }
+
+    async function loadScripts() {
+      const scripts = new URLSearchParams(location.search).getAll('script');
+      for (const source of scripts) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = source;
+          script.onload = resolve;
+          script.onerror = () => reject(new Error(`failed to load harness script: ${source}`));
+          document.head.appendChild(script);
+        });
+      }
+    }
+
+    async function initializeWebGpu() {
+      if (!navigator.gpu) throw new Error('navigator.gpu is unavailable');
+      const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+      if (!adapter) throw new Error('WebGPU returned no adapter');
+      const device = await adapter.requestDevice();
+      const canvas = document.getElementById('fireworks');
+      const context = canvas.getContext('webgpu');
+      if (!context) throw new Error('transparent WebGPU canvas context is unavailable');
+      context.configure({
+        device,
+        format: navigator.gpu.getPreferredCanvasFormat(),
+        alphaMode: 'premultiplied'
+      });
+      return { adapter, adapterInfo: jsonSafeAdapterInfo(adapter.info), canvas, context, device };
+    }
+
+    const ready = Promise.all([loadScripts(), initializeWebGpu()]).then(([, gpu]) => gpu);
+
+    function atlasColor(index) {
+      const low = index & 255;
+      const high = (index >> 8) & 255;
+      return [
+        (low * 73 + 31) & 255,
+        (high * 67 + 83) & 255,
+        ((low ^ high) * 109 + 47) & 255
+      ];
+    }
+
+    async function makeSolidImage(index) {
+      const color = atlasColor(index);
+      const pixels = new Uint8ClampedArray(8 * 8 * 4);
+      for (let offset = 0; offset < pixels.length; offset += 4) {
+        pixels[offset] = color[0];
+        pixels[offset + 1] = color[1];
+        pixels[offset + 2] = color[2];
+        pixels[offset + 3] = 255;
+      }
+      return { color, image: await createImageBitmap(new ImageData(pixels, 8, 8)) };
+    }
+
+    async function createAtlasSampler(renderer) {
+      const device = renderer.device;
+      const module = device.createShaderModule({
+        label: 'fireworks-atlas-stress-sampler-wgsl',
+        code: `
+@group(0) @binding(0) var atlasTexture: texture_2d<f32>;
+@group(0) @binding(1) var atlasSampler: sampler;
+@group(0) @binding(2) var<storage, read> sampleUvs: array<vec2f>;
+@vertex fn sampleVertex(@builtin(vertex_index) id: u32) -> @builtin(position) vec4f {
+  let positions = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));
+  return vec4f(positions[id], 0.0, 1.0);
+}
+@fragment fn sampleFragment(@builtin(position) position: vec4f) -> @location(0) vec4f {
+  return textureSampleLevel(atlasTexture, atlasSampler, sampleUvs[u32(position.x)], 0.0);
+}`
+      });
+      const compilation = await module.getCompilationInfo();
+      const errors = compilation.messages.filter(message => message.type === 'error');
+      if (errors.length) throw new Error(`atlas sampler WGSL: ${errors.map(error => error.message).join('; ')}`);
+      const pipeline = await device.createRenderPipelineAsync({
+        label: 'fireworks-atlas-stress-sampler',
+        layout: 'auto',
+        vertex: { module, entryPoint: 'sampleVertex' },
+        fragment: { module, entryPoint: 'sampleFragment', targets: [{ format: 'rgba8unorm' }] },
+        primitive: { topology: 'triangle-list' }
+      });
+
+      return async function sampleAtlas(entries) {
+        const positions = [];
+        for (const entry of entries) {
+          const slot = entry.textureIndex - 1;
+          const x = (slot % 8) * 128;
+          const y = Math.floor(slot / 8) * 128;
+          for (const [sampleX, sampleY] of [
+            [64, 64], [6.5, 64], [121.5, 64], [64, 6.5], [64, 121.5]
+          ]) {
+            positions.push((x + sampleX) / 1024, (y + sampleY) / 1024);
+          }
+        }
+
+        const sampleCount = positions.length / 2;
+        const inputSize = positions.length * Float32Array.BYTES_PER_ELEMENT;
+        const bytesPerRow = Math.ceil(sampleCount * 4 / 256) * 256;
+        const input = device.createBuffer({
+          label: 'fireworks-atlas-stress-sample-uvs',
+          size: inputSize,
+          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        });
+        const output = device.createTexture({
+          label: 'fireworks-atlas-stress-sample-output',
+          size: [sampleCount, 1],
+          format: 'rgba8unorm',
+          usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC
+        });
+        const readback = device.createBuffer({
+          label: 'fireworks-atlas-stress-sample-readback',
+          size: bytesPerRow,
+          usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+        });
+        try {
+          device.queue.writeBuffer(input, 0, new Float32Array(positions));
+          const bindGroup = device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(0),
+            entries: [
+              { binding: 0, resource: renderer.atlasTexture.createView() },
+              { binding: 1, resource: renderer.atlasSampler },
+              { binding: 2, resource: { buffer: input } }
+            ]
+          });
+          const encoder = device.createCommandEncoder({ label: 'fireworks-atlas-stress-sample-encoder' });
+          const pass = encoder.beginRenderPass({
+            label: 'fireworks-atlas-stress-sample-pass',
+            colorAttachments: [{
+              view: output.createView(),
+              clearValue: { r: 0, g: 0, b: 0, a: 0 },
+              loadOp: 'clear',
+              storeOp: 'store'
+            }]
+          });
+          pass.setPipeline(pipeline);
+          pass.setBindGroup(0, bindGroup);
+          pass.draw(3);
+          pass.end();
+          encoder.copyTextureToBuffer(
+            { texture: output },
+            { buffer: readback, bytesPerRow, rowsPerImage: 1 },
+            [sampleCount, 1]
+          );
+          device.queue.submit([encoder.finish()]);
+          await readback.mapAsync(GPUMapMode.READ);
+          return new Uint8Array(readback.getMappedRange().slice(0), 0, sampleCount * 4);
+        } finally {
+          if (readback.mapState === 'mapped') readback.unmap();
+          input.destroy();
+          output.destroy();
+          readback.destroy();
+        }
+      };
+    }
+
+    async function runAtlasCase() {
+      const uniqueUrls = new Set();
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 360;
+      let nowMs = 1_000;
+      const renderer = new WebGPUParticleEngine(canvas, {
+        now: () => nowMs,
+        maxParticles: 512,
+        trailsEnabled: false,
+        glowEnabled: false,
+        bloomEnabled: false
+      });
+      let result = null;
+      try {
+        if (!await renderer.init()) throw new Error(`atlas renderer failed to initialize: ${JSON.stringify(renderer.getMetrics())}`);
+        const sampleAtlas = await createAtlasSampler(renderer);
+        let maxLiveSlots = 0;
+        let fallbackWhilePinned = 0;
+        let reusedSlots = 0;
+        let releasedPins = 0;
+        let centerSamples = 0;
+        let edgeSamples = 0;
+        let neighborBleedPixels = 0;
+
+        const upload = async index => {
+          const key = `atlas-solid-${index}`;
+          uniqueUrls.add(key);
+          const { color, image } = await makeSolidImage(index);
+          try {
+            const previousOwners = new Map(
+              [...renderer.atlasEntries.values()].map(entry => [entry.textureIndex, entry.key])
+            );
+            const textureIndex = await renderer.uploadImage(key, image);
+            if (textureIndex > 0 && previousOwners.has(textureIndex) && previousOwners.get(textureIndex) !== key) {
+              reusedSlots += 1;
+            }
+            maxLiveSlots = Math.max(maxLiveSlots, renderer.atlasEntries.size);
+            if (renderer.atlasEntries.size > 63) throw new Error('atlas exceeded 63 live external mappings');
+            return { key, color, textureIndex };
+          } finally {
+            image.close();
+          }
+        };
+
+        const renderQueued = async entries => {
+          for (let index = 0; index < entries.length; index += 1) {
+            const entry = entries[index];
+            if (!renderer._queueSpawn({
+              shape: 'image', count: 1, textureIndex: entry.textureIndex,
+              duration: 0.05, particleDuration: 0.05, secondary: false,
+              seed: index + 1, effectId: entry.key
+            })) throw new Error(`atlas image command was rejected for ${entry.key}`);
+            if ((index + 1) % 32 === 0) renderer.render(1 / 60, nowMs / 1_000);
+          }
+          renderer.render(1 / 60, nowMs / 1_000);
+          await renderer.device.queue.onSubmittedWorkDone();
+        };
+
+        const releasePins = async () => {
+          const releaseAt = Math.max(...[...renderer.atlasEntries.values()].map(entry => entry.inUseUntilMs));
+          while (nowMs <= releaseAt) {
+            nowMs += 50;
+            renderer.render(0.05, nowMs / 1_000);
+          }
+          await renderer.device.queue.onSubmittedWorkDone();
+          const stillPinned = [...renderer.atlasEntries.values()].filter(entry => entry.inUseUntilMs > nowMs);
+          if (stillPinned.length) throw new Error(`${stillPinned.length} atlas slots remained pinned after release rendering`);
+          releasedPins += renderer.atlasEntries.size;
+        };
+
+        const verifySamples = async entries => {
+          const samples = await sampleAtlas(entries);
+          entries.forEach((entry, entryIndex) => {
+            const expected = entry.color;
+            for (let sampleIndex = 0; sampleIndex < 5; sampleIndex += 1) {
+              const offset = (entryIndex * 5 + sampleIndex) * 4;
+              const matches = samples[offset + 3] >= 240 && expected.every((value, channel) => (
+                Math.abs(samples[offset + channel] - value) <= 15
+              ));
+              if (!matches) neighborBleedPixels += 1;
+              if (sampleIndex === 0) centerSamples += 1;
+              else edgeSamples += 1;
+            }
+          });
+        };
+
+        const initial = [];
+        for (let index = 0; index < 63; index += 1) initial.push(await upload(index));
+        await renderQueued(initial);
+
+        const pinnedOverflow = await upload(63);
+        if (pinnedOverflow.textureIndex === 0) fallbackWhilePinned += 1;
+        else throw new Error('atlas overwrote a slot while all 63 external mappings were pinned');
+        await releasePins();
+
+        let reusedBatch = [];
+        for (let index = 63; index < 1_000; index += 1) {
+          nowMs += 1;
+          const entry = await upload(index);
+          if (entry.textureIndex === 0) throw new Error(`atlas did not reuse a released slot for ${entry.key}`);
+          reusedBatch.push(entry);
+          if (reusedBatch.length === 63 || index === 999) {
+            await renderQueued(reusedBatch);
+            await verifySamples(reusedBatch);
+            await releasePins();
+            reusedBatch = [];
+          }
+        }
+
+        result = {
+          uniqueUrls: uniqueUrls.size,
+          maxLiveSlots,
+          fallbackWhilePinned,
+          reusedSlots,
+          releasedPins,
+          centerSamples,
+          edgeSamples,
+          neighborBleedPixels,
+          cleanupComplete: false
+        };
+      } finally {
+        renderer.destroy();
+        if (result) result.cleanupComplete = true;
+      }
+      return result;
+    }
+
+    async function runCapacityCase() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 360;
+      const renderer = new WebGPUParticleEngine(canvas, {
+        maxParticles: 2_048,
+        trailsEnabled: false,
+        glowEnabled: false,
+        bloomEnabled: false
+      });
+      let result = null;
+      try {
+        if (!await renderer.init()) {
+          throw new Error(`capacity renderer failed to initialize: ${JSON.stringify(renderer.getMetrics())}`);
+        }
+        const device = renderer.device;
+        const transitions = [];
+        for (const capacity of [512, 16_384]) {
+          const acknowledgement = await renderer.reconfigureCapacity(capacity);
+          if (acknowledgement.maxParticles !== renderer.maxParticles ||
+              acknowledgement.maxParticles !== capacity) {
+            throw new Error(
+              `capacity acknowledgement mismatch: ${JSON.stringify(acknowledgement)} active=${renderer.maxParticles}`
+            );
+          }
+          renderer.lastReadbackAt = performance.now() - 2_000;
+          renderer.render(1 / 60, performance.now() / 1_000);
+          const readback = renderer.readbackPromise;
+          if (!readback) throw new Error(`capacity ${capacity} did not start a counter readback`);
+          await readback;
+          await device.queue.onSubmittedWorkDone();
+          transitions.push({
+            requestedCapacity: capacity,
+            acknowledgedCapacity: acknowledgement.maxParticles,
+            activeCapacity: renderer.maxParticles,
+            generation: renderer.resourceGeneration,
+            particleBufferBytes: renderer.capacityResources.particleBuffer.size,
+            activeIndexBucketStrideBytes: renderer.capacityResources.activeIndexBucketStrideBytes,
+            counters: {
+              activeParticles: renderer.getMetrics().activeParticles,
+              droppedParticles: renderer.getMetrics().droppedParticles
+            }
+          });
+        }
+
+        const activeResources = renderer.capacityResources;
+        const activeGeneration = renderer.resourceGeneration;
+        const validationErrors = [];
+        for (const invalidCapacity of [511, 16_385]) {
+          try {
+            await renderer.reconfigureCapacity(invalidCapacity);
+            throw new Error(`invalid capacity ${invalidCapacity} was accepted`);
+          } catch (error) {
+            if (error.code !== 'INVALID_PARTICLE_CAPACITY') throw error;
+            validationErrors.push({ capacity: invalidCapacity, code: error.code });
+          }
+          if (renderer.capacityResources !== activeResources ||
+              renderer.resourceGeneration !== activeGeneration ||
+              renderer.maxParticles !== 16_384) {
+            throw new Error(`invalid capacity ${invalidCapacity} changed the active renderer state`);
+          }
+        }
+
+        result = {
+          particleStride: renderer.particleStride,
+          capacities: transitions.map(entry => entry.requestedCapacity),
+          generations: transitions.map(entry => entry.generation),
+          activeCapacities: transitions.map(entry => entry.activeCapacity),
+          bufferByteSizes: transitions.map(entry => entry.particleBufferBytes),
+          transitions,
+          validationErrors,
+          validationPreserved: true,
+          deviceIdentityStable: renderer.device === device,
+          cleanupComplete: false
+        };
+      } finally {
+        renderer.destroy();
+        if (result) result.cleanupComplete = true;
+      }
+      return result;
+    }
+    async function waitForRecoveredDevice(renderer, lostDevice, timeoutMs = 15_000) {
+      const deadline = performance.now() + timeoutMs;
+      while (performance.now() < deadline) {
+        if (renderer.device !== lostDevice && renderer.initialized &&
+            renderer.getMetrics().state === 'ready') {
+          return renderer.device;
+        }
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      throw new Error(`renderer did not recover within ${timeoutMs}ms`);
+    }
+
+    async function runRecoveryCase() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 360;
+      const ownerInvalidations = [];
+      const renderer = new WebGPUParticleEngine(canvas, {
+        maxParticles: 2_048,
+        trailsEnabled: false,
+        glowEnabled: false,
+        bloomEnabled: false,
+        recoveryDelayMs: 0,
+        onOwnerInvalidated: (ownerToken, reason) => {
+          ownerInvalidations.push({ ownerToken, reason });
+        }
+      });
+      const devices = [];
+      const generations = [];
+      const pendingReadbacksAtLoss = [];
+      const oldReadbacks = [];
+      let staleCommandsUploaded = 0;
+      let staleReadbacksApplied = 0;
+      let result = null;
+
+      try {
+        if (!await renderer.init()) {
+          throw new Error(`recovery renderer failed to initialize: ${JSON.stringify(renderer.getMetrics())}`);
+        }
+        devices.push(renderer.device);
+        generations.push(renderer.resourceGeneration);
+
+        for (let recoveryIndex = 0; recoveryIndex < 2; recoveryIndex += 1) {
+          const ownerToken = `recovery-owner:${recoveryIndex + 1}`;
+          const lostDevice = renderer.device;
+          const lostGeneration = renderer.resourceGeneration;
+          const expiresAtMs = performance.now() + 60_000;
+          for (let batch = 1; batch <= 2; batch += 1) {
+            if (!renderer._queueSpawn({
+              shape: 'sparkle',
+              count: 1,
+              seed: recoveryIndex * 10 + batch,
+              effectId: `${ownerToken}:batch:${batch}`,
+              ownerToken,
+              expiresAtMs,
+              lane: 'show',
+              priority: 'core',
+              required: true,
+              beatId: `${ownerToken}:beat`,
+              admissionBatchId: batch
+            })) throw new Error(`recovery command ${ownerToken}:${batch} was rejected`);
+          }
+
+          renderer.lastReadbackAt = performance.now() - 2_000;
+          renderer.render(1 / 60, performance.now() / 1_000);
+          const oldRequest = renderer.capacityResources.readbackRequest;
+          const oldReadback = oldRequest?.promise || renderer.readbackPromise;
+          oldReadbacks.push(oldReadback);
+          pendingReadbacksAtLoss.push(Boolean(
+            oldRequest && oldReadback && renderer.capacityResources.readbackPending
+          ));
+          if (renderer.spawnQueue.length !== 1 ||
+              renderer.spawnQueue[0].resourceGeneration !== lostGeneration ||
+              renderer.spawnQueue[0].ownerToken !== ownerToken) {
+            throw new Error(`owned lost-generation command was not retained: ${ownerToken}`);
+          }
+
+          lostDevice.destroy();
+          const recoveredDevice = await waitForRecoveredDevice(renderer, lostDevice);
+          devices.push(recoveredDevice);
+          generations.push(renderer.resourceGeneration);
+          const metricsAtRecovery = {
+            activeParticles: renderer.metrics.activeParticles,
+            droppedParticles: renderer.metrics.droppedParticles,
+            gpuFrameMs: renderer.metrics.gpuFrameMs
+          };
+          if (oldReadback) await Promise.allSettled([oldReadback]);
+          if (renderer.metrics.activeParticles !== metricsAtRecovery.activeParticles ||
+              renderer.metrics.droppedParticles !== metricsAtRecovery.droppedParticles ||
+              renderer.metrics.gpuFrameMs !== metricsAtRecovery.gpuFrameMs) {
+            staleReadbacksApplied += 1;
+          }
+          const recoveredUpload = renderer._uploadSpawnCommands(performance.now());
+          staleCommandsUploaded += recoveredUpload.count;
+        }
+
+        await Promise.allSettled(oldReadbacks.filter(Boolean));
+        result = {
+          deviceCount: devices.length,
+          deviceIdentities: devices.map((device, index) => ({
+            id: `device-${index + 1}`,
+            distinctFromPrevious: index === 0 || device !== devices[index - 1]
+          })),
+          distinctDeviceCount: new Set(devices).size,
+          generations,
+          recoveredGenerations: generations.slice(1),
+          recoveries: devices.length - 1,
+          staleReadbacksApplied,
+          staleCommandsUploaded,
+          staleCommandsDropped: renderer.spawnTelemetry.droppedByReason.staleGeneration,
+          ownerInvalidations,
+          pendingReadbacksAtLoss,
+          cleanupComplete: false
+        };
+      } finally {
+        renderer.destroy();
+        if (result) result.cleanupComplete = true;
+      }
+      return result;
+    }
+    async function createGuardReducer(device) {
+      const module = device.createShaderModule({
+        label: 'fireworks-admission-envelope-guard-reducer-wgsl',
+        code: `
+struct Params { width: u32, height: u32, ignoreBottom: u32, pad: u32 };
+@group(0) @binding(0) var frame: texture_2d<f32>;
+@group(0) @binding(1) var<storage, read_write> counters: array<atomic<u32>>;
+@group(0) @binding(2) var<uniform> params: Params;
+@compute @workgroup_size(16, 16) fn reduce(@builtin(global_invocation_id) gid: vec3u) {
+  if (gid.x >= params.width || gid.y >= params.height) { return; }
+  let alpha = textureLoad(frame, vec2i(gid.xy), 0).a;
+  if (alpha <= (1.0 / 255.0)) { return; }
+  atomicAdd(&counters[1], 1u);
+  let right = params.width - 1u - gid.x;
+  let bottom = params.height - 1u - gid.y;
+  let distance = min(min(gid.x, right), min(gid.y, bottom));
+  atomicMin(&counters[2], distance);
+  let inTop = gid.y < 2u;
+  let inLeft = gid.x < 2u;
+  let inRight = right < 2u;
+  let inSide = inLeft || inRight;
+  let inBottom = params.ignoreBottom == 0u && bottom < 2u;
+  if (inTop) { atomicAdd(&counters[3], 1u); }
+  if (inLeft) { atomicAdd(&counters[4], 1u); }
+  if (inRight) { atomicAdd(&counters[5], 1u); }
+  if (inBottom) { atomicAdd(&counters[6], 1u); }
+  if (inTop || inSide || inBottom) { atomicAdd(&counters[0], 1u); }
+}`
+      });
+      const compilation = await module.getCompilationInfo();
+      const errors = compilation.messages.filter(message => message.type === 'error');
+      if (errors.length) throw new Error(`guard reducer WGSL: ${errors.map(error => error.message).join('; ')}`);
+      const pipeline = await device.createComputePipelineAsync({
+        label: 'fireworks-admission-envelope-guard-reducer',
+        layout: 'auto',
+        compute: { module, entryPoint: 'reduce' }
+      });
+
+      return async function reduceGuard(texture, width, height, ignoreBottom) {
+        const counters = device.createBuffer({
+          label: 'fireworks-admission-envelope-guard-counters',
+          size: 32,
+          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
+        });
+        const params = device.createBuffer({
+          label: 'fireworks-admission-envelope-guard-params',
+          size: 32,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+        const readback = device.createBuffer({
+          label: 'fireworks-admission-envelope-guard-readback',
+          size: 32,
+          usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+        });
+        try {
+          device.queue.writeBuffer(counters, 0, new Uint32Array([0, 0, Math.min(width, height), 0, 0, 0, 0, 0]));
+          device.queue.writeBuffer(params, 0, new Uint32Array([width, height, ignoreBottom ? 1 : 0, 0]));
+          const bindGroup = device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(0),
+            entries: [
+              { binding: 0, resource: texture.createView() },
+              { binding: 1, resource: { buffer: counters } },
+              { binding: 2, resource: { buffer: params } }
+            ]
+          });
+          const encoder = device.createCommandEncoder({ label: 'fireworks-admission-envelope-guard-encoder' });
+          const pass = encoder.beginComputePass({ label: 'fireworks-admission-envelope-guard-pass' });
+          pass.setPipeline(pipeline);
+          pass.setBindGroup(0, bindGroup);
+          pass.dispatchWorkgroups(Math.ceil(width / 16), Math.ceil(height / 16));
+          pass.end();
+          encoder.copyBufferToBuffer(counters, 0, readback, 0, 32);
+          device.queue.submit([encoder.finish()]);
+          await readback.mapAsync(GPUMapMode.READ);
+          const words = new Uint32Array(readback.getMappedRange().slice(0));
+          return {
+            guardPixels: words[0], visiblePixels: words[1], minimumGuardWidth: words[2],
+            top: words[3], left: words[4], right: words[5], bottom: words[6]
+          };
+        } finally {
+          if (readback.mapState === 'mapped') readback.unmap();
+          counters.destroy();
+          params.destroy();
+          readback.destroy();
+        }
+      };
+    }
+
+    async function runAdmissionEnvelopeCase() {
+      const resolutions = [
+        [960, 540], [1920, 1080], [3840, 2160],
+        [540, 960], [1080, 1920], [2160, 3840]
+      ];
+      const depths = [-1, 0, 1];
+      const canvas = document.createElement('canvas');
+      canvas.width = 960;
+      canvas.height = 540;
+      let nowMs = 1_000;
+      const renderer = new WebGPUParticleEngine(canvas, {
+        now: () => nowMs,
+        maxParticles: 4_096,
+        trailsEnabled: true,
+        glowEnabled: true,
+        bloomEnabled: true,
+        trailSamples: 8,
+        turbulence: 0.12
+      });
+      let result = null;
+      try {
+        if (!await renderer.init()) {
+          throw new Error(`admission-envelope renderer failed to initialize: ${JSON.stringify(renderer.getMetrics())}`);
+        }
+        const reduceGuard = await createGuardReducer(renderer.device);
+        let guardViolations = 0;
+        let visiblePixels = 0;
+        let minimumAlphaFreeGuardWidth = Number.POSITIVE_INFINITY;
+        let maximumSharedScaleReduction = 0;
+        let staleViewportUses = 0;
+        let crossOwnerFitUses = 0;
+        let vertexClampUses = 0;
+        let phaseIsolationPasses = 0;
+        let testedCases = 0;
+        let visibleCases = 0;
+        const coverage = [];
+        const envelope = WebGPUFireworksVisibleEnvelope;
+        const variants = envelope.ROCKET_VARIANTS.map(name => ({
+          name,
+          ...(name === 'avatar-head' ? { headTextureIndex: 1 } : {}),
+          ...(name === 'decal' ? { textureIndex: 1 } : {})
+        }));
+
+        const capture = async (width, height, ignoreBottom) => {
+          const frame = renderer.context.getCurrentTexture();
+          const sample = await reduceGuard(frame, width, height, ignoreBottom);
+          guardViolations += sample.guardPixels;
+          visiblePixels += sample.visiblePixels;
+          if (sample.visiblePixels > 0 && !ignoreBottom) {
+            minimumAlphaFreeGuardWidth = Math.min(minimumAlphaFreeGuardWidth, sample.minimumGuardWidth);
+          }
+          return sample;
+        };
+
+        for (const [width, height] of resolutions) {
+          renderer.resize(width, height);
+          renderer.setLogicalSize(width, height);
+          await renderer.device.queue.onSubmittedWorkDone();
+          for (const depth of depths) {
+            const coverageEntry = {
+              width,
+              height,
+              depth,
+              shapes: 0,
+              rockets: 0,
+              testedCases: 0,
+              visibleCases: 0,
+              visiblePixels: 0,
+              guardPixels: 0,
+              shapeGuardPixels: 0,
+              rocketGuardPixels: 0,
+              edges: { top: 0, left: 0, right: 0, bottom: 0 },
+              violatingFrames: [],
+              failedCases: []
+            };
+            const cacheKeysBefore = new Set(renderer.correlationFitCache.keys());
+            for (const shape of envelope.SHAPE_IDS) {
+              const caseId = `shape:${shape}`;
+              const flags = shape >= 10
+                ? envelope.ENVELOPE_FLAG_BITS.V2_MARKER | envelope.ENVELOPE_FLAG_BITS.TRAIL
+                : 0;
+              if (!renderer._queueSpawn({
+                correlationId: `bounds:${width}x${height}:${depth}:shape:${shape}`,
+                envelopeCommandId: `shape:${shape}`,
+                kind: 2,
+                shape,
+                flags,
+                packedColors: flags ? [0xffffffff] : undefined,
+                colorCount: flags ? 1 : 0,
+                count: 1,
+                origin: { x: width * 0.5, y: height * 0.12 },
+                target: { x: width * 0.5, y: height * 0.12 },
+                size: 9,
+                intensity: 0.16,
+                particleDuration: 0.18,
+                duration: 0.18,
+                gravity: 24,
+                drag: (flags & WebGPUFireworksVisibleEnvelope.ENVELOPE_FLAG_BITS.V2_MARKER) !== 0 ? 0.04 : 0.985,
+                depthEnabled: true,
+                burstDepth: depth,
+                launchDepth: depth,
+                seed: shape + 1,
+                effectId: `bounds-shape-${shape}`
+              })) throw new Error(`shape ${shape} was rejected at ${width}x${height} depth ${depth}`);
+              let caseVisiblePixels = 0;
+              let caseGuardPixels = 0;
+              testedCases += 1;
+              coverageEntry.testedCases += 1;
+              coverageEntry.shapes += 1;
+              for (let frame = 0; frame < 4; frame += 1) {
+                nowMs += 50;
+                renderer.render(0.05, nowMs / 1000);
+                const sample = await capture(width, height, false);
+                caseVisiblePixels += sample.visiblePixels;
+                caseGuardPixels += sample.guardPixels;
+                coverageEntry.visiblePixels += sample.visiblePixels;
+                coverageEntry.guardPixels += sample.guardPixels;
+                coverageEntry.shapeGuardPixels += sample.guardPixels;
+                for (const edge of ['top', 'left', 'right', 'bottom']) coverageEntry.edges[edge] += sample[edge];
+                if (sample.guardPixels) {
+                  coverageEntry.violatingFrames.push({ caseId, phase: 'shape', frame, ...sample });
+                }
+              }
+              if (caseVisiblePixels > 0) {
+                visibleCases += 1;
+                coverageEntry.visibleCases += 1;
+              } else {
+                coverageEntry.failedCases.push({ caseId, reason: 'not-visible' });
+              }
+              if (caseGuardPixels > 0) {
+                coverageEntry.failedCases.push({ caseId, reason: 'guard-pixels', caseGuardPixels });
+              }
+              for (let frame = 0; frame < 3; frame += 1) {
+                nowMs += 50;
+                renderer.render(0.05, nowMs / 1000);
+              }
+              const isolated = await capture(width, height, false);
+              if (isolated.visiblePixels !== 0 || isolated.guardPixels !== 0) {
+                throw new Error(
+                  `shape isolation failed for ${caseId} at ${width}x${height} depth ${depth}: ` +
+                  JSON.stringify(isolated)
+                );
+              }
+            }
+
+            for (const [index, variant] of variants.entries()) {
+              const caseId = `rocket:${variant.name}`;
+              const origin = { x: width * [0.08, 0.5, 0.92][index], y: height * 1.02 };
+              const target = { x: width * [0.42, 0.5, 0.58][index], y: height * 0.12 };
+              if (!renderer.spawnRocket({
+                correlationId: `bounds:${width}x${height}:${depth}:rocket:${variant.name}`,
+                origin,
+                target,
+                duration: 0.3,
+                particleDuration: 0.3,
+                renderHints: { depthEnabled: true, launchDepth: depth, burstDepth: depth },
+                headTextureIndex: variant.headTextureIndex,
+                textureIndex: variant.textureIndex,
+                seed: 100 + index,
+                effectId: `bounds-rocket-${variant.name}`,
+                color: '#ffffff',
+                curve: index % 2 === 0 ? 48 : -48
+              })) throw new Error(`rocket ${variant.name} was rejected at ${width}x${height} depth ${depth}`);
+              let ascentVisiblePixels = 0;
+              for (let frame = 0; frame < 7; frame += 1) {
+                nowMs += 50;
+                renderer.render(0.05, nowMs / 1000);
+                const sample = await capture(width, height, true);
+                ascentVisiblePixels += sample.visiblePixels;
+                coverageEntry.visiblePixels += sample.visiblePixels;
+                coverageEntry.guardPixels += sample.guardPixels;
+                coverageEntry.rocketGuardPixels += sample.guardPixels;
+                for (const edge of ['top', 'left', 'right', 'bottom']) coverageEntry.edges[edge] += sample[edge];
+                if (sample.guardPixels) {
+                  coverageEntry.violatingFrames.push({ caseId, phase: 'ascent', frame, ...sample });
+                }
+              }
+
+              // Exhaust children outlive the body. Prove an empty composite
+              // before the independent all-edge upper-state oracle.
+              for (let frame = 0; frame < 24; frame += 1) {
+                nowMs += 50;
+                renderer.render(0.05, nowMs / 1000);
+              }
+              await renderer.device.queue.onSubmittedWorkDone();
+              let isolated = await capture(width, height, false);
+              if (isolated.visiblePixels !== 0 || isolated.guardPixels !== 0) {
+                throw new Error(
+                  `rocket phase isolation failed for ${caseId} at ${width}x${height} depth ${depth}: ` +
+                  JSON.stringify(isolated)
+                );
+              }
+              phaseIsolationPasses += 1;
+
+              if (!renderer.spawnRocket({
+                correlationId: `bounds:${width}x${height}:${depth}:upper:${variant.name}`,
+                origin: target,
+                target,
+                duration: 0.18,
+                particleDuration: 0.18,
+                renderHints: { depthEnabled: true, launchDepth: depth, burstDepth: depth },
+                headTextureIndex: variant.headTextureIndex,
+                textureIndex: variant.textureIndex,
+                seed: 200 + index,
+                effectId: `bounds-upper-${variant.name}`,
+                color: '#ffffff',
+                curve: index % 2 === 0 ? 48 : -48
+              })) throw new Error(`upper rocket ${variant.name} was rejected at ${width}x${height} depth ${depth}`);
+              let upperVisiblePixels = 0;
+              for (let frame = 0; frame < 4; frame += 1) {
+                nowMs += 50;
+                renderer.render(0.05, nowMs / 1000);
+                const sample = await capture(width, height, false);
+                upperVisiblePixels += sample.visiblePixels;
+                coverageEntry.visiblePixels += sample.visiblePixels;
+                coverageEntry.guardPixels += sample.guardPixels;
+                coverageEntry.rocketGuardPixels += sample.guardPixels;
+                for (const edge of ['top', 'left', 'right', 'bottom']) coverageEntry.edges[edge] += sample[edge];
+                if (sample.guardPixels) {
+                  coverageEntry.violatingFrames.push({ caseId, phase: 'upper', frame, ...sample });
+                }
+              }
+              testedCases += 1;
+              coverageEntry.testedCases += 1;
+              coverageEntry.rockets += 1;
+              if (ascentVisiblePixels > 0 && upperVisiblePixels > 0) {
+                visibleCases += 1;
+                coverageEntry.visibleCases += 1;
+              } else {
+                coverageEntry.failedCases.push({
+                  caseId,
+                  reason: 'not-visible',
+                  ascentVisiblePixels,
+                  upperVisiblePixels
+                });
+              }
+
+              for (let frame = 0; frame < 24; frame += 1) {
+                nowMs += 50;
+                renderer.render(0.05, nowMs / 1000);
+              }
+              isolated = await capture(width, height, false);
+              if (isolated.visiblePixels !== 0 || isolated.guardPixels !== 0) {
+                throw new Error(
+                  `rocket case isolation failed for ${caseId} at ${width}x${height} depth ${depth}: ` +
+                  JSON.stringify(isolated)
+                );
+              }
+            }
+
+            for (const [key, cached] of renderer.correlationFitCache.entries()) {
+              if (cacheKeysBefore.has(key)) continue;
+              maximumSharedScaleReduction = Math.max(
+                maximumSharedScaleReduction,
+                1 - Number(cached.fit.scale)
+              );
+              if (cached.fit.vertexClampApplied) vertexClampUses += 1;
+            }
+            if (coverageEntry.testedCases !== 30 || coverageEntry.visibleCases !== 30 ||
+                coverageEntry.failedCases.length !== 0) {
+              throw new Error(`incomplete hardware cases at ${width}x${height} depth ${depth}: ${JSON.stringify(coverageEntry)}`);
+            }
+            coverage.push(coverageEntry);
+          }
+        }
+
+        renderer.resize(1080, 1920);
+        renderer.setLogicalSize(1080, 1920);
+        const resizeProbe = renderer._normalizeSpawnEntry({
+          kind: 2, shape: 3, flags: 0, textureIndex: 0, count: 1,
+          normalizedOrigin: { x: 0.5, y: 0.12 },
+          normalizedTarget: { x: 0.75, y: 0.25 },
+          origin: { x: 540, y: 230.4 }, target: { x: 810, y: 480 },
+          particleDuration: 0.2, size: 8, intensity: 0.1, gravity: 10, drag: 0.985
+        });
+        renderer.resize(1920, 1080);
+        renderer.setLogicalSize(1920, 1080);
+        const resized = renderer._materializeCommandForAdmission(resizeProbe, nowMs).command;
+        if (resized.origin.x !== 960 || Math.abs(resized.origin.y - 129.6) > 1e-7 ||
+            resized.target.x !== 1440 || resized.target.y !== 270) staleViewportUses += 1;
+
+        const manifestCommand = id => Object.freeze({
+          envelopeCommandId: id,
+          kind: 2, shape: 3, flags: 0, textureIndex: 0,
+          origin: Object.freeze({ x: 960, y: 120 }),
+          target: Object.freeze({ x: 960, y: 120 }),
+          size: 8, intensity: 0.1, particleDuration: 0.2, emissionDelay: 0,
+          gravity: 10, drag: 0.985, burstDepth: 0
+        });
+        const manifest = Object.freeze({
+          correlationId: 'shared-cue',
+          commands: Object.freeze([manifestCommand('left'), manifestCommand('right')])
+        });
+        const baseEntry = {
+          resourceGeneration: renderer.resourceGeneration,
+          ownerToken: 'finale:shared',
+          correlationId: 'shared-cue',
+          envelopeCommandId: 'left',
+          correlationManifest: manifest
+        };
+        const first = renderer._getOrCreateCorrelationFit(baseEntry, nowMs);
+        const later = renderer._getOrCreateCorrelationFit({ ...baseEntry }, nowMs + 200);
+        if (first !== later) crossOwnerFitUses += 1;
+        const otherOwner = renderer._getOrCreateCorrelationFit({ ...baseEntry, ownerToken: 'preview:shared' }, nowMs);
+        const otherGeneration = renderer._getOrCreateCorrelationFit({
+          ...baseEntry,
+          resourceGeneration: renderer.resourceGeneration + 1
+        }, nowMs);
+        if (otherOwner === first || otherGeneration === first) crossOwnerFitUses += 1;
+        if (first.vertexClampApplied || otherOwner.vertexClampApplied || otherGeneration.vertexClampApplied) {
+          vertexClampUses += 1;
+        }
+        if (envelope.SHAPE_IDS.length !== 27 || envelope.ROCKET_VARIANTS.length !== 3) {
+          throw new Error('browser visible-envelope registry is incomplete');
+        }
+
+        result = {
+          shapeIds: envelope.SHAPE_IDS.length,
+          rocketVariants: envelope.ROCKET_VARIANTS.length,
+          resolutions: 6,
+          depths: 3,
+          testedCases,
+          visibleCases,
+          coverage,
+          guardViolations,
+          visiblePixels,
+          staleViewportUses,
+          crossOwnerFitUses,
+          vertexClampUses,
+          phaseIsolationPasses,
+          minimumAlphaFreeGuardWidth: Number.isFinite(minimumAlphaFreeGuardWidth)
+            ? minimumAlphaFreeGuardWidth
+            : 0,
+          maximumSharedScaleReduction,
+          cleanupComplete: false
+        };
+      } finally {
+        renderer.destroy();
+        if (result) result.cleanupComplete = true;
+      }
+      return result;
+    }
+    async function runTelemetryAdaptiveCase() { return { skipped: true, owner: 'Task 5' }; }
+
+    async function inspectCurrentFrame(renderer, width, height, inspect) {
+      const device = renderer.device;
+      const bytesPerRow = Math.ceil(width * 4 / 256) * 256;
+      const readback = device.createBuffer({
+        label: 'fireworks-boykisser-frame-readback',
+        size: bytesPerRow * height,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+      });
+      try {
+        const encoder = device.createCommandEncoder({ label: 'fireworks-boykisser-frame-copy' });
+        encoder.copyTextureToBuffer(
+          { texture: renderer.context.getCurrentTexture() },
+          { buffer: readback, bytesPerRow, rowsPerImage: height },
+          [width, height]
+        );
+        device.queue.submit([encoder.finish()]);
+        await readback.mapAsync(GPUMapMode.READ);
+        const frame = {
+          bytes: new Uint8Array(readback.getMappedRange()),
+          bytesPerRow,
+          format: renderer.format,
+          width,
+          height
+        };
+        return inspect(frame);
+      } finally {
+        if (readback.mapState === 'mapped') readback.unmap();
+        readback.destroy();
+      }
+    }
+
+    function boykisserPixel(frame, x, y) {
+      const offset = y * frame.bytesPerRow + x * 4;
+      const bgra = String(frame.format).startsWith('bgra');
+      return bgra
+        ? [frame.bytes[offset + 2], frame.bytes[offset + 1], frame.bytes[offset], frame.bytes[offset + 3]]
+        : [frame.bytes[offset], frame.bytes[offset + 1], frame.bytes[offset + 2], frame.bytes[offset + 3]];
+    }
+
+    function boykisserWindowStats(frame, center, radius, role, roles) {
+      const left = Math.max(0, Math.floor(center.x - radius));
+      const right = Math.min(frame.width - 1, Math.ceil(center.x + radius));
+      const top = Math.max(0, Math.floor(center.y - radius));
+      const bottom = Math.min(frame.height - 1, Math.ceil(center.y + radius));
+      let visiblePixels = 0;
+      let best = [0, 0, 0, 0];
+      let roleColor = null;
+      for (let y = top; y <= bottom; y += 1) {
+        for (let x = left; x <= right; x += 1) {
+          const pixel = boykisserPixel(frame, x, y);
+          if (pixel[3] > 8) visiblePixels += 1;
+          if (pixel[3] > best[3]) best = pixel;
+          if (pixel[3] > 8) {
+            const straight = pixel.slice(0, 3).map(channel => (
+              Math.min(255, Math.round(channel * 255 / pixel[3]))
+            ));
+            if (boykisserRoleColorMatches(role, straight, roles)) roleColor = straight;
+          }
+        }
+      }
+      const alpha = Math.max(1, best[3]);
+      return {
+        visiblePixels,
+        alpha: best[3],
+        straightColor: best.slice(0, 3).map(channel => Math.min(255, Math.round(channel * 255 / alpha))),
+        roleColor
+      };
+    }
+
+    function boykisserGuardPixels(frame) {
+      let pixels = 0;
+      const visible = (x, y) => boykisserPixel(frame, x, y)[3] > 1;
+      for (let x = 0; x < frame.width; x += 1) {
+        for (const y of [0, 1, frame.height - 2, frame.height - 1]) {
+          if (visible(x, y)) pixels += 1;
+        }
+      }
+      for (let y = 2; y < frame.height - 2; y += 1) {
+        for (const x of [0, 1, frame.width - 2, frame.width - 1]) {
+          if (visible(x, y)) pixels += 1;
+        }
+      }
+      return pixels;
+    }
+
+    function boykisserRoleColorMatches(role, color, roles) {
+      const [red, green, blue] = color;
+      const spread = Math.max(red, green, blue) - Math.min(red, green, blue);
+      const lightness = (red + green + blue) / 3;
+      if (role === roles.HEAD) return spread <= 42 && lightness >= 150;
+      if (role === roles.FACE) return spread <= 48 && lightness < 150;
+      if (role === roles.PINK) return red - green >= 28 && red - blue >= 10;
+      return false;
+    }
+
+    async function runBoykisserCase() {
+      const geometry = WebGPUFireworksBoykisserGeometry;
+      if (!geometry) throw new Error('browser Boykisser geometry source is unavailable');
+      const featureNames = Object.keys(geometry.BOYKISSER_FEATURES);
+      const pairedFeatures = [
+        ['left-ear', 'right-ear'],
+        ['left-inner-ear', 'right-inner-ear'],
+        ['left-crescent-eye', 'right-crescent-eye'],
+        ['left-blush', 'right-blush']
+      ];
+      const dimensions = [
+        [960, 540, 'landscape'], [1920, 1080, 'landscape'], [3840, 2160, 'landscape'],
+        [540, 960, 'portrait'], [1080, 1920, 'portrait'], [2160, 3840, 'portrait']
+      ];
+      const densities = [13, 20, 32, 180];
+      const canvas = document.createElement('canvas');
+      canvas.width = 960;
+      canvas.height = 540;
+      let nowMs = 1_000;
+      const renderer = new WebGPUParticleEngine(canvas, {
+        now: () => nowMs,
+        maxParticles: 512,
+        trailsEnabled: false,
+        glowEnabled: false,
+        bloomEnabled: false,
+        turbulence: 0.000001
+      });
+      const coverage = [];
+      let result = null;
+      try {
+        if (!await renderer.init()) {
+          throw new Error(`boykisser renderer failed to initialize: ${JSON.stringify(renderer.getMetrics())}`);
+        }
+        const rolePalette = [
+          geometry.BOYKISSER_COLORS.HEAD,
+          geometry.BOYKISSER_COLORS.FACE,
+          geometry.BOYKISSER_COLORS.PINK
+        ];
+        const roleHex = rgb => `#${rgb.map(component => (
+          Math.round(component * 255).toString(16).padStart(2, '0')
+        )).join('')}`;
+        const packedColors = rolePalette.map(color => renderer._packColor(roleHex(color)));
+
+        for (const [width, height, orientation] of dimensions) {
+          renderer.resize(width, height);
+          renderer.setLogicalSize(width, height);
+          for (const density of densities) {
+            const commandSeed = 0x13579bdf;
+            const effectId = `boykisser-hardware-${width}x${height}-${density}`;
+            const geometrySeed = (commandSeed ^ renderer._hashValue(effectId)) >>> 0;
+            const elapsedSeconds = 0.15;
+            const velocityScale = Math.min(width, height) * 0.28;
+            const intensity = velocityScale / (218 * elapsedSeconds);
+            const particleSize = Math.max(5, Math.min(width, height) / 180);
+            const accepted = renderer._queueSpawn({
+              origin: { x: width / 2, y: height / 2 },
+              target: { x: width / 2, y: height / 2 },
+              count: density,
+              shape: 25,
+              kind: 2,
+              flags: 1 << 15,
+              packedColors,
+              colorCount: packedColors.length,
+              intensity,
+              duration: 0.18,
+              particleDuration: 0.18,
+              size: particleSize,
+              gravity: 0,
+              drag: 0,
+              secondary: false,
+              seed: commandSeed,
+              effectId,
+              globalCount: density
+            });
+            if (!accepted) throw new Error(`boykisser command was rejected for ${width}x${height} density ${density}`);
+
+            for (let frame = 0; frame < 3; frame += 1) {
+              renderer.render(0.05, nowMs / 1_000);
+              nowMs += 50;
+            }
+
+            const samples = geometry.sampleBoykisserSet(density, geometrySeed);
+            const anchors = new Map(samples.slice(0, featureNames.length)
+              .map(sample => [sample.feature, sample]));
+            const projected = new Map(featureNames.map(name => {
+              const sample = anchors.get(name);
+              return [name, {
+                x: width / 2 + sample.x * velocityScale,
+                y: height / 2 + sample.y * velocityScale
+              }];
+            }));
+            const row = await inspectCurrentFrame(renderer, width, height, frame => {
+              const missingLandmarks = [];
+              const roleColorViolations = [];
+              let visiblePixels = 0;
+              const radius = Math.ceil(particleSize * 1.8 + 2);
+              for (const featureName of featureNames) {
+                const role = geometry.BOYKISSER_FEATURES[featureName].role;
+                const stats = boykisserWindowStats(
+                  frame,
+                  projected.get(featureName),
+                  radius,
+                  role,
+                  geometry.BOYKISSER_ROLES
+                );
+                visiblePixels += stats.visiblePixels;
+                if (stats.visiblePixels === 0 || stats.alpha <= 8) missingLandmarks.push(featureName);
+                if (!stats.roleColor) {
+                  roleColorViolations.push({ feature: featureName, color: stats.straightColor, role });
+                }
+              }
+
+              let maximumSymmetryDelta = 0;
+              let symmetryViolations = 0;
+              for (const [leftName, rightName] of pairedFeatures) {
+                const left = projected.get(leftName);
+                const right = projected.get(rightName);
+                const delta = Math.max(
+                  Math.abs((left.x + right.x) - width),
+                  Math.abs(left.y - right.y)
+                );
+                maximumSymmetryDelta = Math.max(maximumSymmetryDelta, delta);
+                if (delta > 1) symmetryViolations += 1;
+              }
+
+              return {
+                width,
+                height,
+                orientation,
+                density,
+                landmarkChecks: featureNames.length,
+                roleColorChecks: featureNames.length,
+                symmetryChecks: pairedFeatures.length,
+                symmetryViolations,
+                maximumSymmetryDelta,
+                guardPixels: boykisserGuardPixels(frame),
+                visiblePixels,
+                missingLandmarks,
+                roleColorViolations
+              };
+            });
+            if (row.missingLandmarks.length || row.roleColorViolations.length ||
+                row.symmetryViolations || row.guardPixels) {
+              throw new Error(`boykisser semantic evidence failed: ${JSON.stringify(row)}`);
+            }
+            coverage.push(row);
+
+            // One fixed frame crosses the 180ms lifetime boundary before the
+            // next matrix entry reuses the renderer.
+            nowMs += 50;
+            renderer.render(0.05, nowMs / 1_000);
+          }
+        }
+
+        result = {
+          geometrySignature: geometry.geometrySignature,
+          densities,
+          resolutions: dimensions.length,
+          orientations: new Set(dimensions.map(entry => entry[2])).size,
+          testedCases: coverage.length,
+          landmarkChecks: coverage.reduce((sum, row) => sum + row.landmarkChecks, 0),
+          roleColorChecks: coverage.reduce((sum, row) => sum + row.roleColorChecks, 0),
+          symmetryChecks: coverage.reduce((sum, row) => sum + row.symmetryChecks, 0),
+          symmetryViolations: coverage.reduce((sum, row) => sum + row.symmetryViolations, 0),
+          guardViolations: coverage.reduce((sum, row) => sum + row.guardPixels, 0),
+          coverage,
+          cleanupComplete: false
+        };
+      } finally {
+        renderer.destroy();
+        if (result) result.cleanupComplete = true;
+      }
+      return result;
+    }
+
+    async function runBoykisserVectorCase() {
+      const geometry = WebGPUFireworksBoykisserGeometry;
+      const envelope = WebGPUFireworksVisibleEnvelope;
+      if (!geometry || !envelope) throw new Error('browser Boykisser vector dependencies are unavailable');
+      const dimensions = [
+        [960, 540, 'landscape'], [1920, 1080, 'landscape'], [3840, 2160, 'landscape'],
+        [540, 960, 'portrait'], [1080, 1920, 'portrait'], [2160, 3840, 'portrait']
+      ];
+      const requestedDensities = [13, 180];
+      const canvas = document.createElement('canvas');
+      canvas.width = 960;
+      canvas.height = 540;
+      let nowMs = 1_000;
+      const renderer = new WebGPUParticleEngine(canvas, {
+        now: () => nowMs,
+        maxParticles: 64,
+        trailsEnabled: false,
+        glowEnabled: false,
+        bloomEnabled: false,
+        turbulence: 0.000001
+      });
+      const coverage = [];
+      let result = null;
+
+      const straightColor = pixel => {
+        const alpha = Math.max(1, pixel[3]);
+        return pixel.slice(0, 3).map(channel => Math.min(255, Math.round(channel * 255 / alpha)));
+      };
+      const isBlack = pixel => pixel[3] > 180 && straightColor(pixel).every(channel => channel < 45);
+      const isRed = pixel => {
+        const [red, green, blue] = straightColor(pixel);
+        return pixel[3] > 180 && red > 150 && green < 70 && blue < 70;
+      };
+      const isWhite = pixel => {
+        const color = straightColor(pixel);
+        return pixel[3] > 180 && Math.min(...color) > 150 && Math.max(...color) - Math.min(...color) < 35;
+      };
+      const mappedPoint = (point, center, halfHeight) => ({
+        x: center.x + point[0] * geometry.BOYKISSER_VECTOR.aspectRatio * halfHeight,
+        y: center.y + point[1] * halfHeight
+      });
+      const regionColorPixels = (frame, points, center, halfHeight, predicate) => {
+        const mapped = points.map(point => mappedPoint(point, center, halfHeight));
+        const left = Math.max(0, Math.floor(Math.min(...mapped.map(point => point.x))) - 2);
+        const right = Math.min(frame.width - 1, Math.ceil(Math.max(...mapped.map(point => point.x))) + 2);
+        const top = Math.max(0, Math.floor(Math.min(...mapped.map(point => point.y))) - 2);
+        const bottom = Math.min(frame.height - 1, Math.ceil(Math.max(...mapped.map(point => point.y))) + 2);
+        let pixels = 0;
+        for (let y = top; y <= bottom; y += 1) {
+          for (let x = left; x <= right; x += 1) {
+            if (predicate(boykisserPixel(frame, x, y))) pixels += 1;
+          }
+        }
+        return pixels;
+      };
+      const frameEvidence = (frame, center, halfHeight) => {
+        let left = frame.width;
+        let right = -1;
+        let top = frame.height;
+        let bottom = -1;
+        let visiblePixels = 0;
+        let whitePixels = 0;
+        for (let y = 0; y < frame.height; y += 1) {
+          for (let x = 0; x < frame.width; x += 1) {
+            const pixel = boykisserPixel(frame, x, y);
+            if (pixel[3] <= 8) continue;
+            visiblePixels += 1;
+            if (isWhite(pixel)) whitePixels += 1;
+            left = Math.min(left, x); right = Math.max(right, x);
+            top = Math.min(top, y); bottom = Math.max(bottom, y);
+          }
+        }
+        const blackFeaturePixels = geometry.BOYKISSER_VECTOR.blackFills.map(points => (
+          regionColorPixels(frame, points, center, halfHeight, isBlack)
+        ));
+        const redFeaturePixels = geometry.BOYKISSER_VECTOR.redStrokes.map(points => (
+          regionColorPixels(frame, points, center, halfHeight, isRed)
+        ));
+        const visibleWidth = right >= left ? right - left + 1 : 0;
+        const visibleHeight = bottom >= top ? bottom - top + 1 : 0;
+        return {
+          visiblePixels,
+          whitePixels,
+          blackFeaturePixels,
+          redFeaturePixels,
+          guardPixels: boykisserGuardPixels(frame),
+          bounds: { left, top, right, bottom, width: visibleWidth, height: visibleHeight },
+          aspectRatio: visibleHeight > 0 ? visibleWidth / visibleHeight : 0,
+          constrainedCoverage: frame.width > frame.height
+            ? visibleHeight / frame.height
+            : visibleWidth / frame.width
+        };
+      };
+
+      try {
+        if (!await renderer.init()) {
+          throw new Error(`boykisser vector renderer failed to initialize: ${JSON.stringify(renderer.getMetrics())}`);
+        }
+        for (const [width, height, orientation] of dimensions) {
+          renderer.resize(width, height);
+          renderer.setLogicalSize(width, height);
+          for (const requestedDensity of requestedDensities) {
+            const effectId = `boykisser-vector-${width}x${height}-${requestedDensity}`;
+            const accepted = renderer.spawnLayer({
+              id: effectId,
+              primitive: 'glyph',
+              glyph: 'boykisser',
+              delayMs: 0,
+              density: requestedDensity,
+              size: 1,
+              lifetimeMs: 1200,
+              gravity: 0.08,
+              drag: 0.035,
+              trail: true,
+              split: false,
+              strobe: false,
+              colors: ['#FFFFFF', '#000000', '#FF0000'],
+              priority: 'core',
+              core: true
+            }, {
+              origin: { x: width / 2, y: height / 2 },
+              target: { x: width / 2, y: height / 2 },
+              seed: 0x13579bdf,
+              effectId,
+              renderHints: {
+                depthEnabled: true,
+                launchDepth: 0,
+                burstDepth: 0.82,
+                glyphScale: 2,
+                glyphExtent: 0.52
+              }
+            });
+            if (!accepted) throw new Error(`boykisser vector command was rejected for ${effectId}`);
+            const queued = renderer.spawnQueue.at(-1);
+            if (queued.count !== 1 || queued.globalCount !== 1 ||
+                (queued.flags & envelope.ENVELOPE_FLAG_BITS.VECTOR_HERO) === 0 ||
+                (queued.flags & envelope.ENVELOPE_FLAG_BITS.TRAIL) !== 0) {
+              throw new Error(`boykisser vector command contract failed: ${JSON.stringify(queued)}`);
+            }
+            const perspective = 4 / (4 - queued.burstDepth);
+            const halfHeight = queued.size * perspective;
+            for (let frame = 0; frame < 3; frame += 1) {
+              renderer.render(0.05, nowMs / 1_000);
+              nowMs += 50;
+            }
+            const evidence = await inspectCurrentFrame(renderer, width, height, frame => (
+              frameEvidence(frame, { x: width / 2, y: height / 2 }, halfHeight)
+            ));
+            const colorViolation = evidence.whitePixels <= 0 ||
+              evidence.blackFeaturePixels.some(count => count <= 0) ||
+              evidence.redFeaturePixels.some(count => count <= 0);
+            if (colorViolation || evidence.guardPixels !== 0 || evidence.visiblePixels <= 0 ||
+                evidence.constrainedCoverage < 0.75 || evidence.constrainedCoverage > 0.85 ||
+                evidence.aspectRatio < 0.7 || evidence.aspectRatio > 0.78) {
+              throw new Error(`boykisser vector evidence failed: ${JSON.stringify({
+                width, height, orientation, requestedDensity, ...evidence
+              })}`);
+            }
+            coverage.push({ width, height, orientation, requestedDensity, commandCount: 1, ...evidence });
+
+            for (let frame = 0; frame < 23; frame += 1) {
+              renderer.render(0.05, nowMs / 1_000);
+              nowMs += 50;
+            }
+          }
+        }
+        result = {
+          geometrySignature: geometry.geometrySignature,
+          requestedDensities,
+          resolutions: dimensions.length,
+          orientations: new Set(dimensions.map(entry => entry[2])).size,
+          testedCases: coverage.length,
+          vectorBillboards: coverage.reduce((sum, row) => sum + row.commandCount, 0),
+          blackFeatureChecks: coverage.reduce((sum, row) => sum + row.blackFeaturePixels.length, 0),
+          redFeatureChecks: coverage.reduce((sum, row) => sum + row.redFeaturePixels.length, 0),
+          guardViolations: coverage.reduce((sum, row) => sum + row.guardPixels, 0),
+          coverage,
+          cleanupComplete: false
+        };
+      } finally {
+        renderer.destroy();
+        if (result) result.cleanupComplete = true;
+      }
+      return result;
+    }
+
+    const CASE_RUNNERS = Object.freeze({
+      atlas: runAtlasCase,
+      capacity: runCapacityCase,
+      recovery: runRecoveryCase,
+      'admission-envelope': runAdmissionEnvelopeCase,
+      'telemetry-adaptive': runTelemetryAdaptiveCase,
+      boykisser: runBoykisserVectorCase
+    });
+
+    async function runNamedCase(name) {
+      await ready;
+      const runner = CASE_RUNNERS[name];
+      if (!runner) throw new Error(`unsupported WebGPU Fireworks case: ${name}`);
+      return runner();
+    }
+
+    window.runWebGpuFireworksCase = async function runWebGpuFireworksCase(name) {
+      const gpu = await ready;
+      if (name === 'all') {
+        const cases = {};
+        for (const caseName of Object.keys(CASE_RUNNERS)) cases[caseName] = await runNamedCase(caseName);
+        return { adapterInfo: gpu.adapterInfo, cases };
+      }
+      return { adapterInfo: gpu.adapterInfo, result: await runNamedCase(name) };
+    };
+  </script>
+</body>
+</html>

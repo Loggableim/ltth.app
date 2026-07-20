@@ -1,5 +1,5 @@
 {
-  "version": "1.3.33",
-  "updated_at": "2026-07-17T05:21:17.474244+00:00",
-  "notes": "LTTH Version 1.3.33 Release Notes\n\nVersion 1.3.33 restores Weather Control OBS overlay recovery after app and plugin restarts and refreshes localized plugin tutorials.\n\n- FIXED: Weather Control OBS overlays reconnect after a server-initiated app restart and replay their ready handshake when the plugin reloads\n- IMPROVED: 39 sourced plugin tutorials are refreshed in German, English, Spanish, and French with verified product captures\n- IMPROVED: The Jest suite runs in a resource-safe single-process mode\n- IMPROVED: Public release metadata and download surfaces bumped to 1.3.33\n"
+  "version": "1.3.35",
+  "updated_at": "2026-07-19T00:00:00+00:00",
+  "notes": "LTTH Version 1.3.35 Release Notes\n\nVersion 1.3.35 releases WebGPU Fireworks 3.1.0 with controlled 3D depth and a Boykisser-led Furry Celebration.\n\n- NEW: Furry Celebration stages all 15, 25, or 38 shells across far, mid, and near depth while other shows stay visually unchanged\n- NEW: A procedural Boykisser/Silly Cat glyph appears in every cue and closes as one centered Hero cat\n- IMPROVED: Rainbow and trans-color halos frame the choreography without obscuring its negative space\n- IMPROVED: Renderer protocol 3 advertises depth3d-v1 and boykisser-v1 capabilities with actionable OBS refresh guidance\n- IMPROVED: Older connected overlays retain a playable legacy burst fallback\n- IMPROVED: WebGPU Fireworks plugin version advanced to 3.1.0\n"
 }

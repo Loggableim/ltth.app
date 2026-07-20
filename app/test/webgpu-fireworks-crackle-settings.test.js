@@ -37,8 +37,8 @@ describe('WebGPU Fireworks crackling settings contract', () => {
 
   test('forwards crackling configuration to rockets and finales', () => {
     const mainSource = read('main.js');
-    expect(mainSource).toContain('crackleFrequency: this.config.crackleFrequency');
-    expect(mainSource).toContain('crackleVolume: this.config.crackleVolume');
+    expect(mainSource).toContain('crackleFrequency: effectiveConfig.crackleFrequency');
+    expect(mainSource).toContain('crackleVolume: effectiveConfig.crackleVolume');
     expect(mainSource).toContain("crackleEnabled: typeof options.crackleEnabled === 'boolean'");
   });
 
@@ -79,10 +79,13 @@ describe('WebGPU Fireworks crackling settings contract', () => {
   });
 
   test('cache-busts every updated overlay and settings script', () => {
-    const version = '2.2.1-avatar-head-1';
     const overlay = read('overlay.html');
     const settingsHtml = read('ui/settings.html');
-    expect(overlay.match(new RegExp(`v=${version}`, 'g'))).toHaveLength(2);
-    expect(settingsHtml).toContain(`ui/settings.js?v=${version}`);
+    expect(overlay).toContain('spawn-command-policy.js?v=3.1.0-depth3d-1');
+    expect(overlay).toContain('webgpu-particle-engine.js?v=3.1.0-furry-visual-1');
+    expect(overlay).toContain('show-plan-v2-runtime.js?v=3.1.0-furry-visual-1');
+    expect(overlay).toContain('engine.js?v=3.1.0-benchmark-session-2');
+    expect(settingsHtml).toContain('show-style-options.js?v=3.1.0-depth3d-1');
+    expect(settingsHtml).toContain('settings.js?v=3.1.0-benchmark-session-2');
   });
 });

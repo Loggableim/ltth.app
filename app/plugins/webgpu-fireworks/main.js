@@ -20,25 +20,64 @@
 
 const path = require('path');
 const fs = require('fs');
+const { randomUUID } = require('crypto');
 const multer = require('multer');
 const {
+    CONFIG_ENUMS,
+    CONFIG_LIMITS,
     normalizeCompletionNotification,
     normalizeConfig,
     normalizeFinaleRequest,
     normalizeFireworkTrigger,
-    normalizeGiftMapping
+    normalizeGiftMapping,
+    isCustomFinaleStyleId
 } = require('./lib/config-schema');
 const { evaluateTriggerPolicy } = require('./lib/trigger-policy');
 const { SpawnPlanner } = require('./lib/spawn-planner');
 const { FinaleShowPlanner, FINALE_STYLES } = require('./lib/finale-show-planner');
+const { FinaleShuffleBag } = require('./lib/finale-shuffle-bag');
+const { resolveFinaleSelection } = require('./lib/finale-runtime-resolver');
+const { RevisionedShowRepository, ShowRepositoryError } = require('./lib/show-repository');
+const { ShowApiController } = require('./lib/show-api-controller');
 const { SuperfanFinaleHistory, normalizeSuperfanIdentityAliases } = require('./lib/superfan-finale-history');
+const {
+    UploadValidationError,
+    validateUploadMetadata,
+    validateStoredUpload
+} = require('./lib/upload-validation');
 
 const FIREWORKS_CONFIG_MIGRATION_VERSION = 1;
 const SUPERFAN_COMPLETION_AUTHORITY = Symbol('webgpu-fireworks-superfan-completion');
+const INTERNAL_FINALE_FALLBACK_STYLE = Symbol('webgpu-fireworks-internal-finale-fallback-style');
+const BENCHMARK_DISPATCH_AUTHORITY = Symbol('webgpu-fireworks-benchmark-dispatch');
+const MAX_RENDERER_FINALE_STYLE_LENGTH = 64;
+const MAX_RENDERER_FINALE_NAME_LENGTH = 200;
+const RENDERER_PROTOCOL_VERSION = 3;
+const RENDERER_CAPABILITIES = Object.freeze(['depth3d-v1', 'boykisser-v1']);
+const RENDERER_TELEMETRY_TTL_MS = 5000;
+const RENDERER_UPGRADE_MESSAGE =
+    'This OBS overlay is outdated. Refresh the OBS browser source to enable Furry Celebration 3D.';
+const BENCHMARK_SESSION_ID_PATTERN =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function createBenchmarkDispatchContext(session, socket, spawnPlanner) {
+    return Object.freeze({
+        authority: BENCHMARK_DISPATCH_AUTHORITY,
+        benchmarkSessionId: session.id,
+        config: session.config,
+        socket,
+        spawnPlanner,
+        playSound: false,
+        trackLiveLoad: false,
+        deferDelivery: true
+    });
+}
 const SUPERFAN_FINALE_TEST_CONFIG_KEYS = Object.freeze([
     'superfanFinaleEnabled',
     'superfanFinaleCooldownHours',
     'superfanFinaleIntensity',
+    'superfanFinaleStyle',
+    'superfanFinaleLength',
     'superfanEndCardDuration',
     'superfanEndCardPosition',
     'superfanEndCardSize',
@@ -46,6 +85,106 @@ const SUPERFAN_FINALE_TEST_CONFIG_KEYS = Object.freeze([
     'goalFinaleStyle',
     'goalFinaleLength'
 ]);
+const MANUAL_FIREWORK_TRIGGER_FIELDS = Object.freeze([
+    'type',
+    'intensity',
+    'shape',
+    'colors',
+    'positionMode',
+    'position',
+    'origin',
+    'seed',
+    'visualStyle',
+    'particleCount',
+    'duration',
+    'tier',
+    'combo',
+    'coins',
+    'crackleEnabled',
+    'giftId',
+    'giftImage',
+    'userAvatar',
+    'username',
+    'forceRocket',
+    'playSound'
+]);
+
+function sanitizeManualFireworkTrigger(value) {
+    const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    return Object.fromEntries(MANUAL_FIREWORK_TRIGGER_FIELDS
+        .filter(field => Object.prototype.hasOwnProperty.call(source, field))
+        .map(field => [field, source[field]]));
+}
+
+function triggerRejectionHttpStatus(reason) {
+    if (reason === 'rate-limit') return 429;
+    if (reason === 'emit-failed') return 503;
+    return 409;
+}
+
+function sanitizeRendererFinaleStyle(value) {
+    if (typeof value !== 'string') return null;
+    const style = value.trim();
+    if (!style || style.length > MAX_RENDERER_FINALE_STYLE_LENGTH) return null;
+    if (style === 'legacy' || FINALE_STYLES.includes(style)) return style;
+    return isCustomFinaleStyleId(style) ? style.toLowerCase() : null;
+}
+
+function sanitizeRendererFinaleName(value) {
+    if (typeof value !== 'string') return null;
+    const name = value.trim();
+    return name ? name.slice(0, MAX_RENDERER_FINALE_NAME_LENGTH) : null;
+}
+
+function sanitizeRendererProtocol(value) {
+    const protocol = Number(value);
+    return Number.isInteger(protocol) && protocol >= 0 && protocol <= 1000 ? protocol : 0;
+}
+
+function sanitizeRendererCapabilities(value) {
+    if (!Array.isArray(value)) return [];
+    return [...new Set(value
+        .filter(item => typeof item === 'string' && /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/.test(item))
+        .map(item => item.slice(0, 64)))]
+        .slice(0, 16);
+}
+
+function missingRendererCapabilities(telemetry, required = RENDERER_CAPABILITIES) {
+    const available = new Set(sanitizeRendererCapabilities(telemetry?.capabilities));
+    return required.filter(capability => !available.has(capability));
+}
+
+function rendererSupportsCapabilities(telemetry, required = RENDERER_CAPABILITIES) {
+    return sanitizeRendererProtocol(telemetry?.rendererProtocol) >= RENDERER_PROTOCOL_VERSION &&
+        missingRendererCapabilities(telemetry, required).length === 0;
+}
+
+function isFreshTelemetry(telemetry, timestampKey, cutoff) {
+    return Boolean(
+        telemetry?.registered === true &&
+        Number.isFinite(Number(telemetry[timestampKey])) &&
+        Number(telemetry[timestampKey]) >= cutoff
+    );
+}
+
+function previewRequiredRendererCapabilities(payload = {}) {
+    if (payload.style === 'furry-celebration' || payload.sourceId === 'furry-celebration') {
+        return [...RENDERER_CAPABILITIES];
+    }
+    const cues = Array.isArray(payload.showPlan?.cues) ? payload.showPlan.cues : [];
+    const advanced = cues.some(cue => {
+        const shells = Array.isArray(cue?.shells)
+            ? cue.shells
+            : Array.isArray(cue?.launches) ? cue.launches : [];
+        return shells.some(shell => (
+            shell?.renderHints?.depthEnabled === true ||
+            (Array.isArray(shell?.layers) && shell.layers.some(layer => (
+                layer?.glyph === 'boykisser' || layer?.glyph === 'trans-flag'
+            )))
+        ));
+    });
+    return advanced ? [...RENDERER_CAPABILITIES] : [];
+}
 
 function isExplicitPaidSubscriberFlag(value) {
     if (value === true || value === 1) return true;
@@ -96,26 +235,252 @@ class FireworksPlugin {
 
         // Benchmark state
         this.currentFps = 0;
-        this.benchmarkPreset = null;
+        this.benchmarkSessions = new Map();
+        this.benchmarkSocketSessions = new Map();
+        this.benchmarkSessionTtlMs = 15 * 60 * 1000;
+        this.benchmarkSessionCleanupIntervalMs = 60 * 1000;
+        this.benchmarkSessionCleanupTimer = null;
+        this.benchmarkDeliveryAckTimeoutMs = 1500;
         this.connectedSockets = new Set();
         this.overlayTelemetry = new Map();
+        this.pendingPreviewRequests = new Map();
+        this.previewAckTimeoutMs = 1500;
         this.pendingSuperfanFinales = new Map();
         this.pendingSuperfanAliases = new Map();
         this.superfanFinaleAttemptCounter = 0;
         this.superfanFinaleAckTimeoutMs = 5000;
 
-        // Combo timeout (ms) - reset combo if no gift within this time
-        this.COMBO_TIMEOUT = 10000;
-
         // Server-side active firework tracking (browser global not available server-side)
         this.activeFireworkCount = 0;
         this.activeFireworkTimers = new Map();
-        this.notificationTimers = new Set();
+        this.followerTimers = new Set();
         this.useLegacyGiftDropGuards = false;
         this.spawnPlanner = new SpawnPlanner();
         this.finaleShowPlanner = new FinaleShowPlanner();
-        this.finaleAutoIndex = 0;
+        this.finaleShuffleBag = new FinaleShuffleBag(() => this.getAutoEligibleFinaleStyleIds());
         this.finaleIdCounter = 0;
+        this.showRepository = null;
+        this.showRepositoryLoadError = null;
+        this.showApiController = null;
+    }
+
+    createBenchmarkSession() {
+        this.cleanupExpiredBenchmarkSessions();
+        const id = randomUUID();
+        const baseConfig = normalizeConfig(this.config || {});
+        const now = Date.now();
+        const session = {
+            id,
+            baseConfig,
+            config: normalizeConfig(baseConfig),
+            socket: null,
+            socketId: null,
+            restored: false,
+            pendingOperation: null,
+            spawnPlanner: new SpawnPlanner(),
+            createdAt: now,
+            updatedAt: now,
+            expiresAt: now + this.benchmarkSessionTtlMs
+        };
+        this.benchmarkSessions.set(id, session);
+        this.ensureBenchmarkSessionCleanupTimer();
+        return session;
+    }
+
+    ensureBenchmarkSessionCleanupTimer() {
+        if (this.benchmarkSessionCleanupTimer) return;
+        this.benchmarkSessionCleanupTimer = setInterval(() => {
+            this.cleanupExpiredBenchmarkSessions();
+        }, this.benchmarkSessionCleanupIntervalMs);
+        this.benchmarkSessionCleanupTimer.unref?.();
+    }
+
+    stopBenchmarkSessionCleanupTimer() {
+        if (!this.benchmarkSessionCleanupTimer) return;
+        clearInterval(this.benchmarkSessionCleanupTimer);
+        this.benchmarkSessionCleanupTimer = null;
+    }
+
+    removeBenchmarkSession(sessionId) {
+        const session = this.benchmarkSessions.get(sessionId);
+        if (!session) return false;
+        if (session.socketId && this.benchmarkSocketSessions.get(session.socketId) === session.id) {
+            this.benchmarkSocketSessions.delete(session.socketId);
+        }
+        this.finishBenchmarkSessionOperation(session, session.pendingOperation);
+        session.socket = null;
+        session.socketId = null;
+        session.spawnPlanner = null;
+        this.benchmarkSessions.delete(sessionId);
+        return true;
+    }
+
+    cleanupExpiredBenchmarkSessions(now = Date.now()) {
+        for (const [sessionId, session] of this.benchmarkSessions.entries()) {
+            if (session.expiresAt <= now) this.removeBenchmarkSession(sessionId);
+        }
+        if (this.benchmarkSessions.size === 0) this.stopBenchmarkSessionCleanupTimer();
+    }
+
+    touchBenchmarkSession(session, now = Date.now()) {
+        if (!session) return null;
+        session.updatedAt = now;
+        session.expiresAt = now + this.benchmarkSessionTtlMs;
+        return session;
+    }
+
+    getBenchmarkSession(sessionId, { allowRestored = false } = {}) {
+        if (typeof sessionId !== 'string' || !BENCHMARK_SESSION_ID_PATTERN.test(sessionId)) return null;
+        const session = this.benchmarkSessions.get(sessionId) || null;
+        if (session && session.expiresAt <= Date.now()) {
+            this.removeBenchmarkSession(sessionId);
+            if (this.benchmarkSessions.size === 0) this.stopBenchmarkSessionCleanupTimer();
+            return null;
+        }
+        if (!allowRestored && session?.restored === true) return null;
+        return session;
+    }
+
+    benchmarkSessionIdFromRequest(req = {}) {
+        return req.body?.sessionId ?? req.query?.sessionId ?? null;
+    }
+
+    resolveBenchmarkRouteSession(req, res, options = {}) {
+        const sessionId = this.benchmarkSessionIdFromRequest(req);
+        if (typeof sessionId !== 'string' || !sessionId.trim()) {
+            res.status(400).json({
+                success: false,
+                accepted: false,
+                code: 'BENCHMARK_SESSION_ID_REQUIRED',
+                error: 'sessionId is required'
+            });
+            return null;
+        }
+        if (!BENCHMARK_SESSION_ID_PATTERN.test(sessionId)) {
+            res.status(400).json({
+                success: false,
+                accepted: false,
+                code: 'INVALID_BENCHMARK_SESSION_ID',
+                error: 'sessionId must be a UUID'
+            });
+            return null;
+        }
+        const session = this.getBenchmarkSession(sessionId, options);
+        if (!session) {
+            res.status(404).json({
+                success: false,
+                accepted: false,
+                code: 'BENCHMARK_SESSION_NOT_FOUND',
+                error: 'Benchmark session not found'
+            });
+            return null;
+        }
+        return session;
+    }
+
+    unbindBenchmarkSocket(socket) {
+        if (!socket) return null;
+        const sessionId = this.benchmarkSocketSessions.get(socket.id);
+        if (!sessionId) return null;
+        const session = this.getBenchmarkSession(sessionId, { allowRestored: true });
+        if (session?.socket === socket) {
+            this.finishBenchmarkSessionOperation(session, session.pendingOperation);
+            session.socket = null;
+            session.socketId = null;
+            session.spawnPlanner = new SpawnPlanner();
+            this.touchBenchmarkSession(session);
+        }
+        this.benchmarkSocketSessions.delete(socket.id);
+        return session || null;
+    }
+
+    bindBenchmarkSocket(socket, sessionId) {
+        const session = this.getBenchmarkSession(sessionId);
+        if (!session || !socket) return null;
+        if (session.socket && session.socket !== socket && session.socket.connected !== false) return null;
+
+        this.unbindBenchmarkSocket(socket);
+        if (session.socket && session.socket !== socket) {
+            this.benchmarkSocketSessions.delete(session.socket.id);
+        }
+        session.socket = socket;
+        session.socketId = socket.id;
+        this.touchBenchmarkSession(session);
+        this.benchmarkSocketSessions.set(socket.id, session.id);
+        return session;
+    }
+
+    getConnectedBenchmarkSocket(session) {
+        if (!session?.socket || session.socket.connected === false) return null;
+        if (session.socketId !== session.socket.id) return null;
+        if (this.benchmarkSocketSessions.get(session.socket.id) !== session.id) return null;
+        return session.socket;
+    }
+
+    getReadyBenchmarkRenderer(session, now = Date.now()) {
+        const socket = this.getConnectedBenchmarkSocket(session);
+        if (!socket) return null;
+        const telemetry = this.overlayTelemetry.get(socket.id);
+        if (
+            !telemetry || !isFreshTelemetry(telemetry, 'statusUpdatedAt', now - RENDERER_TELEMETRY_TTL_MS) ||
+            telemetry.benchmark !== true || telemetry.benchmarkSessionId !== session.id ||
+            telemetry.visible === false || telemetry.state !== 'ready'
+        ) return null;
+        return { socket, telemetry };
+    }
+
+    beginBenchmarkSessionOperation(session, operation, res) {
+        if (session.pendingOperation) {
+            res.status(409).json({
+                success: false,
+                accepted: false,
+                code: 'BENCHMARK_SESSION_BUSY',
+                operation: session.pendingOperation.operation,
+                error: `Benchmark session is busy with ${session.pendingOperation.operation}`
+            });
+            return null;
+        }
+        const token = Object.freeze({ operation });
+        session.pendingOperation = token;
+        this.touchBenchmarkSession(session);
+        return token;
+    }
+
+    finishBenchmarkSessionOperation(session, token) {
+        if (session.pendingOperation !== token) return false;
+        session.pendingOperation = null;
+        this.touchBenchmarkSession(session);
+        return true;
+    }
+
+    deliverBenchmarkSocketEvent(socket, event, payload, onComplete) {
+        let settled = false;
+        const finish = (accepted, reason, response = null) => {
+            if (settled) return;
+            settled = true;
+            onComplete({ accepted, reason, response });
+        };
+        const acknowledge = (error, response) => {
+            if (error) {
+                finish(false, 'ack-timeout');
+                return;
+            }
+            const exactSession = response?.benchmarkSessionId === payload?.benchmarkSessionId;
+            const accepted = exactSession && response?.accepted === true;
+            const reason = exactSession
+                ? (response?.reason || (accepted ? 'acknowledged' : 'renderer-rejected'))
+                : 'ack-session-mismatch';
+            finish(accepted, reason, response);
+        };
+
+        try {
+            const emitted = socket.timeout(this.benchmarkDeliveryAckTimeoutMs)
+                .emit(event, payload, acknowledge);
+            if (emitted === false) finish(false, 'emit-failed');
+        } catch (error) {
+            this.api.log(`[FIREWORKS] Benchmark delivery failed: ${error.message}`, 'warn');
+            finish(false, 'emit-failed');
+        }
     }
 
     async init() {
@@ -123,6 +488,7 @@ class FireworksPlugin {
 
         // Ensure plugin data directory exists
         this.api.ensurePluginDataDir();
+        this.initializeShowRepository();
         this.superfanFinaleHistory.load();
 
         // Migrate old uploads if they exist
@@ -152,12 +518,12 @@ class FireworksPlugin {
             storage: storage,
             limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
             fileFilter: (req, file, cb) => {
-                const allowedTypes = /mp3|wav|ogg|webm|mp4|gif|png|jpg|jpeg/;
-                const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-                if (extname) {
+                try {
+                    validateUploadMetadata(file);
                     return cb(null, true);
+                } catch (error) {
+                    return cb(error);
                 }
-                cb(new Error('Only audio (mp3, wav, ogg) and video (webm, mp4, gif) files are allowed!'));
             }
         });
 
@@ -189,6 +555,25 @@ class FireworksPlugin {
         this.logRoutes();
     }
 
+    initializeShowRepository() {
+        this.showRepository = new RevisionedShowRepository({
+            dataDir: this.pluginDataDir,
+            logger: message => this.api.log(message, 'warn')
+        });
+        this.showRepositoryLoadError = null;
+        try {
+            this.showRepository.load();
+        } catch (error) {
+            this.showRepositoryLoadError = error;
+            const reason = error?.code || error?.message || 'UNKNOWN_ERROR';
+            this.api.log(
+                `[FIREWORKS] Show repository load failed (${reason}): ${error?.message || reason}. ` +
+                'Built-in finales remain available; repository files were left untouched.',
+                'error'
+            );
+        }
+    }
+
     /**
      * Register socket event handlers
      */
@@ -205,43 +590,98 @@ class FireworksPlugin {
                 this.connectedSockets.add(socket);
 
                 // Send current config to newly connected overlay
-                socket.emit('webgpu-fireworks:config-update', { config: this.config });
+                socket.emit('webgpu-fireworks:config-update', this.createConfigPayload());
 
                 socket.on('webgpu-fireworks:register-overlay', (data = {}) => {
+                    const existingSessionId = this.benchmarkSocketSessions.get(socket.id);
+                    const benchmark = data.benchmark === true || Boolean(existingSessionId);
+                    const requestedSessionId = existingSessionId || data.benchmarkSessionId;
+                    const benchmarkSession = benchmark
+                        ? this.bindBenchmarkSocket(socket, requestedSessionId)
+                        : null;
                     this.overlayTelemetry.set(socket.id, {
-                        benchmark: data.benchmark === true,
+                        registered: benchmark ? Boolean(benchmarkSession) : true,
+                        benchmark,
+                        benchmarkSessionId: benchmarkSession?.id || null,
                         visible: data.visible !== false,
+                        rendererProtocol: sanitizeRendererProtocol(data.rendererProtocol),
+                        capabilities: sanitizeRendererCapabilities(data.capabilities),
                         fps: 0,
+                        statusUpdatedAt: 0,
+                        fpsUpdatedAt: 0,
                         updatedAt: Date.now()
                     });
+                    if (benchmarkSession) {
+                        socket.emit('webgpu-fireworks:config-update', {
+                            ...this.createConfigPayload(benchmarkSession.config),
+                            benchmarkSessionId: benchmarkSession.id
+                        });
+                    }
                 });
 
                 // Listen for FPS updates
                 socket.on('webgpu-fireworks:fps-update', (data) => {
+                    const previous = this.overlayTelemetry.get(socket.id);
+                    if (previous?.registered !== true) return;
                     const fps = Number(data && data.fps);
                     if (!Number.isFinite(fps) || fps < 0 || fps > 240) return;
 
-                    const previous = this.overlayTelemetry.get(socket.id) || {
-                        benchmark: data && data.benchmark === true
-                    };
+                    const benchmarkSession = previous.benchmark === true
+                        ? this.getBenchmarkSession(previous.benchmarkSessionId)
+                        : null;
+                    const benchmarkMessage = previous.benchmark === true || data?.benchmark === true ||
+                        typeof data?.benchmarkSessionId === 'string';
+                    if (benchmarkMessage && (
+                        previous.registered !== true || previous.benchmark !== true ||
+                        previous.benchmarkSessionId !== data?.benchmarkSessionId ||
+                        this.benchmarkSocketSessions.get(socket.id) !== previous.benchmarkSessionId ||
+                        !benchmarkSession
+                    )) return;
+                    const now = Date.now();
                     this.overlayTelemetry.set(socket.id, {
                         ...previous,
                         benchmark: previous.benchmark === true,
                         visible: data.visible !== false,
                         fps,
-                        updatedAt: Date.now()
+                        fpsUpdatedAt: now,
+                        updatedAt: now
                     });
+                    if (previous.benchmark === true) {
+                        this.touchBenchmarkSession(benchmarkSession, now);
+                    }
                     this.currentFps = this.getOverlayFps(false).fps;
                 });
 
                 socket.on('webgpu-fireworks:renderer-status', (data = {}) => {
-                    const previous = this.overlayTelemetry.get(socket.id) || {};
+                    const previous = this.overlayTelemetry.get(socket.id);
+                    if (previous?.registered !== true) return;
+                    const benchmarkSession = previous.benchmark === true
+                        ? this.getBenchmarkSession(previous.benchmarkSessionId)
+                        : null;
+                    const benchmarkMessage = previous.benchmark === true || data.benchmark === true ||
+                        typeof data.benchmarkSessionId === 'string';
+                    if (benchmarkMessage && (
+                        previous.registered !== true || previous.benchmark !== true ||
+                        previous.benchmarkSessionId !== data.benchmarkSessionId ||
+                        this.benchmarkSocketSessions.get(socket.id) !== previous.benchmarkSessionId ||
+                        !benchmarkSession
+                    )) return;
                     const allowedStates = new Set(['initializing', 'ready', 'unsupported', 'device-lost', 'error']);
                     const state = allowedStates.has(data.state) ? data.state : 'error';
+                    const now = Date.now();
                     this.overlayTelemetry.set(socket.id, {
                         ...previous,
                         backend: 'webgpu',
                         state,
+                        visible: Object.prototype.hasOwnProperty.call(data, 'visible')
+                            ? data.visible !== false
+                            : previous.visible !== false,
+                        rendererProtocol: Object.prototype.hasOwnProperty.call(data, 'rendererProtocol')
+                            ? sanitizeRendererProtocol(data.rendererProtocol)
+                            : sanitizeRendererProtocol(previous.rendererProtocol),
+                        capabilities: Object.prototype.hasOwnProperty.call(data, 'capabilities')
+                            ? sanitizeRendererCapabilities(data.capabilities)
+                            : sanitizeRendererCapabilities(previous.capabilities),
                         adapter: data.adapter || previous.adapter || null,
                         format: typeof data.format === 'string' ? data.format : previous.format || null,
                         gpuFrameMs: Number.isFinite(Number(data.gpuFrameMs)) ? Number(data.gpuFrameMs) : null,
@@ -287,19 +727,32 @@ class FireworksPlugin {
                             : previous.timelineEvents || [],
                         finaleActive: data.finaleActive === true,
                         finaleId: typeof data.finaleId === 'string' ? data.finaleId.slice(0, 160) : null,
-                        finaleStyle: typeof data.finaleStyle === 'string' ? data.finaleStyle.slice(0, 40) : null,
+                        finaleStyle: sanitizeRendererFinaleStyle(data.finaleStyle),
+                        finaleName: sanitizeRendererFinaleName(data.finaleName),
                         finaleLength: typeof data.finaleLength === 'string' ? data.finaleLength.slice(0, 20) : null,
                         finalePhase: typeof data.finalePhase === 'string' ? data.finalePhase.slice(0, 40) : 'idle',
                         finaleQueueLength: Number.isFinite(Number(data.finaleQueueLength))
                             ? Math.max(0, Math.floor(Number(data.finaleQueueLength)))
                             : 0,
                         finaleError: typeof data.finaleError === 'string' ? data.finaleError.slice(0, 300) : null,
+                        previewActive: data.previewActive === true,
+                        previewRequestId: typeof data.previewRequestId === 'string'
+                            ? data.previewRequestId.slice(0, 160)
+                            : null,
+                        previewScope: typeof data.previewScope === 'string' ? data.previewScope.slice(0, 20) : null,
+                        previewState: typeof data.previewState === 'string' ? data.previewState.slice(0, 20) : null,
+                        previewError: typeof data.previewError === 'string' ? data.previewError.slice(0, 300) : null,
                         visualStyle: typeof data.visualStyle === 'string' ? data.visualStyle : this.config.visualStyle,
                         reason: typeof data.reason === 'string' ? data.reason.slice(0, 300) : null,
-                        updatedAt: Date.now()
+                        statusUpdatedAt: now,
+                        updatedAt: now
                     });
+                    if (previous.benchmark === true) {
+                        this.touchBenchmarkSession(benchmarkSession, now);
+                    }
                     if (state !== 'ready' && state !== 'initializing') {
                         this.clearPendingSuperfanFinalesForSocket(socket.id, `renderer-${state}`);
+                        this.clearPendingPreviewsForSocket(socket.id);
                         this.api.log(`[WEBGPU FIREWORKS] Renderer ${state}: ${data.reason || 'no details'}`, 'warn');
                     }
                 });
@@ -308,7 +761,17 @@ class FireworksPlugin {
                     this.handleSuperfanFinaleAck(data, socket);
                 });
 
+                socket.on('webgpu-fireworks:preview-ack', data => {
+                    this.handlePreviewAck(data, socket);
+                });
+
+                socket.on('webgpu-fireworks:preview-status', data => {
+                    this.handlePreviewStatus(data, socket);
+                });
+
                 socket.on('webgpu-fireworks:interactive-trigger', (data = {}) => {
+                    const telemetry = this.overlayTelemetry.get(socket.id);
+                    if (telemetry?.registered !== true || telemetry.benchmark === true) return;
                     if (!this.config.enabled || !this.config.interactiveEnabled || !this.config.clickTriggerEnabled) return;
                     this.triggerFirework({
                         type: 'click',
@@ -332,6 +795,8 @@ class FireworksPlugin {
                 // Clean up on disconnect
                 socket.on('disconnect', () => {
                     this.clearPendingSuperfanFinalesForSocket(socket.id, 'renderer-disconnected');
+                    this.clearPendingPreviewsForSocket(socket.id);
+                    this.unbindBenchmarkSocket(socket);
                     this.connectedSockets.delete(socket);
                     this.overlayTelemetry.delete(socket.id);
                     this.currentFps = this.getOverlayFps(false).fps;
@@ -344,14 +809,11 @@ class FireworksPlugin {
     }
 
     getOverlayFps(benchmark = false) {
-        const cutoff = Date.now() - 5000;
+        const cutoff = Date.now() - RENDERER_TELEMETRY_TTL_MS;
         const readings = [];
 
-        for (const [socketId, telemetry] of this.overlayTelemetry.entries()) {
-            if (!telemetry || telemetry.updatedAt < cutoff) {
-                this.overlayTelemetry.delete(socketId);
-                continue;
-            }
+        for (const telemetry of this.overlayTelemetry.values()) {
+            if (!isFreshTelemetry(telemetry, 'fpsUpdatedAt', cutoff)) continue;
             if (telemetry.benchmark === benchmark && telemetry.visible !== false && telemetry.fps > 0) {
                 readings.push(telemetry.fps);
             }
@@ -365,13 +827,37 @@ class FireworksPlugin {
     }
 
     getRendererStatus() {
-        const cutoff = Date.now() - 5000;
-        const current = [...this.overlayTelemetry.values()]
-            .filter(item => item && item.updatedAt >= cutoff && item.benchmark !== true)
-            .sort((a, b) => b.updatedAt - a.updatedAt)[0];
-        return current || {
+        const cutoff = Date.now() - RENDERER_TELEMETRY_TTL_MS;
+        const current = [...this.overlayTelemetry.entries()]
+            .map(([rendererId, telemetry]) => ({ rendererId, telemetry }))
+            .filter(candidate => (
+                isFreshTelemetry(candidate.telemetry, 'statusUpdatedAt', cutoff) &&
+                candidate.telemetry.benchmark !== true
+            ))
+            .sort((left, right) => (
+                Number(right.telemetry.statusUpdatedAt) - Number(left.telemetry.statusUpdatedAt) ||
+                String(left.rendererId).localeCompare(String(right.rendererId))
+            ))[0]?.telemetry;
+        if (current) {
+            const missingCapabilities = missingRendererCapabilities(current);
+            const upgradeRequired = current.state === 'ready' && !rendererSupportsCapabilities(current);
+            return {
+                ...current,
+                rendererProtocol: sanitizeRendererProtocol(current.rendererProtocol),
+                capabilities: sanitizeRendererCapabilities(current.capabilities),
+                missingCapabilities,
+                upgradeRequired,
+                upgradeReason: upgradeRequired ? RENDERER_UPGRADE_MESSAGE : null
+            };
+        }
+        return {
             backend: 'webgpu',
             state: 'offline',
+            rendererProtocol: 0,
+            capabilities: [],
+            missingCapabilities: [...RENDERER_CAPABILITIES],
+            upgradeRequired: false,
+            upgradeReason: null,
             adapter: null,
             format: null,
             gpuFrameMs: null,
@@ -393,13 +879,303 @@ class FireworksPlugin {
             finaleActive: false,
             finaleId: null,
             finaleStyle: null,
+            finaleName: null,
             finaleLength: null,
             finalePhase: 'idle',
             finaleQueueLength: 0,
             finaleError: null,
+            previewActive: false,
+            previewRequestId: null,
+            previewScope: null,
+            previewState: null,
+            previewError: null,
             visualStyle: this.config?.visualStyle || 'premium-hybrid',
             reason: 'No active WebGPU overlay connected'
         };
+    }
+
+    isRendererDeliveryEligible(socket, telemetry, cutoff = Date.now() - RENDERER_TELEMETRY_TTL_MS) {
+        return Boolean(
+            socket && socket.connected !== false && telemetry &&
+            telemetry.registered === true &&
+            isFreshTelemetry(telemetry, 'statusUpdatedAt', cutoff) && telemetry.benchmark !== true &&
+            telemetry.visible !== false && telemetry.state === 'ready'
+        );
+    }
+
+    hasRegisteredRendererSocket() {
+        return [...this.connectedSockets].some(socket => {
+            const telemetry = socket ? this.overlayTelemetry.get(socket.id) : null;
+            return Boolean(
+                socket && socket.connected !== false && telemetry?.registered === true &&
+                telemetry.benchmark !== true
+            );
+        });
+    }
+
+    getReadyRendererTelemetry() {
+        return this.getFinaleRendererTargets().map(target => target.telemetry);
+    }
+
+    getFinaleRendererTargets({ requiredCapabilities = [] } = {}) {
+        const cutoff = Date.now() - RENDERER_TELEMETRY_TTL_MS;
+        const socketsById = new Map([...this.connectedSockets].map(socket => [socket.id, socket]));
+        return [...this.overlayTelemetry.entries()]
+            .map(([rendererId, telemetry]) => ({ rendererId, telemetry, socket: socketsById.get(rendererId) }))
+            .filter(target => (
+                this.isRendererDeliveryEligible(target.socket, target.telemetry, cutoff) &&
+                (requiredCapabilities.length === 0 ||
+                    rendererSupportsCapabilities(target.telemetry, requiredCapabilities))
+            ))
+            .sort((left, right) => (
+                Number(right.telemetry.statusUpdatedAt) - Number(left.telemetry.statusUpdatedAt) ||
+                String(left.rendererId).localeCompare(String(right.rendererId))
+            ));
+    }
+
+    createLegacyRendererFinalePayload(payload) {
+        return {
+            ...payload,
+            showPlan: null,
+            rendererFallback: 'legacy-outdated-overlay'
+        };
+    }
+
+    dispatchFinalePayload(payload, options = {}) {
+        const requiresFurryRenderer = options.requiresFurryRenderer === true;
+        const testRequest = options.testRequest === true;
+        let targets = this.getFinaleRendererTargets();
+        if (testRequest) {
+            if (requiresFurryRenderer) {
+                targets = targets.filter(target => rendererSupportsCapabilities(target.telemetry));
+            }
+            targets = targets.slice(0, 1);
+        }
+
+        if (targets.length > 0) {
+            // PluginAPI.emit broadcasts globally. Direct socket delivery is exclusive here so
+            // each registered overlay receives exactly one capability-matched payload.
+            const deliveredPayloads = [];
+            let usedLegacyFallback = false;
+            for (const target of targets) {
+                const targetNeedsLegacyFallback = requiresFurryRenderer &&
+                    !rendererSupportsCapabilities(target.telemetry);
+                const targetPayload = targetNeedsLegacyFallback
+                    ? this.createLegacyRendererFinalePayload(payload)
+                    : payload;
+                usedLegacyFallback ||= targetNeedsLegacyFallback;
+                try {
+                    if (target.socket.emit('webgpu-fireworks:finale', targetPayload) !== false) {
+                        deliveredPayloads.push(targetPayload);
+                    }
+                } catch (error) {
+                    this.api.log(
+                        `[WEBGPU FIREWORKS] Finale dispatch to renderer ${target.rendererId} failed: ${error.message}`,
+                        'warn'
+                    );
+                }
+            }
+            const returnPayload = deliveredPayloads.find(item => item.showPlan) || deliveredPayloads[0] || payload;
+            return { submitted: deliveredPayloads.length > 0, payload: returnPayload, usedLegacyFallback };
+        }
+
+        if (testRequest || this.connectedSockets.size > 0) {
+            return {
+                submitted: false,
+                payload,
+                usedLegacyFallback: false,
+                reason: 'renderer-not-ready',
+                code: 'RENDERER_NOT_READY'
+            };
+        }
+
+        const rendererStatus = this.getRendererStatus();
+        const useGlobalLegacyFallback = !testRequest && requiresFurryRenderer &&
+            rendererStatus.state === 'ready' && !rendererSupportsCapabilities(rendererStatus);
+        const globalPayload = useGlobalLegacyFallback
+            ? this.createLegacyRendererFinalePayload(payload)
+            : payload;
+        return {
+            submitted: this.api.emit('webgpu-fireworks:finale', globalPayload) !== false,
+            payload: globalPayload,
+            usedLegacyFallback: useGlobalLegacyFallback
+        };
+    }
+
+    getPreviewRendererStatus() {
+        const cutoff = Date.now() - RENDERER_TELEMETRY_TTL_MS;
+        const fresh = [...this.overlayTelemetry.values()].filter(item => (
+            isFreshTelemetry(item, 'statusUpdatedAt', cutoff) &&
+            item.benchmark !== true && item.visible !== false
+        ));
+        const ready = fresh.filter(item => item.state === 'ready');
+        const busy = fresh.filter(item => (
+            item.finaleActive === true || item.previewActive === true || Number(item.finaleQueueLength) > 0
+        ));
+        return {
+            freshRendererCount: fresh.length,
+            readyRendererCount: ready.length,
+            busyRendererCount: busy.length
+        };
+    }
+
+    selectPreviewRenderer() {
+        return this.selectPreviewRendererWithCapabilities([]);
+    }
+
+    selectPreviewRendererWithCapabilities(requiredCapabilities = []) {
+        const cutoff = Date.now() - RENDERER_TELEMETRY_TTL_MS;
+        const socketsById = new Map([...this.connectedSockets].map(socket => [socket.id, socket]));
+        const candidates = [...this.overlayTelemetry.entries()]
+            .map(([rendererId, telemetry]) => ({ rendererId, telemetry, socket: socketsById.get(rendererId) }))
+            .filter(candidate => (
+                candidate.socket && candidate.socket.connected !== false &&
+                isFreshTelemetry(candidate.telemetry, 'statusUpdatedAt', cutoff) &&
+                candidate.telemetry?.benchmark !== true &&
+                candidate.telemetry?.visible !== false &&
+                candidate.telemetry?.state === 'ready' &&
+                (requiredCapabilities.length === 0 ||
+                    rendererSupportsCapabilities(candidate.telemetry, requiredCapabilities))
+            ))
+            .sort((left, right) => (
+                Number(right.telemetry.statusUpdatedAt) - Number(left.telemetry.statusUpdatedAt) ||
+                String(left.rendererId).localeCompare(String(right.rendererId))
+            ));
+        return candidates[0] || null;
+    }
+
+    previewDispatchError(code) {
+        const definitions = {
+            RENDERER_NOT_READY: [503, 'A fresh ready WebGPU renderer is required for preview.'],
+            RENDERER_UPGRADE_REQUIRED: [426, RENDERER_UPGRADE_MESSAGE],
+            FINALE_BUSY: [409, 'A finale or preview is active or queued on the selected renderer.'],
+            INVALID_PREVIEW: [422, 'The renderer rejected the preview payload.'],
+            PREVIEW_ACK_TIMEOUT: [503, 'The WebGPU renderer did not acknowledge the preview in time.']
+        };
+        const [status, message] = definitions[code] || definitions.INVALID_PREVIEW;
+        return new ShowRepositoryError(code, status, message, {});
+    }
+
+    settlePendingPreview(requestId, outcome = {}) {
+        const pending = this.pendingPreviewRequests.get(requestId);
+        if (!pending) return false;
+        clearTimeout(pending.timer);
+        this.pendingPreviewRequests.delete(requestId);
+        if (outcome.error) pending.reject(outcome.error);
+        else pending.resolve(outcome.result);
+        return true;
+    }
+
+    dispatchPreview(payload = {}) {
+        const requiredCapabilities = previewRequiredRendererCapabilities(payload);
+        const target = this.selectPreviewRendererWithCapabilities(requiredCapabilities);
+        if (!target && requiredCapabilities.length > 0 && this.selectPreviewRenderer()) {
+            return Promise.reject(this.previewDispatchError('RENDERER_UPGRADE_REQUIRED'));
+        }
+        if (!target) return Promise.reject(this.previewDispatchError('RENDERER_NOT_READY'));
+        if (
+            target.telemetry.finaleActive === true ||
+            target.telemetry.previewActive === true ||
+            Number(target.telemetry.finaleQueueLength) > 0
+        ) {
+            return Promise.reject(this.previewDispatchError('FINALE_BUSY'));
+        }
+        const requestId = typeof payload.requestId === 'string' ? payload.requestId : '';
+        if (!requestId || this.pendingPreviewRequests.has(requestId)) {
+            return Promise.reject(this.previewDispatchError('INVALID_PREVIEW'));
+        }
+
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => {
+                this.settlePendingPreview(requestId, {
+                    error: this.previewDispatchError('PREVIEW_ACK_TIMEOUT')
+                });
+            }, this.previewAckTimeoutMs);
+            timer.unref?.();
+            this.pendingPreviewRequests.set(requestId, {
+                requestId,
+                rendererId: target.rendererId,
+                socket: target.socket,
+                timer,
+                resolve,
+                reject
+            });
+            const emitted = target.socket.emit('webgpu-fireworks:preview', {
+                ...payload,
+                rendererId: target.rendererId
+            });
+            if (emitted === false) {
+                this.settlePendingPreview(requestId, {
+                    error: this.previewDispatchError('RENDERER_NOT_READY')
+                });
+            }
+        });
+    }
+
+    handlePreviewAck(data = {}, socket) {
+        const requestId = typeof data.requestId === 'string' ? data.requestId : '';
+        const pending = this.pendingPreviewRequests.get(requestId);
+        if (!pending || !socket || pending.socket !== socket) return false;
+        if (data.rendererId !== pending.rendererId || socket.id !== pending.rendererId) return false;
+        const telemetry = this.overlayTelemetry.get(pending.rendererId);
+        if (
+            !isFreshTelemetry(telemetry, 'statusUpdatedAt', Date.now() - RENDERER_TELEMETRY_TTL_MS) ||
+            telemetry.benchmark === true || telemetry.visible === false
+        ) return false;
+
+        if (data.accepted !== true && data.reason === 'RENDERER_NOT_READY') {
+            return this.settlePendingPreview(requestId, {
+                error: this.previewDispatchError('RENDERER_NOT_READY')
+            });
+        }
+        if (telemetry.state !== 'ready') return false;
+
+        if (data.accepted === true) {
+            return this.settlePendingPreview(requestId, {
+                result: { accepted: true, requestId, rendererId: pending.rendererId }
+            });
+        }
+        const reason = ['RENDERER_NOT_READY', 'FINALE_BUSY', 'INVALID_PREVIEW'].includes(data.reason)
+            ? data.reason
+            : 'INVALID_PREVIEW';
+        return this.settlePendingPreview(requestId, {
+            error: this.previewDispatchError(reason)
+        });
+    }
+
+    handlePreviewStatus(data = {}, socket) {
+        if (!socket || data.rendererId !== socket.id || typeof data.requestId !== 'string') return false;
+        const telemetry = this.overlayTelemetry.get(socket.id);
+        if (telemetry?.registered !== true || telemetry.benchmark === true) return false;
+        const state = ['running', 'completed', 'failed'].includes(data.state) ? data.state : null;
+        if (!state) return false;
+        this.overlayTelemetry.set(socket.id, {
+            ...telemetry,
+            previewActive: state === 'running',
+            previewRequestId: state === 'running' ? data.requestId.slice(0, 160) : null,
+            previewScope: state === 'running' && typeof data.scope === 'string' ? data.scope.slice(0, 20) : null,
+            previewState: state,
+            previewError: state === 'failed' && typeof data.error === 'string' ? data.error.slice(0, 300) : null,
+            updatedAt: Date.now()
+        });
+        return true;
+    }
+
+    clearPendingPreviewsForSocket(socketId) {
+        for (const pending of [...this.pendingPreviewRequests.values()]) {
+            if (pending.rendererId !== socketId) continue;
+            this.settlePendingPreview(pending.requestId, {
+                error: this.previewDispatchError('RENDERER_NOT_READY')
+            });
+        }
+    }
+
+    clearAllPendingPreviews() {
+        for (const pending of [...this.pendingPreviewRequests.values()]) {
+            this.settlePendingPreview(pending.requestId, {
+                error: this.previewDispatchError('RENDERER_NOT_READY')
+            });
+        }
     }
 
     /**
@@ -459,7 +1235,7 @@ class FireworksPlugin {
                         imported[key] = imported[key].replace('/plugins/fireworks/', '/plugins/webgpu-fireworks/');
                     }
                 }
-                this.config = normalizeConfig({ ...this.config, ...imported, renderer: 'webgpu' });
+                this.applyRuntimeConfig({ ...this.config, ...imported, renderer: 'webgpu' });
                 this.saveConfig();
             }
 
@@ -555,6 +1331,8 @@ class FireworksPlugin {
             superfanFinaleEnabled: true,
             superfanFinaleCooldownHours: 24,
             superfanFinaleIntensity: 3,
+            superfanFinaleStyle: 'inherit',
+            superfanFinaleLength: 'inherit',
             superfanEndCardDuration: 3000,
             superfanEndCardPosition: 'center',
             superfanEndCardSize: 'medium',
@@ -626,12 +1404,19 @@ class FireworksPlugin {
             windStrength: 0.02
         };
 
-        this.config = normalizeConfig({
+        this.applyRuntimeConfig({
             ...defaultConfig,
             ...(savedConfig || {})
         });
+    }
 
-        this.COMBO_TIMEOUT = this.config.comboTimeout;
+    applyRuntimeConfig(input) {
+        this.config = normalizeConfig(input);
+        return this.config;
+    }
+
+    createConfigPayload(config = this.config) {
+        return { config, limits: CONFIG_LIMITS, enums: CONFIG_ENUMS };
     }
 
     /**
@@ -684,10 +1469,27 @@ class FireworksPlugin {
      * Register all HTTP routes
      */
     registerRoutes() {
+        this.showApiController = new ShowApiController({
+            getRepository: () => this.showRepository,
+            getRepositoryError: () => this.showRepositoryLoadError,
+            getPreviewRendererStatus: () => this.getPreviewRendererStatus(),
+            getConfig: () => this.config,
+            finaleShowPlanner: this.finaleShowPlanner,
+            dispatchPreview: payload => this.dispatchPreview(payload),
+            log: (message, level) => this.api.log(message, level)
+        });
+        this.showApiController.registerRoutes(this.api);
+
         // Serve plugin UI (settings page)
         this.api.registerRoute('get', '/webgpu-fireworks/ui', (req, res) => {
             const uiPath = path.join(__dirname, 'ui', 'settings.html');
             res.sendFile(uiPath);
+        });
+
+        // Serve the standalone visual Show Designer.
+        this.api.registerRoute('get', '/webgpu-fireworks/designer', (req, res) => {
+            const designerPath = path.join(__dirname, 'ui', 'designer.html');
+            res.sendFile(designerPath);
         });
 
         // Serve overlay
@@ -699,7 +1501,7 @@ class FireworksPlugin {
         // Get configuration
         this.api.registerRoute('get', '/api/webgpu-fireworks/config', (req, res) => {
             try {
-                res.json({ success: true, config: this.config });
+                res.json({ success: true, ...this.createConfigPayload() });
             } catch (error) {
                 this.api.log(`❌ [FIREWORKS] Error getting config: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
@@ -710,7 +1512,7 @@ class FireworksPlugin {
         this.api.registerRoute('post', '/api/webgpu-fireworks/config', (req, res) => {
             try {
                 const updates = req.body || {};
-                this.config = normalizeConfig({ ...this.config, ...updates });
+                this.applyRuntimeConfig({ ...this.config, ...updates });
                 this.saveConfig();
 
                 // Restart random timer if relevant settings changed
@@ -722,9 +1524,13 @@ class FireworksPlugin {
                 }
 
                 // Notify overlays about config change
-                this.api.emit('webgpu-fireworks:config-update', { config: this.config });
+                this.api.emit('webgpu-fireworks:config-update', this.createConfigPayload());
 
-                res.json({ success: true, message: 'Configuration updated', config: this.config });
+                res.json({
+                    success: true,
+                    message: 'Configuration updated',
+                    ...this.createConfigPayload()
+                });
             } catch (error) {
                 this.api.log(`❌ [FIREWORKS] Error updating config: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
@@ -770,17 +1576,39 @@ class FireworksPlugin {
         // Trigger fireworks manually
         this.api.registerRoute('post', '/api/webgpu-fireworks/trigger', (req, res) => {
             try {
-                const triggerOptions = normalizeFireworkTrigger(req.body || {}, this.config);
+                const triggerOptions = normalizeFireworkTrigger(
+                    sanitizeManualFireworkTrigger(req.body),
+                    this.config
+                );
 
-                this.triggerFirework({
+                const result = this.triggerFirework({
                     ...triggerOptions,
                     reason: 'manual',
                     bypassEnabled: true  // Allow test triggers even when disabled
                 });
 
-                res.json({ success: true, message: 'Firework triggered' });
+                if (result.accepted !== true) {
+                    return res.status(triggerRejectionHttpStatus(result.reason)).json({
+                        success: false,
+                        accepted: false,
+                        reason: result.reason
+                    });
+                }
+
+                return res.json({
+                    success: true,
+                    accepted: true,
+                    reason: result.reason,
+                    message: 'Firework submitted',
+                    payload: result.payload
+                });
             } catch (error) {
-                res.status(500).json({ success: false, error: error.message });
+                return res.status(500).json({
+                    success: false,
+                    accepted: false,
+                    reason: 'internal-error',
+                    error: error.message
+                });
             }
         });
 
@@ -793,25 +1621,43 @@ class FireworksPlugin {
                     ...finaleRequest,
                     bypassEnabled: true
                 });
+                if (result.accepted !== true) {
+                    const status = result.code === 'RENDERER_UPGRADE_REQUIRED'
+                        ? 426
+                        : result.reason === 'renderer-not-ready' ? 503 : 409;
+                    return res.status(status).json({
+                        success: false,
+                        accepted: false,
+                        code: result.code || 'FINALE_REJECTED',
+                        error: result.error || result.reason || 'Finale rejected'
+                    });
+                }
                 const { showPlan, bursts, ...metadata } = result;
-                res.json({ success: true, message: 'Finale triggered', ...metadata });
+                return res.json({ success: true, message: 'Finale triggered', ...metadata });
             } catch (error) {
-                res.status(500).json({ success: false, error: error.message });
+                return res.status(500).json({ success: false, error: error.message });
             }
         });
 
         // Test follower fireworks
         this.api.registerRoute('post', '/api/webgpu-fireworks/test-follower', (req, res) => {
             try {
-                const { username, profilePictureUrl } = req.body;
-                this.handleFollowerEvent({
+                const { username, profilePictureUrl } = req.body || {};
+                const result = this.handleFollowerEvent({
                     uniqueId: username || 'TestFollower',
                     username: username || 'TestFollower',
                     profilePictureUrl: profilePictureUrl || null
+                }, { bypassEnabled: true });
+                const status = result.accepted
+                    ? 200
+                    : result.reason === 'renderer-not-ready' ? 503 : 409;
+                return res.status(status).json({
+                    success: result.accepted,
+                    accepted: result.accepted,
+                    reason: result.reason
                 });
-                res.json({ success: true, message: 'Follower fireworks triggered' });
             } catch (error) {
-                res.status(500).json({ success: false, error: error.message });
+                return res.status(500).json({ success: false, error: error.message });
             }
         });
 
@@ -852,10 +1698,30 @@ class FireworksPlugin {
         // Trigger random firework
         this.api.registerRoute('post', '/api/webgpu-fireworks/random', (req, res) => {
             try {
-                this.triggerRandomFirework(true); // true = bypass enabled check
-                res.json({ success: true, message: 'Random firework triggered' });
+                const result = this.triggerRandomFirework(true); // true = bypass enabled check
+
+                if (result.accepted !== true) {
+                    return res.status(triggerRejectionHttpStatus(result.reason)).json({
+                        success: false,
+                        accepted: false,
+                        reason: result.reason
+                    });
+                }
+
+                return res.json({
+                    success: true,
+                    accepted: true,
+                    reason: result.reason,
+                    message: 'Random firework submitted',
+                    payload: result.payload
+                });
             } catch (error) {
-                res.status(500).json({ success: false, error: error.message });
+                return res.status(500).json({
+                    success: false,
+                    accepted: false,
+                    reason: 'internal-error',
+                    error: error.message
+                });
             }
         });
 
@@ -887,9 +1753,13 @@ class FireworksPlugin {
                     visualStyle: visualStyle || null
                 };
                 this.saveConfig();
-                this.api.emit('webgpu-fireworks:config-update', { config: this.config });
+                this.api.emit('webgpu-fireworks:config-update', this.createConfigPayload());
 
-                res.json({ success: true, message: 'Gift mapping updated' });
+                res.json({
+                    success: true,
+                    message: 'Gift mapping updated',
+                    ...this.createConfigPayload()
+                });
             } catch (error) {
                 res.status(500).json({ success: false, error: error.message });
             }
@@ -901,33 +1771,99 @@ class FireworksPlugin {
                 if (!giftId) return res.status(400).json({ success: false, error: 'giftId is required' });
                 delete this.config.giftShapeMappings[giftId];
                 this.saveConfig();
-                this.api.emit('webgpu-fireworks:config-update', { config: this.config });
-                return res.json({ success: true, message: 'Gift mapping removed' });
+                this.api.emit('webgpu-fireworks:config-update', this.createConfigPayload());
+                return res.json({
+                    success: true,
+                    message: 'Gift mapping removed',
+                    ...this.createConfigPayload()
+                });
             } catch (error) {
                 return res.status(500).json({ success: false, error: error.message });
             }
         });
 
         // Upload audio/video file
-        this.api.registerRoute('post', '/api/webgpu-fireworks/upload', (req, res) => {
-            this.upload.single('file')(req, res, (err) => {
-                if (err) {
-                    return res.status(500).json({ success: false, error: err.message });
+        this.api.registerRoute('post', '/api/webgpu-fireworks/upload', async (req, res) => {
+            const uploadError = await new Promise(resolve => {
+                let settled = false;
+                const settle = error => {
+                    if (settled) return;
+                    settled = true;
+                    resolve(error || null);
+                };
+                try {
+                    this.upload.single('file')(req, res, settle);
+                } catch (error) {
+                    settle(error);
                 }
+            });
 
-                if (!req.file) {
-                    return res.status(400).json({ success: false, error: 'No file uploaded' });
+            if (uploadError) {
+                if (uploadError.code === 'LIMIT_FILE_SIZE') {
+                    return res.status(413).json({
+                        success: false,
+                        code: 'UPLOAD_TOO_LARGE',
+                        error: uploadError.message
+                    });
                 }
-
-                const fileUrl = `/plugins/webgpu-fireworks/uploads/${req.file.filename}`;
-                this.api.log(`📤 [FIREWORKS] File uploaded: ${req.file.filename}`, 'info');
-
-                res.json({
-                    success: true,
-                    url: fileUrl,
-                    filename: req.file.filename,
-                    size: req.file.size
+                if (uploadError instanceof UploadValidationError) {
+                    return res.status(uploadError.status).json({
+                        success: false,
+                        code: uploadError.code,
+                        error: uploadError.message
+                    });
+                }
+                return res.status(500).json({
+                    success: false,
+                    code: 'UPLOAD_FAILED',
+                    error: uploadError.message
                 });
+            }
+
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    code: 'UPLOAD_FILE_REQUIRED',
+                    error: 'No file uploaded'
+                });
+            }
+
+            try {
+                await validateStoredUpload(req.file);
+            } catch (error) {
+                try {
+                    await fs.promises.unlink(req.file.path);
+                } catch (cleanupError) {
+                    if (cleanupError.code !== 'ENOENT') {
+                        this.api.log(
+                            `[FIREWORKS] Failed to remove rejected upload ${req.file.path}: ${cleanupError.message}`,
+                            'warn'
+                        );
+                    }
+                }
+
+                if (error instanceof UploadValidationError) {
+                    return res.status(error.status).json({
+                        success: false,
+                        code: error.code,
+                        error: error.message
+                    });
+                }
+                return res.status(500).json({
+                    success: false,
+                    code: 'UPLOAD_FAILED',
+                    error: error.message
+                });
+            }
+
+            const fileUrl = `/plugins/webgpu-fireworks/uploads/${req.file.filename}`;
+            this.api.log(`📤 [FIREWORKS] File uploaded: ${req.file.filename}`, 'info');
+
+            return res.json({
+                success: true,
+                url: fileUrl,
+                filename: req.file.filename,
+                size: req.file.size
             });
         });
 
@@ -982,37 +1918,188 @@ class FireworksPlugin {
         this.api.registerMiddleware('/plugins/webgpu-fireworks/audio', express.static(audioDir));
 
         // Benchmark API endpoints
+        this.api.registerRoute('post', '/api/webgpu-fireworks/benchmark/start', (req, res) => {
+            try {
+                const session = this.createBenchmarkSession();
+                const origin = `${req.protocol}://${req.get('host')}`;
+                return res.status(201).json({
+                    success: true,
+                    sessionId: session.id,
+                    overlayUrl: `${origin}/webgpu-fireworks/overlay?benchmark=true&benchmarkSessionId=${session.id}`
+                });
+            } catch (error) {
+                this.api.log(`[FIREWORKS] Error starting benchmark session: ${error.message}`, 'error');
+                return res.status(500).json({
+                    success: false,
+                    code: 'BENCHMARK_START_FAILED',
+                    error: error.message
+                });
+            }
+        });
+
         this.api.registerRoute('post', '/api/webgpu-fireworks/benchmark/set-preset', (req, res) => {
             try {
-                const { preset } = req.body;
-                if (!preset) {
-                    return res.status(400).json({ success: false, error: 'Preset data required' });
+                const session = this.resolveBenchmarkRouteSession(req, res);
+                if (!session) return;
+                const preset = req.body?.preset;
+                if (!preset || typeof preset !== 'object' || Array.isArray(preset)) {
+                    return res.status(400).json({
+                        success: false,
+                        code: 'BENCHMARK_PRESET_REQUIRED',
+                        error: 'Preset data required'
+                    });
                 }
-
-                // Temporarily apply preset without saving
-                if (!this.benchmarkPreset) {
-                    this.benchmarkPreset = { ...this.config };
+                const renderer = this.getReadyBenchmarkRenderer(session);
+                if (!renderer) {
+                    return res.status(503).json({
+                        success: false,
+                        code: 'BENCHMARK_RENDERER_NOT_READY',
+                        error: 'Benchmark renderer is not ready'
+                    });
                 }
-                this.config = normalizeConfig({ ...this.config, ...preset });
-
-                // Notify overlay about config change
-                this.api.emit('webgpu-fireworks:config-update', { config: this.config });
-
-                res.json({ success: true, message: 'Preset applied for benchmark' });
+                const socket = renderer.socket;
+                const config = normalizeConfig({ ...session.baseConfig, ...preset });
+                const operation = this.beginBenchmarkSessionOperation(session, 'set-preset', res);
+                if (!operation) return;
+                return this.deliverBenchmarkSocketEvent(socket, 'webgpu-fireworks:config-update', {
+                    ...this.createConfigPayload(config),
+                    benchmarkSessionId: session.id
+                }, delivery => {
+                    if (!delivery.accepted) {
+                        this.finishBenchmarkSessionOperation(session, operation);
+                        return res.status(503).json({
+                            success: false,
+                            code: 'BENCHMARK_CONFIG_DELIVERY_FAILED',
+                            error: 'Benchmark config delivery failed',
+                            reason: delivery.reason
+                        });
+                    }
+                    session.config = config;
+                    this.finishBenchmarkSessionOperation(session, operation);
+                    return res.json({
+                        success: true,
+                        sessionId: session.id,
+                        message: 'Preset applied for benchmark',
+                        ...this.createConfigPayload(session.config)
+                    });
+                });
             } catch (error) {
                 this.api.log(`❌ [FIREWORKS] Error setting benchmark preset: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
             }
         });
 
+        this.api.registerRoute('post', '/api/webgpu-fireworks/benchmark/trigger', (req, res) => {
+            try {
+                const session = this.resolveBenchmarkRouteSession(req, res);
+                if (!session) return;
+                const renderer = this.getReadyBenchmarkRenderer(session);
+                if (!renderer) {
+                    return res.status(503).json({
+                        success: false,
+                        accepted: false,
+                        code: 'BENCHMARK_RENDERER_NOT_READY',
+                        error: 'Benchmark renderer is not ready'
+                    });
+                }
+                const operation = this.beginBenchmarkSessionOperation(session, 'trigger', res);
+                if (!operation) return;
+                const candidatePlanner = session.spawnPlanner.clone();
+                const triggerOptions = sanitizeManualFireworkTrigger(req.body);
+                const result = this.triggerFirework({
+                    ...triggerOptions,
+                    reason: 'benchmark',
+                    bypassEnabled: true,
+                    playSound: false
+                }, createBenchmarkDispatchContext(session, renderer.socket, candidatePlanner));
+                if (result.accepted !== true) {
+                    this.finishBenchmarkSessionOperation(session, operation);
+                    return res.status(triggerRejectionHttpStatus(result.reason)).json({
+                        success: false,
+                        accepted: false,
+                        code: 'BENCHMARK_TRIGGER_REJECTED',
+                        reason: result.reason,
+                        sessionId: session.id
+                    });
+                }
+                Object.assign(result.payload, {
+                    giftId: null,
+                    giftImage: null,
+                    userAvatar: null,
+                    benchmarkAdmissionDeadline: Date.now() + Math.max(
+                        100,
+                        this.benchmarkDeliveryAckTimeoutMs - 250
+                    )
+                });
+                return this.deliverBenchmarkSocketEvent(renderer.socket, 'webgpu-fireworks:trigger', result.payload, delivery => {
+                    if (!delivery.accepted) {
+                        this.finishBenchmarkSessionOperation(session, operation);
+                        return res.status(503).json({
+                            success: false,
+                            accepted: false,
+                            code: 'BENCHMARK_TRIGGER_DELIVERY_FAILED',
+                            reason: delivery.reason,
+                            sessionId: session.id,
+                            error: 'Benchmark trigger delivery failed'
+                        });
+                    }
+                    const operationFinished = this.finishBenchmarkSessionOperation(session, operation);
+                    const currentRenderer = this.getReadyBenchmarkRenderer(session);
+                    const rendererStillBound = currentRenderer?.socket === renderer.socket;
+                    if (!operationFinished || !rendererStillBound) {
+                        return res.status(503).json({
+                            success: false,
+                            accepted: false,
+                            code: 'BENCHMARK_TRIGGER_DELIVERY_FAILED',
+                            reason: operationFinished ? 'renderer-not-ready' : 'renderer-disconnected',
+                            sessionId: session.id,
+                            error: 'Benchmark trigger delivery failed'
+                        });
+                    }
+                    session.spawnPlanner = candidatePlanner;
+                    return res.json({
+                        success: true,
+                        accepted: true,
+                        reason: 'submitted',
+                        sessionId: session.id,
+                        message: 'Benchmark firework submitted',
+                        payload: result.payload
+                    });
+                });
+            } catch (error) {
+                this.api.log(`[FIREWORKS] Error triggering benchmark firework: ${error.message}`, 'error');
+                return res.status(500).json({
+                    success: false,
+                    accepted: false,
+                    code: 'BENCHMARK_TRIGGER_FAILED',
+                    error: error.message
+                });
+            }
+        });
+
         this.api.registerRoute('get', '/api/webgpu-fireworks/benchmark/fps', (req, res) => {
             try {
-                const telemetry = this.getOverlayFps(true);
-                res.json({
+                const session = this.resolveBenchmarkRouteSession(req, res);
+                if (!session) return;
+                const renderer = this.getReadyBenchmarkRenderer(session);
+                if (!renderer || !isFreshTelemetry(
+                    renderer.telemetry,
+                    'fpsUpdatedAt',
+                    Date.now() - RENDERER_TELEMETRY_TTL_MS
+                )) {
+                    return res.status(503).json({
+                        success: false,
+                        code: 'BENCHMARK_RENDERER_NOT_READY',
+                        error: 'Benchmark renderer is not ready'
+                    });
+                }
+                this.touchBenchmarkSession(session);
+                return res.json({
                     success: true,
-                    fps: telemetry.fps,
-                    sampleCount: telemetry.sampleCount,
-                    source: 'benchmark-overlay',
+                    sessionId: session.id,
+                    fps: renderer.telemetry.fps,
+                    sampleCount: renderer.telemetry.fps > 0 ? 1 : 0,
+                    source: 'benchmark-session-overlay',
                     timestamp: Date.now()
                 });
             } catch (error) {
@@ -1023,14 +2110,50 @@ class FireworksPlugin {
 
         this.api.registerRoute('post', '/api/webgpu-fireworks/benchmark/restore', (req, res) => {
             try {
-                // Restore original config after benchmark
-                if (this.benchmarkPreset) {
-                    this.config = { ...this.benchmarkPreset };
-                    this.benchmarkPreset = null;
-                    this.api.emit('webgpu-fireworks:config-update', { config: this.config });
+                const session = this.resolveBenchmarkRouteSession(req, res, { allowRestored: true });
+                if (!session) return;
+                if (session.restored) {
+                    this.touchBenchmarkSession(session);
+                    return res.json({
+                        success: true,
+                        sessionId: session.id,
+                        restored: false,
+                        message: 'Benchmark session already restored'
+                    });
                 }
-
-                res.json({ success: true, message: 'Original config restored' });
+                const socket = this.getConnectedBenchmarkSocket(session);
+                const config = normalizeConfig(session.baseConfig);
+                const operation = this.beginBenchmarkSessionOperation(session, 'restore', res);
+                if (!operation) return;
+                const completeRestore = () => {
+                    session.config = config;
+                    session.restored = true;
+                    session.restoredAt = Date.now();
+                    this.finishBenchmarkSessionOperation(session, operation);
+                    if (socket) this.unbindBenchmarkSocket(socket);
+                    return res.json({
+                        success: true,
+                        sessionId: session.id,
+                        restored: true,
+                        message: 'Benchmark session restored'
+                    });
+                };
+                if (!socket) return completeRestore();
+                return this.deliverBenchmarkSocketEvent(socket, 'webgpu-fireworks:config-update', {
+                    ...this.createConfigPayload(config),
+                    benchmarkSessionId: session.id
+                }, delivery => {
+                    if (!delivery.accepted) {
+                        this.finishBenchmarkSessionOperation(session, operation);
+                        return res.status(503).json({
+                            success: false,
+                            code: 'BENCHMARK_CONFIG_DELIVERY_FAILED',
+                            error: 'Benchmark config delivery failed',
+                            reason: delivery.reason
+                        });
+                    }
+                    return completeRestore();
+                });
             } catch (error) {
                 this.api.log(`❌ [FIREWORKS] Error restoring config: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
@@ -1042,13 +2165,17 @@ class FireworksPlugin {
             try {
                 this.api.setConfig('settings', null);
                 this.loadConfig();
-                this.api.emit('webgpu-fireworks:config-update', { config: this.config });
+                this.api.emit('webgpu-fireworks:config-update', this.createConfigPayload());
                 // Restart random timer with new config
                 this.stopRandomTimer();
                 if (this.config.randomEnabled) {
                     this.startRandomTimer();
                 }
-                res.json({ success: true, message: 'Configuration reset to defaults', config: this.config });
+                res.json({
+                    success: true,
+                    message: 'Configuration reset to defaults',
+                    ...this.createConfigPayload()
+                });
             } catch (error) {
                 this.api.log(`❌ [FIREWORKS] Error resetting config: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
@@ -1206,7 +2333,7 @@ class FireworksPlugin {
         );
 
         // Trigger the firework
-        this.triggerFirework({
+        return this.triggerFirework({
             type: 'gift',
             intensity: finalIntensity,
             shape: shape,
@@ -1267,7 +2394,7 @@ class FireworksPlugin {
         this.lastGiftTime.set(userId, now);
 
         // Check if combo is still active
-        if (timeSinceLastGift > this.COMBO_TIMEOUT) {
+        if (timeSinceLastGift > this.config.comboTimeout) {
             // Reset combo
             this.comboState.set(userId, 1);
             return 1.0;
@@ -1314,11 +2441,11 @@ class FireworksPlugin {
         return colors;
     }
 
-    resolveConfiguredColors(explicitColors = null) {
+    resolveConfiguredColors(explicitColors = null, config = this.config) {
         if (Array.isArray(explicitColors) && explicitColors.length > 0) return explicitColors.slice(0, 12);
-        if (this.config.colorMode === 'random') return this.generateRandomColors(3);
-        if (this.config.colorMode === 'rainbow') return this.generateRainbowColors(5);
-        const theme = Array.isArray(this.config.themeColors) ? this.config.themeColors.filter(Boolean).slice(0, 12) : [];
+        if (config.colorMode === 'random') return this.generateRandomColors(3);
+        if (config.colorMode === 'rainbow') return this.generateRainbowColors(5);
+        const theme = Array.isArray(config.themeColors) ? config.themeColors.filter(Boolean).slice(0, 12) : [];
         return theme.length > 0 ? theme : ['#ffffff'];
     }
 
@@ -1372,7 +2499,7 @@ class FireworksPlugin {
 
         for (const keyword of this.config.chatTriggerKeywords) {
             if (message.includes(keyword.toLowerCase())) {
-                this.triggerFirework({
+                return this.triggerFirework({
                     type: 'chat',
                     intensity: 0.5,
                     shape: 'burst',
@@ -1381,9 +2508,9 @@ class FireworksPlugin {
                     username: data.uniqueId || data.username,
                     reason: 'chat'
                 });
-                break;
             }
         }
+        return false;
     }
 
     handleSuperfanEntry(data = {}, options = {}) {
@@ -1418,8 +2545,7 @@ class FireworksPlugin {
             now
         )) return { accepted: false, reason: 'cooldown', identity };
 
-        const rendererStatus = this.getRendererStatus();
-        if (rendererStatus.state !== 'ready') {
+        if (this.getFinaleRendererTargets().length === 0) {
             return { accepted: false, reason: 'renderer-not-ready', identity };
         }
 
@@ -1455,12 +2581,19 @@ class FireworksPlugin {
 
         let finale;
         try {
+            const finaleStyle = effectiveConfig.superfanFinaleStyle === 'inherit'
+                ? effectiveConfig.goalFinaleStyle
+                : effectiveConfig.superfanFinaleStyle;
+            const finaleLength = effectiveConfig.superfanFinaleLength === 'inherit'
+                ? effectiveConfig.goalFinaleLength
+                : effectiveConfig.superfanFinaleLength;
             finale = this.triggerFinale({
-                style: effectiveConfig.goalFinaleStyle,
-                length: effectiveConfig.goalFinaleLength,
+                style: finaleStyle,
+                length: finaleLength,
                 intensity: effectiveConfig.superfanFinaleIntensity,
                 completionNotification,
                 [SUPERFAN_COMPLETION_AUTHORITY]: true,
+                [INTERNAL_FINALE_FALLBACK_STYLE]: effectiveConfig.goalFinaleStyle,
                 eventId,
                 bypassEnabled: options.bypassEnabled === true,
                 ackRequested: true,
@@ -1476,7 +2609,7 @@ class FireworksPlugin {
             return { accepted: false, reason: finale.reason || 'finale-rejected', identity, finale };
         }
 
-        const notificationAccepted = this.scheduleFollowerAnimation({
+        const notificationPayload = {
             username,
             profilePictureUrl: data.profilePictureUrl || data.userProfilePictureUrl || null,
             duration: effectiveConfig.followerAnimationDuration || 3000,
@@ -1486,7 +2619,13 @@ class FireworksPlugin {
             style: effectiveConfig.followerAnimationStyle || 'gradient-purple',
             entrance: effectiveConfig.followerAnimationEntrance || 'scale',
             thankYouText: 'Superfan joined, this firework is for you!'
-        }, 0);
+        };
+        let notificationAccepted = false;
+        try {
+            notificationAccepted = this.api.emit('webgpu-fireworks:follower-animation', notificationPayload) !== false;
+        } catch (error) {
+            this.api.log(`[FIREWORKS] Follower animation emit failed: ${error.message}`, 'warn');
+        }
         if (!notificationAccepted) {
             this.clearPendingSuperfanFinale(eventId, 'notification-rejected');
             return { accepted: false, reason: 'notification-rejected', identity, finale };
@@ -1503,14 +2642,9 @@ class FireworksPlugin {
     }
 
     beginPendingSuperfanFinale({ eventId, identities, identity, acceptedAt, bypassCooldown }) {
-        const telemetryCutoff = Date.now() - 5000;
-        const targetSocketIds = new Set([...this.connectedSockets]
-            .filter(socket => {
-                const telemetry = this.overlayTelemetry.get(socket.id);
-                return telemetry && telemetry.updatedAt >= telemetryCutoff &&
-                    telemetry.benchmark !== true && telemetry.state === 'ready';
-            })
-            .map(socket => socket.id));
+        const targetSocketIds = new Set(
+            this.getFinaleRendererTargets().map(target => target.rendererId)
+        );
         const attempt = {
             eventId,
             identities,
@@ -1581,31 +2715,32 @@ class FireworksPlugin {
         return this.completePendingSuperfanFinale(attempt);
     }
 
-    scheduleFollowerAnimation(payload, delayMs = 0) {
-        if (delayMs <= 0) {
-            try {
-                return this.api.emit('webgpu-fireworks:follower-animation', payload) !== false;
-            } catch (error) {
-                this.api.log(`[FIREWORKS] Follower animation emit failed: ${error.message}`, 'warn');
-                return false;
-            }
-        }
+    scheduleFollowerTimer(callback, delayMs) {
         const timer = setTimeout(() => {
-            this.notificationTimers.delete(timer);
+            this.followerTimers.delete(timer);
+            callback();
+        }, Math.max(0, Number(delayMs) || 0));
+        this.followerTimers.add(timer);
+        return timer;
+    }
+
+    scheduleFollowerAnimation(payload, delayMs = 0) {
+        return this.scheduleFollowerTimer(() => {
             try {
                 this.api.emit('webgpu-fireworks:follower-animation', payload);
             } catch (error) {
                 this.api.log(`[FIREWORKS] Delayed follower animation emit failed: ${error.message}`, 'warn');
             }
         }, delayMs);
-        this.notificationTimers.add(timer);
-        return timer;
     }
 
     /**
      * Handle follow event - celebrate new follower with fireworks
      */
-    handleFollowerEvent(data) {
+    handleFollowerEvent(data = {}, { bypassEnabled = false } = {}) {
+        if ((!this.config.enabled || !this.config.followerFireworksEnabled) && !bypassEnabled) {
+            return { accepted: false, reason: 'disabled' };
+        }
         const username = data.uniqueId || data.username || data.nickname || 'Unknown';
         const profilePictureUrl = data.profilePictureUrl || data.userProfilePictureUrl || null;
 
@@ -1613,7 +2748,7 @@ class FireworksPlugin {
 
         // Show thank you animation if enabled (with delay)
         if (this.config.followerShowAnimation) {
-            const animationDelay = this.config.followerAnimationDelay || 3000;
+            const animationDelay = this.config.followerAnimationDelay ?? 3000;
 
             this.scheduleFollowerAnimation({
                 username: username,
@@ -1636,7 +2771,7 @@ class FireworksPlugin {
 
         // Stagger the rockets slightly for visual effect
         for (let i = 0; i < rocketCount; i++) {
-            setTimeout(() => {
+            this.scheduleFollowerTimer(() => {
                 // Choose a nice shape
                 const shape = shapes[Math.floor(Math.random() * shapes.length)];
 
@@ -1660,6 +2795,7 @@ class FireworksPlugin {
                 });
             }, i * 300); // 300ms delay between each rocket
         }
+        return { accepted: true, reason: 'scheduled', rocketCount };
     }
 
     /**
@@ -1696,32 +2832,41 @@ class FireworksPlugin {
     /**
      * Core firework trigger - emits to overlay
      */
-    triggerFirework(options) {
+    triggerFirework(options, internalDispatchContext = null) {
+        const dispatchContext = internalDispatchContext?.authority === BENCHMARK_DISPATCH_AUTHORITY
+            ? internalDispatchContext
+            : null;
+        const effectiveConfig = dispatchContext?.config || this.config;
+        const spawnPlanner = dispatchContext?.spawnPlanner || this.spawnPlanner;
         // Ensure options object exists
-        options = normalizeFireworkTrigger(options || {}, this.config);
+        options = normalizeFireworkTrigger(options || {}, effectiveConfig);
 
         // Allow bypass of enabled check for manual triggers (tests, API calls)
-        if (!this.config.enabled && !options.bypassEnabled) return;
+        if (!effectiveConfig.enabled && !options.bypassEnabled) {
+            return { accepted: false, reason: 'disabled' };
+        }
 
         // Check queue rate limiting (unless bypass is enabled)
         if (!options.bypassEnabled && !this.shouldAllowFirework()) {
-            return;
+            return { accepted: false, reason: 'rate-limit' };
         }
 
         const policyDecision = evaluateTriggerPolicy({
             trigger: options,
-            config: this.config,
-            health: this.getTriggerHealth()
+            config: effectiveConfig,
+            health: dispatchContext?.trackLiveLoad === false
+                ? { currentFps: 0, activeFireworkCount: 0, queueDepth: 0 }
+                : this.getTriggerHealth()
         });
 
         if (!policyDecision.allowed) {
             this.api.log(`[FIREWORKS] Trigger dropped by stability policy: ${policyDecision.reason}`, 'debug');
-            return;
+            return { accepted: false, reason: policyDecision.reason };
         }
 
-        const plan = this.spawnPlanner.plan({
+        const plan = spawnPlanner.plan({
             seed: options.seed,
-            orientation: this.config.orientation,
+            orientation: effectiveConfig.orientation,
             positionMode: options.positionMode,
             position: options.position,
             origin: options.origin
@@ -1732,9 +2877,9 @@ class FireworksPlugin {
             timestamp: Date.now(),
             type: options.type || 'burst',
             intensity: options.intensity || 1.0,
-            shape: this.config.shapesEnabled === false ? 'burst' : (options.shape || this.config.defaultShape),
-            visualStyle: options.visualStyle || this.config.visualStyle,
-            colors: this.resolveConfiguredColors(options.colors),
+            shape: effectiveConfig.shapesEnabled === false ? 'burst' : (options.shape || effectiveConfig.defaultShape),
+            visualStyle: options.visualStyle || effectiveConfig.visualStyle,
+            colors: this.resolveConfiguredColors(options.colors, effectiveConfig),
             positionMode: options.positionMode,
             position: plan.position,
             origin: plan.origin,
@@ -1754,73 +2899,116 @@ class FireworksPlugin {
             reason: options.reason || 'manual',
 
             // Audio settings
-            playSound: options.playSound !== false && this.config.audioEnabled,
-            rocketSound: this.config.rocketSound,
-            explosionSound: this.config.explosionSound,
-            audioVolume: this.config.audioVolume,
-            crackleFrequency: this.config.crackleFrequency,
-            crackleVolume: this.config.crackleVolume,
+            playSound: dispatchContext?.playSound !== false && options.playSound !== false && effectiveConfig.audioEnabled,
+            rocketSound: effectiveConfig.rocketSound,
+            explosionSound: effectiveConfig.explosionSound,
+            audioVolume: effectiveConfig.audioVolume,
+            crackleFrequency: effectiveConfig.crackleFrequency,
+            crackleVolume: effectiveConfig.crackleVolume,
             crackleEnabled: typeof options.crackleEnabled === 'boolean' ? options.crackleEnabled : undefined,
 
             // Visual settings
-            trailsEnabled: this.config.trailsEnabled,
-            trailLength: this.config.trailLength,
-            glowEnabled: this.config.glowEnabled,
-            particleSizeRange: this.config.particleSizeRange,
-            gravity: this.config.gravity,
-            friction: this.config.friction,
-            windEnabled: this.config.windEnabled,
-            windStrength: this.config.windStrength,
+            trailsEnabled: effectiveConfig.trailsEnabled,
+            trailLength: effectiveConfig.trailLength,
+            glowEnabled: effectiveConfig.glowEnabled,
+            particleSizeRange: effectiveConfig.particleSizeRange,
+            gravity: effectiveConfig.gravity,
+            friction: effectiveConfig.friction,
+            windEnabled: effectiveConfig.windEnabled,
+            windStrength: effectiveConfig.windStrength,
 
             // Avatar settings
-            avatarParticleChance: this.config.avatarParticleChance ?? 0.3,
+            avatarParticleChance: effectiveConfig.avatarParticleChance ?? 0.3,
 
             // Performance settings
-            targetFps: this.config.targetFps || 60,
-            minFps: this.config.minFps || 24,
-            despawnFadeDuration: this.config.despawnFadeDuration || 3.0,
-            adaptivePerformance: this.config.adaptivePerformance !== false,
-            frameSkipEnabled: this.config.frameSkipEnabled !== false,
+            targetFps: effectiveConfig.targetFps || 60,
+            minFps: effectiveConfig.minFps || 24,
+            despawnFadeDuration: effectiveConfig.despawnFadeDuration || 3.0,
+            adaptivePerformance: effectiveConfig.adaptivePerformance !== false,
+            frameSkipEnabled: effectiveConfig.frameSkipEnabled !== false,
 
             // Gift popup settings
-            giftPopupEnabled: this.config.giftPopupEnabled !== false,
-            giftPopupPosition: this.config.giftPopupPosition || 'bottom'
+            giftPopupEnabled: effectiveConfig.giftPopupEnabled !== false,
+            giftPopupPosition: effectiveConfig.giftPopupPosition || 'bottom'
         };
 
-        // Server-side tracking: increment counter and auto-decrement after estimated lifetime.
+        if (dispatchContext) payload.benchmarkSessionId = dispatchContext.benchmarkSessionId;
+
+        if (dispatchContext?.deferDelivery === true) {
+            return { accepted: true, reason: 'prepared', payload };
+        }
+
+        try {
+            const emitted = dispatchContext
+                ? dispatchContext.socket.emit('webgpu-fireworks:trigger', payload)
+                : this.api.emit('webgpu-fireworks:trigger', payload);
+            if (emitted === false) {
+                this.api.log('[FIREWORKS] Trigger emit was rejected by the dispatcher', 'warn');
+                return { accepted: false, reason: 'emit-failed' };
+            }
+        } catch (error) {
+            this.api.log(`[FIREWORKS] Trigger emit failed: ${error.message}`, 'warn');
+            return { accepted: false, reason: 'emit-failed' };
+        }
+
+        // Server-side tracking starts only after the dispatcher accepted the effect.
         // Base lifetime: 3000ms minimum. Intensity multiplier: +2000ms per intensity unit.
         // Capped at 8000ms to avoid counter staying high for unusually long fireworks.
-        this.activeFireworkCount++;
-        const fireworkId = payload.id;
-        const estimatedLifetime = Math.min(8000, 3000 + (payload.intensity || 1) * 2000);
-        const timer = setTimeout(() => {
-            this.activeFireworkCount = Math.max(0, this.activeFireworkCount - 1);
-            this.activeFireworkTimers.delete(fireworkId);
-        }, estimatedLifetime);
-        this.activeFireworkTimers.set(fireworkId, timer);
-
-        this.api.emit('webgpu-fireworks:trigger', payload);
+        if (dispatchContext?.trackLiveLoad !== false) {
+            this.activeFireworkCount++;
+            const fireworkId = payload.id;
+            const estimatedLifetime = Math.min(8000, 3000 + (payload.intensity || 1) * 2000);
+            const timer = setTimeout(() => {
+                this.activeFireworkCount = Math.max(0, this.activeFireworkCount - 1);
+                this.activeFireworkTimers.delete(fireworkId);
+            }, estimatedLifetime);
+            this.activeFireworkTimers.set(fireworkId, timer);
+        }
 
         this.api.log(
             `🎆 [FIREWORKS] Triggered: ${payload.shape} @ (${payload.position.x.toFixed(2)}, ${payload.position.y.toFixed(2)}) ` +
             `intensity=${payload.intensity.toFixed(2)} particles=${payload.particleCount}${policyDecision.reduced ? ' reduced=true' : ''}`,
             'debug'
         );
+
+        return { accepted: true, reason: 'submitted', payload };
     }
 
     /**
      * Trigger finale show (multiple simultaneous fireworks)
      */
+    getPublishedCustomFinale(style, length) {
+        if (!this.showRepository || this.showRepositoryLoadError) {
+            const error = new Error('The custom show repository is unavailable.');
+            error.code = this.showRepositoryLoadError?.code || 'REPOSITORY_UNAVAILABLE';
+            throw error;
+        }
+        const definition = this.showRepository.getPublishedDefinition(style);
+        if (!definition.variants || !Object.prototype.hasOwnProperty.call(definition.variants, length)) {
+            const error = new Error(`The custom show does not define the ${length} variant.`);
+            error.code = 'CUSTOM_VARIANT_UNAVAILABLE';
+            throw error;
+        }
+        return definition;
+    }
+
     triggerFinale(optionsOrIntensity, legacyDuration, legacyBypassEnabled = false) {
         const config = this.config || normalizeConfig();
+        const rawRequest = optionsOrIntensity;
+        const isGoalRequest = rawRequest && typeof rawRequest === 'object' && rawRequest.source === 'goal';
         const isObjectCall = optionsOrIntensity !== null &&
             typeof optionsOrIntensity === 'object' &&
             !Array.isArray(optionsOrIntensity);
+        let configuredFallbackStyle = config.goalFinaleStyle;
         let request;
+        const isTestRequest = isObjectCall && optionsOrIntensity.testRequest === true;
 
         if (isObjectCall) {
             const options = optionsOrIntensity;
             const hasLegacyDuration = options.duration !== undefined && options.length === undefined;
+            if (typeof options[INTERNAL_FINALE_FALLBACK_STYLE] === 'string') {
+                configuredFallbackStyle = options[INTERNAL_FINALE_FALLBACK_STYLE];
+            }
             const authorizedCompletionNotification = options[SUPERFAN_COMPLETION_AUTHORITY] === true
                 ? options.completionNotification
                 : null;
@@ -1835,6 +3023,7 @@ class FireworksPlugin {
             };
             delete request.completionNotification;
             delete request[SUPERFAN_COMPLETION_AUTHORITY];
+            delete request[INTERNAL_FINALE_FALLBACK_STYLE];
             if (authorizedCompletionNotification) {
                 request.completionNotification = authorizedCompletionNotification;
             }
@@ -1863,25 +3052,71 @@ class FireworksPlugin {
         if (!config.enabled && !finale.bypassEnabled) {
             return { accepted: false, reason: 'disabled' };
         }
+        if (isGoalRequest && !config.goalFinaleEnabled && !finale.bypassEnabled) {
+            return {
+                accepted: false,
+                reason: 'goal-finale-disabled',
+                code: 'GOAL_FINALE_DISABLED'
+            };
+        }
 
-        const resolvedStyle = finale.style === 'auto'
-            ? FINALE_STYLES[this.finaleAutoIndex++ % FINALE_STYLES.length]
-            : finale.style;
+        const selection = resolveFinaleSelection({
+            requestedStyle: finale.style,
+            configuredStyle: configuredFallbackStyle,
+            builtInStyles: FINALE_STYLES,
+            isCustomStyle: isCustomFinaleStyleId,
+            drawAuto: () => this.finaleShuffleBag.draw(),
+            loadCustom: style => this.getPublishedCustomFinale(style, finale.length),
+            warnUnavailable: (style, error) => {
+                const reason = error?.code || error?.message || 'UNKNOWN_ERROR';
+                this.api.log(
+                    `[FIREWORKS] Custom finale ${style} is unavailable (${reason}); applying configured fallback.`,
+                    'warn'
+                );
+            }
+        });
+        const resolvedStyle = selection.style;
         const id = finale.id || `finale-${Date.now()}-${finale.seed}-${this.finaleIdCounter++}`;
-        const showPlan = this.finaleShowPlanner.plan({
+        const planOptions = {
             id,
             style: resolvedStyle,
             length: finale.length,
             orientation: config.orientation,
             intensity: finale.intensity,
             seed: finale.seed
-        });
+        };
+        const showPlan = selection.definition
+            ? this.finaleShowPlanner.planDefinition(selection.definition, planOptions)
+            : this.finaleShowPlanner.plan(planOptions);
         const bursts = showPlan.cues.flatMap(cue => cue.launches.map(launch => ({
             ...launch,
             beatAtMs: cue.beatAtMs,
             phase: cue.phase,
             formation: cue.formation
         })));
+
+        const requiresFurryRenderer = resolvedStyle === 'furry-celebration';
+        const connectedReadyRendererTelemetry = this.getReadyRendererTelemetry();
+        const readyRendererTelemetry = connectedReadyRendererTelemetry;
+        const furryRendererReady = readyRendererTelemetry.some(telemetry => (
+            rendererSupportsCapabilities(telemetry)
+        ));
+        if (isTestRequest && readyRendererTelemetry.length === 0) {
+            return {
+                accepted: false,
+                reason: 'renderer-not-ready',
+                code: 'RENDERER_NOT_READY',
+                error: 'A fresh ready WebGPU renderer is required. Open or refresh the OBS browser source.'
+            };
+        }
+        if (isTestRequest && requiresFurryRenderer && !furryRendererReady) {
+            return {
+                accepted: false,
+                reason: 'renderer-upgrade-required',
+                code: 'RENDERER_UPGRADE_REQUIRED',
+                error: RENDERER_UPGRADE_MESSAGE
+            };
+        }
 
         this.api.log(
             `🎆 [FIREWORKS] FINALE! Style: ${resolvedStyle}, Length: ${finale.length}, ` +
@@ -1932,11 +3167,42 @@ class FireworksPlugin {
             payload.requiresRendererReady = request.requiresRendererReady === true;
         }
 
-        const submitted = this.api.emit('webgpu-fireworks:finale', payload);
-        if (submitted === false) {
-            return { ...payload, accepted: false, reason: 'submission-rejected' };
+        const dispatch = this.dispatchFinalePayload(payload, {
+            testRequest: isTestRequest,
+            requiresFurryRenderer,
+            requiresRendererReady: request.requiresRendererReady === true
+        });
+        if (dispatch?.accepted === true) return dispatch;
+        if (dispatch.usedLegacyFallback) {
+            this.api.log(
+                `[WEBGPU FIREWORKS] ${RENDERER_UPGRADE_MESSAGE} Playing the legacy burst fallback for ${id}.`,
+                'warn'
+            );
         }
-        return payload;
+        if (!dispatch.submitted) {
+            return {
+                ...dispatch.payload,
+                accepted: false,
+                reason: dispatch.reason || 'submission-rejected',
+                ...(dispatch.code ? { code: dispatch.code } : {})
+            };
+        }
+        return dispatch.payload;
+    }
+
+    getAutoEligibleFinaleStyleIds() {
+        if (this.showRepository && !this.showRepositoryLoadError) {
+            try {
+                return this.showRepository.getAutoEligibleStyleIds();
+            } catch (error) {
+                this.api.log(
+                    `[FIREWORKS] Auto style repository lookup failed (${error?.code || error?.message || 'UNKNOWN_ERROR'}); ` +
+                    'using built-in finales.',
+                    'warn'
+                );
+            }
+        }
+        return [...FINALE_STYLES];
     }
 
     /**
@@ -1947,7 +3213,7 @@ class FireworksPlugin {
         const intensity = this.config.randomMinIntensity +
             Math.random() * (this.config.randomMaxIntensity - this.config.randomMinIntensity);
 
-        this.triggerFirework({
+        return this.triggerFirework({
             type: 'random',
             intensity: intensity,
             shape: shapes[Math.floor(Math.random() * shapes.length)],
@@ -2015,7 +3281,7 @@ class FireworksPlugin {
                     ? params.colors.split(',').map(c => c.trim())
                     : null;
 
-                this.triggerFirework({
+                return this.triggerFirework({
                     shape: params.shape,
                     visualStyle: params.visualStyle || this.config.visualStyle,
                     intensity: params.intensity,
@@ -2051,7 +3317,7 @@ class FireworksPlugin {
                 }
             },
             execute: async (params) => {
-                this.triggerFinale(params.intensity, params.duration);
+                return this.triggerFinale(params.intensity, params.duration);
             }
         });
 
@@ -2064,6 +3330,7 @@ class FireworksPlugin {
     logRoutes() {
         this.api.log('📍 [FIREWORKS] Routes registered:', 'info');
         this.api.log('   - GET    /webgpu-fireworks/ui', 'info');
+        this.api.log('   - GET    /webgpu-fireworks/designer', 'info');
         this.api.log('   - GET    /webgpu-fireworks/overlay', 'info');
         this.api.log('   - GET    /api/webgpu-fireworks/config', 'info');
         this.api.log('   - POST   /api/webgpu-fireworks/config', 'info');
@@ -2079,7 +3346,9 @@ class FireworksPlugin {
         this.api.log('   - POST   /api/webgpu-fireworks/upload', 'info');
         this.api.log('   - GET    /api/webgpu-fireworks/uploads', 'info');
         this.api.log('   - DELETE /api/webgpu-fireworks/uploads/:filename', 'info');
+        this.api.log('   - POST   /api/webgpu-fireworks/benchmark/start', 'info');
         this.api.log('   - POST   /api/webgpu-fireworks/benchmark/set-preset', 'info');
+        this.api.log('   - POST   /api/webgpu-fireworks/benchmark/trigger', 'info');
         this.api.log('   - GET    /api/webgpu-fireworks/benchmark/fps', 'info');
         this.api.log('   - POST   /api/webgpu-fireworks/benchmark/restore', 'info');
         this.api.log('   - POST   /api/webgpu-fireworks/config/reset', 'info');
@@ -2095,7 +3364,7 @@ class FireworksPlugin {
      * @param {Object} payload - Trigger options
      */
     trigger(type, payload = {}) {
-        this.triggerFirework({
+        return this.triggerFirework({
             type: type,
             ...payload
         });
@@ -2110,7 +3379,7 @@ class FireworksPlugin {
         const giftInfo = this.getGiftInfo(giftId);
         const giftSettings = this.config.giftShapeMappings[giftId] || {};
 
-        this.triggerFirework({
+        return this.triggerFirework({
             type: 'gift',
             shape: giftSettings.shape || this.config.defaultShape,
             colors: giftSettings.colors || null,
@@ -2151,16 +3420,23 @@ class FireworksPlugin {
         this.activeFireworkTimers.clear();
         this.activeFireworkCount = 0;
 
-        // Cancel delayed follower notifications
-        for (const timer of this.notificationTimers) {
+        // Cancel delayed follower callbacks
+        for (const timer of this.followerTimers) {
             clearTimeout(timer);
         }
-        this.notificationTimers.clear();
+        this.followerTimers.clear();
 
         // Cancel pending Superfan acknowledgements without consuming cooldowns.
         for (const eventId of [...this.pendingSuperfanFinales.keys()]) {
             this.clearPendingSuperfanFinale(eventId, 'plugin-destroyed');
         }
+        this.clearAllPendingPreviews();
+
+        this.stopBenchmarkSessionCleanupTimer();
+        for (const sessionId of [...this.benchmarkSessions.keys()]) {
+            this.removeBenchmarkSession(sessionId);
+        }
+        this.benchmarkSocketSessions.clear();
 
         // PluginAPI owns the connection disposer and removes it on unload.
         this.fpsUpdateHandler = null;
@@ -2172,12 +3448,19 @@ class FireworksPlugin {
                 socket.removeAllListeners('webgpu-fireworks:register-overlay');
                 socket.removeAllListeners('webgpu-fireworks:renderer-status');
                 socket.removeAllListeners('webgpu-fireworks:finale-ack');
+                socket.removeAllListeners('webgpu-fireworks:preview-ack');
+                socket.removeAllListeners('webgpu-fireworks:preview-status');
                 socket.removeAllListeners('webgpu-fireworks:active-count-response');
                 socket.removeAllListeners('webgpu-fireworks:interactive-trigger');
             });
             this.connectedSockets.clear();
         }
         this.overlayTelemetry.clear();
+
+        // Repository persistence outlives the plugin instance; clear only runtime references.
+        this.showRepository = null;
+        this.showRepositoryLoadError = null;
+        this.showApiController = null;
 
         this.api.log('🎆 [FIREWORKS] Fireworks Superplugin destroyed', 'info');
     }

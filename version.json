@@ -1,10 +1,10 @@
 {
-  "version": "1.3.33",
-  "releaseDate": "2026-07-17",
+  "version": "1.3.35",
+  "releaseDate": "2026-07-19",
   "status": "stable",
-  "downloadVersion": "1.3.33",
-  "downloadNote": "Version 1.3.33 restores Weather Control OBS overlay recovery after app and plugin restarts and refreshes localized plugin tutorials.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.33",
+  "downloadVersion": "1.3.35",
+  "downloadNote": "Version 1.3.35 releases WebGPU Fireworks 3.1.0 with controlled 3D depth and a new Boykisser-led Furry Celebration choreography.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.35",
   "oneLineInstaller": {
     "windows": "$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))",
     "macos": "curl -fsSL https://ltth.app/install/install.sh | bash",
@@ -19,6 +19,27 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.3.35": {
+      "date": "2026-07-19",
+      "changes": [
+        "NEW: Furry Celebration uses controlled far, mid, and near WebGPU particle depth with a fixed camera and perspective-safe glyphs",
+        "NEW: A procedural Boykisser/Silly Cat glyph leads every Furry cue and closes as a centered Hero cat with rainbow and trans-color halos",
+        "IMPROVED: Renderer protocol 3 advertises depth3d-v1 and boykisser-v1 capabilities with actionable OBS refresh guidance",
+        "IMPROVED: Older connected overlays retain a playable legacy Furry burst fallback while current overlays render the full 3D plan",
+        "IMPROVED: WebGPU Fireworks plugin version advanced to 3.1.0 and active release surfaces aligned to 1.3.35"
+      ]
+    },
+    "1.3.34": {
+      "date": "2026-07-19",
+      "changes": [
+        "NEW: Five premium finales expand WebGPU Fireworks to nine built-in shows and 27 curated short, medium, and long variants",
+        "NEW: PyroDSL, the visual Show Designer, and a revisioned Custom Show API add validated authoring, publishing, import, and export",
+        "NEW: GPU primitives and curated glyphs create layered professional shells with deterministic particle-budget degradation",
+        "IMPROVED: Explicit previews, Goal and Superfan overrides, and snapshot-safe finale queues integrate built-in and custom shows",
+        "IMPROVED: Show and Designer surfaces are localized in German, English, Spanish, and French",
+        "IMPROVED: WebGPU Fireworks plugin version advanced to 3.0.0 and active release surfaces aligned to 1.3.34"
+      ]
+    },
     "1.3.33": {
       "date": "2026-07-17",
       "changes": [

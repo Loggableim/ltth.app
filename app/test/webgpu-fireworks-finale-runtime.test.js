@@ -1,5 +1,6 @@
 const { FinaleShowPlanner } = require('../plugins/webgpu-fireworks/lib/finale-show-planner');
 const { AudioManager, WebGPUFireworksEngine } = require('../plugins/webgpu-fireworks/gpu/engine');
+const SpawnCommandPolicy = require('../plugins/webgpu-fireworks/gpu/spawn-command-policy');
 
 function makeRuntime(now = 10000) {
   const engine = Object.create(WebGPUFireworksEngine.prototype);
@@ -59,6 +60,7 @@ function tinyPlan(id, overrides = {}) {
     style: overrides.style || 'classic-crescendo',
     length: 'short',
     durationMs: overrides.durationMs || 3000,
+    metadata: overrides.metadata,
     seed: 1,
     cues: overrides.cues || [{
       beatAtMs: 1500,
@@ -451,26 +453,50 @@ describe('WebGPU choreographed finale runtime', () => {
     ['classic-crescendo', 'fan'],
     ['symmetric-salute', 'triple-salute'],
     ['thunder-finale', 'finale-wave-2']
-  ])('synchronizes every %s %s launch to its cue explosion beat', (style, formation) => {
+  ])('synchronizes every %s %s V2 shell to its cue explosion beat', (style, formation) => {
     const engine = makeRuntime(20000);
     const showPlan = plan(style, 'medium', style);
     engine.handleFinale({ id: style, intensity: 4, showPlan });
 
     const cue = showPlan.cues.find(item => item.formation === formation);
-    const events = engine.timelineQueue.filter(event =>
-      event.type === 'finale-launch' && event.payload.cueBeatAtMs === cue.beatAtMs
+    const layerEvents = engine.timelineQueue.filter(event =>
+      event.type === 'finale-v2-layer' && event.cueId === cue.id
     );
-    expect(events).toHaveLength(cue.launches.length);
-    expect(new Set(events.map(event => event.payload.plannedExplodeAt))).toEqual(new Set([
+    const coreBeatEvents = layerEvents.filter(event => event.layer.delayMs === 0);
+    expect(new Set(coreBeatEvents.map(event => event.shellId)).size).toBe(cue.shells.length);
+    expect(new Set(coreBeatEvents.map(event => event.due))).toEqual(new Set([
       engine.currentFinale.startedAt + cue.beatAtMs
     ]));
-    for (const event of events) {
-      const targetY = event.payload.position.y * engine.baseHeight;
+    const rockets = engine.timelineQueue.filter(event =>
+      event.type === 'finale-v2-rocket' && event.cueId === cue.id
+    );
+    expect(rockets).toHaveLength(cue.shells.filter(shell => shell.launchMode === 'rocket').length);
+    for (const event of rockets) {
+      const targetY = event.shell.target.y * engine.baseHeight;
       const expectedFlightMs = engine.calculateFlightDuration(targetY) * 1000;
-      expect(event.payload.plannedExplodeAt - event.payload.plannedLaunchAt).toBeCloseTo(expectedFlightMs, 6);
-      expect(event.due).toBeCloseTo(event.payload.plannedLaunchAt, 6);
+      expect(event.flightDurationMs).toBe(Math.round(expectedFlightMs));
+      expect(event.due + event.flightDurationMs).toBeCloseTo(engine.currentFinale.startedAt + cue.beatAtMs, 6);
       expect(event.finaleId).toBe(style);
     }
+  });
+
+  test('keeps the compiled custom show name snapshot in active finale telemetry', () => {
+    const engine = makeRuntime(10000);
+    const customStyle = 'custom:00000000-0000-4000-8000-000000000504';
+    const showPlan = tinyPlan('custom-runtime-name', {
+      style: customStyle,
+      metadata: { name: 'Published Runtime Name' }
+    });
+
+    expect(engine.handleFinale({ id: 'custom-runtime-name', showPlan }))
+      .toMatchObject({ accepted: true, queued: false });
+    showPlan.metadata.name = 'Later Catalog Name';
+
+    expect(engine.currentFinale.name).toBe('Published Runtime Name');
+    expect(engine.getFinaleTelemetry()).toMatchObject({
+      finaleStyle: customStyle,
+      finaleName: 'Published Runtime Name'
+    });
   });
 
   test('uses different launch times for different target heights but one exact explodeAt', () => {
@@ -491,21 +517,31 @@ describe('WebGPU choreographed finale runtime', () => {
     expect(launches[0].payload.plannedExplodeAt).toBe(launches[1].payload.plannedExplodeAt);
   });
 
-  test('reports build, highlight, breath and finale phases without adding a breath explosion', () => {
+  test('reports the actual V2 phase sequence without a synthetic breath', () => {
     const engine = makeRuntime(10000);
     const showPlan = plan('classic-crescendo', 'short', 'phases');
     engine.handleFinale({ id: 'phases', showPlan });
+    const phaseEvents = engine.timelineQueue.filter(event => event.type === 'finale-v2-phase');
+
+    expect(phaseEvents.map(event => event.phase)).toEqual(['opening', 'build', 'highlight', 'finale']);
+    expect(phaseEvents.some(event => event.phase === 'breath')).toBe(false);
+  });
+
+  test('keeps the synthetic midpoint breath on the V1 path only', () => {
+    const engine = makeRuntime(10000);
+    const showPlan = tinyPlan('v1-phases', {
+      durationMs: 5000,
+      cues: [
+        { beatAtMs: 1000, phase: 'opening', formation: 'single', launches: [] },
+        { beatAtMs: 2000, phase: 'highlight', formation: 'accent', launches: [] },
+        { beatAtMs: 4000, phase: 'finale', formation: 'wave', launches: [] }
+      ]
+    });
+    engine.handleFinale({ id: 'v1-phases', showPlan });
     const phaseEvents = engine.timelineQueue.filter(event => event.type === 'finale-phase');
 
-    expect(phaseEvents.map(event => event.phase)).toEqual(['build', 'highlight', 'breath', 'finale']);
-    const breath = phaseEvents.find(event => event.phase === 'breath');
-    const highlightBeats = showPlan.cues.filter(cue => cue.phase === 'highlight').map(cue => cue.beatAtMs);
-    const finaleBeats = showPlan.cues.filter(cue => cue.phase === 'finale').map(cue => cue.beatAtMs);
-    expect(breath.due).toBeGreaterThan(engine.currentFinale.startedAt + Math.max(...highlightBeats));
-    expect(breath.due).toBeLessThan(engine.currentFinale.startedAt + Math.min(...finaleBeats));
-    expect(engine.timelineQueue.some(event => event.type === 'finale-launch' &&
-      event.payload.plannedExplodeAt > engine.currentFinale.startedAt + Math.max(...highlightBeats) &&
-      event.payload.plannedExplodeAt < engine.currentFinale.startedAt + Math.min(...finaleBeats))).toBe(false);
+    expect(phaseEvents.map(event => event.phase)).toEqual(['highlight', 'breath', 'finale']);
+    expect(phaseEvents.find(event => event.phase === 'breath').due).toBe(13000);
   });
 
   test('keeps legacy burst payloads playable through the same FIFO queue', () => {
@@ -580,56 +616,49 @@ describe('WebGPU choreographed finale runtime', () => {
   });
 
   test.each([
-    ['reduced', false],
-    ['minimal', true],
-    ['toaster', true]
-  ])('degrades %s visuals without changing planned timing or formations', (mode, disablesCrackle) => {
+    ['reduced', 2],
+    ['minimal', 5],
+    ['toaster', 6]
+  ])('degrades %s V2 layers without changing planned timing or formations', (mode, expectedTier) => {
     const normal = makeRuntime(10000);
     const constrained = makeRuntime(10000);
     const showPlan = plan('thunder-finale', 'short', `quality-${mode}`);
     normal.handleFinale({ id: `quality-${mode}`, intensity: 4, showPlan });
     constrained.handleFinale({ id: `quality-${mode}`, intensity: 4, showPlan });
-    const normalEvents = normal.timelineQueue.filter(event => event.type === 'finale-launch');
-    const constrainedEvents = constrained.timelineQueue.filter(event => event.type === 'finale-launch');
+    const normalEvents = normal.timelineQueue.filter(event => event.type === 'finale-v2-layer');
+    const constrainedEvents = constrained.timelineQueue.filter(event => event.type === 'finale-v2-layer');
 
-    expect(constrainedEvents.map(event => [event.due, event.payload.plannedExplodeAt, event.payload.formation]))
-      .toEqual(normalEvents.map(event => [event.due, event.payload.plannedExplodeAt, event.payload.formation]));
+    expect(constrainedEvents.map(event => [event.due, event.cueId, event.shellId, event.context.origin, event.context.target]))
+      .toEqual(normalEvents.map(event => [event.due, event.cueId, event.shellId, event.context.origin, event.context.target]));
     expect(constrainedEvents).toHaveLength(normalEvents.length);
-    expect(constrainedEvents.map(event => event.payload)).toEqual(normalEvents.map(event => event.payload));
+    expect(constrainedEvents.map(event => event.layer)).toEqual(normalEvents.map(event => event.layer));
 
     if (mode === 'toaster') constrained.config.toasterMode = true;
     else constrained.performanceMode = mode;
-    const normalPayloads = normalEvents.map(event => normal.materializeFinalePayload(event.payload));
-    const constrainedPayloads = constrainedEvents.map(event => constrained.materializeFinalePayload(event.payload));
-    expect(constrainedPayloads[0].particleCount).toBeLessThan(normalPayloads[0].particleCount);
-    expect(constrainedPayloads[0].particleSizeRange[1]).toBeLessThan(normalPayloads[0].particleSizeRange[1]);
-    expect(constrainedPayloads[0].shape).toBe(normalPayloads[0].shape);
-    expect(constrainedPayloads[0].colors).toEqual(normalPayloads[0].colors);
-    expect(constrainedPayloads[0].soundRole).toBe(normalPayloads[0].soundRole);
-    if (disablesCrackle) expect(constrainedPayloads.every(payload => payload.crackleEnabled === false)).toBe(true);
-    else expect(constrainedPayloads.filter(payload => payload.crackleEnabled)).toHaveLength(
-      Math.floor(normalPayloads.filter(payload => payload.crackleEnabled).length / 2)
-    );
+    const normalPolicy = normal.getAdaptiveLayerPolicy(normalEvents[0].context.activeLayerLoad);
+    const constrainedPolicy = constrained.getAdaptiveLayerPolicy(constrainedEvents[0].context.activeLayerLoad);
+    expect(normalPolicy.tier).toBe(0);
+    expect(constrainedPolicy.tier).toBe(expectedTier);
+    const source = constrainedEvents.find(event => event.layer.priority === 'decorative') || constrainedEvents[0];
+    const degraded = SpawnCommandPolicy.degradeLayerForPolicy(source.layer, constrainedPolicy);
+    if (source.layer.priority === 'decorative' && expectedTier >= 5) expect(degraded.layer).toBeNull();
+    else expect(degraded.layer?.density || 0).toBeLessThanOrEqual(source.layer.density);
   });
 
-  test('applies the current performance mode when a later finale cue launches', () => {
+  test('applies the current performance mode when a later V2 layer submits', () => {
     const engine = makeRuntime(10000);
     const showPlan = plan('thunder-finale', 'short', 'dynamic-quality');
     engine.handleFinale({ id: 'dynamic-quality', intensity: 4, showPlan });
-    const event = engine.timelineQueue.find(item => item.type === 'finale-launch');
-    const normal = engine.materializeFinalePayload(event.payload);
+    const event = engine.timelineQueue.find(item => item.type === 'finale-v2-layer');
+    const eventSnapshot = JSON.parse(JSON.stringify(event));
+    const normal = engine.getAdaptiveLayerPolicy(event.context.activeLayerLoad);
 
     engine.performanceMode = 'minimal';
-    const degraded = engine.materializeFinalePayload(event.payload);
+    const degraded = engine.getAdaptiveLayerPolicy(event.context.activeLayerLoad);
 
-    expect(degraded).toMatchObject({
-      plannedLaunchAt: normal.plannedLaunchAt,
-      plannedExplodeAt: normal.plannedExplodeAt,
-      formation: normal.formation,
-      crackleEnabled: false
-    });
-    expect(degraded.particleCount).toBeLessThan(normal.particleCount);
-    expect(event.payload).not.toHaveProperty('particleCount');
+    expect(normal.tier).toBe(0);
+    expect(degraded.tier).toBe(5);
+    expect(event).toEqual(eventSnapshot);
   });
 
   test('keeps planned explodeAt through asynchronous trigger preparation', async () => {
@@ -647,6 +676,35 @@ describe('WebGPU choreographed finale runtime', () => {
     expect(plan).toMatchObject({ finaleId: 'show', launchAt: 12000, explodeAt: 13550, flightDuration: 1.55 });
     expect(plan.explosion).toMatchObject({ shape: 'star', colors: ['#abcdef'], soundRole: 'accent' });
     expect(engine.timelineQueue.filter(event => event.plan === plan).every(event => event.finaleId === 'show')).toBe(true);
+  });
+
+  test('does not enqueue a benchmark trigger whose admission expires during preparation', async () => {
+    const engine = makeRuntime(10000);
+    const dateNow = jest.spyOn(Date, 'now').mockReturnValue(1000);
+    let finishPreparation;
+    engine.prepareImages = jest.fn(() => new Promise(resolve => {
+      finishPreparation = resolve;
+    }));
+    try {
+      const admission = engine.handleTrigger({
+        id: 'late-benchmark',
+        benchmarkSessionId: '11111111-1111-4111-8111-111111111111',
+        benchmarkAdmissionDeadline: 1001,
+        position: { x: 0.5, y: 0.25 },
+        origin: { x: 0.5, y: 1.02 }
+      });
+      dateNow.mockReturnValue(1002);
+      finishPreparation({ giftTexture: 0, avatarTexture: 0, avatarChance: 0.3 });
+
+      await expect(admission).resolves.toMatchObject({
+        cancelled: true,
+        reason: 'admission-expired'
+      });
+      expect(engine.timelineQueue).toHaveLength(0);
+      expect(engine.effectPlans.size).toBe(0);
+    } finally {
+      dateNow.mockRestore();
+    }
   });
 
   test('caps the last planned particle lifetime at the finale tail boundary', async () => {

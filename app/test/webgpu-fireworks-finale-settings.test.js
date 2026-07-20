@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const FireworksPlugin = require('../plugins/webgpu-fireworks/main');
+const { CONFIG_ENUMS } = require('../plugins/webgpu-fireworks/lib/config-schema');
 
 const pluginRoot = path.join(__dirname, '..', 'plugins', 'webgpu-fireworks');
 const read = relative => fs.readFileSync(path.join(pluginRoot, relative), 'utf8');
@@ -12,7 +13,18 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
 
     expect(html).toContain('id="finale-style"');
     expect(html).toContain('id="finale-length"');
-    for (const style of ['auto', 'classic-crescendo', 'symmetric-salute', 'sky-ballet', 'thunder-finale']) {
+    for (const style of [
+      'auto',
+      'classic-crescendo',
+      'symmetric-salute',
+      'sky-ballet',
+      'thunder-finale',
+      'nishiki-kamuro',
+      'aurora-cathedral',
+      'royal-brocade',
+      'phoenix-ascension',
+      'furry-celebration'
+    ]) {
       expect(html).toContain(`<option value="${style}"`);
     }
     for (const length of ['short', 'medium', 'long']) {
@@ -20,27 +32,41 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
     }
     expect(html).toMatch(/<option value="auto"[^>]*selected/);
     expect(html).toMatch(/<option value="medium"[^>]*selected/);
+    expect(html).toContain('/plugins/webgpu-fireworks/ui/show-style-options.js');
+    expect(html).toContain('/plugins/webgpu-fireworks/ui/settings-contract.js');
+    expect(html.indexOf('/plugins/webgpu-fireworks/ui/settings-contract.js'))
+      .toBeLessThan(html.indexOf('/plugins/webgpu-fireworks/ui/settings.js'));
+    expect(html).toContain('href="/webgpu-fireworks/designer"');
   });
 
   test('binds finale selectors to config and sends the exact selected object from the test button', () => {
     const source = read('ui/settings.js');
     const triggerSource = source.slice(source.indexOf('async function triggerFinale()'), source.indexOf('async function testSuperfanFinale()'));
+    const requestSource = source.slice(source.indexOf('async function requestJson('), source.indexOf('function finaleSelectorLabels()'));
 
-    expect(source).toContain("document.getElementById('finale-style').value = config.goalFinaleStyle || 'auto'");
-    expect(source).toContain("document.getElementById('finale-length').value = config.goalFinaleLength || 'medium'");
+    expect(source).toContain("document.getElementById('finale-style').value = config.goalFinaleStyle");
+    expect(source).toContain("document.getElementById('finale-length').value = config.goalFinaleLength");
     expect(source).toContain('config.goalFinaleStyle = this.value');
     expect(source).toContain('config.goalFinaleLength = this.value');
+    expect(source).toContain('refreshFinaleShowSelectors');
     expect(triggerSource).toContain("document.getElementById('finale-style').value");
     expect(triggerSource).toContain("document.getElementById('finale-length').value");
     expect(triggerSource).toContain('style: style');
     expect(triggerSource).toContain('length: length');
     expect(triggerSource).toContain('intensity: intensity');
+    expect(triggerSource).toContain('testRequest: true');
+    expect(triggerSource).toContain("requestJson('/api/webgpu-fireworks/finale'");
+    expect(requestSource).toContain('!response.ok');
+    expect(requestSource).toContain('payload?.success !== true');
+    expect(requestSource).toContain('payload.accepted === false');
+    expect(triggerSource).toContain('renderer_upgrade_required');
     expect(triggerSource).not.toContain('duration');
   });
 
   test('renders active finale, phase and queue telemetry in the runtime card', () => {
     const html = read('ui/settings.html');
     const source = read('ui/settings.js');
+    const helper = read('ui/show-style-options.js');
 
     expect(html).toContain('id="webgpu-finale-active"');
     expect(html).toContain('id="webgpu-finale-phase"');
@@ -48,12 +74,15 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
     expect(source).toContain("document.getElementById('webgpu-finale-active')");
     expect(source).toContain("document.getElementById('webgpu-finale-phase')");
     expect(source).toContain("document.getElementById('webgpu-finale-queue')");
-    expect(source).toContain('renderer.finaleStyle');
-    expect(source).toContain('renderer.finalePhase');
-    expect(source).toContain('renderer.finaleQueueLength');
+    expect(source).toContain('showOptions.formatRuntimeFinaleStatus(renderer');
+    expect(helper).toContain('renderer.finaleStyle');
+    expect(helper).toContain('renderer.finalePhase');
+    expect(helper).toContain('renderer.finaleQueueLength');
   });
 
   test('sanitizes finale renderer telemetry and exposes idle offline defaults', () => {
+    const customStyle = 'custom:00000000-0000-4000-8000-000000000503';
+    const finaleName = `  ${'Runtime custom show '.repeat(20)}  `;
     let connectionHandler;
     const api = {
       getPluginDataDir: () => __dirname,
@@ -71,11 +100,17 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
       on: jest.fn((event, handler) => handlers.set(event, handler))
     };
     connectionHandler(socket);
+    plugin.overlayTelemetry.set(socket.id, {
+      registered: true,
+      benchmark: false,
+      statusUpdatedAt: Date.now()
+    });
     handlers.get('webgpu-fireworks:renderer-status')({
       state: 'ready',
       finaleActive: true,
       finaleId: 'goal:likes:100',
-      finaleStyle: 'sky-ballet',
+      finaleStyle: customStyle,
+      finaleName,
       finaleLength: 'long',
       finalePhase: 'highlight',
       finaleQueueLength: 7.9,
@@ -85,18 +120,27 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
     expect(plugin.getRendererStatus()).toMatchObject({
       finaleActive: true,
       finaleId: 'goal:likes:100',
-      finaleStyle: 'sky-ballet',
+      finaleStyle: customStyle,
+      finaleName: finaleName.trim().slice(0, 200),
       finaleLength: 'long',
       finalePhase: 'highlight',
       finaleQueueLength: 7,
       finaleError: 'recoverable renderer fault'
     });
 
+    handlers.get('webgpu-fireworks:renderer-status')({
+      state: 'ready',
+      finaleStyle: 'x'.repeat(65),
+      finaleName: '   '
+    });
+    expect(plugin.getRendererStatus()).toMatchObject({ finaleStyle: null, finaleName: null });
+
     plugin.overlayTelemetry.clear();
     expect(plugin.getRendererStatus()).toMatchObject({
       finaleActive: false,
       finaleId: null,
       finaleStyle: null,
+      finaleName: null,
       finaleLength: null,
       finalePhase: 'idle',
       finaleQueueLength: 0,
@@ -106,7 +150,7 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
 
   test.each(['de', 'en', 'es', 'fr'])('%s locale defines finale choreography labels', locale => {
     const parsed = JSON.parse(read(`locales/${locale}.json`));
-    const translations = parsed.webgpu_fireworks;
+    const translations = parsed.plugins['webgpu-fireworks'].webgpu_fireworks;
     for (const key of [
       'finale_style', 'finale_length', 'finale_style_auto', 'finale_style_classic_crescendo',
       'finale_style_symmetric_salute', 'finale_style_sky_ballet', 'finale_style_thunder_finale',
@@ -118,8 +162,16 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
     }
   });
 
+  test('keeps the OBS refresh warning visible for a ready but outdated renderer', () => {
+    const source = read('ui/settings.js');
+
+    expect(source).toContain('renderer.upgradeRequired === true');
+    expect(source).toContain('renderer.upgradeReason');
+    expect(source).toContain('renderer_upgrade_required');
+  });
+
   test('uses accurate German finale labels', () => {
-    const de = JSON.parse(read('locales/de.json')).webgpu_fireworks;
+    const de = JSON.parse(read('locales/de.json')).plugins['webgpu-fireworks'].webgpu_fireworks;
     expect(de).toMatchObject({
       finale_style: 'Showstil',
       finale_length: 'Showlänge',
@@ -131,5 +183,19 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
       finale_phase: 'Phase',
       finale_queue: 'Warteschlange'
     });
+  });
+
+  test('uses only the injected backend descriptor for custom finale IDs', () => {
+    const helperSource = read('ui/show-style-options.js');
+    expect(helperSource).not.toContain('CUSTOM_STYLE_PATTERN');
+    expect(helperSource).not.toMatch(/\[0-9a-f\]\{8\}.*\[0-9a-f\]\{12\}/i);
+
+    jest.resetModules();
+    const showOptions = require('../plugins/webgpu-fireworks/ui/show-style-options');
+    const validId = 'custom:00000000-0000-4000-8000-000000000503';
+    expect(showOptions.isCustomStyleId(validId)).toBe(false);
+    expect(showOptions.setCustomStyleContract(CONFIG_ENUMS.finaleStyle)).toBe(true);
+    expect(showOptions.isCustomStyleId(validId)).toBe(true);
+    expect(showOptions.isCustomStyleId('custom:not-a-uuid')).toBe(false);
   });
 });

@@ -10,7 +10,7 @@ Aktiviere das Plugin und verwende diese URL in OBS:
 http://localhost:3000/overlay/coincup?transparent=1
 ```
 
-Die Browser Source benötigt keinen Hintergrund. Die Darstellung reagiert auf 16:9 und 9:16; die Glasposition sowie Größe werden in der Steuerung gespeichert. Optionale Parameter sind `showCounter=0|1`, `maxCoins=<20-600>`, `scale=<0.25-3>` und `debug=0|1`.
+Die Browser Source benötigt keinen Hintergrund. Die Darstellung reagiert auf 16:9 und 9:16; die Glasposition sowie Größe werden in der Steuerung gespeichert. Optionale Parameter sind `showCounter=0|1`, `maxCoins=<20-3000>`, `scale=<0.25-3>` und `debug=0|1`.
 
 ## Steuerung
 
@@ -20,13 +20,13 @@ Die Browser Source benötigt keinen Hintergrund. Die Darstellung reagiert auf 16
 - Test Gift und Add 100 Coins ohne TikTok-Livestream
 - Reset Coin Jar und Clear event cache
 - Overlay-Vorschau und kopierbare Browser-Source-URL
-- Becherlayout, Counter, Icon-Skalierung, Physik, Persistenz und Sound
+- Becherlayout, Counter, Icon-Skalierung, feste Geschenkgrößen, Physik, Persistenz und Sound
 
 ## Geschenk- und Combo-Verhalten
 
 Der Backend-Kern akzeptiert nur endliche positive Werte und berechnet `diamondValue × repeatCount`. Er dedupliziert abgeschlossene `eventId`s und merkt bei laufenden Combos nur den größten Zwischenstand. Erst das Endereignis addiert die Coins. Fehlt es, wird der letzte Stand nach einer kurzen Inaktivität genau einmal finalisiert.
 
-Die visuelle Menge ist `ceil(sqrt(value))`, mindestens 1 und maximal 100. Sie begrenzt nur die Darstellung, nie den echten Gesamtwert. Ab dem konfigurierten Maximum von standardmäßig 300 Matter-Körpern verdichtet das Overlay kleine Repräsentationen. Ist der Becher optisch voll, fallen weitere Icons seitlich in die restliche Szene.
+Die visuelle Menge ist `ceil(sqrt(value))`, mindestens 1 und maximal 100. Sie begrenzt nur die Darstellung, nie den echten Gesamtwert. Jedes Geschenk erhält eine feste, im Admin-UI einstellbare Pixelgröße für seinen Wertbereich von `1 Coin` bis `5000+ Coins`; die globale Icon-Skalierung wirkt auf alle Bereiche gleichermaßen. Ab dem konfigurierten Maximum von standardmäßig 300 Matter-Körpern (maximal 3000) verdichtet das Overlay kleine Repräsentationen. Ist der Becher optisch voll, fallen weitere Icons seitlich in die restliche Szene.
 
 ## Persistenz und Reset
 

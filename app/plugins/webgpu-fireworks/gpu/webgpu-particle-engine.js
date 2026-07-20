@@ -5,10 +5,150 @@
  * generation, physics, lifetime management, trail history, active compaction
  * and indirect draw counts are produced by WGSL compute passes.
  */
+const SpawnCommandPolicy = typeof module !== 'undefined' && module.exports
+    ? require('./spawn-command-policy')
+    : globalThis.WebGPUFireworksSpawnCommandPolicy;
+const VisibleEnvelope = typeof module !== 'undefined' && module.exports
+    ? require('./visible-envelope')
+    : globalThis.WebGPUFireworksVisibleEnvelope;
+const BoykisserGeometry = typeof module !== 'undefined' && module.exports
+    ? require('./boykisser-geometry')
+    : globalThis.WebGPUFireworksBoykisserGeometry;
+const missingVisibleEnvelope = () => {
+    throw new Error('visible-envelope.js must load before WebGPUParticleEngine is used.');
+};
+const {
+    V2_PRIMITIVE_IDS,
+    V2_GLYPH_IDS,
+    ENVELOPE_FLAG_BITS,
+    ENVELOPE_PROFILES,
+    fitCorrelatedCommands,
+    applyCorrelationTransform
+} = VisibleEnvelope || {
+    V2_PRIMITIVE_IDS: Object.freeze({}),
+    V2_GLYPH_IDS: Object.freeze({}),
+    ENVELOPE_FLAG_BITS: Object.freeze({
+        TRAIL: 1 << 0,
+        SPLIT_REQUESTED: 1 << 1,
+        STROBE: 1 << 3,
+        ROCKET_AVATAR_HEAD: 1 << 14,
+        VECTOR_HERO: 1 << 7,
+        V2_MARKER: 1 << 15
+    }),
+    ENVELOPE_PROFILES: Object.freeze({
+        projection: Object.freeze({ cameraDistance: 4, minimumDenominator: 2, velocityUnit: 218 })
+    }),
+    fitCorrelatedCommands: missingVisibleEnvelope,
+    applyCorrelationTransform: missingVisibleEnvelope
+};
+const V2_TRAIL = ENVELOPE_FLAG_BITS.TRAIL;
+const buildBoykisserWgsl = BoykisserGeometry?.buildBoykisserWgsl || (() => {
+    throw new Error('boykisser-geometry.js must load before WebGPUParticleEngine is used.');
+});
+const BOYKISSER_VECTOR = BoykisserGeometry?.BOYKISSER_VECTOR || Object.freeze({
+    aspectRatio: 2452 / 3259,
+    viewportFraction: 0.84
+});
+const V2_SPLIT_REQUESTED = ENVELOPE_FLAG_BITS.SPLIT_REQUESTED;
+const V2_STROBE = ENVELOPE_FLAG_BITS.STROBE;
+const V2_VECTOR_HERO = ENVELOPE_FLAG_BITS.VECTOR_HERO || (1 << 7);
+const V2_MARKER = ENVELOPE_FLAG_BITS.V2_MARKER;
+const V2_VECTOR_HERO_MIN_GLYPH_EXTENT = 0.5;
+const DEPTH_METADATA_MARKER = 1 << 3;
+const DEPTH_BUCKET_COUNT = 3;
+const ATLAS_SLOT_COUNT = 64;
+const EXTERNAL_ATLAS_SLOT_COUNT = ATLAS_SLOT_COUNT - 1;
+const ATLAS_RELEASE_GRACE_MS = 1_000;
+const MAX_INACTIVE_SPAWN_OWNERS = 4_096;
+
+function clampColorComponent(value) {
+    const component = Number(value);
+    if (!Number.isFinite(component)) return 0;
+    return Math.max(0, Math.min(1, component));
+}
+
+function nonnegativeFinite(value) {
+    const number = Number(value);
+    return Number.isFinite(number) ? Math.max(0, number) : 0;
+}
+
+function finiteOrZero(value) {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : 0;
+}
+
+function deeplyFreeze(value) {
+    if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
+    Object.getOwnPropertyNames(value).forEach(key => deeplyFreeze(value[key]));
+    return Object.freeze(value);
+}
+
+function isDeeplyFrozen(value, seen = new Set()) {
+    if (!value || typeof value !== 'object' || seen.has(value)) return true;
+    if (!Object.isFrozen(value)) return false;
+    seen.add(value);
+    return Object.getOwnPropertyNames(value).every(key => isDeeplyFrozen(value[key], seen));
+}
+
+function parseColor(color) {
+    if (Array.isArray(color)) {
+        if (color.length < 3) return [1, 1, 1, 1];
+        return [
+            clampColorComponent(color[0]),
+            clampColorComponent(color[1]),
+            clampColorComponent(color[2]),
+            color.length > 3 ? clampColorComponent(color[3]) : 1
+        ];
+    }
+
+    const value = String(color);
+    const shortHex = /^#([a-f\d])([a-f\d])([a-f\d])$/i.exec(value);
+    if (shortHex) {
+        return [
+            parseInt(shortHex[1] + shortHex[1], 16) / 255,
+            parseInt(shortHex[2] + shortHex[2], 16) / 255,
+            parseInt(shortHex[3] + shortHex[3], 16) / 255,
+            1
+        ];
+    }
+
+    const hex = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})?$/i.exec(value);
+    if (hex) {
+        return [
+            parseInt(hex[1], 16) / 255,
+            parseInt(hex[2], 16) / 255,
+            parseInt(hex[3], 16) / 255,
+            hex[4] ? parseInt(hex[4], 16) / 255 : 1
+        ];
+    }
+
+    const hsl = /^hsl\(\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))\s*,\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))%\s*,\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))%\s*\)$/i.exec(value);
+    const hsla = /^hsla\(\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))\s*,\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))%\s*,\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))%\s*,\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))\s*\)$/i.exec(value);
+    const match = hsl || hsla;
+    if (!match) return [1, 1, 1, 1];
+
+    const hue = Number(match[1]);
+    if (!Number.isFinite(hue)) return [1, 1, 1, 1];
+    const h = ((hue % 360) + 360) % 360 / 360;
+    const s = clampColorComponent(Number(match[2]) / 100);
+    const l = clampColorComponent(Number(match[3]) / 100);
+    const f = n => {
+        const k = (n + h * 12) % 12;
+        return l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    };
+    return [f(0), f(8), f(4), hsla ? clampColorComponent(match[4]) : 1];
+}
+
 class WebGPUParticleEngine {
     constructor(canvas, options = {}) {
         this.canvas = canvas;
         this.maxParticles = Math.max(256, Number(options.maxParticles) || 8192);
+        this.particleStride = 96;
+        this.resourceGeneration = 0;
+        this.capacityResources = null;
+        this.pendingCapacityResources = null;
+        this.capacityChangePromise = Promise.resolve();
+        this.capacityResourceEpoch = 0;
         this.maxSpawnCommands = 32;
         this.maxTrailSamples = 12;
         this.trailSamples = Math.max(2, Math.min(this.maxTrailSamples, Number(options.trailSamples) || 8));
@@ -31,20 +171,57 @@ class WebGPUParticleEngine {
         this.adapterInfo = null;
         this.initialized = false;
         this.destroyed = false;
-        this.deviceRecoveryAttempted = false;
+        this.recoveryPromise = null;
+        this.recoveringDevice = null;
+        this.recoveryDelayMs = Number.isFinite(Number(options.recoveryDelayMs))
+            ? Math.max(0, Number(options.recoveryDelayMs))
+            : 1_000;
+        this.onOwnerInvalidated = typeof options.onOwnerInvalidated === 'function'
+            ? options.onOwnerInvalidated
+            : () => {};
+        this.isOwnerActive = typeof options.isOwnerActive === 'function'
+            ? options.isOwnerActive
+            : () => true;
+        this.deviceLossWatches = new WeakMap();
+        this.deviceErrorWatches = new WeakSet();
+        this.deviceLifecycleEpoch = 0;
         this.spawnQueue = [];
-        this.atlasSlots = new Map();
-        this.atlasSources = new Map();
-        this.nextAtlasSlot = 1; // Slot zero is the neutral paw sprite.
+        this.inactiveSpawnOwners = new Set();
+        this.viewportRevision = 0;
+        this.correlationFitCache = new Map();
+        this.correlationManifestRegistry = new Map();
+        this.spawnCorrelationSequence = 0;
+        this.spawnTelemetry = {
+            droppedByReason: {
+                staleGeneration: 0,
+                expired: 0,
+                inactiveOwner: 0,
+                lifeExhausted: 0,
+                unregisteredEnvelope: 0,
+                envelopeCannotFit: 0
+            }
+        };
+        this.pendingDegradedLayerCounts = SpawnCommandPolicy.emptyDegradedLayerCounts();
+        this.atlasEntries = new Map();
+        this.atlasSlotOwners = Array(EXTERNAL_ATLAS_SLOT_COUNT + 1).fill(null);
+        this.atlasAwaitingFirstUse = new Set();
+        this.atlasSlotReservations = Array(EXTERNAL_ATLAS_SLOT_COUNT + 1).fill(null);
+        this.pendingAtlasUploads = new Map();
+        this.atlasOwnershipGeneration = 0;
+        this.atlasEntryVersions = new WeakMap();
+        this.atlasEntryVersionCounter = 0;
+        this.now = typeof options.now === 'function'
+            ? options.now
+            : () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
         this.atlasSize = 1024;
         this.atlasSlotSize = 128;
         this.atlasGutter = 6;
-        this.atlasMipLevels = Math.floor(Math.log2(this.atlasSize)) + 1;
         this.atlasSlotsPerRow = this.atlasSize / this.atlasSlotSize;
         this.logicalWidth = canvas.width || 1920;
         this.logicalHeight = canvas.height || 1080;
         this.lastReadbackAt = 0;
         this.readbackPending = false;
+        this.readbackPromise = null;
         this.fixedStepSeconds = 1 / 60;
         this.simulationAccumulator = 0;
         this.simulationTimeSeconds = null;
@@ -56,11 +233,16 @@ class WebGPUParticleEngine {
             droppedParticles: 0,
             gpuFrameMs: null,
             adapter: null,
-            format: null
+            format: null,
+            commandAdmission: {
+                current: SpawnCommandPolicy.emptyCommandTelemetry(),
+                cumulative: SpawnCommandPolicy.emptyCommandTelemetry()
+            }
         };
     }
 
     async init() {
+        const generationAtStart = this.resourceGeneration;
         this.destroyed = false;
         this._emitStatus('initializing');
         if (!globalThis.navigator || !navigator.gpu) {
@@ -92,13 +274,16 @@ class WebGPUParticleEngine {
             this.context.configure({
                 device: this.device,
                 format: this.format,
-                alphaMode: 'premultiplied'
+                alphaMode: 'premultiplied',
+                usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC |
+                    GPUTextureUsage.TEXTURE_BINDING
             });
 
             this._createResources();
             await this._createPipelines();
             await this._initializeAtlas();
-            this._watchDevice();
+            this.deviceLifecycleEpoch += 1;
+            this._watchDevice(this.device, this.deviceLifecycleEpoch);
             this.initialized = true;
             this._emitStatus('ready', {
                 adapter: this.adapterInfo,
@@ -108,6 +293,8 @@ class WebGPUParticleEngine {
             return true;
         } catch (error) {
             this.initialized = false;
+            this._destroyResources();
+            this.resourceGeneration = generationAtStart;
             this._emitStatus('error', { reason: error && error.message ? error.message : String(error) });
             return false;
         }
@@ -128,25 +315,104 @@ class WebGPUParticleEngine {
         return { vendor: 'unknown', architecture: 'unknown', device: 'unknown', description: 'WebGPU adapter' };
     }
 
-    _watchDevice() {
-        if (!this.device) return;
-        this.device.addEventListener?.('uncapturederror', event => {
-            const message = event && event.error ? event.error.message : 'Uncaptured WebGPU validation error';
-            this._emitStatus('error', { reason: message });
-        });
-        this.device.lost.then(info => this._handleDeviceLost(info));
+    _watchDevice(device = this.device, deviceEpoch = this.deviceLifecycleEpoch) {
+        if (!device) return;
+        if (!this.deviceErrorWatches.has(device)) {
+            this.deviceErrorWatches.add(device);
+            device.addEventListener?.('uncapturederror', event => {
+                if (device !== this.device || this.destroyed) return;
+                const message = event && event.error
+                    ? event.error.message
+                    : 'Uncaptured WebGPU validation error';
+                this._emitStatus('error', { reason: message });
+            });
+        }
+        let watchedEpochs = this.deviceLossWatches.get(device);
+        if (!watchedEpochs) {
+            watchedEpochs = new Set();
+            this.deviceLossWatches.set(device, watchedEpochs);
+        }
+        if (watchedEpochs.size > 0) return;
+        watchedEpochs.add(deviceEpoch);
+        device.lost.then(info => this._handleDeviceLost(info, device, deviceEpoch));
     }
 
-    async _handleDeviceLost(info) {
-        if (this.destroyed) return;
+    _markSpawnOwnerInactive(ownerToken) {
+        if (typeof ownerToken !== 'string' || !ownerToken) return;
+        this.inactiveSpawnOwners.delete(ownerToken);
+        this.inactiveSpawnOwners.add(ownerToken);
+        while (this.inactiveSpawnOwners.size > MAX_INACTIVE_SPAWN_OWNERS) {
+            this.inactiveSpawnOwners.delete(this.inactiveSpawnOwners.values().next().value);
+        }
+    }
+
+    _invalidateQueuedGeneration(generation) {
+        const owners = new Set();
+        const retained = [];
+        let dropped = 0;
+        for (const command of this.spawnQueue) {
+            if (command.resourceGeneration !== generation) {
+                retained.push(command);
+                continue;
+            }
+            dropped += 1;
+            if (command.ownerToken) {
+                owners.add(command.ownerToken);
+                this._markSpawnOwnerInactive(command.ownerToken);
+            }
+        }
+        this.spawnQueue = retained;
+        this.spawnTelemetry.droppedByReason.staleGeneration += dropped;
+        return { dropped, owners: [...owners] };
+    }
+
+    _notifyInvalidatedOwners(ownerTokens, reason) {
+        for (const ownerToken of ownerTokens) {
+            try {
+                this.onOwnerInvalidated(ownerToken, reason);
+            } catch (_) {}
+        }
+    }
+
+    _handleDeviceLost(info, device = this.device, deviceEpoch = this.deviceLifecycleEpoch) {
+        if (this.destroyed || device !== this.device || deviceEpoch !== this.deviceLifecycleEpoch) {
+            return Promise.resolve(false);
+        }
+        if (this.recoveryPromise && this.recoveringDevice === device) {
+            return this.recoveryPromise;
+        }
+
+        const lostResourceGeneration = this.resourceGeneration;
         this.initialized = false;
-        this._emitStatus('device-lost', { reason: info && info.message ? info.message : 'WebGPU device lost' });
-        if (this.deviceRecoveryAttempted) return;
-        this.deviceRecoveryAttempted = true;
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        if (this.destroyed) return;
-        this._destroyResources();
-        await this.init();
+        this.recoveringDevice = device;
+        const invalidated = this._invalidateQueuedGeneration(lostResourceGeneration);
+        this._emitStatus('device-lost', {
+            reason: info && info.message ? info.message : 'WebGPU device lost'
+        });
+        this._notifyInvalidatedOwners(invalidated.owners, 'device-lost');
+
+        const recover = async () => {
+            if (this.recoveryDelayMs > 0) {
+                await new Promise(resolve => setTimeout(resolve, this.recoveryDelayMs));
+            } else {
+                await Promise.resolve();
+            }
+            if (this.destroyed || this.device !== device ||
+                this.deviceLifecycleEpoch !== deviceEpoch) {
+                return false;
+            }
+            this._destroyResources();
+            return this.init();
+        };
+        let trackedPromise;
+        trackedPromise = recover().finally(() => {
+            if (this.recoveryPromise === trackedPromise) {
+                this.recoveryPromise = null;
+                this.recoveringDevice = null;
+            }
+        });
+        this.recoveryPromise = trackedPromise;
+        return trackedPromise;
     }
 
     _emitStatus(state, extra = {}) {
@@ -157,54 +423,322 @@ class WebGPUParticleEngine {
         this.onStatus({ ...this.metrics });
     }
 
-    _createBuffer(label, size, usage, initialData = null) {
-        const buffer = this.device.createBuffer({ label, size: Math.max(4, Math.ceil(size / 4) * 4), usage });
-        if (initialData) this.device.queue.writeBuffer(buffer, 0, initialData);
+    _createBuffer(label, size, usage, initialData = null, device = this.device) {
+        const buffer = device.createBuffer({ label, size: Math.max(4, Math.ceil(size / 4) * 4), usage });
+        if (initialData) device.queue.writeBuffer(buffer, 0, initialData);
         return buffer;
     }
 
     _createResources() {
         const U = globalThis.GPUBufferUsage;
         const T = globalThis.GPUTextureUsage;
-        const particleStride = 80;
-        this.buffers = {
-            particles: this._createBuffer('fireworks-particles', this.maxParticles * particleStride, U.STORAGE | U.COPY_DST | U.COPY_SRC),
-            history: this._createBuffer('fireworks-trail-history', this.maxParticles * this.maxTrailSamples * 8, U.STORAGE | U.COPY_DST),
-            activeIndices: this._createBuffer('fireworks-active-indices', this.maxParticles * 4, U.STORAGE | U.COPY_SRC),
-            secondaryIndices: this._createBuffer('fireworks-secondary-indices', this.maxParticles * 4, U.STORAGE),
-            freeIndices: this._createBuffer('fireworks-free-indices', this.maxParticles * 4, U.STORAGE | U.COPY_DST),
-            counters: this._createBuffer('fireworks-counters', 16, U.STORAGE | U.COPY_SRC | U.COPY_DST),
+        const particleStride = 96;
+        const trailHistoryStride = this.maxTrailSamples * 16;
+        this.particleStride = particleStride;
+        this.capacityResourceEpoch += 1;
+        this.deviceResources = {
             commands: this._createBuffer('fireworks-spawn-commands', this.maxSpawnCommands * 112, U.STORAGE | U.COPY_DST),
-            uniforms: this._createBuffer('fireworks-uniforms', 48, U.UNIFORM | U.COPY_DST),
-            coreIndirect: this._createBuffer('fireworks-core-indirect', 16, U.STORAGE | U.INDIRECT | U.COPY_DST | U.COPY_SRC),
-            trailIndirect: this._createBuffer('fireworks-trail-indirect', 16, U.STORAGE | U.INDIRECT | U.COPY_DST | U.COPY_SRC),
-            readback: this._createBuffer('fireworks-counter-readback', 16, U.MAP_READ | U.COPY_DST)
+            uniforms: this._createBuffer('fireworks-uniforms', 48, U.UNIFORM | U.COPY_DST)
         };
         if (this.timestampEnabled) {
             this.timestampQuerySet = this.device.createQuerySet({ type: 'timestamp', count: 2 });
-            this.buffers.timestampResolve = this._createBuffer('fireworks-timestamp-resolve', 16, U.QUERY_RESOLVE | U.COPY_SRC);
-            this.buffers.timestampReadback = this._createBuffer('fireworks-timestamp-readback', 16, U.MAP_READ | U.COPY_DST);
         }
-
-        const freeIndices = new Uint32Array(this.maxParticles);
-        for (let i = 0; i < this.maxParticles; i++) freeIndices[i] = i;
-        this.device.queue.writeBuffer(this.buffers.freeIndices, 0, freeIndices);
-        this.device.queue.writeBuffer(this.buffers.counters, 0, new Uint32Array([this.maxParticles, 0, 0, 0]));
-        this.device.queue.writeBuffer(this.buffers.coreIndirect, 0, new Uint32Array([6, 0, 0, 0]));
-        this.device.queue.writeBuffer(this.buffers.trailIndirect, 0, new Uint32Array([6, 0, 0, 0]));
+        this.buffers = { ...this.deviceResources };
+        this.pendingCapacityResources = this._createCapacityResources(
+            this.maxParticles,
+            this.device,
+            trailHistoryStride
+        );
+        this._activateCapacityBufferAliases(this.pendingCapacityResources);
 
         this.atlasTexture = this.device.createTexture({
             label: 'fireworks-atlas',
             size: [this.atlasSize, this.atlasSize, 1],
-            mipLevelCount: this.atlasMipLevels,
+            mipLevelCount: 1,
             format: 'rgba8unorm',
             usage: T.TEXTURE_BINDING | T.COPY_DST | T.RENDER_ATTACHMENT
         });
         this.atlasSampler = this.device.createSampler({
-            magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear',
+            magFilter: 'linear', minFilter: 'linear',
             addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge'
         });
         this._createFrameTextures();
+    }
+
+    _createCapacityResources(
+        maxParticles,
+        device = this.device,
+        trailHistoryStride = this.maxTrailSamples * 16
+    ) {
+        const U = globalThis.GPUBufferUsage;
+        const activeIndexBucketBytes = maxParticles * Uint32Array.BYTES_PER_ELEMENT;
+        const storageOffsetAlignment = Math.max(
+            4,
+            Number(device.limits?.minStorageBufferOffsetAlignment) || 256
+        );
+        const activeIndexBucketStrideBytes = Math.ceil(
+            activeIndexBucketBytes / storageOffsetAlignment
+        ) * storageOffsetAlignment;
+        const resources = {
+            maxParticles,
+            activeIndexBucketBytes,
+            activeIndexBucketStrideBytes,
+            generation: 0,
+            inFlightReadbacks: 0,
+            readbackPending: false,
+            readbackPromise: null,
+            readbackRequest: null,
+            readbackLeases: 0,
+            retired: false,
+            destroyed: false
+        };
+
+        try {
+            resources.particleBuffer = this._createBuffer(
+                'fireworks-particles',
+                maxParticles * this.particleStride,
+                U.STORAGE | U.COPY_DST | U.COPY_SRC,
+                null,
+                device
+            );
+            resources.historyBuffer = this._createBuffer(
+                'fireworks-trail-history',
+                maxParticles * trailHistoryStride,
+                U.STORAGE | U.COPY_DST,
+                null,
+                device
+            );
+            resources.activeIndicesBuffer = this._createBuffer(
+                'fireworks-active-indices',
+                activeIndexBucketStrideBytes * DEPTH_BUCKET_COUNT,
+                U.STORAGE | U.COPY_SRC,
+                null,
+                device
+            );
+            resources.secondaryIndicesBuffer = this._createBuffer(
+                'fireworks-secondary-indices',
+                maxParticles * Uint32Array.BYTES_PER_ELEMENT,
+                U.STORAGE,
+                null,
+                device
+            );
+            resources.freeIndicesBuffer = this._createBuffer(
+                'fireworks-free-indices',
+                maxParticles * Uint32Array.BYTES_PER_ELEMENT,
+                U.STORAGE | U.COPY_DST,
+                null,
+                device
+            );
+            resources.countersBuffer = this._createBuffer(
+                'fireworks-counters',
+                32,
+                U.STORAGE | U.COPY_SRC | U.COPY_DST,
+                null,
+                device
+            );
+            resources.coreIndirectBuffer = this._createBuffer(
+                'fireworks-core-indirect',
+                DEPTH_BUCKET_COUNT * 16,
+                U.STORAGE | U.INDIRECT | U.COPY_DST | U.COPY_SRC,
+                null,
+                device
+            );
+            resources.trailIndirectBuffer = this._createBuffer(
+                'fireworks-trail-indirect',
+                DEPTH_BUCKET_COUNT * 16,
+                U.STORAGE | U.INDIRECT | U.COPY_DST | U.COPY_SRC,
+                null,
+                device
+            );
+            resources.readback = this._createBuffer(
+                'fireworks-counter-readback',
+                16,
+                U.MAP_READ | U.COPY_DST,
+                null,
+                device
+            );
+            resources.counterSourceBuffer = resources.countersBuffer;
+            resources.counterReadbackBuffer = resources.readback;
+            resources.timestampSourceBuffer = null;
+            resources.timestampReadbackBuffer = null;
+            if (this.timestampEnabled) {
+                resources.timestampSourceBuffer = this._createBuffer(
+                    'fireworks-timestamp-resolve',
+                    16,
+                    U.QUERY_RESOLVE | U.COPY_SRC,
+                    null,
+                    device
+                );
+                resources.timestampReadbackBuffer = this._createBuffer(
+                    'fireworks-timestamp-readback',
+                    16,
+                    U.MAP_READ | U.COPY_DST,
+                    null,
+                    device
+                );
+            }
+
+            const freeIndices = new Uint32Array(maxParticles);
+            for (let i = 0; i < maxParticles; i++) freeIndices[i] = i;
+            device.queue.writeBuffer(resources.freeIndicesBuffer, 0, freeIndices);
+            device.queue.writeBuffer(
+                resources.countersBuffer,
+                0,
+                new Uint32Array([maxParticles, 0, 0, 0, 0, 0, 0, 0])
+            );
+            const coreIndirect = new Uint32Array(DEPTH_BUCKET_COUNT * 4);
+            const trailIndirect = new Uint32Array(DEPTH_BUCKET_COUNT * 4);
+            for (let bucket = 0; bucket < DEPTH_BUCKET_COUNT; bucket++) {
+                coreIndirect[bucket * 4] = 6;
+                trailIndirect[bucket * 4] = 6;
+            }
+            device.queue.writeBuffer(resources.coreIndirectBuffer, 0, coreIndirect);
+            device.queue.writeBuffer(resources.trailIndirectBuffer, 0, trailIndirect);
+            return resources;
+        } catch (error) {
+            this._destroyCapacityResources(resources);
+            throw error;
+        }
+    }
+
+    _activateCapacityBufferAliases(resources) {
+        this.activeIndexBucketStrideBytes = resources.activeIndexBucketStrideBytes;
+        Object.assign(this.buffers, {
+            particles: resources.particleBuffer,
+            history: resources.historyBuffer,
+            activeIndices: resources.activeIndicesBuffer,
+            secondaryIndices: resources.secondaryIndicesBuffer,
+            freeIndices: resources.freeIndicesBuffer,
+            counters: resources.countersBuffer,
+            coreIndirect: resources.coreIndirectBuffer,
+            trailIndirect: resources.trailIndirectBuffer,
+            readback: resources.counterReadbackBuffer,
+            timestampResolve: resources.timestampSourceBuffer,
+            timestampReadback: resources.timestampReadbackBuffer
+        });
+    }
+
+    _captureCapacityResources() {
+        return this.capacityResources;
+    }
+
+    _destroyCapacityResources(resources) {
+        if (!resources || resources.destroyed) return;
+        resources.retired = true;
+        if (resources.inFlightReadbacks > 0) return;
+        for (const key of [
+            'particleBuffer', 'historyBuffer', 'activeIndicesBuffer',
+            'secondaryIndicesBuffer', 'freeIndicesBuffer', 'countersBuffer',
+            'coreIndirectBuffer', 'trailIndirectBuffer', 'readback',
+            'timestampSourceBuffer', 'timestampReadbackBuffer'
+        ]) resources[key]?.destroy?.();
+        resources.destroyed = true;
+    }
+
+    _createCapacityBindGroups(resources, device = this.device) {
+        const computeBindGroup = device.createBindGroup({
+            layout: this.computeBindGroupLayout,
+            entries: [
+                { binding: 0, resource: { buffer: resources.particleBuffer } },
+                { binding: 1, resource: { buffer: resources.historyBuffer } },
+                { binding: 2, resource: { buffer: resources.activeIndicesBuffer } },
+                { binding: 3, resource: { buffer: resources.freeIndicesBuffer } },
+                { binding: 4, resource: { buffer: resources.countersBuffer } },
+                { binding: 5, resource: { buffer: this.deviceResources.commands } },
+                { binding: 6, resource: { buffer: resources.coreIndirectBuffer } },
+                { binding: 7, resource: { buffer: resources.trailIndirectBuffer } },
+                { binding: 8, resource: { buffer: this.deviceResources.uniforms } },
+                { binding: 9, resource: { buffer: resources.secondaryIndicesBuffer } }
+            ]
+        });
+        const renderBindGroups = Array.from({ length: DEPTH_BUCKET_COUNT }, (_, bucket) =>
+            device.createBindGroup({ layout: this.renderBindGroupLayout, entries: [
+                { binding: 0, resource: { buffer: resources.particleBuffer } },
+                { binding: 1, resource: {
+                    buffer: resources.activeIndicesBuffer,
+                    offset: bucket * resources.activeIndexBucketStrideBytes,
+                    size: resources.activeIndexBucketBytes
+                } },
+                { binding: 2, resource: { buffer: resources.historyBuffer } },
+                { binding: 3, resource: { buffer: this.deviceResources.uniforms } },
+                { binding: 4, resource: this.atlasTexture.createView() },
+                { binding: 5, resource: this.atlasSampler }
+            ]})
+        );
+        return { computeBindGroup, renderBindGroups };
+    }
+
+    async reconfigureCapacity(value) {
+        const maxParticles = Number(value);
+        if (!Number.isInteger(maxParticles) || maxParticles < 512 || maxParticles > 16_384) {
+            const error = new RangeError('Particle capacity must be an integer between 512 and 16384.');
+            error.code = 'INVALID_PARTICLE_CAPACITY';
+            throw error;
+        }
+
+        const change = async () => {
+            if (!this.initialized || this.destroyed || !this.device || !this.capacityResources) {
+                const error = new Error('The WebGPU renderer is not ready for capacity replacement.');
+                error.code = 'GPU_CAPACITY_REALLOCATION_FAILED';
+                throw error;
+            }
+            if (maxParticles === this.maxParticles) {
+                return {
+                    changed: false,
+                    generation: this.resourceGeneration,
+                    maxParticles: this.maxParticles
+                };
+            }
+
+            let replacement = null;
+            const device = this.device;
+            const epoch = this.capacityResourceEpoch;
+            try {
+                replacement = await this._createCapacityResources(maxParticles, device);
+                if (this.device !== device || this.capacityResourceEpoch !== epoch ||
+                    !this.initialized || this.destroyed) {
+                    throw new Error('The WebGPU device changed during particle capacity replacement.');
+                }
+                const bindGroups = this._createCapacityBindGroups(replacement, device);
+                const previous = this.capacityResources;
+
+                this.capacityResources = replacement;
+                this.computeBindGroup = bindGroups.computeBindGroup;
+                this.renderBindGroups = bindGroups.renderBindGroups;
+                this.maxParticles = maxParticles;
+                this.resourceGeneration += 1;
+                this.correlationFitCache.clear();
+                this.correlationManifestRegistry.clear();
+                replacement.generation = this.resourceGeneration;
+                this._activateCapacityBufferAliases(replacement);
+                this.metrics.activeParticles = 0;
+                this.metrics.droppedParticles = 0;
+                this.metrics.gpuFrameMs = null;
+                this.lastReadbackAt = 0;
+                this._destroyCapacityResources(previous);
+
+                return {
+                    changed: true,
+                    generation: this.resourceGeneration,
+                    maxParticles: this.maxParticles
+                };
+            } catch (error) {
+                if (replacement && replacement !== this.capacityResources) {
+                    this._destroyCapacityResources(replacement);
+                }
+                if (error?.code === 'GPU_CAPACITY_REALLOCATION_FAILED') throw error;
+                const failure = new Error(
+                    error && error.message ? error.message : String(error),
+                    { cause: error }
+                );
+                failure.code = 'GPU_CAPACITY_REALLOCATION_FAILED';
+                throw failure;
+            }
+        };
+
+        const operation = this.capacityChangePromise.then(change, change);
+        this.capacityChangePromise = operation.catch(() => undefined);
+        return operation;
     }
 
     _createFrameTextures() {
@@ -238,7 +772,7 @@ class WebGPUParticleEngine {
         await this._assertShader(particleModule, 'particle');
         await this._assertShader(postModule, 'post');
 
-        const computeLayout = this.device.createBindGroupLayout({ entries: [
+        this.computeBindGroupLayout = this.device.createBindGroupLayout({ entries: [
             { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'storage' } },
             { binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'storage' } },
             { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'storage' } },
@@ -250,9 +784,11 @@ class WebGPUParticleEngine {
             { binding: 8, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'uniform' } },
             { binding: 9, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'storage' } }
         ]});
-        const computePipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [computeLayout] });
+        const computePipelineLayout = this.device.createPipelineLayout({
+            bindGroupLayouts: [this.computeBindGroupLayout]
+        });
 
-        const renderLayout = this.device.createBindGroupLayout({ entries: [
+        this.renderBindGroupLayout = this.device.createBindGroupLayout({ entries: [
             { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: 'read-only-storage' } },
             { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: 'read-only-storage' } },
             { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: 'read-only-storage' } },
@@ -260,7 +796,9 @@ class WebGPUParticleEngine {
             { binding: 4, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
             { binding: 5, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } }
         ]});
-        const renderPipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [renderLayout] });
+        const renderPipelineLayout = this.device.createPipelineLayout({
+            bindGroupLayouts: [this.renderBindGroupLayout]
+        });
 
         const premultipliedBlend = {
             color: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
@@ -316,30 +854,19 @@ class WebGPUParticleEngine {
             color: { srcFactor: 'one', dstFactor: 'one', operation: 'add' },
             alpha: { srcFactor: 'one', dstFactor: 'one', operation: 'add' }
         });
-        this.pipelines.atlasMipmap = await makePost('atlasDownsample', 'rgba8unorm');
         this.pipelines.composite = await makePost('composite', this.format);
 
-        this.computeBindGroup = this.device.createBindGroup({ layout: computeLayout, entries: [
-            { binding: 0, resource: { buffer: this.buffers.particles } },
-            { binding: 1, resource: { buffer: this.buffers.history } },
-            { binding: 2, resource: { buffer: this.buffers.activeIndices } },
-            { binding: 3, resource: { buffer: this.buffers.freeIndices } },
-            { binding: 4, resource: { buffer: this.buffers.counters } },
-            { binding: 5, resource: { buffer: this.buffers.commands } },
-            { binding: 6, resource: { buffer: this.buffers.coreIndirect } },
-            { binding: 7, resource: { buffer: this.buffers.trailIndirect } },
-            { binding: 8, resource: { buffer: this.buffers.uniforms } },
-            { binding: 9, resource: { buffer: this.buffers.secondaryIndices } }
-        ]});
-        this.renderBindGroup = this.device.createBindGroup({ layout: renderLayout, entries: [
-            { binding: 0, resource: { buffer: this.buffers.particles } },
-            { binding: 1, resource: { buffer: this.buffers.activeIndices } },
-            { binding: 2, resource: { buffer: this.buffers.history } },
-            { binding: 3, resource: { buffer: this.buffers.uniforms } },
-            { binding: 4, resource: this.atlasTexture.createView() },
-            { binding: 5, resource: this.atlasSampler }
-        ]});
+        const initialCapacityResources = this.pendingCapacityResources;
+        const capacityBindGroups = this._createCapacityBindGroups(initialCapacityResources);
         this._createFrameBindGroups(postLayout);
+        this.capacityResources = initialCapacityResources;
+        this.pendingCapacityResources = null;
+        this.computeBindGroup = capacityBindGroups.computeBindGroup;
+        this.renderBindGroups = capacityBindGroups.renderBindGroups;
+        this.resourceGeneration += 1;
+        this.correlationFitCache.clear();
+        this.correlationManifestRegistry.clear();
+        this.capacityResources.generation = this.resourceGeneration;
     }
 
     _createFrameBindGroups(layout = null) {
@@ -376,8 +903,15 @@ class WebGPUParticleEngine {
     }
 
     async _initializeAtlas() {
-        this.atlasSlots.clear();
-        this.nextAtlasSlot = 1;
+        this.atlasOwnershipGeneration += 1;
+        this.atlasEntries.clear();
+        this.atlasSlotOwners.fill(null);
+        this.atlasSlotOwners[0] = 'shape:paw';
+        this.atlasAwaitingFirstUse.clear();
+        this.atlasSlotReservations.fill(null);
+        this.pendingAtlasUploads.clear();
+        this.atlasEntryVersions = new WeakMap();
+        this.atlasEntryVersionCounter = 0;
         const canvas = typeof OffscreenCanvas !== 'undefined'
             ? new OffscreenCanvas(this.atlasSlotSize, this.atlasSlotSize)
             : Object.assign(document.createElement('canvas'), { width: this.atlasSlotSize, height: this.atlasSlotSize });
@@ -391,28 +925,188 @@ class WebGPUParticleEngine {
         for (const [x, y, r] of [[30, 44, 12], [51, 31, 12], [77, 31, 12], [98, 44, 12]]) {
             ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
         }
-        this.device.queue.copyExternalImageToTexture({ source: canvas }, { texture: this.atlasTexture, origin: [0, 0] }, [this.atlasSlotSize, this.atlasSlotSize]);
-        this.atlasSlots.set('shape:paw', 0);
-        for (const [key, image] of this.atlasSources) this._writeAtlasImage(key, image);
-        this._generateAtlasMipmaps();
+        this._copyAtlasCanvas(canvas, [0, 0]);
     }
 
     async uploadImage(key, image) {
         if (!this.initialized || !key || !image) return 0;
-        if (this.atlasSlots.has(key)) return this.atlasSlots.get(key) + 1;
-        this.atlasSources.set(key, image);
-        const result = this._writeAtlasImage(key, image);
-        if (result) this._generateAtlasMipmaps();
-        return result;
+        const pending = this.pendingAtlasUploads.get(key);
+        if (pending) return pending;
+        const generation = this.atlasOwnershipGeneration;
+        const upload = this._uploadAtlasImage(key, image, generation);
+        this.pendingAtlasUploads.set(key, upload);
+        try {
+            return await upload;
+        } finally {
+            if (this.pendingAtlasUploads.get(key) === upload) this.pendingAtlasUploads.delete(key);
+        }
     }
 
-    _writeAtlasImage(key, image) {
-        const maxSlots = this.atlasSlotsPerRow * this.atlasSlotsPerRow;
-        if (this.nextAtlasSlot >= maxSlots) {
-            this._emitStatus('ready', { reason: 'Texture atlas full; image particle skipped' });
+    async _uploadAtlasImage(key, image, generation) {
+        if (generation !== this.atlasOwnershipGeneration) return 0;
+        const nowMs = this._atlasNow();
+        const existing = this.atlasEntries.get(key);
+        if (existing) {
+            existing.lastUsedAtMs = nowMs;
+            this._touchAtlasEntry(existing);
+            return existing.textureIndex;
+        }
+        const reservation = this._reserveAtlasSlot(nowMs);
+        if (!reservation) {
+            this._emitStatus('ready', { reason: 'Texture atlas full; visible image particle used fallback' });
             return 0;
         }
-        const slot = this.nextAtlasSlot++;
+        try {
+            const copyResult = this._writeAtlasImage(reservation.slot, key, image);
+            if (copyResult && typeof copyResult.then === 'function') await copyResult;
+            if (generation !== this.atlasOwnershipGeneration) return 0;
+            if (!this._isAtlasReservationValid(reservation)) return 0;
+            const entry = this._acquireAtlasSlot(key, {
+                nowMs,
+                inUseUntilMs: nowMs + ATLAS_RELEASE_GRACE_MS,
+                slot: reservation.slot,
+                expectedOwnerKey: reservation.ownerKey
+            });
+            return entry ? entry.textureIndex : 0;
+        } finally {
+            if (this.atlasSlotReservations[reservation.slot] === reservation.token) {
+                this.atlasSlotReservations[reservation.slot] = null;
+            }
+        }
+    }
+
+    _reserveAtlasSlot(nowMs) {
+        let slot = -1;
+        let ownerKey = null;
+        let ownerEntry = null;
+        for (let candidateSlot = 1; candidateSlot < ATLAS_SLOT_COUNT; candidateSlot += 1) {
+            if (this.atlasSlotOwners[candidateSlot] === null && !this.atlasSlotReservations[candidateSlot]) {
+                slot = candidateSlot;
+                break;
+            }
+        }
+
+        if (slot < 1) {
+            let candidate = null;
+            for (const entry of this.atlasEntries.values()) {
+                if (this.atlasSlotReservations[entry.slot]) continue;
+                if (this.atlasAwaitingFirstUse.has(entry.key)) continue;
+                if (entry.inUseUntilMs > nowMs) continue;
+                if (!candidate || entry.lastUsedAtMs < candidate.lastUsedAtMs ||
+                    (entry.lastUsedAtMs === candidate.lastUsedAtMs && entry.slot < candidate.slot)) {
+                    candidate = entry;
+                }
+            }
+            if (!candidate) return null;
+            slot = candidate.slot;
+            ownerKey = candidate.key;
+            ownerEntry = candidate;
+        }
+
+        const token = Symbol('atlas-slot-reservation');
+        this.atlasSlotReservations[slot] = token;
+        return {
+            token,
+            slot,
+            ownerKey,
+            ownerEntry,
+            ownerVersion: ownerEntry ? (this.atlasEntryVersions.get(ownerEntry) || 0) : 0,
+            ownerLastUsedAtMs: ownerEntry ? ownerEntry.lastUsedAtMs : null,
+            ownerInUseUntilMs: ownerEntry ? ownerEntry.inUseUntilMs : null,
+            ownerAwaitingFirstUse: ownerEntry ? this.atlasAwaitingFirstUse.has(ownerEntry.key) : false
+        };
+    }
+
+    _isAtlasReservationValid(reservation) {
+        if (this.atlasSlotReservations[reservation.slot] !== reservation.token) return false;
+        if (this.atlasSlotOwners[reservation.slot] !== reservation.ownerKey) return false;
+        if (reservation.ownerKey === null) return true;
+        const ownerEntry = this.atlasEntries.get(reservation.ownerKey);
+        return ownerEntry === reservation.ownerEntry &&
+            (this.atlasEntryVersions.get(ownerEntry) || 0) === reservation.ownerVersion &&
+            ownerEntry.lastUsedAtMs === reservation.ownerLastUsedAtMs &&
+            ownerEntry.inUseUntilMs === reservation.ownerInUseUntilMs &&
+            this.atlasAwaitingFirstUse.has(reservation.ownerKey) === reservation.ownerAwaitingFirstUse;
+    }
+
+    _touchAtlasEntry(entry) {
+        this.atlasEntryVersionCounter += 1;
+        this.atlasEntryVersions.set(entry, this.atlasEntryVersionCounter);
+    }
+
+    _acquireAtlasSlot(key, {
+        nowMs = this.now(),
+        inUseUntilMs = nowMs,
+        slot = null,
+        expectedOwnerKey = undefined
+    } = {}) {
+        nowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : this._atlasNow();
+        inUseUntilMs = Number.isFinite(Number(inUseUntilMs)) ? Number(inUseUntilMs) : nowMs;
+        const existing = this.atlasEntries.get(key);
+        if (existing) {
+            existing.lastUsedAtMs = nowMs;
+            existing.inUseUntilMs = Math.max(existing.inUseUntilMs, inUseUntilMs);
+            this._touchAtlasEntry(existing);
+            return existing;
+        }
+
+        let directReservation = null;
+        if (slot === null) {
+            directReservation = this._reserveAtlasSlot(nowMs);
+            if (!directReservation) return null;
+            slot = directReservation.slot;
+            expectedOwnerKey = directReservation.ownerKey;
+        }
+
+        const currentOwnerKey = this.atlasSlotOwners[slot];
+        if (expectedOwnerKey !== undefined && currentOwnerKey !== expectedOwnerKey) {
+            if (directReservation && this.atlasSlotReservations[slot] === directReservation.token) {
+                this.atlasSlotReservations[slot] = null;
+            }
+            return null;
+        }
+        if (currentOwnerKey) {
+            this.atlasEntries.delete(currentOwnerKey);
+            this.atlasAwaitingFirstUse.delete(currentOwnerKey);
+        }
+
+        const entry = {
+            key,
+            slot,
+            textureIndex: slot + 1,
+            lastUsedAtMs: nowMs,
+            inUseUntilMs
+        };
+        this.atlasEntries.set(key, entry);
+        this.atlasSlotOwners[slot] = key;
+        this.atlasAwaitingFirstUse.add(key);
+        this._touchAtlasEntry(entry);
+        if (directReservation && this.atlasSlotReservations[slot] === directReservation.token) {
+            this.atlasSlotReservations[slot] = null;
+        }
+        return entry;
+    }
+
+    _markAtlasTextureUsed(textureIndex, { nowMs = this.now(), visibleUntilMs = nowMs } = {}) {
+        nowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : this._atlasNow();
+        visibleUntilMs = Number.isFinite(Number(visibleUntilMs)) ? Number(visibleUntilMs) : nowMs;
+        const slot = Math.floor(Number(textureIndex)) - 1;
+        if (slot < 1 || slot >= ATLAS_SLOT_COUNT) return;
+        const owner = this.atlasSlotOwners[slot];
+        const entry = owner ? this.atlasEntries.get(owner) : null;
+        if (!entry || entry.slot !== slot) return;
+        entry.lastUsedAtMs = nowMs;
+        if (this.atlasAwaitingFirstUse.delete(owner)) entry.inUseUntilMs = Math.max(nowMs, visibleUntilMs);
+        else entry.inUseUntilMs = Math.max(entry.inUseUntilMs, visibleUntilMs);
+        this._touchAtlasEntry(entry);
+    }
+
+    _atlasNow() {
+        const nowMs = Number(this.now());
+        return Number.isFinite(nowMs) ? nowMs : 0;
+    }
+
+    _writeAtlasImage(slot, key, image) {
         const canvas = typeof OffscreenCanvas !== 'undefined'
             ? new OffscreenCanvas(this.atlasSlotSize, this.atlasSlotSize)
             : Object.assign(document.createElement('canvas'), { width: this.atlasSlotSize, height: this.atlasSlotSize });
@@ -437,46 +1131,35 @@ class WebGPUParticleEngine {
         if (isAvatar) ctx.restore();
         const x = (slot % this.atlasSlotsPerRow) * this.atlasSlotSize;
         const y = Math.floor(slot / this.atlasSlotsPerRow) * this.atlasSlotSize;
-        this.device.queue.copyExternalImageToTexture({ source: canvas }, { texture: this.atlasTexture, origin: [x, y] }, [this.atlasSlotSize, this.atlasSlotSize]);
-        this.atlasSlots.set(key, slot);
-        return slot + 1;
+        this._copyAtlasCanvas(canvas, [x, y]);
     }
 
-    _generateAtlasMipmaps() {
-        if (!this.pipelines?.atlasMipmap || !this.postBindGroupLayout || !this.atlasTexture) return;
-        const encoder = this.device.createCommandEncoder({ label: 'fireworks-atlas-mipmaps' });
-        for (let level = 1; level < this.atlasMipLevels; level++) {
-            const sourceView = this.atlasTexture.createView({ baseMipLevel: level - 1, mipLevelCount: 1 });
-            const targetView = this.atlasTexture.createView({ baseMipLevel: level, mipLevelCount: 1 });
-            const bindGroup = this.device.createBindGroup({ layout: this.postBindGroupLayout, entries: [
-                { binding: 0, resource: sourceView },
-                { binding: 1, resource: sourceView },
-                { binding: 2, resource: this.atlasSampler },
-                { binding: 3, resource: { buffer: this.buffers.uniforms } }
-            ]});
-            const pass = encoder.beginRenderPass({ colorAttachments: [{
-                view: targetView,
-                clearValue: { r: 0, g: 0, b: 0, a: 0 },
-                loadOp: 'clear', storeOp: 'store'
-            }]});
-            pass.setPipeline(this.pipelines.atlasMipmap);
-            pass.setBindGroup(0, bindGroup);
-            pass.draw(3);
-            pass.end();
-        }
-        this.device.queue.submit([encoder.finish()]);
+    _copyAtlasCanvas(canvas, origin) {
+        this.device.queue.copyExternalImageToTexture(
+            { source: canvas },
+            { texture: this.atlasTexture, origin },
+            [this.atlasSlotSize, this.atlasSlotSize]
+        );
     }
 
     spawnRocket(options = {}) {
         const style = this._styleId(options.style);
         const seed = this._resolveSeed(options);
         const effectId = this._hashValue(options.effectId ?? seed);
-        const resolutionScale = Math.max(0.75, Math.min(1.75, this.logicalHeight / 1080));
-        const rocketSize = Math.max(28, (Number(options.rocketSize) || 32) * resolutionScale);
+        const correlationId = options.correlationId ?? options.effectId ?? seed;
+        const resolutionScale = Math.max(0.75, Math.min(1.75,
+            Math.min(this.logicalWidth, this.logicalHeight) / 1080));
+        const depthRocket = options.renderHints?.depthEnabled === true;
+        const defaultRocketSize = depthRocket ? 22 : 32;
+        const minimumRocketSize = depthRocket ? 18 : 28;
+        const rocketBaseSize = Number(options.rocketSize) || defaultRocketSize;
+        const rocketSize = Math.max(minimumRocketSize, rocketBaseSize * resolutionScale);
         const headTextureIndex = Math.max(0, Number(options.headTextureIndex) || 0);
         const decalTextureIndex = headTextureIndex > 0 ? 0 : Math.max(0, Number(options.textureIndex) || 0);
-        this._queueSpawn({
+        const commands = [{
             ...options,
+            priority: options.priority || 'core',
+            required: options.required === true,
             kind: 1,
             count: 1,
             shape: 'rocket',
@@ -484,11 +1167,19 @@ class WebGPUParticleEngine {
             size: rocketSize,
             seed,
             effectId,
+            correlationId,
+            envelopeCommandId: options.envelopeCommandIds?.[0] ?? options.envelopeCommandId ??
+                `${correlationId}:rocket:body`,
             flags: this._flags({ role: 1, style, rocketAvatarHead: headTextureIndex > 0 }),
-            curve: options.curve || 0
-        });
-        this._queueSpawn({
+            curve: options.curve || 0,
+            viewportResponsive: true,
+            viewportMaterialization: {
+                kind: 'rocket', baseSize: rocketBaseSize, minimumSize: minimumRocketSize, multiplier: 1
+            }
+        }, {
             ...options,
+            priority: 'accent',
+            required: false,
             kind: 1,
             count: 1,
             shape: 'rocket',
@@ -497,12 +1188,20 @@ class WebGPUParticleEngine {
             color: '#fff4d6',
             seed: seed ^ 0x9e3779b9,
             effectId,
+            correlationId,
+            envelopeCommandId: options.envelopeCommandIds?.[1] ?? `${correlationId}:rocket:flame`,
             flags: this._flags({ role: 2, style }),
-            curve: options.curve || 0
-        });
+            curve: options.curve || 0,
+            viewportResponsive: true,
+            viewportMaterialization: {
+                kind: 'rocket', baseSize: rocketBaseSize, minimumSize: minimumRocketSize, multiplier: 0.76
+            }
+        }];
         if (decalTextureIndex > 0) {
-            this._queueSpawn({
+            commands.push({
                 ...options,
+                priority: 'core',
+                required: true,
                 kind: 1,
                 count: 1,
                 shape: 'image',
@@ -511,10 +1210,22 @@ class WebGPUParticleEngine {
                 color: '#ffffff',
                 seed: seed ^ 0x85ebca6b,
                 effectId,
+                correlationId,
+                envelopeCommandId: options.envelopeCommandIds?.[2] ?? `${correlationId}:rocket:decal`,
                 flags: this._flags({ role: 6, style, nativeColor: true }) | 64,
-                curve: options.curve || 0
+                curve: options.curve || 0,
+                viewportResponsive: true,
+                viewportMaterialization: {
+                    kind: 'scaled-size',
+                    baseSize: Math.max(16, Number(options.size) || 18),
+                    multiplier: 1
+                }
             });
         }
+        return this._queueSpawnGroup(commands, {
+            correlationId,
+            correlationManifest: options.correlationManifest
+        });
     }
 
     spawnExplosion(options = {}) {
@@ -530,18 +1241,22 @@ class WebGPUParticleEngine {
         const style = this._styleId(options.style);
         const seed = this._resolveSeed(options);
         const effectId = this._hashValue(options.effectId ?? seed);
+        const correlationId = options.correlationId ?? options.effectId ?? seed;
         const requestedSize = Number(options.size) || 0;
         const shapeSize = shape >= 1 && shape <= 5
             ? Math.max(requestedSize, this._shapeSize(shape, style))
             : (requestedSize || this._shapeSize(shape, style));
         let remaining = count;
         let globalIndexBase = 0;
+        const commands = [];
         const defaultEmissionSpread = shape === 5 ? 0.2 : shape >= 1 && shape <= 4 ? 0.1 : 0.055;
         for (let i = 0; i < palette.length && remaining > 0; i++) {
             const commandsLeft = palette.length - i;
             const slice = Math.ceil(remaining / commandsLeft);
-            this._queueSpawn({
+            commands.push({
                 ...options,
+                priority: options.priority || 'core',
+                required: options.required === true,
                 kind: 2,
                 count: slice,
                 shape,
@@ -549,6 +1264,7 @@ class WebGPUParticleEngine {
                 color: palette[i],
                 seed,
                 effectId,
+                correlationId,
                 globalIndexBase,
                 globalCount: count,
                 emissionDelay: Number(options.emissionDelay) || 0,
@@ -558,15 +1274,18 @@ class WebGPUParticleEngine {
                     style,
                     secondary: shape === 0 || shape === 5,
                     nativeColor: options.nativeColor === true
-                })
+                }),
+                viewportResponsive: options.viewportResponsive === true
             });
             remaining -= slice;
             globalIndexBase += slice;
         }
 
         if (shape === 0) {
-            this._queueSpawn({
+            commands.push({
                 ...options,
+                priority: 'decorative',
+                required: false,
                 kind: 2,
                 count: 1,
                 shape: 0,
@@ -578,10 +1297,13 @@ class WebGPUParticleEngine {
                 color: '#ffffff',
                 seed: seed ^ 0xc2b2ae35,
                 effectId,
+                correlationId,
                 flags: this._flags({ role: 2, style })
             });
-            this._queueSpawn({
+            commands.push({
                 ...options,
+                priority: 'accent',
+                required: false,
                 kind: 2,
                 count: Math.max(8, Math.round(count * 0.12)),
                 shape: 'sparkle',
@@ -590,6 +1312,7 @@ class WebGPUParticleEngine {
                 color: '#ffffff',
                 seed: seed ^ 0x27d4eb2f,
                 effectId,
+                correlationId,
                 emissionSpread: 0.09,
                 flags: this._flags({ role: 5, style })
             });
@@ -597,8 +1320,10 @@ class WebGPUParticleEngine {
 
         const smokeCount = style === 1 ? 10 : style === 0 ? 5 : 0;
         if (smokeCount > 0 && this.smokeScale > 0.1 && shape === 0) {
-            this._queueSpawn({
+            commands.push({
                 ...options,
+                priority: 'decorative',
+                required: false,
                 kind: 2,
                 count: Math.max(2, Math.round(smokeCount * this.smokeScale)),
                 shape: 9,
@@ -609,9 +1334,186 @@ class WebGPUParticleEngine {
                 color: '#7c84912c',
                 seed: seed ^ 0x165667b1,
                 effectId,
+                correlationId,
                 emissionSpread: 0.14,
                 flags: this._flags({ role: 7, style })
             });
+        }
+        return this._queueSpawnGroup(commands, {
+            correlationId,
+            correlationManifest: options.correlationManifest,
+            envelopeCommandId: options.envelopeCommandId
+        });
+    }
+
+    spawnLayer(layer = {}, context = {}) {
+        this._validateV2Layer(layer, context);
+        const degradation = SpawnCommandPolicy.degradeLayerForPolicy(
+            layer,
+            context.degradationPolicy || { tier: 0 }
+        );
+        this._recordPendingDegradation(degradation.changes);
+        if (!degradation.layer) return false;
+        const effectiveLayer = degradation.layer;
+        const shape = this._v2ShapeId(effectiveLayer);
+        const packedColors = effectiveLayer.colors.map(color => this._packColor(color));
+        const scale = this._v2ViewportScale();
+        const style = context.materialProfile === 'premium-realistic'
+            ? this._styleId('premium-realistic')
+            : this._styleId(context.visualStyle || this.style);
+        const splitQuality = context.splitQuality === undefined ? degradation.splitQuality : context.splitQuality;
+        const materialRole = effectiveLayer.priority === 'decorative' ? 2 : effectiveLayer.priority === 'accent' ? 1 : 0;
+        const renderHints = context.renderHints || {};
+        const depthEnabled = renderHints.depthEnabled === true;
+        const glyphScale = effectiveLayer.primitive === 'glyph' ? Number(renderHints.glyphScale) || 1 : 1;
+        const vectorHero = shape === V2_GLYPH_IDS.boykisser && effectiveLayer.core === true &&
+            Number(renderHints.glyphExtent) >= V2_VECTOR_HERO_MIN_GLYPH_EXTENT;
+        const particleSize = effectiveLayer.size * 6 * scale;
+        const extentIntensity = !vectorHero && effectiveLayer.primitive === 'glyph' &&
+            Number.isFinite(renderHints.glyphExtent)
+            ? this._v2GlyphExtentIntensity(effectiveLayer, renderHints, particleSize)
+            : null;
+        const flags = V2_MARKER | (vectorHero ? V2_VECTOR_HERO : 0) |
+            (!vectorHero && effectiveLayer.trail ? V2_TRAIL : 0) |
+            (effectiveLayer.split ? V2_SPLIT_REQUESTED : 0) | (effectiveLayer.strobe ? V2_STROBE : 0) |
+            ((splitQuality & 3) << 4) | ((materialRole & 15) << 8) | ((style & 3) << 12);
+        const vectorHeroSize = vectorHero
+            ? this._v2VectorHeroHalfHeight(depthEnabled ? Number(renderHints.burstDepth) : 0)
+            : null;
+
+        return this._queueSpawnGroup([{
+            ownerToken: context.ownerToken,
+            expiresAtMs: context.expiresAtMs,
+            lane: context.lane || 'show',
+            priority: effectiveLayer.priority,
+            required: context.required === undefined ? effectiveLayer.core === true : context.required === true,
+            beatId: context.beatId ?? null,
+            admissionBatchId: context.admissionBatchId ?? null,
+            correlationId: context.correlationId ?? effectiveLayer.id,
+            envelopeCommandId: context.envelopeCommandId,
+            correlationManifest: context.correlationManifest,
+            origin: context.origin || context.position || { x: 0, y: 0 },
+            target: context.target || context.origin || context.position || { x: 0, y: 0 },
+            kind: 2,
+            count: vectorHero ? 1 : effectiveLayer.density,
+            shape,
+            packedColors,
+            colorCount: packedColors.length,
+            flags,
+            intensity: vectorHero ? 0.1 : extentIntensity ?? ((context.powerScale ?? 1) * scale * glyphScale),
+            particleDuration: effectiveLayer.lifetimeMs / 1000,
+            size: vectorHero ? vectorHeroSize : particleSize,
+            gravity: vectorHero ? 0 : effectiveLayer.gravity * 105 * scale,
+            drag: vectorHero ? 1 : effectiveLayer.drag,
+            secondary: false,
+            seed: context.seed,
+            effectId: context.effectId ?? effectiveLayer.id,
+            globalCount: vectorHero ? 1 : effectiveLayer.density,
+            depthEnabled,
+            launchDepth: depthEnabled ? Number(renderHints.launchDepth) : 0,
+            burstDepth: depthEnabled ? Number(renderHints.burstDepth) : 0,
+            vectorAspectRatio: vectorHero ? BOYKISSER_VECTOR.aspectRatio : null,
+            viewportResponsive: true,
+            viewportMaterialization: vectorHero ? {
+                kind: 'v2-vector-hero',
+                aspectRatio: BOYKISSER_VECTOR.aspectRatio
+            } : {
+                kind: 'v2-layer',
+                authoredSize: Number(effectiveLayer.size),
+                authoredGravity: Number(effectiveLayer.gravity),
+                powerScale: Number(context.powerScale) || 1,
+                glyphScale,
+                glyphExtent: effectiveLayer.primitive === 'glyph' && Number.isFinite(renderHints.glyphExtent)
+                    ? Number(renderHints.glyphExtent)
+                    : null,
+                lifetimeMs: Number(effectiveLayer.lifetimeMs),
+                drag: Number(effectiveLayer.drag)
+            }
+        }], {
+            correlationId: context.correlationId ?? effectiveLayer.id,
+            correlationManifest: context.correlationManifest,
+            envelopeCommandId: context.envelopeCommandId
+        });
+    }
+
+    _recordPendingDegradation(changes = []) {
+        for (const change of changes) {
+            if (Object.prototype.hasOwnProperty.call(this.pendingDegradedLayerCounts, change)) {
+                this.pendingDegradedLayerCounts[change]++;
+            }
+        }
+    }
+
+    _validateV2Layer(layer, context) {
+        if (!layer || typeof layer !== 'object' || Array.isArray(layer) || this._v2ShapeId(layer) === null) {
+            throw new TypeError('Unsupported ShowPlanV2 layer primitive or glyph.');
+        }
+        if (!Array.isArray(layer.colors) || layer.colors.length < 1 || layer.colors.length > 4) {
+            throw new RangeError('ShowPlanV2 layers require between one and four colors.');
+        }
+        if (!Number.isInteger(layer.density) || layer.density < 1 || layer.density > this.maxParticles) {
+            throw new RangeError(`ShowPlanV2 layer density must be an integer between 1 and ${this.maxParticles}.`);
+        }
+        if (!Number.isFinite(layer.size) || layer.size < 0.05 || layer.size > 10) {
+            throw new RangeError('ShowPlanV2 layer size must be between 0.05 and 10.');
+        }
+        if (!Number.isInteger(layer.lifetimeMs) || layer.lifetimeMs < 1 || layer.lifetimeMs > 10000) {
+            throw new RangeError('ShowPlanV2 layer lifetimeMs must be an integer between 1 and 10000.');
+        }
+        if (!Number.isFinite(layer.gravity) || layer.gravity < -10 || layer.gravity > 10) {
+            throw new RangeError('ShowPlanV2 layer gravity must be between -10 and 10.');
+        }
+        if (!Number.isFinite(layer.drag) || layer.drag < 0 || layer.drag > 1) {
+            throw new RangeError('ShowPlanV2 layer drag must be between 0 and 1.');
+        }
+        if (!Number.isInteger(layer.delayMs) || layer.delayMs < 0) {
+            throw new RangeError('ShowPlanV2 layer delayMs must be a non-negative integer.');
+        }
+        for (const property of ['trail', 'split', 'strobe', 'core']) {
+            if (typeof layer[property] !== 'boolean') throw new TypeError(`ShowPlanV2 layer ${property} must be boolean.`);
+        }
+        if (!['core', 'accent', 'decorative'].includes(layer.priority)) {
+            throw new TypeError('ShowPlanV2 layer priority is unsupported.');
+        }
+        if (layer.priority === 'decorative' && layer.core) {
+            throw new TypeError('Decorative ShowPlanV2 layers cannot be core.');
+        }
+        layer.colors.forEach(color => this._packColor(color));
+        if (context.materialProfile !== undefined && !['classic', 'premium-realistic'].includes(context.materialProfile)) {
+            throw new TypeError('ShowPlanV2 material profile is unsupported.');
+        }
+        if (context.visualStyle !== undefined && !['premium-hybrid', 'realistic', 'stylized-neon'].includes(context.visualStyle)) {
+            throw new TypeError('ShowPlanV2 visual style is unsupported.');
+        }
+        if (context.splitQuality !== undefined && (!Number.isInteger(context.splitQuality)
+            || context.splitQuality < 0 || context.splitQuality > 3)) {
+            throw new RangeError('ShowPlanV2 splitQuality must be an integer between 0 and 3.');
+        }
+        if (context.powerScale !== undefined && (!Number.isFinite(context.powerScale) || context.powerScale <= 0)) {
+            throw new RangeError('ShowPlanV2 powerScale must be positive.');
+        }
+        if (context.renderHints !== undefined) {
+            const hints = context.renderHints;
+            if (!hints || typeof hints !== 'object' || Array.isArray(hints) || typeof hints.depthEnabled !== 'boolean') {
+                throw new TypeError('ShowPlanV2 renderHints must contain a boolean depthEnabled.');
+            }
+            for (const property of ['launchDepth', 'burstDepth']) {
+                if (!Number.isFinite(hints[property]) || hints[property] < -1 || hints[property] > 1) {
+                    throw new RangeError(`ShowPlanV2 renderHints ${property} must be between -1 and 1.`);
+                }
+            }
+            if (!Number.isFinite(hints.glyphScale) || hints.glyphScale < 0.5 || hints.glyphScale > 2) {
+                throw new RangeError('ShowPlanV2 renderHints glyphScale must be between 0.5 and 2.');
+            }
+            if (hints.glyphExtent !== undefined && (!Number.isFinite(hints.glyphExtent)
+                || hints.glyphExtent <= 0 || hints.glyphExtent > 1)) {
+                throw new RangeError('ShowPlanV2 renderHints glyphExtent must be greater than zero through one.');
+            }
+        }
+        for (const point of [context.origin || context.position, context.target]) {
+            if (point !== undefined && (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y))) {
+                throw new TypeError('ShowPlanV2 layer context positions must contain finite x and y values.');
+            }
         }
     }
 
@@ -626,8 +1528,11 @@ class WebGPUParticleEngine {
         const count = pulseCount * (splitterCount + 1);
         const pulseLife = Math.max(0.12, Math.min(0.24, totalDuration * 0.24));
         const seed = this._resolveSeed(options);
-        this._queueSpawn({
+        const correlationId = options.correlationId ?? options.effectId ?? seed;
+        this._queueSpawnGroup([{
             ...options,
+            priority: options.priority || 'accent',
+            required: false,
             kind: 2,
             count,
             globalCount: count,
@@ -638,11 +1543,16 @@ class WebGPUParticleEngine {
             color: colors[0],
             seed,
             effectId: this._hashValue(options.effectId ?? seed),
+            correlationId,
             emissionDelay: Math.max(0, Number(options.emissionDelay) || 0),
             emissionSpread: Math.max(0, totalDuration - pulseLife),
             secondary: false,
             pulseCount,
             flags: this._flags({ role: 8, style, pulseCount })
+        }], {
+            correlationId,
+            correlationManifest: options.correlationManifest,
+            envelopeCommandId: options.envelopeCommandId
         });
         return totalDuration;
     }
@@ -652,8 +1562,50 @@ class WebGPUParticleEngine {
         return { burst: 0, heart: 1, paws: 2, paw: 2, star: 3, ring: 4, spiral: 5, image: 6, sparkle: 7, rocket: 8, smoke: 9 }[shape] ?? 0;
     }
 
+    _v2ShapeId(layer = {}) {
+        if (layer.primitive === 'glyph') return V2_GLYPH_IDS[layer.glyph] ?? null;
+        return V2_PRIMITIVE_IDS[layer.primitive] ?? null;
+    }
+
     _styleId(style) {
-        return { 'premium-hybrid': 0, realistic: 1, 'stylized-neon': 2 }[style] ?? 0;
+        return { 'premium-hybrid': 0, realistic: 1, 'stylized-neon': 2, 'premium-realistic': 3 }[style] ?? 0;
+    }
+
+    _v2ViewportScale() {
+        return Math.max(0.75, Math.min(1.75, Math.min(this.logicalWidth, this.logicalHeight) / 1080));
+    }
+
+    _v2VectorHeroHalfHeight(burstDepth, aspectRatio = BOYKISSER_VECTOR.aspectRatio) {
+        const safeAspectRatio = Math.max(0.1, Number(aspectRatio) || BOYKISSER_VECTOR.aspectRatio);
+        const projectedHalfHeight = Math.min(
+            this.logicalHeight,
+            this.logicalWidth / safeAspectRatio
+        ) * BOYKISSER_VECTOR.viewportFraction * 0.5;
+        const projection = ENVELOPE_PROFILES.projection;
+        const depth = Math.max(-1, Math.min(1, Number(burstDepth) || 0));
+        const perspective = projection.cameraDistance / Math.max(
+            projection.minimumDenominator,
+            projection.cameraDistance - depth
+        );
+        return projectedHalfHeight / perspective;
+    }
+
+    _v2GlyphExtentIntensity(layer, renderHints, particleSize) {
+        const extentPixels = this.logicalWidth * renderHints.glyphExtent;
+        const burstDepth = Math.max(-1, Math.min(1, Number(renderHints.burstDepth) || 0));
+        const projection = ENVELOPE_PROFILES.projection;
+        const perspective = projection.cameraDistance / Math.max(
+            projection.minimumDenominator,
+            projection.cameraDistance - burstDepth
+        );
+        const midpointSeconds = Number(layer.lifetimeMs) / 2000;
+        const decay = Number(layer.drag) * 60;
+        const displacement = decay > 1e-6
+            ? (1 - Math.exp(-decay * midpointSeconds)) / decay
+            : midpointSeconds;
+        const particleDiameter = particleSize * perspective * 2;
+        const velocityWidth = Math.max(1, extentPixels - particleDiameter);
+        return velocityWidth / (1.8 * projection.velocityUnit * displacement * perspective);
     }
 
     _flags({ secondary = false, nativeColor = false, role = 0, style = 0, pulseCount = 0, rocketAvatarHead = false } = {}) {
@@ -684,78 +1636,526 @@ class WebGPUParticleEngine {
         return base * styleScale * resolutionScale;
     }
 
-    _queueSpawn(command) {
-        if (!this.initialized || this.spawnQueue.length >= this.maxSpawnCommands) return false;
+    _normalizeSpawnEntry(command) {
+        const ownerToken = typeof command.ownerToken === 'string' && command.ownerToken
+            ? command.ownerToken
+            : null;
+        const metadata = SpawnCommandPolicy.normalizeCommandMetadata(command);
         const seed = this._resolveSeed(command);
-        this.spawnQueue.push({
-            origin: command.origin || { x: command.x || 0, y: command.y || 0 },
-            target: command.target || command.origin || { x: command.x || 0, y: command.y || 0 },
+        const flags = command.flags || 0;
+        const isV2 = (flags & V2_MARKER) !== 0;
+        const renderHints = command.renderHints || {};
+        const depthEnabled = command.depthEnabled === true || renderHints.depthEnabled === true;
+        const particleDuration = isV2
+            ? nonnegativeFinite(command.particleDuration)
+            : Math.max(0.05, Number(command.particleDuration) || Number(command.duration) || 1.2);
+        const textureIndex = Math.max(0, Number(command.textureIndex) || 0);
+        const emissionDelay = nonnegativeFinite(command.emissionDelay);
+        const emissionSpread = nonnegativeFinite(command.emissionSpread);
+        const nowMs = this._atlasNow();
+        const queuedAtMs = command.queuedAtMs !== null && command.queuedAtMs !== undefined &&
+            command.queuedAtMs !== '' && Number.isFinite(Number(command.queuedAtMs))
+            ? Number(command.queuedAtMs)
+            : nowMs;
+        const expiresAtMs = command.expiresAtMs !== null && command.expiresAtMs !== undefined &&
+            command.expiresAtMs !== '' && Number.isFinite(Number(command.expiresAtMs))
+            ? Number(command.expiresAtMs)
+            : Number.POSITIVE_INFINITY;
+        const origin = command.origin || { x: command.x || 0, y: command.y || 0 };
+        const target = command.target || command.origin || { x: command.x || 0, y: command.y || 0 };
+        const normalizedOrigin = command.normalizedOrigin && Number.isFinite(command.normalizedOrigin.x) &&
+            Number.isFinite(command.normalizedOrigin.y)
+            ? { x: Number(command.normalizedOrigin.x), y: Number(command.normalizedOrigin.y) }
+            : null;
+        const normalizedTarget = command.normalizedTarget && Number.isFinite(command.normalizedTarget.x) &&
+            Number.isFinite(command.normalizedTarget.y)
+            ? { x: Number(command.normalizedTarget.x), y: Number(command.normalizedTarget.y) }
+            : null;
+        return {
+            origin: { x: Number(origin.x) || 0, y: Number(origin.y) || 0 },
+            target: { x: Number(target.x) || 0, y: Number(target.y) || 0 },
+            normalizedOrigin,
+            normalizedTarget,
             color: this._parseColor(command.color || '#ffffff'),
             count: Math.max(1, Math.floor(command.count || 1)),
             shape: this._shapeId(command.shape),
             kind: command.kind || 2,
-            flags: command.flags || 0,
+            flags,
             intensity: Math.max(0.1, Number(command.intensity) || 1),
             duration: Math.max(0.05, Number(command.duration) || 1.2),
-            particleDuration: Math.max(0.05, Number(command.particleDuration) || Number(command.duration) || 1.2),
-            textureIndex: Math.max(0, Number(command.textureIndex) || 0),
+            particleDuration,
+            textureIndex,
             seed,
             effectId: this._hashValue(command.effectId ?? seed),
-            size: Math.max(1, Number(command.size) || 6),
+            size: isV2 ? Number(command.size) : Math.max(1, Number(command.size) || 6),
             gravity: Number.isFinite(command.gravity) ? command.gravity : 90,
             drag: Number.isFinite(command.drag) ? command.drag : 0.985,
             secondary: command.secondary !== false ? 1 : 0,
             wind: Number.isFinite(command.wind) ? command.wind : 0,
             curve: Number.isFinite(command.curve) ? command.curve : 0,
-            emissionDelay: Math.max(0, Number(command.emissionDelay) || 0),
-            emissionSpread: Math.max(0, Number(command.emissionSpread) || 0),
+            emissionDelay,
+            emissionSpread,
             globalIndexBase: Math.max(0, Math.floor(Number(command.globalIndexBase) || 0)),
             globalCount: Math.max(1, Math.floor(Number(command.globalCount) || Number(command.count) || 1)),
-            pulseCount: Math.max(0, Math.min(7, Math.floor(Number(command.pulseCount) || 0)))
+            pulseCount: Math.max(0, Math.min(7, Math.floor(Number(command.pulseCount) || 0))),
+            packedColors: isV2 ? [...command.packedColors] : null,
+            colorCount: isV2 ? command.colorCount : 0,
+            depthEnabled,
+            launchDepth: depthEnabled ? Number(command.launchDepth ?? renderHints.launchDepth) : 0,
+            burstDepth: depthEnabled ? Number(command.burstDepth ?? renderHints.burstDepth) : 0,
+            vectorAspectRatio: Number.isFinite(Number(command.vectorAspectRatio))
+                ? Number(command.vectorAspectRatio)
+                : null,
+            username: command.username ?? null,
+            userId: command.userId ?? null,
+            uniqueId: command.uniqueId ?? null,
+            giftId: command.giftId ?? null,
+            giftName: command.giftName ?? null,
+            giftImage: command.giftImage ?? null,
+            coins: command.coins ?? null,
+            value: command.value ?? null,
+            combo: command.combo ?? null,
+            bundleCount: command.bundleCount ?? null,
+            giftBundleKey: command.giftBundleKey ?? null,
+            ...metadata,
+            resourceGeneration: this.resourceGeneration,
+            ownerToken,
+            queuedAtMs,
+            expiresAtMs,
+            originalEmissionDelaySeconds: emissionDelay,
+            originalParticleDurationSeconds: particleDuration,
+            originalEmissionSpreadSeconds: emissionSpread,
+            correlationId: command.correlationId ?? metadata.correlationId ?? command.effectId ?? seed,
+            sourceCorrelationId: command.sourceCorrelationId ?? command.correlationId ??
+                metadata.correlationId ?? command.effectId ?? seed,
+            envelopeCorrelationId: command.envelopeCorrelationId ?? command.correlationId ??
+                metadata.correlationId ?? command.effectId ?? seed,
+            envelopeCommandId: command.envelopeCommandId ?? null,
+            correlationManifest: command.correlationManifest ?? null,
+            viewportResponsive: command.viewportResponsive === true,
+            viewportMaterialization: command.viewportMaterialization &&
+                typeof command.viewportMaterialization === 'object'
+                ? { ...command.viewportMaterialization }
+                : null,
+            queuedViewportMinimum: Math.max(1, Math.min(this.logicalWidth, this.logicalHeight))
+        };
+    }
+
+    _manifestCommand(entry) {
+        const { correlationManifest, ...snapshot } = entry;
+        return deeplyFreeze({
+            ...snapshot,
+            origin: deeplyFreeze({ ...snapshot.origin }),
+            target: deeplyFreeze({ ...snapshot.target }),
+            normalizedOrigin: snapshot.normalizedOrigin ? deeplyFreeze({ ...snapshot.normalizedOrigin }) : null,
+            normalizedTarget: snapshot.normalizedTarget ? deeplyFreeze({ ...snapshot.normalizedTarget }) : null,
+            color: deeplyFreeze([...(snapshot.color || [])]),
+            packedColors: snapshot.packedColors ? deeplyFreeze([...snapshot.packedColors]) : null
         });
+    }
+
+    _queueNormalizedEntry(entry) {
+        const ownerToken = entry.ownerToken;
+        if (ownerToken && (this.inactiveSpawnOwners.has(ownerToken) || !this.isOwnerActive(ownerToken))) {
+            this.spawnTelemetry.droppedByReason.inactiveOwner += 1;
+            return false;
+        }
+        const managedQueue = entry.admissionManaged || this.spawnQueue.some(item => item.admissionManaged);
+        if (!managedQueue && this.spawnQueue.length >= this.maxSpawnCommands) return false;
+        this.spawnQueue.push(entry);
+        const textureIndex = entry.textureIndex;
+        if (textureIndex > 0) {
+            const queuedAtMs = entry.queuedAtMs;
+            const visibleSeconds = entry.emissionDelay + nonnegativeFinite(entry.particleDuration) + entry.emissionSpread;
+            this._markAtlasTextureUsed(textureIndex, {
+                nowMs: queuedAtMs,
+                visibleUntilMs: queuedAtMs + visibleSeconds * 1_000 + ATLAS_RELEASE_GRACE_MS
+            });
+        }
         return true;
     }
 
-    _parseColor(color) {
-        if (Array.isArray(color) && color.length >= 3) {
-            return [
-                Math.max(0, Math.min(1, Number(color[0]) || 0)),
-                Math.max(0, Math.min(1, Number(color[1]) || 0)),
-                Math.max(0, Math.min(1, Number(color[2]) || 0)),
-                Math.max(0, Math.min(1, color.length > 3 ? Number(color[3]) : 1))
-            ];
+    _queueSpawnGroup(commands, metadata = {}) {
+        if (!this.initialized || !Array.isArray(commands) || commands.length === 0) return false;
+        const groupSequence = ++this.spawnCorrelationSequence;
+        const providedManifest = metadata.correlationManifest ??
+            commands.find(command => command.correlationManifest)?.correlationManifest ?? null;
+        const requestedCorrelationId = metadata.correlationId ?? commands[0]?.correlationId ??
+            commands[0]?.effectId ?? 'runtime';
+        const envelopeCorrelationId = providedManifest
+            ? providedManifest.correlationId ?? requestedCorrelationId
+            : `${String(requestedCorrelationId)}:runtime:${this.resourceGeneration}:${groupSequence}`;
+        const normalized = commands.map((command, index) => this._normalizeSpawnEntry({
+            ...metadata,
+            ...command,
+            correlationId: requestedCorrelationId,
+            sourceCorrelationId: command.sourceCorrelationId ?? metadata.sourceCorrelationId ??
+                requestedCorrelationId,
+            envelopeCorrelationId,
+            envelopeCommandId: command.envelopeCommandId ?? metadata.envelopeCommandIds?.[index] ??
+                metadata.envelopeCommandId ?? `${envelopeCorrelationId}:command:${index + 1}`,
+            correlationManifest: metadata.correlationManifest ?? command.correlationManifest ?? null
+        }));
+        let manifest = providedManifest ?? normalized[0].correlationManifest;
+        if (!manifest) {
+            manifest = deeplyFreeze({
+                correlationId: envelopeCorrelationId,
+                commands: deeplyFreeze(normalized.map(entry => this._manifestCommand(entry)))
+            });
         }
-        const hex = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(String(color));
-        if (hex) return [parseInt(hex[1], 16) / 255, parseInt(hex[2], 16) / 255, parseInt(hex[3], 16) / 255, 1];
-        const hexAlpha = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(String(color));
-        if (hexAlpha) return [
-            parseInt(hexAlpha[1], 16) / 255,
-            parseInt(hexAlpha[2], 16) / 255,
-            parseInt(hexAlpha[3], 16) / 255,
-            parseInt(hexAlpha[4], 16) / 255
-        ];
-        const hsl = /^hsl\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*\)$/i.exec(String(color));
-        if (!hsl) return [1, 1, 1, 1];
-        const h = Number(hsl[1]) / 360, s = Number(hsl[2]) / 100, l = Number(hsl[3]) / 100;
-        const f = n => {
-            const k = (n + h * 12) % 12;
-            return l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1));
-        };
-        return [f(0), f(8), f(4), 1];
+        for (const entry of normalized) entry.correlationManifest = manifest;
+        let queued = false;
+        for (const entry of normalized) queued = this._queueNormalizedEntry(entry) || queued;
+        return queued;
     }
 
-    _uploadSpawnCommands() {
-        const commands = this.spawnQueue.splice(0, this.maxSpawnCommands);
-        if (!commands.length) return { count: 0, maxParticles: 0 };
+    _queueSpawn(command) {
+        if (!this.initialized) return false;
+        if (command.correlationManifest) return this._queueSpawnGroup([command], command);
+        const sequence = ++this.spawnCorrelationSequence;
+        const requestedCorrelationId = command.correlationId ?? command.effectId ?? 'runtime';
+        const envelopeCorrelationId = `${String(requestedCorrelationId)}:runtime:${this.resourceGeneration}:${sequence}`;
+        const envelopeCommandId = command.envelopeCommandId ?? `${envelopeCorrelationId}:command:1`;
+        const entry = this._normalizeSpawnEntry({
+            ...command,
+            correlationId: requestedCorrelationId,
+            sourceCorrelationId: command.sourceCorrelationId ?? requestedCorrelationId,
+            envelopeCorrelationId,
+            envelopeCommandId
+        });
+        const manifest = deeplyFreeze({
+            correlationId: envelopeCorrelationId,
+            commands: deeplyFreeze([this._manifestCommand(entry)])
+        });
+        entry.correlationManifest = manifest;
+        return this._queueNormalizedEntry(entry);
+    }
+
+    cancelQueuedOwner(ownerToken, reason = 'owner-cancelled') {
+        if (typeof ownerToken !== 'string' || !ownerToken) return 0;
+        this._markSpawnOwnerInactive(ownerToken);
+        const before = this.spawnQueue.length;
+        this.spawnQueue = this.spawnQueue.filter(command => command.ownerToken !== ownerToken);
+        const dropped = before - this.spawnQueue.length;
+        if (dropped > 0 && reason !== 'device-lost') {
+            this.spawnTelemetry.droppedByReason.inactiveOwner += dropped;
+        }
+        for (const key of [...this.correlationFitCache.keys()]) {
+            if (JSON.parse(key)[1] === ownerToken) this.correlationFitCache.delete(key);
+        }
+        for (const key of [...this.correlationManifestRegistry.keys()]) {
+            if (JSON.parse(key)[1] === ownerToken) this.correlationManifestRegistry.delete(key);
+        }
+        return dropped;
+    }
+
+    _parseColor(color) {
+        return parseColor(color);
+    }
+
+    _packColor(color) {
+        const match = /^#([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})?$/i.exec(String(color));
+        if (!match) throw new TypeError('ShowPlanV2 colors must use #RRGGBB or #RRGGBBAA.');
+        const red = parseInt(match[1], 16);
+        const green = parseInt(match[2], 16);
+        const blue = parseInt(match[3], 16);
+        const alpha = match[4] ? parseInt(match[4], 16) : 255;
+        return (red | (green << 8) | (blue << 16) | (alpha << 24)) >>> 0;
+    }
+
+    _materializeCommandForAdmission(queueEntry, nowMs, { preserveFullLife = false } = {}) {
+        const command = {
+            ...queueEntry,
+            origin: queueEntry.normalizedOrigin
+                ? {
+                    x: queueEntry.normalizedOrigin.x * this.logicalWidth,
+                    y: queueEntry.normalizedOrigin.y * this.logicalHeight
+                }
+                : { ...queueEntry.origin },
+            target: queueEntry.normalizedTarget
+                ? {
+                    x: queueEntry.normalizedTarget.x * this.logicalWidth,
+                    y: queueEntry.normalizedTarget.y * this.logicalHeight
+                }
+                : { ...queueEntry.target }
+        };
+        const viewportMaterialization = queueEntry.viewportMaterialization;
+        if (viewportMaterialization?.kind === 'rocket') {
+            command.size = Math.max(
+                nonnegativeFinite(viewportMaterialization.minimumSize),
+                nonnegativeFinite(viewportMaterialization.baseSize) * this._v2ViewportScale()
+            ) * nonnegativeFinite(viewportMaterialization.multiplier || 1);
+        } else if (viewportMaterialization?.kind === 'scaled-size') {
+            command.size = nonnegativeFinite(viewportMaterialization.baseSize) *
+                this._v2ViewportScale() * nonnegativeFinite(viewportMaterialization.multiplier || 1);
+        } else if (viewportMaterialization?.kind === 'v2-vector-hero') {
+            command.vectorAspectRatio = nonnegativeFinite(viewportMaterialization.aspectRatio) ||
+                BOYKISSER_VECTOR.aspectRatio;
+            command.size = this._v2VectorHeroHalfHeight(command.burstDepth, command.vectorAspectRatio);
+            command.gravity = 0;
+            command.intensity = 0.1;
+            command.drag = 1;
+        } else if (viewportMaterialization?.kind === 'v2-layer') {
+            const currentScale = this._v2ViewportScale();
+            command.size = nonnegativeFinite(viewportMaterialization.authoredSize) * 6 * currentScale;
+            command.gravity = finiteOrZero(viewportMaterialization.authoredGravity) * 105 * currentScale;
+            command.intensity = Number.isFinite(viewportMaterialization.glyphExtent)
+                ? this._v2GlyphExtentIntensity({
+                    lifetimeMs: viewportMaterialization.lifetimeMs,
+                    drag: viewportMaterialization.drag
+                }, {
+                    glyphExtent: viewportMaterialization.glyphExtent,
+                    burstDepth: command.burstDepth
+                }, command.size)
+                : finiteOrZero(viewportMaterialization.powerScale || 1) * currentScale *
+                    nonnegativeFinite(viewportMaterialization.glyphScale || 1);
+        } else if (queueEntry.viewportResponsive) {
+            const currentMinimum = Math.max(1, Math.min(this.logicalWidth, this.logicalHeight));
+            const ratio = currentMinimum / Math.max(1, queueEntry.queuedViewportMinimum || currentMinimum);
+            command.size *= ratio;
+            command.intensity *= ratio;
+            command.gravity *= ratio;
+            command.wind *= ratio;
+        }
+        const originalDelay = nonnegativeFinite(
+            queueEntry.originalEmissionDelaySeconds ?? queueEntry.emissionDelay
+        );
+        const originalDuration = nonnegativeFinite(
+            queueEntry.originalParticleDurationSeconds ?? queueEntry.particleDuration
+        );
+        const originalSpread = nonnegativeFinite(
+            queueEntry.originalEmissionSpreadSeconds ?? queueEntry.emissionSpread
+        );
+        if (preserveFullLife) {
+            command.emissionDelay = originalDelay;
+            command.particleDuration = originalDuration;
+            command.emissionSpread = originalSpread;
+            return { command };
+        }
+        const deferredSeconds = Math.max(0, Number(nowMs) - Number(queueEntry.queuedAtMs)) / 1_000;
+        if (deferredSeconds < originalDelay) {
+            command.emissionDelay = originalDelay - deferredSeconds;
+            command.particleDuration = originalDuration;
+            command.emissionSpread = originalSpread;
+            return { command };
+        }
+        command.emissionDelay = 0;
+        const remainingVisibleWindow = originalDuration + originalSpread -
+            (deferredSeconds - originalDelay);
+        if (!(remainingVisibleWindow > 0)) return { command: null, dropReason: 'lifeExhausted' };
+        command.particleDuration = Math.min(originalDuration, remainingVisibleWindow);
+        command.emissionSpread = Math.max(0, remainingVisibleWindow - command.particleDuration);
+        return { command };
+    }
+
+    _correlationCacheKey(entry) {
+        return JSON.stringify([
+            entry.resourceGeneration,
+            entry.ownerToken ?? null,
+            String(entry.envelopeCorrelationId ?? entry.correlationId),
+            this.viewportRevision
+        ]);
+    }
+
+    _visibleEnvelopePaddingPx(commands = []) {
+        const needsTipGuard = commands.some(command => Number(command.kind) === 1 ||
+            [0, 3, 4, V2_PRIMITIVE_IDS.ring, V2_GLYPH_IDS.star].includes(Number(command.shape)));
+        if (!needsTipGuard) return 2;
+        return Math.min(
+            48,
+            Math.max(12, Math.min(this.logicalWidth, this.logicalHeight) * 0.025)
+        );
+    }
+
+    _manifestMismatch(message) {
+        const error = new Error(message);
+        error.code = 'CORRELATION_MANIFEST_MISMATCH';
+        return error;
+    }
+
+    _getOrCreateCorrelationFit(queueEntry, nowMs) {
+        const manifest = queueEntry.correlationManifest;
+        const envelopeCorrelationId = queueEntry.envelopeCorrelationId ?? queueEntry.correlationId;
+        if (!manifest || !isDeeplyFrozen(manifest) || manifest.correlationId !== envelopeCorrelationId ||
+            !Array.isArray(manifest.commands)) {
+            throw this._manifestMismatch('Correlation manifest is absent, mutable, or has a mismatched id.');
+        }
+        const members = manifest.commands.filter(command => command.envelopeCommandId === queueEntry.envelopeCommandId);
+        if (members.length !== 1) {
+            throw this._manifestMismatch('Correlation manifest does not contain exactly one queue command member.');
+        }
+        const memberIds = new Set(manifest.commands.map(command => command.envelopeCommandId));
+        if (memberIds.size !== manifest.commands.length) {
+            throw this._manifestMismatch('Correlation manifest contains duplicate queue command ids.');
+        }
+        const key = this._correlationCacheKey(queueEntry);
+        const registered = this.correlationManifestRegistry.get(key);
+        if (registered && registered !== manifest) {
+            throw this._manifestMismatch('A different correlation manifest is already registered for this tuple.');
+        }
+        const cached = this.correlationFitCache.get(key);
+        if (cached) {
+            if (cached.manifest !== manifest) {
+                throw this._manifestMismatch('Cached correlation fit belongs to a different manifest.');
+            }
+            return cached.fit;
+        }
+        const commands = manifest.commands.map(command => {
+            const materialized = this._materializeCommandForAdmission(command, nowMs, {
+                preserveFullLife: true
+            }).command;
+            return materialized;
+        });
+        const fit = fitCorrelatedCommands(commands, {
+            width: this.logicalWidth,
+            height: this.logicalHeight,
+            renderMinimum: Math.min(this.canvas.width || this.logicalWidth, this.canvas.height || this.logicalHeight),
+            renderMaximum: Math.max(this.canvas.width || this.logicalWidth, this.canvas.height || this.logicalHeight)
+        }, { paddingPx: this._visibleEnvelopePaddingPx(commands) });
+        this.correlationManifestRegistry.set(key, manifest);
+        this.correlationFitCache.set(key, { manifest, fit });
+        return fit;
+    }
+
+    _uploadSpawnCommands(nowMs = this._atlasNow()) {
+        nowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : this._atlasNow();
+        const queued = [];
+        for (const command of this.spawnQueue.splice(0)) {
+            if (command.resourceGeneration !== this.resourceGeneration) {
+                this.spawnTelemetry.droppedByReason.staleGeneration += 1;
+                continue;
+            }
+            if (command.expiresAtMs <= nowMs) {
+                this.spawnTelemetry.droppedByReason.expired += 1;
+                continue;
+            }
+            if (command.ownerToken && (this.inactiveSpawnOwners.has(command.ownerToken) ||
+                !this.isOwnerActive(command.ownerToken))) {
+                this.spawnTelemetry.droppedByReason.inactiveOwner += 1;
+                continue;
+            }
+            queued.push(command);
+        }
+        const managedShowCommands = queued.filter(command => (
+            command.admissionManaged &&
+            command.lane === 'show' &&
+            command.admissionBatchId !== null
+        ));
+        let pending = queued;
+        if (managedShowCommands.length > 0) {
+            const earliestBatchId = managedShowCommands.reduce((earliest, command) => {
+                const candidate = Number(command.admissionBatchId);
+                const current = Number(earliest);
+                return Number.isFinite(candidate) && Number.isFinite(current) && candidate < current
+                    ? command.admissionBatchId
+                    : earliest;
+            }, managedShowCommands[0].admissionBatchId);
+            const deferred = [];
+            pending = queued.filter(command => {
+                const isLaterShowBatch = command.admissionManaged &&
+                    command.lane === 'show' &&
+                    command.admissionBatchId !== null &&
+                    command.admissionBatchId !== earliestBatchId;
+                if (isLaterShowBatch) deferred.push(command);
+                return !isLaterShowBatch;
+            });
+            this.spawnQueue.push(...deferred);
+        }
+        const materialized = [];
+        const groups = new Map();
+        for (const entry of pending) {
+            const result = this._materializeCommandForAdmission(entry, nowMs);
+            if (!result.command) {
+                this.spawnTelemetry.droppedByReason[result.dropReason] += 1;
+                continue;
+            }
+            const key = JSON.stringify([
+                entry.resourceGeneration,
+                entry.ownerToken ?? null,
+                String(entry.envelopeCorrelationId ?? entry.correlationId)
+            ]);
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push({ entry, command: result.command });
+        }
+        for (const group of groups.values()) {
+            const groupOwner = group[0].entry.ownerToken;
+            if (groupOwner && this.inactiveSpawnOwners.has(groupOwner)) {
+                this.spawnTelemetry.droppedByReason.inactiveOwner += group.length;
+                continue;
+            }
+            let fit;
+            try {
+                fit = this._getOrCreateCorrelationFit(group[0].entry, nowMs);
+                for (let index = 1; index < group.length; index++) {
+                    if (group[index].entry.correlationManifest !== group[0].entry.correlationManifest) {
+                        throw this._manifestMismatch(
+                            'A correlated upload group contains more than one manifest identity.'
+                        );
+                    }
+                    this._getOrCreateCorrelationFit(group[index].entry, nowMs);
+                }
+                const transformed = applyCorrelationTransform(group.map(item => item.command), fit);
+                transformed.forEach((command, index) => materialized.push({
+                    ...command,
+                    correlationId: group[index].entry.sourceCorrelationId ?? command.correlationId
+                }));
+            } catch (error) {
+                const reason = error?.code === 'CORRELATION_MANIFEST_MISMATCH' ||
+                    error?.code === 'UNREGISTERED_VISIBLE_ENVELOPE'
+                    ? 'unregisteredEnvelope'
+                    : 'envelopeCannotFit';
+                this.spawnTelemetry.droppedByReason[reason] += group.length;
+                if (group.some(item => item.entry.required) && group[0].entry.ownerToken) {
+                    const ownerToken = group[0].entry.ownerToken;
+                    this.cancelQueuedOwner(ownerToken, reason);
+                    let removed = 0;
+                    for (let index = materialized.length - 1; index >= 0; index--) {
+                        if (materialized[index].ownerToken !== ownerToken) continue;
+                        materialized.splice(index, 1);
+                        removed += 1;
+                    }
+                    this.spawnTelemetry.droppedByReason.inactiveOwner += removed;
+                    this._notifyInvalidatedOwners(new Set([ownerToken]), reason);
+                }
+            }
+        }
+        let admission;
+        let admissionError = null;
+        try {
+            admission = SpawnCommandPolicy.admitSpawnCommands(materialized, {
+                maxCommands: this.maxSpawnCommands
+            });
+        } catch (error) {
+            if (!error.admission) {
+                this._recordCommandAdmission(error.telemetry || SpawnCommandPolicy.emptyCommandTelemetry());
+                throw error;
+            }
+            admission = error.admission;
+            admissionError = error;
+        }
+        this._recordCommandAdmission(admission.telemetry);
+        const commands = admission.selected;
+        if (!commands.length) {
+            return admissionError
+                ? { count: 0, maxParticles: 0, admissionError }
+                : { count: 0, maxParticles: 0 };
+        }
         const raw = new ArrayBuffer(commands.length * 112);
         const f32 = new Float32Array(raw);
         const u32 = new Uint32Array(raw);
         let maxParticles = 0;
+        const quantizeDepth = value => Math.round((Math.max(-1, Math.min(1, value)) + 1) * 127.5 + 1e-7);
         commands.forEach((command, index) => {
             const base = index * 28;
             f32[base] = command.origin.x; f32[base + 1] = command.origin.y;
             f32[base + 2] = command.target.x; f32[base + 3] = command.target.y;
-            f32.set(command.color, base + 4);
+            if ((command.flags & V2_MARKER) !== 0) {
+                for (let colorIndex = 0; colorIndex < 4; colorIndex++) {
+                    u32[base + 4 + colorIndex] = command.packedColors[colorIndex] || 0;
+                }
+            } else {
+                f32.set(command.color, base + 4);
+            }
             u32[base + 8] = command.count; u32[base + 9] = command.shape;
             u32[base + 10] = command.kind; u32[base + 11] = command.flags;
             f32[base + 12] = command.intensity; f32[base + 13] = command.particleDuration;
@@ -765,11 +2165,36 @@ class WebGPUParticleEngine {
             f32[base + 20] = command.wind; f32[base + 21] = command.curve;
             f32[base + 22] = command.emissionDelay; f32[base + 23] = command.emissionSpread;
             u32[base + 24] = command.globalIndexBase; u32[base + 25] = command.globalCount;
-            u32[base + 26] = command.effectId; u32[base + 27] = command.pulseCount;
+            u32[base + 26] = command.effectId;
+            const lowBits = (command.flags & V2_MARKER) !== 0 ? command.colorCount : command.pulseCount;
+            u32[base + 27] = command.depthEnabled
+                ? (lowBits | DEPTH_METADATA_MARKER | (quantizeDepth(command.launchDepth) << 8) |
+                    (quantizeDepth(command.burstDepth) << 16)) >>> 0
+                : lowBits;
             maxParticles = Math.max(maxParticles, command.count);
         });
         this.device.queue.writeBuffer(this.buffers.commands, 0, raw);
-        return { count: commands.length, maxParticles };
+        const spawn = { count: commands.length, maxParticles };
+        if (admissionError) spawn.admissionError = admissionError;
+        return spawn;
+    }
+
+    _recordCommandAdmission(current) {
+        const previous = this.metrics.commandAdmission?.cumulative || SpawnCommandPolicy.emptyCommandTelemetry();
+        const cumulative = SpawnCommandPolicy.emptyCommandTelemetry();
+        const next = {
+            ...current,
+            degradedLayerCounts: { ...this.pendingDegradedLayerCounts }
+        };
+        this.pendingDegradedLayerCounts = SpawnCommandPolicy.emptyDegradedLayerCounts();
+        for (const key of Object.keys(cumulative).filter(key => key !== 'degradedLayerCounts')) {
+            cumulative[key] = Number(previous[key] || 0) + Number(current[key] || 0);
+        }
+        for (const key of SpawnCommandPolicy.DEGRADATION_KEYS) {
+            cumulative.degradedLayerCounts[key] = Number(previous.degradedLayerCounts?.[key] || 0) +
+                Number(next.degradedLayerCounts[key] || 0);
+        }
+        this.metrics.commandAdmission = { current: next, cumulative };
     }
 
     render(deltaSeconds, timeSeconds = performance.now() / 1000, options = {}) {
@@ -837,6 +2262,8 @@ class WebGPUParticleEngine {
             this.simulationStarted = true;
         }
 
+        if (spawn.admissionError) throw spawn.admissionError;
+
         // Simulation and queued spawns continue even when adaptive quality
         // skips an expensive presentation frame.
         if (options.present === false) return;
@@ -849,17 +2276,7 @@ class WebGPUParticleEngine {
         const scenePass = encoder.beginRenderPass({ colorAttachments: [{
             view: this.sceneTexture.createView(), clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store'
         }]});
-        scenePass.setBindGroup(0, this.renderBindGroup);
-        if (this.trailsEnabled) {
-            scenePass.setPipeline(this.pipelines.trail);
-            scenePass.drawIndirect(this.buffers.trailIndirect, 0);
-        }
-        if (this.glowEnabled) {
-            scenePass.setPipeline(this.pipelines.glow);
-            scenePass.drawIndirect(this.buffers.coreIndirect, 0);
-        }
-        scenePass.setPipeline(this.pipelines.core);
-        scenePass.drawIndirect(this.buffers.coreIndirect, 0);
+        this._drawDepthBuckets(scenePass);
         scenePass.end();
 
         if (this.bloomEnabled) {
@@ -901,52 +2318,181 @@ class WebGPUParticleEngine {
         const composite = encoder.beginRenderPass({ colorAttachments: [{ view: output, clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store' }]});
         composite.setPipeline(this.pipelines.composite); composite.setBindGroup(0, this.postBindGroups.composite); composite.draw(3); composite.end();
 
-        if (!this.readbackPending && performance.now() - this.lastReadbackAt > 1000) {
-            encoder.copyBufferToBuffer(this.buffers.counters, 0, this.buffers.readback, 0, 16);
-            if (this.timestampEnabled) {
-                encoder.resolveQuerySet(this.timestampQuerySet, 0, 2, this.buffers.timestampResolve, 0);
-                encoder.copyBufferToBuffer(this.buffers.timestampResolve, 0, this.buffers.timestampReadback, 0, 16);
+        const frameCapacityResources = this.capacityResources;
+        let frameReadbackRequest = null;
+        if (frameCapacityResources && !frameCapacityResources.readbackPending &&
+            performance.now() - this.lastReadbackAt > 1000) {
+            frameReadbackRequest = this._captureReadbackRequest(frameCapacityResources);
+            encoder.copyBufferToBuffer(
+                frameReadbackRequest.counterSource,
+                0,
+                frameReadbackRequest.counterReadback,
+                0,
+                16
+            );
+            if (this.timestampEnabled && frameReadbackRequest.timestampSource &&
+                frameReadbackRequest.timestampReadback) {
+                encoder.resolveQuerySet(this.timestampQuerySet, 0, 2, frameReadbackRequest.timestampSource, 0);
+                encoder.copyBufferToBuffer(
+                    frameReadbackRequest.timestampSource,
+                    0,
+                    frameReadbackRequest.timestampReadback,
+                    0,
+                    16
+                );
             }
-            this.readbackPending = true;
             this.lastReadbackAt = performance.now();
         }
-        this.device.queue.submit([encoder.finish()]);
-        if (this.readbackPending) this._consumeReadback();
+        try {
+            this.device.queue.submit([encoder.finish()]);
+        } catch (error) {
+            frameReadbackRequest?.release();
+            throw error;
+        }
+        if (frameReadbackRequest) this._consumeReadback(frameReadbackRequest);
     }
 
-    async _consumeReadback() {
-        if (this.readbackPromise) return;
-        let activeParticles = 0;
-        let droppedParticles = 0;
-        this.readbackPromise = this.buffers.readback.mapAsync(GPUMapMode.READ).then(() => {
-            const values = new Uint32Array(this.buffers.readback.getMappedRange().slice(0));
-            this.buffers.readback.unmap();
-            activeParticles = values[1];
-            droppedParticles = values[2];
-            this.metrics.activeParticles = activeParticles;
-            this.metrics.droppedParticles = droppedParticles;
-            return this.timestampEnabled
-                ? this.buffers.timestampReadback.mapAsync(GPUMapMode.READ).then(() => {
-                    const timestamps = new BigUint64Array(this.buffers.timestampReadback.getMappedRange().slice(0));
-                    this.buffers.timestampReadback.unmap();
-                    const milliseconds = timestamps[1] > timestamps[0]
-                        ? Number(timestamps[1] - timestamps[0]) / 1e6
-                        : NaN;
-                    this.metrics.gpuFrameMs = Number.isFinite(milliseconds) && milliseconds >= 0 && milliseconds <= 250
-                        ? milliseconds
-                        : null;
-                })
-                : null;
-        }).then(() => {
-            this.readbackPending = false;
-            this._emitStatus('ready', {
-                activeParticles, droppedParticles, gpuFrameMs: this.metrics.gpuFrameMs,
-                adapter: this.adapterInfo, format: this.format
-            });
-        }).catch(error => {
-            this.readbackPending = false;
-            this._emitStatus('error', { reason: error.message });
-        }).finally(() => { this.readbackPromise = null; });
+    _drawDepthBuckets(scenePass) {
+        for (let bucket = 0; bucket < DEPTH_BUCKET_COUNT; bucket++) {
+            const offset = bucket * 16;
+            scenePass.setBindGroup(0, this.renderBindGroups[bucket]);
+            if (this.trailsEnabled) {
+                scenePass.setPipeline(this.pipelines.trail);
+                scenePass.drawIndirect(this.buffers.trailIndirect, offset);
+            }
+            if (this.glowEnabled) {
+                scenePass.setPipeline(this.pipelines.glow);
+                scenePass.drawIndirect(this.buffers.coreIndirect, offset);
+            }
+            scenePass.setPipeline(this.pipelines.core);
+            scenePass.drawIndirect(this.buffers.coreIndirect, offset);
+        }
+    }
+
+    _captureReadbackRequest(capacityBundle = this.capacityResources) {
+        if (!capacityBundle || capacityBundle.destroyed || capacityBundle.retired) return null;
+        if (capacityBundle.readbackRequest) return capacityBundle.readbackRequest;
+        const request = {
+            generation: capacityBundle.generation,
+            capacityBundle,
+            counterSource: capacityBundle.counterSourceBuffer || capacityBundle.countersBuffer,
+            counterReadback: capacityBundle.counterReadbackBuffer || capacityBundle.readback,
+            timestampSource: this.timestampEnabled
+                ? capacityBundle.timestampSourceBuffer || null
+                : null,
+            timestampReadback: this.timestampEnabled
+                ? capacityBundle.timestampReadbackBuffer || null
+                : null,
+            device: this.device,
+            promise: null,
+            release: null
+        };
+        let released = false;
+        request.release = () => {
+            if (released) return;
+            released = true;
+            capacityBundle.inFlightReadbacks = Math.max(0, capacityBundle.inFlightReadbacks - 1);
+            capacityBundle.readbackLeases = capacityBundle.inFlightReadbacks;
+            if (capacityBundle.readbackRequest === request) {
+                capacityBundle.readbackRequest = null;
+                capacityBundle.readbackPromise = null;
+                capacityBundle.readbackPending = false;
+            }
+            if (this.readbackPromise === request.promise) this.readbackPromise = null;
+            this.readbackPending = Boolean(this.capacityResources?.readbackPending);
+            if (capacityBundle.retired) this._destroyCapacityResources(capacityBundle);
+        };
+        capacityBundle.inFlightReadbacks += 1;
+        capacityBundle.readbackLeases = capacityBundle.inFlightReadbacks;
+        capacityBundle.readbackPending = true;
+        capacityBundle.readbackRequest = request;
+        this.readbackPending = true;
+        return request;
+    }
+
+    _isReadbackRequestCurrent(request) {
+        return Boolean(
+            this.initialized &&
+            !this.destroyed &&
+            this.device === request.device &&
+            this.capacityResources === request.capacityBundle &&
+            this.resourceGeneration === request.generation &&
+            !request.capacityBundle.destroyed
+        );
+    }
+
+    _consumeReadback(capacityResourcesOrRequest = this.capacityResources) {
+        const request = capacityResourcesOrRequest?.capacityBundle
+            ? capacityResourcesOrRequest
+            : capacityResourcesOrRequest?.readbackRequest ||
+                this._captureReadbackRequest(capacityResourcesOrRequest);
+        if (!request) return undefined;
+        if (request.promise) return request.promise;
+
+        const consume = async () => {
+            let activeParticles = 0;
+            let droppedParticles = 0;
+            let gpuFrameMs = null;
+            try {
+                await request.counterReadback.mapAsync(GPUMapMode.READ);
+                try {
+                    const values = new Uint32Array(request.counterReadback.getMappedRange().slice(0));
+                    activeParticles = values[1];
+                    droppedParticles = values[2];
+                } finally {
+                    request.counterReadback.unmap();
+                }
+                if (!this._isReadbackRequestCurrent(request)) return;
+
+                if (request.timestampSource && request.timestampReadback) {
+                    await request.timestampReadback.mapAsync(GPUMapMode.READ);
+                    try {
+                        const timestamps = new BigUint64Array(
+                            request.timestampReadback.getMappedRange().slice(0)
+                        );
+                        const milliseconds = timestamps[1] > timestamps[0]
+                            ? Number(timestamps[1] - timestamps[0]) / 1e6
+                            : NaN;
+                        gpuFrameMs = Number.isFinite(milliseconds) && milliseconds >= 0 &&
+                            milliseconds <= 250
+                            ? milliseconds
+                            : null;
+                    } finally {
+                        request.timestampReadback.unmap();
+                    }
+                    if (!this._isReadbackRequestCurrent(request)) return;
+                }
+
+                this.metrics.activeParticles = activeParticles;
+                this.metrics.droppedParticles = droppedParticles;
+                if (this.timestampEnabled) this.metrics.gpuFrameMs = gpuFrameMs;
+                this._emitStatus('ready', {
+                    activeParticles,
+                    droppedParticles,
+                    gpuFrameMs: this.metrics.gpuFrameMs,
+                    adapter: this.adapterInfo,
+                    format: this.format
+                });
+            } catch (error) {
+                let deviceLost = false;
+                if (this._isReadbackRequestCurrent(request) && request.device?.lost) {
+                    deviceLost = await Promise.race([
+                        request.device.lost.then(() => true, () => true),
+                        new Promise(resolve => setTimeout(() => resolve(false), 0))
+                    ]);
+                }
+                if (!deviceLost && this._isReadbackRequestCurrent(request)) {
+                    this._emitStatus('error', {
+                        reason: error && error.message ? error.message : String(error)
+                    });
+                }
+            }
+        };
+        const promise = consume().finally(() => request.release());
+        request.promise = promise;
+        request.capacityBundle.readbackPromise = promise;
+        this.readbackPromise = promise;
+        return promise;
     }
 
     resize(width, height) {
@@ -955,13 +2501,25 @@ class WebGPUParticleEngine {
         if (this.canvas.width === nextWidth && this.canvas.height === nextHeight) return;
         this.canvas.width = nextWidth;
         this.canvas.height = nextHeight;
-        if (this.context && this.device) this.context.configure({ device: this.device, format: this.format, alphaMode: 'premultiplied' });
+        if (this.context && this.device) this.context.configure({
+            device: this.device,
+            format: this.format,
+            alphaMode: 'premultiplied',
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC |
+                GPUTextureUsage.TEXTURE_BINDING
+        });
         if (this.initialized) this._createFrameTextures();
     }
 
     setLogicalSize(width, height) {
-        this.logicalWidth = Math.max(1, width);
-        this.logicalHeight = Math.max(1, height);
+        const nextWidth = Math.max(1, width);
+        const nextHeight = Math.max(1, height);
+        if (nextWidth === this.logicalWidth && nextHeight === this.logicalHeight) return;
+        this.logicalWidth = nextWidth;
+        this.logicalHeight = nextHeight;
+        this.viewportRevision += 1;
+        this.correlationFitCache.clear();
+        this.correlationManifestRegistry.clear();
     }
 
     setQuality(options = {}) {
@@ -978,22 +2536,61 @@ class WebGPUParticleEngine {
         this.smokeScale = this.style === 'realistic' ? 1 : this.style === 'stylized-neon' ? 0.15 : 0.45;
     }
 
-    getMetrics() { return { ...this.metrics }; }
+    getMetrics() {
+        return {
+            ...this.metrics,
+            spawnTelemetry: {
+                droppedByReason: { ...this.spawnTelemetry.droppedByReason }
+            },
+            commandAdmission: {
+                current: {
+                    ...this.metrics.commandAdmission.current,
+                    degradedLayerCounts: { ...this.metrics.commandAdmission.current.degradedLayerCounts }
+                },
+                cumulative: {
+                    ...this.metrics.commandAdmission.cumulative,
+                    degradedLayerCounts: { ...this.metrics.commandAdmission.cumulative.degradedLayerCounts }
+                }
+            }
+        };
+    }
 
     _destroyResources() {
-        if (this.buffers) Object.values(this.buffers).forEach(buffer => buffer?.destroy?.());
+        this.capacityResourceEpoch += 1;
+        this._destroyCapacityResources(this.capacityResources);
+        this._destroyCapacityResources(this.pendingCapacityResources);
+        if (this.deviceResources) {
+            Object.values(this.deviceResources).forEach(buffer => buffer?.destroy?.());
+        }
+        this.timestampQuerySet?.destroy?.();
         for (const texture of [
             this.atlasTexture, this.sceneTexture, this.bloomTextureA, this.bloomTextureB,
             this.bloomQuarterA, this.bloomQuarterB, this.bloomEighthA, this.bloomEighthB
         ]) texture?.destroy?.();
+        this.capacityResources = null;
+        this.pendingCapacityResources = null;
+        this.deviceResources = null;
         this.buffers = null;
         this.pipelines = null;
+        this.computeBindGroup = null;
+        this.renderBindGroups = null;
+        this.computeBindGroupLayout = null;
+        this.renderBindGroupLayout = null;
+        this.timestampQuerySet = null;
     }
 
     destroy() {
         this.destroyed = true;
         this.initialized = false;
         this.spawnQueue.length = 0;
+        this.inactiveSpawnOwners.clear();
+        this.correlationFitCache.clear();
+        this.correlationManifestRegistry.clear();
+        this.pendingDegradedLayerCounts = SpawnCommandPolicy.emptyDegradedLayerCounts();
+        this.metrics.commandAdmission = {
+            current: SpawnCommandPolicy.emptyCommandTelemetry(),
+            cumulative: SpawnCommandPolicy.emptyCommandTelemetry()
+        };
         this._destroyResources();
         try { this.context?.unconfigure(); } catch (_) {}
         this.context = null;
@@ -1004,27 +2601,30 @@ class WebGPUParticleEngine {
     _computeShader() {
         return `
 struct Particle {
-  position: vec2f, velocity: vec2f, color: vec4f,
+  position: vec3f, velocity: vec3f, color: vec4f,
   life: f32, maxLife: f32, size: f32, rotation: f32,
   angularVelocity: f32, gravity: f32, drag: f32, shape: u32,
   flags: u32, seed: u32, textureIndex: u32, alive: u32,
 };
 struct SpawnCommand {
-  origin: vec2f, destination: vec2f, color: vec4f,
+  origin: vec2f, destination: vec2f, colorWords: vec4u,
   count: u32, shape: u32, kind: u32, flags: u32,
   intensity: f32, duration: f32, textureIndex: u32, seed: u32,
   size: f32, gravity: f32, drag: f32, secondary: u32,
   wind: f32, curve: f32, emissionDelay: f32, emissionSpread: f32,
-  globalIndexBase: u32, globalCount: u32, effectId: u32, pulseCount: u32,
+  globalIndexBase: u32, globalCount: u32, effectId: u32, colorCount: u32,
 };
-struct Counters { freeCount: atomic<u32>, activeCount: atomic<u32>, droppedCount: atomic<u32>, secondaryCount: atomic<u32> };
+struct Counters {
+  freeCount: atomic<u32>, activeCount: atomic<u32>, droppedCount: atomic<u32>, secondaryCount: atomic<u32>,
+  farCount: atomic<u32>, midCount: atomic<u32>, nearCount: atomic<u32>, pad0: atomic<u32>,
+};
 struct Uniforms {
   dt: f32, time: f32, width: f32, height: f32,
   trailSamples: u32, turbulence: f32, commandCount: u32, maxTrailSamples: u32,
   glowScale: f32, bloomLevels: u32, pad0: vec2u,
 };
 @group(0) @binding(0) var<storage, read_write> particles: array<Particle>;
-@group(0) @binding(1) var<storage, read_write> history: array<vec2f>;
+@group(0) @binding(1) var<storage, read_write> history: array<vec3f>;
 @group(0) @binding(2) var<storage, read_write> activeIndices: array<u32>;
 @group(0) @binding(3) var<storage, read_write> freeIndices: array<u32>;
 @group(0) @binding(4) var<storage, read_write> counters: Counters;
@@ -1034,7 +2634,54 @@ struct Uniforms {
 @group(0) @binding(8) var<uniform> uniforms: Uniforms;
 @group(0) @binding(9) var<storage, read_write> secondaryIndices: array<u32>;
 
+const V2_TRAIL = ${V2_TRAIL}u;
+const V2_SPLIT_REQUESTED = ${V2_SPLIT_REQUESTED}u;
+const V2_SPLIT_EMITTED = 4u;
+const V2_STROBE = ${V2_STROBE}u;
+const V2_VECTOR_HERO = ${V2_VECTOR_HERO}u;
+const V2_DEPTH = 16384u;
+const V2_MARKER = ${V2_MARKER}u;
+const DEPTH_METADATA_MARKER = 8u;
+
 fn hash(value: u32) -> f32 { var x = value; x = ((x >> 16u) ^ x) * 0x45d9f3bu; x = ((x >> 16u) ^ x) * 0x45d9f3bu; x = (x >> 16u) ^ x; return f32(x) / 4294967295.0; }
+fn isV2(flags: u32) -> bool { return (flags & V2_MARKER) != 0u; }
+fn unpackRgba8(packed: u32) -> vec4f {
+  return vec4f(
+    f32(packed & 255u)/255.0,
+    f32((packed >> 8u) & 255u)/255.0,
+    f32((packed >> 16u) & 255u)/255.0,
+    f32((packed >> 24u) & 255u)/255.0
+  );
+}
+${buildBoykisserWgsl()}
+fn commandColor(command: SpawnCommand, globalIndex: u32) -> vec4f {
+  if (!isV2(command.flags)) { return bitcast<vec4f>(command.colorWords); }
+  let suppliedColorCount = min(command.colorCount & 7u, 4u);
+  var colorIndex = globalIndex % max(1u, suppliedColorCount);
+  if (command.shape == 25u) {
+    let semanticRole = boykisserRole(
+      globalIndex,
+      max(1u, command.globalCount),
+      command.seed ^ command.effectId
+    );
+    let canonical = boykisserCanonicalColor(semanticRole);
+    if (semanticRole >= suppliedColorCount) { return vec4f(canonical, 1.0); }
+    let showRole = unpackRgba8(command.colorWords[semanticRole]);
+    // Semantic tint rule: preserve the landmark role, allowing a show palette
+    // to move it at most 35 percent away from the canonical Boykisser color.
+    return vec4f(mix(canonical, showRole.rgb, 0.35), showRole.a);
+  }
+  if (command.shape == 26u) {
+    let glyphT = f32(globalIndex) / max(1.0, f32(command.globalCount));
+    let band = min(4u, u32(floor(glyphT * 5.0)));
+    colorIndex = select(select(0u, 1u, band == 1u || band == 3u), 2u, band == 2u);
+  }
+  return unpackRgba8(command.colorWords[colorIndex]);
+}
+fn depthEnabled(command: SpawnCommand) -> bool { return (command.colorCount & DEPTH_METADATA_MARKER) != 0u; }
+fn unpackDepth(value: u32) -> f32 { return f32(value) / 127.5 - 1.0; }
+fn launchDepth(command: SpawnCommand) -> f32 { return select(0.0, unpackDepth((command.colorCount >> 8u) & 255u), depthEnabled(command)); }
+fn burstDepth(command: SpawnCommand) -> f32 { return select(0.0, unpackDepth((command.colorCount >> 16u) & 255u), depthEnabled(command)); }
 fn allocateParticle() -> u32 {
   var result = 0xffffffffu;
   loop {
@@ -1046,9 +2693,129 @@ fn allocateParticle() -> u32 {
   return result;
 }
 fn releaseParticle(index: u32) { let slot = atomicAdd(&counters.freeCount, 1u); freeIndices[slot] = index; }
-fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) -> vec2f {
+fn glyphPoint(shape: u32, t: f32, seed: u32) -> vec2f {
+  var point = vec2f(0.0);
+  if (shape == 17u) {
+    let section = min(4u, u32(floor(t * 5.0)));
+    let angle = fract(t * 5.0) * 6.2831853;
+    if (section == 0u) {
+      point = vec2f(cos(angle) * 0.42, 0.24 + sin(angle) * 0.34);
+    } else {
+      let centers = array<vec2f, 4>(
+        vec2f(-0.48, -0.28), vec2f(-0.17, -0.48),
+        vec2f(0.17, -0.48), vec2f(0.48, -0.28)
+      );
+      point = centers[section - 1u] + vec2f(cos(angle) * 0.16, sin(angle) * 0.2);
+    }
+  } else if (shape == 18u) {
+    let angle = t * 6.2831853;
+    point = vec2f(
+      16.0 * pow(sin(angle), 3.0) / 18.0,
+      -(13.0*cos(angle)-5.0*cos(2.0*angle)-2.0*cos(3.0*angle)-cos(4.0*angle)) / 18.0
+    );
+  } else if (shape == 19u) {
+    let edge = t * 10.0;
+    let vertex = u32(floor(edge)) % 10u;
+    let local = fract(edge);
+    let angle0 = -1.5707963 + f32(vertex) * 0.6283185;
+    let angle1 = -1.5707963 + f32((vertex + 1u) % 10u) * 0.6283185;
+    let radius0 = select(0.42, 0.94, vertex % 2u == 0u);
+    let radius1 = select(0.42, 0.94, (vertex + 1u) % 2u == 0u);
+    point = mix(vec2f(cos(angle0), sin(angle0))*radius0, vec2f(cos(angle1), sin(angle1))*radius1, local);
+  } else if (shape == 20u) {
+    let points = array<vec2f, 9>(
+      vec2f(-0.82,0.46), vec2f(-0.67,-0.72), vec2f(-0.28,-0.4),
+      vec2f(0.0,-0.68), vec2f(0.28,-0.4), vec2f(0.67,-0.72),
+      vec2f(0.82,0.46), vec2f(0.38,0.78), vec2f(-0.38,0.78)
+    );
+    let edge = t * 9.0; let index = u32(floor(edge)) % 9u;
+    point = mix(points[index], points[(index + 1u) % 9u], fract(edge));
+  } else if (shape == 21u) {
+    let points = array<vec2f, 10>(
+      vec2f(-0.78,0.58), vec2f(-0.62,-0.82), vec2f(-0.24,-0.48),
+      vec2f(0.0,-0.78), vec2f(0.24,-0.48), vec2f(0.62,-0.82),
+      vec2f(0.78,0.58), vec2f(0.42,0.82), vec2f(0.0,0.68), vec2f(-0.42,0.82)
+    );
+    let edge = t * 10.0; let index = u32(floor(edge)) % 10u;
+    point = mix(points[index], points[(index + 1u) % 10u], fract(edge));
+  } else if (shape == 22u) {
+    let points = array<vec2f, 12>(
+      vec2f(-0.9,0.42), vec2f(-0.66,0.02), vec2f(-0.8,-0.38),
+      vec2f(-0.34,-0.2), vec2f(-0.08,-0.68), vec2f(0.12,-0.18),
+      vec2f(0.62,-0.48), vec2f(0.48,-0.02), vec2f(0.9,0.18),
+      vec2f(0.38,0.38), vec2f(0.04,0.76), vec2f(-0.36,0.34)
+    );
+    let edge = t * 12.0; let index = u32(floor(edge)) % 12u;
+    point = mix(points[index], points[(index + 1u) % 12u], fract(edge));
+  } else if (shape == 23u) {
+    let points = array<vec2f, 9>(
+      vec2f(-0.88,0.5), vec2f(-0.42,-0.7), vec2f(-0.12,-0.18),
+      vec2f(0.24,-0.88), vec2f(0.3,-0.16), vec2f(0.84,-0.5),
+      vec2f(0.48,0.22), vec2f(0.9,0.62), vec2f(0.0,0.46)
+    );
+    let edge = t * 9.0; let index = u32(floor(edge)) % 9u;
+    point = mix(points[index], points[(index + 1u) % 9u], fract(edge));
+  } else if (shape == 24u) {
+    let x = -0.9 + t * 1.8;
+    let envelope = 1.0 - 0.42 * t;
+    point = vec2f(x, sin(t * 8.6) * 0.58 * envelope + (t - 0.5) * 0.28);
+  }
+  point *= 0.992 + hash(seed + u32(t * 65535.0)) * 0.016;
+  return clamp(point, vec2f(-1.0), vec2f(1.0));
+}
+fn transFlagPoint(t: f32) -> vec2f {
+  let band = min(4u, u32(floor(t * 5.0)));
+  let local = fract(t * 5.0);
+  let x = -0.9 + local * 1.8;
+  let bandY = (f32(band) - 2.0) * 0.22;
+  let wave = sin(local * 6.2831853 + f32(band) * 0.34) * 0.08;
+  return clamp(vec2f(x, bandY + wave), vec2f(-1.0), vec2f(1.0));
+}
+fn shapeVelocity2(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) -> vec2f {
   let t = f32(index) / max(1.0, f32(count));
   let jitter = (hash(seed + index * 17u) - 0.5) * 0.16;
+  if (shape == 10u) {
+    let angle = t * 6.2831853 + jitter;
+    let speed = 175.0 + hash(seed + index * 23u) * 105.0;
+    return vec2f(cos(angle), sin(angle)) * speed * intensity;
+  }
+  if (shape == 11u) {
+    let angle = t * 6.2831853 + jitter * 0.18;
+    return vec2f(cos(angle), sin(angle)) * 228.0 * intensity;
+  }
+  if (shape == 12u) {
+    let angle = t * 15.707963 + f32(index % 2u) * 3.1415926;
+    let radial = vec2f(cos(angle), sin(angle)) * (72.0 + t * 170.0);
+    let tangent = vec2f(-sin(angle), cos(angle)) * 92.0;
+    return (radial + tangent) * intensity;
+  }
+  if (shape == 13u) {
+    let frond = f32(index % 7u) - 3.0;
+    let angle = -1.5707963 + frond * 0.235 + jitter * 0.3;
+    let speed = 172.0 + hash(seed + index * 31u) * 98.0;
+    return vec2f(cos(angle) * speed, sin(angle) * speed * 1.08) * intensity;
+  }
+  if (shape == 14u) {
+    let arm = index % 4u;
+    let angle = f32(arm) * 1.5707963 + jitter * 0.34;
+    let speed = 152.0 + hash(seed + index * 37u) * 76.0;
+    return vec2f(cos(angle), sin(angle)) * speed * intensity;
+  }
+  if (shape == 15u) {
+    let angle = -1.5707963 + (t - 0.5) * 0.52 + jitter * 0.18;
+    let speed = 142.0 + hash(seed + index * 41u) * 82.0;
+    return vec2f(cos(angle), sin(angle)) * speed * intensity;
+  }
+  if (shape == 16u) {
+    let angle = -2.72 + t * 2.3 + jitter * 0.25;
+    let speed = 205.0 + hash(seed + index * 43u) * 92.0;
+    return vec2f(cos(angle), sin(angle)) * speed * intensity;
+  }
+  if (shape >= 17u && shape <= 26u) {
+    if (shape == 25u) { return boykisserPoint(index, count, seed) * 218.0 * intensity; }
+    if (shape == 26u) { return transFlagPoint(t) * 218.0 * intensity; }
+    return glyphPoint(shape, t, seed) * 218.0 * intensity;
+  }
   if (shape == 1u) {
     let a = t * 6.2831853;
     let x = 16.0 * pow(sin(a), 3.0);
@@ -1090,10 +2857,28 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
   let ring = 0.62 + f32(index % 3u) * 0.22;
   return vec2f(cos(angle), sin(angle)) * (160.0 + hash(seed+index)*170.0) * ring * intensity;
 }
+fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32, depthEnabled: bool) -> vec3f {
+  let planar = shapeVelocity2(shape, index, count, intensity, seed);
+  let volumetric = depthEnabled && shape != 11u && (shape < 17u || shape > 24u)
+    && (shape < 17u || shape > 26u);
+  let depthVelocity = (hash(seed + index * 59u + 0x9e3779b9u) - 0.5) * 1.8 * intensity;
+  return vec3f(planar, select(0.0, depthVelocity, volumetric));
+}
+fn depthBucket(z: f32) -> u32 {
+  if (z < -0.3333333) { return 0u; }
+  if (z > 0.3333333) { return 2u; }
+  return 1u;
+}
 @compute @workgroup_size(1) fn resetCounters() {
   atomicStore(&counters.activeCount, 0u); atomicStore(&counters.secondaryCount, 0u);
-  atomicStore(&coreIndirect[0], 6u); atomicStore(&coreIndirect[1], 0u); atomicStore(&coreIndirect[2], 0u); atomicStore(&coreIndirect[3], 0u);
-  atomicStore(&trailIndirect[0], 6u); atomicStore(&trailIndirect[1], 0u); atomicStore(&trailIndirect[2], 0u); atomicStore(&trailIndirect[3], 0u);
+  atomicStore(&counters.farCount, 0u); atomicStore(&counters.midCount, 0u); atomicStore(&counters.nearCount, 0u);
+  for (var bucket = 0u; bucket < 3u; bucket++) {
+    let offset = bucket * 4u;
+    atomicStore(&coreIndirect[offset], 6u); atomicStore(&coreIndirect[offset + 1u], 0u); atomicStore(&coreIndirect[offset + 2u], 0u);
+    atomicStore(&coreIndirect[offset + 3u], 0u);
+    atomicStore(&trailIndirect[offset], 6u); atomicStore(&trailIndirect[offset + 1u], 0u); atomicStore(&trailIndirect[offset + 2u], 0u);
+    atomicStore(&trailIndirect[offset + 3u], 0u);
+  }
 }
 @compute @workgroup_size(64) fn spawnParticles(@builtin(global_invocation_id) gid: vec3u) {
   if (gid.y >= uniforms.commandCount) { return; }
@@ -1101,25 +2886,32 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
   let slot = allocateParticle(); if (slot == 0xffffffffu) { return; }
   let globalIndex = command.globalIndexBase + gid.x;
   let globalCount = max(1u, command.globalCount);
-  var p: Particle; p.position = command.origin; p.color = command.color; p.life = -command.emissionDelay; p.maxLife = command.duration;
+  let commandDepthEnabled = depthEnabled(command);
+  var p: Particle; p.position = vec3f(command.origin, burstDepth(command)); p.color = commandColor(command, globalIndex); p.life = -command.emissionDelay; p.maxLife = command.duration;
   p.rotation = hash(command.seed + globalIndex * 13u) * 6.2831853; p.angularVelocity = (hash(command.seed + globalIndex * 29u)-0.5)*4.0;
   p.gravity = command.gravity; p.drag = command.drag; p.shape = command.shape;
-  p.flags = command.flags | ((globalIndex & 0xffffu) << 16u); p.seed = command.seed ^ command.effectId ^ globalIndex;
+  p.flags = command.flags | ((globalIndex & 0xffffu) << 16u) | select(0u, V2_DEPTH, commandDepthEnabled); p.seed = command.seed ^ command.effectId ^ globalIndex;
   p.textureIndex = command.textureIndex; p.alive = 1u; p.size = command.size;
   if (command.kind == 1u) {
-    p.velocity = (command.destination-command.origin) / command.duration;
+    p.position = vec3f(command.origin, launchDepth(command));
+    p.velocity = (vec3f(command.destination, burstDepth(command))-p.position) / command.duration;
     p.gravity = 0.0; p.drag = 1.0; p.shape = command.shape;
     p.rotation = atan2(p.velocity.y, p.velocity.x);
     p.angularVelocity = command.curve;
   } else {
-    p.velocity = shapeVelocity(command.shape, globalIndex, globalCount, command.intensity, command.seed ^ command.effectId);
+    p.velocity = shapeVelocity(command.shape, globalIndex, globalCount, command.intensity, command.seed ^ command.effectId, commandDepthEnabled);
     p.velocity.x += command.wind;
+    if (command.shape == 25u && (command.flags & V2_VECTOR_HERO) != 0u) {
+      p.velocity = vec3f(0.0); p.gravity = 0.0; p.drag = 1.0;
+      p.rotation = 0.0; p.angularVelocity = 0.0;
+    }
     let role = (command.flags >> 8u) & 15u;
+    let pulseCount = (command.flags >> 3u) & 7u;
     if (command.emissionSpread > 0.0) {
-      if (role == 8u && command.pulseCount > 1u) {
-        let pulse = globalIndex % command.pulseCount;
-        let localIndex = globalIndex / command.pulseCount;
-        let pulsePhase = f32(pulse) / f32(command.pulseCount - 1u);
+      if (role == 8u && pulseCount > 1u) {
+        let pulse = globalIndex % pulseCount;
+        let localIndex = globalIndex / pulseCount;
+        let pulsePhase = f32(pulse) / f32(pulseCount - 1u);
         let jitter = select(hash(p.seed + 0x68bc21ebu) * 0.016, 0.0, localIndex == 0u);
         p.life -= command.emissionSpread * pulsePhase + jitter;
         if (localIndex == 0u) { p.flags = p.flags | 128u; p.size *= 2.25; p.velocity *= 0.08; }
@@ -1147,13 +2939,13 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
     } else if (command.shape == 5u) {
       p.position += p.velocity * 0.1;
     }
-    if ((p.flags & 2u) != 0u) {
+    if (!isV2(p.flags) && (p.flags & 2u) != 0u) {
       let keepChance = select(0.14, 0.32, command.shape == 5u);
       if (hash(p.seed + 0x27d4eb2fu) > keepChance) { p.flags = p.flags & 0xfffffffdu; }
     }
   }
   particles[slot] = p;
-  for (var sample = 0u; sample < uniforms.maxTrailSamples; sample++) { history[slot * uniforms.maxTrailSamples + sample] = command.origin; }
+  for (var sample = 0u; sample < uniforms.maxTrailSamples; sample++) { history[slot * uniforms.maxTrailSamples + sample] = p.position; }
 }
 @compute @workgroup_size(64) fn updateParticles(@builtin(global_invocation_id) gid: vec3u) {
   let index = gid.x; if (index >= arrayLength(&particles)) { return; }
@@ -1163,27 +2955,33 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
   if (p.life < 0.0) { particles[index] = p; return; }
   if (p.life >= p.maxLife) { p.alive = 0u; particles[index] = p; releaseParticle(index); return; }
   let role = (p.flags >> 8u) & 15u;
-  if (role == 1u || role == 2u) {
+  if (!isV2(p.flags) && (role == 1u || role == 2u)) {
     let progress = clamp(p.life / p.maxLife, 0.0, 1.0);
     let curveVelocity = p.angularVelocity * 3.1415926 / p.maxLife * cos(progress * 3.1415926);
-    p.position += vec2f(p.velocity.x + curveVelocity, p.velocity.y) * uniforms.dt;
+    p.position += vec3f(p.velocity.x + curveVelocity, p.velocity.y, p.velocity.z) * uniforms.dt;
     p.rotation = atan2(p.velocity.y, p.velocity.x + curveVelocity);
+  } else if (p.shape == 25u && (p.flags & V2_VECTOR_HERO) != 0u) {
+    p.velocity = vec3f(0.0); p.rotation = 0.0; p.angularVelocity = 0.0;
   } else {
     let phase = uniforms.time * (1.7 + hash(p.seed + 71u) * 2.1) + hash(p.seed + 19u) * 6.2831853;
     var noise = vec2f(sin(phase), cos(phase * 0.83 + 1.7)) * uniforms.turbulence * 60.0;
     if (role == 7u) { noise += vec2f(cos(phase * 0.47), -abs(sin(phase * 0.31))) * 18.0; }
-    p.velocity += vec2f(noise.x, p.gravity + noise.y) * uniforms.dt;
-    p.velocity *= pow(p.drag, uniforms.dt * 60.0);
+    p.velocity += vec3f(noise.x, p.gravity + noise.y, 0.0) * uniforms.dt;
+    let legacyRetention = pow(p.drag, uniforms.dt * 60.0);
+    let v2Resistance = exp(-p.drag * uniforms.dt * 60.0);
+    p.velocity *= select(legacyRetention, v2Resistance, isV2(p.flags));
     p.position += p.velocity * uniforms.dt;
     p.rotation += p.angularVelocity * uniforms.dt;
   }
   let secondaryAt = 0.48 + hash(p.seed + 0x165667b1u) * 0.2;
-  if ((p.flags & 2u) != 0u && (p.flags & 4u) == 0u && previousLife < p.maxLife * secondaryAt && p.life >= p.maxLife * secondaryAt) {
+  let splitQuality = (p.flags >> 4u) & 3u;
+  let splitEnabled = !isV2(p.flags) || splitQuality > 0u;
+  if ((p.flags & V2_SPLIT_REQUESTED) != 0u && (p.flags & V2_SPLIT_EMITTED) == 0u && splitEnabled && previousLife < p.maxLife * secondaryAt && p.life >= p.maxLife * secondaryAt) {
     let secondary = atomicAdd(&counters.secondaryCount, 1u);
     secondaryIndices[secondary] = index;
-    p.flags = p.flags | 4u;
+    p.flags = p.flags | V2_SPLIT_EMITTED;
   }
-  if (role == 1u && previousLife >= 0.0) {
+  if (!isV2(p.flags) && role == 1u && previousLife >= 0.0) {
     let previousBucket = u32(previousLife * 15.0);
     let currentBucket = u32(p.life * 15.0);
     if (currentBucket != previousBucket) {
@@ -1195,8 +2993,17 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
   for (var sample = uniforms.trailSamples - 1u; sample > 0u; sample--) { history[historyBase + sample] = history[historyBase + sample - 1u]; }
   history[historyBase] = p.position;
   particles[index] = p;
-  let activeSlot = atomicAdd(&counters.activeCount, 1u); activeIndices[activeSlot] = index;
-  atomicAdd(&coreIndirect[1], 1u); atomicAdd(&trailIndirect[1], max(1u, uniforms.trailSamples - 1u));
+  atomicAdd(&counters.activeCount, 1u);
+  let bucket = depthBucket(p.position.z);
+  var bucketSlot = 0u;
+  if (bucket == 0u) { bucketSlot = atomicAdd(&counters.farCount, 1u); }
+  else if (bucket == 1u) { bucketSlot = atomicAdd(&counters.midCount, 1u); }
+  else { bucketSlot = atomicAdd(&counters.nearCount, 1u); }
+  let bucketStride = arrayLength(&activeIndices) / 3u;
+  activeIndices[bucket * bucketStride + bucketSlot] = index;
+  let indirectOffset = bucket * 4u + 1u;
+  atomicAdd(&coreIndirect[indirectOffset], 1u);
+  atomicAdd(&trailIndirect[indirectOffset], max(1u, uniforms.trailSamples - 1u));
 }
 @compute @workgroup_size(64) fn spawnSecondary(@builtin(global_invocation_id) gid: vec3u) {
   let sourceNumber = gid.x;
@@ -1205,9 +3012,31 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
   let source = particles[secondaryIndices[sourceNumber]];
   let sourceRole = (source.flags >> 8u) & 15u;
   let styleBits = source.flags & (3u << 12u);
+  if (isV2(source.flags)) {
+    let splitQuality = (source.flags >> 4u) & 3u;
+    let childCount = splitQuality + 1u;
+    for (var child = 0u; child < childCount; child++) {
+      let slot = allocateParticle();
+      if (slot == 0xffffffffu) { return; }
+      var p = source;
+      let angle = f32(child) / f32(childCount) * 6.2831853 + hash(source.seed + child * 31u) * 0.36;
+      let speed = 78.0 + hash(source.seed + child * 47u) * 86.0;
+      let volumetric = (source.flags & V2_DEPTH) != 0u && source.shape != 11u && (source.shape < 17u || source.shape > 26u);
+      let childDepthVelocity = (hash(source.seed + child * 67u) - 0.5) * 1.4;
+      p.position = source.position;
+      p.velocity = source.velocity * 0.22 + vec3f(cos(angle) * speed, sin(angle) * speed, select(0.0, childDepthVelocity, volumetric));
+      p.life = 0.0; p.maxLife = max(0.08, source.maxLife * 0.46);
+      p.size = source.size * (0.54 + 0.08 * f32(splitQuality));
+      p.flags = (source.flags & ~V2_SPLIT_REQUESTED) | V2_SPLIT_EMITTED;
+      p.seed = source.seed + child * 101u; p.alive = 1u;
+      particles[slot] = p;
+      for (var sample = 0u; sample < uniforms.maxTrailSamples; sample++) { history[slot * uniforms.maxTrailSamples + sample] = source.position; }
+    }
+    return;
+  }
   if (sourceRole == 1u) {
     let style = (source.flags >> 12u) & 3u;
-    let direction = normalize(source.velocity + vec2f(0.0001));
+    let direction = normalize(source.velocity.xy + vec2f(0.0001));
     let normal = vec2f(-direction.y, direction.x);
     let childCount = select(2u, 3u, style == 1u || (style == 0u && hash(source.seed + u32(source.life * 91.0)) < 0.32));
     for (var child = 0u; child < childCount; child++) {
@@ -1215,17 +3044,17 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
       if (slot == 0xffffffffu) { return; }
       var p = source;
       let random = hash(source.seed + child * 101u + u32(source.life * 997.0));
-      p.position = source.position - direction * source.size * (0.5 + random * 0.45) + normal * (random - 0.5) * source.size * 0.28;
+      p.position = source.position + vec3f(-direction * source.size * (0.5 + random * 0.45) + normal * (random - 0.5) * source.size * 0.28, 0.0);
       p.life = 0.0; p.seed = source.seed + child * 131u + u32(source.life * 1301.0); p.textureIndex = 0u;
       p.rotation = atan2(-direction.y, -direction.x); p.angularVelocity = 0.0; p.alive = 1u;
       if (child == 2u) {
         p.shape = 9u; p.flags = styleBits | (7u << 8u); p.maxLife = 0.6 + random * 0.28;
         p.size = source.size * 0.38; p.color = vec4f(0.26, 0.29, 0.34, 0.18); p.gravity = -8.0; p.drag = 0.986;
-        p.velocity = -direction * (12.0 + random * 16.0) + normal * (random - 0.5) * 24.0;
+        p.velocity = vec3f(-direction * (12.0 + random * 16.0) + normal * (random - 0.5) * 24.0, 0.0);
       } else {
         p.shape = 7u; p.flags = styleBits | (10u << 8u); p.maxLife = 0.24 + random * 0.22;
         p.size = source.size * (0.09 + random * 0.08); p.color = mix(source.color, vec4f(1.0, 0.48, 0.08, 1.0), 0.62);
-        p.gravity = 72.0; p.drag = 0.955; p.velocity = -direction * (38.0 + random * 58.0) + normal * (random - 0.5) * 55.0;
+        p.gravity = 72.0; p.drag = 0.955; p.velocity = vec3f(-direction * (38.0 + random * 58.0) + normal * (random - 0.5) * 55.0, 0.0);
       }
       particles[slot] = p;
       for (var sample = 0u; sample < uniforms.maxTrailSamples; sample++) { history[slot * uniforms.maxTrailSamples + sample] = p.position; }
@@ -1239,7 +3068,8 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
     var p = source;
     let angle = f32(child) / f32(childCount) * 6.2831853 + hash(source.seed + child * 31u);
     p.position = source.position;
-    p.velocity = source.velocity * 0.18 + vec2f(cos(angle), sin(angle)) * (90.0 + hash(source.seed + child) * 90.0);
+    let childSpeed = 90.0 + hash(source.seed + child) * 90.0;
+    p.velocity = source.velocity * 0.18 + vec3f(cos(angle) * childSpeed, sin(angle) * childSpeed, 0.0);
     p.life = 0.0;
     p.maxLife = source.maxLife * 0.42;
     p.size = source.size * 0.62;
@@ -1256,7 +3086,7 @@ fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) 
 
     _particleShader() {
         return `
-struct Particle { position: vec2f, velocity: vec2f, color: vec4f, life: f32, maxLife: f32, size: f32, rotation: f32, angularVelocity: f32, gravity: f32, drag: f32, shape: u32, flags: u32, seed: u32, textureIndex: u32, alive: u32 };
+struct Particle { position: vec3f, velocity: vec3f, color: vec4f, life: f32, maxLife: f32, size: f32, rotation: f32, angularVelocity: f32, gravity: f32, drag: f32, shape: u32, flags: u32, seed: u32, textureIndex: u32, alive: u32 };
 struct Uniforms {
   dt: f32, time: f32, width: f32, height: f32,
   trailSamples: u32, turbulence: f32, commandCount: u32, maxTrailSamples: u32,
@@ -1264,10 +3094,15 @@ struct Uniforms {
 };
 @group(0) @binding(0) var<storage, read> particles: array<Particle>;
 @group(0) @binding(1) var<storage, read> activeIndices: array<u32>;
-@group(0) @binding(2) var<storage, read> history: array<vec2f>;
+@group(0) @binding(2) var<storage, read> history: array<vec3f>;
 @group(0) @binding(3) var<uniform> uniforms: Uniforms;
-@group(0) @binding(4) var atlas: texture_2d<f32>;
+@group(0) @binding(4) var atlasTexture: texture_2d<f32>;
 @group(0) @binding(5) var atlasSampler: sampler;
+const V2_TRAIL = ${V2_TRAIL}u;
+const V2_STROBE = ${V2_STROBE}u;
+const V2_VECTOR_HERO = ${V2_VECTOR_HERO}u;
+const V2_MARKER = ${V2_MARKER}u;
+${buildBoykisserWgsl()}
 struct Out {
   @builtin(position) position: vec4f,
   @location(0) uv: vec2f,
@@ -1281,13 +3116,27 @@ struct Out {
   @location(8) @interpolate(flat) rotation: f32,
 };
 fn quadVertex(vertex: u32) -> vec2f { let vertices = array<vec2f,6>(vec2f(-1,-1),vec2f(1,-1),vec2f(-1,1),vec2f(-1,1),vec2f(1,-1),vec2f(1,1)); return vertices[vertex]; }
-fn clip(position: vec2f) -> vec4f { return vec4f(position.x/uniforms.width*2.0-1.0, 1.0-position.y/uniforms.height*2.0, 0.0, 1.0); }
+const CAMERA_DISTANCE = ${ENVELOPE_PROFILES.projection.cameraDistance.toFixed(1)};
+fn perspectiveScale(z: f32) -> f32 { return CAMERA_DISTANCE / max(${ENVELOPE_PROFILES.projection.minimumDenominator.toFixed(1)}, CAMERA_DISTANCE - z); }
+fn projectToPixels(position: vec3f) -> vec2f {
+  let center = vec2f(uniforms.width, uniforms.height) * 0.5;
+  return center + (position.xy - center) * perspectiveScale(position.z);
+}
+fn clipPixels(position: vec2f) -> vec4f { return vec4f(position.x/uniforms.width*2.0-1.0, 1.0-position.y/uniforms.height*2.0, 0.0, 1.0); }
+fn clip(position: vec3f) -> vec4f { return clipPixels(projectToPixels(position)); }
+fn isV2(flags:u32)->bool{return (flags&V2_MARKER)!=0u;}
+fn v2Strobe(flags:u32,t:f32,seed:u32)->f32{
+  if(!isV2(flags)||(flags&V2_STROBE)==0u){return 1.0;}
+  let beat=floor(t*18.0);let pulse=fract(sin((f32(seed&1023u)+beat*91.7)*12.9898)*43758.5453);
+  return select(0.08,1.0,pulse>0.38);
+}
 fn fadeEnvelope(role:u32,shape:u32,t:f32,flags:u32)->f32{
   if(shape==8u||(flags&64u)!=0u){return 1.0-smoothstep(0.9,1.0,t);}
   if(role==2u&&shape==0u){return 1.0-smoothstep(0.0,1.0,t);}
   if(role==7u){return smoothstep(0.0,0.16,t)*(1.0-smoothstep(0.38,1.0,t));}
   if(role==8u){return smoothstep(0.0,0.07,t)*(1.0-smoothstep(0.32,1.0,t));}
   if(role==10u){return pow(1.0-t,1.65);}
+  if(shape>=17u&&shape<=26u){return smoothstep(0.0,0.08,t)*(1.0-smoothstep(0.64,1.0,t));}
   if(role==4u||shape==2u){return smoothstep(0.0,0.08,t)*(1.0-smoothstep(0.68,1.0,t));}
   return pow(1.0-t,select(1.2,0.82,shape>=1u&&shape<=6u));
 }
@@ -1296,22 +3145,24 @@ fn fadeEnvelope(role:u32,shape:u32,t:f32,flags:u32)->f32{
   let rotation=select(p.rotation,0.0,p.shape==6u&&(p.flags&64u)!=0u); let c = cos(rotation); let s = sin(rotation);
   let streak=(p.shape==0u&&role==3u)||(p.shape==7u&&(p.flags&128u)==0u);
   var scale=select(vec2f(1.0),vec2f(2.6,0.42),streak);
-  if(p.shape==8u){scale=select(vec2f(1.42,0.64),vec2f(1.58,0.5),role==2u);}
+  if(p.shape==8u){scale=select(vec2f(1.42,0.48),vec2f(1.58,0.32),role==2u);}
   if(role==7u){scale*=1.0+t*1.75;}
   if(role==10u){scale*=max(0.32,1.0-t*0.68);}
   if(role==4u||p.shape==2u){scale*=0.84+0.16*smoothstep(0.0,0.16,t);}
   let scaledQ=q*scale;
-  let rotated = vec2f(c*scaledQ.x-s*scaledQ.y,s*scaledQ.x+c*scaledQ.y) * p.size;
-  var out: Out; out.position=clip(p.position+rotated); out.uv=q*0.5+0.5; out.color=p.color; out.shape=p.shape; out.textureIndex=p.textureIndex; out.flags=p.flags; out.rotation=p.rotation;
-  out.normalizedLife=t; out.seed=p.seed; out.fade=fadeEnvelope(role,p.shape,t,p.flags); return out;
+  let rotated = vec2f(c*scaledQ.x-s*scaledQ.y,s*scaledQ.x+c*scaledQ.y) * p.size * perspectiveScale(p.position.z);
+  var out: Out; out.position=clipPixels(projectToPixels(p.position)+rotated); out.uv=q*0.5+0.5; out.color=p.color; out.shape=p.shape; out.textureIndex=p.textureIndex; out.flags=p.flags; out.rotation=p.rotation;
+  out.normalizedLife=t; out.seed=p.seed; out.fade=fadeEnvelope(role,p.shape,t,p.flags)*v2Strobe(p.flags,t,p.seed); return out;
 }
 @vertex fn trailVertex(@builtin(vertex_index) vertex: u32, @builtin(instance_index) instance: u32) -> Out {
   let segments=max(1u,uniforms.trailSamples-1u); let particleListIndex=instance/segments; let segment=instance%segments; let index=activeIndices[particleListIndex]; let p=particles[index]; let base=index*uniforms.maxTrailSamples;
-  let a=history[base+segment]; let b=history[base+segment+1u]; let direction=normalize(a-b+vec2f(0.0001)); let normal=vec2f(-direction.y,direction.x); let q=quadVertex(vertex);
-  let along=mix(b,a,q.x*0.5+0.5); let width=p.size*(0.38-f32(segment)/f32(segments)*0.29);
-  var out:Out; out.position=clip(along+normal*q.y*width); out.uv=q*0.5+0.5; out.color=p.color; out.shape=p.shape; out.textureIndex=0u; out.flags=p.flags; out.rotation=p.rotation;
+  let a=history[base+segment]; let b=history[base+segment+1u]; let projectedA=projectToPixels(a); let projectedB=projectToPixels(b);
+  let direction=normalize(projectedA-projectedB+vec2f(0.0001)); let normal=vec2f(-direction.y,direction.x); let q=quadVertex(vertex);
+  let along=mix(projectedB,projectedA,q.x*0.5+0.5); let depth=mix(b.z,a.z,q.x*0.5+0.5); let trailWidthScale=select(1.0,0.62,p.shape==8u); let width=p.size*perspectiveScale(depth)*(0.38-f32(segment)/f32(segments)*0.29)*trailWidthScale;
+  var out:Out; out.position=clipPixels(along+normal*q.y*width); out.uv=q*0.5+0.5; out.color=p.color; out.shape=p.shape; out.textureIndex=0u; out.flags=p.flags; out.rotation=p.rotation;
   let role=(p.flags>>8u)&15u;let t=clamp(p.life/p.maxLife,0.0,1.0);let shapeTrail=select(0.44,0.1,p.shape>=1u&&p.shape<=5u);
-  out.fade=(1.0-f32(segment)/f32(segments))*fadeEnvelope(role,p.shape,t,p.flags)*shapeTrail;out.normalizedLife=t;out.seed=p.seed;return out;
+  out.fade=(1.0-f32(segment)/f32(segments))*fadeEnvelope(role,p.shape,t,p.flags)*shapeTrail*v2Strobe(p.flags,t,p.seed);
+  if(isV2(p.flags)&&(p.flags & V2_TRAIL) == 0u){out.fade=0.0;}out.normalizedLife=t;out.seed=p.seed;return out;
 }
 fn sdCircle(p:vec2f)->f32{return length(p-0.5)-0.42;}
 fn sdEllipse(p:vec2f,r:vec2f)->f32{return (length(p/max(r,vec2f(0.001)))-1.0)*min(r.x,r.y);}
@@ -1340,16 +3191,25 @@ fn shapeDistance(uv:vec2f,shape:u32)->f32{if(shape==1u){return sdHeart(uv);}if(s
 fn sdCapsule(p:vec2f,a:vec2f,b:vec2f,r:f32)->f32{let pa=p-a;let ba=b-a;let h=clamp(dot(pa,ba)/dot(ba,ba),0.0,1.0);return length(pa-ba*h)-r;}
 fn rocketCoverage(uv:vec2f,time:f32,seed:u32)->vec3f{
   let p=uv*2.0-1.0;let aa=0.025;
-  let fuselage=1.0-smoothstep(-aa,aa,sdCapsule(p,vec2f(-0.48,0.0),vec2f(0.43,0.0),0.22));
-  let noseWidth=max(0.0,(0.94-p.x)*0.44);let nose=step(0.38,p.x)*step(p.x,0.94)*(1.0-smoothstep(noseWidth,noseWidth+aa,abs(p.y)));
-  let finWidth=max(0.0,(p.x+0.68)*0.5);let fins=step(-0.68,p.x)*step(p.x,-0.18)*smoothstep(0.16,0.25,abs(p.y))*(1.0-smoothstep(0.46,0.46+finWidth+aa,abs(p.y)));
-  let nozzle=step(-0.68,p.x)*step(p.x,-0.43)*(1.0-smoothstep(0.16,0.23,abs(p.y)));
+  let fuselage=1.0-smoothstep(-aa,aa,sdCapsule(p,vec2f(-0.48,0.0),vec2f(0.43,0.0),0.16));
+  let noseWidth=max(0.0,(0.94-p.x)*0.34);let nose=step(0.38,p.x)*step(p.x,0.94)*(1.0-smoothstep(noseWidth,noseWidth+aa,abs(p.y)));
+  let finWidth=max(0.0,(p.x+0.68)*0.38);let fins=step(-0.68,p.x)*step(p.x,-0.18)*smoothstep(0.12,0.19,abs(p.y))*(1.0-smoothstep(0.34,0.34+finWidth+aa,abs(p.y)));
+  let nozzle=step(-0.68,p.x)*step(p.x,-0.43)*(1.0-smoothstep(0.11,0.17,abs(p.y)));
   let flicker=0.08*sin(time*37.0+f32(seed&255u)*0.17)+0.04*sin(time*71.0);
-  let flameStart=-0.98-flicker;let flameWidth=max(0.0,(p.x-flameStart)*0.31);let flame=step(flameStart,p.x)*step(p.x,-0.56)*(1.0-smoothstep(flameWidth,flameWidth+0.07,abs(p.y)));
+  let flameStart=-0.98-flicker;let flameWidth=max(0.0,(p.x-flameStart)*0.22);let flame=step(flameStart,p.x)*step(p.x,-0.56)*(1.0-smoothstep(flameWidth,flameWidth+0.05,abs(p.y)));
   return vec3f(max(fuselage,max(nose,fins)),nozzle,flame);
 }
-fn atlasSample(uv:vec2f,index:u32,uvDx:vec2f,uvDy:vec2f)->vec4f{let slot=f32(max(1u,index)-1u);let cell=vec2f(fract(slot/8.0),floor(slot/8.0)/8.0);let atlasScale=vec2f(116.0/1024.0);let inner=vec2f(6.0/1024.0)+uv*atlasScale;return textureSampleGrad(atlas,atlasSampler,cell+inner,uvDx*atlasScale,uvDy*atlasScale);}
+fn atlasSample(uv:vec2f,index:u32)->vec4f{let slot=f32(max(1u,index)-1u);let cell=vec2f(fract(slot/8.0),floor(slot/8.0)/8.0);let atlasScale=vec2f(116.0/1024.0);let atlasUv=cell+vec2f(6.0/1024.0)+uv*atlasScale;return textureSampleLevel(atlasTexture, atlasSampler, atlasUv, 0.0);}
+fn premiumRealisticMaterial(base:vec3f,role:u32,t:f32,seed:u32)->vec3f{
+  let ignition=vec3f(1.0,0.985,0.88);let gold=vec3f(1.0,0.64,0.16);let ember=vec3f(0.92,0.075,0.012);
+  var color=mix(ignition,base,smoothstep(0.035,0.26,t));
+  color=mix(color,gold,smoothstep(0.62,0.82,t)*0.34);
+  color=mix(color,ember,smoothstep(0.78,1.0,t)*select(0.42,0.68,role==2u));
+  let grain=0.93+0.07*sin(uniforms.time*(24.0+f32(seed&7u))+f32(seed&255u)*0.31);
+  return color*grain;
+}
 fn materialColor(base:vec3f,role:u32,style:u32,t:f32,seed:u32)->vec3f{
+  if(style==3u){return premiumRealisticMaterial(base,role,t,seed);}
   if(role==7u){return mix(vec3f(0.38,0.4,0.44),base,0.18);}
   let whiteHot=vec3f(1.0,0.965,0.78);let ember=vec3f(1.0,0.2,0.025);
   var color=mix(whiteHot,base,smoothstep(0.02,0.22,t));
@@ -1358,10 +3218,15 @@ fn materialColor(base:vec3f,role:u32,style:u32,t:f32,seed:u32)->vec3f{
   let flicker=0.88+0.12*sin(uniforms.time*(21.0+f32(seed&7u))+f32(seed&255u));
   return color*select(1.0,flicker,role==8u||role==10u);
 }
+fn glyphMaterialColor(base:vec3f,t:f32)->vec3f{
+  let chroma=smoothstep(0.14,0.72,t);
+  return mix(mix(vec3f(1.0),base,0.34),base,chroma*0.66);
+}
 @fragment fn particleFragment(in:Out)->@location(0) vec4f {
-  let uvDx=dpdx(in.uv);let uvDy=dpdy(in.uv);let d=shapeDistance(in.uv,in.shape);let aa=max(0.0035,fwidth(d)*0.9);
+  let d=shapeDistance(in.uv,in.shape);let aa=max(0.0035,fwidth(d)*0.9);
+  if(in.shape==25u&&(in.flags&V2_VECTOR_HERO)!=0u){let vector=boykisserVectorColor(in.uv);let alpha=vector.a*in.fade;return vec4f(vector.rgb*alpha,alpha);}
   let role=(in.flags>>8u)&15u;let style=(in.flags>>12u)&3u;
-  if(in.shape==6u){let tex=atlasSample(in.uv,in.textureIndex,uvDx,uvDy);let alpha=tex.a*in.fade*in.color.a;if((in.flags&1u)!=0u){return vec4f(tex.rgb*alpha,alpha);}return vec4f(in.color.rgb*alpha,alpha);}
+  if(in.shape==6u){let tex=atlasSample(in.uv,in.textureIndex);let alpha=tex.a*in.fade*in.color.a;if((in.flags&1u)!=0u){return vec4f(tex.rgb*alpha,alpha);}return vec4f(in.color.rgb*alpha,alpha);}
   if(in.shape==8u){
     let parts=rocketCoverage(in.uv,uniforms.time,in.seed);
     let bodyColor=mix(in.color.rgb,vec3f(0.96,0.98,1.0),0.2+0.22*smoothstep(0.0,1.0,in.uv.y));
@@ -1369,14 +3234,11 @@ fn materialColor(base:vec3f,role:u32,style:u32,t:f32,seed:u32)->vec3f{
     var coverage=select(parts.x,max(parts.y,parts.z),role==2u);
     var rgb=select(bodyColor,flameColor,role==2u);
     if((in.flags&16384u)!=0u&&in.textureIndex>0u&&role==1u){
-      let local=(in.uv*2.0-1.0-vec2f(0.56,0.0))*vec2f(1.42,0.64);
-      let localDx=uvDx*2.0*vec2f(1.42,0.64);let localDy=uvDy*2.0*vec2f(1.42,0.64);
+      let local=(in.uv*2.0-1.0-vec2f(0.56,0.0))*vec2f(1.42,0.48);
       let c=cos(in.rotation);let s=sin(in.rotation);
       let upright=vec2f(c*local.x-s*local.y,s*local.x+c*local.y);
-      let uprightDx=vec2f(c*localDx.x-s*localDx.y,s*localDx.x+c*localDx.y);
-      let uprightDy=vec2f(c*localDy.x-s*localDy.y,s*localDy.x+c*localDy.y);
       let radius=0.43;let avatarUv=upright/(radius*2.0)+0.5;
-      let avatar=atlasSample(clamp(avatarUv,vec2f(0.0),vec2f(1.0)),in.textureIndex,uprightDx/(radius*2.0),uprightDy/(radius*2.0));
+      let avatar=atlasSample(clamp(avatarUv,vec2f(0.0),vec2f(1.0)),in.textureIndex);
       let normalized=length(upright)/radius;
       let disc=1.0-smoothstep(0.9,0.99,normalized);
       let outer=1.0-smoothstep(0.97,1.04,normalized);let inner=1.0-smoothstep(0.8,0.88,normalized);let rim=max(0.0,outer-inner);
@@ -1392,14 +3254,16 @@ fn materialColor(base:vec3f,role:u32,style:u32,t:f32,seed:u32)->vec3f{
   if(in.shape==7u){if((in.flags&128u)!=0u){coverage=1.0-smoothstep(0.18,0.46,length(in.uv-0.5));}else{let p=abs(in.uv-0.5);coverage=1.0-smoothstep(0.12,0.42,min(max(p.x,p.y)*0.78,p.x+p.y));}}
   if(in.shape==9u){let radius=length(in.uv-0.5);let curl=0.08*sin(atan2(in.uv.y-0.5,in.uv.x-0.5)*5.0+uniforms.time*0.8+f32(in.seed&63u));coverage=pow(1.0-smoothstep(0.04,0.5+curl,radius),1.65)*0.31;}
   let alpha=coverage*in.fade*in.color.a;var rgb=materialColor(in.color.rgb,role,style,in.normalizedLife,in.seed);
+  if(in.shape>=17u&&in.shape<=26u){rgb=glyphMaterialColor(in.color.rgb,in.normalizedLife);}
   if(in.shape==0u||in.shape==7u){let heat=pow(max(0.0,1.0-length(in.uv-0.5)*2.0),3.0);rgb=mix(rgb,vec3f(1.0,0.96,0.76),heat*0.86);}
   return vec4f(rgb*alpha,alpha);
 }
 @fragment fn glowFragment(in:Out)->@location(0) vec4f {
-  let uvDx=dpdx(in.uv);let uvDy=dpdy(in.uv);let role=(in.flags>>8u)&15u;if(role==7u){discard;}var coverage=0.0;if(in.shape==6u){coverage=atlasSample(in.uv,in.textureIndex,uvDx,uvDy).a;}else if(in.shape==8u){let parts=rocketCoverage(in.uv,uniforms.time,in.seed);coverage=max(parts.x*0.62,max(parts.y,parts.z));}else{let d=shapeDistance(in.uv,in.shape);coverage=exp(-max(0.0,d)*select(11.0,7.5,(in.flags&128u)!=0u))*(1.0-smoothstep(0.08,0.7,length(in.uv-0.5)));}
-  let style=(in.flags>>12u)&3u;let styleGlow=select(1.0,select(0.72,1.38,style==2u),style!=0u);let pulse=select(1.0,0.72+0.28*sin(uniforms.time*44.0+f32(in.seed&31u)),role==8u);let alpha=coverage*in.fade*in.color.a*0.18*uniforms.glowScale*styleGlow*pulse;let rgb=materialColor(in.color.rgb,role,style,in.normalizedLife,in.seed);return vec4f(rgb*alpha,alpha);
+  if(in.shape==25u&&(in.flags&V2_VECTOR_HERO)!=0u){discard;}
+  let role=(in.flags>>8u)&15u;if(role==7u){discard;}var coverage=0.0;if(in.shape==6u){coverage=atlasSample(in.uv,in.textureIndex).a;}else if(in.shape==8u){let parts=rocketCoverage(in.uv,uniforms.time,in.seed);coverage=max(parts.x*0.62,max(parts.y,parts.z));}else{let d=shapeDistance(in.uv,in.shape);coverage=exp(-max(0.0,d)*select(11.0,7.5,(in.flags&128u)!=0u))*(1.0-smoothstep(0.08,0.7,length(in.uv-0.5)));}
+  let style=(in.flags>>12u)&3u;var styleGlow=select(1.0,select(0.72,1.38,style==2u),style!=0u);if(style==3u){styleGlow=1.18;}let pulse=select(1.0,0.72+0.28*sin(uniforms.time*44.0+f32(in.seed&31u)),role==8u);let glyphGlow=select(1.0,1.3,in.shape>=17u&&in.shape<=26u);let alpha=coverage*in.fade*in.color.a*0.18*uniforms.glowScale*styleGlow*pulse*glyphGlow;var rgb=materialColor(in.color.rgb,role,style,in.normalizedLife,in.seed);if(in.shape>=17u&&in.shape<=26u){rgb=glyphMaterialColor(in.color.rgb,in.normalizedLife);}return vec4f(rgb*alpha,alpha);
 }
-@fragment fn trailFragment(in:Out)->@location(0) vec4f {let role=(in.flags>>8u)&15u;if((in.shape>=1u&&in.shape<=6u)||in.shape==9u||role==2u||role==7u){discard;}let edge=exp(-pow(abs(in.uv.y-0.5)*3.8,2.0));let alpha=edge*in.fade*in.color.a;let style=(in.flags>>12u)&3u;let rgb=materialColor(in.color.rgb,role,style,in.normalizedLife,in.seed);return vec4f(rgb*alpha,alpha);}
+@fragment fn trailFragment(in:Out)->@location(0) vec4f {let role=(in.flags>>8u)&15u;if(isV2(in.flags)&&(in.flags&V2_TRAIL)==0u){discard;}if(!isV2(in.flags)&&((in.shape>=1u&&in.shape<=6u)||in.shape==9u||role==2u||role==7u)){discard;}let edge=exp(-pow(abs(in.uv.y-0.5)*3.8,2.0));let alpha=edge*in.fade*in.color.a;let style=(in.flags>>12u)&3u;let rgb=materialColor(in.color.rgb,role,style,in.normalizedLife,in.seed);return vec4f(rgb*alpha,alpha);}
 `;
     }
 
@@ -1416,7 +3280,6 @@ struct Out{@builtin(position) position:vec4f,@location(0) uv:vec2f};
 @fragment fn kawaseBlur(in:Out)->@location(0) vec4f{let dim=vec2f(textureDimensions(firstTexture));let px=1.5/dim;var color=textureSample(firstTexture,linearSampler,in.uv)*0.2;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(px.x,px.y))*0.2;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(-px.x,px.y))*0.2;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(px.x,-px.y))*0.2;color+=textureSample(firstTexture,linearSampler,in.uv-vec2f(px.x,px.y))*0.2;return color;}
 @fragment fn bloomCopy(in:Out)->@location(0) vec4f{return textureSample(firstTexture,linearSampler,in.uv);}
 @fragment fn bloomUpsample(in:Out)->@location(0) vec4f{let dim=vec2f(textureDimensions(firstTexture));let px=1.0/dim;var color=textureSample(firstTexture,linearSampler,in.uv)*0.25;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(px.x,0.0))*0.125;color+=textureSample(firstTexture,linearSampler,in.uv-vec2f(px.x,0.0))*0.125;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(0.0,px.y))*0.125;color+=textureSample(firstTexture,linearSampler,in.uv-vec2f(0.0,px.y))*0.125;color+=textureSample(firstTexture,linearSampler,in.uv+px)*0.0625;color+=textureSample(firstTexture,linearSampler,in.uv-px)*0.0625;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(px.x,-px.y))*0.0625;color+=textureSample(firstTexture,linearSampler,in.uv+vec2f(-px.x,px.y))*0.0625;return color*0.68;}
-@fragment fn atlasDownsample(in:Out)->@location(0) vec4f{let dim=vec2f(textureDimensions(firstTexture));let px=0.5/dim;let a=textureSampleLevel(firstTexture,linearSampler,in.uv+vec2f(-px.x,-px.y),0.0);let b=textureSampleLevel(firstTexture,linearSampler,in.uv+vec2f(px.x,-px.y),0.0);let c=textureSampleLevel(firstTexture,linearSampler,in.uv+vec2f(-px.x,px.y),0.0);let d=textureSampleLevel(firstTexture,linearSampler,in.uv+vec2f(px.x,px.y),0.0);let alpha=(a.a+b.a+c.a+d.a)*0.25;let premul=(a.rgb*a.a+b.rgb*b.a+c.rgb*c.a+d.rgb*d.a)*0.25;return vec4f(select(vec3f(0.0),premul/max(alpha,0.0001),alpha>0.0001),alpha);}
 fn aces(color:vec3f)->vec3f{let a=2.51;let b=0.03;let c=2.43;let d=0.59;let e=0.14;return clamp((color*(a*color+b))/(color*(c*color+d)+e),vec3f(0.0),vec3f(1.0));}
 @fragment fn composite(in:Out)->@location(0) vec4f{let scene=textureSample(firstTexture,linearSampler,in.uv);let bloom=textureSample(secondTexture,linearSampler,in.uv);let bloomStrength=0.5+uniforms.glowScale*0.24;let bloomLight=max(bloom.r,max(bloom.g,bloom.b));let bloomAlpha=clamp(bloom.a*0.42+bloomLight*0.14*uniforms.glowScale,0.0,0.68);let alpha=clamp(max(scene.a,bloomAlpha),0.0,1.0);let radiance=scene.rgb+bloom.rgb*bloomStrength;let straight=aces(radiance/max(alpha,0.001));let rgb=select(vec3f(0.0),min(vec3f(alpha),straight*alpha),alpha>0.0001);return vec4f(rgb,alpha);}
 `;
@@ -1424,4 +3287,7 @@ fn aces(color:vec3f)->vec3f{let a=2.51;let b=0.03;let c=2.43;let d=0.59;let e=0.
 }
 
 if (typeof window !== 'undefined') window.WebGPUParticleEngine = WebGPUParticleEngine;
-if (typeof module !== 'undefined' && module.exports) module.exports = WebGPUParticleEngine;
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = WebGPUParticleEngine;
+    module.exports.parseColor = parseColor;
+}

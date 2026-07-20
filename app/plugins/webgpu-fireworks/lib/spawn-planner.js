@@ -27,6 +27,16 @@ class SpawnPlanner {
     this.origins = [];
   }
 
+  clone() {
+    const clone = new SpawnPlanner({
+      historyLimit: this.historyLimit,
+      minimumTargetDistance: this.minimumTargetDistance
+    });
+    clone.targets = this.targets.map(target => ({ ...target }));
+    clone.origins = this.origins.map(origin => ({ ...origin }));
+    return clone;
+  }
+
   getBounds(orientation = 'landscape') {
     return orientation === 'portrait'
       ? { minX: 0.1, maxX: 0.9, minY: 0.12, maxY: 0.68 }

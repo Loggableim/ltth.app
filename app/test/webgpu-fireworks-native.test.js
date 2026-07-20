@@ -1,8 +1,18 @@
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 
 const pluginRoot = path.join(__dirname, '..', 'plugins', 'webgpu-fireworks');
 const read = relative => fs.readFileSync(path.join(pluginRoot, relative), 'utf8');
+const WebGPUParticleEngine = require('../plugins/webgpu-fireworks/gpu/webgpu-particle-engine');
+const {
+  createFakeGpu,
+  makeRenderer,
+  restoreGpuGlobals,
+  waitForRecovery,
+} = require('./helpers/webgpu-fireworks-gpu-harness');
+
+afterEach(() => restoreGpuGlobals());
 
 describe('WebGPU Fireworks native migration', () => {
   const rendererSource = read('gpu/webgpu-particle-engine.js');
@@ -15,7 +25,7 @@ describe('WebGPU Fireworks native migration', () => {
 
   test('is a WebGPU-only plugin with no legacy renderer files', () => {
     expect(manifest.id).toBe('webgpu-fireworks');
-    expect(manifest.version).toBe('2.2.1');
+    expect(manifest.version).toBe('3.1.0');
     expect(manifest.devStatus).toBe('working-beta');
     expect(manifest.features).toEqual(expect.arrayContaining([
       'webgpu-compute-simulation',
@@ -24,9 +34,22 @@ describe('WebGPU Fireworks native migration', () => {
     ]));
     expect(fs.existsSync(path.join(pluginRoot, 'gpu', 'webgl-particle-engine.js'))).toBe(false);
     expect(fs.existsSync(path.join(pluginRoot, 'gpu', 'particle-system-soa.js'))).toBe(false);
-    expect(overlaySource).toContain('webgpu-particle-engine.js?v=2.2.1-avatar-head-1');
-    expect(settingsHtml).toContain('settings.js?v=2.2.1-avatar-head-1');
+    expect(overlaySource).toContain('webgpu-particle-engine.js?v=3.1.0-furry-visual-1');
+    expect(overlaySource).toContain('show-plan-v2-runtime.js?v=3.1.0-furry-visual-1');
+    expect(overlaySource).toContain('engine.js?v=3.1.0-benchmark-session-2');
+    expect(settingsHtml).toContain('show-style-options.js?v=3.1.0-depth3d-1');
+    expect(settingsHtml).toContain('settings.js?v=3.1.0-benchmark-session-2');
     expect(overlaySource).not.toContain('webgl-particle-engine');
+  });
+
+  test('loads renderer and orchestration as consecutive classic scripts', () => {
+    const browserContext = vm.createContext({
+      WebGPUFireworksSpawnCommandPolicy: {},
+      WebGPUFireworksShowPlanV2Runtime: {}
+    });
+
+    expect(() => new vm.Script(rendererSource).runInContext(browserContext)).not.toThrow();
+    expect(() => new vm.Script(orchestrationSource).runInContext(browserContext)).not.toThrow();
   });
 
   test('migrates all legacy renderer values to webgpu', () => {
@@ -37,7 +60,25 @@ describe('WebGPU Fireworks native migration', () => {
       expect(config).not.toHaveProperty('gpuAcceleration');
     }
     expect(normalizeConfig({ avatarParticleChance: 0 }).avatarParticleChance).toBe(0);
-    expect(mainSource).toContain('avatarParticleChance: this.config.avatarParticleChance ?? 0.3');
+    expect(mainSource).toContain('avatarParticleChance: effectiveConfig.avatarParticleChance ?? 0.3');
+  });
+
+  test.each([
+    ['#abc', [170 / 255, 187 / 255, 204 / 255, 1]],
+    ['#112233', [17 / 255, 34 / 255, 51 / 255, 1]],
+    ['#11223380', [17 / 255, 34 / 255, 51 / 255, 128 / 255]],
+    ['hsl(120, 100%, 25%)', [0, 0.5, 0, 1]],
+    ['hsla(240, 100%, 50%, 0.25)', [0, 0, 1, 0.25]],
+    [[1.4, -0.2, 0.5, 2], [1, 0, 0.5, 1]]
+  ])('parses accepted color %p as RGBA', (input, expected) => {
+    expect(WebGPUParticleEngine.parseColor(input)).toHaveLength(4);
+    WebGPUParticleEngine.parseColor(input).forEach((component, index) => {
+      expect(component).toBeCloseTo(expected[index], 6);
+    });
+  });
+
+  test.each(['abc', [255]])('returns opaque white for unsupported color %p', input => {
+    expect(WebGPUParticleEngine.parseColor(input)).toEqual([1, 1, 1, 1]);
   });
 
   test('contains native WebGPU capability and premultiplied-alpha setup', () => {
@@ -116,6 +157,38 @@ describe('WebGPU Fireworks native migration', () => {
     expect(statuses.at(-1)).not.toHaveProperty('reason');
   });
 
+  test('resets the recovery latch after each successful device replacement', async () => {
+    const gpu = createFakeGpu();
+    const statuses = [];
+    const engine = makeRenderer(gpu, {
+      recoveryDelayMs: 0,
+      onStatus: status => statuses.push(status.state)
+    });
+    await engine.init();
+
+    gpu.loseDevice(0, { reason: 'unknown', message: 'first device loss' });
+    await waitForRecovery(engine);
+    expect(engine.recoveryPromise).toBeNull();
+    expect(engine.recoveringDevice).toBeNull();
+
+    gpu.loseDevice(1, { reason: 'unknown', message: 'second device loss' });
+    await waitForRecovery(engine);
+
+    expect(statuses.filter(state => state === 'device-lost')).toHaveLength(2);
+    expect(statuses.filter(state => state === 'ready')).toHaveLength(3);
+    expect(engine.device).toBe(gpu.devices[2]);
+  });
+
+  test('threads finale and preview runtime ownership into every queued GPU spawn family', () => {
+    expect(orchestrationSource).toContain('onOwnerInvalidated: (ownerToken, reason) =>');
+    expect(orchestrationSource).toContain('ownerToken: runtimeToken');
+    expect(orchestrationSource).toContain('ownerToken: explosion.ownerToken');
+    expect(orchestrationSource).toContain('ownerToken: event.runtimeToken');
+    expect(rendererSource).toContain('ownerToken: context.ownerToken');
+    expect(orchestrationSource).toContain("this.cancelGpuOwner(preview.runtimeToken, 'preview-completed')");
+    expect(orchestrationSource).toContain("this.cancelGpuOwner(this.currentFinale.runtimeToken, 'finale-completed')");
+  });
+
   test('orchestrates visual explosion and audio in the same CPU frame', () => {
     const processStart = orchestrationSource.indexOf('processExplosion(explosion, plan = null');
     const processEnd = orchestrationSource.indexOf('handleFinale(data', processStart);
@@ -184,13 +257,19 @@ describe('WebGPU Fireworks native migration', () => {
     expect(rendererSource).toContain('let fins=');
     expect(rendererSource).toContain('let flame=');
     expect(rendererSource).toContain('p.rotation = atan2(p.velocity.y, p.velocity.x + curveVelocity)');
+    expect(rendererSource).toContain('Math.min(this.logicalWidth, this.logicalHeight) / 1080');
+    expect(rendererSource).toContain('const defaultRocketSize = depthRocket ? 22 : 32');
+    expect(rendererSource).toContain('const minimumRocketSize = depthRocket ? 18 : 28');
+    expect(rendererSource).toContain('let trailWidthScale=select(1.0,0.62,p.shape==8u);');
+    expect(rendererSource).toContain('let fuselage=1.0-smoothstep(-aa,aa,sdCapsule(p,vec2f(-0.48,0.0),vec2f(0.43,0.0),0.16));');
+    expect(rendererSource).toContain('let local=(in.uv*2.0-1.0-vec2f(0.56,0.0))*vec2f(1.42,0.48);');
   });
 
   test('reports renderer status through socket, API and settings', () => {
     expect(mainSource).toContain("socket.on('webgpu-fireworks:renderer-status'");
     expect(mainSource).toContain("fallback: 'none'");
     expect(orchestrationSource).toContain("this.socket.emit('webgpu-fireworks:renderer-status'");
-    expect(settingsSource).toContain("fetch('/api/webgpu-fireworks/status'");
+    expect(settingsSource).toContain("requestJson('/api/webgpu-fireworks/status'");
     expect(settingsHtml).toContain('id="webgpu-runtime-state"');
     expect(settingsHtml).toContain('id="webgpu-origin"');
   });

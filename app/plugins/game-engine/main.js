@@ -65,6 +65,26 @@ const AVATAR_PROXY_BLOCKED_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '::
 const AVATAR_PROXY_MAX_BYTES = 2 * 1024 * 1024;
 const AVATAR_PROXY_TIMEOUT_MS = 5000;
 const AVATAR_PROXY_MAX_REDIRECTS = 3;
+const CONNECT4_MEDIA_EVENTS = new Set([
+  'new_challenger',
+  'challenge_accepted',
+  'piece_drop',
+  'player_1_wins',
+  'player_2_wins',
+  'game_over',
+  'timer_warning'
+]);
+const CONNECT4_AUDIO_EXTENSIONS = new Map([
+  ['audio/mpeg', '.mp3'],
+  ['audio/mp3', '.mp3'],
+  ['audio/wav', '.wav'],
+  ['audio/x-wav', '.wav'],
+  ['audio/ogg', '.ogg'],
+  ['audio/webm', '.webm'],
+  ['audio/mp4', '.m4a'],
+  ['audio/x-m4a', '.m4a'],
+  ['audio/aac', '.aac']
+]);
 
 class GameEnginePlugin {
   constructor(api) {
@@ -438,6 +458,36 @@ class GameEnginePlugin {
     }
 
     return null;
+  }
+
+  _isPathInside(baseDir, filePath) {
+    if (!filePath || typeof filePath !== 'string') return false;
+    const root = path.resolve(baseDir);
+    const target = path.resolve(filePath);
+    const relative = path.relative(root, target);
+    return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative);
+  }
+
+  _serializeConnect4Media(row, mediaDir) {
+    if (
+      !row ||
+      !CONNECT4_MEDIA_EVENTS.has(row.media_event) ||
+      !this._isPathInside(mediaDir, row.file_path) ||
+      !fs.existsSync(row.file_path)
+    ) {
+      return null;
+    }
+
+    const revision = Math.floor(fs.statSync(row.file_path).mtimeMs);
+    return {
+      game_type: 'connect4',
+      media_type: 'audio',
+      media_event: row.media_event,
+      file_type: row.file_type,
+      enabled: row.enabled,
+      filename: path.basename(row.file_path),
+      url: `/game-engine/media/connect4/${encodeURIComponent(row.media_event)}?v=${revision}`
+    };
   }
 
   _isSafeAudioFilename(filename) {
@@ -2194,11 +2244,66 @@ class GameEnginePlugin {
       }
     });
 
-    // API: Get game media
+    const gameMediaDataDir = typeof this.api.getPluginDataDir === 'function'
+      ? this.api.getPluginDataDir()
+      : path.join(__dirname, 'data');
+    const connect4MediaDir = path.join(gameMediaDataDir, 'game-media', 'connect4');
+    fs.mkdirSync(connect4MediaDir, { recursive: true });
+
+    const validateConnect4MediaRequest = (req, res, next) => {
+      if (req.params.gameType !== 'connect4') {
+        return res.status(400).json({ success: false, error: 'invalid_connect4_media_game' });
+      }
+      if (!CONNECT4_MEDIA_EVENTS.has(req.params.mediaEvent)) {
+        return res.status(400).json({ success: false, error: 'invalid_connect4_media_event' });
+      }
+      next();
+    };
+
+    const connect4MediaStorage = multer.diskStorage({
+      destination: (req, file, callback) => callback(null, connect4MediaDir),
+      filename: (req, file, callback) => {
+        const extension = CONNECT4_AUDIO_EXTENSIONS.get(String(file.mimetype || '').toLowerCase());
+        callback(null, `${req.params.mediaEvent}${extension}`);
+      }
+    });
+    const connect4MediaUpload = multer({
+      storage: connect4MediaStorage,
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (req, file, callback) => {
+        if (CONNECT4_AUDIO_EXTENSIONS.has(String(file.mimetype || '').toLowerCase())) {
+          callback(null, true);
+          return;
+        }
+        const error = new Error('Unsupported Connect4 audio type');
+        error.code = 'INVALID_CONNECT4_MEDIA_TYPE';
+        callback(error);
+      }
+    });
+    const receiveConnect4MediaUpload = (req, res, next) => {
+      connect4MediaUpload.single('file')(req, res, error => {
+        if (!error) {
+          next();
+          return;
+        }
+        const errorCode = error.code === 'LIMIT_FILE_SIZE'
+          ? 'connect4_media_too_large'
+          : 'invalid_connect4_media_type';
+        res.status(400).json({ success: false, error: errorCode });
+      });
+    };
+
+    // API: Get browser-safe game media metadata
     this.api.registerRoute('GET', '/api/game-engine/media/:gameType', (req, res) => {
       try {
         const { gameType } = req.params;
-        const media = this.db.getGameMedia(gameType);
+        if (gameType !== 'connect4') {
+          return res.status(400).json({ success: false, error: 'invalid_connect4_media_game' });
+        }
+        if (typeof res.set === 'function') res.set('Cache-Control', 'no-store');
+        const media = this.db.getGameMedia(gameType)
+          .map(row => this._serializeConnect4Media(row, connect4MediaDir))
+          .filter(Boolean);
         res.json(media);
       } catch (error) {
         this.logger.error(`Error getting game media: ${error.message}`);
@@ -2206,25 +2311,82 @@ class GameEnginePlugin {
       }
     });
 
-    // API: Upload game media
-    this.api.registerRoute('POST', '/api/game-engine/media/:gameType/:mediaEvent', (req, res) => {
+    // Serve an enabled custom audio file without exposing its local path
+    this.api.registerRoute('GET', '/game-engine/media/:gameType/:mediaEvent', (req, res) => {
       try {
         const { gameType, mediaEvent } = req.params;
-        const { filePath, fileType } = req.body;
-        
-        this.db.saveGameMedia(gameType, mediaEvent, filePath, fileType);
-        res.json({ success: true });
+        if (gameType !== 'connect4' || !CONNECT4_MEDIA_EVENTS.has(mediaEvent)) {
+          return res.status(404).json({ error: 'connect4_media_not_found' });
+        }
+        const media = this.db.getGameMedia(gameType, mediaEvent);
+        if (!media || !this._isPathInside(connect4MediaDir, media.file_path) || !fs.existsSync(media.file_path)) {
+          return res.status(404).json({ error: 'connect4_media_not_found' });
+        }
+        if (typeof res.set === 'function') res.set('Cache-Control', 'no-store');
+        if (typeof res.type === 'function' && media.file_type) res.type(media.file_type);
+        res.sendFile(path.resolve(media.file_path));
       } catch (error) {
-        this.logger.error(`Error saving game media: ${error.message}`);
+        this.logger.error(`Error serving game media: ${error.message}`);
         res.status(500).json({ error: error.message });
       }
     });
+
+    // API: Upload game media
+    this.api.registerRoute(
+      'POST',
+      '/api/game-engine/media/:gameType/:mediaEvent',
+      validateConnect4MediaRequest,
+      receiveConnect4MediaUpload,
+      (req, res) => {
+        try {
+          if (!req.file) {
+            return res.status(400).json({ success: false, error: 'connect4_media_file_required' });
+          }
+          const { gameType, mediaEvent } = req.params;
+          const previousMedia = this.db.getGameMedia(gameType, mediaEvent);
+          const uploadedPath = path.resolve(req.file.path);
+
+          if (!this._isPathInside(connect4MediaDir, uploadedPath)) {
+            return res.status(400).json({ success: false, error: 'invalid_connect4_media_path' });
+          }
+
+          this.db.saveGameMedia(gameType, mediaEvent, uploadedPath, req.file.mimetype);
+          if (
+            previousMedia &&
+            previousMedia.file_path !== uploadedPath &&
+            this._isPathInside(connect4MediaDir, previousMedia.file_path) &&
+            fs.existsSync(previousMedia.file_path)
+          ) {
+            fs.unlinkSync(previousMedia.file_path);
+          }
+
+          this.io.emit('game-engine:media-updated', { gameType, mediaEvent });
+          this.logger.info(`Connect4 audio uploaded: ${mediaEvent}`);
+          res.json({
+            success: true,
+            filename: path.basename(uploadedPath),
+            url: `/game-engine/media/connect4/${encodeURIComponent(mediaEvent)}`
+          });
+        } catch (error) {
+          this.logger.error(`Error saving game media: ${error.message}`);
+          res.status(500).json({ error: error.message });
+        }
+      }
+    );
 
     // API: Delete game media
     this.api.registerRoute('DELETE', '/api/game-engine/media/:gameType/:mediaEvent', (req, res) => {
       try {
         const { gameType, mediaEvent } = req.params;
+        if (gameType !== 'connect4' || !CONNECT4_MEDIA_EVENTS.has(mediaEvent)) {
+          return res.status(400).json({ success: false, error: 'invalid_connect4_media_event' });
+        }
+        const media = this.db.getGameMedia(gameType, mediaEvent);
+        if (media && this._isPathInside(connect4MediaDir, media.file_path) && fs.existsSync(media.file_path)) {
+          fs.unlinkSync(media.file_path);
+        }
         this.db.removeGameMedia(gameType, mediaEvent);
+        this.io.emit('game-engine:media-updated', { gameType, mediaEvent });
         res.json({ success: true });
       } catch (error) {
         this.logger.error(`Error removing game media: ${error.message}`);

@@ -79,7 +79,15 @@
       "font_family_label": "Font Family",
       "font_size_label": "Font Size (px)",
       "save_button": "Save Goal",
-      "cancel_button": "Cancel"
+      "cancel_button": "Cancel",
+      "firework_finale_built_in_shows": "Built-in shows",
+      "firework_finale_custom_shows": "Custom shows",
+      "firework_finale_unavailable": "Unavailable",
+      "firework_finale_style_nishiki_kamuro": "Nishiki Kamuro",
+      "firework_finale_style_aurora_cathedral": "Aurora Cathedral",
+      "firework_finale_style_royal_brocade": "Royal Brocade",
+      "firework_finale_style_phoenix_ascension": "Phoenix Ascension",
+      "firework_finale_style_furry_celebration": "Furry Celebration"
     },
     "card": {
       "progress_label": "Progress",

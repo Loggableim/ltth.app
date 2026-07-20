@@ -1,5 +1,30 @@
 ﻿const socket = io();
 let config = {};
+let animalCommandEditor = null;
+
+function commandEditorText(key, fallback) {
+    const fullKey = `plugins.webgpu-emoji-rain.webgpu_emoji_rain.commands_editor.${key}`;
+    if (window.i18n && typeof window.i18n.t === 'function') {
+        const translated = window.i18n.t(fullKey);
+        if (translated && translated !== fullKey) return translated;
+    }
+    return fallback;
+}
+
+function initializeAnimalCommandEditor() {
+    const root = document.getElementById('animal-command-editor');
+    if (!root || typeof window.EmojiRainCommandEditor !== 'function') return;
+    animalCommandEditor = new window.EmojiRainCommandEditor({
+        root,
+        imagesEndpoint: '/api/webgpu-emoji-rain/images',
+        uploadEndpoint: '/api/webgpu-emoji-rain/upload',
+        translate: commandEditorText
+    });
+    if (window.i18n && typeof window.i18n.onLanguageChange === 'function') {
+        window.i18n.onLanguageChange(() => animalCommandEditor.retranslate());
+    }
+    animalCommandEditor.refreshGallery();
+}
 
 // Load configuration on page load
 async function loadConfig() {
@@ -396,7 +421,7 @@ function updateUI() {
         // SuperFan burst
         console.log('?? [EMOJI RAIN UI] Setting SuperFan burst...');
         document.getElementById('superfan_burst_enabled').checked = config.superfan_burst_enabled !== false;
-        document.getElementById('animal_commands_superfans_only').checked = config.animal_commands_superfans_only !== false;
+        if (animalCommandEditor) animalCommandEditor.load(config);
         setRangeValue('superfan_burst_intensity', config.superfan_burst_intensity !== undefined ? config.superfan_burst_intensity : 3.0);
         document.getElementById('superfan_burst_duration').value = config.superfan_burst_duration || 2000;
 
@@ -518,7 +543,7 @@ async function saveConfig() {
         pixel_size: parseInt(document.getElementById('pixel_size').value),
         // SuperFan burst
         superfan_burst_enabled: document.getElementById('superfan_burst_enabled').checked,
-        animal_commands_superfans_only: document.getElementById('animal_commands_superfans_only').checked,
+        ...(animalCommandEditor ? animalCommandEditor.serialize() : {}),
         superfan_burst_intensity: parseFloat(document.getElementById('superfan_burst_intensity').value),
         superfan_burst_duration: parseInt(document.getElementById('superfan_burst_duration').value),
         // FPS optimization
@@ -589,8 +614,14 @@ async function saveConfig() {
         const data = await response.json();
 
         if (data.success) {
-            config = newConfig;
-            showNotification('Konfiguration gespeichert!');
+            config = data.config || newConfig;
+            if (animalCommandEditor) animalCommandEditor.load(config);
+            showNotification(data.commandRegistration?.status === 'pending'
+                ? commandEditorText(
+                    'registration_pending',
+                    'Saved. Commands will be registered when GCCE is available.'
+                )
+                : 'Konfiguration gespeichert!');
         } else {
             showNotification('Fehler beim Speichern: ' + data.error, true);
         }
@@ -1289,9 +1320,11 @@ async function loadRendererStatus() {
 // ========== INITIALIZATION ==========
 
 // Initialize everything when DOM is ready
-function initializeEmojiRainUI() {
+async function initializeEmojiRainUI() {
     console.log('?? [EMOJI RAIN UI] Initializing Emoji Rain UI...');
 
+    if (window.i18n && window.i18n.ready) await window.i18n.ready;
+    initializeAnimalCommandEditor();
     loadConfig();
     loadUploadedImages();
     loadUserEmojiMappings();

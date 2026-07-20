@@ -59,4 +59,22 @@ describe('Schnorrbecher admin UI', () => {
     expect(ui).toContain('value="mason"');
     expect(ui).toContain('value="arcade"');
   });
+
+  test('exposes fixed pixel sizes for all gift value bands and serializes them as numbers', () => {
+    const ui = fs.readFileSync(path.join(__dirname, '..', 'ui.html'), 'utf8');
+    const document = new JSDOM([
+      '<form id="coin-jar-config">',
+      '<input name="giftSize1" type="number" value="32">',
+      '<input name="giftSize5000Plus" type="number" value="180">',
+      '</form>'
+    ].join('')).window.document;
+    const admin = new SchnorrbecherAdmin({ document });
+
+    expect(ui).toContain('name="giftSize1"');
+    expect(ui).toContain('1 Coin (px)');
+    expect(ui).toContain('name="giftSize5000Plus"');
+    expect(ui).toContain('5000+ Coins (px)');
+    expect(ui).toContain('name="maxPhysicalIcons" type="number" min="20" max="3000"');
+    expect(admin.collectConfig()).toEqual({ giftSize1: 32, giftSize5000Plus: 180 });
+  });
 });

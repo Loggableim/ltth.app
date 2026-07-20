@@ -1,12 +1,19 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
-const { normalizeConfig } = require('../plugins/webgpu-fireworks/lib/config-schema');
+const {
+  CONFIG_ENUMS,
+  CONFIG_LIMITS,
+  normalizeConfig
+} = require('../plugins/webgpu-fireworks/lib/config-schema');
 
 describe('WebGPU Superfan finale settings', () => {
   const pluginDir = path.join(__dirname, '..', 'plugins', 'webgpu-fireworks');
   const html = fs.readFileSync(path.join(pluginDir, 'ui', 'settings.html'), 'utf8');
+  const showOptionsScript = fs.readFileSync(path.join(pluginDir, 'ui', 'show-style-options.js'), 'utf8');
+  const settingsContractScript = fs.readFileSync(path.join(pluginDir, 'ui', 'settings-contract.js'), 'utf8');
   const script = fs.readFileSync(path.join(pluginDir, 'ui', 'settings.js'), 'utf8');
+  const customStyle = 'custom:00000000-0000-4000-8000-000000000611';
   let dom;
 
   afterEach(() => {
@@ -15,7 +22,10 @@ describe('WebGPU Superfan finale settings', () => {
   });
 
   function jsonResponse(body, ok = true) {
-    return { ok, json: async () => body };
+    const payload = body?.config
+      ? { ...body, limits: body.limits || CONFIG_LIMITS, enums: body.enums || CONFIG_ENUMS }
+      : body;
+    return { ok, json: async () => payload };
   }
 
   function deferred() {
@@ -61,13 +71,23 @@ describe('WebGPU Superfan finale settings', () => {
     return JSON.parse(requests[requests.length - 1][1].body).settings;
   }
 
-  async function bootSettings({ initialConfig = {}, saveResponses = [], testResponse, translations = {} } = {}) {
+  async function bootSettings({
+    initialConfig = {},
+    saveResponses = [],
+    testResponse,
+    translations = {},
+    showCatalog = {
+      success: true,
+      selectableStyles: [{ id: customStyle, name: 'Streamer Signature', builtIn: false }]
+    }
+  } = {}) {
     const loadedConfig = normalizeConfig(initialConfig);
     dom = new JSDOM(html, {
       runScripts: 'outside-only',
       url: 'http://localhost:3000/webgpu-fireworks/ui'
     });
     const { window } = dom;
+    const i18nHandlers = { change: [], languageChange: [] };
     const ready = new Promise(resolve => {
       window.document.addEventListener('DOMContentLoaded', resolve, { once: true });
     });
@@ -80,12 +100,17 @@ describe('WebGPU Superfan finale settings', () => {
     window.i18n = {
       init: jest.fn(async () => {}),
       updateDOM: jest.fn(),
-      onChange: jest.fn(),
+      onChange: jest.fn(handler => i18nHandlers.change.push(handler)),
+      onLanguageChange: jest.fn(handler => i18nHandlers.languageChange.push(handler)),
       t: jest.fn(key => translations[key] || key)
     };
     const socketHandlers = new Map();
     window.io = jest.fn(() => ({
-      on: jest.fn((event, handler) => socketHandlers.set(event, handler)),
+      on: jest.fn((event, handler) => socketHandlers.set(event, data => handler(
+        event === 'webgpu-fireworks:config-update' && data?.config
+          ? { ...data, limits: data.limits || CONFIG_LIMITS, enums: data.enums || CONFIG_ENUMS }
+          : data
+      ))),
       emit: jest.fn()
     }));
     window.setInterval = jest.fn(() => 1);
@@ -102,6 +127,9 @@ describe('WebGPU Superfan finale settings', () => {
       if (requestUrl === '/api/webgpu-fireworks/status') {
         return jsonResponse({ success: false });
       }
+      if (requestUrl === '/api/webgpu-fireworks/shows') {
+        return jsonResponse(showCatalog);
+      }
       if (requestUrl === '/api/webgpu-fireworks/config' && options.method === 'POST') {
         if (saveResponses.length > 0) return saveResponses.shift();
         return jsonResponse({
@@ -113,10 +141,15 @@ describe('WebGPU Superfan finale settings', () => {
         const response = testResponse || { ok: true, body: { success: true, accepted: true } };
         return jsonResponse(response.body, response.ok);
       }
+      if (requestUrl === '/api/webgpu-fireworks/finale' && options.method === 'POST') {
+        return jsonResponse({ success: true, accepted: true });
+      }
       throw new Error(`Unexpected request: ${requestUrl}`);
     });
     window.fetch = fetchMock;
 
+    window.eval(showOptionsScript);
+    window.eval(settingsContractScript);
     window.eval(script);
     await ready;
     await waitFor(() => {
@@ -124,13 +157,14 @@ describe('WebGPU Superfan finale settings', () => {
     });
     await new Promise(resolve => setImmediate(resolve));
 
-    return { window, fetchMock, socketHandlers };
+    return { window, fetchMock, socketHandlers, i18nHandlers };
   }
 
-  test('exposes enabled, cooldown, intensity, and inherited finale controls', () => {
+  test('exposes fail-closed Superfan controls and applies their backend contracts', async () => {
     for (const id of [
       'superfan-finale-toggle', 'superfan-finale-cooldown',
       'superfan-finale-intensity', 'superfan-finale-intensity-value',
+      'superfan-finale-style', 'superfan-finale-length',
       'superfan-end-card-duration', 'superfan-end-card-duration-value',
       'superfan-end-card-position', 'superfan-end-card-size',
       'superfan-end-card-scale-container', 'superfan-end-card-scale',
@@ -142,9 +176,48 @@ describe('WebGPU Superfan finale settings', () => {
     }
     expect(html).toMatch(/id="superfan-finale-toggle"[^>]*class="[^"]*active[^"]*"[^>]*data-config="superfanFinaleEnabled"/);
     expect(html).toMatch(/<option value="24"[^>]*selected/);
-    expect(html).toMatch(/id="superfan-finale-intensity"[^>]*min="1"[^>]*max="10"[^>]*step="0\.5"[^>]*value="3"/);
-    expect(html).not.toContain('id="superfan-finale-style"');
-    expect(html).not.toContain('id="superfan-finale-length"');
+    const staticDocument = new JSDOM(html).window.document;
+    const staticIntensity = staticDocument.getElementById('superfan-finale-intensity');
+    expect(staticIntensity.disabled).toBe(true);
+    expect(staticIntensity.hasAttribute('min')).toBe(false);
+    expect(staticIntensity.hasAttribute('max')).toBe(false);
+    expect(staticIntensity.hasAttribute('step')).toBe(false);
+
+    const { window } = await bootSettings();
+    const intensity = window.document.getElementById('superfan-finale-intensity');
+    expect(intensity.disabled).toBe(false);
+    expect(Number(intensity.min)).toBe(CONFIG_LIMITS.superfanFinaleIntensity.min);
+    expect(Number(intensity.max)).toBe(CONFIG_LIMITS.superfanFinaleIntensity.max);
+    expect(Number(intensity.step)).toBe(CONFIG_LIMITS.superfanFinaleIntensity.step);
+    expect(window.document.getElementById('superfan-finale-cooldown').disabled).toBe(false);
+    expect(html).toContain('id="superfan-finale-style"');
+    expect(html).toContain('id="superfan-finale-length"');
+    expect(html).toContain('href="/webgpu-fireworks/designer"');
+  });
+
+  test('loads and saves exact Superfan style and length overrides', async () => {
+    const { window, fetchMock } = await bootSettings({
+      initialConfig: {
+        superfanFinaleStyle: customStyle,
+        superfanFinaleLength: 'long'
+      }
+    });
+    const document = window.document;
+    await waitFor(() => expect(document.getElementById('superfan-finale-style').value).toBe(customStyle));
+    expect(document.getElementById('superfan-finale-length').value).toBe('long');
+
+    const style = document.getElementById('superfan-finale-style');
+    style.value = 'nishiki-kamuro';
+    style.dispatchEvent(new window.Event('change', { bubbles: true }));
+    const length = document.getElementById('superfan-finale-length');
+    length.value = 'short';
+    length.dispatchEvent(new window.Event('change', { bubbles: true }));
+
+    document.getElementById('save-btn').click();
+    await waitFor(() => expect(findRequest(fetchMock, '/api/webgpu-fireworks/config')).toBeDefined());
+    const saved = JSON.parse(findRequest(fetchMock, '/api/webgpu-fireworks/config')[1].body);
+    expect(saved.superfanFinaleStyle).toBe('nishiki-kamuro');
+    expect(saved.superfanFinaleLength).toBe('short');
   });
 
   test('loads, saves, and toggles custom Superfan end card controls', async () => {
@@ -414,6 +487,12 @@ describe('WebGPU Superfan finale settings', () => {
     const length = document.getElementById('finale-length');
     length.value = 'short';
     length.dispatchEvent(new window.Event('change', { bubbles: true }));
+    const superfanStyle = document.getElementById('superfan-finale-style');
+    superfanStyle.value = customStyle;
+    superfanStyle.dispatchEvent(new window.Event('change', { bubbles: true }));
+    const superfanLength = document.getElementById('superfan-finale-length');
+    superfanLength.value = 'long';
+    superfanLength.dispatchEvent(new window.Event('change', { bubbles: true }));
 
     document.getElementById('test-superfan-finale-btn').click();
     await waitFor(() => expect(findRequest(fetchMock, '/api/webgpu-fireworks/test-superfan')).toBeDefined());
@@ -422,6 +501,8 @@ describe('WebGPU Superfan finale settings', () => {
       superfanFinaleEnabled: false,
       superfanFinaleCooldownHours: 168,
       superfanFinaleIntensity: 7.5,
+      superfanFinaleStyle: customStyle,
+      superfanFinaleLength: 'long',
       superfanEndCardDuration: 4500,
       superfanEndCardPosition: 'bottom-right',
       superfanEndCardSize: 'custom',
@@ -432,6 +513,88 @@ describe('WebGPU Superfan finale settings', () => {
     expect(findRequest(fetchMock, '/api/webgpu-fireworks/config')).toBeUndefined();
     await waitFor(() => expect(document.getElementById('toast').textContent).toBe(successText));
     expect(document.getElementById('toast').classList.contains('success')).toBe(true);
+  });
+
+  test('global test button sends the exact selected dynamic style, length, and intensity', async () => {
+    const { window, fetchMock } = await bootSettings({
+      initialConfig: {
+        goalFinaleStyle: customStyle,
+        goalFinaleLength: 'long',
+        goalFinaleIntensity: 4.5
+      }
+    });
+    const document = window.document;
+    await waitFor(() => expect(document.getElementById('finale-style').value).toBe(customStyle));
+
+    document.getElementById('test-finale-btn').click();
+    await waitFor(() => expect(findRequest(fetchMock, '/api/webgpu-fireworks/finale')).toBeDefined());
+    expect(JSON.parse(findRequest(fetchMock, '/api/webgpu-fireworks/finale')[1].body)).toEqual({
+      style: customStyle,
+      length: 'long',
+      intensity: 4.5,
+      testRequest: true
+    });
+  });
+
+  test('live language changes refresh programmatic options and status once across both i18n events', async () => {
+    const translations = {
+      'webgpu_fireworks.finale_style_auto': 'Auto EN',
+      'webgpu_fireworks.finale_global_default': 'Global EN',
+      'webgpu_fireworks.finale_length_short': 'Short EN',
+      'plugins.webgpu-fireworks.shows.classic-crescendo.title': 'Classic EN'
+    };
+    const { window, fetchMock, i18nHandlers } = await bootSettings({ translations });
+    const document = window.document;
+    const optionText = (selectId, value) => document
+      .getElementById(selectId)
+      .querySelector(`option[value="${value}"]`)
+      ?.textContent;
+
+    await waitFor(() => expect(optionText('finale-style', 'auto')).toBe('Auto EN'));
+    expect(optionText('superfan-finale-style', 'inherit')).toBe('Global EN');
+    expect(optionText('finale-length', 'short')).toBe('Short EN');
+    expect(optionText('finale-style', 'classic-crescendo')).toBe('Classic EN');
+    expect(i18nHandlers.change).toHaveLength(1);
+    expect(i18nHandlers.languageChange).toHaveLength(1);
+
+    Object.assign(translations, {
+      'webgpu_fireworks.finale_style_auto': 'Auto DE',
+      'webgpu_fireworks.finale_global_default': 'Global DE',
+      'webgpu_fireworks.finale_length_short': 'Kurz DE',
+      'plugins.webgpu-fireworks.shows.classic-crescendo.title': 'Klassisch DE'
+    });
+    const statusRequestsBefore = fetchMock.mock.calls
+      .filter(([url]) => String(url) === '/api/webgpu-fireworks/status').length;
+
+    i18nHandlers.languageChange[0]();
+
+    await waitFor(() => expect(optionText('finale-style', 'auto')).toBe('Auto DE'));
+    expect(optionText('superfan-finale-style', 'inherit')).toBe('Global DE');
+    expect(optionText('finale-length', 'short')).toBe('Kurz DE');
+    expect(optionText('finale-style', 'classic-crescendo')).toBe('Klassisch DE');
+    expect(fetchMock.mock.calls.filter(([url]) => String(url) === '/api/webgpu-fireworks/status'))
+      .toHaveLength(statusRequestsBefore + 1);
+
+    Object.assign(translations, {
+      'webgpu_fireworks.finale_style_auto': 'Auto FR',
+      'webgpu_fireworks.finale_global_default': 'Global FR',
+      'webgpu_fireworks.finale_length_short': 'Court FR',
+      'plugins.webgpu-fireworks.shows.classic-crescendo.title': 'Classique FR'
+    });
+    const duplicateStatusRequestsBefore = fetchMock.mock.calls
+      .filter(([url]) => String(url) === '/api/webgpu-fireworks/status').length;
+    const updateDomCallsBefore = window.i18n.updateDOM.mock.calls.length;
+
+    i18nHandlers.change[0]();
+    i18nHandlers.languageChange[0]();
+
+    await waitFor(() => expect(optionText('finale-style', 'auto')).toBe('Auto FR'));
+    expect(optionText('superfan-finale-style', 'inherit')).toBe('Global FR');
+    expect(optionText('finale-length', 'short')).toBe('Court FR');
+    expect(optionText('finale-style', 'classic-crescendo')).toBe('Classique FR');
+    expect(window.i18n.updateDOM).toHaveBeenCalledTimes(updateDomCallsBefore + 1);
+    expect(fetchMock.mock.calls.filter(([url]) => String(url) === '/api/webgpu-fireworks/status'))
+      .toHaveLength(duplicateStatusRequestsBefore + 1);
   });
 
   test('test button shows localized failure text with a safe backend reason', async () => {
@@ -490,7 +653,9 @@ describe('WebGPU Superfan finale settings', () => {
   };
 
   test.each(['de', 'en', 'es', 'fr'])('ships all Superfan finale labels in %s', locale => {
-    const messages = JSON.parse(fs.readFileSync(path.join(pluginDir, 'locales', `${locale}.json`), 'utf8'));
+    const messages = JSON.parse(
+      fs.readFileSync(path.join(pluginDir, 'locales', `${locale}.json`), 'utf8')
+    ).plugins['webgpu-fireworks'];
     const keys = [
       'superfan_finale', 'enable_superfan_finale', 'superfan_finale_cooldown',
       'superfan_finale_every_6h', 'superfan_finale_every_12h', 'superfan_finale_every_24h',

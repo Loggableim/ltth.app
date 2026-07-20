@@ -237,6 +237,7 @@ describe('Goals firework finale integration', () => {
     machine.onUpdateAnimationEnd();
 
     expect(webgpuFireworks.triggerFinale).toHaveBeenCalledWith({
+      source: 'goal',
       intensity: 4,
       style: 'inherit',
       length: 'inherit',
@@ -244,6 +245,59 @@ describe('Goals firework finale integration', () => {
     });
     expect(webgpuFireworks.triggerFinale).toHaveBeenCalledTimes(1);
     expect(legacyFireworks.triggerFinale).not.toHaveBeenCalled();
+  });
+
+  test('retries a WebGPU finale after renderer rejection without consuming the goal milestone', () => {
+    const sqlite = new Database(':memory:');
+    const webgpuFireworks = {
+      triggerFinale: jest.fn()
+        .mockReturnValueOnce({ accepted: false, reason: 'renderer-not-ready' })
+        .mockReturnValueOnce({ accepted: true })
+    };
+    const plugin = new GoalsPlugin(createApi(sqlite, new Map([['webgpu-fireworks', webgpuFireworks]])));
+
+    plugin.db.initialize();
+    const goal = plugin.db.createGoal({
+      id: 'goal_webgpu_retry',
+      name: 'WebGPU Retry',
+      goal_type: 'coin',
+      target_value: 100,
+      firework_enabled: 1
+    });
+
+    expect(plugin.triggerGoalFireworkFinale(goal.id)).toBe(false);
+    expect(plugin.triggerGoalFireworkFinale(goal.id)).toBe(true);
+    expect(plugin.triggerGoalFireworkFinale(goal.id)).toBe(false);
+    expect(webgpuFireworks.triggerFinale).toHaveBeenCalledTimes(2);
+  });
+
+  test('deduplicates a synchronous reentrant WebGPU finale trigger', () => {
+    const sqlite = new Database(':memory:');
+    let plugin;
+    let goal;
+    let nestedResult;
+    const webgpuFireworks = {
+      triggerFinale: jest.fn()
+        .mockImplementationOnce(() => {
+          nestedResult = plugin.triggerGoalFireworkFinale(goal.id);
+          return { accepted: true };
+        })
+        .mockReturnValue({ accepted: true })
+    };
+    plugin = new GoalsPlugin(createApi(sqlite, new Map([['webgpu-fireworks', webgpuFireworks]])));
+
+    plugin.db.initialize();
+    goal = plugin.db.createGoal({
+      id: 'goal_webgpu_reentrant',
+      name: 'WebGPU Reentrant',
+      goal_type: 'coin',
+      target_value: 100,
+      firework_enabled: 1
+    });
+
+    expect(plugin.triggerGoalFireworkFinale(goal.id)).toBe(true);
+    expect(nestedResult).toBe(false);
+    expect(webgpuFireworks.triggerFinale).toHaveBeenCalledTimes(1);
   });
 
   test('passes curated per-goal style and length overrides to WebGPU with a stable event id', () => {
@@ -265,6 +319,7 @@ describe('Goals firework finale integration', () => {
 
     expect(plugin.triggerGoalFireworkFinale(goal.id)).toBe(true);
     expect(webgpuFireworks.triggerFinale).toHaveBeenCalledWith({
+      source: 'goal',
       intensity: 6,
       style: 'sky-ballet',
       length: 'long',
@@ -276,6 +331,101 @@ describe('Goals firework finale integration', () => {
     expect(webgpuFireworks.triggerFinale).toHaveBeenLastCalledWith(expect.objectContaining({
       eventId: 'goal:goal_curated_finale:2500'
     }));
+  });
+
+  test('forwards all built-ins, strict Custom UUIDs and inherited selectors without rewriting stored intent', () => {
+    const sqlite = new Database(':memory:');
+    const webgpuFireworks = { triggerFinale: jest.fn() };
+    const plugin = new GoalsPlugin(createApi(sqlite, new Map([['webgpu-fireworks', webgpuFireworks]])));
+    const customStyle = 'custom:00000000-0000-4000-8000-000000000503';
+    const cases = [
+      ['classic-crescendo', 'classic-crescendo'],
+      ['symmetric-salute', 'symmetric-salute'],
+      ['sky-ballet', 'sky-ballet'],
+      ['thunder-finale', 'thunder-finale'],
+      ['nishiki-kamuro', 'nishiki-kamuro'],
+      ['aurora-cathedral', 'aurora-cathedral'],
+      ['royal-brocade', 'royal-brocade'],
+      ['phoenix-ascension', 'phoenix-ascension'],
+      ['furry-celebration', 'furry-celebration'],
+      [customStyle, customStyle],
+      ['custom:00000000-0000-4000-8000-00000000050A', 'custom:00000000-0000-4000-8000-00000000050a'],
+      ['inherit', 'inherit'],
+      ['finale', 'inherit']
+    ];
+
+    plugin.db.initialize();
+    cases.forEach(([storedStyle, expectedStyle], index) => {
+      const goal = plugin.db.createGoal({
+        id: `goal_style_${index}`,
+        name: `Style ${index}`,
+        goal_type: 'coin',
+        target_value: 100 + index,
+        firework_enabled: 1,
+        firework_encounter_mode: storedStyle,
+        firework_finale_length: index % 2 === 0 ? 'short' : 'inherit'
+      });
+
+      expect(goal.firework_encounter_mode).toBe(storedStyle);
+      expect(plugin.triggerGoalFireworkFinale(goal.id)).toBe(true);
+      expect(webgpuFireworks.triggerFinale).toHaveBeenLastCalledWith(expect.objectContaining({
+        style: expectedStyle,
+        length: index % 2 === 0 ? 'short' : 'inherit'
+      }));
+    });
+  });
+
+  test('keeps an already stored Auto goal override for backward compatibility', () => {
+    const sqlite = new Database(':memory:');
+    const webgpuFireworks = { triggerFinale: jest.fn() };
+    const plugin = new GoalsPlugin(createApi(sqlite, new Map([['webgpu-fireworks', webgpuFireworks]])));
+
+    plugin.db.initialize();
+    const goal = plugin.db.createGoal({
+      id: 'goal_legacy_auto',
+      name: 'Legacy Auto',
+      goal_type: 'likes',
+      target_value: 100,
+      firework_enabled: 1,
+      firework_encounter_mode: 'auto',
+      firework_finale_length: 'medium'
+    });
+
+    expect(plugin.triggerGoalFireworkFinale(goal.id)).toBe(true);
+    expect(webgpuFireworks.triggerFinale).toHaveBeenCalledWith(expect.objectContaining({
+      style: 'auto',
+      length: 'medium'
+    }));
+  });
+
+  test('rejects malformed Custom goal IDs at trigger time without changing storage', () => {
+    const sqlite = new Database(':memory:');
+    const webgpuFireworks = { triggerFinale: jest.fn() };
+    const plugin = new GoalsPlugin(createApi(sqlite, new Map([['webgpu-fireworks', webgpuFireworks]])));
+    const invalidStyles = [
+      'custom:not-a-uuid',
+      'custom:00000000-0000-0000-0000-000000000504'
+    ];
+
+    plugin.db.initialize();
+    invalidStyles.forEach((storedStyle, index) => {
+      const goal = plugin.db.createGoal({
+        id: `goal_invalid_custom_${index}`,
+        name: `Invalid Custom ${index}`,
+        goal_type: 'coin',
+        target_value: 10 + index,
+        firework_enabled: 1,
+        firework_encounter_mode: storedStyle,
+        firework_finale_length: 'long'
+      });
+
+      expect(goal.firework_encounter_mode).toBe(storedStyle);
+      expect(plugin.triggerGoalFireworkFinale(goal.id)).toBe(true);
+      expect(webgpuFireworks.triggerFinale).toHaveBeenLastCalledWith(expect.objectContaining({
+        style: 'inherit',
+        length: 'long'
+      }));
+    });
   });
 
   test('maps invalid and legacy goal finale selectors to global WebGPU defaults without using duration', () => {
@@ -299,6 +449,7 @@ describe('Goals firework finale integration', () => {
     plugin.triggerGoalFireworkFinale(legacyGoal.id);
 
     expect(webgpuFireworks.triggerFinale).toHaveBeenCalledWith({
+      source: 'goal',
       intensity: 2.5,
       style: 'inherit',
       length: 'inherit',
@@ -361,9 +512,21 @@ describe('Goals firework finale integration', () => {
     expect(uiHtml).toContain('data-i18n="goals.modal.firework_finale_style_label"');
     expect(uiHtml).toContain('data-i18n="goals.modal.firework_finale_length_label"');
     expect(uiHtml.match(/data-i18n="goals\.modal\.firework_finale_global_default"/g)).toHaveLength(2);
-    for (const style of ['auto', 'classic-crescendo', 'symmetric-salute', 'sky-ballet', 'thunder-finale']) {
+    for (const style of [
+      'classic-crescendo',
+      'symmetric-salute',
+      'sky-ballet',
+      'thunder-finale',
+      'nishiki-kamuro',
+      'aurora-cathedral',
+      'royal-brocade',
+      'phoenix-ascension',
+      'furry-celebration'
+    ]) {
       expect(uiHtml).toContain(`<option value="${style}"`);
     }
+    expect(uiHtml).not.toContain('<option value="auto"');
+    expect(uiHtml).toContain('/plugins/webgpu-fireworks/ui/show-style-options.js');
     for (const length of ['short', 'medium', 'long']) {
       expect(uiHtml).toContain(`<option value="${length}"`);
     }
@@ -377,6 +540,7 @@ describe('Goals firework finale integration', () => {
     expect(uiJs).toContain('firework_encounter_mode');
     expect(uiJs).toContain('firework_finale_length');
     expect(uiJs).toContain("goal.firework_encounter_mode === 'finale'");
+    expect(uiJs).toContain('refreshGoalFinaleShowOptions');
     expect(uiJs).toContain('firework_progress_enabled');
     expect(uiJs).toContain('firework_progress_milestones');
   });
@@ -420,12 +584,12 @@ describe('Goals firework finale integration', () => {
         firework_finale_length_long: 'Longue (28 s)'
       }
     };
-    const showNames = [
-      'Classic Crescendo',
-      'Symmetric Salute',
-      'Sky Ballet',
-      'Thunder Finale'
-    ];
+    const showNames = {
+      de: ['Klassisches Crescendo', 'Symmetrischer Salut', 'Himmelsballett', 'Donnerfinale'],
+      en: ['Classic Crescendo', 'Symmetric Salute', 'Sky Ballet', 'Thunder Finale'],
+      es: ['Crescendo clásico', 'Saludo simétrico', 'Ballet celeste', 'Final de trueno'],
+      fr: ['Crescendo classique', 'Salut symétrique', 'Ballet céleste', 'Final tonnerre']
+    };
 
     for (const [locale, localizedValues] of Object.entries(expected)) {
       const translations = JSON.parse(
@@ -437,7 +601,7 @@ describe('Goals firework finale integration', () => {
         translations.firework_finale_style_symmetric_salute,
         translations.firework_finale_style_sky_ballet,
         translations.firework_finale_style_thunder_finale
-      ]).toEqual(showNames);
+      ]).toEqual(showNames[locale]);
     }
   });
 

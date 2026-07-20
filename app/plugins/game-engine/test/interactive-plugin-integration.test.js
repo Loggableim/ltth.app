@@ -1,4 +1,17 @@
 const GameEnginePlugin = require('../main');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+const testPluginDataDir = path.join(os.tmpdir(), `ltth-connect4-media-${process.pid}`);
+
+beforeAll(() => {
+  fs.mkdirSync(testPluginDataDir, { recursive: true });
+});
+
+afterAll(() => {
+  fs.rmSync(testPluginDataDir, { recursive: true, force: true });
+});
 
 function createPlugin() {
   const io = { emit: jest.fn(), on: jest.fn() };
@@ -17,7 +30,13 @@ function createPlugin() {
         }))
       }
     }),
-    registerRoute: jest.fn((method, path, handler) => routes.push({ method, path, handler })),
+    registerRoute: jest.fn((method, path, ...handlers) => routes.push({
+      method,
+      path,
+      handlers,
+      handler: handlers.at(-1)
+    })),
+    getPluginDataDir: () => testPluginDataDir,
     registerSocketConnection: jest.fn(handler => {
       connectionHandler = handler;
       return true;
@@ -202,6 +221,111 @@ describe('GameEnginePlugin interactive controller integration', () => {
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ error: 'invalid_connect4_config' });
     expect(plugin.db.saveGameConfig).not.toHaveBeenCalled();
+  });
+
+  test('registers a real Connect4 audio upload and persists the uploaded file', () => {
+    const { plugin, routes, io } = createPlugin();
+    plugin.db = {
+      getGameMedia: jest.fn(() => null),
+      saveGameMedia: jest.fn()
+    };
+    plugin.registerRoutes();
+    const route = routes.find(item => (
+      item.method === 'POST' &&
+      item.path === '/api/game-engine/media/:gameType/:mediaEvent'
+    ));
+    const uploadedPath = path.join(testPluginDataDir, 'game-media', 'connect4', 'piece_drop.mp3');
+    const res = { json: jest.fn(), status: jest.fn(() => res) };
+
+    expect(route.handlers).toHaveLength(3);
+    route.handler({
+      params: { gameType: 'connect4', mediaEvent: 'piece_drop' },
+      file: {
+        path: uploadedPath,
+        mimetype: 'audio/mpeg',
+        originalname: 'my-drop.mp3'
+      }
+    }, res);
+
+    expect(plugin.db.saveGameMedia).toHaveBeenCalledWith(
+      'connect4',
+      'piece_drop',
+      uploadedPath,
+      'audio/mpeg'
+    );
+    expect(io.emit).toHaveBeenCalledWith('game-engine:media-updated', {
+      gameType: 'connect4',
+      mediaEvent: 'piece_drop'
+    });
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      filename: 'piece_drop.mp3',
+      url: '/game-engine/media/connect4/piece_drop'
+    }));
+  });
+
+  test('rejects unknown Connect4 audio events before accepting a file', () => {
+    const { plugin, routes } = createPlugin();
+    plugin.db = { getGameMedia: jest.fn(), saveGameMedia: jest.fn() };
+    plugin.registerRoutes();
+    const route = routes.find(item => (
+      item.method === 'POST' &&
+      item.path === '/api/game-engine/media/:gameType/:mediaEvent'
+    ));
+    const next = jest.fn();
+    const res = { json: jest.fn(), status: jest.fn(() => res) };
+
+    route.handlers[0]({
+      params: { gameType: 'connect4', mediaEvent: '../piece_drop' }
+    }, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'invalid_connect4_media_event'
+    });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  test('exposes only browser-safe Connect4 audio metadata and serves the owned file', () => {
+    const { plugin, routes } = createPlugin();
+    const mediaDir = path.join(testPluginDataDir, 'game-media', 'connect4');
+    const mediaPath = path.join(mediaDir, 'piece_drop.mp3');
+    fs.mkdirSync(mediaDir, { recursive: true });
+    fs.writeFileSync(mediaPath, 'audio');
+    const row = {
+      game_type: 'connect4',
+      media_type: 'audio',
+      media_event: 'piece_drop',
+      file_path: mediaPath,
+      file_type: 'audio/mpeg',
+      enabled: 1
+    };
+    plugin.db = {
+      getGameMedia: jest.fn((gameType, mediaEvent) => mediaEvent ? row : [row])
+    };
+    plugin.registerRoutes();
+    const metadataRoute = routes.find(item => (
+      item.method === 'GET' && item.path === '/api/game-engine/media/:gameType'
+    ));
+    const fileRoute = routes.find(item => (
+      item.method === 'GET' && item.path === '/game-engine/media/:gameType/:mediaEvent'
+    ));
+    const metadataRes = { json: jest.fn(), status: jest.fn(() => metadataRes) };
+    const fileRes = { sendFile: jest.fn(), status: jest.fn(() => fileRes), json: jest.fn() };
+
+    metadataRoute.handler({ params: { gameType: 'connect4' } }, metadataRes);
+    fileRoute.handler({ params: { gameType: 'connect4', mediaEvent: 'piece_drop' } }, fileRes);
+
+    expect(metadataRes.json).toHaveBeenCalledWith([
+      expect.objectContaining({
+        media_event: 'piece_drop',
+        filename: 'piece_drop.mp3',
+        url: expect.stringMatching(/^\/game-engine\/media\/connect4\/piece_drop\?v=\d+$/)
+      })
+    ]);
+    expect(metadataRes.json.mock.calls[0][0][0]).not.toHaveProperty('file_path');
+    expect(fileRes.sendFile).toHaveBeenCalledWith(mediaPath);
   });
 
   test('normalizes invalid stored Connect4 configuration values on read', () => {

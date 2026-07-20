@@ -15,6 +15,22 @@ const {
   normalizeSuperfanIdentityAliases
 } = require('../plugins/webgpu-fireworks/lib/superfan-finale-history');
 const FireworksPlugin = require('../plugins/webgpu-fireworks/main');
+const { BUILT_IN_SHOW_DEFINITIONS } = require('../plugins/webgpu-fireworks/lib/built-in-shows');
+const { RevisionedShowRepository } = require('../plugins/webgpu-fireworks/lib/show-repository');
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function publishCustom(repository, uuid, name = 'Superfan Custom') {
+  repository.idFactory = () => uuid;
+  const definition = clone(BUILT_IN_SHOW_DEFINITIONS['nishiki-kamuro']);
+  definition.metadata.name = name;
+  const created = repository.create(definition);
+  repository.validate(created.id, created.revision);
+  repository.publish(created.id, created.revision);
+  return created.id;
+}
 
 describe('WebGPU Superfan finale foundation', () => {
   let tempDir;
@@ -34,6 +50,50 @@ describe('WebGPU Superfan finale foundation', () => {
         superfanFinaleCooldownHours: DEFAULT_FIREWORKS_CONFIG.superfanFinaleCooldownHours,
         superfanFinaleIntensity: 1
       });
+  });
+
+  test('defaults Superfan show overrides to inherit and normalizes only concrete override selectors', () => {
+    const customStyle = 'custom:00000000-0000-4000-8000-000000000501';
+    const builtInStyles = [
+      'classic-crescendo',
+      'symmetric-salute',
+      'sky-ballet',
+      'thunder-finale',
+      'nishiki-kamuro',
+      'aurora-cathedral',
+      'royal-brocade',
+      'phoenix-ascension',
+      'furry-celebration'
+    ];
+
+    expect(DEFAULT_FIREWORKS_CONFIG).toMatchObject({
+      superfanFinaleStyle: 'inherit',
+      superfanFinaleLength: 'inherit'
+    });
+    expect(normalizeConfig()).toMatchObject({
+      superfanFinaleStyle: 'inherit',
+      superfanFinaleLength: 'inherit'
+    });
+    for (const style of ['inherit', ...builtInStyles, customStyle]) {
+      expect(normalizeConfig({ superfanFinaleStyle: style }).superfanFinaleStyle).toBe(style);
+    }
+    for (const length of ['inherit', 'short', 'medium', 'long']) {
+      expect(normalizeConfig({ superfanFinaleLength: length }).superfanFinaleLength).toBe(length);
+    }
+    expect(normalizeConfig({
+      superfanFinaleStyle: 'custom:00000000-0000-0000-0000-000000000501',
+      superfanFinaleLength: 'huge'
+    })).toMatchObject({
+      superfanFinaleStyle: 'inherit',
+      superfanFinaleLength: 'inherit'
+    });
+    expect(normalizeConfig({
+      superfanFinaleStyle: 'custom:00000000-0000-4000-8000-00000000050A'
+    }).superfanFinaleStyle).toBe('custom:00000000-0000-4000-8000-00000000050a');
+  });
+
+  test('maps a previously stored Superfan auto override to inherit instead of creating a second Auto selector', () => {
+    expect(normalizeConfig({ superfanFinaleStyle: 'auto' }).superfanFinaleStyle).toBe('inherit');
   });
 
   test('normalizes Superfan end card defaults, bounds, positions, and sizes', () => {
@@ -365,10 +425,11 @@ describe('WebGPU Superfan finale foundation', () => {
     };
   }
 
-  function connectSocket(plugin, api, id = 'overlay-1') {
+  function connectSocket(plugin, api, id = 'overlay-1', options = {}) {
     const handlers = new Map();
     const socket = {
       id,
+      connected: options.connected !== false,
       handlers,
       emit: jest.fn(),
       on: jest.fn((event, handler) => handlers.set(event, handler)),
@@ -376,7 +437,9 @@ describe('WebGPU Superfan finale foundation', () => {
     };
     plugin.registerSocketHandlers();
     api.socketConnections[0](socket);
+    handlers.get('webgpu-fireworks:register-overlay')({ benchmark: false, visible: options.visible !== false });
     handlers.get('webgpu-fireworks:renderer-status')({ state: 'ready' });
+    plugin.overlayTelemetry.get(id).visible = options.visible !== false;
     return socket;
   }
 
@@ -390,7 +453,28 @@ describe('WebGPU Superfan finale foundation', () => {
       now: () => now
     });
     plugin.superfanFinaleHistory = history;
-    plugin.getRendererStatus = jest.fn(() => ({ state: 'ready' }));
+    const fallbackSocket = {
+      id: 'test-renderer',
+      connected: true,
+      emit: jest.fn((event, payload) => api.emit(event, payload))
+    };
+    const fallbackTarget = {
+      rendererId: fallbackSocket.id,
+      socket: fallbackSocket,
+      telemetry: {
+        registered: true,
+        benchmark: false,
+        visible: true,
+        state: 'ready',
+        statusUpdatedAt: Date.now(),
+        fpsUpdatedAt: Date.now()
+      }
+    };
+    plugin.getFinaleRendererTargets = jest.fn(() => (
+      plugin.connectedSockets.size > 0
+        ? FireworksPlugin.prototype.getFinaleRendererTargets.call(plugin)
+        : [fallbackTarget]
+    ));
     return { api, plugin, history };
   }
 
@@ -458,6 +542,131 @@ describe('WebGPU Superfan finale foundation', () => {
     expect(plugin.triggerFinale).toHaveBeenCalledTimes(1);
     api.events.get('subscribe')({ userId: 'b', uniqueId: 'Beta', isSubscriber: true });
     expect(plugin.triggerFinale).toHaveBeenCalledTimes(2);
+  });
+
+  test.each([
+    {
+      label: 'style only',
+      overrides: { superfanFinaleStyle: 'nishiki-kamuro' },
+      expected: { style: 'nishiki-kamuro', length: 'medium' }
+    },
+    {
+      label: 'length only',
+      overrides: { superfanFinaleLength: 'long' },
+      expected: { style: 'classic-crescendo', length: 'long' }
+    },
+    {
+      label: 'style and length',
+      overrides: {
+        superfanFinaleStyle: 'custom:00000000-0000-4000-8000-000000000502',
+        superfanFinaleLength: 'short'
+      },
+      expected: {
+        style: 'custom:00000000-0000-4000-8000-000000000502',
+        length: 'short'
+      }
+    }
+  ])('resolves Superfan $label overrides independently from global finale settings', ({ overrides, expected }) => {
+    const { plugin } = createPlugin({
+      goalFinaleStyle: 'classic-crescendo',
+      goalFinaleLength: 'medium',
+      ...overrides
+    });
+    plugin.triggerFinale = jest.fn(request => ({ accepted: true, id: request.eventId }));
+
+    expect(plugin.handleSuperfanEntry({
+      userId: `paid-${expected.style}-${expected.length}`,
+      uniqueId: 'OverrideFan'
+    }, { authoritative: true })).toMatchObject({ accepted: true });
+
+    expect(plugin.triggerFinale).toHaveBeenCalledWith(expect.objectContaining(expected));
+  });
+
+  test('compiles a published custom Superfan override into the accepted finale snapshot', () => {
+    const repository = new RevisionedShowRepository({ dataDir: tempDir });
+    repository.load();
+    const customStyle = publishCustom(repository, '00000000-0000-4000-8000-000000000505');
+    const { plugin } = createPlugin({
+      goalFinaleStyle: 'classic-crescendo',
+      goalFinaleLength: 'medium',
+      superfanFinaleStyle: customStyle,
+      superfanFinaleLength: 'short'
+    });
+    plugin.showRepository = repository;
+    plugin.showRepositoryLoadError = null;
+
+    const result = plugin.handleSuperfanEntry({
+      userId: 'custom-superfan',
+      uniqueId: 'CustomFan'
+    }, { authoritative: true });
+
+    expect(result).toMatchObject({
+      accepted: true,
+      finale: {
+        style: customStyle,
+        length: 'short',
+        showPlan: {
+          style: customStyle,
+          definitionId: customStyle,
+          metadata: { name: 'Superfan Custom' }
+        }
+      }
+    });
+  });
+
+  test.each([
+    {
+      label: 'missing',
+      customStyle: 'custom:00000000-0000-4000-8000-000000000506',
+      reason: 'SHOW_NOT_FOUND',
+      prepare: () => {}
+    },
+    {
+      label: 'unpublished',
+      customStyle: 'custom:00000000-0000-4000-8000-000000000507',
+      reason: 'SHOW_NOT_PUBLISHED',
+      prepare: repository => {
+        repository.idFactory = () => '00000000-0000-4000-8000-000000000507';
+        repository.create(clone(BUILT_IN_SHOW_DEFINITIONS['nishiki-kamuro']));
+      }
+    },
+    {
+      label: 'archived',
+      customStyle: 'custom:00000000-0000-4000-8000-000000000508',
+      reason: 'SHOW_ARCHIVED',
+      prepare: repository => {
+        const archivedStyle = publishCustom(repository, '00000000-0000-4000-8000-000000000508');
+        repository.archive(archivedStyle, 1);
+      }
+    }
+  ])('retains an unavailable $label Superfan override while warning and falling back at trigger time', ({
+    customStyle,
+    reason,
+    prepare
+  }) => {
+    const repository = new RevisionedShowRepository({ dataDir: tempDir });
+    repository.load();
+    prepare(repository);
+    const { api, plugin } = createPlugin({
+      goalFinaleStyle: 'royal-brocade',
+      superfanFinaleStyle: customStyle,
+      superfanFinaleLength: 'long'
+    });
+    plugin.showRepository = repository;
+    plugin.showRepositoryLoadError = null;
+
+    const result = plugin.handleSuperfanEntry({
+      userId: 'archived-superfan',
+      uniqueId: 'ArchivedFan'
+    }, { authoritative: true });
+
+    expect(plugin.config.superfanFinaleStyle).toBe(customStyle);
+    expect(result).toMatchObject({
+      accepted: true,
+      finale: { style: 'royal-brocade', length: 'long' }
+    });
+    expect(api.log).toHaveBeenCalledWith(expect.stringContaining(customStyle), 'warn');
+    expect(api.log).toHaveBeenCalledWith(expect.stringContaining(reason), 'warn');
   });
 
   test('attaches the personalized completion card only to a Superfan finale request', () => {
@@ -638,7 +847,7 @@ describe('WebGPU Superfan finale foundation', () => {
 
   test('does not consume cooldown while the renderer is offline', () => {
     const { plugin, history } = createPlugin();
-    plugin.getRendererStatus.mockReturnValue({ state: 'offline' });
+    plugin.getFinaleRendererTargets.mockReturnValue([]);
     plugin.triggerFinale = jest.fn();
     expect(plugin.handleSuperfanEntry({ userId: 'a', uniqueId: 'Alpha' }, { authoritative: true }))
       .toMatchObject({ accepted: false, reason: 'renderer-not-ready' });
@@ -648,7 +857,7 @@ describe('WebGPU Superfan finale foundation', () => {
 
   test('commits cooldown exactly once only after the correlated browser queue ACK', () => {
     const { api, plugin, history } = createPlugin();
-    connectSocket(plugin, api);
+    const socket = connectSocket(plugin, api);
     const markAccepted = jest.spyOn(history, 'markAccepted');
 
     const result = plugin.handleSuperfanEntry({
@@ -657,11 +866,12 @@ describe('WebGPU Superfan finale foundation', () => {
 
     expect(result).toMatchObject({ accepted: true, pending: true, eventId: 'superfan-event:join-upstream-7' });
     expect(history.snapshot()).toEqual({});
-    expect(api.emit).toHaveBeenCalledWith('webgpu-fireworks:finale', expect.objectContaining({
+    expect(socket.emit).toHaveBeenCalledWith('webgpu-fireworks:finale', expect.objectContaining({
       id: 'superfan-event:join-upstream-7',
       ackRequested: true,
       requiresRendererReady: true
     }));
+    expect(api.emit).not.toHaveBeenCalledWith('webgpu-fireworks:finale', expect.anything());
 
     expect(plugin.handleSuperfanFinaleAck({ eventId: result.eventId, accepted: true })).toBe(true);
     expect(history.snapshot()).toEqual({ 'id:a': expect.any(Number) });
@@ -747,6 +957,43 @@ describe('WebGPU Superfan finale foundation', () => {
     expect(history.snapshot()).toEqual({ 'id:a': expect.any(Number) });
   });
 
+  test.each(['rejects', 'disconnects'])(
+    'ignores hidden and disconnected ACK targets when the actual receiver %s',
+    failure => {
+      const { api, plugin, history } = createPlugin();
+      const receiver = connectSocket(plugin, api, 'receiver');
+      const hidden = connectSocket(plugin, api, 'hidden', { visible: false });
+      const disconnected = connectSocket(plugin, api, 'disconnected', { connected: false });
+
+      const result = plugin.handleSuperfanEntry({
+        userId: `ack-target-${failure}`,
+        uniqueId: 'AckTargetFan'
+      }, { authoritative: true });
+
+      expect(plugin.pendingSuperfanFinales.get(result.eventId).targetSocketIds)
+        .toEqual(new Set(['receiver']));
+      expect(receiver.emit).toHaveBeenCalledWith(
+        'webgpu-fireworks:finale',
+        expect.objectContaining({ eventId: result.eventId })
+      );
+      expect(hidden.emit).not.toHaveBeenCalledWith('webgpu-fireworks:finale', expect.anything());
+      expect(disconnected.emit).not.toHaveBeenCalledWith('webgpu-fireworks:finale', expect.anything());
+
+      if (failure === 'rejects') {
+        plugin.handleSuperfanFinaleAck({
+          eventId: result.eventId,
+          accepted: false,
+          reason: 'renderer-rejected'
+        }, receiver);
+      } else {
+        receiver.handlers.get('disconnect')();
+      }
+
+      expect(plugin.pendingSuperfanFinales.size).toBe(0);
+      expect(history.snapshot()).toEqual({});
+    }
+  );
+
   test('does not overwrite pending state when different users reuse an upstream event ID', () => {
     const { plugin } = createPlugin();
     const first = plugin.handleSuperfanEntry({
@@ -808,7 +1055,7 @@ describe('WebGPU Superfan finale foundation', () => {
     });
 
     expect(plugin.handleSuperfanEntry({ userId: 'a', uniqueId: 'Alpha' }, { authoritative: true }))
-      .toMatchObject({ accepted: false, reason: 'submission-error' });
+      .toMatchObject({ accepted: false, reason: 'submission-rejected' });
     expect(plugin.pendingSuperfanFinales.size).toBe(0);
     expect(history.snapshot()).toEqual({});
   });
@@ -827,6 +1074,8 @@ describe('WebGPU Superfan finale foundation', () => {
           superfanFinaleEnabled: false,
           superfanFinaleCooldownHours: 168,
           superfanFinaleIntensity: 7.5,
+          superfanFinaleStyle: 'royal-brocade',
+          superfanFinaleLength: 'long',
           superfanEndCardDuration: 4500,
           superfanEndCardPosition: 'bottom-left',
           superfanEndCardSize: 'custom',
@@ -851,6 +1100,8 @@ describe('WebGPU Superfan finale foundation', () => {
       superfanFinaleEnabled: false,
       superfanFinaleCooldownHours: 168,
       superfanFinaleIntensity: 7.5,
+      superfanFinaleStyle: 'royal-brocade',
+      superfanFinaleLength: 'long',
       superfanEndCardDuration: 4500,
       superfanEndCardPosition: 'bottom-left',
       superfanEndCardSize: 'custom',
@@ -863,8 +1114,8 @@ describe('WebGPU Superfan finale foundation', () => {
     expect(options.configOverride).not.toHaveProperty('unknownKey');
     expect(plugin.triggerFinale).toHaveBeenCalledWith(expect.objectContaining({
       intensity: 7.5,
-      style: 'sky-ballet',
-      length: 'short',
+      style: 'royal-brocade',
+      length: 'long',
       bypassEnabled: true,
       completionNotification: expect.objectContaining({
         duration: 4500,
@@ -876,6 +1127,70 @@ describe('WebGPU Superfan finale foundation', () => {
     expect(plugin.config).toEqual(persistedConfig);
     expect(api.setConfig).not.toHaveBeenCalled();
     expect(history.snapshot()).toEqual({});
+  });
+
+  test.each([
+    {
+      label: 'missing',
+      customStyle: 'custom:00000000-0000-4000-8000-000000000509',
+      prepare: () => {}
+    },
+    {
+      label: 'unpublished',
+      customStyle: 'custom:00000000-0000-4000-8000-000000000510',
+      prepare: repository => {
+        repository.idFactory = () => '00000000-0000-4000-8000-000000000510';
+        repository.create(clone(BUILT_IN_SHOW_DEFINITIONS['nishiki-kamuro']));
+      }
+    },
+    {
+      label: 'archived',
+      customStyle: 'custom:00000000-0000-4000-8000-000000000511',
+      prepare: repository => {
+        const archivedStyle = publishCustom(repository, '00000000-0000-4000-8000-000000000511');
+        repository.archive(archivedStyle, 1);
+      }
+    }
+  ])('test route falls back from a $label Superfan Custom override to its effective global style', ({
+    customStyle,
+    prepare
+  }) => {
+    const repository = new RevisionedShowRepository({ dataDir: tempDir });
+    repository.load();
+    prepare(repository);
+    const { api, plugin } = createPlugin({
+      goalFinaleStyle: 'classic-crescendo',
+      goalFinaleLength: 'short'
+    });
+    plugin.showRepository = repository;
+    plugin.showRepositoryLoadError = null;
+    plugin.registerRoutes();
+    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+    api.routes.get('post:/api/webgpu-fireworks/test-superfan')({
+      body: {
+        username: 'EffectiveFallbackFan',
+        settings: {
+          superfanFinaleStyle: customStyle,
+          superfanFinaleLength: 'inherit',
+          goalFinaleStyle: 'royal-brocade',
+          goalFinaleLength: 'long'
+        }
+      }
+    }, res);
+
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      accepted: true,
+      finale: expect.objectContaining({
+        style: 'royal-brocade',
+        length: 'long'
+      })
+    }));
+    expect(plugin.config).toMatchObject({
+      goalFinaleStyle: 'classic-crescendo',
+      goalFinaleLength: 'short'
+    });
   });
 
   test('test route normalizes invalid overrides before planning the finale', () => {
@@ -892,6 +1207,8 @@ describe('WebGPU Superfan finale foundation', () => {
           superfanFinaleEnabled: 'false',
           superfanFinaleCooldownHours: 13,
           superfanFinaleIntensity: 99,
+          superfanFinaleStyle: 'not-a-style',
+          superfanFinaleLength: 'huge',
           goalFinaleStyle: 'not-a-style',
           goalFinaleLength: 'huge'
         }
@@ -904,6 +1221,8 @@ describe('WebGPU Superfan finale foundation', () => {
         superfanFinaleEnabled: true,
         superfanFinaleCooldownHours: 24,
         superfanFinaleIntensity: 10,
+        superfanFinaleStyle: 'inherit',
+        superfanFinaleLength: 'inherit',
         goalFinaleStyle: 'auto',
         goalFinaleLength: 'medium'
       })
@@ -922,12 +1241,20 @@ describe('WebGPU Superfan finale foundation', () => {
     plugin.registerRoutes();
     const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
     api.routes.get('post:/api/webgpu-fireworks/config')({
-      body: { superfanFinaleEnabled: false, superfanFinaleCooldownHours: 168, superfanFinaleIntensity: 7.5 }
+      body: {
+        superfanFinaleEnabled: false,
+        superfanFinaleCooldownHours: 168,
+        superfanFinaleIntensity: 7.5,
+        superfanFinaleStyle: 'furry-celebration',
+        superfanFinaleLength: 'short'
+      }
     }, res);
     expect(plugin.config).toMatchObject({
       superfanFinaleEnabled: false,
       superfanFinaleCooldownHours: 168,
-      superfanFinaleIntensity: 7.5
+      superfanFinaleIntensity: 7.5,
+      superfanFinaleStyle: 'furry-celebration',
+      superfanFinaleLength: 'short'
     });
     expect(api.setConfig).toHaveBeenCalledWith('settings', expect.objectContaining({
       superfanFinaleCooldownHours: 168
@@ -940,13 +1267,39 @@ describe('WebGPU Superfan finale foundation', () => {
     try {
       const { api, plugin } = createPlugin();
       plugin.scheduleFollowerAnimation({ username: 'Later' }, 1000);
-      expect(plugin.notificationTimers.size).toBe(1);
+      expect(plugin.followerTimers.size).toBe(1);
       await plugin.destroy();
       jest.runAllTimers();
-      expect(plugin.notificationTimers.size).toBe(0);
+      expect(plugin.followerTimers.size).toBe(0);
       expect(api.emit).not.toHaveBeenCalledWith('webgpu-fireworks:follower-animation', expect.anything());
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  test('accepts a Superfan when an older eligible renderer remains ready', () => {
+    const { api, plugin } = createPlugin({ enabled: true, superfanFinaleEnabled: true });
+    plugin.getFinaleRendererTargets = FireworksPlugin.prototype.getFinaleRendererTargets.bind(plugin);
+    const now = Date.now();
+    const dateNow = jest.spyOn(Date, 'now').mockReturnValue(now - 100);
+    const ready = connectSocket(plugin, api, 'ready-renderer');
+    plugin.overlayTelemetry.get(ready.id).statusUpdatedAt = Date.now() - 100;
+
+    dateNow.mockReturnValue(now);
+    const failed = connectSocket(plugin, api, 'newer-failed-renderer');
+    failed.handlers.get('webgpu-fireworks:renderer-status')({ state: 'error', visible: true });
+    plugin.overlayTelemetry.get(failed.id).statusUpdatedAt = Date.now();
+
+    plugin.triggerFinale = jest.fn(() => ({ accepted: true, eventId: 'superfan:eligible' }));
+    plugin.scheduleFollowerAnimation = jest.fn(() => true);
+    const result = plugin.handleSuperfanEntry({
+      userId: 'eligible-user',
+      uniqueId: 'eligible_user',
+      teamMemberLevel: 1
+    }, { authoritative: true, bypassCooldown: true });
+
+    expect(result).toMatchObject({ accepted: true });
+    expect(plugin.triggerFinale).toHaveBeenCalledTimes(1);
+    dateNow.mockRestore();
   });
 });

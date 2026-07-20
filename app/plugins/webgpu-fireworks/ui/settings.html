@@ -97,6 +97,9 @@
             position: relative;
             width: 50px;
             height: 26px;
+            flex: 0 0 50px;
+            padding: 0;
+            border: 0;
             background: #333;
             border-radius: 13px;
             cursor: pointer;
@@ -121,6 +124,11 @@
 
         .toggle-switch.active::after {
             transform: translateX(24px);
+        }
+
+        .toggle-switch:focus-visible {
+            outline: 3px solid #67e8f9;
+            outline-offset: 3px;
         }
 
         .btn-primary {
@@ -767,10 +775,10 @@
             <div class="card rounded-xl p-6 mb-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <h2 class="text-xl font-bold" data-i18n="webgpu_fireworks.enable_fireworks">Enable Fireworks</h2>
+                    <h2 class="text-xl font-bold"><label for="master-toggle" data-i18n="webgpu_fireworks.enable_fireworks">Enable Fireworks</label></h2>
                     <p class="text-gray-400" data-i18n="webgpu_fireworks.toggle_the_entire_fireworks_system_on_off">Toggle the entire fireworks system on/off</p>
                 </div>
-                <div id="master-toggle" class="toggle-switch active"></div>
+                <button id="master-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active"></button>
             </div>
         </div>
 
@@ -783,8 +791,8 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.enable_gift_triggers">Enable Gift Triggers</label>
-                            <div id="gift-toggle" class="toggle-switch active" data-config="giftTriggersEnabled"></div>
+                            <label for="gift-toggle" data-i18n="webgpu_fireworks.enable_gift_triggers">Enable Gift Triggers</label>
+                            <button id="gift-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="giftTriggersEnabled"></button>
                         </div>
 
                         <div>
@@ -804,13 +812,13 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.enable_combo_streaks">Enable Combo Streaks</label>
-                            <div id="combo-toggle" class="toggle-switch active" data-config="comboEnabled"></div>
+                            <label for="combo-toggle" data-i18n="webgpu_fireworks.enable_combo_streaks">Enable Combo Streaks</label>
+                            <button id="combo-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="comboEnabled"></button>
                         </div>
 
                         <div>
                             <label class="block mb-2" data-i18n="webgpu_fireworks.combo_timeout_seconds">Combo Timeout (seconds)</label>
-                            <input type="range" id="combo-timeout" min="5" max="30" value="10" class="w-full">
+                            <input type="range" id="combo-timeout" value="10" class="w-full" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>5s</span>
                                 <span id="combo-timeout-value">10s</span>
@@ -820,7 +828,7 @@
 
                         <div>
                             <label class="block mb-2" data-i18n="webgpu_fireworks.max_combo_multiplier">Max Combo Multiplier</label>
-                            <input type="range" id="combo-max" min="2" max="10" step="0.5" value="5" class="w-full">
+                            <input type="range" id="combo-max" value="5" class="w-full" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>2x</span>
                                 <span id="combo-max-value">5x</span>
@@ -840,8 +848,8 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.enable_escalation">Enable Escalation</label>
-                            <div id="escalation-toggle" class="toggle-switch active" data-config="escalationEnabled"></div>
+                            <label for="escalation-toggle" data-i18n="webgpu_fireworks.enable_escalation">Enable Escalation</label>
+                            <button id="escalation-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="escalationEnabled"></button>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
@@ -905,13 +913,13 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.enable_sounds">Enable Sounds</label>
-                            <div id="audio-toggle" class="toggle-switch active" data-config="audioEnabled"></div>
+                            <label for="audio-toggle" data-i18n="webgpu_fireworks.enable_sounds">Enable Sounds</label>
+                            <button id="audio-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="audioEnabled"></button>
                         </div>
 
                         <div>
                             <label class="block mb-2" data-i18n="webgpu_fireworks.volume">Volume</label>
-                            <input type="range" id="audio-volume" min="0" max="100" value="70" class="w-full">
+                            <input type="range" id="audio-volume" value="70" class="w-full" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>0%</span>
                                 <span id="audio-volume-value">70%</span>
@@ -920,7 +928,7 @@
                         </div>
                         <div>
                             <label class="block mb-2" for="crackle-frequency" data-i18n="generated.5a901fd86563">Crackling frequency</label>
-                            <input type="range" id="crackle-frequency" min="0" max="100" value="50" class="w-full">
+                            <input type="range" id="crackle-frequency" value="50" class="w-full" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>Off</span>
                                 <span id="crackle-frequency-value">50%</span>
@@ -930,7 +938,7 @@
                         </div>
                         <div>
                             <label class="block mb-2" for="crackle-volume" data-i18n="generated.ce59588a0680">Crackling volume</label>
-                            <input type="range" id="crackle-volume" min="0" max="100" value="75" class="w-full">
+                            <input type="range" id="crackle-volume" value="75" class="w-full" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>0%</span>
                                 <span id="crackle-volume-value">75%</span>
@@ -953,8 +961,8 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between mb-2">
-                            <label data-i18n="webgpu_fireworks.random_shape_rotation">Random Shape Rotation</label>
-                            <div id="random-shape-toggle" class="toggle-switch" data-config="randomShapeEnabled"></div>
+                            <label for="random-shape-toggle" data-i18n="webgpu_fireworks.random_shape_rotation">Random Shape Rotation</label>
+                            <button id="random-shape-toggle" type="button" role="switch" aria-checked="false" class="toggle-switch" data-config="randomShapeEnabled"></button>
                         </div>
 
                         <p class="text-sm text-gray-400 mb-2" data-i18n="webgpu_fireworks.click_shapes_to_activate_deactivate_for_random_selection_selected_shapes_have_gold_border">
@@ -972,7 +980,7 @@
 
                         <div>
                             <label class="block mb-2 text-sm" data-i18n="webgpu_fireworks.default_shape_when_random_disabled">Default Shape (when random disabled)</label>
-                            <select id="default-shape" class="w-full bg-black/30 rounded-lg px-4 py-2">
+                            <select id="default-shape" class="w-full bg-black/30 rounded-lg px-4 py-2" disabled>
                                 <option value="burst" data-i18n="generated.8108734a07f4">&#x1F386; Burst</option>
                                 <option value="heart" data-i18n="generated.121ffd026929">&#x2764;&#xFE0F; Heart</option>
                                 <option value="star" data-i18n="generated.6413129ab88a">&#x2B50; Star</option>
@@ -1034,11 +1042,11 @@
                             </div>
                             <input id="gift-style-id" type="text" maxlength="80" placeholder="Gift ID" class="w-full bg-black/30 rounded-lg px-3 py-2">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                <select id="gift-style-shape" class="w-full bg-black/30 rounded-lg px-3 py-2">
+                                <select id="gift-style-shape" class="w-full bg-black/30 rounded-lg px-3 py-2" disabled>
                                     <option value="burst">Burst</option><option value="heart">Heart</option><option value="star">Star</option>
                                     <option value="ring">Ring</option><option value="spiral">Spiral</option><option value="paws">Paws</option>
                                 </select>
-                                <select id="gift-style-override" class="w-full bg-black/30 rounded-lg px-3 py-2">
+                                <select id="gift-style-override" class="w-full bg-black/30 rounded-lg px-3 py-2" disabled>
                                     <option value="" data-i18n="generated.bdae45dcdd19">Use global style</option>
                                     <option value="premium-hybrid" data-i18n="generated.ee10b80f47a1">Premium Hybrid</option>
                                     <option value="realistic">Realistic</option>
@@ -1058,7 +1066,7 @@
                     <div class="space-y-4">
                         <div>
                             <label class="block mb-2" data-i18n="webgpu_fireworks.color_mode">Color Mode</label>
-                            <select id="color-mode" class="w-full bg-black/30 rounded-lg px-4 py-2">
+                            <select id="color-mode" class="w-full bg-black/30 rounded-lg px-4 py-2" disabled>
                                 <option value="gift" data-i18n="webgpu_fireworks.based_on_gift">Based on Gift</option>
                                 <option value="random" data-i18n="webgpu_fireworks.random">Random</option>
                                 <option value="theme" data-i18n="webgpu_fireworks.theme_colors">Theme Colors</option>
@@ -1085,18 +1093,18 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.particle_trails">Particle Trails</label>
-                            <div id="trails-toggle" class="toggle-switch active" data-config="trailsEnabled"></div>
+                            <label for="trails-toggle" data-i18n="webgpu_fireworks.particle_trails">Particle Trails</label>
+                            <button id="trails-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="trailsEnabled"></button>
                         </div>
 
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.glow_effect">Glow Effect</label>
-                            <div id="glow-toggle" class="toggle-switch active" data-config="glowEnabled"></div>
+                            <label for="glow-toggle" data-i18n="webgpu_fireworks.glow_effect">Glow Effect</label>
+                            <button id="glow-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="glowEnabled"></button>
                         </div>
 
                         <div>
                             <label class="block mb-2" data-i18n="webgpu_fireworks.max_particles">Max Particles</label>
-                            <input type="range" id="max-particles" min="500" max="3000" step="100" value="1000" class="w-full">
+                            <input type="range" id="max-particles" value="1000" class="w-full" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>500</span>
                                 <span id="max-particles-value">1000</span>
@@ -1121,10 +1129,10 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label for="toaster_mode" style="display: flex; align-items: center; gap: 10px;">
+                            <label for="toaster-toggle" style="display: flex; align-items: center; gap: 10px;">
                                 <strong data-i18n="webgpu_fireworks.toaster_mode.enabled">Enable Toaster Mode</strong>
                             </label>
-                            <div id="toaster-toggle" class="toggle-switch" data-config="toasterMode"></div>
+                            <button id="toaster-toggle" type="button" role="switch" aria-checked="false" class="toggle-switch" data-config="toasterMode"></button>
                         </div>
 
                         <p class="text-sm text-gray-400" data-i18n="generated.1c31a273f2a9">Keeps WebGPU active while reducing render scale, trails, bloom and turbulence.</p>
@@ -1156,8 +1164,9 @@
                     <div class="space-y-4">
                         <div>
                             <label class="block mb-2"><strong data-i18n="generated.c20611e4cdb0">OBS Overlay Resolution</strong></label>
-                            <select id="resolution-preset" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="resolutionPreset">
+                            <select id="resolution-preset" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="resolutionPreset" disabled>
                                 <option value="360p" data-i18n="generated.dfaa505a7b97">360p (640x360) - Minimum</option>
+                                <option value="480p">480p (854x480)</option>
                                 <option value="540p" data-i18n="generated.db5f27b5b016">540p (960x540) - Low</option>
                                 <option value="720p" data-i18n="generated.cdba1494803e">720p (1280x720) - Medium</option>
                                 <option value="1080p" selected data-i18n="generated.143ff1bf362f">1080p (1920x1080) - High (Default)</option>
@@ -1172,7 +1181,8 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block mb-2"><strong data-i18n="generated.2e2cc866462f">Highest Internal Render Resolution</strong></label>
-                                <select id="internal-max-resolution" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="internalMaxResolutionPreset">
+                                <select id="internal-max-resolution" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="internalMaxResolutionPreset" disabled>
+                                    <option value="360p" data-i18n="generated.dfaa505a7b97">360p (640x360) - Minimum</option>
                                     <option value="480p" data-i18n="generated.0c1528a2dd39">480p (854x480)</option>
                                     <option value="540p" data-i18n="generated.72d71172a118">540p (960x540)</option>
                                     <option value="720p" data-i18n="generated.0b04cc95e4be">720p (1280x720)</option>
@@ -1184,7 +1194,8 @@
 
                             <div>
                                 <label class="block mb-2"><strong data-i18n="generated.a5bd1771e358">Lowest Internal Render Resolution</strong></label>
-                                <select id="internal-min-resolution" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="internalMinResolutionPreset">
+                                <select id="internal-min-resolution" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="internalMinResolutionPreset" disabled>
+                                    <option value="360p" data-i18n="generated.dfaa505a7b97">360p (640x360) - Minimum</option>
                                     <option value="480p" data-i18n="generated.0ec5f20c4de9">480p (854x480)</option>
                                     <option value="540p" selected data-i18n="generated.51f20fe773dd">540p (960x540) - Recommended</option>
                                     <option value="720p" data-i18n="generated.e6c00cde213e">720p (1280x720)</option>
@@ -1206,7 +1217,7 @@
 
                         <div>
                             <label class="block mb-2"><strong data-i18n="webgpu_fireworks.orientation">Orientation</strong></label>
-                            <select id="orientation-select" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="orientation">
+                            <select id="orientation-select" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="orientation" disabled>
                                 <option value="landscape" data-i18n="generated.c600788835a9">Landscape (16:9)</option>
                                 <option value="portrait" data-i18n="generated.d833e0fc10a6">Portrait (9:16)</option>
                             </select>
@@ -1226,7 +1237,7 @@
 
                         <div>
                             <label class="block mb-2"><strong data-i18n="webgpu_fireworks.target_fps">Target FPS</strong></label>
-                            <input type="range" id="target-fps" min="24" max="60" step="6" value="60" class="w-full" data-config="targetFps">
+                            <input type="range" id="target-fps" value="60" class="w-full" data-config="targetFps" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span data-i18n="generated.c533ffacad4c">24 FPS</span>
                                 <span id="target-fps-value" data-i18n="generated.a30289f34037">60 FPS</span>
@@ -1239,7 +1250,7 @@
 
                         <div>
                             <label class="block mb-2"><strong data-i18n="generated.b5f704322236">Minimum FPS (Adaptive Performance)</strong></label>
-                            <input type="range" id="min-fps" min="15" max="45" step="3" value="24" class="w-full" data-config="minFps">
+                            <input type="range" id="min-fps" value="24" class="w-full" data-config="minFps" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span data-i18n="generated.fb92c55e8063">15 FPS</span>
                                 <span id="min-fps-value" data-i18n="generated.4c96f1aadd22">24 FPS</span>
@@ -1252,7 +1263,7 @@
 
                         <div>
                             <label class="block mb-2"><strong data-i18n="generated.5bfac0b23c52">Despawn Fade Duration</strong></label>
-                            <input type="range" id="despawn-fade" min="1.0" max="5.0" step="0.5" value="3.0" class="w-full" data-config="despawnFadeDuration">
+                            <input type="range" id="despawn-fade" value="3.0" class="w-full" data-config="despawnFadeDuration" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>1.0s</span>
                                 <span id="despawn-fade-value">3.0s</span>
@@ -1281,8 +1292,8 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.enable_queue">Enable Queue System</label>
-                            <div id="queue-enabled-toggle" class="toggle-switch" data-config="queueEnabled"></div>
+                            <label for="queue-enabled-toggle" data-i18n="webgpu_fireworks.enable_queue">Enable Queue System</label>
+                            <button id="queue-enabled-toggle" type="button" role="switch" aria-checked="false" class="toggle-switch" data-config="queueEnabled"></button>
                         </div>
 
                         <p class="text-sm text-gray-400" data-i18n="generated.42eaecbe2bd2">
@@ -1292,7 +1303,7 @@
 
                         <div>
                             <label class="block mb-2"><strong data-i18n="generated.cb32366d6e02">Max Rockets Per Second</strong></label>
-                            <input type="range" id="max-rockets-per-second" min="1" max="20" step="1" value="5" class="w-full" data-config="maxRocketsPerSecond">
+                            <input type="range" id="max-rockets-per-second" value="5" class="w-full" data-config="maxRocketsPerSecond" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span data-i18n="generated.dcdbebbb2b7c">1/s (Strict)</span>
                                 <span id="max-rockets-value">5/s</span>
@@ -1328,7 +1339,7 @@
 
                         <div>
                             <label class="block mb-2" data-i18n="webgpu_fireworks.max_concurrent_fireworks">Max Gleichzeitige Fireworks</label>
-                            <input type="range" id="max-fireworks" min="1" max="20" value="5" class="w-full">
+                            <input type="range" id="max-fireworks" value="5" class="w-full" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>1</span>
                                 <span id="max-fireworks-value">5</span>
@@ -1338,7 +1349,7 @@
 
                         <div>
                             <label class="block mb-2" data-i18n="webgpu_fireworks.max_total_particles">Max Partikel Global</label>
-                            <input type="range" id="max-particles-limit" min="200" max="2000" step="100" value="800" class="w-full">
+                            <input type="range" id="max-particles-limit" value="800" class="w-full" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>200</span>
                                 <span id="max-particles-limit-value">800</span>
@@ -1348,7 +1359,7 @@
 
                         <div>
                             <label class="block mb-2" data-i18n="webgpu_fireworks.emergency_cleanup_threshold">Emergency Cleanup Schwelle</label>
-                            <input type="range" id="emergency-threshold" min="500" max="3000" step="100" value="1000" class="w-full">
+                            <input type="range" id="emergency-threshold" value="1000" class="w-full" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>500</span>
                                 <span id="emergency-threshold-value">1000</span>
@@ -1359,13 +1370,13 @@
                         <hr class="border-gray-700">
 
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.adaptive_performance">Adaptive Performance</label>
-                            <div id="adaptive-toggle" class="toggle-switch active" data-config="adaptivePerformance"></div>
+                            <label for="adaptive-toggle" data-i18n="webgpu_fireworks.adaptive_performance">Adaptive Performance</label>
+                            <button id="adaptive-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="adaptivePerformance"></button>
                         </div>
 
                         <div>
                             <label class="block mb-2" data-i18n="webgpu_fireworks.min_target_fps">Minimum Target FPS</label>
-                            <input type="range" id="min-target-fps" min="20" max="50" value="30" class="w-full">
+                            <input type="range" id="min-target-fps" value="30" class="w-full" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>20</span>
                                 <span id="min-target-fps-value">30</span>
@@ -1377,8 +1388,8 @@
                         </div>
 
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.enable_frame_skip">Frame Skip aktivieren</label>
-                            <div id="frame-skip-toggle" class="toggle-switch active" data-config="frameSkipEnabled"></div>
+                            <label for="frame-skip-toggle" data-i18n="webgpu_fireworks.enable_frame_skip">Frame Skip aktivieren</label>
+                            <button id="frame-skip-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="frameSkipEnabled"></button>
                         </div>
                     </div>
                 </div>
@@ -1389,8 +1400,8 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.use_user_avatars">Use User Avatars</label>
-                            <div id="avatar-toggle" class="toggle-switch" data-config="userAvatarEnabled"></div>
+                            <label for="avatar-toggle" data-i18n="webgpu_fireworks.use_user_avatars">Use User Avatars</label>
+                            <button id="avatar-toggle" type="button" role="switch" aria-checked="false" class="toggle-switch" data-config="userAvatarEnabled"></button>
                         </div>
 
                         <p class="text-sm text-gray-400" data-i18n="webgpu_fireworks.when_enabled_user_profile_pictures_will_be_mixed_with_gift_images_as_particles">
@@ -1399,7 +1410,7 @@
 
                         <div>
                             <label class="block mb-2" data-i18n="webgpu_fireworks.avatar_particle_probability">Avatar Particle Probability</label>
-                            <input type="range" id="avatar-chance" min="0" max="100" value="30" class="w-full">
+                            <input type="range" id="avatar-chance" value="30" class="w-full" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>0%</span>
                                 <span id="avatar-chance-value">30%</span>
@@ -1422,8 +1433,8 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label><strong data-i18n="generated.b1ef0edeb7a0">Show Gift Text</strong></label>
-                            <div id="gift-popup-enabled-toggle" class="toggle-switch active" data-config="giftPopupEnabled"></div>
+                            <label for="gift-popup-enabled-toggle"><strong data-i18n="generated.b1ef0edeb7a0">Show Gift Text</strong></label>
+                            <button id="gift-popup-enabled-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="giftPopupEnabled"></button>
                         </div>
 
                         <p class="text-sm text-gray-400" data-i18n="generated.de2fadfd711d">
@@ -1432,7 +1443,7 @@
 
                         <div>
                             <label class="block mb-2"><strong data-i18n="generated.1bd81519e0c0">Gift Text Position</strong></label>
-                            <select id="gift-popup-position" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="giftPopupPosition">
+                            <select id="gift-popup-position" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="giftPopupPosition" disabled>
                                 <option value="top" data-i18n="generated.2a28af6c087c">Top - Centered at top of screen</option>
                                 <option value="middle" data-i18n="generated.f6f1913ff886">Middle - Centered in middle of screen</option>
                                 <option value="bottom" data-i18n="generated.c79d15184aa9">Bottom - At rocket launch position (default)</option>
@@ -1461,13 +1472,13 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.enable_goal_finales">Enable Goal Finales</label>
-                            <div id="finale-toggle" class="toggle-switch active" data-config="goalFinaleEnabled"></div>
+                            <label for="finale-toggle" data-i18n="webgpu_fireworks.enable_goal_finales">Enable Goal Finales</label>
+                            <button id="finale-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="goalFinaleEnabled"></button>
                         </div>
 
                         <div>
                             <label class="block mb-2" data-i18n="webgpu_fireworks.finale_intensity">Finale Intensity</label>
-                            <input type="range" id="finale-intensity" min="1" max="10" step="0.5" value="3" class="w-full">
+                            <input type="range" id="finale-intensity" value="3" class="w-full" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>1x</span>
                                 <span id="finale-intensity-value">3x</span>
@@ -1477,18 +1488,25 @@
 
                         <div>
                             <label class="block mb-2" for="finale-style" data-i18n="webgpu_fireworks.finale_style">Show Style</label>
-                            <select id="finale-style" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="goalFinaleStyle">
+                            <select id="finale-style" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="goalFinaleStyle" disabled>
                                 <option value="auto" selected data-i18n="webgpu_fireworks.finale_style_auto">Auto (rotating)</option>
-                                <option value="classic-crescendo" data-i18n="webgpu_fireworks.finale_style_classic_crescendo">Classic Crescendo</option>
-                                <option value="symmetric-salute" data-i18n="webgpu_fireworks.finale_style_symmetric_salute">Symmetric Salute</option>
-                                <option value="sky-ballet" data-i18n="webgpu_fireworks.finale_style_sky_ballet">Sky Ballet</option>
-                                <option value="thunder-finale" data-i18n="webgpu_fireworks.finale_style_thunder_finale">Thunder Finale</option>
+                                <optgroup label="Built-in shows">
+                                    <option value="classic-crescendo" data-i18n="webgpu_fireworks.finale_style_classic_crescendo">Classic Crescendo</option>
+                                    <option value="symmetric-salute" data-i18n="webgpu_fireworks.finale_style_symmetric_salute">Symmetric Salute</option>
+                                    <option value="sky-ballet" data-i18n="webgpu_fireworks.finale_style_sky_ballet">Sky Ballet</option>
+                                    <option value="thunder-finale" data-i18n="webgpu_fireworks.finale_style_thunder_finale">Thunder Finale</option>
+                                    <option value="nishiki-kamuro" data-i18n="webgpu_fireworks.finale_style_nishiki_kamuro">Nishiki Kamuro</option>
+                                    <option value="aurora-cathedral" data-i18n="webgpu_fireworks.finale_style_aurora_cathedral">Aurora Cathedral</option>
+                                    <option value="royal-brocade" data-i18n="webgpu_fireworks.finale_style_royal_brocade">Royal Brocade</option>
+                                    <option value="phoenix-ascension" data-i18n="webgpu_fireworks.finale_style_phoenix_ascension">Phoenix Ascension</option>
+                                    <option value="furry-celebration" data-i18n="webgpu_fireworks.finale_style_furry_celebration">Furry Celebration</option>
+                                </optgroup>
                             </select>
                         </div>
 
                         <div>
                             <label class="block mb-2" for="finale-length" data-i18n="webgpu_fireworks.finale_length">Show Length</label>
-                            <select id="finale-length" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="goalFinaleLength">
+                            <select id="finale-length" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="goalFinaleLength" disabled>
                                 <option value="short" data-i18n="webgpu_fireworks.finale_length_short">Short (10 s)</option>
                                 <option value="medium" selected data-i18n="webgpu_fireworks.finale_length_medium">Medium (18 s)</option>
                                 <option value="long" data-i18n="webgpu_fireworks.finale_length_long">Long (28 s)</option>
@@ -1498,6 +1516,10 @@
                         <button id="test-finale-btn" class="w-full btn-primary py-3 rounded-lg font-bold" data-i18n="webgpu_fireworks.test_finale">
                             &#x1F389; Test Finale
                         </button>
+
+                        <a id="show-designer-link" href="/webgpu-fireworks/designer" class="block w-full text-center bg-black/30 hover:bg-black/40 py-3 rounded-lg font-semibold" data-i18n="webgpu_fireworks.open_show_designer">
+                            Open Show Designer
+                        </a>
                     </div>
                 </div>
 
@@ -1507,13 +1529,13 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="webgpu_fireworks.enable_superfan_finale">Enable Superfan Finales</label>
-                            <div id="superfan-finale-toggle" class="toggle-switch active" data-config="superfanFinaleEnabled"></div>
+                            <label for="superfan-finale-toggle" data-i18n="webgpu_fireworks.enable_superfan_finale">Enable Superfan Finales</label>
+                            <button id="superfan-finale-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="superfanFinaleEnabled"></button>
                         </div>
 
                         <div>
                             <label class="block mb-2" for="superfan-finale-cooldown" data-i18n="webgpu_fireworks.superfan_finale_cooldown">Repeat per Superfan</label>
-                            <select id="superfan-finale-cooldown" class="w-full bg-black/30 rounded-lg px-4 py-2">
+                            <select id="superfan-finale-cooldown" class="w-full bg-black/30 rounded-lg px-4 py-2" disabled>
                                 <option value="6" data-i18n="webgpu_fireworks.superfan_finale_every_6h">Every 6 hours</option>
                                 <option value="12" data-i18n="webgpu_fireworks.superfan_finale_every_12h">Every 12 hours</option>
                                 <option value="24" selected data-i18n="webgpu_fireworks.superfan_finale_every_24h">Every 24 hours</option>
@@ -1524,7 +1546,7 @@
 
                         <div>
                             <label class="block mb-2" for="superfan-finale-intensity" data-i18n="webgpu_fireworks.superfan_finale_intensity">Finale intensity</label>
-                            <input type="range" id="superfan-finale-intensity" min="1" max="10" step="0.5" value="3" class="w-full">
+                            <input type="range" id="superfan-finale-intensity" value="3" class="w-full" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>1x</span>
                                 <span id="superfan-finale-intensity-value">3x</span>
@@ -1533,8 +1555,36 @@
                         </div>
 
                         <div>
+                            <label class="block mb-2" for="superfan-finale-style" data-i18n="webgpu_fireworks.superfan_finale_style">Show Style</label>
+                            <select id="superfan-finale-style" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="superfanFinaleStyle" disabled>
+                                <option value="inherit" selected data-i18n="webgpu_fireworks.finale_global_default">Use global default</option>
+                                <optgroup label="Built-in shows">
+                                    <option value="classic-crescendo" data-i18n="webgpu_fireworks.finale_style_classic_crescendo">Classic Crescendo</option>
+                                    <option value="symmetric-salute" data-i18n="webgpu_fireworks.finale_style_symmetric_salute">Symmetric Salute</option>
+                                    <option value="sky-ballet" data-i18n="webgpu_fireworks.finale_style_sky_ballet">Sky Ballet</option>
+                                    <option value="thunder-finale" data-i18n="webgpu_fireworks.finale_style_thunder_finale">Thunder Finale</option>
+                                    <option value="nishiki-kamuro" data-i18n="webgpu_fireworks.finale_style_nishiki_kamuro">Nishiki Kamuro</option>
+                                    <option value="aurora-cathedral" data-i18n="webgpu_fireworks.finale_style_aurora_cathedral">Aurora Cathedral</option>
+                                    <option value="royal-brocade" data-i18n="webgpu_fireworks.finale_style_royal_brocade">Royal Brocade</option>
+                                    <option value="phoenix-ascension" data-i18n="webgpu_fireworks.finale_style_phoenix_ascension">Phoenix Ascension</option>
+                                    <option value="furry-celebration" data-i18n="webgpu_fireworks.finale_style_furry_celebration">Furry Celebration</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block mb-2" for="superfan-finale-length" data-i18n="webgpu_fireworks.superfan_finale_length">Show Length</label>
+                            <select id="superfan-finale-length" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="superfanFinaleLength" disabled>
+                                <option value="inherit" selected data-i18n="webgpu_fireworks.finale_global_default">Use global default</option>
+                                <option value="short" data-i18n="webgpu_fireworks.finale_length_short">Short (10 s)</option>
+                                <option value="medium" data-i18n="webgpu_fireworks.finale_length_medium">Medium (18 s)</option>
+                                <option value="long" data-i18n="webgpu_fireworks.finale_length_long">Long (28 s)</option>
+                            </select>
+                        </div>
+
+                        <div>
                             <label class="block mb-2" for="superfan-end-card-duration" data-i18n="webgpu_fireworks.superfan_end_card_duration">End card duration (seconds)</label>
-                            <input type="range" id="superfan-end-card-duration" min="1" max="10" step="0.5" value="3" class="w-full">
+                            <input type="range" id="superfan-end-card-duration" value="3" class="w-full" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>1s</span>
                                 <span id="superfan-end-card-duration-value">3s</span>
@@ -1544,7 +1594,7 @@
 
                         <div>
                             <label class="block mb-2" for="superfan-end-card-position" data-i18n="webgpu_fireworks.superfan_end_card_position">End card position</label>
-                            <select id="superfan-end-card-position" class="w-full bg-gray-700 text-white p-2 rounded-lg">
+                            <select id="superfan-end-card-position" class="w-full bg-gray-700 text-white p-2 rounded-lg" disabled>
                                 <option value="top-left" data-i18n="webgpu_fireworks.superfan_end_card_position_top_left">Top Left</option>
                                 <option value="top-center" data-i18n="webgpu_fireworks.superfan_end_card_position_top_center">Top Center</option>
                                 <option value="top-right" data-i18n="webgpu_fireworks.superfan_end_card_position_top_right">Top Right</option>
@@ -1557,7 +1607,7 @@
 
                         <div>
                             <label class="block mb-2" for="superfan-end-card-size" data-i18n="webgpu_fireworks.superfan_end_card_size">End card size</label>
-                            <select id="superfan-end-card-size" class="w-full bg-gray-700 text-white p-2 rounded-lg">
+                            <select id="superfan-end-card-size" class="w-full bg-gray-700 text-white p-2 rounded-lg" disabled>
                                 <option value="small" data-i18n="webgpu_fireworks.superfan_end_card_size_small">Small</option>
                                 <option value="medium" selected data-i18n="webgpu_fireworks.superfan_end_card_size_medium">Medium</option>
                                 <option value="large" data-i18n="webgpu_fireworks.superfan_end_card_size_large">Large</option>
@@ -1567,7 +1617,7 @@
 
                         <div id="superfan-end-card-scale-container" style="display: none;">
                             <label class="block mb-2" for="superfan-end-card-scale" data-i18n="webgpu_fireworks.superfan_end_card_scale">Custom end card scale</label>
-                            <input type="range" id="superfan-end-card-scale" min="0.5" max="2.0" step="0.1" value="1.0" class="w-full">
+                            <input type="range" id="superfan-end-card-scale" value="1.0" class="w-full" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>0.5x</span>
                                 <span id="superfan-end-card-scale-value">1x</span>
@@ -1587,13 +1637,13 @@
 
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <label data-i18n="generated.c7ee1559d8a6">Enable Follower Fireworks</label>
-                            <div id="follower-toggle" class="toggle-switch" data-config="followerFireworksEnabled"></div>
+                            <label for="follower-toggle" data-i18n="generated.c7ee1559d8a6">Enable Follower Fireworks</label>
+                            <button id="follower-toggle" type="button" role="switch" aria-checked="false" class="toggle-switch" data-config="followerFireworksEnabled"></button>
                         </div>
 
                         <div>
                             <label class="block mb-2" data-i18n="generated.7223c99d9831">Number of Rockets per Follow</label>
-                            <input type="range" id="follower-rocket-count" min="1" max="10" step="1" value="3" class="w-full">
+                            <input type="range" id="follower-rocket-count" value="3" class="w-full" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>1</span>
                                 <span id="follower-rocket-count-value">3</span>
@@ -1602,18 +1652,18 @@
                         </div>
 
                         <div class="flex items-center justify-between">
-                            <label data-i18n="generated.e39dbe203fb0">Show Thank You Animation</label>
-                            <div id="follower-animation-toggle" class="toggle-switch active" data-config="followerShowAnimation"></div>
+                            <label for="follower-animation-toggle" data-i18n="generated.e39dbe203fb0">Show Thank You Animation</label>
+                            <button id="follower-animation-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="followerShowAnimation"></button>
                         </div>
 
                         <div class="flex items-center justify-between">
-                            <label data-i18n="generated.09d7a96ca18e">Show Profile Picture</label>
-                            <div id="follower-profile-toggle" class="toggle-switch active" data-config="followerShowProfilePicture"></div>
+                            <label for="follower-profile-toggle" data-i18n="generated.09d7a96ca18e">Show Profile Picture</label>
+                            <button id="follower-profile-toggle" type="button" role="switch" aria-checked="true" class="toggle-switch active" data-config="followerShowProfilePicture"></button>
                         </div>
 
                         <div>
                             <label class="block mb-2" data-i18n="generated.aa4c0e44416b">Animation Duration (seconds)</label>
-                            <input type="range" id="follower-animation-duration" min="1" max="10" step="0.5" value="3" class="w-full">
+                            <input type="range" id="follower-animation-duration" value="3" class="w-full" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>1s</span>
                                 <span id="follower-animation-duration-value">3s</span>
@@ -1623,7 +1673,7 @@
 
                         <div>
                             <label class="block mb-2" data-i18n="generated.bb8d8b2a0508">Animation Delay (seconds)</label>
-                            <input type="range" id="follower-animation-delay" min="0" max="10" step="0.5" value="3" class="w-full">
+                            <input type="range" id="follower-animation-delay" value="3" class="w-full" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>0s</span>
                                 <span id="follower-animation-delay-value">3s</span>
@@ -1633,7 +1683,7 @@
 
                         <div>
                             <label class="block mb-2" data-i18n="generated.93aa5e35e550">Animation Position</label>
-                            <select id="follower-animation-position" class="w-full bg-gray-700 text-white p-2 rounded-lg">
+                            <select id="follower-animation-position" class="w-full bg-gray-700 text-white p-2 rounded-lg" disabled>
                                 <option value="top-left" data-i18n="generated.02c785b8fef3">Top Left</option>
                                 <option value="top-center" data-i18n="generated.62133cdbe6a3">Top Center</option>
                                 <option value="top-right" data-i18n="generated.495cc858af3c">Top Right</option>
@@ -1646,7 +1696,7 @@
 
                         <div>
                             <label class="block mb-2" data-i18n="generated.d45d9e87751d">Animation Style</label>
-                            <select id="follower-animation-style" class="w-full bg-gray-700 text-white p-2 rounded-lg">
+                            <select id="follower-animation-style" class="w-full bg-gray-700 text-white p-2 rounded-lg" disabled>
                                 <option value="gradient-purple" selected data-i18n="generated.f16c3ac2407c">Gradient Purple (Default)</option>
                                 <option value="gradient-blue" data-i18n="generated.a9df6480a514">Gradient Blue</option>
                                 <option value="gradient-gold" data-i18n="generated.ecf9dde90f79">Gradient Gold</option>
@@ -1658,7 +1708,7 @@
 
                         <div>
                             <label class="block mb-2" data-i18n="generated.56c6e1f51a7e">Animation Size</label>
-                            <select id="follower-animation-size" class="w-full bg-gray-700 text-white p-2 rounded-lg">
+                            <select id="follower-animation-size" class="w-full bg-gray-700 text-white p-2 rounded-lg" disabled>
                                 <option value="small" data-i18n="webgpu_fireworks.small">Small</option>
                                 <option value="medium" selected data-i18n="generated.f9919b478a84">Medium (Default)</option>
                                 <option value="large">Large</option>
@@ -1668,7 +1718,7 @@
 
                         <div id="follower-animation-scale-container" style="display: none;">
                             <label class="block mb-2" data-i18n="generated.a085d10ca0bb">Custom Scale Factor</label>
-                            <input type="range" id="follower-animation-scale" min="0.5" max="2.0" step="0.1" value="1.0" class="w-full">
+                            <input type="range" id="follower-animation-scale" value="1.0" class="w-full" disabled>
                             <div class="flex justify-between text-sm text-gray-400">
                                 <span>0.5x</span>
                                 <span id="follower-animation-scale-value">1.0x</span>
@@ -1678,7 +1728,7 @@
 
                         <div>
                             <label class="block mb-2" data-i18n="generated.055b38a3f84a">Entrance Animation</label>
-                            <select id="follower-animation-entrance" class="w-full bg-gray-700 text-white p-2 rounded-lg">
+                            <select id="follower-animation-entrance" class="w-full bg-gray-700 text-white p-2 rounded-lg" disabled>
                                 <option value="scale" selected data-i18n="generated.0e44ca9396be">Scale (Default)</option>
                                 <option value="fade" data-i18n="generated.72fb0b82ed81">Fade In</option>
                                 <option value="slide-up" data-i18n="generated.d0beb7d20695">Slide Up</option>
@@ -1925,7 +1975,9 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/i18n-client.js"></script>
-    <script src="/plugins/webgpu-fireworks/ui/settings.js?v=2.2.1-avatar-head-1"></script>
+    <script src="/plugins/webgpu-fireworks/ui/show-style-options.js?v=3.1.0-depth3d-1"></script>
+    <script src="/plugins/webgpu-fireworks/ui/settings-contract.js?v=3.1.0-settings-contract-1"></script>
+    <script src="/plugins/webgpu-fireworks/ui/settings.js?v=3.1.0-benchmark-session-2"></script>
 
 <style id="final-fireworks-night-card-contrast">
 html[data-theme="night"] .card {

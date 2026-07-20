@@ -3,7 +3,15 @@
  * TikTok/socket events and audio remain on the CPU. All visible particle
  * simulation and rendering is delegated to WebGPUParticleEngine.
  */
+const OrchestrationSpawnCommandPolicy = typeof module !== 'undefined' && module.exports
+    ? require('./spawn-command-policy')
+    : globalThis.WebGPUFireworksSpawnCommandPolicy;
+const ShowPlanV2Runtime = typeof module !== 'undefined' && module.exports
+    ? require('./show-plan-v2-runtime')
+    : globalThis.WebGPUFireworksShowPlanV2Runtime;
 const DEBUG = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === 'true';
+const RENDERER_PROTOCOL_VERSION = 3;
+const RENDERER_CAPABILITIES = Object.freeze(['depth3d-v1', 'boykisser-v1']);
 
 function t(key, fallback, params = {}) {
     const translated = typeof window !== 'undefined' ? window.i18n?.t?.(key, params) : null;
@@ -655,7 +663,16 @@ class AudioManager {
             heavy: { launch: ['launch-whistle'], bang: ['explosion-huge'] },
             crown: { launch: ['launch-whistle'], bang: ['explosion-huge'] },
             wall: { launch: ['launch-whistle'], bang: ['explosion-huge'] },
-            wave: { launch: ['launch-whistle'], bang: ['explosion-huge'] }
+            wave: { launch: ['launch-whistle'], bang: ['explosion-huge'] },
+            peony: { launch: this.SMOOTH_LAUNCH, bang: ['explosion-medium'] },
+            chrysanthemum: { launch: ['launch-whistle', 'launch-smooth2'], bang: ['explosion-big'] },
+            willow: { launch: this.SMOOTH_LAUNCH, bang: ['explosion-big'] },
+            cathedral: { launch: ['launch-whistle', 'launch-smooth2'], bang: ['explosion-huge'] },
+            brocade: { launch: ['launch-whistle'], bang: ['explosion-huge'] },
+            mine: { launch: this.BASIC_LAUNCH, bang: ['explosion-big'] },
+            wings: { launch: ['launch-whistle', 'launch-smooth2'], bang: ['explosion-big'] },
+            dragon: { launch: ['launch-whistle'], bang: ['explosion-huge'] },
+            rainbow: { launch: ['launch-whistle', 'launch-smooth2'], bang: ['explosion-huge'] }
         };
         const fallback = ['big', 'massive'].includes(tier) ? profiles.accent : profiles.single;
         const profile = profiles[normalizedRole] || fallback;
@@ -806,6 +823,7 @@ class WebGPUFireworksEngine {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
         this.renderer = null;
+        this.rendererReadyPromise = null;
         this.rendererStatus = { state: 'initializing', backend: 'webgpu' };
         this.audio = new AudioManager(() => {
             this.applyInteractiveMode();
@@ -828,9 +846,14 @@ class WebGPUFireworksEngine {
         this.finaleQueue = [];
         this.finaleIds = new Set();
         this.currentFinale = null;
+        this.currentPreview = null;
         this.finalePhase = 'idle';
         this.finaleGeneration = 0;
+        this.previewGeneration = 0;
+        this.gpuOwnerGeneration = 0;
+        this.activeGpuOwners = new Set();
         this.failingFinaleIds = new Set();
+        this.failingPreviewIds = new Set();
         this.followerAnimationGeneration = 0;
         this.followerAnimationTimer = null;
         this.endCardOwnerId = null;
@@ -840,7 +863,15 @@ class WebGPUFireworksEngine {
         this.giftBacklog = new Map();
         this.giftDrainDue = null;
         this.imageCache = new Map();
-        this.isBenchmark = new URLSearchParams(window.location.search).get('benchmark') === 'true';
+        this.imageCacheLimit = 64;
+        this.imageLoadTimeoutMs = 5_000;
+        this.failedImageWarnings = new Set();
+        this.runtimeConfigChangePromise = Promise.resolve();
+        const query = new URLSearchParams(window.location.search);
+        this.isBenchmark = query.get('benchmark') === 'true';
+        this.benchmarkSessionId = this.isBenchmark
+            ? (query.get('benchmarkSessionId') || null)
+            : null;
         this.debug = DEBUG;
         this.config = {
             renderer: 'webgpu', enabled: true, visualStyle: 'premium-hybrid', audioEnabled: true, audioVolume: 0.7,
@@ -865,7 +896,7 @@ class WebGPUFireworksEngine {
                 this.applyInteractiveMode();
                 this.setStatus({ audioStatus: 'ready' });
             });
-            if (!this.config.interactiveEnabled || !this.config.clickTriggerEnabled || !this.socket?.connected) return;
+            if (this.isBenchmark || !this.config.interactiveEnabled || !this.config.clickTriggerEnabled || !this.socket?.connected) return;
             const bounds = this.canvas.getBoundingClientRect();
             this.socket.emit('webgpu-fireworks:interactive-trigger', {
                 position: {
@@ -883,7 +914,6 @@ class WebGPUFireworksEngine {
             return false;
         }
         this.audio.init();
-        this.connectSocket();
         this.resize();
         this.renderer = new WebGPUParticleEngine(this.canvas, {
             maxParticles: this.config.maxTotalParticles,
@@ -891,9 +921,17 @@ class WebGPUFireworksEngine {
             bloomEnabled: this.config.glowEnabled,
             trailsEnabled: this.config.trailsEnabled !== false,
             glowEnabled: this.config.glowEnabled !== false,
-            onStatus: status => this.setStatus(status)
+            onStatus: status => this.setStatus(status),
+            isOwnerActive: ownerToken => this.isGpuOwnerActive(ownerToken),
+            onOwnerInvalidated: (ownerToken, reason) => {
+                this.handleGpuOwnerInvalidated(ownerToken, reason);
+            }
         });
-        const ready = await this.renderer.init();
+        const initializingRenderer = this.renderer;
+        this.rendererReadyPromise = initializingRenderer.init();
+        this.connectSocket();
+        const ready = await this.rendererReadyPromise;
+        if (this.renderer === initializingRenderer) this.rendererReadyPromise = null;
         if (!ready) return false;
         // The renderer only owns a configured WebGPU canvas after init. Resize
         // once more so the backing texture and the logical orientation always
@@ -914,23 +952,158 @@ class WebGPUFireworksEngine {
         this.socket = io({ transports: ['websocket', 'polling'], reconnection: true, reconnectionDelay: 1000 });
         this.socket.on('connect', () => {
             this.socket.emit('webgpu-fireworks:register-overlay', {
-                benchmark: this.isBenchmark, visible: document.visibilityState !== 'hidden', backend: 'webgpu'
+                benchmark: this.isBenchmark,
+                ...this.benchmarkSessionMetadata(),
+                visible: document.visibilityState !== 'hidden',
+                backend: 'webgpu',
+                rendererProtocol: RENDERER_PROTOCOL_VERSION,
+                capabilities: RENDERER_CAPABILITIES
             });
             this.emitStatus();
+            this.startNextFinaleIfReady(this.getRuntimeNow());
             this.audio.ensureContext();
         });
-        this.socket.on('webgpu-fireworks:trigger', data => this.handleIncomingTrigger(data));
-        this.socket.on('webgpu-fireworks:finale', data => this.handleFinaleSocketEvent(data));
-        this.socket.on('webgpu-fireworks:follower-animation', data => this.showFollowerAnimation(data));
+        this.socket.on('webgpu-fireworks:trigger', async (data, acknowledge) => {
+            if (!this.acceptsScopedSocketEvent(data)) {
+                if (typeof acknowledge === 'function') acknowledge({
+                    accepted: false,
+                    benchmarkSessionId: this.benchmarkSessionId,
+                    reason: 'scope-mismatch'
+                });
+                return;
+            }
+            if (this.isBenchmarkAdmissionExpired(data)) {
+                if (typeof acknowledge === 'function') acknowledge({
+                    accepted: false,
+                    benchmarkSessionId: this.benchmarkSessionId,
+                    reason: 'admission-expired'
+                });
+                return;
+            }
+            try {
+                const result = await this.handleIncomingTrigger(data);
+                const admitted = Boolean(
+                    result && result.accepted !== false && result.cancelled !== true
+                );
+                if (typeof acknowledge === 'function') acknowledge({
+                    accepted: admitted,
+                    benchmarkSessionId: this.benchmarkSessionId,
+                    ...(admitted ? { admitted: true } : { reason: 'renderer-rejected' })
+                });
+            } catch (error) {
+                console.error('[WebGPU Fireworks] Trigger admission failed:', error);
+                if (typeof acknowledge === 'function') acknowledge({
+                    accepted: false,
+                    benchmarkSessionId: this.benchmarkSessionId,
+                    reason: 'renderer-error'
+                });
+            }
+        });
+        this.socket.on('webgpu-fireworks:finale', data => {
+            if (!this.isBenchmark && this.acceptsScopedSocketEvent(data)) this.handleFinaleSocketEvent(data);
+        });
+        this.socket.on('webgpu-fireworks:preview', data => {
+            if (!this.isBenchmark && this.acceptsScopedSocketEvent(data)) this.handlePreviewSocketEvent(data);
+        });
+        this.socket.on('webgpu-fireworks:follower-animation', data => {
+            if (!this.isBenchmark && this.acceptsScopedSocketEvent(data)) this.showFollowerAnimation(data);
+        });
+        this.socket.on('disconnect', () => {
+            if (this.currentPreview) {
+                this.failPreview(
+                    this.currentPreview.requestId,
+                    new Error('Preview renderer disconnected.'),
+                    this.getRuntimeNow(),
+                    { reason: 'renderer-disconnected', startNext: false }
+                );
+            }
+        });
         this.socket.on('webgpu-fireworks:get-active-count', () => {
             const metrics = this.renderer?.getMetrics() || {};
             this.socket.emit('webgpu-fireworks:active-count-response', {
                 count: this.activeShows.size, particles: metrics.activeParticles || 0
             });
         });
-        this.socket.on('webgpu-fireworks:config-update', data => {
-            if (!data || !data.config) return;
-            this.config = { ...this.config, ...data.config, renderer: 'webgpu' };
+        this.socket.on('webgpu-fireworks:config-update', async (data, acknowledge) => {
+            if (!data || !data.config || !this.acceptsScopedSocketEvent(data)) {
+                if (typeof acknowledge === 'function') acknowledge({
+                    accepted: false,
+                    benchmarkSessionId: this.benchmarkSessionId,
+                    reason: 'scope-mismatch'
+                });
+                return;
+            }
+            try {
+                await this.applyRuntimeConfig(data.config);
+                if (typeof acknowledge === 'function') acknowledge({
+                    accepted: true,
+                    benchmarkSessionId: this.benchmarkSessionId,
+                    applied: true
+                });
+            } catch (error) {
+                console.error('[WebGPU Fireworks] Config apply failed:', error);
+                if (typeof acknowledge === 'function') acknowledge({
+                    accepted: false,
+                    benchmarkSessionId: this.benchmarkSessionId,
+                    reason: error?.code === 'GPU_CAPACITY_REALLOCATION_FAILED'
+                        ? 'gpu-capacity-reallocation-failed'
+                        : 'config-apply-failed'
+                });
+            }
+        });
+    }
+
+    async applyRuntimeConfig(nextConfig) {
+        const configPatch = { ...nextConfig };
+        const apply = async () => {
+            const normalizedConfig = { ...this.config, ...configPatch, renderer: 'webgpu' };
+            const maxTotalParticles = Number(normalizedConfig.maxTotalParticles);
+            if (!Number.isInteger(maxTotalParticles) || maxTotalParticles < 512 || maxTotalParticles > 16_384) {
+                const error = new RangeError('maxTotalParticles must be an integer between 512 and 16384.');
+                error.code = 'INVALID_PARTICLE_CAPACITY';
+                throw error;
+            }
+            normalizedConfig.maxTotalParticles = maxTotalParticles;
+
+            const capacityWasExplicit = Object.prototype.hasOwnProperty.call(
+                configPatch,
+                'maxTotalParticles'
+            );
+            if (capacityWasExplicit && !this.renderer) {
+                const error = new Error('No WebGPU renderer exists to apply the requested particle capacity.');
+                error.code = 'GPU_CAPACITY_REALLOCATION_FAILED';
+                throw error;
+            }
+            if (capacityWasExplicit && this.renderer && !this.renderer.initialized) {
+                if (!this.rendererReadyPromise) {
+                    const error = new Error('The WebGPU renderer is not ready to apply particle capacity.');
+                    error.code = 'GPU_CAPACITY_REALLOCATION_FAILED';
+                    throw error;
+                }
+                const ready = await this.rendererReadyPromise;
+                if (!ready || !this.renderer.initialized) {
+                    const error = new Error('The WebGPU renderer failed before particle capacity could be applied.');
+                    error.code = 'GPU_CAPACITY_REALLOCATION_FAILED';
+                    throw error;
+                }
+            }
+
+            if (this.renderer && this.renderer.maxParticles !== maxTotalParticles) {
+                if (typeof this.renderer.reconfigureCapacity !== 'function') {
+                    const error = new Error('The active WebGPU renderer cannot replace its particle capacity.');
+                    error.code = 'GPU_CAPACITY_REALLOCATION_FAILED';
+                    throw error;
+                }
+                const result = await this.renderer.reconfigureCapacity(maxTotalParticles);
+                if (result?.maxParticles !== maxTotalParticles || this.renderer.maxParticles !== maxTotalParticles) {
+                    const error = new Error('The WebGPU renderer reported a capacity that differs from its active pool.');
+                    error.code = 'GPU_CAPACITY_REALLOCATION_FAILED';
+                    throw error;
+                }
+            }
+
+            this.config = normalizedConfig;
+            this.resetAdaptivePerformanceState();
             this.audio.setEnabled(this.config.audioEnabled);
             this.audio.setVolume(this.config.audioVolume);
             this.audio.setCrackleVolume(this.config.crackleVolume);
@@ -939,7 +1112,79 @@ class WebGPUFireworksEngine {
             this.resize();
             this.applyQuality();
             this.applyInteractiveMode();
-        });
+            return this.config;
+        };
+
+        const operation = this.runtimeConfigChangePromise.then(apply, apply);
+        this.runtimeConfigChangePromise = operation.catch(() => undefined);
+        return operation;
+    }
+
+    benchmarkSessionMetadata() {
+        return this.isBenchmark && this.benchmarkSessionId
+            ? { benchmarkSessionId: this.benchmarkSessionId }
+            : {};
+    }
+
+    acceptsScopedSocketEvent(data) {
+        const sessionMarked = data && typeof data === 'object' &&
+            data.benchmarkSessionId !== null && data.benchmarkSessionId !== undefined;
+        if (!this.isBenchmark) return !sessionMarked;
+        return Boolean(this.benchmarkSessionId) && data?.benchmarkSessionId === this.benchmarkSessionId;
+    }
+
+    isBenchmarkAdmissionExpired(data, now = Date.now()) {
+        const deadline = Number(data?.benchmarkAdmissionDeadline);
+        return Boolean(
+            data?.benchmarkSessionId && Number.isFinite(deadline) && deadline <= now
+        );
+    }
+
+    cancelGpuOwner(ownerToken, reason) {
+        if (typeof ownerToken !== 'string' || !ownerToken) return 0;
+        this.activeGpuOwners?.delete(ownerToken);
+        return this.renderer?.cancelQueuedOwner?.(ownerToken, reason) || 0;
+    }
+
+    registerGpuOwner(ownerToken) {
+        if (typeof ownerToken !== 'string' || !ownerToken) return null;
+        this.ensureFinaleRuntimeState();
+        this.activeGpuOwners.add(ownerToken);
+        return ownerToken;
+    }
+
+    isGpuOwnerActive(ownerToken) {
+        if (typeof ownerToken !== 'string' || !ownerToken) return true;
+        this.ensureFinaleRuntimeState();
+        return this.activeGpuOwners.has(ownerToken);
+    }
+
+    handleGpuOwnerInvalidated(ownerToken, reason = 'device-lost') {
+        if (typeof ownerToken !== 'string' || !ownerToken) return false;
+        const now = this.getRuntimeNow();
+        if (this.currentFinale?.runtimeToken === ownerToken) {
+            this.failFinale(
+                this.currentFinale.id,
+                new Error(`GPU owner invalidated: ${reason}`),
+                now,
+                { reason }
+            );
+            return true;
+        }
+        if (this.currentPreview?.runtimeToken === ownerToken) {
+            this.failPreview(
+                this.currentPreview.requestId,
+                new Error(`GPU owner invalidated: ${reason}`),
+                now,
+                { reason }
+            );
+            return true;
+        }
+        if (this.activeGpuOwners?.has(ownerToken)) {
+            this.cancelGpuOwner(ownerToken, reason);
+            return true;
+        }
+        return false;
     }
 
     setStatus(status, options = {}) {
@@ -964,9 +1209,23 @@ class WebGPUFireworksEngine {
         else this.hideDiagnostic();
         if (entersRendererFailure && this.currentFinale) {
             const message = status.reason || `Renderer entered ${status.state}`;
-            this.failFinale(this.currentFinale.id, new Error(message), this.getRuntimeNow());
+            this.failFinale(
+                this.currentFinale.id,
+                new Error(message),
+                this.getRuntimeNow(),
+                { reason: status.state === 'device-lost' ? 'device-lost' : 'renderer-error' }
+            );
         }
-        if (status.state === 'ready' && !this.currentFinale) {
+        if (entersRendererFailure && this.currentPreview) {
+            const message = status.reason || `Renderer entered ${status.state}`;
+            this.failPreview(
+                this.currentPreview.requestId,
+                new Error(message),
+                this.getRuntimeNow(),
+                { reason: status.state === 'device-lost' ? 'device-lost' : 'renderer-error' }
+            );
+        }
+        if (status.state === 'ready' && !this.currentFinale && !this.currentPreview) {
             this.startNextFinaleIfReady(this.getRuntimeNow());
         }
     }
@@ -978,7 +1237,10 @@ class WebGPUFireworksEngine {
             ...this.audio.getTelemetry(),
             ...this.getFinaleTelemetry(),
             backend: 'webgpu', fps: this.fps, visualStyle: this.config.visualStyle,
+            rendererProtocol: RENDERER_PROTOCOL_VERSION,
+            capabilities: RENDERER_CAPABILITIES,
             visible: document.visibilityState !== 'hidden', benchmark: this.isBenchmark,
+            ...this.benchmarkSessionMetadata(),
             timestamp: Date.now()
         });
     }
@@ -1019,7 +1281,7 @@ class WebGPUFireworksEngine {
         return { id: 'premium-hybrid', sizeScale: 1.08, glowScale: 1, trailScale: 1, turbulence: 0.12, smoke: 0.45 };
     }
 
-    getResolution() {
+    getResolution(preset = this.config.resolutionPreset) {
         const sizes = {
             '360p': [640, 360],
             '480p': [854, 480],
@@ -1029,19 +1291,54 @@ class WebGPUFireworksEngine {
             '1440p': [2560, 1440],
             '4k': [3840, 2160]
         };
-        let [width, height] = sizes[this.config.resolutionPreset] || sizes['1080p'];
+        let [width, height] = sizes[preset] || sizes['1080p'];
         if (this.config.orientation === 'portrait') [width, height] = [height, width];
         return { width, height };
     }
 
+    getEffectivePerformanceMode() {
+        if (this.config.toasterMode) return 'toaster';
+        if (this.config.adaptivePerformance === false) return 'normal';
+        return ['normal', 'reduced', 'minimal'].includes(this.performanceMode)
+            ? this.performanceMode
+            : 'normal';
+    }
+
+    resetAdaptivePerformanceState() {
+        if (this.config.adaptivePerformance !== false) return false;
+        const changed = this.performanceMode !== 'normal' || this.renderScale !== 1;
+        this.performanceMode = 'normal';
+        this.renderScale = 1;
+        return changed;
+    }
+
     resize() {
         const size = this.getResolution();
+        const configuredMinimumSize = this.getResolution(this.config.internalMinResolutionPreset || '540p');
+        const configuredMaximumSize = this.getResolution(this.config.internalMaxResolutionPreset || '4k');
+        // Internal resolution bounds control downscaling only. A floor or ceiling
+        // above the logical OBS source must never turn into accidental supersampling.
+        const minimumSize = {
+            width: Math.min(size.width, configuredMinimumSize.width),
+            height: Math.min(size.height, configuredMinimumSize.height)
+        };
+        const maximumSize = {
+            width: Math.min(size.width, configuredMaximumSize.width),
+            height: Math.min(size.height, configuredMaximumSize.height)
+        };
         this.baseWidth = size.width;
         this.baseHeight = size.height;
-        const toasterScale = this.config.toasterMode ? 0.65 : 1;
-        const scale = this.config.adaptiveRenderScaleEnabled === false ? 1 : Math.max(this.config.minRenderScale || 0.55, Math.min(toasterScale, this.renderScale));
-        const width = Math.max(320, Math.round(size.width * scale));
-        const height = Math.max(180, Math.round(size.height * scale));
+        let desiredScale = 1;
+        if (this.config.adaptiveRenderScaleEnabled !== false) {
+            const toasterScale = this.config.toasterMode ? 0.65 : 1;
+            const adaptiveScale = this.config.adaptivePerformance === false ? 1 : this.renderScale;
+            desiredScale = Math.max(this.config.minRenderScale || 0.55, Math.min(toasterScale, adaptiveScale));
+        }
+        const minimumScale = Math.max(minimumSize.width / size.width, minimumSize.height / size.height);
+        const maximumScale = Math.min(maximumSize.width / size.width, maximumSize.height / size.height);
+        const scale = Math.max(minimumScale, Math.min(maximumScale, desiredScale));
+        const width = Math.max(minimumSize.width, Math.min(maximumSize.width, Math.round(size.width * scale)));
+        const height = Math.max(minimumSize.height, Math.min(maximumSize.height, Math.round(size.height * scale)));
         this.canvas.style.width = this.config.orientation === 'portrait' ? 'auto' : '100%';
         this.canvas.style.height = '100%';
         this.renderer?.resize(width, height);
@@ -1060,8 +1357,9 @@ class WebGPUFireworksEngine {
             this.renderer.setQuality({ ...visibility, trailSamples: Math.min(3, configuredTrails), bloomEnabled: false, turbulence: 0.04, style: style.id, glowScale: 0.5 });
             return;
         }
-        if (this.performanceMode === 'minimal') this.renderer.setQuality({ ...visibility, trailSamples: Math.min(3, configuredTrails), bloomEnabled: false, turbulence: 0.06, style: style.id, glowScale: 0.58 });
-        else if (this.performanceMode === 'reduced') this.renderer.setQuality({ ...visibility, trailSamples: Math.min(5, configuredTrails), bloomEnabled: this.config.glowEnabled !== false, turbulence: Math.min(style.turbulence, 0.09), style: style.id, glowScale: style.glowScale * 0.78 });
+        const performanceMode = this.getEffectivePerformanceMode();
+        if (performanceMode === 'minimal') this.renderer.setQuality({ ...visibility, trailSamples: Math.min(3, configuredTrails), bloomEnabled: false, turbulence: 0.06, style: style.id, glowScale: 0.58 });
+        else if (performanceMode === 'reduced') this.renderer.setQuality({ ...visibility, trailSamples: Math.min(5, configuredTrails), bloomEnabled: this.config.glowEnabled !== false, turbulence: Math.min(style.turbulence, 0.09), style: style.id, glowScale: style.glowScale * 0.78 });
         else this.renderer.setQuality({ ...visibility, trailSamples: configuredTrails, bloomEnabled: this.config.glowEnabled !== false, turbulence: style.turbulence, style: style.id, glowScale: style.glowScale });
     }
 
@@ -1069,13 +1367,18 @@ class WebGPUFireworksEngine {
         if (!Array.isArray(this.finaleQueue)) this.finaleQueue = [];
         if (!(this.finaleIds instanceof Set)) this.finaleIds = new Set();
         if (!Object.prototype.hasOwnProperty.call(this, 'currentFinale')) this.currentFinale = null;
+        if (!Object.prototype.hasOwnProperty.call(this, 'currentPreview')) this.currentPreview = null;
         if (typeof this.finalePhase !== 'string') this.finalePhase = 'idle';
         if (!Array.isArray(this.giftLaunchTimestamps)) this.giftLaunchTimestamps = [];
         if (!(this.giftBacklog instanceof Map)) this.giftBacklog = new Map();
         if (!Object.prototype.hasOwnProperty.call(this, 'giftDrainDue')) this.giftDrainDue = null;
         if (!Number.isFinite(this.finaleSequence)) this.finaleSequence = 0;
         if (!Number.isFinite(this.finaleGeneration)) this.finaleGeneration = 0;
+        if (!Number.isFinite(this.previewGeneration)) this.previewGeneration = 0;
+        if (!Number.isFinite(this.gpuOwnerGeneration)) this.gpuOwnerGeneration = 0;
+        if (!(this.activeGpuOwners instanceof Set)) this.activeGpuOwners = new Set();
         if (!(this.failingFinaleIds instanceof Set)) this.failingFinaleIds = new Set();
+        if (!(this.failingPreviewIds instanceof Set)) this.failingPreviewIds = new Set();
         if (typeof this.transientFrameError !== 'boolean') this.transientFrameError = false;
     }
 
@@ -1085,13 +1388,27 @@ class WebGPUFireworksEngine {
 
     getFinaleTelemetry() {
         this.ensureFinaleRuntimeState();
+        const plannedAudioGroups = this.currentFinale?.audioGroups || { launch: 0, bang: 0, crackle: 0 };
+        const playedAudioGroups = this.currentFinale?.audioGroupsPlayed || { launch: 0, bang: 0, crackle: 0 };
         return {
             finaleActive: Boolean(this.currentFinale),
             finaleId: this.currentFinale?.id || null,
             finaleStyle: this.currentFinale?.style || null,
+            finaleName: this.currentFinale?.name || null,
             finaleLength: this.currentFinale?.length || null,
             finalePhase: this.currentFinale?.phase || 'idle',
-            finaleQueueLength: this.finaleQueue.length
+            finaleQueueLength: this.finaleQueue.length,
+            finalePlanVersion: this.currentFinale?.planVersion || null,
+            finaleLayerCount: this.currentFinale?.layerCount || 0,
+            finaleLayersSubmitted: this.currentFinale?.layersSubmitted || 0,
+            finaleCommandCount: this.currentFinale?.commandCount || 0,
+            finaleAudioGroups: { ...plannedAudioGroups },
+            finaleAudioGroupsPlayed: { ...playedAudioGroups },
+            previewActive: Boolean(this.currentPreview),
+            previewRequestId: this.currentPreview?.requestId || null,
+            previewScope: this.currentPreview?.scope || null,
+            previewState: this.currentPreview?.state || null,
+            previewError: this.currentPreview?.error || null
         };
     }
 
@@ -1105,12 +1422,34 @@ class WebGPUFireworksEngine {
     }
 
     isValidShowPlan(showPlan) {
-        return Boolean(
-            showPlan &&
-            Number(showPlan.planVersion) >= 1 &&
-            Number(showPlan.durationMs) > 0 &&
-            Array.isArray(showPlan.cues)
-        );
+        if (!showPlan || Number(showPlan.durationMs) <= 0 || !Array.isArray(showPlan.cues)) return false;
+        const version = Number(showPlan.planVersion);
+        if (version === 1) {
+            return showPlan.cues.every(cue => cue && Array.isArray(cue.launches));
+        }
+        if (version === 2) {
+            try {
+                ShowPlanV2Runtime.assertShowPlanV2(showPlan);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    normalizeShowPlan(showPlan, id) {
+        if (showPlan === undefined || showPlan === null) return null;
+        const version = Number(showPlan.planVersion);
+        if (version === 1) {
+            if (!this.isValidShowPlan(showPlan)) throw new TypeError('Invalid ShowPlanV1 launches payload.');
+            return { ...showPlan, id };
+        }
+        if (version === 2) {
+            ShowPlanV2Runtime.assertShowPlanV2(showPlan);
+            return { ...showPlan, id };
+        }
+        throw new TypeError(`Unsupported ShowPlan version ${String(showPlan.planVersion)}.`);
     }
 
     finaleIdentity(data = {}) {
@@ -1180,6 +1519,7 @@ class WebGPUFireworksEngine {
     launchGiftNow(data, now = this.getRuntimeNow()) {
         Promise.resolve(this.handleTrigger({
             ...data,
+            lane: 'gift',
             deferAssets: true,
             trackGiftLaunch: true,
             forceRocket: true
@@ -1227,9 +1567,28 @@ class WebGPUFireworksEngine {
     }
 
     getFinaleQualityScale() {
-        if (this.config.toasterMode || this.performanceMode === 'minimal') return 0.5;
-        if (this.performanceMode === 'reduced') return 0.75;
+        const performanceMode = this.getEffectivePerformanceMode();
+        if (performanceMode === 'toaster' || performanceMode === 'minimal') return 0.5;
+        if (performanceMode === 'reduced') return 0.75;
         return 1;
+    }
+
+    getAdaptiveLayerPolicy(activeLayerLoad = 0) {
+        if (this.config.adaptivePerformance === false) {
+            return OrchestrationSpawnCommandPolicy.deriveAdaptiveDegradationPolicy({
+                performanceMode: this.config.toasterMode ? 'toaster' : 'normal',
+                activeParticleRatio: 0,
+                activeLayerLoad: 0
+            });
+        }
+        const metrics = this.renderer?.getMetrics?.() || {};
+        const particleCapacity = Math.max(1, Number(this.renderer?.maxParticles) || Number(this.config.maxTotalParticles) || 1);
+        const activeParticleRatio = Math.max(0, Math.min(1, Number(metrics.activeParticles) / particleCapacity || 0));
+        return OrchestrationSpawnCommandPolicy.deriveAdaptiveDegradationPolicy({
+            performanceMode: this.getEffectivePerformanceMode(),
+            activeParticleRatio,
+            activeLayerLoad
+        });
     }
 
     isFinaleRuntimeTokenValid(finaleId, runtimeToken) {
@@ -1247,9 +1606,10 @@ class WebGPUFireworksEngine {
         const sizeScale = Math.sqrt(qualityScale);
         const baseSize = Array.isArray(payload.baseParticleSizeRange) ? payload.baseParticleSizeRange : [4, 12];
         const ordinal = Math.max(0, Number(payload.finaleOrdinal) || 0);
-        const crackleEnabled = this.config.toasterMode || this.performanceMode === 'minimal'
+        const performanceMode = this.getEffectivePerformanceMode();
+        const crackleEnabled = performanceMode === 'toaster' || performanceMode === 'minimal'
             ? false
-            : payload.presetCrackleEnabled === true && (this.performanceMode !== 'reduced' || ordinal % 2 === 0);
+            : payload.presetCrackleEnabled === true && (performanceMode !== 'reduced' || ordinal % 2 === 0);
         return {
             ...payload,
             particleCount: Math.max(1, Math.round(Number(payload.baseParticleCount) * qualityScale)),
@@ -1273,13 +1633,25 @@ class WebGPUFireworksEngine {
         while (this.timelineQueue.length && this.timelineQueue[0].due <= now) {
             const event = this.timelineQueue.shift();
             try {
-                if (event.type === 'finale-launch') {
+                if (event.type === 'finale-v2-rocket') {
+                    this.processV2Rocket(event, event.due, now);
+                } else if (event.type === 'finale-v2-layer') {
+                    this.processV2Layer(event, event.due, now);
+                } else if (event.type === 'finale-v2-launch-audio') {
+                    this.processV2LaunchAudio(event, event.due, now);
+                } else if (event.type === 'finale-v2-bang-audio') {
+                    this.processV2BangAudio(event, event.due, now);
+                } else if (event.type === 'finale-v2-crackle-audio') {
+                    this.processV2CrackleAudio(event, event.due, now);
+                } else if (event.type === 'finale-launch') {
                     const payload = this.materializeFinalePayload(event.payload);
                     Promise.resolve(this.handleTrigger(payload)).catch(error => this.failFinale(event.finaleId, error, now));
-                } else if (event.type === 'finale-phase') {
-                    this.setFinalePhase(event.finaleId, event.phase);
+                } else if (event.type === 'finale-phase' || event.type === 'finale-v2-phase') {
+                    if (event.runtimeKind === 'preview') this.setPreviewPhase(event.previewRequestId, event.phase);
+                    else this.setFinalePhase(event.finaleId, event.phase);
                 } else if (event.type === 'finale-complete') {
-                    this.finishFinaleVisuals(event.finaleId, now);
+                    if (event.runtimeKind === 'preview') this.completePreview(event.previewRequestId, now);
+                    else this.finishFinaleVisuals(event.finaleId, now);
                 } else if (event.type === 'finale-end-card-complete') {
                     this.completeFinale(event.finaleId, now);
                 } else if (event.type === 'gift-drain') {
@@ -1293,12 +1665,16 @@ class WebGPUFireworksEngine {
                 } else if (event.type === 'crackle-end') {
                     this.audio.updateDucking();
                 } else if (event.type === 'cleanup') {
+                    if (event.plan.explosion?.standaloneGpuOwner) {
+                        this.cancelGpuOwner(event.plan.explosion.ownerToken, 'effect-completed');
+                    }
                     this.activeShows.delete(event.plan.id);
                     this.effectPlans.delete(event.plan.id);
                     this.audio.updateDucking();
                 }
             } catch (error) {
-                if (event.finaleId || event.plan?.finaleId) this.failFinale(event.finaleId || event.plan.finaleId, error, now);
+                if (event.runtimeKind === 'preview') this.failPreview(event.previewRequestId, error, now);
+                else if (event.finaleId || event.plan?.finaleId) this.failFinale(event.finaleId || event.plan.finaleId, error, now);
                 else {
                     console.error('[WebGPU Fireworks] Timeline event failed:', error);
                     this.setStatus({ timelineError: error.message || String(error) });
@@ -1352,6 +1728,10 @@ class WebGPUFireworksEngine {
         return {
             id: explosion.id,
             finaleId: launch.finaleId || explosion.finaleId || null,
+            lane: explosion.lane,
+            priority: explosion.priority,
+            required: explosion.required,
+            beatId: explosion.beatId,
             seed: launch.seed,
             createdAt,
             launchAt: createdAt,
@@ -1397,6 +1777,23 @@ class WebGPUFireworksEngine {
             const avatarTexture = Number(explosion.assets.avatarTexture) || 0;
             this.renderer.spawnRocket({
                 effectId: plan.id,
+                ownerToken: explosion.ownerToken,
+                expiresAtMs: explosion.finaleEndsAt,
+                lane: plan.lane,
+                priority: plan.priority,
+                required: plan.required,
+                beatId: plan.beatId,
+                username: explosion.username,
+                userId: explosion.userId,
+                uniqueId: explosion.uniqueId,
+                giftId: explosion.giftId,
+                giftName: explosion.giftName,
+                giftImage: explosion.giftImage,
+                coins: explosion.coins,
+                value: explosion.value,
+                combo: explosion.combo,
+                bundleCount: explosion.bundleCount,
+                giftBundleKey: explosion.giftBundleKey,
                 origin: launch.origin,
                 target: launch.target,
                 duration: launchDuration,
@@ -1445,6 +1842,23 @@ class WebGPUFireworksEngine {
         const crackleDuration = Math.min(plan.crackleDuration, remainingShowSeconds);
         this.renderer.spawnCrackle({
             effectId: plan.id,
+            ownerToken: explosion.ownerToken,
+            expiresAtMs: explosion.finaleEndsAt,
+            lane: plan.lane,
+            priority: 'accent',
+            required: false,
+            beatId: plan.beatId,
+            username: explosion.username,
+            userId: explosion.userId,
+            uniqueId: explosion.uniqueId,
+            giftId: explosion.giftId,
+            giftName: explosion.giftName,
+            giftImage: explosion.giftImage,
+            coins: explosion.coins,
+            value: explosion.value,
+            combo: explosion.combo,
+            bundleCount: explosion.bundleCount,
+            giftBundleKey: explosion.giftBundleKey,
             profile: plan.crackleProfile,
             pulseCount: plan.cracklePulseCount,
             origin: { x: explosion.x, y: explosion.y },
@@ -1476,12 +1890,23 @@ class WebGPUFireworksEngine {
     }
 
     async handleTrigger(data = {}) {
+        if (this.isBenchmarkAdmissionExpired(data)) {
+            return { cancelled: true, reason: 'admission-expired' };
+        }
         if (!this.renderer?.initialized || this.rendererStatus.state !== 'ready') {
             if (data.finaleId) throw new Error(`WebGPU renderer is not ready for finale ${data.finaleId}`);
             return;
         }
         const finaleId = data.finaleId || null;
         const runtimeToken = data.runtimeToken || null;
+        const lane = ['show', 'gift', 'live'].includes(data.lane)
+            ? data.lane
+            : this.isGiftTrigger(data)
+                ? 'gift'
+                : finaleId
+                    ? 'show'
+                    : 'live';
+        const beatId = data.beatId ?? data.cueId ?? null;
         const shape = ['burst', 'heart', 'paws', 'star', 'ring', 'spiral'].includes(data.shape) ? data.shape : 'burst';
         const intensity = Math.max(0.1, Math.min(5, Number(data.intensity) || 1));
         const combo = Math.max(1, Number(data.combo) || 1);
@@ -1519,6 +1944,10 @@ class WebGPUFireworksEngine {
             return { cancelled: true, finaleId, reason: 'stale-finale-generation' };
         }
         const id = data.id || `${Date.now()}-${Math.random()}`;
+        const standaloneGpuOwner = !runtimeToken;
+        const effectOwnerToken = runtimeToken ||
+            `${this.isBenchmark ? 'benchmark' : 'standalone'}:${++this.gpuOwnerGeneration}:${id}`;
+        this.registerGpuOwner(effectOwnerToken);
         const seed = Number.isFinite(Number(data.seed)) ? Number(data.seed) : (parseInt(this.audio.hash(id), 36) >>> 0);
         // Choose the complete tier profile before applying the combo shortcut.
         // If this becomes a crackling effect it must remain a real rocket.
@@ -1556,6 +1985,12 @@ class WebGPUFireworksEngine {
         }
         const explosion = {
             id, x, y: targetY, shape, intensity, count, colors, assets, visualStyle, style,
+            lane,
+            priority: 'core',
+            required: true,
+            beatId,
+            ownerToken: runtimeToken || effectOwnerToken,
+            standaloneGpuOwner,
             playSound: data.playSound !== false, sound, tier,
             finaleId: data.finaleId || null,
             finaleEndsAt: Number.isFinite(Number(data.finaleEndsAt)) ? Number(data.finaleEndsAt) : null,
@@ -1567,6 +2002,7 @@ class WebGPUFireworksEngine {
             username: data.username, userId: data.userId, uniqueId: data.uniqueId,
             giftId: data.giftId, giftName: data.giftName, giftImage: data.giftImage,
             coins: data.coins, value: data.value, combo, bundleCount: data.bundleCount,
+            giftBundleKey: data.giftBundleKey,
             gravity: Number(data.gravity ?? this.config.gravity),
             friction: Number(data.friction ?? this.config.friction),
             wind: data.windEnabled ? Number(data.windStrength ?? this.config.windStrength) : 0,
@@ -1586,6 +2022,10 @@ class WebGPUFireworksEngine {
             finaleId: data.finaleId || null,
             trackGiftLaunch: data.trackGiftLaunch === true
         });
+        if (this.isBenchmarkAdmissionExpired(data)) {
+            if (standaloneGpuOwner) this.cancelGpuOwner(effectOwnerToken, 'admission-expired');
+            return { cancelled: true, reason: 'admission-expired' };
+        }
         this.enqueueEffectPlan(plan);
         if (assetPreparation) {
             Promise.resolve(assetPreparation).then(preparedAssets => {
@@ -1603,28 +2043,132 @@ class WebGPUFireworksEngine {
     async prepareImages(data) {
         const result = { giftTexture: 0, avatarTexture: 0, avatarChance: Math.max(0, Math.min(1, Number(data.avatarParticleChance ?? this.config.avatarParticleChance ?? 0.3))) };
         if (data.giftImage) {
-            const image = await this.loadImage(data.giftImage);
-            if (image) result.giftTexture = await this.renderer.uploadImage(`gift:${data.giftImage}`, image);
+            let image = null;
+            let ownsImage = false;
+            try {
+                const source = await this.loadImage(data.giftImage);
+                if (source) {
+                    const decoded = this._decodeImageSource(source);
+                    image = decoded && typeof decoded.then === 'function' ? await decoded : decoded;
+                    if (!image) throw new Error('image decode returned no drawable');
+                    ownsImage = image !== source;
+                    result.giftTexture = await this.renderer.uploadImage(`gift:${data.giftImage}`, image);
+                }
+            } catch (error) {
+                this._warnImageFailure(data.giftImage, error);
+            } finally {
+                if (ownsImage) image?.close?.();
+            }
         }
         if (data.userAvatar) {
-            const image = await this.loadImage(data.userAvatar);
-            if (image) result.avatarTexture = await this.renderer.uploadImage(`avatar:${data.userAvatar}`, image);
+            let image = null;
+            let ownsImage = false;
+            try {
+                const source = await this.loadImage(data.userAvatar);
+                if (source) {
+                    const decoded = this._decodeImageSource(source);
+                    image = decoded && typeof decoded.then === 'function' ? await decoded : decoded;
+                    if (!image) throw new Error('image decode returned no drawable');
+                    ownsImage = image !== source;
+                    result.avatarTexture = await this.renderer.uploadImage(`avatar:${data.userAvatar}`, image);
+                }
+            } catch (error) {
+                this._warnImageFailure(data.userAvatar, error);
+            } finally {
+                if (ownsImage) image?.close?.();
+            }
         }
         return result;
     }
 
-    async loadImage(url) {
+    _warnImageFailure(url, error) {
+        if (!this.failedImageWarnings) this.failedImageWarnings = new Set();
+        if (!this.failedImageWarnings.has(url)) {
+            this.failedImageWarnings.add(url);
+            const reason = error && error.message ? error.message : String(error);
+            console.warn(`[WebGPU Fireworks] Image "${url}" could not be loaded (${reason}). Using the built-in fallback.`);
+        }
+    }
+
+    loadImage(url, { timeoutMs = this.imageLoadTimeoutMs } = {}) {
         if (!url || /^(javascript|data|vbscript|file|about):/i.test(url)) return null;
-        if (this.imageCache.has(url)) return this.imageCache.get(url);
-        const promise = new Promise(resolve => {
-            const image = new Image();
-            image.crossOrigin = 'anonymous';
-            image.onload = () => resolve(image);
-            image.onerror = () => resolve(null);
-            image.src = url;
+        if (!this.imageCache) this.imageCache = new Map();
+        const nowMs = Date.now();
+        const cached = this.imageCache.get(url);
+        if (cached) {
+            cached.lastUsedAtMs = nowMs;
+            return cached.sourcePromise;
+        }
+
+        const cacheLimit = Math.max(1, Number(this.imageCacheLimit) || 64);
+        let shouldCache = true;
+        if (this.imageCache.size >= cacheLimit) {
+            let lruUrl = null;
+            let lruRecord = null;
+            for (const [cachedUrl, record] of this.imageCache) {
+                if (record.state !== 'fulfilled') continue;
+                if (!lruRecord || record.lastUsedAtMs < lruRecord.lastUsedAtMs) {
+                    lruUrl = cachedUrl;
+                    lruRecord = record;
+                }
+            }
+            if (lruUrl !== null) this.imageCache.delete(lruUrl);
+            else shouldCache = false;
+        }
+
+        const sourcePromise = this._fetchImageSourceWithTimeout(url, timeoutMs);
+        if (!shouldCache) return sourcePromise;
+
+        const record = { sourcePromise, state: 'pending', lastUsedAtMs: nowMs };
+        this.imageCache.set(url, record);
+        sourcePromise.then(
+            () => { record.state = 'fulfilled'; },
+            () => {
+                const current = this.imageCache.get(url);
+                if (current && current.sourcePromise === sourcePromise) this.imageCache.delete(url);
+            }
+        );
+        return sourcePromise;
+    }
+
+    _fetchImageSourceWithTimeout(url, timeoutMs) {
+        const durationMs = Math.max(1, Number(timeoutMs) || Number(this.imageLoadTimeoutMs) || 5_000);
+        return new Promise((resolve, reject) => {
+            let settled = false;
+            const settle = (handler, value) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                handler(value);
+            };
+            const timer = setTimeout(() => {
+                settle(reject, new Error(`Image source request timed out after ${durationMs}ms: ${url}`));
+            }, durationMs);
+            Promise.resolve()
+                .then(() => this._fetchImageSource(url))
+                .then(
+                    source => {
+                        if (!source) {
+                            settle(reject, new Error(`Image source request returned no data: ${url}`));
+                            return;
+                        }
+                        settle(resolve, source);
+                    },
+                    error => settle(reject, error)
+                );
         });
-        this.imageCache.set(url, promise);
-        return promise;
+    }
+
+    async _fetchImageSource(url) {
+        const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
+        if (!response.ok) throw new Error(`Image request failed with HTTP ${response.status}: ${url}`);
+        return response.blob();
+    }
+
+    _decodeImageSource(source) {
+        if (typeof createImageBitmap === 'function') return createImageBitmap(source);
+        if (source && (source.width || source.naturalWidth || source.videoWidth)) return source;
+        throw new Error('createImageBitmap is unavailable for image decoding');
     }
 
     processExplosion(explosion, plan = null, plannedAt = performance.now(), actualAt = performance.now()) {
@@ -1645,7 +2189,7 @@ class WebGPUFireworksEngine {
         baseCount = Math.max(1, baseCount - avatarCount - giftCount);
         const naturalDuration = 1.15 + explosion.intensity * 0.28;
         const pressureFade = Math.max(0.25, Math.min(4, explosion.despawnFadeDuration || naturalDuration));
-        const performanceDuration = this.performanceMode === 'minimal' ? Math.min(naturalDuration, pressureFade) : naturalDuration;
+        const performanceDuration = this.getEffectivePerformanceMode() === 'minimal' ? Math.min(naturalDuration, pressureFade) : naturalDuration;
         const finaleTailDuration = explosion.finaleEndsAt ? remainingShowSeconds : performanceDuration;
         const duration = Math.min(performanceDuration, finaleTailDuration);
         const minSize = Math.max(2, Number(explosion.particleSizeRange?.[0]) || 4);
@@ -1666,14 +2210,31 @@ class WebGPUFireworksEngine {
             Math.min(sizeProfile.max, sizeProfile.base * requestedScale * explosion.style.sizeScale)
         );
         const common = {
+            ownerToken: explosion.ownerToken,
+            expiresAtMs: explosion.finaleEndsAt,
+            lane: explosion.lane,
+            priority: explosion.priority,
+            required: explosion.required,
+            beatId: explosion.beatId,
+            username: explosion.username,
+            userId: explosion.userId,
+            uniqueId: explosion.uniqueId,
+            giftId: explosion.giftId,
+            giftName: explosion.giftName,
+            giftImage: explosion.giftImage,
+            coins: explosion.coins,
+            value: explosion.value,
+            combo: explosion.combo,
+            bundleCount: explosion.bundleCount,
+            giftBundleKey: explosion.giftBundleKey,
             origin: { x: explosion.x, y: explosion.y }, intensity: explosion.intensity,
             duration, gravity: explosion.gravity * 850, drag: explosion.friction,
             wind: explosion.wind * 420, size: semanticSize,
             style: explosion.visualStyle
         };
         this.renderer.spawnExplosion({ ...common, effectId, shape: explosion.shape, colors: explosion.colors, count: baseCount });
-        if (avatarCount) this.renderer.spawnExplosion({ ...common, effectId, shape: 'image', colors: ['#ffffff'], count: avatarCount, textureIndex: explosion.assets.avatarTexture, size: 18 * explosion.style.sizeScale, nativeColor: true });
-        if (giftCount) this.renderer.spawnExplosion({ ...common, effectId, shape: 'image', colors: ['#ffffff'], count: giftCount, textureIndex: explosion.assets.giftTexture, size: 18 * explosion.style.sizeScale, nativeColor: true });
+        if (avatarCount) this.renderer.spawnExplosion({ ...common, effectId, priority: 'core', required: true, shape: 'image', colors: ['#ffffff'], count: avatarCount, textureIndex: explosion.assets.avatarTexture, size: 18 * explosion.style.sizeScale, nativeColor: true });
+        if (giftCount) this.renderer.spawnExplosion({ ...common, effectId, priority: 'core', required: true, shape: 'image', colors: ['#ffffff'], count: giftCount, textureIndex: explosion.assets.giftTexture, size: 18 * explosion.style.sizeScale, nativeColor: true });
         this.audio.recordTimelineEvent(effectId, 'explosion-visual', plannedAt, actualAt, 'rendered');
         if (explosion.playSound) {
             const bangDurations = { small: 0.7, medium: 0.9, big: 1.2, massive: 1.5 };
@@ -1689,6 +2250,187 @@ class WebGPUFireworksEngine {
             });
         }
         if (explosion.username && Number(explosion.coins) > 0) this.showGiftPopup(explosion);
+    }
+
+    isV2EventCurrent(event) {
+        if (event.runtimeKind === 'preview') {
+            return Boolean(
+                event.runtimeToken &&
+                this.currentPreview?.requestId === event.previewRequestId &&
+                this.currentPreview.runtimeToken === event.runtimeToken
+            );
+        }
+        return this.isFinaleRuntimeTokenValid(event.finaleId, event.runtimeToken);
+    }
+
+    incrementV2AudioGroup(group) {
+        const owner = this.currentPreview || this.currentFinale;
+        if (!owner || !['launch', 'bang', 'crackle'].includes(group)) return;
+        owner.audioGroupsPlayed[group]++;
+    }
+
+    processV2Rocket(event, plannedAt, actualAt) {
+        if (!this.isV2EventCurrent(event)) return false;
+        const remainingPreRollMs = Math.max(0, Number(plannedAt) + Number(event.flightDurationMs) - actualAt);
+        if (remainingPreRollMs <= 0) {
+            this.audio.recordTimelineEvent(event.shellId, 'v2-rocket-visual', plannedAt, actualAt, 'skipped-burst-reached');
+            return false;
+        }
+        const remainingSeconds = Math.max(0, (Number(event.finaleEndsAt) - actualAt) / 1000);
+        if (remainingSeconds <= 0) {
+            this.audio.recordTimelineEvent(event.shellId, 'v2-rocket-visual', plannedAt, actualAt, 'skipped-finale-ended');
+            return false;
+        }
+        const duration = Math.min(remainingPreRollMs / 1000, remainingSeconds);
+        this.renderer.spawnRocket({
+            effectId: event.shellId,
+            correlationId: event.correlationId,
+            envelopeCommandId: event.envelopeCommandId,
+            envelopeCommandIds: event.envelopeCommandIds,
+            correlationManifest: event.correlationManifest,
+            ownerToken: event.runtimeToken,
+            expiresAtMs: event.finaleEndsAt,
+            lane: 'show',
+            priority: 'core',
+            required: true,
+            beatId: event.beatId,
+            admissionBatchId: event.admissionBatchId,
+            origin: event.origin,
+            target: event.target,
+            normalizedOrigin: event.normalizedOrigin,
+            normalizedTarget: event.normalizedTarget,
+            renderHints: event.renderHints,
+            duration,
+            color: event.shell.colors?.[0] || event.shell.palette?.[0] || '#ffffff',
+            seed: event.seed,
+            style: event.materialProfile === 'premium-realistic'
+                ? 'premium-realistic'
+                : (event.visualStyle || this.config.visualStyle),
+            curve: ((Number(event.seed) || 1) % 2 === 0 ? 1 : -1) * 48
+        });
+        this.audio.recordTimelineEvent(event.shellId, 'v2-rocket-visual', plannedAt, actualAt, 'rendered');
+        return true;
+    }
+
+    processV2Layer(event, plannedAt, actualAt) {
+        if (!this.isV2EventCurrent(event)) return false;
+        const latenessMs = Math.max(0, Number(actualAt) - Number(plannedAt));
+        const remainingNaturalLifetimeMs = Math.floor(Number(event.layer.lifetimeMs) - latenessMs);
+        if (remainingNaturalLifetimeMs <= 0) {
+            this.audio.recordTimelineEvent(event.layer.id, 'v2-layer-visual', plannedAt, actualAt, 'skipped-layer-expired');
+            return false;
+        }
+        const remainingFinaleMs = Math.floor(Number(event.finaleEndsAt) - actualAt);
+        if (remainingFinaleMs <= 0) {
+            this.audio.recordTimelineEvent(event.layer.id, 'v2-layer-visual', plannedAt, actualAt, 'skipped-finale-ended');
+            return false;
+        }
+        const layer = {
+            ...event.layer,
+            colors: [...event.layer.colors],
+            lifetimeMs: Math.min(remainingNaturalLifetimeMs, remainingFinaleMs)
+        };
+        const context = {
+            ...event.context,
+            ownerToken: event.runtimeToken,
+            expiresAtMs: event.finaleEndsAt,
+            degradationPolicy: this.getAdaptiveLayerPolicy(event.context.activeLayerLoad)
+        };
+        const spawned = this.renderer.spawnLayer(layer, context);
+        const owner = event.runtimeKind === 'preview' ? this.currentPreview : this.currentFinale;
+        if (spawned !== false && owner?.runtimeToken === event.runtimeToken) owner.layersSubmitted++;
+        this.audio.recordTimelineEvent(event.layer.id, 'v2-layer-visual', plannedAt, actualAt, spawned === false ? 'degraded-omitted' : 'rendered');
+        return spawned;
+    }
+
+    v2AudioSeed(event, salt = 0) {
+        return ((parseInt(this.audio.hash(event.cueId || event.finaleId || 'v2'), 36) >>> 0) ^ (Number(salt) >>> 0)) >>> 0;
+    }
+
+    processV2LaunchAudio(event, plannedAt, actualAt) {
+        if (!this.isV2EventCurrent(event) || this.config.audioEnabled === false) return false;
+        const flightDurationMs = Math.max(0, Number(event.flightDurationMs) || 0);
+        const remainingPreRollMs = Math.max(0, Number(plannedAt) + flightDurationMs - actualAt);
+        if (remainingPreRollMs <= 0) {
+            this.audio.recordTimelineEvent(event.cueId, 'v2-launch-audio', plannedAt, actualAt, 'skipped-burst-reached');
+            return false;
+        }
+        const remainingSeconds = Math.max(0, (Number(event.finaleEndsAt) - actualAt) / 1000);
+        if (remainingSeconds <= 0) return false;
+        const flightSeconds = remainingPreRollMs / 1000;
+        const seed = this.v2AudioSeed(event, event.shellIds?.length || 0);
+        let selection = this.audio.chooseForRole(event.role, event.tier, seed);
+        selection = this.audio.fitLaunchToFlight(selection, flightSeconds, seed);
+        if (!selection.launch) return false;
+        const cue = this.audio.CUE_MANIFEST[selection.launch] || {};
+        const sourceWindow = Number(selection.launchWindow || cue.embeddedBangAt || flightSeconds);
+        this.incrementV2AudioGroup('launch');
+        void this.audio.play(selection.launch, 0.82, 1, {
+            effectId: event.cueId,
+            eventType: 'v2-launch-audio',
+            plannedAt,
+            maxLatenessMs: Math.max(250, flightDurationMs),
+            bus: 'launch',
+            playbackRate: Math.max(0.9, Math.min(1.1, sourceWindow / Math.max(0.05, flightSeconds))),
+            maxDuration: Math.min(flightSeconds, remainingSeconds),
+            fadeOutDuration: 0.06
+        });
+        return true;
+    }
+
+    processV2BangAudio(event, plannedAt, actualAt) {
+        if (!this.isV2EventCurrent(event) || this.config.audioEnabled === false) return false;
+        const remainingSeconds = Math.max(0, (Number(event.finaleEndsAt) - actualAt) / 1000);
+        if (remainingSeconds <= 0) return false;
+        const seed = this.v2AudioSeed(event);
+        const primary = this.audio.chooseForRole(event.role, event.tier, seed);
+        const durations = { small: 0.7, medium: 0.9, big: 1.2, massive: 1.5 };
+        const maxDuration = Math.min(durations[event.tier] || 0.9, remainingSeconds);
+        this.incrementV2AudioGroup('bang');
+        void this.audio.play(primary.bang, event.tier === 'massive' ? 1 : 0.88, 3, {
+            effectId: event.cueId,
+            eventType: 'v2-bang-audio',
+            plannedAt,
+            maxLatenessMs: 100,
+            maxDuration,
+            fadeOutDuration: 0.1,
+            bus: 'bang'
+        });
+        if (event.voiceCount > 1) {
+            const complementary = this.audio.chooseForRole('accent', 'big', seed ^ 0x9e3779b9).bang;
+            if (complementary && complementary !== primary.bang) {
+                void this.audio.play(complementary, 0.58, 2, {
+                    effectId: event.cueId,
+                    eventType: 'v2-bang-complement',
+                    plannedAt,
+                    maxLatenessMs: 100,
+                    maxDuration: Math.min(1.2, remainingSeconds),
+                    fadeOutDuration: 0.1,
+                    bus: 'bang'
+                });
+            }
+        }
+        return true;
+    }
+
+    processV2CrackleAudio(event, plannedAt, actualAt) {
+        if (!this.isV2EventCurrent(event) || this.config.audioEnabled === false) return false;
+        const remainingSeconds = Math.max(0, (Number(event.finaleEndsAt) - actualAt) / 1000);
+        const maxDuration = Math.min(Number(event.maxDurationMs) / 1000, remainingSeconds);
+        if (maxDuration <= 0) return false;
+        const name = event.tier === 'massive' ? 'crackling-long' : 'crackling-medium';
+        this.incrementV2AudioGroup('crackle');
+        void this.audio.play(name, 1, 4, {
+            effectId: event.cueId,
+            eventType: 'v2-crackle-audio',
+            plannedAt,
+            maxLatenessMs: 140,
+            offset: this.audio.CRACKLE_OFFSETS[name] || 0,
+            maxDuration,
+            fadeOutDuration: Math.min(0.16, maxDuration * 0.2),
+            bus: 'crackle'
+        });
+        return true;
     }
 
     buildPlannedFinalePayload(data, showPlan, cue, launch, startAt, ordinal = 0) {
@@ -1765,6 +2507,240 @@ class WebGPUFireworksEngine {
             finaleId: id
         });
         return { count: showPlan.cues.reduce((sum, cue) => sum + (cue.launches?.length || 0), 0) };
+    }
+
+    startShowPlanV2Finale(entry, startAt) {
+        const { data, showPlan } = entry;
+        const runtime = ShowPlanV2Runtime.buildShowPlanV2Runtime(showPlan, {
+            startAt,
+            width: this.baseWidth,
+            height: this.baseHeight,
+            playSound: data.playSound !== false && this.config.audioEnabled !== false,
+            visualStyle: data.visualStyle || this.config.visualStyle
+        });
+        for (const event of runtime.events) {
+            this.scheduleTimeline({
+                ...event,
+                finaleId: entry.id,
+                runtimeToken: entry.runtimeToken,
+                runtimeKind: entry.runtimeKind || 'finale',
+                previewRequestId: entry.runtimeKind === 'preview' ? entry.id : null,
+                finaleEndsAt: runtime.completeAt
+            });
+        }
+        return {
+            count: runtime.shellCount,
+            layerCount: runtime.layerCount,
+            commandCount: runtime.commandCount,
+            audioGroups: runtime.audioGroups,
+            durationMs: runtime.durationMs
+        };
+    }
+
+    validatePreviewPayload(data = {}) {
+        const requestId = typeof data.requestId === 'string' ? data.requestId : '';
+        if (!requestId || requestId !== requestId.trim() || requestId.length > 160) {
+            throw new TypeError('Preview requestId is invalid.');
+        }
+        if (data.id !== requestId || data.eventId !== requestId || data.showPlan?.id !== requestId) {
+            throw new TypeError('Preview request identity is inconsistent.');
+        }
+        if (data.type !== 'preview' || data.rendererId !== this.socket?.id) {
+            throw new TypeError('Preview renderer target is invalid.');
+        }
+        if (!data.preview || typeof data.preview !== 'object' || Array.isArray(data.preview)) {
+            throw new TypeError('Preview metadata is required.');
+        }
+        const scope = data.scope;
+        if (!['cue', 'phase', 'show'].includes(scope) || data.preview.scope !== scope) {
+            throw new TypeError('Preview scope is invalid.');
+        }
+        if (scope === 'cue' && (
+            !Number.isInteger(data.cueIndex) || data.cueIndex < 0 ||
+            data.preview.cueIndex !== data.cueIndex
+        )) throw new TypeError('Preview cue metadata is invalid.');
+        if (scope === 'phase' && (
+            typeof data.phase !== 'string' || !data.phase || data.preview.phase !== data.phase
+        )) throw new TypeError('Preview phase metadata is invalid.');
+        if (
+            typeof data.preview.sourceId !== 'string' || !data.preview.sourceId ||
+            !Number.isInteger(data.preview.sourceRevision) ||
+            typeof data.preview.builtIn !== 'boolean' ||
+            !data.preview.metadata || typeof data.preview.metadata !== 'object' ||
+            Array.isArray(data.preview.metadata)
+        ) throw new TypeError('Preview source metadata is invalid.');
+        if (Number(data.showPlan?.planVersion) !== 2) {
+            throw new TypeError('Preview requires ShowPlanV2.');
+        }
+        ShowPlanV2Runtime.assertShowPlanV2(data.showPlan);
+        return {
+            id: requestId,
+            runtimeKind: 'preview',
+            data: { ...data, id: requestId },
+            showPlan: data.showPlan,
+            scope,
+            requestId,
+            rendererId: data.rendererId
+        };
+    }
+
+    emitPreviewAck(requestId, accepted, reason = null) {
+        const rendererId = this.socket?.id || null;
+        this.socket?.emit('webgpu-fireworks:preview-ack', {
+            requestId,
+            rendererId,
+            accepted: accepted === true,
+            ...(accepted === true ? {} : { reason: reason || 'INVALID_PREVIEW' })
+        });
+    }
+
+    emitPreviewStatus(preview, state, extra = {}) {
+        if (!preview?.requestId) return false;
+        this.socket?.emit('webgpu-fireworks:preview-status', {
+            requestId: preview.requestId,
+            rendererId: preview.rendererId || this.socket?.id || null,
+            scope: preview.scope,
+            state,
+            ...extra
+        });
+        return true;
+    }
+
+    startPreviewEntry(entry, startAt = this.getRuntimeNow()) {
+        const details = this.startShowPlanV2Finale(entry, startAt);
+        Object.assign(this.currentPreview, {
+            state: 'running',
+            startedAt: startAt,
+            layerCount: details.layerCount || 0,
+            commandCount: details.commandCount || 0,
+            audioGroups: { ...details.audioGroups }
+        });
+        this.emitPreviewStatus(this.currentPreview, 'running', {
+            durationMs: details.durationMs
+        });
+        this.emitFinaleTelemetry({ previewError: null });
+        return details;
+    }
+
+    setPreviewPhase(requestId, phase) {
+        if (!this.currentPreview || this.currentPreview.requestId !== requestId) return false;
+        this.currentPreview.phase = phase;
+        this.emitFinaleTelemetry();
+        return true;
+    }
+
+    completePreview(requestId, now = this.getRuntimeNow()) {
+        const preview = this.currentPreview;
+        if (!preview || preview.requestId !== requestId) return false;
+        this.cancelGpuOwner(preview.runtimeToken, 'preview-completed');
+        this.timelineQueue = this.timelineQueue.filter(event => !(
+            event.runtimeKind === 'preview' && event.previewRequestId === requestId
+        ));
+        this.currentPreview = null;
+        this.emitPreviewStatus(preview, 'completed', {
+            completedAt: now,
+            durationMs: Number(preview.showPlan?.durationMs) || 0
+        });
+        this.emitFinaleTelemetry({ previewError: null });
+        this.startNextFinaleIfReady(now);
+        return true;
+    }
+
+    failPreview(requestId, error, now = this.getRuntimeNow(), options = {}) {
+        this.ensureFinaleRuntimeState();
+        if (!requestId || this.failingPreviewIds.has(requestId)) return false;
+        const preview = this.currentPreview;
+        if (!preview || preview.requestId !== requestId) return false;
+        this.failingPreviewIds.add(requestId);
+        try {
+            const message = error?.message || String(error || 'Unknown preview renderer error');
+            console.error(`[WebGPU Fireworks] Preview ${requestId} failed:`, error);
+            this.cancelGpuOwner(preview.runtimeToken, options.reason || 'preview-failed');
+            this.timelineQueue = this.timelineQueue.filter(event => !(
+                event.runtimeKind === 'preview' && event.previewRequestId === requestId
+            ));
+            this.currentPreview = null;
+            const reason = options.reason || 'renderer-error';
+            this.emitPreviewStatus(preview, 'failed', {
+                failedAt: now,
+                reason,
+                error: String(message).slice(0, 300)
+            });
+            this.emitFinaleTelemetry({ previewError: String(message).slice(0, 300) });
+            if (options.startNext !== false) this.startNextFinaleIfReady(now);
+            return false;
+        } finally {
+            this.failingPreviewIds.delete(requestId);
+        }
+    }
+
+    handlePreviewSocketEvent(data = {}) {
+        this.ensureFinaleRuntimeState();
+        if (typeof data.rendererId === 'string' && data.rendererId !== this.socket?.id) {
+            return { accepted: false, ignored: true, reason: 'wrong-renderer' };
+        }
+        const rawRequestId = typeof data.requestId === 'string' ? data.requestId : '';
+        let entry;
+        try {
+            entry = this.validatePreviewPayload(data);
+        } catch (error) {
+            this.emitPreviewAck(rawRequestId, false, 'INVALID_PREVIEW');
+            return { accepted: false, reason: 'INVALID_PREVIEW', requestId: rawRequestId || null };
+        }
+
+        const rendererReady = (
+            this.rendererStatus?.state === 'ready' &&
+            this.renderer?.initialized === true &&
+            this.isBenchmark !== true
+        );
+        if (!rendererReady) {
+            this.emitPreviewAck(entry.requestId, false, 'RENDERER_NOT_READY');
+            return {
+                accepted: false,
+                reason: 'RENDERER_NOT_READY',
+                requestId: entry.requestId,
+                rendererId: entry.rendererId
+            };
+        }
+        if (this.currentFinale || this.currentPreview || this.finaleQueue.length > 0) {
+            this.emitPreviewAck(entry.requestId, false, 'FINALE_BUSY');
+            return {
+                accepted: false,
+                reason: 'FINALE_BUSY',
+                requestId: entry.requestId,
+                rendererId: entry.rendererId
+            };
+        }
+
+        this.previewGeneration++;
+        entry.runtimeToken = `${entry.requestId}:preview:${this.previewGeneration}`;
+        this.registerGpuOwner(entry.runtimeToken);
+        const firstCue = entry.showPlan.cues
+            .slice()
+            .sort((left, right) => Number(left.beatAtMs) - Number(right.beatAtMs))[0];
+        this.currentPreview = {
+            id: entry.requestId,
+            requestId: entry.requestId,
+            rendererId: entry.rendererId,
+            scope: entry.scope,
+            phase: firstCue?.phase || 'opening',
+            state: 'reserved',
+            runtimeToken: entry.runtimeToken,
+            showPlan: entry.showPlan,
+            layersSubmitted: 0,
+            audioGroupsPlayed: { launch: 0, bang: 0, crackle: 0 }
+        };
+        this.emitPreviewAck(entry.requestId, true);
+        try {
+            this.startPreviewEntry(entry, this.getRuntimeNow());
+        } catch (error) {
+            this.failPreview(entry.requestId, error, this.getRuntimeNow());
+        }
+        return {
+            accepted: true,
+            requestId: entry.requestId,
+            rendererId: entry.rendererId
+        };
     }
 
     describeLegacyFinale(data = {}) {
@@ -1846,24 +2822,43 @@ class WebGPUFireworksEngine {
     startFinaleEntry(entry, startAt = this.getRuntimeNow()) {
         const style = entry.showPlan?.style || 'legacy';
         const length = entry.showPlan?.length || 'legacy';
+        const planVersion = entry.showPlan ? Number(entry.showPlan.planVersion) : null;
         this.finaleGeneration++;
         entry.runtimeToken = `${entry.id}:${this.finaleGeneration}`;
+        this.registerGpuOwner(entry.runtimeToken);
+        const firstPhase = entry.showPlan?.cues
+            ?.slice()
+            .sort((left, right) => Number(left.beatAtMs) - Number(right.beatAtMs))[0]?.phase || 'opening';
         this.currentFinale = {
             id: entry.id,
             eventId: entry.data.eventId || null,
             style,
+            name: typeof entry.showPlan?.metadata?.name === 'string'
+                ? entry.showPlan.metadata.name
+                : null,
             length,
-            phase: 'opening',
+            phase: firstPhase,
             startedAt: startAt,
             runtimeToken: entry.runtimeToken,
             legacy: entry.legacy,
+            planVersion,
+            layerCount: 0,
+            layersSubmitted: 0,
+            commandCount: 0,
+            audioGroups: { launch: 0, bang: 0, crackle: 0 },
+            audioGroupsPlayed: { launch: 0, bang: 0, crackle: 0 },
             completionNotification: entry.completionNotification,
             completionNotificationShown: false
         };
-        this.finalePhase = 'opening';
+        this.finalePhase = firstPhase;
         const details = entry.legacy
             ? this.startLegacyFinale(entry, startAt)
-            : this.startPlannedFinale(entry, startAt);
+            : planVersion === 2
+                ? this.startShowPlanV2Finale(entry, startAt)
+                : this.startPlannedFinale(entry, startAt);
+        this.currentFinale.layerCount = details.layerCount || 0;
+        this.currentFinale.commandCount = details.commandCount || 0;
+        this.currentFinale.audioGroups = { ...this.currentFinale.audioGroups, ...(details.audioGroups || {}) };
         this.emitFinaleTelemetry({ finaleError: null });
         return details;
     }
@@ -1895,8 +2890,11 @@ class WebGPUFireworksEngine {
 
     completeFinale(finaleId, now = this.getRuntimeNow()) {
         if (!this.currentFinale || this.currentFinale.id !== finaleId) return false;
+        this.cancelGpuOwner(this.currentFinale.runtimeToken, 'finale-completed');
         const controlEvents = new Set(['finale-launch', 'finale-phase', 'finale-complete', 'finale-end-card-complete']);
-        this.timelineQueue = this.timelineQueue.filter(event => event.finaleId !== finaleId || !controlEvents.has(event.type));
+        this.timelineQueue = this.timelineQueue.filter(event => (
+            event.finaleId !== finaleId || (!controlEvents.has(event.type) && !event.type.startsWith('finale-v2-'))
+        ));
         this.releaseFinaleEndCard(finaleId, { flushDeferred: true });
         this.finaleIds.delete(finaleId);
         this.currentFinale = null;
@@ -1907,7 +2905,7 @@ class WebGPUFireworksEngine {
 
     startNextFinaleIfReady(now = this.getRuntimeNow()) {
         this.ensureFinaleRuntimeState();
-        if (this.currentFinale || this.rendererStatus?.state !== 'ready' || !this.renderer?.initialized) {
+        if (this.currentFinale || this.currentPreview || this.rendererStatus?.state !== 'ready' || !this.renderer?.initialized) {
             this.emitFinaleTelemetry();
             return false;
         }
@@ -1920,13 +2918,19 @@ class WebGPUFireworksEngine {
         return true;
     }
 
-    failFinale(finaleId, error, now = this.getRuntimeNow()) {
+    failFinale(finaleId, error, now = this.getRuntimeNow(), options = {}) {
         this.ensureFinaleRuntimeState();
         if (!finaleId || this.failingFinaleIds.has(finaleId)) return false;
         this.failingFinaleIds.add(finaleId);
         try {
             const message = error?.message || String(error || 'Unknown finale renderer error');
             console.error(`[WebGPU Fireworks] Finale ${finaleId || 'unknown'} failed:`, error);
+            if (this.currentFinale?.id === finaleId) {
+                this.cancelGpuOwner(
+                    this.currentFinale.runtimeToken,
+                    options.reason || 'finale-failed'
+                );
+            }
             this.releaseFinaleEndCard(finaleId, { flushDeferred: true });
             this.timelineQueue = this.timelineQueue.filter(event => event.finaleId !== finaleId);
             for (const [effectId, plan] of this.effectPlans.entries()) {
@@ -1953,9 +2957,8 @@ class WebGPUFireworksEngine {
         if (this.finaleIds.has(id)) {
             return { accepted: false, duplicate: true, reason: 'duplicate', id, queueLength: this.finaleQueue.length };
         }
-        const showPlan = this.isValidShowPlan(data.showPlan)
-            ? { ...data.showPlan, id }
-            : null;
+        const showPlan = this.normalizeShowPlan(data.showPlan, id);
+        const planVersion = showPlan ? Number(showPlan.planVersion) : null;
         const completionNotification = this.normalizeCompletionNotification(data.completionNotification);
         const entry = { id, data: { ...data, id }, showPlan, legacy: !showPlan, completionNotification };
         const rendererKnownUnavailable = (
@@ -1970,13 +2973,19 @@ class WebGPUFireworksEngine {
                 queueLength: this.finaleQueue.length
             };
         }
-        const queued = Boolean(this.currentFinale || rendererKnownUnavailable);
+        const queued = Boolean(
+            this.currentFinale || this.currentPreview || this.finaleQueue.length > 0 || rendererKnownUnavailable
+        );
         this.finaleIds.add(id);
         let details;
         if (queued) {
             this.finaleQueue.push(entry);
             details = showPlan
-                ? { count: showPlan.cues.reduce((sum, cue) => sum + (cue.launches?.length || 0), 0) }
+                ? {
+                    count: showPlan.cues.reduce((sum, cue) => sum + (
+                        planVersion === 2 ? (cue.shells?.length || 0) : (cue.launches?.length || 0)
+                    ), 0)
+                }
                 : this.describeLegacyFinale(entry.data);
             this.emitFinaleTelemetry();
         } else details = this.startFinaleEntry(entry, this.getRuntimeNow());
@@ -1984,6 +2993,7 @@ class WebGPUFireworksEngine {
             accepted: true,
             queued,
             legacy: entry.legacy,
+            planVersion,
             id,
             queueLength: this.finaleQueue.length,
             count: details.count,
@@ -2143,7 +3153,13 @@ class WebGPUFireworksEngine {
     }
 
     adaptQuality() {
-        if (this.config.adaptivePerformance === false) return;
+        if (this.config.adaptivePerformance === false) {
+            if (this.resetAdaptivePerformanceState()) {
+                this.resize();
+                this.applyQuality();
+            }
+            return;
+        }
         const average = this.fpsHistory.length ? this.fpsHistory.reduce((sum, fps) => sum + fps, 0) / this.fpsHistory.length : this.fps;
         const minimumFps = Math.max(Number(this.config.minFps) || 24, Number(this.config.minTargetFps) || 24);
         const nextMode = average < minimumFps ? 'minimal' : average < (this.config.targetFps || 60) * 0.82 ? 'reduced' : 'normal';
@@ -2156,13 +3172,19 @@ class WebGPUFireworksEngine {
         this.applyQuality();
     }
 
+    shouldSkipCurrentFrame() {
+        return this.config.frameSkipEnabled !== false &&
+            this.getEffectivePerformanceMode() === 'minimal' &&
+            (this.skippedFrame = !this.skippedFrame);
+    }
+
     render() {
         if (!this.running) return;
         const now = performance.now();
         const delta = Math.min(0.05, Math.max(0.001, (now - this.lastFrameAt) / 1000));
         this.lastFrameAt = now;
         this.processTimeline(now);
-        const shouldSkip = this.config.frameSkipEnabled !== false && this.performanceMode === 'minimal' && (this.skippedFrame = !this.skippedFrame);
+        const shouldSkip = this.shouldSkipCurrentFrame();
         let renderSucceeded = false;
         try {
             if (typeof this.renderer?.render === 'function') {
@@ -2172,12 +3194,16 @@ class WebGPUFireworksEngine {
         } catch (error) {
             console.error('[WebGPU Fireworks] Renderer frame failed:', error);
             const failedFinaleId = this.currentFinale?.id || null;
+            const failedPreviewId = this.currentPreview?.requestId || null;
             this.setStatus(
                 { state: 'error', reason: error?.message || String(error) },
                 { transientFrameError: true }
             );
             if (failedFinaleId && this.currentFinale?.id === failedFinaleId) {
                 this.failFinale(failedFinaleId, error, now);
+            }
+            if (failedPreviewId && this.currentPreview?.requestId === failedPreviewId) {
+                this.failPreview(failedPreviewId, error, now);
             }
         }
         if (renderSucceeded && this.transientFrameError && this.rendererStatus.state === 'error') {
@@ -2192,7 +3218,13 @@ class WebGPUFireworksEngine {
             if (this.fpsHistory.length > 5) this.fpsHistory.shift();
             if (!this.isBenchmark) this.adaptQuality();
             this.updateDebugPanel();
-            this.socket?.emit('webgpu-fireworks:fps-update', { fps: this.fps, benchmark: this.isBenchmark, visible: document.visibilityState !== 'hidden', timestamp: Date.now() });
+            this.socket?.emit('webgpu-fireworks:fps-update', {
+                fps: this.fps,
+                benchmark: this.isBenchmark,
+                ...this.benchmarkSessionMetadata(),
+                visible: document.visibilityState !== 'hidden',
+                timestamp: Date.now()
+            });
             this.emitStatus();
         }
         this.animationFrame = requestAnimationFrame(() => this.render());
@@ -2207,7 +3239,7 @@ class WebGPUFireworksEngine {
         if (particles) particles.textContent = metrics.activeParticles || 0;
         if (renderer) {
             const rendererState = this.rendererStatus.state || 'initializing';
-            const performanceMode = this.performanceMode || 'normal';
+            const performanceMode = this.getEffectivePerformanceMode();
             renderer.textContent = t(
                 'plugins.webgpu-fireworks.runtime.renderer_debug',
                 'WEBGPU · {state} · {mode}',
@@ -2224,6 +3256,14 @@ class WebGPUFireworksEngine {
 
     destroy() {
         this.running = false;
+        if (this.currentPreview) {
+            this.failPreview(
+                this.currentPreview.requestId,
+                new Error('Preview renderer destroyed.'),
+                this.getRuntimeNow(),
+                { reason: 'renderer-destroyed', startNext: false }
+            );
+        }
         this.clearFollowerAnimation();
         this.endCardOwnerId = null;
         this.deferredFollowerAnimation = null;
@@ -2233,18 +3273,27 @@ class WebGPUFireworksEngine {
         if (typeof window !== 'undefined') window.removeEventListener('resize', this.resizeHandler);
         this.canvas?.removeEventListener('pointerdown', this.clickHandler);
         this.socket?.disconnect();
+        for (const ownerToken of [...(this.activeGpuOwners || [])]) {
+            this.cancelGpuOwner(ownerToken, 'renderer-destroyed');
+        }
         this.renderer?.destroy();
         this.audio.destroy();
         this.timelineQueue.length = 0;
         this.effectPlans.clear();
         this.activeShows.clear();
         this.imageCache.clear();
+        this.failedImageWarnings?.clear();
         this.finaleQueue.length = 0;
         this.finaleIds.clear();
         this.currentFinale = null;
+        this.currentPreview = null;
         this.finalePhase = 'idle';
         this.finaleGeneration = 0;
+        this.previewGeneration = 0;
+        this.gpuOwnerGeneration = 0;
+        this.activeGpuOwners?.clear();
         this.failingFinaleIds.clear();
+        this.failingPreviewIds.clear();
         this.transientFrameError = false;
         this.giftBacklog.clear();
         this.giftLaunchTimestamps.length = 0;
