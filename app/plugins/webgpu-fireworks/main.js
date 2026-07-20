@@ -53,12 +53,13 @@ const RENDERER_UPGRADE_MESSAGE =
 const BENCHMARK_SESSION_ID_PATTERN =
     /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function createBenchmarkDispatchContext(session, socket) {
+function createBenchmarkDispatchContext(session, socket, spawnPlanner) {
     return Object.freeze({
         authority: BENCHMARK_DISPATCH_AUTHORITY,
         benchmarkSessionId: session.id,
         config: session.config,
         socket,
+        spawnPlanner,
         playSound: false,
         trackLiveLoad: false,
         deferDelivery: true
@@ -272,6 +273,7 @@ class FireworksPlugin {
             socketId: null,
             restored: false,
             pendingOperation: null,
+            spawnPlanner: new SpawnPlanner(),
             createdAt: now,
             updatedAt: now,
             expiresAt: now + this.benchmarkSessionTtlMs
@@ -301,8 +303,10 @@ class FireworksPlugin {
         if (session.socketId && this.benchmarkSocketSessions.get(session.socketId) === session.id) {
             this.benchmarkSocketSessions.delete(session.socketId);
         }
+        this.finishBenchmarkSessionOperation(session, session.pendingOperation);
         session.socket = null;
         session.socketId = null;
+        session.spawnPlanner = null;
         this.benchmarkSessions.delete(sessionId);
         return true;
     }
@@ -376,8 +380,10 @@ class FireworksPlugin {
         if (!sessionId) return null;
         const session = this.getBenchmarkSession(sessionId, { allowRestored: true });
         if (session?.socket === socket) {
+            this.finishBenchmarkSessionOperation(session, session.pendingOperation);
             session.socket = null;
             session.socketId = null;
+            session.spawnPlanner = new SpawnPlanner();
             this.touchBenchmarkSession(session);
         }
         this.benchmarkSocketSessions.delete(socket.id);
@@ -1911,14 +1917,18 @@ class FireworksPlugin {
                         error: 'Benchmark renderer is not ready'
                     });
                 }
+                const operation = this.beginBenchmarkSessionOperation(session, 'trigger', res);
+                if (!operation) return;
+                const candidatePlanner = session.spawnPlanner.clone();
                 const triggerOptions = sanitizeManualFireworkTrigger(req.body);
                 const result = this.triggerFirework({
                     ...triggerOptions,
                     reason: 'benchmark',
                     bypassEnabled: true,
                     playSound: false
-                }, createBenchmarkDispatchContext(session, renderer.socket));
+                }, createBenchmarkDispatchContext(session, renderer.socket, candidatePlanner));
                 if (result.accepted !== true) {
+                    this.finishBenchmarkSessionOperation(session, operation);
                     return res.status(triggerRejectionHttpStatus(result.reason)).json({
                         success: false,
                         accepted: false,
@@ -1936,8 +1946,6 @@ class FireworksPlugin {
                         this.benchmarkDeliveryAckTimeoutMs - 250
                     )
                 });
-                const operation = this.beginBenchmarkSessionOperation(session, 'trigger', res);
-                if (!operation) return;
                 return this.deliverBenchmarkSocketEvent(renderer.socket, 'webgpu-fireworks:trigger', result.payload, delivery => {
                     if (!delivery.accepted) {
                         this.finishBenchmarkSessionOperation(session, operation);
@@ -1950,7 +1958,19 @@ class FireworksPlugin {
                             error: 'Benchmark trigger delivery failed'
                         });
                     }
-                    this.finishBenchmarkSessionOperation(session, operation);
+                    const operationFinished = this.finishBenchmarkSessionOperation(session, operation);
+                    const rendererStillBound = this.getConnectedBenchmarkSocket(session) === renderer.socket;
+                    if (!operationFinished || !rendererStillBound) {
+                        return res.status(503).json({
+                            success: false,
+                            accepted: false,
+                            code: 'BENCHMARK_TRIGGER_DELIVERY_FAILED',
+                            reason: 'renderer-disconnected',
+                            sessionId: session.id,
+                            error: 'Benchmark trigger delivery failed'
+                        });
+                    }
+                    session.spawnPlanner = candidatePlanner;
                     return res.json({
                         success: true,
                         accepted: true,
@@ -2726,6 +2746,7 @@ class FireworksPlugin {
             ? internalDispatchContext
             : null;
         const effectiveConfig = dispatchContext?.config || this.config;
+        const spawnPlanner = dispatchContext?.spawnPlanner || this.spawnPlanner;
         // Ensure options object exists
         options = normalizeFireworkTrigger(options || {}, effectiveConfig);
 
@@ -2752,7 +2773,7 @@ class FireworksPlugin {
             return { accepted: false, reason: policyDecision.reason };
         }
 
-        const plan = this.spawnPlanner.plan({
+        const plan = spawnPlanner.plan({
             seed: options.seed,
             orientation: effectiveConfig.orientation,
             positionMode: options.positionMode,

@@ -5,6 +5,7 @@ const { randomUUID } = require('crypto');
 
 const FireworksPlugin = require('../plugins/webgpu-fireworks/main');
 const { normalizeConfig } = require('../plugins/webgpu-fireworks/lib/config-schema');
+const { SpawnPlanner } = require('../plugins/webgpu-fireworks/lib/spawn-planner');
 
 class FakeSocket {
   constructor(id) {
@@ -516,6 +517,101 @@ describe('WebGPU Fireworks benchmark session isolation', () => {
       reason: 'renderer-not-ready'
     });
     expect(harness.plugin.activeFireworkCount).toBe(0);
+  });
+
+  test('clones planner options and history without sharing mutable arrays', () => {
+    const source = new SpawnPlanner({ historyLimit: 6, minimumTargetDistance: 0.2 });
+    source.targets.push({ x: 0.2, y: 0.3 });
+    source.origins.push({ x: 0.4, y: 1.02 });
+
+    const clone = source.clone();
+    clone.targets[0].x = 0.9;
+    clone.origins.push({ x: 0.8, y: 1.02 });
+
+    expect(clone).toBeInstanceOf(SpawnPlanner);
+    expect(clone.historyLimit).toBe(6);
+    expect(clone.minimumTargetDistance).toBe(0.2);
+    expect(source.targets).toEqual([{ x: 0.2, y: 0.3 }]);
+    expect(source.origins).toEqual([{ x: 0.4, y: 1.02 }]);
+  });
+
+  test('admits before planning and never calls the live planner for benchmark work', () => {
+    jest.useFakeTimers();
+    const harness = createHarness();
+    const started = startSession(harness);
+    const socket = harness.connect('benchmark-busy');
+    registerBenchmarkRenderer(socket, started.sessionId);
+    socket.ackDelayMs = 50;
+
+    const first = harness.callRoute(
+      'post',
+      '/api/webgpu-fireworks/benchmark/trigger',
+      harness.request({ body: { sessionId: started.sessionId, seed: 101 } })
+    );
+    const second = harness.callRoute(
+      'post',
+      '/api/webgpu-fireworks/benchmark/trigger',
+      harness.request({ body: { sessionId: started.sessionId, seed: 102 } })
+    );
+
+    expect(second.statusCode).toBe(409);
+    expect(second.body).toMatchObject({
+      success: false,
+      accepted: false,
+      code: 'BENCHMARK_SESSION_BUSY'
+    });
+    expect(harness.plugin.spawnPlanner.plan).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(50);
+    expect(first.statusCode).toBe(200);
+  });
+
+  test('publishes benchmark planner history only after an accepted matching ACK', () => {
+    jest.useFakeTimers();
+    const harness = createHarness();
+    const started = startSession(harness);
+    const socket = harness.connect('benchmark-transaction');
+    registerBenchmarkRenderer(socket, started.sessionId);
+    socket.ackDelayMs = 50;
+    const session = harness.plugin.benchmarkSessions.get(started.sessionId);
+    const initialPlanner = session.spawnPlanner;
+
+    const response = harness.callRoute(
+      'post',
+      '/api/webgpu-fireworks/benchmark/trigger',
+      harness.request({ body: { sessionId: started.sessionId, seed: 201 } })
+    );
+
+    expect(session.spawnPlanner).toBe(initialPlanner);
+    expect(session.spawnPlanner.targets).toHaveLength(0);
+    jest.advanceTimersByTime(50);
+    expect(response.statusCode).toBe(200);
+    expect(session.spawnPlanner).not.toBe(initialPlanner);
+    expect(session.spawnPlanner.targets).toHaveLength(1);
+  });
+
+  test('keeps benchmark planner history unchanged after renderer rejection', () => {
+    const harness = createHarness();
+    const started = startSession(harness);
+    const socket = harness.connect('benchmark-reject-transaction');
+    registerBenchmarkRenderer(socket, started.sessionId);
+    socket.ackResponse = {
+      accepted: false,
+      benchmarkSessionId: started.sessionId,
+      reason: 'renderer-not-ready'
+    };
+    const session = harness.plugin.benchmarkSessions.get(started.sessionId);
+    const initialPlanner = session.spawnPlanner;
+
+    const response = harness.callRoute(
+      'post',
+      '/api/webgpu-fireworks/benchmark/trigger',
+      harness.request({ body: { sessionId: started.sessionId, seed: 202 } })
+    );
+
+    expect(response.statusCode).toBe(503);
+    expect(session.spawnPlanner).toBe(initialPlanner);
+    expect(session.spawnPlanner.targets).toHaveLength(0);
+    expect(harness.plugin.spawnPlanner.plan).not.toHaveBeenCalled();
   });
 
   test.each([
