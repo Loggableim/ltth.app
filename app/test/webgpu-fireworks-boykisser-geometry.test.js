@@ -4,6 +4,7 @@ const {
   BOYKISSER_FEATURES,
   BOYKISSER_ROLES,
   BOYKISSER_COLORS,
+  BOYKISSER_VECTOR,
   sampleBoykisser,
   sampleBoykisserSet,
   buildBoykisserWgsl,
@@ -11,29 +12,23 @@ const {
 } = require('../plugins/webgpu-fireworks/gpu/boykisser-geometry');
 
 const REQUIRED_FEATURES = [
-  'head-outline',
+  'outer-silhouette',
   'forehead-tuft',
-  'left-ear',
-  'right-ear',
-  'left-inner-ear',
-  'right-inner-ear',
-  'left-crescent-eye',
-  'right-crescent-eye',
+  'left-long-eye',
+  'right-long-eye',
   'centered-nose',
-  'w-smile',
-  'tongue',
-  'left-blush',
-  'right-blush',
+  'omega-mouth',
+  'left-zigzag-cheek',
+  'right-zigzag-cheek',
 ];
 
-const mirrorPoints = points => points.map(([x, y]) => [-x, y]);
 const featureCenterX = feature => feature.points
   .reduce((sum, [x]) => sum + x, 0) / feature.points.length;
 
 describe('WebGPU Fireworks semantic Boykisser geometry', () => {
   test('defines every approved landmark with an explicit semantic color role', () => {
     expect(Object.keys(BOYKISSER_FEATURES)).toEqual(REQUIRED_FEATURES);
-    expect(BOYKISSER_ROLES).toEqual({ HEAD: 0, FACE: 1, PINK: 2 });
+    expect(BOYKISSER_ROLES).toEqual({ HEAD: 0, FACE: 1, ACCENT: 2 });
     for (const feature of Object.values(BOYKISSER_FEATURES)) {
       expect(feature).toMatchObject({
         role: expect.any(Number),
@@ -45,26 +40,38 @@ describe('WebGPU Fireworks semantic Boykisser geometry', () => {
     }
     expect(BOYKISSER_COLORS).toEqual({
       HEAD: [1, 1, 1],
-      FACE: [0.08, 0.08, 0.1],
-      PINK: [1, 0.32, 0.58],
+      FACE: [0, 0, 0],
+      ACCENT: [1, 0, 0],
     });
+    expect(BOYKISSER_FEATURES).not.toHaveProperty('tongue');
+    expect(BOYKISSER_FEATURES).not.toHaveProperty('left-inner-ear');
+    expect(BOYKISSER_FEATURES).not.toHaveProperty('left-crescent-eye');
+    expect(BOYKISSER_VECTOR).toMatchObject({
+      aspectRatio: 2452 / 3259,
+      silhouette: expect.any(Array),
+      blackFills: expect.any(Array),
+      blackStrokes: expect.any(Array),
+      redStrokes: expect.any(Array),
+    });
+    expect(BOYKISSER_VECTOR.silhouette.length).toBeGreaterThanOrEqual(30);
+    expect(BOYKISSER_VECTOR.blackFills.length).toBeGreaterThanOrEqual(3);
+    expect(BOYKISSER_VECTOR.redStrokes).toHaveLength(2);
   });
 
-  test.each([13, 20, 32])('retains every landmark at low density %i', count => {
+  test.each([8, 16, 32])('retains every landmark at low density %i', count => {
     const samples = sampleBoykisserSet(count, 12345);
     expect(samples).toHaveLength(count);
     expect(new Set(samples.map(sample => sample.feature))).toEqual(new Set(REQUIRED_FEATURES));
   });
 
-  test('keeps paired features mirrored and the face centered', () => {
+  test('preserves the reference asymmetry while keeping the face balanced', () => {
     const features = BOYKISSER_FEATURES;
-    expect(mirrorPoints(features['left-ear'].points)).toEqual(features['right-ear'].points);
-    expect(mirrorPoints(features['left-inner-ear'].points)).toEqual(features['right-inner-ear'].points);
-    expect(mirrorPoints(features['left-crescent-eye'].points)).toEqual(features['right-crescent-eye'].points);
-    expect(mirrorPoints(features['left-blush'].points)).toEqual(features['right-blush'].points);
-    expect(featureCenterX(features['centered-nose'])).toBeCloseTo(0, 6);
-    expect(featureCenterX(features['w-smile'])).toBeCloseTo(0, 6);
-    expect(featureCenterX(features.tongue)).toBeCloseTo(0, 6);
+    expect(featureCenterX(features['left-long-eye'])).toBeLessThan(-0.3);
+    expect(featureCenterX(features['right-long-eye'])).toBeGreaterThan(0.25);
+    expect(featureCenterX(features['left-zigzag-cheek'])).toBeLessThan(-0.5);
+    expect(featureCenterX(features['right-zigzag-cheek'])).toBeGreaterThan(0.4);
+    expect(Math.abs(featureCenterX(features['centered-nose']))).toBeLessThan(0.1);
+    expect(Math.abs(featureCenterX(features['omega-mouth']))).toBeLessThan(0.05);
   });
 
   test('uses one deterministic source for CPU samples and generated WGSL', () => {
@@ -74,6 +81,10 @@ describe('WebGPU Fireworks semantic Boykisser geometry', () => {
     expect(wgsl).toContain('fn boykisserPoint(index: u32, count: u32, seed: u32) -> vec2f');
     expect(wgsl).toContain('fn boykisserRole(index: u32, count: u32, seed: u32) -> u32');
     expect(wgsl).toContain('fn boykisserCanonicalColor(role: u32) -> vec3f');
+    expect(wgsl).toContain('fn boykisserVectorColor(uv: vec2f) -> vec4f');
+    expect(wgsl).toContain('fn boykisserSilhouetteContains(point: vec2f) -> bool');
+    expect(wgsl).toContain('fn boykisserBlackCoverage(point: vec2f) -> f32');
+    expect(wgsl).toContain('fn boykisserRedCoverage(point: vec2f) -> f32');
     for (const featureName of REQUIRED_FEATURES) {
       expect(wgsl).toContain(`// feature:${featureName}`);
     }

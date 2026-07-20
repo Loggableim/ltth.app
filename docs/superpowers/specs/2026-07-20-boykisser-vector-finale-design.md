@@ -40,7 +40,7 @@ This approach is preferred over an SVG overlay because it remains in the WebGPU 
 - filled black eye shapes and nose;
 - stroked black polylines for upper eye lines, forehead detail, and omega mouth;
 - stroked red polylines for both zigzag cheek marks;
-- normalized portrait coordinates derived from the supplied 1365 by 2048 reference.
+- normalized portrait coordinates derived from the supplied 2452 by 3259 source file.
 
 The data model must be deterministic, immutable, and serializable so its geometry signature continues to prove CPU/WGSL parity. The shipped colors are canonical white, near-black, and reference red. Show palettes must not tint the core hero away from those colors.
 

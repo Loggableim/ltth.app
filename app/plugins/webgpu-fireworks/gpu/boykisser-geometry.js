@@ -10,15 +10,15 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function createBoykisserGeometry() {
   'use strict';
 
-  const BOYKISSER_ROLES = Object.freeze({ HEAD: 0, FACE: 1, PINK: 2 });
+  const BOYKISSER_ROLES = Object.freeze({ HEAD: 0, FACE: 1, ACCENT: 2 });
   const BOYKISSER_COLORS = Object.freeze({
     HEAD: Object.freeze([1, 1, 1]),
-    FACE: Object.freeze([0.08, 0.08, 0.1]),
-    PINK: Object.freeze([1, 0.32, 0.58]),
+    FACE: Object.freeze([0, 0, 0]),
+    ACCENT: Object.freeze([1, 0, 0]),
   });
 
   const freezePoints = points => Object.freeze(points.map(point => Object.freeze([...point])));
-  const mirrorPoints = points => points.map(([x, y]) => [-x, y]);
+  const closePoints = points => [...points, points[0]];
   const feature = (role, weight, anchor, points) => Object.freeze({
     role,
     weight,
@@ -26,54 +26,100 @@
     points: freezePoints(points),
   });
 
-  const leftEar = [
-    [-0.67, -0.46], [-0.59, -0.96], [-0.25, -0.58], [-0.67, -0.46],
+  // Normalized contours traced from the user-approved 2452 x 3259 reference.
+  // The original drawing is intentionally asymmetric; these points preserve it.
+  const silhouette = [
+    [0.8369, -0.9755], [0.3450, -0.6085], [0.3850, -0.5453],
+    [0.1085, -0.7232], [-0.2007, -0.7913], [-0.1134, -0.6171],
+    [-0.0489, -0.6048], [-0.3540, -0.5029], [-0.0049, -0.5035],
+    [-0.0816, -0.4808], [-0.3980, -0.4894], [-0.2382, -0.5851],
+    [-0.6998, -0.9736], [-0.8197, -0.8386], [-0.8940, -0.6612],
+    [-0.9021, -0.4722], [-0.8393, -0.2943], [-0.7039, -0.1230],
+    [-0.9690, -0.1390], [-0.9086, -0.0525], [-0.7773, 0.0107],
+    [-0.8825, 0.1912], [-0.6542, 0.1801], [-0.1876, 0.2955],
+    [-0.4470, 0.2765], [-0.2879, 0.3943], [-0.4038, 0.4968],
+    [-0.2684, 0.4992], [-0.4323, 0.9994], [0.5873, 0.9994],
+    [0.4951, 0.5410], [0.3613, 0.2863], [0.2945, 0.2519],
+    [0.6069, 0.1672], [0.8891, 0.1599], [0.7463, 0.0064],
+    [0.9307, -0.1513], [0.7365, -0.1476], [0.8980, -0.3145],
+    [0.9698, -0.5183], [0.9478, -0.7668],
   ];
-  const leftInnerEar = [
-    [-0.59, -0.51], [-0.56, -0.82], [-0.36, -0.59], [-0.59, -0.51],
+  const foreheadTuft = [
+    [0.3850, -0.5453], [0.1085, -0.7232], [-0.2007, -0.7913],
+    [-0.1134, -0.6171], [-0.0489, -0.6048], [-0.3540, -0.5029],
+    [-0.0049, -0.5035], [-0.0816, -0.4808],
   ];
-  const leftEye = [
-    [-0.47, -0.08], [-0.43, -0.16], [-0.35, -0.21], [-0.27, -0.20],
-    [-0.20, -0.14], [-0.17, -0.07], [-0.24, -0.12], [-0.32, -0.15],
-    [-0.40, -0.13], [-0.47, -0.08],
+  const leftLongEye = [
+    [-0.6387, -0.2673], [-0.1852, -0.2679], [-0.2031, -0.0985],
+    [-0.2480, -0.0169], [-0.3173, 0.0052], [-0.3793, -0.0322],
+    [-0.4103, -0.1187], [-0.4095, -0.2562], [-0.5481, -0.2550],
+    [-0.5946, -0.1255], [-0.5897, -0.0611], [-0.5595, -0.0077],
+    [-0.5816, 0.0028], [-0.6232, -0.1120], [-0.5791, -0.2531],
+    [-0.6313, -0.2501],
   ];
-  const leftBlush = [
-    [-0.60, 0.22], [-0.54, 0.16], [-0.49, 0.25], [-0.43, 0.18], [-0.37, 0.26],
+  const rightLongEye = [
+    [0.6142, -0.3010], [0.6052, -0.2851], [0.5408, -0.2844],
+    [0.5848, -0.1580], [0.5718, -0.0316], [0.5506, -0.0390],
+    [0.5555, -0.1703], [0.5106, -0.2838], [0.3793, -0.2826],
+    [0.3817, -0.1335], [0.3263, -0.0476], [0.2504, -0.0267],
+    [0.1958, -0.0611], [0.1558, -0.1531], [0.1713, -0.2924],
+  ];
+  const nose = [
+    [-0.1354, -0.0095], [-0.1297, -0.0163], [-0.1183, -0.0193],
+    [-0.0701, -0.0206], [-0.0318, -0.0175], [-0.0237, -0.0126],
+    [-0.0220, -0.0052], [-0.0245, -0.0009], [-0.0326, 0.0034],
+    [-0.0889, 0.0089], [-0.1289, 0.0040], [-0.1346, -0.0003],
+  ];
+  const omegaMouth = [
+    [0.2047, 0.0960], [0.1860, 0.1138], [0.1150, 0.1341],
+    [0.0522, 0.1353], [-0.0228, 0.1175], [-0.0808, 0.1451],
+    [-0.1378, 0.1586], [-0.1900, 0.1507], [-0.2292, 0.1273],
+    [-0.2276, 0.1194], [-0.2121, 0.1145], [-0.1803, 0.1316],
+    [-0.1330, 0.1365], [-0.0783, 0.1206], [-0.0277, 0.0954],
+    [0.0783, 0.1163], [0.1370, 0.1077], [0.1892, 0.0881],
+  ];
+  const leftCheek = [
+    [-0.7178, 0.0482], [-0.7162, 0.0562], [-0.7023, 0.0604],
+    [-0.6419, 0.0408], [-0.6493, 0.0881], [-0.6370, 0.0960],
+    [-0.5155, 0.0592], [-0.5082, 0.0531], [-0.5106, 0.0439],
+    [-0.5220, 0.0402], [-0.6183, 0.0690], [-0.6158, 0.0334],
+    [-0.6215, 0.0206], [-0.6313, 0.0169], [-0.7088, 0.0408],
+  ];
+  const rightCheek = [
+    [0.5987, 0.0175], [0.5832, 0.0175], [0.5147, 0.0623],
+    [0.5122, 0.0156], [0.5049, 0.0095], [0.4910, 0.0095],
+    [0.4274, 0.0525], [0.4258, 0.0611], [0.4331, 0.0672],
+    [0.4454, 0.0666], [0.4869, 0.0365], [0.4878, 0.0875],
+    [0.4959, 0.0936], [0.5049, 0.0936], [0.6020, 0.0310],
   ];
 
-  // Declaration order is protocol: the first 13 particles place one readable
+  const BOYKISSER_VECTOR = Object.freeze({
+    aspectRatio: 2452 / 3259,
+    silhouette: freezePoints(silhouette),
+    blackFills: Object.freeze([
+      freezePoints(leftLongEye),
+      freezePoints(rightLongEye),
+      freezePoints(nose),
+      freezePoints(omegaMouth),
+    ]),
+    blackStrokes: Object.freeze([]),
+    redStrokes: Object.freeze([
+      freezePoints(leftCheek),
+      freezePoints(rightCheek),
+    ]),
+  });
+
+  // Declaration order is protocol: the first eight particles place one readable
   // anchor for every landmark before weighted detail sampling begins.
   const BOYKISSER_FEATURES = Object.freeze({
-    'head-outline': feature(BOYKISSER_ROLES.HEAD, 30, [0, 0.84], [
-      [-0.36, -0.58], [-0.55, -0.52], [-0.70, -0.38], [-0.79, -0.14],
-      [-0.80, 0.16], [-0.72, 0.42], [-0.56, 0.64], [-0.30, 0.78],
-      [0, 0.84], [0.30, 0.78], [0.56, 0.64], [0.72, 0.42],
-      [0.80, 0.16], [0.79, -0.14], [0.70, -0.38], [0.55, -0.52],
-      [0.36, -0.58], [0, -0.64], [-0.36, -0.58],
-    ]),
-    'forehead-tuft': feature(BOYKISSER_ROLES.HEAD, 6, [-0.03, -0.72], [
-      [-0.30, -0.55], [-0.16, -0.70], [-0.09, -0.51], [-0.03, -0.72],
-      [0.07, -0.51], [0.18, -0.66], [0.31, -0.54],
-    ]),
-    'left-ear': feature(BOYKISSER_ROLES.HEAD, 8, [-0.59, -0.96], leftEar),
-    'right-ear': feature(BOYKISSER_ROLES.HEAD, 8, [0.59, -0.96], mirrorPoints(leftEar)),
-    'left-inner-ear': feature(BOYKISSER_ROLES.PINK, 5, [-0.56, -0.82], leftInnerEar),
-    'right-inner-ear': feature(BOYKISSER_ROLES.PINK, 5, [0.56, -0.82], mirrorPoints(leftInnerEar)),
-    'left-crescent-eye': feature(BOYKISSER_ROLES.FACE, 8, [-0.35, -0.21], leftEye),
-    'right-crescent-eye': feature(BOYKISSER_ROLES.FACE, 8, [0.35, -0.21], mirrorPoints(leftEye)),
-    'centered-nose': feature(BOYKISSER_ROLES.FACE, 3, [0, 0.05], [
-      [-0.055, 0.02], [0, 0.075], [0.055, 0.02], [0, 0.11], [0, 0.02],
-    ]),
-    'w-smile': feature(BOYKISSER_ROLES.FACE, 9, [0, 0.22], [
-      [-0.25, 0.18], [-0.17, 0.25], [-0.08, 0.30], [0, 0.22],
-      [0.08, 0.30], [0.17, 0.25], [0.25, 0.18],
-    ]),
-    tongue: feature(BOYKISSER_ROLES.PINK, 4, [0, 0.45], [
-      [0, 0.31], [-0.09, 0.31], [-0.08, 0.39], [0, 0.45],
-      [0.08, 0.39], [0.09, 0.31], [0, 0.31],
-    ]),
-    'left-blush': feature(BOYKISSER_ROLES.PINK, 4, [-0.49, 0.25], leftBlush),
-    'right-blush': feature(BOYKISSER_ROLES.PINK, 4, [0.49, 0.25], mirrorPoints(leftBlush)),
+    'outer-silhouette': feature(BOYKISSER_ROLES.HEAD, 40, [0.8369, -0.9755], closePoints(silhouette)),
+    'forehead-tuft': feature(BOYKISSER_ROLES.HEAD, 7, [-0.2007, -0.7913], foreheadTuft),
+    'left-long-eye': feature(BOYKISSER_ROLES.FACE, 12, [-0.4103, -0.1187], closePoints(leftLongEye)),
+    'right-long-eye': feature(BOYKISSER_ROLES.FACE, 12, [0.3817, -0.1335], closePoints(rightLongEye)),
+    'centered-nose': feature(BOYKISSER_ROLES.FACE, 3, [-0.0783, -0.0055], closePoints(nose)),
+    'omega-mouth': feature(BOYKISSER_ROLES.FACE, 8, [-0.0118, 0.1237], closePoints(omegaMouth)),
+    'left-zigzag-cheek': feature(BOYKISSER_ROLES.ACCENT, 5, [-0.6126, 0.0568], closePoints(leftCheek)),
+    'right-zigzag-cheek': feature(BOYKISSER_ROLES.ACCENT, 5, [0.5151, 0.0519], closePoints(rightCheek)),
   });
 
   const FEATURE_NAMES = Object.freeze(Object.keys(BOYKISSER_FEATURES));
@@ -82,12 +128,13 @@
   const ROLE_COLORS = Object.freeze([
     BOYKISSER_COLORS.HEAD,
     BOYKISSER_COLORS.FACE,
-    BOYKISSER_COLORS.PINK,
+    BOYKISSER_COLORS.ACCENT,
   ]);
 
   const canonicalGeometry = JSON.stringify({
     roles: BOYKISSER_ROLES,
     colors: BOYKISSER_COLORS,
+    vector: BOYKISSER_VECTOR,
     features: FEATURE_NAMES.map(name => ({ name, ...BOYKISSER_FEATURES[name] })),
   });
 
@@ -182,6 +229,25 @@
     return Number(normalized).toFixed(6);
   };
   const wgslPoint = ([x, y]) => `vec2f(${wgslFloat(x)}, ${wgslFloat(y)})`;
+  const buildPolygonContainsFunction = (name, points) => `
+fn ${name}(point: vec2f) -> bool {
+  let vertices = array<vec2f, ${points.length}>(
+    ${points.map(wgslPoint).join(',\n    ')}
+  );
+  var inside = false;
+  var previous = ${points.length - 1}u;
+  for (var current = 0u; current < ${points.length}u; current += 1u) {
+    let a = vertices[current];
+    let b = vertices[previous];
+    let deltaY = b.y - a.y;
+    let safeDeltaY = select(0.000001, deltaY, abs(deltaY) > 0.000001);
+    let crossingX = (b.x - a.x) * (point.y - a.y) / safeDeltaY + a.x;
+    let crosses = ((a.y > point.y) != (b.y > point.y)) && (point.x < crossingX);
+    if (crosses) { inside = !inside; }
+    previous = current;
+  }
+  return inside;
+}`;
 
   function buildBoykisserWgsl() {
     const featureWeightCases = FEATURE_NAMES.map((name, index) => (
@@ -204,6 +270,22 @@
         '      return mix(points[segment], points[segment + 1u], fraction);\n' +
         '    }';
     }).join('\n');
+    const silhouetteFunction = buildPolygonContainsFunction(
+      'boykisserSilhouetteContains',
+      BOYKISSER_VECTOR.silhouette
+    );
+    const blackFunctions = BOYKISSER_VECTOR.blackFills.map((points, index) => (
+      buildPolygonContainsFunction(`boykisserBlackFill${index}Contains`, points)
+    )).join('\n');
+    const blackCoverageChecks = BOYKISSER_VECTOR.blackFills.map((_, index) => (
+      `  if (boykisserBlackFill${index}Contains(point)) { return 1.0; }`
+    )).join('\n');
+    const redFunctions = BOYKISSER_VECTOR.redStrokes.map((points, index) => (
+      buildPolygonContainsFunction(`boykisserRedFill${index}Contains`, points)
+    )).join('\n');
+    const redCoverageChecks = BOYKISSER_VECTOR.redStrokes.map((_, index) => (
+      `  if (boykisserRedFill${index}Contains(point)) { return 1.0; }`
+    )).join('\n');
 
     return `
 // geometry-signature:${geometrySignature}
@@ -250,10 +332,37 @@ fn boykisserCanonicalColor(role: u32) -> vec3f {
   if (role == ${BOYKISSER_ROLES.FACE}u) {
     return vec3f(${BOYKISSER_COLORS.FACE.map(wgslFloat).join(', ')});
   }
-  if (role == ${BOYKISSER_ROLES.PINK}u) {
-    return vec3f(${BOYKISSER_COLORS.PINK.map(wgslFloat).join(', ')});
+  if (role == ${BOYKISSER_ROLES.ACCENT}u) {
+    return vec3f(${BOYKISSER_COLORS.ACCENT.map(wgslFloat).join(', ')});
   }
   return vec3f(${BOYKISSER_COLORS.HEAD.map(wgslFloat).join(', ')});
+}
+
+${silhouetteFunction}
+${blackFunctions}
+${redFunctions}
+
+fn boykisserBlackCoverage(point: vec2f) -> f32 {
+${blackCoverageChecks}
+  return 0.0;
+}
+
+fn boykisserRedCoverage(point: vec2f) -> f32 {
+${redCoverageChecks}
+  return 0.0;
+}
+
+fn boykisserVectorColor(uv: vec2f) -> vec4f {
+  let squarePoint = uv * 2.0 - vec2f(1.0);
+  let point = vec2f(squarePoint.x / ${wgslFloat(BOYKISSER_VECTOR.aspectRatio)}, squarePoint.y);
+  if (!boykisserSilhouetteContains(point)) { return vec4f(0.0); }
+  if (boykisserRedCoverage(point) > 0.5) {
+    return vec4f(${BOYKISSER_COLORS.ACCENT.map(wgslFloat).join(', ')}, 1.0);
+  }
+  if (boykisserBlackCoverage(point) > 0.5) {
+    return vec4f(${BOYKISSER_COLORS.FACE.map(wgslFloat).join(', ')}, 1.0);
+  }
+  return vec4f(${BOYKISSER_COLORS.HEAD.map(wgslFloat).join(', ')}, 1.0);
 }
 
 fn boykisserAnchor(feature: u32) -> vec2f {
@@ -291,6 +400,7 @@ fn boykisserPoint(index: u32, count: u32, seed: u32) -> vec2f {
     BOYKISSER_FEATURES,
     BOYKISSER_ROLES,
     BOYKISSER_COLORS,
+    BOYKISSER_VECTOR,
     sampleBoykisser,
     sampleBoykisserSet,
     buildBoykisserWgsl,

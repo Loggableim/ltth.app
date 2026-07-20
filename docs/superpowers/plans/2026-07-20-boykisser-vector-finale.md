@@ -60,7 +60,7 @@ expect(BOYKISSER_COLORS).toEqual({
 expect(BOYKISSER_FEATURES).not.toHaveProperty('tongue');
 expect(BOYKISSER_FEATURES).not.toHaveProperty('left-inner-ear');
 expect(BOYKISSER_FEATURES).not.toHaveProperty('left-crescent-eye');
-expect(BOYKISSER_VECTOR.aspectRatio).toBeCloseTo(1365 / 2048, 6);
+expect(BOYKISSER_VECTOR.aspectRatio).toBeCloseTo(2452 / 3259, 6);
 expect(buildBoykisserWgsl()).toContain('fn boykisserVectorColor(uv: vec2f) -> vec4f');
 ```
 
@@ -72,12 +72,12 @@ Expected: FAIL because the old crescent-eye/tongue contract exists and `BOYKISSE
 
 - [ ] **Step 3: Trace the supplied image into normalized immutable primitives**
 
-Use the 1365 by 2048 reference coordinate system and normalize every traced point with:
+Use the 2452 by 3259 reference coordinate system and normalize every traced point with:
 
 ```js
 const normalizeReferencePoint = ([x, y]) => [
-  x / 1365 * 2 - 1,
-  y / 2048 * 2 - 1,
+  x / 2452 * 2 - 1,
+  y / 3259 * 2 - 1,
 ];
 ```
 
