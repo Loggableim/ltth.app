@@ -251,7 +251,8 @@ describe('WebGPU Fireworks native migration', () => {
     expect(orchestrationSource).toContain("paws: { base: 43, min: 36, max: 56 }");
     expect(rendererSource).toContain('vec2f(2.6,0.42)');
     expect(rendererSource).toContain('p.rotation = atan2(p.velocity.y, p.velocity.x)');
-    expect(rendererSource).toContain("color: '#fff4d6'");
+    expect(rendererSource).toContain("const rocketTrail = normalizeRocketTrail(options.rocketTrail)");
+    expect(rendererSource).toContain(": ['#fff4d6']");
     expect(rendererSource).toContain('1.0-position.y/uniforms.height*2.0');
     expect(rendererSource).toContain('0.5-p[index].y*0.5');
     expect(rendererSource).toContain('fn rocketCoverage(uv:vec2f,time:f32,seed:u32)');
