@@ -1519,10 +1519,17 @@
         html[data-theme="contrast"] .hero-preview__visual {
             border-color: rgba(148, 163, 184, 0.4);
         }
+        .emoji-command-editor-card {
+            grid-column: 1 / -1;
+            min-width: 0;
+        }
+
         .emoji-command-editor {
-            margin-top: 24px;
-            padding-top: 20px;
-            border-top: 1px solid var(--color-border);
+            min-width: 0;
+        }
+
+        .emoji-command-editor [hidden] {
+            display: none !important;
         }
 
         .emoji-command-editor__rows {
@@ -1533,13 +1540,25 @@
 
         .emoji-command-editor__row {
             display: grid;
-            grid-template-columns: minmax(110px, 0.6fr) minmax(180px, 1fr) minmax(150px, 0.8fr) minmax(220px, 1.4fr);
+            grid-template-columns: minmax(72px, 0.45fr) minmax(0, 1fr) minmax(120px, 0.8fr) minmax(0, 1.4fr);
             gap: 12px;
             align-items: end;
             padding: 16px;
             border: 1px solid var(--color-border);
             border-radius: 10px;
             background: var(--color-bg-tertiary);
+        }
+
+        .emoji-command-editor__row > * {
+            min-width: 0;
+        }
+
+        .emoji-command-editor__label,
+        .emoji-command-editor__command-name,
+        .emoji-command-editor__upload,
+        .emoji-command-editor input,
+        .emoji-command-editor select {
+            min-width: 0;
         }
 
         .emoji-command-editor__label {
@@ -2166,8 +2185,6 @@
                 </span></label>
                 <div class="help-text" data-i18n="plugins.webgpu-emoji-rain.labels.automatischer_burst_bei_superfan_events">Automatischer Burst bei SuperFan-Events</div>
             </div>
-            <div id="animal-command-editor"></div>
-
             <div class="form-grid">
                 <div class="form-group">
                     <label for="superfan_burst_intensity" data-i18n="plugins.webgpu-emoji-rain.labels.burst_intensitat">Burst Intensität</label>
@@ -2181,6 +2198,10 @@
                     <div class="help-text" data-i18n="plugins.webgpu-emoji-rain.labels.dauer_des_burst_effekts">Dauer des Burst-Effekts</div>
                 </div>
             </div>
+        </div>
+
+        <div class="config-section emoji-command-editor-card">
+            <div id="animal-command-editor"></div>
         </div>
 
         <!-- FPS Optimization -->
