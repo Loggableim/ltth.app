@@ -34,6 +34,7 @@ describe('WebGPU Fireworks native migration', () => {
     ]));
     expect(fs.existsSync(path.join(pluginRoot, 'gpu', 'webgl-particle-engine.js'))).toBe(false);
     expect(fs.existsSync(path.join(pluginRoot, 'gpu', 'particle-system-soa.js'))).toBe(false);
+    expect(overlaySource).toContain('visible-envelope.js?v=3.1.0-glyph-envelope-1');
     expect(overlaySource).toContain('boykisser-geometry.js?v=3.1.0-particle-rocket-1');
     expect(overlaySource).toContain('webgpu-particle-engine.js?v=3.1.0-particle-rocket-1');
     expect(overlaySource).toContain('show-plan-v2-runtime.js?v=3.1.0-particle-rocket-1');

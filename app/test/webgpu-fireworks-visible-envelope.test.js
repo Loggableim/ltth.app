@@ -180,6 +180,52 @@ describe('WebGPU Fireworks visible-envelope contract', () => {
     }
   );
 
+  test('keeps the authored Boykisser hero extent when correlated with its below-canvas rocket', () => {
+    const viewport = { width: 1080, height: 1920 };
+    const engine = new WebGPUParticleEngine({ width: viewport.width, height: viewport.height });
+    const target = { x: viewport.width * 0.5, y: viewport.height * 0.38 };
+    const rocket = rocketCommand('standard', {
+      origin: { x: viewport.width * 0.5, y: viewport.height * 1.04 },
+      target,
+      launchDepth: 0,
+      burstDepth: 0.82,
+      particleDuration: 1.835,
+      duration: 1.835,
+      size: 22,
+    });
+    const hero = {
+      kind: 2,
+      shape: V2_GLYPH_IDS.boykisser,
+      flags: ENVELOPE_FLAG_BITS.V2_MARKER,
+      textureIndex: 0,
+      origin: target,
+      target,
+      burstDepth: 0.82,
+      size: 6,
+      intensity: 5.33,
+      particleDuration: 1.2,
+      emissionDelay: 0,
+      gravity: 8.4,
+      drag: 0.035,
+      wind: 0,
+      viewportMaterialization: {
+        kind: 'v2-layer',
+        glyphExtent: 0.84,
+      },
+    };
+    const commands = [rocket, hero];
+    const padding = engine._visibleEnvelopePaddingPx(commands);
+    const fitted = fitCorrelatedCommands(commands, viewport, { paddingPx: padding });
+    const heroBounds = projectVisualEnvelope(fitted.commands[1], viewport);
+
+    expect(fitted.scale).toBeGreaterThan(0.65);
+    expect(heroBounds.components).toContain('authored-glyph-extent');
+    expect(fitted.bounds.top).toBeGreaterThanOrEqual(padding - 1e-5);
+    expect(fitted.bounds.right).toBeLessThanOrEqual(viewport.width - padding + 1e-5);
+    expect(fitted.bounds.bottom).toBeLessThanOrEqual(viewport.height - padding + 1e-5);
+    expect(fitted.bounds.left).toBeGreaterThanOrEqual(padding - 1e-5);
+  });
+
   test('fits rocket side guards across the complete below-canvas launch path', () => {
     const viewport = { width: 540, height: 960 };
     const command = rocketCommand('standard', {
