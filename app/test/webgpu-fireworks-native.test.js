@@ -69,6 +69,10 @@ describe('WebGPU Fireworks native migration', () => {
     });
   });
 
+  test.each(['abc', [255]])('returns opaque white for unsupported color %p', input => {
+    expect(WebGPUParticleEngine.parseColor(input)).toEqual([1, 1, 1, 1]);
+  });
+
   test('contains native WebGPU capability and premultiplied-alpha setup', () => {
     expect(rendererSource).toContain('navigator.gpu.requestAdapter');
     expect(rendererSource).toContain('this.adapter.requestDevice');

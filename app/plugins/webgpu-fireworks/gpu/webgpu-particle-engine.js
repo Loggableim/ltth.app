@@ -43,7 +43,8 @@ function clampColorComponent(value) {
 }
 
 function parseColor(color) {
-    if (Array.isArray(color) && color.length >= 3) {
+    if (Array.isArray(color)) {
+        if (color.length < 3) return [1, 1, 1, 1];
         return [
             clampColorComponent(color[0]),
             clampColorComponent(color[1]),
@@ -53,7 +54,7 @@ function parseColor(color) {
     }
 
     const value = String(color);
-    const shortHex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i.exec(value);
+    const shortHex = /^#([a-f\d])([a-f\d])([a-f\d])$/i.exec(value);
     if (shortHex) {
         return [
             parseInt(shortHex[1] + shortHex[1], 16) / 255,
