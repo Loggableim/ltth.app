@@ -2,7 +2,10 @@ const {
   calculateJarBounds,
   calculateJarPhysicsBounds,
   calculateJarWallSegments,
-  calculateCoinSize,
+  calculateJarInteriorBounds,
+  calculateJarContainmentPosition,
+  calculateGiftSize,
+  isOutsideJarInterior,
   calculateSpillBounds,
   planVisualCoins,
   CoinJarOverlay
@@ -42,26 +45,66 @@ describe('CoinJarOverlay planning', () => {
     });
   });
 
-  test('extends side walls above the rim to retain normal gifts without closing the opening', () => {
+  test('keeps collision walls within the visible glass contour', () => {
     const renderBounds = calculateJarBounds(
       { width: 1920, height: 1080 },
       { jarWidth: 480, jarHeight: 600, jarX: 50, jarY: 82 }
     );
-    const segments = calculateJarWallSegments(calculateJarPhysicsBounds(renderBounds, 'arcade'));
-
-    expect(segments.leftGuard).toEqual({
-      start: { x: 826, y: 246 },
-      end: { x: 826, y: 406 }
-    });
-    expect(segments.rightGuard).toEqual({
-      start: { x: 1094, y: 246 },
-      end: { x: 1094, y: 406 }
+    expect(calculateJarWallSegments(calculateJarPhysicsBounds(renderBounds, 'arcade'))).toEqual({
+      leftWall: {
+        start: { x: 826, y: 406 },
+        end: { x: 806, y: 757 }
+      },
+      rightWall: {
+        start: { x: 1094, y: 406 },
+        end: { x: 1114, y: 757 }
+      }
     });
   });
 
-  test('bounds icon sizes and compacts an oversized spawn request', () => {
-    expect(calculateCoinSize(1, 1)).toBeGreaterThanOrEqual(34);
-    expect(calculateCoinSize(1000000, 3)).toBeLessThanOrEqual(180);
+  test('uses fixed configurable gift sizes for every coin-value band', () => {
+    const config = {
+      iconScale: 1,
+      giftSize1: 32,
+      giftSize2To10: 40,
+      giftSize11To29: 50,
+      giftSize30To99: 62,
+      giftSize100To199: 76,
+      giftSize200To499: 92,
+      giftSize500To999: 110,
+      giftSize1000To1999: 132,
+      giftSize2000To4999: 158,
+      giftSize5000Plus: 180
+    };
+
+    expect(calculateGiftSize(1, config)).toBe(32);
+    expect(calculateGiftSize(10, config)).toBe(40);
+    expect(calculateGiftSize(29, config)).toBe(50);
+    expect(calculateGiftSize(999, config)).toBe(110);
+    expect(calculateGiftSize(1000, config)).toBe(132);
+    expect(calculateGiftSize(5000, config)).toBe(180);
+    expect(calculateGiftSize(1000, { ...config, iconScale: 0.5 })).toBe(66);
+    expect(calculateGiftSize(5000, { ...config, iconScale: 3 })).toBe(240);
+  });
+
+  test('projects escaped normal gifts back inside the visible jar shape only below the opening', () => {
+    const renderBounds = calculateJarBounds(
+      { width: 1920, height: 1080 },
+      { jarWidth: 480, jarHeight: 600, jarX: 50, jarY: 82 }
+    );
+    const physicsBounds = calculateJarPhysicsBounds(renderBounds, 'arcade');
+    const interior = calculateJarInteriorBounds(physicsBounds, 600);
+    const position = { x: 780, y: 600 };
+
+    expect(isOutsideJarInterior(position, 20, physicsBounds)).toBe(true);
+    expect(calculateJarContainmentPosition(position, 20, physicsBounds)).toEqual({
+      x: interior.left + 20,
+      y: 600
+    });
+    expect(isOutsideJarInterior({ x: 780, y: 360 }, 20, physicsBounds)).toBe(false);
+  });
+
+  test('compacts an oversized spawn request', () => {
     expect(planVisualCoins(
       { totalValue: 10000, visualCoins: 100 },
       { maxPhysicalIcons: 300 },
@@ -145,10 +188,11 @@ describe('CoinJarOverlay planning', () => {
     overlay.resize = jest.fn();
     overlay._renderCounter = jest.fn();
 
-    overlay.applyConfig({ jarStyle: 'arcade' });
+    overlay.applyConfig({ jarStyle: 'arcade', maxPhysicalIcons: 99999 });
     const sprite = overlay._createSprite({ giftName: 'Rose', giftImage: 'https://catalog.example/rose.png' }, 64, 0);
 
     expect(overlay.elements.jar.dataset.jarStyle).toBe('arcade');
+    expect(overlay.config.maxPhysicalIcons).toBe(3000);
     expect(overlay.elements.jar.style.getPropertyValue('--jar-artwork')).toContain('/assets/jars/arcade.png');
     expect(sprite.className).toContain('gift-sprite');
     expect(sprite.className).not.toContain('coin-sprite');

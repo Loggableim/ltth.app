@@ -1,6 +1,19 @@
 (function (root) {
   'use strict';
 
+  const DEFAULT_GIFT_SIZES = Object.freeze({
+    giftSize1: 32,
+    giftSize2To10: 40,
+    giftSize11To29: 50,
+    giftSize30To99: 62,
+    giftSize100To199: 76,
+    giftSize200To499: 92,
+    giftSize500To999: 110,
+    giftSize1000To1999: 132,
+    giftSize2000To4999: 158,
+    giftSize5000Plus: 180
+  });
+
   const DEFAULT_RENDER_CONFIG = {
     enabled: true,
     jarStyle: 'classic',
@@ -9,6 +22,7 @@
     jarX: 50,
     jarY: 82,
     iconScale: 1,
+    ...DEFAULT_GIFT_SIZES,
     maxPhysicalIcons: 300,
     spawnMultiplier: 1,
     spawnDelayMs: 80,
@@ -99,29 +113,71 @@
     };
   }
 
-  function calculateJarWallSegments(physicsBounds, guardHeight = 160) {
-    const height = Math.max(0, finiteNumber(guardHeight, 160));
-    const leftOpening = physicsBounds.leftWall.start;
-    const rightOpening = physicsBounds.rightWall.start;
+  function calculateJarWallSegments(physicsBounds) {
     return {
-      leftGuard: {
-        start: { x: leftOpening.x, y: leftOpening.y - height },
-        end: { x: leftOpening.x, y: leftOpening.y }
-      },
       leftWall: physicsBounds.leftWall,
-      rightWall: physicsBounds.rightWall,
-      rightGuard: {
-        start: { x: rightOpening.x, y: rightOpening.y - height },
-        end: { x: rightOpening.x, y: rightOpening.y }
-      }
+      rightWall: physicsBounds.rightWall
     };
   }
 
-  function calculateCoinSize(value, scale) {
+  function calculateGiftSize(value, config = {}) {
     const safeValue = Math.max(1, finiteNumber(value, 1));
-    const safeScale = clamp(finiteNumber(scale, 1), 0.25, 3);
-    const base = 34 + Math.log10(safeValue) * 18;
-    return Math.round(clamp(base * safeScale, 34, 180));
+    let sizeKey = 'giftSize5000Plus';
+    if (safeValue === 1) sizeKey = 'giftSize1';
+    else if (safeValue <= 10) sizeKey = 'giftSize2To10';
+    else if (safeValue <= 29) sizeKey = 'giftSize11To29';
+    else if (safeValue <= 99) sizeKey = 'giftSize30To99';
+    else if (safeValue <= 199) sizeKey = 'giftSize100To199';
+    else if (safeValue <= 499) sizeKey = 'giftSize200To499';
+    else if (safeValue <= 999) sizeKey = 'giftSize500To999';
+    else if (safeValue <= 1999) sizeKey = 'giftSize1000To1999';
+    else if (safeValue <= 4999) sizeKey = 'giftSize2000To4999';
+    const baseSize = clamp(finiteNumber(config[sizeKey], DEFAULT_GIFT_SIZES[sizeKey]), 16, 240);
+    const scale = clamp(finiteNumber(config.iconScale, DEFAULT_RENDER_CONFIG.iconScale), 0.25, 3);
+    return Math.round(clamp(baseSize * scale, 16, 240));
+  }
+
+  function calculateJarInteriorBounds(physicsBounds, y) {
+    const opening = physicsBounds?.opening;
+    const floor = physicsBounds?.floor;
+    if (!opening || !floor) return { left: 0, right: 0 };
+    const height = Math.max(1, floor.y - opening.y);
+    const progress = clamp((finiteNumber(y, opening.y) - opening.y) / height, 0, 1);
+    return {
+      left: opening.left + (floor.left - opening.left) * progress,
+      right: opening.right + (floor.right - opening.right) * progress
+    };
+  }
+
+  function calculateJarContainmentPosition(position, radius, physicsBounds) {
+    const opening = physicsBounds?.opening;
+    const floor = physicsBounds?.floor;
+    if (!opening || !floor) return { x: 0, y: 0 };
+    const safeRadius = Math.max(0, finiteNumber(radius, 0));
+    const minimumY = opening.y + safeRadius;
+    const maximumY = floor.y - safeRadius;
+    const y = minimumY <= maximumY
+      ? clamp(finiteNumber(position?.y, minimumY), minimumY, maximumY)
+      : (opening.y + floor.y) / 2;
+    const interior = calculateJarInteriorBounds(physicsBounds, y);
+    const minimumX = interior.left + safeRadius;
+    const maximumX = interior.right - safeRadius;
+    return {
+      x: minimumX <= maximumX
+        ? clamp(finiteNumber(position?.x, minimumX), minimumX, maximumX)
+        : (interior.left + interior.right) / 2,
+      y
+    };
+  }
+
+  function isOutsideJarInterior(position, radius, physicsBounds) {
+    const opening = physicsBounds?.opening;
+    const floor = physicsBounds?.floor;
+    const y = finiteNumber(position?.y, NaN);
+    const x = finiteNumber(position?.x, NaN);
+    if (!opening || !floor || !Number.isFinite(x) || !Number.isFinite(y) || y < opening.y) return false;
+    const interior = calculateJarInteriorBounds(physicsBounds, y);
+    return y > floor.y || x < interior.left || x > interior.right;
   }
 
   function calculateSpillBounds(viewport, thickness = 24) {
@@ -269,10 +325,8 @@
       const spill = calculateSpillBounds(this._viewport(), thickness);
       const segments = calculateJarWallSegments(this.physicsBounds);
       this.walls = [
-        this._createSlopedWall(Bodies, segments.leftGuard.start, segments.leftGuard.end, 'left', thickness),
         this._createSlopedWall(Bodies, segments.leftWall.start, segments.leftWall.end, 'left', thickness),
         this._createSlopedWall(Bodies, segments.rightWall.start, segments.rightWall.end, 'right', thickness),
-        this._createSlopedWall(Bodies, segments.rightGuard.start, segments.rightGuard.end, 'right', thickness),
         Bodies.rectangle(
           (this.physicsBounds.floor.left + this.physicsBounds.floor.right) / 2,
           this.physicsBounds.floor.y + thickness / 2,
@@ -289,8 +343,11 @@
 
     applyConfig(config = {}) {
       this.config = { ...this.config, ...(config || {}) };
-      this.config.maxPhysicalIcons = Math.floor(clamp(finiteNumber(this.config.maxPhysicalIcons, 300), 20, 600));
+      this.config.maxPhysicalIcons = Math.floor(clamp(finiteNumber(this.config.maxPhysicalIcons, 300), 20, 3000));
       this.config.iconScale = clamp(finiteNumber(this.config.iconScale, 1), 0.25, 3);
+      for (const [key, fallback] of Object.entries(DEFAULT_GIFT_SIZES)) {
+        this.config[key] = Math.round(clamp(finiteNumber(this.config[key], fallback), 16, 240));
+      }
       this.config.spawnMultiplier = clamp(finiteNumber(this.config.spawnMultiplier, 1), 0.1, 5);
       this.config.spawnDelayMs = Math.floor(clamp(finiteNumber(this.config.spawnDelayMs, 80), 20, 1000));
       this.config.jarOpacity = clamp(finiteNumber(this.config.jarOpacity, 0.22), 0, 1);
@@ -426,7 +483,7 @@
       if (!this.engine || !this.Matter || !this.bounds || !this.physicsBounds || !giftImage || this.bodies.length >= this.config.maxPhysicalIcons) return null;
       const { Bodies, Body, Composite } = this.Matter;
       const tier = options.tier || 0;
-      const size = calculateCoinSize(payload.totalValue, this.config.iconScale) * (1 + tier * 0.35);
+      const size = calculateGiftSize(payload.totalValue, this.config);
       const overflow = options.overflow === true;
       const side = this.random() < 0.5 ? -1 : 1;
       const openingWidth = this.physicsBounds.opening.right - this.physicsBounds.opening.left;
@@ -498,6 +555,19 @@
           this.Matter.Body.setVelocity(body, {
             x: body.velocity.x / speed * maximumSpeed,
             y: body.velocity.y / speed * maximumSpeed
+          });
+        }
+        if (body.plugin?.overflow !== true && this.physicsBounds
+          && isOutsideJarInterior(body.position, body.circleRadius, this.physicsBounds)
+          && this.Matter?.Body) {
+          this.Matter.Body.setPosition(body, calculateJarContainmentPosition(
+            body.position,
+            body.circleRadius,
+            this.physicsBounds
+          ));
+          this.Matter.Body.setVelocity(body, {
+            x: body.velocity.x * 0.2,
+            y: Math.max(0, Math.min(1.5, body.velocity.y))
           });
         }
         if (body.position.x < -margin || body.position.x > this._viewport().width + margin || body.position.y > this._viewport().height + margin) {
@@ -616,7 +686,18 @@
     }
   }
 
-  const exports = { calculateJarBounds, calculateJarPhysicsBounds, calculateJarWallSegments, calculateCoinSize, calculateSpillBounds, planVisualCoins, CoinJarOverlay };
+  const exports = {
+    calculateJarBounds,
+    calculateJarPhysicsBounds,
+    calculateJarWallSegments,
+    calculateJarInteriorBounds,
+    calculateJarContainmentPosition,
+    calculateGiftSize,
+    isOutsideJarInterior,
+    calculateSpillBounds,
+    planVisualCoins,
+    CoinJarOverlay
+  };
   if (typeof module !== 'undefined' && module.exports) module.exports = exports;
   root.CoinJarOverlay = CoinJarOverlay;
   root.CoinJarOverlayHelpers = exports;
