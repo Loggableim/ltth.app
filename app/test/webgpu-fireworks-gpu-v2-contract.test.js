@@ -315,9 +315,9 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
       const xRadius = 0.9 * 218 * command.intensity * displacement * perspective;
       const visibleWidth = xRadius * 2 + particleRadius * 2;
 
-      expect(glyphEvent.context.renderHints.glyphExtent).toBeCloseTo(0.0715, 6);
-      expect(visibleWidth / width).toBeGreaterThanOrEqual(0.07);
-      expect(visibleWidth / width).toBeLessThanOrEqual(0.08);
+      expect(glyphEvent.context.renderHints.glyphExtent).toBeCloseTo(0.104, 6);
+      expect(visibleWidth / width).toBeGreaterThanOrEqual(0.1);
+      expect(visibleWidth / width).toBeLessThanOrEqual(0.11);
     }
   );
 

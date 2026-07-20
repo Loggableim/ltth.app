@@ -456,7 +456,7 @@ describe('WebGPU Fireworks finale show planner', () => {
       .filter(layer => layer.glyph === 'boykisser');
 
     for (const shell of ordinaryShells) {
-      const expectedExtent = Math.min(0.18, Math.max(0.07, shell.renderHints.glyphScale * 0.11));
+      const expectedExtent = Math.min(0.28, Math.max(0.1, shell.renderHints.glyphScale * 0.16));
       expect(shell.renderHints.glyphExtent).toBeCloseTo(expectedExtent, 6);
     }
     expect(boykisserLayers.length).toBeGreaterThan(0);

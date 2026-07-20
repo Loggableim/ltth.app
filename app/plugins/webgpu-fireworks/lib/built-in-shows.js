@@ -86,7 +86,7 @@ function renderHints(burstDepth, glyphScale = 1, launchDepth = 0, glyphExtent) {
     burstDepth,
     glyphScale,
     glyphExtent: glyphExtent === undefined
-      ? clamp(glyphScale * 0.11, 0.07, 0.18)
+      ? clamp(glyphScale * 0.16, 0.1, 0.28)
       : glyphExtent
   };
 }
