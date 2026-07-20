@@ -81,6 +81,43 @@ describe('Chess lifecycle', () => {
     );
   });
 
+  test('routes a host resignation to the displayed interactive chess session', async () => {
+    const { plugin } = createPlugin();
+    const session = {
+      sessionId: 42,
+      gameType: 'chess',
+      sessionRevision: 3
+    };
+    const resignHost = jest.fn(() => ({
+      success: true,
+      result: { sessionId: 42, reason: 'resignation', winnerRole: 'viewer' }
+    }));
+    plugin.interactiveController = {
+      registry: {
+        getByViewer: jest.fn(() => null),
+        get: jest.fn(() => session),
+        list: jest.fn(() => [session])
+      },
+      router: {
+        snapshot: jest.fn(() => ({ displaySessionId: 42, displayRevision: 8 }))
+      },
+      resignHost
+    };
+
+    const result = await plugin.handleResignCommand([], {
+      userId: 'streamer',
+      rawData: { uniqueId: 'streamer' }
+    });
+
+    expect(result).toMatchObject({ success: true, displayOverlay: true });
+    expect(resignHost).toHaveBeenCalledWith({
+      sessionId: 42,
+      gameType: 'chess',
+      sessionRevision: 3,
+      displayRevision: 8
+    });
+  });
+
   test('awards chess win and loss XP by player side', () => {
     const { plugin, addXP } = createPlugin();
     const session = {

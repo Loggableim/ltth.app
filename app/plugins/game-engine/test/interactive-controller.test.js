@@ -829,6 +829,53 @@ describe('InteractiveController', () => {
     harness.sqlite.close();
   });
 
+  test('completes a displayed chess session through host resignation and clears the shared queue', () => {
+    const harness = createHarness();
+    harness.controller.init();
+    const chess = harness.controller.startMatch({
+      gameType: 'chess',
+      viewerId: 'resign-viewer',
+      viewerDisplayName: 'Resign Viewer'
+    });
+    const display = harness.controller.getState().display;
+
+    const result = harness.controller.resignHost({
+      sessionId: chess.sessionId,
+      gameType: 'chess',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision
+    });
+
+    expect(result).toMatchObject({
+      success: true,
+      result: {
+        sessionId: chess.sessionId,
+        winner: 'black',
+        winnerRole: 'viewer',
+        reason: 'resignation',
+        gameResult: { gameOver: true, winner: 'black', winReason: 'resignation' }
+      }
+    });
+    expect(harness.finishGame).toHaveBeenCalledWith(expect.objectContaining({
+      sessionId: chess.sessionId,
+      reason: 'resignation',
+      winnerRole: 'viewer'
+    }));
+    expect(harness.database.getInteractiveState(chess.sessionId)).toMatchObject({
+      status: 'completed',
+      terminalReason: 'resignation'
+    });
+    expect(harness.controller.getState().activeSessions).toEqual([]);
+    expect(harness.controller.getState().hostQueue).toEqual([]);
+    expect(harness.controller.getState().display).toMatchObject({
+      phase: 'result',
+      result: { reason: 'resignation' }
+    });
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
   test('reconciles persisted interactive orphans but preserves manual game rows on init', () => {
     const harness = createHarness();
     const orphan = harness.database.createSession('connect4', 'orphan-viewer', 'viewer', 'command', '/c4start');

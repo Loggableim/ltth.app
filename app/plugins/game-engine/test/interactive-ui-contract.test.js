@@ -62,6 +62,17 @@ describe('interactive games admin UI contract', () => {
     expect(ui).toContain('skipButton.hidden =');
   });
 
+  test('offers all chess promotion pieces and removes obsolete challenge controls', () => {
+    expect(ui).toContain('id="interactive-chess-promotion"');
+    for (const piece of ['q', 'r', 'b', 'n']) {
+      expect(ui).toContain(`data-promotion-piece="${piece}"`);
+    }
+    expect(ui).toContain('function showInteractivePromotionChooser(');
+    expect(ui).toContain('function submitInteractiveHostPromotion(');
+    expect(ui).not.toContain('id="chess-challenge-screen"');
+    expect(ui).not.toContain('id="chess-challenge-timeout"');
+  });
+
   test('renders canonical Connect4 timer settings read-only and shows the untimed label', () => {
     expect(ui).toContain('id="interactive-connect4-response" type="text" readonly');
     expect(ui).toContain("runtimeText('plugins.game-engine.runtime.dashboard.no_time_limit')");

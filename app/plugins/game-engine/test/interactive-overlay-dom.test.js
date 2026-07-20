@@ -120,6 +120,68 @@ function connect4State({
   };
 }
 
+function chessState({
+  displayRevision = 1,
+  sessionRevision = 1,
+  sessionId = 11,
+  phase = 'playing',
+  currentTurnRole = 'host',
+  viewerDeadlineMs = null,
+  hostTimeRemainingMs = 5000,
+  config = {},
+  lastMove = { from: 'e2', to: 'e4' },
+  inCheck = true,
+  capturedPieces = { white: { p: 1 }, black: {} }
+} = {}) {
+  return {
+    serverTimestamp: 100000,
+    hostQueue: [],
+    activeSessions: [],
+    display: {
+      displaySessionId: sessionId,
+      gameType: 'chess',
+      sessionRevision,
+      displayRevision,
+      hostDisplayName: 'Host',
+      viewerDisplayName: 'Viewer',
+      currentTurnRole,
+      viewerDeadlineMs,
+      hostTimeRemainingMs,
+      serverTimestamp: 100000,
+      phase,
+      config: {
+        soundEnabled: false,
+        soundVolume: 0.5,
+        timerWarningTime: 30,
+        animationSpeed: 300,
+        boardTheme: 'dark',
+        backgroundColor: '#1a1a2e',
+        whiteColor: '#4CAF50',
+        blackColor: '#2196F3',
+        fontFamily: 'Arial, sans-serif',
+        showCoordinates: true,
+        highlightLastMove: true,
+        highlightCheck: true,
+        showCapturedPieces: true,
+        celebrationEnabled: false,
+        ...config
+      },
+      state: {
+        sessionId,
+        fen: '4r1k1/8/8/8/8/8/8/4K3 w - - 0 1',
+        currentPlayer: 'white',
+        inCheck,
+        whitePlayer: { username: 'host', nickname: 'Host', role: 'streamer' },
+        blackPlayer: { username: 'viewer', nickname: 'Viewer', role: 'viewer' },
+        timers: { white: 50000, black: 5000 },
+        capturedPieces,
+        lastMove,
+        status: phase === 'result' ? 'completed' : 'active'
+      }
+    }
+  };
+}
+
 describe('interactive overlay countdown DOM', () => {
   test('direct Connect4 replays held authoritative text after i18n ready and language changes', async () => {
     let resolveReady;
@@ -256,6 +318,97 @@ describe('interactive overlay countdown DOM', () => {
     expect(hostTimer.textContent).toBe('0:03');
     onChange();
     expect(hostTimer.textContent).toBe('0:03');
+    dom.window.close();
+  });
+
+  test('direct chess applies visual config gates, colors, theme, and timer warning threshold', () => {
+    const { dom, listeners } = loadOverlay('chess.html');
+    const applyState = listeners.get('game-engine:interactive-state');
+    const disabled = chessState({
+      hostTimeRemainingMs: 50000,
+      config: {
+        boardTheme: 'light',
+        backgroundColor: '#123456',
+        whiteColor: '#abcdef',
+        blackColor: '#fedcba',
+        fontFamily: 'Verdana, sans-serif',
+        showCoordinates: false,
+        highlightLastMove: false,
+        highlightCheck: false,
+        showCapturedPieces: false,
+        timerWarningTime: 60
+      }
+    });
+
+    applyState(disabled);
+    expect(dom.window.document.querySelectorAll('.coord-row, .coord-col')).toHaveLength(0);
+    expect(dom.window.document.querySelectorAll('.square.last-move')).toHaveLength(0);
+    expect(dom.window.document.querySelectorAll('.square.check')).toHaveLength(0);
+    expect(dom.window.document.querySelectorAll('.captured-piece')).toHaveLength(0);
+    expect(dom.window.document.body.style.fontFamily).toContain('Verdana');
+    expect(dom.window.document.querySelector('.glass-container').style.backgroundColor).toBe('rgb(18, 52, 86)');
+    expect(dom.window.document.getElementById('white-name').style.color).toBe('rgb(171, 205, 239)');
+    expect(dom.window.document.getElementById('black-name').style.color).toBe('rgb(254, 220, 186)');
+    expect(dom.window.document.getElementById('white-timer').classList.contains('warning')).toBe(true);
+
+    applyState(chessState({
+      displayRevision: 2,
+      sessionRevision: 2,
+      config: {
+        showCoordinates: true,
+        highlightLastMove: true,
+        highlightCheck: true,
+        showCapturedPieces: true
+      }
+    }));
+    expect(dom.window.document.querySelectorAll('.coord-row, .coord-col')).toHaveLength(16);
+    expect(dom.window.document.querySelectorAll('.square.last-move')).toHaveLength(2);
+    expect(dom.window.document.querySelectorAll('.square.check')).toHaveLength(1);
+    expect(dom.window.document.querySelectorAll('.captured-piece')).toHaveLength(1);
+
+    dom.window.close();
+  });
+
+  test('direct chess renders and ticks a viewer response countdown', () => {
+    const { dom, listeners, advance } = loadOverlay('chess.html');
+    const countdown = dom.window.document.getElementById('interactive-viewer-countdown');
+    const applyState = listeners.get('game-engine:interactive-state');
+
+    applyState(chessState({ currentTurnRole: 'viewer', viewerDeadlineMs: 105000 }));
+    expect(countdown.hidden).toBe(false);
+    expect(countdown.textContent).toContain('5');
+    advance(2000);
+    expect(countdown.textContent).toContain('3');
+
+    applyState(chessState({
+      displayRevision: 2,
+      sessionRevision: 2,
+      phase: 'result',
+      currentTurnRole: 'viewer',
+      viewerDeadlineMs: null
+    }));
+    expect(countdown.hidden).toBe(true);
+    expect(countdown.textContent).toBe('');
+
+    dom.window.close();
+  });
+
+  test('direct chess maps interactive terminal reasons to readable text', () => {
+    const { dom, listeners } = loadOverlay('chess.html');
+    const result = chessState({ phase: 'result', hostTimeRemainingMs: null });
+    result.display.result = {
+      sessionId: result.display.displaySessionId,
+      winner: 'black',
+      winnerRole: 'viewer',
+      winnerDisplayName: 'Viewer',
+      reason: 'host_timeout'
+    };
+
+    listeners.get('game-engine:interactive-state')(result);
+    const reason = dom.window.document.getElementById('game-over-reason');
+    expect(reason.textContent).toContain('Timeout');
+    expect(reason.textContent).not.toBe('host_timeout');
+
     dom.window.close();
   });
 

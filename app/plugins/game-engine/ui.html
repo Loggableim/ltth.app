@@ -1221,6 +1221,30 @@
     .interactive-chess-square.dark { background: #7b5d3f; }
     .interactive-chess-square.selected { box-shadow: inset 0 0 0 4px #64b5f6; }
 
+    #interactive-chess-promotion {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 12px 0;
+      padding: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.16);
+    }
+
+    #interactive-chess-promotion[hidden] {
+      display: none !important;
+    }
+
+    .interactive-promotion-button {
+      min-width: 52px;
+      padding: 8px 12px;
+      font-size: 22px;
+      font-weight: 800;
+    }
+
     .interactive-list-item {
       grid-template-columns: auto minmax(120px, 1fr) repeat(2, auto);
       align-items: center;
@@ -1419,6 +1443,13 @@
             <button type="button" class="interactive-column-button" data-interactive-column="G">G</button>
           </div>
           <p id="interactive-chess-help" hidden data-i18n="plugins.game-engine.ui.interactive.chess_help">Quelle und danach Zielfeld anklicken.</p>
+          <div id="interactive-chess-promotion" hidden>
+            <span data-i18n="plugins.game-engine.ui.interactive.choose_promotion">Umwandlung wählen:</span>
+            <button type="button" class="interactive-promotion-button" data-promotion-piece="q" title="Dame" data-i18n-title="plugins.game-engine.ui.interactive.promotion_queen">♕</button>
+            <button type="button" class="interactive-promotion-button" data-promotion-piece="r" title="Turm" data-i18n-title="plugins.game-engine.ui.interactive.promotion_rook">♖</button>
+            <button type="button" class="interactive-promotion-button" data-promotion-piece="b" title="Läufer" data-i18n-title="plugins.game-engine.ui.interactive.promotion_bishop">♗</button>
+            <button type="button" class="interactive-promotion-button" data-promotion-piece="n" title="Springer" data-i18n-title="plugins.game-engine.ui.interactive.promotion_knight">♘</button>
+          </div>
           <p id="interactive-host-action-label" hidden></p>
           <button type="button" id="skipInteractiveHostTurnBtn" hidden data-i18n="plugins.game-engine.ui.interactive.skip_host_turn">Host-Zug ans Queue-Ende schieben</button>
           <button class="danger" id="cancelInteractiveGameBtn" hidden data-i18n="plugins.game-engine.ui.interactive.cancel_current">Angezeigte Partie abbrechen</button>
@@ -1841,19 +1872,7 @@
           </span></label>
         </div>
 
-        <h3 style="margin-top: 30px;" data-i18n="plugins.game-engine.labels.leaderboard_challenge">🏆 Leaderboard & Challenge</h3>
-
-        <div class="form-group">
-          <label>
-            <input type="checkbox" id="chess-challenge-screen" checked><span data-i18n="plugins.game-engine.labels.show_challenge_screen_a70c53">
-            Challenge-Bildschirm anzeigen
-          </span></label>
-        </div>
-
-        <div class="form-group">
-          <label data-i18n="plugins.game-engine.labels.challenge_timeout_sekunden_ed62d0">Challenge-Timeout (Sekunden):</label>
-          <input type="number" id="chess-challenge-timeout" value="30" min="5" max="120">
-        </div>
+        <h3 style="margin-top: 30px;" data-i18n="plugins.game-engine.labels.leaderboard">🏆 Leaderboard</h3>
 
         <div class="form-group">
           <label>
@@ -4330,6 +4349,7 @@
     let latestInteractiveConfig = null;
     let latestLegacyActiveGame = null;
     let interactiveSelectedChessSquare = null;
+    let interactivePendingPromotion = null;
     let interactiveAdminStateReceivedAt = 0;
 
     // Initialize language switcher
@@ -4575,8 +4595,6 @@
         soundEnabled: document.getElementById('chess-sound-enabled').checked,
         soundVolume: parseFloat(document.getElementById('chess-sound-volume').value),
         celebrationEnabled: document.getElementById('chess-celebration-enabled').checked,
-        showChallengeScreen: document.getElementById('chess-challenge-screen').checked,
-        challengeTimeout: parseInt(document.getElementById('chess-challenge-timeout').value),
         leaderboardEnabled: document.getElementById('chess-leaderboard-enabled').checked,
         leaderboardDisplayTime: parseInt(document.getElementById('chess-leaderboard-display-time').value),
         eloEnabled: document.getElementById('chess-elo-enabled').checked,
@@ -4634,8 +4652,6 @@
           document.getElementById('chess-volume-display').textContent = Math.round(config.soundVolume * 100) + '%';
         }
         if (config.celebrationEnabled !== undefined) document.getElementById('chess-celebration-enabled').checked = config.celebrationEnabled;
-        if (config.showChallengeScreen !== undefined) document.getElementById('chess-challenge-screen').checked = config.showChallengeScreen;
-        if (config.challengeTimeout) document.getElementById('chess-challenge-timeout').value = config.challengeTimeout;
         if (config.leaderboardEnabled !== undefined) document.getElementById('chess-leaderboard-enabled').checked = config.leaderboardEnabled;
         if (config.leaderboardDisplayTime) document.getElementById('chess-leaderboard-display-time').value = config.leaderboardDisplayTime;
         if (config.eloEnabled !== undefined) document.getElementById('chess-elo-enabled').checked = config.eloEnabled;
@@ -5328,6 +5344,13 @@
       connect4Controls.hidden = gameType !== 'connect4' || !canMove;
       connect4Controls.querySelectorAll('button').forEach(button => { button.disabled = !canMove; });
       document.getElementById('interactive-chess-help').hidden = gameType !== 'chess' || !canMove;
+      const promotionChooser = document.getElementById('interactive-chess-promotion');
+      if (gameType !== 'chess' || !canMove) {
+        interactivePendingPromotion = null;
+        promotionChooser.hidden = true;
+      } else {
+        promotionChooser.hidden = !interactivePendingPromotion;
+      }
       const actionLabel = document.getElementById('interactive-host-action-label');
       actionLabel.hidden = !canMove;
       actionLabel.textContent = canMove
@@ -5479,6 +5502,36 @@
       });
     }
 
+    function interactiveChessPieceAt(square) {
+      const state = interactiveDisplayState(latestInteractiveAdminState);
+      const board = parseInteractiveFen(state?.fen);
+      const file = String(square || '').charCodeAt(0) - 97;
+      const rank = 8 - Number(String(square || '').charAt(1));
+      return file >= 0 && file < 8 && rank >= 0 && rank < 8
+        ? board[rank]?.[file] || ''
+        : '';
+    }
+
+    function hideInteractivePromotionChooser() {
+      interactivePendingPromotion = null;
+      const chooser = document.getElementById('interactive-chess-promotion');
+      if (chooser) chooser.hidden = true;
+    }
+
+    function showInteractivePromotionChooser(from, to) {
+      interactivePendingPromotion = { from, to };
+      const chooser = document.getElementById('interactive-chess-promotion');
+      if (chooser) chooser.hidden = false;
+    }
+
+    function submitInteractiveHostPromotion(piece) {
+      if (!interactivePendingPromotion || !['q', 'r', 'b', 'n'].includes(piece)) return;
+      const pending = interactivePendingPromotion;
+      hideInteractivePromotionChooser();
+      interactiveSelectedChessSquare = null;
+      submitInteractiveHostMove({ uci: `${pending.from}${pending.to}${piece}` });
+    }
+
     function selectInteractiveChessSquare(square) {
       if (!canSubmitInteractiveHostMove()) return;
       if (!interactiveSelectedChessSquare) {
@@ -5488,8 +5541,13 @@
       }
       const from = interactiveSelectedChessSquare;
       interactiveSelectedChessSquare = null;
-      const promotion = /[18]$/.test(square) ? 'q' : '';
-      submitInteractiveHostMove({ uci: `${from}${square}${promotion}` });
+      if (/[18]$/.test(square) && /[Pp]/.test(interactiveChessPieceAt(from))) {
+        showInteractivePromotionChooser(from, square);
+        renderInteractiveNow(latestInteractiveAdminState);
+        return;
+      }
+      hideInteractivePromotionChooser();
+      submitInteractiveHostMove({ uci: `${from}${square}` });
     }
 
     async function loadInteractiveState() {
@@ -5583,6 +5641,8 @@
       if (incomingRevision < currentRevision) return;
       interactiveAdminStateReceivedAt = Date.now();
       interactiveSelectedChessSquare = null;
+      interactivePendingPromotion = null;
+      document.getElementById('interactive-chess-promotion').hidden = true;
       renderInteractiveState(state);
     });
 
@@ -6561,6 +6621,12 @@
       const button = event.target.closest('[data-interactive-column]');
       if (!button) return;
       submitInteractiveHostMove({ column: button.dataset.interactiveColumn });
+    });
+
+    document.addEventListener('click', event => {
+      const button = event.target.closest('[data-promotion-piece]');
+      if (!button) return;
+      submitInteractiveHostPromotion(button.dataset.promotionPiece);
     });
 
     document.getElementById('cancelInteractiveGameBtn')?.addEventListener('click', () => {

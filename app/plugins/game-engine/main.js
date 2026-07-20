@@ -724,10 +724,52 @@ class GameEnginePlugin {
     if (gameType === 'connect4') {
       return this._normalizeConnect4Config(merged);
     }
+    if (gameType === 'chess') {
+      return this._normalizeChessConfig(merged);
+    }
     if (gameType === 'arena') {
       return this._normalizeArenaConfigDefaults(merged, config || {});
     }
     return merged;
+  }
+
+  _isValidChessTimeControl(value) {
+    try {
+      ChessGame.parseTimeControl(value);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  _normalizeChessConfig(config) {
+    const defaults = this.defaultConfigs.chess;
+    const normalized = { ...config };
+    normalized.defaultTimeControl = this._isValidChessTimeControl(normalized.defaultTimeControl)
+      ? normalized.defaultTimeControl.trim()
+      : defaults.defaultTimeControl;
+    normalized.timeControls = Array.isArray(normalized.timeControls) &&
+      normalized.timeControls.length > 0 &&
+      normalized.timeControls.every(timeControl => this._isValidChessTimeControl(timeControl))
+      ? [...new Set(normalized.timeControls.map(timeControl => timeControl.trim()))]
+      : [...defaults.timeControls];
+    normalized.streamerRole = ['white', 'black', 'random'].includes(normalized.streamerRole)
+      ? normalized.streamerRole
+      : defaults.streamerRole;
+    return normalized;
+  }
+
+  _isValidChessConfig(config) {
+    if (!config || typeof config !== 'object' || Array.isArray(config)) return false;
+    const has = key => Object.prototype.hasOwnProperty.call(config, key);
+    if (has('defaultTimeControl') && !this._isValidChessTimeControl(config.defaultTimeControl)) return false;
+    if (has('timeControls') && (
+      !Array.isArray(config.timeControls) ||
+      config.timeControls.length === 0 ||
+      config.timeControls.some(timeControl => !this._isValidChessTimeControl(timeControl))
+    )) return false;
+    if (has('streamerRole') && !['white', 'black', 'random'].includes(config.streamerRole)) return false;
+    return true;
   }
 
   _normalizeConnect4Config(config) {
@@ -1608,7 +1650,10 @@ class GameEnginePlugin {
     const opponent = opponentUsername || 'streamer';
     const challengerUsername = challenge.challengerUsername;
     const challengerNickname = challenge.challengerNickname || challengerUsername;
-    const config = this.db.getGameConfig(challenge.gameType) || this.defaultConfigs[challenge.gameType];
+    const config = this._getConfigWithDefaults(
+      challenge.gameType,
+      this.db.getGameConfig(challenge.gameType)
+    );
 
     if (!challengerUsername) {
       this.logger.warn(`Challenge ${sessionId} missing challengerUsername`);
@@ -1910,6 +1955,9 @@ class GameEnginePlugin {
         const { gameType } = req.params;
         if (gameType === 'connect4' && !this._isValidConnect4Config(req.body || {})) {
           return res.status(400).json({ error: 'invalid_connect4_config' });
+        }
+        if (gameType === 'chess' && !this._isValidChessConfig(req.body || {})) {
+          return res.status(400).json({ error: 'invalid_chess_config' });
         }
         const config = this._getConfigWithDefaults(gameType, req.body || {});
         
@@ -4868,7 +4916,7 @@ class GameEnginePlugin {
     }
 
     // Get configuration
-    const config = this.db.getGameConfig(gameType) || this.defaultConfigs[gameType];
+    const config = this._getConfigWithDefaults(gameType, this.db.getGameConfig(gameType));
 
     // If challenge screen is disabled, start game directly
     if (!config.showChallengeScreen) {
@@ -5386,6 +5434,8 @@ class GameEnginePlugin {
    * Start a chess game
    */
   startChessGame(viewerUsername, viewerNickname, triggerType, triggerValue, timeControl, config) {
+    config = this._getConfigWithDefaults('chess', config);
+
     // Determine sides (white/black)
     const streamerRole = config.streamerRole || 'random';
     let streamerSide, viewerSide;
@@ -6323,8 +6373,8 @@ class GameEnginePlugin {
       if (args && args.length > 0) {
         // Validate time control format (e.g., "3+0", "5+2")
         const tc = args[0];
-        if (/^\d+\+\d+$/.test(tc)) {
-          timeControl = tc;
+        if (this._isValidChessTimeControl(tc)) {
+          timeControl = tc.trim();
         } else {
           return {
             success: false,
@@ -6336,7 +6386,7 @@ class GameEnginePlugin {
       }
 
       // Get config to check default time control
-      const config = this.db.getGameConfig('chess') || this.defaultConfigs.chess;
+      const config = this._getConfigWithDefaults('chess', this.db.getGameConfig('chess'));
       const finalTimeControl = timeControl || config.defaultTimeControl || '5+0';
 
       // Start a new chess game
@@ -6400,6 +6450,45 @@ class GameEnginePlugin {
           success: true,
           message: 'You resigned from the game.',
           displayOverlay: true
+        };
+      }
+
+      if (this._isHostChatEvent(context.rawData || context) && this.interactiveController) {
+        const display = this.interactiveController.router?.snapshot?.() || {};
+        let hostChessSession = display.displaySessionId == null
+          ? null
+          : this.interactiveController.registry?.get?.(display.displaySessionId);
+        if (!hostChessSession) {
+          const chessSessions = (this.interactiveController.registry?.list?.() || [])
+            .filter(session => session.gameType === 'chess');
+          hostChessSession = chessSessions.length === 1 ? chessSessions[0] : null;
+        }
+        if (!hostChessSession || hostChessSession.gameType !== 'chess') {
+          return {
+            success: false,
+            message: 'You don\'t have an active chess game.',
+            displayOverlay: true
+          };
+        }
+
+        const resignation = this.interactiveController.resignHost({
+          sessionId: hostChessSession.sessionId,
+          gameType: 'chess',
+          sessionRevision: hostChessSession.sessionRevision,
+          displayRevision: display.displayRevision
+        });
+        if (!resignation.success) {
+          return {
+            success: false,
+            message: resignation.error,
+            displayOverlay: true
+          };
+        }
+        return {
+          success: true,
+          message: 'You resigned from the game.',
+          displayOverlay: true,
+          result: resignation.result
         };
       }
       

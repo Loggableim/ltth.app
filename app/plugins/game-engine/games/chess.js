@@ -8,6 +8,32 @@
 const { Chess } = require('chess.js');
 
 class ChessGame {
+  static parseTimeControl(timeControl) {
+    const normalized = typeof timeControl === 'string' ? timeControl.trim() : '';
+    const match = /^(\d+(?:\.\d+)?)\+(\d+)$/.exec(normalized);
+    if (!match) {
+      throw new Error(`Invalid chess time control: ${timeControl}`);
+    }
+
+    const initialMinutes = Number(match[1]);
+    const incrementSeconds = Number(match[2]);
+    if (
+      !Number.isFinite(initialMinutes) ||
+      !Number.isFinite(incrementSeconds) ||
+      initialMinutes <= 0 ||
+      initialMinutes > 180 ||
+      incrementSeconds < 0 ||
+      incrementSeconds > 300
+    ) {
+      throw new Error(`Invalid chess time control: ${timeControl}`);
+    }
+
+    return {
+      initial: initialMinutes * 60 * 1000,
+      increment: incrementSeconds * 1000
+    };
+  }
+
   constructor(sessionId, player1, player2, timeControl, logger) {
     this.sessionId = sessionId;
     this.player1 = player1; // { username, role: 'streamer' | 'viewer', color: '#color', side: 'white' | 'black' }
@@ -19,11 +45,7 @@ class ChessGame {
     
     // Parse time control (e.g., "3+0", "3+2", "5+0")
     // Format: "initialMinutes+incrementSeconds"
-    const [initialMinutes, increment] = timeControl.split('+').map(Number);
-    this.timeControl = {
-      initial: initialMinutes * 60 * 1000, // Convert to milliseconds
-      increment: increment * 1000 // Convert to milliseconds
-    };
+    this.timeControl = ChessGame.parseTimeControl(timeControl);
     
     // Timer state (in milliseconds)
     this.timers = {
@@ -91,6 +113,7 @@ class ChessGame {
     this.status = 'completed';
     this.winner = this.currentPlayer === 'white' ? 'black' : 'white';
     this.winReason = 'timeout';
+    this.stopTimer();
     
     this.logger.info(`Chess game #${this.sessionId}: ${this.currentPlayer} timed out, ${this.winner} wins`);
   }
@@ -179,6 +202,18 @@ class ChessGame {
    * Make a move in the game
    */
   makeMove(moveInput, playerUsername, clockOptions = {}) {
+    if (this.status !== 'active') {
+      return {
+        success: false,
+        gameOver: true,
+        winner: this.winner,
+        winReason: this.winReason,
+        error: 'Game is already over',
+        fen: this.chess.fen(),
+        pgn: this.chess.pgn()
+      };
+    }
+
     // Validate it's the correct player's turn
     const currentPlayer = this.getCurrentPlayerInfo();
     if (currentPlayer.username !== playerUsername) {
@@ -188,17 +223,30 @@ class ChessGame {
       };
     }
     
-    // Validate and make the move
-    const moveResult = this.parseMove(moveInput);
-    
-    if (!moveResult.success) {
-      return moveResult;
-    }
-    
     // Interactive matches own their clocks externally: the visible host clock
     // is managed by InteractiveTurnTimers and viewers use a response deadline.
     // Legacy chess keeps the original elapsed-time and increment behaviour.
     if (!clockOptions.skipElapsedTime) this.updateTimer();
+    if (this.status !== 'active') {
+      return {
+        success: false,
+        gameOver: true,
+        winner: this.winner,
+        winReason: this.winReason,
+        timeout: this.winReason === 'timeout',
+        error: 'Time expired',
+        fen: this.chess.fen(),
+        pgn: this.chess.pgn()
+      };
+    }
+
+    // Validate and make the move only after the current clock is confirmed active.
+    const moveResult = this.parseMove(moveInput);
+
+    if (!moveResult.success) {
+      return moveResult;
+    }
+
     if (clockOptions.applyIncrement !== false) {
       this.timers[this.currentPlayer] += this.timeControl.increment;
     }
@@ -319,6 +367,10 @@ class ChessGame {
    * Resign the game
    */
   resign(playerUsername) {
+    if (this.status !== 'active') {
+      return { success: false, error: 'Game is already over' };
+    }
+
     const currentPlayer = this.getCurrentPlayerInfo();
     const opponent = this.getOpponentPlayerInfo();
     
@@ -349,6 +401,14 @@ class ChessGame {
    * Offer or accept a draw
    */
   offerDraw(playerUsername) {
+    if (this.status !== 'active') {
+      return { success: false, error: 'Game is already over' };
+    }
+
+    if (![this.whitePlayer.username, this.blackPlayer.username].includes(playerUsername)) {
+      return { success: false, error: 'Player not in game' };
+    }
+
     // For simplicity, auto-accept draws in this version
     this.status = 'completed';
     this.winner = null;
