@@ -437,6 +437,7 @@ describe('WebGPU Superfan finale foundation', () => {
     };
     plugin.registerSocketHandlers();
     api.socketConnections[0](socket);
+    handlers.get('webgpu-fireworks:register-overlay')({ benchmark: false, visible: options.visible !== false });
     handlers.get('webgpu-fireworks:renderer-status')({ state: 'ready' });
     plugin.overlayTelemetry.get(id).visible = options.visible !== false;
     return socket;
@@ -452,7 +453,28 @@ describe('WebGPU Superfan finale foundation', () => {
       now: () => now
     });
     plugin.superfanFinaleHistory = history;
-    plugin.getRendererStatus = jest.fn(() => ({ state: 'ready' }));
+    const fallbackSocket = {
+      id: 'test-renderer',
+      connected: true,
+      emit: jest.fn((event, payload) => api.emit(event, payload))
+    };
+    const fallbackTarget = {
+      rendererId: fallbackSocket.id,
+      socket: fallbackSocket,
+      telemetry: {
+        registered: true,
+        benchmark: false,
+        visible: true,
+        state: 'ready',
+        statusUpdatedAt: Date.now(),
+        fpsUpdatedAt: Date.now()
+      }
+    };
+    plugin.getFinaleRendererTargets = jest.fn(() => (
+      plugin.connectedSockets.size > 0
+        ? FireworksPlugin.prototype.getFinaleRendererTargets.call(plugin)
+        : [fallbackTarget]
+    ));
     return { api, plugin, history };
   }
 
@@ -825,7 +847,7 @@ describe('WebGPU Superfan finale foundation', () => {
 
   test('does not consume cooldown while the renderer is offline', () => {
     const { plugin, history } = createPlugin();
-    plugin.getRendererStatus.mockReturnValue({ state: 'offline' });
+    plugin.getFinaleRendererTargets.mockReturnValue([]);
     plugin.triggerFinale = jest.fn();
     expect(plugin.handleSuperfanEntry({ userId: 'a', uniqueId: 'Alpha' }, { authoritative: true }))
       .toMatchObject({ accepted: false, reason: 'renderer-not-ready' });
@@ -1033,7 +1055,7 @@ describe('WebGPU Superfan finale foundation', () => {
     });
 
     expect(plugin.handleSuperfanEntry({ userId: 'a', uniqueId: 'Alpha' }, { authoritative: true }))
-      .toMatchObject({ accepted: false, reason: 'submission-error' });
+      .toMatchObject({ accepted: false, reason: 'submission-rejected' });
     expect(plugin.pendingSuperfanFinales.size).toBe(0);
     expect(history.snapshot()).toEqual({});
   });
@@ -1253,5 +1275,31 @@ describe('WebGPU Superfan finale foundation', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  test('accepts a Superfan when an older eligible renderer remains ready', () => {
+    const { api, plugin } = createPlugin({ enabled: true, superfanFinaleEnabled: true });
+    plugin.getFinaleRendererTargets = FireworksPlugin.prototype.getFinaleRendererTargets.bind(plugin);
+    const now = Date.now();
+    const dateNow = jest.spyOn(Date, 'now').mockReturnValue(now - 100);
+    const ready = connectSocket(plugin, api, 'ready-renderer');
+    plugin.overlayTelemetry.get(ready.id).statusUpdatedAt = Date.now() - 100;
+
+    dateNow.mockReturnValue(now);
+    const failed = connectSocket(plugin, api, 'newer-failed-renderer');
+    failed.handlers.get('webgpu-fireworks:renderer-status')({ state: 'error', visible: true });
+    plugin.overlayTelemetry.get(failed.id).statusUpdatedAt = Date.now();
+
+    plugin.triggerFinale = jest.fn(() => ({ accepted: true, eventId: 'superfan:eligible' }));
+    plugin.scheduleFollowerAnimation = jest.fn(() => true);
+    const result = plugin.handleSuperfanEntry({
+      userId: 'eligible-user',
+      uniqueId: 'eligible_user',
+      teamMemberLevel: 1
+    }, { authoritative: true, bypassCooldown: true });
+
+    expect(result).toMatchObject({ accepted: true });
+    expect(plugin.triggerFinale).toHaveBeenCalledTimes(1);
+    dateNow.mockRestore();
   });
 });

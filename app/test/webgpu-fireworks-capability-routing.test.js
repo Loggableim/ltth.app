@@ -52,18 +52,22 @@ function createHarness() {
     benchmark = false,
     visible = true,
     state = 'ready',
-    connected = true
+    connected = true,
+    registered = true
   }) => {
     const socket = new FakeSocket(id);
     connections[0](socket);
-    socket.receive('webgpu-fireworks:register-overlay', {
-      benchmark,
-      visible,
-      rendererProtocol: current ? 3 : 2,
-      capabilities: current ? ['depth3d-v1', 'boykisser-v1'] : []
-    });
+    if (registered) {
+      socket.receive('webgpu-fireworks:register-overlay', {
+        benchmark,
+        visible,
+        rendererProtocol: current ? 3 : 2,
+        capabilities: current ? ['depth3d-v1', 'boykisser-v1'] : []
+      });
+    }
     socket.receive('webgpu-fireworks:renderer-status', { state });
-    plugin.overlayTelemetry.get(id).updatedAt = updatedAt;
+    const telemetry = plugin.overlayTelemetry.get(id);
+    if (telemetry) telemetry.statusUpdatedAt = updatedAt;
     socket.connected = connected;
     return socket;
   };
@@ -211,6 +215,64 @@ describe('WebGPU Fireworks capability-aware finale routing', () => {
     expect(api.emit).not.toHaveBeenCalledWith('webgpu-fireworks:finale', expect.anything());
   });
 
+  test('ignores ready telemetry from an unregistered connected socket and never delivers to it', () => {
+    const { api, connect, plugin } = createHarness();
+    const socket = connect({
+      id: 'unregistered',
+      current: true,
+      registered: false,
+      state: 'ready'
+    });
+
+    const result = plugin.triggerFinale({
+      style: 'classic-crescendo',
+      length: 'short',
+      seed: 712,
+      eventId: 'unregistered-live'
+    });
+
+    expect(result).toMatchObject({
+      accepted: false,
+      reason: 'renderer-not-ready',
+      code: 'RENDERER_NOT_READY'
+    });
+    expect(plugin.overlayTelemetry.has(socket.id)).toBe(false);
+    expect(socket.finalePayloads()).toHaveLength(0);
+    expect(api.emit).not.toHaveBeenCalledWith('webgpu-fireworks:finale', expect.anything());
+  });
+
+  test('FPS updates cannot keep renderer readiness fresh', () => {
+    const now = 50_000;
+    jest.spyOn(Date, 'now').mockReturnValue(now);
+    const { connect, plugin } = createHarness();
+    const socket = connect({ id: 'status-stale', current: true, updatedAt: now - 5001 });
+    const telemetry = plugin.overlayTelemetry.get(socket.id);
+    telemetry.statusUpdatedAt = now - 5001;
+
+    socket.receive('webgpu-fireworks:fps-update', { fps: 60, visible: true });
+
+    expect(plugin.getOverlayFps(false)).toEqual({ fps: 60, sampleCount: 1 });
+    expect(plugin.getFinaleRendererTargets()).toHaveLength(0);
+    expect(plugin.getRendererStatus()).toMatchObject({ state: 'offline' });
+    jest.restoreAllMocks();
+  });
+
+  test('renderer status updates cannot keep an FPS sample fresh', () => {
+    const now = 60_000;
+    jest.spyOn(Date, 'now').mockReturnValue(now);
+    const { connect, plugin } = createHarness();
+    const socket = connect({ id: 'fps-stale', current: true, updatedAt: now - 5001 });
+    const telemetry = plugin.overlayTelemetry.get(socket.id);
+    telemetry.fps = 48;
+    telemetry.fpsUpdatedAt = now - 5001;
+
+    socket.receive('webgpu-fireworks:renderer-status', { state: 'ready', visible: true });
+
+    expect(plugin.getRendererStatus()).toMatchObject({ state: 'ready' });
+    expect(plugin.getOverlayFps(false)).toEqual({ fps: 0, sampleCount: 0 });
+    jest.restoreAllMocks();
+  });
+
   test('treats a fresh hidden renderer as unavailable for finale test requests', () => {
     const { api, connect, plugin } = createHarness();
     const hiddenRenderer = connect({ id: 'hidden', current: true, visible: false });
@@ -248,12 +310,13 @@ describe('WebGPU Fireworks capability-aware finale routing', () => {
   test('never globally emits a test request for fresh telemetry without a registered socket', () => {
     const { api, plugin } = createHarness();
     plugin.overlayTelemetry.set('unregistered-current', {
+      registered: true,
       benchmark: false,
       visible: true,
       rendererProtocol: 3,
       capabilities: ['depth3d-v1', 'boykisser-v1'],
       state: 'ready',
-      updatedAt: Date.now()
+      statusUpdatedAt: Date.now()
     });
 
     const result = plugin.triggerFinale({

@@ -105,7 +105,7 @@ function createHarness() {
       finaleQueueLength: telemetry.finaleQueueLength || 0,
       benchmark: telemetry.benchmark === true
     });
-    if (telemetry.updatedAt) plugin.overlayTelemetry.get(id).updatedAt = telemetry.updatedAt;
+    if (telemetry.updatedAt) plugin.overlayTelemetry.get(id).statusUpdatedAt = telemetry.updatedAt;
     return socket;
   };
 
@@ -134,7 +134,7 @@ describe('WebGPU preview acknowledgement routing', () => {
     const harness = createHarness();
     dataDirs.push(harness.dataDir);
     const older = harness.connect('renderer-old');
-    harness.plugin.overlayTelemetry.get(older.id).updatedAt -= 10;
+    harness.plugin.overlayTelemetry.get(older.id).statusUpdatedAt -= 10;
     const target = harness.connect('renderer-target');
     target.onPreview = payload => queueMicrotask(() => target.receive('webgpu-fireworks:preview-ack', {
       requestId: payload.requestId,
@@ -260,7 +260,7 @@ describe('WebGPU preview acknowledgement routing', () => {
     const harness = createHarness();
     dataDirs.push(harness.dataDir);
     const wrong = harness.connect('renderer-wrong');
-    harness.plugin.overlayTelemetry.get(wrong.id).updatedAt -= 10;
+    harness.plugin.overlayTelemetry.get(wrong.id).statusUpdatedAt -= 10;
     const target = harness.connect('renderer-target');
     target.onPreview = payload => {
       wrong.receive('webgpu-fireworks:preview-ack', {
@@ -282,7 +282,7 @@ describe('WebGPU preview acknowledgement routing', () => {
   });
 
   test.each([
-    ['stale', telemetry => { telemetry.updatedAt = Date.now() - 6000; }],
+    ['stale', telemetry => { telemetry.statusUpdatedAt = Date.now() - 6000; }],
     ['benchmark', telemetry => { telemetry.benchmark = true; }]
   ])('ignores a %s target ACK and times out without leaking its waiter or timer', async (_label, invalidate) => {
     jest.useFakeTimers();

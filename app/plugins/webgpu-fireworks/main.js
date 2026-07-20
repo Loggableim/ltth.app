@@ -47,6 +47,7 @@ const MAX_RENDERER_FINALE_STYLE_LENGTH = 64;
 const MAX_RENDERER_FINALE_NAME_LENGTH = 200;
 const RENDERER_PROTOCOL_VERSION = 3;
 const RENDERER_CAPABILITIES = Object.freeze(['depth3d-v1', 'boykisser-v1']);
+const RENDERER_TELEMETRY_TTL_MS = 5000;
 const RENDERER_UPGRADE_MESSAGE =
     'This OBS overlay is outdated. Refresh the OBS browser source to enable Furry Celebration 3D.';
 const BENCHMARK_SESSION_ID_PATTERN =
@@ -148,6 +149,14 @@ function missingRendererCapabilities(telemetry, required = RENDERER_CAPABILITIES
 function rendererSupportsCapabilities(telemetry, required = RENDERER_CAPABILITIES) {
     return sanitizeRendererProtocol(telemetry?.rendererProtocol) >= RENDERER_PROTOCOL_VERSION &&
         missingRendererCapabilities(telemetry, required).length === 0;
+}
+
+function isFreshTelemetry(telemetry, timestampKey, cutoff) {
+    return Boolean(
+        telemetry?.registered === true &&
+        Number.isFinite(Number(telemetry[timestampKey])) &&
+        Number(telemetry[timestampKey]) >= cutoff
+    );
 }
 
 function previewRequiredRendererCapabilities(payload = {}) {
@@ -402,11 +411,9 @@ class FireworksPlugin {
         const socket = this.getConnectedBenchmarkSocket(session);
         if (!socket) return null;
         const telemetry = this.overlayTelemetry.get(socket.id);
-        const statusUpdatedAt = Number(telemetry?.statusUpdatedAt);
         if (
-            !telemetry || telemetry.registered !== true || telemetry.benchmark !== true ||
-            telemetry.benchmarkSessionId !== session.id || !Number.isFinite(statusUpdatedAt) ||
-            statusUpdatedAt < now - 5000 ||
+            !telemetry || !isFreshTelemetry(telemetry, 'statusUpdatedAt', now - RENDERER_TELEMETRY_TTL_MS) ||
+            telemetry.benchmark !== true || telemetry.benchmarkSessionId !== session.id ||
             telemetry.visible === false || telemetry.state !== 'ready'
         ) return null;
         return { socket, telemetry };
@@ -604,12 +611,11 @@ class FireworksPlugin {
 
                 // Listen for FPS updates
                 socket.on('webgpu-fireworks:fps-update', (data) => {
+                    const previous = this.overlayTelemetry.get(socket.id);
+                    if (previous?.registered !== true) return;
                     const fps = Number(data && data.fps);
                     if (!Number.isFinite(fps) || fps < 0 || fps > 240) return;
 
-                    const previous = this.overlayTelemetry.get(socket.id) || {
-                        benchmark: data && data.benchmark === true
-                    };
                     const benchmarkSession = previous.benchmark === true
                         ? this.getBenchmarkSession(previous.benchmarkSessionId)
                         : null;
@@ -637,7 +643,8 @@ class FireworksPlugin {
                 });
 
                 socket.on('webgpu-fireworks:renderer-status', (data = {}) => {
-                    const previous = this.overlayTelemetry.get(socket.id) || {};
+                    const previous = this.overlayTelemetry.get(socket.id);
+                    if (previous?.registered !== true) return;
                     const benchmarkSession = previous.benchmark === true
                         ? this.getBenchmarkSession(previous.benchmarkSessionId)
                         : null;
@@ -792,11 +799,11 @@ class FireworksPlugin {
     }
 
     getOverlayFps(benchmark = false) {
-        const cutoff = Date.now() - 5000;
+        const cutoff = Date.now() - RENDERER_TELEMETRY_TTL_MS;
         const readings = [];
 
         for (const telemetry of this.overlayTelemetry.values()) {
-            if (!telemetry || telemetry.updatedAt < cutoff) continue;
+            if (!isFreshTelemetry(telemetry, 'fpsUpdatedAt', cutoff)) continue;
             if (telemetry.benchmark === benchmark && telemetry.visible !== false && telemetry.fps > 0) {
                 readings.push(telemetry.fps);
             }
@@ -810,10 +817,17 @@ class FireworksPlugin {
     }
 
     getRendererStatus() {
-        const cutoff = Date.now() - 5000;
-        const current = [...this.overlayTelemetry.values()]
-            .filter(item => item && item.updatedAt >= cutoff && item.benchmark !== true)
-            .sort((a, b) => b.updatedAt - a.updatedAt)[0];
+        const cutoff = Date.now() - RENDERER_TELEMETRY_TTL_MS;
+        const current = [...this.overlayTelemetry.entries()]
+            .map(([rendererId, telemetry]) => ({ rendererId, telemetry }))
+            .filter(candidate => (
+                isFreshTelemetry(candidate.telemetry, 'statusUpdatedAt', cutoff) &&
+                candidate.telemetry.benchmark !== true
+            ))
+            .sort((left, right) => (
+                Number(right.telemetry.statusUpdatedAt) - Number(left.telemetry.statusUpdatedAt) ||
+                String(left.rendererId).localeCompare(String(right.rendererId))
+            ))[0]?.telemetry;
         if (current) {
             const missingCapabilities = missingRendererCapabilities(current);
             const upgradeRequired = current.state === 'ready' && !rendererSupportsCapabilities(current);
@@ -870,10 +884,11 @@ class FireworksPlugin {
         };
     }
 
-    isRendererDeliveryEligible(socket, telemetry, cutoff = Date.now() - 5000) {
+    isRendererDeliveryEligible(socket, telemetry, cutoff = Date.now() - RENDERER_TELEMETRY_TTL_MS) {
         return Boolean(
             socket && socket.connected !== false && telemetry &&
-            telemetry.updatedAt >= cutoff && telemetry.benchmark !== true &&
+            telemetry.registered === true &&
+            isFreshTelemetry(telemetry, 'statusUpdatedAt', cutoff) && telemetry.benchmark !== true &&
             telemetry.visible !== false && telemetry.state === 'ready'
         );
     }
@@ -893,7 +908,7 @@ class FireworksPlugin {
     }
 
     getFinaleRendererTargets({ requiredCapabilities = [] } = {}) {
-        const cutoff = Date.now() - 5000;
+        const cutoff = Date.now() - RENDERER_TELEMETRY_TTL_MS;
         const socketsById = new Map([...this.connectedSockets].map(socket => [socket.id, socket]));
         return [...this.overlayTelemetry.entries()]
             .map(([rendererId, telemetry]) => ({ rendererId, telemetry, socket: socketsById.get(rendererId) }))
@@ -903,7 +918,7 @@ class FireworksPlugin {
                     rendererSupportsCapabilities(target.telemetry, requiredCapabilities))
             ))
             .sort((left, right) => (
-                Number(right.telemetry.updatedAt) - Number(left.telemetry.updatedAt) ||
+                Number(right.telemetry.statusUpdatedAt) - Number(left.telemetry.statusUpdatedAt) ||
                 String(left.rendererId).localeCompare(String(right.rendererId))
             ));
     }
@@ -954,7 +969,7 @@ class FireworksPlugin {
             return { submitted: deliveredPayloads.length > 0, payload: returnPayload, usedLegacyFallback };
         }
 
-        if (testRequest || this.hasRegisteredRendererSocket()) {
+        if (testRequest || this.connectedSockets.size > 0) {
             return {
                 submitted: false,
                 payload,
@@ -978,9 +993,9 @@ class FireworksPlugin {
     }
 
     getPreviewRendererStatus() {
-        const cutoff = Date.now() - 5000;
+        const cutoff = Date.now() - RENDERER_TELEMETRY_TTL_MS;
         const fresh = [...this.overlayTelemetry.values()].filter(item => (
-            item && item.updatedAt >= cutoff && item.benchmark !== true
+            isFreshTelemetry(item, 'statusUpdatedAt', cutoff) && item.benchmark !== true
         ));
         const ready = fresh.filter(item => item.state === 'ready');
         const busy = fresh.filter(item => (
@@ -998,20 +1013,20 @@ class FireworksPlugin {
     }
 
     selectPreviewRendererWithCapabilities(requiredCapabilities = []) {
-        const cutoff = Date.now() - 5000;
+        const cutoff = Date.now() - RENDERER_TELEMETRY_TTL_MS;
         const socketsById = new Map([...this.connectedSockets].map(socket => [socket.id, socket]));
         const candidates = [...this.overlayTelemetry.entries()]
             .map(([rendererId, telemetry]) => ({ rendererId, telemetry, socket: socketsById.get(rendererId) }))
             .filter(candidate => (
                 candidate.socket && candidate.socket.connected !== false &&
-                candidate.telemetry?.updatedAt >= cutoff &&
+                isFreshTelemetry(candidate.telemetry, 'statusUpdatedAt', cutoff) &&
                 candidate.telemetry?.benchmark !== true &&
                 candidate.telemetry?.state === 'ready' &&
                 (requiredCapabilities.length === 0 ||
                     rendererSupportsCapabilities(candidate.telemetry, requiredCapabilities))
             ))
             .sort((left, right) => (
-                Number(right.telemetry.updatedAt) - Number(left.telemetry.updatedAt) ||
+                Number(right.telemetry.statusUpdatedAt) - Number(left.telemetry.statusUpdatedAt) ||
                 String(left.rendererId).localeCompare(String(right.rendererId))
             ));
         return candidates[0] || null;
@@ -1092,7 +1107,7 @@ class FireworksPlugin {
         if (data.rendererId !== pending.rendererId || socket.id !== pending.rendererId) return false;
         const telemetry = this.overlayTelemetry.get(pending.rendererId);
         if (
-            !telemetry || telemetry.updatedAt < Date.now() - 5000 ||
+            !isFreshTelemetry(telemetry, 'statusUpdatedAt', Date.now() - RENDERER_TELEMETRY_TTL_MS) ||
             telemetry.benchmark === true
         ) return false;
 
@@ -1119,7 +1134,7 @@ class FireworksPlugin {
     handlePreviewStatus(data = {}, socket) {
         if (!socket || data.rendererId !== socket.id || typeof data.requestId !== 'string') return false;
         const telemetry = this.overlayTelemetry.get(socket.id);
-        if (!telemetry || telemetry.benchmark === true) return false;
+        if (telemetry?.registered !== true || telemetry.benchmark === true) return false;
         const state = ['running', 'completed', 'failed'].includes(data.state) ? data.state : null;
         if (!state) return false;
         this.overlayTelemetry.set(socket.id, {
@@ -1952,8 +1967,11 @@ class FireworksPlugin {
                 const session = this.resolveBenchmarkRouteSession(req, res);
                 if (!session) return;
                 const renderer = this.getReadyBenchmarkRenderer(session);
-                const fpsUpdatedAt = Number(renderer?.telemetry?.fpsUpdatedAt);
-                if (!renderer || !Number.isFinite(fpsUpdatedAt) || fpsUpdatedAt < Date.now() - 5000) {
+                if (!renderer || !isFreshTelemetry(
+                    renderer.telemetry,
+                    'fpsUpdatedAt',
+                    Date.now() - RENDERER_TELEMETRY_TTL_MS
+                )) {
                     return res.status(503).json({
                         success: false,
                         code: 'BENCHMARK_RENDERER_NOT_READY',
@@ -2407,8 +2425,7 @@ class FireworksPlugin {
             now
         )) return { accepted: false, reason: 'cooldown', identity };
 
-        const rendererStatus = this.getRendererStatus();
-        if (rendererStatus.state !== 'ready') {
+        if (this.getFinaleRendererTargets().length === 0) {
             return { accepted: false, reason: 'renderer-not-ready', identity };
         }
 
@@ -2942,12 +2959,7 @@ class FireworksPlugin {
 
         const requiresFurryRenderer = resolvedStyle === 'furry-celebration';
         const connectedReadyRendererTelemetry = this.getReadyRendererTelemetry();
-        const unregisteredRendererStatus = this.hasRegisteredRendererSocket()
-            ? null
-            : this.getRendererStatus();
-        const readyRendererTelemetry = connectedReadyRendererTelemetry.length > 0
-            ? connectedReadyRendererTelemetry
-            : unregisteredRendererStatus?.state === 'ready' ? [unregisteredRendererStatus] : [];
+        const readyRendererTelemetry = connectedReadyRendererTelemetry;
         const furryRendererReady = readyRendererTelemetry.some(telemetry => (
             rendererSupportsCapabilities(telemetry)
         ));

@@ -305,7 +305,6 @@ describe('WebGPU Fireworks benchmark session isolation', () => {
     const before = JSON.parse(JSON.stringify(session.config));
     if (options.stale) {
       Object.assign(harness.plugin.overlayTelemetry.get(socket.id), {
-        updatedAt: Date.now() - 6000,
         statusUpdatedAt: Date.now() - 6000,
         fpsUpdatedAt: Date.now() - 6000
       });
@@ -666,7 +665,6 @@ describe('WebGPU Fireworks benchmark session isolation', () => {
     const socket = harness.connect('benchmark-resume');
     registerBenchmarkRenderer(socket, session.sessionId, { fps: 40 });
     Object.assign(harness.plugin.overlayTelemetry.get(socket.id), {
-      updatedAt: Date.now() - 6000,
       statusUpdatedAt: Date.now() - 6000,
       fpsUpdatedAt: Date.now() - 6000
     });
@@ -706,7 +704,6 @@ describe('WebGPU Fireworks benchmark session isolation', () => {
     registerBenchmarkRenderer(socket, session.sessionId, options);
     if (options.stale) {
       Object.assign(harness.plugin.overlayTelemetry.get(socket.id), {
-        updatedAt: Date.now() - 6000,
         statusUpdatedAt: Date.now() - 6000,
         fpsUpdatedAt: Date.now() - 6000
       });
@@ -810,7 +807,7 @@ describe('WebGPU Fireworks benchmark session isolation', () => {
     });
     const socket = harness.connect('live-resume');
     socket.receive('webgpu-fireworks:register-overlay', { benchmark: false, visible: true });
-    harness.plugin.overlayTelemetry.get(socket.id).updatedAt = Date.now() - 6000;
+    harness.plugin.overlayTelemetry.get(socket.id).fpsUpdatedAt = Date.now() - 6000;
     harness.plugin.getOverlayFps(false);
     harness.plugin.triggerFirework = jest.fn(() => ({ accepted: true, reason: 'submitted' }));
 
@@ -1009,8 +1006,13 @@ describe('WebGPU Fireworks benchmark session isolation', () => {
     expect(harness.plugin.hasRegisteredRendererSocket()).toBe(false);
     const payload = { id: 'live-finale', style: 'crescendo', showPlan: { id: 'show' } };
     const dispatch = harness.plugin.dispatchFinalePayload(payload);
-    expect(dispatch).toMatchObject({ submitted: true, payload });
-    expect(harness.api.emit).toHaveBeenCalledWith('webgpu-fireworks:finale', payload);
+    expect(dispatch).toMatchObject({
+      submitted: false,
+      payload,
+      reason: 'renderer-not-ready',
+      code: 'RENDERER_NOT_READY'
+    });
+    expect(harness.api.emit).not.toHaveBeenCalledWith('webgpu-fireworks:finale', payload);
 
     const rejectedSocket = harness.connect('rejected-benchmark');
     rejectedSocket.receive('webgpu-fireworks:register-overlay', {
