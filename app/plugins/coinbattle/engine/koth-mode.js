@@ -13,6 +13,8 @@ class KingOfTheHillMode {
     // Current king tracking
     this.currentKing = null;
     this.kingStartTime = null;
+    this.active = false;
+    this.currentReignBonusPaid = 0;
     this.kingDurations = new Map(); // userId -> total time as king
     this.crownTransfers = [];
     
@@ -47,9 +49,20 @@ class KingOfTheHillMode {
    * Start KOTH mode for a match
    */
   start(matchId) {
+    if (!matchId) {
+      throw new Error('KOTH requires an active normal match');
+    }
+
+    if (this.bonusTimer) {
+      clearInterval(this.bonusTimer);
+      this.bonusTimer = null;
+    }
+
     this.matchId = matchId;
+    this.active = true;
     this.currentKing = null;
     this.kingStartTime = null;
+    this.currentReignBonusPaid = 0;
     this.kingDurations.clear();
     this.crownTransfers = [];
     
@@ -63,6 +76,7 @@ class KingOfTheHillMode {
    * Update leaderboard and check for king change
    */
   updateLeaderboard(leaderboard) {
+    if (!this.active) return null;
     if (!leaderboard || leaderboard.length === 0) {
       return null;
     }
@@ -96,7 +110,7 @@ class KingOfTheHillMode {
       this.kingDurations.set(oldKingId, newDuration);
       
       // Calculate final bonus for old king
-      const bonus = this.calculateBonus(reignDuration);
+      const bonus = Math.max(0, this.calculateBonus(reignDuration) - this.currentReignBonusPaid);
       if (bonus > 0) {
         this.awardBonus(oldKingId, bonus);
       }
@@ -132,12 +146,14 @@ class KingOfTheHillMode {
     }
     
     // Crown new king
+    const previousKingId = this.currentKing?.userId || null;
     this.currentKing = {
       userId: playerId,
       nickname: playerName,
       coins: player.coins || 0
     };
     this.kingStartTime = Date.now();
+    this.currentReignBonusPaid = 0;
     
     // Emit crowned event
     this.io.emit('coinbattle:new-king', {
@@ -154,7 +170,7 @@ class KingOfTheHillMode {
     return {
       type: 'king_change',
       newKing: this.currentKing,
-      oldKing: this.currentKing ? this.currentKing.userId : null
+      oldKing: previousKingId
     };
   }
 
@@ -182,8 +198,18 @@ class KingOfTheHillMode {
     if (bonus <= 0) return;
     
     try {
-      // Add bonus to player's coins
-      this.db.addPlayerCoins(userId, bonus);
+      // KOTH bonus is gameplay score and must affect the active match.
+      const changes = this.db.addMatchParticipantCoins
+        ? this.db.addMatchParticipantCoins(this.matchId, userId, bonus)
+        : 0;
+      if (changes !== 1) {
+        throw new Error(`KOTH participant ${userId} not found in match ${this.matchId}`);
+      }
+
+      this.currentReignBonusPaid += bonus;
+      if (this.currentKing?.userId === userId) {
+        this.currentKing.coins = (this.currentKing.coins || 0) + bonus;
+      }
       
       // Update stats
       if (bonus > this.stats.mostBonusEarned.bonus) {
@@ -212,24 +238,18 @@ class KingOfTheHillMode {
       if (!this.currentKing || !this.kingStartTime) return;
       
       const reignDuration = Date.now() - this.kingStartTime;
-      const reignSeconds = reignDuration / 1000;
-      
-      if (reignSeconds >= this.bonusConfig.minimumTime) {
-        // Award 1 second worth of bonus
-        const microBonus = Math.floor(this.bonusConfig.bonusPerSecond);
-        if (microBonus > 0) {
-          try {
-            this.db.addPlayerCoins(this.currentKing.userId, microBonus);
-            
-            // Emit live bonus update
-            this.io.emit('coinbattle:king-live-bonus', {
-              userId: this.currentKing.userId,
-              bonus: microBonus,
-              totalReign: Math.floor(reignSeconds)
-            });
-          } catch (error) {
-            this.logger.error(`Failed to award live bonus: ${error.message}`);
-          }
+      const totalBonus = this.calculateBonus(reignDuration);
+      const delta = Math.max(0, totalBonus - this.currentReignBonusPaid);
+      if (delta > 0) {
+        try {
+          this.awardBonus(this.currentKing.userId, delta);
+          this.io.emit('coinbattle:king-live-bonus', {
+            userId: this.currentKing.userId,
+            bonus: delta,
+            totalReign: Math.floor(reignDuration / 1000)
+          });
+        } catch (error) {
+          this.logger.error(`Failed to award live bonus: ${error.message}`);
         }
       }
     }, 1000); // Every second
@@ -310,6 +330,7 @@ class KingOfTheHillMode {
         durationSeconds: Math.floor(this.stats.longestReign.duration / 1000)
       },
       mostBonusEarned: this.stats.mostBonusEarned,
+      active: this.active,
       kingDurations: Object.fromEntries(
         Array.from(this.kingDurations.entries()).map(([userId, duration]) => [
           userId,
@@ -323,10 +344,14 @@ class KingOfTheHillMode {
    * End KOTH mode
    */
   end() {
+    if (!this.active) {
+      return null;
+    }
+
     // Award final bonus to current king
     if (this.currentKing && this.kingStartTime) {
       const finalDuration = Date.now() - this.kingStartTime;
-      const finalBonus = this.calculateBonus(finalDuration);
+      const finalBonus = Math.max(0, this.calculateBonus(finalDuration) - this.currentReignBonusPaid);
       if (finalBonus > 0) {
         this.awardBonus(this.currentKing.userId, finalBonus);
       }
@@ -338,8 +363,18 @@ class KingOfTheHillMode {
       this.bonusTimer = null;
     }
     
-    // Emit final stats
-    this.io.emit('coinbattle:koth-ended', this.getStats());
+    // Emit final stats while retaining the last king in the event payload.
+    const finalStats = this.getStats();
+    finalStats.active = false;
+
+    this.active = false;
+    this.currentKing = null;
+    this.kingStartTime = null;
+    this.currentReignBonusPaid = 0;
+
+    this.io.emit('coinbattle:koth-ended', finalStats);
+
+    return finalStats;
     
     this.logger.info('👑 KOTH mode ended');
   }

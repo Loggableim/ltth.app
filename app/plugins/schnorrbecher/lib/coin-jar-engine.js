@@ -4,7 +4,9 @@ const MAX_EVENT_IDS = 5000;
 const COMBO_TIMEOUT_MS = 2500;
 const MAX_RECENT_GIF_ART = 24;
 
-function calculateVisualCoins(value) {
+function calculateVisualCoins(value, repeatCount = 1) {
+  const safeRepeatCount = Math.max(1, Math.floor(Number(repeatCount) || 1));
+  if (safeRepeatCount > 1) return Math.min(100, safeRepeatCount);
   return Math.max(1, Math.min(100, Math.ceil(Math.sqrt(value))));
 }
 
@@ -107,7 +109,7 @@ class CoinJarEngine {
 
     this._rememberEvent(event.eventId);
     this._rememberGiftArt(event);
-    const visualCoins = calculateVisualCoins(totalValue);
+    const visualCoins = calculateVisualCoins(totalValue, event.repeatCount);
     this.state.totalCoinValue += totalValue;
     this.state.visualCoinCount += visualCoins;
     this._persist();

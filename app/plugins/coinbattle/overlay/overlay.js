@@ -80,7 +80,20 @@
   // Timer state
   let timerInterval = null;
   let multiplierInterval = null;
+  let winnerRevealTimeout = null;
   let pyramidWinnerTimeout = null; // Track timeout for cleanup
+  let pyramidPostMatchTimeout = null;
+
+  function clearPyramidDisplayTimers() {
+    if (pyramidWinnerTimeout) {
+      clearTimeout(pyramidWinnerTimeout);
+      pyramidWinnerTimeout = null;
+    }
+    if (pyramidPostMatchTimeout) {
+      clearTimeout(pyramidPostMatchTimeout);
+      pyramidPostMatchTimeout = null;
+    }
+  }
 
   const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
   const LEGACY_THEME_MAP = {
@@ -404,6 +417,10 @@
    * Show match UI
    */
   function showMatchUI() {
+    if (winnerRevealTimeout) {
+      clearTimeout(winnerRevealTimeout);
+      winnerRevealTimeout = null;
+    }
     document.getElementById('timer-container').style.display = 'block';
     document.getElementById('leaderboard-container').style.display = 'block';
   }
@@ -433,8 +450,10 @@
    * Update timer display
    */
   function updateTimer(data) {
-    const minutes = Math.floor(data.remaining / 60);
-    const seconds = data.remaining % 60;
+    const remaining = Math.max(0, Number(data.remaining) || 0);
+    const total = Math.max(1, Number(data.total) || 1);
+    const minutes = Math.floor(remaining / 60);
+    const seconds = remaining % 60;
     const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
     const timerDisplay = document.getElementById('timer-display');
@@ -442,21 +461,21 @@
 
     // Update class for color coding
     timerDisplay.className = 'timer-display';
-    if (data.remaining < 30) {
+    if (remaining < 30) {
       timerDisplay.classList.add('danger');
-    } else if (data.remaining < 60) {
+    } else if (remaining < 60) {
       timerDisplay.classList.add('warning');
     }
 
     // Update circular progress
     const circle = document.getElementById('timer-circle-progress');
     const circumference = 2 * Math.PI * 45; // radius is 45
-    const progress = data.remaining / data.total;
+    const progress = Math.min(1, remaining / total);
     const offset = circumference * (1 - progress);
     
     circle.style.strokeDashoffset = offset;
     circle.setAttribute('class', 'timer-circle-progress');
-    if (data.remaining < 30) {
+    if (remaining < 30) {
       circle.classList.add('danger');
     } else if (data.remaining < 60) {
       circle.classList.add('warning');
@@ -787,6 +806,8 @@
         
         if (remaining === 0) {
           clearInterval(multiplierInterval);
+          multiplierInterval = null;
+          hideMultiplier();
         }
       }, 1000);
     } else if (data.duration) {
@@ -823,6 +844,9 @@
     if (config.toasterMode) return; // Skip animations in toaster mode
 
     const container = document.getElementById('gift-animations');
+    while (container.childElementCount >= 40) {
+      container.firstElementChild?.remove();
+    }
     const particle = document.createElement('div');
     particle.className = 'gift-particle';
     particle.textContent = '🎁';
@@ -873,19 +897,28 @@
     const winnerCoins = document.getElementById('winner-coins');
 
     let winner = null;
-    if (data.winner && data.winner.winner_team) {
+    if (data.winner?.is_draw) {
+      winnerName.textContent = translateOverlay('runtime.overlay.draw', 'DRAW');
+      winnerCoins.textContent = data.teamScores
+        ? `${Number(data.teamScores.red || 0).toLocaleString()} - ${Number(data.teamScores.blue || 0).toLocaleString()}`
+        : '0 - 0';
+    } else if (data.winner && data.winner.winner_team) {
       // Team winner
       winnerName.textContent = translateOverlay('runtime.overlay.team_wins', '{team} TEAM WINS!', {
         team: data.winner.winner_team.toUpperCase()
       });
       winnerCoins.textContent = data.winner.winner_team === 'red' 
-        ? data.teamScores.red.toLocaleString()
-        : data.teamScores.blue.toLocaleString();
+        ? Number(data.teamScores?.red || 0).toLocaleString()
+        : Number(data.teamScores?.blue || 0).toLocaleString();
     } else if (data.leaderboard && data.leaderboard.length > 0) {
       // Solo winner
       winner = data.leaderboard[0];
       winnerName.textContent = winner.nickname || winner.unique_id;
-      winnerCoins.textContent = winner.coins.toLocaleString();
+      winnerCoins.textContent = Number(winner.coins ?? winner.points ?? 0).toLocaleString();
+    }
+
+    if (winnerRevealTimeout) {
+      clearTimeout(winnerRevealTimeout);
     }
 
     // Show winner reveal
@@ -897,7 +930,8 @@
     }
 
     // Hide after 10 seconds
-    setTimeout(() => {
+    winnerRevealTimeout = setTimeout(() => {
+      winnerRevealTimeout = null;
       container.style.display = 'none';
     }, 10000);
   }
@@ -1184,6 +1218,7 @@
    * Handle pyramid round start
    */
   function handlePyramidStart(data) {
+    clearPyramidDisplayTimers();
     pyramidState.active = true;
     pyramidState.remainingTime = data.duration;
     pyramidState.pyramid = [];
@@ -1245,6 +1280,7 @@
    * Handle pyramid round end
    */
   async function handlePyramidEnd(data) {
+    clearPyramidDisplayTimers();
     pyramidState.active = false;
 
     // Hide the pyramid timer immediately when round ends
@@ -1289,15 +1325,27 @@
       }));
 
       // Wait for winner reveal (10 seconds) before showing post-match
-      setTimeout(async () => {
+      pyramidPostMatchTimeout = setTimeout(async () => {
+        pyramidPostMatchTimeout = null;
         // Hide pyramid display before showing post-match
         hidePyramidMode();
+
+        const findRewardPlayer = (reward, index) => {
+          const rewardUserId = reward.userId ?? reward.user_id;
+          const rewardUniqueId = reward.uniqueId ?? reward.unique_id ?? reward.username;
+          return data.leaderboard.find((player) => {
+            const playerUserId = player.userId ?? player.user_id;
+            const playerUniqueId = player.uniqueId ?? player.unique_id;
+            return (rewardUserId && playerUserId && String(rewardUserId) === String(playerUserId))
+              || (rewardUniqueId && playerUniqueId && String(rewardUniqueId) === String(playerUniqueId));
+          }) || data.leaderboard[index];
+        };
         
         // Show post-match display
         await handlePostMatchDisplay({
           config: data.postMatchConfig,
           winnersWithXP: data.xpRewards ? data.xpRewards.map((reward, index) => {
-            const player = data.leaderboard[index];
+            const player = findRewardPlayer(reward, index);
             if (!player) return null; // Skip if player doesn't exist
             return {
               ...player,
@@ -1311,7 +1359,8 @@
       }, 10000);
     } else {
       // Reset after showing winner (if no post-match)
-      setTimeout(() => {
+      pyramidPostMatchTimeout = setTimeout(() => {
+        pyramidPostMatchTimeout = null;
         if (!pyramidState.active) {
           hidePyramidMode();
         }

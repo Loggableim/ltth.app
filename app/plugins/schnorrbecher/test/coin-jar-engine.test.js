@@ -74,7 +74,7 @@ describe('CoinJarEngine', () => {
     expect(engine.handleGift(gift)).toMatchObject({
       accepted: true,
       totalValue: 20,
-      visualCoins: 5
+      visualCoins: 2
     });
     expect(engine.handleGift(gift)).toMatchObject({
       accepted: false,
@@ -82,6 +82,25 @@ describe('CoinJarEngine', () => {
     });
     expect(state.totalCoinValue).toBe(20);
     expect(emitted.filter(item => item.event === 'coinJar.add')).toHaveLength(1);
+  });
+
+  test('renders each completed Rose repeat as an individual falling gift', () => {
+    const { engine, state } = createEngine();
+
+    expect(engine.handleGift({
+      eventId: 'ten-roses',
+      comboId: 'ten-roses',
+      giftId: 'rose',
+      giftName: 'Rose',
+      diamondValue: 1,
+      repeatCount: 10,
+      repeatEnd: true
+    })).toMatchObject({
+      accepted: true,
+      totalValue: 10,
+      visualCoins: 10
+    });
+    expect(state.visualCoinCount).toBe(10);
   });
 
   test('keeps actual catalog gift art available for an overlay resync', () => {

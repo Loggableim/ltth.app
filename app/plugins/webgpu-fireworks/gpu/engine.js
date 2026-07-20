@@ -1763,6 +1763,43 @@ class WebGPUFireworksEngine {
         this.scheduleTimeline({ type: 'cleanup', due: plan.cleanupAt, order: 4, finaleId: plan.finaleId, plan });
     }
 
+    createRocketSpawnOptions(plan, launchDuration) {
+        const { launch, explosion } = plan;
+        const avatarTexture = Number(explosion.assets.avatarTexture) || 0;
+        return {
+            effectId: plan.id,
+            ownerToken: explosion.ownerToken,
+            expiresAtMs: explosion.finaleEndsAt,
+            lane: plan.lane,
+            priority: plan.priority,
+            required: plan.required,
+            beatId: plan.beatId,
+            username: explosion.username,
+            userId: explosion.userId,
+            uniqueId: explosion.uniqueId,
+            giftId: explosion.giftId,
+            giftName: explosion.giftName,
+            giftImage: explosion.giftImage,
+            coins: explosion.coins,
+            value: explosion.value,
+            combo: explosion.combo,
+            bundleCount: explosion.bundleCount,
+            giftBundleKey: explosion.giftBundleKey,
+            origin: launch.origin,
+            target: launch.target,
+            duration: launchDuration,
+            color: explosion.colors[0],
+            textureIndex: explosion.avatarRocketHead ? 0 : avatarTexture,
+            headTextureIndex: explosion.avatarRocketHead ? avatarTexture : 0,
+            size: avatarTexture ? 18 : 8,
+            gravity: 0,
+            drag: 1,
+            seed: plan.seed,
+            style: explosion.visualStyle,
+            curve: ((Number(plan.seed) || 1) % 2 === 0 ? 1 : -1) * (45 + explosion.intensity * 12)
+        };
+    }
+
     processLaunch(plan, plannedAt, actualAt) {
         const { launch, explosion } = plan;
         const remainingShowSeconds = explosion.finaleEndsAt
@@ -1774,38 +1811,26 @@ class WebGPUFireworksEngine {
         }
         const launchDuration = Math.min(plan.flightDuration, remainingShowSeconds);
         if (!launch.skipRocket) {
-            const avatarTexture = Number(explosion.assets.avatarTexture) || 0;
+            const rocketOptions = this.createRocketSpawnOptions(plan, launchDuration);
+            if (!plan.renderCorrelation && typeof this.renderer.prepareCorrelatedSpawns === 'function') {
+                const explosionOptions = this.createExplosionSpawnOptions(
+                    explosion,
+                    plan,
+                    plan.explodeAt
+                ).base;
+                plan.renderCorrelation = this.renderer.prepareCorrelatedSpawns([
+                    { type: 'rocket', options: rocketOptions },
+                    { type: 'explosion', options: explosionOptions }
+                ], plan.id);
+            }
+            const preparedGroup = plan.renderCorrelation?.groups?.[0];
             this.renderer.spawnRocket({
-                effectId: plan.id,
-                ownerToken: explosion.ownerToken,
-                expiresAtMs: explosion.finaleEndsAt,
-                lane: plan.lane,
-                priority: plan.priority,
-                required: plan.required,
-                beatId: plan.beatId,
-                username: explosion.username,
-                userId: explosion.userId,
-                uniqueId: explosion.uniqueId,
-                giftId: explosion.giftId,
-                giftName: explosion.giftName,
-                giftImage: explosion.giftImage,
-                coins: explosion.coins,
-                value: explosion.value,
-                combo: explosion.combo,
-                bundleCount: explosion.bundleCount,
-                giftBundleKey: explosion.giftBundleKey,
-                origin: launch.origin,
-                target: launch.target,
-                duration: launchDuration,
-                color: explosion.colors[0],
-                textureIndex: explosion.avatarRocketHead ? 0 : avatarTexture,
-                headTextureIndex: explosion.avatarRocketHead ? avatarTexture : 0,
-                size: avatarTexture ? 18 : 8,
-                gravity: 0,
-                drag: 1,
-                seed: plan.seed,
-                style: explosion.visualStyle,
-                curve: ((Number(plan.seed) || 1) % 2 === 0 ? 1 : -1) * (45 + explosion.intensity * 12)
+                ...rocketOptions,
+                ...(preparedGroup ? {
+                    correlationId: plan.renderCorrelation.correlationId,
+                    correlationManifest: plan.renderCorrelation.correlationManifest,
+                    envelopeCommandIds: preparedGroup.envelopeCommandIds
+                } : {})
             });
         }
         this.audio.recordTimelineEvent(plan.id, 'launch-visual', plannedAt, actualAt, 'rendered');
@@ -2171,15 +2196,11 @@ class WebGPUFireworksEngine {
         throw new Error('createImageBitmap is unavailable for image decoding');
     }
 
-    processExplosion(explosion, plan = null, plannedAt = performance.now(), actualAt = performance.now()) {
+    createExplosionSpawnOptions(explosion, plan = null, actualAt = performance.now()) {
         const effectId = plan?.id || explosion.id;
         const remainingShowSeconds = explosion.finaleEndsAt
             ? Math.max(0, (explosion.finaleEndsAt - actualAt) / 1000)
             : Number.POSITIVE_INFINITY;
-        if (explosion.finaleEndsAt && remainingShowSeconds <= 0) {
-            this.audio.recordTimelineEvent(effectId, 'explosion-visual', plannedAt, actualAt, 'skipped-finale-ended');
-            return false;
-        }
         const shapeSpecific = explosion.shape !== 'burst';
         let baseCount = explosion.count;
         let avatarCount = 0;
@@ -2227,14 +2248,70 @@ class WebGPUFireworksEngine {
             combo: explosion.combo,
             bundleCount: explosion.bundleCount,
             giftBundleKey: explosion.giftBundleKey,
-            origin: { x: explosion.x, y: explosion.y }, intensity: explosion.intensity,
-            duration, gravity: explosion.gravity * 850, drag: explosion.friction,
-            wind: explosion.wind * 420, size: semanticSize,
+            origin: { x: explosion.x, y: explosion.y },
+            intensity: explosion.intensity,
+            duration,
+            gravity: explosion.gravity * 850,
+            drag: explosion.friction,
+            wind: explosion.wind * 420,
+            size: semanticSize,
             style: explosion.visualStyle
         };
-        this.renderer.spawnExplosion({ ...common, effectId, shape: explosion.shape, colors: explosion.colors, count: baseCount });
-        if (avatarCount) this.renderer.spawnExplosion({ ...common, effectId, priority: 'core', required: true, shape: 'image', colors: ['#ffffff'], count: avatarCount, textureIndex: explosion.assets.avatarTexture, size: 18 * explosion.style.sizeScale, nativeColor: true });
-        if (giftCount) this.renderer.spawnExplosion({ ...common, effectId, priority: 'core', required: true, shape: 'image', colors: ['#ffffff'], count: giftCount, textureIndex: explosion.assets.giftTexture, size: 18 * explosion.style.sizeScale, nativeColor: true });
+        return {
+            remainingShowSeconds,
+            base: {
+                ...common,
+                effectId,
+                shape: explosion.shape,
+                colors: explosion.colors,
+                count: baseCount
+            },
+            avatar: avatarCount ? {
+                ...common,
+                effectId,
+                priority: 'core',
+                required: true,
+                shape: 'image',
+                colors: ['#ffffff'],
+                count: avatarCount,
+                textureIndex: explosion.assets.avatarTexture,
+                size: 18 * explosion.style.sizeScale,
+                nativeColor: true
+            } : null,
+            gift: giftCount ? {
+                ...common,
+                effectId,
+                priority: 'core',
+                required: true,
+                shape: 'image',
+                colors: ['#ffffff'],
+                count: giftCount,
+                textureIndex: explosion.assets.giftTexture,
+                size: 18 * explosion.style.sizeScale,
+                nativeColor: true
+            } : null
+        };
+    }
+
+    processExplosion(explosion, plan = null, plannedAt = performance.now(), actualAt = performance.now()) {
+        const effectId = plan?.id || explosion.id;
+        const spawnOptions = this.createExplosionSpawnOptions(explosion, plan, actualAt);
+        const remainingShowSeconds = spawnOptions.remainingShowSeconds;
+        if (explosion.finaleEndsAt && remainingShowSeconds <= 0) {
+            this.audio.recordTimelineEvent(effectId, 'explosion-visual', plannedAt, actualAt, 'skipped-finale-ended');
+            return false;
+        }
+        const preparedGroup = plan?.renderCorrelation?.groups?.[1];
+        this.renderer.spawnExplosion({
+            ...spawnOptions.base,
+            ...(preparedGroup ? {
+                correlationId: plan.renderCorrelation.correlationId,
+                correlationManifest: plan.renderCorrelation.correlationManifest,
+                envelopeCommandIds: preparedGroup.envelopeCommandIds
+            } : {})
+        });
+        if (spawnOptions.avatar) this.renderer.spawnExplosion(spawnOptions.avatar);
+        if (spawnOptions.gift) this.renderer.spawnExplosion(spawnOptions.gift);
         this.audio.recordTimelineEvent(effectId, 'explosion-visual', plannedAt, actualAt, 'rendered');
         if (explosion.playSound) {
             const bangDurations = { small: 0.7, medium: 0.9, big: 1.2, massive: 1.5 };
@@ -2302,6 +2379,7 @@ class WebGPUFireworksEngine {
             renderHints: event.renderHints,
             duration,
             color: event.shell.colors?.[0] || event.shell.palette?.[0] || '#ffffff',
+            rocketTrail: event.shell.rocketTrail,
             seed: event.seed,
             style: event.materialProfile === 'premium-realistic'
                 ? 'premium-realistic'

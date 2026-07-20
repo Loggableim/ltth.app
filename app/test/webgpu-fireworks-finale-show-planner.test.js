@@ -378,15 +378,15 @@ describe('WebGPU Fireworks finale show planner', () => {
           timeMs: heroBeat,
           phase: 'finale',
           shells: [expect.objectContaining({
-            launchMode: 'airburst',
-            target: { x: 0.5, y: 0.5 },
-            position: { x: 0.5, y: 0.5 },
+            launchMode: 'rocket',
+            target: { x: 0.5, y: 0.38 },
+            position: { x: 0.5, y: 0.38 },
             renderHints: {
               depthEnabled: true,
               launchDepth: 0,
               burstDepth: 0.82,
               glyphScale: 2,
-              glyphExtent: 0.52
+              glyphExtent: 0.84
             }
           })]
         });
@@ -456,11 +456,11 @@ describe('WebGPU Fireworks finale show planner', () => {
       .filter(layer => layer.glyph === 'boykisser');
 
     for (const shell of ordinaryShells) {
-      const expectedExtent = Math.min(0.18, Math.max(0.07, shell.renderHints.glyphScale * 0.11));
+      const expectedExtent = Math.min(0.28, Math.max(0.1, shell.renderHints.glyphScale * 0.16));
       expect(shell.renderHints.glyphExtent).toBeCloseTo(expectedExtent, 6);
     }
     expect(boykisserLayers.length).toBeGreaterThan(0);
-    expect(boykisserLayers.every(layer => layer.density >= 96)).toBe(true);
+    expect(boykisserLayers.every(layer => layer.density >= 220)).toBe(true);
 
     const transRibbon = plan.cues[0].shells[0].layers
       .find(layer => layer.glyph === 'trans-flag');
@@ -479,7 +479,14 @@ describe('WebGPU Fireworks finale show planner', () => {
     });
 
     const heroLayers = heroCue.shells[0].layers;
-    expect(heroCue.shells[0].renderHints.glyphExtent).toBe(0.52);
+    const heroBoykisser = heroLayers.find(layer => layer.glyph === 'boykisser');
+    expect(heroCue.shells[0]).toMatchObject({
+      launchMode: 'rocket',
+      target: { x: 0.5, y: 0.38 }
+    });
+    expect(heroBoykisser.density).toBeGreaterThanOrEqual(640);
+    expect(heroBoykisser.density).toBeLessThanOrEqual(960);
+    expect(heroCue.shells[0].renderHints.glyphExtent).toBe(0.84);
     expect(heroLayers.filter(layer => layer.primitive === 'ring').map(layer => layer.delayMs))
       .toEqual([90, 180]);
   });

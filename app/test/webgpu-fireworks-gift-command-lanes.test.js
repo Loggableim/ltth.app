@@ -48,6 +48,60 @@ const makeRuntime = () => {
 };
 
 describe('WebGPU Fireworks gift command lanes', () => {
+  test.each(['star', 'ring'])(
+    'keeps a normal %s test rocket and its explosion in one visible-envelope correlation',
+    async shape => {
+      const runtime = makeRuntime();
+      const renderer = new WebGPUParticleEngine({ width: 1080, height: 1920 }, {});
+      renderer.initialized = true;
+      runtime.renderer = renderer;
+      runtime.baseWidth = 1080;
+      runtime.baseHeight = 1920;
+      runtime.prepareImages = jest.fn().mockResolvedValue({
+        giftTexture: 0,
+        avatarTexture: 0,
+        avatarChance: 0.3
+      });
+
+      const plan = await runtime.handleTrigger({
+        id: `test-${shape}-correlation`,
+        shape,
+        position: { x: 0.15, y: 0.12 },
+        origin: { x: 0.15, y: 1.02 },
+        intensity: 1.5,
+        particleCount: 80,
+        playSound: false,
+        forceRocket: true
+      });
+
+      runtime.processLaunch(plan, plan.launchAt, plan.launchAt);
+      runtime.processExplosion(plan.explosion, plan, plan.explodeAt, plan.explodeAt);
+
+      const rocketCommands = renderer.spawnQueue.filter(command => command.kind === 1);
+      const explosionCommands = renderer.spawnQueue.filter(command => command.kind === 2);
+      expect(rocketCommands.length).toBeGreaterThan(0);
+      expect(explosionCommands.length).toBeGreaterThan(0);
+      const manifest = rocketCommands[0].correlationManifest;
+      expect(manifest).toBeTruthy();
+      expect(Object.isFrozen(manifest)).toBe(true);
+      expect([...rocketCommands, ...explosionCommands]
+        .every(command => command.correlationManifest === manifest)).toBe(true);
+      expect(new Set(manifest.commands.map(command => command.envelopeCommandId)).size)
+        .toBe(manifest.commands.length);
+      const rocketFit = renderer._getOrCreateCorrelationFit(rocketCommands[0], plan.launchAt);
+      const explosionFit = renderer._getOrCreateCorrelationFit(explosionCommands[0], plan.explodeAt);
+      expect(explosionFit).toBe(rocketFit);
+      const fittedRocket = rocketFit.commands.find(command =>
+        command.envelopeCommandId === rocketCommands[0].envelopeCommandId
+      );
+      const fittedExplosion = rocketFit.commands.find(command =>
+        command.envelopeCommandId === explosionCommands[0].envelopeCommandId
+      );
+      expect(fittedRocket.target.x).toBeCloseTo(fittedExplosion.origin.x, 6);
+      expect(fittedRocket.target.y).toBeCloseTo(fittedExplosion.origin.y, 6);
+    }
+  );
+
   test('tags direct and bundled gift launches after the metadata spread', async () => {
     const runtime = Object.create(WebGPUFireworksEngine.prototype);
     runtime.handleTrigger = jest.fn().mockResolvedValue({});

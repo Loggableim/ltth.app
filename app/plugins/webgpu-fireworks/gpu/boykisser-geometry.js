@@ -21,6 +21,11 @@
     enumerable: false,
   });
   const BOYKISSER_COLORS = Object.freeze(boykisserColors);
+  const BOYKISSER_PARTICLE_LOD = Object.freeze({
+    cameo: 220,
+    standard: 320,
+    hero: 880,
+  });
 
   const freezePoints = points => Object.freeze(points.map(point => Object.freeze([...point])));
   const closePoints = points => [...points, points[0]];
@@ -140,6 +145,7 @@
   const canonicalGeometry = JSON.stringify({
     roles: BOYKISSER_ROLES,
     colors: BOYKISSER_COLORS,
+    particleLod: BOYKISSER_PARTICLE_LOD,
     vector: BOYKISSER_VECTOR,
     features: FEATURE_NAMES.map(name => ({ name, ...BOYKISSER_FEATURES[name] })),
   });
@@ -159,6 +165,48 @@
     result = Math.imul((result >>> 16) ^ result, 0x045d9f3b) >>> 0;
     result = Math.imul((result >>> 16) ^ result, 0x045d9f3b) >>> 0;
     return ((result >>> 16) ^ result) >>> 0;
+  }
+
+  function polygonContains(point, points) {
+    let inside = false;
+    for (let current = 0, previous = points.length - 1; current < points.length; previous = current++) {
+      const [ax, ay] = points[current];
+      const [bx, by] = points[previous];
+      if (((ay > point[1]) !== (by > point[1])) &&
+        point[0] < ((bx - ax) * (point[1] - ay)) / (by - ay) + ax) inside = !inside;
+    }
+    return inside;
+  }
+
+  function shouldUseSilhouetteFill(index, count, seed, featureIndex) {
+    if (index < FEATURE_NAMES.length || FEATURES[featureIndex].role !== BOYKISSER_ROLES.HEAD) return false;
+    return hash32(
+      (seed >>> 0) ^
+      Math.imul((index + 1) >>> 0, 0x7f4a7c15) ^
+      Math.imul((featureIndex + 1) >>> 0, 0x94d049bb) ^
+      Math.imul(count >>> 0, 0x85ebca6b)
+    ) % 3 !== 0;
+  }
+
+  function sampleSilhouetteFill(index, count, seed, featureIndex) {
+    const basis = hash32(
+      (seed >>> 0) ^
+      Math.imul((index + 1) >>> 0, 0x27d4eb2d) ^
+      Math.imul((featureIndex + 1) >>> 0, 0x165667b1) ^
+      Math.imul(count >>> 0, 0x85ebca6b)
+    );
+    for (let attempt = 0; attempt < 48; attempt += 1) {
+      const xHash = hash32(basis ^ Math.imul(attempt + 1, 0x9e3779b9));
+      const yHash = hash32(xHash ^ 0xa5a5a5a5);
+      const point = [
+        ((xHash & 0xffff) / 0xffff) * 1.94 - 0.97,
+        ((yHash & 0xffff) / 0xffff) * 1.98 - 0.99,
+      ];
+      if (polygonContains(point, BOYKISSER_VECTOR.silhouette) &&
+        !BOYKISSER_VECTOR.blackFills.some(points => polygonContains(point, points)) &&
+        !BOYKISSER_VECTOR.redStrokes.some(points => polygonContains(point, points))) return point;
+    }
+    return [0, 0.35];
   }
 
   function featureIndexFor(index, count, seed) {
@@ -197,7 +245,10 @@
     const featureIndex = featureIndexFor(index, count, seed);
     const entry = FEATURES[featureIndex];
     let point;
-    if (index < FEATURE_NAMES.length) {
+    const silhouetteFill = shouldUseSilhouetteFill(index, count, seed, featureIndex);
+    if (silhouetteFill) {
+      point = sampleSilhouetteFill(index, count, seed, featureIndex);
+    } else if (index < FEATURE_NAMES.length) {
       point = entry.anchor;
     } else {
       const sampleSeed = sampleSeedFor(index, count, seed, featureIndex);
@@ -215,7 +266,7 @@
     return Object.freeze({
       x: point[0],
       y: point[1],
-      feature: FEATURE_NAMES[featureIndex],
+      feature: silhouetteFill ? 'silhouette-fill' : FEATURE_NAMES[featureIndex],
       role: entry.role,
       color: Object.freeze([...ROLE_COLORS[entry.role]]),
     });
@@ -358,6 +409,26 @@ ${redCoverageChecks}
   return 0.0;
 }
 
+fn boykisserFillPoint(index: u32, count: u32, seed: u32, feature: u32) -> vec2f {
+  let basis = boykisserHash(
+    seed ^ ((index + 1u) * 0x27d4eb2du) ^
+    ((feature + 1u) * 0x165667b1u) ^ (count * 0x85ebca6bu)
+  );
+  for (var attempt = 0u; attempt < 48u; attempt += 1u) {
+    let xHash = boykisserHash(basis ^ ((attempt + 1u) * 0x9e3779b9u));
+    let yHash = boykisserHash(xHash ^ 0xa5a5a5a5u);
+    let point = vec2f(
+      (f32(xHash & 0xffffu) / 65535.0) * 1.94 - 0.97,
+      (f32(yHash & 0xffffu) / 65535.0) * 1.98 - 0.99
+    );
+    if (boykisserSilhouetteContains(point) &&
+        boykisserBlackCoverage(point) < 0.5 && boykisserRedCoverage(point) < 0.5) {
+      return point;
+    }
+  }
+  return vec2f(0.0, 0.35);
+}
+
 fn boykisserVectorColor(uv: vec2f) -> vec4f {
   let squarePoint = uv * 2.0 - vec2f(1.0);
   let point = vec2f(squarePoint.x / ${wgslFloat(BOYKISSER_VECTOR.aspectRatio)}, squarePoint.y);
@@ -397,6 +468,13 @@ ${featurePointCases}
 fn boykisserPoint(index: u32, count: u32, seed: u32) -> vec2f {
   let feature = boykisserFeature(index, count, seed);
   if (index < BOYKISSER_FEATURE_COUNT) { return boykisserAnchor(feature); }
+  let fillTicket = boykisserHash(
+    seed ^ ((index + 1u) * 0x7f4a7c15u) ^
+    ((feature + 1u) * 0x94d049bbu) ^ (count * 0x85ebca6bu)
+  );
+  if (boykisserRole(index, count, seed) == ${BOYKISSER_ROLES.HEAD}u && fillTicket % 3u != 0u) {
+    return boykisserFillPoint(index, count, seed, feature);
+  }
   return boykisserFeaturePoint(feature, boykisserSampleSeed(index, count, seed, feature));
 }
 `;
@@ -407,6 +485,7 @@ fn boykisserPoint(index: u32, count: u32, seed: u32) -> vec2f {
     BOYKISSER_ROLES,
     BOYKISSER_COLORS,
     BOYKISSER_VECTOR,
+    BOYKISSER_PARTICLE_LOD,
     sampleBoykisser,
     sampleBoykisserSet,
     buildBoykisserWgsl,

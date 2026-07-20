@@ -168,8 +168,8 @@ class CoinBattlePlugin {
   /**
    * Load plugin configuration from database
    */
-  loadConfiguration() {
-    const defaultConfig = {
+  getDefaultConfiguration() {
+    return {
       matchDuration: 300,
       autoStart: false,
       autoReset: true,
@@ -203,6 +203,10 @@ class CoinBattlePlugin {
         showXPAwards: true
       }
     };
+  }
+
+  loadConfiguration() {
+    const defaultConfig = this.getDefaultConfiguration();
 
     const savedConfig = this.api.getConfig('coinbattle_config') || {};
     return {
@@ -213,6 +217,16 @@ class CoinBattlePlugin {
         ...(savedConfig.postMatch || {})
       }
     };
+  }
+
+  resetConfiguration() {
+    const defaults = this.getDefaultConfiguration();
+    this.api.setConfig('coinbattle_config', defaults);
+    this.engine.loadConfig(defaults);
+    if (this.pyramidMode && defaults.postMatch) {
+      this.pyramidMode.setPostMatchConfig(defaults.postMatch);
+    }
+    return defaults;
   }
 
   /**
@@ -262,6 +276,99 @@ class CoinBattlePlugin {
   }
 
   /**
+   * Start exactly one CoinBattle owner. Pyramid is a standalone alternative
+   * to the normal engine, never a child/parallel score stream.
+   */
+  startMatchForMode(mode, duration) {
+    if (mode === 'pyramid') {
+      if (!this.pyramidMode) {
+        throw new Error('Pyramid Battle is not available');
+      }
+      if (this.engine?.currentMatch) {
+        throw new Error('Cannot start Pyramid while a normal CoinBattle is active');
+      }
+      if (this.pyramidMode.active) {
+        throw new Error('Pyramid round already active');
+      }
+      return this.pyramidMode.startRound(null, duration);
+    }
+
+    if (this.pyramidMode?.active) {
+      throw new Error('Cannot start normal CoinBattle while Pyramid is active');
+    }
+    return this.engine.startMatch(mode, duration);
+  }
+
+  assertNormalMatchActive() {
+    if (this.pyramidMode?.active) {
+      throw new Error('This control is unavailable while Pyramid is active');
+    }
+    if (!this.engine?.currentMatch) {
+      throw new Error('No active normal CoinBattle match');
+    }
+  }
+
+  /**
+   * Route one gift to the currently active gameplay owner.
+   */
+  async processGiftEvent(data) {
+    const coins = data.coins || data.diamondCount || data.giftValue || 1;
+    const giftData = {
+      giftId: data.giftId,
+      giftName: data.giftName,
+      diamondCount: data.diamondCount || data.giftValue || 1,
+      coins,
+      repeatCount: data.repeatCount || 1
+    };
+    const userData = {
+      userId: data.userId,
+      uniqueId: data.uniqueId,
+      nickname: data.nickname,
+      profilePictureUrl: data.profilePictureUrl
+    };
+
+    const pyramidAutoStart = !this.engine.currentMatch &&
+      this.pyramidMode &&
+      this.pyramidMode.config.enabled &&
+      this.pyramidMode.config.autoStart;
+
+    if (this.pyramidMode?.active || pyramidAutoStart) {
+      return {
+        owner: 'pyramid',
+        result: this.pyramidMode.processGift(userData, coins),
+        userData,
+        coins
+      };
+    }
+
+    const eventId = this.extractTikTokEventId(data);
+    const giftResult = this.engine.processGift(giftData, userData, eventId);
+    if (!giftResult || giftResult.duplicate) {
+      return { owner: 'normal', result: giftResult, userData, coins };
+    }
+
+    if (this.kothMode?.active) {
+      this.kothMode.updateLeaderboard(this.engine.getLeaderboard(100));
+    }
+
+    return { owner: 'normal', result: giftResult, userData, coins };
+  }
+
+  checkGiftAchievements(userData) {
+    const playerStats = this.db?.getPlayerStats?.(userData.userId);
+    if (!playerStats || !this.avatarSystem) return;
+
+    const unlockedSkins = this.avatarSystem.checkAchievements(userData.userId, playerStats);
+    if (unlockedSkins.length > 0) {
+      this.io.emit('coinbattle:skins-unlocked', {
+        userId: userData.userId,
+        nickname: userData.nickname,
+        skins: unlockedSkins
+      });
+    }
+  }
+
+  /**
    * Extract a stable TikTok event id for gift deduplication.
    */
   extractTikTokEventId(data = {}) {
@@ -291,8 +398,12 @@ class CoinBattlePlugin {
 
     if (this.engine && typeof this.engine.onMatchEnded === 'function') {
       this.matchEndedUnsubscribe = this.engine.onMatchEnded((data) => {
-        if (data.mode === 'pyramid' && this.pyramidMode && this.pyramidMode.active) {
-          this.pyramidMode.endRound();
+        if (this.kothMode?.active) {
+          this.kothMode.end();
+        }
+
+        if (this.likesPointsSystem) {
+          this.likesPointsSystem.clearMatch(data.matchId);
         }
 
         this.awardMatchXP(data);
@@ -505,27 +616,8 @@ class CoinBattlePlugin {
           const resolvedMode = matchMode || configuredMode;
           const matchDuration = this.parseBoundedNumber(duration, config.matchDuration, 10, 3600);
 
-          if (resolvedMode === 'pyramid') {
-            if (!this.pyramidMode) {
-              throw new Error('Pyramid Battle is not available');
-            }
-
-            if (this.pyramidMode.active) {
-              throw new Error('Pyramid round already active');
-            }
-          }
-
-          const match = this.engine.startMatch(resolvedMode, matchDuration);
-          let pyramid = null;
-
-          if (match.mode === 'pyramid') {
-            pyramid = this.pyramidMode.startRound(match.id, matchDuration);
-            if (!pyramid.success) {
-              throw new Error(pyramid.error || 'Failed to start Pyramid Battle');
-            }
-          }
-
-          res.json({ success: true, data: pyramid ? { ...match, pyramid } : match });
+          const match = this.startMatchForMode(resolvedMode, matchDuration);
+          res.json({ success: true, data: match });
         } catch (error) {
           this.api.log(`Error starting match: ${error.message}`, 'error');
           res.status(500).json({ success: false, error: error.message });
@@ -537,7 +629,9 @@ class CoinBattlePlugin {
     this.api.registerRoute('POST', '/api/plugins/coinbattle/match/end', 
       withRateLimit(strictLimit, (req, res) => {
         try {
-          const result = this.engine.endMatch();
+          const result = this.pyramidMode?.active
+            ? this.pyramidMode.endRound()
+            : this.engine.endMatch();
           res.json({ success: true, data: result });
         } catch (error) {
           this.api.log(`Error ending match: ${error.message}`, 'error');
@@ -550,6 +644,7 @@ class CoinBattlePlugin {
     this.api.registerRoute('POST', '/api/plugins/coinbattle/match/pause', 
       withRateLimit(strictLimit, (req, res) => {
         try {
+          this.assertNormalMatchActive();
           const success = this.engine.pauseMatch();
           res.json({ success });
         } catch (error) {
@@ -563,6 +658,7 @@ class CoinBattlePlugin {
     this.api.registerRoute('POST', '/api/plugins/coinbattle/match/resume', 
       withRateLimit(strictLimit, (req, res) => {
         try {
+          this.assertNormalMatchActive();
           const success = this.engine.resumeMatch();
           res.json({ success });
         } catch (error) {
@@ -576,6 +672,7 @@ class CoinBattlePlugin {
     this.api.registerRoute('POST', '/api/plugins/coinbattle/match/extend', 
       withRateLimit(strictLimit, (req, res) => {
         try {
+          this.assertNormalMatchActive();
           const { seconds } = req.body;
           const extensionSeconds = this.parseBoundedNumber(seconds, 60, 1, 600);
           const success = this.engine.extendMatch(extensionSeconds);
@@ -591,6 +688,7 @@ class CoinBattlePlugin {
     this.api.registerRoute('POST', '/api/plugins/coinbattle/multiplier/activate', 
       withRateLimit(strictLimit, (req, res) => {
         try {
+          this.assertNormalMatchActive();
           const { multiplier, duration, activatedBy } = req.body;
           const safeMultiplier = this.parseBoundedNumber(multiplier, 2.0, 1.0, 10.0, false);
           const safeDuration = this.parseBoundedNumber(duration, 30, 1, 600);
@@ -703,6 +801,9 @@ class CoinBattlePlugin {
           if (!seasonName || !Number.isFinite(Number(startDate)) || !Number.isFinite(Number(endDate))) {
             return res.status(400).json({ success: false, error: 'Invalid season data' });
           }
+          if (Number(endDate) <= Number(startDate)) {
+            return res.status(400).json({ success: false, error: 'Season end date must be after start date' });
+          }
           const result = this.db.createOrUpdateSeason(seasonName, startDate, endDate);
           res.json(result);
         } catch (error) {
@@ -781,6 +882,20 @@ class CoinBattlePlugin {
       })
     );
 
+    // Reset configuration to the documented defaults.
+    this.api.registerRoute('POST', '/api/plugins/coinbattle/config/reset',
+      withRateLimit(moderateLimit, (req, res) => {
+        try {
+          const config = this.resetConfiguration();
+          this.io.emit('coinbattle:config-updated', config);
+          res.json({ success: true, data: config });
+        } catch (error) {
+          this.api.log(`Error resetting config: ${error.message}`, 'error');
+          res.status(500).json({ success: false, error: error.message });
+        }
+      })
+    );
+
     // Start offline simulation (moderate rate limiting)
     this.api.registerRoute('POST', '/api/plugins/coinbattle/simulation/start', 
       withRateLimit(moderateLimit, (req, res) => {
@@ -814,10 +929,31 @@ class CoinBattlePlugin {
       withRateLimit(strictLimit, (req, res) => {
         try {
           const { matchId } = req.body;
-          this.kothMode.start(matchId);
+          this.assertNormalMatchActive();
+          const activeMatchId = this.engine.currentMatch.id;
+          if (matchId && Number(matchId) !== Number(activeMatchId)) {
+            throw new Error('KOTH matchId must match the active CoinBattle match');
+          }
+          this.kothMode.start(activeMatchId);
           res.json({ success: true });
         } catch (error) {
           this.api.log(`Error starting KOTH mode: ${error.message}`, 'error');
+          res.status(500).json({ success: false, error: error.message });
+        }
+      })
+    );
+
+    // Stop KOTH mode without ending the underlying CoinBattle match.
+    this.api.registerRoute('POST', '/api/plugins/coinbattle/koth/end',
+      withRateLimit(strictLimit, (req, res) => {
+        try {
+          if (!this.kothMode.active) {
+            return res.status(400).json({ success: false, error: 'KOTH mode is not active' });
+          }
+          const stats = this.kothMode.end();
+          res.json({ success: true, data: stats });
+        } catch (error) {
+          this.api.log(`Error stopping KOTH mode: ${error.message}`, 'error');
           res.status(500).json({ success: false, error: error.message });
         }
       })
@@ -1198,8 +1334,13 @@ class CoinBattlePlugin {
     this.api.registerRoute('POST', '/api/plugins/coinbattle/pyramid/start',
       withRateLimit(strictLimit, (req, res) => {
         try {
-          const { matchId } = req.body;
-          const result = this.pyramidMode.startRound(matchId);
+          const duration = this.parseBoundedNumber(
+            req.body?.duration,
+            this.pyramidMode.config.roundDuration,
+            10,
+            3600
+          );
+          const result = this.startMatchForMode('pyramid', duration);
           res.json(result);
         } catch (error) {
           this.api.log(`Error starting pyramid round: ${error.message}`, 'error');
@@ -1438,18 +1579,41 @@ class CoinBattlePlugin {
     this.api.registerSocket('coinbattle:assign-team', (socket, data) => {
       try {
         const { userId, team } = data;
-        if (this.engine.currentMatch) {
-          // Update team in database
-          const rawDb = this.db.getRawDb();
+        if (!this.engine.currentMatch || this.engine.currentMatch.mode !== 'team') {
+          throw new Error('Manual team assignment requires an active team match');
+        }
+        if (!['red', 'blue'].includes(team)) {
+          throw new Error('Team must be red or blue');
+        }
+        if (!userId || typeof userId !== 'string') {
+          throw new Error('A valid userId is required');
+        }
+
+        const rawDb = this.db.getRawDb();
+        const player = this.db.getOrCreatePlayer({
+          userId,
+          uniqueId: userId,
+          nickname: userId,
+          profilePictureUrl: null
+        });
+        const participant = rawDb.prepare(`
+          SELECT id FROM coinbattle_match_participants
+          WHERE match_id = ? AND player_id = ?
+        `).get(this.engine.currentMatch.id, player.id);
+
+        if (participant) {
           rawDb.prepare(`
             UPDATE coinbattle_match_participants
             SET team = ?
-            WHERE match_id = ? AND user_id = ?
-          `).run(team, this.engine.currentMatch.id, userId);
-
-          this.engine.emitLeaderboard();
-          socket.emit('coinbattle:team-assigned', { userId, team });
+            WHERE id = ?
+          `).run(team, participant.id);
+        } else {
+          this.db.addMatchParticipant(this.engine.currentMatch.id, player.id, userId, team);
         }
+
+        this.engine.setPlayerTeam(userId, team);
+        this.engine.emitLeaderboard();
+        socket.emit('coinbattle:team-assigned', { userId, team });
       } catch (error) {
         this.api.log(`Error assigning team: ${error.message}`, 'error');
       }
@@ -1465,59 +1629,9 @@ class CoinBattlePlugin {
     // Gift received
     this.api.registerTikTokEvent('gift', async (data) => {
       try {
-        // FIX: Use data.coins (already calculated as diamondCount * repeatCount)
-        // instead of data.diamondCount (which is just the raw diamond value per gift)
-        const coins = data.coins || data.diamondCount || data.giftValue || 1;
-        
-        const giftData = {
-          giftId: data.giftId,
-          giftName: data.giftName,
-          diamondCount: data.diamondCount || data.giftValue || 1,
-          coins: coins,
-          repeatCount: data.repeatCount || 1
-        };
-
-        const userData = {
-          userId: data.userId,
-          uniqueId: data.uniqueId,
-          nickname: data.nickname,
-          profilePictureUrl: data.profilePictureUrl
-        };
-
-        // Use performance manager for optimized gift processing
-        await this.performanceManager.processGiftEvent(userData.userId, giftData);
-
-        // Process gift through engine
-        const eventId = this.extractTikTokEventId(data);
-        const giftResult = this.engine.processGift(giftData, userData, eventId);
-
-        if (!giftResult || giftResult.duplicate) {
-          return;
-        }
-
-        // Update KOTH mode if active
-        if (this.kothMode && this.kothMode.currentKing) {
-          const leaderboard = this.engine.getLeaderboard(100);
-          this.kothMode.updateLeaderboard(leaderboard);
-        }
-
-        // Process gift through Pyramid Mode if enabled or manually started.
-        if (this.pyramidMode && (this.pyramidMode.config.enabled || this.pyramidMode.active)) {
-          this.pyramidMode.processGift(userData, coins);
-        }
-
-        // Check for avatar achievement unlocks
-        const playerStats = this.db.getPlayerStats(userData.userId);
-        if (playerStats) {
-          const unlockedSkins = this.avatarSystem.checkAchievements(userData.userId, playerStats);
-          if (unlockedSkins.length > 0) {
-            this.io.emit('coinbattle:skins-unlocked', {
-              userId: userData.userId,
-              nickname: userData.nickname,
-              skins: unlockedSkins
-            });
-          }
-        }
+        const result = await this.processGiftEvent(data);
+        if (!result.result || result.result.duplicate) return;
+        this.checkGiftAchievements(result.userData);
       } catch (error) {
         this.api.log(`Error processing gift: ${error.message}`, 'error');
       }
@@ -1554,14 +1668,13 @@ class CoinBattlePlugin {
           profilePictureUrl: data.profilePictureUrl
         };
 
-        // Process likes through Pyramid Mode while a round is active.
-        if (this.pyramidMode && this.pyramidMode.active) {
-          if (data.likeCount) {
-            this.pyramidMode.processLike(userData, data.likeCount);
-          }
+        // Pyramid owns the event exclusively while a round is active.
+        if (this.pyramidMode?.active) {
+          if (data.likeCount) this.pyramidMode.processLike(userData, data.likeCount);
+          return;
         }
 
-        // Process likes as points for coinbattle if match is active
+        // Process likes as points for normal CoinBattle if a match is active.
         if (!this.engine.currentMatch) return;
         
         // Process likes as points if enabled
@@ -1597,6 +1710,7 @@ class CoinBattlePlugin {
 
     // Share event - integrate with likes points system
     this.api.registerTikTokEvent('share', async (data) => {
+      if (this.pyramidMode?.active) return;
       if (!this.engine.currentMatch) return;
       
       try {
@@ -1637,6 +1751,7 @@ class CoinBattlePlugin {
 
     // Follow event - integrate with likes points system
     this.api.registerTikTokEvent('follow', async (data) => {
+      if (this.pyramidMode?.active) return;
       if (!this.engine.currentMatch) return;
       
       try {
@@ -1676,6 +1791,7 @@ class CoinBattlePlugin {
 
     // Comment event - integrate with likes points system
     this.api.registerTikTokEvent('chat', async (data) => {
+      if (this.pyramidMode?.active) return;
       if (!this.engine.currentMatch) return;
       
       try {
@@ -1746,6 +1862,10 @@ class CoinBattlePlugin {
 
     if (this.friendChallenges) {
       this.friendChallenges.destroy();
+    }
+
+    if (this.db) {
+      this.db.destroy();
     }
 
     this.api.log('✅ CoinBattle Plugin destroyed with all features cleaned up', 'info');

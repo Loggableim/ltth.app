@@ -60,6 +60,12 @@ class PyramidMode {
       totalKnockouts: 0,
       roundsPlayed: 0
     };
+    this.roundStats = {
+      totalPointsEarned: 0,
+      totalExtensions: 0,
+      totalKnockouts: 0
+    };
+    this.roundBaseDuration = 0;
 
     // Post-match configuration (set by parent plugin)
     this.postMatchConfig = null;
@@ -259,9 +265,32 @@ class PyramidMode {
       'xpRewardsEnabled', 'xpDistributionMode', 'xpConversionRate', 'xpRewardedPlaces'
     ];
 
-    Object.keys(newConfig).forEach(key => {
+    Object.keys(newConfig || {}).forEach(key => {
       if (validKeys.includes(key)) {
-        this.config[key] = newConfig[key];
+        if (['enabled', 'autoStart', 'xpRewardsEnabled'].includes(key)) {
+          this.config[key] = newConfig[key] === true || newConfig[key] === 1;
+          return;
+        }
+
+        if (key === 'xpDistributionMode') {
+          if (!['winner-takes-all', 'top3', 'top5', 'top10'].includes(newConfig[key])) {
+            throw new Error('xpDistributionMode has an invalid value');
+          }
+          this.config[key] = newConfig[key];
+          return;
+        }
+
+        const value = Number(newConfig[key]);
+        const integerKey = ['rowCount', 'roundDuration', 'coinsPerPoint', 'likesPerPoint', 'minCoinsToJoin', 'xpRewardedPlaces'].includes(key);
+        const minimum = ['extensionPerCoin', 'maxExtension', 'minCoinsToJoin'].includes(key) ? 0 :
+          (key === 'xpConversionRate' ? Number.MIN_VALUE : 1);
+        if (!Number.isFinite(value) || value < minimum || (integerKey && !Number.isInteger(value))) {
+          throw new Error(`${key} has an invalid value`);
+        }
+        if (key === 'rowCount' && (value < 1 || value > 6)) {
+          throw new Error('rowCount must be between 1 and 6');
+        }
+        this.config[key] = value;
       }
     });
 
@@ -331,9 +360,15 @@ class PyramidMode {
     this.matchId = matchId;
     this.roundStartTime = Date.now();
     this.roundDuration = roundDuration;
+    this.roundBaseDuration = roundDuration;
     this.remainingTime = this.roundDuration;
     this.players.clear();
     this.previousLeaderboard = [];
+    this.roundStats = {
+      totalPointsEarned: 0,
+      totalExtensions: 0,
+      totalKnockouts: 0
+    };
     this.stats.roundsPlayed++;
 
     // Start timer
@@ -387,7 +422,7 @@ class PyramidMode {
         Math.floor(this.roundStartTime / 1000),
         Math.floor(Date.now() / 1000),
         this.roundDuration,
-        this.stats.totalExtensions,
+        this.roundStats.totalExtensions,
         this.players.size,
         winner ? winner.userId : null,
         winner ? winner.points : 0
@@ -459,13 +494,14 @@ class PyramidMode {
 
     const extension = Math.min(
       coins * this.config.extensionPerCoin,
-      this.config.maxExtension - (this.roundDuration - this.config.roundDuration)
+      this.config.maxExtension - (this.roundDuration - this.roundBaseDuration)
     );
 
     if (extension > 0) {
       this.roundDuration += extension;
       this.remainingTime += extension;
       this.stats.totalExtensions++;
+      this.roundStats.totalExtensions++;
 
       this.io.emit('pyramid:round-extended', {
         extension,
@@ -492,11 +528,18 @@ class PyramidMode {
       return { success: false, error: 'Pyramid not active' };
     }
 
-    const points = coins * this.config.coinsPerPoint;
-    const result = this.addPoints(userData, points, 'gift', coins);
+    const safeCoins = Number(coins);
+    if (!Number.isFinite(safeCoins) || safeCoins <= 0) {
+      return { success: false, error: 'Coins must be a positive number' };
+    }
 
-    // Extend round based on coins
-    this.extendRound(coins);
+    const points = safeCoins * this.config.coinsPerPoint;
+    const result = this.addPoints(userData, points, 'gift', safeCoins);
+
+    // A rejected newcomer must not be able to extend the round.
+    if (result.success) {
+      this.extendRound(safeCoins);
+    }
 
     return result;
   }
@@ -560,6 +603,7 @@ class PyramidMode {
     }
 
     this.stats.totalPointsEarned += points;
+    this.roundStats.totalPointsEarned += points;
 
     // Get new position
     const newPosition = this.getPlayerPosition(userId);
@@ -576,6 +620,7 @@ class PyramidMode {
     if (previousLeader && currentLeader && previousLeader.userId !== currentLeader.userId) {
       knockout = true;
       this.stats.totalKnockouts++;
+      this.roundStats.totalKnockouts++;
 
       this.io.emit('pyramid:knockout', {
         newLeader: currentLeader,
@@ -887,6 +932,11 @@ class PyramidMode {
     this.stopTimer();
     this.active = false;
     this.players.clear();
+    this.roundStats = {
+      totalPointsEarned: 0,
+      totalExtensions: 0,
+      totalKnockouts: 0
+    };
     this.xpAwardHandlers.clear();
     this.logger.info('🔺 Pyramid Mode destroyed');
   }

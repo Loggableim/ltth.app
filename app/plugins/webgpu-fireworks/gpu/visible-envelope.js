@@ -27,6 +27,7 @@
     boykisser: 25,
     'trans-flag': 26,
   });
+  const BOYKISSER_ASPECT_RATIO = 2452 / 3259;
   const ROCKET_VARIANTS = Object.freeze(['standard', 'avatar-head', 'decal']);
   const ENVELOPE_FLAG_BITS = Object.freeze({
     TRAIL: 1 << 0,
@@ -241,6 +242,35 @@
     };
   }
 
+  function authoredGlyphExtentEnvelope(command, viewport, profile, scale) {
+    const origin = point(command.origin);
+    const depth = quantizedDepth(command.burstDepth);
+    const projected = projectPoint(origin, depth, viewport);
+    const authoredExtent = positive(command.viewportMaterialization?.glyphExtent);
+    const admissionScale = command.admissionScaleApplied === true
+      ? Math.max(Number.EPSILON, positive(command.admissionScale, 1) || 1)
+      : scale;
+    const width = viewport.width * authoredExtent * admissionScale;
+    const aspectRatio = Number(command.shape) === V2_GLYPH_IDS.boykisser
+      ? BOYKISSER_ASPECT_RATIO
+      : 1;
+    const halfWidth = width * 0.5;
+    const halfHeight = halfWidth / aspectRatio;
+    const size = positive(command.size, 6) * scale;
+    const quad = size * profile.quadAxisFactor * profile.rotationFactor * projected.scale;
+    const post = logicalPostRadius(command, viewport, scale);
+    const duration = positive(command.particleDuration, positive(command.duration, 1.2));
+    const gravityDrift = Math.max(0, finite(command.gravity)) * duration * duration * 0.5 * projected.scale;
+    return {
+      left: projected.x - halfWidth - quad - post,
+      top: projected.y - halfHeight - quad - post,
+      right: projected.x + halfWidth + quad + post,
+      bottom: projected.y + halfHeight + quad + post + gravityDrift,
+      components: ['authored-glyph-extent', 'rotated-quad', 'glow', 'bloom'],
+      responseScale: projected.scale,
+    };
+  }
+
   function vectorHeroEnvelope(command, viewport, scale) {
     const origin = point(command.origin);
     const depth = quantizedDepth(command.burstDepth);
@@ -331,8 +361,13 @@
     const flags = Number(command.flags) >>> 0;
     const vectorHero = Number(command.shape) === V2_GLYPH_IDS.boykisser &&
       (flags & ENVELOPE_FLAG_BITS.VECTOR_HERO) !== 0;
+    const authoredGlyphExtent = profile.category === 'shape' &&
+      profile.shapeId >= V2_GLYPH_IDS.paw && profile.shapeId <= V2_GLYPH_IDS['trans-flag'] &&
+      positive(command.viewportMaterialization?.glyphExtent) > 0;
     return vectorHero
       ? vectorHeroEnvelope(command, normalizedViewport, scale)
+      : authoredGlyphExtent
+        ? authoredGlyphExtentEnvelope(command, normalizedViewport, profile, scale)
       : shapeEnvelope(command, normalizedViewport, profile, scale);
   }
 

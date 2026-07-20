@@ -17,7 +17,10 @@ const {
   PHASE_CONCURRENCY_CAPS,
   validateShowDefinition
 } = require('../plugins/webgpu-fireworks/lib/pyrodsl');
-const { BOYKISSER_COLORS } = require('../plugins/webgpu-fireworks/gpu/boykisser-geometry');
+const {
+  BOYKISSER_COLORS,
+  BOYKISSER_PARTICLE_LOD,
+} = require('../plugins/webgpu-fireworks/gpu/boykisser-geometry');
 
 const roleHex = rgb => `#${rgb.map(component => (
   Math.round(component * 255).toString(16).padStart(2, '0')
@@ -228,6 +231,7 @@ describe('WebGPU Fireworks built-in PyroDSL shows', () => {
     const transLayers = layers.filter(layer => layer.glyph === 'trans-flag');
 
     expect(boyLayers.length).toBeGreaterThan(0);
+    expect(boyLayers.every(layer => layer.density >= BOYKISSER_PARTICLE_LOD.cameo)).toBe(true);
     const semanticPalette = [
       roleHex(BOYKISSER_COLORS.HEAD),
       roleHex(BOYKISSER_COLORS.FACE),
@@ -260,11 +264,33 @@ describe('WebGPU Fireworks built-in PyroDSL shows', () => {
       roleHex(BOYKISSER_COLORS.PINK)
     ]);
     expect(hero.shells[0]).toMatchObject({
-      launchMode: 'airburst',
-      target: { x: 0.5, y: 0.5 },
+      launchMode: 'rocket',
+      target: { x: 0.5, y: 0.38 },
       renderHints: { depthEnabled: true }
     });
+    expect(boyLayers[0].density).toBe(BOYKISSER_PARTICLE_LOD.hero);
     expect(hero.shells[0].layers.some(layer => ['fox-head', 'wolf-head'].includes(layer.glyph))).toBe(false);
+  });
+
+  test.each(FINALE_LENGTHS)('choreographs Trans, Rainbow and braided special rocket trails in %s', length => {
+    const plan = new FinaleShowPlanner().plan({
+      style: 'furry-celebration', length, orientation: 'landscape', intensity: 5, seed: 88
+    });
+    const finaleTrails = plan.cues.filter(cue => cue.phase === 'finale')
+      .flatMap(cue => cue.shells)
+      .filter(shell => shell.rocketTrail)
+      .map(shell => shell.rocketTrail);
+
+    expect(new Set(finaleTrails.map(trail => trail.style)))
+      .toEqual(new Set(['comet', 'spiral', 'braided']));
+    expect(finaleTrails.some(trail => trail.colors.join() === ['#5BCEFA', '#F5A9B8', '#FFFFFF'].join()))
+      .toBe(true);
+    expect(finaleTrails.some(trail => ['#E40303', '#FFED00', '#008026', '#24408E']
+      .every(color => trail.colors.includes(color)))).toBe(true);
+    expect(plan.cues.at(-1).shells[0].rocketTrail).toMatchObject({
+      style: 'braided',
+      colors: expect.arrayContaining(['#E40303', '#FFED00', '#24408E', '#732982'])
+    });
   });
 
   test('imports the semantic palette instead of declaring a second Boykisser color table', () => {

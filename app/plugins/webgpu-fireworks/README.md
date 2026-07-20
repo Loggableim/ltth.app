@@ -2,6 +2,12 @@
 
 This edition requires the [Loggableim OBS WebGPU build](https://github.com/Loggableim/obs-studio-webgpu). In OBS, set Browser Source WebGPU mode to `Auto`, add the current LTTH HTTP origin to the insecure-origin allowlist, restart OBS, and refresh the Browser Source cache after plugin updates.
 
+## Release 3.1.1
+
+- Star, ring, standard, and special rockets use the same immutable visible-envelope fit as their explosion command.
+- Every burst opens at the exact rendered rocket endpoint with preserved top headroom, including rockets fired from the settings test controls.
+- Preview telemetry, show-style catalogs, benchmark payloads, and crackle controls are validated against the current runtime contracts.
+
 🎆 GPU-accelerated fireworks effects for TikTok LIVE streams with gift-specific displays, combo systems, and interactive triggers.
 
 ## Features

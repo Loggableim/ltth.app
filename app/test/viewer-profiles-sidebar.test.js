@@ -1,11 +1,5 @@
 /**
- * Test: Viewer Profiles Plugin Sidebar Integration
- *
- * Validates that the Viewer Profiles feature is exposed by the consolidated
- * milestone-leaderboard plugin in the dashboard:
- * - Sidebar menu entry exists with correct attributes
- * - View container exists with iframe lazy-loading
- * - Locale translations exist in supported locales
+ * Regression coverage for the hidden, consolidated Viewer Profiles UI.
  */
 
 const fs = require('fs');
@@ -16,143 +10,28 @@ function readLocale(filePath) {
   return JSON.parse(raw.replace(/^\uFEFF/, ''));
 }
 
-describe('Viewer Profiles Plugin Sidebar Integration', () => {
+describe('Viewer Profiles dashboard cleanup', () => {
   let dashboardHtml;
-  let enLocale;
-  let deLocale;
-  let esLocale;
-  let frLocale;
+  let locales;
 
   beforeAll(() => {
     const dashboardPath = path.join(__dirname, '..', 'public', 'dashboard.html');
     dashboardHtml = fs.readFileSync(dashboardPath, 'utf8');
 
-    enLocale = readLocale(path.join(__dirname, '..', 'locales', 'en.json'));
-    deLocale = readLocale(path.join(__dirname, '..', 'locales', 'de.json'));
-    esLocale = readLocale(path.join(__dirname, '..', 'locales', 'es.json'));
-    frLocale = readLocale(path.join(__dirname, '..', 'locales', 'fr.json'));
+    locales = ['de', 'en', 'es', 'fr'].map(locale => readLocale(
+      path.join(__dirname, '..', 'locales', `${locale}.json`)
+    ));
   });
 
-  describe('Sidebar Menu Entry', () => {
-    test('should have viewer-profiles sidebar item with correct data-view', () => {
-      expect(dashboardHtml).toContain('data-view="viewer-profiles"');
-    });
-
-    test('should have viewer-profiles sidebar item backed by milestone-leaderboard', () => {
-      expect(dashboardHtml).toContain('data-view="viewer-profiles" data-plugin="milestone-leaderboard"');
-    });
-
-    test('should use users icon for viewer-profiles sidebar item', () => {
-      const sidebarSection = dashboardHtml.substring(
-        dashboardHtml.indexOf('data-view="viewer-profiles"') - 100,
-        dashboardHtml.indexOf('data-view="viewer-profiles"') + 250
-      );
-      expect(sidebarSection).toContain('data-lucide="users"');
-    });
-
-    test('should use i18n key for viewer-profiles label', () => {
-      const sidebarSection = dashboardHtml.substring(
-        dashboardHtml.indexOf('data-view="viewer-profiles"') - 100,
-        dashboardHtml.indexOf('data-view="viewer-profiles"') + 300
-      );
-      expect(sidebarSection).toContain('data-i18n="navigation.viewer_profiles"');
-    });
-
-    test('should appear after the master Viewer XP entry in sidebar', () => {
-      const leaderboardIdx = dashboardHtml.indexOf('data-view="milestone-leaderboard"');
-      const profilesIdx = dashboardHtml.indexOf('data-view="viewer-profiles"');
-      expect(leaderboardIdx).toBeGreaterThan(0);
-      expect(profilesIdx).toBeGreaterThan(leaderboardIdx);
-    });
-
-    test('sidebar item should follow existing sidebar-item class pattern', () => {
-      const sidebarSection = dashboardHtml.substring(
-        dashboardHtml.indexOf('data-view="viewer-profiles"') - 100,
-        dashboardHtml.indexOf('data-view="viewer-profiles"') + 250
-      );
-      expect(sidebarSection).toContain('class="sidebar-item"');
-      expect(sidebarSection).toContain('<i data-lucide=');
-      expect(sidebarSection).toContain('sidebar-item-text');
-    });
+  test('does not expose Viewer Profiles in the dashboard sidebar or embedded views', () => {
+    expect(dashboardHtml).not.toContain('data-view="viewer-profiles"');
+    expect(dashboardHtml).not.toContain('id="view-viewer-profiles"');
+    expect(dashboardHtml).not.toContain('/viewer-profiles/ui');
   });
 
-  describe('View Container', () => {
-    test('should have viewer-profiles view container', () => {
-      expect(dashboardHtml).toContain('id="view-viewer-profiles"');
-    });
-
-    test('should have correct plugin data attribute on view container', () => {
-      const viewSection = dashboardHtml.substring(
-        dashboardHtml.indexOf('id="view-viewer-profiles"'),
-        dashboardHtml.indexOf('id="view-viewer-profiles"') + 1000
-      );
-      expect(viewSection).toContain('data-plugin="milestone-leaderboard"');
-    });
-
-    test('should have iframe with correct data-src for lazy loading', () => {
-      const viewSection = dashboardHtml.substring(
-        dashboardHtml.indexOf('id="view-viewer-profiles"'),
-        dashboardHtml.indexOf('id="view-viewer-profiles"') + 1000
-      );
-      expect(viewSection).toContain('data-src="/viewer-profiles/ui"');
-    });
-
-    test('should have external link to the master-provided viewer-profiles UI', () => {
-      const viewSection = dashboardHtml.substring(
-        dashboardHtml.indexOf('id="view-viewer-profiles"'),
-        dashboardHtml.indexOf('id="view-viewer-profiles"') + 1000
-      );
-      expect(viewSection).toContain('href="/viewer-profiles/ui"');
-    });
-
-    test('should have iframe-container wrapper', () => {
-      const viewSection = dashboardHtml.substring(
-        dashboardHtml.indexOf('id="view-viewer-profiles"'),
-        dashboardHtml.indexOf('id="view-viewer-profiles"') + 1000
-      );
-      expect(viewSection).toContain('class="iframe-container"');
-    });
-
-    test('should have view-section and view-header structure', () => {
-      const viewSection = dashboardHtml.substring(
-        dashboardHtml.indexOf('id="view-viewer-profiles"'),
-        dashboardHtml.indexOf('id="view-viewer-profiles"') + 1000
-      );
-      expect(viewSection).toContain('class="view-section"');
-      expect(viewSection).toContain('class="view-header"');
-    });
-  });
-
-  describe('Locale Translations', () => {
-    test('should have English translation for viewer_profiles', () => {
-      expect(enLocale.navigation).toBeDefined();
-      expect(enLocale.navigation.viewer_profiles).toBe('Viewer Profiles');
-    });
-
-    test('should have German translation for viewer_profiles', () => {
-      expect(deLocale.navigation).toBeDefined();
-      expect(typeof deLocale.navigation.viewer_profiles).toBe('string');
-      expect(deLocale.navigation.viewer_profiles.length).toBeGreaterThan(0);
-    });
-
-    test('should have Spanish translation for viewer_profiles', () => {
-      expect(esLocale.navigation).toBeDefined();
-      expect(typeof esLocale.navigation.viewer_profiles).toBe('string');
-      expect(esLocale.navigation.viewer_profiles.length).toBeGreaterThan(0);
-    });
-
-    test('should have French translation for viewer_profiles', () => {
-      expect(frLocale.navigation).toBeDefined();
-      expect(typeof frLocale.navigation.viewer_profiles).toBe('string');
-      expect(frLocale.navigation.viewer_profiles.length).toBeGreaterThan(0);
-    });
-
-    test('viewer_profiles key should appear after viewer_leaderboard in en.json', () => {
-      const keys = Object.keys(enLocale.navigation);
-      const leaderboardIdx = keys.indexOf('viewer_leaderboard');
-      const profilesIdx = keys.indexOf('viewer_profiles');
-      expect(leaderboardIdx).toBeGreaterThan(-1);
-      expect(profilesIdx).toBeGreaterThan(leaderboardIdx);
+  test('removes the stale root navigation translation from every supported locale', () => {
+    locales.forEach(locale => {
+      expect(locale.navigation.viewer_profiles).toBeUndefined();
     });
   });
 });

@@ -1,5 +1,5 @@
 {
-  "version": "1.3.35",
-  "updated_at": "2026-07-19T00:00:00+00:00",
-  "notes": "LTTH Version 1.3.35 Release Notes\n\nVersion 1.3.35 releases WebGPU Fireworks 3.1.0 with controlled 3D depth and a Boykisser-led Furry Celebration.\n\n- NEW: Furry Celebration stages all 15, 25, or 38 shells across far, mid, and near depth while other shows stay visually unchanged\n- NEW: A procedural Boykisser/Silly Cat glyph appears in every cue and closes as one centered Hero cat\n- IMPROVED: Rainbow and trans-color halos frame the choreography without obscuring its negative space\n- IMPROVED: Renderer protocol 3 advertises depth3d-v1 and boykisser-v1 capabilities with actionable OBS refresh guidance\n- IMPROVED: Older connected overlays retain a playable legacy burst fallback\n- IMPROVED: WebGPU Fireworks plugin version advanced to 3.1.0\n"
+  "version": "1.3.37",
+  "updated_at": "2026-07-20T00:00:00+00:00",
+  "notes": "LTTH Version 1.3.37 Release Notes\n\nVersion 1.3.37 publishes WebGPU Fireworks 3.1.1 with exact rocket-to-burst alignment and synchronized runtime contracts.\n\n- FIXED: Star, ring, standard, and special rockets share one visible-envelope fit with their explosions\n- FIXED: Bursts now open at the exact visual rocket endpoint without top-edge clipping or spawn offset\n- IMPROVED: Preview freshness uses authenticated statusUpdatedAt telemetry and registered renderers\n- IMPROVED: Show-style catalogs, benchmark payloads, and crackle controls follow their current server contracts\n- IMPROVED: Active package, plugin, README, changelog, download, locale, website, and release-test surfaces advanced to LTTH 1.3.37 and WebGPU Fireworks 3.1.1\n"
 }

@@ -19,7 +19,15 @@
     config: {}
   };
 
+  let kothState = {
+    active: false,
+    currentKing: null,
+    totalCrownTransfers: 0
+  };
+
   let translations = {};
+  let multiplierCountdownTimer = null;
+  let multiplierCountdownToken = 0;
   const SUPPORTED_LANGUAGES = new Set(['en', 'de', 'es', 'fr']);
   let currentLanguage = resolveCurrentLanguage();
 
@@ -214,6 +222,7 @@
     loadConfig();
     loadTranslations();
     updateOverlayURL();
+    refreshKothStatus();
     loadPyramidConfig(); // Load pyramid config on page load
     loadLikesPointsConfig(); // Load likes points config on page load
     initLeaderboardTabs(); // Initialize leaderboard sub-tabs
@@ -260,6 +269,11 @@
     document.getElementById('btn-pause-match').addEventListener('click', togglePause);
     document.getElementById('btn-extend-match').addEventListener('click', extendMatch);
     document.getElementById('btn-activate-multiplier').addEventListener('click', activateMultiplier);
+
+    const btnStartKoth = document.getElementById('btn-start-koth');
+    if (btnStartKoth) btnStartKoth.addEventListener('click', startKoth);
+    const btnStopKoth = document.getElementById('btn-stop-koth');
+    if (btnStopKoth) btnStopKoth.addEventListener('click', stopKoth);
 
     // Simulation buttons
     document.getElementById('btn-start-simulation').addEventListener('click', startSimulation);
@@ -317,6 +331,11 @@
           updateOverlayURL();
         });
       }
+    });
+
+    ['setting-show-avatars', 'setting-show-badges', 'setting-toaster-mode', 'setting-koth-overlay'].forEach(id => {
+      const input = document.getElementById(id);
+      if (input) input.addEventListener('change', updateOverlayURL);
     });
 
     // Season management button
@@ -379,6 +398,7 @@
     socket.on('coinbattle:match-state', (state) => {
       currentState = state;
       updateUI();
+      updateKothStatus(kothState);
     });
 
     // Timer updates
@@ -401,6 +421,7 @@
 
     socket.on('coinbattle:match-ended', (data) => {
       showNotification(translateCoinBattle('runtime.toast.match_ended', {}, 'Match ended!'), 'info');
+      refreshKothStatus();
       socket.emit('coinbattle:get-state');
     });
 
@@ -462,6 +483,10 @@
     socket.on('pyramid:round-extended', (data) => {
       showNotification(translateCoinBattle('runtime.toast.pyramid_extended', { seconds: data.extension.toFixed(1) }, `Pyramid extended by ${data.extension.toFixed(1)}s`), 'info');
     });
+
+    socket.on('coinbattle:new-king', refreshKothStatus);
+    socket.on('coinbattle:king-dethroned', refreshKothStatus);
+    socket.on('coinbattle:koth-ended', refreshKothStatus);
   }
 
   /**
@@ -512,6 +537,81 @@
     } catch (error) {
       showNotification(runtimeError(error.message, `Error ending match: ${error.message}`), 'danger');
     }
+  }
+
+  async function startKoth() {
+    try {
+      const response = await fetch('/api/plugins/coinbattle/koth/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to start KOTH');
+      }
+      showNotification(translateCoinBattle('runtime.toast.koth_started', {}, 'KOTH started!'), 'success');
+      await refreshKothStatus();
+    } catch (error) {
+      showNotification(runtimeError(error.message, `Error starting KOTH: ${error.message}`), 'danger');
+    }
+  }
+
+  async function stopKoth() {
+    if (!confirm(translateCoinBattle('runtime.dialog.stop_koth_confirm', {}, 'Stop King of the Hill?'))) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/plugins/coinbattle/koth/end', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to stop KOTH');
+      }
+      showNotification(translateCoinBattle('runtime.toast.koth_ended', {}, 'KOTH stopped.'), 'info');
+      await refreshKothStatus();
+    } catch (error) {
+      showNotification(runtimeError(error.message, `Error stopping KOTH: ${error.message}`), 'danger');
+    }
+  }
+
+  async function refreshKothStatus() {
+    try {
+      const response = await fetch('/api/plugins/coinbattle/koth/stats');
+      const result = await response.json();
+      if (result.success) {
+        updateKothStatus(result.data);
+      }
+    } catch (error) {
+      // KOTH stats are secondary to the match controls; keep the last known state.
+    }
+  }
+
+  function updateKothStatus(stats = {}) {
+    kothState = {
+      ...kothState,
+      ...stats,
+      active: stats.active === true
+    };
+
+    const status = document.getElementById('koth-status');
+    const king = document.getElementById('koth-king');
+    const startButton = document.getElementById('btn-start-koth');
+    const stopButton = document.getElementById('btn-stop-koth');
+    if (!status || !king || !startButton || !stopButton) return;
+
+    status.textContent = kothState.active
+      ? translateCoinBattle('runtime.status.active', {}, 'Active')
+      : translateCoinBattle('runtime.status.inactive', {}, 'Inactive');
+    king.textContent = kothState.currentKing?.nickname
+      ? `${translateCoinBattle('runtime.status.current_king', {}, 'Current king')}: ${kothState.currentKing.nickname}`
+      : '';
+    const normalMatchActive = currentState.active && currentState.match?.mode !== 'pyramid';
+    startButton.disabled = kothState.active || !normalMatchActive;
+    stopButton.disabled = !kothState.active;
   }
 
   /**
@@ -761,12 +861,26 @@
   /**
    * Reset settings to defaults
    */
-  function resetSettings() {
+  async function resetSettings() {
     if (!confirm(translateCoinBattle('runtime.dialog.reset_settings_confirm', {}, 'Reset all settings to defaults?'))) {
       return;
     }
-    loadConfig();
-    showNotification(translateCoinBattle('runtime.toast.settings_reset', {}, 'Settings reset to defaults'), 'info');
+
+    try {
+      const response = await fetch('/api/plugins/coinbattle/config/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to reset settings');
+      }
+
+      await loadConfig();
+      showNotification(translateCoinBattle('runtime.toast.settings_reset', {}, 'Settings reset to defaults'), 'info');
+    } catch (error) {
+      showNotification(runtimeError(error.message, `Error resetting settings: ${error.message}`), 'danger');
+    }
   }
 
   /**
@@ -781,6 +895,7 @@
       showAvatars: String(document.getElementById('setting-show-avatars')?.checked !== false),
       showBadges: String(document.getElementById('setting-show-badges')?.checked !== false),
       toasterMode: String(document.getElementById('setting-toaster-mode')?.checked || false),
+      kothMode: String(document.getElementById('setting-koth-overlay')?.checked || false),
       overlayWidth: String(width),
       overlayHeight: String(height)
     });
@@ -792,6 +907,7 @@
     if (pyramidUrlEl) {
       const pyramidParams = new URLSearchParams(params);
       pyramidParams.set('pyramidMode', 'true');
+      pyramidParams.set('kothMode', 'false');
       pyramidUrlEl.value = `${window.location.origin}/plugins/coinbattle/overlay?${pyramidParams.toString()}`;
     }
   }
@@ -1069,19 +1185,31 @@
    */
   function updateMultiplierDisplay() {
     const card = document.getElementById('multiplier-card');
+    if (!card) return;
+
+    multiplierCountdownToken += 1;
+    const token = multiplierCountdownToken;
+    if (multiplierCountdownTimer) {
+      clearTimeout(multiplierCountdownTimer);
+      multiplierCountdownTimer = null;
+    }
     
     if (currentState.multiplier?.active) {
       card.style.display = 'block';
       document.getElementById('multiplier-value').textContent = `${currentState.multiplier.value}x`;
       
-      // Update countdown
-      if (currentState.multiplier.endTime) {
+      const pausedRemainingMs = currentState.multiplier.remainingMs;
+      const endTime = currentState.multiplier.endTime;
+      if (endTime || pausedRemainingMs) {
         const updateCountdown = () => {
-          const remaining = Math.max(0, Math.floor((currentState.multiplier.endTime - Date.now()) / 1000));
+          if (token !== multiplierCountdownToken) return;
+          const remaining = endTime
+            ? Math.max(0, Math.floor((endTime - Date.now()) / 1000))
+            : Math.max(0, Math.floor(pausedRemainingMs / 1000));
           document.getElementById('multiplier-remaining').textContent = `${remaining}s`;
           
-          if (remaining > 0) {
-            setTimeout(updateCountdown, 1000);
+          if (remaining > 0 && endTime) {
+            multiplierCountdownTimer = setTimeout(updateCountdown, 1000);
           }
         };
         updateCountdown();
@@ -1164,35 +1292,35 @@
         if (autostartEl) autostartEl.checked = config.autoStart !== false;
         
         const rowsEl = document.getElementById('setting-pyramid-rows');
-        if (rowsEl) rowsEl.value = config.rowCount || 4;
+        if (rowsEl) rowsEl.value = config.rowCount ?? 4;
         
         const durationEl = document.getElementById('setting-pyramid-duration');
-        if (durationEl) durationEl.value = config.roundDuration || 120;
+        if (durationEl) durationEl.value = config.roundDuration ?? 120;
         
         const extensionEl = document.getElementById('setting-pyramid-extension');
-        if (extensionEl) extensionEl.value = config.extensionPerCoin || 0.5;
+        if (extensionEl) extensionEl.value = config.extensionPerCoin ?? 0.5;
         
         const maxExtEl = document.getElementById('setting-pyramid-max-extension');
-        if (maxExtEl) maxExtEl.value = config.maxExtension || 300;
+        if (maxExtEl) maxExtEl.value = config.maxExtension ?? 300;
         
         const coinsEl = document.getElementById('setting-pyramid-coins-per-point');
-        if (coinsEl) coinsEl.value = config.coinsPerPoint || 100;
+        if (coinsEl) coinsEl.value = config.coinsPerPoint ?? 100;
         
         const likesEl = document.getElementById('setting-pyramid-likes-per-point');
-        if (likesEl) likesEl.value = config.likesPerPoint || 1;
+        if (likesEl) likesEl.value = config.likesPerPoint ?? 1;
         
         // XP Rewards settings
         const xpEnabledEl = document.getElementById('setting-pyramid-xp-enabled');
-        if (xpEnabledEl) xpEnabledEl.checked = config.xpRewardsEnabled || false;
+        if (xpEnabledEl) xpEnabledEl.checked = config.xpRewardsEnabled ?? false;
         
         const xpDistributionEl = document.getElementById('setting-pyramid-xp-distribution');
         if (xpDistributionEl) xpDistributionEl.value = config.xpDistributionMode || 'winner-takes-all';
         
         const xpConversionEl = document.getElementById('setting-pyramid-xp-conversion');
-        if (xpConversionEl) xpConversionEl.value = config.xpConversionRate || 1.0;
+        if (xpConversionEl) xpConversionEl.value = config.xpConversionRate ?? 1.0;
         
         const xpPlacesEl = document.getElementById('setting-pyramid-xp-places');
-        if (xpPlacesEl) xpPlacesEl.value = config.xpRewardedPlaces || 1;
+        if (xpPlacesEl) xpPlacesEl.value = config.xpRewardedPlaces ?? 1;
       }
     } catch (error) {
       console.error('Error loading pyramid config:', error);
@@ -1234,19 +1362,24 @@
    * Save pyramid settings
    */
   async function savePyramidSettings() {
+    const readNumber = (id, fallback, parser) => {
+      const raw = document.getElementById(id)?.value;
+      if (raw === undefined || raw === '') return fallback;
+      return parser(raw);
+    };
     const config = {
       enabled: document.getElementById('setting-pyramid-enabled')?.checked || false,
       autoStart: document.getElementById('setting-pyramid-autostart')?.checked !== false,
-      rowCount: parseInt(document.getElementById('setting-pyramid-rows')?.value || 4),
-      roundDuration: parseInt(document.getElementById('setting-pyramid-duration')?.value || 120),
-      extensionPerCoin: parseFloat(document.getElementById('setting-pyramid-extension')?.value || 0.5),
-      maxExtension: parseInt(document.getElementById('setting-pyramid-max-extension')?.value || 300),
-      coinsPerPoint: parseInt(document.getElementById('setting-pyramid-coins-per-point')?.value || 100),
-      likesPerPoint: parseInt(document.getElementById('setting-pyramid-likes-per-point')?.value || 1),
+      rowCount: readNumber('setting-pyramid-rows', 4, value => parseInt(value, 10)),
+      roundDuration: readNumber('setting-pyramid-duration', 120, value => parseInt(value, 10)),
+      extensionPerCoin: readNumber('setting-pyramid-extension', 0.5, parseFloat),
+      maxExtension: readNumber('setting-pyramid-max-extension', 300, value => parseInt(value, 10)),
+      coinsPerPoint: readNumber('setting-pyramid-coins-per-point', 100, value => parseInt(value, 10)),
+      likesPerPoint: readNumber('setting-pyramid-likes-per-point', 1, value => parseInt(value, 10)),
       xpRewardsEnabled: document.getElementById('setting-pyramid-xp-enabled')?.checked || false,
       xpDistributionMode: document.getElementById('setting-pyramid-xp-distribution')?.value || 'winner-takes-all',
-      xpConversionRate: parseFloat(document.getElementById('setting-pyramid-xp-conversion')?.value || 1.0),
-      xpRewardedPlaces: parseInt(document.getElementById('setting-pyramid-xp-places')?.value || 1)
+      xpConversionRate: readNumber('setting-pyramid-xp-conversion', 1.0, parseFloat),
+      xpRewardedPlaces: readNumber('setting-pyramid-xp-places', 1, value => parseInt(value, 10))
     };
 
     try {

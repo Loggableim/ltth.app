@@ -24,6 +24,7 @@
           "end_match_confirm": "Are you sure you want to end the current match?",
           "reset_settings_confirm": "Reset all settings to defaults?",
           "end_pyramid_confirm": "Are you sure you want to end the pyramid round?",
+          "stop_koth_confirm": "Stop King of the Hill?",
           "delete_user_confirm": "Are you sure you want to delete {nickname} from all leaderboards? This cannot be undone."
         },
         "aria": { "overlay_width": "Overlay width", "overlay_height": "Overlay height" },
@@ -32,6 +33,7 @@
           "red_team": "RED TEAM",
           "blue_team": "BLUE TEAM",
           "unknown_player": "Unknown",
+          "draw": "Draw",
           "no_data": "No data available",
           "achievement_unlocked": "Achievement unlocked!",
           "team_wins": "{team} TEAM WINS!",
@@ -79,7 +81,7 @@
           "reset_confirm": "Reset layout to its default?",
           "layout_reset": "Layout reset"
         },
-        "status": { "active": "Active", "paused": "Paused", "inactive": "Inactive" },
+        "status": { "active": "Active", "paused": "Paused", "inactive": "Inactive", "current_king": "Current king" },
         "action": { "pause": "⏸️ Pause", "resume": "▶️ Resume", "delete": "Delete" },
         "table": {
           "rank": "Rank",
@@ -141,6 +143,8 @@
           "pyramid_ended": "Pyramid round ended!",
           "pyramid_leader": "🥊 {nickname} takes the lead!",
           "pyramid_extended": "Pyramid extended by {seconds}s",
+          "koth_started": "KOTH started!",
+          "koth_ended": "KOTH stopped.",
           "settings_saved": "Settings saved successfully!",
           "settings_reset": "Settings reset to defaults",
           "url_copied": "URL copied to clipboard!",
@@ -357,6 +361,9 @@
         "mittel_200x200": "Mittel (200x200)",
         "koth_king_badge": "👑 KOTH King Badge",
         "gameplay_settings": "Gameplay settings",
+        "start_koth": "Start KOTH",
+        "stop_koth": "Stop KOTH",
+        "show_koth_overlay": "Show KOTH overlay",
         "standard_1280x720": "Standard 1280x720",
         "auto_extension_on_close_match": "Auto-extension on close match",
         "high_contrast": "High Contrast",

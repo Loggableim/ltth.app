@@ -340,6 +340,13 @@ class FriendChallengeSystem {
       
       return { success: true, matchId: match.id };
     } catch (error) {
+      if (this.gameEngine.currentMatch && this.gameEngine.currentMatch.id === match.id) {
+        try {
+          this.gameEngine.endMatch({ skipAutoReset: true });
+        } catch (cleanupError) {
+          this.logger.error(`Failed to close partial challenge match: ${cleanupError.message}`);
+        }
+      }
       this.db.addPlayerCoins(challenge.challengerUserId, challenge.stake);
       this.db.addPlayerCoins(accepterUserId, challenge.stake);
       this.logger.error(`Failed to start challenge match: ${error.message}`);

@@ -55,7 +55,6 @@
     mason: Object.freeze({ opening: [0.23, 0.77, 0.12], floor: [0.20, 0.80, 0.83] }),
     arcade: Object.freeze({ opening: [0.22, 0.78, 0.20], floor: [0.18, 0.82, 0.785] })
   });
-  const JAR_FILL_DENSITY = 0.55;
 
   function clamp(value, minimum, maximum) {
     return Math.max(minimum, Math.min(maximum, value));
@@ -150,31 +149,6 @@
     };
   }
 
-  function calculateJarFillRatio(bodies, physicsBounds, incomingSize = 0) {
-    const opening = physicsBounds?.opening;
-    const floor = physicsBounds?.floor;
-    if (!opening || !floor) return 0;
-    const interiorHeight = Math.max(1, floor.y - opening.y);
-    const interiorArea = Math.max(1, (
-      Math.max(1, opening.right - opening.left) + Math.max(1, floor.right - floor.left)
-    ) * interiorHeight / 2);
-    const occupiedArea = (Array.isArray(bodies) ? bodies : [])
-      .filter(body => body?.plugin?.overflow !== true)
-      .reduce((area, body) => {
-        const radius = Math.max(0, finiteNumber(body.circleRadius, 0));
-        return area + Math.PI * radius * radius;
-      }, 0);
-    const incomingRadius = Math.max(0, finiteNumber(incomingSize, 0)) / 2;
-    return (occupiedArea + Math.PI * incomingRadius * incomingRadius) / (interiorArea * JAR_FILL_DENSITY);
-  }
-
-  function shouldOverflowJar(bodies, physicsBounds, incomingSize = 0) {
-    const openingWidth = Math.max(0, finiteNumber(physicsBounds?.opening?.right, 0) - finiteNumber(physicsBounds?.opening?.left, 0));
-    const safeIncomingSize = Math.max(0, finiteNumber(incomingSize, 0));
-    const cannotPassOpening = safeIncomingSize > 0 && safeIncomingSize >= Math.max(1, openingWidth - 12);
-    return cannotPassOpening || calculateJarFillRatio(bodies, physicsBounds, safeIncomingSize) >= 1;
-  }
-
   function calculateJarContainmentPosition(position, radius, physicsBounds) {
     const opening = physicsBounds?.opening;
     const floor = physicsBounds?.floor;
@@ -247,7 +221,6 @@
       this.socket = dependencies.socket || (typeof root.io === 'function'
         ? root.io({ reconnectionDelay: 1000, reconnectionDelayMax: 30000 })
         : null);
-      this.AudioContext = dependencies.AudioContext || root.AudioContext || root.webkitAudioContext;
       this.random = dependencies.random || Math.random;
       this.setTimeoutFn = dependencies.setTimeoutFn || root.setTimeout.bind(root);
       this.clearTimeoutFn = dependencies.clearTimeoutFn || root.clearTimeout.bind(root);
@@ -285,6 +258,7 @@
         jarLabel: this.document.querySelector?.('.jar-label'),
         counter: this.document.getElementById('coin-jar-counter'),
         sprites: this.document.getElementById('coin-jar-sprites'),
+        impactSound: this.document.getElementById('coin-jar-impact-sound'),
         popup: this.document.getElementById('gift-popup'),
         debug: this.document.getElementById('coin-jar-debug')
       };
@@ -432,7 +406,7 @@
           generation: this.generation
         }, {
           settled: true,
-          overflow: this._isJarFull(calculateGiftSize(totalValue, this.config)),
+          overflow: false,
           tier: index > 180 ? 1 : 0
         });
       }
@@ -448,11 +422,9 @@
 
       const requested = Math.max(1, Math.floor(finiteNumber(payload.visualCoins, 1)));
       this._compactFor(requested);
-      const plan = planVisualCoins(payload, this.config, this.bodies.length);
       const count = Math.min(requested, Math.max(0, this.config.maxPhysicalIcons - this.bodies.length));
-      const overflow = plan.overflow || this._isJarFull(calculateGiftSize(payload.totalValue, this.config));
       for (let index = 0; index < count; index += 1) {
-        this.queue.push({ payload, generation: this.generation, overflow, tier: 0 });
+        this.queue.push({ payload, generation: this.generation, overflow: false, tier: 0 });
       }
       this._scheduleSpawn();
       this._emitTelemetry();
@@ -467,11 +439,11 @@
 
     _compactBodies() {
       const candidates = this.bodies
-        .filter(body => !body.plugin?.overflow && (body.plugin?.tier || 0) < 2)
+        .filter(body => !body.plugin?.overflow)
         .sort((left, right) => (left.plugin?.tier || 0) - (right.plugin?.tier || 0));
       if (candidates.length < 10) return false;
       const group = candidates.slice(0, 10);
-      const tier = Math.min(2, (group[0].plugin?.tier || 0) + 1);
+      const tier = (group[0].plugin?.tier || 0) + 1;
       const average = group.reduce((result, body) => ({
         x: result.x + body.position.x / group.length,
         y: result.y + body.position.y / group.length
@@ -492,10 +464,6 @@
       return true;
     }
 
-    _isJarFull(incomingSize = 0) {
-      return shouldOverflowJar(this.bodies, this.physicsBounds, incomingSize);
-    }
-
     _scheduleSpawn() {
       if (this.spawnTimer || this.queue.length === 0) return;
       const item = this.queue.shift();
@@ -503,8 +471,7 @@
       this.spawnTimer = this.setTimeoutFn(() => {
         this.spawnTimer = null;
         if (item.generation === this.generation) {
-          const overflow = item.overflow || this._isJarFull(calculateGiftSize(item.payload.totalValue, this.config));
-          this._createCoin(item.payload, { ...item, overflow });
+          this._createCoin(item.payload, { ...item, overflow: false });
         }
         this._emitTelemetry();
         this._scheduleSpawn();
@@ -517,16 +484,13 @@
       const { Bodies, Body, Composite } = this.Matter;
       const tier = options.tier || 0;
       const size = calculateGiftSize(payload.totalValue, this.config);
-      const overflow = options.overflow === true;
-      const side = this.random() < 0.5 ? -1 : 1;
+      const overflow = false;
       const openingWidth = this.physicsBounds.opening.right - this.physicsBounds.opening.left;
       const spawnX = openingWidth <= size
         ? (this.physicsBounds.opening.left + this.physicsBounds.opening.right) / 2
         : this.physicsBounds.opening.left + size / 2 + this.random() * (openingWidth - size);
       const interiorHeight = this.physicsBounds.floor.y - this.physicsBounds.opening.y;
-      const x = options.position?.x ?? (overflow
-        ? (side < 0 ? this.bounds.left - 50 - this.random() * 160 : this.bounds.right + 50 + this.random() * 160)
-        : spawnX);
+      const x = options.position?.x ?? spawnX;
       const y = options.position?.y ?? (options.settled
         ? this.physicsBounds.opening.y + size / 2 + this.random() * Math.max(1, interiorHeight - size)
         : this.physicsBounds.opening.y - 30 - this.random() * 120);
@@ -590,19 +554,6 @@
             y: body.velocity.y / speed * maximumSpeed
           });
         }
-        if (body.plugin?.overflow !== true && this.physicsBounds
-          && isOutsideJarInterior(body.position, body.circleRadius, this.physicsBounds)
-          && this.Matter?.Body) {
-          this.Matter.Body.setPosition(body, calculateJarContainmentPosition(
-            body.position,
-            body.circleRadius,
-            this.physicsBounds
-          ));
-          this.Matter.Body.setVelocity(body, {
-            x: body.velocity.x * 0.2,
-            y: Math.max(0, Math.min(1.5, body.velocity.y))
-          });
-        }
         if (body.position.x < -margin || body.position.x > this._viewport().width + margin || body.position.y > this._viewport().height + margin) {
           this._removeBody(body);
           continue;
@@ -625,21 +576,17 @@
       if (event.pairs?.some(pair => pair.bodyA.plugin || pair.bodyB.plugin)) this._playImpactSound(event);
     }
 
-    _playImpactSound(event) {
-      if (this.config.soundEnabled !== true || !this.AudioContext) return;
+    _playImpactSound() {
+      if (this.config.soundEnabled !== true) return;
       const now = Date.now();
       if (now - this.lastSoundAt < 110) return;
       this.lastSoundAt = now;
       try {
-        this.audioContext = this.audioContext || new this.AudioContext();
-        const oscillator = this.audioContext.createOscillator();
-        const gain = this.audioContext.createGain();
-        const largeGift = event.pairs?.some(pair => Math.max(pair.bodyA.plugin?.value || 0, pair.bodyB.plugin?.value || 0) >= 500);
-        oscillator.frequency.value = largeGift ? 720 : 520;
-        gain.gain.value = clamp(finiteNumber(this.config.soundVolume, 0.35), 0, 1) * 0.08;
-        oscillator.connect(gain).connect(this.audioContext.destination);
-        oscillator.start();
-        oscillator.stop(this.audioContext.currentTime + 0.06);
+        const impactSound = this.elements.impactSound?.cloneNode?.(true);
+        if (!impactSound) return;
+        impactSound.volume = clamp(finiteNumber(this.config.soundVolume, 0.35), 0, 1);
+        const playResult = impactSound.play?.();
+        playResult?.catch?.(() => {});
       } catch (_) {
         // Browser sources can reject audio until a gesture; the visual must continue silently.
       }
@@ -726,7 +673,6 @@
     calculateJarInteriorBounds,
     calculateJarContainmentPosition,
     calculateGiftSize,
-    calculateJarFillRatio,
     isOutsideJarInterior,
     calculateSpillBounds,
     planVisualCoins,

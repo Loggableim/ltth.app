@@ -8,11 +8,7 @@
   const VisibleEnvelope = typeof module !== 'undefined' && module.exports
     ? require('./visible-envelope')
     : globalThis.WebGPUFireworksVisibleEnvelope;
-  const BoykisserGeometry = typeof module !== 'undefined' && module.exports
-    ? require('./boykisser-geometry')
-    : globalThis.WebGPUFireworksBoykisserGeometry;
   const { V2_PRIMITIVE_IDS, V2_GLYPH_IDS, ENVELOPE_FLAG_BITS } = VisibleEnvelope;
-  const { BOYKISSER_VECTOR } = BoykisserGeometry;
   const PLAN_VERSION = 2;
   const LAUNCH_MODES = new Set(['rocket', 'airburst', 'ground']);
   const PRIMITIVES = new Set(['radial', 'ring', 'spiral', 'palm', 'crossette', 'comet', 'mine', 'glyph']);
@@ -31,13 +27,13 @@
     'furry-celebration'
   ]);
   const COLOR_PATTERN = /^#[0-9a-f]{6}([0-9a-f]{2})?$/i;
+  const ROCKET_TRAIL_STYLES = new Set(['comet', 'spiral', 'braided']);
   const DEFAULT_RENDER_HINTS = Object.freeze({
     depthEnabled: false,
     launchDepth: 0,
     burstDepth: 0,
     glyphScale: 1
   });
-  const VECTOR_HERO_MIN_GLYPH_EXTENT = 0.5;
   const MAX_REQUIRED_SHOW_COMMANDS = 28;
   const TIER_RANK = Object.freeze({ small: 0, medium: 1, big: 2, massive: 3 });
   const ROLE_ALIASES = Object.freeze({
@@ -66,27 +62,24 @@
     return Object.freeze(value);
   };
 
+  const normalizeRocketTrail = shell => {
+    const authored = shell?.rocketTrail && typeof shell.rocketTrail === 'object';
+    return {
+      authored,
+      style: authored ? shell.rocketTrail.style : 'comet',
+      colors: authored ? [...shell.rocketTrail.colors] : ['#fff4d6']
+    };
+  };
+
+  const rocketTrailCurveOffset = (style, index, count) => {
+    if (count <= 1) return 0;
+    const spread = style === 'spiral' ? 14 : style === 'braided' ? 9 : 4;
+    return (index - (count - 1) * 0.5) * spread;
+  };
+
   const envelopeShapeId = layer => layer.primitive === 'glyph'
     ? V2_GLYPH_IDS[layer.glyph]
     : V2_PRIMITIVE_IDS[layer.primitive];
-
-  const isVectorHeroLayer = (layer, renderHints) => layer.primitive === 'glyph' &&
-    layer.glyph === 'boykisser' && layer.core === true &&
-    Number(renderHints.glyphExtent) >= VECTOR_HERO_MIN_GLYPH_EXTENT;
-
-  const vectorHeroHalfHeight = (width, height, burstDepth) => {
-    const projection = VisibleEnvelope.ENVELOPE_PROFILES.projection;
-    const depth = Math.max(-1, Math.min(1, Number(burstDepth) || 0));
-    const perspective = projection.cameraDistance / Math.max(
-      projection.minimumDenominator,
-      projection.cameraDistance - depth
-    );
-    const projectedHalfHeight = Math.min(
-      height,
-      width / BOYKISSER_VECTOR.aspectRatio
-    ) * BOYKISSER_VECTOR.viewportFraction * 0.5;
-    return projectedHalfHeight / perspective;
-  };
 
   function fail(message) {
     throw new TypeError(`Invalid ShowPlanV2: ${message}`);
@@ -174,6 +167,20 @@
         const shellPath = `${cuePath}.shells.${shellIndex}`;
         if (!shell || typeof shell !== 'object' || Array.isArray(shell)) fail(`${shellPath} must be an object`);
         if (!LAUNCH_MODES.has(shell.launchMode)) fail(`${shellPath} launch mode is unsupported`);
+        if (shell.rocketTrail !== undefined) {
+          if (shell.launchMode !== 'rocket' || !shell.rocketTrail || typeof shell.rocketTrail !== 'object'
+            || Array.isArray(shell.rocketTrail)) fail(`${shellPath}.rocketTrail requires a rocket shell object`);
+          if (!ROCKET_TRAIL_STYLES.has(shell.rocketTrail.style)) {
+            fail(`${shellPath}.rocketTrail.style is unsupported`);
+          }
+          if (!Array.isArray(shell.rocketTrail.colors) || shell.rocketTrail.colors.length < 1
+            || shell.rocketTrail.colors.length > 4) {
+            fail(`${shellPath}.rocketTrail.colors must contain between one and four colors`);
+          }
+          if (shell.rocketTrail.colors.some(color => typeof color !== 'string' || !COLOR_PATTERN.test(color))) {
+            fail(`${shellPath}.rocketTrail.colors must use hexadecimal colors`);
+          }
+        }
         if (shell.renderHints !== undefined) assertRenderHints(shell.renderHints, `${shellPath}.renderHints`);
         assertPoint(shell.origin, `${shellPath}.origin`, 1.1);
         assertPoint(shell.target, `${shellPath}.target`, 1);
@@ -292,7 +299,7 @@
           const renderHints = normalizeRenderHints(shell.renderHints);
           const naturalFlightDurationMs = calculateRocketFlightMs(shell.target, renderHints);
           const flightDurationMs = Math.min(naturalFlightDurationMs, Math.max(0, cueDue));
-          addDemand(cueDue - flightDurationMs, 1, 1);
+          addDemand(cueDue - flightDurationMs, 1, normalizeRocketTrail(shell).colors.length);
         }
         for (const layer of shell.layers) {
           addDemand(cueDue + Number(layer.delayMs), layer.core === true ? 1 : 0, layer.core === true ? 0 : 1);
@@ -394,6 +401,7 @@
           const minimumRocketSize = depthRocket ? 18 : 28;
           const rocketSize = Math.max(minimumRocketSize, rocketBaseSize * viewportScale);
           const rocketSeed = Number(shell.seed ?? showPlan.seed) >>> 0;
+          const rocketTrail = normalizeRocketTrail(shell);
           const base = {
             shellId,
             kind: 1,
@@ -413,6 +421,18 @@
             viewportResponsive: true,
             queuedViewportMinimum: Math.min(width, height),
           };
+          const trailVoices = rocketTrail.colors.map((color, trailIndex) => ({
+            color,
+            curve: base.curve + rocketTrailCurveOffset(
+              rocketTrail.style,
+              trailIndex,
+              rocketTrail.colors.length
+            ),
+            multiplier: Math.max(0.58, 0.76 - trailIndex * 0.04),
+            envelopeCommandId: rocketTrail.authored
+              ? `${envelopeShellId}:rocket:trail:${trailIndex + 1}`
+              : `${envelopeShellId}:rocket:flame`
+          }));
           manifestCommands.push({
             ...base,
             envelopeCommandId: `${envelopeShellId}:rocket:body`,
@@ -421,15 +441,18 @@
             viewportMaterialization: {
               kind: 'rocket', baseSize: rocketBaseSize, minimumSize: minimumRocketSize, multiplier: 1,
             },
-          }, {
+          }, ...trailVoices.map(voice => ({
             ...base,
-            envelopeCommandId: `${envelopeShellId}:rocket:flame`,
+            envelopeCommandId: voice.envelopeCommandId,
             flags: 2 << 8,
-            size: rocketSize * 0.76,
+            color: voice.color,
+            curve: voice.curve,
+            size: rocketSize * voice.multiplier,
             viewportMaterialization: {
-              kind: 'rocket', baseSize: rocketBaseSize, minimumSize: minimumRocketSize, multiplier: 0.76,
+              kind: 'rocket', baseSize: rocketBaseSize, minimumSize: minimumRocketSize,
+              multiplier: voice.multiplier,
             },
-          });
+          })));
           if (Number(shell.textureIndex) > 0) {
             manifestCommands.push({
               ...base,
@@ -448,10 +471,8 @@
           const ground = shell.launchMode === 'ground';
           const normalizedOrigin = ground ? shell.origin : shell.target;
           const normalizedTarget = shell.target;
-          const vectorHero = isVectorHeroLayer(layer, renderHints);
           const renderFlags = ENVELOPE_FLAG_BITS.V2_MARKER |
-            (vectorHero ? ENVELOPE_FLAG_BITS.VECTOR_HERO : 0) |
-            (!vectorHero && layer.trail ? ENVELOPE_FLAG_BITS.TRAIL : 0) |
+            (layer.trail ? ENVELOPE_FLAG_BITS.TRAIL : 0) |
             (layer.split ? ENVELOPE_FLAG_BITS.SPLIT_REQUESTED : 0) |
             (layer.strobe ? ENVELOPE_FLAG_BITS.STROBE : 0);
           const effectId = layer.id || `${shellId}:layer:${layerIndex + 1}`;
@@ -467,25 +488,18 @@
             normalizedTarget: { ...normalizedTarget },
             origin: toPixels(normalizedOrigin, width, height),
             target: toPixels(normalizedTarget, width, height),
-            size: vectorHero
-              ? vectorHeroHalfHeight(width, height, renderHints.burstDepth)
-              : Number(layer.size) * 6 * viewportScale,
-            intensity: vectorHero
-              ? 0.1
-              : (Number(shell.powerScale) || 1) * viewportScale * Number(renderHints.glyphScale || 1),
+            size: Number(layer.size) * 6 * viewportScale,
+            intensity: (Number(shell.powerScale) || 1) * viewportScale * Number(renderHints.glyphScale || 1),
             particleDuration: Number(layer.lifetimeMs) / 1000,
             emissionDelay: Number(layer.delayMs) / 1000,
-            gravity: vectorHero ? 0 : Number(layer.gravity) * 105 * viewportScale,
-            drag: vectorHero ? 1 : Number(layer.drag),
+            gravity: Number(layer.gravity) * 105 * viewportScale,
+            drag: Number(layer.drag),
             depthEnabled: renderHints.depthEnabled,
             launchDepth: renderHints.depthEnabled ? renderHints.launchDepth : 0,
             burstDepth: renderHints.depthEnabled ? renderHints.burstDepth : 0,
-            vectorAspectRatio: vectorHero ? BOYKISSER_VECTOR.aspectRatio : null,
+            vectorAspectRatio: null,
             viewportResponsive: true,
-            viewportMaterialization: vectorHero ? {
-              kind: 'v2-vector-hero',
-              aspectRatio: BOYKISSER_VECTOR.aspectRatio,
-            } : {
+            viewportMaterialization: {
               kind: 'v2-layer',
               authoredSize: Number(layer.size),
               authoredGravity: Number(layer.gravity),
@@ -519,6 +533,12 @@
         const renderHints = normalizeRenderHints(shell.renderHints);
         if (shell.launchMode === 'rocket') {
           const rocketSeed = Number(shell.seed ?? showPlan.seed) >>> 0;
+          const rocketTrail = normalizeRocketTrail(shell);
+          const trailEnvelopeCommandIds = rocketTrail.colors.map((_, trailIndex) => (
+            rocketTrail.authored
+              ? `${envelopeShellId}:rocket:trail:${trailIndex + 1}`
+              : `${envelopeShellId}:rocket:flame`
+          ));
           const naturalFlightDurationMs = calculateRocketFlightMs(shell.target, renderHints);
           const flightDurationMs = Math.min(naturalFlightDurationMs, Math.max(0, Number(cue.beatAtMs)));
           const due = cueDue - flightDurationMs;
@@ -540,7 +560,7 @@
             envelopeCommandId: `${envelopeShellId}:rocket:body`,
             envelopeCommandIds: [
               `${envelopeShellId}:rocket:body`,
-              `${envelopeShellId}:rocket:flame`,
+              ...trailEnvelopeCommandIds,
               ...(Number(shell.textureIndex) > 0 ? [`${envelopeShellId}:rocket:decal`] : []),
             ],
             correlationManifest,

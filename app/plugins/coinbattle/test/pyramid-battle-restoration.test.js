@@ -115,14 +115,11 @@ describe('Pyramid Battle restoration', () => {
 
     handler({ body: {}, ip: '127.0.0.1', path: '/api/plugins/coinbattle/match/start' }, res);
 
-    expect(plugin.engine.startMatch).toHaveBeenCalledWith('pyramid', 45);
-    expect(plugin.pyramidMode.startRound).toHaveBeenCalledWith(12, 45);
+    expect(plugin.engine.startMatch).not.toHaveBeenCalled();
+    expect(plugin.pyramidMode.startRound).toHaveBeenCalledWith(null, 45);
     expect(res.json).toHaveBeenCalledWith({
       success: true,
-      data: expect.objectContaining({
-        mode: 'pyramid',
-        pyramid: expect.objectContaining({ success: true })
-      })
+      data: expect.objectContaining({ success: true, duration: 45 })
     });
   });
 
@@ -138,7 +135,7 @@ describe('Pyramid Battle restoration', () => {
     expect(js).toContain("document.getElementById('setting-overlay-height')");
   });
 
-  test('includes the match mode in match-ended payloads for Pyramid cleanup hooks', () => {
+  test('includes the match mode in normal match-ended payloads', () => {
     const emittedEvents = [];
     const mockDb = {
       createMatch: jest.fn(() => 11),
@@ -167,13 +164,13 @@ describe('Pyramid Battle restoration', () => {
     const engine = new CoinBattleEngine(mockDb, io, createLogger());
 
     try {
-      engine.startMatch('pyramid', 45);
+      engine.startMatch('solo', 45);
       engine.endMatch();
 
       const matchEnded = emittedEvents.find((entry) => entry.event === 'coinbattle:match-ended');
       expect(matchEnded.data).toMatchObject({
         matchId: 11,
-        mode: 'pyramid'
+        mode: 'solo'
       });
     } finally {
       engine.destroy();

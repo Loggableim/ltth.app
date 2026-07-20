@@ -1,5 +1,7 @@
 'use strict';
 
+const WebGPUParticleEngine = require('../plugins/webgpu-fireworks/gpu/webgpu-particle-engine');
+
 const {
   SHAPE_IDS,
   V2_PRIMITIVE_IDS,
@@ -141,6 +143,87 @@ describe('WebGPU Fireworks visible-envelope contract', () => {
     const bounds = projectVisualEnvelope(fitted.commands[0], viewport);
     expect(bounds.components).toEqual(expect.arrayContaining(['body', 'flame', 'trail', 'glow', 'bloom']));
     expect(bounds.top).toBeGreaterThanOrEqual(2 - 1e-5);
+  });
+
+  test.each(RESOLUTIONS)(
+    'keeps a correlated rocket and star/ring burst at least eight-percent-class below the top at $width x $height',
+    viewport => {
+      const engine = new WebGPUParticleEngine({ width: viewport.width, height: viewport.height });
+      const target = { x: viewport.width * 0.5, y: viewport.height * 0.1 };
+      const rocketBody = rocketCommand('standard', {
+        origin: { x: viewport.width * 0.5, y: viewport.height * 1.02 },
+        target,
+        launchDepth: 0.8,
+        burstDepth: 0.8,
+        size: 22,
+      });
+      const rocketFlame = rocketCommand('standard', {
+        ...rocketBody,
+        size: 16.72,
+        flags: 2 << 8,
+      });
+      const bursts = [3, 4].map(shape => shapeCommand(shape, viewport, 0.8));
+      bursts.forEach(command => {
+        command.origin = { ...target };
+        command.target = { ...target };
+        command.particleDuration = 0.65;
+        command.intensity = 0.5;
+      });
+      const commands = [rocketBody, rocketFlame, ...bursts];
+      const padding = engine._visibleEnvelopePaddingPx(commands);
+      const fitted = fitCorrelatedCommands(commands, viewport, { paddingPx: padding });
+
+      expect(padding / viewport.height).toBeGreaterThanOrEqual(0.075);
+      expect(fitted.bounds.top).toBeGreaterThanOrEqual(padding - 1e-5);
+      expect(fitted.commands).toHaveLength(commands.length);
+      expect(fitted.vertexClampApplied).toBe(false);
+    }
+  );
+
+  test('keeps the authored Boykisser hero extent when correlated with its below-canvas rocket', () => {
+    const viewport = { width: 1080, height: 1920 };
+    const engine = new WebGPUParticleEngine({ width: viewport.width, height: viewport.height });
+    const target = { x: viewport.width * 0.5, y: viewport.height * 0.38 };
+    const rocket = rocketCommand('standard', {
+      origin: { x: viewport.width * 0.5, y: viewport.height * 1.04 },
+      target,
+      launchDepth: 0,
+      burstDepth: 0.82,
+      particleDuration: 1.835,
+      duration: 1.835,
+      size: 22,
+    });
+    const hero = {
+      kind: 2,
+      shape: V2_GLYPH_IDS.boykisser,
+      flags: ENVELOPE_FLAG_BITS.V2_MARKER,
+      textureIndex: 0,
+      origin: target,
+      target,
+      burstDepth: 0.82,
+      size: 6,
+      intensity: 5.33,
+      particleDuration: 1.2,
+      emissionDelay: 0,
+      gravity: 8.4,
+      drag: 0.035,
+      wind: 0,
+      viewportMaterialization: {
+        kind: 'v2-layer',
+        glyphExtent: 0.84,
+      },
+    };
+    const commands = [rocket, hero];
+    const padding = engine._visibleEnvelopePaddingPx(commands);
+    const fitted = fitCorrelatedCommands(commands, viewport, { paddingPx: padding });
+    const heroBounds = projectVisualEnvelope(fitted.commands[1], viewport);
+
+    expect(fitted.scale).toBeGreaterThan(0.65);
+    expect(heroBounds.components).toContain('authored-glyph-extent');
+    expect(fitted.bounds.top).toBeGreaterThanOrEqual(padding - 1e-5);
+    expect(fitted.bounds.right).toBeLessThanOrEqual(viewport.width - padding + 1e-5);
+    expect(fitted.bounds.bottom).toBeLessThanOrEqual(viewport.height - padding + 1e-5);
+    expect(fitted.bounds.left).toBeGreaterThanOrEqual(padding - 1e-5);
   });
 
   test('fits rocket side guards across the complete below-canvas launch path', () => {

@@ -215,6 +215,46 @@ describe('ShowPlanV2 pure overlay runtime', () => {
       .toEqual(renderHints);
   });
 
+  test('validates and materializes every colored special-rocket trail voice in one cue manifest', () => {
+    const rocketTrail = {
+      style: 'spiral',
+      colors: ['#5BCEFA', '#F5A9B8', '#FFFFFF']
+    };
+    const showPlan = plan([{
+      id: 'special-trail', beatAtMs: 2000, phase: 'finale', formation: 'single', importance: 'final-wave',
+      shells: [shell('special-trail:rocket', 'rocket', { rocketTrail })]
+    }]);
+    const runtime = buildShowPlanV2Runtime(showPlan, { width: 1920, height: 1080, playSound: false });
+    const rocket = runtime.events.find(event => event.type === 'finale-v2-rocket');
+    const manifestIds = rocket.correlationManifest.commands
+      .filter(command => command.shellId === rocket.shellId)
+      .map(command => command.envelopeCommandId);
+
+    expect(rocket.shell.rocketTrail).toEqual(rocketTrail);
+    expect(rocket.envelopeCommandIds).toEqual([
+      expect.stringMatching(/rocket:body$/),
+      expect.stringMatching(/rocket:trail:1$/),
+      expect.stringMatching(/rocket:trail:2$/),
+      expect.stringMatching(/rocket:trail:3$/)
+    ]);
+    expect(manifestIds).toEqual(expect.arrayContaining(rocket.envelopeCommandIds));
+    expect(Object.isFrozen(rocket.correlationManifest)).toBe(true);
+    expect(runtime.peakOptionalCommands).toBe(3);
+
+    for (const malformed of [
+      { style: 'laser', colors: ['#FFFFFF'] },
+      { style: 'comet', colors: [] },
+      { style: 'braided', colors: ['red'] },
+      { style: 'spiral', colors: ['#111111', '#222222', '#333333', '#444444', '#555555'] }
+    ]) {
+      const invalid = plan([{
+        id: 'invalid-trail', beatAtMs: 1000, phase: 'opening', formation: 'single', importance: 'standard',
+        shells: [shell('invalid-trail:rocket', 'rocket', { rocketTrail: malformed })]
+      }]);
+      expect(() => assertShowPlanV2(invalid)).toThrow(/rocketTrail/i);
+    }
+  });
+
   test('accounts for deterministic depth travel while keeping the burst on the exact planned beat', () => {
     const showPlan = plan([{
       id: 'depth-flight', beatAtMs: 3000, phase: 'opening', formation: 'single', importance: 'standard',
@@ -440,9 +480,9 @@ describe('ShowPlanV2 built-in scheduling matrix', () => {
   };
 
   test.each([
-    ['short', 15, 21, 1600],
-    ['medium', 25, 31, 2350],
-    ['long', 38, 44, 3350]
+    ['short', 15, 21, 4000],
+    ['medium', 25, 31, 5200],
+    ['long', 38, 44, 7000]
   ])('keeps the %s Furry score inside its visible choreography budget',
     (length, shellCount, layerCount, particleBudget) => {
       const showPlan = new FinaleShowPlanner().plan({
@@ -530,14 +570,23 @@ describe('ShowPlanV2 built-in scheduling matrix', () => {
       return event.due;
     };
     const quietIntervalActivity = runtime.events.filter(event => forbiddenTypes.has(event.type))
+      .filter(event => !(
+        (event.type === 'finale-v2-rocket' && heroShellIds.has(event.shellId))
+        || (event.type === 'finale-v2-launch-audio'
+          && event.shellIds.some(shellId => heroShellIds.has(shellId)))
+      ))
       .filter(event => (
         (event.due >= quietStart && event.due < heroAt)
         || (event.due < heroAt && activeEnd(event) > quietStart)
       ));
 
     expect(heroCue.shells).toHaveLength(1);
-    expect(heroCue.shells[0].launchMode).toBe('airburst');
-    expect(heroLaunchEvents).toEqual([]);
+    expect(heroCue.shells[0].launchMode).toBe('rocket');
+    expect(heroLaunchEvents.map(event => event.type)).toEqual([
+      'finale-v2-rocket',
+      'finale-v2-launch-audio'
+    ]);
+    expect(heroLaunchEvents[0].due + heroLaunchEvents[0].flightDurationMs).toBe(heroAt);
     expect(quietIntervalActivity).toEqual([]);
   });
 

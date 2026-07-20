@@ -29,6 +29,11 @@ class LikesPointsSystem {
       totalPointsFromFollows: 0,
       totalPointsFromComments: 0
     };
+
+    // Preserve fractional progress between separate interaction events.
+    // Keys include the match, viewer, and event type so progress cannot leak
+    // between matches or between likes/shares/follows/comments.
+    this.remainders = new Map();
     
     this.logger.info('💕 Likes as Points System initialized');
   }
@@ -135,102 +140,123 @@ class LikesPointsSystem {
    */
   updateConfig(newConfig) {
     const validKeys = ['enabled', 'coinsPerPoint', 'likesPerPoint', 'sharesPerPoint', 'followsPerPoint', 'commentsPerPoint'];
-    
-    Object.keys(newConfig).forEach(key => {
-      if (validKeys.includes(key)) {
-        this.config[key] = newConfig[key];
+
+    Object.keys(newConfig || {}).forEach(key => {
+      if (!validKeys.includes(key)) return;
+
+      if (key === 'enabled') {
+        this.config[key] = newConfig[key] === true || newConfig[key] === 1;
+        return;
       }
+
+      const value = Number(newConfig[key]);
+      if (!Number.isFinite(value) || value <= 0) {
+        throw new Error(`${key} must be a positive number`);
+      }
+      this.config[key] = value;
     });
     
     return this.saveConfig();
   }
 
   /**
+   * Clear fractional interaction progress for a completed match.
+   */
+  clearMatch(matchId) {
+    const prefix = `${matchId}:`;
+    for (const key of this.remainders.keys()) {
+      if (key.startsWith(prefix)) {
+        this.remainders.delete(key);
+      }
+    }
+  }
+
+  /**
+   * Convert a count event into whole gameplay points while retaining the
+   * fractional remainder for the next event of the same type.
+   */
+  processCountEvent(matchId, userId, eventType, count, threshold, countStat, pointsStat) {
+    if (!this.config.enabled) {
+      return { success: false, points: 0 };
+    }
+
+    const safeCount = Number(count);
+    const safeThreshold = Number(threshold);
+    if (!Number.isFinite(safeCount) || safeCount <= 0 || !Number.isFinite(safeThreshold) || safeThreshold <= 0) {
+      return { success: false, points: 0 };
+    }
+
+    const key = `${matchId}:${userId}:${eventType}`;
+    const accumulated = (this.remainders.get(key) || 0) + safeCount;
+    const points = Math.floor(accumulated / safeThreshold);
+    this.remainders.set(key, accumulated - (points * safeThreshold));
+
+    this.recordEvent(matchId, userId, eventType, safeCount, points);
+    this.stats[countStat] += safeCount;
+    this.stats[pointsStat] += points;
+
+    this.logger.debug(`Awarded ${points} whole points for ${safeCount} ${eventType} events to user ${userId}`);
+    return { success: true, points, eventType };
+  }
+
+  /**
    * Process like event
    */
   processLikeEvent(matchId, userId, likeCount = 1) {
-    if (!this.config.enabled || this.config.likesPerPoint === 0) {
-      return { success: false, points: 0 };
-    }
-    
-    const points = likeCount / this.config.likesPerPoint;
-    
-    if (points > 0) {
-      this.recordEvent(matchId, userId, 'like', likeCount, points);
-      this.stats.totalLikesProcessed += likeCount;
-      this.stats.totalPointsFromLikes += points;
-      
-      this.logger.debug(`Awarded ${points} points for ${likeCount} likes to user ${userId}`);
-      return { success: true, points, eventType: 'like' };
-    }
-    
-    return { success: false, points: 0 };
+    return this.processCountEvent(
+      matchId,
+      userId,
+      'like',
+      likeCount,
+      this.config.likesPerPoint,
+      'totalLikesProcessed',
+      'totalPointsFromLikes'
+    );
   }
 
   /**
    * Process share event
    */
   processShareEvent(matchId, userId, shareCount = 1) {
-    if (!this.config.enabled || this.config.sharesPerPoint === 0) {
-      return { success: false, points: 0 };
-    }
-    
-    const points = shareCount / this.config.sharesPerPoint;
-    
-    if (points > 0) {
-      this.recordEvent(matchId, userId, 'share', shareCount, points);
-      this.stats.totalSharesProcessed += shareCount;
-      this.stats.totalPointsFromShares += points;
-      
-      this.logger.debug(`Awarded ${points} points for ${shareCount} shares to user ${userId}`);
-      return { success: true, points, eventType: 'share' };
-    }
-    
-    return { success: false, points: 0 };
+    return this.processCountEvent(
+      matchId,
+      userId,
+      'share',
+      shareCount,
+      this.config.sharesPerPoint,
+      'totalSharesProcessed',
+      'totalPointsFromShares'
+    );
   }
 
   /**
    * Process follow event
    */
   processFollowEvent(matchId, userId) {
-    if (!this.config.enabled || this.config.followsPerPoint === 0) {
-      return { success: false, points: 0 };
-    }
-    
-    const points = 1 / this.config.followsPerPoint;
-    
-    if (points > 0) {
-      this.recordEvent(matchId, userId, 'follow', 1, points);
-      this.stats.totalFollowsProcessed += 1;
-      this.stats.totalPointsFromFollows += points;
-      
-      this.logger.debug(`Awarded ${points} points for follow to user ${userId}`);
-      return { success: true, points, eventType: 'follow' };
-    }
-    
-    return { success: false, points: 0 };
+    return this.processCountEvent(
+      matchId,
+      userId,
+      'follow',
+      1,
+      this.config.followsPerPoint,
+      'totalFollowsProcessed',
+      'totalPointsFromFollows'
+    );
   }
 
   /**
    * Process comment event
    */
   processCommentEvent(matchId, userId) {
-    if (!this.config.enabled || this.config.commentsPerPoint === 0) {
-      return { success: false, points: 0 };
-    }
-    
-    const points = 1 / this.config.commentsPerPoint;
-    
-    if (points > 0) {
-      this.recordEvent(matchId, userId, 'comment', 1, points);
-      this.stats.totalCommentsProcessed += 1;
-      this.stats.totalPointsFromComments += points;
-      
-      this.logger.debug(`Awarded ${points} points for comment to user ${userId}`);
-      return { success: true, points, eventType: 'comment' };
-    }
-    
-    return { success: false, points: 0 };
+    return this.processCountEvent(
+      matchId,
+      userId,
+      'comment',
+      1,
+      this.config.commentsPerPoint,
+      'totalCommentsProcessed',
+      'totalPointsFromComments'
+    );
   }
 
   /**

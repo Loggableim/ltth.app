@@ -1,7 +1,10 @@
 'use strict';
 
 const { SHOW_DEFINITION_VERSION, VARIANT_PRESETS } = require('./pyrodsl');
-const { BOYKISSER_COLORS } = require('../gpu/boykisser-geometry');
+const {
+  BOYKISSER_COLORS,
+  BOYKISSER_PARTICLE_LOD,
+} = require('../gpu/boykisser-geometry');
 
 const FINALE_LENGTHS = Object.freeze(['short', 'medium', 'long']);
 const PHASE_ORDER = Object.freeze(['opening', 'build', 'highlight', 'finale']);
@@ -83,7 +86,7 @@ function renderHints(burstDepth, glyphScale = 1, launchDepth = 0, glyphExtent) {
     burstDepth,
     glyphScale,
     glyphExtent: glyphExtent === undefined
-      ? clamp(glyphScale * 0.11, 0.07, 0.18)
+      ? clamp(glyphScale * 0.16, 0.1, 0.28)
       : glyphExtent
   };
 }
@@ -98,14 +101,18 @@ function shellVariant(shape, soundRole, layers, hints, options = {}) {
     layers,
     renderHints: hints,
     exactTarget: options.exactTarget,
-    exactOrigin: options.exactOrigin
+    exactOrigin: options.exactOrigin,
+    rocketTrail: options.rocketTrail
   };
 }
 
 function boykisserLayer(options = {}) {
   return layer('glyph', BOYKISSER_ROLE_PALETTE, {
     glyph: 'boykisser',
-    density: Math.max(96, Number(options.density) || 96),
+    density: Math.max(
+      BOYKISSER_PARTICLE_LOD.cameo,
+      Number(options.density) || BOYKISSER_PARTICLE_LOD.standard
+    ),
     size: options.size || 1,
     lifetimeMs: options.lifetimeMs || 900,
     gravity: options.gravity === undefined ? 0.15 : options.gravity,
@@ -136,7 +143,8 @@ function furryCue(formation, soundRole, tier, catHints, supports = [], options =
     launchMode: options.launchMode,
     crackleEnabled: options.crackleEnabled,
     exactTarget: options.exactTarget,
-    exactOrigin: options.exactOrigin
+    exactOrigin: options.exactOrigin,
+    rocketTrail: options.rocketTrail
   });
   return descriptor(formation, 'boykisser', soundRole, tier, {
     crackleEnabled: options.crackleEnabled,
@@ -344,6 +352,7 @@ const BLUEPRINTS = {
           supportGlyph('fox-head', ['#FF8C00', '#FFED00'], renderHints(-0.05, 0.82), { soundRole: 'fox-wave' })
         ], {
           crackleEnabled: true,
+          rocketTrail: { style: 'comet', colors: TRANS_COLORS },
           accents: [layer('glyph', TRANS_COLORS, { glyph: 'trans-flag', delayMs: 100, density: 32, lifetimeMs: 540, priority: 'decorative', core: false })]
         }),
         furryCue('finale-wave-2', 'false-finale-mid', 'massive', renderHints(0.1, 1.15), [
@@ -353,6 +362,7 @@ const BLUEPRINTS = {
           supportGlyph('paw', ['#FF8C00', '#FFED00'], renderHints(0.05, 0.88), { soundRole: 'paw-wave' })
         ], {
           crackleEnabled: true,
+          rocketTrail: { style: 'spiral', colors: ['#E40303', '#FFED00', '#008026', '#24408E'] },
           accents: [layer('glyph', RAINBOW_COLORS.slice(0, 4), { glyph: 'heart', delayMs: 120, density: 32, lifetimeMs: 520, priority: 'decorative', core: false })]
         }),
         furryCue('finale-wave-3', 'false-finale-near', 'massive', renderHints(0.55, 1.45), [
@@ -363,13 +373,15 @@ const BLUEPRINTS = {
         ], {
           cat: { density: 132, lifetimeMs: 600 },
           crackleEnabled: false,
+          rocketTrail: { style: 'braided', colors: TRANS_COLORS },
           accents: [layer('glyph', TRANS_COLORS, { glyph: 'trans-flag', delayMs: 140, density: 32, lifetimeMs: 460, priority: 'decorative', core: false })]
         }),
-        furryCue('gold-crown', 'boykisser-hero', 'massive', renderHints(0.82, 2, 0, 0.52), [], {
-          cat: { density: 180, lifetimeMs: 1200, gravity: 0.08 },
-          launchMode: 'airburst',
-          exactTarget: { x: 0.5, y: 0.5 },
-          exactOrigin: { x: 0.5, y: 1.02 },
+        furryCue('gold-crown', 'boykisser-hero', 'massive', renderHints(0.82, 2, 0, 0.84), [], {
+          cat: { density: BOYKISSER_PARTICLE_LOD.hero, lifetimeMs: 1200, gravity: 0.08 },
+          launchMode: 'rocket',
+          exactTarget: { x: 0.5, y: 0.38 },
+          exactOrigin: { x: 0.5, y: 1.04 },
+          rocketTrail: { style: 'braided', colors: ['#E40303', '#FFED00', '#24408E', '#732982'] },
           accents: [
             layer('ring', RAINBOW_COLORS.slice(0, 4), { delayMs: 90, density: 42, lifetimeMs: 900, strobe: true, priority: 'decorative', core: false }),
             layer('ring', RAINBOW_COLORS.slice(4), { delayMs: 180, density: 32, lifetimeMs: 850, priority: 'decorative', core: false })
