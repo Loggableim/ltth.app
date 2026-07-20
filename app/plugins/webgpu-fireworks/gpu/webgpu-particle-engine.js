@@ -1159,7 +1159,7 @@ class WebGPUParticleEngine {
         );
     }
 
-    spawnRocket(options = {}) {
+    _buildRocketCommands(options = {}) {
         const style = this._styleId(options.style);
         const seed = this._resolveSeed(options);
         const effectId = this._hashValue(options.effectId ?? seed);
@@ -1253,13 +1253,18 @@ class WebGPUParticleEngine {
                 }
             });
         }
+        return { commands, correlationId };
+    }
+
+    spawnRocket(options = {}) {
+        const { commands, correlationId } = this._buildRocketCommands(options);
         return this._queueSpawnGroup(commands, {
             correlationId,
             correlationManifest: options.correlationManifest
         });
     }
 
-    spawnExplosion(options = {}) {
+    _buildExplosionCommands(options = {}) {
         const shape = this._shapeId(options.shape);
         const ranges = {
             0: [60, 220], 1: [36, 72], 2: [5, 9], 3: [30, 60],
@@ -1370,10 +1375,68 @@ class WebGPUParticleEngine {
                 flags: this._flags({ role: 7, style })
             });
         }
+        commands.forEach((command, index) => {
+            command.envelopeCommandId = options.envelopeCommandIds?.[index] ?? (
+                options.envelopeCommandId
+                    ? (index === 0 ? options.envelopeCommandId : `${options.envelopeCommandId}:${index + 1}`)
+                    : `${correlationId}:explosion:${index + 1}`
+            );
+        });
+        return { commands, correlationId };
+    }
+
+    spawnExplosion(options = {}) {
+        const { commands, correlationId } = this._buildExplosionCommands(options);
         return this._queueSpawnGroup(commands, {
             correlationId,
             correlationManifest: options.correlationManifest,
-            envelopeCommandId: options.envelopeCommandId
+            envelopeCommandIds: options.envelopeCommandIds
+        });
+    }
+
+    prepareCorrelatedSpawns(spawns = [], requestedCorrelationId = null) {
+        if (!Array.isArray(spawns) || spawns.length === 0) {
+            throw new TypeError('prepareCorrelatedSpawns requires at least one spawn group.');
+        }
+        const sourceCorrelationId = requestedCorrelationId ??
+            spawns[0]?.options?.correlationId ?? spawns[0]?.options?.effectId ?? 'runtime';
+        const envelopeCorrelationId = `${String(sourceCorrelationId)}:effect:${this.resourceGeneration}:${++this.spawnCorrelationSequence}`;
+        const groups = [];
+        const manifestCommands = [];
+
+        spawns.forEach((spawn, groupIndex) => {
+            const options = { ...(spawn?.options || {}), correlationId: sourceCorrelationId };
+            const builder = spawn?.type === 'rocket'
+                ? this._buildRocketCommands.bind(this)
+                : spawn?.type === 'explosion'
+                    ? this._buildExplosionCommands.bind(this)
+                    : null;
+            if (!builder) throw new TypeError(`Unsupported correlated spawn type: ${spawn?.type}`);
+            const built = builder(options);
+            const envelopeCommandIds = built.commands.map((_, commandIndex) =>
+                `${envelopeCorrelationId}:group:${groupIndex + 1}:command:${commandIndex + 1}`
+            );
+            built.commands.forEach((command, commandIndex) => {
+                const entry = this._normalizeSpawnEntry({
+                    ...command,
+                    correlationId: sourceCorrelationId,
+                    sourceCorrelationId,
+                    envelopeCorrelationId,
+                    envelopeCommandId: envelopeCommandIds[commandIndex]
+                });
+                manifestCommands.push(this._manifestCommand(entry));
+            });
+            groups.push(deeplyFreeze({ envelopeCommandIds: deeplyFreeze(envelopeCommandIds) }));
+        });
+
+        const correlationManifest = deeplyFreeze({
+            correlationId: envelopeCorrelationId,
+            commands: deeplyFreeze(manifestCommands)
+        });
+        return deeplyFreeze({
+            correlationId: sourceCorrelationId,
+            correlationManifest,
+            groups: deeplyFreeze(groups)
         });
     }
 
