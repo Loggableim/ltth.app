@@ -219,7 +219,7 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
         expect(command.flags & ENVELOPE_FLAG_BITS.VECTOR_HERO).toBe(0);
         expect(command.flags & ENVELOPE_FLAG_BITS.TRAIL).toBe(0);
         expect(command.gravity).toBeGreaterThan(0);
-        expect(command.viewportMaterialization).toMatchObject({ kind: 'v2-layer', glyphExtent: 0.52 });
+        expect(command.viewportMaterialization).toMatchObject({ kind: 'v2-layer', glyphExtent: 0.84 });
       }
     }
   );
@@ -277,7 +277,7 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
     expect(manifestHero.flags & ENVELOPE_FLAG_BITS.VECTOR_HERO).toBe(0);
     expect(manifestHero.viewportMaterialization).toMatchObject({
       kind: 'v2-layer',
-      glyphExtent: 0.52,
+      glyphExtent: 0.84,
     });
 
     const engine = makeEngine(width, height);
@@ -391,6 +391,7 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
     expect(resources).toContain('this.maxTrailSamples * 16');
     expect(compute).toContain('position: vec3f, velocity: vec3f');
     expect(compute).toContain('history: array<vec3f>');
+    expect(compute).toContain('vec2f(boykisser.x * 0.752378, boykisser.y)');
     expect(compute).toContain('fn shapeVelocity(shape: u32, index: u32, count: u32, intensity: f32, seed: u32, depthEnabled: bool) -> vec3f');
     expect(compute).toContain('let volumetric = depthEnabled && shape != 11u && (shape < 17u || shape > 24u)');
     expect(particle).toContain('position: vec3f, velocity: vec3f');

@@ -376,7 +376,7 @@ const BLUEPRINTS = {
           rocketTrail: { style: 'braided', colors: TRANS_COLORS },
           accents: [layer('glyph', TRANS_COLORS, { glyph: 'trans-flag', delayMs: 140, density: 32, lifetimeMs: 460, priority: 'decorative', core: false })]
         }),
-        furryCue('gold-crown', 'boykisser-hero', 'massive', renderHints(0.82, 2, 0, 0.52), [], {
+        furryCue('gold-crown', 'boykisser-hero', 'massive', renderHints(0.82, 2, 0, 0.84), [], {
           cat: { density: BOYKISSER_PARTICLE_LOD.hero, lifetimeMs: 1200, gravity: 0.08 },
           launchMode: 'rocket',
           exactTarget: { x: 0.5, y: 0.38 },

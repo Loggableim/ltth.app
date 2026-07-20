@@ -386,7 +386,7 @@ describe('WebGPU Fireworks finale show planner', () => {
               launchDepth: 0,
               burstDepth: 0.82,
               glyphScale: 2,
-              glyphExtent: 0.52
+              glyphExtent: 0.84
             }
           })]
         });
@@ -486,7 +486,7 @@ describe('WebGPU Fireworks finale show planner', () => {
     });
     expect(heroBoykisser.density).toBeGreaterThanOrEqual(640);
     expect(heroBoykisser.density).toBeLessThanOrEqual(960);
-    expect(heroCue.shells[0].renderHints.glyphExtent).toBe(0.52);
+    expect(heroCue.shells[0].renderHints.glyphExtent).toBe(0.84);
     expect(heroLayers.filter(layer => layer.primitive === 'ring').map(layer => layer.delayMs))
       .toEqual([90, 180]);
   });

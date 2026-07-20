@@ -1994,8 +1994,8 @@ class WebGPUParticleEngine {
             [0, 3, 4, V2_PRIMITIVE_IDS.ring, V2_GLYPH_IDS.star].includes(Number(command.shape)));
         if (!needsTipGuard) return 2;
         return Math.min(
-            48,
-            Math.max(12, Math.min(this.logicalWidth, this.logicalHeight) * 0.025)
+            320,
+            Math.max(24, Math.min(this.logicalHeight * 0.08, this.logicalWidth * 0.14))
         );
     }
 
@@ -2844,7 +2844,10 @@ fn shapeVelocity2(shape: u32, index: u32, count: u32, intensity: f32, seed: u32)
     return vec2f(cos(angle), sin(angle)) * speed * intensity;
   }
   if (shape >= 17u && shape <= 26u) {
-    if (shape == 25u) { return boykisserPoint(index, count, seed) * 218.0 * intensity; }
+    if (shape == 25u) {
+      let boykisser = boykisserPoint(index, count, seed);
+      return vec2f(boykisser.x * ${BOYKISSER_VECTOR.aspectRatio.toFixed(6)}, boykisser.y) * 218.0 * intensity;
+    }
     if (shape == 26u) { return transFlagPoint(t) * 218.0 * intensity; }
     return glyphPoint(shape, t, seed) * 218.0 * intensity;
   }

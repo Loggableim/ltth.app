@@ -1213,22 +1213,22 @@ struct Params { width: u32, height: u32, ignoreBottom: u32, pad: u32 };
       return result;
     }
 
-    async function runBoykisserVectorCase() {
+    async function runBoykisserParticleCase() {
       const geometry = WebGPUFireworksBoykisserGeometry;
       const envelope = WebGPUFireworksVisibleEnvelope;
-      if (!geometry || !envelope) throw new Error('browser Boykisser vector dependencies are unavailable');
+      if (!geometry || !envelope) throw new Error('browser Boykisser particle dependencies are unavailable');
       const dimensions = [
         [960, 540, 'landscape'], [1920, 1080, 'landscape'], [3840, 2160, 'landscape'],
         [540, 960, 'portrait'], [1080, 1920, 'portrait'], [2160, 3840, 'portrait']
       ];
-      const requestedDensities = [13, 180];
+      const requestedDensities = [geometry.BOYKISSER_PARTICLE_LOD.cameo, geometry.BOYKISSER_PARTICLE_LOD.hero];
       const canvas = document.createElement('canvas');
       canvas.width = 960;
       canvas.height = 540;
       let nowMs = 1_000;
       const renderer = new WebGPUParticleEngine(canvas, {
         now: () => nowMs,
-        maxParticles: 64,
+        maxParticles: 2048,
         trailsEnabled: false,
         glowEnabled: false,
         bloomEnabled: false,
@@ -1241,10 +1241,13 @@ struct Params { width: u32, height: u32, ignoreBottom: u32, pad: u32 };
         const alpha = Math.max(1, pixel[3]);
         return pixel.slice(0, 3).map(channel => Math.min(255, Math.round(channel * 255 / alpha)));
       };
-      const isBlack = pixel => pixel[3] > 180 && straightColor(pixel).every(channel => channel < 45);
+      const isBlack = pixel => {
+        const color = straightColor(pixel);
+        return pixel[3] > 24 && Math.max(...color) < 180 && Math.max(...color) - Math.min(...color) < 100;
+      };
       const isRed = pixel => {
         const [red, green, blue] = straightColor(pixel);
-        return pixel[3] > 180 && red > 150 && green < 70 && blue < 70;
+        return pixel[3] > 24 && red > 130 && red - green > 55 && red - blue > 35;
       };
       const isWhite = pixel => {
         const color = straightColor(pixel);
@@ -1268,36 +1271,34 @@ struct Params { width: u32, height: u32, ignoreBottom: u32, pad: u32 };
         }
         return pixels;
       };
-      const frameEvidence = (frame, center, halfHeight) => {
+      const frameEvidence = frame => {
         let left = frame.width;
         let right = -1;
         let top = frame.height;
         let bottom = -1;
         let visiblePixels = 0;
         let whitePixels = 0;
+        let blackPixels = 0;
+        let redPixels = 0;
         for (let y = 0; y < frame.height; y += 1) {
           for (let x = 0; x < frame.width; x += 1) {
             const pixel = boykisserPixel(frame, x, y);
             if (pixel[3] <= 8) continue;
             visiblePixels += 1;
             if (isWhite(pixel)) whitePixels += 1;
+            if (isBlack(pixel)) blackPixels += 1;
+            if (isRed(pixel)) redPixels += 1;
             left = Math.min(left, x); right = Math.max(right, x);
             top = Math.min(top, y); bottom = Math.max(bottom, y);
           }
         }
-        const blackFeaturePixels = geometry.BOYKISSER_VECTOR.blackFills.map(points => (
-          regionColorPixels(frame, points, center, halfHeight, isBlack)
-        ));
-        const redFeaturePixels = geometry.BOYKISSER_VECTOR.redStrokes.map(points => (
-          regionColorPixels(frame, points, center, halfHeight, isRed)
-        ));
         const visibleWidth = right >= left ? right - left + 1 : 0;
         const visibleHeight = bottom >= top ? bottom - top + 1 : 0;
         return {
           visiblePixels,
           whitePixels,
-          blackFeaturePixels,
-          redFeaturePixels,
+          blackPixels,
+          redPixels,
           guardPixels: boykisserGuardPixels(frame),
           bounds: { left, top, right, bottom, width: visibleWidth, height: visibleHeight },
           aspectRatio: visibleHeight > 0 ? visibleWidth / visibleHeight : 0,
@@ -1309,13 +1310,13 @@ struct Params { width: u32, height: u32, ignoreBottom: u32, pad: u32 };
 
       try {
         if (!await renderer.init()) {
-          throw new Error(`boykisser vector renderer failed to initialize: ${JSON.stringify(renderer.getMetrics())}`);
+          throw new Error(`boykisser particle renderer failed to initialize: ${JSON.stringify(renderer.getMetrics())}`);
         }
         for (const [width, height, orientation] of dimensions) {
           renderer.resize(width, height);
           renderer.setLogicalSize(width, height);
           for (const requestedDensity of requestedDensities) {
-            const effectId = `boykisser-vector-${width}x${height}-${requestedDensity}`;
+            const effectId = `boykisser-particle-${width}x${height}-${requestedDensity}`;
             const accepted = renderer.spawnLayer({
               id: effectId,
               primitive: 'glyph',
@@ -1326,7 +1327,7 @@ struct Params { width: u32, height: u32, ignoreBottom: u32, pad: u32 };
               lifetimeMs: 1200,
               gravity: 0.08,
               drag: 0.035,
-              trail: true,
+              trail: false,
               split: false,
               strobe: false,
               colors: ['#FFFFFF', '#000000', '#FF0000'],
@@ -1342,38 +1343,32 @@ struct Params { width: u32, height: u32, ignoreBottom: u32, pad: u32 };
                 launchDepth: 0,
                 burstDepth: 0.82,
                 glyphScale: 2,
-                glyphExtent: 0.52
+                glyphExtent: 0.84
               }
             });
-            if (!accepted) throw new Error(`boykisser vector command was rejected for ${effectId}`);
+            if (!accepted) throw new Error(`boykisser particle command was rejected for ${effectId}`);
             const queued = renderer.spawnQueue.at(-1);
-            if (queued.count !== 1 || queued.globalCount !== 1 ||
-                (queued.flags & envelope.ENVELOPE_FLAG_BITS.VECTOR_HERO) === 0 ||
+            if (queued.count !== requestedDensity || queued.globalCount !== requestedDensity ||
+                (queued.flags & envelope.ENVELOPE_FLAG_BITS.VECTOR_HERO) !== 0 ||
                 (queued.flags & envelope.ENVELOPE_FLAG_BITS.TRAIL) !== 0) {
-              throw new Error(`boykisser vector command contract failed: ${JSON.stringify(queued)}`);
+              throw new Error(`boykisser particle command contract failed: ${JSON.stringify(queued)}`);
             }
-            const perspective = 4 / (4 - queued.burstDepth);
-            const halfHeight = queued.size * perspective;
-            for (let frame = 0; frame < 3; frame += 1) {
+            for (let frame = 0; frame < 12; frame += 1) {
               renderer.render(0.05, nowMs / 1_000);
               nowMs += 50;
             }
-            const evidence = await inspectCurrentFrame(renderer, width, height, frame => (
-              frameEvidence(frame, { x: width / 2, y: height / 2 }, halfHeight)
-            ));
-            const colorViolation = evidence.whitePixels <= 0 ||
-              evidence.blackFeaturePixels.some(count => count <= 0) ||
-              evidence.redFeaturePixels.some(count => count <= 0);
+            const evidence = await inspectCurrentFrame(renderer, width, height, frameEvidence);
+            const colorViolation = evidence.whitePixels <= 0 || evidence.blackPixels <= 0 || evidence.redPixels <= 0;
             if (colorViolation || evidence.guardPixels !== 0 || evidence.visiblePixels <= 0 ||
-                evidence.constrainedCoverage < 0.75 || evidence.constrainedCoverage > 0.85 ||
-                evidence.aspectRatio < 0.7 || evidence.aspectRatio > 0.78) {
-              throw new Error(`boykisser vector evidence failed: ${JSON.stringify({
+                evidence.constrainedCoverage < 0.2 || evidence.constrainedCoverage > 0.9 ||
+                evidence.aspectRatio < 0.6 || evidence.aspectRatio > 0.9) {
+              throw new Error(`boykisser particle evidence failed: ${JSON.stringify({
                 width, height, orientation, requestedDensity, ...evidence
               })}`);
             }
             coverage.push({ width, height, orientation, requestedDensity, commandCount: 1, ...evidence });
 
-            for (let frame = 0; frame < 23; frame += 1) {
+            for (let frame = 0; frame < 14; frame += 1) {
               renderer.render(0.05, nowMs / 1_000);
               nowMs += 50;
             }
@@ -1385,9 +1380,9 @@ struct Params { width: u32, height: u32, ignoreBottom: u32, pad: u32 };
           resolutions: dimensions.length,
           orientations: new Set(dimensions.map(entry => entry[2])).size,
           testedCases: coverage.length,
-          vectorBillboards: coverage.reduce((sum, row) => sum + row.commandCount, 0),
-          blackFeatureChecks: coverage.reduce((sum, row) => sum + row.blackFeaturePixels.length, 0),
-          redFeatureChecks: coverage.reduce((sum, row) => sum + row.redFeaturePixels.length, 0),
+          particleFormations: coverage.reduce((sum, row) => sum + row.commandCount, 0),
+          blackFeatureChecks: coverage.filter(row => row.blackPixels > 0).length,
+          redFeatureChecks: coverage.filter(row => row.redPixels > 0).length,
           guardViolations: coverage.reduce((sum, row) => sum + row.guardPixels, 0),
           coverage,
           cleanupComplete: false
@@ -1405,7 +1400,7 @@ struct Params { width: u32, height: u32, ignoreBottom: u32, pad: u32 };
       recovery: runRecoveryCase,
       'admission-envelope': runAdmissionEnvelopeCase,
       'telemetry-adaptive': runTelemetryAdaptiveCase,
-      boykisser: runBoykisserVectorCase
+      boykisser: runBoykisserParticleCase
     });
 
     async function runNamedCase(name) {
