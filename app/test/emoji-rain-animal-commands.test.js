@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const {
   DEFAULT_ANIMAL_COMMANDS,
   AnimalCommandCooldowns,
@@ -24,6 +26,19 @@ function command(command, assetType = 'emoji', assetValue = '🐾', enabled = tr
 }
 
 describe('EmojiRain animal command configuration', () => {
+  test.each([
+    'plugins/emoji-rain/main.js',
+    'plugins/webgpu-emoji-rain/main.js'
+  ])('%s refreshes the shared command helper during plugin reload', relativePath => {
+    const source = fs.readFileSync(path.join(__dirname, '..', relativePath), 'utf8');
+    const refresh = "delete require.cache[require.resolve('../../modules/emoji-rain-animal-commands')];";
+
+    expect(source).toContain(refresh);
+    expect(source.indexOf(refresh)).toBeLessThan(
+      source.indexOf("require('../../modules/emoji-rain-animal-commands')")
+    );
+  });
+
   test('migrates a missing list to five independent default rows', () => {
     const normalized = normalizeAnimalCommandSettings({});
 

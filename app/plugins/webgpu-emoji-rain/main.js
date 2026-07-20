@@ -20,6 +20,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const crypto = require('crypto');
+delete require.cache[require.resolve('../../modules/emoji-rain-animal-commands')];
 delete require.cache[require.resolve('./lib/webgpu-config')];
 const { createDefaultWebGPUConfig, normalizeWebGPUConfig } = require('./lib/webgpu-config');
 const {

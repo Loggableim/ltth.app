@@ -20,6 +20,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const crypto = require('crypto');
+delete require.cache[require.resolve('../../modules/emoji-rain-animal-commands')];
 const {
   AnimalCommandConflictError,
   AnimalCommandCooldowns,
