@@ -6,7 +6,6 @@
   'use strict';
 
   const SHOWS_ENDPOINT = '/api/webgpu-fireworks/shows';
-  const CUSTOM_STYLE_PATTERN = /^custom:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const BUILT_IN_SHOWS = Object.freeze([
     Object.freeze({ id: 'classic-crescendo', name: 'Classic Crescendo', builtIn: true }),
     Object.freeze({ id: 'symmetric-salute', name: 'Symmetric Salute', builtIn: true }),
@@ -47,6 +46,7 @@
 
   const refreshGenerations = new WeakMap();
   let catalogPromise = null;
+  let customStylePattern = null;
 
   function cloneStyle(style) {
     return {
@@ -272,8 +272,30 @@
     return select.value;
   }
 
+  function setCustomStyleContract(descriptor) {
+    customStylePattern = null;
+    const expectedValues = ['auto', ...BUILT_IN_SHOWS.map(show => show.id)];
+    if (
+      !descriptor ||
+      !Array.isArray(descriptor.values) ||
+      descriptor.values.length !== expectedValues.length ||
+      descriptor.values.some((value, index) => value !== expectedValues[index]) ||
+      typeof descriptor.dynamicPattern !== 'string' ||
+      typeof (descriptor.dynamicFlags || '') !== 'string'
+    ) return false;
+    try {
+      customStylePattern = new RegExp(descriptor.dynamicPattern, descriptor.dynamicFlags || '');
+      return true;
+    } catch (error) {
+      customStylePattern = null;
+      return false;
+    }
+  }
+
   function isCustomStyleId(value) {
-    return typeof value === 'string' && CUSTOM_STYLE_PATTERN.test(value);
+    if (typeof value !== 'string' || !customStylePattern) return false;
+    customStylePattern.lastIndex = 0;
+    return customStylePattern.test(value);
   }
 
   function isSelectableStyleId(value) {
@@ -354,6 +376,7 @@
     normalizeCatalog,
     refreshStyleSelect,
     renderLengthSelect,
-    renderStyleSelect
+    renderStyleSelect,
+    setCustomStyleContract
   });
 });

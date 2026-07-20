@@ -15,6 +15,88 @@ let rendererStatusTimer = null;
 let paletteSaveTimer = null;
 let palettePreviewTimer = null;
 let localizedDynamicRefreshScheduled = false;
+let configContractsReady = false;
+
+const RANGE_VALUE_DISPLAYS = Object.freeze({
+    'combo-timeout': ['combo-timeout-value', 's'],
+    'combo-max': ['combo-max-value', 'x'],
+    'audio-volume': ['audio-volume-value', '%'],
+    'crackle-frequency': ['crackle-frequency-value', '%'],
+    'crackle-volume': ['crackle-volume-value', '%'],
+    'max-particles': ['max-particles-value', ''],
+    'target-fps': ['target-fps-value', ' FPS'],
+    'min-fps': ['min-fps-value', ' FPS'],
+    'despawn-fade': ['despawn-fade-value', 's'],
+    'max-rockets-per-second': ['max-rockets-value', '/s'],
+    'max-fireworks': ['max-fireworks-value', ''],
+    'max-particles-limit': ['max-particles-limit-value', ''],
+    'emergency-threshold': ['emergency-threshold-value', ''],
+    'min-target-fps': ['min-target-fps-value', ''],
+    'avatar-chance': ['avatar-chance-value', '%'],
+    'finale-intensity': ['finale-intensity-value', 'x'],
+    'superfan-finale-intensity': ['superfan-finale-intensity-value', 'x'],
+    'superfan-end-card-duration': ['superfan-end-card-duration-value', 's'],
+    'superfan-end-card-scale': ['superfan-end-card-scale-value', 'x'],
+    'follower-rocket-count': ['follower-rocket-count-value', ''],
+    'follower-animation-duration': ['follower-animation-duration-value', 's'],
+    'follower-animation-delay': ['follower-animation-delay-value', 's'],
+    'follower-animation-scale': ['follower-animation-scale-value', 'x']
+});
+
+function settingsContract() {
+    const contract = window.WebGpuFireworksSettingsContract;
+    if (!contract) throw new Error('Settings contract module is unavailable');
+    return contract;
+}
+
+function failClosedConfigControls() {
+    configContractsReady = false;
+    const contract = window.WebGpuFireworksSettingsContract;
+    const ids = [
+        ...Object.keys(contract?.RANGE_CONTROLS || {}),
+        ...Object.keys(contract?.ENUM_CONTROLS || {})
+    ];
+    for (const id of ids) {
+        const element = document.getElementById(id);
+        if (element) element.disabled = true;
+    }
+    window.WebGpuFireworksShowOptions?.setCustomStyleContract?.(null);
+}
+
+function installConfigContracts(data) {
+    const contract = settingsContract();
+    try {
+        contract.applyConfigContracts(document, { limits: data?.limits, enums: data?.enums });
+        const showOptions = window.WebGpuFireworksShowOptions;
+        if (!showOptions?.setCustomStyleContract?.(data?.enums?.finaleStyle)) {
+            throw new Error('Finale style contract is invalid');
+        }
+        configContractsReady = true;
+    } catch (error) {
+        failClosedConfigControls();
+        throw error;
+    }
+}
+
+function readVisibleNumericConfig() {
+    if (!configContractsReady) throw new Error('Settings contracts are not ready');
+    const contract = settingsContract();
+    contract.reconcileFpsControls(document);
+    return contract.readNumericConfig(document);
+}
+
+function updateNumericValueDisplays() {
+    for (const [id, [valueId, suffix]] of Object.entries(RANGE_VALUE_DISPLAYS)) {
+        const input = document.getElementById(id);
+        const output = document.getElementById(valueId);
+        if (input && output) output.textContent = `${input.value}${suffix}`;
+    }
+}
+
+function syncNumericConfigFromControls() {
+    Object.assign(config, readVisibleNumericConfig());
+    updateNumericValueDisplays();
+}
 
 function t(key, fallback, params = {}) {
     const translated = window.i18n?.t?.(key, params);
@@ -95,7 +177,7 @@ function refreshLocalizedUiFromI18nChange() {
 
 async function refreshFinaleShowSelectors() {
     const showOptions = window.WebGpuFireworksShowOptions;
-    if (!showOptions) return [];
+    if (!showOptions || !configContractsReady) return [];
     const labels = finaleSelectorLabels();
     const globalStyle = document.getElementById('finale-style');
     const globalLength = document.getElementById('finale-length');
@@ -105,14 +187,14 @@ async function refreshFinaleShowSelectors() {
     if (globalLength) {
         showOptions.renderLengthSelect(globalLength, {
             surface: 'global',
-            selectedValue: config.goalFinaleLength || 'medium',
+            selectedValue: config.goalFinaleLength,
             labels
         });
     }
     if (superfanLength) {
         showOptions.renderLengthSelect(superfanLength, {
             surface: 'inherited',
-            selectedValue: config.superfanFinaleLength || 'inherit',
+            selectedValue: config.superfanFinaleLength,
             labels
         });
     }
@@ -121,14 +203,14 @@ async function refreshFinaleShowSelectors() {
     if (globalStyle) {
         refreshes.push(showOptions.refreshStyleSelect(globalStyle, {
             surface: 'global',
-            selectedValue: config.goalFinaleStyle || 'auto',
+            selectedValue: config.goalFinaleStyle,
             labels
         }));
     }
     if (superfanStyle) {
         refreshes.push(showOptions.refreshStyleSelect(superfanStyle, {
             surface: 'inherited',
-            selectedValue: config.superfanFinaleStyle || 'inherit',
+            selectedValue: config.superfanFinaleStyle,
             labels
         }));
     }
@@ -279,8 +361,13 @@ function connectSocket() {
         });
 
         socket.on('webgpu-fireworks:config-update', (data) => {
-            if (data.config && canApplyRemoteConfig()) {
-                applyRemoteConfig(data.config);
+            try {
+                installConfigContracts(data);
+                if (data.config && canApplyRemoteConfig()) {
+                    applyRemoteConfig(data.config);
+                }
+            } catch (error) {
+                console.error('[Fireworks Settings] Invalid socket config contract:', error);
             }
         });
     } catch (e) {
@@ -296,6 +383,7 @@ async function loadConfig() {
     const requestedAtRevision = configRevision;
     try {
         const data = await requestJson('/api/webgpu-fireworks/config');
+        installConfigContracts(data);
 
         if (requestedAtRevision === configRevision && canApplyRemoteConfig()) {
             applyRemoteConfig(data.config);
@@ -446,6 +534,11 @@ async function loadRendererStatus() {
 }
 
 async function saveConfig(showSuccessToast = true) {
+    if (!configContractsReady) {
+        showToast(t('plugins.webgpu-fireworks.ui.configuration_contract_unavailable', 'Settings are waiting for the server contract'), 'error');
+        return false;
+    }
+    syncNumericConfigFromControls();
     normalizeInternalResolutionBounds();
     const requestId = ++latestSaveRequestId;
     const requestedAtRevision = configRevision;
@@ -458,6 +551,7 @@ async function saveConfig(showSuccessToast = true) {
             headers: { 'Content-Type': 'application/json' },
             body: serializedConfig
         });
+        installConfigContracts(data);
         const isCurrentRequest = requestId === latestSaveRequestId
             && requestedAtRevision === configRevision;
 
@@ -510,7 +604,7 @@ async function triggerTest() {
 
 async function triggerFinale() {
     try {
-        const intensity = parseFloat(document.getElementById('finale-intensity').value);
+        const intensity = readVisibleNumericConfig().goalFinaleIntensity;
         const style = document.getElementById('finale-style').value;
         const length = document.getElementById('finale-length').value;
 
@@ -539,7 +633,8 @@ async function triggerFinale() {
 
 async function testSuperfanFinale() {
     try {
-        await requestJson('/api/webgpu-fireworks/test-superfan', {
+        const numericConfig = readVisibleNumericConfig();
+        const result = await requestJson('/api/webgpu-fireworks/test-superfan', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -548,19 +643,26 @@ async function testSuperfanFinale() {
                 settings: {
                     superfanFinaleEnabled: document.getElementById('superfan-finale-toggle').classList.contains('active'),
                     superfanFinaleCooldownHours: Number(document.getElementById('superfan-finale-cooldown').value),
-                    superfanFinaleIntensity: Number(document.getElementById('superfan-finale-intensity').value),
+                    superfanFinaleIntensity: numericConfig.superfanFinaleIntensity,
                     superfanFinaleStyle: document.getElementById('superfan-finale-style').value,
                     superfanFinaleLength: document.getElementById('superfan-finale-length').value,
-                    superfanEndCardDuration: Math.round(Number(document.getElementById('superfan-end-card-duration').value) * 1000),
+                    superfanEndCardDuration: numericConfig.superfanEndCardDuration,
                     superfanEndCardPosition: document.getElementById('superfan-end-card-position').value,
                     superfanEndCardSize: document.getElementById('superfan-end-card-size').value,
-                    superfanEndCardScale: Number(document.getElementById('superfan-end-card-scale').value),
+                    superfanEndCardScale: numericConfig.superfanEndCardScale,
                     goalFinaleStyle: document.getElementById('finale-style').value,
                     goalFinaleLength: document.getElementById('finale-length').value
                 }
             })
         });
-        showToast(window.i18n?.t('webgpu_fireworks.superfan_finale_test_success') || 'Superfan finale triggered!', 'success');
+        if (result.pending === true) {
+            showToast(t(
+                'plugins.webgpu-fireworks.ui.superfan_finale_test_pending',
+                'Superfan finale submitted; renderer confirmation is pending.'
+            ), 'info');
+        } else {
+            showToast(window.i18n?.t('webgpu_fireworks.superfan_finale_test_success') || 'Superfan finale triggered!', 'success');
+        }
     } catch (error) {
         console.error('[Fireworks Settings] Failed to trigger Superfan finale:', error);
         const message = window.i18n?.t('webgpu_fireworks.superfan_finale_test_failed') || 'Failed to trigger Superfan finale';
@@ -593,6 +695,9 @@ async function testFollowerFireworks() {
 // ============================================================================
 
 function updateUI() {
+    settingsContract().writeNumericConfig(document, config);
+    settingsContract().reconcileFpsControls(document);
+    updateNumericValueDisplays();
     normalizeInternalResolutionBounds();
 
     // Master toggle
@@ -604,11 +709,6 @@ function updateUI() {
 
     // Combo system
     updateToggle('combo-toggle', config.comboEnabled);
-    const comboTimeout = (config.comboTimeout || 10000) / 1000;
-    document.getElementById('combo-timeout').value = comboTimeout;
-    document.getElementById('combo-timeout-value').textContent = comboTimeout + 's';
-    document.getElementById('combo-max').value = config.comboMaxMultiplier || 5;
-    document.getElementById('combo-max-value').textContent = (config.comboMaxMultiplier || 5) + 'x';
 
     // Escalation
     updateToggle('escalation-toggle', config.escalationEnabled);
@@ -627,15 +727,6 @@ function updateUI() {
 
     // Audio
     updateToggle('audio-toggle', config.audioEnabled);
-    const volume = Math.round((config.audioVolume ?? 0.7) * 100);
-    document.getElementById('audio-volume').value = volume;
-    document.getElementById('audio-volume-value').textContent = volume + '%';
-    const crackleFrequency = Math.round((config.crackleFrequency ?? 0.5) * 100);
-    document.getElementById('crackle-frequency').value = crackleFrequency;
-    document.getElementById('crackle-frequency-value').textContent = crackleFrequency + '%';
-    const crackleVolume = Math.round((config.crackleVolume ?? 0.75) * 100);
-    document.getElementById('crackle-volume').value = crackleVolume;
-    document.getElementById('crackle-volume-value').textContent = crackleVolume + '%';
 
     // Color mode
     document.getElementById('color-mode').value = config.colorMode || 'gift';
@@ -644,8 +735,6 @@ function updateUI() {
     // Visual effects
     updateToggle('trails-toggle', config.trailsEnabled);
     updateToggle('glow-toggle', config.glowEnabled);
-    document.getElementById('max-particles').value = config.maxParticles || 1000;
-    document.getElementById('max-particles-value').textContent = config.maxParticles || 1000;
     if (config.particleSizeRange) {
         document.getElementById('particle-min').value = config.particleSizeRange[0] || 3;
         document.getElementById('particle-max').value = config.particleSizeRange[1] || 10;
@@ -653,28 +742,17 @@ function updateUI() {
 
     // Goal finale
     updateToggle('finale-toggle', config.goalFinaleEnabled);
-    document.getElementById('finale-intensity').value = config.goalFinaleIntensity || 3;
-    document.getElementById('finale-intensity-value').textContent = (config.goalFinaleIntensity || 3) + 'x';
-    document.getElementById('finale-style').value = config.goalFinaleStyle || 'auto';
-    document.getElementById('finale-length').value = config.goalFinaleLength || 'medium';
+    document.getElementById('finale-style').value = config.goalFinaleStyle;
+    document.getElementById('finale-length').value = config.goalFinaleLength;
 
     // Superfan finale
     updateToggle('superfan-finale-toggle', config.superfanFinaleEnabled !== false);
-    document.getElementById('superfan-finale-cooldown').value = String(config.superfanFinaleCooldownHours ?? 24);
-    document.getElementById('superfan-finale-intensity').value = config.superfanFinaleIntensity ?? 3;
-    document.getElementById('superfan-finale-intensity-value').textContent = `${config.superfanFinaleIntensity ?? 3}x`;
-    document.getElementById('superfan-finale-style').value = config.superfanFinaleStyle || 'inherit';
-    document.getElementById('superfan-finale-length').value = config.superfanFinaleLength || 'inherit';
-    const superfanEndCardDuration = config.superfanEndCardDuration ?? 3000;
-    const superfanEndCardSize = config.superfanEndCardSize ?? 'medium';
-    const superfanEndCardScale = config.superfanEndCardScale ?? 1;
-    document.getElementById('superfan-end-card-duration').value = String(superfanEndCardDuration / 1000);
-    document.getElementById('superfan-end-card-duration-value').textContent = `${superfanEndCardDuration / 1000}s`;
-    document.getElementById('superfan-end-card-position').value = config.superfanEndCardPosition ?? 'center';
-    document.getElementById('superfan-end-card-size').value = superfanEndCardSize;
-    document.getElementById('superfan-end-card-scale').value = String(superfanEndCardScale);
-    document.getElementById('superfan-end-card-scale-value').textContent = `${superfanEndCardScale}x`;
-    document.getElementById('superfan-end-card-scale-container').style.display = superfanEndCardSize === 'custom'
+    document.getElementById('superfan-finale-cooldown').value = String(config.superfanFinaleCooldownHours);
+    document.getElementById('superfan-finale-style').value = config.superfanFinaleStyle;
+    document.getElementById('superfan-finale-length').value = config.superfanFinaleLength;
+    document.getElementById('superfan-end-card-position').value = config.superfanEndCardPosition;
+    document.getElementById('superfan-end-card-size').value = config.superfanEndCardSize;
+    document.getElementById('superfan-end-card-scale-container').style.display = config.superfanEndCardSize === 'custom'
         ? 'block'
         : 'none';
     refreshFinaleShowSelectors();
@@ -683,18 +761,10 @@ function updateUI() {
     updateToggle('follower-toggle', config.followerFireworksEnabled);
     updateToggle('follower-animation-toggle', config.followerShowAnimation);
     updateToggle('follower-profile-toggle', config.followerShowProfilePicture);
-    document.getElementById('follower-rocket-count').value = config.followerRocketCount || 3;
-    document.getElementById('follower-rocket-count-value').textContent = config.followerRocketCount || 3;
-    document.getElementById('follower-animation-duration').value = (config.followerAnimationDuration || 3000) / 1000;
-    document.getElementById('follower-animation-duration-value').textContent = ((config.followerAnimationDuration || 3000) / 1000) + 's';
-    document.getElementById('follower-animation-delay').value = (config.followerAnimationDelay || 3000) / 1000;
-    document.getElementById('follower-animation-delay-value').textContent = ((config.followerAnimationDelay || 3000) / 1000) + 's';
-    document.getElementById('follower-animation-position').value = config.followerAnimationPosition || 'center';
-    document.getElementById('follower-animation-size').value = config.followerAnimationSize || 'medium';
-    document.getElementById('follower-animation-scale').value = config.followerAnimationScale || 1.0;
-    document.getElementById('follower-animation-scale-value').textContent = (config.followerAnimationScale || 1.0) + 'x';
-    document.getElementById('follower-animation-style').value = config.followerAnimationStyle || 'gradient-purple';
-    document.getElementById('follower-animation-entrance').value = config.followerAnimationEntrance || 'scale';
+    document.getElementById('follower-animation-position').value = config.followerAnimationPosition;
+    document.getElementById('follower-animation-size').value = config.followerAnimationSize;
+    document.getElementById('follower-animation-style').value = config.followerAnimationStyle;
+    document.getElementById('follower-animation-entrance').value = config.followerAnimationEntrance;
 
     // Show/hide custom scale slider based on size selection
     const scaleContainer = document.getElementById('follower-animation-scale-container');
@@ -726,15 +796,6 @@ function updateUI() {
 
     // User avatar integration
     updateToggle('avatar-toggle', config.userAvatarEnabled);
-    const avatarChance = Math.round((config.avatarParticleChance || 0.3) * 100);
-    const avatarChanceSlider = document.getElementById('avatar-chance');
-    const avatarChanceValue = document.getElementById('avatar-chance-value');
-    if (avatarChanceSlider) {
-        avatarChanceSlider.value = avatarChance;
-    }
-    if (avatarChanceValue) {
-        avatarChanceValue.textContent = avatarChance + '%';
-    }
 
     // Performance & Resolution settings
     updateToggle('toaster-toggle', config.toasterMode);
@@ -767,94 +828,14 @@ function updateUI() {
         config.orientation || 'landscape'
     );
 
-    const targetFps = config.targetFps || 60;
-    const targetFpsSlider = document.getElementById('target-fps');
-    const targetFpsValue = document.getElementById('target-fps-value');
-    if (targetFpsSlider) {
-        targetFpsSlider.value = targetFps;
-    }
-    if (targetFpsValue) {
-        targetFpsValue.textContent = targetFps + ' FPS';
-    }
-    const minFps = config.minFps || 30;
-    const minFpsSlider = document.getElementById('min-fps');
-    const minFpsValue = document.getElementById('min-fps-value');
-    if (minFpsSlider) {
-        minFpsSlider.value = minFps;
-    }
-    if (minFpsValue) {
-        minFpsValue.textContent = minFps + ' FPS';
-    }
-
-    // Despawn fade duration
-    const despawnFade = config.despawnFadeDuration || 3.0;
-    const despawnFadeSlider = document.getElementById('despawn-fade');
-    const despawnFadeValue = document.getElementById('despawn-fade-value');
-    if (despawnFadeSlider) {
-        despawnFadeSlider.value = despawnFade;
-    }
-    if (despawnFadeValue) {
-        despawnFadeValue.textContent = despawnFade + 's';
-    }
-
     // Queue system settings
     updateToggle('queue-enabled-toggle', !!config.queueEnabled);
-    const maxRocketsPerSecond = config.maxRocketsPerSecond || 5;
-    const maxRocketsSlider = document.getElementById('max-rockets-per-second');
-    const maxRocketsValue = document.getElementById('max-rockets-value');
-    if (maxRocketsSlider) {
-        maxRocketsSlider.value = maxRocketsPerSecond;
-    }
-    if (maxRocketsValue) {
-        maxRocketsValue.textContent = maxRocketsPerSecond + '/s';
-    }
 
     // Gift popup settings
     updateToggle('gift-popup-enabled-toggle', config.giftPopupEnabled !== false);
     const giftPopupPositionSelect = document.getElementById('gift-popup-position');
     if (giftPopupPositionSelect) {
         giftPopupPositionSelect.value = config.giftPopupPosition || 'bottom';
-    }
-
-    // Performance Limits (NEW)
-    const maxFireworks = config.maxConcurrentFireworks || 5;
-    const maxFireworksSlider = document.getElementById('max-fireworks');
-    const maxFireworksValue = document.getElementById('max-fireworks-value');
-    if (maxFireworksSlider) {
-        maxFireworksSlider.value = maxFireworks;
-    }
-    if (maxFireworksValue) {
-        maxFireworksValue.textContent = maxFireworks;
-    }
-
-    const maxParticlesLimit = config.maxTotalParticles || 800;
-    const maxParticlesLimitSlider = document.getElementById('max-particles-limit');
-    const maxParticlesLimitValue = document.getElementById('max-particles-limit-value');
-    if (maxParticlesLimitSlider) {
-        maxParticlesLimitSlider.value = maxParticlesLimit;
-    }
-    if (maxParticlesLimitValue) {
-        maxParticlesLimitValue.textContent = maxParticlesLimit;
-    }
-
-    const emergencyThreshold = config.emergencyCleanupThreshold || 1000;
-    const emergencyThresholdSlider = document.getElementById('emergency-threshold');
-    const emergencyThresholdValue = document.getElementById('emergency-threshold-value');
-    if (emergencyThresholdSlider) {
-        emergencyThresholdSlider.value = emergencyThreshold;
-    }
-    if (emergencyThresholdValue) {
-        emergencyThresholdValue.textContent = emergencyThreshold;
-    }
-
-    const minTargetFps = config.minTargetFps || 30;
-    const minTargetFpsSlider = document.getElementById('min-target-fps');
-    const minTargetFpsValue = document.getElementById('min-target-fps-value');
-    if (minTargetFpsSlider) {
-        minTargetFpsSlider.value = minTargetFps;
-    }
-    if (minTargetFpsValue) {
-        minTargetFpsValue.textContent = minTargetFps;
     }
 
     updateToggle('adaptive-toggle', config.adaptivePerformance !== false);
@@ -1118,34 +1099,9 @@ function setupEventListeners() {
     document.getElementById('test-audio-btn')?.addEventListener('click', () => triggerTestShape('burst', 1.25));
     document.getElementById('test-crackle-btn')?.addEventListener('click', triggerTestCrackle);
 
-    // Range sliders
-    setupRangeSlider('combo-timeout', 'combo-timeout-value', 's', (val) => {
-        config.comboTimeout = val * 1000;
-    });
-
-    setupRangeSlider('combo-max', 'combo-max-value', 'x', (val) => {
-        config.comboMaxMultiplier = parseFloat(val);
-    });
-
-    setupRangeSlider('audio-volume', 'audio-volume-value', '%', (val) => {
-        config.audioVolume = val / 100;
-    });
-
-    setupRangeSlider('crackle-frequency', 'crackle-frequency-value', '%', (val) => {
-        config.crackleFrequency = val / 100;
-    });
-
-    setupRangeSlider('crackle-volume', 'crackle-volume-value', '%', (val) => {
-        config.crackleVolume = val / 100;
-    });
-
-    setupRangeSlider('max-particles', 'max-particles-value', '', (val) => {
-        config.maxParticles = parseInt(val);
-    });
-
-    setupRangeSlider('finale-intensity', 'finale-intensity-value', 'x', (val) => {
-        config.goalFinaleIntensity = parseFloat(val);
-    });
+    for (const id of Object.keys(settingsContract().RANGE_CONTROLS)) {
+        document.getElementById(id)?.addEventListener('input', syncNumericConfigFromControls);
+    }
     document.getElementById('finale-style')?.addEventListener('change', function() {
         config.goalFinaleStyle = this.value;
     });
@@ -1155,17 +1111,11 @@ function setupEventListeners() {
     document.getElementById('superfan-finale-cooldown')?.addEventListener('change', function() {
         config.superfanFinaleCooldownHours = Number(this.value);
     });
-    setupRangeSlider('superfan-finale-intensity', 'superfan-finale-intensity-value', 'x', value => {
-        config.superfanFinaleIntensity = Number(value);
-    });
     document.getElementById('superfan-finale-style')?.addEventListener('change', function() {
         config.superfanFinaleStyle = this.value;
     });
     document.getElementById('superfan-finale-length')?.addEventListener('change', function() {
         config.superfanFinaleLength = this.value;
-    });
-    setupRangeSlider('superfan-end-card-duration', 'superfan-end-card-duration-value', 's', value => {
-        config.superfanEndCardDuration = Math.round(Number(value) * 1000);
     });
     document.getElementById('superfan-end-card-position')?.addEventListener('change', function() {
         config.superfanEndCardPosition = this.value;
@@ -1176,26 +1126,6 @@ function setupEventListeners() {
             ? 'block'
             : 'none';
     });
-    setupRangeSlider('superfan-end-card-scale', 'superfan-end-card-scale-value', 'x', value => {
-        config.superfanEndCardScale = Number(value);
-    });
-
-    setupRangeSlider('follower-rocket-count', 'follower-rocket-count-value', '', (val) => {
-        config.followerRocketCount = parseInt(val);
-    });
-
-    setupRangeSlider('follower-animation-duration', 'follower-animation-duration-value', 's', (val) => {
-        config.followerAnimationDuration = val * 1000; // Convert to ms
-    });
-
-    setupRangeSlider('follower-animation-delay', 'follower-animation-delay-value', 's', (val) => {
-        config.followerAnimationDelay = val * 1000; // Convert to ms
-    });
-
-    setupRangeSlider('follower-animation-scale', 'follower-animation-scale-value', 'x', (val) => {
-        config.followerAnimationScale = parseFloat(val);
-    });
-
     // Follower animation position selector
     document.getElementById('follower-animation-position')?.addEventListener('change', function() {
         config.followerAnimationPosition = this.value;
@@ -1222,10 +1152,6 @@ function setupEventListeners() {
     // Follower animation entrance selector
     document.getElementById('follower-animation-entrance')?.addEventListener('change', function() {
         config.followerAnimationEntrance = this.value;
-    });
-
-    setupRangeSlider('avatar-chance', 'avatar-chance-value', '%', (val) => {
-        config.avatarParticleChance = val / 100;
     });
 
     // Performance & Resolution settings
@@ -1278,25 +1204,6 @@ function setupEventListeners() {
         void saveConfig(false);
     });
 
-    setupRangeSlider('target-fps', 'target-fps-value', ' FPS', (val) => {
-        config.targetFps = parseInt(val);
-    });
-
-    setupRangeSlider('min-fps', 'min-fps-value', ' FPS', (val) => {
-        config.minFps = parseInt(val);
-    });
-
-    setupRangeSlider('despawn-fade', 'despawn-fade-value', 's', (val) => {
-        config.despawnFadeDuration = parseFloat(val);
-        // Note: Changes take effect after clicking "Save Settings" button
-        // This is consistent with other settings like FPS, audio volume, etc.
-    });
-
-    // Queue system slider
-    setupRangeSlider('max-rockets-per-second', 'max-rockets-value', '/s', (val) => {
-        config.maxRocketsPerSecond = Math.max(1, Math.min(20, parseInt(val)));
-    });
-
     // Gift popup position
     document.getElementById('gift-popup-position')?.addEventListener('change', function() {
         config.giftPopupPosition = this.value;
@@ -1311,23 +1218,6 @@ function setupEventListeners() {
         }
         // Note: Changes take effect after clicking "Save Settings" button
         // This is consistent with other settings
-    });
-
-    // Performance Limits Sliders (NEW)
-    setupRangeSlider('max-fireworks', 'max-fireworks-value', '', (val) => {
-        config.maxConcurrentFireworks = parseInt(val);
-    });
-
-    setupRangeSlider('max-particles-limit', 'max-particles-limit-value', '', (val) => {
-        config.maxTotalParticles = parseInt(val);
-    });
-
-    setupRangeSlider('emergency-threshold', 'emergency-threshold-value', '', (val) => {
-        config.emergencyCleanupThreshold = parseInt(val);
-    });
-
-    setupRangeSlider('min-target-fps', 'min-target-fps-value', '', (val) => {
-        config.minTargetFps = parseInt(val);
     });
 
     // Number inputs

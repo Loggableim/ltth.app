@@ -19,6 +19,7 @@ const APP_ROOT = path.resolve(__dirname, '..');
 const PLUGIN_ROOT = path.join(APP_ROOT, 'plugins', 'webgpu-fireworks');
 const POLICY_SCRIPT_PATH = '/plugins/webgpu-fireworks/gpu/spawn-command-policy.js';
 const ENVELOPE_SCRIPT_PATH = '/plugins/webgpu-fireworks/gpu/visible-envelope.js';
+const BOYKISSER_SCRIPT_PATH = '/plugins/webgpu-fireworks/gpu/boykisser-geometry.js';
 const SCRIPT_PATH = '/plugins/webgpu-fireworks/gpu/webgpu-particle-engine.js';
 
 function requireCaseName(argv) {
@@ -312,6 +313,43 @@ function assertAdmissionEnvelopeResult(result) {
   if (result.cleanupComplete !== true) throw new Error('admission-envelope renderer cleanup did not complete');
 }
 
+function assertBoykisserResult(result) {
+  if (!result || result.skipped === true) throw new Error('boykisser case is missing or skipped');
+  const exact = {
+    resolutions: 6,
+    orientations: 2,
+    testedCases: 24,
+    landmarkChecks: 312,
+    roleColorChecks: 312,
+    symmetryChecks: 96,
+    symmetryViolations: 0,
+    guardViolations: 0
+  };
+  for (const [key, expected] of Object.entries(exact)) {
+    if (result[key] !== expected) {
+      throw new Error(`boykisser ${key} must be ${expected}, got ${result[key]}: ${JSON.stringify(result)}`);
+    }
+  }
+  if (JSON.stringify(result.densities) !== JSON.stringify([13, 20, 32, 180])) {
+    throw new Error(`boykisser density matrix mismatch: ${JSON.stringify(result.densities)}`);
+  }
+  if (!/^[a-f0-9]{8}$/.test(result.geometrySignature || '')) {
+    throw new Error(`boykisser geometry signature is invalid: ${result.geometrySignature}`);
+  }
+  if (!Array.isArray(result.coverage) || result.coverage.length !== result.testedCases) {
+    throw new Error(`boykisser coverage must contain ${result.testedCases} rows`);
+  }
+  for (const row of result.coverage) {
+    if (row.landmarkChecks !== 13 || row.roleColorChecks !== 13 || row.symmetryChecks !== 4 ||
+        row.symmetryViolations !== 0 || row.guardPixels !== 0 || row.visiblePixels <= 0 ||
+        row.maximumSymmetryDelta > 1 || row.missingLandmarks?.length !== 0 ||
+        row.roleColorViolations?.length !== 0) {
+      throw new Error(`boykisser hardware coverage mismatch: ${JSON.stringify(row)}`);
+    }
+  }
+  if (result.cleanupComplete !== true) throw new Error('boykisser renderer cleanup did not complete');
+}
+
 async function collectCleanupFailure(failures, label, cleanup) {
   try {
     await cleanup();
@@ -360,6 +398,7 @@ async function main() {
     const fixtureUrl = new URL(`http://127.0.0.1:${address.port}/webgpu-fireworks-chrome-harness.html`);
     fixtureUrl.searchParams.append('script', POLICY_SCRIPT_PATH);
     fixtureUrl.searchParams.append('script', ENVELOPE_SCRIPT_PATH);
+    fixtureUrl.searchParams.append('script', BOYKISSER_SCRIPT_PATH);
     fixtureUrl.searchParams.append('script', SCRIPT_PATH);
     await page.goto(fixtureUrl.href, { waitUntil: 'load' });
     const pageEvidence = await page.evaluate(name => window.runWebGpuFireworksCase(name), caseName);
@@ -401,12 +440,14 @@ async function main() {
       assertCapacityResult(cases.capacity);
       assertRecoveryResult(cases.recovery);
       assertAdmissionEnvelopeResult(cases['admission-envelope']);
+      assertBoykisserResult(cases.boykisser);
       payload = { hardware, cases };
     } else {
       if (caseName === 'atlas') assertAtlasResult(pageEvidence.result);
       if (caseName === 'capacity') assertCapacityResult(pageEvidence.result);
       if (caseName === 'recovery') assertRecoveryResult(pageEvidence.result);
       if (caseName === 'admission-envelope') assertAdmissionEnvelopeResult(pageEvidence.result);
+      if (caseName === 'boykisser') assertBoykisserResult(pageEvidence.result);
       payload = { hardware, result: pageEvidence.result };
     }
     terminalPassLine = `PASS ${caseName} ${JSON.stringify(payload)}`;

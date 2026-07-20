@@ -20,6 +20,11 @@ const {
   PyroDSLValidationError
 } = require('../plugins/webgpu-fireworks/lib/pyrodsl');
 const WebGPUParticleEngine = require('../plugins/webgpu-fireworks/gpu/webgpu-particle-engine');
+const {
+  BOYKISSER_FEATURES,
+  buildBoykisserWgsl,
+  geometrySignature
+} = require('../plugins/webgpu-fireworks/gpu/boykisser-geometry');
 
 const COLOR = '#ffd166';
 
@@ -208,13 +213,13 @@ describe('PyroDSL contract and normalization', () => {
     }
   });
 
-  test('ships bounded deterministic Boykisser and five-band trans ribbon GPU paths', () => {
+  test('ships shared deterministic Boykisser and five-band trans ribbon GPU paths', () => {
     const engine = new WebGPUParticleEngine({ width: 1920, height: 1080 });
     const shader = engine._computeShader();
     const glyphSection = shader.slice(shader.indexOf('fn glyphPoint'), shader.indexOf('fn shapeVelocity'));
 
-    expect(glyphSection).toContain('fn boykisserPoint(index: u32, count: u32, seed: u32) -> vec2f');
-    expect(glyphSection).toContain('let detailed = count >= 96u;');
+    expect(shader).toContain(`// geometry-signature:${geometrySignature}`);
+    expect(shader).toContain('fn boykisserPoint(index: u32, count: u32, seed: u32) -> vec2f');
     expect(glyphSection).toContain('fn transFlagPoint(t: f32) -> vec2f');
     expect(glyphSection).toContain('let band = min(4u, u32(floor(t * 5.0)));');
     expect(glyphSection).toContain('return clamp(point, vec2f(-1.0), vec2f(1.0));');
@@ -223,41 +228,20 @@ describe('PyroDSL contract and normalization', () => {
     expect(glyphSection).not.toContain('uniforms.time');
   });
 
-  test('ships semantic Boykisser paths in detailed and simplified LODs', () => {
+  test('ships the signed semantic Boykisser landmark source without inline LOD geometry', () => {
     const engine = new WebGPUParticleEngine({ width: 1920, height: 1080 });
     const shader = engine._computeShader();
-    const boykisser = shader.slice(shader.indexOf('fn boykisserPoint'), shader.indexOf('fn transFlagPoint'));
-    const parseArray = (name, size) => {
-      const match = boykisser.match(new RegExp(`let ${name} = array<vec2f, ${size}>\\(([\\s\\S]*?)\\);`));
-      expect(match).not.toBeNull();
-      return [...match[1].matchAll(/vec2f\((-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)\)/g)]
-        .map(([, x, y]) => ({ x: Number(x), y: Number(y) }));
-    };
-    const detailed = parseArray('detailedOutline', 22);
-    const simplified = parseArray('simplifiedOutline', 14);
-    const detailedForelock = parseArray('detailedForelock', 6);
-    const simplifiedForelock = parseArray('simplifiedForelock', 4);
-    const nose = parseArray('nose', 4);
-    const mouth = parseArray('mouth', 5);
+    const sharedWgsl = buildBoykisserWgsl().trim();
 
-    for (const outline of [detailed, simplified]) {
-      expect(Math.min(...outline.map(point => point.x))).toBe(-0.9);
-      expect(Math.max(...outline.map(point => point.x))).toBe(0.9);
-      expect(outline.some(point => point.x < -0.5 && point.y < -0.65)).toBe(true);
-      expect(outline.some(point => point.x > 0.5 && point.y < -0.65)).toBe(true);
-      expect(outline.some(point => Math.abs(point.x) > 0.75 && Math.abs(point.y) < 0.25)).toBe(true);
-      expect(outline.some(point => Math.abs(point.x) > 0.3 && point.y > 0.65)).toBe(true);
+    expect(Object.keys(BOYKISSER_FEATURES)).toHaveLength(13);
+    expect(shader).toContain(sharedWgsl);
+    expect(shader).toContain(`// geometry-signature:${geometrySignature}`);
+    for (const featureName of Object.keys(BOYKISSER_FEATURES)) {
+      expect(shader).toContain(`// feature:${featureName}`);
     }
-    expect(detailedForelock.every(point => point.y < -0.2)).toBe(true);
-    expect(simplifiedForelock.every(point => point.y < -0.2)).toBe(true);
-    expect(boykisser).toContain('let eyeArc = ((eyeLocal - 0.35) / 0.65) * 3.1415926;');
-    expect(boykisser).toContain('let eyeLid = mix(vec2f(-0.15,-0.12), vec2f(0.15,-0.12)');
-    expect(boykisser).not.toContain('let angle = u * 6.2831853;');
-    expect(Math.max(...nose.map(point => point.y))).toBeLessThan(Math.min(...mouth.map(point => point.y)));
-    expect(Math.min(...nose.map(point => point.y))).toBeGreaterThan(-0.12);
-    expect(mouth.map(point => point.y)).toEqual([0.18, 0.29, 0.18, 0.29, 0.18]);
-    expect(boykisser).toContain('let cheekCenter = vec2f(side * 0.5, 0.18);');
-    expect(boykisser).toContain('if (detailed)');
+    expect(shader).not.toContain('detailedOutline');
+    expect(shader).not.toContain('simplifiedOutline');
+    expect(shader).not.toContain('if (detailed)');
   });
 
   test('clones into a stable normalized contract with resolved defaults and no shared references', () => {

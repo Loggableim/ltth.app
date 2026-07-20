@@ -1,6 +1,7 @@
 'use strict';
 
 const { SHOW_DEFINITION_VERSION, VARIANT_PRESETS } = require('./pyrodsl');
+const { BOYKISSER_COLORS } = require('../gpu/boykisser-geometry');
 
 const FINALE_LENGTHS = Object.freeze(['short', 'medium', 'long']);
 const PHASE_ORDER = Object.freeze(['opening', 'build', 'highlight', 'finale']);
@@ -64,7 +65,14 @@ function descriptor(formation, shape, soundRole, tier, options = {}) {
   };
 }
 
-const BOYKISSER_COLORS = Object.freeze(['#D7DEE8', '#F8FBFF', '#FFF4D6', '#FF5C8A']);
+const roleColorToHex = rgb => `#${rgb.map(component => (
+  Math.round(component * 255).toString(16).padStart(2, '0')
+)).join('')}`.toUpperCase();
+const BOYKISSER_ROLE_PALETTE = Object.freeze([
+  roleColorToHex(BOYKISSER_COLORS.HEAD),
+  roleColorToHex(BOYKISSER_COLORS.FACE),
+  roleColorToHex(BOYKISSER_COLORS.PINK)
+]);
 const TRANS_COLORS = Object.freeze(['#5BCEFA', '#F5A9B8', '#FFFFFF']);
 const RAINBOW_COLORS = Object.freeze(['#E40303', '#FF8C00', '#FFED00', '#008026', '#24408E', '#732982']);
 
@@ -95,7 +103,7 @@ function shellVariant(shape, soundRole, layers, hints, options = {}) {
 }
 
 function boykisserLayer(options = {}) {
-  return layer('glyph', BOYKISSER_COLORS, {
+  return layer('glyph', BOYKISSER_ROLE_PALETTE, {
     glyph: 'boykisser',
     density: Math.max(96, Number(options.density) || 96),
     size: options.size || 1,

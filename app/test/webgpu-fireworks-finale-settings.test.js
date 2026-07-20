@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const FireworksPlugin = require('../plugins/webgpu-fireworks/main');
+const { CONFIG_ENUMS } = require('../plugins/webgpu-fireworks/lib/config-schema');
 
 const pluginRoot = path.join(__dirname, '..', 'plugins', 'webgpu-fireworks');
 const read = relative => fs.readFileSync(path.join(pluginRoot, relative), 'utf8');
@@ -32,6 +33,9 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
     expect(html).toMatch(/<option value="auto"[^>]*selected/);
     expect(html).toMatch(/<option value="medium"[^>]*selected/);
     expect(html).toContain('/plugins/webgpu-fireworks/ui/show-style-options.js');
+    expect(html).toContain('/plugins/webgpu-fireworks/ui/settings-contract.js');
+    expect(html.indexOf('/plugins/webgpu-fireworks/ui/settings-contract.js'))
+      .toBeLessThan(html.indexOf('/plugins/webgpu-fireworks/ui/settings.js'));
     expect(html).toContain('href="/webgpu-fireworks/designer"');
   });
 
@@ -40,8 +44,8 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
     const triggerSource = source.slice(source.indexOf('async function triggerFinale()'), source.indexOf('async function testSuperfanFinale()'));
     const requestSource = source.slice(source.indexOf('async function requestJson('), source.indexOf('function finaleSelectorLabels()'));
 
-    expect(source).toContain("document.getElementById('finale-style').value = config.goalFinaleStyle || 'auto'");
-    expect(source).toContain("document.getElementById('finale-length').value = config.goalFinaleLength || 'medium'");
+    expect(source).toContain("document.getElementById('finale-style').value = config.goalFinaleStyle");
+    expect(source).toContain("document.getElementById('finale-length').value = config.goalFinaleLength");
     expect(source).toContain('config.goalFinaleStyle = this.value');
     expect(source).toContain('config.goalFinaleLength = this.value');
     expect(source).toContain('refreshFinaleShowSelectors');
@@ -179,5 +183,19 @@ describe('WebGPU Fireworks finale settings and telemetry', () => {
       finale_phase: 'Phase',
       finale_queue: 'Warteschlange'
     });
+  });
+
+  test('uses only the injected backend descriptor for custom finale IDs', () => {
+    const helperSource = read('ui/show-style-options.js');
+    expect(helperSource).not.toContain('CUSTOM_STYLE_PATTERN');
+    expect(helperSource).not.toMatch(/\[0-9a-f\]\{8\}.*\[0-9a-f\]\{12\}/i);
+
+    jest.resetModules();
+    const showOptions = require('../plugins/webgpu-fireworks/ui/show-style-options');
+    const validId = 'custom:00000000-0000-4000-8000-000000000503';
+    expect(showOptions.isCustomStyleId(validId)).toBe(false);
+    expect(showOptions.setCustomStyleContract(CONFIG_ENUMS.finaleStyle)).toBe(true);
+    expect(showOptions.isCustomStyleId(validId)).toBe(true);
+    expect(showOptions.isCustomStyleId('custom:not-a-uuid')).toBe(false);
   });
 });

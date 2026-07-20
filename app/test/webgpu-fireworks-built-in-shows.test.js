@@ -1,6 +1,8 @@
 'use strict';
 
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const {
   BUILT_IN_SHOW_DEFINITIONS,
   FINALE_STYLE_METADATA,
@@ -15,6 +17,11 @@ const {
   PHASE_CONCURRENCY_CAPS,
   validateShowDefinition
 } = require('../plugins/webgpu-fireworks/lib/pyrodsl');
+const { BOYKISSER_COLORS } = require('../plugins/webgpu-fireworks/gpu/boykisser-geometry');
+
+const roleHex = rgb => `#${rgb.map(component => (
+  Math.round(component * 255).toString(16).padStart(2, '0')
+)).join('')}`.toUpperCase();
 
 const STYLE_FIXTURES = Object.freeze({
   'classic-crescendo': { counts: [14, 24, 36], palette: ['#ffd166', '#fff4d6', '#ff3b30'], profile: 'classic' },
@@ -221,9 +228,12 @@ describe('WebGPU Fireworks built-in PyroDSL shows', () => {
     const transLayers = layers.filter(layer => layer.glyph === 'trans-flag');
 
     expect(boyLayers.length).toBeGreaterThan(0);
-    expect(boyLayers.every(layer => layer.colors.join() === [
-      '#D7DEE8', '#F8FBFF', '#FFF4D6', '#FF5C8A'
-    ].join())).toBe(true);
+    const semanticPalette = [
+      roleHex(BOYKISSER_COLORS.HEAD),
+      roleHex(BOYKISSER_COLORS.FACE),
+      roleHex(BOYKISSER_COLORS.PINK)
+    ];
+    expect(boyLayers.every(layer => layer.colors.join() === semanticPalette.join())).toBe(true);
     expect(transLayers.length).toBeGreaterThan(0);
     expect(transLayers.every(layer => layer.colors.join() === ['#5BCEFA', '#F5A9B8', '#FFFFFF'].join())).toBe(true);
     expect(transLayers.every(layer => layer.priority !== 'core' && layer.core === false)).toBe(true);
@@ -234,6 +244,35 @@ describe('WebGPU Fireworks built-in PyroDSL shows', () => {
       .filter(layer => layer.priority !== 'core')
       .flatMap(layer => layer.colors);
     expect(heroRainbow).toEqual(expect.arrayContaining(rainbow));
+  });
+
+  test.each(['short', 'medium', 'long'])('uses semantic Boykisser colors and one centered hero in %s', length => {
+    const plan = new FinaleShowPlanner().plan({
+      style: 'furry-celebration', length, orientation: 'portrait', intensity: 5, seed: 88
+    });
+    const hero = plan.cues.at(-1);
+    const boyLayers = hero.shells.flatMap(shell => shell.layers)
+      .filter(layer => layer.glyph === 'boykisser');
+    expect(boyLayers).toHaveLength(1);
+    expect(boyLayers[0].colors).toEqual([
+      roleHex(BOYKISSER_COLORS.HEAD),
+      roleHex(BOYKISSER_COLORS.FACE),
+      roleHex(BOYKISSER_COLORS.PINK)
+    ]);
+    expect(hero.shells[0]).toMatchObject({
+      launchMode: 'airburst',
+      target: { x: 0.5, y: 0.5 },
+      renderHints: { depthEnabled: true }
+    });
+    expect(hero.shells[0].layers.some(layer => ['fox-head', 'wolf-head'].includes(layer.glyph))).toBe(false);
+  });
+
+  test('imports the semantic palette instead of declaring a second Boykisser color table', () => {
+    const source = fs.readFileSync(path.join(
+      __dirname, '..', 'plugins', 'webgpu-fireworks', 'lib', 'built-in-shows.js'
+    ), 'utf8');
+    expect(source).toContain("require('../gpu/boykisser-geometry')");
+    expect(source).not.toMatch(/const\s+BOYKISSER_COLORS\s*=\s*Object\.freeze\(\s*\[/);
   });
 
   test.each([

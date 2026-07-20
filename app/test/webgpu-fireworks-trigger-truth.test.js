@@ -1,7 +1,11 @@
 const path = require('path');
 
 const FireworksPlugin = require('../plugins/webgpu-fireworks/main');
-const { normalizeConfig } = require('../plugins/webgpu-fireworks/lib/config-schema');
+const {
+  CONFIG_ENUMS,
+  CONFIG_LIMITS,
+  normalizeConfig
+} = require('../plugins/webgpu-fireworks/lib/config-schema');
 
 function createApi(emitImplementation) {
   const routes = new Map();
@@ -17,6 +21,7 @@ function createApi(emitImplementation) {
     log: jest.fn(),
     registerMiddleware: jest.fn(),
     registerRoute: jest.fn((method, route, handler) => routes.set(`${method}:${route}`, handler)),
+    registerSocketConnection: jest.fn(),
     registerFlowAction: jest.fn((id, action) => flowActions.set(id, action))
   };
 }
@@ -64,6 +69,65 @@ describe('WebGPU Fireworks trigger truth contract', () => {
       minFps: 24,
       minTargetFps: 24
     });
+  });
+
+  test('attaches the same schema contracts to config routes and realtime mutations', () => {
+    const { api, plugin } = createPlugin();
+    plugin.registerRoutes();
+    const expectContracts = payload => expect(payload).toMatchObject({
+      limits: CONFIG_LIMITS,
+      enums: CONFIG_ENUMS
+    });
+
+    const getResponse = createResponse();
+    api.routes.get('get:/api/webgpu-fireworks/config')({}, getResponse);
+    expectContracts(getResponse.body);
+
+    const postResponse = createResponse();
+    api.routes.get('post:/api/webgpu-fireworks/config')({
+      body: { superfanFinaleIntensity: 7.5, maxTotalParticles: 10000 }
+    }, postResponse);
+    expectContracts(postResponse.body);
+    expectContracts(api.emit.mock.calls.at(-1)[1]);
+
+    const mappingResponse = createResponse();
+    api.routes.get('post:/api/webgpu-fireworks/gift-mappings')({
+      body: { giftId: '5655', shape: 'heart' }
+    }, mappingResponse);
+    expectContracts(api.emit.mock.calls.at(-1)[1]);
+
+    const deleteResponse = createResponse();
+    api.routes.get('delete:/api/webgpu-fireworks/gift-mappings/:giftId')({
+      params: { giftId: '5655' }
+    }, deleteResponse);
+    expectContracts(api.emit.mock.calls.at(-1)[1]);
+
+    const resetResponse = createResponse();
+    api.routes.get('post:/api/webgpu-fireworks/config/reset')({}, resetResponse);
+    expectContracts(resetResponse.body);
+    expectContracts(api.emit.mock.calls.at(-1)[1]);
+
+    plugin.registerSocketHandlers();
+    const socket = { id: 'settings-contract-socket', emit: jest.fn(), on: jest.fn() };
+    api.registerSocketConnection.mock.calls[0][0](socket);
+    expectContracts(socket.emit.mock.calls.find(([event]) => event === 'webgpu-fireworks:config-update')[1]);
+  });
+
+  test('uses the shared payload helper for benchmark preset and restore config delivery', () => {
+    const source = require('fs').readFileSync(
+      path.join(__dirname, '..', 'plugins', 'webgpu-fireworks', 'main.js'),
+      'utf8'
+    );
+    const presetSource = source.slice(
+      source.indexOf("'/api/webgpu-fireworks/benchmark/set-preset'"),
+      source.indexOf("'/api/webgpu-fireworks/benchmark/trigger'")
+    );
+    const restoreSource = source.slice(
+      source.indexOf("'/api/webgpu-fireworks/benchmark/restore'"),
+      source.indexOf('// Reset configuration to defaults')
+    );
+    expect(presetSource).toContain('this.createConfigPayload(config');
+    expect(restoreSource).toContain('this.createConfigPayload(config');
   });
 
   test('trims, removes, and deduplicates chat trigger keywords', () => {

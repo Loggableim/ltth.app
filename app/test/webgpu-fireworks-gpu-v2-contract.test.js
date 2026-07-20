@@ -2,8 +2,16 @@
 
 const crypto = require('crypto');
 const WebGPUParticleEngine = require('../plugins/webgpu-fireworks/gpu/webgpu-particle-engine');
+const {
+  geometrySignature,
+} = require('../plugins/webgpu-fireworks/gpu/boykisser-geometry');
 const { FinaleShowPlanner } = require('../plugins/webgpu-fireworks/lib/finale-show-planner');
 const { buildShowPlanV2Runtime } = require('../plugins/webgpu-fireworks/gpu/show-plan-v2-runtime');
+const {
+  createFakeGpu,
+  makeRenderer,
+  restoreGpuGlobals,
+} = require('./helpers/webgpu-fireworks-gpu-harness');
 const {
   SHAPE_IDS,
   V2_PRIMITIVE_IDS,
@@ -46,6 +54,23 @@ const uploadCommands = engine => {
 };
 
 describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
+  test('injects shared Boykisser WGSL and has no inline index-band color heuristic', async () => {
+    const gpu = createFakeGpu();
+    const renderer = makeRenderer(gpu);
+    try {
+      await renderer.init();
+      const shader = gpu.shaderCode('fireworks-compute-wgsl');
+
+      expect(shader).toContain(`// geometry-signature:${geometrySignature}`);
+      expect(shader).toContain('boykisserRole(');
+      expect(shader).toContain('boykisserCanonicalColor(');
+      expect(shader).not.toMatch(/command\.shape\s*==\s*25u[\s\S]{0,400}glyphT\s*</);
+    } finally {
+      renderer.destroy();
+      restoreGpuGlobals();
+    }
+  });
+
   test('shares the complete 0-26 registry and numeric WGSL constants', () => {
     const engine = makeEngine();
     const shader = engine._particleShader();
@@ -471,7 +496,8 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
     const shader = engine._computeShader();
     expect(shader).toContain('colorWords: vec4u');
     expect(shader).toContain('fn unpackRgba8');
-    expect(shader).toContain('globalIndex % min(command.colorCount & 7u, 4u)');
+    expect(shader).toContain('let suppliedColorCount = min(command.colorCount & 7u, 4u)');
+    expect(shader).toContain('globalIndex % max(1u, suppliedColorCount)');
     expect(shader).toMatch(/f32\(packed\s*&\s*255u\)\/255\.0/);
     expect(shader).toMatch(/f32\(\(packed\s*>>\s*24u\)\s*&\s*255u\)\/255\.0/);
     expect(shader).toContain('bitcast<vec4f>(command.colorWords)');

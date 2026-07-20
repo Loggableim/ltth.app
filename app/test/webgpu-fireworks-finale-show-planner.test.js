@@ -6,6 +6,11 @@ const {
   FINALE_LENGTHS
 } = require('../plugins/webgpu-fireworks/lib/finale-show-planner');
 const { BUILT_IN_SHOW_DEFINITIONS } = require('../plugins/webgpu-fireworks/lib/built-in-shows');
+const { BOYKISSER_COLORS } = require('../plugins/webgpu-fireworks/gpu/boykisser-geometry');
+
+const roleHex = rgb => `#${rgb.map(component => (
+  Math.round(component * 255).toString(16).padStart(2, '0')
+)).join('')}`.toUpperCase();
 
 const COUNTS = {
   'classic-crescendo': { short: 14, medium: 24, long: 36 },
@@ -385,7 +390,17 @@ describe('WebGPU Fireworks finale show planner', () => {
             }
           })]
         });
-        expect(hero.layers.some(layer => layer.glyph === 'boykisser' && layer.core === true)).toBe(true);
+        const heroBoykissers = hero.layers.filter(layer => layer.glyph === 'boykisser');
+        expect(heroBoykissers).toHaveLength(1);
+        expect(heroBoykissers[0]).toMatchObject({
+          core: true,
+          colors: [
+            roleHex(BOYKISSER_COLORS.HEAD),
+            roleHex(BOYKISSER_COLORS.FACE),
+            roleHex(BOYKISSER_COLORS.PINK)
+          ]
+        });
+        expect(hero.layers.some(layer => ['fox-head', 'wolf-head'].includes(layer.glyph))).toBe(false);
         expect(heroCue.shells).toHaveLength(1);
         expect(penultimate.shells.every(shell => shell.crackleEnabled === false)).toBe(true);
         expect(Math.max(...penultimate.shells.flatMap(shell => shell.layers)

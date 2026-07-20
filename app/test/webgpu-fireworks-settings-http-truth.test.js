@@ -3,12 +3,17 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
-const { normalizeConfig } = require('../plugins/webgpu-fireworks/lib/config-schema');
+const {
+  CONFIG_ENUMS,
+  CONFIG_LIMITS,
+  normalizeConfig
+} = require('../plugins/webgpu-fireworks/lib/config-schema');
 
 describe('WebGPU Fireworks settings HTTP truth', () => {
   const pluginDir = path.join(__dirname, '..', 'plugins', 'webgpu-fireworks');
   const html = fs.readFileSync(path.join(pluginDir, 'ui', 'settings.html'), 'utf8');
   const showOptionsScript = fs.readFileSync(path.join(pluginDir, 'ui', 'show-style-options.js'), 'utf8');
+  const settingsContractScript = fs.readFileSync(path.join(pluginDir, 'ui', 'settings-contract.js'), 'utf8');
   const settingsScript = fs.readFileSync(path.join(pluginDir, 'ui', 'settings.js'), 'utf8');
   const readyStatus = {
     success: true,
@@ -65,6 +70,16 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
     return response(spec?.body ?? spec ?? { success: true }, spec || {});
   }
 
+  function configPayload(config = normalizeConfig({}), extra = {}) {
+    return {
+      success: true,
+      config,
+      limits: CONFIG_LIMITS,
+      enums: CONFIG_ENUMS,
+      ...extra
+    };
+  }
+
   async function waitFor(assertion) {
     const startedAt = Date.now();
     let lastError;
@@ -82,6 +97,7 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
 
   async function bootSettings({
     configResponse,
+    onConfigRequest,
     openWindow = jest.fn(() => ({ closed: false, close: jest.fn() })),
     requestHandlers = {},
     requestResponses = {},
@@ -123,6 +139,13 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
     window.URL.revokeObjectURL = jest.fn();
     window.open = openWindow;
 
+    const socketHandlers = new Map();
+    const socketMock = {
+      on: jest.fn((event, handler) => socketHandlers.set(event, handler)),
+      emit: jest.fn()
+    };
+    window.io = jest.fn(() => socketMock);
+
     const responseQueues = Object.fromEntries(Object.entries(requestResponses).map(([key, value]) => (
       [key, Array.isArray(value) ? [...value] : [value]]
     )));
@@ -136,8 +159,9 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
       }
       if (responseQueues[key]?.length) return materialize(responseQueues[key].shift());
       if (requestUrl === '/api/webgpu-fireworks/config' && method === 'GET') {
+        await onConfigRequest?.({ socketHandlers, window });
         return materialize(configResponse || {
-          body: { success: true, config: normalizeConfig({}) }
+          body: configPayload()
         });
       }
       if (requestUrl === '/api/webgpu-fireworks/status') {
@@ -149,9 +173,8 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
       }
       if (requestUrl === '/api/webgpu-fireworks/config' && method === 'POST') {
         return response({
-          success: true,
-          accepted: true,
-          config: normalizeConfig(JSON.parse(options.body || '{}'))
+          ...configPayload(normalizeConfig(JSON.parse(options.body || '{}'))),
+          accepted: true
         });
       }
       if (method === 'DELETE' && requestUrl.startsWith('/api/webgpu-fireworks/gift-mappings/')) {
@@ -165,13 +188,14 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
     window.fetch = fetchMock;
 
     window.eval(showOptionsScript);
+    window.eval(settingsContractScript);
     window.eval(settingsScript);
     await ready;
     await waitFor(() => {
       expect(fetchMock.mock.calls.some(([url]) => String(url) === '/api/webgpu-fireworks/status')).toBe(true);
     });
     await new Promise(resolve => setImmediate(resolve));
-    return { window, fetchMock, openWindow };
+    return { window, fetchMock, openWindow, socketHandlers };
   }
 
   function callsFor(fetchMock, method, url) {
@@ -213,6 +237,97 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
     window.document.getElementById('save-btn').click();
     await waitFor(() => expect(window.document.getElementById('toast').textContent).toContain(reason));
     expect(window.document.getElementById('toast').classList.contains('error')).toBe(true);
+  });
+
+  test('keeps all contract controls disabled when a successful config response omits contracts', async () => {
+    const { window } = await bootSettings({
+      configResponse: { body: { success: true, config: normalizeConfig({}) } }
+    });
+    const controls = [...window.document.querySelectorAll('input[type="range"], select[id]')];
+    expect(controls).toHaveLength(43);
+    expect(controls.every(control => control.disabled)).toBe(true);
+    expect(window.document.getElementById('toast').classList.contains('error')).toBe(true);
+  });
+
+  test('round-trips visible Superfan values through test and save requests', async () => {
+    const { window, fetchMock } = await bootSettings({
+      configResponse: {
+        body: configPayload(normalizeConfig({
+          maxTotalParticles: 10000,
+          superfanFinaleCooldownHours: 72,
+          superfanFinaleIntensity: 7.5,
+          superfanFinaleStyle: 'thunder-finale',
+          superfanFinaleLength: 'long',
+          superfanEndCardDuration: 6500,
+          superfanEndCardPosition: 'top-right',
+          superfanEndCardSize: 'custom',
+          superfanEndCardScale: 1.7
+        }))
+      }
+    });
+
+    expect(window.document.getElementById('max-particles-limit').value).toBe('10000');
+    expect(window.document.getElementById('superfan-finale-intensity').value).toBe('7.5');
+    expect(window.document.getElementById('superfan-end-card-duration').value).toBe('6.5');
+    expect(window.document.getElementById('superfan-end-card-scale').value).toBe('1.7');
+
+    window.document.getElementById('test-superfan-finale-btn').click();
+    await waitFor(() => expect(callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/test-superfan')).toHaveLength(1));
+    const testBody = JSON.parse(callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/test-superfan')[0][1].body);
+    expect(testBody.settings).toMatchObject({
+      superfanFinaleCooldownHours: 72,
+      superfanFinaleIntensity: 7.5,
+      superfanFinaleStyle: 'thunder-finale',
+      superfanFinaleLength: 'long',
+      superfanEndCardDuration: 6500,
+      superfanEndCardPosition: 'top-right',
+      superfanEndCardSize: 'custom',
+      superfanEndCardScale: 1.7
+    });
+
+    window.document.getElementById('save-btn').click();
+    await waitFor(() => expect(callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/config')).toHaveLength(1));
+    expect(JSON.parse(callsFor(fetchMock, 'POST', '/api/webgpu-fireworks/config')[0][1].body))
+      .toMatchObject({ maxTotalParticles: 10000, superfanEndCardDuration: 6500 });
+  });
+
+  test('keeps the first socket config when it arrives before the initial GET', async () => {
+    const socketConfig = normalizeConfig({
+      superfanFinaleIntensity: 9,
+      superfanEndCardDuration: 8500,
+      maxTotalParticles: 16384
+    });
+    const staleGetConfig = normalizeConfig({
+      superfanFinaleIntensity: 2,
+      superfanEndCardDuration: 2000,
+      maxTotalParticles: 512
+    });
+    const { window } = await bootSettings({
+      configResponse: { body: configPayload(staleGetConfig) },
+      onConfigRequest: async ({ socketHandlers }) => {
+        socketHandlers.get('webgpu-fireworks:config-update')({
+          config: socketConfig,
+          limits: CONFIG_LIMITS,
+          enums: CONFIG_ENUMS
+        });
+      }
+    });
+    expect(window.document.getElementById('superfan-finale-intensity').value).toBe('9');
+    expect(window.document.getElementById('superfan-end-card-duration').value).toBe('8.5');
+    expect(window.document.getElementById('max-particles-limit').value).toBe('16384');
+  });
+
+  test('reports a pending Superfan test as submitted instead of triggered', async () => {
+    const { window } = await bootSettings({
+      requestResponses: {
+        'POST /api/webgpu-fireworks/test-superfan': {
+          body: { success: true, accepted: true, pending: true, reason: 'renderer-confirmation-pending' }
+        }
+      }
+    });
+    window.document.getElementById('test-superfan-finale-btn').click();
+    await waitFor(() => expect(window.document.getElementById('toast').textContent).toContain('pending'));
+    expect(window.document.getElementById('toast').textContent.toLowerCase()).not.toContain('triggered');
   });
 
   test('a rejected preset save never overwrites the error with an applied toast', async () => {
@@ -279,9 +394,9 @@ describe('WebGPU Fireworks settings HTTP truth', () => {
       configResponse: {
         body: {
           success: true,
-          config: normalizeConfig({
+          ...configPayload(normalizeConfig({
             giftShapeMappings: { [giftId]: { shape: 'heart', intensity: 1 } }
-          })
+          }))
         }
       },
       requestResponses: {

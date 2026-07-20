@@ -1,12 +1,17 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
-const { normalizeConfig } = require('../plugins/webgpu-fireworks/lib/config-schema');
+const {
+  CONFIG_ENUMS,
+  CONFIG_LIMITS,
+  normalizeConfig
+} = require('../plugins/webgpu-fireworks/lib/config-schema');
 
 describe('WebGPU Superfan finale settings', () => {
   const pluginDir = path.join(__dirname, '..', 'plugins', 'webgpu-fireworks');
   const html = fs.readFileSync(path.join(pluginDir, 'ui', 'settings.html'), 'utf8');
   const showOptionsScript = fs.readFileSync(path.join(pluginDir, 'ui', 'show-style-options.js'), 'utf8');
+  const settingsContractScript = fs.readFileSync(path.join(pluginDir, 'ui', 'settings-contract.js'), 'utf8');
   const script = fs.readFileSync(path.join(pluginDir, 'ui', 'settings.js'), 'utf8');
   const customStyle = 'custom:00000000-0000-4000-8000-000000000611';
   let dom;
@@ -17,7 +22,10 @@ describe('WebGPU Superfan finale settings', () => {
   });
 
   function jsonResponse(body, ok = true) {
-    return { ok, json: async () => body };
+    const payload = body?.config
+      ? { ...body, limits: body.limits || CONFIG_LIMITS, enums: body.enums || CONFIG_ENUMS }
+      : body;
+    return { ok, json: async () => payload };
   }
 
   function deferred() {
@@ -98,7 +106,11 @@ describe('WebGPU Superfan finale settings', () => {
     };
     const socketHandlers = new Map();
     window.io = jest.fn(() => ({
-      on: jest.fn((event, handler) => socketHandlers.set(event, handler)),
+      on: jest.fn((event, handler) => socketHandlers.set(event, data => handler(
+        event === 'webgpu-fireworks:config-update' && data?.config
+          ? { ...data, limits: data.limits || CONFIG_LIMITS, enums: data.enums || CONFIG_ENUMS }
+          : data
+      ))),
       emit: jest.fn()
     }));
     window.setInterval = jest.fn(() => 1);
@@ -137,6 +149,7 @@ describe('WebGPU Superfan finale settings', () => {
     window.fetch = fetchMock;
 
     window.eval(showOptionsScript);
+    window.eval(settingsContractScript);
     window.eval(script);
     await ready;
     await waitFor(() => {
@@ -147,7 +160,7 @@ describe('WebGPU Superfan finale settings', () => {
     return { window, fetchMock, socketHandlers, i18nHandlers };
   }
 
-  test('exposes enabled, cooldown, intensity, and inherited finale controls', () => {
+  test('exposes fail-closed Superfan controls and applies their backend contracts', async () => {
     for (const id of [
       'superfan-finale-toggle', 'superfan-finale-cooldown',
       'superfan-finale-intensity', 'superfan-finale-intensity-value',
@@ -163,7 +176,20 @@ describe('WebGPU Superfan finale settings', () => {
     }
     expect(html).toMatch(/id="superfan-finale-toggle"[^>]*class="[^"]*active[^"]*"[^>]*data-config="superfanFinaleEnabled"/);
     expect(html).toMatch(/<option value="24"[^>]*selected/);
-    expect(html).toMatch(/id="superfan-finale-intensity"[^>]*min="1"[^>]*max="10"[^>]*step="0\.5"[^>]*value="3"/);
+    const staticDocument = new JSDOM(html).window.document;
+    const staticIntensity = staticDocument.getElementById('superfan-finale-intensity');
+    expect(staticIntensity.disabled).toBe(true);
+    expect(staticIntensity.hasAttribute('min')).toBe(false);
+    expect(staticIntensity.hasAttribute('max')).toBe(false);
+    expect(staticIntensity.hasAttribute('step')).toBe(false);
+
+    const { window } = await bootSettings();
+    const intensity = window.document.getElementById('superfan-finale-intensity');
+    expect(intensity.disabled).toBe(false);
+    expect(Number(intensity.min)).toBe(CONFIG_LIMITS.superfanFinaleIntensity.min);
+    expect(Number(intensity.max)).toBe(CONFIG_LIMITS.superfanFinaleIntensity.max);
+    expect(Number(intensity.step)).toBe(CONFIG_LIMITS.superfanFinaleIntensity.step);
+    expect(window.document.getElementById('superfan-finale-cooldown').disabled).toBe(false);
     expect(html).toContain('id="superfan-finale-style"');
     expect(html).toContain('id="superfan-finale-length"');
     expect(html).toContain('href="/webgpu-fireworks/designer"');

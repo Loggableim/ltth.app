@@ -942,7 +942,276 @@ struct Params { width: u32, height: u32, ignoreBottom: u32, pad: u32 };
       return result;
     }
     async function runTelemetryAdaptiveCase() { return { skipped: true, owner: 'Task 5' }; }
-    async function runBoykisserCase() { return { skipped: true, owner: 'Task 6' }; }
+
+    async function inspectCurrentFrame(renderer, width, height, inspect) {
+      const device = renderer.device;
+      const bytesPerRow = Math.ceil(width * 4 / 256) * 256;
+      const readback = device.createBuffer({
+        label: 'fireworks-boykisser-frame-readback',
+        size: bytesPerRow * height,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+      });
+      try {
+        const encoder = device.createCommandEncoder({ label: 'fireworks-boykisser-frame-copy' });
+        encoder.copyTextureToBuffer(
+          { texture: renderer.context.getCurrentTexture() },
+          { buffer: readback, bytesPerRow, rowsPerImage: height },
+          [width, height]
+        );
+        device.queue.submit([encoder.finish()]);
+        await readback.mapAsync(GPUMapMode.READ);
+        const frame = {
+          bytes: new Uint8Array(readback.getMappedRange()),
+          bytesPerRow,
+          format: renderer.format,
+          width,
+          height
+        };
+        return inspect(frame);
+      } finally {
+        if (readback.mapState === 'mapped') readback.unmap();
+        readback.destroy();
+      }
+    }
+
+    function boykisserPixel(frame, x, y) {
+      const offset = y * frame.bytesPerRow + x * 4;
+      const bgra = String(frame.format).startsWith('bgra');
+      return bgra
+        ? [frame.bytes[offset + 2], frame.bytes[offset + 1], frame.bytes[offset], frame.bytes[offset + 3]]
+        : [frame.bytes[offset], frame.bytes[offset + 1], frame.bytes[offset + 2], frame.bytes[offset + 3]];
+    }
+
+    function boykisserWindowStats(frame, center, radius, role, roles) {
+      const left = Math.max(0, Math.floor(center.x - radius));
+      const right = Math.min(frame.width - 1, Math.ceil(center.x + radius));
+      const top = Math.max(0, Math.floor(center.y - radius));
+      const bottom = Math.min(frame.height - 1, Math.ceil(center.y + radius));
+      let visiblePixels = 0;
+      let best = [0, 0, 0, 0];
+      let roleColor = null;
+      for (let y = top; y <= bottom; y += 1) {
+        for (let x = left; x <= right; x += 1) {
+          const pixel = boykisserPixel(frame, x, y);
+          if (pixel[3] > 8) visiblePixels += 1;
+          if (pixel[3] > best[3]) best = pixel;
+          if (pixel[3] > 8) {
+            const straight = pixel.slice(0, 3).map(channel => (
+              Math.min(255, Math.round(channel * 255 / pixel[3]))
+            ));
+            if (boykisserRoleColorMatches(role, straight, roles)) roleColor = straight;
+          }
+        }
+      }
+      const alpha = Math.max(1, best[3]);
+      return {
+        visiblePixels,
+        alpha: best[3],
+        straightColor: best.slice(0, 3).map(channel => Math.min(255, Math.round(channel * 255 / alpha))),
+        roleColor
+      };
+    }
+
+    function boykisserGuardPixels(frame) {
+      let pixels = 0;
+      const visible = (x, y) => boykisserPixel(frame, x, y)[3] > 1;
+      for (let x = 0; x < frame.width; x += 1) {
+        for (const y of [0, 1, frame.height - 2, frame.height - 1]) {
+          if (visible(x, y)) pixels += 1;
+        }
+      }
+      for (let y = 2; y < frame.height - 2; y += 1) {
+        for (const x of [0, 1, frame.width - 2, frame.width - 1]) {
+          if (visible(x, y)) pixels += 1;
+        }
+      }
+      return pixels;
+    }
+
+    function boykisserRoleColorMatches(role, color, roles) {
+      const [red, green, blue] = color;
+      const spread = Math.max(red, green, blue) - Math.min(red, green, blue);
+      const lightness = (red + green + blue) / 3;
+      if (role === roles.HEAD) return spread <= 42 && lightness >= 150;
+      if (role === roles.FACE) return spread <= 48 && lightness < 150;
+      if (role === roles.PINK) return red - green >= 28 && red - blue >= 10;
+      return false;
+    }
+
+    async function runBoykisserCase() {
+      const geometry = WebGPUFireworksBoykisserGeometry;
+      if (!geometry) throw new Error('browser Boykisser geometry source is unavailable');
+      const featureNames = Object.keys(geometry.BOYKISSER_FEATURES);
+      const pairedFeatures = [
+        ['left-ear', 'right-ear'],
+        ['left-inner-ear', 'right-inner-ear'],
+        ['left-crescent-eye', 'right-crescent-eye'],
+        ['left-blush', 'right-blush']
+      ];
+      const dimensions = [
+        [960, 540, 'landscape'], [1920, 1080, 'landscape'], [3840, 2160, 'landscape'],
+        [540, 960, 'portrait'], [1080, 1920, 'portrait'], [2160, 3840, 'portrait']
+      ];
+      const densities = [13, 20, 32, 180];
+      const canvas = document.createElement('canvas');
+      canvas.width = 960;
+      canvas.height = 540;
+      let nowMs = 1_000;
+      const renderer = new WebGPUParticleEngine(canvas, {
+        now: () => nowMs,
+        maxParticles: 512,
+        trailsEnabled: false,
+        glowEnabled: false,
+        bloomEnabled: false,
+        turbulence: 0.000001
+      });
+      const coverage = [];
+      let result = null;
+      try {
+        if (!await renderer.init()) {
+          throw new Error(`boykisser renderer failed to initialize: ${JSON.stringify(renderer.getMetrics())}`);
+        }
+        const rolePalette = [
+          geometry.BOYKISSER_COLORS.HEAD,
+          geometry.BOYKISSER_COLORS.FACE,
+          geometry.BOYKISSER_COLORS.PINK
+        ];
+        const roleHex = rgb => `#${rgb.map(component => (
+          Math.round(component * 255).toString(16).padStart(2, '0')
+        )).join('')}`;
+        const packedColors = rolePalette.map(color => renderer._packColor(roleHex(color)));
+
+        for (const [width, height, orientation] of dimensions) {
+          renderer.resize(width, height);
+          renderer.setLogicalSize(width, height);
+          for (const density of densities) {
+            const commandSeed = 0x13579bdf;
+            const effectId = `boykisser-hardware-${width}x${height}-${density}`;
+            const geometrySeed = (commandSeed ^ renderer._hashValue(effectId)) >>> 0;
+            const elapsedSeconds = 0.15;
+            const velocityScale = Math.min(width, height) * 0.28;
+            const intensity = velocityScale / (218 * elapsedSeconds);
+            const particleSize = Math.max(5, Math.min(width, height) / 180);
+            const accepted = renderer._queueSpawn({
+              origin: { x: width / 2, y: height / 2 },
+              target: { x: width / 2, y: height / 2 },
+              count: density,
+              shape: 25,
+              kind: 2,
+              flags: 1 << 15,
+              packedColors,
+              colorCount: packedColors.length,
+              intensity,
+              duration: 0.18,
+              particleDuration: 0.18,
+              size: particleSize,
+              gravity: 0,
+              drag: 0,
+              secondary: false,
+              seed: commandSeed,
+              effectId,
+              globalCount: density
+            });
+            if (!accepted) throw new Error(`boykisser command was rejected for ${width}x${height} density ${density}`);
+
+            for (let frame = 0; frame < 3; frame += 1) {
+              renderer.render(0.05, nowMs / 1_000);
+              nowMs += 50;
+            }
+
+            const samples = geometry.sampleBoykisserSet(density, geometrySeed);
+            const anchors = new Map(samples.slice(0, featureNames.length)
+              .map(sample => [sample.feature, sample]));
+            const projected = new Map(featureNames.map(name => {
+              const sample = anchors.get(name);
+              return [name, {
+                x: width / 2 + sample.x * velocityScale,
+                y: height / 2 + sample.y * velocityScale
+              }];
+            }));
+            const row = await inspectCurrentFrame(renderer, width, height, frame => {
+              const missingLandmarks = [];
+              const roleColorViolations = [];
+              let visiblePixels = 0;
+              const radius = Math.ceil(particleSize * 1.8 + 2);
+              for (const featureName of featureNames) {
+                const role = geometry.BOYKISSER_FEATURES[featureName].role;
+                const stats = boykisserWindowStats(
+                  frame,
+                  projected.get(featureName),
+                  radius,
+                  role,
+                  geometry.BOYKISSER_ROLES
+                );
+                visiblePixels += stats.visiblePixels;
+                if (stats.visiblePixels === 0 || stats.alpha <= 8) missingLandmarks.push(featureName);
+                if (!stats.roleColor) {
+                  roleColorViolations.push({ feature: featureName, color: stats.straightColor, role });
+                }
+              }
+
+              let maximumSymmetryDelta = 0;
+              let symmetryViolations = 0;
+              for (const [leftName, rightName] of pairedFeatures) {
+                const left = projected.get(leftName);
+                const right = projected.get(rightName);
+                const delta = Math.max(
+                  Math.abs((left.x + right.x) - width),
+                  Math.abs(left.y - right.y)
+                );
+                maximumSymmetryDelta = Math.max(maximumSymmetryDelta, delta);
+                if (delta > 1) symmetryViolations += 1;
+              }
+
+              return {
+                width,
+                height,
+                orientation,
+                density,
+                landmarkChecks: featureNames.length,
+                roleColorChecks: featureNames.length,
+                symmetryChecks: pairedFeatures.length,
+                symmetryViolations,
+                maximumSymmetryDelta,
+                guardPixels: boykisserGuardPixels(frame),
+                visiblePixels,
+                missingLandmarks,
+                roleColorViolations
+              };
+            });
+            if (row.missingLandmarks.length || row.roleColorViolations.length ||
+                row.symmetryViolations || row.guardPixels) {
+              throw new Error(`boykisser semantic evidence failed: ${JSON.stringify(row)}`);
+            }
+            coverage.push(row);
+
+            // One fixed frame crosses the 180ms lifetime boundary before the
+            // next matrix entry reuses the renderer.
+            nowMs += 50;
+            renderer.render(0.05, nowMs / 1_000);
+          }
+        }
+
+        result = {
+          geometrySignature: geometry.geometrySignature,
+          densities,
+          resolutions: dimensions.length,
+          orientations: new Set(dimensions.map(entry => entry[2])).size,
+          testedCases: coverage.length,
+          landmarkChecks: coverage.reduce((sum, row) => sum + row.landmarkChecks, 0),
+          roleColorChecks: coverage.reduce((sum, row) => sum + row.roleColorChecks, 0),
+          symmetryChecks: coverage.reduce((sum, row) => sum + row.symmetryChecks, 0),
+          symmetryViolations: coverage.reduce((sum, row) => sum + row.symmetryViolations, 0),
+          guardViolations: coverage.reduce((sum, row) => sum + row.guardPixels, 0),
+          coverage,
+          cleanupComplete: false
+        };
+      } finally {
+        renderer.destroy();
+        if (result) result.cleanupComplete = true;
+      }
+      return result;
+    }
 
     const CASE_RUNNERS = Object.freeze({
       atlas: runAtlasCase,

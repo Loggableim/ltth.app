@@ -1,26 +1,79 @@
-const ALLOWED_SHAPES = ['burst', 'heart', 'star', 'ring', 'spiral', 'paws'];
-const ALLOWED_VISUAL_STYLES = ['premium-hybrid', 'realistic', 'stylized-neon'];
-const VALID_GIFT_POPUP_POSITIONS = ['top', 'middle', 'bottom', 'none'];
-const VALID_ORIENTATIONS = ['landscape', 'portrait'];
-const VALID_RESOLUTION_PRESETS = ['360p', '480p', '540p', '720p', '1080p', '1440p', '4k'];
-const VALID_FOLLOWER_POSITIONS = ['top-left', 'top-center', 'top-right', 'center', 'bottom-left', 'bottom-center', 'bottom-right'];
-const VALID_FOLLOWER_STYLES = ['gradient-purple', 'gradient-blue', 'gradient-gold', 'gradient-rainbow', 'neon', 'minimal'];
-const VALID_FOLLOWER_ENTRANCES = ['scale', 'fade', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'bounce', 'rotate'];
+const ALLOWED_SHAPES = Object.freeze(['burst', 'heart', 'star', 'ring', 'spiral', 'paws']);
+const ALLOWED_VISUAL_STYLES = Object.freeze(['premium-hybrid', 'realistic', 'stylized-neon']);
+const VALID_COLOR_MODES = Object.freeze(['gift', 'random', 'theme', 'rainbow']);
+const VALID_GIFT_POPUP_POSITIONS = Object.freeze(['top', 'middle', 'bottom', 'none']);
+const VALID_ORIENTATIONS = Object.freeze(['landscape', 'portrait']);
+const VALID_RESOLUTION_PRESETS = Object.freeze(['360p', '480p', '540p', '720p', '1080p', '1440p', '4k']);
+const VALID_FOLLOWER_POSITIONS = Object.freeze(['top-left', 'top-center', 'top-right', 'center', 'bottom-left', 'bottom-center', 'bottom-right']);
+const VALID_FOLLOWER_STYLES = Object.freeze(['gradient-purple', 'gradient-blue', 'gradient-gold', 'gradient-rainbow', 'neon', 'minimal']);
+const VALID_FOLLOWER_SIZES = Object.freeze(['small', 'medium', 'large', 'custom']);
+const VALID_FOLLOWER_ENTRANCES = Object.freeze(['scale', 'fade', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'bounce', 'rotate']);
 const { FINALE_STYLES, FINALE_LENGTHS } = require('./finale-show-planner');
 
 const ALLOWED_FINALE_STYLES = Object.freeze(['auto', ...FINALE_STYLES]);
 const ALLOWED_FINALE_LENGTHS = Object.freeze([...FINALE_LENGTHS]);
 const CUSTOM_FINALE_STYLE_PATTERN = /^custom:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SUPERFAN_FINALE_COOLDOWN_HOURS = Object.freeze([6, 12, 24, 72, 168]);
+const ALLOWED_SUPERFAN_FINALE_STYLES = Object.freeze(['inherit', ...FINALE_STYLES]);
+const ALLOWED_SUPERFAN_FINALE_LENGTHS = Object.freeze(['inherit', ...FINALE_LENGTHS]);
 const FINALE_DURATION_BY_LENGTH = Object.freeze({
   short: 10000,
   medium: 18000,
   long: 28000
 });
 const CONFIG_LIMITS = Object.freeze({
-  targetFps: Object.freeze({ min: 24, max: 120 }),
-  minFps: Object.freeze({ min: 15, max: 60 }),
-  minTargetFps: Object.freeze({ min: 20, max: 50 })
+  comboTimeout: Object.freeze({ min: 1000, max: 60000, step: 1000, uiScale: 0.001 }),
+  comboMaxMultiplier: Object.freeze({ min: 1, max: 20, step: 0.5, uiScale: 1 }),
+  audioVolume: Object.freeze({ min: 0, max: 1, step: 0.01, uiScale: 100 }),
+  crackleFrequency: Object.freeze({ min: 0, max: 1, step: 0.01, uiScale: 100 }),
+  crackleVolume: Object.freeze({ min: 0, max: 1, step: 0.01, uiScale: 100 }),
+  maxParticles: Object.freeze({ min: 200, max: 3000, step: 1, uiScale: 1 }),
+  targetFps: Object.freeze({ min: 24, max: 120, step: 1, uiScale: 1 }),
+  minFps: Object.freeze({ min: 15, max: 60, step: 1, uiScale: 1 }),
+  despawnFadeDuration: Object.freeze({ min: 0.25, max: 10, step: 0.25, uiScale: 1 }),
+  maxRocketsPerSecond: Object.freeze({ min: 1, max: 20, step: 1, uiScale: 1 }),
+  maxConcurrentFireworks: Object.freeze({ min: 1, max: 20, step: 1, uiScale: 1 }),
+  maxTotalParticles: Object.freeze({ min: 512, max: 16384, step: 1, uiScale: 1 }),
+  emergencyCleanupThreshold: Object.freeze({ min: 1024, max: 16384, step: 1, uiScale: 1 }),
+  minTargetFps: Object.freeze({ min: 20, max: 50, step: 1, uiScale: 1 }),
+  avatarParticleChance: Object.freeze({ min: 0, max: 1, step: 0.01, uiScale: 100 }),
+  goalFinaleIntensity: Object.freeze({ min: 0.1, max: 10, step: 0.1, uiScale: 1 }),
+  superfanFinaleIntensity: Object.freeze({ min: 1, max: 10, step: 0.5, uiScale: 1 }),
+  superfanEndCardDuration: Object.freeze({ min: 1000, max: 10000, step: 500, uiScale: 0.001 }),
+  superfanEndCardScale: Object.freeze({ min: 0.5, max: 2, step: 0.1, uiScale: 1 }),
+  followerRocketCount: Object.freeze({ min: 1, max: 10, step: 1, uiScale: 1 }),
+  followerAnimationDuration: Object.freeze({ min: 1000, max: 10000, step: 500, uiScale: 0.001 }),
+  followerAnimationDelay: Object.freeze({ min: 0, max: 10000, step: 500, uiScale: 0.001 }),
+  followerAnimationScale: Object.freeze({ min: 0.5, max: 2, step: 0.1, uiScale: 1 })
+});
+
+function enumDescriptor(values, dynamicPattern = null) {
+  const descriptor = { values: Object.freeze(values.map(value => String(value))) };
+  if (dynamicPattern) {
+    descriptor.dynamicPattern = dynamicPattern.source;
+    descriptor.dynamicFlags = dynamicPattern.flags;
+  }
+  return Object.freeze(descriptor);
+}
+
+const CONFIG_ENUMS = Object.freeze({
+  shape: enumDescriptor(ALLOWED_SHAPES),
+  giftVisualStyle: enumDescriptor(['', ...ALLOWED_VISUAL_STYLES]),
+  colorMode: enumDescriptor(VALID_COLOR_MODES),
+  resolutionPreset: enumDescriptor(VALID_RESOLUTION_PRESETS),
+  orientation: enumDescriptor(VALID_ORIENTATIONS),
+  giftPopupPosition: enumDescriptor(VALID_GIFT_POPUP_POSITIONS),
+  finaleStyle: enumDescriptor(ALLOWED_FINALE_STYLES, CUSTOM_FINALE_STYLE_PATTERN),
+  finaleLength: enumDescriptor(ALLOWED_FINALE_LENGTHS),
+  superfanFinaleCooldown: enumDescriptor(SUPERFAN_FINALE_COOLDOWN_HOURS),
+  superfanFinaleStyle: enumDescriptor(ALLOWED_SUPERFAN_FINALE_STYLES, CUSTOM_FINALE_STYLE_PATTERN),
+  superfanFinaleLength: enumDescriptor(ALLOWED_SUPERFAN_FINALE_LENGTHS),
+  endCardPosition: enumDescriptor(VALID_FOLLOWER_POSITIONS),
+  endCardSize: enumDescriptor(VALID_FOLLOWER_SIZES),
+  followerAnimationPosition: enumDescriptor(VALID_FOLLOWER_POSITIONS),
+  followerAnimationStyle: enumDescriptor(VALID_FOLLOWER_STYLES),
+  followerAnimationSize: enumDescriptor(VALID_FOLLOWER_SIZES),
+  followerAnimationEntrance: enumDescriptor(VALID_FOLLOWER_ENTRANCES)
 });
 
 const DEFAULT_FIREWORKS_CONFIG = {
@@ -141,6 +194,16 @@ function clampInteger(value, min, max, fallback) {
   return Math.round(clampNumber(value, min, max, fallback));
 }
 
+function clampConfigNumber(field, value, fallback) {
+  const { min, max } = CONFIG_LIMITS[field];
+  return clampNumber(value, min, max, fallback);
+}
+
+function clampConfigInteger(field, value, fallback) {
+  const { min, max } = CONFIG_LIMITS[field];
+  return clampInteger(value, min, max, fallback);
+}
+
 function normalizeBoolean(value, fallback) {
   if (typeof value === 'boolean') return value;
   return fallback;
@@ -184,17 +247,17 @@ function normalizeCompletionNotification(value) {
     ),
     thankYouText: normalizeDisplayText(value.thankYouText, 'This firework was for you!', 180),
     profilePictureUrl: normalizeOptionalImageUrl(value.profilePictureUrl),
-    duration: clampInteger(value.duration, 1000, 10000, 3000),
-    position: VALID_FOLLOWER_POSITIONS.includes(value.position) ? value.position : 'center',
-    size: ['small', 'medium', 'large', 'custom'].includes(value.size) ? value.size : 'medium',
-    scale: clampNumber(value.scale, 0.5, 2, 1),
-    style: VALID_FOLLOWER_STYLES.includes(value.style) ? value.style : 'gradient-purple',
-    entrance: VALID_FOLLOWER_ENTRANCES.includes(value.entrance) ? value.entrance : 'scale'
+    duration: clampConfigInteger('superfanEndCardDuration', value.duration, 3000),
+    position: CONFIG_ENUMS.endCardPosition.values.includes(value.position) ? value.position : 'center',
+    size: CONFIG_ENUMS.endCardSize.values.includes(value.size) ? value.size : 'medium',
+    scale: clampConfigNumber('superfanEndCardScale', value.scale, 1),
+    style: CONFIG_ENUMS.followerAnimationStyle.values.includes(value.style) ? value.style : 'gradient-purple',
+    entrance: CONFIG_ENUMS.followerAnimationEntrance.values.includes(value.entrance) ? value.entrance : 'scale'
   };
 }
 
 function normalizeShape(value, fallback = DEFAULT_FIREWORKS_CONFIG.defaultShape) {
-  return ALLOWED_SHAPES.includes(value) ? value : fallback;
+  return CONFIG_ENUMS.shape.values.includes(value) ? value : fallback;
 }
 
 function normalizeVisualStyle(value, fallback = DEFAULT_FIREWORKS_CONFIG.visualStyle) {
@@ -202,7 +265,7 @@ function normalizeVisualStyle(value, fallback = DEFAULT_FIREWORKS_CONFIG.visualS
 }
 
 function normalizeFinaleStyle(value, fallback = DEFAULT_FIREWORKS_CONFIG.goalFinaleStyle) {
-  if (ALLOWED_FINALE_STYLES.includes(value)) return value;
+  if (CONFIG_ENUMS.finaleStyle.values.includes(value)) return value;
   return isCustomFinaleStyleId(value) ? value.toLowerCase() : fallback;
 }
 
@@ -211,17 +274,17 @@ function isCustomFinaleStyleId(value) {
 }
 
 function normalizeFinaleLength(value, fallback = DEFAULT_FIREWORKS_CONFIG.goalFinaleLength) {
-  return ALLOWED_FINALE_LENGTHS.includes(value) ? value : fallback;
+  return CONFIG_ENUMS.finaleLength.values.includes(value) ? value : fallback;
 }
 
 function normalizeSuperfanFinaleStyle(value, fallback = DEFAULT_FIREWORKS_CONFIG.superfanFinaleStyle) {
-  if (value === 'inherit' || FINALE_STYLES.includes(value)) return value;
+  if (CONFIG_ENUMS.superfanFinaleStyle.values.includes(value)) return value;
   if (isCustomFinaleStyleId(value)) return value.toLowerCase();
   return fallback;
 }
 
 function normalizeSuperfanFinaleLength(value, fallback = DEFAULT_FIREWORKS_CONFIG.superfanFinaleLength) {
-  return value === 'inherit' || ALLOWED_FINALE_LENGTHS.includes(value) ? value : fallback;
+  return CONFIG_ENUMS.superfanFinaleLength.values.includes(value) ? value : fallback;
 }
 
 function finaleLengthFromDuration(value) {
@@ -302,7 +365,7 @@ function normalizeAudioPath(value, fallback) {
 }
 
 function normalizePreset(value, fallback) {
-  return VALID_RESOLUTION_PRESETS.includes(value) ? value : fallback;
+  return CONFIG_ENUMS.resolutionPreset.values.includes(value) ? value : fallback;
 }
 
 function normalizeGiftShapeMappings(value) {
@@ -357,14 +420,14 @@ function normalizeConfig(config = {}) {
     // This plugin has no alternate backend. Legacy cloned values migrate here.
     renderer: 'webgpu',
     visualStyle: normalizeVisualStyle(source.visualStyle, defaults.visualStyle),
-    maxParticles: clampInteger(source.maxParticles, 200, 3000, defaults.maxParticles),
+    maxParticles: clampConfigInteger('maxParticles', source.maxParticles, defaults.maxParticles),
     targetFps,
     giftTriggersEnabled: normalizeBoolean(source.giftTriggersEnabled, defaults.giftTriggersEnabled),
     minGiftCoins: clampInteger(source.minGiftCoins, 0, 1000000, defaults.minGiftCoins),
     comboEnabled: normalizeBoolean(source.comboEnabled, defaults.comboEnabled),
-    comboTimeout: clampInteger(source.comboTimeout, 1000, 60000, defaults.comboTimeout),
+    comboTimeout: clampConfigInteger('comboTimeout', source.comboTimeout, defaults.comboTimeout),
     comboMultiplierBase: clampNumber(source.comboMultiplierBase, 1, 5, defaults.comboMultiplierBase),
-    comboMaxMultiplier: clampNumber(source.comboMaxMultiplier, 1, 20, defaults.comboMaxMultiplier),
+    comboMaxMultiplier: clampConfigNumber('comboMaxMultiplier', source.comboMaxMultiplier, defaults.comboMaxMultiplier),
     escalationEnabled: normalizeBoolean(source.escalationEnabled, defaults.escalationEnabled),
     escalationThresholds: normalizeThresholds(source.escalationThresholds),
     particleCount: normalizeParticleCounts(source.particleCount),
@@ -374,46 +437,46 @@ function normalizeConfig(config = {}) {
     activeShapes: normalizeShapeArray(source.activeShapes),
     giftShapeMappings: normalizeGiftShapeMappings(source.giftShapeMappings),
     userAvatarEnabled: normalizeBoolean(source.userAvatarEnabled, defaults.userAvatarEnabled),
-    avatarParticleChance: clampNumber(source.avatarParticleChance, 0, 1, defaults.avatarParticleChance),
+    avatarParticleChance: clampConfigNumber('avatarParticleChance', source.avatarParticleChance, defaults.avatarParticleChance),
     audioEnabled: normalizeBoolean(source.audioEnabled, defaults.audioEnabled),
     rocketSound: normalizeAudioPath(source.rocketSound, defaults.rocketSound),
     explosionSound: normalizeAudioPath(source.explosionSound, defaults.explosionSound),
-    audioVolume: clampNumber(source.audioVolume, 0, 1, defaults.audioVolume),
-    crackleFrequency: clampNumber(source.crackleFrequency, 0, 1, defaults.crackleFrequency),
-    crackleVolume: clampNumber(source.crackleVolume, 0, 1, defaults.crackleVolume),
-    colorMode: ['gift', 'random', 'theme', 'rainbow'].includes(source.colorMode) ? source.colorMode : defaults.colorMode,
+    audioVolume: clampConfigNumber('audioVolume', source.audioVolume, defaults.audioVolume),
+    crackleFrequency: clampConfigNumber('crackleFrequency', source.crackleFrequency, defaults.crackleFrequency),
+    crackleVolume: clampConfigNumber('crackleVolume', source.crackleVolume, defaults.crackleVolume),
+    colorMode: CONFIG_ENUMS.colorMode.values.includes(source.colorMode) ? source.colorMode : defaults.colorMode,
     themeColors: normalizeColorArray(source.themeColors, defaults.themeColors),
     goalFinaleEnabled: normalizeBoolean(source.goalFinaleEnabled, defaults.goalFinaleEnabled),
-    goalFinaleIntensity: clampNumber(source.goalFinaleIntensity, 0.1, 10, defaults.goalFinaleIntensity),
+    goalFinaleIntensity: clampConfigNumber('goalFinaleIntensity', source.goalFinaleIntensity, defaults.goalFinaleIntensity),
     goalFinaleStyle: normalizeFinaleStyle(source.goalFinaleStyle, defaults.goalFinaleStyle),
     goalFinaleLength: normalizeFinaleLength(source.goalFinaleLength, defaults.goalFinaleLength),
     goalFinaleDuration: clampInteger(source.goalFinaleDuration, 250, 30000, defaults.goalFinaleDuration),
     superfanFinaleEnabled: normalizeBoolean(source.superfanFinaleEnabled, defaults.superfanFinaleEnabled),
-    superfanFinaleCooldownHours: SUPERFAN_FINALE_COOLDOWN_HOURS.includes(Number(source.superfanFinaleCooldownHours))
+    superfanFinaleCooldownHours: CONFIG_ENUMS.superfanFinaleCooldown.values.includes(String(Number(source.superfanFinaleCooldownHours)))
       ? Number(source.superfanFinaleCooldownHours)
       : defaults.superfanFinaleCooldownHours,
-    superfanFinaleIntensity: clampNumber(source.superfanFinaleIntensity, 1, 10, defaults.superfanFinaleIntensity),
+    superfanFinaleIntensity: clampConfigNumber('superfanFinaleIntensity', source.superfanFinaleIntensity, defaults.superfanFinaleIntensity),
     superfanFinaleStyle: normalizeSuperfanFinaleStyle(source.superfanFinaleStyle, defaults.superfanFinaleStyle),
     superfanFinaleLength: normalizeSuperfanFinaleLength(source.superfanFinaleLength, defaults.superfanFinaleLength),
-    superfanEndCardDuration: clampInteger(source.superfanEndCardDuration, 1000, 10000, defaults.superfanEndCardDuration),
-    superfanEndCardPosition: VALID_FOLLOWER_POSITIONS.includes(source.superfanEndCardPosition)
+    superfanEndCardDuration: clampConfigInteger('superfanEndCardDuration', source.superfanEndCardDuration, defaults.superfanEndCardDuration),
+    superfanEndCardPosition: CONFIG_ENUMS.endCardPosition.values.includes(source.superfanEndCardPosition)
       ? source.superfanEndCardPosition
       : defaults.superfanEndCardPosition,
-    superfanEndCardSize: ['small', 'medium', 'large', 'custom'].includes(source.superfanEndCardSize)
+    superfanEndCardSize: CONFIG_ENUMS.endCardSize.values.includes(source.superfanEndCardSize)
       ? source.superfanEndCardSize
       : defaults.superfanEndCardSize,
-    superfanEndCardScale: clampNumber(source.superfanEndCardScale, 0.5, 2, defaults.superfanEndCardScale),
+    superfanEndCardScale: clampConfigNumber('superfanEndCardScale', source.superfanEndCardScale, defaults.superfanEndCardScale),
     followerFireworksEnabled: normalizeBoolean(source.followerFireworksEnabled, defaults.followerFireworksEnabled),
-    followerRocketCount: clampInteger(source.followerRocketCount, 1, 10, defaults.followerRocketCount),
+    followerRocketCount: clampConfigInteger('followerRocketCount', source.followerRocketCount, defaults.followerRocketCount),
     followerShowAnimation: normalizeBoolean(source.followerShowAnimation, defaults.followerShowAnimation),
     followerShowProfilePicture: normalizeBoolean(source.followerShowProfilePicture, defaults.followerShowProfilePicture),
-    followerAnimationDuration: clampInteger(source.followerAnimationDuration, 1000, 10000, defaults.followerAnimationDuration),
-    followerAnimationDelay: clampInteger(source.followerAnimationDelay, 0, 10000, defaults.followerAnimationDelay),
-    followerAnimationPosition: VALID_FOLLOWER_POSITIONS.includes(source.followerAnimationPosition) ? source.followerAnimationPosition : defaults.followerAnimationPosition,
-    followerAnimationSize: ['small', 'medium', 'large', 'custom'].includes(source.followerAnimationSize) ? source.followerAnimationSize : defaults.followerAnimationSize,
-    followerAnimationScale: clampNumber(source.followerAnimationScale, 0.5, 2, defaults.followerAnimationScale),
-    followerAnimationStyle: VALID_FOLLOWER_STYLES.includes(source.followerAnimationStyle) ? source.followerAnimationStyle : defaults.followerAnimationStyle,
-    followerAnimationEntrance: VALID_FOLLOWER_ENTRANCES.includes(source.followerAnimationEntrance) ? source.followerAnimationEntrance : defaults.followerAnimationEntrance,
+    followerAnimationDuration: clampConfigInteger('followerAnimationDuration', source.followerAnimationDuration, defaults.followerAnimationDuration),
+    followerAnimationDelay: clampConfigInteger('followerAnimationDelay', source.followerAnimationDelay, defaults.followerAnimationDelay),
+    followerAnimationPosition: CONFIG_ENUMS.followerAnimationPosition.values.includes(source.followerAnimationPosition) ? source.followerAnimationPosition : defaults.followerAnimationPosition,
+    followerAnimationSize: CONFIG_ENUMS.followerAnimationSize.values.includes(source.followerAnimationSize) ? source.followerAnimationSize : defaults.followerAnimationSize,
+    followerAnimationScale: clampConfigNumber('followerAnimationScale', source.followerAnimationScale, defaults.followerAnimationScale),
+    followerAnimationStyle: CONFIG_ENUMS.followerAnimationStyle.values.includes(source.followerAnimationStyle) ? source.followerAnimationStyle : defaults.followerAnimationStyle,
+    followerAnimationEntrance: CONFIG_ENUMS.followerAnimationEntrance.values.includes(source.followerAnimationEntrance) ? source.followerAnimationEntrance : defaults.followerAnimationEntrance,
     followerThankYouText: typeof source.followerThankYouText === 'string' ? source.followerThankYouText.slice(0, 120) : defaults.followerThankYouText,
     interactiveEnabled: normalizeBoolean(source.interactiveEnabled, defaults.interactiveEnabled),
     clickTriggerEnabled: normalizeBoolean(source.clickTriggerEnabled, defaults.clickTriggerEnabled),
@@ -440,18 +503,18 @@ function normalizeConfig(config = {}) {
     resolutionPreset: normalizePreset(source.resolutionPreset, defaults.resolutionPreset),
     internalMaxResolutionPreset: internalBounds[1],
     internalMinResolutionPreset: internalBounds[0],
-    orientation: VALID_ORIENTATIONS.includes(source.orientation) ? source.orientation : defaults.orientation,
+    orientation: CONFIG_ENUMS.orientation.values.includes(source.orientation) ? source.orientation : defaults.orientation,
     adaptiveRenderScaleEnabled: normalizeBoolean(source.adaptiveRenderScaleEnabled, defaults.adaptiveRenderScaleEnabled),
     minRenderScale: clampNumber(source.minRenderScale, 0.25, 1, defaults.minRenderScale),
     minFps,
-    despawnFadeDuration: clampNumber(source.despawnFadeDuration, 0.25, 10, defaults.despawnFadeDuration),
+    despawnFadeDuration: clampConfigNumber('despawnFadeDuration', source.despawnFadeDuration, defaults.despawnFadeDuration),
     giftPopupEnabled: normalizeBoolean(source.giftPopupEnabled, defaults.giftPopupEnabled),
-    giftPopupPosition: VALID_GIFT_POPUP_POSITIONS.includes(source.giftPopupPosition) ? source.giftPopupPosition : defaults.giftPopupPosition,
+    giftPopupPosition: CONFIG_ENUMS.giftPopupPosition.values.includes(source.giftPopupPosition) ? source.giftPopupPosition : defaults.giftPopupPosition,
     queueEnabled: normalizeBoolean(source.queueEnabled, defaults.queueEnabled),
-    maxRocketsPerSecond: clampInteger(source.maxRocketsPerSecond, 1, 20, defaults.maxRocketsPerSecond),
-    maxConcurrentFireworks: clampInteger(source.maxConcurrentFireworks, 1, 20, defaults.maxConcurrentFireworks),
-    maxTotalParticles: clampInteger(source.maxTotalParticles, 512, 16384, defaults.maxTotalParticles),
-    emergencyCleanupThreshold: clampInteger(source.emergencyCleanupThreshold, 1024, 16384, defaults.emergencyCleanupThreshold),
+    maxRocketsPerSecond: clampConfigInteger('maxRocketsPerSecond', source.maxRocketsPerSecond, defaults.maxRocketsPerSecond),
+    maxConcurrentFireworks: clampConfigInteger('maxConcurrentFireworks', source.maxConcurrentFireworks, defaults.maxConcurrentFireworks),
+    maxTotalParticles: clampConfigInteger('maxTotalParticles', source.maxTotalParticles, defaults.maxTotalParticles),
+    emergencyCleanupThreshold: clampConfigInteger('emergencyCleanupThreshold', source.emergencyCleanupThreshold, defaults.emergencyCleanupThreshold),
     adaptivePerformance: normalizeBoolean(source.adaptivePerformance, defaults.adaptivePerformance),
     minTargetFps,
     frameSkipEnabled: normalizeBoolean(source.frameSkipEnabled, defaults.frameSkipEnabled),
@@ -550,6 +613,7 @@ module.exports = {
   ALLOWED_FINALE_STYLES,
   ALLOWED_SHAPES,
   ALLOWED_VISUAL_STYLES,
+  CONFIG_ENUMS,
   CONFIG_LIMITS,
   DEFAULT_FIREWORKS_CONFIG,
   FINALE_DURATION_BY_LENGTH,

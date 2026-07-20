@@ -23,6 +23,8 @@ const fs = require('fs');
 const { randomUUID } = require('crypto');
 const multer = require('multer');
 const {
+    CONFIG_ENUMS,
+    CONFIG_LIMITS,
     normalizeCompletionNotification,
     normalizeConfig,
     normalizeFinaleRequest,
@@ -588,7 +590,7 @@ class FireworksPlugin {
                 this.connectedSockets.add(socket);
 
                 // Send current config to newly connected overlay
-                socket.emit('webgpu-fireworks:config-update', { config: this.config });
+                socket.emit('webgpu-fireworks:config-update', this.createConfigPayload());
 
                 socket.on('webgpu-fireworks:register-overlay', (data = {}) => {
                     const existingSessionId = this.benchmarkSocketSessions.get(socket.id);
@@ -611,7 +613,7 @@ class FireworksPlugin {
                     });
                     if (benchmarkSession) {
                         socket.emit('webgpu-fireworks:config-update', {
-                            config: benchmarkSession.config,
+                            ...this.createConfigPayload(benchmarkSession.config),
                             benchmarkSessionId: benchmarkSession.id
                         });
                     }
@@ -1413,6 +1415,10 @@ class FireworksPlugin {
         return this.config;
     }
 
+    createConfigPayload(config = this.config) {
+        return { config, limits: CONFIG_LIMITS, enums: CONFIG_ENUMS };
+    }
+
     /**
      * Save plugin configuration to database
      */
@@ -1495,7 +1501,7 @@ class FireworksPlugin {
         // Get configuration
         this.api.registerRoute('get', '/api/webgpu-fireworks/config', (req, res) => {
             try {
-                res.json({ success: true, config: this.config });
+                res.json({ success: true, ...this.createConfigPayload() });
             } catch (error) {
                 this.api.log(`❌ [FIREWORKS] Error getting config: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
@@ -1518,9 +1524,13 @@ class FireworksPlugin {
                 }
 
                 // Notify overlays about config change
-                this.api.emit('webgpu-fireworks:config-update', { config: this.config });
+                this.api.emit('webgpu-fireworks:config-update', this.createConfigPayload());
 
-                res.json({ success: true, message: 'Configuration updated', config: this.config });
+                res.json({
+                    success: true,
+                    message: 'Configuration updated',
+                    ...this.createConfigPayload()
+                });
             } catch (error) {
                 this.api.log(`❌ [FIREWORKS] Error updating config: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
@@ -1743,9 +1753,13 @@ class FireworksPlugin {
                     visualStyle: visualStyle || null
                 };
                 this.saveConfig();
-                this.api.emit('webgpu-fireworks:config-update', { config: this.config });
+                this.api.emit('webgpu-fireworks:config-update', this.createConfigPayload());
 
-                res.json({ success: true, message: 'Gift mapping updated' });
+                res.json({
+                    success: true,
+                    message: 'Gift mapping updated',
+                    ...this.createConfigPayload()
+                });
             } catch (error) {
                 res.status(500).json({ success: false, error: error.message });
             }
@@ -1757,8 +1771,12 @@ class FireworksPlugin {
                 if (!giftId) return res.status(400).json({ success: false, error: 'giftId is required' });
                 delete this.config.giftShapeMappings[giftId];
                 this.saveConfig();
-                this.api.emit('webgpu-fireworks:config-update', { config: this.config });
-                return res.json({ success: true, message: 'Gift mapping removed' });
+                this.api.emit('webgpu-fireworks:config-update', this.createConfigPayload());
+                return res.json({
+                    success: true,
+                    message: 'Gift mapping removed',
+                    ...this.createConfigPayload()
+                });
             } catch (error) {
                 return res.status(500).json({ success: false, error: error.message });
             }
@@ -1944,7 +1962,7 @@ class FireworksPlugin {
                 const operation = this.beginBenchmarkSessionOperation(session, 'set-preset', res);
                 if (!operation) return;
                 return this.deliverBenchmarkSocketEvent(socket, 'webgpu-fireworks:config-update', {
-                    config,
+                    ...this.createConfigPayload(config),
                     benchmarkSessionId: session.id
                 }, delivery => {
                     if (!delivery.accepted) {
@@ -1962,7 +1980,7 @@ class FireworksPlugin {
                         success: true,
                         sessionId: session.id,
                         message: 'Preset applied for benchmark',
-                        config: session.config
+                        ...this.createConfigPayload(session.config)
                     });
                 });
             } catch (error) {
@@ -2122,7 +2140,7 @@ class FireworksPlugin {
                 };
                 if (!socket) return completeRestore();
                 return this.deliverBenchmarkSocketEvent(socket, 'webgpu-fireworks:config-update', {
-                    config,
+                    ...this.createConfigPayload(config),
                     benchmarkSessionId: session.id
                 }, delivery => {
                     if (!delivery.accepted) {
@@ -2147,13 +2165,17 @@ class FireworksPlugin {
             try {
                 this.api.setConfig('settings', null);
                 this.loadConfig();
-                this.api.emit('webgpu-fireworks:config-update', { config: this.config });
+                this.api.emit('webgpu-fireworks:config-update', this.createConfigPayload());
                 // Restart random timer with new config
                 this.stopRandomTimer();
                 if (this.config.randomEnabled) {
                     this.startRandomTimer();
                 }
-                res.json({ success: true, message: 'Configuration reset to defaults', config: this.config });
+                res.json({
+                    success: true,
+                    message: 'Configuration reset to defaults',
+                    ...this.createConfigPayload()
+                });
             } catch (error) {
                 this.api.log(`❌ [FIREWORKS] Error resetting config: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });

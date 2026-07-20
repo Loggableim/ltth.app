@@ -84,6 +84,7 @@ describe('WebGPU Fireworks 3.1.0 release alignment', () => {
     const manifest = readJson('app/plugins/webgpu-fireworks/plugin.json');
     const surfaces = {
       'app/plugins/webgpu-fireworks/overlay.html': [
+        '/plugins/webgpu-fireworks/gpu/boykisser-geometry.js',
         '/plugins/webgpu-fireworks/gpu/engine.js',
         '/plugins/webgpu-fireworks/gpu/show-plan-v2-runtime.js',
         '/plugins/webgpu-fireworks/gpu/spawn-command-policy.js',
@@ -91,6 +92,7 @@ describe('WebGPU Fireworks 3.1.0 release alignment', () => {
         '/plugins/webgpu-fireworks/gpu/webgpu-particle-engine.js'
       ],
       'app/plugins/webgpu-fireworks/ui/settings.html': [
+        '/plugins/webgpu-fireworks/ui/settings-contract.js',
         '/plugins/webgpu-fireworks/ui/settings.js',
         '/plugins/webgpu-fireworks/ui/show-style-options.js'
       ],
@@ -112,5 +114,15 @@ describe('WebGPU Fireworks 3.1.0 release alignment', () => {
       expect(assetUrls.every(url => new RegExp(`\\?v=${PLUGIN_VERSION.replace(/\\./g, '\\\\.')}($|-[a-z0-9.-]+$)`, 'i').test(url)))
         .toBe(true);
     }
+
+    const settingsAssets = pluginAssetUrls(read('app/plugins/webgpu-fireworks/ui/settings.html'))
+      .map(url => url.split('?')[0]);
+    expect(settingsAssets.indexOf('/plugins/webgpu-fireworks/ui/settings-contract.js'))
+      .toBeLessThan(settingsAssets.indexOf('/plugins/webgpu-fireworks/ui/settings.js'));
+
+    const overlayAssets = pluginAssetUrls(read('app/plugins/webgpu-fireworks/overlay.html'))
+      .map(url => url.split('?')[0]);
+    expect(overlayAssets.indexOf('/plugins/webgpu-fireworks/gpu/boykisser-geometry.js'))
+      .toBeLessThan(overlayAssets.indexOf('/plugins/webgpu-fireworks/gpu/webgpu-particle-engine.js'));
   });
 });
