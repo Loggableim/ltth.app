@@ -413,6 +413,7 @@ describe('ShowPlanV2 overlay dispatch', () => {
     const engine = makeRuntime(now);
     engine.getRuntimeNow = () => now;
     const palette = ['#E40303', '#FF8C00', '#FFED00', '#008026', '#24408E', '#732982'];
+    const rocketTrail = { style: 'spiral', colors: ['#5BCEFA', '#F5A9B8', '#FFFFFF'] };
     const showPlan = v2Plan('seeded-color', {
       style: 'furry-celebration',
       durationMs: 5000,
@@ -420,7 +421,7 @@ describe('ShowPlanV2 overlay dispatch', () => {
         id: 'seeded-color:opening', beatAtMs: 3000, timeMs: 3000,
         phase: 'opening', formation: 'single', importance: 'standard',
         shells: [v2Shell('seeded-color:rocket', 'rocket', {
-          seed: 14, palette, colors: [...palette]
+          seed: 14, palette, colors: [...palette], rocketTrail
         })]
       }]
     });
@@ -431,7 +432,8 @@ describe('ShowPlanV2 overlay dispatch', () => {
     engine.processTimeline(now);
 
     expect(engine.renderer.spawnRocket).toHaveBeenCalledWith(expect.objectContaining({
-      color: palette[14 % palette.length]
+      color: palette[14 % palette.length],
+      rocketTrail
     }));
   });
 

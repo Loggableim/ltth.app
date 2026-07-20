@@ -272,6 +272,27 @@ describe('WebGPU Fireworks built-in PyroDSL shows', () => {
     expect(hero.shells[0].layers.some(layer => ['fox-head', 'wolf-head'].includes(layer.glyph))).toBe(false);
   });
 
+  test.each(FINALE_LENGTHS)('choreographs Trans, Rainbow and braided special rocket trails in %s', length => {
+    const plan = new FinaleShowPlanner().plan({
+      style: 'furry-celebration', length, orientation: 'landscape', intensity: 5, seed: 88
+    });
+    const finaleTrails = plan.cues.filter(cue => cue.phase === 'finale')
+      .flatMap(cue => cue.shells)
+      .filter(shell => shell.rocketTrail)
+      .map(shell => shell.rocketTrail);
+
+    expect(new Set(finaleTrails.map(trail => trail.style)))
+      .toEqual(new Set(['comet', 'spiral', 'braided']));
+    expect(finaleTrails.some(trail => trail.colors.join() === ['#5BCEFA', '#F5A9B8', '#FFFFFF'].join()))
+      .toBe(true);
+    expect(finaleTrails.some(trail => ['#E40303', '#FFED00', '#008026', '#24408E']
+      .every(color => trail.colors.includes(color)))).toBe(true);
+    expect(plan.cues.at(-1).shells[0].rocketTrail).toMatchObject({
+      style: 'braided',
+      colors: expect.arrayContaining(['#E40303', '#FFED00', '#24408E', '#732982'])
+    });
+  });
+
   test('imports the semantic palette instead of declaring a second Boykisser color table', () => {
     const source = fs.readFileSync(path.join(
       __dirname, '..', 'plugins', 'webgpu-fireworks', 'lib', 'built-in-shows.js'

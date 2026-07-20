@@ -2302,6 +2302,7 @@ class WebGPUFireworksEngine {
             renderHints: event.renderHints,
             duration,
             color: event.shell.colors?.[0] || event.shell.palette?.[0] || '#ffffff',
+            rocketTrail: event.shell.rocketTrail,
             seed: event.seed,
             style: event.materialProfile === 'premium-realistic'
                 ? 'premium-realistic'

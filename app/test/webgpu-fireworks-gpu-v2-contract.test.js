@@ -339,6 +339,39 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
     expect(rocketSize(1080, 1920, undefined, { headTextureIndex: 2 })).toBe(32);
   });
 
+  test('queues one correlated flame and exhaust voice per Trans or Rainbow trail color', () => {
+    const engine = makeEngine();
+    engine.spawnRocket({
+      correlationId: 'special-trail',
+      origin: { x: 960, y: 1080 },
+      target: { x: 960, y: 360 },
+      duration: 1.2,
+      curve: 48,
+      seed: 77,
+      rocketTrail: {
+        style: 'braided',
+        colors: ['#5BCEFA', '#F5A9B8', '#FFFFFF']
+      }
+    });
+
+    expect(engine.spawnQueue).toHaveLength(4);
+    const [body, ...trailVoices] = engine.spawnQueue;
+    expect(body.envelopeCommandId).toBe('special-trail:rocket:body');
+    expect(trailVoices.map(command => command.color)).toEqual([
+      [0x5b / 255, 0xce / 255, 0xfa / 255, 1],
+      [0xf5 / 255, 0xa9 / 255, 0xb8 / 255, 1],
+      [1, 1, 1, 1]
+    ]);
+    expect(new Set(trailVoices.map(command => command.curve)).size).toBe(3);
+    expect(trailVoices.map(command => command.envelopeCommandId)).toEqual([
+      'special-trail:rocket:trail:1',
+      'special-trail:rocket:trail:2',
+      'special-trail:rocket:trail:3'
+    ]);
+    expect(engine.spawnQueue.every(command => command.correlationManifest === body.correlationManifest)).toBe(true);
+    expect(body.correlationManifest.commands).toHaveLength(4);
+  });
+
   test('holds curated glyphs on screen with brighter chroma and a 30 percent glow lift', () => {
     const shader = makeEngine()._particleShader();
 

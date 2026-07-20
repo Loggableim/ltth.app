@@ -116,6 +116,9 @@ class FinaleShowPlanner {
           crackleEnabled: shellDescriptor.crackleEnabled ?? cueDescriptor.crackleEnabled,
           ...(style === 'furry-celebration' && shellDescriptor.renderHints
             ? { renderHints: clone(shellDescriptor.renderHints) }
+            : {}),
+          ...(style === 'furry-celebration' && shellDescriptor.rocketTrail
+            ? { rocketTrail: clone(shellDescriptor.rocketTrail) }
             : {})
         };
       });

@@ -27,6 +27,7 @@
     'furry-celebration'
   ]);
   const COLOR_PATTERN = /^#[0-9a-f]{6}([0-9a-f]{2})?$/i;
+  const ROCKET_TRAIL_STYLES = new Set(['comet', 'spiral', 'braided']);
   const DEFAULT_RENDER_HINTS = Object.freeze({
     depthEnabled: false,
     launchDepth: 0,
@@ -59,6 +60,21 @@
     if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
     Object.getOwnPropertyNames(value).forEach(key => deepFreeze(value[key]));
     return Object.freeze(value);
+  };
+
+  const normalizeRocketTrail = shell => {
+    const authored = shell?.rocketTrail && typeof shell.rocketTrail === 'object';
+    return {
+      authored,
+      style: authored ? shell.rocketTrail.style : 'comet',
+      colors: authored ? [...shell.rocketTrail.colors] : ['#fff4d6']
+    };
+  };
+
+  const rocketTrailCurveOffset = (style, index, count) => {
+    if (count <= 1) return 0;
+    const spread = style === 'spiral' ? 14 : style === 'braided' ? 9 : 4;
+    return (index - (count - 1) * 0.5) * spread;
   };
 
   const envelopeShapeId = layer => layer.primitive === 'glyph'
@@ -151,6 +167,20 @@
         const shellPath = `${cuePath}.shells.${shellIndex}`;
         if (!shell || typeof shell !== 'object' || Array.isArray(shell)) fail(`${shellPath} must be an object`);
         if (!LAUNCH_MODES.has(shell.launchMode)) fail(`${shellPath} launch mode is unsupported`);
+        if (shell.rocketTrail !== undefined) {
+          if (shell.launchMode !== 'rocket' || !shell.rocketTrail || typeof shell.rocketTrail !== 'object'
+            || Array.isArray(shell.rocketTrail)) fail(`${shellPath}.rocketTrail requires a rocket shell object`);
+          if (!ROCKET_TRAIL_STYLES.has(shell.rocketTrail.style)) {
+            fail(`${shellPath}.rocketTrail.style is unsupported`);
+          }
+          if (!Array.isArray(shell.rocketTrail.colors) || shell.rocketTrail.colors.length < 1
+            || shell.rocketTrail.colors.length > 4) {
+            fail(`${shellPath}.rocketTrail.colors must contain between one and four colors`);
+          }
+          if (shell.rocketTrail.colors.some(color => typeof color !== 'string' || !COLOR_PATTERN.test(color))) {
+            fail(`${shellPath}.rocketTrail.colors must use hexadecimal colors`);
+          }
+        }
         if (shell.renderHints !== undefined) assertRenderHints(shell.renderHints, `${shellPath}.renderHints`);
         assertPoint(shell.origin, `${shellPath}.origin`, 1.1);
         assertPoint(shell.target, `${shellPath}.target`, 1);
@@ -269,7 +299,7 @@
           const renderHints = normalizeRenderHints(shell.renderHints);
           const naturalFlightDurationMs = calculateRocketFlightMs(shell.target, renderHints);
           const flightDurationMs = Math.min(naturalFlightDurationMs, Math.max(0, cueDue));
-          addDemand(cueDue - flightDurationMs, 1, 1);
+          addDemand(cueDue - flightDurationMs, 1, normalizeRocketTrail(shell).colors.length);
         }
         for (const layer of shell.layers) {
           addDemand(cueDue + Number(layer.delayMs), layer.core === true ? 1 : 0, layer.core === true ? 0 : 1);
@@ -371,6 +401,7 @@
           const minimumRocketSize = depthRocket ? 18 : 28;
           const rocketSize = Math.max(minimumRocketSize, rocketBaseSize * viewportScale);
           const rocketSeed = Number(shell.seed ?? showPlan.seed) >>> 0;
+          const rocketTrail = normalizeRocketTrail(shell);
           const base = {
             shellId,
             kind: 1,
@@ -390,6 +421,18 @@
             viewportResponsive: true,
             queuedViewportMinimum: Math.min(width, height),
           };
+          const trailVoices = rocketTrail.colors.map((color, trailIndex) => ({
+            color,
+            curve: base.curve + rocketTrailCurveOffset(
+              rocketTrail.style,
+              trailIndex,
+              rocketTrail.colors.length
+            ),
+            multiplier: Math.max(0.58, 0.76 - trailIndex * 0.04),
+            envelopeCommandId: rocketTrail.authored
+              ? `${envelopeShellId}:rocket:trail:${trailIndex + 1}`
+              : `${envelopeShellId}:rocket:flame`
+          }));
           manifestCommands.push({
             ...base,
             envelopeCommandId: `${envelopeShellId}:rocket:body`,
@@ -398,15 +441,18 @@
             viewportMaterialization: {
               kind: 'rocket', baseSize: rocketBaseSize, minimumSize: minimumRocketSize, multiplier: 1,
             },
-          }, {
+          }, ...trailVoices.map(voice => ({
             ...base,
-            envelopeCommandId: `${envelopeShellId}:rocket:flame`,
+            envelopeCommandId: voice.envelopeCommandId,
             flags: 2 << 8,
-            size: rocketSize * 0.76,
+            color: voice.color,
+            curve: voice.curve,
+            size: rocketSize * voice.multiplier,
             viewportMaterialization: {
-              kind: 'rocket', baseSize: rocketBaseSize, minimumSize: minimumRocketSize, multiplier: 0.76,
+              kind: 'rocket', baseSize: rocketBaseSize, minimumSize: minimumRocketSize,
+              multiplier: voice.multiplier,
             },
-          });
+          })));
           if (Number(shell.textureIndex) > 0) {
             manifestCommands.push({
               ...base,
@@ -487,6 +533,12 @@
         const renderHints = normalizeRenderHints(shell.renderHints);
         if (shell.launchMode === 'rocket') {
           const rocketSeed = Number(shell.seed ?? showPlan.seed) >>> 0;
+          const rocketTrail = normalizeRocketTrail(shell);
+          const trailEnvelopeCommandIds = rocketTrail.colors.map((_, trailIndex) => (
+            rocketTrail.authored
+              ? `${envelopeShellId}:rocket:trail:${trailIndex + 1}`
+              : `${envelopeShellId}:rocket:flame`
+          ));
           const naturalFlightDurationMs = calculateRocketFlightMs(shell.target, renderHints);
           const flightDurationMs = Math.min(naturalFlightDurationMs, Math.max(0, Number(cue.beatAtMs)));
           const due = cueDue - flightDurationMs;
@@ -508,7 +560,7 @@
             envelopeCommandId: `${envelopeShellId}:rocket:body`,
             envelopeCommandIds: [
               `${envelopeShellId}:rocket:body`,
-              `${envelopeShellId}:rocket:flame`,
+              ...trailEnvelopeCommandIds,
               ...(Number(shell.textureIndex) > 0 ? [`${envelopeShellId}:rocket:decal`] : []),
             ],
             correlationManifest,
