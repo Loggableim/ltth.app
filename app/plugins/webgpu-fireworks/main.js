@@ -38,6 +38,11 @@ const { resolveFinaleSelection } = require('./lib/finale-runtime-resolver');
 const { RevisionedShowRepository, ShowRepositoryError } = require('./lib/show-repository');
 const { ShowApiController } = require('./lib/show-api-controller');
 const { SuperfanFinaleHistory, normalizeSuperfanIdentityAliases } = require('./lib/superfan-finale-history');
+const {
+    UploadValidationError,
+    validateUploadMetadata,
+    validateStoredUpload
+} = require('./lib/upload-validation');
 
 const FIREWORKS_CONFIG_MIGRATION_VERSION = 1;
 const SUPERFAN_COMPLETION_AUTHORITY = Symbol('webgpu-fireworks-superfan-completion');
@@ -511,12 +516,12 @@ class FireworksPlugin {
             storage: storage,
             limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
             fileFilter: (req, file, cb) => {
-                const allowedTypes = /mp3|wav|ogg|webm|mp4|gif|png|jpg|jpeg/;
-                const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-                if (extname) {
+                try {
+                    validateUploadMetadata(file);
                     return cb(null, true);
+                } catch (error) {
+                    return cb(error);
                 }
-                cb(new Error('Only audio (mp3, wav, ogg) and video (webm, mp4, gif) files are allowed!'));
             }
         });
 
@@ -1760,25 +1765,87 @@ class FireworksPlugin {
         });
 
         // Upload audio/video file
-        this.api.registerRoute('post', '/api/webgpu-fireworks/upload', (req, res) => {
-            this.upload.single('file')(req, res, (err) => {
-                if (err) {
-                    return res.status(500).json({ success: false, error: err.message });
+        this.api.registerRoute('post', '/api/webgpu-fireworks/upload', async (req, res) => {
+            const uploadError = await new Promise(resolve => {
+                let settled = false;
+                const settle = error => {
+                    if (settled) return;
+                    settled = true;
+                    resolve(error || null);
+                };
+                try {
+                    this.upload.single('file')(req, res, settle);
+                } catch (error) {
+                    settle(error);
                 }
+            });
 
-                if (!req.file) {
-                    return res.status(400).json({ success: false, error: 'No file uploaded' });
+            if (uploadError) {
+                if (uploadError.code === 'LIMIT_FILE_SIZE') {
+                    return res.status(413).json({
+                        success: false,
+                        code: 'UPLOAD_TOO_LARGE',
+                        error: uploadError.message
+                    });
                 }
-
-                const fileUrl = `/plugins/webgpu-fireworks/uploads/${req.file.filename}`;
-                this.api.log(`📤 [FIREWORKS] File uploaded: ${req.file.filename}`, 'info');
-
-                res.json({
-                    success: true,
-                    url: fileUrl,
-                    filename: req.file.filename,
-                    size: req.file.size
+                if (uploadError instanceof UploadValidationError) {
+                    return res.status(uploadError.status).json({
+                        success: false,
+                        code: uploadError.code,
+                        error: uploadError.message
+                    });
+                }
+                return res.status(500).json({
+                    success: false,
+                    code: 'UPLOAD_FAILED',
+                    error: uploadError.message
                 });
+            }
+
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    code: 'UPLOAD_FILE_REQUIRED',
+                    error: 'No file uploaded'
+                });
+            }
+
+            try {
+                await validateStoredUpload(req.file);
+            } catch (error) {
+                try {
+                    await fs.promises.unlink(req.file.path);
+                } catch (cleanupError) {
+                    if (cleanupError.code !== 'ENOENT') {
+                        this.api.log(
+                            `[FIREWORKS] Failed to remove rejected upload ${req.file.path}: ${cleanupError.message}`,
+                            'warn'
+                        );
+                    }
+                }
+
+                if (error instanceof UploadValidationError) {
+                    return res.status(error.status).json({
+                        success: false,
+                        code: error.code,
+                        error: error.message
+                    });
+                }
+                return res.status(500).json({
+                    success: false,
+                    code: 'UPLOAD_FAILED',
+                    error: error.message
+                });
+            }
+
+            const fileUrl = `/plugins/webgpu-fireworks/uploads/${req.file.filename}`;
+            this.api.log(`📤 [FIREWORKS] File uploaded: ${req.file.filename}`, 'info');
+
+            return res.json({
+                success: true,
+                url: fileUrl,
+                filename: req.file.filename,
+                size: req.file.size
             });
         });
 
