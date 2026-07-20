@@ -20,6 +20,7 @@ const commandEditorKeys = [
   'title', 'description', 'add', 'enabled', 'command', 'asset_type', 'emoji', 'image',
   'asset_value', 'gallery', 'upload', 'remove', 'allow_team_members', 'subscriber_help',
   'team_user_cooldown_seconds', 'superfan_cooldown_seconds', 'global_cooldown_seconds',
+  'command_despawn_seconds',
   'select_gallery', 'https_placeholder', 'no_images', 'upload_failed', 'max_commands',
   'registration_pending'
 ];

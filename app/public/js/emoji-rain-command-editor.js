@@ -44,12 +44,12 @@
             return label;
         }
 
-        createNumberSetting(key, label, defaultSeconds) {
+        createNumberSetting(key, label, defaultSeconds, bounds = {}) {
             const input = this.createElement('input', { type: 'number' });
             input.dataset.setting = key;
-            input.min = '0';
-            input.max = '86400';
-            input.step = '1';
+            input.min = String(bounds.min ?? 0);
+            input.max = String(bounds.max ?? 86400);
+            input.step = String(bounds.step ?? 1);
             input.value = String(defaultSeconds);
             return this.createLabel(label, input);
         }
@@ -94,6 +94,12 @@
                     'global-cooldown',
                     this.text('global_cooldown_seconds', 'Global cooldown (seconds)'),
                     15
+                ),
+                this.createNumberSetting(
+                    'command-despawn',
+                    this.text('command_despawn_seconds', 'Command emoji despawn duration (seconds)'),
+                    8,
+                    { min: 1, max: 120, step: 1 }
                 )
             );
 
@@ -125,6 +131,7 @@
             this.setSeconds('team-cooldown', config.animal_command_user_cooldown_ms, 60000);
             this.setSeconds('superfan-cooldown', config.animal_command_superfan_cooldown_ms, 15000);
             this.setSeconds('global-cooldown', config.animal_command_global_cooldown_ms, 15000);
+            this.setSeconds('command-despawn', config.animal_command_despawn_ms, 8000);
             this.rows.replaceChildren();
 
             const commands = Array.isArray(config.animal_commands) ? config.animal_commands : [];
@@ -388,7 +395,9 @@
                 animal_command_superfan_cooldown_ms:
                     this.secondsToMilliseconds('superfan-cooldown', 15000),
                 animal_command_global_cooldown_ms:
-                    this.secondsToMilliseconds('global-cooldown', 15000)
+                    this.secondsToMilliseconds('global-cooldown', 15000),
+                animal_command_despawn_ms:
+                    this.secondsToMilliseconds('command-despawn', 8000)
             };
         }
 

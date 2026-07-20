@@ -30,6 +30,7 @@
           "team_user_cooldown_seconds": "Teamlevel-Cooldown (Sekunden)",
           "superfan_cooldown_seconds": "Abo-Superfan-Cooldown (Sekunden)",
           "global_cooldown_seconds": "Globaler Cooldown (Sekunden)",
+          "command_despawn_seconds": "Despawn-Dauer der Kommando-Emojis (Sekunden)",
           "select_gallery": "Bild aus Galerie wählen",
           "https_placeholder": "HTTPS-URL oder Galeriebild",
           "no_images": "Keine Galeriebilder",

@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const {
   DEFAULT_ANIMAL_COMMANDS,
   AnimalCommandCooldowns,
@@ -24,6 +26,19 @@ function command(command, assetType = 'emoji', assetValue = '🐾', enabled = tr
 }
 
 describe('EmojiRain animal command configuration', () => {
+  test.each([
+    'plugins/emoji-rain/main.js',
+    'plugins/webgpu-emoji-rain/main.js'
+  ])('%s refreshes the shared command helper during plugin reload', relativePath => {
+    const source = fs.readFileSync(path.join(__dirname, '..', relativePath), 'utf8');
+    const refresh = "delete require.cache[require.resolve('../../modules/emoji-rain-animal-commands')];";
+
+    expect(source).toContain(refresh);
+    expect(source.indexOf(refresh)).toBeLessThan(
+      source.indexOf("require('../../modules/emoji-rain-animal-commands')")
+    );
+  });
+
   test('migrates a missing list to five independent default rows', () => {
     const normalized = normalizeAnimalCommandSettings({});
 
@@ -33,8 +48,33 @@ describe('EmojiRain animal command configuration', () => {
       animal_commands_allow_team_members: true,
       animal_command_user_cooldown_ms: 60000,
       animal_command_superfan_cooldown_ms: 15000,
-      animal_command_global_cooldown_ms: 15000
+      animal_command_global_cooldown_ms: 15000,
+      animal_command_despawn_ms: 8000
     });
+  });
+
+  test.each([999, 120001, 1500.5, 'eight seconds'])(
+    'strict validation rejects invalid command despawn %p',
+    value => {
+      expect(() => normalizeAnimalCommandSettings({
+        animal_commands: [],
+        animal_command_despawn_ms: value
+      }, { strict: true })).toThrow(expect.objectContaining({
+        issues: expect.arrayContaining([
+          expect.objectContaining({
+            field: 'animal_command_despawn_ms',
+            code: 'invalid_despawn'
+          })
+        ])
+      }));
+    }
+  );
+
+  test.each([1000, 8000, 120000])('accepts command despawn %i', value => {
+    expect(normalizeAnimalCommandSettings({
+      animal_commands: [],
+      animal_command_despawn_ms: value
+    }, { strict: true }).animal_command_despawn_ms).toBe(value);
   });
 
   test('preserves an explicit empty list as the disabled state', () => {

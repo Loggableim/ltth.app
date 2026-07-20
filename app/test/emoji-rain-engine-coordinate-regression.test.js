@@ -176,6 +176,51 @@ describe('EmojiRain client coordinate regressions', () => {
     expect(circleBodies[0].position.y).toBeCloseTo(540, 0);
   });
 
+  test.each(scripts)('$name stores a command-specific lifetime on normal emojis', ({ path: scriptPath }) => {
+    const { context } = loadOverlayScript(scriptPath);
+    context.initPhysics();
+
+    const emoji = context.spawnEmoji(
+      'paw',
+      0.5,
+      0.5,
+      60,
+      null,
+      null,
+      null,
+      'command',
+      false,
+      12000
+    );
+
+    expect(emoji.lifetimeMs).toBe(12000);
+  });
+
+  test.each(scripts)('$name carries command lifetime through its rate-limit queue', ({ path: scriptPath }) => {
+    const { source } = loadOverlayScript(scriptPath);
+    const queueStart = source.indexOf('rateLimitQueue.push({');
+    const queueEnd = source.indexOf('});', queueStart);
+    const drainStart = source.indexOf('const emojiData = rateLimitQueue.shift();');
+    const drainEnd = source.indexOf('emojisSpawnedThisSecond++', drainStart);
+
+    expect(queueStart).toBeGreaterThan(-1);
+    expect(source.slice(queueStart, queueEnd)).toContain('lifetimeMs');
+    expect(drainStart).toBeGreaterThan(-1);
+    expect(source.slice(drainStart, drainEnd)).toContain('emojiData.lifetimeMs');
+    expect(source).toContain('emoji.despawnMs || emoji.lifetimeMs || config.emoji_lifetime_ms');
+  });
+
+  test('standard overlay carries command lifetime through its spawn queue', () => {
+    const { source } = loadOverlayScript('public/js/emoji-rain-engine.js');
+    const queueStart = source.indexOf('spawnQueue.push({');
+    const queueEnd = source.indexOf('});', queueStart);
+
+    expect(queueStart).toBeGreaterThan(-1);
+    expect(source.slice(queueStart, queueEnd)).toContain('lifetimeMs');
+    expect(source).toMatch(/function processSpawn\([^)]*lifetimeMs[^)]*\)/);
+    expect(source).toContain('event.spawnKind, event.lifetimeMs');
+  });
+
   test.each(scripts)('$name keeps large top-spawn batches close enough to enter the viewport', async ({ path: scriptPath, spawnBatch }) => {
     const { context, circleBodies } = loadOverlayScript(scriptPath);
 
