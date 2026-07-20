@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.36] - 2026-07-20
+
+### Added
+
+- **Pride Special Rockets**: Added rainbow and trans-color special rocket trails and finale accents.
+- **Schnorrbecher Gift Rain**: Repeated gifts now fall individually through the jar opening and use the bundled glass impact sound.
+
+### Fixed
+
+- **Boykisser Finale**: Rebuilt the small and Hero Boykisser effects as recognizable particle rocket formations and integrated the Superfan finale with the current UI and renderer protocol.
+- **Fireworks Framing and Runtime**: Preserved rocket-tip headroom, prevented clipped star and ring shells, hardened command admission and GPU resource handling, and retained adaptive fallbacks for older overlays.
+- **Emoji Rain Commands**: Added dynamic command editing and command-specific despawn timing with reliable UI refresh behavior.
+- **Game and Dashboard Polish**: Hardened Coinbattle pyramid gameplay, restored custom Connect Four audio handling, retried rejected Goal finales, clarified Music Bot health state, and removed the obsolete Viewer Profiles dashboard surface.
+
+### Changed
+
+- **Localized Guides**: Regenerated affected plugin guides in German, English, Spanish, and French.
+- **Release Metadata**: Synchronized package, launcher, download, locale, website, and release-test version surfaces to LTTH 1.3.36.
+
 ## [1.3.35] - 2026-07-19
 
 ### Added

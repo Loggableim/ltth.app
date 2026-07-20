@@ -11,6 +11,8 @@ describe('Schnorrbecher OBS overlay markup', () => {
 
     expect(html).toContain('id="coin-jar-scene"');
     expect(html).toContain('id="coin-jar"');
+    expect(html).toContain('id="coin-jar-impact-sound"');
+    expect(html).toContain('/plugins/schnorrbecher/assets/sounds/adriantnt_glass.mp3');
     expect(html).toContain('src="/js/matter.min.js"');
     expect(html).toContain('src="/socket.io/socket.io.js"');
     expect(css).toContain('background: transparent');

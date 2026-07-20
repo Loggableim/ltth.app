@@ -5,7 +5,6 @@ const {
   calculateJarInteriorBounds,
   calculateJarContainmentPosition,
   calculateGiftSize,
-  calculateJarFillRatio,
   isOutsideJarInterior,
   calculateSpillBounds,
   planVisualCoins,
@@ -201,27 +200,68 @@ describe('CoinJarOverlay planning', () => {
     expect(overlay._createSprite({ giftName: 'Missing catalog art' }, 64, 0)).toBeNull();
   });
 
-  test('uses the visible glass capacity instead of the global 3,000-icon safety limit', () => {
+  test('spawns every gift directly above the opening even when an overflow flag is supplied', () => {
     const renderBounds = calculateJarBounds(
       { width: 1920, height: 1080 },
       { jarWidth: 230, jarHeight: 290, jarX: 90, jarY: 92 }
     );
     const physicsBounds = calculateJarPhysicsBounds(renderBounds, 'mason');
-    const bodies = Array.from({ length: 100 }, () => ({
-      circleRadius: 8,
-      plugin: { overflow: false }
-    }));
+    const body = { position: {}, velocity: {}, plugin: {} };
+    const Bodies = { circle: jest.fn(() => body) };
     const overlay = Object.create(CoinJarOverlay.prototype);
-    overlay.bodies = bodies;
+    overlay.engine = { world: {} };
+    overlay.Matter = {
+      Bodies,
+      Body: { setVelocity: jest.fn(), setAngularVelocity: jest.fn() },
+      Composite: { add: jest.fn() }
+    };
+    overlay.bounds = renderBounds;
     overlay.physicsBounds = physicsBounds;
-    overlay.config = { maxPhysicalIcons: 3000 };
+    overlay.config = { iconScale: 1, maxPhysicalIcons: 3000 };
+    overlay.random = () => 0.5;
+    overlay.bodies = [];
+    overlay._createSprite = jest.fn(() => ({ remove: jest.fn() }));
 
-    expect(calculateJarFillRatio(bodies, physicsBounds, 16)).toBeGreaterThanOrEqual(1);
-    expect(overlay._isJarFull(16)).toBe(true);
-    expect(overlay._isJarFull(128)).toBe(true);
+    overlay._createCoin({
+      totalValue: 1,
+      giftImage: 'https://catalog.example/rose.png'
+    }, { overflow: true });
+
+    const [x, y] = Bodies.circle.mock.calls[0];
+    expect(x).toBeGreaterThanOrEqual(physicsBounds.opening.left);
+    expect(x).toBeLessThanOrEqual(physicsBounds.opening.right);
+    expect(y).toBeLessThan(physicsBounds.opening.y);
+    expect(body.plugin.overflow).toBe(false);
   });
 
-  test('rechecks glass capacity for every queued gift icon before it spawns', () => {
+  test('does not force a naturally escaped gift back into the glass', () => {
+    const renderBounds = calculateJarBounds(
+      { width: 1920, height: 1080 },
+      { jarWidth: 480, jarHeight: 600, jarX: 50, jarY: 82 }
+    );
+    const physicsBounds = calculateJarPhysicsBounds(renderBounds, 'mason');
+    const Body = { setPosition: jest.fn(), setVelocity: jest.fn() };
+    const overlay = Object.create(CoinJarOverlay.prototype);
+    overlay.bounds = renderBounds;
+    overlay.physicsBounds = physicsBounds;
+    overlay.Matter = { Body };
+    overlay._viewport = () => ({ width: 1920, height: 1080 });
+    overlay._removeBody = jest.fn();
+    overlay._renderDebug = jest.fn();
+    overlay.bodies = [{
+      position: { x: physicsBounds.opening.left - 40, y: physicsBounds.opening.y + 100 },
+      velocity: { x: 0, y: 0 },
+      circleRadius: 20,
+      angle: 0,
+      plugin: { overflow: false, element: null }
+    }];
+
+    overlay._updateBodies();
+
+    expect(Body.setPosition).not.toHaveBeenCalled();
+  });
+
+  test('queues a gift from the opening even when the jar is full', () => {
     const overlay = Object.create(CoinJarOverlay.prototype);
     const payload = { totalValue: 1, giftImage: 'https://catalog.example/rose.png' };
     let scheduled;
@@ -241,6 +281,46 @@ describe('CoinJarOverlay planning', () => {
     overlay._scheduleSpawn();
     scheduled();
 
-    expect(overlay._createCoin).toHaveBeenCalledWith(payload, expect.objectContaining({ overflow: true }));
+    expect(overlay._createCoin).toHaveBeenCalledWith(payload, expect.objectContaining({ overflow: false }));
+    expect(overlay._isJarFull).not.toHaveBeenCalled();
+  });
+
+  test('continues compacting old tier-two gifts so new gifts can still spawn at the object limit', () => {
+    const overlay = Object.create(CoinJarOverlay.prototype);
+    overlay.bodies = Array.from({ length: 10 }, (_, index) => ({
+      position: { x: index * 10, y: index * 10 },
+      plugin: {
+        tier: 2,
+        overflow: false,
+        giftImage: 'https://catalog.example/rose.png',
+        giftName: 'Rose'
+      }
+    }));
+    overlay._removeBody = jest.fn(body => {
+      overlay.bodies = overlay.bodies.filter(candidate => candidate !== body);
+    });
+    overlay._createCoin = jest.fn();
+
+    expect(overlay._compactBodies()).toBe(true);
+    expect(overlay._createCoin).toHaveBeenCalledWith(expect.objectContaining({
+      giftImage: 'https://catalog.example/rose.png'
+    }), expect.objectContaining({ tier: 3, overflow: false }));
+  });
+
+  test('plays the bundled glass impact sound at the configured volume', () => {
+    const play = jest.fn(() => Promise.resolve());
+    const cloneNode = jest.fn(() => ({ volume: 0, play }));
+    const overlay = Object.create(CoinJarOverlay.prototype);
+    overlay.config = { soundEnabled: true, soundVolume: 0.35 };
+    overlay.elements = { impactSound: { cloneNode } };
+    overlay.lastSoundAt = 0;
+    const dateNow = jest.spyOn(Date, 'now').mockReturnValue(1000);
+
+    overlay._playImpactSound();
+
+    expect(cloneNode).toHaveBeenCalledWith(true);
+    expect(play).toHaveBeenCalledTimes(1);
+    expect(cloneNode.mock.results[0].value.volume).toBe(0.35);
+    dateNow.mockRestore();
   });
 });
