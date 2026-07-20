@@ -310,4 +310,3 @@ Open the OBS URL at 16:9, wait for spawns to settle, and inspect the rendered DO
 - [ ] **Step 4: Preserve runtime state**
 
 Run \`git status --short\`. Do not stage or commit runtime files produced by verification.
-
