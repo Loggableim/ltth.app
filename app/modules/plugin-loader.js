@@ -192,13 +192,18 @@ class PluginAPI {
     /**
      * Registriert eine Flow-Action für Automatisierungen
      * @param {string} actionName - Name der Action (z.B. 'goals.set_value')
-     * @param {function} handler - Action-Handler-Funktion
+     * @param {Function|Object} action - Action handler or executable descriptor
      */
-    registerFlowAction(actionName, handler) {
+    registerFlowAction(actionName, action) {
         try {
+            const descriptor = typeof action === 'function' ? null : action;
+            const execute = typeof action === 'function' ? action : action?.execute;
+            if (typeof execute !== 'function') {
+                throw new TypeError('Flow action must be a function or a descriptor with execute(params)');
+            }
             const wrappedHandler = async (params) => {
                 try {
-                    return await handler(params);
+                    return await execute(params);
                 } catch (error) {
                     this.log(`Flow action error in ${actionName}: ${error.message}`, 'error');
                     return {
@@ -209,8 +214,10 @@ class PluginAPI {
             };
 
             this.registeredFlowActions.push({
+                ...(descriptor || {}),
                 actionName,
                 handler: wrappedHandler,
+                execute: wrappedHandler,
                 pluginId: this.pluginId
             });
             this.log(`Registered flow action: ${actionName}`);
@@ -1849,3 +1856,4 @@ class PluginLoader extends EventEmitter {
 }
 
 module.exports = PluginLoader;
+module.exports.PluginAPI = PluginAPI;

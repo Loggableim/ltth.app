@@ -530,7 +530,7 @@ class GoalsPlugin extends EventEmitter {
                 const style = normalizeGoalFinaleStyle(goal.firework_encounter_mode);
                 const length = normalizeGoalFinaleLength(goal.firework_finale_length);
                 const eventId = `goal:${milestoneKey}`;
-                const result = fireworks.triggerFinale({ intensity, style, length, eventId });
+                const result = fireworks.triggerFinale({ source: 'goal', intensity, style, length, eventId });
                 if (result && result.accepted === false) {
                     this.fireworkFinaleMilestones.delete(milestoneKey);
                     this.api.log(

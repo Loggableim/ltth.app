@@ -237,6 +237,7 @@ describe('Goals firework finale integration', () => {
     machine.onUpdateAnimationEnd();
 
     expect(webgpuFireworks.triggerFinale).toHaveBeenCalledWith({
+      source: 'goal',
       intensity: 4,
       style: 'inherit',
       length: 'inherit',
@@ -318,6 +319,7 @@ describe('Goals firework finale integration', () => {
 
     expect(plugin.triggerGoalFireworkFinale(goal.id)).toBe(true);
     expect(webgpuFireworks.triggerFinale).toHaveBeenCalledWith({
+      source: 'goal',
       intensity: 6,
       style: 'sky-ballet',
       length: 'long',
@@ -447,6 +449,7 @@ describe('Goals firework finale integration', () => {
     plugin.triggerGoalFireworkFinale(legacyGoal.id);
 
     expect(webgpuFireworks.triggerFinale).toHaveBeenCalledWith({
+      source: 'goal',
       intensity: 2.5,
       style: 'inherit',
       length: 'inherit',

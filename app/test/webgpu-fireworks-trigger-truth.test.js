@@ -286,5 +286,91 @@ describe('WebGPU Fireworks trigger truth contract', () => {
       intensity: 2,
       colors: '#ff0000, #00ff00'
     })).resolves.toBe(result);
+
+    const finaleResult = { accepted: false, reason: 'renderer-not-ready' };
+    plugin.triggerFinale = jest.fn(() => finaleResult);
+    const finaleAction = api.flowActions.get('webgpu_fireworks_finale');
+    await expect(finaleAction.execute({ intensity: 3, duration: 10_000 }))
+      .resolves.toBe(finaleResult);
+  });
+
+  test('rejects object-form Goal finales when goal finales are disabled', () => {
+    const { api, plugin } = createPlugin({ enabled: true, goalFinaleEnabled: false });
+
+    const result = plugin.triggerFinale({
+      source: 'goal',
+      intensity: 4,
+      style: 'classic-crescendo',
+      length: 'short',
+      eventId: 'goal:disabled:100'
+    });
+
+    expect(result).toEqual({
+      accepted: false,
+      reason: 'goal-finale-disabled',
+      code: 'GOAL_FINALE_DISABLED'
+    });
+    expect(api.emit).not.toHaveBeenCalledWith('webgpu-fireworks:finale', expect.anything());
+  });
+
+  test('allows an explicit Goal test bypass without enabling the stored switch', () => {
+    const { plugin } = createPlugin({ enabled: true, goalFinaleEnabled: false });
+    plugin.dispatchFinalePayload = jest.fn(payload => payload);
+
+    const result = plugin.triggerFinale({
+      source: 'goal',
+      bypassEnabled: true,
+      style: 'classic-crescendo',
+      length: 'short',
+      eventId: 'goal:test-bypass'
+    });
+
+    expect(result).toMatchObject({ accepted: true, id: 'goal:test-bypass' });
+  });
+
+  test('keeps follower delay zero and cancels every follower callback on destroy', async () => {
+    const { api, plugin } = createPlugin({
+      enabled: true,
+      followerFireworksEnabled: true,
+      followerShowAnimation: true,
+      followerAnimationDelay: 0,
+      followerRocketCount: 3
+    });
+    plugin.triggerFirework = jest.fn(() => ({ accepted: true, reason: 'submitted' }));
+
+    const result = plugin.handleFollowerEvent({ uniqueId: 'zero_delay' });
+
+    expect(result).toEqual({ accepted: true, reason: 'scheduled', rocketCount: 3 });
+    expect(plugin.followerTimers.size).toBe(4);
+    jest.advanceTimersByTime(0);
+    expect(api.emit).toHaveBeenCalledWith(
+      'webgpu-fireworks:follower-animation',
+      expect.objectContaining({ username: 'zero_delay' })
+    );
+    expect(plugin.triggerFirework).toHaveBeenCalledTimes(1);
+    await plugin.destroy();
+    jest.runOnlyPendingTimers();
+    expect(plugin.triggerFirework).toHaveBeenCalledTimes(1);
+    expect(plugin.followerTimers.size).toBe(0);
+  });
+
+  test.each([
+    [{}, { accepted: false, reason: 'disabled' }, 409],
+    [undefined, { accepted: false, reason: 'renderer-not-ready' }, 503]
+  ])('follower test route maps handler result for body %p', (body, result, status) => {
+    const { api, plugin } = createPlugin();
+    plugin.handleFollowerEvent = jest.fn(() => result);
+    plugin.registerRoutes();
+    const response = createResponse();
+
+    api.routes.get('post:/api/webgpu-fireworks/test-follower')({ body }, response);
+
+    expect(plugin.handleFollowerEvent).toHaveBeenCalledWith({
+      uniqueId: 'TestFollower',
+      username: 'TestFollower',
+      profilePictureUrl: null
+    }, { bypassEnabled: true });
+    expect(response.statusCode).toBe(status);
+    expect(response.body).toEqual({ success: false, accepted: false, reason: result.reason });
   });
 });

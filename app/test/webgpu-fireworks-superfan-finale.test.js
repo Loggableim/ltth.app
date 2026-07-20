@@ -1267,10 +1267,10 @@ describe('WebGPU Superfan finale foundation', () => {
     try {
       const { api, plugin } = createPlugin();
       plugin.scheduleFollowerAnimation({ username: 'Later' }, 1000);
-      expect(plugin.notificationTimers.size).toBe(1);
+      expect(plugin.followerTimers.size).toBe(1);
       await plugin.destroy();
       jest.runAllTimers();
-      expect(plugin.notificationTimers.size).toBe(0);
+      expect(plugin.followerTimers.size).toBe(0);
       expect(api.emit).not.toHaveBeenCalledWith('webgpu-fireworks:follower-animation', expect.anything());
     } finally {
       jest.useRealTimers();
