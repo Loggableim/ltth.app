@@ -55,6 +55,7 @@
     mason: Object.freeze({ opening: [0.23, 0.77, 0.12], floor: [0.20, 0.80, 0.83] }),
     arcade: Object.freeze({ opening: [0.22, 0.78, 0.20], floor: [0.18, 0.82, 0.785] })
   });
+  const JAR_FILL_DENSITY = 0.55;
 
   function clamp(value, minimum, maximum) {
     return Math.max(minimum, Math.min(maximum, value));
@@ -147,6 +148,31 @@
       left: opening.left + (floor.left - opening.left) * progress,
       right: opening.right + (floor.right - opening.right) * progress
     };
+  }
+
+  function calculateJarFillRatio(bodies, physicsBounds, incomingSize = 0) {
+    const opening = physicsBounds?.opening;
+    const floor = physicsBounds?.floor;
+    if (!opening || !floor) return 0;
+    const interiorHeight = Math.max(1, floor.y - opening.y);
+    const interiorArea = Math.max(1, (
+      Math.max(1, opening.right - opening.left) + Math.max(1, floor.right - floor.left)
+    ) * interiorHeight / 2);
+    const occupiedArea = (Array.isArray(bodies) ? bodies : [])
+      .filter(body => body?.plugin?.overflow !== true)
+      .reduce((area, body) => {
+        const radius = Math.max(0, finiteNumber(body.circleRadius, 0));
+        return area + Math.PI * radius * radius;
+      }, 0);
+    const incomingRadius = Math.max(0, finiteNumber(incomingSize, 0)) / 2;
+    return (occupiedArea + Math.PI * incomingRadius * incomingRadius) / (interiorArea * JAR_FILL_DENSITY);
+  }
+
+  function shouldOverflowJar(bodies, physicsBounds, incomingSize = 0) {
+    const openingWidth = Math.max(0, finiteNumber(physicsBounds?.opening?.right, 0) - finiteNumber(physicsBounds?.opening?.left, 0));
+    const safeIncomingSize = Math.max(0, finiteNumber(incomingSize, 0));
+    const cannotPassOpening = safeIncomingSize > 0 && safeIncomingSize >= Math.max(1, openingWidth - 12);
+    return cannotPassOpening || calculateJarFillRatio(bodies, physicsBounds, safeIncomingSize) >= 1;
   }
 
   function calculateJarContainmentPosition(position, radius, physicsBounds) {
@@ -396,14 +422,19 @@
       for (let index = 0; index < count; index += 1) {
         const gift = recentGifts[index % Math.max(1, recentGifts.length)];
         if (!gift) break;
+        const totalValue = Math.max(1, finiteNumber(payload.totalCoinValue, 1) / Math.max(1, count));
         this._createCoin({
-          totalValue: Math.max(1, finiteNumber(payload.totalCoinValue, 1) / Math.max(1, count)),
+          totalValue,
           giftId: gift.giftId,
           giftName: gift.giftName,
           giftImage: gift.giftImage,
           visualCoins: 1,
           generation: this.generation
-        }, { settled: true, overflow: false, tier: index > 180 ? 1 : 0 });
+        }, {
+          settled: true,
+          overflow: this._isJarFull(calculateGiftSize(totalValue, this.config)),
+          tier: index > 180 ? 1 : 0
+        });
       }
       this._emitTelemetry();
     }
@@ -419,7 +450,7 @@
       this._compactFor(requested);
       const plan = planVisualCoins(payload, this.config, this.bodies.length);
       const count = Math.min(requested, Math.max(0, this.config.maxPhysicalIcons - this.bodies.length));
-      const overflow = plan.overflow || this._isJarFull();
+      const overflow = plan.overflow || this._isJarFull(calculateGiftSize(payload.totalValue, this.config));
       for (let index = 0; index < count; index += 1) {
         this.queue.push({ payload, generation: this.generation, overflow, tier: 0 });
       }
@@ -461,9 +492,8 @@
       return true;
     }
 
-    _isJarFull() {
-      const inJar = this.bodies.filter(body => !body.plugin?.overflow).length;
-      return inJar >= Math.max(24, Math.floor(this.config.maxPhysicalIcons * 0.8));
+    _isJarFull(incomingSize = 0) {
+      return shouldOverflowJar(this.bodies, this.physicsBounds, incomingSize);
     }
 
     _scheduleSpawn() {
@@ -472,7 +502,10 @@
       const delay = Math.round((40 + this.random() * 80) * this.config.spawnMultiplier);
       this.spawnTimer = this.setTimeoutFn(() => {
         this.spawnTimer = null;
-        if (item.generation === this.generation) this._createCoin(item.payload, item);
+        if (item.generation === this.generation) {
+          const overflow = item.overflow || this._isJarFull(calculateGiftSize(item.payload.totalValue, this.config));
+          this._createCoin(item.payload, { ...item, overflow });
+        }
         this._emitTelemetry();
         this._scheduleSpawn();
       }, delay);
@@ -693,6 +726,7 @@
     calculateJarInteriorBounds,
     calculateJarContainmentPosition,
     calculateGiftSize,
+    calculateJarFillRatio,
     isOutsideJarInterior,
     calculateSpillBounds,
     planVisualCoins,

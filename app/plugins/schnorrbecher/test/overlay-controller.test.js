@@ -5,6 +5,7 @@ const {
   calculateJarInteriorBounds,
   calculateJarContainmentPosition,
   calculateGiftSize,
+  calculateJarFillRatio,
   isOutsideJarInterior,
   calculateSpillBounds,
   planVisualCoins,
@@ -198,5 +199,48 @@ describe('CoinJarOverlay planning', () => {
     expect(sprite.className).not.toContain('coin-sprite');
     expect(sprite.querySelector('img').src).toBe('https://catalog.example/rose.png');
     expect(overlay._createSprite({ giftName: 'Missing catalog art' }, 64, 0)).toBeNull();
+  });
+
+  test('uses the visible glass capacity instead of the global 3,000-icon safety limit', () => {
+    const renderBounds = calculateJarBounds(
+      { width: 1920, height: 1080 },
+      { jarWidth: 230, jarHeight: 290, jarX: 90, jarY: 92 }
+    );
+    const physicsBounds = calculateJarPhysicsBounds(renderBounds, 'mason');
+    const bodies = Array.from({ length: 100 }, () => ({
+      circleRadius: 8,
+      plugin: { overflow: false }
+    }));
+    const overlay = Object.create(CoinJarOverlay.prototype);
+    overlay.bodies = bodies;
+    overlay.physicsBounds = physicsBounds;
+    overlay.config = { maxPhysicalIcons: 3000 };
+
+    expect(calculateJarFillRatio(bodies, physicsBounds, 16)).toBeGreaterThanOrEqual(1);
+    expect(overlay._isJarFull(16)).toBe(true);
+    expect(overlay._isJarFull(128)).toBe(true);
+  });
+
+  test('rechecks glass capacity for every queued gift icon before it spawns', () => {
+    const overlay = Object.create(CoinJarOverlay.prototype);
+    const payload = { totalValue: 1, giftImage: 'https://catalog.example/rose.png' };
+    let scheduled;
+    overlay.generation = 0;
+    overlay.queue = [{ payload, generation: 0, overflow: false, tier: 0 }];
+    overlay.spawnTimer = null;
+    overlay.config = { spawnMultiplier: 1 };
+    overlay.random = () => 0;
+    overlay.setTimeoutFn = callback => {
+      scheduled = callback;
+      return 1;
+    };
+    overlay._isJarFull = jest.fn(() => true);
+    overlay._createCoin = jest.fn();
+    overlay._emitTelemetry = jest.fn();
+
+    overlay._scheduleSpawn();
+    scheduled();
+
+    expect(overlay._createCoin).toHaveBeenCalledWith(payload, expect.objectContaining({ overflow: true }));
   });
 });
