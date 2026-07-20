@@ -1587,7 +1587,7 @@
                 }
 
                 // Check lifetime
-                const lifetimeMs = emoji.despawnMs || config.emoji_lifetime_ms;
+                const lifetimeMs = emoji.despawnMs || emoji.lifetimeMs || config.emoji_lifetime_ms;
                 if (emoji.spawnTime && lifetimeMs > 0) {
                     const age = currentTime - emoji.spawnTime;
                     if (age > lifetimeMs && !emoji.fading) {
@@ -1640,7 +1640,8 @@
         }
 
         // Spawn emoji with enhanced effects
-        function spawnEmoji(emoji, x, y, size, username = null, profilePictureUrl = null, color = null, spawnKind = 'default', isBurst = false) {
+        function spawnEmoji(emoji, x, y, size, username = null, profilePictureUrl = null, color = null, spawnKind = 'default', isBurst = false, lifetimeMs = null) {
+            const normalizedLifetimeMs = Number(lifetimeMs);
             // Check for user-specific emoji (try multiple username formats)
             if (username) {
                 // Try exact match first
@@ -1789,6 +1790,9 @@
                 lastColorUpdate: performance.now(), // Track when color was last updated
                 spawnKind: spawnKind,
                 isBurst: isBurst,
+                lifetimeMs: Number.isFinite(normalizedLifetimeMs) && normalizedLifetimeMs > 0
+                    ? normalizedLifetimeMs
+                    : null,
                 stageScale: stageProfile.scale,
                 impactScale: 1,
                 visualProfile: stageProfile
@@ -1915,6 +1919,7 @@
             const color = data.color || null;
             const isBurst = Boolean(data.burst);
             const spawnKind = determineSpawnKind(data, isBurst);
+            const lifetimeMs = data.lifetimeMs;
 
             console.log(`🌧️ [OBS HUD SPAWN] count=${count}, emoji=${emoji}, username=${username}, color=${color}, profilePictureUrl=${profilePictureUrl ? 'present' : 'none'}`);
 
@@ -1940,7 +1945,8 @@
                         profilePictureUrl,
                         color,
                         spawnKind,
-                        isBurst
+                        isBurst,
+                        lifetimeMs
                     });
                 }
                 
@@ -1952,7 +1958,7 @@
                     const offsetX = calculateOffsetX(x); // BUG 12 fix: use calculateOffsetX with clamping
                     const offsetY = calculateOffsetY(y, i, size);
 
-                    spawnEmoji(emoji, offsetX, offsetY, size, username, profilePictureUrl, color, spawnKind, isBurst);
+                    spawnEmoji(emoji, offsetX, offsetY, size, username, profilePictureUrl, color, spawnKind, isBurst, lifetimeMs);
                 }
 
                 console.log(`🌧️ Spawned ${count}x ${emoji} at (${x.toFixed(2)}, ${y})${username ? ' for ' + username : ''}`);
@@ -2001,7 +2007,8 @@
                     emojiData.profilePictureUrl,
                     emojiData.color,
                     emojiData.spawnKind,
-                    emojiData.isBurst
+                    emojiData.isBurst,
+                    emojiData.lifetimeMs
                 );
                 emojisSpawnedThisSecond++;
             }
