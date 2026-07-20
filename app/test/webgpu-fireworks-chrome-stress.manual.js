@@ -143,11 +143,23 @@ function assertAtlasResult(result) {
   if (!result || result.skipped === true) throw new Error('atlas case is missing or skipped');
   if (result.uniqueUrls !== 1000) throw new Error(`atlas uniqueUrls must be 1000, got ${result.uniqueUrls}`);
   if (result.maxLiveSlots !== 63) throw new Error(`atlas maxLiveSlots must be 63, got ${result.maxLiveSlots}`);
-  if (!(result.fallbackWhilePinned > 0)) throw new Error('atlas did not prove pinned fallback behavior');
-  if (!(result.reusedSlots > 0)) throw new Error('atlas did not prove released-slot reuse');
-  if (!(result.releasedPins > 0)) throw new Error('atlas did not render long enough to release pins');
-  if (!(result.centerSamples > 0 && result.edgeSamples > 0)) {
-    throw new Error('atlas did not sample both tile centers and inner edges');
+  const expectedReusedSlots = result.uniqueUrls - result.maxLiveSlots;
+  if (result.fallbackWhilePinned !== 1) {
+    throw new Error(`atlas fallbackWhilePinned must be exactly 1, got ${result.fallbackWhilePinned}`);
+  }
+  if (result.reusedSlots !== expectedReusedSlots) {
+    throw new Error(`atlas reusedSlots must be ${expectedReusedSlots}, got ${result.reusedSlots}`);
+  }
+  if (result.centerSamples !== result.reusedSlots) {
+    throw new Error(`atlas centerSamples must equal reusedSlots, got ${result.centerSamples}`);
+  }
+  if (result.edgeSamples !== result.reusedSlots * 4) {
+    throw new Error(`atlas edgeSamples must equal reusedSlots * 4, got ${result.edgeSamples}`);
+  }
+  const releasePasses = 1 + Math.ceil(result.reusedSlots / result.maxLiveSlots);
+  const expectedReleasedPins = result.maxLiveSlots * releasePasses;
+  if (result.releasedPins !== expectedReleasedPins) {
+    throw new Error(`atlas releasedPins must be ${expectedReleasedPins}, got ${result.releasedPins}`);
   }
   if (result.neighborBleedPixels !== 0) {
     throw new Error(`atlas detected ${result.neighborBleedPixels} neighbor-contaminated samples`);

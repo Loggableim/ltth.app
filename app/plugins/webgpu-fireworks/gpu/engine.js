@@ -1900,36 +1900,38 @@ class WebGPUFireworksEngine {
         const result = { giftTexture: 0, avatarTexture: 0, avatarChance: Math.max(0, Math.min(1, Number(data.avatarParticleChance ?? this.config.avatarParticleChance ?? 0.3))) };
         if (data.giftImage) {
             let image = null;
+            let ownsImage = false;
             try {
                 const source = await this.loadImage(data.giftImage);
                 if (source) {
-                    image = source.width || source.naturalWidth || source.videoWidth
-                        ? source
-                        : await this._decodeImageSource(source);
+                    const decoded = this._decodeImageSource(source);
+                    image = decoded && typeof decoded.then === 'function' ? await decoded : decoded;
                     if (!image) throw new Error('image decode returned no drawable');
+                    ownsImage = image !== source;
                     result.giftTexture = await this.renderer.uploadImage(`gift:${data.giftImage}`, image);
                 }
             } catch (error) {
                 this._warnImageFailure(data.giftImage, error);
             } finally {
-                image?.close?.();
+                if (ownsImage) image?.close?.();
             }
         }
         if (data.userAvatar) {
             let image = null;
+            let ownsImage = false;
             try {
                 const source = await this.loadImage(data.userAvatar);
                 if (source) {
-                    image = source.width || source.naturalWidth || source.videoWidth
-                        ? source
-                        : await this._decodeImageSource(source);
+                    const decoded = this._decodeImageSource(source);
+                    image = decoded && typeof decoded.then === 'function' ? await decoded : decoded;
                     if (!image) throw new Error('image decode returned no drawable');
+                    ownsImage = image !== source;
                     result.avatarTexture = await this.renderer.uploadImage(`avatar:${data.userAvatar}`, image);
                 }
             } catch (error) {
                 this._warnImageFailure(data.userAvatar, error);
             } finally {
-                image?.close?.();
+                if (ownsImage) image?.close?.();
             }
         }
         return result;
@@ -2020,11 +2022,9 @@ class WebGPUFireworksEngine {
     }
 
     _decodeImageSource(source) {
+        if (typeof createImageBitmap === 'function') return createImageBitmap(source);
         if (source && (source.width || source.naturalWidth || source.videoWidth)) return source;
-        if (typeof createImageBitmap !== 'function') {
-            throw new Error('createImageBitmap is unavailable for image decoding');
-        }
-        return createImageBitmap(source);
+        throw new Error('createImageBitmap is unavailable for image decoding');
     }
 
     processExplosion(explosion, plan = null, plannedAt = performance.now(), actualAt = performance.now()) {

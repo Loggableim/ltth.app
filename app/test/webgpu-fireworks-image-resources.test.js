@@ -1,6 +1,7 @@
 'use strict';
 
 const {
+  createDeferred,
   createFakeGpu,
   makeRenderer,
   restoreGpuGlobals,
@@ -149,5 +150,128 @@ describe('WebGPU Fireworks image resource lifecycle', () => {
     const particleShader = gpu.shaderCode('fireworks-particle-wgsl');
     expect(particleShader).toContain('textureSampleLevel(atlasTexture, atlasSampler, atlasUv, 0.0)');
     expect(particleShader).not.toContain('textureSampleGrad(atlasTexture');
+  });
+
+  test('does not roll back a successful upload when an earlier upload fails late', async () => {
+    const renderer = makeRenderer(createFakeGpu());
+    await renderer.init();
+    const firstCopy = createDeferred();
+    renderer._writeAtlasImage = jest.fn((slot, key) => (
+      key === 'first' ? firstCopy.promise : Promise.resolve()
+    ));
+
+    const firstUpload = renderer.uploadImage('first', { key: 'first' });
+    await Promise.resolve();
+    const secondIndex = await renderer.uploadImage('second', { key: 'second' });
+    const firstRejected = expect(firstUpload).rejects.toThrow('first copy failed');
+    firstCopy.reject(new Error('first copy failed'));
+    await firstRejected;
+
+    expect(renderer.atlasEntries.get('second').textureIndex).toBe(secondIndex);
+    expect(renderer.atlasSlotOwners[secondIndex - 1]).toBe('second');
+  });
+
+  test('shares a pending same-key upload without exposing its index before the copy completes', async () => {
+    const renderer = makeRenderer(createFakeGpu());
+    await renderer.init();
+    const copy = createDeferred();
+    renderer._writeAtlasImage = jest.fn(() => copy.promise);
+
+    const first = renderer.uploadImage('shared', { key: 'shared-a' });
+    await Promise.resolve();
+    let secondSettled = false;
+    const second = renderer.uploadImage('shared', { key: 'shared-b' })
+      .then(value => {
+        secondSettled = true;
+        return value;
+      });
+    await Promise.resolve();
+
+    expect(secondSettled).toBe(false);
+    expect(renderer._writeAtlasImage).toHaveBeenCalledTimes(1);
+
+    copy.resolve();
+    await expect(second).resolves.toBe(await first);
+  });
+
+  test('ignores an old upload completion after atlas recovery resets ownership', async () => {
+    const renderer = makeRenderer(createFakeGpu());
+    await renderer.init();
+    const copy = createDeferred();
+    renderer._writeAtlasImage = jest.fn(() => copy.promise);
+
+    const oldUpload = renderer.uploadImage('old', { key: 'old' });
+    await Promise.resolve();
+    await renderer._initializeAtlas();
+    copy.resolve();
+
+    await expect(oldUpload).resolves.toBe(0);
+    expect(renderer.atlasEntries.size).toBe(0);
+    expect(renderer.atlasSlotOwners.slice(1).every(owner => owner === null)).toBe(true);
+  });
+
+  test('keeps never-used uploaded slots pinned under later atlas pressure', async () => {
+    let nowMs = 1_000;
+    const renderer = makeRenderer(createFakeGpu(), { now: () => nowMs });
+    await renderer.init();
+    const first = await renderer.uploadImage('never-used-0', { key: 'never-used-0' });
+    for (let index = 1; index < 63; index += 1) {
+      await renderer.uploadImage(`never-used-${index}`, { key: `never-used-${index}` });
+    }
+    nowMs += 60_000;
+
+    const overflow = await renderer.uploadImage('pressure', { key: 'pressure' });
+
+    expect(overflow).toBe(0);
+    expect(renderer.atlasEntries.get('never-used-0').textureIndex).toBe(first);
+    expect(renderer.atlasEntries.has('pressure')).toBe(false);
+  });
+
+  test('recycles an awaiting slot only after first use is marked and its deadline expires', async () => {
+    let nowMs = 1_000;
+    const renderer = makeRenderer(createFakeGpu(), { now: () => nowMs });
+    await renderer.init();
+    const first = await renderer.uploadImage('released-0', { key: 'released-0' });
+    for (let index = 1; index < 63; index += 1) {
+      await renderer.uploadImage(`awaiting-${index}`, { key: `awaiting-${index}` });
+    }
+    nowMs += 60_000;
+    renderer._markAtlasTextureUsed(first, { nowMs, visibleUntilMs: nowMs + 10 });
+    nowMs += 11;
+
+    const reused = await renderer.uploadImage('after-first-use', { key: 'after-first-use' });
+
+    expect(reused).toBe(first);
+    expect(renderer.atlasEntries.has('released-0')).toBe(false);
+    expect(renderer.atlasEntries.has('after-first-use')).toBe(true);
+  });
+
+  test('decodes a fresh owned drawable for each cached source use', async () => {
+    const source = { width: 8, height: 8, close: jest.fn() };
+    const drawables = [
+      { id: 'drawable-1', close: jest.fn() },
+      { id: 'drawable-2', close: jest.fn() }
+    ];
+    const engine = Object.create(WebGPUFireworksEngine.prototype);
+    engine.renderer = { uploadImage: jest.fn().mockResolvedValue(2) };
+    engine.config = {};
+    engine.imageCache = new Map();
+    engine.imageCacheLimit = 64;
+    engine.imageLoadTimeoutMs = 100;
+    engine._fetchImageSource = jest.fn().mockResolvedValue(source);
+    engine._decodeImageSource = jest.fn()
+      .mockResolvedValueOnce(drawables[0])
+      .mockResolvedValueOnce(drawables[1]);
+
+    await engine.prepareImages({ giftImage: '/cached-source.png' });
+    await engine.prepareImages({ giftImage: '/cached-source.png' });
+
+    expect(engine._fetchImageSource).toHaveBeenCalledTimes(1);
+    expect(engine._decodeImageSource).toHaveBeenNthCalledWith(1, source);
+    expect(engine._decodeImageSource).toHaveBeenNthCalledWith(2, source);
+    expect(engine.renderer.uploadImage.mock.calls.map(([, image]) => image)).toEqual(drawables);
+    expect(drawables[0].close).toHaveBeenCalledTimes(1);
+    expect(drawables[1].close).toHaveBeenCalledTimes(1);
+    expect(source.close).not.toHaveBeenCalled();
   });
 });
