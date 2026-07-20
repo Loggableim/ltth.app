@@ -218,6 +218,48 @@ describe('WebGPU Fireworks spawn command lane admission', () => {
     expect(nextGeneration).not.toBe(resized);
   });
 
+  test.each([
+    ['standard', 0, 8],
+    ['star', 3, 20],
+    ['ring', 4, 18],
+  ])('keeps a visible top guard for representative %s rockets', (name, shape, size) => {
+    const width = 1920;
+    const height = 1080;
+    const { engine } = makeEngine({ width, height });
+    const envelopeCommandId = `top-guard:${name}`;
+    const command = Object.freeze({
+      envelopeCommandId,
+      kind: 2,
+      shape,
+      flags: 0,
+      textureIndex: 0,
+      origin: Object.freeze({ x: width / 2, y: height * 0.16 }),
+      target: Object.freeze({ x: width / 2, y: height * 0.16 }),
+      size,
+      intensity: 1.5,
+      particleDuration: 1.57,
+      emissionDelay: 0,
+      gravity: 153,
+      drag: 0.985,
+      burstDepth: 0,
+    });
+    const manifest = Object.freeze({
+      correlationId: `top-guard:${name}`,
+      commands: Object.freeze([command]),
+    });
+    const fit = engine._getOrCreateCorrelationFit({
+      resourceGeneration: engine.resourceGeneration,
+      ownerToken: `standalone:top-guard:${name}`,
+      correlationId: manifest.correlationId,
+      envelopeCommandId,
+      correlationManifest: manifest,
+    }, 1000);
+    const expectedGuard = Math.min(48, Math.max(12, Math.min(width, height) * 0.025));
+
+    expect(fit.bounds.top).toBeGreaterThanOrEqual(expectedGuard - 1e-5);
+    expect(fit.bounds.bottom).toBeLessThanOrEqual(height - expectedGuard + 1e-5);
+  });
+
   test('keeps tuple cache identity when owners and correlations contain separators', () => {
     const { engine } = makeEngine({ width: 1080, height: 1920 });
     const makeEntry = (ownerToken, correlationId) => {

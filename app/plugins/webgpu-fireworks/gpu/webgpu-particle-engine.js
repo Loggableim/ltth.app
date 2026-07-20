@@ -32,6 +32,7 @@ const {
         SPLIT_REQUESTED: 1 << 1,
         STROBE: 1 << 3,
         ROCKET_AVATAR_HEAD: 1 << 14,
+        VECTOR_HERO: 1 << 7,
         V2_MARKER: 1 << 15
     }),
     ENVELOPE_PROFILES: Object.freeze({
@@ -44,9 +45,15 @@ const V2_TRAIL = ENVELOPE_FLAG_BITS.TRAIL;
 const buildBoykisserWgsl = BoykisserGeometry?.buildBoykisserWgsl || (() => {
     throw new Error('boykisser-geometry.js must load before WebGPUParticleEngine is used.');
 });
+const BOYKISSER_VECTOR = BoykisserGeometry?.BOYKISSER_VECTOR || Object.freeze({
+    aspectRatio: 2452 / 3259,
+    viewportFraction: 0.84
+});
 const V2_SPLIT_REQUESTED = ENVELOPE_FLAG_BITS.SPLIT_REQUESTED;
 const V2_STROBE = ENVELOPE_FLAG_BITS.STROBE;
+const V2_VECTOR_HERO = ENVELOPE_FLAG_BITS.VECTOR_HERO || (1 << 7);
 const V2_MARKER = ENVELOPE_FLAG_BITS.V2_MARKER;
+const V2_VECTOR_HERO_MIN_GLYPH_EXTENT = 0.5;
 const DEPTH_METADATA_MARKER = 1 << 3;
 const DEPTH_BUCKET_COUNT = 3;
 const ATLAS_SLOT_COUNT = 64;
@@ -1359,13 +1366,20 @@ class WebGPUParticleEngine {
         const renderHints = context.renderHints || {};
         const depthEnabled = renderHints.depthEnabled === true;
         const glyphScale = effectiveLayer.primitive === 'glyph' ? Number(renderHints.glyphScale) || 1 : 1;
+        const vectorHero = shape === V2_GLYPH_IDS.boykisser && effectiveLayer.core === true &&
+            Number(renderHints.glyphExtent) >= V2_VECTOR_HERO_MIN_GLYPH_EXTENT;
         const particleSize = effectiveLayer.size * 6 * scale;
-        const extentIntensity = effectiveLayer.primitive === 'glyph' && Number.isFinite(renderHints.glyphExtent)
+        const extentIntensity = !vectorHero && effectiveLayer.primitive === 'glyph' &&
+            Number.isFinite(renderHints.glyphExtent)
             ? this._v2GlyphExtentIntensity(effectiveLayer, renderHints, particleSize)
             : null;
-        const flags = V2_MARKER | (effectiveLayer.trail ? V2_TRAIL : 0) |
+        const flags = V2_MARKER | (vectorHero ? V2_VECTOR_HERO : 0) |
+            (!vectorHero && effectiveLayer.trail ? V2_TRAIL : 0) |
             (effectiveLayer.split ? V2_SPLIT_REQUESTED : 0) | (effectiveLayer.strobe ? V2_STROBE : 0) |
             ((splitQuality & 3) << 4) | ((materialRole & 15) << 8) | ((style & 3) << 12);
+        const vectorHeroSize = vectorHero
+            ? this._v2VectorHeroHalfHeight(depthEnabled ? Number(renderHints.burstDepth) : 0)
+            : null;
 
         return this._queueSpawnGroup([{
             ownerToken: context.ownerToken,
@@ -1381,25 +1395,29 @@ class WebGPUParticleEngine {
             origin: context.origin || context.position || { x: 0, y: 0 },
             target: context.target || context.origin || context.position || { x: 0, y: 0 },
             kind: 2,
-            count: effectiveLayer.density,
+            count: vectorHero ? 1 : effectiveLayer.density,
             shape,
             packedColors,
             colorCount: packedColors.length,
             flags,
-            intensity: extentIntensity ?? ((context.powerScale ?? 1) * scale * glyphScale),
+            intensity: vectorHero ? 0.1 : extentIntensity ?? ((context.powerScale ?? 1) * scale * glyphScale),
             particleDuration: effectiveLayer.lifetimeMs / 1000,
-            size: particleSize,
-            gravity: effectiveLayer.gravity * 105 * scale,
-            drag: effectiveLayer.drag,
+            size: vectorHero ? vectorHeroSize : particleSize,
+            gravity: vectorHero ? 0 : effectiveLayer.gravity * 105 * scale,
+            drag: vectorHero ? 1 : effectiveLayer.drag,
             secondary: false,
             seed: context.seed,
             effectId: context.effectId ?? effectiveLayer.id,
-            globalCount: effectiveLayer.density,
+            globalCount: vectorHero ? 1 : effectiveLayer.density,
             depthEnabled,
             launchDepth: depthEnabled ? Number(renderHints.launchDepth) : 0,
             burstDepth: depthEnabled ? Number(renderHints.burstDepth) : 0,
+            vectorAspectRatio: vectorHero ? BOYKISSER_VECTOR.aspectRatio : null,
             viewportResponsive: true,
-            viewportMaterialization: {
+            viewportMaterialization: vectorHero ? {
+                kind: 'v2-vector-hero',
+                aspectRatio: BOYKISSER_VECTOR.aspectRatio
+            } : {
                 kind: 'v2-layer',
                 authoredSize: Number(effectiveLayer.size),
                 authoredGravity: Number(effectiveLayer.gravity),
@@ -1557,6 +1575,21 @@ class WebGPUParticleEngine {
         return Math.max(0.75, Math.min(1.75, Math.min(this.logicalWidth, this.logicalHeight) / 1080));
     }
 
+    _v2VectorHeroHalfHeight(burstDepth, aspectRatio = BOYKISSER_VECTOR.aspectRatio) {
+        const safeAspectRatio = Math.max(0.1, Number(aspectRatio) || BOYKISSER_VECTOR.aspectRatio);
+        const projectedHalfHeight = Math.min(
+            this.logicalHeight,
+            this.logicalWidth / safeAspectRatio
+        ) * BOYKISSER_VECTOR.viewportFraction * 0.5;
+        const projection = ENVELOPE_PROFILES.projection;
+        const depth = Math.max(-1, Math.min(1, Number(burstDepth) || 0));
+        const perspective = projection.cameraDistance / Math.max(
+            projection.minimumDenominator,
+            projection.cameraDistance - depth
+        );
+        return projectedHalfHeight / perspective;
+    }
+
     _v2GlyphExtentIntensity(layer, renderHints, particleSize) {
         const extentPixels = this.logicalWidth * renderHints.glyphExtent;
         const burstDepth = Math.max(-1, Math.min(1, Number(renderHints.burstDepth) || 0));
@@ -1670,6 +1703,9 @@ class WebGPUParticleEngine {
             depthEnabled,
             launchDepth: depthEnabled ? Number(command.launchDepth ?? renderHints.launchDepth) : 0,
             burstDepth: depthEnabled ? Number(command.burstDepth ?? renderHints.burstDepth) : 0,
+            vectorAspectRatio: Number.isFinite(Number(command.vectorAspectRatio))
+                ? Number(command.vectorAspectRatio)
+                : null,
             username: command.username ?? null,
             userId: command.userId ?? null,
             uniqueId: command.uniqueId ?? null,
@@ -1852,6 +1888,13 @@ class WebGPUParticleEngine {
         } else if (viewportMaterialization?.kind === 'scaled-size') {
             command.size = nonnegativeFinite(viewportMaterialization.baseSize) *
                 this._v2ViewportScale() * nonnegativeFinite(viewportMaterialization.multiplier || 1);
+        } else if (viewportMaterialization?.kind === 'v2-vector-hero') {
+            command.vectorAspectRatio = nonnegativeFinite(viewportMaterialization.aspectRatio) ||
+                BOYKISSER_VECTOR.aspectRatio;
+            command.size = this._v2VectorHeroHalfHeight(command.burstDepth, command.vectorAspectRatio);
+            command.gravity = 0;
+            command.intensity = 0.1;
+            command.drag = 1;
         } else if (viewportMaterialization?.kind === 'v2-layer') {
             const currentScale = this._v2ViewportScale();
             command.size = nonnegativeFinite(viewportMaterialization.authoredSize) * 6 * currentScale;
@@ -1914,6 +1957,16 @@ class WebGPUParticleEngine {
         ]);
     }
 
+    _visibleEnvelopePaddingPx(commands = []) {
+        const needsTipGuard = commands.some(command => Number(command.kind) === 1 ||
+            [0, 3, 4, V2_PRIMITIVE_IDS.ring, V2_GLYPH_IDS.star].includes(Number(command.shape)));
+        if (!needsTipGuard) return 2;
+        return Math.min(
+            48,
+            Math.max(12, Math.min(this.logicalWidth, this.logicalHeight) * 0.025)
+        );
+    }
+
     _manifestMismatch(message) {
         const error = new Error(message);
         error.code = 'CORRELATION_MANIFEST_MISMATCH';
@@ -1958,7 +2011,7 @@ class WebGPUParticleEngine {
             height: this.logicalHeight,
             renderMinimum: Math.min(this.canvas.width || this.logicalWidth, this.canvas.height || this.logicalHeight),
             renderMaximum: Math.max(this.canvas.width || this.logicalWidth, this.canvas.height || this.logicalHeight)
-        }, { paddingPx: 2 });
+        }, { paddingPx: this._visibleEnvelopePaddingPx(commands) });
         this.correlationManifestRegistry.set(key, manifest);
         this.correlationFitCache.set(key, { manifest, fit });
         return fit;
@@ -2585,6 +2638,7 @@ const V2_TRAIL = ${V2_TRAIL}u;
 const V2_SPLIT_REQUESTED = ${V2_SPLIT_REQUESTED}u;
 const V2_SPLIT_EMITTED = 4u;
 const V2_STROBE = ${V2_STROBE}u;
+const V2_VECTOR_HERO = ${V2_VECTOR_HERO}u;
 const V2_DEPTH = 16384u;
 const V2_MARKER = ${V2_MARKER}u;
 const DEPTH_METADATA_MARKER = 8u;
@@ -2847,6 +2901,10 @@ fn depthBucket(z: f32) -> u32 {
   } else {
     p.velocity = shapeVelocity(command.shape, globalIndex, globalCount, command.intensity, command.seed ^ command.effectId, commandDepthEnabled);
     p.velocity.x += command.wind;
+    if (command.shape == 25u && (command.flags & V2_VECTOR_HERO) != 0u) {
+      p.velocity = vec3f(0.0); p.gravity = 0.0; p.drag = 1.0;
+      p.rotation = 0.0; p.angularVelocity = 0.0;
+    }
     let role = (command.flags >> 8u) & 15u;
     let pulseCount = (command.flags >> 3u) & 7u;
     if (command.emissionSpread > 0.0) {
@@ -2902,6 +2960,8 @@ fn depthBucket(z: f32) -> u32 {
     let curveVelocity = p.angularVelocity * 3.1415926 / p.maxLife * cos(progress * 3.1415926);
     p.position += vec3f(p.velocity.x + curveVelocity, p.velocity.y, p.velocity.z) * uniforms.dt;
     p.rotation = atan2(p.velocity.y, p.velocity.x + curveVelocity);
+  } else if (p.shape == 25u && (p.flags & V2_VECTOR_HERO) != 0u) {
+    p.velocity = vec3f(0.0); p.rotation = 0.0; p.angularVelocity = 0.0;
   } else {
     let phase = uniforms.time * (1.7 + hash(p.seed + 71u) * 2.1) + hash(p.seed + 19u) * 6.2831853;
     var noise = vec2f(sin(phase), cos(phase * 0.83 + 1.7)) * uniforms.turbulence * 60.0;
@@ -3040,7 +3100,9 @@ struct Uniforms {
 @group(0) @binding(5) var atlasSampler: sampler;
 const V2_TRAIL = ${V2_TRAIL}u;
 const V2_STROBE = ${V2_STROBE}u;
+const V2_VECTOR_HERO = ${V2_VECTOR_HERO}u;
 const V2_MARKER = ${V2_MARKER}u;
+${buildBoykisserWgsl()}
 struct Out {
   @builtin(position) position: vec4f,
   @location(0) uv: vec2f,
@@ -3162,6 +3224,7 @@ fn glyphMaterialColor(base:vec3f,t:f32)->vec3f{
 }
 @fragment fn particleFragment(in:Out)->@location(0) vec4f {
   let d=shapeDistance(in.uv,in.shape);let aa=max(0.0035,fwidth(d)*0.9);
+  if(in.shape==25u&&(in.flags&V2_VECTOR_HERO)!=0u){let vector=boykisserVectorColor(in.uv);let alpha=vector.a*in.fade;return vec4f(vector.rgb*alpha,alpha);}
   let role=(in.flags>>8u)&15u;let style=(in.flags>>12u)&3u;
   if(in.shape==6u){let tex=atlasSample(in.uv,in.textureIndex);let alpha=tex.a*in.fade*in.color.a;if((in.flags&1u)!=0u){return vec4f(tex.rgb*alpha,alpha);}return vec4f(in.color.rgb*alpha,alpha);}
   if(in.shape==8u){
@@ -3196,6 +3259,7 @@ fn glyphMaterialColor(base:vec3f,t:f32)->vec3f{
   return vec4f(rgb*alpha,alpha);
 }
 @fragment fn glowFragment(in:Out)->@location(0) vec4f {
+  if(in.shape==25u&&(in.flags&V2_VECTOR_HERO)!=0u){discard;}
   let role=(in.flags>>8u)&15u;if(role==7u){discard;}var coverage=0.0;if(in.shape==6u){coverage=atlasSample(in.uv,in.textureIndex).a;}else if(in.shape==8u){let parts=rocketCoverage(in.uv,uniforms.time,in.seed);coverage=max(parts.x*0.62,max(parts.y,parts.z));}else{let d=shapeDistance(in.uv,in.shape);coverage=exp(-max(0.0,d)*select(11.0,7.5,(in.flags&128u)!=0u))*(1.0-smoothstep(0.08,0.7,length(in.uv-0.5)));}
   let style=(in.flags>>12u)&3u;var styleGlow=select(1.0,select(0.72,1.38,style==2u),style!=0u);if(style==3u){styleGlow=1.18;}let pulse=select(1.0,0.72+0.28*sin(uniforms.time*44.0+f32(in.seed&31u)),role==8u);let glyphGlow=select(1.0,1.3,in.shape>=17u&&in.shape<=26u);let alpha=coverage*in.fade*in.color.a*0.18*uniforms.glowScale*styleGlow*pulse*glyphGlow;var rgb=materialColor(in.color.rgb,role,style,in.normalizedLife,in.seed);if(in.shape>=17u&&in.shape<=26u){rgb=glyphMaterialColor(in.color.rgb,in.normalizedLife);}return vec4f(rgb*alpha,alpha);
 }

@@ -3,6 +3,7 @@
 const crypto = require('crypto');
 const WebGPUParticleEngine = require('../plugins/webgpu-fireworks/gpu/webgpu-particle-engine');
 const {
+  BOYKISSER_VECTOR,
   geometrySignature,
 } = require('../plugins/webgpu-fireworks/gpu/boykisser-geometry');
 const { FinaleShowPlanner } = require('../plugins/webgpu-fireworks/lib/finale-show-planner');
@@ -64,6 +65,7 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
       expect(shader).toContain(`// geometry-signature:${geometrySignature}`);
       expect(shader).toContain('boykisserRole(');
       expect(shader).toContain('boykisserCanonicalColor(');
+      expect(shader).toContain('boykisserVectorColor(');
       expect(shader).not.toMatch(/command\.shape\s*==\s*25u[\s\S]{0,400}glyphT\s*</);
     } finally {
       renderer.destroy();
@@ -212,24 +214,85 @@ describe('WebGPU Fireworks ShowPlanV2 GPU command contract', () => {
       for (const command of commands) {
         expect(command.origin).toEqual({ x: width / 2, y: height / 2 });
         expect(command.burstDepth).toBe(0.82);
-        const midpointSeconds = command.particleDuration * 0.5;
-        const decay = command.drag * 60;
-        const displacement = (1 - Math.exp(-decay * midpointSeconds)) / decay;
+        expect(command.count).toBe(1);
+        expect(command.globalCount).toBe(1);
+        expect(command.flags & ENVELOPE_FLAG_BITS.VECTOR_HERO).toBe(ENVELOPE_FLAG_BITS.VECTOR_HERO);
+        expect(command.flags & ENVELOPE_FLAG_BITS.TRAIL).toBe(0);
+        expect(command.gravity).toBe(0);
         const perspective = 4 / (4 - command.burstDepth);
-        const particleRadius = command.size * perspective;
-        const xRadius = 0.9 * 218 * command.intensity * displacement * perspective;
-        const visibleWidth = xRadius * 2 + particleRadius * 2;
-        expect(visibleWidth / width).toBeGreaterThanOrEqual(0.5);
-        expect(visibleWidth / width).toBeLessThanOrEqual(0.65);
-
-        const yRadius = 0.86 * 218 * command.intensity * displacement * perspective;
-        const gravityDisplacement = command.gravity / decay * (midpointSeconds - displacement);
-        const projectedCenterY = height / 2 + gravityDisplacement * perspective;
-        expect(projectedCenterY - yRadius - particleRadius).toBeGreaterThanOrEqual(0);
-        expect(projectedCenterY + yRadius + particleRadius).toBeLessThanOrEqual(height);
+        const visibleHeight = command.size * perspective * 2;
+        const visibleWidth = visibleHeight * BOYKISSER_VECTOR.aspectRatio;
+        expect(visibleWidth).toBeLessThanOrEqual(width * 0.84 + 1e-5);
+        expect(visibleHeight).toBeLessThanOrEqual(height * 0.84 + 1e-5);
+        expect(Math.max(visibleWidth / width, visibleHeight / height)).toBeCloseTo(0.84, 6);
       }
     }
   );
+
+  test('uses one stationary vector billboard only for the core Boykisser hero', () => {
+    const engine = makeEngine();
+    const context = {
+      origin: { x: 960, y: 540 },
+      seed: 417,
+      renderHints: {
+        depthEnabled: true, launchDepth: 0, burstDepth: 0.82, glyphScale: 1, glyphExtent: 0.58,
+      },
+    };
+
+    expect(engine.spawnLayer(layer({
+      primitive: 'glyph', glyph: 'boykisser', density: 192,
+    }), context)).toBe(true);
+    expect(engine.spawnLayer(layer({
+      primitive: 'glyph', glyph: 'boykisser', density: 96, core: false, priority: 'accent',
+    }), context)).toBe(true);
+
+    const [hero, buildGlyph] = engine.spawnQueue;
+    expect(hero).toMatchObject({ count: 1, globalCount: 1, gravity: 0, drag: 1 });
+    expect(hero.flags & ENVELOPE_FLAG_BITS.VECTOR_HERO).toBe(ENVELOPE_FLAG_BITS.VECTOR_HERO);
+    expect(hero.flags & ENVELOPE_FLAG_BITS.TRAIL).toBe(0);
+    expect(buildGlyph).toMatchObject({ count: 96, globalCount: 96 });
+    expect(buildGlyph.flags & ENVELOPE_FLAG_BITS.VECTOR_HERO).toBe(0);
+
+    const compute = engine._computeShader();
+    const particle = engine._particleShader();
+    expect(compute).toContain(`const V2_VECTOR_HERO = ${ENVELOPE_FLAG_BITS.VECTOR_HERO}u;`);
+    expect(compute).toContain('command.shape == 25u && (command.flags & V2_VECTOR_HERO) != 0u');
+    expect(particle).toContain(`const V2_VECTOR_HERO = ${ENVELOPE_FLAG_BITS.VECTOR_HERO}u;`);
+    expect(particle).toContain('boykisserVectorColor(in.uv)');
+    expect(particle).toContain('if(in.shape==25u&&(in.flags&V2_VECTOR_HERO)!=0u){discard;}');
+  });
+
+  test('materializes the vector hero from the complete finale correlation manifest', () => {
+    const width = 1920;
+    const height = 1080;
+    const showPlan = new FinaleShowPlanner().plan({
+      id: 'vector-manifest',
+      style: 'furry-celebration',
+      length: 'medium',
+      orientation: 'landscape',
+      intensity: 5,
+      seed: 417,
+    });
+    const runtime = buildShowPlanV2Runtime(showPlan, { width, height, playSound: false });
+    const heroEvent = runtime.events.filter(event => event.type === 'finale-v2-layer')
+      .findLast(event => event.layer.glyph === 'boykisser');
+    const manifestHero = heroEvent.context.correlationManifest.commands.find(command => (
+      command.envelopeCommandId === heroEvent.context.envelopeCommandId
+    ));
+    expect(manifestHero.flags & ENVELOPE_FLAG_BITS.VECTOR_HERO).toBe(ENVELOPE_FLAG_BITS.VECTOR_HERO);
+    expect(manifestHero.viewportMaterialization).toMatchObject({
+      kind: 'v2-vector-hero',
+      aspectRatio: BOYKISSER_VECTOR.aspectRatio,
+    });
+
+    const engine = makeEngine(width, height);
+    expect(engine.spawnLayer(heroEvent.layer, heroEvent.context)).toBe(true);
+    const uploaded = uploadCommands(engine);
+    expect(uploaded.result).toMatchObject({ count: 1, maxParticles: 1 });
+    expect(uploaded.words[8]).toBe(1);
+    expect(uploaded.words[11] & ENVELOPE_FLAG_BITS.VECTOR_HERO)
+      .toBe(ENVELOPE_FLAG_BITS.VECTOR_HERO);
+  });
 
   test.each([[1920, 1080], [1080, 1920]])(
     'sizes ordinary Furry glyphs by normalized viewport extent at %ix%i',

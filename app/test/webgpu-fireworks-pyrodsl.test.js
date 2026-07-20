@@ -233,7 +233,7 @@ describe('PyroDSL contract and normalization', () => {
     const shader = engine._computeShader();
     const sharedWgsl = buildBoykisserWgsl().trim();
 
-    expect(Object.keys(BOYKISSER_FEATURES)).toHaveLength(13);
+    expect(Object.keys(BOYKISSER_FEATURES)).toHaveLength(8);
     expect(shader).toContain(sharedWgsl);
     expect(shader).toContain(`// geometry-signature:${geometrySignature}`);
     for (const featureName of Object.keys(BOYKISSER_FEATURES)) {

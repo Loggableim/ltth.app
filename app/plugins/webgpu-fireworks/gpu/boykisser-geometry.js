@@ -11,11 +11,16 @@
   'use strict';
 
   const BOYKISSER_ROLES = Object.freeze({ HEAD: 0, FACE: 1, ACCENT: 2 });
-  const BOYKISSER_COLORS = Object.freeze({
+  const boykisserColors = {
     HEAD: Object.freeze([1, 1, 1]),
     FACE: Object.freeze([0, 0, 0]),
     ACCENT: Object.freeze([1, 0, 0]),
+  };
+  Object.defineProperty(boykisserColors, 'PINK', {
+    value: boykisserColors.ACCENT,
+    enumerable: false,
   });
+  const BOYKISSER_COLORS = Object.freeze(boykisserColors);
 
   const freezePoints = points => Object.freeze(points.map(point => Object.freeze([...point])));
   const closePoints = points => [...points, points[0]];
@@ -95,6 +100,7 @@
 
   const BOYKISSER_VECTOR = Object.freeze({
     aspectRatio: 2452 / 3259,
+    viewportFraction: 0.84,
     silhouette: freezePoints(silhouette),
     blackFills: Object.freeze([
       freezePoints(leftLongEye),

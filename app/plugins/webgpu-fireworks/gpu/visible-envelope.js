@@ -33,6 +33,7 @@
     SPLIT_REQUESTED: 1 << 1,
     STROBE: 1 << 3,
     ROCKET_AVATAR_HEAD: 1 << 14,
+    VECTOR_HERO: 1 << 7,
     V2_MARKER: 1 << 15,
   });
 
@@ -240,6 +241,32 @@
     };
   }
 
+  function vectorHeroEnvelope(command, viewport, scale) {
+    const origin = point(command.origin);
+    const depth = quantizedDepth(command.burstDepth);
+    const projected = projectPoint(origin, depth, viewport);
+    const halfHeight = positive(command.size, 6) * scale * projected.scale;
+    const aspectRatio = positive(command.vectorAspectRatio, 1) || 1;
+    const halfWidth = halfHeight * aspectRatio;
+    const physicalMinimum = Math.max(1, finite(
+      viewport.renderMinimum,
+      Math.min(viewport.width, viewport.height)
+    ));
+    const resolutionFactor = Math.max(1, Math.min(viewport.width, viewport.height) / physicalMinimum);
+    const post = positive(
+      command.bloomRadius,
+      PROJECTION.bloomGuardPixelsAt1080 * Math.max(0.5, Math.min(viewport.width, viewport.height) / 1080)
+    ) * resolutionFactor;
+    return {
+      left: projected.x - halfWidth - post,
+      top: projected.y - halfHeight - post,
+      right: projected.x + halfWidth + post,
+      bottom: projected.y + halfHeight + post,
+      components: ['vector-billboard', 'bloom'],
+      responseScale: projected.scale,
+    };
+  }
+
   function rocketEnvelope(command, viewport, profile, scale) {
     const origin = point(command.origin);
     const target = point(command.target, origin);
@@ -298,8 +325,14 @@
     const scale = command.admissionScaleApplied === true
       ? 1
       : Math.max(Number.EPSILON, Math.min(1, positive(command.admissionScale, 1) || 1));
-    return profile.category === 'rocket'
-      ? rocketEnvelope(command, normalizedViewport, profile, scale)
+    if (profile.category === 'rocket') {
+      return rocketEnvelope(command, normalizedViewport, profile, scale);
+    }
+    const flags = Number(command.flags) >>> 0;
+    const vectorHero = Number(command.shape) === V2_GLYPH_IDS.boykisser &&
+      (flags & ENVELOPE_FLAG_BITS.VECTOR_HERO) !== 0;
+    return vectorHero
+      ? vectorHeroEnvelope(command, normalizedViewport, scale)
       : shapeEnvelope(command, normalizedViewport, profile, scale);
   }
 

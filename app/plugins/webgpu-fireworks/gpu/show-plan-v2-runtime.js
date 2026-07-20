@@ -8,7 +8,11 @@
   const VisibleEnvelope = typeof module !== 'undefined' && module.exports
     ? require('./visible-envelope')
     : globalThis.WebGPUFireworksVisibleEnvelope;
+  const BoykisserGeometry = typeof module !== 'undefined' && module.exports
+    ? require('./boykisser-geometry')
+    : globalThis.WebGPUFireworksBoykisserGeometry;
   const { V2_PRIMITIVE_IDS, V2_GLYPH_IDS, ENVELOPE_FLAG_BITS } = VisibleEnvelope;
+  const { BOYKISSER_VECTOR } = BoykisserGeometry;
   const PLAN_VERSION = 2;
   const LAUNCH_MODES = new Set(['rocket', 'airburst', 'ground']);
   const PRIMITIVES = new Set(['radial', 'ring', 'spiral', 'palm', 'crossette', 'comet', 'mine', 'glyph']);
@@ -33,6 +37,7 @@
     burstDepth: 0,
     glyphScale: 1
   });
+  const VECTOR_HERO_MIN_GLYPH_EXTENT = 0.5;
   const MAX_REQUIRED_SHOW_COMMANDS = 28;
   const TIER_RANK = Object.freeze({ small: 0, medium: 1, big: 2, massive: 3 });
   const ROLE_ALIASES = Object.freeze({
@@ -64,6 +69,24 @@
   const envelopeShapeId = layer => layer.primitive === 'glyph'
     ? V2_GLYPH_IDS[layer.glyph]
     : V2_PRIMITIVE_IDS[layer.primitive];
+
+  const isVectorHeroLayer = (layer, renderHints) => layer.primitive === 'glyph' &&
+    layer.glyph === 'boykisser' && layer.core === true &&
+    Number(renderHints.glyphExtent) >= VECTOR_HERO_MIN_GLYPH_EXTENT;
+
+  const vectorHeroHalfHeight = (width, height, burstDepth) => {
+    const projection = VisibleEnvelope.ENVELOPE_PROFILES.projection;
+    const depth = Math.max(-1, Math.min(1, Number(burstDepth) || 0));
+    const perspective = projection.cameraDistance / Math.max(
+      projection.minimumDenominator,
+      projection.cameraDistance - depth
+    );
+    const projectedHalfHeight = Math.min(
+      height,
+      width / BOYKISSER_VECTOR.aspectRatio
+    ) * BOYKISSER_VECTOR.viewportFraction * 0.5;
+    return projectedHalfHeight / perspective;
+  };
 
   function fail(message) {
     throw new TypeError(`Invalid ShowPlanV2: ${message}`);
@@ -425,8 +448,10 @@
           const ground = shell.launchMode === 'ground';
           const normalizedOrigin = ground ? shell.origin : shell.target;
           const normalizedTarget = shell.target;
+          const vectorHero = isVectorHeroLayer(layer, renderHints);
           const renderFlags = ENVELOPE_FLAG_BITS.V2_MARKER |
-            (layer.trail ? ENVELOPE_FLAG_BITS.TRAIL : 0) |
+            (vectorHero ? ENVELOPE_FLAG_BITS.VECTOR_HERO : 0) |
+            (!vectorHero && layer.trail ? ENVELOPE_FLAG_BITS.TRAIL : 0) |
             (layer.split ? ENVELOPE_FLAG_BITS.SPLIT_REQUESTED : 0) |
             (layer.strobe ? ENVELOPE_FLAG_BITS.STROBE : 0);
           const effectId = layer.id || `${shellId}:layer:${layerIndex + 1}`;
@@ -442,17 +467,25 @@
             normalizedTarget: { ...normalizedTarget },
             origin: toPixels(normalizedOrigin, width, height),
             target: toPixels(normalizedTarget, width, height),
-            size: Number(layer.size) * 6 * viewportScale,
-            intensity: (Number(shell.powerScale) || 1) * viewportScale * Number(renderHints.glyphScale || 1),
+            size: vectorHero
+              ? vectorHeroHalfHeight(width, height, renderHints.burstDepth)
+              : Number(layer.size) * 6 * viewportScale,
+            intensity: vectorHero
+              ? 0.1
+              : (Number(shell.powerScale) || 1) * viewportScale * Number(renderHints.glyphScale || 1),
             particleDuration: Number(layer.lifetimeMs) / 1000,
             emissionDelay: Number(layer.delayMs) / 1000,
-            gravity: Number(layer.gravity) * 105 * viewportScale,
-            drag: Number(layer.drag),
+            gravity: vectorHero ? 0 : Number(layer.gravity) * 105 * viewportScale,
+            drag: vectorHero ? 1 : Number(layer.drag),
             depthEnabled: renderHints.depthEnabled,
             launchDepth: renderHints.depthEnabled ? renderHints.launchDepth : 0,
             burstDepth: renderHints.depthEnabled ? renderHints.burstDepth : 0,
+            vectorAspectRatio: vectorHero ? BOYKISSER_VECTOR.aspectRatio : null,
             viewportResponsive: true,
-            viewportMaterialization: {
+            viewportMaterialization: vectorHero ? {
+              kind: 'v2-vector-hero',
+              aspectRatio: BOYKISSER_VECTOR.aspectRatio,
+            } : {
               kind: 'v2-layer',
               authoredSize: Number(layer.size),
               authoredGravity: Number(layer.gravity),

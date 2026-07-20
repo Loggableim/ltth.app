@@ -350,6 +350,43 @@ function assertBoykisserResult(result) {
   if (result.cleanupComplete !== true) throw new Error('boykisser renderer cleanup did not complete');
 }
 
+function assertBoykisserVectorResult(result) {
+  if (!result || result.skipped === true) throw new Error('boykisser vector case is missing or skipped');
+  const exact = {
+    resolutions: 6,
+    orientations: 2,
+    testedCases: 12,
+    vectorBillboards: 12,
+    blackFeatureChecks: 48,
+    redFeatureChecks: 24,
+    guardViolations: 0
+  };
+  for (const [key, expected] of Object.entries(exact)) {
+    if (result[key] !== expected) {
+      throw new Error(`boykisser ${key} must be ${expected}, got ${result[key]}: ${JSON.stringify(result)}`);
+    }
+  }
+  if (JSON.stringify(result.requestedDensities) !== JSON.stringify([13, 180])) {
+    throw new Error(`boykisser requested-density matrix mismatch: ${JSON.stringify(result.requestedDensities)}`);
+  }
+  if (!/^[a-f0-9]{8}$/.test(result.geometrySignature || '')) {
+    throw new Error(`boykisser geometry signature is invalid: ${result.geometrySignature}`);
+  }
+  if (!Array.isArray(result.coverage) || result.coverage.length !== result.testedCases) {
+    throw new Error(`boykisser coverage must contain ${result.testedCases} rows`);
+  }
+  for (const row of result.coverage) {
+    if (row.commandCount !== 1 || row.guardPixels !== 0 || row.visiblePixels <= 0 || row.whitePixels <= 0 ||
+        row.blackFeaturePixels?.length !== 4 || row.blackFeaturePixels.some(count => count <= 0) ||
+        row.redFeaturePixels?.length !== 2 || row.redFeaturePixels.some(count => count <= 0) ||
+        row.constrainedCoverage < 0.75 || row.constrainedCoverage > 0.85 ||
+        row.aspectRatio < 0.7 || row.aspectRatio > 0.78) {
+      throw new Error(`boykisser vector hardware coverage mismatch: ${JSON.stringify(row)}`);
+    }
+  }
+  if (result.cleanupComplete !== true) throw new Error('boykisser vector renderer cleanup did not complete');
+}
+
 async function collectCleanupFailure(failures, label, cleanup) {
   try {
     await cleanup();
@@ -440,14 +477,14 @@ async function main() {
       assertCapacityResult(cases.capacity);
       assertRecoveryResult(cases.recovery);
       assertAdmissionEnvelopeResult(cases['admission-envelope']);
-      assertBoykisserResult(cases.boykisser);
+      assertBoykisserVectorResult(cases.boykisser);
       payload = { hardware, cases };
     } else {
       if (caseName === 'atlas') assertAtlasResult(pageEvidence.result);
       if (caseName === 'capacity') assertCapacityResult(pageEvidence.result);
       if (caseName === 'recovery') assertRecoveryResult(pageEvidence.result);
       if (caseName === 'admission-envelope') assertAdmissionEnvelopeResult(pageEvidence.result);
-      if (caseName === 'boykisser') assertBoykisserResult(pageEvidence.result);
+      if (caseName === 'boykisser') assertBoykisserVectorResult(pageEvidence.result);
       payload = { hardware, result: pageEvidence.result };
     }
     terminalPassLine = `PASS ${caseName} ${JSON.stringify(payload)}`;
