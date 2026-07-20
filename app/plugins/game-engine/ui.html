@@ -4094,7 +4094,7 @@
             <label data-i18n="plugins.game-engine.labels.neuer_herausforderer_new_challenger">🎵 Neuer Herausforderer (New Challenger):</label>
             <div style="color: #888; font-size: 12px; margin: 5px 0;" data-i18n="plugins.game-engine.labels.default_new_challenger_alert_mp3">Default: new-challenger-alert.mp3</div>
             <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
-              <input type="file" id="mediaNewChallenger" accept="audio/*,video/*" style="flex: 1;">
+              <input type="file" id="mediaNewChallenger" accept="audio/*" style="flex: 1;">
               <button type="button" class="secondary media-preview-btn" data-audio="/game-engine/sounds/default/new-challenger-alert.mp3" style="padding: 8px 15px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
             </div>
             <div id="currentMediaNewChallenger" style="margin-top: 5px; color: #aaa;"></div>
@@ -4106,7 +4106,7 @@
             <label data-i18n="plugins.game-engine.labels.challenge_akzeptiert_challenge_accepted">🎵 Challenge Akzeptiert (Challenge Accepted):</label>
             <div style="color: #888; font-size: 12px; margin: 5px 0;" data-i18n="plugins.game-engine.labels.default_challenge_accepted_mp3">Default: challenge accepted.mp3</div>
             <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
-              <input type="file" id="mediaChallengeAccepted" accept="audio/*,video/*" style="flex: 1;">
+              <input type="file" id="mediaChallengeAccepted" accept="audio/*" style="flex: 1;">
               <button type="button" class="secondary media-preview-btn" data-audio="/game-engine/sounds/default/challenge accepted.mp3" style="padding: 8px 15px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
             </div>
             <div id="currentMediaChallengeAccepted" style="margin-top: 5px; color: #aaa;"></div>
@@ -5725,32 +5725,25 @@
         return;
       }
 
-      showMessage('Uploading... (Not fully implemented - requires file upload endpoint)', 'error');
-
-      // Note: This is a placeholder. Full implementation would require:
-      // 1. FormData to upload file to server
-      // 2. Server endpoint to save file to plugin data directory
-      // 3. Return file path and save to database
-
-      // For now, just show the structure:
       const formData = new FormData();
       formData.append('file', file);
 
       try {
-        // This endpoint would need to be implemented to handle file uploads
         const response = await fetch(`/api/game-engine/media/connect4/${eventType}`, {
           method: 'POST',
           body: formData
         });
+        const result = await response.json().catch(() => ({}));
 
         if (response.ok) {
           showMessage('Media hochgeladen!');
-          loadCurrentMedia();
+          fileInput.value = '';
+          await loadCurrentMedia();
         } else {
-          showMessage('Fehler beim Hochladen', 'error');
+          showMessage(result.error || 'Fehler beim Hochladen', 'error');
         }
       } catch (error) {
-        showMessage('Upload-Feature requires server-side file handling', 'error');
+        showMessage('Fehler beim Hochladen: ' + error.message, 'error');
         console.error('Upload error:', error);
       }
     }
@@ -5787,19 +5780,21 @@
 
         // Define all event types with their display IDs
         const eventTypes = [
-          { event: 'new_challenger', displayId: 'currentMediaNewChallenger' },
-          { event: 'challenge_accepted', displayId: 'currentMediaChallengeAccepted' },
-          { event: 'piece_drop', displayId: 'currentMediaPieceDrop' },
-          { event: 'player_1_wins', displayId: 'currentMediaPlayer1Wins' },
-          { event: 'player_2_wins', displayId: 'currentMediaPlayer2Wins' },
-          { event: 'game_over', displayId: 'currentMediaGameOver' },
-          { event: 'timer_warning', displayId: 'currentMediaTimerWarning' }
+          { event: 'new_challenger', displayId: 'currentMediaNewChallenger', inputId: 'mediaNewChallenger', defaultAudio: '/game-engine/sounds/default/new-challenger-alert.mp3' },
+          { event: 'challenge_accepted', displayId: 'currentMediaChallengeAccepted', inputId: 'mediaChallengeAccepted', defaultAudio: '/game-engine/sounds/default/challenge accepted.mp3' },
+          { event: 'piece_drop', displayId: 'currentMediaPieceDrop', inputId: 'mediaPieceDrop', defaultAudio: '/game-engine/sounds/default/game start.mp3' },
+          { event: 'player_1_wins', displayId: 'currentMediaPlayer1Wins', inputId: 'mediaPlayer1Wins', defaultAudio: '/game-engine/sounds/default/player-1-wins.mp3' },
+          { event: 'player_2_wins', displayId: 'currentMediaPlayer2Wins', inputId: 'mediaPlayer2Wins', defaultAudio: '/game-engine/sounds/default/player-2-wins.mp3' },
+          { event: 'game_over', displayId: 'currentMediaGameOver', inputId: 'mediaGameOver', defaultAudio: '/game-engine/sounds/default/game over.mp3' },
+          { event: 'timer_warning', displayId: 'currentMediaTimerWarning', inputId: 'mediaTimerWarning', defaultAudio: '/game-engine/sounds/default/ten-sec-timer.mp3' }
         ];
 
         // Clear all displays and show default info
-        eventTypes.forEach(({ displayId }) => {
+        eventTypes.forEach(({ displayId, inputId, defaultAudio }) => {
           const display = document.getElementById(displayId);
           if (display) setLocalizedHtml(display, '<span style="color: #4CAF50;" data-i18n="plugins.game-engine.ui.audio.default_active">✓ Standard-Sound aktiv</span>');
+          const previewButton = document.getElementById(inputId)?.parentElement?.querySelector('.media-preview-btn');
+          if (previewButton) previewButton.dataset.audio = defaultAudio;
         });
 
         // Show custom media if configured
@@ -5812,11 +5807,13 @@
               const label = document.createElement('span');
               label.style.color = '#FFC107';
               label.textContent = runtimeText('plugins.game-engine.ui.runtime.dashboard.custom_media', {
-                filename: (m.file_path || '').split('/').pop(),
+                filename: m.filename || '',
                 mediaType: m.media_type || ''
               });
               display.appendChild(label);
             }
+            const previewButton = document.getElementById(eventType.inputId)?.parentElement?.querySelector('.media-preview-btn');
+            if (previewButton && m.url) previewButton.dataset.audio = m.url;
           }
         });
       } catch (error) {
