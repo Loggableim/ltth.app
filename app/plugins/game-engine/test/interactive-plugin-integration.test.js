@@ -331,6 +331,33 @@ describe('GameEnginePlugin interactive controller integration', () => {
       params: { gameType: 'connect4', audioEvent: 'unknown' },
       body: { scopeId: 'default', enabled: false }
     })).toMatchObject({ status: 400, body: { error: 'invalid_audio_event' } });
+    expect(invoke(audioStateRoute, {
+      params: { gameType: 'unknown', audioEvent: 'piece_drop' },
+      body: { scopeId: 'default', enabled: false }
+    })).toMatchObject({ status: 400, body: { error: 'invalid_game_type' } });
+    expect(invoke(audioStateRoute, {
+      params: { gameType: 'connect4', audioEvent: 'piece_drop' }
+    })).toMatchObject({ status: 400, body: { error: 'invalid_audio_enabled' } });
+    expect(invoke(audioStateRoute, {
+      params: { gameType: 'connect4', audioEvent: 'piece_drop' },
+      body: { enabled: 'false' }
+    })).toMatchObject({ status: 400, body: { error: 'invalid_audio_enabled' } });
+    expect(invoke(audioStateRoute, {
+      params: { gameType: 'connect4', audioEvent: 'piece_drop' },
+      body: { scopeId: 'not-a-connect4-scope', enabled: true }
+    }).body).toMatchObject({ success: true, scopeId: 'default', enabled: true });
+    expect(invoke(audioStateRoute, {
+      params: { gameType: 'wheel', audioEvent: 'spinning' },
+      body: { scopeId: '007', enabled: true }
+    }).body).toMatchObject({ success: true, scopeId: '7', enabled: true });
+    expect(invoke(audioStateRoute, {
+      params: { gameType: 'wheel', audioEvent: 'spinning' },
+      body: { enabled: true }
+    })).toMatchObject({ status: 400, body: { error: 'invalid_audio_scope' } });
+    expect(invoke(audioStateRoute, {
+      params: { gameType: 'slot', audioEvent: 'spin' },
+      body: { scopeId: 'invalid', enabled: true }
+    })).toMatchObject({ status: 400, body: { error: 'invalid_audio_scope' } });
 
     expect(invoke(audioStateRoute, {
       params: { gameType: 'connect4', audioEvent: 'piece_drop' },

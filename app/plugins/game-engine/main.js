@@ -530,7 +530,10 @@ class GameEnginePlugin {
   _getGameAudioScopeId(gameType, scopeId) {
     if (gameType === 'connect4') return 'default';
     if (gameType === 'wheel' || gameType === 'slot') {
-      return this._sanitizeNumericId(scopeId);
+      const normalizedScopeId = String(scopeId || '').trim();
+      if (!/^[0-9]+$/.test(normalizedScopeId)) return null;
+      const numericScopeId = parseInt(normalizedScopeId, 10);
+      return numericScopeId > 0 ? String(numericScopeId) : null;
     }
     return null;
   }
@@ -2482,6 +2485,7 @@ class GameEnginePlugin {
     this.api.registerRoute('PUT', '/api/game-engine/audio-state/:gameType/:audioEvent', (req, res) => {
       try {
         const { gameType, audioEvent } = req.params;
+        const body = req.body || {};
         const audioEvents = this._getGameAudioEvents(gameType);
         if (!audioEvents) {
           return res.status(400).json({ error: 'invalid_game_type' });
@@ -2489,12 +2493,15 @@ class GameEnginePlugin {
         if (!audioEvents.includes(audioEvent)) {
           return res.status(400).json({ error: 'invalid_audio_event' });
         }
-        if (typeof req.body?.enabled !== 'boolean') {
+        if (typeof body.enabled !== 'boolean') {
           return res.status(400).json({ error: 'invalid_audio_enabled' });
         }
 
-        const scopeId = this._getGameAudioScopeId(gameType, req.body.scopeId);
-        const enabled = req.body.enabled;
+        const scopeId = this._getGameAudioScopeId(gameType, body.scopeId);
+        if (!scopeId) {
+          return res.status(400).json({ error: 'invalid_audio_scope' });
+        }
+        const enabled = body.enabled;
         if (!this.db.setGameAudioEnabled(gameType, scopeId, audioEvent, enabled)) {
           return res.status(500).json({ error: 'audio_state_not_saved' });
         }
