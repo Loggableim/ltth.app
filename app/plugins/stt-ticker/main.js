@@ -319,9 +319,10 @@ class SttTickerPlugin {
         const requestedKey = String(body.apiKey || '').trim();
         const key = requestedKey && requestedKey !== '__KEEP__'
           ? requestedKey
-          : (this.config.asr && this.config.asr.deepgramApiKey) || '';
+          : this.asrPipeline?.getDeepgramApiKey?.()
+            || (this.config.asr && this.config.asr.deepgramApiKey) || '';
         if (!key.trim()) {
-          return res.json({ success: false, error: 'Kein Deepgram-Key konfiguriert' });
+          return res.json({ success: false, error: 'no_key_configured' });
         }
         const DeepgramAsrClient = require('./backend/asr/deepgram-client');
         const client = new DeepgramAsrClient(key, this.logger, { timeout: 10000 });
@@ -344,9 +345,10 @@ class SttTickerPlugin {
         const requestedKey = String(body.apiKey || '').trim();
         const key = requestedKey && requestedKey !== '__KEEP__'
           ? requestedKey
-          : (this.config.asr && this.config.asr.elevenlabsApiKey) || '';
+          : this.asrPipeline?.getElevenLabsApiKey?.()
+            || (this.config.asr && this.config.asr.elevenlabsApiKey) || '';
         if (!key.trim()) {
-          return res.json({ success: false, error: 'Kein ElevenLabs-Key konfiguriert' });
+          return res.json({ success: false, error: 'no_key_configured' });
         }
         const ElevenLabsAsrClient = require('./backend/asr/elevenlabs-client');
         const client = new ElevenLabsAsrClient(key, this.logger, { timeout: 10000 });
@@ -899,10 +901,13 @@ class SttTickerPlugin {
         provider: asrStatus.provider,         // effective: 'fish.audio' | 'deepgram' | 'elevenlabs'
         providerConfig: asrStatus.providerConfig,
         deepgramConfigured: asrStatus.deepgramConfigured,
+        deepgramKeySource: asrStatus.deepgramKeySource || null,
         deepgramModel: asrStatus.deepgramModel,
         elevenlabsConfigured: asrStatus.elevenlabsConfigured,
+        elevenlabsKeySource: asrStatus.elevenlabsKeySource || null,
         elevenlabsModel: asrStatus.elevenlabsModel,
         fishaudioConfigured: asrStatus.fishaudioConfigured,
+        fishaudioKeySource: asrStatus.fishaudioKeySource || null,
         diagnostics: asrStatus.diagnostics
       },
       deepgramLive: this.deepgramLiveSessions
@@ -924,9 +929,20 @@ class SttTickerPlugin {
     if (!this.config) return {};
     const safe = JSON.parse(JSON.stringify(this.config));
     if (safe.asr) {
-      for (const keyName of ['deepgramApiKey', 'elevenlabsApiKey', 'fishaudioApiKey']) {
+      const credentials = this.asrPipeline?.getCredentialStatus?.() || {};
+      const credentialNames = {
+        deepgramApiKey: 'deepgram',
+        elevenlabsApiKey: 'elevenlabs',
+        fishaudioApiKey: 'fishaudio'
+      };
+      for (const [keyName, credentialName] of Object.entries(credentialNames)) {
         const configuredName = `${keyName}Configured`;
-        safe.asr[configuredName] = Boolean(this.config.asr?.[keyName]);
+        const sourceName = `${keyName}Source`;
+        const credential = credentials[credentialName];
+        safe.asr[configuredName] = credential
+          ? Boolean(credential.configured)
+          : Boolean(this.config.asr?.[keyName]);
+        safe.asr[sourceName] = credential?.source || (safe.asr[configuredName] ? 'config' : null);
         safe.asr[keyName] = safe.asr[configuredName] ? '__KEEP__' : '';
       }
     }

@@ -23,6 +23,15 @@ const LEGACY_TRANSLATION_MODELS = new Set([
   'mistral-large-2',
   'gemma-2-27b-it'
 ]);
+// Keep this list in sync with the source-language selects in ui.html and
+// capture.html. It is deliberately exported so backend validation has the
+// same policy as the user-facing controls.
+const SUPPORTED_SOURCE_LANGUAGES = [
+  'de', 'en', 'es', 'fr', 'it', 'pt', 'nl', 'pl', 'ru', 'ja', 'ko', 'zh',
+  'ar', 'tr', 'sv', 'da', 'fi', 'no', 'cs', 'hu', 'ro', 'uk', 'el', 'he',
+  'th', 'vi'
+];
+const LEGACY_DEFAULT_LANGUAGE_WHITELIST = ['de', 'en'];
 
 const DEFAULT_CONFIG = {
   // Master enable
@@ -35,7 +44,7 @@ const DEFAULT_CONFIG = {
     languageDefault: 'de',      // Default-Sprache für Auto-Modus (UI-Auswahl)
     languageFixed: 'de',        // Feste Sprache für Fix-Modus
     fallbackLanguage: 'en',     // Fallback wenn Heuristik nichts findet
-    languageWhitelist: ['de', 'en'],  // nur diese Sprachen erlauben (filtert Halluzinationen)
+    languageWhitelist: SUPPORTED_SOURCE_LANGUAGES,  // alle UI-Quellsprachen erlauben
     deepgramApiKey: '',         // Deepgram API-Key (NIE im Git, persistent in Plugin-Config)
     deepgramModel: 'nova-2',     // 'nova-2' | 'whisper-large' | 'whisper-medium'
     elevenlabsApiKey: '',        // ElevenLabs API-Key für ASR
@@ -184,7 +193,8 @@ class ConfigManager {
         this.config = this._deepMerge(this._cloneDefaults(), stored);
         const translationMigrated = this._migrateLegacyTranslationModel();
         const overlayMigrated = this._migrateLegacyOverlayDesign();
-        if (translationMigrated || overlayMigrated) {
+        const languagePolicyMigrated = this._migrateLegacyLanguageWhitelist();
+        if (translationMigrated || overlayMigrated || languagePolicyMigrated) {
           this.save();
         }
       } else {
@@ -265,10 +275,25 @@ class ConfigManager {
     };
     return true;
   }
+
+  _migrateLegacyLanguageWhitelist() {
+    const whitelist = this.config?.asr?.languageWhitelist;
+    if (!Array.isArray(whitelist) || whitelist.length !== LEGACY_DEFAULT_LANGUAGE_WHITELIST.length) {
+      return false;
+    }
+
+    const normalized = whitelist.map(language => String(language).toLowerCase());
+    const isHistoricalDefault = LEGACY_DEFAULT_LANGUAGE_WHITELIST.every(language => normalized.includes(language));
+    if (!isHistoricalDefault) return false;
+
+    this.config.asr.languageWhitelist = [...SUPPORTED_SOURCE_LANGUAGES];
+    return true;
+  }
 }
 
 module.exports = {
   ConfigManager,
   DEFAULT_CONFIG,
+  SUPPORTED_SOURCE_LANGUAGES,
   VALID_OVERLAY_DESIGNS
 };
