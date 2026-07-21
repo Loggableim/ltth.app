@@ -702,6 +702,27 @@ describe('interactive overlay countdown DOM', () => {
     wheel.dom.window.close();
   });
 
+  test('wheel preserves an immediate mute when its settings refresh rejects', async () => {
+    const fetch = jest.fn()
+      .mockResolvedValueOnce(jsonResponse({ spinning: { enabled: true } }))
+      .mockRejectedValueOnce(new Error('refresh failed'));
+    const wheel = loadOverlay('wheel.html', null, { fetch });
+    await flushPromises();
+
+    await wheel.listeners.get('wheel:audio-updated')({
+      wheelId: '1',
+      audioType: 'spinning',
+      enabled: false
+    });
+
+    expect(wheel.dom.window.playWheelEventSound(
+      'spinning',
+      wheel.dom.window.document.getElementById('spin-sound')
+    )).toBe(false);
+    expect(wheel.mediaPlay).not.toHaveBeenCalled();
+    wheel.dom.window.close();
+  });
+
   test('slot plays the first spin sound exactly once after matching scoped settings resolve', async () => {
     const settings = deferred();
     const fetch = jest.fn(() => settings.promise);
@@ -721,6 +742,28 @@ describe('interactive overlay countdown DOM', () => {
     expect(slot.audioPlay).toHaveBeenCalledTimes(1);
     await flushPromises();
     expect(slot.audioPlay).toHaveBeenCalledTimes(1);
+    slot.dom.window.close();
+  });
+
+  test('slot expires pending first-spin audio when the visual result completes first', async () => {
+    const settings = deferred();
+    const fetch = jest.fn(() => settings.promise);
+    const slot = loadOverlay('slot.html', null, { fetch });
+
+    slot.listeners.get('slot:spin-started')({
+      spinId: 'spin-7',
+      machineId: '7',
+      settings: { soundEnabled: true }
+    });
+    slot.dom.window.showResult('loss', false, { soundEnabled: true }, 'spin-7');
+    expect(slot.dom.window.document.querySelector('#result-text.visible')).not.toBeNull();
+    expect(slot.audioPlay).not.toHaveBeenCalled();
+
+    settings.resolve(jsonResponse({ spin: { enabled: true } }));
+    await flushPromises();
+
+    expect(slot.audioSources).toEqual([]);
+    expect(slot.audioPlay).not.toHaveBeenCalled();
     slot.dom.window.close();
   });
 
@@ -791,6 +834,31 @@ describe('interactive overlay countdown DOM', () => {
 
       expect(slot.dom.window.playAudio('spin', { soundEnabled: true }, '7')).toBe(true);
       slot.dom.window.applyAudioSettings({ spin: { enabled: false } });
+      if (failure === 'error') {
+        slot.AudioConstructor.mock.instances[0]._listeners.get('error')();
+      }
+      await flushPromises();
+
+      expect(slot.audioSources).toEqual(['/game-engine/sounds/slot/custom/7/spin.mp3']);
+      expect(slot.AudioConstructor).toHaveBeenCalledTimes(1);
+      slot.dom.window.close();
+    }
+  );
+
+  test.each(['error', 'rejection'])(
+    'slot does not fall back after custom audio %s when the global sound setting was disabled meanwhile',
+    async failure => {
+      const audioPlay = jest.fn(() => Promise.resolve());
+      if (failure === 'rejection') audioPlay.mockRejectedValueOnce(new Error('custom failed'));
+      const slot = loadOverlay('slot.html', null, { audioPlay });
+      slot.dom.window.applyAudioSettings({ spin: { enabled: true } });
+
+      expect(slot.dom.window.playAudio('spin', { soundEnabled: true }, '7')).toBe(true);
+      slot.listeners.get('slot:spin-result')({
+        spinId: 'spin-7',
+        reels: [],
+        settings: { soundEnabled: false }
+      });
       if (failure === 'error') {
         slot.AudioConstructor.mock.instances[0]._listeners.get('error')();
       }

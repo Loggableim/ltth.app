@@ -838,6 +838,7 @@
       // ── Notify server: animation complete, dispatch rewards ──
       // Fire as soon as the result is visible (reels have stopped).
       if (spinId) {
+        if (pendingSpinAudioIntent?.spinId === String(spinId)) pendingSpinAudioIntent = null;
         socket.emit('slot:spin-completed', { spinId, category, isWin });
       }
 
@@ -945,7 +946,7 @@
 
       function playFallback(src) {
         if (fallbackStarted || src === defaultSrc || !defaultSrc) return;
-        if (!canPlayAudioEvent(audioType, s, mid)) return;
+        if (!canPlayAudioEvent(audioType, lastSettings, mid)) return;
         fallbackStarted = true;
         delete audioCache[cacheKey];
         tryPlay(defaultSrc);

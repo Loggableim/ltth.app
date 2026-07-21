@@ -763,7 +763,6 @@
       } catch (error) {
         if (generation !== wheelAudioSettingsGeneration || scopeId !== String(currentWheelId)) return false;
         console.error('Error loading wheel audio:', error);
-        applyAudioSettings({});
         // Fall back to defaults
         spinSound.src = defaultAudioUrls.spinning;
         prize1Sound.src = defaultAudioUrls.prize1;
