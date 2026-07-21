@@ -55,6 +55,7 @@ function createMockApi(db) {
     getDatabase: jest.fn(() => ({ db })),
     registerRoute: jest.fn((method, route, handler) => routes.push({ method, route, handler })),
     registerSocket: jest.fn((event, handler) => sockets.push({ event, handler })),
+    registerTikTokEvent: jest.fn(),
     registerFlowAction: jest.fn((name, handler) => flowActions.push({ name, handler })),
     getPlugin: jest.fn((id) => id === 'gcce' ? gcce : null),
     emit: jest.fn((event, payload) => emitted.push({ event, payload })),
@@ -139,6 +140,26 @@ describe('WebGPU Weather Control independent plugin surface', () => {
     db.close();
   });
 
+  test.each([
+    ['a null config row', 'plugin:webgpu-weather-control:weather_config', 'null'],
+    ['a corrupt config row', 'plugin:webgpu-weather-control:weather_config', '{invalid-json'],
+    ['a null completion marker', 'plugin:webgpu-weather-control:bootstrap_v1', 'null'],
+    ['a corrupt completion marker', 'plugin:webgpu-weather-control:bootstrap_v1', '{invalid-json']
+  ])('never imports or overwrites when %s already exists', (label, key, rawValue) => {
+    const db = createDatabase();
+    db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run(key, rawValue);
+    setSetting(db, 'plugin:weather-control:weather_config', { enabled: true });
+    db.prepare('INSERT INTO gift_weather_mappings (gift_id, weather_effect) VALUES (?, ?)').run(91, 'storm');
+
+    const result = migrateWebgpuWeatherStorage({ db }, () => 'must-not-be-used');
+
+    expect(label).toBeTruthy();
+    expect(result.migrated).toBe(false);
+    expect(db.prepare('SELECT value FROM settings WHERE key = ?').get(key).value).toBe(rawValue);
+    expect(db.prepare('SELECT COUNT(*) AS count FROM webgpu_gift_weather_mappings').get().count).toBe(0);
+    db.close();
+  });
+
   test('uses only the WebGPU routes, key header, sockets, flows, and GCCE commands', async () => {
     const db = createDatabase();
     const api = createMockApi(db);
@@ -192,11 +213,45 @@ describe('WebGPU Weather Control independent plugin surface', () => {
     expect(overlay).not.toContain('getContext(');
     expect(overlay).not.toContain('weather-engine.js');
     expect(overlay).toContain('webgpu-weather:diagnostics');
+    expect(overlay).toContain('communityHud');
+    expect(overlay).toContain('hudMeter');
+    expect(overlay).toContain('hudQuest');
+    expect(overlay).toContain('hudStreak');
+    expect(overlay).toContain('hudRewardFeed');
     expect(ui).toContain('/api/webgpu-weather/config');
 
     const localeKeys = ['de', 'en', 'es', 'fr'].map((locale) => Object.keys(JSON.parse(
       fs.readFileSync(path.join(pluginDir, 'locales', `${locale}.json`), 'utf8')
     )).sort());
     expect(localeKeys.every((keys) => JSON.stringify(keys) === JSON.stringify(localeKeys[0]))).toBe(true);
+  });
+
+  test('keeps the complete classic control surface on isolated WebGPU endpoints', async () => {
+    const db = createDatabase();
+    const api = createMockApi(db);
+    const plugin = new WebgpuWeatherControlPlugin(api);
+    await plugin.init();
+
+    const routes = api.routes.map(({ route }) => route);
+    expect(routes).toEqual(expect.arrayContaining([
+      '/api/webgpu-weather/effects',
+      '/api/webgpu-weather/gamification',
+      '/api/webgpu-weather/gamification/reset',
+      '/api/webgpu-weather/sequence/trigger',
+      '/api/webgpu-weather/gift-mappings',
+      '/api/webgpu-weather/gift-mappings/:giftId',
+      '/api/webgpu-weather/reset-key'
+    ]));
+
+    const pluginDir = path.join(__dirname, '../plugins/webgpu-weather-control');
+    const ui = fs.readFileSync(path.join(pluginDir, 'ui.html'), 'utf8');
+    ['effect-rain-enabled', 'giftMappingList', 'sequenceSteps', 'audioEnabled', 'permissionsEnabled', 'gamificationEnabled', 'qualityPreset'].forEach((control) => {
+      expect(ui).toContain(control);
+    });
+    expect(ui).toContain('/api/webgpu-weather/gift-mappings');
+    expect(ui).toContain('webgpuStorageDiagnostic');
+    expect(ui).not.toContain('/api/weather/');
+    expect(ui).not.toContain("'weather:");
+    db.close();
   });
 });

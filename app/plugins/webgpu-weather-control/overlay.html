@@ -7,10 +7,20 @@
   <style>
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent; color: #eaf6ff; font: 13px system-ui, sans-serif; }
     #diagnostics { position: absolute; right: 14px; bottom: 14px; padding: 8px 10px; border-radius: 999px; background: rgba(7, 16, 29, .72); border: 1px solid rgba(116, 205, 255, .55); }
+    #communityHud { position: absolute; left: 14px; bottom: 14px; min-width: 180px; padding: 12px; border-radius: 10px; background: rgba(7, 16, 29, .72); border: 1px solid rgba(116, 205, 255, .55); }
+    #communityHud[hidden], .hud-row[hidden] { display: none; }
+    .hud-row { display: flex; justify-content: space-between; gap: 12px; margin-top: 5px; }
   </style>
 </head>
 <body>
   <aside id="diagnostics" aria-live="polite">WebGPU renderer: awaiting Task 4</aside>
+  <aside id="communityHud" hidden aria-live="polite">
+    <strong>Community Weather</strong>
+    <div class="hud-row" id="hudMeter" hidden><span>Meter</span><span id="hudMeterValue">0</span></div>
+    <div class="hud-row" id="hudQuest" hidden><span>Quest</span><span id="hudQuestValue">—</span></div>
+    <div class="hud-row" id="hudStreak" hidden><span>Streak</span><span id="hudStreakValue">0</span></div>
+    <div class="hud-row" id="hudRewardFeed" hidden><span>Reward</span><span id="hudRewardValue">—</span></div>
+  </aside>
   <script>
     // This intentionally contains no renderer. A later WebGPU-only task owns GPU initialization.
     const diagnostics = document.querySelector('#diagnostics');
@@ -21,6 +31,22 @@
       });
       socket.on('webgpu-weather:config-changed', () => {
         diagnostics.textContent = 'WebGPU configuration updated';
+      });
+      socket.on('webgpu-weather:gamification-state', (snapshot = {}) => {
+        const overlay = snapshot.config?.overlay || snapshot.overlay || {};
+        const state = snapshot.state || snapshot;
+        const hud = document.querySelector('#communityHud');
+        hud.hidden = overlay.enabled !== true;
+        const rows = [
+          ['hudMeter', 'hudMeterValue', overlay.showMeter, state.communityMeter?.current ?? 0],
+          ['hudQuest', 'hudQuestValue', overlay.showQuest, state.quest?.active?.title ?? '—'],
+          ['hudStreak', 'hudStreakValue', overlay.showStreak, state.streaks?.current ?? 0],
+          ['hudRewardFeed', 'hudRewardValue', overlay.showRewardFeed, state.rewards?.history?.[0]?.label ?? '—']
+        ];
+        rows.forEach(([rowId, valueId, visible, value]) => {
+          document.querySelector(`#${rowId}`).hidden = visible !== true;
+          document.querySelector(`#${valueId}`).textContent = String(value);
+        });
       });
     }
   </script>

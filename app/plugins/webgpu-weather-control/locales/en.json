@@ -1,10 +1,339 @@
 {
   "plugins": {
     "webgpu-weather-control": {
-      "name": "WebGPU Weather Control",
-      "description": "Independent WebGPU weather controls",
-      "ui": { "title": "WebGPU Weather Control", "diagnostics": "Renderer diagnostics" },
-      "overlay": { "status": "WebGPU renderer awaiting activation" }
+      "form_controls": {
+        "effect_search_placeholder": "rain, storm, heatwave"
+      },
+      "weather_control": {
+        "title": "Weather Control",
+        "subtitle": "Stream Weather Effects",
+        "config": {
+          "title": "Configuration",
+          "enabled": "Enable Weather Effects",
+          "default_weather": "Default Weather",
+          "transition_duration": "Transition Duration (seconds)",
+          "save": "Save Settings"
+        },
+        "chat_commands": {
+          "title": "Chat Commands",
+          "enabled": "Enable Chat Commands",
+          "require_permission": "Require Permissions",
+          "allow_intensity": "Allow Intensity Control",
+          "allow_duration": "Allow Duration Control",
+          "description": "Allow viewers to trigger weather effects via chat commands"
+        },
+        "weather_types": {
+          "clear": "Clear",
+          "rain": "Rain",
+          "snow": "Snow",
+          "storm": "Storm",
+          "fog": "Fog",
+          "wind": "Wind",
+          "thunder": "Thunder",
+          "sunbeam": "Sunbeam",
+          "glitchclouds": "Glitch Clouds",
+          "aurora": "Aurora",
+          "fireflies": "Fireflies",
+          "meteors": "Meteors",
+          "sakura": "Sakura",
+          "embers": "Embers",
+          "heatwave": "Heatwave"
+        },
+        "commands": {
+          "weather": {
+            "description": "Trigger weather effects on the stream",
+            "syntax": "/weather <effect> [intensity] [duration]",
+            "examples": "/weather rain, /weather storm 0.8"
+          },
+          "weatherlist": {
+            "description": "List all available weather effects",
+            "syntax": "/weatherlist"
+          },
+          "weatherstop": {
+            "description": "Stop all active weather effects or one specific effect",
+            "syntax": "/weatherstop [effect]"
+          }
+        },
+        "triggers": {
+          "title": "Event Triggers",
+          "gift_trigger": "Trigger on Gift",
+          "follow_trigger": "Trigger on Follow",
+          "weather_map": "Gift to Weather Mapping"
+        },
+        "overlay": {
+          "title": "Overlay",
+          "url": "Overlay URL",
+          "copy": "Copy URL",
+          "open": "Open Overlay",
+          "test": "Test Weather Effect"
+        },
+        "controls": {
+          "set_weather": "Set Weather",
+          "clear_weather": "Clear All Effects"
+        }
+      },
+      "header": {
+        "title": "Weather Control",
+        "back": "Back"
+      },
+      "stats": {
+        "effects": "Weather Effects",
+        "active": "Active Effects",
+        "events": "Events Triggered",
+        "connection": "Connection"
+      },
+      "cards": {
+        "preview": {
+          "title": "Live Weather Preview"
+        },
+        "main": {
+          "title": "Main Settings",
+          "enable": "Enable Weather Control Plugin",
+          "use_global": "Use Global Authentication",
+          "rate_limit": "Rate Limit (requests/min)",
+          "overlay_url": "Overlay URL"
+        },
+        "chat": {
+          "title": "Chat Commands (GCCE Integration)",
+          "info": "Requires Global Chat Command Engine (GCCE) plugin to be enabled. Viewers can trigger weather effects via chat commands.",
+          "enable": "Enable Chat Commands",
+          "enable_help": "Allow viewers to trigger weather effects using /weather, /weatherlist, and /weatherstop commands.",
+          "require_permission": "Require Permissions",
+          "require_permission_help": "Use the permission system below to control who can use weather commands.",
+          "allow_intensity": "Allow intensity",
+          "allow_intensity_help": "Allow users to specify effect intensity (0.0-1.0).",
+          "allow_duration": "Allow duration",
+          "allow_duration_help": "Allow users to specify effect duration (1-60 seconds).",
+          "command_names_title": "Custom Command Names",
+          "command_weather": "Weather Command",
+          "command_weather_placeholder": "Command weather placeholder",
+          "command_weather_help": "Trigger effects command",
+          "command_list": "List Command",
+          "command_list_placeholder": "Command list placeholder",
+          "command_list_help": "List available effects",
+          "command_stop": "Stop Command",
+          "command_stop_placeholder": "Command stop placeholder",
+          "command_stop_help": "Stop all effects",
+          "command_usage_title": "Command Usage:",
+          "command_usage_weather": "Command usage weather",
+          "command_usage_list": "Command usage list",
+          "command_usage_stop": "Command usage stop"
+        },
+        "permissions": {
+          "title": "Permission Settings",
+          "enable": "Enable Permission System",
+          "allow_all": "Allow All Users",
+          "followers": "Followers",
+          "superfans": "Superfans",
+          "subscribers": "Subscribers",
+          "team_members": "Team members",
+          "min_team_level": "Min Team Level",
+          "top_gifters": "Top Gifters (Top N)",
+          "min_points": "Minimum Points Required"
+        },
+        "effects": {
+          "title": "Weather Effects Configuration"
+        },
+        "tools": {
+          "title": "Weather Control Tools",
+          "search": "Search Effects",
+          "category": "Effect Category",
+          "preset": "Effect Preset",
+          "sequence_name": "Sequence Name",
+          "sequence_steps": "Sequence Steps JSON"
+        },
+        "audio": {
+          "enable": "Enable Weather Audio"
+        },
+        "active": {
+          "title": "Active Weather Effects"
+        },
+        "triggers": {
+          "title": "Event Triggers"
+        },
+        "gifts": {
+          "title": "Gift-to-Weather Mappings",
+          "description": "Map specific TikTok gifts to weather effects. When a mapped gift is received, it will trigger the configured weather effect.",
+          "load_prompt": "Click \"Load Gift Catalog\" to see available gifts",
+          "effect_label": "Weather Effect",
+          "no_mapping": "No Mapping",
+          "enabled": "Enabled",
+          "save": "Save",
+          "delete": "Delete",
+          "delete_confirm": "Are you sure you want to delete this gift mapping?"
+        }
+      },
+      "buttons": {
+        "preview_on": "Start Preview",
+        "preview_off": "Stop Preview",
+        "test_rain": "Test Rain Effect",
+        "stop_all": "Stop All",
+        "copy": "Copy",
+        "load_catalog": "Load catalog",
+        "update_catalog": "Update catalog",
+        "refresh_mappings": "Refresh mappings",
+        "save_config": "Save config"
+      },
+      "preview": {
+        "fps": "FPS",
+        "avg_fps": "Avg FPS",
+        "particles": "Particles",
+        "active_effects": "Active",
+        "warning": "Performance Warning: This configuration may lag on low-end systems"
+      },
+      "settings": {
+        "quality_preset": "Quality Preset",
+        "adaptive_quality": "Adaptive Quality"
+      },
+      "effects": {
+        "names": {
+          "rain": "Rain",
+          "snow": "Snow",
+          "storm": "Storm",
+          "fog": "Fog",
+          "thunder": "Thunder",
+          "sunbeam": "Sunbeam",
+          "glitchclouds": "Glitch Clouds",
+          "aurora": "Aurora Borealis",
+          "fireflies": "Fireflies",
+          "meteors": "Meteor Shower",
+          "sakura": "Sakura Petals",
+          "embers": "Rising Embers",
+          "heatwave": "Heatwave"
+        },
+        "intensity": "Intensity",
+        "duration_ms": "Duration (ms)",
+        "permanent_label": "Permanent",
+        "permanent_help": "Keep this effect running until manually stopped.",
+        "test_button": "Test Effect",
+        "fog_color": "Fog Color Preset",
+        "sunbeam_colortemp": "Color Temperature"
+      },
+      "labels": {
+        "cool_moonlight": "Cool Moonlight",
+        "ultra_800": "Ultra â€“ 800",
+        "golden_hour": "Golden Hour",
+        "import_config": "Import Config",
+        "audio_volume": "Audio Volume",
+        "static_noise": "Static Noise",
+        "ice_blue": "Ice Blue",
+        "community_meter_max": "Community Meter Max",
+        "digital_blocks": "Digital Blocks",
+        "apply_preset": "Apply Preset",
+        "trigger_sequence": "Trigger Sequence",
+        "reset_progress": "Reset Progress",
+        "community_meter_carry_over": "Community Meter Carry Over",
+        "reward_thresholds_json": "Reward Thresholds JSON",
+        "low_100_max_particles": "Low â€“ 100 max particles",
+        "glitch_intensity_multiplier": "Glitch Intensity Multiplier",
+        "golden_mist": "Golden Mist",
+        "enable_gamification": "Enable Gamification",
+        "show_overlay_meter": "Show Overlay Meter",
+        "weather_gamification": "Weather Gamification",
+        "show_overlay_streak": "Show Overlay Streak",
+        "show_overlay_quest": "Show Overlay Quest",
+        "high_500": "High â€“ 500",
+        "refresh_state": "Refresh State",
+        "rgb_shift": "RGB Shift",
+        "glitch_displacement": "Displacement",
+        "glitch_scanlines": "Scanlines",
+        "action_fog_delay_0_intensity_0_35_duration": "[ {\"action\":\"fog\",\"delay\":0,\"intensity\":0.35,\"duration\":8000}, {\"action\":\"rain\",\"delay\":2000,\"intensity\":0.55,\"duration\":10000}, {\"action\":\"thunder\",\"delay\":5500,\"intensity\":0.8,\"duration\":5000} ]",
+        "blood_red": "Blood Red",
+        "reward_cooldown_ms": "Reward Cooldown (ms)",
+        "weather_control_modern_configuration": "Weather Control - Modern Configuration",
+        "no_active_effects_reported_by_the_overlay_yet": "No active effects reported by the overlay yet.",
+        "community_weather": "Community Weather",
+        "streak_window_ms": "Streak Window (ms)",
+        "quest_pool_json": "Quest Pool JSON",
+        "chromatic_aberration": "Chromatic Aberration",
+        "next_reward": "Next Reward",
+        "medium_300": "Medium â€“ 300",
+        "all_categories": "All categories",
+        "export_config": "Export Config",
+        "show_reward_feed": "Show Reward Feed",
+        "glitch_sub_effects": "Glitch Sub-Effects",
+        "toxic_green": "Toxic Green",
+        "weather_control_overlay": "Weather Control Overlay",
+        "default_white": "Default White",
+        "streak_bonus_threshold": "Streak Bonus Threshold"
+      },
+      "ui": {
+        "commands": { "weather": "weather", "weatherlist": "weatherlist", "weatherstop": "weatherstop" },
+        "overlay": { "quest": "Quest", "streak": "Streak", "meter": "Meter" },
+        "effects": {
+          "midday": "Midday", "sunset": "Sunset", "precipitation": "Precipitation",
+          "atmosphere": "Atmosphere", "light": "Light", "ambient": "Ambient",
+          "impact": "Impact", "digital": "Digital", "direction": "Direction", "layer": "Layer"
+        },
+        "actions": { "play": "Play", "stopEffect": "Stop Effect", "stop": "Stop" },
+        "advanced": { "title": "Advanced", "opacity": "Opacity", "particle_scale": "Particle Scale", "wind": "Wind" },
+        "triggers": { "effect": "Effect", "intensity": "Intensity", "duration": "Duration", "likeInterval": "Like Interval", "follow": "Follow", "share": "Share", "subscribe": "Subscribe", "likeMilestone": "Like milestone" },
+        "active": { "noEffects": "No active effects reported by the overlay." }
+      },
+      "status": {
+        "config_loaded": "Configuration loaded successfully",
+        "error_loading_config": "Error loading configuration: {error}",
+        "config_saved": "Configuration saved successfully!",
+        "error_saving_config": "Error saving configuration: {error}",
+        "saving_config": "Saving...",
+        "overlay_copied": "Overlay URL copied to clipboard!",
+        "effect_triggered": "{effect} effect triggered!",
+        "effect_trigger_error": "Error triggering effect: {error}",
+        "gift_catalog_loading": "Loading gift catalog...",
+        "gift_catalog_empty": "No gifts in catalog. Connect to a TikTok stream first.",
+        "gift_catalog_loaded": "Gift catalog loaded: {count} gifts",
+        "gift_catalog_error": "Error loading gift catalog: {error}",
+        "gift_catalog_updating": "Updating gift catalog...",
+        "gift_catalog_updated": "Gift catalog updated successfully",
+        "gift_mappings_refreshed": "Gift mappings refreshed",
+        "gift_mapping_saved": "Gift mapping saved successfully!",
+        "gift_mapping_deleted": "Gift mapping deleted successfully!",
+        "gift_mapping_error": "Error saving mapping: {error}",
+        "select_effect": "Please select a weather effect",
+        "permanent_effects_active": "Permanent effects active: {effects}"
+      },
+      "runtime": {
+        "ui": {
+          "duration_ms": "{duration} ms",
+          "effect_details": "Intensity {intensity} | Layer {layer}",
+          "preview_effect": "Testing {effect} in the preview",
+          "preview_stopped": "All preview effects stopped",
+          "api_key_missing": "API key is not configured. Check the settings.",
+          "gift_cost": "{count} diamonds | ID: {id}",
+          "invalid_sequence_json": "Sequence steps contain invalid JSON: {error}",
+          "reset_failed": "Unable to reset gamification",
+          "overlay_url_unavailable": "Overlay URL is not available",
+          "presets": {
+            "cozy_rain": "Cozy Rain",
+            "boss_storm": "Boss Storm",
+            "winter_chill": "Winter Chill",
+            "cyber_glitch": "Cyber Glitch"
+          }
+        },
+        "overlay": {
+          "connected": "Connected",
+          "disconnected": "Disconnected",
+          "reconnected": "Reconnected",
+          "connecting": "Connecting",
+          "reconnecting": "Reconnecting {attempt}",
+          "init_failed": "Initialization failed: {error}",
+          "quest": "Quest",
+          "reward": "Reward",
+          "next_reward": "{reward} @ {meter}",
+          "meter_disabled": "Meter disabled",
+          "streak_disabled": "Streak disabled",
+          "debug_title": "Weather Control Debug",
+          "debug_socket": "Socket: {status}",
+          "socket_connected": "connected",
+          "socket_disconnected": "disconnected",
+          "debug_fps": "FPS: {fps} / avg {average}",
+          "debug_quality": "Quality: {quality}",
+          "debug_particles": "Particles: {count}",
+          "debug_active": "Active: {effects}",
+          "debug_queue": "Queue: {count}",
+          "debug_events": "Events: {count}"
+        }
+      }
     }
   }
 }
