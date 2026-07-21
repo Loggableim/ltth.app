@@ -140,9 +140,19 @@ function mergeConfig(base, incoming) {
   }
 
   Object.entries(incoming).forEach(([key, value]) => {
-    result[key] = isPlainObject(value) && isPlainObject(result[key])
-      ? mergeConfig(result[key], value)
-      : clone(value);
+    if (isPlainObject(result[key])) {
+      if (isPlainObject(value)) {
+        result[key] = mergeConfig(result[key], value);
+      }
+      return;
+    }
+    if (Array.isArray(result[key])) {
+      if (Array.isArray(value)) {
+        result[key] = clone(value);
+      }
+      return;
+    }
+    result[key] = clone(value);
   });
   return result;
 }

@@ -110,4 +110,18 @@ describe('WebGPU Weather Control bootstrap config', () => {
       expect.objectContaining({ id: 'community-chat' })
     ]));
   });
+
+  test('normalizes malformed nested persisted sections to usable defaults', () => {
+    const { createInitialWebgpuWeatherConfig } = require('../plugins/webgpu-weather-control/lib/bootstrap-config');
+
+    const config = createInitialWebgpuWeatherConfig({
+      effects: null,
+      gamification: null
+    }, () => 'nested-fallback-key');
+
+    expect(config.effects.rain).toMatchObject({ enabled: true, defaultIntensity: 0.5 });
+    expect(config.gamification).toMatchObject({ enabled: false });
+    expect(config.gamification.overlay.enabled).toBe(false);
+    expect(config.gamification.state.communityMeter.current).toBe(0);
+  });
 });
