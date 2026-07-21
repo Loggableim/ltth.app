@@ -1310,6 +1310,7 @@
             "no_prize": "💔 Pas de gain !",
             "send_gift": "Envoyez un cadeau pour faire tourner la roue !",
             "shock": "⚡ CHOC !",
+            "segment_count_changed": "La configuration de la roue a changé pendant que ce tirage était en file d’attente ({previousCount} → {currentCount} segments). Réessayez.",
             "spin_failed": "Le tirage n’a pas pu être effectué",
             "spinning": "🎡 La roue tourne",
             "test_spin_error": "Impossible de déclencher le test de rotation : {error}",

@@ -201,7 +201,12 @@ describe('Wheel Queue / Spin-Hanger Fix', () => {
       expect(wheel.isSpinning).toBe(false);
       expect(wheel.activeSpins.has('ss-seg-count')).toBe(false);
       expect(mockIO.emit).toHaveBeenCalledWith('wheel:spin-error', expect.objectContaining({
-        spinId: 'ss-seg-count'
+        spinId: 'ss-seg-count',
+        messageKey: 'plugins.game-engine.runtime.wheel.segment_count_changed',
+        messageParams: {
+          previousCount: 5,
+          currentCount: 3
+        }
       }));
     });
   });
