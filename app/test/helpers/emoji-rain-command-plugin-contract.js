@@ -215,7 +215,8 @@ function registerEmojiRainCommandContract({
         ...(imageRendererMode === 'profile-picture' ? { profilePictureUrl: imagePath } : {}),
         count: 4,
         burst: false,
-        lifetimeMs: 12000
+        lifetimeMs: 12000,
+        assetLocked: true
       });
 
       plugin.checkAntiSpam = jest.fn(() => true);
@@ -239,6 +240,7 @@ function registerEmojiRainCommandContract({
       });
       expect(builtInResponse).toMatchObject({ success: true });
       expect(api.emissions[2].data).not.toHaveProperty('lifetimeMs');
+      expect(api.emissions[2].data).not.toHaveProperty('assetLocked');
     });
 
     test('keeps an explicitly empty command list disabled', async () => {

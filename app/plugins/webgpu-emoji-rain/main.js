@@ -822,6 +822,7 @@ class WebGPUEmojiRainPlugin {
       exactCount: true,
       intensity: 1.5,
       lifetimeMs: config.animal_command_despawn_ms,
+      assetLocked: true,
       duration: 0,
       burst: false,
       username: context.username,
@@ -1424,6 +1425,7 @@ class WebGPUEmojiRainPlugin {
       ...(Number.isFinite(Number(params.lifetimeMs))
         ? { lifetimeMs: Number(params.lifetimeMs) }
         : {}),
+      ...(params.assetLocked === true ? { assetLocked: true } : {}),
       ...(coordinates.spawnAreaPreset && { spawnAreaPreset: coordinates.spawnAreaPreset })
     };
 
