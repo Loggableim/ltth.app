@@ -202,6 +202,25 @@ describe('WebGPU Weather Control independent plugin surface', () => {
     db.close();
   });
 
+  test('never exposes the WebGPU key outside the dashboard-admin config flow', async () => {
+    const db = createDatabase();
+    const api = createMockApi(db);
+    const plugin = new WebgpuWeatherControlPlugin(api);
+    await plugin.init();
+    const configRoute = api.routes.find(({ method, route }) => method === 'get' && route === '/api/webgpu-weather/config').handler;
+
+    const external = createResponse();
+    await configRoute({ headers: {}, ip: '203.0.113.10' }, external);
+    expect(external.statusCode).toBe(403);
+    expect(JSON.stringify(external.body)).not.toContain(plugin.apiKey);
+
+    const dashboard = createResponse();
+    await configRoute({ headers: {}, ip: '127.0.0.1' }, dashboard);
+    expect(dashboard.statusCode).toBe(200);
+    expect(dashboard.body.config.apiKey).toBe(plugin.apiKey);
+    db.close();
+  });
+
   test('ships a transparent renderer-free overlay and four locale files under the new namespace', () => {
     const pluginDir = path.join(__dirname, '../plugins/webgpu-weather-control');
     const manifest = JSON.parse(fs.readFileSync(path.join(pluginDir, 'plugin.json'), 'utf8'));

@@ -1,5 +1,6 @@
 const path = require('path');
 const crypto = require('crypto');
+const { createAdminAuth } = require('../../modules/admin-auth');
 const { createInitialWebgpuWeatherConfig } = require('./lib/bootstrap-config');
 
 const PLUGIN_ID = 'webgpu-weather-control';
@@ -91,6 +92,7 @@ function migrateWebgpuWeatherStorage(databaseManager, generateApiKey) {
 class WebgpuWeatherControlPlugin {
     constructor(api) {
         this.api = api;
+        this.adminAuth = createAdminAuth();
 
         this.supportedEffects = [
             'rain',
@@ -251,6 +253,12 @@ class WebgpuWeatherControlPlugin {
             this.apiKeysEqual(req.headers && req.headers['x-webgpu-weather-key'], this.apiKey)
                 ? handler(req, res, next)
                 : res.status(401).json({ success: false, error: 'Missing or invalid X-WebGPU-Weather-Key' })
+        ));
+    }
+
+    registerAdminRoute(method, routePath, handler) {
+        this.api.registerRoute(method, routePath, (req, res, next) => (
+            this.adminAuth(req, res, () => handler(req, res, next))
         ));
     }
 
@@ -551,13 +559,13 @@ class WebgpuWeatherControlPlugin {
         });
 
         // Get current configuration
-        this.api.registerRoute('get', '/api/webgpu-weather/config', async (req, res) => {
+        this.registerAdminRoute('get', '/api/webgpu-weather/config', async (req, res) => {
             try {
                 // Return config without sensitive data
                 const safeConfig = {
                     ...this.config,
-                    // The configuration route is served through the plugin UI;
-                    // its own client uses this key for every mutating WebGPU API call.
+                    // This route is dashboard-admin authenticated. Its client uses
+                    // the key for separately authenticated WebGPU mutations.
                     apiKey: this.apiKey,
                     hasApiKey: Boolean(this.apiKey)
                 };
@@ -942,7 +950,7 @@ class WebgpuWeatherControlPlugin {
         });
 
         // Reset API key
-        this.registerWebgpuRoute('post', '/api/webgpu-weather/reset-key', async (req, res) => {
+        this.registerAdminRoute('post', '/api/webgpu-weather/reset-key', async (req, res) => {
             try {
                 this.apiKey = this.generateApiKey();
                 this.config.apiKey = this.apiKey;
