@@ -7,8 +7,8 @@ class InteractiveTurnQueue {
   }
 
   enqueue(session) {
-    if (!session || session.status !== 'active' || session.turnRole !== 'host') {
-      throw new Error('Only an active host turn can enter the interactive queue');
+    if (!session || session.status !== 'active' || !['host', 'viewer'].includes(session.turnRole)) {
+      throw new Error('Only an active interactive turn can enter the interactive queue');
     }
     const sessionId = Number(session.sessionId);
     const existing = this.entries.find(entry => entry.sessionId === sessionId);

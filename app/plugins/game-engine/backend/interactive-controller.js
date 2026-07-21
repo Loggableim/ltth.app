@@ -269,6 +269,19 @@ class InteractiveController {
     })}`);
   }
 
+  _rotateAfterTurn(session) {
+    const head = this.queue.head();
+    if (!head || head.sessionId !== session.sessionId) {
+      throw new Error('interactive_queue_head_changed');
+    }
+    if (this.queue.list().length < 2) return { moved: false, single: true };
+    const rotated = this.queue.rotateHeadToTail(session.sessionId);
+    if (!rotated?.moved) {
+      throw new Error(rotated?.error || 'queue_rotation_failed');
+    }
+    return rotated;
+  }
+
   init() {
     let recovered = 0;
     const reconciled = this.database.reconcileOrphanedInteractiveSessions?.() || 0;
@@ -312,16 +325,19 @@ class InteractiveController {
     const validQueueRows = [];
     for (const row of this.database.getInteractiveQueue()) {
       const session = this.registry.get(row.sessionId);
-      if (session && session.status === 'active' && session.turnRole === 'host') {
+      if (session && session.status === 'active' && ['host', 'viewer'].includes(session.turnRole)) {
         validQueueRows.push(row);
       } else {
         this.database.removeInteractiveTurn(row.sessionId);
       }
     }
     this.queue.restore(validQueueRows);
+    for (const session of this.registry.list().sort((left, right) => left.sessionId - right.sessionId)) {
+      if (!this.queue.has(session.sessionId)) this.queue.enqueue(session);
+    }
     this.router.sync();
     this.emitState();
-    return { recovered, reconciled, queueLength: validQueueRows.length };
+    return { recovered, reconciled, queueLength: this.queue.list().length };
   }
 
   startMatch({ gameType, viewerId, viewerDisplayName, timeControl = null, triggerType = 'command', triggerValue = null }) {
@@ -394,7 +410,7 @@ class InteractiveController {
 
       this.database.transaction(() => {
         this.database.createInteractiveState(this._sessionRecord(session));
-        if (turnRole === 'host') this.queue.enqueue(session);
+        this.queue.enqueue(session);
       });
       this.emitLegacyEvent?.('started', { session, state, config });
       this._logTransition('session_started', session);
@@ -419,6 +435,11 @@ class InteractiveController {
       return { success: true, duplicate: true, sessionId: session.sessionId };
     }
     if (session.turnRole !== 'viewer') return { success: false, error: 'not_viewer_turn' };
+    const head = this.queue.head();
+    if (!head || head.sessionId !== session.sessionId) return { success: false, error: 'not_queue_head' };
+    if (this.router.snapshot().displaySessionId !== session.sessionId) {
+      return { success: false, error: 'not_displayed' };
+    }
     if (session.viewerDeadlineMs != null && this.now() >= session.viewerDeadlineMs) {
       this._handleViewerTimeout(session.sessionId, session.sessionRevision);
       return { success: false, error: 'viewer_timeout' };
@@ -460,7 +481,7 @@ class InteractiveController {
             throw new Error('duplicate_move_identity');
           }
           this.database.updateInteractiveState(session.sessionId, this._sessionRecord(session));
-          this.queue.enqueue(session);
+          this._rotateAfterTurn(session);
         });
       }
     } catch (error) {
@@ -488,7 +509,15 @@ class InteractiveController {
           queueSequence: this.queue.list().find(row => row.sessionId === session.sessionId)?.sequence
         });
       });
-      this._publishSafely('Viewer move display routing', session.sessionId, () => this.router.sync());
+      const animationSpeed = this._bounded(session.config?.animationSpeed, 500, 100, 2000);
+      const routed = this._publishSafely('Viewer move display routing', session.sessionId, () => {
+        this.router.beginAnimation(session.sessionId, animationSpeed);
+      });
+      if (!routed) {
+        this._publishSafely('Viewer move display reconciliation', session.sessionId, () => {
+          this.router.sync({ force: true });
+        });
+      }
       this._publishSafely('Viewer move state', session.sessionId, () => this.emitState());
     }
     return { success: true, sessionId: session.sessionId, result };
@@ -579,8 +608,8 @@ class InteractiveController {
           if (moveIdentity && !this.database.recordInteractiveMoveIdentity(session.sessionId, moveIdentity)) {
             throw new Error('duplicate_move_identity');
           }
-          this.queue.remove(session.sessionId);
           this.database.updateInteractiveState(session.sessionId, this._sessionRecord(session));
+          this._rotateAfterTurn(session);
         });
       }
     } catch (error) {

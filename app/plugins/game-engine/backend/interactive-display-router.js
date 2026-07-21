@@ -90,8 +90,7 @@ class InteractiveDisplayRouter {
       this.leaderboard = null;
       this.resultQueue = [];
     }
-    const viewer = head ? null : this._nextViewerSession();
-    const nextSessionId = head?.sessionId ?? viewer?.sessionId ?? null;
+    const nextSessionId = head?.sessionId ?? null;
     const nextPhase = nextSessionId == null ? 'idle' : 'playing';
     if (this.displaySessionId === nextSessionId && this.phase === nextPhase) {
       this._resumeDisplayedTimers();
@@ -277,7 +276,7 @@ class InteractiveDisplayRouter {
     this.leaderboard = null;
     this.displaySessionId = null;
     this.phase = 'idle';
-    if (!this.queue.head() && !this._nextViewerSession()) {
+    if (!this.queue.head()) {
       this._advanceRevision();
       return this._publish();
     }

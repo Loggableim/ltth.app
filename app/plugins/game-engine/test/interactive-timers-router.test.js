@@ -261,14 +261,21 @@ describe('InteractiveDisplayRouter', () => {
       pauseViewer: jest.fn()
     };
     snapshots = [];
+    const runnableQueueRows = () => {
+      if (queueRows.length) return queueRows;
+      return Array.from(registryRows.values())
+        .filter(row => row.status === 'active')
+        .sort((left, right) => left.sessionId - right.sessionId)
+        .map((row, index) => ({ sessionId: row.sessionId, sequence: index + 1 }));
+    };
     router = new InteractiveDisplayRouter({
       registry: {
         get: id => registryRows.get(Number(id)) || null,
         list: () => Array.from(registryRows.values())
       },
       queue: {
-        head: () => queueRows[0] || null,
-        list: () => queueRows.map(row => ({ ...row }))
+        head: () => runnableQueueRows()[0] || null,
+        list: () => runnableQueueRows().map(row => ({ ...row }))
       },
       timers,
       database,
@@ -383,28 +390,29 @@ describe('InteractiveDisplayRouter', () => {
     expect(timers.resumeViewer).not.toHaveBeenCalled();
   });
 
-  test('displays the oldest active viewer turn with session ID as the tie breaker', () => {
+  test('displays the queued viewer head over older active viewer sessions', () => {
     registryRows.set(2, session({
       sessionId: 2,
       viewerId: 'viewer-2',
       viewerDisplayName: 'Viewer Two',
-      lastActivityAt: 100
+      lastActivityAt: 2
     }));
-    registryRows.set(1, session({ lastActivityAt: 100 }));
+    registryRows.set(1, session({ lastActivityAt: 1 }));
     registryRows.set(3, session({
       sessionId: 3,
       viewerId: 'viewer-3',
       viewerDisplayName: 'Viewer Three',
-      lastActivityAt: 200
+      lastActivityAt: 3
     }));
+    queueRows.push({ sessionId: 3, sequence: 1 }, { sessionId: 1, sequence: 2 }, { sessionId: 2, sequence: 3 });
 
     router.sync();
 
     expect(router.snapshot()).toMatchObject({
-      displaySessionId: 1,
+      displaySessionId: 3,
       phase: 'playing'
     });
-    expect(timers.resumeViewer).toHaveBeenCalledWith(registryRows.get(1));
+    expect(timers.resumeViewer).toHaveBeenCalledWith(registryRows.get(3));
   });
 
   test('force sync resumes a prepared viewer timer for the unchanged playing display', () => {
@@ -697,7 +705,7 @@ describe('InteractiveDisplayRouter', () => {
     });
   });
 
-  test('keeps viewer time paused through leaderboard presentation', () => {
+  test('resumes the queued viewer instead of delaying its turn for a leaderboard presentation', () => {
     const active = session();
     registryRows.set(1, active);
     router.sync();
@@ -709,10 +717,6 @@ describe('InteractiveDisplayRouter', () => {
       types: ['daily'],
       displayTimeMs: 1000
     });
-    jest.advanceTimersByTime(1000);
-    expect(router.snapshot()).toMatchObject({ phase: 'leaderboard' });
-    expect(timers.resumeViewer).not.toHaveBeenCalled();
-
     jest.advanceTimersByTime(1000);
     expect(timers.resumeViewer).toHaveBeenCalledWith(active);
     expect(router.snapshot()).toMatchObject({ displaySessionId: 1, phase: 'playing' });
