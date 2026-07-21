@@ -108,6 +108,7 @@ fn auroraBands(uv: vec2<f32>) -> f32 { return sin(uv.x * 18. + uv.y * 4.) * .5 +
 fn heatwaveRefraction(uv: vec2<f32>) -> f32 { return noise(uv * 42.) * .035; }
 fn glitchClouds(uv: vec2<f32>) -> f32 { return noise(floor(uv * 45.)); }
 fn bitEnabled(bits: f32, bit: f32) -> f32 { let quotient = floor(bits / bit); return quotient - 2.0 * floor(quotient / 2.0); }
+fn isFullscreenKind(kind: f32) -> bool { return kind == 2.0 || kind == 3.0 || kind == 4.0 || kind == 5.0 || kind == 6.0 || kind == 7.0 || kind == 12.0; }
 fn fullscreenEffect(kind: f32, uv: vec2<f32>, block0: vec4<f32>, block1: vec4<f32>, block2: vec4<f32>, block3: vec4<f32>) -> vec3<f32> {
   if (kind == 2.0) { return vec3<f32>(-0.32 * (0.4 + noise(uv * 12.0))); }
   if (kind == 3.0) { return mix(vec3<f32>(noise(uv * 18.0) * .22), block2.xyz, .65); }
@@ -123,7 +124,7 @@ fn layeredCinema(uv: vec2<f32>) -> vec4<f32> {
   // activeOrder is rank+1. The rank loop gives actual layer-sorted alpha composition independent of fixed storage order.
   for (var rank: f32 = 1.0; rank <= 13.0; rank = rank + 1.0) { for (var effectIndex: u32 = 0u; effectIndex < 13u; effectIndex = effectIndex + 1u) {
     let base = effectIndex * 4u; let block0 = effectState[base]; let block1 = effectState[base + 1u]; let block2 = effectState[base + 2u]; let block3 = effectState[base + 3u];
-    if (block3.w == rank) { var accumulated = vec3<f32>(0.0); for (var sample: u32 = 0u; sample < samples; sample = sample + 1u) { let depth = f32(sample) / f32(samples); accumulated = accumulated + fullscreenEffect(block3.z, uv + vec2<f32>(0.0, depth * .004), block0, block1, block2, block3); }
+    if (block3.w == rank && isFullscreenKind(block3.z)) { var accumulated = vec3<f32>(0.0); for (var sample: u32 = 0u; sample < samples; sample = sample + 1u) { let depth = f32(sample) / f32(samples); accumulated = accumulated + fullscreenEffect(block3.z, uv + vec2<f32>(0.0, depth * .004), block0, block1, block2, block3); }
       let temperatureTint = vec3<f32>(1.0 + max(block2.w, 0.0) * .28, 1.0, 1.0 + max(-block2.w, 0.0) * .28); let effectColor = accumulated / f32(samples) * temperatureTint; let alpha = clamp(block0.x * block1.x, 0.0, 1.0); cinema = mix(cinema, effectColor + cinema * .2, alpha); cinemaAlpha = cinemaAlpha + alpha * (1.0 - cinemaAlpha);
     }
   } }

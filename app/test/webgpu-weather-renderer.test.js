@@ -215,6 +215,15 @@ describe('cinematic WebGPU weather renderer contract', () => {
     expect(framegraph).toContain('max(scene.a, original.a)');
   });
 
+  test('gates canvas-wide cinema alpha to fullscreen or hybrid kinds and leaves particle-only kinds transparent away from sprites', () => {
+    const framegraph = fs.readFileSync(framegraphPath, 'utf8');
+    expect(framegraph).toContain('fn isFullscreenKind(kind: f32) -> bool');
+    [2, 3, 4, 5, 6, 7, 12].forEach((kind) => expect(framegraph).toContain(`kind == ${kind}.0`));
+    [0, 1, 8, 9, 10, 11].forEach((kind) => expect(framegraph).not.toContain(`kind == ${kind}.0 ||`));
+    expect(framegraph).toContain('block3.w == rank && isFullscreenKind(block3.z)');
+    expect(framegraph).not.toContain('if (block3.w == rank) { var accumulated');
+  });
+
   test('clears stale particles across capacity after stop or expiry before compacting indirect instances', async () => {
     const { CinematicWeatherEngine } = require(enginePath);
     const mock = makeMockGpu(false);
@@ -225,6 +234,7 @@ describe('cinematic WebGPU weather renderer contract', () => {
     engine.render(16);
     expect(engine.getMetrics().activeParticles).toBeGreaterThan(0);
     engine.stop();
+    expect(engine.getMetrics()).toMatchObject({ activeParticles: 0, activeParticleCommands: 0 });
     engine.render(16);
     expect(engine.getMetrics()).toMatchObject({ activeParticles: 0, activeParticleCommands: 0 });
     const framegraph = fs.readFileSync(framegraphPath, 'utf8');

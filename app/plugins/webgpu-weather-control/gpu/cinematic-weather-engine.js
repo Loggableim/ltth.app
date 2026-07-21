@@ -120,7 +120,7 @@
       return true;
     }
 
-    stop(action) { if (action) this.effects.delete(action); else this.effects.clear(); this.metrics.activeParticles = 0; this.publishDiagnostic('effect-stopped'); }
+    stop(action) { if (action) this.effects.delete(action); else this.effects.clear(); this.metrics.activeParticles = 0; this.metrics.activeParticleCommands = 0; this.publishDiagnostic('effect-stopped'); }
     applyConfig(config = {}) { this.adaptiveQuality = config.adaptiveQuality !== false; this.setQuality(config.qualityPreset || this.qualityName); Object.entries(config.effects || {}).forEach(([action, effect]) => { if (config.enabled !== false && effect.enabled !== false && effect.permanent) this.trigger({ action, ...effect, permanent: true }); }); }
     getEffectState() { return [...this.effects.values()].sort((a, b) => a.layer - b.layer); }
 
