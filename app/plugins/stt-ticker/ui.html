@@ -1328,7 +1328,7 @@
             <select id="asr-languageFixed"></select>
           </div>
         </div>
-        <p class="help-text" data-i18n="plugins.stt-ticker.labels.halluzinations_schutz_aktiv_auto_modus_filtert_cjk_thai">Halluzinations-Schutz aktiv: Auto-Modus filtert CJK/Thai automatisch.</p>
+        <p id="deepgram-language-hint" class="help-text">Provider-Sprache hängt vom gewählten Deepgram-Modell ab. Nicht unterstützte Kombinationen werden klar abgelehnt.</p>
       </div>
 
       <!-- VAD -->
@@ -1451,9 +1451,47 @@
   <script>
     const BASE = window.location.origin;
 
-    function translateUi(key, fallback) {
-      const translation = window.i18n.t(key);
+    function translateUi(key, fallback, params = {}) {
+      const translation = window.i18n?.t?.(key, params);
       return translation && translation !== key ? translation : fallback;
+    }
+
+    function credentialSourceLabel(source) {
+      const messages = {
+        config: ['plugins.stt-ticker.stt_ticker.ui.messages.key_source_config', 'config'],
+        file: ['plugins.stt-ticker.stt_ticker.ui.messages.key_source_file', 'file'],
+        environment: ['plugins.stt-ticker.stt_ticker.ui.messages.key_source_environment', 'environment'],
+        plugin: ['plugins.stt-ticker.stt_ticker.ui.messages.key_source_plugin', 'plugin']
+      };
+      const message = messages[source];
+      return message ? translateUi(message[0], message[1]) : '';
+    }
+
+    function setCredentialBadge(element, configured, source) {
+      if (!element) return;
+      const label = configured
+        ? translateUi('plugins.stt-ticker.stt_ticker.ui.messages.key_configured', 'Configured')
+        : translateUi('plugins.stt-ticker.stt_ticker.ui.messages.key_not_configured', 'Not configured');
+      const sourceLabel = configured ? credentialSourceLabel(source) : '';
+      element.textContent = sourceLabel ? `${label} (${sourceLabel})` : label;
+      element.className = configured ? 'badge badge-green' : 'badge badge-gray';
+    }
+
+    function updateDeepgramLanguageHint(provider, model) {
+      const hint = document.getElementById('deepgram-language-hint');
+      if (!hint || provider !== 'deepgram') return;
+      const languages = Array.isArray(model?.multilingualLanguages) ? model.multilingualLanguages.join(', ') : '';
+      hint.textContent = languages
+        ? translateUi(
+          'plugins.stt-ticker.stt_ticker.ui.messages.deepgram_multilingual_hint',
+          `Auto mode for ${model.name} supports multilingual transcription for: ${languages}. Choose a fixed language for other source languages.`,
+          { model: model.name, languages }
+        )
+        : translateUi(
+          'plugins.stt-ticker.stt_ticker.ui.messages.deepgram_fixed_language_hint',
+          `Auto multilingual mode is not supported by ${model?.name || 'this model'}; choose a fixed language.`,
+          { model: model?.name || 'this model' }
+        );
     }
 
     function setSelectFallback(select, key, fallback) {
@@ -1480,13 +1518,16 @@
 
     // ===== Status =====
     async function refreshStatus() {
+      if (window.i18n?.ready) await window.i18n.ready;
       try {
         const res = await fetch('/api/stt-ticker/status');
         const data = await res.json();
         if (!data.success) return;
         const s = data.status;
 
-        document.getElementById('stat-enabled').textContent = s.enabled ? 'Active' : 'Disabled';
+        document.getElementById('stat-enabled').textContent = s.enabled
+          ? translateUi('plugins.stt-ticker.stt_ticker.ui.messages.enabled', 'Enabled')
+          : translateUi('plugins.stt-ticker.stt_ticker.ui.messages.disabled', 'Disabled');
         document.getElementById('stat-enabled').style.color = s.enabled ? '#4CAF50' : 'var(--stt-status-warning, #facc15)';
 
         const asr = s.asr || {};
@@ -1497,11 +1538,19 @@
         const fishKeyBadgeEl = document.getElementById('fishaudio-key-status-badge');
         if (asr.provider === 'deepgram') {
           providerEl.textContent = 'Deepgram';
+          providerEl.setAttribute('aria-label', translateUi(
+            'plugins.stt-ticker.stt_ticker.ui.messages.provider_deepgram',
+            'Deepgram speech recognition'
+          ));
           providerEl.style.color = '#4CAF50';
           if (providerHintEl) {
             providerHintEl.style.background = 'rgba(76, 175, 80, 0.1)';
             providerHintEl.style.color = '#4CAF50';
-            providerHintEl.innerHTML = '<strong>Deepgram aktiv</strong> - ca. $0.26/h, Modell: ' + (asr.deepgramModel || 'nova-2');
+            providerHintEl.textContent = translateUi(
+              'plugins.stt-ticker.stt_ticker.ui.messages.deepgram_active',
+              `Deepgram active — model: ${asr.deepgramModel || 'nova-2'}`,
+              { model: asr.deepgramModel || 'nova-2' }
+            );
           }
         } else if (asr.provider === 'elevenlabs') {
           providerEl.textContent = 'ElevenLabs';
@@ -1509,7 +1558,11 @@
           if (providerHintEl) {
             providerHintEl.style.background = 'rgba(76, 175, 80, 0.1)';
             providerHintEl.style.color = '#4CAF50';
-            providerHintEl.innerHTML = '<strong>ElevenLabs aktiv</strong> - Modell: ' + (asr.elevenlabsModel || 'scribe_v2');
+            providerHintEl.textContent = translateUi(
+              'plugins.stt-ticker.stt_ticker.ui.messages.elevenlabs_active',
+              `ElevenLabs active — model: ${asr.elevenlabsModel || 'scribe_v2'}`,
+              { model: asr.elevenlabsModel || 'scribe_v2' }
+            );
           }
         } else if (asr.provider === 'fish.audio') {
           providerEl.textContent = 'Fish.audio';
@@ -1517,42 +1570,23 @@
           if (providerHintEl) {
             providerHintEl.style.background = 'rgba(255, 193, 7, 0.1)';
             providerHintEl.style.color = 'var(--stt-status-warning, #facc15)';
-            providerHintEl.innerHTML = '<strong>Fish.audio aktiv</strong> - Token-Verbrauch sichtbar. Deepgram/ElevenLabs-Key spart Kosten.';
+            providerHintEl.textContent = translateUi(
+              'plugins.stt-ticker.stt_ticker.ui.messages.fish_audio_active',
+              'Fish.audio active — token usage is visible.'
+            );
           }
         } else {
-          providerEl.textContent = asr.provider || 'unbekannt';
+          providerEl.textContent = asr.provider || translateUi('plugins.stt-ticker.stt_ticker.ui.messages.unknown', 'Unknown');
           providerEl.style.color = '#f44336';
         }
-        if (keyBadgeEl) {
-          if (asr.deepgramConfigured) {
-            keyBadgeEl.textContent = 'gesetzt';
-            keyBadgeEl.className = 'badge badge-green';
-          } else {
-            keyBadgeEl.textContent = 'nicht gesetzt';
-            keyBadgeEl.className = 'badge badge-gray';
-          }
-        }
-        if (elKeyBadgeEl) {
-          if (asr.elevenlabsConfigured) {
-            elKeyBadgeEl.textContent = 'gesetzt';
-            elKeyBadgeEl.className = 'badge badge-green';
-          } else {
-            elKeyBadgeEl.textContent = 'nicht gesetzt';
-            elKeyBadgeEl.className = 'badge badge-gray';
-          }
-        }
-        if (fishKeyBadgeEl) {
-          if (asr.fishaudioConfigured) {
-            fishKeyBadgeEl.textContent = 'gesetzt';
-            fishKeyBadgeEl.className = 'badge badge-green';
-          } else {
-            fishKeyBadgeEl.textContent = 'nicht gesetzt';
-            fishKeyBadgeEl.className = 'badge badge-gray';
-          }
-        }
+        setCredentialBadge(keyBadgeEl, asr.deepgramConfigured, asr.deepgramKeySource);
+        setCredentialBadge(elKeyBadgeEl, asr.elevenlabsConfigured, asr.elevenlabsKeySource);
+        setCredentialBadge(fishKeyBadgeEl, asr.fishaudioConfigured, asr.fishaudioKeySource);
 
         const trans = s.translation || {};
-        document.getElementById('stat-translation').textContent = trans.enabled ? (trans.model || 'An') : 'Off';
+        document.getElementById('stat-translation').textContent = trans.enabled
+          ? (trans.model || translateUi('plugins.stt-ticker.stt_ticker.ui.messages.translation_on', 'On'))
+          : translateUi('plugins.stt-ticker.stt_ticker.ui.messages.translation_off', 'Off');
         document.getElementById('stat-translation').style.color = trans.enabled ? '#4CAF50' : '#666';
 
         const buf = s.buffer || {};
@@ -1565,13 +1599,17 @@
         if (vrchatEnabled) vrchatEnabled.checked = vrchat.enabled === true;
         if (vrchatStatus) {
           if (!vrchat.enabled) {
-            vrchatStatus.textContent = 'Deaktiviert';
+            vrchatStatus.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.vrchat_disabled', 'Disabled');
             vrchatStatus.style.color = '#888';
           } else if (vrchat.bridgeAvailable) {
-            vrchatStatus.textContent = 'OSC-Bridge bereit';
+            vrchatStatus.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.osc_bridge_ready', 'OSC Bridge ready');
             vrchatStatus.style.color = '#4CAF50';
           } else {
             vrchatStatus.textContent = vrchat.lastError || 'OSC-Bridge nicht verfügbar – Untertitel bleiben aktiv.';
+            vrchatStatus.textContent = translateUi(
+              'plugins.stt-ticker.stt_ticker.ui.messages.osc_bridge_unavailable',
+              'OSC Bridge unavailable — captions stay active.'
+            );
             vrchatStatus.style.color = 'var(--stt-status-warning, #facc15)';
           }
         }
@@ -1584,10 +1622,14 @@
           apiKeyField.dataset.loaded = '1';
         }
         if (tc.apiKeyConfigured) {
-          keyStatus.textContent = '(gespeichert)';
+          keyStatus.textContent = translateUi(
+            'plugins.stt-ticker.stt_ticker.ui.messages.saved_key_masked',
+            '(saved)',
+            { masked: '••••' }
+          );
           keyStatus.style.color = '#4CAF50';
         } else {
-          keyStatus.textContent = '(nicht gesetzt)';
+          keyStatus.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.key_not_configured', 'Not configured');
           keyStatus.style.color = 'var(--stt-status-warning, #facc15)';
         }
         await loadLanguages(tc.sourceLanguage || 'de', tc.targetLanguage || 'en');
@@ -1752,6 +1794,7 @@
           opt.textContent = m.name;
           select.appendChild(opt);
         }
+        updateDeepgramLanguageHint(effectiveProvider, models.find(model => model.id === select.value) || models[0]);
       } else {
         setSelectFallback(
           select,
@@ -1783,6 +1826,10 @@
       const status = document.getElementById('ml-status');
       if (status && (!ml.outputLanguages || ml.outputLanguages.length === 0)) {
         status.textContent = 'Keine Zielsprache gewählt – normale Untertitelanzeige aktiv.';
+        status.textContent = translateUi(
+          'plugins.stt-ticker.stt_ticker.ui.messages.no_target_language',
+          'No target language selected — standard captions are active.'
+        );
         status.style.color = 'var(--stt-status-warning, #facc15)';
       }
     }
@@ -1851,14 +1898,19 @@
           body: JSON.stringify({ translation })
         });
         const data = await res.json();
-      showToast(data.success ? 'Config gespeichert' : (data.error || 'Fehler'), data.success ? 'success' : 'error');
+        showToast(
+          data.success
+            ? translateUi('plugins.stt-ticker.stt_ticker.ui.messages.config_saved', 'Configuration saved')
+            : translateUi('plugins.stt-ticker.stt_ticker.ui.messages.error', 'Error'),
+          data.success ? 'success' : 'error'
+        );
         if (data.success && translation.apiKey !== '__KEEP__') {
           document.getElementById('translation-apiKey').value = '__KEEP__';
           apiKeyFieldMarkDirty();
         }
         refreshStatus();
       } catch (e) {
-        showToast(e.message, 'error');
+        showToast(translateUi('plugins.stt-ticker.stt_ticker.ui.messages.error', 'Error'), 'error');
       }
     }
 
@@ -1879,10 +1931,13 @@
         const data = await res.json();
         if (!data.success) throw new Error(data.error || 'Speichern fehlgeschlagen');
             status.textContent = enabled ? 'Aktiviert – OSC-Bridge wird geprüft.' : 'Deaktiviert';
+        status.textContent = enabled
+          ? translateUi('plugins.stt-ticker.stt_ticker.ui.messages.vrchat_enable_pending', 'Enabled — checking OSC Bridge.')
+          : translateUi('plugins.stt-ticker.stt_ticker.ui.messages.vrchat_disabled', 'Disabled');
         status.style.color = enabled ? '#4CAF50' : '#888';
         refreshStatus();
       } catch (error) {
-        status.textContent = error.message;
+        status.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.error', 'Error');
         status.style.color = '#f44336';
       }
     }
@@ -1936,7 +1991,7 @@
       const design = document.getElementById('design-select')?.value;
 
       const statusEl = document.getElementById('asr-status');
-      statusEl.textContent = 'Speichere...';
+      statusEl.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.saving', 'Saving…');
       statusEl.style.color = 'var(--stt-status-warning, #facc15)';
 
       try {
@@ -1947,7 +2002,7 @@
         });
         const data = await res.json();
         if (data.success) {
-          statusEl.textContent = 'ASR-Settings gespeichert';
+          statusEl.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.asr_settings_saved', 'ASR settings saved');
           statusEl.style.color = '#4CAF50';
           [dgKeyField, elKeyField, fishKeyField].forEach(field => {
             if (field && field.value.trim() && field.value.trim() !== '__KEEP__') {
@@ -1957,11 +2012,11 @@
           setTimeout(() => { statusEl.textContent = ''; }, 3000);
           refreshStatus();
         } else {
-          statusEl.textContent = data.error || 'Fehler';
+          statusEl.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.error', 'Error');
           statusEl.style.color = '#f44336';
         }
       } catch (e) {
-        statusEl.textContent = e.message;
+        statusEl.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.error', 'Error');
         statusEl.style.color = '#f44336';
       }
     }
@@ -1987,13 +2042,16 @@
 
     async function clearBuffer() {
       await fetch('/api/stt-ticker/clear', { method: 'POST' });
-      showToast('Buffer geleert', 'success');
+      showToast(translateUi('plugins.stt-ticker.stt_ticker.ui.messages.buffer_cleared', 'Buffer cleared'), 'success');
       refreshStatus();
     }
 
     async function clearTranslationCache() {
       await fetch('/api/stt-ticker/translator/clear-cache', { method: 'POST' });
-      document.getElementById('translation-status').textContent = 'Cache geleert';
+      document.getElementById('translation-status').textContent = translateUi(
+        'plugins.stt-ticker.stt_ticker.ui.messages.cache_cleared',
+        'Translation cache cleared'
+      );
       setTimeout(() => { document.getElementById('translation-status').textContent = ''; }, 3000);
     }
 
@@ -2069,13 +2127,13 @@
         });
         const data = await res.json();
         if (data.success) {
-          document.getElementById('ml-status').textContent = 'Gespeichert';
+          document.getElementById('ml-status').textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.saved', 'Saved');
           setTimeout(() => { document.getElementById('ml-status').textContent = ''; }, 2000);
         } else {
-          document.getElementById('ml-status').textContent = data.error || 'Fehler';
+          document.getElementById('ml-status').textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.error', 'Error');
         }
       } catch (e) {
-        document.getElementById('ml-status').textContent = e.message;
+        document.getElementById('ml-status').textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.error', 'Error');
       }
     }
 
@@ -2108,7 +2166,7 @@
       const statusEl = document.getElementById('deepgram-test-status');
       const keyField = document.getElementById('asr-deepgramApiKey');
       const keyToTest = (keyField && keyField.value && keyField.value !== '__KEEP__') ? keyField.value : '';
-      statusEl.textContent = 'Teste...';
+      statusEl.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.testing', 'Testing…');
       statusEl.style.color = 'var(--stt-status-warning, #facc15)';
       try {
         const res = await fetch('/api/stt-ticker/asr/test-deepgram', {
@@ -2118,14 +2176,16 @@
         });
         const data = await res.json();
         if (data.success) {
-          statusEl.textContent = 'Key g\u00fcltig!';
+          statusEl.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.key_valid', 'Key is valid!');
           statusEl.style.color = '#4CAF50';
         } else {
-          statusEl.textContent = data.message || data.error || 'Ung\u00fcltig';
+          statusEl.textContent = data.error === 'no_key_configured'
+            ? translateUi('plugins.stt-ticker.stt_ticker.ui.messages.no_key_to_test', 'No key to test')
+            : translateUi('plugins.stt-ticker.stt_ticker.ui.messages.key_invalid', 'Invalid');
           statusEl.style.color = '#f44336';
         }
       } catch (e) {
-        statusEl.textContent = e.message;
+        statusEl.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.key_invalid', 'Invalid');
         statusEl.style.color = '#f44336';
       }
     });
@@ -2134,7 +2194,7 @@
       const statusEl = document.getElementById('elevenlabs-test-status');
       const keyField = document.getElementById('asr-elevenlabsApiKey');
       const keyToTest = (keyField && keyField.value && keyField.value !== '__KEEP__') ? keyField.value : '';
-      statusEl.textContent = 'Teste...';
+      statusEl.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.testing', 'Testing…');
       statusEl.style.color = 'var(--stt-status-warning, #facc15)';
       try {
         const res = await fetch('/api/stt-ticker/asr/test-elevenlabs', {
@@ -2144,14 +2204,16 @@
         });
         const data = await res.json();
         if (data.success) {
-          statusEl.textContent = 'Key g\u00fcltig!';
+          statusEl.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.key_valid', 'Key is valid!');
           statusEl.style.color = '#4CAF50';
         } else {
-          statusEl.textContent = data.message || data.error || 'Ung\u00fcltig';
+          statusEl.textContent = data.error === 'no_key_configured'
+            ? translateUi('plugins.stt-ticker.stt_ticker.ui.messages.no_key_to_test', 'No key to test')
+            : translateUi('plugins.stt-ticker.stt_ticker.ui.messages.key_invalid', 'Invalid');
           statusEl.style.color = '#f44336';
         }
       } catch (e) {
-        statusEl.textContent = e.message;
+        statusEl.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.key_invalid', 'Invalid');
         statusEl.style.color = '#f44336';
       }
     });
@@ -2164,7 +2226,7 @@
       const lang = document.getElementById('ml-add-lang').value;
       if (!lang) return;
       if (currentOutputLangs.includes(lang)) {
-        document.getElementById('ml-status').textContent = 'Bereits vorhanden';
+        document.getElementById('ml-status').textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.already_added', 'Already added');
         return;
       }
       currentOutputLangs.push(lang);
@@ -2181,6 +2243,10 @@
         await loadAsrModels();
         // Provider-Wechsel = STT-Modell-Dropdown aktualisieren
         document.getElementById('asr-provider').addEventListener('change', updateAsrModelDropdown);
+        document.getElementById('asr-model-select').addEventListener('change', () => {
+          const model = (window._dgModels || []).find(item => item.id === document.getElementById('asr-model-select').value);
+          updateDeepgramLanguageHint(document.getElementById('asr-provider').value, model);
+        });
       } catch (e) {
         console.error('Init failed:', e);
       }

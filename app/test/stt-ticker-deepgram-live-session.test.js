@@ -81,7 +81,8 @@ describe('STT Ticker Deepgram live session manager', () => {
       channels: 1,
       interim_results: true,
       endpointing: 900,
-      utterance_end_ms: '1500'
+      utterance_end_ms: '1500',
+      reconnectAttempts: 0
     }));
     expect(connection.connect).toHaveBeenCalledTimes(1);
     expect(connection.waitForOpen).toHaveBeenCalledTimes(1);
@@ -159,5 +160,66 @@ describe('STT Ticker Deepgram live session manager', () => {
     expect(connection.sendFinalize).toHaveBeenCalledWith({ type: 'Finalize' });
     expect(connection.sendCloseStream).not.toHaveBeenCalled();
     await manager.destroy();
+  });
+});
+
+describe('STT Ticker Deepgram live session recovery', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  test('recovers after a close and accepts audio on the reopened connection', async () => {
+    const first = createConnection();
+    const reopened = createConnection();
+    const { manager, socket, onStatus } = createHarness({ connections: [first, reopened] });
+
+    await manager.start(socket, { sampleRate: 16000, channels: 1 });
+    first.emit('close', { code: 1006 });
+    expect(manager.sendAudio(socket.id, Buffer.from([1]))).toBe(false);
+
+    await jest.advanceTimersByTimeAsync(1000);
+
+    expect(reopened.connect).toHaveBeenCalledTimes(1);
+    expect(manager.sendAudio(socket.id, Buffer.from([1, 2]))).toBe(true);
+    expect(onStatus).toHaveBeenCalledWith(socket.id, expect.objectContaining({
+      state: 'reconnecting', reconnectAttempt: 1, nextRetryMs: 1000
+    }));
+    expect(onStatus).toHaveBeenCalledWith(socket.id, expect.objectContaining({
+      state: 'open', reconnectAttempt: 0, nextRetryMs: null
+    }));
+    await manager.destroy();
+  });
+
+  test('removes the session after three failed recovery attempts', async () => {
+    const first = createConnection();
+    const { manager, socket, onStatus } = createHarness({ connections: [first, null, null, null] });
+
+    await manager.start(socket, { sampleRate: 16000, channels: 1 });
+    first.emit('close', { code: 1006 });
+    await jest.advanceTimersByTimeAsync(1000);
+    await jest.advanceTimersByTimeAsync(2000);
+    await jest.advanceTimersByTimeAsync(5000);
+
+    expect(manager.getStatus().activeSessions).toBe(0);
+    expect(onStatus).toHaveBeenCalledWith(socket.id, expect.objectContaining({
+      state: 'error', reconnectAttempt: 3, nextRetryMs: null
+    }));
+  });
+
+  test('clears recovery timers when stopped or destroyed', async () => {
+    const first = createConnection();
+    const { manager, socket } = createHarness({ connections: [first] });
+
+    await manager.start(socket, { sampleRate: 16000, channels: 1 });
+    first.emit('close', { code: 1006 });
+    expect(jest.getTimerCount()).toBeGreaterThan(0);
+    await manager.stop(socket.id);
+    expect(jest.getTimerCount()).toBe(0);
+
+    const second = createConnection();
+    const harness = createHarness({ connections: [second] });
+    await harness.manager.start(harness.socket, { sampleRate: 16000, channels: 1 });
+    second.emit('close', { code: 1006 });
+    await harness.manager.destroy();
+    expect(jest.getTimerCount()).toBe(0);
   });
 });

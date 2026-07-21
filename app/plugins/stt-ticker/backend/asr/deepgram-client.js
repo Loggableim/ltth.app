@@ -12,14 +12,43 @@ class DeepgramAsrClient {
   static DEFAULT_MAX_AUDIO_BYTES = 25 * 1024 * 1024;
   static MAX_ERROR_MESSAGE_BYTES = 2048;
 
-  static MULTI_LANGUAGES = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru'];
-  static DEFAULT_LANGUAGE_WHITELIST = ['de', 'en'];
+  // Deepgram's `multi` option is model-specific. Nova-2 currently supports
+  // Spanish/English code switching; a fixed `language` remains the correct
+  // path for every other supported Nova-2 language.
+  static MULTI_LANGUAGES = ['en', 'es'];
+  static DEFAULT_LANGUAGE_WHITELIST = [
+    'de', 'en', 'es', 'fr', 'it', 'pt', 'nl', 'pl', 'ru', 'ja', 'ko', 'zh',
+    'tr', 'sv', 'da', 'fi', 'no', 'cs', 'hu', 'ro', 'uk', 'el', 'th', 'vi'
+  ];
 
   static MODELS = {
-    'nova-2': { name: 'Nova-2', multilingual: true, de: true, en: true },
-    'nova-3': { name: 'Nova-3', multilingual: true, de: true, en: true },
-    'whisper-large': { name: 'Whisper Large (Deepgram-hosted)', multilingual: true, de: true, en: true },
-    'whisper-medium': { name: 'Whisper Medium (Deepgram-hosted)', multilingual: true, de: true, en: true }
+    'nova-2': {
+      name: 'Nova-2',
+      multilingual: true,
+      multilingualLanguages: ['en', 'es'],
+      supportedFixedLanguages: [
+        'de', 'en', 'es', 'fr', 'it', 'pt', 'nl', 'pl', 'ru', 'ja', 'ko', 'zh',
+        'tr', 'sv', 'da', 'fi', 'no', 'cs', 'hu', 'ro', 'uk', 'el', 'th', 'vi'
+      ]
+    },
+    'nova-3': {
+      name: 'Nova-3',
+      multilingual: true,
+      multilingualLanguages: ['en', 'es', 'fr', 'de', 'ru', 'pt', 'ja', 'it', 'nl', 'hi'],
+      supportedFixedLanguages: ['en', 'es', 'fr', 'de', 'ru', 'pt', 'ja', 'it', 'nl']
+    },
+    'whisper-large': {
+      name: 'Whisper Large (Deepgram-hosted)',
+      multilingual: false,
+      multilingualLanguages: [],
+      supportedFixedLanguages: []
+    },
+    'whisper-medium': {
+      name: 'Whisper Medium (Deepgram-hosted)',
+      multilingual: false,
+      multilingualLanguages: [],
+      supportedFixedLanguages: []
+    }
   };
 
   constructor(apiKey, logger, config = {}) {

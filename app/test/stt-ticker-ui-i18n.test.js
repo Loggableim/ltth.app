@@ -43,6 +43,9 @@ describe('STT Ticker static UI localization', () => {
       'messages.no_key_to_test', 'messages.testing', 'messages.already_added',
       'messages.vrchat_enable_pending', 'messages.vrchat_disabled', 'messages.cache_cleared',
       'messages.key_valid', 'messages.key_invalid', 'messages.provider_deepgram'
+      , 'messages.key_source_config', 'messages.key_source_file',
+      'messages.key_source_environment', 'messages.key_source_plugin',
+      'messages.deepgram_multilingual_hint', 'messages.deepgram_fixed_language_hint'
     ]
   };
 
@@ -75,6 +78,10 @@ describe('STT Ticker static UI localization', () => {
       expect(source).toContain('if (window.i18n?.ready) await window.i18n.ready;');
       expect(source).toContain('setSelectFallback(');
     });
+  });
+
+  test('waits for i18n before it renders dynamic admin status values', () => {
+    expect(read('ui.html')).toContain('async function refreshStatus() {\n      if (window.i18n?.ready) await window.i18n.ready;');
   });
 
   test('uses stable message keys for every audited runtime status', () => {

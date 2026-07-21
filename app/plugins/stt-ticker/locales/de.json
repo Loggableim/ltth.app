@@ -87,7 +87,13 @@
             "cache_cleared": "Übersetzungs-Cache geleert",
             "key_valid": "Key ist gültig!",
             "key_invalid": "Ungültig",
-            "provider_deepgram": "Deepgram-Spracherkennung"
+  "provider_deepgram": "Deepgram-Spracherkennung",
+  "key_source_config": "in der Konfiguration",
+  "key_source_file": "aus lokaler Datei",
+  "key_source_environment": "aus Umgebung",
+  "key_source_plugin": "aus Plugin",
+  "deepgram_multilingual_hint": "Der Auto-Modus von {model} unterstützt mehrsprachige Transkription für: {languages}. Für andere Quellsprachen bitte eine feste Sprache wählen.",
+  "deepgram_fixed_language_hint": "Der mehrsprachige Auto-Modus wird von {model} nicht unterstützt; bitte eine feste Sprache wählen."
           },
           "labels": {
             "source_microphone": "Quell-Mikrofon",
