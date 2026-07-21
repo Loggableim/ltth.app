@@ -75,6 +75,7 @@ describe('EulerStream-only TikTok connector', () => {
 
   test('does not publish Data Source Manager or TikFinity as a live-data option', () => {
     const root = path.join(__dirname, '..', '..');
+    const thisTest = path.relative(root, __filename).replace(/\\/g, '/');
     const registry = JSON.parse(fs.readFileSync(path.join(root, 'plugin-store.json'), 'utf8'));
     const activeFiles = [
       'app/README.md', 'app/wiki/Home.md', 'app/wiki/Wiki-Index.md',
@@ -82,18 +83,30 @@ describe('EulerStream-only TikTok connector', () => {
       'features/catalog-data.js', 'plugins.html', 'sitemap.xml'
     ];
     const activeRoots = ['.github', 'app/locales', 'app/wiki', 'build-src/locales', 'docs', 'features', 'infos', 'locales', 'public/locales', 'scripts', 'screenshots'];
-    const banned = /TikFinity|Data Source Manager|Datenquellen-Manager|\/api\/data-source|datasource:/i;
+    const assetRoots = ['assets', 'screenshots'];
+    const banned = /TikFinity|Data Source Manager|Datenquellen-Manager|plugin-data-source|#datasource-eulerstream|\/(?:api|plugins)\/data-source|datasource:|data_source\.plugin|["']data-source["']|plugin:data-source/i;
+    const bannedAssetPath = /(?:^|\/)data-source(?:\/|[.-])|tikfinity/i;
     const textFiles = [];
+    const assetFiles = [];
     const collectTextFiles = (relativePath) => {
       const fullPath = path.join(root, relativePath);
       for (const entry of fs.readdirSync(fullPath, { withFileTypes: true })) {
         const child = path.join(relativePath, entry.name);
         if (['docs_archive', 'new_patch', 'superpowers'].includes(entry.name)) continue;
         if (entry.isDirectory()) collectTextFiles(child);
-        else if (/\.(?:html|js|json|md|xml)$/i.test(entry.name)) textFiles.push(child);
+        else if (/\.(?:html|js|json|md|xml)$/i.test(entry.name) && child.replace(/\\/g, '/') !== thisTest) textFiles.push(child);
+      }
+    };
+    const collectAssetFiles = (relativePath) => {
+      const fullPath = path.join(root, relativePath);
+      for (const entry of fs.readdirSync(fullPath, { withFileTypes: true })) {
+        const child = path.join(relativePath, entry.name);
+        if (entry.isDirectory()) collectAssetFiles(child);
+        else assetFiles.push(child.replace(/\\/g, '/'));
       }
     };
     activeRoots.forEach(collectTextFiles);
+    assetRoots.forEach(collectAssetFiles);
 
     expect(registry.plugins.some((plugin) => plugin.id === 'data-source')).toBe(false);
     expect(fs.existsSync(path.join(root, 'plugin-store', 'packages', 'data-source-1.0.0.zip'))).toBe(false);
@@ -103,6 +116,9 @@ describe('EulerStream-only TikTok connector', () => {
     }
     for (const relativePath of textFiles) {
       expect(fs.readFileSync(path.join(root, relativePath), 'utf8')).not.toMatch(banned);
+    }
+    for (const relativePath of assetFiles) {
+      expect(relativePath).not.toMatch(bannedAssetPath);
     }
   });
 });

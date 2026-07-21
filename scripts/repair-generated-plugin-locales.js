@@ -11,8 +11,6 @@ const descriptions = {
   'api-bridge': {
     root: 'api_bridge', de: { name: 'API-Bridge', description: 'Steuert LTTH über HTTP- und WebSocket-APIs aus externen Anwendungen.' }, es: { name: 'Puente API', description: 'Permite controlar LTTH desde aplicaciones externas mediante APIs HTTP y WebSocket.' }, fr: { name: 'Pont API', description: 'Permet à des applications externes de contrôler LTTH via des API HTTP et WebSocket.' }
   },
-  'data-source': {
-  },
   'gift-catalog': {
     root: 'gift_catalog', de: { name: 'Geschenkkatalog', description: 'TikTok-Geschenkdaten nach Sprache und Region aktualisieren und prüfen.' }, es: { name: 'Catálogo de regalos', description: 'Actualiza y consulta el catálogo de regalos de TikTok por idioma y región.' }, fr: { name: 'Catalogue de cadeaux', description: 'Actualisez et consultez le catalogue de cadeaux TikTok par langue et région.' }
   },

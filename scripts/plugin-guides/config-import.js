@@ -30,7 +30,6 @@ const guide = {
   "mode": "ui",
   "overlay": null,
   "related": [
-    "data-source",
     "store-admin"
   ],
   "copy": {
@@ -42,7 +41,6 @@ const guide = {
       "safety": "Verwende ausschließlich Demo-Ereignisse und ein temporäres Testprofil. Dieser konkrete Config Backup & Restore-Ablauf behandelt Backup-Datei, Export und Wiederherstellungsprüfung.",
       "troubleshooting": "Wenn Backup-Datei, Export und Wiederherstellungsprüfung nicht sichtbar ist, prüfe zuerst den aktiven Plugin-Status, die lokale Route und gespeicherte Testwerte.",
       "related": [
-        "data-source",
         "store-admin"
       ]
     },
@@ -54,7 +52,6 @@ const guide = {
       "safety": "Use demo events and a temporary test profile only. This Config Backup & Restore workflow specifically covers backup file, export, and restore check.",
       "troubleshooting": "If backup file, export, and restore check is not visible, first check the active plugin status, local route, and saved test values.",
       "related": [
-        "data-source",
         "store-admin"
       ]
     },
@@ -66,7 +63,6 @@ const guide = {
       "safety": "Usa solo eventos de demostración y un perfil de prueba temporal. Este flujo concreto de Config Backup & Restore trata archivo de copia, exportación y comprobación de restauración.",
       "troubleshooting": "Si archivo de copia, exportación y comprobación de restauración no aparece, comprueba primero el estado activo del plugin, la ruta local y los valores de prueba guardados.",
       "related": [
-        "data-source",
         "store-admin"
       ]
     },
@@ -78,7 +74,6 @@ const guide = {
       "safety": "Utilisez uniquement des événements de démonstration et un profil de test temporaire. Ce flux spécifique de Config Backup & Restore couvre fichier de sauvegarde, export et contrôle de restauration.",
       "troubleshooting": "Si fichier de sauvegarde, export et contrôle de restauration n’est pas visible, vérifiez d’abord l’état actif du plugin, la route locale et les valeurs de test enregistrées.",
       "related": [
-        "data-source",
         "store-admin"
       ]
     }

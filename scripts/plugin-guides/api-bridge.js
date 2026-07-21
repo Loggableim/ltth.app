@@ -28,7 +28,6 @@ module.exports = Object.freeze({
   "mode": "api",
   "overlay": null,
   "related": [
-    "data-source",
     "gcce"
   ],
   "copy": {
@@ -40,7 +39,6 @@ module.exports = Object.freeze({
       "safety": "Keine echten API-Schlüssel oder Konten eingeben; Platzhalter bleiben Platzhalter. Dieser konkrete API Bridge-Ablauf behandelt lokale Aktionen, Ereignisse und die API-Bridge.",
       "troubleshooting": "Wenn lokale Aktionen, Ereignisse und die API-Bridge nicht sichtbar ist, prüfe zuerst den aktiven Plugin-Status, die lokale Route und gespeicherte Testwerte.",
       "related": [
-        "data-source",
         "gcce"
       ]
     },
@@ -52,7 +50,6 @@ module.exports = Object.freeze({
       "safety": "Do not enter real API keys or accounts; placeholders stay placeholders. This API Bridge workflow specifically covers local actions, events, and the API bridge.",
       "troubleshooting": "If local actions, events, and the API bridge is not visible, first check the active plugin status, local route, and saved test values.",
       "related": [
-        "data-source",
         "gcce"
       ]
     },
@@ -64,7 +61,6 @@ module.exports = Object.freeze({
       "safety": "No introduzcas claves API ni cuentas reales; los marcadores siguen siendo marcadores. Este flujo concreto de API Bridge trata acciones locales, eventos y la API Bridge.",
       "troubleshooting": "Si acciones locales, eventos y la API Bridge no aparece, comprueba primero el estado activo del plugin, la ruta local y los valores de prueba guardados.",
       "related": [
-        "data-source",
         "gcce"
       ]
     },
@@ -76,7 +72,6 @@ module.exports = Object.freeze({
       "safety": "Ne saisissez aucune clé API ni compte réel ; les espaces réservés restent des espaces réservés. Ce flux spécifique de API Bridge couvre actions locales, événements et l’API Bridge.",
       "troubleshooting": "Si actions locales, événements et l’API Bridge n’est pas visible, vérifiez d’abord l’état actif du plugin, la route locale et les valeurs de test enregistrées.",
       "related": [
-        "data-source",
         "gcce"
       ]
     }
