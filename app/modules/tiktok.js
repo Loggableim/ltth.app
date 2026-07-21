@@ -1,6 +1,7 @@
 'use strict';
 
 const EventEmitter = require('events');
+const EulerstreamAdapter = require('./adapters/EulerstreamAdapter');
 
 /**
  * TikTokConnector - Facade / Router
@@ -9,14 +10,7 @@ const EventEmitter = require('events');
  * All consumers (server.js, plugin-loader.js, plugins) continue to work
  * without any modification.
  *
- * Internally, the class delegates every call to the active adapter, which is
- * selected by the `tiktok_data_source` database setting:
- *
- *   - 'eulerstream' (default) -> EulerstreamAdapter (original full behaviour)
- *   - 'tikfinity'             -> TikFinityAdapter   (TikFinity Desktop App WS)
- *
- * The setting is re-read on every connect() call so that a change takes effect
- * the next time the user starts a stream - no server restart required.
+ * Internally, the class delegates every call to the EulerStream adapter.
  *
  * @extends EventEmitter
  */
@@ -28,10 +22,10 @@ class TikTokConnector extends EventEmitter {
     this.logger = logger;
     this.setMaxListeners(50);
     this._adapter = null;
-    this._currentSource = '';
+    this._currentSource = 'eulerstream';
     this._eventForwarders = {};
-    const source = this.db.getSetting('tiktok_data_source') || 'eulerstream';
-    this._switchAdapter(source);
+    this._removeLegacyDataSourceSettings();
+    this._switchAdapter();
   }
 
   _withDbDefaults(db = {}) {
@@ -58,13 +52,16 @@ class TikTokConnector extends EventEmitter {
     return dbWithDefaults;
   }
 
-  _createAdapterForSource(source) {
-    if (source === 'tikfinity') {
-      const TikFinityAdapter = require('./adapters/TikFinityAdapter');
-      return new TikFinityAdapter(this.io, this.db, this.logger);
+  _removeLegacyDataSourceSettings() {
+    if (typeof this.db.deleteSetting !== 'function') return;
+
+    for (const key of ['tiktok_data_source', 'tikfinity_ws_port']) {
+      try {
+        this.db.deleteSetting(key);
+      } catch (error) {
+        this.logger.warn?.(`[TikTokConnector] Could not remove obsolete ${key}: ${error.message}`);
+      }
     }
-    const EulerstreamAdapter = require('./adapters/EulerstreamAdapter');
-    return new EulerstreamAdapter(this.io, this.db, this.logger);
   }
 
   _bindAdapterEvents(adapter) {
@@ -86,20 +83,19 @@ class TikTokConnector extends EventEmitter {
     this._eventForwarders = {};
   }
 
-  _switchAdapter(source) {
-    const normalized = source === 'tikfinity' ? 'tikfinity' : 'eulerstream';
+  _switchAdapter() {
     if (this._adapter) {
       this._unbindAdapterEvents(this._adapter);
     }
-    this._adapter = this._createAdapterForSource(normalized);
+    this._adapter = new EulerstreamAdapter(this.io, this.db, this.logger);
     if (typeof this._adapter.setStreamSessionLifecycleHandler === 'function') {
       this._adapter.setStreamSessionLifecycleHandler(
         data => this._emitAsync('streamSessionStarted', data)
       );
     }
-    this._currentSource = normalized;
+    this._currentSource = 'eulerstream';
     this._bindAdapterEvents(this._adapter);
-    this.logger.info(`[TikTokConnector] Active adapter: ${normalized}`);
+    this.logger.info('[TikTokConnector] Active adapter: eulerstream');
   }
 
   async _emitAsync(event, data) {
@@ -174,14 +170,12 @@ class TikTokConnector extends EventEmitter {
     // Prefer the adapter's local session generation. Eulerstream can reuse a
     // room ID for a later LIVE, while this token remains stable for reconnects
     // and changes only after LTTH confirms a new session.
-    if (this._currentSource === 'eulerstream') {
-      if (this._adapter.streamSessionId !== null && this._adapter.streamSessionId !== undefined) {
-        return `euler:${this._adapter.streamSessionId}`;
-      }
-      if (this._adapter.streamIdentity) return this._adapter.streamIdentity;
-      if (this._adapter.roomId && this.currentUsername) {
-        return `${String(this.currentUsername).toLowerCase()}:${this._adapter.roomId}`;
-      }
+    if (this._adapter.streamSessionId !== null && this._adapter.streamSessionId !== undefined) {
+      return `euler:${this._adapter.streamSessionId}`;
+    }
+    if (this._adapter.streamIdentity) return this._adapter.streamIdentity;
+    if (this._adapter.roomId && this.currentUsername) {
+      return `${String(this.currentUsername).toLowerCase()}:${this._adapter.roomId}`;
     }
 
     return null;
@@ -212,34 +206,7 @@ class TikTokConnector extends EventEmitter {
   }
 
   async connect(username, options = {}) {
-    const newSource = this.db.getSetting('tiktok_data_source') || 'eulerstream';
-    if (newSource !== this._currentSource) {
-      this.logger.info(`[TikTokConnector] Data source changed: ${this._currentSource} -> ${newSource}`);
-      if (this._adapter && this._adapter.isActive()) {
-        // Promise.resolve() safely handles both sync and async disconnect() implementations
-        await Promise.resolve(this._adapter.disconnect());
-      }
-      this._switchAdapter(newSource);
-    }
     return this._adapter.connect(username, options);
-  }
-
-  /**
-   * Switches the active adapter immediately.
-   * If currently connected, disconnects first, then switches.
-   * Does NOT reconnect automatically – caller is responsible.
-   * @param {string} source - 'eulerstream' | 'tikfinity'
-   * @returns {Promise<void>}
-   */
-  async switchSourceNow(source) {
-    const normalized = source === 'tikfinity' ? 'tikfinity' : 'eulerstream';
-    if (normalized === this._currentSource) return;
-    this.logger.info(`[TikTokConnector] Live source switch: ${this._currentSource} → ${normalized}`);
-    if (this._adapter && this._adapter.isActive()) {
-      // Promise.resolve() safely handles both sync and async disconnect() implementations
-      await Promise.resolve(this._adapter.disconnect());
-    }
-    this._switchAdapter(normalized);
   }
 
   disconnect() {
