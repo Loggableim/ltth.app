@@ -581,13 +581,14 @@ class GameEngineDatabase {
       VALUES ('displayRevision', '0');
     `);
 
-    try {
+    const interactiveSessionColumns = this.db.prepare(`
+      PRAGMA table_info(game_interactive_sessions)
+    `).all();
+    if (!interactiveSessionColumns.some(column => column.name === 'viewer_time_remaining_ms')) {
       this.db.exec(`
         ALTER TABLE game_interactive_sessions
         ADD COLUMN viewer_time_remaining_ms INTEGER
       `);
-    } catch (error) {
-      // Column already exists, ignore error.
     }
     
     // Initialize default overlay settings for all game types

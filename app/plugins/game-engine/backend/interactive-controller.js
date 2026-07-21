@@ -70,6 +70,20 @@ class InteractiveController {
     return Math.min(max, Math.max(min, Math.round(parsed)));
   }
 
+  _publishSafely(label, sessionId, callback) {
+    try {
+      callback();
+      return true;
+    } catch (error) {
+      try {
+        this.logger?.error?.(`[INTERACTIVE] ${label} publication failed for ${sessionId}: ${error.message}`);
+      } catch (loggingError) {
+        // Publication failures must never invalidate an already committed transition.
+      }
+      return false;
+    }
+  }
+
   _settings() {
     const configured = this.getSettings?.() || {};
     const connect4ViewerResponseSeconds = this._bounded(
@@ -410,7 +424,7 @@ class InteractiveController {
       return { success: false, error: 'viewer_timeout' };
     }
 
-    const previousState = session.adapter.getState();
+    const previousState = JSON.parse(JSON.stringify(session.adapter.getState()));
     const previous = {
       revision: session.sessionRevision,
       turnRole: session.turnRole,
@@ -430,9 +444,11 @@ class InteractiveController {
     session.lastMoveIdentity = moveIdentity || `${previous.revision}:${JSON.stringify(move)}`;
     session.lastActivityAt = this.now();
 
+    const complete = result.gameOver || session.adapter.isComplete();
+    let completionPayload = null;
     try {
-      if (result.gameOver || session.adapter.isComplete()) {
-        this._completeSession(session, {
+      if (complete) {
+        completionPayload = this._persistSessionCompletion(session, {
           winner: result.winner,
           winnerRole: this._roleForWinner(session, result.winner),
           reason: result.winReason || (result.draw ? 'draw' : 'win'),
@@ -446,14 +462,7 @@ class InteractiveController {
           this.database.updateInteractiveState(session.sessionId, this._sessionRecord(session));
           this.queue.enqueue(session);
         });
-        this.emitLegacyEvent?.('move', { session, result, actorRole: 'viewer' });
-        this._logTransition('viewer_move_accepted', session, {
-          queueSequence: this.queue.list().find(row => row.sessionId === session.sessionId)?.sequence
-        });
-        this.router.sync();
-        this.emitState();
       }
-      return { success: true, sessionId: session.sessionId, result };
     } catch (error) {
       session.adapter.restoreState(previousState);
       session.sessionRevision = previous.revision;
@@ -462,10 +471,27 @@ class InteractiveController {
       session.viewerTimeRemainingMs = previous.remaining;
       session.lastMoveIdentity = previous.lastMoveIdentity;
       session.lastActivityAt = previous.lastActivityAt;
+      this.queue.restore(this.database.getInteractiveQueue());
       this.timers.restore(session);
       this.logger?.error?.(`[INTERACTIVE] Viewer move persistence failed for ${session.sessionId}: ${error.message}`);
       return { success: false, error: 'persistence_error' };
     }
+    if (complete) {
+      this.registry.remove(session.sessionId);
+      this._publishSessionCompletion(session, completionPayload);
+    } else {
+      this._publishSafely('Viewer move legacy event', session.sessionId, () => {
+        this.emitLegacyEvent?.('move', { session, result, actorRole: 'viewer' });
+      });
+      this._publishSafely('Viewer move transition log', session.sessionId, () => {
+        this._logTransition('viewer_move_accepted', session, {
+          queueSequence: this.queue.list().find(row => row.sessionId === session.sessionId)?.sequence
+        });
+      });
+      this._publishSafely('Viewer move display routing', session.sessionId, () => this.router.sync());
+      this._publishSafely('Viewer move state', session.sessionId, () => this.emitState());
+    }
+    return { success: true, sessionId: session.sessionId, result };
   }
 
   applyHostMove(envelope) {
@@ -504,8 +530,16 @@ class InteractiveController {
         session.adapter.game.lastMoveTime = null;
       }
     }
-    const previousState = session.adapter.getState();
-    const previousLastMoveIdentity = session.lastMoveIdentity;
+    const previousState = JSON.parse(JSON.stringify(session.adapter.getState()));
+    const previous = {
+      revision: session.sessionRevision,
+      turnRole: session.turnRole,
+      deadline: session.viewerDeadlineMs,
+      remaining: session.viewerTimeRemainingMs,
+      hostTimeRemainingMs: session.hostTimeRemainingMs,
+      lastMoveIdentity: session.lastMoveIdentity,
+      lastActivityAt: session.lastActivityAt
+    };
     const result = session.adapter.applyHostMove(envelope.move);
     if (!result.success) {
       if (session.gameType === 'chess') this.timers.resumeHostChess(session);
@@ -530,45 +564,60 @@ class InteractiveController {
       this.timers.prepareViewer(session, this._viewerResponseSeconds(session.gameType), { persist: false });
     }
 
+    const complete = result.gameOver || session.adapter.isComplete();
+    let completionPayload = null;
     try {
-      this.database.transaction(() => {
-        if (moveIdentity && !this.database.recordInteractiveMoveIdentity(session.sessionId, moveIdentity)) {
-          throw new Error('duplicate_move_identity');
-        }
-        this.queue.remove(session.sessionId);
-        this.database.updateInteractiveState(session.sessionId, this._sessionRecord(session));
-      });
-      this.emitLegacyEvent?.('move', { session, result, actorRole: 'host' });
-      this._logTransition('host_move_accepted', session);
-      if (result.gameOver || session.adapter.isComplete()) {
-        this._completeSession(session, {
+      if (complete) {
+        completionPayload = this._persistSessionCompletion(session, {
           winner: result.winner,
           winnerRole: this._roleForWinner(session, result.winner),
           reason: result.winReason || (result.draw ? 'draw' : 'win'),
           gameResult: result
-        });
+        }, { moveIdentity });
       } else {
-        const animationSpeed = this._bounded(session.config?.animationSpeed, 500, 100, 2000);
-        this.router.beginAnimation(session.sessionId, animationSpeed);
-        this.emitState();
+        this.database.transaction(() => {
+          if (moveIdentity && !this.database.recordInteractiveMoveIdentity(session.sessionId, moveIdentity)) {
+            throw new Error('duplicate_move_identity');
+          }
+          this.queue.remove(session.sessionId);
+          this.database.updateInteractiveState(session.sessionId, this._sessionRecord(session));
+        });
       }
-      return { success: true, sessionId: session.sessionId, result };
     } catch (error) {
       session.adapter.restoreState(previousState);
       if (session.gameType === 'chess') {
         session.hostTimeRemainingMs = chessHostTimeBeforeMove;
         if (chessHostSide) session.adapter.game.timers[chessHostSide] = chessHostTimeBeforeMove;
       }
-      session.sessionRevision -= 1;
-      session.turnRole = 'host';
-      session.lastMoveIdentity = previousLastMoveIdentity;
-      session.viewerDeadlineMs = null;
-      session.viewerTimeRemainingMs = null;
-      if (!this.queue.has(session.sessionId)) this.queue.enqueue(session);
+      session.sessionRevision = previous.revision;
+      session.turnRole = previous.turnRole;
+      session.lastMoveIdentity = previous.lastMoveIdentity;
+      session.lastActivityAt = previous.lastActivityAt;
+      session.viewerDeadlineMs = previous.deadline;
+      session.viewerTimeRemainingMs = previous.remaining;
+      session.hostTimeRemainingMs = previous.hostTimeRemainingMs;
+      this.queue.restore(this.database.getInteractiveQueue());
       if (session.gameType === 'chess') this.timers.resumeHostChess(session);
       this.logger?.error?.(`[INTERACTIVE] Host move persistence failed for ${session.sessionId}: ${error.message}`);
       return { success: false, error: 'persistence_error' };
     }
+    if (complete) this.registry.remove(session.sessionId);
+    this._publishSafely('Host move legacy event', session.sessionId, () => {
+      this.emitLegacyEvent?.('move', { session, result, actorRole: 'host' });
+    });
+    this._publishSafely('Host move transition log', session.sessionId, () => {
+      this._logTransition('host_move_accepted', session);
+    });
+    if (complete) {
+      this._publishSessionCompletion(session, completionPayload);
+    } else {
+      const animationSpeed = this._bounded(session.config?.animationSpeed, 500, 100, 2000);
+      this._publishSafely('Host move display routing', session.sessionId, () => {
+        this.router.beginAnimation(session.sessionId, animationSpeed);
+      });
+      this._publishSafely('Host move state', session.sessionId, () => this.emitState());
+    }
+    return { success: true, sessionId: session.sessionId, result };
   }
 
   skipHostTurn(envelope) {
@@ -666,10 +715,9 @@ class InteractiveController {
     return true;
   }
 
-  _completeSession(session, outcome, {
+  _persistSessionCompletion(session, outcome, {
     moveIdentity = null,
     skipAccounting = false,
-    resultDurationMs = null,
     skipLeaderboard = false
   } = {}) {
     const resultPayload = {
@@ -701,19 +749,39 @@ class InteractiveController {
       this.database.updateInteractiveState(session.sessionId, this._sessionRecord(session));
       this.database.completeInteractiveState(session.sessionId, outcome.reason);
     });
-    this.registry.remove(session.sessionId);
-    try {
-      this.finishGame?.(resultPayload);
-    } catch (error) {
-      this.logger?.error?.(`[INTERACTIVE] Result accounting failed for ${session.sessionId}: ${error.message}`);
-    }
-    this.emitLegacyEvent?.('ended', resultPayload);
-    this._logTransition('session_ended', session, { terminalReason: outcome.reason });
+    return resultPayload;
+  }
+
+  _publishSessionCompletion(session, resultPayload, resultDurationMs = null) {
+    this._publishSafely('Result accounting', session.sessionId, () => this.finishGame?.(resultPayload));
+    this._publishSafely('Session completion legacy event', session.sessionId, () => {
+      this.emitLegacyEvent?.('ended', resultPayload);
+    });
+    this._publishSafely('Session completion transition log', session.sessionId, () => {
+      this._logTransition('session_ended', session, { terminalReason: resultPayload.reason });
+    });
     const resultDuration = resultDurationMs == null
       ? this._settings().interactiveResultDisplaySeconds * 1000
       : resultDurationMs;
-    this.router.showResult(resultPayload, resultDuration, resultPayload.leaderboard);
-    this.emitState();
+    this._publishSafely('Session result display', session.sessionId, () => {
+      this.router.showResult(resultPayload, resultDuration, resultPayload.leaderboard);
+    });
+    this._publishSafely('Session completion state', session.sessionId, () => this.emitState());
+  }
+
+  _completeSession(session, outcome, {
+    moveIdentity = null,
+    skipAccounting = false,
+    resultDurationMs = null,
+    skipLeaderboard = false
+  } = {}) {
+    const resultPayload = this._persistSessionCompletion(session, outcome, {
+      moveIdentity,
+      skipAccounting,
+      skipLeaderboard
+    });
+    this.registry.remove(session.sessionId);
+    this._publishSessionCompletion(session, resultPayload, resultDurationMs);
     return resultPayload;
   }
 

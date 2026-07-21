@@ -118,6 +118,7 @@ class InteractiveTurnTimers {
       remaining = Math.max(0, Number(session.viewerDeadlineMs) - this.now());
     }
     if (!Number.isFinite(remaining)) return null;
+    remaining = Math.max(0, remaining);
 
     session.viewerDeadlineMs = null;
     session.viewerTimeRemainingMs = remaining;

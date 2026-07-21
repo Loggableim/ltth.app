@@ -121,6 +121,69 @@ describe('interactive games admin UI contract', () => {
     expect(ui).toContain('interactiveTimerLabel(display, fallbackSession)');
   });
 
+  test('keeps a background viewer timer visually paused across same-state rerenders', () => {
+    const functionSource = ui.match(
+      /    function renderInteractiveBackground\(state\) \{[\s\S]*?\r?\n    \}(?=\r?\n\r?\n    function renderInteractiveState)/
+    )?.[0];
+    expect(functionSource).toEqual(expect.any(String));
+    const dom = new JSDOM('<div id="interactive-background-matches"></div>');
+    let now = 1000000;
+    const DateStub = { now: () => now };
+    const interactiveElement = (tag, className = '', text = '') => {
+      const element = dom.window.document.createElement(tag);
+      element.className = className;
+      element.textContent = text;
+      return element;
+    };
+    const runtimeText = (key, params = {}) => {
+      if (key.endsWith('viewer_timer')) return `viewer timer ${params.time}`;
+      if (key.endsWith('background_summary')) return `${params.player}: ${params.timer}`;
+      return key;
+    };
+    const render = new Function(
+      'document',
+      'Date',
+      'runtimeText',
+      'interactiveFormatDuration',
+      'interactiveElement',
+      'renderInteractiveBoard',
+      'interactiveCancelButton',
+      `const interactiveAdminStateReceivedAt = 1000000; ${functionSource}; return renderInteractiveBackground;`
+    )(
+      dom.window.document,
+      DateStub,
+      runtimeText,
+      milliseconds => `${milliseconds}ms`,
+      interactiveElement,
+      () => {},
+      () => dom.window.document.createElement('button')
+    );
+    const state = {
+      serverTimestamp: 1000000,
+      display: { displaySessionId: 99 },
+      activeSessions: [{
+        sessionId: 1,
+        gameType: 'connect4',
+        viewerDisplayName: 'Paused Viewer',
+        hostDisplayName: 'Host',
+        turnRole: 'viewer',
+        viewerTimeRemainingMs: 5000,
+        lastActivityAt: 999000,
+        moveCount: 1,
+        state: { board: [[0]] }
+      }]
+    };
+
+    render(state);
+    const initial = dom.window.document.querySelector('summary').textContent;
+    now += 2000;
+    render(state);
+
+    expect(initial).toContain('5000ms');
+    expect(dom.window.document.querySelector('summary').textContent).toBe(initial);
+    dom.window.close();
+  });
+
   test('uses dedicated namespaced interactive copy instead of legacy Connect4 translations', () => {
     expect(ui).toContain('data-i18n="plugins.game-engine.ui.interactive.title">Interactive Games</h3>');
     expect(ui).toContain('id="game-status" data-i18n="plugins.game-engine.ui.interactive.waiting_for_move"');

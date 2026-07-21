@@ -114,6 +114,44 @@ describe('GameEngineDatabase interactive persistence', () => {
       .map(column => column.name)).toContain('viewer_time_remaining_ms');
   });
 
+  test('does not suppress a real viewer remaining-time migration failure', () => {
+    sqlite.close();
+    sqlite = new Database(':memory:');
+    sqlite.exec(`
+      CREATE TABLE game_interactive_sessions (
+        session_id INTEGER PRIMARY KEY,
+        game_type TEXT NOT NULL,
+        viewer_id TEXT NOT NULL,
+        viewer_display_name TEXT NOT NULL,
+        host_display_name TEXT NOT NULL,
+        state_json TEXT NOT NULL,
+        session_revision INTEGER NOT NULL DEFAULT 1,
+        display_revision INTEGER NOT NULL DEFAULT 0,
+        turn_role TEXT NOT NULL,
+        viewer_deadline_ms INTEGER,
+        host_time_remaining_ms INTEGER,
+        time_control TEXT,
+        last_move_identity TEXT,
+        last_activity_at INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        terminal_reason TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    `);
+    const originalExec = sqlite.exec.bind(sqlite);
+    const execSpy = jest.spyOn(sqlite, 'exec').mockImplementation(sql => {
+      if (/ALTER TABLE game_interactive_sessions/.test(sql)) throw new Error('migration denied');
+      return originalExec(sql);
+    });
+
+    try {
+      expect(() => createDatabase(sqlite)).toThrow('migration denied');
+    } finally {
+      execSpy.mockRestore();
+    }
+  });
+
   test('persists viewer deadline and remaining time together across timer states', () => {
     database.createInteractiveState(session());
 

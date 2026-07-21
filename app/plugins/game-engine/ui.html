@@ -5507,7 +5507,7 @@
         const details = interactiveElement('details', 'interactive-list-item');
         const timer = session.turnRole === 'viewer' && session.viewerTimeRemainingMs != null
           ? runtimeText('plugins.game-engine.runtime.dashboard.viewer_timer', {
-            time: interactiveFormatDuration(Number(session.viewerTimeRemainingMs) - (Date.now() - interactiveAdminStateReceivedAt))
+            time: interactiveFormatDuration(Number(session.viewerTimeRemainingMs))
           })
           : session.turnRole === 'viewer' && session.gameType === 'connect4'
             ? runtimeText('plugins.game-engine.runtime.dashboard.no_time_limit')

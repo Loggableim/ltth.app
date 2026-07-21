@@ -106,6 +106,21 @@ describe('InteractiveTurnTimers', () => {
     expect(onViewerTimeout).toHaveBeenCalledTimes(1);
   });
 
+  test('clamps a persisted negative viewer remainder to zero when pausing', () => {
+    const active = session({ viewerTimeRemainingMs: -250 });
+    sessions.set(1, active);
+
+    expect(timers.pauseViewer(active)).toBe(0);
+    expect(active).toMatchObject({
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 0
+    });
+    expect(database.updateInteractiveState).toHaveBeenLastCalledWith(1, {
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 0
+    });
+  });
+
   test('ignores a viewer timeout after the authoritative display changes', () => {
     const active = session();
     sessions.set(1, active);

@@ -338,6 +338,72 @@ describe('InteractiveController', () => {
     harness.sqlite.close();
   });
 
+  test('keeps a committed viewer move authoritative when legacy publication throws', () => {
+    const harness = createHarness({ connect4HostStarts: false });
+    harness.controller.init();
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'viewer-publication-fault',
+      viewerDisplayName: 'Viewer Publication Fault'
+    });
+    harness.emitLegacyEvent.mockImplementationOnce(() => {
+      throw new Error('legacy emitter offline');
+    });
+
+    expect(harness.controller.applyViewerMove({
+      viewerId: 'viewer-publication-fault',
+      gameType: 'connect4',
+      move: { column: 'D' },
+      moveIdentity: 'viewer-publication-fault-1'
+    })).toMatchObject({ success: true, sessionId: match.sessionId });
+
+    const active = harness.controller.registry.get(match.sessionId);
+    const persisted = harness.database.getInteractiveState(match.sessionId);
+    expect(active.sessionRevision).toBe(2);
+    expect(active.sessionRevision).toBe(persisted.sessionRevision);
+    expect(active.adapter.getState()).toEqual(persisted.state);
+    expect(harness.controller.getState().hostQueue.map(row => row.sessionId)).toEqual([match.sessionId]);
+    expect(harness.database.getInteractiveQueue().map(row => row.sessionId)).toEqual([match.sessionId]);
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('publication failed'));
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('keeps a committed host move authoritative when display routing throws', () => {
+    const harness = createHarness();
+    harness.controller.init();
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'host-publication-fault',
+      viewerDisplayName: 'Host Publication Fault'
+    });
+    const display = harness.controller.getState().display;
+    jest.spyOn(harness.controller.router, 'beginAnimation').mockImplementationOnce(() => {
+      throw new Error('display router offline');
+    });
+
+    expect(harness.controller.applyHostMove({
+      sessionId: match.sessionId,
+      gameType: 'connect4',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move: { column: 'D' }
+    })).toMatchObject({ success: true, sessionId: match.sessionId });
+
+    const active = harness.controller.registry.get(match.sessionId);
+    const persisted = harness.database.getInteractiveState(match.sessionId);
+    expect(active.sessionRevision).toBe(2);
+    expect(active.sessionRevision).toBe(persisted.sessionRevision);
+    expect(active.adapter.getState()).toEqual(persisted.state);
+    expect(harness.controller.getState().hostQueue).toEqual([]);
+    expect(harness.database.getInteractiveQueue()).toEqual([]);
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('publication failed'));
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
   test('deduplicates a delayed viewer chat event after an intervening host move', () => {
     const harness = createHarness({ connect4HostStarts: false });
     harness.controller.init();
@@ -1133,6 +1199,32 @@ describe('InteractiveController', () => {
 
     secondHarness.controller.destroy();
     firstHarness.sqlite.close();
+  });
+
+  test('persists the exact live viewer remainder during orderly shutdown', () => {
+    const harness = createHarness({
+      connect4HostStarts: false,
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 5
+      }
+    });
+    harness.controller.init();
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'viewer-orderly-shutdown',
+      viewerDisplayName: 'Viewer Orderly Shutdown'
+    });
+
+    jest.advanceTimersByTime(1750);
+    harness.controller.destroy();
+
+    expect(harness.database.getInteractiveState(match.sessionId)).toMatchObject({
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 3250
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(0);
+    harness.sqlite.close();
   });
 
   test('closes only a corrupt persisted session and restores the remaining games', () => {
