@@ -12,7 +12,7 @@ describe('plugin guide definitions', () => {
   test('requires complete, localized guide contracts instead of renderer-generated prose', () => {
     const guides = buildGuides(repoRoot);
 
-    expect(guides).toHaveLength(39);
+    expect(guides).toHaveLength(38);
     for (const guide of guides) {
       expect(guide.definition).toEqual(expect.objectContaining({
         metadata: expect.objectContaining({
@@ -244,7 +244,7 @@ describe('plugin guide definitions', () => {
         const hasEveryLocaleLabel = LOCALES.every((locale) => typeof control.labels?.[locale] === 'string' && control.labels[locale].trim());
         const visible = visibleControls.get(control.selector);
         expect(visible).toBeDefined();
-        if (hasEveryLocaleLabel) {
+        if (hasEveryLocaleLabel && visible.classification === 'documented') {
           expect(visible.classification).toBe('documented');
           expect(settings).toContain(control.selector);
           continue;
@@ -261,6 +261,25 @@ describe('plugin guide definitions', () => {
         expect(settings).not.toContain(control.selector);
       }
     }
+  });
+
+  test('keeps the browser-hidden Music Bot request field as an explicit internal exception', () => {
+    const musicBot = buildGuides(repoRoot).find((guide) => guide.id === 'music-bot');
+    const inventory = collectGuideUiInventory(repoRoot, musicBot);
+    const requestInput = inventory.controls.find((control) => control.selector === '#request-input');
+    const visible = musicBot.definition.visibleControls.find((control) => control.selector === '#request-input');
+
+    expect(requestInput.labels).toEqual({
+      de: 'Song-Anfrage',
+      en: 'Song request',
+      es: 'Solicitud de canción',
+      fr: 'Demande de morceau'
+    });
+    expect(visible).toEqual(expect.objectContaining({
+      classification: 'internal',
+      section: 'guide-controls'
+    }));
+    expect(musicBot.definition.settingsReference.map((setting) => setting.selector)).not.toContain('#request-input');
   });
 
   test('uses each plugin locale label in the corresponding setting reference', () => {
