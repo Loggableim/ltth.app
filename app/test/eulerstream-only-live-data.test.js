@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 
 describe('EulerStream-only TikTok connector', () => {
   afterEach(() => {
@@ -35,6 +36,16 @@ describe('EulerStream-only TikTok connector', () => {
   });
 
   test('does not ship the TikFinity adapter', () => {
-    expect(fs.existsSync(require('path').join(__dirname, '..', 'modules', 'adapters', 'TikFinityAdapter.js'))).toBe(false);
+    expect(fs.existsSync(path.join(__dirname, '..', 'modules', 'adapters', 'TikFinityAdapter.js'))).toBe(false);
+  });
+
+  test('does not expose manager controls or legacy data-source routes', () => {
+    const root = path.join(__dirname, '..', '..');
+    const dashboard = fs.readFileSync(path.join(root, 'app', 'public', 'dashboard.html'), 'utf8');
+    const dashboardJs = fs.readFileSync(path.join(root, 'app', 'public', 'js', 'dashboard.js'), 'utf8');
+
+    expect(fs.existsSync(path.join(root, 'app', 'plugins', 'data-source'))).toBe(false);
+    expect(dashboard).not.toMatch(/datasource-|TikFinity|tiktok-data-source/i);
+    expect(dashboardJs).not.toMatch(/\/api\/data-source|datasource:|TikFinity|loadDataSourceStatus/);
   });
 });

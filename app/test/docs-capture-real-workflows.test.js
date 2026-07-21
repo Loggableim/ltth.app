@@ -46,38 +46,6 @@ describe('documentation capture real workflows', () => {
     });
   });
 
-  test('selects the real local TikFinity source before documenting Local Source', () => {
-    expect(step('data-source', 'local-source').capture.action).toMatchObject({
-      type: 'select-local-source',
-      allowClick: true,
-      clickSelector: '#card-tikfinity'
-    });
-  });
-
-  test('reviews Field MAP after the local source is selected instead of clicking it twice', () => {
-    const fieldMap = step('data-source', 'field-map');
-    expect(fieldMap.capture).toMatchObject({ assertVisible: '#tikfinity-port' });
-    expect(fieldMap.capture.action).toMatchObject({
-      type: 'open-plugin-surface',
-      prepare: 'select-local-tikfinity',
-      preparationEvidenceSelector: '#tikfinity-settings-card'
-    });
-    expect(fieldMap.workflow.captureRule.stateChange).toBe(false);
-    for (const locale of ['de', 'en', 'es', 'fr']) {
-      expect(fieldMap.copy[locale].body).not.toMatch(/(?:Klicke|Click|Haz clic|Cliquez)/i);
-      expect(fieldMap.workflow.instructions[locale].body).toBe(fieldMap.copy[locale].body);
-    }
-  });
-
-  test('saves the local TikFinity settings before documenting the result', () => {
-    expect(step('data-source', 'data-preview').capture.action).toMatchObject({
-      type: 'save-demo-config',
-      prepare: 'select-local-tikfinity',
-      allowClick: true,
-      clickSelector: '#btn-save-tikfinity'
-    });
-  });
-
   test.each(['goal-target', 'reset-rule', 'progress-pulse', 'goal-reset'])(
     'opens the real Goals create dialog before documenting %s',
     (stepId) => {

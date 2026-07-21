@@ -6,7 +6,6 @@ const { loadPublishedPluginCatalog } = require('../../scripts/lib/published-plug
 const PLUGIN_IDS = new Set([
   'advanced-timer',
   'config-import',
-  'data-source',
   'thermal-printer',
   'multicam'
 ]);
