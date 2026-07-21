@@ -1,6 +1,4 @@
 (function() {
-  const TOKEN_KEY = 'ltth_store_auth_token';
-  const EXPIRY_KEY = 'ltth_store_auth_token_exp';
   const STATE_KEY = 'ltth_store_auth_state';
   const NEXT_KEY = 'ltth_store_auth_next';
   const SIGNED_OUT_KEY = 'ltth_store_auth_signed_out';
@@ -267,29 +265,26 @@
   }
 
   function clearStoredBridgeToken() {
-    sessionStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(EXPIRY_KEY);
+    sessionStorage.removeItem('ltth_store_auth_token');
+    sessionStorage.removeItem('ltth_store_auth_token_exp');
     sessionStorage.removeItem(STATE_KEY);
     sessionStorage.removeItem(NEXT_KEY);
     state.bridgeToken = '';
   }
 
+  function getSignedOutStorageKey() {
+    const cookieName = String(state.config?.storeSessionCookieName || 'default').trim() || 'default';
+    return `${SIGNED_OUT_KEY}:${cookieName}`;
+  }
+
   function clearExplicitSignedOutState() {
-    sessionStorage.removeItem(SIGNED_OUT_KEY);
+    localStorage.removeItem(getSignedOutStorageKey());
     state.signedOutExplicitly = false;
   }
 
   function getStoredBridgeToken() {
-    const token = sessionStorage.getItem(TOKEN_KEY) || '';
-    if (!token) return '';
-
-    const expiresAt = Number(sessionStorage.getItem(EXPIRY_KEY) || 0);
-    if (expiresAt > 0 && expiresAt <= Date.now() + 10_000) {
-      clearStoredBridgeToken();
-      return '';
-    }
-
-    return token;
+    clearStoredBridgeToken();
+    return '';
   }
 
   async function fetchStoreAccount(token = '') {
@@ -382,7 +377,7 @@
 
   async function clearBridgeSession(shouldRender = true) {
     state.signedOutExplicitly = true;
-    sessionStorage.setItem(SIGNED_OUT_KEY, '1');
+    localStorage.setItem(getSignedOutStorageKey(), '1');
     clearStoredBridgeToken();
     state.bridgeToken = '';
     state.account = null;
@@ -418,7 +413,7 @@
       try {
         state.account = null;
         state.bridgeToken = getStoredBridgeToken();
-        state.signedOutExplicitly = sessionStorage.getItem(SIGNED_OUT_KEY) === '1';
+        state.signedOutExplicitly = localStorage.getItem(getSignedOutStorageKey()) === '1';
         if (!state.signedOutExplicitly) {
           await restoreBridgeSession();
         }

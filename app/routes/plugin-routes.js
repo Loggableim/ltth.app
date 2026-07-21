@@ -7,6 +7,7 @@ const { PluginStore } = require('../modules/plugin-store');
 const {
     buildStoreAccountResponse,
     buildStoreAuthConfig,
+    buildStoreSessionCookieName,
     claimBetaLicenseForStoreAccount,
     clearStoreSessionCookie,
     createRequireStoreAuth,
@@ -14,6 +15,7 @@ const {
     hasClosedBetaPluginAccess,
     hasStoreAdminAccess,
     hasSubscriberPluginAccess,
+    STORE_SESSION_COOKIE,
     setStoreSessionCookie
 } = require('../modules/clerk-store-auth');
 const {
@@ -21,6 +23,20 @@ const {
     resolvePluginChildPath,
     resolvePluginEntryPath
 } = require('../modules/plugin-paths');
+
+function getRequestCookie(req, cookieName) {
+    const cookie = String(req.headers?.cookie || '')
+        .split(';')
+        .map((part) => part.trim())
+        .find((part) => part.startsWith(`${cookieName}=`));
+    if (!cookie) return null;
+
+    try {
+        return decodeURIComponent(cookie.slice(cookieName.length + 1)) || null;
+    } catch {
+        return null;
+    }
+}
 
 /**
  * Plugin Routes - Verwaltet Plugin-Upload, Aktivierung, Deaktivierung, etc.
@@ -30,7 +46,14 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
     const limiter = pluginLimiter || apiLimiter;
     const env = options.env || process.env;
     const pluginStore = options.pluginStore || new PluginStore(pluginLoader, { logger });
-    const storeAuth = options.storeAuth || createRequireStoreAuth({ env, logger });
+    const profileId = options.profileId || 'default';
+    const storeSessionStore = options.storeSessionStore || null;
+    const storeAuthOptions = { env, logger, profileId, sessionStore: storeSessionStore };
+    const storeAuth = options.storeAuth || createRequireStoreAuth(storeAuthOptions);
+    const freshStoreAuth = options.freshStoreAuth || createRequireStoreAuth({
+        ...storeAuthOptions,
+        allowLocalSession: false
+    });
     const storeAuthConfig = options.storeAuthConfig || (() => buildStoreAuthConfig(env));
     const storeAccountResponse = options.storeAccountResponse || ((req) => buildStoreAccountResponse(req, env));
     const claimBetaLicense = options.claimBetaLicense || ((req) => claimBetaLicenseForStoreAccount(req.storeAccount || {}, { env, logger }));
@@ -81,7 +104,8 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
     app.get('/api/plugin-store/config', limiter, (req, res) => {
         res.json({
             success: true,
-            ...storeAuthConfig()
+            ...storeAuthConfig(),
+            storeSessionCookieName: buildStoreSessionCookieName(profileId)
         });
     });
 
@@ -93,13 +117,27 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
     });
 
     /**
-     * POST /api/plugin-store/session - Persist the verified Clerk account in a local 14-day HttpOnly cookie.
+     * POST /api/plugin-store/session - Exchange a fresh Clerk JWT for a local 28-day profile session.
      */
-    app.post('/api/plugin-store/session', limiter, storeAuth, (req, res) => {
+    app.post('/api/plugin-store/session', limiter, freshStoreAuth, (req, res) => {
+        if (!storeSessionStore) {
+            return res.status(500).json({
+                success: false,
+                code: 'STORE_SESSION_UNAVAILABLE',
+                error: 'Local plugin store session storage is unavailable.'
+            });
+        }
+
+        const previousToken = getRequestCookie(req, buildStoreSessionCookieName(profileId));
+        if (previousToken) {
+            storeSessionStore.revoke(previousToken);
+        }
+        const issued = storeSessionStore.issue(req.storeAccount || {});
         setStoreSessionCookie(res, req.storeAccount || {}, {
-            ...options,
-            token: req.storeAuthToken
+            profileId,
+            token: issued.token
         });
+        clearStoreSessionCookie(res, { cookieName: STORE_SESSION_COOKIE });
         res.json(storeAccountResponse(req));
     });
 
@@ -107,7 +145,12 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
      * DELETE /api/plugin-store/session - Clear the local store session cookie.
      */
     app.delete('/api/plugin-store/session', limiter, (req, res) => {
-        clearStoreSessionCookie(res, options);
+        const cookieName = buildStoreSessionCookieName(profileId);
+        const token = getRequestCookie(req, cookieName);
+        if (token && storeSessionStore) {
+            storeSessionStore.revoke(token);
+        }
+        clearStoreSessionCookie(res, { profileId, clearLegacy: true });
         res.json({
             success: true
         });

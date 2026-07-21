@@ -84,8 +84,6 @@
   <script src="/auth/clerk/callback-utils.js"></script>
   <script>
     (function() {
-      const TOKEN_KEY = 'ltth_store_auth_token';
-      const EXPIRY_KEY = 'ltth_store_auth_token_exp';
       const STATE_KEY = 'ltth_store_auth_state';
       const NEXT_KEY = 'ltth_store_auth_next';
 
@@ -140,7 +138,6 @@
         const hash = readHash();
         const token = hash.get('token');
         const state = hash.get('state');
-        const expiresAt = hash.get('expires_at') || '';
         const callbackUtils = window.LTTHAccountCallbackUtils || {};
         const next = typeof callbackUtils.getSafeNext === 'function'
           ? callbackUtils.getSafeNext(hash.get('next') || sessionStorage.getItem(NEXT_KEY), window.location.origin)
@@ -157,14 +154,9 @@
           throw new Error('Auth state mismatch. Start the login again from the LTTH app.');
         }
 
-        sessionStorage.setItem(TOKEN_KEY, token);
-        if (expiresAt) {
-          sessionStorage.setItem(EXPIRY_KEY, expiresAt);
-        } else {
-          sessionStorage.removeItem(EXPIRY_KEY);
-        }
-
         await createLocalSession(token);
+        sessionStorage.removeItem('ltth_store_auth_token');
+        sessionStorage.removeItem('ltth_store_auth_token_exp');
         sessionStorage.removeItem(STATE_KEY);
         sessionStorage.removeItem(NEXT_KEY);
         setMessage('Signed in', 'Returning to the LTTH plugin store...');
@@ -172,8 +164,8 @@
       }
 
       complete().catch((error) => {
-        sessionStorage.removeItem(TOKEN_KEY);
-        sessionStorage.removeItem(EXPIRY_KEY);
+        sessionStorage.removeItem('ltth_store_auth_token');
+        sessionStorage.removeItem('ltth_store_auth_token_exp');
         fail(error);
       });
     })();

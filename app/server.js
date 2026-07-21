@@ -168,9 +168,9 @@ const { createAdminAuth } = require('./modules/admin-auth');
 const { obsCacheControl } = require('./modules/obs-cache-control');
 const {
     createClerkFrontendProxy,
-    createClerkMiddleware,
-    createRequireStoreAuth
+    createClerkMiddleware
 } = require('./modules/clerk-store-auth');
+const StoreSessionStore = require('./modules/store-session-store');
 const { getAnimationFilePath } = require('./modules/animation-files');
 
 function decodeClerkFrontendDomain(publishableKey) {
@@ -535,6 +535,7 @@ try {
 logger.info(`✅ Database initialized: ${dbPath}`);
 logger.info(`💡 All settings (including API keys) are stored here and will survive app updates!`);
 logger.info(`👤 Streamer ID for scoped data: ${activeProfile}`);
+const storeSessionStore = new StoreSessionStore(db);
 initState.setDatabaseReady();
 
 // ========== NETWORK MANAGER ==========
@@ -668,7 +669,8 @@ if (process.env.DISABLE_SWAGGER !== 'true') {
 
 // ========== PLUGIN ROUTES ==========
 setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger, io, pluginLimiter, {
-    storeAuth: createRequireStoreAuth({ logger }),
+    profileId: activeProfile,
+    storeSessionStore,
     closedStore: true
 });
 

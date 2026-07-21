@@ -7,8 +7,13 @@ const path = require('path');
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const request = require('supertest');
+const Sqlite = require('better-sqlite3');
 
 const { setupPluginRoutes } = require('../routes/plugin-routes');
+const StoreSessionStore = require('../modules/store-session-store');
+const { buildStoreSessionCookieName } = require('../modules/clerk-store-auth');
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function createAuthFixture(claimOverrides = {}) {
   const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
@@ -32,6 +37,8 @@ function createAuthFixture(claimOverrides = {}) {
 function createTestApp(pluginsDir, envOverrides = {}, options = {}) {
   const app = express();
   app.use(express.json());
+  const sessionSqlite = options.sessionSqlite || new Sqlite(':memory:');
+  const storeSessionStore = options.storeSessionStore || new StoreSessionStore(sessionSqlite);
 
   const logger = {
     info: jest.fn(),
@@ -61,10 +68,12 @@ function createTestApp(pluginsDir, envOverrides = {}, options = {}) {
 
   setupPluginRoutes(app, pluginLoader, (req, res, next) => next(), (req, res, next) => next(), logger, null, null, {
     env,
-    pluginStore: options.pluginStore
+    pluginStore: options.pluginStore,
+    profileId: options.profileId || 'streamer-a',
+    storeSessionStore
   });
 
-  return { app, logger, pluginLoader, authFixture, env };
+  return { app, logger, pluginLoader, authFixture, env, sessionSqlite, storeSessionStore };
 }
 
 describe('Plugin store routes', () => {
@@ -170,7 +179,7 @@ describe('Plugin store routes', () => {
     assert.strictEqual(sessionResponse.body.success, true);
     assert.strictEqual(sessionResponse.body.account.authenticated, true);
     assert.strictEqual(sessionResponse.body.account.userId, 'user_123');
-    assert(sessionResponse.headers['set-cookie'].some((value) => value.includes('ltth_store_session=')));
+    assert(sessionResponse.headers['set-cookie'].some((value) => value.includes('ltth_store_session_')));
 
     const listing = await request(app)
       .get('/api/plugin-store')
@@ -182,6 +191,198 @@ describe('Plugin store routes', () => {
     assert.strictEqual(listing.body.communityEnabled, false);
     assert.strictEqual(listing.body.plugins.some((plugin) => plugin.id === 'tts'), true);
     assert.strictEqual(listing.body.plugins.some((plugin) => plugin.id === 'store-admin'), false);
+  });
+
+  it('replaces the Clerk JWT with an opaque profile-local session cookie', async () => {
+    const sqlite = new Sqlite(':memory:');
+    const storeSessionStore = new StoreSessionStore(sqlite);
+    const { app, authFixture } = createTestApp(tempDir, {}, {
+      profileId: 'streamer-a',
+      storeSessionStore
+    });
+
+    const sessionResponse = await request(app)
+      .post('/api/plugin-store/session')
+      .set('Authorization', `Bearer ${authFixture.token}`)
+      .set('Origin', 'http://127.0.0.1:3000')
+      .expect(200);
+
+    const setCookie = sessionResponse.headers['set-cookie'].find((value) => value.includes('ltth_store_session_'));
+    const cookie = setCookie.split(';', 1)[0];
+    assert(!setCookie.includes(authFixture.token));
+
+    const listing = await request(app)
+      .get('/api/plugin-store')
+      .set('Cookie', cookie)
+      .set('Origin', 'http://127.0.0.1:3000')
+      .expect(200);
+
+    assert.strictEqual(listing.body.success, true);
+    sqlite.close();
+  });
+
+  it('rotates and revokes the previous profile session after a fresh Clerk confirmation', async () => {
+    const sqlite = new Sqlite(':memory:');
+    const storeSessionStore = new StoreSessionStore(sqlite);
+    const previous = storeSessionStore.issue({
+      userId: 'user_123',
+      sessionId: 'sess_previous',
+      license: { active: true, status: 'active', plan: 'beta-free' },
+      access: {}
+    });
+    const { app, authFixture } = createTestApp(tempDir, {}, {
+      profileId: 'streamer-a',
+      storeSessionStore
+    });
+    const previousCookie = `${buildStoreSessionCookieName('streamer-a')}=${previous.token}`;
+
+    const response = await request(app)
+      .post('/api/plugin-store/session')
+      .set('Authorization', `Bearer ${authFixture.token}`)
+      .set('Cookie', previousCookie)
+      .set('Origin', 'http://127.0.0.1:3000')
+      .expect(200);
+
+    const replacementCookie = response.headers['set-cookie']
+      .find((value) => value.includes(`${buildStoreSessionCookieName('streamer-a')}=`))
+      .split(';', 1)[0];
+    assert.deepStrictEqual(storeSessionStore.read(previous.token), { status: 'missing' });
+    assert.notStrictEqual(replacementCookie, previousCookie);
+    sqlite.close();
+  });
+
+  it('clears a legacy JWT cookie when issuing a fresh profile-local session', async () => {
+    const sqlite = new Sqlite(':memory:');
+    const storeSessionStore = new StoreSessionStore(sqlite);
+    const { app, authFixture } = createTestApp(tempDir, {}, {
+      profileId: 'streamer-a',
+      storeSessionStore
+    });
+
+    const response = await request(app)
+      .post('/api/plugin-store/session')
+      .set('Authorization', `Bearer ${authFixture.token}`)
+      .set('Cookie', `ltth_store_session=${encodeURIComponent(authFixture.token)}`)
+      .set('Origin', 'http://127.0.0.1:3000')
+      .expect(200);
+
+    assert(response.headers['set-cookie'].some((value) => value.startsWith('ltth_store_session=; Max-Age=0')));
+    sqlite.close();
+  });
+
+  it('requires a weekly Clerk confirmation without deleting the local session', async () => {
+    let now = new Date('2026-07-21T12:00:00.000Z');
+    const sqlite = new Sqlite(':memory:');
+    const storeSessionStore = new StoreSessionStore(sqlite, { now: () => now });
+    const issued = storeSessionStore.issue({
+      userId: 'user_123',
+      sessionId: 'sess_123',
+      license: { active: true, status: 'active', plan: 'beta-free' },
+      access: { groups: [], closedBetaPlugins: [], features: [] }
+    });
+    const { app } = createTestApp(tempDir, {}, {
+      profileId: 'streamer-a',
+      storeSessionStore
+    });
+    const cookie = `${buildStoreSessionCookieName('streamer-a')}=${issued.token}`;
+
+    now = new Date(now.getTime() + (7 * DAY_MS));
+    const response = await request(app)
+      .get('/api/plugin-store/account')
+      .set('Cookie', cookie)
+      .set('Origin', 'http://127.0.0.1:3000')
+      .expect(401);
+
+    assert.strictEqual(response.body.code, 'STORE_SESSION_REVALIDATION_REQUIRED');
+    assert.strictEqual(sqlite.prepare('SELECT COUNT(*) AS count FROM store_sessions').get().count, 1);
+    sqlite.close();
+  });
+
+  it('keeps profile-local sessions isolated even when both cookies are sent by the browser', async () => {
+    const sqliteA = new Sqlite(':memory:');
+    const sqliteB = new Sqlite(':memory:');
+    const storeA = new StoreSessionStore(sqliteA);
+    const storeB = new StoreSessionStore(sqliteB);
+    const issuedA = storeA.issue({
+      userId: 'user_a',
+      license: { active: true, status: 'active', plan: 'beta-free' },
+      access: {}
+    });
+    const issuedB = storeB.issue({
+      userId: 'user_b',
+      license: { active: true, status: 'active', plan: 'beta-free' },
+      access: {}
+    });
+    const { app: appA } = createTestApp(tempDir, {}, {
+      profileId: 'streamer-a',
+      storeSessionStore: storeA
+    });
+    const { app: appB } = createTestApp(tempDir, {}, {
+      profileId: 'streamer-b',
+      storeSessionStore: storeB
+    });
+    const bothCookies = [
+      `${buildStoreSessionCookieName('streamer-a')}=${issuedA.token}`,
+      `${buildStoreSessionCookieName('streamer-b')}=${issuedB.token}`
+    ].join('; ');
+
+    const accountA = await request(appA)
+      .get('/api/plugin-store/account')
+      .set('Cookie', bothCookies)
+      .set('Origin', 'http://127.0.0.1:3000')
+      .expect(200);
+    const accountB = await request(appB)
+      .get('/api/plugin-store/account')
+      .set('Cookie', bothCookies)
+      .set('Origin', 'http://127.0.0.1:3000')
+      .expect(200);
+
+    assert.strictEqual(accountA.body.account.userId, 'user_a');
+    assert.strictEqual(accountB.body.account.userId, 'user_b');
+    sqliteA.close();
+    sqliteB.close();
+  });
+
+  it('migrates a valid legacy Clerk cookie to the opaque profile-local session', async () => {
+    const sqlite = new Sqlite(':memory:');
+    const storeSessionStore = new StoreSessionStore(sqlite);
+    const { app, authFixture } = createTestApp(tempDir, {}, {
+      profileId: 'streamer-a',
+      storeSessionStore
+    });
+
+    const response = await request(app)
+      .get('/api/plugin-store/account')
+      .set('Cookie', `ltth_store_session=${encodeURIComponent(authFixture.token)}`)
+      .set('Origin', 'http://127.0.0.1:3000')
+      .expect(200);
+
+    const setCookies = response.headers['set-cookie'];
+    assert(setCookies.some((value) => value.includes(`${buildStoreSessionCookieName('streamer-a')}=`)));
+    assert(setCookies.some((value) => value.startsWith('ltth_store_session=; Max-Age=0')));
+    assert.strictEqual(sqlite.prepare('SELECT COUNT(*) AS count FROM store_sessions').get().count, 1);
+    sqlite.close();
+  });
+
+  it('revokes only the active profile session on local sign-out', async () => {
+    const sqlite = new Sqlite(':memory:');
+    const storeSessionStore = new StoreSessionStore(sqlite);
+    const first = storeSessionStore.issue({ userId: 'user_a', license: {}, access: {} });
+    const second = storeSessionStore.issue({ userId: 'user_b', license: {}, access: {} });
+    const { app } = createTestApp(tempDir, {}, {
+      profileId: 'streamer-a',
+      storeSessionStore
+    });
+    const firstCookie = `${buildStoreSessionCookieName('streamer-a')}=${first.token}`;
+
+    await request(app)
+      .delete('/api/plugin-store/session')
+      .set('Cookie', firstCookie)
+      .expect(200);
+
+    assert.deepStrictEqual(storeSessionStore.read(first.token), { status: 'missing' });
+    assert.strictEqual(storeSessionStore.read(second.token).status, 'active');
+    sqlite.close();
   });
 
   it('rejects community source mutations in the closed store', async () => {

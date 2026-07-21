@@ -270,24 +270,53 @@ describe('Clerk store auth', () => {
 
   it('sets the local store session cookie from a verified token', () => {
     const {
+      buildStoreSessionCookieName,
       setStoreSessionCookie,
       STORE_SESSION_COOKIE
     } = require('../modules/clerk-store-auth');
     const response = createHeaderResponse();
     const ok = setStoreSessionCookie(response, {}, {
       token: 'eyJhbGciOiJSUzI1NiJ9.test.signature',
+      profileId: 'streamer-a',
       now: () => new Date('2026-07-06T12:00:00.000Z')
     });
     const cookie = response.getHeader('Set-Cookie');
 
     assert.strictEqual(ok, true);
-    assert(cookie.includes(`${STORE_SESSION_COOKIE}=`));
-    assert(cookie.includes('Max-Age=1209600'));
-    assert(cookie.includes('Expires=Mon, 20 Jul 2026 12:00:00 GMT'));
+    assert.strictEqual(STORE_SESSION_COOKIE, 'ltth_store_session');
+    assert(cookie.includes(`${buildStoreSessionCookieName('streamer-a')}=`));
+    assert(cookie.includes('Max-Age=2419200'));
+    assert(cookie.includes('Expires=Mon, 03 Aug 2026 12:00:00 GMT'));
     assert(cookie.includes('Path=/'));
     assert(cookie.includes('HttpOnly'));
     assert(cookie.includes('SameSite=Lax'));
     assert(cookie.includes('eyJhbGciOiJSUzI1NiJ9.test.signature'));
+  });
+
+  it('scopes opaque local session cookies to the active streamer profile for 28 days', () => {
+    const {
+      STORE_SESSION_MAX_AGE_MS,
+      buildStoreSessionCookieName,
+      setStoreSessionCookie
+    } = require('../modules/clerk-store-auth');
+    const response = createHeaderResponse();
+    const now = new Date('2026-07-06T12:00:00.000Z');
+    const profileACookie = buildStoreSessionCookieName('streamer-a');
+    const profileBCookie = buildStoreSessionCookieName('streamer-b');
+
+    setStoreSessionCookie(response, {}, {
+      profileId: 'streamer-a',
+      token: 'local-session-token',
+      now: () => now
+    });
+
+    const cookie = response.getHeader('Set-Cookie');
+    assert.strictEqual(STORE_SESSION_MAX_AGE_MS, 28 * 24 * 60 * 60 * 1000);
+    assert.notStrictEqual(profileACookie, profileBCookie);
+    assert(cookie.includes(`${profileACookie}=local-session-token`));
+    assert(cookie.includes('Max-Age=2419200'));
+    assert(cookie.includes('Expires=Mon, 03 Aug 2026 12:00:00 GMT'));
+    assert(!cookie.includes('ltth_store_session=local-session-token'));
   });
 
   it('claims a free beta license through Clerk metadata', async () => {

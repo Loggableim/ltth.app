@@ -229,7 +229,7 @@ describe('Clerk auth bridge', () => {
     const storeAuthScript = readAppFile('public', 'js', 'clerk-store-auth.js');
     const { window } = createStoreAuthDom();
     const requests = [];
-    window.sessionStorage.setItem('ltth_store_auth_signed_out', '1');
+    window.localStorage.setItem('ltth_store_auth_signed_out:ltth_store_session_profile_a', '1');
     window.fetch = async (url) => {
       requests.push(String(url));
       if (url === '/api/plugin-store/config') {
@@ -238,7 +238,8 @@ describe('Clerk auth bridge', () => {
           clerkEnabled: true,
           publishableKey: 'pk_test_public',
           authBridgeUrl: 'https://ltth.app/auth/',
-          authCallbackPath: '/auth/clerk/callback.html'
+          authCallbackPath: '/auth/clerk/callback.html',
+          storeSessionCookieName: 'ltth_store_session_profile_a'
         });
       }
 
@@ -317,6 +318,51 @@ describe('Clerk auth bridge', () => {
 
     assert.strictEqual(redirects.length, 0);
     assert(window.document.querySelector('[data-store-auth-mode="sign-in"]'));
+  });
+
+  it('does not persist the Clerk JWT after exchanging it for the local store session', () => {
+    const callbackHtml = readAppFile('public', 'auth', 'clerk', 'callback.html');
+    const storeAuthScript = readAppFile('public', 'js', 'clerk-store-auth.js');
+
+    assert(callbackHtml.includes('await createLocalSession(token);'));
+    assert(!callbackHtml.includes('sessionStorage.setItem(TOKEN_KEY, token)'));
+    assert(!storeAuthScript.includes("const TOKEN_KEY = 'ltth_store_auth_token'"));
+    assert(!storeAuthScript.includes('return sessionStorage.getItem(TOKEN_KEY)'));
+  });
+
+  it('persists explicit sign-out per profile instead of auto-restoring it after a restart', async () => {
+    const { window } = createStoreAuthDom();
+    window.fetch = async (url, options = {}) => {
+      if (url === '/api/plugin-store/config') {
+        return jsonResponse({
+          success: true,
+          clerkEnabled: true,
+          publishableKey: 'pk_test_public',
+          authBridgeUrl: 'https://ltth.app/auth/',
+          storeSessionCookieName: 'ltth_store_session_profile_a'
+        });
+      }
+
+      if (url === '/api/plugin-store/account') {
+        return jsonResponse({
+          success: true,
+          account: { authenticated: true, userId: 'user_123', license: {}, access: {} }
+        });
+      }
+
+      if (url === '/api/plugin-store/session' && options.method === 'DELETE') {
+        return jsonResponse({ success: true });
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    };
+
+    window.eval(readAppFile('public', 'js', 'clerk-store-auth.js'));
+    await window.StoreAuth.init();
+    await window.StoreAuth.signOut();
+
+    assert.strictEqual(window.localStorage.getItem('ltth_store_auth_signed_out:ltth_store_session_profile_a'), '1');
+    assert.strictEqual(window.sessionStorage.getItem('ltth_store_auth_signed_out'), null);
   });
 });
 
