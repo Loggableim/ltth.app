@@ -133,6 +133,45 @@
       display: block;
     }
 
+    #interactive-active-player {
+      display: block;
+      margin-bottom: 7px;
+      color: #ffe269;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .interactive-player-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .interactive-player {
+      padding: 5px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 999px;
+      color: #d6dfeb;
+      font-size: 15px;
+      font-weight: 700;
+      transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+    }
+
+    .interactive-player.is-active-player {
+      border-color: #ffe269;
+      background: rgba(255, 226, 105, 0.2);
+      color: #fff9d6;
+    }
+
+    .interactive-player-separator {
+      color: #8fa1b7;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
     #interactive-status {
       display: block;
       margin-top: 4px;
@@ -154,7 +193,12 @@
     <iframe id="frame-slot" class="game-frame" data-src="/overlay/game-engine/slot"></iframe>
 
     <div id="interactive-matchup" aria-live="polite">
-      <span id="interactive-matchup-names"></span>
+      <span id="interactive-active-player"></span>
+      <div class="interactive-player-row">
+        <span id="interactive-host-player" class="interactive-player"></span>
+        <span class="interactive-player-separator">VS</span>
+        <span id="interactive-viewer-player" class="interactive-player"></span>
+      </div>
       <span id="interactive-status"></span>
     </div>
     
@@ -316,7 +360,10 @@
       if (presentationDisplay.phase === 'leaderboard') {
         hideInteractiveMatchup();
       } else {
-        showInteractiveMatchup(presentationDisplay, state.hostQueue?.length || 0);
+        showInteractiveMatchup(
+          presentationDisplay,
+          presentationDisplay.activeSessionCount ?? state.hostQueue?.length ?? 0
+        );
       }
       switchToGame(presentationDisplay.gameType, interactiveState);
       updateQueueIndicator(state.hostQueue?.length || 0);
@@ -363,11 +410,27 @@
 
     function showInteractiveMatchup(display, queueLength) {
       const matchup = document.getElementById('interactive-matchup');
-      document.getElementById('interactive-matchup-names').textContent =
-        runtimeText('plugins.game-engine.runtime.unified.matchup', {
-          host: display.hostDisplayName || runtimeText('plugins.game-engine.runtime.dashboard.host'),
-          player: display.viewerDisplayName || runtimeText('plugins.game-engine.runtime.dashboard.player')
-        });
+      const hostName = display.hostDisplayName || runtimeText('plugins.game-engine.runtime.dashboard.host');
+      const viewerName = display.viewerDisplayName || runtimeText('plugins.game-engine.runtime.dashboard.player');
+      const activeRole = ['host', 'viewer'].includes(display.currentTurnRole)
+        ? display.currentTurnRole
+        : null;
+      const activePlayerName = display.activePlayerDisplayName || (activeRole === 'host'
+        ? hostName
+        : activeRole === 'viewer'
+          ? viewerName
+          : '');
+      const hostPlayer = document.getElementById('interactive-host-player');
+      const viewerPlayer = document.getElementById('interactive-viewer-player');
+      const activePlayer = document.getElementById('interactive-active-player');
+      hostPlayer.textContent = hostName;
+      viewerPlayer.textContent = viewerName;
+      hostPlayer.classList.toggle('is-active-player', activeRole === 'host');
+      viewerPlayer.classList.toggle('is-active-player', activeRole === 'viewer');
+      activePlayer.textContent = activePlayerName
+        ? runtimeText('plugins.game-engine.runtime.unified.active_turn', { player: activePlayerName })
+        : '';
+      activePlayer.hidden = !activePlayerName;
       if (interactiveStatusInterval) clearInterval(interactiveStatusInterval);
       const renderStatus = () => {
         const elapsedMs = Date.now() - interactiveStateReceivedAt;
@@ -401,7 +464,7 @@
     function rerenderUnifiedRuntimeText() {
       const display = latestInteractiveState?.display;
       if (!display) return;
-      const queueLength = latestInteractiveState.hostQueue?.length || 0;
+      const queueLength = display.activeSessionCount ?? latestInteractiveState.hostQueue?.length ?? 0;
       if (display.phase !== 'leaderboard' && display.phase !== 'idle') {
         showInteractiveMatchup(display, queueLength);
       }

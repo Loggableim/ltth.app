@@ -1292,12 +1292,13 @@
           "plinko": { "slot_hits": "Slot {slot}: {count}x" },
           "overlay": { "viewer_countdown": "Viewer: {seconds}s remaining" },
           "unified": {
+            "active_turn": "CURRENT TURN: {player}",
             "matchup": "{host} vs. {player}",
             "phase_host_turn": "Host to move",
             "phase_result": "Result",
             "phase_viewer_turn": "Viewer to move",
             "queue_count": "{count} game(s) in queue",
-            "status": "{game} · {phase} · host turns queued: {count}"
+            "status": "{game} · {phase} · {count} active games"
           },
           "wheel": {
             "info_screen": "To collect your prize, visit discord.gg/yourserver",

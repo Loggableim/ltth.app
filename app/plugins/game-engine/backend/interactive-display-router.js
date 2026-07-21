@@ -321,6 +321,11 @@ class InteractiveDisplayRouter {
     const hostRemaining = session?.gameType === 'chess'
       ? this.timers.getHostRemaining?.(session) ?? session.hostTimeRemainingMs
       : null;
+    const activePlayerDisplayName = session?.turnRole === 'host'
+      ? session.hostDisplayName
+      : session?.turnRole === 'viewer'
+        ? session.viewerDisplayName
+        : null;
     return {
       displaySessionId: this.displaySessionId,
       gameType: this.phase === 'result'
@@ -332,6 +337,7 @@ class InteractiveDisplayRouter {
       displayRevision: this.displayRevision,
       hostDisplayName: result?.hostDisplayName || session?.hostDisplayName || leaderboard?.hostDisplayName || null,
       viewerDisplayName: result?.viewerDisplayName || session?.viewerDisplayName || leaderboard?.viewerDisplayName || null,
+      activePlayerDisplayName,
       state,
       currentTurnRole: session?.turnRole || null,
       viewerDeadlineMs: session?.viewerDeadlineMs ?? null,
