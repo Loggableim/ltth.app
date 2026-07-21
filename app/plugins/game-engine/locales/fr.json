@@ -1231,7 +1231,13 @@
           "default_no_upload": "Par défaut (aucun téléversement)",
           "upload": "⬆️ Téléverser",
           "reset_default": "↩ Par défaut",
-          "sync": "(synchronisation)"
+          "sync": "(synchronisation)",
+          "enabled": "Activé",
+          "disabled": "Désactivé",
+          "enable": "Activer",
+          "disable": "Désactiver",
+          "state_updated": "État du son mis à jour",
+          "state_update_failed": "Impossible de mettre à jour l’état du son"
         },
         "openshock": {
           "intensity_1_100": "Intensité (1–100) :",
@@ -1292,18 +1298,20 @@
             "viewer_countdown": "Spectateur : encore {seconds} s"
           },
           "unified": {
+            "active_turn": "AU TOUR DE : {player}",
             "matchup": "{host} contre {player}",
             "phase_host_turn": "À l’hôte de jouer",
             "phase_result": "Résultat",
             "phase_viewer_turn": "Au spectateur de jouer",
             "queue_count": "{count} partie(s) en attente",
-            "status": "{game} · {phase} · tours de l’hôte en attente : {count}"
+            "status": "{game} · {phase} · {count} parties actives"
           },
           "wheel": {
             "info_screen": "Pour récupérer votre gain, rendez-vous sur discord.gg/votreserveur",
             "no_prize": "💔 Pas de gain !",
             "send_gift": "Envoyez un cadeau pour faire tourner la roue !",
             "shock": "⚡ CHOC !",
+            "segment_count_changed": "La configuration de la roue a changé pendant que ce tirage était en file d’attente ({previousCount} → {currentCount} segments). Réessayez.",
             "spin_failed": "Le tirage n’a pas pu être effectué",
             "spinning": "🎡 La roue tourne",
             "test_spin_error": "Impossible de déclencher le test de rotation : {error}",

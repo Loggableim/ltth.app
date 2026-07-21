@@ -1,6 +1,7 @@
 class InteractiveTurnTimers {
   constructor({
     getSession,
+    getDisplaySessionId = () => null,
     database,
     onViewerTimeout,
     onHostTimeout,
@@ -12,6 +13,7 @@ class InteractiveTurnTimers {
     hostCheckpointIntervalMs = 1000
   }) {
     this.getSession = getSession;
+    this.getDisplaySessionId = getDisplaySessionId;
     this.database = database;
     this.onViewerTimeout = onViewerTimeout;
     this.onHostTimeout = onHostTimeout;
@@ -26,12 +28,42 @@ class InteractiveTurnTimers {
   }
 
   startViewer(session, seconds, { persist = true } = {}) {
+    this.prepareViewer(session, seconds, { persist: false });
+    return this.resumeViewer(session, { persist });
+  }
+
+  prepareViewer(session, seconds, { persist = true } = {}) {
     this.clearViewer(session.sessionId, { persist: false });
-    const deadline = this.now() + (Number(seconds) * 1000);
-    session.viewerDeadlineMs = deadline;
+    const remaining = Math.max(0, Number(seconds) * 1000);
+    session.viewerDeadlineMs = null;
+    session.viewerTimeRemainingMs = remaining;
     if (persist) {
       this.database.updateInteractiveState(session.sessionId, {
-        viewerDeadlineMs: deadline
+        viewerDeadlineMs: null,
+        viewerTimeRemainingMs: remaining
+      });
+    }
+    return remaining;
+  }
+
+  resumeViewer(session, { persist = true } = {}) {
+    const sessionId = Number(session.sessionId);
+    const running = this.viewerTimers.get(sessionId);
+    if (running) return running.deadline;
+    if (session.status !== 'active' || session.turnRole !== 'viewer') {
+      return session.viewerDeadlineMs;
+    }
+    const remaining = session.viewerTimeRemainingMs == null
+      ? NaN
+      : Number(session.viewerTimeRemainingMs);
+    if (!Number.isFinite(remaining)) return session.viewerDeadlineMs;
+    const deadline = this.now() + Math.max(0, remaining);
+    session.viewerDeadlineMs = deadline;
+    session.viewerTimeRemainingMs = null;
+    if (persist) {
+      this.database.updateInteractiveState(sessionId, {
+        viewerDeadlineMs: deadline,
+        viewerTimeRemainingMs: null
       });
     }
     this._scheduleViewer(session);
@@ -43,7 +75,8 @@ class InteractiveTurnTimers {
     if (!Number.isFinite(deadline)) return;
     const sessionId = Number(session.sessionId);
     const revision = session.sessionRevision;
-    const delay = Math.max(0, deadline - this.now());
+    const startedAt = this.now();
+    const delay = Math.max(0, deadline - startedAt);
     const timeout = this.setTimeoutFn(() => {
       this.viewerTimers.delete(sessionId);
       const current = this.getSession(sessionId);
@@ -53,6 +86,7 @@ class InteractiveTurnTimers {
         current.turnRole !== 'viewer' ||
         current.sessionRevision !== revision ||
         current.viewerDeadlineMs !== deadline ||
+        this.getDisplaySessionId() !== sessionId ||
         this.now() < deadline
       ) {
         return;
@@ -60,19 +94,54 @@ class InteractiveTurnTimers {
       this.onViewerTimeout?.(sessionId, revision);
     }, delay);
     timeout.unref?.();
-    this.viewerTimers.set(sessionId, timeout);
+    this.viewerTimers.set(sessionId, { timeout, deadline, startedAt, remaining: delay, revision });
+  }
+
+  pauseViewer(session, { persist = true } = {}) {
+    const sessionId = Number(session.sessionId);
+    const running = this.viewerTimers.get(sessionId);
+    if (running) this.clearTimeoutFn(running.timeout);
+    this.viewerTimers.delete(sessionId);
+
+    let remaining = session.viewerTimeRemainingMs == null
+      ? NaN
+      : Number(session.viewerTimeRemainingMs);
+    if (running) {
+      remaining = Math.max(0, running.remaining - (this.now() - running.startedAt));
+    } else if (
+      session.viewerDeadlineMs != null &&
+      Number.isFinite(Number(session.viewerDeadlineMs))
+    ) {
+      remaining = Math.max(0, Number(session.viewerDeadlineMs) - this.now());
+    }
+    if (!Number.isFinite(remaining)) return null;
+    remaining = Math.max(0, remaining);
+
+    session.viewerDeadlineMs = null;
+    session.viewerTimeRemainingMs = remaining;
+    if (persist) {
+      this.database.updateInteractiveState(sessionId, {
+        viewerDeadlineMs: null,
+        viewerTimeRemainingMs: remaining
+      });
+    }
+    return remaining;
   }
 
   clearViewer(sessionId, { persist = true } = {}) {
     const normalizedId = Number(sessionId);
-    const timeout = this.viewerTimers.get(normalizedId);
-    if (timeout) this.clearTimeoutFn(timeout);
+    const running = this.viewerTimers.get(normalizedId);
+    if (running) this.clearTimeoutFn(running.timeout);
     this.viewerTimers.delete(normalizedId);
     const session = this.getSession(normalizedId);
-    if (session) session.viewerDeadlineMs = null;
+    if (session) {
+      session.viewerDeadlineMs = null;
+      session.viewerTimeRemainingMs = null;
+    }
     if (persist && session) {
       this.database.updateInteractiveState(normalizedId, {
-        viewerDeadlineMs: null
+        viewerDeadlineMs: null,
+        viewerTimeRemainingMs: null
       });
     }
   }
@@ -180,7 +249,11 @@ class InteractiveTurnTimers {
       const session = this.getSession(sessionId);
       if (session) this.pauseHostChess(session, { persist: true });
     }
-    for (const timeout of this.viewerTimers.values()) this.clearTimeoutFn(timeout);
+    for (const [sessionId, running] of Array.from(this.viewerTimers.entries())) {
+      const session = this.getSession(sessionId);
+      if (session) this.pauseViewer(session, { persist: true });
+      else this.clearTimeoutFn(running.timeout);
+    }
     this.viewerTimers.clear();
     this.hostTimers.clear();
   }

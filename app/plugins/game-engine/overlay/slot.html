@@ -614,6 +614,29 @@
     let lastSettings    = {};
     let hideTimer       = null;
     let currentSpinId   = null; // track active spin for spin-completed reporting
+    const spinCallbackTimers = new Set();
+
+    function isCurrentSpinScope(spinId, machineId) {
+      return spinId != null &&
+        machineId != null &&
+        String(spinId) === String(currentSpinId) &&
+        String(machineId) === String(currentMachineId);
+    }
+
+    function clearSpinCallbackTimers() {
+      for (const timer of spinCallbackTimers) clearTimeout(timer);
+      spinCallbackTimers.clear();
+    }
+
+    function scheduleSpinCallback(spinId, machineId, callback, delay) {
+      const timer = setTimeout(() => {
+        spinCallbackTimers.delete(timer);
+        if (!isCurrentSpinScope(spinId, machineId)) return;
+        callback();
+      }, delay);
+      spinCallbackTimers.add(timer);
+      return timer;
+    }
 
     const socket = io({ transports: ['websocket'], auth: { role: 'overlay' } });
 
@@ -732,7 +755,8 @@
       requestAnimationFrame(step);
     }
 
-    function stopReel(index, resultSymbol, callback) {
+    function stopReel(index, resultSymbol, callback, spinId, machineId) {
+      if (!isCurrentSpinScope(spinId, machineId)) return;
       const track = document.getElementById(`track-${index}`);
       const reel  = document.getElementById(`reel-${index}`);
       if (!track || !reel) { if (callback) callback(); return; }
@@ -766,7 +790,7 @@
       track.classList.add('stopping');
       track.style.transform = `translateY(-${snapTo}px)`;
 
-      setTimeout(() => {
+      scheduleSpinCallback(spinId, machineId, () => {
         track.classList.remove('stopping');
         if (callback) callback();
       }, 600);
@@ -779,7 +803,7 @@
 
     // ── Reset all visual state ────────────────────────────
     function resetVisualState() {
-      reelsWrap.classList.remove('win-glow', 'jackpot-glow');
+      reelsWrap.classList.remove('win-glow', 'jackpot-glow', 'near-miss-shake');
       resultEl.className = '';
       resultEl.classList.remove('visible');
       resultEl.textContent = '';
@@ -798,7 +822,7 @@
     }
 
     // ── Confetti ───────────────────────────────────────────
-    function launchConfetti() {
+    function launchConfetti(spinId, machineId) {
       const colors = ['#FFD700','#FF6B6B','#4ECDC4','#A8E6CF','#FF8C94','#FFD3B6'];
       for (let i = 0; i < 80; i++) {
         const piece = document.createElement('div');
@@ -810,11 +834,12 @@
         piece.style.transform        = `rotate(${Math.random() * 360}deg)`;
         confettiEl.appendChild(piece);
       }
-      setTimeout(() => { confettiEl.innerHTML = ''; }, 4000);
+      scheduleSpinCallback(spinId, machineId, () => { confettiEl.innerHTML = ''; }, 4000);
     }
 
     // ── Display result label ───────────────────────────────
-    function showResult(category, isWin, settings, spinId) {
+    function showResult(category, isWin, settings, spinId, machineId = currentMachineId) {
+      if (!isCurrentSpinScope(spinId, machineId)) return false;
       const label = RESULT_LABELS[category] || category;
       resultEl.textContent = label;
       resultEl.className = category;
@@ -826,11 +851,16 @@
       }
       if (category === 'near_miss') {
         reelsWrap.classList.add('near-miss-shake');
-        setTimeout(() => reelsWrap.classList.remove('near-miss-shake'), 600);
+        scheduleSpinCallback(
+          spinId,
+          machineId,
+          () => reelsWrap.classList.remove('near-miss-shake'),
+          600
+        );
       }
       if (category === 'jackpot') {
         reelsWrap.classList.add('jackpot-glow');
-        launchConfetti();
+        launchConfetti(spinId, machineId);
       }
 
       const showMs = (settings && settings.showResultDuration) ? settings.showResultDuration : 5000;
@@ -838,15 +868,62 @@
       // ── Notify server: animation complete, dispatch rewards ──
       // Fire as soon as the result is visible (reels have stopped).
       if (spinId) {
-        socket.emit('slot:spin-completed', { spinId, category, isWin });
+        if (pendingSpinAudioIntent?.spinId === String(spinId)) pendingSpinAudioIntent = null;
+        socket.emit('slot:spin-completed', { spinId, machineId, category, isWin });
       }
 
       scheduledHide(showMs + 1200);
+      return true;
     }
 
     // ── Audio playback ─────────────────────────────────────
     const audioCache = {};
     let currentMachineId = null;
+    const audioSettingsByEvent = new Map();
+    const slotAudioEvents = ['spin', 'small_win', 'medium_win', 'big_win', 'jackpot', 'near_miss', 'reel_stop'];
+    let audioSettingsReady = false;
+    let slotAudioSettingsGeneration = 0;
+    let pendingSpinAudioIntent = null;
+
+    function applyAudioSettings(settings) {
+      audioSettingsByEvent.clear();
+      for (const audioEvent of slotAudioEvents) {
+        const setting = settings?.[audioEvent];
+        const entry = { enabled: setting?.enabled !== false };
+        if (setting?.url) entry.url = setting.url;
+        audioSettingsByEvent.set(audioEvent, entry);
+      }
+      audioSettingsReady = true;
+    }
+
+    function applyAudioStateUpdate(audioEvent, enabled) {
+      if (typeof enabled !== 'boolean') return;
+      const current = audioSettingsByEvent.get(audioEvent) || {};
+      audioSettingsByEvent.set(audioEvent, { ...current, enabled });
+    }
+
+    async function loadAudioSettings(machineId) {
+      if (!machineId) return;
+      const scopeId = String(machineId);
+      const generation = ++slotAudioSettingsGeneration;
+      audioSettingsReady = false;
+      try {
+        const response = await fetch(`/api/game-engine/slot/audio/settings?machineId=${machineId}`, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const settings = await response.json();
+        if (generation !== slotAudioSettingsGeneration || scopeId !== String(currentMachineId)) return false;
+        applyAudioSettings(settings);
+        playPendingSpinAudio(scopeId);
+        return true;
+      } catch (error) {
+        if (generation === slotAudioSettingsGeneration && scopeId === String(currentMachineId)) {
+          console.warn('Failed to load slot audio settings:', error);
+        }
+        return false;
+      }
+    }
+
+    applyAudioSettings({});
 
     function getAudioPath(audioType, machineId) {
       // Custom sounds are served from /game-engine/sounds/slot/custom/:machineId/:type.mp3
@@ -866,11 +943,27 @@
       return defaultPaths[audioType] || null;
     }
 
-    function playAudio(audioType, settings, machineId) {
+    function canPlayAudioEvent(audioType, settings, machineId, spinId = null) {
       const s = settings || lastSettings;
-      if (s.soundEnabled === false) return;
+      if (s.soundEnabled === false) return false;
+      if (!audioSettingsReady) return false;
+      if (audioSettingsByEvent.get(audioType)?.enabled === false) return false;
+      if (currentMachineId != null && machineId != null && String(machineId) !== String(currentMachineId)) return false;
+      if (spinId != null && !isCurrentSpinScope(spinId, machineId)) return false;
+      return true;
+    }
+
+    function playAudio(audioType, settings, machineId, spinId = null) {
+      const s = settings || lastSettings;
+      const scope = Object.freeze({
+        spinId: spinId == null ? null : String(spinId),
+        machineId: machineId == null
+          ? (currentMachineId == null ? null : String(currentMachineId))
+          : String(machineId)
+      });
+      if (!canPlayAudioEvent(audioType, s, scope.machineId, scope.spinId)) return false;
       const vol = (s.soundVolume !== undefined) ? Math.min(1, Math.max(0, s.soundVolume)) : 0.7;
-      const mid = machineId || currentMachineId;
+      const mid = scope.machineId;
 
       // Try custom path first, fall back to default
       const customSrc = mid ? `/game-engine/sounds/slot/custom/${mid}/${audioType}.mp3` : null;
@@ -884,44 +977,90 @@
         reel_stop:  '/game-engine/sounds/slot/reel-stop.mp3'
       };
       const defaultSrc = defaultPaths[audioType];
-      if (!defaultSrc && !customSrc) return;
+      if (!defaultSrc && !customSrc) return false;
 
-      const cacheKey = `${mid || 'default'}:${audioType}`;
+      const cacheKey = `${mid || 'default'}:${scope.spinId || 'unscoped'}:${audioType}`;
+      let fallbackStarted = false;
 
-      function tryPlay(src) {
-        if (!src) return;
+      function playFallback(src) {
+        if (fallbackStarted || src === defaultSrc || !defaultSrc) return;
+        if (!canPlayAudioEvent(audioType, lastSettings, scope.machineId, scope.spinId)) return;
+        fallbackStarted = true;
+        delete audioCache[cacheKey];
+        tryPlay(defaultSrc, true);
+      }
+
+      function tryPlay(src, isFallback = false) {
+        if (!src) return false;
+        const guardSettings = isFallback ? lastSettings : s;
+        if (!canPlayAudioEvent(audioType, guardSettings, scope.machineId, scope.spinId)) return false;
         try {
           if (!audioCache[cacheKey] || audioCache[cacheKey]._src !== src) {
             const a = new Audio(src);
             a._src = src;
+            a._spinId = scope.spinId;
+            a._machineId = scope.machineId;
             // On error (e.g. 204/404 for custom), fall back to default
             a.addEventListener('error', () => {
-              delete audioCache[cacheKey];
-              if (src !== defaultSrc && defaultSrc) tryPlay(defaultSrc);
+              playFallback(src);
             });
             audioCache[cacheKey] = a;
           }
           const audio = audioCache[cacheKey];
           audio.volume = vol;
           audio.currentTime = 0;
-          audio.play().catch(() => {});
+          audio.play().catch(() => playFallback(src));
+          return true;
         } catch (e) { /* ignore */ }
+        return false;
       }
 
-      tryPlay(customSrc || defaultSrc);
+      return tryPlay(customSrc || defaultSrc);
+    }
+
+    function requestSpinAudio(spinId, machineId, settings) {
+      pendingSpinAudioIntent = null;
+      if (settings?.soundEnabled === false || spinId == null || machineId == null) return;
+      if (audioSettingsReady) {
+        playAudio('spin', settings, machineId, spinId);
+        return;
+      }
+      pendingSpinAudioIntent = {
+        spinId: String(spinId),
+        machineId: String(machineId),
+        settings
+      };
+    }
+
+    function playPendingSpinAudio(machineId) {
+      const intent = pendingSpinAudioIntent;
+      if (!intent) return false;
+      if (intent.machineId !== String(machineId) || intent.machineId !== String(currentMachineId)) return false;
+      if (intent.spinId !== String(currentSpinId)) return false;
+      pendingSpinAudioIntent = null;
+      return playAudio('spin', intent.settings, intent.machineId, intent.spinId);
     }
 
     // ── Socket event: spin started ─────────────────────────
     socket.on('slot:spin-started', (data) => {
+      clearSpinCallbackTimers();
       currentSymbols = (data.symbols && data.symbols.length > 0) ? data.symbols : currentSymbols;
       lastSettings   = data.settings || {};
-      currentSpinId  = data.spinId || null;
+      currentSpinId  = data.spinId ?? null;
+      pendingSpinAudioIntent = null;
+      Object.keys(audioCache).forEach(key => {
+        if (audioCache[key]?._spinId != null && String(audioCache[key]._spinId) !== String(currentSpinId)) {
+          delete audioCache[key];
+        }
+      });
 
       // Track current machine for custom sound routing
-      if (data.machineId && data.machineId !== currentMachineId) {
+      const nextMachineId = data.machineId == null ? null : String(data.machineId);
+      if (nextMachineId && nextMachineId !== String(currentMachineId)) {
         // Machine changed – clear audio cache so new machine's sounds load fresh
         Object.keys(audioCache).forEach(k => delete audioCache[k]);
-        currentMachineId = data.machineId;
+        currentMachineId = nextMachineId;
+        loadAudioSettings(currentMachineId);
       }
 
       // Apply overlay mode from server
@@ -956,11 +1095,11 @@
       // Start spinning all reels
       for (let i = 0; i < 3; i++) startReel(i);
 
-      playAudio('spin', lastSettings, currentMachineId);
+      requestSpinAudio(currentSpinId, currentMachineId, lastSettings);
     });
 
     // ── Socket event: audio updated – flush cache for this machine ─
-    socket.on('slot:audio-updated', (data) => {
+    socket.on('slot:audio-updated', async (data) => {
       const mid = data.machineId ? String(data.machineId) : null;
       if (!mid) return;
       // Remove stale cache entries for this machine so next play re-fetches
@@ -968,6 +1107,11 @@
       Object.keys(audioCache).forEach(k => {
         if (k.startsWith(prefix)) delete audioCache[k];
       });
+      if (mid === String(currentMachineId)) {
+        slotAudioSettingsGeneration++;
+        applyAudioStateUpdate(data.audioType, data.enabled);
+        await loadAudioSettings(mid);
+      }
     });
 
     // ── Socket event: spin result ──────────────────────────
@@ -977,7 +1121,9 @@
       const isWin     = data.isWin    || false;
       const settings  = data.settings || lastSettings;
       const stopDelay = settings.reelStopDelay || REEL_STOP_DELAY;
-      const spinId    = data.spinId   || currentSpinId;
+      const spinId    = data.spinId   ?? currentSpinId;
+      const machineId = data.machineId ?? currentMachineId;
+      if (!isCurrentSpinScope(spinId, machineId)) return;
 
       // Update last known settings
       lastSettings = settings;
@@ -986,21 +1132,30 @@
       let stoppedCount = 0;
 
       for (let i = 0; i < 3; i++) {
-        setTimeout(() => {
-          playAudio('reel_stop', settings, currentMachineId);
+        scheduleSpinCallback(spinId, machineId, () => {
+          playAudio('reel_stop', settings, machineId, spinId);
           stopReel(i, reels[i] || { emoji: '❓' }, () => {
             stoppedCount++;
             if (stoppedCount === 3) {
               // All reels stopped – show result and notify server
-              setTimeout(() => showResult(category, isWin, settings, spinId), 200);
+              scheduleSpinCallback(
+                spinId,
+                machineId,
+                () => showResult(category, isWin, settings, spinId, machineId),
+                200
+              );
             }
-          });
+          }, spinId, machineId);
         }, i * stopDelay);
       }
     });
 
     // ── Socket event: spin error – reset overlay ───────────
-    socket.on('slot:spin-error', () => {
+    socket.on('slot:spin-error', (data = {}) => {
+      const spinId = data.spinId ?? currentSpinId;
+      const machineId = data.machineId ?? currentMachineId;
+      if (!isCurrentSpinScope(spinId, machineId)) return;
+      clearSpinCallbackTimers();
       // Stop any running reels and reset to idle
       for (let i = 0; i < 3; i++) {
         const reel = document.getElementById(`reel-${i}`);
@@ -1012,10 +1167,15 @@
       machine.classList.remove('visible');
       if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
       currentSpinId = null;
+      pendingSpinAudioIntent = null;
     });
 
     // ── Socket event: spin timeout (queue safety) ──────────
-    socket.on('slot:spin-timeout', () => {
+    socket.on('slot:spin-timeout', (data = {}) => {
+      const spinId = data.spinId ?? currentSpinId;
+      const machineId = data.machineId ?? currentMachineId;
+      if (!isCurrentSpinScope(spinId, machineId)) return;
+      clearSpinCallbackTimers();
       // Force reset if overlay is stuck
       for (let i = 0; i < 3; i++) {
         const reel = document.getElementById(`reel-${i}`);
@@ -1027,15 +1187,18 @@
       machine.classList.remove('visible');
       if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
       currentSpinId = null;
+      pendingSpinAudioIntent = null;
     });
 
     // ── Socket event: play-audio (from reward dispatch) ────
     socket.on('slot:play-audio', (data) => {
-      playAudio(data.audioType || 'win', lastSettings, currentMachineId);
+      if (!isCurrentSpinScope(data?.spinId, data?.machineId)) return;
+      playAudio(data.audioType || 'win', lastSettings, data.machineId, data.spinId);
     });
 
     // ── Socket event: overlay effect (from reward dispatch) ─
     socket.on('slot:overlay-effect', (data) => {
+      if (!isCurrentSpinScope(data?.spinId, data?.machineId)) return;
       if (data.effect === 'win') {
         reelsWrap.classList.add('win-glow');
         document.querySelectorAll('.reel').forEach(r => r.classList.add('win-flash'));

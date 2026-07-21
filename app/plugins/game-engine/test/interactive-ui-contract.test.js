@@ -121,6 +121,69 @@ describe('interactive games admin UI contract', () => {
     expect(ui).toContain('interactiveTimerLabel(display, fallbackSession)');
   });
 
+  test('keeps a background viewer timer visually paused across same-state rerenders', () => {
+    const functionSource = ui.match(
+      /    function renderInteractiveBackground\(state\) \{[\s\S]*?\r?\n    \}(?=\r?\n\r?\n    function renderInteractiveState)/
+    )?.[0];
+    expect(functionSource).toEqual(expect.any(String));
+    const dom = new JSDOM('<div id="interactive-background-matches"></div>');
+    let now = 1000000;
+    const DateStub = { now: () => now };
+    const interactiveElement = (tag, className = '', text = '') => {
+      const element = dom.window.document.createElement(tag);
+      element.className = className;
+      element.textContent = text;
+      return element;
+    };
+    const runtimeText = (key, params = {}) => {
+      if (key.endsWith('viewer_timer')) return `viewer timer ${params.time}`;
+      if (key.endsWith('background_summary')) return `${params.player}: ${params.timer}`;
+      return key;
+    };
+    const render = new Function(
+      'document',
+      'Date',
+      'runtimeText',
+      'interactiveFormatDuration',
+      'interactiveElement',
+      'renderInteractiveBoard',
+      'interactiveCancelButton',
+      `const interactiveAdminStateReceivedAt = 1000000; ${functionSource}; return renderInteractiveBackground;`
+    )(
+      dom.window.document,
+      DateStub,
+      runtimeText,
+      milliseconds => `${milliseconds}ms`,
+      interactiveElement,
+      () => {},
+      () => dom.window.document.createElement('button')
+    );
+    const state = {
+      serverTimestamp: 1000000,
+      display: { displaySessionId: 99 },
+      activeSessions: [{
+        sessionId: 1,
+        gameType: 'connect4',
+        viewerDisplayName: 'Paused Viewer',
+        hostDisplayName: 'Host',
+        turnRole: 'viewer',
+        viewerTimeRemainingMs: 5000,
+        lastActivityAt: 999000,
+        moveCount: 1,
+        state: { board: [[0]] }
+      }]
+    };
+
+    render(state);
+    const initial = dom.window.document.querySelector('summary').textContent;
+    now += 2000;
+    render(state);
+
+    expect(initial).toContain('5000ms');
+    expect(dom.window.document.querySelector('summary').textContent).toBe(initial);
+    dom.window.close();
+  });
+
   test('uses dedicated namespaced interactive copy instead of legacy Connect4 translations', () => {
     expect(ui).toContain('data-i18n="plugins.game-engine.ui.interactive.title">Interactive Games</h3>');
     expect(ui).toContain('id="game-status" data-i18n="plugins.game-engine.ui.interactive.waiting_for_move"');
@@ -144,5 +207,82 @@ describe('interactive games admin UI contract', () => {
     expect(selectTarget(idle, { sessionId: 9 })).toBe('legacy');
     expect(selectTarget(idle, null)).toBe('idle');
     expect(selectTarget(null, null)).toBe(null);
+  });
+
+  test('renders one shared localized audio toggle contract for Connect4, wheel, and slot rows', () => {
+    expect(ui).toContain('class="secondary audio-toggle-btn"');
+    expect(ui).toContain('function renderAudioToggle(button, enabled)');
+    expect(ui).toContain("'plugins.game-engine.ui.audio.enabled'");
+    expect(ui).toContain("'plugins.game-engine.ui.audio.disabled'");
+    expect(ui).toContain("'plugins.game-engine.ui.audio.enable'");
+    expect(ui).toContain("'plugins.game-engine.ui.audio.disable'");
+    expect(ui).toContain("e.target.closest('.audio-toggle-btn')");
+
+    const connect4Events = [
+      'new_challenger', 'challenge_accepted', 'piece_drop', 'player_1_wins',
+      'player_2_wins', 'game_over', 'timer_warning'
+    ];
+    const wheelEvents = ['spinning', 'prize1', 'prize2', 'prize3', 'lost'];
+    const slotEvents = ['spin', 'small_win', 'medium_win', 'big_win', 'jackpot', 'near_miss', 'reel_stop'];
+    const dom = new JSDOM(ui);
+    const eventsIn = selector => [...dom.window.document.querySelectorAll(selector)]
+      .map(button => button.dataset.audioEvent);
+
+    expect(eventsIn('#media-section-connect4 .audio-toggle-btn').sort()).toEqual([...connect4Events].sort());
+    expect(eventsIn('#tab-wheel .audio-toggle-btn').sort()).toEqual([...wheelEvents].sort());
+    expect(eventsIn('#media-section-wheel .audio-toggle-btn').sort()).toEqual([...wheelEvents].sort());
+    const slotMediaRenderer = ui.match(/    async function renderSlotMediaSounds\(machineId\) \{[\s\S]*?\n    \}/)?.[0] || '';
+    const slotTabRenderer = ui.match(/    async function renderSlotSoundManagement\(machineId\) \{[\s\S]*?\n    \}/)?.[0] || '';
+    const slotAudioTypesSource = ui.match(/    const SLOT_AUDIO_TYPES = \[[\s\S]*?\n    \];/)?.[0] || '';
+    const configuredSlotEvents = [...slotAudioTypesSource.matchAll(/type: '([^']+)'/g)]
+      .map(([, event]) => event);
+    expect(configuredSlotEvents).toEqual(slotEvents);
+    expect(slotMediaRenderer).toContain('for (const { type, label, sync } of SLOT_AUDIO_TYPES)');
+    expect(slotTabRenderer).toContain('for (const { type, label, sync } of SLOT_AUDIO_TYPES)');
+    expect(slotMediaRenderer).toContain("audioToggleMarkup('slot', type, machineId, setting.enabled !== false)");
+    expect(slotTabRenderer).toContain("audioToggleMarkup('slot', type, machineId, setting.enabled !== false)");
+    dom.window.close();
+  });
+
+  test('sends the inverse enabled state through the shared audio-state endpoint', async () => {
+    const functionSource = ui.match(/    async function setAudioEventEnabled\(button\) \{[\s\S]*?\n    \}/)?.[0];
+    expect(functionSource).toEqual(expect.any(String));
+    const fetch = jest.fn(() => Promise.resolve({ ok: true }));
+    const renderAudioToggle = jest.fn();
+    const setAudioEventEnabled = new Function(
+      'fetch',
+      'renderAudioToggle',
+      `${functionSource}; return setAudioEventEnabled;`
+    )(fetch, renderAudioToggle);
+    const button = {
+      dataset: {
+        gameType: 'wheel',
+        audioEvent: 'prize2',
+        scopeId: '7',
+        enabled: 'true'
+      }
+    };
+
+    await setAudioEventEnabled(button);
+
+    expect(fetch).toHaveBeenCalledWith('/api/game-engine/audio-state/wheel/prize2', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scopeId: '7', enabled: false })
+    });
+    expect(button.dataset.enabled).toBe('false');
+    expect(renderAudioToggle).toHaveBeenCalledWith(button, false);
+  });
+
+  test('renders toggle state from enriched settings without coupling preview to mute state', () => {
+    expect(ui).toContain('renderAudioToggle(button, item.enabled !== false);');
+    expect(ui).toContain('renderAudioToggle(button, setting?.enabled !== false);');
+    expect(ui).toContain('renderAudioToggle(button, setting.enabled !== false);');
+    expect(ui).toContain('function previewMediaAudio(audioPath)');
+    expect(ui).toContain('function previewWheelAudio(audioType)');
+    const mediaPreview = ui.match(/    function previewMediaAudio\(audioPath\) \{[\s\S]*?\n    \}/)?.[0] || '';
+    const wheelPreview = ui.match(/    function previewWheelAudio\(audioType\) \{[\s\S]*?\n    \}/)?.[0] || '';
+    expect(mediaPreview).not.toContain('dataset.enabled');
+    expect(wheelPreview).not.toContain('dataset.enabled');
   });
 });

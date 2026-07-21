@@ -18,7 +18,7 @@ describe('interactive overlay contract', () => {
     expect(html).toContain("window.location.origin");
     expect(html).toContain('hostDisplayName');
     expect(html).toContain('viewerDisplayName');
-    expect(html).toContain('viewerDeadlineMs');
+    expect(html).toContain('forwardInteractiveSnapshot(frame, interactiveState);');
     expect(html).toContain('hostTimeRemainingMs');
   });
 
@@ -46,15 +46,17 @@ describe('interactive overlay contract', () => {
     expect(html).toContain('if (!latestInteractiveQueueIdle) return;');
   });
 
-  test('overlays render a sole viewer-turn session outside the host queue', () => {
+  test('overlays never invent a display from the active session list', () => {
     const unified = readOverlay('unified.html');
     const connect4 = readOverlay('connect4.html');
 
     expect(unified).toContain('function interactiveOverlayPresentation(');
-    expect(unified).toContain('state?.activeSessions?.length === 1');
+    expect(unified).not.toContain('state?.activeSessions?.length === 1');
+    expect(unified).not.toContain('viewerTurnSession');
     expect(unified).toContain('switchToGame(presentationDisplay.gameType, interactiveState);');
     expect(connect4).toContain('function interactiveConnect4Presentation(');
-    expect(connect4).toContain('state?.activeSessions?.length === 1');
+    expect(connect4).not.toContain('state?.activeSessions?.length === 1');
+    expect(connect4).not.toContain('viewerTurnSession');
     expect(connect4).toContain("socket.emit('game-engine:request-state');");
   });
 
@@ -115,6 +117,43 @@ describe('interactive overlay contract', () => {
     expect(html).toContain('highestAudibleMoveBySession');
     expect(html).toMatch(/lastMove\?\.moveNumber/);
     expect(html).toContain('highestAudibleMoveBySession.get(sessionId)');
+  });
+
+  test('Connect4 stores enabled state and optional URLs in its audio event map', () => {
+    const html = readOverlay('connect4.html');
+
+    expect(html).toContain('function applyAudioSettings(settings)');
+    expect(html).toContain('enabled: setting?.enabled !== false');
+    expect(html).toContain('if (setting?.url) entry.url = setting.url;');
+    expect(html).toContain("if (audioSettingsByEvent.get(mediaEvent)?.enabled === false) return false;");
+    expect(html).toContain('connect4AudioSettingsGeneration');
+    expect(html).toContain('generation !== connect4AudioSettingsGeneration');
+  });
+
+  test('wheel guards every configured sound event with enriched enabled state', () => {
+    const html = readOverlay('wheel.html');
+
+    expect(html).toContain('function applyAudioSettings(settings)');
+    expect(html).toContain('function playWheelEventSound(audioEvent, audioElement)');
+    expect(html).toContain('wheelAudioSettingsGeneration');
+    expect(html).toContain('scopeId !== String(currentWheelId)');
+    for (const event of ['spinning', 'prize1', 'prize2', 'prize3', 'lost']) {
+      expect(html).toContain(`${event}:`);
+    }
+  });
+
+  test('slot guards every configured sound event and reloads state-only socket updates', () => {
+    const html = readOverlay('slot.html');
+
+    expect(html).toContain('function applyAudioSettings(settings)');
+    expect(html).toContain('async function loadAudioSettings(machineId)');
+    expect(html).toContain('slotAudioSettingsGeneration');
+    expect(html).toContain('pendingSpinAudioIntent');
+    expect(html).toContain("if (audioSettingsByEvent.get(audioType)?.enabled === false) return false;");
+    for (const event of ['spin', 'small_win', 'medium_win', 'big_win', 'jackpot', 'near_miss', 'reel_stop']) {
+      expect(html).toContain(`${event}:`);
+    }
+    expect(html).toContain("socket.on('slot:audio-updated', async (data) =>");
   });
 
   test('authoritative cancellations render neutral results instead of a winner or draw', () => {

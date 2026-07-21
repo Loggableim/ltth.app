@@ -183,6 +183,84 @@ describe('InteractiveController', () => {
     harness.sqlite.close();
   });
 
+  test('queues viewer and host turns together before selecting the first round-robin board', () => {
+    const harness = createHarness({ connect4HostStarts: false });
+    harness.controller.init();
+
+    const first = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'anna', viewerDisplayName: 'Anna' });
+    const second = harness.controller.startMatch({ gameType: 'chess', viewerId: 'ben', viewerDisplayName: 'Ben' });
+    const third = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'carla', viewerDisplayName: 'Carla' });
+    const fourth = harness.controller.startMatch({ gameType: 'chess', viewerId: 'david', viewerDisplayName: 'David' });
+    const fifth = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'elif', viewerDisplayName: 'Elif' });
+
+    expect(harness.controller.getState().hostQueue.map(row => row.sessionId)).toEqual([
+      first.sessionId,
+      second.sessionId,
+      third.sessionId,
+      fourth.sessionId,
+      fifth.sessionId
+    ]);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: first.sessionId,
+      gameType: 'connect4',
+      currentTurnRole: 'viewer'
+    });
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('rejects a viewer move while another session owns the displayed round-robin turn', () => {
+    const harness = createHarness({ connect4HostStarts: false });
+    harness.controller.init();
+    const visible = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'visible', viewerDisplayName: 'Visible' });
+    const hidden = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'hidden', viewerDisplayName: 'Hidden' });
+    const before = harness.controller.getState();
+
+    expect(harness.controller.applyViewerMove({
+      viewerId: 'hidden',
+      gameType: 'connect4',
+      move: { column: 'A' }
+    })).toEqual({ success: false, error: 'not_queue_head' });
+    expect(harness.controller.getState().hostQueue.map(row => row.sessionId)).toEqual(
+      before.hostQueue.map(row => row.sessionId)
+    );
+    expect(harness.controller.getState().display.displaySessionId).toBe(visible.sessionId);
+    expect(harness.controller.registry.get(hidden.sessionId).sessionRevision).toBe(1);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('rotates a non-terminal host turn to the tail after its move animation', () => {
+    const harness = createHarness();
+    harness.controller.init();
+    const first = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'first', viewerDisplayName: 'First' });
+    const second = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'second', viewerDisplayName: 'Second' });
+    const display = harness.controller.getState().display;
+
+    expect(harness.controller.applyHostMove({
+      sessionId: first.sessionId,
+      gameType: 'connect4',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move: { column: 'D' }
+    })).toMatchObject({ success: true });
+    expect(harness.controller.getState().hostQueue.map(row => row.sessionId)).toEqual([
+      second.sessionId,
+      first.sessionId
+    ]);
+
+    jest.advanceTimersByTime(500);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: second.sessionId,
+      currentTurnRole: 'host'
+    });
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
   test('rejects out-of-order and stale host controls without changing queue order', () => {
     const harness = createHarness();
     harness.controller.init();
@@ -314,7 +392,7 @@ describe('InteractiveController', () => {
     const harness = createHarness({ connect4HostStarts: false });
     harness.controller.init();
     const first = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'viewer-a', viewerDisplayName: 'A' });
-    harness.controller.startMatch({ gameType: 'connect4', viewerId: 'viewer-b', viewerDisplayName: 'B' });
+    const second = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'viewer-b', viewerDisplayName: 'B' });
 
     expect(harness.controller.applyViewerMove({
       viewerId: 'viewer-a',
@@ -322,8 +400,10 @@ describe('InteractiveController', () => {
       move: { column: 'A' },
       moveIdentity: 'chat-a-1'
     })).toMatchObject({ success: true, sessionId: first.sessionId });
-    expect(harness.controller.getState().hostQueue).toHaveLength(1);
-    expect(harness.controller.getState().hostQueue[0].sessionId).toBe(first.sessionId);
+    expect(harness.controller.getState().hostQueue.map(row => row.sessionId)).toEqual([
+      second.sessionId,
+      first.sessionId
+    ]);
 
     const duplicate = harness.controller.applyViewerMove({
       viewerId: 'viewer-a',
@@ -332,7 +412,387 @@ describe('InteractiveController', () => {
       moveIdentity: 'chat-a-1'
     });
     expect(duplicate).toMatchObject({ success: true, duplicate: true });
-    expect(harness.controller.getState().hostQueue).toHaveLength(1);
+    expect(harness.controller.getState().hostQueue).toHaveLength(2);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('keeps a committed viewer move authoritative when legacy publication throws', () => {
+    const harness = createHarness({ connect4HostStarts: false });
+    harness.controller.init();
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'viewer-publication-fault',
+      viewerDisplayName: 'Viewer Publication Fault'
+    });
+    harness.emitLegacyEvent.mockImplementationOnce(() => {
+      throw new Error('legacy emitter offline');
+    });
+
+    expect(harness.controller.applyViewerMove({
+      viewerId: 'viewer-publication-fault',
+      gameType: 'connect4',
+      move: { column: 'D' },
+      moveIdentity: 'viewer-publication-fault-1'
+    })).toMatchObject({ success: true, sessionId: match.sessionId });
+
+    const active = harness.controller.registry.get(match.sessionId);
+    const persisted = harness.database.getInteractiveState(match.sessionId);
+    expect(active.sessionRevision).toBe(2);
+    expect(active.sessionRevision).toBe(persisted.sessionRevision);
+    expect(active.adapter.getState()).toEqual(persisted.state);
+    expect(harness.controller.getState().hostQueue.map(row => row.sessionId)).toEqual([match.sessionId]);
+    expect(harness.database.getInteractiveQueue().map(row => row.sessionId)).toEqual([match.sessionId]);
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('publication failed'));
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('keeps a committed host move authoritative when display routing throws', () => {
+    const harness = createHarness();
+    harness.controller.init();
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'host-publication-fault',
+      viewerDisplayName: 'Host Publication Fault'
+    });
+    const display = harness.controller.getState().display;
+    jest.spyOn(harness.controller.router, 'beginAnimation').mockImplementationOnce(() => {
+      throw new Error('display router offline');
+    });
+
+    expect(harness.controller.applyHostMove({
+      sessionId: match.sessionId,
+      gameType: 'connect4',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move: { column: 'D' }
+    })).toMatchObject({ success: true, sessionId: match.sessionId });
+
+    const active = harness.controller.registry.get(match.sessionId);
+    const persisted = harness.database.getInteractiveState(match.sessionId);
+    expect(active.sessionRevision).toBe(2);
+    expect(active.sessionRevision).toBe(persisted.sessionRevision);
+    expect(active.adapter.getState()).toEqual(persisted.state);
+    expect(harness.controller.getState().hostQueue.map(row => row.sessionId)).toEqual([match.sessionId]);
+    expect(harness.database.getInteractiveQueue().map(row => row.sessionId)).toEqual([match.sessionId]);
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('publication failed'));
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('reconciles a timed host move when animation fails before router state changes', () => {
+    const harness = createHarness({
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 5
+      }
+    });
+    harness.controller.init();
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'animation-before-fault',
+      viewerDisplayName: 'Animation Before Fault'
+    });
+    const display = harness.controller.getState().display;
+    jest.spyOn(harness.controller.router, 'beginAnimation').mockImplementationOnce(() => {
+      throw new Error('animation rejected before state change');
+    });
+
+    expect(harness.controller.applyHostMove({
+      sessionId: match.sessionId,
+      gameType: 'connect4',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move: { column: 'D' }
+    })).toMatchObject({ success: true, sessionId: match.sessionId });
+
+    expect(harness.database.getInteractiveState(match.sessionId)).toMatchObject({
+      sessionRevision: 2,
+      turnRole: 'viewer',
+      viewerDeadlineMs: Date.now() + 5000,
+      viewerTimeRemainingMs: null
+    });
+    expect(harness.database.getInteractiveQueue().map(row => row.sessionId)).toEqual([match.sessionId]);
+    expect(harness.controller.getState().hostQueue.map(row => row.sessionId)).toEqual([match.sessionId]);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: match.sessionId,
+      phase: 'playing',
+      viewerDeadlineMs: Date.now() + 5000
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(1);
+    expect(harness.controller.router.transitionTimer).toBeNull();
+    expect(harness.controller.router.transitionDeadline).toBeNull();
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('reconciles a timed host move when animation publish leaves an unscheduled partial state', () => {
+    const harness = createHarness({
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 5
+      }
+    });
+    harness.controller.init();
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'animation-partial-fault',
+      viewerDisplayName: 'Animation Partial Fault'
+    });
+    const display = harness.controller.getState().display;
+    harness.io.emit.mockImplementationOnce(() => {
+      throw new Error('animation publish failed after state change');
+    });
+
+    expect(harness.controller.applyHostMove({
+      sessionId: match.sessionId,
+      gameType: 'connect4',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move: { column: 'D' }
+    })).toMatchObject({ success: true, sessionId: match.sessionId });
+
+    expect(harness.database.getInteractiveState(match.sessionId)).toMatchObject({
+      sessionRevision: 2,
+      turnRole: 'viewer',
+      viewerDeadlineMs: Date.now() + 5000,
+      viewerTimeRemainingMs: null
+    });
+    expect(harness.database.getInteractiveQueue().map(row => row.sessionId)).toEqual([match.sessionId]);
+    expect(harness.controller.getState().hostQueue.map(row => row.sessionId)).toEqual([match.sessionId]);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: match.sessionId,
+      phase: 'playing',
+      viewerDeadlineMs: Date.now() + 5000
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(1);
+    expect(harness.controller.router.transitionTimer).toBeNull();
+    expect(harness.controller.router.transitionDeadline).toBeNull();
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('recovers the committed result for its full duration when result routing throws before mutation', () => {
+    const harness = createHarness({
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 5
+      }
+    });
+    harness.controller.init();
+    const completed = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'result-before-fault',
+      viewerDisplayName: 'Result Before Fault'
+    });
+    const getConfig = harness.controller.getConfig;
+    harness.controller.getConfig = gameType => gameType === 'connect4'
+      ? { ...getConfig(gameType), streamerRole: 'player2', leaderboardEnabled: false }
+      : getConfig(gameType);
+    const waiting = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'waiting-after-before-fault',
+      viewerDisplayName: 'Waiting After Before Fault'
+    });
+    harness.controller.registry.get(completed.sessionId).config.leaderboardEnabled = false;
+    jest.spyOn(harness.controller.router, 'showResult').mockImplementationOnce(() => {
+      throw new Error('result rejected before router mutation');
+    });
+
+    const displayRevision = harness.controller.getState().display.displayRevision;
+    const ended = harness.controller.end(completed.sessionId, {
+      winner: 1,
+      winnerRole: 'host',
+      reason: 'win',
+      gameResult: { gameOver: true, winner: 1 }
+    });
+
+    expect(ended).toMatchObject({ success: true });
+
+    expect(harness.database.getInteractiveState(completed.sessionId)).toMatchObject({ status: 'completed' });
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: completed.sessionId,
+      displayRevision: displayRevision + 1,
+      phase: 'result',
+      viewerDeadlineMs: null,
+      result: ended.result
+    });
+    expect(harness.controller.router.resultQueue).toEqual([]);
+    expect(harness.controller.timers.viewerTimers.size).toBe(0);
+
+    jest.advanceTimersByTime(2999);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: completed.sessionId,
+      phase: 'result',
+      result: ended.result
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(0);
+
+    jest.advanceTimersByTime(1);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: waiting.sessionId,
+      displayRevision: displayRevision + 2,
+      phase: 'playing',
+      viewerDeadlineMs: Date.now() + 5000,
+      result: null
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(1);
+    expect(harness.controller.timers.viewerTimers.has(waiting.sessionId)).toBe(true);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('retains an already committed result idempotently when routing throws after mutation', () => {
+    const harness = createHarness({
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 5
+      }
+    });
+    harness.controller.init();
+    const completed = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'result-after-fault',
+      viewerDisplayName: 'Result After Fault'
+    });
+    const getConfig = harness.controller.getConfig;
+    harness.controller.getConfig = gameType => gameType === 'connect4'
+      ? { ...getConfig(gameType), streamerRole: 'player2', leaderboardEnabled: false }
+      : getConfig(gameType);
+    const waiting = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'waiting-after-result-fault',
+      viewerDisplayName: 'Waiting After Result Fault'
+    });
+    harness.controller.registry.get(completed.sessionId).config.leaderboardEnabled = false;
+    const showResult = harness.controller.router.showResult.bind(harness.controller.router);
+    jest.spyOn(harness.controller.router, 'showResult').mockImplementationOnce((...args) => {
+      showResult(...args);
+      throw new Error('result failed after router mutation');
+    });
+
+    const displayRevision = harness.controller.getState().display.displayRevision;
+    const ended = harness.controller.end(completed.sessionId, {
+      winner: 1,
+      winnerRole: 'host',
+      reason: 'win',
+      gameResult: { gameOver: true, winner: 1 }
+    });
+
+    expect(ended).toMatchObject({ success: true });
+
+    expect(harness.database.getInteractiveState(completed.sessionId)).toMatchObject({ status: 'completed' });
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: completed.sessionId,
+      displayRevision: displayRevision + 1,
+      phase: 'result',
+      viewerDeadlineMs: null,
+      result: ended.result
+    });
+    expect(harness.controller.router.resultQueue).toEqual([]);
+    expect(harness.controller.timers.viewerTimers.size).toBe(0);
+    expect(harness.controller.router.transitionTimer).not.toBeNull();
+    expect(harness.controller.router.transitionDeadline).toBe(Date.now() + 3000);
+    expect(harness.controller.router.transitionAction).toEqual(expect.any(Function));
+
+    jest.advanceTimersByTime(2999);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: completed.sessionId,
+      phase: 'result',
+      result: ended.result
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(0);
+
+    jest.advanceTimersByTime(1);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: waiting.sessionId,
+      displayRevision: displayRevision + 2,
+      phase: 'playing',
+      viewerDeadlineMs: Date.now() + 5000,
+      result: null
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(1);
+    expect(harness.controller.timers.viewerTimers.has(waiting.sessionId)).toBe(true);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('pauses the visible viewer timer while recovering a hidden result before router mutation', () => {
+    const harness = createHarness({
+      connect4HostStarts: false,
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 5
+      }
+    });
+    harness.controller.init();
+    const visible = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'visible-result-recovery',
+      viewerDisplayName: 'Visible Result Recovery'
+    });
+    const hidden = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'hidden-result-recovery',
+      viewerDisplayName: 'Hidden Result Recovery'
+    });
+    harness.controller.registry.get(hidden.sessionId).config.leaderboardEnabled = false;
+    jest.spyOn(harness.controller.router, 'showResult').mockImplementationOnce(() => {
+      throw new Error('hidden result rejected before router mutation');
+    });
+
+    expect(harness.controller.timers.viewerTimers.has(visible.sessionId)).toBe(true);
+    const ended = harness.controller.end(hidden.sessionId, {
+      winner: 1,
+      winnerRole: 'viewer',
+      reason: 'win',
+      gameResult: { gameOver: true, winner: 1 }
+    });
+
+    expect(ended).toMatchObject({ success: true });
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: hidden.sessionId,
+      phase: 'result',
+      result: ended.result
+    });
+    expect(harness.controller.getState().activeSessions.find(row => row.sessionId === visible.sessionId))
+      .toMatchObject({
+        viewerDeadlineMs: null,
+        viewerTimeRemainingMs: 5000
+      });
+    expect(harness.controller.timers.viewerTimers.size).toBe(0);
+
+    jest.advanceTimersByTime(2999);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: hidden.sessionId,
+      phase: 'result',
+      result: ended.result
+    });
+    expect(harness.controller.getState().activeSessions.find(row => row.sessionId === visible.sessionId))
+      .toMatchObject({
+        viewerDeadlineMs: null,
+        viewerTimeRemainingMs: 5000
+      });
+    expect(harness.controller.timers.viewerTimers.size).toBe(0);
+
+    jest.advanceTimersByTime(1);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: visible.sessionId,
+      phase: 'playing',
+      viewerDeadlineMs: Date.now() + 5000,
+      viewerTimeRemainingMs: 5000,
+      result: null
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(1);
+    expect(harness.controller.timers.viewerTimers.has(visible.sessionId)).toBe(true);
 
     harness.controller.destroy();
     harness.sqlite.close();
@@ -410,6 +870,75 @@ describe('InteractiveController', () => {
     harness.sqlite.close();
   });
 
+  test('prepares a new viewer timer before the display router schedules it', () => {
+    const harness = createHarness({
+      connect4HostStarts: false,
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 5
+      }
+    });
+    harness.controller.init();
+    const createState = jest.spyOn(harness.database, 'createInteractiveState');
+
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'prepared-viewer',
+      viewerDisplayName: 'Prepared Viewer'
+    });
+
+    expect(createState).toHaveBeenCalledWith(expect.objectContaining({
+      sessionId: match.sessionId,
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 5000
+    }));
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: match.sessionId,
+      phase: 'playing',
+      viewerDeadlineMs: Date.now() + 5000
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(1);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('runs a deadline for only the displayed viewer session', () => {
+    const harness = createHarness({
+      connect4HostStarts: false,
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 5
+      }
+    });
+    harness.controller.init();
+    const first = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'visible-viewer',
+      viewerDisplayName: 'Visible Viewer'
+    });
+    jest.advanceTimersByTime(2000);
+    const second = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'hidden-viewer',
+      viewerDisplayName: 'Hidden Viewer'
+    });
+
+    const sessions = harness.controller.getState().activeSessions;
+    expect(sessions.find(row => row.sessionId === first.sessionId)).toMatchObject({
+      viewerDeadlineMs: 1005000,
+      viewerTimeRemainingMs: 3000
+    });
+    expect(sessions.find(row => row.sessionId === second.sessionId)).toMatchObject({
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 5000
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(1);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
   test('rotates a completed game leaderboard only until a host board needs the overlay', () => {
     const harness = createHarness();
     harness.controller.init();
@@ -448,7 +977,7 @@ describe('InteractiveController', () => {
     harness.sqlite.close();
   });
 
-  test('suspends and resumes the same host board for a background viewer timeout result', () => {
+  test('does not consume a hidden viewer timer until that session owns the display', () => {
     const harness = createHarness({
       settings: {
         connect4ViewerTimeoutEnabled: true,
@@ -462,16 +991,37 @@ describe('InteractiveController', () => {
     const viewerFirstConfig = { streamerRole: 'player2', animationSpeed: 500 };
     const originalGetConfig = harness.controller.getConfig;
     harness.controller.getConfig = gameType => gameType === 'connect4' ? viewerFirstConfig : originalGetConfig(gameType);
-    harness.controller.startMatch({ gameType: 'connect4', viewerId: 'slow', viewerDisplayName: 'Slow' });
+    const slow = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'slow', viewerDisplayName: 'Slow' });
 
     expect(harness.controller.getState().display.displaySessionId).toBe(hostBoard.sessionId);
     jest.advanceTimersByTime(5000);
-    expect(harness.controller.getState().display).toMatchObject({ phase: 'result' });
-    jest.advanceTimersByTime(3000);
+    expect(harness.finishGame).not.toHaveBeenCalled();
+    expect(harness.database.getInteractiveState(slow.sessionId)).toMatchObject({
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 5000
+    });
+
+    let display = harness.controller.getState().display;
+    expect(harness.controller.applyHostMove({
+      sessionId: hostBoard.sessionId,
+      gameType: 'connect4',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move: { column: 'D' }
+    })).toMatchObject({ success: true });
+    jest.advanceTimersByTime(500);
     expect(harness.controller.getState().display).toMatchObject({
-      displaySessionId: hostBoard.sessionId,
+      displaySessionId: slow.sessionId,
       phase: 'playing'
     });
+
+    jest.advanceTimersByTime(4999);
+    expect(harness.finishGame).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(1);
+    expect(harness.finishGame).toHaveBeenCalledWith(expect.objectContaining({
+      sessionId: slow.sessionId,
+      reason: 'viewer_timeout'
+    }));
 
     harness.controller.destroy();
     harness.sqlite.close();
@@ -528,7 +1078,9 @@ describe('InteractiveController', () => {
     secondHarness.controller.init();
 
     expect(secondHarness.controller.getState().activeSessions[0].viewerDeadlineMs).toBeNull();
+    expect(secondHarness.controller.getState().activeSessions[0].viewerTimeRemainingMs).toBeNull();
     expect(secondHarness.database.getInteractiveState(match.sessionId).viewerDeadlineMs).toBeNull();
+    expect(secondHarness.database.getInteractiveState(match.sessionId).viewerTimeRemainingMs).toBeNull();
     expect(secondHarness.controller.timers.viewerTimers.size).toBe(0);
 
     secondHarness.controller.destroy();
@@ -711,10 +1263,107 @@ describe('InteractiveController', () => {
     })).toMatchObject({ success: true });
 
     expect(harness.controller.getState().activeSessions[0]).toMatchObject({
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 45000
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(0);
+
+    jest.advanceTimersByTime(499);
+    expect(harness.controller.getState().activeSessions[0]).toMatchObject({
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 45000
+    });
+    jest.advanceTimersByTime(1);
+    expect(harness.controller.getState().activeSessions[0]).toMatchObject({
       viewerDeadlineMs: Date.now() + 45000,
       viewerTimeRemainingMs: 45000
     });
     expect(harness.controller.timers.viewerTimers.size).toBe(1);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('pauses legacy viewer deadlines before recovery routes exactly one session', () => {
+    const firstHarness = createHarness({
+      connect4HostStarts: false,
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 30
+      }
+    });
+    firstHarness.controller.init();
+    const first = firstHarness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'legacy-first',
+      viewerDisplayName: 'Legacy First'
+    });
+    const second = firstHarness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'legacy-second',
+      viewerDisplayName: 'Legacy Second'
+    });
+    firstHarness.controller.destroy();
+    firstHarness.database.updateInteractiveState(first.sessionId, {
+      viewerDeadlineMs: Date.now() + 20000,
+      viewerTimeRemainingMs: null
+    });
+    firstHarness.database.updateInteractiveState(second.sessionId, {
+      viewerDeadlineMs: Date.now() + 30000,
+      viewerTimeRemainingMs: null
+    });
+
+    const secondHarness = createHarness({
+      dbContext: firstHarness.dbContext,
+      nextSessionId: 100,
+      connect4HostStarts: false,
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 30
+      }
+    });
+    secondHarness.controller.init();
+
+    const recovered = secondHarness.controller.getState().activeSessions;
+    expect(secondHarness.controller.getState().display.displaySessionId).toBe(first.sessionId);
+    expect(recovered.find(row => row.sessionId === first.sessionId)).toMatchObject({
+      viewerDeadlineMs: Date.now() + 20000,
+      viewerTimeRemainingMs: 20000
+    });
+    expect(recovered.find(row => row.sessionId === second.sessionId)).toMatchObject({
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 30000
+    });
+    expect(secondHarness.controller.timers.viewerTimers.size).toBe(1);
+
+    secondHarness.controller.destroy();
+    firstHarness.sqlite.close();
+  });
+
+  test('rejects a late viewer timeout when the session no longer owns the display', () => {
+    const harness = createHarness({
+      connect4HostStarts: false,
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 5
+      }
+    });
+    harness.controller.init();
+    harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'displayed-timeout',
+      viewerDisplayName: 'Displayed Timeout'
+    });
+    const hidden = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'hidden-timeout',
+      viewerDisplayName: 'Hidden Timeout'
+    });
+    const hiddenSession = harness.controller.registry.get(hidden.sessionId);
+
+    expect(harness.controller._handleViewerTimeout(hidden.sessionId, hiddenSession.sessionRevision)).toBe(false);
+    expect(harness.finishGame).not.toHaveBeenCalled();
+    expect(harness.controller.registry.get(hidden.sessionId)).toBe(hiddenSession);
 
     harness.controller.destroy();
     harness.sqlite.close();
@@ -944,6 +1593,32 @@ describe('InteractiveController', () => {
 
     secondHarness.controller.destroy();
     firstHarness.sqlite.close();
+  });
+
+  test('persists the exact live viewer remainder during orderly shutdown', () => {
+    const harness = createHarness({
+      connect4HostStarts: false,
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 5
+      }
+    });
+    harness.controller.init();
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'viewer-orderly-shutdown',
+      viewerDisplayName: 'Viewer Orderly Shutdown'
+    });
+
+    jest.advanceTimersByTime(1750);
+    harness.controller.destroy();
+
+    expect(harness.database.getInteractiveState(match.sessionId)).toMatchObject({
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 3250
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(0);
+    harness.sqlite.close();
   });
 
   test('closes only a corrupt persisted session and restores the remaining games', () => {

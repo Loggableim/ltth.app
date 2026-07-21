@@ -128,9 +128,10 @@ describe('InteractiveTurnQueue', () => {
     expect(database.removeInteractiveTurn).toHaveBeenCalledWith(1);
   });
 
-  test('rejects non-host turns and restores persisted sequence order', () => {
+  test('accepts active host and viewer turns, rejects invalid roles, and restores persisted sequence order', () => {
     const { queue } = createQueue();
-    expect(() => queue.enqueue(makeSession({ turnRole: 'viewer' }))).toThrow(/host turn/i);
+    expect(queue.enqueue(makeSession({ turnRole: 'viewer' }))).toMatchObject({ inserted: true, sequence: 1 });
+    expect(() => queue.enqueue(makeSession({ sessionId: 4, turnRole: 'spectator' }))).toThrow(/active interactive turn/i);
 
     queue.restore([
       { sessionId: 3, gameType: 'connect4', viewerId: 'c', viewerDisplayName: 'C', sequence: 9, enqueuedAt: 9, sessionRevision: 2 },

@@ -22,12 +22,6 @@ const SHOCK_DISPLAY_DELAY_MS = 500; // Delay before triggering shock to ensure r
 const OPENSHOCK_BATCH_CLEANUP_THRESHOLD = 50; // Minimum batches before triggering cleanup
 const SPIN_SAFETY_TIMEOUT_BUFFER = 10000; // 10 seconds buffer for spin safety timeout
 
-// Error messages (TODO: Move to localization system)
-const ERROR_MESSAGES = {
-  SEGMENT_COUNT_CHANGED: (oldCount, newCount) => 
-    `Rad-Konfiguration wurde während der Warteschlange geändert (${oldCount} → ${newCount} Segmente). Bitte erneut versuchen.`
-};
-
 class WheelGame {
   constructor(api, db, logger) {
     this.api = api;
@@ -422,7 +416,11 @@ class WheelGame {
         username: spinData.username,
         nickname: spinData.nickname,
         error: 'Segment count changed',
-        message: ERROR_MESSAGES.SEGMENT_COUNT_CHANGED(segmentCount, config.segments.length),
+        messageKey: 'plugins.game-engine.runtime.wheel.segment_count_changed',
+        messageParams: {
+          previousCount: segmentCount,
+          currentCount: config.segments.length
+        },
         wheelId,
         wheelName: config.name
       });

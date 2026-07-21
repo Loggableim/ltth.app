@@ -1,8 +1,7 @@
 const Database = require('better-sqlite3');
 const GameEngineDatabase = require('../backend/database');
 
-function createDatabase() {
-  const sqlite = new Database(':memory:');
+function createDatabase(sqlite = new Database(':memory:')) {
   const api = {
     getDatabase: () => ({ db: sqlite }),
     log: jest.fn()
@@ -29,6 +28,7 @@ function session(overrides = {}) {
     displayRevision: 0,
     turnRole: 'viewer',
     viewerDeadlineMs: 123456,
+    viewerTimeRemainingMs: 5000,
     hostTimeRemainingMs: null,
     timeControl: null,
     lastMoveIdentity: null,
@@ -49,6 +49,20 @@ describe('GameEngineDatabase interactive persistence', () => {
     sqlite.close();
   });
 
+  test('stores per-event audio enable state with an enabled default', () => {
+    database.saveGameMedia('connect4', 'piece_drop', '/tmp/piece-drop.mp3', 'audio/mpeg');
+
+    expect(database.isGameAudioEnabled('connect4', 'default', 'piece_drop')).toBe(true);
+    expect(database.setGameAudioEnabled('connect4', 'default', 'piece_drop', false)).toBe(true);
+    expect(database.getGameAudioStates('connect4', 'default')).toMatchObject({ piece_drop: false });
+    expect(database.isGameAudioEnabled('connect4', 'default', 'piece_drop')).toBe(false);
+    expect(database.isGameAudioEnabled('wheel', '1', 'piece_drop')).toBe(true);
+    expect(database.getGameMedia('connect4', 'piece_drop')).toMatchObject({
+      file_path: '/tmp/piece-drop.mp3',
+      enabled: 1
+    });
+  });
+
   test('creates and reads active interactive state with parsed game data', () => {
     database.createInteractiveState(session());
 
@@ -62,9 +76,100 @@ describe('GameEngineDatabase interactive persistence', () => {
       sessionRevision: 1,
       turnRole: 'viewer',
       viewerDeadlineMs: 123456,
+      viewerTimeRemainingMs: 5000,
       status: 'active'
     });
     expect(database.getActiveInteractiveStates()).toHaveLength(1);
+  });
+
+  test('adds viewer remaining time to an existing interactive session table', () => {
+    sqlite.close();
+    sqlite = new Database(':memory:');
+    sqlite.exec(`
+      CREATE TABLE game_interactive_sessions (
+        session_id INTEGER PRIMARY KEY,
+        game_type TEXT NOT NULL,
+        viewer_id TEXT NOT NULL,
+        viewer_display_name TEXT NOT NULL,
+        host_display_name TEXT NOT NULL,
+        state_json TEXT NOT NULL,
+        session_revision INTEGER NOT NULL DEFAULT 1,
+        display_revision INTEGER NOT NULL DEFAULT 0,
+        turn_role TEXT NOT NULL,
+        viewer_deadline_ms INTEGER,
+        host_time_remaining_ms INTEGER,
+        time_control TEXT,
+        last_move_identity TEXT,
+        last_activity_at INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        terminal_reason TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    `);
+
+    ({ database } = createDatabase(sqlite));
+
+    expect(sqlite.prepare(`PRAGMA table_info(game_interactive_sessions)`).all()
+      .map(column => column.name)).toContain('viewer_time_remaining_ms');
+  });
+
+  test('does not suppress a real viewer remaining-time migration failure', () => {
+    sqlite.close();
+    sqlite = new Database(':memory:');
+    sqlite.exec(`
+      CREATE TABLE game_interactive_sessions (
+        session_id INTEGER PRIMARY KEY,
+        game_type TEXT NOT NULL,
+        viewer_id TEXT NOT NULL,
+        viewer_display_name TEXT NOT NULL,
+        host_display_name TEXT NOT NULL,
+        state_json TEXT NOT NULL,
+        session_revision INTEGER NOT NULL DEFAULT 1,
+        display_revision INTEGER NOT NULL DEFAULT 0,
+        turn_role TEXT NOT NULL,
+        viewer_deadline_ms INTEGER,
+        host_time_remaining_ms INTEGER,
+        time_control TEXT,
+        last_move_identity TEXT,
+        last_activity_at INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        terminal_reason TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    `);
+    const originalExec = sqlite.exec.bind(sqlite);
+    const execSpy = jest.spyOn(sqlite, 'exec').mockImplementation(sql => {
+      if (/ALTER TABLE game_interactive_sessions/.test(sql)) throw new Error('migration denied');
+      return originalExec(sql);
+    });
+
+    try {
+      expect(() => createDatabase(sqlite)).toThrow('migration denied');
+    } finally {
+      execSpy.mockRestore();
+    }
+  });
+
+  test('persists viewer deadline and remaining time together across timer states', () => {
+    database.createInteractiveState(session());
+
+    database.updateInteractiveState(41, {
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 3210
+    });
+
+    expect(database.getInteractiveState(41)).toMatchObject({
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 3210
+    });
+
+    database.completeInteractiveState(41, 'cancelled');
+    expect(database.getInteractiveState(41)).toMatchObject({
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: null
+    });
   });
 
   test('allows only one active interactive session per viewer', () => {
@@ -296,5 +401,132 @@ describe('GameEngineDatabase interactive persistence', () => {
     expect(database.getDailyLeaderboard('connect4')).not.toEqual(expect.arrayContaining([
       expect.objectContaining({ username: 'cancelled' })
     ]));
+  });
+
+  test('presents a historical viewer display name while keeping every leaderboard keyed by stable player ID', () => {
+    const playerId = '7446102145268843553';
+    const completedSession = database.createSession('connect4', playerId, 'viewer', 'command', '/c4start');
+    database.addPlayer2(completedSession, 'streamer', 'streamer');
+    database.endSession(completedSession, playerId, { board: [[1]] }, 'win');
+    database.createInteractiveState(session({
+      sessionId: 42,
+      viewerId: playerId,
+      viewerDisplayName: 'Former Sam',
+      lastActivityAt: 1000
+    }));
+    database.completeInteractiveState(42, 'cancelled');
+    sqlite.prepare(`UPDATE game_interactive_sessions SET updated_at = ? WHERE session_id = ?`)
+      .run(1000, 42);
+    database.createInteractiveState(session({
+      sessionId: completedSession,
+      viewerId: playerId,
+      viewerDisplayName: 'Sam',
+      lastActivityAt: 2000
+    }));
+    database.updatePlayerStats(playerId, 'connect4', true, false, false, 10);
+    database.updatePlayerStats(playerId, 'connect4', true, false, false, 10);
+    database.updatePlayerELO(playerId, 'connect4', 240);
+
+    const leaderboardRows = [
+      database.getDailyLeaderboard('connect4', 10)[0],
+      database.getSeasonLeaderboard('connect4', 10)[0],
+      database.getLifetimeLeaderboard('connect4', 10)[0],
+      database.getELOLeaderboard('connect4', 10)[0],
+      database.getStreakLeaderboard('connect4', 10)[0]
+    ];
+
+    for (const row of leaderboardRows) {
+      expect(row).toMatchObject({ playerId, username: 'Sam' });
+    }
+    expect(sqlite.prepare(`
+      SELECT username FROM game_player_stats WHERE game_type = ?
+    `).all('connect4')).toEqual([expect.objectContaining({ username: playerId })]);
+    expect(database.getSession(completedSession).player1_username).toBe(playerId);
+  });
+
+  test('ignores a newer whitespace-only identity in every leaderboard presentation', () => {
+    const playerId = '7446102145268843555';
+    const completedSession = database.createSession('connect4', playerId, 'viewer', 'command', '/c4start');
+    database.addPlayer2(completedSession, 'streamer', 'streamer');
+    database.endSession(completedSession, playerId, { board: [[1]] }, 'win');
+
+    database.createInteractiveState(session({
+      sessionId: 42,
+      viewerId: playerId,
+      viewerDisplayName: 'Sam',
+      lastActivityAt: 1000
+    }));
+    database.completeInteractiveState(42, 'cancelled');
+    sqlite.prepare(`UPDATE game_interactive_sessions SET updated_at = ? WHERE session_id = ?`)
+      .run(1000, 42);
+
+    database.createInteractiveState(session({
+      sessionId: 43,
+      viewerId: playerId,
+      viewerDisplayName: '\t\n\u00a0',
+      lastActivityAt: 2000
+    }));
+    database.completeInteractiveState(43, 'cancelled');
+    sqlite.prepare(`UPDATE game_interactive_sessions SET updated_at = ? WHERE session_id = ?`)
+      .run(2000, 43);
+
+    database.updatePlayerStats(playerId, 'connect4', true, false, false, 10);
+    database.updatePlayerELO(playerId, 'connect4', 240);
+
+    expect(database.resolveLeaderboardIdentity(playerId)).toEqual({ playerId, username: 'Sam' });
+    const leaderboardRows = [
+      database.getDailyLeaderboard('connect4', 10)[0],
+      database.getSeasonLeaderboard('connect4', 10)[0],
+      database.getLifetimeLeaderboard('connect4', 10)[0],
+      database.getELOLeaderboard('connect4', 10)[0],
+      database.getStreakLeaderboard('connect4', 10)[0]
+    ];
+    for (const row of leaderboardRows) {
+      expect(row).toMatchObject({ playerId, username: 'Sam' });
+    }
+  });
+
+  test('preserves meaningful leading and trailing whitespace in every leaderboard presentation', () => {
+    const playerId = '7446102145268843556';
+    const displayName = '\u00a0 Sam Streamer \u2003';
+    const completedSession = database.createSession('connect4', playerId, 'viewer', 'command', '/c4start');
+    database.addPlayer2(completedSession, 'streamer', 'streamer');
+    database.endSession(completedSession, playerId, { board: [[1]] }, 'win');
+    database.createInteractiveState(session({
+      sessionId: completedSession,
+      viewerId: playerId,
+      viewerDisplayName: displayName,
+      lastActivityAt: 2000
+    }));
+    database.updatePlayerStats(playerId, 'connect4', true, false, false, 10);
+    database.updatePlayerELO(playerId, 'connect4', 240);
+
+    expect(database.resolveLeaderboardIdentity(playerId)).toEqual({ playerId, username: displayName });
+    const leaderboardRows = [
+      database.getDailyLeaderboard('connect4', 10)[0],
+      database.getSeasonLeaderboard('connect4', 10)[0],
+      database.getLifetimeLeaderboard('connect4', 10)[0],
+      database.getELOLeaderboard('connect4', 10)[0],
+      database.getStreakLeaderboard('connect4', 10)[0]
+    ];
+    for (const row of leaderboardRows) {
+      expect(row).toMatchObject({ playerId, username: displayName });
+    }
+  });
+
+  test('keeps a nonnumeric player name as both leaderboard ID and display name', () => {
+    const username = 'sam_the_viewer';
+    database.updatePlayerStats(username, 'connect4', true, false, false, 10);
+
+    expect(database.resolveLeaderboardIdentity(username)).toEqual({ playerId: username, username });
+    expect(database.getLifetimeLeaderboard('connect4', 10)[0]).toMatchObject({ playerId: username, username });
+  });
+
+  test('falls back to an unresolved numeric player ID as the display name', () => {
+    const playerId = '7446102145268843554';
+    database.updatePlayerStats(playerId, 'connect4', true, false, false, 10);
+
+    expect(database.resolveLeaderboardIdentity(playerId)).toEqual({ playerId, username: playerId });
+    expect(database.getELOLeaderboard('connect4', 10)[0]).toMatchObject({ playerId, username: playerId });
   });
 });

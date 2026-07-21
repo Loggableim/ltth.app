@@ -742,7 +742,12 @@
     let interactiveViewerCountdownInterval = null;
     const highestAudibleMoveBySession = new Map();
     const warnedViewerDeadlines = new Set();
-    const customAudioByEvent = new Map();
+    const audioSettingsByEvent = new Map();
+    // Default sounds are safe to play until the optional custom-media request
+    // returns. Waiting for that request used to drop the first move/result
+    // sound (and all sounds when the request failed).
+    let connect4AudioSettingsReady = true;
+    let connect4AudioSettingsGeneration = 0;
     const ROWS = 6;
     const COLUMNS = 7;
 
@@ -762,14 +767,16 @@
     }
 
     // Play audio file (MP3/WAV)
-    function playAudioFile(filePath, volume = null, fallbackPath = null) {
+    function playAudioFile(filePath, volume = null, fallbackPath = null, mediaEvent = null) {
       if (!gameConfig || !gameConfig.soundEnabled || !filePath) return false;
+      if (mediaEvent && audioSettingsByEvent.get(mediaEvent)?.enabled === false) return false;
 
       let fallbackStarted = false;
       const playFallback = () => {
         if (fallbackStarted || !fallbackPath || fallbackPath === filePath) return;
+        if (mediaEvent && audioSettingsByEvent.get(mediaEvent)?.enabled === false) return;
         fallbackStarted = true;
-        playAudioFile(fallbackPath, volume);
+        playAudioFile(fallbackPath, volume, null, mediaEvent);
       };
       try {
         const audio = new Audio(filePath);
@@ -797,26 +804,53 @@
       timer_warning: '/game-engine/sounds/default/ten-sec-timer.mp3'
     };
 
+    function applyAudioSettings(settings) {
+      audioSettingsByEvent.clear();
+      for (const [mediaEvent, setting] of Object.entries(settings || {})) {
+        const entry = { enabled: setting?.enabled !== false };
+        if (setting?.url) entry.url = setting.url;
+        audioSettingsByEvent.set(mediaEvent, entry);
+      }
+      connect4AudioSettingsReady = true;
+    }
+
+    function applyAudioStateUpdate(mediaEvent, enabled) {
+      if (typeof enabled !== 'boolean') return;
+      const current = audioSettingsByEvent.get(mediaEvent) || {};
+      audioSettingsByEvent.set(mediaEvent, { ...current, enabled });
+    }
+
     async function loadCustomAudio() {
+      const generation = ++connect4AudioSettingsGeneration;
       try {
         const response = await fetch('/api/game-engine/media/connect4', { cache: 'no-store' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const media = await response.json();
-        customAudioByEvent.clear();
+        if (generation !== connect4AudioSettingsGeneration) return false;
+        const settings = {};
         for (const item of Array.isArray(media) ? media : []) {
-          if (item && typeof item.media_event === 'string' && typeof item.url === 'string') {
-            customAudioByEvent.set(item.media_event, item.url);
-          }
+          if (!item || typeof item.media_event !== 'string') continue;
+          settings[item.media_event] = {
+            enabled: item.enabled !== false,
+            ...(typeof item.url === 'string' ? { url: item.url } : {})
+          };
         }
+        applyAudioSettings(settings);
+        return true;
       } catch (error) {
-        console.warn('Failed to load custom Connect4 audio:', error);
+        if (generation === connect4AudioSettingsGeneration) {
+          console.warn('Failed to load custom Connect4 audio:', error);
+        }
+        return false;
       }
     }
 
     function playEventSound(mediaEvent) {
+      if (!connect4AudioSettingsReady) return false;
+      if (audioSettingsByEvent.get(mediaEvent)?.enabled === false) return false;
       const defaultPath = defaultSoundsByEvent[mediaEvent];
-      const customPath = customAudioByEvent.get(mediaEvent);
-      return playAudioFile(customPath || defaultPath, null, customPath ? defaultPath : null);
+      const customPath = audioSettingsByEvent.get(mediaEvent)?.url;
+      return playAudioFile(customPath || defaultPath, null, customPath ? defaultPath : null, mediaEvent);
     }
 
     function playSound(type) {
@@ -1445,43 +1479,16 @@
     }
 
     function interactiveConnect4Presentation(state) {
-      const display = state?.display;
-      if (!display) return state;
-
-      const ownsDisplay = ['playing', 'animating', 'result', 'leaderboard'].includes(display.phase) &&
-        display.gameType === 'connect4';
-      if (ownsDisplay) return state;
-
-      const viewerTurnSession = display.phase === 'idle' && state?.activeSessions?.length === 1
-        ? state.activeSessions[0]
-        : null;
-      if (!viewerTurnSession || viewerTurnSession.gameType !== 'connect4') return state;
-
-      return {
-        ...state,
-        display: {
-          ...display,
-          displaySessionId: viewerTurnSession.sessionId,
-          gameType: viewerTurnSession.gameType,
-          sessionRevision: viewerTurnSession.sessionRevision,
-          hostDisplayName: viewerTurnSession.hostDisplayName,
-          viewerDisplayName: viewerTurnSession.viewerDisplayName,
-          state: viewerTurnSession.state,
-          currentTurnRole: viewerTurnSession.turnRole,
-          viewerDeadlineMs: viewerTurnSession.viewerDeadlineMs,
-          hostTimeRemainingMs: viewerTurnSession.hostTimeRemainingMs,
-          config: viewerTurnSession.config || display.config,
-          phase: 'playing'
-        }
-      };
+      return state;
     }
 
     function applyInteractiveSnapshot(state, { force = false, suppressEffects = false } = {}) {
       const interactiveState = interactiveConnect4Presentation(state);
       const display = interactiveState?.display;
       if (!display) return;
+      const resultPresentation = display.phase === 'result' ? display.result : null;
       const displayRevision = Number(display.displayRevision);
-      const sessionRevision = Number(display.sessionRevision ?? display.result?.sessionRevision ?? -1);
+      const sessionRevision = Number(resultPresentation?.sessionRevision ?? display.sessionRevision ?? -1);
       if (!Number.isFinite(displayRevision)) return;
       if (!force && displayRevision < lastInteractiveDisplayRevision) return;
       if (!force &&
@@ -1512,12 +1519,13 @@
         return;
       }
 
-      const snapshotState = display.state || display.result?.state;
+      const snapshotState = resultPresentation?.state || display.state;
       if (!interactiveSnapshotActive || !snapshotState) return;
-      currentSession = Number(display.displaySessionId ?? display.result?.sessionId);
-      const animationMs = Math.max(100, Math.min(2000, Number(display.config?.animationSpeed) || 500));
+      currentSession = Number(resultPresentation?.sessionId ?? display.displaySessionId);
+      const presentationConfig = resultPresentation?.config || display.config || gameConfig || {};
+      const animationMs = Math.max(100, Math.min(2000, Number(presentationConfig.animationSpeed) || 500));
       document.documentElement.style.setProperty('--interactive-animation-ms', `${animationMs}ms`);
-      applyConfig(display.config || gameConfig || {});
+      applyConfig(presentationConfig);
       updateBoard(snapshotState);
       updatePlayerInfo(snapshotState);
       updateStatus(snapshotState);
@@ -1613,6 +1621,12 @@
 
     socket.on('game-engine:media-updated', data => {
       if (data?.gameType === 'connect4') loadCustomAudio();
+    });
+    socket.on('game-engine:audio-state-updated', data => {
+      if (data?.gameType !== 'connect4') return;
+      connect4AudioSettingsGeneration++;
+      applyAudioStateUpdate(data.audioEvent, data.enabled);
+      loadCustomAudio();
     });
 
     loadCustomAudio();

@@ -1,3 +1,5 @@
+const { getViewerTimeRemainingMs } = require('./interactive-session-registry');
+
 class InteractiveDisplayRouter {
   constructor({
     registry,
@@ -36,16 +38,27 @@ class InteractiveDisplayRouter {
       : this.registry.get(this.displaySessionId);
   }
 
-  _pauseDisplayedHost() {
+  _nextViewerSession() {
+    return this.registry.list()
+      .filter(row => row.status === 'active' && row.turnRole === 'viewer')
+      .sort((a, b) => (a.lastActivityAt - b.lastActivityAt) || (a.sessionId - b.sessionId))[0] || null;
+  }
+
+  _pauseDisplayedTimers() {
     const session = this._displaySession();
-    if (session?.gameType === 'chess' && session.turnRole === 'host') {
+    if (session?.turnRole === 'viewer') {
+      this.timers.pauseViewer(session);
+    } else if (session?.gameType === 'chess' && session.turnRole === 'host') {
       this.timers.pauseHostChess(session);
     }
   }
 
-  _resumeDisplayedHost() {
+  _resumeDisplayedTimers() {
+    if (this.phase !== 'playing' || this.suspendedReason) return;
     const session = this._displaySession();
-    if (session?.gameType === 'chess' && session.turnRole === 'host') {
+    if (session?.turnRole === 'viewer') {
+      this.timers.resumeViewer(session);
+    } else if (session?.gameType === 'chess' && session.turnRole === 'host') {
       this.timers.resumeHostChess(session);
     }
   }
@@ -65,22 +78,30 @@ class InteractiveDisplayRouter {
     if (this.suspendedReason || (!force && ['animating', 'result'].includes(this.phase))) {
       return this.snapshot();
     }
+    if (force) {
+      this._clearTransition();
+      this.transitionAction = null;
+      this.transitionRemainingMs = null;
+    }
+    const head = this.queue.head();
     if (this.phase === 'leaderboard') {
+      if (!head && !force) return this.snapshot();
       this._clearTransition();
       this.leaderboard = null;
       this.resultQueue = [];
     }
-    const head = this.queue.head();
     const nextSessionId = head?.sessionId ?? null;
-    if (this.displaySessionId === nextSessionId && this.phase === (head ? 'playing' : 'idle')) {
+    const nextPhase = nextSessionId == null ? 'idle' : 'playing';
+    if (this.displaySessionId === nextSessionId && this.phase === nextPhase) {
+      this._resumeDisplayedTimers();
       return this.snapshot();
     }
-    this._pauseDisplayedHost();
+    this._pauseDisplayedTimers();
     this.displaySessionId = nextSessionId;
-    this.phase = head ? 'playing' : 'idle';
+    this.phase = nextPhase;
     this.result = null;
     this._advanceRevision();
-    this._resumeDisplayedHost();
+    this._resumeDisplayedTimers();
     return this._publish();
   }
 
@@ -93,9 +114,14 @@ class InteractiveDisplayRouter {
   _scheduleTransition(durationMs, action) {
     this._clearTransition();
     const delay = Math.max(0, Number(durationMs) || 0);
+    this.transitionAction = action;
+    this.transitionRemainingMs = null;
+    if (this.suspendedReason) {
+      this.transitionRemainingMs = delay;
+      return;
+    }
     const revision = this.displayRevision;
     this.transitionDeadline = this.now() + delay;
-    this.transitionAction = action;
     this.transitionTimer = this.setTimeoutFn(() => {
       this.transitionTimer = null;
       this.transitionDeadline = null;
@@ -108,7 +134,7 @@ class InteractiveDisplayRouter {
   beginAnimation(sessionId, durationMs) {
     if (Number(sessionId) !== this.displaySessionId) return this.snapshot();
     this._clearTransition();
-    this._pauseDisplayedHost();
+    this._pauseDisplayedTimers();
     this.phase = 'animating';
     this._advanceRevision();
     const snapshot = this._publish();
@@ -134,11 +160,54 @@ class InteractiveDisplayRouter {
     return this.snapshot();
   }
 
+  _matchesResult(left, right) {
+    if (left === right) return true;
+    const leftSessionId = left?.sessionId;
+    const rightSessionId = right?.sessionId;
+    return leftSessionId != null &&
+      rightSessionId != null &&
+      String(leftSessionId) === String(rightSessionId);
+  }
+
+  _hasScheduledTransition() {
+    return typeof this.transitionAction === 'function' && (
+      this.transitionTimer != null ||
+      (this.suspendedReason && this.transitionRemainingMs != null)
+    );
+  }
+
+  recoverResult(result, durationMs, leaderboard = null) {
+    const entry = { result, durationMs, leaderboard };
+    const activeMatch = this.phase === 'result' && this._matchesResult(this.result, result);
+    if (activeMatch && this._hasScheduledTransition()) {
+      return this.snapshot();
+    }
+
+    const queuedMatch = this.resultQueue.some(queued => this._matchesResult(queued.result, result));
+    if (this.phase === 'result' && !activeMatch) {
+      if (!queuedMatch) this.resultQueue.push(entry);
+      return this.snapshot();
+    }
+
+    this._pauseDisplayedTimers();
+    this._clearTransition();
+    this.transitionAction = null;
+    this.transitionRemainingMs = null;
+    this.resultQueue = this.resultQueue.filter(queued => !this._matchesResult(queued.result, result));
+    this.result = null;
+    this.leaderboard = null;
+    this.displaySessionId = null;
+    this.phase = 'idle';
+    this._activateResult(entry);
+    return this.snapshot();
+  }
+
   _activateResult(entry) {
     this._clearTransition();
-    this._pauseDisplayedHost();
+    this._pauseDisplayedTimers();
     this.result = entry.result;
     this.leaderboard = null;
+    this.displaySessionId = Number(entry.result?.sessionId) || null;
     this.phase = 'result';
     this._advanceRevision();
     this._publish();
@@ -160,7 +229,7 @@ class InteractiveDisplayRouter {
     const types = entry.leaderboard?.types || [];
     if (!types[index]) return this._advanceToNextPresentation();
     this._clearTransition();
-    this._pauseDisplayedHost();
+    this._pauseDisplayedTimers();
     this.result = null;
     this.displaySessionId = null;
     this.phase = 'leaderboard';
@@ -193,7 +262,8 @@ class InteractiveDisplayRouter {
     this.displaySessionId = null;
     this.phase = 'idle';
     this._advanceRevision();
-    return this._publish();
+    this._publish();
+    return this.sync({ force: true });
   }
 
   _advanceToNextPresentation() {
@@ -215,7 +285,7 @@ class InteractiveDisplayRouter {
 
   suspend(reason) {
     if (this.suspendedReason) return this.snapshot();
-    this._pauseDisplayedHost();
+    this._pauseDisplayedTimers();
     this.suspendedReason = reason || 'transient';
     if (this.transitionTimer) {
       this.transitionRemainingMs = Math.max(0, this.transitionDeadline - this.now());
@@ -229,7 +299,7 @@ class InteractiveDisplayRouter {
     if (!this.suspendedReason) return this.snapshot();
     this.suspendedReason = null;
     this._advanceRevision();
-    this._resumeDisplayedHost();
+    this._resumeDisplayedTimers();
     const snapshot = this._publish();
     if (this.transitionAction && this.transitionRemainingMs != null) {
       const action = this.transitionAction;
@@ -241,27 +311,37 @@ class InteractiveDisplayRouter {
   }
 
   snapshot() {
-    const session = this._displaySession();
+    const result = this.phase === 'result' ? this.result : null;
+    const session = ['playing', 'animating'].includes(this.phase)
+      ? this._displaySession()
+      : null;
     const queue = this.queue.list();
     const leaderboard = this.leaderboard;
-    const state = session?.adapter?.getState?.() || null;
+    const state = result?.state || session?.adapter?.getState?.() || null;
     const hostRemaining = session?.gameType === 'chess'
       ? this.timers.getHostRemaining?.(session) ?? session.hostTimeRemainingMs
       : null;
+    const activePlayerDisplayName = session?.turnRole === 'host'
+      ? session.hostDisplayName
+      : session?.turnRole === 'viewer'
+        ? session.viewerDisplayName
+        : null;
     return {
       displaySessionId: this.displaySessionId,
       gameType: this.phase === 'result'
-        ? this.result?.gameType || session?.gameType || null
+        ? result?.gameType || null
         : this.phase === 'leaderboard'
           ? leaderboard?.gameType || null
           : session?.gameType || null,
-      sessionRevision: session?.sessionRevision ?? null,
+      sessionRevision: result?.sessionRevision ?? session?.sessionRevision ?? null,
       displayRevision: this.displayRevision,
-      hostDisplayName: session?.hostDisplayName || this.result?.hostDisplayName || leaderboard?.hostDisplayName || null,
-      viewerDisplayName: session?.viewerDisplayName || this.result?.viewerDisplayName || leaderboard?.viewerDisplayName || null,
+      hostDisplayName: result?.hostDisplayName || session?.hostDisplayName || leaderboard?.hostDisplayName || null,
+      viewerDisplayName: result?.viewerDisplayName || session?.viewerDisplayName || leaderboard?.viewerDisplayName || null,
+      activePlayerDisplayName,
       state,
       currentTurnRole: session?.turnRole || null,
       viewerDeadlineMs: session?.viewerDeadlineMs ?? null,
+      viewerTimeRemainingMs: getViewerTimeRemainingMs(session, this.now()),
       hostTimeRemainingMs: hostRemaining,
       waitingQueueCount: Math.max(0, queue.length - (this.phase === 'playing' && session ? 1 : 0)),
       activeSessionCount: this.registry.list().length,
@@ -271,7 +351,7 @@ class InteractiveDisplayRouter {
         ? { type: leaderboard.type, index: leaderboard.index, total: leaderboard.total }
         : null,
       suspendedReason: this.suspendedReason,
-      config: session?.config || null,
+      config: result?.config || session?.config || null,
       serverTimestamp: this.now()
     };
   }

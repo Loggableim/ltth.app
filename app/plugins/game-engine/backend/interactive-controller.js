@@ -48,6 +48,7 @@ class InteractiveController {
     this.queue = new InteractiveTurnQueue(database, logger, now);
     this.timers = new InteractiveTurnTimers({
       getSession: sessionId => this.registry.get(sessionId),
+      getDisplaySessionId: () => this.router?.snapshot().displaySessionId ?? null,
       database,
       onViewerTimeout: (sessionId, revision) => this._handleViewerTimeout(sessionId, revision),
       onHostTimeout: (sessionId, revision) => this._handleHostTimeout(sessionId, revision),
@@ -67,6 +68,20 @@ class InteractiveController {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) return fallback;
     return Math.min(max, Math.max(min, Math.round(parsed)));
+  }
+
+  _publishSafely(label, sessionId, callback) {
+    try {
+      callback();
+      return true;
+    } catch (error) {
+      try {
+        this.logger?.error?.(`[INTERACTIVE] ${label} publication failed for ${sessionId}: ${error.message}`);
+      } catch (loggingError) {
+        // Publication failures must never invalidate an already committed transition.
+      }
+      return false;
+    }
   }
 
   _settings() {
@@ -152,6 +167,7 @@ class InteractiveController {
       displayRevision: this.router.displayRevision,
       turnRole: session.turnRole,
       viewerDeadlineMs: session.viewerDeadlineMs,
+      viewerTimeRemainingMs: session.viewerTimeRemainingMs,
       hostTimeRemainingMs: session.gameType === 'chess'
         ? this.timers.getHostRemaining(session)
         : null,
@@ -203,10 +219,9 @@ class InteractiveController {
       if (!presentationChanged) continue;
 
       const viewerTurn = session.turnRole === 'viewer';
-      const preservedViewerDeadlineMs = viewerTurn && enabled && !scheduleChanged
-        ? session.viewerDeadlineMs
-        : null;
-      if (viewerTurn && (scheduleChanged || preservedViewerDeadlineMs != null)) {
+      if (viewerTurn && enabled && !scheduleChanged) {
+        this.timers.pauseViewer(session, { persist: false });
+      } else if (viewerTurn && !enabled) {
         this.timers.clearViewer(session.sessionId, { persist: false });
       }
       session.config = {
@@ -218,13 +233,20 @@ class InteractiveController {
       session.sessionRevision += 1;
       if (viewerTurn && enabled) {
         if (scheduleChanged) {
-          this.timers.startViewer(session, responseSeconds, { persist: false });
-        } else if (preservedViewerDeadlineMs != null) {
-          session.viewerDeadlineMs = preservedViewerDeadlineMs;
-          this.timers.restore(session);
+          this.timers.prepareViewer(session, responseSeconds, { persist: false });
         }
       }
       this.database.updateInteractiveState(session.sessionId, this._sessionRecord(session));
+      const display = this.router.snapshot();
+      if (
+        viewerTurn &&
+        enabled &&
+        display.displaySessionId === session.sessionId &&
+        display.phase === 'playing' &&
+        !display.suspendedReason
+      ) {
+        this.timers.resumeViewer(session);
+      }
       updatedSessions += 1;
     }
 
@@ -247,6 +269,19 @@ class InteractiveController {
     })}`);
   }
 
+  _rotateAfterTurn(session) {
+    const head = this.queue.head();
+    if (!head || head.sessionId !== session.sessionId) {
+      throw new Error('interactive_queue_head_changed');
+    }
+    if (this.queue.list().length < 2) return { moved: false, single: true };
+    const rotated = this.queue.rotateHeadToTail(session.sessionId);
+    if (!rotated?.moved) {
+      throw new Error(rotated?.error || 'queue_rotation_failed');
+    }
+    return rotated;
+  }
+
   init() {
     let recovered = 0;
     const reconciled = this.database.reconcileOrphanedInteractiveSessions?.() || 0;
@@ -264,15 +299,18 @@ class InteractiveController {
           timeControl: row.timeControl || restored.timeControl,
           status: 'active'
         });
-        if (
-          session.turnRole === 'viewer' &&
-          session.viewerDeadlineMs != null &&
-          !this._viewerTimeoutEnabled(session.gameType)
-        ) {
-          session.viewerDeadlineMs = null;
-          this.database.updateInteractiveState(session.sessionId, { viewerDeadlineMs: null });
+        if (session.turnRole === 'viewer') {
+          if (!this._viewerTimeoutEnabled(session.gameType)) {
+            this.timers.clearViewer(session.sessionId);
+          } else if (
+            (session.viewerDeadlineMs != null && Number.isFinite(Number(session.viewerDeadlineMs))) ||
+            (session.viewerTimeRemainingMs != null && Number.isFinite(Number(session.viewerTimeRemainingMs)))
+          ) {
+            this.timers.pauseViewer(session);
+          } else {
+            this.timers.prepareViewer(session, this._viewerResponseSeconds(session.gameType));
+          }
         }
-        this.timers.restore(session);
         recovered += 1;
         this._logTransition('session_recovered', session);
       } catch (error) {
@@ -287,16 +325,19 @@ class InteractiveController {
     const validQueueRows = [];
     for (const row of this.database.getInteractiveQueue()) {
       const session = this.registry.get(row.sessionId);
-      if (session && session.status === 'active' && session.turnRole === 'host') {
+      if (session && session.status === 'active' && ['host', 'viewer'].includes(session.turnRole)) {
         validQueueRows.push(row);
       } else {
         this.database.removeInteractiveTurn(row.sessionId);
       }
     }
     this.queue.restore(validQueueRows);
+    for (const session of this.registry.list().sort((left, right) => left.sessionId - right.sessionId)) {
+      if (!this.queue.has(session.sessionId)) this.queue.enqueue(session);
+    }
     this.router.sync();
     this.emitState();
-    return { recovered, reconciled, queueLength: validQueueRows.length };
+    return { recovered, reconciled, queueLength: this.queue.list().length };
   }
 
   startMatch({ gameType, viewerId, viewerDisplayName, timeControl = null, triggerType = 'command', triggerValue = null }) {
@@ -355,20 +396,22 @@ class InteractiveController {
         sessionRevision: 1,
         displayRevision: this.router.displayRevision,
         turnRole,
-        viewerDeadlineMs: turnRole === 'viewer' && this._viewerTimeoutEnabled(gameType)
-          ? now + (this._viewerResponseSeconds(gameType) * 1000)
-          : null,
+        viewerDeadlineMs: null,
+        viewerTimeRemainingMs: null,
         hostTimeRemainingMs: this._hostTimeFromState(gameType, state),
         lastMoveIdentity: null,
         lastActivityAt: now,
         status: 'active'
       });
 
+      if (turnRole === 'viewer' && this._viewerTimeoutEnabled(gameType)) {
+        this.timers.prepareViewer(session, this._viewerResponseSeconds(gameType), { persist: false });
+      }
+
       this.database.transaction(() => {
         this.database.createInteractiveState(this._sessionRecord(session));
-        if (turnRole === 'host') this.queue.enqueue(session);
+        this.queue.enqueue(session);
       });
-      if (turnRole === 'viewer') this.timers.restore(session);
       this.emitLegacyEvent?.('started', { session, state, config });
       this._logTransition('session_started', session);
       this.router.sync();
@@ -392,16 +435,22 @@ class InteractiveController {
       return { success: true, duplicate: true, sessionId: session.sessionId };
     }
     if (session.turnRole !== 'viewer') return { success: false, error: 'not_viewer_turn' };
+    const head = this.queue.head();
+    if (!head || head.sessionId !== session.sessionId) return { success: false, error: 'not_queue_head' };
+    if (this.router.snapshot().displaySessionId !== session.sessionId) {
+      return { success: false, error: 'not_displayed' };
+    }
     if (session.viewerDeadlineMs != null && this.now() >= session.viewerDeadlineMs) {
       this._handleViewerTimeout(session.sessionId, session.sessionRevision);
       return { success: false, error: 'viewer_timeout' };
     }
 
-    const previousState = session.adapter.getState();
+    const previousState = JSON.parse(JSON.stringify(session.adapter.getState()));
     const previous = {
       revision: session.sessionRevision,
       turnRole: session.turnRole,
       deadline: session.viewerDeadlineMs,
+      remaining: session.viewerTimeRemainingMs,
       lastMoveIdentity: session.lastMoveIdentity,
       lastActivityAt: session.lastActivityAt
     };
@@ -412,12 +461,15 @@ class InteractiveController {
     session.sessionRevision += 1;
     session.turnRole = session.adapter.getCurrentTurnRole();
     session.viewerDeadlineMs = null;
+    session.viewerTimeRemainingMs = null;
     session.lastMoveIdentity = moveIdentity || `${previous.revision}:${JSON.stringify(move)}`;
     session.lastActivityAt = this.now();
 
+    const complete = result.gameOver || session.adapter.isComplete();
+    let completionPayload = null;
     try {
-      if (result.gameOver || session.adapter.isComplete()) {
-        this._completeSession(session, {
+      if (complete) {
+        completionPayload = this._persistSessionCompletion(session, {
           winner: result.winner,
           winnerRole: this._roleForWinner(session, result.winner),
           reason: result.winReason || (result.draw ? 'draw' : 'win'),
@@ -429,27 +481,46 @@ class InteractiveController {
             throw new Error('duplicate_move_identity');
           }
           this.database.updateInteractiveState(session.sessionId, this._sessionRecord(session));
-          this.queue.enqueue(session);
+          this._rotateAfterTurn(session);
         });
-        this.emitLegacyEvent?.('move', { session, result, actorRole: 'viewer' });
-        this._logTransition('viewer_move_accepted', session, {
-          queueSequence: this.queue.list().find(row => row.sessionId === session.sessionId)?.sequence
-        });
-        this.router.sync();
-        this.emitState();
       }
-      return { success: true, sessionId: session.sessionId, result };
     } catch (error) {
       session.adapter.restoreState(previousState);
       session.sessionRevision = previous.revision;
       session.turnRole = previous.turnRole;
       session.viewerDeadlineMs = previous.deadline;
+      session.viewerTimeRemainingMs = previous.remaining;
       session.lastMoveIdentity = previous.lastMoveIdentity;
       session.lastActivityAt = previous.lastActivityAt;
+      this.queue.restore(this.database.getInteractiveQueue());
       this.timers.restore(session);
       this.logger?.error?.(`[INTERACTIVE] Viewer move persistence failed for ${session.sessionId}: ${error.message}`);
       return { success: false, error: 'persistence_error' };
     }
+    if (complete) {
+      this.registry.remove(session.sessionId);
+      this._publishSessionCompletion(session, completionPayload);
+    } else {
+      this._publishSafely('Viewer move legacy event', session.sessionId, () => {
+        this.emitLegacyEvent?.('move', { session, result, actorRole: 'viewer' });
+      });
+      this._publishSafely('Viewer move transition log', session.sessionId, () => {
+        this._logTransition('viewer_move_accepted', session, {
+          queueSequence: this.queue.list().find(row => row.sessionId === session.sessionId)?.sequence
+        });
+      });
+      const animationSpeed = this._bounded(session.config?.animationSpeed, 500, 100, 2000);
+      const routed = this._publishSafely('Viewer move display routing', session.sessionId, () => {
+        this.router.beginAnimation(session.sessionId, animationSpeed);
+      });
+      if (!routed) {
+        this._publishSafely('Viewer move display reconciliation', session.sessionId, () => {
+          this.router.sync({ force: true });
+        });
+      }
+      this._publishSafely('Viewer move state', session.sessionId, () => this.emitState());
+    }
+    return { success: true, sessionId: session.sessionId, result };
   }
 
   applyHostMove(envelope) {
@@ -488,8 +559,16 @@ class InteractiveController {
         session.adapter.game.lastMoveTime = null;
       }
     }
-    const previousState = session.adapter.getState();
-    const previousLastMoveIdentity = session.lastMoveIdentity;
+    const previousState = JSON.parse(JSON.stringify(session.adapter.getState()));
+    const previous = {
+      revision: session.sessionRevision,
+      turnRole: session.turnRole,
+      deadline: session.viewerDeadlineMs,
+      remaining: session.viewerTimeRemainingMs,
+      hostTimeRemainingMs: session.hostTimeRemainingMs,
+      lastMoveIdentity: session.lastMoveIdentity,
+      lastActivityAt: session.lastActivityAt
+    };
     const result = session.adapter.applyHostMove(envelope.move);
     if (!result.success) {
       if (session.gameType === 'chess') this.timers.resumeHostChess(session);
@@ -503,50 +582,76 @@ class InteractiveController {
     session.turnRole = session.adapter.getCurrentTurnRole();
     session.lastMoveIdentity = moveIdentity || `${session.sessionRevision - 1}:${JSON.stringify(envelope.move)}`;
     session.lastActivityAt = this.now();
-    session.viewerDeadlineMs = result.gameOver || session.adapter.isComplete() ||
-      !this._viewerTimeoutEnabled(session.gameType)
-      ? null
-      : this.now() + (this._viewerResponseSeconds(session.gameType) * 1000);
+    session.viewerDeadlineMs = null;
+    session.viewerTimeRemainingMs = null;
+    if (
+      !result.gameOver &&
+      !session.adapter.isComplete() &&
+      session.turnRole === 'viewer' &&
+      this._viewerTimeoutEnabled(session.gameType)
+    ) {
+      this.timers.prepareViewer(session, this._viewerResponseSeconds(session.gameType), { persist: false });
+    }
 
+    const complete = result.gameOver || session.adapter.isComplete();
+    let completionPayload = null;
     try {
-      this.database.transaction(() => {
-        if (moveIdentity && !this.database.recordInteractiveMoveIdentity(session.sessionId, moveIdentity)) {
-          throw new Error('duplicate_move_identity');
-        }
-        this.queue.remove(session.sessionId);
-        this.database.updateInteractiveState(session.sessionId, this._sessionRecord(session));
-      });
-      this.emitLegacyEvent?.('move', { session, result, actorRole: 'host' });
-      this._logTransition('host_move_accepted', session);
-      if (result.gameOver || session.adapter.isComplete()) {
-        this._completeSession(session, {
+      if (complete) {
+        completionPayload = this._persistSessionCompletion(session, {
           winner: result.winner,
           winnerRole: this._roleForWinner(session, result.winner),
           reason: result.winReason || (result.draw ? 'draw' : 'win'),
           gameResult: result
-        });
+        }, { moveIdentity });
       } else {
-        this.timers.restore(session);
-        const animationSpeed = this._bounded(session.config?.animationSpeed, 500, 100, 2000);
-        this.router.beginAnimation(session.sessionId, animationSpeed);
-        this.emitState();
+        this.database.transaction(() => {
+          if (moveIdentity && !this.database.recordInteractiveMoveIdentity(session.sessionId, moveIdentity)) {
+            throw new Error('duplicate_move_identity');
+          }
+          this.database.updateInteractiveState(session.sessionId, this._sessionRecord(session));
+          this._rotateAfterTurn(session);
+        });
       }
-      return { success: true, sessionId: session.sessionId, result };
     } catch (error) {
       session.adapter.restoreState(previousState);
       if (session.gameType === 'chess') {
         session.hostTimeRemainingMs = chessHostTimeBeforeMove;
         if (chessHostSide) session.adapter.game.timers[chessHostSide] = chessHostTimeBeforeMove;
       }
-      session.sessionRevision -= 1;
-      session.turnRole = 'host';
-      session.lastMoveIdentity = previousLastMoveIdentity;
-      session.viewerDeadlineMs = null;
-      if (!this.queue.has(session.sessionId)) this.queue.enqueue(session);
+      session.sessionRevision = previous.revision;
+      session.turnRole = previous.turnRole;
+      session.lastMoveIdentity = previous.lastMoveIdentity;
+      session.lastActivityAt = previous.lastActivityAt;
+      session.viewerDeadlineMs = previous.deadline;
+      session.viewerTimeRemainingMs = previous.remaining;
+      session.hostTimeRemainingMs = previous.hostTimeRemainingMs;
+      this.queue.restore(this.database.getInteractiveQueue());
       if (session.gameType === 'chess') this.timers.resumeHostChess(session);
       this.logger?.error?.(`[INTERACTIVE] Host move persistence failed for ${session.sessionId}: ${error.message}`);
       return { success: false, error: 'persistence_error' };
     }
+    if (complete) this.registry.remove(session.sessionId);
+    this._publishSafely('Host move legacy event', session.sessionId, () => {
+      this.emitLegacyEvent?.('move', { session, result, actorRole: 'host' });
+    });
+    this._publishSafely('Host move transition log', session.sessionId, () => {
+      this._logTransition('host_move_accepted', session);
+    });
+    if (complete) {
+      this._publishSessionCompletion(session, completionPayload);
+    } else {
+      const animationSpeed = this._bounded(session.config?.animationSpeed, 500, 100, 2000);
+      const routed = this._publishSafely('Host move display routing', session.sessionId, () => {
+        this.router.beginAnimation(session.sessionId, animationSpeed);
+      });
+      if (!routed) {
+        this._publishSafely('Host move display reconciliation', session.sessionId, () => {
+          this.router.sync({ force: true });
+        });
+      }
+      this._publishSafely('Host move state', session.sessionId, () => this.emitState());
+    }
+    return { success: true, sessionId: session.sessionId, result };
   }
 
   skipHostTurn(envelope) {
@@ -604,6 +709,15 @@ class InteractiveController {
   _handleViewerTimeout(sessionId, revision) {
     const session = this.registry.get(sessionId);
     if (!session || session.sessionRevision !== revision || session.turnRole !== 'viewer') return false;
+    const display = this.router.snapshot();
+    if (
+      display.displaySessionId !== Number(sessionId) ||
+      display.sessionRevision !== revision ||
+      display.phase !== 'playing' ||
+      display.suspendedReason
+    ) {
+      return false;
+    }
     const winner = this._winnerForRole(session, 'host');
     this._markTimedOut(session, winner, 'viewer_timeout');
     session.sessionRevision += 1;
@@ -635,10 +749,9 @@ class InteractiveController {
     return true;
   }
 
-  _completeSession(session, outcome, {
+  _persistSessionCompletion(session, outcome, {
     moveIdentity = null,
     skipAccounting = false,
-    resultDurationMs = null,
     skipLeaderboard = false
   } = {}) {
     const resultPayload = {
@@ -658,6 +771,7 @@ class InteractiveController {
       gameResult: outcome.gameResult,
       state: session.adapter.getState(),
       sessionRevision: session.sessionRevision,
+      config: session.config ? { ...session.config } : null,
       leaderboard: skipLeaderboard ? null : this._leaderboardPresentation(session),
       skipAccounting
     };
@@ -670,19 +784,44 @@ class InteractiveController {
       this.database.updateInteractiveState(session.sessionId, this._sessionRecord(session));
       this.database.completeInteractiveState(session.sessionId, outcome.reason);
     });
-    this.registry.remove(session.sessionId);
-    try {
-      this.finishGame?.(resultPayload);
-    } catch (error) {
-      this.logger?.error?.(`[INTERACTIVE] Result accounting failed for ${session.sessionId}: ${error.message}`);
-    }
-    this.emitLegacyEvent?.('ended', resultPayload);
-    this._logTransition('session_ended', session, { terminalReason: outcome.reason });
+    return resultPayload;
+  }
+
+  _publishSessionCompletion(session, resultPayload, resultDurationMs = null) {
+    this._publishSafely('Result accounting', session.sessionId, () => this.finishGame?.(resultPayload));
+    this._publishSafely('Session completion legacy event', session.sessionId, () => {
+      this.emitLegacyEvent?.('ended', resultPayload);
+    });
+    this._publishSafely('Session completion transition log', session.sessionId, () => {
+      this._logTransition('session_ended', session, { terminalReason: resultPayload.reason });
+    });
     const resultDuration = resultDurationMs == null
       ? this._settings().interactiveResultDisplaySeconds * 1000
       : resultDurationMs;
-    this.router.showResult(resultPayload, resultDuration, resultPayload.leaderboard);
-    this.emitState();
+    const routed = this._publishSafely('Session result display', session.sessionId, () => {
+      this.router.showResult(resultPayload, resultDuration, resultPayload.leaderboard);
+    });
+    if (!routed) {
+      this._publishSafely('Session result display reconciliation', session.sessionId, () => {
+        this.router.recoverResult(resultPayload, resultDuration, resultPayload.leaderboard);
+      });
+    }
+    this._publishSafely('Session completion state', session.sessionId, () => this.emitState());
+  }
+
+  _completeSession(session, outcome, {
+    moveIdentity = null,
+    skipAccounting = false,
+    resultDurationMs = null,
+    skipLeaderboard = false
+  } = {}) {
+    const resultPayload = this._persistSessionCompletion(session, outcome, {
+      moveIdentity,
+      skipAccounting,
+      skipLeaderboard
+    });
+    this.registry.remove(session.sessionId);
+    this._publishSessionCompletion(session, resultPayload, resultDurationMs);
     return resultPayload;
   }
 

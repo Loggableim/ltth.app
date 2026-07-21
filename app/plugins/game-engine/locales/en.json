@@ -1231,7 +1231,13 @@
           "default_no_upload": "Default (no upload)",
           "upload": "⬆️ Upload",
           "reset_default": "↩ Default",
-          "sync": "(sync)"
+          "sync": "(sync)",
+          "enabled": "Enabled",
+          "disabled": "Disabled",
+          "enable": "Enable",
+          "disable": "Disable",
+          "state_updated": "Sound state updated",
+          "state_update_failed": "Sound state could not be updated"
         },
         "openshock": {
           "intensity_1_100": "Intensity (1–100):",
@@ -1286,18 +1292,20 @@
           "plinko": { "slot_hits": "Slot {slot}: {count}x" },
           "overlay": { "viewer_countdown": "Viewer: {seconds}s remaining" },
           "unified": {
+            "active_turn": "CURRENT TURN: {player}",
             "matchup": "{host} vs. {player}",
             "phase_host_turn": "Host to move",
             "phase_result": "Result",
             "phase_viewer_turn": "Viewer to move",
             "queue_count": "{count} game(s) in queue",
-            "status": "{game} · {phase} · host turns queued: {count}"
+            "status": "{game} · {phase} · {count} active games"
           },
           "wheel": {
             "info_screen": "To collect your prize, visit discord.gg/yourserver",
             "no_prize": "💔 No prize!",
             "send_gift": "Send a gift to spin the wheel!",
             "shock": "⚡ SHOCK!",
+            "segment_count_changed": "The wheel configuration changed while this spin was queued ({previousCount} → {currentCount} segments). Please try again.",
             "spin_failed": "The spin could not be completed",
             "spinning": "🎡 Spinning the wheel",
             "test_spin_error": "Could not trigger the test spin: {error}",

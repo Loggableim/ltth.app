@@ -1231,7 +1231,13 @@
           "default_no_upload": "Standard (kein Upload)",
           "upload": "⬆️ Hochladen",
           "reset_default": "↩ Standard",
-          "sync": "(synchronisiert)"
+          "sync": "(synchronisiert)",
+          "enabled": "Aktiviert",
+          "disabled": "Deaktiviert",
+          "enable": "Aktivieren",
+          "disable": "Deaktivieren",
+          "state_updated": "Soundstatus aktualisiert",
+          "state_update_failed": "Soundstatus konnte nicht aktualisiert werden"
         },
         "openshock": {
           "intensity_1_100": "Intensität (1–100):",
@@ -1292,18 +1298,20 @@
             "viewer_countdown": "Zuschauer: noch {seconds} s"
           },
           "unified": {
+            "active_turn": "AM ZUG: {player}",
             "matchup": "{host} gegen {player}",
             "phase_host_turn": "Host ist am Zug",
             "phase_result": "Ergebnis",
             "phase_viewer_turn": "Zuschauer ist am Zug",
             "queue_count": "{count} Spiel(e) in der Warteschlange",
-            "status": "{game} · {phase} · Host-Züge in der Queue: {count}"
+            "status": "{game} · {phase} · {count} aktive Spiele"
           },
           "wheel": {
             "info_screen": "Um deinen Gewinn abzuholen, besuche discord.gg/deinserver",
             "no_prize": "💔 Niete!",
             "send_gift": "Sende ein Geschenk, um das Glücksrad zu drehen!",
             "shock": "⚡ SCHOCK!",
+            "segment_count_changed": "Die Rad-Konfiguration wurde während der Warteschlange geändert ({previousCount} → {currentCount} Segmente). Bitte erneut versuchen.",
             "spin_failed": "Der Dreh konnte nicht durchgeführt werden",
             "spinning": "🎡 Das Rad dreht sich",
             "test_spin_error": "Der Testdreh konnte nicht ausgelöst werden: {error}",

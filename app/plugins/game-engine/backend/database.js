@@ -177,6 +177,17 @@ class GameEngineDatabase {
       )
     `);
 
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS game_audio_states (
+        game_type TEXT NOT NULL,
+        scope_id TEXT NOT NULL DEFAULT 'default',
+        audio_event TEXT NOT NULL,
+        enabled INTEGER NOT NULL DEFAULT 1,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (game_type, scope_id, audio_event)
+      )
+    `);
+
     // Round timer configuration
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS game_round_timers (
@@ -523,6 +534,7 @@ class GameEngineDatabase {
         display_revision INTEGER NOT NULL DEFAULT 0,
         turn_role TEXT NOT NULL CHECK(turn_role IN ('viewer', 'host')),
         viewer_deadline_ms INTEGER,
+        viewer_time_remaining_ms INTEGER,
         host_time_remaining_ms INTEGER,
         time_control TEXT,
         last_move_identity TEXT,
@@ -568,6 +580,16 @@ class GameEngineDatabase {
       INSERT OR IGNORE INTO game_interactive_meta (key, value)
       VALUES ('displayRevision', '0');
     `);
+
+    const interactiveSessionColumns = this.db.prepare(`
+      PRAGMA table_info(game_interactive_sessions)
+    `).all();
+    if (!interactiveSessionColumns.some(column => column.name === 'viewer_time_remaining_ms')) {
+      this.db.exec(`
+        ALTER TABLE game_interactive_sessions
+        ADD COLUMN viewer_time_remaining_ms INTEGER
+      `);
+    }
     
     // Initialize default overlay settings for all game types
     this.initializeOverlaySettings();
@@ -637,6 +659,7 @@ class GameEngineDatabase {
       displayRevision: row.display_revision,
       turnRole: row.turn_role,
       viewerDeadlineMs: row.viewer_deadline_ms,
+      viewerTimeRemainingMs: row.viewer_time_remaining_ms,
       hostTimeRemainingMs: row.host_time_remaining_ms,
       timeControl: row.time_control,
       lastMoveIdentity: row.last_move_identity,
@@ -667,9 +690,9 @@ class GameEngineDatabase {
       INSERT INTO game_interactive_sessions (
         session_id, game_type, viewer_id, viewer_display_name, host_display_name,
         state_json, session_revision, display_revision, turn_role,
-        viewer_deadline_ms, host_time_remaining_ms, time_control,
+        viewer_deadline_ms, viewer_time_remaining_ms, host_time_remaining_ms, time_control,
         last_move_identity, last_activity_at, status, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
     `).run(
       data.sessionId,
       data.gameType,
@@ -681,6 +704,7 @@ class GameEngineDatabase {
       data.displayRevision || 0,
       data.turnRole,
       data.viewerDeadlineMs ?? null,
+      data.viewerTimeRemainingMs ?? null,
       data.hostTimeRemainingMs ?? null,
       data.timeControl ?? null,
       data.lastMoveIdentity ?? null,
@@ -702,6 +726,7 @@ class GameEngineDatabase {
       displayRevision: 'display_revision',
       turnRole: 'turn_role',
       viewerDeadlineMs: 'viewer_deadline_ms',
+      viewerTimeRemainingMs: 'viewer_time_remaining_ms',
       hostTimeRemainingMs: 'host_time_remaining_ms',
       timeControl: 'time_control',
       lastMoveIdentity: 'last_move_identity',
@@ -839,7 +864,8 @@ class GameEngineDatabase {
       this.updateInteractiveState(sessionId, {
         status: 'completed',
         terminalReason: reason,
-        viewerDeadlineMs: null
+        viewerDeadlineMs: null,
+        viewerTimeRemainingMs: null
       });
       this.db.prepare(`
         UPDATE game_sessions
@@ -856,7 +882,7 @@ class GameEngineDatabase {
       const interactiveChanged = this.db.prepare(`
         UPDATE game_interactive_sessions
         SET status = 'completed', terminal_reason = 'recovery_failed',
-            viewer_deadline_ms = NULL, updated_at = ?
+            viewer_deadline_ms = NULL, viewer_time_remaining_ms = NULL, updated_at = ?
         WHERE session_id = ?
       `).run(Date.now(), sessionId).changes > 0;
       this.db.prepare(`
@@ -1232,6 +1258,35 @@ class GameEngineDatabase {
   }
 
   /**
+   * Resolve a stable player ID to its newest known interactive display name.
+   * Leaderboards keep the stable ID for aggregation and expose the display name
+   * only at presentation time.
+   */
+  resolveLeaderboardIdentity(playerId) {
+    const stableId = String(playerId);
+    const identities = this.db.prepare(`
+      SELECT viewer_display_name FROM game_interactive_sessions
+      WHERE viewer_id = ?
+      ORDER BY updated_at DESC, session_id DESC
+    `).iterate(stableId);
+    let username = stableId;
+    for (const identity of identities) {
+      const displayName = String(identity.viewer_display_name || '');
+      if (!displayName.trim()) continue;
+      username = displayName;
+      break;
+    }
+    return { playerId: stableId, username };
+  }
+
+  _presentLeaderboardRows(rows) {
+    return rows.map(row => ({
+      ...row,
+      ...this.resolveLeaderboardIdentity(row.username)
+    }));
+  }
+
+  /**
    * Get leaderboard by win streaks
    */
   getStreakLeaderboard(gameType, limit = 10) {
@@ -1240,7 +1295,7 @@ class GameEngineDatabase {
       : `SELECT * FROM game_player_stats ORDER BY best_win_streak DESC, wins DESC LIMIT ?`;
     
     const stmt = this.db.prepare(query);
-    return gameType ? stmt.all(gameType, limit) : stmt.all(limit);
+    return this._presentLeaderboardRows(gameType ? stmt.all(gameType, limit) : stmt.all(limit));
   }
 
   /**
@@ -1287,9 +1342,9 @@ class GameEngineDatabase {
     
     const stmt = this.db.prepare(query);
     if (gameType) {
-      return stmt.all(today, gameType, today, gameType, limit);
+      return this._presentLeaderboardRows(stmt.all(today, gameType, today, gameType, limit));
     } else {
-      return stmt.all(today, today, limit);
+      return this._presentLeaderboardRows(stmt.all(today, today, limit));
     }
   }
 
@@ -1336,9 +1391,9 @@ class GameEngineDatabase {
     
     const stmt = this.db.prepare(query);
     if (gameType) {
-      return stmt.all(thisMonth, gameType, thisMonth, gameType, limit);
+      return this._presentLeaderboardRows(stmt.all(thisMonth, gameType, thisMonth, gameType, limit));
     } else {
-      return stmt.all(thisMonth, thisMonth, limit);
+      return this._presentLeaderboardRows(stmt.all(thisMonth, thisMonth, limit));
     }
   }
 
@@ -1351,7 +1406,7 @@ class GameEngineDatabase {
       : `SELECT * FROM game_player_stats ORDER BY wins DESC, total_games DESC LIMIT ?`;
     
     const stmt = this.db.prepare(query);
-    return gameType ? stmt.all(gameType, limit) : stmt.all(limit);
+    return this._presentLeaderboardRows(gameType ? stmt.all(gameType, limit) : stmt.all(limit));
   }
 
   /**
@@ -1363,7 +1418,7 @@ class GameEngineDatabase {
       : `SELECT * FROM game_player_stats ORDER BY elo_rating DESC, total_games DESC LIMIT ?`;
     
     const stmt = this.db.prepare(query);
-    return gameType ? stmt.all(gameType, limit) : stmt.all(limit);
+    return this._presentLeaderboardRows(gameType ? stmt.all(gameType, limit) : stmt.all(limit));
   }
 
   /**
@@ -1443,6 +1498,66 @@ class GameEngineDatabase {
   /**
    * Get media configuration for game events
    */
+  _normalizeGameAudioIdentifier(value, fallback = null) {
+    if (typeof value !== 'string') return fallback;
+    const normalized = value.trim();
+    return normalized ? normalized : fallback;
+  }
+
+  /**
+   * Return whether an individual game audio event is enabled.
+   * An absent row intentionally means enabled so adding new events is non-breaking.
+   */
+  isGameAudioEnabled(gameType, scopeId, audioEvent) {
+    const normalizedGameType = this._normalizeGameAudioIdentifier(gameType);
+    const normalizedScopeId = this._normalizeGameAudioIdentifier(scopeId, 'default');
+    const normalizedAudioEvent = this._normalizeGameAudioIdentifier(audioEvent);
+    if (!normalizedGameType || !normalizedAudioEvent) return true;
+
+    const row = this.db.prepare(`
+      SELECT enabled FROM game_audio_states
+      WHERE game_type = ? AND scope_id = ? AND audio_event = ?
+    `).get(normalizedGameType, normalizedScopeId, normalizedAudioEvent);
+    return !row || row.enabled === 1;
+  }
+
+  /**
+   * Return persisted audio states for a game scope, keyed by audio event.
+   */
+  getGameAudioStates(gameType, scopeId) {
+    const normalizedGameType = this._normalizeGameAudioIdentifier(gameType);
+    const normalizedScopeId = this._normalizeGameAudioIdentifier(scopeId, 'default');
+    if (!normalizedGameType) return {};
+
+    const rows = this.db.prepare(`
+      SELECT audio_event, enabled FROM game_audio_states
+      WHERE game_type = ? AND scope_id = ?
+    `).all(normalizedGameType, normalizedScopeId);
+    return rows.reduce((states, row) => {
+      states[row.audio_event] = row.enabled === 1;
+      return states;
+    }, {});
+  }
+
+  /**
+   * Persist the enabled state without touching custom media metadata.
+   */
+  setGameAudioEnabled(gameType, scopeId, audioEvent, enabled) {
+    const normalizedGameType = this._normalizeGameAudioIdentifier(gameType);
+    const normalizedScopeId = this._normalizeGameAudioIdentifier(scopeId, 'default');
+    const normalizedAudioEvent = this._normalizeGameAudioIdentifier(audioEvent);
+    if (!normalizedGameType || !normalizedAudioEvent || typeof enabled !== 'boolean') return false;
+
+    const result = this.db.prepare(`
+      INSERT INTO game_audio_states (game_type, scope_id, audio_event, enabled, updated_at)
+      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(game_type, scope_id, audio_event) DO UPDATE SET
+        enabled = excluded.enabled,
+        updated_at = CURRENT_TIMESTAMP
+    `).run(normalizedGameType, normalizedScopeId, normalizedAudioEvent, enabled ? 1 : 0);
+    return result.changes > 0;
+  }
+
   getGameMedia(gameType, mediaEvent = null) {
     if (mediaEvent) {
       const stmt = this.db.prepare(`

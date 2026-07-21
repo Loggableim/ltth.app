@@ -1000,6 +1000,7 @@ class SlotGame {
     switch (action) {
       case 'audio':
         this.io.emit('slot:play-audio', {
+          spinId: spinData.spinId,
           machineId: spinData.machineId,
           audioType: params.audioType || 'win',
           username: spinData.username,
@@ -1009,6 +1010,7 @@ class SlotGame {
 
       case 'overlay':
         this.io.emit('slot:overlay-effect', {
+          spinId: spinData.spinId,
           machineId: spinData.machineId,
           effect: params.effect || 'win',
           username: spinData.username,
