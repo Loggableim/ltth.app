@@ -7,7 +7,7 @@ const pluginRoot = path.join(__dirname, '..', 'plugins', 'stt-ticker');
 const locales = ['de', 'en', 'es', 'fr'];
 
 function read(relativePath) {
-  return fs.readFileSync(path.join(pluginRoot, relativePath), 'utf8');
+  return fs.readFileSync(path.join(pluginRoot, relativePath), 'utf8').replace(/\r\n/g, '\n');
 }
 
 function getLeaf(object, key) {
