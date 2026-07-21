@@ -5,9 +5,10 @@ const { buildGuides } = require('../../scripts/plugin-tutorial-source');
 
 describe('documentation capture real workflows', () => {
   const repoRoot = path.join(__dirname, '..', '..');
+  const guides = buildGuides(repoRoot);
 
   function step(pluginId, stepId) {
-    return buildGuides(repoRoot)
+    return guides
       .find((guide) => guide.id === pluginId)
       .steps.find((guideStep) => guideStep.id === stepId);
   }
@@ -138,7 +139,7 @@ describe('documentation capture real workflows', () => {
   );
 
   test('keeps JavaScript and localized shipped demo mode for every Interactive Story capture', () => {
-    const guide = buildGuides(repoRoot).find((candidate) => candidate.id === 'interactive-story');
+    const guide = guides.find((candidate) => candidate.id === 'interactive-story');
     const runnerSource = fs.readFileSync(path.join(repoRoot, 'scripts', 'capture-product-screenshots.js'), 'utf8');
     const uiSource = fs.readFileSync(path.join(repoRoot, 'app', 'plugins', 'interactive-story', 'ui.html'), 'utf8');
 
@@ -344,7 +345,7 @@ describe('documentation capture real workflows', () => {
   });
 
   test('publishes Emoji Rain’s actual OBS HUD route instead of a generic plugin overlay path', () => {
-    const guide = buildGuides(repoRoot).find((candidate) => candidate.id === 'emoji-rain');
+    const guide = guides.find((candidate) => candidate.id === 'emoji-rain');
     expect(guide.overlay).toBe('/emoji-rain/obs-hud');
   });
 

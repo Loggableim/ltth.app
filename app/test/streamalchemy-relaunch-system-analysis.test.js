@@ -72,6 +72,20 @@ describe('SystemAnalyzer', () => {
     }));
   });
 
+  test('recognizes an NVIDIA adapter from the Windows fallback so Stream Monsters can offer managed setup', async () => {
+    const analyzer = new SystemAnalyzer({
+      execFileImpl: jest.fn((cmd, args, callback) => {
+        if (cmd === 'nvidia-smi') return callback(new Error('missing'), '', '');
+        return callback(null, 'Name=NVIDIA GeForce RTX 4060;AdapterRAM=8589934592;DriverVersion=1', '');
+      }),
+      osImpl: { platform: () => 'win32', cpus: () => [{ model: 'CPU' }], totalmem: () => 16 * 1024 * 1024 * 1024 }
+    });
+
+    const result = await analyzer.analyze();
+
+    expect(result.gpu).toEqual(expect.objectContaining({ vendor: 'nvidia', vramMb: 8192 }));
+  });
+
   test('does not include API keys or environment secrets', async () => {
     const analyzer = new SystemAnalyzer({
       execFileImpl: jest.fn((cmd, args, callback) => callback(new Error('missing'), '', '')),
