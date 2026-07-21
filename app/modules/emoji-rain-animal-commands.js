@@ -284,6 +284,40 @@ function hasPaidSuperfanStatus(contextOrRawData = {}) {
   ].some(isExplicitPaidSubscriberFlag);
 }
 
+function normalizeTikTokUsername(value) {
+  return String(value ?? '')
+    .trim()
+    .replace(/^@+/, '')
+    .toLowerCase();
+}
+
+function isAnimalCommandBroadcaster(context = {}, broadcasterUsername = '') {
+  const expectedUsername = normalizeTikTokUsername(broadcasterUsername);
+  const rawData = context.rawData && typeof context.rawData === 'object'
+    ? context.rawData
+    : {};
+  const rawUser = rawData.user && typeof rawData.user === 'object'
+    ? rawData.user
+    : {};
+  const explicitBroadcaster = [
+    context?.userData?.isBroadcaster,
+    rawData.isBroadcaster,
+    rawData.isHost,
+    rawUser.isBroadcaster,
+    rawUser.isHost
+  ].some(isExplicitPaidSubscriberFlag);
+
+  if (explicitBroadcaster) return true;
+  if (!expectedUsername) return false;
+
+  return [
+    rawData.uniqueId,
+    rawData.username,
+    rawUser.uniqueId,
+    rawUser.username
+  ].some(candidate => normalizeTikTokUsername(candidate) === expectedUsername);
+}
+
 function getTeamMemberLevel(context = {}) {
   const values = [
     context?.userData?.teamMemberLevel,
@@ -305,16 +339,17 @@ function getAnimalCommandUserKey(context = {}) {
   return context.uniqueId || context.userId || context.username || '';
 }
 
-function evaluateAnimalCommandAccess(context = {}, settings = {}) {
+function evaluateAnimalCommandAccess(context = {}, settings = {}, options = {}) {
   const isPaidSubscriber = hasPaidSuperfanStatus(context);
+  const isBroadcaster = isAnimalCommandBroadcaster(context, options.broadcasterUsername);
   const teamMemberLevel = getTeamMemberLevel(context);
   const allowTeamMembers = settings.animal_commands_allow_team_members !== false;
   return {
-    allowed: isPaidSubscriber || (allowTeamMembers && teamMemberLevel >= 1),
+    allowed: isBroadcaster || isPaidSubscriber || (allowTeamMembers && teamMemberLevel >= 1),
     isPaidSubscriber,
     teamMemberLevel,
     count: Math.max(1, teamMemberLevel),
-    userCooldownMs: isPaidSubscriber
+    userCooldownMs: isBroadcaster || isPaidSubscriber
       ? Number(settings.animal_command_superfan_cooldown_ms ?? DEFAULT_ANIMAL_COMMAND_SETTINGS.animal_command_superfan_cooldown_ms)
       : Number(settings.animal_command_user_cooldown_ms ?? DEFAULT_ANIMAL_COMMAND_SETTINGS.animal_command_user_cooldown_ms)
   };

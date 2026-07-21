@@ -199,6 +199,29 @@ describe('EmojiRain animal command eligibility and count', () => {
     });
   });
 
+  test('connected broadcaster is allowed at level zero and uses the lower cooldown', () => {
+    expect(evaluateAnimalCommandAccess({
+      rawData: {
+        username: 'streamer',
+        isSubscriber: false,
+        teamMemberLevel: 0
+      },
+      userData: { teamMemberLevel: 0 }
+    }, {
+      animal_commands_allow_team_members: false,
+      animal_command_user_cooldown_ms: 60000,
+      animal_command_superfan_cooldown_ms: 15000
+    }, {
+      broadcasterUsername: '@Streamer'
+    })).toEqual({
+      allowed: true,
+      isPaidSubscriber: false,
+      teamMemberLevel: 0,
+      count: 1,
+      userCooldownMs: 15000
+    });
+  });
+
   test('Teamlevel-only members follow the access toggle and regular viewers stay excluded', () => {
     const member = { rawData: {}, userData: { teamMemberLevel: 7, isSubscriber: true } };
     const viewer = { rawData: {}, userData: { teamMemberLevel: 0 } };

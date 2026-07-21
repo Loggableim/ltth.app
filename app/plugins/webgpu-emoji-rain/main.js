@@ -783,7 +783,9 @@ class WebGPUEmojiRainPlugin {
       };
     }
 
-    const access = evaluateAnimalCommandAccess(context, config);
+    const access = evaluateAnimalCommandAccess(context, config, {
+      broadcasterUsername: this.api.tiktok?.currentUsername
+    });
     if (!access.allowed) {
       return {
         success: false,

@@ -283,6 +283,32 @@ function registerEmojiRainCommandContract({
       expect(api.emissions[0].data).toMatchObject({ emoji: '🐾', count: 1 });
     });
 
+    test('always admits the connected broadcaster without subscriber or Teamlevel flags', async () => {
+      const api = new MockAPI({ config: { animal_commands_allow_team_members: false } });
+      api.tiktok = { currentUsername: '@HostAccount' };
+      const plugin = new Plugin(api);
+      plugin.checkAntiSpam = jest.fn(() => true);
+      await plugin.integrateWithGCCE();
+
+      const response = await api.gcce.registry.getCommand('beans').handler([], {
+        userId: '7421356832385664032',
+        uniqueId: '7421356832385664032',
+        username: 'Host Display Name',
+        rawData: {
+          username: 'hostaccount',
+          isSubscriber: false,
+          teamMemberLevel: 0
+        },
+        userData: { teamMemberLevel: 0 }
+      });
+
+      expect(response).toMatchObject({ success: true });
+      expect(api.emissions).toEqual([expect.objectContaining({
+        event: eventName,
+        data: expect.objectContaining({ count: 1, source: '/beans' })
+      })]);
+    });
+
     test('applies paid, Teamlevel, global, and per-command cooldowns only after success', async () => {
       let now = 1000;
       const api = new MockAPI();

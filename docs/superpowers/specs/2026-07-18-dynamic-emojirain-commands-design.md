@@ -33,11 +33,11 @@ Command names are stored without `!`, normalized to lowercase, limited to 32 cha
 
 A shared CommonJS helper owns configuration normalization and validation, paid-subscriber detection, Teamlevel/count calculation, and dedicated per-command cooldown state. Both renderers consume the same helper and keep their renderer-specific config persistence and upload endpoints.
 
-Paid subscription status is derived only from unmodified TikTok event fields, including nested raw user fields and `userIdentity.isSubscriberOfAnchor`. GCCE's enriched `context.userData.isSubscriber` is never used because GCCE also sets it for Teamlevel members. Paid subscribers are always allowed. Teamlevel members are allowed only while `animal_commands_allow_team_members` is true. Normal viewers remain excluded.
+Paid subscription status is derived only from unmodified TikTok event fields, including nested raw user fields and `userIdentity.isSubscriberOfAnchor`. GCCE's enriched `context.userData.isSubscriber` is never used because GCCE also sets it for Teamlevel members. Paid subscribers are always allowed. The currently connected broadcaster is also always allowed, even when TikTok reports level 0 without subscriber or broadcaster flags; EmojiRain matches the raw chat username against the active TikTok connection. Teamlevel members are allowed only while `animal_commands_allow_team_members` is true. Normal viewers remain excluded.
 
-Spawn count is `max(1, floor(teamMemberLevel))`, with Teamlevel clamped to the supported 0-50 domain. Levels 1-50 therefore produce exactly 1-50 elements, and a paid subscriber at level 0 produces one.
+Spawn count is `max(1, floor(teamMemberLevel))`, with Teamlevel clamped to the supported 0-50 domain. Levels 1-50 therefore produce exactly 1-50 elements, and a paid subscriber or broadcaster at level 0 produces one.
 
-Each command maintains independent user and global cooldown buckets. Paid subscribers use the configurable 15-second user cooldown. Teamlevel-only members use the configurable 60-second user cooldown. The configurable global cooldown is 15 seconds. The existing additional EmojiRain flood protection remains active, and dedicated cooldown state is recorded only after a successful spawn. Every dynamic command uses `burst: false` and intensity `1.5`.
+Each command maintains independent user and global cooldown buckets. Paid subscribers and the connected broadcaster use the configurable 15-second user cooldown. Teamlevel-only members use the configurable 60-second user cooldown. The configurable global cooldown is 15 seconds. The existing additional EmojiRain flood protection remains active, and dedicated cooldown state is recorded only after a successful spawn. Every dynamic command uses `burst: false` and intensity `1.5`.
 
 ## Atomic GCCE registration
 

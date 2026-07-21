@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` and follow test-driven development task by task.
 
-**Goal:** Give Classic and WebGPU EmojiRain a shared, configurable command system with secure asset assignment, paid-subscriber/Teamlevel access, level-based counts, and per-command cooldowns.
+**Goal:** Give Classic and WebGPU EmojiRain a shared, configurable command system with secure asset assignment, broadcaster/paid-subscriber/Teamlevel access, level-based counts, and per-command cooldowns.
 
 **Architecture:** A shared CommonJS domain helper supplies defaults, strict/tolerant normalization, raw paid-subscriber detection, count calculation, and injectable-clock cooldowns. Each plugin owns atomic GCCE registration and its persistence adapter. One browser-side component renders the same safe editor in both UIs.
 
@@ -25,6 +25,7 @@
 
 - [ ] Add failing tests for missing-vs-empty migration, normalization, invalid/duplicate/reserved names, target validation, and the 50-row limit.
 - [ ] Add failing tests for raw paid-subscriber detection that explicitly rejects GCCE's enriched `userData.isSubscriber` as evidence.
+- [ ] Add a failing regression test proving that the connected broadcaster remains eligible when TikTok reports level 0 without subscriber or broadcaster flags.
 - [ ] Add failing tests for level 0, 1, 50, invalid, and negative count behavior.
 - [ ] Add controlled-clock tests for paid 15s, Teamlevel 60s, global 15s, and independent command buckets.
 - [ ] Implement the smallest shared helper that makes the domain suite pass.
