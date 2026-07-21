@@ -701,7 +701,7 @@ describe('interactive overlay countdown DOM', () => {
     dom.window.close();
   });
 
-  test('Connect4 fails closed while its initial audio settings request is pending', async () => {
+  test('Connect4 plays default audio while its initial audio settings request is pending', async () => {
     const media = deferred();
     const fetch = jest.fn(url => url.includes('/media/connect4')
       ? media.promise
@@ -712,17 +712,17 @@ describe('interactive overlay countdown DOM', () => {
       config: { soundEnabled: true, soundVolume: 0.5 }
     });
 
-    expect(connect4.dom.window.playEventSound('piece_drop')).toBe(false);
-    expect(connect4.AudioConstructor).not.toHaveBeenCalled();
+    expect(connect4.dom.window.playEventSound('piece_drop')).toBe(true);
+    expect(connect4.audioSources).toEqual(['/game-engine/sounds/default/game start.mp3']);
 
     media.resolve(jsonResponse([{ media_event: 'piece_drop', enabled: true }]));
     await flushPromises();
     expect(connect4.dom.window.playEventSound('piece_drop')).toBe(true);
-    expect(connect4.AudioConstructor).toHaveBeenCalledTimes(1);
+    expect(connect4.AudioConstructor).toHaveBeenCalledTimes(2);
     connect4.dom.window.close();
   });
 
-  test('Connect4 fails closed when its initial audio settings request returns HTTP 500', async () => {
+  test('Connect4 keeps default audio when its initial audio settings request returns HTTP 500', async () => {
     const failure = httpErrorResponse(500, [
       { media_event: 'piece_drop', enabled: true }
     ]);
@@ -737,8 +737,8 @@ describe('interactive overlay countdown DOM', () => {
     await flushPromises();
 
     expect(failure.json).not.toHaveBeenCalled();
-    expect(connect4.dom.window.playEventSound('piece_drop')).toBe(false);
-    expect(connect4.AudioConstructor).not.toHaveBeenCalled();
+    expect(connect4.dom.window.playEventSound('piece_drop')).toBe(true);
+    expect(connect4.audioSources).toEqual(['/game-engine/sounds/default/game start.mp3']);
     connect4.dom.window.close();
   });
 
@@ -874,6 +874,27 @@ describe('interactive overlay countdown DOM', () => {
     expect(slot.dom.window.playAudio('spin', { soundEnabled: true }, '7')).toBe(false);
     expect(slot.audioPlay).not.toHaveBeenCalled();
     slot.dom.window.close();
+  });
+
+  test('Connect4 plays the default sound before asynchronous media settings resolve', async () => {
+    const settings = deferred();
+    const connect4 = loadOverlay('connect4.html', null, {
+      fetch: jest.fn(() => settings.promise)
+    });
+    connect4.listeners.get('game-engine:config-updated')({
+      gameType: 'connect4',
+      config: { soundEnabled: true, soundVolume: 0.5 }
+    });
+
+    expect(connect4.dom.window.playEventSound('piece_drop')).toBe(true);
+    expect(connect4.audioSources).toEqual(['/game-engine/sounds/default/game start.mp3']);
+
+    settings.resolve(jsonResponse([{ media_event: 'piece_drop', enabled: false }]));
+    await flushPromises();
+
+    expect(connect4.dom.window.playEventSound('piece_drop')).toBe(false);
+    expect(connect4.AudioConstructor).toHaveBeenCalledTimes(1);
+    connect4.dom.window.close();
   });
 
   test('Connect4 socket state wins over an older in-flight settings response', async () => {

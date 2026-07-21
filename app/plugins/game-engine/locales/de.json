@@ -1310,6 +1310,7 @@
             "no_prize": "💔 Niete!",
             "send_gift": "Sende ein Geschenk, um das Glücksrad zu drehen!",
             "shock": "⚡ SCHOCK!",
+            "segment_count_changed": "Die Rad-Konfiguration wurde während der Warteschlange geändert ({previousCount} → {currentCount} Segmente). Bitte erneut versuchen.",
             "spin_failed": "Der Dreh konnte nicht durchgeführt werden",
             "spinning": "🎡 Das Rad dreht sich",
             "test_spin_error": "Der Testdreh konnte nicht ausgelöst werden: {error}",

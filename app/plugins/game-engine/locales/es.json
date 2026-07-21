@@ -1310,6 +1310,7 @@
             "no_prize": "💔 ¡Sin premio!",
             "send_gift": "¡Envía un regalo para girar la ruleta!",
             "shock": "⚡ ¡DESCARGA!",
+            "segment_count_changed": "La configuración de la ruleta cambió mientras este giro estaba en cola ({previousCount} → {currentCount} segmentos). Inténtalo de nuevo.",
             "spin_failed": "No se pudo realizar el giro",
             "spinning": "🎡 Girando la ruleta",
             "test_spin_error": "No se pudo activar el giro de prueba: {error}",

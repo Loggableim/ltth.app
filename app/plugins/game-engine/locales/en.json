@@ -1304,6 +1304,7 @@
             "no_prize": "💔 No prize!",
             "send_gift": "Send a gift to spin the wheel!",
             "shock": "⚡ SHOCK!",
+            "segment_count_changed": "The wheel configuration changed while this spin was queued ({previousCount} → {currentCount} segments). Please try again.",
             "spin_failed": "The spin could not be completed",
             "spinning": "🎡 Spinning the wheel",
             "test_spin_error": "Could not trigger the test spin: {error}",

@@ -743,7 +743,10 @@
     const highestAudibleMoveBySession = new Map();
     const warnedViewerDeadlines = new Set();
     const audioSettingsByEvent = new Map();
-    let connect4AudioSettingsReady = false;
+    // Default sounds are safe to play until the optional custom-media request
+    // returns. Waiting for that request used to drop the first move/result
+    // sound (and all sounds when the request failed).
+    let connect4AudioSettingsReady = true;
     let connect4AudioSettingsGeneration = 0;
     const ROWS = 6;
     const COLUMNS = 7;

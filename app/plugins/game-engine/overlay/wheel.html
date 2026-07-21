@@ -1738,7 +1738,10 @@
       // Show error message in announcement area (with safe fallbacks)
       winnerName.textContent = data.nickname || data.username || runtimeText('plugins.game-engine.runtime.hud.player');
       congratsText.textContent = runtimeText('plugins.game-engine.runtime.common.error');
-      prizeText.textContent = data.message || runtimeText('plugins.game-engine.runtime.wheel.spin_failed');
+      const fallbackMessage = data.message || runtimeText('plugins.game-engine.runtime.wheel.spin_failed');
+      prizeText.textContent = data.messageKey
+        ? runtimeText(data.messageKey, data.messageParams || {}, fallbackMessage)
+        : fallbackMessage;
       prizeText.style.color = '#FF6B6B';
       winAnnouncement.classList.remove('niete');
       winAnnouncement.classList.remove('shock');
