@@ -1271,8 +1271,8 @@ class GameEngineDatabase {
     `).iterate(stableId);
     let username = stableId;
     for (const identity of identities) {
-      const displayName = String(identity.viewer_display_name || '').trim();
-      if (!displayName) continue;
+      const displayName = String(identity.viewer_display_name || '');
+      if (!displayName.trim()) continue;
       username = displayName;
       break;
     }

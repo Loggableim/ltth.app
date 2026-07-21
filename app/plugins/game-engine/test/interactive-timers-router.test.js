@@ -477,6 +477,83 @@ describe('InteractiveDisplayRouter', () => {
     expect(router.snapshot()).toMatchObject({ displaySessionId: 1, phase: 'playing' });
   });
 
+  test('retains a matching fully scheduled result during idempotent recovery', () => {
+    const active = session();
+    const result = { sessionId: 8, gameType: 'connect4', reason: 'win' };
+    registryRows.set(1, active);
+    router.sync();
+    router.showResult(result, 1000);
+    timers.resumeViewer.mockClear();
+    const revision = router.displayRevision;
+    const deadline = router.transitionDeadline;
+    const timer = router.transitionTimer;
+    const action = router.transitionAction;
+    const publishCount = snapshots.length;
+
+    expect(router.recoverResult(result, 1000)).toMatchObject({
+      displaySessionId: result.sessionId,
+      displayRevision: revision,
+      phase: 'result',
+      result
+    });
+    expect(router.transitionDeadline).toBe(deadline);
+    expect(router.transitionTimer).toBe(timer);
+    expect(router.transitionAction).toBe(action);
+    expect(router.resultQueue).toEqual([]);
+    expect(snapshots).toHaveLength(publishCount);
+
+    jest.advanceTimersByTime(999);
+    expect(router.snapshot()).toMatchObject({ phase: 'result', result });
+    expect(timers.resumeViewer).not.toHaveBeenCalled();
+
+    jest.advanceTimersByTime(1);
+    expect(router.snapshot()).toMatchObject({ displaySessionId: active.sessionId, phase: 'playing' });
+    expect(timers.resumeViewer).toHaveBeenCalledTimes(1);
+    expect(timers.resumeViewer).toHaveBeenCalledWith(active);
+  });
+
+  test('clears an incomplete result transition and reactivates the same payload once', () => {
+    const active = session();
+    const result = { sessionId: 8, gameType: 'connect4', reason: 'win' };
+    registryRows.set(1, active);
+    router.sync();
+    timers.pauseViewer(active);
+    router.result = result;
+    router.leaderboard = { type: 'stale' };
+    router.displaySessionId = result.sessionId;
+    router.phase = 'result';
+    router.transitionAction = jest.fn();
+    router.transitionRemainingMs = 17;
+    router._advanceRevision();
+    const partialRevision = router.displayRevision;
+    snapshots.length = 0;
+    timers.pauseViewer.mockClear();
+    timers.resumeViewer.mockClear();
+
+    expect(router.recoverResult(result, 1000)).toMatchObject({
+      displaySessionId: result.sessionId,
+      displayRevision: partialRevision + 1,
+      phase: 'result',
+      result,
+      leaderboard: null
+    });
+    expect(router.transitionTimer).not.toBeNull();
+    expect(router.transitionDeadline).toBe(Date.now() + 1000);
+    expect(router.transitionAction).toEqual(expect.any(Function));
+    expect(router.transitionRemainingMs).toBeNull();
+    expect(router.resultQueue).toEqual([]);
+    expect(snapshots).toHaveLength(1);
+
+    jest.advanceTimersByTime(999);
+    expect(router.snapshot()).toMatchObject({ phase: 'result', result });
+    expect(timers.resumeViewer).not.toHaveBeenCalled();
+
+    jest.advanceTimersByTime(1);
+    expect(router.snapshot()).toMatchObject({ displaySessionId: active.sessionId, phase: 'playing' });
+    expect(timers.resumeViewer).toHaveBeenCalledTimes(1);
+    expect(timers.resumeViewer).toHaveBeenCalledWith(active);
+  });
+
   test.each([
     ['completion', { winner: 2, winnerRole: 'viewer', reason: 'win' }],
     ['cancellation', { winner: null, winnerRole: null, reason: 'cancelled' }]

@@ -1135,6 +1135,155 @@ describe('interactive overlay countdown DOM', () => {
   });
 
   test.each(['error', 'rejection'])(
+    'slot suppresses a stale same-machine fallback after spin replacement on custom audio %s',
+    async failure => {
+      const customPlayback = deferred();
+      const audioPlay = failure === 'rejection'
+        ? jest.fn(() => customPlayback.promise)
+        : jest.fn(() => Promise.resolve());
+      const slot = loadOverlay('slot.html', null, { audioPlay });
+      const spinStarted = slot.listeners.get('slot:spin-started');
+      spinStarted({ spinId: 'spin-a', machineId: '7', settings: { soundEnabled: true } });
+      slot.dom.window.applyAudioSettings({
+        spin: { enabled: false },
+        small_win: { enabled: true }
+      });
+
+      expect(slot.dom.window.playAudio(
+        'small_win',
+        { soundEnabled: true },
+        '7',
+        'spin-a'
+      )).toBe(true);
+      spinStarted({ spinId: 'spin-b', machineId: '7', settings: { soundEnabled: true } });
+
+      if (failure === 'error') {
+        slot.AudioConstructor.mock.instances[0]._listeners.get('error')();
+      } else {
+        customPlayback.reject(new Error('spin-a custom failed'));
+      }
+      await flushPromises();
+
+      expect(slot.audioSources).toEqual([
+        '/game-engine/sounds/slot/custom/7/small_win.mp3'
+      ]);
+      expect(slot.audioSources).not.toContain('/game-engine/sounds/slot/small-win.mp3');
+      slot.dom.window.close();
+    }
+  );
+
+  test.each([
+    ['error', 'error', 'slot:spin-error'],
+    ['error', 'rejection', 'slot:spin-error'],
+    ['timeout', 'error', 'slot:spin-timeout'],
+    ['timeout', 'rejection', 'slot:spin-timeout']
+  ])(
+    'slot suppresses a stale fallback after the current %s and deferred custom audio %s',
+    async (_label, failure, resetEvent) => {
+      const customPlayback = deferred();
+      const audioPlay = failure === 'rejection'
+        ? jest.fn(() => customPlayback.promise)
+        : jest.fn(() => Promise.resolve());
+      const slot = loadOverlay('slot.html', null, { audioPlay });
+      slot.listeners.get('slot:spin-started')({
+        spinId: 'spin-a',
+        machineId: '7',
+        settings: { soundEnabled: true }
+      });
+      slot.dom.window.applyAudioSettings({
+        spin: { enabled: false },
+        small_win: { enabled: true }
+      });
+      expect(slot.dom.window.playAudio(
+        'small_win',
+        { soundEnabled: true },
+        '7',
+        'spin-a'
+      )).toBe(true);
+
+      slot.listeners.get(resetEvent)({ spinId: 'spin-a', machineId: '7' });
+      if (failure === 'error') {
+        slot.AudioConstructor.mock.instances[0]._listeners.get('error')();
+      } else {
+        customPlayback.reject(new Error('spin-a custom failed'));
+      }
+      await flushPromises();
+
+      expect(slot.audioSources).toEqual([
+        '/game-engine/sounds/slot/custom/7/small_win.mp3'
+      ]);
+      expect(slot.audioSources).not.toContain('/game-engine/sounds/slot/small-win.mp3');
+      slot.dom.window.close();
+    }
+  );
+
+  test.each([
+    ['same machine', '7'],
+    ['different machine', '8']
+  ])('slot rejects a delayed overlay effect after replacement on the %s', (_label, nextMachineId) => {
+    const slot = loadOverlay('slot.html');
+    const spinStarted = slot.listeners.get('slot:spin-started');
+    const overlayEffect = slot.listeners.get('slot:overlay-effect');
+    const reelsWrap = slot.dom.window.document.getElementById('reels-wrapper');
+
+    spinStarted({ spinId: 'spin-a', machineId: '7', settings: { soundEnabled: false } });
+    spinStarted({ spinId: 'spin-b', machineId: nextMachineId, settings: { soundEnabled: false } });
+    overlayEffect({ spinId: 'spin-a', machineId: '7', effect: 'win' });
+
+    expect(reelsWrap.classList.contains('win-glow')).toBe(false);
+    expect(Array.from(slot.dom.window.document.querySelectorAll('.reel'))
+      .some(reel => reel.classList.contains('win-flash'))).toBe(false);
+
+    overlayEffect({ spinId: 'spin-b', machineId: nextMachineId, effect: 'win' });
+    expect(reelsWrap.classList.contains('win-glow')).toBe(true);
+    expect(Array.from(slot.dom.window.document.querySelectorAll('.reel'))
+      .every(reel => reel.classList.contains('win-flash'))).toBe(true);
+    slot.dom.window.close();
+  });
+
+  test.each([
+    ['replacement', 'slot:spin-started'],
+    ['error', 'slot:spin-error'],
+    ['timeout', 'slot:spin-timeout']
+  ])('slot %s reset removes every result-owned visual class', (_label, resetEvent) => {
+    const slot = loadOverlay('slot.html');
+    const document = slot.dom.window.document;
+    const reelsWrap = document.getElementById('reels-wrapper');
+    const result = document.getElementById('result-text');
+    const confetti = document.getElementById('confetti-overlay');
+    const reels = Array.from(document.querySelectorAll('.reel'));
+    slot.listeners.get('slot:spin-started')({
+      spinId: 'spin-a',
+      machineId: '7',
+      settings: { soundEnabled: false }
+    });
+    reelsWrap.classList.add('win-glow', 'jackpot-glow', 'near-miss-shake');
+    result.classList.add('visible', 'jackpot');
+    result.textContent = 'stale result';
+    confetti.appendChild(document.createElement('i'));
+    reels.forEach(reel => reel.classList.add('win-flash'));
+
+    if (resetEvent === 'slot:spin-started') {
+      slot.listeners.get(resetEvent)({
+        spinId: 'spin-b',
+        machineId: '7',
+        settings: { soundEnabled: false }
+      });
+    } else {
+      slot.listeners.get(resetEvent)({ spinId: 'spin-a', machineId: '7' });
+    }
+
+    expect(reelsWrap.classList.contains('win-glow')).toBe(false);
+    expect(reelsWrap.classList.contains('jackpot-glow')).toBe(false);
+    expect(reelsWrap.classList.contains('near-miss-shake')).toBe(false);
+    expect(result.className).toBe('');
+    expect(result.textContent).toBe('');
+    expect(confetti.children).toHaveLength(0);
+    expect(reels.every(reel => !reel.classList.contains('win-flash'))).toBe(true);
+    slot.dom.window.close();
+  });
+
+  test.each(['error', 'rejection'])(
     'Connect4 does not fall back after custom audio %s when the event was muted meanwhile',
     async failure => {
       const audioPlay = jest.fn(() => Promise.resolve());

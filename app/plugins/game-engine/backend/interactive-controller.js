@@ -774,7 +774,7 @@ class InteractiveController {
     });
     if (!routed) {
       this._publishSafely('Session result display reconciliation', session.sessionId, () => {
-        this.router.sync({ force: true });
+        this.router.recoverResult(resultPayload, resultDuration, resultPayload.leaderboard);
       });
     }
     this._publishSafely('Session completion state', session.sessionId, () => this.emitState());

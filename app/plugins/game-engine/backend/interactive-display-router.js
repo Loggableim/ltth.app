@@ -156,6 +156,47 @@ class InteractiveDisplayRouter {
     return this.snapshot();
   }
 
+  _matchesResult(left, right) {
+    if (left === right) return true;
+    const leftSessionId = left?.sessionId;
+    const rightSessionId = right?.sessionId;
+    return leftSessionId != null &&
+      rightSessionId != null &&
+      String(leftSessionId) === String(rightSessionId);
+  }
+
+  _hasScheduledTransition() {
+    return typeof this.transitionAction === 'function' && (
+      this.transitionTimer != null ||
+      (this.suspendedReason && this.transitionRemainingMs != null)
+    );
+  }
+
+  recoverResult(result, durationMs, leaderboard = null) {
+    const entry = { result, durationMs, leaderboard };
+    const activeMatch = this.phase === 'result' && this._matchesResult(this.result, result);
+    if (activeMatch && this._hasScheduledTransition()) {
+      return this.snapshot();
+    }
+
+    const queuedMatch = this.resultQueue.some(queued => this._matchesResult(queued.result, result));
+    if (this.phase === 'result' && !activeMatch) {
+      if (!queuedMatch) this.resultQueue.push(entry);
+      return this.snapshot();
+    }
+
+    this._clearTransition();
+    this.transitionAction = null;
+    this.transitionRemainingMs = null;
+    this.resultQueue = this.resultQueue.filter(queued => !this._matchesResult(queued.result, result));
+    this.result = null;
+    this.leaderboard = null;
+    this.displaySessionId = null;
+    this.phase = 'idle';
+    this._activateResult(entry);
+    return this.snapshot();
+  }
+
   _activateResult(entry) {
     this._clearTransition();
     this._pauseDisplayedTimers();

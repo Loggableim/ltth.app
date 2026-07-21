@@ -1010,6 +1010,7 @@ class SlotGame {
 
       case 'overlay':
         this.io.emit('slot:overlay-effect', {
+          spinId: spinData.spinId,
           machineId: spinData.machineId,
           effect: params.effect || 'win',
           username: spinData.username,

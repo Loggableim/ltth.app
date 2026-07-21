@@ -498,7 +498,7 @@ describe('InteractiveController', () => {
     harness.sqlite.close();
   });
 
-  test('force-reconciles a committed completion when result routing throws before mutation', () => {
+  test('recovers the committed result for its full duration when result routing throws before mutation', () => {
     const harness = createHarness({
       settings: {
         connect4ViewerTimeoutEnabled: true,
@@ -513,29 +513,54 @@ describe('InteractiveController', () => {
     });
     const getConfig = harness.controller.getConfig;
     harness.controller.getConfig = gameType => gameType === 'connect4'
-      ? { ...getConfig(gameType), streamerRole: 'player2' }
+      ? { ...getConfig(gameType), streamerRole: 'player2', leaderboardEnabled: false }
       : getConfig(gameType);
     const waiting = harness.controller.startMatch({
       gameType: 'connect4',
       viewerId: 'waiting-after-before-fault',
       viewerDisplayName: 'Waiting After Before Fault'
     });
+    harness.controller.registry.get(completed.sessionId).config.leaderboardEnabled = false;
     jest.spyOn(harness.controller.router, 'showResult').mockImplementationOnce(() => {
       throw new Error('result rejected before router mutation');
     });
 
-    expect(harness.controller.end(completed.sessionId, {
+    const displayRevision = harness.controller.getState().display.displayRevision;
+    const ended = harness.controller.end(completed.sessionId, {
       winner: 1,
       winnerRole: 'host',
       reason: 'win',
       gameResult: { gameOver: true, winner: 1 }
-    })).toMatchObject({ success: true });
+    });
+
+    expect(ended).toMatchObject({ success: true });
 
     expect(harness.database.getInteractiveState(completed.sessionId)).toMatchObject({ status: 'completed' });
     expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: completed.sessionId,
+      displayRevision: displayRevision + 1,
+      phase: 'result',
+      viewerDeadlineMs: null,
+      result: ended.result
+    });
+    expect(harness.controller.router.resultQueue).toEqual([]);
+    expect(harness.controller.timers.viewerTimers.size).toBe(0);
+
+    jest.advanceTimersByTime(2999);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: completed.sessionId,
+      phase: 'result',
+      result: ended.result
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(0);
+
+    jest.advanceTimersByTime(1);
+    expect(harness.controller.getState().display).toMatchObject({
       displaySessionId: waiting.sessionId,
+      displayRevision: displayRevision + 2,
       phase: 'playing',
-      viewerDeadlineMs: Date.now() + 5000
+      viewerDeadlineMs: Date.now() + 5000,
+      result: null
     });
     expect(harness.controller.timers.viewerTimers.size).toBe(1);
     expect(harness.controller.timers.viewerTimers.has(waiting.sessionId)).toBe(true);
@@ -544,7 +569,7 @@ describe('InteractiveController', () => {
     harness.sqlite.close();
   });
 
-  test('force-reconciles a committed completion when result routing throws after mutation', () => {
+  test('retains an already committed result idempotently when routing throws after mutation', () => {
     const harness = createHarness({
       settings: {
         connect4ViewerTimeoutEnabled: true,
@@ -559,44 +584,62 @@ describe('InteractiveController', () => {
     });
     const getConfig = harness.controller.getConfig;
     harness.controller.getConfig = gameType => gameType === 'connect4'
-      ? { ...getConfig(gameType), streamerRole: 'player2' }
+      ? { ...getConfig(gameType), streamerRole: 'player2', leaderboardEnabled: false }
       : getConfig(gameType);
     const waiting = harness.controller.startMatch({
       gameType: 'connect4',
       viewerId: 'waiting-after-result-fault',
       viewerDisplayName: 'Waiting After Result Fault'
     });
+    harness.controller.registry.get(completed.sessionId).config.leaderboardEnabled = false;
     const showResult = harness.controller.router.showResult.bind(harness.controller.router);
     jest.spyOn(harness.controller.router, 'showResult').mockImplementationOnce((...args) => {
       showResult(...args);
       throw new Error('result failed after router mutation');
     });
 
-    expect(harness.controller.end(completed.sessionId, {
+    const displayRevision = harness.controller.getState().display.displayRevision;
+    const ended = harness.controller.end(completed.sessionId, {
       winner: 1,
       winnerRole: 'host',
       reason: 'win',
       gameResult: { gameOver: true, winner: 1 }
-    })).toMatchObject({ success: true });
+    });
+
+    expect(ended).toMatchObject({ success: true });
 
     expect(harness.database.getInteractiveState(completed.sessionId)).toMatchObject({ status: 'completed' });
     expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: completed.sessionId,
+      displayRevision: displayRevision + 1,
+      phase: 'result',
+      viewerDeadlineMs: null,
+      result: ended.result
+    });
+    expect(harness.controller.router.resultQueue).toEqual([]);
+    expect(harness.controller.timers.viewerTimers.size).toBe(0);
+    expect(harness.controller.router.transitionTimer).not.toBeNull();
+    expect(harness.controller.router.transitionDeadline).toBe(Date.now() + 3000);
+    expect(harness.controller.router.transitionAction).toEqual(expect.any(Function));
+
+    jest.advanceTimersByTime(2999);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: completed.sessionId,
+      phase: 'result',
+      result: ended.result
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(0);
+
+    jest.advanceTimersByTime(1);
+    expect(harness.controller.getState().display).toMatchObject({
       displaySessionId: waiting.sessionId,
+      displayRevision: displayRevision + 2,
       phase: 'playing',
       viewerDeadlineMs: Date.now() + 5000,
       result: null
     });
     expect(harness.controller.timers.viewerTimers.size).toBe(1);
     expect(harness.controller.timers.viewerTimers.has(waiting.sessionId)).toBe(true);
-    expect(harness.controller.router.transitionTimer).toBeNull();
-    expect(harness.controller.router.transitionDeadline).toBeNull();
-    expect(harness.controller.router.transitionAction).toBeNull();
-
-    jest.advanceTimersByTime(3000);
-    expect(harness.controller.getState().display).toMatchObject({
-      displaySessionId: waiting.sessionId,
-      phase: 'playing'
-    });
 
     harness.controller.destroy();
     harness.sqlite.close();

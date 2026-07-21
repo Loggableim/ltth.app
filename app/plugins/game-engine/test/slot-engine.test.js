@@ -511,6 +511,27 @@ describe('SlotGame – _buildRewardActions', () => {
     });
   });
 
+  it('emits overlay effects with the originating spin and machine scope', async () => {
+    mockIO.emit.mockClear();
+
+    await game._executeReward(
+      { action: 'overlay', params: { effect: 'win' } },
+      { spinId: 'spin-18', machineId: 4, username: 'winner', nickname: 'Winner' },
+      { category: 'big_win', reels: ['seven', 'seven', 'seven'] },
+      minimalConfig({ id: 4 })
+    );
+
+    expect(mockIO.emit).toHaveBeenCalledWith('slot:overlay-effect', {
+      spinId: 'spin-18',
+      machineId: 4,
+      effect: 'win',
+      username: 'winner',
+      nickname: 'Winner',
+      category: 'big_win',
+      reels: ['seven', 'seven', 'seven']
+    });
+  });
+
   // ── Per-symbol shock dispatch ──────────────────────────────────────────────
 
   it('adds openshock action when winning symbol has isShock=true', () => {
