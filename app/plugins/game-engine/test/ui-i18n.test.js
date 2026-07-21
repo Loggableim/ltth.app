@@ -32,6 +32,56 @@ describe('Game Engine UI i18n', () => {
     expect(errors).toEqual([]);
   });
 
+  test('localizes every audio state and action independently in all supported locales', () => {
+    const expectedByLocale = {
+      de: {
+        enabled: 'Aktiviert',
+        disabled: 'Deaktiviert',
+        enable: 'Aktivieren',
+        disable: 'Deaktivieren',
+        state_updated: 'Soundstatus aktualisiert',
+        state_update_failed: 'Soundstatus konnte nicht aktualisiert werden'
+      },
+      en: {
+        enabled: 'Enabled',
+        disabled: 'Disabled',
+        enable: 'Enable',
+        disable: 'Disable',
+        state_updated: 'Sound state updated',
+        state_update_failed: 'Sound state could not be updated'
+      },
+      es: {
+        enabled: 'Activado',
+        disabled: 'Desactivado',
+        enable: 'Activar',
+        disable: 'Desactivar',
+        state_updated: 'Estado del sonido actualizado',
+        state_update_failed: 'No se pudo actualizar el estado del sonido'
+      },
+      fr: {
+        enabled: 'Activé',
+        disabled: 'Désactivé',
+        enable: 'Activer',
+        disable: 'Désactiver',
+        state_updated: 'État du son mis à jour',
+        state_update_failed: 'Impossible de mettre à jour l’état du son'
+      }
+    };
+    const pluginRoot = path.join(repoRoot, 'app', 'plugins', pluginId);
+
+    for (const [locale, expected] of Object.entries(expectedByLocale)) {
+      const values = flattenTranslations(JSON.parse(
+        fs.readFileSync(path.join(pluginRoot, 'locales', `${locale}.json`), 'utf8')
+      ));
+      const actual = Object.fromEntries(Object.keys(expected).map(key => [
+        key,
+        values[`plugins.game-engine.ui.audio.${key}`]
+      ]));
+
+      expect(actual).toEqual(expected);
+    }
+  });
+
   test('routes dynamic dashboard and overlay copy through independently translated runtime keys', () => {
     const pluginRoot = path.join(repoRoot, 'app', 'plugins', pluginId);
     const sources = [

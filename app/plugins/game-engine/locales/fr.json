@@ -1231,7 +1231,13 @@
           "default_no_upload": "Par défaut (aucun téléversement)",
           "upload": "⬆️ Téléverser",
           "reset_default": "↩ Par défaut",
-          "sync": "(synchronisation)"
+          "sync": "(synchronisation)",
+          "enabled": "Activé",
+          "disabled": "Désactivé",
+          "enable": "Activer",
+          "disable": "Désactiver",
+          "state_updated": "État du son mis à jour",
+          "state_update_failed": "Impossible de mettre à jour l’état du son"
         },
         "openshock": {
           "intensity_1_100": "Intensité (1–100) :",

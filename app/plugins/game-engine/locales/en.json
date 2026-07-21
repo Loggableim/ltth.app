@@ -1231,7 +1231,13 @@
           "default_no_upload": "Default (no upload)",
           "upload": "⬆️ Upload",
           "reset_default": "↩ Default",
-          "sync": "(sync)"
+          "sync": "(sync)",
+          "enabled": "Enabled",
+          "disabled": "Disabled",
+          "enable": "Enable",
+          "disable": "Disable",
+          "state_updated": "Sound state updated",
+          "state_update_failed": "Sound state could not be updated"
         },
         "openshock": {
           "intensity_1_100": "Intensity (1–100):",

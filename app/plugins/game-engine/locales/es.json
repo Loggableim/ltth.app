@@ -1231,7 +1231,13 @@
           "default_no_upload": "Predeterminado (sin carga)",
           "upload": "⬆️ Subir",
           "reset_default": "↩ Predeterminado",
-          "sync": "(sincronización)"
+          "sync": "(sincronización)",
+          "enabled": "Activado",
+          "disabled": "Desactivado",
+          "enable": "Activar",
+          "disable": "Desactivar",
+          "state_updated": "Estado del sonido actualizado",
+          "state_update_failed": "No se pudo actualizar el estado del sonido"
         },
         "openshock": {
           "intensity_1_100": "Intensidad (1–100):",

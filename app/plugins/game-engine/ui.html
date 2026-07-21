@@ -4488,6 +4488,15 @@
       });
     }
 
+    function bindRuntimeI18nRerender(rerender) {
+      const i18n = window.i18n;
+      if (!i18n) return;
+      i18n.ready?.then(rerender);
+      i18n.onChange?.(rerender);
+      i18n.onLanguageChange?.(rerender);
+    }
+    // Runtime i18n helpers: end
+
     document.addEventListener('click', async (e) => {
       const button = e.target.closest('.audio-toggle-btn');
       if (!button) return;
@@ -4498,15 +4507,6 @@
         showMessage(runtimeText('plugins.game-engine.ui.audio.state_update_failed', {}, 'Sound state could not be updated') + `: ${error.message}`, 'error');
       }
     });
-
-    function bindRuntimeI18nRerender(rerender) {
-      const i18n = window.i18n;
-      if (!i18n) return;
-      i18n.ready?.then(rerender);
-      i18n.onChange?.(rerender);
-      i18n.onLanguageChange?.(rerender);
-    }
-    // Runtime i18n helpers: end
 
     // Color picker preview updates
     ['board', 'player1', 'player2', 'text'].forEach(prefix => {
