@@ -240,6 +240,13 @@
 
   function normalizeAsset(data = {}, fallback = configuredEmojiFallback()) {
     const profilePictureUrl = getProfilePictureUrl(data);
+    if (data.assetLocked === true) {
+      if (data.emoji === PROFILE_PICTURE_TOKEN) {
+        return { asset: profilePictureAsset(profilePictureUrl), fallback: '👤', isProfile: true };
+      }
+      return { asset: data.emoji || fallback, fallback, isProfile: false };
+    }
+
     const mapped = findUserMapping(data.username || data.uniqueId);
     if (mapped) {
       if (mapped === PROFILE_PICTURE_TOKEN) {

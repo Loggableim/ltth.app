@@ -23,7 +23,7 @@ function loadCore() {
   return context.WebGPUEmojiEngine;
 }
 
-async function loadAdapter({ mappings = {} } = {}) {
+async function loadAdapter({ mappings = {}, config = {} } = {}) {
   const socketHandlers = {};
   const socket = {
     connected: true,
@@ -80,7 +80,8 @@ async function loadAdapter({ mappings = {} } = {}) {
               emoji_lifetime_ms: 7600,
               heart_balloon_profile_every: 5,
               heart_balloon_pop_y: 0.5,
-              heart_balloon_wind_strength: 0.45
+              heart_balloon_wind_strength: 0.45,
+              ...config
             }
           }
     })),
@@ -248,6 +249,45 @@ describe('WebGPU EmojiRain renderer parity', () => {
       expect.objectContaining({ kind: 'profile', asset: '/api/webgpu-emoji-rain/avatar?url=https%3A%2F%2Fp16.tiktokcdn.com%2Falice.webp' }),
       expect.objectContaining({ kind: 'superfan', asset: '🔥' })
     ]));
+  });
+
+  test.each([
+    ['emoji', '🦖'],
+    ['image', '/command.webp']
+  ])('locked command %s wins over user mappings and global custom images', async (_type, asset) => {
+    const { renderer, socketHandlers } = await loadAdapter({
+      mappings: { alice: '/mapped-user.webp' },
+      config: { use_custom_images: true, image_urls: ['/global-custom.webp'] }
+    });
+
+    socketHandlers['webgpu-emoji-rain:spawn']({
+      emoji: asset,
+      username: 'alice',
+      reason: 'command',
+      source: '/rawr',
+      count: 1,
+      assetLocked: true
+    });
+    await flushAsyncWork();
+
+    expect(renderer.spawn).toHaveBeenCalledWith(expect.objectContaining({ asset }));
+  });
+
+  test('unlocked rain still uses the global custom image', async () => {
+    const { renderer, socketHandlers } = await loadAdapter({
+      config: { use_custom_images: true, image_urls: ['/global-custom.webp'] }
+    });
+
+    socketHandlers['webgpu-emoji-rain:spawn']({
+      emoji: '🐶',
+      reason: 'manual',
+      count: 1
+    });
+    await flushAsyncWork();
+
+    expect(renderer.spawn).toHaveBeenCalledWith(expect.objectContaining({
+      asset: '/global-custom.webp'
+    }));
   });
 
   test('profile-picture mappings fall back to a real glyph when the avatar is missing', async () => {
