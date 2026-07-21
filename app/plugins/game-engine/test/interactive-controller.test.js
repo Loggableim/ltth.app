@@ -183,6 +183,84 @@ describe('InteractiveController', () => {
     harness.sqlite.close();
   });
 
+  test('queues viewer and host turns together before selecting the first round-robin board', () => {
+    const harness = createHarness({ connect4HostStarts: false });
+    harness.controller.init();
+
+    const first = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'anna', viewerDisplayName: 'Anna' });
+    const second = harness.controller.startMatch({ gameType: 'chess', viewerId: 'ben', viewerDisplayName: 'Ben' });
+    const third = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'carla', viewerDisplayName: 'Carla' });
+    const fourth = harness.controller.startMatch({ gameType: 'chess', viewerId: 'david', viewerDisplayName: 'David' });
+    const fifth = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'elif', viewerDisplayName: 'Elif' });
+
+    expect(harness.controller.getState().hostQueue.map(row => row.sessionId)).toEqual([
+      first.sessionId,
+      second.sessionId,
+      third.sessionId,
+      fourth.sessionId,
+      fifth.sessionId
+    ]);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: first.sessionId,
+      gameType: 'connect4',
+      currentTurnRole: 'viewer'
+    });
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('rejects a viewer move while another session owns the displayed round-robin turn', () => {
+    const harness = createHarness({ connect4HostStarts: false });
+    harness.controller.init();
+    const visible = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'visible', viewerDisplayName: 'Visible' });
+    const hidden = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'hidden', viewerDisplayName: 'Hidden' });
+    const before = harness.controller.getState();
+
+    expect(harness.controller.applyViewerMove({
+      viewerId: 'hidden',
+      gameType: 'connect4',
+      move: { column: 'A' }
+    })).toEqual({ success: false, error: 'not_queue_head' });
+    expect(harness.controller.getState().hostQueue.map(row => row.sessionId)).toEqual(
+      before.hostQueue.map(row => row.sessionId)
+    );
+    expect(harness.controller.getState().display.displaySessionId).toBe(visible.sessionId);
+    expect(harness.controller.registry.get(hidden.sessionId).sessionRevision).toBe(1);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('rotates a non-terminal host turn to the tail after its move animation', () => {
+    const harness = createHarness();
+    harness.controller.init();
+    const first = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'first', viewerDisplayName: 'First' });
+    const second = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'second', viewerDisplayName: 'Second' });
+    const display = harness.controller.getState().display;
+
+    expect(harness.controller.applyHostMove({
+      sessionId: first.sessionId,
+      gameType: 'connect4',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move: { column: 'D' }
+    })).toMatchObject({ success: true });
+    expect(harness.controller.getState().hostQueue.map(row => row.sessionId)).toEqual([
+      second.sessionId,
+      first.sessionId
+    ]);
+
+    jest.advanceTimersByTime(500);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: second.sessionId,
+      currentTurnRole: 'host'
+    });
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
   test('rejects out-of-order and stale host controls without changing queue order', () => {
     const harness = createHarness();
     harness.controller.init();
@@ -314,7 +392,7 @@ describe('InteractiveController', () => {
     const harness = createHarness({ connect4HostStarts: false });
     harness.controller.init();
     const first = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'viewer-a', viewerDisplayName: 'A' });
-    harness.controller.startMatch({ gameType: 'connect4', viewerId: 'viewer-b', viewerDisplayName: 'B' });
+    const second = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'viewer-b', viewerDisplayName: 'B' });
 
     expect(harness.controller.applyViewerMove({
       viewerId: 'viewer-a',
@@ -322,8 +400,10 @@ describe('InteractiveController', () => {
       move: { column: 'A' },
       moveIdentity: 'chat-a-1'
     })).toMatchObject({ success: true, sessionId: first.sessionId });
-    expect(harness.controller.getState().hostQueue).toHaveLength(1);
-    expect(harness.controller.getState().hostQueue[0].sessionId).toBe(first.sessionId);
+    expect(harness.controller.getState().hostQueue.map(row => row.sessionId)).toEqual([
+      second.sessionId,
+      first.sessionId
+    ]);
 
     const duplicate = harness.controller.applyViewerMove({
       viewerId: 'viewer-a',
@@ -332,7 +412,7 @@ describe('InteractiveController', () => {
       moveIdentity: 'chat-a-1'
     });
     expect(duplicate).toMatchObject({ success: true, duplicate: true });
-    expect(harness.controller.getState().hostQueue).toHaveLength(1);
+    expect(harness.controller.getState().hostQueue).toHaveLength(2);
 
     harness.controller.destroy();
     harness.sqlite.close();
@@ -396,8 +476,8 @@ describe('InteractiveController', () => {
     expect(active.sessionRevision).toBe(2);
     expect(active.sessionRevision).toBe(persisted.sessionRevision);
     expect(active.adapter.getState()).toEqual(persisted.state);
-    expect(harness.controller.getState().hostQueue).toEqual([]);
-    expect(harness.database.getInteractiveQueue()).toEqual([]);
+    expect(harness.controller.getState().hostQueue.map(row => row.sessionId)).toEqual([match.sessionId]);
+    expect(harness.database.getInteractiveQueue().map(row => row.sessionId)).toEqual([match.sessionId]);
     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('publication failed'));
 
     harness.controller.destroy();
@@ -436,8 +516,8 @@ describe('InteractiveController', () => {
       viewerDeadlineMs: Date.now() + 5000,
       viewerTimeRemainingMs: null
     });
-    expect(harness.database.getInteractiveQueue()).toEqual([]);
-    expect(harness.controller.getState().hostQueue).toEqual([]);
+    expect(harness.database.getInteractiveQueue().map(row => row.sessionId)).toEqual([match.sessionId]);
+    expect(harness.controller.getState().hostQueue.map(row => row.sessionId)).toEqual([match.sessionId]);
     expect(harness.controller.getState().display).toMatchObject({
       displaySessionId: match.sessionId,
       phase: 'playing',
@@ -483,8 +563,8 @@ describe('InteractiveController', () => {
       viewerDeadlineMs: Date.now() + 5000,
       viewerTimeRemainingMs: null
     });
-    expect(harness.database.getInteractiveQueue()).toEqual([]);
-    expect(harness.controller.getState().hostQueue).toEqual([]);
+    expect(harness.database.getInteractiveQueue().map(row => row.sessionId)).toEqual([match.sessionId]);
+    expect(harness.controller.getState().hostQueue.map(row => row.sessionId)).toEqual([match.sessionId]);
     expect(harness.controller.getState().display).toMatchObject({
       displaySessionId: match.sessionId,
       phase: 'playing',
