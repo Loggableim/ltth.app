@@ -723,6 +723,23 @@ describe('interactive overlay countdown DOM', () => {
     wheel.dom.window.close();
   });
 
+  test('wheel isolates an old mute when a new scope settings request rejects', async () => {
+    const fetch = jest.fn()
+      .mockResolvedValueOnce(jsonResponse({ spinning: { enabled: false } }))
+      .mockRejectedValueOnce(new Error('new scope failed'));
+    const wheel = loadOverlay('wheel.html', null, { fetch });
+    await flushPromises();
+
+    const loaded = await wheel.dom.window.loadWheelAudio('2');
+    const spinSound = wheel.dom.window.document.getElementById('spin-sound');
+
+    expect(loaded).toBe(false);
+    expect(wheel.dom.window.playWheelEventSound('spinning', spinSound)).toBe(true);
+    expect(spinSound.src).toBe('http://localhost/game-engine/sounds/wheel/spinning%20sound.mp3');
+    expect(wheel.mediaPlay).toHaveBeenCalledTimes(1);
+    wheel.dom.window.close();
+  });
+
   test('slot plays the first spin sound exactly once after matching scoped settings resolve', async () => {
     const settings = deferred();
     const fetch = jest.fn(() => settings.promise);

@@ -721,8 +721,10 @@
      * Load audio files for a specific wheel
      */
     async function loadWheelAudio(wheelId) {
-      currentWheelId = wheelId;
       const scopeId = String(wheelId);
+      const scopeChanged = scopeId !== String(currentWheelId);
+      currentWheelId = wheelId;
+      if (scopeChanged) applyAudioSettings({});
       const generation = ++wheelAudioSettingsGeneration;
 
       try {
