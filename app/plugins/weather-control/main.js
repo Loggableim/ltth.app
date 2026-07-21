@@ -574,6 +574,10 @@ class WeatherControlPlugin {
                             this.config.gamification
                         );
                     }
+                    if (this.config.gamification.enabled === false) {
+                        this.clearGamificationTimers();
+                        this.gamification.quest.active = null;
+                    }
                 }
                 if (Array.isArray(newConfig.presets)) {
                     this.config.presets = newConfig.presets.slice(0, 20);
@@ -1947,20 +1951,24 @@ class WeatherControlPlugin {
         };
         if (gamificationConfig.enabled === false) {
             this.gamification.quest.active = null;
-            if (this.questRotationTimer) {
-                clearTimeout(this.questRotationTimer);
-                this.questRotationTimer = null;
-            }
-            if (this.gamificationPersistTimer) {
-                clearTimeout(this.gamificationPersistTimer);
-                this.gamificationPersistTimer = null;
-            }
+            this.clearGamificationTimers();
             return this.gamification;
         }
         if (gamificationConfig.quests?.enabled !== false && !this.gamification.quest.active) {
             this.createNextQuest();
         }
         return this.gamification;
+    }
+
+    clearGamificationTimers() {
+        if (this.questRotationTimer) {
+            clearTimeout(this.questRotationTimer);
+            this.questRotationTimer = null;
+        }
+        if (this.gamificationPersistTimer) {
+            clearTimeout(this.gamificationPersistTimer);
+            this.gamificationPersistTimer = null;
+        }
     }
 
     serializeGamificationState() {

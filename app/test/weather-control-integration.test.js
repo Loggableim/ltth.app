@@ -121,6 +121,30 @@ describe('Weather Control runtime integration', () => {
     expect(plugin.applyGamificationEvent('chat', { username: 'viewer' })).toBeNull();
   });
 
+  test('cancels active gamification timers when settings disable gamification live', async () => {
+    const questTimer = setTimeout(jest.fn(), 60000);
+    const persistTimer = setTimeout(jest.fn(), 60000);
+    plugin.questRotationTimer = questTimer;
+    plugin.gamificationPersistTimer = persistTimer;
+
+    try {
+      await request(app)
+        .post('/api/weather/config')
+        .send({ gamification: { enabled: false } })
+        .expect(200);
+
+      expect(plugin.config.gamification.enabled).toBe(false);
+      expect(plugin.questRotationTimer).toBeNull();
+      expect(plugin.gamificationPersistTimer).toBeNull();
+      expect(plugin.createNextQuest()).toBeNull();
+      plugin.scheduleGamificationPersist();
+      expect(plugin.gamificationPersistTimer).toBeNull();
+    } finally {
+      clearTimeout(questTimer);
+      clearTimeout(persistTimer);
+    }
+  });
+
   test('sanitizes overlay state and removes socket listeners during destroy', async () => {
     const socket = new EventEmitter();
     expect(io.listenerCount('connection')).toBe(1);
