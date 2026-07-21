@@ -155,14 +155,30 @@ describe('interactive games admin UI contract', () => {
     expect(ui).toContain("'plugins.game-engine.ui.audio.disable'");
     expect(ui).toContain("e.target.closest('.audio-toggle-btn')");
 
-    for (const event of [
+    const connect4Events = [
       'new_challenger', 'challenge_accepted', 'piece_drop', 'player_1_wins',
       'player_2_wins', 'game_over', 'timer_warning'
-    ]) {
-      expect(ui).toContain(`data-audio-event="${event}"`);
-    }
-    expect(ui).toContain("const audioTypes = ['spinning', 'prize1', 'prize2', 'prize3', 'lost'];");
-    expect(ui).toContain("type: 'reel_stop'");
+    ];
+    const wheelEvents = ['spinning', 'prize1', 'prize2', 'prize3', 'lost'];
+    const slotEvents = ['spin', 'small_win', 'medium_win', 'big_win', 'jackpot', 'near_miss', 'reel_stop'];
+    const dom = new JSDOM(ui);
+    const eventsIn = selector => [...dom.window.document.querySelectorAll(selector)]
+      .map(button => button.dataset.audioEvent);
+
+    expect(eventsIn('#media-section-connect4 .audio-toggle-btn').sort()).toEqual([...connect4Events].sort());
+    expect(eventsIn('#tab-wheel .audio-toggle-btn').sort()).toEqual([...wheelEvents].sort());
+    expect(eventsIn('#media-section-wheel .audio-toggle-btn').sort()).toEqual([...wheelEvents].sort());
+    const slotMediaRenderer = ui.match(/    async function renderSlotMediaSounds\(machineId\) \{[\s\S]*?\n    \}/)?.[0] || '';
+    const slotTabRenderer = ui.match(/    async function renderSlotSoundManagement\(machineId\) \{[\s\S]*?\n    \}/)?.[0] || '';
+    const slotAudioTypesSource = ui.match(/    const SLOT_AUDIO_TYPES = \[[\s\S]*?\n    \];/)?.[0] || '';
+    const configuredSlotEvents = [...slotAudioTypesSource.matchAll(/type: '([^']+)'/g)]
+      .map(([, event]) => event);
+    expect(configuredSlotEvents).toEqual(slotEvents);
+    expect(slotMediaRenderer).toContain('for (const { type, label, sync } of SLOT_AUDIO_TYPES)');
+    expect(slotTabRenderer).toContain('for (const { type, label, sync } of SLOT_AUDIO_TYPES)');
+    expect(slotMediaRenderer).toContain("audioToggleMarkup('slot', type, machineId, setting.enabled !== false)");
+    expect(slotTabRenderer).toContain("audioToggleMarkup('slot', type, machineId, setting.enabled !== false)");
+    dom.window.close();
   });
 
   test('sends the inverse enabled state through the shared audio-state endpoint', async () => {

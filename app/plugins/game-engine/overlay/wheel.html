@@ -687,6 +687,7 @@
       lost: '/game-engine/sounds/wheel/lost.mp3'
     };
     const audioSettingsByEvent = new Map();
+    let wheelAudioSettingsGeneration = 0;
 
     function applyAudioSettings(settings) {
       audioSettingsByEvent.clear();
@@ -721,11 +722,14 @@
      */
     async function loadWheelAudio(wheelId) {
       currentWheelId = wheelId;
+      const scopeId = String(wheelId);
+      const generation = ++wheelAudioSettingsGeneration;
 
       try {
         // Fetch audio settings
         const res = await fetch(`/api/game-engine/wheel/audio/settings?wheelId=${wheelId}`);
         const settings = await res.json();
+        if (generation !== wheelAudioSettingsGeneration || scopeId !== String(currentWheelId)) return false;
         applyAudioSettings(settings);
 
         // Set audio sources based on settings
@@ -755,7 +759,9 @@
 
         audioLoaded = true;
         console.log('Wheel audio loaded for wheel', wheelId);
+        return true;
       } catch (error) {
+        if (generation !== wheelAudioSettingsGeneration || scopeId !== String(currentWheelId)) return false;
         console.error('Error loading wheel audio:', error);
         applyAudioSettings({});
         // Fall back to defaults
@@ -765,6 +771,7 @@
         prize3Sound.src = defaultAudioUrls.prize3;
         lostSound.src = defaultAudioUrls.lost;
         audioLoaded = true;
+        return false;
       }
     }
 
@@ -1602,6 +1609,7 @@
       console.log('🔊 Audio updated', data);
       // Reload audio if this is the current wheel
       if (data.wheelId == currentWheelId) {
+        wheelAudioSettingsGeneration++;
         applyAudioStateUpdate(data.audioType, data.enabled);
         await loadWheelAudio(data.wheelId);
       }

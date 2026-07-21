@@ -743,6 +743,7 @@
     const highestAudibleMoveBySession = new Map();
     const warnedViewerDeadlines = new Set();
     const audioSettingsByEvent = new Map();
+    let connect4AudioSettingsGeneration = 0;
     const ROWS = 6;
     const COLUMNS = 7;
 
@@ -762,14 +763,16 @@
     }
 
     // Play audio file (MP3/WAV)
-    function playAudioFile(filePath, volume = null, fallbackPath = null) {
+    function playAudioFile(filePath, volume = null, fallbackPath = null, mediaEvent = null) {
       if (!gameConfig || !gameConfig.soundEnabled || !filePath) return false;
+      if (mediaEvent && audioSettingsByEvent.get(mediaEvent)?.enabled === false) return false;
 
       let fallbackStarted = false;
       const playFallback = () => {
         if (fallbackStarted || !fallbackPath || fallbackPath === filePath) return;
+        if (mediaEvent && audioSettingsByEvent.get(mediaEvent)?.enabled === false) return;
         fallbackStarted = true;
-        playAudioFile(fallbackPath, volume);
+        playAudioFile(fallbackPath, volume, null, mediaEvent);
       };
       try {
         const audio = new Audio(filePath);
@@ -813,10 +816,12 @@
     }
 
     async function loadCustomAudio() {
+      const generation = ++connect4AudioSettingsGeneration;
       try {
         const response = await fetch('/api/game-engine/media/connect4', { cache: 'no-store' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const media = await response.json();
+        if (generation !== connect4AudioSettingsGeneration) return false;
         const settings = {};
         for (const item of Array.isArray(media) ? media : []) {
           if (!item || typeof item.media_event !== 'string') continue;
@@ -826,8 +831,12 @@
           };
         }
         applyAudioSettings(settings);
+        return true;
       } catch (error) {
-        console.warn('Failed to load custom Connect4 audio:', error);
+        if (generation === connect4AudioSettingsGeneration) {
+          console.warn('Failed to load custom Connect4 audio:', error);
+        }
+        return false;
       }
     }
 
@@ -835,7 +844,7 @@
       if (audioSettingsByEvent.get(mediaEvent)?.enabled === false) return false;
       const defaultPath = defaultSoundsByEvent[mediaEvent];
       const customPath = audioSettingsByEvent.get(mediaEvent)?.url;
-      return playAudioFile(customPath || defaultPath, null, customPath ? defaultPath : null);
+      return playAudioFile(customPath || defaultPath, null, customPath ? defaultPath : null, mediaEvent);
     }
 
     function playSound(type) {
@@ -1635,6 +1644,7 @@
     });
     socket.on('game-engine:audio-state-updated', data => {
       if (data?.gameType !== 'connect4') return;
+      connect4AudioSettingsGeneration++;
       applyAudioStateUpdate(data.audioEvent, data.enabled);
       loadCustomAudio();
     });

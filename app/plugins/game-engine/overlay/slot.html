@@ -850,6 +850,8 @@
     const audioSettingsByEvent = new Map();
     const slotAudioEvents = ['spin', 'small_win', 'medium_win', 'big_win', 'jackpot', 'near_miss', 'reel_stop'];
     let audioSettingsReady = false;
+    let slotAudioSettingsGeneration = 0;
+    let pendingSpinAudioIntent = null;
 
     function applyAudioSettings(settings) {
       audioSettingsByEvent.clear();
@@ -870,13 +872,22 @@
 
     async function loadAudioSettings(machineId) {
       if (!machineId) return;
+      const scopeId = String(machineId);
+      const generation = ++slotAudioSettingsGeneration;
       audioSettingsReady = false;
       try {
         const response = await fetch(`/api/game-engine/slot/audio/settings?machineId=${machineId}`, { cache: 'no-store' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        applyAudioSettings(await response.json());
+        const settings = await response.json();
+        if (generation !== slotAudioSettingsGeneration || scopeId !== String(currentMachineId)) return false;
+        applyAudioSettings(settings);
+        playPendingSpinAudio(scopeId);
+        return true;
       } catch (error) {
-        console.warn('Failed to load slot audio settings:', error);
+        if (generation === slotAudioSettingsGeneration && scopeId === String(currentMachineId)) {
+          console.warn('Failed to load slot audio settings:', error);
+        }
+        return false;
       }
     }
 
@@ -900,11 +911,18 @@
       return defaultPaths[audioType] || null;
     }
 
-    function playAudio(audioType, settings, machineId) {
+    function canPlayAudioEvent(audioType, settings, machineId) {
       const s = settings || lastSettings;
       if (s.soundEnabled === false) return false;
       if (!audioSettingsReady) return false;
       if (audioSettingsByEvent.get(audioType)?.enabled === false) return false;
+      if (currentMachineId != null && machineId != null && String(machineId) !== String(currentMachineId)) return false;
+      return true;
+    }
+
+    function playAudio(audioType, settings, machineId) {
+      const s = settings || lastSettings;
+      if (!canPlayAudioEvent(audioType, s, machineId)) return false;
       const vol = (s.soundVolume !== undefined) ? Math.min(1, Math.max(0, s.soundVolume)) : 0.7;
       const mid = machineId || currentMachineId;
 
@@ -923,6 +941,15 @@
       if (!defaultSrc && !customSrc) return false;
 
       const cacheKey = `${mid || 'default'}:${audioType}`;
+      let fallbackStarted = false;
+
+      function playFallback(src) {
+        if (fallbackStarted || src === defaultSrc || !defaultSrc) return;
+        if (!canPlayAudioEvent(audioType, s, mid)) return;
+        fallbackStarted = true;
+        delete audioCache[cacheKey];
+        tryPlay(defaultSrc);
+      }
 
       function tryPlay(src) {
         if (!src) return false;
@@ -932,15 +959,14 @@
             a._src = src;
             // On error (e.g. 204/404 for custom), fall back to default
             a.addEventListener('error', () => {
-              delete audioCache[cacheKey];
-              if (src !== defaultSrc && defaultSrc) tryPlay(defaultSrc);
+              playFallback(src);
             });
             audioCache[cacheKey] = a;
           }
           const audio = audioCache[cacheKey];
           audio.volume = vol;
           audio.currentTime = 0;
-          audio.play().catch(() => {});
+          audio.play().catch(() => playFallback(src));
           return true;
         } catch (e) { /* ignore */ }
         return false;
@@ -949,11 +975,35 @@
       return tryPlay(customSrc || defaultSrc);
     }
 
+    function requestSpinAudio(spinId, machineId, settings) {
+      pendingSpinAudioIntent = null;
+      if (settings?.soundEnabled === false || spinId == null || machineId == null) return;
+      if (audioSettingsReady) {
+        playAudio('spin', settings, machineId);
+        return;
+      }
+      pendingSpinAudioIntent = {
+        spinId: String(spinId),
+        machineId: String(machineId),
+        settings
+      };
+    }
+
+    function playPendingSpinAudio(machineId) {
+      const intent = pendingSpinAudioIntent;
+      if (!intent) return false;
+      if (intent.machineId !== String(machineId) || intent.machineId !== String(currentMachineId)) return false;
+      if (intent.spinId !== String(currentSpinId)) return false;
+      pendingSpinAudioIntent = null;
+      return playAudio('spin', intent.settings, intent.machineId);
+    }
+
     // ── Socket event: spin started ─────────────────────────
     socket.on('slot:spin-started', (data) => {
       currentSymbols = (data.symbols && data.symbols.length > 0) ? data.symbols : currentSymbols;
       lastSettings   = data.settings || {};
-      currentSpinId  = data.spinId || null;
+      currentSpinId  = data.spinId ?? null;
+      pendingSpinAudioIntent = null;
 
       // Track current machine for custom sound routing
       if (data.machineId && data.machineId !== currentMachineId) {
@@ -995,7 +1045,7 @@
       // Start spinning all reels
       for (let i = 0; i < 3; i++) startReel(i);
 
-      playAudio('spin', lastSettings, currentMachineId);
+      requestSpinAudio(currentSpinId, currentMachineId, lastSettings);
     });
 
     // ── Socket event: audio updated – flush cache for this machine ─
@@ -1008,6 +1058,7 @@
         if (k.startsWith(prefix)) delete audioCache[k];
       });
       if (mid === String(currentMachineId)) {
+        slotAudioSettingsGeneration++;
         applyAudioStateUpdate(data.audioType, data.enabled);
         await loadAudioSettings(mid);
       }
@@ -1055,6 +1106,7 @@
       machine.classList.remove('visible');
       if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
       currentSpinId = null;
+      pendingSpinAudioIntent = null;
     });
 
     // ── Socket event: spin timeout (queue safety) ──────────
@@ -1070,6 +1122,7 @@
       machine.classList.remove('visible');
       if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
       currentSpinId = null;
+      pendingSpinAudioIntent = null;
     });
 
     // ── Socket event: play-audio (from reward dispatch) ────

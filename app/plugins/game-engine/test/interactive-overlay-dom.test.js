@@ -4,10 +4,28 @@ const { JSDOM } = require('jsdom');
 
 const overlayDir = path.join(__dirname, '..', 'overlay');
 
+function deferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
+function jsonResponse(body) {
+  return { ok: true, json: () => Promise.resolve(body) };
+}
+
+function flushPromises() {
+  return new Promise(resolve => setImmediate(resolve));
+}
+
 function loadOverlay(name, i18n = null, options = {}) {
   const listeners = new Map();
-  const audioPlay = jest.fn(() => Promise.resolve());
-  const mediaPlay = jest.fn(() => Promise.resolve());
+  const audioPlay = options.audioPlay || jest.fn(() => Promise.resolve());
+  const mediaPlay = options.mediaPlay || jest.fn(() => Promise.resolve());
   const audioSources = [];
   const AudioConstructor = jest.fn(function Audio(src) {
     this.src = src;
@@ -51,6 +69,8 @@ function loadOverlay(name, i18n = null, options = {}) {
         return id;
       };
       window.clearTimeout = id => timeouts.delete(id);
+      window.requestAnimationFrame = jest.fn(() => 1);
+      window.cancelAnimationFrame = jest.fn();
       window.Audio = AudioConstructor;
       window.HTMLMediaElement.prototype.play = mediaPlay;
       window.HTMLMediaElement.prototype.pause = jest.fn();
@@ -625,15 +645,177 @@ describe('interactive overlay countdown DOM', () => {
     slot.dom.window.close();
   });
 
-  test('slot waits for scoped audio state before playing a newly selected machine', () => {
-    const slot = loadOverlay('slot.html');
+  test('Connect4 socket state wins over an older in-flight settings response', async () => {
+    const initial = deferred();
+    const refreshed = deferred();
+    const fetch = jest.fn()
+      .mockReturnValueOnce(initial.promise)
+      .mockReturnValueOnce(refreshed.promise);
+    const connect4 = loadOverlay('connect4.html', null, { fetch });
+    connect4.listeners.get('game-engine:config-updated')({
+      gameType: 'connect4',
+      config: { soundEnabled: true, soundVolume: 0.5 }
+    });
+
+    connect4.listeners.get('game-engine:audio-state-updated')({
+      gameType: 'connect4',
+      scopeId: 'default',
+      audioEvent: 'piece_drop',
+      enabled: false
+    });
+    initial.resolve(jsonResponse([
+      { media_event: 'piece_drop', enabled: true, url: '/stale/drop.mp3' }
+    ]));
+    await flushPromises();
+
+    expect(connect4.dom.window.playEventSound('piece_drop')).toBe(false);
+    expect(connect4.AudioConstructor).not.toHaveBeenCalled();
+
+    refreshed.resolve(jsonResponse([{ media_event: 'piece_drop', enabled: false }]));
+    await flushPromises();
+    connect4.dom.window.close();
+  });
+
+  test('wheel ignores an older scope response that resolves after the active wheel', async () => {
+    const wheelA = deferred();
+    const wheelB = deferred();
+    const fetch = jest.fn()
+      .mockReturnValueOnce(wheelA.promise)
+      .mockReturnValueOnce(wheelB.promise);
+    const wheel = loadOverlay('wheel.html', null, { fetch });
+
+    const loadB = wheel.dom.window.loadWheelAudio('2');
+    expect(fetch.mock.calls.map(([url]) => url)).toEqual([
+      '/api/game-engine/wheel/audio/settings?wheelId=1',
+      '/api/game-engine/wheel/audio/settings?wheelId=2'
+    ]);
+    wheelB.resolve(jsonResponse({ spinning: { enabled: false } }));
+    expect(await loadB).toBe(true);
+    wheelA.resolve(jsonResponse({ spinning: { enabled: true } }));
+    await flushPromises();
+
+    expect(wheel.dom.window.playWheelEventSound(
+      'spinning',
+      wheel.dom.window.document.getElementById('spin-sound')
+    )).toBe(false);
+    expect(wheel.mediaPlay).not.toHaveBeenCalled();
+    wheel.dom.window.close();
+  });
+
+  test('slot plays the first spin sound exactly once after matching scoped settings resolve', async () => {
+    const settings = deferred();
+    const fetch = jest.fn(() => settings.promise);
+    const slot = loadOverlay('slot.html', null, { fetch });
+
+    slot.listeners.get('slot:spin-started')({
+      spinId: 'spin-7',
+      machineId: '7',
+      settings: { soundEnabled: true }
+    });
+    expect(slot.audioPlay).not.toHaveBeenCalled();
+
+    settings.resolve(jsonResponse({ spin: { enabled: true } }));
+    await flushPromises();
+
+    expect(slot.audioSources).toEqual(['/game-engine/sounds/slot/custom/7/spin.mp3']);
+    expect(slot.audioPlay).toHaveBeenCalledTimes(1);
+    await flushPromises();
+    expect(slot.audioPlay).toHaveBeenCalledTimes(1);
+    slot.dom.window.close();
+  });
+
+  test('slot ignores stale machine settings and stale spin playback intents', async () => {
+    const machineA = deferred();
+    const machineB = deferred();
+    const fetch = jest.fn()
+      .mockReturnValueOnce(machineA.promise)
+      .mockReturnValueOnce(machineB.promise);
+    const slot = loadOverlay('slot.html', null, { fetch });
+
+    slot.listeners.get('slot:spin-started')({
+      spinId: 'spin-a',
+      machineId: '1',
+      settings: { soundEnabled: true }
+    });
+    slot.listeners.get('slot:spin-started')({
+      spinId: 'spin-b',
+      machineId: '2',
+      settings: { soundEnabled: true }
+    });
+
+    machineB.resolve(jsonResponse({ spin: { enabled: true } }));
+    await flushPromises();
+    expect(slot.audioSources).toEqual(['/game-engine/sounds/slot/custom/2/spin.mp3']);
+    expect(slot.audioPlay).toHaveBeenCalledTimes(1);
+
+    machineA.resolve(jsonResponse({ spin: { enabled: false } }));
+    await flushPromises();
+    expect(slot.audioSources).not.toContain('/game-engine/sounds/slot/custom/1/spin.mp3');
+    expect(slot.audioPlay).toHaveBeenCalledTimes(1);
+    expect(slot.dom.window.playAudio('spin', { soundEnabled: true }, '2')).toBe(true);
+    slot.dom.window.close();
+  });
+
+  test.each(['error', 'rejection'])(
+    'Connect4 does not fall back after custom audio %s when the event was muted meanwhile',
+    async failure => {
+      const audioPlay = jest.fn(() => Promise.resolve());
+      if (failure === 'rejection') audioPlay.mockRejectedValueOnce(new Error('custom failed'));
+      const connect4 = loadOverlay('connect4.html', null, { audioPlay });
+      connect4.listeners.get('game-engine:config-updated')({
+        gameType: 'connect4',
+        config: { soundEnabled: true, soundVolume: 0.5 }
+      });
+      connect4.dom.window.applyAudioSettings({
+        piece_drop: { enabled: true, url: '/custom/drop.mp3' }
+      });
+
+      expect(connect4.dom.window.playEventSound('piece_drop')).toBe(true);
+      connect4.dom.window.applyAudioSettings({ piece_drop: { enabled: false } });
+      if (failure === 'error') connect4.AudioConstructor.mock.instances[0].onerror();
+      await flushPromises();
+
+      expect(connect4.audioSources).toEqual(['/custom/drop.mp3']);
+      expect(connect4.AudioConstructor).toHaveBeenCalledTimes(1);
+      connect4.dom.window.close();
+    }
+  );
+
+  test.each(['error', 'rejection'])(
+    'slot does not fall back after custom audio %s when the event was muted meanwhile',
+    async failure => {
+      const audioPlay = jest.fn(() => Promise.resolve());
+      if (failure === 'rejection') audioPlay.mockRejectedValueOnce(new Error('custom failed'));
+      const slot = loadOverlay('slot.html', null, { audioPlay });
+      slot.dom.window.applyAudioSettings({ spin: { enabled: true } });
+
+      expect(slot.dom.window.playAudio('spin', { soundEnabled: true }, '7')).toBe(true);
+      slot.dom.window.applyAudioSettings({ spin: { enabled: false } });
+      if (failure === 'error') {
+        slot.AudioConstructor.mock.instances[0]._listeners.get('error')();
+      }
+      await flushPromises();
+
+      expect(slot.audioSources).toEqual(['/game-engine/sounds/slot/custom/7/spin.mp3']);
+      expect(slot.AudioConstructor).toHaveBeenCalledTimes(1);
+      slot.dom.window.close();
+    }
+  );
+
+  test('slot falls back to default after an enabled custom source rejects', async () => {
+    const audioPlay = jest.fn(() => Promise.resolve());
+    audioPlay.mockRejectedValueOnce(new Error('custom failed'));
+    const slot = loadOverlay('slot.html', null, { audioPlay });
     slot.dom.window.applyAudioSettings({ spin: { enabled: true } });
 
-    slot.listeners.get('slot:spin-started')({ machineId: '7', settings: { soundEnabled: true } });
+    expect(slot.dom.window.playAudio('spin', { soundEnabled: true }, '7')).toBe(true);
+    await flushPromises();
 
-    expect(slot.dom.window.playAudio('spin', { soundEnabled: true }, '7')).toBe(false);
-    expect(slot.AudioConstructor).not.toHaveBeenCalled();
-    expect(slot.audioPlay).not.toHaveBeenCalled();
+    expect(slot.audioSources).toEqual([
+      '/game-engine/sounds/slot/custom/7/spin.mp3',
+      '/game-engine/sounds/slot/spin.mp3'
+    ]);
+    expect(audioPlay).toHaveBeenCalledTimes(2);
     slot.dom.window.close();
   });
 

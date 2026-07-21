@@ -124,6 +124,8 @@ describe('interactive overlay contract', () => {
     expect(html).toContain('enabled: setting?.enabled !== false');
     expect(html).toContain('if (setting?.url) entry.url = setting.url;');
     expect(html).toContain("if (audioSettingsByEvent.get(mediaEvent)?.enabled === false) return false;");
+    expect(html).toContain('connect4AudioSettingsGeneration');
+    expect(html).toContain('generation !== connect4AudioSettingsGeneration');
   });
 
   test('wheel guards every configured sound event with enriched enabled state', () => {
@@ -131,6 +133,8 @@ describe('interactive overlay contract', () => {
 
     expect(html).toContain('function applyAudioSettings(settings)');
     expect(html).toContain('function playWheelEventSound(audioEvent, audioElement)');
+    expect(html).toContain('wheelAudioSettingsGeneration');
+    expect(html).toContain('scopeId !== String(currentWheelId)');
     for (const event of ['spinning', 'prize1', 'prize2', 'prize3', 'lost']) {
       expect(html).toContain(`${event}:`);
     }
@@ -141,6 +145,8 @@ describe('interactive overlay contract', () => {
 
     expect(html).toContain('function applyAudioSettings(settings)');
     expect(html).toContain('async function loadAudioSettings(machineId)');
+    expect(html).toContain('slotAudioSettingsGeneration');
+    expect(html).toContain('pendingSpinAudioIntent');
     expect(html).toContain("if (audioSettingsByEvent.get(audioType)?.enabled === false) return false;");
     for (const event of ['spin', 'small_win', 'medium_win', 'big_win', 'jackpot', 'near_miss', 'reel_stop']) {
       expect(html).toContain(`${event}:`);
