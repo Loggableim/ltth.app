@@ -1310,6 +1310,20 @@ class WebgpuWeatherControlPlugin {
                             this.syncPermanentEffects(socket);
                         },
                         overlayState: (payload = {}) => {
+                            const diagnostics = {
+                                state: String(payload.state || 'ready'),
+                                fps: this.clampNumber(payload.fps, 0, 240, 0),
+                                frameMs: this.clampNumber(payload.frameMs, 0, 1000, 0),
+                                gpuFrameMs: this.clampNumber(payload.gpuFrameMs, 0, 1000, 0),
+                                activeParticles: Math.max(0, Math.min(100000, parseInt(payload.activeParticles, 10) || 0)),
+                                resolution: payload.resolution && typeof payload.resolution === 'object' ? {
+                                    width: Math.max(1, Math.min(1920, parseInt(payload.resolution.width, 10) || 1)),
+                                    height: Math.max(1, Math.min(1080, parseInt(payload.resolution.height, 10) || 1))
+                                } : null,
+                                quality: payload.quality || null,
+                                timestamp: Date.now()
+                            };
+                            this.api.emit('webgpu-weather:diagnostics', diagnostics);
                             this.api.emit('webgpu-weather:active-state', {
                                 ...this.sanitizeOverlayState(payload),
                                 gamification: this.getGamificationSnapshot(),

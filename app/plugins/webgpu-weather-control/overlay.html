@@ -6,14 +6,17 @@
   <title>WebGPU Weather diagnostics</title>
   <style>
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent; color: #eaf6ff; font: 13px system-ui, sans-serif; }
+    #webgpuCanvas { position: fixed; inset: 0; width: 100%; height: 100%; background: transparent; pointer-events: none; }
     #diagnostics { position: absolute; right: 14px; bottom: 14px; padding: 8px 10px; border-radius: 999px; background: rgba(7, 16, 29, .72); border: 1px solid rgba(116, 205, 255, .55); }
+    #diagnostics[hidden] { display: none; }
     #communityHud { position: absolute; left: 14px; bottom: 14px; min-width: 180px; padding: 12px; border-radius: 10px; background: rgba(7, 16, 29, .72); border: 1px solid rgba(116, 205, 255, .55); }
     #communityHud[hidden], .hud-row[hidden] { display: none; }
     .hud-row { display: flex; justify-content: space-between; gap: 12px; margin-top: 5px; }
   </style>
 </head>
 <body>
-  <aside id="diagnostics" aria-live="polite">WebGPU renderer: awaiting Task 4</aside>
+  <canvas id="webgpuCanvas" aria-hidden="true"></canvas>
+  <aside id="diagnostics" hidden aria-live="polite"></aside>
   <aside id="communityHud" hidden aria-live="polite">
     <strong>Community Weather</strong>
     <div class="hud-row" id="hudMeter" hidden><span>Meter</span><span id="hudMeterValue">0</span></div>
@@ -21,16 +24,46 @@
     <div class="hud-row" id="hudStreak" hidden><span>Streak</span><span id="hudStreakValue">0</span></div>
     <div class="hud-row" id="hudRewardFeed" hidden><span>Reward</span><span id="hudRewardValue">—</span></div>
   </aside>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/plugins/webgpu-weather-control/gpu/weather-framegraph.js"></script>
+  <script src="/plugins/webgpu-weather-control/gpu/cinematic-weather-engine.js"></script>
   <script>
-    // This intentionally contains no renderer. A later WebGPU-only task owns GPU initialization.
     const diagnostics = document.querySelector('#diagnostics');
+    const debug = new URLSearchParams(location.search).get('debug') === '1';
+    const canvas = document.querySelector('#webgpuCanvas');
+    const engine = new CinematicWeatherEngine(canvas, {
+      onDiagnostic: (metrics) => {
+        if (!debug) return;
+        diagnostics.hidden = false;
+        diagnostics.textContent = `${metrics.state} | ${Math.round(metrics.fps || 0)} FPS | ${Math.round(metrics.gpuFrameMs || 0)} ms | ${metrics.activeParticles || 0} particles | ${metrics.reason || ''}`;
+      }
+    });
     const socket = typeof io === 'function' ? io() : null;
+    async function loadOverlayConfig() {
+      try {
+        const response = await fetch('/api/webgpu-weather/config');
+        const payload = await response.json();
+        if (payload.success) engine.applyConfig(payload.config);
+      } catch (_) {
+        // The canvas stays transparent when dashboard-admin config is unavailable.
+      }
+    }
+    function resize() { engine.resize(innerWidth, innerHeight); }
+    addEventListener('resize', resize);
+    engine.init().then((ready) => { if (ready) { resize(); loadOverlayConfig(); } });
     if (socket) {
+      socket.on('connect', () => {
+        socket.emit('webgpu-weather:client-ready', { renderer: 'webgpu' });
+        socket.emit('webgpu-weather:request-permanent-effects');
+      });
+      socket.on('webgpu-weather:trigger', (event) => engine.trigger(event));
+      socket.on('webgpu-weather:stop-effect', (event = {}) => engine.stop(event.action));
+      socket.on('webgpu-weather:stop', () => engine.stop());
       socket.on('webgpu-weather:diagnostics', (state) => {
-        diagnostics.textContent = state && state.message ? state.message : 'WebGPU diagnostics updated';
+        if (debug) { diagnostics.hidden = false; diagnostics.textContent = state && state.message ? state.message : 'WebGPU diagnostics updated'; }
       });
       socket.on('webgpu-weather:config-changed', () => {
-        diagnostics.textContent = 'WebGPU configuration updated';
+        loadOverlayConfig();
       });
       socket.on('webgpu-weather:gamification-state', (snapshot = {}) => {
         const overlay = snapshot.config?.overlay || snapshot.overlay || {};
@@ -49,6 +82,10 @@
         });
       });
     }
+    setInterval(() => {
+      engine.render(16.67);
+      if (socket) socket.emit('webgpu-weather:overlay-state', engine.getMetrics());
+    }, 16);
   </script>
 </body>
 </html>

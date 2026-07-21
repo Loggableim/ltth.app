@@ -229,8 +229,9 @@ describe('WebGPU Weather Control independent plugin surface', () => {
 
     expect(manifest).toMatchObject({ id: 'webgpu-weather-control', version: '1.0.0', enabled: false, devStatus: 'working-beta' });
     expect(manifest.description).toContain('WebGPU');
-    expect(overlay).not.toContain('getContext(');
-    expect(overlay).not.toContain('weather-engine.js');
+    expect(overlay).not.toContain("getContext('2d')");
+    expect(overlay).not.toContain("getContext('webgl");
+    expect(overlay).not.toContain('/weather-engine.js');
     expect(overlay).toContain('webgpu-weather:diagnostics');
     expect(overlay).toContain('communityHud');
     expect(overlay).toContain('hudMeter');

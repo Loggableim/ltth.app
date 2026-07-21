@@ -836,7 +836,7 @@
             <div class="card-body">
                 <div class="preview-container">
                     <div class="preview-stage-wrapper">
-                        <div id="preview-stage" aria-live="polite">WebGPU renderer diagnostics: awaiting activation</div>
+                        <a id="preview-stage" href="/webgpu-weather-control/overlay?debug=1" target="_blank" rel="noopener">Open the live WebGPU overlay preview</a>
                     </div>
 
                     <div class="preview-controls">
@@ -2910,6 +2910,12 @@
             });
             socket.on('webgpu-weather:active-state', (payload) => {
                 renderActiveEffects(payload?.activeEffects || []);
+            });
+            socket.on('webgpu-weather:diagnostics', (metrics = {}) => {
+                document.getElementById('preview-fps').textContent = Math.round(metrics.fps || 0);
+                document.getElementById('preview-avg-fps').textContent = `${Math.round(metrics.gpuFrameMs || metrics.frameMs || 0)} ms`;
+                document.getElementById('preview-particles').textContent = metrics.activeParticles || 0;
+                document.getElementById('preview-active-effects').textContent = Array.isArray(metrics.effects) ? metrics.effects.length : 0;
             });
         }
 
