@@ -319,6 +319,30 @@ describe('MusicResolver provider cascade and subscribers', () => {
     expect(runner.run.mock.calls[0][1].at(-1)).toBe('https://www.youtube.com/watch?v=direct-id');
   });
 
+  test('preserves provider album, BPM, and genre metadata for the catalog', () => {
+    const { resolver } = createResolver(async () => '');
+
+    const song = resolver._songFromData({
+      id: 'metadata-id',
+      title: 'Metadata Song',
+      uploader: 'Artist',
+      duration: 180,
+      extractor: 'youtube',
+      webpage_url: 'https://www.youtube.com/watch?v=metadata-id',
+      album: 'Neon Roads',
+      bpm: 127.5,
+      genres: ['Electronic', 'Dance'],
+      categories: ['Music']
+    });
+
+    expect(song).toMatchObject({
+      album: 'Neon Roads',
+      bpm: 127.5,
+      genres: ['Electronic', 'Dance'],
+      categories: ['Music']
+    });
+  });
+
   test.each([
     ['https://www.youtube.com/live/AbC123xYz_-?si=share', 'AbC123xYz_-'],
     ['https://www.youtube-nocookie.com/embed/NoCookie123', 'NoCookie123']

@@ -438,7 +438,12 @@
             "requestFailed": "{method}-Anfrage fehlgeschlagen.",
             "title": "Katalog",
             "description": "Frühere Songs suchen, bewerten und zu Playlists hinzufügen.",
-            "search": "Titel suchen"
+            "search": "Titel suchen",
+            "genres": "Genres",
+            "genrePlaceholder": "z. B. rock, pop",
+            "saveGenres": "Genres speichern",
+            "genresSaved": "Genres gespeichert.",
+            "genresSaveFailed": "Genres konnten nicht gespeichert werden."
           },
           "playlists": {
             "playlistSaveFailed": "Playlist konnte nicht gespeichert werden.",

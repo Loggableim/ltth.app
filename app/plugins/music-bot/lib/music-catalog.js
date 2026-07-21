@@ -7,6 +7,15 @@ const SEVEN_DAYS = 7 * ONE_DAY;
 const LEGACY_DUAL_WRITE_WINDOW_MS = 1000;
 const UNRELIABLE_ARTISTS = new Set(['', 'unknown', 'unknown artist', 'various artists', 'youtube']);
 const VERSION_QUALIFIER = '(?:live|remix|acoustic|instrumental|cover|karaoke|sped\\s*up|slowed|nightcore|reverb)';
+const GENRE_ALIASES = {
+  alternative: 'alternative', ambient: 'ambient', blues: 'blues', chill: 'chill',
+  classical: 'classical', country: 'country', dance: 'dance', disco: 'dance',
+  drumandbass: 'electronic', dubstep: 'electronic', edm: 'electronic', electronic: 'electronic',
+  folk: 'folk', funk: 'funk', hiphop: 'hip-hop', hiphoprap: 'hip-hop', house: 'electronic',
+  indie: 'indie', jazz: 'jazz', latin: 'latin', lofi: 'chill', metal: 'metal', pop: 'pop',
+  punk: 'punk', rnb: 'rnb', rap: 'hip-hop', reggae: 'reggae', rock: 'rock', soul: 'rnb',
+  soundtrack: 'soundtrack', techno: 'electronic', trance: 'electronic'
+};
 const NORMAL_UPLOAD_MARKERS = /(?:\s*[-–—]?\s*|\s*[\[(])(?:official\s*(?:music\s*)?(?:video|audio)|lyrics?|lyric\s*video)(?:\s*[\])])?/gi;
 
 class MusicCatalogError extends Error {
@@ -161,7 +170,7 @@ class MusicCatalog {
     if (!ids.length) return [];
     const placeholders = ids.map(() => '?').join(', ');
     const songs = this.db.prepare(
-      `SELECT songs.id AS songId, songs.canonical_key AS canonicalKey, songs.title,
+      `SELECT songs.id AS songId, songs.canonical_key AS canonicalKey, songs.title, songs.created_at AS createdAt,
        CASE WHEN COALESCE(feedback.state, 0) > 0 THEN 'up'
             WHEN COALESCE(feedback.state, 0) < 0 THEN 'down' ELSE 'neutral' END AS feedback,
        COALESCE(SUM(CASE WHEN events.outcome = 'completed'
@@ -196,20 +205,67 @@ class MusicCatalog {
        WHERE links.song_id IN (${placeholders})
        ORDER BY links.song_id ASC, artists.normalized_name ASC`
     ).all(...ids);
-    return songs.map((song) => ({
-      ...song,
-      completePlays: Number(song.completePlays) || 0,
-      earlySkips: Number(song.earlySkips) || 0,
-      lastPlayedAt: song.lastPlayedAt || null,
-      sources: sources.filter((source) => Number(source.songId) === Number(song.songId)),
-      artists: artists.filter((artist) => Number(artist.songId) === Number(song.songId))
-        .map((artist) => ({
-          id: artist.id,
-          name: artist.name,
-          affinity: Number(artist.affinity) || 0,
-          lastPlayedAt: artist.lastPlayedAt || null
-        }))
-    }));
+    const metadata = this.db.prepare(
+      `SELECT song_id AS songId, album, normalized_album AS normalizedAlbum, bpm
+       FROM plugin_music_bot_song_metadata WHERE song_id IN (${placeholders})`
+    ).all(...ids);
+    const albumPlays = this.db.prepare(
+      `SELECT candidates.song_id AS songId, MAX(events.finished_at) AS lastPlayedAt
+       FROM plugin_music_bot_song_metadata candidates
+       JOIN plugin_music_bot_song_metadata album_songs
+         ON album_songs.normalized_album = candidates.normalized_album
+       JOIN plugin_music_bot_song_artists candidate_artists
+         ON candidate_artists.song_id = candidates.song_id
+       JOIN plugin_music_bot_song_artists album_artists
+         ON album_artists.song_id = album_songs.song_id
+        AND album_artists.artist_id = candidate_artists.artist_id
+       JOIN plugin_music_bot_play_events events ON events.song_id = album_songs.song_id
+       WHERE candidates.song_id IN (${placeholders})
+         AND candidates.normalized_album IS NOT NULL
+         AND events.outcome != 'failed'
+       GROUP BY candidates.song_id`
+    ).all(...ids);
+    const genres = this.db.prepare(
+      `SELECT links.song_id AS songId, genres.slug, links.source, COALESCE(affinity.score, 0) AS affinity
+       FROM plugin_music_bot_song_genres links
+       JOIN plugin_music_bot_genres genres ON genres.id = links.genre_id
+       LEFT JOIN plugin_music_bot_genre_affinity affinity ON affinity.genre_id = genres.id
+       WHERE links.song_id IN (${placeholders}) ORDER BY links.song_id ASC, genres.slug ASC`
+    ).all(...ids);
+    const preferences = this.db.prepare(
+      `SELECT song_id AS songId, score FROM plugin_music_bot_radio_song_affinity
+       WHERE song_id IN (${placeholders})`
+    ).all(...ids);
+    return songs.map((song) => {
+      const songId = Number(song.songId);
+      const songMetadata = metadata.find((entry) => Number(entry.songId) === songId);
+      const albumPlay = albumPlays.find((entry) => Number(entry.songId) === songId);
+      const songGenres = genres.filter((entry) => Number(entry.songId) === songId);
+      const preference = preferences.find((entry) => Number(entry.songId) === songId);
+      return {
+        ...song,
+        createdAt: Number(song.createdAt) || null,
+        completePlays: Number(song.completePlays) || 0,
+        earlySkips: Number(song.earlySkips) || 0,
+        lastPlayedAt: song.lastPlayedAt || null,
+        album: songMetadata?.album || null,
+        normalizedAlbum: songMetadata?.normalizedAlbum || null,
+        albumLastPlayedAt: albumPlay?.lastPlayedAt || null,
+        bpm: Number(songMetadata?.bpm) || null,
+        genres: songGenres.map((entry) => entry.slug),
+        genreSource: songGenres.some((entry) => entry.source === 'manual') ? 'manual' : 'automatic',
+        genreAffinities: Object.fromEntries(songGenres.map((entry) => [entry.slug, Number(entry.affinity) || 0])),
+        radioAffinity: Number(preference?.score) || 0,
+        sources: sources.filter((source) => Number(source.songId) === Number(song.songId)),
+        artists: artists.filter((artist) => Number(artist.songId) === Number(song.songId))
+          .map((artist) => ({
+            id: artist.id,
+            name: artist.name,
+            affinity: Number(artist.affinity) || 0,
+            lastPlayedAt: artist.lastPlayedAt || null
+          }))
+      };
+    });
   }
 
   getSongArtists(songId) {
@@ -218,6 +274,106 @@ class MusicCatalog {
        JOIN plugin_music_bot_artists a ON a.id = links.artist_id
        WHERE links.song_id = ? ORDER BY a.normalized_name ASC`
     ).all(songId);
+  }
+
+  getMetadataEnrichmentCandidates({ limit = 1, now = Date.now(), staleAfterMs = ONE_DAY } = {}) {
+    const safeLimit = Math.max(1, Math.min(10, Number(limit) || 1));
+    const cutoff = Number(now) - Math.max(1, Number(staleAfterMs) || ONE_DAY);
+    const rows = this.db.prepare(
+      `SELECT songs.id AS songId, songs.title, sources.id AS sourceId, sources.provider,
+       sources.provider_id AS providerId, sources.track_key AS trackKey, sources.url,
+       (SELECT GROUP_CONCAT(artists.name, ' & ')
+        FROM plugin_music_bot_song_artists links
+        JOIN plugin_music_bot_artists artists ON artists.id = links.artist_id
+        WHERE links.song_id = songs.id) AS artist
+       FROM plugin_music_bot_songs songs
+       JOIN plugin_music_bot_sources sources ON sources.song_id = songs.id
+       LEFT JOIN plugin_music_bot_song_metadata metadata ON metadata.song_id = songs.id
+       WHERE sources.url IS NOT NULL AND TRIM(sources.url) != ''
+         AND sources.id = (
+           SELECT candidate_sources.id FROM plugin_music_bot_sources candidate_sources
+           WHERE candidate_sources.song_id = songs.id AND candidate_sources.url IS NOT NULL
+             AND TRIM(candidate_sources.url) != ''
+           ORDER BY candidate_sources.id ASC LIMIT 1
+         )
+         AND (metadata.song_id IS NULL OR metadata.updated_at <= ?)
+       ORDER BY COALESCE(metadata.updated_at, 0) ASC, songs.id ASC
+       LIMIT ?`
+    ).all(cutoff, safeLimit);
+    return rows.map((row) => ({
+      songId: Number(row.songId),
+      sourceId: Number(row.sourceId),
+      title: row.title,
+      artist: row.artist || '',
+      provider: row.provider,
+      providerId: row.providerId,
+      trackKey: row.trackKey,
+      url: row.url
+    }));
+  }
+
+  markMetadataEnrichmentAttempt(songId, updatedAt = Date.now()) {
+    const normalizedSongId = Number(songId);
+    if (!Number.isInteger(normalizedSongId) || normalizedSongId <= 0) {
+      throw new MusicCatalogError('CATALOG_SONG_NOT_FOUND', 'Catalog song not found');
+    }
+    const song = this.db.prepare('SELECT id FROM plugin_music_bot_songs WHERE id = ?').get(normalizedSongId);
+    if (!song) throw new MusicCatalogError('CATALOG_SONG_NOT_FOUND', 'Catalog song not found');
+    const timestamp = Number(updatedAt) || Date.now();
+    this.db.prepare(
+      `INSERT INTO plugin_music_bot_song_metadata (song_id, album, normalized_album, bpm, updated_at)
+       VALUES (?, NULL, NULL, NULL, ?)
+       ON CONFLICT(song_id) DO UPDATE SET updated_at = excluded.updated_at`
+    ).run(normalizedSongId, timestamp);
+    return { songId: normalizedSongId, updatedAt: timestamp };
+  }
+
+  setSongGenres(songId, genres) {
+    const normalizedSongId = Number(songId);
+    if (!Number.isInteger(normalizedSongId) || normalizedSongId <= 0) {
+      throw new MusicCatalogError('CATALOG_SONG_NOT_FOUND', 'Catalog song not found');
+    }
+    const normalizedGenres = this._normalizeGenres(genres);
+    return this._withTransaction(() => {
+      const song = this.db.prepare('SELECT id FROM plugin_music_bot_songs WHERE id = ?').get(normalizedSongId);
+      if (!song) throw new MusicCatalogError('CATALOG_SONG_NOT_FOUND', 'Catalog song not found');
+      this.db.prepare('DELETE FROM plugin_music_bot_song_genres WHERE song_id = ?').run(normalizedSongId);
+      normalizedGenres.forEach((genre) => this._linkSongGenre(normalizedSongId, genre, 'manual'));
+      return { songId: normalizedSongId, genres: normalizedGenres, source: 'manual' };
+    });
+  }
+
+  recordLivePreference(songId, direction) {
+    const normalizedSongId = Number(songId);
+    const value = String(direction || '').toLowerCase();
+    const delta = value === 'more' ? 1 : (value === 'less' ? -1 : 0);
+    if (!Number.isInteger(normalizedSongId) || normalizedSongId <= 0 || !delta) {
+      throw new MusicCatalogError('CATALOG_INVALID_PREFERENCE', 'Live preference must be more or less');
+    }
+    return this._withTransaction(() => {
+      const song = this.db.prepare('SELECT id FROM plugin_music_bot_songs WHERE id = ?').get(normalizedSongId);
+      if (!song) throw new MusicCatalogError('CATALOG_SONG_NOT_FOUND', 'Catalog song not found');
+      const now = Date.now();
+      this.db.prepare(
+        `INSERT INTO plugin_music_bot_radio_song_affinity (song_id, score, updated_at)
+         VALUES (?, ?, ?)
+         ON CONFLICT(song_id) DO UPDATE SET score = MIN(4, MAX(-4, score + excluded.score)), updated_at = excluded.updated_at`
+      ).run(normalizedSongId, delta, now);
+      this.db.prepare(
+        `INSERT INTO plugin_music_bot_artist_affinity (artist_id, score, updated_at)
+         SELECT artist_id, ?, ? FROM plugin_music_bot_song_artists WHERE song_id = ?
+         ON CONFLICT(artist_id) DO UPDATE SET score = MIN(4, MAX(-4, score + excluded.score)), updated_at = excluded.updated_at`
+      ).run(delta, now, normalizedSongId);
+      this.db.prepare(
+        `INSERT INTO plugin_music_bot_genre_affinity (genre_id, score, updated_at)
+         SELECT genre_id, ?, ? FROM plugin_music_bot_song_genres WHERE song_id = ?
+         ON CONFLICT(genre_id) DO UPDATE SET score = MIN(4, MAX(-4, score + excluded.score)), updated_at = excluded.updated_at`
+      ).run(delta, now, normalizedSongId);
+      const score = this.db.prepare(
+        'SELECT score FROM plugin_music_bot_radio_song_affinity WHERE song_id = ?'
+      ).get(normalizedSongId)?.score || 0;
+      return { songId: normalizedSongId, direction: value, score: Number(score) || 0, updatedAt: now };
+    });
   }
 
   recordSourceFailure(sourceId, error, now = Date.now()) {
@@ -289,9 +445,17 @@ class MusicCatalog {
   searchSongs(query, limit = 25) {
     const normalized = `%${normalizeText(query)}%`;
     return this.db.prepare(
-      `SELECT id, title FROM plugin_music_bot_songs WHERE normalized_title LIKE ?
-       ORDER BY created_at DESC LIMIT ?`
-    ).all(normalized, Math.max(1, Math.min(100, Number(limit) || 25)));
+      `SELECT songs.id, songs.title, GROUP_CONCAT(genres.slug, ',') AS genres
+       FROM plugin_music_bot_songs songs
+       LEFT JOIN plugin_music_bot_song_genres links ON links.song_id = songs.id
+       LEFT JOIN plugin_music_bot_genres genres ON genres.id = links.genre_id
+       WHERE songs.normalized_title LIKE ?
+       GROUP BY songs.id
+       ORDER BY songs.created_at DESC LIMIT ?`
+    ).all(normalized, Math.max(1, Math.min(100, Number(limit) || 25))).map((song) => ({
+      ...song,
+      genres: String(song.genres || '').split(',').filter(Boolean).sort()
+    }));
   }
 
   _recordPlayback(track, details) {
@@ -350,6 +514,7 @@ class MusicCatalog {
       ).get(info.lastInsertRowid);
     }
     artists.forEach((artist) => this._linkArtist(song.id, artist));
+    this._upsertMetadata(song.id, track);
     const source = this._upsertSource(song.id, identity, track);
     return { song, source, identity };
   }
@@ -406,6 +571,53 @@ class MusicCatalog {
     this.db.prepare(
       'INSERT OR IGNORE INTO plugin_music_bot_song_artists (song_id, artist_id) VALUES (?, ?)'
     ).run(songId, row.id);
+  }
+
+  _upsertMetadata(songId, track) {
+    const album = String(track?.album || '').trim() || null;
+    const normalizedAlbum = album ? normalizeText(album) : null;
+    const bpmValue = Number(track?.bpm);
+    const bpm = Number.isFinite(bpmValue) && bpmValue >= 40 && bpmValue <= 260 ? bpmValue : null;
+    if (album || bpm) {
+      this.db.prepare(
+        `INSERT INTO plugin_music_bot_song_metadata (song_id, album, normalized_album, bpm, updated_at)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(song_id) DO UPDATE SET album = COALESCE(excluded.album, album),
+           normalized_album = COALESCE(excluded.normalized_album, normalized_album), bpm = COALESCE(excluded.bpm, bpm),
+           updated_at = excluded.updated_at`
+      ).run(songId, album, normalizedAlbum, bpm, Date.now());
+    }
+    const hasManualGenres = this.db.prepare(
+      "SELECT 1 FROM plugin_music_bot_song_genres WHERE song_id = ? AND source = 'manual' LIMIT 1"
+    ).get(songId);
+    if (hasManualGenres) return;
+    const genres = this._normalizeGenres(track?.genres || track?.categories || []);
+    if (!genres.length) return;
+    this.db.prepare("DELETE FROM plugin_music_bot_song_genres WHERE song_id = ? AND source = 'automatic'").run(songId);
+    genres.forEach((genre) => this._linkSongGenre(songId, genre, 'automatic'));
+  }
+
+  _linkSongGenre(songId, genre, source) {
+    this.db.prepare(
+      'INSERT INTO plugin_music_bot_genres (slug, created_at) VALUES (?, ?) ON CONFLICT(slug) DO NOTHING'
+    ).run(genre, Date.now());
+    const row = this.db.prepare('SELECT id FROM plugin_music_bot_genres WHERE slug = ?').get(genre);
+    this.db.prepare(
+      `INSERT INTO plugin_music_bot_song_genres (song_id, genre_id, source, updated_at)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(song_id, genre_id) DO UPDATE SET source = excluded.source, updated_at = excluded.updated_at`
+    ).run(songId, row.id, source, Date.now());
+  }
+
+  _normalizeGenres(values) {
+    const input = Array.isArray(values) ? values : [values];
+    const genres = new Set();
+    input.forEach((value) => {
+      const normalized = normalizeText(value).replace(/[^a-z0-9]+/g, '');
+      const genre = GENRE_ALIASES[normalized];
+      if (genre) genres.add(genre);
+    });
+    return [...genres].sort();
   }
 
   _creditedArtists(track) {
@@ -508,8 +720,25 @@ class MusicCatalog {
       `CREATE TABLE IF NOT EXISTS plugin_music_bot_artist_affinity (
         artist_id INTEGER PRIMARY KEY, score INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL
       )`,
+      `CREATE TABLE IF NOT EXISTS plugin_music_bot_song_metadata (
+        song_id INTEGER PRIMARY KEY, album TEXT, normalized_album TEXT, bpm REAL, updated_at INTEGER NOT NULL
+      )`,
+      `CREATE TABLE IF NOT EXISTS plugin_music_bot_genres (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL
+      )`,
+      `CREATE TABLE IF NOT EXISTS plugin_music_bot_song_genres (
+        song_id INTEGER NOT NULL, genre_id INTEGER NOT NULL, source TEXT NOT NULL DEFAULT 'automatic', updated_at INTEGER NOT NULL,
+        PRIMARY KEY (song_id, genre_id)
+      )`,
+      `CREATE TABLE IF NOT EXISTS plugin_music_bot_radio_song_affinity (
+        song_id INTEGER PRIMARY KEY, score INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL
+      )`,
+      `CREATE TABLE IF NOT EXISTS plugin_music_bot_genre_affinity (
+        genre_id INTEGER PRIMARY KEY, score INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL
+      )`,
       'CREATE INDEX IF NOT EXISTS idx_music_bot_play_events_finished ON plugin_music_bot_play_events (finished_at DESC)',
-      'CREATE INDEX IF NOT EXISTS idx_music_bot_sources_song ON plugin_music_bot_sources (song_id)'
+      'CREATE INDEX IF NOT EXISTS idx_music_bot_sources_song ON plugin_music_bot_sources (song_id)',
+      'CREATE INDEX IF NOT EXISTS idx_music_bot_song_genres_song ON plugin_music_bot_song_genres (song_id)'
     ];
     statements.forEach((sql) => this.db.prepare(sql).run());
   }

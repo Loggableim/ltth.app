@@ -45,4 +45,21 @@ describe('Music Bot command parser', () => {
 
     expect(commands).toEqual([{ type: 'request', query: 'I Need a Hero' }]);
   });
+
+  test.each(['!vote1', '!vote2'])('parses the optional next-song command %s with the global prefix', async (message) => {
+    const commands = [];
+    const parser = new CommandParser({
+      commandPrefix: '!',
+      commands: { vote1: 'vote1', vote2: 'vote2' },
+      commandAliases: { vote1: [], vote2: [] },
+      permissions: { vote1: 'viewer', vote2: 'viewer' }
+    }, null, null, null, {
+      getDatabase: () => ({ prepare: () => ({ get: () => null }) }),
+      log: jest.fn()
+    }, null, null);
+
+    await parser.parse({ message, username: 'viewer' }, (command) => commands.push(command));
+
+    expect(commands).toEqual([{ type: message.slice(1) }]);
+  });
 });

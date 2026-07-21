@@ -438,7 +438,12 @@
             "requestFailed": "La requête {method} a échoué.",
             "title": "Catalogue",
             "description": "Recherchez et évaluez les anciens morceaux ou ajoutez-les à des playlists.",
-            "search": "Rechercher des titres"
+            "search": "Rechercher des titres",
+            "genres": "Styles musicaux",
+            "genrePlaceholder": "ex. rock, pop",
+            "saveGenres": "Enregistrer les genres",
+            "genresSaved": "Genres enregistrés.",
+            "genresSaveFailed": "Les genres n’ont pas pu être enregistrés."
           },
           "playlists": {
             "playlistSaveFailed": "Impossible d'enregistrer la playlist.",

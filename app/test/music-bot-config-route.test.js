@@ -485,7 +485,17 @@ describe('music-bot POST /api/plugins/music-bot/config', () => {
       autoDJ: {
         mode: 'mix',
         mixHistoryPercent: -12,
-        repeatCooldownHours: 300
+        repeatCooldownHours: 300,
+        genreFilterEnabled: true,
+        selectedGenres: ['Rock', 'Electronic', 'rock'],
+        artistSpacingMinutes: -10,
+        albumSpacingMinutes: 999999,
+        noveltyBudgetPercent: 20.9,
+        requestSeedsEnabled: false,
+        liveFeedbackEnabled: false,
+        previewEnabled: false,
+        chatVotingEnabled: true,
+        chatVoteCloseBeforeEndSeconds: 1
       }
     } }, res);
 
@@ -493,7 +503,16 @@ describe('music-bot POST /api/plugins/music-bot/config', () => {
     expect(persisted.autoDJ).toMatchObject({
       mode: 'mix',
       mixHistoryPercent: 0,
-      repeatCooldownHours: 168
+      repeatCooldownHours: 168,
+      selectedGenres: ['rock', 'electronic'],
+      artistSpacingMinutes: 0,
+      albumSpacingMinutes: 10080,
+      noveltyBudgetPercent: 20,
+      requestSeedsEnabled: false,
+      liveFeedbackEnabled: false,
+      previewEnabled: false,
+      chatVotingEnabled: true,
+      chatVoteCloseBeforeEndSeconds: 5
     });
     expect(plugin.autoDJ.updateConfig).toHaveBeenCalledWith(persisted.autoDJ);
   });

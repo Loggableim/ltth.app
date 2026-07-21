@@ -438,7 +438,12 @@
             "requestFailed": "{method} request failed.",
             "title": "Catalog",
             "description": "Search and rate previous songs or add them to playlists.",
-            "search": "Search tracks"
+            "search": "Search tracks",
+            "genres": "Music genres",
+            "genrePlaceholder": "e.g. rock, pop",
+            "saveGenres": "Save genres",
+            "genresSaved": "Genres saved.",
+            "genresSaveFailed": "Genres could not be saved."
           },
           "playlists": {
             "playlistSaveFailed": "Could not save playlist.",

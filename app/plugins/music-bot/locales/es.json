@@ -438,7 +438,12 @@
             "requestFailed": "La solicitud {method} ha fallado.",
             "title": "Catálogo",
             "description": "Busca y valora canciones anteriores o añádelas a listas.",
-            "search": "Buscar pistas"
+            "search": "Buscar pistas",
+            "genres": "Géneros",
+            "genrePlaceholder": "p. ej. rock, pop",
+            "saveGenres": "Guardar géneros",
+            "genresSaved": "Géneros guardados.",
+            "genresSaveFailed": "No se pudieron guardar los géneros."
           },
           "playlists": {
             "playlistSaveFailed": "No se pudo guardar la lista.",

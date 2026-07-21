@@ -153,6 +153,41 @@ describe('Music Bot core features', () => {
     expect(plugin.mediaCache.pin).toHaveBeenCalledWith('radio-prefetched-track');
   });
 
+  test('enriches one stale catalog entry asynchronously and schedules the next background pass', async () => {
+    const plugin = new MusicBotPlugin({
+      getSocketIO: jest.fn(() => ({ emit: jest.fn() })),
+      getDatabase: jest.fn(() => ({})),
+      log: jest.fn()
+    });
+    const candidate = {
+      songId: 8,
+      title: 'Older catalog song',
+      artist: 'Radio Artist',
+      url: 'https://example.test/older-song'
+    };
+    plugin.musicCatalog = {
+      getMetadataEnrichmentCandidates: jest.fn(() => [candidate]),
+      markMetadataEnrichmentAttempt: jest.fn(),
+      resolveOrUpsert: jest.fn()
+    };
+    plugin.musicResolver = {
+      resolve: jest.fn(async () => ({
+        success: true,
+        song: { title: 'Older catalog song', artist: 'Radio Artist', bpm: 124, genres: ['rock'] }
+      }))
+    };
+    plugin._scheduleCatalogMetadataEnrichment = jest.fn();
+
+    await plugin._runCatalogMetadataEnrichment();
+
+    expect(plugin.musicCatalog.markMetadataEnrichmentAttempt).toHaveBeenCalledWith(8);
+    expect(plugin.musicResolver.resolve).toHaveBeenCalledWith('https://example.test/older-song');
+    expect(plugin.musicCatalog.resolveOrUpsert).toHaveBeenCalledWith(expect.objectContaining({
+      url: 'https://example.test/older-song', bpm: 124, genres: ['rock']
+    }));
+    expect(plugin._scheduleCatalogMetadataEnrichment).toHaveBeenCalledWith(20_000);
+  });
+
   test('processes a TikTok gift event ID only once', async () => {
     const plugin = new MusicBotPlugin({
       getSocketIO: jest.fn(() => ({ emit: jest.fn() })),

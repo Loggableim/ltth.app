@@ -22,6 +22,10 @@ class AutoDJ {
     this.blockedCount = 0;
     this.lastSelection = null;
     this.lastResult = { state: 'idle', message: 'Auto-DJ bereit.' };
+    this.currentRadioContext = null;
+    this.requestSeed = null;
+    this.recentNovelty = [];
+    this.genreSelectionCounts = new Map();
     this.updateConfig(config);
     this.isActive = this.config.enabled;
   }
@@ -39,6 +43,18 @@ class AutoDJ {
       repeatCooldownHours: 12,
       playlistUrls: [],
       playlistFallbackToRandom: true,
+      genreFilterEnabled: true,
+      selectedGenres: [],
+      bpmTransitionsEnabled: true,
+      artistSpacingMinutes: 90,
+      albumSpacingMinutes: 360,
+      noveltyBudgetPercent: 20,
+      noveltyCatalogAgeDays: 10,
+      requestSeedsEnabled: true,
+      liveFeedbackEnabled: true,
+      previewEnabled: true,
+      chatVotingEnabled: false,
+      chatVoteCloseBeforeEndSeconds: 20,
       ...(config || {})
     };
     this.config.enabled = typeof this.config.enabled === 'boolean' ? this.config.enabled : false;
@@ -51,6 +67,25 @@ class AutoDJ {
     this.config.playlistFallbackToRandom = typeof this.config.playlistFallbackToRandom === 'boolean'
       ? this.config.playlistFallbackToRandom
       : true;
+    this.config.genreFilterEnabled = typeof this.config.genreFilterEnabled === 'boolean'
+      ? this.config.genreFilterEnabled
+      : true;
+    this.config.bpmTransitionsEnabled = typeof this.config.bpmTransitionsEnabled === 'boolean'
+      ? this.config.bpmTransitionsEnabled
+      : true;
+    this.config.requestSeedsEnabled = typeof this.config.requestSeedsEnabled === 'boolean'
+      ? this.config.requestSeedsEnabled
+      : true;
+    this.config.liveFeedbackEnabled = typeof this.config.liveFeedbackEnabled === 'boolean'
+      ? this.config.liveFeedbackEnabled
+      : true;
+    this.config.previewEnabled = typeof this.config.previewEnabled === 'boolean'
+      ? this.config.previewEnabled
+      : true;
+    this.config.chatVotingEnabled = typeof this.config.chatVotingEnabled === 'boolean'
+      ? this.config.chatVotingEnabled
+      : false;
+    this.config.selectedGenres = this._normalizeGenres(this.config.selectedGenres);
     const configuredCooldownHours = Number(this.config.repeatCooldownHours);
     const cooldownHours = Number.isFinite(configuredCooldownHours)
       ? Math.floor(configuredCooldownHours)
@@ -66,6 +101,16 @@ class AutoDJ {
       ? Math.floor(configuredMaxConsecutive)
       : 10;
     this.config.maxConsecutiveAutoDJ = Math.min(Math.max(maxConsecutiveAutoDJ, 1), 100);
+    this.config.artistSpacingMinutes = this._normalizeInteger(this.config.artistSpacingMinutes, 90, 0, 24 * 60);
+    this.config.albumSpacingMinutes = this._normalizeInteger(this.config.albumSpacingMinutes, 360, 0, 7 * 24 * 60);
+    this.config.noveltyBudgetPercent = this._normalizeInteger(this.config.noveltyBudgetPercent, 20, 0, 100);
+    this.config.noveltyCatalogAgeDays = this._normalizeInteger(this.config.noveltyCatalogAgeDays, 10, 1, 60);
+    this.config.chatVoteCloseBeforeEndSeconds = this._normalizeInteger(
+      this.config.chatVoteCloseBeforeEndSeconds,
+      20,
+      5,
+      120
+    );
     if (!this.config.enabled) {
       this.isActive = false;
       this._setResult('disabled', 'Auto-DJ ist deaktiviert.');
@@ -121,7 +166,7 @@ class AutoDJ {
 
     const track = await this._selectTrack();
     if (!track) {
-      if (this.lastResult.state !== 'error' && this.lastResult.state !== 'no-playlist-context') {
+      if (!['error', 'no-playlist-context', 'no-genre-match', 'novelty-budget'].includes(this.lastResult.state)) {
         this._setResult('no-track', 'Kein passender Auto-DJ-Titel gefunden. Pruefe Playlist oder History.');
       }
       return null;
@@ -148,6 +193,10 @@ class AutoDJ {
     this.relatedTrackIndices.clear();
     this.mixSeedIndex = 0;
     this.lastPlaylistTrack = null;
+    this.currentRadioContext = null;
+    this.requestSeed = null;
+    this.recentNovelty = [];
+    this.genreSelectionCounts.clear();
   }
 
   markTrackStarted(track) {
@@ -158,14 +207,55 @@ class AutoDJ {
     }
     const songId = Number(track?.catalogSongId ?? track?.songId);
     if (Number.isInteger(songId) && songId > 0) this.playedSongIds.add(songId);
+    if (track?.radioNovelty) {
+      this.recentNovelty.push(true);
+      this.recentNovelty = this.recentNovelty.slice(-10);
+    } else if (track?.requestedBy === 'AutoDJ') {
+      this.recentNovelty.push(false);
+      this.recentNovelty = this.recentNovelty.slice(-10);
+    }
+    if (track?.radioRequestSeed && this.requestSeed?.remaining > 0) {
+      this.requestSeed.remaining -= 1;
+      if (this.requestSeed.remaining <= 0) this.requestSeed = null;
+    }
+    this.setRadioContext(track);
     this._setResult('playing', `Spielt: ${track?.title || 'Unbekannter Titel'}`, {
       title: track?.title || 'Unbekannter Titel'
     });
   }
 
   setPlaybackSeed(track) {
+    this.setRadioContext(track);
     if (!track?.youtubeId) return false;
     this.lastPlaylistTrack = { ...track };
+    return true;
+  }
+
+  setRadioContext(track) {
+    if (!track || typeof track !== 'object') return false;
+    const bpm = Number(track.bpm);
+    this.currentRadioContext = {
+      catalogSongId: Number(track.catalogSongId ?? track.songId) || null,
+      title: String(track.title || '').trim(),
+      artist: String(track.artist || '').trim(),
+      album: String(track.album || '').trim() || null,
+      bpm: Number.isFinite(bpm) && bpm > 0 ? bpm : null,
+      genres: this._normalizeGenres(track.genres || track.categories || [])
+    };
+    return true;
+  }
+
+  setRequestSeed(track) {
+    if (!this.config.requestSeedsEnabled || !track || typeof track !== 'object') return false;
+    const artist = String(track.artist || '').trim();
+    const genres = this._normalizeGenres(track.genres || track.categories || []);
+    if (!artist && genres.length === 0) return false;
+    this.requestSeed = {
+      artist,
+      artistKey: this._normalizeText(artist),
+      genres,
+      remaining: 2
+    };
     return true;
   }
 
@@ -260,6 +350,18 @@ class AutoDJ {
       announceAutoDJ: this.config.announceAutoDJ,
       playlistUrls: this.config.playlistUrls,
       playlistFallbackToRandom: this.config.playlistFallbackToRandom,
+      genreFilterEnabled: this.config.genreFilterEnabled,
+      selectedGenres: [...this.config.selectedGenres],
+      bpmTransitionsEnabled: this.config.bpmTransitionsEnabled,
+      artistSpacingMinutes: this.config.artistSpacingMinutes,
+      albumSpacingMinutes: this.config.albumSpacingMinutes,
+      noveltyBudgetPercent: this.config.noveltyBudgetPercent,
+      requestSeedsEnabled: this.config.requestSeedsEnabled,
+      liveFeedbackEnabled: this.config.liveFeedbackEnabled,
+      previewEnabled: this.config.previewEnabled,
+      chatVotingEnabled: this.config.chatVotingEnabled,
+      chatVoteCloseBeforeEndSeconds: this.config.chatVoteCloseBeforeEndSeconds,
+      requestSeedRemaining: this.requestSeed?.remaining || 0,
       lastPlaylistTrack: this.lastPlaylistTrack
         ? {
           title: this.lastPlaylistTrack.title,
@@ -403,23 +505,48 @@ class AutoDJ {
     const songIds = [...new Set(items.map((item) => Number(item.songId)).filter(Number.isInteger))];
     if (!songIds.length) {
       this.blockedCount = 0;
-      return { items: [], candidates: [], eligible: [], artistSpacingRelaxed: false };
+      return {
+        items: [], candidates: [], eligible: [], bySongId: new Map(),
+        genreFilterApplied: false, genreEligibleCount: 0, genreTarget: null,
+        albumSpacingRelaxed: false, artistSpacingRelaxed: false, noveltyBudgetExhausted: false
+      };
     }
     const now = this.now();
     const candidates = this.catalog?.getRadioCandidates?.(songIds, { now }) || [];
     const bySongId = new Map(candidates.map((candidate) => [Number(candidate.songId), candidate]));
     const hardEligible = candidates.filter((candidate) => this._isCatalogCandidateHardEligible(candidate, now));
     this.blockedCount = candidates.length - hardEligible.length;
-    const artistEligible = hardEligible.filter((candidate) => !this._isArtistSpaced(candidate, now));
-    const artistSpacingRelaxed = artistEligible.length === 0 && hardEligible.length > 0;
-    const eligible = artistSpacingRelaxed ? hardEligible : artistEligible;
+    const genreFilterApplied = this._hasSelectedGenres();
+    const genreEligible = genreFilterApplied
+      ? hardEligible.filter((candidate) => this._matchesSelectedGenre(candidate))
+      : hardEligible;
+    const strictSpacingEligible = genreEligible.filter((candidate) => (
+      !this._isAlbumSpaced(candidate, now) && !this._isArtistSpaced(candidate, now)
+    ));
+    const albumRelaxedEligible = genreEligible.filter((candidate) => !this._isArtistSpaced(candidate, now));
+    const albumSpacingRelaxed = strictSpacingEligible.length === 0 && albumRelaxedEligible.length > 0;
+    const artistSpacingRelaxed = strictSpacingEligible.length === 0 && albumRelaxedEligible.length === 0
+      && genreEligible.length > 0;
+    const afterSpacing = strictSpacingEligible.length
+      ? strictSpacingEligible
+      : (albumRelaxedEligible.length ? albumRelaxedEligible : genreEligible);
+    const noveltyEligible = afterSpacing.filter((candidate) => (
+      !this._isNovelCandidate(candidate, now) || this._canSelectNovelty()
+    ));
+    const noveltyBudgetExhausted = noveltyEligible.length === 0 && afterSpacing.length > 0;
+    const eligible = noveltyBudgetExhausted ? [] : noveltyEligible;
     const eligibleIds = new Set(eligible.map((candidate) => Number(candidate.songId)));
     return {
       items: items.filter((item) => eligibleIds.has(Number(item.songId))),
       candidates,
       eligible,
       bySongId,
-      artistSpacingRelaxed
+      genreFilterApplied,
+      genreEligibleCount: genreEligible.length,
+      genreTarget: this._getBalancedGenreTarget(eligible),
+      albumSpacingRelaxed,
+      artistSpacingRelaxed,
+      noveltyBudgetExhausted
     };
   }
 
@@ -428,9 +555,19 @@ class AutoDJ {
     if (!pool.items.length) {
       this.lastSelection = {
         type: 'familiar',
+        genreFilterApplied: pool.genreFilterApplied,
+        genreTarget: pool.genreTarget,
+        albumSpacingRelaxed: pool.albumSpacingRelaxed,
         artistSpacingRelaxed: pool.artistSpacingRelaxed,
+        noveltyBudgetExhausted: pool.noveltyBudgetExhausted,
         candidates: []
       };
+      if (pool.genreFilterApplied && pool.candidates.length > 0 && pool.genreEligibleCount === 0) {
+        this.isActive = false;
+        this._setResult('no-genre-match', 'Kein Katalogtitel passt zu den gewaehlten Radio-Genres.', {
+          selectedGenres: this.config.selectedGenres
+        });
+      }
       return null;
     }
 
@@ -447,17 +584,27 @@ class AutoDJ {
       }
       groups.get(playlistId).items.push(item);
     });
-    const group = this._chooseWeighted([...groups.values()], (entry) => entry.weight);
+    const genreTarget = pool.genreTarget;
+    const genreGroups = genreTarget
+      ? [...groups.values()].filter((entry) => entry.items.some((item) => (
+        this._candidateHasGenre(pool.bySongId.get(Number(item.songId)), genreTarget)
+      )))
+      : [...groups.values()];
+    const group = this._chooseWeighted(genreGroups.length ? genreGroups : [...groups.values()], (entry) => entry.weight);
     if (!group) return null;
 
     const scored = group.items.map((item) => {
       const candidate = pool.bySongId.get(Number(item.songId));
       return { item, candidate, ...this._scoreCatalogCandidate(candidate) };
-    }).filter((entry) => entry.candidate);
+    }).filter((entry) => entry.candidate && (!genreTarget || this._candidateHasGenre(entry.candidate, genreTarget)));
     const selected = group.mode === 'shuffle'
       ? this._chooseWeighted(scored, (entry) => entry.score)
       : scored[0];
     if (!selected) return null;
+
+    if (genreTarget) {
+      this.genreSelectionCounts.set(genreTarget, (this.genreSelectionCounts.get(genreTarget) || 0) + 1);
+    }
 
     if (group.mode === 'ordered') {
       const length = Math.max(1, Number(selected.item.itemCount) || group.items.length);
@@ -469,24 +616,40 @@ class AutoDJ {
       playlistId: group.playlistId,
       playlistMode: group.mode,
       playlistWeight: group.weight,
+      genreFilterApplied: pool.genreFilterApplied,
+      genreTarget,
+      albumSpacingRelaxed: pool.albumSpacingRelaxed,
       artistSpacingRelaxed: pool.artistSpacingRelaxed,
+      noveltyBudgetExhausted: pool.noveltyBudgetExhausted,
       candidates: scored.map((entry) => ({
         songId: Number(entry.candidate.songId),
         explicitSongFactor: entry.explicitSongFactor,
         implicitSongFactor: entry.implicitSongFactor,
         songFactor: entry.songFactor,
         artistFactor: entry.artistFactor,
+        genreFactor: entry.genreFactor,
+        bpmFactor: entry.bpmFactor,
+        requestSeedFactor: entry.requestSeedFactor,
         score: entry.score
       }))
     };
-    return this._catalogCandidateToTrack(selected.candidate);
+    return this._catalogCandidateToTrack(selected.candidate, {
+      ...selected,
+      genreTarget,
+      albumSpacingRelaxed: pool.albumSpacingRelaxed,
+      artistSpacingRelaxed: pool.artistSpacingRelaxed
+    });
   }
 
   async _pickCatalogDiscovery() {
     const pool = this._loadCatalogPool();
     if (!pool.eligible.length) return null;
+    const genreTarget = pool.genreTarget;
+    const discoveryCandidates = genreTarget
+      ? pool.eligible.filter((candidate) => this._candidateHasGenre(candidate, genreTarget))
+      : pool.eligible;
     const seedEntry = this._chooseWeighted(
-      pool.eligible.map((candidate) => ({ candidate, ...this._scoreCatalogCandidate(candidate) })),
+      discoveryCandidates.map((candidate) => ({ candidate, ...this._scoreCatalogCandidate(candidate) })),
       (entry) => entry.score
     );
     if (!seedEntry) return null;
@@ -513,6 +676,8 @@ class AutoDJ {
         ? this.catalog.getRadioCandidates?.([songId], { now: this.now() })?.find((candidate) => Number(candidate.songId) === songId)
         : null;
       if (canonical && !this._isCatalogCandidateHardEligible(canonical, this.now())) return null;
+      if (canonical && this._hasSelectedGenres() && !this._matchesSelectedGenre(canonical)) return null;
+      if (canonical && genreTarget && !this._candidateHasGenre(canonical, genreTarget)) return null;
       discovered = {
         ...discovered,
         catalogSongId: Number.isInteger(songId) ? songId : undefined,
@@ -524,15 +689,21 @@ class AutoDJ {
     this.lastSelection = {
       type: 'discovery',
       seedSongId: Number(seedEntry.candidate.songId),
+      genreTarget,
+      albumSpacingRelaxed: pool.albumSpacingRelaxed,
       artistSpacingRelaxed: pool.artistSpacingRelaxed,
       candidates: []
     };
+    if (genreTarget) {
+      this.genreSelectionCounts.set(genreTarget, (this.genreSelectionCounts.get(genreTarget) || 0) + 1);
+    }
     return discovered;
   }
 
   _isCatalogCandidateHardEligible(candidate, now) {
     if (!candidate || candidate.feedback === 'down') return false;
     const songId = Number(candidate.songId);
+    if (songId > 0 && songId === Number(this.currentRadioContext?.catalogSongId)) return false;
     if (this.playedSongIds.has(songId)) return false;
     const cooldownStartedAt = now - this._getRepeatCooldownMs();
     if (candidate.lastPlayedAt !== null && candidate.lastPlayedAt !== undefined
@@ -555,11 +726,19 @@ class AutoDJ {
   }
 
   _isArtistSpaced(candidate, now) {
-    const cutoff = now - (90 * 60 * 1000);
+    if (this.config.artistSpacingMinutes <= 0) return false;
+    const cutoff = now - (this.config.artistSpacingMinutes * 60 * 1000);
     return (candidate?.artists || []).some((artist) => (
       artist.lastPlayedAt !== null && artist.lastPlayedAt !== undefined
       && Number(artist.lastPlayedAt) >= cutoff
     ));
+  }
+
+  _isAlbumSpaced(candidate, now) {
+    if (this.config.albumSpacingMinutes <= 0 || !candidate?.normalizedAlbum && !candidate?.album) return false;
+    const lastPlayedAt = Number(candidate.albumLastPlayedAt);
+    if (!Number.isFinite(lastPlayedAt) || lastPlayedAt <= 0) return false;
+    return lastPlayedAt >= now - (this.config.albumSpacingMinutes * 60 * 1000);
   }
 
   _scoreCatalogCandidate(candidate) {
@@ -571,16 +750,38 @@ class AutoDJ {
     const affinities = (candidate?.artists || []).map((artist) => Number(artist.affinity) || 0);
     const affinity = affinities.length ? Math.max(...affinities) : 0;
     const artistFactor = this._clamp(0.4, 2.5, 1 + (affinity * 0.25));
+    const radioAffinity = Number(candidate?.radioAffinity) || 0;
+    const radioAffinityFactor = this._clamp(0.5, 1.6, 1 + (radioAffinity * 0.15));
+    const genreScores = Object.values(candidate?.genreAffinities || {}).map(Number).filter(Number.isFinite);
+    const genreAffinity = genreScores.length ? Math.max(...genreScores) : 0;
+    const genreFactor = this._clamp(0.5, 1.6, 1 + (genreAffinity * 0.12));
+    const candidateBpm = Number(candidate?.bpm);
+    const contextBpm = Number(this.currentRadioContext?.bpm);
+    const hasBpmTransition = this.config.bpmTransitionsEnabled
+      && Number.isFinite(candidateBpm) && candidateBpm > 0
+      && Number.isFinite(contextBpm) && contextBpm > 0;
+    const bpmDistance = hasBpmTransition ? Math.abs(candidateBpm - contextBpm) : null;
+    const bpmFactor = hasBpmTransition
+      ? this._clamp(0.65, 1.3, 1.25 - (bpmDistance / 100))
+      : 1;
+    const requestSeed = this._getRequestSeedScore(candidate);
     return {
       explicitSongFactor,
       implicitSongFactor,
       songFactor,
       artistFactor,
-      score: songFactor * artistFactor
+      radioAffinityFactor,
+      genreFactor,
+      bpmFactor,
+      bpmDistance,
+      requestSeedFactor: requestSeed.factor,
+      requestSeedActive: requestSeed.active,
+      requestSeedMatched: requestSeed.matched,
+      score: songFactor * artistFactor * radioAffinityFactor * genreFactor * bpmFactor * requestSeed.factor
     };
   }
 
-  _catalogCandidateToTrack(candidate) {
+  _catalogCandidateToTrack(candidate, scoring = {}) {
     const now = this.now();
     const sources = this._eligibleCatalogSources(candidate, now);
     if (!candidate || !sources.length) return null;
@@ -591,9 +792,164 @@ class AutoDJ {
       artist: (candidate.artists || []).map((artist) => artist.name).filter(Boolean).join(', '),
       canonicalKey: candidate.canonicalKey,
       catalogSongId: Number(candidate.songId),
+      album: candidate.album || null,
+      bpm: Number(candidate.bpm) || null,
+      genres: Array.isArray(candidate.genres) ? [...candidate.genres] : [],
+      radioNovelty: this._isNovelCandidate(candidate, now),
+      radioRequestSeed: Boolean(scoring.requestSeedActive),
+      radioReasons: this._buildCandidateReasons(candidate, scoring),
       ...this._sourceToTrack(primary),
       alternativeSources: alternatives
     };
+  }
+
+  getRadioPreview(limit = 3) {
+    if (!this.catalog || !this.playlistStore || !this._hasConfiguredCatalogRadioSources()) return [];
+    const safeLimit = this._normalizeInteger(limit, 3, 1, 10);
+    const pool = this._loadCatalogPool();
+    if (!pool.eligible.length) return [];
+    const target = pool.genreTarget;
+    const entries = pool.eligible.map((candidate) => ({
+      candidate,
+      ...this._scoreCatalogCandidate(candidate)
+    })).sort((left, right) => (
+      right.score - left.score || Number(left.candidate.songId) - Number(right.candidate.songId)
+    ));
+    const prioritised = target
+      ? [
+        ...entries.filter((entry) => this._candidateHasGenre(entry.candidate, target)),
+        ...entries.filter((entry) => !this._candidateHasGenre(entry.candidate, target))
+      ]
+      : entries;
+    return prioritised.slice(0, safeLimit).map((entry) => ({
+      id: `catalog:${entry.candidate.songId}:${entry.candidate.canonicalKey || ''}`,
+      songId: Number(entry.candidate.songId),
+      title: entry.candidate.title,
+      artist: (entry.candidate.artists || []).map((artist) => artist.name).filter(Boolean).join(', '),
+      album: entry.candidate.album || null,
+      bpm: Number(entry.candidate.bpm) || null,
+      genres: Array.isArray(entry.candidate.genres) ? [...entry.candidate.genres] : [],
+      score: Number(entry.score.toFixed(4)),
+      reasons: this._buildCandidateReasons(entry.candidate, { ...entry, genreTarget: target }),
+      isNovel: this._isNovelCandidate(entry.candidate, this.now())
+    }));
+  }
+
+  getTrackForPreview(previewId) {
+    const match = /^catalog:(\d+):/.exec(String(previewId || ''));
+    const songId = Number(match?.[1]);
+    if (!Number.isInteger(songId) || songId <= 0) return null;
+    const pool = this._loadCatalogPool();
+    const candidate = pool.eligible.find((entry) => Number(entry.songId) === songId);
+    if (!candidate) return null;
+    const scoring = this._scoreCatalogCandidate(candidate);
+    const selectedGenre = this.config.selectedGenres
+      .filter((genre) => this._candidateHasGenre(candidate, genre))
+      .reduce((best, genre) => {
+        if (!best) return genre;
+        return (this.genreSelectionCounts.get(genre) || 0) < (this.genreSelectionCounts.get(best) || 0)
+          ? genre
+          : best;
+      }, null);
+    if (selectedGenre) {
+      this.genreSelectionCounts.set(selectedGenre, (this.genreSelectionCounts.get(selectedGenre) || 0) + 1);
+    }
+    this.selectionSource = 'vote';
+    this.lastSelection = {
+      type: 'vote',
+      songId,
+      genreTarget: selectedGenre,
+      albumSpacingRelaxed: pool.albumSpacingRelaxed,
+      artistSpacingRelaxed: pool.artistSpacingRelaxed
+    };
+    return this._catalogCandidateToTrack(candidate, {
+      ...scoring,
+      genreTarget: selectedGenre,
+      albumSpacingRelaxed: pool.albumSpacingRelaxed,
+      artistSpacingRelaxed: pool.artistSpacingRelaxed
+    });
+  }
+
+  _hasSelectedGenres() {
+    return this.config.genreFilterEnabled && this.config.selectedGenres.length > 0;
+  }
+
+  _matchesSelectedGenre(candidate) {
+    return this.config.selectedGenres.some((genre) => this._candidateHasGenre(candidate, genre));
+  }
+
+  _candidateHasGenre(candidate, genre) {
+    return Array.isArray(candidate?.genres) && candidate.genres.includes(genre);
+  }
+
+  _getBalancedGenreTarget(candidates) {
+    if (!this._hasSelectedGenres() || !Array.isArray(candidates) || !candidates.length) return null;
+    const available = this.config.selectedGenres.filter((genre) => (
+      candidates.some((candidate) => this._candidateHasGenre(candidate, genre))
+    ));
+    if (!available.length) return null;
+    return available.reduce((best, genre) => {
+      const bestCount = this.genreSelectionCounts.get(best) || 0;
+      const genreCount = this.genreSelectionCounts.get(genre) || 0;
+      return genreCount < bestCount ? genre : best;
+    }, available[0]);
+  }
+
+  _isNovelCandidate(candidate, now) {
+    const createdAt = Number(candidate?.createdAt);
+    if (!Number.isFinite(createdAt) || createdAt <= 0) return false;
+    return createdAt >= now - (this.config.noveltyCatalogAgeDays * 24 * 60 * 60 * 1000);
+  }
+
+  _canSelectNovelty() {
+    const budget = Number(this.config.noveltyBudgetPercent) || 0;
+    if (budget <= 0 || this.recentNovelty.at(-1) === true) return false;
+    const allowedInWindow = Math.ceil((budget / 100) * 10);
+    if (allowedInWindow <= 0) return false;
+    return this.recentNovelty.filter(Boolean).length < allowedInWindow;
+  }
+
+  _getRequestSeedScore(candidate) {
+    const seed = this.requestSeed;
+    const active = Boolean(this.config.requestSeedsEnabled && seed?.remaining > 0);
+    if (!active) return { active: false, matched: false, factor: 1 };
+    const artistMatch = seed.artistKey && (candidate?.artists || []).some((artist) => (
+      this._normalizeText(artist.name) === seed.artistKey
+    ));
+    const genreMatch = seed.genres.some((genre) => this._candidateHasGenre(candidate, genre));
+    if (artistMatch) return { active: true, matched: true, factor: 1.45 };
+    if (genreMatch) return { active: true, matched: true, factor: 1.25 };
+    return { active: true, matched: false, factor: 1 };
+  }
+
+  _buildCandidateReasons(candidate, scoring = {}) {
+    const reasons = [];
+    const matchedGenres = this.config.selectedGenres.filter((genre) => this._candidateHasGenre(candidate, genre));
+    if (this._hasSelectedGenres() && matchedGenres.length) {
+      reasons.push({ code: 'genre-filter', text: `Genre: ${matchedGenres.join(', ')}` });
+    }
+    if (scoring.genreTarget && this._candidateHasGenre(candidate, scoring.genreTarget)) {
+      reasons.push({ code: 'genre-balance', text: `Ausgleich: ${scoring.genreTarget}` });
+    }
+    if (Number(scoring.bpmFactor) !== 1 && Number.isFinite(Number(scoring.bpmDistance))) {
+      reasons.push({ code: 'bpm-transition', text: `BPM-Uebergang: ${Math.round(scoring.bpmDistance)} BPM Abstand` });
+    }
+    if (scoring.requestSeedMatched) {
+      reasons.push({ code: 'request-seed', text: 'Stilvorlage eines Viewer-Requests' });
+    }
+    if (Number(candidate?.radioAffinity) > 0 || Number(scoring.radioAffinityFactor) > 1) {
+      reasons.push({ code: 'live-feedback', text: 'Passt zu deinem Live-Feedback' });
+    }
+    if (this._isNovelCandidate(candidate, this.now())) {
+      reasons.push({ code: 'novelty-budget', text: 'Innerhalb des Neuheitsbudgets' });
+    }
+    if (scoring.albumSpacingRelaxed) {
+      reasons.push({ code: 'album-spacing-relaxed', text: 'Album-Abstand wurde bei leerem Pool gelockert' });
+    }
+    if (scoring.artistSpacingRelaxed) {
+      reasons.push({ code: 'artist-spacing-relaxed', text: 'Kuenstler-Abstand wurde bei leerem Pool gelockert' });
+    }
+    return reasons;
   }
 
   _sourceToTrack(source) {
@@ -826,6 +1182,25 @@ class AutoDJ {
       .trim()
       .replace(/[^\p{L}\p{N}]+/gu, ' ')
       .trim();
+  }
+
+  _normalizeGenres(values) {
+    const source = Array.isArray(values) ? values : [values];
+    const genres = [];
+    source.forEach((value) => {
+      const normalized = String(value || '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9-]+/g, '-');
+      if (normalized && !genres.includes(normalized)) genres.push(normalized);
+    });
+    return genres;
+  }
+
+  _normalizeInteger(value, fallback, minimum, maximum) {
+    const numeric = Number(value);
+    const safe = Number.isFinite(numeric) ? Math.floor(numeric) : fallback;
+    return this._clamp(minimum, maximum, safe);
   }
 }
 

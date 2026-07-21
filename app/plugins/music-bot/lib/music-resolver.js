@@ -450,6 +450,9 @@ class MusicResolver extends EventEmitter {
 
   _songFromData(data = {}, fallbackUrl = '', meta = {}, isUrl = false) {
     const ageLimit = Number.isFinite(meta.ageLimit) ? meta.ageLimit : Number(data.age_limit ?? NaN);
+    const bpm = Number(data.bpm);
+    const categories = Array.isArray(data.categories) && data.categories.length ? data.categories : (meta.categories || []);
+    const genres = Array.isArray(data.genres) && data.genres.length ? data.genres : categories;
     const channelName = data.channel || data.uploader || meta.channelName || '';
     let canonicalUrl = data.webpage_url || data.original_url || fallbackUrl || data.url || '';
     const identity = deriveTrackIdentity(data, canonicalUrl);
@@ -477,7 +480,10 @@ class MusicResolver extends EventEmitter {
       channelId: data.channel_id || meta.channelId || null,
       channelName,
       ageLimit: Number.isFinite(ageLimit) ? ageLimit : null,
-      categories: Array.isArray(data.categories) && data.categories.length ? data.categories : (meta.categories || [])
+      album: typeof data.album === 'string' && data.album.trim() ? data.album.trim() : null,
+      bpm: Number.isFinite(bpm) && bpm > 0 ? bpm : null,
+      genres,
+      categories
     };
   }
 
