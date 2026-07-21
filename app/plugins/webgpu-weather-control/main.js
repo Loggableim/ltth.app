@@ -1259,6 +1259,43 @@ class WebgpuWeatherControlPlugin {
             }
         });
 
+        // OBS overlays need renderer settings but must never receive the API key,
+        // permissions, command settings, or user-facing administration data.
+        this.api.registerRoute('get', '/api/webgpu-weather/overlay-config', (req, res) => {
+            const effects = this.supportedEffects.reduce((result, action) => {
+                const effect = this.config.effects[action] || {};
+                result[action] = {
+                    enabled: effect.enabled !== false,
+                    defaultIntensity: effect.defaultIntensity,
+                    defaultDuration: effect.defaultDuration,
+                    permanent: effect.permanent === true,
+                    layer: effect.layer,
+                    opacity: effect.opacity,
+                    particleScale: effect.particleScale,
+                    wind: effect.wind,
+                    directionDeg: effect.directionDeg,
+                    fogColor: effect.fogColor,
+                    colorTemperature: effect.colorTemperature,
+                    glitchRgbShift: effect.glitchRgbShift,
+                    glitchDisplacement: effect.glitchDisplacement,
+                    glitchScanlines: effect.glitchScanlines,
+                    glitchNoise: effect.glitchNoise,
+                    glitchBlocks: effect.glitchBlocks,
+                    glitchChromaticAberration: effect.glitchChromaticAberration,
+                    glitchIntensity: effect.glitchIntensity
+                };
+                return result;
+            }, {});
+            res.json({ success: true, config: {
+                enabled: this.config.enabled === true,
+                qualityPreset: this.config.qualityPreset,
+                adaptiveQuality: this.config.adaptiveQuality !== false,
+                maxConcurrentEffects: this.config.maxConcurrentEffects,
+                effectLayerOrder: this.config.effectLayerOrder,
+                effects
+            } });
+        });
+
         this.api.registerFlowAction('webgpu-weather.stop', async (params = {}) => {
             const action = this.supportedEffects.includes(params.action) ? params.action : null;
             this.api.emit(action ? 'webgpu-weather:stop-effect' : 'webgpu-weather:stop', {

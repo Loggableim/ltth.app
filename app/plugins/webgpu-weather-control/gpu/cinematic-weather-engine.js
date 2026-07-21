@@ -33,6 +33,7 @@
       this.transparent = true;
       this.qualityName = 'auto';
       this.quality = cloneQuality('auto');
+      this.adaptiveQuality = true;
       this.metrics = { fps: 0, frameMs: 0, gpuFrameMs: 0, gpuTimeSource: 'queue-latency', activeParticles: 0, state: this.state, transparent: this.transparent, resolution: { width: 1, height: 1 }, quality: this.quality };
       this.framegraph = null;
       this.device = null;
@@ -90,8 +91,9 @@
     recordFrameTime(frameMs) {
       this.metrics.frameMs = clamp(frameMs, 0, 1000, 0);
       this.metrics.fps = this.metrics.frameMs ? 1000 / this.metrics.frameMs : 0;
-      if (this.qualityName !== 'auto') return;
-      const scale = this.metrics.frameMs > TARGET_FRAME_MS ? 0.82 : this.metrics.frameMs < TARGET_FRAME_MS * 0.7 ? 1.08 : 1;
+      if (this.qualityName !== 'auto' || !this.adaptiveQuality) return;
+      const measuredFrameMs = Math.max(this.metrics.frameMs, this.metrics.gpuFrameMs || 0);
+      const scale = measuredFrameMs > TARGET_FRAME_MS ? 0.82 : measuredFrameMs < TARGET_FRAME_MS * 0.7 ? 1.08 : 1;
       if (scale !== 1) {
         this.quality.particleBudget = Math.round(clamp(this.quality.particleBudget * scale, QUALITY_PRESETS.low.particleBudget, QUALITY_PRESETS.ultra.particleBudget, this.quality.particleBudget));
         this.quality.volumetricSamples = Math.round(clamp(this.quality.volumetricSamples * scale, QUALITY_PRESETS.low.volumetricSamples, QUALITY_PRESETS.ultra.volumetricSamples, this.quality.volumetricSamples));
@@ -106,7 +108,7 @@
       const effect = {
         action: event.action, intensity: clamp(event.intensity, 0, 1, 0.5), duration: clamp(event.duration, 0, 600000, 10000), permanent: event.permanent === true,
         layer: clamp(event.layer, 0, 100, 50), opacity: clamp(event.opacity, 0, 1, 1), particleScale: clamp(event.particleScale, 0.25, 2, 1), wind: clamp(event.wind, -1, 1, 0), directionDeg: clamp(event.directionDeg, -180, 180, 0),
-        fogColor: event.fogColor || 'default', colorTemperature: event.colorTemperature || 'default', glitchRgbShift: event.glitchRgbShift === true, glitchDisplacement: event.glitchDisplacement === true, glitchScanlines: event.glitchScanlines === true, glitchNoise: event.glitchNoise === true, glitchBlocks: event.glitchBlocks === true, glitchChromaticAberration: event.glitchChromaticAberration === true, glitchIntensity: clamp(event.glitchIntensity, 0, 3, 1), startedAt: performance.now ? performance.now() : Date.now()
+        fogColor: event.fogColor || 'default', colorTemperature: event.colorTemperature || 'default', glitchRgbShift: event.glitchRgbShift === true, glitchDisplacement: event.glitchDisplacement === true, glitchScanlines: event.glitchScanlines === true, glitchNoise: event.glitchNoise === true, glitchBlocks: event.glitchBlocks === true, glitchChromaticAberration: event.glitchChromaticAberration === true, glitchIntensity: clamp(event.glitchIntensity, 0, 3, 1), effectIndex: WEATHER_EFFECTS.indexOf(event.action), startedAt: performance.now ? performance.now() : Date.now()
       };
       this.effects.set(effect.action, effect);
       this.metrics.activeParticles = [...this.effects.values()].filter((item) => PARTICLE_EFFECTS.has(item.action)).length * Math.round(180 * effect.intensity * effect.particleScale);
@@ -115,7 +117,7 @@
     }
 
     stop(action) { if (action) this.effects.delete(action); else this.effects.clear(); this.metrics.activeParticles = 0; this.publishDiagnostic('effect-stopped'); }
-    applyConfig(config = {}) { this.setQuality(config.qualityPreset || this.qualityName); Object.entries(config.effects || {}).forEach(([action, effect]) => { if (effect.permanent) this.trigger({ action, ...effect, permanent: true }); }); }
+    applyConfig(config = {}) { this.adaptiveQuality = config.adaptiveQuality !== false; this.setQuality(config.qualityPreset || this.qualityName); Object.entries(config.effects || {}).forEach(([action, effect]) => { if (config.enabled !== false && effect.enabled !== false && effect.permanent) this.trigger({ action, ...effect, permanent: true }); }); }
     getEffectState() { return [...this.effects.values()].sort((a, b) => a.layer - b.layer); }
 
     render(frameMs = TARGET_FRAME_MS) {
@@ -124,7 +126,7 @@
       const now = performance.now ? performance.now() : Date.now();
       const alive = this.getEffectState().filter((effect) => effect.permanent || now - effect.startedAt < effect.duration);
       this.effects = new Map(alive.map((effect) => [effect.action, effect]));
-      this.framegraph.uploadEffectState(alive, this.quality, now / 1000);
+      this.framegraph.uploadEffectState(alive, this.quality, now / 1000, Math.max(0, frameMs) / 1000);
       const encoder = this.device.createCommandEncoder({ label: 'weather-cinematic-frame' });
       this.framegraph.encode(encoder, this.context.getCurrentTexture().createView(), this.metrics);
       this.device.queue.submit([encoder.finish()]);

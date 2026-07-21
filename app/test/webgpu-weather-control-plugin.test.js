@@ -221,6 +221,22 @@ describe('WebGPU Weather Control independent plugin surface', () => {
     db.close();
   });
 
+  test('serves a public sanitized overlay config without the WebGPU API key', async () => {
+    const db = createDatabase();
+    const api = createMockApi(db);
+    const plugin = new WebgpuWeatherControlPlugin(api);
+    await plugin.init();
+    const overlayConfig = api.routes.find(({ method, route }) => method === 'get' && route === '/api/webgpu-weather/overlay-config').handler;
+    const response = createResponse();
+    await overlayConfig({ headers: {}, ip: '203.0.113.10' }, response);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.config.apiKey).toBeUndefined();
+    expect(response.body.config).toEqual(expect.objectContaining({ qualityPreset: 'auto', effects: expect.any(Object) }));
+    expect(JSON.stringify(response.body)).not.toContain(plugin.apiKey);
+    db.close();
+  });
+
   test('ships a transparent renderer-free overlay and four locale files under the new namespace', () => {
     const pluginDir = path.join(__dirname, '../plugins/webgpu-weather-control');
     const manifest = JSON.parse(fs.readFileSync(path.join(pluginDir, 'plugin.json'), 'utf8'));

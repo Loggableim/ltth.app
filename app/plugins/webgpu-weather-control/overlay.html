@@ -41,7 +41,7 @@
     const socket = typeof io === 'function' ? io() : null;
     async function loadOverlayConfig() {
       try {
-        const response = await fetch('/api/webgpu-weather/config');
+        const response = await fetch('/api/webgpu-weather/overlay-config');
         const payload = await response.json();
         if (payload.success) engine.applyConfig(payload.config);
       } catch (_) {
@@ -82,10 +82,15 @@
         });
       });
     }
-    setInterval(() => {
-      engine.render(16.67);
+    let lastFrameAt = performance.now();
+    function frame(now) {
+      const deltaMs = Math.min(100, Math.max(0, now - lastFrameAt));
+      lastFrameAt = now;
+      engine.render(deltaMs);
       if (socket) socket.emit('webgpu-weather:overlay-state', engine.getMetrics());
-    }, 16);
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
   </script>
 </body>
 </html>
