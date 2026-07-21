@@ -49,6 +49,20 @@ describe('GameEngineDatabase interactive persistence', () => {
     sqlite.close();
   });
 
+  test('stores per-event audio enable state with an enabled default', () => {
+    database.saveGameMedia('connect4', 'piece_drop', '/tmp/piece-drop.mp3', 'audio/mpeg');
+
+    expect(database.isGameAudioEnabled('connect4', 'default', 'piece_drop')).toBe(true);
+    expect(database.setGameAudioEnabled('connect4', 'default', 'piece_drop', false)).toBe(true);
+    expect(database.getGameAudioStates('connect4', 'default')).toMatchObject({ piece_drop: false });
+    expect(database.isGameAudioEnabled('connect4', 'default', 'piece_drop')).toBe(false);
+    expect(database.isGameAudioEnabled('wheel', '1', 'piece_drop')).toBe(true);
+    expect(database.getGameMedia('connect4', 'piece_drop')).toMatchObject({
+      file_path: '/tmp/piece-drop.mp3',
+      enabled: 1
+    });
+  });
+
   test('creates and reads active interactive state with parsed game data', () => {
     database.createInteractiveState(session());
 

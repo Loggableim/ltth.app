@@ -177,6 +177,17 @@ class GameEngineDatabase {
       )
     `);
 
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS game_audio_states (
+        game_type TEXT NOT NULL,
+        scope_id TEXT NOT NULL DEFAULT 'default',
+        audio_event TEXT NOT NULL,
+        enabled INTEGER NOT NULL DEFAULT 1,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (game_type, scope_id, audio_event)
+      )
+    `);
+
     // Round timer configuration
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS game_round_timers (
@@ -1443,6 +1454,66 @@ class GameEngineDatabase {
   /**
    * Get media configuration for game events
    */
+  _normalizeGameAudioIdentifier(value, fallback = null) {
+    if (typeof value !== 'string') return fallback;
+    const normalized = value.trim();
+    return normalized ? normalized : fallback;
+  }
+
+  /**
+   * Return whether an individual game audio event is enabled.
+   * An absent row intentionally means enabled so adding new events is non-breaking.
+   */
+  isGameAudioEnabled(gameType, scopeId, audioEvent) {
+    const normalizedGameType = this._normalizeGameAudioIdentifier(gameType);
+    const normalizedScopeId = this._normalizeGameAudioIdentifier(scopeId, 'default');
+    const normalizedAudioEvent = this._normalizeGameAudioIdentifier(audioEvent);
+    if (!normalizedGameType || !normalizedAudioEvent) return true;
+
+    const row = this.db.prepare(`
+      SELECT enabled FROM game_audio_states
+      WHERE game_type = ? AND scope_id = ? AND audio_event = ?
+    `).get(normalizedGameType, normalizedScopeId, normalizedAudioEvent);
+    return !row || row.enabled === 1;
+  }
+
+  /**
+   * Return persisted audio states for a game scope, keyed by audio event.
+   */
+  getGameAudioStates(gameType, scopeId) {
+    const normalizedGameType = this._normalizeGameAudioIdentifier(gameType);
+    const normalizedScopeId = this._normalizeGameAudioIdentifier(scopeId, 'default');
+    if (!normalizedGameType) return {};
+
+    const rows = this.db.prepare(`
+      SELECT audio_event, enabled FROM game_audio_states
+      WHERE game_type = ? AND scope_id = ?
+    `).all(normalizedGameType, normalizedScopeId);
+    return rows.reduce((states, row) => {
+      states[row.audio_event] = row.enabled === 1;
+      return states;
+    }, {});
+  }
+
+  /**
+   * Persist the enabled state without touching custom media metadata.
+   */
+  setGameAudioEnabled(gameType, scopeId, audioEvent, enabled) {
+    const normalizedGameType = this._normalizeGameAudioIdentifier(gameType);
+    const normalizedScopeId = this._normalizeGameAudioIdentifier(scopeId, 'default');
+    const normalizedAudioEvent = this._normalizeGameAudioIdentifier(audioEvent);
+    if (!normalizedGameType || !normalizedAudioEvent || typeof enabled !== 'boolean') return false;
+
+    const result = this.db.prepare(`
+      INSERT INTO game_audio_states (game_type, scope_id, audio_event, enabled, updated_at)
+      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(game_type, scope_id, audio_event) DO UPDATE SET
+        enabled = excluded.enabled,
+        updated_at = CURRENT_TIMESTAMP
+    `).run(normalizedGameType, normalizedScopeId, normalizedAudioEvent, enabled ? 1 : 0);
+    return result.changes > 0;
+  }
+
   getGameMedia(gameType, mediaEvent = null) {
     if (mediaEvent) {
       const stmt = this.db.prepare(`

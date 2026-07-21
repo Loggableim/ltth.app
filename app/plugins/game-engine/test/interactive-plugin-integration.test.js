@@ -287,6 +287,99 @@ describe('GameEnginePlugin interactive controller integration', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
+  test('updates scoped audio states and exposes enabled defaults for every known event', () => {
+    const { plugin, routes, io } = createPlugin();
+    const states = new Map();
+    const stateKey = (gameType, scopeId, audioEvent) => `${gameType}:${scopeId}:${audioEvent}`;
+    plugin.db = {
+      getGameMedia: jest.fn(() => []),
+      getWheelAudioSettings: jest.fn(() => ({})),
+      getSlotAudioSettings: jest.fn(() => ({})),
+      isGameAudioEnabled: jest.fn((gameType, scopeId, audioEvent) => (
+        states.get(stateKey(gameType, scopeId, audioEvent)) ?? true
+      )),
+      setGameAudioEnabled: jest.fn((gameType, scopeId, audioEvent, enabled) => {
+        states.set(stateKey(gameType, scopeId, audioEvent), enabled);
+        return true;
+      })
+    };
+    plugin.registerRoutes();
+
+    const audioStateRoute = routes.find(item => (
+      item.method === 'PUT' &&
+      item.path === '/api/game-engine/audio-state/:gameType/:audioEvent'
+    ));
+    expect(audioStateRoute).toBeDefined();
+
+    const invoke = (route, req) => {
+      const result = { status: 200, body: null };
+      const res = {
+        status: jest.fn(code => {
+          result.status = code;
+          return res;
+        }),
+        json: jest.fn(body => {
+          result.body = body;
+          return res;
+        })
+      };
+      route.handler(req, res);
+      return result;
+    };
+
+    expect(invoke(audioStateRoute, {
+      params: { gameType: 'connect4', audioEvent: 'unknown' },
+      body: { scopeId: 'default', enabled: false }
+    })).toMatchObject({ status: 400, body: { error: 'invalid_audio_event' } });
+
+    expect(invoke(audioStateRoute, {
+      params: { gameType: 'connect4', audioEvent: 'piece_drop' },
+      body: { scopeId: 'default', enabled: false }
+    }).body).toMatchObject({ success: true, scopeId: 'default', enabled: false });
+    expect(invoke(audioStateRoute, {
+      params: { gameType: 'wheel', audioEvent: 'spinning' },
+      body: { scopeId: '7', enabled: false }
+    }).body).toMatchObject({ success: true, scopeId: '7', enabled: false });
+    expect(invoke(audioStateRoute, {
+      params: { gameType: 'slot', audioEvent: 'spin' },
+      body: { scopeId: '9', enabled: false }
+    }).body).toMatchObject({ success: true, scopeId: '9', enabled: false });
+
+    const connect4SettingsRoute = routes.find(item => (
+      item.method === 'GET' && item.path === '/api/game-engine/media/:gameType'
+    ));
+    const wheelSettingsRoute = routes.find(item => (
+      item.method === 'GET' && item.path === '/api/game-engine/wheel/audio/settings'
+    ));
+    const slotSettingsRoute = routes.find(item => (
+      item.method === 'GET' && item.path === '/api/game-engine/slot/audio/settings'
+    ));
+    const connect4Settings = invoke(connect4SettingsRoute, { params: { gameType: 'connect4' } });
+    const wheelSettings = invoke(wheelSettingsRoute, { query: { wheelId: '7' } });
+    const slotSettings = invoke(slotSettingsRoute, { query: { machineId: '9' } });
+
+    expect(connect4Settings.body).toEqual(expect.arrayContaining([
+      expect.objectContaining({ media_event: 'piece_drop', enabled: false }),
+      expect.objectContaining({ media_event: 'timer_warning', enabled: true })
+    ]));
+    expect(wheelSettings.body).toMatchObject({
+      spinning: { enabled: false },
+      prize1: { enabled: true },
+      lost: { enabled: true }
+    });
+    expect(slotSettings.body).toMatchObject({
+      spin: { enabled: false },
+      jackpot: { enabled: true },
+      reel_stop: { enabled: true }
+    });
+    expect(io.emit).toHaveBeenCalledWith('game-engine:audio-state-updated', {
+      gameType: 'slot',
+      scopeId: '9',
+      audioEvent: 'spin',
+      enabled: false
+    });
+  });
+
   test('exposes only browser-safe Connect4 audio metadata and serves the owned file', () => {
     const { plugin, routes } = createPlugin();
     const mediaDir = path.join(testPluginDataDir, 'game-media', 'connect4');
@@ -302,7 +395,8 @@ describe('GameEnginePlugin interactive controller integration', () => {
       enabled: 1
     };
     plugin.db = {
-      getGameMedia: jest.fn((gameType, mediaEvent) => mediaEvent ? row : [row])
+      getGameMedia: jest.fn((gameType, mediaEvent) => mediaEvent ? row : [row]),
+      isGameAudioEnabled: jest.fn(() => true)
     };
     plugin.registerRoutes();
     const metadataRoute = routes.find(item => (
@@ -317,13 +411,14 @@ describe('GameEnginePlugin interactive controller integration', () => {
     metadataRoute.handler({ params: { gameType: 'connect4' } }, metadataRes);
     fileRoute.handler({ params: { gameType: 'connect4', mediaEvent: 'piece_drop' } }, fileRes);
 
-    expect(metadataRes.json).toHaveBeenCalledWith([
+    expect(metadataRes.json).toHaveBeenCalledWith(expect.arrayContaining([
       expect.objectContaining({
         media_event: 'piece_drop',
         filename: 'piece_drop.mp3',
+        enabled: true,
         url: expect.stringMatching(/^\/game-engine\/media\/connect4\/piece_drop\?v=\d+$/)
       })
-    ]);
+    ]));
     expect(metadataRes.json.mock.calls[0][0][0]).not.toHaveProperty('file_path');
     expect(fileRes.sendFile).toHaveBeenCalledWith(mediaPath);
   });

@@ -65,7 +65,7 @@ const AVATAR_PROXY_BLOCKED_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '::
 const AVATAR_PROXY_MAX_BYTES = 2 * 1024 * 1024;
 const AVATAR_PROXY_TIMEOUT_MS = 5000;
 const AVATAR_PROXY_MAX_REDIRECTS = 3;
-const CONNECT4_MEDIA_EVENTS = new Set([
+const CONNECT4_AUDIO_EVENTS = Object.freeze([
   'new_challenger',
   'challenge_accepted',
   'piece_drop',
@@ -74,6 +74,9 @@ const CONNECT4_MEDIA_EVENTS = new Set([
   'game_over',
   'timer_warning'
 ]);
+const CONNECT4_MEDIA_EVENTS = new Set(CONNECT4_AUDIO_EVENTS);
+const WHEEL_AUDIO_EVENTS = Object.freeze(['spinning', 'prize1', 'prize2', 'prize3', 'lost']);
+const SLOT_AUDIO_EVENTS = Object.freeze(['spin', 'small_win', 'medium_win', 'big_win', 'jackpot', 'near_miss', 'reel_stop']);
 const CONNECT4_AUDIO_EXTENSIONS = new Map([
   ['audio/mpeg', '.mp3'],
   ['audio/mp3', '.mp3'],
@@ -514,8 +517,33 @@ class GameEnginePlugin {
   }
 
   _sanitizeWheelAudioType(audioType) {
-    const validTypes = new Set(['spinning', 'prize1', 'prize2', 'prize3', 'lost']);
-    return validTypes.has(audioType) ? audioType : null;
+    return WHEEL_AUDIO_EVENTS.includes(audioType) ? audioType : null;
+  }
+
+  _getGameAudioEvents(gameType) {
+    if (gameType === 'connect4') return CONNECT4_AUDIO_EVENTS;
+    if (gameType === 'wheel') return WHEEL_AUDIO_EVENTS;
+    if (gameType === 'slot') return SLOT_AUDIO_EVENTS;
+    return null;
+  }
+
+  _getGameAudioScopeId(gameType, scopeId) {
+    if (gameType === 'connect4') return 'default';
+    if (gameType === 'wheel' || gameType === 'slot') {
+      return this._sanitizeNumericId(scopeId);
+    }
+    return null;
+  }
+
+  _getAudioSettings(gameType, scopeId, sourceSettings = {}) {
+    const audioEvents = this._getGameAudioEvents(gameType) || [];
+    return audioEvents.reduce((settings, audioEvent) => {
+      settings[audioEvent] = {
+        ...(sourceSettings[audioEvent] || {}),
+        enabled: this.db.isGameAudioEnabled(gameType, scopeId, audioEvent)
+      };
+      return settings;
+    }, {});
   }
 
   _getSocketAddress(socket) {
@@ -2349,9 +2377,18 @@ class GameEnginePlugin {
           return res.status(400).json({ success: false, error: 'invalid_connect4_media_game' });
         }
         if (typeof res.set === 'function') res.set('Cache-Control', 'no-store');
-        const media = this.db.getGameMedia(gameType)
+        const mediaByEvent = new Map(this.db.getGameMedia(gameType)
           .map(row => this._serializeConnect4Media(row, connect4MediaDir))
-          .filter(Boolean);
+          .filter(Boolean)
+          .map(media => [media.media_event, media]));
+        const media = CONNECT4_AUDIO_EVENTS.map(mediaEvent => ({
+          game_type: 'connect4',
+          media_type: 'audio',
+          media_event: mediaEvent,
+          isCustom: mediaByEvent.has(mediaEvent),
+          ...(mediaByEvent.get(mediaEvent) || {}),
+          enabled: this.db.isGameAudioEnabled('connect4', 'default', mediaEvent)
+        }));
         res.json(media);
       } catch (error) {
         this.logger.error(`Error getting game media: ${error.message}`);
@@ -2438,6 +2475,41 @@ class GameEnginePlugin {
         res.json({ success: true });
       } catch (error) {
         this.logger.error(`Error removing game media: ${error.message}`);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    this.api.registerRoute('PUT', '/api/game-engine/audio-state/:gameType/:audioEvent', (req, res) => {
+      try {
+        const { gameType, audioEvent } = req.params;
+        const audioEvents = this._getGameAudioEvents(gameType);
+        if (!audioEvents) {
+          return res.status(400).json({ error: 'invalid_game_type' });
+        }
+        if (!audioEvents.includes(audioEvent)) {
+          return res.status(400).json({ error: 'invalid_audio_event' });
+        }
+        if (typeof req.body?.enabled !== 'boolean') {
+          return res.status(400).json({ error: 'invalid_audio_enabled' });
+        }
+
+        const scopeId = this._getGameAudioScopeId(gameType, req.body.scopeId);
+        const enabled = req.body.enabled;
+        if (!this.db.setGameAudioEnabled(gameType, scopeId, audioEvent, enabled)) {
+          return res.status(500).json({ error: 'audio_state_not_saved' });
+        }
+
+        if (gameType === 'connect4') {
+          this.io.emit('game-engine:media-updated', { gameType, mediaEvent: audioEvent });
+        } else if (gameType === 'wheel') {
+          this.io.emit('wheel:audio-updated', { wheelId: scopeId, audioType: audioEvent, enabled });
+        } else {
+          this.io.emit('slot:audio-updated', { machineId: scopeId, audioType: audioEvent, enabled });
+        }
+        this.io.emit('game-engine:audio-state-updated', { gameType, scopeId, audioEvent, enabled });
+        res.json({ success: true, gameType, scopeId, audioEvent, enabled });
+      } catch (error) {
+        this.logger.error(`Error saving game audio state: ${error.message}`);
         res.status(500).json({ error: error.message });
       }
     });
@@ -3327,7 +3399,7 @@ class GameEnginePlugin {
     this.api.registerRoute('GET', '/api/game-engine/wheel/audio/settings', (req, res) => {
       try {
         const wheelId = this._sanitizeNumericId(req.query.wheelId);
-        const settings = this.db.getWheelAudioSettings(wheelId);
+        const settings = this._getAudioSettings('wheel', wheelId, this.db.getWheelAudioSettings(wheelId));
         res.json(settings);
       } catch (error) {
         this.logger.error(`Error getting wheel audio settings: ${error.message}`);
@@ -3556,8 +3628,6 @@ class GameEnginePlugin {
       fs.mkdirSync(slotAudioDir, { recursive: true });
     }
 
-    const VALID_SLOT_AUDIO_TYPES = new Set(['spin', 'small_win', 'medium_win', 'big_win', 'jackpot', 'near_miss', 'reel_stop']);
-
     const slotAudioStorage = multer.diskStorage({
       destination: (req, file, cb) => {
         const safeId = String(parseInt(req.body.machineId, 10) || 1);
@@ -3568,7 +3638,7 @@ class GameEnginePlugin {
         cb(null, machineDir);
       },
       filename: (req, file, cb) => {
-        const audioType = VALID_SLOT_AUDIO_TYPES.has(req.body.audioType) ? req.body.audioType : 'unknown';
+        const audioType = SLOT_AUDIO_EVENTS.includes(req.body.audioType) ? req.body.audioType : 'unknown';
         cb(null, `${audioType}.mp3`);
       }
     });
@@ -3593,7 +3663,7 @@ class GameEnginePlugin {
         }
         const safeId = String(parseInt(req.body.machineId, 10) || 1);
         const audioType = req.body.audioType;
-        if (!VALID_SLOT_AUDIO_TYPES.has(audioType)) {
+        if (!SLOT_AUDIO_EVENTS.includes(audioType)) {
           return res.status(400).json({ success: false, error: 'Invalid audio type' });
         }
         const durationMs = req.body.durationMs ? Math.max(0, Math.min(parseInt(req.body.durationMs, 10), 60000)) : null;
@@ -3627,7 +3697,7 @@ class GameEnginePlugin {
       try {
         const { machineId, audioType } = req.body;
         const safeId = String(parseInt(machineId, 10) || 1);
-        if (!VALID_SLOT_AUDIO_TYPES.has(audioType)) {
+        if (!SLOT_AUDIO_EVENTS.includes(audioType)) {
           return res.status(400).json({ success: false, error: 'Invalid audio type' });
         }
         const audioPath = path.join(slotAudioDir, safeId, `${audioType}.mp3`);
@@ -3647,8 +3717,8 @@ class GameEnginePlugin {
     // API: Get slot audio settings
     this.api.registerRoute('GET', '/api/game-engine/slot/audio/settings', (req, res) => {
       try {
-        const machineId = req.query.machineId || '1';
-        const settings = this.db.getSlotAudioSettings(machineId);
+        const machineId = this._sanitizeNumericId(req.query.machineId);
+        const settings = this._getAudioSettings('slot', machineId, this.db.getSlotAudioSettings(machineId));
         res.json(settings);
       } catch (error) {
         this.logger.error(`Error getting slot audio settings: ${error.message}`);
