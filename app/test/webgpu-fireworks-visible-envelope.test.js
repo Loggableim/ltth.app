@@ -249,6 +249,34 @@ describe('WebGPU Fireworks visible-envelope contract', () => {
     expect(bodyAndCurveLeft).toBeGreaterThanOrEqual(2 - 1e-5);
   });
 
+  test('treats a launch on the exact bottom edge as below-canvas', () => {
+    const viewport = { width: 1080, height: 1920 };
+    const target = { x: 540, y: 864 };
+    const rocket = rocketCommand('standard', {
+      origin: { x: 540, y: viewport.height },
+      target,
+      size: 8,
+      curve: -63,
+      particleDuration: 1.2375,
+      duration: 1.2375,
+    });
+    const burst = shapeCommand(3, viewport, 0, 0.5);
+    Object.assign(burst, {
+      origin: target,
+      target,
+      size: 39.69,
+      intensity: 1.5,
+      particleDuration: 0.65,
+    });
+
+    const fitted = fitCorrelatedCommands([rocket, burst], viewport, { paddingPx: 108 });
+    const [fittedRocket, fittedBurst] = fitted.commands;
+
+    expect(fitted.translation).toEqual({ dx: 0, dy: 0 });
+    expect(fittedBurst.origin).toEqual(target);
+    expect(fittedRocket.target).toEqual(fittedBurst.origin);
+  });
+
   test('uses target depth response for target-only vertical rocket bounds', () => {
     const viewport = { width: 960, height: 540 };
     const commands = [
