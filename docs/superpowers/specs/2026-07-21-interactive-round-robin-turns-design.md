@@ -110,7 +110,7 @@ match is displayed.
 A host move is accepted only if all conditions hold:
 
 - the session is active and equals the queue head and `displaySessionId`;
-- the displayed turn role is `streamer`;
+- the displayed turn role is `host`;
 - the existing admin socket authorisation passes;
 - session and display revisions match; and
 - the adapter accepts the game-specific move.
@@ -128,7 +128,7 @@ The interactive display payload adds explicit actor and rotation metadata:
   displaySessionId,
   hostDisplayName,
   viewerDisplayName,
-  currentTurnRole,          // 'streamer' or 'viewer'
+  currentTurnRole,          // 'host' or 'viewer'
   activePlayerDisplayName,  // hostDisplayName or viewerDisplayName
   activeSessionIndex,       // one-based display position
   activeSessionCount
