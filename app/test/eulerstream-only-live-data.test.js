@@ -57,12 +57,28 @@ describe('EulerStream-only TikTok connector', () => {
       'docs/SNAPSHOT_STATUS.md', 'infos/llm_start_here.md',
       'features/catalog-data.js', 'plugins.html', 'sitemap.xml'
     ];
+    const activeRoots = ['.github', 'app/locales', 'app/wiki', 'build-src/locales', 'docs', 'features', 'infos', 'locales', 'public/locales', 'scripts', 'screenshots'];
+    const banned = /TikFinity|Data Source Manager|Datenquellen-Manager|\/api\/data-source|datasource:/i;
+    const textFiles = [];
+    const collectTextFiles = (relativePath) => {
+      const fullPath = path.join(root, relativePath);
+      for (const entry of fs.readdirSync(fullPath, { withFileTypes: true })) {
+        const child = path.join(relativePath, entry.name);
+        if (['docs_archive', 'new_patch', 'superpowers'].includes(entry.name)) continue;
+        if (entry.isDirectory()) collectTextFiles(child);
+        else if (/\.(?:html|js|json|md|xml)$/i.test(entry.name)) textFiles.push(child);
+      }
+    };
+    activeRoots.forEach(collectTextFiles);
 
     expect(registry.plugins.some((plugin) => plugin.id === 'data-source')).toBe(false);
     expect(fs.existsSync(path.join(root, 'plugin-store', 'packages', 'data-source-1.0.0.zip'))).toBe(false);
     expect(fs.existsSync(path.join(root, 'screenshots', 'features', 'data-source.png'))).toBe(false);
     for (const relativePath of activeFiles) {
-      expect(fs.readFileSync(path.join(root, relativePath), 'utf8')).not.toMatch(/TikFinity|Data Source Manager|Datenquellen-Manager/i);
+      expect(fs.readFileSync(path.join(root, relativePath), 'utf8')).not.toMatch(banned);
+    }
+    for (const relativePath of textFiles) {
+      expect(fs.readFileSync(path.join(root, relativePath), 'utf8')).not.toMatch(banned);
     }
   });
 });

@@ -17,3 +17,11 @@
 ## Preserved historical scope
 
 `docs_archive/`, `new_patch/`, and `docs/superpowers/` were intentionally excluded.
+
+## Review correction
+
+- Restored the Task-2 capture-manifest baseline, then removed only Data Source/TikFinity capture entries.
+- Restored the translation inventory baseline and removed only obsolete product names and referenced keys.
+- Removed the review-identified stale capture declarations, Store Admin controls, obsolete screenshot asset, and adapter documentation remnants.
+- Strengthened the published-surface regression to scan the active publication roots for the obsolete visible names and routes.
+- `npx jest --runInBand --silent test/eulerstream-only-live-data.test.js` passed (1 suite, 4 tests).

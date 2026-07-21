@@ -142,7 +142,6 @@ The feature pages in `features/*.html` reference these via `<img src="/screensho
 | `features/osc-bridge.html` | `/screenshots/features/osc-bridge.png` | ✅ Generated from mock |
 | `features/security.html` | `/screenshots/features/security.png` | ✅ Generated from mock |
 | `features/slot-machine.html` | `/screenshots/features/slot-machine.png` | ✅ Generated from mock |
-| `features/` | `/screenshots/features/tikfinity-api.png` | ✅ Generated from mock |
 | `features/vdoninja.html` | `/screenshots/features/vdoninja.png` | ✅ Real screenshot |
 | `features/sidekick.html` | `/screenshots/features/sidekick-dashboard.png` | ✅ Real screenshot |
 

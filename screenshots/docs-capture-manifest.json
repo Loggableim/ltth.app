@@ -22843,7 +22843,7 @@
   ],
   "sourceUrl": "isolated-local-process",
   "capturedAt": "2026-07-17T04:08:28.321Z",
-  "specHash": "9abdd29d1dbe06f720aef82c92926c3f53abefa3bdb6663e8cfa87cf6efe2b9c",
+  "specHash": "ab8ca8b141afaef7bc4b2955c3558d11a4b78064860bc50f8eff429822e1373b",
   "requestedLocales": [
     "de",
     "en",
@@ -22851,219 +22851,11 @@
     "fr"
   ],
   "requestedIds": [
-    "advanced-timer__timer-card",
-    "advanced-timer__timer-duration",
-    "advanced-timer__start-signal",
-    "advanced-timer__countdown-preview",
-    "advanced-timer__timer-overlay",
-    "advanced-timer__timer-reset",
-    "animazingpal__avatar-card",
-    "animazingpal__avatar-event-map",
-    "animazingpal__placeholder-provider",
-    "animazingpal__sample-event",
-    "animazingpal__mapping-review",
-    "api-bridge__bridge-info",
-    "api-bridge__actions-list",
-    "api-bridge__request-example",
-    "api-bridge__event-stream-check",
-    "api-bridge__bridge-review",
-    "chatango__chatango-card",
-    "chatango__room-placeholder",
-    "chatango__widget-position",
-    "chatango__widget-preview",
-    "chatango__chatango-review",
-    "clarityhud__hud-card",
-    "clarityhud__hud-modules",
-    "clarityhud__chat-region",
-    "clarityhud__full-hud-preview",
-    "clarityhud__obs-hud-source",
-    "clarityhud__hud-reset",
-    "coinbattle__coinbattle-card",
-    "coinbattle__coin-values",
-    "coinbattle__battle-mode",
-    "coinbattle__demo-match",
-    "coinbattle__battle-overlay",
-    "coinbattle__match-reset",
-    "config-import__backup-card",
-    "config-import__export-scope",
-    "config-import__test-export",
-    "config-import__restore-inspection",
-    "config-import__backup-cleanup",
-    "gift-catalog__catalog-card",
-    "gift-catalog__catalog-filter",
-    "gift-catalog__coin-threshold",
-    "gift-catalog__gift-preview",
-    "gift-catalog__catalog-review",
-    "emoji-rain__enable-emoji-rain",
-    "emoji-rain__choose-emojis",
-    "emoji-rain__enable-obs-hud",
-    "emoji-rain__select-hud-resolution",
-    "emoji-rain__save-emoji-rain",
-    "emoji-rain__run-local-rain-test",
-    "emoji-rain__verify-obs-hud",
-    "fireworks__fireworks-card",
-    "fireworks__effect-profile",
-    "fireworks__audio-limit",
-    "fireworks__fireworks-test",
-    "fireworks__fireworks-overlay",
-    "fireworks__fireworks-reset",
-    "gcce__command-card",
-    "gcce__command-name",
-    "gcce__permission-rule",
-    "gcce__command-dry-run",
-    "gcce__command-review",
-    "openshock__safety-card",
-    "openshock__safe-limit",
-    "openshock__device-placeholder",
-    "openshock__shock-simulation",
-    "openshock__shock-overlay",
-    "openshock__safety-reset",
-    "interactive-story__story-card",
-    "interactive-story__story-mode",
-    "interactive-story__vote-rule",
-    "interactive-story__local-decision",
-    "interactive-story__story-overlay",
-    "interactive-story__story-reset",
-    "goals__goals-card",
-    "goals__goal-target",
-    "goals__reset-rule",
-    "goals__progress-pulse",
-    "goals__goal-overlay",
-    "goals__goal-reset",
     "store-admin__store-card",
     "store-admin__official-source",
     "store-admin__package-status",
     "store-admin__store-inspection",
-    "store-admin__store-review",
-    "game-engine__engine-card",
-    "game-engine__game-mode",
-    "game-engine__queue-rule",
-    "game-engine__test-round",
-    "game-engine__game-hud",
-    "game-engine__queue-reset",
-    "minecraft-connect__minecraft-card",
-    "minecraft-connect__offline-address",
-    "minecraft-connect__event-format",
-    "minecraft-connect__offline-message",
-    "minecraft-connect__minecraft-overlay-settings",
-    "multicam__multicam-card",
-    "multicam__camera-source",
-    "multicam__scene-rule",
-    "multicam__scene-dry-run",
-    "multicam__multicam-review",
-    "music-bot__music-card",
-    "music-bot__mpv-path",
-    "music-bot__queue-rule",
-    "music-bot__sample-queue",
-    "music-bot__music-overlay",
-    "music-bot__queue-reset",
-    "osc-bridge__osc-card",
-    "osc-bridge__loopback-host",
-    "osc-bridge__udp-port",
-    "osc-bridge__loopback-check",
-    "osc-bridge__osc-review",
-    "quiz-show__quiz-card",
-    "quiz-show__question-pool",
-    "quiz-show__answer-window",
-    "quiz-show__sample-question",
-    "quiz-show__quiz-overlay",
-    "quiz-show__quiz-reset",
-    "schnorrbecher__coin-jar-config",
-    "schnorrbecher__test-gift",
-    "schnorrbecher__coin-jar-overlay",
-    "sidekick__sidekick-card",
-    "sidekick__assistant-mode",
-    "sidekick__context-source",
-    "sidekick__local-request",
-    "sidekick__sidekick-overlay",
-    "sidekick__sidekick-reset",
-    "soundboard__soundboard-card",
-    "soundboard__sound-slot",
-    "soundboard__volume-rule",
-    "soundboard__muted-sound-test",
-    "soundboard__soundboard-review",
-    "spotlight__spotlight-card",
-    "spotlight__event-style",
-    "spotlight__display-duration",
-    "spotlight__chatter-preview",
-    "spotlight__spotlight-overlay",
-    "spotlight__spotlight-reset",
-    "streamalchemy__alchemy-card",
-    "streamalchemy__automation-rule",
-    "streamalchemy__action-chain",
-    "streamalchemy__rule-dry-run",
-    "streamalchemy__alchemy-overlay",
-    "streamalchemy__rule-reset",
-    "stt-ticker__ticker-card",
-    "stt-ticker__subtitle-language",
-    "stt-ticker__ticker-style",
-    "stt-ticker__sample-sentence",
-    "stt-ticker__ticker-overlay",
-    "stt-ticker__ticker-reset",
-    "talking-heads__heads-card",
-    "talking-heads__character-select",
-    "talking-heads__speech-map",
-    "talking-heads__text-preview",
-    "talking-heads__heads-overlay",
-    "talking-heads__heads-reset",
-    "tts__tts-card",
-    "tts__voice-select",
-    "tts__moderation-filter",
-    "tts__muted-voice-preview",
-    "tts__tts-review",
-    "thermal-printer__printer-card",
-    "thermal-printer__offline-profile",
-    "thermal-printer__encoding-rule",
-    "thermal-printer__queue-test",
-    "thermal-printer__printer-review",
-    "toptier__tier-card",
-    "toptier__ranking-rule",
-    "toptier__tier-threshold",
-    "toptier__rank-preview",
-    "toptier__tier-overlay",
-    "toptier__tier-reset",
-    "vdoninja__ninja-card",
-    "vdoninja__placeholder-room",
-    "vdoninja__guest-layout",
-    "vdoninja__browser-preview",
-    "vdoninja__obs-guest-source",
-    "vdoninja__ninja-reset",
-    "milestone-leaderboard__xp-card",
-    "milestone-leaderboard__xp-rule",
-    "milestone-leaderboard__milestone",
-    "milestone-leaderboard__xp-pulse",
-    "milestone-leaderboard__leaderboard-overlay",
-    "milestone-leaderboard__xp-reset",
-    "flame-overlay__frame-card",
-    "flame-overlay__frame-style",
-    "flame-overlay__frame-intensity",
-    "flame-overlay__frame-preview",
-    "flame-overlay__frame-obs-source",
-    "flame-overlay__frame-reset",
-    "visual-fx-frame-webgpu__webgpu-frame-card",
-    "visual-fx-frame-webgpu__texture-select",
-    "visual-fx-frame-webgpu__quality-profile",
-    "visual-fx-frame-webgpu__gpu-frame-preview",
-    "visual-fx-frame-webgpu__frame-obs-source",
-    "visual-fx-frame-webgpu__frame-reset",
-    "weather-control__weather-card",
-    "weather-control__weather-effect",
-    "weather-control__lifecycle-rule",
-    "weather-control__weather-pulse",
-    "weather-control__weather-overlay",
-    "weather-control__weather-reset",
-    "webgpu-emoji-rain__gpu-rain-card",
-    "webgpu-emoji-rain__gpu-preset",
-    "webgpu-emoji-rain__asset-rule",
-    "webgpu-emoji-rain__gpu-rain-test",
-    "webgpu-emoji-rain__gpu-rain-overlay",
-    "webgpu-emoji-rain__gpu-rain-reset",
-    "webgpu-fireworks__gpu-fireworks-card",
-    "webgpu-fireworks__gpu-quality",
-    "webgpu-fireworks__follower-trigger",
-    "webgpu-fireworks__gpu-fireworks-test",
-    "webgpu-fireworks__gpu-fireworks-overlay",
-    "webgpu-fireworks__gpu-fireworks-reset"
+    "store-admin__store-review"
   ],
   "outputs": [
     {
@@ -52500,7 +52292,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:53190/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -52520,7 +52311,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:53190/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -53312,7 +53102,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:53190/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -53332,7 +53121,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:53190/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           }
@@ -54102,7 +53890,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:53190/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -54122,7 +53909,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:53190/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -55152,7 +54938,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:53190/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -55667,7 +55452,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:53190/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -55687,7 +55471,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:53190/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -130692,7 +130475,6 @@
             "resourceType": "other"
           },
           {
-            "url": "http://127.0.0.1:55741/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -130732,7 +130514,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:55741/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -131509,7 +131290,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:55741/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -131539,7 +131319,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:55741/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -132331,7 +132110,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:55741/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -132351,7 +132129,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:55741/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -133143,7 +132920,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:55741/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -133163,7 +132939,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:55741/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -133955,7 +133730,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:55741/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -133975,7 +133749,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:55741/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -209672,7 +209445,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:51175/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -209687,7 +209459,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:51175/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           }
@@ -210459,7 +210230,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:51175/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -210479,7 +210249,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:51175/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -211271,7 +211040,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:51175/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -211291,7 +211059,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:51175/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -212093,7 +211860,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:51175/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -212118,7 +211884,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:51175/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -212905,7 +212670,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:51175/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -288632,7 +288396,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:56385/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -288657,7 +288420,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:56385/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -289444,7 +289206,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:56385/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -289464,7 +289225,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:56385/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -290246,7 +290006,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:56385/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -290276,7 +290035,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:56385/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -291068,7 +290826,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:56385/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -291088,7 +290845,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:56385/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -291890,7 +291646,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:56385/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -291910,7 +291665,6 @@
             "resourceType": "fetch"
           },
           {
-            "url": "http://127.0.0.1:56385/api/data-source/status",
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -337539,7 +337293,5 @@
       }
     }
   ],
-  "failures": [],
-  "reconciledAt": "2026-07-21T17:21:15.127Z",
-  "reconciliation": "Removed captures only for tutorial definitions absent from the current manifest inventory."
+  "failures": []
 }

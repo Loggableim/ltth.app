@@ -26,7 +26,6 @@ const OG_LOCALES = {
   fr: 'fr_FR',
 };
 const LANGS = ['de', 'en', 'es', 'fr'];
-const REMOVED_FEATURE_SLUGS = new Set(['overlays', 'tikfinity-api', 'plugin-leaderboard', 'plugin-openshock']);
 const FEATURE_OVERVIEW_IMAGE = '/screenshots/features/dashboard-main.png';
 const SITE_NAME = 'ltth.app';
 const SITE_URL = 'https://ltth.app';
