@@ -1,0 +1,10 @@
+{
+  "plugins": {
+    "webgpu-weather-control": {
+      "name": "WebGPU Weather Control",
+      "description": "Independent WebGPU weather controls",
+      "ui": { "title": "WebGPU Weather Control", "diagnostics": "Renderer diagnostics" },
+      "overlay": { "status": "WebGPU renderer awaiting activation" }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WebGPU Weather diagnostics</title>
+  <style>
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent; color: #eaf6ff; font: 13px system-ui, sans-serif; }
+    #diagnostics { position: absolute; right: 14px; bottom: 14px; padding: 8px 10px; border-radius: 999px; background: rgba(7, 16, 29, .72); border: 1px solid rgba(116, 205, 255, .55); }
+  </style>
+</head>
+<body>
+  <aside id="diagnostics" aria-live="polite">WebGPU renderer: awaiting Task 4</aside>
+  <script>
+    // This intentionally contains no renderer. A later WebGPU-only task owns GPU initialization.
+    const diagnostics = document.querySelector('#diagnostics');
+    const socket = typeof io === 'function' ? io() : null;
+    if (socket) {
+      socket.on('webgpu-weather:diagnostics', (state) => {
+        diagnostics.textContent = state && state.message ? state.message : 'WebGPU diagnostics updated';
+      });
+      socket.on('webgpu-weather:config-changed', () => {
+        diagnostics.textContent = 'WebGPU configuration updated';
+      });
+    }
+  </script>
+</body>
+</html>

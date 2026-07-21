@@ -1,0 +1,10 @@
+{
+  "plugins": {
+    "webgpu-weather-control": {
+      "name": "Controle meteo WebGPU",
+      "description": "Commandes meteo WebGPU independantes",
+      "ui": { "title": "Controle meteo WebGPU", "diagnostics": "Diagnostic du moteur de rendu" },
+      "overlay": { "status": "Le moteur WebGPU attend son activation" }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "webgpu-weather-control",
+  "name": "WebGPU Weather Control",
+  "version": "1.0.0",
+  "description": "Independent WebGPU weather control surface with a renderer-ready transparent overlay.",
+  "entry": "main.js",
+  "enabled": false,
+  "devStatus": "working-beta",
+  "permissions": ["socket.io", "routes", "database", "webgpu-rendering"],
+  "capabilities": ["webgpu-rendering"],
+  "descriptions": {
+    "de": "Eigenstaendige WebGPU-Wettersteuerung mit transparenter, rendererbereiter Overlay-Oberflaeche.",
+    "en": "Independent WebGPU weather controls with a transparent renderer-ready overlay.",
+    "es": "Controles meteorologicos WebGPU independientes con una superposicion transparente lista para renderizado.",
+    "fr": "Commandes meteo WebGPU independantes avec une superposition transparente prete au rendu."
+  }
+}

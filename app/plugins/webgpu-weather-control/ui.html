@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WebGPU Weather Control</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #10131a; color: #eef3ff; }
+    body { margin: 0; padding: 24px; } main { max-width: 760px; margin: auto; display: grid; gap: 16px; }
+    section { background: #1a2030; border: 1px solid #33415f; border-radius: 10px; padding: 16px; }
+    label { display: flex; justify-content: space-between; gap: 16px; margin: 10px 0; } button { padding: 8px 12px; }
+    code { color: #8ad9ff; } #status { color: #9dffb0; }
+  </style>
+</head>
+<body>
+  <main>
+    <header><h1>WebGPU Weather Control</h1><p id="status">Loading isolated configuration…</p></header>
+    <section>
+      <h2>Renderer readiness</h2>
+      <p>This control plane is ready for a WebGPU renderer. The overlay is currently transparent and diagnostic-only.</p>
+      <p>API namespace: <code>/api/webgpu-weather/config</code></p>
+    </section>
+    <section>
+      <h2>Controls</h2>
+      <label>Enable WebGPU weather <input id="enabled" type="checkbox"></label>
+      <label>Adaptive quality <input id="adaptive" type="checkbox" checked></label>
+      <label>Community gamification <input id="gamification" type="checkbox" disabled></label>
+      <p>Gamification and its HUD are disabled by default for this independent beta.</p>
+      <button id="refresh" type="button">Refresh diagnostics</button>
+    </section>
+  </main>
+  <script>
+    async function loadConfig() {
+      const response = await fetch('/api/webgpu-weather/config');
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || 'Configuration unavailable');
+      document.querySelector('#enabled').checked = Boolean(data.config.enabled);
+      document.querySelector('#adaptive').checked = Boolean(data.config.adaptiveQuality);
+      document.querySelector('#status').textContent = data.config.hasApiKey ? 'WebGPU Weather Control is configured.' : 'Waiting for an API key.';
+    }
+    document.querySelector('#refresh').addEventListener('click', () => loadConfig().catch((error) => {
+      document.querySelector('#status').textContent = error.message;
+    }));
+    loadConfig().catch((error) => { document.querySelector('#status').textContent = error.message; });
+  </script>
+</body>
+</html>

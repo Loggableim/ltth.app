@@ -1,0 +1,10 @@
+{
+  "plugins": {
+    "webgpu-weather-control": {
+      "name": "WebGPU-Wettersteuerung",
+      "description": "Eigenstaendige WebGPU-Wettersteuerung",
+      "ui": { "title": "WebGPU-Wettersteuerung", "diagnostics": "Renderer-Diagnose" },
+      "overlay": { "status": "WebGPU-Renderer wartet auf Aktivierung" }
+    }
+  }
+}
