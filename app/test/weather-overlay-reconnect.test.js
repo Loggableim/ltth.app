@@ -36,7 +36,7 @@ class FakeSocket {
   }
 }
 
-function createOverlayDom(overlay, socket) {
+function createOverlayDom(overlay, socket, gamification = { enabled: true, overlay: {} }) {
   return new JSDOM(overlay, {
     url: 'http://localhost/weather-control/overlay',
     runScripts: 'dangerously',
@@ -51,7 +51,7 @@ function createOverlayDom(overlay, socket) {
                 audio: { enabled: false, effects: {} },
                 maxConcurrentEffects: 1,
                 qualityPreset: 'high',
-                gamification: { overlay: {} }
+                gamification
               }
             }
           : { success: true, gamification: {} }
@@ -128,6 +128,53 @@ describe('Weather Control overlay reconnect recovery', () => {
     } finally {
       dom.window.dispatchEvent(new dom.window.Event('beforeunload'));
       dom.window.close();
+    }
+  });
+
+  test('hides the entire Community HUD or individual rows from overlay settings', async () => {
+    const socket = new FakeSocket();
+    const dom = createOverlayDom(overlay, socket, {
+      enabled: true,
+      overlay: {
+        enabled: true,
+        showMeter: false,
+        showQuest: false,
+        showStreak: true,
+        showRewardFeed: false
+      }
+    });
+
+    try {
+      await waitForSocketHandler(socket, 'weather:gamification-state');
+      socket.trigger('weather:gamification-state', {
+        communityMeter: { current: 25, max: 100 },
+        streaks: { current: 3 },
+        rewards: { nextThreshold: { label: 'Storm', meter: 50 } }
+      });
+
+      expect(dom.window.document.getElementById('gamification-hud').classList.contains('show')).toBe(true);
+      expect(dom.window.document.getElementById('gamification-meter-row').hidden).toBe(true);
+      expect(dom.window.document.getElementById('gamification-quest-row').hidden).toBe(true);
+      expect(dom.window.document.getElementById('gamification-streak-row').hidden).toBe(false);
+      expect(dom.window.document.getElementById('gamification-reward-row').hidden).toBe(true);
+    } finally {
+      dom.window.dispatchEvent(new dom.window.Event('beforeunload'));
+      dom.window.close();
+    }
+
+    const disabledSocket = new FakeSocket();
+    const disabledDom = createOverlayDom(overlay, disabledSocket, {
+      enabled: true,
+      overlay: { enabled: false, showMeter: true, showQuest: true, showStreak: true, showRewardFeed: true }
+    });
+
+    try {
+      await waitForSocketHandler(disabledSocket, 'weather:gamification-state');
+      disabledSocket.trigger('weather:gamification-state', {});
+      expect(disabledDom.window.document.getElementById('gamification-hud').classList.contains('show')).toBe(false);
+    } finally {
+      disabledDom.window.dispatchEvent(new disabledDom.window.Event('beforeunload'));
+      disabledDom.window.close();
     }
   });
 });

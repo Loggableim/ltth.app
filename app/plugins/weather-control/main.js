@@ -1945,6 +1945,18 @@ class WeatherControlPlugin {
             ...gamificationConfig,
             state: this.serializeGamificationState()
         };
+        if (gamificationConfig.enabled === false) {
+            this.gamification.quest.active = null;
+            if (this.questRotationTimer) {
+                clearTimeout(this.questRotationTimer);
+                this.questRotationTimer = null;
+            }
+            if (this.gamificationPersistTimer) {
+                clearTimeout(this.gamificationPersistTimer);
+                this.gamificationPersistTimer = null;
+            }
+            return this.gamification;
+        }
         if (gamificationConfig.quests?.enabled !== false && !this.gamification.quest.active) {
             this.createNextQuest();
         }
@@ -2015,6 +2027,13 @@ class WeatherControlPlugin {
     }
 
     scheduleGamificationPersist() {
+        if (this.config?.gamification?.enabled === false) {
+            if (this.gamificationPersistTimer) {
+                clearTimeout(this.gamificationPersistTimer);
+                this.gamificationPersistTimer = null;
+            }
+            return;
+        }
         if (this.gamificationPersistTimer) {
             clearTimeout(this.gamificationPersistTimer);
         }
@@ -2039,6 +2058,9 @@ class WeatherControlPlugin {
     }
 
     broadcastGamificationState(reason = 'update', extra = {}) {
+        if (this.config?.gamification?.enabled === false) {
+            return null;
+        }
         const payload = {
             reason,
             timestamp: Date.now(),
@@ -2110,6 +2132,9 @@ class WeatherControlPlugin {
 
     createNextQuest() {
         const config = this.config?.gamification || this.getDefaultGamificationConfig();
+        if (config.enabled === false) {
+            return null;
+        }
         const pool = Array.isArray(config.quests?.pool) ? config.quests.pool : [];
         if (pool.length === 0) {
             this.gamification.quest.active = null;
@@ -2186,7 +2211,7 @@ class WeatherControlPlugin {
                 }
                 this.questRotationTimer = setTimeout(() => {
                     this.questRotationTimer = null;
-                    if (this.config?.enabled) {
+                    if (this.config?.enabled && this.config?.gamification?.enabled !== false) {
                         this.createNextQuest();
                     }
                 }, 0);

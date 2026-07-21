@@ -1190,6 +1190,17 @@
                     <div class="form-group">
                         <label class="form-label">
                             <span style="display: flex; justify-content: space-between; align-items: center;">
+                                <span>Show Community HUD</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="gamificationOverlayEnabled" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span style="display: flex; justify-content: space-between; align-items: center;">
                                 <span data-i18n="plugins.weather-control.labels.show_overlay_meter">Show Overlay Meter</span>
                                 <label class="switch">
                                     <input type="checkbox" id="gamificationOverlayMeter" checked>
@@ -2738,7 +2749,7 @@
                     thresholds: parseJsonField('gamificationRewardThresholds', [])
                 },
                 overlay: {
-                    enabled: document.getElementById('gamificationEnabled')?.checked === true,
+                    enabled: document.getElementById('gamificationOverlayEnabled')?.checked !== false,
                     showMeter: document.getElementById('gamificationOverlayMeter')?.checked !== false,
                     showQuest: document.getElementById('gamificationOverlayQuest')?.checked !== false,
                     showStreak: document.getElementById('gamificationOverlayStreak')?.checked !== false,
@@ -2954,6 +2965,7 @@
 
                     const gamification = config.gamification || {};
                     document.getElementById('gamificationEnabled').checked = gamification.enabled !== false;
+                    document.getElementById('gamificationOverlayEnabled').checked = gamification.overlay?.enabled !== false;
                     document.getElementById('gamificationOverlayMeter').checked = gamification.overlay?.showMeter !== false;
                     document.getElementById('gamificationOverlayQuest').checked = gamification.overlay?.showQuest !== false;
                     document.getElementById('gamificationOverlayStreak').checked = gamification.overlay?.showStreak !== false;

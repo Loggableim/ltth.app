@@ -145,4 +145,43 @@ describe('Weather Control gamification', () => {
     expect(manifest).toContain('community gamification');
     expect(readme).toContain('Community Gamification');
   });
+
+  test('persists the Community HUD master switch independently from gamification', () => {
+    const ui = fs.readFileSync(uiPath, 'utf8');
+
+    expect(ui).toContain('id="gamificationOverlayEnabled"');
+    expect(ui).toContain("enabled: document.getElementById('gamificationOverlayEnabled')?.checked !== false");
+    expect(ui).toContain("document.getElementById('gamificationOverlayEnabled').checked = gamification.overlay?.enabled !== false");
+  });
+
+  test('does not create quests, process events, rewards, or timers when gamification is disabled', async () => {
+    jest.useFakeTimers();
+    try {
+      mockApi.getConfig.mockResolvedValue({
+        enabled: true,
+        gamification: {
+          enabled: false,
+          quests: {
+            enabled: true,
+            pool: [{ id: 'disabled-quest', title: 'Disabled', type: 'chat_count', target: 1, eventTypes: ['chat'] }]
+          },
+          rewards: {
+            enabled: true,
+            thresholds: [{ meter: 1, action: 'rain', intensity: 0.5, duration: 1000, label: 'Disabled reward' }]
+          }
+        }
+      });
+
+      await plugin.loadConfig();
+
+      expect(plugin.gamification.quest.active).toBeNull();
+      expect(jest.getTimerCount()).toBe(0);
+      expect(plugin.applyGamificationEvent('chat', { username: 'alice' })).toBeNull();
+      expect(plugin.resolveRewardThreshold({ meter: 100 })).toEqual([]);
+      expect(mockApi.emit).not.toHaveBeenCalled();
+      expect(jest.getTimerCount()).toBe(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });
