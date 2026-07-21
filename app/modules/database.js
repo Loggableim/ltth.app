@@ -292,6 +292,20 @@ class DatabaseManager {
             )
         `);
 
+        // WebGPU Weather Control: isolated gift-to-weather mappings
+        this.db.exec(`
+            CREATE TABLE IF NOT EXISTS webgpu_gift_weather_mappings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                gift_id INTEGER UNIQUE NOT NULL,
+                weather_effect TEXT NOT NULL,
+                intensity REAL DEFAULT 0.5,
+                duration INTEGER DEFAULT 10000,
+                enabled INTEGER DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
         // HUD-Element-Konfigurationen (Position und Sichtbarkeit)
         this.db.exec(`
             CREATE TABLE IF NOT EXISTS hud_elements (
@@ -1645,6 +1659,52 @@ class DatabaseManager {
 
     clearGiftWeatherMappings() {
         const stmt = this.db.prepare('DELETE FROM gift_weather_mappings');
+        return stmt.run();
+    }
+
+    // ========== WEBGPU GIFT WEATHER MAPPINGS ==========
+    getWebgpuGiftWeatherMapping(giftId) {
+        const stmt = this.db.prepare(`
+            SELECT wgw.*, gc.name as gift_name, gc.diamond_count, gc.image_url
+            FROM webgpu_gift_weather_mappings wgw
+            LEFT JOIN gift_catalog gc ON wgw.gift_id = gc.id
+            WHERE wgw.gift_id = ?
+        `);
+        const row = stmt.get(giftId);
+        return row ? { ...row, enabled: Boolean(row.enabled) } : null;
+    }
+
+    getAllWebgpuGiftWeatherMappings() {
+        const stmt = this.db.prepare(`
+            SELECT wgw.*, gc.name as gift_name, gc.diamond_count, gc.image_url
+            FROM webgpu_gift_weather_mappings wgw
+            LEFT JOIN gift_catalog gc ON wgw.gift_id = gc.id
+            ORDER BY gc.diamond_count DESC
+        `);
+        return stmt.all().map(row => ({ ...row, enabled: Boolean(row.enabled) }));
+    }
+
+    setWebgpuGiftWeatherMapping(giftId, weatherEffect, intensity = 0.5, duration = 10000, enabled = true) {
+        const stmt = this.db.prepare(`
+            INSERT INTO webgpu_gift_weather_mappings (gift_id, weather_effect, intensity, duration, enabled, updated_at)
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(gift_id) DO UPDATE SET
+                weather_effect = excluded.weather_effect,
+                intensity = excluded.intensity,
+                duration = excluded.duration,
+                enabled = excluded.enabled,
+                updated_at = CURRENT_TIMESTAMP
+        `);
+        return stmt.run(giftId, weatherEffect, intensity, duration, enabled ? 1 : 0);
+    }
+
+    deleteWebgpuGiftWeatherMapping(giftId) {
+        const stmt = this.db.prepare('DELETE FROM webgpu_gift_weather_mappings WHERE gift_id = ?');
+        return stmt.run(giftId);
+    }
+
+    clearWebgpuGiftWeatherMappings() {
+        const stmt = this.db.prepare('DELETE FROM webgpu_gift_weather_mappings');
         return stmt.run();
     }
 
