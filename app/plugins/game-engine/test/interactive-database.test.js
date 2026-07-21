@@ -444,6 +444,48 @@ describe('GameEngineDatabase interactive persistence', () => {
     expect(database.getSession(completedSession).player1_username).toBe(playerId);
   });
 
+  test('ignores a newer whitespace-only identity in every leaderboard presentation', () => {
+    const playerId = '7446102145268843555';
+    const completedSession = database.createSession('connect4', playerId, 'viewer', 'command', '/c4start');
+    database.addPlayer2(completedSession, 'streamer', 'streamer');
+    database.endSession(completedSession, playerId, { board: [[1]] }, 'win');
+
+    database.createInteractiveState(session({
+      sessionId: 42,
+      viewerId: playerId,
+      viewerDisplayName: 'Sam',
+      lastActivityAt: 1000
+    }));
+    database.completeInteractiveState(42, 'cancelled');
+    sqlite.prepare(`UPDATE game_interactive_sessions SET updated_at = ? WHERE session_id = ?`)
+      .run(1000, 42);
+
+    database.createInteractiveState(session({
+      sessionId: 43,
+      viewerId: playerId,
+      viewerDisplayName: '\t\n\u00a0',
+      lastActivityAt: 2000
+    }));
+    database.completeInteractiveState(43, 'cancelled');
+    sqlite.prepare(`UPDATE game_interactive_sessions SET updated_at = ? WHERE session_id = ?`)
+      .run(2000, 43);
+
+    database.updatePlayerStats(playerId, 'connect4', true, false, false, 10);
+    database.updatePlayerELO(playerId, 'connect4', 240);
+
+    expect(database.resolveLeaderboardIdentity(playerId)).toEqual({ playerId, username: 'Sam' });
+    const leaderboardRows = [
+      database.getDailyLeaderboard('connect4', 10)[0],
+      database.getSeasonLeaderboard('connect4', 10)[0],
+      database.getLifetimeLeaderboard('connect4', 10)[0],
+      database.getELOLeaderboard('connect4', 10)[0],
+      database.getStreakLeaderboard('connect4', 10)[0]
+    ];
+    for (const row of leaderboardRows) {
+      expect(row).toMatchObject({ playerId, username: 'Sam' });
+    }
+  });
+
   test('keeps a nonnumeric player name as both leaderboard ID and display name', () => {
     const username = 'sam_the_viewer';
     database.updatePlayerStats(username, 'connect4', true, false, false, 10);

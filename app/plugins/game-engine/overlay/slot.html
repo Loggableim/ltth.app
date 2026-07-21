@@ -614,6 +614,29 @@
     let lastSettings    = {};
     let hideTimer       = null;
     let currentSpinId   = null; // track active spin for spin-completed reporting
+    const spinCallbackTimers = new Set();
+
+    function isCurrentSpinScope(spinId, machineId) {
+      return spinId != null &&
+        machineId != null &&
+        String(spinId) === String(currentSpinId) &&
+        String(machineId) === String(currentMachineId);
+    }
+
+    function clearSpinCallbackTimers() {
+      for (const timer of spinCallbackTimers) clearTimeout(timer);
+      spinCallbackTimers.clear();
+    }
+
+    function scheduleSpinCallback(spinId, machineId, callback, delay) {
+      const timer = setTimeout(() => {
+        spinCallbackTimers.delete(timer);
+        if (!isCurrentSpinScope(spinId, machineId)) return;
+        callback();
+      }, delay);
+      spinCallbackTimers.add(timer);
+      return timer;
+    }
 
     const socket = io({ transports: ['websocket'], auth: { role: 'overlay' } });
 
@@ -732,7 +755,8 @@
       requestAnimationFrame(step);
     }
 
-    function stopReel(index, resultSymbol, callback) {
+    function stopReel(index, resultSymbol, callback, spinId, machineId) {
+      if (!isCurrentSpinScope(spinId, machineId)) return;
       const track = document.getElementById(`track-${index}`);
       const reel  = document.getElementById(`reel-${index}`);
       if (!track || !reel) { if (callback) callback(); return; }
@@ -766,7 +790,7 @@
       track.classList.add('stopping');
       track.style.transform = `translateY(-${snapTo}px)`;
 
-      setTimeout(() => {
+      scheduleSpinCallback(spinId, machineId, () => {
         track.classList.remove('stopping');
         if (callback) callback();
       }, 600);
@@ -798,7 +822,7 @@
     }
 
     // ── Confetti ───────────────────────────────────────────
-    function launchConfetti() {
+    function launchConfetti(spinId, machineId) {
       const colors = ['#FFD700','#FF6B6B','#4ECDC4','#A8E6CF','#FF8C94','#FFD3B6'];
       for (let i = 0; i < 80; i++) {
         const piece = document.createElement('div');
@@ -810,11 +834,12 @@
         piece.style.transform        = `rotate(${Math.random() * 360}deg)`;
         confettiEl.appendChild(piece);
       }
-      setTimeout(() => { confettiEl.innerHTML = ''; }, 4000);
+      scheduleSpinCallback(spinId, machineId, () => { confettiEl.innerHTML = ''; }, 4000);
     }
 
     // ── Display result label ───────────────────────────────
-    function showResult(category, isWin, settings, spinId) {
+    function showResult(category, isWin, settings, spinId, machineId = currentMachineId) {
+      if (!isCurrentSpinScope(spinId, machineId)) return false;
       const label = RESULT_LABELS[category] || category;
       resultEl.textContent = label;
       resultEl.className = category;
@@ -826,11 +851,16 @@
       }
       if (category === 'near_miss') {
         reelsWrap.classList.add('near-miss-shake');
-        setTimeout(() => reelsWrap.classList.remove('near-miss-shake'), 600);
+        scheduleSpinCallback(
+          spinId,
+          machineId,
+          () => reelsWrap.classList.remove('near-miss-shake'),
+          600
+        );
       }
       if (category === 'jackpot') {
         reelsWrap.classList.add('jackpot-glow');
-        launchConfetti();
+        launchConfetti(spinId, machineId);
       }
 
       const showMs = (settings && settings.showResultDuration) ? settings.showResultDuration : 5000;
@@ -839,10 +869,11 @@
       // Fire as soon as the result is visible (reels have stopped).
       if (spinId) {
         if (pendingSpinAudioIntent?.spinId === String(spinId)) pendingSpinAudioIntent = null;
-        socket.emit('slot:spin-completed', { spinId, category, isWin });
+        socket.emit('slot:spin-completed', { spinId, machineId, category, isWin });
       }
 
       scheduledHide(showMs + 1200);
+      return true;
     }
 
     // ── Audio playback ─────────────────────────────────────
@@ -1001,16 +1032,18 @@
 
     // ── Socket event: spin started ─────────────────────────
     socket.on('slot:spin-started', (data) => {
+      clearSpinCallbackTimers();
       currentSymbols = (data.symbols && data.symbols.length > 0) ? data.symbols : currentSymbols;
       lastSettings   = data.settings || {};
       currentSpinId  = data.spinId ?? null;
       pendingSpinAudioIntent = null;
 
       // Track current machine for custom sound routing
-      if (data.machineId && data.machineId !== currentMachineId) {
+      const nextMachineId = data.machineId == null ? null : String(data.machineId);
+      if (nextMachineId && nextMachineId !== String(currentMachineId)) {
         // Machine changed – clear audio cache so new machine's sounds load fresh
         Object.keys(audioCache).forEach(k => delete audioCache[k]);
-        currentMachineId = data.machineId;
+        currentMachineId = nextMachineId;
         loadAudioSettings(currentMachineId);
       }
 
@@ -1072,7 +1105,9 @@
       const isWin     = data.isWin    || false;
       const settings  = data.settings || lastSettings;
       const stopDelay = settings.reelStopDelay || REEL_STOP_DELAY;
-      const spinId    = data.spinId   || currentSpinId;
+      const spinId    = data.spinId   ?? currentSpinId;
+      const machineId = data.machineId ?? currentMachineId;
+      if (!isCurrentSpinScope(spinId, machineId)) return;
 
       // Update last known settings
       lastSettings = settings;
@@ -1081,21 +1116,30 @@
       let stoppedCount = 0;
 
       for (let i = 0; i < 3; i++) {
-        setTimeout(() => {
-          playAudio('reel_stop', settings, currentMachineId);
+        scheduleSpinCallback(spinId, machineId, () => {
+          playAudio('reel_stop', settings, machineId);
           stopReel(i, reels[i] || { emoji: '❓' }, () => {
             stoppedCount++;
             if (stoppedCount === 3) {
               // All reels stopped – show result and notify server
-              setTimeout(() => showResult(category, isWin, settings, spinId), 200);
+              scheduleSpinCallback(
+                spinId,
+                machineId,
+                () => showResult(category, isWin, settings, spinId, machineId),
+                200
+              );
             }
-          });
+          }, spinId, machineId);
         }, i * stopDelay);
       }
     });
 
     // ── Socket event: spin error – reset overlay ───────────
-    socket.on('slot:spin-error', () => {
+    socket.on('slot:spin-error', (data = {}) => {
+      const spinId = data.spinId ?? currentSpinId;
+      const machineId = data.machineId ?? currentMachineId;
+      if (!isCurrentSpinScope(spinId, machineId)) return;
+      clearSpinCallbackTimers();
       // Stop any running reels and reset to idle
       for (let i = 0; i < 3; i++) {
         const reel = document.getElementById(`reel-${i}`);
@@ -1111,7 +1155,11 @@
     });
 
     // ── Socket event: spin timeout (queue safety) ──────────
-    socket.on('slot:spin-timeout', () => {
+    socket.on('slot:spin-timeout', (data = {}) => {
+      const spinId = data.spinId ?? currentSpinId;
+      const machineId = data.machineId ?? currentMachineId;
+      if (!isCurrentSpinScope(spinId, machineId)) return;
+      clearSpinCallbackTimers();
       // Force reset if overlay is stuck
       for (let i = 0; i < 3; i++) {
         const reel = document.getElementById(`reel-${i}`);
@@ -1128,7 +1176,8 @@
 
     // ── Socket event: play-audio (from reward dispatch) ────
     socket.on('slot:play-audio', (data) => {
-      playAudio(data.audioType || 'win', lastSettings, currentMachineId);
+      if (!isCurrentSpinScope(data?.spinId, data?.machineId)) return;
+      playAudio(data.audioType || 'win', lastSettings, data.machineId);
     });
 
     // ── Socket event: overlay effect (from reward dispatch) ─

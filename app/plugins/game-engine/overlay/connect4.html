@@ -743,6 +743,7 @@
     const highestAudibleMoveBySession = new Map();
     const warnedViewerDeadlines = new Set();
     const audioSettingsByEvent = new Map();
+    let connect4AudioSettingsReady = false;
     let connect4AudioSettingsGeneration = 0;
     const ROWS = 6;
     const COLUMNS = 7;
@@ -807,6 +808,7 @@
         if (setting?.url) entry.url = setting.url;
         audioSettingsByEvent.set(mediaEvent, entry);
       }
+      connect4AudioSettingsReady = true;
     }
 
     function applyAudioStateUpdate(mediaEvent, enabled) {
@@ -841,6 +843,7 @@
     }
 
     function playEventSound(mediaEvent) {
+      if (!connect4AudioSettingsReady) return false;
       if (audioSettingsByEvent.get(mediaEvent)?.enabled === false) return false;
       const defaultPath = defaultSoundsByEvent[mediaEvent];
       const customPath = audioSettingsByEvent.get(mediaEvent)?.url;
@@ -1480,8 +1483,9 @@
       const interactiveState = interactiveConnect4Presentation(state);
       const display = interactiveState?.display;
       if (!display) return;
+      const resultPresentation = display.phase === 'result' ? display.result : null;
       const displayRevision = Number(display.displayRevision);
-      const sessionRevision = Number(display.sessionRevision ?? display.result?.sessionRevision ?? -1);
+      const sessionRevision = Number(resultPresentation?.sessionRevision ?? display.sessionRevision ?? -1);
       if (!Number.isFinite(displayRevision)) return;
       if (!force && displayRevision < lastInteractiveDisplayRevision) return;
       if (!force &&
@@ -1512,12 +1516,13 @@
         return;
       }
 
-      const snapshotState = display.state || display.result?.state;
+      const snapshotState = resultPresentation?.state || display.state;
       if (!interactiveSnapshotActive || !snapshotState) return;
-      currentSession = Number(display.displaySessionId ?? display.result?.sessionId);
-      const animationMs = Math.max(100, Math.min(2000, Number(display.config?.animationSpeed) || 500));
+      currentSession = Number(resultPresentation?.sessionId ?? display.displaySessionId);
+      const presentationConfig = resultPresentation?.config || display.config || gameConfig || {};
+      const animationMs = Math.max(100, Math.min(2000, Number(presentationConfig.animationSpeed) || 500));
       document.documentElement.style.setProperty('--interactive-animation-ms', `${animationMs}ms`);
-      applyConfig(display.config || gameConfig || {});
+      applyConfig(presentationConfig);
       updateBoard(snapshotState);
       updatePlayerInfo(snapshotState);
       updateStatus(snapshotState);

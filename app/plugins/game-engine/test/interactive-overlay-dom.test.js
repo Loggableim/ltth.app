@@ -18,6 +18,10 @@ function jsonResponse(body) {
   return { ok: true, json: () => Promise.resolve(body) };
 }
 
+function httpErrorResponse(status, body = {}) {
+  return { ok: false, status, json: jest.fn(() => Promise.resolve(body)) };
+}
+
 function flushPromises() {
   return new Promise(resolve => setImmediate(resolve));
 }
@@ -96,11 +100,21 @@ function loadOverlay(name, i18n = null, options = {}) {
   return {
     dom,
     listeners,
+    socket,
     audioPlay,
     mediaPlay,
     AudioConstructor,
     audioSources,
     pendingTimeoutCount: () => timeouts.size,
+    runTimeouts(maxDelay = Number.POSITIVE_INFINITY) {
+      const due = Array.from(timeouts.entries())
+        .filter(([, entry]) => entry.delay <= maxDelay)
+        .sort(([, left], [, right]) => left.delay - right.delay);
+      for (const [id, entry] of due) {
+        if (!timeouts.delete(id)) continue;
+        entry.callback();
+      }
+    },
     advance(milliseconds) {
       now += milliseconds;
       for (const callback of [...intervals.values()]) callback();
@@ -296,6 +310,7 @@ describe('interactive overlay countdown DOM', () => {
       onLanguageChange: callback => { onLanguageChange = callback; }
     };
     const { dom, listeners, audioPlay, pendingTimeoutCount } = loadOverlay('connect4.html', i18n);
+    dom.window.applyAudioSettings({ player_1_wins: { enabled: true } });
     const resultState = connect4State({ phase: 'result', deadline: null, moveNumber: 0 });
     resultState.display.config.celebrationEnabled = true;
     resultState.display.config.displayTexts = {};
@@ -338,6 +353,63 @@ describe('interactive overlay countdown DOM', () => {
     expect(resultText.textContent).toContain('fr: Host wins');
     expect(audioPlay).toHaveBeenCalledTimes(1);
     expect(pendingTimeoutCount()).toBe(initialConfettiTimeouts);
+    dom.window.close();
+  });
+
+  test.each([
+    ['completion', { winner: 2, winnerRole: 'viewer', reason: 'win' }],
+    ['cancellation', { winner: null, winnerRole: null, reason: 'cancelled' }]
+  ])('direct Connect4 renders a hidden-session %s from result-owned state, config, and ID', (_label, outcome) => {
+    const { dom, listeners } = loadOverlay('connect4.html');
+    const snapshot = connect4State({
+      sessionId: 1,
+      sessionRevision: 2,
+      displayRevision: 8,
+      phase: 'result',
+      deadline: null,
+      moveNumber: 0
+    });
+    snapshot.display.viewerDisplayName = 'Visible Viewer';
+    snapshot.display.config.displayTexts = { labelWin: 'Visible {player} wins' };
+    snapshot.display.state.player2.nickname = 'Visible Viewer';
+
+    const resultState = connect4State({
+      sessionId: 2,
+      sessionRevision: 9,
+      phase: 'result',
+      deadline: null,
+      moveNumber: 0
+    }).display.state;
+    resultState.board[5][6] = 2;
+    resultState.player1.nickname = 'Hidden Host';
+    resultState.player2.nickname = 'Hidden Viewer';
+    resultState.status = 'completed';
+    resultState.winner = outcome.winner;
+    snapshot.display.result = {
+      sessionId: 2,
+      gameType: 'connect4',
+      sessionRevision: 9,
+      hostDisplayName: 'Hidden Host',
+      viewerDisplayName: 'Hidden Viewer',
+      state: resultState,
+      config: {
+        ...snapshot.display.config,
+        displayTexts: { labelWin: 'Hidden {player} wins' }
+      },
+      ...outcome
+    };
+
+    listeners.get('game-engine:interactive-state')(snapshot);
+
+    expect(dom.window.document.getElementById('player2-name').textContent).toBe('Hidden Viewer');
+    expect(dom.window.document.querySelector('[data-row="5"][data-col="6"] .piece.player2')).not.toBeNull();
+    if (outcome.reason === 'cancelled') {
+      expect(dom.window.document.getElementById('result-text').textContent)
+        .toContain('cancelled');
+    } else {
+      expect(dom.window.document.getElementById('result-text').textContent)
+        .toContain('Hidden Hidden Viewer wins');
+    }
     dom.window.close();
   });
 
@@ -497,6 +569,7 @@ describe('interactive overlay countdown DOM', () => {
 
   test('direct Connect4 never replays an audible move after queue rotation, background, or stale snapshots', () => {
     const { dom, listeners, audioPlay } = loadOverlay('connect4.html');
+    dom.window.applyAudioSettings({ piece_drop: { enabled: true } });
     const applyState = listeners.get('game-engine:interactive-state');
 
     applyState(connect4State({ displayRevision: 1, sessionId: 7, moveNumber: 1 }));
@@ -626,6 +699,109 @@ describe('interactive overlay countdown DOM', () => {
     expect(AudioConstructor).not.toHaveBeenCalled();
     expect(audioPlay).not.toHaveBeenCalled();
     dom.window.close();
+  });
+
+  test('Connect4 fails closed while its initial audio settings request is pending', async () => {
+    const media = deferred();
+    const fetch = jest.fn(url => url.includes('/media/connect4')
+      ? media.promise
+      : Promise.resolve(jsonResponse({ soundEnabled: true, soundVolume: 0.5 })));
+    const connect4 = loadOverlay('connect4.html', null, { fetch });
+    connect4.listeners.get('game-engine:config-updated')({
+      gameType: 'connect4',
+      config: { soundEnabled: true, soundVolume: 0.5 }
+    });
+
+    expect(connect4.dom.window.playEventSound('piece_drop')).toBe(false);
+    expect(connect4.AudioConstructor).not.toHaveBeenCalled();
+
+    media.resolve(jsonResponse([{ media_event: 'piece_drop', enabled: true }]));
+    await flushPromises();
+    expect(connect4.dom.window.playEventSound('piece_drop')).toBe(true);
+    expect(connect4.AudioConstructor).toHaveBeenCalledTimes(1);
+    connect4.dom.window.close();
+  });
+
+  test('Connect4 fails closed when its initial audio settings request returns HTTP 500', async () => {
+    const failure = httpErrorResponse(500, [
+      { media_event: 'piece_drop', enabled: true }
+    ]);
+    const fetch = jest.fn(url => url.includes('/media/connect4')
+      ? Promise.resolve(failure)
+      : Promise.resolve(jsonResponse({ soundEnabled: true, soundVolume: 0.5 })));
+    const connect4 = loadOverlay('connect4.html', null, { fetch });
+    connect4.listeners.get('game-engine:config-updated')({
+      gameType: 'connect4',
+      config: { soundEnabled: true, soundVolume: 0.5 }
+    });
+    await flushPromises();
+
+    expect(failure.json).not.toHaveBeenCalled();
+    expect(connect4.dom.window.playEventSound('piece_drop')).toBe(false);
+    expect(connect4.AudioConstructor).not.toHaveBeenCalled();
+    connect4.dom.window.close();
+  });
+
+  test('Connect4 retains a same-scope socket mute when its HTTP 500 refresh fails', async () => {
+    const failure = httpErrorResponse(500, [
+      { media_event: 'piece_drop', enabled: true }
+    ]);
+    let mediaRequestCount = 0;
+    const fetch = jest.fn(url => {
+      if (!url.includes('/media/connect4')) {
+        return Promise.resolve(jsonResponse({ soundEnabled: true, soundVolume: 0.5 }));
+      }
+      mediaRequestCount++;
+      return Promise.resolve(mediaRequestCount === 1
+        ? jsonResponse([{ media_event: 'piece_drop', enabled: true }])
+        : failure);
+    });
+    const connect4 = loadOverlay('connect4.html', null, { fetch });
+    connect4.listeners.get('game-engine:config-updated')({
+      gameType: 'connect4',
+      config: { soundEnabled: true, soundVolume: 0.5 }
+    });
+    await flushPromises();
+
+    connect4.listeners.get('game-engine:audio-state-updated')({
+      gameType: 'connect4',
+      scopeId: 'default',
+      audioEvent: 'piece_drop',
+      enabled: false
+    });
+    await flushPromises();
+
+    expect(failure.json).not.toHaveBeenCalled();
+    expect(connect4.dom.window.playEventSound('piece_drop')).toBe(false);
+    expect(connect4.AudioConstructor).not.toHaveBeenCalled();
+    connect4.dom.window.close();
+  });
+
+  test('wheel fails closed while its initial audio settings request is pending', async () => {
+    const settings = deferred();
+    const wheel = loadOverlay('wheel.html', null, { fetch: jest.fn(() => settings.promise) });
+    const spinSound = wheel.dom.window.document.getElementById('spin-sound');
+
+    expect(wheel.dom.window.playWheelEventSound('spinning', spinSound)).toBe(false);
+    expect(wheel.mediaPlay).not.toHaveBeenCalled();
+
+    settings.resolve(jsonResponse({ spinning: { enabled: true } }));
+    await flushPromises();
+    expect(wheel.dom.window.playWheelEventSound('spinning', spinSound)).toBe(true);
+    expect(wheel.mediaPlay).toHaveBeenCalledTimes(1);
+    wheel.dom.window.close();
+  });
+
+  test('wheel fails closed when its initial audio settings request rejects', async () => {
+    const wheel = loadOverlay('wheel.html', null, {
+      fetch: jest.fn(() => Promise.reject(new Error('initial settings failed')))
+    });
+    await flushPromises();
+    const spinSound = wheel.dom.window.document.getElementById('spin-sound');
+
+    expect(wheel.dom.window.playWheelEventSound('spinning', spinSound)).toBe(false);
+    expect(wheel.mediaPlay).not.toHaveBeenCalled();
+    wheel.dom.window.close();
   });
 
   test.each(['spinning', 'prize1', 'prize2', 'prize3', 'lost'])(
@@ -778,6 +954,27 @@ describe('interactive overlay countdown DOM', () => {
     wheel.dom.window.close();
   });
 
+  test('wheel rejects HTTP 500 before parsing and retains its same-scope socket mute', async () => {
+    const failure = httpErrorResponse(500, { spinning: { enabled: true } });
+    const fetch = jest.fn()
+      .mockResolvedValueOnce(jsonResponse({ spinning: { enabled: true } }))
+      .mockResolvedValueOnce(failure);
+    const wheel = loadOverlay('wheel.html', null, { fetch });
+    await flushPromises();
+
+    await wheel.listeners.get('wheel:audio-updated')({
+      wheelId: '1',
+      audioType: 'spinning',
+      enabled: false
+    });
+    const spinSound = wheel.dom.window.document.getElementById('spin-sound');
+
+    expect(failure.json).not.toHaveBeenCalled();
+    expect(wheel.dom.window.playWheelEventSound('spinning', spinSound)).toBe(false);
+    expect(wheel.mediaPlay).not.toHaveBeenCalled();
+    wheel.dom.window.close();
+  });
+
   test('wheel isolates an old mute when a new scope settings request rejects', async () => {
     const fetch = jest.fn()
       .mockResolvedValueOnce(jsonResponse({ spinning: { enabled: false } }))
@@ -789,9 +986,8 @@ describe('interactive overlay countdown DOM', () => {
     const spinSound = wheel.dom.window.document.getElementById('spin-sound');
 
     expect(loaded).toBe(false);
-    expect(wheel.dom.window.playWheelEventSound('spinning', spinSound)).toBe(true);
-    expect(spinSound.src).toBe('http://localhost/game-engine/sounds/wheel/spinning%20sound.mp3');
-    expect(wheel.mediaPlay).toHaveBeenCalledTimes(1);
+    expect(wheel.dom.window.playWheelEventSound('spinning', spinSound)).toBe(false);
+    expect(wheel.mediaPlay).not.toHaveBeenCalled();
     wheel.dom.window.close();
   });
 
@@ -871,6 +1067,73 @@ describe('interactive overlay countdown DOM', () => {
     slot.dom.window.close();
   });
 
+  test('slot ignores delayed reels, results, and reward audio from a replaced spin scope', () => {
+    const slot = loadOverlay('slot.html');
+    const spinStarted = slot.listeners.get('slot:spin-started');
+    const spinResult = slot.listeners.get('slot:spin-result');
+    const playRewardAudio = slot.listeners.get('slot:play-audio');
+    const reels = [
+      { emoji: 'A', label: 'A' },
+      { emoji: 'A', label: 'A' },
+      { emoji: 'A', label: 'A' }
+    ];
+
+    spinStarted({
+      spinId: 'spin-a',
+      machineId: '1',
+      symbols: reels,
+      settings: { soundEnabled: false, reelStopDelay: 100 }
+    });
+    spinResult({
+      spinId: 'spin-a',
+      machineId: '1',
+      reels,
+      category: 'small_win',
+      isWin: true,
+      settings: { soundEnabled: true, reelStopDelay: 100 }
+    });
+
+    spinStarted({
+      spinId: 'spin-b',
+      machineId: '2',
+      symbols: reels.map(symbol => ({ ...symbol, emoji: 'B', label: 'B' })),
+      settings: { soundEnabled: false, reelStopDelay: 100 }
+    });
+    slot.dom.window.applyAudioSettings({
+      small_win: { enabled: true },
+      big_win: { enabled: true },
+      reel_stop: { enabled: true }
+    });
+    spinResult({
+      spinId: 'spin-b',
+      machineId: '2',
+      reels: reels.map(symbol => ({ ...symbol, emoji: 'B', label: 'B' })),
+      category: 'big_win',
+      isWin: true,
+      settings: { soundEnabled: true, reelStopDelay: 100 }
+    });
+
+    playRewardAudio({ spinId: 'spin-a', machineId: '1', audioType: 'small_win' });
+    playRewardAudio({ spinId: 'spin-b', machineId: '2', audioType: 'big_win' });
+    expect(slot.audioSources).not.toContain('/game-engine/sounds/slot/custom/2/small_win.mp3');
+    expect(slot.audioSources).toContain('/game-engine/sounds/slot/custom/2/big_win.mp3');
+
+    slot.audioPlay.mockClear();
+    slot.runTimeouts(200);
+    expect(slot.audioPlay).toHaveBeenCalledTimes(3);
+    slot.runTimeouts(600);
+    slot.runTimeouts(200);
+
+    const completionEvents = slot.socket.emit.mock.calls
+      .filter(([event]) => event === 'slot:spin-completed');
+    expect(completionEvents).toEqual([[
+      'slot:spin-completed',
+      expect.objectContaining({ spinId: 'spin-b', machineId: '2', category: 'big_win' })
+    ]]);
+    expect(slot.dom.window.document.getElementById('result-text').textContent).toContain('Großer Gewinn');
+    slot.dom.window.close();
+  });
+
   test.each(['error', 'rejection'])(
     'Connect4 does not fall back after custom audio %s when the event was muted meanwhile',
     async failure => {
@@ -923,11 +1186,17 @@ describe('interactive overlay countdown DOM', () => {
       const audioPlay = jest.fn(() => Promise.resolve());
       if (failure === 'rejection') audioPlay.mockRejectedValueOnce(new Error('custom failed'));
       const slot = loadOverlay('slot.html', null, { audioPlay });
+      slot.listeners.get('slot:spin-started')({
+        spinId: 'spin-7',
+        machineId: '7',
+        settings: { soundEnabled: false }
+      });
       slot.dom.window.applyAudioSettings({ spin: { enabled: true } });
 
       expect(slot.dom.window.playAudio('spin', { soundEnabled: true }, '7')).toBe(true);
       slot.listeners.get('slot:spin-result')({
         spinId: 'spin-7',
+        machineId: '7',
         reels: [],
         settings: { soundEnabled: false }
       });

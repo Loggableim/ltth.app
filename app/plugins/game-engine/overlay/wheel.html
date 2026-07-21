@@ -687,6 +687,7 @@
       lost: '/game-engine/sounds/wheel/lost.mp3'
     };
     const audioSettingsByEvent = new Map();
+    let wheelAudioSettingsReady = false;
     let wheelAudioSettingsGeneration = 0;
 
     function applyAudioSettings(settings) {
@@ -697,6 +698,7 @@
         if (setting?.url) entry.url = setting.url;
         audioSettingsByEvent.set(audioEvent, entry);
       }
+      wheelAudioSettingsReady = true;
     }
 
     function applyAudioStateUpdate(audioEvent, enabled) {
@@ -707,6 +709,7 @@
 
     function playWheelEventSound(audioEvent, audioElement) {
       if (!config.settings.soundEnabled) return false;
+      if (!wheelAudioSettingsReady) return false;
       if (audioSettingsByEvent.get(audioEvent)?.enabled === false) return false;
       if (!audioElement) return false;
       audioElement.volume = config.settings.soundVolume || 0.7;
@@ -715,8 +718,6 @@
       return true;
     }
 
-    applyAudioSettings({});
-
     /**
      * Load audio files for a specific wheel
      */
@@ -724,12 +725,17 @@
       const scopeId = String(wheelId);
       const scopeChanged = scopeId !== String(currentWheelId);
       currentWheelId = wheelId;
-      if (scopeChanged) applyAudioSettings({});
+      if (scopeChanged) {
+        audioSettingsByEvent.clear();
+        wheelAudioSettingsReady = false;
+        audioLoaded = false;
+      }
       const generation = ++wheelAudioSettingsGeneration;
 
       try {
         // Fetch audio settings
         const res = await fetch(`/api/game-engine/wheel/audio/settings?wheelId=${wheelId}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const settings = await res.json();
         if (generation !== wheelAudioSettingsGeneration || scopeId !== String(currentWheelId)) return false;
         applyAudioSettings(settings);
@@ -765,13 +771,6 @@
       } catch (error) {
         if (generation !== wheelAudioSettingsGeneration || scopeId !== String(currentWheelId)) return false;
         console.error('Error loading wheel audio:', error);
-        // Fall back to defaults
-        spinSound.src = defaultAudioUrls.spinning;
-        prize1Sound.src = defaultAudioUrls.prize1;
-        prize2Sound.src = defaultAudioUrls.prize2;
-        prize3Sound.src = defaultAudioUrls.prize3;
-        lostSound.src = defaultAudioUrls.lost;
-        audioLoaded = true;
         return false;
       }
     }

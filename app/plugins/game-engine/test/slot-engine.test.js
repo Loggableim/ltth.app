@@ -492,6 +492,25 @@ describe('SlotGame – _buildRewardActions', () => {
     expect(game._buildRewardActions({ category: 'jackpot' }, cfg)).toHaveLength(0);
   });
 
+  it('emits reward audio with the originating spin and machine scope', async () => {
+    mockIO.emit.mockClear();
+
+    await game._executeReward(
+      { action: 'audio', params: { audioType: 'jackpot' } },
+      { spinId: 'spin-17', machineId: 4, username: 'winner' },
+      { category: 'jackpot' },
+      minimalConfig({ id: 4 })
+    );
+
+    expect(mockIO.emit).toHaveBeenCalledWith('slot:play-audio', {
+      spinId: 'spin-17',
+      machineId: 4,
+      audioType: 'jackpot',
+      username: 'winner',
+      category: 'jackpot'
+    });
+  });
+
   // ── Per-symbol shock dispatch ──────────────────────────────────────────────
 
   it('adds openshock action when winning symbol has isShock=true', () => {

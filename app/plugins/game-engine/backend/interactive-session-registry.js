@@ -1,3 +1,14 @@
+function getViewerTimeRemainingMs(session, now = Date.now()) {
+  if (!session) return null;
+  if (session.viewerDeadlineMs != null) {
+    const deadline = Number(session.viewerDeadlineMs);
+    if (Number.isFinite(deadline)) return Math.max(0, deadline - now);
+  }
+  if (session.viewerTimeRemainingMs == null) return null;
+  const remaining = Number(session.viewerTimeRemainingMs);
+  return Number.isFinite(remaining) ? Math.max(0, remaining) : null;
+}
+
 class InteractiveSessionRegistry {
   constructor({ maxSessions = 20 } = {}) {
     const parsedLimit = Number(maxSessions);
@@ -84,9 +95,7 @@ class InteractiveSessionRegistry {
         sessionRevision: session.sessionRevision,
         turnRole: session.turnRole,
         viewerDeadlineMs: session.viewerDeadlineMs ?? null,
-        viewerTimeRemainingMs: session.viewerDeadlineMs == null
-          ? session.viewerTimeRemainingMs ?? null
-          : Math.max(0, session.viewerDeadlineMs - now),
+        viewerTimeRemainingMs: getViewerTimeRemainingMs(session, now),
         hostTimeRemainingMs: session.hostTimeRemainingMs ?? null,
         moveCount: Number(state.moveCount) || 0,
         lastActivityAt: session.lastActivityAt,
@@ -98,3 +107,4 @@ class InteractiveSessionRegistry {
 }
 
 module.exports = InteractiveSessionRegistry;
+module.exports.getViewerTimeRemainingMs = getViewerTimeRemainingMs;

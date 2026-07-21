@@ -1000,6 +1000,7 @@ class SlotGame {
     switch (action) {
       case 'audio':
         this.io.emit('slot:play-audio', {
+          spinId: spinData.spinId,
           machineId: spinData.machineId,
           audioType: params.audioType || 'win',
           username: spinData.username,

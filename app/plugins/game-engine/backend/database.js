@@ -1264,12 +1264,19 @@ class GameEngineDatabase {
    */
   resolveLeaderboardIdentity(playerId) {
     const stableId = String(playerId);
-    const identity = this.db.prepare(`
+    const identities = this.db.prepare(`
       SELECT viewer_display_name FROM game_interactive_sessions
-      WHERE viewer_id = ? AND TRIM(viewer_display_name) <> ''
-      ORDER BY updated_at DESC LIMIT 1
-    `).get(stableId);
-    return { playerId: stableId, username: identity?.viewer_display_name || stableId };
+      WHERE viewer_id = ?
+      ORDER BY updated_at DESC, session_id DESC
+    `).iterate(stableId);
+    let username = stableId;
+    for (const identity of identities) {
+      const displayName = String(identity.viewer_display_name || '').trim();
+      if (!displayName) continue;
+      username = displayName;
+      break;
+    }
+    return { playerId: stableId, username };
   }
 
   _presentLeaderboardRows(rows) {

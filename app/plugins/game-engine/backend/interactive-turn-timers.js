@@ -66,19 +66,16 @@ class InteractiveTurnTimers {
         viewerTimeRemainingMs: null
       });
     }
-    this._scheduleViewer(session, Math.max(0, remaining));
+    this._scheduleViewer(session);
     return deadline;
   }
 
-  _scheduleViewer(session, remainingMs = null) {
+  _scheduleViewer(session) {
     const deadline = Number(session.viewerDeadlineMs);
     if (!Number.isFinite(deadline)) return;
     const sessionId = Number(session.sessionId);
     const revision = session.sessionRevision;
     const startedAt = this.now();
-    const remaining = remainingMs == null
-      ? Math.max(0, deadline - startedAt)
-      : Math.max(0, Number(remainingMs) || 0);
     const delay = Math.max(0, deadline - startedAt);
     const timeout = this.setTimeoutFn(() => {
       this.viewerTimers.delete(sessionId);
@@ -97,7 +94,7 @@ class InteractiveTurnTimers {
       this.onViewerTimeout?.(sessionId, revision);
     }, delay);
     timeout.unref?.();
-    this.viewerTimers.set(sessionId, { timeout, deadline, startedAt, remaining, revision });
+    this.viewerTimers.set(sessionId, { timeout, deadline, startedAt, remaining: delay, revision });
   }
 
   pauseViewer(session, { persist = true } = {}) {
@@ -151,7 +148,7 @@ class InteractiveTurnTimers {
 
   restore(session) {
     if (session.turnRole === 'viewer' && session.viewerDeadlineMs != null) {
-      this._scheduleViewer(session, Math.max(0, Number(session.viewerDeadlineMs) - this.now()));
+      this._scheduleViewer(session);
     }
   }
 

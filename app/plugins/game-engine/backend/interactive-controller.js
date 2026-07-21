@@ -742,6 +742,7 @@ class InteractiveController {
       gameResult: outcome.gameResult,
       state: session.adapter.getState(),
       sessionRevision: session.sessionRevision,
+      config: session.config ? { ...session.config } : null,
       leaderboard: skipLeaderboard ? null : this._leaderboardPresentation(session),
       skipAccounting
     };
@@ -768,9 +769,14 @@ class InteractiveController {
     const resultDuration = resultDurationMs == null
       ? this._settings().interactiveResultDisplaySeconds * 1000
       : resultDurationMs;
-    this._publishSafely('Session result display', session.sessionId, () => {
+    const routed = this._publishSafely('Session result display', session.sessionId, () => {
       this.router.showResult(resultPayload, resultDuration, resultPayload.leaderboard);
     });
+    if (!routed) {
+      this._publishSafely('Session result display reconciliation', session.sessionId, () => {
+        this.router.sync({ force: true });
+      });
+    }
     this._publishSafely('Session completion state', session.sessionId, () => this.emitState());
   }
 
