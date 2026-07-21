@@ -1834,7 +1834,7 @@ function showFreezeWarning() {
 /**
  * Spawn emoji
  */
-function spawnEmoji(emoji, x, y, size, username = null, profilePictureUrl = null, color = null, spawnKind = 'default', isBurst = false, lifetimeMs = null) {
+function spawnEmoji(emoji, x, y, size, username = null, profilePictureUrl = null, color = null, spawnKind = 'default', isBurst = false, lifetimeMs = null, assetLocked = false) {
     const normalizedLifetimeMs = Number(lifetimeMs);
     // Check for user-specific emoji (try multiple username formats)
     if (username) {
@@ -1964,7 +1964,7 @@ function spawnEmoji(emoji, x, y, size, username = null, profilePictureUrl = null
         };
         
         element.appendChild(img);
-    } else if (config.use_custom_images && config.image_urls && config.image_urls.length > 0) {
+    } else if (assetLocked !== true && config.use_custom_images && config.image_urls && config.image_urls.length > 0) {
         const imageUrl = config.image_urls[Math.floor(Math.random() * config.image_urls.length)];
         const img = document.createElement('img');
         img.src = imageUrl;
@@ -2138,6 +2138,7 @@ function handleSpawnEvent(data) {
     const color = data.color || null;
     const spawnKind = determineSpawnKind(data, isBurst);
     const lifetimeMs = data.lifetimeMs;
+    const assetLocked = data.assetLocked === true;
 
     console.log(`🌧️ [SPAWN EVENT] count=${count}, emoji=${emoji}, username=${username}, burst=${isBurst}, color=${color}, profilePictureUrl=${profilePictureUrl ? 'present' : 'none'}`);
 
@@ -2156,7 +2157,7 @@ function handleSpawnEvent(data) {
     
     // If we're spawning too quickly, queue the event
     if (timeSinceLastSpawn < MIN_SPAWN_INTERVAL_MS) {
-        spawnQueue.push({ emoji, x, y, actualCount, username, profilePictureUrl, color, isBurst, spawnKind, lifetimeMs });
+        spawnQueue.push({ emoji, x, y, actualCount, username, profilePictureUrl, color, isBurst, spawnKind, lifetimeMs, assetLocked });
         // Only log queue size every 10 events to reduce console spam
         if (spawnQueue.length % 10 === 0 || debugMode) {
             console.log(`⏸️ [SPAWN] Queued spawn event (queue size: ${spawnQueue.length})`);
@@ -2165,7 +2166,7 @@ function handleSpawnEvent(data) {
     }
 
     // Process this spawn immediately
-    processSpawn(emoji, x, y, actualCount, username, profilePictureUrl, color, isBurst, spawnKind, lifetimeMs);
+    processSpawn(emoji, x, y, actualCount, username, profilePictureUrl, color, isBurst, spawnKind, lifetimeMs, assetLocked);
     lastSpawnTime = now;
 }
 
@@ -2181,7 +2182,7 @@ function processSpawnQueue() {
     // Only process queue if enough time has passed
     if (timeSinceLastSpawn >= MIN_SPAWN_INTERVAL_MS) {
         const event = spawnQueue.shift();
-        processSpawn(event.emoji, event.x, event.y, event.actualCount, event.username, event.profilePictureUrl, event.color, event.isBurst, event.spawnKind, event.lifetimeMs);
+        processSpawn(event.emoji, event.x, event.y, event.actualCount, event.username, event.profilePictureUrl, event.color, event.isBurst, event.spawnKind, event.lifetimeMs, event.assetLocked);
         lastSpawnTime = now;
     }
 }
@@ -2204,7 +2205,7 @@ function calculateOffsetX(x) {
 /**
  * Process a single spawn event
  */
-function processSpawn(emoji, x, y, actualCount, username, profilePictureUrl, color, isBurst, spawnKind = 'default', lifetimeMs = null) {
+function processSpawn(emoji, x, y, actualCount, username, profilePictureUrl, color, isBurst, spawnKind = 'default', lifetimeMs = null, assetLocked = false) {
     // If rate limiting is enabled, add individual emojis to the rate limit queue
     if (config.rate_limit_enabled && config.rate_limit_emojis_per_second > 0) {
         // BUG 11 fix: enforce max queue size to prevent unbounded memory growth
@@ -2228,7 +2229,8 @@ function processSpawn(emoji, x, y, actualCount, username, profilePictureUrl, col
                 color,
                 spawnKind,
                 isBurst,
-                lifetimeMs
+                lifetimeMs,
+                assetLocked
             });
         }
         
@@ -2242,7 +2244,7 @@ function processSpawn(emoji, x, y, actualCount, username, profilePictureUrl, col
             const offsetX = calculateOffsetX(x);
             const offsetY = calculateOffsetY(y, i, size);
 
-            spawnEmoji(emoji, offsetX, offsetY, size, username, profilePictureUrl, color, spawnKind, isBurst, lifetimeMs);
+            spawnEmoji(emoji, offsetX, offsetY, size, username, profilePictureUrl, color, spawnKind, isBurst, lifetimeMs, assetLocked);
         }
 
         console.log(`🌧️ Spawned ${actualCount}x ${emoji} at (${x.toFixed(2)}, ${y})${isBurst ? ' [BURST]' : ''}${username ? ' for ' + username : ''}`);
@@ -2304,7 +2306,8 @@ function processRateLimitQueue() {
             emojiData.color,
             emojiData.spawnKind,
             emojiData.isBurst,
-            emojiData.lifetimeMs
+            emojiData.lifetimeMs,
+            emojiData.assetLocked
         );
         emojisSpawnedThisSecond++;
     }

@@ -152,6 +152,13 @@ function loadOverlayScript(scriptPath, options = {}) {
   return { context, dom, circleBodies, source };
 }
 
+function enableCustomImages(context, imageUrl = '/global-custom.webp') {
+  vm.runInContext(`
+    config.use_custom_images = true;
+    config.image_urls = [${JSON.stringify(imageUrl)}];
+  `, context);
+}
+
 describe('EmojiRain client coordinate regressions', () => {
   const scripts = [
     {
@@ -196,6 +203,63 @@ describe('EmojiRain client coordinate regressions', () => {
     expect(emoji.lifetimeMs).toBe(12000);
   });
 
+  test.each(scripts)('$name keeps a locked command emoji when custom images are enabled', ({ path: scriptPath }) => {
+    const { context } = loadOverlayScript(scriptPath);
+    context.initPhysics();
+    enableCustomImages(context);
+
+    const rendered = context.spawnEmoji(
+      '🐶',
+      0.5,
+      0.5,
+      60,
+      null,
+      null,
+      null,
+      'command',
+      false,
+      12000,
+      true
+    );
+
+    expect(rendered.element.querySelector('img')).toBeNull();
+    expect(rendered.element.textContent).toBe('🐶');
+  });
+
+  test.each(scripts)('$name keeps a locked command image when custom images are enabled', ({ path: scriptPath }) => {
+    const { context } = loadOverlayScript(scriptPath);
+    context.initPhysics();
+    enableCustomImages(context);
+
+    const rendered = context.spawnEmoji(
+      '{{profilePicture}}',
+      0.5,
+      0.5,
+      60,
+      null,
+      '/command.webp',
+      null,
+      'command',
+      false,
+      12000,
+      true
+    );
+    const image = rendered.element.querySelector('img');
+
+    expect(image?.src).toContain('/command.webp');
+    expect(image?.src).not.toContain('/global-custom.webp');
+  });
+
+  test.each(scripts)('$name still uses a global custom image for unlocked rain', ({ path: scriptPath }) => {
+    const { context } = loadOverlayScript(scriptPath);
+    context.initPhysics();
+    enableCustomImages(context);
+
+    const rendered = context.spawnEmoji('🐶', 0.5, 0.5, 60);
+
+    expect(rendered.element.querySelector('img')?.src).toContain('/global-custom.webp');
+  });
+
   test.each(scripts)('$name carries command lifetime through its rate-limit queue', ({ path: scriptPath }) => {
     const { source } = loadOverlayScript(scriptPath);
     const queueStart = source.indexOf('rateLimitQueue.push({');
@@ -205,8 +269,10 @@ describe('EmojiRain client coordinate regressions', () => {
 
     expect(queueStart).toBeGreaterThan(-1);
     expect(source.slice(queueStart, queueEnd)).toContain('lifetimeMs');
+    expect(source.slice(queueStart, queueEnd)).toContain('assetLocked');
     expect(drainStart).toBeGreaterThan(-1);
     expect(source.slice(drainStart, drainEnd)).toContain('emojiData.lifetimeMs');
+    expect(source.slice(drainStart, drainEnd)).toContain('emojiData.assetLocked');
     expect(source).toContain('emoji.despawnMs || emoji.lifetimeMs || config.emoji_lifetime_ms');
   });
 
@@ -217,8 +283,10 @@ describe('EmojiRain client coordinate regressions', () => {
 
     expect(queueStart).toBeGreaterThan(-1);
     expect(source.slice(queueStart, queueEnd)).toContain('lifetimeMs');
+    expect(source.slice(queueStart, queueEnd)).toContain('assetLocked');
     expect(source).toMatch(/function processSpawn\([^)]*lifetimeMs[^)]*\)/);
     expect(source).toContain('event.spawnKind, event.lifetimeMs');
+    expect(source).toContain('event.assetLocked');
   });
 
   test.each(scripts)('$name keeps large top-spawn batches close enough to enter the viewport', async ({ path: scriptPath, spawnBatch }) => {

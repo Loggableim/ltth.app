@@ -1640,7 +1640,7 @@
         }
 
         // Spawn emoji with enhanced effects
-        function spawnEmoji(emoji, x, y, size, username = null, profilePictureUrl = null, color = null, spawnKind = 'default', isBurst = false, lifetimeMs = null) {
+        function spawnEmoji(emoji, x, y, size, username = null, profilePictureUrl = null, color = null, spawnKind = 'default', isBurst = false, lifetimeMs = null, assetLocked = false) {
             const normalizedLifetimeMs = Number(lifetimeMs);
             // Check for user-specific emoji (try multiple username formats)
             if (username) {
@@ -1743,7 +1743,7 @@
                 };
                 
                 element.appendChild(img);
-            } else if (config.use_custom_images && config.image_urls && config.image_urls.length > 0) {
+            } else if (assetLocked !== true && config.use_custom_images && config.image_urls && config.image_urls.length > 0) {
                 const imageUrl = config.image_urls[Math.floor(Math.random() * config.image_urls.length)];
                 const img = document.createElement('img');
                 img.src = imageUrl;
@@ -1920,6 +1920,7 @@
             const isBurst = Boolean(data.burst);
             const spawnKind = determineSpawnKind(data, isBurst);
             const lifetimeMs = data.lifetimeMs;
+            const assetLocked = data.assetLocked === true;
 
             console.log(`🌧️ [OBS HUD SPAWN] count=${count}, emoji=${emoji}, username=${username}, color=${color}, profilePictureUrl=${profilePictureUrl ? 'present' : 'none'}`);
 
@@ -1946,7 +1947,8 @@
                         color,
                         spawnKind,
                         isBurst,
-                        lifetimeMs
+                        lifetimeMs,
+                        assetLocked
                     });
                 }
                 
@@ -1958,7 +1960,7 @@
                     const offsetX = calculateOffsetX(x); // BUG 12 fix: use calculateOffsetX with clamping
                     const offsetY = calculateOffsetY(y, i, size);
 
-                    spawnEmoji(emoji, offsetX, offsetY, size, username, profilePictureUrl, color, spawnKind, isBurst, lifetimeMs);
+                    spawnEmoji(emoji, offsetX, offsetY, size, username, profilePictureUrl, color, spawnKind, isBurst, lifetimeMs, assetLocked);
                 }
 
                 console.log(`🌧️ Spawned ${count}x ${emoji} at (${x.toFixed(2)}, ${y})${username ? ' for ' + username : ''}`);
@@ -2008,7 +2010,8 @@
                     emojiData.color,
                     emojiData.spawnKind,
                     emojiData.isBurst,
-                    emojiData.lifetimeMs
+                    emojiData.lifetimeMs,
+                    emojiData.assetLocked
                 );
                 emojisSpawnedThisSecond++;
             }
