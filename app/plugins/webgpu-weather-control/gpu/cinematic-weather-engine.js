@@ -8,7 +8,6 @@
   const framegraphModule = typeof require === 'function' ? require('./weather-framegraph') : { WeatherFramegraph: BrowserFramegraph };
   const { WeatherFramegraph } = framegraphModule;
   const WEATHER_EFFECTS = Object.freeze(['rain', 'snow', 'storm', 'fog', 'thunder', 'sunbeam', 'glitchclouds', 'aurora', 'fireflies', 'meteors', 'sakura', 'embers', 'heatwave']);
-  const PARTICLE_EFFECTS = new Set(['rain', 'snow', 'storm', 'fireflies', 'meteors', 'sakura', 'embers']);
   const QUALITY_PRESETS = Object.freeze({
     low: { particleBudget: 1200, volumetricSamples: 8, bloomPasses: 1, temporalStability: 0.35 },
     medium: { particleBudget: 2800, volumetricSamples: 16, bloomPasses: 2, temporalStability: 0.55 },
@@ -115,7 +114,8 @@
         fogColor: event.fogColor || 'default', colorTemperature: event.colorTemperature || 'default', glitchRgbShift: event.glitchRgbShift === true, glitchDisplacement: event.glitchDisplacement === true, glitchScanlines: event.glitchScanlines === true, glitchNoise: event.glitchNoise === true, glitchBlocks: event.glitchBlocks === true, glitchChromaticAberration: event.glitchChromaticAberration === true, glitchIntensity: clamp(event.glitchIntensity, 0, 3, 1), effectIndex: WEATHER_EFFECTS.indexOf(event.action), startedAt: performance.now ? performance.now() : Date.now()
       };
       this.effects.set(effect.action, effect);
-      this.metrics.activeParticles = [...this.effects.values()].filter((item) => PARTICLE_EFFECTS.has(item.action)).length * Math.round(180 * effect.intensity * effect.particleScale);
+      // The framegraph replaces this with its command/density-derived GPU target on the next frame.
+      this.metrics.activeParticles = 0;
       this.publishDiagnostic('effect-triggered');
       return true;
     }

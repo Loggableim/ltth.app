@@ -48,13 +48,18 @@ fn integrateParticle(index: u32) {
 @compute @workgroup_size(1) fn resetCounters() { atomicStore(&counters[0], 0u); }
 @compute @workgroup_size(128) fn spawnParticles(@builtin(global_invocation_id) id: vec3<u32>) {
   let cap = u32(frame.particleCap); let count = u32(frame.particleCommandCount);
-  if (id.x >= cap || count == 0u) { return; }
-  let slot = id.x % count; let command = spawnCommands[slot]; let effectIndex = u32(command.x); let shape = effectState[effectIndex * 4u + 1u];
+  // This kernel always covers capacity so stop(), expiry, and cap downshifts clear stale GPU-owned particles.
+  if (id.x >= arrayLength(&particles)) { return; }
+  if (id.x >= cap || count == 0u) { particles[id.x].state.x = 0.0; return; }
+  let slot = id.x % count; let command = spawnCommands[slot]; let slotsForCommand = (cap + count - 1u) / count; let slotParticle = id.x / count;
+  let densityCap = u32(ceil(f32(slotsForCommand) * clamp(command.z, 0.0, 1.0)));
+  if (command.z <= 0.0 || slotParticle >= densityCap) { particles[id.x].state.x = 0.0; return; }
+  let effectIndex = u32(command.x); let shape = effectState[effectIndex * 4u + 1u];
   if (particles[id.x].state.x > 0.0 && particles[id.x].state.y == command.x && particles[id.x].state.z == command.y) { return; }
   let seed = hash(f32(id.x) + frame.time * 13.0);
   particles[id.x].position = vec4<f32>(seed * 2.0 - 1.0, 1.0 + seed, seed, 1.0);
   particles[id.x].velocity = vec4<f32>(particleMaterialVelocity(command.x, seed) * max(0.1, shape.y), 0.0, 0.0);
-  particles[id.x].state = vec4<f32>(1.0, command.x, command.y, command.w);
+  particles[id.x].state = vec4<f32>(1.0, command.x, command.y, command.w * command.z);
   particles[id.x].trail = vec4<f32>(particles[id.x].position.xy, 0.0, 0.0);
 }
 @compute @workgroup_size(128) fn simulateParticles(@builtin(global_invocation_id) id: vec3<u32>) {
@@ -81,8 +86,8 @@ fn particleColor(kind: f32, tint: vec3<f32>) -> vec3<f32> { if (kind == 0.0) { r
   let p = particles[visible[ii]]; let corners = array<vec2<f32>, 6>(vec2<f32>(-1.,-1.), vec2<f32>(1.,-1.), vec2<f32>(1.,1.), vec2<f32>(-1.,-1.), vec2<f32>(1.,1.), vec2<f32>(-1.,1.));
   let kind = p.state.y; let effectIndex = u32(kind); let material = effectState[effectIndex * 4u + 2u]; let shape = effectState[effectIndex * 4u + 1u]; let size = .004 + .018 * clamp(shape.y, .25, 2.0);
   // Configured layer is real depth: higher overlay layers receive a closer depth value.
-  let depth = clamp(1.0 - p.state.z / 100.0, 0.0, 1.0);
-  var out: Out; out.position = vec4<f32>(p.position.xy + corners[vi] * size, depth, 1.); out.color = vec4<f32>(particleColor(kind, material.xyz), clamp(p.state.w, 0.05, 1.0)); return out;
+  let depth = clamp(0.9999 - p.state.z / 100.02, 0.0001, 0.9999); let alpha = clamp(p.state.w, 0.0, 1.0);
+  var out: Out; out.position = vec4<f32>(p.position.xy + corners[vi] * size, depth, 1.); out.color = vec4<f32>(particleColor(kind, material.xyz) * alpha, alpha); return out;
 }
 @fragment fn particleFragment(in: Out) -> @location(0) vec4<f32> { return in.color; }`;
 
@@ -113,18 +118,18 @@ fn fullscreenEffect(kind: f32, uv: vec2<f32>, block0: vec4<f32>, block1: vec4<f3
   if (kind == 12.0) { return vec3<f32>(heatwaveRefraction(uv + vec2<f32>(sin(postFrame.time + uv.y * 24.0) * .01, 0.0))); }
   return vec3<f32>(0.0);
 }
-fn layeredCinema(uv: vec2<f32>) -> vec3<f32> {
-  var cinema = vec3<f32>(0.0); let samples = u32(clamp(postFrame.samples, 1.0, 48.0));
+fn layeredCinema(uv: vec2<f32>) -> vec4<f32> {
+  var cinema = vec3<f32>(0.0); var cinemaAlpha = 0.0; let samples = u32(clamp(postFrame.samples, 1.0, 48.0));
   // activeOrder is rank+1. The rank loop gives actual layer-sorted alpha composition independent of fixed storage order.
   for (var rank: f32 = 1.0; rank <= 13.0; rank = rank + 1.0) { for (var effectIndex: u32 = 0u; effectIndex < 13u; effectIndex = effectIndex + 1u) {
     let base = effectIndex * 4u; let block0 = effectState[base]; let block1 = effectState[base + 1u]; let block2 = effectState[base + 2u]; let block3 = effectState[base + 3u];
     if (block3.w == rank) { var accumulated = vec3<f32>(0.0); for (var sample: u32 = 0u; sample < samples; sample = sample + 1u) { let depth = f32(sample) / f32(samples); accumulated = accumulated + fullscreenEffect(block3.z, uv + vec2<f32>(0.0, depth * .004), block0, block1, block2, block3); }
-      let temperatureTint = vec3<f32>(1.0 + max(block2.w, 0.0) * .28, 1.0, 1.0 + max(-block2.w, 0.0) * .28); let effectColor = accumulated / f32(samples) * temperatureTint; let alpha = clamp(block0.x * block1.x, 0.0, 1.0); cinema = mix(cinema, effectColor + cinema * .2, alpha);
+      let temperatureTint = vec3<f32>(1.0 + max(block2.w, 0.0) * .28, 1.0, 1.0 + max(-block2.w, 0.0) * .28); let effectColor = accumulated / f32(samples) * temperatureTint; let alpha = clamp(block0.x * block1.x, 0.0, 1.0); cinema = mix(cinema, effectColor + cinema * .2, alpha); cinemaAlpha = cinemaAlpha + alpha * (1.0 - cinemaAlpha);
     }
   } }
-  return cinema;
+  return vec4<f32>(cinema, cinemaAlpha);
 }
-@fragment fn volumetricFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; let scene = sampleHdr(sceneHdr, uv); let cinema = layeredCinema(uv); return vec4<f32>(max(scene.rgb + cinema, vec3<f32>(0.0)), scene.a); }
+@fragment fn volumetricFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; let scene = sampleHdr(sceneHdr, uv); let cinema = layeredCinema(uv); let alpha = max(scene.a, cinema.a); return vec4<f32>(max(scene.rgb + cinema.rgb * cinema.a, vec3<f32>(0.0)), alpha); }
 @fragment fn bloomFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; let previous = sampleHdr(sceneHdr, uv); let source = sampleHdr(bloomHdr, uv); return max(previous * .68 + max(source - vec4<f32>(0.55), vec4<f32>(0.0)), vec4<f32>(0.0)); }
 @fragment fn temporalFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; return mix(sampleHdr(sceneHdr, uv), sampleHdr(historyHdr, uv), postFrame.temporalBlend); }
 @fragment fn compositeFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; let scene = sampleHdr(sceneHdr, uv); let bloom = sampleHdr(bloomHdr, uv); let original = sampleHdr(historyHdr, uv); return vec4<f32>(scene.rgb + bloom.rgb + original.rgb * .05, max(scene.a, original.a)); }
@@ -230,6 +235,11 @@ fn layeredCinema(uv: vec2<f32>) -> vec3<f32> {
       const commands = new Float32Array(PARTICLE_EFFECT_INDEXES.size * 4);
       particleEffects.forEach((effect, index) => commands.set([effect.effectIndex, effect.layer, effect.intensity, effect.opacity], index * 4));
       this.activeParticleCap = Math.min(this.capacity, Math.max(0, quality.particleBudget));
+      this.activeParticleCommands = particleEffects.length;
+      this.activeParticleTarget = particleEffects.reduce((total, effect, index) => {
+        const slotsForCommand = Math.floor((this.activeParticleCap + particleEffects.length - index - 1) / particleEffects.length);
+        return total + (effect.intensity > 0 ? Math.ceil(slotsForCommand * effect.intensity) : 0);
+      }, 0);
       this.frameQuality = { ...quality };
       this.device.queue.writeBuffer(this.resources.effectState, 0, packed);
       this.device.queue.writeBuffer(this.resources.spawnCommands, 0, commands);
@@ -238,10 +248,11 @@ fn layeredCinema(uv: vec2<f32>) -> vec3<f32> {
 
     encode(encoder, targetView, metrics) {
       const workgroups = Math.ceil((this.activeParticleCap || 0) / 128);
+      const cleanupWorkgroups = Math.ceil(this.capacity / 128);
       const compute = encoder.beginComputePass(this.timestampEnabled ? { timestampWrites: { querySet: this.resources.timestamps, beginningOfPassWriteIndex: 0, endOfPassWriteIndex: 1 } } : {});
       if (this.bindGroups?.compute) compute.setBindGroup(0, this.bindGroups.compute);
       compute.setPipeline(this.pipelines.reset); compute.dispatchWorkgroups(1);
-      compute.setPipeline(this.pipelines.spawn); compute.dispatchWorkgroups(workgroups);
+      compute.setPipeline(this.pipelines.spawn); compute.dispatchWorkgroups(cleanupWorkgroups);
       compute.setPipeline(this.pipelines.simulate); compute.dispatchWorkgroups(workgroups);
       compute.setPipeline(this.pipelines.compact); compute.dispatchWorkgroups(workgroups);
       compute.setPipeline(this.pipelines.indirect); compute.dispatchWorkgroups(1); compute.end();
@@ -261,7 +272,9 @@ fn layeredCinema(uv: vec2<f32>) -> vec3<f32> {
       const composite = encoder.beginRenderPass({ colorAttachments: [{ view: targetView, loadOp: 'clear', storeOp: 'store', clearValue: { r: 0, g: 0, b: 0, a: 0 } }] }); composite.setPipeline(this.pipelines.composite); composite.setBindGroup(0, bloomTarget === 'bloomA' ? this.bindGroups.post.compositeA : this.bindGroups.post.compositeB); composite.draw(3); composite.end();
       encoder.copyTextureToTexture?.({ texture: this.resources.temporal }, { texture: this.resources.history }, [this.width, this.height, 1]);
       if (this.timestampEnabled && this.timestampResolveEnabled) { encoder.resolveQuerySet(this.resources.timestamps, 0, 2, this.resources.timestampResolve, 0); encoder.copyBufferToBuffer(this.resources.timestampResolve, 0, this.resources.timestampReadback, 0, 16); }
-      metrics.activeParticles = Math.min(this.capacity, metrics.activeParticles || 0);
+      metrics.activeParticles = this.activeParticleTarget || 0;
+      metrics.activeParticleCap = this.activeParticleCap || 0;
+      metrics.activeParticleCommands = this.activeParticleCommands || 0;
     }
 
     destroy() { Object.values(this.resources).forEach((resource) => resource?.destroy?.()); this.resources = {}; }

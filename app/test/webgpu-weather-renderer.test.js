@@ -205,6 +205,61 @@ describe('cinematic WebGPU weather renderer contract', () => {
     expect(framegraph).toContain("postEntries('bloomB', 'volume', 'history')");
   });
 
+  test('writes premultiplied fullscreen alpha through volumetric, temporal, and composite passes', () => {
+    const framegraph = fs.readFileSync(framegraphPath, 'utf8');
+    expect(framegraph).toContain('var cinemaAlpha = 0.0');
+    expect(framegraph).toContain('cinemaAlpha = cinemaAlpha + alpha * (1.0 - cinemaAlpha)');
+    expect(framegraph).toContain('let alpha = max(scene.a, cinema.a)');
+    expect(framegraph).toContain('cinema.rgb * cinema.a');
+    expect(framegraph).toContain('mix(sampleHdr(sceneHdr, uv), sampleHdr(historyHdr, uv), postFrame.temporalBlend)');
+    expect(framegraph).toContain('max(scene.a, original.a)');
+  });
+
+  test('clears stale particles across capacity after stop or expiry before compacting indirect instances', async () => {
+    const { CinematicWeatherEngine } = require(enginePath);
+    const mock = makeMockGpu(false);
+    const canvas = { getContext: () => ({ configure: () => {}, getCurrentTexture: () => ({ createView: () => ({}) }), unconfigure: () => {} }) };
+    const engine = new CinematicWeatherEngine(canvas, { gpu: mock.gpu });
+    await engine.init();
+    engine.trigger({ action: 'rain', intensity: 1, permanent: true });
+    engine.render(16);
+    expect(engine.getMetrics().activeParticles).toBeGreaterThan(0);
+    engine.stop();
+    engine.render(16);
+    expect(engine.getMetrics()).toMatchObject({ activeParticles: 0, activeParticleCommands: 0 });
+    const framegraph = fs.readFileSync(framegraphPath, 'utf8');
+    expect(framegraph).toContain('if (id.x >= cap || count == 0u) { particles[id.x].state.x = 0.0; return; }');
+    expect(framegraph).toContain('const cleanupWorkgroups = Math.ceil(this.capacity / 128)');
+    expect(mock.calls.dispatches.filter(([entry]) => entry === 'spawnParticles').at(-1)[1]).toBe(Math.ceil(9000 / 128));
+  });
+
+  test('uses command intensity for particle density and premultiplied particle opacity', async () => {
+    const { CinematicWeatherEngine } = require(enginePath);
+    const mock = makeMockGpu(false);
+    const canvas = { getContext: () => ({ configure: () => {}, getCurrentTexture: () => ({ createView: () => ({}) }), unconfigure: () => {} }) };
+    const engine = new CinematicWeatherEngine(canvas, { gpu: mock.gpu });
+    await engine.init();
+    engine.trigger({ action: 'rain', intensity: 0.01, opacity: 1, permanent: true });
+    engine.render(16);
+    const sparse = engine.getMetrics().activeParticles;
+    const sparseCommand = mock.calls.writes.filter(([, , data]) => data instanceof Float32Array && data.length === 28).at(-1)[2];
+    expect(sparseCommand[2]).toBeCloseTo(0.01);
+    engine.trigger({ action: 'rain', intensity: 1, opacity: 1, permanent: true });
+    engine.render(16);
+    expect(engine.getMetrics().activeParticles).toBeGreaterThan(sparse);
+    const framegraph = fs.readFileSync(framegraphPath, 'utf8');
+    expect(framegraph).toContain('let densityCap = u32(ceil(f32(slotsForCommand) * clamp(command.z, 0.0, 1.0)))');
+    expect(framegraph).toContain('command.w * command.z');
+    expect(framegraph).toContain('particleColor(kind, material.xyz) * alpha');
+  });
+
+  test('keeps legal layer zero visible while higher layers remain closer in the depth attachment', () => {
+    const framegraph = fs.readFileSync(framegraphPath, 'utf8');
+    expect(framegraph).toContain('clamp(0.9999 - p.state.z / 100.02, 0.0001, 0.9999)');
+    expect(framegraph).toContain('depthClearValue: 1');
+    expect(framegraph).toContain("depthCompare: 'less'");
+  });
+
   test('binds each explicit layout to compatible complete bind groups', async () => {
     const { CinematicWeatherEngine } = require(enginePath);
     const mock = makeMockGpu(false);
