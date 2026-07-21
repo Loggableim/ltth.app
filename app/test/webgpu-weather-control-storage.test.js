@@ -124,4 +124,30 @@ describe('WebGPU Weather Control bootstrap config', () => {
     expect(config.gamification.overlay.enabled).toBe(false);
     expect(config.gamification.state.communityMeter.current).toBe(0);
   });
+
+  test('retains typed defaults when persisted primitive values are malformed', () => {
+    const { createInitialWebgpuWeatherConfig } = require('../plugins/webgpu-weather-control/lib/bootstrap-config');
+
+    const config = createInitialWebgpuWeatherConfig({
+      maxConcurrentEffects: null,
+      rateLimitPerMinute: 'unlimited',
+      effects: {
+        rain: {
+          enabled: 'yes',
+          defaultIntensity: null
+        }
+      },
+      gamification: {
+        communityMeter: {
+          max: 'one-hundred'
+        }
+      }
+    }, () => 'typed-fallback-key');
+
+    expect(config.maxConcurrentEffects).toBe(5);
+    expect(config.rateLimitPerMinute).toBe(10);
+    expect(config.effects.rain.enabled).toBe(true);
+    expect(config.effects.rain.defaultIntensity).toBe(0.5);
+    expect(config.gamification.communityMeter.max).toBe(100);
+  });
 });

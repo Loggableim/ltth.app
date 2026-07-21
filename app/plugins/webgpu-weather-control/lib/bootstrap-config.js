@@ -133,6 +133,13 @@ function clone(value) {
   return value;
 }
 
+function isCompatiblePrimitive(defaultValue, value) {
+  if (typeof defaultValue === 'number') {
+    return typeof value === 'number' && Number.isFinite(value);
+  }
+  return typeof value === typeof defaultValue;
+}
+
 function mergeConfig(base, incoming) {
   const result = clone(base);
   if (!isPlainObject(incoming)) {
@@ -140,6 +147,10 @@ function mergeConfig(base, incoming) {
   }
 
   Object.entries(incoming).forEach(([key, value]) => {
+    if (!Object.prototype.hasOwnProperty.call(result, key)) {
+      result[key] = clone(value);
+      return;
+    }
     if (isPlainObject(result[key])) {
       if (isPlainObject(value)) {
         result[key] = mergeConfig(result[key], value);
@@ -152,7 +163,9 @@ function mergeConfig(base, incoming) {
       }
       return;
     }
-    result[key] = clone(value);
+    if (isCompatiblePrimitive(result[key], value)) {
+      result[key] = clone(value);
+    }
   });
   return result;
 }
