@@ -1,4 +1,5 @@
 const childProcess = require('child_process');
+const DEFAULT_MAX_OUTPUT_BYTES = 4 * 1024 * 1024;
 
 function abortError(message = 'yt-dlp operation aborted') {
   const error = new Error(message);
@@ -13,10 +14,17 @@ function timeoutError() {
   return error;
 }
 
+function outputLimitError(maxOutputBytes) {
+  const error = new Error(`yt-dlp output exceeded the ${maxOutputBytes}-byte safety limit`);
+  error.code = 'YTDLP_OUTPUT_LIMIT';
+  return error;
+}
+
 class YtDlpRunner {
   constructor(options = {}) {
     this.maxConcurrent = Math.max(1, Number(options.maxConcurrent) || 2);
     this.maxQueue = Math.max(this.maxConcurrent, Number(options.maxQueue) || 100);
+    this.maxOutputBytes = Math.max(1024, Number(options.maxOutputBytes) || DEFAULT_MAX_OUTPUT_BYTES);
     this.spawnImpl = options.spawnImpl || childProcess.spawn;
     this.taskkillImpl = options.taskkillImpl || childProcess.spawn;
     this.processKill = options.processKill || process.kill.bind(process);
@@ -52,7 +60,8 @@ class YtDlpRunner {
         settled: false,
         terminating: false,
         stdout: '',
-        stderr: ''
+        stderr: '',
+        outputBytes: 0
       };
       job.onAbort = () => this._cancel(job, abortError());
       job.signal?.addEventListener('abort', job.onAbort, { once: true });
@@ -118,8 +127,8 @@ class YtDlpRunner {
 
     job.child = child;
     this.active.set(job.id, job);
-    child.stdout?.on('data', (chunk) => { job.stdout += chunk.toString(); });
-    child.stderr?.on('data', (chunk) => { job.stderr += chunk.toString(); });
+    child.stdout?.on('data', (chunk) => this._appendOutput(job, 'stdout', chunk));
+    child.stderr?.on('data', (chunk) => this._appendOutput(job, 'stderr', chunk));
     child.once('error', (error) => {
       if (job.terminating) return;
       if (error?.code === 'ENOENT') {
@@ -148,6 +157,38 @@ class YtDlpRunner {
     this.active.delete(job.id);
     this._settle(job, error, value);
     this._drain();
+  }
+
+  updateLimits({ maxConcurrent, maxQueue, maxOutputBytes } = {}) {
+    const requestedConcurrent = Number(maxConcurrent);
+    if (Number.isFinite(requestedConcurrent)) {
+      this.maxConcurrent = Math.max(1, Math.floor(requestedConcurrent));
+    }
+    const requestedQueue = Number(maxQueue);
+    if (Number.isFinite(requestedQueue)) {
+      this.maxQueue = Math.max(this.maxConcurrent, Math.floor(requestedQueue));
+    } else {
+      this.maxQueue = Math.max(this.maxQueue, this.maxConcurrent);
+    }
+    const requestedOutputBytes = Number(maxOutputBytes);
+    if (Number.isFinite(requestedOutputBytes)) {
+      this.maxOutputBytes = Math.max(1024, Math.floor(requestedOutputBytes));
+    }
+    this._drain();
+  }
+
+  _appendOutput(job, field, chunk) {
+    if (job.settled || job.terminating) return;
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
+    const remaining = this.maxOutputBytes - job.outputBytes;
+    if (buffer.length > remaining) {
+      if (remaining > 0) job[field] += buffer.subarray(0, remaining).toString();
+      job.outputBytes = this.maxOutputBytes;
+      void this._terminateAndSettle(job, outputLimitError(this.maxOutputBytes));
+      return;
+    }
+    job[field] += buffer.toString();
+    job.outputBytes += buffer.length;
   }
 
   _settle(job, error, value) {
@@ -244,5 +285,6 @@ class YtDlpRunner {
 
 YtDlpRunner.abortError = abortError;
 YtDlpRunner.timeoutError = timeoutError;
+YtDlpRunner.outputLimitError = outputLimitError;
 
 module.exports = YtDlpRunner;

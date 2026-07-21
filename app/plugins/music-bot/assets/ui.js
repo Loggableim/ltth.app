@@ -5,9 +5,9 @@
   const I18N_PREFIX = 'plugins.music-bot.music_bot.ui';
   const RUNTIME_I18N_SECTIONS = Object.fromEntries(Object.entries({
     shell: 'networkTitle connectionLost socketDisconnected apiError unknownError saved error onboardingSettingsTitle onboardingSettingsMeta onboardingOverlayTitle onboardingOverlayMeta onboardingPlayerTitle onboardingPlayerMeta setupHint setupOpen onboardingHelpWithIssues onboardingHelpReady mpvNotInstalled install mpvInstallation mpvReady installationFailed installationSlow statusCheckFailed installing installationStarted installationStartFailed installMpv assistantCompleted assistantCompletedMessage setup onboardingSaveFailed viewerFallback toastDefaultTitle setupYtdlpMissingTitle setupYtdlpMissingDescription setupYtdlpInstallNpm setupYtdlpInstallManual setupYtdlpConfigurePath setupMpvMissingTitle setupMpvMissingDescription setupMpvInstallWindows setupMpvInstallLinux setupMpvInstallMacos setupMpvConfigurePath mpvInstallIdle mpvAlreadyAvailable mpvInstalledReady mpvInstallFailed mpvPackageManagerUnavailable mpvInstallTimedOut mpvInstallWindowsPrompt mpvInstallStartFailed mpvInstallChocolateyLock mpvInstallAdminConfirmation mpvInstallPermissionDenied mpvInstallCommandUnavailable mpvInstallExited mpvInstallMissingAfterExit',
-    player: 'seekUnavailable seekFailed nowPlayingEmpty stateIdle statePaused statePlaying stateUnknown playbackAdvancing loading skip pauseTitle noActiveTrack playbackResumed playbackStarted nextTrackPlaying resumeTitle noStartableTrack skipTitle playingNow searchLoading searching noResult queueAdding queueAdded songAddedTitle requestAdded requestFailed requestRejectedTitle requestRequired requestUserBlocked requestLikesRequired requestGiftRequired songBlockedTitle songSkipped banSong banArtist banKeyword banChannel queueInvalidSong queueFull queueDurationUnknown queueDurationTooLong queueDuplicate queueUserLimit queueCooldown payToPlayTitle payToPlayCredits payToSkipTitle payToSkipGift masterVolumeTitle sourceVolumeTitle volumeSetFailed crossfadeSaveFailed requestedBy selectedTitle playerToastTitle sourceYoutube sourceSoundCloud sourceOther',
+    player: 'seekUnavailable seekFailed nowPlayingEmpty stateIdle statePaused statePlaying stateUnknown playbackAdvancing loading skip pauseTitle noActiveTrack playbackResumed playbackStarted nextTrackPlaying resumeTitle noStartableTrack skipTitle playingNow searchLoading searching noResult queueAdding queueAdded songAddedTitle requestAdded requestFailed requestRejectedTitle requestRequired requestUserBlocked requestLikesRequired requestGiftRequired songBlockedTitle songSkipped banSong banArtist banKeyword banChannel queueInvalidSong queueFull queueDurationUnknown queueDurationTooLong queueDuplicate queueUserLimit queueCooldown payToPlayTitle payToPlayCredits payToSkipTitle payToSkipGift masterVolumeTitle sourceVolumeTitle volumeSetFailed crossfadeSaveFailed crossfadeSaving crossfadeApplied requestedBy selectedTitle playerToastTitle sourceYoutube sourceSoundCloud sourceOther',
     queue: 'queueEmptyTitle queueEmptyHint playNow moveUp moveDown queueUpdated trackRemoved queueTitle alreadyPlaying titleStartFailed orderUpdated queueRefreshRetry trackMoved remove',
-    autoDj: 'autoDjPlaying autoDjActive autoDjDisabled autoDjOn autoDjOff autoDjSelected autoDjSource autoDjBlocked autoDjStarted autoDjWaiting noTrackAvailable autoDjToastTitle sourceFamiliar sourceDiscoveryFallback sourceDiscovery sourceFamiliarFallback sourceHistory sourceRadio sourceHistoryFallback sourceUnknown',
+    autoDj: 'autoDjPlaying autoDjActive autoDjDisabled autoDjOn autoDjOff autoDjSelected autoDjSource autoDjBlocked consecutiveProgress autoDjLimitReached autoDjStarted autoDjWaiting noTrackAvailable autoDjToastTitle sourceFamiliar sourceDiscoveryFallback sourceDiscovery sourceFamiliarFallback sourceHistory sourceRadio sourceHistoryFallback sourceUnknown',
     moderation: 'banAdded banAddFailed banRemoveFailed enterTitleKeyword banFailed moderationTitle queueMatchesRemoved banLabel trackBanLabel enterValue noEntries delete url keyword channel user artist exactTrack titleKeyword unknownBanType',
     history: 'historyLoadFailed historyFeedbackFailed historyToastTitle',
     playlists: 'playlistSaveFailed playlistConflict importRunning',
@@ -211,6 +211,7 @@
   const skipButton = document.getElementById('skip-btn');
   const crossfadeInput = document.getElementById('crossfade-input');
   const crossfadeValue = document.getElementById('crossfade-value');
+  const crossfadeSaveStatus = document.getElementById('crossfade-save-status');
   const duplicateDetection = document.getElementById('duplicate-detection');
   const cooldownSecondsInput = document.getElementById('cooldown-seconds');
   const maxSongDurationInput = document.getElementById('max-song-duration-seconds');
@@ -787,9 +788,18 @@
   });
 
   const postCrossfade = debounce(async (ms) => {
-    const result = await post('/config', { playback: { crossfadeDuration: ms } });
-    if (!result?.success) {
-      showToast('error', tr('crossfadeTitle', 'Crossfade'), result?.error || tr('crossfadeSaveFailed', 'Crossfade konnte nicht gespeichert werden.'));
+    crossfadeInput?.setAttribute('aria-busy', 'true');
+    if (crossfadeSaveStatus) crossfadeSaveStatus.textContent = tr('crossfadeSaving', 'Wird gespeichert ...');
+    try {
+      const result = await post('/config', { playback: { crossfadeDuration: ms } });
+      if (!result?.success) {
+        showToast('error', tr('crossfadeTitle', 'Crossfade'), result?.error || tr('crossfadeSaveFailed', 'Crossfade konnte nicht gespeichert werden.'));
+        if (crossfadeSaveStatus) crossfadeSaveStatus.textContent = tr('crossfadeSaveFailed', 'Crossfade konnte nicht gespeichert werden.');
+        return;
+      }
+      if (crossfadeSaveStatus) crossfadeSaveStatus.textContent = tr('crossfadeApplied', 'Aktiv');
+    } finally {
+      crossfadeInput?.removeAttribute('aria-busy');
     }
   });
   crossfadeInput.addEventListener('input', () => {
@@ -2421,7 +2431,9 @@
     autoDjHistoryPlays.value = status.historyMinPlays || 1;
     autoDjMixHistoryPercent.value = status.mixHistoryPercent ?? 80;
     autoDjRepeatCooldownHours.value = status.repeatCooldownHours ?? 12;
-    autoDjMaxConsecutive.value = status.maxConsecutiveAutoDJ || 1;
+    if (document.activeElement !== autoDjMaxConsecutive) {
+      autoDjMaxConsecutive.value = status.maxConsecutiveAutoDJ || 1;
+    }
     autoDjAnnounce.checked = Boolean(status.announceAutoDJ);
     if (autoDjPlaylistUrls) autoDjPlaylistUrls.value = (status.playlistUrls || []).join('\n');
     const legacyAutoDjTitle = String(status.lastResult?.message || '').split(':').slice(1).join(':').trim();
@@ -2429,11 +2441,19 @@
       ? tr('autoDjSelected', 'Ausgewählt: {title}', { title: status.lastResult?.params?.title || legacyAutoDjTitle })
       : '';
     autoDjStatus.textContent = status.enabled
-      ? (status.lastResult?.state === 'playing' ? tr('autoDjPlaying', 'Spielt') : tr('autoDjActive', 'Aktiv'))
+      ? (status.lastResult?.state === 'limit-reached'
+        ? tr('autoDjLimitReached', 'Limit erreicht')
+        : (status.lastResult?.state === 'playing' ? tr('autoDjPlaying', 'Spielt') : tr('autoDjActive', 'Aktiv')))
       : tr('autoDjDisabled', 'Deaktiviert');
     autoDjStatus.title = autoDjMessage;
     if (autoDjDetail) {
       const diagnostics = [];
+      if (typeof status.consecutiveCount === 'number' && typeof status.maxConsecutiveAutoDJ === 'number') {
+        diagnostics.push(tr('consecutiveProgress', 'Auto-DJ-Folge: {current}/{limit}', {
+          current: status.consecutiveCount,
+          limit: status.maxConsecutiveAutoDJ
+        }));
+      }
       if (status.selectionSource) diagnostics.push(tr('autoDjSource', 'Quelle: {source}', { source: autoDjSourceLabel(status.selectionSource) }));
       if (typeof status.blockedCount === 'number') diagnostics.push(tr('autoDjBlocked', 'Gesperrt: {count}', { count: status.blockedCount }));
       autoDjDetail.textContent = [autoDjMessage, diagnostics.join(' · ')].filter(Boolean).join(' · ');

@@ -41,6 +41,16 @@ class AutoDJ {
       playlistFallbackToRandom: true,
       ...(config || {})
     };
+    this.config.enabled = typeof this.config.enabled === 'boolean' ? this.config.enabled : false;
+    this.config.historyShuffled = typeof this.config.historyShuffled === 'boolean'
+      ? this.config.historyShuffled
+      : true;
+    this.config.announceAutoDJ = typeof this.config.announceAutoDJ === 'boolean'
+      ? this.config.announceAutoDJ
+      : true;
+    this.config.playlistFallbackToRandom = typeof this.config.playlistFallbackToRandom === 'boolean'
+      ? this.config.playlistFallbackToRandom
+      : true;
     const configuredCooldownHours = Number(this.config.repeatCooldownHours);
     const cooldownHours = Number.isFinite(configuredCooldownHours)
       ? Math.floor(configuredCooldownHours)
@@ -51,6 +61,11 @@ class AutoDJ {
       ? Math.floor(configuredMixHistoryPercent)
       : 80;
     this.config.mixHistoryPercent = Math.min(Math.max(mixHistoryPercent, 0), 100);
+    const configuredMaxConsecutive = Number(this.config.maxConsecutiveAutoDJ);
+    const maxConsecutiveAutoDJ = Number.isFinite(configuredMaxConsecutive)
+      ? Math.floor(configuredMaxConsecutive)
+      : 10;
+    this.config.maxConsecutiveAutoDJ = Math.min(Math.max(maxConsecutiveAutoDJ, 1), 100);
     if (!this.config.enabled) {
       this.isActive = false;
       this._setResult('disabled', 'Auto-DJ ist deaktiviert.');
@@ -92,6 +107,15 @@ class AutoDJ {
     }
     if (!force && !this.isActive) {
       this._setResult('idle', 'Auto-DJ wartet auf einen freien Queue-Slot.');
+      return null;
+    }
+    if (!force && this.consecutiveCount >= this.config.maxConsecutiveAutoDJ) {
+      this.isActive = false;
+      this._setResult(
+        'limit-reached',
+        `Auto-DJ-Limit von ${this.config.maxConsecutiveAutoDJ} aufeinanderfolgenden Titeln erreicht.`,
+        { maxConsecutiveAutoDJ: this.config.maxConsecutiveAutoDJ }
+      );
       return null;
     }
 
@@ -226,6 +250,7 @@ class AutoDJ {
       mode: this.config.mode,
       isActive: this.isActive,
       consecutiveCount: this.consecutiveCount,
+      maxConsecutiveAutoDJ: this.config.maxConsecutiveAutoDJ,
       historyMinPlays: this.config.historyMinPlays,
       mixHistoryPercent: this.config.mixHistoryPercent,
       repeatCooldownHours: this.config.repeatCooldownHours,

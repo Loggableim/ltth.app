@@ -66,6 +66,18 @@ describe('Music Bot runtime i18n', () => {
     });
   });
 
+  test('exposes Crossfade persistence and the Auto-DJ cap as accessible, user-visible controls', () => {
+    const html = fs.readFileSync(path.join(pluginRoot, 'ui.html'), 'utf8');
+    const source = fs.readFileSync(path.join(pluginRoot, 'assets/ui.js'), 'utf8');
+
+    expect(html).toMatch(/id="crossfade-input"[^>]*max="15"[^>]*aria-describedby="crossfade-help"/);
+    expect(html).toContain('id="crossfade-save-status"');
+    expect(html).toMatch(/id="auto-dj-max-consecutive"[^>]*max="100"[^>]*aria-describedby="auto-dj-limit-hint"/);
+    expect(source).toContain("tr('consecutiveProgress'");
+    expect(source).toContain("tr('autoDjLimitReached'");
+    expect(source).toContain('document.activeElement !== autoDjMaxConsecutive');
+  });
+
   test.each(locales)('provides complete non-empty UI and overlay runtime translations for %s', (locale) => {
     const base = readPluginLocale(locale).music_bot.ui;
 

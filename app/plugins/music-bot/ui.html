@@ -252,9 +252,11 @@
             <div class="slider-group">
               <label for="crossfade-input" data-i18n="plugins.music-bot.music_bot.ui.player.crossfadeSeconds">Crossfade (Sek.)</label>
               <div class="slider-row">
-                <input type="range" id="crossfade-input" min="0" max="10" value="3" step="1">
+                <input type="range" id="crossfade-input" min="0" max="15" value="3" step="1" aria-describedby="crossfade-help">
                 <span id="crossfade-value">3s</span>
               </div>
+              <small id="crossfade-help" class="text-secondary" data-i18n="plugins.music-bot.music_bot.ui.player.crossfadeHelp">Gilt für neue Übergänge. 0 Sekunden schaltet Crossfade aus.</small>
+              <span id="crossfade-save-status" class="text-secondary" role="status" aria-live="polite"></span>
             </div>
           </div>
         </div>
@@ -510,7 +512,8 @@
         </label>
         <label class="field">
           <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.maxConsecutive">Max. aufeinanderfolgende Tracks</span>
-          <input type="number" id="auto-dj-max-consecutive" min="1" value="10">
+          <input type="number" id="auto-dj-max-consecutive" min="1" max="100" value="10" aria-describedby="auto-dj-limit-hint">
+          <small id="auto-dj-limit-hint" class="text-secondary" data-i18n="plugins.music-bot.music_bot.ui.autoDj.maxConsecutiveHint">Danach pausiert Auto-DJ; „Nächster Auto-DJ-Track“ setzt manuell fort.</small>
         </label>
         <label class="checkbox-field">
           <input type="checkbox" id="auto-dj-announce">

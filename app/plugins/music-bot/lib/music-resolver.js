@@ -18,11 +18,15 @@ try {
   // youtube-dl-exec is optional; a configured system binary remains supported.
 }
 
-const TOTAL_BUDGET_MS = 45000;
+const DEFAULT_SEARCH_TIMEOUT_MS = 45000;
 const YOUTUBE_BUDGET_MS = 30000;
 const SOUNDCLOUD_RESERVE_MS = 15000;
 const DEFAULT_CACHE_TTL_DAYS = 30;
 const DEFAULT_CACHE_SIZE_MB = 2048;
+const MIN_SEARCH_TIMEOUT_MS = 5000;
+const MAX_SEARCH_TIMEOUT_MS = 120000;
+const MIN_CONCURRENT_PROCESSES = 1;
+const MAX_CONCURRENT_PROCESSES = 4;
 const DEFAULT_MODERATION = {
   rejectExplicit: false,
   rejectAgeRestricted: true,
@@ -61,10 +65,22 @@ class MusicResolver extends EventEmitter {
   updateConfig(config = {}) {
     const cacheTTLDays = Number(config?.cacheTTLDays);
     const maxCacheSizeMB = Number(config?.maxCacheSizeMB);
+    const requestedTimeout = Number(config?.searchTimeout ?? config?.textSearchTimeoutMs);
+    const searchTimeout = Number.isFinite(requestedTimeout)
+      ? Math.floor(requestedTimeout)
+      : DEFAULT_SEARCH_TIMEOUT_MS;
+    const requestedConcurrency = Number(config?.maxConcurrentProcesses);
+    const maxConcurrentProcesses = Number.isFinite(requestedConcurrency)
+      ? Math.floor(requestedConcurrency)
+      : 2;
     this.config = {
       ...config,
       ytdlpPath: MusicResolver.resolveYtDlpPath(config?.ytdlpPath),
-      searchTimeout: TOTAL_BUDGET_MS,
+      searchTimeout: Math.min(MAX_SEARCH_TIMEOUT_MS, Math.max(MIN_SEARCH_TIMEOUT_MS, searchTimeout)),
+      maxConcurrentProcesses: Math.min(
+        MAX_CONCURRENT_PROCESSES,
+        Math.max(MIN_CONCURRENT_PROCESSES, maxConcurrentProcesses)
+      ),
       cacheTTLDays: Number.isFinite(cacheTTLDays) && cacheTTLDays > 0
         ? cacheTTLDays
         : DEFAULT_CACHE_TTL_DAYS,
@@ -76,6 +92,14 @@ class MusicResolver extends EventEmitter {
         ...(config?.moderation || {})
       }
     };
+    if (typeof this.runner.updateLimits === 'function') {
+      this.runner.updateLimits({ maxConcurrent: this.config.maxConcurrentProcesses });
+    } else if (this.runner) {
+      this.runner.maxConcurrent = this.config.maxConcurrentProcesses;
+      if (Number.isFinite(this.runner.maxQueue)) {
+        this.runner.maxQueue = Math.max(this.runner.maxQueue, this.runner.maxConcurrent);
+      }
+    }
   }
 
   resolve(query, { signal } = {}) {
@@ -85,7 +109,7 @@ class MusicResolver extends EventEmitter {
     const cacheKey = normalizeRequestKey(trimmed);
     const cacheHit = this._fromCache(cacheKey);
     if (cacheHit) return Promise.resolve(this._revalidateCached(cacheHit));
-    const deadline = Date.now() + TOTAL_BUDGET_MS;
+    const deadline = this._createDeadline();
 
     return this._subscribe(cacheKey, signal, async (operationSignal) => {
       return this._resolveUncached(trimmed, operationSignal, deadline);
@@ -215,11 +239,21 @@ class MusicResolver extends EventEmitter {
     return this._resolveText(trimmed, signal, deadline);
   }
 
-  async _resolveText(query, signal, overallDeadline = Date.now() + TOTAL_BUDGET_MS) {
-    const startedAt = overallDeadline - TOTAL_BUDGET_MS;
+  _createDeadline() {
+    return Date.now() + this.config.searchTimeout;
+  }
+
+  async _resolveText(query, signal, overallDeadline = this._createDeadline()) {
+    const totalBudgetMs = this.config.searchTimeout;
+    const startedAt = overallDeadline - totalBudgetMs;
+    const soundCloudReserveMs = Math.min(
+      SOUNDCLOUD_RESERVE_MS,
+      Math.max(1000, Math.floor(totalBudgetMs / 3))
+    );
+    const youtubeBudgetMs = Math.max(1000, totalBudgetMs - soundCloudReserveMs);
     const youtubeDeadline = Math.min(
-      overallDeadline - SOUNDCLOUD_RESERVE_MS,
-      startedAt + YOUTUBE_BUDGET_MS
+      overallDeadline - soundCloudReserveMs,
+      startedAt + Math.min(YOUTUBE_BUDGET_MS, youtubeBudgetMs)
     );
     const normalizedQuery = normalizeRequestKey(query);
 
@@ -261,7 +295,7 @@ class MusicResolver extends EventEmitter {
     };
   }
 
-  async _resolveDirect(url, signal, deadline = Date.now() + TOTAL_BUDGET_MS) {
+  async _resolveDirect(url, signal, deadline = this._createDeadline()) {
     const args = this._directArgs(url);
     let output;
     try {
@@ -269,12 +303,12 @@ class MusicResolver extends EventEmitter {
     } catch (error) {
       if (error.name === 'AbortError') throw error;
       if (error.ytdlpNotFound && this._extractYouTubeId(url)) {
-        this.api.log?.('[music-bot] yt-dlp not found; using YouTube oEmbed fallback', 'warn');
-        return this._resolveViaOEmbed(url, signal);
+        this.api.log?.('[music-bot] yt-dlp not found; cannot resolve a playable YouTube stream', 'warn');
+        return this._resolverUnavailableResult('YouTube');
       }
       if (error.ytdlpNotFound && this._isSoundCloudUrl(url)) {
-        this.api.log?.('[music-bot] yt-dlp not found; using SoundCloud oEmbed fallback', 'warn');
-        return this._resolveSoundCloudOEmbed(url, signal);
+        this.api.log?.('[music-bot] yt-dlp not found; cannot resolve a playable SoundCloud stream', 'warn');
+        return this._resolverUnavailableResult('SoundCloud');
       }
       throw error;
     }
@@ -289,7 +323,7 @@ class MusicResolver extends EventEmitter {
       '--print', '%(channel)s', '--print', '%(categories)s',
       '--dump-json', url
     ];
-    const output = await this._runYtDlp(args, { deadline: Date.now() + TOTAL_BUDGET_MS, signal });
+    const output = await this._runYtDlp(args, { deadline: this._createDeadline(), signal });
     return this._createSongResponse(output, url, true);
   }
 
@@ -312,7 +346,7 @@ class MusicResolver extends EventEmitter {
   }
 
   async _runYtDlp(args, options = {}) {
-    const deadline = Number.isFinite(options.deadline) ? options.deadline : Date.now() + TOTAL_BUDGET_MS;
+    const deadline = Number.isFinite(options.deadline) ? options.deadline : this._createDeadline();
     let lastError = null;
     for (let attempt = 1; attempt <= 2; attempt += 1) {
       if (options.signal?.aborted) throw abortError();
@@ -532,6 +566,14 @@ class MusicResolver extends EventEmitter {
     } catch (_error) {
       return false;
     }
+  }
+
+  _resolverUnavailableResult(provider) {
+    return {
+      success: false,
+      reason: 'resolver_unavailable',
+      message: `yt-dlp is required to resolve a playable ${provider} stream. Install or configure yt-dlp first.`
+    };
   }
 
   async _resolveViaOEmbed(url, signal) {

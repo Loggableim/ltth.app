@@ -48,7 +48,8 @@ const PlaylistImportService = require('./lib/playlist-import-service');
 const DEFAULT_PRECACHE_LOOKAHEAD = 2;
 const MAX_PRECACHE_LOOKAHEAD = 5;
 const MPV_INSTALL_TIMEOUT_MS = 5 * 60 * 1000;
-const RADIO_CROSSFADE_MS = 3000;
+const GIFT_EVENT_DEDUPE_TTL_MS = 10 * 60 * 1000;
+const MAX_TRACKED_GIFT_EVENT_IDS = 10000;
 const MUSIC_BOT_BUILD_FINGERPRINT = 'music-bot-radio-supervisor-v1';
 
 const DEFAULT_CONFIG = {
@@ -157,7 +158,6 @@ const DEFAULT_CONFIG = {
   resolver: {
     ytdlpPath: process.env.YTDLP_PATH || 'yt-dlp',
     searchTimeout: 45000,
-    textSearchTimeoutMs: 45000,
     maxConcurrentProcesses: 2,
     maxCacheSizeMB: 2048,
     cacheTTLDays: 30
@@ -231,6 +231,7 @@ class MusicBotPlugin extends EventEmitter {
     this._pendingRequests = new Set();
     this._requestCredits = new Map();
     this._userLikes = new Map();
+    this._processedGiftEventIds = new Map();
     this.pluginDataDir = null;
     this.cacheDir = null;
     this._precacheTasks = new Map();
@@ -279,11 +280,8 @@ class MusicBotPlugin extends EventEmitter {
       cacheDir: this.cacheDir,
       maxConcurrentDownloads: this.config.preCache.maxConcurrentDownloads
     }, this.api, { runner: this.musicResolver.runner });
-    await this.mediaCache.prune();
-    this.playbackEngine = new PlaybackController({
-      ...this.config.playback,
-      crossfadeDuration: RADIO_CROSSFADE_MS
-    }, this.api);
+    this.mediaCache.schedulePrune();
+    this.playbackEngine = new PlaybackController(this.config.playback, this.api);
     await this.playbackEngine.setVolume(this._computeEffectiveVolume());
     await this._reconcilePlaybackProcessesAtInit();
     if (this.config.safety.locked || this.playbackEngine.isSafetyLocked?.()) {
@@ -436,6 +434,8 @@ class MusicBotPlugin extends EventEmitter {
     this.config.moderation = this._mergeDeep(DEFAULT_CONFIG.moderation, this.config.moderation || {});
     this.config.monetization = this._mergeDeep(DEFAULT_CONFIG.monetization, this.config.monetization || {});
     this.config.audio = this._mergeDeep(DEFAULT_CONFIG.audio, this.config.audio || {});
+    this.config.playback = this._mergeDeep(DEFAULT_CONFIG.playback, this.config.playback || {});
+    this.config.playback.crossfadeDuration = this._getCrossfadeDurationMs(this.config);
     this.config.autoDJ = this._normalizeAutoDJConfig(this.config.autoDJ);
     this.config.onboarding = this._normalizeOnboarding(this.config.onboarding);
     this.config.safety = this._normalizeSafetyConfig(this.config.safety);
@@ -489,7 +489,7 @@ class MusicBotPlugin extends EventEmitter {
 
     if (isDefaultPath) {
       this.api.log(
-        '[music-bot] yt-dlp not found. Music Bot runs in limited mode (oEmbed fallback only). ' +
+        '[music-bot] yt-dlp not found. YouTube and SoundCloud resolution is unavailable until yt-dlp is installed. ' +
         'Install yt-dlp for full functionality: run "npm install youtube-dl-exec" in app/, ' +
         'or download yt-dlp manually and set the path in Music Bot settings.',
         'warn'
@@ -990,6 +990,8 @@ class MusicBotPlugin extends EventEmitter {
         return { valid: false, error: `${section} must be an object` };
       }
     }
+    const autoDJValidation = this._validateAutoDJConfigTypes(update.autoDJ);
+    if (!autoDJValidation.valid) return autoDJValidation;
 
     const config = this._mergeDeep(this.config, update);
     for (const section of objectSections) {
@@ -1021,6 +1023,7 @@ class MusicBotPlugin extends EventEmitter {
     config.playback.defaultVolume = Math.round(
       (config.audio.masterVolume * config.audio.sourceVolume) / 100
     );
+    config.playback.crossfadeDuration = this._getCrossfadeDurationMs(config);
     const aliasValidation = this._validateCommandAliases(config);
     if (!aliasValidation.valid) return aliasValidation;
     return { valid: true, config };
@@ -1033,15 +1036,9 @@ class MusicBotPlugin extends EventEmitter {
       this.queueManager.queueConfig = config.queue;
     }
     if (typeof this.playbackEngine?.updateConfig === 'function') {
-      this.playbackEngine.updateConfig({
-        ...config.playback,
-        crossfadeDuration: RADIO_CROSSFADE_MS
-      });
+      this.playbackEngine.updateConfig(config.playback);
     } else if (this.playbackEngine) {
-      this.playbackEngine.config = {
-        ...config.playback,
-        crossfadeDuration: RADIO_CROSSFADE_MS
-      };
+      this.playbackEngine.config = { ...config.playback };
     }
     if (this.commandParser) this.commandParser.config = config;
     this.musicResolver?.updateConfig?.({
@@ -1066,6 +1063,13 @@ class MusicBotPlugin extends EventEmitter {
     const master = Math.max(0, Math.min(100, Number(this.config.audio?.masterVolume) || 0));
     const source = Math.max(0, Math.min(100, Number(this.config.audio?.sourceVolume) || 0));
     return Math.round((master * source) / 100);
+  }
+
+  _getCrossfadeDurationMs(config = this.config) {
+    const configured = Number(config?.playback?.crossfadeDuration);
+    const fallback = DEFAULT_CONFIG.playback.crossfadeDuration;
+    const duration = Number.isFinite(configured) ? Math.round(configured) : fallback;
+    return Math.max(0, Math.min(15000, duration));
   }
 
   async _applyAudioVolume() {
@@ -1198,6 +1202,51 @@ class MusicBotPlugin extends EventEmitter {
     });
     this._configUpdateTail = queued.catch(() => {});
     return queued;
+  }
+
+  _applySerializedConfigPatch(patch, context = 'Music Bot config', { applyAudio = false } = {}) {
+    return this._runSerializedConfigUpdate(async () => {
+      const prepared = this._prepareLiveConfigUpdate(patch);
+      if (!prepared.valid) {
+        const error = new Error(prepared.error);
+        error.code = 'CONFIG_VALIDATION_FAILED';
+        throw error;
+      }
+
+      const previousConfig = this.config;
+      const nextConfig = prepared.config;
+      let persistedNext = false;
+      try {
+        await this._persistConfigOrThrow(nextConfig, context);
+        persistedNext = true;
+        this._assertConfigUpdateActive();
+        this._distributeLiveConfig(nextConfig);
+        const effectiveVolume = applyAudio
+          ? await this._applyAudioVolume()
+          : this._computeEffectiveVolume();
+        this._assertConfigUpdateActive();
+        return { config: this.config, effectiveVolume };
+      } catch (error) {
+        try {
+          if (this._destroyed) {
+            this.config = previousConfig;
+          } else {
+            this._distributeLiveConfig(previousConfig);
+            if (applyAudio) await this._applyAudioVolume();
+          }
+        } catch (rollbackError) {
+          this.api.log(`[music-bot] ${context} runtime rollback failed: ${rollbackError.message}`, 'error');
+        }
+        if (persistedNext) {
+          try {
+            await this._persistConfigOrThrow(previousConfig, `${context} rollback`);
+          } catch (rollbackError) {
+            this.api.log(`[music-bot] ${context} persistence rollback failed: ${rollbackError.message}`, 'error');
+          }
+        }
+        throw error;
+      }
+    });
   }
 
   async _reconcilePlaybackProcessesAtInit() {
@@ -1376,6 +1425,7 @@ class MusicBotPlugin extends EventEmitter {
 
   _normalizeAutoDJConfig(value) {
     const config = value && typeof value === 'object' ? { ...value } : {};
+    const normalizeBoolean = (input, fallback) => (typeof input === 'boolean' ? input : fallback);
     const normalizeInteger = (input, fallback, minimum, maximum) => {
       const numeric = Number(input);
       const normalized = Number.isFinite(numeric) ? Math.floor(numeric) : fallback;
@@ -1383,9 +1433,34 @@ class MusicBotPlugin extends EventEmitter {
     };
     return {
       ...config,
+      enabled: normalizeBoolean(config.enabled, DEFAULT_CONFIG.autoDJ.enabled),
+      historyShuffled: normalizeBoolean(config.historyShuffled, DEFAULT_CONFIG.autoDJ.historyShuffled),
+      announceAutoDJ: normalizeBoolean(config.announceAutoDJ, DEFAULT_CONFIG.autoDJ.announceAutoDJ),
+      playlistFallbackToRandom: normalizeBoolean(
+        config.playlistFallbackToRandom,
+        DEFAULT_CONFIG.autoDJ.playlistFallbackToRandom
+      ),
       mixHistoryPercent: normalizeInteger(config.mixHistoryPercent, 80, 0, 100),
-      repeatCooldownHours: normalizeInteger(config.repeatCooldownHours, 12, 1, 168)
+      repeatCooldownHours: normalizeInteger(config.repeatCooldownHours, 12, 1, 168),
+      maxConsecutiveAutoDJ: normalizeInteger(config.maxConsecutiveAutoDJ, 10, 1, 100)
     };
+  }
+
+  _validateAutoDJConfigTypes(value) {
+    if (!value || typeof value !== 'object') return { valid: true };
+    const booleanFields = [
+      'enabled',
+      'historyShuffled',
+      'announceAutoDJ',
+      'playlistFallbackToRandom'
+    ];
+    const invalidField = booleanFields.find((field) => (
+      Object.prototype.hasOwnProperty.call(value, field) && typeof value[field] !== 'boolean'
+    ));
+    if (invalidField) {
+      return { valid: false, error: `autoDJ.${invalidField} must be a boolean` };
+    }
+    return { valid: true };
   }
 
   _getRequestCredits(username) {
@@ -2101,23 +2176,25 @@ class MusicBotPlugin extends EventEmitter {
         res.status(400).json({ success: false, error: 'Volume payload missing' });
         return;
       }
-      if (hasLegacy) {
-        this.config.audio.sourceVolume = Math.max(0, Math.min(100, Number(volume) || 0));
+      const audio = {};
+      if (hasLegacy) audio.sourceVolume = Math.max(0, Math.min(100, Number(volume) || 0));
+      if (hasMaster) audio.masterVolume = Math.max(0, Math.min(100, Number(masterVolume) || 0));
+      if (hasSource) audio.sourceVolume = Math.max(0, Math.min(100, Number(sourceVolume) || 0));
+      try {
+        const result = await this._applySerializedConfigPatch(
+          { audio },
+          'volume update',
+          { applyAudio: true }
+        );
+        res.json({
+          success: true,
+          volume: result.effectiveVolume,
+          masterVolume: result.config.audio.masterVolume,
+          sourceVolume: result.config.audio.sourceVolume
+        });
+      } catch (error) {
+        res.status(500).json({ success: false, error: error.message || 'Volume update failed' });
       }
-      if (hasMaster) {
-        this.config.audio.masterVolume = Math.max(0, Math.min(100, Number(masterVolume) || 0));
-      }
-      if (hasSource) {
-        this.config.audio.sourceVolume = Math.max(0, Math.min(100, Number(sourceVolume) || 0));
-      }
-      const effectiveVolume = await this._applyAudioVolume();
-      await this.api.setConfig('config', this.config);
-      res.json({
-        success: true,
-        volume: effectiveVolume,
-        masterVolume: this.config.audio.masterVolume,
-        sourceVolume: this.config.audio.sourceVolume
-      });
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/pause', async (req, res) => {
@@ -2164,14 +2241,18 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/onboarding/complete', async (req, res) => {
-      this.config.onboarding = this._normalizeOnboarding({
-        ...this.config.onboarding,
-        completed: true,
-        completedAt: this.config.onboarding?.completedAt || Date.now()
-      });
-      await this.api.setConfig('config', this.config);
-      this.io?.emit?.('music-bot:onboarding-updated', this.config.onboarding);
-      res.json({ success: true, onboarding: this.config.onboarding });
+      try {
+        const result = await this._applySerializedConfigPatch({
+          onboarding: {
+            completed: true,
+            completedAt: this.config.onboarding?.completedAt || Date.now()
+          }
+        }, 'onboarding completion');
+        this.io?.emit?.('music-bot:onboarding-updated', result.config.onboarding);
+        res.json({ success: true, onboarding: result.config.onboarding });
+      } catch (error) {
+        res.status(500).json({ success: false, error: error.message || 'Onboarding update failed' });
+      }
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/config', async (req, res) => {
@@ -2195,8 +2276,7 @@ class MusicBotPlugin extends EventEmitter {
             this._assertConfigUpdateActive();
             this._distributeLiveConfig(nextConfig);
             if (this.mediaCache) {
-              await this.mediaCache.prune({ protectedKeys: [...this._pinnedCacheKeys] });
-              this._assertConfigUpdateActive();
+              this.mediaCache.schedulePrune({ protectedKeys: [...this._pinnedCacheKeys] });
             }
             if (ytDlpPathChanged) {
               await this._ensureYtDlp();
@@ -2443,17 +2523,23 @@ class MusicBotPlugin extends EventEmitter {
 
     this.api.registerRoute('post', '/api/plugins/music-bot/auto-dj/toggle', async (req, res) => {
       const payload = req.body || {};
-      this.config.autoDJ = this._mergeDeep(this.config.autoDJ, payload);
-      this.config.autoDJ = this._normalizeAutoDJConfig(this.config.autoDJ);
-      this.autoDJ?.updateConfig(this.config.autoDJ);
-      this.radioSupervisor?.setEnabled?.(Boolean(this.config.autoDJ.enabled), { wake: false });
-      if (this.config.autoDJ.enabled) {
-        this.autoDJ?.activate();
+      const validation = this._validateAutoDJConfigTypes(payload);
+      if (!validation.valid) {
+        res.status(400).json({ success: false, error: validation.error });
+        return;
       }
-      await this.api.setConfig('config', this.config);
+      let config;
+      try {
+        const result = await this._applySerializedConfigPatch({ autoDJ: payload }, 'Auto-DJ update');
+        config = result.config;
+      } catch (error) {
+        res.status(500).json({ success: false, error: error.message || 'Auto-DJ update failed' });
+        return;
+      }
+      if (config.autoDJ.enabled) this.autoDJ?.activate();
       let track = null;
       if (
-        this.config.autoDJ.enabled &&
+        config.autoDJ.enabled &&
         !this._isSafetyLocked() &&
         !this.playbackEngine?.isPlaying?.() &&
         this.queueManager?.getQueue?.().length === 0
@@ -2520,14 +2606,18 @@ class MusicBotPlugin extends EventEmitter {
         (Number.isFinite(source) && source >= 0 && source <= 100) ||
         (Number.isFinite(master) && master >= 0 && master <= 100)
       ) {
-        if (Number.isFinite(source)) {
-          this.config.audio.sourceVolume = source;
+        const audio = {};
+        if (Number.isFinite(source)) audio.sourceVolume = source;
+        if (Number.isFinite(master)) audio.masterVolume = master;
+        try {
+          await this._applySerializedConfigPatch(
+            { audio },
+            'dashboard volume update',
+            { applyAudio: true }
+          );
+        } catch (error) {
+          socket.emit('musicbot:error', { message: error.message || 'Volume update failed' });
         }
-        if (Number.isFinite(master)) {
-          this.config.audio.masterVolume = master;
-        }
-        await this._applyAudioVolume();
-        await this.api.setConfig('config', this.config);
       } else {
         socket.emit('musicbot:error', { message: 'Volume must be between 0 and 100' });
       }
@@ -2651,9 +2741,9 @@ class MusicBotPlugin extends EventEmitter {
         return;
       case 'volume':
         if (command.value !== undefined) {
-          this.config.audio.sourceVolume = Math.max(0, Math.min(100, Number(command.value) || 0));
-          await this._applyAudioVolume();
-          await this.api.setConfig('config', this.config);
+          await this._applySerializedConfigPatch({
+            audio: { sourceVolume: Math.max(0, Math.min(100, Number(command.value) || 0)) }
+          }, 'chat volume update', { applyAudio: true });
         } else {
           this._emitChatResponse(`Aktuelle Lautstärke: ${this._computeEffectiveVolume()}`, username);
         }
@@ -3443,6 +3533,11 @@ class MusicBotPlugin extends EventEmitter {
     );
     const currentKey = this.playbackEngine?.getNowPlaying?.()?.trackKey;
     if (currentKey) next.add(currentKey);
+    for (const trackKey of this._precacheTasks.keys()) {
+      if (trackKey) next.add(trackKey);
+    }
+    const radioPrefetchKey = this._radioPrefetch?.prepared?.trackKey;
+    if (radioPrefetchKey) next.add(radioPrefetchKey);
     for (const key of this._pinnedCacheKeys) {
       if (!next.has(key)) this.mediaCache.unpin(key);
     }
@@ -3683,6 +3778,10 @@ class MusicBotPlugin extends EventEmitter {
     const username =
       data?.username || data?.nickname || data?.user?.uniqueId || data?.user?.nickname;
     if (!username) return;
+    if (this._isDuplicateGiftEvent(data)) {
+      this.api.log?.('[music-bot] Ignored duplicate TikTok gift event.', 'debug');
+      return;
+    }
     const giftNameRaw = String(
       data?.gift?.name || data?.giftName || ''
     ).trim();
@@ -3732,6 +3831,40 @@ class MusicBotPlugin extends EventEmitter {
     this.queueManager.addSkipImmunity(username);
     this.api.emit('musicbot:skip-immunity-granted', { username, giftName: match });
     this._emitChatResponse(`${username} hat Skip-Immunity erhalten (${match}).`, username);
+  }
+
+  _isDuplicateGiftEvent(data) {
+    const eventId = [
+      data?.eventId,
+      data?.event_id,
+      data?.messageId,
+      data?.message_id,
+      data?.msgId,
+      data?.msg_id,
+      data?.logId,
+      data?.common?.eventId,
+      data?.common?.msgId
+    ].find((value) => (
+      (typeof value === 'string' && value.trim().length > 0)
+      || (typeof value === 'number' && Number.isFinite(value))
+    ));
+    const key = typeof eventId === 'string' ? eventId.trim() : String(eventId ?? '');
+    if (!key) return false;
+
+    const now = Date.now();
+    for (const [knownEventId, processedAt] of this._processedGiftEventIds) {
+      if (now - processedAt >= GIFT_EVENT_DEDUPE_TTL_MS) {
+        this._processedGiftEventIds.delete(knownEventId);
+      }
+    }
+    if (this._processedGiftEventIds.has(key)) return true;
+    while (this._processedGiftEventIds.size >= MAX_TRACKED_GIFT_EVENT_IDS) {
+      const oldestEventId = this._processedGiftEventIds.keys().next().value;
+      if (!oldestEventId) break;
+      this._processedGiftEventIds.delete(oldestEventId);
+    }
+    this._processedGiftEventIds.set(key, now);
+    return false;
   }
 
   _findSongByUser(username) {
@@ -4300,13 +4433,14 @@ class MusicBotPlugin extends EventEmitter {
   _startRadioPrefetch(track) {
     const generation = this._invalidateRadioPrefetch('track-change');
     const durationSeconds = Number(track?.duration);
+    const crossfadeMs = this._getCrossfadeDurationMs();
     if (
       this._destroyed
       || this._isSafetyLocked()
       || !this.config.autoDJ?.enabled
       || !this.autoDJ
       || !Number.isFinite(durationSeconds)
-      || durationSeconds * 1000 <= RADIO_CROSSFADE_MS
+      || durationSeconds * 1000 <= crossfadeMs
       || this.queueManager?.getQueue?.().length > 0
     ) return null;
 
@@ -4342,6 +4476,7 @@ class MusicBotPlugin extends EventEmitter {
       if (!isCurrent() || !result?.prefetched || !result.track) return null;
       entry.prepared = result.track;
       entry.announce = Boolean(result.announce);
+      this._refreshCachePins(this.queueManager?.getQueue?.() || []);
       return entry.prepared;
     }).catch((error) => {
       if (isCurrent()) {
@@ -4408,6 +4543,7 @@ class MusicBotPlugin extends EventEmitter {
     const durationMs = Math.round(Number(track?.duration) * 1000);
     const positionMs = Math.max(0, Math.round(Number(positionSeconds) * 1000) || 0);
     const remainingMs = durationMs - positionMs;
+    const crossfadeMs = this._getCrossfadeDurationMs();
     if (!Number.isFinite(durationMs) || remainingMs <= 0) return null;
 
     const trackId = track?.id;
@@ -4429,7 +4565,7 @@ class MusicBotPlugin extends EventEmitter {
       Promise.resolve(advance).catch((error) => {
         this.api.log(`[music-bot] Crossfade transition failed: ${error.message}`, 'warn');
       });
-    }, Math.max(0, remainingMs - RADIO_CROSSFADE_MS));
+    }, Math.max(0, remainingMs - crossfadeMs));
     this.crossfadeTimer.unref?.();
     return this.crossfadeTimer;
   }
