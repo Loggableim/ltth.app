@@ -15,8 +15,27 @@
 const fs = require('fs');
 const path = require('path');
 const { detectLanguage } = require('./lang-detect');
+const { SUPPORTED_SOURCE_LANGUAGES } = require('./config');
 const DeepgramAsrClient = require('./asr/deepgram-client');
 const ElevenLabsAsrClient = require('./asr/elevenlabs-client');
+
+const SUPPORTED_SOURCE_LANGUAGE_SET = new Set(SUPPORTED_SOURCE_LANGUAGES);
+const SCRIPT_PATTERNS = {
+  arabic: /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/u,
+  cyrillic: /[\u0400-\u052F]/u,
+  greek: /[\u0370-\u03FF\u1F00-\u1FFF]/u,
+  han: /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/u,
+  hangul: /[\u1100-\u11FF\u3130-\u318F\uAC00-\uD7AF]/u,
+  hebrew: /[\u0590-\u05FF]/u,
+  hiragana: /[\u3040-\u309F]/u,
+  katakana: /[\u30A0-\u30FF\u31F0-\u31FF]/u,
+  thai: /[\u0E00-\u0E7F]/u
+};
+const LANGUAGE_SCRIPTS = {
+  ar: ['arabic'], el: ['greek'], he: ['hebrew'],
+  ja: ['han', 'hiragana', 'katakana'], ko: ['hangul'],
+  ru: ['cyrillic'], th: ['thai'], uk: ['cyrillic'], zh: ['han']
+};
 
 class AsrPipeline {
   constructor(api, config, logger) {
@@ -81,25 +100,19 @@ class AsrPipeline {
     }
 
     let text = String(result.text).trim();
-    if (result.language) {
-      const langWhitelist = (this.config.asr
-        && Array.isArray(this.config.asr.languageWhitelist)
-        && this.config.asr.languageWhitelist.length > 0)
-        ? this.config.asr.languageWhitelist.map(language => String(language).toLowerCase().slice(0, 2))
-        : ['de', 'en'];
-      const detectedLang = String(result.language).toLowerCase().slice(0, 2);
-      if (detectedLang && !langWhitelist.includes(detectedLang)) {
-        this.logger.warn(`STT Ticker: discarded transcript in language "${detectedLang}" (not in whitelist: ${langWhitelist.join(',')})`);
-        throw new Error(`Transcript language "${detectedLang}" not in whitelist`);
-      }
+    const language = this._resolveResultLanguage(result.language);
+    const langWhitelist = this._getLanguageWhitelist();
+    if (language && !langWhitelist.includes(language)) {
+      this.logger.warn(`STT Ticker: discarded transcript in language "${language}" (not in whitelist: ${langWhitelist.join(',')})`);
+      throw new Error(`Transcript language "${language}" not in whitelist`);
     }
 
-    text = this._scrubHallucinations(text);
+    text = this._sanitizeTranscriptForLanguage(text, language);
     if (text.length < 2) {
       throw new Error('Empty transcription result (after hallucination filter)');
     }
 
-    const langInfo = this._classifyLanguage(text, result.language);
+    const langInfo = this._classifyLanguage(text, language);
     this.diagnostics.counters.transcribed += 1;
     this.diagnostics.lastTranscriptAt = Date.now();
     this.diagnostics.lastError = null;
@@ -158,7 +171,57 @@ class AsrPipeline {
     return 'fish.audio';
   }
 
+  _resolveCredential({ configKey, fileName, environmentName, fallback }) {
+    const fromConfig = String(this.config.asr?.[configKey] || '').trim();
+    if (fromConfig) return { key: fromConfig, source: 'config' };
+
+    try {
+      const localPath = path.join(__dirname, '..', 'data', fileName);
+      if (fs.existsSync(localPath)) {
+        const fromFile = String(fs.readFileSync(localPath, 'utf8') || '').trim();
+        if (fromFile) return { key: fromFile, source: 'file' };
+      }
+    } catch (error) { /* local credential files are optional */ }
+
+    const fromEnvironment = String(process.env[environmentName] || '').trim();
+    if (fromEnvironment) return { key: fromEnvironment, source: 'environment' };
+
+    const fallbackKey = typeof fallback === 'function' ? String(fallback() || '').trim() : '';
+    return fallbackKey
+      ? { key: fallbackKey, source: 'plugin' }
+      : { key: null, source: null };
+  }
+
+  _getDeepgramCredential() {
+    return this._resolveCredential({
+      configKey: 'deepgramApiKey',
+      fileName: 'deepgram.key',
+      environmentName: 'DEEPGRAM_API_KEY'
+    });
+  }
+
+  _getElevenLabsCredential() {
+    return this._resolveCredential({
+      configKey: 'elevenlabsApiKey',
+      fileName: 'elevenlabs.key',
+      environmentName: 'ELEVENLABS_API_KEY'
+    });
+  }
+
+  _getFishCredential() {
+    return this._resolveCredential({
+      configKey: 'fishaudioApiKey',
+      fileName: 'fishaudio.key',
+      environmentName: 'FISHAUDIO_API_KEY',
+      fallback: () => this._getTtsPlugin()?.getFishAudioApiKey?.()
+    });
+  }
+
   _getDeepgramKey() {
+    return this._getDeepgramCredential().key;
+  }
+
+  _legacyGetDeepgramKey() {
     // 1. In-Config (aus UI gespeichert)
     const fromConfig = (this.config.asr && this.config.asr.deepgramApiKey) || '';
     if (fromConfig.trim()) return fromConfig.trim();
@@ -176,6 +239,10 @@ class AsrPipeline {
   }
 
   _getElevenLabsKey() {
+    return this._getElevenLabsCredential().key;
+  }
+
+  _legacyGetElevenLabsKey() {
     // 1. In-Config (aus UI gespeichert)
     const fromConfig = (this.config.asr && this.config.asr.elevenlabsApiKey) || '';
     if (fromConfig.trim()) return fromConfig.trim();
@@ -193,6 +260,10 @@ class AsrPipeline {
   }
 
   _getFishKey() {
+    return this._getFishCredential().key;
+  }
+
+  _legacyGetFishKey() {
     // 1. In-Config (aus UI gespeichert)
     const fromConfig = (this.config.asr && this.config.asr.fishaudioApiKey) || '';
     if (fromConfig.trim()) return fromConfig.trim();
@@ -262,17 +333,27 @@ class AsrPipeline {
     //   Verhindert Halluzinationen in Chinesisch/Japanisch/Koreanisch/Thai
     // - ISO-639-1 (de, en) = Sprache festschnüren, kein Auto-Detect
     // - undefined = kein language → Client mappt auf 'multi' als Default
+    const model = asrCfg.deepgramModel || 'nova-2';
     let dgLanguage = apiLanguage;
     if (!dgLanguage || dgLanguage === 'auto') {
       dgLanguage = 'multi'; // sicherer Default
     }
     // Wenn der User explizit 'de' oder 'en' setzt → behalten (single-language mode)
 
+    const modelInfo = DeepgramAsrClient.MODELS[model];
+    if (dgLanguage === 'multi' && modelInfo && !modelInfo.multilingual) {
+      throw new Error(`Deepgram model "${model}" does not support multilingual mode; choose a fixed language or a multilingual model`);
+    }
+    if (dgLanguage !== 'multi' && modelInfo?.supportedFixedLanguages?.length > 0
+      && !modelInfo.supportedFixedLanguages.includes(dgLanguage)) {
+      throw new Error(`Deepgram model "${model}" does not support fixed language "${dgLanguage}"`);
+    }
+
     return await client.transcribe(audioBuffer, {
       mimeType: options.mimeType,
       filename: options.filename,
       language: dgLanguage,
-      model: (asrCfg.deepgramModel || 'nova-2')
+      model
     });
   }
 
@@ -317,17 +398,8 @@ class AsrPipeline {
       });
     }
 
-    if (typeof backendLanguage === 'string' && backendLanguage && backendLanguage !== 'unknown') {
-      const bl = backendLanguage.toLowerCase().slice(0, 2);
-      if (bl === 'de' || bl === 'en') {
-        if (heuristic.lang === bl) {
-          return { lang: bl, source: 'backend', confidence: 1.0 };
-        }
-        if (heuristic.confidence > 0.6) {
-          return { lang: heuristic.lang, source: 'heuristic' };
-        }
-        return { lang: bl, source: 'backend' };
-      }
+    if (typeof backendLanguage === 'string' && SUPPORTED_SOURCE_LANGUAGE_SET.has(backendLanguage)) {
+      return { lang: backendLanguage, source: 'backend', confidence: 1.0 };
     }
 
     if (heuristic.lang !== 'unknown') {
@@ -335,6 +407,56 @@ class AsrPipeline {
     }
 
     return { lang: fallback, source: 'fallback', confidence: 0 };
+  }
+
+  _getLanguageWhitelist() {
+    const whitelist = this.config.asr?.languageWhitelist;
+    if (!Array.isArray(whitelist) || whitelist.length === 0) {
+      return [...SUPPORTED_SOURCE_LANGUAGES];
+    }
+    return whitelist.map(language => String(language).toLowerCase().slice(0, 2));
+  }
+
+  _resolveResultLanguage(language) {
+    if (typeof language === 'string' && language.trim() && language !== 'unknown') {
+      return language.toLowerCase().slice(0, 2);
+    }
+
+    const asrCfg = this.config.asr || {};
+    if (asrCfg.languageMode === 'fixed' && asrCfg.languageFixed) {
+      return String(asrCfg.languageFixed).toLowerCase().slice(0, 2);
+    }
+    return null;
+  }
+
+  /**
+   * Keep scripts that belong to the reported (or fixed) source language.
+   * A small amount of conflicting script noise is stripped; a transcript
+   * dominated by a conflicting script is rejected as an ASR mismatch.
+   */
+  _sanitizeTranscriptForLanguage(text, language) {
+    if (!text || !language) return text;
+
+    const allowedScripts = new Set(LANGUAGE_SCRIPTS[language] || []);
+    const characters = Array.from(text);
+    const incompatible = characters.filter(character => {
+      const script = Object.entries(SCRIPT_PATTERNS)
+        .find(([, pattern]) => pattern.test(character))?.[0];
+      return script && !allowedScripts.has(script);
+    });
+
+    if (incompatible.length === 0) return text;
+    if (incompatible.length / characters.length > 0.4) {
+      this.logger.warn(`STT Ticker: discarded transcript because its script contradicts language "${language}"`);
+      throw new Error(`Transcript language/script mismatch for "${language}"`);
+    }
+
+    this.logger.warn(`STT Ticker: removed contradictory script characters for language "${language}"`);
+    return characters
+      .filter(character => !incompatible.includes(character))
+      .join('')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   /**
@@ -488,21 +610,38 @@ class AsrPipeline {
   }
 
   getDeepgramApiKey() {
-    return this._getDeepgramKey();
+    return this._getDeepgramCredential().key;
+  }
+
+  getElevenLabsApiKey() {
+    return this._getElevenLabsCredential().key;
+  }
+
+  getCredentialStatus() {
+    const credentials = {
+      deepgram: this._getDeepgramCredential(),
+      elevenlabs: this._getElevenLabsCredential(),
+      fishaudio: this._getFishCredential()
+    };
+    return Object.fromEntries(Object.entries(credentials).map(([name, credential]) => [name, {
+      configured: Boolean(credential.key),
+      source: credential.source
+    }]));
   }
 
   getStatus() {
     const tts = this._getTtsPlugin();
-    const deepgramKey = this._getDeepgramKey();
-    const elevenlabsKey = this._getElevenLabsKey();
-    const fishKey = this._getFishKey();
+    const credentials = this.getCredentialStatus();
     const asr = this.config.asr || {};
     return {
       ttsAvailable: !!tts,
       ttsHasAsr: tts && typeof tts.transcribeFishAudio === 'function',
-      deepgramConfigured: !!deepgramKey,
-      elevenlabsConfigured: !!elevenlabsKey,
-      fishaudioConfigured: !!fishKey,
+      deepgramConfigured: credentials.deepgram.configured,
+      deepgramKeySource: credentials.deepgram.source,
+      elevenlabsConfigured: credentials.elevenlabs.configured,
+      elevenlabsKeySource: credentials.elevenlabs.source,
+      fishaudioConfigured: credentials.fishaudio.configured,
+      fishaudioKeySource: credentials.fishaudio.source,
       provider: this._resolveProvider(),
       providerConfig: (asr.provider || 'auto'),
       deepgramModel: asr.deepgramModel || 'nova-2',
