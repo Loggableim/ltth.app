@@ -937,8 +937,9 @@
                     <div class="form-group">
                         <label class="form-label" data-i18n-key="plugins.webgpu-weather-control.settings.quality_preset">Quality Preset</label>
                         <select class="form-select" id="qualityPreset">
+                            <option value="auto" selected data-i18n="plugins.webgpu-weather-control.labels.auto_adaptive_1080p60">Auto - Adaptive 1080p60</option>
                             <option value="low" data-i18n="plugins.webgpu-weather-control.labels.low_100_max_particles">Low ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ 100 max particles</option>
-                            <option value="medium" selected data-i18n="plugins.webgpu-weather-control.labels.medium_300">Medium ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ 300</option>
+                            <option value="medium" data-i18n="plugins.webgpu-weather-control.labels.medium_300">Medium ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ 300</option>
                             <option value="high" data-i18n="plugins.webgpu-weather-control.labels.high_500">High ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ 500</option>
                             <option value="ultra" data-i18n="plugins.webgpu-weather-control.labels.ultra_800">Ultra ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ 800</option>
                         </select>
@@ -1191,7 +1192,7 @@
                     <div class="form-group">
                         <label class="form-label">
                             <span style="display: flex; justify-content: space-between; align-items: center;">
-                                <span>Show Community HUD</span>
+                                <span data-i18n="plugins.webgpu-weather-control.labels.show_community_hud">Show Community HUD</span>
                                 <label class="switch">
                                     <input type="checkbox" id="gamificationOverlayEnabled" checked>
                                     <span class="slider"></span>
@@ -2965,10 +2966,16 @@
                             document.getElementById('cmdNameWeatherlist').value = config.chatCommands.commandNames.weatherlist || 'weatherlist';
                             document.getElementById('cmdNameWeatherstop').value = config.chatCommands.commandNames.weatherstop || 'weatherstop';
 
-                            // Update display
-                            document.getElementById('displayCmdWeather').textContent = config.chatCommands.commandNames.weather || 'weather';
-                            document.getElementById('displayCmdList').textContent = config.chatCommands.commandNames.weatherlist || 'weatherlist';
-                            document.getElementById('displayCmdStop').textContent = config.chatCommands.commandNames.weatherstop || 'weatherstop';
+                            // Command usage displays are optional in the compact UI.
+                            const commandDisplays = {
+                                displayCmdWeather: config.chatCommands.commandNames.weather || 'weather',
+                                displayCmdList: config.chatCommands.commandNames.weatherlist || 'weatherlist',
+                                displayCmdStop: config.chatCommands.commandNames.weatherstop || 'weatherstop'
+                            };
+                            Object.entries(commandDisplays).forEach(([id, value]) => {
+                                const display = document.getElementById(id);
+                                if (display) display.textContent = value;
+                            });
                         }
                     }
 
@@ -3196,23 +3203,12 @@
                 const intensity = parseFloat(document.getElementById(`effect-${action}-intensity`).value);
                 const duration = parseInt(document.getElementById(`effect-${action}-duration`).value);
 
-                // Build headers
+                // Preview uses the local dashboard-admin route, rather than
+                // the keyed production trigger. The plugin can therefore stay
+                // disabled while the browser verifies the native WebGPU path.
                 const headers = { 'Content-Type': 'application/json' };
 
-                // Add API key if useGlobalAuth is disabled
-                if (weatherConfig && !weatherConfig.useGlobalAuth) {
-                    if (weatherConfig.apiKey) {
-                        headers['x-webgpu-weather-key'] = weatherConfig.apiKey;
-                    } else {
-                        // Warn if API key is required but missing
-                        console.warn('[Weather Control] API key required but not configured. Request may fail.');
-                        showStatus('status.effect_trigger_error', 'warning', {
-                            error: weatherText('plugins.webgpu-weather-control.runtime.ui.api_key_missing', 'API key not configured. Please check settings.')
-                        });
-                    }
-                }
-
-                const response = await fetch('/api/webgpu-weather/trigger', {
+                const response = await fetch('/api/webgpu-weather/preview', {
                     method: 'POST',
                     headers,
                     // Don't send username for test requests to bypass permission checks

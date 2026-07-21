@@ -210,6 +210,7 @@
         "sunbeam_colortemp": "Temperatura de color"
       },
       "labels": {
+        "show_community_hud": "Mostrar HUD de comunidad",
         "cool_moonlight": "luz de luna fresca",
         "ultra_800": "Calidad ultra – 800",
         "golden_hour": "Hora Dorada",

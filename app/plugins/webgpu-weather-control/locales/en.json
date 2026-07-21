@@ -210,6 +210,7 @@
         "sunbeam_colortemp": "Color Temperature"
       },
       "labels": {
+        "auto_adaptive_1080p60": "Auto - Adaptive 1080p60",
         "cool_moonlight": "Cool Moonlight",
         "ultra_800": "Ultra â€“ 800",
         "golden_hour": "Golden Hour",
@@ -228,6 +229,7 @@
         "glitch_intensity_multiplier": "Glitch Intensity Multiplier",
         "golden_mist": "Golden Mist",
         "enable_gamification": "Enable Gamification",
+        "show_community_hud": "Show Community HUD",
         "show_overlay_meter": "Show Overlay Meter",
         "weather_gamification": "Weather Gamification",
         "show_overlay_streak": "Show Overlay Streak",

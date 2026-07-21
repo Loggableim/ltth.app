@@ -3826,6 +3826,7 @@
     }
   },
   "docs.plugin.schnorrbecher.title": "Schnorrbecher",
+  "docs.plugin.webgpu-weather-control.title": "Contrôle météo WebGPU",
   "docs.plugin.breadcrumb.docs": "Documentation",
   "docs.plugin.breadcrumb.label": "Fil d’Ariane",
   "docs.plugin.definition.purpose": "Objectif et public",

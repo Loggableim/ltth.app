@@ -3826,6 +3826,7 @@
     }
   },
   "docs.plugin.schnorrbecher.title": "Schnorrbecher",
+  "docs.plugin.webgpu-weather-control.title": "Control meteorológico WebGPU",
   "docs.plugin.breadcrumb.docs": "Documentación",
   "docs.plugin.breadcrumb.label": "Navegación de migas de pan",
   "docs.plugin.definition.purpose": "Objetivo y público",

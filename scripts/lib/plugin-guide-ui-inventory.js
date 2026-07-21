@@ -9,6 +9,7 @@ function sourceFileFor(repoRoot, route) {
   const explicit = {
     '/api-bridge/ui': ['app', 'plugins', 'api-bridge', 'ui.html'],
     '/emoji-rain/ui': ['app', 'plugins', 'emoji-rain', 'ui.html'],
+    '/webgpu-weather-control/ui': ['app', 'plugins', 'webgpu-weather-control', 'ui.html'],
     '/clarityhud/ui': ['app', 'plugins', 'clarityhud', 'ui', 'main.html'],
     '/visual-fx-frame-webgpu/ui': ['plugin-store', 'sources', 'visual-fx-frame-webgpu', 'ui', 'settings.html'],
     '/dashboard.html': ['app', 'public', 'dashboard.html']

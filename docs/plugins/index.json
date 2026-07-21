@@ -1366,5 +1366,41 @@
         "firstResult": "les feux WebGPU sont rendus sans connecter TikTok LIVE"
       }
     }
+  },
+  {
+    "id": "webgpu-weather-control",
+    "name": "WebGPU Weather Control",
+    "category": "plugin",
+    "access": "working-beta",
+    "devStatus": "working-beta",
+    "storeAvailable": false,
+    "image": {
+      "de": "/screenshots/de/docs/plugins/webgpu-weather-control/webgpu-weather-status.png",
+      "en": "/screenshots/docs/plugins/webgpu-weather-control/webgpu-weather-status.png",
+      "es": "/screenshots/es/docs/plugins/webgpu-weather-control/webgpu-weather-status.png",
+      "fr": "/screenshots/fr/docs/plugins/webgpu-weather-control/webgpu-weather-status.png"
+    },
+    "translations": {
+      "de": {
+        "title": "WebGPU Wetterkontrolle",
+        "summary": "WebGPU Wetterkontrolle richtet cineastische WebGPU-Wettereffekte und adaptive 1080p60-Qualität in einer isolierten Vorschau ein.",
+        "firstResult": "die 1080p-Vorschau zeigt den Effekt ohne LIVE-Ausgabe"
+      },
+      "en": {
+        "title": "WebGPU Weather Control",
+        "summary": "WebGPU Weather Control configures cinematic WebGPU weather effects and adaptive 1080p60 quality in an isolated preview.",
+        "firstResult": "the 1080p preview shows the effect without LIVE output"
+      },
+      "es": {
+        "title": "Control meteorológico WebGPU",
+        "summary": "Control meteorológico WebGPU configura efectos cinematográficos WebGPU y calidad adaptativa 1080p60 en una vista previa aislada.",
+        "firstResult": "la vista previa a 1080p muestra el efecto sin salida LIVE"
+      },
+      "fr": {
+        "title": "Contrôle météo WebGPU",
+        "summary": "Contrôle météo WebGPU configure des effets météo WebGPU cinématographiques et une qualité adaptative 1080p60 dans un aperçu isolé.",
+        "firstResult": "l’aperçu 1080p affiche l’effet sans sortie LIVE"
+      }
+    }
   }
 ]

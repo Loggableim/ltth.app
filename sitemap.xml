@@ -818,5 +818,15 @@
     <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/webgpu-fireworks.html?lang=es"/>
     <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/webgpu-fireworks.html?lang=fr"/>
   </url>
+  <url>
+    <loc>https://ltth.app/docs/plugins/webgpu-weather-control.html</loc>
+    <lastmod>2026-07-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://ltth.app/docs/plugins/webgpu-weather-control.html?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ltth.app/docs/plugins/webgpu-weather-control.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ltth.app/docs/plugins/webgpu-weather-control.html?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://ltth.app/docs/plugins/webgpu-weather-control.html?lang=fr"/>
+  </url>
 <!-- GENERATED PLUGIN DOCS END -->
 </urlset>

@@ -74,6 +74,7 @@ const PLUGIN_ROUTES = {
   'viewer-xp': '/viewer-xp/ui',
   'viewer-xp-leaderboard': '/viewer-xp/ui',
   'weather-control': '/weather-control/ui',
+  'webgpu-weather-control': '/webgpu-weather-control/ui',
   'webgpu-emoji-rain': '/webgpu-emoji-rain/ui',
   'webgpu-emoji-rain-dashboard': '/webgpu-emoji-rain/ui',
 };

@@ -199,6 +199,43 @@ describe('WebGPU Weather Control independent plugin surface', () => {
     expect(accepted.statusCode).toBe(200);
     expect(api.emitted).toContainEqual(expect.objectContaining({ event: 'webgpu-weather:trigger' }));
     expect(api.emitted.some(({ event }) => event.startsWith('weather:'))).toBe(false);
+
+    const sequenceRoute = api.routes.find(({ route }) => route === '/api/webgpu-weather/sequence/trigger').handler;
+    const sequenceDenied = createResponse();
+    await sequenceRoute({ headers: {}, body: { steps: [{ action: 'rain', delay: 0, duration: 1000 }] } }, sequenceDenied);
+    expect(sequenceDenied.statusCode).toBe(401);
+    db.close();
+  });
+
+  test('emits a dashboard-admin local preview without enabling production weather control', async () => {
+    const db = createDatabase();
+    const api = createMockApi(db);
+    const plugin = new WebgpuWeatherControlPlugin(api);
+    await plugin.init();
+
+    const previewRoute = api.routes.find(({ method, route }) => method === 'post' && route === '/api/webgpu-weather/preview').handler;
+    const response = createResponse();
+    await previewRoute({
+      headers: {},
+      ip: '127.0.0.1',
+      body: { action: 'rain', intensity: 0.6, duration: 1200, options: { wind: 0.25 } }
+    }, response);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toMatchObject({
+      success: true,
+      event: {
+        action: 'rain',
+        intensity: 0.6,
+        duration: 1200,
+        meta: { triggeredBy: 'local-ui-preview', preview: true }
+      }
+    });
+    expect(plugin.config.enabled).toBe(false);
+    expect(api.emitted).toContainEqual(expect.objectContaining({
+      event: 'webgpu-weather:trigger',
+      payload: expect.objectContaining({ action: 'rain', meta: expect.objectContaining({ preview: true }) })
+    }));
     db.close();
   });
 
@@ -255,11 +292,83 @@ describe('WebGPU Weather Control independent plugin surface', () => {
     expect(overlay).toContain('hudStreak');
     expect(overlay).toContain('hudRewardFeed');
     expect(ui).toContain('/api/webgpu-weather/config');
+    expect(ui).toContain('<option value="auto" selected');
 
     const localeKeys = ['de', 'en', 'es', 'fr'].map((locale) => Object.keys(JSON.parse(
       fs.readFileSync(path.join(pluginDir, 'locales', `${locale}.json`), 'utf8')
     )).sort());
     expect(localeKeys.every((keys) => JSON.stringify(keys) === JSON.stringify(localeKeys[0]))).toBe(true);
+  });
+
+  test('localizes the independent community HUD switch in every WebGPU locale', () => {
+    const pluginDir = path.join(__dirname, '../plugins/webgpu-weather-control');
+    const ui = fs.readFileSync(path.join(pluginDir, 'ui.html'), 'utf8');
+
+    expect(ui).toContain('data-i18n="plugins.webgpu-weather-control.labels.show_community_hud"');
+    ['de', 'en', 'es', 'fr'].forEach((locale) => {
+      const labels = JSON.parse(fs.readFileSync(path.join(pluginDir, 'locales', `${locale}.json`), 'utf8'))
+        .plugins['webgpu-weather-control'].labels;
+      expect(labels.show_community_hud).toEqual(expect.any(String));
+      expect(labels.show_community_hud.trim()).not.toBe('');
+    });
+  });
+
+  test('hydrates disabled community controls even when retired command-display nodes are absent', async () => {
+    const vm = require('vm');
+    const pluginDir = path.join(__dirname, '../plugins/webgpu-weather-control');
+    const ui = fs.readFileSync(path.join(pluginDir, 'ui.html'), 'utf8');
+    const functionStart = ui.indexOf('async function loadConfig()');
+    const functionEnd = ui.indexOf('\n        // Save configuration', functionStart);
+    const makeElement = () => ({
+      checked: true,
+      value: '',
+      textContent: '',
+      hidden: false,
+      classList: { add: jest.fn(), remove: jest.fn() }
+    });
+    const elements = new Map([
+      ['gamificationEnabled', makeElement()],
+      ['gamificationOverlayEnabled', makeElement()],
+      ['gamificationOverlayMeter', makeElement()],
+      ['gamificationOverlayQuest', makeElement()],
+      ['gamificationOverlayStreak', makeElement()],
+      ['gamificationOverlayRewardFeed', makeElement()]
+    ]);
+    const document = {
+      getElementById: (id) => {
+        if (id.startsWith('displayCmd')) return null;
+        if (!elements.has(id)) elements.set(id, makeElement());
+        return elements.get(id);
+      }
+    };
+    const config = {
+      enabled: false,
+      rateLimitPerMinute: 10,
+      useGlobalAuth: true,
+      chatCommands: { enabled: false, requirePermission: true, allowIntensityControl: false, allowDurationControl: false, commandNames: { weather: 'wgweather', weatherlist: 'wgweatherlist', weatherstop: 'wgweatherstop' } },
+      permissions: { enabled: true, allowAll: true, allowedGroups: { followers: true, superfans: true, subscribers: true, teamMembers: true, minTeamLevel: 1 }, topGifterThreshold: 10, minPoints: 0 },
+      gamification: { enabled: false, overlay: { enabled: false, showMeter: false, showQuest: false, showStreak: false, showRewardFeed: false }, communityMeter: { carryOver: false, max: 100 }, quests: { pool: [] }, streaks: {}, rewards: { thresholds: [] } },
+      effects: {}
+    };
+    const showStatus = jest.fn();
+    const context = {
+      document,
+      effects: [],
+      weatherConfig: {},
+      fetch: jest.fn().mockResolvedValue({ json: async () => ({ success: true, config, diagnostic: 'webgpu-bootstrap-complete' }) }),
+      showStatus,
+      populatePresetSelect: jest.fn(),
+      renderTriggerControls: jest.fn(),
+      applyAdvancedValues: jest.fn(),
+      setEffectField: jest.fn()
+    };
+    const loadConfig = vm.runInNewContext(`${ui.slice(functionStart, functionEnd)}\nloadConfig`, context);
+
+    await loadConfig();
+
+    expect(elements.get('gamificationEnabled').checked).toBe(false);
+    expect(elements.get('gamificationOverlayEnabled').checked).toBe(false);
+    expect(showStatus).toHaveBeenCalledWith('status.config_loaded', 'success');
   });
 
   test('keeps the complete classic control surface on isolated WebGPU endpoints', async () => {

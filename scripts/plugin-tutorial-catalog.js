@@ -42,13 +42,14 @@ const ROUTES = {
   tts: ['/dashboard.html?view=plugins', '/tts/ui', '/tts/ui', '/tts/ui'],
   vdoninja: ['/dashboard.html?view=plugins', '/vdoninja/ui', '/vdoninja/ui', '/vdoninja/ui'],
   'weather-control': ['/dashboard.html?view=plugins', '/weather-control/ui', '/weather-control/ui', '/plugins/weather-control/overlay.html'],
+  'webgpu-weather-control': ['/dashboard.html?view=plugins', '/webgpu-weather-control/ui', '/webgpu-weather-control/ui', '/webgpu-weather-control/overlay'],
   'webgpu-emoji-rain': ['/dashboard.html?view=plugins', '/webgpu-emoji-rain/ui', '/webgpu-emoji-rain/ui', '/plugins/webgpu-emoji-rain/overlay.html'],
   'webgpu-fireworks': ['/dashboard.html?view=plugins', '/webgpu-fireworks/ui', '/webgpu-fireworks/ui', '/plugins/webgpu-fireworks/overlay.html'],
   'store-admin': ['/dashboard.html?view=plugins', '/dashboard.html?view=plugins', '/dashboard.html?view=plugins', '/dashboard.html?view=plugins']
 };
 
 const PROFILES = {
-  visual: ['clarityhud', 'emoji-rain', 'fireworks', 'flame-overlay', 'goals', 'spotlight', 'stt-ticker', 'toptier', 'weather-control', 'webgpu-emoji-rain', 'webgpu-fireworks', 'talking-heads'],
+  visual: ['clarityhud', 'emoji-rain', 'fireworks', 'flame-overlay', 'goals', 'spotlight', 'stt-ticker', 'toptier', 'weather-control', 'webgpu-weather-control', 'webgpu-emoji-rain', 'webgpu-fireworks', 'talking-heads'],
   game: ['advanced-timer', 'coinbattle', 'game-engine', 'interactive-story', 'quiz-show', 'streamalchemy'],
   integration: ['animazingpal', 'chatango', 'minecraft-connect', 'multicam', 'music-bot', 'openshock', 'osc-bridge', 'thermal-printer', 'vdoninja'],
   audio: ['soundboard', 'tts'],

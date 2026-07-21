@@ -39,6 +39,7 @@ module.exports = Object.freeze(applySafeWorkflowContracts([
   require('./vdoninja'),
   require('./visual-fx-frame-webgpu'),
   require('./weather-control'),
+  require('./webgpu-weather-control'),
   require('./webgpu-emoji-rain'),
   require('./webgpu-fireworks'),
   require('./store-admin'),

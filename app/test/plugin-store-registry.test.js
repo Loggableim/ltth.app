@@ -76,7 +76,44 @@ async function readZipEntry(zipPath, entryName) {
   });
 }
 
+function listSourceFiles(rootDir, relativeDir = '') {
+  return fs.readdirSync(path.join(rootDir, relativeDir), { withFileTypes: true }).flatMap((entry) => {
+    const relativePath = path.posix.join(relativeDir.replace(/\\/g, '/'), entry.name);
+    return entry.isDirectory() ? listSourceFiles(rootDir, relativePath) : [relativePath];
+  });
+}
+
 describe('Official plugin store registry', () => {
+  it('publishes the WebGPU Weather Control open beta as a source-identical 1080p package', async () => {
+    const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
+    const storePlugin = registry.plugins.find((plugin) => plugin.id === 'webgpu-weather-control');
+    const sourceDir = path.join(repoRoot, 'app', 'plugins', 'webgpu-weather-control');
+    const sourceManifest = JSON.parse(fs.readFileSync(path.join(sourceDir, 'plugin.json'), 'utf8'));
+
+    assert(storePlugin, 'WebGPU Weather Control must exist in the official store registry');
+    assert.strictEqual(sourceManifest.version, '1.0.0');
+    assert.strictEqual(storePlugin.version, sourceManifest.version);
+    assert.strictEqual(storePlugin.channel, 'open-beta');
+    assert(storePlugin.badges.includes('working-beta'));
+    assert.strictEqual(storePlugin.packageUrl, 'https://ltth.app/plugin-store/packages/webgpu-weather-control-1.0.0.zip');
+    assert.deepStrictEqual(storePlugin.screenshots, ['/screenshots/features/webgpu-weather-control.png']);
+
+    const screenshot = fs.readFileSync(path.join(repoRoot, 'screenshots', 'features', 'webgpu-weather-control.png'));
+    assert.strictEqual(screenshot.readUInt32BE(16), 1920, 'store screenshot must be 1080p wide');
+    assert.strictEqual(screenshot.readUInt32BE(20), 1080, 'store screenshot must be 1080p high');
+
+    const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'webgpu-weather-control-1.0.0.zip');
+    assert(fs.existsSync(packagePath), 'WebGPU Weather Control package must exist');
+    const digest = crypto.createHash('sha256').update(fs.readFileSync(packagePath)).digest('hex');
+    assert.strictEqual(storePlugin.sha256, digest);
+
+    const entries = (await listZipEntries(packagePath)).map((entry) => entry.replace(/\\/g, '/'));
+    const sourceFiles = listSourceFiles(sourceDir).sort();
+    assert.strictEqual(JSON.stringify(entries.filter((entry) => !entry.endsWith('/')).sort()), JSON.stringify(sourceFiles));
+    const packagedManifest = JSON.parse((await readZipEntry(packagePath, 'plugin.json')).toString('utf8'));
+    assert.deepStrictEqual(packagedManifest, sourceManifest);
+  });
+
   it('publishes the Schnorrbecher package with a matching manifest and checksum', async () => {
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
     const storePlugin = registry.plugins.find((plugin) => plugin.id === 'schnorrbecher');

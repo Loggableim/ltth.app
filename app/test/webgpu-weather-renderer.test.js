@@ -93,6 +93,30 @@ describe('cinematic WebGPU weather renderer contract', () => {
     expect(engine.getMetrics().gpuTimeSource).toBe('queue-latency');
   });
 
+  test('uses measured GPU reserve to grow auto quality even when presentation is correctly locked to 60 FPS', async () => {
+    const { CinematicWeatherEngine } = require(enginePath);
+    const mock = makeMockGpu(false);
+    const canvas = { getContext: () => ({ configure: () => {}, getCurrentTexture: () => ({ createView: () => ({}) }), unconfigure: () => {} }) };
+    const engine = new CinematicWeatherEngine(canvas, { gpu: mock.gpu });
+    await engine.init();
+    const before = engine.getMetrics().quality.particleBudget;
+    engine.metrics.gpuFrameMs = 4;
+    engine.recordFrameTime(16.67);
+    expect(engine.getMetrics().quality.particleBudget).toBeGreaterThan(before);
+  });
+
+  test('uses measured GPU reserve when the browser externally throttles presentation frames', async () => {
+    const { CinematicWeatherEngine } = require(enginePath);
+    const mock = makeMockGpu(false);
+    const canvas = { getContext: () => ({ configure: () => {}, getCurrentTexture: () => ({ createView: () => ({}) }), unconfigure: () => {} }) };
+    const engine = new CinematicWeatherEngine(canvas, { gpu: mock.gpu });
+    await engine.init();
+    const before = engine.getMetrics().quality.particleBudget;
+    engine.metrics.gpuFrameMs = 4;
+    engine.recordFrameTime(50);
+    expect(engine.getMetrics().quality.particleBudget).toBeGreaterThan(before);
+  });
+
   test('tears down to a transparent state on unsupported, errors, and device loss', async () => {
     const { CinematicWeatherEngine } = require(enginePath);
     const unsupported = new CinematicWeatherEngine({}, { gpu: null });
@@ -106,6 +130,20 @@ describe('cinematic WebGPU weather renderer contract', () => {
     engine.handleDeviceLost('mock device lost');
     expect(engine.getMetrics()).toMatchObject({ state: 'device-lost', transparent: true });
     expect(mock.calls.destroy).toBeGreaterThan(0);
+  });
+
+  test('reports a ready native renderer and rejects implausible timestamp-query values', async () => {
+    const { CinematicWeatherEngine } = require(enginePath);
+    const mock = makeMockGpu(true);
+    const canvas = { getContext: () => ({ configure: () => {}, getCurrentTexture: () => ({ createView: () => ({}) }), unconfigure: () => {} }) };
+    const engine = new CinematicWeatherEngine(canvas, { gpu: mock.gpu });
+    await engine.init();
+    expect(engine.getMetrics()).toMatchObject({ state: 'ready', transparent: false, gpuTimeSource: 'timestamp-query' });
+
+    engine.framegraph.readTimestampMs = async () => 120000;
+    await engine.measureTimestamp();
+    expect(engine.getMetrics()).toMatchObject({ gpuTimeSource: 'queue-latency' });
+    expect(engine.getMetrics().gpuFrameMs).toBeLessThanOrEqual(1000);
   });
 
   test('contains no Canvas2D, WebGL, or fallback renderer context', () => {
@@ -211,15 +249,23 @@ describe('cinematic WebGPU weather renderer contract', () => {
     expect(framegraph).toContain('cinemaAlpha = cinemaAlpha + alpha * (1.0 - cinemaAlpha)');
     expect(framegraph).toContain('let alpha = max(scene.a, cinema.a)');
     expect(framegraph).toContain('cinema.rgb * cinema.a');
-    expect(framegraph).toContain('mix(sampleHdr(sceneHdr, uv), sampleHdr(historyHdr, uv), postFrame.temporalBlend)');
+    expect(framegraph).toContain('mix(sampleHdr(sceneHdr, uv), sampleHdr(historyHdr, uv), stability)');
     expect(framegraph).toContain('max(scene.a, original.a)');
+  });
+
+  test('uses bounded temporal accumulation and filmic HDR composition so dynamic lightning does not smear across the canvas', () => {
+    const framegraph = fs.readFileSync(framegraphPath, 'utf8');
+    expect(framegraph).toContain('postFrame.temporalBlend * 0.18');
+    expect(framegraph).toContain('let mapped = hdr / (vec3<f32>(1.0) + hdr)');
+    expect(framegraph).toContain('bloom.rgb * .4');
   });
 
   test('gates canvas-wide cinema alpha to fullscreen or hybrid kinds and leaves particle-only kinds transparent away from sprites', () => {
     const framegraph = fs.readFileSync(framegraphPath, 'utf8');
     expect(framegraph).toContain('fn isFullscreenKind(kind: f32) -> bool');
-    [2, 3, 4, 5, 6, 7, 12].forEach((kind) => expect(framegraph).toContain(`kind == ${kind}.0`));
-    [0, 1, 8, 9, 10, 11].forEach((kind) => expect(framegraph).not.toContain(`kind == ${kind}.0 ||`));
+    const fullscreenGate = framegraph.match(/fn isFullscreenKind\(kind: f32\) -> bool \{[^}]+\}/)?.[0] || '';
+    [2, 3, 4, 5, 6, 7, 12].forEach((kind) => expect(fullscreenGate).toContain(`kind == ${kind}.0`));
+    [0, 1, 8, 9, 10, 11].forEach((kind) => expect(fullscreenGate).not.toContain(`kind == ${kind}.0`));
     expect(framegraph).toContain('block3.w == rank && isFullscreenKind(block3.z)');
     expect(framegraph).not.toContain('if (block3.w == rank) { var accumulated');
   });
@@ -277,6 +323,20 @@ describe('cinematic WebGPU weather renderer contract', () => {
     expect(framegraph).toContain('let densityCap = u32(ceil(f32(slotsForCommand) * clamp(command.z, 0.0, 1.0)))');
     expect(framegraph).toContain('command.w * command.z');
     expect(framegraph).toContain('particleColor(kind, material.xyz) * alpha');
+  });
+
+  test('decorrelates particle spawn axes so GPU rain and sakura fill the frame instead of forming a diagonal band', () => {
+    const framegraph = fs.readFileSync(framegraphPath, 'utf8');
+    expect(framegraph).toContain('let seedX = hash');
+    expect(framegraph).toContain('let seedY = hash');
+    expect(framegraph).toContain('vec4<f32>(seedX * 2.0 - 1.0, seedY * 2.0 - 1.0');
+  });
+
+  test('renders rain as fine motion-streaks and keeps snow, sakura, and fireflies at cinematic sprite scale', () => {
+    const framegraph = fs.readFileSync(framegraphPath, 'utf8');
+    expect(framegraph).toContain('vec2<f32>(size * .18, size * 4.6)');
+    expect(framegraph).toContain('kind == 10.0');
+    expect(framegraph).toContain('p.state.w * (0.24 + .32 * p.position.z)');
   });
 
   test('keeps legal layer zero visible while higher layers remain closer in the depth attachment', () => {

@@ -2,6 +2,7 @@ const {
   auditGuideDefinition,
   formatGuideContractAudit
 } = require('../../scripts/lib/guide-definition-validation');
+const { buildGuides } = require('../../scripts/plugin-tutorial-source');
 const childProcess = require('child_process');
 const path = require('path');
 
@@ -404,7 +405,7 @@ describe('GuideDefinition contract audit', () => {
     });
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain('GuideDefinition contract audit: 39 guide(s)');
+    expect(result.stdout).toContain(`GuideDefinition contract audit: ${buildGuides(repoRoot).length} guide(s)`);
     expect(result.stdout).toContain('0 error(s)');
   });
 });

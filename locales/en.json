@@ -3826,6 +3826,7 @@
     }
   },
   "docs.plugin.schnorrbecher.title": "Schnorrbecher",
+  "docs.plugin.webgpu-weather-control.title": "WebGPU Weather Control",
   "docs.plugin.breadcrumb.docs": "Documentation",
   "docs.plugin.breadcrumb.label": "Breadcrumb navigation",
   "docs.plugin.definition.purpose": "Purpose and audience",

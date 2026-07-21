@@ -11,9 +11,9 @@ const OUT = path.join(ROOT, 'docs', 'plugins');
 const GUIDE_LOCALES_OUT = path.join(ROOT, 'locales', 'guides');
 const escapeHtml = (value) => String(value || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 const key = (id, suffix) => `docs.plugin.${id}.${suffix}`;
-const imagePath = (locale, id, stepId) => locale === 'en'
+const imagePath = (locale, id, stepId) => (locale === 'en'
   ? `/screenshots/docs/plugins/${id}/${stepId}.png`
-  : `/screenshots/${locale}/docs/plugins/${id}/${stepId}.png`;
+  : `/screenshots/${locale}/docs/plugins/${id}/${stepId}.png`);
 
 function waitForFileUnlock(milliseconds) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);

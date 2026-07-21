@@ -367,7 +367,7 @@ class WebgpuWeatherControlPlugin {
                 apiKey: this.generateApiKey(),
                 useGlobalAuth: false,
                 rateLimitPerMinute: 10,
-                qualityPreset: 'high',
+                qualityPreset: 'auto',
                 adaptiveQuality: true,
                 maxConcurrentEffects: 5,
                 effectLayerOrder: [
@@ -827,6 +827,43 @@ class WebgpuWeatherControlPlugin {
 
             } catch (error) {
                 this.api.log(`ÃƒÂ¢Ã‚ÂÃ…â€™ [WEATHER CONTROL] Error triggering webgpu-weather: ${error.message}`, 'error');
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        // Dashboard tests stay local to the WebGPU overlay. They deliberately
+        // bypass the disabled production switch, but retain the plugin key and
+        // never create a TikTok, gift, community, or persistent side effect.
+        this.registerAdminRoute('post', '/api/webgpu-weather/preview', async (req, res) => {
+            try {
+                const { action, intensity, duration, meta, permanent, options } = req.body || {};
+                if (!action || !this.supportedEffects.includes(action)) {
+                    return res.status(400).json({
+                        success: false,
+                        error: `Invalid action. Supported: ${this.supportedEffects.join(', ')}`
+                    });
+                }
+                if (!this.config.effects[action]?.enabled) {
+                    return res.status(403).json({ success: false, error: `Effect "${action}" is disabled` });
+                }
+
+                const event = this.createWeatherEvent({
+                    action,
+                    intensity,
+                    duration,
+                    permanent: permanent === true,
+                    username: 'dashboard-preview',
+                    meta: {
+                        ...this.sanitizeMeta(meta),
+                        triggeredBy: 'local-ui-preview',
+                        preview: true
+                    },
+                    options: options || {}
+                });
+                this.emitWeatherEvent(event);
+                res.json({ success: true, event });
+            } catch (error) {
+                this.api.log(`[WEATHER CONTROL] Error rendering local WebGPU preview: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
             }
         });

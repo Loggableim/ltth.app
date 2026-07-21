@@ -916,6 +916,46 @@
       ]
     },
     {
+      "id": "webgpu-weather-control",
+      "name": {
+        "en": "WebGPU Weather Control",
+        "de": "WebGPU Wetterkontrolle",
+        "es": "Control meteorologico WebGPU",
+        "fr": "Controle meteo WebGPU"
+      },
+      "description": {
+        "en": "Native cinematic WebGPU weather control with compute particles, HDR bloom, adaptive 1080p60 quality, presets, sequences, gifts, Flow, GCCE, and optional community HUD.",
+        "de": "Native cineastische WebGPU-Wetterkontrolle mit Compute-Partikeln, HDR-Bloom, adaptiver 1080p60-Qualitaet, Presets, Sequenzen, Gifts, Flow, GCCE und optionalem Community-HUD.",
+        "es": "Control meteorologico WebGPU cinematografico nativo con particulas compute, bloom HDR, calidad adaptativa 1080p60, presets, secuencias, regalos, Flow, GCCE y HUD comunitario opcional.",
+        "fr": "Controle meteo WebGPU cinematographique natif avec particules compute, bloom HDR, qualite adaptative 1080p60, presets, sequences, cadeaux, Flow, GCCE et HUD communautaire optionnel."
+      },
+      "version": "1.0.0",
+      "author": "Pup Cid",
+      "category": "plugin",
+      "channel": "open-beta",
+      "badges": [
+        "working-beta",
+        "native-webgpu"
+      ],
+      "quality": {
+        "level": "working-beta",
+        "badges": [
+          "native-webgpu",
+          "1080p60"
+        ]
+      },
+      "packageUrl": "https://ltth.app/plugin-store/packages/webgpu-weather-control-1.0.0.zip",
+      "sha256": "e4738db92864963f743402275c7402c2b50eaa30185e0dbe256b5d2770f10ee7",
+      "pricing": {
+        "type": "free",
+        "amount": 0,
+        "currency": "EUR"
+      },
+      "screenshots": [
+        "/screenshots/features/webgpu-weather-control.png"
+      ]
+    },
+    {
       "id": "emoji-rain",
       "name": {
         "en": "EmojiRain",

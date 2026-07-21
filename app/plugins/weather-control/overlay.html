@@ -321,9 +321,21 @@
         const streakRow = document.getElementById('gamification-streak-row');
         const rewardRow = document.getElementById('gamification-reward-row');
 
-        if (meterRow) meterRow.hidden = overlay.showMeter === false;
+        if (meterRow) {
+          const meterDisabled = overlay.showMeter === false;
+          meterRow.hidden = meterDisabled;
+          meterRow.setAttribute('aria-label', meterDisabled
+            ? weatherText('plugins.weather-control.runtime.overlay.meter_disabled', 'Meter disabled')
+            : '');
+        }
         if (questRow) questRow.hidden = overlay.showQuest === false;
-        if (streakRow) streakRow.hidden = overlay.showStreak === false;
+        if (streakRow) {
+          const streakDisabled = overlay.showStreak === false;
+          streakRow.hidden = streakDisabled;
+          streakRow.setAttribute('aria-label', streakDisabled
+            ? weatherText('plugins.weather-control.runtime.overlay.streak_disabled', 'Streak disabled')
+            : '');
+        }
         if (rewardRow) rewardRow.hidden = overlay.showRewardFeed === false;
 
         if (meterValue) {

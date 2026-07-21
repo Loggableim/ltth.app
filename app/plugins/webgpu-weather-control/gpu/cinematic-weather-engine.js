@@ -62,7 +62,10 @@
         this.framegraph = new WeatherFramegraph(this.device, this.format, { timestampEnabled, float16Filterable, float16Blendable, capacity: QUALITY_PRESETS.ultra.particleBudget });
         this.framegraph.initialize();
         this.resize(this.canvas.clientWidth || this.canvas.width || 1920, this.canvas.clientHeight || this.canvas.height || 1080);
-        this.state = 'ready'; this.transparent = false; this.metrics.gpuTimeSource = timestampEnabled ? 'timestamp-query' : 'queue-latency';
+        this.state = 'ready'; this.transparent = false;
+        this.metrics.state = this.state;
+        this.metrics.transparent = this.transparent;
+        this.metrics.gpuTimeSource = timestampEnabled ? 'timestamp-query' : 'queue-latency';
         this.device.lost?.then((info) => this.handleDeviceLost(info?.message || 'WebGPU device lost')).catch((error) => this.fail('error', error?.message || String(error)));
         this.publishDiagnostic('ready');
         return true;
@@ -80,7 +83,7 @@
       this.device = null; this.context = null;
     }
 
-    destroy() { this.state = 'destroyed'; this.transparent = true; this.destroyGpuResources(); this.publishDiagnostic('destroyed'); }
+    destroy() { this.state = 'destroyed'; this.transparent = true; this.metrics.state = this.state; this.metrics.transparent = true; this.destroyGpuResources(); this.publishDiagnostic('destroyed'); }
 
     resize(width, height) {
       const w = Math.min(1920, Math.max(1, Math.floor(width || 1)));
@@ -96,8 +99,17 @@
       this.metrics.frameMs = clamp(frameMs, 0, 1000, 0);
       this.metrics.fps = this.metrics.frameMs ? 1000 / this.metrics.frameMs : 0;
       if (this.qualityName !== 'auto' || !this.adaptiveQuality) return;
-      const measuredFrameMs = Math.max(this.metrics.frameMs, this.metrics.gpuFrameMs || 0);
-      const scale = measuredFrameMs > TARGET_FRAME_MS ? 0.82 : measuredFrameMs < TARGET_FRAME_MS * 0.7 ? 1.08 : 1;
+      const gpuFrameMs = Number(this.metrics.gpuFrameMs) || 0;
+      const hasGpuMeasurement = gpuFrameMs > 0 && gpuFrameMs <= 1000;
+      // Use measured GPU time whenever it is available. Browser sources may
+      // deliberately throttle rAF while hidden or under automation; that is
+      // not GPU pressure and must not waste available render capacity.
+      const overloaded = hasGpuMeasurement
+        ? gpuFrameMs > TARGET_FRAME_MS
+        : this.metrics.frameMs > TARGET_FRAME_MS * 1.25;
+      const gpuReserve = hasGpuMeasurement && gpuFrameMs < TARGET_FRAME_MS * 0.7;
+      const cpuReserve = !hasGpuMeasurement && this.metrics.frameMs < TARGET_FRAME_MS * 0.7;
+      const scale = overloaded ? 0.82 : (gpuReserve || cpuReserve ? 1.08 : 1);
       if (scale !== 1) {
         this.quality.particleBudget = Math.round(clamp(this.quality.particleBudget * scale, QUALITY_PRESETS.low.particleBudget, QUALITY_PRESETS.ultra.particleBudget, this.quality.particleBudget));
         this.quality.volumetricSamples = Math.round(clamp(this.quality.volumetricSamples * scale, QUALITY_PRESETS.low.volumetricSamples, QUALITY_PRESETS.ultra.volumetricSamples, this.quality.volumetricSamples));
@@ -156,7 +168,20 @@
       this.publishDiagnostic('frame');
     }
 
-    async measureTimestamp() { this.timestampReadPending = true; try { const value = await this.framegraph.readTimestampMs(); if (value !== null) this.metrics.gpuFrameMs = value; } finally { this.timestampReadPending = false; } }
+    async measureTimestamp() {
+      this.timestampReadPending = true;
+      try {
+        const value = await this.framegraph.readTimestampMs();
+        // Some Windows driver/browser combinations expose timestamp ticks with a
+        // non-standard scale. Never feed an implausible value into auto quality.
+        if (Number.isFinite(value) && value >= 0 && value <= 1000) {
+          this.metrics.gpuFrameMs = value;
+        } else {
+          this.metrics.gpuTimeSource = 'queue-latency';
+          await this.measureQueueLatency();
+        }
+      } finally { this.timestampReadPending = false; }
+    }
     async measureQueueLatency() { const started = performance.now ? performance.now() : Date.now(); await this.device.queue.onSubmittedWorkDone?.(); this.metrics.gpuFrameMs = Math.max(0, (performance.now ? performance.now() : Date.now()) - started); }
     getMetrics() { return { ...this.metrics, quality: { ...this.metrics.quality }, resolution: { ...this.metrics.resolution } }; }
     publishDiagnostic(reason) { this.onDiagnostic({ ...this.getMetrics(), reason, effects: this.getEffectState().map((effect) => effect.action) }); }

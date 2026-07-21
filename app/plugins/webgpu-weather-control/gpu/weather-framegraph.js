@@ -56,8 +56,10 @@ fn integrateParticle(index: u32) {
   if (command.z <= 0.0 || slotParticle >= densityCap) { particles[id.x].state.x = 0.0; return; }
   let effectIndex = u32(command.x); let shape = effectState[effectIndex * 4u + 1u];
   if (particles[id.x].state.x > 0.0 && particles[id.x].state.y == command.x && particles[id.x].state.z == command.y) { return; }
-  let seed = hash(f32(id.x) + frame.time * 13.0);
-  particles[id.x].position = vec4<f32>(seed * 2.0 - 1.0, 1.0 + seed, seed, 1.0);
+  let particleId = f32(id.x); let seed = hash(particleId * 0.618 + f32(effectIndex) * 19.19);
+  let seedX = hash(particleId * 12.9898 + f32(effectIndex) * 37.719);
+  let seedY = hash(particleId * 73.156 + f32(effectIndex) * 11.173);
+  particles[id.x].position = vec4<f32>(seedX * 2.0 - 1.0, seedY * 2.0 - 1.0, seed, 1.0);
   particles[id.x].velocity = vec4<f32>(particleMaterialVelocity(command.x, seed) * max(0.1, shape.y), 0.0, 0.0);
   particles[id.x].state = vec4<f32>(1.0, command.x, command.y, command.w * command.z);
   particles[id.x].trail = vec4<f32>(particles[id.x].position.xy, 0.0, 0.0);
@@ -84,10 +86,15 @@ struct Out { @builtin(position) position: vec4<f32>, @location(0) color: vec4<f3
 fn particleColor(kind: f32, tint: vec3<f32>) -> vec3<f32> { if (kind == 0.0) { return vec3<f32>(.55,.78,1.0); } if (kind == 1.0) { return vec3<f32>(.96,.98,1.0); } if (kind == 2.0) { return vec3<f32>(.24,.34,.58); } if (kind == 8.0) { return vec3<f32>(.78,1.0,.38); } if (kind == 9.0) { return vec3<f32>(1.0,.52,.22); } if (kind == 10.0) { return vec3<f32>(1.0,.52,.72); } if (kind == 11.0) { return vec3<f32>(1.0,.24,.05); } return tint; }
 @vertex fn particleVertex(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out {
   let p = particles[visible[ii]]; let corners = array<vec2<f32>, 6>(vec2<f32>(-1.,-1.), vec2<f32>(1.,-1.), vec2<f32>(1.,1.), vec2<f32>(-1.,-1.), vec2<f32>(1.,1.), vec2<f32>(-1.,1.));
-  let kind = p.state.y; let effectIndex = u32(kind); let material = effectState[effectIndex * 4u + 2u]; let shape = effectState[effectIndex * 4u + 1u]; let size = .004 + .018 * clamp(shape.y, .25, 2.0);
+  let kind = p.state.y; let effectIndex = u32(kind); let material = effectState[effectIndex * 4u + 2u]; let shape = effectState[effectIndex * 4u + 1u]; let size = .0018 + .0048 * clamp(shape.y, .25, 2.0);
+  var spriteScale = vec2<f32>(size);
+  if (kind == 0.0 || kind == 2.0 || kind == 9.0) { spriteScale = vec2<f32>(size * .18, size * 4.6); }
+  else if (kind == 8.0) { spriteScale = vec2<f32>(size * .72); }
+  else if (kind == 10.0) { spriteScale = vec2<f32>(size * 1.65, size * 1.1); }
+  else if (kind == 11.0) { spriteScale = vec2<f32>(size * .85, size * 1.5); }
   // Configured layer is real depth: higher overlay layers receive a closer depth value.
-  let depth = clamp(0.9999 - p.state.z / 100.02, 0.0001, 0.9999); let alpha = clamp(p.state.w, 0.0, 1.0);
-  var out: Out; out.position = vec4<f32>(p.position.xy + corners[vi] * size, depth, 1.); out.color = vec4<f32>(particleColor(kind, material.xyz) * alpha, alpha); return out;
+  let depth = clamp(0.9999 - p.state.z / 100.02, 0.0001, 0.9999); let alpha = clamp(p.state.w * (0.24 + .32 * p.position.z), 0.0, 1.0);
+  var out: Out; out.position = vec4<f32>(p.position.xy + corners[vi] * spriteScale, depth, 1.); out.color = vec4<f32>(particleColor(kind, material.xyz) * alpha, alpha); return out;
 }
 @fragment fn particleFragment(in: Out) -> @location(0) vec4<f32> { return in.color; }`;
 
@@ -131,9 +138,9 @@ fn layeredCinema(uv: vec2<f32>) -> vec4<f32> {
   return vec4<f32>(cinema, cinemaAlpha);
 }
 @fragment fn volumetricFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; let scene = sampleHdr(sceneHdr, uv); let cinema = layeredCinema(uv); let alpha = max(scene.a, cinema.a); return vec4<f32>(max(scene.rgb + cinema.rgb * cinema.a, vec3<f32>(0.0)), alpha); }
-@fragment fn bloomFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; let previous = sampleHdr(sceneHdr, uv); let source = sampleHdr(bloomHdr, uv); return max(previous * .68 + max(source - vec4<f32>(0.55), vec4<f32>(0.0)), vec4<f32>(0.0)); }
-@fragment fn temporalFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; return mix(sampleHdr(sceneHdr, uv), sampleHdr(historyHdr, uv), postFrame.temporalBlend); }
-@fragment fn compositeFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; let scene = sampleHdr(sceneHdr, uv); let bloom = sampleHdr(bloomHdr, uv); let original = sampleHdr(historyHdr, uv); return vec4<f32>(scene.rgb + bloom.rgb + original.rgb * .05, max(scene.a, original.a)); }
+@fragment fn bloomFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; let previous = sampleHdr(sceneHdr, uv); let source = sampleHdr(bloomHdr, uv); return max(previous * .22 + max(source - vec4<f32>(0.78), vec4<f32>(0.0)) * .28, vec4<f32>(0.0)); }
+@fragment fn temporalFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; let stability = clamp(postFrame.temporalBlend * 0.18, 0.0, 0.22); return mix(sampleHdr(sceneHdr, uv), sampleHdr(historyHdr, uv), stability); }
+@fragment fn compositeFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; let scene = sampleHdr(sceneHdr, uv); let bloom = sampleHdr(bloomHdr, uv); let original = sampleHdr(historyHdr, uv); let hdr = max(scene.rgb + bloom.rgb * .4 + original.rgb * .02, vec3<f32>(0.0)); let mapped = hdr / (vec3<f32>(1.0) + hdr); return vec4<f32>(mapped, max(scene.a, original.a)); }
 `;
 
   class WeatherFramegraph {

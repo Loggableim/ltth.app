@@ -210,6 +210,7 @@
         "sunbeam_colortemp": "TempÃ©rature de couleur"
       },
       "labels": {
+        "auto_adaptive_1080p60": "Auto - Adaptatif 1080p60",
         "cool_moonlight": "Clair de lune frais",
         "ultra_800": "Ultra-800",
         "golden_hour": "Heure d'or",
@@ -228,6 +229,7 @@
         "glitch_intensity_multiplier": "Multiplicateur d'intensitÃ© des glitchs",
         "golden_mist": "Brume dorÃ©e",
         "enable_gamification": "Activer la gamification",
+        "show_community_hud": "Afficher le HUD communautaire",
         "show_overlay_meter": "Afficher le compteur de superposition",
         "weather_gamification": "Gamification mÃ©tÃ©o",
         "show_overlay_streak": "Afficher la sÃ©quence de superposition",
