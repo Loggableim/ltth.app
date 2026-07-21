@@ -847,6 +847,40 @@
     // ── Audio playback ─────────────────────────────────────
     const audioCache = {};
     let currentMachineId = null;
+    const audioSettingsByEvent = new Map();
+    const slotAudioEvents = ['spin', 'small_win', 'medium_win', 'big_win', 'jackpot', 'near_miss', 'reel_stop'];
+    let audioSettingsReady = false;
+
+    function applyAudioSettings(settings) {
+      audioSettingsByEvent.clear();
+      for (const audioEvent of slotAudioEvents) {
+        const setting = settings?.[audioEvent];
+        const entry = { enabled: setting?.enabled !== false };
+        if (setting?.url) entry.url = setting.url;
+        audioSettingsByEvent.set(audioEvent, entry);
+      }
+      audioSettingsReady = true;
+    }
+
+    function applyAudioStateUpdate(audioEvent, enabled) {
+      if (typeof enabled !== 'boolean') return;
+      const current = audioSettingsByEvent.get(audioEvent) || {};
+      audioSettingsByEvent.set(audioEvent, { ...current, enabled });
+    }
+
+    async function loadAudioSettings(machineId) {
+      if (!machineId) return;
+      audioSettingsReady = false;
+      try {
+        const response = await fetch(`/api/game-engine/slot/audio/settings?machineId=${machineId}`, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        applyAudioSettings(await response.json());
+      } catch (error) {
+        console.warn('Failed to load slot audio settings:', error);
+      }
+    }
+
+    applyAudioSettings({});
 
     function getAudioPath(audioType, machineId) {
       // Custom sounds are served from /game-engine/sounds/slot/custom/:machineId/:type.mp3
@@ -868,7 +902,9 @@
 
     function playAudio(audioType, settings, machineId) {
       const s = settings || lastSettings;
-      if (s.soundEnabled === false) return;
+      if (s.soundEnabled === false) return false;
+      if (!audioSettingsReady) return false;
+      if (audioSettingsByEvent.get(audioType)?.enabled === false) return false;
       const vol = (s.soundVolume !== undefined) ? Math.min(1, Math.max(0, s.soundVolume)) : 0.7;
       const mid = machineId || currentMachineId;
 
@@ -884,12 +920,12 @@
         reel_stop:  '/game-engine/sounds/slot/reel-stop.mp3'
       };
       const defaultSrc = defaultPaths[audioType];
-      if (!defaultSrc && !customSrc) return;
+      if (!defaultSrc && !customSrc) return false;
 
       const cacheKey = `${mid || 'default'}:${audioType}`;
 
       function tryPlay(src) {
-        if (!src) return;
+        if (!src) return false;
         try {
           if (!audioCache[cacheKey] || audioCache[cacheKey]._src !== src) {
             const a = new Audio(src);
@@ -905,10 +941,12 @@
           audio.volume = vol;
           audio.currentTime = 0;
           audio.play().catch(() => {});
+          return true;
         } catch (e) { /* ignore */ }
+        return false;
       }
 
-      tryPlay(customSrc || defaultSrc);
+      return tryPlay(customSrc || defaultSrc);
     }
 
     // ── Socket event: spin started ─────────────────────────
@@ -922,6 +960,7 @@
         // Machine changed – clear audio cache so new machine's sounds load fresh
         Object.keys(audioCache).forEach(k => delete audioCache[k]);
         currentMachineId = data.machineId;
+        loadAudioSettings(currentMachineId);
       }
 
       // Apply overlay mode from server
@@ -960,7 +999,7 @@
     });
 
     // ── Socket event: audio updated – flush cache for this machine ─
-    socket.on('slot:audio-updated', (data) => {
+    socket.on('slot:audio-updated', async (data) => {
       const mid = data.machineId ? String(data.machineId) : null;
       if (!mid) return;
       // Remove stale cache entries for this machine so next play re-fetches
@@ -968,6 +1007,10 @@
       Object.keys(audioCache).forEach(k => {
         if (k.startsWith(prefix)) delete audioCache[k];
       });
+      if (mid === String(currentMachineId)) {
+        applyAudioStateUpdate(data.audioType, data.enabled);
+        await loadAudioSettings(mid);
+      }
     });
 
     // ── Socket event: spin result ──────────────────────────

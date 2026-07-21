@@ -145,4 +145,65 @@ describe('interactive games admin UI contract', () => {
     expect(selectTarget(idle, null)).toBe('idle');
     expect(selectTarget(null, null)).toBe(null);
   });
+
+  test('renders one shared localized audio toggle contract for Connect4, wheel, and slot rows', () => {
+    expect(ui).toContain('class="secondary audio-toggle-btn"');
+    expect(ui).toContain('function renderAudioToggle(button, enabled)');
+    expect(ui).toContain("'plugins.game-engine.ui.audio.enabled'");
+    expect(ui).toContain("'plugins.game-engine.ui.audio.disabled'");
+    expect(ui).toContain("'plugins.game-engine.ui.audio.enable'");
+    expect(ui).toContain("'plugins.game-engine.ui.audio.disable'");
+    expect(ui).toContain("e.target.closest('.audio-toggle-btn')");
+
+    for (const event of [
+      'new_challenger', 'challenge_accepted', 'piece_drop', 'player_1_wins',
+      'player_2_wins', 'game_over', 'timer_warning'
+    ]) {
+      expect(ui).toContain(`data-audio-event="${event}"`);
+    }
+    expect(ui).toContain("const audioTypes = ['spinning', 'prize1', 'prize2', 'prize3', 'lost'];");
+    expect(ui).toContain("type: 'reel_stop'");
+  });
+
+  test('sends the inverse enabled state through the shared audio-state endpoint', async () => {
+    const functionSource = ui.match(/    async function setAudioEventEnabled\(button\) \{[\s\S]*?\n    \}/)?.[0];
+    expect(functionSource).toEqual(expect.any(String));
+    const fetch = jest.fn(() => Promise.resolve({ ok: true }));
+    const renderAudioToggle = jest.fn();
+    const setAudioEventEnabled = new Function(
+      'fetch',
+      'renderAudioToggle',
+      `${functionSource}; return setAudioEventEnabled;`
+    )(fetch, renderAudioToggle);
+    const button = {
+      dataset: {
+        gameType: 'wheel',
+        audioEvent: 'prize2',
+        scopeId: '7',
+        enabled: 'true'
+      }
+    };
+
+    await setAudioEventEnabled(button);
+
+    expect(fetch).toHaveBeenCalledWith('/api/game-engine/audio-state/wheel/prize2', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scopeId: '7', enabled: false })
+    });
+    expect(button.dataset.enabled).toBe('false');
+    expect(renderAudioToggle).toHaveBeenCalledWith(button, false);
+  });
+
+  test('renders toggle state from enriched settings without coupling preview to mute state', () => {
+    expect(ui).toContain('renderAudioToggle(button, item.enabled !== false);');
+    expect(ui).toContain('renderAudioToggle(button, setting?.enabled !== false);');
+    expect(ui).toContain('renderAudioToggle(button, setting.enabled !== false);');
+    expect(ui).toContain('function previewMediaAudio(audioPath)');
+    expect(ui).toContain('function previewWheelAudio(audioType)');
+    const mediaPreview = ui.match(/    function previewMediaAudio\(audioPath\) \{[\s\S]*?\n    \}/)?.[0] || '';
+    const wheelPreview = ui.match(/    function previewWheelAudio\(audioType\) \{[\s\S]*?\n    \}/)?.[0] || '';
+    expect(mediaPreview).not.toContain('dataset.enabled');
+    expect(wheelPreview).not.toContain('dataset.enabled');
+  });
 });

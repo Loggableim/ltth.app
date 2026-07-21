@@ -742,7 +742,7 @@
     let interactiveViewerCountdownInterval = null;
     const highestAudibleMoveBySession = new Map();
     const warnedViewerDeadlines = new Set();
-    const customAudioByEvent = new Map();
+    const audioSettingsByEvent = new Map();
     const ROWS = 6;
     const COLUMNS = 7;
 
@@ -797,25 +797,44 @@
       timer_warning: '/game-engine/sounds/default/ten-sec-timer.mp3'
     };
 
+    function applyAudioSettings(settings) {
+      audioSettingsByEvent.clear();
+      for (const [mediaEvent, setting] of Object.entries(settings || {})) {
+        const entry = { enabled: setting?.enabled !== false };
+        if (setting?.url) entry.url = setting.url;
+        audioSettingsByEvent.set(mediaEvent, entry);
+      }
+    }
+
+    function applyAudioStateUpdate(mediaEvent, enabled) {
+      if (typeof enabled !== 'boolean') return;
+      const current = audioSettingsByEvent.get(mediaEvent) || {};
+      audioSettingsByEvent.set(mediaEvent, { ...current, enabled });
+    }
+
     async function loadCustomAudio() {
       try {
         const response = await fetch('/api/game-engine/media/connect4', { cache: 'no-store' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const media = await response.json();
-        customAudioByEvent.clear();
+        const settings = {};
         for (const item of Array.isArray(media) ? media : []) {
-          if (item && typeof item.media_event === 'string' && typeof item.url === 'string') {
-            customAudioByEvent.set(item.media_event, item.url);
-          }
+          if (!item || typeof item.media_event !== 'string') continue;
+          settings[item.media_event] = {
+            enabled: item.enabled !== false,
+            ...(typeof item.url === 'string' ? { url: item.url } : {})
+          };
         }
+        applyAudioSettings(settings);
       } catch (error) {
         console.warn('Failed to load custom Connect4 audio:', error);
       }
     }
 
     function playEventSound(mediaEvent) {
+      if (audioSettingsByEvent.get(mediaEvent)?.enabled === false) return false;
       const defaultPath = defaultSoundsByEvent[mediaEvent];
-      const customPath = customAudioByEvent.get(mediaEvent);
+      const customPath = audioSettingsByEvent.get(mediaEvent)?.url;
       return playAudioFile(customPath || defaultPath, null, customPath ? defaultPath : null);
     }
 
@@ -1613,6 +1632,11 @@
 
     socket.on('game-engine:media-updated', data => {
       if (data?.gameType === 'connect4') loadCustomAudio();
+    });
+    socket.on('game-engine:audio-state-updated', data => {
+      if (data?.gameType !== 'connect4') return;
+      applyAudioStateUpdate(data.audioEvent, data.enabled);
+      loadCustomAudio();
     });
 
     loadCustomAudio();

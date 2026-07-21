@@ -686,6 +686,35 @@
       prize3: '/game-engine/sounds/wheel/price 3 audio.mp3',
       lost: '/game-engine/sounds/wheel/lost.mp3'
     };
+    const audioSettingsByEvent = new Map();
+
+    function applyAudioSettings(settings) {
+      audioSettingsByEvent.clear();
+      for (const audioEvent of Object.keys(defaultAudioUrls)) {
+        const setting = settings?.[audioEvent];
+        const entry = { enabled: setting?.enabled !== false };
+        if (setting?.url) entry.url = setting.url;
+        audioSettingsByEvent.set(audioEvent, entry);
+      }
+    }
+
+    function applyAudioStateUpdate(audioEvent, enabled) {
+      if (typeof enabled !== 'boolean') return;
+      const current = audioSettingsByEvent.get(audioEvent) || {};
+      audioSettingsByEvent.set(audioEvent, { ...current, enabled });
+    }
+
+    function playWheelEventSound(audioEvent, audioElement) {
+      if (!config.settings.soundEnabled) return false;
+      if (audioSettingsByEvent.get(audioEvent)?.enabled === false) return false;
+      if (!audioElement) return false;
+      audioElement.volume = config.settings.soundVolume || 0.7;
+      audioElement.currentTime = 0;
+      audioElement.play().catch(() => {});
+      return true;
+    }
+
+    applyAudioSettings({});
 
     /**
      * Load audio files for a specific wheel
@@ -697,6 +726,7 @@
         // Fetch audio settings
         const res = await fetch(`/api/game-engine/wheel/audio/settings?wheelId=${wheelId}`);
         const settings = await res.json();
+        applyAudioSettings(settings);
 
         // Set audio sources based on settings
         const audioMap = {
@@ -727,6 +757,7 @@
         console.log('Wheel audio loaded for wheel', wheelId);
       } catch (error) {
         console.error('Error loading wheel audio:', error);
+        applyAudioSettings({});
         // Fall back to defaults
         spinSound.src = defaultAudioUrls.spinning;
         prize1Sound.src = defaultAudioUrls.prize1;
@@ -973,11 +1004,7 @@
       // Play spin sound
       // Note: If the audio duration doesn't match the spin duration, it will be cut short or loop
       // This ensures the visual animation and landing position remain accurate
-      if (config.settings.soundEnabled) {
-        spinSound.volume = config.settings.soundVolume || 0.7;
-        spinSound.currentTime = 0;
-        spinSound.play().catch(() => {});
-      }
+      playWheelEventSound('spinning', spinSound);
 
       // CRITICAL: Reset rotation to 0 before EVERY spin for consistent starting position
       // The server calculates totalRotation assuming the wheel always starts at 0 degrees
@@ -1104,44 +1131,47 @@
       winAnnouncement.classList.add('visible');
 
       // Play appropriate sound based on segment configuration
-      if (config.settings.soundEnabled) {
-        const volume = config.settings.soundVolume || 0.7;
+      {
         let soundToPlay = null;
+        let audioEvent = null;
 
         if (isShock) {
           // Play lost sound for shock (or could be a special shock sound)
           soundToPlay = lostSound;
+          audioEvent = 'lost';
         } else if (isNiete) {
           // Play lost sound for Niete
           soundToPlay = lostSound;
+          audioEvent = 'lost';
         } else if (prizeAudio !== null && prizeAudio !== undefined && Number(prizeAudio) > 0) {
           // Play configured prize audio (1, 2, or 3)
           const audioNumber = Number(prizeAudio);
           switch(audioNumber) {
             case 1:
               soundToPlay = prize1Sound;
+              audioEvent = 'prize1';
               break;
             case 2:
               soundToPlay = prize2Sound;
+              audioEvent = 'prize2';
               break;
             case 3:
               soundToPlay = prize3Sound;
+              audioEvent = 'prize3';
               break;
             default:
               soundToPlay = prize1Sound; // Default to prize 1
+              audioEvent = 'prize1';
           }
         } else {
           // Default prize audio for real wins without an explicit prizeAudio value.
           // isNiete and isShock are already handled above, so this branch is only
           // reached for genuine wins missing an explicit prizeAudio configuration.
           soundToPlay = prize1Sound;
+          audioEvent = 'prize1';
         }
 
-        if (soundToPlay) {
-          soundToPlay.volume = volume;
-          soundToPlay.currentTime = 0;
-          soundToPlay.play().catch(() => {});
-        }
+        playWheelEventSound(audioEvent, soundToPlay);
       }
 
       // Hide after delay (use configurable duration, default 5 seconds)
@@ -1572,6 +1602,7 @@
       console.log('🔊 Audio updated', data);
       // Reload audio if this is the current wheel
       if (data.wheelId == currentWheelId) {
+        applyAudioStateUpdate(data.audioType, data.enabled);
         await loadWheelAudio(data.wheelId);
       }
     });

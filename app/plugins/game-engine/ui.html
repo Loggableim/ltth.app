@@ -2477,6 +2477,7 @@
           <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
             <input type="file" id="wheel-audio-spinning" accept="audio/*" style="flex: 1;">
             <button type="button" id="wheel-audio-spinning-preview" class="secondary" style="padding: 8px 15px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
+            <button type="button" class="secondary audio-toggle-btn" data-game-type="wheel" data-audio-event="spinning" data-scope-id="1" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             <button type="button" id="wheel-audio-spinning-reset" class="danger" style="padding: 8px 15px;" title="Zurücksetzen" data-i18n-title="plugins.game-engine.ui.common.reset">🔄</button>
           </div>
           <p id="wheel-audio-spinning-status" style="color: #4CAF50; font-size: 12px; margin-top: 5px;" data-i18n="plugins.game-engine.labels.standard_spinning_sound_mp3_6136d2">Standard: spinning sound.mp3</p>
@@ -2487,6 +2488,7 @@
           <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
             <input type="file" id="wheel-audio-prize1" accept="audio/*" style="flex: 1;">
             <button type="button" id="wheel-audio-prize1-preview" class="secondary" style="padding: 8px 15px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
+            <button type="button" class="secondary audio-toggle-btn" data-game-type="wheel" data-audio-event="prize1" data-scope-id="1" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             <button type="button" id="wheel-audio-prize1-reset" class="danger" style="padding: 8px 15px;" title="Zurücksetzen" data-i18n-title="plugins.game-engine.ui.common.reset">🔄</button>
           </div>
           <p id="wheel-audio-prize1-status" style="color: #4CAF50; font-size: 12px; margin-top: 5px;" data-i18n="plugins.game-engine.labels.standard_price_1_audio_mp3_95fa2e">Standard: price 1 audio.mp3</p>
@@ -2497,6 +2499,7 @@
           <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
             <input type="file" id="wheel-audio-prize2" accept="audio/*" style="flex: 1;">
             <button type="button" id="wheel-audio-prize2-preview" class="secondary" style="padding: 8px 15px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
+            <button type="button" class="secondary audio-toggle-btn" data-game-type="wheel" data-audio-event="prize2" data-scope-id="1" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             <button type="button" id="wheel-audio-prize2-reset" class="danger" style="padding: 8px 15px;" title="Zurücksetzen" data-i18n-title="plugins.game-engine.ui.common.reset">🔄</button>
           </div>
           <p id="wheel-audio-prize2-status" style="color: #4CAF50; font-size: 12px; margin-top: 5px;" data-i18n="plugins.game-engine.labels.standard_price_2_audio_mp3">Standard: price 2 audio.mp3</p>
@@ -2507,6 +2510,7 @@
           <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
             <input type="file" id="wheel-audio-prize3" accept="audio/*" style="flex: 1;">
             <button type="button" id="wheel-audio-prize3-preview" class="secondary" style="padding: 8px 15px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
+            <button type="button" class="secondary audio-toggle-btn" data-game-type="wheel" data-audio-event="prize3" data-scope-id="1" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             <button type="button" id="wheel-audio-prize3-reset" class="danger" style="padding: 8px 15px;" title="Zurücksetzen" data-i18n-title="plugins.game-engine.ui.common.reset">🔄</button>
           </div>
           <p id="wheel-audio-prize3-status" style="color: #4CAF50; font-size: 12px; margin-top: 5px;" data-i18n="plugins.game-engine.labels.standard_price_3_audio_mp3">Standard: price 3 audio.mp3</p>
@@ -2517,6 +2521,7 @@
           <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
             <input type="file" id="wheel-audio-lost" accept="audio/*" style="flex: 1;">
             <button type="button" id="wheel-audio-lost-preview" class="secondary" style="padding: 8px 15px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
+            <button type="button" class="secondary audio-toggle-btn" data-game-type="wheel" data-audio-event="lost" data-scope-id="1" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             <button type="button" id="wheel-audio-lost-reset" class="danger" style="padding: 8px 15px;" title="Zurücksetzen" data-i18n-title="plugins.game-engine.ui.common.reset">🔄</button>
           </div>
           <p id="wheel-audio-lost-status" style="color: #4CAF50; font-size: 12px; margin-top: 5px;" data-i18n="plugins.game-engine.labels.standard_lost_mp3">Standard: lost.mp3</p>
@@ -4115,6 +4120,7 @@
             <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
               <input type="file" id="mediaNewChallenger" accept="audio/*" style="flex: 1;">
               <button type="button" class="secondary media-preview-btn" data-audio="/game-engine/sounds/default/new-challenger-alert.mp3" style="padding: 8px 15px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
+              <button type="button" class="secondary audio-toggle-btn" data-game-type="connect4" data-audio-event="new_challenger" data-scope-id="default" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             </div>
             <div id="currentMediaNewChallenger" style="margin-top: 5px; color: #aaa;"></div>
             <button data-upload="new_challenger" data-input="mediaNewChallenger" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.upload_custom_69fd87">Upload Custom</button>
@@ -4127,6 +4133,7 @@
             <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
               <input type="file" id="mediaChallengeAccepted" accept="audio/*" style="flex: 1;">
               <button type="button" class="secondary media-preview-btn" data-audio="/game-engine/sounds/default/challenge accepted.mp3" style="padding: 8px 15px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
+              <button type="button" class="secondary audio-toggle-btn" data-game-type="connect4" data-audio-event="challenge_accepted" data-scope-id="default" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             </div>
             <div id="currentMediaChallengeAccepted" style="margin-top: 5px; color: #aaa;"></div>
             <button data-upload="challenge_accepted" data-input="mediaChallengeAccepted" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.upload_custom_330388">Upload Custom</button>
@@ -4141,6 +4148,7 @@
             <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
               <input type="file" id="mediaPlayer1Wins" accept="audio/*" style="flex: 1;">
               <button type="button" class="secondary media-preview-btn" data-audio="/game-engine/sounds/default/player-1-wins.mp3" style="padding: 8px 15px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
+              <button type="button" class="secondary audio-toggle-btn" data-game-type="connect4" data-audio-event="player_1_wins" data-scope-id="default" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             </div>
             <div id="currentMediaPlayer1Wins" style="margin-top: 5px; color: #aaa;"></div>
             <button data-upload="player_1_wins" data-input="mediaPlayer1Wins" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.upload_custom_6790d8">Upload Custom</button>
@@ -4153,6 +4161,7 @@
             <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
               <input type="file" id="mediaPlayer2Wins" accept="audio/*" style="flex: 1;">
               <button type="button" class="secondary media-preview-btn" data-audio="/game-engine/sounds/default/player-2-wins.mp3" style="padding: 8px 15px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
+              <button type="button" class="secondary audio-toggle-btn" data-game-type="connect4" data-audio-event="player_2_wins" data-scope-id="default" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             </div>
             <div id="currentMediaPlayer2Wins" style="margin-top: 5px; color: #aaa;"></div>
             <button data-upload="player_2_wins" data-input="mediaPlayer2Wins" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.upload_custom_2560cd">Upload Custom</button>
@@ -4165,6 +4174,7 @@
             <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
               <input type="file" id="mediaGameOver" accept="audio/*" style="flex: 1;">
               <button type="button" class="secondary media-preview-btn" data-audio="/game-engine/sounds/default/game over.mp3" style="padding: 8px 15px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
+              <button type="button" class="secondary audio-toggle-btn" data-game-type="connect4" data-audio-event="game_over" data-scope-id="default" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             </div>
             <div id="currentMediaGameOver" style="margin-top: 5px; color: #aaa;"></div>
             <button data-upload="game_over" data-input="mediaGameOver" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.upload_custom_bd125f">Upload Custom</button>
@@ -4177,6 +4187,7 @@
             <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
               <input type="file" id="mediaPieceDrop" accept="audio/*" style="flex: 1;">
               <button type="button" class="secondary media-preview-btn" data-audio="/game-engine/sounds/default/game start.mp3" style="padding: 8px 15px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
+              <button type="button" class="secondary audio-toggle-btn" data-game-type="connect4" data-audio-event="piece_drop" data-scope-id="default" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             </div>
             <div id="currentMediaPieceDrop" style="margin-top: 5px; color: #aaa;"></div>
             <button data-upload="piece_drop" data-input="mediaPieceDrop" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.upload_custom_e2c63f">Upload Custom</button>
@@ -4189,6 +4200,7 @@
             <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
               <input type="file" id="mediaTimerWarning" accept="audio/*" style="flex: 1;">
               <button type="button" class="secondary media-preview-btn" data-audio="/game-engine/sounds/default/ten-sec-timer.mp3" style="padding: 8px 15px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
+              <button type="button" class="secondary audio-toggle-btn" data-game-type="connect4" data-audio-event="timer_warning" data-scope-id="default" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             </div>
             <div id="currentMediaTimerWarning" style="margin-top: 5px; color: #aaa;"></div>
             <button data-upload="timer_warning" data-input="mediaTimerWarning" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.upload_custom_67d8da">Upload Custom</button>
@@ -4216,6 +4228,7 @@
             <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
               <input type="file" id="mediaWheelSpinning" accept="audio/*" style="flex: 1;">
               <button type="button" class="secondary media-preview-btn" data-audio="/game-engine/sounds/wheel/spinning sound.mp3" style="padding: 8px 15px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
+              <button type="button" class="secondary audio-toggle-btn" data-game-type="wheel" data-audio-event="spinning" data-scope-id="1" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             </div>
             <div id="currentMediaWheelSpinning" style="margin-top: 5px; color: #4CAF50;" data-i18n="plugins.game-engine.labels.standard_spinning_sound_mp3">Standard: spinning sound.mp3</div>
             <button data-upload="wheel_spinning" data-input="mediaWheelSpinning" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.upload_custom_7988ae">Upload Custom</button>
@@ -4228,6 +4241,7 @@
             <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
               <input type="file" id="mediaWheelPrize1" accept="audio/*" style="flex: 1;">
               <button type="button" class="secondary media-preview-btn" data-audio="/game-engine/sounds/wheel/price 1 audio.mp3" style="padding: 8px 15px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
+              <button type="button" class="secondary audio-toggle-btn" data-game-type="wheel" data-audio-event="prize1" data-scope-id="1" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             </div>
             <div id="currentMediaWheelPrize1" style="margin-top: 5px; color: #4CAF50;" data-i18n="plugins.game-engine.labels.standard_price_1_audio_mp3">Standard: price 1 audio.mp3</div>
             <button data-upload="wheel_prize1" data-input="mediaWheelPrize1" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.upload_custom_813b8e">Upload Custom</button>
@@ -4240,6 +4254,7 @@
             <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
               <input type="file" id="mediaWheelPrize2" accept="audio/*" style="flex: 1;">
               <button type="button" class="secondary media-preview-btn" data-audio="/game-engine/sounds/wheel/price 2 audio.mp3" style="padding: 8px 15px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
+              <button type="button" class="secondary audio-toggle-btn" data-game-type="wheel" data-audio-event="prize2" data-scope-id="1" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             </div>
             <div id="currentMediaWheelPrize2" style="margin-top: 5px; color: #4CAF50;" data-i18n="plugins.game-engine.labels.standard_price_2_audio_mp3_bf6b3a">Standard: price 2 audio.mp3</div>
             <button data-upload="wheel_prize2" data-input="mediaWheelPrize2" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.upload_custom">Upload Custom</button>
@@ -4252,6 +4267,7 @@
             <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
               <input type="file" id="mediaWheelPrize3" accept="audio/*" style="flex: 1;">
               <button type="button" class="secondary media-preview-btn" data-audio="/game-engine/sounds/wheel/price 3 audio.mp3" style="padding: 8px 15px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
+              <button type="button" class="secondary audio-toggle-btn" data-game-type="wheel" data-audio-event="prize3" data-scope-id="1" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             </div>
             <div id="currentMediaWheelPrize3" style="margin-top: 5px; color: #4CAF50;" data-i18n="plugins.game-engine.labels.standard_price_3_audio_mp3_94f26f">Standard: price 3 audio.mp3</div>
             <button data-upload="wheel_prize3" data-input="mediaWheelPrize3" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.upload_custom_6feefd">Upload Custom</button>
@@ -4264,6 +4280,7 @@
             <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
               <input type="file" id="mediaWheelLost" accept="audio/*" style="flex: 1;">
               <button type="button" class="secondary media-preview-btn" data-audio="/game-engine/sounds/wheel/lost.mp3" style="padding: 8px 15px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
+              <button type="button" class="secondary audio-toggle-btn" data-game-type="wheel" data-audio-event="lost" data-scope-id="1" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             </div>
             <div id="currentMediaWheelLost" style="margin-top: 5px; color: #4CAF50;" data-i18n="plugins.game-engine.labels.standard_lost_mp3_78218e">Standard: lost.mp3</div>
             <button data-upload="wheel_lost" data-input="mediaWheelLost" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.upload_custom_89aa60">Upload Custom</button>
@@ -4424,6 +4441,63 @@
       const translated = window.i18n?.t?.(normalizedKey, params);
       return translated && translated !== normalizedKey ? translated : readableFallback;
     }
+
+    function renderAudioToggle(button, enabled) {
+      if (!button) return;
+      const stateKey = enabled
+        ? 'plugins.game-engine.ui.audio.enabled'
+        : 'plugins.game-engine.ui.audio.disabled';
+      const actionKey = enabled
+        ? 'plugins.game-engine.ui.audio.disable'
+        : 'plugins.game-engine.ui.audio.enable';
+      const state = runtimeText(stateKey, {}, enabled ? 'Enabled' : 'Disabled');
+      const action = runtimeText(actionKey, {}, enabled ? 'Disable' : 'Enable');
+      button.dataset.enabled = String(enabled);
+      button.dataset.i18n = actionKey;
+      button.textContent = action;
+      button.title = state;
+      button.setAttribute('aria-label', `${state}: ${action}`);
+      button.setAttribute('aria-pressed', String(enabled));
+    }
+
+    function audioToggleMarkup(gameType, audioEvent, scopeId, enabled = true) {
+      const actionKey = enabled
+        ? 'plugins.game-engine.ui.audio.disable'
+        : 'plugins.game-engine.ui.audio.enable';
+      return `<button type="button" class="secondary audio-toggle-btn" data-game-type="${escapeHtml(gameType)}" data-audio-event="${escapeHtml(audioEvent)}" data-scope-id="${escapeHtml(scopeId)}" data-enabled="${enabled}" data-i18n="${actionKey}">${runtimeText(actionKey, {}, enabled ? 'Disable' : 'Enable')}</button>`;
+    }
+
+    async function setAudioEventEnabled(button) {
+      const enabled = button.dataset.enabled !== 'true';
+      const response = await fetch(`/api/game-engine/audio-state/${button.dataset.gameType}/${button.dataset.audioEvent}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scopeId: button.dataset.scopeId, enabled })
+      });
+      if (!response.ok) throw new Error((await response.json()).error);
+      button.dataset.enabled = String(enabled);
+      const candidates = button.ownerDocument?.querySelectorAll('.audio-toggle-btn') || [button];
+      candidates.forEach(candidate => {
+        if (
+          candidate.dataset.gameType === button.dataset.gameType &&
+          candidate.dataset.audioEvent === button.dataset.audioEvent &&
+          candidate.dataset.scopeId === button.dataset.scopeId
+        ) {
+          renderAudioToggle(candidate, enabled);
+        }
+      });
+    }
+
+    document.addEventListener('click', async (e) => {
+      const button = e.target.closest('.audio-toggle-btn');
+      if (!button) return;
+      try {
+        await setAudioEventEnabled(button);
+        showMessage(runtimeText('plugins.game-engine.ui.audio.state_updated', {}, 'Sound state updated'));
+      } catch (error) {
+        showMessage(runtimeText('plugins.game-engine.ui.audio.state_update_failed', {}, 'Sound state could not be updated') + `: ${error.message}`, 'error');
+      }
+    });
 
     function bindRuntimeI18nRerender(rerender) {
       const i18n = window.i18n;
@@ -5850,17 +5924,20 @@
         ];
 
         // Clear all displays and show default info
-        eventTypes.forEach(({ displayId, inputId, defaultAudio }) => {
+        eventTypes.forEach(({ event, displayId, inputId, defaultAudio }) => {
           const display = document.getElementById(displayId);
           if (display) setLocalizedHtml(display, '<span style="color: #4CAF50;" data-i18n="plugins.game-engine.ui.audio.default_active">✓ Standard-Sound aktiv</span>');
           const previewButton = document.getElementById(inputId)?.parentElement?.querySelector('.media-preview-btn');
           if (previewButton) previewButton.dataset.audio = defaultAudio;
+          const item = media.find(entry => entry.media_event === event) || {};
+          const button = document.getElementById(inputId)?.parentElement?.querySelector('.audio-toggle-btn');
+          renderAudioToggle(button, item.enabled !== false);
         });
 
         // Show custom media if configured
         media.forEach(m => {
           const eventType = eventTypes.find(e => e.event === m.media_event);
-          if (eventType) {
+          if (eventType && m.isCustom) {
             const display = document.getElementById(eventType.displayId);
             if (display) {
               setLocalizedHtml(display, '');
@@ -5937,6 +6014,8 @@
           if (!display) return;
 
           const setting = settings[type];
+          const button = display.closest('.form-group')?.querySelector('.audio-toggle-btn');
+          renderAudioToggle(button, setting?.enabled !== false);
           if (setting && setting.isCustom && setting.filename) {
             setLocalizedHtml(display, '');
             const label = document.createElement('span');
@@ -6144,6 +6223,7 @@
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <input type="file" id="slotAudio_${type}" accept="audio/*" style="flex:1;min-width:160px;">
             <button type="button" class="secondary slot-audio-preview-btn" data-machine="${escapeHtml(machineId)}" data-type="${type}" style="padding:6px 12px;" title="Vorschau" data-i18n-title="plugins.game-engine.ui.common.preview">▶️</button>
+            ${audioToggleMarkup('slot', type, machineId, setting.enabled !== false)}
             <button type="button" class="secondary slot-audio-upload-btn" data-machine="${escapeHtml(machineId)}" data-type="${type}" data-sync="${sync}" style="padding:6px 12px;" data-i18n="plugins.game-engine.ui.audio.upload">⬆️ Upload</button>
             ${isCustom ? `<button type="button" class="danger slot-audio-reset-btn" data-machine="${escapeHtml(machineId)}" data-type="${type}" style="padding:6px 12px;" data-i18n="plugins.game-engine.ui.audio.reset_default">↩ Standard</button>` : ''}
           </div>
@@ -7077,6 +7157,7 @@
             <span style="flex:1;font-size:13px;">${label}${sync ? ' <span style="color:#4CAF50;font-size:11px;" data-i18n="plugins.game-engine.ui.audio.sync">(sync)</span>' : ''}</span>
             <span style="font-size:12px;color:${isCustom ? '#2196F3' : '#666'};">${isCustom ? '📁 ' + escapeHtml(setting.filename) + durationInfo : '– Standard –'}</span>
             <input type="file" id="slotTabAudio_${type}" accept="audio/*" style="width:160px;font-size:12px;">
+            ${audioToggleMarkup('slot', type, machineId, setting.enabled !== false)}
             <button type="button" class="secondary" style="padding:4px 10px;font-size:12px;"
               onclick="(async()=>{
                 const f=document.getElementById('slotTabAudio_${type}').files[0];
@@ -10233,7 +10314,7 @@
         const data = await res.json();
         if (data.success) {
           showMessage(`Audio "${audioType}" erfolgreich hochgeladen!`);
-          updateAudioStatus(audioType, file.name, true);
+          await loadWheelAudioSettings();
           return true;
         } else {
           showMessage(`Fehler: ${data.error}`, 'error');
@@ -10262,7 +10343,7 @@
         const data = await res.json();
         if (data.success) {
           showMessage(`Audio "${audioType}" auf Standard zurückgesetzt`);
-          updateAudioStatus(audioType, null, false);
+          await loadWheelAudioSettings();
           // Clear file input
           const inputId = `wheel-audio-${audioType}`;
           const input = document.getElementById(inputId);
@@ -10357,8 +10438,11 @@
 
         const audioTypes = ['spinning', 'prize1', 'prize2', 'prize3', 'lost'];
         audioTypes.forEach(type => {
-          const setting = data[type];
+          const setting = data[type] || {};
           updateAudioStatus(type, setting?.filename || null, setting?.isCustom || false);
+          const button = document.getElementById(`wheel-audio-${type}`)?.parentElement?.querySelector('.audio-toggle-btn');
+          if (button) button.dataset.scopeId = String(currentWheelId);
+          renderAudioToggle(button, setting.enabled !== false);
         });
       } catch (error) {
         console.error('Error loading audio settings:', error);

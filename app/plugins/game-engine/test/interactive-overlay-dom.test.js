@@ -7,7 +7,15 @@ const overlayDir = path.join(__dirname, '..', 'overlay');
 function loadOverlay(name, i18n = null, options = {}) {
   const listeners = new Map();
   const audioPlay = jest.fn(() => Promise.resolve());
+  const mediaPlay = jest.fn(() => Promise.resolve());
   const audioSources = [];
+  const AudioConstructor = jest.fn(function Audio(src) {
+    this.src = src;
+    this._listeners = new Map();
+    audioSources.push(src);
+    this.addEventListener = (event, handler) => this._listeners.set(event, handler);
+    this.play = audioPlay;
+  });
   const socket = {
     on: jest.fn((event, handler) => listeners.set(event, handler)),
     emit: jest.fn()
@@ -43,22 +51,34 @@ function loadOverlay(name, i18n = null, options = {}) {
         return id;
       };
       window.clearTimeout = id => timeouts.delete(id);
-      window.Audio = class Audio {
-        constructor(src) {
-          this.src = src;
-          audioSources.push(src);
-        }
-
-        play() {
-          return audioPlay();
-        }
-      };
+      window.Audio = AudioConstructor;
+      window.HTMLMediaElement.prototype.play = mediaPlay;
+      window.HTMLMediaElement.prototype.pause = jest.fn();
+      window.HTMLMediaElement.prototype.load = jest.fn();
+      window.HTMLCanvasElement.prototype.getContext = () => ({
+        clearRect: jest.fn(),
+        save: jest.fn(),
+        restore: jest.fn(),
+        translate: jest.fn(),
+        rotate: jest.fn(),
+        beginPath: jest.fn(),
+        moveTo: jest.fn(),
+        arc: jest.fn(),
+        closePath: jest.fn(),
+        fill: jest.fn(),
+        stroke: jest.fn(),
+        fillText: jest.fn(),
+        measureText: jest.fn(() => ({ width: 100 })),
+        createLinearGradient: jest.fn(() => ({ addColorStop: jest.fn() }))
+      });
     }
   });
   return {
     dom,
     listeners,
     audioPlay,
+    mediaPlay,
+    AudioConstructor,
     audioSources,
     pendingTimeoutCount: () => timeouts.size,
     advance(milliseconds) {
@@ -518,6 +538,103 @@ describe('interactive overlay countdown DOM', () => {
 
     expect(audioSources).toContain('/game-engine/media/connect4/player_2_wins?v=3');
     dom.window.close();
+  });
+
+  test('direct Connect4 never constructs audio or falls back for a disabled custom event', () => {
+    const { dom, AudioConstructor, audioPlay } = loadOverlay('connect4.html');
+
+    dom.window.applyAudioSettings({
+      piece_drop: { enabled: false, url: '/custom/drop.mp3' }
+    });
+
+    expect(dom.window.playEventSound('piece_drop')).toBe(false);
+    expect(AudioConstructor).not.toHaveBeenCalled();
+    expect(audioPlay).not.toHaveBeenCalled();
+    dom.window.close();
+  });
+
+  test.each(['spinning', 'prize1', 'prize2', 'prize3', 'lost'])(
+    'wheel never plays disabled %s audio',
+    audioEvent => {
+      const { dom, mediaPlay } = loadOverlay('wheel.html');
+      const elementIds = {
+        spinning: 'spin-sound',
+        prize1: 'prize-1-sound',
+        prize2: 'prize-2-sound',
+        prize3: 'prize-3-sound',
+        lost: 'lost-sound'
+      };
+      dom.window.applyAudioSettings({
+        [audioEvent]: { enabled: false, url: `/custom/${audioEvent}.mp3` }
+      });
+
+      expect(dom.window.playWheelEventSound(
+        audioEvent,
+        dom.window.document.getElementById(elementIds[audioEvent])
+      )).toBe(false);
+      expect(mediaPlay).not.toHaveBeenCalled();
+      dom.window.close();
+    }
+  );
+
+  test.each(['spin', 'small_win', 'medium_win', 'big_win', 'jackpot', 'near_miss', 'reel_stop'])(
+    'slot never constructs audio or falls back for disabled %s audio',
+    audioEvent => {
+      const { dom, AudioConstructor, audioPlay } = loadOverlay('slot.html');
+      dom.window.applyAudioSettings({
+        [audioEvent]: { enabled: false, url: `/custom/${audioEvent}.mp3` }
+      });
+
+      expect(dom.window.playAudio(audioEvent, { soundEnabled: true }, '7')).toBe(false);
+      expect(AudioConstructor).not.toHaveBeenCalled();
+      expect(audioPlay).not.toHaveBeenCalled();
+      dom.window.close();
+    }
+  );
+
+  test('audio-state socket updates mute immediately without replaying any overlay sound', () => {
+    const connect4 = loadOverlay('connect4.html');
+    connect4.dom.window.applyAudioSettings({ piece_drop: { enabled: true } });
+    connect4.listeners.get('game-engine:audio-state-updated')({
+      gameType: 'connect4',
+      scopeId: 'default',
+      audioEvent: 'piece_drop',
+      enabled: false
+    });
+    expect(connect4.dom.window.playEventSound('piece_drop')).toBe(false);
+    expect(connect4.audioPlay).not.toHaveBeenCalled();
+    connect4.dom.window.close();
+
+    const wheel = loadOverlay('wheel.html');
+    wheel.dom.window.loadWheelAudio('7');
+    wheel.dom.window.applyAudioSettings({ spinning: { enabled: true } });
+    wheel.listeners.get('wheel:audio-updated')({ wheelId: '7', audioType: 'spinning', enabled: false });
+    expect(wheel.dom.window.playWheelEventSound(
+      'spinning',
+      wheel.dom.window.document.getElementById('spin-sound')
+    )).toBe(false);
+    expect(wheel.mediaPlay).not.toHaveBeenCalled();
+    wheel.dom.window.close();
+
+    const slot = loadOverlay('slot.html');
+    slot.dom.window.applyAudioSettings({ spin: { enabled: true } });
+    slot.listeners.get('slot:spin-started')({ machineId: '7', settings: { soundEnabled: true } });
+    slot.listeners.get('slot:audio-updated')({ machineId: '7', audioType: 'spin', enabled: false });
+    expect(slot.dom.window.playAudio('spin', { soundEnabled: true }, '7')).toBe(false);
+    expect(slot.audioPlay).not.toHaveBeenCalled();
+    slot.dom.window.close();
+  });
+
+  test('slot waits for scoped audio state before playing a newly selected machine', () => {
+    const slot = loadOverlay('slot.html');
+    slot.dom.window.applyAudioSettings({ spin: { enabled: true } });
+
+    slot.listeners.get('slot:spin-started')({ machineId: '7', settings: { soundEnabled: true } });
+
+    expect(slot.dom.window.playAudio('spin', { soundEnabled: true }, '7')).toBe(false);
+    expect(slot.AudioConstructor).not.toHaveBeenCalled();
+    expect(slot.audioPlay).not.toHaveBeenCalled();
+    slot.dom.window.close();
   });
 
   test('unified delegates countdown rendering to the child and ignores a stale session revision', () => {

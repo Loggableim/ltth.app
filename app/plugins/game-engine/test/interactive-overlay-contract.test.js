@@ -117,6 +117,37 @@ describe('interactive overlay contract', () => {
     expect(html).toContain('highestAudibleMoveBySession.get(sessionId)');
   });
 
+  test('Connect4 stores enabled state and optional URLs in its audio event map', () => {
+    const html = readOverlay('connect4.html');
+
+    expect(html).toContain('function applyAudioSettings(settings)');
+    expect(html).toContain('enabled: setting?.enabled !== false');
+    expect(html).toContain('if (setting?.url) entry.url = setting.url;');
+    expect(html).toContain("if (audioSettingsByEvent.get(mediaEvent)?.enabled === false) return false;");
+  });
+
+  test('wheel guards every configured sound event with enriched enabled state', () => {
+    const html = readOverlay('wheel.html');
+
+    expect(html).toContain('function applyAudioSettings(settings)');
+    expect(html).toContain('function playWheelEventSound(audioEvent, audioElement)');
+    for (const event of ['spinning', 'prize1', 'prize2', 'prize3', 'lost']) {
+      expect(html).toContain(`${event}:`);
+    }
+  });
+
+  test('slot guards every configured sound event and reloads state-only socket updates', () => {
+    const html = readOverlay('slot.html');
+
+    expect(html).toContain('function applyAudioSettings(settings)');
+    expect(html).toContain('async function loadAudioSettings(machineId)');
+    expect(html).toContain("if (audioSettingsByEvent.get(audioType)?.enabled === false) return false;");
+    for (const event of ['spin', 'small_win', 'medium_win', 'big_win', 'jackpot', 'near_miss', 'reel_stop']) {
+      expect(html).toContain(`${event}:`);
+    }
+    expect(html).toContain("socket.on('slot:audio-updated', async (data) =>");
+  });
+
   test('authoritative cancellations render neutral results instead of a winner or draw', () => {
     const connect4 = readOverlay('connect4.html');
     const chess = readOverlay('chess.html');
