@@ -177,7 +177,33 @@
     const x = finiteNumber(position?.x, NaN);
     if (!opening || !floor || !Number.isFinite(x) || !Number.isFinite(y) || y < opening.y) return false;
     const interior = calculateJarInteriorBounds(physicsBounds, y);
-    return y > floor.y || x < interior.left || x > interior.right;
+    const safeRadius = Math.max(0, finiteNumber(radius, 0));
+    return y > floor.y - safeRadius || x < interior.left + safeRadius || x > interior.right - safeRadius;
+  }
+
+  function calculateJarFillRatio(bodies, physicsBounds, incomingSize = 0) {
+    const opening = physicsBounds?.opening;
+    const floor = physicsBounds?.floor;
+    if (!opening || !floor) return 0;
+    const interiorHeight = Math.max(1, floor.y - opening.y);
+    const interiorArea = Math.max(1, (
+      Math.max(1, opening.right - opening.left) + Math.max(1, floor.right - floor.left)
+    ) * interiorHeight / 2);
+    const occupiedArea = (Array.isArray(bodies) ? bodies : [])
+      .filter(body => body?.plugin?.overflow !== true)
+      .reduce((area, body) => {
+        const radius = Math.max(0, finiteNumber(body.circleRadius, 0));
+        return area + Math.PI * radius * radius;
+      }, 0);
+    const incomingRadius = Math.max(0, finiteNumber(incomingSize, 0)) / 2;
+    return (occupiedArea + Math.PI * incomingRadius * incomingRadius) / (interiorArea * 0.55);
+  }
+
+  function shouldOverflowJar(bodies, physicsBounds, incomingSize = 0) {
+    const openingWidth = Math.max(0, finiteNumber(physicsBounds?.opening?.right, 0) - finiteNumber(physicsBounds?.opening?.left, 0));
+    const safeIncomingSize = Math.max(0, finiteNumber(incomingSize, 0));
+    const cannotPassOpening = safeIncomingSize > 0 && safeIncomingSize >= Math.max(1, openingWidth - 12);
+    return cannotPassOpening || calculateJarFillRatio(bodies, physicsBounds, safeIncomingSize) >= 1;
   }
 
   function calculateSpillBounds(viewport, thickness = 24) {
@@ -242,7 +268,7 @@
       this._boundResize = () => this.resize();
 
       this._findElements();
-      if (this.Matter && this.document && this.config.physicsEnabled !== false) {
+      if (this.Matter && this.document) {
         this._initializePhysics();
       }
       if (this.window?.addEventListener) this.window.addEventListener('resize', this._boundResize);
@@ -350,6 +376,7 @@
       }
       this.config.spawnMultiplier = clamp(finiteNumber(this.config.spawnMultiplier, 1), 0.1, 5);
       this.config.spawnDelayMs = Math.floor(clamp(finiteNumber(this.config.spawnDelayMs, 80), 20, 1000));
+      this.config.physicsEnabled = true;
       this.config.jarOpacity = clamp(finiteNumber(this.config.jarOpacity, 0.22), 0, 1);
       this.config.jarStyle = normalizeJarStyle(this.config.jarStyle);
       const { scene, jar, jarLabel, counter, debug } = this.elements;
@@ -391,11 +418,14 @@
       this._renderCounter(true);
       const count = Math.min(this.config.maxPhysicalIcons, Math.max(0, Math.floor(finiteNumber(payload.visualCoinCount, 0))));
       const recentGifts = Array.isArray(payload.recentGifts)
-        ? payload.recentGifts.filter(gift => typeof gift?.giftImage === 'string' && gift.giftImage.trim())
+        ? payload.recentGifts.filter(gift => gift && typeof gift === 'object')
         : [];
       for (let index = 0; index < count; index += 1) {
-        const gift = recentGifts[index % Math.max(1, recentGifts.length)];
-        if (!gift) break;
+        const gift = recentGifts[index % Math.max(1, recentGifts.length)] || {
+          giftId: 'sync-fallback',
+          giftName: 'Gift',
+          giftImage: ''
+        };
         const totalValue = Math.max(1, finiteNumber(payload.totalCoinValue, 1) / Math.max(1, count));
         this._createCoin({
           totalValue,
@@ -406,7 +436,7 @@
           generation: this.generation
         }, {
           settled: true,
-          overflow: false,
+          overflow: this._isJarFull(calculateGiftSize(totalValue, this.config)),
           tier: index > 180 ? 1 : 0
         });
       }
@@ -422,9 +452,11 @@
 
       const requested = Math.max(1, Math.floor(finiteNumber(payload.visualCoins, 1)));
       this._compactFor(requested);
+      const plan = planVisualCoins(payload, this.config, this.bodies.length);
       const count = Math.min(requested, Math.max(0, this.config.maxPhysicalIcons - this.bodies.length));
+      const overflow = plan.overflow || this._isJarFull(calculateGiftSize(payload.totalValue, this.config));
       for (let index = 0; index < count; index += 1) {
-        this.queue.push({ payload, generation: this.generation, overflow: false, tier: 0 });
+        this.queue.push({ payload, generation: this.generation, overflow, tier: 0 });
       }
       this._scheduleSpawn();
       this._emitTelemetry();
@@ -439,11 +471,11 @@
 
     _compactBodies() {
       const candidates = this.bodies
-        .filter(body => !body.plugin?.overflow)
+        .filter(body => !body.plugin?.overflow && (body.plugin?.tier || 0) < 2)
         .sort((left, right) => (left.plugin?.tier || 0) - (right.plugin?.tier || 0));
       if (candidates.length < 10) return false;
       const group = candidates.slice(0, 10);
-      const tier = (group[0].plugin?.tier || 0) + 1;
+      const tier = Math.min(2, (group[0].plugin?.tier || 0) + 1);
       const average = group.reduce((result, body) => ({
         x: result.x + body.position.x / group.length,
         y: result.y + body.position.y / group.length
@@ -464,14 +496,19 @@
       return true;
     }
 
+    _isJarFull(incomingSize = 0) {
+      return shouldOverflowJar(this.bodies, this.physicsBounds, incomingSize);
+    }
+
     _scheduleSpawn() {
       if (this.spawnTimer || this.queue.length === 0) return;
       const item = this.queue.shift();
-      const delay = Math.round((40 + this.random() * 80) * this.config.spawnMultiplier);
+      const delay = Math.round(this.config.spawnDelayMs * (0.5 + this.random()) * this.config.spawnMultiplier);
       this.spawnTimer = this.setTimeoutFn(() => {
         this.spawnTimer = null;
         if (item.generation === this.generation) {
-          this._createCoin(item.payload, { ...item, overflow: false });
+          const overflow = item.overflow || this._isJarFull(calculateGiftSize(item.payload.totalValue, this.config));
+          this._createCoin(item.payload, { ...item, overflow });
         }
         this._emitTelemetry();
         this._scheduleSpawn();
@@ -480,17 +517,20 @@
 
     _createCoin(payload = {}, options = {}) {
       const giftImage = typeof payload.giftImage === 'string' ? payload.giftImage.trim() : '';
-      if (!this.engine || !this.Matter || !this.bounds || !this.physicsBounds || !giftImage || this.bodies.length >= this.config.maxPhysicalIcons) return null;
+      if (!this.engine || !this.Matter || !this.bounds || !this.physicsBounds || this.bodies.length >= this.config.maxPhysicalIcons) return null;
       const { Bodies, Body, Composite } = this.Matter;
       const tier = options.tier || 0;
       const size = calculateGiftSize(payload.totalValue, this.config);
-      const overflow = false;
+      const overflow = options.overflow === true;
+      const side = this.random() < 0.5 ? -1 : 1;
       const openingWidth = this.physicsBounds.opening.right - this.physicsBounds.opening.left;
       const spawnX = openingWidth <= size
         ? (this.physicsBounds.opening.left + this.physicsBounds.opening.right) / 2
         : this.physicsBounds.opening.left + size / 2 + this.random() * (openingWidth - size);
       const interiorHeight = this.physicsBounds.floor.y - this.physicsBounds.opening.y;
-      const x = options.position?.x ?? spawnX;
+      const x = options.position?.x ?? (overflow
+        ? (side < 0 ? this.bounds.left - 50 - this.random() * 160 : this.bounds.right + 50 + this.random() * 160)
+        : spawnX);
       const y = options.position?.y ?? (options.settled
         ? this.physicsBounds.opening.y + size / 2 + this.random() * Math.max(1, interiorHeight - size)
         : this.physicsBounds.opening.y - 30 - this.random() * 120);
@@ -513,7 +553,7 @@
       };
       Composite.add(this.engine.world, body);
       this.bodies.push(body);
-      const sprite = this._createSprite({ ...payload, giftImage }, size, tier, () => this._removeBody(body));
+      const sprite = this._createSprite({ ...payload, giftImage }, size, tier);
       if (!sprite) {
         this._removeBody(body);
         return null;
@@ -522,9 +562,21 @@
       return body;
     }
 
-    _createSprite(payload, size, tier, onImageError) {
+    _createFallbackSprite(payload, size, tier) {
+      if (!this.elements.sprites || !this.document?.createElement) return null;
+      const element = this.document.createElement('div');
+      element.className = `gift-sprite gift-tier-${tier} gift-fallback`;
+      element.style.width = `${size}px`;
+      element.style.height = `${size}px`;
+      element.setAttribute('aria-label', payload.giftName || 'Gift');
+      this.elements.sprites.appendChild(element);
+      return element;
+    }
+
+    _createSprite(payload, size, tier) {
       const giftImage = typeof payload.giftImage === 'string' ? payload.giftImage.trim() : '';
-      if (!this.elements.sprites || !this.document?.createElement || this.config.showGiftImage === false || !giftImage) return null;
+      if (this.config.showGiftImage === false || !giftImage) return this._createFallbackSprite(payload, size, tier);
+      if (!this.elements.sprites || !this.document?.createElement) return null;
       const element = this.document.createElement('div');
       element.className = `gift-sprite gift-tier-${tier}`;
       element.style.width = `${size}px`;
@@ -534,8 +586,8 @@
       image.src = giftImage;
       image.alt = '';
       image.addEventListener('error', () => {
-        element.remove();
-        onImageError?.();
+        image.remove();
+        element.classList.add('gift-fallback');
       }, { once: true });
       element.appendChild(image);
       this.elements.sprites.appendChild(element);
@@ -552,6 +604,19 @@
           this.Matter.Body.setVelocity(body, {
             x: body.velocity.x / speed * maximumSpeed,
             y: body.velocity.y / speed * maximumSpeed
+          });
+        }
+        if (body.plugin?.overflow !== true && this.physicsBounds
+          && isOutsideJarInterior(body.position, body.circleRadius, this.physicsBounds)
+          && this.Matter?.Body) {
+          this.Matter.Body.setPosition(body, calculateJarContainmentPosition(
+            body.position,
+            body.circleRadius,
+            this.physicsBounds
+          ));
+          this.Matter.Body.setVelocity(body, {
+            x: body.velocity.x * 0.2,
+            y: Math.max(0, Math.min(1.5, body.velocity.y))
           });
         }
         if (body.position.x < -margin || body.position.x > this._viewport().width + margin || body.position.y > this._viewport().height + margin) {
@@ -673,6 +738,7 @@
     calculateJarInteriorBounds,
     calculateJarContainmentPosition,
     calculateGiftSize,
+    calculateJarFillRatio,
     isOutsideJarInterior,
     calculateSpillBounds,
     planVisualCoins,

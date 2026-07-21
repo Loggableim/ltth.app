@@ -168,7 +168,34 @@ describe('CoinJarOverlay planning', () => {
     expect(overlay.generation).toBe(0);
   });
 
-  test('selects the configured jar artwork and renders catalog gifts without coin styling', () => {
+  test('reconstructs sync gifts without catalog art as fallback coins', () => {
+    const overlay = Object.create(CoinJarOverlay.prototype);
+    overlay.generation = 0;
+    overlay.queue = [];
+    overlay.bodies = [];
+    overlay.config = { maxPhysicalIcons: 300 };
+    overlay.applyConfig = jest.fn();
+    overlay.clear = jest.fn();
+    overlay._renderCounter = jest.fn();
+    overlay._isJarFull = jest.fn(() => false);
+    overlay._createCoin = jest.fn();
+    overlay._emitTelemetry = jest.fn();
+
+    overlay.applySync({
+      generation: 0,
+      totalCoinValue: 2,
+      visualCoinCount: 2,
+      recentGifts: [{ giftId: 'unknown-gift', giftName: 'Unknown Gift', giftImage: '' }]
+    });
+
+    expect(overlay._createCoin).toHaveBeenCalledTimes(2);
+    expect(overlay._createCoin).toHaveBeenLastCalledWith(expect.objectContaining({
+      giftId: 'unknown-gift',
+      giftImage: ''
+    }), expect.objectContaining({ settled: true }));
+  });
+
+  test('selects the configured jar artwork and renders catalog gifts or a neutral fallback', () => {
     const document = new JSDOM([
       '<main id="coin-jar-scene"><div id="coin-jar-sprites"></div>',
       '<div id="coin-jar"><div class="jar-label"></div></div>',
@@ -197,10 +224,31 @@ describe('CoinJarOverlay planning', () => {
     expect(sprite.className).toContain('gift-sprite');
     expect(sprite.className).not.toContain('coin-sprite');
     expect(sprite.querySelector('img').src).toBe('https://catalog.example/rose.png');
-    expect(overlay._createSprite({ giftName: 'Missing catalog art' }, 64, 0)).toBeNull();
+    expect(overlay._createSprite({ giftName: 'Missing catalog art' }, 64, 0).className).toContain('gift-fallback');
+
+    overlay.config.showGiftImage = false;
+    expect(overlay._createSprite({ giftName: 'Hidden catalog art', giftImage: 'https://catalog.example/hidden.png' }, 64, 0).className).toContain('gift-fallback');
   });
 
-  test('spawns every gift directly above the opening even when an overflow flag is supplied', () => {
+  test('keeps an existing gift body visible when its image request fails', () => {
+    const document = new JSDOM('<div id="coin-jar-sprites"></div>').window.document;
+    const overlay = Object.create(CoinJarOverlay.prototype);
+    overlay.document = document;
+    overlay.config = { showGiftImage: true };
+    overlay.elements = { sprites: document.querySelector('#coin-jar-sprites') };
+
+    const sprite = overlay._createSprite({
+      giftName: 'Broken catalog art',
+      giftImage: 'https://catalog.example/missing.png'
+    }, 64, 0);
+    sprite.querySelector('img').dispatchEvent(new document.defaultView.Event('error'));
+
+    expect(sprite.isConnected).toBe(true);
+    expect(sprite.className).toContain('gift-fallback');
+    expect(sprite.querySelector('img')).toBeNull();
+  });
+
+  test('spawns overflow gifts beside the glass and marks their bodies as overflow', () => {
     const renderBounds = calculateJarBounds(
       { width: 1920, height: 1080 },
       { jarWidth: 230, jarHeight: 290, jarX: 90, jarY: 92 }
@@ -228,13 +276,12 @@ describe('CoinJarOverlay planning', () => {
     }, { overflow: true });
 
     const [x, y] = Bodies.circle.mock.calls[0];
-    expect(x).toBeGreaterThanOrEqual(physicsBounds.opening.left);
-    expect(x).toBeLessThanOrEqual(physicsBounds.opening.right);
+    expect(x).toBeGreaterThan(renderBounds.right);
     expect(y).toBeLessThan(physicsBounds.opening.y);
-    expect(body.plugin.overflow).toBe(false);
+    expect(body.plugin.overflow).toBe(true);
   });
 
-  test('does not force a naturally escaped gift back into the glass', () => {
+  test('keeps normal gifts inside the visible glass contour', () => {
     const renderBounds = calculateJarBounds(
       { width: 1920, height: 1080 },
       { jarWidth: 480, jarHeight: 600, jarX: 50, jarY: 82 }
@@ -258,17 +305,17 @@ describe('CoinJarOverlay planning', () => {
 
     overlay._updateBodies();
 
-    expect(Body.setPosition).not.toHaveBeenCalled();
+    expect(Body.setPosition).toHaveBeenCalledWith(expect.any(Object), expect.objectContaining({ y: physicsBounds.opening.y + 100 }));
   });
 
-  test('queues a gift from the opening even when the jar is full', () => {
+  test('rechecks visible jar capacity before queued gifts spawn', () => {
     const overlay = Object.create(CoinJarOverlay.prototype);
     const payload = { totalValue: 1, giftImage: 'https://catalog.example/rose.png' };
     let scheduled;
     overlay.generation = 0;
     overlay.queue = [{ payload, generation: 0, overflow: false, tier: 0 }];
     overlay.spawnTimer = null;
-    overlay.config = { spawnMultiplier: 1 };
+    overlay.config = { spawnDelayMs: 80, spawnMultiplier: 1 };
     overlay.random = () => 0;
     overlay.setTimeoutFn = callback => {
       scheduled = callback;
@@ -281,11 +328,59 @@ describe('CoinJarOverlay planning', () => {
     overlay._scheduleSpawn();
     scheduled();
 
-    expect(overlay._createCoin).toHaveBeenCalledWith(payload, expect.objectContaining({ overflow: false }));
-    expect(overlay._isJarFull).not.toHaveBeenCalled();
+    expect(overlay._createCoin).toHaveBeenCalledWith(payload, expect.objectContaining({ overflow: true }));
+    expect(overlay._isJarFull).toHaveBeenCalled();
   });
 
-  test('continues compacting old tier-two gifts so new gifts can still spawn at the object limit', () => {
+  test('uses the configured spawn delay as the timer basis', () => {
+    const overlay = Object.create(CoinJarOverlay.prototype);
+    let scheduledDelay;
+    overlay.generation = 0;
+    overlay.queue = [{ payload: {}, generation: 0, overflow: false, tier: 0 }];
+    overlay.spawnTimer = null;
+    overlay.config = { spawnDelayMs: 500, spawnMultiplier: 2 };
+    overlay.random = () => 0.5;
+    overlay.setTimeoutFn = (_callback, delay) => {
+      scheduledDelay = delay;
+      return 1;
+    };
+    overlay._emitTelemetry = jest.fn();
+
+    overlay._scheduleSpawn();
+
+    expect(scheduledDelay).toBe(1000);
+  });
+
+  test('keeps a physical fallback body when gift art is unavailable', () => {
+    const document = new JSDOM('<div id="coin-jar-sprites"></div>').window.document;
+    const renderBounds = calculateJarBounds(
+      { width: 1920, height: 1080 },
+      { jarWidth: 480, jarHeight: 600, jarX: 50, jarY: 82 }
+    );
+    const body = { position: {}, velocity: {}, plugin: {} };
+    const overlay = Object.create(CoinJarOverlay.prototype);
+    overlay.engine = { world: {} };
+    overlay.Matter = {
+      Bodies: { circle: jest.fn(() => body) },
+      Body: { setVelocity: jest.fn(), setAngularVelocity: jest.fn() },
+      Composite: { add: jest.fn(), remove: jest.fn() }
+    };
+    overlay.bounds = renderBounds;
+    overlay.physicsBounds = calculateJarPhysicsBounds(renderBounds, 'classic');
+    overlay.config = { iconScale: 1, maxPhysicalIcons: 300, showGiftImage: true };
+    overlay.random = () => 0.5;
+    overlay.bodies = [];
+    overlay.document = document;
+    overlay.elements = { sprites: document.querySelector('#coin-jar-sprites') };
+
+    const created = overlay._createCoin({ totalValue: 1, giftName: 'Unknown gift' });
+
+    expect(created).toBe(body);
+    expect(body.plugin.element.className).toContain('gift-fallback');
+    expect(overlay.bodies).toEqual([body]);
+  });
+
+  test('keeps full-size representations so later gifts overflow instead of compacting forever', () => {
     const overlay = Object.create(CoinJarOverlay.prototype);
     overlay.bodies = Array.from({ length: 10 }, (_, index) => ({
       position: { x: index * 10, y: index * 10 },
@@ -301,10 +396,8 @@ describe('CoinJarOverlay planning', () => {
     });
     overlay._createCoin = jest.fn();
 
-    expect(overlay._compactBodies()).toBe(true);
-    expect(overlay._createCoin).toHaveBeenCalledWith(expect.objectContaining({
-      giftImage: 'https://catalog.example/rose.png'
-    }), expect.objectContaining({ tier: 3, overflow: false }));
+    expect(overlay._compactBodies()).toBe(false);
+    expect(overlay._createCoin).not.toHaveBeenCalled();
   });
 
   test('plays the bundled glass impact sound at the configured volume', () => {

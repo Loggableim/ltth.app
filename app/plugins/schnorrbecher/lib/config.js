@@ -77,7 +77,6 @@ function normalizeRecentGifts(value) {
   for (const candidate of value) {
     if (!candidate || typeof candidate !== 'object') continue;
     const giftImage = typeof candidate.giftImage === 'string' ? candidate.giftImage.trim() : '';
-    if (!giftImage) continue;
     const giftId = String(candidate.giftId || '').slice(0, 160);
     const giftName = typeof candidate.giftName === 'string' ? candidate.giftName.slice(0, 160) : 'Gift';
     const key = `${giftId}:${giftImage}`;
@@ -113,7 +112,10 @@ function normalizeConfig(input = {}) {
     jarLabel: normalizeText(input.jarLabel, DEFAULT_CONFIG.jarLabel),
     persistenceMode: input.persistenceMode === 'persistent' ? 'persistent' : 'session',
     resetOnNewStream: normalizeBoolean(input.resetOnNewStream, DEFAULT_CONFIG.resetOnNewStream),
-    physicsEnabled: normalizeBoolean(input.physicsEnabled, DEFAULT_CONFIG.physicsEnabled),
+    // Physics is now always active. Keep the field for old stored configs and
+    // external callers, but migrate every legacy false value to the only
+    // supported mode.
+    physicsEnabled: true,
     soundEnabled: normalizeBoolean(input.soundEnabled, DEFAULT_CONFIG.soundEnabled),
     soundVolume: clamp(input.soundVolume, DEFAULT_CONFIG.soundVolume, 0, 1),
     jarBorderColor: normalizeText(input.jarBorderColor, DEFAULT_CONFIG.jarBorderColor, 32),

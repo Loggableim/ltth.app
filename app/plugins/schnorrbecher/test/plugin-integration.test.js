@@ -126,6 +126,38 @@ describe('Schnorrbecher plugin integration', () => {
     expect(plugin.getStatus().state.totalCoinValue).toBe(0);
   });
 
+  test('keeps the live status transient while persistent jar data survives', async () => {
+    plugin.config = plugin.store.saveConfig({ ...plugin.config, persistenceMode: 'persistent' });
+    plugin._handleAdd({ value: 200, eventId: 'persistent-live' });
+    api.tikTokEvents.get('streamSessionStarted')({ streamIdentity: 'room:persistent', isNewStream: true });
+
+    await request(api.app)
+      .get('/api/coin-jar/state')
+      .expect(200)
+      .expect(response => {
+        expect(response.body.livestreamStatus).toBe('active');
+        expect(response.body.state.totalCoinValue).toBe(200);
+      });
+
+    const overlaySocket = { emit: jest.fn() };
+    api.socketEvents.get('coinJar.sync.request')(overlaySocket);
+    expect(overlaySocket.emit).toHaveBeenCalledWith('coinJar.sync', expect.objectContaining({
+      livestreamStatus: 'active'
+    }));
+
+    await request(api.app).post('/api/coin-jar/event-cache/clear').send({}).expect(200);
+    expect(api.emissions.at(-1)).toMatchObject({
+      event: 'coinJar.sync',
+      payload: expect.objectContaining({
+        config: expect.any(Object),
+        livestreamStatus: 'active'
+      })
+    });
+
+    api.tikTokEvents.get('disconnected')({ reason: 'test' });
+    expect(plugin.getStatus().livestreamStatus).toBe('waiting');
+  });
+
   test('validates config and tracks renderer telemetry for the admin status', async () => {
     await request(api.app)
       .post('/api/coin-jar/config')

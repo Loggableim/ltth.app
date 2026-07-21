@@ -15,7 +15,10 @@ class SchnorrbecherPlugin {
     this.engine = new CoinJarEngine({
       store: this.store,
       getConfig: () => this.config,
-      emit: (event, payload) => this.api.emit(event, payload),
+      emit: (event, payload) => this.api.emit(
+        event,
+        event === 'coinJar.sync' ? this._syncPayload(payload) : payload
+      ),
       log: (message, level) => this.api.log(message, level),
       now: () => Date.now(),
       setTimeoutFn: setTimeout,
@@ -46,7 +49,7 @@ class SchnorrbecherPlugin {
       config: this.config,
       physicalCoinCount,
       pendingSpawns: this.rendererMetrics.pendingSpawns,
-      livestreamStatus: state.sessionId ? 'active' : 'waiting'
+      livestreamStatus: this.engine.isLive() ? 'active' : 'waiting'
     };
   }
 
@@ -89,11 +92,20 @@ class SchnorrbecherPlugin {
     }
   }
 
+  _syncPayload(payload = this.engine.syncPayload()) {
+    return {
+      ...payload,
+      config: this.config,
+      livestreamStatus: this.engine.isLive() ? 'active' : 'waiting'
+    };
+  }
+
   _sendSync(socket) {
-    socket.emit('coinJar.sync', {
-      ...this.engine.syncPayload(),
-      config: this.config
-    });
+    socket.emit('coinJar.sync', this._syncPayload());
+  }
+
+  _broadcastSync() {
+    this.api.emit('coinJar.sync', this._syncPayload());
   }
 
   _handleAdd(payload = {}) {
@@ -171,11 +183,20 @@ class SchnorrbecherPlugin {
     });
 
     this.api.registerTikTokEvent('streamSessionStarted', data => {
-      return this.engine.handleStreamSession(data);
+      const result = this.engine.handleStreamSession(data);
+      this._broadcastSync();
+      return result;
     });
 
     this.api.registerTikTokEvent('connected', data => {
-      return this.engine.handleStreamSession(data, { requireIsNewStream: true });
+      const result = this.engine.handleStreamSession(data, { requireIsNewStream: true });
+      this._broadcastSync();
+      return result;
+    });
+
+    this.api.registerTikTokEvent('disconnected', () => {
+      this.engine.handleStreamDisconnect();
+      this._broadcastSync();
     });
 
     this.api.registerSocket('coinJar.sync.request', socket => {

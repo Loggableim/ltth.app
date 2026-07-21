@@ -2,7 +2,7 @@ const { DEFAULT_STATE, normalizeState } = require('./config');
 
 const MAX_EVENT_IDS = 5000;
 const COMBO_TIMEOUT_MS = 2500;
-const MAX_RECENT_GIF_ART = 24;
+const MAX_RECENT_GIF_METADATA = 24;
 
 function calculateVisualCoins(value, repeatCount = 1) {
   const safeRepeatCount = Math.max(1, Math.floor(Number(repeatCount) || 1));
@@ -52,6 +52,7 @@ class CoinJarEngine {
     this.generation = 0;
     this.lastStreamIdentity = null;
     this.manualSequence = 0;
+    this.live = false;
 
     // Session data deliberately does not survive a plugin or server restart.
     // The JSON store is still used while the process is alive so browser
@@ -75,9 +76,8 @@ class CoinJarEngine {
     }
   }
 
-  _rememberGiftArt(event) {
+  _rememberGiftMetadata(event) {
     const giftImage = typeof event.giftImage === 'string' ? event.giftImage.trim() : '';
-    if (!giftImage) return;
     const gift = {
       giftId: String(event.giftId || '').slice(0, 160),
       giftName: typeof event.giftName === 'string' ? event.giftName.slice(0, 160) : 'Gift',
@@ -88,7 +88,7 @@ class CoinJarEngine {
     this.state.recentGifts = [
       ...remembered.filter(item => `${item.giftId}:${item.giftImage}` !== key),
       gift
-    ].slice(-MAX_RECENT_GIF_ART);
+    ].slice(-MAX_RECENT_GIF_METADATA);
   }
 
   _persist() {
@@ -108,7 +108,7 @@ class CoinJarEngine {
     }
 
     this._rememberEvent(event.eventId);
-    this._rememberGiftArt(event);
+    this._rememberGiftMetadata(event);
     const visualCoins = calculateVisualCoins(totalValue, event.repeatCount);
     this.state.totalCoinValue += totalValue;
     this.state.visualCoinCount += visualCoins;
@@ -220,7 +220,12 @@ class CoinJarEngine {
     };
   }
 
+  isLive() {
+    return this.live === true;
+  }
+
   handleStreamSession(data = {}, options = {}) {
+    this.live = true;
     const config = this.getConfig();
     const streamIdentity = data?.streamIdentity || data?.roomId || data?.room_id || null;
     if (!streamIdentity || config.resetOnNewStream !== true || config.persistenceMode !== 'session') {
@@ -239,6 +244,10 @@ class CoinJarEngine {
     this.state.sessionId = streamIdentity;
     this._persist();
     return true;
+  }
+
+  handleStreamDisconnect() {
+    this.live = false;
   }
 
   destroy() {

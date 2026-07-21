@@ -55,7 +55,7 @@ Der echte Gesamtwert ist stets unabhängig von der Darstellung. Pro abgeschlosse
 Math.max(1, Math.min(100, Math.ceil(Math.sqrt(totalValue))))
 ```
 
-Die Größe jedes Gift-Icons wächst mit seinem Coin-Wert und wird von `iconScale` begrenzt. Der Renderer staffelt Spawns um 40–120 ms, mit zufälliger Rotation und horizontalem Impuls, statt alle Icons gleichzeitig zu erzeugen.
+Die Größe jedes Gift-Icons wächst mit seinem Coin-Wert und wird von `iconScale` begrenzt. Der Renderer staffelt Spawns mit `round(spawnDelayMs × (0.5 + random()) × spawnMultiplier)`; beim Default ergibt das 40–120 ms, mit zufälliger Rotation und horizontalem Impuls.
 
 `maxPhysicalIcons` ist standardmäßig 300. Bei Erreichen des Limits erhöht der Server weiterhin Gesamtwert und visuelle Zielmenge, der Renderer verdichtet aber kleine zu mittleren und mittlere zu großen Repräsentationen. Ist der Becher sichtbar voll, nutzt er weitere dynamische Körper außerhalb der Seitenwände, damit neue Geschenke seitlich herausfallen und den Rest der Szene füllen. Aus dem sichtbaren Bereich geratene Körper werden entfernt; sie verändern den Gesamtwert nicht.
 
@@ -75,7 +75,7 @@ density: 0.002
 
 Unsichtbare statische Körper bilden Boden und Seitenwände der sichtbaren Innenform. Geschenk-Icons sind DOM-Sprites, kollidieren miteinander und mit den Wänden, rotieren und haben eine begrenzte Geschwindigkeit. Bei Größenänderungen werden Renderfläche und statische Wände synchron neu aufgebaut.
 
-Der Counter kann ein- und ausgeblendet werden, animiert Wertänderungen, nutzt die lokale Tausendertrennung und ist über Label, Schrift, Größe und Farbe einstellbar. Geschenk-Popup, Absendername, Geschenkbild, Partikel-/Glanzeffekte und ein gedrosselter Sound (höchstens ungefähr alle 80–150 ms) sind optionale, voneinander unabhängige Funktionen. Deaktivierter Sound fordert keine Medieninteraktion an.
+Der Counter kann ein- und ausgeblendet werden, animiert Wertänderungen, nutzt die lokale Tausendertrennung und ist über Label, Schrift, Größe und Farbe einstellbar. Geschenk-Popup, Absendername, Geschenkbild, Partikel-/Glanzeffekte und ein gedrosselter Sound (höchstens ungefähr alle 80–150 ms) sind optionale, voneinander unabhängige Funktionen. Wird das Geschenkbild ausgeblendet oder kann es nicht geladen werden, rendert der bestehende Matter-Körper stattdessen einen neutralen CSS-Coin. Deaktivierter Sound fordert keine Medieninteraktion an.
 
 ## Zustand und Persistenz
 
@@ -97,7 +97,7 @@ Ein Reset bricht alle asynchronen Spawn-Jobs über eine neue Generation ab, leer
 
 ## Konfiguration und Administration
 
-Die persistierte Konfiguration enthält mindestens `enabled`, Bechermaße/-position, `iconScale`, `maxPhysicalIcons`, Spawn-Multiplikator/-Delay, Counter- und Popup-Optionen, Labels, Persistenzmodus, `resetOnNewStream`, Physik- und Soundoptionen. Grenzwerte werden serverseitig validiert, damit URL-Parameter und Formulare keine unkontrollierte Objektmenge erzeugen.
+Die persistierte Konfiguration enthält mindestens `enabled`, Bechermaße/-position, `iconScale`, `maxPhysicalIcons`, Spawn-Multiplikator/-Delay, Counter- und Popup-Optionen, Labels, Persistenzmodus, `resetOnNewStream` und Soundoptionen. Matter.js-Physik ist immer aktiv; alte gespeicherte `physicsEnabled: false`-Werte werden kompatibel als aktiv behandelt. Grenzwerte werden serverseitig validiert, damit URL-Parameter und Formulare keine unkontrollierte Objektmenge erzeugen.
 
 Die Admin-Seite zeigt Verbindungs- und Livestream-Status, Gesamtwert, Zahl physischer Icons und wartende Spawns. Sie bietet **Test Gift**, **Add 100 Coins**, **Reset Coin Jar**, **Clear event cache**, Konfigurationsformular, Overlay-Vorschau und kopierbare URL. Ein konfigurierbarer Bestätigungsdialog schützt den Reset.
 

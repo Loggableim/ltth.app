@@ -20,17 +20,17 @@ Die Browser Source benötigt keinen Hintergrund. Die Darstellung reagiert auf 16
 - Test Gift und Add 100 Coins ohne TikTok-Livestream
 - Reset Coin Jar und Clear event cache
 - Overlay-Vorschau und kopierbare Browser-Source-URL
-- Becherlayout, Counter, Icon-Skalierung, feste Geschenkgrößen, Physik, Persistenz und Sound
+- Becherlayout, Counter, Icon-Skalierung, feste Geschenkgrößen, immer aktive Physik, Persistenz und Sound
 
 ## Geschenk- und Combo-Verhalten
 
 Der Backend-Kern akzeptiert nur endliche positive Werte und berechnet `diamondValue × repeatCount`. Er dedupliziert abgeschlossene `eventId`s und merkt bei laufenden Combos nur den größten Zwischenstand. Erst das Endereignis addiert die Coins. Fehlt es, wird der letzte Stand nach einer kurzen Inaktivität genau einmal finalisiert.
 
-Die visuelle Menge ist `ceil(sqrt(value))`, mindestens 1 und maximal 100. Sie begrenzt nur die Darstellung, nie den echten Gesamtwert. Jedes Geschenk erhält eine feste, im Admin-UI einstellbare Pixelgröße für seinen Wertbereich von `1 Coin` bis `5000+ Coins`; die globale Icon-Skalierung wirkt auf alle Bereiche gleichermaßen. Ab dem konfigurierten Maximum von standardmäßig 300 Matter-Körpern (maximal 3000) verdichtet das Overlay kleine Repräsentationen. Ist der Becher optisch voll, fallen weitere Icons seitlich in die restliche Szene.
+Die visuelle Menge ist `ceil(sqrt(value))`, mindestens 1 und maximal 100. Sie begrenzt nur die Darstellung, nie den echten Gesamtwert. Jedes Geschenk erhält eine feste, im Admin-UI einstellbare Pixelgröße für seinen Wertbereich von `1 Coin` bis `5000+ Coins`; die globale Icon-Skalierung wirkt auf alle Bereiche gleichermaßen. Alle Geschenke fallen mit Matter.js von oben in den Becher. Fehlen Katalogbild oder Bilddatei, bleibt derselbe physische Körper als neutraler Coin sichtbar. `spawnDelayMs` ist das Basisintervall und der Spawn-Delay-Multiplikator skaliert die zufällige 50–150-%-Streuung. Ab dem konfigurierten Maximum von standardmäßig 300 Matter-Körpern (maximal 3000) verdichtet das Overlay kleine Repräsentationen. Ist der Becher optisch voll, fallen weitere Icons seitlich in die restliche Szene.
 
 ## Persistenz und Reset
 
-`session` setzt den Becher beim Pluginstart und beim bestätigten neuen Livestream zurück. `persistent` speichert Gesamtwert, visuelle Zielmenge und Event-Cache unter dem LTTH-Plugin-Datenverzeichnis. Nach einem Browser-Reload stellt das Overlay den Zähler wieder her und rekonstruiert eine zufällige, begrenzte Füllung.
+`session` setzt den Becher beim Pluginstart und beim bestätigten neuen Livestream zurück. `persistent` speichert Gesamtwert, visuelle Zielmenge und Event-Cache unter dem LTTH-Plugin-Datenverzeichnis. Der angezeigte LIVE-Status ist davon getrennt und folgt ausschließlich der aktuellen TikTok-Verbindung. Nach einem Browser-Reload stellt das Overlay den Zähler wieder her und rekonstruiert eine zufällige, begrenzte Füllung.
 
 Ein Reset über die Oberfläche, `POST /api/coin-jar/reset` oder das Socket.IO-Ereignis `coinJar.reset` leert Zustand, Event-Cache, laufende Spawn-Queue und Matter-Körper. Neue Browser-Quellen fordern bei jeder Socket-Verbindung `coinJar.sync.request` an und erhalten einen vollständigen Zustand.
 

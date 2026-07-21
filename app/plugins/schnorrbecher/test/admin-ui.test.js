@@ -60,6 +60,33 @@ describe('Schnorrbecher admin UI', () => {
     expect(ui).toContain('value="arcade"');
   });
 
+  test('keeps the LIVE status when a socket sync arrives', () => {
+    const document = new JSDOM('<!doctype html><html><body></body></html>').window.document;
+    document.body.innerHTML = [
+      '<span id="total-value"></span><span id="physical-count"></span>',
+      '<span id="pending-count"></span><span id="connection-status"></span>',
+      '<span id="livestream-status"></span><input id="overlay-url">'
+    ].join('');
+    const handlers = {};
+    const admin = new SchnorrbecherAdmin({
+      document,
+      location: { origin: 'http://localhost:3000' },
+      socket: {
+        on: (event, handler) => { handlers[event] = handler; },
+        emit: jest.fn()
+      }
+    });
+
+    admin.bind();
+    handlers['coinJar.sync']({
+      totalCoinValue: 5,
+      visualCoinCount: 1,
+      livestreamStatus: 'active'
+    });
+
+    expect(document.querySelector('#livestream-status').textContent).toBe('LIVE');
+  });
+
   test('exposes fixed pixel sizes for all gift value bands and serializes them as numbers', () => {
     const ui = fs.readFileSync(path.join(__dirname, '..', 'ui.html'), 'utf8');
     const document = new JSDOM([
@@ -75,6 +102,8 @@ describe('Schnorrbecher admin UI', () => {
     expect(ui).toContain('name="giftSize5000Plus"');
     expect(ui).toContain('5000+ Coins (px)');
     expect(ui).toContain('name="maxPhysicalIcons" type="number" min="20" max="3000"');
+    expect(ui).toContain('Spawn-Delay-Multiplikator');
+    expect(ui).not.toContain('name="physicsEnabled"');
     expect(admin.collectConfig()).toEqual({ giftSize1: 32, giftSize5000Plus: 180 });
   });
 });
