@@ -11,7 +11,6 @@ module.exports = Object.freeze(applySafeWorkflowContracts([
   require('./clarityhud'),
   require('./coinbattle'),
   require('./config-import'),
-  require('./data-source'),
   require('./emoji-rain'),
   require('./fireworks'),
   require('./flame-overlay'),

@@ -191,7 +191,7 @@ Dashboard → Plugins → Soundboard → Enable
 3. Hacer clic en el botón **Enable**
 4. Configurar plugin (si hay UI disponible)
 
-Ver **[Lista de Plugins](./Plugin-Liste.md#español)** para todos los 36 Plugins disponibles.
+Ver **[Lista de Plugins](./Plugin-Liste.md#español)** para todos los 35 Plugins disponibles.
 
 ---
 
@@ -288,7 +288,7 @@ Dashboard → Plugins → Viewer XP System → Enable
 
 #### Leer Documentación
 
-- **[Lista de Plugins](./Plugin-Liste.md#español)** - Todos los 36 Plugins en detalle
+- **[Lista de Plugins](./Plugin-Liste.md#español)** - todos los 35 Plugins en detalle
 - **[Configuración](./Konfiguration.md#español)** - Configuración avanzada
 - **[FAQ & Troubleshooting](./FAQ-&-Troubleshooting.md#español)** - Resolver problemas comunes
 

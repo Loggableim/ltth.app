@@ -48,4 +48,21 @@ describe('EulerStream-only TikTok connector', () => {
     expect(dashboard).not.toMatch(/datasource-|TikFinity|tiktok-data-source/i);
     expect(dashboardJs).not.toMatch(/\/api\/data-source|datasource:|TikFinity|loadDataSourceStatus/);
   });
+
+  test('does not publish Data Source Manager or TikFinity as a live-data option', () => {
+    const root = path.join(__dirname, '..', '..');
+    const registry = JSON.parse(fs.readFileSync(path.join(root, 'plugin-store.json'), 'utf8'));
+    const activeFiles = [
+      'app/README.md', 'app/wiki/Home.md', 'app/wiki/Wiki-Index.md',
+      'docs/SNAPSHOT_STATUS.md', 'infos/llm_start_here.md',
+      'features/catalog-data.js', 'plugins.html', 'sitemap.xml'
+    ];
+
+    expect(registry.plugins.some((plugin) => plugin.id === 'data-source')).toBe(false);
+    expect(fs.existsSync(path.join(root, 'plugin-store', 'packages', 'data-source-1.0.0.zip'))).toBe(false);
+    expect(fs.existsSync(path.join(root, 'screenshots', 'features', 'data-source.png'))).toBe(false);
+    for (const relativePath of activeFiles) {
+      expect(fs.readFileSync(path.join(root, relativePath), 'utf8')).not.toMatch(/TikFinity|Data Source Manager|Datenquellen-Manager/i);
+    }
+  });
 });

@@ -8,7 +8,7 @@ Diese Seite fasst den aktuellen Stand dieses LTTH-Snapshots zusammen. Sie ist di
 - **Startpunkt:** `app/server.js`, aufgerufen über `npm start` in `app/`.
 - **Dashboard:** `http://localhost:3000/dashboard.html`
 - **Wiki:** `http://localhost:3000/wiki.html`
-- **Plugins:** 36 Plugin-Manifeste unter `app/plugins/`.
+- **Plugins:** 35 Plugin-Manifeste unter `app/plugins/`.
 - **Launcher:** Go-Launcher-Quellen liegen in `build-src/`.
 
 ## Wichtige Einschränkungen

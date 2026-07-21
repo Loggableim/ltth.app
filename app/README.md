@@ -42,7 +42,7 @@ Eulerstream requires an API key. Use one of:
 - `app/.env` copied from `.env.example`
 - `EULER_API_KEY`
 
-TikFinity can be selected through the data source setting/plugin when used.
+EulerStream is the sole TikTok LIVE data source.
 
 ## Commands
 
@@ -61,7 +61,7 @@ npm run lint
 - `server.js`: main Express/Socket.IO runtime
 - `modules/database.js`: SQLite schema and persistence
 - `modules/tiktok.js`: live data source facade
-- `modules/adapters/`: Eulerstream and TikFinity adapters
+- `modules/adapters/`: EulerStream adapter
 - `modules/plugin-loader.js`: PluginAPI and lifecycle
 - `modules/ifttt/`: automation engine
 - `routes/plugin-routes.js`: plugin management API

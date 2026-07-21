@@ -301,7 +301,6 @@
       "pluginSystem": "Système de Plugins",
       "flowEngine": "Moteur de Flux",
       "autoUpdater": "Mise à Jour Automatique",
-      "tikfinity": "API TikFinity",
       "plugins": "🧩 Plugins et extensions",
       "connections": "📱 Connexions",
       "osc": "OSC / VRChat",
@@ -1292,8 +1291,6 @@
   "screenshots.slotMachine.hero.caption": "Aperçu de Slot Machine",
   "screenshots.talkingHeads.hero.alt": "Capture de l’interface Talking Heads",
   "screenshots.talkingHeads.hero.caption": "Aperçu de Talking Heads",
-  "screenshots.tikfinityApi.hero.alt": "Capture de l’interface TikFinity API",
-  "screenshots.tikfinityApi.hero.caption": "Aperçu de TikFinity API",
   "screenshots.vdoninja.hero.alt": "Capture de l’interface VDO.Ninja",
   "screenshots.vdoninja.hero.caption": "Aperçu de VDO.Ninja",
   "screenshots.viewerXp.hero.alt": "Capture de l’interface Viewer XP",
@@ -1318,7 +1315,6 @@
   "docs.plugin.clarityhud.title": "ClarityHUD",
   "docs.plugin.coinbattle.title": "CoinBattle",
   "docs.plugin.config-import.title": "Config Backup & Restore",
-  "docs.plugin.data-source.title": "Data Source Manager",
   "docs.plugin.gift-catalog.title": "Developer Guides",
   "docs.plugin.emoji-rain.title": "Emoji Rain",
   "docs.plugin.fireworks.title": "Fireworks Superplugin (Stable)",
@@ -2772,31 +2768,6 @@
           "013": "Migriere Konfigurationen aus älteren Installationspfaden (z. B. vor Version 1.0) automatisch in das neue Format. Kompatibel mit allen bisherigen Versionen."
         }
       },
-      "plugin-data-source": {
-        "text": {
-          "001": "Data Source Manager – PupCid's Little TikTool Helper",
-          "002": "Data Source Manager",
-          "003": "Data Source Manager",
-          "004": "Wähle zwischen Eulerstream und TikFinity als TikTok‑Datenquelle und schalte sie zur Laufzeit um.",
-          "005": "Jetzt herunterladen",
-          "006": "Was macht der Data Source Manager?",
-          "007": "Eulerstream Integration",
-          "008": "TikFinity Integration",
-          "009": "Umschaltung zur Laufzeit",
-          "010": "UI‑Auswahl im Admin‑Panel",
-          "011": "Kurzanleitung zur Konfiguration",
-          "012": "Schritt 1:",
-          "013": "Plugin aktivieren und in den Einstellungen die gewünschte Datenquelle auswählen.",
-          "014": "Schritt 2:",
-          "015": "API‑Keys bzw. Authentifizierungsdaten für Eulerstream oder TikFinity eingeben.",
-          "016": "Schritt 3:",
-          "017": "Im Admin‑Panel die aktive Quelle prüfen und bei Bedarf zur Laufzeit wechseln.",
-          "018": "Jetzt ausprobieren",
-          "019": "Die Datenquellenverwaltung ist sofort nach dem Download nutzbar.",
-          "020": "Jetzt herunterladen",
-          "021": "? Alle Features"
-        }
-      },
       "plugin-gcce-hud": {
         "text": {
           "001": "GCCE HUD - PupCid's Little TikTool Helper",
@@ -3385,34 +3356,6 @@
           "021": "Talking Heads aktivieren",
           "022": "Bringe deine Chat-Teilnehmer als animierte Avatare in deinen Stream.",
           "023": "? Alle Features"
-        }
-      },
-      "tikfinity-api": {
-        "text": {
-          "001": "TikFinity API Integration – PupCid's Little TikTool Helper",
-          "002": "TikFinity API Integration",
-          "003": "TikFinity API Integration",
-          "004": "Verbinde LTTH mit TikFinity für ein erweitertes Event-Ecosystem. Bidirektionaler Datenfluss, Webhooks und Echtzeit-Synchronisation für professionelle Streams.",
-          "005": "Bidirektionaler Datenfluss",
-          "006": "LTTH empfängt Events von TikFinity und sendet Aktionen zurück. Daten fließen in beide Richtungen – perfekte Synchronisation zwischen beiden Systemen in Echtzeit.",
-          "007": "Erweiterte Trigger-Events",
-          "008": "Zugriff auf TikFinity-exklusive Events, die über die Standard-TikTok-API nicht verfügbar sind. Erweiterte Gift-Daten, Milestone-Events und Community-Challenges.",
-          "009": "Exklusive Events",
-          "010": "LTTH stellt Webhook-Endpunkte bereit, die TikFinity aufrufen kann. Externe Dienste und eigene Server können so in das LTTH-Event-System integriert werden.",
-          "011": "HTTP POST",
-          "012": "API-Key Management",
-          "013": "Sichere Verwaltung von TikFinity API-Keys direkt in LTTH. Verschlüsselte Speicherung, automatische Token-Erneuerung und Connection-Health-Monitoring.",
-          "014": "WebSocket-Verbindung für minimale Latenz. Events von TikFinity werden in unter 50ms in LTTH-Flows übersetzt – kein Polling, kein Delay.",
-          "015": "Automatische Wiederverbindung bei Verbindungsabbrüchen. Exponentielles Backoff-Retry, Queue-Pufferung und Event-Replay für lückenlose Event-Verarbeitung.",
-          "016": "TikFinity-Events werden auf LTTH-interne Event-Typen gemappt. Vollständige Kompatibilität mit Flow Engine, Alert System und allen anderen LTTH-Features.",
-          "017": "Rate-Limit Handling",
-          "018": "Intelligentes Rate-Limit-Management verhindert API-Übernutzung. Event-Batching, Request-Throttling und automatisches Backoff bei 429-Antworten.",
-          "019": "Debug & Monitoring",
-          "020": "Eingebautes API-Debug-Panel zeigt alle eingehenden und ausgehenden TikFinity-Events. Request/Response-Logging, Latenz-Tracking und Fehlerdiagnose.",
-          "021": "<50ms",
-          "022": "TikFinity verbinden",
-          "023": "Erweitere dein TikTok LIVE mit TikFinity – nahtlos integriert in LTTH für ein maximales Stream-Erlebnis.",
-          "024": "? Alle Features"
         }
       },
       "toptier": {

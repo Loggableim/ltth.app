@@ -147,7 +147,7 @@ Key modules in `app/modules/`:
 
 - `database.js` — SQLite schema, settings, event logs, plugin-support tables.
 - `tiktok.js` — TikTok connector and event normalization.
-- `adapters/` — `EulerstreamAdapter.js`, `TikFinityAdapter.js`, `BaseAdapter.js`.
+- `adapters/` — `EulerstreamAdapter.js`, `BaseAdapter.js`.
 - `plugin-loader.js` (1502 lines) — PluginAPI and lifecycle.
 - `plugin-store.js` (563 lines) — Plugin store registry, install, community sources.
 - `ifttt/` — Visual automation engine (action/condition/trigger registries, engine, migration, variable store).

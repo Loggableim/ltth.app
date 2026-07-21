@@ -53,7 +53,7 @@ app/server.js
 app/modules/
   database.js
   tiktok.js
-  adapters/ (EulerstreamAdapter, TikFinityAdapter, BaseAdapter)
+  adapters/ (EulerstreamAdapter, BaseAdapter)
   plugin-loader.js
   plugin-store.js          ← plugin store registry, install, community sources
   ifttt/                   ← visual automation engine
@@ -125,7 +125,7 @@ naked/             ← reduced repo clone from 2026-04-30 (ignored by .gitignore
 
 ## Main Data Flow
 
-1. A live event arrives from Eulerstream or TikFinity through `app/modules/tiktok.js`.
+1. A live event arrives from EulerStream through `app/modules/tiktok.js`.
 2. The selected adapter normalizes and deduplicates the event.
 3. `server.js` listens for normalized events such as `gift`, `chat`, `follow`, `like`, `share`, and `subscribe`.
 4. Core handlers update alerts, goals, leaderboard stats, event logs, and IFTTT flows.
@@ -149,7 +149,7 @@ Security: HTTPS-only package URLs, SHA-256 checksum verification, safe ZIP extra
 
 - `app/server.js`: central runtime composition and route wiring
 - `app/modules/adapters/EulerstreamAdapter.js`: Eulerstream WebSocket behavior, dedupe, stats, gift catalog
-- `app/modules/adapters/TikFinityAdapter.js`: TikFinity WebSocket adapter
+- `app/modules/adapters/EulerStreamAdapter.js`: EulerStream WebSocket adapter
 - `app/modules/database.js`: schema, settings, event logs, plugin-support tables
 - `app/modules/plugin-loader.js`: PluginAPI and lifecycle
 - `app/modules/plugin-store.js`: plugin store registry, install, community sources

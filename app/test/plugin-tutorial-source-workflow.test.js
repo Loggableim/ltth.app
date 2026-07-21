@@ -84,7 +84,6 @@ describe('plugin tutorial workflow evidence', () => {
 
   test.each([
     ['advanced-timer', 'timer-reset'],
-    ['data-source', 'field-map'],
     ['coinbattle', 'match-reset'],
     ['gcce', 'command-review'],
     ['openshock', 'shock-simulation'],

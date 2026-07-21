@@ -16,7 +16,7 @@ LTTH is an event-driven local web app:
 
 ```text
 External services
-  Eulerstream / TikFinity
+  EulerStream
   OBS WebSocket
   MyInstants
   OSC / VRChat
@@ -25,7 +25,7 @@ External services
 Adapters and integrations
   app/modules/tiktok.js
   app/modules/adapters/EulerstreamAdapter.js
-  app/modules/adapters/TikFinityAdapter.js
+  app/modules/adapters/EulerStreamAdapter.js
   app/modules/obs-websocket.js
 
 Core backend
@@ -63,7 +63,7 @@ Persistence
 ## TikTok Event Flow
 
 ```text
-Eulerstream or TikFinity
+EulerStream
   -> adapter normalizes event
   -> app/modules/tiktok.js re-emits event
   -> app/server.js core handler

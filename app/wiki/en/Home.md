@@ -114,7 +114,7 @@ Actions:
 | **Web Framework** | Express | ^4.18.2 |
 | **Real-time** | Socket.io | ^4.6.1 |
 | **Database** | SQLite (better-sqlite3) | ^11.9.0 |
-| **TikTok API** | Eulerstream SDK / TikFinity Adapter | app adapters |
+| **TikTok API** | EulerStream SDK | app adapters |
 | **OBS Integration** | obs-websocket-js | ^5.0.6 |
 | **OSC Protocol** | osc | ^2.4.5 |
 | **Logging** | winston | ^3.18.3 |

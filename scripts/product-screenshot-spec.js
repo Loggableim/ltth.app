@@ -28,7 +28,6 @@ const PLUGIN_ROUTES = {
   'clarityhud': '/clarityhud/ui',
   'coinbattle': '/coinbattle/ui',
   'config-import': '/config-import/ui',
-  'data-source': '/data-source/ui',
   'emoji-rain': '/emoji-rain/ui',
   'fireworks': '/fireworks/ui',
   'flame-overlay': '/flame-overlay/ui',
