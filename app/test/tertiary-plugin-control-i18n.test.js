@@ -21,20 +21,6 @@ const repairedControls = [
     attribute: 'data-i18n-aria-label',
     key: 'plugins.webgpu-emoji-rain.form_controls.enabled_toggle_aria'
   },
-  {
-    pluginId: 'talking-heads',
-    html: 'app/plugins/talking-heads/ui.html',
-    selector: '#manualZipInput',
-    attribute: 'data-i18n-aria-label',
-    key: 'plugins.talking-heads.form_controls.manual_zip_input_aria'
-  },
-  {
-    pluginId: 'talking-heads',
-    html: 'app/plugins/talking-heads/ui.html',
-    selector: '#manualAssignBtn',
-    attribute: 'data-i18n',
-    key: 'plugins.talking-heads.form_controls.manual_assign'
-  }
 ];
 
 function flattened(value, prefix = '') {

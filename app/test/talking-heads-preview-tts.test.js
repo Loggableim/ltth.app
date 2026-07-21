@@ -151,7 +151,7 @@ describe('Talking Heads TTS Preview', () => {
     );
   });
 
-  test('TTS playback bridge ignores non-allowed TTS sources', async () => {
+  test('TTS playback bridge animates the normal TTS source', async () => {
     await plugin.init();
 
     const onCalls = mockApi.pluginLoader.on.mock.calls;
@@ -166,6 +166,10 @@ describe('Talking Heads TTS Preview', () => {
       duration: 5000
     });
 
-    expect(handleTTSEventSpy).not.toHaveBeenCalled();
+    expect(handleTTSEventSpy).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 'chat_user',
+      username: 'Chat User',
+      text: 'Chat message'
+    }));
   });
 });

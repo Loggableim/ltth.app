@@ -31,7 +31,6 @@ module.exports = [
       'public/js/matter.min.js',
       'public/js/vendor/**',
       'plugins/openshock/ui.js',
-      'plugins/talking-heads/assets/ui-old.js',
       'test/animazingpal-enhanced-features.test.js',
     ],
   },

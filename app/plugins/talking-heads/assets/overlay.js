@@ -5,6 +5,13 @@
 
 const socket = io();
 
+function t(key) {
+  if (window.i18n && typeof window.i18n.t === 'function') {
+    return window.i18n.t(key);
+  }
+  return key;
+}
+
 // Active avatar instances
 const activeAvatars = new Map();
 const SPAWN_DURATION = 1800;
@@ -202,6 +209,106 @@ class SpawnAnimator {
 const spawnAnimator = new SpawnAnimator();
 
 /**
+ * Presents a gift-awarded avatar as a short local slot draw in OBS.
+ */
+class AvatarLotteryPresenter {
+  constructor() {
+    this.root = document.getElementById('lotteryOverlay');
+    this.title = document.getElementById('lotteryTitle');
+    this.avatar = document.getElementById('lotteryAvatar');
+    this.username = document.getElementById('lotteryUsername');
+    this.message = document.getElementById('lotteryMessage');
+    this.commands = document.getElementById('lotteryCommands');
+    this.spinTimer = null;
+    this.hideTimer = null;
+  }
+
+  _show() {
+    if (!this.root) return;
+    this.root.hidden = false;
+    requestAnimationFrame(() => this.root.classList.add('is-visible'));
+  }
+
+  _hideAfter(delay) {
+    clearTimeout(this.hideTimer);
+    this.hideTimer = setTimeout(() => {
+      if (!this.root) return;
+      this.root.classList.remove('is-visible', 'is-result');
+      setTimeout(() => { this.root.hidden = true; }, 200);
+    }, delay);
+  }
+
+  _displayName(selection = {}) {
+    const character = selection.characterId || 'Neue Figur';
+    const pack = selection.packId === 'boba' ? 'Boba Animals'
+      : selection.packId === 'kenney' ? 'Kenney Monster'
+        : selection.packId === 'rgs' ? 'Character Builder' : 'Lokale Bibliothek';
+    return `${pack}: ${character}`;
+  }
+
+  start(data = {}) {
+    if (!this.root || !this.avatar) return;
+    clearInterval(this.spinTimer);
+    clearTimeout(this.hideTimer);
+
+    const candidates = Array.isArray(data.candidates) ? data.candidates.filter((candidate) => candidate?.spriteUrl) : [];
+    const winner = data.winner || {};
+    const winnerSprite = winner.sprites?.idle_neutral;
+    const duration = Math.max(800, Number(data.duration) || 2600);
+    let index = 0;
+
+    this.username.textContent = data.username || t('plugins.talking-heads.talking_heads_ui.lottery_overlay.new_supporter');
+    this.title.textContent = t('plugins.talking-heads.talking_heads_ui.lottery_overlay.drawing');
+    this.message.textContent = t('plugins.talking-heads.talking_heads_ui.lottery_overlay.running');
+    this.commands.textContent = '';
+    this.root.classList.remove('is-result');
+    this.root.classList.add('is-spinning');
+    this._show();
+
+    const spinFrames = candidates.length ? candidates : (winnerSprite ? [{ spriteUrl: winnerSprite }] : []);
+    const showNext = () => {
+      if (!spinFrames.length) return;
+      this.avatar.src = spinFrames[index % spinFrames.length].spriteUrl;
+      index += 1;
+    };
+    showNext();
+    this.spinTimer = setInterval(showNext, 110);
+
+    setTimeout(() => {
+      clearInterval(this.spinTimer);
+      this.root.classList.remove('is-spinning');
+      this.root.classList.add('is-result');
+      if (winnerSprite) this.avatar.src = winnerSprite;
+      this.title.textContent = t('plugins.talking-heads.talking_heads_ui.lottery_overlay.won');
+      this.message.textContent = this._displayName(winner.selection);
+      this.commands.textContent = `${t('plugins.talking-heads.talking_heads_ui.lottery_overlay.keep_label')}: ${data.keepCommand || '!keep'}  ·  ${t('plugins.talking-heads.talking_heads_ui.lottery_overlay.reroll_label')}: ${data.rerollCommand || '!reroll'}`;
+      this._hideAfter(10000);
+    }, Math.max(520, duration - 420));
+  }
+
+  showChoice(data = {}) {
+    if (!this.root) return;
+    clearTimeout(this.hideTimer);
+    this._show();
+    this.root.classList.remove('is-spinning');
+    this.root.classList.add('is-result');
+    this.username.textContent = data.username || t('plugins.talking-heads.talking_heads_ui.lottery_overlay.supporter');
+    if (data.command === '!keep') {
+      this.title.textContent = t('plugins.talking-heads.talking_heads_ui.lottery_overlay.kept');
+      this.message.textContent = t('plugins.talking-heads.talking_heads_ui.lottery_overlay.kept_message');
+      this.commands.textContent = t('plugins.talking-heads.talking_heads_ui.lottery_overlay.kept_hint');
+    } else {
+      this.title.textContent = t('plugins.talking-heads.talking_heads_ui.lottery_overlay.reroll_armed');
+      this.message.textContent = t('plugins.talking-heads.talking_heads_ui.lottery_overlay.reroll_message');
+      this.commands.textContent = t('plugins.talking-heads.talking_heads_ui.lottery_overlay.reroll_hint');
+    }
+    this._hideAfter(6500);
+  }
+}
+
+const avatarLotteryPresenter = new AvatarLotteryPresenter();
+
+/**
  * Avatar instance class
  */
 class AvatarInstance {
@@ -320,6 +427,15 @@ socket.on('talkingheads:animation:start', (data) => {
 // Spawn animation event for new avatars
 socket.on('talkingheads:avatar:spawn', (data = {}) => {
   spawnAnimator.trigger(data);
+});
+
+// Gift avatar lottery: animated slot draw followed by keep/reroll guidance.
+socket.on('talkingheads:avatar:lottery:start', (data = {}) => {
+  avatarLotteryPresenter.start(data);
+});
+
+socket.on('talkingheads:avatar:lottery:choice', (data = {}) => {
+  avatarLotteryPresenter.showChoice(data);
 });
 
 // Frame update event
