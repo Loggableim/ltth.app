@@ -8,6 +8,7 @@
   const framegraphModule = typeof require === 'function' ? require('./weather-framegraph') : { WeatherFramegraph: BrowserFramegraph };
   const { WeatherFramegraph } = framegraphModule;
   const WEATHER_EFFECTS = Object.freeze(['rain', 'snow', 'storm', 'fog', 'thunder', 'sunbeam', 'glitchclouds', 'aurora', 'fireflies', 'meteors', 'sakura', 'embers', 'heatwave']);
+  const PARTICLE_EFFECTS = new Set(['rain', 'snow', 'storm', 'fireflies', 'meteors', 'sakura', 'embers']);
   const QUALITY_PRESETS = Object.freeze({
     low: { particleBudget: 1200, volumetricSamples: 8, bloomPasses: 1, temporalStability: 0.35 },
     medium: { particleBudget: 2800, volumetricSamples: 16, bloomPasses: 2, temporalStability: 0.55 },
@@ -89,7 +90,7 @@
       this.metrics.resolution = { width: w, height: h };
     }
 
-    setQuality(name) { this.qualityName = QUALITY_PRESETS[name] ? name : 'auto'; this.quality = cloneQuality(this.qualityName); this.metrics.quality = { ...this.quality }; this.publishDiagnostic('quality-changed'); }
+    setQuality(name) { this.qualityName = QUALITY_PRESETS[name] ? name : 'auto'; this.quality = cloneQuality(this.qualityName); this.metrics.quality = { ...this.quality }; this.refreshParticleMetrics(); this.publishDiagnostic('quality-changed'); }
 
     recordFrameTime(frameMs) {
       this.metrics.frameMs = clamp(frameMs, 0, 1000, 0);
@@ -114,13 +115,27 @@
         fogColor: event.fogColor || 'default', colorTemperature: event.colorTemperature || 'default', glitchRgbShift: event.glitchRgbShift === true, glitchDisplacement: event.glitchDisplacement === true, glitchScanlines: event.glitchScanlines === true, glitchNoise: event.glitchNoise === true, glitchBlocks: event.glitchBlocks === true, glitchChromaticAberration: event.glitchChromaticAberration === true, glitchIntensity: clamp(event.glitchIntensity, 0, 3, 1), effectIndex: WEATHER_EFFECTS.indexOf(event.action), startedAt: performance.now ? performance.now() : Date.now()
       };
       this.effects.set(effect.action, effect);
-      // The framegraph replaces this with its command/density-derived GPU target on the next frame.
-      this.metrics.activeParticles = 0;
+      this.refreshParticleMetrics();
       this.publishDiagnostic('effect-triggered');
       return true;
     }
 
-    stop(action) { if (action) this.effects.delete(action); else this.effects.clear(); this.metrics.activeParticles = 0; this.metrics.activeParticleCommands = 0; this.publishDiagnostic('effect-stopped'); }
+    refreshParticleMetrics() {
+      const particleEffects = this.getEffectState().filter((effect) => PARTICLE_EFFECTS.has(effect.action));
+      const cap = Math.min(this.framegraph?.capacity || QUALITY_PRESETS.ultra.particleBudget, Math.max(0, this.quality.particleBudget || 0));
+      this.metrics.activeParticleCap = cap;
+      this.metrics.activeParticleCommands = particleEffects.length;
+      this.metrics.activeParticles = particleEffects.reduce((total, effect, index) => {
+        const slotsForCommand = Math.floor((cap + particleEffects.length - index - 1) / particleEffects.length);
+        return total + (effect.intensity > 0 ? Math.ceil(slotsForCommand * effect.intensity) : 0);
+      }, 0);
+    }
+
+    stop(action) {
+      if (action) { this.effects.delete(action); this.refreshParticleMetrics(); }
+      else { this.effects.clear(); this.metrics.activeParticles = 0; this.metrics.activeParticleCommands = 0; this.metrics.activeParticleCap = 0; }
+      this.publishDiagnostic('effect-stopped');
+    }
     applyConfig(config = {}) { this.adaptiveQuality = config.adaptiveQuality !== false; this.setQuality(config.qualityPreset || this.qualityName); Object.entries(config.effects || {}).forEach(([action, effect]) => { if (config.enabled !== false && effect.enabled !== false && effect.permanent) this.trigger({ action, ...effect, permanent: true }); }); }
     getEffectState() { return [...this.effects.values()].sort((a, b) => a.layer - b.layer); }
 

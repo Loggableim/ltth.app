@@ -243,6 +243,22 @@ describe('cinematic WebGPU weather renderer contract', () => {
     expect(mock.calls.dispatches.filter(([entry]) => entry === 'spawnParticles').at(-1)[1]).toBe(Math.ceil(9000 / 128));
   });
 
+  test('recomputes predicted particle metrics for a selective stop while other particle effects remain', async () => {
+    const { CinematicWeatherEngine } = require(enginePath);
+    const mock = makeMockGpu(false);
+    const canvas = { getContext: () => ({ configure: () => {}, getCurrentTexture: () => ({ createView: () => ({}) }), unconfigure: () => {} }) };
+    const engine = new CinematicWeatherEngine(canvas, { gpu: mock.gpu });
+    await engine.init();
+    engine.trigger({ action: 'rain', intensity: 1, permanent: true, layer: 20 });
+    engine.trigger({ action: 'snow', intensity: 0.5, permanent: true, layer: 30 });
+    expect(engine.getMetrics()).toMatchObject({ activeParticleCommands: 2, activeParticles: 3150 });
+    engine.stop('rain');
+    expect(engine.getEffectState().map((effect) => effect.action)).toEqual(['snow']);
+    expect(engine.getMetrics()).toMatchObject({ activeParticleCommands: 1, activeParticles: 2100, activeParticleCap: 4200 });
+    engine.stop();
+    expect(engine.getMetrics()).toMatchObject({ activeParticleCommands: 0, activeParticles: 0, activeParticleCap: 0 });
+  });
+
   test('uses command intensity for particle density and premultiplied particle opacity', async () => {
     const { CinematicWeatherEngine } = require(enginePath);
     const mock = makeMockGpu(false);
