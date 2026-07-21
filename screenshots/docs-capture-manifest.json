@@ -52292,10 +52292,6 @@
             "resourceType": "fetch"
           },
           {
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "url": "http://127.0.0.1:53190/api/settings",
             "method": "GET",
             "resourceType": "fetch"
@@ -52307,10 +52303,6 @@
           },
           {
             "url": "http://127.0.0.1:53190/api/openshock/safety",
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -53102,10 +53094,6 @@
             "resourceType": "fetch"
           },
           {
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "url": "http://127.0.0.1:53190/api/settings",
             "method": "GET",
             "resourceType": "fetch"
@@ -53117,10 +53105,6 @@
           },
           {
             "url": "http://127.0.0.1:53190/api/openshock/safety",
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "method": "GET",
             "resourceType": "fetch"
           }
@@ -53890,10 +53874,6 @@
             "resourceType": "fetch"
           },
           {
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "url": "http://127.0.0.1:53190/api/settings",
             "method": "GET",
             "resourceType": "fetch"
@@ -53905,10 +53885,6 @@
           },
           {
             "url": "http://127.0.0.1:53190/api/openshock/safety",
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -54938,10 +54914,6 @@
             "resourceType": "fetch"
           },
           {
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "url": "http://127.0.0.1:53190/dashboard.html?lang=de",
             "method": "GET",
             "resourceType": "document"
@@ -55452,10 +55424,6 @@
             "resourceType": "fetch"
           },
           {
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "url": "http://127.0.0.1:53190/api/settings",
             "method": "GET",
             "resourceType": "fetch"
@@ -55467,10 +55435,6 @@
           },
           {
             "url": "http://127.0.0.1:53190/api/openshock/safety",
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -130475,10 +130439,6 @@
             "resourceType": "other"
           },
           {
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "url": "http://127.0.0.1:55741/api/settings",
             "method": "GET",
             "resourceType": "fetch"
@@ -130510,10 +130470,6 @@
           },
           {
             "url": "http://127.0.0.1:55741/api/connection-health",
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -131290,10 +131246,6 @@
             "resourceType": "fetch"
           },
           {
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "url": "http://127.0.0.1:55741/api/plugin-store/session",
             "method": "DELETE",
             "resourceType": "fetch"
@@ -131315,10 +131267,6 @@
           },
           {
             "url": "http://127.0.0.1:55741/api/openshock/safety",
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -132110,10 +132058,6 @@
             "resourceType": "fetch"
           },
           {
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "url": "http://127.0.0.1:55741/api/settings",
             "method": "GET",
             "resourceType": "fetch"
@@ -132125,10 +132069,6 @@
           },
           {
             "url": "http://127.0.0.1:55741/api/openshock/safety",
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -132920,10 +132860,6 @@
             "resourceType": "fetch"
           },
           {
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "url": "http://127.0.0.1:55741/api/settings",
             "method": "GET",
             "resourceType": "fetch"
@@ -132935,10 +132871,6 @@
           },
           {
             "url": "http://127.0.0.1:55741/api/openshock/safety",
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -133730,10 +133662,6 @@
             "resourceType": "fetch"
           },
           {
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "url": "http://127.0.0.1:55741/api/settings",
             "method": "GET",
             "resourceType": "fetch"
@@ -133745,10 +133673,6 @@
           },
           {
             "url": "http://127.0.0.1:55741/api/openshock/safety",
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -209445,20 +209369,12 @@
             "resourceType": "fetch"
           },
           {
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "url": "http://127.0.0.1:51175/api/openshock/safety",
             "method": "GET",
             "resourceType": "fetch"
           },
           {
             "url": "http://127.0.0.1:51175/api/settings",
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "method": "GET",
             "resourceType": "fetch"
           }
@@ -210230,10 +210146,6 @@
             "resourceType": "fetch"
           },
           {
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "url": "http://127.0.0.1:51175/api/settings",
             "method": "GET",
             "resourceType": "fetch"
@@ -210245,10 +210157,6 @@
           },
           {
             "url": "http://127.0.0.1:51175/api/openshock/safety",
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -211040,10 +210948,6 @@
             "resourceType": "fetch"
           },
           {
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "url": "http://127.0.0.1:51175/api/settings",
             "method": "GET",
             "resourceType": "fetch"
@@ -211055,10 +210959,6 @@
           },
           {
             "url": "http://127.0.0.1:51175/api/openshock/safety",
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -211860,10 +211760,6 @@
             "resourceType": "fetch"
           },
           {
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "url": "http://127.0.0.1:51175/api/settings",
             "method": "GET",
             "resourceType": "fetch"
@@ -211880,10 +211776,6 @@
           },
           {
             "url": "http://127.0.0.1:51175/api/openshock/safety",
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -212666,10 +212558,6 @@
           },
           {
             "url": "http://127.0.0.1:51175/api/plugins?locale=es",
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -288396,10 +288284,6 @@
             "resourceType": "fetch"
           },
           {
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "url": "http://127.0.0.1:56385/api/connection-health",
             "method": "GET",
             "resourceType": "fetch"
@@ -288416,10 +288300,6 @@
           },
           {
             "url": "http://127.0.0.1:56385/api/openshock/safety",
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -289206,10 +289086,6 @@
             "resourceType": "fetch"
           },
           {
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "url": "http://127.0.0.1:56385/api/settings",
             "method": "GET",
             "resourceType": "fetch"
@@ -289221,10 +289097,6 @@
           },
           {
             "url": "http://127.0.0.1:56385/api/openshock/safety",
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -290006,10 +289878,6 @@
             "resourceType": "fetch"
           },
           {
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "url": "http://127.0.0.1:56385/api/plugin-store/session",
             "method": "DELETE",
             "resourceType": "fetch"
@@ -290031,10 +289899,6 @@
           },
           {
             "url": "http://127.0.0.1:56385/api/openshock/safety",
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -290826,10 +290690,6 @@
             "resourceType": "fetch"
           },
           {
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "url": "http://127.0.0.1:56385/api/settings",
             "method": "GET",
             "resourceType": "fetch"
@@ -290841,10 +290701,6 @@
           },
           {
             "url": "http://127.0.0.1:56385/api/openshock/safety",
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "method": "GET",
             "resourceType": "fetch"
           },
@@ -291646,10 +291502,6 @@
             "resourceType": "fetch"
           },
           {
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "url": "http://127.0.0.1:56385/api/settings",
             "method": "GET",
             "resourceType": "fetch"
@@ -291661,10 +291513,6 @@
           },
           {
             "url": "http://127.0.0.1:56385/api/openshock/safety",
-            "method": "GET",
-            "resourceType": "fetch"
-          },
-          {
             "method": "GET",
             "resourceType": "fetch"
           },

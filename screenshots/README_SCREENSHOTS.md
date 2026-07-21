@@ -29,7 +29,6 @@ screenshots/
 â”‚   â”œâ”€â”€ emoji-rain.html
 â”‚   â”œâ”€â”€ auto-updater.html
 â”‚   â”œâ”€â”€ chat-commands.html
-â”‚   â””â”€â”€ 
 â”œâ”€â”€ features/                      # Captured feature screenshots (generated via Puppeteer)
 â”‚   â”œâ”€â”€ .gitkeep                   # Keeps the directory tracked by git
 â”‚   â”œâ”€â”€ tts.png                    # âœ… Generated from mock
@@ -196,6 +195,5 @@ Refresh locally with `runtime/node/node.exe scripts/capture-product-screenshots.
 Use `SCREENSHOT_LANGS`, `SCREENSHOT_IDS`, and `SCREENSHOT_START_APP=false` for
 targeted captures or an already-running app. Verify the complete set with
 `runtime/node/node.exe scripts/verify-public-screenshot-coverage.js`.
-
 
 

@@ -75,7 +75,7 @@ app/modules/
   webgpu-engine/            ← experimental WebGPU engine (TypeScript)
 
 app/plugins/
-  36 plugin manifests
+  35 plugin manifests
   plugin-specific backend, UI, overlay, tests, assets
 
 app/routes/

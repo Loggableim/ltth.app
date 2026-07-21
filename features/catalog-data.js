@@ -421,7 +421,7 @@ module.exports = {
       en: 'A 3-reel engine with multi-machine support, custom sound uploads, superfan detection, and a fully customizable design for TikTok LIVE.',
       es: 'Motor de 3 carretes con soporte para varias máquinas, subida de sonidos personalizados, detección de superfans y diseño totalmente personalizable para TikTok LIVE.',
       fr: 'Moteur à 3 rouleaux avec prise en charge de plusieurs machines, import de sons personnalisés, détection des superfans et design entièrement personnalisable pour TikTok LIVE.',
-    },
+    },
     'viewer-xp': {
       en: 'Per-viewer XP tracking, a level system with overlays, leaderboards, and OBS overlay integration for TikTok LIVE.',
       es: 'Seguimiento de XP por espectador, sistema de niveles con overlays, clasificaciones e integración de overlay OBS para TikTok LIVE.',

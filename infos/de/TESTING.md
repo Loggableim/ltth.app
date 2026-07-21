@@ -87,7 +87,6 @@ After installing dependencies:
 Some behavior requires external applications or credentials:
 
 - Eulerstream API key for real TikTok LIVE connection
-- 
 - OBS Studio for OBS WebSocket actions and Browser Source testing
 - plugin-specific credentials for OpenAI, OpenShock, Speechify, etc.
 
