@@ -95,8 +95,6 @@ describe('plugin tutorial workflow evidence', () => {
     ['music-bot', 'queue-reset'],
     ['osc-bridge', 'loopback-check'],
     ['osc-bridge', 'osc-review'],
-    ['sidekick', 'local-request'],
-    ['sidekick', 'sidekick-reset'],
     ['streamalchemy', 'rule-reset'],
     ['stt-ticker', 'sample-sentence'],
     ['stt-ticker', 'ticker-reset'],

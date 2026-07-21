@@ -70,12 +70,6 @@ const plugins = {
     es: ['Bot de música', 'Permite a los espectadores solicitar, saltar y gestionar música en TikTok LIVE mediante comandos.'],
     fr: ['Bot musical', 'Permettez aux spectateurs de demander, ignorer et gérer la musique sur TikTok LIVE par commandes.']
   },
-  sidekick: {
-    en: ['Sidekick', 'Intelligent stream assistant for event analysis, automatic responses and stream analytics.'],
-    de: ['Sidekick', 'Intelligenter Stream-Assistent für Event-Analyse, automatische Antworten und Stream-Analysen.'],
-    es: ['Sidekick', 'Asistente inteligente para analizar eventos, responder automáticamente y consultar analíticas.'],
-    fr: ['Sidekick', 'Assistant de stream intelligent pour analyser les événements, répondre automatiquement et suivre les statistiques.']
-  },
   'stt-ticker': {
     en: ['STT Ticker', 'Live caption overlay that transcribes host speech for accessible OBS streams.'],
     de: ['STT-Ticker', 'Live-Untertitel-Overlay, das die Sprache des Hosts für barrierearme OBS-Streams transkribiert.'],

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AnimazingPal Stream Assistant HUD</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; }
+    body { margin: 0; background: transparent; color: #f8fafc; }
+    #hud { width: 300px; margin: 18px; padding: 16px; border: 1px solid rgba(45, 212, 191, .65); border-radius: 14px; background: rgba(8, 18, 32, .87); box-shadow: 0 14px 40px rgba(0, 0, 0, .32); }
+    .heading { display: flex; align-items: center; justify-content: space-between; font-weight: 700; letter-spacing: .02em; }
+    .status { display: inline-flex; align-items: center; gap: 6px; color: #cbd5e1; font-size: 12px; }
+    .dot { width: 8px; height: 8px; border-radius: 999px; background: #f59e0b; }
+    .dot.live { background: #22c55e; box-shadow: 0 0 10px #22c55e; }
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+    .metric { padding: 9px 7px; border-radius: 9px; background: rgba(30, 41, 59, .8); text-align: center; }
+    .metric strong { display: block; color: #5eead4; font-size: 20px; }
+    .metric span { color: #94a3b8; font-size: 10px; text-transform: uppercase; }
+    #last { min-height: 17px; margin: 12px 0 0; color: #cbd5e1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <main id="hud" aria-live="polite">
+    <div class="heading"><span data-i18n="plugins.animazingpal.live_host.stream_assistant.hud.title">Stream Assistant</span><span class="status"><i id="dot" class="dot"></i><span id="state" data-i18n="plugins.animazingpal.live_host.stream_assistant.hud.connecting">connecting</span></span></div>
+    <div class="metrics">
+      <div class="metric"><strong id="processed">0</strong><span data-i18n="plugins.animazingpal.live_host.stream_assistant.hud.events">events</span></div>
+      <div class="metric"><strong id="responses">0</strong><span data-i18n="plugins.animazingpal.live_host.stream_assistant.hud.answers">answers</span></div>
+      <div class="metric"><strong id="duplicates">0</strong><span data-i18n="plugins.animazingpal.live_host.stream_assistant.hud.deduped">deduped</span></div>
+    </div>
+    <p id="last" data-i18n="plugins.animazingpal.live_host.stream_assistant.hud.waiting">Waiting for stream events</p>
+  </main>
+  <script src="/js/i18n-client.js"></script>
+  <script>
+    (() => {
+      let pluginTranslations = {};
+      const getValue = (source, key) => key.split('.').reduce((value, part) => (
+        value && typeof value === 'object' ? value[part] : undefined
+      ), source);
+      const getLocale = () => {
+        const requested = new URLSearchParams(window.location.search).get('locale')
+          || document.documentElement.lang
+          || navigator.language
+          || 'en';
+        const normalized = String(requested).toLowerCase().split('-')[0];
+        return ['de', 'en', 'es', 'fr'].includes(normalized) ? normalized : 'en';
+      };
+      const translate = (key, fallback) => {
+        const shared = window.i18n?.t?.(key);
+        if (shared && shared !== key) return shared;
+        return getValue(pluginTranslations, key) || fallback;
+      };
+      const localizeStaticText = () => document.querySelectorAll('[data-i18n]').forEach((element) => {
+        element.textContent = translate(element.dataset.i18n, element.textContent);
+      });
+      const loadPluginTranslations = async () => {
+        try {
+          const response = await fetch(`/plugins/animazingpal/locales/${getLocale()}.json`);
+          if (response.ok) pluginTranslations = await response.json();
+        } catch (_) {
+          // The HUD remains usable with its embedded English fallbacks.
+        }
+        localizeStaticText();
+      };
+      const setText = (id, value) => { document.getElementById(id).textContent = String(value ?? 0); };
+      const update = (payload = {}) => {
+        const runtime = payload.runtime || {};
+        const analytics = payload.analytics || {};
+        const diagnostics = runtime.diagnostics || {};
+        const active = payload.config?.enabled !== false && payload.config?.muted !== true;
+        document.getElementById('dot').classList.toggle('live', active);
+        document.getElementById('state').textContent = active
+          ? translate('plugins.animazingpal.live_host.stream_assistant.hud.live', 'live')
+          : (payload.config?.muted
+            ? translate('plugins.animazingpal.live_host.stream_assistant.hud.muted', 'muted')
+            : translate('plugins.animazingpal.live_host.stream_assistant.hud.disabled', 'disabled'));
+        setText('processed', analytics.processedEvents ?? diagnostics.processedEvents);
+        setText('responses', analytics.respondedEvents ?? diagnostics.respondedEvents);
+        setText('duplicates', analytics.dedupedEvents ?? diagnostics.dedupedEvents);
+        const last = (payload.events || [])[0] || diagnostics.lastEventResult;
+        if (last) document.getElementById('last').textContent = `${last.eventType || 'event'}: ${last.reason || 'processed'}`;
+      };
+      const refresh = () => fetch('/api/animazingpal/live-host/stream-assistant/status').then(response => response.ok ? response.json() : Promise.reject(new Error('status'))).then(update).catch(() => {
+        document.getElementById('state').textContent = translate('plugins.animazingpal.live_host.stream_assistant.hud.offline', 'offline');
+        document.getElementById('dot').classList.remove('live');
+      });
+      loadPluginTranslations().then(refresh);
+      refresh();
+      window.setInterval(refresh, 5000);
+      if (typeof window.io === 'function') {
+        const socket = window.io();
+        socket.on('animazingpal:stream-assistant:event', refresh);
+        socket.on('animazingpal:stream-assistant:reset', update);
+      }
+    })();
+  </script>
+</body>
+</html>

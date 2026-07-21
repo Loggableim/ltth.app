@@ -20,9 +20,6 @@ const descriptions = {
   'music-bot': {
     root: 'music_bot', de: { name: 'Musik-Bot', description: 'Zuschauer können Musik im TikTok-LIVE-Chat anfordern, überspringen und verwalten.' }, es: { name: 'Bot de música', description: 'Permite pedir, saltar y gestionar música en TikTok LIVE mediante comandos del chat.' }, fr: { name: 'Bot musical', description: 'Les spectateurs peuvent demander, passer et gérer la musique dans le chat TikTok LIVE.' }
   },
-  sidekick: {
-    root: 'sidekick', de: { name: 'Sidekick', description: 'Intelligenter Stream-Assistent für Ereignisanalyse, automatische Antworten und Stream-Analysen.' }, es: { name: 'Sidekick', description: 'Asistente inteligente para analizar eventos, responder automáticamente y analizar el directo.' }, fr: { name: 'Sidekick', description: 'Assistant de stream intelligent pour analyser les événements, répondre automatiquement et suivre les statistiques.' }
-  },
   'stt-ticker': {
     root: 'stt_ticker', de: { name: 'STT-Ticker', description: 'Live-Untertitel-Overlay, das Host-Sprache für barrierearme OBS-Streams transkribiert.' }, es: { name: 'Ticker STT', description: 'Overlay de subtítulos en directo que transcribe la voz del host para streams OBS accesibles.' }, fr: { name: 'Ticker STT', description: 'Overlay de sous-titres en direct qui transcrit la voix de l’hôte pour des streams OBS accessibles.' }
   },

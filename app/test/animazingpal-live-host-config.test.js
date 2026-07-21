@@ -3,7 +3,8 @@ const {
   normalizeLiveHostConfig,
   sanitizeLiveHostConfig,
   applyLiveHostPreset,
-  mergeLiveHostSecrets
+  mergeLiveHostSecrets,
+  migrateSidekickConfig
 } = require('../plugins/animazingpal/brain/live-host-config');
 
 describe('AnimazingPal live host configuration', () => {
@@ -41,9 +42,59 @@ describe('AnimazingPal live host configuration', () => {
     }));
   });
 
-  test('normalizes the explicit standalone or sidekick operating mode', () => {
-    expect(normalizeLiveHostConfig({ operatingMode: 'sidekick' }).operatingMode).toBe('sidekick');
+  test('normalizes legacy operating modes into the single AnimazingPal runtime', () => {
+    expect(normalizeLiveHostConfig({ operatingMode: 'sidekick' }).operatingMode).toBe('standalone');
     expect(normalizeLiveHostConfig({ operatingMode: 'invalid' }).operatingMode).toBe('standalone');
+  });
+
+  test('defines a dedicated Stream Assistant configuration without duplicating Brain output settings', () => {
+    const configured = normalizeLiveHostConfig({
+      streamAssistant: {
+        enabled: 'true',
+        muted: 'true',
+        joinGreetings: { enabled: 'false', greetAfterSeconds: 42 },
+        batching: { windowSeconds: 11, maxItems: 4, maxChars: 180, separator: ' / ' },
+        conversation: { hostName: 'Streamer', minHostSpeechChars: 5 }
+      }
+    });
+
+    expect(configured.streamAssistant).toEqual(expect.objectContaining({
+      enabled: true,
+      muted: true,
+      joinGreetings: expect.objectContaining({ enabled: false, greetAfterSeconds: 42 }),
+      batching: expect.objectContaining({ windowSeconds: 11, maxItems: 4, maxChars: 180, separator: ' / ' }),
+      conversation: expect.objectContaining({ hostName: 'Streamer', minHostSpeechChars: 5 })
+    }));
+  });
+
+  test('maps legacy Sidekick settings into the single AnimazingPal Stream Assistant configuration', () => {
+    expect(migrateSidekickConfig).toEqual(expect.any(Function));
+
+    const migrated = migrateSidekickConfig(buildLiveHostDefaults(), {
+      output: { username: 'Rexi' },
+      comment: { enabled: false, replyThreshold: 0.71, maxRepliesPerMin: 12, decisionProbability: 0.6 },
+      conversation: { hostName: 'PupCid', minHostSpeechChars: 7, hostReplyProbability: 0.9 },
+      asr: { enabled: false, language: 'en-US', silenceTimeoutMs: 1500 },
+      joinRules: { enabled: true, greetAfterSeconds: 25 },
+      outbox: { windowSeconds: 9, maxItems: 3, maxChars: 240, separator: ' + ' },
+      muted: true
+    });
+
+    expect(migrated.response).toEqual(expect.objectContaining({
+      sidekickName: 'Rexi',
+      minDecisionScore: 0.71,
+      maxResponsesPerMinute: 12,
+      chatProbability: 0.6
+    }));
+    expect(migrated.events.chat).toEqual(expect.objectContaining({ enabled: false }));
+    expect(migrated.asr).toEqual(expect.objectContaining({ enabled: false, language: 'en-US', silenceTimeoutMs: 1500 }));
+    expect(migrated.streamAssistant).toEqual(expect.objectContaining({
+      muted: true,
+      conversation: expect.objectContaining({ hostName: 'PupCid', minHostSpeechChars: 7 }),
+      joinGreetings: expect.objectContaining({ enabled: true, greetAfterSeconds: 25 }),
+      batching: expect.objectContaining({ windowSeconds: 9, maxItems: 3, maxChars: 240, separator: ' + ' })
+    }));
+    expect(migrated.response.hostReplyProbability).toBe(0.9);
   });
 
   test('defines explicit safe defaults for every TikTok event', () => {

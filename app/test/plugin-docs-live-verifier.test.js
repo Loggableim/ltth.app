@@ -12,8 +12,8 @@ describe('deployed plugin documentation verifier', () => {
   test('plans exactly one localized live page for every guide and language', () => {
     const targets = buildLiveTargets(repoRoot, { baseUrl: 'https://ltth.app' });
 
-    expect(targets).toHaveLength(156);
-    expect(new Set(targets.map((target) => `${target.guideId}:${target.locale}`)).size).toBe(156);
+    expect(targets).toHaveLength(152);
+    expect(new Set(targets.map((target) => `${target.guideId}:${target.locale}`)).size).toBe(152);
     expect(targets).toEqual(expect.arrayContaining([
       expect.objectContaining({
         guideId: 'emoji-rain',
@@ -57,7 +57,7 @@ describe('deployed plugin documentation verifier', () => {
     ]));
   });
 
-  test('writes an incomplete report when any of the 156 deployed variants fails', async () => {
+  test('writes an incomplete report when any of the 152 deployed variants fails', async () => {
     const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-plugin-docs-live-'));
     try {
       const report = await runPluginDocsLiveVerification({
@@ -71,8 +71,8 @@ describe('deployed plugin documentation verifier', () => {
         })
       });
 
-      expect(report).toEqual(expect.objectContaining({ targetCount: 156, completedCount: 156, success: false }));
-      expect(report.results.filter((result) => !result.success)).toHaveLength(39);
+      expect(report).toEqual(expect.objectContaining({ targetCount: 152, completedCount: 152, success: false }));
+      expect(report.results.filter((result) => !result.success)).toHaveLength(38);
       expect(JSON.parse(fs.readFileSync(path.join(outputDir, 'report.json'), 'utf8')).success).toBe(false);
     } finally {
       fs.rmSync(outputDir, { recursive: true, force: true });

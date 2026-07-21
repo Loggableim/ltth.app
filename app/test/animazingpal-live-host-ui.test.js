@@ -18,6 +18,24 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('24/7 Produktionsprofil');
   });
 
+  test('presents the former Sidekick experience as the AnimazingPal Stream Assistant', () => {
+    const main = fs.readFileSync(path.join(__dirname, '../plugins/animazingpal/main.js'), 'utf8');
+
+    expect(html).toContain('Stream Assistant');
+    expect(script).toContain('renderStreamAssistant');
+    expect(script).toContain("input('streamAssistant.enabled'");
+    expect(script).toContain("input('streamAssistant.conversation.hostName'");
+    expect(script).toContain("input('streamAssistant.joinGreetings.greetAfterSeconds'");
+    expect(script).toContain("input('streamAssistant.batching.windowSeconds'");
+    expect(script).toContain('/api/animazingpal/live-host/stream-assistant/status');
+    expect(script).toContain('`${window.location.origin}/overlay/animazingpal/stream-assistant`');
+    expect(script).toContain("get('streamAssistant.migration')");
+    expect(main).toContain('/api/animazingpal/live-host/stream-assistant/status');
+    expect(main).toContain('/api/animazingpal/live-host/stream-assistant/analytics');
+    expect(main).toContain('/api/animazingpal/live-host/stream-assistant/events');
+    expect(main).toContain('/overlay/animazingpal/stream-assistant');
+  });
+
   test('covers providers, events, viewer memory, voices, audio and avatar bundles', () => {
     for (const provider of ['openai', 'gemini', 'openrouter', 'ollama']) {
       expect(script).toContain(provider);
@@ -45,7 +63,8 @@ describe('AnimazingPal live-host configuration UI', () => {
     const defaults = buildLiveHostDefaults();
     const internal = new Set([
       'source.readOnly', 'tts.engine', 'audio.outputDeviceLabel',
-      'viewerMemory.allowedProfileFields', 'avatarBundles', 'activeAvatarBundleId'
+      'viewerMemory.allowedProfileFields', 'avatarBundles', 'activeAvatarBundleId',
+      'streamAssistant.migration'
     ]);
     const leaves = [];
     const visit = (value, prefix = '') => {

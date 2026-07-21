@@ -31,8 +31,7 @@ const guide = {
   "overlay": "/plugins/interactive-story/overlay.html",
   "overlayWorkflowStepIds": ["story-overlay"],
   "related": [
-    "quiz-show",
-    "sidekick"
+    "quiz-show"
   ],
   "copy": {
     "de": {
@@ -43,8 +42,7 @@ const guide = {
       "safety": "Keine echten API-Schlüssel oder Konten eingeben; Platzhalter bleiben Platzhalter. Dieser konkrete Interactive Story Generator-Ablauf behandelt Geschichtenmodus, Abstimmung und Modelloption.",
       "troubleshooting": "Wenn Geschichtenmodus, Abstimmung und Modelloption nicht sichtbar ist, prüfe zuerst den aktiven Plugin-Status, die lokale Route und gespeicherte Testwerte.",
       "related": [
-        "quiz-show",
-        "sidekick"
+        "quiz-show"
       ]
     },
     "en": {
@@ -55,8 +53,7 @@ const guide = {
       "safety": "Do not enter real API keys or accounts; placeholders stay placeholders. This Interactive Story Generator workflow specifically covers story mode, voting, and model option.",
       "troubleshooting": "If story mode, voting, and model option is not visible, first check the active plugin status, local route, and saved test values.",
       "related": [
-        "quiz-show",
-        "sidekick"
+        "quiz-show"
       ]
     },
     "es": {
@@ -67,8 +64,7 @@ const guide = {
       "safety": "No introduzcas claves API ni cuentas reales; los marcadores siguen siendo marcadores. Este flujo concreto de Interactive Story Generator trata modo de historia, votación y opción de modelo.",
       "troubleshooting": "Si modo de historia, votación y opción de modelo no aparece, comprueba primero el estado activo del plugin, la ruta local y los valores de prueba guardados.",
       "related": [
-        "quiz-show",
-        "sidekick"
+        "quiz-show"
       ]
     },
     "fr": {
@@ -79,8 +75,7 @@ const guide = {
       "safety": "Ne saisissez aucune clé API ni compte réel ; les espaces réservés restent des espaces réservés. Ce flux spécifique de Interactive Story Generator couvre mode histoire, vote et option de modèle.",
       "troubleshooting": "Si mode histoire, vote et option de modèle n’est pas visible, vérifiez d’abord l’état actif du plugin, la route locale et les valeurs de test enregistrées.",
       "related": [
-        "quiz-show",
-        "sidekick"
+        "quiz-show"
       ]
     }
   },

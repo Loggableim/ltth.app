@@ -6,7 +6,6 @@ const plugins = [
   ['data-source', 'data_source'],
   ['gift-catalog', 'gift_catalog', 'no_gifts_available'],
   ['music-bot', 'music_bot'],
-  ['sidekick', 'sidekick'],
   ['stt-ticker', 'stt_ticker'],
   ['toptier', 'toptier'],
   ['flame-overlay', 'flame_overlay']
