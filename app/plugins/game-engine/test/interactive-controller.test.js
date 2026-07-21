@@ -404,6 +404,100 @@ describe('InteractiveController', () => {
     harness.sqlite.close();
   });
 
+  test('reconciles a timed host move when animation fails before router state changes', () => {
+    const harness = createHarness({
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 5
+      }
+    });
+    harness.controller.init();
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'animation-before-fault',
+      viewerDisplayName: 'Animation Before Fault'
+    });
+    const display = harness.controller.getState().display;
+    jest.spyOn(harness.controller.router, 'beginAnimation').mockImplementationOnce(() => {
+      throw new Error('animation rejected before state change');
+    });
+
+    expect(harness.controller.applyHostMove({
+      sessionId: match.sessionId,
+      gameType: 'connect4',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move: { column: 'D' }
+    })).toMatchObject({ success: true, sessionId: match.sessionId });
+
+    expect(harness.database.getInteractiveState(match.sessionId)).toMatchObject({
+      sessionRevision: 2,
+      turnRole: 'viewer',
+      viewerDeadlineMs: Date.now() + 5000,
+      viewerTimeRemainingMs: null
+    });
+    expect(harness.database.getInteractiveQueue()).toEqual([]);
+    expect(harness.controller.getState().hostQueue).toEqual([]);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: match.sessionId,
+      phase: 'playing',
+      viewerDeadlineMs: Date.now() + 5000
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(1);
+    expect(harness.controller.router.transitionTimer).toBeNull();
+    expect(harness.controller.router.transitionDeadline).toBeNull();
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('reconciles a timed host move when animation publish leaves an unscheduled partial state', () => {
+    const harness = createHarness({
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 5
+      }
+    });
+    harness.controller.init();
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'animation-partial-fault',
+      viewerDisplayName: 'Animation Partial Fault'
+    });
+    const display = harness.controller.getState().display;
+    harness.io.emit.mockImplementationOnce(() => {
+      throw new Error('animation publish failed after state change');
+    });
+
+    expect(harness.controller.applyHostMove({
+      sessionId: match.sessionId,
+      gameType: 'connect4',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move: { column: 'D' }
+    })).toMatchObject({ success: true, sessionId: match.sessionId });
+
+    expect(harness.database.getInteractiveState(match.sessionId)).toMatchObject({
+      sessionRevision: 2,
+      turnRole: 'viewer',
+      viewerDeadlineMs: Date.now() + 5000,
+      viewerTimeRemainingMs: null
+    });
+    expect(harness.database.getInteractiveQueue()).toEqual([]);
+    expect(harness.controller.getState().hostQueue).toEqual([]);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: match.sessionId,
+      phase: 'playing',
+      viewerDeadlineMs: Date.now() + 5000
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(1);
+    expect(harness.controller.router.transitionTimer).toBeNull();
+    expect(harness.controller.router.transitionDeadline).toBeNull();
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
   test('deduplicates a delayed viewer chat event after an intervening host move', () => {
     const harness = createHarness({ connect4HostStarts: false });
     harness.controller.init();

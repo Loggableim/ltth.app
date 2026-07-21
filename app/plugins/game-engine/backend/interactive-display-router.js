@@ -76,6 +76,11 @@ class InteractiveDisplayRouter {
     if (this.suspendedReason || (!force && ['animating', 'result'].includes(this.phase))) {
       return this.snapshot();
     }
+    if (force && this.phase === 'animating') {
+      this._clearTransition();
+      this.transitionAction = null;
+      this.transitionRemainingMs = null;
+    }
     const head = this.queue.head();
     if (this.phase === 'leaderboard') {
       if (!head && !force) return this.snapshot();
@@ -87,6 +92,7 @@ class InteractiveDisplayRouter {
     const nextSessionId = head?.sessionId ?? viewer?.sessionId ?? null;
     const nextPhase = nextSessionId == null ? 'idle' : 'playing';
     if (this.displaySessionId === nextSessionId && this.phase === nextPhase) {
+      this._resumeDisplayedTimers();
       return this.snapshot();
     }
     this._pauseDisplayedTimers();

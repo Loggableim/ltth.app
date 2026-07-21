@@ -339,6 +339,22 @@ describe('InteractiveDisplayRouter', () => {
     expect(timers.resumeViewer).toHaveBeenCalledWith(registryRows.get(1));
   });
 
+  test('force sync resumes a prepared viewer timer for the unchanged playing display', () => {
+    const visible = session({ viewerTimeRemainingMs: 5000 });
+    registryRows.set(1, visible);
+    router.sync();
+    timers.resumeViewer.mockClear();
+
+    router.sync({ force: true });
+
+    expect(router.snapshot()).toMatchObject({
+      displaySessionId: 1,
+      phase: 'playing'
+    });
+    expect(timers.resumeViewer).toHaveBeenCalledTimes(1);
+    expect(timers.resumeViewer).toHaveBeenCalledWith(visible);
+  });
+
   test('pauses the old viewer and resumes the next viewer when display ownership changes', () => {
     const first = session({ lastActivityAt: 100 });
     const second = session({

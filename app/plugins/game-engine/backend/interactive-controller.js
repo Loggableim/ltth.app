@@ -612,9 +612,14 @@ class InteractiveController {
       this._publishSessionCompletion(session, completionPayload);
     } else {
       const animationSpeed = this._bounded(session.config?.animationSpeed, 500, 100, 2000);
-      this._publishSafely('Host move display routing', session.sessionId, () => {
+      const routed = this._publishSafely('Host move display routing', session.sessionId, () => {
         this.router.beginAnimation(session.sessionId, animationSpeed);
       });
+      if (!routed) {
+        this._publishSafely('Host move display reconciliation', session.sessionId, () => {
+          this.router.sync({ force: true });
+        });
+      }
       this._publishSafely('Host move state', session.sessionId, () => this.emitState());
     }
     return { success: true, sessionId: session.sessionId, result };
