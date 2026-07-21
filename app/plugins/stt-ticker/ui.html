@@ -1256,7 +1256,7 @@
             <span id="deepgram-key-status-badge" class="badge badge-gray" data-i18n="plugins.stt-ticker.labels.nicht_gesetzt">nicht gesetzt</span>
           </div>
           <div class="inline-flex">
-            <input type="password" id="asr-deepgramApiKey" placeholder="z.B. 1234567890abcdef..." style="flex:1;min-width:200px;font-family:monospace;">
+            <input type="password" id="asr-deepgramApiKey" placeholder="z.B. 1234567890abcdef..." data-i18n-placeholder="plugins.stt-ticker.form_controls.deepgram_api_key_placeholder" style="flex:1;min-width:200px;font-family:monospace;">
             <button id="btn-test-deepgram" class="btn btn-secondary btn-sm" data-i18n="plugins.stt-ticker.stt_ticker.ui.actions.test">Test</button>
             <span id="deepgram-test-status" style="font-size:11px;"></span>
           </div>
@@ -1269,7 +1269,7 @@
             <span id="elevenlabs-key-status-badge" class="badge badge-gray" data-i18n="plugins.stt-ticker.labels.nicht_gesetzt_a305c4">nicht gesetzt</span>
           </div>
           <div class="inline-flex">
-            <input type="password" id="asr-elevenlabsApiKey" placeholder="sk_..." style="flex:1;min-width:200px;font-family:monospace;">
+            <input type="password" id="asr-elevenlabsApiKey" placeholder="sk_..." data-i18n-placeholder="plugins.stt-ticker.form_controls.elevenlabs_api_key_placeholder" style="flex:1;min-width:200px;font-family:monospace;">
             <button id="btn-test-elevenlabs" class="btn btn-secondary btn-sm" data-i18n="plugins.stt-ticker.stt_ticker.ui.actions.test">Test</button>
             <span id="elevenlabs-test-status" style="font-size:11px;"></span>
           </div>
@@ -1282,7 +1282,7 @@
             <span id="fishaudio-key-status-badge" class="badge badge-gray" data-i18n="plugins.stt-ticker.labels.nicht_gesetzt_7cc1c3">nicht gesetzt</span>
           </div>
           <div class="inline-flex">
-            <input type="password" id="asr-fishaudioApiKey" placeholder="Fish.audio API key..." style="flex:1;min-width:200px;font-family:monospace;">
+            <input type="password" id="asr-fishaudioApiKey" placeholder="Fish.audio API key..." data-i18n-placeholder="plugins.stt-ticker.form_controls.fish_audio_api_key_placeholder" style="flex:1;min-width:200px;font-family:monospace;">
             <span id="fishaudio-test-status" style="font-size:11px;color:#888;" data-i18n="plugins.stt-ticker.labels.fallback_zum_tts_plugin_key">Fallback zum TTS-Plugin-Key</span>
           </div>
           <p class="help-text"><span data-i18n="plugins.stt-ticker.labels.uberschreibt_den_fish_audio_key_aus_dem_tts">&Uuml;berschreibt den Fish.audio-Key aus dem TTS-Plugin. </span><a href="https://docs.fish.audio" target="_blank" style="color:#64B5F6;">docs.fish.audio</a></p>
@@ -1312,7 +1312,7 @@
         <hr class="section-divider">
         <div class="inline-flex" style="margin-bottom:8px;">
           <label class="mt-0" style="display:inline-flex;align-items:center;gap:4px;">
-            <input type="radio" name="languageMode" value="auto" id="language-mode-auto"> Auto-Erkennung
+                <input type="radio" name="languageMode" value="auto" id="language-mode-auto"><span data-i18n="plugins.stt-ticker.form_controls.labels.auto_detect_language"> Auto-Erkennung</span>
           </label>
           <label class="mt-0" style="display:inline-flex;align-items:center;gap:4px;">
             <input type="radio" name="languageMode" value="fixed" id="language-mode-fixed"><span data-i18n="plugins.stt-ticker.labels.feste_sprache"> Feste Sprache
@@ -1328,7 +1328,7 @@
             <select id="asr-languageFixed"></select>
           </div>
         </div>
-        <p id="deepgram-language-hint" class="help-text">Provider-Sprache hängt vom gewählten Deepgram-Modell ab. Nicht unterstützte Kombinationen werden klar abgelehnt.</p>
+        <p id="deepgram-language-hint" class="help-text" data-i18n="plugins.stt-ticker.stt_ticker.ui.messages.deepgram_language_support_hint">Provider-Sprache hängt vom gewählten Deepgram-Modell ab. Nicht unterstützte Kombinationen werden klar abgelehnt.</p>
       </div>
 
       <!-- VAD -->
@@ -1342,7 +1342,7 @@
         </div>
         <div class="inline-flex" style="gap:12px;">
           <label class="mt-0" style="flex:1;">
-            RMS-Schwelle
+                <span data-i18n="plugins.stt-ticker.form_controls.labels.rms_threshold">RMS-Schwelle</span>
             <input type="range" id="vad-rmsThreshold" min="0.005" max="0.05" step="0.001" value="0.012">
           </label>
           <span id="vad-rmsThreshold-value" style="color:#4CAF50;font-size:14px;font-weight:700;min-width:40px;">0.012</span>
@@ -1370,7 +1370,7 @@
             <span>OL</span>
             <strong data-i18n="plugins.stt-ticker.labels.ollama_cloud_api_key">Ollama Cloud API Key</strong>
           </div>
-          <input type="password" id="translation-apiKey" placeholder="ollama-key-..." style="font-family:monospace;">
+          <input type="password" id="translation-apiKey" placeholder="ollama-key-..." data-i18n-placeholder="plugins.stt-ticker.form_controls.ollama_api_key_placeholder" style="font-family:monospace;">
           <p class="help-text" data-i18n="plugins.stt-ticker.labels.wird_persistent_gespeichert_leer_lassen_aktueller_key_bleibt">Wird persistent gespeichert. Leer lassen = aktueller Key bleibt.</p>
         </div>
         <div class="grid-2">
@@ -1416,7 +1416,7 @@
             <label data-i18n="plugins.stt-ticker.labels.sprache_hinzufugen">Sprache hinzuf&uuml;gen</label>
             <div class="inline-flex">
               <select id="ml-add-lang" style="flex:1;"></select>
-              <button id="btn-add-lang" class="btn btn-primary btn-sm">+</button>
+              <button id="btn-add-lang" class="btn btn-primary btn-sm" data-i18n-aria-label="plugins.stt-ticker.form_controls.aria.add_language">+</button>
             </div>
           </div>
         </div>
@@ -1437,7 +1437,7 @@
         <div class="card-title">Finale Untertitel an VRChat senden</div>
         <label class="inline-flex" style="margin-top:0;">
           <input type="checkbox" id="vrchat-chatbox-enabled">
-          An VRChat-Chatbox senden
+          <span data-i18n="plugins.stt-ticker.form_controls.labels.send_to_vrchat_chatbox">An VRChat-Chatbox senden</span>
         </label>
         <p class="help-text" data-i18n="plugins.stt-ticker.stt_ticker.ui.help.vrchat_final_captions">Sendet nur finale Original-Untertitel nach 700 ms Bündelung. Lange Texte werden automatisch auf das VRChat-Chatbox-Limit aufgeteilt.</p>
         <div class="btn-row">
@@ -1537,7 +1537,7 @@
         const elKeyBadgeEl = document.getElementById('elevenlabs-key-status-badge');
         const fishKeyBadgeEl = document.getElementById('fishaudio-key-status-badge');
         if (asr.provider === 'deepgram') {
-          providerEl.textContent = 'Deepgram';
+          providerEl.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.provider_deepgram_name', 'Deepgram');
           providerEl.setAttribute('aria-label', translateUi(
             'plugins.stt-ticker.stt_ticker.ui.messages.provider_deepgram',
             'Deepgram speech recognition'
@@ -1604,9 +1604,7 @@
           } else if (vrchat.bridgeAvailable) {
             vrchatStatus.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.osc_bridge_ready', 'OSC Bridge ready');
             vrchatStatus.style.color = '#4CAF50';
-          } else {
-            vrchatStatus.textContent = vrchat.lastError || 'OSC-Bridge nicht verfügbar – Untertitel bleiben aktiv.';
-            vrchatStatus.textContent = translateUi(
+          } else {            vrchatStatus.textContent = translateUi(
               'plugins.stt-ticker.stt_ticker.ui.messages.osc_bridge_unavailable',
               'OSC Bridge unavailable — captions stay active.'
             );
@@ -1682,7 +1680,7 @@
       if (includeEmpty) {
         const placeholder = document.createElement('option');
         placeholder.value = '';
-        placeholder.textContent = 'Sprache w\u00e4hlen...';
+        placeholder.textContent = translateUi('plugins.stt-ticker.stt_ticker.ui.messages.choose_language', 'Choose a language');
         select.appendChild(placeholder);
       }
       for (const [code, label] of LANGUAGE_OPTIONS) {
@@ -1824,9 +1822,7 @@
         renderLangTags(ml.outputLanguages);
       }
       const status = document.getElementById('ml-status');
-      if (status && (!ml.outputLanguages || ml.outputLanguages.length === 0)) {
-        status.textContent = 'Keine Zielsprache gewählt – normale Untertitelanzeige aktiv.';
-        status.textContent = translateUi(
+      if (status && (!ml.outputLanguages || ml.outputLanguages.length === 0)) {        status.textContent = translateUi(
           'plugins.stt-ticker.stt_ticker.ui.messages.no_target_language',
           'No target language selected — standard captions are active.'
         );
@@ -1929,9 +1925,7 @@
           body: JSON.stringify({ vrchatChatbox: { enabled } })
         });
         const data = await res.json();
-        if (!data.success) throw new Error(data.error || 'Speichern fehlgeschlagen');
-            status.textContent = enabled ? 'Aktiviert – OSC-Bridge wird geprüft.' : 'Deaktiviert';
-        status.textContent = enabled
+        if (!data.success) throw new Error(data.error || 'Speichern fehlgeschlagen');        status.textContent = enabled
           ? translateUi('plugins.stt-ticker.stt_ticker.ui.messages.vrchat_enable_pending', 'Enabled — checking OSC Bridge.')
           : translateUi('plugins.stt-ticker.stt_ticker.ui.messages.vrchat_disabled', 'Disabled');
         status.style.color = enabled ? '#4CAF50' : '#888';

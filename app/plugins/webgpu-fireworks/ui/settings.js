@@ -147,14 +147,14 @@ async function requestJson(url, options = {}) {
 
 function finaleSelectorLabels() {
     return {
-        auto: t('webgpu_fireworks.finale_style_auto', 'Auto'),
-        inherit: t('webgpu_fireworks.finale_global_default', 'Use global default'),
-        builtIns: t('webgpu_fireworks.finale_built_in_shows', 'Built-in shows'),
-        custom: t('webgpu_fireworks.finale_custom_shows', 'Custom shows'),
-        unavailable: t('webgpu_fireworks.finale_unavailable', 'Unavailable'),
-        short: t('webgpu_fireworks.finale_length_short', 'Short (10 s)'),
-        medium: t('webgpu_fireworks.finale_length_medium', 'Medium (18 s)'),
-        long: t('webgpu_fireworks.finale_length_long', 'Long (28 s)')
+        auto: t('plugins.webgpu-fireworks.webgpu_fireworks.finale_style_auto', 'Auto'),
+        inherit: t('plugins.webgpu-fireworks.webgpu_fireworks.finale_global_default', 'Use global default'),
+        builtIns: t('plugins.webgpu-fireworks.webgpu_fireworks.finale_built_in_shows', 'Built-in shows'),
+        custom: t('plugins.webgpu-fireworks.webgpu_fireworks.finale_custom_shows', 'Custom shows'),
+        unavailable: t('plugins.webgpu-fireworks.webgpu_fireworks.finale_unavailable', 'Unavailable'),
+        short: t('plugins.webgpu-fireworks.webgpu_fireworks.finale_length_short', 'Short (10 s)'),
+        medium: t('plugins.webgpu-fireworks.webgpu_fireworks.finale_length_medium', 'Medium (18 s)'),
+        long: t('plugins.webgpu-fireworks.webgpu_fireworks.finale_length_long', 'Long (28 s)')
     };
 }
 
@@ -661,11 +661,11 @@ async function testSuperfanFinale() {
                 'Superfan finale submitted; renderer confirmation is pending.'
             ), 'info');
         } else {
-            showToast(window.i18n?.t('webgpu_fireworks.superfan_finale_test_success') || 'Superfan finale triggered!', 'success');
+            showToast(t('plugins.webgpu-fireworks.webgpu_fireworks.superfan_finale_test_success', 'Superfan finale triggered!'), 'success');
         }
     } catch (error) {
         console.error('[Fireworks Settings] Failed to trigger Superfan finale:', error);
-        const message = window.i18n?.t('webgpu_fireworks.superfan_finale_test_failed') || 'Failed to trigger Superfan finale';
+        const message = t('plugins.webgpu-fireworks.webgpu_fireworks.superfan_finale_test_failed', 'Failed to trigger Superfan finale');
         const detail = typeof error?.message === 'string' ? error.message.trim().slice(0, 160) : '';
         showToast(detail ? `${message}: ${detail}` : message, 'error');
     }

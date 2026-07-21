@@ -36,9 +36,9 @@ describe('OBS documentation capture batch', () => {
       }
     });
 
-    expect(records).toHaveLength(100);
-    expect(calls).toHaveLength(100);
-    expect(resetReport).toHaveBeenCalledWith({ targetCount: 100 });
+    expect(records).toHaveLength(104);
+    expect(calls).toHaveLength(104);
+    expect(resetReport).toHaveBeenCalledWith({ targetCount: 104 });
     expect(calls.every((options) => options.sceneName === 'tutorial')).toBe(true);
     expect(calls.every((options) => options.overlayUrl.startsWith('http://127.0.0.1:3000/'))).toBe(true);
     expect(calls.every((options) => options.obsUrl === 'ws://127.0.0.1:4455/')).toBe(true);

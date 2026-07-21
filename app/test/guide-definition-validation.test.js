@@ -404,7 +404,7 @@ describe('GuideDefinition contract audit', () => {
     });
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain('GuideDefinition contract audit: 38 guide(s)');
+    expect(result.stdout).toContain('GuideDefinition contract audit: 39 guide(s)');
     expect(result.stdout).toContain('0 error(s)');
   });
 });

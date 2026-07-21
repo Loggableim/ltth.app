@@ -11,9 +11,9 @@ describe('OBS documentation capture inventory', () => {
     const captures = buildObsCaptureInventory(repoRoot, { baseUrl: 'http://127.0.0.1:3000' });
 
     expect(OBS_DOCS_CAPTURE_LOCALES).toEqual(['de', 'en', 'es', 'fr']);
-    expect(captures).toHaveLength(100);
-    expect(new Set(captures.map((capture) => `${capture.plugin}:${capture.locale}`)).size).toBe(100);
-    expect(new Set(captures.map((capture) => capture.plugin)).size).toBe(25);
+    expect(captures).toHaveLength(104);
+    expect(new Set(captures.map((capture) => `${capture.plugin}:${capture.locale}`)).size).toBe(104);
+    expect(new Set(captures.map((capture) => capture.plugin)).size).toBe(26);
     expect(captures).toEqual(expect.arrayContaining([
       expect.objectContaining({
         plugin: 'emoji-rain',

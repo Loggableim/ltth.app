@@ -15,6 +15,19 @@ const imagePath = (locale, id, stepId) => locale === 'en'
   ? `/screenshots/docs/plugins/${id}/${stepId}.png`
   : `/screenshots/${locale}/docs/plugins/${id}/${stepId}.png`;
 
+function writeFileAtomically(file, contents) {
+  const temporary = path.join(
+    path.dirname(file),
+    `.${path.basename(file)}.${process.pid}.${Date.now()}.${Math.random().toString(16).slice(2)}.tmp`
+  );
+  try {
+    fs.writeFileSync(temporary, contents, 'utf8');
+    fs.renameSync(temporary, file);
+  } finally {
+    if (fs.existsSync(temporary)) fs.rmSync(temporary, { force: true });
+  }
+}
+
 const LABELS = {
   de: { contents: 'Inhalt', result: 'Dein erstes Ergebnis', requirements: 'Voraussetzungen', safety: 'Sicherheitsgrenzen', steps: 'Schritt für Schritt', expected: 'Daran erkennst du den Erfolg:', obs: 'Overlay und OBS', obsIntro: 'Füge diese URL erst in eine nicht gesendete OBS-Testszene als Browser-Quelle ein.', troubleshooting: 'Fehlerbehebung', related: 'Nächste passende Tutorials', back: 'Alle Plugin-Tutorials', status: 'Status' },
   en: { contents: 'Contents', result: 'Your first result', requirements: 'Requirements', safety: 'Safety boundaries', steps: 'Step by step', expected: 'Success signal:', obs: 'Overlay and OBS', obsIntro: 'Add this URL as a browser source in an OBS test scene that is not live first.', troubleshooting: 'Troubleshooting', related: 'Next relevant tutorials', back: 'All plugin tutorials', status: 'Status' },
@@ -165,7 +178,7 @@ function updateSitemap(guides) {
   const end = '<!-- GENERATED PLUGIN DOCS END -->';
   const urls = guides.map((guide) => `  <url>\n    <loc>https://ltth.app/docs/plugins/${guide.id}.html</loc>\n    <lastmod>2026-07-13</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.8</priority>\n${LOCALES.map((locale) => `    <xhtml:link rel="alternate" hreflang="${locale}" href="https://ltth.app/docs/plugins/${guide.id}.html?lang=${locale}"/>`).join('\n')}\n  </url>`).join('\n');
   const block = `${start}\n${urls}\n${end}`;
-  fs.writeFileSync(file, text.includes(start) ? text.replace(new RegExp(`${start}[\\s\\S]*?${end}`), block) : text.replace('</urlset>', `${block}\n</urlset>`), 'utf8');
+  writeFileAtomically(file, text.includes(start) ? text.replace(new RegExp(`${start}[\\s\\S]*?${end}`), block) : text.replace('</urlset>', `${block}\n</urlset>`));
 }
 
 function removeStaleGuidePages(guides) {
@@ -214,8 +227,8 @@ function main() {
   fs.mkdirSync(OUT, { recursive: true });
   fs.mkdirSync(GUIDE_LOCALES_OUT, { recursive: true });
   removeStaleGuidePages(guides);
-  for (const guide of guides) fs.writeFileSync(path.join(OUT, `${guide.id}.html`), renderGuideDocument(guide, values, byId), 'utf8');
-  fs.writeFileSync(path.join(OUT, 'index.json'), `${JSON.stringify(guides.map((guide) => ({ id: guide.id, name: guide.name, category: guide.category, access: guide.devStatus, devStatus: guide.devStatus, storeAvailable: guide.id === 'store-admin' || fs.existsSync(path.join(ROOT, 'plugin-store', 'packages', `${guide.id}.zip`)), image: Object.fromEntries(LOCALES.map((locale) => [locale, imagePath(locale, guide.id, guide.steps[0].id)])), translations: Object.fromEntries(LOCALES.map((locale) => [locale, { title: guide.copy[locale].title, summary: guide.copy[locale].summary, firstResult: guide.copy[locale].firstResult }])) })), null, 2)}\n`, 'utf8');
+  for (const guide of guides) writeFileAtomically(path.join(OUT, `${guide.id}.html`), renderGuideDocument(guide, values, byId));
+  writeFileAtomically(path.join(OUT, 'index.json'), `${JSON.stringify(guides.map((guide) => ({ id: guide.id, name: guide.name, category: guide.category, access: guide.devStatus, devStatus: guide.devStatus, storeAvailable: guide.id === 'store-admin' || fs.existsSync(path.join(ROOT, 'plugin-store', 'packages', `${guide.id}.zip`)), image: Object.fromEntries(LOCALES.map((locale) => [locale, imagePath(locale, guide.id, guide.steps[0].id)])), translations: Object.fromEntries(LOCALES.map((locale) => [locale, { title: guide.copy[locale].title, summary: guide.copy[locale].summary, firstResult: guide.copy[locale].firstResult }])) })), null, 2)}\n`);
   for (const locale of LOCALES) {
     const file = path.join(ROOT, 'locales', `${locale}.json`);
     const current = JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -226,11 +239,10 @@ function main() {
     const rootValues = Object.fromEntries(Object.entries(values[locale])
       .filter(([name]) => !isGuideProseKey(name, guides)));
     Object.assign(current, rootValues);
-    fs.writeFileSync(file, `${JSON.stringify(current, null, 2)}\n`, 'utf8');
-    fs.writeFileSync(
+    writeFileAtomically(file, `${JSON.stringify(current, null, 2)}\n`);
+    writeFileAtomically(
       path.join(GUIDE_LOCALES_OUT, `${locale}.json`),
-      `${JSON.stringify(guideLocaleBundle(values[locale]), null, 2)}\n`,
-      'utf8'
+      `${JSON.stringify(guideLocaleBundle(values[locale]), null, 2)}\n`
     );
   }
   updateSitemap(guides);
