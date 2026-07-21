@@ -254,6 +254,7 @@ func TestStopDetectedLTTHServersTerminatesExternalHealthPID(t *testing.T) {
 	var terminated []int
 	oldTerminate := terminateProcessTreeByPID
 	oldWait := waitForHealthyServerToStop
+	oldCommandLine := serverProcessCommandLine
 	terminateProcessTreeByPID = func(pid int) error {
 		terminated = append(terminated, pid)
 		return nil
@@ -261,9 +262,11 @@ func TestStopDetectedLTTHServersTerminatesExternalHealthPID(t *testing.T) {
 	waitForHealthyServerToStop = func(_ *Launcher, _ int, _ time.Duration) bool {
 		return true
 	}
+	serverProcessCommandLine = func(_ int) string { return filepath.Join(launcher.exeDir, "app", "server.js") }
 	defer func() {
 		terminateProcessTreeByPID = oldTerminate
 		waitForHealthyServerToStop = oldWait
+		serverProcessCommandLine = oldCommandLine
 	}()
 
 	stopped, err := launcher.stopDetectedLTTHServers("TEST")
@@ -285,9 +288,42 @@ func TestStopDetectedLTTHServersTerminatesExternalHealthPID(t *testing.T) {
 	}
 }
 
-func TestPrepareFreshBackendStartupStopsOldServerAndResetsPort(t *testing.T) {
+func TestStopDetectedLTTHServersPreservesForeignHealthPID(t *testing.T) {
+	port, closeServer := startLauncherHealthTestServer(t, 4243, "LTTH - Pup Cids little TikTool Helper")
+	defer closeServer()
+
+	launcher := NewLauncher()
+	launcher.exeDir = t.TempDir()
+	launcher.preferredPort = port
+
+	oldTerminate := terminateProcessTreeByPID
+	oldCommandLine := serverProcessCommandLine
+	terminated := false
+	terminateProcessTreeByPID = func(_ int) error {
+		terminated = true
+		return nil
+	}
+	serverProcessCommandLine = func(_ int) string { return `C:\Other\app\server.js` }
+	defer func() {
+		terminateProcessTreeByPID = oldTerminate
+		serverProcessCommandLine = oldCommandLine
+	}()
+
+	stopped, err := launcher.stopDetectedLTTHServers("TEST")
+	if err != nil {
+		t.Fatalf("foreign health process should not be treated as a stop failure: %v", err)
+	}
+	if stopped || terminated {
+		t.Fatal("foreign LTTH-looking health process must not be terminated")
+	}
+}
+
+func TestPrepareFreshBackendStartupStopsOldServerOnSelectedPort(t *testing.T) {
 	port, closeServer := startLauncherHealthTestServer(t, 5252, "LTTH - Pup Cids little TikTool Helper")
 	defer closeServer()
+	oldPortAvailable := selectedPortAvailable
+	selectedPortAvailable = func(_ int) bool { return true }
+	defer func() { selectedPortAvailable = oldPortAvailable }()
 
 	launcher := NewLauncher()
 	launcher.exeDir = t.TempDir()
@@ -298,6 +334,7 @@ func TestPrepareFreshBackendStartupStopsOldServerAndResetsPort(t *testing.T) {
 	var terminated []int
 	oldTerminate := terminateProcessTreeByPID
 	oldWait := waitForHealthyServerToStop
+	oldCommandLine := serverProcessCommandLine
 	terminateProcessTreeByPID = func(pid int) error {
 		terminated = append(terminated, pid)
 		return nil
@@ -305,9 +342,11 @@ func TestPrepareFreshBackendStartupStopsOldServerAndResetsPort(t *testing.T) {
 	waitForHealthyServerToStop = func(_ *Launcher, _ int, _ time.Duration) bool {
 		return true
 	}
+	serverProcessCommandLine = func(_ int) string { return filepath.Join(launcher.exeDir, "app", "server.js") }
 	defer func() {
 		terminateProcessTreeByPID = oldTerminate
 		waitForHealthyServerToStop = oldWait
+		serverProcessCommandLine = oldCommandLine
 	}()
 
 	stopped, err := launcher.prepareFreshBackendStartup("TEST")
@@ -317,14 +356,10 @@ func TestPrepareFreshBackendStartupStopsOldServerAndResetsPort(t *testing.T) {
 	if !stopped {
 		t.Fatal("expected old LTTH server to be stopped before fresh backend startup")
 	}
-	if launcher.preferredPort != 3000 {
-		t.Fatalf("expected launcher preferred port to reset to 3000, got %d", launcher.preferredPort)
+	if launcher.preferredPort != port {
+		t.Fatalf("expected selected launcher port %d to be preserved, got %d", port, launcher.preferredPort)
 	}
 
-	settings := launcher.loadSettings()
-	if settings.PreferredPort != 3000 {
-		t.Fatalf("expected persisted preferred port to reset to 3000, got %d", settings.PreferredPort)
-	}
 	foundExpectedPID := false
 	for _, pid := range terminated {
 		if pid == 5252 {
@@ -338,6 +373,10 @@ func TestPrepareFreshBackendStartupStopsOldServerAndResetsPort(t *testing.T) {
 }
 
 func TestPrepareFreshBackendStartupClearsStalePortFileAndStopsPortOwners(t *testing.T) {
+	oldPortAvailable := selectedPortAvailable
+	selectedPortAvailable = func(_ int) bool { return true }
+	defer func() { selectedPortAvailable = oldPortAvailable }()
+
 	launcher := NewLauncher()
 	launcher.exeDir = t.TempDir()
 	launcher.preferredPort = 3001
@@ -370,8 +409,8 @@ func TestPrepareFreshBackendStartupClearsStalePortFileAndStopsPortOwners(t *test
 	if _, err := os.Stat(launcher.runtimePortFilePath()); !os.IsNotExist(err) {
 		t.Fatalf("expected stale runtime port file to be removed, got err=%v", err)
 	}
-	if launcher.preferredPort != 3000 {
-		t.Fatalf("expected startup port to reset to 3000, got %d", launcher.preferredPort)
+	if launcher.preferredPort != 3001 {
+		t.Fatalf("expected selected startup port 3001 to be preserved, got %d", launcher.preferredPort)
 	}
 }
 
@@ -389,6 +428,108 @@ func TestBackendPortConfigPinsMaxPortToPreferredPort(t *testing.T) {
 	preferred, maxPort = backendPortConfig(4321)
 	if preferred != 4321 || maxPort != 4321 {
 		t.Fatalf("expected manual preferred port to be fixed, got %d/%d", preferred, maxPort)
+	}
+}
+
+func TestCandidatePortsUsesOnlySelectedPort(t *testing.T) {
+	launcher := NewLauncher()
+	launcher.exeDir = t.TempDir()
+	launcher.preferredPort = 4321
+	launcher.serverPort = 3000
+	if err := os.WriteFile(launcher.runtimePortFilePath(), []byte("3001"), 0644); err != nil {
+		t.Fatalf("failed to write stale runtime port file: %v", err)
+	}
+
+	ports := launcher.candidatePorts()
+	if len(ports) != 1 || ports[0] != 4321 {
+		t.Fatalf("expected only selected port 4321, got %#v", ports)
+	}
+}
+
+func TestProductionInstallArgsUseCleanProductionInstall(t *testing.T) {
+	args := productionInstallArgs()
+	if len(args) != 2 || args[0] != "ci" || args[1] != "--omit=dev" {
+		t.Fatalf("expected npm ci --omit=dev, got %#v", args)
+	}
+}
+
+func TestGoManagedEnvironmentMarksNodeSupervisor(t *testing.T) {
+	env := goManagedLauncherEnvironment([]string{"OPEN_BROWSER=false"})
+	found := false
+	for _, entry := range env {
+		if entry == "LTTH_GO_LAUNCHER_MANAGED=true" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("Go-managed launcher environment missing supervisor flag: %#v", env)
+	}
+}
+
+func TestSelectedPortInUseErrorNamesOwner(t *testing.T) {
+	err := selectedPortInUseError(4321, "other-service.exe (PID 99)")
+	if err == nil || !strings.Contains(err.Error(), "4321") || !strings.Contains(err.Error(), "other-service.exe") {
+		t.Fatalf("expected selected-port owner error, got %v", err)
+	}
+}
+
+func TestPrepareFreshBackendStartupFailsForForeignSelectedPortWithoutTermination(t *testing.T) {
+	launcher := NewLauncher()
+	launcher.exeDir = t.TempDir()
+	launcher.preferredPort = 4321
+	launcher.settings = defaultLauncherSettings()
+	launcher.settings.PreferredPort = 4321
+
+	oldPortAvailable := selectedPortAvailable
+	oldStopStale := stopStaleLTTHPortOwners
+	oldTerminate := terminateProcessTreeByPID
+	selectedPortAvailable = func(_ int) bool { return false }
+	stopStaleLTTHPortOwners = func(_ *Launcher, _ string) (bool, error) { return false, nil }
+	terminated := false
+	terminateProcessTreeByPID = func(_ int) error {
+		terminated = true
+		return nil
+	}
+	defer func() {
+		selectedPortAvailable = oldPortAvailable
+		stopStaleLTTHPortOwners = oldStopStale
+		terminateProcessTreeByPID = oldTerminate
+	}()
+
+	_, err := launcher.prepareFreshBackendStartup("TEST")
+	if err == nil || !strings.Contains(err.Error(), "4321") {
+		t.Fatalf("expected foreign selected-port error, got %v", err)
+	}
+	if terminated {
+		t.Fatal("foreign selected-port owner must not be terminated")
+	}
+}
+
+func TestStaleLauncherPIDsExcludeCurrentActiveAndForeignLaunchers(t *testing.T) {
+	exePath := `C:\LTTH\launcher.exe`
+	processes := []launcherProcessSnapshot{
+		{PID: 100, ExecutablePath: exePath, CommandLine: exePath, CreationDate: "20260721120000.000000+120"},
+		{PID: 101, ExecutablePath: exePath, CommandLine: exePath, CreationDate: "20260721110000.000000+120"},
+		{PID: 102, ExecutablePath: exePath, CommandLine: exePath, CreationDate: "20260721100000.000000+120"},
+		{PID: 202, ParentPID: 102, ExecutablePath: `C:\LTTH\runtime\node\node.exe`, CommandLine: `node.exe C:\LTTH\app\launch.js`, CreationDate: "20260721100001.000000+120"},
+		{PID: 103, ExecutablePath: `C:\Other\launcher.exe`, CommandLine: `C:\Other\launcher.exe`, CreationDate: "20260721110000.000000+120"},
+		{PID: 104, ExecutablePath: exePath, CommandLine: exePath, CreationDate: "20260721130000.000000+120"},
+	}
+
+	stale := staleLauncherPIDs(100, exePath, processes)
+	if len(stale) != 1 || stale[0] != 101 {
+		t.Fatalf("expected only orphan launcher PID 101, got %#v", stale)
+	}
+}
+
+func TestManagedLTTHProcessRequiresThisInstallationPath(t *testing.T) {
+	if isManagedLTTHProcessCommandLine(
+		`C:\Other\runtime\node\node.exe C:\Other\app\server.js`,
+		`C:\LTTH`,
+		`C:\LTTH\app`,
+	) {
+		t.Fatal("a different installation's runtime Node process must be treated as foreign")
 	}
 }
 

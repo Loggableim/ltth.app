@@ -299,6 +299,14 @@ type ServerHealthInfo struct {
 	Port    int    `json:"port"`
 }
 
+type launcherProcessSnapshot struct {
+	PID            int    `json:"ProcessId"`
+	ParentPID      int    `json:"ParentProcessId"`
+	ExecutablePath string `json:"ExecutablePath"`
+	CommandLine    string `json:"CommandLine"`
+	CreationDate   string `json:"CreationDate"`
+}
+
 type VacuumMaintenanceResult struct {
 	Success         bool   `json:"success"`
 	DeletedUsers    int64  `json:"deletedUsers"`
@@ -632,33 +640,9 @@ func (l *Launcher) readRuntimePortFile() int {
 }
 
 func (l *Launcher) candidatePorts() []int {
-	seen := map[int]bool{}
-	var ports []int
-	add := func(port int) {
-		port = normalizePort(port, 0)
-		if port == 0 || seen[port] {
-			return
-		}
-		seen[port] = true
-		ports = append(ports, port)
-	}
-
-	add(l.readRuntimePortFile())
-	add(l.serverPort)
-	add(l.preferredPort)
-
-	base := l.preferredPort
-	if base == 0 {
-		base = defaultBackendPort
-	}
-	for port := base; port <= base+50 && port <= 65535; port++ {
-		add(port)
-	}
-	for port := defaultBackendPort; port <= defaultBackendPort+50; port++ {
-		add(port)
-	}
-
-	return ports
+	// The backend is started on one explicit port. Scanning neighbouring ports
+	// makes restart and status checks slow and risks touching unrelated tools.
+	return []int{normalizePort(l.preferredPort, defaultBackendPort)}
 }
 
 func isPortAvailable(port int) bool {
@@ -737,6 +721,30 @@ func (l *Launcher) logPortDiagnostics() {
 	l.logAndSync("[WARNING] Backend port is fixed to %d; no automatic fallback port will be used.", preferred)
 }
 
+func selectedPortInUseError(port int, owner string) error {
+	owner = strings.TrimSpace(owner)
+	if owner == "" {
+		owner = "unbekannter Prozess"
+	}
+	return fmt.Errorf("Port %d ist durch einen fremden Prozess belegt: %s", port, owner)
+}
+
+func (l *Launcher) ensureSelectedPortAvailable(source string) error {
+	port := normalizePort(l.preferredPort, defaultBackendPort)
+	if selectedPortAvailable(port) {
+		return nil
+	}
+
+	owner := describePortOwner(port)
+	err := selectedPortInUseError(port, owner)
+	if source == "" {
+		source = "STARTUP"
+	}
+	l.logAndSync("[%s] %v", source, err)
+	l.updateProgressLocalized(95, "status.port_occupied", "Port %d ist belegt: %s", port, owner)
+	return err
+}
+
 func minInt(a, b int) int {
 	if a < b {
 		return a
@@ -762,6 +770,8 @@ var (
 	terminateProcessTreeByPID  = terminateProcessTreeByPIDOS
 	waitForHealthyServerToStop = defaultWaitForHealthyServerToStop
 	stopStaleLTTHPortOwners    = defaultStopStaleLTTHPortOwners
+	selectedPortAvailable      = isPortAvailable
+	serverProcessCommandLine   = windowsProcessCommandLine
 )
 
 // loadTranslations loads i18n strings from locale files
@@ -1633,7 +1643,7 @@ func (l *Launcher) prepareFreshBackendStartup(source string) (bool, error) {
 		stopped = true
 	}
 	l.clearRuntimePortFile()
-	if err := l.resetStartupPortToDefault(); err != nil {
+	if err := l.ensureSelectedPortAvailable(source); err != nil {
 		return stopped, err
 	}
 	return stopped, nil
@@ -1696,7 +1706,7 @@ func isManagedLTTHProcessCommandLine(commandLine string, exeDir string, appDir s
 		}
 	}
 
-	return strings.Contains(normalized, "/runtime/node/")
+	return false
 }
 
 func uniquePorts(ports []int) []int {
@@ -1735,7 +1745,7 @@ func defaultStopStaleLTTHPortOwners(l *Launcher, source string) (bool, error) {
 	var failures []string
 	for port, pids := range portPIDs {
 		for _, pid := range pids {
-			commandLine := windowsProcessCommandLine(pid)
+			commandLine := serverProcessCommandLine(pid)
 			if !isManagedLTTHProcessCommandLine(commandLine, l.exeDir, l.appDir) {
 				l.logAndSync("[%s] Port %d is owned by PID %d, but it does not look like this LTTH server. Owner: %s", source, port, pid, strings.TrimSpace(commandLine))
 				continue
@@ -1769,6 +1779,152 @@ func windowsProcessCommandLine(pid int) string {
 		return ""
 	}
 	return strings.TrimSpace(string(output))
+}
+
+func canonicalLauncherPath(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return ""
+	}
+	if absolute, err := filepath.Abs(path); err == nil {
+		path = absolute
+	}
+	path = filepath.Clean(path)
+	if runtime.GOOS == "windows" {
+		return strings.ToLower(path)
+	}
+	return path
+}
+
+func isNodeDescendantProcess(process launcherProcessSnapshot) bool {
+	identity := strings.ToLower(process.ExecutablePath + " " + process.CommandLine)
+	return strings.Contains(identity, "node.exe") || strings.Contains(identity, "/node") || strings.Contains(identity, "\\node")
+}
+
+func launcherProcessStartTime(process launcherProcessSnapshot) time.Time {
+	value := strings.TrimSpace(process.CreationDate)
+	if value == "" {
+		return time.Time{}
+	}
+	for _, layout := range []string{time.RFC3339Nano, time.RFC3339} {
+		if startedAt, err := time.Parse(layout, value); err == nil {
+			return startedAt
+		}
+	}
+	// Win32_Process CreationDate uses a DMTF timestamp. Its first fourteen
+	// digits are local wall-clock time and are enough for relative ordering.
+	if len(value) >= 14 {
+		if startedAt, err := time.ParseInLocation("20060102150405", value[:14], time.Local); err == nil {
+			return startedAt
+		}
+	}
+	return time.Time{}
+}
+
+func staleLauncherPIDs(currentPID int, launcherPath string, processes []launcherProcessSnapshot) []int {
+	launcherPath = canonicalLauncherPath(launcherPath)
+	if launcherPath == "" {
+		return nil
+	}
+
+	children := make(map[int][]launcherProcessSnapshot)
+	for _, process := range processes {
+		if process.ParentPID > 0 {
+			children[process.ParentPID] = append(children[process.ParentPID], process)
+		}
+	}
+
+	hasLiveNodeDescendant := func(pid int) bool {
+		pending := append([]launcherProcessSnapshot{}, children[pid]...)
+		seen := map[int]bool{}
+		for len(pending) > 0 {
+			process := pending[0]
+			pending = pending[1:]
+			if process.PID <= 0 || seen[process.PID] {
+				continue
+			}
+			seen[process.PID] = true
+			if isNodeDescendantProcess(process) {
+				return true
+			}
+			pending = append(pending, children[process.PID]...)
+		}
+		return false
+	}
+	var currentStartedAt time.Time
+	for _, process := range processes {
+		if process.PID == currentPID {
+			currentStartedAt = launcherProcessStartTime(process)
+			break
+		}
+	}
+	if currentStartedAt.IsZero() {
+		return nil
+	}
+
+	var stale []int
+	for _, process := range processes {
+		if process.PID <= 0 || process.PID == currentPID || canonicalLauncherPath(process.ExecutablePath) != launcherPath {
+			continue
+		}
+		startedAt := launcherProcessStartTime(process)
+		if !strings.EqualFold(filepath.Base(process.ExecutablePath), "launcher.exe") || startedAt.IsZero() || !startedAt.Before(currentStartedAt) || hasLiveNodeDescendant(process.PID) {
+			continue
+		}
+		stale = append(stale, process.PID)
+	}
+	return stale
+}
+
+func windowsLauncherProcessSnapshots() ([]launcherProcessSnapshot, error) {
+	if runtime.GOOS != "windows" {
+		return nil, nil
+	}
+
+	script := "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,ExecutablePath,CommandLine,CreationDate | ConvertTo-Json -Compress"
+	output, err := hiddenCommand("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script).CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("process enumeration failed: %w", err)
+	}
+
+	jsonOutput := strings.TrimSpace(string(output))
+	if jsonOutput == "" || jsonOutput == "null" {
+		return nil, nil
+	}
+
+	var snapshots []launcherProcessSnapshot
+	if err := json.Unmarshal([]byte(jsonOutput), &snapshots); err == nil {
+		return snapshots, nil
+	}
+
+	var snapshot launcherProcessSnapshot
+	if err := json.Unmarshal([]byte(jsonOutput), &snapshot); err != nil {
+		return nil, fmt.Errorf("could not parse process enumeration: %w", err)
+	}
+	return []launcherProcessSnapshot{snapshot}, nil
+}
+
+func (l *Launcher) cleanupAbandonedLauncherSiblings(reason string) {
+	if runtime.GOOS != "windows" {
+		return
+	}
+
+	executablePath, err := os.Executable()
+	if err != nil {
+		l.logAndSync("[WARNING] Could not resolve current launcher path for stale-launcher cleanup: %v", err)
+		return
+	}
+	processes, err := windowsLauncherProcessSnapshots()
+	if err != nil {
+		l.logAndSync("[WARNING] Could not inspect stale launcher processes: %v", err)
+		return
+	}
+	for _, pid := range staleLauncherPIDs(os.Getpid(), executablePath, processes) {
+		l.logAndSync("[CLEANUP] Ending abandoned launcher PID %d after %s", pid, reason)
+		if err := terminateProcessTreeByPID(pid); err != nil {
+			l.logAndSync("[WARNING] Could not end abandoned launcher PID %d: %v", pid, err)
+		}
+	}
 }
 
 func waitForPortAvailable(port int, timeout time.Duration) bool {
@@ -2700,18 +2856,14 @@ func (l *Launcher) verifyNativeModules() error {
 }
 
 func (l *Launcher) installDependencies() error {
-	l.logger.Println("[INFO] Starting npm install...")
-	l.updateProgressLocalized(45, "status.npm_install_start", "npm install wird gestartet...")
-	time.Sleep(500 * time.Millisecond)
+	l.logger.Println("[INFO] Starting npm ci --omit=dev...")
+	l.updateProgressLocalized(45, "status.npm_install_start", "npm ci --omit=dev wird gestartet...")
+	l.updateProgressLocalized(45, "status.npm_install_delay_notice", "HINWEIS: Die Installation kann bei langsamer Internetverbindung mehrere Minuten dauern. Bitte warten...")
 
-	// Show initial warning about potential delay
-	l.updateProgressLocalized(45, "status.npm_install_delay_notice", "HINWEIS: npm install kann mehrere Minuten dauern, besonders bei langsamer Internetverbindung. Bitte warten...")
-	time.Sleep(2 * time.Second)
-
-	npm := l.resolveNpmCommand()
+	npm := l.resolveNpmCommandForNode(l.nodePath)
 	l.logAndSync("[INFO] Using npm: %s", npm.Label)
 
-	cmd := npm.execCommand("install")
+	cmd := npm.execCommand(productionInstallArgs()...)
 
 	cmd.Dir = l.appDir
 
@@ -2733,8 +2885,8 @@ func (l *Launcher) installDependencies() error {
 
 	// Start the command
 	if err := cmd.Start(); err != nil {
-		l.logger.Printf("[ERROR] Failed to start npm install: %v\n", err)
-		return fmt.Errorf("Failed to start npm install: %v", err)
+		l.logger.Printf("[ERROR] Failed to start npm ci --omit=dev: %v\n", err)
+		return fmt.Errorf("failed to start npm ci --omit=dev: %w", err)
 	}
 
 	// Track progress with live updates
@@ -2817,37 +2969,14 @@ func (l *Launcher) installDependencies() error {
 
 	if err != nil {
 		stderrOutput := stderrBuf.String()
-		l.logger.Printf("[ERROR] npm install (with --cache false) failed: %v\n", err)
+		l.logger.Printf("[ERROR] npm ci --omit=dev failed: %v\n", err)
 		if stderrOutput != "" {
 			l.logger.Printf("[ERROR] npm stderr output: %s\n", stderrOutput)
 		}
-
-		// Fallback: retry without --cache flag
-		l.logger.Println("[INFO] Retrying npm install without --cache flag...")
-		l.updateProgressLocalized(50, "status.npm_install_retry", "Wiederhole npm install (Fallback ohne --cache)...")
-		time.Sleep(1 * time.Second)
-
-		retryCmd := npm.execCommand("install")
-		retryCmd.Dir = l.appDir
-		retryCmd.Env = nodeCommandEnvironment(append(os.Environ(),
-			"YOUTUBE_DL_SKIP_PYTHON_CHECK=1",
-			"PUPPETEER_SKIP_DOWNLOAD=true",
-		), l.nodePath)
-		var retryStderr bytes.Buffer
-		retryCmd.Stderr = &retryStderr
-
-		if retryErr := retryCmd.Run(); retryErr != nil {
-			if retryStderr.Len() > 0 {
-				l.logger.Printf("[ERROR] npm install retry stderr: %s\n", retryStderr.String())
-			}
-			l.logger.Printf("[ERROR] npm install retry also failed: %v\n", retryErr)
-			return fmt.Errorf("Installation fehlgeschlagen: %v", retryErr)
-		}
-
-		l.logger.Println("[SUCCESS] npm install retry (without --cache) succeeded")
+		return fmt.Errorf("npm ci --omit=dev failed: %w", err)
 	}
 
-	l.logger.Println("[SUCCESS] npm install completed successfully")
+	l.logger.Println("[SUCCESS] npm ci --omit=dev completed successfully")
 	return nil
 }
 
@@ -2869,7 +2998,7 @@ func (l *Launcher) startTool() (*exec.Cmd, error) {
 		if strings.HasPrefix(e, "LTTH_PORT=") || strings.HasPrefix(e, "LTTH_MAX_PORT=") {
 			continue
 		}
-		if strings.HasPrefix(e, "LTTH_LOG_DIR=") || strings.HasPrefix(e, "LTTH_LOG_ARCHIVE_DONE=") || strings.HasPrefix(e, "LTTH_CURRENT_LAUNCHER_LOG=") {
+		if strings.HasPrefix(e, "LTTH_LOG_DIR=") || strings.HasPrefix(e, "LTTH_LOG_ARCHIVE_DONE=") || strings.HasPrefix(e, "LTTH_CURRENT_LAUNCHER_LOG=") || strings.HasPrefix(e, "LTTH_GO_LAUNCHER_MANAGED=") {
 			continue
 		}
 		if strings.HasPrefix(e, "LTTH_SAFE_MODE=") || strings.HasPrefix(e, "DISABLE_PLUGINS=") {
@@ -2894,7 +3023,7 @@ func (l *Launcher) startTool() (*exec.Cmd, error) {
 		env = append(env, "LTTH_SAFE_MODE=true", "DISABLE_PLUGINS=true", "DISABLE_SWAGGER=true")
 		l.logAndSync("[SAFE-MODE] Starting backend with plugins disabled.")
 	}
-	cmd.Env = env
+	cmd.Env = goManagedLauncherEnvironment(env)
 
 	// Redirect both stdout and stderr to log file only (not os.Stdout because GUI mode has no console)
 	if l.logFile != nil {
@@ -2910,6 +3039,7 @@ func (l *Launcher) startTool() (*exec.Cmd, error) {
 	l.logAndSync("LTTH_PORT environment variable set to: %d", preferredPort)
 	l.logAndSync("LTTH_MAX_PORT environment variable set to: %d", maxPort)
 	l.logAndSync("LTTH_LOG_DIR environment variable set to: %s", rootLogDir)
+	l.logAndSync("LTTH_GO_LAUNCHER_MANAGED environment variable set to: true")
 	l.clearRuntimePortFile()
 	l.logPortDiagnostics()
 	l.logAndSync("--- Node.js Server Output Start ---")
@@ -3070,6 +3200,13 @@ func (l *Launcher) stopDetectedLTTHServers(source string) (bool, error) {
 			failures = append(failures, fmt.Sprintf("LTTH server on port %d did not report a PID", server.Port))
 			continue
 		}
+		if runtime.GOOS == "windows" {
+			commandLine := serverProcessCommandLine(server.PID)
+			if !isManagedLTTHProcessCommandLine(commandLine, l.exeDir, l.appDir) {
+				l.logAndSync("[%s] Port %d responds as LTTH but PID %d is not managed by this installation. Leaving it running. Owner: %s", source, server.Port, server.PID, strings.TrimSpace(commandLine))
+				continue
+			}
+		}
 
 		l.logAndSync("[%s] Existing LTTH server detected on port %d with PID %d. Stopping it before continuing.", source, server.Port, server.PID)
 		if err := terminateProcessTreeByPID(server.PID); err != nil {
@@ -3203,11 +3340,14 @@ func (l *Launcher) setPreferredPort(port int) error {
 
 func (l *Launcher) markServerStartDone(err error) {
 	l.startMu.Lock()
-	defer l.startMu.Unlock()
 	l.startupInProgress = false
 	if err != nil {
 		l.lastStartError = err.Error()
 		l.serverStarted = false
+	}
+	l.startMu.Unlock()
+	if err != nil {
+		l.cleanupAbandonedLauncherSiblings("server start failure")
 	}
 }
 
@@ -3232,6 +3372,14 @@ func (l *Launcher) manualStartServer(port int) error {
 		return err
 	} else if stopped {
 		l.updateProgressLocalized(88, "status.old_instance_stopped", "Alte Server-Instanz gestoppt.")
+	}
+	if !selectedPortAvailable(port) {
+		err := selectedPortInUseError(port, describePortOwner(port))
+		l.startMu.Lock()
+		l.lastStartError = err.Error()
+		l.startMu.Unlock()
+		l.updateProgressLocalized(95, "status.port_occupied", "%v", err)
+		return err
 	}
 
 	l.startMu.Lock()
@@ -3788,6 +3936,21 @@ type npmCommand struct {
 	Label   string
 }
 
+func productionInstallArgs() []string {
+	return []string{"ci", "--omit=dev"}
+}
+
+func goManagedLauncherEnvironment(env []string) []string {
+	result := make([]string, 0, len(env)+1)
+	for _, entry := range env {
+		if strings.HasPrefix(strings.ToUpper(entry), "LTTH_GO_LAUNCHER_MANAGED=") {
+			continue
+		}
+		result = append(result, entry)
+	}
+	return append(result, "LTTH_GO_LAUNCHER_MANAGED=true")
+}
+
 func (n npmCommand) execCommand(extraArgs ...string) *exec.Cmd {
 	args := append([]string{}, n.Args...)
 	args = append(args, extraArgs...)
@@ -4148,13 +4311,12 @@ func (l *Launcher) downloadAndApplyUpdate(release *GitHubRelease) error {
 		l.logAndSync("[WARNING] Could not write version file: %v", err)
 	}
 
-	// Re-run npm install if node_modules is missing
+	// Dependency installation is deliberately deferred until runLauncher has
+	// selected the portable Node runtime. This prevents a global Node/npm from
+	// building native modules before the supported Node 22 runtime is ready.
 	if _, err := os.Stat(filepath.Join(appDir, "node_modules")); os.IsNotExist(err) {
-		l.logAndSync("[INFO] node_modules missing after update, running npm install...")
-		l.updateProgressLocalized(9, "status.update_npm_install", "npm install nach Update...")
-		if err := l.installDependencies(); err != nil {
-			l.logAndSync("[WARNING] npm install after update failed: %v", err)
-		}
+		l.logAndSync("[INFO] node_modules missing after update; installation will run once after portable Node setup.")
+		l.updateProgressLocalized(9, "status.update_npm_install", "Abhängigkeiten werden nach Node-Setup installiert...")
 	}
 
 	l.logAndSync("[SUCCESS] Update %s applied", release.TagName)
@@ -4358,6 +4520,7 @@ func (l *Launcher) runLauncher() {
 		l.logAndSync("[ERROR] App bootstrap/update failed: %v", err)
 		l.updateProgressLocalized(5, "status.update_failed", "FEHLER: %v", err)
 		time.Sleep(5 * time.Second)
+		l.cleanupAbandonedLauncherSiblings("app bootstrap failure")
 		l.closeLogging()
 		os.Exit(1)
 	}
@@ -4374,6 +4537,7 @@ func (l *Launcher) runLauncher() {
 		l.logAndSync("[ERROR] Node.js check/install failed: %v", err)
 		l.updateProgressLocalized(10, "status.nodejs_missing", "FEHLER: Node.js konnte nicht installiert werden!")
 		time.Sleep(5 * time.Second)
+		l.cleanupAbandonedLauncherSiblings("Node.js setup failure")
 		l.closeLogging()
 		os.Exit(1)
 	}
@@ -4402,6 +4566,7 @@ func (l *Launcher) runLauncher() {
 		l.logger.Printf("[ERROR] App directory not found: %s\n", l.appDir)
 		l.updateProgressLocalized(30, "status.app_dir_missing", "FEHLER: app Verzeichnis nicht gefunden")
 		time.Sleep(5 * time.Second)
+		l.cleanupAbandonedLauncherSiblings("app directory validation failure")
 		l.closeLogging()
 		os.Exit(1)
 	}
@@ -4410,25 +4575,43 @@ func (l *Launcher) runLauncher() {
 	l.logger.Printf("[SUCCESS] App directory exists: %s\n", l.appDir)
 	time.Sleep(300 * time.Millisecond)
 
+	// Resolve the selected port before an expensive dependency operation. A
+	// foreign owner must be visible before a Node process can be spawned.
+	if stopped, err := l.prepareFreshBackendStartup("STARTUP"); err != nil {
+		l.logAndSync("[ERROR] Could not prepare backend startup: %v", err)
+		l.startMu.Lock()
+		l.lastStartError = err.Error()
+		l.startMu.Unlock()
+		l.cleanupAbandonedLauncherSiblings("backend preparation failure")
+		l.updateProgressLocalized(95, "status.port_occupied", "%v", err)
+		l.updateProgressLocalized(100, "status.manual_start_available", "Manueller Start ist im Launcher verfügbar. Port wählen oder Fremdprozess beenden.")
+		return
+	} else if stopped {
+		l.updateProgressLocalized(36, "status.old_instance_stopped", "Alte Server-Instanz gestoppt.")
+	}
+
 	// Phase 3: Check and install dependencies (35–80%)
 	l.updateProgressLocalized(35, "status.checking_dependencies", "Prüfe Abhängigkeiten...")
 	l.logger.Println("[Phase 3] Checking dependencies...")
 	time.Sleep(300 * time.Millisecond)
 
+	dependenciesInstalledThisRun := false
 	if !l.checkNodeModules() {
 		l.updateProgressLocalized(40, "status.installing_dependencies", "Installiere Abhängigkeiten...")
 		l.logger.Println("[INFO] node_modules not found, installing dependencies...")
 		time.Sleep(500 * time.Millisecond)
-		l.updateProgressLocalized(45, "status.installation_hint", "HINWEIS: npm install kann einige Minuten dauern, bitte das Fenster offen halten und warten")
+		l.updateProgressLocalized(45, "status.installation_hint", "HINWEIS: npm ci --omit=dev kann einige Minuten dauern, bitte das Fenster offen halten und warten")
 
 		err = l.installDependencies()
 		if err != nil {
 			l.logger.Printf("[ERROR] Dependency installation failed: %v\n", err)
 			l.updateProgressLocalized(45, "status.installation_failed", "FEHLER: %v", err)
 			time.Sleep(5 * time.Second)
+			l.cleanupAbandonedLauncherSiblings("dependency installation failure")
 			l.closeLogging()
 			os.Exit(1)
 		}
+		dependenciesInstalledThisRun = true
 
 		l.updateProgressLocalized(80, "status.installation_done", "Installation abgeschlossen!")
 		l.logger.Println("[SUCCESS] Dependencies installed successfully")
@@ -4460,22 +4643,28 @@ func (l *Launcher) runLauncher() {
 			reinstallNativeModule = true
 		}
 		if reinstallNativeModule {
-			l.updateProgressLocalized(83, "status.reinstalling_dependencies", "Installiere Abhaengigkeiten neu...")
-			if removeErr := l.removeNativeModulePackage("better-sqlite3"); removeErr != nil {
-				l.logAndSync("[WARNING] Could not remove broken better-sqlite3 package before reinstall: %v", removeErr)
-			}
-			if installErr := l.installDependencies(); installErr != nil {
-				l.logAndSync("[ERROR] Dependency reinstall after native module failure failed: %v", installErr)
-				l.updateProgressLocalized(95, "status.installation_failed", "FEHLER: %v", installErr)
-				time.Sleep(5 * time.Second)
-				l.closeLogging()
-				os.Exit(1)
+			if dependenciesInstalledThisRun {
+				l.logAndSync("[ERROR] Native module verification failed after the fresh npm ci --omit=dev run; refusing to start a second install in the same launcher run.")
+			} else {
+				l.updateProgressLocalized(83, "status.reinstalling_dependencies", "Installiere Abhängigkeiten neu...")
+				if removeErr := l.removeNativeModulePackage("better-sqlite3"); removeErr != nil {
+					l.logAndSync("[WARNING] Could not remove broken better-sqlite3 package before reinstall: %v", removeErr)
+				}
+				if installErr := l.installDependencies(); installErr != nil {
+					l.logAndSync("[ERROR] Dependency reinstall after native module failure failed: %v", installErr)
+					l.updateProgressLocalized(95, "status.installation_failed", "FEHLER: %v", installErr)
+					time.Sleep(5 * time.Second)
+					l.cleanupAbandonedLauncherSiblings("native dependency repair failure")
+					l.closeLogging()
+					os.Exit(1)
+				}
 			}
 		}
 		if verifyErr := l.verifyNativeModules(); verifyErr != nil {
 			l.logAndSync("[ERROR] Native modules still fail after repair: %v", verifyErr)
 			l.updateProgressLocalized(95, "status.native_modules_failed", "Native Module konnten nicht repariert werden")
 			time.Sleep(5 * time.Second)
+			l.cleanupAbandonedLauncherSiblings("native module verification failure")
 			l.closeLogging()
 			os.Exit(1)
 		}
@@ -4488,17 +4677,6 @@ func (l *Launcher) runLauncher() {
 	// Auto-fix: Create .env file if missing
 	if err := l.autoFixEnvFile(); err != nil {
 		l.logger.Printf("[WARNING] Could not auto-create .env: %v\n", err)
-	}
-
-	// Startup policy: replace old LTTH servers and launch fresh on port 3000.
-	if stopped, err := l.prepareFreshBackendStartup("STARTUP"); err != nil {
-		l.logAndSync("[ERROR] Could not prepare fresh backend startup: %v", err)
-		l.updateProgressLocalized(95, "status.stop_old_instance_failed", "Alte Server-Instanz konnte nicht gestoppt werden: %v", err)
-		l.updateProgressLocalized(100, "status.manual_start_available", "Manueller Start ist im Launcher verfügbar. Logs prüfen und Port wählen.")
-		return
-	} else if stopped {
-		l.updateProgressLocalized(86, "status.old_instance_stopped", "Alte Server-Instanz gestoppt.")
-		time.Sleep(500 * time.Millisecond)
 	}
 
 	// Auto-fix: Check port availability
@@ -4514,16 +4692,6 @@ func (l *Launcher) runLauncher() {
 	l.updateProgressLocalized(90, "status.starting_tool", "Starte Tool...")
 	l.logger.Println("[Phase 4] Starting Node.js server...")
 	time.Sleep(500 * time.Millisecond)
-
-	if stopped, err := l.stopDetectedLTTHServers("STARTUP"); err != nil {
-		l.logAndSync("[ERROR] Could not stop existing LTTH server before startup: %v", err)
-		l.updateProgressLocalized(95, "status.stop_old_instance_failed", "Alte Server-Instanz konnte nicht gestoppt werden: %v", err)
-		l.updateProgressLocalized(100, "status.manual_start_available", "Manueller Start ist im Launcher verfügbar. Logs prüfen und Port wählen.")
-		return
-	} else if stopped {
-		l.updateProgressLocalized(90, "status.old_instance_stopped", "Alte Server-Instanz gestoppt.")
-		time.Sleep(500 * time.Millisecond)
-	}
 
 	// Start the tool
 	l.startMu.Lock()
@@ -4632,9 +4800,9 @@ func (l *Launcher) runLauncher() {
 			time.Sleep(2 * time.Second)
 			l.updateProgressLocalized(97, "status.check_launcher_logs", "💡 Prüfe logs/launcher_*.log für Details")
 			time.Sleep(2 * time.Second)
-			l.updateProgressLocalized(98, "status.manual_install_hint", "💡 Oder führe manuell: cd app && npm install")
+			l.updateProgressLocalized(98, "status.manual_install_hint", "💡 Oder führe manuell: cd app && npm ci --omit=dev")
 			time.Sleep(2 * time.Second)
-			l.updateProgressLocalized(99, "status.port_check_hint", "💡 Oder prüfe ob Port 3000 frei ist")
+			l.updateProgressLocalized(99, "status.port_check_hint", "💡 Oder prüfe ob Port %d frei ist", normalizePort(l.preferredPort, defaultBackendPort))
 			time.Sleep(2 * time.Second)
 			l.markServerStartDone(fmt.Errorf("node process exited before ready: %v", err))
 			l.updateProgressLocalized(100, "status.manual_start_available", "Manueller Start ist im Launcher verfügbar. Logs prüfen und Port wählen.")

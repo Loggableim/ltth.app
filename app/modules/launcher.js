@@ -157,6 +157,15 @@ class Launcher {
         try {
             this.log.clear();
             this.log.header('TikTok Stream Tool - Launcher');
+
+            // The Go launcher already selected Node, installed dependencies and
+            // prepared the backend port. Keep this process as the server
+            // supervisor so exit code 75 profile-switch restarts still work.
+            if (process.env.LTTH_GO_LAUNCHER_MANAGED === 'true') {
+                this.log.info('Go-Launcher verwaltet Vorabprüfungen; starte Server-Supervisor...');
+                await this.startServer();
+                return;
+            }
             
             // Load cache once at start
             this._envCache = this._loadEnvCache();

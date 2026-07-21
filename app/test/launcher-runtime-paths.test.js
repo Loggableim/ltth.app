@@ -277,4 +277,36 @@ describe('launcher runtime toolchain', () => {
       launcher.checkDependencies.mock.invocationCallOrder[0]
     );
   });
+
+  test('Go-managed launch skips Node preflight but keeps the server supervisor', async () => {
+    const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-launcher-go-managed-'));
+    const launcher = createQuietLauncher(projectRoot);
+    const previousManagedValue = process.env.LTTH_GO_LAUNCHER_MANAGED;
+    process.env.LTTH_GO_LAUNCHER_MANAGED = 'true';
+
+    launcher._loadEnvCache = jest.fn(() => null);
+    launcher.checkNode = jest.fn(async () => {});
+    launcher.checkNpm = jest.fn(async () => {});
+    launcher.checkUpdates = jest.fn(async () => ({}));
+    launcher.checkDependencies = jest.fn(async () => {});
+    launcher.checkNativeModules = jest.fn(async () => {});
+    launcher.startServer = jest.fn(async () => {});
+
+    try {
+      await launcher.launch();
+    } finally {
+      if (previousManagedValue === undefined) {
+        delete process.env.LTTH_GO_LAUNCHER_MANAGED;
+      } else {
+        process.env.LTTH_GO_LAUNCHER_MANAGED = previousManagedValue;
+      }
+    }
+
+    expect(launcher.checkNode).not.toHaveBeenCalled();
+    expect(launcher.checkNpm).not.toHaveBeenCalled();
+    expect(launcher.checkUpdates).not.toHaveBeenCalled();
+    expect(launcher.checkDependencies).not.toHaveBeenCalled();
+    expect(launcher.checkNativeModules).not.toHaveBeenCalled();
+    expect(launcher.startServer).toHaveBeenCalledTimes(1);
+  });
 });

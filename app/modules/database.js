@@ -28,19 +28,6 @@ class DatabaseManager {
                 SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'settings'
             `).get();
             
-            // Test database integrity
-            try {
-                const integrityResult = this.db.pragma('integrity_check');
-                const isHealthy = Array.isArray(integrityResult) &&
-                    integrityResult.length > 0 &&
-                    integrityResult[0].integrity_check === 'ok';
-                if (!isHealthy) {
-                    throw new Error(`integrity_check failed: ${JSON.stringify(integrityResult)}`);
-                }
-            } catch (integrityError) {
-                console.error('❌ [DATABASE] Database integrity check failed:', integrityError.message);
-                throw new Error('DATABASE_CORRUPTED');
-            }
         } catch (error) {
             if (error.message === 'DATABASE_CORRUPTED' || error.message.includes('malformed') || error.message.includes('corrupt')) {
                 console.error('❌ [DATABASE] Database is corrupted. Attempting recovery...');
@@ -82,6 +69,26 @@ class DatabaseManager {
 
         // Graceful shutdown handler (nur einmal registrieren)
         this.setupShutdownHandler();
+    }
+
+    /**
+     * Runs the expensive SQLite integrity scan only when an explicit diagnosis
+     * or recovery workflow requests it. It is intentionally not part of the
+     * normal database-open path.
+     */
+    assertDatabaseIntegrity() {
+        try {
+            const integrityResult = this.db.pragma('integrity_check');
+            const isHealthy = Array.isArray(integrityResult) &&
+                integrityResult.length > 0 &&
+                integrityResult[0].integrity_check === 'ok';
+            if (!isHealthy) {
+                throw new Error(`integrity_check failed: ${JSON.stringify(integrityResult)}`);
+            }
+        } catch (integrityError) {
+            console.error('❌ [DATABASE] Database integrity check failed:', integrityError.message);
+            throw new Error('DATABASE_CORRUPTED');
+        }
     }
 
     setupShutdownHandler() {
