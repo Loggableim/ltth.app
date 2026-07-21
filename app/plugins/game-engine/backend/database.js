@@ -534,6 +534,7 @@ class GameEngineDatabase {
         display_revision INTEGER NOT NULL DEFAULT 0,
         turn_role TEXT NOT NULL CHECK(turn_role IN ('viewer', 'host')),
         viewer_deadline_ms INTEGER,
+        viewer_time_remaining_ms INTEGER,
         host_time_remaining_ms INTEGER,
         time_control TEXT,
         last_move_identity TEXT,
@@ -579,6 +580,15 @@ class GameEngineDatabase {
       INSERT OR IGNORE INTO game_interactive_meta (key, value)
       VALUES ('displayRevision', '0');
     `);
+
+    try {
+      this.db.exec(`
+        ALTER TABLE game_interactive_sessions
+        ADD COLUMN viewer_time_remaining_ms INTEGER
+      `);
+    } catch (error) {
+      // Column already exists, ignore error.
+    }
     
     // Initialize default overlay settings for all game types
     this.initializeOverlaySettings();
@@ -648,6 +658,7 @@ class GameEngineDatabase {
       displayRevision: row.display_revision,
       turnRole: row.turn_role,
       viewerDeadlineMs: row.viewer_deadline_ms,
+      viewerTimeRemainingMs: row.viewer_time_remaining_ms,
       hostTimeRemainingMs: row.host_time_remaining_ms,
       timeControl: row.time_control,
       lastMoveIdentity: row.last_move_identity,
@@ -678,9 +689,9 @@ class GameEngineDatabase {
       INSERT INTO game_interactive_sessions (
         session_id, game_type, viewer_id, viewer_display_name, host_display_name,
         state_json, session_revision, display_revision, turn_role,
-        viewer_deadline_ms, host_time_remaining_ms, time_control,
+        viewer_deadline_ms, viewer_time_remaining_ms, host_time_remaining_ms, time_control,
         last_move_identity, last_activity_at, status, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
     `).run(
       data.sessionId,
       data.gameType,
@@ -692,6 +703,7 @@ class GameEngineDatabase {
       data.displayRevision || 0,
       data.turnRole,
       data.viewerDeadlineMs ?? null,
+      data.viewerTimeRemainingMs ?? null,
       data.hostTimeRemainingMs ?? null,
       data.timeControl ?? null,
       data.lastMoveIdentity ?? null,
@@ -713,6 +725,7 @@ class GameEngineDatabase {
       displayRevision: 'display_revision',
       turnRole: 'turn_role',
       viewerDeadlineMs: 'viewer_deadline_ms',
+      viewerTimeRemainingMs: 'viewer_time_remaining_ms',
       hostTimeRemainingMs: 'host_time_remaining_ms',
       timeControl: 'time_control',
       lastMoveIdentity: 'last_move_identity',
@@ -850,7 +863,8 @@ class GameEngineDatabase {
       this.updateInteractiveState(sessionId, {
         status: 'completed',
         terminalReason: reason,
-        viewerDeadlineMs: null
+        viewerDeadlineMs: null,
+        viewerTimeRemainingMs: null
       });
       this.db.prepare(`
         UPDATE game_sessions
@@ -867,7 +881,7 @@ class GameEngineDatabase {
       const interactiveChanged = this.db.prepare(`
         UPDATE game_interactive_sessions
         SET status = 'completed', terminal_reason = 'recovery_failed',
-            viewer_deadline_ms = NULL, updated_at = ?
+            viewer_deadline_ms = NULL, viewer_time_remaining_ms = NULL, updated_at = ?
         WHERE session_id = ?
       `).run(Date.now(), sessionId).changes > 0;
       this.db.prepare(`

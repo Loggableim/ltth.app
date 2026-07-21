@@ -18,7 +18,7 @@ describe('interactive overlay contract', () => {
     expect(html).toContain("window.location.origin");
     expect(html).toContain('hostDisplayName');
     expect(html).toContain('viewerDisplayName');
-    expect(html).toContain('viewerDeadlineMs');
+    expect(html).toContain('forwardInteractiveSnapshot(frame, interactiveState);');
     expect(html).toContain('hostTimeRemainingMs');
   });
 
@@ -46,15 +46,17 @@ describe('interactive overlay contract', () => {
     expect(html).toContain('if (!latestInteractiveQueueIdle) return;');
   });
 
-  test('overlays render a sole viewer-turn session outside the host queue', () => {
+  test('overlays never invent a display from the active session list', () => {
     const unified = readOverlay('unified.html');
     const connect4 = readOverlay('connect4.html');
 
     expect(unified).toContain('function interactiveOverlayPresentation(');
-    expect(unified).toContain('state?.activeSessions?.length === 1');
+    expect(unified).not.toContain('state?.activeSessions?.length === 1');
+    expect(unified).not.toContain('viewerTurnSession');
     expect(unified).toContain('switchToGame(presentationDisplay.gameType, interactiveState);');
     expect(connect4).toContain('function interactiveConnect4Presentation(');
-    expect(connect4).toContain('state?.activeSessions?.length === 1');
+    expect(connect4).not.toContain('state?.activeSessions?.length === 1');
+    expect(connect4).not.toContain('viewerTurnSession');
     expect(connect4).toContain("socket.emit('game-engine:request-state');");
   });
 

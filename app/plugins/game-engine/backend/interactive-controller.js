@@ -48,6 +48,7 @@ class InteractiveController {
     this.queue = new InteractiveTurnQueue(database, logger, now);
     this.timers = new InteractiveTurnTimers({
       getSession: sessionId => this.registry.get(sessionId),
+      getDisplaySessionId: () => this.router?.snapshot().displaySessionId ?? null,
       database,
       onViewerTimeout: (sessionId, revision) => this._handleViewerTimeout(sessionId, revision),
       onHostTimeout: (sessionId, revision) => this._handleHostTimeout(sessionId, revision),
@@ -152,6 +153,7 @@ class InteractiveController {
       displayRevision: this.router.displayRevision,
       turnRole: session.turnRole,
       viewerDeadlineMs: session.viewerDeadlineMs,
+      viewerTimeRemainingMs: session.viewerTimeRemainingMs,
       hostTimeRemainingMs: session.gameType === 'chess'
         ? this.timers.getHostRemaining(session)
         : null,
@@ -203,10 +205,9 @@ class InteractiveController {
       if (!presentationChanged) continue;
 
       const viewerTurn = session.turnRole === 'viewer';
-      const preservedViewerDeadlineMs = viewerTurn && enabled && !scheduleChanged
-        ? session.viewerDeadlineMs
-        : null;
-      if (viewerTurn && (scheduleChanged || preservedViewerDeadlineMs != null)) {
+      if (viewerTurn && enabled && !scheduleChanged) {
+        this.timers.pauseViewer(session, { persist: false });
+      } else if (viewerTurn && !enabled) {
         this.timers.clearViewer(session.sessionId, { persist: false });
       }
       session.config = {
@@ -218,13 +219,20 @@ class InteractiveController {
       session.sessionRevision += 1;
       if (viewerTurn && enabled) {
         if (scheduleChanged) {
-          this.timers.startViewer(session, responseSeconds, { persist: false });
-        } else if (preservedViewerDeadlineMs != null) {
-          session.viewerDeadlineMs = preservedViewerDeadlineMs;
-          this.timers.restore(session);
+          this.timers.prepareViewer(session, responseSeconds, { persist: false });
         }
       }
       this.database.updateInteractiveState(session.sessionId, this._sessionRecord(session));
+      const display = this.router.snapshot();
+      if (
+        viewerTurn &&
+        enabled &&
+        display.displaySessionId === session.sessionId &&
+        display.phase === 'playing' &&
+        !display.suspendedReason
+      ) {
+        this.timers.resumeViewer(session);
+      }
       updatedSessions += 1;
     }
 
@@ -264,15 +272,18 @@ class InteractiveController {
           timeControl: row.timeControl || restored.timeControl,
           status: 'active'
         });
-        if (
-          session.turnRole === 'viewer' &&
-          session.viewerDeadlineMs != null &&
-          !this._viewerTimeoutEnabled(session.gameType)
-        ) {
-          session.viewerDeadlineMs = null;
-          this.database.updateInteractiveState(session.sessionId, { viewerDeadlineMs: null });
+        if (session.turnRole === 'viewer') {
+          if (!this._viewerTimeoutEnabled(session.gameType)) {
+            this.timers.clearViewer(session.sessionId);
+          } else if (
+            (session.viewerDeadlineMs != null && Number.isFinite(Number(session.viewerDeadlineMs))) ||
+            (session.viewerTimeRemainingMs != null && Number.isFinite(Number(session.viewerTimeRemainingMs)))
+          ) {
+            this.timers.pauseViewer(session);
+          } else {
+            this.timers.prepareViewer(session, this._viewerResponseSeconds(session.gameType));
+          }
         }
-        this.timers.restore(session);
         recovered += 1;
         this._logTransition('session_recovered', session);
       } catch (error) {
@@ -355,20 +366,22 @@ class InteractiveController {
         sessionRevision: 1,
         displayRevision: this.router.displayRevision,
         turnRole,
-        viewerDeadlineMs: turnRole === 'viewer' && this._viewerTimeoutEnabled(gameType)
-          ? now + (this._viewerResponseSeconds(gameType) * 1000)
-          : null,
+        viewerDeadlineMs: null,
+        viewerTimeRemainingMs: null,
         hostTimeRemainingMs: this._hostTimeFromState(gameType, state),
         lastMoveIdentity: null,
         lastActivityAt: now,
         status: 'active'
       });
 
+      if (turnRole === 'viewer' && this._viewerTimeoutEnabled(gameType)) {
+        this.timers.prepareViewer(session, this._viewerResponseSeconds(gameType), { persist: false });
+      }
+
       this.database.transaction(() => {
         this.database.createInteractiveState(this._sessionRecord(session));
         if (turnRole === 'host') this.queue.enqueue(session);
       });
-      if (turnRole === 'viewer') this.timers.restore(session);
       this.emitLegacyEvent?.('started', { session, state, config });
       this._logTransition('session_started', session);
       this.router.sync();
@@ -402,6 +415,7 @@ class InteractiveController {
       revision: session.sessionRevision,
       turnRole: session.turnRole,
       deadline: session.viewerDeadlineMs,
+      remaining: session.viewerTimeRemainingMs,
       lastMoveIdentity: session.lastMoveIdentity,
       lastActivityAt: session.lastActivityAt
     };
@@ -412,6 +426,7 @@ class InteractiveController {
     session.sessionRevision += 1;
     session.turnRole = session.adapter.getCurrentTurnRole();
     session.viewerDeadlineMs = null;
+    session.viewerTimeRemainingMs = null;
     session.lastMoveIdentity = moveIdentity || `${previous.revision}:${JSON.stringify(move)}`;
     session.lastActivityAt = this.now();
 
@@ -444,6 +459,7 @@ class InteractiveController {
       session.sessionRevision = previous.revision;
       session.turnRole = previous.turnRole;
       session.viewerDeadlineMs = previous.deadline;
+      session.viewerTimeRemainingMs = previous.remaining;
       session.lastMoveIdentity = previous.lastMoveIdentity;
       session.lastActivityAt = previous.lastActivityAt;
       this.timers.restore(session);
@@ -503,10 +519,16 @@ class InteractiveController {
     session.turnRole = session.adapter.getCurrentTurnRole();
     session.lastMoveIdentity = moveIdentity || `${session.sessionRevision - 1}:${JSON.stringify(envelope.move)}`;
     session.lastActivityAt = this.now();
-    session.viewerDeadlineMs = result.gameOver || session.adapter.isComplete() ||
-      !this._viewerTimeoutEnabled(session.gameType)
-      ? null
-      : this.now() + (this._viewerResponseSeconds(session.gameType) * 1000);
+    session.viewerDeadlineMs = null;
+    session.viewerTimeRemainingMs = null;
+    if (
+      !result.gameOver &&
+      !session.adapter.isComplete() &&
+      session.turnRole === 'viewer' &&
+      this._viewerTimeoutEnabled(session.gameType)
+    ) {
+      this.timers.prepareViewer(session, this._viewerResponseSeconds(session.gameType), { persist: false });
+    }
 
     try {
       this.database.transaction(() => {
@@ -526,7 +548,6 @@ class InteractiveController {
           gameResult: result
         });
       } else {
-        this.timers.restore(session);
         const animationSpeed = this._bounded(session.config?.animationSpeed, 500, 100, 2000);
         this.router.beginAnimation(session.sessionId, animationSpeed);
         this.emitState();
@@ -542,6 +563,7 @@ class InteractiveController {
       session.turnRole = 'host';
       session.lastMoveIdentity = previousLastMoveIdentity;
       session.viewerDeadlineMs = null;
+      session.viewerTimeRemainingMs = null;
       if (!this.queue.has(session.sessionId)) this.queue.enqueue(session);
       if (session.gameType === 'chess') this.timers.resumeHostChess(session);
       this.logger?.error?.(`[INTERACTIVE] Host move persistence failed for ${session.sessionId}: ${error.message}`);
@@ -604,6 +626,15 @@ class InteractiveController {
   _handleViewerTimeout(sessionId, revision) {
     const session = this.registry.get(sessionId);
     if (!session || session.sessionRevision !== revision || session.turnRole !== 'viewer') return false;
+    const display = this.router.snapshot();
+    if (
+      display.displaySessionId !== Number(sessionId) ||
+      display.sessionRevision !== revision ||
+      display.phase !== 'playing' ||
+      display.suspendedReason
+    ) {
+      return false;
+    }
     const winner = this._winnerForRole(session, 'host');
     this._markTimedOut(session, winner, 'viewer_timeout');
     session.sessionRevision += 1;

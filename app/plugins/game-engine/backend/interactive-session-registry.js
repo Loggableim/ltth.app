@@ -85,7 +85,7 @@ class InteractiveSessionRegistry {
         turnRole: session.turnRole,
         viewerDeadlineMs: session.viewerDeadlineMs ?? null,
         viewerTimeRemainingMs: session.viewerDeadlineMs == null
-          ? null
+          ? session.viewerTimeRemainingMs ?? null
           : Math.max(0, session.viewerDeadlineMs - now),
         hostTimeRemainingMs: session.hostTimeRemainingMs ?? null,
         moveCount: Number(state.moveCount) || 0,

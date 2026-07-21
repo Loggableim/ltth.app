@@ -1473,35 +1473,7 @@
     }
 
     function interactiveConnect4Presentation(state) {
-      const display = state?.display;
-      if (!display) return state;
-
-      const ownsDisplay = ['playing', 'animating', 'result', 'leaderboard'].includes(display.phase) &&
-        display.gameType === 'connect4';
-      if (ownsDisplay) return state;
-
-      const viewerTurnSession = display.phase === 'idle' && state?.activeSessions?.length === 1
-        ? state.activeSessions[0]
-        : null;
-      if (!viewerTurnSession || viewerTurnSession.gameType !== 'connect4') return state;
-
-      return {
-        ...state,
-        display: {
-          ...display,
-          displaySessionId: viewerTurnSession.sessionId,
-          gameType: viewerTurnSession.gameType,
-          sessionRevision: viewerTurnSession.sessionRevision,
-          hostDisplayName: viewerTurnSession.hostDisplayName,
-          viewerDisplayName: viewerTurnSession.viewerDisplayName,
-          state: viewerTurnSession.state,
-          currentTurnRole: viewerTurnSession.turnRole,
-          viewerDeadlineMs: viewerTurnSession.viewerDeadlineMs,
-          hostTimeRemainingMs: viewerTurnSession.hostTimeRemainingMs,
-          config: viewerTurnSession.config || display.config,
-          phase: 'playing'
-        }
-      };
+      return state;
     }
 
     function applyInteractiveSnapshot(state, { force = false, suppressEffects = false } = {}) {

@@ -1,8 +1,7 @@
 const Database = require('better-sqlite3');
 const GameEngineDatabase = require('../backend/database');
 
-function createDatabase() {
-  const sqlite = new Database(':memory:');
+function createDatabase(sqlite = new Database(':memory:')) {
   const api = {
     getDatabase: () => ({ db: sqlite }),
     log: jest.fn()
@@ -29,6 +28,7 @@ function session(overrides = {}) {
     displayRevision: 0,
     turnRole: 'viewer',
     viewerDeadlineMs: 123456,
+    viewerTimeRemainingMs: 5000,
     hostTimeRemainingMs: null,
     timeControl: null,
     lastMoveIdentity: null,
@@ -76,9 +76,62 @@ describe('GameEngineDatabase interactive persistence', () => {
       sessionRevision: 1,
       turnRole: 'viewer',
       viewerDeadlineMs: 123456,
+      viewerTimeRemainingMs: 5000,
       status: 'active'
     });
     expect(database.getActiveInteractiveStates()).toHaveLength(1);
+  });
+
+  test('adds viewer remaining time to an existing interactive session table', () => {
+    sqlite.close();
+    sqlite = new Database(':memory:');
+    sqlite.exec(`
+      CREATE TABLE game_interactive_sessions (
+        session_id INTEGER PRIMARY KEY,
+        game_type TEXT NOT NULL,
+        viewer_id TEXT NOT NULL,
+        viewer_display_name TEXT NOT NULL,
+        host_display_name TEXT NOT NULL,
+        state_json TEXT NOT NULL,
+        session_revision INTEGER NOT NULL DEFAULT 1,
+        display_revision INTEGER NOT NULL DEFAULT 0,
+        turn_role TEXT NOT NULL,
+        viewer_deadline_ms INTEGER,
+        host_time_remaining_ms INTEGER,
+        time_control TEXT,
+        last_move_identity TEXT,
+        last_activity_at INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        terminal_reason TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    `);
+
+    ({ database } = createDatabase(sqlite));
+
+    expect(sqlite.prepare(`PRAGMA table_info(game_interactive_sessions)`).all()
+      .map(column => column.name)).toContain('viewer_time_remaining_ms');
+  });
+
+  test('persists viewer deadline and remaining time together across timer states', () => {
+    database.createInteractiveState(session());
+
+    database.updateInteractiveState(41, {
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 3210
+    });
+
+    expect(database.getInteractiveState(41)).toMatchObject({
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 3210
+    });
+
+    database.completeInteractiveState(41, 'cancelled');
+    expect(database.getInteractiveState(41)).toMatchObject({
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: null
+    });
   });
 
   test('allows only one active interactive session per viewer', () => {

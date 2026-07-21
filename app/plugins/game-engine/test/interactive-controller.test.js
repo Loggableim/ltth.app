@@ -410,6 +410,75 @@ describe('InteractiveController', () => {
     harness.sqlite.close();
   });
 
+  test('prepares a new viewer timer before the display router schedules it', () => {
+    const harness = createHarness({
+      connect4HostStarts: false,
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 5
+      }
+    });
+    harness.controller.init();
+    const createState = jest.spyOn(harness.database, 'createInteractiveState');
+
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'prepared-viewer',
+      viewerDisplayName: 'Prepared Viewer'
+    });
+
+    expect(createState).toHaveBeenCalledWith(expect.objectContaining({
+      sessionId: match.sessionId,
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 5000
+    }));
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: match.sessionId,
+      phase: 'playing',
+      viewerDeadlineMs: Date.now() + 5000
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(1);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('runs a deadline for only the displayed viewer session', () => {
+    const harness = createHarness({
+      connect4HostStarts: false,
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 5
+      }
+    });
+    harness.controller.init();
+    const first = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'visible-viewer',
+      viewerDisplayName: 'Visible Viewer'
+    });
+    jest.advanceTimersByTime(2000);
+    const second = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'hidden-viewer',
+      viewerDisplayName: 'Hidden Viewer'
+    });
+
+    const sessions = harness.controller.getState().activeSessions;
+    expect(sessions.find(row => row.sessionId === first.sessionId)).toMatchObject({
+      viewerDeadlineMs: 1005000,
+      viewerTimeRemainingMs: 3000
+    });
+    expect(sessions.find(row => row.sessionId === second.sessionId)).toMatchObject({
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 5000
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(1);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
   test('rotates a completed game leaderboard only until a host board needs the overlay', () => {
     const harness = createHarness();
     harness.controller.init();
@@ -448,7 +517,7 @@ describe('InteractiveController', () => {
     harness.sqlite.close();
   });
 
-  test('suspends and resumes the same host board for a background viewer timeout result', () => {
+  test('does not consume a hidden viewer timer until that session owns the display', () => {
     const harness = createHarness({
       settings: {
         connect4ViewerTimeoutEnabled: true,
@@ -462,16 +531,37 @@ describe('InteractiveController', () => {
     const viewerFirstConfig = { streamerRole: 'player2', animationSpeed: 500 };
     const originalGetConfig = harness.controller.getConfig;
     harness.controller.getConfig = gameType => gameType === 'connect4' ? viewerFirstConfig : originalGetConfig(gameType);
-    harness.controller.startMatch({ gameType: 'connect4', viewerId: 'slow', viewerDisplayName: 'Slow' });
+    const slow = harness.controller.startMatch({ gameType: 'connect4', viewerId: 'slow', viewerDisplayName: 'Slow' });
 
     expect(harness.controller.getState().display.displaySessionId).toBe(hostBoard.sessionId);
     jest.advanceTimersByTime(5000);
-    expect(harness.controller.getState().display).toMatchObject({ phase: 'result' });
-    jest.advanceTimersByTime(3000);
+    expect(harness.finishGame).not.toHaveBeenCalled();
+    expect(harness.database.getInteractiveState(slow.sessionId)).toMatchObject({
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 5000
+    });
+
+    let display = harness.controller.getState().display;
+    expect(harness.controller.applyHostMove({
+      sessionId: hostBoard.sessionId,
+      gameType: 'connect4',
+      sessionRevision: display.sessionRevision,
+      displayRevision: display.displayRevision,
+      move: { column: 'D' }
+    })).toMatchObject({ success: true });
+    jest.advanceTimersByTime(500);
     expect(harness.controller.getState().display).toMatchObject({
-      displaySessionId: hostBoard.sessionId,
+      displaySessionId: slow.sessionId,
       phase: 'playing'
     });
+
+    jest.advanceTimersByTime(4999);
+    expect(harness.finishGame).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(1);
+    expect(harness.finishGame).toHaveBeenCalledWith(expect.objectContaining({
+      sessionId: slow.sessionId,
+      reason: 'viewer_timeout'
+    }));
 
     harness.controller.destroy();
     harness.sqlite.close();
@@ -528,7 +618,9 @@ describe('InteractiveController', () => {
     secondHarness.controller.init();
 
     expect(secondHarness.controller.getState().activeSessions[0].viewerDeadlineMs).toBeNull();
+    expect(secondHarness.controller.getState().activeSessions[0].viewerTimeRemainingMs).toBeNull();
     expect(secondHarness.database.getInteractiveState(match.sessionId).viewerDeadlineMs).toBeNull();
+    expect(secondHarness.database.getInteractiveState(match.sessionId).viewerTimeRemainingMs).toBeNull();
     expect(secondHarness.controller.timers.viewerTimers.size).toBe(0);
 
     secondHarness.controller.destroy();
@@ -711,10 +803,107 @@ describe('InteractiveController', () => {
     })).toMatchObject({ success: true });
 
     expect(harness.controller.getState().activeSessions[0]).toMatchObject({
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 45000
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(0);
+
+    jest.advanceTimersByTime(499);
+    expect(harness.controller.getState().activeSessions[0]).toMatchObject({
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 45000
+    });
+    jest.advanceTimersByTime(1);
+    expect(harness.controller.getState().activeSessions[0]).toMatchObject({
       viewerDeadlineMs: Date.now() + 45000,
       viewerTimeRemainingMs: 45000
     });
     expect(harness.controller.timers.viewerTimers.size).toBe(1);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('pauses legacy viewer deadlines before recovery routes exactly one session', () => {
+    const firstHarness = createHarness({
+      connect4HostStarts: false,
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 30
+      }
+    });
+    firstHarness.controller.init();
+    const first = firstHarness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'legacy-first',
+      viewerDisplayName: 'Legacy First'
+    });
+    const second = firstHarness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'legacy-second',
+      viewerDisplayName: 'Legacy Second'
+    });
+    firstHarness.controller.destroy();
+    firstHarness.database.updateInteractiveState(first.sessionId, {
+      viewerDeadlineMs: Date.now() + 20000,
+      viewerTimeRemainingMs: null
+    });
+    firstHarness.database.updateInteractiveState(second.sessionId, {
+      viewerDeadlineMs: Date.now() + 30000,
+      viewerTimeRemainingMs: null
+    });
+
+    const secondHarness = createHarness({
+      dbContext: firstHarness.dbContext,
+      nextSessionId: 100,
+      connect4HostStarts: false,
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 30
+      }
+    });
+    secondHarness.controller.init();
+
+    const recovered = secondHarness.controller.getState().activeSessions;
+    expect(secondHarness.controller.getState().display.displaySessionId).toBe(first.sessionId);
+    expect(recovered.find(row => row.sessionId === first.sessionId)).toMatchObject({
+      viewerDeadlineMs: Date.now() + 20000,
+      viewerTimeRemainingMs: 20000
+    });
+    expect(recovered.find(row => row.sessionId === second.sessionId)).toMatchObject({
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 30000
+    });
+    expect(secondHarness.controller.timers.viewerTimers.size).toBe(1);
+
+    secondHarness.controller.destroy();
+    firstHarness.sqlite.close();
+  });
+
+  test('rejects a late viewer timeout when the session no longer owns the display', () => {
+    const harness = createHarness({
+      connect4HostStarts: false,
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 5
+      }
+    });
+    harness.controller.init();
+    harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'displayed-timeout',
+      viewerDisplayName: 'Displayed Timeout'
+    });
+    const hidden = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'hidden-timeout',
+      viewerDisplayName: 'Hidden Timeout'
+    });
+    const hiddenSession = harness.controller.registry.get(hidden.sessionId);
+
+    expect(harness.controller._handleViewerTimeout(hidden.sessionId, hiddenSession.sessionRevision)).toBe(false);
+    expect(harness.finishGame).not.toHaveBeenCalled();
+    expect(harness.controller.registry.get(hidden.sessionId)).toBe(hiddenSession);
 
     harness.controller.destroy();
     harness.sqlite.close();

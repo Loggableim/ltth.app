@@ -583,6 +583,38 @@ describe('interactive overlay countdown DOM', () => {
     dom.window.close();
   });
 
+  test('direct Connect4 stays idle when only activeSessions claims a viewer board', () => {
+    const { dom, listeners } = loadOverlay('connect4.html');
+    const state = connect4State({ phase: 'idle', deadline: null });
+    const viewerSession = {
+      sessionId: state.display.displaySessionId,
+      gameType: 'connect4',
+      sessionRevision: state.display.sessionRevision,
+      hostDisplayName: state.display.hostDisplayName,
+      viewerDisplayName: state.display.viewerDisplayName,
+      turnRole: 'viewer',
+      viewerDeadlineMs: 105000,
+      config: state.display.config,
+      state: state.display.state
+    };
+    state.activeSessions = [viewerSession];
+    Object.assign(state.display, {
+      displaySessionId: null,
+      gameType: null,
+      sessionRevision: null,
+      hostDisplayName: null,
+      viewerDisplayName: null,
+      currentTurnRole: null,
+      state: null
+    });
+
+    listeners.get('game-engine:interactive-state')(state);
+
+    expect(dom.window.document.getElementById('game-container').classList.contains('active')).toBe(false);
+    expect(dom.window.document.getElementById('interactive-viewer-countdown').hidden).toBe(true);
+    dom.window.close();
+  });
+
   test('direct Connect4 never constructs audio or falls back for a disabled custom event', () => {
     const { dom, AudioConstructor, audioPlay } = loadOverlay('connect4.html');
 
@@ -944,6 +976,38 @@ describe('interactive overlay countdown DOM', () => {
     expect(postMessage).toHaveBeenCalledTimes(1);
     expect(dom.window.document.getElementById('interactive-viewer-countdown')).toBeNull();
 
+    dom.window.close();
+  });
+
+  test('unified stays idle when only activeSessions claims a viewer board', () => {
+    const { dom, listeners } = loadOverlay('unified.html');
+    const state = connect4State({ phase: 'idle', deadline: null });
+    const viewerSession = {
+      sessionId: state.display.displaySessionId,
+      gameType: 'connect4',
+      sessionRevision: state.display.sessionRevision,
+      hostDisplayName: state.display.hostDisplayName,
+      viewerDisplayName: state.display.viewerDisplayName,
+      turnRole: 'viewer',
+      viewerDeadlineMs: 105000,
+      config: state.display.config,
+      state: state.display.state
+    };
+    state.activeSessions = [viewerSession];
+    Object.assign(state.display, {
+      displaySessionId: null,
+      gameType: null,
+      sessionRevision: null,
+      hostDisplayName: null,
+      viewerDisplayName: null,
+      currentTurnRole: null,
+      state: null
+    });
+
+    listeners.get('game-engine:interactive-state')(state);
+
+    expect(dom.window.document.getElementById('interactive-matchup').classList.contains('visible')).toBe(false);
+    expect(dom.window.document.getElementById('idle-state').classList.contains('visible')).toBe(true);
     dom.window.close();
   });
 
