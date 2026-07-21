@@ -115,9 +115,14 @@ class InteractiveDisplayRouter {
   _scheduleTransition(durationMs, action) {
     this._clearTransition();
     const delay = Math.max(0, Number(durationMs) || 0);
+    this.transitionAction = action;
+    this.transitionRemainingMs = null;
+    if (this.suspendedReason) {
+      this.transitionRemainingMs = delay;
+      return;
+    }
     const revision = this.displayRevision;
     this.transitionDeadline = this.now() + delay;
-    this.transitionAction = action;
     this.transitionTimer = this.setTimeoutFn(() => {
       this.transitionTimer = null;
       this.transitionDeadline = null;
@@ -185,6 +190,7 @@ class InteractiveDisplayRouter {
       return this.snapshot();
     }
 
+    this._pauseDisplayedTimers();
     this._clearTransition();
     this.transitionAction = null;
     this.transitionRemainingMs = null;

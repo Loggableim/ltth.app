@@ -645,6 +645,79 @@ describe('InteractiveController', () => {
     harness.sqlite.close();
   });
 
+  test('pauses the visible viewer timer while recovering a hidden result before router mutation', () => {
+    const harness = createHarness({
+      connect4HostStarts: false,
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 5
+      }
+    });
+    harness.controller.init();
+    const visible = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'visible-result-recovery',
+      viewerDisplayName: 'Visible Result Recovery'
+    });
+    const hidden = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'hidden-result-recovery',
+      viewerDisplayName: 'Hidden Result Recovery'
+    });
+    harness.controller.registry.get(hidden.sessionId).config.leaderboardEnabled = false;
+    jest.spyOn(harness.controller.router, 'showResult').mockImplementationOnce(() => {
+      throw new Error('hidden result rejected before router mutation');
+    });
+
+    expect(harness.controller.timers.viewerTimers.has(visible.sessionId)).toBe(true);
+    const ended = harness.controller.end(hidden.sessionId, {
+      winner: 1,
+      winnerRole: 'viewer',
+      reason: 'win',
+      gameResult: { gameOver: true, winner: 1 }
+    });
+
+    expect(ended).toMatchObject({ success: true });
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: hidden.sessionId,
+      phase: 'result',
+      result: ended.result
+    });
+    expect(harness.controller.getState().activeSessions.find(row => row.sessionId === visible.sessionId))
+      .toMatchObject({
+        viewerDeadlineMs: null,
+        viewerTimeRemainingMs: 5000
+      });
+    expect(harness.controller.timers.viewerTimers.size).toBe(0);
+
+    jest.advanceTimersByTime(2999);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: hidden.sessionId,
+      phase: 'result',
+      result: ended.result
+    });
+    expect(harness.controller.getState().activeSessions.find(row => row.sessionId === visible.sessionId))
+      .toMatchObject({
+        viewerDeadlineMs: null,
+        viewerTimeRemainingMs: 5000
+      });
+    expect(harness.controller.timers.viewerTimers.size).toBe(0);
+
+    jest.advanceTimersByTime(1);
+    expect(harness.controller.getState().display).toMatchObject({
+      displaySessionId: visible.sessionId,
+      phase: 'playing',
+      viewerDeadlineMs: Date.now() + 5000,
+      viewerTimeRemainingMs: 5000,
+      result: null
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(1);
+    expect(harness.controller.timers.viewerTimers.has(visible.sessionId)).toBe(true);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
   test('deduplicates a delayed viewer chat event after an intervening host move', () => {
     const harness = createHarness({ connect4HostStarts: false });
     harness.controller.init();

@@ -555,6 +555,90 @@ describe('InteractiveDisplayRouter', () => {
   });
 
   test.each([
+    ['viewer', { gameType: 'connect4', turnRole: 'viewer' }, 'pauseViewer', 'resumeViewer', false],
+    ['Chess host', { gameType: 'chess', turnRole: 'host', hostTimeRemainingMs: 5000 }, 'pauseHostChess', 'resumeHostChess', true]
+  ])(
+    'recovered hidden-session result pauses the visible %s timer until the exact deadline',
+    (_label, overrides, pauseMethod, resumeMethod, queued) => {
+      const active = session(overrides);
+      const result = { sessionId: 8, gameType: 'connect4', reason: 'win' };
+      registryRows.set(active.sessionId, active);
+      if (queued) queueRows.push({ sessionId: active.sessionId, sequence: 1 });
+      router.sync();
+      timers[pauseMethod].mockClear();
+      timers[resumeMethod].mockClear();
+
+      router.recoverResult(result, 1000);
+
+      expect(router.snapshot()).toMatchObject({
+        displaySessionId: result.sessionId,
+        phase: 'result',
+        result
+      });
+      expect(timers[pauseMethod]).toHaveBeenCalledTimes(1);
+      expect(timers[pauseMethod]).toHaveBeenCalledWith(active);
+      expect(timers[resumeMethod]).not.toHaveBeenCalled();
+
+      jest.advanceTimersByTime(999);
+      expect(router.snapshot()).toMatchObject({ phase: 'result', result });
+      expect(timers[resumeMethod]).not.toHaveBeenCalled();
+
+      jest.advanceTimersByTime(1);
+      expect(router.snapshot()).toMatchObject({ displaySessionId: active.sessionId, phase: 'playing' });
+      expect(timers[resumeMethod]).toHaveBeenCalledTimes(1);
+      expect(timers[resumeMethod]).toHaveBeenCalledWith(active);
+    }
+  );
+
+  test('defers a recovered result transition for its full duration while suspended', () => {
+    const active = session();
+    const result = { sessionId: 8, gameType: 'connect4', reason: 'win' };
+    registryRows.set(active.sessionId, active);
+    router.sync();
+    router.suspend('overlay-hidden');
+    timers.resumeViewer.mockClear();
+
+    router.recoverResult(result, 1000);
+
+    expect(router.snapshot()).toMatchObject({
+      displaySessionId: result.sessionId,
+      phase: 'result',
+      result,
+      suspendedReason: 'overlay-hidden'
+    });
+    expect(router.transitionTimer).toBeNull();
+    expect(router.transitionDeadline).toBeNull();
+    expect(router.transitionAction).toEqual(expect.any(Function));
+    expect(router.transitionRemainingMs).toBe(1000);
+
+    jest.advanceTimersByTime(5000);
+    expect(router.snapshot()).toMatchObject({ phase: 'result', result });
+    expect(timers.resumeViewer).not.toHaveBeenCalled();
+
+    router.resume();
+    expect(router.snapshot()).toMatchObject({
+      phase: 'result',
+      result,
+      suspendedReason: null
+    });
+    expect(router.transitionTimer).not.toBeNull();
+    expect(router.transitionDeadline).toBe(Date.now() + 1000);
+    expect(router.transitionRemainingMs).toBeNull();
+
+    jest.advanceTimersByTime(999);
+    expect(router.snapshot()).toMatchObject({ phase: 'result', result });
+    expect(timers.resumeViewer).not.toHaveBeenCalled();
+
+    jest.advanceTimersByTime(1);
+    expect(router.snapshot()).toMatchObject({ displaySessionId: active.sessionId, phase: 'playing' });
+    expect(timers.resumeViewer).toHaveBeenCalledTimes(1);
+    expect(timers.resumeViewer).toHaveBeenCalledWith(active);
+
+    jest.advanceTimersByTime(5000);
+    expect(timers.resumeViewer).toHaveBeenCalledTimes(1);
+  });
+
+  test.each([
     ['completion', { winner: 2, winnerRole: 'viewer', reason: 'win' }],
     ['cancellation', { winner: null, winnerRole: null, reason: 'cancelled' }]
   ])('keeps a hidden-session %s result snapshot session-coherent', (_label, outcome) => {
