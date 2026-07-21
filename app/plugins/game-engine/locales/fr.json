@@ -1298,12 +1298,13 @@
             "viewer_countdown": "Spectateur : encore {seconds} s"
           },
           "unified": {
+            "active_turn": "AU TOUR DE : {player}",
             "matchup": "{host} contre {player}",
             "phase_host_turn": "À l’hôte de jouer",
             "phase_result": "Résultat",
             "phase_viewer_turn": "Au spectateur de jouer",
             "queue_count": "{count} partie(s) en attente",
-            "status": "{game} · {phase} · tours de l’hôte en attente : {count}"
+            "status": "{game} · {phase} · {count} parties actives"
           },
           "wheel": {
             "info_screen": "Pour récupérer votre gain, rendez-vous sur discord.gg/votreserveur",

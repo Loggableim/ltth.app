@@ -311,6 +311,8 @@ describe('InteractiveDisplayRouter', () => {
       phase: 'playing',
       hostDisplayName: 'Host',
       viewerDisplayName: 'Viewer One',
+      activePlayerDisplayName: 'Host',
+      currentTurnRole: 'host',
       sessionRevision: 1,
       waitingQueueCount: 1,
       activeSessionCount: 2,

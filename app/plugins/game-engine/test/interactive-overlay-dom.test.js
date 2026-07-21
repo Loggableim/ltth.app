@@ -1418,6 +1418,45 @@ describe('interactive overlay countdown DOM', () => {
     dom.window.close();
   });
 
+  test('unified highlights the displayed round-robin actor while keeping both player names visible', () => {
+    const i18n = {
+      initialized: true,
+      t: (key, params = {}) => key === 'plugins.game-engine.ui.runtime.unified.active_turn'
+        ? `CURRENT TURN: ${params.player}`
+        : key
+    };
+    const { dom, listeners } = loadOverlay('unified.html', i18n);
+    const state = connect4State();
+    state.display.hostDisplayName = 'Streamer';
+    state.display.viewerDisplayName = 'Anna';
+    state.display.currentTurnRole = 'viewer';
+    state.display.activePlayerDisplayName = 'Anna';
+
+    listeners.get('game-engine:interactive-state')(state);
+
+    const host = dom.window.document.getElementById('interactive-host-player');
+    const viewer = dom.window.document.getElementById('interactive-viewer-player');
+    const banner = dom.window.document.getElementById('interactive-active-player');
+    expect(host).not.toBeNull();
+    expect(viewer).not.toBeNull();
+    expect(banner).not.toBeNull();
+    expect(host.textContent).toBe('Streamer');
+    expect(viewer.textContent).toBe('Anna');
+    expect(banner.textContent).toBe('CURRENT TURN: Anna');
+    expect(host.classList.contains('is-active-player')).toBe(false);
+    expect(viewer.classList.contains('is-active-player')).toBe(true);
+
+    state.display.displayRevision += 1;
+    state.display.currentTurnRole = 'host';
+    state.display.activePlayerDisplayName = 'Streamer';
+    listeners.get('game-engine:interactive-state')(state);
+
+    expect(host.classList.contains('is-active-player')).toBe(true);
+    expect(viewer.classList.contains('is-active-player')).toBe(false);
+    expect(banner.textContent).toBe('CURRENT TURN: Streamer');
+    dom.window.close();
+  });
+
   test('unified stays idle when only activeSessions claims a viewer board', () => {
     const { dom, listeners } = loadOverlay('unified.html');
     const state = connect4State({ phase: 'idle', deadline: null });
@@ -1463,21 +1502,21 @@ describe('interactive overlay countdown DOM', () => {
       onLanguageChange: callback => { onLanguageChange = callback; }
     };
     const { dom, listeners } = loadOverlay('unified.html', i18n);
-    const matchup = dom.window.document.getElementById('interactive-matchup-names');
+    const activePlayer = dom.window.document.getElementById('interactive-active-player');
     listeners.get('game-engine:interactive-state')(connect4State());
-    expect(matchup.textContent).not.toBe('');
+    expect(activePlayer.textContent).not.toBe('');
     expect(i18n.t).not.toHaveBeenCalled();
 
     i18n.initialized = true;
     resolveReady();
     await Promise.resolve();
-    expect(matchup.textContent).toContain('en:');
+    expect(activePlayer.textContent).toContain('en:');
     language = 'de';
     onChange();
-    expect(matchup.textContent).toContain('de:');
+    expect(activePlayer.textContent).toContain('de:');
     language = 'fr';
     onLanguageChange();
-    expect(matchup.textContent).toContain('fr:');
+    expect(activePlayer.textContent).toContain('fr:');
     dom.window.close();
   });
 });

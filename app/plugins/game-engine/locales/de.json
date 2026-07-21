@@ -1298,12 +1298,13 @@
             "viewer_countdown": "Zuschauer: noch {seconds} s"
           },
           "unified": {
+            "active_turn": "AM ZUG: {player}",
             "matchup": "{host} gegen {player}",
             "phase_host_turn": "Host ist am Zug",
             "phase_result": "Ergebnis",
             "phase_viewer_turn": "Zuschauer ist am Zug",
             "queue_count": "{count} Spiel(e) in der Warteschlange",
-            "status": "{game} · {phase} · Host-Züge in der Queue: {count}"
+            "status": "{game} · {phase} · {count} aktive Spiele"
           },
           "wheel": {
             "info_screen": "Um deinen Gewinn abzuholen, besuche discord.gg/deinserver",
