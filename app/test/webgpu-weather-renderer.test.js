@@ -5,14 +5,17 @@ const gpuDir = path.join(__dirname, '../plugins/webgpu-weather-control/gpu');
 const framegraphPath = path.join(gpuDir, 'weather-framegraph.js');
 const enginePath = path.join(gpuDir, 'cinematic-weather-engine.js');
 
-function makeMockGpu(timestamp = true) {
-  const calls = { buffers: [], textures: [], compute: [], render: [], indirect: 0, timestamp: 0, copies: 0, destroy: 0, layouts: [], pipelineLayouts: [], bindGroups: [], pipelines: [], writes: [] };
+function makeMockGpu(timestamp = true, optionalFeatures = []) {
+  const calls = { buffers: [], textures: [], samplers: [], compute: [], dispatches: [], render: [], indirect: 0, timestamp: 0, copies: 0, destroy: 0, layouts: [], pipelineLayouts: [], bindGroups: [], pipelines: [], writes: [], requestDevice: null };
   const buffer = () => ({ destroy: () => { calls.destroy++; }, mapAsync: async () => {}, getMappedRange: () => new ArrayBuffer(16), unmap: () => {} });
   const texture = () => ({ createView: () => ({}), destroy: () => { calls.destroy++; } });
-  const pass = (kind) => ({
-    setPipeline: () => {}, setBindGroup: () => {}, dispatchWorkgroups: (...args) => calls.compute.push([kind, ...args]),
+  const pass = (kind) => {
+    let pipeline = null;
+    return {
+    setPipeline: (value) => { pipeline = value; }, setBindGroup: () => {}, dispatchWorkgroups: (...args) => { calls.compute.push([kind, ...args]); calls.dispatches.push([pipeline?.entryPoint, ...args]); },
     draw: () => {}, drawIndirect: () => { calls.indirect++; }, end: () => {}
-  });
+    };
+  };
   const device = {
     queue: { writeBuffer: (...args) => { calls.writes.push(args); }, submit: () => {}, onSubmittedWorkDone: async () => {} },
     lost: new Promise(() => {}),
@@ -20,15 +23,15 @@ function makeMockGpu(timestamp = true) {
     createTexture: (descriptor) => { calls.textures.push(descriptor); return texture(); },
     createShaderModule: () => ({ getCompilationInfo: async () => ({ messages: [] }) }),
     createBindGroupLayout: (descriptor) => { calls.layouts.push(descriptor); return { descriptor }; }, createPipelineLayout: (descriptor) => { calls.pipelineLayouts.push(descriptor); return { descriptor }; },
-    createSampler: () => ({}), createComputePipeline: (descriptor) => { calls.compute.push(descriptor.compute.entryPoint); calls.pipelines.push(descriptor); return {}; },
-    createRenderPipeline: (descriptor) => { calls.render.push(descriptor.fragment.entryPoint); calls.pipelines.push(descriptor); return {}; },
+    createSampler: (descriptor) => { calls.samplers.push(descriptor); return {}; }, createComputePipeline: (descriptor) => { calls.compute.push(descriptor.compute.entryPoint); calls.pipelines.push(descriptor); return { entryPoint: descriptor.compute.entryPoint, layout: descriptor.layout }; },
+    createRenderPipeline: (descriptor) => { calls.render.push(descriptor.fragment.entryPoint); calls.pipelines.push(descriptor); return { entryPoint: descriptor.fragment.entryPoint, layout: descriptor.layout }; },
     createBindGroup: (descriptor) => { calls.bindGroups.push(descriptor); return {}; }, createQuerySet: () => ({ destroy: () => { calls.destroy++; } }),
     createCommandEncoder: () => ({
       beginComputePass: () => pass('compute'), beginRenderPass: () => pass('render'),
       resolveQuerySet: () => { calls.timestamp++; }, copyBufferToBuffer: () => {}, copyTextureToTexture: () => { calls.copies++; }, finish: () => ({})
     })
   };
-  const adapter = { features: new Set(timestamp ? ['timestamp-query'] : []), requestDevice: async () => device };
+  const adapter = { features: new Set([...(timestamp ? ['timestamp-query'] : []), ...optionalFeatures]), requestDevice: async (descriptor) => { calls.requestDevice = descriptor; return device; } };
   const gpu = { requestAdapter: async () => adapter, getPreferredCanvasFormat: () => 'bgra8unorm' };
   return { calls, device, gpu };
 }
@@ -76,8 +79,8 @@ describe('cinematic WebGPU weather renderer contract', () => {
     engine.render(16.67);
     const effectUpload = mock.calls.writes.find(([, offset, data]) => offset === 0 && data instanceof Float32Array && data.length === 13 * 16)[2];
     expect(new Set(Array.from({ length: 13 }, (_, index) => effectUpload[index * 16 + 14]))).toEqual(new Set(Array.from({ length: 13 }, (_, index) => index)));
-    expect(effectUpload[8]).toBeCloseTo(0.48); // fogColor ice reaches GPU storage.
-    expect(effectUpload[12]).toBe(63); // all six glitch options are represented as GPU flags.
+    expect(effectUpload[3 * 16 + 8]).toBeCloseTo(0.48); // fogColor ice reaches fixed fog slot block 2.
+    expect(effectUpload[6 * 16 + 12]).toBe(63); // all six glitch options are in glitch block 3.
     engine.setQuality('auto');
     const before = engine.getMetrics().quality.particleBudget;
     engine.metrics.gpuFrameMs = 24;
@@ -130,7 +133,76 @@ describe('cinematic WebGPU weather renderer contract', () => {
     expect(framegraph).not.toContain('@fragment fn compositeFragment() -> @location(0) vec4<f32> { return vec4(0.0); }');
     expect(framegraph).toContain('indirectArgs[1] = atomicLoad(&counters[0])');
     expect(framegraph).toContain('copyTextureToTexture');
-    expect(framegraph).toContain('for (let passIndex = 0; passIndex < bloomPasses; passIndex++)');
+    expect(framegraph).toContain('for (let passIndex = 1; passIndex < bloomPasses; passIndex++)');
+    expect(framegraph).toContain('unfilterable-float');
+    expect(framegraph).toContain('bloomAtoB');
+  });
+
+  test('uses fixed effect blocks, rank-based layers, and block-3 glitch controls without duration brightness', () => {
+    const framegraph = fs.readFileSync(framegraphPath, 'utf8');
+    expect(framegraph).toContain('0=(intensity,duration,permanent,layer), 1=(opacity,particleScale,wind,direction)');
+    expect(framegraph).toContain('2=(fog RGB,colorTemp), 3=(glitchBits,glitchIntensity,effectIndex,activeOrder)');
+    expect(framegraph).toContain('const base = effect.effectIndex * EFFECT_BLOCK_FLOATS');
+    expect(framegraph).toContain('block3.w == rank');
+    expect(framegraph).toContain('block0.x * block1.x');
+    expect(framegraph).not.toContain('block0.x * block0.y');
+    [1, 2, 4, 8, 16, 32].forEach((flag) => expect(framegraph).toContain(`bitEnabled(block3.x, ${flag}.0)`));
+    expect(framegraph).toContain('block3.y');
+    ['toxic', 'blood', 'midday', 'sunset'].forEach((preset) => expect(framegraph).toContain(`${preset}:`));
+  });
+
+  test('does not emit fullscreen effects as particle spawn commands and bounds GPU work after a downshift', async () => {
+    const { CinematicWeatherEngine } = require(enginePath);
+    const mock = makeMockGpu(false);
+    const canvas = { getContext: () => ({ configure: () => {}, getCurrentTexture: () => ({ createView: () => ({}) }), unconfigure: () => {} }) };
+    const engine = new CinematicWeatherEngine(canvas, { gpu: mock.gpu, requestAnimationFrame: () => 0, cancelAnimationFrame: () => {} });
+    await engine.init();
+    engine.trigger({ action: 'fog', intensity: 1, permanent: true, layer: 12 });
+    engine.trigger({ action: 'sunbeam', intensity: 1, permanent: true, layer: 70 });
+    engine.render(16);
+    const fullscreenCommands = mock.calls.writes.find(([, , data]) => data instanceof Float32Array && data.length === 28)[2];
+    expect(Array.from(fullscreenCommands)).toEqual(Array(28).fill(0));
+
+    engine.trigger({ action: 'rain', intensity: 1, permanent: true, layer: 80 });
+    engine.setQuality('ultra');
+    engine.render(16);
+    engine.setQuality('low');
+    engine.render(16);
+    const lastSimulate = mock.calls.dispatches.filter(([entry]) => entry === 'simulateParticles').at(-1);
+    const lastCompact = mock.calls.dispatches.filter(([entry]) => entry === 'compactParticles').at(-1);
+    expect(lastSimulate[1]).toBe(Math.ceil(1200 / 128));
+    expect(lastCompact[1]).toBe(Math.ceil(1200 / 128));
+    const framegraph = fs.readFileSync(framegraphPath, 'utf8');
+    expect(framegraph).toContain('id.x >= u32(frame.particleCap)');
+    expect(framegraph).toContain('weather-layer-depth');
+  });
+
+  test('uses a non-filtering non-blended float16 path by default and opts into enhancements only when advertised', async () => {
+    const { CinematicWeatherEngine } = require(enginePath);
+    const canvas = () => ({ getContext: () => ({ configure: () => {}, getCurrentTexture: () => ({ createView: () => ({}) }), unconfigure: () => {} }) });
+    const fallback = makeMockGpu(false);
+    const baseEngine = new CinematicWeatherEngine(canvas(), { gpu: fallback.gpu });
+    await baseEngine.init();
+    expect(fallback.calls.requestDevice.requiredFeatures).toEqual([]);
+    expect(fallback.calls.samplers[0]).toMatchObject({ minFilter: 'nearest', magFilter: 'nearest' });
+    expect(fallback.calls.layouts.find((layout) => layout.entries.length === 6).entries[0].texture.sampleType).toBe('unfilterable-float');
+    expect(fallback.calls.pipelines.find((pipeline) => pipeline.fragment?.entryPoint === 'particleFragment').fragment.targets[0].blend).toBeUndefined();
+
+    const enhanced = makeMockGpu(false, ['float16-filterable', 'float16-blendable']);
+    const enhancedEngine = new CinematicWeatherEngine(canvas(), { gpu: enhanced.gpu });
+    await enhancedEngine.init();
+    expect(enhanced.calls.requestDevice.requiredFeatures).toEqual(expect.arrayContaining(['float16-filterable', 'float16-blendable']));
+    expect(enhanced.calls.samplers[0]).toMatchObject({ minFilter: 'linear', magFilter: 'linear' });
+    expect(enhanced.calls.layouts.find((layout) => layout.entries.length === 6).entries[0].texture.sampleType).toBe('float');
+    expect(enhanced.calls.pipelines.find((pipeline) => pipeline.fragment?.entryPoint === 'particleFragment').fragment.targets[0].blend).toBeDefined();
+  });
+
+  test('ping-pongs bloom sources and targets rather than sampling a texture attached by the same bloom pass', () => {
+    const framegraph = fs.readFileSync(framegraphPath, 'utf8');
+    expect(framegraph).toContain("postPass('bloomFragment', 'bloomA', this.bindGroups.post.bloomFromVolume)");
+    expect(framegraph).toContain("postPass('bloomFragment', writeBloomB ? 'bloomB' : 'bloomA'");
+    expect(framegraph).toContain("postEntries('bloomA', 'volume', 'history')");
+    expect(framegraph).toContain("postEntries('bloomB', 'volume', 'history')");
   });
 
   test('binds each explicit layout to compatible complete bind groups', async () => {

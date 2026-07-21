@@ -42,6 +42,7 @@
       this.frameHandle = 0;
       this.lastFrameAt = 0;
       this.lastQueueAt = 0;
+      this.timestampReadPending = false;
     }
 
     async init() {
@@ -50,12 +51,15 @@
         this.adapter = await this.gpu.requestAdapter({ powerPreference: 'high-performance' });
         if (!this.adapter) return this.fail('unsupported', 'No WebGPU adapter');
         const timestampEnabled = this.adapter.features?.has('timestamp-query') === true;
-        this.device = await this.adapter.requestDevice({ requiredFeatures: timestampEnabled ? ['timestamp-query'] : [] });
+        const float16Filterable = this.adapter.features?.has('float16-filterable') === true;
+        const float16Blendable = this.adapter.features?.has('float16-blendable') === true;
+        const requiredFeatures = [timestampEnabled ? 'timestamp-query' : null, float16Filterable ? 'float16-filterable' : null, float16Blendable ? 'float16-blendable' : null].filter(Boolean);
+        this.device = await this.adapter.requestDevice({ requiredFeatures });
         this.context = this.canvas.getContext('webgpu');
         if (!this.context) return this.fail('unsupported', 'No WebGPU canvas context');
         this.format = this.gpu.getPreferredCanvasFormat();
         this.context.configure({ device: this.device, format: this.format, alphaMode: 'premultiplied' });
-        this.framegraph = new WeatherFramegraph(this.device, this.format, { timestampEnabled, capacity: QUALITY_PRESETS.ultra.particleBudget });
+        this.framegraph = new WeatherFramegraph(this.device, this.format, { timestampEnabled, float16Filterable, float16Blendable, capacity: QUALITY_PRESETS.ultra.particleBudget });
         this.framegraph.initialize();
         this.resize(this.canvas.clientWidth || this.canvas.width || 1920, this.canvas.clientHeight || this.canvas.height || 1080);
         this.state = 'ready'; this.transparent = false; this.metrics.gpuTimeSource = timestampEnabled ? 'timestamp-query' : 'queue-latency';
@@ -127,15 +131,17 @@
       const alive = this.getEffectState().filter((effect) => effect.permanent || now - effect.startedAt < effect.duration);
       this.effects = new Map(alive.map((effect) => [effect.action, effect]));
       this.framegraph.uploadEffectState(alive, this.quality, now / 1000, Math.max(0, frameMs) / 1000);
+      const shouldReadTimestamp = this.metrics.gpuTimeSource === 'timestamp-query' && !this.timestampReadPending;
+      this.framegraph.timestampResolveEnabled = shouldReadTimestamp;
       const encoder = this.device.createCommandEncoder({ label: 'weather-cinematic-frame' });
       this.framegraph.encode(encoder, this.context.getCurrentTexture().createView(), this.metrics);
       this.device.queue.submit([encoder.finish()]);
-      if (this.metrics.gpuTimeSource === 'timestamp-query') this.measureTimestamp();
+      if (shouldReadTimestamp) this.measureTimestamp();
       else this.measureQueueLatency();
       this.publishDiagnostic('frame');
     }
 
-    async measureTimestamp() { const value = await this.framegraph.readTimestampMs(); if (value !== null) this.metrics.gpuFrameMs = value; }
+    async measureTimestamp() { this.timestampReadPending = true; try { const value = await this.framegraph.readTimestampMs(); if (value !== null) this.metrics.gpuFrameMs = value; } finally { this.timestampReadPending = false; } }
     async measureQueueLatency() { const started = performance.now ? performance.now() : Date.now(); await this.device.queue.onSubmittedWorkDone?.(); this.metrics.gpuFrameMs = Math.max(0, (performance.now ? performance.now() : Date.now()) - started); }
     getMetrics() { return { ...this.metrics, quality: { ...this.metrics.quality }, resolution: { ...this.metrics.resolution } }; }
     publishDiagnostic(reason) { this.onDiagnostic({ ...this.getMetrics(), reason, effects: this.getEffectState().map((effect) => effect.action) }); }

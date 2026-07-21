@@ -9,15 +9,20 @@
   const INDIRECT_BYTES = 16;
   const U = () => globalThis.GPUBufferUsage || { STORAGE: 1, COPY_DST: 2, INDIRECT: 4, UNIFORM: 8, COPY_SRC: 16, MAP_READ: 32, QUERY_RESOLVE: 64 };
   const T = () => globalThis.GPUTextureUsage || { RENDER_ATTACHMENT: 1, TEXTURE_BINDING: 2, STORAGE_BINDING: 4, COPY_SRC: 8, COPY_DST: 16 };
-  const COLOR_LOOKUP = Object.freeze({ default: [0.68, 0.76, 0.84], ice: [0.48, 0.78, 1], golden: [1, 0.7, 0.32], warm: [1, 0.46, 0.2], cool: [0.35, 0.62, 1], violet: [0.62, 0.36, 1] });
-  const TEMPERATURE_LOOKUP = Object.freeze({ default: 0, golden: 0.7, warm: 0.9, cool: -0.7, ice: -0.9, neutral: 0 });
+  // Effect state uses four vec4 blocks per fixed effect index:
+  // 0=(intensity,duration,permanent,layer), 1=(opacity,particleScale,wind,direction),
+  // 2=(fog RGB,colorTemp), 3=(glitchBits,glitchIntensity,effectIndex,activeOrder).
+  const EFFECT_BLOCK_FLOATS = 16;
+  const PARTICLE_EFFECT_INDEXES = Object.freeze(new Set([0, 1, 2, 8, 9, 10, 11]));
+  const COLOR_LOOKUP = Object.freeze({ default: [0.68, 0.76, 0.84], ice: [0.48, 0.78, 1], toxic: [0.2, 0.95, 0.28], blood: [0.82, 0.05, 0.08], golden: [1, 0.7, 0.32], warm: [1, 0.46, 0.2], cool: [0.35, 0.62, 1], violet: [0.62, 0.36, 1] });
+  const TEMPERATURE_LOOKUP = Object.freeze({ default: 0, neutral: 0, ice: -0.9, cool: -0.7, midday: 0.12, golden: 0.7, sunset: 0.88, warm: 0.9 });
   function colorVector(value) { return COLOR_LOOKUP[String(value || 'default').toLowerCase()] || COLOR_LOOKUP.default; }
   function temperatureValue(value) { return TEMPERATURE_LOOKUP[String(value || 'default').toLowerCase()] ?? 0; }
 
   // Particles, visible-index compaction and draw arguments are exclusively GPU-owned.
   const COMPUTE_WGSL = /* wgsl */`
 struct Particle { position: vec4<f32>, velocity: vec4<f32>, state: vec4<f32>, trail: vec4<f32> };
-struct Frame { viewport: vec2<f32>, time: f32, delta: f32, intensity: f32, wind: f32, direction: f32, layer: f32, opacity: f32, particleScale: f32, particleCap: f32, effectCount: f32, samples: f32, bloomPasses: f32, temporalBlend: f32, pad0: f32, pad1: f32 };
+struct Frame { viewport: vec2<f32>, time: f32, delta: f32, intensity: f32, wind: f32, direction: f32, layer: f32, opacity: f32, particleScale: f32, particleCap: f32, particleCommandCount: f32, samples: f32, bloomPasses: f32, temporalBlend: f32, pad0: f32 };
 @group(0) @binding(0) var<storage, read_write> particles: array<Particle>;
 @group(0) @binding(1) var<storage, read_write> visible: array<u32>;
 @group(0) @binding(2) var<storage, read_write> counters: array<atomic<u32>>;
@@ -33,31 +38,31 @@ fn particleMaterialVelocity(kind: f32, seed: f32) -> vec2<f32> { if (kind == 0.0
 fn integrateParticle(index: u32) {
   var p = particles[index];
   let wind = vec2<f32>(cos(frame.direction), sin(frame.direction)) * frame.wind;
-  p.velocity.xy = p.velocity.xy + wind * frame.delta;
-  p.position.xy = p.position.xy + p.velocity.xy * frame.delta;
-  p.trail.xy = mix(p.trail.xy, p.position.xy, min(1.0, frame.delta * 14.0));
+  p.velocity = vec4<f32>(p.velocity.xy + wind * frame.delta, p.velocity.zw);
+  p.position = vec4<f32>(p.position.xy + p.velocity.xy * frame.delta, p.position.zw);
+  p.trail = vec4<f32>(mix(p.trail.xy, p.position.xy, min(1.0, frame.delta * 14.0)), p.trail.zw);
   // Rain retains splash/ripple/ground mist, snow retains accumulation, and the other particle effects retain trails entirely on GPU.
   if (p.position.y < -1.0) { let impact = p.position.y; p.state.x = 2.0; p.position.y = 1.0; if (p.state.y == 0.0) { p.trail.z = rainSplashRippleGroundMist(impact) + particleTrail(length(p.velocity.xy)); } else if (p.state.y == 1.0) { p.trail.z = snowAccumulation(impact); } else { p.trail.z = particleTrail(length(p.velocity.xy)); } }
   particles[index] = p;
 }
 @compute @workgroup_size(1) fn resetCounters() { atomicStore(&counters[0], 0u); }
 @compute @workgroup_size(128) fn spawnParticles(@builtin(global_invocation_id) id: vec3<u32>) {
-  let cap = u32(frame.particleCap); let count = u32(frame.effectCount);
+  let cap = u32(frame.particleCap); let count = u32(frame.particleCommandCount);
   if (id.x >= cap || count == 0u) { return; }
-  let slot = id.x % count; let command = spawnCommands[slot]; let shape = effectState[slot * 4u + 1u];
-  if (particles[id.x].state.x > 0.0 && particles[id.x].state.y == command.x) { return; }
+  let slot = id.x % count; let command = spawnCommands[slot]; let effectIndex = u32(command.x); let shape = effectState[effectIndex * 4u + 1u];
+  if (particles[id.x].state.x > 0.0 && particles[id.x].state.y == command.x && particles[id.x].state.z == command.y) { return; }
   let seed = hash(f32(id.x) + frame.time * 13.0);
   particles[id.x].position = vec4<f32>(seed * 2.0 - 1.0, 1.0 + seed, seed, 1.0);
   particles[id.x].velocity = vec4<f32>(particleMaterialVelocity(command.x, seed) * max(0.1, shape.y), 0.0, 0.0);
-  particles[id.x].state = vec4<f32>(1.0, command.x, f32(slot), command.w);
+  particles[id.x].state = vec4<f32>(1.0, command.x, command.y, command.w);
   particles[id.x].trail = vec4<f32>(particles[id.x].position.xy, 0.0, 0.0);
 }
 @compute @workgroup_size(128) fn simulateParticles(@builtin(global_invocation_id) id: vec3<u32>) {
-  if (id.x >= arrayLength(&particles)) { return; }
+  if (id.x >= u32(frame.particleCap) || id.x >= arrayLength(&particles)) { return; }
   integrateParticle(id.x);
 }
 @compute @workgroup_size(128) fn compactParticles(@builtin(global_invocation_id) id: vec3<u32>) {
-  if (id.x >= arrayLength(&particles)) { return; }
+  if (id.x >= u32(frame.particleCap) || id.x >= arrayLength(&particles)) { return; }
   if (particles[id.x].state.x > 0.0) { let slot = atomicAdd(&counters[0], 1u); visible[slot] = id.x; }
 }
 @compute @workgroup_size(1) fn finalizeIndirectArgs() {
@@ -74,8 +79,10 @@ struct Out { @builtin(position) position: vec4<f32>, @location(0) color: vec4<f3
 fn particleColor(kind: f32, tint: vec3<f32>) -> vec3<f32> { if (kind == 0.0) { return vec3<f32>(.55,.78,1.0); } if (kind == 1.0) { return vec3<f32>(.96,.98,1.0); } if (kind == 2.0) { return vec3<f32>(.24,.34,.58); } if (kind == 8.0) { return vec3<f32>(.78,1.0,.38); } if (kind == 9.0) { return vec3<f32>(1.0,.52,.22); } if (kind == 10.0) { return vec3<f32>(1.0,.52,.72); } if (kind == 11.0) { return vec3<f32>(1.0,.24,.05); } return tint; }
 @vertex fn particleVertex(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> Out {
   let p = particles[visible[ii]]; let corners = array<vec2<f32>, 6>(vec2<f32>(-1.,-1.), vec2<f32>(1.,-1.), vec2<f32>(1.,1.), vec2<f32>(-1.,-1.), vec2<f32>(1.,1.), vec2<f32>(-1.,1.));
-  let kind = p.state.y; let material = effectState[u32(p.state.z) * 4u + 2u]; let shape = effectState[u32(p.state.z) * 4u + 1u]; let size = .004 + .018 * clamp(shape.y, .25, 2.0);
-  var out: Out; out.position = vec4<f32>(p.position.xy + corners[vi] * size, p.position.z, 1.); out.color = vec4<f32>(particleColor(kind, material.xyz), clamp(p.state.w, 0.05, 1.0)); return out;
+  let kind = p.state.y; let effectIndex = u32(kind); let material = effectState[effectIndex * 4u + 2u]; let shape = effectState[effectIndex * 4u + 1u]; let size = .004 + .018 * clamp(shape.y, .25, 2.0);
+  // Configured layer is real depth: higher overlay layers receive a closer depth value.
+  let depth = clamp(1.0 - p.state.z / 100.0, 0.0, 1.0);
+  var out: Out; out.position = vec4<f32>(p.position.xy + corners[vi] * size, depth, 1.); out.color = vec4<f32>(particleColor(kind, material.xyz), clamp(p.state.w, 0.05, 1.0)); return out;
 }
 @fragment fn particleFragment(in: Out) -> @location(0) vec4<f32> { return in.color; }`;
 
@@ -84,32 +91,43 @@ const POST_WGSL = /* wgsl */`
 @group(0) @binding(0) var sceneHdr: texture_2d<f32>;
 @group(0) @binding(1) var bloomHdr: texture_2d<f32>;
 @group(0) @binding(2) var historyHdr: texture_2d<f32>;
-@group(0) @binding(3) var linearSampler: sampler;
-struct PostFrame { viewport: vec2<f32>, time: f32, delta: f32, intensity: f32, wind: f32, direction: f32, layer: f32, opacity: f32, particleScale: f32, particleCap: f32, effectCount: f32, samples: f32, bloomPasses: f32, temporalBlend: f32, pad0: f32, pad1: f32 };
+@group(0) @binding(3) var hdrSampler: sampler;
+struct PostFrame { viewport: vec2<f32>, time: f32, delta: f32, intensity: f32, wind: f32, direction: f32, layer: f32, opacity: f32, particleScale: f32, particleCap: f32, particleCommandCount: f32, samples: f32, bloomPasses: f32, temporalBlend: f32, pad0: f32 };
 @group(0) @binding(4) var<uniform> postFrame: PostFrame;
 @group(0) @binding(5) var<storage, read> effectState: array<vec4<f32>>;
 @vertex fn fullscreen(@builtin(vertex_index) index: u32) -> @builtin(position) vec4<f32> { let p = array<vec2<f32>,3>(vec2<f32>(-1.,-3.), vec2<f32>(3.,1.), vec2<f32>(-1.,1.)); return vec4<f32>(p[index],0.,1.); }
+fn sampleHdr(source: texture_2d<f32>, uv: vec2<f32>) -> vec4<f32> { return __HDR_SAMPLE__; }
 fn noise(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(12.9898,78.233))) * 43758.5453); }
 fn thunderBolt(p: vec2<f32>, time: f32) -> f32 { let branch = sin(p.y * 34. + time * 18.) * .08 + sin(p.y * 91.) * .025; return smoothstep(.025, 0., abs(p.x - branch)) * smoothstep(.9,.15,p.y); }
 fn auroraBands(uv: vec2<f32>) -> f32 { return sin(uv.x * 18. + uv.y * 4.) * .5 + .5; }
 fn heatwaveRefraction(uv: vec2<f32>) -> f32 { return noise(uv * 42.) * .035; }
 fn glitchClouds(uv: vec2<f32>) -> f32 { return noise(floor(uv * 45.)); }
-fn bitEnabled(bits: f32, bit: f32) -> f32 { return floor(mod(floor(bits / bit), 2.0)); }
-fn fullscreenEffect(kind: f32, uv: vec2<f32>, material: vec4<f32>, look: vec4<f32>) -> vec3<f32> {
+fn bitEnabled(bits: f32, bit: f32) -> f32 { let quotient = floor(bits / bit); return quotient - 2.0 * floor(quotient / 2.0); }
+fn fullscreenEffect(kind: f32, uv: vec2<f32>, block0: vec4<f32>, block1: vec4<f32>, block2: vec4<f32>, block3: vec4<f32>) -> vec3<f32> {
   if (kind == 2.0) { return vec3<f32>(-0.32 * (0.4 + noise(uv * 12.0))); }
-  if (kind == 3.0) { return mix(vec3<f32>(noise(uv * 18.0) * .22), look.xyz, .65) * (0.4 + look.w); }
-  if (kind == 4.0) { let bolt = thunderBolt(uv - vec2<f32>(.5,0.), postFrame.time); return vec3<f32>(bolt * (1.0 + material.x * 3.0)); }
+  if (kind == 3.0) { return mix(vec3<f32>(noise(uv * 18.0) * .22), block2.xyz, .65); }
+  if (kind == 4.0) { let bolt = thunderBolt(uv - vec2<f32>(.5,0.), postFrame.time); return vec3<f32>(bolt * (1.0 + block0.x * 3.0)); }
   if (kind == 5.0) { return vec3<f32>(pow(max(0.0,1.0-length(uv-vec2<f32>(.7,.1))*1.7),5.0)); }
-  if (kind == 6.0) { let rgb = bitEnabled(look.x, 1.0); let displacement = bitEnabled(look.x, 2.0); let scanlines = bitEnabled(look.x, 4.0); let noiseOn = bitEnabled(look.x, 8.0); let blocks = bitEnabled(look.x, 16.0); let aberration = bitEnabled(look.x, 32.0); let shifted = glitchClouds(uv + vec2<f32>(displacement * .03, 0.0)); return vec3<f32>(shifted * (1.0 + rgb), shifted * (1.0 + scanlines * sin(uv.y * 720.0)), shifted * (1.0 + noiseOn + blocks + aberration)) * look.y; }
+  if (kind == 6.0) { let rgb = bitEnabled(block3.x, 1.0); let displacement = bitEnabled(block3.x, 2.0); let scanlines = bitEnabled(block3.x, 4.0); let noiseOn = bitEnabled(block3.x, 8.0); let blocks = bitEnabled(block3.x, 16.0); let aberration = bitEnabled(block3.x, 32.0); let shifted = glitchClouds(uv + vec2<f32>(displacement * .03, 0.0)); return vec3<f32>(shifted * (1.0 + rgb), shifted * (1.0 + scanlines * sin(uv.y * 720.0)), shifted * (1.0 + noiseOn + blocks + aberration)) * block3.y; }
   if (kind == 7.0) { return vec3<f32>(auroraBands(uv),auroraBands(uv*.7),1.0); }
   if (kind == 12.0) { return vec3<f32>(heatwaveRefraction(uv + vec2<f32>(sin(postFrame.time + uv.y * 24.0) * .01, 0.0))); }
   return vec3<f32>(0.0);
 }
-fn layeredCinema(uv: vec2<f32>) -> vec3<f32> { var cinema = vec3<f32>(0.0); let samples = u32(clamp(postFrame.samples, 1.0, 48.0)); for (var effectIndex: u32 = 0u; effectIndex < 13u; effectIndex = effectIndex + 1u) { let base = effectIndex * 4u; let material = effectState[base]; let look = effectState[base + 2u]; let kind = effectState[base + 3u].z; if (material.x > 0.0) { var accumulation = vec3<f32>(0.0); for (var sample: u32 = 0u; sample < samples; sample = sample + 1u) { let depth = f32(sample) / f32(samples); accumulation = accumulation + fullscreenEffect(kind, uv + vec2<f32>(0.0, depth * .004), material, look); } let temperatureTint = vec3<f32>(1.0 + max(look.w, 0.0) * .28, 1.0, 1.0 + max(-look.w, 0.0) * .28); cinema = cinema + accumulation / f32(samples) * material.x * material.y * temperatureTint; } } return cinema; }
-@fragment fn volumetricFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; let scene = textureSample(sceneHdr, linearSampler, uv); let cinema = layeredCinema(uv); return vec4<f32>(max(scene.rgb + cinema, vec3<f32>(0.0)), scene.a); }
-@fragment fn bloomFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; let s = textureSample(sceneHdr, linearSampler, uv); return max(s - vec4<f32>(0.55), vec4<f32>(0.0)); }
-@fragment fn temporalFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; return mix(textureSample(sceneHdr, linearSampler, uv), textureSample(historyHdr, linearSampler, uv), postFrame.temporalBlend); }
-@fragment fn compositeFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; let scene = textureSample(sceneHdr, linearSampler, uv); let bloom = textureSample(bloomHdr, linearSampler, uv); let original = textureSample(historyHdr, linearSampler, uv); return vec4<f32>(scene.rgb + bloom.rgb + original.rgb * .05, max(scene.a, original.a)); }
+fn layeredCinema(uv: vec2<f32>) -> vec3<f32> {
+  var cinema = vec3<f32>(0.0); let samples = u32(clamp(postFrame.samples, 1.0, 48.0));
+  // activeOrder is rank+1. The rank loop gives actual layer-sorted alpha composition independent of fixed storage order.
+  for (var rank: f32 = 1.0; rank <= 13.0; rank = rank + 1.0) { for (var effectIndex: u32 = 0u; effectIndex < 13u; effectIndex = effectIndex + 1u) {
+    let base = effectIndex * 4u; let block0 = effectState[base]; let block1 = effectState[base + 1u]; let block2 = effectState[base + 2u]; let block3 = effectState[base + 3u];
+    if (block3.w == rank) { var accumulated = vec3<f32>(0.0); for (var sample: u32 = 0u; sample < samples; sample = sample + 1u) { let depth = f32(sample) / f32(samples); accumulated = accumulated + fullscreenEffect(block3.z, uv + vec2<f32>(0.0, depth * .004), block0, block1, block2, block3); }
+      let temperatureTint = vec3<f32>(1.0 + max(block2.w, 0.0) * .28, 1.0, 1.0 + max(-block2.w, 0.0) * .28); let effectColor = accumulated / f32(samples) * temperatureTint; let alpha = clamp(block0.x * block1.x, 0.0, 1.0); cinema = mix(cinema, effectColor + cinema * .2, alpha);
+    }
+  } }
+  return cinema;
+}
+@fragment fn volumetricFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; let scene = sampleHdr(sceneHdr, uv); let cinema = layeredCinema(uv); return vec4<f32>(max(scene.rgb + cinema, vec3<f32>(0.0)), scene.a); }
+@fragment fn bloomFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; let previous = sampleHdr(sceneHdr, uv); let source = sampleHdr(bloomHdr, uv); return max(previous * .68 + max(source - vec4<f32>(0.55), vec4<f32>(0.0)), vec4<f32>(0.0)); }
+@fragment fn temporalFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; return mix(sampleHdr(sceneHdr, uv), sampleHdr(historyHdr, uv), postFrame.temporalBlend); }
+@fragment fn compositeFragment(@builtin(position) p: vec4<f32>) -> @location(0) vec4<f32> { let uv = p.xy / postFrame.viewport; let scene = sampleHdr(sceneHdr, uv); let bloom = sampleHdr(bloomHdr, uv); let original = sampleHdr(historyHdr, uv); return vec4<f32>(scene.rgb + bloom.rgb + original.rgb * .05, max(scene.a, original.a)); }
 `;
 
   class WeatherFramegraph {
@@ -117,6 +135,8 @@ fn layeredCinema(uv: vec2<f32>) -> vec3<f32> { var cinema = vec3<f32>(0.0); let 
       this.device = device;
       this.format = format;
       this.timestampEnabled = options.timestampEnabled === true;
+      this.float16Filterable = options.float16Filterable === true;
+      this.float16Blendable = options.float16Blendable === true;
       this.capacity = options.capacity || 4096;
       this.width = 1;
       this.height = 1;
@@ -131,9 +151,9 @@ fn layeredCinema(uv: vec2<f32>) -> vec3<f32> { var cinema = vec3<f32>(0.0); let 
       this.resources.counters = this.device.createBuffer({ label: 'weather-gpu-active-counter', size: 16, usage: usage.STORAGE | usage.COPY_DST | usage.COPY_SRC });
       this.resources.indirect = this.device.createBuffer({ label: 'weather-gpu-written-indirect-args', size: INDIRECT_BYTES, usage: usage.STORAGE | usage.INDIRECT | usage.COPY_DST });
       this.resources.uniforms = this.device.createBuffer({ label: 'weather-frame-effect-uniforms', size: 256, usage: usage.UNIFORM | usage.COPY_DST });
-      this.resources.effectState = this.device.createBuffer({ label: 'weather-layered-effect-state', size: 13 * 16 * 4, usage: usage.STORAGE | usage.COPY_DST });
-      this.resources.spawnCommands = this.device.createBuffer({ label: 'weather-bounded-effect-spawn-commands', size: 13 * 16, usage: usage.STORAGE | usage.COPY_DST });
-      this.resources.sampler = this.device.createSampler({ magFilter: 'linear', minFilter: 'linear' });
+      this.resources.effectState = this.device.createBuffer({ label: 'weather-fixed-effect-state-blocks', size: 13 * EFFECT_BLOCK_FLOATS * 4, usage: usage.STORAGE | usage.COPY_DST });
+      this.resources.spawnCommands = this.device.createBuffer({ label: 'weather-bounded-particle-spawn-commands', size: PARTICLE_EFFECT_INDEXES.size * 16, usage: usage.STORAGE | usage.COPY_DST });
+      this.resources.sampler = this.device.createSampler(this.float16Filterable ? { magFilter: 'linear', minFilter: 'linear' } : { magFilter: 'nearest', minFilter: 'nearest' });
       if (this.timestampEnabled) {
         this.resources.timestamps = this.device.createQuerySet({ type: 'timestamp', count: 2 });
         this.resources.timestampResolve = this.device.createBuffer({ label: 'weather-timestamp-resolve', size: 16, usage: usage.QUERY_RESOLVE | usage.COPY_SRC });
@@ -141,11 +161,14 @@ fn layeredCinema(uv: vec2<f32>) -> vec3<f32> { var cinema = vec3<f32>(0.0); let 
       }
       const compute = this.device.createShaderModule({ label: 'weather-compute-wgsl', code: COMPUTE_WGSL });
       const particle = this.device.createShaderModule({ label: 'weather-particle-wgsl', code: PARTICLE_WGSL });
-      const post = this.device.createShaderModule({ label: 'weather-cinematic-wgsl', code: POST_WGSL });
+      const hdrSample = this.float16Filterable
+        ? 'textureSample(source, hdrSampler, uv)'
+        : 'textureLoad(source, vec2<i32>(clamp(uv * postFrame.viewport, vec2<f32>(0.0), postFrame.viewport - vec2<f32>(1.0))), 0)';
+      const post = this.device.createShaderModule({ label: 'weather-cinematic-wgsl', code: POST_WGSL.replace('__HDR_SAMPLE__', hdrSample) });
       this.layouts = {
         compute: this.device.createBindGroupLayout({ entries: [0, 1, 2, 3].map((binding) => ({ binding, visibility: 4, buffer: { type: 'storage' } })).concat([{ binding: 4, visibility: 4, buffer: { type: 'uniform', minBindingSize: 64 } }, { binding: 5, visibility: 4, buffer: { type: 'read-only-storage' } }, { binding: 6, visibility: 4, buffer: { type: 'read-only-storage' } }]) }),
         particle: this.device.createBindGroupLayout({ entries: [{ binding: 0, visibility: 1, buffer: { type: 'read-only-storage' } }, { binding: 1, visibility: 1, buffer: { type: 'read-only-storage' } }, { binding: 2, visibility: 1, buffer: { type: 'uniform', minBindingSize: 16 } }, { binding: 3, visibility: 1, buffer: { type: 'read-only-storage' } }] }),
-        post: this.device.createBindGroupLayout({ entries: [{ binding: 0, visibility: 2, texture: {} }, { binding: 1, visibility: 2, texture: {} }, { binding: 2, visibility: 2, texture: {} }, { binding: 3, visibility: 2, sampler: {} }, { binding: 4, visibility: 2, buffer: { type: 'uniform', minBindingSize: 64 } }, { binding: 5, visibility: 2, buffer: { type: 'read-only-storage' } }] })
+        post: this.device.createBindGroupLayout({ entries: [{ binding: 0, visibility: 2, texture: { sampleType: this.float16Filterable ? 'float' : 'unfilterable-float' } }, { binding: 1, visibility: 2, texture: { sampleType: this.float16Filterable ? 'float' : 'unfilterable-float' } }, { binding: 2, visibility: 2, texture: { sampleType: this.float16Filterable ? 'float' : 'unfilterable-float' } }, { binding: 3, visibility: 2, sampler: { type: this.float16Filterable ? 'filtering' : 'non-filtering' } }, { binding: 4, visibility: 2, buffer: { type: 'uniform', minBindingSize: 64 } }, { binding: 5, visibility: 2, buffer: { type: 'read-only-storage' } }] })
       };
       this.pipelineLayouts = { compute: this.device.createPipelineLayout({ bindGroupLayouts: [this.layouts.compute] }), particle: this.device.createPipelineLayout({ bindGroupLayouts: [this.layouts.particle] }), post: this.device.createPipelineLayout({ bindGroupLayouts: [this.layouts.post] }) };
       this.pipelines.reset = this.device.createComputePipeline({ layout: this.pipelineLayouts.compute, compute: { module: compute, entryPoint: 'resetCounters' } });
@@ -153,7 +176,8 @@ fn layeredCinema(uv: vec2<f32>) -> vec3<f32> { var cinema = vec3<f32>(0.0); let 
       this.pipelines.simulate = this.device.createComputePipeline({ layout: this.pipelineLayouts.compute, compute: { module: compute, entryPoint: 'simulateParticles' } });
       this.pipelines.compact = this.device.createComputePipeline({ layout: this.pipelineLayouts.compute, compute: { module: compute, entryPoint: 'compactParticles' } });
       this.pipelines.indirect = this.device.createComputePipeline({ layout: this.pipelineLayouts.compute, compute: { module: compute, entryPoint: 'finalizeIndirectArgs' } });
-      this.pipelines.particle = this.device.createRenderPipeline({ layout: this.pipelineLayouts.particle, vertex: { module: particle, entryPoint: 'particleVertex' }, fragment: { module: particle, entryPoint: 'particleFragment', targets: [{ format: 'rgba16float', blend: { color: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' }, alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' } } }] }, primitive: { topology: 'triangle-list' } });
+      const float16Blend = this.float16Blendable ? { color: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' }, alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' } } : undefined;
+      this.pipelines.particle = this.device.createRenderPipeline({ layout: this.pipelineLayouts.particle, vertex: { module: particle, entryPoint: 'particleVertex' }, fragment: { module: particle, entryPoint: 'particleFragment', targets: [{ format: 'rgba16float', blend: float16Blend }] }, primitive: { topology: 'triangle-list' }, depthStencil: { format: 'depth24plus', depthWriteEnabled: true, depthCompare: 'less' } });
       ['volumetricFragment', 'bloomFragment', 'temporalFragment'].forEach((entry) => { this.pipelines[entry] = this.device.createRenderPipeline({ layout: this.pipelineLayouts.post, vertex: { module: post, entryPoint: 'fullscreen' }, fragment: { module: post, entryPoint: entry, targets: [{ format: 'rgba16float' }] }, primitive: { topology: 'triangle-list' } }); });
       this.pipelines.composite = this.device.createRenderPipeline({ layout: this.pipelineLayouts.post, vertex: { module: post, entryPoint: 'fullscreen' }, fragment: { module: post, entryPoint: 'compositeFragment', targets: [{ format: this.format }] }, primitive: { topology: 'triangle-list' } });
       this.bindGroups = {
@@ -168,39 +192,48 @@ fn layeredCinema(uv: vec2<f32>) -> vec3<f32> { var cinema = vec3<f32>(0.0); let 
     resize(width, height) {
       this.width = Math.min(1920, Math.max(1, Math.floor(width || 1)));
       this.height = Math.min(1080, Math.max(1, Math.floor(height || 1)));
-      ['scene', 'bloom', 'history', 'volume', 'temporal'].forEach((key) => this.resources[key]?.destroy?.());
+      ['scene', 'bloomA', 'bloomB', 'history', 'volume', 'temporal', 'depth'].forEach((key) => this.resources[key]?.destroy?.());
       const usage = T();
-      ['scene', 'bloom', 'history', 'volume', 'temporal'].forEach((key) => { this.resources[key] = this.device.createTexture({ label: `weather-hdr-${key}`, size: [this.width, this.height], format: 'rgba16float', usage: usage.RENDER_ATTACHMENT | usage.TEXTURE_BINDING | usage.STORAGE_BINDING | usage.COPY_SRC | usage.COPY_DST }); });
+      ['scene', 'bloomA', 'bloomB', 'history', 'volume', 'temporal'].forEach((key) => { this.resources[key] = this.device.createTexture({ label: `weather-hdr-${key}`, size: [this.width, this.height], format: 'rgba16float', usage: usage.RENDER_ATTACHMENT | usage.TEXTURE_BINDING | usage.COPY_SRC | usage.COPY_DST }); });
+      this.resources.depth = this.device.createTexture({ label: 'weather-layer-depth', size: [this.width, this.height], format: 'depth24plus', usage: usage.RENDER_ATTACHMENT });
       const postEntries = (scene, bloom, history) => [{ binding: 0, resource: this.resources[scene].createView() }, { binding: 1, resource: this.resources[bloom].createView() }, { binding: 2, resource: this.resources[history].createView() }, { binding: 3, resource: this.resources.sampler }, { binding: 4, resource: { buffer: this.resources.uniforms } }, { binding: 5, resource: { buffer: this.resources.effectState } }];
       this.bindGroups.post = {
-        volumetric: this.device.createBindGroup({ layout: this.layouts.post, entries: postEntries('scene', 'bloom', 'history') }),
-        bloom: this.device.createBindGroup({ layout: this.layouts.post, entries: postEntries('volume', 'bloom', 'history') }),
-        temporal: this.device.createBindGroup({ layout: this.layouts.post, entries: postEntries('volume', 'bloom', 'history') }),
-        composite: this.device.createBindGroup({ layout: this.layouts.post, entries: postEntries('temporal', 'bloom', 'scene') })
+        volumetric: this.device.createBindGroup({ layout: this.layouts.post, entries: postEntries('scene', 'scene', 'history') }),
+        bloomFromVolume: this.device.createBindGroup({ layout: this.layouts.post, entries: postEntries('volume', 'volume', 'history') }),
+        bloomAtoB: this.device.createBindGroup({ layout: this.layouts.post, entries: postEntries('bloomA', 'volume', 'history') }),
+        bloomBtoA: this.device.createBindGroup({ layout: this.layouts.post, entries: postEntries('bloomB', 'volume', 'history') }),
+        temporal: this.device.createBindGroup({ layout: this.layouts.post, entries: postEntries('volume', 'volume', 'history') }),
+        compositeA: this.device.createBindGroup({ layout: this.layouts.post, entries: postEntries('temporal', 'bloomA', 'scene') }),
+        compositeB: this.device.createBindGroup({ layout: this.layouts.post, entries: postEntries('temporal', 'bloomB', 'scene') })
       };
     }
 
     uploadEffectState(effects, quality, time, deltaSeconds) {
-      // This fixed-size upload is per effect (max 13), never a CPU particle simulation.
-      const packed = new Float32Array(13 * 16);
-      effects.slice(0, 13).forEach((effect, index) => {
-        const base = index * 16;
+      // Fixed slots are keyed by effectIndex; activeOrder is rank+1 from the engine's layer sort.
+      const packed = new Float32Array(13 * EFFECT_BLOCK_FLOATS);
+      effects.slice(0, 13).forEach((effect, rank) => {
+        const base = effect.effectIndex * EFFECT_BLOCK_FLOATS;
         const fogColor = colorVector(effect.fogColor);
         const glitchBits = (effect.glitchRgbShift ? 1 : 0) + (effect.glitchDisplacement ? 2 : 0) + (effect.glitchScanlines ? 4 : 0) + (effect.glitchNoise ? 8 : 0) + (effect.glitchBlocks ? 16 : 0) + (effect.glitchChromaticAberration ? 32 : 0);
         packed.set([
+          // block 0=(intensity,duration,permanent,layer)
           effect.intensity, effect.duration, effect.permanent ? 1 : 0, effect.layer,
+          // block 1=(opacity,particleScale,wind,direction)
           effect.opacity, effect.particleScale, effect.wind, effect.directionDeg,
+          // block 2=(fog RGB,colorTemp)
           fogColor[0], fogColor[1], fogColor[2], temperatureValue(effect.colorTemperature),
-          glitchBits, effect.glitchIntensity, effect.effectIndex, 1
+          // block 3=(glitchBits,glitchIntensity,effectIndex,activeOrder)
+          glitchBits, effect.glitchIntensity, effect.effectIndex, rank + 1
         ], base);
       });
-      const commands = new Float32Array(13 * 4);
-      effects.slice(0, 13).forEach((effect, index) => commands.set([effect.effectIndex, effect.layer, effect.intensity, effect.opacity], index * 4));
+      const particleEffects = effects.filter((effect) => PARTICLE_EFFECT_INDEXES.has(effect.effectIndex)).slice(0, PARTICLE_EFFECT_INDEXES.size);
+      const commands = new Float32Array(PARTICLE_EFFECT_INDEXES.size * 4);
+      particleEffects.forEach((effect, index) => commands.set([effect.effectIndex, effect.layer, effect.intensity, effect.opacity], index * 4));
       this.activeParticleCap = Math.min(this.capacity, Math.max(0, quality.particleBudget));
       this.frameQuality = { ...quality };
       this.device.queue.writeBuffer(this.resources.effectState, 0, packed);
       this.device.queue.writeBuffer(this.resources.spawnCommands, 0, commands);
-      this.device.queue.writeBuffer(this.resources.uniforms, 0, new Float32Array([this.width, this.height, time, deltaSeconds, effects[0]?.intensity || 0, effects[0]?.wind || 0, effects[0]?.directionDeg || 0, effects[0]?.layer || 0, effects[0]?.opacity || 0, effects[0]?.particleScale || 1, this.activeParticleCap, effects.length, quality.volumetricSamples, quality.bloomPasses, quality.temporalStability, quality.temporalStability]));
+      this.device.queue.writeBuffer(this.resources.uniforms, 0, new Float32Array([this.width, this.height, time, deltaSeconds, effects[0]?.intensity || 0, effects[0]?.wind || 0, effects[0]?.directionDeg || 0, effects[0]?.layer || 0, effects[0]?.opacity || 0, effects[0]?.particleScale || 1, this.activeParticleCap, particleEffects.length, quality.volumetricSamples, quality.bloomPasses, quality.temporalStability, quality.temporalStability]));
     }
 
     encode(encoder, targetView, metrics) {
@@ -212,16 +245,22 @@ fn layeredCinema(uv: vec2<f32>) -> vec3<f32> { var cinema = vec3<f32>(0.0); let 
       compute.setPipeline(this.pipelines.simulate); compute.dispatchWorkgroups(workgroups);
       compute.setPipeline(this.pipelines.compact); compute.dispatchWorkgroups(workgroups);
       compute.setPipeline(this.pipelines.indirect); compute.dispatchWorkgroups(1); compute.end();
-      const particlePass = encoder.beginRenderPass({ colorAttachments: [{ view: this.resources.scene.createView(), loadOp: 'clear', storeOp: 'store', clearValue: { r: 0, g: 0, b: 0, a: 0 } }] });
+      const particlePass = encoder.beginRenderPass({ colorAttachments: [{ view: this.resources.scene.createView(), loadOp: 'clear', storeOp: 'store', clearValue: { r: 0, g: 0, b: 0, a: 0 } }], depthStencilAttachment: { view: this.resources.depth.createView(), depthClearValue: 1, depthLoadOp: 'clear', depthStoreOp: 'store' } });
       particlePass.setPipeline(this.pipelines.particle); if (this.bindGroups?.particle) particlePass.setBindGroup(0, this.bindGroups.particle); particlePass.drawIndirect(this.resources.indirect, 0); particlePass.end();
       const postPass = (name, target, group) => { const pass = encoder.beginRenderPass({ colorAttachments: [{ view: this.resources[target].createView(), loadOp: 'clear', storeOp: 'store', clearValue: { r: 0, g: 0, b: 0, a: 0 } }] }); pass.setPipeline(this.pipelines[name]); pass.setBindGroup(0, group); pass.draw(3); pass.end(); };
       postPass('volumetricFragment', 'volume', this.bindGroups.post.volumetric);
       const bloomPasses = Math.max(1, Math.round(this.frameQuality?.bloomPasses || 1));
-      for (let passIndex = 0; passIndex < bloomPasses; passIndex++) postPass('bloomFragment', 'bloom', this.bindGroups.post.bloom);
+      postPass('bloomFragment', 'bloomA', this.bindGroups.post.bloomFromVolume);
+      let bloomTarget = 'bloomA';
+      for (let passIndex = 1; passIndex < bloomPasses; passIndex++) {
+        const writeBloomB = bloomTarget === 'bloomA';
+        postPass('bloomFragment', writeBloomB ? 'bloomB' : 'bloomA', writeBloomB ? this.bindGroups.post.bloomAtoB : this.bindGroups.post.bloomBtoA);
+        bloomTarget = writeBloomB ? 'bloomB' : 'bloomA';
+      }
       postPass('temporalFragment', 'temporal', this.bindGroups.post.temporal);
-      const composite = encoder.beginRenderPass({ colorAttachments: [{ view: targetView, loadOp: 'clear', storeOp: 'store', clearValue: { r: 0, g: 0, b: 0, a: 0 } }] }); composite.setPipeline(this.pipelines.composite); composite.setBindGroup(0, this.bindGroups.post.composite); composite.draw(3); composite.end();
+      const composite = encoder.beginRenderPass({ colorAttachments: [{ view: targetView, loadOp: 'clear', storeOp: 'store', clearValue: { r: 0, g: 0, b: 0, a: 0 } }] }); composite.setPipeline(this.pipelines.composite); composite.setBindGroup(0, bloomTarget === 'bloomA' ? this.bindGroups.post.compositeA : this.bindGroups.post.compositeB); composite.draw(3); composite.end();
       encoder.copyTextureToTexture?.({ texture: this.resources.temporal }, { texture: this.resources.history }, [this.width, this.height, 1]);
-      if (this.timestampEnabled) { encoder.resolveQuerySet(this.resources.timestamps, 0, 2, this.resources.timestampResolve, 0); encoder.copyBufferToBuffer(this.resources.timestampResolve, 0, this.resources.timestampReadback, 0, 16); }
+      if (this.timestampEnabled && this.timestampResolveEnabled) { encoder.resolveQuerySet(this.resources.timestamps, 0, 2, this.resources.timestampResolve, 0); encoder.copyBufferToBuffer(this.resources.timestampResolve, 0, this.resources.timestampReadback, 0, 16); }
       metrics.activeParticles = Math.min(this.capacity, metrics.activeParticles || 0);
     }
 
