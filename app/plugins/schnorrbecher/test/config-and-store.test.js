@@ -2,7 +2,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { DEFAULT_STATE, normalizeConfig } = require('../lib/config');
+const { DEFAULT_STATE, normalizeConfig, normalizeState } = require('../lib/config');
 const CoinJarStore = require('../lib/state-store');
 
 describe('Schnorrbecher configuration and store', () => {
@@ -24,6 +24,7 @@ describe('Schnorrbecher configuration and store', () => {
       giftSize1: 0,
       giftSize1000To1999: 99999,
       spawnDelayMs: 0,
+      physicsEnabled: false,
       persistenceMode: 'invalid',
       soundVolume: 5
     })).toMatchObject({
@@ -33,6 +34,7 @@ describe('Schnorrbecher configuration and store', () => {
       giftSize1: 16,
       giftSize1000To1999: 240,
       spawnDelayMs: 20,
+      physicsEnabled: true,
       persistenceMode: 'session',
       soundVolume: 1
     });
@@ -42,6 +44,16 @@ describe('Schnorrbecher configuration and store', () => {
     expect(normalizeConfig({}).jarStyle).toBe('classic');
     expect(normalizeConfig({ jarStyle: 'arcade' }).jarStyle).toBe('arcade');
     expect(normalizeConfig({ jarStyle: 'unknown' }).jarStyle).toBe('classic');
+  });
+
+  test('retains recent gift metadata without an image for fallback reconstruction', () => {
+    expect(normalizeState({
+      recentGifts: [{ giftId: 'unknown-gift', giftName: 'Unknown Gift' }]
+    }).recentGifts).toEqual([{
+      giftId: 'unknown-gift',
+      giftName: 'Unknown Gift',
+      giftImage: ''
+    }]);
   });
 
   test('persists state atomically and clears it to defaults', () => {

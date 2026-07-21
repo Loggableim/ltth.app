@@ -124,6 +124,26 @@ describe('CoinJarEngine', () => {
     expect(engine.syncPayload().recentGifts).toEqual(state.recentGifts);
   });
 
+  test('keeps gift metadata without catalog art so an overlay resync can render a fallback coin', () => {
+    const { engine, state } = createEngine();
+
+    engine.handleGift({
+      eventId: 'gift-without-art',
+      giftId: 'unknown-gift',
+      giftName: 'Unknown Gift',
+      diamondValue: 1,
+      repeatCount: 1,
+      repeatEnd: true
+    });
+
+    expect(state.recentGifts).toEqual([{
+      giftId: 'unknown-gift',
+      giftName: 'Unknown Gift',
+      giftImage: ''
+    }]);
+    expect(engine.syncPayload().recentGifts).toEqual(state.recentGifts);
+  });
+
   test('defers a combo until its terminal event and uses its largest repeat count', () => {
     const { engine, state } = createEngine();
     expect(engine.handleGift({
@@ -203,6 +223,18 @@ describe('CoinJarEngine', () => {
     engine.addValue(200, { eventId: 'persistent-1' });
     expect(engine.handleStreamSession({ streamIdentity: 'room:persistent', isNewStream: true })).toBe(false);
     expect(state.totalCoinValue).toBe(200);
+  });
+
+  test('reports the current live connection without resetting persistent state', () => {
+    const { engine, state } = createEngine();
+    engine.addValue(200, { eventId: 'persistent-live-1' });
+
+    expect(engine.handleStreamSession({ streamIdentity: 'room:persistent', isNewStream: true })).toBe(false);
+    expect(engine.isLive()).toBe(true);
+    expect(state.totalCoinValue).toBe(200);
+
+    engine.handleStreamDisconnect();
+    expect(engine.isLive()).toBe(false);
   });
 
   test('clears stale state when the session-mode plugin starts', () => {

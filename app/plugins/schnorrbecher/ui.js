@@ -104,7 +104,11 @@
       });
 
       if (this.socket?.on) {
-        this.socket.on('coinJar.sync', payload => this.renderStatus({ state: payload, config: payload.config }));
+        this.socket.on('coinJar.sync', payload => this.renderStatus({
+          state: payload,
+          config: payload.config,
+          livestreamStatus: payload.livestreamStatus
+        }));
         this.socket.on('coinJar.config', config => this.renderConfig(config));
         this.socket.on('connect', () => this.socket.emit('coinJar.sync.request'));
       }

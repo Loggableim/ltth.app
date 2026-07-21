@@ -26,9 +26,9 @@ describe('Schnorrbecher OBS overlay markup', () => {
     expect(css).not.toContain('.jar-rim');
     expect(css).not.toContain('border: 1px solid rgba(255, 255, 255, .6)');
     expect(css).not.toContain('background: rgba(10, 22, 42, .16)');
-    expect(css).not.toContain('.gift-fallback');
+    expect(css).toContain('.gift-fallback');
     expect(script).not.toContain("textContent = '🎁'");
     expect(html).not.toContain('class="jar-rim"');
-    expect(css).not.toContain('background: radial-gradient(circle at 32% 28%');
+    expect(css).toContain('background: radial-gradient(circle at 32% 28%');
   });
 });
