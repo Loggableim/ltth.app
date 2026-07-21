@@ -1243,6 +1243,28 @@ class GameEngineDatabase {
   }
 
   /**
+   * Resolve a stable player ID to its newest known interactive display name.
+   * Leaderboards keep the stable ID for aggregation and expose the display name
+   * only at presentation time.
+   */
+  resolveLeaderboardIdentity(playerId) {
+    const stableId = String(playerId);
+    const identity = this.db.prepare(`
+      SELECT viewer_display_name FROM game_interactive_sessions
+      WHERE viewer_id = ? AND TRIM(viewer_display_name) <> ''
+      ORDER BY updated_at DESC LIMIT 1
+    `).get(stableId);
+    return { playerId: stableId, username: identity?.viewer_display_name || stableId };
+  }
+
+  _presentLeaderboardRows(rows) {
+    return rows.map(row => ({
+      ...row,
+      ...this.resolveLeaderboardIdentity(row.username)
+    }));
+  }
+
+  /**
    * Get leaderboard by win streaks
    */
   getStreakLeaderboard(gameType, limit = 10) {
@@ -1251,7 +1273,7 @@ class GameEngineDatabase {
       : `SELECT * FROM game_player_stats ORDER BY best_win_streak DESC, wins DESC LIMIT ?`;
     
     const stmt = this.db.prepare(query);
-    return gameType ? stmt.all(gameType, limit) : stmt.all(limit);
+    return this._presentLeaderboardRows(gameType ? stmt.all(gameType, limit) : stmt.all(limit));
   }
 
   /**
@@ -1298,9 +1320,9 @@ class GameEngineDatabase {
     
     const stmt = this.db.prepare(query);
     if (gameType) {
-      return stmt.all(today, gameType, today, gameType, limit);
+      return this._presentLeaderboardRows(stmt.all(today, gameType, today, gameType, limit));
     } else {
-      return stmt.all(today, today, limit);
+      return this._presentLeaderboardRows(stmt.all(today, today, limit));
     }
   }
 
@@ -1347,9 +1369,9 @@ class GameEngineDatabase {
     
     const stmt = this.db.prepare(query);
     if (gameType) {
-      return stmt.all(thisMonth, gameType, thisMonth, gameType, limit);
+      return this._presentLeaderboardRows(stmt.all(thisMonth, gameType, thisMonth, gameType, limit));
     } else {
-      return stmt.all(thisMonth, thisMonth, limit);
+      return this._presentLeaderboardRows(stmt.all(thisMonth, thisMonth, limit));
     }
   }
 
@@ -1362,7 +1384,7 @@ class GameEngineDatabase {
       : `SELECT * FROM game_player_stats ORDER BY wins DESC, total_games DESC LIMIT ?`;
     
     const stmt = this.db.prepare(query);
-    return gameType ? stmt.all(gameType, limit) : stmt.all(limit);
+    return this._presentLeaderboardRows(gameType ? stmt.all(gameType, limit) : stmt.all(limit));
   }
 
   /**
@@ -1374,7 +1396,7 @@ class GameEngineDatabase {
       : `SELECT * FROM game_player_stats ORDER BY elo_rating DESC, total_games DESC LIMIT ?`;
     
     const stmt = this.db.prepare(query);
-    return gameType ? stmt.all(gameType, limit) : stmt.all(limit);
+    return this._presentLeaderboardRows(gameType ? stmt.all(gameType, limit) : stmt.all(limit));
   }
 
   /**

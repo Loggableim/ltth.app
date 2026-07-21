@@ -311,4 +311,61 @@ describe('GameEngineDatabase interactive persistence', () => {
       expect.objectContaining({ username: 'cancelled' })
     ]));
   });
+
+  test('presents a historical viewer display name while keeping every leaderboard keyed by stable player ID', () => {
+    const playerId = '7446102145268843553';
+    const completedSession = database.createSession('connect4', playerId, 'viewer', 'command', '/c4start');
+    database.addPlayer2(completedSession, 'streamer', 'streamer');
+    database.endSession(completedSession, playerId, { board: [[1]] }, 'win');
+    database.createInteractiveState(session({
+      sessionId: 42,
+      viewerId: playerId,
+      viewerDisplayName: 'Former Sam',
+      lastActivityAt: 1000
+    }));
+    database.completeInteractiveState(42, 'cancelled');
+    sqlite.prepare(`UPDATE game_interactive_sessions SET updated_at = ? WHERE session_id = ?`)
+      .run(1000, 42);
+    database.createInteractiveState(session({
+      sessionId: completedSession,
+      viewerId: playerId,
+      viewerDisplayName: 'Sam',
+      lastActivityAt: 2000
+    }));
+    database.updatePlayerStats(playerId, 'connect4', true, false, false, 10);
+    database.updatePlayerStats(playerId, 'connect4', true, false, false, 10);
+    database.updatePlayerELO(playerId, 'connect4', 240);
+
+    const leaderboardRows = [
+      database.getDailyLeaderboard('connect4', 10)[0],
+      database.getSeasonLeaderboard('connect4', 10)[0],
+      database.getLifetimeLeaderboard('connect4', 10)[0],
+      database.getELOLeaderboard('connect4', 10)[0],
+      database.getStreakLeaderboard('connect4', 10)[0]
+    ];
+
+    for (const row of leaderboardRows) {
+      expect(row).toMatchObject({ playerId, username: 'Sam' });
+    }
+    expect(sqlite.prepare(`
+      SELECT username FROM game_player_stats WHERE game_type = ?
+    `).all('connect4')).toEqual([expect.objectContaining({ username: playerId })]);
+    expect(database.getSession(completedSession).player1_username).toBe(playerId);
+  });
+
+  test('keeps a nonnumeric player name as both leaderboard ID and display name', () => {
+    const username = 'sam_the_viewer';
+    database.updatePlayerStats(username, 'connect4', true, false, false, 10);
+
+    expect(database.resolveLeaderboardIdentity(username)).toEqual({ playerId: username, username });
+    expect(database.getLifetimeLeaderboard('connect4', 10)[0]).toMatchObject({ playerId: username, username });
+  });
+
+  test('falls back to an unresolved numeric player ID as the display name', () => {
+    const playerId = '7446102145268843554';
+    database.updatePlayerStats(playerId, 'connect4', true, false, false, 10);
+
+    expect(database.resolveLeaderboardIdentity(playerId)).toEqual({ playerId, username: playerId });
+    expect(database.getELOLeaderboard('connect4', 10)[0]).toMatchObject({ playerId, username: playerId });
+  });
 });

@@ -223,6 +223,29 @@ function chessState({
 }
 
 describe('interactive overlay countdown DOM', () => {
+  test('direct Connect4 leaderboard renders the readable username instead of playerId', async () => {
+    const playerId = '7446102145268843553';
+    const fetch = jest.fn(url => {
+      if (url === '/api/game-engine/lifetime-leaderboard/connect4?limit=10') {
+        return Promise.resolve(jsonResponse([{
+          playerId,
+          username: 'Sam',
+          wins: 2,
+          total_games: 2
+        }]));
+      }
+      return new Promise(() => {});
+    });
+    const { dom } = loadOverlay('connect4.html', null, { fetch });
+
+    await dom.window.showLeaderboard('connect4', 'lifetime');
+
+    const leaderboard = dom.window.document.getElementById('leaderboard-content');
+    expect(leaderboard.textContent).toContain('Sam');
+    expect(leaderboard.textContent).not.toContain(playerId);
+    dom.window.close();
+  });
+
   test('direct Connect4 replays held authoritative text after i18n ready and language changes', async () => {
     let resolveReady;
     let onChange;
