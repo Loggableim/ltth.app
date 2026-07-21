@@ -49,6 +49,30 @@ describe('EulerStream-only TikTok connector', () => {
     expect(dashboardJs).not.toMatch(/\/api\/data-source|datasource:|TikFinity|loadDataSourceStatus/);
   });
 
+  test('does not retain orphaned source-choice localization machinery', () => {
+    const root = path.join(__dirname, '..', '..');
+    const localePaths = ['de', 'en', 'es', 'fr'].map((lang) => path.join(root, 'app', 'locales', `${lang}.json`));
+    const inventory = fs.readFileSync(path.join(root, 'app', 'locales', 'translation-inventory.json'), 'utf8');
+    const repairScripts = [
+      'scripts/repair-dashboard-i18n.js',
+      'scripts/repair-dashboard-extended-i18n.js'
+    ].map((relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8'));
+
+    for (const localePath of localePaths) {
+      const locale = JSON.parse(fs.readFileSync(localePath, 'utf8'));
+      expect(locale.dashboard).not.toHaveProperty('tiktok_source');
+      expect(locale.dashboard).not.toHaveProperty('tiktok_source_desc');
+      expect(locale.common.dashboard).not.toHaveProperty('tiktok_datenquelle');
+      expect(locale.common.dashboard).not.toHaveProperty('wahle_die_datenquelle_fur_tiktok_live_events_die_anderung_wird_beim_nachsten_verbinden_aktiv');
+      expect(locale.settings).not.toHaveProperty('websocket_port');
+      expect(locale.settings).not.toHaveProperty('websocket_hint');
+    }
+    expect(inventory).not.toMatch(/dashboard\.tiktok_source|settings\.websocket_(?:port|hint)/);
+    for (const repairScript of repairScripts) {
+      expect(repairScript).not.toMatch(/tiktok_source(?:_desc)?|settings\.websocket_(?:port|hint)|websocket_port/);
+    }
+  });
+
   test('does not publish Data Source Manager or TikFinity as a live-data option', () => {
     const root = path.join(__dirname, '..', '..');
     const registry = JSON.parse(fs.readFileSync(path.join(root, 'plugin-store.json'), 'utf8'));

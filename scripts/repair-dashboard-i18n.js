@@ -72,7 +72,6 @@ const entries = {
     platform: { en: 'Platform:', de: 'Plattform:', es: 'Plataforma:', fr: 'Plateforme :' },
     status: { en: 'Status:', de: 'Status:', es: 'Estado:', fr: 'État :' },
     checking: { en: 'Checking…', de: 'Wird geprüft …', es: 'Comprobando…', fr: 'Vérification…' },
-    websocket_port: { en: 'WebSocket Port', de: 'WebSocket-Port', es: 'Puerto WebSocket', fr: 'Port WebSocket' },
     eulerstream_title: { en: '⚡ Eulerstream', de: '⚡ Eulerstream', es: '⚡ Eulerstream', fr: '⚡ Eulerstream' },
     eulerstream_desc: { en: 'Direct WebSocket connection through the Eulerstream SDK', de: 'Direkte WebSocket-Verbindung über das Eulerstream-SDK', es: 'Conexión WebSocket directa mediante el SDK de Eulerstream', fr: 'Connexion WebSocket directe via le SDK Eulerstream' },
     api_key: { en: 'API Key', de: 'API-Key', es: 'Clave de API', fr: 'Clé API' },
@@ -163,7 +162,6 @@ const replacements = new Map([
   ['<span id="autostart-status" class="ml-2">Checking...</span>', '<span id="autostart-status" class="ml-2" data-i18n="settings.checking">Checking…</span>'],
   ['<span>⚡ Eulerstream</span>', '<span data-i18n="settings.eulerstream_title">⚡ Eulerstream</span>'],
   ['<p class="text-xs text-gray-400 mt-0.5">Direkte WebSocket-Verbindung über Eulerstream SDK</p>', '<p class="text-xs text-gray-400 mt-0.5" data-i18n="settings.eulerstream_desc">Direkte WebSocket-Verbindung über das Eulerstream-SDK</p>'],
-  ['<label>WebSocket Port</label>', '<label data-i18n="settings.websocket_port">WebSocket Port</label>'],
   ['<label>API Key</label>', '<label data-i18n="settings.api_key">API Key</label>'],
   ['<span>Automatisch beim Start verbinden</span>', '<span data-i18n="settings.auto_connect_stream">Automatisch beim Start verbinden</span>'],
   ['<span>Wenn aktiviert, verbindet sich die Software automatisch beim Start mit dem zuletzt verbundenen Stream</span>', '<span data-i18n="settings.auto_connect_stream_desc">Wenn aktiviert, verbindet sich die Software beim Start automatisch mit dem zuletzt verbundenen Stream.</span>']
