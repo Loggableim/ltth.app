@@ -16,11 +16,17 @@ function isLoopbackAddress(address) {
 
 function getRequestAddress(req) {
   return normalizeAddress(
-    req.ip ||
     req.socket?.remoteAddress ||
     req.connection?.remoteAddress ||
     ''
   );
+}
+
+function hasForwardingHeaders(req) {
+  return Object.keys(req.headers || {}).some(header => {
+    const normalized = String(header).toLowerCase();
+    return normalized === 'forwarded' || normalized.startsWith('x-forwarded-');
+  });
 }
 
 function getProvidedToken(req) {
@@ -51,9 +57,9 @@ function createAdminAuth(options = {}) {
 
   return function adminAuth(req, res, next) {
     const remoteAddress = getRequestAddress(req);
-    const isLoopback = isLoopbackAddress(remoteAddress);
+    const isDirectLoopback = isLoopbackAddress(remoteAddress) && !hasForwardingHeaders(req);
 
-    if (allowLoopbackWithoutToken && isLoopback) {
+    if (allowLoopbackWithoutToken && isDirectLoopback) {
       return next();
     }
 
@@ -86,5 +92,6 @@ function createAdminAuth(options = {}) {
 module.exports = {
   createAdminAuth,
   isLoopbackAddress,
-  getRequestAddress
+  getRequestAddress,
+  hasForwardingHeaders
 };

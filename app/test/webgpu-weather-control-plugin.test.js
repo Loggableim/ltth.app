@@ -218,6 +218,7 @@ describe('WebGPU Weather Control independent plugin surface', () => {
     await previewRoute({
       headers: {},
       ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
       body: { action: 'rain', intensity: 0.6, duration: 1200, options: { wind: 0.25 } }
     }, response);
 
@@ -252,7 +253,7 @@ describe('WebGPU Weather Control independent plugin surface', () => {
     expect(JSON.stringify(external.body)).not.toContain(plugin.apiKey);
 
     const dashboard = createResponse();
-    await configRoute({ headers: {}, ip: '127.0.0.1' }, dashboard);
+    await configRoute({ headers: {}, ip: '127.0.0.1', socket: { remoteAddress: '127.0.0.1' } }, dashboard);
     expect(dashboard.statusCode).toBe(200);
     expect(dashboard.body.config.apiKey).toBe(plugin.apiKey);
     db.close();
@@ -285,13 +286,16 @@ describe('WebGPU Weather Control independent plugin surface', () => {
     expect(overlay).not.toContain("getContext('2d')");
     expect(overlay).not.toContain("getContext('webgl");
     expect(overlay).not.toContain('/weather-engine.js');
-    expect(overlay).toContain('webgpu-weather:diagnostics');
+    expect(overlay).toContain("io({ auth: { role: 'overlay' } })");
+    expect(overlay).not.toContain("socket.on('webgpu-weather:diagnostics'");
     expect(overlay).toContain('communityHud');
     expect(overlay).toContain('hudMeter');
     expect(overlay).toContain('hudQuest');
     expect(overlay).toContain('hudStreak');
     expect(overlay).toContain('hudRewardFeed');
     expect(ui).toContain('/api/webgpu-weather/config');
+    expect(ui).toContain("io({ auth: { role: 'admin' } })");
+    expect(ui).toContain("socket.emit('webgpu-weather:subscribe-diagnostics')");
     expect(ui).toContain('<option value="auto" selected');
 
     const localeKeys = ['de', 'en', 'es', 'fr'].map((locale) => Object.keys(JSON.parse(

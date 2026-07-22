@@ -41,7 +41,7 @@ class DeepgramLiveSessionManager {
       if (this._isCurrent(session)) this.sessions.delete(socket.id);
       session.stopped = true;
       this._clearTimers(session);
-      try { session.connection?.close(); } catch (closeError) { /* best effort */ }
+      this._disposeConnection(session, session.connection);
       const message = this._safeErrorMessage(error, apiKey);
       this._emitStatus(session, { state: 'error', error: message, nextRetryMs: null });
       throw new Error(`Deepgram live connection failed: ${message}`);
@@ -93,9 +93,10 @@ class DeepgramLiveSessionManager {
     this._clearTimers(session);
 
     if (session.connection) {
+      const connection = session.connection;
       try { session.connection.sendFinalize({ type: 'Finalize' }); } catch (error) { /* best effort */ }
       try { session.connection.sendCloseStream({ type: 'CloseStream' }); } catch (error) { /* best effort */ }
-      try { session.connection.close(); } catch (error) { /* best effort */ }
+      this._disposeConnection(session, connection);
     }
 
     this._emitStatus(session, { state: 'closed', reason, nextRetryMs: null });
@@ -169,14 +170,23 @@ class DeepgramLiveSessionManager {
       try { connection.close(); } catch (error) { /* best effort */ }
       return false;
     }
+    if (session.connection) {
+      try { connection.close(); } catch (error) { /* best effort */ }
+      throw new Error('Deepgram live connection is still active');
+    }
 
     const connectionGeneration = session.connectionGeneration + 1;
     session.connection = connection;
     session.connectionGeneration = connectionGeneration;
     session.open = false;
-    this._bindConnection(session, connection, connectionGeneration);
-    connection.connect();
-    await connection.waitForOpen();
+    try {
+      this._bindConnection(session, connection, connectionGeneration);
+      connection.connect();
+      await connection.waitForOpen();
+    } catch (error) {
+      if (session.connection === connection) this._disposeConnection(session, connection);
+      throw error;
+    }
 
     if (!this._isCurrentConnection(session, connection, connectionGeneration)) {
       try { connection.close(); } catch (error) { /* best effort */ }
@@ -245,10 +255,7 @@ class DeepgramLiveSessionManager {
     });
     connection.on('error', error => this._handleConnectionFailure(session, connection, connectionGeneration, error));
     connection.on('close', event => {
-      if (!this._isCurrentConnection(session, connection, connectionGeneration)) return;
-      session.open = false;
-      this._clearKeepAliveTimer(session);
-      this._scheduleRecovery(session, {
+      this._handleConnectionBoundary(session, connection, connectionGeneration, {
         code: Number.isFinite(event?.code) ? event.code : null
       });
     });
@@ -256,10 +263,19 @@ class DeepgramLiveSessionManager {
   }
 
   _handleConnectionFailure(session, connection, connectionGeneration, error) {
+    this._handleConnectionBoundary(session, connection, connectionGeneration, {
+      error: this._safeErrorMessage(error, session.apiKey)
+    });
+  }
+
+  _handleConnectionBoundary(session, connection, connectionGeneration, status = {}) {
     if (!this._isCurrentConnection(session, connection, connectionGeneration) || session.stopped) return;
     session.open = false;
     this._clearKeepAliveTimer(session);
-    this._scheduleRecovery(session, { error: this._safeErrorMessage(error, session.apiKey) });
+    this._flushFinal(session);
+    session.requestId = null;
+    this._disposeConnection(session, connection);
+    this._scheduleRecovery(session, status);
   }
 
   _scheduleRecovery(session, status = {}) {
@@ -315,7 +331,7 @@ class DeepgramLiveSessionManager {
     session.state = 'error';
     session.recoveryInFlight = false;
     this._clearTimers(session);
-    try { session.connection?.close(); } catch (closeError) { /* best effort */ }
+    this._disposeConnection(session, session.connection);
     this._emitStatus(session, {
       state: 'error',
       error,
@@ -437,6 +453,20 @@ class DeepgramLiveSessionManager {
   _clearTimers(session) {
     this._clearKeepAliveTimer(session);
     this._clearRecoveryTimer(session);
+  }
+
+  _disposeConnection(session, connection) {
+    if (!connection) return;
+    if (typeof connection.on === 'function') {
+      for (const event of ['message', 'error', 'close', 'open']) {
+        try { connection.on(event, () => {}); } catch (error) { /* best effort */ }
+      }
+    }
+    if (session.connection === connection) {
+      session.connection = null;
+      session.open = false;
+    }
+    try { connection.close(); } catch (error) { /* best effort */ }
   }
 
   _safeErrorMessage(error, apiKey) {

@@ -38,7 +38,7 @@
         diagnostics.textContent = `${metrics.state} | ${Math.round(metrics.fps || 0)} FPS | ${Math.round(metrics.gpuFrameMs || 0)} ms | ${metrics.activeParticles || 0} particles | ${metrics.reason || ''}`;
       }
     });
-    const socket = typeof io === 'function' ? io() : null;
+    const socket = typeof io === 'function' ? io({ auth: { role: 'overlay' } }) : null;
     async function loadOverlayConfig() {
       try {
         const response = await fetch('/api/webgpu-weather/overlay-config');
@@ -59,9 +59,6 @@
       socket.on('webgpu-weather:trigger', (event) => engine.trigger(event));
       socket.on('webgpu-weather:stop-effect', (event = {}) => engine.stop(event.action));
       socket.on('webgpu-weather:stop', () => engine.stop());
-      socket.on('webgpu-weather:diagnostics', (state) => {
-        if (debug) { diagnostics.hidden = false; diagnostics.textContent = state && state.message ? state.message : 'WebGPU diagnostics updated'; }
-      });
       socket.on('webgpu-weather:config-changed', () => {
         loadOverlayConfig();
       });
@@ -82,12 +79,24 @@
         });
       });
     }
+    const telemetryIntervalMs = 500;
     let lastFrameAt = performance.now();
+    let lastTelemetryAt = Number.NEGATIVE_INFINITY;
+    let lastTelemetrySignature = null;
+    function publishOverlayState(now) {
+      if (!socket || now - lastTelemetryAt < telemetryIntervalMs) return;
+      lastTelemetryAt = now;
+      const metrics = engine.getMetrics();
+      const signature = JSON.stringify(metrics);
+      if (signature === lastTelemetrySignature) return;
+      lastTelemetrySignature = signature;
+      socket.emit('webgpu-weather:overlay-state', metrics);
+    }
     function frame(now) {
       const deltaMs = Math.min(100, Math.max(0, now - lastFrameAt));
       lastFrameAt = now;
       engine.render(deltaMs);
-      if (socket) socket.emit('webgpu-weather:overlay-state', engine.getMetrics());
+      publishOverlayState(now);
       requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);

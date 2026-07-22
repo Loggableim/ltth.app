@@ -189,6 +189,41 @@ describe('STT Ticker Deepgram live session recovery', () => {
     await manager.destroy();
   });
 
+  test('flushes and disposes a failed connection before accepting reused timestamps after recovery', async () => {
+    const first = createConnection();
+    const reopened = createConnection();
+    const onFinal = jest.fn();
+    const { manager, connect, socket } = createHarness({
+      connections: [first, reopened],
+      onFinal
+    });
+
+    await manager.start(socket, { sampleRate: 16000, channels: 1 });
+    first.emit('message', resultMessage('Vorher', { isFinal: true, start: 0 }));
+    first.emit('error', new Error('connection failed'));
+
+    expect(first.close).toHaveBeenCalledTimes(1);
+    expect(onFinal).toHaveBeenCalledTimes(1);
+    expect(onFinal).toHaveBeenLastCalledWith(socket.id, expect.objectContaining({ text: 'Vorher' }));
+
+    first.emit('message', resultMessage('Veraltet', { isFinal: true, speechFinal: true, start: 0 }));
+    await jest.advanceTimersByTimeAsync(1000);
+
+    expect(reopened.connect).toHaveBeenCalledTimes(1);
+    expect(first.close.mock.invocationCallOrder[0]).toBeLessThan(reopened.connect.mock.invocationCallOrder[0]);
+
+    reopened.emit('message', resultMessage('Nachher', { isFinal: true, speechFinal: true, start: 0 }));
+    first.emit('message', resultMessage('Noch veraltet', { isFinal: true, speechFinal: true, start: 0 }));
+    first.emit('close', { code: 1006 });
+    first.emit('error', new Error('late stale error'));
+    await jest.advanceTimersByTimeAsync(5000);
+
+    expect(connect).toHaveBeenCalledTimes(2);
+    expect(onFinal).toHaveBeenCalledTimes(2);
+    expect(onFinal.mock.calls.map(([, payload]) => payload.text)).toEqual(['Vorher', 'Nachher']);
+    await manager.destroy();
+  });
+
   test('removes the session after three failed recovery attempts', async () => {
     const first = createConnection();
     const { manager, socket, onStatus } = createHarness({ connections: [first, null, null, null] });

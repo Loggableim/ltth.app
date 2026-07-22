@@ -81,6 +81,121 @@ describe('StreamAlchemy relaunch plugin routes', () => {
     expect(res.body.config.providerOrder).toContain('localComfy');
   });
 
+  test('legacy config mutation rejects unauthenticated non-local requests', async () => {
+    const { api, routes } = createApi();
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    const route = routes.find(entry => entry.method === 'POST' && entry.path === '/api/streamalchemy/config');
+    const res = createRes();
+
+    await route.handler({
+      ip: '203.0.113.10',
+      headers: {},
+      body: {
+        streamMonsters: {
+          localRuntime: {
+            manifest: { archiveUrl: 'https://attacker.example/payload.zip', sha256: 'a'.repeat(64) }
+          }
+        }
+      }
+    }, res);
+
+    expect(res.statusCode).toBe(403);
+    expect(api.getConfig('streamalchemy_config')).toBeNull();
+  });
+
+  test('legacy config mutation strips all managed-runtime trust data before updating config', async () => {
+    const { api, routes } = createApi();
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    const route = routes.find(entry => entry.method === 'POST' && entry.path === '/api/streamalchemy/config');
+    const res = createRes();
+
+    await route.handler({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      body: {
+        manifest: { archiveUrl: 'https://attacker.example/root-payload.zip' },
+        archiveUrl: 'https://attacker.example/root-archive.zip',
+        localRuntime: { manifest: { archiveUrl: 'https://attacker.example/root-runtime.zip' } },
+        streamMonsters: {
+          creatorName: 'safe-creator',
+          manifest: { archiveUrl: 'https://attacker.example/stream-payload.zip' },
+          localRuntime: {
+            state: 'ready',
+            runtimeRoot: 'C:\\attacker-runtime',
+            manifest: { archiveUrl: 'https://attacker.example/payload.zip', sha256: 'a'.repeat(64) },
+            archiveUrl: 'https://attacker.example/second-payload.zip',
+            executableRelativePath: '..\\payload.exe'
+          }
+        }
+      }
+    }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(plugin.config.streamMonsters.creatorName).toBe('safe-creator');
+    expect(plugin.config.streamMonsters.localRuntime).toEqual({ state: 'not_installed' });
+    expect(JSON.stringify(api.getConfig('streamalchemy_config'))).not.toContain('attacker');
+  });
+
+  test('loading and persisting config retains only internal runtime state fields', async () => {
+    const { api } = createApi();
+    api.setConfig('streamalchemy_config', {
+      manifest: { archiveUrl: 'https://attacker.example/root-payload.zip' },
+      archiveUrl: 'https://attacker.example/root-archive.zip',
+      localRuntime: { manifest: { archiveUrl: 'https://attacker.example/root-runtime.zip' } },
+      streamMonsters: {
+        creatorName: 'creator',
+        localRuntime: {
+          state: 'ready',
+          runtimeRoot: 'C:\\LTTH\\managed-runtime',
+          manifest: { archiveUrl: 'https://attacker.example/payload.zip', sha256: 'a'.repeat(64) },
+          archiveUrl: 'https://attacker.example/second-payload.zip',
+          sha256: 'b'.repeat(64),
+          modelSha256: 'c'.repeat(64),
+          executableRelativePath: '..\\payload.exe'
+        }
+      }
+    });
+    const plugin = new StreamAlchemyPlugin(api);
+
+    const loaded = plugin.loadConfig();
+    expect(loaded.streamMonsters.localRuntime).toEqual({
+      state: 'ready',
+      runtimeRoot: 'C:\\LTTH\\managed-runtime'
+    });
+    expect(JSON.stringify(loaded)).not.toContain('attacker');
+
+    await plugin.init();
+    expect(JSON.stringify(api.getConfig('streamalchemy_config'))).not.toContain('attacker');
+    expect(api.getConfig('streamalchemy_config').streamMonsters.localRuntime).toEqual({
+      state: 'ready',
+      runtimeRoot: 'C:\\LTTH\\managed-runtime'
+    });
+    const next = plugin.updateConfig({
+      streamMonsters: {
+        localRuntime: {
+          state: 'ready',
+          runtimeRoot: 'C:\\LTTH\\managed-runtime',
+          manifest: { archiveUrl: 'https://attacker.example/new-payload.zip', sha256: 'd'.repeat(64) },
+          archiveType: 'zip',
+          healthUrl: 'http://attacker.example/health'
+        }
+      }
+    });
+
+    expect(next.streamMonsters.localRuntime).toEqual({
+      state: 'ready',
+      runtimeRoot: 'C:\\LTTH\\managed-runtime'
+    });
+    expect(api.getConfig('streamalchemy_config').streamMonsters.localRuntime).toEqual({
+      state: 'ready',
+      runtimeRoot: 'C:\\LTTH\\managed-runtime'
+    });
+    expect(JSON.stringify(api.getConfig('streamalchemy_config'))).not.toContain('attacker');
+  });
+
   test('config updates keep stored model token when the settings form sends an empty token', async () => {
     const { api } = createApi();
     api.setConfig('streamalchemy_config', {

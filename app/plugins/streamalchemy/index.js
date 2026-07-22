@@ -26,6 +26,12 @@ const StreamMonstersGenerationPool = require('./backend/streammonsters/generatio
 const StreamMonstersProgressionService = require('./backend/streammonsters/progression-service');
 const StreamMonstersManagedRuntimeInstaller = require('./backend/streammonsters/managed-runtime-installer');
 
+const RUNTIME_TRUST_FIELDS = new Set([
+  'manifest', 'archiveUrl', 'sha256', 'modelSha256', 'archiveType',
+  'executableRelativePath', 'executableArgs', 'comfyRootRelativePath',
+  'healthBaseUrl', 'healthUrl', 'downloadSizeBytes', 'modelSizeBytes'
+]);
+
 class StreamAlchemyPlugin {
   constructor(api) {
     this.api = api;
@@ -35,7 +41,9 @@ class StreamAlchemyPlugin {
 
   async init() {
     this.api.log('[STREAMALCHEMY] Initializing relaunch runtime', 'info');
-    this.config = this.loadConfig();
+    const storedConfig = this.api.getConfig('streamalchemy_config');
+    this.config = this.loadConfig(storedConfig);
+    this.persistSanitizedConfigIfNeeded(storedConfig);
 
     const logger = {
       info: msg => this.api.log(msg, 'info'),
@@ -150,8 +158,9 @@ class StreamAlchemyPlugin {
     this.api.log('[STREAMALCHEMY] Relaunch runtime initialized', 'info');
   }
 
-  loadConfig() {
-    const stored = this.api.getConfig('streamalchemy_config') || {};
+  loadConfig(storedConfig = this.api.getConfig('streamalchemy_config')) {
+    const stored = this.sanitizeConfig(storedConfig);
+    const storedStreamMonsters = stored.streamMonsters || {};
     return {
       ...DEFAULT_CONFIG,
       ...stored,
@@ -165,10 +174,59 @@ class StreamAlchemyPlugin {
         hatchDurationMs: 30 * 60 * 1000,
         maxUnhatchedEggs: 3,
         elementRules: 'deterministic',
-        localRuntime: { state: 'not_installed', manifest: null },
-        ...(stored.streamMonsters || {})
+        ...storedStreamMonsters,
+        localRuntime: {
+          state: 'not_installed',
+          ...(storedStreamMonsters.localRuntime || {})
+        }
       }
     };
+  }
+
+  persistSanitizedConfigIfNeeded(storedConfig) {
+    if (!storedConfig || typeof storedConfig !== 'object' || Array.isArray(storedConfig)) return false;
+    const sanitizedStored = this.sanitizeConfig(storedConfig);
+    if (JSON.stringify(storedConfig) === JSON.stringify(sanitizedStored)) return false;
+    this.api.setConfig('streamalchemy_config', this.config);
+    return true;
+  }
+
+  sanitizeConfig(input = {}) {
+    if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
+    const safe = {};
+    for (const [key, value] of Object.entries(input)) {
+      if (key === 'streamMonsters') {
+        safe.streamMonsters = this.sanitizeStreamMonstersConfig(value);
+      } else if (key !== 'localRuntime' && !RUNTIME_TRUST_FIELDS.has(key)) {
+        safe[key] = value;
+      }
+    }
+    return safe;
+  }
+
+  sanitizeStreamMonstersConfig(input = {}) {
+    if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
+    const safe = {};
+    for (const [key, value] of Object.entries(input)) {
+      if (key === 'localRuntime') {
+        safe.localRuntime = this.sanitizeLocalRuntime(value);
+      } else if (!RUNTIME_TRUST_FIELDS.has(key)) {
+        safe[key] = value;
+      }
+    }
+    return safe;
+  }
+
+  sanitizeLocalRuntime(input = {}) {
+    if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
+    const safe = {};
+    for (const key of ['state', 'runtimeRoot']) {
+      const value = input[key];
+      if (Object.prototype.hasOwnProperty.call(input, key) && typeof value === 'string' && value.trim()) {
+        safe[key] = value;
+      }
+    }
+    return safe;
   }
 
   createProviders(logger) {
@@ -290,9 +348,10 @@ class StreamAlchemyPlugin {
     };
   }
 
-  updateConfig(updates) {
+  updateConfig(updates = {}) {
+    const safeUpdates = this.sanitizeConfig(updates);
     const localGenerationUpdates = {
-      ...(updates.localGeneration || {})
+      ...(safeUpdates.localGeneration || {})
     };
     if (Object.prototype.hasOwnProperty.call(localGenerationUpdates, 'modelAuthToken') && !this.normalizeSecret(localGenerationUpdates.modelAuthToken)) {
       delete localGenerationUpdates.modelAuthToken;
@@ -308,16 +367,27 @@ class StreamAlchemyPlugin {
     localGenerationUpdates.modelFile = preset.fileName;
     localGenerationUpdates.modelDownloadUrl = preset.downloadUrl;
 
+    const currentStreamMonsters = this.sanitizeStreamMonstersConfig(this.config.streamMonsters);
+    const streamMonstersUpdates = this.sanitizeStreamMonstersConfig(safeUpdates.streamMonsters);
+    const currentLocalRuntime = {
+      state: 'not_installed',
+      ...(currentStreamMonsters.localRuntime || {})
+    };
+    const nextLocalRuntime = Object.prototype.hasOwnProperty.call(streamMonstersUpdates, 'localRuntime')
+      ? { ...currentLocalRuntime, ...streamMonstersUpdates.localRuntime }
+      : currentLocalRuntime;
+
     this.config = {
       ...this.config,
-      ...updates,
+      ...safeUpdates,
       localGeneration: {
         ...this.config.localGeneration,
         ...localGenerationUpdates
       },
       streamMonsters: {
-        ...this.config.streamMonsters,
-        ...(updates.streamMonsters || {})
+        ...currentStreamMonsters,
+        ...streamMonstersUpdates,
+        localRuntime: nextLocalRuntime
       }
     };
     this.api.setConfig('streamalchemy_config', this.config);

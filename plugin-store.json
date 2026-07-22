@@ -639,7 +639,7 @@
         "type": "subscriber"
       },
       "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.1.2.zip",
-      "sha256": "c318c24abe89a1d2b283676d20b7c71cefe3ea948bd6c11ef873ae9217e662eb",
+      "sha256": "c1d75fcc2fb1ccd18bfa6c7be0c108fafd32cbcd651b8852a8f3e3e9e8a9d83d",
       "pricing": {
         "type": "free",
         "amount": 0,
@@ -921,7 +921,7 @@
         ]
       },
       "packageUrl": "https://ltth.app/plugin-store/packages/webgpu-weather-control-1.0.0.zip",
-      "sha256": "e4738db92864963f743402275c7402c2b50eaa30185e0dbe256b5d2770f10ee7",
+      "sha256": "ceb0dde8f16bf9464f185dd0151d826d72f522768365a47ab6de4fd8877142db",
       "pricing": {
         "type": "free",
         "amount": 0,

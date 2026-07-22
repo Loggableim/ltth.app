@@ -1,4 +1,5 @@
 const path = require('path');
+const { createAdminAuth } = require('../../../../modules/admin-auth');
 
 class StreamMonstersRoutes {
   constructor({ api, pluginDir, store, engine, generationPool, systemAnalyzer, managedRuntime, localModelInstaller, giftCatalogProvider, configProvider }) {
@@ -12,6 +13,7 @@ class StreamMonstersRoutes {
     this.localModelInstaller = localModelInstaller;
     this.giftCatalogProvider = giftCatalogProvider || (() => []);
     this.configProvider = configProvider;
+    this.adminAuth = createAdminAuth();
   }
 
   register() {
@@ -32,10 +34,10 @@ class StreamMonstersRoutes {
         metrics: this.engine.streamKey ? this.store.getStreamMetrics(this.engine.streamKey) : null
       });
     });
-    this.api.registerRoute('POST', '/api/streammonsters/config', (req, res) => {
-      const next = this.configProvider.updateConfig({ streamMonsters: req.body || {} });
+    this.api.registerRoute('POST', '/api/streammonsters/config', this.protectAdmin((req, res) => {
+      const next = this.configProvider.updateConfig({ streamMonsters: this.sanitizeConfigUpdate(req.body) });
       res.json({ success: true, config: this.publicConfig(next.streamMonsters) });
-    });
+    }));
     this.api.registerRoute('POST', '/api/streammonsters/demo', (req, res) => {
       const config = this.configProvider.getConfig().streamMonsters;
       const gift = this.engine.describeGift({ giftId: 0, giftName: 'Demo Spark', coinValue: 0 });
@@ -93,7 +95,7 @@ class StreamMonstersRoutes {
       }
     });
     this.api.registerRoute('GET', '/api/streammonsters/local-runtime/status', async (req, res) => {
-      const config = this.configProvider.getConfig().streamMonsters;
+      const manifest = this.managedRuntime.getTrustedManifest();
       const analysis = await this.systemAnalyzer.analyze({
         comfyUrl: this.configProvider.getConfig().localGeneration?.comfyUrl,
         comfyRootDir: this.configProvider.getConfig().localGeneration?.comfyRootDir
@@ -103,23 +105,24 @@ class StreamMonstersRoutes {
         success: true,
         runtime: this.managedRuntime.current || { state: recommendation.supported ? 'ready_to_install' : 'expert_or_remote' },
         recommendation,
-        manifestAvailable: Boolean(config.localRuntime?.manifest),
-        installDetails: this.publicInstallDetails(config.localRuntime?.manifest)
+        manifestAvailable: Boolean(manifest),
+        installDetails: this.publicInstallDetails(manifest)
       });
     });
-    this.api.registerRoute('POST', '/api/streammonsters/local-runtime/install', async (req, res) => {
+    this.api.registerRoute('POST', '/api/streammonsters/local-runtime/install', this.protectAdmin(async (req, res) => {
       try {
         const current = this.configProvider.getConfig();
         const analysis = await this.systemAnalyzer.analyze({
           comfyUrl: current.localGeneration?.comfyUrl,
           comfyRootDir: current.localGeneration?.comfyRootDir
         });
-        const manifest = current.streamMonsters?.localRuntime?.manifest;
-        if (!/^[a-f0-9]{64}$/i.test(manifest?.modelSha256 || '')) {
-          throw new Error('STREAM_MONSTERS_MODEL_CHECKSUM_REQUIRED');
-        }
-        const runtime = await this.managedRuntime.install(analysis.gpu, manifest);
-        const comfyRootDir = path.resolve(runtime.runtimeRoot, manifest.comfyRootRelativePath || 'ComfyUI');
+        const manifest = this.managedRuntime.getTrustedManifest();
+        if (!manifest) throw new Error('STREAM_MONSTERS_RUNTIME_MANIFEST_UNAVAILABLE');
+        const runtime = await this.managedRuntime.install(analysis.gpu);
+        const comfyRootDir = runtime.comfyRootDir || this.managedRuntime.resolveExistingInside(
+          runtime.runtimeRoot,
+          manifest.comfyRootRelativePath || 'ComfyUI'
+        );
         const localGeneration = {
           enabled: true,
           generationMode: 'local_strict',
@@ -135,7 +138,7 @@ class StreamMonstersRoutes {
         const model = this.localModelInstaller?.startInstall(localGeneration) || null;
         const next = this.configProvider.updateConfig({
           streamMonsters: {
-            localRuntime: { ...current.streamMonsters?.localRuntime, state: runtime.state, runtimeRoot: runtime.runtimeRoot }
+            localRuntime: { state: runtime.state, runtimeRoot: runtime.runtimeRoot }
           },
           localGeneration
         });
@@ -143,7 +146,20 @@ class StreamMonstersRoutes {
       } catch (error) {
         res.status(400).json({ success: false, error: error.message });
       }
-    });
+    }));
+  }
+
+  protectAdmin(handler) {
+    return (req, res, next) => this.adminAuth(req, res, () => handler(req, res, next));
+  }
+
+  sanitizeConfigUpdate(input = {}) {
+    if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
+    const safe = {};
+    for (const key of ['enabled', 'creatorName', 'hatchDurationMs', 'maxUnhatchedEggs', 'elementRules']) {
+      if (Object.prototype.hasOwnProperty.call(input, key)) safe[key] = input[key];
+    }
+    return safe;
   }
 
   viewerState(userId) {

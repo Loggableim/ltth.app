@@ -1,4 +1,35 @@
 const ManagedRuntimeInstaller = require('../plugins/streamalchemy/backend/streammonsters/managed-runtime-installer');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const yazl = require('yazl');
+
+const TRUSTED_MANIFEST = Object.freeze({
+  version: 'runtime-1',
+  archiveUrl: 'https://github.com/Loggableim/ltth.app/releases/download/runtime-1/runtime.zip',
+  sha256: 'a'.repeat(64),
+  modelSha256: 'b'.repeat(64),
+  archiveType: 'zip',
+  executableRelativePath: 'ComfyUI/runtime.exe',
+  executableArgs: ['--listen', '127.0.0.1'],
+  comfyRootRelativePath: 'ComfyUI',
+  healthBaseUrl: 'http://127.0.0.1:8188',
+  healthUrl: 'http://127.0.0.1:8188/system_stats'
+});
+
+async function writeSymlinkArchive(archivePath) {
+  const zip = new yazl.ZipFile();
+  zip.addBuffer(Buffer.from('../outside-runtime.exe'), 'ComfyUI/runtime.exe', { mode: 0o120777 });
+  const output = fs.createWriteStream(archivePath);
+  const finished = new Promise((resolve, reject) => {
+    output.once('close', resolve);
+    output.once('error', reject);
+    zip.outputStream.once('error', reject);
+  });
+  zip.outputStream.pipe(output);
+  zip.end();
+  await finished;
+}
 
 describe('Stream Monsters managed local runtime', () => {
   test('recommends a fast four-step Windows NVIDIA profile from detected VRAM', () => {
@@ -15,46 +46,240 @@ describe('Stream Monsters managed local runtime', () => {
 
   test('installs only a trusted manifest, verifies its hash and health-checks the managed runtime', async () => {
     const calls = [];
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-install-'));
+    const staleFile = path.join(dataDir, 'managed-runtime', 'ComfyUI', 'custom_nodes', 'attacker.py');
+    fs.mkdirSync(path.dirname(staleFile), { recursive: true });
+    fs.writeFileSync(staleFile, 'stale attacker code');
     const installer = new ManagedRuntimeInstaller({
       platform: () => 'win32',
-      dataDir: 'C:\\LTTH\\streammonsters',
+      dataDir,
+      trustedManifest: TRUSTED_MANIFEST,
       downloadArchive: async input => { calls.push(['download', input]); return 'C:\\LTTH\\runtime.zip'; },
       verifyArchive: async input => { calls.push(['verify', input]); return true; },
-      extractArchive: async input => { calls.push(['extract', input]); },
+      inspectArchive: async input => { calls.push(['inspect', input]); },
+      extractArchive: async input => {
+        calls.push(['extract', input]);
+        const comfyRoot = path.join(input.runtimeRoot, 'ComfyUI');
+        await fs.promises.mkdir(comfyRoot, { recursive: true });
+        await fs.promises.writeFile(path.join(comfyRoot, 'runtime.exe'), 'test executable placeholder');
+      },
       startRuntime: async input => { calls.push(['start', input]); return { pid: 42 }; },
       healthCheck: async () => true
     });
-    const manifest = {
-      version: 'test-1', archiveUrl: 'https://downloads.example/runtime.zip',
-      sha256: 'a'.repeat(64), modelSha256: 'b'.repeat(64), archiveType: 'zip', executableRelativePath: 'ComfyUI/run_nvidia_gpu.bat'
-    };
 
-    const result = await installer.install({ vendor: 'nvidia', vramMb: 8192 }, manifest);
+    try {
+      const result = await installer.install({ vendor: 'nvidia', vramMb: 8192 });
 
-    expect(result).toEqual(expect.objectContaining({ state: 'ready', pid: 42, recommendation: expect.objectContaining({ width: 768 }) }));
-    expect(calls.map(([name]) => name)).toEqual(['download', 'verify', 'extract', 'start']);
+      expect(result).toEqual(expect.objectContaining({ state: 'ready', pid: 42, recommendation: expect.objectContaining({ width: 768 }) }));
+      expect(path.basename(path.dirname(result.runtimeRoot))).toMatch(/^runtime-1-a{16}-/);
+      expect(result.runtimeRoot).not.toBe(path.join(dataDir, 'managed-runtime'));
+      expect(fs.existsSync(path.join(result.runtimeRoot, 'ComfyUI', 'custom_nodes', 'attacker.py'))).toBe(false);
+      expect(fs.existsSync(staleFile)).toBe(true);
+      expect(calls.map(([name]) => name)).toEqual(['download', 'verify', 'inspect', 'extract', 'start']);
+    } finally {
+      fs.rmSync(dataDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 });
+    }
   });
 
   test('rejects unpinned runtime manifests before downloading anything', async () => {
     const downloadArchive = jest.fn();
-    const installer = new ManagedRuntimeInstaller({ platform: () => 'win32', downloadArchive });
+    const startRuntime = jest.fn();
+    const installer = new ManagedRuntimeInstaller({
+      platform: () => 'win32',
+      dataDir: 'C:\\LTTH\\streammonsters',
+      trustedManifest: TRUSTED_MANIFEST,
+      downloadArchive,
+      startRuntime
+    });
+    const attackerManifest = {
+      ...TRUSTED_MANIFEST,
+      archiveUrl: 'https://attacker.example/runtime.zip',
+      sha256: 'c'.repeat(64)
+    };
 
-    await expect(installer.install({ vendor: 'nvidia', vramMb: 8192 }, { archiveUrl: 'https://example.test/runtime.zip' }))
-      .rejects.toThrow('STREAM_MONSTERS_RUNTIME_MANIFEST_INVALID');
+    await expect(installer.install({ vendor: 'nvidia', vramMb: 8192 }, attackerManifest))
+      .rejects.toThrow('STREAM_MONSTERS_RUNTIME_MANIFEST_UNTRUSTED');
     expect(downloadArchive).not.toHaveBeenCalled();
+    expect(startRuntime).not.toHaveBeenCalled();
+  });
+
+  test('rejects symlink archive entries before extraction or runtime start', async () => {
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-symlink-'));
+    const archivePath = path.join(dataDir, 'symlink-runtime.zip');
+    await writeSymlinkArchive(archivePath);
+    const extractArchive = jest.fn();
+    const startRuntime = jest.fn();
+    const installer = new ManagedRuntimeInstaller({
+      platform: () => 'win32',
+      dataDir,
+      trustedManifest: TRUSTED_MANIFEST,
+      downloadArchive: jest.fn(async () => archivePath),
+      verifyArchive: jest.fn(async () => true),
+      extractArchive,
+      startRuntime
+    });
+
+    try {
+      await expect(installer.install({ vendor: 'nvidia', vramMb: 8192 }))
+        .rejects.toThrow('STREAM_MONSTERS_RUNTIME_ARCHIVE_ENTRY_UNSAFE');
+      expect(extractArchive).not.toHaveBeenCalled();
+      expect(startRuntime).not.toHaveBeenCalled();
+    } finally {
+      fs.rmSync(dataDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 });
+    }
+  });
+
+  test('never requests an unapproved archive redirect target', async () => {
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-redirect-'));
+    const cancel = jest.fn(async () => {});
+    const fetchImpl = jest.fn(async () => ({
+      ok: false,
+      status: 302,
+      headers: { get: name => String(name).toLowerCase() === 'location' ? 'https://attacker.example/payload.zip' : null },
+      body: { cancel }
+    }));
+    const installer = new ManagedRuntimeInstaller({ fetchImpl });
+
+    try {
+      await expect(installer.download({
+        manifest: TRUSTED_MANIFEST,
+        archivePath: path.join(dataDir, 'runtime.zip')
+      })).rejects.toThrow('STREAM_MONSTERS_RUNTIME_ARCHIVE_URL_UNAPPROVED');
+      expect(fetchImpl).toHaveBeenCalledTimes(1);
+      expect(fetchImpl).toHaveBeenCalledWith(TRUSTED_MANIFEST.archiveUrl, { redirect: 'manual' });
+      expect(cancel).toHaveBeenCalledTimes(1);
+      expect(fetchImpl.mock.calls.flat().join(' ')).not.toContain('attacker.example');
+    } finally {
+      fs.rmSync(dataDir, { recursive: true, force: true });
+    }
+  });
+
+  test('rejects health redirects without following their target', async () => {
+    const fetchImpl = jest.fn(async () => ({
+      ok: true,
+      status: 302,
+      headers: { get: name => String(name).toLowerCase() === 'location' ? 'http://attacker.example/health' : null }
+    }));
+    const installer = new ManagedRuntimeInstaller({
+      fetchImpl,
+      healthAttempts: 1,
+      healthRetryDelayMs: 0
+    });
+
+    await expect(installer.checkHealth({ manifest: TRUSTED_MANIFEST })).resolves.toBe(false);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(fetchImpl).toHaveBeenCalledWith(TRUSTED_MANIFEST.healthUrl, { redirect: 'manual' });
+    expect(fetchImpl.mock.calls.flat().join(' ')).not.toContain('attacker.example');
+  });
+
+  test('rejects an unapproved server-side archive origin and private health endpoint before spawning', async () => {
+    const downloadArchive = jest.fn();
+    const startRuntime = jest.fn();
+    const installer = new ManagedRuntimeInstaller({
+      platform: () => 'win32',
+      dataDir: 'C:\\LTTH\\streammonsters',
+      trustedManifest: {
+        ...TRUSTED_MANIFEST,
+        archiveUrl: 'https://attacker.example/runtime.zip',
+        healthUrl: 'http://169.254.169.254/latest/meta-data'
+      },
+      downloadArchive,
+      startRuntime
+    });
+
+    await expect(installer.install({ vendor: 'nvidia', vramMb: 8192 }))
+      .rejects.toThrow('STREAM_MONSTERS_RUNTIME_ARCHIVE_URL_UNAPPROVED');
+    expect(downloadArchive).not.toHaveBeenCalled();
+    expect(startRuntime).not.toHaveBeenCalled();
+  });
+
+  test('rejects a non-loopback health endpoint even for an approved archive', async () => {
+    const downloadArchive = jest.fn();
+    const startRuntime = jest.fn();
+    const installer = new ManagedRuntimeInstaller({
+      platform: () => 'win32',
+      dataDir: 'C:\\LTTH\\streammonsters',
+      trustedManifest: { ...TRUSTED_MANIFEST, healthUrl: 'http://169.254.169.254/latest/meta-data' },
+      downloadArchive,
+      startRuntime
+    });
+
+    await expect(installer.install({ vendor: 'nvidia', vramMb: 8192 }))
+      .rejects.toThrow('STREAM_MONSTERS_RUNTIME_HEALTH_URL_INVALID');
+    expect(downloadArchive).not.toHaveBeenCalled();
+    expect(startRuntime).not.toHaveBeenCalled();
+  });
+
+  test('rejects an escaping executable path before downloading or spawning', async () => {
+    const downloadArchive = jest.fn();
+    const startRuntime = jest.fn();
+    const installer = new ManagedRuntimeInstaller({
+      platform: () => 'win32',
+      dataDir: 'C:\\LTTH\\streammonsters',
+      trustedManifest: { ...TRUSTED_MANIFEST, executableRelativePath: '..\\outside.exe' },
+      downloadArchive,
+      startRuntime
+    });
+
+    await expect(installer.install({ vendor: 'nvidia', vramMb: 8192 }))
+      .rejects.toThrow('STREAM_MONSTERS_RUNTIME_PATH_INVALID');
+    expect(downloadArchive).not.toHaveBeenCalled();
+    expect(startRuntime).not.toHaveBeenCalled();
+  });
+
+  test('starts the resolved executable directly without a command shell', async () => {
+    const runtimeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-runtime-'));
+    const executablePath = path.join(runtimeRoot, 'runtime.exe');
+    fs.writeFileSync(executablePath, 'test executable placeholder');
+    const spawnImpl = jest.fn(() => ({ pid: 42 }));
+    const installer = new ManagedRuntimeInstaller({ spawnImpl });
+
+    try {
+      await expect(installer.start({ executablePath, runtimeRoot, manifest: TRUSTED_MANIFEST }))
+        .resolves.toEqual({ pid: 42 });
+      expect(spawnImpl).toHaveBeenCalledWith(
+        fs.realpathSync(executablePath),
+        TRUSTED_MANIFEST.executableArgs,
+        expect.objectContaining({ cwd: fs.realpathSync(runtimeRoot), shell: false, windowsHide: true })
+      );
+      expect(spawnImpl.mock.calls[0][0]).not.toBe('cmd.exe');
+    } finally {
+      fs.rmSync(runtimeRoot, { recursive: true, force: true });
+    }
+  });
+
+  test('rejects a resolved executable that escapes through a link', async () => {
+    const runtimeRoot = path.resolve('managed-runtime-test');
+    const executablePath = path.join(runtimeRoot, 'runtime.exe');
+    const outsideExecutable = path.resolve('outside-runtime-test', 'runtime.exe');
+    const spawnImpl = jest.fn();
+    const existsSpy = jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+    const realpathSpy = jest.spyOn(fs, 'realpathSync').mockImplementation(target => (
+      target === executablePath ? outsideExecutable : runtimeRoot
+    ));
+    const installer = new ManagedRuntimeInstaller({ spawnImpl });
+
+    try {
+      await expect(installer.start({ executablePath, runtimeRoot, manifest: TRUSTED_MANIFEST }))
+        .rejects.toThrow('STREAM_MONSTERS_RUNTIME_PATH_INVALID');
+      expect(spawnImpl).not.toHaveBeenCalled();
+    } finally {
+      existsSpy.mockRestore();
+      realpathSpy.mockRestore();
+    }
   });
 
   test('honours an aborted setup before it can download or extract anything', async () => {
     const downloadArchive = jest.fn();
-    const installer = new ManagedRuntimeInstaller({ platform: () => 'win32', dataDir: 'C:\\LTTH\\streammonsters', downloadArchive });
+    const installer = new ManagedRuntimeInstaller({
+      platform: () => 'win32',
+      dataDir: 'C:\\LTTH\\streammonsters',
+      trustedManifest: TRUSTED_MANIFEST,
+      downloadArchive
+    });
     const controller = new AbortController();
     controller.abort();
-    const manifest = {
-      version: 'test-1', archiveUrl: 'https://downloads.example/runtime.zip', sha256: 'a'.repeat(64),
-      modelSha256: 'b'.repeat(64), archiveType: 'zip', executableRelativePath: 'ComfyUI/run_nvidia_gpu.bat'
-    };
-
-    await expect(installer.install({ vendor: 'nvidia', vramMb: 8192 }, manifest, { signal: controller.signal }))
+    await expect(installer.install({ vendor: 'nvidia', vramMb: 8192 }, undefined, { signal: controller.signal }))
       .rejects.toThrow('STREAM_MONSTERS_RUNTIME_ABORTED');
     expect(downloadArchive).not.toHaveBeenCalled();
   });

@@ -2893,10 +2893,11 @@
 
         // Initialize Socket.IO
         function initSocket() {
-            socket = io();
+            socket = io({ auth: { role: 'admin' } });
             socket.on('connect', () => {
                 console.log('Connected to server');
                 updateConnectionStatus(true);
+                socket.emit('webgpu-weather:subscribe-diagnostics');
             });
             socket.on('disconnect', () => {
                 console.log('Disconnected from server');

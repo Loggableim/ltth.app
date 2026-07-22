@@ -83,6 +83,16 @@ function listSourceFiles(rootDir, relativeDir = '') {
   });
 }
 
+async function assertPackagedFilesMatchSource(packagePath, sourceDir, relativeFiles) {
+  for (const relativeFile of relativeFiles) {
+    assert.deepStrictEqual(
+      await readZipEntry(packagePath, relativeFile),
+      fs.readFileSync(path.join(sourceDir, ...relativeFile.split('/'))),
+      `${relativeFile} must match the release source byte-for-byte`
+    );
+  }
+}
+
 describe('Official plugin store registry', () => {
   it('publishes the WebGPU Weather Control open beta as a source-identical 1080p package', async () => {
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
@@ -112,6 +122,36 @@ describe('Official plugin store registry', () => {
     assert.strictEqual(JSON.stringify(entries.filter((entry) => !entry.endsWith('/')).sort()), JSON.stringify(sourceFiles));
     const packagedManifest = JSON.parse((await readZipEntry(packagePath, 'plugin.json')).toString('utf8'));
     assert.deepStrictEqual(packagedManifest, sourceManifest);
+    await assertPackagedFilesMatchSource(packagePath, sourceDir, ['main.js', 'overlay.html', 'ui.html']);
+  });
+
+  it('publishes Stream Monsters 1.1.2 with the hardened source-identical runtime', async () => {
+    const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
+    const storePlugin = registry.plugins.find((plugin) => plugin.id === 'streamalchemy');
+    const sourceDir = path.join(repoRoot, 'app', 'plugins', 'streamalchemy');
+    const sourceManifest = JSON.parse(fs.readFileSync(path.join(sourceDir, 'plugin.json'), 'utf8'));
+
+    assert(storePlugin, 'Stream Monsters must exist in the official store registry');
+    assert.strictEqual(sourceManifest.id, 'streamalchemy');
+    assert.strictEqual(sourceManifest.version, '1.1.2');
+    assert.strictEqual(storePlugin.version, sourceManifest.version);
+    assert.strictEqual(storePlugin.packageUrl, 'https://ltth.app/plugin-store/packages/streamalchemy-1.1.2.zip');
+
+    const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.1.2.zip');
+    const digest = crypto.createHash('sha256').update(fs.readFileSync(packagePath)).digest('hex');
+    assert.strictEqual(storePlugin.sha256, digest);
+
+    const entries = (await listZipEntries(packagePath)).map((entry) => entry.replace(/\\/g, '/'));
+    const sourceFiles = listSourceFiles(sourceDir).sort();
+    assert.strictEqual(JSON.stringify(entries.filter((entry) => !entry.endsWith('/')).sort()), JSON.stringify(sourceFiles));
+    const packagedManifest = JSON.parse((await readZipEntry(packagePath, 'plugin.json')).toString('utf8'));
+    assert.deepStrictEqual(packagedManifest, sourceManifest);
+    await assertPackagedFilesMatchSource(packagePath, sourceDir, [
+      'index.js',
+      'backend/routes.js',
+      'backend/streammonsters/routes.js',
+      'backend/streammonsters/managed-runtime-installer.js'
+    ]);
   });
 
   it('publishes the Schnorrbecher package with a matching manifest and checksum', async () => {

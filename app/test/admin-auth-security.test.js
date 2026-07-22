@@ -60,6 +60,41 @@ describe('admin auth middleware', () => {
     expect(res.body.error).toMatch(/Admin authentication required/);
   });
 
+  test('does not trust a loopback req.ip when the direct transport is external', () => {
+    const middleware = createAdminAuth();
+
+    const { res, next } = runMiddleware(middleware, {
+      ip: '127.0.0.1',
+      socket: {
+        remoteAddress: '203.0.113.10'
+      }
+    });
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(403);
+  });
+
+  test.each([
+    ['forwarded', 'for=127.0.0.1;proto=http'],
+    ['x-forwarded-for', '127.0.0.1'],
+    ['x-forwarded-proto', 'http']
+  ])('requires authentication when direct loopback carries %s', (header, value) => {
+    const middleware = createAdminAuth();
+
+    const { res, next } = runMiddleware(middleware, {
+      ip: '127.0.0.1',
+      socket: {
+        remoteAddress: '127.0.0.1'
+      },
+      headers: {
+        [header]: value
+      }
+    });
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(403);
+  });
+
   test('requires a matching bearer token when an admin token is configured', () => {
     process.env.LTTH_ADMIN_TOKEN = 'correct-token';
     const middleware = createAdminAuth();

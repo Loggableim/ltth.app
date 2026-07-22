@@ -1,6 +1,6 @@
 const path = require('path');
 const crypto = require('crypto');
-const { createAdminAuth } = require('../../modules/admin-auth');
+const { createAdminAuth, isLoopbackAddress } = require('../../modules/admin-auth');
 const { createInitialWebgpuWeatherConfig } = require('./lib/bootstrap-config');
 
 const PLUGIN_ID = 'webgpu-weather-control';
@@ -147,6 +147,10 @@ class WebgpuWeatherControlPlugin {
         this.socketSyncRegistered = false;
         this.socketConnectionHandler = null;
         this.socketHandlers = new Map();
+        this.overlayTelemetryMinIntervalMs = 500;
+        this.lastOverlayTelemetryPublishedAt = Number.NEGATIVE_INFINITY;
+        this.lastOverlayTelemetrySignature = null;
+        this.lastOverlayTelemetryPayload = null;
         this.sequenceTimers = new Set();
         this.questRotationTimer = null;
         this.gamificationPersistTimer = null;
@@ -295,6 +299,66 @@ class WebgpuWeatherControlPlugin {
             particles: Math.max(0, Math.min(10000, parseInt(payload.particles) || 0)),
             quality: this.validateQualityPreset(payload.quality)
         };
+    }
+
+    sanitizeOverlayDiagnostics(payload = {}) {
+        const allowedStates = new Set(['idle', 'ready', 'unsupported', 'error', 'device-lost', 'destroyed']);
+        const state = String(payload.state || 'ready');
+        const rawQuality = payload.quality;
+        const quality = rawQuality && typeof rawQuality === 'object'
+            ? {
+                particleBudget: Math.round(this.clampNumber(rawQuality.particleBudget, 0, 100000, 0)),
+                volumetricSamples: Math.round(this.clampNumber(rawQuality.volumetricSamples, 0, 256, 0)),
+                bloomPasses: Math.round(this.clampNumber(rawQuality.bloomPasses, 0, 20, 0)),
+                temporalStability: this.clampNumber(rawQuality.temporalStability, 0, 1, 0)
+            }
+            : this.validateQualityPreset(rawQuality);
+
+        return {
+            state: allowedStates.has(state) ? state : 'ready',
+            fps: this.clampNumber(payload.fps, 0, 240, 0),
+            frameMs: this.clampNumber(payload.frameMs, 0, 1000, 0),
+            gpuFrameMs: this.clampNumber(payload.gpuFrameMs, 0, 1000, 0),
+            activeParticles: Math.max(0, Math.min(100000, parseInt(payload.activeParticles, 10) || 0)),
+            resolution: payload.resolution && typeof payload.resolution === 'object' ? {
+                width: Math.max(1, Math.min(1920, parseInt(payload.resolution.width, 10) || 1)),
+                height: Math.max(1, Math.min(1080, parseInt(payload.resolution.height, 10) || 1))
+            } : null,
+            quality
+        };
+    }
+
+    getOverlayTelemetrySignature(diagnostics, activeState) {
+        const resolution = diagnostics.resolution || {};
+        const quality = diagnostics.quality && typeof diagnostics.quality === 'object'
+            ? diagnostics.quality
+            : {};
+        const effects = activeState.activeEffects.map((effect) => [
+            effect.type,
+            effect.intensity,
+            effect.permanent ? 1 : 0,
+            effect.duration,
+            effect.startedAt,
+            effect.layer
+        ].join(','));
+        return [
+            diagnostics.state,
+            diagnostics.fps,
+            diagnostics.frameMs,
+            diagnostics.gpuFrameMs,
+            diagnostics.activeParticles,
+            resolution.width || 0,
+            resolution.height || 0,
+            typeof diagnostics.quality === 'string' ? diagnostics.quality : '',
+            quality.particleBudget || 0,
+            quality.volumetricSamples || 0,
+            quality.bloomPasses || 0,
+            quality.temporalStability || 0,
+            activeState.fps,
+            activeState.particles,
+            activeState.quality,
+            effects.join(';')
+        ].join('|');
     }
 
     sanitizeSequences(sequences) {
@@ -543,6 +607,50 @@ class WebgpuWeatherControlPlugin {
         const expectedBuffer = Buffer.from(String(expected || ''), 'utf8');
         return providedBuffer.length === expectedBuffer.length &&
             crypto.timingSafeEqual(providedBuffer, expectedBuffer);
+    }
+
+    getSocketAddress(socket) {
+        return socket?.handshake?.address || socket?.conn?.remoteAddress || socket?.request?.socket?.remoteAddress || '';
+    }
+
+    hasValidAdminSocketToken(socket) {
+        const expected = process.env.LTTH_ADMIN_TOKEN || process.env.ADMIN_TOKEN || '';
+        if (!expected) {
+            return false;
+        }
+        const auth = socket?.handshake?.auth || {};
+        const headers = socket?.handshake?.headers || {};
+        const bearerMatch = String(headers.authorization || '').match(/^Bearer\s+(.+)$/i);
+        const provided = auth.adminToken || auth.token || headers['x-ltth-admin-token'] || (bearerMatch ? bearerMatch[1] : '');
+        return this.apiKeysEqual(provided, expected);
+    }
+
+    isAuthorizedAdminSocket(socket) {
+        return socket?.handshake?.auth?.role === 'admin' && (
+            isLoopbackAddress(this.getSocketAddress(socket)) || this.hasValidAdminSocketToken(socket)
+        );
+    }
+
+    isAuthorizedOverlaySocket(socket) {
+        if (socket?.handshake?.auth?.role !== 'overlay') {
+            return false;
+        }
+        try {
+            return new URL(String(socket.handshake.headers?.referer || '')).pathname
+                .startsWith('/webgpu-weather-control/overlay');
+        } catch (_) {
+            return false;
+        }
+    }
+
+    emitOverlayTelemetry(diagnostics, activeState) {
+        this.socketHandlers.forEach((handlers, socket) => {
+            if (!handlers.diagnosticsSubscribed) {
+                return;
+            }
+            socket.emit('webgpu-weather:diagnostics', diagnostics);
+            socket.emit('webgpu-weather:active-state', activeState);
+        });
     }
 
     registerRoutes() {
@@ -1375,6 +1483,8 @@ class WebgpuWeatherControlPlugin {
                     this.api.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ [WEATHER CONTROL] New overlay client connected, waiting for ready signal...', 'debug');
 
                     const handlers = {
+                        diagnosticsSubscribed: false,
+                        lastOverlayStateAt: Number.NEGATIVE_INFINITY,
                         clientReady: () => {
                             this.api.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ [WEATHER CONTROL] Client ready, syncing permanent effects...', 'debug');
                             this.syncPermanentEffects(socket);
@@ -1383,26 +1493,51 @@ class WebgpuWeatherControlPlugin {
                             this.api.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ [WEATHER CONTROL] Client requested permanent effects', 'debug');
                             this.syncPermanentEffects(socket);
                         },
+                        subscribeDiagnostics: () => {
+                            if (!this.isAuthorizedAdminSocket(socket)) {
+                                socket.emit('webgpu-weather:authorization-error', {
+                                    event: 'webgpu-weather:subscribe-diagnostics',
+                                    error: 'Unauthorized socket action'
+                                });
+                                return;
+                            }
+                            if (handlers.diagnosticsSubscribed) {
+                                return;
+                            }
+                            handlers.diagnosticsSubscribed = true;
+                            if (this.lastOverlayTelemetryPayload) {
+                                socket.emit('webgpu-weather:diagnostics', this.lastOverlayTelemetryPayload.diagnostics);
+                                socket.emit('webgpu-weather:active-state', this.lastOverlayTelemetryPayload.activeState);
+                            }
+                        },
                         overlayState: (payload = {}) => {
-                            const diagnostics = {
-                                state: String(payload.state || 'ready'),
-                                fps: this.clampNumber(payload.fps, 0, 240, 0),
-                                frameMs: this.clampNumber(payload.frameMs, 0, 1000, 0),
-                                gpuFrameMs: this.clampNumber(payload.gpuFrameMs, 0, 1000, 0),
-                                activeParticles: Math.max(0, Math.min(100000, parseInt(payload.activeParticles, 10) || 0)),
-                                resolution: payload.resolution && typeof payload.resolution === 'object' ? {
-                                    width: Math.max(1, Math.min(1920, parseInt(payload.resolution.width, 10) || 1)),
-                                    height: Math.max(1, Math.min(1080, parseInt(payload.resolution.height, 10) || 1))
-                                } : null,
-                                quality: payload.quality || null,
-                                timestamp: Date.now()
+                            if (!this.isAuthorizedOverlaySocket(socket)) {
+                                return;
+                            }
+                            const now = Date.now();
+                            if (now - handlers.lastOverlayStateAt < this.overlayTelemetryMinIntervalMs) {
+                                return;
+                            }
+                            handlers.lastOverlayStateAt = now;
+                            if (now - this.lastOverlayTelemetryPublishedAt < this.overlayTelemetryMinIntervalMs) {
+                                return;
+                            }
+                            const diagnostics = this.sanitizeOverlayDiagnostics(payload);
+                            const activeState = this.sanitizeOverlayState(payload);
+                            const signature = this.getOverlayTelemetrySignature(diagnostics, activeState);
+                            if (signature === this.lastOverlayTelemetrySignature) {
+                                return;
+                            }
+                            this.lastOverlayTelemetryPublishedAt = now;
+                            this.lastOverlayTelemetrySignature = signature;
+                            this.lastOverlayTelemetryPayload = {
+                                diagnostics: { ...diagnostics, timestamp: now },
+                                activeState: { ...activeState, gamification: this.getGamificationSnapshot(), timestamp: now }
                             };
-                            this.api.emit('webgpu-weather:diagnostics', diagnostics);
-                            this.api.emit('webgpu-weather:active-state', {
-                                ...this.sanitizeOverlayState(payload),
-                                gamification: this.getGamificationSnapshot(),
-                                timestamp: Date.now()
-                            });
+                            this.emitOverlayTelemetry(
+                                this.lastOverlayTelemetryPayload.diagnostics,
+                                this.lastOverlayTelemetryPayload.activeState
+                            );
                         },
                         requestGamificationState: () => {
                             socket.emit('webgpu-weather:gamification-state', this.getGamificationSnapshot());
@@ -1419,6 +1554,7 @@ class WebgpuWeatherControlPlugin {
 
                     // Allow clients to request permanent effects explicitly
                     socket.on('webgpu-weather:request-permanent-effects', handlers.requestPermanentEffects);
+                    socket.on('webgpu-weather:subscribe-diagnostics', handlers.subscribeDiagnostics);
                     socket.on('webgpu-weather:overlay-state', handlers.overlayState);
                     socket.on('webgpu-weather:request-gamification-state', handlers.requestGamificationState);
                     socket.on('disconnect', handlers.disconnect);
@@ -2649,12 +2785,16 @@ class WebgpuWeatherControlPlugin {
         this.socketHandlers.forEach((handlers, socket) => {
             socket.off('webgpu-weather:client-ready', handlers.clientReady);
             socket.off('webgpu-weather:request-permanent-effects', handlers.requestPermanentEffects);
+            socket.off('webgpu-weather:subscribe-diagnostics', handlers.subscribeDiagnostics);
             socket.off('webgpu-weather:overlay-state', handlers.overlayState);
             socket.off('webgpu-weather:request-gamification-state', handlers.requestGamificationState);
             socket.off('disconnect', handlers.disconnect);
         });
         this.socketHandlers.clear();
         this.socketSyncRegistered = false;
+        this.lastOverlayTelemetryPublishedAt = Number.NEGATIVE_INFINITY;
+        this.lastOverlayTelemetrySignature = null;
+        this.lastOverlayTelemetryPayload = null;
 
         this.api.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ [WEATHER CONTROL] Weather Control Plugin destroyed', 'info');
     }

@@ -1,4 +1,11 @@
 const path = require('path');
+const { createAdminAuth } = require('../../../modules/admin-auth');
+
+const RUNTIME_TRUST_FIELDS = [
+  'manifest', 'archiveUrl', 'sha256', 'modelSha256', 'archiveType',
+  'executableRelativePath', 'executableArgs', 'comfyRootRelativePath',
+  'healthBaseUrl', 'healthUrl', 'downloadSizeBytes', 'modelSizeBytes'
+];
 
 class StreamAlchemyRoutes {
   constructor({ api, pluginDir, store, generationService, systemAnalyzer, configProvider, localModelInstaller, modelCatalog }) {
@@ -10,6 +17,7 @@ class StreamAlchemyRoutes {
     this.configProvider = configProvider;
     this.localModelInstaller = localModelInstaller;
     this.modelCatalog = modelCatalog;
+    this.adminAuth = createAdminAuth();
   }
 
   register() {
@@ -28,10 +36,10 @@ class StreamAlchemyRoutes {
       });
     });
 
-    this.api.registerRoute('POST', '/api/streamalchemy/config', async (req, res) => {
-      const config = this.configProvider.updateConfig(req.body || {});
+    this.api.registerRoute('POST', '/api/streamalchemy/config', this.protectAdmin(async (req, res) => {
+      const config = this.configProvider.updateConfig(this.sanitizeConfigUpdate(req.body));
       res.json({ success: true, config: this.maskConfig(config) });
-    });
+    }));
 
     this.api.registerRoute('GET', '/api/streamalchemy/items', async (req, res) => {
       res.json({ success: true, items: this.store.getAllItems() });
@@ -116,13 +124,44 @@ class StreamAlchemyRoutes {
     });
   }
 
+  protectAdmin(handler) {
+    return (req, res, next) => this.adminAuth(req, res, () => handler(req, res, next));
+  }
+
+  sanitizeConfigUpdate(input = {}) {
+    if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
+    const safe = { ...input };
+    delete safe.localRuntime;
+    for (const key of RUNTIME_TRUST_FIELDS) delete safe[key];
+    if (safe.streamMonsters && typeof safe.streamMonsters === 'object' && !Array.isArray(safe.streamMonsters)) {
+      const streamMonsters = { ...safe.streamMonsters };
+      delete streamMonsters.localRuntime;
+      for (const key of RUNTIME_TRUST_FIELDS) delete streamMonsters[key];
+      safe.streamMonsters = streamMonsters;
+    }
+    return safe;
+  }
+
   maskConfig(config) {
     const clone = JSON.parse(JSON.stringify(config || {}));
+    delete clone.localRuntime;
+    for (const key of RUNTIME_TRUST_FIELDS) delete clone[key];
     delete clone.openaiApiKey;
     delete clone.siliconFlowApiKey;
     delete clone.lightxApiKey;
     if (clone.localGeneration) {
       delete clone.localGeneration.modelAuthToken;
+    }
+    if (clone.streamMonsters?.localRuntime) {
+      clone.streamMonsters.localRuntime = {
+        state: clone.streamMonsters.localRuntime.state,
+        ...(clone.streamMonsters.localRuntime.runtimeRoot
+          ? { runtimeRoot: clone.streamMonsters.localRuntime.runtimeRoot }
+          : {})
+      };
+    }
+    if (clone.streamMonsters) {
+      for (const key of RUNTIME_TRUST_FIELDS) delete clone.streamMonsters[key];
     }
     return clone;
   }
