@@ -2,7 +2,7 @@
 
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
-[![Version](https://img.shields.io/badge/version-1.3.3-blue)](https://github.com/Loggableim/ltth.app)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue)](https://github.com/Loggableim/ltth.app)
 [![Status](https://img.shields.io/badge/status-active-success)](https://github.com/Loggableim/ltth.app)
 
 ---
@@ -157,8 +157,8 @@ This project is licensed under the **Creative Commons Attribution-NonCommercial 
 
 ---
 
-*Last updated: 2026-04-28*
-*Version: 1.3.3*
+*Last updated: 2026-07-22*
+*Version: 1.4.0*
 
 ---
 
@@ -303,8 +303,8 @@ Dieses Projekt ist unter der **Creative Commons Attribution-NonCommercial 4.0 In
 
 ---
 
-*Letzte Aktualisierung: 2026-04-28*
-*Version: 1.3.3*
+*Letzte Aktualisierung: 2026-07-22*
+*Version: 1.4.0*
 
 ---
 
@@ -449,8 +449,8 @@ Este proyecto está licenciado bajo la licencia **Creative Commons Attribution-N
 
 ---
 
-*Última actualización: 2026-04-28*
-*Versión: 1.3.3*
+*Última actualización: 2026-07-22*
+*Versión: 1.4.0*
 
 ---
 
@@ -595,5 +595,5 @@ Ce projet est sous licence **Creative Commons Attribution-NonCommercial 4.0 Inte
 
 ---
 
-*Dernière mise à jour : 2026-04-28*
-*Version : 1.3.3*
+*Dernière mise à jour : 2026-07-22*
+*Version : 1.4.0*

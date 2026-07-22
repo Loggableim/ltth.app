@@ -619,6 +619,7 @@
         "renderer_state_initializing": "Initializing",
         "renderer_state_offline": "OFFLINE",
         "renderer_state_unavailable": "Unavailable",
+        "renderer_backend_webgpu": "WEBGPU",
         "not_connected": "Not connected",
         "audio_status_ready": "Audio ready",
         "audio_status_locked": "Audio locked",

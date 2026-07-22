@@ -1,6 +1,6 @@
 # Snapshot Status
 
-Last reviewed: 2026-07-08
+Last reviewed: 2026-07-22
 
 ## Scope
 
@@ -51,7 +51,7 @@ Do not confuse this snapshot with older LTTH repositories or stale archive refer
 - Runtime state: `runtime/`
 - Repository identity: `REPOSITORY_IDENTITY.md`
 - Developer onboarding: `AGENTS.md` and `infos/llm_start_here.md`
-- Version: `1.3.24` (see `version.json` and `app/package.json`)
+- Version: `1.4.0` (see `version.json` and `app/package.json`)
 
 ## Dependency State
 
@@ -180,7 +180,7 @@ Key modules in `app/modules/`:
 
 ## Plugin Inventory
 
-The workspace currently contains 35 plugin manifests in `app/plugins/`:
+The workspace currently contains 37 plugin manifests in `app/plugins/`:
 
 - advanced-timer
 - animazingpal
@@ -189,14 +189,14 @@ The workspace currently contains 35 plugin manifests in `app/plugins/`:
 - clarityhud
 - coinbattle
 - config-import
+- emoji-rain
 - fireworks (stable, v2.0.1 — `fireworks-dev/` was removed and consolidated into `fireworks/`)
 - flame-overlay (v3.0.0)
 - game-engine
 - gcce
-- gift-milestone
+- gift-catalog
 - goals
 - interactive-story (v1.0.0, enabled by default)
-- lastevent-spotlight
 - milestone-leaderboard
 - minecraft-connect
 - multicam
@@ -204,19 +204,21 @@ The workspace currently contains 35 plugin manifests in `app/plugins/`:
 - openshock
 - osc-bridge
 - quiz-show
-- sidekick (v1.0.0, development-beta)
+- schnorrbecher
 - soundboard
-- streamalchemy
+- spotlight
+- streamalchemy (Stream Monsters 1.1.2)
 - stt-ticker
 - talking-heads
 - thermal-printer
 - toptier
 - tts
 - vdoninja
-- viewer-leaderboard
-- viewer-profiles
+- visual-fx-frame-webgpu
 - weather-control
 - webgpu-emoji-rain
+- webgpu-fireworks
+- webgpu-weather-control (1.0.0 open beta)
 
 `fireworks-dev/` was deleted and consolidated into `fireworks/` (v2.0.1, `devStatus: stable`). Its stale package archive has also been removed from the plugin store.
 

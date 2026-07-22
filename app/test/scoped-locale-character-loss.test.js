@@ -31,7 +31,7 @@ describe('scoped plugin locale character-loss regressions', () => {
 
     expect(likelyLostCharacter('https://localhost:3000/overlay?lang=fr&mode=preview')).toBe(false);
     expect(JSON.parse(fs.readFileSync(SCOPED_LOCALE_FILES[2], 'utf8')).plugins.streamalchemy.streamalchemy.title)
-      .toBe('Stream Alchemy - Configuración avanzada');
+      .toBe('Stream Monsters - Configuración avanzada');
     expect(JSON.parse(fs.readFileSync(SCOPED_LOCALE_FILES[7], 'utf8')).plugins['osc-bridge'].osc_bridge.config.target_host)
       .toBe('Hôte cible (IP de VRChat)');
     expect(JSON.parse(fs.readFileSync(SCOPED_LOCALE_FILES[7], 'utf8')).plugins['osc-bridge'].osc_bridge.custom_command.osc_value_help)

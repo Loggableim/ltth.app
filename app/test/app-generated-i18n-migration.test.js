@@ -91,12 +91,6 @@ describe('app runtime i18n namespace migration', () => {
         es: 'Añadir',
         fr: 'Ajouter'
       },
-      'common.dashboard.tiktok_datenquelle': {
-        en: 'TikTok Data Source',
-        de: 'TikTok-Datenquelle',
-        es: 'Fuente de datos de TikTok',
-        fr: 'Source de données TikTok'
-      },
       'common.dashboard.wird_geladen': {
         en: 'Loading...',
         de: 'Wird geladen...',
@@ -117,6 +111,13 @@ describe('app runtime i18n namespace migration', () => {
       for (const [key, values] of Object.entries(expected)) {
         expect(get(key)).toBe(values[locale]);
       }
+    }
+  });
+
+  test('does not restore the retired data-source dashboard key', () => {
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      const translations = JSON.parse(fs.readFileSync(path.join(appRoot, 'locales', `${locale}.json`), 'utf8'));
+      expect(translations.common.dashboard).not.toHaveProperty('tiktok_datenquelle');
     }
   });
 

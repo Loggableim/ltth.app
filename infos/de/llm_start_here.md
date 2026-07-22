@@ -23,7 +23,7 @@ This workspace is a full Git checkout:
 - `app/` is the maintained runtime.
 - The old Electron main-process folder is not present.
 - Root `package.json` is a convenience wrapper, not the backend dependency manifest.
-- Current version: `1.3.24` (see `version.json` and `app/package.json`).
+- Current version: `1.4.0` (see `version.json` and `app/package.json`).
 
 Before making changes, read:
 
@@ -75,7 +75,7 @@ app/modules/
   webgpu-engine/            ← experimental WebGPU engine (TypeScript)
 
 app/plugins/
-  35 plugin manifests
+  37 plugin manifests
   plugin-specific backend, UI, overlay, tests, assets
 
 app/routes/

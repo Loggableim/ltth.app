@@ -743,7 +743,7 @@
   "faq.p.11": "El Windows Launcher es una peque?a aplicaci?n de Windows (~7 MB) que descarga, instala y mantiene LTTH actualizado autom?ticamente. Ofrece actualizaciones autom?ticas, rollback a versiones anteriores y gesti?n de versiones integrada. Todos los datos se almacenan en %LOCALAPPDATA%\\LTTH\\.",
   "faq.h3.12": "⚠️Warum erscheint eine SmartScreen-Warnung?",
   "faq.span.13": "⚠️",
-  "faq.p.14": "El launcher es una aplicaci?n nueva que a?n no est? firmada con c?digo. Eso es normal en aplicaciones sin firmar. Haz clic en \"M?s informaci?n\" ? \"Ejecutar de todos modos\". El archivo es seguro y la versi?n actual est? disponible en GitHub.",
+  "faq.p.14": "El launcher de Windows está firmado con código. SmartScreen aún puede mostrar una advertencia de reputación en versiones nuevas o poco habituales. Comprueba el editor y la dirección de descarga y usa solo la página oficial de LTTH o GitHub Releases.",
   "faq.h3.15": "?? ?LTTH es compatible con macOS o Linux?",
   "faq.span.16": "🍎",
   "faq.p.17": "El Windows Launcher actualmente solo est? disponible para Windows. El soporte para macOS y Linux est? previsto. LTTH funciona en todas las plataformas, pero la instalaci?n autom?tica mediante el launcher por ahora solo est? disponible en Windows.",
@@ -1014,7 +1014,7 @@
     },
     "p": {
       "11": "Windows Launcher es una peque?a app de Windows que descarga, instala y mantiene LTTH actualizado autom?ticamente. Ofrece actualizaciones autom?ticas, rollback a versiones anteriores y gesti?n de versiones integrada. Todos los datos se almacenan en %LOCALAPPDATA%\\LTTH\\.",
-      "14": "Windows Launcher es una app nueva que todav?a no est? firmada con c?digo. Eso es normal en proyectos de c?digo abierto. Haz clic en \"M?s informaci?n\" ? \"Ejecutar de todas formas\". El archivo es seguro y el c?digo fuente est? disponible en GitHub.",
+      "14": "El launcher de Windows está firmado con código. SmartScreen aún puede mostrar una advertencia de reputación en versiones nuevas o poco habituales. Comprueba el editor y la dirección de descarga y usa solo la página oficial de LTTH o GitHub Releases.",
       "17": "Windows Launcher actualmente solo est? disponible para Windows. El soporte para macOS y Linux est? en planificaci?n. LTTH en s? funciona en todas las plataformas, pero la instalaci?n autom?tica mediante el launcher por ahora solo est? disponible en Windows.",
       "20": "Windows Launcher es compatible con Windows 10 y Windows 11. La instalaci?n autom?tica mediante el launcher es el m?todo recomendado para usuarios de Windows. Consulta la p?gina de descarga para m?s detalles.",
       "24": "Recomendado: descarga Windows Launcher y ejec?talo. El launcher instala LTTH autom?ticamente y lo mantiene actualizado. Encontrar?s m?s detalles en la p?gina de descarga.",

@@ -95,6 +95,21 @@ function collectReferencedKeys(source) {
 function referenceLocaleMap(sourceFile) {
   const relative = path.relative(repoRoot, sourceFile).replace(/\\/g, '/');
   if (!relative.startsWith('app/')) {
+    if (relative.startsWith('plugin-store/sources/')) {
+      const sourceId = relative.split('/')[2];
+      const directories = [
+        path.join(appRoot, 'locales'),
+        path.join(repoRoot, 'plugin-store', 'sources', sourceId, 'locales')
+      ];
+      return Object.fromEntries(locales.map(locale => {
+        const merged = new Map();
+        directories.forEach(directory => {
+          const values = localeSet(directory)[locale];
+          if (values) flatten(values).forEach((value, key) => merged.set(key, value));
+        });
+        return [locale, merged];
+      }));
+    }
     if (relative.startsWith('plugins/')) {
       const pluginDirectory = path.join(repoRoot, 'plugins', relative.split('/')[1], 'locales');
       return Object.fromEntries(locales.map(locale => {
@@ -160,7 +175,11 @@ function listMarkdown(directory, baseDirectory = directory) {
 }
 
 for (const root of ['app/wiki', 'docs', 'infos']) {
-  const source = listMarkdown(path.join(repoRoot, root)).filter(file => !/^(en|de|es|fr)\//.test(file));
+  const source = listMarkdown(path.join(repoRoot, root)).filter(file => {
+    if (/^(en|de|es|fr)\//.test(file)) return false;
+    if (root === 'docs' && /^(?:plans|superpowers)\//.test(file)) return false;
+    return true;
+  });
   const docsSummary = { label: `docs:${root}`, files: source.length };
   for (const locale of locales) {
     const translated = listMarkdown(path.join(repoRoot, root, locale));

@@ -1,4 +1,4 @@
-# Wiki Index - Little TikTool Helper v1.3.3
+# Wiki Index - Little TikTool Helper v1.4.0
 
 **Vollständige Dokumentation für PupCid's Little TikTool Helper**
 
@@ -11,7 +11,7 @@ Neu hier? Starte mit diesen Seiten:
 1. **[Getting Started](Getting-Started.md)** - 5-Minuten-Schnelleinstieg
 2. **[Installation & Setup](Installation-&-Setup.md)** - Detaillierte Installation
 3. **[Snapshot Status](Snapshot-Status.md)** - Aktueller Stand dieses lokalen Snapshots
-4. **[Plugin-Liste](Plugin-Liste.md)** - Alle 35 Plugins im Überblick
+4. **[Plugin-Liste](Plugin-Liste.md)** - Alle 37 Plugins im Überblick
 
 ---
 
@@ -32,11 +32,11 @@ Neu hier? Starte mit diesen Seiten:
 | Seite | Beschreibung | Plugins |
 |-------|--------------|---------|
 | **[Plugin-Dokumentation](Plugin-Dokumentation.md)** | Plugin-System-Übersicht | Grundlagen |
-| **[Plugin-Liste](Plugin-Liste.md)** | Alle 35 Plugins mit Details | Komplett |
+| **[Plugin-Liste](Plugin-Liste.md)** | Alle 37 Plugins mit Details | Komplett |
 | **[VDO.Ninja](Plugins/VDO-Ninja.md)** | VDO.Ninja Multi-Guest-Manager | Spezifisch |
 
 **Plugin-Status im Snapshot:**
-- **35 Plugin-Manifeste** unter `app/plugins/`
+- **37 Plugin-Manifeste** unter `app/plugins/`
 - **18 standardmäßig aktiviert**, **18 standardmäßig deaktiviert**
 - Die Plugin-Manifeste und der Plugin-Manager sind die aktuelle Quelle der Wahrheit.
 - Einzelne Beschreibungstexte können ältere Reifegrad- oder Versionsformulierungen enthalten.
@@ -177,7 +177,7 @@ Neu hier? Starte mit diesen Seiten:
 ## 🆕 Version 1.3.3 Highlights
 
 ### Aktueller Snapshot
-- ✅ **36 integrierte Plugin-Manifeste**
+- ✅ **37 integrierte Plugin-Manifeste**
 - ✅ **Node/Express-Laufzeit in `app/`** als gepflegte Anwendung
 - ✅ **EulerStream-Adapter** als TikTok-LIVE-Datenquellen
 - ✅ **Statische Dashboard-/Overlay-Oberflächen** unter `app/public/`
@@ -200,7 +200,7 @@ Siehe **[Home](Home.md)** für vollständige Übersicht.
 | Getting Started | ✅ | 100% |
 | Installation | ✅ | 100% |
 | Snapshot Status | ✅ | Aktuell |
-| Plugin-Liste | ✅ | Inventar 36/36, Detailtexte teils historisch |
+| Plugin-Liste | ✅ | Inventar 37/37, Detailtexte teils historisch |
 | Feature-Docs | ✅ | 100% |
 | Overlays | ✅ | 100% |
 | Advanced | ✅ | 100% |
@@ -208,8 +208,8 @@ Siehe **[Home](Home.md)** für vollständige Übersicht.
 | Developer Guide | ✅ | 100% |
 | Troubleshooting | ✅ | 100% |
 
-**Letzte große Aktualisierung:** 2026-04-28
-**Version:** 1.3.3
+**Letzte große Aktualisierung:** 2026-07-22
+**Version:** 1.4.0
 
 ---
 
@@ -297,7 +297,7 @@ app/wiki/
 ## ✅ Wartungs-Checkliste
 
 ### Dokumentiert
-- [x] Plugin-Inventar mit 36 Manifesten
+- [x] Plugin-Inventar mit 37 Manifesten
 - [x] Alle Features (WebGPU, GCCE, etc.)
 - [x] Alle 25+ Overlays
 - [x] Installation & Setup
@@ -324,7 +324,7 @@ app/wiki/
 
 ---
 
-*Letzte Aktualisierung: 2026-04-28*
-*Version: 1.3.3*
+*Letzte Aktualisierung: 2026-07-22*
+*Version: 1.4.0*
 *Wiki-Seiten: 20+*
 *Status: funktionsfähig, mit bekannten historischen Detailtexten*

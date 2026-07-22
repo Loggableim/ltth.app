@@ -256,7 +256,7 @@
   },
   "features.a.36": "Herunterladen",
   "docs.h3.75": "TikTok Voices",
-  "faq.p.14": "Der Launcher ist eine neue Anwendung, die noch nicht code-signiert ist. Das ist bei nicht signierten Anwendungen normal. Klicke „Weitere Informationen\" ? „Trotzdem ausführen\". Die Datei ist sicher und die aktuelle Version wird auf GitHub bereitgestellt.",
+  "faq.p.14": "Der Windows Launcher ist code-signiert. SmartScreen kann bei neuen oder wenig verbreiteten Releases dennoch eine Reputationswarnung anzeigen. Prüfe Herausgeber und Download-Adresse; nutze ausschließlich die offizielle LTTH-Download-Seite oder GitHub Releases.",
   "docs.a.5": "Windows Launcher",
   "docs.h2.33": "Installation mit Windows Launcher (empfohlen)",
   "docs.p.34": "Der Windows Launcher ist die einfachste und empfohlene Installationsmethode für Windows:",

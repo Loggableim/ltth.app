@@ -3,9 +3,9 @@ const path = require('path');
 
 const appRoot = path.join(__dirname, '..');
 const repoRoot = path.join(appRoot, '..');
-const APP_VERSION = '1.3.37';
+const APP_VERSION = '1.4.0';
 const PLUGIN_VERSION = '3.1.1';
-const RELEASE_DATE = '2026-07-20';
+const RELEASE_DATE = '2026-07-22';
 
 function read(relativePath) {
   return fs.readFileSync(path.join(repoRoot, relativePath), 'utf8');
@@ -21,7 +21,7 @@ function pluginAssetUrls(source) {
 }
 
 describe('WebGPU Fireworks 3.1.1 release alignment', () => {
-  test('aligns app and public release metadata to LTTH 1.3.37', () => {
+  test('aligns app and public release metadata to LTTH 1.4.0', () => {
     const rootPackage = readJson('package.json');
     const appPackage = readJson('app/package.json');
     const appLock = readJson('app/package-lock.json');

@@ -110,7 +110,8 @@
             "status": "Statut",
             "admin": "Administration",
             "capture": "Enregistrement",
-            "multi_language": "Multilingue"
+            "multi_language": "Multilingue",
+            "vrchat": "VRChat"
           },
           "options": {
             "no_selection": "Aucune sélection",

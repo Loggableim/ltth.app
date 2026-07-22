@@ -399,7 +399,7 @@ function markRendererStatusUnavailable(error) {
     const unavailable = t('plugins.webgpu-fireworks.ui.unavailable', 'Unavailable');
     const state = document.getElementById('webgpu-runtime-state');
     if (state) {
-        state.textContent = `${t('plugins.webgpu-fireworks.ui.renderer_state_offline', 'OFFLINE')} · WEBGPU`;
+        state.textContent = `${t('plugins.webgpu-fireworks.ui.renderer_state_offline', 'OFFLINE')} · ${t('plugins.webgpu-fireworks.ui.renderer_backend_webgpu', 'WEBGPU')}`;
         state.className = 'text-red-300';
     }
     for (const id of [
@@ -456,7 +456,7 @@ async function loadRendererStatus() {
         const reason = document.getElementById('webgpu-runtime-reason');
         const rendererUpgradeRequired = renderer.upgradeRequired === true;
         if (state) {
-            state.textContent = `${t(`plugins.webgpu-fireworks.ui.renderer_state_${String(renderer.state || 'offline').toLowerCase()}`, String(renderer.state || 'offline').toUpperCase())} · WEBGPU`;
+            state.textContent = `${t(`plugins.webgpu-fireworks.ui.renderer_state_${String(renderer.state || 'offline').toLowerCase()}`, String(renderer.state || 'offline').toUpperCase())} · ${t('plugins.webgpu-fireworks.ui.renderer_backend_webgpu', 'WEBGPU')}`;
             state.className = rendererUpgradeRequired || renderer.state === 'initializing'
                 ? 'text-yellow-200'
                 : renderer.state === 'ready' ? 'text-green-300' : 'text-red-300';

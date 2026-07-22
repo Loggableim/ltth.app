@@ -110,7 +110,8 @@
             "status": "Estado",
             "admin": "Administración",
             "capture": "Captura",
-            "multi_language": "Multilingüe"
+            "multi_language": "Multilingüe",
+            "vrchat": "VRChat"
           },
           "options": {
             "no_selection": "Sin selección",

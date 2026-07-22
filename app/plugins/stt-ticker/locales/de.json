@@ -110,7 +110,8 @@
             "status": "Statusanzeige",
             "admin": "Verwaltung",
             "capture": "Aufnahme",
-            "multi_language": "Mehrsprachig"
+            "multi_language": "Mehrsprachig",
+            "vrchat": "VRChat"
           },
           "options": {
             "no_selection": "Keine Auswahl",

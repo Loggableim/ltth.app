@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-22T07:01:36.959Z",
+  "generatedAt": "2026-07-22T08:03:59.115Z",
   "languages": [
     "en",
     "de",
@@ -24763,6 +24763,7 @@
         "plugins.stt-ticker.stt_ticker.ui.navigation.capture",
         "plugins.stt-ticker.stt_ticker.ui.navigation.multi_language",
         "plugins.stt-ticker.stt_ticker.ui.navigation.status",
+        "plugins.stt-ticker.stt_ticker.ui.navigation.vrchat",
         "plugins.stt-ticker.stt_ticker.ui.options.center",
         "plugins.talking-heads.labels.talking_heads_obs_hud",
         "plugins.talking-heads.labels.talking_heads_obs_overlay",
@@ -35858,6 +35859,7 @@
         "plugins.stt-ticker.stt_ticker.ui.navigation.capture",
         "plugins.stt-ticker.stt_ticker.ui.navigation.multi_language",
         "plugins.stt-ticker.stt_ticker.ui.navigation.status",
+        "plugins.stt-ticker.stt_ticker.ui.navigation.vrchat",
         "plugins.stt-ticker.stt_ticker.ui.options.center",
         "plugins.talking-heads.labels.talking_heads_obs_hud",
         "plugins.talking-heads.labels.talking_heads_obs_overlay",

@@ -110,7 +110,8 @@
             "status": "Status",
             "admin": "Admin",
             "capture": "Capture",
-            "multi_language": "Multi-language"
+            "multi_language": "Multi-language",
+            "vrchat": "VRChat"
           },
           "options": {
             "no_selection": "No selection",

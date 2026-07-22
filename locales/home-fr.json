@@ -258,7 +258,7 @@
   "docs.h3.75": "TikTok Voices",
   "faq.h3.9": "?? Qu?est-ce que le Windows Launcher ?",
   "faq.p.11": "Le Windows Launcher est une petite application Windows (~7 MB) qui télécharge, installe et maintient LTTH à jour automatiquement. Il propose des mises à jour automatiques, le retour aux versions précédentes et une gestion de version intégrée. Toutes les données sont stockées dans %LOCALAPPDATA%\\LTTH\\.",
-  "faq.p.14": "Le launcher est une nouvelle application qui n?est pas encore signée. C?est normal pour les applications non signées. Cliquez sur \"Plus d?informations\" ? \"Ex?cuter quand m?me\". Le fichier est s?r et la version actuelle est disponible sur GitHub.",
+  "faq.p.14": "Le launcher Windows est signé par code. SmartScreen peut néanmoins afficher un avertissement de réputation pour une version récente ou peu répandue. Vérifiez l’éditeur et l’adresse de téléchargement, puis utilisez uniquement la page officielle LTTH ou GitHub Releases.",
   "faq.h3.15": "?? LTTH prend-il en charge macOS ou Linux ?",
   "faq.p.17": "Le Windows Launcher est actuellement disponible uniquement pour Windows. La prise en charge de macOS et Linux est prévue. LTTH fonctionne sur toutes les plateformes, mais l’installation automatique via le launcher n?est pour l?instant disponible que sous Windows.",
   "faq.h3.18": "?? Quels systèmes d?exploitation sont pris en charge ?",

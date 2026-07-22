@@ -139,5 +139,5 @@ Ce projet est sous licence **Creative Commons Attribution-NonCommercial 4.0 Inte
 
 ---
 
-*Dernière mise à jour : 2026-04-28*
-*Version : 1.3.3*
+*Dernière mise à jour : 2026-07-22*
+*Version : 1.4.0*

@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-07-22
+
+### Added
+
+- **Stream Monsters 1.1.2**: Relaunched StreamAlchemy as Stream Monsters while retaining the compatible `streamalchemy` plugin ID and existing data. TikTok gifts become deterministic elemental eggs, community monsters, quests, and transparent three-round duels through `/streammonsters/*` and `/api/streammonsters/*`.
+- **WebGPU Weather Control 1.0.0 (Open Beta)**: Added an independent cinematic WebGPU weather plugin with transparent OBS rendering, a native framegraph, adaptive quality, isolated configuration storage, `/api/webgpu-weather/*`, socket controls, Flow actions, and an optional community HUD.
+- **Music Bot Smart Radio**: Added localized Radio Preview and live feedback, persistent catalog and playlist workflows, safer seeking, a self-healing radio supervisor, and optional viewer voting through `!vote1` and `!vote2`.
+- **Talking Heads Local Assets and Gift Lottery**: Added bundled modular avatar asset packs and a gift-driven avatar lottery.
+- **WebGPU Fireworks Show Platform**: Added PyroDSL, premium and revisioned custom shows, visual authoring, preview and import/export workflows, Goal and Superfan overrides, Pride rockets, and the 3D Furry/Boykisser finale.
+- **Game Engine Controls**: Added per-event audio controls and fair Round Robin rotation with the active interactive player visible in the OBS overlay.
+- **Emoji Rain Commands**: Added editable chat commands, command-specific lifetimes, and locked command assets.
+
+### Changed
+
+- **AnimazingPal Consolidation**: Integrated Stream Assistant capabilities, Live Host configuration, and the assistant HUD into AnimazingPal; `animazingpal` remains the public plugin ID.
+- **EulerStream-only LIVE Transport**: EulerStream is now the sole TikTok LIVE event source, with bounded fallback support for connection recovery.
+- **Launcher Reliability**: Hardened startup and runtime-path handling, database-start integrity checks, dependency self-healing, and launcher branding while retaining the signed release binary.
+- **Localization and Documentation**: Regenerated affected plugin guides, catalogs, galleries, and UI surfaces in German, English, Spanish, and French.
+- **App Store Sessions**: Profile logins now persist across app restarts.
+
+### Fixed
+
+- **Game Engine Stability**: Closed timer and audio-identity races, paused timers during hidden-game and result recovery states, restored default and custom Connect Four audio, hardened Chess lifecycle handling, and improved CoinBattle pyramid mode.
+- **Music Bot Playback**: Hardened configuration, playback recovery, catalog and playlist handling, seek races, localization, and Smart Radio Auto-DJ recovery.
+- **WebGPU Fireworks Runtime**: Improved renderer capability routing, GPU resource and atlas lifecycle handling, safe finale admission, telemetry, preview delivery, bottom-edge launches, visible-envelope rocket-to-burst alignment, and top-edge framing in WebGPU Fireworks 3.1.1.
+- **STT Ticker**: Hardened multilingual live transcription, ASR credentials, source-language policy, translation caching, and secret masking.
+- **Schnorrbecher**: Restored coin-jar behavior, configurable gift sizing, repeat-gift visuals, bundled glass-impact audio, and natural overflow.
+- **Weather Control**: Improved gamification timer cleanup and independent community HUD controls.
+
+### Removed
+
+- **Sidekick Plugin**: Removed the standalone Sidekick plugin after consolidating its stream-assistant functionality into AnimazingPal.
+- **Data Source Manager**: Removed the obsolete Data Source plugin and its dashboard, store, documentation, package, and translation surfaces.
+- **TikFinity and Legacy Source Selection**: Removed the TikFinity adapter, TikFinity-facing documentation, and remaining multi-source LIVE configuration. Existing installations must use EulerStream for TikTok LIVE events.
+- **Generated Talking Heads Assets**: Removed legacy generated-avatar paths in favor of bundled local assets.
+
+### Security
+
+- **Signed Windows Launcher**: Retains a valid Authenticode signature and adds hardened startup integrity checks.
+- **Safer Diagnostics and Credentials**: Music Bot redacts media parameters in diagnostics, while STT Ticker improves credential validation and masking.
+
+
 ## [1.3.37] - 2026-07-20
 
 ### Fixed

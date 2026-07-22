@@ -1,10 +1,10 @@
 {
-  "version": "1.3.37",
-  "releaseDate": "2026-07-20",
+  "version": "1.4.0",
+  "releaseDate": "2026-07-22",
   "status": "stable",
-  "downloadVersion": "1.3.37",
-  "downloadNote": "Version 1.3.37 publishes WebGPU Fireworks 3.1.1 with exact rocket-to-burst alignment, preserved top headroom, and synchronized renderer and UI contracts.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.37",
+  "downloadVersion": "1.4.0",
+  "downloadNote": "LTTH 1.4.0 consolidates Stream Assistant into AnimazingPal, makes EulerStream the sole LIVE connector, adds Stream Monsters 1.1.2, WebGPU Weather Control 1.0.0, Smart Radio, and carries forward WebGPU Fireworks 3.1.1 with major stability hardening.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.4.0",
   "oneLineInstaller": {
     "windows": "$installer = [Text.Encoding]::UTF8.GetString((New-Object Net.WebClient).DownloadData('https://ltth.app/install/install.ps1')); iex ($installer.TrimStart([char]0xFEFF))",
     "macos": "curl -fsSL https://ltth.app/install/install.sh | bash",
@@ -19,6 +19,24 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.4.0": {
+      "date": "2026-07-22",
+      "changes": [
+        "CHANGED: Stream Assistant capabilities are consolidated into AnimazingPal and the standalone Sidekick plugin is removed",
+        "CHANGED: EulerStream is the sole TikTok LIVE connector; TikFinity, Data Source Manager, and legacy source selection are removed",
+        "NEW: Stream Monsters 1.1.2 retains the streamalchemy plugin ID with elemental eggs, community monsters, quests, and three-round duels",
+        "NEW: WebGPU Weather Control 1.0.0 adds cinematic native rendering, adaptive quality, Flow, socket, and community HUD interfaces",
+        "NEW: Music Bot Smart Radio adds localized live feedback, resilient catalog and playlist workflows, and !vote1 or !vote2 viewer voting",
+        "NEW: Game Engine adds fair Round Robin rotation, active-player overlay state, per-event audio controls, and restored default game sounds",
+        "NEW: Talking Heads uses bundled local avatar assets and gift-driven avatar lotteries",
+        "IMPROVED: WebGPU Fireworks 3.1.1 includes PyroDSL shows, 3D Furry and Boykisser finales, Pride rockets, visible-envelope alignment, and safer GPU lifecycle handling",
+        "FIXED: STT Ticker multilingual ASR, source-language policy, translation caching, credentials, and secret masking are hardened",
+        "FIXED: Schnorrbecher restores coin-jar behavior, repeat-gift visuals, bundled glass audio, sizing, and natural overflow",
+        "FIXED: Game Engine timers and audio identity, Music Bot recovery and seeking, and Weather Control cleanup are hardened",
+        "IMPROVED: German, English, Spanish, and French plugin guides, catalogs, galleries, and UI locales are regenerated from the final source set",
+        "SECURITY: The signed Windows launcher retains a valid Authenticode signature and adds startup integrity, dependency self-healing, and runtime-path checks"
+      ]
+    },
     "1.3.37": {
       "date": "2026-07-20",
       "changes": [

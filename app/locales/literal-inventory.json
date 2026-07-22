@@ -1,70 +1,282 @@
 {
-  "generatedAt": "2026-07-14T20:47:55.155Z",
-  "files": 274,
+  "generatedAt": "2026-07-22T08:04:01.361Z",
+  "files": 279,
   "findings": [
+    {
+      "file": "app/plugins/animazingpal/overlay/stream-assistant-hud.html",
+      "text": "AnimazingPal Stream Assistant HUD"
+    },
     {
       "file": "app/plugins/api-bridge/ui.html",
       "text": "API Bridge — local contract"
     },
     {
-      "file": "app/plugins/api-bridge/ui.html",
-      "text": "Local, read-only reference"
+      "file": "app/plugins/config-import/ui.html",
+      "text": "ℹ️"
     },
     {
-      "file": "app/plugins/api-bridge/ui.html",
-      "text": "API Bridge contract"
+      "file": "app/plugins/game-engine/overlay/chess.html",
+      "text": "Black Player"
     },
     {
-      "file": "app/plugins/api-bridge/ui.html",
-      "text": "Inspect these local endpoints before integrating a client. This page never sends an action request."
+      "file": "app/plugins/game-engine/overlay/chess.html",
+      "text": "White Player"
     },
     {
-      "file": "app/plugins/api-bridge/ui.html",
-      "text": "Identify the running LTTH and API Bridge versions."
+      "file": "app/plugins/game-engine/overlay/chess.html",
+      "text": "Game Over!"
     },
     {
-      "file": "app/plugins/api-bridge/ui.html",
-      "text": "List action IDs and their declared parameters. Reading this endpoint has no side effect."
+      "file": "app/plugins/game-engine/overlay/connect4.html",
+      "text": "Vier Gewinnt / Connect4"
     },
     {
-      "file": "app/plugins/api-bridge/ui.html",
-      "text": "Review the most recent event record; a new temporary profile starts with an empty list."
+      "file": "app/plugins/game-engine/overlay/connect4.html",
+      "text": "Warte auf Spiel..."
     },
     {
-      "file": "app/plugins/api-bridge/ui.html",
-      "text": "Execution belongs in a separately tested client. Verify the required body without sending it here."
+      "file": "app/plugins/schnorrbecher/overlay/coincup.html",
+      "text": "Schnorrbecher OBS Overlay"
     },
     {
-      "file": "app/plugins/api-bridge/ui.html",
-      "text": "Safe integration boundary"
+      "file": "app/plugins/schnorrbecher/overlay/coincup.html",
+      "text": "Schnorr Becher"
     },
     {
-      "file": "app/plugins/api-bridge/ui.html",
-      "text": "Use GET endpoints first. Keep credentials and production action IDs out of screenshots and test profiles; POST execution is intentionally not available on this page."
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Schnorrbecher Steuerung"
     },
     {
-      "file": "app/plugins/music-bot/ui.html",
-      "text": "History-Anteil im Radio-Mix (%)"
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "TikTok-LIVE Geschenkeglas für OBS Browser Sources"
     },
     {
-      "file": "app/plugins/music-bot/ui.html",
-      "text": "Wiederholungs-Sperre (Stunden)"
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Prüfe…"
     },
     {
-      "file": "app/plugins/osc-bridge/ui.html",
-      "text": "VRChat Chatbox"
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Physische Icons"
     },
     {
-      "file": "app/plugins/osc-bridge/ui.html",
-      "text": "Typing-Indikator bei externen Chatbox-Nachrichten anzeigen"
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Test Gift"
     },
     {
-      "file": "app/plugins/osc-bridge/ui.html",
-      "text": "Benachrichtigungston in VRChat abspielen"
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Test +100 Giftwert"
     },
     {
-      "file": "app/plugins/stt-ticker/ui.html",
-      "text": "Mehrere gewählte Sprachen werden automatisch als eigene Zeilen angezeigt."
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Reset Coin Jar"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Clear event cache"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "OBS Browser-Source URL"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Overlay-URL kopieren"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Plugin aktiv"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Klassischer Becher"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Mason Jar"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Neon Arcade"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Becherhöhe"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "X-Position (%)"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Y-Position (%)"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "1 Coin (px)"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "2-10 Coins (px)"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "11-29 Coins (px)"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "30-99 Coins (px)"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "100-199 Coins (px)"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "200-499 Coins (px)"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "500-999 Coins (px)"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "1000-1999 Coins (px)"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "2000-4999 Coins (px)"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "5000+ Coins (px)"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Max. physische Icons"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Spawn-Delay (ms)"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Counter-Schriftgröße"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Sound-Lautstärke"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Gesamtzähler anzeigen"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Geschenk-Popup anzeigen"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Absendername anzeigen"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Geschenkbild anzeigen"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Bei neuem Stream zurücksetzen"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Sound aktiv"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Reset bestätigen"
+    },
+    {
+      "file": "app/plugins/schnorrbecher/ui.html",
+      "text": "Konfiguration speichern"
+    },
+    {
+      "file": "app/plugins/streamalchemy/overlay.html",
+      "text": "Stream Monsters"
+    },
+    {
+      "file": "app/plugins/streamalchemy/streammonsters-overlay.html",
+      "text": "Stream Monsters Overlay"
+    },
+    {
+      "file": "app/plugins/streamalchemy/streammonsters-overlay.html",
+      "text": "Stream Monsters"
+    },
+    {
+      "file": "app/plugins/streamalchemy/streammonsters-overlay.html",
+      "text": "Viewers can check !inventory."
+    },
+    {
+      "file": "app/plugins/streamalchemy/streammonsters-overlay.html",
+      "text": "!inventory · !choose <slot> · !battle"
+    },
+    {
+      "file": "app/plugins/streamalchemy/streammonsters-overlay.html",
+      "text": "Stream Monsters Duel"
+    },
+    {
+      "file": "app/plugins/streamalchemy/streammonsters-overlay.html",
+      "text": "Three transparent rounds"
+    },
+    {
+      "file": "app/plugins/streamalchemy/streammonsters-ui.html",
+      "text": "Stream Monsters"
+    },
+    {
+      "file": "app/plugins/streamalchemy/streammonsters-ui.html",
+      "text": "Stream Monsters · five-minute setup"
+    },
+    {
+      "file": "app/plugins/streamalchemy/streammonsters-ui.html",
+      "text": "Original, transparent game rules."
+    },
+    {
+      "file": "app/plugins/streamalchemy/streammonsters-ui.html",
+      "text": "Loading your Stream Monsters setup…"
+    },
+    {
+      "file": "app/plugins/streamalchemy/streammonsters-ui.html",
+      "text": "Creator or world name"
+    },
+    {
+      "file": "app/plugins/streamalchemy/streammonsters-ui.html",
+      "text": "Known TikTok gift"
+    },
+    {
+      "file": "app/plugins/streamalchemy/streammonsters-ui.html",
+      "text": "Gift ID"
+    },
+    {
+      "file": "app/plugins/streamalchemy/streammonsters-ui.html",
+      "text": "Gift name"
+    },
+    {
+      "file": "app/plugins/streamalchemy/streammonsters-ui.html",
+      "text": "Start a TikTok session to see eggs, hatches, viewers, duels, quests and pool coverage."
+    },
+    {
+      "file": "app/plugins/streamalchemy/streammonsters-ui.html",
+      "text": "!inventory"
+    },
+    {
+      "file": "app/plugins/streamalchemy/streammonsters-ui.html",
+      "text": "!choose <slot>"
+    },
+    {
+      "file": "app/plugins/streamalchemy/streammonsters-ui.html",
+      "text": "!battle"
+    },
+    {
+      "file": "app/plugins/streamalchemy/streammonsters-ui.html",
+      "text": "let viewers play."
     },
     {
       "file": "app/plugins/stt-ticker/ui.html",
@@ -75,20 +287,124 @@
       "text": "Finale Untertitel an VRChat senden"
     },
     {
-      "file": "app/plugins/stt-ticker/ui.html",
-      "text": "An VRChat-Chatbox senden"
+      "file": "app/plugins/talking-heads/ui.html",
+      "text": "Talking Heads"
     },
     {
-      "file": "app/plugins/stt-ticker/ui.html",
-      "text": "Sendet nur finale Original-Untertitel nach 700 ms BÃ¼ndelung. Lange Texte werden automatisch auf das VRChat-Chatbox-Limit aufgeteilt."
+      "file": "app/plugins/visual-fx-frame-webgpu/ui/settings.html",
+      "text": "10 px"
     },
     {
-      "file": "app/plugins/stt-ticker/ui.html",
-      "text": "VRChat-Ausgabe speichern"
+      "file": "app/plugins/webgpu-fireworks/ui/settings.html",
+      "text": "480p (854x480)"
     },
     {
-      "file": "app/plugins/webgpu-emoji-rain/ui.html",
-      "text": "-- FPS"
+      "file": "app/plugins/webgpu-weather-control/overlay.html",
+      "text": "WebGPU Weather diagnostics"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/overlay.html",
+      "text": "Community Weather"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ°Ã…Â¸Ã…â€™Ã‚Â¤ÃƒÂ¯Ã‚Â¸Ã‚Â"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ¢Ã…Â¡Ã‚Âª"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚ÂÃƒÂ¯Ã‚Â¸Ã‚Â"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "Open the live WebGPU overlay preview"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¶ÃƒÂ¯Ã‚Â¸Ã‚Â"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ°Ã…Â¸Ã…â€™Ã‚Â§ÃƒÂ¯Ã‚Â¸Ã‚Â"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ¢Ã‚ÂÃ‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ¢Ã…Â¡Ã¢â€žÂ¢ÃƒÂ¯Ã‚Â¸Ã‚Â"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂºÃ‚Â¡ÃƒÂ¯Ã‚Â¸Ã‚Â"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â®"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ°Ã…Â¸Ã…â€™Ã‹â€"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ¢Ã‚ÂÃ¢â‚¬Å¾ÃƒÂ¯Ã‚Â¸Ã‚Â"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ¢Ã¢â‚¬ÂºÃ‹â€ ÃƒÂ¯Ã‚Â¸Ã‚Â"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ°Ã…Â¸Ã…â€™Ã‚Â«ÃƒÂ¯Ã‚Â¸Ã‚Â"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ¢Ã…Â¡Ã‚Â¡"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ¢Ã‹Å“Ã¢â€šÂ¬ÃƒÂ¯Ã‚Â¸Ã‚Â"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ¢Ã‹Å“Ã‚ÂÃƒÂ¯Ã‚Â¸Ã‚Â"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ°Ã…Â¸Ã…â€™Ã…â€™"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ¢Ã…â€œÃ‚Â¨"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ¢Ã‹Å“Ã¢â‚¬Å¾ÃƒÂ¯Ã‚Â¸Ã‚Â"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ°Ã…Â¸Ã…â€™Ã‚Â¸"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¥"
+    },
+    {
+      "file": "app/plugins/webgpu-weather-control/ui.html",
+      "text": "ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â"
+    },
+    {
+      "file": "app/test/fixtures/webgpu-fireworks-chrome-harness.html",
+      "text": "WebGPU Fireworks isolated Chrome harness"
     },
     {
       "file": "auth/index.html",
@@ -117,6 +433,22 @@
     {
       "file": "community.html",
       "text": "PupCid-Support öffnen"
+    },
+    {
+      "file": "docs/plugin-docs-qa/index.html",
+      "text": "LTTH Plugin Documentation QA"
+    },
+    {
+      "file": "docs/plugin-docs-qa/index.html",
+      "text": "Review: pending"
+    },
+    {
+      "file": "docs/plugin-docs-qa/index.html",
+      "text": "852 screenshots · 38 guides · 0/104 OBS previews"
+    },
+    {
+      "file": "docs/plugin-docs-qa/index.html",
+      "text": "Review every localized product screenshot, its route, and CaptureReceipt hash before marking this gallery approved."
     },
     {
       "file": "features/auto-updater.html",
@@ -281,14 +613,6 @@
     {
       "file": "features/index.html",
       "text": "KI-gestützte interaktive Story-Generierung mit Chat-Voting, Bildgenerierung, Multi-Voice-TTS und adaptiven OBS-Overlays. Erstelle fesselnde Geschichten mit deinem Publikum mithilfe von LLM-Technologie."
-    },
-    {
-      "file": "features/index.html",
-      "text": "Sidekick – Intelligenter Stream-Assistent"
-    },
-    {
-      "file": "features/index.html",
-      "text": "Intelligenter Stream-Assistent, der Sprache und Avatar-Reaktionen über AnimazingPal und Fish.audio delegiert. Bietet Event-Analyse, automatische Antworten, Benutzer-Gedächtnis mit Verfall, Nachrichten-Batching, Relevanz-Scoring und umfassende Stream-Analytik."
     },
     {
       "file": "features/index.html",
@@ -588,11 +912,11 @@
     },
     {
       "file": "features/index.html",
-      "text": "Stream Alchemy"
+      "text": "Stream Monsters"
     },
     {
       "file": "features/index.html",
-      "text": "Verwandeln Sie TikTok-Geschenke in virtuelle RPG-Items mit Crafting-Mechaniken und KI-generierten Icons. Bietet Inventarsystem, Item-Crafting und Rezept-Verwaltung."
+      "text": "TikTok-Geschenke werden zu deterministischen Element-Eiern, Community-Monstern, Quests und transparenten Drei-Runden-Duellen. Bilder werden vor dem Stream vorbereitet."
     },
     {
       "file": "features/index.html",
@@ -601,6 +925,10 @@
     {
       "file": "features/index.html",
       "text": "Erweitert den Stream um echte Verbindungen nach außen."
+    },
+    {
+      "file": "features/index.html",
+      "text": "Für VRChat, VDO.Ninja, Hardware und Spezial-Workflows."
     },
     {
       "file": "features/index.html",
@@ -777,18 +1105,6 @@
     {
       "file": "features-en.html",
       "text": "AI-powered interactive story generation with chat voting, image generation, multi-voice TTS, and adaptive OBS overlays. Create engaging stories with your audience using LLM technology."
-    },
-    {
-      "file": "features-en.html",
-      "text": "Sidekick – Intelligenter Stream-Assistent"
-    },
-    {
-      "file": "features-en.html",
-      "text": "Intelligent stream assistant that delegates speech and avatar responses through AnimazingPal and Fish.audio. Features event analysis, automatic responses, user memory with decay, message batching, relevance scoring, and comprehensive stream analytics."
-    },
-    {
-      "file": "features-en.html",
-      "text": "Dashboard view"
     },
     {
       "file": "features-en.html",
@@ -984,6 +1300,10 @@
     },
     {
       "file": "features-en.html",
+      "text": "Dashboard view"
+    },
+    {
+      "file": "features-en.html",
       "text": "Playable formats that turn chat, gifts, and rules directly into entertainment."
     },
     {
@@ -1120,11 +1440,11 @@
     },
     {
       "file": "features-en.html",
-      "text": "Stream Alchemy"
+      "text": "Stream Monsters"
     },
     {
       "file": "features-en.html",
-      "text": "Transform TikTok gifts into virtual RPG items with crafting mechanics and AI-generated icons. Features inventory system, item crafting, and recipe management."
+      "text": "Turn TikTok gifts into deterministic element eggs, community monsters, quests and transparent three-round duels. Visuals are prepared before the stream."
     },
     {
       "file": "features-en.html",
@@ -1133,6 +1453,10 @@
     {
       "file": "features-en.html",
       "text": "Extends the stream with real connections to the outside world."
+    },
+    {
+      "file": "features-en.html",
+      "text": "For VRChat, VDO.Ninja, hardware, and special workflows."
     },
     {
       "file": "features-en.html",
@@ -1317,18 +1641,6 @@
     {
       "file": "features-es.html",
       "text": "Generación de historias interactivas impulsada por IA con votación por chat, generación de imágenes, TTS multi-voz y overlays adaptativos para OBS. Crea historias cautivadoras con tu audiencia usando tecnología LLM."
-    },
-    {
-      "file": "features-es.html",
-      "text": "Sidekick – Intelligenter Stream-Assistent"
-    },
-    {
-      "file": "features-es.html",
-      "text": "Asistente de stream inteligente que delega voz y respuestas de avatar mediante AnimazingPal y Fish.audio. Incluye análisis de eventos, respuestas automáticas, memoria de usuarios con decaimiento, agrupación de mensajes, puntuación de relevancia y análisis completo de streams."
-    },
-    {
-      "file": "features-es.html",
-      "text": "Vista del panel"
     },
     {
       "file": "features-es.html",
@@ -1524,6 +1836,10 @@
     },
     {
       "file": "features-es.html",
+      "text": "Vista del panel"
+    },
+    {
+      "file": "features-es.html",
       "text": "Formatos jugables que convierten chat, regalos y reglas directamente en entretenimiento."
     },
     {
@@ -1660,11 +1976,11 @@
     },
     {
       "file": "features-es.html",
-      "text": "Stream Alchemy"
+      "text": "Stream Monsters"
     },
     {
       "file": "features-es.html",
-      "text": "Transforma regalos de TikTok en objetos RPG virtuales con mecánicas de elaboración e iconos generados por IA. Presenta sistema de inventario, elaboración de objetos y gestión de recetas."
+      "text": "Convierte regalos de TikTok en huevos elementales deterministas, monstruos comunitarios, misiones y duelos transparentes de tres rondas. Las imagenes se preparan antes del directo."
     },
     {
       "file": "features-es.html",
@@ -1673,6 +1989,10 @@
     {
       "file": "features-es.html",
       "text": "Amplía el stream con conexiones reales hacia el exterior."
+    },
+    {
+      "file": "features-es.html",
+      "text": "Para VRChat, VDO.Ninja, hardware y flujos de trabajo especiales."
     },
     {
       "file": "features-es.html",
@@ -1857,18 +2177,6 @@
     {
       "file": "features-fr.html",
       "text": "Génération d'histoires interactives alimentée par l'IA avec vote par chat, génération d'images, TTS multi-voix et overlays adaptatifs OBS. Créez des histoires captivantes avec votre public grâce à la technologie LLM."
-    },
-    {
-      "file": "features-fr.html",
-      "text": "Sidekick – Intelligenter Stream-Assistent"
-    },
-    {
-      "file": "features-fr.html",
-      "text": "Assistant de stream intelligent qui délègue la voix et les réponses d'avatar via AnimazingPal et Fish.audio. Comprend l'analyse d'événements, les réponses automatiques, la mémoire utilisateur avec déclin, le regroupement de messages, le scoring de pertinence et l'analytique complète de streams."
-    },
-    {
-      "file": "features-fr.html",
-      "text": "Vue du tableau de bord"
     },
     {
       "file": "features-fr.html",
@@ -2064,6 +2372,10 @@
     },
     {
       "file": "features-fr.html",
+      "text": "Vue du tableau de bord"
+    },
+    {
+      "file": "features-fr.html",
       "text": "Des formats jouables qui transforment directement le chat, les cadeaux et les règles en divertissement."
     },
     {
@@ -2200,11 +2512,11 @@
     },
     {
       "file": "features-fr.html",
-      "text": "Stream Alchemy"
+      "text": "Stream Monsters"
     },
     {
       "file": "features-fr.html",
-      "text": "Transforme les cadeaux TikTok en objets RPG virtuels avec mécaniques d'artisanat et icônes générées par IA. Comprend système d'inventaire, fabrication d'objets et gestion de recettes."
+      "text": "Transformez les cadeaux TikTok en oeufs elementaires deterministes, monstres communautaires, quetes et duels transparents en tres manches. Les visuels sont prepares avant le live."
     },
     {
       "file": "features-fr.html",
@@ -2213,6 +2525,10 @@
     {
       "file": "features-fr.html",
       "text": "Étend le stream avec de vraies connexions vers l’extérieur."
+    },
+    {
+      "file": "features-fr.html",
+      "text": "Pour VRChat, VDO.Ninja, le matériel et les workflows spéciaux."
     },
     {
       "file": "features-fr.html",
@@ -2275,60 +2591,8 @@
       "text": "Diese Hinweise ersetzen keine individuelle Rechtsberatung. Betreiberangaben, UID-/Firmenbuchdaten und gegebenenfalls eine verantwortliche Person für redaktionelle Inhalte müssen vor Veröffentlichung auf Aktualität geprüft werden."
     },
     {
-      "file": "obs-overlay-wrapper.html",
-      "text": "LTTH OBS Wrapper"
-    },
-    {
-      "file": "plugin-store/sources/visual-fx-frame-webgpu/renderer/index.html",
-      "text": "Visual FX Frame WEBGPU"
-    },
-    {
-      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
-      "text": "Premium Neon"
-    },
-    {
-      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
-      "text": "WEBGPU RUNTIME"
-    },
-    {
-      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
-      "text": "Particles — · Field — · Bloom — · Lightning —"
-    },
-    {
-      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
-      "text": "Solar Forge"
-    },
-    {
-      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
-      "text": "Prism Reactor"
-    },
-    {
-      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
-      "text": "Arcane Bloom"
-    },
-    {
-      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
-      "text": "Tempest Rift"
-    },
-    {
-      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
-      "text": "Quantum Circuit"
-    },
-    {
       "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
       "text": "10 px"
-    },
-    {
-      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
-      "text": "Brechungsstärke"
-    },
-    {
-      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
-      "text": "Sekundärfarbe:"
-    },
-    {
-      "file": "plugin-store/sources/visual-fx-frame-webgpu/ui/settings.html",
-      "text": "Include and overwrite named presets"
     },
     {
       "file": "plugins.html",
@@ -2381,10 +2645,6 @@
     {
       "file": "plugins.html",
       "text": "Sicherung und Wiederherstellung."
-    },
-    {
-      "file": "plugins.html",
-      "text": "TikTok-Datenquelle auswählen."
     },
     {
       "file": "plugins.html",
@@ -2476,7 +2736,7 @@
     },
     {
       "file": "plugins.html",
-      "text": "Intelligenter Stream-Assistent."
+      "text": "Physikbasiertes Geschenkeglas für OBS."
     },
     {
       "file": "plugins.html",
@@ -2484,7 +2744,11 @@
     },
     {
       "file": "plugins.html",
-      "text": "Geschenke in RPG-Items verwandeln."
+      "text": "Stream Monsters"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Geschenke werden zu Element-Eiern, Community-Monstern und transparenten Duellen."
     },
     {
       "file": "plugins.html",
@@ -2557,6 +2821,14 @@
     {
       "file": "plugins.html",
       "text": "GPU-beschleunigter Emoji-Regen."
+    },
+    {
+      "file": "plugins.html",
+      "text": "WebGPU Wetterkontrolle"
+    },
+    {
+      "file": "plugins.html",
+      "text": "Cineastische WebGPU-Wettereffekte mit adaptiver Qualität."
     },
     {
       "file": "plugins.html",

@@ -221,6 +221,7 @@ describe('Music Bot runtime i18n', () => {
       'settings.crossfadeTitle': 'Crossfade is an established technical term.',
       'settings.giftRegion': 'Region is the same metadata label in German and English.',
       'autoDj.autoDjToastTitle': 'Auto-DJ is the product feature name.',
+      'autoDj.radioScore': 'Score is established product terminology for the radio ranking.',
       'autoDj.sourceRadio': 'Radio is the same source name in these languages.',
       'player.sourceYoutube': 'YouTube is a proper product name.',
       'player.sourceSoundCloud': 'SoundCloud is a proper product name.'

@@ -483,7 +483,7 @@
       "show_alert": "🔔 Mostrar alerta",
       "webhook_http_request": "🌐 Webhook (solicitud HTTP)",
       "alert_text_supports_variables": "Texto de alerta (admite variables)",
-      "available_variables_username_giftname_coins_message": "Variables disponibles: {nombre de usuario}, {nombre de regalo}, {monedas}, {mensaje}",
+      "available_variables_username_giftname_coins_message": "Variables disponibles: {username}, {giftName}, {coins}, {message}",
       "webhook_url": "URL de webhook",
       "allowed_domains_webhook_site_discord_com_zapier_com_ifttt_com_make_com": "Dominios permitidos: webhook.site, discord.com, zapier.com, ifttt.com, make.com",
       "create_flow": "Crear flujo",

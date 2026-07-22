@@ -619,6 +619,7 @@
         "renderer_state_initializing": "Wird initialisiert",
         "renderer_state_offline": "OFFLINE",
         "renderer_state_unavailable": "Nicht verfügbar",
+        "renderer_backend_webgpu": "WEBGPU",
         "not_connected": "Nicht verbunden",
         "audio_status_ready": "Audio bereit",
         "audio_status_locked": "Audio gesperrt",

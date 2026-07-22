@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-11T23:46:36.908Z",
+  "generatedAt": "2026-07-22T08:04:09.156Z",
   "locales": [
     "en",
     "de",
@@ -9,13 +9,13 @@
   "sets": [
     {
       "label": "app",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\locales",
-      "keys": 1265
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\locales",
+      "keys": 1279
     },
     {
       "label": "website",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\locales",
-      "keys": 7655
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\locales",
+      "keys": 3083
     },
     {
       "label": "docs:app/wiki",
@@ -27,7 +27,7 @@
     },
     {
       "label": "docs:docs",
-      "files": 44,
+      "files": 14,
       "en": 44,
       "de": 44,
       "es": 44,
@@ -43,182 +43,192 @@
     },
     {
       "label": "plugin:advanced-timer",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\advanced-timer\\locales",
-      "keys": 166
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\advanced-timer\\locales",
+      "keys": 281
     },
     {
       "label": "plugin:animazingpal",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\animazingpal\\locales",
-      "keys": 269
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\animazingpal\\locales",
+      "keys": 547
     },
     {
       "label": "plugin:api-bridge",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\api-bridge\\locales",
-      "keys": 18
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\api-bridge\\locales",
+      "keys": 27
     },
     {
       "label": "plugin:chatango",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\chatango\\locales",
-      "keys": 60
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\chatango\\locales",
+      "keys": 66
     },
     {
       "label": "plugin:clarityhud",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\clarityhud\\locales",
-      "keys": 112
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\clarityhud\\locales",
+      "keys": 197
     },
     {
       "label": "plugin:coinbattle",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\coinbattle\\locales",
-      "keys": 334
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\coinbattle\\locales",
+      "keys": 477
     },
     {
       "label": "plugin:config-import",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\config-import\\locales",
-      "keys": 152
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\config-import\\locales",
+      "keys": 199
     },
     {
       "label": "plugin:emoji-rain",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\emoji-rain\\locales",
-      "keys": 348
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\emoji-rain\\locales",
+      "keys": 416
     },
     {
       "label": "plugin:fireworks",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\fireworks\\locales",
-      "keys": 271
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\fireworks\\locales",
+      "keys": 374
     },
     {
       "label": "plugin:flame-overlay",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\flame-overlay\\locales",
-      "keys": 211
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\flame-overlay\\locales",
+      "keys": 318
     },
     {
       "label": "plugin:game-engine",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\game-engine\\locales",
-      "keys": 950
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\game-engine\\locales",
+      "keys": 1396
     },
     {
       "label": "plugin:gcce",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\gcce\\locales",
-      "keys": 213
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\gcce\\locales",
+      "keys": 373
     },
     {
       "label": "plugin:gift-catalog",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\gift-catalog\\locales",
-      "keys": 74
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\gift-catalog\\locales",
+      "keys": 99
     },
     {
       "label": "plugin:goals",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\goals\\locales",
-      "keys": 107
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\goals\\locales",
+      "keys": 183
     },
     {
       "label": "plugin:interactive-story",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\interactive-story\\locales",
-      "keys": 230
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\interactive-story\\locales",
+      "keys": 344
     },
     {
       "label": "plugin:milestone-leaderboard",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\milestone-leaderboard\\locales",
-      "keys": 758
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\milestone-leaderboard\\locales",
+      "keys": 1016
     },
     {
       "label": "plugin:minecraft-connect",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\minecraft-connect\\locales",
-      "keys": 151
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\minecraft-connect\\locales",
+      "keys": 239
     },
     {
       "label": "plugin:multicam",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\multicam\\locales",
-      "keys": 80
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\multicam\\locales",
+      "keys": 105
     },
     {
       "label": "plugin:music-bot",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\music-bot\\locales",
-      "keys": 117
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\music-bot\\locales",
+      "keys": 555
     },
     {
       "label": "plugin:openshock",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\openshock\\locales",
-      "keys": 427
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\openshock\\locales",
+      "keys": 795
     },
     {
       "label": "plugin:osc-bridge",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\osc-bridge\\locales",
-      "keys": 203
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\osc-bridge\\locales",
+      "keys": 315
     },
     {
       "label": "plugin:quiz-show",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\quiz-show\\locales",
-      "keys": 489
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\quiz-show\\locales",
+      "keys": 708
     },
     {
-      "label": "plugin:sidekick",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\sidekick\\locales",
-      "keys": 108
+      "label": "plugin:schnorrbecher",
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\schnorrbecher\\locales",
+      "keys": 1
     },
     {
       "label": "plugin:soundboard",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\soundboard\\locales",
-      "keys": 138
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\soundboard\\locales",
+      "keys": 201
     },
     {
       "label": "plugin:spotlight",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\spotlight\\locales",
-      "keys": 48
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\spotlight\\locales",
+      "keys": 174
     },
     {
       "label": "plugin:streamalchemy",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\streamalchemy\\locales",
-      "keys": 180
-    },
-    {
-      "label": "plugin:stt-ticker",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\stt-ticker\\locales",
-      "keys": 170
-    },
-    {
-      "label": "plugin:talking-heads",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\talking-heads\\locales",
-      "keys": 162
-    },
-    {
-      "label": "plugin:thermal-printer",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\thermal-printer\\locales",
-      "keys": 56
-    },
-    {
-      "label": "plugin:toptier",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\toptier\\locales",
-      "keys": 133
-    },
-    {
-      "label": "plugin:tts",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\tts\\locales",
-      "keys": 353
-    },
-    {
-      "label": "plugin:vdoninja",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\vdoninja\\locales",
-      "keys": 60
-    },
-    {
-      "label": "plugin:weather-control",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\weather-control\\locales",
-      "keys": 185
-    },
-    {
-      "label": "plugin:webgpu-emoji-rain",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\webgpu-emoji-rain\\locales",
-      "keys": 399
-    },
-    {
-      "label": "plugin:webgpu-fireworks",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\app\\plugins\\webgpu-fireworks\\locales",
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\streamalchemy\\locales",
       "keys": 322
     },
     {
+      "label": "plugin:stt-ticker",
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\stt-ticker\\locales",
+      "keys": 250
+    },
+    {
+      "label": "plugin:talking-heads",
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\talking-heads\\locales",
+      "keys": 50
+    },
+    {
+      "label": "plugin:thermal-printer",
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\thermal-printer\\locales",
+      "keys": 77
+    },
+    {
+      "label": "plugin:toptier",
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\toptier\\locales",
+      "keys": 238
+    },
+    {
+      "label": "plugin:tts",
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\tts\\locales",
+      "keys": 578
+    },
+    {
+      "label": "plugin:vdoninja",
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\vdoninja\\locales",
+      "keys": 57
+    },
+    {
+      "label": "plugin:visual-fx-frame-webgpu",
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\visual-fx-frame-webgpu\\locales",
+      "keys": 354
+    },
+    {
+      "label": "plugin:weather-control",
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\weather-control\\locales",
+      "keys": 281
+    },
+    {
+      "label": "plugin:webgpu-emoji-rain",
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\webgpu-emoji-rain\\locales",
+      "keys": 436
+    },
+    {
+      "label": "plugin:webgpu-fireworks",
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\webgpu-fireworks\\locales",
+      "keys": 834
+    },
+    {
+      "label": "plugin:webgpu-weather-control",
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\app\\plugins\\webgpu-weather-control\\locales",
+      "keys": 282
+    },
+    {
       "label": "plugin:openshock",
-      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\plugins\\openshock\\locales",
+      "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-1-4-0-rollup\\plugins\\openshock\\locales",
       "keys": 343
     }
   ],
