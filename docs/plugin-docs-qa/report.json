@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-21T16:24:34.169Z",
+  "generatedAt": "2026-07-22T07:01:36.895Z",
   "reviewStatus": "pending",
   "guides": 38,
   "locales": [
@@ -9,10 +9,10 @@
     "es",
     "fr"
   ],
-  "screenshots": 848,
-  "receipts": 848,
+  "screenshots": 852,
+  "receipts": 852,
   "obs": {
-    "expected": 100,
+    "expected": 104,
     "records": 0,
     "reportPath": null
   }
