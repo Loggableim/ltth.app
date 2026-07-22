@@ -15,6 +15,10 @@ const imagePath = (locale, id, stepId) => locale === 'en'
   ? `/screenshots/docs/plugins/${id}/${stepId}.png`
   : `/screenshots/${locale}/docs/plugins/${id}/${stepId}.png`;
 
+function waitForFileUnlock(milliseconds) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
+}
+
 function writeFileAtomically(file, contents) {
   const temporary = path.join(
     path.dirname(file),
@@ -22,7 +26,15 @@ function writeFileAtomically(file, contents) {
   );
   try {
     fs.writeFileSync(temporary, contents, 'utf8');
-    fs.renameSync(temporary, file);
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        fs.renameSync(temporary, file);
+        break;
+      } catch (error) {
+        if (!['EPERM', 'EBUSY'].includes(error.code) || attempt >= 39) throw error;
+        waitForFileUnlock(Math.min(50, 5 * (attempt + 1)));
+      }
+    }
   } finally {
     if (fs.existsSync(temporary)) fs.rmSync(temporary, { force: true });
   }
@@ -249,4 +261,6 @@ function main() {
   console.log(`Built ${guides.length} detailed plugin tutorial pages in four locales.`);
 }
 
-main();
+if (require.main === module) main();
+
+module.exports = { writeFileAtomically };
