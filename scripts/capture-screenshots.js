@@ -50,7 +50,6 @@ const pages = [
   { mock: 'emoji-rain.html',    output: 'emoji-rain.png' },
   { mock: 'auto-updater.html',  output: 'auto-updater.png' },
   { mock: 'chat-commands.html', output: 'chat-commands.png' },
-  { mock: 'tikfinity-api.html', output: 'tikfinity-api.png' },
 ];
 
 async function main() {

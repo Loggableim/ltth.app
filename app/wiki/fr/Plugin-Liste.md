@@ -1053,7 +1053,7 @@ IFTTT-Integration für erweiterte Automatisierungen. Verbindet TikTok-Events mit
 ## 🔧 Plugin-Installation
 
 ### Automatische Installation
-Alle 36 Plugins sind bereits vorinstalliert und können direkt über das Admin-UI aktiviert werden.
+Alle 35 Plugins sind bereits vorinstalliert und können direkt über das Admin-UI aktiviert werden.
 
 ### Plugin aktivieren
 1. Dashboard öffnen: `http://localhost:3000`

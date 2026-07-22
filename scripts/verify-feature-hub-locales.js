@@ -5,7 +5,7 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const store = JSON.parse(fs.readFileSync(path.join(root, 'plugin-store.json'), 'utf8'));
-const ids = ['talking-heads', 'stt-ticker', 'music-bot', 'toptier', 'data-source', 'openshock'];
+const ids = ['talking-heads', 'stt-ticker', 'music-bot', 'toptier', 'openshock'];
 const errors = [];
 
 for (const id of ids) {
@@ -23,7 +23,7 @@ for (const id of ids) {
   }
 }
 
-const englishMustNotBeGerman = ['toptier', 'data-source'];
+const englishMustNotBeGerman = ['toptier'];
 for (const id of englishMustNotBeGerman) {
   const plugin = store.plugins.find((item) => item.id === id);
   if (plugin?.description?.en && /\b(mit|und|als|für|zwischen|wähle)\b/i.test(plugin.description.en)) {

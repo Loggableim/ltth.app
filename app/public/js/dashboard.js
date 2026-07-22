@@ -344,22 +344,6 @@ function initializeButtons() {
         saveTikTokCredentialsBtn.addEventListener('click', saveTikTokCredentials);
     }
 
-    // Data Source radio buttons
-    const dsRadioEuler = document.getElementById('datasource-eulerstream');
-    const dsRadioTikfinity = document.getElementById('datasource-tikfinity');
-    if (dsRadioEuler) {
-        dsRadioEuler.addEventListener('change', handleDataSourceChange);
-    }
-    if (dsRadioTikfinity) {
-        dsRadioTikfinity.addEventListener('change', handleDataSourceChange);
-    }
-
-    // TikFinity save settings button
-    const saveTikfinityBtn = document.getElementById('save-tikfinity-settings');
-    if (saveTikfinityBtn) {
-        saveTikfinityBtn.addEventListener('click', saveTikFinitySettings);
-    }
-
     // OpenAI API Configuration save button
     const saveOpenAICredentialsBtn = document.getElementById('save-openai-credentials');
     if (saveOpenAICredentialsBtn) {
@@ -624,11 +608,6 @@ function initializeSocketListeners() {
     // Euler Backup Key Warning (non-dismissible, blocks connection for 10 seconds)
     socket.on('euler-backup-key-warning', (data) => {
         showEulerBackupKeyWarning(data);
-    });
-
-    // Data Source changed (from another tab or the data-source plugin UI)
-    socket.on('datasource:changed', (data) => {
-        updateDataSourceUI(data.newSource);
     });
 
     // Profile Switched Event - handled by profile-manager.js (shows restart overlay)
@@ -1852,9 +1831,6 @@ async function loadSettings() {
         // Load username aliases for active profile
         await loadUsernameAliases();
 
-        // Load data source status (eulerstream vs tikfinity)
-        await loadDataSourceStatus();
-
     } catch (error) {
         console.error('Error loading settings:', error);
     }
@@ -1928,134 +1904,6 @@ async function saveTikTokCredentials() {
     } catch (error) {
         console.error('Error saving TikTok credentials:', error);
         alert('❌ Error saving API key!');
-    }
-}
-
-// ========== DATA SOURCE SWITCHING ==========
-
-/**
- * Load data source status from the data-source plugin API and update the UI.
- */
-async function loadDataSourceStatus() {
-    try {
-        const response = await fetch('/api/data-source/status');
-        const data = await response.json();
-        if (data.success) {
-            updateDataSourceUI(data.currentSource, data.settings);
-        }
-    } catch (error) {
-        console.error('Error loading data source status:', error);
-    }
-}
-
-/**
- * Update the data source radio buttons, TikFinity section visibility, and
- * EulerStream card visibility based on the selected source.
- */
-function updateDataSourceUI(source, dsSettings) {
-    const radioEuler = document.getElementById('datasource-eulerstream');
-    const radioTikfinity = document.getElementById('datasource-tikfinity');
-    const tikfinitySection = document.getElementById('tikfinity-settings-section');
-    const eulerstreamCard = document.getElementById('eulerstream-settings-card');
-
-    if (radioEuler && radioTikfinity) {
-        radioEuler.checked = source === 'eulerstream';
-        radioTikfinity.checked = source === 'tikfinity';
-    }
-
-    if (tikfinitySection) {
-        tikfinitySection.style.display = source === 'tikfinity' ? '' : 'none';
-    }
-
-    // Dim but keep visible the Euler card when TikFinity is active
-    if (eulerstreamCard) {
-        eulerstreamCard.style.opacity = source === 'tikfinity' ? '0.5' : '1';
-    }
-
-    if (dsSettings && dsSettings.tikfinity_ws_port !== undefined) {
-        const portInput = document.getElementById('tikfinity-ws-port');
-        if (portInput) {
-            portInput.value = dsSettings.tikfinity_ws_port;
-        }
-    }
-}
-
-/**
- * Handle data source radio button change — persist via plugin API.
- */
-async function handleDataSourceChange(e) {
-    const source = e.target.value;
-    if (!source) return;
-
-    // If switching to tikfinity, auto-save the current port value first so the
-    // adapter uses the value currently visible in the UI, not a potentially stale DB value.
-    if (source === 'tikfinity') {
-        const portInput = document.getElementById('tikfinity-ws-port');
-        if (portInput) {
-            const port = parseInt(portInput.value, 10);
-            if (!isNaN(port) && port >= 1 && port <= 65535) {
-                try {
-                    await fetch('/api/data-source/settings', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tikfinity_ws_port: port })
-                    });
-                } catch (portSaveErr) { /* non-fatal – proceed with switch anyway */
-                    console.error('Error auto-saving TikFinity port before switch:', portSaveErr);
-                }
-            }
-        }
-    }
-
-    try {
-        const response = await fetch('/api/data-source/switch', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ source })
-        });
-        const data = await response.json();
-        if (data.success) {
-            updateDataSourceUI(source);
-        } else {
-            alert('❌ ' + (data.error || 'Fehler beim Wechseln der Datenquelle'));
-            // revert radio
-            loadDataSourceStatus();
-        }
-    } catch (error) {
-        console.error('Error switching data source:', error);
-        alert('❌ Fehler beim Wechseln der Datenquelle');
-        loadDataSourceStatus();
-    }
-}
-
-/**
- * Save TikFinity-specific settings (port).
- */
-async function saveTikFinitySettings() {
-    const portInput = document.getElementById('tikfinity-ws-port');
-    if (!portInput) return;
-
-    const port = parseInt(portInput.value, 10);
-    if (isNaN(port) || port < 1 || port > 65535) {
-        alert('❌ Ungültiger Port (1 – 65535)');
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/data-source/settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tikfinity_ws_port: port })
-        });
-        const data = await response.json();
-        if (data.success) {
-            alert('✅ TikFinity Einstellungen gespeichert!');
-        } else {
-            alert('❌ ' + (data.error || 'Fehler beim Speichern'));
-        }
-    } catch (error) {
-        console.error('Error saving TikFinity settings:', error);
-        alert('❌ Fehler beim Speichern der TikFinity Einstellungen');
     }
 }
 
@@ -4269,8 +4117,6 @@ async function loadTikTokSettings() {
             connectUniqueIdCheckbox.checked = settings.tiktok_connect_with_unique_id === 'true';
         }
 
-        // Load data source status (eulerstream vs tikfinity)
-        await loadDataSourceStatus();
     } catch (error) {
         console.error('Error loading TikTok settings:', error);
     }

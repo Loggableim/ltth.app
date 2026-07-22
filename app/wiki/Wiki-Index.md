@@ -11,7 +11,7 @@ Neu hier? Starte mit diesen Seiten:
 1. **[Getting Started](Getting-Started.md)** - 5-Minuten-Schnelleinstieg
 2. **[Installation & Setup](Installation-&-Setup.md)** - Detaillierte Installation
 3. **[Snapshot Status](Snapshot-Status.md)** - Aktueller Stand dieses lokalen Snapshots
-4. **[Plugin-Liste](Plugin-Liste.md)** - Alle 36 Plugins im Überblick
+4. **[Plugin-Liste](Plugin-Liste.md)** - Alle 35 Plugins im Überblick
 
 ---
 
@@ -32,11 +32,11 @@ Neu hier? Starte mit diesen Seiten:
 | Seite | Beschreibung | Plugins |
 |-------|--------------|---------|
 | **[Plugin-Dokumentation](Plugin-Dokumentation.md)** | Plugin-System-Übersicht | Grundlagen |
-| **[Plugin-Liste](Plugin-Liste.md)** | Alle 36 Plugins mit Details | Komplett |
+| **[Plugin-Liste](Plugin-Liste.md)** | Alle 35 Plugins mit Details | Komplett |
 | **[VDO.Ninja](Plugins/VDO-Ninja.md)** | VDO.Ninja Multi-Guest-Manager | Spezifisch |
 
 **Plugin-Status im Snapshot:**
-- **36 Plugin-Manifeste** unter `app/plugins/`
+- **35 Plugin-Manifeste** unter `app/plugins/`
 - **18 standardmäßig aktiviert**, **18 standardmäßig deaktiviert**
 - Die Plugin-Manifeste und der Plugin-Manager sind die aktuelle Quelle der Wahrheit.
 - Einzelne Beschreibungstexte können ältere Reifegrad- oder Versionsformulierungen enthalten.
@@ -179,7 +179,7 @@ Neu hier? Starte mit diesen Seiten:
 ### Aktueller Snapshot
 - ✅ **36 integrierte Plugin-Manifeste**
 - ✅ **Node/Express-Laufzeit in `app/`** als gepflegte Anwendung
-- ✅ **Eulerstream- und TikFinity-Adapter** als TikTok-LIVE-Datenquellen
+- ✅ **EulerStream-Adapter** als TikTok-LIVE-Datenquellen
 - ✅ **Statische Dashboard-/Overlay-Oberflächen** unter `app/public/`
 - ✅ **Go-Launcher-Quellen** unter `build-src/`
 

@@ -53,7 +53,6 @@ const FEATURE_PAGES = [
   'emoji-rain',
   'auto-updater',
   'chat-commands',
-  'tikfinity-api',
 ];
 
 function normalizeUrl(pathPart) {

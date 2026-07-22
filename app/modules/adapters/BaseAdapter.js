@@ -3,10 +3,8 @@
 const EventEmitter = require('events');
 
 /**
- * BaseAdapter – Abstract base class for all TikTok data-source adapters.
  *
  * Provides shared state, helper methods and event infrastructure so that
- * concrete adapters (EulerstreamAdapter, TikFinityAdapter, …) can focus
  * solely on their protocol logic.
  *
  * Concrete subclasses MUST implement:

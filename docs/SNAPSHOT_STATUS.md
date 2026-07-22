@@ -78,8 +78,8 @@ The root package has no dependency tree on purpose. It only forwards commands in
 
 The plugin store was introduced in v1.3.9 and remains part of the current snapshot:
 
-- **Registry:** `plugin-store.json` (root) — 36 plugin entries with multilingual descriptions (en/de/es/fr), SHA-256 checksums, package URLs, pricing, and badges.
-- **Packages:** `plugin-store/packages/` — 36 pre-packaged `.zip` files, one per plugin.
+- **Registry:** `plugin-store.json` (root) — 35 plugin entries with multilingual descriptions (en/de/es/fr), SHA-256 checksums, package URLs, pricing, and badges.
+- **Packages:** `plugin-store/packages/` — 35 pre-packaged `.zip` files, one per plugin.
 - **Backend:** `app/modules/plugin-store.js` (563 lines) — `PluginStore` class with HTTPS URL validation, SHA-256 checksum verification, safe ZIP extraction, community-source opt-in.
 - **Routes:** `app/routes/plugin-routes.js` — 6 store-specific API endpoints under `/api/plugin-store`.
 - **Frontend:** `app/public/js/plugin-manager.js` (1590 lines) — `PluginManager` class with `store` and `installed` tabs, category filters, dev-status filters, badges, and one-click install flow.
@@ -147,7 +147,7 @@ Key modules in `app/modules/`:
 
 - `database.js` — SQLite schema, settings, event logs, plugin-support tables.
 - `tiktok.js` — TikTok connector and event normalization.
-- `adapters/` — `EulerstreamAdapter.js`, `TikFinityAdapter.js`, `BaseAdapter.js`.
+- `adapters/` — `EulerstreamAdapter.js`, `BaseAdapter.js`.
 - `plugin-loader.js` (1502 lines) — PluginAPI and lifecycle.
 - `plugin-store.js` (563 lines) — Plugin store registry, install, community sources.
 - `ifttt/` — Visual automation engine (action/condition/trigger registries, engine, migration, variable store).
@@ -180,7 +180,7 @@ Key modules in `app/modules/`:
 
 ## Plugin Inventory
 
-The workspace currently contains 36 plugin manifests in `app/plugins/`:
+The workspace currently contains 35 plugin manifests in `app/plugins/`:
 
 - advanced-timer
 - animazingpal
@@ -189,7 +189,6 @@ The workspace currently contains 36 plugin manifests in `app/plugins/`:
 - clarityhud
 - coinbattle
 - config-import
-- data-source
 - fireworks (stable, v2.0.1 — `fireworks-dev/` was removed and consolidated into `fireworks/`)
 - flame-overlay (v3.0.0)
 - game-engine

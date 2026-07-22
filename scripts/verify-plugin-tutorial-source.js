@@ -72,7 +72,6 @@ for (const guide of guides) {
     if (step.capture.action.prepare) {
       const isTimerDemo = guide.id === 'advanced-timer' && step.id === 'countdown-preview' && step.capture.action.prepare === 'create-demo-timer';
       const isTimerOverlayDemo = guide.id === 'advanced-timer' && step.id === 'timer-overlay' && step.capture.action.prepare === 'create-demo-timer-overlay';
-      const isTikFinitySave = guide.id === 'data-source' && ['field-map', 'data-preview'].includes(step.id) && step.capture.action.prepare === 'select-local-tikfinity';
       const isFireworksSettings = guide.id === 'fireworks' && ['fireworks-card', 'effect-profile', 'audio-limit', 'fireworks-reset'].includes(step.id) && step.capture.action.prepare === 'open-fireworks-settings';
       const isFlameTab = guide.id === 'flame-overlay' && ((step.id === 'frame-style' && step.capture.action.prepare === 'open-flame-frame-tab') || (step.id === 'frame-intensity' && step.capture.action.prepare === 'open-flame-motion-tab'));
       const isManualGame = guide.id === 'game-engine' && ['test-round', 'queue-reset'].includes(step.id) && step.capture.action.prepare === 'start-local-manual-game';
@@ -97,7 +96,7 @@ for (const guide of guides) {
           || (['chatter-preview', 'spotlight-overlay', 'spotlight-reset'].includes(step.id) && step.capture.action.prepare === 'open-spotlight-preview'));
       const isStreamAlchemySettings = guide.id === 'streamalchemy' && ['alchemy-card', 'automation-rule', 'action-chain', 'rule-dry-run'].includes(step.id) && step.capture.action.prepare === 'open-streamalchemy-settings';
       const isMusicBotSettings = guide.id === 'music-bot' && step.id === 'queue-rule' && step.capture.action.prepare === 'open-music-bot-settings';
-      assert.ok(isTimerDemo || isTimerOverlayDemo || isTikFinitySave || isFireworksSettings || isFlameTab || isManualGame || isGoalsCreate || isGoalsOverlayDemo || isMilestoneTier || isOpenShockSafety || isMinecraftTab || isQuizWorkflow || isSoundboardWorkspace || isStoreAdminView || isSpotlightWorkflow || isStreamAlchemySettings || isMusicBotSettings, `${guide.id}/${step.id} may only prepare a verified local demo workflow`);
+      assert.ok(isTimerDemo || isTimerOverlayDemo || isFireworksSettings || isFlameTab || isManualGame || isGoalsCreate || isGoalsOverlayDemo || isMilestoneTier || isOpenShockSafety || isMinecraftTab || isQuizWorkflow || isSoundboardWorkspace || isStoreAdminView || isSpotlightWorkflow || isStreamAlchemySettings || isMusicBotSettings, `${guide.id}/${step.id} may only prepare a verified local demo workflow`);
     }
     assert.ok(step.capture.focusText && typeof step.capture.focusText === 'object', `${guide.id}/${step.id} needs localized focus text`);
     assert.ok(!step.capture.route.includes('docsPlugin='), `${guide.id}/${step.id} must not capture the ignored docsPlugin parameter`);

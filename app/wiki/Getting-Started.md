@@ -303,7 +303,7 @@ Dashboard → Plugins → Viewer XP System → Enable
 
 #### Read Documentation
 
-- **[Plugin List](Plugin-Liste.md#english)** - All 36 Plugins in detail
+- **[Plugin List](Plugin-Liste.md#english)** - all 35 Plugins in detail
 - **[Configuration](Konfiguration.md#english)** - Advanced settings
 - **[FAQ & Troubleshooting](FAQ-&-Troubleshooting.md#english)** - Solve common problems
 
@@ -620,7 +620,7 @@ Dashboard → Plugins → Viewer XP System → Enable
 
 #### Dokumentation lesen
 
-- **[Plugin-Liste](Plugin-Liste.md#deutsch)** - Alle 36 Plugins im Detail
+- **[Plugin-Liste](Plugin-Liste.md#deutsch)** - Alle 35 Plugins im Detail
 - **[Konfiguration](Konfiguration.md#deutsch)** - Erweiterte Einstellungen
 - **[FAQ & Troubleshooting](FAQ-&-Troubleshooting.md#deutsch)** - Häufige Probleme lösen
 
@@ -840,7 +840,7 @@ Dashboard → Plugins → Soundboard → Enable
 3. Hacer clic en el botón **Enable**
 4. Configurar plugin (si hay UI disponible)
 
-Ver **[Lista de Plugins](Plugin-Liste.md#español)** para todos los 36 Plugins disponibles.
+Ver **[Lista de Plugins](Plugin-Liste.md#español)** para todos los 35 Plugins disponibles.
 
 ---
 
@@ -937,7 +937,7 @@ Dashboard → Plugins → Viewer XP System → Enable
 
 #### Leer Documentación
 
-- **[Lista de Plugins](Plugin-Liste.md#español)** - Todos los 36 Plugins en detalle
+- **[Lista de Plugins](Plugin-Liste.md#español)** - todos los 35 Plugins en detalle
 - **[Configuración](Konfiguration.md#español)** - Configuración avanzada
 - **[FAQ & Troubleshooting](FAQ-&-Troubleshooting.md#español)** - Resolver problemas comunes
 
@@ -1157,7 +1157,7 @@ Dashboard → Plugins → Soundboard → Enable
 3. Cliquer sur le bouton **Enable**
 4. Configurer le plugin (si UI disponible)
 
-Voir **[Liste des Plugins](Plugin-Liste.md#français)** pour tous les 36 Plugins disponibles.
+Voir **[Liste des Plugins](Plugin-Liste.md#français)** pour tous les 35 Plugins disponibles.
 
 ---
 
@@ -1254,7 +1254,7 @@ Dashboard → Plugins → Viewer XP System → Enable
 
 #### Lire la Documentation
 
-- **[Liste des Plugins](Plugin-Liste.md#français)** - Tous les 36 Plugins en détail
+- **[Liste des Plugins](Plugin-Liste.md#français)** - tous les 35 Plugins en détail
 - **[Configuration](Konfiguration.md#français)** - Paramètres avancés
 - **[FAQ & Troubleshooting](FAQ-&-Troubleshooting.md#français)** - Résoudre les problèmes courants
 

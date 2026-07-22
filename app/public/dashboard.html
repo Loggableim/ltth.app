@@ -3954,62 +3954,6 @@
                                 </div>
                             </div>
 
-                            <!-- TikTok Data Source Selection -->
-                            <div class="settings-card">
-                                <h3 class="card-title">
-                                    <i data-lucide="radio"></i><span data-i18n="common.dashboard.tiktok_datenquelle">
-                                    TikTok Datenquelle
-                                </span></h3>
-                                <p class="text-sm text-gray-400 mb-4" data-i18n="common.dashboard.wahle_die_datenquelle_fur_tiktok_live_events_die_anderung_wird_beim_nachsten_verbinden_aktiv">
-                                    Wähle die Datenquelle für TikTok LIVE Events. Die Änderung wird beim nächsten Verbinden aktiv.
-                                </p>
-
-                                <div class="form-group">
-                                    <div class="flex gap-4 flex-wrap">
-                                        <label class="flex items-center gap-2 cursor-pointer px-4 py-3 rounded-lg border border-gray-600 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-500/10 transition-all" id="datasource-label-eulerstream">
-                                            <input type="radio" name="tiktok-data-source" value="eulerstream" id="datasource-eulerstream" checked class="accent-blue-500">
-                                            <div>
-                                                <span class="font-medium" data-i18n="settings.eulerstream_title">⚡ Eulerstream</span>
-                                                <p class="text-xs text-gray-400 mt-0.5" data-i18n="settings.eulerstream_desc">Direkte WebSocket-Verbindung über das Eulerstream-SDK</p>
-                                            </div>
-                                        </label>
-                                        <label class="flex items-center gap-2 cursor-pointer px-4 py-3 rounded-lg border border-gray-600 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-500/10 transition-all" id="datasource-label-tikfinity">
-                                            <input type="radio" name="tiktok-data-source" value="tikfinity" id="datasource-tikfinity" class="accent-purple-500">
-                                            <div>
-                                                <span class="font-medium" data-i18n="settings.tikfinity_title">🔗 TikFinity</span>
-                                                <p class="text-xs text-gray-400 mt-0.5" data-i18n="settings.tikfinity_desc">Verbindung über die TikFinity-Desktop-App (lokaler WebSocket)</p>
-                                            </div>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <!-- TikFinity Settings (shown when tikfinity is selected) -->
-                                <div id="tikfinity-settings-section" class="mt-4 pt-4 border-t border-gray-700" style="display: none;">
-                                    <div class="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-3 mb-4">
-                                        <div class="flex items-start gap-2">
-                                            <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0"></i>
-                                            <div class="text-sm">
-                                                <p class="text-yellow-400 font-medium mb-1" data-i18n="common.dashboard.tikfinity_desktop_app_erforderlich">
-                                                    TikFinity Desktop App erforderlich
-                                                </p>
-                                                <p class="text-gray-400 text-xs" data-i18n="common.dashboard.stelle_sicher_dass_die_tikfinity_desktop_app_lauft_und_mit_deinem_tiktok_account_verbunden_ist">
-                                                    Stelle sicher, dass die TikFinity Desktop App läuft und mit deinem TikTok-Account verbunden ist.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label data-i18n="settings.websocket_port">WebSocket Port</label>
-                                        <input type="number" id="tikfinity-ws-port" class="form-input" value="21213" min="1" max="65535" placeholder="21213">
-                                        <p class="text-xs text-gray-500 mt-1" data-i18n="settings.websocket_hint">Standard: 21213. Nur ändern, wenn TikFinity einen anderen Port verwendet.</p>
-                                    </div>
-                                    <button id="save-tikfinity-settings" class="btn btn-primary">
-                                        <i data-lucide="save"></i><span data-i18n="common.dashboard.tikfinity_einstellungen_speichern">
-                                        TikFinity Einstellungen speichern
-                                    </span></button>
-                                </div>
-                            </div>
-
                             <!-- EulerStream API Credentials -->
                             <div class="settings-card" id="eulerstream-settings-card">
                                 <h3 class="card-title">

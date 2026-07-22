@@ -40,11 +40,6 @@ const plugins = {
     es: ['API Bridge', 'Permite controlar LTTH desde aplicaciones externas mediante APIs HTTP y WebSocket.'],
     fr: ['API Bridge', 'Permet à des applications externes de contrôler LTTH via des API HTTP et WebSocket.']
   },
-  'data-source': {
-    en: ['Data Source Manager', 'Choose Eulerstream or TikFinity as the TikTok data source.'],
-    de: ['Datenquellenverwaltung', 'Wähle Eulerstream oder TikFinity als TikTok-Datenquelle.'],
-    es: ['Gestor de fuentes de datos', 'Elige Eulerstream o TikFinity como fuente de datos de TikTok.'],
-    fr: ['Gestionnaire des sources de données', 'Choisissez Eulerstream ou TikFinity comme source de données TikTok.']
   },
   'flame-overlay': {
     en: ['Visual FX Frame', 'Broadcast-safe WebGL effects with live triggers, presets and transparent OBS output.'],

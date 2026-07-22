@@ -544,14 +544,6 @@
     },
     {
       "file": "features/index.html",
-      "text": "Data Source Manager"
-    },
-    {
-      "file": "features/index.html",
-      "text": "Wähle Eulerstream oder TikFinity als Datenquelle für TikTok-LIVE-Events."
-    },
-    {
-      "file": "features/index.html",
       "text": "Flow Engine"
     },
     {
@@ -609,10 +601,6 @@
     {
       "file": "features/index.html",
       "text": "Erweitert den Stream um echte Verbindungen nach außen."
-    },
-    {
-      "file": "features/index.html",
-      "text": "Für VRChat, VDO.Ninja, TikFinity, Hardware und Spezial-Workflows."
     },
     {
       "file": "features/index.html",
@@ -1084,14 +1072,6 @@
     },
     {
       "file": "features-en.html",
-      "text": "Data Source Manager"
-    },
-    {
-      "file": "features-en.html",
-      "text": "Choose Eulerstream or TikFinity as the data source for TikTok LIVE events."
-    },
-    {
-      "file": "features-en.html",
       "text": "Flow Engine"
     },
     {
@@ -1153,10 +1133,6 @@
     {
       "file": "features-en.html",
       "text": "Extends the stream with real connections to the outside world."
-    },
-    {
-      "file": "features-en.html",
-      "text": "For VRChat, VDO.Ninja, TikFinity, hardware, and special workflows."
     },
     {
       "file": "features-en.html",
@@ -1636,14 +1612,6 @@
     },
     {
       "file": "features-es.html",
-      "text": "Data Source Manager"
-    },
-    {
-      "file": "features-es.html",
-      "text": "Elige Eulerstream o TikFinity como fuente de datos para los eventos de TikTok LIVE."
-    },
-    {
-      "file": "features-es.html",
       "text": "Flow Engine"
     },
     {
@@ -1705,10 +1673,6 @@
     {
       "file": "features-es.html",
       "text": "Amplía el stream con conexiones reales hacia el exterior."
-    },
-    {
-      "file": "features-es.html",
-      "text": "Para VRChat, VDO.Ninja, TikFinity, hardware y flujos de trabajo especiales."
     },
     {
       "file": "features-es.html",
@@ -2188,14 +2152,6 @@
     },
     {
       "file": "features-fr.html",
-      "text": "Data Source Manager"
-    },
-    {
-      "file": "features-fr.html",
-      "text": "Choisissez Eulerstream ou TikFinity comme source de données pour les événements TikTok LIVE."
-    },
-    {
-      "file": "features-fr.html",
       "text": "Flow Engine"
     },
     {
@@ -2257,10 +2213,6 @@
     {
       "file": "features-fr.html",
       "text": "Étend le stream avec de vraies connexions vers l’extérieur."
-    },
-    {
-      "file": "features-fr.html",
-      "text": "Pour VRChat, VDO.Ninja, TikFinity, le matériel et les workflows spéciaux."
     },
     {
       "file": "features-fr.html",
@@ -2429,10 +2381,6 @@
     {
       "file": "plugins.html",
       "text": "Sicherung und Wiederherstellung."
-    },
-    {
-      "file": "plugins.html",
-      "text": "Data Source Manager"
     },
     {
       "file": "plugins.html",

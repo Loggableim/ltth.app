@@ -15,8 +15,6 @@ describe('interaction capture guide evidence', () => {
   test.each([
     ['chatango', 'chatango-review', '#btn-preview', '#preview-card'],
     ['config-import', 'backup-cleanup', '#exportBtn', '#exportResultCard'],
-    ['data-source', 'local-source', '#card-tikfinity', '#tikfinity-settings-card'],
-    ['data-source', 'data-preview', '#btn-save-tikfinity', '#toast'],
     ['weather-control', 'lifecycle-rule', '#testRainEffectBtn', '#statusAlert'],
     ['weather-control', 'weather-reset', '#stopAllPreviewBtn', '#statusAlert'],
     ['visual-fx-frame-webgpu', 'gpu-frame-preview', '#previewToggle', '#previewContainer']

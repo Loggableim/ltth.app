@@ -288,7 +288,7 @@ Dashboard → Plugins → Viewer XP System → Enable
 
 #### Read Documentation
 
-- **[Plugin List](./Plugin-Liste.md#english)** - All 36 Plugins in detail
+- **[Plugin List](./Plugin-Liste.md#english)** - all 35 Plugins in detail
 - **[Configuration](./Konfiguration.md#english)** - Advanced settings
 - **[FAQ & Troubleshooting](./FAQ-&-Troubleshooting.md#english)** - Solve common problems
 

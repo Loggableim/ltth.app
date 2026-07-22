@@ -15,7 +15,6 @@ This repository snapshot is LTTH, a local TikTok LIVE helper with a Node.js back
 - `app/server.js`: Express, Socket.IO, API routes, TikTok event handlers, service composition
 - `app/modules/database.js`: SQLite schema and persistence helpers
 - `app/modules/tiktok.js`: adapter facade
-- `app/modules/adapters/`: Eulerstream and TikFinity adapters
 - `app/modules/plugin-loader.js`: PluginAPI and lifecycle
 - `app/modules/ifttt/`: automation engine
 - `app/plugins/`: plugin ecosystem

@@ -29,7 +29,6 @@ screenshots/
 â”‚   â”œâ”€â”€ emoji-rain.html
 â”‚   â”œâ”€â”€ auto-updater.html
 â”‚   â”œâ”€â”€ chat-commands.html
-â”‚   â””â”€â”€ tikfinity-api.html
 â”œâ”€â”€ features/                      # Captured feature screenshots (generated via Puppeteer)
 â”‚   â”œâ”€â”€ .gitkeep                   # Keeps the directory tracked by git
 â”‚   â”œâ”€â”€ tts.png                    # âœ… Generated from mock
@@ -142,7 +141,6 @@ The feature pages in `features/*.html` reference these via `<img src="/screensho
 | `features/osc-bridge.html` | `/screenshots/features/osc-bridge.png` | ✅ Generated from mock |
 | `features/security.html` | `/screenshots/features/security.png` | ✅ Generated from mock |
 | `features/slot-machine.html` | `/screenshots/features/slot-machine.png` | ✅ Generated from mock |
-| `features/tikfinity-api.html` | `/screenshots/features/tikfinity-api.png` | ✅ Generated from mock |
 | `features/vdoninja.html` | `/screenshots/features/vdoninja.png` | ✅ Real screenshot |
 | `features/sidekick.html` | `/screenshots/features/sidekick-dashboard.png` | ✅ Real screenshot |
 
@@ -197,6 +195,5 @@ Refresh locally with `runtime/node/node.exe scripts/capture-product-screenshots.
 Use `SCREENSHOT_LANGS`, `SCREENSHOT_IDS`, and `SCREENSHOT_START_APP=false` for
 targeted captures or an already-running app. Verify the complete set with
 `runtime/node/node.exe scripts/verify-public-screenshot-coverage.js`.
-
 
 

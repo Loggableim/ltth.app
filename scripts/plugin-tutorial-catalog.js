@@ -16,7 +16,6 @@ const ROUTES = {
   clarityhud: ['/dashboard.html?view=plugins', '/clarityhud/ui', '/clarityhud/ui', '/plugins/clarityhud/overlays/full.html'],
   coinbattle: ['/dashboard.html?view=plugins', '/coinbattle/ui', '/coinbattle/ui', '/plugins/coinbattle/overlay/overlay.html'],
   'config-import': ['/dashboard.html?view=plugins', '/config-import/ui', '/config-import/ui', '/config-import/ui'],
-  'data-source': ['/dashboard.html?view=plugins', '/data-source/ui', '/data-source/ui', '/data-source/ui'],
   'emoji-rain': ['/dashboard.html?view=plugins', '/emoji-rain/ui', '/emoji-rain/ui', '/plugins/emoji-rain/overlay.html'],
   fireworks: ['/dashboard.html?view=plugins', '/fireworks/ui', '/fireworks/ui', '/plugins/fireworks/overlay.html'],
   'flame-overlay': ['/dashboard.html?view=plugins', '/flame-overlay/ui', '/flame-overlay/ui', '/flame-overlay/overlay'],
@@ -53,7 +52,7 @@ const PROFILES = {
   game: ['advanced-timer', 'coinbattle', 'game-engine', 'interactive-story', 'quiz-show', 'streamalchemy'],
   integration: ['animazingpal', 'chatango', 'minecraft-connect', 'multicam', 'music-bot', 'openshock', 'osc-bridge', 'thermal-printer', 'vdoninja'],
   audio: ['soundboard', 'tts'],
-  system: ['api-bridge', 'config-import', 'data-source', 'gcce', 'gift-catalog', 'milestone-leaderboard', 'store-admin']
+  system: ['api-bridge', 'config-import', 'gcce', 'gift-catalog', 'milestone-leaderboard', 'store-admin']
 };
 
 const CATEGORY_LABELS = {

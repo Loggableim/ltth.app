@@ -5,7 +5,6 @@
 // visible review, never masquerade as a local preview, save, or reset action.
 const REVIEW_ONLY_STEPS = Object.freeze({
   'advanced-timer': ['timer-reset'],
-  'data-source': ['field-map'],
   coinbattle: ['match-reset'],
   gcce: ['command-review'],
   openshock: ['shock-simulation', 'safety-reset'],

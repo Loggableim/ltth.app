@@ -340,6 +340,7 @@ const INTERNAL_INVENTORY_CONTROLS = new Set([
   'store-admin:#window-close-btn',
   'store-admin:#window-maximize-btn',
   'store-admin:#window-minimize-btn',
+  'music-bot:#request-input',
   'milestone-leaderboard:#audioInput',
   'milestone-leaderboard:#gifInput',
   'milestone-leaderboard:#tierAudioInput',

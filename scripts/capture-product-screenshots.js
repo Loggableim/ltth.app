@@ -63,7 +63,6 @@ const SUPPORTED_LOCAL_PREPARATIONS = new Set([
   'open-spotlight-settings',
   'open-store-admin-view',
   'open-streamalchemy-settings',
-  'select-local-tikfinity',
   'start-local-manual-game',
   'start-local-quiz'
 ]);
@@ -444,20 +443,6 @@ async function applySafeStepState(page, asset, locale) {
       }
     });
     await new Promise((resolve) => setTimeout(resolve, 120));
-  }
-  if (asset.action && asset.action.prepare === 'select-local-tikfinity') {
-    await page.evaluate(() => {
-      const card = document.querySelector('#card-tikfinity.source-card[data-source="tikfinity"]');
-      if (!card) throw new Error('TikFinity source card is unavailable');
-      card.click();
-    });
-    await page.waitForFunction(() => {
-      const control = document.querySelector('#btn-save-tikfinity');
-      if (!control) return false;
-      const style = getComputedStyle(control);
-      const rect = control.getBoundingClientRect();
-      return style.display !== 'none' && style.visibility !== 'hidden' && rect.width >= 2 && rect.height >= 2;
-    }, { timeout: 2000 });
   }
   if (asset.action && asset.action.prepare === 'open-goal-create-modal') {
     await page.evaluate(() => {
@@ -844,10 +829,7 @@ async function applySafeStepState(page, asset, locale) {
     await page.evaluate((selector, actionType, guideId) => {
       const control = document.querySelector(selector);
       if (!control) throw new Error(`Capture selector not found: ${selector}`);
-      const isLocalSourceCard = actionType === 'select-local-source'
-        && guideId === 'data-source'
-        && control.matches('#card-tikfinity.source-card[data-source="tikfinity"]');
-      if (!(control instanceof HTMLButtonElement || control instanceof HTMLInputElement || control.getAttribute('role') === 'button' || isLocalSourceCard)) {
+      if (!(control instanceof HTMLButtonElement || control instanceof HTMLInputElement || control.getAttribute('role') === 'button')) {
         throw new Error(`Declared local action is not a clickable control: ${selector}`);
       }
       if (control.disabled) throw new Error(`Declared local action is disabled: ${selector}`);

@@ -147,17 +147,6 @@
       }
     },
     {
-      "id": "data-source",
-      "canonical": "/screenshots/features/data-source.png",
-      "route": "/data-source/ui",
-      "state": "default-demo",
-      "viewport": {
-        "width": 1280,
-        "height": 800,
-        "deviceScaleFactor": 1
-      }
-    },
-    {
       "id": "emoji-rain",
       "canonical": "/screenshots/features/emoji-rain.png",
       "route": "/emoji-rain/ui",
@@ -686,17 +675,6 @@
       }
     },
     {
-      "id": "tikfinity-api",
-      "canonical": "/screenshots/features/tikfinity-api.png",
-      "route": "/dashboard.html",
-      "state": "default-demo",
-      "viewport": {
-        "width": 1280,
-        "height": 800,
-        "deviceScaleFactor": 1
-      }
-    },
-    {
       "id": "toptier",
       "canonical": "/screenshots/features/toptier.png",
       "route": "/toptier/ui",
@@ -965,16 +943,6 @@
       "id": "dashboard",
       "path": "screenshots/de/features/dashboard.png",
       "route": "/dashboard.html",
-      "state": {
-        "lang": "de",
-        "theme": "cid"
-      }
-    },
-    {
-      "locale": "de",
-      "id": "data-source",
-      "path": "screenshots/de/features/data-source.png",
-      "route": "/data-source/ui",
       "state": {
         "lang": "de",
         "theme": "cid"
@@ -1332,16 +1300,6 @@
     },
     {
       "locale": "de",
-      "id": "tikfinity-api",
-      "path": "screenshots/de/features/tikfinity-api.png",
-      "route": "/dashboard.html",
-      "state": {
-        "lang": "de",
-        "theme": "cid"
-      }
-    },
-    {
-      "locale": "de",
       "id": "toptier",
       "path": "screenshots/de/features/toptier.png",
       "route": "/toptier/ui",
@@ -1555,16 +1513,6 @@
       "id": "dashboard",
       "path": "screenshots/features/dashboard.png",
       "route": "/dashboard.html",
-      "state": {
-        "lang": "en",
-        "theme": "cid"
-      }
-    },
-    {
-      "locale": "en",
-      "id": "data-source",
-      "path": "screenshots/features/data-source.png",
-      "route": "/data-source/ui",
       "state": {
         "lang": "en",
         "theme": "cid"
@@ -1922,16 +1870,6 @@
     },
     {
       "locale": "en",
-      "id": "tikfinity-api",
-      "path": "screenshots/features/tikfinity-api.png",
-      "route": "/dashboard.html",
-      "state": {
-        "lang": "en",
-        "theme": "cid"
-      }
-    },
-    {
-      "locale": "en",
       "id": "toptier",
       "path": "screenshots/features/toptier.png",
       "route": "/toptier/ui",
@@ -2145,16 +2083,6 @@
       "id": "dashboard",
       "path": "screenshots/es/features/dashboard.png",
       "route": "/dashboard.html",
-      "state": {
-        "lang": "es",
-        "theme": "cid"
-      }
-    },
-    {
-      "locale": "es",
-      "id": "data-source",
-      "path": "screenshots/es/features/data-source.png",
-      "route": "/data-source/ui",
       "state": {
         "lang": "es",
         "theme": "cid"
@@ -2512,16 +2440,6 @@
     },
     {
       "locale": "es",
-      "id": "tikfinity-api",
-      "path": "screenshots/es/features/tikfinity-api.png",
-      "route": "/dashboard.html",
-      "state": {
-        "lang": "es",
-        "theme": "cid"
-      }
-    },
-    {
-      "locale": "es",
       "id": "toptier",
       "path": "screenshots/es/features/toptier.png",
       "route": "/toptier/ui",
@@ -2735,16 +2653,6 @@
       "id": "dashboard",
       "path": "screenshots/fr/features/dashboard.png",
       "route": "/dashboard.html",
-      "state": {
-        "lang": "fr",
-        "theme": "cid"
-      }
-    },
-    {
-      "locale": "fr",
-      "id": "data-source",
-      "path": "screenshots/fr/features/data-source.png",
-      "route": "/data-source/ui",
       "state": {
         "lang": "fr",
         "theme": "cid"
@@ -3095,16 +3003,6 @@
       "id": "thermal-printer",
       "path": "screenshots/fr/features/thermal-printer.png",
       "route": "/thermal-printer/ui",
-      "state": {
-        "lang": "fr",
-        "theme": "cid"
-      }
-    },
-    {
-      "locale": "fr",
-      "id": "tikfinity-api",
-      "path": "screenshots/fr/features/tikfinity-api.png",
-      "route": "/dashboard.html",
       "state": {
         "lang": "fr",
         "theme": "cid"

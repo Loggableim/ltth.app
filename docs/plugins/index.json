@@ -252,42 +252,6 @@
     }
   },
   {
-    "id": "data-source",
-    "name": "Data Source Manager",
-    "category": "system",
-    "access": "available",
-    "devStatus": "available",
-    "storeAvailable": false,
-    "image": {
-      "de": "/screenshots/de/docs/plugins/data-source/source-card.png",
-      "en": "/screenshots/docs/plugins/data-source/source-card.png",
-      "es": "/screenshots/es/docs/plugins/data-source/source-card.png",
-      "fr": "/screenshots/fr/docs/plugins/data-source/source-card.png"
-    },
-    "translations": {
-      "de": {
-        "title": "Data Source Manager",
-        "summary": "Data Source Manager richtet Datenquelle, Feldzuordnung und Aktualisierungsintervall ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Vorschau zeigt die Testfelder, ohne einen Fremdserver anzufragen"
-      },
-      "en": {
-        "title": "Data Source Manager",
-        "summary": "Data Source Manager configures data source, field mapping, and refresh interval with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the preview shows test fields without requesting an external server"
-      },
-      "es": {
-        "title": "Data Source Manager",
-        "summary": "Data Source Manager configura fuente de datos, asignación de campos e intervalo de actualización mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la vista previa muestra campos de prueba sin consultar un servidor externo"
-      },
-      "fr": {
-        "title": "Data Source Manager",
-        "summary": "Data Source Manager configure source de données, mappage des champs et intervalle de mise à jour avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "l’aperçu affiche les champs de test sans interroger de serveur externe"
-      }
-    }
-  },
-  {
     "id": "gift-catalog",
     "name": "Developer Guides",
     "category": "plugin",

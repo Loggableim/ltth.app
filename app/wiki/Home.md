@@ -132,7 +132,7 @@ Actions:
 | **Web Framework** | Express | ^4.18.2 |
 | **Real-time** | Socket.io | ^4.6.1 |
 | **Database** | SQLite (better-sqlite3) | ^11.9.0 |
-| **TikTok API** | Eulerstream SDK / TikFinity Adapter | app adapters |
+| **TikTok API** | EulerStream SDK | app adapters |
 | **OBS Integration** | obs-websocket-js | ^5.0.6 |
 | **OSC Protocol** | osc | ^2.4.5 |
 | **Logging** | winston | ^3.18.3 |
@@ -278,7 +278,7 @@ Actions:
 | **Web-Framework** | Express | ^4.18.2 |
 | **Real-time** | Socket.io | ^4.6.1 |
 | **Datenbank** | SQLite (better-sqlite3) | ^11.9.0 |
-| **TikTok-API** | Eulerstream SDK / TikFinity Adapter | App-Adapter |
+| **TikTok-API** | EulerStream SDK | App-Adapter |
 | **OBS-Integration** | obs-websocket-js | ^5.0.6 |
 | **OSC-Protocol** | osc | ^2.4.5 |
 | **Logging** | winston | ^3.18.3 |
@@ -424,7 +424,7 @@ Acciones:
 | **Framework Web** | Express | ^4.18.2 |
 | **Tiempo Real** | Socket.io | ^4.6.1 |
 | **Base de Datos** | SQLite (better-sqlite3) | ^11.9.0 |
-| **API TikTok** | Eulerstream SDK / Adaptador TikFinity | adaptadores de app |
+| **API TikTok** | EulerStream SDK | adaptadores de app |
 | **Integración OBS** | obs-websocket-js | ^5.0.6 |
 | **Protocolo OSC** | osc | ^2.4.5 |
 | **Logging** | winston | ^3.18.3 |
@@ -570,7 +570,7 @@ Actions :
 | **Framework Web** | Express | ^4.18.2 |
 | **Temps Réel** | Socket.io | ^4.6.1 |
 | **Base de Données** | SQLite (better-sqlite3) | ^11.9.0 |
-| **API TikTok** | SDK Eulerstream / Adaptateur TikFinity | adaptateurs app |
+| **API TikTok** | SDK EulerStream | adaptateurs app |
 | **Intégration OBS** | obs-websocket-js | ^5.0.6 |
 | **Protocole OSC** | osc | ^2.4.5 |
 | **Logging** | winston | ^3.18.3 |

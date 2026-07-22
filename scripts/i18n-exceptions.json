@@ -1,5 +1,4 @@
 {
-  "productNames": ["ltth.app", "PupCid", "TikTok", "TikTok LIVE", "OBS", "VDO.Ninja", "AnimazingPal", "Fish.audio", "Eulerstream", "TikFinity"],
   "technicalIdentifiers": ["data-i18n", "WebSocket", "Socket.io", "OpenAI", "GPT-5", "TTS", "STT", "API", "JSON", "HTTP", "URL", "CSS", "HTML", "Node.js", "SQLite"],
   "codeAndCommands": true,
   "dynamicContent": ["chat", "username", "giftName", "coins", "message", "streamId", "sessionId", "error.message"],

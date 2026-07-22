@@ -3,7 +3,6 @@ const path = require('path');
 
 const plugins = [
   ['api-bridge', 'api_bridge'],
-  ['data-source', 'data_source'],
   ['gift-catalog', 'gift_catalog', 'no_gifts_available'],
   ['music-bot', 'music_bot'],
   ['stt-ticker', 'stt_ticker'],

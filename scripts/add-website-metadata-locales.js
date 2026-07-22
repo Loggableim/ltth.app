@@ -19,7 +19,6 @@ const names = {
   security: ['Security', 'Sicherheit'],
   slotMachine: ['Slot Machine', 'Slot Machine'],
   talkingHeads: ['Talking Heads', 'Talking Heads'],
-  tikfinityApi: ['TikFinity API', 'TikFinity-API'],
   vdoninja: ['VDO.Ninja', 'VDO.Ninja'],
   viewerXp: ['Viewer XP', 'Viewer-XP']
 };

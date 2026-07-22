@@ -210,33 +210,6 @@
       ]
     },
     {
-      "id": "data-source",
-      "name": {
-        "en": "Data Source Manager"
-      },
-      "description": {
-        "en": "Choose Eulerstream or TikFinity as the data source for TikTok LIVE events.",
-        "de": "Wähle Eulerstream oder TikFinity als Datenquelle für TikTok-LIVE-Events.",
-        "es": "Elige Eulerstream o TikFinity como fuente de datos para los eventos de TikTok LIVE.",
-        "fr": "Choisissez Eulerstream ou TikFinity comme source de données pour les événements TikTok LIVE."
-      },
-      "version": "1.0.0",
-      "author": "PupCid",
-      "category": "plugin",
-      "channel": "open-beta",
-      "badges": [],
-      "packageUrl": "https://ltth.app/plugin-store/packages/data-source-1.0.0.zip",
-      "sha256": "7f32849e135342064726c9f5d9f399401cfe32a62c81a892584b74cbc9d8d5b3",
-      "pricing": {
-        "type": "free",
-        "amount": 0,
-        "currency": "EUR"
-      },
-      "screenshots": [
-        "/screenshots/features/data-source.png"
-      ]
-    },
-    {
       "id": "fireworks",
       "name": {
         "en": "Fireworks Superplugin (Stable)"

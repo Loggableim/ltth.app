@@ -108,7 +108,6 @@ function isInvariantUiText(value) {
     || /^(?:[A-Z][A-Z0-9+._-]{1,}|\d+(?:\.\d+)?\s?(?:ms|s|fps|px|%|MB|GB|KB)|https?:\/\/\S+|\/\S+|[\w.-]+:\/\/\S+|[\w.-]+\.\w{2,})(?:\s*[|/,]\s*(?:[A-Z][A-Z0-9+._-]{1,}|\d+(?:\.\d+)?\s?(?:ms|s|fps|px|%|MB|GB|KB)))?$/.test(value)
     || /^[\w.-]+\.\w{2,}(?:\/\S*)?$/.test(normalized)
     || /^keyword\d+(?:\s+keyword\d+)*$/i.test(normalized)
-    || /^(?:WebGPU|TikTok|TikFinity|LTTH|MPV|OSC|VRChat|OpenShock|Chatango|ChatPal)$/i.test(normalized);
 }
 
 function isCopiedEnglishUiText(targetValue, englishValue) {
