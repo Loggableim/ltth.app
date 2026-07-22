@@ -62,6 +62,26 @@ describe('YtDlpRunner concurrency and cancellation', () => {
     await runner.destroy();
   });
 
+  test('terminates a process that exceeds the configured combined output limit', async () => {
+    const child = makeChild(8181);
+    const processKill = jest.fn();
+    const runner = new YtDlpRunner({
+      maxConcurrent: 1,
+      maxOutputBytes: 1024,
+      platform: 'linux',
+      processKill,
+      spawnImpl: jest.fn(() => child)
+    });
+
+    const operation = runner.run('yt-dlp', ['verbose'], { deadline: Date.now() + 10000 });
+    await flush();
+    child.stderr.emit('data', Buffer.alloc(1025, 'x'));
+
+    await expect(operation).rejects.toMatchObject({ code: 'YTDLP_OUTPUT_LIMIT' });
+    expect(processKill).toHaveBeenCalledWith(-8181, 'SIGTERM');
+    expect(runner.getStatus()).toMatchObject({ active: 0, queued: 0 });
+  });
+
   test('aborting queued work never spawns it', async () => {
     const children = [];
     const runner = new YtDlpRunner({
@@ -207,6 +227,25 @@ describe('MusicResolver provider cascade and subscribers', () => {
     return { resolver, runner, progress };
   }
 
+  test('does not report an oEmbed-only YouTube URL as a playable song when yt-dlp is unavailable', async () => {
+    const missingYtDlp = new Error('yt-dlp missing');
+    missingYtDlp.ytdlpNotFound = true;
+    const { resolver } = createResolver(async () => { throw missingYtDlp; });
+    resolver._getJson = jest.fn(async () => ({
+      title: 'Metadata only',
+      author_name: 'Artist'
+    }));
+
+    const result = await resolver.resolve('https://www.youtube.com/watch?v=abc123def45');
+
+    expect(result).toEqual(expect.objectContaining({
+      success: false,
+      reason: 'resolver_unavailable',
+      message: expect.stringContaining('yt-dlp')
+    }));
+    expect(result.song).toBeUndefined();
+  });
+
   test('equivalent concurrent text requests share one yt-dlp operation', async () => {
     let release;
     const output = youtubeSearch([{ id: 'abc', title: 'Artist Song', uploader: 'Artist', duration: 180,
@@ -280,6 +319,30 @@ describe('MusicResolver provider cascade and subscribers', () => {
     expect(runner.run.mock.calls[0][1].at(-1)).toBe('https://www.youtube.com/watch?v=direct-id');
   });
 
+  test('preserves provider album, BPM, and genre metadata for the catalog', () => {
+    const { resolver } = createResolver(async () => '');
+
+    const song = resolver._songFromData({
+      id: 'metadata-id',
+      title: 'Metadata Song',
+      uploader: 'Artist',
+      duration: 180,
+      extractor: 'youtube',
+      webpage_url: 'https://www.youtube.com/watch?v=metadata-id',
+      album: 'Neon Roads',
+      bpm: 127.5,
+      genres: ['Electronic', 'Dance'],
+      categories: ['Music']
+    });
+
+    expect(song).toMatchObject({
+      album: 'Neon Roads',
+      bpm: 127.5,
+      genres: ['Electronic', 'Dance'],
+      categories: ['Music']
+    });
+  });
+
   test.each([
     ['https://www.youtube.com/live/AbC123xYz_-?si=share', 'AbC123xYz_-'],
     ['https://www.youtube-nocookie.com/embed/NoCookie123', 'NoCookie123']
@@ -341,6 +404,39 @@ describe('MusicResolver provider cascade and subscribers', () => {
     expect(result.song).toMatchObject({
       source: 'soundcloud', youtubeId: null, provider: 'soundcloud', trackKey: 'soundcloud:same'
     });
+  });
+
+  test('uses the configured resolver timeout and max concurrent process limit', async () => {
+    const runner = {
+      maxConcurrent: 1,
+      run: jest.fn(async () => youtubeSearch([{
+        id: 'timeout-track',
+        title: 'Timeout Track',
+        uploader: 'Artist',
+        duration: 180,
+        extractor: 'youtube',
+        webpage_url: 'https://www.youtube.com/watch?v=timeout-track'
+      }])),
+      destroy: jest.fn(async () => {}),
+      getStatus: jest.fn(() => ({ active: 0, queued: 0 }))
+    };
+    const resolver = new MusicResolver({
+      ytdlpPath: 'yt-dlp',
+      searchTimeout: 12000,
+      maxConcurrentProcesses: 3
+    }, { log: jest.fn() }, { runner });
+    const now = jest.spyOn(Date, 'now').mockReturnValue(1000);
+
+    try {
+      const result = await resolver.resolve('timeout track');
+
+      expect(result.success).toBe(true);
+      expect(resolver.config.searchTimeout).toBe(12000);
+      expect(runner.maxConcurrent).toBe(3);
+      expect(runner.run.mock.calls[0][2].deadline).toBe(9000);
+    } finally {
+      now.mockRestore();
+    }
   });
 
   test('provider deadlines use one absolute 45 second budget', async () => {

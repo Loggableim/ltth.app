@@ -27,6 +27,9 @@ class MediaCache {
     this.jobControllers = new Set();
     this.pinnedKeys = new Set();
     this.destroyed = false;
+    this.pruneBatchSize = Math.max(1, Math.floor(Number(this.config.pruneBatchSize) || 25));
+    this._scheduledPrune = null;
+    this._scheduledPruneProtectedKeys = new Set();
     this.ownsRunner = !dependencies.runner;
     this.runner = dependencies.runner || new YtDlpRunner({
       maxConcurrent: this._positiveNumber(this.config.maxConcurrentDownloads, 2),
@@ -107,12 +110,16 @@ class MediaCache {
     let remaining = files;
 
     if (ttlMs > 0) {
-      remaining = files.filter((entry) => {
+      remaining = [];
+      for (let index = 0; index < files.length; index += 1) {
+        const entry = files[index];
         if (entry.pinned || protectedHashes.has(entry.hash) || now - entry.stat.mtimeMs <= ttlMs) {
-          return true;
+          remaining.push(entry);
+        } else if (!this._removeFile(entry.path)) {
+          remaining.push(entry);
         }
-        return !this._removeFile(entry.path);
-      });
+        await this._yieldPruneWork(index + 1);
+      }
     }
 
     const maxBytes = this.maxSizeMB * 1024 * 1024;
@@ -120,11 +127,13 @@ class MediaCache {
     const lru = remaining
       .filter((entry) => !entry.pinned && !protectedHashes.has(entry.hash))
       .sort((a, b) => a.stat.atimeMs - b.stat.atimeMs || a.path.localeCompare(b.path));
-    for (const entry of lru) {
+    for (let index = 0; index < lru.length; index += 1) {
+      const entry = lru[index];
       if (bytes <= maxBytes) break;
       if (this._removeFile(entry.path)) {
         bytes -= entry.stat.size;
       }
+      await this._yieldPruneWork(index + 1);
     }
 
     const actual = this._publishedFiles();
@@ -132,6 +141,29 @@ class MediaCache {
       bytes: actual.reduce((sum, entry) => sum + entry.stat.size, 0),
       files: actual.length
     };
+  }
+
+  schedulePrune(options = {}) {
+    for (const key of options.protectedKeys || []) {
+      if (key) this._scheduledPruneProtectedKeys.add(String(key));
+    }
+    if (this._scheduledPrune) return this._scheduledPrune;
+
+    this._scheduledPrune = new Promise((resolve) => {
+      setImmediate(async () => {
+        const protectedKeys = [...this._scheduledPruneProtectedKeys];
+        this._scheduledPruneProtectedKeys.clear();
+        try {
+          resolve(await this.prune({ protectedKeys }));
+        } catch (error) {
+          this.api.log?.(`[music-bot] Cache prune failed: ${error.message}`, 'warn');
+          resolve(null);
+        } finally {
+          this._scheduledPrune = null;
+        }
+      });
+    });
+    return this._scheduledPrune;
   }
 
   getStats() {
@@ -223,7 +255,7 @@ class MediaCache {
         published = true;
         this._touchFile(finalPath);
         this._removeTemporaryFiles(temporaryPrefix);
-        await this.prune({ protectedKeys: [trackKey] });
+        this.schedulePrune({ protectedKeys: [trackKey] });
         if (this.destroyed || controller.signal.aborted) {
           throw new Error('Media cache download aborted');
         }
@@ -365,6 +397,11 @@ class MediaCache {
       this.api.log?.(`[music-bot] Failed to remove cached media: ${error.message}`, 'debug');
       return false;
     }
+  }
+
+  async _yieldPruneWork(completed) {
+    if (completed % this.pruneBatchSize !== 0) return;
+    await new Promise((resolve) => setImmediate(resolve));
   }
 
   _touchFile(filePath) {

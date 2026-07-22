@@ -65,4 +65,12 @@ describe('Music Bot catalog and playlist admin UI contract', () => {
     expect(main).toContain("'/api/plugins/music-bot/catalog/songs/:songId/feedback'");
     expect(main).toContain('this.musicCatalog.setFeedback');
   });
+
+  test('lets the dashboard review and save a manual genre correction for a catalog title', () => {
+    expect(script).toContain('data-catalog-save-genres');
+    expect(script).toContain('data-catalog-genre-input');
+    expect(script).toContain('put(`/catalog/songs/${genreButton.dataset.catalogSaveGenres}/genres`');
+    expect(main).toContain("'/api/plugins/music-bot/catalog/songs/:songId/genres'");
+    expect(main).toContain('this.musicCatalog.setSongGenres');
+  });
 });

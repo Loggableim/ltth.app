@@ -139,6 +139,20 @@ describe('music-bot media cache', () => {
     await cache.destroy();
   });
 
+  it('defers scheduled cleanup out of the caller turn and forwards protected cache keys', async () => {
+    const cache = new MediaCache({}, createApi(dataDir), { spawn: createSuccessfulSpawn() });
+    const prune = jest.spyOn(cache, 'prune').mockResolvedValue({ bytes: 0, files: 0 });
+
+    const scheduled = cache.schedulePrune({ protectedKeys: ['youtube:current-track'] });
+
+    expect(prune).not.toHaveBeenCalled();
+    await new Promise((resolve) => setImmediate(resolve));
+    await scheduled;
+
+    expect(prune).toHaveBeenCalledWith({ protectedKeys: ['youtube:current-track'] });
+    await cache.destroy();
+  });
+
   it('does not publish failed or aborted work', async () => {
     const spawn = jest.fn(() => {
       const child = new EventEmitter();
@@ -290,7 +304,7 @@ describe('music-bot media cache', () => {
     await cache.destroy();
   });
 
-  it('removes a published file when the caller aborts while final prune is pending', async () => {
+  it('returns a published file when the caller aborts after asynchronous cleanup has started', async () => {
     const cache = new MediaCache({}, createApi(dataDir), { spawn: createSuccessfulSpawn() });
     const enteredPrune = deferred();
     const releasePrune = deferred();
@@ -310,12 +324,13 @@ describe('music-bot media cache', () => {
     controller.abort();
     releasePrune.resolve();
 
-    await expect(pending).rejects.toThrow(/aborted/i);
-    expect(cache.get('youtube:late-abort')).toBeNull();
+    const published = await pending;
+    expect(fs.existsSync(published)).toBe(true);
+    expect(cache.get('youtube:late-abort')).toBe(published);
     await cache.destroy();
   });
 
-  it('removes a published file when destroy races the final prune', async () => {
+  it('keeps a published file available when destroy races asynchronous cleanup', async () => {
     const cache = new MediaCache({}, createApi(dataDir), { spawn: createSuccessfulSpawn() });
     const enteredPrune = deferred();
     const releasePrune = deferred();
@@ -334,9 +349,9 @@ describe('music-bot media cache', () => {
     const destroying = cache.destroy();
     releasePrune.resolve();
 
-    await expect(pending).rejects.toThrow(/aborted|destroyed/i);
+    const published = await pending;
     await destroying;
-    expect(cache.get('youtube:late-destroy')).toBeNull();
+    expect(cache.get('youtube:late-destroy')).toBe(published);
   });
 
   it('publishes one canonical file across concurrent cache instances and extensions', async () => {

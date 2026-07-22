@@ -252,6 +252,129 @@ describe('music-bot catalog', () => {
     db.close();
   });
 
+  it('persists automatic song metadata, honours manual genres, and records soft live preferences', () => {
+    const { db, catalog } = createCatalog();
+    const resolved = catalog.resolveOrUpsert({
+      title: 'Midnight Pulse',
+      artist: 'Night Driver',
+      album: 'Neon Roads',
+      bpm: 128,
+      categories: ['Electronic', 'Dance'],
+      provider: 'youtube',
+      providerId: 'midnight-pulse'
+    });
+
+    expect(catalog.getRadioCandidates([resolved.song.id])).toEqual([
+      expect.objectContaining({
+        album: 'Neon Roads',
+        bpm: 128,
+        genres: ['dance', 'electronic'],
+        genreSource: 'automatic'
+      })
+    ]);
+
+    expect(catalog.setSongGenres(resolved.song.id, ['Rock'])).toEqual({
+      songId: resolved.song.id,
+      genres: ['rock'],
+      source: 'manual'
+    });
+    expect(catalog.recordLivePreference(resolved.song.id, 'more')).toMatchObject({
+      songId: resolved.song.id,
+      direction: 'more',
+      score: 1
+    });
+    expect(catalog.recordLivePreference(resolved.song.id, 'less')).toMatchObject({
+      songId: resolved.song.id,
+      direction: 'less',
+      score: 0
+    });
+
+    expect(catalog.getRadioCandidates([resolved.song.id])).toEqual([
+      expect.objectContaining({
+        genres: ['rock'],
+        genreSource: 'manual',
+        radioAffinity: 0
+      })
+    ]);
+    db.close();
+  });
+
+  it('exposes catalog genres in search results so manual corrections are reviewable', () => {
+    const { db, catalog } = createCatalog();
+    catalog.resolveOrUpsert({
+      title: 'Searchable Genre', artist: 'Catalog Artist', genres: ['Electronic', 'Dance'],
+      provider: 'youtube', providerId: 'searchable-genre'
+    });
+
+    expect(catalog.searchSongs('Searchable')).toEqual([
+      expect.objectContaining({ title: 'Searchable Genre', genres: ['dance', 'electronic'] })
+    ]);
+    db.close();
+  });
+
+  it('reports album spacing and genre-level live affinity for Radio-Mix scoring', () => {
+    const { db, catalog } = createCatalog();
+    const first = catalog.resolveOrUpsert({
+      title: 'Album opener', artist: 'Album Artist', album: 'Shared Album', bpm: 120,
+      genres: ['Rock'], provider: 'youtube', providerId: 'album-opener'
+    });
+    catalog.recordCompleted({
+      title: 'Album closer', artist: 'Album Artist', album: 'Shared Album', bpm: 124,
+      genres: ['Rock'], provider: 'youtube', providerId: 'album-closer'
+    }, { id: 'album-play', finishedAt: 600, duration: 180, playedSeconds: 180, requestedBy: 'AutoDJ' });
+    catalog.recordLivePreference(first.song.id, 'more');
+
+    expect(catalog.getRadioCandidates([first.song.id])).toEqual([
+      expect.objectContaining({
+        albumLastPlayedAt: 600,
+        genreAffinities: { rock: 1 },
+        radioAffinity: 1
+      })
+    ]);
+    db.close();
+  });
+
+  it('does not apply album spacing across artists that merely share an album title', () => {
+    const { db, catalog } = createCatalog();
+    const first = catalog.recordCompleted({
+      title: 'First Greatest Hit', artist: 'Artist One', album: 'Greatest Hits',
+      provider: 'youtube', providerId: 'artist-one-greatest-hits'
+    }, { id: 'artist-one-play', finishedAt: 600, duration: 180, playedSeconds: 180, requestedBy: 'AutoDJ' });
+    const second = catalog.resolveOrUpsert({
+      title: 'Second Greatest Hit', artist: 'Artist Two', album: 'Greatest Hits',
+      provider: 'youtube', providerId: 'artist-two-greatest-hits'
+    });
+
+    expect(catalog.getRadioCandidates([first.song.id, second.song.id], { now: 700 }))
+      .toEqual(expect.arrayContaining([
+        expect.objectContaining({ songId: first.song.id, albumLastPlayedAt: 600 }),
+        expect.objectContaining({ songId: second.song.id, albumLastPlayedAt: null })
+      ]));
+    db.close();
+  });
+
+  it('returns stale catalog sources for throttled metadata enrichment without touching playback data', () => {
+    const { db, catalog } = createCatalog();
+    const stale = catalog.resolveOrUpsert({
+      title: 'Needs metadata', artist: 'Catalog Artist', provider: 'youtube', providerId: 'needs-metadata',
+      url: 'https://www.youtube.com/watch?v=needs-metadata'
+    });
+    const fresh = catalog.resolveOrUpsert({
+      title: 'Already checked', artist: 'Catalog Artist', provider: 'youtube', providerId: 'already-checked',
+      url: 'https://www.youtube.com/watch?v=already-checked'
+    });
+    catalog.markMetadataEnrichmentAttempt(fresh.song.id, 9_500);
+
+    expect(catalog.getMetadataEnrichmentCandidates({ now: 10_000, staleAfterMs: 1_000, limit: 2 }))
+      .toEqual([expect.objectContaining({
+        songId: stale.song.id,
+        title: 'Needs metadata',
+        url: 'https://www.youtube.com/watch?v=needs-metadata'
+      })]);
+    expect(db.prepare('SELECT COUNT(*) AS count FROM plugin_music_bot_play_events').get().count).toBe(0);
+    db.close();
+  });
+
   it('excludes viewer events from implicit taste while keeping AutoDJ events and explicit votes', () => {
     const { db, catalog } = createCatalog();
     const track = { title: 'Taste boundary', artist: 'Taste Artist', provider: 'youtube', providerId: 'taste-boundary' };

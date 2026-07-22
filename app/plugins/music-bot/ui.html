@@ -252,9 +252,11 @@
             <div class="slider-group">
               <label for="crossfade-input" data-i18n="plugins.music-bot.music_bot.ui.player.crossfadeSeconds">Crossfade (Sek.)</label>
               <div class="slider-row">
-                <input type="range" id="crossfade-input" min="0" max="10" value="3" step="1">
+                <input type="range" id="crossfade-input" min="0" max="15" value="3" step="1" aria-describedby="crossfade-help">
                 <span id="crossfade-value">3s</span>
               </div>
+              <small id="crossfade-help" class="text-secondary" data-i18n="plugins.music-bot.music_bot.ui.player.crossfadeHelp">Gilt für neue Übergänge. 0 Sekunden schaltet Crossfade aus.</small>
+              <span id="crossfade-save-status" class="text-secondary" role="status" aria-live="polite"></span>
             </div>
           </div>
         </div>
@@ -331,6 +333,15 @@
                 <span data-i18n="plugins.music-bot.music_bot.ui.settings.mpvPath">mpv Pfad</span>
                 <input type="text" id="mpv-path" placeholder="z.B. C:\tools\mpv\mpv.exe oder /usr/bin/mpv" data-i18n-placeholder="plugins.music-bot.music_bot.ui.settings.mpvPlaceholder">
                 <small class="text-secondary" data-i18n="plugins.music-bot.music_bot.ui.settings.mpvHint">Benötigt für die Audio-Wiedergabe. Standard: mpv</small>
+              </label>
+              <label class="checkbox-field">
+                <input type="checkbox" id="normalization-enabled">
+                <span>Lautheitsanpassung aktivieren</span>
+              </label>
+              <label class="field">
+                <span>Ziel-Lautheit (LUFS)</span>
+                <input type="number" id="normalization-lufs" min="-30" max="-8" step="1" value="-16">
+                <small class="text-secondary">Wirkt pro MPV-Slot auch bei Streams und Crossfades.</small>
               </label>
             </div>
           </section>
@@ -510,12 +521,79 @@
         </label>
         <label class="field">
           <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.maxConsecutive">Max. aufeinanderfolgende Tracks</span>
-          <input type="number" id="auto-dj-max-consecutive" min="1" value="10">
+          <input type="number" id="auto-dj-max-consecutive" min="1" max="100" value="10" aria-describedby="auto-dj-limit-hint">
+          <small id="auto-dj-limit-hint" class="text-secondary" data-i18n="plugins.music-bot.music_bot.ui.autoDj.maxConsecutiveHint">Danach pausiert Auto-DJ; „Nächster Auto-DJ-Track“ setzt manuell fort.</small>
         </label>
         <label class="checkbox-field">
           <input type="checkbox" id="auto-dj-announce">
           <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.announce">Chat-Ansage fuer Auto-DJ</span>
         </label>
+        <section class="smart-radio-section span-2" aria-labelledby="smart-radio-title">
+          <div class="smart-radio-header">
+            <div>
+              <h3 id="smart-radio-title">Smart Radio</h3>
+              <p class="text-secondary">Transparente Auswahl, weiche Geschmacks-Signale und optionales Viewer-Voting.</p>
+            </div>
+            <span id="radio-preview-status" class="pill">Vorschau wird geladen</span>
+          </div>
+          <div class="form-grid">
+            <label class="checkbox-field">
+              <input type="checkbox" id="auto-dj-genre-filter">
+              <span>Genre-Mix begrenzen</span>
+            </label>
+            <label class="field">
+              <span>Genres fuer den Mix</span>
+              <select id="auto-dj-genres" multiple size="5" aria-describedby="auto-dj-genres-help">
+                <option value="alternative">Alternative</option><option value="chill">Chill</option><option value="classical">Classical</option><option value="country">Country</option><option value="dance">Dance</option><option value="electronic">Electronic</option><option value="hip-hop">Hip-Hop</option><option value="indie">Indie</option><option value="jazz">Jazz</option><option value="metal">Metal</option><option value="pop">Pop</option><option value="rock">Rock</option>
+              </select>
+              <small id="auto-dj-genres-help" class="text-secondary">Mehrfachauswahl: alle Genres werden gleichmaessig bedient. Ohne passende Songs pausiert das Radio sichtbar.</small>
+            </label>
+            <label class="checkbox-field">
+              <input type="checkbox" id="auto-dj-bpm-transitions">
+              <span>BPM-Uebergaenge bevorzugen</span>
+            </label>
+            <label class="field">
+              <span>Kuenstler-Abstand (Min., 0 = aus)</span>
+              <input type="number" id="auto-dj-artist-spacing" min="0" max="1440" value="90">
+            </label>
+            <label class="field">
+              <span>Album-Abstand (Min., 0 = aus)</span>
+              <input type="number" id="auto-dj-album-spacing" min="0" max="10080" value="360">
+            </label>
+            <label class="field">
+              <span>Neuheitsbudget (%)</span>
+              <input type="number" id="auto-dj-novelty-budget" min="0" max="100" value="20">
+              <small class="text-secondary">Neu = in den letzten zehn Tagen zum Katalog hinzugefuegt.</small>
+            </label>
+            <label class="checkbox-field">
+              <input type="checkbox" id="auto-dj-request-seeds">
+              <span>Viewer-Requests als Stil-Seed nutzen</span>
+            </label>
+            <label class="checkbox-field">
+              <input type="checkbox" id="auto-dj-live-feedback">
+              <span>Live-Feedback erlauben</span>
+            </label>
+            <label class="checkbox-field">
+              <input type="checkbox" id="auto-dj-preview-enabled">
+              <span>Nächste Kandidaten im Dashboard zeigen</span>
+            </label>
+            <label class="checkbox-field">
+              <input type="checkbox" id="auto-dj-chat-voting">
+              <span>Chat-Abstimmung im Overlay aktivieren</span>
+            </label>
+            <label class="field">
+              <span>Voting schliesst vor Songende (Sek.)</span>
+              <input type="number" id="auto-dj-vote-close-before" min="5" max="120" value="20">
+            </label>
+          </div>
+          <div class="radio-feedback-actions" aria-label="Live-Feedback zum aktuellen Song">
+            <strong>Aktueller Song:</strong>
+            <button id="radio-feedback-more" class="btn ghost small" type="button">Mehr davon</button>
+            <button id="radio-feedback-less" class="btn ghost small" type="button">Weniger davon</button>
+            <span id="radio-feedback-status" class="text-secondary" aria-live="polite"></span>
+          </div>
+          <div id="radio-preview-list" class="radio-preview-list" aria-live="polite"></div>
+        </section>
         <label class="field span-2">
           <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.playlistLinks">Playlist-Links (einer pro Zeile oder kommagetrennt; danach folgt das passende Playlist-Radio)</span>
           <textarea id="auto-dj-playlist-urls" rows="3" placeholder="https://www.youtube.com/watch?v=..." data-i18n-placeholder="plugins.music-bot.music_bot.ui.autoDj.playlistPlaceholder"></textarea>

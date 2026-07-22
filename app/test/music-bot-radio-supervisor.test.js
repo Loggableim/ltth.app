@@ -522,7 +522,7 @@ describe('music-bot catalog radio selection', () => {
     });
   });
 
-  test('removes the legacy ten-title limiter from AutoDJ status and selection', async () => {
+  test('enforces the configured consecutive AutoDJ limit and exposes it in status', async () => {
     const resolver = {
       resolvePlaylistEntry: jest.fn(async (_url, index) => ({
         success: true,
@@ -537,8 +537,12 @@ describe('music-bot catalog radio selection', () => {
     }, resolver, {}, { log: jest.fn() });
     autoDJ.consecutiveCount = 100;
 
-    await expect(autoDJ.getNextSong()).resolves.toMatchObject({ song: expect.any(Object) });
-    expect(autoDJ.getStatus()).not.toHaveProperty('maxConsecutiveAutoDJ');
+    await expect(autoDJ.getNextSong()).resolves.toBeNull();
+    expect(autoDJ.getStatus()).toMatchObject({
+      maxConsecutiveAutoDJ: 10,
+      isActive: false,
+      lastResult: { state: 'limit-reached' }
+    });
   });
 });
 
@@ -1094,10 +1098,10 @@ describe('music-bot supervisor diagnostics compatibility', () => {
     expect(plugin.radioSupervisor.wake).toHaveBeenCalledTimes(4);
   });
 
-  test('reschedules a prepared transition at a fixed three-second lead for pause/resume/seek compatibility', async () => {
+  test('reschedules a prepared transition at the configured crossfade lead for pause/resume/seek compatibility', async () => {
     jest.useFakeTimers();
     const { plugin } = createPlugin();
-    const track = { id: 'timed', title: 'Timed', duration: 10, requestedBy: 'AutoDJ' };
+    const track = { id: 'timed', title: 'Timed', duration: 20, requestedBy: 'AutoDJ' };
     plugin.config.playback.crossfadeDuration = 9000;
     plugin.playbackEngine = {
       getNowPlaying: jest.fn(() => track),
@@ -1110,7 +1114,7 @@ describe('music-bot supervisor diagnostics compatibility', () => {
     expect(plugin.radioSupervisor.wake).not.toHaveBeenCalled();
 
     plugin._rescheduleCrossfadeTransition(track, 2, { paused: false });
-    await jest.advanceTimersByTimeAsync(4999);
+    await jest.advanceTimersByTimeAsync(8999);
     expect(plugin.radioSupervisor.wake).not.toHaveBeenCalled();
     await jest.advanceTimersByTimeAsync(1);
     expect(plugin.radioSupervisor.wake).toHaveBeenCalledWith('crossfade', {
@@ -1311,7 +1315,7 @@ describe('music-bot supervisor diagnostics compatibility', () => {
     expect(plugin.autoDJ.markTrackStarted).not.toHaveBeenCalledWith(radio);
   });
 
-  test('keeps the playback controller crossfade fixed at three seconds while accepting legacy config', () => {
+  test('passes the configured crossfade duration to the playback controller', () => {
     const { plugin } = createPlugin();
     plugin.playbackEngine = { updateConfig: jest.fn() };
     plugin.musicResolver = { updateConfig: jest.fn() };
@@ -1326,7 +1330,7 @@ describe('music-bot supervisor diagnostics compatibility', () => {
 
     expect(plugin.config.playback.crossfadeDuration).toBe(9000);
     expect(plugin.playbackEngine.updateConfig).toHaveBeenCalledWith(
-      expect.objectContaining({ crossfadeDuration: 3000 })
+      expect.objectContaining({ crossfadeDuration: 9000 })
     );
   });
 
