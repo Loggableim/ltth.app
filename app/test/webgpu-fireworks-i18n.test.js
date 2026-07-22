@@ -69,6 +69,14 @@ function designerLocalePath(fullKey) {
   return fullKey.replace(/^plugins\.webgpu-fireworks\./, '');
 }
 
+function settingsLocalePath(fullKey) {
+  return fullKey.replace(/^plugins\.webgpu-fireworks\./, '');
+}
+
+function goalsLocalePath(fullKey) {
+  return fullKey.replace(/^plugins\.goals\./, '');
+}
+
 function keySegment(value) {
   return String(value).replace(/-/g, '_');
 }
@@ -292,8 +300,9 @@ describe('WebGPU Fireworks user-facing i18n', () => {
       'goals.modal.firework_finale_length_long',
       ...builtInIds.map(id => `goals.modal.firework_finale_style_${id.replace(/-/g, '_')}`)
     ];
-    settingsKeys.forEach(key => expect(valueAt(webgpu, key)).toBeDefined());
-    goalsKeys.forEach(key => expect(valueAt(goals, key)).toEqual(expect.any(String)));
+    settingsKeys.forEach(key => expect(valueAt(webgpu, settingsLocalePath(key))).toBeDefined());
+    const goalMessages = goals.plugins?.goals;
+    goalsKeys.forEach(key => expect(valueAt(goalMessages, goalsLocalePath(`plugins.goals.${key}`))).toEqual(expect.any(String)));
   });
 
   test('keeps configuration controls editorially localized outside English', () => {

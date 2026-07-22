@@ -459,7 +459,7 @@ describe('WebGPU Superfan finale settings', () => {
   test('test button sends the currently visible unsaved Superfan and inherited finale settings', async () => {
     const successText = 'Localized Superfan success';
     const { window, fetchMock } = await bootSettings({
-      translations: { 'webgpu_fireworks.superfan_finale_test_success': successText }
+      translations: { 'plugins.webgpu-fireworks.webgpu_fireworks.superfan_finale_test_success': successText }
     });
     const document = window.document;
     document.getElementById('superfan-finale-toggle').click();
@@ -538,9 +538,9 @@ describe('WebGPU Superfan finale settings', () => {
 
   test('live language changes refresh programmatic options and status once across both i18n events', async () => {
     const translations = {
-      'webgpu_fireworks.finale_style_auto': 'Auto EN',
-      'webgpu_fireworks.finale_global_default': 'Global EN',
-      'webgpu_fireworks.finale_length_short': 'Short EN',
+      'plugins.webgpu-fireworks.webgpu_fireworks.finale_style_auto': 'Auto EN',
+      'plugins.webgpu-fireworks.webgpu_fireworks.finale_global_default': 'Global EN',
+      'plugins.webgpu-fireworks.webgpu_fireworks.finale_length_short': 'Short EN',
       'plugins.webgpu-fireworks.shows.classic-crescendo.title': 'Classic EN'
     };
     const { window, fetchMock, i18nHandlers } = await bootSettings({ translations });
@@ -558,9 +558,9 @@ describe('WebGPU Superfan finale settings', () => {
     expect(i18nHandlers.languageChange).toHaveLength(1);
 
     Object.assign(translations, {
-      'webgpu_fireworks.finale_style_auto': 'Auto DE',
-      'webgpu_fireworks.finale_global_default': 'Global DE',
-      'webgpu_fireworks.finale_length_short': 'Kurz DE',
+      'plugins.webgpu-fireworks.webgpu_fireworks.finale_style_auto': 'Auto DE',
+      'plugins.webgpu-fireworks.webgpu_fireworks.finale_global_default': 'Global DE',
+      'plugins.webgpu-fireworks.webgpu_fireworks.finale_length_short': 'Kurz DE',
       'plugins.webgpu-fireworks.shows.classic-crescendo.title': 'Klassisch DE'
     });
     const statusRequestsBefore = fetchMock.mock.calls
@@ -576,9 +576,9 @@ describe('WebGPU Superfan finale settings', () => {
       .toHaveLength(statusRequestsBefore + 1);
 
     Object.assign(translations, {
-      'webgpu_fireworks.finale_style_auto': 'Auto FR',
-      'webgpu_fireworks.finale_global_default': 'Global FR',
-      'webgpu_fireworks.finale_length_short': 'Court FR',
+      'plugins.webgpu-fireworks.webgpu_fireworks.finale_style_auto': 'Auto FR',
+      'plugins.webgpu-fireworks.webgpu_fireworks.finale_global_default': 'Global FR',
+      'plugins.webgpu-fireworks.webgpu_fireworks.finale_length_short': 'Court FR',
       'plugins.webgpu-fireworks.shows.classic-crescendo.title': 'Classique FR'
     });
     const duplicateStatusRequestsBefore = fetchMock.mock.calls
@@ -602,7 +602,7 @@ describe('WebGPU Superfan finale settings', () => {
     const backendReason = 'renderer-not-ready <img src=x onerror="danger()">';
     const { window } = await bootSettings({
       testResponse: { ok: true, body: { success: false, accepted: false, reason: backendReason } },
-      translations: { 'webgpu_fireworks.superfan_finale_test_failed': failureText }
+      translations: { 'plugins.webgpu-fireworks.webgpu_fireworks.superfan_finale_test_failed': failureText }
     });
     const document = window.document;
 

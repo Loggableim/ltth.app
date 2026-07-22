@@ -108,7 +108,7 @@ describe('Goals static UI localization', () => {
     const html = read('ui.html');
     const ui = read('ui.js');
 
-    expect(html).toContain('data-i18n="plugins.goals.goals.ui.multigoal_name_placeholder"');
+    expect(html).toContain('data-i18n-placeholder="plugins.goals.goals.ui.multigoal_name_placeholder"');
     expect(ui).toContain("t('plugins.goals.goals.ui.brand_logo'");
   });
 

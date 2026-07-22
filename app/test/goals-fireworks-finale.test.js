@@ -509,9 +509,9 @@ describe('Goals firework finale integration', () => {
     expect(uiHtml).toContain('id="goal-firework-duration" type="hidden"');
     expect(uiHtml).toContain('id="goal-firework-encounter"');
     expect(uiHtml).toContain('id="goal-firework-finale-length"');
-    expect(uiHtml).toContain('data-i18n="goals.modal.firework_finale_style_label"');
-    expect(uiHtml).toContain('data-i18n="goals.modal.firework_finale_length_label"');
-    expect(uiHtml.match(/data-i18n="goals\.modal\.firework_finale_global_default"/g)).toHaveLength(2);
+    expect(uiHtml).toContain('data-i18n="plugins.goals.goals.modal.firework_finale_style_label"');
+    expect(uiHtml).toContain('data-i18n="plugins.goals.goals.modal.firework_finale_length_label"');
+    expect(uiHtml.match(/data-i18n="plugins\.goals\.goals\.modal\.firework_finale_global_default"/g)).toHaveLength(2);
     for (const style of [
       'classic-crescendo',
       'symmetric-salute',
@@ -594,7 +594,7 @@ describe('Goals firework finale integration', () => {
     for (const [locale, localizedValues] of Object.entries(expected)) {
       const translations = JSON.parse(
         fs.readFileSync(path.join(__dirname, '..', 'plugins', 'goals', 'locales', `${locale}.json`), 'utf8')
-      ).goals.modal;
+      ).plugins.goals.goals.modal;
       expect(translations).toMatchObject(localizedValues);
       expect([
         translations.firework_finale_style_classic_crescendo,

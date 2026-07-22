@@ -14,7 +14,7 @@ describe('Interactive Story overlay preview loading', () => {
     expect(source).not.toContain('if (overlayFrame) overlayFrame.src = overlayUrl;');
     expect(helperIndex).toBeGreaterThan(-1);
     expect(toggleIndex).toBeGreaterThan(helperIndex);
-    expect(source).toContain("if (container.style.display === 'none') {\n\n        ensureOverlayPreviewLoaded();");
+    expect(source).toMatch(/if \(container\.style\.display === 'none'\) \{\s+ensureOverlayPreviewLoaded\(\);/);
     expect(source).toContain("if (!previewFrame || previewFrame.getAttribute('src')) return;");
   });
 

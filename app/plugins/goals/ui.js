@@ -19,20 +19,31 @@ function t(key, fallback, params = {}) {
 
 function goalFinaleSelectorLabels() {
     return {
-        inherit: t('goals.modal.firework_finale_global_default', 'Use global default'),
-        builtIns: t('goals.modal.firework_finale_built_in_shows', 'Built-in shows'),
-        custom: t('goals.modal.firework_finale_custom_shows', 'Custom shows'),
-        unavailable: t('goals.modal.firework_finale_unavailable', 'Unavailable'),
-        short: t('goals.modal.firework_finale_length_short', 'Short (10 s)'),
-        medium: t('goals.modal.firework_finale_length_medium', 'Medium (18 s)'),
-        long: t('goals.modal.firework_finale_length_long', 'Long (28 s)')
+        inherit: t('plugins.goals.goals.modal.firework_finale_global_default', 'Use global default'),
+        builtIns: t('plugins.goals.goals.modal.firework_finale_built_in_shows', 'Built-in shows'),
+        custom: t('plugins.goals.goals.modal.firework_finale_custom_shows', 'Custom shows'),
+        unavailable: t('plugins.goals.goals.modal.firework_finale_unavailable', 'Unavailable'),
+        short: t('plugins.goals.goals.modal.firework_finale_length_short', 'Short (10 s)'),
+        medium: t('plugins.goals.goals.modal.firework_finale_length_medium', 'Medium (18 s)'),
+        long: t('plugins.goals.goals.modal.firework_finale_length_long', 'Long (28 s)')
     };
+}
+
+function prepareGoalFinaleStyleContract(showOptions) {
+    const builtIns = showOptions?.BUILT_IN_SHOWS;
+    if (!Array.isArray(builtIns) || typeof showOptions?.setCustomStyleContract !== 'function') return;
+    showOptions.setCustomStyleContract({
+        values: ['auto', ...builtIns.map(style => style.id)],
+        dynamicPattern: CUSTOM_FINALE_STYLE_PATTERN.source,
+        dynamicFlags: CUSTOM_FINALE_STYLE_PATTERN.flags
+    });
 }
 
 async function refreshGoalFinaleShowOptions(selectedStyle) {
     const showOptions = window.WebGpuFireworksShowOptions;
     const styleSelect = document.getElementById('goal-firework-encounter');
     if (!showOptions || !styleSelect) return null;
+    prepareGoalFinaleStyleContract(showOptions);
     const labels = goalFinaleSelectorLabels();
     const normalizedStyle = normalizeGoalFireworkStyle(selectedStyle ?? styleSelect.value);
     if (selectedStyle !== undefined) styleSelect.value = normalizedStyle;

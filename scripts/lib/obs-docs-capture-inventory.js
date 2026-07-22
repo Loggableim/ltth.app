@@ -4,7 +4,7 @@ const { buildGuides } = require('../plugin-tutorial-source');
 const { TEMPORARY_SOURCE_NAME, TUTORIAL_SCENE_NAME } = require('./obs-docs-capture-session');
 
 const OBS_DOCS_CAPTURE_LOCALES = Object.freeze(['de', 'en', 'es', 'fr']);
-const EXPECTED_OVERLAY_GUIDE_COUNT = 25;
+const EXPECTED_OVERLAY_GUIDE_COUNT = 26;
 
 // Each entry is an explicit Browser Source target, rather than a hidden
 // fallback in the runner. This is the capture resolution declared for the
@@ -23,6 +23,7 @@ const OBS_OVERLAY_DIMENSIONS = Object.freeze({
   'minecraft-connect': { width: 1280, height: 720 },
   'music-bot': { width: 1280, height: 720 },
   'quiz-show': { width: 1280, height: 720 },
+  schnorrbecher: { width: 1280, height: 720 },
   sidekick: { width: 1280, height: 720 },
   spotlight: { width: 1280, height: 720 },
   streamalchemy: { width: 1280, height: 720 },

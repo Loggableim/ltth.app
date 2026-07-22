@@ -38,12 +38,16 @@ describe('Music Bot catalog admin i18n contract', () => {
     return key.split('.').reduce((value, part) => value?.[part], translations);
   }
 
+  function pluginMessages(translations) {
+    return translations.plugins?.['music-bot'] || translations;
+  }
+
   function adminKeysFromHtml(html) {
     const dom = new JSDOM(html);
     return [...new Set(
       ['data-i18n', 'data-i18n-placeholder', 'data-i18n-aria-label', 'data-i18n-title']
         .flatMap((attribute) => Array.from(dom.window.document.querySelectorAll(`[${attribute}]`), (element) => element.getAttribute(attribute)))
-        .filter((key) => key.startsWith('music_bot.ui.'))
+        .filter((key) => key.startsWith('plugins.music-bot.music_bot.ui.'))
     )];
   }
 
@@ -56,8 +60,9 @@ describe('Music Bot catalog admin i18n contract', () => {
 
   test.each(locales)('provides nonempty catalog and runtime messages in %s', (locale) => {
     const translations = JSON.parse(fs.readFileSync(path.join(root, 'locales', `${locale}.json`), 'utf8'));
-    Object.values(runtimePaths).forEach((keyPath) => expect(lookup(translations.music_bot.ui, keyPath).trim()).not.toBe(''));
-    staticAdminPaths.forEach((keyPath) => expect(lookup(translations.music_bot.ui, keyPath).trim()).not.toBe(''));
+    const messages = pluginMessages(translations).music_bot.ui;
+    Object.values(runtimePaths).forEach((keyPath) => expect(lookup(messages, keyPath).trim()).not.toBe(''));
+    staticAdminPaths.forEach((keyPath) => expect(lookup(messages, keyPath).trim()).not.toBe(''));
   });
 
   test.each(['en', 'es', 'fr'])('renders new catalog controls through the i18n DOM pipeline in %s', (locale) => {
@@ -74,10 +79,11 @@ describe('Music Bot catalog admin i18n contract', () => {
       if (typeof value === 'string') element.placeholder = value;
     });
 
-    expect(dom.window.document.querySelector('[data-tab="catalog"]').textContent).toBe(translations.music_bot.ui.tabs.catalog);
-    expect(dom.window.document.getElementById('catalog-search-input').placeholder).toBe(translations.music_bot.ui.catalog.search);
-    expect(dom.window.document.getElementById('playlist-create-btn').textContent).toBe(translations.music_bot.ui.playlists.create);
-    expect(dom.window.document.getElementById('playlist-radio-save').textContent).toBe(translations.music_bot.ui.playlists.saveRadioSources);
+    const messages = pluginMessages(translations).music_bot.ui;
+    expect(dom.window.document.querySelector('[data-tab="catalog"]').textContent).toBe(messages.tabs.catalog);
+    expect(dom.window.document.getElementById('catalog-search-input').placeholder).toBe(messages.catalog.search);
+    expect(dom.window.document.getElementById('playlist-create-btn').textContent).toBe(messages.playlists.create);
+    expect(dom.window.document.getElementById('playlist-radio-save').textContent).toBe(messages.playlists.saveRadioSources);
   });
 
   test('uses named, complete UI keys for every static admin label', () => {
@@ -87,7 +93,7 @@ describe('Music Bot catalog admin i18n contract', () => {
     expect(html).not.toMatch(/data-i18n(?:-placeholder|-aria-label|-title)?="(?:generated\.|music_bot\.ui\.[^"]*\.label_[a-f0-9]{8,})/i);
 
     adminKeysFromHtml(html).forEach((key) => {
-      const [, , section, ...semanticPath] = key.split('.');
+      const [, , , , section, ...semanticPath] = key.split('.');
       expect(adminSections.has(section)).toBe(true);
       expect(semanticPath.length).toBeGreaterThan(0);
       semanticPath.forEach((part) => {
@@ -182,8 +188,9 @@ describe('Music Bot catalog admin i18n contract', () => {
     for (const locale of locales) {
       const translations = JSON.parse(fs.readFileSync(path.join(root, 'locales', `${locale}.json`), 'utf8'));
       Object.entries(expected).forEach(([section, values]) => {
-        expect(translations.music_bot.ui[section]).toEqual(expect.any(Object));
-        expect(translations.music_bot.ui[section][values.key]).toBe(values[locale]);
+        const messages = pluginMessages(translations).music_bot.ui;
+        expect(messages[section]).toEqual(expect.any(Object));
+        expect(messages[section][values.key]).toBe(values[locale]);
       });
     }
   });
@@ -198,7 +205,7 @@ describe('Music Bot catalog admin i18n contract', () => {
 
     for (const locale of locales) {
       const translations = JSON.parse(fs.readFileSync(path.join(root, 'locales', `${locale}.json`), 'utf8'));
-      expect(translations.music_bot.ui.player.seekUnavailable).toBe(expected[locale]);
+      expect(pluginMessages(translations).music_bot.ui.player.seekUnavailable).toBe(expected[locale]);
     }
   });
 
@@ -208,28 +215,28 @@ describe('Music Bot catalog admin i18n contract', () => {
     const german = JSON.parse(fs.readFileSync(path.join(root, 'locales', 'de.json'), 'utf8'));
     const translated = JSON.parse(fs.readFileSync(path.join(root, 'locales', `${locale}.json`), 'utf8'));
     const languageNeutralKeys = new Set([
-      'music_bot.ui.tabs.autoDj',
-      'music_bot.ui.tabs.playlists',
-      'music_bot.ui.tabs.overlay',
-      'music_bot.ui.shell.autoDjMetric',
-      'music_bot.ui.autoDj.title',
-      'music_bot.ui.autoDj.playlistMode',
-      'music_bot.ui.autoDj.playlistPlaceholder',
-      'music_bot.ui.queue.title',
-      'music_bot.ui.settings.filter',
-      'music_bot.ui.settings.payToPlayPlaceholder',
-      'music_bot.ui.settings.payToSkipPlaceholder',
-      'music_bot.ui.moderation.url',
-      'music_bot.ui.overlay.design',
-      'music_bot.ui.overlay.cyberpunk',
-      'music_bot.ui.overlay.minimal',
-      'music_bot.ui.overlay.neon',
-      'music_bot.ui.overlay.position',
-      'music_bot.ui.playlists.title',
-      'music_bot.ui.health.players',
-      'music_bot.ui.health.mpv',
-      'music_bot.ui.health.resolver',
-      'music_bot.ui.health.cache'
+      'plugins.music-bot.music_bot.ui.tabs.autoDj',
+      'plugins.music-bot.music_bot.ui.tabs.playlists',
+      'plugins.music-bot.music_bot.ui.tabs.overlay',
+      'plugins.music-bot.music_bot.ui.shell.autoDjMetric',
+      'plugins.music-bot.music_bot.ui.autoDj.title',
+      'plugins.music-bot.music_bot.ui.autoDj.playlistMode',
+      'plugins.music-bot.music_bot.ui.autoDj.playlistPlaceholder',
+      'plugins.music-bot.music_bot.ui.queue.title',
+      'plugins.music-bot.music_bot.ui.settings.filter',
+      'plugins.music-bot.music_bot.ui.settings.payToPlayPlaceholder',
+      'plugins.music-bot.music_bot.ui.settings.payToSkipPlaceholder',
+      'plugins.music-bot.music_bot.ui.moderation.url',
+      'plugins.music-bot.music_bot.ui.overlay.design',
+      'plugins.music-bot.music_bot.ui.overlay.cyberpunk',
+      'plugins.music-bot.music_bot.ui.overlay.minimal',
+      'plugins.music-bot.music_bot.ui.overlay.neon',
+      'plugins.music-bot.music_bot.ui.overlay.position',
+      'plugins.music-bot.music_bot.ui.playlists.title',
+      'plugins.music-bot.music_bot.ui.health.players',
+      'plugins.music-bot.music_bot.ui.health.mpv',
+      'plugins.music-bot.music_bot.ui.health.resolver',
+      'plugins.music-bot.music_bot.ui.health.cache'
     ]);
 
     keys.filter((key) => !languageNeutralKeys.has(key)).forEach((key) => {

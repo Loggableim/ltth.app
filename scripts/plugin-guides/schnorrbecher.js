@@ -32,6 +32,7 @@ function workflowStep({ id, route, selector, action, copy, stateChange = false, 
       postconditions: [
         { type: 'http-status', expected: [200, 304] },
         { type: 'url', expected: exactLocalUrlExpectation(route) },
+        ...(evidenceSelector === selector ? [] : [{ type: 'visible', selector }]),
         { type: 'visible', selector: evidenceSelector },
         { type: 'console', expected: 'no-errors' }
       ],

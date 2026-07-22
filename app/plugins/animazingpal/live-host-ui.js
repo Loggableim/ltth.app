@@ -86,7 +86,9 @@
   });
 
   function liveHostText(key, fallback, params = {}) {
-    return translateRuntime(`plugins.animazingpal.live_host.${key}`, fallback, params);
+    const translationKey = `plugins.animazingpal.live_host.${key}`;
+    const translated = window.i18n?.t?.(translationKey, params);
+    return translated && translated !== translationKey ? translated : fallback;
   }
 
   function localizeLiveHostText(text) {

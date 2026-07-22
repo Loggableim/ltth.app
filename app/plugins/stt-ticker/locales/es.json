@@ -87,13 +87,15 @@
             "cache_cleared": "Caché de traducción vaciada",
             "key_valid": "¡La clave es válida!",
             "key_invalid": "No válida",
-  "provider_deepgram": "Reconocimiento de voz Deepgram",
-  "key_source_config": "desde la configuración",
-  "key_source_file": "desde un archivo local",
-  "key_source_environment": "desde el entorno",
-  "key_source_plugin": "desde el plugin",
-  "deepgram_multilingual_hint": "El modo automático de {model} admite transcripción multilingüe para: {languages}. Elige un idioma fijo para otros idiomas de origen.",
-  "deepgram_fixed_language_hint": "El modo automático multilingüe no es compatible con {model}; elige un idioma fijo."
+            "provider_deepgram": "Reconocimiento de voz Deepgram",
+            "key_source_config": "desde la configuración",
+            "key_source_file": "desde un archivo local",
+            "key_source_environment": "desde el entorno",
+            "key_source_plugin": "desde el plugin",
+            "deepgram_multilingual_hint": "El modo automático de {model} admite transcripción multilingüe para: {languages}. Elige un idioma fijo para otros idiomas de origen.",
+            "deepgram_fixed_language_hint": "El modo automático multilingüe no es compatible con {model}; elige un idioma fijo.",
+            "deepgram_language_support_hint": "El idioma del proveedor depende del modelo de Deepgram seleccionado. Las combinaciones no compatibles se rechazan claramente.",
+            "provider_deepgram_name": "Reconocimiento Deepgram"
           },
           "labels": {
             "source_microphone": "Micrófono de origen",

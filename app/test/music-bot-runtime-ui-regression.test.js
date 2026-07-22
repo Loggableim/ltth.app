@@ -11,6 +11,19 @@ const productionCatalogs = Object.fromEntries(
   ['en', 'es', 'fr'].map((locale) => [locale, productionI18n.getAllTranslations(locale)])
 );
 
+function pluginMessages(catalog) {
+  return catalog.plugins?.['music-bot'] || catalog;
+}
+
+function musicBotUi(catalog) {
+  return pluginMessages(catalog).music_bot.ui;
+}
+
+function lookupTranslation(catalog, key) {
+  const lookup = (path) => path.split('.').reduce((value, part) => value?.[part], catalog);
+  return lookup(key) ?? lookup(key.replace(/^plugins\.music-bot\./, ''));
+}
+
 function readCanonicalBanTypes() {
   const source = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/lib/ban-list.js'), 'utf8');
   const declaration = source.match(/const VALID_TYPES = \[([^\]]+)\]/);
@@ -218,7 +231,7 @@ function bootMusicBotUi(options = {}) {
         installProductionI18nClient(window, productionLocale, translations);
       } else if (translations) {
         window.i18n = { t: (key, params = {}) => {
-          const value = key.replace('plugins.music-bot.', '').split('.').reduce((current, part) => current?.[part], translations);
+          const value = lookupTranslation(translations, key);
           return typeof value === 'string' ? value.replace(/\{(\w+)\}/g, (_match, name) => params[name] ?? `{${name}}`) : key;
         } };
       }
@@ -227,17 +240,16 @@ function bootMusicBotUi(options = {}) {
   if (productionLocale && translations) {
     dom.window.i18n.updateDOM();
   } else if (translations) {
-    const lookup = (key) => key.split('.').reduce((value, part) => value?.[part], translations);
     dom.window.document.querySelectorAll('[data-i18n]').forEach((element) => {
-      const value = lookup(element.dataset.i18n);
+      const value = lookupTranslation(translations, element.dataset.i18n);
       if (typeof value === 'string') element.textContent = value;
     });
     dom.window.document.querySelectorAll('[data-i18n-placeholder]').forEach((element) => {
-      const value = lookup(element.dataset.i18nPlaceholder);
+      const value = lookupTranslation(translations, element.dataset.i18nPlaceholder);
       if (typeof value === 'string') element.placeholder = value;
     });
     dom.window.document.querySelectorAll('[data-i18n-aria-label]').forEach((element) => {
-      const value = lookup(element.dataset.i18nAriaLabel);
+      const value = lookupTranslation(translations, element.dataset.i18nAriaLabel);
       if (typeof value === 'string') element.setAttribute('aria-label', value);
     });
   }
@@ -1229,7 +1241,7 @@ describe('Music Bot runtime and UI regressions', () => {
     });
     doms.push(dom);
     await new Promise((resolve) => setTimeout(resolve, 25));
-    const ui = translations.music_bot.ui;
+    const ui = musicBotUi(translations);
 
     expect(dom.window.document.querySelector('.history-ban-badge').textContent).toBe(ui.history.historyBanned);
     expect(dom.window.document.querySelector('[data-track-ban-trigger]').getAttribute('aria-label')).toBe(ui.history.banTrack);
@@ -1606,7 +1618,7 @@ describe('Music Bot runtime and UI regressions', () => {
     doms.push(dom);
     await new Promise((resolve) => setTimeout(resolve, 25));
 
-    const ui = translations.music_bot.ui;
+    const ui = musicBotUi(translations);
     expect(ui.settings.giftsCount).toContain('{count}');
     expect(ui.settings.giftLocales).toEqual(expect.any(String));
     expect(ui.settings.giftRegion).toEqual(expect.any(String));
@@ -1635,7 +1647,7 @@ describe('Music Bot runtime and UI regressions', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(translations.music_bot.ui.overlay.copySuccess).toBe(expectedCopy[locale]);
+    expect(musicBotUi(translations).overlay.copySuccess).toBe(expectedCopy[locale]);
     expect(copyButton.textContent).toBe(expectedCopy[locale]);
   });
 
@@ -1654,7 +1666,7 @@ describe('Music Bot runtime and UI regressions', () => {
     await new Promise((resolve) => setTimeout(resolve, 25));
 
     const labels = Array.from(dom.window.document.querySelectorAll('#ban-table tbody tr td:first-child'), (cell) => cell.textContent);
-    expect(labels).toEqual(canonicalTypes.map((type) => translations.music_bot.ui.moderation[typeToKey[type]]));
+    expect(labels).toEqual(canonicalTypes.map((type) => musicBotUi(translations).moderation[typeToKey[type]]));
   });
 
   test.each(['de', 'en', 'es', 'fr'])('reconciles every produced playlist-import status with localized %s UI output', async (locale) => {
@@ -1670,7 +1682,7 @@ describe('Music Bot runtime and UI regressions', () => {
     const producedStatuses = readProducedPlaylistImportStatuses();
     expect([...producedStatuses].sort()).toEqual(Object.keys(statusToKey).sort());
     const translations = JSON.parse(fs.readFileSync(path.join(__dirname, `../plugins/music-bot/locales/${locale}.json`), 'utf8'));
-    expect(translations.music_bot.ui.playlists.importQueued).toBe(expectedQueued[locale]);
+    expect(musicBotUi(translations).playlists.importQueued).toBe(expectedQueued[locale]);
     const { dom, socketHandlers } = bootMusicBotUi({ translations });
     doms.push(dom);
     await new Promise((resolve) => setTimeout(resolve, 25));
@@ -1678,13 +1690,13 @@ describe('Music Bot runtime and UI regressions', () => {
     for (const status of producedStatuses) {
       socketHandlers['musicbot:playlist-import-progress']({ status });
       expect(dom.window.document.getElementById('playlist-import-progress').textContent)
-        .toBe(translations.music_bot.ui.playlists[statusToKey[status]]);
+        .toBe(musicBotUi(translations).playlists[statusToKey[status]]);
     }
   });
 
   test('ships correct Spanish and French sectioned admin orthography', () => {
-    const es = JSON.parse(fs.readFileSync(path.join(__dirname, '../plugins/music-bot/locales/es.json'), 'utf8')).music_bot.ui;
-    const fr = JSON.parse(fs.readFileSync(path.join(__dirname, '../plugins/music-bot/locales/fr.json'), 'utf8')).music_bot.ui;
+    const es = musicBotUi(JSON.parse(fs.readFileSync(path.join(__dirname, '../plugins/music-bot/locales/es.json'), 'utf8')));
+    const fr = musicBotUi(JSON.parse(fs.readFileSync(path.join(__dirname, '../plugins/music-bot/locales/fr.json'), 'utf8')));
 
     expect(es.player).toMatchObject({
       seek: 'Posición de reproducción',
@@ -1733,8 +1745,8 @@ describe('Music Bot runtime and UI regressions', () => {
     dom.window.document.getElementById('playlist-create-btn').click();
     await new Promise((resolve) => setTimeout(resolve, 0));
     const toast = dom.window.document.getElementById('musicbot-toast-container').textContent;
-    expect(toast).toContain(translations.music_bot.ui.catalog.networkTitle);
-    expect(toast).toContain(translations.music_bot.ui.catalog.postFailed);
+    expect(toast).toContain(musicBotUi(translations).catalog.networkTitle);
+    expect(toast).toContain(musicBotUi(translations).catalog.postFailed);
   });
 
   test('rolls a failed seek back once and shows its localized error', async () => {
@@ -2691,8 +2703,7 @@ describe('Music Bot runtime and UI regressions', () => {
         en: {
           plugins: {
             'music-bot': {
-              plugin: fullCatalog.plugin,
-              ui: fullCatalog.ui
+              ...pluginMessages(fullCatalog)
             }
           }
         }
@@ -2711,13 +2722,13 @@ describe('Music Bot runtime and UI regressions', () => {
       await new Promise((resolve) => setTimeout(resolve, 40));
 
       expect(fetchMock).toHaveBeenCalledWith('/plugins/music-bot/locales/en.json', { cache: 'no-store' });
-      expect(dom.window.document.querySelector('[data-i18n="music_bot.ui.health.state"]')?.textContent).toBe('State');
-      expect(dom.window.document.querySelector('[data-i18n="music_bot.ui.tabs.catalog"]')?.textContent).toBe('Catalog');
-      expect(dom.window.document.querySelector('[data-i18n="music_bot.ui.tabs.settings"]')?.textContent).toBe('Settings');
+      expect(dom.window.document.querySelector('[data-i18n="plugins.music-bot.music_bot.ui.health.state"]')?.textContent).toBe('State');
+      expect(dom.window.document.querySelector('[data-i18n="plugins.music-bot.music_bot.ui.tabs.catalog"]')?.textContent).toBe('Catalog');
+      expect(dom.window.document.querySelector('[data-i18n="plugins.music-bot.music_bot.ui.tabs.settings"]')?.textContent).toBe('Settings');
       expect(dom.window.document.querySelector('#now-playing p')?.textContent)
-        .toBe(fullCatalog.music_bot.ui.player.nowPlayingEmpty);
+        .toBe(musicBotUi(fullCatalog).player.nowPlayingEmpty);
       expect(dom.window.document.querySelector('#health-state')?.textContent)
-        .toBe(fullCatalog.music_bot.ui.safety.safetyLocked);
+        .toBe(musicBotUi(fullCatalog).safety.safetyLocked);
     });
   });
 });

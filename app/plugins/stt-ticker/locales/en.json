@@ -87,13 +87,15 @@
             "cache_cleared": "Translation cache cleared",
             "key_valid": "Key is valid!",
             "key_invalid": "Invalid",
-  "provider_deepgram": "Deepgram speech recognition",
-  "key_source_config": "from configuration",
-  "key_source_file": "from local file",
-  "key_source_environment": "from environment",
-  "key_source_plugin": "from plugin",
-  "deepgram_multilingual_hint": "Auto mode for {model} supports multilingual transcription for: {languages}. Choose a fixed language for other source languages.",
-  "deepgram_fixed_language_hint": "Auto multilingual mode is not supported by {model}; choose a fixed language."
+            "provider_deepgram": "Deepgram speech recognition",
+            "key_source_config": "from configuration",
+            "key_source_file": "from local file",
+            "key_source_environment": "from environment",
+            "key_source_plugin": "from plugin",
+            "deepgram_multilingual_hint": "Auto mode for {model} supports multilingual transcription for: {languages}. Choose a fixed language for other source languages.",
+            "deepgram_fixed_language_hint": "Auto multilingual mode is not supported by {model}; choose a fixed language.",
+            "deepgram_language_support_hint": "Provider language depends on the selected Deepgram model. Unsupported combinations are rejected clearly.",
+            "provider_deepgram_name": "Deepgram"
           },
           "labels": {
             "source_microphone": "Source microphone",
