@@ -121,7 +121,7 @@ class SystemAnalyzer {
           const lower = String(name || '').toLowerCase();
           resolve({
             name,
-            vendor: lower.includes('amd') ? 'amd' : (lower.includes('intel') ? 'intel' : 'unknown'),
+            vendor: lower.includes('nvidia') ? 'nvidia' : (lower.includes('amd') ? 'amd' : (lower.includes('intel') ? 'intel' : 'unknown')),
             vramMb,
             vramGb: Math.round((vramMb / 1024) * 10) / 10,
             driver: data.DriverVersion || null,

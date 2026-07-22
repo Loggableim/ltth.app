@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stream Monsters</title>
+  <style>
+    :root { color-scheme: dark; --ink:#edf4ff; --muted:#aebbd0; --panel:#171d2c; --line:#2d3a54; --accent:#9d71ff; --good:#54d89b; --warn:#ffcd66; }
+    * { box-sizing:border-box; } body { margin:0; font:15px/1.5 Inter,Segoe UI,Arial,sans-serif; color:var(--ink); background:radial-gradient(circle at 15% 0,#30205a,#0b0e16 52%); }
+    main { max-width:1120px; margin:auto; padding:38px 22px 72px; } .eyebrow { color:#bea9ff; text-transform:uppercase; font-size:12px; letter-spacing:.14em; font-weight:700; }
+    h1 { font-size:clamp(38px,7vw,70px); margin:3px 0 8px; line-height:1; } h2 { margin:0 0 8px; font-size:22px; } p { color:var(--muted); margin:6px 0; }
+    .hero { display:grid; grid-template-columns:1.3fr .7fr; gap:26px; align-items:end; padding-bottom:26px; } .promise { border:1px solid #6553a5; background:#1d1935cc; padding:18px; border-radius:16px; }
+    .steps { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:20px 0; padding:0; list-style:none; } .steps li { padding:9px 11px; border-radius:10px; background:#171d2c; border:1px solid var(--line); color:var(--muted); font-size:12px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; } .card { background:linear-gradient(145deg,#1a2131,#111725); border:1px solid var(--line); border-radius:16px; padding:18px; }
+    label { display:grid; gap:5px; color:var(--muted); margin-top:11px; font-size:13px; } input,select,button { font:inherit; border-radius:9px; } input,select { padding:10px; color:var(--ink); border:1px solid #415071; background:#0c111d; }
+    button { border:0; padding:10px 13px; margin-top:13px; background:var(--accent); color:white; font-weight:700; cursor:pointer; } button.secondary { background:#26334b; } button:disabled { opacity:.55; cursor:wait; }
+    code { display:block; margin-top:10px; padding:10px; overflow-wrap:anywhere; border-radius:9px; color:#c9f0ff; background:#0a0e17; } .notice { min-height:24px; margin:18px 0; padding:10px 13px; border-radius:9px; background:#172033; color:var(--muted); } .notice.success { color:#bcffe0; border:1px solid #316e55; } .notice.error { color:#ffd0d0; border:1px solid #843b45; }
+    .pool-row { display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px solid var(--line); } .status { font-size:12px; color:var(--good); } .rules { margin:0; padding-left:20px; color:var(--muted); } .rules li { margin:6px 0; }
+    @media (max-width:700px) { .hero { grid-template-columns:1fr; } .steps { grid-template-columns:1fr 1fr; } }
+  </style>
+</head>
+<body>
+<main id="streammonsters-app">
+  <section class="hero">
+    <div><div class="eyebrow">Stream Monsters · five-minute setup</div><h1 data-i18n="plugins.streamalchemy.streammonsters.heroTitle">Your community hatches the world.</h1><p data-i18n="plugins.streamalchemy.streammonsters.heroCopy">Gifts spawn deterministic element eggs. Prepare the visuals before live; during live, every event stays instant and safe.</p></div>
+    <aside class="promise"><strong>Original, transparent game rules.</strong><p data-i18n="plugins.streamalchemy.streammonsters.promiseCopy">No paid randomness, no wagers, no transferable rewards. Elements, boosts and duels are visible and reproducible.</p></aside>
+  </section>
+  <ol class="steps"><li data-i18n="plugins.streamalchemy.streammonsters.stepWorld">1. Name your world</li><li data-i18n="plugins.streamalchemy.streammonsters.stepGifts">2. Select gifts</li><li data-i18n="plugins.streamalchemy.streammonsters.stepAi">3. Choose local AI</li><li data-i18n="plugins.streamalchemy.streammonsters.stepPrepare">4. Prepare art</li><li data-i18n="plugins.streamalchemy.streammonsters.stepObs">5. Add OBS overlay</li></ol>
+  <div id="notice" class="notice" role="status">Loading your Stream Monsters setup…</div>
+  <section class="grid">
+    <article class="card"><h2 data-i18n="plugins.streamalchemy.streammonsters.worldHeading">1. Your world</h2><p data-i18n="plugins.streamalchemy.streammonsters.worldCopy">We use the connected TikTok name by default. Change this only if you want a custom display name.</p><label>Creator or world name<input id="creatorName" maxlength="60" placeholder="Your TikTok username" data-i18n-placeholder="plugins.streamalchemy.streammonsters.creatorPlaceholder"></label><button id="saveSetup" type="button" data-i18n="plugins.streamalchemy.streammonsters.save">Save world</button></article>
+    <article class="card"><h2 data-i18n="plugins.streamalchemy.streammonsters.giftHeading">2. Gift pool</h2><p data-i18n="plugins.streamalchemy.streammonsters.giftCopy">Add gifts you expect tonight. They are queued now, but never generated while you are live.</p><label>Known TikTok gift<select id="catalogGift"><option value="" data-i18n="plugins.streamalchemy.streammonsters.knownGift">Choose a known gift…</option></select></label><label>Gift ID<input id="giftId" inputmode="numeric" placeholder="e.g. 5655" data-i18n-placeholder="plugins.streamalchemy.streammonsters.giftIdPlaceholder"></label><label>Gift name<input id="giftName" maxlength="80" placeholder="e.g. Rose" data-i18n-placeholder="plugins.streamalchemy.streammonsters.giftNamePlaceholder"></label><label>Role<select id="giftEffect"><option value="spawn" data-i18n="plugins.streamalchemy.streammonsters.spawnEgg">Spawns an egg</option><option value="boost" data-i18n="plugins.streamalchemy.streammonsters.boostEgg">Accelerates the oldest egg</option></select></label><button id="queueGift" type="button" data-i18n="plugins.streamalchemy.streammonsters.queueGift">Add to preparation pool</button></article>
+    <article class="card"><h2 data-i18n="plugins.streamalchemy.streammonsters.aiHeading">3. Local image AI</h2><p id="localModelCopy" data-i18n="plugins.streamalchemy.streammonsters.aiCopy">Windows + NVIDIA: Stream Monsters will recommend the fastest safe profile from your detected GPU. Other systems can use remote or an existing ComfyUI setup.</p><p id="localRuntimeStatus" class="status" data-i18n="plugins.streamalchemy.streammonsters.checkingAi">Checking local AI compatibility…</p><button class="secondary" id="openLocalSetup" type="button" data-i18n="plugins.streamalchemy.streammonsters.checkAi">Check local AI setup</button></article>
+    <article class="card"><h2 data-i18n="plugins.streamalchemy.streammonsters.prepareHeading">4. Prepare before live</h2><p data-i18n="plugins.streamalchemy.streammonsters.prepareCopy">One job at a time. If art is not ready, viewers see a branded egg and can use !inventory next stream.</p><button id="preparePool" type="button" data-i18n="plugins.streamalchemy.streammonsters.prepare">Prepare queued art</button><div id="poolList" aria-live="polite"></div></article>
+    <article class="card"><h2 data-i18n="plugins.streamalchemy.streammonsters.overlayHeading">5. OBS overlay</h2><p data-i18n="plugins.streamalchemy.streammonsters.overlayCopy">Add this browser source to OBS. Use the demo before going live.</p><code id="overlayUrl">/streammonsters/overlay</code><button class="secondary" id="runDemo" type="button" data-i18n="plugins.streamalchemy.streammonsters.demo">Run safe demo</button></article>
+    <article class="card"><h2 data-i18n="plugins.streamalchemy.streammonsters.dashboardHeading">Live dashboard</h2><p data-i18n="plugins.streamalchemy.streammonsters.dashboardCopy">Current stream activity is transparent and never used for billing.</p><div id="creatorMetrics" class="rules">Start a TikTok session to see eggs, hatches, viewers, duels, quests and pool coverage.</div></article>
+    <article class="card"><h2 data-i18n="plugins.streamalchemy.streammonsters.playHeading">Community play</h2><ul class="rules"><li data-i18n="plugins.streamalchemy.streammonsters.ruleElements">Six deterministic elements: Ember, Tide, Grove, Gale, Volt and Lunar.</li><li data-i18n="plugins.streamalchemy.streammonsters.ruleHatch">Eggs hatch after 30 minutes in real time; configured booster gifts reduce the timer.</li><li><strong>!inventory</strong>, <strong>!choose &lt;slot&gt;</strong> and <strong>!battle</strong> let viewers play.</li><li data-i18n="plugins.streamalchemy.streammonsters.ruleBattle">Duels are three reproducible rounds without stakes or prizes.</li></ul></article>
+  </section>
+</main>
+<script src="/js/i18n-client.js"></script>
+<script>
+(() => {
+  const doc = document;
+  const byId = id => doc.getElementById(id);
+  const t = (key, fallback, params = {}) => { const translated = window.i18n?.t(key, params); return translated && translated !== key ? translated : String(fallback).replace(/\{(\w+)\}/g, (match, name) => params[name] ?? match); };
+  const notice = (message, type = '') => { const node = byId('notice'); if (!node) return; node.textContent = message; node.className = `notice ${type}`; };
+  const request = async (url, options = {}) => { const response = await fetch(url, options); if (!response.ok) throw new Error(`Request failed: ${url}`); return response.json(); };
+  const renderPool = entries => {
+    const root = byId('poolList'); root.replaceChildren();
+    entries.slice(0, 8).forEach(entry => { const row = document.createElement('div'); row.className = 'pool-row'; const name = document.createElement('span'); name.textContent = `${entry.gift_name} · ${entry.element}`; const state = document.createElement('span'); state.className = 'status'; state.textContent = entry.status; row.append(name, state); root.append(row); });
+    if (!entries.length) root.textContent = t('plugins.streamalchemy.streammonsters.noGifts', 'No gifts queued yet.');
+  };
+  const refreshPool = async () => { const payload = await request('/api/streammonsters/pool'); renderPool(payload.entries || []); };
+  const renderMetrics = metrics => {
+    const root = byId('creatorMetrics'); if (!metrics) return;
+    root.textContent = t('plugins.streamalchemy.streammonsters.dashboardMetrics', '{eggs} eggs · {hatches} hatches · {viewers} active viewers · {duels} duels · {quests} quest completions · {ready}/{total} art ready', { eggs: metrics.eggs_spawned || 0, hatches: metrics.hatches || 0, viewers: metrics.active_viewers || 0, duels: metrics.duels || 0, quests: metrics.quest_completions || 0, ready: metrics.pool_ready || 0, total: metrics.pool_total || 0 });
+  };
+  const formatBytes = value => { const bytes = Number(value) || 0; if (!bytes) return 'size supplied by the release'; return `${(bytes / 1024 / 1024 / 1024).toFixed(bytes >= 1024 * 1024 * 1024 ? 1 : 2)} GB`; };
+  const loadGiftCatalog = async () => {
+    const payload = await request('/api/streammonsters/gift-catalog');
+    const select = byId('catalogGift');
+    (payload.gifts || []).forEach(gift => {
+      const option = document.createElement('option');
+      option.value = String(gift.giftId); option.dataset.name = gift.giftName || ''; option.dataset.value = String(gift.coinValue || 0);
+      option.textContent = t('plugins.streamalchemy.streammonsters.giftOption', '{name} · {coins} diamonds', { name: gift.giftName || `Gift ${gift.giftId}`, coins: gift.coinValue || 0 });
+      select.append(option);
+    });
+  };
+  const saveSetup = async () => { const creatorName = byId('creatorName').value.trim(); await request('/api/streammonsters/config', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ creatorName }) }); notice('World saved. Your viewers will see this name in Stream Monsters.', 'success'); };
+  const queueGift = async () => { const giftId = Number.parseInt(byId('giftId').value, 10); const giftName = byId('giftName').value.trim(); if (!giftId || !giftName) { notice('Enter a gift ID and name first.', 'error'); return; } await request('/api/streammonsters/pool', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ giftId, giftName, effect:byId('giftEffect').value }) }); byId('giftId').value = ''; byId('giftName').value = ''; await refreshPool(); notice('Gift added. Prepare it before your stream for generated artwork.', 'success'); };
+  const preparePool = async () => { const button = byId('preparePool'); button.disabled = true; notice('Preparing queued Stream Monsters art…'); try { const result = await request('/api/streammonsters/pool/prepare', { method:'POST' }); await refreshPool(); notice(`${(result.entries || []).length} queued visuals prepared.`, 'success'); } catch (error) { notice(error.message, 'error'); } finally { button.disabled = false; } };
+  const checkLocalRuntime = async (install = false) => {
+    const button = byId('openLocalSetup'); const status = byId('localRuntimeStatus');
+    button.disabled = true;
+    try {
+      const endpoint = install ? '/api/streammonsters/local-runtime/install' : '/api/streammonsters/local-runtime/status';
+      const payload = await request(endpoint, { method: install ? 'POST' : 'GET' });
+      if (install) { status.textContent = t('plugins.streamalchemy.streammonsters.runtimeInstallStarted', 'Verified runtime installation started. Model download and health status will appear here when ready.'); notice('Local AI installation started with the recommended fast profile.', 'success'); return; }
+      const recommendation = payload.recommendation || {};
+      delete button.dataset.installReady; delete button.dataset.installDetails;
+      if (!recommendation.supported) {
+        status.textContent = recommendation.reason || t('plugins.streamalchemy.streammonsters.runtimeUnsupported', 'Use your existing ComfyUI or a remote image provider on this system.');
+        button.textContent = t('plugins.streamalchemy.streammonsters.expertSetup', 'Use expert or remote setup'); return;
+      }
+      const resolution = `${recommendation.width}×${recommendation.height}, ${recommendation.steps} steps`;
+      if (!payload.manifestAvailable) {
+        status.textContent = t('plugins.streamalchemy.streammonsters.runtimeMissing', '{resolution} recommended. A signed LTTH runtime package is not configured yet; use existing ComfyUI or remote generation.', { resolution });
+        button.textContent = t('plugins.streamalchemy.streammonsters.refreshCompatibility', 'Refresh compatibility'); return;
+      }
+      const details = payload.installDetails || {};
+      status.textContent = t('plugins.streamalchemy.streammonsters.runtimeRecommended', '{resolution} recommended. Runtime: {runtime}; model: {model}; target: {target}.', { resolution, runtime: formatBytes(details.runtimeDownloadBytes), model: formatBytes(details.modelDownloadBytes), target: details.targetDir || 'managed plugin data folder' });
+      button.textContent = t('plugins.streamalchemy.streammonsters.installAi', 'Install verified local AI'); button.dataset.installReady = 'true'; button.dataset.installDetails = JSON.stringify(details);
+    } catch (error) { status.textContent = t('plugins.streamalchemy.streammonsters.localCheckFailed', 'Local AI check failed: {error}', { error: error.message }); }
+    finally { button.disabled = false; }
+  };
+  const init = async () => { try { const [status, state] = await Promise.all([request('/api/status'), request('/api/streammonsters/state')]); const creator = state.config?.creatorName || status.username || ''; byId('creatorName').value = creator; byId('overlayUrl').textContent = `${location.origin}/streammonsters/overlay`; renderPool(state.pool || []); renderMetrics(state.metrics); notice('Setup ready. Add your gift pool, prepare it, then run the OBS demo.', 'success'); } catch (error) { notice(`Setup could not load: ${error.message}`, 'error'); } };
+  byId('saveSetup').addEventListener('click', () => saveSetup().catch(error => notice(error.message, 'error')));
+  byId('queueGift').addEventListener('click', () => queueGift().catch(error => notice(error.message, 'error')));
+  byId('preparePool').addEventListener('click', preparePool);
+  byId('catalogGift').addEventListener('change', event => { const option = event.target.selectedOptions[0]; if (!option?.value) return; byId('giftId').value = option.value; byId('giftName').value = option.dataset.name || option.textContent; });
+  byId('runDemo').addEventListener('click', async () => { try { await request('/api/streammonsters/demo', { method:'POST' }); notice('Demo sent to the Stream Monsters overlay.', 'success'); } catch (error) { notice(error.message, 'error'); } });
+  byId('openLocalSetup').addEventListener('click', () => {
+    const button = byId('openLocalSetup');
+    if (button.dataset.installReady !== 'true') return checkLocalRuntime().catch(error => notice(error.message, 'error'));
+    const details = JSON.parse(button.dataset.installDetails || '{}');
+    const confirmed = window.confirm(t('plugins.streamalchemy.streammonsters.confirmInstall', 'Install verified Stream Monsters local AI? Runtime: {runtime} Model: {model} Target: {target}', { runtime: formatBytes(details.runtimeDownloadBytes), model: formatBytes(details.modelDownloadBytes), target: details.targetDir || 'managed plugin data folder' }));
+    if (confirmed) return checkLocalRuntime(true).catch(error => notice(error.message, 'error'));
+  });
+  loadGiftCatalog().catch(() => {});
+  checkLocalRuntime().catch(() => {});
+  init();
+})();
+</script>
+</body>
+</html>

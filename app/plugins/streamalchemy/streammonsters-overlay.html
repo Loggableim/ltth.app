@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stream Monsters Overlay</title>
+  <style>
+    :root { --ink:#f4f7ff; --muted:#b8c3dc; --panel:#12182af0; --accent:#a576ff; --green:#7ef0ba; }
+    * { box-sizing:border-box; } body { margin:0; overflow:hidden; font-family:Inter,Segoe UI,Arial,sans-serif; color:var(--ink); background:transparent; }
+    #streammonsters-overlay { position:fixed; inset:0; pointer-events:none; } #event { position:absolute; top:34px; left:34px; border:1px solid #5f4b9a; border-radius:999px; background:#151229e8; padding:9px 15px; font-size:15px; opacity:0; transform:translateY(-15px); transition:.3s; } #event.visible { opacity:1; transform:none; }
+    #card { position:absolute; right:42px; bottom:42px; display:grid; grid-template-columns:130px 1fr; gap:16px; min-width:430px; max-width:560px; padding:16px; border:1px solid #6175a0; border-radius:22px; background:linear-gradient(140deg,#202a42f7,#111725f7); box-shadow:0 20px 60px #000a; opacity:0; transform:translateX(80px) scale(.95); transition:.35s; }
+    #card.visible { opacity:1; transform:none; } #art { width:130px; height:130px; object-fit:contain; border-radius:16px; background:radial-gradient(circle,#483579,#101522); } .kicker { text-transform:uppercase; letter-spacing:.11em; font-size:12px; font-weight:700; color:#d9c8ff; } #title { margin:4px 0; font-size:29px; line-height:1.05; } #subtitle { color:var(--muted); } #progress { height:10px; overflow:hidden; margin-top:12px; border-radius:99px; background:#090d15; } #bar { height:100%; width:0; transition:width .5s; background:linear-gradient(90deg,#68e8c0,#a576ff); }
+    #battle { position:absolute; left:50%; top:48%; min-width:600px; padding:22px 30px; text-align:center; border:1px solid #8f75cb; border-radius:24px; background:linear-gradient(140deg,#21173ce8,#121b31e8); box-shadow:0 25px 80px #000b; opacity:0; transform:translate(-50%,-50%) scale(.92); transition:.35s; } #battle.visible { opacity:1; transform:translate(-50%,-50%) scale(1); } #versus { display:flex; align-items:center; justify-content:space-between; gap:20px; font-size:24px; font-weight:800; } #versus .vs { color:#ffd875; font-size:18px; } #battle-detail { color:var(--muted); margin-top:10px; } .hint { color:var(--green); margin-top:8px; font-size:14px; }
+  </style>
+</head>
+<body>
+<main id="streammonsters-overlay" aria-live="polite">
+  <div id="event"></div>
+  <section id="card"><img id="art" alt=""><div><div id="kicker" class="kicker">Stream Monsters</div><h1 id="title" data-i18n="plugins.streamalchemy.streammonsters.readyHatch">Ready to hatch</h1><div id="subtitle">Viewers can check !inventory.</div><div id="progress"><div id="bar"></div></div><div class="hint">!inventory · !choose &lt;slot&gt; · !battle</div></div></section>
+  <section id="battle"><div class="kicker">Stream Monsters Duel</div><div id="versus"><span id="fighterA" data-i18n="plugins.streamalchemy.streammonsters.waiting">Waiting</span><span class="vs">VS</span><span id="fighterB" data-i18n="plugins.streamalchemy.streammonsters.waiting">Waiting</span></div><div id="battle-detail">Three transparent rounds</div></section>
+</main>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/i18n-client.js"></script>
+<script>
+(() => {
+  const doc = document; const node = id => doc.getElementById(id); let cardTimer = null; let battleTimer = null;
+  const value = (input, fallback = '') => String(input ?? fallback);
+  const itemName = item => value(item?.name || item?.gift_name || item?.giftName, 'Element Egg');
+  const showCard = ({ kicker, title, subtitle, imageUrl, progress = 0 }) => {
+    node('kicker').textContent = kicker; node('title').textContent = title; node('subtitle').textContent = subtitle; node('art').src = imageUrl || '';
+    node('bar').style.width = `${Math.max(0, Math.min(100, progress))}%`; node('card').classList.add('visible');
+    clearTimeout(cardTimer); cardTimer = setTimeout(() => node('card').classList.remove('visible'), 6500);
+  };
+  const showEvent = text => { node('event').textContent = text; node('event').classList.add('visible'); setTimeout(() => node('event').classList.remove('visible'), 8500); };
+  const showBattle = (left, right, detail) => { node('fighterA').textContent = left; node('fighterB').textContent = right; node('battle-detail').textContent = detail; node('battle').classList.add('visible'); clearTimeout(battleTimer); battleTimer = setTimeout(() => node('battle').classList.remove('visible'), 9000); };
+  const socket = typeof io === 'function' ? io() : null; if (!socket) return;
+  socket.on('streammonsters:stream_started', data => showEvent(`${value(data?.event?.element, 'Elemental')} Hour · eggs receive visible boosts`));
+  socket.on('streammonsters:egg_spawned', data => showCard({ kicker:`${value(data?.egg?.element, 'Element')} egg spawned`, title:itemName(data?.egg), subtitle:`${value(data?.userId, 'Viewer')}, check !inventory when it hatches.`, imageUrl:data?.egg?.image_url, progress:0 }));
+  socket.on('streammonsters:egg_boosted', data => showCard({ kicker:'Egg accelerated', title:itemName(data?.egg), subtitle:'A configured boost gift shortened the hatch time.', imageUrl:data?.egg?.image_url, progress:65 }));
+  socket.on('streammonsters:gift_combo', data => showCard({ kicker:'Gift combo!', title:itemName(data?.egg), subtitle:`Two different gifts combined for ${value(data?.userId, 'a viewer')}. The oldest egg gets a visible hatch boost.`, imageUrl:data?.egg?.image_url, progress:78 }));
+  socket.on('streammonsters:egg_hatched', data => showCard({ kicker:`${value(data?.monster?.rarity, 'Rare')} monster hatched`, title:itemName(data?.monster), subtitle:`${value(data?.userId, 'Viewer')} can select it with !choose.`, imageUrl:data?.monster?.image_url || data?.egg?.image_url, progress:100 }));
+  socket.on('streammonsters:battle_started', data => showBattle(itemName(data?.challenger), itemName(data?.defender), 'Three seeded rounds are starting…'));
+  socket.on('streammonsters:battle_completed', data => { const winner = data?.winner?.name || 'A Stream Monster'; showBattle(value(data?.battle?.monsterAId, 'Monster A'), value(data?.battle?.monsterBId, 'Monster B'), `${winner} wins the transparent three-round duel.`); });
+})();
+</script>
+</body>
+</html>

@@ -17,6 +17,14 @@ const { DEFAULT_CONFIG } = require('./backend/constants');
 const CraftingService = require('./craftingService');
 const SiliconFlowService = require('./siliconFlowService');
 const LightXService = require('./lightxService');
+const StreamMonstersDatabase = require('./backend/streammonsters/database');
+const StreamMonstersEngine = require('./backend/streammonsters/game-engine');
+const StreamMonstersRoutes = require('./backend/streammonsters/routes');
+const StreamMonstersBattleService = require('./backend/streammonsters/battle-service');
+const StreamMonstersChatCommands = require('./backend/streammonsters/chat-commands');
+const StreamMonstersGenerationPool = require('./backend/streammonsters/generation-pool');
+const StreamMonstersProgressionService = require('./backend/streammonsters/progression-service');
+const StreamMonstersManagedRuntimeInstaller = require('./backend/streammonsters/managed-runtime-installer');
 
 class StreamAlchemyPlugin {
   constructor(api) {
@@ -38,6 +46,23 @@ class StreamAlchemyPlugin {
 
     this.store = new StreamAlchemyDatabase(this.api.getDatabase(), logger);
     this.store.initialize();
+    this.streamMonstersStore = new StreamMonstersDatabase(this.api.getDatabase());
+    this.streamMonstersStore.initialize();
+    this.streamMonstersProgression = new StreamMonstersProgressionService({ store: this.streamMonstersStore });
+    this.streamMonstersEngine = new StreamMonstersEngine({
+      store: this.streamMonstersStore,
+      progression: this.streamMonstersProgression,
+      emit: (event, payload) => this.api.emit(event, payload),
+      config: this.config.streamMonsters
+    });
+    this.streamMonstersBattleService = new StreamMonstersBattleService({ store: this.streamMonstersStore });
+    this.streamMonstersChatCommands = new StreamMonstersChatCommands({
+      store: this.streamMonstersStore,
+      engine: this.streamMonstersEngine,
+      battleService: this.streamMonstersBattleService,
+      progression: this.streamMonstersProgression,
+      emit: (event, payload) => this.api.emit(event, payload)
+    });
     this.modelCatalog = new ModelCatalog();
 
     this.promptService = new PromptService({ promptVersion: this.config.promptVersion });
@@ -51,12 +76,20 @@ class StreamAlchemyPlugin {
       logger,
       catalog: this.modelCatalog
     });
+    this.streamMonstersManagedRuntime = new StreamMonstersManagedRuntimeInstaller({
+      dataDir: this.getPluginDataDir()
+    });
 
     this.generationService = new GenerationService(this.store, logger, {
       providerOrder: this.config.providerOrder,
       providers: this.providers,
       getConfig: () => this.config
     });
+    this.streamMonstersGenerationPool = new StreamMonstersGenerationPool({
+      store: this.streamMonstersStore,
+      generationService: this.generationService
+    });
+    this.streamMonstersEngine.generationPool = this.streamMonstersGenerationPool;
 
     this.craftingEngine = new CraftingEngine({
       store: this.store,
@@ -89,11 +122,30 @@ class StreamAlchemyPlugin {
       }
     });
     this.routes.register();
+    this.streamMonstersRoutes = new StreamMonstersRoutes({
+      api: this.api,
+      pluginDir: this.pluginDir,
+      store: this.streamMonstersStore,
+      engine: this.streamMonstersEngine,
+      generationPool: this.streamMonstersGenerationPool,
+      systemAnalyzer: this.systemAnalyzer,
+      managedRuntime: this.streamMonstersManagedRuntime,
+      localModelInstaller: this.localModelInstaller,
+      giftCatalogProvider: () => this.getStreamMonstersGiftCatalog(),
+      configProvider: {
+        getConfig: () => this.config,
+        updateConfig: updates => this.updateConfig(updates)
+      }
+    });
+    this.streamMonstersRoutes.register();
+    this.integrateStreamMonstersGCCE();
 
     this.api.registerTikTokEvent('gift', async data => {
       if (!this.config.enabled) return;
-      await this.eventProcessor.handleGiftEvent(data);
+      await this.handleStreamMonstersGift(data);
     });
+    this.api.registerTikTokEvent('chat', async data => this.handleStreamMonstersChat(data));
+    this.api.registerTikTokEvent('streamSessionStarted', async data => this.handleStreamMonstersSession(data));
 
     this.api.log('[STREAMALCHEMY] Relaunch runtime initialized', 'info');
   }
@@ -106,6 +158,15 @@ class StreamAlchemyPlugin {
       localGeneration: {
         ...DEFAULT_CONFIG.localGeneration,
         ...(stored.localGeneration || {})
+      },
+      streamMonsters: {
+        enabled: true,
+        creatorName: '',
+        hatchDurationMs: 30 * 60 * 1000,
+        maxUnhatchedEggs: 3,
+        elementRules: 'deterministic',
+        localRuntime: { state: 'not_installed', manifest: null },
+        ...(stored.streamMonsters || {})
       }
     };
   }
@@ -253,6 +314,10 @@ class StreamAlchemyPlugin {
       localGeneration: {
         ...this.config.localGeneration,
         ...localGenerationUpdates
+      },
+      streamMonsters: {
+        ...this.config.streamMonsters,
+        ...(updates.streamMonsters || {})
       }
     };
     this.api.setConfig('streamalchemy_config', this.config);
@@ -260,7 +325,107 @@ class StreamAlchemyPlugin {
   }
 
   async destroy() {
+    if (this.streamMonstersGCCE?.unregisterCommandsForPlugin) {
+      this.streamMonstersGCCE.unregisterCommandsForPlugin('streamalchemy');
+    }
     this.api.log('[STREAMALCHEMY] Relaunch runtime stopped', 'info');
+  }
+
+  getStreamMonstersGiftCatalog() {
+    try {
+      const database = this.api.getDatabase();
+      if (typeof database?.getGiftCatalog === 'function') return database.getGiftCatalog() || [];
+      const sqlite = database?.db || database;
+      if (!sqlite?.prepare) return [];
+      return sqlite.prepare(`
+        SELECT id, name, image_url, diamond_count
+        FROM gift_catalog
+        ORDER BY diamond_count DESC, id ASC
+        LIMIT 100
+      `).all();
+    } catch (error) {
+      this.api.log(`[STREAM MONSTERS] Gift catalog unavailable: ${error.message}`, 'debug');
+      return [];
+    }
+  }
+
+  integrateStreamMonstersGCCE() {
+    const gcce = this.api.pluginLoader?.loadedPlugins?.get('gcce')?.instance;
+    if (!gcce?.registerCommandsForPlugin || !gcce?.unregisterCommandsForPlugin) return false;
+    const definitions = [
+      ['inventory', 'Show your Stream Monsters inventory', 0, 0],
+      ['monsters', 'Show your Stream Monsters', 0, 0],
+      ['choose', 'Choose a monster by slot', 1, 1],
+      ['battle', 'Join the public Stream Monsters battle queue', 0, 0],
+      ['leavebattle', 'Leave the Stream Monsters battle queue', 0, 0],
+      ['monstershelp', 'Show Stream Monsters commands', 0, 0]
+    ].map(([name, description, minArgs, maxArgs]) => ({
+      name,
+      description,
+      syntax: `!${name}${minArgs ? ' <slot>' : ''}`,
+      permission: 'all',
+      enabled: true,
+      minArgs,
+      maxArgs,
+      category: 'Stream Monsters',
+      cooldown: { user: name === 'battle' ? 2000 : 1000, global: 250 },
+      handler: async (args, context) => this.streamMonstersChatCommands.handle(
+        { username: context?.username || context?.uniqueId || context?.userId },
+        `!${name}${Array.isArray(args) && args.length ? ` ${args.join(' ')}` : ''}`
+      )
+    }));
+    gcce.unregisterCommandsForPlugin('streamalchemy');
+    gcce.registerCommandsForPlugin('streamalchemy', definitions);
+    this.streamMonstersGCCE = gcce;
+    return true;
+  }
+
+  async handleStreamMonstersGift(data = {}) {
+    const userId = data.uniqueId || data.userId || data.username;
+    const giftId = Number.parseInt(data.giftId, 10);
+    const giftName = data.giftName || data.name;
+    const coinValue = Number.parseInt(data.diamondCount ?? data.coins ?? 0, 10) || 0;
+    const repeatCount = Math.max(Number.parseInt(data.repeatCount || 1, 10) || 1, 1);
+    if (!userId || !giftId || !giftName) {
+      this.api.log('[STREAMMONSTERS] Ignored invalid gift event', 'warn');
+      return;
+    }
+    for (let index = 0; index < repeatCount; index += 1) {
+      this.streamMonstersEngine.processGift({ userId, giftId, giftName, coinValue });
+    }
+    this.streamMonstersEngine.hatchReadyEggs(userId);
+  }
+
+  async handleStreamMonstersChat(data = {}) {
+    const userId = data.uniqueId || data.userId || data.username;
+    if (!userId) return;
+    const message = data.comment || data.message || data.text || '';
+    const result = this.streamMonstersChatCommands.handle({ userId, username: userId }, message);
+    if (result.status !== 'ignored') {
+      this.api.emit('streammonsters:chat_result', { userId, result });
+    }
+  }
+
+  async handleStreamMonstersSession(data = {}) {
+    const creatorName = data.username || data.uniqueId || null;
+    if (!this.config.streamMonsters.creatorName && creatorName) {
+      this.updateConfig({ streamMonsters: { creatorName } });
+    }
+    const streamKey = data.streamIdentity || `${creatorName || 'creator'}:${data.streamSessionId || data.roomId || 'session'}`;
+    const event = this.streamMonstersProgression.startStreamSession({ streamKey });
+    this.streamMonstersEngine.setStreamKey(streamKey);
+    this.api.emit('streammonsters:stream_started', {
+      creatorName: this.config.streamMonsters.creatorName || 'Creator',
+      event
+    });
+  }
+
+  selectStreamEvent(data = {}) {
+    const elements = ['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar'];
+    const source = String(data.streamSessionId || data.roomId || new Date().toISOString().slice(0, 10));
+    let hash = 0;
+    for (const char of source) hash = ((hash * 31) + char.charCodeAt(0)) >>> 0;
+    return { id: `elemental-hour:${hash % elements.length}`, element: elements[hash % elements.length], boostMultiplier: 2 };
   }
 }
 
