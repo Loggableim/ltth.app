@@ -56,7 +56,9 @@ const {
 
   mergeLiveHostSecrets,
 
-  applyLiveHostPreset
+  applyLiveHostPreset,
+
+  migrateSidekickConfig
 
 } = require('./brain/live-host-config');
 
@@ -437,6 +439,14 @@ class AnimazingPalPlugin {
 
     };
 
+    this.streamAssistantSessionStartedAt = new Date().toISOString();
+
+    this.streamAssistantEvents = [];
+
+    this.streamAssistantJoinBatch = null;
+
+    this.streamAssistantLastJoinGreetingAt = 0;
+
     this.liveHostIdleMotionTimer = null;
 
     this.liveHostLastAvatarActionAt = 0;
@@ -652,6 +662,11 @@ class AnimazingPalPlugin {
 
       }
 
+      const migration = this.migrateLegacySidekickState();
+      if (migration.migrated) {
+        this.api.log(`Stream Assistant migration imported ${migration.importedUsers} users and ${migration.importedMessages} messages`, 'info');
+      }
+
       
 
       this.api.log('Brain Engine initialized successfully', 'info');
@@ -712,6 +727,122 @@ class AnimazingPalPlugin {
 
     this.api.log('AnimazingPal Plugin initialized', 'info');
 
+  }
+
+  migrateLegacySidekickState() {
+    const liveHost = this.config?.brain?.liveHost;
+    const existingMarker = liveHost?.streamAssistant?.migration;
+    if (existingMarker?.version === 'sidekick-v1') {
+      return { migrated: false, reason: 'already-migrated', ...existingMarker };
+    }
+
+    const hasSidekickMemory = this.db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'sidekick_memory'").get();
+    const setting = this.db.prepare('SELECT value FROM settings WHERE key = ?').get('plugin:sidekick:config');
+    if (!hasSidekickMemory && !setting) {
+      return { migrated: false, reason: 'no-source' };
+    }
+
+    let sidekickConfig = {};
+    try {
+      sidekickConfig = setting?.value ? JSON.parse(setting.value) : {};
+    } catch (error) {
+      this.api.log(`Stream Assistant migration ignored invalid Sidekick config: ${error.message}`, 'warn');
+    }
+
+    const memoryDb = this.brainEngine?.memoryDb;
+    if (!memoryDb) {
+      return { migrated: false, reason: 'memory-unavailable' };
+    }
+
+    const rows = hasSidekickMemory ? this.db.prepare('SELECT * FROM sidekick_memory').all() : [];
+    const nextLiveHost = migrateSidekickConfig(liveHost || buildLiveHostDefaults(), sidekickConfig);
+    nextLiveHost.operatingMode = 'standalone';
+    const stats = { sourceUsers: rows.length, importedUsers: 0, importedMessages: 0 };
+    const streamerId = memoryDb.getStreamerId();
+    const insertProfile = this.db.prepare(`
+      INSERT INTO animazingpal_user_profiles
+        (streamer_id, username, nickname, first_seen, last_seen, last_interaction, interaction_count, stream_count, interaction_history, personality_notes)
+      VALUES (?, ?, ?, datetime(? / 1000, 'unixepoch'), datetime(? / 1000, 'unixepoch'), datetime(? / 1000, 'unixepoch'), ?, 1, ?, ?)
+      ON CONFLICT(streamer_id, username) DO UPDATE SET
+        nickname = COALESCE(NULLIF(excluded.nickname, ''), nickname),
+        last_seen = CASE WHEN excluded.last_seen > last_seen THEN excluded.last_seen ELSE last_seen END,
+        last_interaction = CASE WHEN excluded.last_interaction > last_interaction THEN excluded.last_interaction ELSE last_interaction END
+    `);
+    const insertMemory = this.db.prepare(`
+      INSERT INTO animazingpal_memories
+        (streamer_id, memory_type, content, context, importance, tags, source_user, source_event)
+      VALUES (?, 'sidekick-import', ?, ?, 0.35, ?, ?, 'sidekick-migration')
+    `);
+
+    const migrate = this.db.transaction(() => {
+      for (const row of rows) {
+        const username = String(row.uid || '').trim().slice(0, 128);
+        if (!username) continue;
+        const nickname = String(row.nickname || '').trim().slice(0, 128);
+        const lastSeen = Number(row.last_seen) || Date.now();
+        const firstSeen = Number(row.first_seen) || lastSeen;
+        let messages = [];
+        try {
+          const parsed = JSON.parse(row.messages || '[]');
+          messages = Array.isArray(parsed) ? parsed : [];
+        } catch (_) {
+          messages = [];
+        }
+        const normalizedMessages = messages
+          .map((entry) => typeof entry === 'string' ? { text: entry, ts: lastSeen } : entry)
+          .map((entry) => ({ text: String(entry?.text || '').trim().slice(0, 500), ts: Number(entry?.ts) || lastSeen }))
+          .filter((entry) => entry.text)
+          .slice(-100);
+        const counters = {
+          likes: Number(row.likes) || 0,
+          gifts: Number(row.gifts) || 0,
+          follows: Number(row.follows) || 0,
+          subs: Number(row.subs) || 0,
+          shares: Number(row.shares) || 0,
+          joins: Number(row.joins) || 0,
+          isSubscriber: Boolean(row.is_subscriber),
+          isFollower: Boolean(row.is_follower),
+          isModerator: Boolean(row.is_moderator)
+        };
+        insertProfile.run(
+          streamerId,
+          username,
+          nickname,
+          firstSeen,
+          lastSeen,
+          lastSeen,
+          Math.max(1, normalizedMessages.length),
+          JSON.stringify(normalizedMessages),
+          JSON.stringify({ sidekickMigration: { counters, background: row.background || '{}' } })
+        );
+        for (const message of normalizedMessages) {
+          insertMemory.run(
+            streamerId,
+            `${nickname || username} said: "${message.text}"`,
+            JSON.stringify({ importedAt: Date.now(), originalTimestamp: message.ts }),
+            JSON.stringify(['sidekick-import']),
+            username
+          );
+          stats.importedMessages += 1;
+        }
+        stats.importedUsers += 1;
+      }
+      const marker = {
+        version: 'sidekick-v1',
+        migratedAt: new Date().toISOString(),
+        ...stats
+      };
+      nextLiveHost.streamAssistant.migration = marker;
+      this.config.brain.liveHost = nextLiveHost;
+      this.db.prepare(`
+        INSERT INTO settings (key, value) VALUES (?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+      `).run('plugin:animazingpal:config', JSON.stringify(this.config));
+      return marker;
+    });
+
+    const marker = migrate();
+    return { migrated: true, ...marker };
   }
 
 
@@ -2549,6 +2680,12 @@ class AnimazingPalPlugin {
 
     });
 
+    this.api.registerRoute('get', '/overlay/animazingpal/stream-assistant', (req, res) => {
+
+      res.sendFile(path.join(__dirname, 'overlay', 'stream-assistant-hud.html'));
+
+    });
+
 
 
     this.api.registerRoute('get', '/api/animazingpal/platforms', (req, res) => {
@@ -2708,6 +2845,34 @@ class AnimazingPalPlugin {
         presets: ['safe-live', 'production-24-7']
 
       });
+
+    });
+
+    this.api.registerRoute('get', '/api/animazingpal/live-host/stream-assistant/status', (req, res) => {
+
+      res.json({ success: true, ...this.getStreamAssistantStatus() });
+
+    });
+
+    this.api.registerRoute('get', '/api/animazingpal/live-host/stream-assistant/analytics', (req, res) => {
+
+      res.json({ success: true, analytics: this.getStreamAssistantAnalytics() });
+
+    });
+
+    this.api.registerRoute('get', '/api/animazingpal/live-host/stream-assistant/events', (req, res) => {
+
+      const requestedLimit = Number(req.query?.limit);
+
+      const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(100, requestedLimit)) : 50;
+
+      res.json({ success: true, events: this.getStreamAssistantEvents(limit) });
+
+    });
+
+    this.api.registerRoute('post', '/api/animazingpal/live-host/stream-assistant/reset', (req, res) => {
+
+      res.json({ success: true, ...this.resetStreamAssistantSession() });
 
     });
 
@@ -7302,9 +7467,9 @@ class AnimazingPalPlugin {
       this.stopLiveHostIdleMotion();
     }
 
-    if (!liveHost.enabled || !liveHost.tts.enabled || !message) {
+    if (!liveHost.enabled || liveHost.streamAssistant?.enabled === false || liveHost.streamAssistant?.muted === true || !liveHost.tts.enabled || !message) {
 
-      return { success: false, blocked: true, reason: 'host_tts_disabled' };
+      return { success: false, blocked: true, reason: liveHost.streamAssistant?.muted === true ? 'stream-assistant-muted' : 'host_tts_disabled' };
 
     }
 
@@ -7665,6 +7830,30 @@ class AnimazingPalPlugin {
 
     }
 
+    if (!Array.isArray(this.streamAssistantEvents)) {
+
+      this.streamAssistantEvents = [];
+
+    }
+
+    if (!this.streamAssistantSessionStartedAt) {
+
+      this.streamAssistantSessionStartedAt = new Date().toISOString();
+
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(this, 'streamAssistantJoinBatch')) {
+
+      this.streamAssistantJoinBatch = null;
+
+    }
+
+    if (!Number.isFinite(this.streamAssistantLastJoinGreetingAt)) {
+
+      this.streamAssistantLastJoinGreetingAt = 0;
+
+    }
+
     if (!this.liveHostDiagnostics) {
 
       this.liveHostDiagnostics = {
@@ -7917,6 +8106,14 @@ class AnimazingPalPlugin {
 
     this.liveHostDiagnostics.lastSourceEventType = eventType || 'unknown';
 
+    this.api.emit?.('animazingpal:stream-assistant:source-event', {
+
+      eventType: this.liveHostDiagnostics.lastSourceEventType,
+
+      checkedAt: this.liveHostDiagnostics.lastSourceEventAt
+
+    });
+
   }
 
 
@@ -7977,6 +8174,16 @@ class AnimazingPalPlugin {
     }
 
     this.liveHostDiagnostics.lastEventResult = outcome;
+
+    this.streamAssistantEvents.push(outcome);
+
+    if (this.streamAssistantEvents.length > 100) {
+
+      this.streamAssistantEvents.splice(0, this.streamAssistantEvents.length - 100);
+
+    }
+
+    this.api.emit?.('animazingpal:stream-assistant:event', outcome);
 
     return outcome;
 
@@ -8053,6 +8260,278 @@ class AnimazingPalPlugin {
       diagnostics: { ...this.liveHostDiagnostics }
 
     };
+
+  }
+
+
+
+  queueStreamAssistantJoin(data = {}) {
+
+    this.ensureLiveHostRuntime();
+
+    const liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {});
+
+    const joinGreetings = liveHost.streamAssistant?.joinGreetings || {};
+
+    if (liveHost.streamAssistant?.enabled === false || !joinGreetings.enabled) {
+
+      return { queued: false, reason: 'join-greetings-disabled' };
+
+    }
+
+    const now = Date.now();
+
+    const cooldownMs = Math.max(0, Number(joinGreetings.globalCooldownSeconds) || 0) * 1000;
+
+    if (cooldownMs > 0 && now - this.streamAssistantLastJoinGreetingAt < cooldownMs) {
+
+      return { queued: false, reason: 'join-greeting-cooldown' };
+
+    }
+
+    const username = String(data.uniqueId || data.userId || data.username || data.nickname || 'Viewer').trim().slice(0, 100);
+
+    const nickname = String(data.nickname || username || 'Viewer').trim().slice(0, 100);
+
+    if (!username) return { queued: false, reason: 'missing-viewer' };
+
+    if (!this.streamAssistantJoinBatch) {
+
+      this.streamAssistantJoinBatch = { users: new Map(), timer: null, queuedAt: now };
+
+    }
+
+    this.streamAssistantJoinBatch.users.set(username.toLowerCase(), { username, nickname });
+
+    if (!this.streamAssistantJoinBatch.timer) {
+
+      const batching = liveHost.streamAssistant?.batching || {};
+
+      const delayMs = Math.max(
+
+        Math.max(0, Number(joinGreetings.greetAfterSeconds) || 0) * 1000,
+
+        Math.max(0, Number(batching.windowSeconds) || 0) * 1000
+
+      );
+
+      this.streamAssistantJoinBatch.timer = setTimeout(() => {
+
+        this.flushStreamAssistantJoinBatch().catch(error => this.api.log(`Stream Assistant join batch failed: ${error.message}`, 'warn'));
+
+      }, delayMs);
+
+      this.streamAssistantJoinBatch.timer.unref?.();
+
+    }
+
+    return { queued: true, username, queuedAt: this.streamAssistantJoinBatch.queuedAt };
+
+  }
+
+
+
+  async flushStreamAssistantJoinBatch() {
+
+    this.ensureLiveHostRuntime();
+
+    const batch = this.streamAssistantJoinBatch;
+
+    this.streamAssistantJoinBatch = null;
+
+    if (!batch) return { success: false, reason: 'no-join-batch' };
+
+    if (batch.timer) clearTimeout(batch.timer);
+
+    const liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {});
+
+    const joinGreetings = liveHost.streamAssistant?.joinGreetings || {};
+
+    if (liveHost.streamAssistant?.enabled === false || liveHost.streamAssistant?.muted === true || !joinGreetings.enabled) {
+
+      return { success: false, blocked: true, reason: 'join-greetings-disabled' };
+
+    }
+
+    const now = Date.now();
+
+    const cooldownMs = Math.max(0, Number(joinGreetings.globalCooldownSeconds) || 0) * 1000;
+
+    if (cooldownMs > 0 && now - this.streamAssistantLastJoinGreetingAt < cooldownMs) {
+
+      return { success: false, blocked: true, reason: 'join-greeting-cooldown' };
+
+    }
+
+    const maxItems = Math.max(1, Number(liveHost.streamAssistant?.batching?.maxItems) || 8);
+
+    const names = [...batch.users.values()].slice(0, maxItems).map(item => item.nickname || item.username).filter(Boolean);
+
+    if (!names.length) return { success: false, reason: 'empty-join-batch' };
+
+    const separator = liveHost.streamAssistant?.batching?.separator || ' • ';
+
+    const list = names.join(separator).slice(0, Math.max(20, Number(liveHost.streamAssistant?.batching?.maxChars) || 320));
+
+    const message = names.length === 1 ? `Willkommen, ${list}!` : `Willkommen im Stream: ${list}!`;
+
+    const speech = await this.speakHostResponse(message, {
+
+      eventType: 'join',
+
+      username: 'Stream Assistant',
+
+      userId: 'animazingpal-stream-assistant',
+
+      source: 'animazingpal-stream-assistant-join'
+
+    });
+
+    if (speech?.success !== false && !speech?.blocked) {
+
+      this.streamAssistantLastJoinGreetingAt = now;
+
+      this.recordLiveHostResponseSlot();
+
+    }
+
+    const outcome = this.recordLiveHostEventOutcome('join-batch', {
+
+      handled: true,
+
+      responded: speech?.success !== false && !speech?.blocked,
+
+      reason: speech?.success === false || speech?.blocked ? (speech.reason || speech.error || 'speech-failed') : 'join-greeting',
+
+      decision: { users: names.length, queuedAt: new Date(batch.queuedAt).toISOString() }
+
+    });
+
+    return { ...speech, outcome, users: names };
+
+  }
+
+
+
+  getStreamAssistantAnalytics() {
+
+    this.ensureLiveHostRuntime();
+
+    const diagnostics = this.liveHostDiagnostics || {};
+
+    const processed = Number(diagnostics.processedEvents) || 0;
+
+    const responded = Number(diagnostics.respondedEvents) || 0;
+
+    return {
+
+      sessionStartedAt: this.streamAssistantSessionStartedAt,
+
+      processedEvents: processed,
+
+      respondedEvents: responded,
+
+      skippedEvents: Number(diagnostics.skippedEvents) || 0,
+
+      dedupedEvents: Number(diagnostics.dedupedEvents) || 0,
+
+      rateLimitedResponses: Number(diagnostics.rateLimitedResponses) || 0,
+
+      responseRate: processed > 0 ? responded / processed : 0,
+
+      recentEventCount: this.streamAssistantEvents.length
+
+    };
+
+  }
+
+
+
+  getStreamAssistantEvents(limit = 50) {
+
+    this.ensureLiveHostRuntime();
+
+    return this.streamAssistantEvents.slice(-Math.max(1, Math.min(100, Number(limit) || 50))).reverse();
+
+  }
+
+
+
+  getStreamAssistantStatus() {
+
+    const liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {});
+
+    return {
+
+      config: {
+
+        enabled: liveHost.streamAssistant?.enabled !== false,
+
+        muted: liveHost.streamAssistant?.muted === true,
+
+        overlayUrl: '/overlay/animazingpal/stream-assistant'
+
+      },
+
+      runtime: this.getLiveHostRuntimeStatus(),
+
+      analytics: this.getStreamAssistantAnalytics(),
+
+      events: this.getStreamAssistantEvents(20)
+
+    };
+
+  }
+
+
+
+  resetStreamAssistantSession() {
+
+    this.ensureLiveHostRuntime();
+
+    this.streamAssistantSessionStartedAt = new Date().toISOString();
+
+    this.streamAssistantEvents = [];
+
+    this.liveHostResponseTimes = [];
+
+    if (this.streamAssistantJoinBatch?.timer) clearTimeout(this.streamAssistantJoinBatch.timer);
+
+    this.streamAssistantJoinBatch = null;
+
+    this.streamAssistantLastJoinGreetingAt = 0;
+
+    this.liveHostEventDeduper?.destroy?.();
+
+    this.liveHostEventDeduper = new EventDeduper({ ttl: 120, maxSize: 5000 });
+
+    this.liveHostDiagnostics = {
+
+      ...this.liveHostDiagnostics,
+
+      dedupedEvents: 0,
+
+      rateLimitedResponses: 0,
+
+      lastDedupedSignature: null,
+
+      lastRateLimitedAt: null,
+
+      lastEventResult: null,
+
+      processedEvents: 0,
+
+      respondedEvents: 0,
+
+      skippedEvents: 0
+
+    };
+
+    const status = this.getStreamAssistantStatus();
+
+    this.api.emit?.('animazingpal:stream-assistant:reset', status);
+
+    return status;
 
   }
 
@@ -9565,15 +10044,9 @@ class AnimazingPalPlugin {
 
     const event = liveHost?.events?.[eventType];
 
-    if (!liveHost?.enabled) return { handled: false };
+    if (!liveHost?.enabled || liveHost.streamAssistant?.enabled === false) return { handled: false, responded: false, reason: 'stream-assistant-disabled' };
 
     if (!options.delegated) this.recordLiveHostSourceEvent(eventType);
-
-    if (!options.delegated && (this.liveHostOperatingModeOverride || liveHost.operatingMode || 'standalone') === 'sidekick') {
-
-      return { handled: false, responded: false, reason: 'delegated-to-sidekick' };
-
-    }
 
     const complete = result => {
 
@@ -9582,6 +10055,26 @@ class AnimazingPalPlugin {
       return result;
 
     };
+
+    if (eventType === 'join' && !options.delegated && liveHost.streamAssistant?.joinGreetings?.enabled) {
+
+      const dedupe = this.isDuplicateLiveHostEvent(eventType, data);
+
+      if (dedupe.duplicate) {
+
+        return complete({ handled: true, responded: false, duplicate: true, reason: 'duplicate' });
+
+      }
+
+      const queued = this.queueStreamAssistantJoin(data);
+
+      if (queued.queued) {
+
+        return complete({ handled: true, responded: false, reason: 'join-batched' });
+
+      }
+
+    }
 
     if (!event?.enabled) return complete({ handled: false, responded: false, reason: 'event-disabled' });
 
@@ -11160,13 +11653,15 @@ class AnimazingPalPlugin {
 
     this.liveHostHostSpeechHistory.push(record);
 
-    const cutoff = Date.now() - 300000;
+    const conversation = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {}).streamAssistant?.conversation || {};
+
+    const cutoff = Date.now() - Math.max(1000, Number(conversation.conversationWindowMs) || 300000);
 
     this.liveHostHostSpeechHistory = this.liveHostHostSpeechHistory
 
       .filter(item => item.timestamp >= cutoff)
 
-      .slice(-40);
+      .slice(-Math.max(1, Number(conversation.maxRecentUtterances) || 20));
 
     return record;
 
@@ -11254,12 +11749,13 @@ class AnimazingPalPlugin {
     const normalizedText = normalizeHostSpeechText(cleanText);
 
     const features = buildHostSpeechFeatures(cleanText, response, liveHost);
-    const isSidekickMode = String(liveHost.operatingMode || '').toLowerCase() === 'sidekick';
+    const conversation = liveHost.streamAssistant?.conversation || {};
+    const conversationEnabled = liveHost.streamAssistant?.enabled !== false && conversation.enabled !== false;
     const recentAcceptedSpeechAt = this.lastHostSpeechDecision?.respond === true
       ? this.lastHostSpeechDecisionAt
       : null;
-    const conversationWindowMs = Math.max(15000, Math.max(0, Number(response.hostContextCooldownMs) || 0));
-    const conversationalFollowUp = isSidekickMode
+    const conversationWindowMs = Math.max(15000, Number(conversation.conversationActiveWindowMs) || Number(response.hostContextCooldownMs) || 0);
+    const conversationalFollowUp = conversationEnabled
       && Number.isFinite(recentAcceptedSpeechAt)
       && (timestamp - recentAcceptedSpeechAt) < conversationWindowMs
       && !features.isGreeting
@@ -11309,7 +11805,7 @@ class AnimazingPalPlugin {
 
 
 
-    if (!liveHost.enabled) return reject('live-host-disabled');
+    if (!liveHost.enabled || liveHost.streamAssistant?.enabled === false) return reject('stream-assistant-disabled');
     if (!asr.enabled) return reject('asr-disabled');
     if (!normalizedText) return reject('empty');
     if (cleanText.length < Math.max(1, Number(asr.minTranscriptChars) || 1)) return reject('too_short', 0);
@@ -11371,7 +11867,7 @@ class AnimazingPalPlugin {
 
 
 
-    const echoWindowMs = Math.max(1000, Number(response.hostContextCooldownMs) || 12000);
+    const echoWindowMs = Math.max(1000, Number(conversation.echoWindowMs) || Number(response.hostContextCooldownMs) || 12000);
     const assistantEchoWindowMs = Math.max(echoWindowMs, 15000);
 
     if (this._hasRecentLiveHostSpeechMatch(normalizedText, 'assistant', timestamp, assistantEchoWindowMs)) return reject('echo', score);
@@ -11527,7 +12023,7 @@ class AnimazingPalPlugin {
 
 
 
-    if (!liveHost?.enabled) return complete({ handled: false, responded: false, reason: 'live-host-disabled' });
+    if (!liveHost?.enabled || liveHost.streamAssistant?.enabled === false) return complete({ handled: false, responded: false, reason: 'stream-assistant-disabled' });
 
     if (!event?.enabled) return complete({ handled: false, responded: false, reason: 'event-disabled' });
 
@@ -11825,7 +12321,7 @@ class AnimazingPalPlugin {
 
   setLiveHostOperatingMode(mode, options = {}) {
 
-    if (!['standalone', 'sidekick'].includes(mode)) return false;
+    if (mode !== 'standalone') return false;
 
     if (options.persist === false) {
 
@@ -14678,6 +15174,14 @@ class AnimazingPalPlugin {
 
 
     this.stopLiveHostIdleMotion();
+
+    if (this.streamAssistantJoinBatch?.timer) {
+
+      clearTimeout(this.streamAssistantJoinBatch.timer);
+
+    }
+
+    this.streamAssistantJoinBatch = null;
 
     
 

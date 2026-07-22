@@ -24,7 +24,6 @@ const OBS_OVERLAY_DIMENSIONS = Object.freeze({
   'music-bot': { width: 1280, height: 720 },
   'quiz-show': { width: 1280, height: 720 },
   schnorrbecher: { width: 1280, height: 720 },
-  sidekick: { width: 1280, height: 720 },
   spotlight: { width: 1280, height: 720 },
   streamalchemy: { width: 1280, height: 720 },
   'stt-ticker': { width: 1280, height: 720 },

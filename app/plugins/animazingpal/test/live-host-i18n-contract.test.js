@@ -23,6 +23,27 @@ describe('AnimazingPal live-host localization contract', () => {
 
     expect(liveHost).toEqual(expect.any(Object));
     expect(Object.keys(liveHost).length).toBeGreaterThan(0);
+    expect(liveHost.stream_assistant?.hud).toEqual(expect.objectContaining({
+      title: expect.any(String),
+      connecting: expect.any(String),
+      events: expect.any(String),
+      answers: expect.any(String)
+    }));
+    expect(liveHost.stream_assistant?.ui).toEqual(expect.objectContaining({
+      description: expect.any(String),
+      host_name: expect.any(String),
+      join_greetings: expect.any(String),
+      obs_hud: expect.any(String),
+      migration_note: expect.any(String)
+    }));
+  });
+
+  test('ships the Stream Assistant HUD with locale loading and stable i18n keys', () => {
+    const hud = fs.readFileSync(path.join(pluginRoot, 'overlay', 'stream-assistant-hud.html'), 'utf8');
+
+    expect(hud).toContain("/plugins/animazingpal/locales/${getLocale()}.json");
+    expect(hud).toContain('plugins.animazingpal.live_host.stream_assistant.hud.title');
+    expect(hud).toContain('data-i18n');
   });
 
   test('resolves the remaining bundle, warm-up, test, and memory-search fields in every locale', () => {
@@ -37,7 +58,7 @@ describe('AnimazingPal live-host localization contract', () => {
       '#bundleName': { de: 'Anzeigename', en: 'Display name', es: 'Nombre visible', fr: "Nom d’affichage" },
       '#bundlePitch': { de: 'Tonhöhe', en: 'Pitch', es: 'Tono', fr: 'Hauteur' },
       '#bundlePriority': { de: 'Queue-Priorität', en: 'Queue priority', es: 'Prioridad de cola', fr: 'Priorité de file' },
-      '#bundleSidekickName': { de: 'Sidekick-Name für diesen Avatar', en: 'Sidekick name for this avatar', es: 'Nombre de Sidekick para este avatar', fr: 'Nom Sidekick pour cet avatar' },
+      '#bundleSidekickName': { de: 'Assistenzname für diesen Avatar', en: 'Assistant name for this avatar', es: 'Nombre del asistente para este avatar', fr: "Nom de l'assistant pour cet avatar" },
       '#bundleSpeed': { de: 'Tempo', en: 'Speed', es: 'Velocidad', fr: 'Vitesse' },
       '#bundleVolume': { de: 'Lautstärke', en: 'Volume', es: 'Volumen', fr: 'Niveau sonore' },
       '#greetingWarmupLimit': { de: 'Top-User Limit', en: 'Top user limit', es: 'Límite de usuarios principales', fr: 'Limite des principaux utilisateurs' },

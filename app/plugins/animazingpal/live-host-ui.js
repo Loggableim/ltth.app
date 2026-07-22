@@ -66,7 +66,7 @@
     'Fish.audio': 'copy.fish_audio',
     'Gift aus Katalog wählen...': 'copy.choose_catalog_gift',
     'Gift-Namen als Fallback, kommasepariert': 'fields.bundle_gift_names',
-    'Intelligenter Live Host': 'copy.title',
+    'Stream Assistant': 'copy.title',
     'Jetzt lesend verbinden': 'copy.connect_readonly',
     'Live Host aktiv': 'copy.host_enabled',
     'Lautstärke': 'fields.bundle_volume',
@@ -75,7 +75,7 @@
     'Modus speichern': 'copy.save_mode',
     'Pflicht-Setup: TikTok-Kanal, Fish.audio-Stimme und CABLE-Ausgabegerät auswählen; danach den Preflight ausführen.': 'copy.required_setup',
     'Speichern': 'copy.save',
-    'Sidekick-Name für diesen Avatar': 'fields.bundle_sidekick_name',
+    'Assistant-Name für diesen Avatar': 'fields.bundle_sidekick_name',
     'Tempo': 'fields.bundle_speed',
     'Testtext': 'fields.test_text',
     'TikTok-LIVE-Ereignisquelle': 'copy.tiktok_event_source',
@@ -88,7 +88,15 @@
   function liveHostText(key, fallback, params = {}) {
     const translationKey = `plugins.animazingpal.live_host.${key}`;
     const translated = window.i18n?.t?.(translationKey, params);
-    return translated && translated !== translationKey ? translated : fallback;
+    if (translated && translated !== translationKey) return translated;
+    if (typeof window.translateRuntime === 'function') {
+      return window.translateRuntime(translationKey, fallback, params);
+    }
+    return String(fallback || '').replace(/\{([^}]+)\}/g, (match, name) => params[name] ?? match);
+  }
+
+  function streamAssistantText(key, fallback, params = {}) {
+    return liveHostText(`stream_assistant.ui.${key}`, fallback, params);
   }
 
   function localizeLiveHostText(text) {
@@ -419,11 +427,10 @@
     const root = document.getElementById('liveHostSettings');
     if (!root || !state.config) return;
     const markup = `
-      <div class="card flex flex-wrap items-center gap-3"><h2 class="text-xl font-bold flex-1">Intelligenter Live Host</h2>
-        ${input('enabled', 'Live Host aktiv', { type: 'checkbox' })}
+      <div class="card flex flex-wrap items-center gap-3"><h2 class="text-xl font-bold flex-1">Stream Assistant</h2>
+        ${input('enabled', 'Stream Assistant aktiv', { type: 'checkbox' })}
         ${input('operatingMode', 'Betriebsmodus', { type: 'select', options: [
-          { value: 'standalone', label: 'Standalone Host' },
-          { value: 'sidekick', label: 'Sidekick / Streamer-Assistent' }
+          { value: 'standalone', label: 'AnimazingPal Stream Assistant' }
         ] })}
         <button class="btn btn-primary" data-livehost-save="enabled">Aktivierung speichern</button>
         <button class="btn btn-primary" data-livehost-save="operatingMode">Modus speichern</button>
@@ -433,6 +440,7 @@
         <p class="basis-full text-sm text-yellow-300">Pflicht-Setup: TikTok-Kanal, Fish.audio-Stimme und CABLE-Ausgabegerät auswählen; danach den Preflight ausführen.</p>
         <div class="basis-full">${renderPreflightStatus()}</div>
       </div>
+      ${renderStreamAssistant()}
       <section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">TikTok-LIVE-Ereignisquelle</h2><div class="grid grid-cols-1 md:grid-cols-3 gap-3">
         ${input('source.watchdogIntervalMs', 'Watchdog-Intervall (ms)', { type: 'number', min: 5000, max: 300000 })}
         ${input('source.eventStaleMs', 'Event-Stale-Schwelle (ms)', { type: 'number', min: 30000, max: 3600000 })}
@@ -460,7 +468,7 @@
         ${input('response.hostContextCooldownMs', 'Host-STT aktive Pause (ms)', { type: 'number', min: 0, max: 3600000 })}
         ${input('response.hostOvertalkCooldownMs', 'Anti-Overtalk (ms)', { type: 'number', min: 0, max: 300000 })}
         ${input('response.hostLongFormWordLimit', 'Langform-Wortlimit', { type: 'number', min: 1, max: 500 })}
-        ${input('response.sidekickName', 'Sidekick-Name global')}
+        ${input('response.sidekickName', 'Assistenzname')}
         ${input('response.maxSentences', 'Max. Sätze', { type: 'number', min: 1, max: 10 })}${input('response.maxCharacters', 'Max. Zeichen', { type: 'number', min: 20, max: 4000 })}
         ${input('response.language', 'Sprache')}${input('response.cacheEnabled', 'Cache aktiv', { type: 'checkbox' })}
         ${input('response.cacheTtlMs', 'Cache TTL (ms)', { type: 'number', min: 0 })}${input('response.contextMessages', 'Kontextnachrichten', { type: 'number', min: 0, max: 100 })}
@@ -510,6 +518,46 @@
     </div></section>`;
   }
 
+  function renderStreamAssistant() {
+    const assistant = state.streamAssistant || {};
+    const runtime = assistant.runtime || {};
+    const diagnostics = runtime.diagnostics || {};
+    const migration = get('streamAssistant.migration');
+    const overlayUrl = `${window.location.origin}/overlay/animazingpal/stream-assistant`;
+    const t = (key, fallback, params = {}) => streamAssistantText(key.replace('plugins.animazingpal.live_host.', ''), fallback, params);
+    const migrationNote = migration
+      ? `<p class="text-xs text-green-300 mt-3">${escapeHtml(t('plugins.animazingpal.live_host.stream_assistant.ui.migration_note', 'Übernommene Legacy-Daten: {users} Profile, {memories} Erinnerungen. Die Quelle bleibt unverändert.', { users: migration.importedUsers || 0, memories: migration.importedMessages || 0 }))}</p>`
+      : '';
+    return `<section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">${escapeHtml(t('plugins.animazingpal.live_host.stream_assistant.ui.title', 'Stream Assistant'))}</h2>
+      <p class="text-sm text-gray-400 mb-3">${escapeHtml(t('plugins.animazingpal.live_host.stream_assistant.ui.description', 'AnimazingPal verarbeitet Chat, Host-Mikrofon, Memory, TTS und Avatar-Ausgabe in einer Laufzeit. Echo- und Overtalk-Schutz verwenden dieselben Brain- und Live-Host-Gates.'))}</p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        ${input('streamAssistant.enabled', t('plugins.animazingpal.live_host.stream_assistant.ui.enabled', 'Stream Assistant aktiv'), { type: 'checkbox' })}
+        ${input('streamAssistant.muted', t('plugins.animazingpal.live_host.stream_assistant.ui.muted', 'Ausgabe stummschalten'), { type: 'checkbox' })}
+        ${input('streamAssistant.conversation.enabled', t('plugins.animazingpal.live_host.stream_assistant.ui.conversation_enabled', 'Host-Gespräch aktiv'), { type: 'checkbox' })}
+        ${input('streamAssistant.conversation.hostName', t('plugins.animazingpal.live_host.stream_assistant.ui.host_name', 'Host-Name'))}
+        ${input('streamAssistant.conversation.minHostSpeechChars', t('plugins.animazingpal.live_host.stream_assistant.ui.min_host_chars', 'Min. Host-Zeichen'), { type: 'number', min: 1, max: 500 })}
+        ${input('streamAssistant.conversation.echoWindowMs', t('plugins.animazingpal.live_host.stream_assistant.ui.echo_window', 'Echo-Schutz (ms)'), { type: 'number', min: 1000, max: 600000 })}
+        ${input('streamAssistant.conversation.maxRecentUtterances', t('plugins.animazingpal.live_host.stream_assistant.ui.recent_utterances', 'Gesprächsverlauf'), { type: 'number', min: 1, max: 100 })}
+        ${input('streamAssistant.conversation.conversationWindowMs', t('plugins.animazingpal.live_host.stream_assistant.ui.conversation_window', 'Gesprächsfenster (ms)'), { type: 'number', min: 1000, max: 3600000 })}
+        ${input('streamAssistant.conversation.conversationActiveWindowMs', t('plugins.animazingpal.live_host.stream_assistant.ui.active_window', 'Aktivfenster (ms)'), { type: 'number', min: 1000, max: 3600000 })}
+        ${input('streamAssistant.conversation.conversationTurnLimit', t('plugins.animazingpal.live_host.stream_assistant.ui.turn_limit', 'Turn-Limit'), { type: 'number', min: 1, max: 100 })}
+        ${input('streamAssistant.joinGreetings.enabled', t('plugins.animazingpal.live_host.stream_assistant.ui.join_greetings', 'Join-Begrüßungen'), { type: 'checkbox' })}
+        ${input('streamAssistant.joinGreetings.greetAfterSeconds', t('plugins.animazingpal.live_host.stream_assistant.ui.join_delay', 'Join nach Sekunden'), { type: 'number', min: 0, max: 3600 })}
+        ${input('streamAssistant.joinGreetings.activeTtlSeconds', t('plugins.animazingpal.live_host.stream_assistant.ui.active_ttl', 'Aktiv-TTL (Sek.)'), { type: 'number', min: 1, max: 3600 })}
+        ${input('streamAssistant.joinGreetings.minIdleSinceLastOutputSec', t('plugins.animazingpal.live_host.stream_assistant.ui.idle_output', 'Min. Ausgabe-Leerlauf (Sek.)'), { type: 'number', min: 0, max: 3600 })}
+        ${input('streamAssistant.joinGreetings.globalCooldownSeconds', t('plugins.animazingpal.live_host.stream_assistant.ui.join_cooldown', 'Join-Cooldown (Sek.)'), { type: 'number', min: 0, max: 86400 })}
+        ${input('streamAssistant.batching.windowSeconds', t('plugins.animazingpal.live_host.stream_assistant.ui.batch_window', 'Batch-Fenster (Sek.)'), { type: 'number', min: 0, max: 300 })}
+        ${input('streamAssistant.batching.maxItems', t('plugins.animazingpal.live_host.stream_assistant.ui.batch_items', 'Batch-Elemente'), { type: 'number', min: 1, max: 100 })}
+        ${input('streamAssistant.batching.maxChars', t('plugins.animazingpal.live_host.stream_assistant.ui.batch_chars', 'Batch-Zeichen'), { type: 'number', min: 20, max: 4000 })}
+        ${input('streamAssistant.batching.separator', t('plugins.animazingpal.live_host.stream_assistant.ui.batch_separator', 'Batch-Trenner'))}
+      </div>
+      <div class="mt-3 text-sm text-gray-400">${escapeHtml(t('plugins.animazingpal.live_host.stream_assistant.ui.session_summary', 'Session: {processed} verarbeitet · {responses} Antworten · {deduped} Duplikate', { processed: diagnostics.processedEvents || 0, responses: diagnostics.respondedEvents || 0, deduped: diagnostics.dedupedEvents || 0 }))}</div>
+      <p class="mt-2 text-sm">${escapeHtml(t('plugins.animazingpal.live_host.stream_assistant.ui.obs_hud', 'OBS-HUD'))}: <code class="text-cyan-300 select-all">${escapeHtml(overlayUrl)}</code></p>
+      <div class="mt-3 flex flex-wrap gap-3"><button class="btn btn-primary" data-livehost-save="streamAssistant">${escapeHtml(t('plugins.animazingpal.live_host.stream_assistant.ui.save', 'Stream Assistant speichern'))}</button><button class="btn btn-secondary" data-stream-assistant-reset>${escapeHtml(t('plugins.animazingpal.live_host.stream_assistant.ui.reset', 'Session-Analytics und Ereignislog zurücksetzen'))}</button></div>
+      ${migrationNote}
+    </div></section>`;
+  }
+
   function renderTtsAudio() {
     return `<section class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4"><div class="card"><h2 class="text-xl font-bold mb-3">Fish.audio</h2><div class="grid grid-cols-2 gap-3">
       ${input('tts.enabled', 'TTS aktiv', { type: 'checkbox' })}${input('tts.voiceId', 'Globale Host-Stimme', { type: 'select', options: voiceOptions() })}
@@ -553,7 +601,7 @@
       <div id="avatarBundleList" class="mt-4 space-y-2">${bundles.length ? bundles.map(bundle => `<div class="flex items-center gap-2 bg-gray-800 p-2 rounded"><strong class="flex-1">${escapeHtml(bundle.name || bundle.id)}${bundle.sidekickName ? ` (${escapeHtml(bundle.sidekickName)})` : ''}</strong><span class="text-gray-400">${escapeHtml((bundle.giftIds || bundle.gifts || []).join(', '))}</span><button class="btn btn-secondary" data-bundle-edit="${escapeHtml(bundle.id)}">Bearbeiten</button><button class="btn btn-success" data-bundle-activate="${escapeHtml(bundle.id)}">Aktivieren</button><button class="btn btn-danger" data-bundle-delete="${escapeHtml(bundle.id)}">Löschen</button></div>`).join('') : '<p class="text-gray-400">Noch keine Bundles.</p>'}</div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
         <input class="input" id="bundleId" placeholder="Bundle-ID" data-i18n-key="plugins.animazingpal.live_host.fields.bundle_id"><input class="input" id="bundleName" placeholder="Anzeigename" data-i18n-key="plugins.animazingpal.live_host.fields.bundle_name">
-        <input class="input" id="bundleSidekickName" placeholder="Sidekick-Name für diesen Avatar" data-i18n-key="plugins.animazingpal.live_host.fields.bundle_sidekick_name">
+        <input class="input" id="bundleSidekickName" placeholder="Assistant-Name für diesen Avatar" data-i18n-key="plugins.animazingpal.live_host.fields.bundle_sidekick_name">
         <select class="select" id="bundleAvatar"><option value="">Avatar wählen</option>${state.avatars.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('')}</select>
         <select class="select" id="bundlePersonality"><option value="">Persönlichkeit wählen</option>${state.personalities.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('')}</select>
         <select class="select" id="bundleVoice">${voiceOptions().map(item => `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`).join('')}</select>
@@ -1175,6 +1223,13 @@
       if (!window.confirm(liveHostText('messages.reset_confirm', 'Bereich {section} wirklich zurücksetzen? API-Keys bleiben erhalten.', { section: button.dataset.livehostReset }))) return;
       try { const body = await request('/api/animazingpal/live-host/reset', { method: 'POST', body: JSON.stringify({ section: button.dataset.livehostReset }) }); state.config = body.config; render(); } catch (error) { notify(error.message, true); }
     });
+    document.querySelector('[data-stream-assistant-reset]')?.addEventListener('click', async () => {
+      if (!window.confirm(liveHostText('messages.stream_assistant_reset_confirm', 'Session-Analytics und Ereignislog wirklich zurücksetzen?'))) return;
+      try {
+        state.streamAssistant = await request('/api/animazingpal/live-host/stream-assistant/reset', { method: 'POST', body: '{}' });
+        render();
+      } catch (error) { notify(error.message, true); }
+    });
     document.querySelector('[data-preset]')?.addEventListener('click', async event => { try { const body = await request('/api/animazingpal/live-host/preset', { method: 'POST', body: JSON.stringify({ preset: event.currentTarget.dataset.preset }) }); state.config = body.config; render(); notify(liveHostText('messages.production_profile_applied', '24/7 Produktionsprofil angewendet')); } catch (error) { notify(error.message, true); } });
     document.querySelector('[data-speak-test]')?.addEventListener('click', () => request('/api/animazingpal/live-host/speak-test', { method: 'POST', body: JSON.stringify({ text: document.getElementById('liveHostTestText').value }) }).then(() => notify(liveHostText('messages.speech_test_started', 'Sprachtest gestartet'))).catch(error => notify(error.message, true)));
     document.querySelector('[data-provider-test]')?.addEventListener('click', async () => {
@@ -1225,19 +1280,21 @@
   async function initialize() {
     if (state.loaded) return;
     try {
-      const [config, voices, gifts, status, personalities, ttsStatus, ttsQueue] = await Promise.all([
+      const [config, voices, gifts, status, personalities, ttsStatus, ttsQueue, streamAssistant] = await Promise.all([
         request('/api/animazingpal/live-host/config'),
         request('/api/tts/voices?engine=fishaudio').catch(() => ({ voices: {} })),
         request('/api/gift-catalog').catch(() => ({ catalog: [] })),
         request('/api/animazingpal/status').catch(() => ({})),
         request('/api/animazingpal/brain/personalities').catch(() => ({ personalities: [] })),
         request('/api/tts/status').catch(() => ({})),
-        request('/api/tts/queue').catch(() => ({}))
+        request('/api/tts/queue').catch(() => ({})),
+        request('/api/animazingpal/live-host/stream-assistant/status').catch(() => ({}))
       ]);
       state.config = config.config;
       state.status = status || {};
       state.ttsStatus = ttsStatus || {};
       state.ttsQueue = ttsQueue || {};
+      state.streamAssistant = streamAssistant || {};
       state.voices = normalizeVoices(voices);
       state.gifts = (gifts.catalog || []).map(item => ({
         id: String(item.id ?? item.giftId ?? item.gift_id),

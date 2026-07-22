@@ -2,6 +2,8 @@ const AnimazingPalPlugin = require('../plugins/animazingpal/main');
 const BrainEngine = require('../plugins/animazingpal/brain/brain-engine');
 const { normalizeLiveHostConfig } = require('../plugins/animazingpal/brain/live-host-config');
 const SpeechState = require('../plugins/animazingpal/brain/speech-state');
+const MemoryDatabase = require('../plugins/animazingpal/brain/memory-database');
+const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
 
@@ -25,6 +27,147 @@ function createPlugin() {
 }
 
 describe('AnimazingPal live host integration', () => {
+  test('imports legacy Sidekick state once without modifying the source settings or memory table', () => {
+    const db = new Database(':memory:');
+    db.exec(`
+      CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+      CREATE TABLE sidekick_memory (
+        uid TEXT PRIMARY KEY,
+        nickname TEXT,
+        first_seen INTEGER,
+        last_seen INTEGER,
+        likes INTEGER DEFAULT 0,
+        gifts INTEGER DEFAULT 0,
+        follows INTEGER DEFAULT 0,
+        subs INTEGER DEFAULT 0,
+        shares INTEGER DEFAULT 0,
+        joins INTEGER DEFAULT 0,
+        messages TEXT DEFAULT '[]',
+        is_subscriber INTEGER DEFAULT 0,
+        is_follower INTEGER DEFAULT 0,
+        is_moderator INTEGER DEFAULT 0,
+        background TEXT DEFAULT '{}',
+        updated_at INTEGER
+      );
+    `);
+    const legacyConfig = {
+      output: { username: 'Rexi' },
+      comment: { replyThreshold: 0.7, maxRepliesPerMin: 15 },
+      conversation: { hostName: 'PupCid' },
+      muted: true
+    };
+    db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)')
+      .run('plugin:sidekick:config', JSON.stringify(legacyConfig));
+    db.prepare(`INSERT INTO sidekick_memory
+      (uid, nickname, first_seen, last_seen, likes, gifts, messages, is_subscriber, background, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run('viewer-1', 'Viewer One', 1000, 2000, 4, 2, JSON.stringify([{ text: 'Hallo Rexi', ts: 1500 }]), 1, JSON.stringify({ favoriteGame: 'LTTH' }), 2000);
+
+    const { plugin } = createPlugin();
+    plugin.db = db;
+    plugin.api = {
+      getConfig: jest.fn(() => null),
+      setConfig: jest.fn(),
+      getDatabase: () => db,
+      log: jest.fn(),
+      emit: jest.fn(),
+      getPluginInstance: jest.fn()
+    };
+    plugin.config = plugin.getDefaultConfig();
+    plugin.config.brain.liveHost = normalizeLiveHostConfig(plugin.config.brain.liveHost);
+    const memoryDb = new MemoryDatabase(db, { info: jest.fn(), error: jest.fn() });
+    memoryDb.initialize();
+    plugin.brainEngine = { memoryDb };
+
+    expect(plugin.migrateLegacySidekickState).toEqual(expect.any(Function));
+
+    const first = plugin.migrateLegacySidekickState();
+    const second = plugin.migrateLegacySidekickState();
+
+    expect(first).toEqual(expect.objectContaining({ migrated: true, importedUsers: 1, importedMessages: 1 }));
+    expect(second).toEqual(expect.objectContaining({ migrated: false, reason: 'already-migrated' }));
+    expect(plugin.config.brain.liveHost.response).toEqual(expect.objectContaining({ sidekickName: 'Rexi', minDecisionScore: 0.7 }));
+    expect(plugin.config.brain.liveHost.streamAssistant.migration).toEqual(expect.objectContaining({ sourceUsers: 1, importedUsers: 1 }));
+    expect(db.prepare('SELECT value FROM settings WHERE key = ?').get('plugin:sidekick:config').value).toBe(JSON.stringify(legacyConfig));
+    expect(db.prepare('SELECT COUNT(*) AS count FROM sidekick_memory').get().count).toBe(1);
+    expect(db.prepare('SELECT nickname FROM animazingpal_user_profiles WHERE username = ?').get('viewer-1').nickname).toBe('Viewer One');
+    expect(db.prepare("SELECT content FROM animazingpal_memories WHERE source_event = 'sidekick-migration' AND source_user = ?").all('viewer-1'))
+      .toEqual(expect.arrayContaining([expect.objectContaining({ content: expect.stringContaining('Hallo Rexi') })]));
+  });
+
+  test('exposes Stream Assistant status, analytics, event log, reset, and OBS HUD routes under AnimazingPal', () => {
+    const { plugin } = createPlugin();
+    const routes = [];
+    plugin.api.registerRoute = (method, routePath, handler) => routes.push({ method: method.toLowerCase(), path: routePath, handler });
+    plugin.getStreamAssistantStatus = jest.fn(() => ({ runtime: { diagnostics: {} }, analytics: {}, events: [] }));
+    plugin.getStreamAssistantAnalytics = jest.fn(() => ({ processedEvents: 3 }));
+    plugin.getStreamAssistantEvents = jest.fn(() => [{ eventType: 'chat' }]);
+    plugin.resetStreamAssistantSession = jest.fn(() => ({ runtime: { diagnostics: {} }, analytics: {}, events: [] }));
+
+    plugin.registerRoutes();
+
+    const expected = [
+      ['get', '/api/animazingpal/live-host/stream-assistant/status'],
+      ['get', '/api/animazingpal/live-host/stream-assistant/analytics'],
+      ['get', '/api/animazingpal/live-host/stream-assistant/events'],
+      ['post', '/api/animazingpal/live-host/stream-assistant/reset'],
+      ['get', '/overlay/animazingpal/stream-assistant']
+    ];
+    for (const [method, routePath] of expected) {
+      expect(routes).toEqual(expect.arrayContaining([expect.objectContaining({ method, path: routePath })]));
+    }
+
+    const status = routes.find(route => route.path.endsWith('/stream-assistant/status'));
+    const events = routes.find(route => route.path.endsWith('/stream-assistant/events'));
+    const overlay = routes.find(route => route.path === '/overlay/animazingpal/stream-assistant');
+    const statusResponse = { json: jest.fn() };
+    status.handler({}, statusResponse);
+    expect(statusResponse.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, runtime: expect.any(Object) }));
+    const eventsResponse = { json: jest.fn() };
+    events.handler({ query: { limit: '200' } }, eventsResponse);
+    expect(plugin.getStreamAssistantEvents).toHaveBeenCalledWith(100);
+    expect(eventsResponse.json).toHaveBeenCalledWith(expect.objectContaining({ events: [expect.objectContaining({ eventType: 'chat' })] }));
+    const overlayResponse = { sendFile: jest.fn() };
+    overlay.handler({}, overlayResponse);
+    expect(overlayResponse.sendFile).toHaveBeenCalledWith(expect.stringContaining('stream-assistant-hud.html'));
+  });
+
+  test('removes the standalone Sidekick runtime and compatibility routes', () => {
+    const mainSource = fs.readFileSync(path.join(__dirname, '../plugins/animazingpal/main.js'), 'utf8');
+
+    expect(fs.existsSync(path.join(__dirname, '../plugins/sidekick'))).toBe(false);
+    expect(mainSource).not.toContain('/api/sidekick/');
+    expect(mainSource).not.toContain("registerSocket('sidekick:");
+  });
+
+  test('batches Stream Assistant join greetings through AnimazingPal speech without a Sidekick outbox', async () => {
+    const { plugin } = createPlugin();
+    plugin.config.brain.liveHost.streamAssistant.joinGreetings = {
+      ...plugin.config.brain.liveHost.streamAssistant.joinGreetings,
+      enabled: true,
+      greetAfterSeconds: 0,
+      globalCooldownSeconds: 0
+    };
+    plugin.config.brain.liveHost.streamAssistant.batching = {
+      ...plugin.config.brain.liveHost.streamAssistant.batching,
+      windowSeconds: 1,
+      maxItems: 2
+    };
+
+    expect(plugin.queueStreamAssistantJoin).toEqual(expect.any(Function));
+    expect(plugin.flushStreamAssistantJoinBatch).toEqual(expect.any(Function));
+    plugin.speakHostResponse = jest.fn().mockResolvedValue({ success: true });
+
+    plugin.queueStreamAssistantJoin({ uniqueId: 'viewer-one', nickname: 'Viewer One' });
+    plugin.queueStreamAssistantJoin({ uniqueId: 'viewer-two', nickname: 'Viewer Two' });
+    await plugin.flushStreamAssistantJoinBatch();
+
+    expect(plugin.speakHostResponse).toHaveBeenCalledTimes(1);
+    expect(plugin.speakHostResponse).toHaveBeenCalledWith(expect.stringContaining('Viewer One'), expect.objectContaining({
+      source: 'animazingpal-stream-assistant-join'
+    }));
+  });
+
   test('live host UI uploads Host-STT microphone segments as WAV for Fish.audio compatibility', () => {
     const ui = fs.readFileSync(path.join(__dirname, '../plugins/animazingpal/live-host-ui.js'), 'utf8');
 
@@ -44,55 +187,32 @@ describe('AnimazingPal live host integration', () => {
     expect(ui).toContain("input('asr.minSpeechMs'");
   });
 
-  test('fresh live host config persists standalone while runtime Sidekick override is temporary', () => {
+  test('does not restore the removed Sidekick runtime override', () => {
     const { plugin, ttsPlugin } = createPlugin();
     plugin.ensureLiveHostRuntime = jest.fn();
-    plugin.recordLiveHostSourceEvent = jest.fn();
     plugin.safeEmitStatus = jest.fn();
 
     expect(plugin.config.brain.liveHost.operatingMode).toBe('standalone');
 
     const changed = plugin.setLiveHostOperatingMode('sidekick', { persist: false });
 
-    expect(changed).toBe(true);
-    expect(plugin.liveHostOperatingModeOverride).toBe('sidekick');
+    expect(changed).toBe(false);
+    expect(plugin.liveHostOperatingModeOverride).toBeUndefined();
     expect(plugin.config.brain.liveHost.operatingMode).toBe('standalone');
     expect(plugin.api.setConfig).not.toHaveBeenCalled();
     expect(ttsPlugin.speak).not.toHaveBeenCalled();
 
-    plugin.clearLiveHostOperatingModeOverride();
-    expect(plugin.liveHostOperatingModeOverride).toBeNull();
-    expect(plugin.config.brain.liveHost.operatingMode).toBe('standalone');
+    expect(ttsPlugin.speak).not.toHaveBeenCalled();
   });
 
-  test('destroy clears temporary live host operating mode override', async () => {
-    const { plugin } = createPlugin();
-    plugin.liveHostOperatingModeOverride = 'sidekick';
-    plugin.brainEngine = null;
-    plugin.disconnect = jest.fn();
-    plugin.stopLiveHostIdleMotion = jest.fn();
-    plugin.lastEventTimes = new Map();
-    plugin.pendingRequests = new Map();
-    plugin.stopLiveHostSourceWatchdog = jest.fn();
-    plugin.viewerbaseSyncTimer = null;
-    plugin.liveHostSourceTimer = null;
-    plugin.liveHostEventDeduper = null;
-
-    await plugin.destroy();
-
-    expect(plugin.liveHostOperatingModeOverride).toBeNull();
-  });
-
-  test('sidekick mode delegates TikTok response decisions while keeping speech available', async () => {
+  test('legacy Sidekick operating flags no longer block the AnimazingPal event pipeline', async () => {
     const { plugin, ttsPlugin } = createPlugin();
     plugin.config.brain.liveHost.operatingMode = 'sidekick';
-    plugin.ensureLiveHostRuntime = jest.fn();
-    plugin.recordLiveHostSourceEvent = jest.fn();
+    plugin.config.brain.liveHost.events.chat.enabled = false;
 
     const result = await plugin.processLiveHostEvent('chat', { comment: 'Hallo?' });
 
-    expect(result).toEqual({ handled: false, responded: false, reason: 'delegated-to-sidekick' });
-    expect(plugin.recordLiveHostSourceEvent).toHaveBeenCalledWith('chat');
+    expect(result).toEqual(expect.objectContaining({ handled: false, responded: false, reason: 'event-disabled' }));
     expect(ttsPlugin.speak).not.toHaveBeenCalled();
   });
 

@@ -50,7 +50,6 @@ const PLUGIN_ROUTES = {
   'plugin-minecraft-connect-night': '/minecraft-connect/ui',
   'plugin-minecraft-connect-vision': '/minecraft-connect/ui',
   'quiz-show': '/quiz-show/ui',
-  'sidekick-dashboard': '/sidekick/ui',
   'slot-machine': '/game-engine/ui',
   'soundboard': '/soundboard/ui',
   'soundboard-detail': '/soundboard/ui',
