@@ -1031,10 +1031,12 @@
       if (!data || data.socketId !== socket.id) return;
       if (data.state === 'open') {
         deepgramLiveActive = true;
+        if (isCapturing && effectiveProvider === 'deepgram') deepgramVadGate?.reset();
         setStatus('Deepgram Live verbunden', 'listening');
       } else if (data.state === 'reconnecting') {
         deepgramLiveActive = false;
-        setStatus('Deepgram verbindet neu...', 'silence');
+        const retrySuffix = data.reconnectAttempt ? ' (' + data.reconnectAttempt + '/3)' : '';
+        setStatus('Deepgram verbindet neu...' + retrySuffix, 'silence');
       } else if (data.state === 'error') {
         log('Deepgram Live: ' + (data.error || 'Unbekannter Fehler'), 'err');
         setStatus('Deepgram Live Fehler', 'error');

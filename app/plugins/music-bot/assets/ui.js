@@ -5,9 +5,9 @@
   const I18N_PREFIX = 'plugins.music-bot.music_bot.ui';
   const RUNTIME_I18N_SECTIONS = Object.fromEntries(Object.entries({
     shell: 'networkTitle connectionLost socketDisconnected apiError unknownError saved error onboardingSettingsTitle onboardingSettingsMeta onboardingOverlayTitle onboardingOverlayMeta onboardingPlayerTitle onboardingPlayerMeta setupHint setupOpen onboardingHelpWithIssues onboardingHelpReady mpvNotInstalled install mpvInstallation mpvReady installationFailed installationSlow statusCheckFailed installing installationStarted installationStartFailed installMpv assistantCompleted assistantCompletedMessage setup onboardingSaveFailed viewerFallback toastDefaultTitle setupYtdlpMissingTitle setupYtdlpMissingDescription setupYtdlpInstallNpm setupYtdlpInstallManual setupYtdlpConfigurePath setupMpvMissingTitle setupMpvMissingDescription setupMpvInstallWindows setupMpvInstallLinux setupMpvInstallMacos setupMpvConfigurePath mpvInstallIdle mpvAlreadyAvailable mpvInstalledReady mpvInstallFailed mpvPackageManagerUnavailable mpvInstallTimedOut mpvInstallWindowsPrompt mpvInstallStartFailed mpvInstallChocolateyLock mpvInstallAdminConfirmation mpvInstallPermissionDenied mpvInstallCommandUnavailable mpvInstallExited mpvInstallMissingAfterExit',
-    player: 'seekUnavailable seekFailed nowPlayingEmpty stateIdle statePaused statePlaying stateUnknown playbackAdvancing loading skip pauseTitle noActiveTrack playbackResumed playbackStarted nextTrackPlaying resumeTitle noStartableTrack skipTitle playingNow searchLoading searching noResult queueAdding queueAdded songAddedTitle requestAdded requestFailed requestRejectedTitle requestRequired requestUserBlocked requestLikesRequired requestGiftRequired songBlockedTitle songSkipped banSong banArtist banKeyword banChannel queueInvalidSong queueFull queueDurationUnknown queueDurationTooLong queueDuplicate queueUserLimit queueCooldown payToPlayTitle payToPlayCredits payToSkipTitle payToSkipGift masterVolumeTitle sourceVolumeTitle volumeSetFailed crossfadeSaveFailed requestedBy selectedTitle playerToastTitle sourceYoutube sourceSoundCloud sourceOther',
+    player: 'seekUnavailable seekFailed nowPlayingEmpty stateIdle statePaused statePlaying stateUnknown playbackAdvancing loading skip pauseTitle noActiveTrack playbackResumed playbackStarted nextTrackPlaying resumeTitle noStartableTrack skipTitle playingNow searchLoading searching noResult queueAdding queueAdded songAddedTitle requestAdded requestFailed requestRejectedTitle requestRequired requestUserBlocked requestLikesRequired requestGiftRequired songBlockedTitle songSkipped banSong banArtist banKeyword banChannel queueInvalidSong queueFull queueDurationUnknown queueDurationTooLong queueDuplicate queueUserLimit queueCooldown payToPlayTitle payToPlayCredits payToSkipTitle payToSkipGift masterVolumeTitle sourceVolumeTitle volumeSetFailed crossfadeSaveFailed crossfadeSaving crossfadeApplied requestedBy selectedTitle playerToastTitle sourceYoutube sourceSoundCloud sourceOther',
     queue: 'queueEmptyTitle queueEmptyHint playNow moveUp moveDown queueUpdated trackRemoved queueTitle alreadyPlaying titleStartFailed orderUpdated queueRefreshRetry trackMoved remove',
-    autoDj: 'autoDjPlaying autoDjActive autoDjDisabled autoDjOn autoDjOff autoDjSelected autoDjSource autoDjBlocked autoDjStarted autoDjWaiting noTrackAvailable autoDjToastTitle sourceFamiliar sourceDiscoveryFallback sourceDiscovery sourceFamiliarFallback sourceHistory sourceRadio sourceHistoryFallback sourceUnknown',
+    autoDj: 'autoDjPlaying autoDjActive autoDjDisabled autoDjOn autoDjOff autoDjSelected autoDjSource autoDjBlocked consecutiveProgress autoDjLimitReached autoDjStarted autoDjWaiting noTrackAvailable autoDjToastTitle sourceFamiliar sourceDiscoveryFallback sourceDiscovery sourceFamiliarFallback sourceHistory sourceRadio sourceHistoryFallback sourceUnknown radioPreviewDisabled radioCandidateCount radioNoCandidates radioPreviewDisabledHint radioPreviewEmptyHint radioUnknownTitle radioScore radioScoreReason radioFeedbackSaving radioFeedbackFailed radioFeedbackMoreSaved radioFeedbackLessSaved',
     moderation: 'banAdded banAddFailed banRemoveFailed enterTitleKeyword banFailed moderationTitle queueMatchesRemoved banLabel trackBanLabel enterValue noEntries delete url keyword channel user artist exactTrack titleKeyword unknownBanType',
     history: 'historyLoadFailed historyFeedbackFailed historyToastTitle',
     playlists: 'playlistSaveFailed playlistConflict importRunning',
@@ -19,7 +19,7 @@
   const CATALOG_I18N_SECTIONS = Object.fromEntries(Object.entries({
     player: 'seek seekAria',
     history: 'historyMore historyBanned historyEmpty banTrack voteUp voteDown voteNeutral',
-    catalog: 'catalogSearch catalogDescription addToPlaylist catalogEmpty networkTitle postFailed getFailed deleteFailed requestFailed',
+    catalog: 'catalogSearch catalogDescription addToPlaylist catalogEmpty networkTitle postFailed getFailed deleteFailed requestFailed genres genrePlaceholder saveGenres genresSaved genresSaveFailed',
     playlists: 'playlistsDescription newPlaylist playbackMode ordered shuffle create radioDescription saveRadioSources playlistName save delete importUrl import protected playlistEmpty playlistItemsEmpty remove radioWeight importQueued importCompleted importFailed importAborted importError playlistConflict viewerRadio radioSources importRunning'
   }).flatMap(([section, keys]) => keys.split(' ').map((key) => [key, section])));
 
@@ -211,6 +211,7 @@
   const skipButton = document.getElementById('skip-btn');
   const crossfadeInput = document.getElementById('crossfade-input');
   const crossfadeValue = document.getElementById('crossfade-value');
+  const crossfadeSaveStatus = document.getElementById('crossfade-save-status');
   const duplicateDetection = document.getElementById('duplicate-detection');
   const cooldownSecondsInput = document.getElementById('cooldown-seconds');
   const maxSongDurationInput = document.getElementById('max-song-duration-seconds');
@@ -228,6 +229,22 @@
   const autoDjSave = document.getElementById('auto-dj-save');
   const autoDjSkip = document.getElementById('auto-dj-skip');
   const autoDjPlaylistUrls = document.getElementById('auto-dj-playlist-urls');
+  const autoDjGenreFilter = document.getElementById('auto-dj-genre-filter');
+  const autoDjGenres = document.getElementById('auto-dj-genres');
+  const autoDjBpmTransitions = document.getElementById('auto-dj-bpm-transitions');
+  const autoDjArtistSpacing = document.getElementById('auto-dj-artist-spacing');
+  const autoDjAlbumSpacing = document.getElementById('auto-dj-album-spacing');
+  const autoDjNoveltyBudget = document.getElementById('auto-dj-novelty-budget');
+  const autoDjRequestSeeds = document.getElementById('auto-dj-request-seeds');
+  const autoDjLiveFeedback = document.getElementById('auto-dj-live-feedback');
+  const autoDjPreviewEnabled = document.getElementById('auto-dj-preview-enabled');
+  const autoDjChatVoting = document.getElementById('auto-dj-chat-voting');
+  const autoDjVoteCloseBefore = document.getElementById('auto-dj-vote-close-before');
+  const radioPreviewList = document.getElementById('radio-preview-list');
+  const radioPreviewStatus = document.getElementById('radio-preview-status');
+  const radioFeedbackMore = document.getElementById('radio-feedback-more');
+  const radioFeedbackLess = document.getElementById('radio-feedback-less');
+  const radioFeedbackStatus = document.getElementById('radio-feedback-status');
   const aliasInputs = document.querySelectorAll('.alias-input');
   const aliasSave = document.getElementById('alias-save');
   const rejectAge = document.getElementById('reject-age');
@@ -241,6 +258,8 @@
   const banTable = document.getElementById('ban-table');
   const ytdlpPathInput = document.getElementById('ytdlp-path');
   const mpvPathInput = document.getElementById('mpv-path');
+  const normalizationEnabled = document.getElementById('normalization-enabled');
+  const normalizationLufs = document.getElementById('normalization-lufs');
   const requireSuperfan = document.getElementById('require-superfan');
   const payToPlayEnabled = document.getElementById('pay-to-play-enabled');
   const payToPlayGifts = document.getElementById('pay-to-play-gifts');
@@ -787,9 +806,18 @@
   });
 
   const postCrossfade = debounce(async (ms) => {
-    const result = await post('/config', { playback: { crossfadeDuration: ms } });
-    if (!result?.success) {
-      showToast('error', tr('crossfadeTitle', 'Crossfade'), result?.error || tr('crossfadeSaveFailed', 'Crossfade konnte nicht gespeichert werden.'));
+    crossfadeInput?.setAttribute('aria-busy', 'true');
+    if (crossfadeSaveStatus) crossfadeSaveStatus.textContent = tr('crossfadeSaving', 'Wird gespeichert ...');
+    try {
+      const result = await post('/config', { playback: { crossfadeDuration: ms } });
+      if (!result?.success) {
+        showToast('error', tr('crossfadeTitle', 'Crossfade'), result?.error || tr('crossfadeSaveFailed', 'Crossfade konnte nicht gespeichert werden.'));
+        if (crossfadeSaveStatus) crossfadeSaveStatus.textContent = tr('crossfadeSaveFailed', 'Crossfade konnte nicht gespeichert werden.');
+        return;
+      }
+      if (crossfadeSaveStatus) crossfadeSaveStatus.textContent = tr('crossfadeApplied', 'Aktiv');
+    } finally {
+      crossfadeInput?.removeAttribute('aria-busy');
     }
   });
   crossfadeInput.addEventListener('input', () => {
@@ -994,6 +1022,7 @@
 
   autoDjSave.addEventListener('click', async () => {
     const playlistUrls = parseList(autoDjPlaylistUrls?.value || '');
+    const selectedGenres = Array.from(autoDjGenres?.selectedOptions || []).map((option) => option.value);
     const mixHistoryPercent = Number(autoDjMixHistoryPercent.value);
     const normalizedMixHistoryPercent = autoDjMixHistoryPercent.value.trim() === '' || !Number.isFinite(mixHistoryPercent)
       ? 80
@@ -1007,7 +1036,18 @@
       maxConsecutiveAutoDJ: Number(autoDjMaxConsecutive.value) || 1,
       announceAutoDJ: autoDjAnnounce.checked,
       playlistUrls,
-      playlistFallbackToRandom: true
+      playlistFallbackToRandom: true,
+      genreFilterEnabled: Boolean(autoDjGenreFilter?.checked),
+      selectedGenres,
+      bpmTransitionsEnabled: Boolean(autoDjBpmTransitions?.checked),
+      artistSpacingMinutes: Math.min(1440, Math.max(0, Number(autoDjArtistSpacing?.value) || 0)),
+      albumSpacingMinutes: Math.min(10080, Math.max(0, Number(autoDjAlbumSpacing?.value) || 0)),
+      noveltyBudgetPercent: Math.min(100, Math.max(0, Number(autoDjNoveltyBudget?.value) || 0)),
+      requestSeedsEnabled: Boolean(autoDjRequestSeeds?.checked),
+      liveFeedbackEnabled: Boolean(autoDjLiveFeedback?.checked),
+      previewEnabled: Boolean(autoDjPreviewEnabled?.checked),
+      chatVotingEnabled: Boolean(autoDjChatVoting?.checked),
+      chatVoteCloseBeforeEndSeconds: Math.min(120, Math.max(5, Number(autoDjVoteCloseBefore?.value) || 20))
     };
     const result = await post('/auto-dj/toggle', payload);
     if (result?.track) {
@@ -1027,6 +1067,9 @@
     }
     await refreshAutoDjStatus();
   });
+
+  radioFeedbackMore?.addEventListener('click', () => sendLiveRadioFeedback('more'));
+  radioFeedbackLess?.addEventListener('click', () => sendLiveRadioFeedback('less'));
 
   aliasSave.addEventListener('click', async () => {
     const aliases = {};
@@ -1055,7 +1098,13 @@
         cooldownBypassForGifts: cooldownBypassGifts.checked
       },
       resolver: { ytdlpPath: (ytdlpPathInput?.value || '').trim() || 'yt-dlp' },
-      playback: { mpvPath: (mpvPathInput?.value || '').trim() || 'mpv' },
+      playback: {
+        mpvPath: (mpvPathInput?.value || '').trim() || 'mpv',
+        normalization: {
+          enabled: Boolean(normalizationEnabled?.checked),
+          integratedLufs: Math.max(-30, Math.min(-8, Number(normalizationLufs?.value) || -16))
+        }
+      },
       giftIntegration: { skipImmunityGifts: parseList(skipImmunityGifts.value) },
       permissions: { requireSuperfanForRequest: requireSuperfan?.checked || false },
       audio: {
@@ -1332,6 +1381,7 @@
       }
     }
     refreshHistory({ reset: true });
+    refreshRadioPreview();
   });
 
   socket.on('musicbot:queue-update', ({ queue, length }) => {
@@ -1433,6 +1483,7 @@
     }
     renderHistory(latestHistoryTracks);
   });
+  socket.on('musicbot:radio-feedback', () => refreshRadioPreview());
   socket.on('musicbot:playlist-import-progress', async (payload) => {
     const status = payload?.status || 'running';
     if (playlistImportProgress) {
@@ -1698,6 +1749,10 @@
     }
     if (configData?.config?.playback?.mpvPath && mpvPathInput) {
       mpvPathInput.value = configData.config.playback.mpvPath;
+    }
+    if (configData?.config?.playback?.normalization) {
+      if (normalizationEnabled) normalizationEnabled.checked = Boolean(configData.config.playback.normalization.enabled);
+      if (normalizationLufs) normalizationLufs.value = configData.config.playback.normalization.integratedLufs ?? -16;
     }
     if (configData?.config?.audio) {
       if (typeof configData.config.audio.masterVolume === 'number' && masterVolumeInput && masterVolumeValue) {
@@ -2235,13 +2290,31 @@
     const songs = result?.songs || [];
     catalogSearchResults.classList.toggle('empty', songs.length === 0);
     catalogSearchResults.innerHTML = songs.length
-      ? songs.map((song) => `<div class="item playlist-item"><span class="queue-title">${escapeHtml(song.title)}</span><button class="btn ghost small" type="button" data-catalog-add-song="${escapeHtml(song.id)}">${escapeHtml(catalogTr('addToPlaylist', 'Add to playlist'))}</button></div>`).join('')
+      ? songs.map((song) => {
+        const genres = Array.isArray(song.genres) ? song.genres.join(', ') : '';
+        return `<div class="item playlist-item"><span class="queue-title">${escapeHtml(song.title)}</span><label class="catalog-genre-editor"><span class="sr-only">${escapeHtml(catalogTr('genres', 'Genres'))}</span><input type="text" value="${escapeHtml(genres)}" placeholder="${escapeHtml(catalogTr('genrePlaceholder', 'e.g. rock, pop'))}" data-catalog-genre-input></label><button class="btn ghost small" type="button" data-catalog-save-genres="${escapeHtml(song.id)}">${escapeHtml(catalogTr('saveGenres', 'Save genres'))}</button><button class="btn ghost small" type="button" data-catalog-add-song="${escapeHtml(song.id)}">${escapeHtml(catalogTr('addToPlaylist', 'Add to playlist'))}</button></div>`;
+      }).join('')
       : `<p>${escapeHtml(catalogTr('catalogEmpty', 'No titles found.'))}</p>`;
   }
 
   const debouncedCatalogSearch = debounce(() => searchCatalog());
   catalogSearchInput?.addEventListener('input', debouncedCatalogSearch);
   catalogSearchResults?.addEventListener('click', async (event) => {
+    const genreButton = event.target.closest('[data-catalog-save-genres]');
+    if (genreButton) {
+      const input = genreButton.parentElement?.querySelector('[data-catalog-genre-input]');
+      const result = await put(`/catalog/songs/${genreButton.dataset.catalogSaveGenres}/genres`, {
+        genres: parseList(input?.value || '')
+      });
+      if (!result?.success) {
+        showToast('warn', tr('autoDjToastTitle', 'Auto-DJ'), result?.error || catalogTr('genresSaveFailed', 'Genres could not be saved.'));
+        return;
+      }
+      if (input) input.value = (result.genres || []).join(', ');
+      showToast('success', tr('autoDjToastTitle', 'Auto-DJ'), catalogTr('genresSaved', 'Genres saved.'));
+      await refreshRadioPreview();
+      return;
+    }
     const button = event.target.closest('[data-catalog-add-song]');
     if (!button || !selectedPlaylist) return;
     const result = await post(`/playlists/${selectedPlaylist.id}/items`, {
@@ -2413,6 +2486,7 @@
     if (!status) return;
     latestAutoDjStatus = status;
     renderAutoDjStatus(status);
+    await refreshRadioPreview();
   }
 
   function renderAutoDjStatus(status = {}) {
@@ -2421,24 +2495,97 @@
     autoDjHistoryPlays.value = status.historyMinPlays || 1;
     autoDjMixHistoryPercent.value = status.mixHistoryPercent ?? 80;
     autoDjRepeatCooldownHours.value = status.repeatCooldownHours ?? 12;
-    autoDjMaxConsecutive.value = status.maxConsecutiveAutoDJ || 1;
+    if (document.activeElement !== autoDjMaxConsecutive) {
+      autoDjMaxConsecutive.value = status.maxConsecutiveAutoDJ || 1;
+    }
     autoDjAnnounce.checked = Boolean(status.announceAutoDJ);
     if (autoDjPlaylistUrls) autoDjPlaylistUrls.value = (status.playlistUrls || []).join('\n');
+    if (autoDjGenreFilter) autoDjGenreFilter.checked = Boolean(status.genreFilterEnabled);
+    if (autoDjGenres) {
+      const selectedGenres = new Set(status.selectedGenres || []);
+      Array.from(autoDjGenres.options).forEach((option) => { option.selected = selectedGenres.has(option.value); });
+    }
+    if (autoDjBpmTransitions) autoDjBpmTransitions.checked = Boolean(status.bpmTransitionsEnabled);
+    if (autoDjArtistSpacing) autoDjArtistSpacing.value = status.artistSpacingMinutes ?? 90;
+    if (autoDjAlbumSpacing) autoDjAlbumSpacing.value = status.albumSpacingMinutes ?? 360;
+    if (autoDjNoveltyBudget) autoDjNoveltyBudget.value = status.noveltyBudgetPercent ?? 20;
+    if (autoDjRequestSeeds) autoDjRequestSeeds.checked = Boolean(status.requestSeedsEnabled);
+    if (autoDjLiveFeedback) autoDjLiveFeedback.checked = Boolean(status.liveFeedbackEnabled);
+    if (autoDjPreviewEnabled) autoDjPreviewEnabled.checked = Boolean(status.previewEnabled);
+    if (autoDjChatVoting) autoDjChatVoting.checked = Boolean(status.chatVotingEnabled);
+    if (autoDjVoteCloseBefore) autoDjVoteCloseBefore.value = status.chatVoteCloseBeforeEndSeconds ?? 20;
     const legacyAutoDjTitle = String(status.lastResult?.message || '').split(':').slice(1).join(':').trim();
     const autoDjMessage = status.lastResult?.state === 'selected'
       ? tr('autoDjSelected', 'Ausgewählt: {title}', { title: status.lastResult?.params?.title || legacyAutoDjTitle })
       : '';
     autoDjStatus.textContent = status.enabled
-      ? (status.lastResult?.state === 'playing' ? tr('autoDjPlaying', 'Spielt') : tr('autoDjActive', 'Aktiv'))
+      ? (status.lastResult?.state === 'limit-reached'
+        ? tr('autoDjLimitReached', 'Limit erreicht')
+        : (status.lastResult?.state === 'playing' ? tr('autoDjPlaying', 'Spielt') : tr('autoDjActive', 'Aktiv')))
       : tr('autoDjDisabled', 'Deaktiviert');
     autoDjStatus.title = autoDjMessage;
     if (autoDjDetail) {
       const diagnostics = [];
+      if (typeof status.consecutiveCount === 'number' && typeof status.maxConsecutiveAutoDJ === 'number') {
+        diagnostics.push(tr('consecutiveProgress', 'Auto-DJ-Folge: {current}/{limit}', {
+          current: status.consecutiveCount,
+          limit: status.maxConsecutiveAutoDJ
+        }));
+      }
       if (status.selectionSource) diagnostics.push(tr('autoDjSource', 'Quelle: {source}', { source: autoDjSourceLabel(status.selectionSource) }));
       if (typeof status.blockedCount === 'number') diagnostics.push(tr('autoDjBlocked', 'Gesperrt: {count}', { count: status.blockedCount }));
+      if (status.requestSeedRemaining) diagnostics.push(`Request-Seed: ${status.requestSeedRemaining} Titel`);
       autoDjDetail.textContent = [autoDjMessage, diagnostics.join(' · ')].filter(Boolean).join(' · ');
     }
     if (heroAutodjStatus) heroAutodjStatus.textContent = status.enabled ? tr('autoDjOn', 'Ein') : tr('autoDjOff', 'Aus');
+  }
+
+  async function refreshRadioPreview() {
+    if (!radioPreviewList) return;
+    const result = await get('/radio/preview');
+    renderRadioPreview(result?.candidates || [], Boolean(result?.disabled));
+  }
+
+  function renderRadioPreview(candidates = [], disabled = false) {
+    if (!radioPreviewList) return;
+    if (radioPreviewStatus) {
+      radioPreviewStatus.textContent = disabled
+        ? tr('radioPreviewDisabled', 'Vorschau deaktiviert')
+        : (candidates.length
+          ? tr('radioCandidateCount', '{count} Kandidaten', { count: candidates.length })
+          : tr('radioNoCandidates', 'Keine passenden Kandidaten'));
+    }
+    if (disabled) {
+      radioPreviewList.innerHTML = `<p class="text-secondary">${escapeHtml(tr('radioPreviewDisabledHint', 'Aktiviere die Vorschau, um die nächsten Radio-Kandidaten mit ihren Gründen zu sehen.'))}</p>`;
+      return;
+    }
+    if (!candidates.length) {
+      radioPreviewList.innerHTML = `<p class="text-secondary">${escapeHtml(tr('radioPreviewEmptyHint', 'Noch keine Kandidaten verfügbar. Prüfe Radio-Quellen oder die gewählten Genres.'))}</p>`;
+      return;
+    }
+    radioPreviewList.innerHTML = candidates.map((candidate, index) => {
+      const title = escapeHtml(candidate.title || tr('radioUnknownTitle', 'Unbekannter Titel'));
+      const artist = escapeHtml(candidate.artist || '');
+      const details = [candidate.album, candidate.bpm ? `${Math.round(candidate.bpm)} BPM` : null]
+        .filter(Boolean).map(escapeHtml).join(' · ');
+      const reasons = (candidate.reasons || []).map((reason) => escapeHtml(reason.text || reason.code)).join(' · ');
+      const score = escapeHtml(tr('radioScore', 'Score {score}', { score: Number(candidate.score || 0).toFixed(2) }));
+      const fallbackReason = escapeHtml(tr('radioScoreReason', 'Radio-Score'));
+      return `<article class="radio-preview-item"><div><strong>${index + 1}. ${title}</strong><span>${artist}</span><span class="text-secondary">${details}</span></div><span class="pill">${score}</span><div class="radio-preview-reasons">${reasons || fallbackReason}</div></article>`;
+    }).join('');
+  }
+
+  async function sendLiveRadioFeedback(direction) {
+    if (radioFeedbackStatus) radioFeedbackStatus.textContent = tr('radioFeedbackSaving', 'Wird gespeichert …');
+    const result = await post('/radio/live-feedback', { direction });
+    if (!result?.success) {
+      if (radioFeedbackStatus) radioFeedbackStatus.textContent = result?.error || tr('radioFeedbackFailed', 'Feedback konnte nicht gespeichert werden.');
+      return;
+    }
+    if (radioFeedbackStatus) radioFeedbackStatus.textContent = direction === 'more'
+      ? tr('radioFeedbackMoreSaved', 'Mehr davon gespeichert.')
+      : tr('radioFeedbackLessSaved', 'Weniger davon gespeichert.');
+    await refreshRadioPreview();
   }
 
   function parseList(value = '', keepNewLinesOnly = false) {

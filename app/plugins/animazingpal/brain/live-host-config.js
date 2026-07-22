@@ -168,6 +168,37 @@ function buildLiveHostDefaults() {
       speechPeakThreshold: 0.04,
       minSpeechMs: 250
     },
+    // Stream Assistant owns the former Sidekick-only orchestration settings.
+    // Brain, memory, speech, queue and avatar output stay in the surrounding
+    // Live Host configuration so they have one authoritative implementation.
+    streamAssistant: {
+      enabled: true,
+      muted: false,
+      joinGreetings: {
+        enabled: false,
+        greetAfterSeconds: 30,
+        activeTtlSeconds: 45,
+        minIdleSinceLastOutputSec: 25,
+        globalCooldownSeconds: 180
+      },
+      batching: {
+        windowSeconds: 8,
+        maxItems: 8,
+        maxChars: 320,
+        separator: ' • '
+      },
+      conversation: {
+        enabled: true,
+        hostName: 'Host',
+        minHostSpeechChars: 3,
+        echoWindowMs: 12000,
+        maxRecentUtterances: 20,
+        conversationWindowMs: 120000,
+        conversationActiveWindowMs: 30000,
+        conversationTurnLimit: 8
+      },
+      migration: null
+    },
     viewerMemory: {
       enabled: true,
       streamerId: '',
@@ -234,11 +265,81 @@ function migrateLegacy(legacy = {}) {
   return patch;
 }
 
+function migrateSidekickConfig(liveHostConfig = {}, sidekickConfig = {}) {
+  const source = sidekickConfig && typeof sidekickConfig === 'object' && !Array.isArray(sidekickConfig)
+    ? sidekickConfig
+    : {};
+  const comment = source.comment && typeof source.comment === 'object' ? source.comment : {};
+  const conversation = source.conversation && typeof source.conversation === 'object' ? source.conversation : {};
+  const asr = source.asr && typeof source.asr === 'object' ? source.asr : {};
+  const joinRules = source.joinRules && typeof source.joinRules === 'object' ? source.joinRules : {};
+  const outbox = source.outbox && typeof source.outbox === 'object' ? source.outbox : {};
+  const output = source.output && typeof source.output === 'object' ? source.output : {};
+
+  const patch = {
+    response: {
+      sidekickName: output.username,
+      minDecisionScore: comment.replyThreshold,
+      maxResponsesPerMinute: comment.maxRepliesPerMin,
+      chatProbability: comment.decisionProbability,
+      decisionMode: comment.decisionMode,
+      hostReplyProbability: conversation.hostReplyProbability,
+      hostMinConfidence: conversation.hostMinConfidence,
+      hostContextCooldownMs: conversation.hostContextCooldownMs,
+      hostOvertalkCooldownMs: conversation.hostOvertalkCooldownMs,
+      hostLongFormWordLimit: conversation.hostLongFormWordLimit
+    },
+    events: {
+      chat: { enabled: comment.enabled }
+    },
+    asr: {
+      enabled: asr.enabled,
+      deviceId: asr.deviceId,
+      language: asr.language,
+      maxAudioBytes: asr.maxAudioBytes,
+      minTranscriptChars: asr.minTranscriptChars,
+      rateLimitMax: asr.rateLimitMax,
+      rateLimitWindowMs: asr.rateLimitWindowMs,
+      unsafeOverride: asr.unsafeOverride,
+      silenceTimeoutMs: asr.silenceTimeoutMs,
+      maxSegmentMs: asr.maxSegmentMs
+    },
+    streamAssistant: {
+      enabled: true,
+      muted: source.muted,
+      joinGreetings: {
+        enabled: joinRules.enabled,
+        greetAfterSeconds: joinRules.greetAfterSeconds,
+        activeTtlSeconds: joinRules.activeTtlSeconds,
+        minIdleSinceLastOutputSec: joinRules.minIdleSinceLastOutputSec,
+        globalCooldownSeconds: joinRules.greetGlobalCooldownSec
+      },
+      batching: {
+        windowSeconds: outbox.windowSeconds,
+        maxItems: outbox.maxItems,
+        maxChars: outbox.maxChars,
+        separator: outbox.separator
+      },
+      conversation: {
+        enabled: conversation.enabled,
+        hostName: conversation.hostName,
+        minHostSpeechChars: conversation.minHostSpeechChars,
+        echoWindowMs: conversation.echoWindowMs,
+        maxRecentUtterances: conversation.maxRecentUtterances,
+        conversationWindowMs: conversation.conversationWindowMs,
+        conversationActiveWindowMs: conversation.conversationActiveWindowMs,
+        conversationTurnLimit: conversation.conversationTurnLimit
+      }
+    }
+  };
+
+  return normalizeLiveHostConfig(merge(liveHostConfig, patch));
+}
+
 function normalizeLiveHostConfig(input = {}, legacy = {}) {
   const defaults = buildLiveHostDefaults();
   const configured = merge(merge(defaults, migrateLegacy(legacy)), input);
-  configured.operatingMode = ['standalone', 'sidekick'].includes(configured.operatingMode)
-    ? configured.operatingMode : defaults.operatingMode;
+  configured.operatingMode = 'standalone';
   configured.enabled = normalizeBoolean(configured.enabled, defaults.enabled);
   configured.provider = PROVIDERS.includes(configured.provider) ? configured.provider : defaults.provider;
   configured.source.username = safeString(configured.source.username, 100).replace(/^@/, '');
@@ -330,6 +431,31 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
   configured.asr.speechRmsThreshold = clamp(configured.asr.speechRmsThreshold, 0, 0.25, defaults.asr.speechRmsThreshold);
   configured.asr.speechPeakThreshold = clamp(configured.asr.speechPeakThreshold, 0, 1, defaults.asr.speechPeakThreshold);
   configured.asr.minSpeechMs = Math.round(clamp(configured.asr.minSpeechMs, 0, 5000, defaults.asr.minSpeechMs));
+  configured.streamAssistant.enabled = normalizeBoolean(configured.streamAssistant.enabled, defaults.streamAssistant.enabled);
+  configured.streamAssistant.muted = normalizeBoolean(configured.streamAssistant.muted, defaults.streamAssistant.muted);
+  configured.streamAssistant.joinGreetings.enabled = normalizeBoolean(configured.streamAssistant.joinGreetings.enabled, defaults.streamAssistant.joinGreetings.enabled);
+  configured.streamAssistant.joinGreetings.greetAfterSeconds = Math.round(clamp(configured.streamAssistant.joinGreetings.greetAfterSeconds, 0, 3600, defaults.streamAssistant.joinGreetings.greetAfterSeconds));
+  configured.streamAssistant.joinGreetings.activeTtlSeconds = Math.round(clamp(configured.streamAssistant.joinGreetings.activeTtlSeconds, 1, 3600, defaults.streamAssistant.joinGreetings.activeTtlSeconds));
+  configured.streamAssistant.joinGreetings.minIdleSinceLastOutputSec = Math.round(clamp(configured.streamAssistant.joinGreetings.minIdleSinceLastOutputSec, 0, 3600, defaults.streamAssistant.joinGreetings.minIdleSinceLastOutputSec));
+  configured.streamAssistant.joinGreetings.globalCooldownSeconds = Math.round(clamp(configured.streamAssistant.joinGreetings.globalCooldownSeconds, 0, 86400, defaults.streamAssistant.joinGreetings.globalCooldownSeconds));
+  configured.streamAssistant.batching.windowSeconds = Math.round(clamp(configured.streamAssistant.batching.windowSeconds, 1, 120, defaults.streamAssistant.batching.windowSeconds));
+  configured.streamAssistant.batching.maxItems = Math.round(clamp(configured.streamAssistant.batching.maxItems, 1, 100, defaults.streamAssistant.batching.maxItems));
+  configured.streamAssistant.batching.maxChars = Math.round(clamp(configured.streamAssistant.batching.maxChars, 20, 4000, defaults.streamAssistant.batching.maxChars));
+  const batchingSeparator = String(configured.streamAssistant.batching.separator ?? '').slice(0, 32);
+  configured.streamAssistant.batching.separator = batchingSeparator.trim()
+    ? batchingSeparator
+    : defaults.streamAssistant.batching.separator;
+  configured.streamAssistant.conversation.enabled = normalizeBoolean(configured.streamAssistant.conversation.enabled, defaults.streamAssistant.conversation.enabled);
+  configured.streamAssistant.conversation.hostName = safeString(configured.streamAssistant.conversation.hostName, 64, defaults.streamAssistant.conversation.hostName) || defaults.streamAssistant.conversation.hostName;
+  configured.streamAssistant.conversation.minHostSpeechChars = Math.round(clamp(configured.streamAssistant.conversation.minHostSpeechChars, 1, 500, defaults.streamAssistant.conversation.minHostSpeechChars));
+  configured.streamAssistant.conversation.echoWindowMs = Math.round(clamp(configured.streamAssistant.conversation.echoWindowMs, 1000, 300000, defaults.streamAssistant.conversation.echoWindowMs));
+  configured.streamAssistant.conversation.maxRecentUtterances = Math.round(clamp(configured.streamAssistant.conversation.maxRecentUtterances, 1, 200, defaults.streamAssistant.conversation.maxRecentUtterances));
+  configured.streamAssistant.conversation.conversationWindowMs = Math.round(clamp(configured.streamAssistant.conversation.conversationWindowMs, 5000, 600000, defaults.streamAssistant.conversation.conversationWindowMs));
+  configured.streamAssistant.conversation.conversationActiveWindowMs = Math.round(clamp(configured.streamAssistant.conversation.conversationActiveWindowMs, 1000, 600000, defaults.streamAssistant.conversation.conversationActiveWindowMs));
+  configured.streamAssistant.conversation.conversationTurnLimit = Math.round(clamp(configured.streamAssistant.conversation.conversationTurnLimit, 2, 20, defaults.streamAssistant.conversation.conversationTurnLimit));
+  configured.streamAssistant.migration = configured.streamAssistant.migration && typeof configured.streamAssistant.migration === 'object'
+    ? configured.streamAssistant.migration
+    : null;
   configured.viewerMemory.enabled = normalizeBoolean(configured.viewerMemory.enabled, defaults.viewerMemory.enabled);
   configured.viewerMemory.writeMemories = normalizeBoolean(configured.viewerMemory.writeMemories, defaults.viewerMemory.writeMemories);
   configured.viewerMemory.includeInsights = normalizeBoolean(configured.viewerMemory.includeInsights, defaults.viewerMemory.includeInsights);
@@ -481,5 +607,6 @@ module.exports = {
   sanitizeLiveHostConfig,
   applyLiveHostPreset,
   mergeLiveHostSecrets,
+  migrateSidekickConfig,
   merge
 };

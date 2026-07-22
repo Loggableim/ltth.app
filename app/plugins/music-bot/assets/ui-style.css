@@ -953,6 +953,80 @@ input[type="range"] {
   grid-column: 1 / -1;
 }
 
+.smart-radio-section {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--musicbot-accent) 38%, var(--musicbot-border));
+  border-radius: 10px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--musicbot-accent-2) 10%, var(--musicbot-surface-2)), var(--musicbot-surface-2));
+}
+
+.smart-radio-header,
+.radio-feedback-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.smart-radio-header h3 {
+  margin-bottom: 2px;
+}
+
+.smart-radio-header p {
+  margin-bottom: 0;
+}
+
+.smart-radio-section .form-grid {
+  padding: 0;
+}
+
+.radio-feedback-actions {
+  padding-top: 2px;
+}
+
+.radio-preview-list {
+  display: grid;
+  gap: 8px;
+}
+
+.radio-preview-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 14px;
+  align-items: start;
+  padding: 10px 12px;
+  border: 1px solid var(--musicbot-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--musicbot-surface) 88%, transparent);
+}
+
+.radio-preview-item strong,
+.radio-preview-item span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.radio-preview-reasons {
+  grid-column: 1 / -1;
+  color: var(--musicbot-muted);
+  font-size: 12px;
+}
+
+.catalog-genre-editor {
+  flex: 1 1 170px;
+  min-width: 140px;
+}
+
+.catalog-genre-editor input {
+  width: 100%;
+}
+
 .checkbox-field {
   display: flex;
   align-items: center;

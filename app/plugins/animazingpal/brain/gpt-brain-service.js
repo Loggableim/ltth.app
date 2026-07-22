@@ -245,7 +245,7 @@ class GPTBrainService {
       conversationText = this._shortenPromptText(conversationSummary, 360);
     }
     if (conversationText) {
-      lines.push(`Sidekick-Kontext${username ? ` für ${username}` : ''}: ${conversationText}`);
+      lines.push(`Stream-Assistant-Kontext${username ? ` für ${username}` : ''}: ${conversationText}`);
     }
 
     const userContextSummary = userInfo.sidekickUserContextSummary || sidekickContext.userContext;
@@ -307,7 +307,7 @@ class GPTBrainService {
     const decisionReason = userInfo.sidekickDecisionReason || sidekickContext.decision?.reason;
     const decisionText = this._shortenPromptText(decisionReason, 120);
     if (decisionText) {
-      lines.push(`Sidekick-Entscheidung: ${decisionText}`);
+      lines.push(`Stream-Assistant-Entscheidung: ${decisionText}`);
     }
 
     return lines.length > 0 ? `${systemPrompt}\n\n${lines.join('\n')}` : systemPrompt;
@@ -466,7 +466,7 @@ Antworte auf Chat-Nachrichten NATÜRLICH und AUTHENTISCH.
    * Generate a co-host response to the streamer/host.
    */
   async generateHostSpeechResponse(hostName, message, personality, context = {}) {
-    let systemPrompt = `Du bist der KI-Sidekick und Co-Host eines Livestreams mit folgender Persoenlichkeit: ${personality}
+    let systemPrompt = `Du bist der KI-Stream-Assistant und Co-Host eines Livestreams mit folgender Persoenlichkeit: ${personality}
 
 Antworte direkt auf den Streamer/Host, nicht wie auf normalen Zuschauerchat.
 - Halte die Antwort kurz, natuerlich und TTS-tauglich (1-2 Saetze)
@@ -510,7 +510,7 @@ Antworte direkt auf den Streamer/Host, nicht wie auf normalen Zuschauerchat.
       systemPrompt += '\nDer Dialog ist aktiv. Antworte wie in einem laufenden Gespräch und halte den Faden.';
     }
 
-    const situation = `${hostName || 'Host'} sagt zum Sidekick: "${message}"`;
+    const situation = `${hostName || 'Host'} sagt zum Stream Assistant: "${message}"`;
 
     return this.generateResponse(systemPrompt, situation, context.conversationHistory || [], {
       maxTokens: 120,

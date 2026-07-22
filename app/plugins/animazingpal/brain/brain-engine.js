@@ -820,7 +820,7 @@ class BrainEngine {
 
       const personality = [
         this._resolveSystemPrompt(options),
-        'Rolle: Du bist der Sidekick/Co-Host und antwortest dem Streamer, nicht einem Zuschauer.'
+        'Rolle: Du bist der Stream Assistant/Co-Host und antwortest dem Streamer, nicht einem Zuschauer.'
       ].filter(Boolean).join('\n\n');
 
       const fallbackLiveContext = this.streamContext || {};

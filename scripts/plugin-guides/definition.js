@@ -173,10 +173,10 @@ function localizedWorkflow(name, topic, test, overlay, anchor) {
     overlay: overlay ? {
       title: localized('Overlay sicher prüfen', 'Verify the overlay safely', 'Comprobar el overlay de forma segura', 'Vérifier l’overlay en sécurité'),
       summary: localized(
-        `Für ${topic.de} führt die reale Overlay-URL ${overlay} zur lokalen Vorschau. ${sourceReference(anchor, 'de')}`,
-        `For ${topic.en}, the real overlay URL ${overlay} opens the local preview. ${sourceReference(anchor, 'en')}`,
-        `Para ${topic.es}, la URL real del overlay ${overlay} abre la vista previa local. ${sourceReference(anchor, 'es')}`,
-        `Pour ${topic.fr}, l’URL réelle de l’overlay ${overlay} ouvre l’aperçu local. ${sourceReference(anchor, 'fr')}`
+        `Für ${topic.de} führt die reale Overlay-URL ${overlay} zur lokalen Vorschau; die Konfiguration liegt auf ${anchor.route}. ${sourceReference(anchor, 'de')}`,
+        `For ${topic.en}, the real overlay URL ${overlay} opens the local preview; configuration is on ${anchor.route}. ${sourceReference(anchor, 'en')}`,
+        `Para ${topic.es}, la URL real del overlay ${overlay} abre la vista previa local; la configuración está en ${anchor.route}. ${sourceReference(anchor, 'es')}`,
+        `Pour ${topic.fr}, l’URL réelle de l’overlay ${overlay} ouvre l’aperçu local ; la configuration se trouve sur ${anchor.route}. ${sourceReference(anchor, 'fr')}`
       )
   } : null
   };
@@ -340,7 +340,6 @@ const INTERNAL_INVENTORY_CONTROLS = new Set([
   'store-admin:#window-close-btn',
   'store-admin:#window-maximize-btn',
   'store-admin:#window-minimize-btn',
-  'music-bot:#request-input',
   'milestone-leaderboard:#audioInput',
   'milestone-leaderboard:#gifInput',
   'milestone-leaderboard:#tierAudioInput',

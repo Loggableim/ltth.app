@@ -8,6 +8,10 @@ Dieses Plugin verbindet PupCid's Little TikTool Helper mit VTubing-Zielen über 
 
 ## ✨ Features
 
+- **Stream Assistant**: Der frühere Live-Host- und Sidekick-Ablauf ist in einem einzigen Tab vereint: TikTok-Events, Host-Mikrofon/ASR, Brain, Memory, Fish.audio, Avatar-Ausgabe und Session-Analytics laufen durch AnimazingPal.
+- **OBS-HUD**: `GET /overlay/animazingpal/stream-assistant` liefert das transparente Stream-Assistant-HUD. Status, Analytics, Ereignislog und Session-Reset liegen unter `/api/animazingpal/live-host/stream-assistant/*`.
+- **Sichere Einmalmigration**: Beim ersten Start importiert AnimazingPal bei Bedarf `plugin:sidekick:config` und `sidekick_memory` transaktional. Die Quell-Settings und die Quelltabelle bleiben unverändert; ein Migrationsbeleg verhindert Doppelimporte.
+
 - **Plattform-Auswahl** zwischen Animaze, VTube Studio und VSeeFace
 - **TikTok Events → Avatar-Aktionen**:
   - Geschenke → Emotes, Hotkeys, Expressions, Motions, Posen oder Idle-Reset

@@ -89,6 +89,13 @@ describe('plugin WorkflowStep contracts', () => {
     }
   });
 
+  test('uses the shipped Talking Heads controls for its demo steps', () => {
+    const talkingHeads = buildGuides(repoRoot).find((guide) => guide.id === 'talking-heads');
+
+    expect(talkingHeads.steps.find((step) => step.id === 'character-select').capture.assertVisible).toBe('#assetCharacter');
+    expect(talkingHeads.steps.find((step) => step.id === 'speech-map').capture.assertVisible).toBe('#previewText');
+  });
+
   test('creates a real local timer before documenting the Advanced Timer overlay URL', () => {
     const guide = buildGuides(repoRoot).find((candidate) => candidate.id === 'advanced-timer');
     const overlay = guide.steps.find((step) => step.id === 'timer-overlay');

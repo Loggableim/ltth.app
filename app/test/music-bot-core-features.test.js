@@ -111,6 +111,126 @@ describe('Music Bot core features', () => {
     expect(plugin._playNextFromQueue).toHaveBeenCalledTimes(1);
   });
 
+  test('pins the playing, queued, in-flight pre-cache, and radio-prefetched cache files', () => {
+    const plugin = new MusicBotPlugin({
+      getSocketIO: jest.fn(() => ({ emit: jest.fn() })),
+      getDatabase: jest.fn(() => ({})),
+      log: jest.fn()
+    });
+    plugin.mediaCache = { pin: jest.fn(), unpin: jest.fn() };
+    plugin.playbackEngine = { getNowPlaying: jest.fn(() => ({ trackKey: 'playing-track' })) };
+    plugin._precacheTasks.set('in-flight-track', {});
+    plugin._radioPrefetch = { prepared: { trackKey: 'radio-prefetched-track' } };
+    plugin._pinnedCacheKeys = new Set(['obsolete-track']);
+
+    plugin._refreshCachePins([{ trackKey: 'queued-track' }]);
+
+    expect(plugin.mediaCache.pin).toHaveBeenCalledWith('playing-track');
+    expect(plugin.mediaCache.pin).toHaveBeenCalledWith('queued-track');
+    expect(plugin.mediaCache.pin).toHaveBeenCalledWith('in-flight-track');
+    expect(plugin.mediaCache.pin).toHaveBeenCalledWith('radio-prefetched-track');
+    expect(plugin.mediaCache.unpin).toHaveBeenCalledWith('obsolete-track');
+  });
+
+  test('pins a radio-prefetched track as soon as Auto-DJ resolves it', async () => {
+    const plugin = new MusicBotPlugin({
+      getSocketIO: jest.fn(() => ({ emit: jest.fn() })),
+      getDatabase: jest.fn(() => ({})),
+      log: jest.fn()
+    });
+    plugin.config.autoDJ = { ...plugin.config.autoDJ, enabled: true };
+    plugin.autoDJ = {};
+    plugin.queueManager = { getQueue: jest.fn(() => []) };
+    plugin.playbackEngine = { getNowPlaying: jest.fn(() => ({ trackKey: 'playing-track' })) };
+    plugin.mediaCache = { pin: jest.fn(), unpin: jest.fn() };
+    plugin._maybePlayAutoDJ = jest.fn(async () => ({
+      prefetched: true,
+      track: { trackKey: 'radio-prefetched-track', title: 'Radio track' }
+    }));
+
+    await plugin._startRadioPrefetch({ id: 'playing-track', duration: 180 });
+
+    expect(plugin.mediaCache.pin).toHaveBeenCalledWith('radio-prefetched-track');
+  });
+
+  test('enriches one stale catalog entry asynchronously and schedules the next background pass', async () => {
+    const plugin = new MusicBotPlugin({
+      getSocketIO: jest.fn(() => ({ emit: jest.fn() })),
+      getDatabase: jest.fn(() => ({})),
+      log: jest.fn()
+    });
+    const candidate = {
+      songId: 8,
+      title: 'Older catalog song',
+      artist: 'Radio Artist',
+      url: 'https://example.test/older-song'
+    };
+    plugin.musicCatalog = {
+      getMetadataEnrichmentCandidates: jest.fn(() => [candidate]),
+      markMetadataEnrichmentAttempt: jest.fn(),
+      resolveOrUpsert: jest.fn()
+    };
+    plugin.musicResolver = {
+      resolve: jest.fn(async () => ({
+        success: true,
+        song: { title: 'Older catalog song', artist: 'Radio Artist', bpm: 124, genres: ['rock'] }
+      }))
+    };
+    plugin._scheduleCatalogMetadataEnrichment = jest.fn();
+
+    await plugin._runCatalogMetadataEnrichment();
+
+    expect(plugin.musicCatalog.markMetadataEnrichmentAttempt).toHaveBeenCalledWith(8);
+    expect(plugin.musicResolver.resolve).toHaveBeenCalledWith('https://example.test/older-song');
+    expect(plugin.musicCatalog.resolveOrUpsert).toHaveBeenCalledWith(expect.objectContaining({
+      url: 'https://example.test/older-song', bpm: 124, genres: ['rock']
+    }));
+    expect(plugin._scheduleCatalogMetadataEnrichment).toHaveBeenCalledWith(20_000);
+  });
+
+  test('processes a TikTok gift event ID only once', async () => {
+    const plugin = new MusicBotPlugin({
+      getSocketIO: jest.fn(() => ({ emit: jest.fn() })),
+      getDatabase: jest.fn(() => ({})),
+      log: jest.fn(),
+      emit: jest.fn()
+    });
+    plugin.config.monetization = {
+      ...plugin.config.monetization,
+      payToPlayEnabled: true,
+      payToPlayGiftCatalog: ['rose']
+    };
+    plugin._emitToast = jest.fn();
+    plugin._emitChatResponse = jest.fn();
+
+    const event = { eventId: 'gift-event-42', username: 'viewer', giftName: 'Rose' };
+    await Promise.all([plugin._handleGiftEvent(event), plugin._handleGiftEvent(event)]);
+
+    expect(plugin._getRequestCredits('viewer')).toBe(1);
+    expect(plugin._emitToast).toHaveBeenCalledTimes(1);
+  });
+
+  test('uses a populated TikTok message ID when an earlier event ID field is blank', async () => {
+    const plugin = new MusicBotPlugin({
+      getSocketIO: jest.fn(() => ({ emit: jest.fn() })),
+      getDatabase: jest.fn(() => ({})),
+      log: jest.fn(),
+      emit: jest.fn()
+    });
+    plugin.config.monetization = {
+      ...plugin.config.monetization,
+      payToPlayEnabled: true,
+      payToPlayGiftCatalog: ['rose']
+    };
+    plugin._emitToast = jest.fn();
+
+    const event = { eventId: '', messageId: 'gift-message-43', username: 'viewer', giftName: 'Rose' };
+    await Promise.all([plugin._handleGiftEvent(event), plugin._handleGiftEvent(event)]);
+
+    expect(plugin._getRequestCredits('viewer')).toBe(1);
+    expect(plugin._emitToast).toHaveBeenCalledTimes(1);
+  });
+
   test('enforces max requests per user case-insensitively', () => {
     const db = createDbMock();
     const api = createApiMock(db);
@@ -413,6 +533,29 @@ describe('Music Bot core features', () => {
     await engine._fadeVolume(50, 0, 150, false);
 
     expect(maxInFlight).toBe(1);
+  });
+
+  test('settles the previous fade promise when a later fade supersedes it', async () => {
+    jest.useFakeTimers();
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    engine._setMpvVolume = jest.fn(async () => {});
+
+    try {
+      const firstFade = engine._fadeVolume(50, 0, 500);
+      await Promise.resolve();
+      const secondFade = engine._fadeVolume(0, 50, 0);
+      let firstFadeSettled = false;
+      firstFade.then(() => { firstFadeSettled = true; });
+
+      await jest.runAllTimersAsync();
+      await secondFade;
+      await Promise.resolve();
+
+      expect(firstFadeSettled).toBe(true);
+      expect(engine._fadeTimer).toBeNull();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   test('starts the MPV executable directly instead of the Windows command wrapper', () => {
@@ -834,6 +977,33 @@ describe('Music Bot core features', () => {
     autoDJ.markTrackStarted(result.song);
     expect(autoDJ.getStatus().consecutiveCount).toBe(1);
     expect(autoDJ.getStatus().lastResult.state).toBe('playing');
+  });
+
+  test('stops normal Auto-DJ at its consecutive-track limit but permits a forced manual next track', async () => {
+    const resolver = {
+      resolvePlaylistEntry: jest.fn(async () => ({
+        success: true,
+        song: { title: 'Manual Auto-DJ track', youtubeId: 'manual-autodj-track' }
+      }))
+    };
+    const autoDJ = new AutoDJ({
+      enabled: true,
+      mode: 'playlist',
+      playlistUrls: ['https://www.youtube.com/playlist?list=playlist'],
+      maxConsecutiveAutoDJ: 1
+    }, resolver, createDbMock(), { log: jest.fn() });
+    autoDJ.markTrackStarted({ title: 'First Auto-DJ track', youtubeId: 'first-autodj-track' });
+
+    await expect(autoDJ.getNextSong()).resolves.toBeNull();
+    expect(autoDJ.getStatus()).toMatchObject({
+      consecutiveCount: 1,
+      maxConsecutiveAutoDJ: 1,
+      lastResult: { state: 'limit-reached' }
+    });
+
+    await expect(autoDJ.getNextSong(true)).resolves.toMatchObject({
+      song: { youtubeId: 'manual-autodj-track' }
+    });
   });
 
   test('advances through individual entries when Auto-DJ receives one playlist URL', async () => {

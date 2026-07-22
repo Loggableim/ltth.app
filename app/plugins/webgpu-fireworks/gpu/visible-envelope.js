@@ -321,7 +321,7 @@
     };
     const originBounds = endpointBounds(projectedOrigin);
     const targetBounds = endpointBounds(projectedTarget);
-    const belowCanvasLaunch = origin.y > viewport.height;
+    const belowCanvasLaunch = origin.y >= viewport.height;
     const constraints = [
       {
         ...originBounds,

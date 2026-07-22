@@ -112,7 +112,7 @@ describe('Talking Heads Avatar Generation Socket Events', () => {
       expect.objectContaining({
         userId: 'test_user',
         username: 'TestUser',
-        styleKey: 'cartoon',
+        styleKey: 'asset:boba:Fox',
         sprites: expect.any(Object)
       })
     );
@@ -153,7 +153,7 @@ describe('Talking Heads Avatar Generation Socket Events', () => {
       body: {
         userId: 'assigned_user',
         username: 'AssignedUser',
-        styleKey: 'cartoon',
+        styleKey: 'asset:boba:Fox',
         profileImageUrl: 'https://example.com/profile.jpg'
       }
     };
@@ -172,7 +172,7 @@ describe('Talking Heads Avatar Generation Socket Events', () => {
       expect.objectContaining({
         userId: 'assigned_user',
         username: 'AssignedUser',
-        styleKey: 'cartoon',
+        styleKey: 'asset:boba:Fox',
         sprites: expect.any(Object)
       })
     );
@@ -189,9 +189,9 @@ describe('Talking Heads Avatar Generation Socket Events', () => {
     plugin = new TalkingHeadsPlugin(mockApi);
     await plugin.init();
 
-    // Mock _generateAvatarAndSprites to simulate failure
-    plugin._generateAvatarAndSprites = jest.fn().mockRejectedValue(
-      new Error('API key not configured')
+    // Mock local asset materialization to simulate a broken asset installation.
+    plugin._getConfiguredAssetAvatar = jest.fn().mockRejectedValue(
+      new Error('Local asset missing')
     );
 
     // Get the route handler

@@ -80,8 +80,22 @@ class Translator {
       return { translated: false, text: trimmed };
     }
 
-    // Cache-Check
-    const cacheKey = trimmed.toLowerCase().slice(0, 200);
+    // Resolve the complete translation job before cache lookup. The same text
+    // can validly have different results after a language/model/limit change.
+    const sourceLang = this._resolveSourceLanguage(cfg, options);
+    const targetLang = String(cfg.targetLanguage || 'en').toLowerCase();
+    const maxLen = Number(cfg.maxTextLength) > 0 ? Number(cfg.maxTextLength) : 500;
+    if (sourceLang === targetLang) {
+      // Already in target language - save tokens.
+      return { translated: false, text: trimmed, sameAsTarget: true };
+    }
+    const cacheKey = this._createCacheKey({
+      text: trimmed,
+      sourceLanguage: sourceLang,
+      targetLanguage: targetLang,
+      model: cfg.model,
+      maxTextLength: maxLen
+    });
     const cached = this._cache.get(cacheKey);
     if (cached && (Date.now() - cached.ts) < this._cacheTtlMs) {
       return {
@@ -115,20 +129,9 @@ class Translator {
     }
 
     // Text kürzen falls nötig
-    const maxLen = cfg.maxTextLength || 500;
     const inputText = trimmed.length > maxLen ? trimmed.slice(0, maxLen) + '…' : trimmed;
 
     // Prompt bauen
-    // sourceLanguage kann sein: explizit aus Optionen > cfg.sourceLanguage > detected > autoDefault
-    let sourceLang = options.sourceLanguage || cfg.sourceLanguage || 'auto';
-    if (sourceLang === 'auto') {
-      sourceLang = options._detectedLanguage || cfg.autoDetectDefault || 'de';
-    }
-    const targetLang = cfg.targetLanguage || 'en';
-    if (sourceLang === targetLang) {
-      // Bereits in Zielsprache - keine Übersetzung nötig, Token sparen
-      return { translated: false, text: trimmed, sameAsTarget: true };
-    }
     const systemPrompt = `You are a real-time caption translator. Translate the following ${sourceLang} text to ${targetLang}. Return ONLY the translation, no explanations, no quotes, no formatting. Keep the tone and style. If the text is already in ${targetLang}, return it unchanged.`;
 
     // Request starten
@@ -329,6 +332,24 @@ class Translator {
     }
   }
 
+  _resolveSourceLanguage(cfg, options) {
+    let sourceLanguage = options.sourceLanguage || cfg.sourceLanguage || 'auto';
+    if (sourceLanguage === 'auto') {
+      sourceLanguage = options._detectedLanguage || cfg.autoDetectDefault || 'de';
+    }
+    return String(sourceLanguage).toLowerCase();
+  }
+
+  _createCacheKey({ text, sourceLanguage, targetLanguage, model, maxTextLength }) {
+    return JSON.stringify({
+      text,
+      sourceLanguage,
+      targetLanguage,
+      model: model || 'deepseek-v4-flash',
+      maxTextLength
+    });
+  }
+
   /**
    * Ruft die native Ollama Cloud API auf.
    */
@@ -431,7 +452,13 @@ class Translator {
    * Config aktualisieren.
    */
   updateConfig(config) {
+    const previousTranslation = JSON.stringify(this.config?.translation || {});
+    const nextTranslation = JSON.stringify(config?.translation || {});
     this.config = config;
+    if (previousTranslation !== nextTranslation) {
+      this.clearCache();
+      this._pendingRequests.clear();
+    }
   }
 
   /**

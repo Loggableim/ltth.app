@@ -8,6 +8,11 @@ function getPath(object, keyPath) {
   return keyPath.split('.').reduce((value, key) => value?.[key], object);
 }
 
+function readPluginLocale(locale) {
+  const data = JSON.parse(fs.readFileSync(path.join(pluginRoot, `locales/${locale}.json`), 'utf8'));
+  return data.plugins?.['music-bot'] || data;
+}
+
 function readSectionMap(source, constantName) {
   const block = source.match(new RegExp(`const ${constantName} = Object\\.fromEntries\\(Object\\.entries\\(\\{([\\s\\S]*?)\\}\\)\\.flatMap`));
   expect(block).not.toBeNull();
@@ -61,9 +66,20 @@ describe('Music Bot runtime i18n', () => {
     });
   });
 
+  test('exposes Crossfade persistence and the Auto-DJ cap as accessible, user-visible controls', () => {
+    const html = fs.readFileSync(path.join(pluginRoot, 'ui.html'), 'utf8');
+    const source = fs.readFileSync(path.join(pluginRoot, 'assets/ui.js'), 'utf8');
+
+    expect(html).toMatch(/id="crossfade-input"[^>]*max="15"[^>]*aria-describedby="crossfade-help"/);
+    expect(html).toContain('id="crossfade-save-status"');
+    expect(html).toMatch(/id="auto-dj-max-consecutive"[^>]*max="100"[^>]*aria-describedby="auto-dj-limit-hint"/);
+    expect(source).toContain("tr('consecutiveProgress'");
+    expect(source).toContain("tr('autoDjLimitReached'");
+    expect(source).toContain('document.activeElement !== autoDjMaxConsecutive');
+  });
+
   test.each(locales)('provides complete non-empty UI and overlay runtime translations for %s', (locale) => {
-    const data = JSON.parse(fs.readFileSync(path.join(pluginRoot, `locales/${locale}.json`), 'utf8'));
-    const base = data.music_bot.ui;
+    const base = readPluginLocale(locale).music_bot.ui;
 
     Object.values(uiRuntimePaths).forEach((keyPath) => {
       expect(getPath(base, keyPath)).toEqual(expect.any(String));
@@ -76,7 +92,7 @@ describe('Music Bot runtime i18n', () => {
   });
 
   test.each(locales)('preserves the shared generated-plugin locale contract for %s', (locale) => {
-    const base = JSON.parse(fs.readFileSync(path.join(pluginRoot, `locales/${locale}.json`), 'utf8')).music_bot;
+    const base = readPluginLocale(locale).music_bot;
     expect(base.plugin.description).toEqual(expect.any(String));
     expect(base.ui.actions.save).toEqual(expect.any(String));
     expect(base.ui.status.ready).toEqual(expect.any(String));
@@ -89,7 +105,7 @@ describe('Music Bot runtime i18n', () => {
 
   test.each(locales)('resolves every literal dynamic admin key from a meaningful section in %s', (locale) => {
     const source = fs.readFileSync(path.join(pluginRoot, 'assets/ui.js'), 'utf8');
-    const base = JSON.parse(fs.readFileSync(path.join(pluginRoot, `locales/${locale}.json`), 'utf8')).music_bot.ui;
+    const base = readPluginLocale(locale).music_bot.ui;
     const runtimeSections = readSectionMap(source, 'RUNTIME_I18N_SECTIONS');
     const catalogSections = readSectionMap(source, 'CATALOG_I18N_SECTIONS');
     const runtimeKeys = [...new Set(Array.from(source.matchAll(/(?<![A-Za-z])tr\('([^']+)'/g), (match) => match[1]))];
@@ -109,7 +125,7 @@ describe('Music Bot runtime i18n', () => {
 
   test.each(locales)('keeps every literal dynamic callsite placeholder-compatible with %s', (locale) => {
     const source = fs.readFileSync(path.join(pluginRoot, 'assets/ui.js'), 'utf8');
-    const base = JSON.parse(fs.readFileSync(path.join(pluginRoot, `locales/${locale}.json`), 'utf8')).music_bot.ui;
+    const base = readPluginLocale(locale).music_bot.ui;
     const maps = {
       tr: readSectionMap(source, 'RUNTIME_I18N_SECTIONS'),
       catalogTr: readSectionMap(source, 'CATALOG_I18N_SECTIONS')
@@ -141,7 +157,7 @@ describe('Music Bot runtime i18n', () => {
     emittedKeys.forEach((key) => {
       expect(runtimeSections[key]).toEqual(expect.any(String));
       locales.forEach((locale) => {
-        const base = JSON.parse(fs.readFileSync(path.join(pluginRoot, `locales/${locale}.json`), 'utf8')).music_bot.ui;
+        const base = readPluginLocale(locale).music_bot.ui;
         expect(getPath(base, `${runtimeSections[key]}.${key}`)).toEqual(expect.any(String));
       });
     });
@@ -190,8 +206,8 @@ describe('Music Bot runtime i18n', () => {
     const source = fs.readFileSync(path.join(pluginRoot, 'assets/ui.js'), 'utf8');
     const runtimeSections = readSectionMap(source, 'RUNTIME_I18N_SECTIONS');
     const catalogSections = readSectionMap(source, 'CATALOG_I18N_SECTIONS');
-    const german = JSON.parse(fs.readFileSync(path.join(pluginRoot, 'locales/de.json'), 'utf8')).music_bot.ui;
-    const translated = JSON.parse(fs.readFileSync(path.join(pluginRoot, `locales/${locale}.json`), 'utf8')).music_bot.ui;
+    const german = readPluginLocale('de').music_bot.ui;
+    const translated = readPluginLocale(locale).music_bot.ui;
     const dynamicPaths = new Set([
       ...Array.from(source.matchAll(/(?<![A-Za-z])tr\('([^']+)'/g), (match) => `${runtimeSections[match[1]]}.${match[1]}`),
       ...Array.from(source.matchAll(/catalogTr\('([^']+)'/g), (match) => `${catalogSections[match[1]]}.${match[1]}`)
@@ -248,7 +264,7 @@ describe('Music Bot runtime i18n', () => {
       'safety.testToneCompleted': 'Test sonore terminé.'
     }]
   ])('uses reviewed language-native dynamic copy in %s', (locale, expected) => {
-    const base = JSON.parse(fs.readFileSync(path.join(pluginRoot, `locales/${locale}.json`), 'utf8')).music_bot.ui;
+    const base = readPluginLocale(locale).music_bot.ui;
     Object.entries(expected).forEach(([keyPath, value]) => expect(getPath(base, keyPath)).toBe(value));
   });
 });

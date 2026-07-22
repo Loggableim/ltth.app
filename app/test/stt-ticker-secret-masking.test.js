@@ -1,4 +1,6 @@
 const SttTickerPlugin = require('../plugins/stt-ticker/main');
+const DeepgramAsrClient = require('../plugins/stt-ticker/backend/asr/deepgram-client');
+const ElevenLabsAsrClient = require('../plugins/stt-ticker/backend/asr/elevenlabs-client');
 const fs = require('fs');
 const path = require('path');
 
@@ -52,11 +54,21 @@ function createHarness() {
   };
   plugin.asrPipeline = {
     updateConfig: jest.fn(),
+    getDeepgramApiKey: jest.fn(() => SECRETS.deepgram),
+    getElevenLabsApiKey: jest.fn(() => SECRETS.elevenlabs),
+    getCredentialStatus: jest.fn(() => ({
+      deepgram: { configured: true, source: 'config' },
+      elevenlabs: { configured: true, source: 'config' },
+      fishaudio: { configured: true, source: 'config' }
+    })),
     getStatus: jest.fn(() => ({
       provider: 'deepgram',
       deepgramConfigured: true,
+      deepgramKeySource: 'config',
       elevenlabsConfigured: true,
+      elevenlabsKeySource: 'config',
       fishaudioConfigured: true,
+      fishaudioKeySource: 'config',
       deepgramModel: 'nova-2',
       diagnostics: {}
     }))
@@ -123,6 +135,73 @@ describe('STT Ticker secret masking', () => {
     expectNoSecrets(multilangResponse.body);
     expect(multilangResponse.body.translation.apiKey).toBe('__KEEP__');
     expect(multilangResponse.body.asr.deepgramApiKey).toBe('__KEEP__');
+  });
+
+  test('external credential status exposes only configured and source metadata', () => {
+    const { plugin } = createHarness();
+    plugin.config.asr.deepgramApiKey = '';
+    plugin.config.asr.elevenlabsApiKey = '';
+    plugin.config.asr.fishaudioApiKey = '';
+    plugin.asrPipeline.getCredentialStatus.mockReturnValue({
+      deepgram: { configured: true, source: 'environment' },
+      elevenlabs: { configured: true, source: 'file' },
+      fishaudio: { configured: false, source: null }
+    });
+    plugin.asrPipeline.getStatus.mockReturnValue({
+      provider: 'deepgram',
+      deepgramConfigured: true,
+      deepgramKeySource: 'environment',
+      elevenlabsConfigured: true,
+      elevenlabsKeySource: 'file',
+      fishaudioConfigured: false,
+      fishaudioKeySource: null,
+      diagnostics: {}
+    });
+
+    const safe = plugin._getSafeConfig();
+    const status = plugin._getStatus();
+
+    expect(safe.asr).toMatchObject({
+      deepgramApiKey: '__KEEP__',
+      deepgramApiKeyConfigured: true,
+      deepgramApiKeySource: 'environment',
+      elevenlabsApiKey: '__KEEP__',
+      elevenlabsApiKeyConfigured: true,
+      elevenlabsApiKeySource: 'file',
+      fishaudioApiKey: '',
+      fishaudioApiKeyConfigured: false,
+      fishaudioApiKeySource: null
+    });
+    expect(status.asr).toMatchObject({
+      deepgramKeySource: 'environment',
+      elevenlabsKeySource: 'file',
+      fishaudioKeySource: null
+    });
+    expectNoSecrets({ safe, status });
+  });
+
+  test('provider key tests use the resolved credential when no key is submitted', async () => {
+    const deepgramTest = jest.spyOn(DeepgramAsrClient.prototype, 'testConnection')
+      .mockResolvedValue({ ok: true, status: 200 });
+    const elevenLabsTest = jest.spyOn(ElevenLabsAsrClient.prototype, 'testConnection')
+      .mockResolvedValue({ ok: true, status: 200 });
+    const { plugin, routes } = createHarness();
+    plugin.config.asr.deepgramApiKey = '';
+    plugin.config.asr.elevenlabsApiKey = '';
+
+    const deepgramResponse = createResponse();
+    await routes['post:/api/stt-ticker/asr/test-deepgram']({ body: {} }, deepgramResponse);
+    const elevenLabsResponse = createResponse();
+    await routes['post:/api/stt-ticker/asr/test-elevenlabs']({ body: {} }, elevenLabsResponse);
+
+    expect(plugin.asrPipeline.getDeepgramApiKey).toHaveBeenCalled();
+    expect(plugin.asrPipeline.getElevenLabsApiKey).toHaveBeenCalled();
+    expect(deepgramTest).toHaveBeenCalled();
+    expect(elevenLabsTest).toHaveBeenCalled();
+    expectNoSecrets({ deepgramResponse: deepgramResponse.body, elevenLabsResponse: elevenLabsResponse.body });
+
+    deepgramTest.mockRestore();
+    elevenLabsTest.mockRestore();
   });
 
   test('browser pages do not fetch stored secrets or place translation keys in URLs', () => {

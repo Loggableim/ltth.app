@@ -612,38 +612,6 @@
       ]
     },
     {
-      "id": "sidekick",
-      "name": {
-        "en": "Sidekick"
-      },
-      "description": {
-        "en": "Intelligent stream assistant that delegates speech and avatar responses through AnimazingPal and Fish.audio. Features event analysis, automatic responses, user memory with decay, message batching, relevance scoring, and comprehensive stream analytics.",
-        "de": "Intelligenter Stream-Assistent, der Sprache und Avatar-Reaktionen über AnimazingPal und Fish.audio delegiert. Bietet Event-Analyse, automatische Antworten, Benutzer-Gedächtnis mit Verfall, Nachrichten-Batching, Relevanz-Scoring und umfassende Stream-Analytik.",
-        "es": "Asistente de stream inteligente que delega voz y respuestas de avatar mediante AnimazingPal y Fish.audio. Incluye análisis de eventos, respuestas automáticas, memoria de usuarios con decaimiento, agrupación de mensajes, puntuación de relevancia y análisis completo de streams.",
-        "fr": "Assistant de stream intelligent qui délègue la voix et les réponses d'avatar via AnimazingPal et Fish.audio. Comprend l'analyse d'événements, les réponses automatiques, la mémoire utilisateur avec déclin, le regroupement de messages, le scoring de pertinence et l'analytique complète de streams."
-      },
-      "version": "1.0.0",
-      "author": "Pup Cid",
-      "category": "tool",
-      "channel": "open-beta",
-      "badges": [
-        "subscriber-only"
-      ],
-      "access": {
-        "type": "subscriber"
-      },
-      "packageUrl": "https://ltth.app/plugin-store/packages/sidekick-1.0.0.zip",
-      "sha256": "8c0940d3fe3541ea19d5b280fb7cafbf07189d2c6859f01a548526ee393d0fad",
-      "pricing": {
-        "type": "free",
-        "amount": 0,
-        "currency": "EUR"
-      },
-      "screenshots": [
-        "/screenshots/features/sidekick-dashboard.png"
-      ]
-    },
-    {
       "id": "soundboard",
       "name": {
         "en": "Soundboard"

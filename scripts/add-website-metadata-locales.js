@@ -17,7 +17,6 @@ const names = {
   'config-import': ['Config Import', 'Konfigurationsimport'],
   pluginSystem: ['Plugin System', 'Plugin-System'],
   security: ['Security', 'Sicherheit'],
-  sidekick: ['Sidekick', 'Sidekick'],
   slotMachine: ['Slot Machine', 'Slot Machine'],
   talkingHeads: ['Talking Heads', 'Talking Heads'],
   tikfinityApi: ['TikFinity API', 'TikFinity-API'],

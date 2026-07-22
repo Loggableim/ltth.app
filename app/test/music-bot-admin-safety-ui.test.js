@@ -62,20 +62,21 @@ describe('Music Bot admin safety UI', () => {
     const root = path.join(__dirname, '..', 'plugins', 'music-bot', 'locales');
     for (const locale of ['de', 'en', 'es', 'fr']) {
       const translations = JSON.parse(fs.readFileSync(path.join(root, `${locale}.json`), 'utf8'));
-      expect(translations.music_bot.ui.safety).toEqual(expect.objectContaining({
+      const messages = (translations.plugins?.['music-bot'] || translations).music_bot.ui;
+      expect(messages.safety).toEqual(expect.objectContaining({
         emergencyStop: expect.any(String),
         unlock: expect.any(String),
         reset: expect.any(String),
         testTone: expect.any(String)
       }));
-      expect(translations.music_bot.ui.health).toEqual(expect.objectContaining({
+      expect(messages.health).toEqual(expect.objectContaining({
         refresh: expect.any(String),
         export: expect.any(String),
         ipcLatency: expect.any(String),
         mediaTitle: expect.any(String),
         cache: expect.any(String)
       }));
-      expect(translations.music_bot.ui.moderation).toEqual(expect.objectContaining({
+      expect(messages.moderation).toEqual(expect.objectContaining({
         banTrack: expect.any(String),
         banArtist: expect.any(String),
         banChannel: expect.any(String),

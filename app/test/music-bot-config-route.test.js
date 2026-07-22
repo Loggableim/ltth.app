@@ -80,6 +80,39 @@ function hydratePluginForConfigRoute(plugin) {
 }
 
 describe('music-bot POST /api/plugins/music-bot/config', () => {
+  test('applies the persisted Crossfade duration to the playback engine', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    hydratePluginForConfigRoute(plugin);
+    plugin._registerRoutes();
+    const response = createResponseMock();
+
+    await api.handlers['POST:/api/plugins/music-bot/config']({
+      body: { playback: { crossfadeDuration: 8000 } }
+    }, response);
+
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    expect(plugin.config.playback.crossfadeDuration).toBe(8000);
+    expect(plugin.playbackEngine.config.crossfadeDuration).toBe(8000);
+  });
+
+  test('schedules cache cleanup after a config update without awaiting it in the request', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    hydratePluginForConfigRoute(plugin);
+    const cleanup = new Promise(() => {});
+    plugin.mediaCache = { schedulePrune: jest.fn(() => cleanup) };
+    plugin._registerRoutes();
+    const response = createResponseMock();
+
+    await api.handlers['POST:/api/plugins/music-bot/config']({
+      body: { queue: { maxLength: 61 } }
+    }, response);
+
+    expect(plugin.mediaCache.schedulePrune).toHaveBeenCalledWith({ protectedKeys: [] });
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+  });
+
   test('rejects malformed nested sections without mutating or persisting runtime config', async () => {
     const api = createApi();
     const plugin = new MusicBotPlugin(api);
@@ -246,6 +279,52 @@ describe('music-bot POST /api/plugins/music-bot/config', () => {
     expect(plugin.queueManager.config).toBe(plugin.config);
   });
 
+  test('serializes a volume update ahead of a concurrent general config save', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    hydratePluginForConfigRoute(plugin);
+    const persistedSnapshots = [];
+    api.setConfig.mockImplementation(async (_key, config) => {
+      persistedSnapshots.push(structuredClone(config));
+      return true;
+    });
+    let releaseVolume;
+    let markVolumeStarted;
+    const volumeStarted = new Promise((resolve) => { markVolumeStarted = resolve; });
+    plugin._applyAudioVolume = jest.fn()
+      .mockImplementationOnce(() => {
+        markVolumeStarted();
+        return new Promise((resolve) => { releaseVolume = resolve; });
+      })
+      .mockResolvedValue(40);
+    plugin._registerRoutes();
+    const volumeResponse = createResponseMock();
+    const configResponse = createResponseMock();
+
+    const volumeRequest = api.handlers['POST:/api/plugins/music-bot/volume']({
+      body: { sourceVolume: 80 }
+    }, volumeResponse);
+    await volumeStarted;
+    const configRequest = api.handlers['POST:/api/plugins/music-bot/config']({
+      body: { queue: { maxLength: 77 } }
+    }, configResponse);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(persistedSnapshots).toHaveLength(1);
+    expect(persistedSnapshots[0]).toMatchObject({
+      audio: { sourceVolume: 80 },
+      queue: { maxLength: plugin.config.queue.maxLength }
+    });
+
+    releaseVolume(40);
+    await Promise.all([volumeRequest, configRequest]);
+
+    expect(persistedSnapshots).toHaveLength(2);
+    expect(persistedSnapshots.at(-1)).toEqual(plugin.config);
+    expect(plugin.config.queue.maxLength).toBe(77);
+  });
+
   test('rejects a queued update when the plugin lifecycle ends before its turn', async () => {
     const api = createApi();
     const plugin = new MusicBotPlugin(api);
@@ -406,7 +485,17 @@ describe('music-bot POST /api/plugins/music-bot/config', () => {
       autoDJ: {
         mode: 'mix',
         mixHistoryPercent: -12,
-        repeatCooldownHours: 300
+        repeatCooldownHours: 300,
+        genreFilterEnabled: true,
+        selectedGenres: ['Rock', 'Electronic', 'rock'],
+        artistSpacingMinutes: -10,
+        albumSpacingMinutes: 999999,
+        noveltyBudgetPercent: 20.9,
+        requestSeedsEnabled: false,
+        liveFeedbackEnabled: false,
+        previewEnabled: false,
+        chatVotingEnabled: true,
+        chatVoteCloseBeforeEndSeconds: 1
       }
     } }, res);
 
@@ -414,7 +503,16 @@ describe('music-bot POST /api/plugins/music-bot/config', () => {
     expect(persisted.autoDJ).toMatchObject({
       mode: 'mix',
       mixHistoryPercent: 0,
-      repeatCooldownHours: 168
+      repeatCooldownHours: 168,
+      selectedGenres: ['rock', 'electronic'],
+      artistSpacingMinutes: 0,
+      albumSpacingMinutes: 10080,
+      noveltyBudgetPercent: 20,
+      requestSeedsEnabled: false,
+      liveFeedbackEnabled: false,
+      previewEnabled: false,
+      chatVotingEnabled: true,
+      chatVoteCloseBeforeEndSeconds: 5
     });
     expect(plugin.autoDJ.updateConfig).toHaveBeenCalledWith(persisted.autoDJ);
   });
@@ -568,6 +666,76 @@ describe('music-bot Auto-DJ routes', () => {
       repeatCooldownHours: 1
     });
     expect(plugin.autoDJ.updateConfig).toHaveBeenCalledWith(persisted.autoDJ);
+  });
+
+  test('rejects a string Auto-DJ enabled flag instead of treating it as true', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    plugin.queueManager = { getQueue: jest.fn(() => []) };
+    plugin.playbackEngine = { isPlaying: jest.fn(() => true) };
+    plugin.autoDJ = {
+      updateConfig: jest.fn(),
+      activate: jest.fn(),
+      getStatus: jest.fn(() => ({ enabled: false }))
+    };
+    plugin._registerRoutes();
+    const response = createResponseMock();
+
+    await api.handlers['POST:/api/plugins/music-bot/auto-dj/toggle']({
+      body: { enabled: 'false' }
+    }, response);
+
+    expect(response.status).toHaveBeenCalledWith(400);
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: false,
+      error: expect.stringContaining('enabled')
+    }));
+    expect(api.setConfig).not.toHaveBeenCalled();
+    expect(plugin.autoDJ.updateConfig).not.toHaveBeenCalled();
+  });
+
+  test('serializes an Auto-DJ toggle with a concurrent general config save', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    hydratePluginForConfigRoute(plugin);
+    plugin.playbackEngine.isPlaying = jest.fn(() => true);
+    plugin.autoDJ = {
+      updateConfig: jest.fn(),
+      activate: jest.fn(),
+      getStatus: jest.fn(() => ({ enabled: true }))
+    };
+    plugin.queueManager.getQueue = jest.fn(() => []);
+    let releaseFirstPersist;
+    let markFirstPersistStarted;
+    const firstPersistStarted = new Promise((resolve) => { markFirstPersistStarted = resolve; });
+    api.setConfig.mockImplementationOnce(() => {
+      markFirstPersistStarted();
+      return new Promise((resolve) => { releaseFirstPersist = resolve; });
+    }).mockResolvedValue(true);
+    plugin._registerRoutes();
+    const toggleResponse = createResponseMock();
+    const configResponse = createResponseMock();
+
+    const toggleRequest = api.handlers['POST:/api/plugins/music-bot/auto-dj/toggle']({
+      body: { enabled: true }
+    }, toggleResponse);
+    await firstPersistStarted;
+    const configRequest = api.handlers['POST:/api/plugins/music-bot/config']({
+      body: { queue: { maxLength: 77 } }
+    }, configResponse);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(api.setConfig).toHaveBeenCalledTimes(1);
+
+    releaseFirstPersist(true);
+    await Promise.all([toggleRequest, configRequest]);
+
+    expect(api.setConfig).toHaveBeenCalledTimes(2);
+    expect(plugin.config).toMatchObject({
+      autoDJ: { enabled: true },
+      queue: { maxLength: 77 }
+    });
   });
 
   test('starts a selected queue item when the player has no current track', async () => {

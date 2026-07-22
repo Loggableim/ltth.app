@@ -229,7 +229,7 @@ module.exports = Object.freeze(applyOverlayEntryPoints({
       },
       "capture": {
         "route": "/plugins/talking-heads/ui.html",
-        "assertVisible": "#sourceAvatarSelect",
+        "assertVisible": "#assetCharacter",
         "focusText": {
           "de": "Character Select im Testprofil konfigurieren",
           "en": "Configure Character Select in the test profile",
@@ -278,7 +278,7 @@ module.exports = Object.freeze(applyOverlayEntryPoints({
           },
           {
             "type": "set-demo-value",
-            "selector": "#sourceAvatarSelect"
+            "selector": "#assetCharacter"
           }
         ],
         "postconditions": [
@@ -296,7 +296,7 @@ module.exports = Object.freeze(applyOverlayEntryPoints({
           },
           {
             "type": "visible",
-            "selector": "#sourceAvatarSelect"
+            "selector": "#assetCharacter"
           },
           {
             "type": "console",
@@ -304,7 +304,7 @@ module.exports = Object.freeze(applyOverlayEntryPoints({
           }
         ],
         "captureRule": {
-          "selector": "#sourceAvatarSelect",
+          "selector": "#assetCharacter",
           "viewport": {
             "width": 1440,
             "height": 900
@@ -343,7 +343,7 @@ module.exports = Object.freeze(applyOverlayEntryPoints({
       },
       "capture": {
         "route": "/plugins/talking-heads/ui.html",
-        "assertVisible": "#previewTtsText",
+        "assertVisible": "#previewText",
         "focusText": {
           "de": "Speech MAP im Testprofil konfigurieren",
           "en": "Configure Speech MAP in the test profile",
@@ -392,7 +392,7 @@ module.exports = Object.freeze(applyOverlayEntryPoints({
           },
           {
             "type": "set-demo-value",
-            "selector": "#previewTtsText"
+            "selector": "#previewText"
           }
         ],
         "postconditions": [
@@ -410,7 +410,7 @@ module.exports = Object.freeze(applyOverlayEntryPoints({
           },
           {
             "type": "visible",
-            "selector": "#previewTtsText"
+            "selector": "#previewText"
           },
           {
             "type": "console",
@@ -418,7 +418,7 @@ module.exports = Object.freeze(applyOverlayEntryPoints({
           }
         ],
         "captureRule": {
-          "selector": "#previewTtsText",
+          "selector": "#previewText",
           "viewport": {
             "width": 1440,
             "height": 900

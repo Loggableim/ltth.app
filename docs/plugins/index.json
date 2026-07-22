@@ -828,42 +828,6 @@
     }
   },
   {
-    "id": "sidekick",
-    "name": "Sidekick",
-    "category": "plugin",
-    "access": "development-beta",
-    "devStatus": "development-beta",
-    "storeAvailable": false,
-    "image": {
-      "de": "/screenshots/de/docs/plugins/sidekick/sidekick-card.png",
-      "en": "/screenshots/docs/plugins/sidekick/sidekick-card.png",
-      "es": "/screenshots/es/docs/plugins/sidekick/sidekick-card.png",
-      "fr": "/screenshots/fr/docs/plugins/sidekick/sidekick-card.png"
-    },
-    "translations": {
-      "de": {
-        "title": "Sidekick",
-        "summary": "Sidekick richtet Assistentenmodus, Kontextquelle und Antwortkanal ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die UI bestätigt die Konfiguration, ohne einen externen Dienst anzurufen"
-      },
-      "en": {
-        "title": "Sidekick",
-        "summary": "Sidekick configures assistant mode, context source, and response channel with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the UI confirms the configuration without calling an external service"
-      },
-      "es": {
-        "title": "Sidekick",
-        "summary": "Sidekick configura modo asistente, fuente de contexto y canal de respuesta mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la UI confirma la configuración sin llamar a un servicio externo"
-      },
-      "fr": {
-        "title": "Sidekick",
-        "summary": "Sidekick configure mode assistant, source de contexte et canal de réponse avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "l’UI confirme la configuration sans appeler de service externe"
-      }
-    }
-  },
-  {
     "id": "soundboard",
     "name": "Soundboard",
     "category": "plugin",

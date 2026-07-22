@@ -89,6 +89,8 @@ class CommandParser {
       case 'clear':
       case 'mysong':
       case 'help':
+      case 'vote1':
+      case 'vote2':
         return { type };
       case 'remove': {
         const indexArg = Number(args[0]);

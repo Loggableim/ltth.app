@@ -43,6 +43,7 @@ class PlaybackEngine extends EventEmitter {
     this.volume = this.masterVolume;
     this._buffer = '';
     this._fadeTimer = null;
+    this._activeFade = null;
     this._restartAttempts = 0;
     this._shuttingDown = false;
     this._duckActiveCount = 0;
@@ -397,10 +398,7 @@ class PlaybackEngine extends EventEmitter {
       clearTimeout(this._duckReleaseTimer);
       this._duckReleaseTimer = null;
     }
-    if (this._fadeTimer) {
-      clearInterval(this._fadeTimer);
-      this._fadeTimer = null;
-    }
+    this._cancelActiveFade();
     const socket = this.socket;
     const child = this.process;
     if (socket) {
@@ -1101,10 +1099,7 @@ class PlaybackEngine extends EventEmitter {
   }
 
   async _fadeVolume(from, to, durationMs, emitVolumeEvent = true) {
-    if (this._fadeTimer) {
-      clearInterval(this._fadeTimer);
-      this._fadeTimer = null;
-    }
+    this._cancelActiveFade();
     const duration = Math.max(durationMs, 0);
     if (duration === 0 || from === to) {
       this.volume = to;
@@ -1112,7 +1107,7 @@ class PlaybackEngine extends EventEmitter {
       if (emitVolumeEvent) {
         this.emit('volume-changed', to);
       }
-      return;
+      return true;
     }
 
     const stepInterval = 50;
@@ -1123,8 +1118,9 @@ class PlaybackEngine extends EventEmitter {
 
     await this._setMpvVolume(from);
 
-    await new Promise((resolve) => {
-      this._fadeTimer = setInterval(async () => {
+    return new Promise((resolve) => {
+      const fade = { timer: null, resolve, settled: false };
+      fade.timer = setInterval(async () => {
         try {
           currentStep += 1;
           currentVolume = currentVolume + delta;
@@ -1137,18 +1133,31 @@ class PlaybackEngine extends EventEmitter {
             this.emit('volume-changed', currentVolume);
           }
           if (currentStep >= steps) {
-            clearInterval(this._fadeTimer);
-            this._fadeTimer = null;
-            resolve();
+            this._settleFade(fade);
           }
         } catch (error) {
-          clearInterval(this._fadeTimer);
-          this._fadeTimer = null;
           this.emit('error', error);
-          resolve();
+          this._settleFade(fade);
         }
       }, stepInterval);
+      this._fadeTimer = fade.timer;
+      this._activeFade = fade;
     });
+  }
+
+  _cancelActiveFade() {
+    if (!this._activeFade) return false;
+    this._settleFade(this._activeFade);
+    return true;
+  }
+
+  _settleFade(fade) {
+    if (!fade || fade.settled) return;
+    fade.settled = true;
+    if (fade.timer) clearInterval(fade.timer);
+    if (this._fadeTimer === fade.timer) this._fadeTimer = null;
+    if (this._activeFade === fade) this._activeFade = null;
+    fade.resolve(true);
   }
 
   async getAvailableDevices() {

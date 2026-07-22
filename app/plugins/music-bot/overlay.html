@@ -593,6 +593,57 @@
       opacity: 1;
     }
 
+    .next-song-vote {
+      position: fixed;
+      left: 20px;
+      bottom: 20px;
+      width: min(360px, calc(100vw - 40px));
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--border));
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--card) 92%, #17113a);
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 220ms ease, transform 220ms ease;
+      pointer-events: none;
+    }
+    .next-song-vote.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .next-song-vote-head {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .next-song-vote-candidates {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .next-song-vote-candidate {
+      min-width: 0;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .next-song-vote-candidate strong,
+    .next-song-vote-candidate span {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .next-song-vote-candidate strong { color: var(--accent); font-size: 12px; }
+    .next-song-vote-candidate span { color: var(--muted); font-size: 11px; margin-top: 3px; }
+    .next-song-vote-info { color: var(--muted); font-size: 11px; }
+
     /* ===== Idle State ===== */
     .idle-message {
       font-size: 14px;
@@ -727,6 +778,11 @@
     <div class="up-next-title" data-i18n="plugins.music-bot.labels.up_next">Up Next</div>
     <div id="up-next-items"></div>
   </div>
+  <div id="next-song-vote" class="next-song-vote" aria-live="polite">
+    <div class="next-song-vote-head" data-i18n="plugins.music-bot.music_bot.ui.controls.overlay.nextSongVoteHeading">Nächster Song · Chat-Abstimmung</div>
+    <div id="next-song-vote-candidates" class="next-song-vote-candidates"></div>
+    <div id="next-song-vote-info" class="next-song-vote-info"></div>
+  </div>
 
   <script>
     (() => {
@@ -821,6 +877,42 @@
       const UP_NEXT_LIMIT = 3;
       const upNextWidget = document.getElementById('up-next-widget');
       const upNextItems = document.getElementById('up-next-items');
+      const nextSongVoteWidget = document.getElementById('next-song-vote');
+      const nextSongVoteCandidates = document.getElementById('next-song-vote-candidates');
+      const nextSongVoteInfo = document.getElementById('next-song-vote-info');
+
+      function renderNextSongVote(payload) {
+        const candidates = Array.isArray(payload?.candidates) ? payload.candidates : [];
+        const open = payload?.enabled !== false && payload?.status === 'open' && candidates.length === 2;
+        if (!nextSongVoteWidget || !nextSongVoteCandidates || !nextSongVoteInfo) return;
+        if (!open) {
+          nextSongVoteWidget.classList.remove('visible');
+          nextSongVoteCandidates.replaceChildren();
+          nextSongVoteInfo.textContent = '';
+          return;
+        }
+        const votes = payload.votes || {};
+        const fragment = document.createDocumentFragment();
+        candidates.forEach((candidate, index) => {
+          const item = document.createElement('div');
+          item.className = 'next-song-vote-candidate';
+          const title = document.createElement('strong');
+          title.textContent = tr('nextSongVoteCandidate', '!vote{choice} · {title}', {
+            choice: index + 1,
+            title: candidate.title || tr('nextSongVoteUnknownTitle', 'Unbekannter Titel')
+          });
+          const artist = document.createElement('span');
+          artist.textContent = tr('nextSongVoteCandidateVotes', '{artist} · {count} Stimme(n)', {
+            artist: candidate.artist || tr('nextSongVoteAutoDj', 'Auto-DJ'),
+            count: Number(votes[index + 1] || 0)
+          });
+          item.append(title, artist);
+          fragment.appendChild(item);
+        });
+        nextSongVoteCandidates.replaceChildren(fragment);
+        nextSongVoteInfo.textContent = tr('nextSongVoteInstructions', 'Im Chat mit !vote1 oder !vote2 abstimmen · bei Gleichstand gewinnt Kandidat 1.');
+        nextSongVoteWidget.classList.add('visible');
+      }
 
       function handleVoteSkipUpdate(data) {
         const bar = document.getElementById('vote-skip-bar');
@@ -894,6 +986,7 @@
         socket.on('musicbot:volume-changed', () => {});
         socket.on('musicbot:playback-sync', handlePlaybackSync);
         socket.on('musicbot:vote-skip-update', handleVoteSkipUpdate);
+        socket.on('musicbot:next-song-vote', renderNextSongVote);
       }
 
       function handleQueueUpdate(payload) {

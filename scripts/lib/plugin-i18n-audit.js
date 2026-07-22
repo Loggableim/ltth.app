@@ -97,6 +97,8 @@ function isInvariantUiText(value) {
     || value === '&#9654;'
     || value === 'ℹ️'
     || /^v?\d+(?:\.\d+){1,3}(?:[-+][\w.-]+)?$/i.test(normalized)
+    || /^\d{1,2}:\d{2}$/.test(normalized)
+    || /^(?:error|info|success|warn)$/.test(normalized)
     || /^\d+(?:p|k|x|\/s)$/i.test(normalized)
     || /^[-+]?\d+(?:[.,]\d+)?(?:\s*(?:%|x|×|\/|→|-|–)\s*[-+]?\d+(?:[.,]\d+)?)*$/.test(normalized)
     || /^[A-Za-z]$/.test(normalized)

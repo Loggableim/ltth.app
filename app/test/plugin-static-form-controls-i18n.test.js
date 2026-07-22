@@ -20,7 +20,6 @@ const pluginIds = new Set([
   'interactive-story',
   'music-bot',
   'osc-bridge',
-  'sidekick',
   'streamalchemy',
   'stt-ticker',
   'talking-heads',

@@ -39,19 +39,20 @@ describe('TalkingHeads log buffer', () => {
     expect(logs.find((entry) => entry.message.includes('Debug message'))).toBeFalsy();
   });
 
-  test('normalizes legacy SiliconFlow API endpoints', () => {
-    const legacyApi = {
+  test('normalizes local avatar lottery settings', () => {
+    const configuredApi = {
       ...api,
       getConfig: jest.fn(() => ({
-        imageApiUrl: 'https://api.siliconflow.cn/v1/image/generations'
+        lotteryGiftNames: 'Heart Me, Team Herz',
+        lotteryAnimationDuration: 99999
       })),
       getDatabase: jest.fn(() => ({ getSetting: jest.fn() }))
     };
 
-    const plugin = new TalkingHeadsPlugin(legacyApi);
+    const plugin = new TalkingHeadsPlugin(configuredApi);
 
-    expect(plugin.config.imageApiUrl).toBe('https://api.siliconflow.com/v1/images/generations');
-    expect(plugin._normalizeImageApiUrl('https://api.siliconflow.cn/v1/image/generations'))
-      .toBe('https://api.siliconflow.com/v1/images/generations');
+    expect(plugin.config.lotteryGiftNames).toEqual(['Heart Me', 'Team Herz']);
+    expect(plugin.config.lotteryAnimationDuration).toBe(10000);
+    expect(plugin.config.avatarLotteryEnabled).toBe(true);
   });
 });

@@ -198,7 +198,6 @@ describe('Official plugin store registry', () => {
     ];
     const subscriberIds = [
       'animazingpal',
-      'sidekick',
       'streamalchemy',
       'talking-heads',
       'vdoninja',
