@@ -903,8 +903,8 @@
     "id": "streamalchemy",
     "name": "StreamAlchemy",
     "category": "plugin",
-    "access": "early-version",
-    "devStatus": "early-version",
+    "access": "beta",
+    "devStatus": "beta",
     "storeAvailable": false,
     "image": {
       "de": "/screenshots/de/docs/plugins/streamalchemy/alchemy-card.png",

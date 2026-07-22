@@ -14,11 +14,11 @@ class StreamAlchemyRoutes {
 
   register() {
     this.api.registerRoute('GET', '/streamalchemy/ui', (req, res) => {
-      res.sendFile(path.join(this.pluginDir, 'ui.html'));
+      res.sendFile(path.join(this.pluginDir, 'streammonsters-ui.html'));
     });
 
     this.api.registerRoute('GET', '/streamalchemy/overlay', (req, res) => {
-      res.sendFile(path.join(this.pluginDir, 'overlay.html'));
+      res.sendFile(path.join(this.pluginDir, 'streammonsters-overlay.html'));
     });
 
     this.api.registerRoute('GET', '/api/streamalchemy/config', async (req, res) => {

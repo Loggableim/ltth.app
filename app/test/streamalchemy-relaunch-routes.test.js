@@ -49,7 +49,7 @@ describe('StreamAlchemy relaunch plugin routes', () => {
     const plugin = new StreamAlchemyPlugin(api);
     await plugin.init();
 
-    expect(tiktokEvents.map(event => event.event)).toEqual(['gift']);
+    expect(tiktokEvents.map(event => event.event)).toEqual(expect.arrayContaining(['gift', 'chat', 'streamSessionStarted']));
     expect(routes.map(route => `${route.method} ${route.path}`)).toEqual(expect.arrayContaining([
       'GET /streamalchemy/ui',
       'GET /streamalchemy/overlay',

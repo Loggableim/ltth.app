@@ -171,9 +171,9 @@ http://localhost:3000/gcce-hud/overlay
 
 ---
 
-### 4. Stream Alchemy
+### 4. Stream Monsters
 **Status:** 🔴 Early Beta
-**Version:** 1.0.0
+**Version:** 1.1.0
 **Autor:** Pup Cid
 
 **Beschreibung:**
@@ -196,7 +196,7 @@ Verwandle TikTok-Geschenke in virtuelle RPG-Items mit Crafting-Mechaniken und KI
 
 **Overlay-URL:**
 ```
-http://localhost:3000/streamalchemy/overlay
+http://localhost:3000/streammonsters/overlay
 ```
 
 **Integration:** Optional mit GCCE für Chat-Commands

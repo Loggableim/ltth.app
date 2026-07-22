@@ -1167,6 +1167,7 @@ describe('AnimazingPal live host integration', () => {
     expect(plugin.config.brain.liveHost.audio.outputDeviceId).toBe('saved-cable');
     expect(plugin.config.brain.liveHost.source.username).toBe('saved-stream');
     plugin.stopLiveHostIdleMotion();
+    plugin.stopLiveHostSourceWatchdog();
   });
 
   test('24/7 production preset also applies unattended Animaze connection defaults', async () => {

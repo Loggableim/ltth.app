@@ -171,7 +171,7 @@ http://localhost:3000/gcce-hud/overlay
 
 ---
 
-### 4. Stream Alchemy
+### 4. Stream Monsters
 **Status:** 🔴 Early Beta
 **Version:** 1.0.0
 **Autor:** Pup Cid

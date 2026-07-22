@@ -599,7 +599,7 @@
     },
     {
       "id": "stream-alchemy",
-      "canonical": "/screenshots/features/stream-alchemy.png",
+      "canonical": "/screenshots/features/stream-monsters.png",
       "route": "/streamalchemy/ui",
       "state": "default-demo",
       "viewport": {
@@ -1263,7 +1263,7 @@
     {
       "locale": "de",
       "id": "stream-alchemy",
-      "path": "screenshots/de/features/stream-alchemy.png",
+      "path": "screenshots/de/features/stream-monsters.png",
       "route": "/streamalchemy/ui",
       "state": {
         "lang": "de",
@@ -1853,7 +1853,7 @@
     {
       "locale": "en",
       "id": "stream-alchemy",
-      "path": "screenshots/features/stream-alchemy.png",
+      "path": "screenshots/features/stream-monsters.png",
       "route": "/streamalchemy/ui",
       "state": {
         "lang": "en",
@@ -2443,7 +2443,7 @@
     {
       "locale": "es",
       "id": "stream-alchemy",
-      "path": "screenshots/es/features/stream-alchemy.png",
+      "path": "screenshots/es/features/stream-monsters.png",
       "route": "/streamalchemy/ui",
       "state": {
         "lang": "es",
@@ -3033,7 +3033,7 @@
     {
       "locale": "fr",
       "id": "stream-alchemy",
-      "path": "screenshots/fr/features/stream-alchemy.png",
+      "path": "screenshots/fr/features/stream-monsters.png",
       "route": "/streamalchemy/ui",
       "state": {
         "lang": "fr",

@@ -5,7 +5,7 @@
         "comfy_root_directory_placeholder": "Chemin, p. ex. C:\\ComfyUI"
       },
       "streamalchemy": {
-        "title": "Stream Alchemy - Paramètres avancés",
+        "title": "Stream Monsters - Paramètres avancés",
         "subtitle": "Configuration complète pour la génération d'objets, les invites personnalisées, etc.",
         "tabs": {
           "general": "Général",
@@ -21,7 +21,7 @@
         "general": {
           "title": "Réglages de base",
           "enabled": "Plugin activ?",
-          "enabled_label": "Activer Stream Alchemy",
+          "enabled_label": "Activer Stream Monsters",
           "auto_crafting": "Fabrication de voitures",
           "auto_crafting_label": "Fabrication automatique avec 2 cadeaux",
           "item_generation_mode": "Mode de génération d’objets",
@@ -195,18 +195,18 @@
         "crafting_time_window_seconds": "Fenêtre de temps de fabrication (secondes)",
         "configuration": "⚙️Configuration",
         "ready_providers": "Fournisseurs prêts",
-        "streamalchemy_overlay": "Superposition StreamAlchemy",
+        "streamalchemy_overlay": "Superposition Stream Monsters",
         "generation_mode": "Mode génération",
-        "streamalchemy_relaunch": "Relance de StreamAlchemy",
+        "streamalchemy_relaunch": "Stream Monsters",
         "save_configuration": "Enregistrer la configuration",
         "provider_status": "Statut du fournisseur",
         "preferred_preset": "Préréglage préféré",
         "for_gated_hugging_face_models_accept_upstream_terms": "Pour les modèles Hugging Face fermés, acceptez les conditions en amont et fournissez HF_TOKEN ou HUGGINGFACE_TOKEN avant de démarrer LTTH.",
         "local_size": "Taille locale",
         "default_style": "Style par défaut",
-        "stream_alchemy": "🧪 Alchimie de stream",
+        "stream_alchemy": "🪺 Stream Monsters",
         "transform_tiktok_gifts_into_virtual_rpg_items_with": "Transformez les cadeaux TikTok en objets RPG virtuels grâce à des mécanismes de fabrication",
-        "stream_alchemy_configuration": "Alchimie de flux - Configuration",
+        "stream_alchemy_configuration": "Stream Monsters - Configuration",
         "live_status_for_inventory_cached_recipes_generation_providers": "Statut en direct de l'inventaire, des recettes mises en cache, des fournisseurs de génération et de la préparation du modèle local.",
         "crafting_window_ms": "Fenêtre d'artisanat ms",
         "test_local_generation": "Tester la génération locale",
@@ -214,7 +214,7 @@
       },
       "ui": {
         "app": {
-          "title": "StreamAlchemy",
+          "title": "Stream Monsters",
           "overview": "Vue d'ensemble",
           "items": "Objets",
           "recipes": "Recettes",
@@ -224,7 +224,7 @@
           "source": "Origine"
         },
         "navigation": {
-          "areas": "Sections StreamAlchemy"
+          "areas": "Sections Stream Monsters"
         },
         "metrics": {
           "items": "Objets",
@@ -249,7 +249,7 @@
           "overviewTitle": "Vue d’ensemble",
           "overviewDescription": "État en direct de l’inventaire, des recettes en cache, des fournisseurs de génération et de la disponibilité du modèle local.",
           "itemsTitle": "Objets",
-          "itemsDescription": "Cadeaux de base et résultats fabriqués conservés dans StreamAlchemy.",
+          "itemsDescription": "Cadeaux de base et résultats fabriqués conservés dans l’archive Stream Monsters.",
           "recipesTitle": "Recettes",
           "recipesDescription": "Les combinaisons de fabrication en cache réutilisent leurs images et évitent les coûts de génération répétés.",
           "generationTitle": "Génération",
@@ -320,6 +320,16 @@
           "recipeCache": "Cache de recettes",
           "existingImageReused": "Image existante réutilisée"
         }
+      },
+      "streammonsters": {
+        "heroTitle":"Votre communaute fait eclore le monde.","heroCopy":"Les cadeaux creent des oeufs elementaires deterministes. Preparez les visuels avant; les evenements live restent instantanes et surs.","promiseCopy":"Pas de hasard payant, de mises ni de recompenses transferables. Elements, bonus et duels sont visibles et reproductibles.",
+        "stepWorld":"1. Nommez votre monde","stepGifts":"2. Choisissez les cadeaux","stepAi":"3. Choisissez l IA locale","stepPrepare":"4. Preparez les visuels","stepObs":"5. Ajoutez l overlay OBS",
+        "worldHeading":"1. Votre monde","worldCopy":"Le nom TikTok connecte est utilise par defaut. Modifiez-le seulement pour un nom d affichage personnalise.","creatorPlaceholder":"Votre nom TikTok","save":"Enregistrer le monde",
+        "giftHeading":"2. Pool de cadeaux","giftCopy":"Ajoutez les cadeaux attendus. Ils sont mis en file maintenant et jamais generes pendant le live.","knownGift":"Choisissez un cadeau connu...","giftIdPlaceholder":"ex. 5655","giftNamePlaceholder":"ex. Rose","spawnEgg":"Fait apparaitre un oeuf","boostEgg":"Accelere l oeuf le plus ancien","queueGift":"Ajouter au pool de preparation",
+        "aiHeading":"3. IA d image locale","aiCopy":"Windows avec NVIDIA recoit le profil sur le plus rapide pour le GPU detecte. Les autres systemes utilisent le distant ou ComfyUI existant.","checkingAi":"Verification de la compatibilite IA locale...","checkAi":"Verifier l IA locale",
+        "prepareHeading":"4. Preparer avant le live","prepareCopy":"Un seul travail a la fois. Sans visuel pret, les spectateurs voient un oeuf de marque et utilisent !inventory au prochain stream.","prepare":"Preparer les visuels en file",
+        "overlayHeading":"5. Overlay OBS","overlayCopy":"Ajoutez cette source navigateur a OBS. Utilisez la demo avant le live.","demo":"Lancer la demo sure","dashboardHeading":"Tableau live","dashboardCopy":"L activite du stream est transparente et jamais utilisee pour la facturation.","playHeading":"Jeu communautaire","ruleElements":"Six elements deterministes : Ember, Tide, Grove, Gale, Volt et Lunar.","ruleHatch":"Les oeufs eclosent apres 30 minutes reelles; les cadeaux bonus reduisent le temps.","ruleBattle":"Les duels ont trois manches reproductibles sans mises ni prix.","readyHatch":"Pret a eclore","waiting":"En attente",
+        "noGifts":"Aucun cadeau en file pour le moment.","dashboardMetrics":"{eggs} oeufs - {hatches} eclosions - {viewers} spectateurs actifs - {duels} duels - {quests} quetes terminees - {ready}/{total} visuels prets","giftOption":"{name} - {coins} diamants","runtimeInstallStarted":"L installation verifiee du runtime a commence. Le telechargement du modele et son etat apparaitront ici.","runtimeUnsupported":"Utilisez ComfyUI existant ou un fournisseur d images distant sur ce systeme.","expertSetup":"Utiliser la configuration experte ou distante","runtimeMissing":"{resolution} recommande. Aucun paquet LTTH signe n est encore configure; utilisez ComfyUI ou la generation distante.","refreshCompatibility":"Actualiser la compatibilite","runtimeRecommended":"{resolution} recommande. Runtime : {runtime}; modele : {model}; cible : {target}.","installAi":"Installer l IA locale verifiee","localCheckFailed":"Verification de l IA locale echouee : {error}","confirmInstall":"Installer l IA locale verifiee Stream Monsters ? Runtime : {runtime} Modele : {model} Cible : {target}"
       }
     }
   }

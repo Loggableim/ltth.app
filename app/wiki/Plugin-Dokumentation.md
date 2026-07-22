@@ -738,7 +738,7 @@ Für eine detaillierte Übersicht aller Plugins mit Features, Status, Endpoints 
 
 | Status | Anzahl | Plugins |
 |--------|--------|---------|
-| 🔴 **Early Beta** | 5 | Advanced Timer, Chatango, GCCE HUD, Stream Alchemy, WebGPU Emoji Rain |
+| 🔴 **Early Beta** | 5 | Advanced Timer, Chatango, GCCE HUD, Stream Monsters, WebGPU Emoji Rain |
 | 🟡 **Beta** | 11 | Minecraft Connect, Thermal Printer, Quiz Show, Viewer XP, Leaderboard, OpenShock, Multi-Cam, Gift Milestone, VDO.Ninja, GCCE, Weather Control |
 | 🟢 **Alpha** | 6 | Emoji Rain v2.0, Soundboard, ClarityHUD, Spotlight, TTS v2.0, Live Goals |
 | 🔵 **Final** | 7 | OSC-Bridge, Config Import, Fireworks, API Bridge, CoinBattle, Flame Overlay, Hybridshock |

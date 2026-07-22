@@ -351,7 +351,7 @@
       "uses_the_official_fish_audio_api_fish_speech_with_the_s1_model_get_your_key_at": "Utiliza la API oficial Fish.audio (Fish Speech) con el modelo S1. Obtenga su clave en",
       "fish_audio_quickstart": "Inicio rápido de Fish.audio",
       "siliconflow_api_key": "Clave API de SiliconFlow",
-      "used_for_fish_speech_1_5_tts_and_streamalchemy_flux_1_schnell_image_generation": ". Se utiliza para la generación de imágenes Fish Speech 1.5 TTS y StreamAlchemy FLUX.1-schnell.",
+      "used_for_fish_speech_1_5_tts_and_streamalchemy_flux_1_schnell_image_generation": ". Se utiliza para Fish Speech 1.5 TTS y la generación local de imágenes de Stream Monsters.",
       "ollama_cloud_api_key_stt_ticker_ubersetzung": "Clave API de Ollama Cloud (traducción STT Ticker)",
       "wird_vom": "Lo utiliza el",
       "stt_ticker_plugin": "Complemento de teletipo STT",

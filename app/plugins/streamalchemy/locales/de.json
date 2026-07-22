@@ -5,7 +5,7 @@
         "comfy_root_directory_placeholder": "Pfad, z. B. C:\\ComfyUI"
       },
       "streamalchemy": {
-        "title": "Stream Alchemy - Erweiterte Einstellungen",
+        "title": "Stream Monsters - Erweiterte Einstellungen",
         "subtitle": "Umfangreiche Konfiguration für Item-Generierung, Custom Prompts und mehr",
         "tabs": {
           "general": "Allgemein",
@@ -21,7 +21,7 @@
         "general": {
           "title": "Grundeinstellungen",
           "enabled": "Plugin Aktiviert",
-          "enabled_label": "Stream Alchemy aktivieren",
+          "enabled_label": "Stream Monsters aktivieren",
           "auto_crafting": "Auto-Crafting",
           "auto_crafting_label": "Automatisches Crafting bei 2 Gifts",
           "item_generation_mode": "Item Generierungs-Modus",
@@ -195,18 +195,18 @@
         "crafting_time_window_seconds": "Herstellungszeitfenster (Sekunden)",
         "configuration": "⚙️ Konfiguration",
         "ready_providers": "Bereite Anbieter",
-        "streamalchemy_overlay": "StreamAlchemy-Overlay",
+        "streamalchemy_overlay": "Stream-Monsters-Overlay",
         "generation_mode": "Generierungsmodus",
-        "streamalchemy_relaunch": "StreamAlchemy-Relaunch",
+        "streamalchemy_relaunch": "Stream Monsters",
         "save_configuration": "Konfiguration speichern",
         "provider_status": "Anbieterstatus",
         "preferred_preset": "Bevorzugte Voreinstellung",
         "for_gated_hugging_face_models_accept_upstream_terms": "Akzeptieren Sie für geschlossene Hugging Face-Modelle die Upstream-Bedingungen und stellen Sie HF_TOKEN oder HUGGINGFACE_TOKEN bereit, bevor Sie LTTH starten.",
         "local_size": "Lokale Größe",
         "default_style": "Standardstil",
-        "stream_alchemy": "🧪 Streamen Sie Alchemy",
+        "stream_alchemy": "🪺 Stream Monsters",
         "transform_tiktok_gifts_into_virtual_rpg_items_with": "Verwandeln Sie TikTok-Geschenke mit Handwerksmechaniken in virtuelle RPG-Gegenstände",
-        "stream_alchemy_configuration": "Stream Alchemy – Konfiguration",
+        "stream_alchemy_configuration": "Stream Monsters – Konfiguration",
         "live_status_for_inventory_cached_recipes_generation_providers": "Live-Status für Inventar, zwischengespeicherte Rezepte, Erzeugungsanbieter und lokale Modellbereitschaft.",
         "crafting_window_ms": "Crafting-Fenster ms",
         "test_local_generation": "Testen Sie die lokale Generierung",
@@ -214,7 +214,7 @@
       },
       "ui": {
         "app": {
-          "title": "StreamAlchemy",
+          "title": "Stream Monsters",
           "overview": "\u00dcbersicht",
           "items": "Gegenst\u00e4nde",
           "recipes": "Rezepte",
@@ -224,7 +224,7 @@
           "source": "Quelle"
         },
         "navigation": {
-          "areas": "StreamAlchemy-Bereiche"
+          "areas": "Stream-Monsters-Bereiche"
         },
         "metrics": {
           "items": "Gegenst\u00e4nde",
@@ -241,7 +241,7 @@
           "overviewTitle": "Übersicht",
           "overviewDescription": "Live-Status für Inventar, zwischengespeicherte Rezepte, Generierungsanbieter und die Bereitschaft lokaler Modelle.",
           "itemsTitle": "Gegenstände",
-          "itemsDescription": "Basisgeschenke und hergestellte Ergebnisse, die im StreamAlchemy-Speicher abgelegt sind.",
+          "itemsDescription": "Basisgeschenke und hergestellte Ergebnisse, die im Stream-Monsters-Archiv abgelegt sind.",
           "recipesTitle": "Rezepte",
           "recipesDescription": "Zwischengespeicherte Herstellungskombinationen verwenden ihre vorhandenen Bilder erneut und vermeiden wiederholte Generierungskosten.",
           "generationTitle": "Generierung",
@@ -320,6 +320,16 @@
           "fromGift": "Vom Geschenk",
           "created": "Erstellt"
         }
+      },
+      "streammonsters": {
+        "heroTitle":"Deine Community brütet eine Welt aus.","heroCopy":"Geschenke erzeugen deterministische Element-Eier. Bereite Bilder vorher vor; Live-Ereignisse bleiben sofort und sicher.","promiseCopy":"Keine bezahlte Zufallsbelohnung, Einsaetze oder uebertragbaren Gewinne. Elemente, Boosts und Duelle sind sichtbar und reproduzierbar.",
+        "stepWorld":"1. Welt benennen","stepGifts":"2. Geschenke waehlen","stepAi":"3. Lokale KI waehlen","stepPrepare":"4. Bilder vorbereiten","stepObs":"5. OBS-Overlay hinzufuegen",
+        "worldHeading":"1. Deine Welt","worldCopy":"Der verbundene TikTok-Name wird vorausgefuellt. Aendere ihn nur fuer einen eigenen Anzeigenamen.","creatorPlaceholder":"Dein TikTok-Benutzername","save":"Welt speichern",
+        "giftHeading":"2. Geschenkpool","giftCopy":"Fuege erwartete Geschenke hinzu. Sie werden jetzt vorgemerkt und niemals im Live generiert.","knownGift":"Bekanntes Geschenk waehlen...","giftIdPlaceholder":"z.B. 5655","giftNamePlaceholder":"z.B. Rose","spawnEgg":"Erzeugt ein Ei","boostEgg":"Beschleunigt das aelteste Ei","queueGift":"Zum Vorbereitungspool hinzufuegen",
+        "aiHeading":"3. Lokale Bild-KI","aiCopy":"Windows mit NVIDIA erhaelt das schnellste sichere Profil fuer die erkannte GPU. Andere Systeme nutzen Remote oder vorhandenes ComfyUI.","checkingAi":"Lokale KI-Kompatibilitaet wird geprueft...","checkAi":"Lokale KI pruefen",
+        "prepareHeading":"4. Vor dem Live vorbereiten","prepareCopy":"Immer nur ein Job. Fehlt ein Bild, sehen Zuschauer ein Marken-Ei und nutzen im naechsten Stream !inventory.","prepare":"Vorgemerkte Bilder vorbereiten",
+        "overlayHeading":"5. OBS-Overlay","overlayCopy":"Fuege diese Browserquelle in OBS ein. Nutze vor dem Live die sichere Demo.","demo":"Sichere Demo starten","dashboardHeading":"Live-Dashboard","dashboardCopy":"Die aktuelle Stream-Aktivitaet ist transparent und wird nie fuer Abrechnung verwendet.","playHeading":"Community-Spiel","ruleElements":"Sechs deterministische Elemente: Ember, Tide, Grove, Gale, Volt und Lunar.","ruleHatch":"Eier schluepfen nach 30 Minuten Echtzeit; konfigurierte Booster-Geschenke verkuerzen den Timer.","ruleBattle":"Duelle laufen in drei reproduzierbaren Runden ohne Einsaetze oder Preise.","readyHatch":"Bereit zum Schluepfen","waiting":"Wartet",
+        "noGifts":"Noch keine Geschenke vorgemerkt.","dashboardMetrics":"{eggs} Eier - {hatches} Schluepfe - {viewers} aktive Zuschauer - {duels} Duelle - {quests} Quest-Abschluesse - {ready}/{total} Bilder bereit","giftOption":"{name} - {coins} Diamanten","runtimeInstallStarted":"Die verifizierte Runtime-Installation wurde gestartet. Modell-Download und Health-Status erscheinen hier.","runtimeUnsupported":"Nutze auf diesem System vorhandenes ComfyUI oder einen Remote-Bildanbieter.","expertSetup":"Experten- oder Remote-Setup nutzen","runtimeMissing":"{resolution} empfohlen. Ein signiertes LTTH-Runtime-Paket ist noch nicht konfiguriert; nutze ComfyUI oder Remote-Generierung.","refreshCompatibility":"Kompatibilitaet aktualisieren","runtimeRecommended":"{resolution} empfohlen. Runtime: {runtime}; Modell: {model}; Ziel: {target}.","installAi":"Verifizierte lokale KI installieren","localCheckFailed":"Pruefung der lokalen KI fehlgeschlagen: {error}","confirmInstall":"Verifizierte lokale Stream-Monsters-KI installieren? Runtime: {runtime} Modell: {model} Ziel: {target}"
       }
     }
   }

@@ -1,12 +1,12 @@
 {
   "id": "streamalchemy",
-  "name": "StreamAlchemy",
-  "version": "1.0.0",
-  "description": "Transform TikTok gifts into virtual RPG items with crafting mechanics and AI-generated icons",
+  "name": "Stream Monsters",
+  "version": "1.1.2",
+  "description": "Turn TikTok gifts into deterministic element eggs, community monsters and transparent viewer duels.",
   "author": "Pup Cid",
   "entry": "index.js",
   "enabled": false,
-  "devStatus": "early-version",
+  "devStatus": "beta",
   "dependencies": {
     "optional": [
       "gcce"
@@ -19,9 +19,9 @@
     "database"
   ],
   "descriptions": {
-    "en": "Transform TikTok gifts into virtual RPG items with crafting mechanics and AI-generated icons. Features inventory system, item crafting, and recipe management.",
-    "de": "Verwandeln Sie TikTok-Geschenke in virtuelle RPG-Items mit Crafting-Mechaniken und KI-generierten Icons. Bietet Inventarsystem, Item-Crafting und Rezept-Verwaltung.",
-    "es": "Transforma regalos de TikTok en objetos RPG virtuales con mecánicas de elaboración e iconos generados por IA. Presenta sistema de inventario, elaboración de objetos y gestión de recetas.",
-    "fr": "Transforme les cadeaux TikTok en objets RPG virtuels avec mécaniques d'artisanat et icônes générées par IA. Comprend système d'inventaire, fabrication d'objets et gestion de recettes."
+    "en": "Turn TikTok gifts into deterministic element eggs, community monsters, quests and transparent three-round duels. Visuals are prepared before the stream.",
+    "de": "TikTok-Geschenke werden zu deterministischen Element-Eiern, Community-Monstern, Quests und transparenten Drei-Runden-Duellen. Bilder werden vor dem Stream vorbereitet.",
+    "es": "Convierte regalos de TikTok en huevos elementales deterministas, monstruos comunitarios, misiones y duelos transparentes de tres rondas. Las imagenes se preparan antes del directo.",
+    "fr": "Transformez les cadeaux TikTok en oeufs elementaires deterministes, monstres communautaires, quetes et duels transparents en trois manches. Les visuels sont prepares avant le live."
   }
 }

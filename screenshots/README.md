@@ -137,7 +137,7 @@ The following files were promoted from the local browser capture set into the ca
 - `plugins.png`
 - `stt-capture.png`
 - `stt-ticker-night.png`
-- `stream-alchemy.png`
+- `stream-monsters.png`
 - `thermal-printer.png`
 - `toptier.png`
 - `tts.png`

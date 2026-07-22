@@ -5,7 +5,7 @@
         "comfy_root_directory_placeholder": "C:\\ComfyUI"
       },
       "streamalchemy": {
-        "title": "Stream Alchemy - Advanced Settings",
+        "title": "Stream Monsters - Advanced Settings",
         "subtitle": "Comprehensive configuration for item generation, custom prompts and more",
         "tabs": {
           "general": "General",
@@ -21,7 +21,7 @@
         "general": {
           "title": "Basic Settings",
           "enabled": "Plugin Enabled",
-          "enabled_label": "Enable Stream Alchemy",
+          "enabled_label": "Enable Stream Monsters",
           "auto_crafting": "Auto crafting",
           "auto_crafting_label": "Automatic crafting with 2 Gifts",
           "item_generation_mode": "Item Generation Mode",
@@ -195,18 +195,18 @@
         "crafting_time_window_seconds": "Crafting Time Window (seconds)",
         "configuration": "⚙️ Configuration",
         "ready_providers": "Ready Providers",
-        "streamalchemy_overlay": "StreamAlchemy Overlay",
+        "streamalchemy_overlay": "Stream Monsters Overlay",
         "generation_mode": "Generation mode",
-        "streamalchemy_relaunch": "StreamAlchemy Relaunch",
+        "streamalchemy_relaunch": "Stream Monsters",
         "save_configuration": "Save Configuration",
         "provider_status": "Provider Status",
         "preferred_preset": "Preferred preset",
         "for_gated_hugging_face_models_accept_upstream_terms": "For gated Hugging Face models, accept upstream terms and provide HF_TOKEN or HUGGINGFACE_TOKEN before starting LTTH.",
         "local_size": "Local size",
         "default_style": "Default style",
-        "stream_alchemy": "🧪 Stream Alchemy",
+        "stream_alchemy": "🧪 Stream Monsters",
         "transform_tiktok_gifts_into_virtual_rpg_items_with": "Transform TikTok gifts into virtual RPG items with crafting mechanics",
-        "stream_alchemy_configuration": "Stream Alchemy - Configuration",
+        "stream_alchemy_configuration": "Stream Monsters - Configuration",
         "live_status_for_inventory_cached_recipes_generation_providers": "Live status for inventory, cached recipes, generation providers, and local model readiness.",
         "crafting_window_ms": "Crafting window ms",
         "test_local_generation": "Test local generation",
@@ -214,7 +214,7 @@
       },
       "ui": {
         "app": {
-          "title": "StreamAlchemy",
+          "title": "Stream Monsters",
           "overview": "Overview",
           "items": "Items",
           "recipes": "Recipes",
@@ -224,7 +224,7 @@
           "source": "Source"
         },
         "navigation": {
-          "areas": "StreamAlchemy areas"
+          "areas": "Stream Monsters areas"
         },
         "metrics": {
           "items": "Items",
@@ -241,7 +241,7 @@
           "overviewTitle": "Overview",
           "overviewDescription": "Live status for inventory, cached recipes, generation providers, and local model readiness.",
           "itemsTitle": "Items",
-          "itemsDescription": "Base gifts and crafted results persisted in the StreamAlchemy store.",
+          "itemsDescription": "Base gifts and crafted results persisted in the Stream Monsters archive.",
           "recipesTitle": "Recipes",
           "recipesDescription": "Cached craft combinations reuse their existing images and avoid repeated generation costs.",
           "generationTitle": "Generation",
@@ -320,6 +320,16 @@
           "fromGift": "From Gift",
           "created": "Created"
         }
+      },
+      "streammonsters": {
+        "heroTitle":"Your community hatches the world.","heroCopy":"Gifts spawn deterministic element eggs. Prepare visuals before live; every live event stays instant and safe.","promiseCopy":"No paid randomness, wagers or transferable rewards. Elements, boosts and duels are visible and reproducible.",
+        "stepWorld":"1. Name your world","stepGifts":"2. Select gifts","stepAi":"3. Choose local AI","stepPrepare":"4. Prepare art","stepObs":"5. Add OBS overlay",
+        "worldHeading":"1. Your world","worldCopy":"We use the connected TikTok name by default. Change it only for a custom display name.","creatorPlaceholder":"Your TikTok username","save":"Save world",
+        "giftHeading":"2. Gift pool","giftCopy":"Add gifts you expect tonight. They are queued now, never generated while live.","knownGift":"Choose a known gift...","giftIdPlaceholder":"e.g. 5655","giftNamePlaceholder":"e.g. Rose","spawnEgg":"Spawns an egg","boostEgg":"Accelerates the oldest egg","queueGift":"Add to preparation pool",
+        "aiHeading":"3. Local image AI","aiCopy":"Windows plus NVIDIA receives the fastest safe profile for the detected GPU. Other systems can use remote or existing ComfyUI.","checkingAi":"Checking local AI compatibility...","checkAi":"Check local AI setup",
+        "prepareHeading":"4. Prepare before live","prepareCopy":"One job at a time. If art is not ready, viewers see a branded egg and can use !inventory next stream.","prepare":"Prepare queued art",
+        "overlayHeading":"5. OBS overlay","overlayCopy":"Add this browser source to OBS. Use the demo before going live.","demo":"Run safe demo","dashboardHeading":"Live dashboard","dashboardCopy":"Current stream activity is transparent and never used for billing.","playHeading":"Community play","ruleElements":"Six deterministic elements: Ember, Tide, Grove, Gale, Volt and Lunar.","ruleHatch":"Eggs hatch after 30 minutes in real time; configured booster gifts reduce the timer.","ruleBattle":"Duels are three reproducible rounds without stakes or prizes.","readyHatch":"Ready to hatch","waiting":"Waiting",
+        "noGifts":"No gifts queued yet.","dashboardMetrics":"{eggs} eggs - {hatches} hatches - {viewers} active viewers - {duels} duels - {quests} quest completions - {ready}/{total} art ready","giftOption":"{name} - {coins} diamonds","runtimeInstallStarted":"Verified runtime installation started. Model download and health status will appear here when ready.","runtimeUnsupported":"Use existing ComfyUI or a remote image provider on this system.","expertSetup":"Use expert or remote setup","runtimeMissing":"{resolution} recommended. A signed LTTH runtime package is not configured yet; use existing ComfyUI or remote generation.","refreshCompatibility":"Refresh compatibility","runtimeRecommended":"{resolution} recommended. Runtime: {runtime}; model: {model}; target: {target}.","installAi":"Install verified local AI","localCheckFailed":"Local AI check failed: {error}","confirmInstall":"Install verified Stream Monsters local AI? Runtime: {runtime} Model: {model} Target: {target}"
       }
     }
   }
