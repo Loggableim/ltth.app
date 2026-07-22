@@ -10,19 +10,12 @@ const { flattenTranslations } = require('../../scripts/lib/plugin-i18n-audit');
 const repoRoot = path.resolve(__dirname, '..', '..');
 const pluginId = 'talking-heads';
 const uiKeys = [
-  'plugins.talking-heads.labels.api_status_unknown',
-  'plugins.talking-heads.labels.default_style',
-  'plugins.talking-heads.labels.copy',
-  'plugins.talking-heads.labels.preview_text',
-  'plugins.talking-heads.labels.user_filter',
-  'plugins.talking-heads.labels.sprite_mode',
-  'plugins.talking-heads.labels.sprite_set',
-  'plugins.talking-heads.labels.scroll_direction',
-  'plugins.talking-heads.labels.right',
-  'plugins.talking-heads.labels.bar_background',
-  'plugins.talking-heads.labels.delete',
-  'plugins.talking-heads.labels.copy_url',
-  'plugins.talking-heads.labels.open_preview'
+  'plugins.talking-heads.labels.talking_heads_obs_overlay',
+  'plugins.talking-heads.labels.talking_heads_obs_hud',
+  'plugins.talking-heads.labels.talking_heads_viewer_bar',
+  'plugins.talking-heads.talking_heads_ui.local_assets.title',
+  'plugins.talking-heads.talking_heads_ui.local_assets.lottery_title',
+  'plugins.talking-heads.talking_heads_ui.lottery_overlay.drawing'
 ];
 
 describe('Talking Heads UI i18n', () => {

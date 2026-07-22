@@ -12,6 +12,21 @@
         <!-- Avatar sprites will be dynamically added here -->
     </div>
 
+    <section id="lotteryOverlay" class="lottery-overlay" aria-live="polite" aria-atomic="true" hidden>
+        <div class="lottery-card">
+            <p class="lottery-kicker">AVATAR-LOTTERIE</p>
+            <h1 id="lotteryTitle" data-i18n="plugins.talking-heads.talking_heads_ui.lottery_overlay.drawing">Neue Figur wird gezogen …</h1>
+            <div class="lottery-slot-window">
+                <img id="lotteryAvatar" alt="Avatar-Lotterie">
+            </div>
+            <div class="lottery-info">
+                <strong id="lotteryUsername"></strong>
+                <p id="lotteryMessage" data-i18n="plugins.talking-heads.talking_heads_ui.lottery_overlay.spinning">Die Rollen drehen sich …</p>
+                <p id="lotteryCommands" class="lottery-commands"></p>
+            </div>
+        </div>
+    </section>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="assets/overlay.js"></script>
 </body>

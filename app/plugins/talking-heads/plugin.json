@@ -1,17 +1,14 @@
 {
   "id": "talking-heads",
   "name": "Talking Heads",
-  "version": "1.0.0",
-  "description": "AI-generated 2D avatars with synchronized animations for TikTok users speaking via TTS",
+  "version": "1.1.0",
+  "description": "Local modular 2D characters with synchronized TTS mouth animation",
   "author": "Pup Cid",
   "entry": "main.js",
   "enabled": false,
   "type": "module",
   "devStatus": "early-version",
-  "dependencies": [
-    "axios",
-    "sharp"
-  ],
+  "dependencies": [],
   "permissions": [
     "socket.io",
     "routes",
@@ -20,20 +17,26 @@
     "file-system"
   ],
   "features": [
-    "AI Avatar Generation from TikTok Profile",
+    "Bundled Boba Animals Library",
+    "Bundled Kenney Monster Builder",
+    "Bundled Vector Character Builder",
+    "Modular Head, Hair, Eye and Mouth Selection",
     "5-Frame Sprite Animation System",
+    "Gift Avatar Lottery with Keep/Reroll",
     "TTS Audio Synchronization",
     "OBS WebSocket Integration",
     "Role-based Activation",
-    "Multiple Style Templates",
-    "Avatar & Sprite Caching",
-    "Persistent User Identity"
+    "Manual Sprite Sets"
   ],
   "config": {
     "enabled": false,
-    "imageApiUrl": "https://api.siliconflow.com/v1/images/generations",
-    "imageApiKey": "",
-    "defaultStyle": "cartoon",
+    "assetPack": "boba",
+    "assetCharacter": "Fox",
+    "assetOptions": {},
+    "avatarLotteryEnabled": true,
+    "lotteryGiftId": "",
+    "lotteryGiftNames": ["Heart Me", "Team Heart", "Team Herz"],
+    "lotteryAnimationDuration": 2600,
     "cacheEnabled": true,
     "cacheDuration": 2592000,
     "obsEnabled": true,
@@ -49,11 +52,10 @@
     "minTeamLevel": 0,
     "requireSubscriber": false,
     "requireCustomVoice": false,
-    "avatarResolution": 1500,
-    "spriteResolution": 512
+    "spriteMode": "asset-library"
   },
   "descriptions": {
-    "en": "AI-generated 2D avatars with synchronized animations for TikTok users speaking via TTS. Features role-based activation, multiple style templates, and OBS integration.",
-    "de": "KI-generierte 2D-Avatare mit synchronisierten Animationen für TikTok-Nutzer, die per TTS sprechen. Mit rollenbasierter Aktivierung, mehreren Stil-Vorlagen und OBS-Integration."
+    "en": "Local modular 2D characters with synchronized TTS mouth animation. Includes Boba Animals, Kenney Monster Builder, and a vector character builder with no external avatar API costs.",
+    "de": "Lokale modulare 2D-Figuren mit synchronisierter TTS-Mundanimation. Enthält Boba Animals, Kenney Monster Builder und einen Vector Character Builder ohne Bildgenerierungs-APIs."
   }
 }

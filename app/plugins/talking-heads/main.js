@@ -1,25 +1,17 @@
 /**
  * Talking Heads Plugin - Main Class
- * AI-generated 2D avatars with synchronized animations for TikTok users speaking via TTS
+ * Local modular 2D avatars with synchronized animations for TikTok users speaking via TTS
  */
 
 const path = require('path');
 const fs = require('fs').promises;
 
 // Import engines and utilities
-const AvatarGenerator = require('./engines/avatar-generator');
-const SpriteGenerator = require('./engines/sprite-generator');
 const AnimationController = require('./engines/animation-controller');
+const AssetSpriteLibrary = require('./engines/asset-sprite-library');
 const CacheManager = require('./utils/cache-manager');
 const RoleManager = require('./utils/role-manager');
-const { getAllStyleTemplates, getStyleKeys } = require('./utils/style-templates');
-
-const ALLOWED_TTS_SOURCES = new Set([
-  'animazingpal',
-  'animazingpal-host',
-  'animazingpal-host-speech-output',
-  'talking-heads-preview'
-]);
+const AvatarLotteryManager = require('./utils/avatar-lottery-manager');
 
 class TalkingHeadsPlugin {
   constructor(api) {
@@ -34,10 +26,9 @@ class TalkingHeadsPlugin {
     // Initialize managers and engines
     this.cacheManager = null;
     this.roleManager = null;
-    this.avatarGenerator = null;
-    this.spriteGenerator = null;
+    this.avatarLotteryManager = null;
+    this.assetSpriteLibrary = null;
     this.animationController = null;
-    this.activeImageProvider = 'siliconflow';
     this.logBuffer = [];
     this.maxLogEntries = 200;
     
@@ -64,10 +55,13 @@ class TalkingHeadsPlugin {
   _loadConfig() {
     const defaultConfig = {
       enabled: false,
-      imageApiUrl: 'https://api.siliconflow.com/v1/images/generations',
-      imageProvider: 'auto',
-      openaiImageModel: 'dall-e-3',
-      defaultStyle: 'cartoon',
+      assetPack: 'boba',
+      assetCharacter: 'Fox',
+      assetOptions: {},
+      avatarLotteryEnabled: true,
+      lotteryGiftId: '',
+      lotteryGiftNames: ['Heart Me', 'Team Heart', 'Team Herz'],
+      lotteryAnimationDuration: 2600,
       cacheEnabled: true,
       cacheDuration: 2592000000, // 30 days in milliseconds
       obsEnabled: true,
@@ -83,12 +77,10 @@ class TalkingHeadsPlugin {
       minTeamLevel: 0,
       requireSubscriber: false,
       requireCustomVoice: false,
-      avatarResolution: 1500,
-      spriteResolution: 512,
       debugLogging: false, // Enable/disable detailed logging
       // Manual sprite mode
-      spriteMode: 'auto',        // 'auto' | 'manual' | 'hybrid'
-      manualFallback: true,      // fallback to AI when manual mode but no set assigned
+      spriteMode: 'asset-library', // 'asset-library' | 'manual' | 'hybrid'
+      manualFallback: true,      // fallback to local assets when no set is assigned
       defaultManualSetId: null,  // default manual set for users without an assigned set
       // Viewer Bar configuration
       viewerBar: {
@@ -119,161 +111,34 @@ class TalkingHeadsPlugin {
     const mergedConfig = savedConfig ? { ...defaultConfig, ...savedConfig } : defaultConfig;
     // Deep-merge viewerBar so partial saved configs don't lose defaults
     mergedConfig.viewerBar = { ...defaultConfig.viewerBar, ...(mergedConfig.viewerBar || {}) };
+    return this._normalizeLotteryConfig(mergedConfig);
+  }
+
+  /**
+   * Keep the avatar-lottery configuration valid when loaded or saved.
+   * @param {object} config
+   * @returns {object}
+   * @private
+   */
+  _normalizeLotteryConfig(config) {
+    const defaultGiftNames = ['Heart Me', 'Team Heart', 'Team Herz'];
+    const rawGiftNames = Array.isArray(config.lotteryGiftNames)
+      ? config.lotteryGiftNames
+      : String(config.lotteryGiftNames || '').split(',');
+    const lotteryGiftNames = rawGiftNames
+      .map((name) => String(name || '').trim().slice(0, 80))
+      .filter(Boolean);
+    const requestedDuration = Number(config.lotteryAnimationDuration);
+
     return {
-      ...mergedConfig,
-      imageApiUrl: this._normalizeImageApiUrl(
-        mergedConfig.imageApiUrl,
-        defaultConfig.imageApiUrl
-      )
+      ...config,
+      avatarLotteryEnabled: config.avatarLotteryEnabled !== false,
+      lotteryGiftId: String(config.lotteryGiftId || '').trim().slice(0, 80),
+      lotteryGiftNames: lotteryGiftNames.length ? lotteryGiftNames : defaultGiftNames,
+      lotteryAnimationDuration: Number.isFinite(requestedDuration)
+        ? Math.min(10000, Math.max(800, Math.round(requestedDuration)))
+        : 2600
     };
-  }
-
-  /**
-   * Normalize legacy SiliconFlow image API URLs
-   * - Switches deprecated .cn domain to .com
-   * - Fixes singular /image/ path to /images/
-   * @param {string} url - Configured URL
-   * @param {string} fallback - Fallback URL if normalization fails
-   * @returns {string} Normalized URL
-   * @private
-   */
-  _normalizeImageApiUrl(url, fallback = null) {
-    const safeDefault = 'https://api.siliconflow.com/v1/images/generations';
-    if (!url) return fallback || safeDefault;
-
-    try {
-      const parsed = new URL(url.trim());
-      if (parsed.hostname === 'api.siliconflow.cn') {
-        parsed.hostname = 'api.siliconflow.com';
-      }
-      if (parsed.pathname === '/v1/image/generations') {
-        parsed.pathname = '/v1/images/generations';
-      }
-      return parsed.toString();
-    } catch (error) {
-      this._log(`Failed to normalize imageApiUrl: ${error.message}`, 'warn');
-      return fallback || safeDefault;
-    }
-  }
-
-  /**
-   * Get SiliconFlow API key from global settings
-   * @returns {string|null} SiliconFlow API key
-   * @private
-   */
-  _getSiliconFlowApiKey() {
-    try {
-      // Try global settings (centralized key)
-      const key = this.db.getSetting('siliconflow_api_key') || 
-                 this.db.getSetting('streamalchemy_siliconflow_api_key');
-      if (key) {
-        this._log(`Found SiliconFlow API key in database`, 'debug');
-        return key;
-      }
-    } catch (error) {
-      this._log(`Failed to get SiliconFlow key from settings: ${error.message}`, 'warn');
-    }
-    // Try environment variable
-    const envKey = process.env.SILICONFLOW_API_KEY || null;
-    if (envKey) {
-      this._log(`Found SiliconFlow API key in environment`, 'debug');
-    }
-    return envKey;
-  }
-
-  /**
-   * Get OpenAI API key from global settings or environment
-   * @returns {string|null} OpenAI API key
-   * @private
-   */
-  _getOpenAIApiKey() {
-    try {
-      const key = this.db.getSetting('openai_api_key') || this.db.getSetting('tts_openai_api_key');
-      if (key) {
-        this._log('Found OpenAI API key in database', 'debug');
-        return key;
-      }
-    } catch (error) {
-      this._log(`Failed to get OpenAI key from settings: ${error.message}`, 'warn');
-    }
-
-    const envKey = process.env.OPENAI_API_KEY || null;
-    if (envKey) {
-      this._log('Found OpenAI API key in environment', 'debug');
-    }
-    return envKey;
-  }
-
-  /**
-   * Resolve which image provider and API key to use
-   * @returns {{provider: string, apiKey: string|null, apiKeySource: string}}
-   * @private
-   */
-  _resolveImageProvider() {
-    const preference = this.config.imageProvider || 'auto';
-    const openaiKey = this._getOpenAIApiKey();
-    const siliconKey = this._getSiliconFlowApiKey();
-
-    if (preference === 'openai') {
-      return {
-        provider: 'openai',
-        apiKey: openaiKey,
-        apiKeySource: openaiKey ? 'openai_settings' : 'none'
-      };
-    }
-
-    if (preference === 'siliconflow') {
-      return {
-        provider: 'siliconflow',
-        apiKey: siliconKey,
-        apiKeySource: siliconKey ? 'global_settings' : 'none'
-      };
-    }
-
-    if (openaiKey) {
-      return { provider: 'openai', apiKey: openaiKey, apiKeySource: 'openai_settings' };
-    }
-
-    return { provider: 'siliconflow', apiKey: siliconKey, apiKeySource: siliconKey ? 'global_settings' : 'none' };
-  }
-
-  /**
-   * Initialize or re-initialize avatar and sprite generators with current API key
-   * @returns {boolean} True if generators were successfully initialized
-   * @private
-   */
-  _initializeGenerators() {
-    const { provider, apiKey } = this._resolveImageProvider();
-    
-    if (!apiKey) {
-      this._log(`⚠️  No API key configured for ${provider} - avatar generation disabled`, 'warn');
-      if (provider === 'openai') {
-        this._log('Configure the API key in Dashboard > Settings > OpenAI API Configuration', 'info');
-      } else {
-        this._log('Configure the API key in Dashboard > Settings > TTS API Keys > SiliconFlow API Key', 'info');
-      }
-      return false;
-    }
-
-    this._log('Initializing AI engines...', 'debug');
-    this.activeImageProvider = provider;
-    
-    this.avatarGenerator = new AvatarGenerator(
-      provider === 'openai' ? 'https://api.openai.com/v1/images/generations' : this.config.imageApiUrl,
-      apiKey,
-      this.logger,
-      { ...this.config, imageProvider: provider }
-    );
-
-    this.spriteGenerator = new SpriteGenerator(
-      provider === 'openai' ? 'https://api.openai.com/v1/images/generations' : this.config.imageApiUrl,
-      apiKey,
-      this.logger,
-      { ...this.config, imageProvider: provider }
-    );
-
-    this._log(`✅ Avatar and sprite generators initialized (${provider})`, 'info');
-    return true;
   }
 
   /**
@@ -374,6 +239,185 @@ class TalkingHeadsPlugin {
   }
 
   /**
+   * Resolve the configured local selection into a shared five-frame sprite set.
+   * The files are materialized once per selection in the plugin data directory.
+   * @private
+   */
+  async _getConfiguredAssetAvatar(userId, username, selection = {}) {
+    if (!this.assetSpriteLibrary) {
+      this.assetSpriteLibrary = new AssetSpriteLibrary({
+        dataDir: this.api.getPluginDataDir(),
+        logger: this.logger
+      });
+    }
+
+    const spriteSet = await this.assetSpriteLibrary.getSpriteSet({
+      packId: selection.assetPack || selection.packId || this.config.assetPack,
+      characterId: selection.assetCharacter || selection.characterId || this.config.assetCharacter,
+      options: {
+        ...(this.config.assetOptions || {}),
+        ...(selection.assetOptions || selection.options || {})
+      }
+    });
+
+    return {
+      userId,
+      username,
+      styleKey: `asset:${spriteSet.packId}:${spriteSet.characterId}`,
+      assetSelection: {
+        packId: spriteSet.packId,
+        characterId: spriteSet.characterId,
+        options: spriteSet.options
+      },
+      sprites: spriteSet.sprites
+    };
+  }
+
+  /**
+   * Register the TikTok events used by the gift avatar lottery.
+   * @private
+   */
+  _registerAvatarLotteryEvents() {
+    this.api.registerTikTokEvent('gift', async (data) => {
+      try {
+        await this._handleLotteryGift(data || {});
+      } catch (error) {
+        this.logger.error('TalkingHeads: Avatar lottery gift event failed', error);
+      }
+    });
+
+    this.api.registerTikTokEvent('chat', async (data) => {
+      try {
+        await this._handleLotteryCommand(data || {});
+      } catch (error) {
+        this.logger.error('TalkingHeads: Avatar lottery chat command failed', error);
+      }
+    });
+  }
+
+  /**
+   * Check whether a TikTok gift is configured as the avatar lottery trigger.
+   * A configured gift ID always takes precedence over the fallback names.
+   * @param {object} data
+   * @returns {boolean}
+   * @private
+   */
+  _isLotteryGift(data = {}) {
+    if (this.config.avatarLotteryEnabled === false) return false;
+
+    const configuredGiftId = String(this.config.lotteryGiftId || '').trim();
+    if (configuredGiftId) {
+      const receivedGiftId = String(data.giftId || data.gift_id || data.id || '').trim();
+      return receivedGiftId === configuredGiftId;
+    }
+
+    const normalizeName = (value) => String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    const receivedName = normalizeName(data.giftName || data.gift_name || data.name);
+    if (!receivedName) return false;
+    return (this.config.lotteryGiftNames || []).some((giftName) => normalizeName(giftName) === receivedName);
+  }
+
+  /**
+   * Extract the stable TikTok identity used for a lottery record.
+   * @param {object} data
+   * @returns {{userId: string, username: string}|null}
+   * @private
+   */
+  _getLotteryUser(data = {}) {
+    const userId = this._sanitizeInput(data.userId || data.user_id || data.uniqueId, 'userId');
+    if (!userId) return null;
+    const username = this._sanitizeInput(
+      data.uniqueId || data.username || data.nickname || userId,
+      'username'
+    ) || userId;
+    return { userId, username };
+  }
+
+  /**
+   * Draw and publish one local avatar lottery result for a matching gift.
+   * Pending users deliberately draw again on their next matching gift; only
+   * a kept selection is protected from another draw.
+   * @param {object} data
+   * @returns {Promise<boolean>}
+   * @private
+   */
+  async _handleLotteryGift(data = {}) {
+    if (!this._isLotteryGift(data) || !this.avatarLotteryManager) return false;
+    const user = this._getLotteryUser(data);
+    if (!user) return false;
+
+    const currentChoice = this.avatarLotteryManager.getChoice(user.userId);
+    if (!this.avatarLotteryManager.shouldDraw(currentChoice)) {
+      this._log(`Avatar lottery: ${user.username} kept their current avatar`, 'debug');
+      return false;
+    }
+
+    if (!this.assetSpriteLibrary) {
+      this.assetSpriteLibrary = new AssetSpriteLibrary({
+        dataDir: this.api.getPluginDataDir(),
+        logger: this.logger
+      });
+    }
+
+    const winnerSelection = this.assetSpriteLibrary.getRandomSelection();
+    const candidateSelections = this.assetSpriteLibrary.getLotteryCandidates(3);
+    const [winnerSpriteSet, candidates] = await Promise.all([
+      this.assetSpriteLibrary.getSpriteSet(winnerSelection),
+      Promise.all(candidateSelections.map(async (selection) => {
+        const spriteSet = await this.assetSpriteLibrary.getSpriteSet(selection);
+        return {
+          selection,
+          spriteUrl: spriteSet.sprites.idle_neutral,
+          sprites: spriteSet.sprites
+        };
+      }))
+    ]);
+
+    const draw = this.avatarLotteryManager.draw(user.userId, user.username, winnerSelection);
+    this.io.emit('talkingheads:avatar:lottery:start', {
+      userId: user.userId,
+      username: user.username,
+      candidates,
+      winner: {
+        selection: winnerSelection,
+        sprites: winnerSpriteSet.sprites
+      },
+      state: draw.state,
+      duration: this.config.lotteryAnimationDuration,
+      keepCommand: '!keep',
+      rerollCommand: '!reroll'
+    });
+    this._log(`Avatar lottery: drew ${winnerSelection.packId}/${winnerSelection.characterId} for ${user.username}`, 'info');
+    return true;
+  }
+
+  /**
+   * Apply exact `!keep` or `!reroll` chat choices to the user's current draw.
+   * @param {object} data
+   * @returns {Promise<object|null>}
+   * @private
+   */
+  async _handleLotteryCommand(data = {}) {
+    if (!this.avatarLotteryManager) return null;
+    const command = String(data.comment || data.message || data.text || '').trim().toLowerCase();
+    if (command !== '!keep' && command !== '!reroll') return null;
+
+    const user = this._getLotteryUser(data);
+    if (!user) return null;
+    const choice = this.avatarLotteryManager.applyCommand(user.userId, command);
+    if (!choice) return null;
+
+    this.io.emit('talkingheads:avatar:lottery:choice', {
+      userId: user.userId,
+      username: user.username,
+      state: choice.state,
+      command
+    });
+    this._log(`Avatar lottery: ${user.username} selected ${command}`, 'info');
+    return choice;
+  }
+
+  /**
    * Slugify a set name to produce a safe setId
    * @param {string} name
    * @returns {string}
@@ -438,9 +482,7 @@ class TalkingHeadsPlugin {
         return String(input).replace(/[<>'"&]/g, '').slice(0, 50);
       
       case 'styleKey':
-        // Whitelist against valid style templates
-        const validKeys = getStyleKeys();
-        return validKeys.includes(input) ? input : this.config.defaultStyle || 'cartoon';
+        return String(input).replace(/[^a-zA-Z0-9:_-]/g, '').slice(0, 96);
       
       case 'url':
         // Validate URL format and ensure HTTPS only
@@ -467,7 +509,7 @@ class TalkingHeadsPlugin {
   _saveConfig(newConfig) {
     try {
       const oldDebugLogging = this.config ? this.config.debugLogging : false;
-      this.config = { ...this.config, ...newConfig };
+      this.config = this._normalizeLotteryConfig({ ...this.config, ...newConfig });
       this.config.spawnAnimationMode = this.config.spawnAnimationMode || 'standard';
       this.config.spawnAnimationUrl = this.config.spawnAnimationUrl || '';
       if (typeof this.config.spawnAnimationVolume === 'number') {
@@ -489,7 +531,8 @@ class TalkingHeadsPlugin {
       if (this.config.debugLogging) {
         this._log('Config updated', 'debug', {
           enabled: this.config.enabled,
-          defaultStyle: this.config.defaultStyle,
+          assetPack: this.config.assetPack,
+          assetCharacter: this.config.assetCharacter,
           rolePermission: this.config.rolePermission,
           cacheEnabled: this.config.cacheEnabled,
           debugLogging: this.config.debugLogging
@@ -528,8 +571,16 @@ class TalkingHeadsPlugin {
       this.roleManager = new RoleManager(this.config, this.logger);
       this._log(`Role permission: ${this.config.rolePermission}`, 'debug');
 
-      // Initialize avatar and sprite generators if API key is configured
-      this._initializeGenerators();
+      this.avatarLotteryManager = new AvatarLotteryManager(this.db, this.logger);
+      this.avatarLotteryManager.init();
+      this._log('Avatar lottery manager initialized', 'debug');
+
+      // Local packs are composed on demand into the plugin data directory.
+      this.assetSpriteLibrary = new AssetSpriteLibrary({
+        dataDir: pluginDataDir,
+        logger: this.logger
+      });
+      this._log('Local asset sprite library initialized', 'debug');
 
       // Initialize animation controller
       this._log('Initializing animation controller...', 'debug');
@@ -555,6 +606,9 @@ class TalkingHeadsPlugin {
 
     // Bridge playback events from TTS plugin so avatars follow speech
     this._registerPlaybackBridge();
+
+    // Register gift and chat commands for the avatar lottery.
+    this._registerAvatarLotteryEvents();
 
     // Register Viewer Bar TikTok events
     this._log('Registering viewer bar events...', 'debug');
@@ -611,14 +665,11 @@ class TalkingHeadsPlugin {
 
     // Get configuration
     this.api.registerRoute('get', '/api/talkingheads/config', (req, res) => {
-      const providerInfo = this._resolveImageProvider();
       res.json({
         success: true,
         config: this.config,
-        styleTemplates: getAllStyleTemplates(),
-        apiConfigured: !!providerInfo.apiKey,
-        apiKeySource: providerInfo.apiKeySource,
-        provider: providerInfo.provider
+        assetCatalog: this.assetSpriteLibrary.getCatalog(),
+        generationMode: 'asset-library'
       });
     });
 
@@ -628,10 +679,14 @@ class TalkingHeadsPlugin {
         // Shallow copy to avoid mutating Express request body
         const newConfig = { ...req.body };
         
-        // Remove imageApiKey if sent (should not be stored here)
-        if (newConfig.imageApiKey !== undefined) {
-          delete newConfig.imageApiKey;
-        }
+        const selection = this.assetSpriteLibrary.normalizeSelection({
+          packId: newConfig.assetPack ?? this.config.assetPack,
+          characterId: newConfig.assetCharacter ?? this.config.assetCharacter,
+          options: newConfig.assetOptions ?? this.config.assetOptions
+        });
+        newConfig.assetPack = selection.packId;
+        newConfig.assetCharacter = selection.characterId;
+        newConfig.assetOptions = selection.options;
 
         if (newConfig.spawnAnimationVolume !== undefined) {
           newConfig.spawnAnimationVolume = parseFloat(newConfig.spawnAnimationVolume);
@@ -644,11 +699,11 @@ class TalkingHeadsPlugin {
           this.roleManager.updateConfig(this.config);
         }
 
-        const apiKey = this._resolveImageProvider().apiKey;
         res.json({ 
           success: true, 
           config: this.config,
-          apiConfigured: !!apiKey
+          assetCatalog: this.assetSpriteLibrary.getCatalog(),
+          generationMode: 'asset-library'
         });
       } catch (error) {
         this.logger.error('TalkingHeads: Failed to save config', error);
@@ -701,7 +756,7 @@ class TalkingHeadsPlugin {
         }
 
         // Get cached avatar
-        const cached = this.cacheManager.getAvatar(sanitizedUserId, this.config.defaultStyle);
+        const cached = this.cacheManager.getAvatar(sanitizedUserId, 'asset-library');
         
         if (!cached) {
           return res.status(404).json({ success: false, error: 'Avatar not found in cache' });
@@ -755,88 +810,41 @@ class TalkingHeadsPlugin {
       }
     });
 
-    // Test API connection
+    // Verify that local assets can be selected and materialized.
     this.api.registerRoute('post', '/api/talkingheads/test-api', async (req, res) => {
       try {
-        const providerInfo = this._resolveImageProvider();
-        // Try to initialize generators if they don't exist yet
-        if (!this.avatarGenerator) {
-          this._log('Avatar generator not initialized, attempting to initialize...', 'debug');
-          const initialized = this._initializeGenerators();
-          
-          if (!initialized) {
-            return res.json({ 
-              success: false, 
-              error: providerInfo.provider === 'openai'
-                ? 'API key not configured. Please configure the OpenAI API key in Dashboard > Settings > OpenAI API Configuration and reload the plugin.'
-                : 'API key not configured. Please configure the SiliconFlow API key in Dashboard > Settings > TTS API Keys and reload the plugin.'
-            });
-          }
-        }
-
-        const connected = await this.avatarGenerator.testConnection();
-        
-        if (connected) {
-          this._log('API connection test successful', 'info');
-        } else {
-          this._log('API connection test failed', 'warn');
-        }
-        
-        res.json({ 
-          success: connected, 
-          message: connected ? 'API connection successful' : 'API connection failed - check API key and network connection',
-          provider: this.activeImageProvider
+        const avatar = await this._getConfiguredAssetAvatar('asset_check', 'Asset Check');
+        res.json({
+          success: true,
+          message: 'Local asset library is ready',
+          assetSelection: avatar.assetSelection,
+          sprites: avatar.sprites
         });
       } catch (error) {
-        this._log(`Test API error: ${error.message}`, 'error');
-        res.status(500).json({ success: false, error: error.message || 'Unknown error' });
+        this._log(`Local asset check failed: ${error.message}`, 'error');
+        res.status(500).json({ success: false, error: error.message || 'Local asset check failed' });
       }
     });
 
-    // Test avatar generation
+    // Test local sprite materialization.
     this.api.registerRoute('post', '/api/talkingheads/test-generate', async (req, res) => {
       try {
-        const providerInfo = this._resolveImageProvider();
-        // Try to initialize generators if they don't exist yet
-        if (!this.avatarGenerator || !this.spriteGenerator) {
-          this._log('Generators not initialized, attempting to initialize...', 'debug');
-          const initialized = this._initializeGenerators();
-          
-          if (!initialized) {
-            return res.json({ 
-              success: false, 
-              error: providerInfo.provider === 'openai'
-                ? 'API key not configured. Please configure the OpenAI API key in Dashboard > Settings > OpenAI API Configuration and reload the plugin.'
-                : 'API key not configured. Please configure the SiliconFlow API key in Dashboard > Settings > TTS API Keys and reload the plugin.'
-            });
-          }
-        }
-
-        const { styleKey } = req.body;
-        const style = styleKey || this.config.defaultStyle;
-        
-        this._log(`Testing avatar generation with style: ${style}`, 'info');
-
-        // Generate a test avatar with dummy user data
-        const testUserId = `test_${Date.now()}`;
-        const testUsername = 'TestUser';
-        
-        const result = await this._generateAvatarAndSprites(
-          testUserId,
-          testUsername,
-          '',
-          style
+        const result = await this._getConfiguredAssetAvatar(
+          `asset_test_${Date.now()}`,
+          'Asset Test',
+          req.body || {}
         );
 
         res.json({ 
           success: true, 
-          message: 'Test avatar generated successfully',
+          message: 'Local asset sprites prepared successfully',
           sprites: result.sprites ? Object.keys(result.sprites).length : 0,
-          cacheId: result.cacheId
+          spriteUrls: result.sprites,
+          assetSelection: result.assetSelection
         });
       } catch (error) {
-        this._log(`Test generation failed: ${error.message}`, 'error');
-        res.status(500).json({ success: false, error: error.message || 'Generation failed' });
+        this._log(`Local sprite test failed: ${error.message}`, 'error');
+        res.status(500).json({ success: false, error: error.message || 'Local sprite test failed' });
       }
     });
 
@@ -852,44 +860,11 @@ class TalkingHeadsPlugin {
         const previewUserId = (req.body && req.body.userId) || 'talkingheads_preview';
         const previewUsername = (req.body && req.body.username) || 'TalkingHeads Preview';
 
-        // Check if test avatar exists
-        let cached = this.cacheManager.getAvatar(previewUserId, this.config.defaultStyle);
-        let wasGenerated = false;
-        
-        if (!cached) {
-          this._log('Test avatar not found, generating...', 'info');
-          wasGenerated = true;
-          
-          // Ensure generators are initialized
-          if (!this.avatarGenerator || !this.spriteGenerator) {
-            const initialized = this._initializeGenerators();
-            if (!initialized) {
-              return res.status(503).json({ 
-                success: false, 
-                error: 'Avatar generators not available. Please configure API keys.' 
-              });
-            }
-          }
-          
-          // Generate test avatar
-          try {
-            this._log('Generating test avatar for preview...', 'info');
-            await this._generateAvatarAndSprites(
-              previewUserId,
-              previewUsername,
-              '',
-              this.config.defaultStyle
-            );
-            cached = this.cacheManager.getAvatar(previewUserId, this.config.defaultStyle);
-            this._log('Test avatar generated successfully', 'info');
-          } catch (genError) {
-            this._log(`Preview avatar generation failed: ${genError.message}`, 'error');
-            return res.status(500).json({ 
-              success: false, 
-              error: `Failed to generate test avatar: ${genError.message}` 
-            });
-          }
-        }
+        const assetAvatar = await this._getConfiguredAssetAvatar(
+          previewUserId,
+          previewUsername,
+          req.body || {}
+        );
 
         // Now play TTS with the avatar
         this._log('Calling TTS speak for preview...', 'info');
@@ -923,7 +898,7 @@ class TalkingHeadsPlugin {
         res.json({ 
           success: true, 
           result: speakResult,
-          avatarGenerated: wasGenerated
+          assetSelection: assetAvatar.assetSelection
         });
       } catch (error) {
         this.logger.error('TalkingHeads: Preview TTS failed', error);
@@ -931,35 +906,23 @@ class TalkingHeadsPlugin {
       }
     });
 
-    // Manually generate avatar for user
+    // Assign the selected local asset set to a user for immediate preview.
     this.api.registerRoute('post', '/api/talkingheads/generate', async (req, res) => {
       try {
-        const { userId, username, styleKey, profileImageUrl } = req.body;
+        const { userId, username } = req.body;
 
         if (!userId || !username) {
           return res.status(400).json({ success: false, error: 'Missing required fields' });
         }
 
-        // Sanitize inputs
         const sanitizedUserId = this._sanitizeInput(userId, 'userId');
         const sanitizedUsername = this._sanitizeInput(username, 'username');
-        const sanitizedStyleKey = this._sanitizeInput(styleKey, 'styleKey');
-        const sanitizedProfileImageUrl = profileImageUrl ? this._sanitizeInput(profileImageUrl, 'url') : '';
 
         if (!sanitizedUserId || !sanitizedUsername) {
           return res.status(400).json({ success: false, error: 'Invalid input parameters' });
         }
 
-        if (profileImageUrl && !sanitizedProfileImageUrl) {
-          return res.status(400).json({ success: false, error: 'Invalid profile image URL' });
-        }
-
-        const result = await this._generateAvatarAndSprites(
-          sanitizedUserId,
-          sanitizedUsername,
-          sanitizedProfileImageUrl,
-          sanitizedStyleKey
-        );
+        const result = await this._getConfiguredAssetAvatar(sanitizedUserId, sanitizedUsername, req.body);
 
         // Emit socket event to notify UI of new avatar
         this.io.emit('talkingheads:avatar:generated', {
@@ -1020,8 +983,8 @@ class TalkingHeadsPlugin {
         
         // Map users with talking head status
         const usersWithStatus = users.map(user => {
-          const hasAvatar = this.cacheManager.hasAvatar(user.user_id, this.config.defaultStyle);
-          const cached = hasAvatar ? this.cacheManager.getAvatar(user.user_id, this.config.defaultStyle) : null;
+          const hasAvatar = this.cacheManager.hasAvatar(user.user_id, 'asset-library');
+          const cached = hasAvatar ? this.cacheManager.getAvatar(user.user_id, 'asset-library') : null;
           
           return {
             userId: user.user_id,
@@ -1045,62 +1008,23 @@ class TalkingHeadsPlugin {
       }
     });
 
-    // Assign/generate talking head for user with LLM-based profile analysis
+    // Assign the currently selected local asset set to a user.
     this.api.registerRoute('post', '/api/talkingheads/assign', async (req, res) => {
       try {
-        const { userId, username, profileImageUrl, styleKey } = req.body;
+        const { userId, username } = req.body;
 
         if (!userId || !username) {
           return res.status(400).json({ success: false, error: 'Missing required fields: userId and username' });
         }
 
-        // Sanitize inputs
         const sanitizedUserId = this._sanitizeInput(userId, 'userId');
         const sanitizedUsername = this._sanitizeInput(username, 'username');
-        const sanitizedStyleKey = this._sanitizeInput(styleKey, 'styleKey');
-        const sanitizedProfileImageUrl = profileImageUrl ? this._sanitizeInput(profileImageUrl, 'url') : null;
 
         if (!sanitizedUserId || !sanitizedUsername) {
           return res.status(400).json({ success: false, error: 'Invalid input parameters' });
         }
 
-        if (profileImageUrl && !sanitizedProfileImageUrl) {
-          return res.status(400).json({ 
-            success: false, 
-            error: 'Invalid profile image URL: Only HTTP/HTTPS URLs are allowed' 
-          });
-        }
-
-        const style = sanitizedStyleKey;
-
-        // Step 1: Analyze profile image and username with LLM (if available and profile image exists)
-        let avatarDescription = null;
-        let llmFallbackReason = null;
-        
-        if (sanitizedProfileImageUrl && this._getOpenAIApiKey()) {
-          try {
-            this._log(`Analyzing profile for user ${sanitizedUsername} with LLM...`, 'info');
-            avatarDescription = await this._analyzeProfileWithLLM(sanitizedUsername, sanitizedProfileImageUrl, style);
-            this._log(`LLM analysis complete for ${sanitizedUsername}: ${avatarDescription}`, 'debug');
-          } catch (error) {
-            llmFallbackReason = error.message;
-            this._log(`LLM analysis failed for ${sanitizedUsername}: ${error.message}. Using default prompt.`, 'warn');
-            avatarDescription = null;
-          }
-        } else if (!sanitizedProfileImageUrl) {
-          llmFallbackReason = 'No profile image URL provided';
-        } else {
-          llmFallbackReason = 'OpenAI API key not configured';
-        }
-
-        // Step 2: Generate avatar and sprites
-        const result = await this._generateAvatarAndSprites(
-          sanitizedUserId,
-          sanitizedUsername,
-          sanitizedProfileImageUrl || '',
-          style,
-          avatarDescription // Pass the LLM-generated description as override
-        );
+        const result = await this._getConfiguredAssetAvatar(sanitizedUserId, sanitizedUsername, req.body);
 
         // Emit socket event to notify UI of new avatar
         this.io.emit('talkingheads:avatar:generated', {
@@ -1110,12 +1034,7 @@ class TalkingHeadsPlugin {
           sprites: this._getRelativeSpritePaths(result.sprites)
         });
 
-        res.json({ 
-          success: true, 
-          result,
-          llmAnalysisUsed: !!avatarDescription,
-          llmFallbackReason: avatarDescription ? null : llmFallbackReason
-        });
+        res.json({ success: true, result });
       } catch (error) {
         this.logger.error('TalkingHeads: User assignment failed', error);
         res.status(500).json({ success: false, error: error.message });
@@ -1144,7 +1063,7 @@ class TalkingHeadsPlugin {
         }
 
         // Get target user's avatar from cache
-        const targetAvatar = this.cacheManager.getAvatar(sanitizedTargetUserId, this.config.defaultStyle);
+        const targetAvatar = this.cacheManager.getAvatar(sanitizedTargetUserId, 'asset-library');
         
         if (!targetAvatar) {
           return res.status(404).json({ 
@@ -1255,47 +1174,15 @@ class TalkingHeadsPlugin {
             if (!this.config.manualFallback) {
               return res.status(404).json({
                 success: false,
-                error: 'No manual sprite set configured and AI fallback is disabled. Please configure a manual set in settings.'
+                error: 'No manual sprite set configured and local asset fallback is disabled. Please configure a manual set in settings.'
               });
             }
-            this._log('No manual sprites for test animation, falling back to AI', 'warn');
+            this._log('No manual sprites for test animation, falling back to local assets', 'warn');
           }
         }
 
         if (!avatarData) {
-          // Auto mode or hybrid/manual fallback: check AI cache
-          avatarData = this.cacheManager.getAvatar(testUserId, this.config.defaultStyle);
-        }
-
-        if (!avatarData) {
-          // Generate test avatar if not exists
-          this._log('Generating test avatar for animation test...', 'info');
-
-          if (!this.avatarGenerator || !this.spriteGenerator) {
-            const initialized = this._initializeGenerators();
-            if (!initialized) {
-              return res.status(503).json({
-                success: false,
-                error: 'Avatar generators not available. Please configure API keys.'
-              });
-            }
-          }
-
-          await this._generateAvatarAndSprites(
-            testUserId,
-            testUsername,
-            '',
-            this.config.defaultStyle
-          );
-          // Re-fetch from cache to get consistent data format
-          avatarData = this.cacheManager.getAvatar(testUserId, this.config.defaultStyle);
-
-          if (!avatarData) {
-            return res.status(500).json({
-              success: false,
-              error: 'Avatar generation completed but cache entry not found.'
-            });
-          }
+          avatarData = await this._getConfiguredAssetAvatar(testUserId, testUsername, req.body || {});
         }
 
         // Start animation directly
@@ -1809,8 +1696,8 @@ class TalkingHeadsPlugin {
       try {
         const { userId, username, duration } = data;
         
-        // Get or generate avatar
-        const cached = this.cacheManager.getAvatar(userId, this.config.defaultStyle);
+        // Resolve the selected local sprite set.
+        const cached = await this._getConfiguredAssetAvatar(userId, username, data || {});
         
         if (cached) {
           this.animationController.startAnimation(
@@ -1819,8 +1706,6 @@ class TalkingHeadsPlugin {
             cached.sprites,
             duration || 5000
           );
-        } else {
-          this.logger.warn('TalkingHeads: No cached avatar for test animation');
         }
       } catch (error) {
         this.logger.error('TalkingHeads: Test animation failed', error);
@@ -1867,11 +1752,6 @@ class TalkingHeadsPlugin {
       const source = String(payload.source || '').toLowerCase();
       const isPreview = source === 'talking-heads-preview';
 
-      if (!ALLOWED_TTS_SOURCES.has(source)) {
-        this._log(`Ignoring playback source '${source || 'unknown'}' for talking head bridge`, 'debug');
-        return;
-      }
-
       // Allow preview to work even if plugin is not enabled
       if (!this.config.enabled && !isPreview) return;
       
@@ -1902,12 +1782,6 @@ class TalkingHeadsPlugin {
     };
 
     const endHandler = (payload = {}) => {
-      const source = String(payload.source || '').toLowerCase();
-      if (!ALLOWED_TTS_SOURCES.has(source)) {
-        this._log(`Ignoring playback end for source '${source || 'unknown'}'`, 'debug');
-        return;
-      }
-
       const userId = payload.userId || payload.username;
       if (!userId || !this.animationController) return;
       this.animationController.stopAnimation(userId);
@@ -1962,7 +1836,21 @@ class TalkingHeadsPlugin {
     let avatarData = null;
     let wasCached = false;
 
-    if (spriteMode === 'manual' || spriteMode === 'hybrid') {
+    // A gift-awarded avatar takes precedence over the generic local selection.
+    // Pending choices remain active for TTS even though their next matching
+    // gift will draw a fresh avatar unless the viewer sends !keep.
+    const lotteryChoice = this.avatarLotteryManager?.getChoice(userId);
+    if (lotteryChoice?.selection) {
+      try {
+        avatarData = await this._getConfiguredAssetAvatar(userId, username, lotteryChoice.selection);
+        wasCached = true;
+        this._log(`Using lottery avatar for ${username}`, 'debug', lotteryChoice.selection);
+      } catch (error) {
+        this._log(`Failed to prepare lottery avatar for ${username}: ${error.message}`, 'warn');
+      }
+    }
+
+    if (!avatarData && (spriteMode === 'manual' || spriteMode === 'hybrid')) {
       // Check for manually assigned sprite set first
       const manualStyleKey = this._getManualStyleKeyForUser(userId);
       if (manualStyleKey) {
@@ -1983,7 +1871,7 @@ class TalkingHeadsPlugin {
 
       if (!avatarData && spriteMode === 'manual') {
         if (this.config.manualFallback) {
-          this._log(`No manual sprites for ${username}, falling back to AI`, 'warn');
+          this._log(`No manual sprites for ${username}, falling back to local assets`, 'warn');
         } else {
           this._log(`No manual sprites for ${username} and fallback disabled`, 'warn');
           return;
@@ -1992,27 +1880,18 @@ class TalkingHeadsPlugin {
     }
 
     if (!avatarData) {
-      // Auto mode or hybrid fallback: check AI cache
-      this._log(`Checking cache for user ${username} with style ${this.config.defaultStyle}`, 'debug');
-      avatarData = this.cacheManager.getAvatar(userId, this.config.defaultStyle);
+      // Retain previously assigned legacy/manual sprites when they exist.
+      avatarData = this.cacheManager.getAvatar(userId, 'asset-library');
       wasCached = !!avatarData;
     }
 
     if (!avatarData) {
-      // Generate new avatar and sprites
-      this._log(`Generating new avatar for ${username}`, 'info');
-      this._log(`Profile URL: ${enrichedUserData.profilePictureUrl || 'none'}`, 'debug');
-      
       try {
-        avatarData = await this._generateAvatarAndSprites(
-          userId,
-          username,
-          enrichedUserData.profilePictureUrl || '',
-          this.config.defaultStyle
-        );
-        this._log(`Avatar generation completed for ${username}`, 'debug');
+        avatarData = await this._getConfiguredAssetAvatar(userId, username);
+        wasCached = true;
+        this._log(`Using local asset selection for ${username}`, 'debug', avatarData.assetSelection);
       } catch (error) {
-        this._log(`Failed to generate avatar for ${username}: ${error.message}`, 'error');
+        this._log(`Failed to prepare local assets for ${username}: ${error.message}`, 'error');
         return;
       }
     } else {
@@ -2187,12 +2066,11 @@ class TalkingHeadsPlugin {
         if (defaultSet) return defaultSet.sprites;
       }
 
-      if (spriteMode === 'manual') return null; // no AI fallback in pure manual mode
+      if (spriteMode === 'manual') return null; // no local fallback in pure manual mode
     }
 
-    // Auto / hybrid fallback: check AI cache (do NOT generate on-the-fly for viewer bar)
-    const cached = this.cacheManager.getAvatar(userId, this.config.defaultStyle);
-    return cached ? cached.sprites : null;
+    const avatar = await this._getConfiguredAssetAvatar(userId, username);
+    return avatar.sprites;
   }
 
   /**
@@ -2219,161 +2097,6 @@ class TalkingHeadsPlugin {
     }
 
     return this._getRelativeSpritePaths(sprites);
-  }
-
-  /**
-   * Generate avatar and sprites for user
-   * @param {string} userId - TikTok user ID
-   * @param {string} username - TikTok username
-   * @param {string} profileImageUrl - Profile image URL
-   * @param {string} styleKey - Style template key
-   * @param {string} customDescription - Optional LLM-generated custom description
-   * @returns {Promise<object>} Avatar data
-   * @private
-   */
-  async _generateAvatarAndSprites(userId, username, profileImageUrl, styleKey, customDescription = null) {
-    if (!this.avatarGenerator || !this.spriteGenerator) {
-      throw new Error('Avatar generation not configured - API key missing');
-    }
-
-    const pluginDataDir = this.api.getPluginDataDir();
-    const cacheDir = path.join(pluginDataDir, 'avatars');
-
-    try {
-      // Generate avatar with optional custom description
-      this._log(`Starting avatar generation for ${username} (${userId})`, 'info');
-      const avatarPath = await this.avatarGenerator.generateAvatar(
-        username,
-        userId,
-        profileImageUrl,
-        styleKey,
-        cacheDir,
-        customDescription
-      );
-      this._log(`Avatar generated successfully: ${avatarPath}`, 'info');
-
-      // Generate sprites
-      this._log(`Starting sprite generation for ${username} (${userId})`, 'info');
-      const spritePaths = await this.spriteGenerator.generateSprites(
-        username,
-        userId,
-        avatarPath,
-        styleKey,
-        cacheDir
-      );
-      this._log(`Sprites generated successfully for ${username}`, 'info', { spriteCount: Object.keys(spritePaths).length });
-
-      // Save to cache
-      this._log(`Saving to cache for ${username}`, 'debug');
-      this.cacheManager.saveAvatar(
-        userId,
-        username,
-        styleKey,
-        avatarPath,
-        spritePaths,
-        profileImageUrl
-      );
-      this._log(`Avatar and sprites cached successfully for ${username}`, 'info');
-
-      return {
-        userId,
-        username,
-        styleKey,
-        avatarPath,
-        sprites: spritePaths
-      };
-    } catch (error) {
-      this._log(`Failed to generate avatar and sprites for ${username}: ${error.message}`, 'error', { 
-        stack: error.stack
-      });
-      throw error;
-    }
-  }
-
-  /**
-   * Analyze user profile with LLM to generate avatar description
-   * Uses OpenAI's vision API to analyze profile image and generate description
-   * @param {string} username - TikTok username
-   * @param {string} profileImageUrl - URL to profile image
-   * @param {string} styleKey - Style template key to match genre
-   * @returns {Promise<string>} LLM-generated avatar description
-   * @private
-   */
-  async _analyzeProfileWithLLM(username, profileImageUrl, styleKey) {
-    const OpenAI = require('openai');
-    const apiKey = this._getOpenAIApiKey();
-    
-    if (!apiKey) {
-      throw new Error('OpenAI API key not configured');
-    }
-    
-    const client = new OpenAI({ apiKey });
-    const { getStyleTemplate } = require('./utils/style-templates');
-    const styleTemplate = getStyleTemplate(styleKey);
-    
-    if (!styleTemplate) {
-      throw new Error(`Invalid style key: ${styleKey}`);
-    }
-
-    try {
-      const prompt = `You are an expert character designer. Analyze the profile image and username to create a detailed character description for a 2D avatar.
-
-Username: ${username}
-Style Genre: ${styleTemplate.name} (${styleTemplate.description})
-
-Based on the profile image and username, describe a unique 2D avatar character that:
-1. Captures the essence and personality suggested by the profile image
-2. Fits the ${styleTemplate.name} art style (${styleTemplate.description})
-3. Works well for a TikTok livestream talking head animation
-4. Has clear, expressive facial features suitable for lip-sync animation
-
-Provide a detailed character description including:
-- Physical appearance (face, hair, clothing, colors)
-- Personality traits reflected in the design
-- Key visual elements that make this character unique
-- How it fits the ${styleTemplate.name} style
-
-Keep the description focused and specific. This will be used to generate the actual avatar image.`;
-
-      this._log(`Sending LLM request for profile analysis (${username})`, 'debug');
-
-      const response = await client.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: prompt
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: profileImageUrl
-                }
-              }
-            ]
-          }
-        ],
-        max_tokens: 500,
-        // Temperature 0.7: Balanced between creativity and consistency
-        // High enough for diverse character descriptions, low enough to stay on-topic
-        temperature: 0.7
-      });
-
-      if (!response.choices || response.choices.length === 0) {
-        throw new Error('No response from OpenAI');
-      }
-
-      const description = response.choices[0].message.content.trim();
-      this._log(`LLM generated description (${description.length} chars)`, 'debug');
-      
-      return description;
-    } catch (error) {
-      this._log(`LLM analysis failed: ${error.message}`, 'error');
-      throw error;
-    }
   }
 
   /**
