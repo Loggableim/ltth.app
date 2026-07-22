@@ -2,18 +2,24 @@
 
 const path = require('path');
 
-const { buildObsCaptureInventory, localOverlayUrl, OBS_DOCS_CAPTURE_LOCALES } = require('../../scripts/lib/obs-docs-capture-inventory');
+const {
+  buildObsCaptureInventory,
+  localOverlayUrl,
+  OBS_DOCS_CAPTURE_LOCALES,
+  EXPECTED_OVERLAY_GUIDE_COUNT
+} = require('../../scripts/lib/obs-docs-capture-inventory');
 
 describe('OBS documentation capture inventory', () => {
   const repoRoot = path.join(__dirname, '..', '..');
+  const expectedCaptureCount = EXPECTED_OVERLAY_GUIDE_COUNT * OBS_DOCS_CAPTURE_LOCALES.length;
 
   test('requires one declared, localized OBS capture per overlay guide', () => {
     const captures = buildObsCaptureInventory(repoRoot, { baseUrl: 'http://127.0.0.1:3000' });
 
     expect(OBS_DOCS_CAPTURE_LOCALES).toEqual(['de', 'en', 'es', 'fr']);
-    expect(captures).toHaveLength(104);
-    expect(new Set(captures.map((capture) => `${capture.plugin}:${capture.locale}`)).size).toBe(104);
-    expect(new Set(captures.map((capture) => capture.plugin)).size).toBe(26);
+    expect(captures).toHaveLength(expectedCaptureCount);
+    expect(new Set(captures.map((capture) => `${capture.plugin}:${capture.locale}`)).size).toBe(expectedCaptureCount);
+    expect(new Set(captures.map((capture) => capture.plugin)).size).toBe(EXPECTED_OVERLAY_GUIDE_COUNT);
     expect(captures).toEqual(expect.arrayContaining([
       expect.objectContaining({
         plugin: 'emoji-rain',

@@ -4,7 +4,7 @@ const { buildGuides } = require('../plugin-tutorial-source');
 const { TEMPORARY_SOURCE_NAME, TUTORIAL_SCENE_NAME } = require('./obs-docs-capture-session');
 
 const OBS_DOCS_CAPTURE_LOCALES = Object.freeze(['de', 'en', 'es', 'fr']);
-const EXPECTED_OVERLAY_GUIDE_COUNT = 26;
+const EXPECTED_OVERLAY_GUIDE_COUNT = 25;
 
 // Each entry is an explicit Browser Source target, rather than a hidden
 // fallback in the runner. This is the capture resolution declared for the

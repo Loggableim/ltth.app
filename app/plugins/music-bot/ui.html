@@ -336,10 +336,10 @@
               </label>
               <label class="checkbox-field">
                 <input type="checkbox" id="normalization-enabled">
-                <span>Lautheitsanpassung aktivieren</span>
+                <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.normalizationEnabled">Lautheitsanpassung aktivieren</span>
               </label>
               <label class="field">
-                <span>Ziel-Lautheit (LUFS)</span>
+                <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.targetLoudness">Ziel-Lautheit (LUFS)</span>
                 <input type="number" id="normalization-lufs" min="-30" max="-8" step="1" value="-16">
                 <small class="text-secondary">Wirkt pro MPV-Slot auch bei Streams und Crossfades.</small>
               </label>
@@ -531,65 +531,65 @@
         <section class="smart-radio-section span-2" aria-labelledby="smart-radio-title">
           <div class="smart-radio-header">
             <div>
-              <h3 id="smart-radio-title">Smart Radio</h3>
-              <p class="text-secondary">Transparente Auswahl, weiche Geschmacks-Signale und optionales Viewer-Voting.</p>
+              <h3 id="smart-radio-title" data-i18n="plugins.music-bot.music_bot.ui.autoDj.smartRadioTitle">Smart Radio</h3>
+              <p class="text-secondary" data-i18n="plugins.music-bot.music_bot.ui.autoDj.smartRadioDescription">Transparente Auswahl, weiche Geschmacks-Signale und optionales Viewer-Voting.</p>
             </div>
-            <span id="radio-preview-status" class="pill">Vorschau wird geladen</span>
+            <span id="radio-preview-status" class="pill" data-i18n="plugins.music-bot.music_bot.ui.autoDj.radioPreviewLoading">Vorschau wird geladen</span>
           </div>
           <div class="form-grid">
             <label class="checkbox-field">
               <input type="checkbox" id="auto-dj-genre-filter">
-              <span>Genre-Mix begrenzen</span>
+              <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.genreFilter">Genre-Mix begrenzen</span>
             </label>
             <label class="field">
-              <span>Genres fuer den Mix</span>
+              <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.genres">Genres fuer den Mix</span>
               <select id="auto-dj-genres" multiple size="5" aria-describedby="auto-dj-genres-help">
-                <option value="alternative">Alternative</option><option value="chill">Chill</option><option value="classical">Classical</option><option value="country">Country</option><option value="dance">Dance</option><option value="electronic">Electronic</option><option value="hip-hop">Hip-Hop</option><option value="indie">Indie</option><option value="jazz">Jazz</option><option value="metal">Metal</option><option value="pop">Pop</option><option value="rock">Rock</option>
+                <option value="alternative" data-i18n="plugins.music-bot.music_bot.ui.autoDj.genreAlternative">Alternative</option><option value="chill" data-i18n="plugins.music-bot.music_bot.ui.autoDj.genreChill">Chill</option><option value="classical" data-i18n="plugins.music-bot.music_bot.ui.autoDj.genreClassical">Classical</option><option value="country" data-i18n="plugins.music-bot.music_bot.ui.autoDj.genreCountry">Country</option><option value="dance" data-i18n="plugins.music-bot.music_bot.ui.autoDj.genreDance">Dance</option><option value="electronic" data-i18n="plugins.music-bot.music_bot.ui.autoDj.genreElectronic">Electronic</option><option value="hip-hop" data-i18n="plugins.music-bot.music_bot.ui.autoDj.genreHipHop">Hip-Hop</option><option value="indie" data-i18n="plugins.music-bot.music_bot.ui.autoDj.genreIndie">Indie</option><option value="jazz" data-i18n="plugins.music-bot.music_bot.ui.autoDj.genreJazz">Jazz</option><option value="metal" data-i18n="plugins.music-bot.music_bot.ui.autoDj.genreMetal">Metal</option><option value="pop" data-i18n="plugins.music-bot.music_bot.ui.autoDj.genrePop">Pop</option><option value="rock" data-i18n="plugins.music-bot.music_bot.ui.autoDj.genreRock">Rock</option>
               </select>
               <small id="auto-dj-genres-help" class="text-secondary">Mehrfachauswahl: alle Genres werden gleichmaessig bedient. Ohne passende Songs pausiert das Radio sichtbar.</small>
             </label>
             <label class="checkbox-field">
               <input type="checkbox" id="auto-dj-bpm-transitions">
-              <span>BPM-Uebergaenge bevorzugen</span>
+              <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.bpmTransitions">BPM-Uebergaenge bevorzugen</span>
             </label>
             <label class="field">
-              <span>Kuenstler-Abstand (Min., 0 = aus)</span>
+              <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.artistSpacing">Kuenstler-Abstand (Min., 0 = aus)</span>
               <input type="number" id="auto-dj-artist-spacing" min="0" max="1440" value="90">
             </label>
             <label class="field">
-              <span>Album-Abstand (Min., 0 = aus)</span>
+              <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.albumSpacing">Album-Abstand (Min., 0 = aus)</span>
               <input type="number" id="auto-dj-album-spacing" min="0" max="10080" value="360">
             </label>
             <label class="field">
-              <span>Neuheitsbudget (%)</span>
+              <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.noveltyBudget">Neuheitsbudget (%)</span>
               <input type="number" id="auto-dj-novelty-budget" min="0" max="100" value="20">
               <small class="text-secondary">Neu = in den letzten zehn Tagen zum Katalog hinzugefuegt.</small>
             </label>
             <label class="checkbox-field">
               <input type="checkbox" id="auto-dj-request-seeds">
-              <span>Viewer-Requests als Stil-Seed nutzen</span>
+              <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.requestSeeds">Viewer-Requests als Stil-Seed nutzen</span>
             </label>
             <label class="checkbox-field">
               <input type="checkbox" id="auto-dj-live-feedback">
-              <span>Live-Feedback erlauben</span>
+              <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.liveFeedback">Live-Feedback erlauben</span>
             </label>
             <label class="checkbox-field">
               <input type="checkbox" id="auto-dj-preview-enabled">
-              <span>Nächste Kandidaten im Dashboard zeigen</span>
+              <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.previewEnabled">Nächste Kandidaten im Dashboard zeigen</span>
             </label>
             <label class="checkbox-field">
               <input type="checkbox" id="auto-dj-chat-voting">
-              <span>Chat-Abstimmung im Overlay aktivieren</span>
+              <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.chatVoting">Chat-Abstimmung im Overlay aktivieren</span>
             </label>
             <label class="field">
-              <span>Voting schliesst vor Songende (Sek.)</span>
+              <span data-i18n="plugins.music-bot.music_bot.ui.autoDj.voteCloseBefore">Voting schliesst vor Songende (Sek.)</span>
               <input type="number" id="auto-dj-vote-close-before" min="5" max="120" value="20">
             </label>
           </div>
-          <div class="radio-feedback-actions" aria-label="Live-Feedback zum aktuellen Song">
-            <strong>Aktueller Song:</strong>
-            <button id="radio-feedback-more" class="btn ghost small" type="button">Mehr davon</button>
-            <button id="radio-feedback-less" class="btn ghost small" type="button">Weniger davon</button>
+          <div class="radio-feedback-actions" aria-label="Live-Feedback zum aktuellen Song" data-i18n-aria-label="plugins.music-bot.music_bot.ui.autoDj.liveFeedbackAria">
+            <strong data-i18n="plugins.music-bot.music_bot.ui.autoDj.currentSong">Aktueller Song:</strong>
+            <button id="radio-feedback-more" class="btn ghost small" type="button" data-i18n="plugins.music-bot.music_bot.ui.autoDj.feedbackMore">Mehr davon</button>
+            <button id="radio-feedback-less" class="btn ghost small" type="button" data-i18n="plugins.music-bot.music_bot.ui.autoDj.feedbackLess">Weniger davon</button>
             <span id="radio-feedback-status" class="text-secondary" aria-live="polite"></span>
           </div>
           <div id="radio-preview-list" class="radio-preview-list" aria-live="polite"></div>

@@ -7,7 +7,7 @@
     shell: 'networkTitle connectionLost socketDisconnected apiError unknownError saved error onboardingSettingsTitle onboardingSettingsMeta onboardingOverlayTitle onboardingOverlayMeta onboardingPlayerTitle onboardingPlayerMeta setupHint setupOpen onboardingHelpWithIssues onboardingHelpReady mpvNotInstalled install mpvInstallation mpvReady installationFailed installationSlow statusCheckFailed installing installationStarted installationStartFailed installMpv assistantCompleted assistantCompletedMessage setup onboardingSaveFailed viewerFallback toastDefaultTitle setupYtdlpMissingTitle setupYtdlpMissingDescription setupYtdlpInstallNpm setupYtdlpInstallManual setupYtdlpConfigurePath setupMpvMissingTitle setupMpvMissingDescription setupMpvInstallWindows setupMpvInstallLinux setupMpvInstallMacos setupMpvConfigurePath mpvInstallIdle mpvAlreadyAvailable mpvInstalledReady mpvInstallFailed mpvPackageManagerUnavailable mpvInstallTimedOut mpvInstallWindowsPrompt mpvInstallStartFailed mpvInstallChocolateyLock mpvInstallAdminConfirmation mpvInstallPermissionDenied mpvInstallCommandUnavailable mpvInstallExited mpvInstallMissingAfterExit',
     player: 'seekUnavailable seekFailed nowPlayingEmpty stateIdle statePaused statePlaying stateUnknown playbackAdvancing loading skip pauseTitle noActiveTrack playbackResumed playbackStarted nextTrackPlaying resumeTitle noStartableTrack skipTitle playingNow searchLoading searching noResult queueAdding queueAdded songAddedTitle requestAdded requestFailed requestRejectedTitle requestRequired requestUserBlocked requestLikesRequired requestGiftRequired songBlockedTitle songSkipped banSong banArtist banKeyword banChannel queueInvalidSong queueFull queueDurationUnknown queueDurationTooLong queueDuplicate queueUserLimit queueCooldown payToPlayTitle payToPlayCredits payToSkipTitle payToSkipGift masterVolumeTitle sourceVolumeTitle volumeSetFailed crossfadeSaveFailed crossfadeSaving crossfadeApplied requestedBy selectedTitle playerToastTitle sourceYoutube sourceSoundCloud sourceOther',
     queue: 'queueEmptyTitle queueEmptyHint playNow moveUp moveDown queueUpdated trackRemoved queueTitle alreadyPlaying titleStartFailed orderUpdated queueRefreshRetry trackMoved remove',
-    autoDj: 'autoDjPlaying autoDjActive autoDjDisabled autoDjOn autoDjOff autoDjSelected autoDjSource autoDjBlocked consecutiveProgress autoDjLimitReached autoDjStarted autoDjWaiting noTrackAvailable autoDjToastTitle sourceFamiliar sourceDiscoveryFallback sourceDiscovery sourceFamiliarFallback sourceHistory sourceRadio sourceHistoryFallback sourceUnknown',
+    autoDj: 'autoDjPlaying autoDjActive autoDjDisabled autoDjOn autoDjOff autoDjSelected autoDjSource autoDjBlocked consecutiveProgress autoDjLimitReached autoDjStarted autoDjWaiting noTrackAvailable autoDjToastTitle sourceFamiliar sourceDiscoveryFallback sourceDiscovery sourceFamiliarFallback sourceHistory sourceRadio sourceHistoryFallback sourceUnknown radioPreviewDisabled radioCandidateCount radioNoCandidates radioPreviewDisabledHint radioPreviewEmptyHint radioUnknownTitle radioScore radioScoreReason radioFeedbackSaving radioFeedbackFailed radioFeedbackMoreSaved radioFeedbackLessSaved',
     moderation: 'banAdded banAddFailed banRemoveFailed enterTitleKeyword banFailed moderationTitle queueMatchesRemoved banLabel trackBanLabel enterValue noEntries delete url keyword channel user artist exactTrack titleKeyword unknownBanType',
     history: 'historyLoadFailed historyFeedbackFailed historyToastTitle',
     playlists: 'playlistSaveFailed playlistConflict importRunning',
@@ -2550,35 +2550,41 @@
     if (!radioPreviewList) return;
     if (radioPreviewStatus) {
       radioPreviewStatus.textContent = disabled
-        ? 'Vorschau deaktiviert'
-        : (candidates.length ? `${candidates.length} Kandidaten` : 'Keine passenden Kandidaten');
+        ? tr('radioPreviewDisabled', 'Vorschau deaktiviert')
+        : (candidates.length
+          ? tr('radioCandidateCount', '{count} Kandidaten', { count: candidates.length })
+          : tr('radioNoCandidates', 'Keine passenden Kandidaten'));
     }
     if (disabled) {
-      radioPreviewList.innerHTML = '<p class="text-secondary">Aktiviere die Vorschau, um die nächsten Radio-Kandidaten mit ihren Gründen zu sehen.</p>';
+      radioPreviewList.innerHTML = `<p class="text-secondary">${escapeHtml(tr('radioPreviewDisabledHint', 'Aktiviere die Vorschau, um die nächsten Radio-Kandidaten mit ihren Gründen zu sehen.'))}</p>`;
       return;
     }
     if (!candidates.length) {
-      radioPreviewList.innerHTML = '<p class="text-secondary">Noch keine Kandidaten verfügbar. Prüfe Radio-Quellen oder die gewählten Genres.</p>';
+      radioPreviewList.innerHTML = `<p class="text-secondary">${escapeHtml(tr('radioPreviewEmptyHint', 'Noch keine Kandidaten verfügbar. Prüfe Radio-Quellen oder die gewählten Genres.'))}</p>`;
       return;
     }
     radioPreviewList.innerHTML = candidates.map((candidate, index) => {
-      const title = escapeHtml(candidate.title || 'Unbekannter Titel');
+      const title = escapeHtml(candidate.title || tr('radioUnknownTitle', 'Unbekannter Titel'));
       const artist = escapeHtml(candidate.artist || '');
       const details = [candidate.album, candidate.bpm ? `${Math.round(candidate.bpm)} BPM` : null]
         .filter(Boolean).map(escapeHtml).join(' · ');
       const reasons = (candidate.reasons || []).map((reason) => escapeHtml(reason.text || reason.code)).join(' · ');
-      return `<article class="radio-preview-item"><div><strong>${index + 1}. ${title}</strong><span>${artist}</span><span class="text-secondary">${details}</span></div><span class="pill">Score ${Number(candidate.score || 0).toFixed(2)}</span><div class="radio-preview-reasons">${reasons || 'Radio-Score'}</div></article>`;
+      const score = escapeHtml(tr('radioScore', 'Score {score}', { score: Number(candidate.score || 0).toFixed(2) }));
+      const fallbackReason = escapeHtml(tr('radioScoreReason', 'Radio-Score'));
+      return `<article class="radio-preview-item"><div><strong>${index + 1}. ${title}</strong><span>${artist}</span><span class="text-secondary">${details}</span></div><span class="pill">${score}</span><div class="radio-preview-reasons">${reasons || fallbackReason}</div></article>`;
     }).join('');
   }
 
   async function sendLiveRadioFeedback(direction) {
-    if (radioFeedbackStatus) radioFeedbackStatus.textContent = 'Wird gespeichert …';
+    if (radioFeedbackStatus) radioFeedbackStatus.textContent = tr('radioFeedbackSaving', 'Wird gespeichert …');
     const result = await post('/radio/live-feedback', { direction });
     if (!result?.success) {
-      if (radioFeedbackStatus) radioFeedbackStatus.textContent = result?.error || 'Feedback konnte nicht gespeichert werden.';
+      if (radioFeedbackStatus) radioFeedbackStatus.textContent = result?.error || tr('radioFeedbackFailed', 'Feedback konnte nicht gespeichert werden.');
       return;
     }
-    if (radioFeedbackStatus) radioFeedbackStatus.textContent = direction === 'more' ? 'Mehr davon gespeichert.' : 'Weniger davon gespeichert.';
+    if (radioFeedbackStatus) radioFeedbackStatus.textContent = direction === 'more'
+      ? tr('radioFeedbackMoreSaved', 'Mehr davon gespeichert.')
+      : tr('radioFeedbackLessSaved', 'Weniger davon gespeichert.');
     await refreshRadioPreview();
   }
 

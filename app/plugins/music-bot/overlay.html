@@ -779,7 +779,7 @@
     <div id="up-next-items"></div>
   </div>
   <div id="next-song-vote" class="next-song-vote" aria-live="polite">
-    <div class="next-song-vote-head">Nächster Song · Chat-Abstimmung</div>
+    <div class="next-song-vote-head" data-i18n="plugins.music-bot.music_bot.ui.controls.overlay.nextSongVoteHeading">Nächster Song · Chat-Abstimmung</div>
     <div id="next-song-vote-candidates" class="next-song-vote-candidates"></div>
     <div id="next-song-vote-info" class="next-song-vote-info"></div>
   </div>
@@ -897,14 +897,20 @@
           const item = document.createElement('div');
           item.className = 'next-song-vote-candidate';
           const title = document.createElement('strong');
-          title.textContent = `!vote${index + 1} · ${candidate.title || 'Unbekannter Titel'}`;
+          title.textContent = tr('nextSongVoteCandidate', '!vote{choice} · {title}', {
+            choice: index + 1,
+            title: candidate.title || tr('nextSongVoteUnknownTitle', 'Unbekannter Titel')
+          });
           const artist = document.createElement('span');
-          artist.textContent = `${candidate.artist || 'Auto-DJ'} · ${Number(votes[index + 1] || 0)} Stimme(n)`;
+          artist.textContent = tr('nextSongVoteCandidateVotes', '{artist} · {count} Stimme(n)', {
+            artist: candidate.artist || tr('nextSongVoteAutoDj', 'Auto-DJ'),
+            count: Number(votes[index + 1] || 0)
+          });
           item.append(title, artist);
           fragment.appendChild(item);
         });
         nextSongVoteCandidates.replaceChildren(fragment);
-        nextSongVoteInfo.textContent = 'Im Chat mit !vote1 oder !vote2 abstimmen · bei Gleichstand gewinnt Kandidat 1.';
+        nextSongVoteInfo.textContent = tr('nextSongVoteInstructions', 'Im Chat mit !vote1 oder !vote2 abstimmen · bei Gleichstand gewinnt Kandidat 1.');
         nextSongVoteWidget.classList.add('visible');
       }
 
