@@ -2175,7 +2175,7 @@ async function saveTTSAPIKeys() {
             updateData.fishaudio_api_key = fishaudioKey;
         }
         if (fishspeechKey && fishspeechKey !== '***REDACTED***') {
-            // Save to centralized SiliconFlow API key (used by both TTS and StreamAlchemy)
+            // Save to centralized SiliconFlow API key (used by both TTS and Stream Monsters)
             updateData.siliconflow_api_key = fishspeechKey;
             // Also save to legacy key for backwards compatibility
             updateData.tts_fishspeech_api_key = fishspeechKey;

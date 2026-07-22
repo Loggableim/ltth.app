@@ -5,7 +5,7 @@
         "comfy_root_directory_placeholder": "Chemin, p. ex. C:\\ComfyUI"
       },
       "streamalchemy": {
-        "title": "Stream Alchemy - Paramètres avancés",
+        "title": "Stream Monsters - Paramètres avancés",
         "subtitle": "Configuration complète pour la génération d'objets, les invites personnalisées, etc.",
         "tabs": {
           "general": "Général",
@@ -21,7 +21,7 @@
         "general": {
           "title": "Réglages de base",
           "enabled": "Plugin activ?",
-          "enabled_label": "Activer Stream Alchemy",
+          "enabled_label": "Activer Stream Monsters",
           "auto_crafting": "Fabrication de voitures",
           "auto_crafting_label": "Fabrication automatique avec 2 cadeaux",
           "item_generation_mode": "Mode de génération d’objets",
@@ -195,18 +195,18 @@
         "crafting_time_window_seconds": "Fenêtre de temps de fabrication (secondes)",
         "configuration": "⚙️Configuration",
         "ready_providers": "Fournisseurs prêts",
-        "streamalchemy_overlay": "Superposition StreamAlchemy",
+        "streamalchemy_overlay": "Superposition Stream Monsters",
         "generation_mode": "Mode génération",
-        "streamalchemy_relaunch": "Relance de StreamAlchemy",
+        "streamalchemy_relaunch": "Stream Monsters",
         "save_configuration": "Enregistrer la configuration",
         "provider_status": "Statut du fournisseur",
         "preferred_preset": "Préréglage préféré",
         "for_gated_hugging_face_models_accept_upstream_terms": "Pour les modèles Hugging Face fermés, acceptez les conditions en amont et fournissez HF_TOKEN ou HUGGINGFACE_TOKEN avant de démarrer LTTH.",
         "local_size": "Taille locale",
         "default_style": "Style par défaut",
-        "stream_alchemy": "🧪 Alchimie de stream",
+        "stream_alchemy": "🪺 Stream Monsters",
         "transform_tiktok_gifts_into_virtual_rpg_items_with": "Transformez les cadeaux TikTok en objets RPG virtuels grâce à des mécanismes de fabrication",
-        "stream_alchemy_configuration": "Alchimie de flux - Configuration",
+        "stream_alchemy_configuration": "Stream Monsters - Configuration",
         "live_status_for_inventory_cached_recipes_generation_providers": "Statut en direct de l'inventaire, des recettes mises en cache, des fournisseurs de génération et de la préparation du modèle local.",
         "crafting_window_ms": "Fenêtre d'artisanat ms",
         "test_local_generation": "Tester la génération locale",
@@ -214,7 +214,7 @@
       },
       "ui": {
         "app": {
-          "title": "StreamAlchemy",
+          "title": "Stream Monsters",
           "overview": "Vue d'ensemble",
           "items": "Objets",
           "recipes": "Recettes",
@@ -224,7 +224,7 @@
           "source": "Origine"
         },
         "navigation": {
-          "areas": "Sections StreamAlchemy"
+          "areas": "Sections Stream Monsters"
         },
         "metrics": {
           "items": "Objets",
@@ -249,7 +249,7 @@
           "overviewTitle": "Vue d’ensemble",
           "overviewDescription": "État en direct de l’inventaire, des recettes en cache, des fournisseurs de génération et de la disponibilité du modèle local.",
           "itemsTitle": "Objets",
-          "itemsDescription": "Cadeaux de base et résultats fabriqués conservés dans StreamAlchemy.",
+          "itemsDescription": "Cadeaux de base et résultats fabriqués conservés dans l’archive Stream Monsters.",
           "recipesTitle": "Recettes",
           "recipesDescription": "Les combinaisons de fabrication en cache réutilisent leurs images et évitent les coûts de génération répétés.",
           "generationTitle": "Génération",

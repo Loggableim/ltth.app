@@ -5,7 +5,7 @@
         "comfy_root_directory_placeholder": "C:\\ComfyUI"
       },
       "streamalchemy": {
-        "title": "Stream Alchemy - Advanced Settings",
+        "title": "Stream Monsters - Advanced Settings",
         "subtitle": "Comprehensive configuration for item generation, custom prompts and more",
         "tabs": {
           "general": "General",
@@ -21,7 +21,7 @@
         "general": {
           "title": "Basic Settings",
           "enabled": "Plugin Enabled",
-          "enabled_label": "Enable Stream Alchemy",
+          "enabled_label": "Enable Stream Monsters",
           "auto_crafting": "Auto crafting",
           "auto_crafting_label": "Automatic crafting with 2 Gifts",
           "item_generation_mode": "Item Generation Mode",
@@ -195,18 +195,18 @@
         "crafting_time_window_seconds": "Crafting Time Window (seconds)",
         "configuration": "⚙️ Configuration",
         "ready_providers": "Ready Providers",
-        "streamalchemy_overlay": "StreamAlchemy Overlay",
+        "streamalchemy_overlay": "Stream Monsters Overlay",
         "generation_mode": "Generation mode",
-        "streamalchemy_relaunch": "StreamAlchemy Relaunch",
+        "streamalchemy_relaunch": "Stream Monsters",
         "save_configuration": "Save Configuration",
         "provider_status": "Provider Status",
         "preferred_preset": "Preferred preset",
         "for_gated_hugging_face_models_accept_upstream_terms": "For gated Hugging Face models, accept upstream terms and provide HF_TOKEN or HUGGINGFACE_TOKEN before starting LTTH.",
         "local_size": "Local size",
         "default_style": "Default style",
-        "stream_alchemy": "🧪 Stream Alchemy",
+        "stream_alchemy": "🧪 Stream Monsters",
         "transform_tiktok_gifts_into_virtual_rpg_items_with": "Transform TikTok gifts into virtual RPG items with crafting mechanics",
-        "stream_alchemy_configuration": "Stream Alchemy - Configuration",
+        "stream_alchemy_configuration": "Stream Monsters - Configuration",
         "live_status_for_inventory_cached_recipes_generation_providers": "Live status for inventory, cached recipes, generation providers, and local model readiness.",
         "crafting_window_ms": "Crafting window ms",
         "test_local_generation": "Test local generation",
@@ -214,7 +214,7 @@
       },
       "ui": {
         "app": {
-          "title": "StreamAlchemy",
+          "title": "Stream Monsters",
           "overview": "Overview",
           "items": "Items",
           "recipes": "Recipes",
@@ -224,7 +224,7 @@
           "source": "Source"
         },
         "navigation": {
-          "areas": "StreamAlchemy areas"
+          "areas": "Stream Monsters areas"
         },
         "metrics": {
           "items": "Items",
@@ -241,7 +241,7 @@
           "overviewTitle": "Overview",
           "overviewDescription": "Live status for inventory, cached recipes, generation providers, and local model readiness.",
           "itemsTitle": "Items",
-          "itemsDescription": "Base gifts and crafted results persisted in the StreamAlchemy store.",
+          "itemsDescription": "Base gifts and crafted results persisted in the Stream Monsters archive.",
           "recipesTitle": "Recipes",
           "recipesDescription": "Cached craft combinations reuse their existing images and avoid repeated generation costs.",
           "generationTitle": "Generation",

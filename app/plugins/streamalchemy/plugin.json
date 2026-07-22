@@ -1,7 +1,7 @@
 {
   "id": "streamalchemy",
   "name": "Stream Monsters",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Turn TikTok gifts into deterministic element eggs, community monsters and transparent viewer duels.",
   "author": "Pup Cid",
   "entry": "index.js",

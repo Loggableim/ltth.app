@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=1920, height=1080">
-  <title data-i18n="plugins.streamalchemy.labels.streamalchemy_overlay">StreamAlchemy Overlay</title>
+  <title data-i18n="plugins.streamalchemy.labels.streamalchemy_overlay">Stream Monsters Overlay</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     * {
@@ -291,7 +291,7 @@
         <img id="toastImage" alt="">
       </div>
       <div>
-        <div class="kicker" id="toastKicker">StreamAlchemy</div>
+        <div class="kicker" id="toastKicker">Stream Monsters</div>
         <div class="title" id="toastTitle"></div>
         <div class="subtitle" id="toastSubtitle"></div>
       </div>
@@ -340,7 +340,7 @@
 
     function showToast({ kicker, title, subtitle, image, rarity }) {
       clearTimeout(toastTimer);
-      document.getElementById('toastKicker').textContent = kicker || translateUi('plugins.streamalchemy.ui.app.title', 'StreamAlchemy');
+      document.getElementById('toastKicker').textContent = kicker || translateUi('plugins.streamalchemy.ui.app.title', 'Stream Monsters');
       document.getElementById('toastTitle').textContent = title || '';
       document.getElementById('toastSubtitle').textContent = subtitle || '';
       document.getElementById('toastImage').src = image || '';

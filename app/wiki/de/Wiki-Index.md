@@ -144,7 +144,7 @@ Neu hier? Starte mit diesen Seiten:
 - GCCE HUD
 
 **Expert (Development/Customization):**
-- Stream Alchemy
+- Stream Monsters
 - API Bridge
 - GCCE (für Entwickler)
 - Custom Plugins

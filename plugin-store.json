@@ -687,7 +687,7 @@
         "es": "Convierte regalos de TikTok en huevos elementales deterministas, monstruos comunitarios, misiones y duelos transparentes de tres rondas. Las imagenes se preparan antes del directo.",
         "fr": "Transformez les cadeaux TikTok en oeufs elementaires deterministes, monstres communautaires, quetes et duels transparents en tres manches. Les visuels sont prepares avant le live."
       },
-      "version": "1.1.1",
+      "version": "1.1.2",
       "author": "Pup Cid",
       "category": "plugin",
       "channel": "open-beta",
@@ -697,15 +697,15 @@
       "access": {
         "type": "subscriber"
       },
-      "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.1.1.zip",
-      "sha256": "4ef2dee6386ef3760f4f18171d69f9de11b4bf766192aca25673b763ba921e26",
+      "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.1.2.zip",
+      "sha256": "c318c24abe89a1d2b283676d20b7c71cefe3ea948bd6c11ef873ae9217e662eb",
       "pricing": {
         "type": "free",
         "amount": 0,
         "currency": "EUR"
       },
       "screenshots": [
-        "/screenshots/features/stream-alchemy.png"
+        "/screenshots/features/stream-monsters.png"
       ]
     },
     {
