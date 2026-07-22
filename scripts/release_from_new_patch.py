@@ -375,7 +375,11 @@ class ReleaseManager:
         print()
         
         # Step 4: Archive current version
-        if current_version:
+        if current_version == str(new_version):
+            print("📦 Step 4: Skipping archive (metadata already uses target version)")
+            print("   The existing bundle must not be relabeled as the new release.")
+            print()
+        elif current_version:
             print("📦 Step 4: Archiving current version")
             if not self.archive_current_version(current_version):
                 return False

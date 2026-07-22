@@ -47,6 +47,7 @@ APP_EXCLUDED_PREFIXES = (
     "archive/",
     "logs/",
     "node_modules/",
+    "test/",
 )
 
 APP_EXCLUDED_EXACT = {
@@ -54,6 +55,14 @@ APP_EXCLUDED_EXACT = {
     "CURRENT_VERSION.txt",
     "ltth_latest.zip",
 }
+
+TALKING_HEADS_RGS_PREFIX = "plugins/talking-heads/assets/asset-packs/rgs/"
+TALKING_HEADS_RGS_RUNTIME_FRAMES = {
+    "idle_0.png",
+    "idle_3.png",
+}
+TALKING_HEADS_BOBA_PREFIX = "plugins/talking-heads/assets/asset-packs/boba/animals/"
+MAX_RELEASE_BUNDLE_BYTES = 95 * 1024 * 1024
 
 
 def parse_args() -> argparse.Namespace:
@@ -131,6 +140,8 @@ def build_bundle_zip(repo_root: Path, version: str, zip_path: Path) -> None:
         add_app_tree(archive, app_root, root_prefix)
         add_directory_entry(archive, f"{root_prefix}/app/logs/")
 
+    validate_bundle_size(zip_path)
+
 
 def add_app_tree(archive: zipfile.ZipFile, app_root: Path, root_prefix: str) -> None:
     files = sorted(path for path in app_root.rglob("*") if path.is_file())
@@ -145,7 +156,31 @@ def should_exclude_app_path(relative_path: str) -> bool:
     normalized = relative_path.replace("\\", "/")
     if normalized in APP_EXCLUDED_EXACT:
         return True
+    if "node_modules" in normalized.split("/"):
+        return True
+    if normalized.startswith(TALKING_HEADS_BOBA_PREFIX) and "/Ready-To-Use/" in normalized:
+        # The runtime composes Boba avatars from Layers/ and boba/extras.
+        # Ready-To-Use contains duplicate flattened reference renders.
+        return True
+    if normalized.startswith(TALKING_HEADS_RGS_PREFIX):
+        rgs_relative = normalized[len(TALKING_HEADS_RGS_PREFIX):]
+        filename = rgs_relative.rsplit("/", 1)[-1]
+        if filename.lower().endswith(".png"):
+            # Talking Heads composes its five runtime sprites only from the
+            # neutral and blink layers. The other RGS animation frames are
+            # editable source material and would push the committed installer
+            # ZIP beyond GitHub's 100 MiB blob limit.
+            return filename not in TALKING_HEADS_RGS_RUNTIME_FRAMES
     return any(normalized == prefix.rstrip("/") or normalized.startswith(prefix) for prefix in APP_EXCLUDED_PREFIXES)
+
+
+def validate_bundle_size(zip_path: Path) -> None:
+    size = zip_path.stat().st_size
+    if size > MAX_RELEASE_BUNDLE_BYTES:
+        raise ValueError(
+            f"Release bundle is {size / 1024 / 1024:.2f} MiB; "
+            f"the committed ZIP must stay below {MAX_RELEASE_BUNDLE_BYTES / 1024 / 1024:.0f} MiB."
+        )
 
 
 def add_directory_entry(archive: zipfile.ZipFile, archive_name: str) -> None:
@@ -174,6 +209,7 @@ def main() -> int:
     print(f"Built release bundle: {zip_path}")
     print(f"Built changelog:       {changelog_path}")
     print(f"Version:               {version}")
+    print(f"Bundle size:           {zip_path.stat().st_size / 1024 / 1024:.2f} MiB")
     print(f"Timestamp:             {datetime.now(timezone.utc).isoformat()}")
     return 0
 
