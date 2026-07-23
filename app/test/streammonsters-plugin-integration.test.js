@@ -563,4 +563,85 @@ describe('Stream Monsters plugin integration', () => {
     ]);
     await plugin.destroy();
   });
+
+  test('translates owned disabled and GCCE handler failures exactly once', async () => {
+    const gcce = createGCCE('!');
+    const { api, emitted, pluginEvents } = createApi({ gcce });
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+
+    pluginEvents.emit('gcce:command_result', {
+      success: false,
+      error: 'Command is disabled.',
+      errorCode: 'COMMAND_DISABLED',
+      commandName: 'eggs',
+      pluginId: 'streamalchemy',
+      userId: 'viewer-a',
+      username: 'Viewer A'
+    });
+    pluginEvents.emit('gcce:command_result', {
+      success: false,
+      error: 'Command failed: handler exploded.',
+      errorCode: 'EXECUTION_FAILED',
+      commandName: 'battle',
+      pluginId: 'streamalchemy',
+      userId: 'viewer-b',
+      username: 'Viewer B'
+    });
+
+    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result').map(entry => entry.payload)).toEqual([
+      expect.objectContaining({
+        userId: 'viewer-a',
+        command: 'eggs',
+        transport: 'gcce',
+        result: expect.objectContaining({
+          status: 'command_disabled',
+          errorCode: 'COMMAND_DISABLED'
+        })
+      }),
+      expect.objectContaining({
+        userId: 'viewer-b',
+        command: 'battle',
+        transport: 'gcce',
+        result: expect.objectContaining({
+          status: 'execution_failed',
+          errorCode: 'EXECUTION_FAILED'
+        })
+      })
+    ]);
+    await plugin.destroy();
+  });
+
+  test('returns and emits one execution failure when the fallback domain handler throws', async () => {
+    const { api, emitted } = createApi();
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    plugin.streamMonstersCommandIngress.execute = jest.fn().mockRejectedValue(new Error('handler exploded'));
+
+    await expect(plugin.handleStreamMonstersChat({
+      uniqueId: 'viewer-a',
+      nickname: 'Viewer A',
+      comment: '!eggs'
+    })).resolves.toEqual(expect.objectContaining({
+      success: false,
+      status: 'execution_failed',
+      errorCode: 'EXECUTION_FAILED',
+      message: expect.stringContaining('handler exploded')
+    }));
+
+    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toEqual([
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          userId: 'viewer-a',
+          command: 'eggs',
+          transport: 'fallback',
+          result: expect.objectContaining({
+            status: 'execution_failed',
+            errorCode: 'EXECUTION_FAILED'
+          })
+        })
+      })
+    ]);
+    await plugin.destroy();
+  });
 });

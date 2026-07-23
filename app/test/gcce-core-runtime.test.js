@@ -181,6 +181,38 @@ describe('GCCE core runtime', () => {
     await gcce.destroy();
   });
 
+  test('publishes one owned execution failure when a registered command handler throws', async () => {
+    const { api, gcce } = await createInitializedGCCE();
+    gcce.registerCommandsForPlugin('throwing-plugin', [{
+      name: 'throwprobe',
+      permission: 'all',
+      handler: () => {
+        throw new Error('handler exploded');
+      }
+    }]);
+    api.emitted = [];
+
+    await gcce.handleChatMessage({
+      comment: '/throwprobe',
+      uniqueId: 'viewer-a',
+      nickname: 'Viewer A'
+    });
+
+    expect(api.emitted.filter(entry => entry.event === 'gcce:command_result')).toEqual([
+      expect.objectContaining({
+        data: expect.objectContaining({
+          success: false,
+          errorCode: 'EXECUTION_FAILED',
+          commandName: 'throwprobe',
+          pluginId: 'throwing-plugin',
+          userId: 'viewer-a'
+        })
+      })
+    ]);
+
+    await gcce.destroy();
+  });
+
   test('executes registered flow commands through the parser API', async () => {
     const { api, gcce } = await createInitializedGCCE();
 

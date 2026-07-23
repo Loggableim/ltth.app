@@ -690,6 +690,8 @@ class StreamAlchemyPlugin {
       PERMISSION_DENIED: 'permission_denied',
       RATE_LIMIT_USER: 'rate_limited',
       RATE_LIMIT_GLOBAL: 'rate_limited',
+      COMMAND_DISABLED: 'command_disabled',
+      EXECUTION_FAILED: 'execution_failed',
       COMMAND_ON_COOLDOWN: payload.cooldownType === 'global' ? 'global_cooldown' : 'cooldown'
     };
     const status = statuses[payload.errorCode];

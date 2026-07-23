@@ -70,7 +70,17 @@ class StreamMonstersCommandIngress {
   }
 
   async executeCommand(commandName, args, context, transport) {
-    const result = await this.execute(context, commandName, args);
+    let result;
+    try {
+      result = await this.execute(context, commandName, args);
+    } catch (error) {
+      result = {
+        success: false,
+        status: 'execution_failed',
+        errorCode: 'EXECUTION_FAILED',
+        message: error?.message || 'Command execution failed.'
+      };
+    }
     this.emitResult(commandName, context, result, transport);
     return result;
   }

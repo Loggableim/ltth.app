@@ -391,7 +391,9 @@ class CommandParser {
                 success: false,
                 error: errorObj.message,
                 displayOverlay: true,
-                errorCode: errorObj.code
+                errorCode: errorObj.code,
+                commandName: commandDef.name,
+                pluginId: commandDef.pluginId
             };
         }
     }
