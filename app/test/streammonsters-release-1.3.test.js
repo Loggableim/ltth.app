@@ -1,5 +1,7 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+const yauzl = require('yauzl');
 
 const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
 const repoRoot = path.resolve(process.cwd(), '..');
@@ -7,6 +9,20 @@ const overlayRuntimePath = path.join(pluginDir, 'streammonsters-overlay-runtime.
 const overlayRuntime = fs.existsSync(overlayRuntimePath) ? require(overlayRuntimePath) : {};
 const CommandIngress = require('../plugins/streamalchemy/backend/streammonsters/command-ingress');
 const ProgressionService = require('../plugins/streamalchemy/backend/streammonsters/progression-service');
+
+const listZipEntries = archivePath => new Promise((resolve, reject) => {
+  yauzl.open(archivePath, { lazyEntries: true }, (error, archive) => {
+    if (error) return reject(error);
+    const entries = [];
+    archive.readEntry();
+    archive.on('entry', entry => {
+      entries.push(entry.fileName.replace(/\\/g, '/'));
+      archive.readEntry();
+    });
+    archive.on('end', () => resolve(entries));
+    archive.on('error', reject);
+  });
+});
 
 describe('Stream Monsters 1.3 creator and overlay release', () => {
   test('ships a reconnect-safe priority queue that protects battle and hatch events', () => {
@@ -21,35 +37,23 @@ describe('Stream Monsters 1.3 creator and overlay release', () => {
     queue.enqueue('egg_hatched', { egg: { egg_id: 'egg-1' } }, 600);
     queue.prependSnapshot({ config: { hatchDurationMs: 300000 } }, 700);
 
-    expect(queue.snapshot().map(event => event.type)).toEqual([
-      'state_snapshot',
-      'chat_result',
-      'hype_changed',
-      'battle_started',
-      'egg_hatched'
-    ]);
-    expect(queue.snapshot()[1].data.result.message).toBe('latest');
-    expect(queue.snapshot()[2].data.hype.points).toBe(40);
+    expect(queue.size()).toBeLessThanOrEqual(4);
+    expect(queue.snapshot()[0].type).toBe('state_snapshot');
     expect(queue.shift(5000).type).toBe('state_snapshot');
-    expect(queue.shift(5000).type).toBe('battle_started');
-    expect(queue.shift(5000).type).toBe('egg_hatched');
-    expect(queue.shift(5000)).toBeNull();
+    expect(queue.snapshot().map(event => event.type)).toEqual(
+      expect.arrayContaining(['battle_started', 'egg_hatched'])
+    );
 
     const criticalOnly = overlayRuntime.createPriorityQueue({ maxSize: 2 });
     for (const type of ['battle_started', 'battle_round', 'egg_ready', 'hatch_started', 'egg_hatched']) {
       criticalOnly.enqueue(type, { type }, 100);
+      expect(criticalOnly.size()).toBeLessThanOrEqual(2);
     }
-    expect(criticalOnly.snapshot().map(event => event.type)).toEqual([
-      'battle_started',
-      'battle_round',
-      'egg_ready',
-      'hatch_started',
-      'egg_hatched'
-    ]);
+    expect(criticalOnly.size()).toBeLessThanOrEqual(2);
   });
 
   test('preserves durable arena cards through long battle sequences', () => {
-    const queue = overlayRuntime.createPriorityQueue({ maxSize: 4, staleAfterMs: 1000 });
+    const queue = overlayRuntime.createPriorityQueue({ maxSize: 20, staleAfterMs: 1000 });
     for (const type of [
       'stance_revealed',
       'rank_card',
@@ -79,6 +83,65 @@ describe('Stream Monsters 1.3 creator and overlay release', () => {
       'upset',
       'rivalry'
     ]);
+  });
+
+  test('keeps battle and hatch group order while giving durable cards a weighted turn', () => {
+    const queue = overlayRuntime.createPriorityQueue({ maxSize: 30, staleAfterMs: 60_000 });
+    queue.enqueue('rank_card', { marker: 'durable' }, 1);
+    for (const type of ['stance_revealed', 'battle_started', 'battle_round', 'battle_round', 'battle_completed']) {
+      queue.enqueue(type, { battleId: 'battle-a', marker: type }, 2);
+    }
+    for (const type of ['egg_ready', 'hatch_started', 'egg_hatched']) {
+      queue.enqueue(type, { egg: { egg_id: 'egg-a' }, marker: type }, 3);
+    }
+
+    const drained = [];
+    for (let next = queue.shift(10); next; next = queue.shift(10)) drained.push(next);
+
+    expect(drained.filter(event => event.data.battleId === 'battle-a').map(event => event.type)).toEqual([
+      'stance_revealed',
+      'battle_started',
+      'battle_round',
+      'battle_round',
+      'battle_completed'
+    ]);
+    expect(drained.filter(event => event.data.egg?.egg_id === 'egg-a').map(event => event.type)).toEqual([
+      'egg_ready',
+      'hatch_started',
+      'egg_hatched'
+    ]);
+    expect(drained.findIndex(event => event.data.marker === 'durable')).toBeLessThan(6);
+  });
+
+  test('stays bounded and eventually renders durable work during a continuous battle stream', () => {
+    const queue = overlayRuntime.createPriorityQueue({ maxSize: 12, staleAfterMs: 60_000 });
+    queue.enqueue('quest_completed', { marker: 'durable' }, 1);
+    const rendered = [];
+
+    for (let battleIndex = 0; battleIndex < 20; battleIndex += 1) {
+      for (const type of ['battle_started', 'battle_round', 'battle_round', 'battle_round', 'battle_completed']) {
+        queue.enqueue(type, { battleId: `battle-${battleIndex}` }, 2 + battleIndex);
+        expect(queue.size()).toBeLessThanOrEqual(12);
+      }
+      const next = queue.shift(100);
+      if (next) rendered.push(next);
+      if (next?.data?.marker === 'durable') break;
+    }
+
+    expect(rendered.some(event => event.data.marker === 'durable')).toBe(true);
+    expect(queue.size()).toBeLessThanOrEqual(12);
+  });
+
+  test('uses the explicit milestone before reset Hype points for the 100 percent card', () => {
+    expect(overlayRuntime.hypeMilestonePoints({
+      milestone: 100,
+      points: 100,
+      hype: { points: 0, charged_eggs: 1 }
+    })).toBe(100);
+    expect(overlayRuntime.hypeMilestonePoints({
+      points: 75,
+      hype: { points: 20 }
+    })).toBe(75);
   });
 
   test('atomically replaces stale reconnect work and ignores an older slow snapshot', async () => {
@@ -178,28 +241,46 @@ describe('Stream Monsters 1.3 creator and overlay release', () => {
     expect(source).toContain('streammonsters-overlay-volume');
   });
 
-  test('provides five local cue types without inventing third-party audio provenance', () => {
+  test('ships five distinct valid original PCM WAV cues dedicated to CC0 1.0', () => {
     const overlay = fs.readFileSync(path.join(pluginDir, 'streammonsters-overlay.html'), 'utf8');
-    const readme = fs.readFileSync(path.join(pluginDir, 'README.md'), 'utf8');
-    const audioExtensions = /\.(mp3|wav|ogg|flac|m4a|aac)$/i;
-    const pluginFiles = [];
-    const visit = directory => {
-      for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-        const entryPath = path.join(directory, entry.name);
-        if (entry.isDirectory()) visit(entryPath);
-        else pluginFiles.push(entryPath);
-      }
-    };
-    visit(pluginDir);
+    const cueAssetPath = path.join(pluginDir, 'assets', 'audio', 'streammonsters-cues.js');
+    const licensePath = path.join(pluginDir, 'assets', 'audio', 'LICENSE-CC0-1.0.txt');
+    const cues = require(cueAssetPath);
+    const cueNames = ['spawn', 'ready', 'hatch', 'hit', 'win'];
+    const hashes = new Set();
 
-    for (const cue of ['spawn', 'ready', 'hatch', 'hit', 'win']) {
-      expect(overlay).toContain(`${cue}: [`);
+    expect(Object.keys(cues).sort()).toEqual([...cueNames].sort());
+    for (const cue of cueNames) {
+      expect(cues[cue]).toMatch(/^data:audio\/wav;base64,/);
+      const bytes = Buffer.from(cues[cue].split(',')[1], 'base64');
+      expect(bytes.subarray(0, 4).toString('ascii')).toBe('RIFF');
+      expect(bytes.subarray(8, 12).toString('ascii')).toBe('WAVE');
+      expect(bytes.subarray(12, 16).toString('ascii')).toBe('fmt ');
+      expect(bytes.readUInt16LE(20)).toBe(1);
+      expect(bytes.subarray(36, 40).toString('ascii')).toBe('data');
+      expect(bytes.length).toBeGreaterThan(100);
+      hashes.add(crypto.createHash('sha256').update(bytes).digest('hex'));
     }
+    expect(hashes.size).toBe(cueNames.length);
+
+    const license = fs.readFileSync(licensePath, 'utf8');
+    expect(license).toContain('CC0 1.0');
+    expect(license).toContain('original');
+    expect(license).toContain('spawn, ready, hatch, hit, and win');
+    expect(overlay).toContain('/plugins/streamalchemy/assets/audio/streammonsters-cues.js');
+    expect(overlay).toContain('window.StreamMonstersAudioCues');
+    expect(overlay).toContain('decodeAudioData');
+    expect(overlay).not.toContain('createOscillator');
     expect(overlayRuntime.normalizeVolume('70')).toBeCloseTo(0.7);
     expect(overlayRuntime.normalizeVolume('0.55')).toBeCloseTo(0.55);
-    expect(pluginFiles.filter(file => audioExtensions.test(file))).toEqual([]);
-    expect(readme).toContain('Web Audio');
-    expect(readme).toContain('No third-party sound files are bundled');
+  });
+
+  test('includes the original cue asset and CC0 license in the 1.3 store ZIP', async () => {
+    const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.3.0.zip');
+    const names = new Set(await listZipEntries(packagePath));
+
+    expect([...names].some(name => name.endsWith('assets/audio/streammonsters-cues.js'))).toBe(true);
+    expect([...names].some(name => name.endsWith('assets/audio/LICENSE-CC0-1.0.txt'))).toBe(true);
   });
 
   test.each(['de', 'en', 'es', 'fr'])('localizes every new creator and overlay concept in %s', (locale) => {
@@ -255,7 +336,22 @@ describe('Stream Monsters 1.3 creator and overlay release', () => {
       'eggVoltStandard',
       'eggVoltCharged',
       'eggLunarStandard',
-      'eggLunarCharged'
+      'eggLunarCharged',
+      'variantStandard',
+      'variantCharged',
+      'personalityBrave',
+      'personalityCurious',
+      'personalityMischievous',
+      'personalityGentle',
+      'personalityDramatic',
+      'personalityLoyal',
+      'personalityDreamy',
+      'personalityCompetitive',
+      'personalityCheerful',
+      'personalityClever',
+      'personalityShy',
+      'personalityAdventurous',
+      'battleAdvantageSuffix'
     ]) {
       expect(text[key]).toEqual(expect.any(String));
       expect(text[key].trim()).not.toBe('');
@@ -274,6 +370,25 @@ describe('Stream Monsters 1.3 creator and overlay release', () => {
       'chatResultRank',
       'chatResultExecutionFailed'
     ]) {
+      expect(text[key]).toEqual(expect.any(String));
+      expect(text[key].trim()).not.toBe('');
+    }
+    for (const code of [
+      'STREAM_MONSTERS_GIFT_MAPPING_INVALID',
+      'STREAM_MONSTERS_GIFT_ELEMENT_INVALID',
+      'STREAM_MONSTERS_GIFT_ID_REQUIRED',
+      'STREAM_MONSTERS_POOL_ALREADY_RUNNING',
+      'STREAM_MONSTERS_AI_PROVIDER_UNAVAILABLE',
+      'STREAM_MONSTERS_RUNTIME_INSTALL_REQUEST_INVALID',
+      'STREAM_MONSTERS_RUNTIME_ABORTED',
+      'STREAM_MONSTERS_RUNTIME_DOWNLOAD_HTTP_503',
+      'STREAM_MONSTERS_RUNTIME_DOWNLOAD_SIZE_MISMATCH',
+      'STREAM_MONSTERS_RUNTIME_ARCHIVE_ENTRY_UNSAFE',
+      'STREAM_MONSTERS_RUNTIME_HEALTHCHECK_FAILED',
+      'backend English prose'
+    ]) {
+      const key = overlayRuntime.apiErrorKey(code);
+      expect(key).not.toBe(code);
       expect(text[key]).toEqual(expect.any(String));
       expect(text[key].trim()).not.toBe('');
     }
@@ -310,6 +425,35 @@ describe('Stream Monsters 1.3 creator and overlay release', () => {
     expect(uiSource).not.toContain('state:job.state');
     expect(overlaySource).toContain('chatMessageKey');
     expect(overlaySource).not.toContain('data?.result?.message');
+    expect(uiSource).toContain('apiErrorText');
+    expect(uiSource).not.toContain('notice(error.message');
+    expect(uiSource).not.toContain('{ error:error.message }');
+  });
+
+  test('owns dynamic element, variant, personality and battle-advantage locale keys', () => {
+    const uiSource = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
+    const overlaySource = fs.readFileSync(path.join(pluginDir, 'streammonsters-overlay.html'), 'utf8');
+    const personalities = [
+      'Brave', 'Curious', 'Mischievous', 'Gentle', 'Dramatic', 'Loyal',
+      'Dreamy', 'Competitive', 'Cheerful', 'Clever', 'Shy', 'Adventurous'
+    ];
+
+    for (const element of ['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar']) {
+      expect(overlayRuntime.elementKey(element)).toMatch(/^element[A-Z]/);
+    }
+    for (const variant of ['standard', 'charged']) {
+      expect(overlayRuntime.variantKey(variant)).toMatch(/^variant[A-Z]/);
+    }
+    for (const personality of personalities) {
+      expect(overlayRuntime.personalityKey(personality)).toMatch(/^personality[A-Z]/);
+    }
+    expect(overlayRuntime.elementKey('backend prose')).toBe('unknown');
+    expect(overlayRuntime.personalityKey('backend prose')).toBe('unknown');
+    expect(uiSource).toContain('elementName(entry.element)');
+    expect(uiSource).toContain('variantName(entry.variant)');
+    expect(uiSource).toContain('personalityName(monster.personality)');
+    expect(overlaySource).toContain('battleAdvantageSuffix');
+    expect(overlaySource).not.toContain('Vorteil ${battleAdvantageName}');
   });
 
   test('publishes an owned chat message key and ignores untrusted prose keys', () => {

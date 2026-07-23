@@ -301,7 +301,12 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
     const fetchImpl = jest.fn(async () => ({
       ok: true,
       status: 206,
-      headers: { get: name => String(name).toLowerCase() === 'content-length' ? String(bytes.length) : null },
+      headers: {
+        get: name => ({
+          'content-length': String(bytes.length),
+          'content-range': 'bytes 6-10/11'
+        })[String(name).toLowerCase()] || null
+      },
       body: Readable.from([bytes])
     }));
     const installer = new ManagedRuntimeInstaller({ fetchImpl });
@@ -319,6 +324,116 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
       );
       expect(fs.readFileSync(targetPath, 'utf8')).toBe('hello world');
       expect(fs.existsSync(`${targetPath}.part`)).toBe(false);
+    } finally {
+      fs.rmSync(dataDir, { recursive: true, force: true });
+    }
+  });
+
+  test('discards an oversized part before requesting a complete artifact', async () => {
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-oversized-part-'));
+    const targetPath = path.join(dataDir, 'runtime.7z');
+    const content = Buffer.from('hello world');
+    fs.writeFileSync(`${targetPath}.part`, 'this partial is too large');
+    const fetchImpl = jest.fn(async (url, options) => ({
+      ok: true,
+      status: 200,
+      headers: { get: name => String(name).toLowerCase() === 'content-length' ? String(content.length) : null },
+      body: Readable.from([content]),
+      requestedOptions: options
+    }));
+    const installer = new ManagedRuntimeInstaller({ fetchImpl });
+
+    try {
+      await expect(installer.downloadArtifact({
+        url: 'https://github.com/Loggableim/ltth.app/releases/download/test/runtime.7z',
+        targetPath,
+        expectedSize: content.length,
+        sha256: crypto.createHash('sha256').update(content).digest('hex')
+      })).resolves.toBe(targetPath);
+      expect(fetchImpl.mock.calls[0][1].headers).toBeUndefined();
+      expect(fs.readFileSync(targetPath)).toEqual(content);
+    } finally {
+      fs.rmSync(dataDir, { recursive: true, force: true });
+    }
+  });
+
+  test('rejects an inconsistent resume response, removes the part, and retries from zero', async () => {
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-invalid-range-'));
+    const targetPath = path.join(dataDir, 'runtime.7z');
+    const content = Buffer.from('hello world');
+    fs.writeFileSync(`${targetPath}.part`, 'hello ');
+    const fetchImpl = jest.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 206,
+        headers: {
+          get: name => ({
+            'content-length': '5',
+            'content-range': 'bytes 5-9/11'
+          })[String(name).toLowerCase()] || null
+        },
+        body: Readable.from([Buffer.from('world')])
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: name => String(name).toLowerCase() === 'content-length' ? String(content.length) : null },
+        body: Readable.from([content])
+      });
+    const installer = new ManagedRuntimeInstaller({ fetchImpl });
+    const request = {
+      url: 'https://github.com/Loggableim/ltth.app/releases/download/test/runtime.7z',
+      targetPath,
+      expectedSize: content.length,
+      sha256: crypto.createHash('sha256').update(content).digest('hex')
+    };
+
+    try {
+      await expect(installer.downloadArtifact(request))
+        .rejects.toThrow('STREAM_MONSTERS_RUNTIME_DOWNLOAD_SIZE_MISMATCH');
+      expect(fs.existsSync(`${targetPath}.part`)).toBe(false);
+      await expect(installer.downloadArtifact(request)).resolves.toBe(targetPath);
+      expect(fetchImpl.mock.calls[0][1].headers).toEqual({ Range: 'bytes=6-' });
+      expect(fetchImpl.mock.calls[1][1].headers).toBeUndefined();
+      expect(fs.readFileSync(targetPath)).toEqual(content);
+    } finally {
+      fs.rmSync(dataDir, { recursive: true, force: true });
+    }
+  });
+
+  test('clears a truncated full response before a clean retry', async () => {
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-truncated-retry-'));
+    const targetPath = path.join(dataDir, 'runtime.7z');
+    const content = Buffer.from('hello world');
+    fs.writeFileSync(`${targetPath}.part`, 'hello ');
+    const fetchImpl = jest.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: name => String(name).toLowerCase() === 'content-length' ? '5' : null },
+        body: Readable.from([Buffer.from('short')])
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: name => String(name).toLowerCase() === 'content-length' ? String(content.length) : null },
+        body: Readable.from([content])
+      });
+    const installer = new ManagedRuntimeInstaller({ fetchImpl });
+    const request = {
+      url: 'https://github.com/Loggableim/ltth.app/releases/download/test/runtime.7z',
+      targetPath,
+      expectedSize: content.length,
+      sha256: crypto.createHash('sha256').update(content).digest('hex')
+    };
+
+    try {
+      await expect(installer.downloadArtifact(request))
+        .rejects.toThrow('STREAM_MONSTERS_RUNTIME_DOWNLOAD_SIZE_MISMATCH');
+      expect(fs.existsSync(`${targetPath}.part`)).toBe(false);
+      await expect(installer.downloadArtifact(request)).resolves.toBe(targetPath);
+      expect(fetchImpl.mock.calls[1][1].headers).toBeUndefined();
+      expect(fs.readFileSync(targetPath)).toEqual(content);
     } finally {
       fs.rmSync(dataDir, { recursive: true, force: true });
     }

@@ -1,0 +1,13 @@
+Stream Monsters original audio cues
+
+The spawn, ready, hatch, hit, and win PCM WAV cues in
+streammonsters-cues.js are original works authored deterministically for
+Stream Monsters. No third-party recording or sample was used.
+
+The author dedicates these cues to the public domain under Creative Commons
+CC0 1.0 Universal:
+
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Attribution is not required. "Stream Monsters original audio cues" may be
+used as optional attribution.

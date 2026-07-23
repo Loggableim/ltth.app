@@ -146,8 +146,8 @@ class ChatCommands {
     const queuedAt = ownEntry?.queued_at_ms ?? this.now();
     this.store.removeBattleQueueEntry(userId);
     this.syncQueue();
-    const eligible = this.queue.filter(entry => {
-      if (entry.userId === userId) return false;
+    const candidates = this.queue.filter(entry => entry.userId !== userId);
+    const eligible = candidates.filter(entry => {
       const levelGap = Math.abs((entry.monster.level || 1) - (selected.level || 1));
       const waitedLongEnough = (
         this.now() - entry.queuedAt >= 30_000 ||
@@ -160,7 +160,15 @@ class ChatCommands {
       userId,
       this.now() - (10 * 60 * 1000)
     ));
-    const opponent = (fresh.length ? fresh : eligible)[0] || null;
+    const waitingFreshOpponent = candidates.some(entry => (
+      !eligible.includes(entry) &&
+      !this.store.hasRecentOpponentPair(
+        entry.userId,
+        userId,
+        this.now() - (10 * 60 * 1000)
+      )
+    ));
+    const opponent = fresh[0] || (!waitingFreshOpponent ? eligible[0] : null) || null;
     if (!opponent) {
       this.store.enqueueBattle({
         userId,
@@ -194,6 +202,7 @@ class ChatCommands {
       battleId: battle.battleId
     });
     this.emit('streammonsters:battle_started', {
+      battleId: battle.battleId,
       challenger: opponent.monster,
       defender: selected,
       seed,
@@ -216,7 +225,11 @@ class ChatCommands {
     battle.rounds.forEach(round => {
       this.emit('streammonsters:battle_round', { battleId: battle.battleId, round });
     });
-    this.emit('streammonsters:battle_completed', { battle, winner });
+    this.emit('streammonsters:battle_completed', {
+      battleId: battle.battleId,
+      battle,
+      winner
+    });
     if (winner) {
       const loser = winner.monster_id === opponent.monster.monster_id ? selected : opponent.monster;
       const streak = this.store.getViewerBattleStats?.(winner.user_id)?.win_streak || 0;

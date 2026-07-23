@@ -62,6 +62,14 @@ describe('Stream Monsters chat commands', () => {
     expect(result.status).toBe('started');
     expect(emitted.map(entry => entry.event)).toContain('streammonsters:battle_started');
     expect(emitted.map(entry => entry.event)).toContain('streammonsters:battle_completed');
+    const grouped = emitted.filter(entry => [
+      'streammonsters:stance_revealed',
+      'streammonsters:battle_started',
+      'streammonsters:battle_round',
+      'streammonsters:battle_completed'
+    ].includes(entry.event));
+    expect(grouped).not.toHaveLength(0);
+    expect(grouped.every(entry => entry.payload.battleId === result.battle.battleId)).toBe(true);
   });
 
   test('expires queue entries after five minutes and lets a viewer leave', () => {

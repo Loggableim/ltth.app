@@ -320,6 +320,7 @@
 </main>
 
 <script src="/js/i18n-client.js"></script>
+<script src="/plugins/streamalchemy/streammonsters-overlay-runtime.js"></script>
 <script>
 (async () => {
   if (window.i18n?.init) {
@@ -337,6 +338,10 @@
     const translated = window.i18n?.t?.(fullKey, params);
     return translated && translated !== fullKey ? translated : interpolate(fallback, params);
   };
+  const runtimeText = window.StreamMonstersOverlayRuntime;
+  const elementName = element => text(runtimeText.elementKey(element), 'Unknown');
+  const variantName = variant => text(runtimeText.variantKey(variant), 'Unknown');
+  const personalityName = personality => text(runtimeText.personalityKey(personality), 'Unknown');
   const RUNTIME_REASON_KEYS = Object.freeze({
     supported_profile: 'runtimeReasonSupportedProfile',
     windows_required: 'runtimeReasonWindowsRequired',
@@ -377,30 +382,15 @@
     disabled: 'providerStateDisabled',
     error: 'providerStateError'
   });
-  const RUNTIME_ERROR_KEYS = Object.freeze({
-    STREAM_MONSTERS_RUNTIME_INSTALL_IN_PROGRESS: 'runtimeErrorInstallInProgress',
-    STREAM_MONSTERS_RUNTIME_ADAPTER_NOT_FOUND: 'runtimeErrorAdapterNotFound',
-    STREAM_MONSTERS_RUNTIME_UNSUPPORTED_GPU: 'runtimeErrorUnsupportedGpu',
-    STREAM_MONSTERS_RUNTIME_PROFILE_INVALID: 'runtimeErrorProfileInvalid',
-    STREAM_MONSTERS_MODEL_LICENSE_REQUIRED: 'runtimeErrorLicenseRequired',
-    STREAM_MONSTERS_RUNTIME_INSTALL_COMMITTING: 'runtimeErrorCommitting',
-    STREAM_MONSTERS_RUNTIME_DISK_SPACE_INSUFFICIENT: 'runtimeErrorDiskSpace',
-    STREAM_MONSTERS_RUNTIME_CHECKSUM_MISMATCH: 'runtimeErrorChecksum',
-    STREAM_MONSTERS_RUNTIME_SMOKE_TEST_FAILED: 'runtimeErrorSmokeTest',
-    STREAM_MONSTERS_RUNTIME_NOT_INSTALLED: 'runtimeErrorNotInstalled',
-    STREAM_MONSTERS_RUNTIME_VERIFY_ADAPTER_MISMATCH: 'runtimeErrorVerifyAdapterMismatch',
-    STREAM_MONSTERS_RUNTIME_VERIFY_PROFILE_MISMATCH: 'runtimeErrorVerifyProfileMismatch'
-  });
   const codeText = (mapping, code, fallbackKey, fallback) => text(
     mapping[String(code || '')] || fallbackKey,
     fallback
   );
-  const runtimeErrorText = error => codeText(
-    RUNTIME_ERROR_KEYS,
-    error?.message || error,
-    'runtimeErrorUnknown',
-    'The runtime action failed. Please try again.'
+  const apiErrorText = error => text(
+    runtimeText.apiErrorKey(error),
+    'The action failed. Please try again.'
   );
+  const runtimeErrorText = apiErrorText;
   const rankLabel = rank => ({
     Bronze:text('rankBronze', 'Bronze'),
     Silver:text('rankSilver', 'Silber'),
@@ -447,7 +437,12 @@
   const request = async (url, options = {}) => {
     const response = await fetch(url, options);
     const payload = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(payload.error || `Request failed: ${url}`);
+    if (!response.ok) {
+      const code = String(payload.errorCode || payload.error || 'STREAM_MONSTERS_REQUEST_FAILED');
+      const failure = new Error(code);
+      failure.code = code;
+      throw failure;
+    }
     return payload;
   };
   const giftImage = gift => gift.imageUrl || '/plugins/streamalchemy/assets/branding/stream-monsters-icon.png';
@@ -513,7 +508,11 @@
     return payload.mappings || [];
   };
   const saveGiftMapping = async () => {
-    if (!selectedGift) throw new Error(text('selectGiftFirst', 'Zuerst ein Geschenk im Katalog auswählen.'));
+    if (!selectedGift) {
+      const failure = new Error('STREAM_MONSTERS_GIFT_SELECTION_REQUIRED');
+      failure.code = failure.message;
+      throw failure;
+    }
     const effect = byId('giftEffect').value;
     await request(`/api/streammonsters/gift-mappings/${selectedGift.giftId}`, {
       method:'PUT',
@@ -529,7 +528,7 @@
     (coverage || []).forEach(entry => {
       const item = document.createElement('div');
       const title = document.createElement('strong');
-      title.textContent = `${entry.element} · ${entry.variant}`;
+      title.textContent = `${elementName(entry.element)} · ${variantName(entry.variant)}`;
       const count = document.createElement('span');
       count.textContent = text('poolFree', '{count} frei', { count:entry.ready || 0 });
       item.append(title,document.createElement('br'),count);
@@ -562,15 +561,18 @@
     });
     const items = [
       ...(viewer.eggs || []).filter(egg => egg.state !== 'hatched').map(egg => ({
-        title:text('eggTitle', '{element} Ei · {variant}', { element:egg.element, variant:egg.variant }),
+        title:text('eggTitle', '{element} Ei · {variant}', {
+          element:elementName(egg.element),
+          variant:variantName(egg.variant)
+        }),
         meta:egg.state === 'ready' ? text('readyForHatch', 'Bereit für !hatch') : text('incubating', 'Brütet'),
         image:egg.image_url
       })),
       ...(viewer.monsters || []).map(monster => ({
         title:text('monsterTitle', '{name} · Lv.{level}', { name:monster.name, level:monster.level }),
         meta:text('monsterMeta', '{element} · {personality} · {xp} XP{active}', {
-          element:monster.element,
-          personality:monster.personality,
+          element:elementName(monster.element),
+          personality:personalityName(monster.personality),
           xp:monster.xp,
           active:monster.monster_id === selectedId ? text('activeSuffix', ' · AKTIV') : ''
         }),
@@ -656,7 +658,9 @@
         : text('poolNeedsGift', 'Aktiviere zuerst mindestens ein Spawn-Gift; erst dann werden KI-Jobs erstellt.'),
       (result.coverage || []).length ? 'success' : 'error');
     } catch (error) {
-      notice(text('poolFailed', '{error} · Kenney bleibt als sofortiger Fallback aktiv.', { error:error.message }), 'error');
+      notice(text('poolFailed', '{error} · Kenney bleibt als sofortiger Fallback aktiv.', {
+        error:apiErrorText(error)
+      }), 'error');
     } finally {
       button.disabled = false;
     }
@@ -936,14 +940,16 @@
       if (end) byId('seasonCountdown').textContent = text('seasonEnds', 'Endet {date}', { date:new Date(end).toLocaleDateString() });
       notice(text('arenaReady', 'Collector Arena bereit. Gifts auswählen, Pool prüfen, Demo starten.'), 'success');
     } catch (error) {
-      notice(text('setupFailed', 'Setup konnte nicht geladen werden: {error}', { error:error.message }), 'error');
+      notice(text('setupFailed', 'Setup konnte nicht geladen werden: {error}', {
+        error:apiErrorText(error)
+      }), 'error');
     }
   };
 
-  byId('saveSetup').addEventListener('click', () => saveSetup().catch(error => notice(error.message, 'error')));
-  byId('saveGiftMapping').addEventListener('click', () => saveGiftMapping().catch(error => notice(error.message, 'error')));
+  byId('saveSetup').addEventListener('click', () => saveSetup().catch(error => notice(apiErrorText(error), 'error')));
+  byId('saveGiftMapping').addEventListener('click', () => saveGiftMapping().catch(error => notice(apiErrorText(error), 'error')));
   byId('preparePool').addEventListener('click', preparePool);
-  byId('loadViewer').addEventListener('click', () => loadViewer().catch(error => notice(error.message, 'error')));
+  byId('loadViewer').addEventListener('click', () => loadViewer().catch(error => notice(apiErrorText(error), 'error')));
   byId('openLocalSetup').addEventListener('click', () => checkLocalRuntime(byId('runtimeAdapters').value));
   byId('runtimeAdapters').addEventListener('change', event => checkLocalRuntime(event.target.value));
   byId('runtimeInstall').addEventListener('click', () => installRuntime().catch(error => notice(runtimeErrorText(error), 'error')));
@@ -955,7 +961,7 @@
       await request('/api/streammonsters/demo', { method:'POST' });
       notice(text('demoSent', 'Vollständiger Spawn-, Hatch-, Kenney-, Liga- und Duell-Demoablauf gesendet.'), 'success');
     } catch (error) {
-      notice(error.message, 'error');
+      notice(apiErrorText(error), 'error');
     }
   });
   byId('giftEffect').addEventListener('change', () => {
@@ -963,7 +969,7 @@
   });
   byId('giftSearch').addEventListener('input', event => {
     clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => loadCatalog(event.target.value).catch(error => notice(error.message, 'error')), 180);
+    searchTimer = setTimeout(() => loadCatalog(event.target.value).catch(error => notice(apiErrorText(error), 'error')), 180);
   });
   loadCatalog().catch(() => {});
   loadLeaderboard().catch(() => {});

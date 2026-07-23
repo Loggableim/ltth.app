@@ -1465,6 +1465,11 @@ class ManagedRuntimeInstaller {
     try {
       completedBytes = (await fs.promises.stat(partPath)).size;
     } catch (_) {}
+    const expectedBytes = Math.max(0, Number(expectedSize) || 0);
+    if (expectedBytes > 0 && completedBytes > expectedBytes) {
+      await fs.promises.rm(partPath, { force: true });
+      completedBytes = 0;
+    }
     if (expectedSize > 0 && completedBytes === Number(expectedSize)) {
       const complete = await this.verify({ archivePath: partPath, sha256, signal });
       if (complete) {
@@ -1482,7 +1487,41 @@ class ManagedRuntimeInstaller {
       await this.releaseResponseBody(response);
       throw new Error(`STREAM_MONSTERS_RUNTIME_DOWNLOAD_HTTP_${response?.status || 'UNKNOWN'}`);
     }
-    const append = completedBytes > 0 && Number(response.status) === 206;
+    const responseStatus = Number(response.status);
+    const responseLengthHeader = response.headers?.get?.('content-length');
+    const responseLength = responseLengthHeader === null || responseLengthHeader === undefined
+      ? null
+      : Number(responseLengthHeader);
+    const contentRangeHeader = response.headers?.get?.('content-range');
+    const contentRange = /^bytes\s+(\d+)-(\d+)\/(\d+)$/i.exec(String(contentRangeHeader || '').trim());
+    let responseMetadataValid = responseLength === null || (
+      Number.isSafeInteger(responseLength) && responseLength >= 0
+    );
+    if (responseStatus === 206) {
+      const rangeStart = contentRange ? Number(contentRange[1]) : -1;
+      const rangeEnd = contentRange ? Number(contentRange[2]) : -1;
+      const rangeTotal = contentRange ? Number(contentRange[3]) : -1;
+      const rangeLength = rangeEnd - rangeStart + 1;
+      responseMetadataValid = responseMetadataValid &&
+        Boolean(contentRange) &&
+        rangeStart === completedBytes &&
+        rangeEnd >= rangeStart &&
+        rangeTotal > rangeEnd &&
+        (responseLength === null || responseLength === rangeLength) &&
+        (expectedBytes === 0 || (
+          rangeTotal === expectedBytes &&
+          rangeEnd === expectedBytes - 1 &&
+          rangeLength === expectedBytes - completedBytes
+        ));
+    } else if (expectedBytes > 0 && responseLength !== null) {
+      responseMetadataValid = responseMetadataValid && responseLength === expectedBytes;
+    }
+    if (!responseMetadataValid) {
+      await this.releaseResponseBody(response);
+      await fs.promises.rm(partPath, { force: true });
+      throw new Error('STREAM_MONSTERS_RUNTIME_DOWNLOAD_SIZE_MISMATCH');
+    }
+    const append = completedBytes > 0 && responseStatus === 206;
     if (!append) completedBytes = 0;
     const source = response.body.getReader && Readable.fromWeb
       ? Readable.fromWeb(response.body)
@@ -1509,6 +1548,7 @@ class ManagedRuntimeInstaller {
     }
     this.throwIfAborted(signal);
     if (expectedSize > 0 && completedBytes !== Number(expectedSize)) {
+      await fs.promises.rm(partPath, { force: true });
       throw new Error('STREAM_MONSTERS_RUNTIME_DOWNLOAD_SIZE_MISMATCH');
     }
     const verified = await this.verify({ archivePath: partPath, sha256, signal });

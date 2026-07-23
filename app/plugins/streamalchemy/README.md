@@ -58,7 +58,7 @@ Only enabled mappings affect the game. A spawn gift creates an element egg. A bo
 
 The responsive overlay supports 16:9 and 9:16. It restores `/api/streammonsters/state` before replaying socket activity after a reconnect. Battle and hatch events are critical, Hype/chat updates coalesce, stale noncritical events are discarded, and bounded overflow removes noncritical work first. Cards cover starter monsters, stance reveals, Hype milestones, Elemental Hour, streaks, upsets, rivalries and ranks as well as the existing egg and battle flow.
 
-The creator page exposes mute and volume controls for five short local Web Audio cues: spawn, ready, hatch, hit and win. No third-party sound files are bundled because this repository snapshot contains no verified Kenney CC0 audio source or matching audio license. The existing Kenney Monster Builder license covers graphics only, so the release does not invent audio provenance.
+The creator page exposes mute and volume controls for five short local PCM WAV cues: spawn, ready, hatch, hit and win. They are original deterministic Stream Monsters cues, bundled for offline playback and dedicated to CC0 1.0 in `assets/audio/LICENSE-CC0-1.0.txt`. No third-party recording or sample is used; the existing Kenney Monster Builder license continues to cover graphics only.
 
 ## Bundled assets and license
 

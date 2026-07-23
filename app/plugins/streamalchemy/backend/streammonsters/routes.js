@@ -374,10 +374,10 @@ class StreamMonstersRoutes {
       } catch (_) {}
       res.json({
         success: true,
-        runtime: installationMatchesAdapter
+        runtime: this.publicRuntime(installationMatchesAdapter
           ? (this.managedRuntime.current || processState || { state: 'stopped' })
-          : { state: recommendation.supported ? 'ready_to_install' : 'expert_or_remote' },
-        recommendation,
+          : { state: recommendation.supported ? 'ready_to_install' : 'expert_or_remote' }),
+        recommendation: this.publicRecommendation(recommendation),
         manifestAvailable: Boolean(manifest || profiles.length),
         installDetails: profiles.length && recommendation.supported
           ? this.publicCatalogInstallDetails(
@@ -385,21 +385,21 @@ class StreamMonstersRoutes {
             recommendation.profileId
           )
           : (profiles.length ? null : this.publicInstallDetails(manifest)),
-        adapters,
+        adapters: adapters.map(adapter => this.publicAdapter(adapter)),
         selectedAdapterId: selectedAdapter?.id || null,
-        profiles,
+        profiles: profiles.map(profile => this.publicProfile(profile)),
         installation: this.publicInstallation(this.managedRuntime.installation),
         model: this.publicModel({
           ...catalog.model,
           verified: Boolean(this.managedRuntime.installation?.model?.verified)
         }),
-        smokeTest,
+        smokeTest: this.publicSmokeTest(smokeTest),
         runtimeDetails: {
           profileId: activeProfileId || null,
           backend: activeProfile?.backend || null,
           adapterId: selectedAdapter?.id || null,
           device: selectedAdapter?.name || null,
-          driverVersion: selectedAdapter?.driverVersion || null,
+          driverVersion: selectedAdapter?.driverVersion || selectedAdapter?.driver || null,
           vramMb: Math.max(0, Number(selectedAdapter?.vramMb) || 0),
           verifiedOnDevice: Boolean(
             installationMatchesAdapter &&
@@ -411,7 +411,7 @@ class StreamMonstersRoutes {
             smokeTest?.height === 256
           )
         },
-        disk
+        disk: this.publicDisk(disk)
       });
     });
     this.api.registerRoute('POST', '/api/streammonsters/local-runtime/install', this.protectAdmin(async (req, res) => {
@@ -488,13 +488,17 @@ class StreamMonstersRoutes {
         if (!profile || profile.id !== installation.profileId) {
           throw new Error('STREAM_MONSTERS_RUNTIME_VERIFY_PROFILE_MISMATCH');
         }
-        const smokeTest = await this.managedRuntime.verifyManagedRuntime({
-          adapter,
-          profile,
-          baseUrl: this.managedRuntime.getProcessState?.().baseUrl,
-          child: this.managedRuntime.managedChild
-        });
-        res.json({ success: true, smokeTest });
+        await this.managedRuntime.startManagedRuntime({ adapter });
+        const smokeTest = this.managedRuntime.lastSmokeTest || installation.smokeTest;
+        if (
+          !smokeTest ||
+          smokeTest.state !== 'passed' ||
+          smokeTest.adapterId !== adapter.id ||
+          smokeTest.profileId !== profile.id
+        ) {
+          throw new Error('STREAM_MONSTERS_RUNTIME_SMOKE_TEST_FAILED');
+        }
+        res.json({ success: true, smokeTest: this.publicSmokeTest(smokeTest) });
       } catch (error) {
         res.status(409).json({ success: false, error: error.message });
       }
@@ -569,10 +573,82 @@ class StreamMonstersRoutes {
     return {
       state: installation.state,
       verified: Boolean(installation.verified),
-      runtimeRoot: installation.runtimeRoot,
       profileId: installation.profileId,
-      adapterId: installation.adapterId,
-      previousRuntimeRoot: installation.previousRuntimeRoot || null
+      adapterId: installation.adapterId
+    };
+  }
+
+  publicRuntime(runtime = {}) {
+    return {
+      state: String(runtime.state || 'stopped')
+    };
+  }
+
+  publicRecommendation(recommendation = {}) {
+    return {
+      supported: Boolean(recommendation.supported),
+      mode: recommendation.mode || null,
+      reasonCode: recommendation.reasonCode || null,
+      profileId: recommendation.profileId || null,
+      presetId: recommendation.presetId || null,
+      width: Math.max(0, Number(recommendation.width) || 0),
+      height: Math.max(0, Number(recommendation.height) || 0),
+      steps: Math.max(0, Number(recommendation.steps) || 0),
+      experimental: Boolean(recommendation.experimental)
+    };
+  }
+
+  publicAdapter(adapter = {}) {
+    const vramMb = Math.max(0, Number(adapter.vramMb) || 0);
+    return {
+      id: adapter.id || null,
+      name: adapter.name || null,
+      vendor: adapter.vendor || null,
+      vramMb,
+      vramGb: Number.isFinite(Number(adapter.vramGb))
+        ? Number(adapter.vramGb)
+        : Math.round((vramMb / 1024) * 10) / 10,
+      driverVersion: adapter.driverVersion || adapter.driver || null,
+      supportState: adapter.supportState || adapter.backendSelectionState || null
+    };
+  }
+
+  publicProfile(profile = {}) {
+    return {
+      id: profile.id || null,
+      label: profile.label || null,
+      backend: profile.backend || null,
+      version: profile.version || null,
+      experimental: Boolean(profile.experimental),
+      recommendationState: profile.recommendationState || null
+    };
+  }
+
+  publicSmokeTest(smokeTest) {
+    if (!smokeTest) return null;
+    return {
+      state: smokeTest.state || null,
+      width: Math.max(0, Number(smokeTest.width) || 0),
+      height: Math.max(0, Number(smokeTest.height) || 0),
+      adapterId: smokeTest.adapterId || null,
+      profileId: smokeTest.profileId || null,
+      runtimeVersion: smokeTest.runtimeVersion || null,
+      completedAt: smokeTest.completedAt || null
+    };
+  }
+
+  publicDisk(disk) {
+    if (!disk) return null;
+    return {
+      freeGb: Number.isFinite(Number(disk.freeGb)) ? Number(disk.freeGb) : null,
+      runtimeDownloadBytes: Math.max(0, Number(disk.runtimeDownloadBytes) || 0),
+      runtimeInstalledBytes: Math.max(0, Number(disk.runtimeInstalledBytes) || 0),
+      modelDownloadBytes: Math.max(0, Number(disk.modelDownloadBytes) || 0),
+      modelCopyBytes: Math.max(0, Number(disk.modelCopyBytes) || 0),
+      safetyMarginBytes: Math.max(0, Number(disk.safetyMarginBytes) || 0),
+      requiredBytes: Math.max(0, Number(disk.requiredBytes) || 0),
+      freeBytes: Number.isFinite(Number(disk.freeBytes)) ? Number(disk.freeBytes) : null,
+      sufficient: typeof disk.sufficient === 'boolean' ? disk.sufficient : null
     };
   }
 
@@ -594,21 +670,15 @@ class StreamMonstersRoutes {
     return {
       runtimeDownloadBytes: Math.max(0, Number(selectedProfile?.downloadSizeBytes) || 0),
       runtimeInstalledBytes: Math.max(0, Number(selectedProfile?.installedSizeBytes) || 0),
-      modelDownloadBytes: Math.max(0, Number(catalog.model?.sizeBytes) || 0),
-      targetDir: (() => {
-        try { return this.managedRuntime.resolveRuntimeRootV2?.() || null; } catch (_) { return null; }
-      })()
+      modelDownloadBytes: Math.max(0, Number(catalog.model?.sizeBytes) || 0)
     };
   }
 
   publicInstallDetails(manifest) {
     if (!manifest) return null;
-    let targetDir = null;
-    try { targetDir = this.managedRuntime.resolveRuntimeRoot(); } catch (_) {}
     return {
       runtimeDownloadBytes: Math.max(0, Number(manifest.downloadSizeBytes) || 0),
-      modelDownloadBytes: Math.max(0, Number(manifest.modelSizeBytes) || 0),
-      targetDir
+      modelDownloadBytes: Math.max(0, Number(manifest.modelSizeBytes) || 0)
     };
   }
 }

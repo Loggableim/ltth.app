@@ -100,6 +100,7 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/i18n-client.js"></script>
+<script src="/plugins/streamalchemy/assets/audio/streammonsters-cues.js"></script>
 <script src="/plugins/streamalchemy/streammonsters-overlay-runtime.js"></script>
 <script>
 (async () => {
@@ -114,6 +115,18 @@
     if (translated && translated !== fullKey) return translated;
     return fallback.replace(/\{(\w+)\}/g, (match, name) => name in params ? params[name] : match);
   };
+  const elementName = element => text(
+    window.StreamMonstersOverlayRuntime.elementKey(element),
+    text('unknown', 'unbekannt')
+  );
+  const variantName = variant => text(
+    window.StreamMonstersOverlayRuntime.variantKey(variant),
+    text('unknown', 'unbekannt')
+  );
+  const personalityName = personality => text(
+    window.StreamMonstersOverlayRuntime.personalityKey(personality),
+    text('unknown', 'unbekannt')
+  );
   const rankLabel = rank => ({
     Bronze: text('rankBronze', 'Bronze'),
     Silver: text('rankSilver', 'Silber'),
@@ -169,29 +182,23 @@
   const playCue = cue => {
     const settings = readAudioSettings();
     if (settings.muted || !settings.volume) return;
+    const cueUri = window.StreamMonstersAudioCues?.[cue];
+    if (!cueUri) return;
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) return;
-    try {
+    (async () => {
       const context = new AudioContextClass();
-      const oscillator = context.createOscillator();
+      const response = await fetch(cueUri);
+      const audioBuffer = await context.decodeAudioData(await response.arrayBuffer());
+      const source = context.createBufferSource();
       const gain = context.createGain();
-      const profile = {
-        spawn: [330, 0.12],
-        ready: [660, 0.16],
-        hatch: [880, 0.28],
-        hit: [180, 0.08],
-        win: [1046, 0.32]
-      }[cue] || [440, 0.1];
-      oscillator.type = cue === 'hit' ? 'square' : 'sine';
-      oscillator.frequency.value = profile[0];
-      gain.gain.setValueAtTime(settings.volume * 0.12, context.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + profile[1]);
-      oscillator.connect(gain);
+      source.buffer = audioBuffer;
+      gain.gain.setValueAtTime(settings.volume * 0.35, context.currentTime);
+      source.connect(gain);
       gain.connect(context.destination);
-      oscillator.start();
-      oscillator.stop(context.currentTime + profile[1]);
-      oscillator.addEventListener('ended', () => context.close());
-    } catch (_) {}
+      source.addEventListener('ended', () => context.close());
+      source.start();
+    })().catch(() => {});
   };
   const showToast = async (message, duration = 2600, cue = null) => {
     if (cue) playCue(cue);
@@ -272,12 +279,12 @@
     if (type === 'stream_started' || type === 'elemental_hour') return showToast(text(
       'elementalHourActive',
       '{element} Hour ist aktiv',
-      { element: value(data?.event?.element || data?.element, 'Element') }
+      { element: elementName(data?.event?.element || data?.element) }
     ));
     if (type === 'egg_spawned') return showCard({
       kicker: text('eggKicker', '{element} · {variant}', {
-        element: value(data?.egg?.element, 'Element'),
-        variant: value(data?.egg?.variant, 'standard')
+        element: elementName(data?.egg?.element),
+        variant: variantName(data?.egg?.variant)
       }),
       title: text('newEgg', 'Ein neues Ei!'),
       subtitle: text('eggSpawned', '{viewer} hat einen Brutplatz gefüllt.', {
@@ -302,20 +309,23 @@
       { viewer: value(data?.userId, text('viewerFallback', 'einen Viewer')) }
     ));
     if (type === 'hype_changed') return showHype(data);
-    if (type === 'hype_milestone') return showCard({
+    if (type === 'hype_milestone') {
+      const milestone = window.StreamMonstersOverlayRuntime.hypeMilestonePoints(data);
+      return showCard({
       kicker: text('hypeMilestone', 'Hype-Meilenstein'),
       title: text('hypeMilestoneTitle', '{points}% Stream-Hype', {
-        points: Number(data?.hype?.points ?? data?.points) || 0
+        points: milestone
       }),
       subtitle: text('hypeMilestoneCopy', 'Die Collector Arena ist aufgeladen.'),
-      progress: Number(data?.hype?.points ?? data?.points) || 0,
+      progress: milestone,
       charged: true,
       cue: 'ready'
-    });
+      });
+    }
     if (type === 'egg_ready') return showCard({
       kicker: text('ready', 'Bereit!'),
       title: text('eggReadyTitle', '{element}-Ei kann schlüpfen', {
-        element: value(data?.egg?.element, 'Element')
+        element: elementName(data?.egg?.element)
       }),
       subtitle: text('hatchMoment', '{viewer}, dein Moment gehört dir.', {
         viewer: value(data?.userId, 'Viewer')
@@ -331,13 +341,13 @@
       '{viewer} öffnet ein {element}-Ei …',
       {
         viewer: value(data?.userId, 'Viewer'),
-        element: value(data?.egg?.element, 'Element')
+        element: elementName(data?.egg?.element)
       }
     ), 1800, 'hatch');
     if (type === 'egg_hatched') return showCard({
       kicker: text('monsterKicker', '{element} · {personality}', {
-        element: value(data?.monster?.element, data?.egg?.element),
-        personality: value(data?.monster?.personality, text('curious', 'Neugierig'))
+        element: elementName(data?.monster?.element || data?.egg?.element),
+        personality: personalityName(data?.monster?.personality)
       }),
       title: text('hatchedTitle', '{name} ist da!', { name: itemName(data?.monster) }),
       subtitle: text('hatchedCopy', '28 faire Startpunkte · gehört {viewer} dauerhaft.', {
@@ -406,7 +416,11 @@
           round,
           first: data?.round?.firstDamage || 0,
           second: data?.round?.secondDamage || 0,
-          advantage: battleAdvantageName ? ` · Vorteil ${battleAdvantageName}` : ''
+          advantage: battleAdvantageName
+            ? text('battleAdvantageSuffix', ' · Vorteil {monster}', {
+              monster: battleAdvantageName
+            })
+            : ''
         }),
         cue:'hit'
       });

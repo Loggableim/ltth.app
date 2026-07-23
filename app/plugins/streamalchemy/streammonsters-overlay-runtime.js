@@ -51,6 +51,54 @@
     'chatResultExecutionFailed',
     'chatResultUnknown'
   ]);
+  const ELEMENT_KEYS = Object.freeze({
+    ember: 'elementEmber',
+    tide: 'elementTide',
+    grove: 'elementGrove',
+    gale: 'elementGale',
+    volt: 'elementVolt',
+    lunar: 'elementLunar'
+  });
+  const VARIANT_KEYS = Object.freeze({
+    standard: 'variantStandard',
+    charged: 'variantCharged'
+  });
+  const PERSONALITY_KEYS = Object.freeze({
+    brave: 'personalityBrave',
+    curious: 'personalityCurious',
+    mischievous: 'personalityMischievous',
+    gentle: 'personalityGentle',
+    dramatic: 'personalityDramatic',
+    loyal: 'personalityLoyal',
+    dreamy: 'personalityDreamy',
+    competitive: 'personalityCompetitive',
+    cheerful: 'personalityCheerful',
+    clever: 'personalityClever',
+    shy: 'personalityShy',
+    adventurous: 'personalityAdventurous'
+  });
+  const API_ERROR_KEYS = Object.freeze({
+    STREAM_MONSTERS_GIFT_MAPPING_INVALID: 'apiErrorGiftMapping',
+    STREAM_MONSTERS_GIFT_ELEMENT_INVALID: 'apiErrorGiftElement',
+    STREAM_MONSTERS_GIFT_ID_REQUIRED: 'apiErrorGiftId',
+    STREAM_MONSTERS_POOL_ALREADY_RUNNING: 'apiErrorPoolBusy',
+    STREAM_MONSTERS_EGG_NOT_READY: 'apiErrorEggNotReady',
+    STREAM_MONSTERS_MODEL_LICENSE_REQUIRED: 'runtimeErrorLicenseRequired',
+    STREAM_MONSTERS_RUNTIME_INSTALL_IN_PROGRESS: 'runtimeErrorInstallInProgress',
+    STREAM_MONSTERS_RUNTIME_ADAPTER_NOT_FOUND: 'runtimeErrorAdapterNotFound',
+    STREAM_MONSTERS_RUNTIME_UNSUPPORTED_GPU: 'runtimeErrorUnsupportedGpu',
+    STREAM_MONSTERS_RUNTIME_PROFILE_INVALID: 'runtimeErrorProfileInvalid',
+    STREAM_MONSTERS_RUNTIME_INSTALL_REQUEST_INVALID: 'runtimeErrorInstallRequest',
+    STREAM_MONSTERS_RUNTIME_INSTALL_COMMITTING: 'runtimeErrorCommitting',
+    STREAM_MONSTERS_RUNTIME_DISK_SPACE_INSUFFICIENT: 'runtimeErrorDiskSpace',
+    STREAM_MONSTERS_RUNTIME_CHECKSUM_MISMATCH: 'runtimeErrorChecksum',
+    STREAM_MONSTERS_RUNTIME_SMOKE_TEST_FAILED: 'runtimeErrorSmokeTest',
+    STREAM_MONSTERS_RUNTIME_NOT_INSTALLED: 'runtimeErrorNotInstalled',
+    STREAM_MONSTERS_RUNTIME_VERIFY_ADAPTER_MISMATCH: 'runtimeErrorVerifyAdapterMismatch',
+    STREAM_MONSTERS_RUNTIME_VERIFY_PROFILE_MISMATCH: 'runtimeErrorVerifyProfileMismatch',
+    STREAM_MONSTERS_RUNTIME_JOB_NOT_FOUND: 'runtimeErrorJobNotFound',
+    STREAM_MONSTERS_RUNTIME_ABORTED: 'runtimeErrorAborted'
+  });
 
   function normalizeVolume(storedValue) {
     const numeric = Number(storedValue);
@@ -61,8 +109,11 @@
 
   function createPriorityQueue({ maxSize = 30, staleAfterMs = 10000 } = {}) {
     const entries = [];
+    const boundedMaxSize = Math.max(1, Number(maxSize) || 1);
     let snapshotEvent = null;
     let sequence = 0;
+    let activeGroupKey = null;
+    let durableTurn = false;
 
     function priority(type) {
       if (type === 'state_snapshot') return 4;
@@ -70,11 +121,69 @@
       return DURABLE_TYPES.has(type) ? 2 : 1;
     }
 
+    function groupKey(type, data = {}) {
+      if (!CRITICAL_TYPES.has(type)) return null;
+      if (type.startsWith('egg_') || type === 'hatch_started') {
+        const eggId = data.egg?.egg_id || data.egg?.id || data.eggId || data.userId || 'ungrouped';
+        return `hatch:${eggId}`;
+      }
+      const battleId = data.battleId || data.battle?.battleId || data.battle?.battle_id || 'ungrouped';
+      return `battle:${battleId}`;
+    }
+
+    function totalSize() {
+      return entries.length + (snapshotEvent ? 1 : 0);
+    }
+
+    function removeEntry(index) {
+      const [removed] = entries.splice(index, 1);
+      if (removed?.groupKey === activeGroupKey && !entries.some(entry => entry.groupKey === activeGroupKey)) {
+        activeGroupKey = null;
+        durableTurn = true;
+      }
+    }
+
     function trim() {
-      while (entries.length > maxSize) {
+      while (totalSize() > boundedMaxSize) {
         const ephemeralIndex = entries.findIndex(entry => entry.priority === 1);
-        if (ephemeralIndex < 0) break;
-        entries.splice(ephemeralIndex, 1);
+        if (ephemeralIndex >= 0) {
+          removeEntry(ephemeralIndex);
+          continue;
+        }
+
+        const removableCriticalGroups = [];
+        for (const entry of entries) {
+          if (entry.priority !== 3 || entry.groupKey === activeGroupKey) continue;
+          if (!removableCriticalGroups.includes(entry.groupKey)) removableCriticalGroups.push(entry.groupKey);
+        }
+        if (removableCriticalGroups.length > 1 || (activeGroupKey && removableCriticalGroups.length)) {
+          const oldestGroup = removableCriticalGroups[0];
+          for (let index = entries.length - 1; index >= 0; index -= 1) {
+            if (entries[index].groupKey === oldestGroup) removeEntry(index);
+          }
+          continue;
+        }
+
+        const criticalIndex = entries.findIndex(entry => (
+          entry.priority === 3 && entry.groupKey !== activeGroupKey
+        ));
+        if (criticalIndex >= 0) {
+          removeEntry(criticalIndex);
+          continue;
+        }
+
+        const durableIndex = entries.findIndex(entry => entry.priority === 2);
+        if (durableIndex >= 0) {
+          removeEntry(durableIndex);
+          continue;
+        }
+
+        const activeCriticalIndex = entries.findIndex(entry => entry.priority === 3);
+        if (activeCriticalIndex >= 0) {
+          removeEntry(activeCriticalIndex);
+          continue;
+        }
+        break;
       }
     }
 
@@ -88,7 +197,8 @@
         data,
         enqueuedAt,
         priority: priority(type),
-        sequence: sequence += 1
+        sequence: sequence += 1,
+        groupKey: groupKey(type, data)
       });
       trim();
     }
@@ -101,6 +211,7 @@
         priority: priority('state_snapshot'),
         sequence: sequence += 1
       };
+      trim();
     }
 
     function orderedEntries() {
@@ -116,10 +227,43 @@
         snapshotEvent = null;
         return current;
       }
+
+      if (activeGroupKey) {
+        const groupedIndex = entries.findIndex(entry => entry.groupKey === activeGroupKey);
+        if (groupedIndex >= 0) {
+          const next = entries.splice(groupedIndex, 1)[0];
+          const terminal = next.type === 'battle_completed' || next.type === 'egg_hatched';
+          if (terminal || !entries.some(entry => entry.groupKey === activeGroupKey)) {
+            activeGroupKey = null;
+            durableTurn = true;
+          }
+          return next;
+        }
+        activeGroupKey = null;
+        durableTurn = true;
+      }
+
+      if (durableTurn) {
+        const durableIndex = entries.findIndex(entry => entry.priority === 2);
+        durableTurn = false;
+        if (durableIndex >= 0) return entries.splice(durableIndex, 1)[0];
+      }
+
       while (entries.length) {
-        const highestPriority = Math.max(...entries.map(entry => entry.priority));
-        const nextIndex = entries.findIndex(entry => entry.priority === highestPriority);
-        const next = entries.splice(nextIndex, 1)[0];
+        const criticalIndex = entries.findIndex(entry => entry.priority === 3);
+        if (criticalIndex >= 0) {
+          activeGroupKey = entries[criticalIndex].groupKey;
+          const next = entries.splice(criticalIndex, 1)[0];
+          const terminal = next.type === 'battle_completed' || next.type === 'egg_hatched';
+          if (terminal || !entries.some(entry => entry.groupKey === activeGroupKey)) {
+            activeGroupKey = null;
+            durableTurn = true;
+          }
+          return next;
+        }
+        const durableIndex = entries.findIndex(entry => entry.priority === 2);
+        if (durableIndex >= 0) return entries.splice(durableIndex, 1)[0];
+        const next = entries.shift();
         if (next.priority === 1 && now - next.enqueuedAt > staleAfterMs) continue;
         return next;
       }
@@ -129,6 +273,8 @@
     function beginSnapshot() {
       snapshotEvent = null;
       entries.length = 0;
+      activeGroupKey = null;
+      durableTurn = false;
     }
 
     return {
@@ -137,7 +283,7 @@
       prependSnapshot,
       shift,
       snapshot: orderedEntries,
-      size: () => entries.length + (snapshotEvent ? 1 : 0)
+      size: totalSize
     };
   }
 
@@ -182,11 +328,47 @@
     return CHAT_RESULT_KEYS.has(result.messageKey) ? result.messageKey : 'chatResultUnknown';
   }
 
+  function enumKey(mapping, value) {
+    return mapping[String(value || '').trim().toLowerCase()] || 'unknown';
+  }
+
+  function apiErrorKey(error) {
+    const code = String(error?.code || error?.message || error || '').trim();
+    if (API_ERROR_KEYS[code]) return API_ERROR_KEYS[code];
+    if (/^STREAM_MONSTERS_RUNTIME_DOWNLOAD_HTTP_/.test(code)) return 'runtimeErrorDownloadHttp';
+    if (code === 'STREAM_MONSTERS_RUNTIME_DOWNLOAD_SIZE_MISMATCH') return 'runtimeErrorDownloadSize';
+    if (/^STREAM_MONSTERS_RUNTIME_(?:ARCHIVE|REDIRECT)/.test(code)) return 'runtimeErrorArchive';
+    if (/^STREAM_MONSTERS_RUNTIME_(?:HEALTH|BACKEND|DEVICE|CHILD)/.test(code)) return 'runtimeErrorHealthcheck';
+    if (/^STREAM_MONSTERS_RUNTIME_(?:PATH|DATA_DIR|BASE_DIR|STAGING|INSTALL_UNSAFE|EXECUTABLE)/.test(code)) {
+      return 'runtimeErrorPath';
+    }
+    if (/^STREAM_MONSTERS_RUNTIME_MANIFEST/.test(code)) return 'runtimeErrorManifest';
+    if (/^STREAM_MONSTERS_RUNTIME_(?:ADAPTER_MAPPING|ADAPTER_MISMATCH)/.test(code)) return 'runtimeErrorAdapterMapping';
+    if (/^STREAM_MONSTERS_RUNTIME_/.test(code)) return 'runtimeErrorUnknown';
+    if (/^STREAM_MONSTERS_(?:AI|ART|KENNEY)_/.test(code)) return 'apiErrorArtUnavailable';
+    if (/^STREAM_MONSTERS_GIFT_/.test(code)) return 'apiErrorGiftMapping';
+    if (/^STREAM_MONSTERS_EGG_/.test(code)) return 'apiErrorEggNotReady';
+    if (/^STREAM_MONSTERS_(?:USER|PRESTIGE|PROGRESS|INVALID)_/.test(code)) return 'apiErrorInvalidRequest';
+    return 'apiErrorUnknown';
+  }
+
+  function hypeMilestonePoints(data = {}) {
+    return Math.max(
+      0,
+      Number(data.milestone ?? data.points ?? data.hype?.points) || 0
+    );
+  }
+
   return {
+    apiErrorKey,
     createPriorityQueue,
     createReconnectController,
     chatMessageKey,
+    elementKey: value => enumKey(ELEMENT_KEYS, value),
+    hypeMilestonePoints,
     isCritical: type => CRITICAL_TYPES.has(type),
-    normalizeVolume
+    normalizeVolume,
+    personalityKey: value => enumKey(PERSONALITY_KEYS, value),
+    variantKey: value => enumKey(VARIANT_KEYS, value)
   };
 }));

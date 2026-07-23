@@ -46,6 +46,8 @@ function createSubject({ storedManifest = null, artPool = null } = {}) {
       verified: true,
       adapterId: 'gpu-1',
       profileId: 'nvidia-standard',
+      runtimeRoot: 'C:\\private\\managed-runtime\\active',
+      previousRuntimeRoot: 'C:\\private\\managed-runtime\\previous',
       model: { verified: true }
     },
     lastSmokeTest: {
@@ -94,7 +96,14 @@ function createSubject({ storedManifest = null, artPool = null } = {}) {
       }
     })),
     getTrustedManifest: jest.fn(() => ({ ...TRUSTED_MANIFEST })),
-    getProcessState: jest.fn(() => ({ state: 'stopped', pid: null })),
+    getProcessState: jest.fn(() => ({
+      state: 'running',
+      pid: 9191,
+      port: 8188,
+      baseUrl: 'http://127.0.0.1:8188',
+      deviceSelectorArgs: ['--cuda-device', '0'],
+      backendIndex: 0
+    })),
     resolveRuntimeRoot: jest.fn(() => 'C:\\LTTH\\managed-runtime'),
     resolveInside: jest.fn((root, relativePath) => require('path').resolve(root, relativePath)),
     resolveExistingInside: jest.fn((root, relativePath) => require('path').resolve(root, relativePath)),
@@ -124,8 +133,28 @@ function createSubject({ storedManifest = null, artPool = null } = {}) {
       analyze: jest.fn(async () => ({
         gpu: { id: 'gpu-1', name: 'NVIDIA GeForce RTX 4060', vendor: 'nvidia', vramMb: 8192 },
         adapters: [
-          { id: 'gpu-1', name: 'NVIDIA GeForce RTX 4060', vendor: 'nvidia', vramMb: 8192 },
-          { id: 'gpu-2', name: 'AMD Radeon RX 7900 XTX', vendor: 'amd', vramMb: 24576, driverVersion: '31.0.1' }
+          {
+            id: 'gpu-1',
+            name: 'NVIDIA GeForce RTX 4060',
+            vendor: 'nvidia',
+            vramMb: 8192,
+            driver: '572.42',
+            pnpDeviceId: 'PCI\\VEN_10DE&DEV_2882\\PRIVATE',
+            pciBusId: '0000:01:00.0',
+            locationPaths: ['PCIROOT(0)#PCI(0100)'],
+            backendIndex: 0,
+            backendIdentity: {
+              uuid: 'GPU-PRIVATE-UUID',
+              pciBusId: '0000:01:00.0'
+            }
+          },
+          {
+            id: 'gpu-2',
+            name: 'AMD Radeon RX 7900 XTX',
+            vendor: 'amd',
+            vramMb: 24576,
+            driver: '31.0.1'
+          }
         ],
         disk: { targetRoot: 'C:\\LTTH', freeGb: 50 }
       }))
@@ -289,7 +318,62 @@ describe('Stream Monsters privileged routes', () => {
     }
     expect(managedRuntime.startManagedRuntime).toHaveBeenCalled();
     expect(managedRuntime.stopManagedRuntime).toHaveBeenCalled();
-    expect(managedRuntime.verifyManagedRuntime).toHaveBeenCalled();
+  });
+
+  test('serializes public runtime status without paths, process data or adapter identities', async () => {
+    const { findRoute } = createSubject();
+    const response = createResponse();
+
+    await findRoute('GET', '/api/streammonsters/local-runtime/status').handler({
+      query: { adapterId: 'gpu-1' }
+    }, response);
+
+    const payload = response.json.mock.calls[0][0];
+    const keys = [];
+    const visit = value => {
+      if (!value || typeof value !== 'object') return;
+      for (const [key, nested] of Object.entries(value)) {
+        keys.push(key);
+        visit(nested);
+      }
+    };
+    visit(payload);
+
+    expect(payload.runtime).toEqual({ state: 'running' });
+    expect(payload.adapters[0]).toEqual({
+      id: 'gpu-1',
+      name: 'NVIDIA GeForce RTX 4060',
+      vendor: 'nvidia',
+      vramMb: 8192,
+      vramGb: 8,
+      driverVersion: '572.42',
+      supportState: null
+    });
+    expect(payload.installation).toEqual({
+      state: 'ready',
+      verified: true,
+      profileId: 'nvidia-standard',
+      adapterId: 'gpu-1'
+    });
+    expect(payload.disk).toEqual(expect.objectContaining({ freeGb: 50 }));
+    expect(payload.disk).not.toHaveProperty('targetRoot');
+    expect(payload.installDetails).not.toHaveProperty('targetDir');
+    expect(keys).not.toEqual(expect.arrayContaining([
+      'runtimeRoot',
+      'previousRuntimeRoot',
+      'targetRoot',
+      'pid',
+      'port',
+      'baseUrl',
+      'deviceSelectorArgs',
+      'pnpDeviceId',
+      'pciBusId',
+      'locationPaths',
+      'backendIndex',
+      'backendIdentity',
+      'uuid'
+    ]));
+    expect(JSON.stringify(payload)).not.toMatch(/C:\\|GPU-PRIVATE-UUID|--cuda-device|PCIROOT|VEN_10DE/);
   });
 
   test('recomputes the public recommendation for the adapter selected by the wizard', async () => {
@@ -436,14 +520,18 @@ describe('Stream Monsters privileged routes', () => {
 
   test('verify binds returned smoke evidence to the installed adapter and profile', async () => {
     const { findRoute, managedRuntime } = createSubject();
-    managedRuntime.verifyManagedRuntime.mockImplementation(async ({ adapter, profile }) => ({
-      state: 'passed',
-      width: 256,
-      height: 256,
-      adapterId: adapter.id,
-      profileId: profile.id,
-      runtimeVersion: profile.version
-    }));
+    managedRuntime.lastSmokeTest = null;
+    managedRuntime.startManagedRuntime.mockImplementation(async ({ adapter }) => {
+      managedRuntime.lastSmokeTest = {
+        state: 'passed',
+        width: 256,
+        height: 256,
+        adapterId: adapter.id,
+        profileId: 'nvidia-standard',
+        runtimeVersion: '0.28.0'
+      };
+      return { state: 'running', pid: 42 };
+    });
     const response = createResponse();
 
     await findRoute('POST', '/api/streammonsters/local-runtime/verify').handler({
@@ -461,6 +549,10 @@ describe('Stream Monsters privileged routes', () => {
         runtimeVersion: '0.28.0'
       })
     });
+    expect(managedRuntime.startManagedRuntime).toHaveBeenCalledWith({
+      adapter: expect.objectContaining({ id: 'gpu-1' })
+    });
+    expect(managedRuntime.verifyManagedRuntime).not.toHaveBeenCalled();
   });
 
   test('does not verify a profile that differs from the installed runtime', async () => {

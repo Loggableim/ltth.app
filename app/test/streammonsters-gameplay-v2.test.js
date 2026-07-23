@@ -477,6 +477,58 @@ describe('Stream Monsters battle stances and fair matchmaking', () => {
     );
   });
 
+  test('keeps a recent rematch waiting while a persisted fresh opponent approaches level expansion', () => {
+    const game = createGame({ config: { hatchDurationMs: 0 } });
+    const recentMonster = game.hatch('viewer-recent', 1);
+    const joiningMonster = game.hatch('viewer-joining', 2);
+    const freshMonster = game.hatch('viewer-fresh', 3);
+    game.sqlite.prepare('UPDATE streammonsters_monsters SET level = 10 WHERE monster_id = ?')
+      .run(freshMonster.monster_id);
+    game.battleService.resolve(
+      recentMonster,
+      joiningMonster,
+      'recent-pair',
+      'power',
+      'guard'
+    );
+    game.store.enqueueBattle({
+      userId: 'viewer-recent',
+      monsterId: recentMonster.monster_id,
+      stance: 'power',
+      queuedAtMs: game.now()
+    });
+    game.store.enqueueBattle({
+      userId: 'viewer-fresh',
+      monsterId: freshMonster.monster_id,
+      stance: 'speed',
+      queuedAtMs: game.now()
+    });
+    const resumedCommands = new ChatCommands({
+      store: game.store,
+      engine: game.engine,
+      battleService: game.battleService,
+      now: game.now
+    });
+
+    const waiting = resumedCommands.execute({ userId: 'viewer-joining' }, 'battle', ['guard']);
+
+    expect(waiting.status).toBe('queued');
+    expect(new Set(game.store.getBattleQueue().map(entry => entry.user_id))).toEqual(new Set([
+      'viewer-recent',
+      'viewer-fresh',
+      'viewer-joining'
+    ]));
+
+    game.setNow(game.now() + 30_000);
+    const matched = resumedCommands.execute({ userId: 'viewer-joining' }, 'battle', ['guard']);
+
+    expect(matched.status).toBe('started');
+    expect(new Set([matched.battle.monsterAId, matched.battle.monsterBId])).toEqual(
+      new Set([joiningMonster.monster_id, freshMonster.monster_id])
+    );
+    expect(game.store.getBattleQueue().map(entry => entry.user_id)).toEqual(['viewer-recent']);
+  });
+
   test('expands level matchmaking after either viewer has waited thirty seconds', () => {
     const game = createGame({ config: { hatchDurationMs: 0 } });
     const monsterA = game.hatch('viewer-a', 1);

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
+const overlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
 
 function response(payload) {
   return { ok: true, json: async () => payload };
@@ -76,6 +77,7 @@ function bootUi({ runtimeFetch, locale = null } = {}) {
     runScripts: 'dangerously',
     beforeParse(window) {
       window.fetch = fetchMock;
+      window.StreamMonstersOverlayRuntime = overlayRuntime;
       window.i18n = {
         init: async () => {},
         updateDOM: () => {},

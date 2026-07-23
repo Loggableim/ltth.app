@@ -23,7 +23,8 @@ describe('Stream Monsters OBS overlay', () => {
     expect(html).toContain('const eventQueue');
     expect(html).toContain('drainQueue');
     expect(html).toContain('hat Elementvorteil');
-    expect(html).toContain('Vorteil ${battleAdvantageName}');
+    expect(html).toContain('battleAdvantageSuffix');
+    expect(html).not.toContain('Vorteil ${battleAdvantageName}');
     expect(html).toContain('@media (orientation: portrait)');
     expect(html).toContain('!hatch');
   });
