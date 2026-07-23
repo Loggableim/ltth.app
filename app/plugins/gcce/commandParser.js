@@ -101,6 +101,11 @@ class CommandParser {
                 return { isCommand: false };
             }
 
+            // Parse and resolve ownership before admission checks so recognized
+            // plugin commands retain their identity when rejected.
+            const parsed = this.parseCommandStructure(message);
+            const commandDef = this.registry.getCommand(parsed.command);
+
             // P2: Check rate limiting with Token Bucket
             const rateLimitResult = this.rateLimiter.tryConsume(context.userId);
             if (!rateLimitResult.allowed) {
@@ -117,16 +122,14 @@ class CommandParser {
                     error: error.message,
                     suggestion: error.suggestion,
                     displayOverlay: true,
-                    errorCode: error.code
+                    errorCode: error.code,
+                    ...(commandDef ? {
+                        commandName: commandDef.name,
+                        pluginId: commandDef.pluginId
+                    } : {})
                 };
             }
 
-            // P3: Parse command structure (optimized)
-            const parsed = this.parseCommandStructure(message);
-            
-            // Look up command in registry (with cache and alias support)
-            const commandDef = this.registry.getCommand(parsed.command);
-            
             if (!commandDef) {
                 const error = this.errorHandler.createError('COMMAND_NOT_FOUND', {
                     command: parsed.command
@@ -151,7 +154,9 @@ class CommandParser {
                     success: false,
                     error: error.message,
                     displayOverlay: true,
-                    errorCode: error.code
+                    errorCode: error.code,
+                    commandName: commandDef.name,
+                    pluginId: commandDef.pluginId
                 };
             }
 
@@ -194,7 +199,9 @@ class CommandParser {
                     error: error.message,
                     suggestion: error.suggestion,
                     displayOverlay: true,
-                    errorCode: error.code
+                    errorCode: error.code,
+                    commandName: commandDef.name,
+                    pluginId: commandDef.pluginId
                 };
             }
 
@@ -206,7 +213,9 @@ class CommandParser {
                     error: validationResult.error,
                     suggestion: validationResult.suggestion,
                     displayOverlay: true,
-                    errorCode: 'VALIDATION_ERROR'
+                    errorCode: 'VALIDATION_ERROR',
+                    commandName: commandDef.name,
+                    pluginId: commandDef.pluginId
                 };
             }
 

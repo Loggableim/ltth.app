@@ -15,7 +15,10 @@ class StreamMonstersCommandIngress {
       String(definition.name).toLowerCase(),
       {
         user: Math.max(0, Number(definition.cooldown?.user) || 0),
-        global: Math.max(0, Number(definition.cooldown?.global) || 0)
+        global: Math.max(0, Number(definition.cooldown?.global) || 0),
+        minArgs: Math.max(0, Number(definition.minArgs) || 0),
+        maxArgs: definition.maxArgs === undefined ? Infinity : Math.max(0, Number(definition.maxArgs) || 0),
+        syntax: definition.syntax || `${commandPrefix}${definition.name}`
       }
     ]));
   }
@@ -36,6 +39,18 @@ class StreamMonstersCommandIngress {
       rawData: data
     };
     if (!context.userId) return { success: false, status: 'ignored' };
+
+    const command = this.commands.get(commandName);
+    if (args.length < command.minArgs || args.length > command.maxArgs) {
+      const result = {
+        success: false,
+        status: 'invalid_arguments',
+        errorCode: 'VALIDATION_ERROR',
+        message: `Invalid arguments. Usage: ${command.syntax}`
+      };
+      this.emitResult(commandName, context, result, 'fallback');
+      return result;
+    }
 
     const cooldown = this.checkCooldown(commandName, context.userId);
     if (cooldown) {

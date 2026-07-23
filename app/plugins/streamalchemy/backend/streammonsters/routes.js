@@ -16,7 +16,12 @@ class StreamMonstersRoutes {
     localModelInstaller,
     giftCatalogProvider,
     configProvider,
-    gcceStateProvider = () => ({ commandPrefix: '!', registrationState: 'fallback', commandsRegistered: false })
+    gcceStateProvider = () => ({
+      commandPrefix: '!',
+      registrationState: 'fallback',
+      registrationError: null,
+      commandsRegistered: false
+    })
   }) {
     this.api = api;
     this.pluginDir = pluginDir;

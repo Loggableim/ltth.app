@@ -221,6 +221,7 @@ describe('Stream Monsters plugin integration', () => {
     expect(state.gcce).toEqual({
       commandPrefix: '!',
       registrationState: 'active',
+      registrationError: null,
       commandsRegistered: true
     });
     await plugin.destroy();
@@ -313,6 +314,79 @@ describe('Stream Monsters plugin integration', () => {
     expect(secondGCCE.unregisterCommandsForPlugin).toHaveBeenCalledWith('streamalchemy');
   });
 
+  test('blocks direct fallback when available GCCE only partially registers commands', async () => {
+    const gcce = createGCCE('!');
+    gcce.registerCommandsForPlugin.mockImplementationOnce((pluginId, commands) => {
+      gcce.definitions.set(commands[0].name, commands[0]);
+      return {
+        pluginId,
+        registered: [commands[0].name],
+        failed: commands.slice(1).map(command => command.name)
+      };
+    });
+    const { api, events, emitted, routes } = createApi({ gcce });
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    const progression = jest.spyOn(plugin.streamMonstersProgression, 'recordCommand');
+
+    await events.find(entry => entry.event === 'chat').handler({
+      uniqueId: 'viewer-a',
+      nickname: 'Viewer A',
+      comment: '!eggs'
+    });
+
+    const stateRoute = routes.find(route => route.method === 'GET' && route.path === '/api/streammonsters/state');
+    let state = null;
+    stateRoute.handler({ query: {} }, { json: payload => { state = payload; } });
+    expect(state.gcce).toEqual({
+      commandPrefix: '!',
+      registrationState: 'blocked',
+      registrationError: 'partial_registration',
+      commandsRegistered: false
+    });
+    expect(gcce.definitions.size).toBe(0);
+    expect(progression).not.toHaveBeenCalled();
+    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toEqual([]);
+    await plugin.destroy();
+  });
+
+  test('recovers a blocked partial registration on GCCE reload without double processing', async () => {
+    const gcce = createGCCE('!');
+    gcce.registerCommandsForPlugin.mockImplementationOnce((pluginId, commands) => ({
+      pluginId,
+      registered: [],
+      failed: commands.map(command => command.name)
+    }));
+    const { api, events, emitted, pluginEvents, routes } = createApi({ gcce });
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+
+    pluginEvents.emit('plugin:reloaded', 'gcce');
+    const progression = jest.spyOn(plugin.streamMonstersProgression, 'recordCommand');
+    await gcce.definitions.get('eggs').handler([], {
+      userId: 'viewer-a',
+      username: 'Viewer A'
+    });
+    await events.find(entry => entry.event === 'chat').handler({
+      uniqueId: 'viewer-a',
+      nickname: 'Viewer A',
+      comment: '!eggs'
+    });
+
+    const stateRoute = routes.find(route => route.method === 'GET' && route.path === '/api/streammonsters/state');
+    let state = null;
+    stateRoute.handler({ query: {} }, { json: payload => { state = payload; } });
+    expect(state.gcce).toEqual({
+      commandPrefix: '!',
+      registrationState: 'active',
+      registrationError: null,
+      commandsRegistered: true
+    });
+    expect(progression).toHaveBeenCalledTimes(1);
+    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toHaveLength(1);
+    await plugin.destroy();
+  });
+
   test('uses the configured GCCE prefix for fallback when GCCE is disabled', async () => {
     const gcce = createGCCE('/', false);
     const { api, events, emitted } = createApi({ gcce });
@@ -363,6 +437,42 @@ describe('Stream Monsters plugin integration', () => {
     await plugin.destroy();
   });
 
+  test('validates fallback !monster and !choose arguments before progression side effects', async () => {
+    const { api, events, emitted } = createApi();
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    const progression = jest.spyOn(plugin.streamMonstersProgression, 'recordCommand');
+    const chat = events.find(entry => entry.event === 'chat').handler;
+
+    await chat({ uniqueId: 'viewer-a', nickname: 'Viewer A', comment: '!monster' });
+    await chat({ uniqueId: 'viewer-b', nickname: 'Viewer B', comment: '!choose' });
+
+    expect(progression).not.toHaveBeenCalled();
+    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toEqual([
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          userId: 'viewer-a',
+          command: 'monster',
+          result: expect.objectContaining({
+            status: 'invalid_arguments',
+            errorCode: 'VALIDATION_ERROR'
+          })
+        })
+      }),
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          userId: 'viewer-b',
+          command: 'choose',
+          result: expect.objectContaining({
+            status: 'invalid_arguments',
+            errorCode: 'VALIDATION_ERROR'
+          })
+        })
+      })
+    ]);
+    await plugin.destroy();
+  });
+
   test('translates a GCCE cooldown rejection into one personalized Stream Monsters result', async () => {
     const gcce = createGCCE('!');
     const { api, emitted, pluginEvents } = createApi({ gcce });
@@ -390,6 +500,65 @@ describe('Stream Monsters plugin integration', () => {
             status: 'cooldown'
           })
         })
+      })
+    ]);
+    await plugin.destroy();
+  });
+
+  test('translates owned validation, permission and rate-limit rejections exactly once', async () => {
+    const gcce = createGCCE('!');
+    const { api, emitted, pluginEvents } = createApi({ gcce });
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    const rejections = [
+      {
+        error: 'Missing arguments.',
+        errorCode: 'VALIDATION_ERROR',
+        commandName: 'monster',
+        userId: 'viewer-a',
+        username: 'Viewer A'
+      },
+      {
+        error: 'Permission denied.',
+        errorCode: 'PERMISSION_DENIED',
+        commandName: 'choose',
+        userId: 'viewer-b',
+        username: 'Viewer B'
+      },
+      {
+        error: 'Rate limit exceeded.',
+        errorCode: 'RATE_LIMIT_USER',
+        commandName: 'eggs',
+        userId: 'viewer-c',
+        username: 'Viewer C'
+      }
+    ];
+    rejections.forEach(rejection => pluginEvents.emit('gcce:command_result', {
+      ...rejection,
+      success: false,
+      pluginId: 'streamalchemy'
+    }));
+    pluginEvents.emit('gcce:command_result', {
+      ...rejections[0],
+      success: false,
+      pluginId: 'another-plugin'
+    });
+
+    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result').map(entry => entry.payload)).toEqual([
+      expect.objectContaining({
+        userId: 'viewer-a',
+        command: 'monster',
+        result: expect.objectContaining({ status: 'invalid_arguments', errorCode: 'VALIDATION_ERROR' })
+      }),
+      expect.objectContaining({
+        userId: 'viewer-b',
+        command: 'choose',
+        result: expect.objectContaining({ status: 'permission_denied', errorCode: 'PERMISSION_DENIED' })
+      }),
+      expect.objectContaining({
+        userId: 'viewer-c',
+        command: 'eggs',
+        result: expect.objectContaining({ status: 'rate_limited', errorCode: 'RATE_LIMIT_USER' })
       })
     ]);
     await plugin.destroy();

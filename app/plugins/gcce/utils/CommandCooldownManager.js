@@ -8,7 +8,7 @@ class CommandCooldownManager {
     // Map<commandName, CooldownConfig>
     this.commandCooldowns = new Map();
     
-    // Map<userId:commandName, timestamp>
+    // Map<commandName, Map<userId, timestamp>>
     this.userCooldowns = new Map();
     
     // Map<commandName, timestamp> (global cooldowns)
@@ -63,8 +63,7 @@ class CommandCooldownManager {
 
     // Check user cooldown
     if (config.userCooldown > 0) {
-      const userKey = this.getUserCooldownKey(userId, commandName);
-      const lastUsed = this.userCooldowns.get(userKey);
+      const lastUsed = this.userCooldowns.get(commandName)?.get(String(userId));
       
       if (lastUsed) {
         const elapsed = now - lastUsed;
@@ -101,8 +100,10 @@ class CommandCooldownManager {
 
     // Record user cooldown
     if (config.userCooldown > 0) {
-      const userKey = this.getUserCooldownKey(userId, commandName);
-      this.userCooldowns.set(userKey, now);
+      if (!this.userCooldowns.has(commandName)) {
+        this.userCooldowns.set(commandName, new Map());
+      }
+      this.userCooldowns.get(commandName).set(String(userId), now);
     }
   }
 
@@ -115,8 +116,9 @@ class CommandCooldownManager {
     commandName = commandName.toLowerCase();
     
     if (userId) {
-      const userKey = this.getUserCooldownKey(userId, commandName);
-      this.userCooldowns.delete(userKey);
+      const commandUsers = this.userCooldowns.get(commandName);
+      commandUsers?.delete(String(userId));
+      if (commandUsers?.size === 0) this.userCooldowns.delete(commandName);
     } else {
       this.globalCooldowns.delete(commandName);
     }
@@ -130,10 +132,7 @@ class CommandCooldownManager {
     const normalizedName = commandName.toLowerCase();
     this.commandCooldowns.delete(normalizedName);
     this.globalCooldowns.delete(normalizedName);
-    const userKeySuffix = `:${normalizedName}`;
-    for (const userKey of this.userCooldowns.keys()) {
-      if (userKey.endsWith(userKeySuffix)) this.userCooldowns.delete(userKey);
-    }
+    this.userCooldowns.delete(normalizedName);
   }
 
   /**
@@ -146,29 +145,22 @@ class CommandCooldownManager {
   }
 
   /**
-   * Get user cooldown key
-   * @param {string} userId - User ID
-   * @param {string} commandName - Command name
-   * @returns {string} Cooldown key
-   */
-  getUserCooldownKey(userId, commandName) {
-    return `${userId}:${commandName}`;
-  }
-
-  /**
    * Clean up expired cooldowns
    */
   cleanup() {
     const now = Date.now();
 
     // Cleanup user cooldowns
-    for (const [key, timestamp] of this.userCooldowns.entries()) {
-      const [userId, commandName] = key.split(':');
+    for (const [commandName, commandUsers] of this.userCooldowns.entries()) {
       const config = this.commandCooldowns.get(commandName);
-      
-      if (!config || now - timestamp > config.userCooldown) {
-        this.userCooldowns.delete(key);
+      if (!config) {
+        this.userCooldowns.delete(commandName);
+        continue;
       }
+      for (const [userId, timestamp] of commandUsers.entries()) {
+        if (now - timestamp > config.userCooldown) commandUsers.delete(userId);
+      }
+      if (commandUsers.size === 0) this.userCooldowns.delete(commandName);
     }
 
     // Cleanup global cooldowns
@@ -186,9 +178,11 @@ class CommandCooldownManager {
    * @returns {Object} Cooldown stats
    */
   getStats() {
+    const activeUserCooldowns = Array.from(this.userCooldowns.values())
+      .reduce((total, commandUsers) => total + commandUsers.size, 0);
     return {
       commandsWithCooldowns: this.commandCooldowns.size,
-      activeUserCooldowns: this.userCooldowns.size,
+      activeUserCooldowns,
       activeGlobalCooldowns: this.globalCooldowns.size
     };
   }

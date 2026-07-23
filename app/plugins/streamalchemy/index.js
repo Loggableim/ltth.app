@@ -79,6 +79,7 @@ class StreamAlchemyPlugin {
     });
     this.streamMonstersCommandPrefix = '!';
     this.streamMonstersGCCERegistrationState = 'fallback';
+    this.streamMonstersGCCERegistrationError = null;
     this.streamMonstersGCCELifecycleListeners = [];
     this.streamMonstersCommandIngress = new StreamMonstersCommandIngress({
       execute: (context, commandName, args) => this.streamMonstersChatCommands.execute(context, commandName, args),
@@ -568,6 +569,7 @@ class StreamAlchemyPlugin {
     return {
       commandPrefix: this.streamMonstersCommandPrefix,
       registrationState: this.streamMonstersGCCERegistrationState,
+      registrationError: this.streamMonstersGCCERegistrationError,
       commandsRegistered: this.streamMonstersGCCERegistrationState === 'active'
     };
   }
@@ -611,17 +613,25 @@ class StreamAlchemyPlugin {
       const registered = Array.isArray(result?.registered) ? result.registered : [];
       if (registered.length !== definitions.length) {
         gcce.unregisterCommandsForPlugin('streamalchemy');
-        this.streamMonstersGCCE = null;
-        this.streamMonstersGCCERegistrationState = 'fallback';
+        this.streamMonstersGCCE = gcce;
+        this.streamMonstersGCCERegistrationState = 'blocked';
+        this.streamMonstersGCCERegistrationError = 'partial_registration';
         return false;
       }
       this.streamMonstersGCCE = gcce;
       this.streamMonstersGCCERegistrationState = 'active';
+      this.streamMonstersGCCERegistrationError = null;
       return true;
     } catch (error) {
       this.api.log(`[STREAM MONSTERS] GCCE registration failed: ${error.message}`, 'warn');
-      this.streamMonstersGCCE = null;
-      this.streamMonstersGCCERegistrationState = 'fallback';
+      try {
+        gcce.unregisterCommandsForPlugin('streamalchemy');
+      } catch (cleanupError) {
+        this.api.log(`[STREAM MONSTERS] GCCE registration rollback failed: ${cleanupError.message}`, 'debug');
+      }
+      this.streamMonstersGCCE = gcce;
+      this.streamMonstersGCCERegistrationState = 'blocked';
+      this.streamMonstersGCCERegistrationError = 'registration_failed';
       return false;
     }
   }
@@ -636,6 +646,7 @@ class StreamAlchemyPlugin {
     }
     this.streamMonstersGCCE = null;
     this.streamMonstersGCCERegistrationState = 'fallback';
+    this.streamMonstersGCCERegistrationError = null;
   }
 
   setupStreamMonstersGCCELifecycle() {
@@ -673,15 +684,20 @@ class StreamAlchemyPlugin {
   }
 
   handleStreamMonstersGCCECommandResult(payload = {}) {
-    if (
-      payload.pluginId !== 'streamalchemy' ||
-      payload.errorCode !== 'COMMAND_ON_COOLDOWN'
-    ) {
-      return;
-    }
+    if (payload.pluginId !== 'streamalchemy') return;
+    const statuses = {
+      VALIDATION_ERROR: 'invalid_arguments',
+      PERMISSION_DENIED: 'permission_denied',
+      RATE_LIMIT_USER: 'rate_limited',
+      RATE_LIMIT_GLOBAL: 'rate_limited',
+      COMMAND_ON_COOLDOWN: payload.cooldownType === 'global' ? 'global_cooldown' : 'cooldown'
+    };
+    const status = statuses[payload.errorCode];
+    if (!status) return;
     const result = {
       success: false,
-      status: payload.cooldownType === 'global' ? 'global_cooldown' : 'cooldown',
+      status,
+      errorCode: payload.errorCode,
       message: payload.error
     };
     this.streamMonstersCommandIngress.emitResult(
@@ -711,7 +727,12 @@ class StreamAlchemyPlugin {
   }
 
   async handleStreamMonstersChat(data = {}) {
-    if (this.streamMonstersGCCERegistrationState === 'active') return { success: false, status: 'gcce_active' };
+    if (this.streamMonstersGCCERegistrationState !== 'fallback') {
+      return {
+        success: false,
+        status: this.streamMonstersGCCERegistrationState === 'active' ? 'gcce_active' : 'gcce_blocked'
+      };
+    }
     return this.streamMonstersCommandIngress.handleFallback(data);
   }
 
