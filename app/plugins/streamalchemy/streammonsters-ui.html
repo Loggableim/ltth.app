@@ -102,6 +102,18 @@
     .provider strong { display:block; color:var(--ink); font-size:12px; }
     .coverage { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-top:12px; }
     .coverage > div { padding:9px; border-radius:10px; background:#0b1221; text-align:center; color:var(--muted); }
+    .runtime-wizard { display:grid; gap:14px; }
+    .runtime-details { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+    .runtime-detail { min-height:72px; padding:10px; border:1px solid #344568; border-radius:11px; background:#0d1424; }
+    .runtime-detail span,.runtime-detail strong { display:block; overflow-wrap:anywhere; }
+    .runtime-detail span { color:var(--muted); font-size:12px; }
+    .runtime-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .runtime-actions button { margin-top:0; }
+    .driver-links { display:flex; flex-wrap:wrap; gap:8px; }
+    .driver-links a { color:var(--cyan); }
+    .check-row { display:flex; grid-template-columns:none; align-items:center; gap:8px; }
+    .check-row input { width:auto; min-height:0; }
+    progress { width:100%; height:18px; accent-color:var(--violet); }
     .commands { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
     .commands code { display:inline-block; margin:0; }
     .rank-track { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; margin-top:12px; }
@@ -112,6 +124,7 @@
       .card,.card.wide { grid-column:1/-1; }
       .egg-grid { grid-template-columns:repeat(4,1fr); }
       .provider-grid { grid-template-columns:repeat(3,1fr); }
+      .runtime-details { grid-template-columns:repeat(2,minmax(0,1fr)); }
     }
     @media (max-width:620px) {
       main { padding:14px 12px 60px; }
@@ -119,6 +132,7 @@
       .hero-stats { grid-template-columns:1fr; }
       .egg-grid { grid-template-columns:repeat(2,1fr); }
       .coverage,.rank-track { grid-template-columns:repeat(2,1fr); }
+      .runtime-details { grid-template-columns:1fr; }
     }
   </style>
 </head>
@@ -127,154 +141,220 @@
   <header class="hero">
     <div>
       <img class="hero-logo" src="/plugins/streamalchemy/assets/branding/stream-monsters-logo.png" alt="Stream Monsters">
-      <div class="eyebrow">Collector Arena · Version 1.2</div>
-      <h1>Ein Geschenk. Ein Ei. Ein Monster für immer.</h1>
-      <p>Das faire Live-Sammelspiel: Geschenke beschleunigen die Show, niemals die Kampfstärke. KI-Kunst wird vor dem Stream vorbereitet; Kenney übernimmt live sofort.</p>
+      <div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.version">Collector Arena · Version 1.3</div>
+      <h1 data-i18n="plugins.streamalchemy.ui.monsters.heroTitle">Ein Geschenk. Ein Ei. Ein Monster für immer.</h1>
+      <p data-i18n="plugins.streamalchemy.ui.monsters.heroCopy">Das faire Live-Sammelspiel: Geschenke beschleunigen die Show, niemals die Kampfstärke. KI-Kunst wird vor dem Stream vorbereitet; Kenney übernimmt live sofort.</p>
     </div>
     <div class="hero-stats">
-      <div class="metric"><strong id="readinessScore">0/4</strong><span>Live bereit</span></div>
-      <div class="metric"><strong id="catalogTotal">—</strong><span>Geschenke im Katalog</span></div>
-      <div class="metric"><strong id="hypeMetric">0%</strong><span>Stream-Hype</span></div>
+      <div class="metric"><strong id="readinessScore">0/4</strong><span data-i18n="plugins.streamalchemy.ui.monsters.readinessLive">Live bereit</span></div>
+      <div class="metric"><strong id="catalogTotal">—</strong><span data-i18n="plugins.streamalchemy.ui.monsters.catalogGifts">Geschenke im Katalog</span></div>
+      <div class="metric"><strong id="hypeMetric">0%</strong><span data-i18n="plugins.streamalchemy.ui.monsters.streamHype">Stream-Hype</span></div>
     </div>
   </header>
 
-  <nav class="nav" aria-label="Collector Arena Bereiche">
-    <a href="#readiness">1 · Live-Readiness</a>
-    <a href="#gifts">2 · Geschenke-Mapping</a>
-    <a href="#art-lab">3 · Art Lab</a>
-    <a href="#collections">4 · Zuschauer-Sammlungen</a>
-    <a href="#league">5 · Saison &amp; Liga</a>
+  <nav class="nav" aria-label="Collector Arena Bereiche" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.navAreas">
+    <a href="#readiness" data-i18n="plugins.streamalchemy.ui.monsters.navReadiness">1 · Live-Readiness</a>
+    <a href="#gifts" data-i18n="plugins.streamalchemy.ui.monsters.navGifts">2 · Geschenke-Mapping</a>
+    <a href="#art-lab" data-i18n="plugins.streamalchemy.ui.monsters.navArt">3 · Art Lab</a>
+    <a href="#collections" data-i18n="plugins.streamalchemy.ui.monsters.navCollections">4 · Zuschauer-Sammlungen</a>
+    <a href="#league" data-i18n="plugins.streamalchemy.ui.monsters.navLeague">5 · Saison &amp; Liga</a>
   </nav>
-  <div id="notice" class="notice" role="status">Stream Monsters wird geladen …</div>
+  <div id="notice" class="notice" role="status" data-i18n="plugins.streamalchemy.ui.monsters.loading">Stream Monsters wird geladen …</div>
 
   <section id="readiness" class="area">
-    <div class="area-head"><div><div class="eyebrow">Bereich 1</div><h2>Live-Readiness</h2><p class="section-copy">Vier klare Checks, dann ist die Arena sendebereit.</p></div><span id="liveBadge" class="badge">● Offline-Check</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area1">Bereich 1</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.readinessTitle">Live-Readiness</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.readinessCopy">Vier klare Checks, dann ist die Arena sendebereit.</p></div><span id="liveBadge" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.offlineCheck">● Offline-Check</span></div>
     <div class="grid">
       <article class="card">
-        <h3>Welt & Creator</h3>
-        <label>Öffentlicher Name<input id="creatorName" maxlength="60" placeholder="TikTok-Name"></label>
-        <button id="saveSetup" type="button">Namen speichern</button>
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.worldCreator">Welt & Creator</h3>
+        <label><span data-i18n="plugins.streamalchemy.ui.monsters.publicName">Öffentlicher Name</span><input id="creatorName" maxlength="60" placeholder="TikTok-Name" data-i18n-placeholder="plugins.streamalchemy.ui.monsters.creatorPlaceholder"></label>
+        <button id="saveSetup" type="button" data-i18n="plugins.streamalchemy.ui.monsters.saveName">Namen speichern</button>
       </article>
       <article class="card">
-        <h3>OBS Browser Source</h3>
-        <p class="muted">Unterstützt 16:9 und 9:16 automatisch.</p>
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.obsSource">OBS Browser Source</h3>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.responsiveCopy">Unterstützt 16:9 und 9:16 automatisch.</p>
         <code id="overlayUrl">/streammonsters/overlay</code>
-        <button id="runDemo" type="button">Kompletten Demoablauf starten</button>
+        <label class="check-row"><input id="overlayMuted" type="checkbox"><span data-i18n="plugins.streamalchemy.ui.monsters.mute">Overlay-Sounds stummschalten</span></label>
+        <label><span data-i18n="plugins.streamalchemy.ui.monsters.volume">Overlay-Lautstärke</span><input id="overlayVolume" type="range" min="0" max="100" value="70"></label>
+        <button id="runDemo" type="button" data-i18n="plugins.streamalchemy.ui.monsters.runDemo">Kompletten Demoablauf starten</button>
       </article>
       <article class="card">
-        <h3>Spielregeln</h3>
-        <p class="muted">5 Minuten Brutzeit · Charged nur kosmetisch und schneller · 28 feste Startpunkte · 3 reproduzierbare Kampfrunden.</p>
-        <div id="creatorMetrics" class="badge">Noch keine Streamdaten</div>
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.rules">Spielregeln</h3>
+        <p id="dynamicRules" class="muted"></p>
+        <div><span data-i18n="plugins.streamalchemy.ui.monsters.prefix">Aktives GCCE-Präfix</span>: <strong id="activePrefix">!</strong></div>
+        <div><span data-i18n="plugins.streamalchemy.ui.monsters.hatchDuration">Tatsächliche Brutzeit</span>: <strong id="activeHatchDuration">—</strong></div>
+        <div id="creatorMetrics" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.noMetrics">Noch keine Streamdaten</div>
       </article>
       <article class="card full">
-        <h3>Viewer-Kommandos</h3>
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.viewerCommands">Viewer-Kommandos</h3>
         <div class="commands">
-          <code>!eggs</code><code>!hatch [slot]</code><code>!monsters</code><code>!monster [slot]</code>
-          <code>!choose &lt;slot&gt;</code><code>!battle</code><code>!leavebattle</code>
-          <code>!rank</code><code>!quests</code><code>!monstershelp</code>
+          <code data-command="eggs">!eggs</code><code data-command="hatch">!hatch [slot]</code><code data-command="monsters">!monsters</code><code data-command="monster">!monster [slot]</code>
+          <code data-command="choose">!choose &lt;slot&gt;</code><code data-command="battle">!battle</code><code data-command="leavebattle">!leavebattle</code>
+          <code data-command="rank">!rank</code><code data-command="quests">!quests</code><code data-command="monstershelp">!monstershelp</code>
         </div>
       </article>
     </div>
   </section>
 
   <section id="gifts" class="area">
-    <div class="area-head"><div><div class="eyebrow">Bereich 2</div><h2>Geschenke-Mapping</h2><p class="section-copy">Der vollständige TikTok-Katalog ist die Quelle. Nur aktivierte Geschenke lösen Stream-Monsters-Aktionen aus.</p></div><span id="mappingCount" class="badge">0 aktiv</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area2">Bereich 2</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.giftsTitle">Geschenke-Mapping</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.giftsCopy">Der vollständige TikTok-Katalog ist die Quelle. Nur aktivierte Geschenke lösen Stream-Monsters-Aktionen aus.</p></div><span id="mappingCount" class="badge"></span></div>
     <div class="gift-layout">
       <article class="card full">
-        <h3>Katalog durchsuchen</h3>
-        <label>Geschenkname oder ID<input id="giftSearch" type="search" placeholder="z. B. Rose oder 5655"></label>
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.catalogSearch">Katalog durchsuchen</h3>
+        <label><span data-i18n="plugins.streamalchemy.ui.monsters.giftNameOrId">Geschenkname oder ID</span><input id="giftSearch" type="search" placeholder="z. B. Rose oder 5655" data-i18n-placeholder="plugins.streamalchemy.ui.monsters.giftSearchPlaceholder"></label>
         <div id="giftCatalog" class="catalog" aria-live="polite"></div>
       </article>
       <article class="card full">
-        <h3>Ausgewähltes Geschenk</h3>
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.selectedGift">Ausgewähltes Geschenk</h3>
         <input id="selectedGiftId" type="hidden">
-        <div id="selectedGift" class="gift-row"><span class="muted">Im Katalog ein Geschenk wählen.</span></div>
-        <label>Aktion<select id="giftEffect"><option value="spawn">Ei spawnen</option><option value="boost">Ältestes Ei boosten</option></select></label>
-        <label>Element<select id="giftElement"><option>Ember</option><option>Tide</option><option>Grove</option><option>Gale</option><option>Volt</option><option>Lunar</option></select></label>
-        <button id="saveGiftMapping" type="button">Mapping aktivieren</button>
-        <h3 style="margin-top:18px">Aktive Auswahl</h3>
+        <div id="selectedGift" class="gift-row"><span class="muted" data-i18n="plugins.streamalchemy.ui.monsters.chooseGift">Im Katalog ein Geschenk wählen.</span></div>
+        <label><span data-i18n="plugins.streamalchemy.ui.monsters.action">Aktion</span><select id="giftEffect"><option value="spawn" data-i18n="plugins.streamalchemy.ui.monsters.spawnEgg">Ei spawnen</option><option value="boost" data-i18n="plugins.streamalchemy.ui.monsters.boostEgg">Ältestes Ei boosten</option></select></label>
+        <label><span data-i18n="plugins.streamalchemy.ui.monsters.element">Element</span><select id="giftElement"><option data-i18n="plugins.streamalchemy.ui.monsters.ember">Ember</option><option data-i18n="plugins.streamalchemy.ui.monsters.tide">Tide</option><option data-i18n="plugins.streamalchemy.ui.monsters.grove">Grove</option><option data-i18n="plugins.streamalchemy.ui.monsters.gale">Gale</option><option data-i18n="plugins.streamalchemy.ui.monsters.volt">Volt</option><option data-i18n="plugins.streamalchemy.ui.monsters.lunar">Lunar</option></select></label>
+        <button id="saveGiftMapping" type="button" data-i18n="plugins.streamalchemy.ui.monsters.enableMapping">Mapping aktivieren</button>
+        <h3 style="margin-top:18px" data-i18n="plugins.streamalchemy.ui.monsters.activeSelection">Aktive Auswahl</h3>
         <div id="mappingList" class="mapping-list"></div>
       </article>
     </div>
   </section>
 
   <section id="art-lab" class="area">
-    <div class="area-head"><div><div class="eyebrow">Bereich 3</div><h2>Art Lab</h2><p class="section-copy">Premium-KI wird seriell vor dem Stream vorbereitet. Fehlt Kunst, baut Kenney sofort ein deterministisches Monster.</p></div><span id="poolStatus" class="badge">Pool wird geprüft</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area3">Bereich 3</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.artLab">Art Lab</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.artCopy">Premium-KI wird seriell vor dem Stream vorbereitet. Fehlt Kunst, baut Kenney sofort ein deterministisches Monster.</p></div><span id="poolStatus" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.poolChecking">Pool wird geprüft</span></div>
     <div class="grid">
       <article class="card wide">
-        <h3>Die zwölf Element-Eier</h3>
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.twelveEggs">Die zwölf Element-Eier</h3>
         <div class="egg-grid">
-          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/ember-standard.png" alt="Ember Standard Ei"><strong>Ember · Standard</strong></div>
-          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/ember-charged.png" alt="Ember Charged Ei"><strong>Ember · Charged</strong></div>
-          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/tide-standard.png" alt="Tide Standard Ei"><strong>Tide · Standard</strong></div>
-          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/tide-charged.png" alt="Tide Charged Ei"><strong>Tide · Charged</strong></div>
-          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/grove-standard.png" alt="Grove Standard Ei"><strong>Grove · Standard</strong></div>
-          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/grove-charged.png" alt="Grove Charged Ei"><strong>Grove · Charged</strong></div>
-          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/gale-standard.png" alt="Gale Standard Ei"><strong>Gale · Standard</strong></div>
-          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/gale-charged.png" alt="Gale Charged Ei"><strong>Gale · Charged</strong></div>
-          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/volt-standard.png" alt="Volt Standard Ei"><strong>Volt · Standard</strong></div>
-          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/volt-charged.png" alt="Volt Charged Ei"><strong>Volt · Charged</strong></div>
-          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/lunar-standard.png" alt="Lunar Standard Ei"><strong>Lunar · Standard</strong></div>
-          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/lunar-charged.png" alt="Lunar Charged Ei"><strong>Lunar · Charged</strong></div>
+          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/ember-standard.png" alt="Ember · Standard" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggEmberStandard"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggEmberStandard">Ember · Standard</strong></div>
+          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/ember-charged.png" alt="Ember · Aufgeladen" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggEmberCharged"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggEmberCharged">Ember · Aufgeladen</strong></div>
+          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/tide-standard.png" alt="Tide · Standard" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggTideStandard"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggTideStandard">Tide · Standard</strong></div>
+          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/tide-charged.png" alt="Tide · Aufgeladen" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggTideCharged"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggTideCharged">Tide · Aufgeladen</strong></div>
+          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/grove-standard.png" alt="Grove · Standard" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggGroveStandard"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggGroveStandard">Grove · Standard</strong></div>
+          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/grove-charged.png" alt="Grove · Aufgeladen" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggGroveCharged"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggGroveCharged">Grove · Aufgeladen</strong></div>
+          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/gale-standard.png" alt="Gale · Standard" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggGaleStandard"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggGaleStandard">Gale · Standard</strong></div>
+          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/gale-charged.png" alt="Gale · Aufgeladen" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggGaleCharged"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggGaleCharged">Gale · Aufgeladen</strong></div>
+          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/volt-standard.png" alt="Volt · Standard" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggVoltStandard"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggVoltStandard">Volt · Standard</strong></div>
+          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/volt-charged.png" alt="Volt · Aufgeladen" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggVoltCharged"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggVoltCharged">Volt · Aufgeladen</strong></div>
+          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/lunar-standard.png" alt="Lunar · Standard" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggLunarStandard"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggLunarStandard">Lunar · Standard</strong></div>
+          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/lunar-charged.png" alt="Lunar · Aufgeladen" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggLunarCharged"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggLunarCharged">Lunar · Aufgeladen</strong></div>
         </div>
       </article>
       <article class="card">
-        <h3>Provider & Zielabdeckung</h3>
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.providersCoverage">Provider & Zielabdeckung</h3>
         <div class="provider-grid">
-          <div class="provider"><strong>ComfyUI</strong><span id="provider-localComfy">wird geprüft</span></div>
-          <div class="provider"><strong>SiliconFlow</strong><span id="provider-siliconflow">wird geprüft</span></div>
-          <div class="provider"><strong>OpenAI</strong><span id="provider-openai">wird geprüft</span></div>
-          <div class="provider"><strong>LightX</strong><span id="provider-lightx">wird geprüft</span></div>
-          <div class="provider"><strong>Kenney</strong><span id="provider-kenney">CC0 · sofort bereit</span></div>
+          <div class="provider"><strong>ComfyUI</strong><span id="provider-localComfy" data-i18n="plugins.streamalchemy.ui.monsters.checking">wird geprüft</span></div>
+          <div class="provider"><strong>SiliconFlow</strong><span id="provider-siliconflow" data-i18n="plugins.streamalchemy.ui.monsters.checking">wird geprüft</span></div>
+          <div class="provider"><strong>OpenAI</strong><span id="provider-openai" data-i18n="plugins.streamalchemy.ui.monsters.checking">wird geprüft</span></div>
+          <div class="provider"><strong>LightX</strong><span id="provider-lightx" data-i18n="plugins.streamalchemy.ui.monsters.checking">wird geprüft</span></div>
+          <div class="provider"><strong>Kenney</strong><span id="provider-kenney" data-i18n="plugins.streamalchemy.ui.monsters.kenneyReady">CC0 · sofort bereit</span></div>
         </div>
-        <p id="localRuntimeStatus" class="muted">Providerstatus wird geprüft …</p>
-        <button class="secondary" id="openLocalSetup" type="button">Lokale KI prüfen</button>
-        <label>Freie KI-Skins je Variante<select id="poolTarget"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label>
-        <button id="preparePool" type="button">Pre-Stream-Pool vorbereiten</button>
+        <p id="localRuntimeStatus" class="muted" data-i18n="plugins.streamalchemy.ui.monsters.providerChecking">Providerstatus wird geprüft …</p>
+        <div><span data-i18n="plugins.streamalchemy.ui.monsters.providerFallback">Provider-Fallback</span>: <strong id="providerFallback">Kenney</strong></div>
+        <label><span data-i18n="plugins.streamalchemy.ui.monsters.poolTargetLabel">Freie KI-Skins je Variante</span><select id="poolTarget"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label>
+        <button id="preparePool" type="button" data-i18n="plugins.streamalchemy.ui.monsters.preparePool">Pre-Stream-Pool vorbereiten</button>
+      </article>
+      <article class="card full runtime-wizard" id="runtimeWizard">
+        <div>
+          <h3 data-i18n="plugins.streamalchemy.ui.monsters.wizardTitle">Geführte lokale Art-Lab-Einrichtung</h3>
+          <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.wizardCopy">Erkannten Adapter wählen, festes Profil und Anforderungen prüfen, dann installieren, Backend verifizieren und den Pool vorbereiten.</p>
+        </div>
+        <label><span data-i18n="plugins.streamalchemy.ui.monsters.adapter">Grafikadapter</span><select id="runtimeAdapters"></select></label>
+        <button class="secondary" id="openLocalSetup" type="button" data-i18n="plugins.streamalchemy.ui.monsters.recommendation">Empfehlung aktualisieren</button>
+        <div id="runtimeRecommendation" class="badge">—</div>
+        <div class="runtime-details">
+          <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.profile">Runtime-Profil</span><strong id="runtimeProfile">—</strong></div>
+          <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.backend">Backend</span><strong id="runtimeBackend">—</strong></div>
+          <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.device">Gerät</span><strong id="runtimeDevice">—</strong></div>
+          <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.driver">Treiber</span><strong id="runtimeDriver">—</strong></div>
+          <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.vram">VRAM</span><strong id="runtimeVram">—</strong></div>
+          <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.disk">Speicherplatz</span><strong id="runtimeDisk">—</strong></div>
+          <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.license">Modell-Lizenz</span><strong id="runtimeLicense">—</strong></div>
+          <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.download">Download- und Installationsgröße</span><strong id="runtimeDownload">—</strong></div>
+        </div>
+        <div class="driver-links"><span data-i18n="plugins.streamalchemy.ui.monsters.driverLinks">Offizielle Treiber-Downloads</span>:
+          <a href="https://www.nvidia.com/en-us/geforce/drivers/" target="_blank" rel="noopener noreferrer" data-i18n="plugins.streamalchemy.ui.monsters.nvidiaDriver">NVIDIA-Treiber</a>
+          <a href="https://www.intel.com/content/www/us/en/download-center/home.html" target="_blank" rel="noopener noreferrer" data-i18n="plugins.streamalchemy.ui.monsters.intelDriver">Intel-Treiber</a>
+          <a href="https://www.amd.com/en/support/download/drivers.html" target="_blank" rel="noopener noreferrer" data-i18n="plugins.streamalchemy.ui.monsters.amdDriver">AMD-Treiber</a>
+        </div>
+        <label class="check-row"><input id="runtimeLicenseAccepted" type="checkbox"><span data-i18n="plugins.streamalchemy.ui.monsters.licenseAccept">Ich akzeptiere die OpenRAIL++-Modell-Lizenz.</span></label>
+        <div><span data-i18n="plugins.streamalchemy.ui.monsters.progress">Installationsfortschritt</span><progress id="runtimeProgress" max="100" value="0"></progress><strong id="runtimeProgressText">—</strong></div>
+        <div class="runtime-actions">
+          <button id="runtimeInstall" type="button" data-i18n="plugins.streamalchemy.ui.monsters.install">Installieren</button>
+          <button id="runtimeCancel" class="danger" type="button" data-i18n="plugins.streamalchemy.ui.monsters.cancel">Abbrechen</button>
+          <button id="runtimeResume" class="secondary" type="button" data-i18n="plugins.streamalchemy.ui.monsters.resume">Fortschritt fortsetzen</button>
+          <button id="runtimeVerify" class="secondary" type="button" data-i18n="plugins.streamalchemy.ui.monsters.verify">Backend verifizieren</button>
+        </div>
+        <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.smokeTest">256×256-Smoke-Test</span><strong id="runtimeSmokeTest">—</strong></div>
+        <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.recovery">Wiederherstellungsaktion</span><strong id="runtimeRecovery">—</strong></div>
       </article>
       <article class="card full">
-        <h3>Poolabdeckung</h3>
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.poolCoverage">Poolabdeckung</h3>
         <div id="poolList" class="coverage"></div>
       </article>
     </div>
   </section>
 
   <section id="collections" class="area">
-    <div class="area-head"><div><div class="eyebrow">Bereich 4</div><h2>Zuschauer-Sammlungen</h2><p class="section-copy">Eier, Monster, Auswahl, Level und Achievements eines Viewers auf einen Blick.</p></div><span class="badge">Permanente Sammlung</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area4">Bereich 4</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.collectionsTitle">Zuschauer-Sammlungen</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.collectionsCopy">Eier, Monster, Auswahl, Level und Achievements eines Viewers auf einen Blick.</p></div><span class="badge" data-i18n="plugins.streamalchemy.ui.monsters.permanentCollection">Permanente Sammlung</span></div>
     <div class="grid">
       <article class="card">
-        <h3>Viewer finden</h3>
-        <label>TikTok-Name<input id="viewerSearch" placeholder="viewer_name"></label>
-        <button id="loadViewer" type="button">Sammlung laden</button>
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.findViewer">Viewer finden</h3>
+        <label><span data-i18n="plugins.streamalchemy.ui.monsters.creatorPlaceholder">TikTok-Name</span><input id="viewerSearch" placeholder="viewer_name" data-i18n-placeholder="plugins.streamalchemy.ui.monsters.viewerPlaceholder"></label>
+        <button id="loadViewer" type="button" data-i18n="plugins.streamalchemy.ui.monsters.loadCollection">Sammlung laden</button>
       </article>
       <article class="card wide">
-        <h3>Sammlung</h3>
-        <p id="viewerSummary" class="muted">Rang, Auswahl und Achievements erscheinen nach der Suche.</p>
-        <div id="viewerCollection" class="collection-list"><span class="muted">Viewer wählen, um Eier und Monster zu sehen.</span></div>
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.collection">Sammlung</h3>
+        <p id="viewerSummary" class="muted" data-i18n="plugins.streamalchemy.ui.monsters.viewerSummaryEmpty">Rang, Auswahl und Achievements erscheinen nach der Suche.</p>
+        <div id="viewerCollection" class="collection-list"><span class="muted" data-i18n="plugins.streamalchemy.ui.monsters.viewerEmpty">Viewer wählen, um Eier und Monster zu sehen.</span></div>
       </article>
     </div>
   </section>
 
   <section id="league" class="area">
-    <div class="area-head"><div><div class="eyebrow">Bereich 5</div><h2>Saison &amp; Liga</h2><p class="section-copy">Die Sammlung bleibt. Nur Saisonpunkte und Rang starten nach 28 Tagen neu.</p></div><span id="seasonCountdown" class="badge">Saison wird geladen</span></div>
+    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area5">Bereich 5</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.leagueTitle">Saison &amp; Liga</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.leagueCopy">Die Sammlung bleibt. Nur Saisonpunkte und Rang starten nach 28 Tagen neu.</p></div><span id="seasonCountdown" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.seasonLoading">Saison wird geladen</span></div>
     <div class="rank-track">
-      <div><strong>Bronze</strong>0</div><div><strong>Silber</strong>100</div><div><strong>Gold</strong>250</div><div><strong>Kristall</strong>500</div><div><strong>Monster Master</strong>900</div>
+      <div><strong data-i18n="plugins.streamalchemy.ui.monsters.rankBronze">Bronze</strong>0</div><div><strong data-i18n="plugins.streamalchemy.ui.monsters.rankSilver">Silber</strong>100</div><div><strong data-i18n="plugins.streamalchemy.ui.monsters.rankGold">Gold</strong>250</div><div><strong data-i18n="plugins.streamalchemy.ui.monsters.rankCrystal">Kristall</strong>500</div><div><strong data-i18n="plugins.streamalchemy.ui.monsters.rankMonsterMaster">Monster-Meister</strong>900</div>
     </div>
     <article class="card full" style="margin-top:14px">
-      <h3>Top Collector</h3>
-      <div id="leaderboard" class="leaderboard"><span class="muted">Noch keine Saisonpunkte.</span></div>
+      <h3 data-i18n="plugins.streamalchemy.ui.monsters.topCollector">Top Collector</h3>
+      <div id="leaderboard" class="leaderboard"><span class="muted" data-i18n="plugins.streamalchemy.ui.monsters.noSeasonPoints">Noch keine Saisonpunkte.</span></div>
     </article>
   </section>
 </main>
 
 <script src="/js/i18n-client.js"></script>
 <script>
-(() => {
+(async () => {
+  if (window.i18n?.init) {
+    await window.i18n.init();
+    window.i18n.updateDOM();
+  }
   const byId = id => document?.getElementById(id) || null;
   const jsonHeaders = { 'Content-Type':'application/json' };
-  const rankLabel = rank => ({ Silver:'Silber', Crystal:'Kristall' }[rank] || rank || 'Bronze');
+  const translationKey = key => `plugins.streamalchemy.ui.monsters.${key}`;
+  const interpolate = (template, params = {}) => String(template).replace(/\{(\w+)\}/g, (match, key) => (
+    Object.prototype.hasOwnProperty.call(params, key) ? params[key] : match
+  ));
+  const text = (key, fallback, params = {}) => {
+    const fullKey = translationKey(key);
+    const translated = window.i18n?.t?.(fullKey, params);
+    return translated && translated !== fullKey ? translated : interpolate(fallback, params);
+  };
+  const rankLabel = rank => ({ Silver:text('rankSilver', 'Silber'), Crystal:text('rankCrystal', 'Kristall') }[rank] || rank || text('rankBronze', 'Bronze'));
+  const formatBytes = bytes => {
+    const value = Math.max(0, Number(bytes) || 0);
+    if (!value) return '0 B';
+    const units = ['B','KB','MB','GB','TB'];
+    const index = Math.min(units.length - 1, Math.floor(Math.log(value) / Math.log(1024)));
+    return `${(value / (1024 ** index)).toFixed(index > 2 ? 1 : 0)} ${units[index]}`;
+  };
+  const formatDuration = milliseconds => {
+    const totalSeconds = Math.max(0, Math.round((Number(milliseconds) || 0) / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return minutes ? `${minutes}m ${seconds ? `${seconds}s` : ''}`.trim() : `${seconds}s`;
+  };
   let selectedGift = null;
   let searchTimer = null;
+  let runtimePayload = null;
+  let runtimeJobTimer = null;
   const notice = (message, type = '') => {
     const root = byId('notice');
     if (!root) return;
@@ -283,8 +363,9 @@
   };
   const request = async (url, options = {}) => {
     const response = await fetch(url, options);
-    if (!response.ok) throw new Error(`Request failed: ${url}`);
-    return response.json();
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `Request failed: ${url}`);
+    return payload;
   };
   const giftImage = gift => gift.imageUrl || '/plugins/streamalchemy/assets/branding/stream-monsters-icon.png';
   const giftRow = (gift, buttonText, onClick) => {
@@ -299,7 +380,10 @@
     const title = document.createElement('strong');
     title.textContent = gift.giftName || gift.gift_name;
     const meta = document.createElement('small');
-    meta.textContent = `ID ${gift.giftId || gift.gift_id} · ${gift.coinValue ?? gift.coin_value ?? 0} Diamonds`;
+    meta.textContent = text('giftMeta', 'ID {id} · {coins} Diamonds', {
+      id: gift.giftId || gift.gift_id,
+      coins: gift.coinValue ?? gift.coin_value ?? 0
+    });
     copy.append(title, meta);
     row.append(image, copy);
     if (buttonText) {
@@ -322,8 +406,8 @@
     byId('catalogTotal').textContent = payload.total ?? (payload.gifts || []).length;
     const root = byId('giftCatalog');
     root.replaceChildren();
-    (payload.gifts || []).forEach(gift => root.append(giftRow(gift, 'Auswählen', () => selectGift(gift))));
-    if (!(payload.gifts || []).length) root.textContent = 'Keine Geschenke gefunden.';
+    (payload.gifts || []).forEach(gift => root.append(giftRow(gift, text('select', 'Auswählen'), () => selectGift(gift))));
+    if (!(payload.gifts || []).length) root.textContent = text('noGifts', 'Keine Geschenke gefunden.');
   };
   const loadMappings = async () => {
     const payload = await request('/api/streammonsters/gift-mappings');
@@ -336,17 +420,17 @@
         coinValue:mapping.coin_value,
         imageUrl:mapping.image_url
       };
-      root.append(giftRow(gift, 'Entfernen', async () => {
+      root.append(giftRow(gift, text('remove', 'Entfernen'), async () => {
         await request(`/api/streammonsters/gift-mappings/${mapping.gift_id}`, { method:'DELETE' });
         await loadMappings();
       }));
     });
-    byId('mappingCount').textContent = `${(payload.mappings || []).length} aktiv`;
-    if (!(payload.mappings || []).length) root.textContent = 'Noch keine Gifts aktiviert.';
+    byId('mappingCount').textContent = text('activeCount', '{count} aktiv', { count:(payload.mappings || []).length });
+    if (!(payload.mappings || []).length) root.textContent = text('noMappings', 'Noch keine Gifts aktiviert.');
     return payload.mappings || [];
   };
   const saveGiftMapping = async () => {
-    if (!selectedGift) throw new Error('Zuerst ein Geschenk im Katalog auswählen.');
+    if (!selectedGift) throw new Error(text('selectGiftFirst', 'Zuerst ein Geschenk im Katalog auswählen.'));
     const effect = byId('giftEffect').value;
     await request(`/api/streammonsters/gift-mappings/${selectedGift.giftId}`, {
       method:'PUT',
@@ -354,7 +438,7 @@
       body:JSON.stringify({ enabled:true, effect, element:byId('giftElement').value })
     });
     await loadMappings();
-    notice(`${selectedGift.giftName} ist jetzt für Stream Monsters aktiv.`, 'success');
+    notice(text('mappingEnabled', '{gift} ist jetzt für Stream Monsters aktiv.', { gift:selectedGift.giftName }), 'success');
   };
   const renderPool = coverage => {
     const root = byId('poolList');
@@ -364,13 +448,15 @@
       const title = document.createElement('strong');
       title.textContent = `${entry.element} · ${entry.variant}`;
       const count = document.createElement('span');
-      count.textContent = `${entry.ready || 0} frei`;
+      count.textContent = text('poolFree', '{count} frei', { count:entry.ready || 0 });
       item.append(title,document.createElement('br'),count);
       root.append(item);
     });
-    if (!(coverage || []).length) root.textContent = 'Noch keine KI-Skins vorbereitet. Kenney ist jederzeit startklar.';
+    if (!(coverage || []).length) root.textContent = text('poolEmpty', 'Noch keine KI-Skins vorbereitet. Kenney ist jederzeit startklar.');
     const ready = (coverage || []).reduce((sum, entry) => sum + (entry.ready || 0), 0);
-    byId('poolStatus').textContent = ready ? `${ready} KI-Skins frei` : 'Kenney fallback bereit';
+    byId('poolStatus').textContent = ready
+      ? text('poolReady', '{count} KI-Skins frei', { count:ready })
+      : text('kenneyFallback', 'Kenney-Fallback bereit');
   };
   const refreshPool = async () => {
     const payload = await request('/api/streammonsters/pool');
@@ -385,17 +471,26 @@
     const summary = byId('viewerSummary');
     const achievementLabel = achievements.length
       ? achievements.map(entry => String(entry.achievement_key || '').replaceAll('_',' ')).join(', ')
-      : 'noch keine Achievements';
-    summary.textContent = `${rankLabel(rank.rank)} · ${rank.points || 0} Punkte · ${achievementLabel}`;
+      : text('noAchievements', 'noch keine Achievements');
+    summary.textContent = text('viewerSummary', '{rank} · {points} Punkte · {achievements}', {
+      rank:rankLabel(rank.rank),
+      points:rank.points || 0,
+      achievements:achievementLabel
+    });
     const items = [
       ...(viewer.eggs || []).filter(egg => egg.state !== 'hatched').map(egg => ({
-        title:`${egg.element} Ei · ${egg.variant}`,
-        meta:egg.state === 'ready' ? 'Bereit für !hatch' : 'Brütet',
+        title:text('eggTitle', '{element} Ei · {variant}', { element:egg.element, variant:egg.variant }),
+        meta:egg.state === 'ready' ? text('readyForHatch', 'Bereit für !hatch') : text('incubating', 'Brütet'),
         image:egg.image_url
       })),
       ...(viewer.monsters || []).map(monster => ({
-        title:`${monster.name} · Lv.${monster.level}`,
-        meta:`${monster.element} · ${monster.personality} · ${monster.xp} XP${monster.monster_id === selectedId ? ' · AKTIV' : ''}`,
+        title:text('monsterTitle', '{name} · Lv.{level}', { name:monster.name, level:monster.level }),
+        meta:text('monsterMeta', '{element} · {personality} · {xp} XP{active}', {
+          element:monster.element,
+          personality:monster.personality,
+          xp:monster.xp,
+          active:monster.monster_id === selectedId ? text('activeSuffix', ' · AKTIV') : ''
+        }),
         image:monster.image_url
       }))
     ];
@@ -415,7 +510,7 @@
       row.append(image, copy);
       root.append(row);
     });
-    if (!items.length) root.textContent = 'Noch keine Eier oder Monster.';
+    if (!items.length) root.textContent = text('noCollectionItems', 'Noch keine Eier oder Monster.');
   };
   const loadViewer = async () => {
     const userId = byId('viewerSearch').value.trim();
@@ -436,14 +531,17 @@
       const user = document.createElement('strong');
       user.textContent = entry.user_id;
       const rank = document.createElement('small');
-      rank.textContent = `${rankLabel(entry.rank)}${entry.title ? ` · ${entry.title}` : ''}`;
+      rank.textContent = text('rankLine', '{rank}{title}', {
+        rank:rankLabel(entry.rank),
+        title:entry.title ? ` · ${entry.title}` : ''
+      });
       copy.append(user,rank);
       const points = document.createElement('strong');
       points.textContent = entry.points;
       row.append(place,copy,points);
       root.append(row);
     });
-    if (!(entries || []).length) root.textContent = 'Noch keine Saisonpunkte.';
+    if (!(entries || []).length) root.textContent = text('noSeasonPoints', 'Noch keine Saisonpunkte.');
   };
   const loadLeaderboard = async () => {
     const payload = await request('/api/streammonsters/leaderboard?limit=25');
@@ -456,12 +554,12 @@
       headers:jsonHeaders,
       body:JSON.stringify({ creatorName, artPoolTarget:Number(byId('poolTarget').value) })
     });
-    notice('Weltname und Art-Pool-Ziel gespeichert.', 'success');
+    notice(text('setupSaved', 'Weltname und Art-Pool-Ziel gespeichert.'), 'success');
   };
   const preparePool = async () => {
     const button = byId('preparePool');
     button.disabled = true;
-    notice('KI-Skins werden seriell vor dem Stream vorbereitet …');
+    notice(text('poolPreparing', 'KI-Skins werden seriell vor dem Stream vorbereitet …'));
     try {
       const targetPerVariant = Number(byId('poolTarget').value);
       const result = await request('/api/streammonsters/pool/prepare', {
@@ -471,47 +569,227 @@
       });
       renderPool(result.coverage || []);
       notice((result.coverage || []).length
-        ? 'Art-Pool ist vorbereitet. Live wird keine Bild-KI gestartet.'
-        : 'Aktiviere zuerst mindestens ein Spawn-Gift; erst dann werden KI-Jobs erstellt.',
+        ? text('poolPrepared', 'Art-Pool ist vorbereitet. Live wird keine Bild-KI gestartet.')
+        : text('poolNeedsGift', 'Aktiviere zuerst mindestens ein Spawn-Gift; erst dann werden KI-Jobs erstellt.'),
       (result.coverage || []).length ? 'success' : 'error');
     } catch (error) {
-      notice(`${error.message} · Kenney bleibt als sofortiger Fallback aktiv.`, 'error');
+      notice(text('poolFailed', '{error} · Kenney bleibt als sofortiger Fallback aktiv.', { error:error.message }), 'error');
     } finally {
       button.disabled = false;
     }
   };
-  const checkLocalRuntime = async () => {
-    try {
-      const payload = await request('/api/streammonsters/local-runtime/status');
-      const recommendation = payload.recommendation || {};
-      const status = byId('localRuntimeStatus');
-      if (!status) return;
-      status.textContent = recommendation.supported
-        ? `Lokale KI kompatibel · ${recommendation.width || '?'}×${recommendation.height || '?'} · ${recommendation.steps || '?'} Schritte`
-        : (recommendation.reason || 'Remote-Provider oder bestehendes ComfyUI verwenden.');
-    } catch (error) {
-      const status = byId('localRuntimeStatus');
-      if (status) status.textContent = `Providercheck nicht verfügbar: ${error.message}`;
+  const runtimeRecoveryText = ({ recommendation = {}, disk = {}, installation = {}, job = null } = {}) => {
+    if (job?.state === 'failed') {
+      return text('runtimeRetry', 'Fehler {error}. Installation erneut starten; eine zuvor verifizierte Runtime bleibt erhalten.', {
+        error:job.error || text('unknownError', 'unbekannt')
+      });
     }
+    if (job?.state === 'cancelled') return text('runtimeResume', 'Abgebrochen. Installation erneut starten; verifizierte Teildownloads werden fortgesetzt.');
+    if (disk?.sufficient === false) {
+      return text('runtimeFreeDisk', '{required} freigeben und die Prüfung wiederholen.', {
+        required:formatBytes(disk.requiredBytes)
+      });
+    }
+    if (!recommendation.supported) {
+      return recommendation.reason || text('runtimeRemote', 'Offiziellen Grafiktreiber aktualisieren oder externes ComfyUI beziehungsweise einen Remote-Provider verwenden.');
+    }
+    if (installation?.verified) return text('runtimePreparePool', 'Backend verifizieren und danach den Pre-Stream-Pool vorbereiten.');
+    return text('runtimeInstallNext', 'Lizenz akzeptieren und die empfohlene Runtime installieren.');
+  };
+  const renderRuntimeStatus = payload => {
+    runtimePayload = payload;
+    const recommendation = payload.recommendation || {};
+    const details = payload.runtimeDetails || {};
+    const adapters = payload.adapters || [];
+    const selectedAdapterId = payload.selectedAdapterId || adapters[0]?.id || '';
+    const adapterSelect = byId('runtimeAdapters');
+    adapterSelect.replaceChildren();
+    adapters.forEach(adapter => {
+      const option = document.createElement('option');
+      option.value = adapter.id;
+      option.textContent = text('runtimeAdapter', '{name} · {vram} GB', {
+        name: adapter.name || adapter.id,
+        vram: Math.round((Number(adapter.vramMb) || 0) / 1024)
+      });
+      option.selected = adapter.id === selectedAdapterId;
+      adapterSelect.append(option);
+    });
+    if (!adapters.length) {
+      const option = document.createElement('option');
+      option.textContent = text('noAdapters', 'Kein sicher zugeordneter Grafikadapter erkannt');
+      adapterSelect.append(option);
+    }
+
+    const profile = (payload.profiles || []).find(item => item.id === details.profileId || item.id === recommendation.profileId);
+    const statusLabel = recommendation.experimental
+      ? text('experimental', 'Experimenteller Runtime-Pfad')
+      : text('officialBeta', 'Offizieller Runtime-Pfad · Beta');
+    byId('runtimeRecommendation').textContent = `${statusLabel} · ${recommendation.reason || recommendation.mode || '—'}`;
+    byId('runtimeProfile').textContent = profile?.label || details.profileId || recommendation.profileId || '—';
+    byId('runtimeBackend').textContent = details.backend || profile?.backend || '—';
+    byId('runtimeDevice').textContent = details.device || adapters.find(item => item.id === selectedAdapterId)?.name || '—';
+    byId('runtimeDriver').textContent = details.driverVersion || text('unknown', 'unbekannt');
+    byId('runtimeVram').textContent = details.vramMb ? formatBytes(details.vramMb * 1024 * 1024) : text('unknown', 'unbekannt');
+    const disk = payload.disk || {};
+    byId('runtimeDisk').textContent = disk.freeBytes
+      ? text('diskAvailable', '{free} frei · {required} benötigt', {
+        free:formatBytes(disk.freeBytes),
+        required:formatBytes(disk.requiredBytes)
+      })
+      : (disk.freeGb ? `${disk.freeGb} GB` : text('unknown', 'unbekannt'));
+    byId('runtimeLicense').textContent = `${payload.model?.license || '—'} · ${payload.model?.verified ? text('verified', 'verifiziert') : text('checksumPending', 'Prüfsumme vor Installation')}`;
+    const install = payload.installDetails || {};
+    byId('runtimeDownload').textContent = text('runtimeSizes', '{download} Download + {model} Modell · {installed} installiert', {
+      download:formatBytes(install.runtimeDownloadBytes),
+      model:formatBytes(install.modelDownloadBytes),
+      installed:formatBytes(install.runtimeInstalledBytes)
+    });
+    const smoke = payload.smokeTest;
+    byId('runtimeSmokeTest').textContent = details.verifiedOnDevice
+      ? text('smokeVerified', 'Auf diesem Gerät verifiziert · {width}×{height}', { width:smoke?.width || 256, height:smoke?.height || 256 })
+      : (smoke?.state
+        ? text('smokeRecorded', 'Letztes Ergebnis: {state} · keine Hardware-Behauptung für die aktuelle Auswahl', { state:smoke.state })
+        : text('smokePending', 'Ausstehend · keine Verifizierung auf diesem Gerät'));
+    byId('runtimeRecovery').textContent = runtimeRecoveryText(payload);
+    byId('localRuntimeStatus').textContent = recommendation.supported
+      ? text('runtimeCompatible', 'Lokale KI kompatibel · {width}×{height} · {steps} Schritte', {
+        width:recommendation.width || '?',
+        height:recommendation.height || '?',
+        steps:recommendation.steps || '?'
+      })
+      : runtimeRecoveryText(payload);
+  };
+  const checkLocalRuntime = async (adapterId = '') => {
+    try {
+      const query = adapterId ? `?adapterId=${encodeURIComponent(adapterId)}` : '';
+      const payload = await request(`/api/streammonsters/local-runtime/status${query}`);
+      renderRuntimeStatus(payload);
+    } catch (error) {
+      byId('localRuntimeStatus').textContent = text('providerUnavailable', 'Providercheck nicht verfügbar: {error}', { error:error.message });
+      byId('runtimeRecovery').textContent = text('runtimeStatusRetry', 'Status erneut laden. Wenn das fehlschlägt, externes ComfyUI oder einen Remote-Provider verwenden.');
+    }
+  };
+  const renderRuntimeJob = job => {
+    const progress = job.progress || {};
+    const completed = Math.max(0, Number(progress.completedBytes) || 0);
+    const total = Math.max(0, Number(progress.totalBytes) || 0);
+    const percent = total ? Math.min(100, Math.round((completed / total) * 100)) : (job.state === 'ready' ? 100 : 0);
+    byId('runtimeProgress').value = percent;
+    byId('runtimeProgressText').textContent = text('runtimeJobProgress', '{state} · {phase} · {percent}%', {
+      state:job.state,
+      phase:progress.phase || job.state,
+      percent
+    });
+    byId('runtimeRecovery').textContent = runtimeRecoveryText({ ...(runtimePayload || {}), job });
+  };
+  const pollRuntimeJob = async jobId => {
+    clearTimeout(runtimeJobTimer);
+    try {
+      const job = await request(`/api/streammonsters/local-runtime/install/${encodeURIComponent(jobId)}`);
+      renderRuntimeJob(job);
+      if (['ready','failed','cancelled'].includes(job.state)) {
+        localStorage.removeItem('streammonsters-runtime-job-id');
+        if (job.state === 'ready') await checkLocalRuntime(byId('runtimeAdapters').value);
+        return;
+      }
+      runtimeJobTimer = setTimeout(() => pollRuntimeJob(jobId), 900);
+    } catch (error) {
+      byId('runtimeRecovery').textContent = text('runtimeJobLost', 'Installationsstatus nicht erreichbar: {error}. Mit „Fortschritt fortsetzen“ erneut prüfen.', { error:error.message });
+    }
+  };
+  const installRuntime = async () => {
+    if (!byId('runtimeLicenseAccepted').checked) {
+      notice(text('licenseRequired', 'Die Modell-Lizenz muss vor der Installation akzeptiert werden.'), 'error');
+      return;
+    }
+    const adapterId = byId('runtimeAdapters').value;
+    const profileId = runtimePayload?.recommendation?.profileId;
+    const accepted = await request('/api/streammonsters/local-runtime/install', {
+      method:'POST',
+      headers:jsonHeaders,
+      body:JSON.stringify({ adapterId, profileId, acceptModelLicense:true })
+    });
+    localStorage.setItem('streammonsters-runtime-job-id', accepted.jobId);
+    renderRuntimeJob({ ...accepted, progress:{ phase:'queued' } });
+    await pollRuntimeJob(accepted.jobId);
+  };
+  const cancelRuntimeInstall = async () => {
+    const jobId = localStorage.getItem('streammonsters-runtime-job-id');
+    if (!jobId) return;
+    const job = await request(`/api/streammonsters/local-runtime/install/${encodeURIComponent(jobId)}`, { method:'DELETE' });
+    localStorage.removeItem('streammonsters-runtime-job-id');
+    renderRuntimeJob(job);
+  };
+  const resumeRuntimeInstall = async () => {
+    const jobId = localStorage.getItem('streammonsters-runtime-job-id');
+    if (jobId) {
+      await pollRuntimeJob(jobId);
+      return;
+    }
+    await checkLocalRuntime(byId('runtimeAdapters').value);
+  };
+  const verifyRuntime = async () => {
+    const adapterId = byId('runtimeAdapters').value;
+    const result = await request('/api/streammonsters/local-runtime/verify', {
+      method:'POST',
+      headers:jsonHeaders,
+      body:JSON.stringify({ adapterId })
+    });
+    byId('runtimeSmokeTest').textContent = text('smokeResult', '{state} · {width}×{height}', {
+      state:result.smokeTest?.state || text('unknown', 'unbekannt'),
+      width:result.smokeTest?.width || 256,
+      height:result.smokeTest?.height || 256
+    });
+    await checkLocalRuntime(adapterId);
   };
   const loadProviderStatus = async () => {
     try {
       const payload = await request('/api/streamalchemy/providers/status');
       const known = new Set(['localComfy','siliconflow','openai','lightx']);
+      const readyProviders = [];
       (payload.providers || []).forEach(provider => {
         if (!known.has(provider.provider)) return;
         const target = byId(`provider-${provider.provider}`);
         if (!target) return;
         target.textContent = provider.state === 'ready'
-          ? `bereit${provider.model ? ` · ${provider.model}` : ''}`
-          : (provider.detail || provider.state || 'nicht konfiguriert');
+          ? text('providerReady', 'bereit{model}', { model:provider.model ? ` · ${provider.model}` : '' })
+          : (provider.detail || provider.state || text('notConfigured', 'nicht konfiguriert'));
+        if (provider.state === 'ready') readyProviders.push(provider.provider);
       });
+      byId('providerFallback').textContent = [...readyProviders, 'Kenney'].join(' → ');
     } catch (error) {
       ['localComfy','siliconflow','openai','lightx'].forEach(providerId => {
         const target = byId(`provider-${providerId}`);
-        if (target) target.textContent = 'Status nicht verfügbar';
+        if (target) target.textContent = text('statusUnavailable', 'Status nicht verfügbar');
       });
+      byId('providerFallback').textContent = text('kenneyOnly', 'Kenney · lokaler Sofort-Fallback');
     }
+  };
+  const configureOverlayAudio = () => {
+    const muted = localStorage.getItem('streammonsters-overlay-muted') === 'true';
+    const storedVolume = localStorage.getItem('streammonsters-overlay-volume');
+    const volume = Math.max(0, Math.min(100, storedVolume === null ? 70 : Number(storedVolume)));
+    byId('overlayMuted').checked = muted;
+    byId('overlayVolume').value = String(volume);
+    byId('overlayMuted').addEventListener('change', event => {
+      localStorage.setItem('streammonsters-overlay-muted', String(event.target.checked));
+    });
+    byId('overlayVolume').addEventListener('input', event => {
+      localStorage.setItem('streammonsters-overlay-volume', String(event.target.value));
+    });
+  };
+  const applyDynamicRules = state => {
+    const prefix = state.gcce?.commandPrefix || '!';
+    const hatchDurationMs = state.config?.hatchDurationMs || 0;
+    const duration = formatDuration(hatchDurationMs);
+    byId('activePrefix').textContent = prefix;
+    byId('activeHatchDuration').textContent = duration;
+    byId('dynamicRules').textContent = text('rulesDynamic', '{duration} Brutzeit · aktives Präfix {prefix} · Charged nur kosmetisch · 28 feste Startpunkte · 3 reproduzierbare Kampfrunden.', { duration, prefix });
+    document.querySelectorAll('[data-command]').forEach(command => {
+      const name = command.dataset.command;
+      const suffix = ['hatch','monster'].includes(name) ? ' [slot]' : (name === 'choose' ? ' <slot>' : '');
+      command.textContent = `${prefix}${name}${suffix}`;
+    });
   };
   const init = async () => {
     try {
@@ -525,15 +803,20 @@
       byId('overlayUrl').textContent = `${location.origin}/streammonsters/overlay`;
       byId('hypeMetric').textContent = `${state.hype?.points || 0}%`;
       renderPool(state.pool || []);
+      applyDynamicRules(state);
       const metrics = state.metrics;
-      if (metrics) byId('creatorMetrics').textContent = `${metrics.eggs_spawned || 0} Eier · ${metrics.hatches || 0} Hatches · ${metrics.duels || 0} Duelle`;
+      if (metrics) byId('creatorMetrics').textContent = text('metrics', '{eggs} Eier · {hatches} Hatches · {duels} Duelle', {
+        eggs:metrics.eggs_spawned || 0,
+        hatches:metrics.hatches || 0,
+        duels:metrics.duels || 0
+      });
       const readiness = [Boolean(byId('creatorName').value), mappings.length > 0, true, Boolean(byId('overlayUrl').textContent)].filter(Boolean).length;
       byId('readinessScore').textContent = `${readiness}/4`;
       const end = state.season?.ends_at_ms;
-      if (end) byId('seasonCountdown').textContent = `Endet ${new Date(end).toLocaleDateString()}`;
-      notice('Collector Arena bereit. Gifts auswählen, Pool prüfen, Demo starten.', 'success');
+      if (end) byId('seasonCountdown').textContent = text('seasonEnds', 'Endet {date}', { date:new Date(end).toLocaleDateString() });
+      notice(text('arenaReady', 'Collector Arena bereit. Gifts auswählen, Pool prüfen, Demo starten.'), 'success');
     } catch (error) {
-      notice(`Setup konnte nicht geladen werden: ${error.message}`, 'error');
+      notice(text('setupFailed', 'Setup konnte nicht geladen werden: {error}', { error:error.message }), 'error');
     }
   };
 
@@ -541,11 +824,16 @@
   byId('saveGiftMapping').addEventListener('click', () => saveGiftMapping().catch(error => notice(error.message, 'error')));
   byId('preparePool').addEventListener('click', preparePool);
   byId('loadViewer').addEventListener('click', () => loadViewer().catch(error => notice(error.message, 'error')));
-  byId('openLocalSetup').addEventListener('click', checkLocalRuntime);
+  byId('openLocalSetup').addEventListener('click', () => checkLocalRuntime(byId('runtimeAdapters').value));
+  byId('runtimeAdapters').addEventListener('change', event => checkLocalRuntime(event.target.value));
+  byId('runtimeInstall').addEventListener('click', () => installRuntime().catch(error => notice(error.message, 'error')));
+  byId('runtimeCancel').addEventListener('click', () => cancelRuntimeInstall().catch(error => notice(error.message, 'error')));
+  byId('runtimeResume').addEventListener('click', () => resumeRuntimeInstall().catch(error => notice(error.message, 'error')));
+  byId('runtimeVerify').addEventListener('click', () => verifyRuntime().catch(error => notice(error.message, 'error')));
   byId('runDemo').addEventListener('click', async () => {
     try {
       await request('/api/streammonsters/demo', { method:'POST' });
-      notice('Vollständiger Spawn-, Hatch-, Kenney-, Liga- und Duell-Demoablauf gesendet.', 'success');
+      notice(text('demoSent', 'Vollständiger Spawn-, Hatch-, Kenney-, Liga- und Duell-Demoablauf gesendet.'), 'success');
     } catch (error) {
       notice(error.message, 'error');
     }
@@ -561,6 +849,20 @@
   loadLeaderboard().catch(() => {});
   loadProviderStatus();
   checkLocalRuntime();
+  configureOverlayAudio();
+  const savedRuntimeJobId = localStorage.getItem('streammonsters-runtime-job-id');
+  if (savedRuntimeJobId) pollRuntimeJob(savedRuntimeJobId);
+  if (window.i18n?.onLanguageChange) {
+    window.i18n.onLanguageChange(() => {
+      Promise.allSettled([
+        init(),
+        loadCatalog(byId('giftSearch').value),
+        loadLeaderboard(),
+        loadProviderStatus(),
+        checkLocalRuntime(byId('runtimeAdapters').value)
+      ]);
+    });
+  }
   init();
 })();
 </script>

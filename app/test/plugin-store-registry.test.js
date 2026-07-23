@@ -77,6 +77,36 @@ async function readZipEntry(zipPath, entryName) {
   });
 }
 
+async function readAllZipFiles(zipPath) {
+  const zipFile = await openZip(zipPath);
+  const files = new Map();
+
+  return new Promise((resolve, reject) => {
+    zipFile.readEntry();
+    zipFile.on('entry', (entry) => {
+      if (entry.fileName.endsWith('/')) {
+        zipFile.readEntry();
+        return;
+      }
+      zipFile.openReadStream(entry, (streamError, stream) => {
+        if (streamError) {
+          reject(streamError);
+          return;
+        }
+        const chunks = [];
+        stream.on('data', (chunk) => chunks.push(chunk));
+        stream.on('error', reject);
+        stream.on('end', () => {
+          files.set(entry.fileName, Buffer.concat(chunks));
+          zipFile.readEntry();
+        });
+      });
+    });
+    zipFile.on('end', () => resolve(files));
+    zipFile.on('error', reject);
+  });
+}
+
 function listSourceFiles(rootDir, relativeDir = '') {
   return fs.readdirSync(path.join(rootDir, relativeDir), { withFileTypes: true }).flatMap((entry) => {
     const relativePath = path.posix.join(relativeDir.replace(/\\/g, '/'), entry.name);
@@ -95,13 +125,24 @@ async function assertPackagedFilesMatchSource(packagePath, sourceDir, relativeFi
 }
 
 async function assertPackagedFilesMatchGitSource(packagePath, sourcePrefix, relativeFiles) {
+  const packagedFiles = await readAllZipFiles(packagePath);
+  const specs = relativeFiles.map(relativeFile => `:${path.posix.join(sourcePrefix, relativeFile)}`);
+  const batch = childProcess.execFileSync('git', ['cat-file', '--batch'], {
+    cwd: repoRoot,
+    input: `${specs.join('\n')}\n`,
+    maxBuffer: 64 * 1024 * 1024
+  });
+  let offset = 0;
+
   for (const relativeFile of relativeFiles) {
-    const source = childProcess.execFileSync('git', [
-      'show',
-      `:${path.posix.join(sourcePrefix, relativeFile)}`
-    ], { cwd: repoRoot, maxBuffer: 20 * 1024 * 1024 });
+    const headerEnd = batch.indexOf(10, offset);
+    const header = batch.subarray(offset, headerEnd).toString('utf8');
+    const size = Number(header.split(' ').at(-1));
+    const sourceStart = headerEnd + 1;
+    const source = batch.subarray(sourceStart, sourceStart + size);
+    offset = sourceStart + size + 1;
     assert.deepStrictEqual(
-      await readZipEntry(packagePath, relativeFile),
+      packagedFiles.get(relativeFile),
       source,
       `${relativeFile} must match the staged release source byte-for-byte`
     );
@@ -140,7 +181,7 @@ describe('Official plugin store registry', () => {
     await assertPackagedFilesMatchSource(packagePath, sourceDir, ['main.js', 'overlay.html', 'ui.html']);
   });
 
-  it('publishes Stream Monsters 1.2.0 with source-identical Collector Arena assets and keeps 1.1.2', async () => {
+  it('publishes Stream Monsters 1.3.0 with source-identical Collector Arena assets and keeps 1.2.0', async () => {
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
     const storePlugin = registry.plugins.find((plugin) => plugin.id === 'streamalchemy');
     const sourceDir = path.join(repoRoot, 'app', 'plugins', 'streamalchemy');
@@ -148,14 +189,14 @@ describe('Official plugin store registry', () => {
 
     assert(storePlugin, 'Stream Monsters must exist in the official store registry');
     assert.strictEqual(sourceManifest.id, 'streamalchemy');
-    assert.strictEqual(sourceManifest.version, '1.2.0');
+    assert.strictEqual(sourceManifest.version, '1.3.0');
     assert.strictEqual(storePlugin.version, sourceManifest.version);
-    assert.strictEqual(storePlugin.packageUrl, 'https://ltth.app/plugin-store/packages/streamalchemy-1.2.0.zip');
+    assert.strictEqual(storePlugin.packageUrl, 'https://ltth.app/plugin-store/packages/streamalchemy-1.3.0.zip');
     assert.strictEqual(storePlugin.channel, 'open-beta');
     assert(storePlugin.badges.includes('working-beta'));
-    assert(fs.existsSync(path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.1.2.zip')));
+    assert(fs.existsSync(path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.2.0.zip')));
 
-    const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.2.0.zip');
+    const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.3.0.zip');
     const digest = crypto.createHash('sha256').update(fs.readFileSync(packagePath)).digest('hex');
     assert.strictEqual(storePlugin.sha256, digest);
 
@@ -164,18 +205,11 @@ describe('Official plugin store registry', () => {
     assert.strictEqual(JSON.stringify(entries.filter((entry) => !entry.endsWith('/')).sort()), JSON.stringify(sourceFiles));
     const packagedManifest = JSON.parse((await readZipEntry(packagePath, 'plugin.json')).toString('utf8'));
     assert.deepStrictEqual(packagedManifest, sourceManifest);
-    await assertPackagedFilesMatchGitSource(packagePath, 'app/plugins/streamalchemy', [
-      'index.js',
-      'assets/branding/stream-monsters-icon.png',
-      'assets/branding/stream-monsters-logo.png',
-      'assets/eggs/ember-standard.png',
-      'assets/kenney-monster-builder/License.txt',
-      'backend/routes.js',
-      'backend/streammonsters/art-pool-service.js',
-      'backend/streammonsters/kenney-monster-builder.js',
-      'backend/streammonsters/routes.js',
-      'backend/streammonsters/managed-runtime-installer.js'
-    ]);
+    await assertPackagedFilesMatchGitSource(
+      packagePath,
+      'app/plugins/streamalchemy',
+      sourceFiles
+    );
   });
 
   it('publishes the Schnorrbecher package with a matching manifest and checksum', async () => {

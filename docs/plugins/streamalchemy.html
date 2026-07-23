@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Stream Monsters 1.2 Collector Arena: faire Element-Eier, permanente Monster, Quests, Ligen und reproduzierbare Duelle für TikTok LIVE.">
+  <meta name="description" content="Stream Monsters 1.3 Collector Arena: geführtes Art Lab, faire Element-Eier, permanente Monster, Quests, Ligen und reproduzierbare Duelle für TikTok LIVE.">
   <title>Stream Monsters – LTTH Docs</title>
   <link rel="canonical" href="https://ltth.app/docs/plugins/streamalchemy.html">
   <meta property="og:type" content="article">
@@ -23,9 +23,9 @@
     </nav>
     <header class="plugin-doc-hero">
       <p class="plugin-doc-hero__eyebrow">Working / Open Beta</p>
-      <h1>Stream Monsters 1.2 – Collector Arena</h1>
+      <h1>Stream Monsters 1.3 – Collector Arena</h1>
       <p>Ausgewählte TikTok-Geschenke werden zu Element-Eiern, permanenten Monstern, Quests, Achievements und transparenten Drei-Runden-Duellen.</p>
-      <dl class="plugin-doc-meta"><div><dt>Status</dt><dd>Working / Open Beta</dd></div><div><dt>Version</dt><dd>1.2.0</dd></div></dl>
+      <dl class="plugin-doc-meta"><div><dt>Status</dt><dd>Working / Open Beta</dd></div><div><dt>Version</dt><dd>1.3.0</dd></div></dl>
     </header>
 
     <section class="plugin-doc-section plugin-doc-first-result">
@@ -33,7 +33,8 @@
       <ol>
         <li>Öffne <code>/streammonsters/ui</code> und wähle im vollständigen Katalog die Gifts aus, die Stream Monsters verwenden darf.</li>
         <li>Ordne Spawn-Gifts einem Element zu und aktiviere optionale Boost-Gifts.</li>
-        <li>Bereite im Art Lab optional KI-Skins vor. Ohne freien Skin baut der gebündelte CC0-Kenney-Builder sofort ein Monster.</li>
+        <li>Wähle im geführten Art Lab einen erkannten Grafikadapter. Prüfe Empfehlung, Beta-/Experimentalstatus, Speicherbedarf, Modelllizenz und offiziellen Treiberlink.</li>
+        <li>Installiere oder setze einen Download fort, verifiziere das Backend mit dem 256×256-Smoke-Test und bereite anschließend KI-Skins vor. Ohne freien Skin baut der gebündelte CC0-Kenney-Builder sofort ein Monster.</li>
         <li>Füge <code>/streammonsters/overlay</code> als OBS-Browserquelle hinzu und starte den vollständigen Demoablauf.</li>
       </ol>
     </section>
@@ -62,7 +63,8 @@
 
     <section class="plugin-doc-section plugin-doc-obs">
       <h2>Overlay und OBS</h2>
-      <p>Die responsive Browserquelle unterstützt 16:9 und 9:16. Eine interne Queue serialisiert Spawn, Hype, Ready, Hatch, Evolution, Kampf, Quest und Liga-Animationen.</p>
+      <p>Die responsive Browserquelle unterstützt 16:9 und 9:16. Nach einem Reconnect wird zuerst ein Zustands-Snapshot geladen. Battle/Hatch bleiben kritisch, Hype/Chat werden zusammengefasst und veraltete unkritische Karten verworfen. Starter, Haltungen, Hype-Meilensteine, Elemental Hour, Siegesserien, Überraschungen, Rivalitäten und Rangkarten sind sichtbar.</p>
+      <p>Spawn, Ready, Hatch, Hit und Win verwenden kurze lokal erzeugte Web-Audio-Signale mit Mute- und Lautstärkeregler. Es werden keine Drittanbieter-Sounddateien ausgeliefert: Im Snapshot gibt es keine verifizierte Kenney-CC0-Audioquelle; die vorhandene Kenney-Lizenz deckt nur Grafiken ab.</p>
       <code>/streammonsters/overlay</code>
     </section>
 

@@ -296,10 +296,29 @@ class StreamMonstersRoutes {
         comfyUrl: this.configProvider.getConfig().localGeneration?.comfyUrl,
         comfyRootDir: this.configProvider.getConfig().localGeneration?.comfyRootDir
       });
-      const recommendation = this.managedRuntime.recommend(analysis.gpu);
+      const adapters = analysis.adapters || (analysis.gpu?.id ? [analysis.gpu] : []);
+      const requestedAdapter = String(req.query?.adapterId || '').trim();
+      const installedAdapter = adapters.find(
+        adapter => adapter.id === this.managedRuntime.installation?.adapterId
+      );
+      const selectedAdapter = adapters.find(adapter => adapter.id === requestedAdapter) ||
+        installedAdapter ||
+        analysis.gpu ||
+        adapters[0] ||
+        null;
+      const recommendation = this.managedRuntime.recommend(selectedAdapter || {});
       const catalog = this.managedRuntime.getCatalog?.() || { profiles: [], model: null };
       const profiles = this.managedRuntime.getPublicProfiles?.() || [];
       const processState = this.managedRuntime.getProcessState?.();
+      const installationMatchesAdapter = Boolean(
+        this.managedRuntime.installation?.adapterId &&
+        this.managedRuntime.installation.adapterId === selectedAdapter?.id
+      );
+      const activeProfileId = installationMatchesAdapter
+        ? this.managedRuntime.installation.profileId
+        : recommendation.profileId;
+      const activeProfile = profiles.find(profile => profile.id === activeProfileId) || null;
+      const smokeTest = this.managedRuntime.lastSmokeTest || this.managedRuntime.installation?.smokeTest || null;
       let disk = analysis.disk || null;
       try {
         if (this.managedRuntime.getDiskStatus) {
@@ -319,15 +338,30 @@ class StreamMonstersRoutes {
             this.managedRuntime.installation?.profileId || recommendation.profileId
           )
           : this.publicInstallDetails(manifest),
-        adapters: analysis.adapters || (analysis.gpu?.id ? [analysis.gpu] : []),
-        selectedAdapterId: this.managedRuntime.installation?.adapterId || analysis.gpu?.id || null,
+        adapters,
+        selectedAdapterId: selectedAdapter?.id || null,
         profiles,
         installation: this.publicInstallation(this.managedRuntime.installation),
         model: this.publicModel({
           ...catalog.model,
           ...(this.managedRuntime.installation?.model || {})
         }),
-        smokeTest: this.managedRuntime.lastSmokeTest || this.managedRuntime.installation?.smokeTest || null,
+        smokeTest,
+        runtimeDetails: {
+          profileId: activeProfileId || null,
+          backend: activeProfile?.backend || null,
+          adapterId: selectedAdapter?.id || null,
+          device: selectedAdapter?.name || null,
+          driverVersion: selectedAdapter?.driverVersion || null,
+          vramMb: Math.max(0, Number(selectedAdapter?.vramMb) || 0),
+          verifiedOnDevice: Boolean(
+            installationMatchesAdapter &&
+            this.managedRuntime.installation?.verified &&
+            smokeTest?.state === 'passed' &&
+            smokeTest?.width === 256 &&
+            smokeTest?.height === 256
+          )
+        },
         disk
       });
     });

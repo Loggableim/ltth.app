@@ -57,12 +57,21 @@ function createSubject({ storedManifest = null, artPool = null } = {}) {
       height: 768,
       steps: 4
     })),
-    getPublicProfiles: jest.fn(() => [{ id: 'nvidia-standard', label: 'NVIDIA RTX 20+', backend: 'cuda' }]),
+    getPublicProfiles: jest.fn(() => [
+      { id: 'nvidia-standard', label: 'NVIDIA RTX 20+', backend: 'cuda' },
+      { id: 'amd-experimental', label: 'AMD Radeon (experimental)', backend: 'rocm', experimental: true }
+    ]),
     getCatalog: jest.fn(() => ({
       profiles: [{
         id: 'nvidia-standard',
         downloadSizeBytes: 2092156323,
         installedSizeBytes: 8368625292
+      }, {
+        id: 'amd-experimental',
+        downloadSizeBytes: 1762815561,
+        installedSizeBytes: 7051262244,
+        experimental: true,
+        backend: 'rocm'
       }],
       model: {
         id: 'sdxl_lightning_4step',
@@ -101,7 +110,10 @@ function createSubject({ storedManifest = null, artPool = null } = {}) {
     systemAnalyzer: {
       analyze: jest.fn(async () => ({
         gpu: { id: 'gpu-1', name: 'NVIDIA GeForce RTX 4060', vendor: 'nvidia', vramMb: 8192 },
-        adapters: [{ id: 'gpu-1', name: 'NVIDIA GeForce RTX 4060', vendor: 'nvidia', vramMb: 8192 }],
+        adapters: [
+          { id: 'gpu-1', name: 'NVIDIA GeForce RTX 4060', vendor: 'nvidia', vramMb: 8192 },
+          { id: 'gpu-2', name: 'AMD Radeon RX 7900 XTX', vendor: 'amd', vramMb: 24576, driverVersion: '31.0.1' }
+        ],
         disk: { targetRoot: 'C:\\LTTH', freeGb: 50 }
       }))
     },
@@ -265,6 +277,60 @@ describe('Stream Monsters privileged routes', () => {
     expect(managedRuntime.startManagedRuntime).toHaveBeenCalled();
     expect(managedRuntime.stopManagedRuntime).toHaveBeenCalled();
     expect(managedRuntime.verifyManagedRuntime).toHaveBeenCalled();
+  });
+
+  test('recomputes the public recommendation for the adapter selected by the wizard', async () => {
+    const { findRoute, managedRuntime } = createSubject();
+    managedRuntime.recommend.mockImplementation(adapter => ({
+      supported: true,
+      profileId: adapter.id === 'gpu-2' ? 'amd-experimental' : 'nvidia-standard',
+      experimental: adapter.id === 'gpu-2'
+    }));
+    const response = createResponse();
+
+    await findRoute('GET', '/api/streammonsters/local-runtime/status').handler({
+      query: { adapterId: 'gpu-2' }
+    }, response);
+
+    expect(managedRuntime.recommend).toHaveBeenCalledWith(expect.objectContaining({ id: 'gpu-2' }));
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
+      selectedAdapterId: 'gpu-2',
+      recommendation: expect.objectContaining({
+        profileId: 'amd-experimental',
+        experimental: true
+      }),
+      runtimeDetails: expect.objectContaining({
+        profileId: 'amd-experimental',
+        backend: 'rocm',
+        adapterId: 'gpu-2',
+        device: 'AMD Radeon RX 7900 XTX',
+        driverVersion: '31.0.1',
+        vramMb: 24576,
+        verifiedOnDevice: false
+      })
+    }));
+  });
+
+  test('defaults runtime status to the installed adapter and reports only matching smoke verification', async () => {
+    const { findRoute, managedRuntime } = createSubject();
+    managedRuntime.installation.adapterId = 'gpu-2';
+    managedRuntime.installation.profileId = 'amd-experimental';
+    const response = createResponse();
+
+    await findRoute('GET', '/api/streammonsters/local-runtime/status').handler({
+      query: {}
+    }, response);
+
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
+      selectedAdapterId: 'gpu-2',
+      runtimeDetails: expect.objectContaining({
+        profileId: 'amd-experimental',
+        backend: 'rocm',
+        adapterId: 'gpu-2',
+        device: 'AMD Radeon RX 7900 XTX',
+        verifiedOnDevice: true
+      })
+    }));
   });
 
   test('starts an installed managed runtime before pool preparation and emits progress/state events', async () => {

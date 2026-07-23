@@ -82,17 +82,17 @@
   <section id="card">
     <div id="art-wrap"><img id="art" alt=""></div>
     <div>
-      <div id="kicker">Stream Monsters</div>
-      <h1 id="title">Collector Arena</h1>
-      <div id="subtitle">Das nächste Monster wartet.</div>
+      <div id="kicker" data-i18n="plugins.streamalchemy.ui.monsters.overlayBrand">Stream Monsters</div>
+      <h1 id="title" data-i18n="plugins.streamalchemy.ui.monsters.overlayTitle">Collector Arena</h1>
+      <div id="subtitle" data-i18n="plugins.streamalchemy.ui.monsters.overlayWaiting">Das nächste Monster wartet.</div>
       <div id="progress"><div id="bar"></div></div>
-      <div id="hint">!eggs · !hatch [slot] · !battle</div>
+      <div id="hint" data-i18n="plugins.streamalchemy.ui.monsters.overlayCommands">!eggs · !hatch [slot] · !battle</div>
     </div>
   </section>
   <section id="battle">
-    <div id="battle-kicker">Collector Arena · Drei Runden</div>
-    <div id="versus"><span id="fighterA">Monster A</span><span class="vs">VS</span><span id="fighterB">Monster B</span></div>
-    <div id="battle-detail">Die Arena wird vorbereitet …</div>
+    <div id="battle-kicker" data-i18n="plugins.streamalchemy.ui.monsters.overlayBattleKicker">Collector Arena · Drei Runden</div>
+    <div id="versus"><span id="fighterA" data-i18n="plugins.streamalchemy.ui.monsters.monsterA">Monster A</span><span class="vs">VS</span><span id="fighterB" data-i18n="plugins.streamalchemy.ui.monsters.monsterB">Monster B</span></div>
+    <div id="battle-detail" data-i18n="plugins.streamalchemy.ui.monsters.battlePreparing">Die Arena wird vorbereitet …</div>
     <div id="round-dots"><span></span><span></span><span></span></div>
   </section>
   <div id="chat-card"></div>
@@ -100,46 +100,105 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/i18n-client.js"></script>
+<script src="/plugins/streamalchemy/streammonsters-overlay-runtime.js"></script>
 <script>
-(() => {
+(async () => {
+  await window.i18n?.init?.();
+  window.i18n?.updateDOM?.();
+
   const node = id => document.getElementById(id);
   const value = (input, fallback = '') => String(input ?? fallback);
-  const rankLabel = rank => ({ Silver:'Silber', Crystal:'Kristall' }[rank] || value(rank,'Neuer Rang'));
-  const itemName = item => value(item?.name || item?.gift_name || item?.giftName, 'Element-Ei');
+  const text = (key, fallback, params = {}) => {
+    const fullKey = `plugins.streamalchemy.ui.monsters.${key}`;
+    const translated = window.i18n?.t?.(fullKey, params);
+    if (translated && translated !== fullKey) return translated;
+    return fallback.replace(/\{(\w+)\}/g, (match, name) => name in params ? params[name] : match);
+  };
+  const rankLabel = rank => ({
+    Bronze: text('rankBronze', 'Bronze'),
+    Silver: text('rankSilver', 'Silber'),
+    Crystal: text('rankCrystal', 'Kristall')
+  }[rank] || value(rank, text('rankNew', 'Neuer Rang')));
+  const itemName = item => value(item?.name || item?.gift_name || item?.giftName, text('eggFallback', 'Element-Ei'));
+  const stanceName = stance => ({
+    power: text('stancePower', 'Kraft'),
+    guard: text('stanceGuard', 'Schutz'),
+    speed: text('stanceSpeed', 'Tempo')
+  }[String(stance || '').toLowerCase()] || value(stance, text('unknown', 'unbekannt')));
   const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
-  const eventQueue = [];
+  const eventQueue = window.StreamMonstersOverlayRuntime.createPriorityQueue({
+    maxSize: 30,
+    staleAfterMs: 15000
+  });
   const chatCooldowns = new Map();
   let queueRunning = false;
-  let battleNames = ['Monster A','Monster B'];
-  let battleIds = [null,null];
+  let snapshotReady = false;
+  let battleNames = [text('monsterA', 'Monster A'), text('monsterB', 'Monster B')];
+  let battleIds = [null, null];
   let battleAdvantageName = '';
 
-  const showToast = async (text, duration = 2600) => {
-    node('toast').textContent = text;
+  const readAudioSettings = () => ({
+    muted: localStorage.getItem('streammonsters-overlay-muted') === 'true',
+    volume: window.StreamMonstersOverlayRuntime.normalizeVolume(
+      localStorage.getItem('streammonsters-overlay-volume')
+    )
+  });
+  const playCue = cue => {
+    const settings = readAudioSettings();
+    if (settings.muted || !settings.volume) return;
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    try {
+      const context = new AudioContextClass();
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      const profile = {
+        spawn: [330, 0.12],
+        ready: [660, 0.16],
+        hatch: [880, 0.28],
+        hit: [180, 0.08],
+        win: [1046, 0.32]
+      }[cue] || [440, 0.1];
+      oscillator.type = cue === 'hit' ? 'square' : 'sine';
+      oscillator.frequency.value = profile[0];
+      gain.gain.setValueAtTime(settings.volume * 0.12, context.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + profile[1]);
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start();
+      oscillator.stop(context.currentTime + profile[1]);
+      oscillator.addEventListener('ended', () => context.close());
+    } catch (_) {}
+  };
+  const showToast = async (message, duration = 2600, cue = null) => {
+    if (cue) playCue(cue);
+    node('toast').textContent = message;
     node('toast').classList.add('visible');
     await wait(duration);
     node('toast').classList.remove('visible');
     await wait(250);
   };
-  const showCard = async ({ kicker, title, subtitle, imageUrl, progress = 0, charged = false, hint }) => {
+  const showCard = async ({ kicker, title, subtitle, imageUrl, progress = 0, charged = false, hint, cue = null }) => {
+    if (cue) playCue(cue);
     node('kicker').textContent = kicker;
     node('title').textContent = title;
     node('subtitle').textContent = subtitle;
     node('art').src = imageUrl || '/plugins/streamalchemy/assets/branding/stream-monsters-icon.png';
-    node('bar').style.width = `${Math.max(0,Math.min(100,progress))}%`;
-    node('hint').textContent = hint || '!eggs · !hatch [slot] · !battle';
+    node('bar').style.width = `${Math.max(0, Math.min(100, progress))}%`;
+    node('hint').textContent = hint || text('overlayCommands', '!eggs · !hatch [slot] · !battle');
     node('card').classList.toggle('charged', Boolean(charged));
     node('card').classList.add('visible');
     await wait(3900);
     node('card').classList.remove('visible');
     await wait(350);
   };
-  const showBattle = async ({ left, right, detail, round = 0, winner = false }) => {
-    battleNames = [left || battleNames[0],right || battleNames[1]];
+  const showBattle = async ({ left, right, detail, round = 0, winner = false, cue = null }) => {
+    if (cue) playCue(cue);
+    battleNames = [left || battleNames[0], right || battleNames[1]];
     node('fighterA').textContent = battleNames[0];
     node('fighterB').textContent = battleNames[1];
     node('battle-detail').textContent = detail;
-    [...node('round-dots').children].forEach((dot,index) => dot.classList.toggle('active',index < round));
+    [...node('round-dots').children].forEach((dot, index) => dot.classList.toggle('active', index < round));
     node('battle').classList.add('visible');
     await wait(winner ? 4300 : 2600);
     node('battle').classList.remove('visible');
@@ -147,8 +206,10 @@
   };
   const showHype = async data => {
     const points = Number(data?.hype?.points) || 0;
-    node('hype').style.setProperty('--hype',`${points}%`);
-    node('hype-value').textContent = data?.hype?.charged_eggs ? 'CHARGED!' : `${points}%`;
+    node('hype').style.setProperty('--hype', `${points}%`);
+    node('hype-value').textContent = data?.hype?.charged_eggs
+      ? text('charged', 'CHARGED!')
+      : `${points}%`;
     node('hype').classList.add('visible');
     await wait(2600);
     node('hype').classList.remove('visible');
@@ -165,53 +226,130 @@
     await wait(2800);
     node('chat-card').classList.remove('visible');
   };
+  const applySnapshot = data => {
+    const points = Number(data?.hype?.points) || 0;
+    const prefix = value(data?.gcce?.commandPrefix, '!');
+    const duration = Math.max(0, Number(data?.config?.hatchDurationMs) || 0);
+    const minutes = Math.round(duration / 60000);
+    node('hype').style.setProperty('--hype', `${points}%`);
+    node('hype-value').textContent = data?.hype?.charged_eggs
+      ? text('charged', 'CHARGED!')
+      : `${points}%`;
+    node('hint').textContent = text(
+      'snapshotRules',
+      '{prefix}eggs · {prefix}hatch [slot] · {minutes} min',
+      { prefix, minutes }
+    );
+  };
   const present = async ({ type, data }) => {
-    if (type === 'stream_started') return showToast(`${value(data?.event?.element,'Element')} Hour ist aktiv`);
+    if (type === 'state_snapshot') {
+      applySnapshot(data);
+      return;
+    }
+    if (type === 'stream_started' || type === 'elemental_hour') return showToast(text(
+      'elementalHourActive',
+      '{element} Hour ist aktiv',
+      { element: value(data?.event?.element || data?.element, 'Element') }
+    ));
     if (type === 'egg_spawned') return showCard({
-      kicker:`${value(data?.egg?.element,'Element')} · ${value(data?.egg?.variant,'standard')}`,
-      title:'Ein neues Ei!',
-      subtitle:`${value(data?.userId,'Viewer')} hat einen Brutplatz gefüllt.`,
+      kicker: text('eggKicker', '{element} · {variant}', {
+        element: value(data?.egg?.element, 'Element'),
+        variant: value(data?.egg?.variant, 'standard')
+      }),
+      title: text('newEgg', 'Ein neues Ei!'),
+      subtitle: text('eggSpawned', '{viewer} hat einen Brutplatz gefüllt.', {
+        viewer: value(data?.userId, 'Viewer')
+      }),
       imageUrl:data?.egg?.image_url,
       charged:data?.egg?.variant === 'charged',
-      hint:'!eggs zeigt den Timer',
-      progress:4
+      hint: text('eggsTimer', '!eggs zeigt den Timer'),
+      progress:4,
+      cue:'spawn'
     });
     if (type === 'egg_boosted') return showCard({
-      kicker:'Tempo-Boost',
-      title:'Das Ei leuchtet!',
-      subtitle:'Ein ausgewähltes Gift hat nur die Brutzeit verkürzt.',
+      kicker: text('speedBoost', 'Tempo-Boost'),
+      title: text('eggGlows', 'Das Ei leuchtet!'),
+      subtitle: text('boostFair', 'Ein ausgewähltes Gift hat nur die Brutzeit verkürzt.'),
       imageUrl:data?.egg?.image_url,
       progress:62
     });
-    if (type === 'gift_combo') return showToast(`Hype-Combo für ${value(data?.userId,'einen Viewer')} · +20`);
+    if (type === 'gift_combo') return showToast(text(
+      'hypeCombo',
+      'Hype-Combo für {viewer} · +20',
+      { viewer: value(data?.userId, text('viewerFallback', 'einen Viewer')) }
+    ));
     if (type === 'hype_changed') return showHype(data);
+    if (type === 'hype_milestone') return showCard({
+      kicker: text('hypeMilestone', 'Hype-Meilenstein'),
+      title: text('hypeMilestoneTitle', '{points}% Stream-Hype', {
+        points: Number(data?.hype?.points ?? data?.points) || 0
+      }),
+      subtitle: text('hypeMilestoneCopy', 'Die Collector Arena ist aufgeladen.'),
+      progress: Number(data?.hype?.points ?? data?.points) || 0,
+      charged: true,
+      cue: 'ready'
+    });
     if (type === 'egg_ready') return showCard({
-      kicker:'Bereit!',
-      title:`${value(data?.egg?.element,'Element')}-Ei kann schlüpfen`,
-      subtitle:`${value(data?.userId,'Viewer')}, dein Moment gehört dir.`,
+      kicker: text('ready', 'Bereit!'),
+      title: text('eggReadyTitle', '{element}-Ei kann schlüpfen', {
+        element: value(data?.egg?.element, 'Element')
+      }),
+      subtitle: text('hatchMoment', '{viewer}, dein Moment gehört dir.', {
+        viewer: value(data?.userId, 'Viewer')
+      }),
       imageUrl:data?.egg?.image_url,
       progress:100,
       charged:data?.egg?.variant === 'charged',
-      hint:'Jetzt !hatch [slot] schreiben'
+      hint: text('hatchNow', 'Jetzt !hatch [slot] schreiben'),
+      cue:'ready'
     });
-    if (type === 'hatch_started') return showToast(`${value(data?.userId,'Viewer')} öffnet ein ${value(data?.egg?.element,'Element')}-Ei …`,1800);
+    if (type === 'hatch_started') return showToast(text(
+      'hatchStarted',
+      '{viewer} öffnet ein {element}-Ei …',
+      {
+        viewer: value(data?.userId, 'Viewer'),
+        element: value(data?.egg?.element, 'Element')
+      }
+    ), 1800, 'hatch');
     if (type === 'egg_hatched') return showCard({
-      kicker:`${value(data?.monster?.element,data?.egg?.element)} · ${value(data?.monster?.personality,'Neugierig')}`,
-      title:`${itemName(data?.monster)} ist da!`,
-      subtitle:`28 faire Startpunkte · gehört ${value(data?.userId,'dem Viewer')} dauerhaft.`,
+      kicker: text('monsterKicker', '{element} · {personality}', {
+        element: value(data?.monster?.element, data?.egg?.element),
+        personality: value(data?.monster?.personality, text('curious', 'Neugierig'))
+      }),
+      title: text('hatchedTitle', '{name} ist da!', { name: itemName(data?.monster) }),
+      subtitle: text('hatchedCopy', '28 faire Startpunkte · gehört {viewer} dauerhaft.', {
+        viewer: value(data?.userId, text('viewerOwner', 'dem Viewer'))
+      }),
       imageUrl:data?.monster?.image_url || data?.egg?.image_url,
       charged:data?.egg?.variant === 'charged',
-      hint:'!monster [slot] zeigt die Karte',
-      progress:100
+      hint: text('monsterCardHint', '!monster [slot] zeigt die Karte'),
+      progress:100,
+      cue:'hatch'
+    });
+    if (type === 'starter_revealed') return showCard({
+      kicker: text('starter', 'Starter-Monster'),
+      title: itemName(data?.monster || data?.egg),
+      subtitle: text('starterCopy', 'Deine Collector-Reise beginnt.'),
+      imageUrl: data?.monster?.image_url || data?.egg?.image_url,
+      progress: 100,
+      cue: 'spawn'
     });
     if (type === 'monster_visual_evolved') return showCard({
-      kicker:'Kosmetische Evolution',
-      title:`${itemName(data?.monster)} strahlt neu`,
-      subtitle:'KI-Kunst ersetzt Kenney. Name, Werte und Besitz bleiben unverändert.',
+      kicker: text('evolution', 'Kosmetische Evolution'),
+      title: text('evolvedTitle', '{name} strahlt neu', { name: itemName(data?.monster) }),
+      subtitle: text('evolvedCopy', 'KI-Kunst ersetzt Kenney. Name, Werte und Besitz bleiben unverändert.'),
       imageUrl:data?.monster?.image_url,
       charged:true,
       progress:100
     });
+    if (type === 'stance_revealed') return showToast(text(
+      'stanceCard',
+      '{monster} kämpft in Haltung {stance}.',
+      {
+        monster: itemName(data?.monster),
+        stance: stanceName(data?.stance)
+      }
+    ));
     if (type === 'battle_started') return showBattle({
       left:itemName(data?.challenger),
       right:itemName(data?.defender),
@@ -220,10 +358,20 @@
         battleAdvantageName = data?.elementAdvantageMonsterId === battleIds[0]
           ? itemName(data?.challenger)
           : (data?.elementAdvantageMonsterId === battleIds[1] ? itemName(data?.defender) : '');
+        const stances = text('stancePair', '{left}: {stanceA} · {right}: {stanceB}', {
+          left: itemName(data?.challenger),
+          stanceA: stanceName(data?.stanceA),
+          right: itemName(data?.defender),
+          stanceB: stanceName(data?.stanceB)
+        });
         return battleAdvantageName
-          ? `${battleAdvantageName} hat Elementvorteil · Seed gespeichert`
-          : 'Kein Elementvorteil · Seed gespeichert';
-      })()
+          ? text('battleAdvantage', '{monster} hat Elementvorteil · {stances} · Seed gespeichert', {
+            monster: battleAdvantageName,
+            stances
+          })
+          : text('battleNoAdvantage', 'Kein Elementvorteil · {stances} · Seed gespeichert', { stances });
+      })(),
+      cue:'hit'
     });
     if (type === 'battle_round') {
       const round = Number(data?.round?.number) || 1;
@@ -231,7 +379,13 @@
         left:battleNames[0],
         right:battleNames[1],
         round,
-        detail:`Runde ${round} · ${data?.round?.firstDamage || 0} / ${data?.round?.secondDamage || 0} Schaden${battleAdvantageName ? ` · Vorteil ${battleAdvantageName}` : ''}`
+        detail: text('battleRound', 'Runde {round} · {first} / {second} Schaden{advantage}', {
+          round,
+          first: data?.round?.firstDamage || 0,
+          second: data?.round?.secondDamage || 0,
+          advantage: battleAdvantageName ? ` · Vorteil ${battleAdvantageName}` : ''
+        }),
+        cue:'hit'
       });
     }
     if (type === 'battle_completed') return showBattle({
@@ -239,47 +393,88 @@
       right:battleNames[1],
       round:3,
       winner:true,
-      detail:`${itemName(data?.winner)} gewinnt!`
+      detail:text('battleWinner', '{monster} gewinnt!', { monster: itemName(data?.winner) }),
+      cue:'win'
+    });
+    if (type === 'win_streak') return showCard({
+      kicker: text('winStreak', 'Siegesserie'),
+      title: text('winStreakTitle', '{monster} · {count} Siege', {
+        monster: itemName(data?.monster),
+        count: Number(data?.count) || 0
+      }),
+      subtitle: text('winStreakCopy', 'Die Arena merkt sich jede Serie.'),
+      progress: 100,
+      charged: true,
+      cue: 'win'
+    });
+    if (type === 'upset') return showCard({
+      kicker: text('upset', 'Überraschungssieg'),
+      title: text('upsetTitle', '{winner} besiegt den Favoriten!', {
+        winner: itemName(data?.winner)
+      }),
+      subtitle: text('upsetCopy', 'Der reproduzierbare Seed hat eine Überraschung geliefert.'),
+      progress: 100,
+      charged: true,
+      cue: 'win'
+    });
+    if (type === 'rivalry') return showCard({
+      kicker: text('rivalry', 'Rivalität'),
+      title: text('rivalryTitle', '{left} gegen {right}', {
+        left: itemName(data?.left || data?.challenger),
+        right: itemName(data?.right || data?.defender)
+      }),
+      subtitle: text('rivalryCopy', 'Diese Monster treffen wieder aufeinander.'),
+      progress: 100
     });
     if (type === 'achievement_unlocked') return showCard({
-      kicker:'Achievement freigeschaltet',
-      title:value(data?.achievement?.achievement_key,'Neuer Meilenstein').replaceAll('_',' '),
-      subtitle:`${value(data?.userId,'Viewer')} erweitert die Collector-Karte.`,
+      kicker:text('achievement', 'Achievement freigeschaltet'),
+      title:value(data?.achievement?.achievement_key, text('milestone', 'Neuer Meilenstein')).replaceAll('_', ' '),
+      subtitle:text('achievementCopy', '{viewer} erweitert die Collector-Karte.', {
+        viewer: value(data?.userId, 'Viewer')
+      }),
       progress:100,
       charged:true
     });
-    if (type === 'season_rank_changed') return showCard({
-      kicker:'Liga-Aufstieg',
-      title:`${rankLabel(data?.after)}!`,
-      subtitle:`${value(data?.userId,'Viewer')} erreicht ${data?.score?.points || 0} Saisonpunkte.`,
+    if (type === 'season_rank_changed' || type === 'rank_card') return showCard({
+      kicker:text('rankCard', 'Rangkarte'),
+      title:text('rankReachedTitle', '{rank}!', { rank: rankLabel(data?.after || data?.rank) }),
+      subtitle:text('rankReachedCopy', '{viewer} erreicht {points} Saisonpunkte.', {
+        viewer: value(data?.userId, 'Viewer'),
+        points: data?.score?.points || data?.points || 0
+      }),
       progress:100,
-      charged:true
+      charged:true,
+      cue:'win'
     });
-    if (type === 'quest_completed') return showToast(`Quest geschafft · ${value(data?.quest?.title,'Belohnung eingesammelt')}`);
+    if (type === 'quest_completed') return showToast(text('questComplete', 'Quest geschafft · {reward}', {
+      reward: value(data?.quest?.title, text('reward', 'Belohnung eingesammelt'))
+    }));
     if (type === 'chat_result') return showChat(data);
   };
   const drainQueue = async () => {
-    if (queueRunning) return;
+    if (queueRunning || !snapshotReady) return;
     queueRunning = true;
-    while (eventQueue.length) {
-      const next = eventQueue.shift();
+    for (let next = eventQueue.shift(Date.now()); next; next = eventQueue.shift(Date.now())) {
       try { await present(next); } catch (_) {}
     }
     queueRunning = false;
   };
-  const enqueue = (type,data) => {
-    eventQueue.push({ type,data });
-    if (eventQueue.length > 30) eventQueue.splice(0,eventQueue.length - 30);
+  const enqueue = (type, data) => {
+    eventQueue.enqueue(type, data, Date.now());
     drainQueue();
   };
   const socket = typeof io === 'function' ? io() : null;
   if (!socket) return;
   const eventTypes = {
     'streammonsters:stream_started':'stream_started',
+    'streammonsters:starter_claimed':'starter_revealed',
+    'streammonsters:stance_revealed':'stance_revealed',
     'streammonsters:egg_spawned':'egg_spawned',
     'streammonsters:egg_boosted':'egg_boosted',
     'streammonsters:gift_combo':'gift_combo',
     'streammonsters:hype_changed':'hype_changed',
+    'streammonsters:hype_milestone':'hype_milestone',
+    'streammonsters:elemental_hour':'elemental_hour',
     'streammonsters:egg_ready':'egg_ready',
     'streammonsters:hatch_started':'hatch_started',
     'streammonsters:egg_hatched':'egg_hatched',
@@ -287,12 +482,33 @@
     'streammonsters:battle_started':'battle_started',
     'streammonsters:battle_round':'battle_round',
     'streammonsters:battle_completed':'battle_completed',
+    'streammonsters:win_streak':'win_streak',
+    'streammonsters:upset':'upset',
+    'streammonsters:rivalry':'rivalry',
     'streammonsters:achievement_unlocked':'achievement_unlocked',
-    'streammonsters:season_rank_changed':'season_rank_changed',
+    'streammonsters:season_rank_changed':'rank_card',
     'streammonsters:quest_completed':'quest_completed',
     'streammonsters:chat_result':'chat_result'
   };
-  Object.entries(eventTypes).forEach(([eventName,type]) => socket.on(eventName,data => enqueue(type,data)));
+  Object.entries(eventTypes).forEach(([eventName, type]) => socket.on(eventName, data => enqueue(type, data)));
+  socket.on('connect', async () => {
+    snapshotReady = false;
+    try {
+      const response = await fetch('/api/streammonsters/state');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = await response.json();
+      eventQueue.prependSnapshot(payload, Date.now());
+    } catch (error) {
+      eventQueue.prependSnapshot({
+        hype: { points: 0 },
+        gcce: { commandPrefix: '!' },
+        config: { hatchDurationMs: 0 },
+        recovery: error.message
+      }, Date.now());
+    }
+    snapshotReady = true;
+    drainQueue();
+  });
 })();
 </script>
 </body>

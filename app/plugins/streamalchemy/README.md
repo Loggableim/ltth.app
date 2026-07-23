@@ -1,4 +1,4 @@
-# Stream Monsters 1.2 – Collector Arena
+# Stream Monsters 1.3 – Collector Arena
 
 Stream Monsters keeps the stable `streamalchemy` plugin ID so existing installations, routes and data remain compatible. The public product name is exclusively **Stream Monsters**. Existing crafting data stays untouched; Collector Arena uses additive `streammonsters_*` tables.
 
@@ -6,8 +6,10 @@ Stream Monsters keeps the stable `streamalchemy` plugin ID so existing installat
 
 1. Open `/streammonsters/ui`.
 2. In **Geschenke-Mapping**, search the complete shared TikTok catalog and explicitly enable each spawn or boost gift.
-3. In **Art Lab**, prepare one to eight AI skins per active element/variant before going live. Three is the default. Generation is serial and a live gift never starts an image job.
-4. Add `/streammonsters/overlay` as an OBS browser source and run the full safe demo.
+3. In **Art Lab**, select a detected graphics adapter. The guided wizard shows the recommended pinned profile, official Beta or experimental status, disk and download sizes, the model license, and links to official NVIDIA, Intel and AMD driver downloads.
+4. Install, cancel or resume the managed runtime. Then verify the backend with the 256×256 smoke test. The UI reports the actual profile, backend, device, driver, VRAM and whether that exact device passed—not a generic hardware claim.
+5. Prepare one to eight AI skins per active element/variant before going live. Three is the default. Generation is serial and a live gift never starts an image job. Zero coverage remains visible, and every failure includes a concrete recovery action.
+6. Add `/streammonsters/overlay` as an OBS browser source and run the full safe demo.
 
 Only enabled mappings affect the game. A spawn gift creates an element egg. A boost gift shortens the oldest active egg by 15, 30, 60 or 120 seconds according to the catalog diamond band. Gift value never changes combat strength or random odds.
 
@@ -54,8 +56,10 @@ Only enabled mappings affect the game. A spawn gift creates an element egg. A bo
 - `GET /api/streammonsters/local-runtime/status`
 - `POST /api/streammonsters/local-runtime/install`
 
-The responsive overlay serializes its animation queue and consumes the compatible legacy events plus `egg_ready`, `hatch_started`, `monster_visual_evolved`, `hype_changed`, `battle_round`, `achievement_unlocked` and `season_rank_changed` events in the `streammonsters:` namespace.
+The responsive overlay supports 16:9 and 9:16. It restores `/api/streammonsters/state` before replaying socket activity after a reconnect. Battle and hatch events are critical, Hype/chat updates coalesce, stale noncritical events are discarded, and bounded overflow removes noncritical work first. Cards cover starter monsters, stance reveals, Hype milestones, Elemental Hour, streaks, upsets, rivalries and ranks as well as the existing egg and battle flow.
+
+The creator page exposes mute and volume controls for five short local Web Audio cues: spawn, ready, hatch, hit and win. No third-party sound files are bundled because this repository snapshot contains no verified Kenney CC0 audio source or matching audio license. The existing Kenney Monster Builder license covers graphics only, so the release does not invent audio provenance.
 
 ## Bundled assets and license
 
-The plugin bundles twelve transparent 1024×1024 element eggs, the Stream Monsters icon and wide logo, and Kenney Monster Builder Pack 1.0. Kenney assets are CC0; the upstream license is included at `assets/kenney-monster-builder/License.txt`.
+The plugin bundles twelve transparent 1024×1024 element eggs, the Stream Monsters icon and wide logo, and Kenney Monster Builder Pack 1.0. Kenney graphics are CC0; the upstream license is included at `assets/kenney-monster-builder/License.txt`.
