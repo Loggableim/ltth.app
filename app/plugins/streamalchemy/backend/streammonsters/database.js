@@ -70,8 +70,41 @@ class StreamMonstersDatabase {
         monster_a_id TEXT NOT NULL,
         monster_b_id TEXT NOT NULL,
         winner_monster_id TEXT NOT NULL,
+        user_a_id TEXT,
+        user_b_id TEXT,
+        stance_a TEXT,
+        stance_b TEXT,
+        rounds_json TEXT,
         result_json TEXT NOT NULL,
         created_at_ms INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS streammonsters_battle_queue (
+        user_id TEXT PRIMARY KEY,
+        monster_id TEXT NOT NULL,
+        stance TEXT NOT NULL,
+        queued_at_ms INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS streammonsters_battle_queue_time
+        ON streammonsters_battle_queue(queued_at_ms, user_id);
+
+      CREATE TABLE IF NOT EXISTS streammonsters_starter_claims (
+        user_id TEXT PRIMARY KEY,
+        egg_id TEXT NOT NULL UNIQUE,
+        claimed_at_ms INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS streammonsters_viewer_identities (
+        platform_user_id TEXT PRIMARY KEY,
+        canonical_user_id TEXT NOT NULL UNIQUE,
+        current_unique_id TEXT,
+        updated_at_ms INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS streammonsters_viewer_aliases (
+        alias_id TEXT PRIMARY KEY,
+        canonical_user_id TEXT NOT NULL,
+        updated_at_ms INTEGER NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS streammonsters_gift_mappings (
@@ -198,10 +231,21 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_monsters', 'visual_key', 'TEXT');
     this.ensureColumn('streammonsters_monsters', 'battle_count', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_monsters', 'win_streak', 'INTEGER NOT NULL DEFAULT 0');
+    this.ensureColumn('streammonsters_battles', 'user_a_id', 'TEXT');
+    this.ensureColumn('streammonsters_battles', 'user_b_id', 'TEXT');
+    this.ensureColumn('streammonsters_battles', 'stance_a', 'TEXT');
+    this.ensureColumn('streammonsters_battles', 'stance_b', 'TEXT');
+    this.ensureColumn('streammonsters_battles', 'rounds_json', 'TEXT');
     this.ensureColumn('streammonsters_gift_mappings', 'enabled', 'INTEGER NOT NULL DEFAULT 1');
     this.ensureColumn('streammonsters_viewer_progress', 'pending_xp', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_viewer_progress', 'battle_win_streak', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_viewer_progress', 'best_battle_win_streak', 'INTEGER NOT NULL DEFAULT 0');
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS streammonsters_battles_created
+        ON streammonsters_battles(created_at_ms);
+      CREATE INDEX IF NOT EXISTS streammonsters_battles_pair_time
+        ON streammonsters_battles(user_a_id, user_b_id, created_at_ms);
+    `);
     this.db.prepare(`
       UPDATE streammonsters_eggs
       SET ready_at_ms = created_at_ms + hatch_duration_ms - boost_ms
@@ -447,6 +491,131 @@ class StreamMonstersDatabase {
     return this.getEgg(eggId);
   }
 
+  resolveViewerIdentity({ platformUserId = null, legacyUserId = null, updatedAtMs = Date.now() } = {}) {
+    const platformId = platformUserId === null || platformUserId === undefined
+      ? ''
+      : String(platformUserId).trim();
+    const legacyId = legacyUserId === null || legacyUserId === undefined
+      ? ''
+      : String(legacyUserId).trim();
+    if (!platformId) return legacyId || null;
+    const transaction = this.db.transaction(() => {
+      const existing = this.db.prepare(`
+        SELECT * FROM streammonsters_viewer_identities WHERE platform_user_id = ?
+      `).get(platformId);
+      if (existing) {
+        this.db.prepare(`
+          UPDATE streammonsters_viewer_identities
+          SET current_unique_id = ?, updated_at_ms = ?
+          WHERE platform_user_id = ?
+        `).run(legacyId || existing.current_unique_id, updatedAtMs, platformId);
+        this.recordViewerAlias(legacyId, existing.canonical_user_id, updatedAtMs);
+        return existing.canonical_user_id;
+      }
+
+      const claimedLegacyIdentity = legacyId
+        ? this.db.prepare(`
+          SELECT 1
+          FROM streammonsters_viewer_identities identity
+          LEFT JOIN streammonsters_viewer_aliases alias
+            ON alias.canonical_user_id = identity.canonical_user_id
+          WHERE identity.canonical_user_id = ? OR alias.alias_id = ?
+          LIMIT 1
+        `).get(legacyId, legacyId)
+        : null;
+      const canonicalUserId = legacyId &&
+        !claimedLegacyIdentity &&
+        this.viewerDataExists(legacyId)
+        ? legacyId
+        : `tiktok:${platformId}`;
+      this.db.prepare(`
+        INSERT INTO streammonsters_viewer_identities (
+          platform_user_id, canonical_user_id, current_unique_id, updated_at_ms
+        ) VALUES (?, ?, ?, ?)
+      `).run(platformId, canonicalUserId, legacyId || null, updatedAtMs);
+      this.recordViewerAlias(legacyId, canonicalUserId, updatedAtMs);
+      return canonicalUserId;
+    });
+    return transaction();
+  }
+
+  recordViewerAlias(aliasId, canonicalUserId, updatedAtMs) {
+    if (!aliasId || !canonicalUserId) return;
+    this.db.prepare(`
+      INSERT OR IGNORE INTO streammonsters_viewer_aliases (
+        alias_id, canonical_user_id, updated_at_ms
+      ) VALUES (?, ?, ?)
+    `).run(aliasId, canonicalUserId, updatedAtMs);
+  }
+
+  resolveKnownViewerId(userId) {
+    const value = String(userId || '').trim();
+    if (!value) return value;
+    const identity = this.db.prepare(`
+      SELECT canonical_user_id
+      FROM streammonsters_viewer_identities
+      WHERE platform_user_id = ? OR canonical_user_id = ?
+      LIMIT 1
+    `).get(value, value);
+    if (identity) return identity.canonical_user_id;
+    const alias = this.db.prepare(`
+      SELECT canonical_user_id FROM streammonsters_viewer_aliases WHERE alias_id = ?
+    `).get(value);
+    return alias?.canonical_user_id || value;
+  }
+
+  viewerDataExists(userId) {
+    return Boolean(this.db.prepare(`
+      SELECT 1 FROM (
+        SELECT user_id FROM streammonsters_eggs WHERE user_id = ?
+        UNION ALL SELECT user_id FROM streammonsters_monsters WHERE user_id = ?
+        UNION ALL SELECT user_id FROM streammonsters_viewer_progress WHERE user_id = ?
+        UNION ALL SELECT user_id FROM streammonsters_quests WHERE user_id = ?
+        UNION ALL SELECT user_id FROM streammonsters_achievements WHERE user_id = ?
+        UNION ALL SELECT user_id FROM streammonsters_season_scores WHERE user_id = ?
+        UNION ALL SELECT user_id FROM streammonsters_daily_battle_rewards WHERE user_id = ?
+        UNION ALL SELECT user_id FROM streammonsters_stream_actions WHERE user_id = ?
+        UNION ALL SELECT user_id FROM streammonsters_battle_queue WHERE user_id = ?
+        UNION ALL SELECT user_id FROM streammonsters_starter_claims WHERE user_id = ?
+      )
+      LIMIT 1
+    `).get(
+      userId,
+      userId,
+      userId,
+      userId,
+      userId,
+      userId,
+      userId,
+      userId,
+      userId,
+      userId
+    ));
+  }
+
+  claimStarterEgg(input) {
+    const transaction = this.db.transaction(() => {
+      const eggId = input.eggId || randomUUID();
+      const inserted = this.db.prepare(`
+        INSERT OR IGNORE INTO streammonsters_starter_claims (user_id, egg_id, claimed_at_ms)
+        VALUES (?, ?, ?)
+      `).run(input.userId, eggId, input.claimedAtMs);
+      if (!inserted.changes) {
+        const claim = this.getStarterClaim(input.userId);
+        return { claimed: false, claim, egg: claim ? this.getEgg(claim.egg_id) : null };
+      }
+      const egg = this.createEgg({ ...input, eggId });
+      return { claimed: true, claim: this.getStarterClaim(input.userId), egg };
+    });
+    return transaction();
+  }
+
+  getStarterClaim(userId) {
+    return this.db.prepare(`
+      SELECT * FROM streammonsters_starter_claims WHERE user_id = ?
+    `).get(userId) || null;
+  }
+
   getEgg(eggId) {
     return this.db.prepare('SELECT * FROM streammonsters_eggs WHERE egg_id = ?').get(eggId) || null;
   }
@@ -540,17 +709,83 @@ class StreamMonstersDatabase {
   createBattle(input) {
     this.db.prepare(`
       INSERT OR IGNORE INTO streammonsters_battles (
-        battle_id, seed, monster_a_id, monster_b_id, winner_monster_id, result_json, created_at_ms
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        battle_id, seed, monster_a_id, monster_b_id, winner_monster_id,
+        user_a_id, user_b_id, stance_a, stance_b, rounds_json,
+        result_json, created_at_ms
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       input.battleId, input.seed, input.monsterAId, input.monsterBId,
-      input.winnerMonsterId, JSON.stringify(input.result), input.createdAtMs
+      input.winnerMonsterId, input.userAId || null, input.userBId || null,
+      input.stanceA || null, input.stanceB || null,
+      JSON.stringify(input.result?.rounds || []),
+      JSON.stringify(input.result), input.createdAtMs
     );
     return this.getBattle(input.battleId);
   }
 
   getBattle(battleId) {
     return this.db.prepare('SELECT * FROM streammonsters_battles WHERE battle_id = ?').get(battleId) || null;
+  }
+
+  hasRecentOpponentPair(userAId, userBId, sinceMs) {
+    if (!userAId || !userBId) return false;
+    return Boolean(this.db.prepare(`
+      SELECT 1
+      FROM streammonsters_battles battle
+      LEFT JOIN streammonsters_monsters monster_a
+        ON monster_a.monster_id = battle.monster_a_id
+      LEFT JOIN streammonsters_monsters monster_b
+        ON monster_b.monster_id = battle.monster_b_id
+      WHERE battle.created_at_ms >= ?
+        AND (
+          (
+            COALESCE(battle.user_a_id, monster_a.user_id) = ?
+            AND COALESCE(battle.user_b_id, monster_b.user_id) = ?
+          )
+          OR (
+            COALESCE(battle.user_a_id, monster_a.user_id) = ?
+            AND COALESCE(battle.user_b_id, monster_b.user_id) = ?
+          )
+        )
+      LIMIT 1
+    `).get(sinceMs, userAId, userBId, userBId, userAId));
+  }
+
+  enqueueBattle({ userId, monsterId, stance, queuedAtMs }) {
+    this.db.prepare(`
+      INSERT INTO streammonsters_battle_queue (user_id, monster_id, stance, queued_at_ms)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET
+        monster_id = excluded.monster_id,
+        stance = excluded.stance,
+        queued_at_ms = excluded.queued_at_ms
+    `).run(userId, monsterId, stance, queuedAtMs);
+    return this.getBattleQueueEntry(userId);
+  }
+
+  getBattleQueueEntry(userId) {
+    return this.db.prepare(`
+      SELECT * FROM streammonsters_battle_queue WHERE user_id = ?
+    `).get(userId) || null;
+  }
+
+  getBattleQueue() {
+    return this.db.prepare(`
+      SELECT * FROM streammonsters_battle_queue
+      ORDER BY queued_at_ms ASC, user_id ASC
+    `).all();
+  }
+
+  removeBattleQueueEntry(userId) {
+    return this.db.prepare(`
+      DELETE FROM streammonsters_battle_queue WHERE user_id = ?
+    `).run(userId).changes > 0;
+  }
+
+  purgeBattleQueue(cutoffMs) {
+    return this.db.prepare(`
+      DELETE FROM streammonsters_battle_queue WHERE queued_at_ms < ?
+    `).run(cutoffMs).changes;
   }
 
   awardMonsterXp(monsterId, amount) {

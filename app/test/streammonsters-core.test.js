@@ -101,7 +101,7 @@ describe('Stream Monsters game core', () => {
     expect(emitted.map(entry => entry.event)).toContain('streammonsters:gift_combo');
   });
 
-  test('keeps the five-minute timer fair during legacy elemental hours and records stream metrics', () => {
+  test('applies the fixed Elemental Hour reduction without multiplying gift value and records stream metrics', () => {
     const { store, engine } = createGame();
     const gift = Array.from({ length: 24 }, (_, index) => index + 1)
       .map(giftId => engine.describeGift({ giftId, giftName: `Gift ${giftId}` }))
@@ -112,9 +112,9 @@ describe('Stream Monsters game core', () => {
 
     engine.processGift({ userId: 'viewer-a', giftId: gift.giftId, giftName: gift.giftName });
 
-    expect(store.getViewerEggs('viewer-a')[0].boost_ms).toBe(0);
+    expect(store.getViewerEggs('viewer-a')[0].boost_ms).toBe(30_000);
     expect(store.getViewerEggs('viewer-a')[0].ready_at_ms).toBe(
-      store.getViewerEggs('viewer-a')[0].created_at_ms + 300000
+      store.getViewerEggs('viewer-a')[0].created_at_ms + 270_000
     );
     expect(store.getStreamMetrics('creator:room-1')).toEqual(expect.objectContaining({ eggs_spawned: 1 }));
   });

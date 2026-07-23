@@ -1,9 +1,16 @@
 class StreamMonstersCommandIngress {
-  constructor({ execute, emit = () => {}, now = () => Date.now(), commandPrefix = '!' }) {
+  constructor({
+    execute,
+    emit = () => {},
+    now = () => Date.now(),
+    commandPrefix = '!',
+    resolveUserId = data => data.userId || data.uniqueId || data.username
+  }) {
     this.execute = execute;
     this.emit = emit;
     this.now = now;
     this.commandPrefix = commandPrefix;
+    this.resolveUserId = resolveUserId;
     this.commands = new Map();
     this.userCooldowns = new Map();
     this.globalCooldowns = new Map();
@@ -32,7 +39,7 @@ class StreamMonstersCommandIngress {
     if (!this.commands.has(commandName)) return { success: false, status: 'ignored' };
 
     const context = {
-      userId: data.uniqueId || data.userId || data.username,
+      userId: this.resolveUserId(data),
       uniqueId: data.uniqueId || data.userId,
       username: data.nickname || data.username || data.uniqueId || data.userId,
       nickname: data.nickname || data.username || data.uniqueId || data.userId,

@@ -120,6 +120,8 @@ function createSubject({ storedManifest = null, artPool = null } = {}) {
 describe('Stream Monsters privileged routes', () => {
   test.each([
     ['POST', '/api/streammonsters/config'],
+    ['POST', '/api/streammonsters/pool'],
+    ['POST', '/api/streammonsters/pool/prepare'],
     ['POST', '/api/streammonsters/local-runtime/install']
   ])('rejects unauthenticated non-local %s %s requests', async (method, routePath) => {
     const { findRoute, managedRuntime, updateConfig } = createSubject();

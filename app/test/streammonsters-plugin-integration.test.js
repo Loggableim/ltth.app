@@ -80,6 +80,60 @@ describe('Stream Monsters plugin integration', () => {
     expect(plugin.streamMonstersStore.getStreamEvent('creator:room-7')).toEqual(expect.objectContaining({ boost_multiplier: 2 }));
   });
 
+  test('applies an allowed creator incubation update to future eggs without restarting', async () => {
+    const { api } = createApi();
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    plugin.streamMonstersStore.upsertGiftMapping({
+      giftId: 1,
+      giftName: 'Rose',
+      element: 'Ember',
+      effect: 'spawn',
+      enabled: true
+    });
+
+    plugin.updateConfig({ streamMonsters: { hatchDurationMs: 120_000 } });
+    const result = plugin.streamMonstersEngine.processGift({
+      userId: 'viewer-a',
+      giftId: 1,
+      giftName: 'Rose',
+      coinValue: 1
+    });
+
+    expect(result.egg.hatch_duration_ms).toBe(120_000);
+    await plugin.destroy();
+  });
+
+  test('uses the stable TikTok viewer ID for starter claims across handle changes', async () => {
+    const { api, events, emitted } = createApi();
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    const chat = events.find(entry => entry.event === 'chat').handler;
+
+    await chat({
+      userId: '7123456789012345678',
+      uniqueId: 'old_handle',
+      nickname: 'Viewer',
+      comment: '!adopt'
+    });
+    plugin.streamMonstersCommandIngress.clear();
+    await chat({
+      userId: '7123456789012345678',
+      uniqueId: 'new_handle',
+      nickname: 'Viewer',
+      comment: '!adopt'
+    });
+
+    const canonicalId = plugin.streamMonstersStore.resolveKnownViewerId('7123456789012345678');
+    expect(plugin.streamMonstersStore.getViewerEggs(canonicalId)).toHaveLength(1);
+    expect(emitted.filter(entry => entry.event === 'streammonsters:starter_claimed')).toHaveLength(1);
+    expect(emitted.filter(entry => (
+      entry.event === 'streammonsters:chat_result' &&
+      entry.payload.result.status === 'starter_already_claimed'
+    ))).toHaveLength(1);
+    await plugin.destroy();
+  });
+
   test('exposes Stream Monsters setup, state and safe demo routes', async () => {
     const { api, routes } = createApi();
     const plugin = new StreamAlchemyPlugin(api);
@@ -140,9 +194,10 @@ describe('Stream Monsters plugin integration', () => {
     await plugin.init();
     expect(gcce.unregisterCommandsForPlugin).toHaveBeenCalledWith('streamalchemy');
     expect(gcce.registerCommandsForPlugin).toHaveBeenCalledWith('streamalchemy', expect.arrayContaining([
+      expect.objectContaining({ name: 'adopt', minArgs: 0, maxArgs: 0, permission: 'all' }),
       expect.objectContaining({ name: 'eggs', permission: 'all' }),
       expect.objectContaining({ name: 'hatch', permission: 'all' }),
-      expect.objectContaining({ name: 'battle', permission: 'all' })
+      expect.objectContaining({ name: 'battle', minArgs: 0, maxArgs: 1, permission: 'all' })
     ]));
   });
 

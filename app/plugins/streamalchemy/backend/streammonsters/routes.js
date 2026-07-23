@@ -406,9 +406,12 @@ class StreamMonstersRoutes {
   sanitizeConfigUpdate(input = {}) {
     if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
     const safe = {};
-    for (const key of ['enabled', 'creatorName', 'hatchDurationMs', 'maxUnhatchedEggs', 'elementRules']) {
+    for (const key of ['enabled', 'creatorName', 'maxUnhatchedEggs', 'elementRules']) {
       if (Object.prototype.hasOwnProperty.call(input, key)) safe[key] = input[key];
     }
+    const allowedHatchDurations = new Set([2, 5, 10, 30].map(minutes => minutes * 60_000));
+    const hatchDurationMs = Number(input.hatchDurationMs);
+    if (allowedHatchDurations.has(hatchDurationMs)) safe.hatchDurationMs = hatchDurationMs;
     if (Object.prototype.hasOwnProperty.call(input, 'artPoolTarget')) {
       safe.artPoolTarget = Math.max(1, Math.min(8, Number.parseInt(input.artPoolTarget, 10) || 3));
     }
@@ -416,13 +419,14 @@ class StreamMonstersRoutes {
   }
 
   viewerState(userId) {
+    const resolvedUserId = this.store.resolveKnownViewerId?.(userId) || userId;
     return {
-      progress: this.store.getViewerProgress(userId),
-      eggs: this.store.getViewerEggs(userId),
-      monsters: this.store.getViewerMonsters(userId),
-      selectedMonster: this.store.getSelectedMonster(userId),
-      achievements: this.store.getViewerAchievements(userId),
-      rank: this.progression?.getViewerSeason?.(userId) || null
+      progress: this.store.getViewerProgress(resolvedUserId),
+      eggs: this.store.getViewerEggs(resolvedUserId),
+      monsters: this.store.getViewerMonsters(resolvedUserId),
+      selectedMonster: this.store.getSelectedMonster(resolvedUserId),
+      achievements: this.store.getViewerAchievements(resolvedUserId),
+      rank: this.progression?.getViewerSeason?.(resolvedUserId) || null
     };
   }
 
@@ -430,6 +434,7 @@ class StreamMonstersRoutes {
     return {
       enabled: Boolean(config.enabled),
       creatorName: config.creatorName || '',
+      rulesVersion: 2,
       hatchDurationMs: config.hatchDurationMs,
       maxUnhatchedEggs: config.maxUnhatchedEggs,
       elementRules: config.elementRules || 'deterministic',

@@ -1,3 +1,5 @@
+const { createHash } = require('crypto');
+
 const ELEMENTS = ['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar'];
 const EGG_COLORS = ['#ef6b45', '#3aaee8', '#54b86d', '#8ecfcb', '#f1ca43', '#a778e2'];
 
@@ -81,6 +83,8 @@ class StreamMonstersEngine {
     const createdAtMs = this.now();
     const variant = this.store.consumeChargedEgg(this.streamKey, createdAtMs) ? 'charged' : 'standard';
     const hatchDurationMs = this.hatchDurationFor(variant);
+    const elementalHourMatch = event?.element === gift.element;
+    const initialBoostMs = elementalHourMatch ? Math.min(30_000, hatchDurationMs) : 0;
     const egg = this.store.createEgg({
       userId,
       giftId: gift.giftId,
@@ -90,7 +94,7 @@ class StreamMonstersEngine {
       seed: this.seedFor(userId, gift.giftId, createdAtMs),
       createdAtMs,
       hatchDurationMs,
-      initialBoostMs: 0,
+      initialBoostMs,
       imageUrl: this.createDefaultEggImage(gift, variant),
       variant,
       visualSource: 'egg_asset',
@@ -100,9 +104,47 @@ class StreamMonstersEngine {
     this.progression?.recordGift(userId, this.streamKey);
     this.store.incrementStreamMetric(this.streamKey, 'eggs_spawned');
     const combo = this.applyGiftCombo(userId, gift, createdAtMs);
-    this.addHype(10 + (combo ? 20 : 0), { userId, gift, combo });
+    this.addHype(10 + (combo ? 20 : 0) + (elementalHourMatch ? 10 : 0), {
+      userId,
+      gift,
+      combo,
+      elementalHourMatch
+    });
     this.emit('streammonsters:egg_spawned', { userId, egg, gift, event, hint: '!inventory' });
     return { type: 'spawned', egg, gift };
+  }
+
+  adoptStarter(userId) {
+    if (!userId) throw new Error('STREAM_MONSTERS_USER_REQUIRED');
+    const elementIndex = this.hashNumber(`starter:${userId}`) % ELEMENTS.length;
+    const element = ELEMENTS[elementIndex];
+    const eggId = `starter-${createHash('sha256').update(String(userId)).digest('hex').slice(0, 32)}`;
+    const claimedAtMs = this.now();
+    const result = this.store.claimStarterEgg({
+      eggId,
+      userId,
+      giftId: 0,
+      giftName: 'Starter Egg',
+      element,
+      eggColor: EGG_COLORS[elementIndex],
+      seed: `starter:${createHash('sha256').update(`streammonsters:${userId}`).digest('hex')}`,
+      createdAtMs: claimedAtMs,
+      claimedAtMs,
+      hatchDurationMs: 60_000,
+      initialBoostMs: 0,
+      imageUrl: this.createDefaultEggImage({ element }, 'standard'),
+      variant: 'standard',
+      visualSource: 'egg_asset',
+      visualKey: `egg:${element.toLowerCase()}:standard`
+    });
+    if (result.claimed) {
+      this.emit('streammonsters:starter_claimed', {
+        userId,
+        egg: result.egg,
+        hint: '!eggs'
+      });
+    }
+    return result;
   }
 
   hatchReadyEggs(userId) {
@@ -207,11 +249,25 @@ class StreamMonstersEngine {
   }
 
   addHype(points, context = {}) {
-    const hype = this.store.addStreamHype(this.streamKey, points, this.now());
+    const normalizedPoints = Math.max(0, Number(points) || 0);
+    const previous = this.store.getStreamHype(this.streamKey);
+    const total = previous.points + normalizedPoints;
+    const milestones = [25, 50, 75, 100].filter(milestone => (
+      previous.points < milestone && total >= milestone
+    ));
+    const hype = this.store.addStreamHype(this.streamKey, normalizedPoints, this.now());
     this.emit('streammonsters:hype_changed', {
       streamKey: this.streamKey,
       hype,
       ...context
+    });
+    milestones.forEach(milestone => {
+      this.emit('streammonsters:hype_milestone', {
+        streamKey: this.streamKey,
+        milestone,
+        hype,
+        ...context
+      });
     });
     return hype;
   }

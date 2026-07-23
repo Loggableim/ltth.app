@@ -93,7 +93,7 @@ describe('Stream Monsters 1.2 Collector Arena', () => {
 
     engine.processGift({ userId: 'viewer-a', giftId: 2, giftName: 'Boost', coinValue: 9_999 });
 
-    expect(store.getViewerEggs('viewer-a', 'incubating')[0].boost_ms).toBe(15_000);
+    expect(store.getViewerEggs('viewer-a', 'incubating')[0].boost_ms).toBe(45_000);
   });
 
   test('timer transition marks eggs ready without hatching or occupying a hatch slot', () => {

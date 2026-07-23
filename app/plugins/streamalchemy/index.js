@@ -34,6 +34,9 @@ const RUNTIME_TRUST_FIELDS = new Set([
   'executableRelativePath', 'executableArgs', 'comfyRootRelativePath',
   'healthBaseUrl', 'healthUrl', 'downloadSizeBytes', 'modelSizeBytes'
 ]);
+const STREAM_MONSTERS_RULES_VERSION = 2;
+const LEGACY_HATCH_DURATION_MS = 30 * 60 * 1000;
+const DEFAULT_HATCH_DURATION_MS = 5 * 60 * 1000;
 
 class StreamAlchemyPlugin {
   constructor(api) {
@@ -84,7 +87,11 @@ class StreamAlchemyPlugin {
     this.streamMonstersCommandIngress = new StreamMonstersCommandIngress({
       execute: (context, commandName, args) => this.streamMonstersChatCommands.execute(context, commandName, args),
       emit: (event, payload) => this.api.emit(event, payload),
-      commandPrefix: this.streamMonstersCommandPrefix
+      commandPrefix: this.streamMonstersCommandPrefix,
+      resolveUserId: data => this.resolveStreamMonstersViewerId({
+        platformUserId: data.userId,
+        legacyUserId: data.uniqueId || data.username
+      })
     });
     this.streamMonstersCommandIngress.setCommands(
       this.buildStreamMonstersCommandDefinitions(this.streamMonstersCommandPrefix),
@@ -214,6 +221,11 @@ class StreamAlchemyPlugin {
   loadConfig(storedConfig = this.api.getConfig('streamalchemy_config')) {
     const stored = this.sanitizeConfig(storedConfig);
     const storedStreamMonsters = stored.streamMonsters || {};
+    const rulesVersionMissing = storedStreamMonsters.rulesVersion == null;
+    const hatchDurationMs = rulesVersionMissing &&
+      storedStreamMonsters.hatchDurationMs === LEGACY_HATCH_DURATION_MS
+      ? DEFAULT_HATCH_DURATION_MS
+      : (storedStreamMonsters.hatchDurationMs ?? DEFAULT_HATCH_DURATION_MS);
     return {
       ...DEFAULT_CONFIG,
       ...stored,
@@ -224,11 +236,13 @@ class StreamAlchemyPlugin {
       streamMonsters: {
         enabled: true,
         creatorName: '',
-        hatchDurationMs: 5 * 60 * 1000,
+        hatchDurationMs: DEFAULT_HATCH_DURATION_MS,
         maxUnhatchedEggs: 3,
         elementRules: 'deterministic',
         artPoolTarget: 3,
         ...storedStreamMonsters,
+        rulesVersion: STREAM_MONSTERS_RULES_VERSION,
+        hatchDurationMs,
         localRuntime: {
           state: 'not_installed',
           ...(storedStreamMonsters.localRuntime || {})
@@ -240,7 +254,8 @@ class StreamAlchemyPlugin {
   persistSanitizedConfigIfNeeded(storedConfig) {
     if (!storedConfig || typeof storedConfig !== 'object' || Array.isArray(storedConfig)) return false;
     const sanitizedStored = this.sanitizeConfig(storedConfig);
-    if (JSON.stringify(storedConfig) === JSON.stringify(sanitizedStored)) return false;
+    const rulesAreCurrent = sanitizedStored.streamMonsters?.rulesVersion === STREAM_MONSTERS_RULES_VERSION;
+    if (rulesAreCurrent && JSON.stringify(storedConfig) === JSON.stringify(sanitizedStored)) return false;
     this.api.setConfig('streamalchemy_config', this.config);
     return true;
   }
@@ -448,10 +463,17 @@ class StreamAlchemyPlugin {
       streamMonsters: {
         ...currentStreamMonsters,
         ...streamMonstersUpdates,
+        rulesVersion: STREAM_MONSTERS_RULES_VERSION,
         localRuntime: nextLocalRuntime
       }
     };
     this.api.setConfig('streamalchemy_config', this.config);
+    if (this.streamMonstersEngine) {
+      this.streamMonstersEngine.config = {
+        ...this.streamMonstersEngine.config,
+        ...this.config.streamMonsters
+      };
+    }
     if (
       this.streamMonstersCommandIngress &&
       (
@@ -531,13 +553,14 @@ class StreamAlchemyPlugin {
 
   buildStreamMonstersCommandDefinitions(commandPrefix = this.streamMonstersCommandPrefix) {
     return [
+      ['adopt', 'Claim your one-time Stream Monsters starter egg', 0, 0],
       ['eggs', 'Show your Stream Monsters eggs', 0, 0],
       ['hatch', 'Hatch a ready egg by slot', 0, 1],
       ['inventory', 'Show your Stream Monsters inventory', 0, 0],
       ['monsters', 'Show your Stream Monsters', 0, 0],
       ['monster', 'Show one monster by slot', 1, 1],
       ['choose', 'Choose a monster by slot', 1, 1],
-      ['battle', 'Join the public Stream Monsters battle queue', 0, 0],
+      ['battle', 'Join the public Stream Monsters battle queue with an optional stance', 0, 1],
       ['leavebattle', 'Leave the Stream Monsters battle queue', 0, 0],
       ['rank', 'Show the current Collector Arena rank', 0, 0],
       ['quests', 'Show daily and weekly quests', 0, 0],
@@ -545,7 +568,9 @@ class StreamAlchemyPlugin {
     ].map(([name, description, minArgs, maxArgs]) => ({
       name,
       description,
-      syntax: `${commandPrefix}${name}${minArgs ? ' <slot>' : ''}`,
+      syntax: name === 'battle'
+        ? `${commandPrefix}${name} [power|guard|speed]`
+        : `${commandPrefix}${name}${minArgs ? ' <slot>' : ''}`,
       permission: 'all',
       enabled: true,
       minArgs,
@@ -557,7 +582,13 @@ class StreamAlchemyPlugin {
         Array.isArray(args) ? args : [],
         {
           ...context,
-          userId: context.userId || context.uniqueId || context.rawData?.uniqueId || context.username,
+          userId: this.resolveStreamMonstersViewerId({
+            platformUserId: context.rawData?.userId,
+            legacyUserId: context.rawData?.uniqueId ||
+              context.uniqueId ||
+              context.userId ||
+              context.username
+          }),
           username: context.username || context.nickname || context.uniqueId || context.userId
         },
         'gcce'
@@ -713,8 +744,19 @@ class StreamAlchemyPlugin {
     );
   }
 
+  resolveStreamMonstersViewerId({ platformUserId = null, legacyUserId = null } = {}) {
+    return this.streamMonstersStore.resolveViewerIdentity({
+      platformUserId,
+      legacyUserId,
+      updatedAtMs: Date.now()
+    }) || legacyUserId || platformUserId;
+  }
+
   async handleStreamMonstersGift(data = {}) {
-    const userId = data.uniqueId || data.userId || data.username;
+    const userId = this.resolveStreamMonstersViewerId({
+      platformUserId: data.userId,
+      legacyUserId: data.uniqueId || data.username
+    });
     const giftId = Number.parseInt(data.giftId, 10);
     const giftName = data.giftName || data.name;
     const coinValue = Number.parseInt(data.diamondCount ?? data.coins ?? 0, 10) || 0;

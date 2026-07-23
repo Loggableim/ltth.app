@@ -8,6 +8,7 @@ class ChatCommands {
     this.now = now;
     this.queueTtlMs = queueTtlMs;
     this.queue = [];
+    this.syncQueue();
   }
 
   execute(context = {}, commandName = '', args = []) {
@@ -16,12 +17,13 @@ class ChatCommands {
     const commandArgs = Array.isArray(args) ? args : [];
     if (!userId) return { success: false, status: 'ignored' };
     if (![
-      'eggs', 'hatch', 'inventory', 'monsters', 'monster', 'choose',
+      'adopt', 'eggs', 'hatch', 'inventory', 'monsters', 'monster', 'choose',
       'battle', 'leavebattle', 'rank', 'quests', 'monstershelp'
     ].includes(command)) {
       return { success: false, status: 'ignored' };
     }
     this.engine.markReadyEggs();
+    if (command === 'adopt') return this.adopt(userId);
     this.progression?.recordCommand(userId, this.engine.streamKey);
 
     if (command === 'eggs') return this.eggs(userId);
@@ -29,14 +31,32 @@ class ChatCommands {
     if (command === 'inventory' || command === 'monsters') return this.inventory(userId);
     if (command === 'monster') return this.monster(userId, commandArgs[0]);
     if (command === 'choose') return this.choose(userId, commandArgs[0]);
-    if (command === 'battle') return this.joinBattle(userId);
+    if (command === 'battle') return this.joinBattle(userId, commandArgs[0]);
     if (command === 'leavebattle') return this.leaveBattle(userId);
     if (command === 'rank') return this.rank(userId);
     if (command === 'quests') return this.quests(userId);
     return {
       success: true,
       status: 'help',
-      message: 'Commands: !eggs, !hatch <slot>, !monsters, !monster <slot>, !choose <slot>, !battle, !leavebattle, !rank, !quests'
+      message: 'Commands: !adopt, !eggs, !hatch <slot>, !monsters, !monster <slot>, !choose <slot>, !battle [power|guard|speed], !leavebattle, !rank, !quests'
+    };
+  }
+
+  adopt(userId) {
+    const result = this.engine.adoptStarter(userId);
+    if (!result.claimed) {
+      return {
+        success: false,
+        status: 'starter_already_claimed',
+        message: 'You already claimed your starter egg.',
+        egg: result.egg
+      };
+    }
+    return {
+      success: true,
+      status: 'starter_claimed',
+      message: `Your ${result.egg.element} starter egg is incubating for 60 seconds.`,
+      egg: result.egg
     };
   }
 
@@ -109,14 +129,24 @@ class ChatCommands {
     };
   }
 
-  joinBattle(userId) {
+  joinBattle(userId, requestedStance = null) {
     this.purgeExpiredQueue();
+    const normalizedRequestedStance = String(requestedStance || '').trim().toLowerCase();
+    if (requestedStance && !['power', 'guard', 'speed'].includes(normalizedRequestedStance)) {
+      return {
+        success: false,
+        status: 'invalid_stance',
+        message: 'Choose power, guard or speed.'
+      };
+    }
     const selected = this.store.getSelectedMonster(userId);
     if (!selected) return { success: false, status: 'no_monster', message: 'Hatch an egg first, then choose a monster.' };
-    const ownEntry = this.queue.find(entry => entry.userId === userId);
-    const queuedAt = ownEntry?.queuedAt ?? this.now();
-    this.queue = this.queue.filter(entry => entry.userId !== userId);
-    const opponentIndex = this.queue.findIndex(entry => {
+    const stance = normalizedRequestedStance || this.battleService.stanceForMonster(selected);
+    const ownEntry = this.store.getBattleQueueEntry(userId);
+    const queuedAt = ownEntry?.queued_at_ms ?? this.now();
+    this.store.removeBattleQueueEntry(userId);
+    this.syncQueue();
+    const eligible = this.queue.filter(entry => {
       if (entry.userId === userId) return false;
       const levelGap = Math.abs((entry.monster.level || 1) - (selected.level || 1));
       const waitedLongEnough = (
@@ -125,20 +155,41 @@ class ChatCommands {
       );
       return levelGap <= 2 || waitedLongEnough;
     });
-    if (opponentIndex < 0) {
-      this.queue.push({ userId, monster: selected, queuedAt });
+    const fresh = eligible.filter(entry => !this.store.hasRecentOpponentPair(
+      entry.userId,
+      userId,
+      this.now() - (10 * 60 * 1000)
+    ));
+    const opponent = (fresh.length ? fresh : eligible)[0] || null;
+    if (!opponent) {
+      this.store.enqueueBattle({
+        userId,
+        monsterId: selected.monster_id,
+        stance,
+        queuedAtMs: queuedAt
+      });
+      this.syncQueue();
       return { success: true, status: 'queued', message: 'Battle queue joined. Waiting for an opponent.' };
     }
-    const [opponent] = this.queue.splice(opponentIndex, 1);
+    this.store.removeBattleQueueEntry(opponent.userId);
+    this.syncQueue();
     const seed = `queue:${[opponent.userId, userId].sort().join(':')}:${this.now()}`;
-    const elementAdvantageMonsterId = this.battleService.elementAdvantageMonsterId(opponent.monster, selected);
+    const battle = this.battleService.resolve(
+      opponent.monster,
+      selected,
+      seed,
+      opponent.stance,
+      stance
+    );
     this.emit('streammonsters:battle_started', {
       challenger: opponent.monster,
       defender: selected,
       seed,
-      elementAdvantageMonsterId
+      stanceA: battle.stanceA,
+      stanceB: battle.stanceB,
+      elementAdvantageMonsterId: battle.elementAdvantageMonsterId,
+      stanceAdvantageMonsterId: battle.stanceAdvantageMonsterId
     });
-    const battle = this.battleService.resolve(opponent.monster, selected, seed);
     const winner = this.store.getMonster(battle.winnerId);
     if (winner) this.store.incrementViewer(winner.user_id, 'battles_won');
     this.store.incrementStreamMetric(this.engine.streamKey, 'duels');
@@ -159,12 +210,12 @@ class ChatCommands {
 
   leaveBattle(userId) {
     this.purgeExpiredQueue();
-    const previousLength = this.queue.length;
-    this.queue = this.queue.filter(entry => entry.userId !== userId);
+    const removed = this.store.removeBattleQueueEntry(userId);
+    this.syncQueue();
     return {
       success: true,
       status: 'left',
-      message: previousLength === this.queue.length ? 'You were not in the battle queue.' : 'You left the battle queue.'
+      message: removed ? 'You left the battle queue.' : 'You were not in the battle queue.'
     };
   }
 
@@ -197,7 +248,21 @@ class ChatCommands {
 
   purgeExpiredQueue() {
     const cutoff = this.now() - this.queueTtlMs;
-    this.queue = this.queue.filter(entry => entry.queuedAt >= cutoff);
+    this.store.purgeBattleQueue(cutoff);
+    this.syncQueue();
+  }
+
+  syncQueue() {
+    if (!this.store?.getBattleQueue) return this.queue;
+    this.queue = this.store.getBattleQueue()
+      .map(entry => ({
+        userId: entry.user_id,
+        monster: this.store.getMonster(entry.monster_id),
+        stance: entry.stance,
+        queuedAt: entry.queued_at_ms
+      }))
+      .filter(entry => entry.monster);
+    return this.queue;
   }
 }
 
