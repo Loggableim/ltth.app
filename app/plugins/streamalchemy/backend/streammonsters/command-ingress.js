@@ -70,6 +70,12 @@ class StreamMonstersCommandIngress {
   }
 
   async executeCommand(commandName, args, context, transport) {
+    if (transport === 'gcce') {
+      const result = await this.execute(context, commandName, args);
+      this.emitResult(commandName, context, result, transport);
+      return result;
+    }
+
     let result;
     try {
       result = await this.execute(context, commandName, args);

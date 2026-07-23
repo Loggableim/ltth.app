@@ -1,5 +1,6 @@
 const Database = require('better-sqlite3');
 const { EventEmitter } = require('events');
+const GCCE = require('../plugins/gcce');
 const StreamAlchemyPlugin = require('../plugins/streamalchemy');
 
 function createApi({ gcce = null, streamMonstersEnabled = true } = {}) {
@@ -643,5 +644,57 @@ describe('Stream Monsters plugin integration', () => {
       })
     ]);
     await plugin.destroy();
+  });
+
+  test('publishes one result when a real GCCE Stream Monsters handler throws', async () => {
+    const { api, emitted, pluginEvents } = createApi();
+    api.pluginLoader.emit = (event, payload) => pluginEvents.emit(event, payload);
+    api.registerSocket = jest.fn();
+    api.registerFlowAction = jest.fn();
+    api.registerIFTTTAction = jest.fn();
+    api.getSocketIO = () => ({ emit: jest.fn() });
+    api.pluginDir = require('path').join(process.cwd(), 'plugins', 'gcce');
+    const gcce = new GCCE(api);
+    await gcce.init();
+    api.pluginLoader.loadedPlugins.set('gcce', { instance: gcce });
+    api.pluginDir = require('path').join(process.cwd(), 'plugins', 'streamalchemy');
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    plugin.streamMonstersCommandIngress.execute = jest.fn().mockRejectedValue(new Error('handler exploded'));
+    const publishedResults = [];
+    pluginEvents.on('gcce:command_result', payload => publishedResults.push(payload));
+    emitted.length = 0;
+
+    await gcce.handleChatMessage({
+      comment: `${gcce.parser.commandPrefix}eggs`,
+      uniqueId: 'viewer-a',
+      nickname: 'Viewer A'
+    });
+
+    expect(publishedResults).toEqual([
+      expect.objectContaining({
+        success: false,
+        errorCode: 'EXECUTION_FAILED',
+        commandName: 'eggs',
+        pluginId: 'streamalchemy',
+        userId: 'viewer-a'
+      })
+    ]);
+    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toEqual([
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          userId: 'viewer-a',
+          command: 'eggs',
+          transport: 'gcce',
+          result: expect.objectContaining({
+            status: 'execution_failed',
+            errorCode: 'EXECUTION_FAILED'
+          })
+        })
+      })
+    ]);
+
+    await plugin.destroy();
+    await gcce.destroy();
   });
 });
