@@ -6,8 +6,18 @@ function response(payload) {
   return { ok: true, json: async () => payload };
 }
 
-function bootUi({ runtimeFetch } = {}) {
+function errorResponse(error) {
+  return { ok: false, json: async () => ({ error }) };
+}
+
+function bootUi({ runtimeFetch, locale = null } = {}) {
   const html = fs.readFileSync(path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-ui.html'), 'utf8');
+  const localeText = locale
+    ? JSON.parse(fs.readFileSync(
+      path.join(process.cwd(), 'plugins', 'streamalchemy', 'locales', `${locale}.json`),
+      'utf8'
+    )).plugins.streamalchemy.ui.monsters
+    : null;
   const fetchMock = jest.fn(async (url, options = {}) => {
     if (runtimeFetch) {
       const runtimeResponse = await runtimeFetch(url, options);
@@ -69,9 +79,13 @@ function bootUi({ runtimeFetch } = {}) {
       window.i18n = {
         init: async () => {},
         updateDOM: () => {},
-        t: key => ({
-          'plugins.streamalchemy.ui.monsters.achievementFirstHatch': 'Erster Schlupf'
-        }[key] || key)
+        t: key => {
+          const prefix = 'plugins.streamalchemy.ui.monsters.';
+          if (localeText && key.startsWith(prefix)) return localeText[key.slice(prefix.length)] || key;
+          return ({
+            'plugins.streamalchemy.ui.monsters.achievementFirstHatch': 'Erster Schlupf'
+          }[key] || key);
+        }
       };
     }
   });
@@ -91,6 +105,66 @@ async function waitFor(assertion) {
 }
 
 describe('Stream Monsters creator wizard', () => {
+  test.each([
+    ['de', {
+      STREAM_MONSTERS_RUNTIME_NOT_INSTALLED: 'Installiere zuerst die empfohlene Runtime.',
+      STREAM_MONSTERS_RUNTIME_VERIFY_ADAPTER_MISMATCH: 'Wähle den installierten Grafikadapter aus oder installiere die Runtime für den ausgewählten Adapter neu.',
+      STREAM_MONSTERS_RUNTIME_VERIFY_PROFILE_MISMATCH: 'Wähle das installierte Runtime-Profil aus oder installiere die Runtime für das ausgewählte Profil neu.'
+    }],
+    ['en', {
+      STREAM_MONSTERS_RUNTIME_NOT_INSTALLED: 'Install the recommended runtime first.',
+      STREAM_MONSTERS_RUNTIME_VERIFY_ADAPTER_MISMATCH: 'Select the installed graphics adapter or reinstall the runtime for the selected adapter.',
+      STREAM_MONSTERS_RUNTIME_VERIFY_PROFILE_MISMATCH: 'Select the installed runtime profile or reinstall the runtime for the selected profile.'
+    }],
+    ['es', {
+      STREAM_MONSTERS_RUNTIME_NOT_INSTALLED: 'Instala primero el runtime recomendado.',
+      STREAM_MONSTERS_RUNTIME_VERIFY_ADAPTER_MISMATCH: 'Selecciona el adaptador gráfico instalado o reinstala el runtime para el adaptador seleccionado.',
+      STREAM_MONSTERS_RUNTIME_VERIFY_PROFILE_MISMATCH: 'Selecciona el perfil de runtime instalado o reinstala el runtime para el perfil seleccionado.'
+    }],
+    ['fr', {
+      STREAM_MONSTERS_RUNTIME_NOT_INSTALLED: 'Installez d’abord le runtime recommandé.',
+      STREAM_MONSTERS_RUNTIME_VERIFY_ADAPTER_MISMATCH: 'Sélectionnez l’adaptateur graphique installé ou réinstallez le runtime pour l’adaptateur sélectionné.',
+      STREAM_MONSTERS_RUNTIME_VERIFY_PROFILE_MISMATCH: 'Sélectionnez le profil de runtime installé ou réinstallez le runtime pour le profil sélectionné.'
+    }]
+  ])('renders actionable managed-runtime verification errors in %s without the generic fallback', async (locale, expectedMessages) => {
+    const runtimeStatus = {
+      success: true,
+      adapters: [{ id: 'gpu-1', name: 'NVIDIA RTX 4060', vramMb: 8192 }],
+      selectedAdapterId: 'gpu-1',
+      recommendation: {
+        supported: true,
+        profileId: 'nvidia-standard',
+        reasonCode: 'supported_profile'
+      },
+      profiles: [{ id: 'nvidia-standard', label: 'NVIDIA RTX 20+', backend: 'cuda' }],
+      runtimeDetails: { profileId: 'nvidia-standard', backend: 'cuda', adapterId: 'gpu-1' },
+      installDetails: {},
+      model: { license: 'OpenRAIL++' }
+    };
+    const genericFallback = JSON.parse(fs.readFileSync(
+      path.join(process.cwd(), 'plugins', 'streamalchemy', 'locales', `${locale}.json`),
+      'utf8'
+    )).plugins.streamalchemy.ui.monsters.runtimeErrorUnknown;
+
+    for (const [errorCode, expectedMessage] of Object.entries(expectedMessages)) {
+      const { dom } = bootUi({
+        locale,
+        runtimeFetch: async (url, options) => {
+          if (url.startsWith('/api/streammonsters/local-runtime/status')) return response(runtimeStatus);
+          if (url === '/api/streammonsters/local-runtime/verify' && options.method === 'POST') {
+            return errorResponse(errorCode);
+          }
+          return null;
+        }
+      });
+      await waitFor(() => expect(dom.window.document.getElementById('runtimeAdapters').value).toBe('gpu-1'));
+      dom.window.document.getElementById('runtimeVerify').click();
+      await waitFor(() => expect(dom.window.document.getElementById('notice').textContent).toBe(expectedMessage));
+      expect(dom.window.document.getElementById('notice').textContent).not.toBe(genericFallback);
+      dom.window.close();
+    }
+  });
+
   test('starts a fresh install job with the remembered request after cancel and resume', async () => {
     let installCount = 0;
     const runtimeStatus = {
