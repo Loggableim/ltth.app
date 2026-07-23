@@ -1,113 +1,566 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Stream Monsters</title>
+  <title>Stream Monsters · Collector Arena</title>
   <style>
-    :root { color-scheme: dark; --ink:#edf4ff; --muted:#aebbd0; --panel:#171d2c; --line:#2d3a54; --accent:#9d71ff; --good:#54d89b; --warn:#ffcd66; }
-    * { box-sizing:border-box; } body { margin:0; font:15px/1.5 Inter,Segoe UI,Arial,sans-serif; color:var(--ink); background:radial-gradient(circle at 15% 0,#30205a,#0b0e16 52%); }
-    main { max-width:1120px; margin:auto; padding:38px 22px 72px; } .eyebrow { color:#bea9ff; text-transform:uppercase; font-size:12px; letter-spacing:.14em; font-weight:700; }
-    h1 { font-size:clamp(38px,7vw,70px); margin:3px 0 8px; line-height:1; } h2 { margin:0 0 8px; font-size:22px; } p { color:var(--muted); margin:6px 0; }
-    .hero { display:grid; grid-template-columns:1.3fr .7fr; gap:26px; align-items:end; padding-bottom:26px; } .promise { border:1px solid #6553a5; background:#1d1935cc; padding:18px; border-radius:16px; }
-    .steps { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:20px 0; padding:0; list-style:none; } .steps li { padding:9px 11px; border-radius:10px; background:#171d2c; border:1px solid var(--line); color:var(--muted); font-size:12px; }
-    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; } .card { background:linear-gradient(145deg,#1a2131,#111725); border:1px solid var(--line); border-radius:16px; padding:18px; }
-    label { display:grid; gap:5px; color:var(--muted); margin-top:11px; font-size:13px; } input,select,button { font:inherit; border-radius:9px; } input,select { padding:10px; color:var(--ink); border:1px solid #415071; background:#0c111d; }
-    button { border:0; padding:10px 13px; margin-top:13px; background:var(--accent); color:white; font-weight:700; cursor:pointer; } button.secondary { background:#26334b; } button:disabled { opacity:.55; cursor:wait; }
-    code { display:block; margin-top:10px; padding:10px; overflow-wrap:anywhere; border-radius:9px; color:#c9f0ff; background:#0a0e17; } .notice { min-height:24px; margin:18px 0; padding:10px 13px; border-radius:9px; background:#172033; color:var(--muted); } .notice.success { color:#bcffe0; border:1px solid #316e55; } .notice.error { color:#ffd0d0; border:1px solid #843b45; }
-    .pool-row { display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px solid var(--line); } .status { font-size:12px; color:var(--good); } .rules { margin:0; padding-left:20px; color:var(--muted); } .rules li { margin:6px 0; }
-    @media (max-width:700px) { .hero { grid-template-columns:1fr; } .steps { grid-template-columns:1fr 1fr; } }
+    :root {
+      color-scheme: dark;
+      --night:#090c18;
+      --panel:#131a2c;
+      --panel-2:#1a2340;
+      --line:#344267;
+      --ink:#f7f8ff;
+      --muted:#aeb8d2;
+      --violet:#9a76ff;
+      --cyan:#55d7ff;
+      --mint:#55e4aa;
+      --gold:#ffd266;
+      --danger:#ff748e;
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at 8% -10%,#56358c 0,transparent 34%),
+        radial-gradient(circle at 100% 22%,#163d68 0,transparent 32%),
+        var(--night);
+      font:15px/1.5 Inter,Segoe UI,Arial,sans-serif;
+    }
+    button,input,select { font:inherit; }
+    button { cursor:pointer; }
+    main { max-width:1320px; margin:auto; padding:28px 24px 80px; }
+    .hero {
+      position:relative;
+      display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(260px,420px);
+      gap:24px;
+      align-items:center;
+      overflow:hidden;
+      padding:24px 28px;
+      border:1px solid #57487c;
+      border-radius:28px;
+      background:linear-gradient(130deg,#211638e8,#101a31e8);
+      box-shadow:0 28px 90px #0008;
+    }
+    .hero-logo { width:min(560px,100%); max-height:132px; object-fit:contain; object-position:left center; }
+    .eyebrow { color:#c9b6ff; text-transform:uppercase; letter-spacing:.14em; font-size:12px; font-weight:800; }
+    .hero h1 { margin:8px 0 6px; font-size:clamp(28px,4vw,48px); line-height:1.05; }
+    .hero p,.section-copy,.muted { color:var(--muted); }
+    .hero-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    .metric { padding:13px; border:1px solid #3c4a70; border-radius:16px; background:#0b1120b8; }
+    .metric strong { display:block; font-size:21px; color:var(--cyan); }
+    .nav {
+      position:sticky;
+      top:0;
+      z-index:4;
+      display:flex;
+      gap:8px;
+      overflow:auto;
+      padding:16px 0;
+      background:linear-gradient(var(--night) 70%,transparent);
+    }
+    .nav a { white-space:nowrap; color:var(--muted); text-decoration:none; padding:9px 12px; border:1px solid var(--line); border-radius:999px; background:#101728; }
+    .nav a:hover { color:var(--ink); border-color:var(--violet); }
+    .notice { min-height:42px; padding:10px 14px; margin-bottom:14px; color:var(--muted); border:1px solid var(--line); border-radius:12px; background:#11192b; }
+    .notice.success { color:#bfffe3; border-color:#34795f; }
+    .notice.error { color:#ffd4dc; border-color:#8d4051; }
+    .area { scroll-margin-top:74px; margin-top:18px; padding:22px; border:1px solid var(--line); border-radius:22px; background:linear-gradient(145deg,#151d31ed,#0e1425ed); }
+    .area-head { display:flex; justify-content:space-between; gap:18px; align-items:flex-start; margin-bottom:16px; }
+    .area h2 { margin:2px 0; font-size:26px; }
+    .badge { display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border:1px solid #456; border-radius:999px; color:var(--muted); background:#0b1221; font-size:12px; }
+    .badge.good { color:#bfffe3; border-color:#39765f; }
+    .grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px; }
+    .card { grid-column:span 4; min-width:0; padding:16px; border:1px solid #334263; border-radius:17px; background:linear-gradient(145deg,#1a2440,#11182a); }
+    .card.wide { grid-column:span 8; }
+    .card.full { grid-column:1/-1; }
+    .card h3 { margin:0 0 6px; font-size:18px; }
+    label { display:grid; gap:5px; margin-top:11px; color:var(--muted); font-size:13px; }
+    input,select { width:100%; min-height:42px; padding:9px 11px; color:var(--ink); border:1px solid #405076; border-radius:10px; background:#0b1120; }
+    button { min-height:40px; margin-top:11px; padding:9px 13px; border:0; border-radius:10px; color:white; background:linear-gradient(135deg,var(--violet),#6f54d9); font-weight:800; }
+    button.secondary { color:#dfe8ff; background:#273654; }
+    button.danger { background:#733548; }
+    button:disabled { opacity:.5; cursor:wait; }
+    code { display:block; padding:10px; margin-top:8px; overflow-wrap:anywhere; color:#c5f3ff; border-radius:10px; background:#080c16; }
+    .gift-layout { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(300px,.7fr); gap:14px; }
+    .catalog,.mapping-list,.collection-list,.leaderboard { display:grid; gap:8px; max-height:390px; overflow:auto; margin-top:12px; }
+    .gift-row,.mapping-row,.pool-row,.viewer-row,.rank-row { display:flex; align-items:center; gap:11px; padding:10px; border:1px solid #303f61; border-radius:12px; background:#0d1424; }
+    .gift-row button { margin:0 0 0 auto; }
+    .gift-img { width:44px; height:44px; object-fit:contain; border-radius:10px; background:#202942; }
+    .grow { flex:1; min-width:0; }
+    .grow strong,.grow small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .grow small { color:var(--muted); }
+    .egg-grid { display:grid; grid-template-columns:repeat(6,minmax(100px,1fr)); gap:10px; margin-top:14px; }
+    .egg-card { position:relative; min-height:154px; overflow:hidden; padding:9px; border:1px solid #344568; border-radius:16px; text-align:center; background:radial-gradient(circle at 50% 35%,#35486d,#101727 68%); }
+    .egg-card.charged { border-color:#b495ff; box-shadow:inset 0 0 28px #8c67ff3d; }
+    .egg-card img { width:100%; height:112px; object-fit:contain; filter:drop-shadow(0 9px 15px #0008); }
+    .egg-card strong { display:block; text-transform:capitalize; font-size:12px; }
+    .provider-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:12px 0; }
+    .provider { padding:9px; border:1px solid #344568; border-radius:11px; text-align:center; color:var(--muted); background:#0d1424; }
+    .provider strong { display:block; color:var(--ink); font-size:12px; }
+    .coverage { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-top:12px; }
+    .coverage > div { padding:9px; border-radius:10px; background:#0b1221; text-align:center; color:var(--muted); }
+    .commands { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
+    .commands code { display:inline-block; margin:0; }
+    .rank-track { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; margin-top:12px; }
+    .rank-track div { padding:10px; border:1px solid #334263; border-radius:11px; text-align:center; color:var(--muted); background:#0b1221; }
+    .rank-track strong { display:block; color:var(--gold); }
+    @media (max-width:960px) {
+      .hero,.gift-layout { grid-template-columns:1fr; }
+      .card,.card.wide { grid-column:1/-1; }
+      .egg-grid { grid-template-columns:repeat(4,1fr); }
+      .provider-grid { grid-template-columns:repeat(3,1fr); }
+    }
+    @media (max-width:620px) {
+      main { padding:14px 12px 60px; }
+      .hero,.area { padding:16px; border-radius:18px; }
+      .hero-stats { grid-template-columns:1fr; }
+      .egg-grid { grid-template-columns:repeat(2,1fr); }
+      .coverage,.rank-track { grid-template-columns:repeat(2,1fr); }
+    }
   </style>
 </head>
 <body>
 <main id="streammonsters-app">
-  <section class="hero">
-    <div><div class="eyebrow">Stream Monsters · five-minute setup</div><h1 data-i18n="plugins.streamalchemy.streammonsters.heroTitle">Your community hatches the world.</h1><p data-i18n="plugins.streamalchemy.streammonsters.heroCopy">Gifts spawn deterministic element eggs. Prepare the visuals before live; during live, every event stays instant and safe.</p></div>
-    <aside class="promise"><strong>Original, transparent game rules.</strong><p data-i18n="plugins.streamalchemy.streammonsters.promiseCopy">No paid randomness, no wagers, no transferable rewards. Elements, boosts and duels are visible and reproducible.</p></aside>
+  <header class="hero">
+    <div>
+      <img class="hero-logo" src="/plugins/streamalchemy/assets/branding/stream-monsters-logo.png" alt="Stream Monsters">
+      <div class="eyebrow">Collector Arena · Version 1.2</div>
+      <h1>Ein Geschenk. Ein Ei. Ein Monster für immer.</h1>
+      <p>Das faire Live-Sammelspiel: Geschenke beschleunigen die Show, niemals die Kampfstärke. KI-Kunst wird vor dem Stream vorbereitet; Kenney übernimmt live sofort.</p>
+    </div>
+    <div class="hero-stats">
+      <div class="metric"><strong id="readinessScore">0/4</strong><span>Live bereit</span></div>
+      <div class="metric"><strong id="catalogTotal">—</strong><span>Geschenke im Katalog</span></div>
+      <div class="metric"><strong id="hypeMetric">0%</strong><span>Stream-Hype</span></div>
+    </div>
+  </header>
+
+  <nav class="nav" aria-label="Collector Arena Bereiche">
+    <a href="#readiness">1 · Live-Readiness</a>
+    <a href="#gifts">2 · Geschenke-Mapping</a>
+    <a href="#art-lab">3 · Art Lab</a>
+    <a href="#collections">4 · Zuschauer-Sammlungen</a>
+    <a href="#league">5 · Saison &amp; Liga</a>
+  </nav>
+  <div id="notice" class="notice" role="status">Stream Monsters wird geladen …</div>
+
+  <section id="readiness" class="area">
+    <div class="area-head"><div><div class="eyebrow">Bereich 1</div><h2>Live-Readiness</h2><p class="section-copy">Vier klare Checks, dann ist die Arena sendebereit.</p></div><span id="liveBadge" class="badge">● Offline-Check</span></div>
+    <div class="grid">
+      <article class="card">
+        <h3>Welt & Creator</h3>
+        <label>Öffentlicher Name<input id="creatorName" maxlength="60" placeholder="TikTok-Name"></label>
+        <button id="saveSetup" type="button">Namen speichern</button>
+      </article>
+      <article class="card">
+        <h3>OBS Browser Source</h3>
+        <p class="muted">Unterstützt 16:9 und 9:16 automatisch.</p>
+        <code id="overlayUrl">/streammonsters/overlay</code>
+        <button id="runDemo" type="button">Kompletten Demoablauf starten</button>
+      </article>
+      <article class="card">
+        <h3>Spielregeln</h3>
+        <p class="muted">5 Minuten Brutzeit · Charged nur kosmetisch und schneller · 28 feste Startpunkte · 3 reproduzierbare Kampfrunden.</p>
+        <div id="creatorMetrics" class="badge">Noch keine Streamdaten</div>
+      </article>
+      <article class="card full">
+        <h3>Viewer-Kommandos</h3>
+        <div class="commands">
+          <code>!eggs</code><code>!hatch [slot]</code><code>!monsters</code><code>!monster [slot]</code>
+          <code>!choose &lt;slot&gt;</code><code>!battle</code><code>!leavebattle</code>
+          <code>!rank</code><code>!quests</code><code>!monstershelp</code>
+        </div>
+      </article>
+    </div>
   </section>
-  <ol class="steps"><li data-i18n="plugins.streamalchemy.streammonsters.stepWorld">1. Name your world</li><li data-i18n="plugins.streamalchemy.streammonsters.stepGifts">2. Select gifts</li><li data-i18n="plugins.streamalchemy.streammonsters.stepAi">3. Choose local AI</li><li data-i18n="plugins.streamalchemy.streammonsters.stepPrepare">4. Prepare art</li><li data-i18n="plugins.streamalchemy.streammonsters.stepObs">5. Add OBS overlay</li></ol>
-  <div id="notice" class="notice" role="status">Loading your Stream Monsters setup…</div>
-  <section class="grid">
-    <article class="card"><h2 data-i18n="plugins.streamalchemy.streammonsters.worldHeading">1. Your world</h2><p data-i18n="plugins.streamalchemy.streammonsters.worldCopy">We use the connected TikTok name by default. Change this only if you want a custom display name.</p><label>Creator or world name<input id="creatorName" maxlength="60" placeholder="Your TikTok username" data-i18n-placeholder="plugins.streamalchemy.streammonsters.creatorPlaceholder"></label><button id="saveSetup" type="button" data-i18n="plugins.streamalchemy.streammonsters.save">Save world</button></article>
-    <article class="card"><h2 data-i18n="plugins.streamalchemy.streammonsters.giftHeading">2. Gift pool</h2><p data-i18n="plugins.streamalchemy.streammonsters.giftCopy">Add gifts you expect tonight. They are queued now, but never generated while you are live.</p><label>Known TikTok gift<select id="catalogGift"><option value="" data-i18n="plugins.streamalchemy.streammonsters.knownGift">Choose a known gift…</option></select></label><label>Gift ID<input id="giftId" inputmode="numeric" placeholder="e.g. 5655" data-i18n-placeholder="plugins.streamalchemy.streammonsters.giftIdPlaceholder"></label><label>Gift name<input id="giftName" maxlength="80" placeholder="e.g. Rose" data-i18n-placeholder="plugins.streamalchemy.streammonsters.giftNamePlaceholder"></label><label>Role<select id="giftEffect"><option value="spawn" data-i18n="plugins.streamalchemy.streammonsters.spawnEgg">Spawns an egg</option><option value="boost" data-i18n="plugins.streamalchemy.streammonsters.boostEgg">Accelerates the oldest egg</option></select></label><button id="queueGift" type="button" data-i18n="plugins.streamalchemy.streammonsters.queueGift">Add to preparation pool</button></article>
-    <article class="card"><h2 data-i18n="plugins.streamalchemy.streammonsters.aiHeading">3. Local image AI</h2><p id="localModelCopy" data-i18n="plugins.streamalchemy.streammonsters.aiCopy">Windows + NVIDIA: Stream Monsters will recommend the fastest safe profile from your detected GPU. Other systems can use remote or an existing ComfyUI setup.</p><p id="localRuntimeStatus" class="status" data-i18n="plugins.streamalchemy.streammonsters.checkingAi">Checking local AI compatibility…</p><button class="secondary" id="openLocalSetup" type="button" data-i18n="plugins.streamalchemy.streammonsters.checkAi">Check local AI setup</button></article>
-    <article class="card"><h2 data-i18n="plugins.streamalchemy.streammonsters.prepareHeading">4. Prepare before live</h2><p data-i18n="plugins.streamalchemy.streammonsters.prepareCopy">One job at a time. If art is not ready, viewers see a branded egg and can use !inventory next stream.</p><button id="preparePool" type="button" data-i18n="plugins.streamalchemy.streammonsters.prepare">Prepare queued art</button><div id="poolList" aria-live="polite"></div></article>
-    <article class="card"><h2 data-i18n="plugins.streamalchemy.streammonsters.overlayHeading">5. OBS overlay</h2><p data-i18n="plugins.streamalchemy.streammonsters.overlayCopy">Add this browser source to OBS. Use the demo before going live.</p><code id="overlayUrl">/streammonsters/overlay</code><button class="secondary" id="runDemo" type="button" data-i18n="plugins.streamalchemy.streammonsters.demo">Run safe demo</button></article>
-    <article class="card"><h2 data-i18n="plugins.streamalchemy.streammonsters.dashboardHeading">Live dashboard</h2><p data-i18n="plugins.streamalchemy.streammonsters.dashboardCopy">Current stream activity is transparent and never used for billing.</p><div id="creatorMetrics" class="rules">Start a TikTok session to see eggs, hatches, viewers, duels, quests and pool coverage.</div></article>
-    <article class="card"><h2 data-i18n="plugins.streamalchemy.streammonsters.playHeading">Community play</h2><ul class="rules"><li data-i18n="plugins.streamalchemy.streammonsters.ruleElements">Six deterministic elements: Ember, Tide, Grove, Gale, Volt and Lunar.</li><li data-i18n="plugins.streamalchemy.streammonsters.ruleHatch">Eggs hatch after 30 minutes in real time; configured booster gifts reduce the timer.</li><li><strong>!inventory</strong>, <strong>!choose &lt;slot&gt;</strong> and <strong>!battle</strong> let viewers play.</li><li data-i18n="plugins.streamalchemy.streammonsters.ruleBattle">Duels are three reproducible rounds without stakes or prizes.</li></ul></article>
+
+  <section id="gifts" class="area">
+    <div class="area-head"><div><div class="eyebrow">Bereich 2</div><h2>Geschenke-Mapping</h2><p class="section-copy">Der vollständige TikTok-Katalog ist die Quelle. Nur aktivierte Geschenke lösen Stream-Monsters-Aktionen aus.</p></div><span id="mappingCount" class="badge">0 aktiv</span></div>
+    <div class="gift-layout">
+      <article class="card full">
+        <h3>Katalog durchsuchen</h3>
+        <label>Geschenkname oder ID<input id="giftSearch" type="search" placeholder="z. B. Rose oder 5655"></label>
+        <div id="giftCatalog" class="catalog" aria-live="polite"></div>
+      </article>
+      <article class="card full">
+        <h3>Ausgewähltes Geschenk</h3>
+        <input id="selectedGiftId" type="hidden">
+        <div id="selectedGift" class="gift-row"><span class="muted">Im Katalog ein Geschenk wählen.</span></div>
+        <label>Aktion<select id="giftEffect"><option value="spawn">Ei spawnen</option><option value="boost">Ältestes Ei boosten</option></select></label>
+        <label>Element<select id="giftElement"><option>Ember</option><option>Tide</option><option>Grove</option><option>Gale</option><option>Volt</option><option>Lunar</option></select></label>
+        <button id="saveGiftMapping" type="button">Mapping aktivieren</button>
+        <h3 style="margin-top:18px">Aktive Auswahl</h3>
+        <div id="mappingList" class="mapping-list"></div>
+      </article>
+    </div>
+  </section>
+
+  <section id="art-lab" class="area">
+    <div class="area-head"><div><div class="eyebrow">Bereich 3</div><h2>Art Lab</h2><p class="section-copy">Premium-KI wird seriell vor dem Stream vorbereitet. Fehlt Kunst, baut Kenney sofort ein deterministisches Monster.</p></div><span id="poolStatus" class="badge">Pool wird geprüft</span></div>
+    <div class="grid">
+      <article class="card wide">
+        <h3>Die zwölf Element-Eier</h3>
+        <div class="egg-grid">
+          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/ember-standard.png" alt="Ember Standard Ei"><strong>Ember · Standard</strong></div>
+          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/ember-charged.png" alt="Ember Charged Ei"><strong>Ember · Charged</strong></div>
+          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/tide-standard.png" alt="Tide Standard Ei"><strong>Tide · Standard</strong></div>
+          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/tide-charged.png" alt="Tide Charged Ei"><strong>Tide · Charged</strong></div>
+          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/grove-standard.png" alt="Grove Standard Ei"><strong>Grove · Standard</strong></div>
+          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/grove-charged.png" alt="Grove Charged Ei"><strong>Grove · Charged</strong></div>
+          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/gale-standard.png" alt="Gale Standard Ei"><strong>Gale · Standard</strong></div>
+          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/gale-charged.png" alt="Gale Charged Ei"><strong>Gale · Charged</strong></div>
+          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/volt-standard.png" alt="Volt Standard Ei"><strong>Volt · Standard</strong></div>
+          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/volt-charged.png" alt="Volt Charged Ei"><strong>Volt · Charged</strong></div>
+          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/lunar-standard.png" alt="Lunar Standard Ei"><strong>Lunar · Standard</strong></div>
+          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/lunar-charged.png" alt="Lunar Charged Ei"><strong>Lunar · Charged</strong></div>
+        </div>
+      </article>
+      <article class="card">
+        <h3>Provider & Zielabdeckung</h3>
+        <div class="provider-grid">
+          <div class="provider"><strong>ComfyUI</strong><span id="provider-localComfy">wird geprüft</span></div>
+          <div class="provider"><strong>SiliconFlow</strong><span id="provider-siliconflow">wird geprüft</span></div>
+          <div class="provider"><strong>OpenAI</strong><span id="provider-openai">wird geprüft</span></div>
+          <div class="provider"><strong>LightX</strong><span id="provider-lightx">wird geprüft</span></div>
+          <div class="provider"><strong>Kenney</strong><span id="provider-kenney">CC0 · sofort bereit</span></div>
+        </div>
+        <p id="localRuntimeStatus" class="muted">Providerstatus wird geprüft …</p>
+        <button class="secondary" id="openLocalSetup" type="button">Lokale KI prüfen</button>
+        <label>Freie KI-Skins je Variante<select id="poolTarget"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label>
+        <button id="preparePool" type="button">Pre-Stream-Pool vorbereiten</button>
+      </article>
+      <article class="card full">
+        <h3>Poolabdeckung</h3>
+        <div id="poolList" class="coverage"></div>
+      </article>
+    </div>
+  </section>
+
+  <section id="collections" class="area">
+    <div class="area-head"><div><div class="eyebrow">Bereich 4</div><h2>Zuschauer-Sammlungen</h2><p class="section-copy">Eier, Monster, Auswahl, Level und Achievements eines Viewers auf einen Blick.</p></div><span class="badge">Permanente Sammlung</span></div>
+    <div class="grid">
+      <article class="card">
+        <h3>Viewer finden</h3>
+        <label>TikTok-Name<input id="viewerSearch" placeholder="viewer_name"></label>
+        <button id="loadViewer" type="button">Sammlung laden</button>
+      </article>
+      <article class="card wide">
+        <h3>Sammlung</h3>
+        <p id="viewerSummary" class="muted">Rang, Auswahl und Achievements erscheinen nach der Suche.</p>
+        <div id="viewerCollection" class="collection-list"><span class="muted">Viewer wählen, um Eier und Monster zu sehen.</span></div>
+      </article>
+    </div>
+  </section>
+
+  <section id="league" class="area">
+    <div class="area-head"><div><div class="eyebrow">Bereich 5</div><h2>Saison &amp; Liga</h2><p class="section-copy">Die Sammlung bleibt. Nur Saisonpunkte und Rang starten nach 28 Tagen neu.</p></div><span id="seasonCountdown" class="badge">Saison wird geladen</span></div>
+    <div class="rank-track">
+      <div><strong>Bronze</strong>0</div><div><strong>Silber</strong>100</div><div><strong>Gold</strong>250</div><div><strong>Kristall</strong>500</div><div><strong>Monster Master</strong>900</div>
+    </div>
+    <article class="card full" style="margin-top:14px">
+      <h3>Top Collector</h3>
+      <div id="leaderboard" class="leaderboard"><span class="muted">Noch keine Saisonpunkte.</span></div>
+    </article>
   </section>
 </main>
+
 <script src="/js/i18n-client.js"></script>
 <script>
 (() => {
-  const doc = document;
-  const byId = id => doc.getElementById(id);
-  const t = (key, fallback, params = {}) => { const translated = window.i18n?.t(key, params); return translated && translated !== key ? translated : String(fallback).replace(/\{(\w+)\}/g, (match, name) => params[name] ?? match); };
-  const notice = (message, type = '') => { const node = byId('notice'); if (!node) return; node.textContent = message; node.className = `notice ${type}`; };
-  const request = async (url, options = {}) => { const response = await fetch(url, options); if (!response.ok) throw new Error(`Request failed: ${url}`); return response.json(); };
-  const renderPool = entries => {
-    const root = byId('poolList'); root.replaceChildren();
-    entries.slice(0, 8).forEach(entry => { const row = document.createElement('div'); row.className = 'pool-row'; const name = document.createElement('span'); name.textContent = `${entry.gift_name} · ${entry.element}`; const state = document.createElement('span'); state.className = 'status'; state.textContent = entry.status; row.append(name, state); root.append(row); });
-    if (!entries.length) root.textContent = t('plugins.streamalchemy.streammonsters.noGifts', 'No gifts queued yet.');
+  const byId = id => document?.getElementById(id) || null;
+  const jsonHeaders = { 'Content-Type':'application/json' };
+  const rankLabel = rank => ({ Silver:'Silber', Crystal:'Kristall' }[rank] || rank || 'Bronze');
+  let selectedGift = null;
+  let searchTimer = null;
+  const notice = (message, type = '') => {
+    const root = byId('notice');
+    if (!root) return;
+    root.textContent = message;
+    root.className = `notice ${type}`;
   };
-  const refreshPool = async () => { const payload = await request('/api/streammonsters/pool'); renderPool(payload.entries || []); };
-  const renderMetrics = metrics => {
-    const root = byId('creatorMetrics'); if (!metrics) return;
-    root.textContent = t('plugins.streamalchemy.streammonsters.dashboardMetrics', '{eggs} eggs · {hatches} hatches · {viewers} active viewers · {duels} duels · {quests} quest completions · {ready}/{total} art ready', { eggs: metrics.eggs_spawned || 0, hatches: metrics.hatches || 0, viewers: metrics.active_viewers || 0, duels: metrics.duels || 0, quests: metrics.quest_completions || 0, ready: metrics.pool_ready || 0, total: metrics.pool_total || 0 });
+  const request = async (url, options = {}) => {
+    const response = await fetch(url, options);
+    if (!response.ok) throw new Error(`Request failed: ${url}`);
+    return response.json();
   };
-  const formatBytes = value => { const bytes = Number(value) || 0; if (!bytes) return 'size supplied by the release'; return `${(bytes / 1024 / 1024 / 1024).toFixed(bytes >= 1024 * 1024 * 1024 ? 1 : 2)} GB`; };
-  const loadGiftCatalog = async () => {
-    const payload = await request('/api/streammonsters/gift-catalog');
-    const select = byId('catalogGift');
-    (payload.gifts || []).forEach(gift => {
-      const option = document.createElement('option');
-      option.value = String(gift.giftId); option.dataset.name = gift.giftName || ''; option.dataset.value = String(gift.coinValue || 0);
-      option.textContent = t('plugins.streamalchemy.streammonsters.giftOption', '{name} · {coins} diamonds', { name: gift.giftName || `Gift ${gift.giftId}`, coins: gift.coinValue || 0 });
-      select.append(option);
+  const giftImage = gift => gift.imageUrl || '/plugins/streamalchemy/assets/branding/stream-monsters-icon.png';
+  const giftRow = (gift, buttonText, onClick) => {
+    const row = document.createElement('div');
+    row.className = 'gift-row';
+    const image = document.createElement('img');
+    image.className = 'gift-img';
+    image.src = giftImage(gift);
+    image.alt = '';
+    const copy = document.createElement('div');
+    copy.className = 'grow';
+    const title = document.createElement('strong');
+    title.textContent = gift.giftName || gift.gift_name;
+    const meta = document.createElement('small');
+    meta.textContent = `ID ${gift.giftId || gift.gift_id} · ${gift.coinValue ?? gift.coin_value ?? 0} Diamonds`;
+    copy.append(title, meta);
+    row.append(image, copy);
+    if (buttonText) {
+      const button = document.createElement('button');
+      button.className = 'secondary';
+      button.textContent = buttonText;
+      button.addEventListener('click', onClick);
+      row.append(button);
+    }
+    return row;
+  };
+  const selectGift = gift => {
+    selectedGift = gift;
+    byId('selectedGiftId').value = gift.giftId;
+    const root = byId('selectedGift');
+    root.replaceChildren(giftRow(gift));
+  };
+  const loadCatalog = async (query = '') => {
+    const payload = await request(`/api/streammonsters/gift-catalog?q=${encodeURIComponent(query)}&offset=0&limit=40`);
+    byId('catalogTotal').textContent = payload.total ?? (payload.gifts || []).length;
+    const root = byId('giftCatalog');
+    root.replaceChildren();
+    (payload.gifts || []).forEach(gift => root.append(giftRow(gift, 'Auswählen', () => selectGift(gift))));
+    if (!(payload.gifts || []).length) root.textContent = 'Keine Geschenke gefunden.';
+  };
+  const loadMappings = async () => {
+    const payload = await request('/api/streammonsters/gift-mappings');
+    const root = byId('mappingList');
+    root.replaceChildren();
+    (payload.mappings || []).forEach(mapping => {
+      const gift = {
+        giftId:mapping.gift_id,
+        giftName:mapping.gift_name,
+        coinValue:mapping.coin_value,
+        imageUrl:mapping.image_url
+      };
+      root.append(giftRow(gift, 'Entfernen', async () => {
+        await request(`/api/streammonsters/gift-mappings/${mapping.gift_id}`, { method:'DELETE' });
+        await loadMappings();
+      }));
     });
+    byId('mappingCount').textContent = `${(payload.mappings || []).length} aktiv`;
+    if (!(payload.mappings || []).length) root.textContent = 'Noch keine Gifts aktiviert.';
+    return payload.mappings || [];
   };
-  const saveSetup = async () => { const creatorName = byId('creatorName').value.trim(); await request('/api/streammonsters/config', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ creatorName }) }); notice('World saved. Your viewers will see this name in Stream Monsters.', 'success'); };
-  const queueGift = async () => { const giftId = Number.parseInt(byId('giftId').value, 10); const giftName = byId('giftName').value.trim(); if (!giftId || !giftName) { notice('Enter a gift ID and name first.', 'error'); return; } await request('/api/streammonsters/pool', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ giftId, giftName, effect:byId('giftEffect').value }) }); byId('giftId').value = ''; byId('giftName').value = ''; await refreshPool(); notice('Gift added. Prepare it before your stream for generated artwork.', 'success'); };
-  const preparePool = async () => { const button = byId('preparePool'); button.disabled = true; notice('Preparing queued Stream Monsters art…'); try { const result = await request('/api/streammonsters/pool/prepare', { method:'POST' }); await refreshPool(); notice(`${(result.entries || []).length} queued visuals prepared.`, 'success'); } catch (error) { notice(error.message, 'error'); } finally { button.disabled = false; } };
-  const checkLocalRuntime = async (install = false) => {
-    const button = byId('openLocalSetup'); const status = byId('localRuntimeStatus');
+  const saveGiftMapping = async () => {
+    if (!selectedGift) throw new Error('Zuerst ein Geschenk im Katalog auswählen.');
+    const effect = byId('giftEffect').value;
+    await request(`/api/streammonsters/gift-mappings/${selectedGift.giftId}`, {
+      method:'PUT',
+      headers:jsonHeaders,
+      body:JSON.stringify({ enabled:true, effect, element:byId('giftElement').value })
+    });
+    await loadMappings();
+    notice(`${selectedGift.giftName} ist jetzt für Stream Monsters aktiv.`, 'success');
+  };
+  const renderPool = coverage => {
+    const root = byId('poolList');
+    root.replaceChildren();
+    (coverage || []).forEach(entry => {
+      const item = document.createElement('div');
+      const title = document.createElement('strong');
+      title.textContent = `${entry.element} · ${entry.variant}`;
+      const count = document.createElement('span');
+      count.textContent = `${entry.ready || 0} frei`;
+      item.append(title,document.createElement('br'),count);
+      root.append(item);
+    });
+    if (!(coverage || []).length) root.textContent = 'Noch keine KI-Skins vorbereitet. Kenney ist jederzeit startklar.';
+    const ready = (coverage || []).reduce((sum, entry) => sum + (entry.ready || 0), 0);
+    byId('poolStatus').textContent = ready ? `${ready} KI-Skins frei` : 'Kenney fallback bereit';
+  };
+  const refreshPool = async () => {
+    const payload = await request('/api/streammonsters/pool');
+    renderPool(payload.coverage || []);
+  };
+  const renderViewer = viewer => {
+    const root = byId('viewerCollection');
+    root.replaceChildren();
+    const selectedId = viewer.selectedMonster?.monster_id;
+    const achievements = viewer.achievements || [];
+    const rank = viewer.rank || {};
+    const summary = byId('viewerSummary');
+    const achievementLabel = achievements.length
+      ? achievements.map(entry => String(entry.achievement_key || '').replaceAll('_',' ')).join(', ')
+      : 'noch keine Achievements';
+    summary.textContent = `${rankLabel(rank.rank)} · ${rank.points || 0} Punkte · ${achievementLabel}`;
+    const items = [
+      ...(viewer.eggs || []).filter(egg => egg.state !== 'hatched').map(egg => ({
+        title:`${egg.element} Ei · ${egg.variant}`,
+        meta:egg.state === 'ready' ? 'Bereit für !hatch' : 'Brütet',
+        image:egg.image_url
+      })),
+      ...(viewer.monsters || []).map(monster => ({
+        title:`${monster.name} · Lv.${monster.level}`,
+        meta:`${monster.element} · ${monster.personality} · ${monster.xp} XP${monster.monster_id === selectedId ? ' · AKTIV' : ''}`,
+        image:monster.image_url
+      }))
+    ];
+    items.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'viewer-row';
+      const image = document.createElement('img');
+      image.className = 'gift-img';
+      image.src = item.image || '/plugins/streamalchemy/assets/branding/stream-monsters-icon.png';
+      const copy = document.createElement('div');
+      copy.className = 'grow';
+      const title = document.createElement('strong');
+      title.textContent = item.title;
+      const meta = document.createElement('small');
+      meta.textContent = item.meta;
+      copy.append(title,meta);
+      row.append(image, copy);
+      root.append(row);
+    });
+    if (!items.length) root.textContent = 'Noch keine Eier oder Monster.';
+  };
+  const loadViewer = async () => {
+    const userId = byId('viewerSearch').value.trim();
+    if (!userId) return;
+    const payload = await request(`/api/streammonsters/state?userId=${encodeURIComponent(userId)}`);
+    renderViewer(payload.viewer || {});
+  };
+  const renderLeaderboard = entries => {
+    const root = byId('leaderboard');
+    root.replaceChildren();
+    (entries || []).forEach((entry, index) => {
+      const row = document.createElement('div');
+      row.className = 'rank-row';
+      const place = document.createElement('strong');
+      place.textContent = `#${index + 1}`;
+      const copy = document.createElement('div');
+      copy.className = 'grow';
+      const user = document.createElement('strong');
+      user.textContent = entry.user_id;
+      const rank = document.createElement('small');
+      rank.textContent = `${rankLabel(entry.rank)}${entry.title ? ` · ${entry.title}` : ''}`;
+      copy.append(user,rank);
+      const points = document.createElement('strong');
+      points.textContent = entry.points;
+      row.append(place,copy,points);
+      root.append(row);
+    });
+    if (!(entries || []).length) root.textContent = 'Noch keine Saisonpunkte.';
+  };
+  const loadLeaderboard = async () => {
+    const payload = await request('/api/streammonsters/leaderboard?limit=25');
+    renderLeaderboard(payload.entries || []);
+  };
+  const saveSetup = async () => {
+    const creatorName = byId('creatorName').value.trim();
+    await request('/api/streammonsters/config', {
+      method:'POST',
+      headers:jsonHeaders,
+      body:JSON.stringify({ creatorName, artPoolTarget:Number(byId('poolTarget').value) })
+    });
+    notice('Weltname und Art-Pool-Ziel gespeichert.', 'success');
+  };
+  const preparePool = async () => {
+    const button = byId('preparePool');
     button.disabled = true;
+    notice('KI-Skins werden seriell vor dem Stream vorbereitet …');
     try {
-      const endpoint = install ? '/api/streammonsters/local-runtime/install' : '/api/streammonsters/local-runtime/status';
-      const payload = await request(endpoint, { method: install ? 'POST' : 'GET' });
-      if (install) { status.textContent = t('plugins.streamalchemy.streammonsters.runtimeInstallStarted', 'Verified runtime installation started. Model download and health status will appear here when ready.'); notice('Local AI installation started with the recommended fast profile.', 'success'); return; }
-      const recommendation = payload.recommendation || {};
-      delete button.dataset.installReady; delete button.dataset.installDetails;
-      if (!recommendation.supported) {
-        status.textContent = recommendation.reason || t('plugins.streamalchemy.streammonsters.runtimeUnsupported', 'Use your existing ComfyUI or a remote image provider on this system.');
-        button.textContent = t('plugins.streamalchemy.streammonsters.expertSetup', 'Use expert or remote setup'); return;
-      }
-      const resolution = `${recommendation.width}×${recommendation.height}, ${recommendation.steps} steps`;
-      if (!payload.manifestAvailable) {
-        status.textContent = t('plugins.streamalchemy.streammonsters.runtimeMissing', '{resolution} recommended. A signed LTTH runtime package is not configured yet; use existing ComfyUI or remote generation.', { resolution });
-        button.textContent = t('plugins.streamalchemy.streammonsters.refreshCompatibility', 'Refresh compatibility'); return;
-      }
-      const details = payload.installDetails || {};
-      status.textContent = t('plugins.streamalchemy.streammonsters.runtimeRecommended', '{resolution} recommended. Runtime: {runtime}; model: {model}; target: {target}.', { resolution, runtime: formatBytes(details.runtimeDownloadBytes), model: formatBytes(details.modelDownloadBytes), target: details.targetDir || 'managed plugin data folder' });
-      button.textContent = t('plugins.streamalchemy.streammonsters.installAi', 'Install verified local AI'); button.dataset.installReady = 'true'; button.dataset.installDetails = JSON.stringify(details);
-    } catch (error) { status.textContent = t('plugins.streamalchemy.streammonsters.localCheckFailed', 'Local AI check failed: {error}', { error: error.message }); }
-    finally { button.disabled = false; }
+      const targetPerVariant = Number(byId('poolTarget').value);
+      const result = await request('/api/streammonsters/pool/prepare', {
+        method:'POST',
+        headers:jsonHeaders,
+        body:JSON.stringify({ targetPerVariant })
+      });
+      renderPool(result.coverage || []);
+      notice((result.coverage || []).length
+        ? 'Art-Pool ist vorbereitet. Live wird keine Bild-KI gestartet.'
+        : 'Aktiviere zuerst mindestens ein Spawn-Gift; erst dann werden KI-Jobs erstellt.',
+      (result.coverage || []).length ? 'success' : 'error');
+    } catch (error) {
+      notice(`${error.message} · Kenney bleibt als sofortiger Fallback aktiv.`, 'error');
+    } finally {
+      button.disabled = false;
+    }
   };
-  const init = async () => { try { const [status, state] = await Promise.all([request('/api/status'), request('/api/streammonsters/state')]); const creator = state.config?.creatorName || status.username || ''; byId('creatorName').value = creator; byId('overlayUrl').textContent = `${location.origin}/streammonsters/overlay`; renderPool(state.pool || []); renderMetrics(state.metrics); notice('Setup ready. Add your gift pool, prepare it, then run the OBS demo.', 'success'); } catch (error) { notice(`Setup could not load: ${error.message}`, 'error'); } };
+  const checkLocalRuntime = async () => {
+    try {
+      const payload = await request('/api/streammonsters/local-runtime/status');
+      const recommendation = payload.recommendation || {};
+      const status = byId('localRuntimeStatus');
+      if (!status) return;
+      status.textContent = recommendation.supported
+        ? `Lokale KI kompatibel · ${recommendation.width || '?'}×${recommendation.height || '?'} · ${recommendation.steps || '?'} Schritte`
+        : (recommendation.reason || 'Remote-Provider oder bestehendes ComfyUI verwenden.');
+    } catch (error) {
+      const status = byId('localRuntimeStatus');
+      if (status) status.textContent = `Providercheck nicht verfügbar: ${error.message}`;
+    }
+  };
+  const loadProviderStatus = async () => {
+    try {
+      const payload = await request('/api/streamalchemy/providers/status');
+      const known = new Set(['localComfy','siliconflow','openai','lightx']);
+      (payload.providers || []).forEach(provider => {
+        if (!known.has(provider.provider)) return;
+        const target = byId(`provider-${provider.provider}`);
+        if (!target) return;
+        target.textContent = provider.state === 'ready'
+          ? `bereit${provider.model ? ` · ${provider.model}` : ''}`
+          : (provider.detail || provider.state || 'nicht konfiguriert');
+      });
+    } catch (error) {
+      ['localComfy','siliconflow','openai','lightx'].forEach(providerId => {
+        const target = byId(`provider-${providerId}`);
+        if (target) target.textContent = 'Status nicht verfügbar';
+      });
+    }
+  };
+  const init = async () => {
+    try {
+      const [status,state,mappings] = await Promise.all([
+        request('/api/status'),
+        request('/api/streammonsters/state'),
+        loadMappings()
+      ]);
+      byId('creatorName').value = state.config?.creatorName || status.username || '';
+      byId('poolTarget').value = String(state.config?.artPoolTarget || 3);
+      byId('overlayUrl').textContent = `${location.origin}/streammonsters/overlay`;
+      byId('hypeMetric').textContent = `${state.hype?.points || 0}%`;
+      renderPool(state.pool || []);
+      const metrics = state.metrics;
+      if (metrics) byId('creatorMetrics').textContent = `${metrics.eggs_spawned || 0} Eier · ${metrics.hatches || 0} Hatches · ${metrics.duels || 0} Duelle`;
+      const readiness = [Boolean(byId('creatorName').value), mappings.length > 0, true, Boolean(byId('overlayUrl').textContent)].filter(Boolean).length;
+      byId('readinessScore').textContent = `${readiness}/4`;
+      const end = state.season?.ends_at_ms;
+      if (end) byId('seasonCountdown').textContent = `Endet ${new Date(end).toLocaleDateString()}`;
+      notice('Collector Arena bereit. Gifts auswählen, Pool prüfen, Demo starten.', 'success');
+    } catch (error) {
+      notice(`Setup konnte nicht geladen werden: ${error.message}`, 'error');
+    }
+  };
+
   byId('saveSetup').addEventListener('click', () => saveSetup().catch(error => notice(error.message, 'error')));
-  byId('queueGift').addEventListener('click', () => queueGift().catch(error => notice(error.message, 'error')));
+  byId('saveGiftMapping').addEventListener('click', () => saveGiftMapping().catch(error => notice(error.message, 'error')));
   byId('preparePool').addEventListener('click', preparePool);
-  byId('catalogGift').addEventListener('change', event => { const option = event.target.selectedOptions[0]; if (!option?.value) return; byId('giftId').value = option.value; byId('giftName').value = option.dataset.name || option.textContent; });
-  byId('runDemo').addEventListener('click', async () => { try { await request('/api/streammonsters/demo', { method:'POST' }); notice('Demo sent to the Stream Monsters overlay.', 'success'); } catch (error) { notice(error.message, 'error'); } });
-  byId('openLocalSetup').addEventListener('click', () => {
-    const button = byId('openLocalSetup');
-    if (button.dataset.installReady !== 'true') return checkLocalRuntime().catch(error => notice(error.message, 'error'));
-    const details = JSON.parse(button.dataset.installDetails || '{}');
-    const confirmed = window.confirm(t('plugins.streamalchemy.streammonsters.confirmInstall', 'Install verified Stream Monsters local AI? Runtime: {runtime} Model: {model} Target: {target}', { runtime: formatBytes(details.runtimeDownloadBytes), model: formatBytes(details.modelDownloadBytes), target: details.targetDir || 'managed plugin data folder' }));
-    if (confirmed) return checkLocalRuntime(true).catch(error => notice(error.message, 'error'));
+  byId('loadViewer').addEventListener('click', () => loadViewer().catch(error => notice(error.message, 'error')));
+  byId('openLocalSetup').addEventListener('click', checkLocalRuntime);
+  byId('runDemo').addEventListener('click', async () => {
+    try {
+      await request('/api/streammonsters/demo', { method:'POST' });
+      notice('Vollständiger Spawn-, Hatch-, Kenney-, Liga- und Duell-Demoablauf gesendet.', 'success');
+    } catch (error) {
+      notice(error.message, 'error');
+    }
   });
-  loadGiftCatalog().catch(() => {});
-  checkLocalRuntime().catch(() => {});
+  byId('giftEffect').addEventListener('change', () => {
+    byId('giftElement').disabled = byId('giftEffect').value === 'boost';
+  });
+  byId('giftSearch').addEventListener('input', event => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => loadCatalog(event.target.value).catch(error => notice(error.message, 'error')), 180);
+  });
+  loadCatalog().catch(() => {});
+  loadLeaderboard().catch(() => {});
+  loadProviderStatus();
+  checkLocalRuntime();
   init();
 })();
 </script>

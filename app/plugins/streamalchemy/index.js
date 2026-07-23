@@ -25,6 +25,8 @@ const StreamMonstersChatCommands = require('./backend/streammonsters/chat-comman
 const StreamMonstersGenerationPool = require('./backend/streammonsters/generation-pool');
 const StreamMonstersProgressionService = require('./backend/streammonsters/progression-service');
 const StreamMonstersManagedRuntimeInstaller = require('./backend/streammonsters/managed-runtime-installer');
+const StreamMonstersArtPoolService = require('./backend/streammonsters/art-pool-service');
+const KenneyMonsterBuilder = require('./backend/streammonsters/kenney-monster-builder');
 
 const RUNTIME_TRUST_FIELDS = new Set([
   'manifest', 'archiveUrl', 'sha256', 'modelSha256', 'archiveType',
@@ -40,7 +42,7 @@ class StreamAlchemyPlugin {
   }
 
   async init() {
-    this.api.log('[STREAMALCHEMY] Initializing relaunch runtime', 'info');
+    this.api.log('[STREAM MONSTERS] Initializing Collector Arena runtime', 'info');
     const storedConfig = this.api.getConfig('streamalchemy_config');
     this.config = this.loadConfig(storedConfig);
     this.persistSanitizedConfigIfNeeded(storedConfig);
@@ -56,7 +58,10 @@ class StreamAlchemyPlugin {
     this.store.initialize();
     this.streamMonstersStore = new StreamMonstersDatabase(this.api.getDatabase());
     this.streamMonstersStore.initialize();
-    this.streamMonstersProgression = new StreamMonstersProgressionService({ store: this.streamMonstersStore });
+    this.streamMonstersProgression = new StreamMonstersProgressionService({
+      store: this.streamMonstersStore,
+      emit: (event, payload) => this.api.emit(event, payload)
+    });
     this.streamMonstersEngine = new StreamMonstersEngine({
       store: this.streamMonstersStore,
       progression: this.streamMonstersProgression,
@@ -97,7 +102,20 @@ class StreamAlchemyPlugin {
       store: this.streamMonstersStore,
       generationService: this.generationService
     });
-    this.streamMonstersEngine.generationPool = this.streamMonstersGenerationPool;
+    this.streamMonstersArtPool = new StreamMonstersArtPoolService({
+      store: this.streamMonstersStore,
+      generationService: this.generationService,
+      dataDir: this.getPluginDataDir(),
+      logger,
+      emit: (event, payload) => this.api.emit(event, payload)
+    });
+    this.streamMonstersKenneyBuilder = new KenneyMonsterBuilder({
+      assetDir: require('path').join(this.pluginDir, 'assets', 'kenney-monster-builder'),
+      dataDir: this.getPluginDataDir(),
+      logger
+    });
+    this.streamMonstersEngine.artPool = this.streamMonstersArtPool;
+    this.streamMonstersEngine.kenneyBuilder = this.streamMonstersKenneyBuilder;
 
     this.craftingEngine = new CraftingEngine({
       store: this.store,
@@ -133,13 +151,16 @@ class StreamAlchemyPlugin {
     this.streamMonstersRoutes = new StreamMonstersRoutes({
       api: this.api,
       pluginDir: this.pluginDir,
+      dataDir: this.getPluginDataDir(),
       store: this.streamMonstersStore,
       engine: this.streamMonstersEngine,
       generationPool: this.streamMonstersGenerationPool,
+      artPool: this.streamMonstersArtPool,
+      progression: this.streamMonstersProgression,
       systemAnalyzer: this.systemAnalyzer,
       managedRuntime: this.streamMonstersManagedRuntime,
       localModelInstaller: this.localModelInstaller,
-      giftCatalogProvider: () => this.getStreamMonstersGiftCatalog(),
+      giftCatalogProvider: locale => this.getStreamMonstersGiftCatalog(locale),
       configProvider: {
         getConfig: () => this.config,
         updateConfig: updates => this.updateConfig(updates)
@@ -149,13 +170,28 @@ class StreamAlchemyPlugin {
     this.integrateStreamMonstersGCCE();
 
     this.api.registerTikTokEvent('gift', async data => {
-      if (!this.config.enabled) return;
+      if (!this.config.enabled || !this.config.streamMonsters.enabled) return;
       await this.handleStreamMonstersGift(data);
     });
-    this.api.registerTikTokEvent('chat', async data => this.handleStreamMonstersChat(data));
-    this.api.registerTikTokEvent('streamSessionStarted', async data => this.handleStreamMonstersSession(data));
+    this.api.registerTikTokEvent('chat', async data => {
+      if (!this.config.enabled || !this.config.streamMonsters.enabled) return;
+      await this.handleStreamMonstersChat(data);
+    });
+    this.api.registerTikTokEvent('streamSessionStarted', async data => {
+      if (!this.config.enabled || !this.config.streamMonsters.enabled) return;
+      await this.handleStreamMonstersSession(data);
+    });
+    this.streamMonstersReadyTimer = setInterval(() => {
+      try {
+        if (!this.config.enabled || !this.config.streamMonsters.enabled) return;
+        this.streamMonstersEngine.markReadyEggs();
+      } catch (error) {
+        this.api.log(`[STREAM MONSTERS] Ready timer failed: ${error.message}`, 'warn');
+      }
+    }, 1_000);
+    this.streamMonstersReadyTimer.unref?.();
 
-    this.api.log('[STREAMALCHEMY] Relaunch runtime initialized', 'info');
+    this.api.log('[STREAM MONSTERS] Collector Arena runtime initialized', 'info');
   }
 
   loadConfig(storedConfig = this.api.getConfig('streamalchemy_config')) {
@@ -171,9 +207,10 @@ class StreamAlchemyPlugin {
       streamMonsters: {
         enabled: true,
         creatorName: '',
-        hatchDurationMs: 30 * 60 * 1000,
+        hatchDurationMs: 5 * 60 * 1000,
         maxUnhatchedEggs: 3,
         elementRules: 'deterministic',
+        artPoolTarget: 3,
         ...storedStreamMonsters,
         localRuntime: {
           state: 'not_installed',
@@ -318,7 +355,7 @@ class StreamAlchemyPlugin {
         return this.normalizeSecret(row?.value);
       }
     } catch (error) {
-      this.api.log(`[STREAMALCHEMY] Central setting ${key} unavailable: ${error.message}`, 'debug');
+      this.api.log(`[STREAM MONSTERS] Central setting ${key} unavailable: ${error.message}`, 'debug');
     }
     return null;
   }
@@ -395,23 +432,28 @@ class StreamAlchemyPlugin {
   }
 
   async destroy() {
+    if (this.streamMonstersReadyTimer) {
+      clearInterval(this.streamMonstersReadyTimer);
+      this.streamMonstersReadyTimer = null;
+    }
     if (this.streamMonstersGCCE?.unregisterCommandsForPlugin) {
       this.streamMonstersGCCE.unregisterCommandsForPlugin('streamalchemy');
     }
-    this.api.log('[STREAMALCHEMY] Relaunch runtime stopped', 'info');
+    this.streamMonstersEngine?.recentGifts?.clear?.();
+    this.streamMonstersChatCommands?.queue?.splice?.(0);
+    this.api.log('[STREAM MONSTERS] Collector Arena runtime stopped', 'info');
   }
 
-  getStreamMonstersGiftCatalog() {
+  getStreamMonstersGiftCatalog(locale = null) {
     try {
       const database = this.api.getDatabase();
-      if (typeof database?.getGiftCatalog === 'function') return database.getGiftCatalog() || [];
+      if (typeof database?.getGiftCatalog === 'function') return database.getGiftCatalog(locale) || [];
       const sqlite = database?.db || database;
       if (!sqlite?.prepare) return [];
       return sqlite.prepare(`
         SELECT id, name, image_url, diamond_count
         FROM gift_catalog
         ORDER BY diamond_count DESC, id ASC
-        LIMIT 100
       `).all();
     } catch (error) {
       this.api.log(`[STREAM MONSTERS] Gift catalog unavailable: ${error.message}`, 'debug');
@@ -423,11 +465,15 @@ class StreamAlchemyPlugin {
     const gcce = this.api.pluginLoader?.loadedPlugins?.get('gcce')?.instance;
     if (!gcce?.registerCommandsForPlugin || !gcce?.unregisterCommandsForPlugin) return false;
     const definitions = [
-      ['inventory', 'Show your Stream Monsters inventory', 0, 0],
+      ['eggs', 'Show your Stream Monsters eggs', 0, 0],
+      ['hatch', 'Hatch a ready egg by slot', 0, 1],
       ['monsters', 'Show your Stream Monsters', 0, 0],
+      ['monster', 'Show one monster by slot', 1, 1],
       ['choose', 'Choose a monster by slot', 1, 1],
       ['battle', 'Join the public Stream Monsters battle queue', 0, 0],
       ['leavebattle', 'Leave the Stream Monsters battle queue', 0, 0],
+      ['rank', 'Show the current Collector Arena rank', 0, 0],
+      ['quests', 'Show daily and weekly quests', 0, 0],
       ['monstershelp', 'Show Stream Monsters commands', 0, 0]
     ].map(([name, description, minArgs, maxArgs]) => ({
       name,
@@ -463,7 +509,6 @@ class StreamAlchemyPlugin {
     for (let index = 0; index < repeatCount; index += 1) {
       this.streamMonstersEngine.processGift({ userId, giftId, giftName, coinValue });
     }
-    this.streamMonstersEngine.hatchReadyEggs(userId);
   }
 
   async handleStreamMonstersChat(data = {}) {

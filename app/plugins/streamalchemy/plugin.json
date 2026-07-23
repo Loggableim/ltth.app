@@ -1,12 +1,14 @@
 {
   "id": "streamalchemy",
   "name": "Stream Monsters",
-  "version": "1.1.2",
-  "description": "Turn TikTok gifts into deterministic element eggs, community monsters and transparent viewer duels.",
+  "version": "1.2.0",
+  "description": "Collector Arena turns selected TikTok gifts into fair element eggs, permanent monsters, quests, achievements and transparent viewer duels.",
   "author": "Pup Cid",
+  "icon": "/plugins/streamalchemy/assets/branding/stream-monsters-icon.png",
+  "logo": "/plugins/streamalchemy/assets/branding/stream-monsters-logo.png",
   "entry": "index.js",
   "enabled": false,
-  "devStatus": "beta",
+  "devStatus": "working-beta",
   "dependencies": {
     "optional": [
       "gcce"
@@ -19,9 +21,9 @@
     "database"
   ],
   "descriptions": {
-    "en": "Turn TikTok gifts into deterministic element eggs, community monsters, quests and transparent three-round duels. Visuals are prepared before the stream.",
-    "de": "TikTok-Geschenke werden zu deterministischen Element-Eiern, Community-Monstern, Quests und transparenten Drei-Runden-Duellen. Bilder werden vor dem Stream vorbereitet.",
-    "es": "Convierte regalos de TikTok en huevos elementales deterministas, monstruos comunitarios, misiones y duelos transparentes de tres rondas. Las imagenes se preparan antes del directo.",
-    "fr": "Transformez les cadeaux TikTok en oeufs elementaires deterministes, monstres communautaires, quetes et duels transparents en trois manches. Les visuels sont prepares avant le live."
+    "en": "A fair live Collector Arena with selected gifts, twelve element eggs, permanent monsters, quests, achievements, 28-day leagues and transparent three-round duels. AI art is prepared before live; Kenney works instantly.",
+    "de": "Eine faire Live-Collector-Arena mit ausgewählten Gifts, zwölf Element-Eiern, permanenten Monstern, Quests, Achievements, 28-Tage-Ligen und transparenten Drei-Runden-Duellen. KI-Kunst wird vorab vorbereitet; Kenney funktioniert sofort.",
+    "es": "Una Collector Arena en directo justa con regalos seleccionados, doce huevos elementales, monstruos permanentes, misiones, logros, ligas de 28 días y duelos transparentes de tres rondas. El arte de IA se prepara antes; Kenney funciona al instante.",
+    "fr": "Une Collector Arena équitable avec cadeaux sélectionnés, douze oeufs élémentaires, monstres permanents, quêtes, succès, ligues de 28 jours et duels transparents en trois manches. L'art IA est préparé avant; Kenney fonctionne immédiatement."
   }
 }

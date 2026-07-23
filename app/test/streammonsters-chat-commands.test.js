@@ -18,6 +18,9 @@ function createCommands() {
     now: () => now
   });
   const hatch = (userId, giftId) => {
+    store.upsertGiftMapping({
+      giftId, giftName: `Gift ${giftId}`, element: giftId % 2 ? 'Ember' : 'Tide', effect: 'spawn', enabled: true
+    });
     engine.processGift({ userId, giftId, giftName: `Gift ${giftId}`, coinValue: 1 });
     return engine.hatchReadyEggs(userId)[0];
   };

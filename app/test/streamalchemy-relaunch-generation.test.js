@@ -245,7 +245,7 @@ describe('GenerationService', () => {
     expect(jobs[0].provider).toBe('localComfy');
   });
 
-  test('falls back to placeholder and records failed provider attempt', async () => {
+  test('records placeholder output as failed instead of successful AI generation', async () => {
     const { store, logger } = createStore();
     const failingProvider = {
       id: 'localComfy',
@@ -260,19 +260,19 @@ describe('GenerationService', () => {
       }
     });
 
-    const result = await service.generateImage({
+    await expect(service.generateImage({
       recipeKey: 'craft:v1:a:b:rpg:streamalchemy-v2',
       prompt: 'prompt',
       negativePrompt: 'negative',
       rarity: 'Common'
-    });
+    })).rejects.toThrow('PLACEHOLDER_IS_NOT_GENERATED_ART');
 
-    expect(result.provider).toBe('placeholder');
     const jobs = store.getGenerationJobs();
     expect(jobs).toHaveLength(2);
     const placeholderJob = jobs.find(job => job.provider === 'placeholder');
     const localJob = jobs.find(job => job.provider === 'localComfy');
-    expect(placeholderJob.status).toBe('succeeded');
+    expect(placeholderJob.status).toBe('failed');
+    expect(placeholderJob.error).toContain('PLACEHOLDER_IS_NOT_GENERATED_ART');
     expect(localJob.status).toBe('failed');
     expect(localJob.error).toContain('GPU out of memory');
   });

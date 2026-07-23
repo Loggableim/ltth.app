@@ -13,7 +13,7 @@ function createGame(options = {}) {
     now: options.now || (() => 1_000),
     emit: (event, payload) => emitted.push({ event, payload }),
     config: {
-      hatchDurationMs: 1_800_000,
+      hatchDurationMs: 5 * 60 * 1000,
       maxUnhatchedEggs: 3,
       defaultCreatorName: 'Creator',
       ...options.config
@@ -47,14 +47,22 @@ describe('Stream Monsters game core', () => {
     expect(first.eggColor).toMatch(/^#/);
   });
 
-  test('creates eggs for the first three gifts and uses later gifts as hatch boosts', () => {
+  test('creates eggs only for selected spawn gifts and uses selected boost gifts for acceleration', () => {
     let now = 10_000;
     const { store, engine } = createGame({ now: () => now });
-
+    for (let giftId = 1; giftId <= 4; giftId += 1) {
+      store.upsertGiftMapping({
+        giftId, giftName: `Gift ${giftId}`, element: 'Ember', effect: 'spawn', enabled: true
+      });
+    }
+    store.upsertGiftMapping({
+      giftId: 99, giftName: 'Boost', element: 'Volt', effect: 'boost', enabled: true
+    });
     for (let giftId = 1; giftId <= 4; giftId += 1) {
       engine.processGift({ userId: 'viewer-a', giftId, giftName: `Gift ${giftId}`, coinValue: 10 });
       now += 1;
     }
+    engine.processGift({ userId: 'viewer-a', giftId: 99, giftName: 'Boost', coinValue: 10 });
 
     const eggs = store.getViewerEggs('viewer-a');
     expect(eggs).toHaveLength(3);
@@ -65,6 +73,9 @@ describe('Stream Monsters game core', () => {
   test('hatches overdue eggs after the viewer returns and persists a selectable monster', () => {
     let now = 10_000;
     const { store, engine, emitted } = createGame({ now: () => now, config: { hatchDurationMs: 100 } });
+    store.upsertGiftMapping({
+      giftId: 7, giftName: 'Heart', element: 'Tide', effect: 'spawn', enabled: true
+    });
     engine.processGift({ userId: 'viewer-a', giftId: 7, giftName: 'Heart', coinValue: 1 });
 
     now = 10_101;
@@ -77,33 +88,41 @@ describe('Stream Monsters game core', () => {
     expect(emitted.map(entry => entry.event)).toContain('streammonsters:egg_hatched');
   });
 
-  test('rewards two different quick gifts with a transparent hatch combo boost', () => {
+  test('rewards two different quick gifts with a transparent hype combo bonus', () => {
     let now = 10_000;
     const { store, engine, emitted } = createGame({ now: () => now, config: { comboWindowMs: 6_000 } });
+    store.upsertGiftMapping({ giftId: 1, giftName: 'Rose', element: 'Ember', effect: 'spawn', enabled: true });
+    store.upsertGiftMapping({ giftId: 2, giftName: 'Heart', element: 'Tide', effect: 'spawn', enabled: true });
     engine.processGift({ userId: 'viewer-a', giftId: 1, giftName: 'Rose', coinValue: 1 });
     now = 12_000;
     engine.processGift({ userId: 'viewer-a', giftId: 2, giftName: 'Heart', coinValue: 1 });
 
-    expect(store.getViewerEggs('viewer-a')[0].boost_ms).toBeGreaterThan(0);
+    expect(store.getStreamHype('offline').points).toBe(40);
     expect(emitted.map(entry => entry.event)).toContain('streammonsters:gift_combo');
   });
 
-  test('applies the visible elemental-hour hatch bonus and stream metrics', () => {
+  test('keeps the five-minute timer fair during legacy elemental hours and records stream metrics', () => {
     const { store, engine } = createGame();
     const gift = Array.from({ length: 24 }, (_, index) => index + 1)
       .map(giftId => engine.describeGift({ giftId, giftName: `Gift ${giftId}` }))
       .find(item => item.element === 'Tide');
     store.createStreamEvent({ streamKey: 'creator:room-1', eventId: 'elemental-hour:tide', element: 'Tide', boostMultiplier: 2, startedAtMs: 1_000 });
     engine.setStreamKey('creator:room-1');
+    store.upsertGiftMapping({ ...gift, effect: 'spawn', enabled: true });
 
     engine.processGift({ userId: 'viewer-a', giftId: gift.giftId, giftName: gift.giftName });
 
-    expect(store.getViewerEggs('viewer-a')[0].boost_ms).toBe(120000);
+    expect(store.getViewerEggs('viewer-a')[0].boost_ms).toBe(0);
+    expect(store.getViewerEggs('viewer-a')[0].ready_at_ms).toBe(
+      store.getViewerEggs('viewer-a')[0].created_at_ms + 300000
+    );
     expect(store.getStreamMetrics('creator:room-1')).toEqual(expect.objectContaining({ eggs_spawned: 1 }));
   });
 
   test('resolves a three-round duel from a stored seed and records a non-transferable result', () => {
     const { store, engine } = createGame({ config: { hatchDurationMs: 0 } });
+    store.upsertGiftMapping({ giftId: 1, giftName: 'Rose', element: 'Ember', effect: 'spawn', enabled: true });
+    store.upsertGiftMapping({ giftId: 2, giftName: 'Heart', element: 'Tide', effect: 'spawn', enabled: true });
     engine.processGift({ userId: 'viewer-a', giftId: 1, giftName: 'Rose', coinValue: 1 });
     engine.processGift({ userId: 'viewer-b', giftId: 2, giftName: 'Heart', coinValue: 1 });
     const [monsterA] = engine.hatchReadyEggs('viewer-a');

@@ -1,13 +1,13 @@
 const Database = require('better-sqlite3');
 const StreamAlchemyPlugin = require('../plugins/streamalchemy');
 
-function createApi({ gcce = null } = {}) {
+function createApi({ gcce = null, streamMonstersEnabled = true } = {}) {
   const events = [];
   const routes = [];
   const emitted = [];
   const settings = new Map([['streamalchemy_config', {
     enabled: true,
-    streamMonsters: { hatchDurationMs: 1, maxUnhatchedEggs: 3 }
+    streamMonsters: { enabled: streamMonstersEnabled, hatchDurationMs: 1, maxUnhatchedEggs: 3 }
   }]]);
   const sqlite = new Database(':memory:');
   return {
@@ -38,7 +38,10 @@ describe('Stream Monsters plugin integration', () => {
     await plugin.init();
 
     expect(events.map(entry => entry.event)).toEqual(expect.arrayContaining(['gift', 'chat', 'streamSessionStarted']));
-    expect(plugin.streamMonstersEngine.generationPool).toBeDefined();
+    expect(plugin.streamMonstersEngine.artPool).toBeDefined();
+    plugin.streamMonstersStore.upsertGiftMapping({
+      giftId: 1, giftName: 'Rose', element: 'Ember', effect: 'spawn', enabled: true
+    });
     await events.find(entry => entry.event === 'gift').handler({
       uniqueId: 'viewer-a', giftId: 1, giftName: 'Rose', diamondCount: 1
     });
@@ -91,8 +94,52 @@ describe('Stream Monsters plugin integration', () => {
 
     expect(gcce.unregisterCommandsForPlugin).toHaveBeenCalledWith('streamalchemy');
     expect(gcce.registerCommandsForPlugin).toHaveBeenCalledWith('streamalchemy', expect.arrayContaining([
-      expect.objectContaining({ name: 'inventory', permission: 'all' }),
+      expect.objectContaining({ name: 'eggs', permission: 'all' }),
+      expect.objectContaining({ name: 'hatch', permission: 'all' }),
       expect.objectContaining({ name: 'battle', permission: 'all' })
     ]));
+  });
+
+  test('cleans the ready timer and volatile queues during reload shutdown', async () => {
+    const { api } = createApi();
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    plugin.streamMonstersEngine.recentGifts.set('viewer-a', { giftId: 1, timestamp: 1 });
+    plugin.streamMonstersChatCommands.queue.push({ userId: 'viewer-a', queuedAt: 1 });
+
+    expect(plugin.streamMonstersReadyTimer).toBeDefined();
+    await plugin.destroy();
+
+    expect(plugin.streamMonstersReadyTimer).toBeNull();
+    expect(plugin.streamMonstersEngine.recentGifts.size).toBe(0);
+    expect(plugin.streamMonstersChatCommands.queue).toEqual([]);
+  });
+
+  test('honors the nested Stream Monsters enable switch for gifts and chat', async () => {
+    const { api, events, emitted } = createApi({ streamMonstersEnabled: false });
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    plugin.streamMonstersStore.upsertGiftMapping({
+      giftId: 1,
+      giftName: 'Rose',
+      element: 'Ember',
+      effect: 'spawn',
+      enabled: true
+    });
+
+    await events.find(entry => entry.event === 'gift').handler({
+      uniqueId: 'viewer-a',
+      giftId: 1,
+      giftName: 'Rose',
+      diamondCount: 1
+    });
+    await events.find(entry => entry.event === 'chat').handler({
+      uniqueId: 'viewer-a',
+      comment: '!eggs'
+    });
+
+    expect(plugin.streamMonstersStore.getViewerEggs('viewer-a')).toEqual([]);
+    expect(emitted).toEqual([]);
+    await plugin.destroy();
   });
 });

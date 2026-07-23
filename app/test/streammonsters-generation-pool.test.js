@@ -21,34 +21,36 @@ function createPool() {
   return { store, pool, engine, generationService };
 }
 
-describe('Stream Monsters pre-stream generation pool', () => {
-  test('queues an unknown gift during live play but never invokes image generation', () => {
+describe('Stream Monsters legacy generation pool compatibility', () => {
+  test('ignores an unselected live gift and never invokes image generation', () => {
     const { store, engine, generationService } = createPool();
 
     const result = engine.processGift({ userId: 'viewer-a', giftId: 44, giftName: 'Comet', coinValue: 10 });
 
-    expect(result.egg.image_url).toMatch(/^data:image\/svg\+xml/);
+    expect(result.type).toBe('ignored');
     expect(generationService.generateImage).not.toHaveBeenCalled();
-    expect(store.getGenerationPool()).toEqual([expect.objectContaining({ gift_id: 44, status: 'queued' })]);
+    expect(store.getGenerationPool()).toEqual([]);
   });
 
-  test('prepares queued gift art once before a stream and reuses it for future eggs', async () => {
-    const { store, pool, engine, generationService } = createPool();
+  test('uses bundled element egg art for a selected live gift without queueing AI', async () => {
+    const { store, engine, generationService } = createPool();
+    store.upsertGiftMapping({
+      giftId: 44, giftName: 'Comet', element: 'Ember', effect: 'spawn', enabled: true
+    });
     engine.processGift({ userId: 'viewer-a', giftId: 44, giftName: 'Comet', coinValue: 10 });
 
-    const prepared = await pool.preparePending();
     const next = engine.processGift({ userId: 'viewer-b', giftId: 44, giftName: 'Comet', coinValue: 10 });
 
-    expect(prepared).toHaveLength(1);
-    expect(generationService.generateImage).toHaveBeenCalledTimes(1);
-    expect(store.getGenerationPool()[0]).toEqual(expect.objectContaining({ status: 'ready', image_url: 'https://images.example/ember-egg.png' }));
-    expect(next.egg.image_url).toBe('https://images.example/ember-egg.png');
+    expect(generationService.generateImage).not.toHaveBeenCalled();
+    expect(store.getGenerationPool()).toEqual([]);
+    expect(next.egg.image_url).toBe('/plugins/streamalchemy/assets/eggs/ember-standard.png');
   });
 
   test('treats configured booster gifts as explicit hatch acceleration rather than chance', () => {
     const { store, engine } = createPool();
+    store.upsertGiftMapping({ giftId: 1, giftName: 'Rose', element: 'Ember', effect: 'spawn', enabled: true });
     engine.processGift({ userId: 'viewer-a', giftId: 1, giftName: 'Rose', coinValue: 1 });
-    store.upsertGiftMapping({ giftId: 99, giftName: 'Galaxy', coinValue: 100, effect: 'boost' });
+    store.upsertGiftMapping({ giftId: 99, giftName: 'Galaxy', coinValue: 100, effect: 'boost', enabled: true });
 
     const result = engine.processGift({ userId: 'viewer-a', giftId: 99, giftName: 'Galaxy', coinValue: 100 });
 

@@ -708,7 +708,7 @@
             { icon: 'zap', label: 'Hybridshock', view: 'openshock', plugin: 'openshock' },
             { icon: 'help-circle', label: 'Quiz Show', view: 'quiz-show', plugin: 'quiz-show' },
             { icon: 'trophy', label: 'Viewer XP', view: 'milestone-leaderboard', plugin: 'milestone-leaderboard' },
-            { icon: 'flask-conical', label: 'Stream Alchemy', view: 'streamalchemy', plugin: 'streamalchemy' },
+            { icon: 'egg', label: 'Stream Monsters', view: 'streamalchemy', plugin: 'streamalchemy' },
             { icon: 'terminal', label: 'Chat Commands', view: 'gcce', plugin: 'gcce' },
             { icon: 'printer', label: 'Thermal Printer', view: 'thermal-printer', plugin: 'thermal-printer' },
             { icon: 'plug', label: 'Plugins', view: 'plugins' },

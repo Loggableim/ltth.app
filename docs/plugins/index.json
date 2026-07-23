@@ -865,37 +865,37 @@
   },
   {
     "id": "streamalchemy",
-    "name": "StreamAlchemy",
+    "name": "Stream Monsters",
     "category": "plugin",
-    "access": "beta",
-    "devStatus": "beta",
+    "access": "working-beta",
+    "devStatus": "working-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/de/docs/plugins/streamalchemy/alchemy-card.png",
-      "en": "/screenshots/docs/plugins/streamalchemy/alchemy-card.png",
-      "es": "/screenshots/es/docs/plugins/streamalchemy/alchemy-card.png",
-      "fr": "/screenshots/fr/docs/plugins/streamalchemy/alchemy-card.png"
+      "de": "/screenshots/features/stream-monsters.png",
+      "en": "/screenshots/features/stream-monsters.png",
+      "es": "/screenshots/features/stream-monsters.png",
+      "fr": "/screenshots/features/stream-monsters.png"
     },
     "translations": {
       "de": {
-        "title": "StreamAlchemy",
-        "summary": "StreamAlchemy richtet Automationsregel, Auslöser und Aktionskette ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Regel protokolliert den Trockenlauf, ohne LIVE-Aktionen auszuführen"
+        "title": "Stream Monsters",
+        "summary": "Ausgewählte TikTok-Geschenke werden zu fairen Element-Eiern, permanenten Monstern, Quests und reproduzierbaren Duellen.",
+        "firstResult": "ein ausgewähltes Gift erzeugt sofort ein Ei; Kenney liefert ohne Bild-KI ein lokales Monster"
       },
       "en": {
-        "title": "StreamAlchemy",
-        "summary": "StreamAlchemy configures automation rule, trigger, and action chain with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the rule logs the dry run without executing LIVE actions"
+        "title": "Stream Monsters",
+        "summary": "Selected TikTok gifts become fair element eggs, permanent monsters, quests and reproducible duels.",
+        "firstResult": "a selected gift spawns an egg immediately and Kenney supplies a local monster without image AI"
       },
       "es": {
-        "title": "StreamAlchemy",
-        "summary": "StreamAlchemy configura regla de automatización, disparador y cadena de acciones mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la regla registra la ejecución en seco sin realizar acciones LIVE"
+        "title": "Stream Monsters",
+        "summary": "Los regalos seleccionados se convierten en huevos elementales justos, monstruos permanentes, misiones y duelos reproducibles.",
+        "firstResult": "un regalo seleccionado crea un huevo y Kenney genera un monstruo local sin IA de imagen"
       },
       "fr": {
-        "title": "StreamAlchemy",
-        "summary": "StreamAlchemy configure règle d’automatisation, déclencheur et chaîne d’actions avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "la règle journalise l’essai à blanc sans exécuter d’actions LIVE"
+        "title": "Stream Monsters",
+        "summary": "Les cadeaux sélectionnés deviennent des oeufs élémentaires équitables, des monstres permanents, des quêtes et des duels reproductibles.",
+        "firstResult": "un cadeau sélectionné crée un oeuf et Kenney fournit un monstre local sans IA d’image"
       }
     }
   },
