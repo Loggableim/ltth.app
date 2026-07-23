@@ -147,6 +147,7 @@ class ManagedRuntimeInstaller {
     maxArchiveRedirects = 5,
     healthAttempts = 20,
     healthRequestTimeoutMs = 5000,
+    forcedVerifyTimeoutMs = 120000,
     healthRetryDelayMs = 500
   } = {}) {
     this.platform = platform;
@@ -185,6 +186,10 @@ class ManagedRuntimeInstaller {
     this.healthRequestTimeoutMs = Math.max(
       1,
       Math.min(60000, Number(healthRequestTimeoutMs) || 5000)
+    );
+    this.forcedVerifyTimeoutMs = Math.max(
+      1,
+      Math.min(600000, Number(forcedVerifyTimeoutMs) || 120000)
     );
     this.healthRetryDelayMs = Math.max(0, Math.min(10000, Number(healthRetryDelayMs) || 0));
     this.current = null;
@@ -938,13 +943,49 @@ class ManagedRuntimeInstaller {
   forceVerifyManagedRuntime({ adapter, profile, signal = null } = {}) {
     this.throwIfUnavailable(signal);
     if (this.forcedVerifyPromise) return this.forcedVerifyPromise;
-    const pending = this.settleForcedVerification({ adapter, profile, signal });
+    const deadline = this.createForcedVerificationDeadline(signal);
+    const operation = this.settleForcedVerification({
+      adapter,
+      profile,
+      signal: deadline.signal
+    });
+    const pending = Promise.race([operation, deadline.promise])
+      .finally(deadline.cleanup);
     this.forcedVerifyPromise = pending;
     const clearPending = () => {
       if (this.forcedVerifyPromise === pending) this.forcedVerifyPromise = null;
     };
     pending.then(clearPending, clearPending);
     return pending;
+  }
+
+  createForcedVerificationDeadline(signal = null) {
+    const controller = new AbortController();
+    let timeout = null;
+    let abortListener = null;
+    const promise = new Promise((_, reject) => {
+      abortListener = () => {
+        controller.abort();
+        reject(new Error('STREAM_MONSTERS_RUNTIME_ABORTED'));
+      };
+      if (signal?.aborted) {
+        abortListener();
+        return;
+      }
+      signal?.addEventListener?.('abort', abortListener, { once: true });
+      timeout = setTimeout(() => {
+        reject(new Error('STREAM_MONSTERS_RUNTIME_VERIFY_TIMEOUT'));
+        controller.abort();
+      }, this.forcedVerifyTimeoutMs);
+    });
+    return {
+      signal: controller.signal,
+      promise,
+      cleanup: () => {
+        if (timeout) clearTimeout(timeout);
+        signal?.removeEventListener?.('abort', abortListener);
+      }
+    };
   }
 
   async settleForcedVerification({ adapter, profile, signal = null } = {}) {
@@ -1083,6 +1124,7 @@ class ManagedRuntimeInstaller {
     if (!smoke?.ok || smoke.width !== 256 || smoke.height !== 256) {
       throw new Error('STREAM_MONSTERS_RUNTIME_SMOKE_TEST_FAILED');
     }
+    this.throwIfUnavailable(signal);
     this.lastSmokeTest = {
       state: 'passed',
       width: smoke.width,
@@ -1102,13 +1144,18 @@ class ManagedRuntimeInstaller {
         ...this.installation,
         smokeTest: this.lastSmokeTest
       };
-      if (this.dataDir) await this.writeActiveInstallation(this.installation);
+      if (this.dataDir) {
+        this.throwIfUnavailable(signal);
+        await this.writeActiveInstallation(this.installation);
+        this.throwIfUnavailable(signal);
+      }
     }
     return this.lastSmokeTest;
   }
 
   async fetchHealthStatus(url, signal = null) {
-    const controller = new AbortController();
+    const controller = signal ? null : new AbortController();
+    const fetchSignal = signal || controller.signal;
     let timeout = null;
     let timedOut = false;
     let abortListener = null;
@@ -1116,13 +1163,12 @@ class ManagedRuntimeInstaller {
       timeout = setTimeout(() => {
         timedOut = true;
         reject(new Error('STREAM_MONSTERS_RUNTIME_HEALTH_REQUEST_TIMEOUT'));
-        controller.abort();
+        controller?.abort();
       }, this.healthRequestTimeoutMs);
     });
     const abortPromise = new Promise((_, reject) => {
       if (!signal) return;
       abortListener = () => {
-        controller.abort();
         const error = new Error('STREAM_MONSTERS_RUNTIME_ABORTED');
         error.name = 'AbortError';
         reject(error);
@@ -1137,7 +1183,7 @@ class ManagedRuntimeInstaller {
       return await Promise.race([
         this.fetch(url, {
           redirect: 'manual',
-          signal: controller.signal
+          signal: fetchSignal
         }),
         timeoutPromise,
         abortPromise
@@ -1241,8 +1287,10 @@ class ManagedRuntimeInstaller {
       body: JSON.stringify({ prompt: workflow }),
       ...(signal ? { signal } : {})
     });
+    this.throwIfUnavailable(signal);
     if (!submitted?.ok) return { ok: false, width, height };
     const payload = await submitted.json();
+    this.throwIfUnavailable(signal);
     const promptId = payload.prompt_id;
     if (!promptId) return { ok: false, width, height };
     for (let attempt = 0; attempt < 60; attempt += 1) {
@@ -1250,9 +1298,14 @@ class ManagedRuntimeInstaller {
       const history = await this.fetch(`${baseUrl}/history/${encodeURIComponent(promptId)}`, (
         signal ? { signal } : undefined
       ));
+      this.throwIfUnavailable(signal);
       if (history?.ok) {
         const body = await history.json();
-        if (body?.[promptId]?.outputs) return { ok: true, width, height };
+        this.throwIfUnavailable(signal);
+        if (body?.[promptId]?.outputs) {
+          this.throwIfUnavailable(signal);
+          return { ok: true, width, height };
+        }
       }
       await this.wait(500, signal);
     }

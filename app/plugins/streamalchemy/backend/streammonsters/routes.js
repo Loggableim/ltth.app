@@ -380,7 +380,11 @@ class StreamMonstersRoutes {
         this.api.emit('art_pool_progress', { state: 'complete', targetPerVariant });
         res.json({ success: true, ...result });
       } catch (error) {
-        this.api.emit('art_pool_progress', { state: 'failed', error: error.message });
+        this.api.emit('art_pool_progress', StreamMonstersRoutes.publicRuntimeProgress({
+          state: 'failed',
+          phase: 'pool_prepare',
+          errorCode: error.message
+        }));
         res.status(409).json({ success: false, error: error.message });
       }
     }));

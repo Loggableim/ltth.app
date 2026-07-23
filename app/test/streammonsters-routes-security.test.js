@@ -729,6 +729,36 @@ describe('Stream Monsters privileged routes', () => {
     expect(emit).toHaveBeenCalledWith('art_pool_progress', expect.objectContaining({ state: 'complete' }));
   });
 
+  test('sanitizes pool preparation failures before broadcasting them', async () => {
+    const artPool = {
+      prepare: jest.fn(async () => {
+        throw new Error('backend failed at C:\\private\\pool\\secret.json');
+      })
+    };
+    const { findRoute, emit } = createSubject({ artPool });
+    const response = createResponse();
+
+    await findRoute('POST', '/api/streammonsters/pool/prepare').handler({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      body: { targetPerVariant: 2 }
+    }, response);
+
+    const failure = emit.mock.calls.find(([event, payload]) => (
+      event === 'art_pool_progress' && payload.state === 'failed'
+    ));
+    expect(failure).toEqual([
+      'art_pool_progress',
+      {
+        state: 'failed',
+        phase: 'pool_prepare',
+        errorCode: 'STREAM_MONSTERS_RUNTIME_UNKNOWN'
+      }
+    ]);
+    expectSafeRuntimePayload(failure[1]);
+  });
+
   test('returns a conflict when cancellation reaches the non-cancellable commit phase', async () => {
     const { findRoute, managedRuntime } = createSubject();
     managedRuntime.cancelInstallJob.mockRejectedValueOnce(

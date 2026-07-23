@@ -54,6 +54,95 @@ function createManagedChild(pid) {
   return child;
 }
 
+function createDeferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
+function jsonResponse(body) {
+  return {
+    ok: true,
+    status: 200,
+    json: async () => body
+  };
+}
+
+function systemStatsBody() {
+  return {
+    devices: [{
+      name: ADAPTER.name,
+      type: 'cuda',
+      index: 0,
+      uuid: ADAPTER.backendIdentity.uuid,
+      pci_bus_id: ADAPTER.pciBusId
+    }]
+  };
+}
+
+function createRunningVerificationInstaller(fetchImpl) {
+  const installer = new ManagedRuntimeInstaller({
+    fetchImpl,
+    healthAttempts: 1,
+    healthRequestTimeoutMs: 1000,
+    forcedVerifyTimeoutMs: 20
+  });
+  const cachedSmokeTest = {
+    state: 'passed',
+    width: 256,
+    height: 256,
+    adapterId: ADAPTER.id,
+    profileId: 'nvidia-standard',
+    runtimeVersion: '0.28.0',
+    completedAt: '2020-01-01T00:00:00.000Z'
+  };
+  installer.installation = {
+    state: 'ready',
+    verified: true,
+    adapterId: ADAPTER.id,
+    profileId: 'nvidia-standard',
+    smokeTest: cachedSmokeTest
+  };
+  installer.managedChild = { exitCode: null };
+  installer.processState = {
+    state: 'running',
+    baseUrl: 'http://127.0.0.1:8299',
+    adapterId: ADAPTER.id,
+    profileId: 'nvidia-standard'
+  };
+  installer.lastSmokeTest = cachedSmokeTest;
+  return { installer, cachedSmokeTest };
+}
+
+function forceVerification(installer) {
+  return installer.forceVerifyManagedRuntime({
+    adapter: ADAPTER,
+    profile: installer.getProfile('nvidia-standard')
+  });
+}
+
+async function expectForcedVerifyTimeout(installer) {
+  const outcome = forceVerification(installer).then(
+    () => 'unexpected-pass',
+    error => error.message
+  );
+  const safetyTimeout = new Promise(resolve => {
+    setTimeout(() => resolve('test-safety-timeout'), 150);
+  });
+  await expect(Promise.race([outcome, safetyTimeout]))
+    .resolves.toBe('STREAM_MONSTERS_RUNTIME_VERIFY_TIMEOUT');
+  expect(installer.forcedVerifyPromise).toBeNull();
+}
+
+async function flushDeferredVerification() {
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+}
+
 describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
   test('loads only an existing verified installation record inside the versioned plugin-data root', () => {
     const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-active-'));
@@ -861,6 +950,151 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(smokeTest).not.toHaveBeenCalled();
     expect(installer.lastSmokeTest).toBe(cachedSmokeTest);
+  });
+
+  test('deadlines a hung system-stats body and allows a clean forced-verify retry', async () => {
+    const staleStatsBody = createDeferred();
+    let statsRequests = 0;
+    const fetchImpl = jest.fn((url, options) => {
+      const value = String(url);
+      if (value.endsWith('/system_stats')) {
+        statsRequests += 1;
+        if (statsRequests === 1) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: () => staleStatsBody.promise
+          });
+        }
+        return Promise.resolve(jsonResponse(systemStatsBody()));
+      }
+      if (value.endsWith('/prompt')) {
+        return Promise.resolve(jsonResponse({ prompt_id: 'retry-prompt' }));
+      }
+      if (value.endsWith('/history/retry-prompt')) {
+        return Promise.resolve(jsonResponse({
+          'retry-prompt': { outputs: { 7: { images: [{}] } } }
+        }));
+      }
+      throw new Error(`unexpected URL ${value}`);
+    });
+    const { installer, cachedSmokeTest } = createRunningVerificationInstaller(fetchImpl);
+
+    await expectForcedVerifyTimeout(installer);
+    expect(installer.lastSmokeTest).toBe(cachedSmokeTest);
+    const firstSignal = fetchImpl.mock.calls[0][1].signal;
+    expect(firstSignal.aborted).toBe(true);
+
+    const retryEvidence = await forceVerification(installer);
+    const retryCalls = fetchImpl.mock.calls.slice(1);
+    const retrySignal = retryCalls[0][1].signal;
+    expect(retryCalls.every(([, options]) => options.signal === retrySignal)).toBe(true);
+    expect(retrySignal).not.toBe(firstSignal);
+    expect(retryEvidence).toEqual(expect.objectContaining({ state: 'passed' }));
+
+    staleStatsBody.resolve(systemStatsBody());
+    await flushDeferredVerification();
+    expect(installer.lastSmokeTest).toBe(retryEvidence);
+    expect(installer.installation.smokeTest).toBe(retryEvidence);
+  });
+
+  test('deadlines a hung prompt request and allows a clean forced-verify retry', async () => {
+    const stalePromptRequest = createDeferred();
+    let promptRequests = 0;
+    const fetchImpl = jest.fn((url, options) => {
+      const value = String(url);
+      if (value.endsWith('/system_stats')) {
+        return Promise.resolve(jsonResponse(systemStatsBody()));
+      }
+      if (value.endsWith('/prompt')) {
+        promptRequests += 1;
+        if (promptRequests === 1) return stalePromptRequest.promise;
+        return Promise.resolve(jsonResponse({ prompt_id: 'retry-prompt' }));
+      }
+      if (value.endsWith('/history/retry-prompt')) {
+        return Promise.resolve(jsonResponse({
+          'retry-prompt': { outputs: { 7: { images: [{}] } } }
+        }));
+      }
+      if (value.endsWith('/history/stale-prompt')) {
+        return Promise.resolve(jsonResponse({
+          'stale-prompt': { outputs: { 7: { images: [{}] } } }
+        }));
+      }
+      throw new Error(`unexpected URL ${value}`);
+    });
+    const { installer, cachedSmokeTest } = createRunningVerificationInstaller(fetchImpl);
+
+    await expectForcedVerifyTimeout(installer);
+    expect(installer.lastSmokeTest).toBe(cachedSmokeTest);
+    const firstAttemptCalls = fetchImpl.mock.calls.slice(0, 2);
+    const firstSignal = firstAttemptCalls[0][1].signal;
+    expect(firstAttemptCalls.every(([, options]) => options.signal === firstSignal)).toBe(true);
+    expect(firstSignal.aborted).toBe(true);
+
+    const retryStart = fetchImpl.mock.calls.length;
+    const retryEvidence = await forceVerification(installer);
+    const retryCalls = fetchImpl.mock.calls.slice(retryStart);
+    const retrySignal = retryCalls[0][1].signal;
+    expect(retryCalls.every(([, options]) => options.signal === retrySignal)).toBe(true);
+    expect(retrySignal).not.toBe(firstSignal);
+
+    stalePromptRequest.resolve(jsonResponse({ prompt_id: 'stale-prompt' }));
+    await flushDeferredVerification();
+    expect(installer.lastSmokeTest).toBe(retryEvidence);
+    expect(installer.installation.smokeTest).toBe(retryEvidence);
+  });
+
+  test('deadlines a hung history body and allows a clean forced-verify retry', async () => {
+    const staleHistoryBody = createDeferred();
+    let promptRequests = 0;
+    const fetchImpl = jest.fn((url, options) => {
+      const value = String(url);
+      if (value.endsWith('/system_stats')) {
+        return Promise.resolve(jsonResponse(systemStatsBody()));
+      }
+      if (value.endsWith('/prompt')) {
+        promptRequests += 1;
+        return Promise.resolve(jsonResponse({
+          prompt_id: promptRequests === 1 ? 'stale-prompt' : 'retry-prompt'
+        }));
+      }
+      if (value.endsWith('/history/stale-prompt')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => staleHistoryBody.promise
+        });
+      }
+      if (value.endsWith('/history/retry-prompt')) {
+        return Promise.resolve(jsonResponse({
+          'retry-prompt': { outputs: { 7: { images: [{}] } } }
+        }));
+      }
+      throw new Error(`unexpected URL ${value}`);
+    });
+    const { installer, cachedSmokeTest } = createRunningVerificationInstaller(fetchImpl);
+
+    await expectForcedVerifyTimeout(installer);
+    expect(installer.lastSmokeTest).toBe(cachedSmokeTest);
+    const firstAttemptCalls = fetchImpl.mock.calls.slice(0, 3);
+    const firstSignal = firstAttemptCalls[0][1].signal;
+    expect(firstAttemptCalls.every(([, options]) => options.signal === firstSignal)).toBe(true);
+    expect(firstSignal.aborted).toBe(true);
+
+    const retryStart = fetchImpl.mock.calls.length;
+    const retryEvidence = await forceVerification(installer);
+    const retryCalls = fetchImpl.mock.calls.slice(retryStart);
+    const retrySignal = retryCalls[0][1].signal;
+    expect(retryCalls.every(([, options]) => options.signal === retrySignal)).toBe(true);
+    expect(retrySignal).not.toBe(firstSignal);
+
+    staleHistoryBody.resolve({
+      'stale-prompt': { outputs: { 7: { images: [{}] } } }
+    });
+    await flushDeferredVerification();
+    expect(installer.lastSmokeTest).toBe(retryEvidence);
+    expect(installer.installation.smokeTest).toBe(retryEvidence);
   });
 
   test('requires exactly one active device record matching the selected adapter and backend', async () => {
