@@ -188,8 +188,7 @@
     if (!AudioContextClass) return;
     (async () => {
       const context = new AudioContextClass();
-      const response = await fetch(cueUri);
-      const audioBuffer = await context.decodeAudioData(await response.arrayBuffer());
+      const audioBuffer = await window.StreamMonstersOverlayRuntime.decodeAudioCue(context, cueUri);
       const source = context.createBufferSource();
       const gain = context.createGain();
       source.buffer = audioBuffer;

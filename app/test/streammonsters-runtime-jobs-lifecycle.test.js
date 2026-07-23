@@ -689,6 +689,180 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
+  test('force-verifies a running child with fresh system stats and a new 256 smoke test', async () => {
+    const fetchImpl = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        devices: [{
+          name: ADAPTER.name,
+          type: 'cuda',
+          index: 0,
+          uuid: ADAPTER.backendIdentity.uuid,
+          pci_bus_id: ADAPTER.pciBusId
+        }]
+      })
+    }));
+    const smokeTest = jest.fn(async () => ({ ok: true, width: 256, height: 256 }));
+    const installer = new ManagedRuntimeInstaller({
+      fetchImpl,
+      smokeTest,
+      healthAttempts: 1
+    });
+    const cachedSmokeTest = {
+      state: 'passed',
+      width: 256,
+      height: 256,
+      adapterId: ADAPTER.id,
+      profileId: 'nvidia-standard',
+      runtimeVersion: '0.28.0',
+      completedAt: '2020-01-01T00:00:00.000Z'
+    };
+    installer.installation = {
+      state: 'ready',
+      verified: true,
+      adapterId: ADAPTER.id,
+      profileId: 'nvidia-standard',
+      smokeTest: cachedSmokeTest
+    };
+    installer.managedChild = { exitCode: null };
+    installer.processState = {
+      state: 'running',
+      baseUrl: 'http://127.0.0.1:8299',
+      adapterId: ADAPTER.id,
+      profileId: 'nvidia-standard'
+    };
+    installer.lastSmokeTest = cachedSmokeTest;
+
+    const freshSmokeTest = await installer.forceVerifyManagedRuntime({
+      adapter: ADAPTER,
+      profile: installer.getProfile('nvidia-standard')
+    });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'http://127.0.0.1:8299/system_stats',
+      expect.objectContaining({ redirect: 'manual' })
+    );
+    expect(smokeTest).toHaveBeenCalledTimes(1);
+    expect(smokeTest).toHaveBeenCalledWith(expect.objectContaining({
+      width: 256,
+      height: 256,
+      baseUrl: 'http://127.0.0.1:8299'
+    }));
+    expect(freshSmokeTest.completedAt).not.toBe(cachedSmokeTest.completedAt);
+    expect(installer.lastSmokeTest).toBe(freshSmokeTest);
+  });
+
+  test('single-flights forced verification while startup is still in progress', async () => {
+    let resolveStart;
+    const startGate = new Promise(resolve => { resolveStart = resolve; });
+    const fetchImpl = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        devices: [{
+          name: ADAPTER.name,
+          type: 'cuda',
+          index: 0,
+          uuid: ADAPTER.backendIdentity.uuid,
+          pci_bus_id: ADAPTER.pciBusId
+        }]
+      })
+    }));
+    const smokeTest = jest.fn(async () => ({ ok: true, width: 256, height: 256 }));
+    const installer = new ManagedRuntimeInstaller({
+      fetchImpl,
+      smokeTest,
+      healthAttempts: 1
+    });
+    installer.installation = {
+      state: 'ready',
+      verified: true,
+      adapterId: ADAPTER.id,
+      profileId: 'nvidia-standard'
+    };
+    installer.managedChild = { exitCode: null };
+    installer.processState = {
+      state: 'starting',
+      baseUrl: 'http://127.0.0.1:8299',
+      adapterId: ADAPTER.id,
+      profileId: 'nvidia-standard'
+    };
+    installer.startPromise = startGate;
+
+    const first = installer.forceVerifyManagedRuntime({
+      adapter: ADAPTER,
+      profile: installer.getProfile('nvidia-standard')
+    });
+    const second = installer.forceVerifyManagedRuntime({
+      adapter: ADAPTER,
+      profile: installer.getProfile('nvidia-standard')
+    });
+    await Promise.resolve();
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(smokeTest).not.toHaveBeenCalled();
+
+    installer.processState = { ...installer.processState, state: 'running' };
+    resolveStart(installer.getProcessState());
+    const [firstResult, secondResult] = await Promise.all([first, second]);
+
+    expect(firstResult).toEqual(secondResult);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(smokeTest).toHaveBeenCalledTimes(1);
+  });
+
+  test('forced verification rejects a non-responsive running child instead of returning cached evidence', async () => {
+    const fetchImpl = jest.fn(() => new Promise(() => {}));
+    const smokeTest = jest.fn(async () => ({ ok: true, width: 256, height: 256 }));
+    const installer = new ManagedRuntimeInstaller({
+      fetchImpl,
+      smokeTest,
+      healthAttempts: 2,
+      healthRequestTimeoutMs: 5,
+      healthRetryDelayMs: 0
+    });
+    const cachedSmokeTest = {
+      state: 'passed',
+      width: 256,
+      height: 256,
+      adapterId: ADAPTER.id,
+      profileId: 'nvidia-standard',
+      runtimeVersion: '0.28.0',
+      completedAt: '2020-01-01T00:00:00.000Z'
+    };
+    installer.installation = {
+      state: 'ready',
+      verified: true,
+      adapterId: ADAPTER.id,
+      profileId: 'nvidia-standard',
+      smokeTest: cachedSmokeTest
+    };
+    installer.managedChild = { exitCode: null };
+    installer.processState = {
+      state: 'running',
+      baseUrl: 'http://127.0.0.1:8299',
+      adapterId: ADAPTER.id,
+      profileId: 'nvidia-standard'
+    };
+    installer.lastSmokeTest = cachedSmokeTest;
+
+    const forcedVerification = installer.forceVerifyManagedRuntime({
+      adapter: ADAPTER,
+      profile: installer.getProfile('nvidia-standard')
+    }).then(
+      () => 'unexpected-pass',
+      error => error.message
+    );
+    const safetyTimeout = new Promise(resolve => {
+      setTimeout(() => resolve('test-safety-timeout'), 100);
+    });
+    await expect(Promise.race([forcedVerification, safetyTimeout]))
+      .resolves.toBe('STREAM_MONSTERS_RUNTIME_HEALTHCHECK_FAILED');
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(smokeTest).not.toHaveBeenCalled();
+    expect(installer.lastSmokeTest).toBe(cachedSmokeTest);
+  });
+
   test('requires exactly one active device record matching the selected adapter and backend', async () => {
     const child = { exitCode: null };
     const installer = new ManagedRuntimeInstaller({

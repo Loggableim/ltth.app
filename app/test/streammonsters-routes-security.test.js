@@ -1,4 +1,5 @@
 const StreamMonstersRoutes = require('../plugins/streamalchemy/backend/streammonsters/routes');
+const StreamAlchemyPlugin = require('../plugins/streamalchemy');
 
 const TRUSTED_MANIFEST = Object.freeze({
   version: 'runtime-1',
@@ -21,6 +22,41 @@ function createResponse() {
     }),
     json: jest.fn()
   };
+}
+
+const FORBIDDEN_RUNTIME_KEYS = new Set([
+  'runtimeRoot',
+  'previousRuntimeRoot',
+  'targetRoot',
+  'targetPath',
+  'pid',
+  'port',
+  'baseUrl',
+  'deviceSelectorArgs',
+  'pnpDeviceId',
+  'pciBusId',
+  'locationPaths',
+  'backendIndex',
+  'runtimeDeviceIndex',
+  'backendIdentity',
+  'uuid',
+  'error'
+]);
+
+function expectSafeRuntimePayload(payload) {
+  const keys = [];
+  const visit = value => {
+    if (!value || typeof value !== 'object') return;
+    for (const [key, nested] of Object.entries(value)) {
+      keys.push(key);
+      visit(nested);
+    }
+  };
+  visit(payload);
+  expect(keys.filter(key => FORBIDDEN_RUNTIME_KEYS.has(key))).toEqual([]);
+  expect(JSON.stringify(payload)).not.toMatch(
+    /C:\\private|127\.0\.0\.1:8188|GPU-PRIVATE|--cuda-device|PCIROOT|backend English prose/
+  );
 }
 
 function createSubject({ storedManifest = null, artPool = null } = {}) {
@@ -117,7 +153,15 @@ function createSubject({ storedManifest = null, artPool = null } = {}) {
     cancelInstallJob: jest.fn(jobId => ({ jobId, state: 'cancelled' })),
     startManagedRuntime: jest.fn(async () => ({ state: 'running', pid: 42 })),
     stopManagedRuntime: jest.fn(async () => ({ state: 'stopped', pid: null })),
-    verifyManagedRuntime: jest.fn(async () => ({ state: 'passed', width: 256, height: 256 }))
+    verifyManagedRuntime: jest.fn(async () => ({ state: 'passed', width: 256, height: 256 })),
+    forceVerifyManagedRuntime: jest.fn(async () => ({
+      state: 'passed',
+      width: 256,
+      height: 256,
+      adapterId: 'gpu-1',
+      profileId: 'nvidia-standard',
+      runtimeVersion: '0.28.0'
+    }))
   };
   const routes = new StreamMonstersRoutes({
     api: {
@@ -329,16 +373,6 @@ describe('Stream Monsters privileged routes', () => {
     }, response);
 
     const payload = response.json.mock.calls[0][0];
-    const keys = [];
-    const visit = value => {
-      if (!value || typeof value !== 'object') return;
-      for (const [key, nested] of Object.entries(value)) {
-        keys.push(key);
-        visit(nested);
-      }
-    };
-    visit(payload);
-
     expect(payload.runtime).toEqual({ state: 'running' });
     expect(payload.adapters[0]).toEqual({
       id: 'gpu-1',
@@ -358,22 +392,123 @@ describe('Stream Monsters privileged routes', () => {
     expect(payload.disk).toEqual(expect.objectContaining({ freeGb: 50 }));
     expect(payload.disk).not.toHaveProperty('targetRoot');
     expect(payload.installDetails).not.toHaveProperty('targetDir');
-    expect(keys).not.toEqual(expect.arrayContaining([
-      'runtimeRoot',
-      'previousRuntimeRoot',
-      'targetRoot',
-      'pid',
-      'port',
-      'baseUrl',
-      'deviceSelectorArgs',
-      'pnpDeviceId',
-      'pciBusId',
-      'locationPaths',
-      'backendIndex',
-      'backendIdentity',
-      'uuid'
+    expectSafeRuntimePayload(payload);
+    expect(JSON.stringify(payload)).not.toMatch(/C:\\|VEN_10DE/);
+  });
+
+  test('sanitizes start, stop, verify and pool runtime broadcasts with stable public fields', async () => {
+    const artPool = { prepare: jest.fn(async () => ({ jobs: [], coverage: [] })) };
+    const { findRoute, managedRuntime, emit } = createSubject({ artPool });
+    const internalRuntime = {
+      state: 'running',
+      pid: 9191,
+      port: 8188,
+      baseUrl: 'http://127.0.0.1:8188',
+      runtimeRoot: 'C:\\private\\managed-runtime\\active',
+      backendIndex: 0,
+      runtimeDeviceIndex: 0,
+      deviceSelectorArgs: ['--cuda-device', '0'],
+      backendIdentity: { uuid: 'GPU-PRIVATE' }
+    };
+    managedRuntime.startManagedRuntime.mockResolvedValue(internalRuntime);
+    managedRuntime.stopManagedRuntime.mockResolvedValue({ ...internalRuntime, state: 'stopped' });
+    managedRuntime.forceVerifyManagedRuntime.mockResolvedValue({
+      state: 'passed',
+      width: 256,
+      height: 256,
+      adapterId: 'gpu-1',
+      profileId: 'nvidia-standard',
+      runtimeVersion: '0.28.0',
+      baseUrl: internalRuntime.baseUrl,
+      runtimeRoot: internalRuntime.runtimeRoot
+    });
+
+    for (const action of ['start', 'stop', 'verify']) {
+      const response = createResponse();
+      await findRoute('POST', `/api/streammonsters/local-runtime/${action}`).handler({
+        ip: '127.0.0.1',
+        socket: { remoteAddress: '127.0.0.1' },
+        headers: {},
+        body: { adapterId: 'gpu-1', profileId: 'nvidia-standard' }
+      }, response);
+      expect(response.statusCode).toBe(200);
+      expectSafeRuntimePayload(response.json.mock.calls[0][0]);
+    }
+    await findRoute('POST', '/api/streammonsters/pool/prepare').handler({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      body: { targetPerVariant: 2 }
+    }, createResponse());
+
+    const runtimeBroadcasts = emit.mock.calls.filter(([event]) => event.startsWith('local_runtime_'));
+    expect(runtimeBroadcasts.map(([event]) => event)).toEqual(expect.arrayContaining([
+      'local_runtime_state',
+      'local_runtime_progress'
     ]));
-    expect(JSON.stringify(payload)).not.toMatch(/C:\\|GPU-PRIVATE-UUID|--cuda-device|PCIROOT|VEN_10DE/);
+    expect(runtimeBroadcasts.length).toBeGreaterThanOrEqual(5);
+    for (const [, payload] of runtimeBroadcasts) expectSafeRuntimePayload(payload);
+    expect(runtimeBroadcasts).toEqual(expect.arrayContaining([
+      ['local_runtime_progress', expect.objectContaining({ phase: 'verify', state: 'checking' })],
+      ['local_runtime_progress', expect.objectContaining({
+        phase: 'verify',
+        state: 'passed',
+        width: 256,
+        height: 256
+      })]
+    ]));
+  });
+
+  test('sanitizes asynchronous install lifecycle broadcasts and replaces raw errors with errorCode', () => {
+    const emit = jest.fn();
+    const subject = {
+      api: { emit },
+      streamMonstersManagedRuntime: {
+        installation: null,
+        jobs: new Map()
+      }
+    };
+    const internalState = {
+      jobId: 'runtime-job-secret',
+      state: 'failed',
+      adapterId: 'gpu-1',
+      profileId: 'nvidia-standard',
+      pid: 9191,
+      port: 8188,
+      baseUrl: 'http://127.0.0.1:8188',
+      runtimeRoot: 'C:\\private\\managed-runtime\\active',
+      backendIdentity: { uuid: 'GPU-PRIVATE' },
+      error: 'backend English prose C:\\private\\managed-runtime\\active',
+      errorCode: 'STREAM_MONSTERS_RUNTIME_UNKNOWN',
+      progress: {
+        phase: 'failed',
+        completedBytes: 12,
+        totalBytes: 24,
+        targetPath: 'C:\\private\\runtime.zip',
+        baseUrl: 'http://127.0.0.1:8188'
+      }
+    };
+
+    StreamAlchemyPlugin.prototype.handleManagedRuntimeState.call(subject, internalState);
+
+    expect(emit).toHaveBeenCalledWith('local_runtime_progress', {
+      jobId: 'runtime-job-secret',
+      state: 'failed',
+      phase: 'failed',
+      adapterId: 'gpu-1',
+      profileId: 'nvidia-standard',
+      completedBytes: 12,
+      totalBytes: 24,
+      errorCode: 'STREAM_MONSTERS_RUNTIME_UNKNOWN'
+    });
+    expect(emit).toHaveBeenCalledWith('local_runtime_state', expect.objectContaining({
+      jobId: 'runtime-job-secret',
+      state: 'failed',
+      adapterId: 'gpu-1',
+      profileId: 'nvidia-standard',
+      errorCode: 'STREAM_MONSTERS_RUNTIME_UNKNOWN'
+    }));
+    for (const [, payload] of emit.mock.calls) expectSafeRuntimePayload(payload);
   });
 
   test('recomputes the public recommendation for the adapter selected by the wizard', async () => {
@@ -520,17 +655,18 @@ describe('Stream Monsters privileged routes', () => {
 
   test('verify binds returned smoke evidence to the installed adapter and profile', async () => {
     const { findRoute, managedRuntime } = createSubject();
-    managedRuntime.lastSmokeTest = null;
-    managedRuntime.startManagedRuntime.mockImplementation(async ({ adapter }) => {
-      managedRuntime.lastSmokeTest = {
-        state: 'passed',
-        width: 256,
-        height: 256,
-        adapterId: adapter.id,
-        profileId: 'nvidia-standard',
-        runtimeVersion: '0.28.0'
-      };
-      return { state: 'running', pid: 42 };
+    managedRuntime.lastSmokeTest = {
+      state: 'passed',
+      width: 256,
+      height: 256,
+      adapterId: 'gpu-1',
+      profileId: 'nvidia-standard',
+      runtimeVersion: '0.28.0',
+      completedAt: '2020-01-01T00:00:00.000Z'
+    };
+    managedRuntime.forceVerifyManagedRuntime.mockResolvedValue({
+      ...managedRuntime.lastSmokeTest,
+      completedAt: '2026-07-23T12:00:00.000Z'
     });
     const response = createResponse();
 
@@ -546,13 +682,15 @@ describe('Stream Monsters privileged routes', () => {
       smokeTest: expect.objectContaining({
         adapterId: 'gpu-1',
         profileId: 'nvidia-standard',
-        runtimeVersion: '0.28.0'
+        runtimeVersion: '0.28.0',
+        completedAt: '2026-07-23T12:00:00.000Z'
       })
     });
-    expect(managedRuntime.startManagedRuntime).toHaveBeenCalledWith({
-      adapter: expect.objectContaining({ id: 'gpu-1' })
+    expect(managedRuntime.forceVerifyManagedRuntime).toHaveBeenCalledWith({
+      adapter: expect.objectContaining({ id: 'gpu-1' }),
+      profile: expect.objectContaining({ id: 'nvidia-standard' })
     });
-    expect(managedRuntime.verifyManagedRuntime).not.toHaveBeenCalled();
+    expect(managedRuntime.startManagedRuntime).not.toHaveBeenCalled();
   });
 
   test('does not verify a profile that differs from the installed runtime', async () => {

@@ -1,6 +1,67 @@
 const path = require('path');
 const { createAdminAuth } = require('../../../../modules/admin-auth');
 
+function stableRuntimeErrorCode(error) {
+  const code = String(error?.errorCode || error?.code || error?.message || error || '').trim();
+  if (!code) return null;
+  return /^STREAM_MONSTERS_[A-Z0-9_]+$/.test(code)
+    ? code
+    : 'STREAM_MONSTERS_RUNTIME_UNKNOWN';
+}
+
+function publicRuntimeProgress(payload = {}) {
+  const progress = payload.progress && typeof payload.progress === 'object'
+    ? payload.progress
+    : payload;
+  const result = {};
+  for (const key of ['jobId', 'state', 'phase', 'adapterId', 'profileId']) {
+    const value = payload[key] ?? progress[key];
+    if (typeof value === 'string' && value) result[key] = value;
+  }
+  for (const key of ['completedBytes', 'totalBytes', 'width', 'height']) {
+    const value = Number(progress[key] ?? payload[key]);
+    if (Number.isFinite(value) && value >= 0) result[key] = value;
+  }
+  const errorCode = stableRuntimeErrorCode(
+    payload.errorCode || progress.errorCode || payload.error || progress.error
+  );
+  if (errorCode) result.errorCode = errorCode;
+  return result;
+}
+
+function publicSmokeTest(smokeTest) {
+  if (!smokeTest) return null;
+  return {
+    state: smokeTest.state || null,
+    width: Math.max(0, Number(smokeTest.width) || 0),
+    height: Math.max(0, Number(smokeTest.height) || 0),
+    adapterId: smokeTest.adapterId || null,
+    profileId: smokeTest.profileId || null,
+    runtimeVersion: smokeTest.runtimeVersion || null,
+    completedAt: smokeTest.completedAt || null
+  };
+}
+
+function publicRuntimeEvent(payload = {}) {
+  const result = {
+    state: String(payload.state || 'stopped')
+  };
+  for (const key of ['jobId', 'adapterId', 'profileId']) {
+    if (typeof payload[key] === 'string' && payload[key]) result[key] = payload[key];
+  }
+  if (payload.progress) result.progress = publicRuntimeProgress(payload);
+  const errorCode = stableRuntimeErrorCode(payload.errorCode || payload.error);
+  if (errorCode) result.errorCode = errorCode;
+  if (payload.result) {
+    result.result = {
+      state: payload.result.state || null,
+      verified: Boolean(payload.result.verified)
+    };
+  }
+  if (payload.smokeTest) result.smokeTest = publicSmokeTest(payload.smokeTest);
+  return result;
+}
+
 class StreamMonstersRoutes {
   constructor({
     api,
@@ -299,7 +360,10 @@ class StreamMonstersRoutes {
           8,
           Number.parseInt(req.body?.targetPerVariant, 10) || 3
         ));
-        this.api.emit('local_runtime_progress', { phase: 'pool_prepare', state: 'checking' });
+        this.api.emit(
+          'local_runtime_progress',
+          StreamMonstersRoutes.publicRuntimeProgress({ phase: 'pool_prepare', state: 'checking' })
+        );
         if (this.managedRuntime.installation?.verified) {
           const analysis = await this.systemAnalyzer.analyze({
             comfyUrl: this.configProvider.getConfig().localGeneration?.comfyUrl,
@@ -307,7 +371,7 @@ class StreamMonstersRoutes {
           });
           const adapter = this.selectAdapter(analysis.adapters, this.managedRuntime.installation.adapterId);
           const processState = await this.managedRuntime.startManagedRuntime({ adapter });
-          this.api.emit('local_runtime_state', processState);
+          this.api.emit('local_runtime_state', StreamMonstersRoutes.publicRuntimeEvent(processState));
         }
         this.api.emit('art_pool_progress', { state: 'running', targetPerVariant });
         const result = this.artPool
@@ -449,19 +513,30 @@ class StreamMonstersRoutes {
           req.body?.adapterId || this.managedRuntime.installation?.adapterId
         );
         const runtime = await this.managedRuntime.startManagedRuntime({ adapter });
-        this.api.emit('local_runtime_state', runtime);
-        res.json({ success: true, runtime });
+        const publicRuntime = this.publicRuntime(runtime);
+        this.api.emit('local_runtime_state', StreamMonstersRoutes.publicRuntimeEvent(runtime));
+        res.json({ success: true, runtime: publicRuntime });
       } catch (error) {
+        this.api.emit('local_runtime_progress', StreamMonstersRoutes.publicRuntimeProgress({
+          phase: 'start',
+          state: 'failed',
+          errorCode: error.message
+        }));
         res.status(409).json({ success: false, error: error.message });
       }
     }));
     this.api.registerRoute('POST', '/api/streammonsters/local-runtime/stop', this.protectAdmin(async (req, res) => {
       const runtime = await this.managedRuntime.stopManagedRuntime();
-      this.api.emit('local_runtime_state', runtime);
-      res.json({ success: true, runtime });
+      const publicRuntime = this.publicRuntime(runtime);
+      this.api.emit('local_runtime_state', StreamMonstersRoutes.publicRuntimeEvent(runtime));
+      res.json({ success: true, runtime: publicRuntime });
     }));
     this.api.registerRoute('POST', '/api/streammonsters/local-runtime/verify', this.protectAdmin(async (req, res) => {
       try {
+        this.api.emit('local_runtime_progress', StreamMonstersRoutes.publicRuntimeProgress({
+          phase: 'verify',
+          state: 'checking'
+        }));
         const installation = this.managedRuntime.installation;
         if (!installation?.verified || installation.state !== 'ready') {
           throw new Error('STREAM_MONSTERS_RUNTIME_NOT_INSTALLED');
@@ -488,8 +563,10 @@ class StreamMonstersRoutes {
         if (!profile || profile.id !== installation.profileId) {
           throw new Error('STREAM_MONSTERS_RUNTIME_VERIFY_PROFILE_MISMATCH');
         }
-        await this.managedRuntime.startManagedRuntime({ adapter });
-        const smokeTest = this.managedRuntime.lastSmokeTest || installation.smokeTest;
+        const smokeTest = await this.managedRuntime.forceVerifyManagedRuntime({
+          adapter,
+          profile
+        });
         if (
           !smokeTest ||
           smokeTest.state !== 'passed' ||
@@ -498,8 +575,19 @@ class StreamMonstersRoutes {
         ) {
           throw new Error('STREAM_MONSTERS_RUNTIME_SMOKE_TEST_FAILED');
         }
+        this.api.emit('local_runtime_progress', StreamMonstersRoutes.publicRuntimeProgress({
+          phase: 'verify',
+          state: 'passed',
+          width: smokeTest.width,
+          height: smokeTest.height
+        }));
         res.json({ success: true, smokeTest: this.publicSmokeTest(smokeTest) });
       } catch (error) {
+        this.api.emit('local_runtime_progress', StreamMonstersRoutes.publicRuntimeProgress({
+          phase: 'verify',
+          state: 'failed',
+          errorCode: error.message
+        }));
         res.status(409).json({ success: false, error: error.message });
       }
     }));
@@ -625,16 +713,7 @@ class StreamMonstersRoutes {
   }
 
   publicSmokeTest(smokeTest) {
-    if (!smokeTest) return null;
-    return {
-      state: smokeTest.state || null,
-      width: Math.max(0, Number(smokeTest.width) || 0),
-      height: Math.max(0, Number(smokeTest.height) || 0),
-      adapterId: smokeTest.adapterId || null,
-      profileId: smokeTest.profileId || null,
-      runtimeVersion: smokeTest.runtimeVersion || null,
-      completedAt: smokeTest.completedAt || null
-    };
+    return publicSmokeTest(smokeTest);
   }
 
   publicDisk(disk) {
@@ -682,5 +761,9 @@ class StreamMonstersRoutes {
     };
   }
 }
+
+StreamMonstersRoutes.publicRuntimeEvent = publicRuntimeEvent;
+StreamMonstersRoutes.publicRuntimeProgress = publicRuntimeProgress;
+StreamMonstersRoutes.stableRuntimeErrorCode = stableRuntimeErrorCode;
 
 module.exports = StreamMonstersRoutes;

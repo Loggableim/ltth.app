@@ -107,6 +107,19 @@
     return Math.max(0, Math.min(1, ratio));
   }
 
+  function decodeAudioCue(audioContext, dataUri, decodeBase64 = globalThis.atob) {
+    const match = /^data:audio\/wav;base64,([a-z0-9+/=]+)$/i.exec(String(dataUri || ''));
+    if (!match || typeof decodeBase64 !== 'function' || typeof audioContext?.decodeAudioData !== 'function') {
+      throw new Error('STREAM_MONSTERS_AUDIO_CUE_INVALID');
+    }
+    const binary = decodeBase64(match[1]);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+    return audioContext.decodeAudioData(bytes.buffer);
+  }
+
   function createPriorityQueue({ maxSize = 30, staleAfterMs = 10000 } = {}) {
     const entries = [];
     const boundedMaxSize = Math.max(1, Number(maxSize) || 1);
@@ -364,6 +377,7 @@
     createPriorityQueue,
     createReconnectController,
     chatMessageKey,
+    decodeAudioCue,
     elementKey: value => enumKey(ELEMENT_KEYS, value),
     hypeMilestonePoints,
     isCritical: type => CRITICAL_TYPES.has(type),

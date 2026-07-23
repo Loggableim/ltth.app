@@ -642,7 +642,7 @@
         "type": "subscriber"
       },
       "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.3.0.zip",
-      "sha256": "724c38e1e4f1cca52cc9f8741bb4eba30d6fbb2413092506eca0881207a20382",
+      "sha256": "fcc0b260a4b4bcba5e475ef8126497e04e21be0b8ceb04be223b46b756a9c106",
       "pricing": {
         "type": "free",
         "amount": 0,

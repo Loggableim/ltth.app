@@ -501,12 +501,14 @@ class StreamAlchemyPlugin {
   }
 
   handleManagedRuntimeState(state) {
-    this.api.emit('local_runtime_progress', {
-      jobId: state.jobId,
-      state: state.state,
-      ...(state.progress || {})
-    });
-    this.api.emit('local_runtime_state', state);
+    this.api.emit(
+      'local_runtime_progress',
+      StreamMonstersRoutes.publicRuntimeProgress({
+        ...state,
+        ...(state.progress || {})
+      })
+    );
+    this.api.emit('local_runtime_state', StreamMonstersRoutes.publicRuntimeEvent(state));
     if (state.state !== 'ready') return;
     const installation = this.streamMonstersManagedRuntime?.installation;
     const job = this.streamMonstersManagedRuntime?.jobs?.get?.(state.jobId);

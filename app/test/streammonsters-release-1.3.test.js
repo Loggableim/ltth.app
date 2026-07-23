@@ -241,7 +241,7 @@ describe('Stream Monsters 1.3 creator and overlay release', () => {
     expect(source).toContain('streammonsters-overlay-volume');
   });
 
-  test('ships five distinct valid original PCM WAV cues dedicated to CC0 1.0', () => {
+  test('ships five distinct valid original PCM WAV cues dedicated to CC0 1.0', async () => {
     const overlay = fs.readFileSync(path.join(pluginDir, 'streammonsters-overlay.html'), 'utf8');
     const cueAssetPath = path.join(pluginDir, 'assets', 'audio', 'streammonsters-cues.js');
     const licensePath = path.join(pluginDir, 'assets', 'audio', 'LICENSE-CC0-1.0.txt');
@@ -269,7 +269,23 @@ describe('Stream Monsters 1.3 creator and overlay release', () => {
     expect(license).toContain('spawn, ready, hatch, hit, and win');
     expect(overlay).toContain('/plugins/streamalchemy/assets/audio/streammonsters-cues.js');
     expect(overlay).toContain('window.StreamMonstersAudioCues');
-    expect(overlay).toContain('decodeAudioData');
+    expect(typeof overlayRuntime.decodeAudioCue).toBe('function');
+    const audioContext = {
+      decodeAudioData: jest.fn(async bytes => bytes)
+    };
+    const fetchSpy = jest.spyOn(global, 'fetch');
+    const decoded = await overlayRuntime.decodeAudioCue(
+      audioContext,
+      cues.spawn,
+      base64 => Buffer.from(base64, 'base64').toString('binary')
+    );
+    fetchSpy.mockRestore();
+    const decodedBytes = Buffer.from(decoded);
+    expect(decodedBytes.subarray(0, 4).toString('ascii')).toBe('RIFF');
+    expect(audioContext.decodeAudioData).toHaveBeenCalledWith(expect.any(ArrayBuffer));
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(overlay).toContain('decodeAudioCue(context, cueUri)');
+    expect(overlay).not.toContain('fetch(cueUri)');
     expect(overlay).not.toContain('createOscillator');
     expect(overlayRuntime.normalizeVolume('70')).toBeCloseTo(0.7);
     expect(overlayRuntime.normalizeVolume('0.55')).toBeCloseTo(0.55);

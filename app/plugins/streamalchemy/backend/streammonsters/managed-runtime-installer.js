@@ -146,6 +146,7 @@ class ManagedRuntimeInstaller {
     maxArchiveUncompressedBytes = MAX_ARCHIVE_UNCOMPRESSED_BYTES,
     maxArchiveRedirects = 5,
     healthAttempts = 20,
+    healthRequestTimeoutMs = 5000,
     healthRetryDelayMs = 500
   } = {}) {
     this.platform = platform;
@@ -181,6 +182,10 @@ class ManagedRuntimeInstaller {
     this.maxArchiveUncompressedBytes = Math.max(1, Number(maxArchiveUncompressedBytes) || MAX_ARCHIVE_UNCOMPRESSED_BYTES);
     this.maxArchiveRedirects = Math.max(0, Math.min(10, Number(maxArchiveRedirects) || 0));
     this.healthAttempts = Math.max(1, Math.min(100, Number(healthAttempts) || 1));
+    this.healthRequestTimeoutMs = Math.max(
+      1,
+      Math.min(60000, Number(healthRequestTimeoutMs) || 5000)
+    );
     this.healthRetryDelayMs = Math.max(0, Math.min(10000, Number(healthRetryDelayMs) || 0));
     this.current = null;
     this.installation = null;
@@ -190,6 +195,8 @@ class ManagedRuntimeInstaller {
     this.idleTimer = null;
     this.activeRequests = 0;
     this.idleStopPending = false;
+    this.startPromise = null;
+    this.forcedVerifyPromise = null;
     this.stopPromise = null;
     this.disposed = false;
     this.destroyPromise = null;
@@ -816,7 +823,26 @@ class ManagedRuntimeInstaller {
     }
   }
 
-  async startManagedRuntime({ adapter, allowUnverified = false, signal = null } = {}) {
+  async startManagedRuntime(options = {}) {
+    this.throwIfUnavailable(options.signal);
+    if (this.startPromise) {
+      const requestedAdapterId = options.adapter?.id;
+      const activeAdapterId = this.processState.adapterId || this.installation?.adapterId;
+      if (requestedAdapterId && activeAdapterId && requestedAdapterId !== activeAdapterId) {
+        throw new Error('STREAM_MONSTERS_RUNTIME_ADAPTER_MISMATCH');
+      }
+      return this.startPromise;
+    }
+    const pending = this.startManagedRuntimeOnce(options);
+    this.startPromise = pending;
+    try {
+      return await pending;
+    } finally {
+      if (this.startPromise === pending) this.startPromise = null;
+    }
+  }
+
+  async startManagedRuntimeOnce({ adapter, allowUnverified = false, signal = null } = {}) {
     this.throwIfUnavailable(signal);
     if (this.managedChild && this.managedChild.exitCode === null) {
       if (adapter?.id && adapter.id !== this.processState.adapterId) {
@@ -909,6 +935,59 @@ class ManagedRuntimeInstaller {
     return this.getProcessState();
   }
 
+  forceVerifyManagedRuntime({ adapter, profile, signal = null } = {}) {
+    this.throwIfUnavailable(signal);
+    if (this.forcedVerifyPromise) return this.forcedVerifyPromise;
+    const pending = this.settleForcedVerification({ adapter, profile, signal });
+    this.forcedVerifyPromise = pending;
+    const clearPending = () => {
+      if (this.forcedVerifyPromise === pending) this.forcedVerifyPromise = null;
+    };
+    pending.then(clearPending, clearPending);
+    return pending;
+  }
+
+  async settleForcedVerification({ adapter, profile, signal = null } = {}) {
+    const installation = this.installation;
+    if (!installation?.verified || installation.state !== 'ready') {
+      throw new Error('STREAM_MONSTERS_RUNTIME_NOT_INSTALLED');
+    }
+    const selectedAdapter = adapter || {
+      id: installation.adapterId,
+      name: installation.adapterId
+    };
+    if (selectedAdapter.id !== installation.adapterId) {
+      throw new Error('STREAM_MONSTERS_RUNTIME_VERIFY_ADAPTER_MISMATCH');
+    }
+    const selectedProfile = profile || this.getProfile(installation.profileId);
+    if (!selectedProfile || selectedProfile.id !== installation.profileId) {
+      throw new Error('STREAM_MONSTERS_RUNTIME_VERIFY_PROFILE_MISMATCH');
+    }
+    const inProgressStart = this.startPromise;
+    if (inProgressStart) {
+      await inProgressStart;
+    } else {
+      await this.startManagedRuntime({ adapter: selectedAdapter, signal });
+    }
+    this.throwIfUnavailable(signal);
+    const child = this.managedChild;
+    if (!child || (child.exitCode !== null && child.exitCode !== undefined)) {
+      throw new Error('STREAM_MONSTERS_RUNTIME_CHILD_EXITED');
+    }
+    if (this.processState.state !== 'running' || !this.processState.baseUrl) {
+      throw new Error('STREAM_MONSTERS_RUNTIME_NOT_RUNNING');
+    }
+    const smokeTest = await this.verifyManagedRuntime({
+      adapter: selectedAdapter,
+      profile: selectedProfile,
+      baseUrl: this.processState.baseUrl,
+      child,
+      signal
+    });
+    this.touchActivity();
+    return smokeTest;
+  }
+
   buildDeviceSelectorArgs(profile, adapter) {
     const index = this.resolveBackendIndex(adapter);
     if (profile?.backend === 'xpu') {
@@ -952,10 +1031,7 @@ class ManagedRuntimeInstaller {
         throw new Error('STREAM_MONSTERS_RUNTIME_CHILD_EXITED');
       }
       try {
-        const candidate = await this.fetch(`${baseUrl}/system_stats`, {
-          redirect: 'manual',
-          ...(signal ? { signal } : {})
-        });
+        const candidate = await this.fetchHealthStatus(`${baseUrl}/system_stats`, signal);
         if (candidate?.ok && !REDIRECT_STATUSES.has(Number(candidate?.status))) {
           response = candidate;
           break;
@@ -1029,6 +1105,50 @@ class ManagedRuntimeInstaller {
       if (this.dataDir) await this.writeActiveInstallation(this.installation);
     }
     return this.lastSmokeTest;
+  }
+
+  async fetchHealthStatus(url, signal = null) {
+    const controller = new AbortController();
+    let timeout = null;
+    let timedOut = false;
+    let abortListener = null;
+    const timeoutPromise = new Promise((_, reject) => {
+      timeout = setTimeout(() => {
+        timedOut = true;
+        reject(new Error('STREAM_MONSTERS_RUNTIME_HEALTH_REQUEST_TIMEOUT'));
+        controller.abort();
+      }, this.healthRequestTimeoutMs);
+    });
+    const abortPromise = new Promise((_, reject) => {
+      if (!signal) return;
+      abortListener = () => {
+        controller.abort();
+        const error = new Error('STREAM_MONSTERS_RUNTIME_ABORTED');
+        error.name = 'AbortError';
+        reject(error);
+      };
+      if (signal.aborted) {
+        abortListener();
+      } else {
+        signal.addEventListener('abort', abortListener, { once: true });
+      }
+    });
+    try {
+      return await Promise.race([
+        this.fetch(url, {
+          redirect: 'manual',
+          signal: controller.signal
+        }),
+        timeoutPromise,
+        abortPromise
+      ]);
+    } catch (error) {
+      if (timedOut) throw new Error('STREAM_MONSTERS_RUNTIME_HEALTH_REQUEST_TIMEOUT');
+      throw error;
+    } finally {
+      if (timeout) clearTimeout(timeout);
+      if (signal && abortListener) signal.removeEventListener('abort', abortListener);
+    }
   }
 
   deviceMatchesBackend(device, backend, stats) {
