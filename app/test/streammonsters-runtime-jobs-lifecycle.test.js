@@ -54,6 +54,34 @@ function createManagedChild(pid) {
   return child;
 }
 
+function createSpawnRuntimeFixture(children) {
+  const runtimeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-generation-'));
+  const pythonPath = path.join(runtimeRoot, 'python_embeded', 'python.exe');
+  const mainPath = path.join(runtimeRoot, 'ComfyUI', 'main.py');
+  fs.mkdirSync(path.dirname(pythonPath), { recursive: true });
+  fs.mkdirSync(path.dirname(mainPath), { recursive: true });
+  fs.writeFileSync(pythonPath, 'python');
+  fs.writeFileSync(mainPath, 'main');
+  const spawnImpl = jest.fn();
+  for (const child of children) spawnImpl.mockReturnValueOnce(child);
+  const findFreePort = jest.fn();
+  children.forEach((child, index) => findFreePort.mockResolvedValueOnce(8299 + index));
+  const installer = new ManagedRuntimeInstaller({
+    spawnImpl,
+    fetchImpl: jest.fn(async () => jsonResponse(systemStatsBody())),
+    findFreePort,
+    smokeTest: jest.fn(async () => ({ ok: true, width: 256, height: 256 }))
+  });
+  installer.installation = {
+    state: 'ready',
+    verified: true,
+    runtimeRoot,
+    profileId: 'nvidia-standard',
+    adapterId: ADAPTER.id
+  };
+  return { installer, runtimeRoot, spawnImpl };
+}
+
 function createDeferred() {
   let resolve;
   let reject;
@@ -729,6 +757,74 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
       expect(child.kill).toHaveBeenCalledTimes(1);
       expect(installer.getProcessState()).toEqual(expect.objectContaining({ state: 'stopped' }));
     } finally {
+      fs.rmSync(runtimeRoot, { recursive: true, force: true });
+    }
+  });
+
+  test('does not allocate a generation for a live-child reuse and clears runtime state when that child exits', async () => {
+    const child = createManagedChild(4243);
+    const { installer, runtimeRoot, spawnImpl } = createSpawnRuntimeFixture([child]);
+
+    try {
+      await installer.startManagedRuntime({ adapter: ADAPTER });
+      const spawnedGeneration = installer.startGeneration;
+
+      await installer.startManagedRuntime({ adapter: ADAPTER });
+      await forceVerification(installer);
+
+      child.exitCode = 0;
+      child.emit('exit', 0);
+
+      expect(spawnImpl).toHaveBeenCalledTimes(1);
+      expect(installer.startGeneration).toBe(spawnedGeneration);
+      expect(installer.managedChild).toBeNull();
+      expect(installer.current).toBeNull();
+      expect(installer.getProcessState()).toEqual(expect.objectContaining({
+        state: 'stopped',
+        pid: null
+      }));
+    } finally {
+      fs.rmSync(runtimeRoot, { recursive: true, force: true });
+    }
+  });
+
+  test('does not let a late old-child exit clear a real replacement child', async () => {
+    const oldChild = createManagedChild(4244);
+    const replacementChild = createManagedChild(4245);
+    const { installer, runtimeRoot, spawnImpl } = createSpawnRuntimeFixture([
+      oldChild,
+      replacementChild
+    ]);
+
+    try {
+      await installer.startManagedRuntime({ adapter: ADAPTER });
+      const oldGeneration = installer.startGeneration;
+      oldChild.exitCode = 0;
+      installer.managedChild = null;
+      installer.current = null;
+      installer.processState = {
+        ...installer.processState,
+        state: 'stopped',
+        pid: null
+      };
+
+      await installer.startManagedRuntime({ adapter: ADAPTER });
+      const replacementGeneration = installer.startGeneration;
+      oldChild.emit('exit', 0);
+
+      expect(spawnImpl).toHaveBeenCalledTimes(2);
+      expect(replacementGeneration).toBe(oldGeneration + 1);
+      expect(installer.managedChild).toBe(replacementChild);
+      expect(installer.current).toEqual(expect.objectContaining({
+        state: 'ready',
+        pid: 4245
+      }));
+      expect(installer.getProcessState()).toEqual(expect.objectContaining({
+        state: 'running',
+        pid: 4245
+      }));
+    } finally {
+      await installer.stopManagedRuntime({ force: true });
       fs.rmSync(runtimeRoot, { recursive: true, force: true });
     }
   });

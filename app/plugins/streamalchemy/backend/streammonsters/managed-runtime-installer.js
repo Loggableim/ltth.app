@@ -845,6 +845,13 @@ class ManagedRuntimeInstaller {
       }
       return this.startPromise;
     }
+    if (this.managedChild && this.managedChild.exitCode === null) {
+      if (options.adapter?.id && options.adapter.id !== this.processState.adapterId) {
+        throw new Error('STREAM_MONSTERS_RUNTIME_ADAPTER_MISMATCH');
+      }
+      this.touchActivity();
+      return this.getProcessState();
+    }
     const attempt = this.createStartAttempt(options.signal);
     this.activeStartAttempt = attempt;
     const operation = this.startManagedRuntimeOnce({
@@ -861,13 +868,13 @@ class ManagedRuntimeInstaller {
       } finally {
         attempt.cleanup();
         if (
-          this.startGeneration === attempt.generation &&
+          this.isStartAttemptGenerationCurrent(attempt) &&
           this.activeStartAttempt === attempt
         ) {
           this.activeStartAttempt = null;
         }
         if (
-          this.startGeneration === attempt.generation &&
+          this.isStartAttemptGenerationCurrent(attempt) &&
           this.startPromise === pending
         ) {
           this.startPromise = null;
@@ -881,8 +888,6 @@ class ManagedRuntimeInstaller {
 
   createStartAttempt(signal = null) {
     const controller = new AbortController();
-    const generation = this.startGeneration + 1;
-    this.startGeneration = generation;
     let timeout = null;
     let externalAbortListener = null;
     let internalAbortListener = null;
@@ -907,7 +912,7 @@ class ManagedRuntimeInstaller {
       }, this.startTimeoutMs);
     });
     return {
-      generation,
+      generation: null,
       controller,
       abortPromise,
       child: null,
@@ -922,22 +927,23 @@ class ManagedRuntimeInstaller {
     };
   }
 
+  isStartAttemptGenerationCurrent(attempt) {
+    return attempt.generation === null || this.startGeneration === attempt.generation;
+  }
+
   assertStartAttemptCurrent(attempt) {
     this.throwIfUnavailable(attempt.controller.signal);
-    if (attempt.invalidated || this.startGeneration !== attempt.generation) {
+    if (
+      attempt.invalidated ||
+      this.activeStartAttempt !== attempt ||
+      !this.isStartAttemptGenerationCurrent(attempt)
+    ) {
       throw new Error('STREAM_MONSTERS_RUNTIME_ABORTED');
     }
   }
 
   async startManagedRuntimeOnce({ adapter, allowUnverified = false, signal = null } = {}, attempt) {
     this.throwIfUnavailable(signal);
-    if (this.managedChild && this.managedChild.exitCode === null) {
-      if (adapter?.id && adapter.id !== this.processState.adapterId) {
-        throw new Error('STREAM_MONSTERS_RUNTIME_ADAPTER_MISMATCH');
-      }
-      this.touchActivity();
-      return this.getProcessState();
-    }
     const installation = this.installation;
     if (!installation || (!installation.verified && !allowUnverified)) {
       throw new Error('STREAM_MONSTERS_RUNTIME_NOT_INSTALLED');
@@ -974,6 +980,8 @@ class ManagedRuntimeInstaller {
       shell: false
     });
     attempt.child = child;
+    attempt.generation = this.startGeneration + 1;
+    this.startGeneration = attempt.generation;
     this.assertStartAttemptCurrent(attempt);
     this.managedChild = child;
     this.processState = {
@@ -993,6 +1001,7 @@ class ManagedRuntimeInstaller {
         this.startGeneration === attempt.generation
       ) {
         this.managedChild = null;
+        this.current = null;
         this.processState = { ...this.processState, state: 'stopped', pid: null };
       }
     });
@@ -1037,13 +1046,13 @@ class ManagedRuntimeInstaller {
       attempt.controller.abort(new Error('STREAM_MONSTERS_RUNTIME_ABORTED'));
     }
     if (
-      this.startGeneration === attempt.generation &&
+      this.isStartAttemptGenerationCurrent(attempt) &&
       this.activeStartAttempt === attempt
     ) {
       this.activeStartAttempt = null;
     }
     if (
-      this.startGeneration === attempt.generation &&
+      this.isStartAttemptGenerationCurrent(attempt) &&
       this.startPromise === attempt.promise
     ) {
       this.startPromise = null;
@@ -1052,7 +1061,10 @@ class ManagedRuntimeInstaller {
       const child = attempt.child;
       if (child && this.managedChild === child) this.managedChild = null;
       if (child) await this.killAndWaitForChildExit(child);
-      if (this.startGeneration === attempt.generation) {
+      if (
+        attempt.generation !== null &&
+        this.startGeneration === attempt.generation
+      ) {
         this.processState = { ...this.processState, state: 'stopped', pid: null };
         this.current = this.current
           ? { ...this.current, state: 'stopped', pid: null }
