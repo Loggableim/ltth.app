@@ -8,6 +8,8 @@ class LocalComfyProvider {
   constructor({
     config = {},
     getConfig = null,
+    getRuntimeBaseUrl = null,
+    acquireRuntimeActivity = null,
     fetchImpl = global.fetch,
     dataDir = null,
     logger = null,
@@ -18,6 +20,8 @@ class LocalComfyProvider {
     this.id = 'localComfy';
     this.config = config;
     this.getConfig = getConfig;
+    this.getRuntimeBaseUrl = getRuntimeBaseUrl;
+    this.acquireRuntimeActivity = acquireRuntimeActivity;
     this.fetch = fetchImpl;
     this.dataDir = dataDir;
     this.logger = logger;
@@ -34,8 +38,31 @@ class LocalComfyProvider {
     return this.catalog.resolveConfigPreset(config);
   }
 
+  resolveBaseUrl(config = this.resolveConfig()) {
+    const managedBaseUrl = typeof this.getRuntimeBaseUrl === 'function'
+      ? this.getRuntimeBaseUrl()
+      : null;
+    return managedBaseUrl || config.comfyUrl;
+  }
+
+  async withRuntimeActivity(operation) {
+    const release = typeof this.acquireRuntimeActivity === 'function'
+      ? this.acquireRuntimeActivity()
+      : null;
+    try {
+      return await operation();
+    } finally {
+      if (typeof release === 'function') await release();
+    }
+  }
+
   async checkStatus() {
     const config = this.resolveConfig();
+    const baseUrl = this.resolveBaseUrl(config);
+    return this.withRuntimeActivity(() => this.checkStatusAt(config, baseUrl));
+  }
+
+  async checkStatusAt(config, baseUrl) {
     if (!config.enabled) {
       return {
         provider: this.id,
@@ -48,7 +75,7 @@ class LocalComfyProvider {
     const preset = this.resolvePreset(config);
 
     try {
-      const response = await this.fetch(`${config.comfyUrl}/system_stats`);
+      const response = await this.fetch(`${baseUrl}/system_stats`);
       if (!response || !response.ok) {
         return {
           provider: this.id,
@@ -93,56 +120,59 @@ class LocalComfyProvider {
 
   async generate(input = {}) {
     const config = this.resolveConfig();
-    const preset = this.resolvePreset(config);
-    const status = await this.checkStatus();
-    if (status.state !== 'ready') {
-      throw new Error(`LOCAL_PROVIDER_NOT_READY:${status.state}`);
-    }
+    const baseUrl = this.resolveBaseUrl(config);
+    return this.withRuntimeActivity(async () => {
+      const preset = this.resolvePreset(config);
+      const status = await this.checkStatusAt(config, baseUrl);
+      if (status.state !== 'ready') {
+        throw new Error(`LOCAL_PROVIDER_NOT_READY:${status.state}`);
+      }
 
-    const response = await this.fetch(`${config.comfyUrl}/prompt`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        prompt: this.catalog.createWorkflow({
-          presetId: preset.id,
-          prompt: input.prompt,
-          negativePrompt: input.negativePrompt,
-          width: Number(config.width) || preset.width,
-          height: Number(config.height) || preset.height,
-          steps: Number(config.steps) || preset.steps
-        }),
-        client_id: 'streamalchemy'
-      })
+      const response = await this.fetch(`${baseUrl}/prompt`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt: this.catalog.createWorkflow({
+            presetId: preset.id,
+            prompt: input.prompt,
+            negativePrompt: input.negativePrompt,
+            width: Number(config.width) || preset.width,
+            height: Number(config.height) || preset.height,
+            steps: Number(config.steps) || preset.steps
+          }),
+          client_id: 'streamalchemy'
+        })
+      });
+
+      if (!response?.ok) {
+        throw new Error(`LOCAL_COMFY_PROMPT_HTTP_${response?.status || 'UNKNOWN'}`);
+      }
+
+      const payload = await response.json();
+      const promptId = payload?.prompt_id;
+      if (!promptId) {
+        throw new Error('LOCAL_COMFY_PROMPT_ID_MISSING');
+      }
+
+      const history = await this.waitForHistory(baseUrl, promptId);
+      const image = this.extractImage(history, promptId);
+      if (!image) {
+        throw new Error('LOCAL_COMFY_OUTPUT_MISSING');
+      }
+
+      const url = new URL('/view', baseUrl);
+      url.searchParams.set('filename', image.filename);
+      url.searchParams.set('subfolder', image.subfolder || '');
+      url.searchParams.set('type', image.type || 'output');
+
+      return {
+        imageUrl: url.toString(),
+        provider: this.id,
+        model: preset.id
+      };
     });
-
-    if (!response?.ok) {
-      throw new Error(`LOCAL_COMFY_PROMPT_HTTP_${response?.status || 'UNKNOWN'}`);
-    }
-
-    const payload = await response.json();
-    const promptId = payload?.prompt_id;
-    if (!promptId) {
-      throw new Error('LOCAL_COMFY_PROMPT_ID_MISSING');
-    }
-
-    const history = await this.waitForHistory(config.comfyUrl, promptId);
-    const image = this.extractImage(history, promptId);
-    if (!image) {
-      throw new Error('LOCAL_COMFY_OUTPUT_MISSING');
-    }
-
-    const url = new URL('/view', config.comfyUrl);
-    url.searchParams.set('filename', image.filename);
-    url.searchParams.set('subfolder', image.subfolder || '');
-    url.searchParams.set('type', image.type || 'output');
-
-    return {
-      imageUrl: url.toString(),
-      provider: this.id,
-      model: preset.id
-    };
   }
 
   async waitForHistory(comfyUrl, promptId) {

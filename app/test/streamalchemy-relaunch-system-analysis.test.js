@@ -2,6 +2,37 @@ const SystemAnalyzer = require('../plugins/streamalchemy/backend/system-analyzer
 const ModelCatalog = require('../plugins/streamalchemy/backend/model-catalog');
 
 describe('SystemAnalyzer', () => {
+  test('assigns backend device indexes independently for each physical GPU vendor', () => {
+    const analyzer = new SystemAnalyzer();
+
+    const adapters = analyzer.parseWindowsAdapters(JSON.stringify({
+      adapters: [
+        {
+          Name: 'NVIDIA GeForce RTX 4090',
+          AdapterRAM: 4293918720,
+          PNPDeviceID: 'PCI\\VEN_10DE&DEV_2684\\1'
+        },
+        {
+          Name: 'NVIDIA GeForce RTX 4080',
+          AdapterRAM: 4293918720,
+          PNPDeviceID: 'PCI\\VEN_10DE&DEV_2704\\2'
+        },
+        {
+          Name: 'Intel(R) Arc(TM) A770 Graphics',
+          AdapterRAM: 4293918720,
+          PNPDeviceID: 'PCI\\VEN_8086&DEV_56A0\\3'
+        }
+      ],
+      registry: []
+    }));
+
+    expect(adapters.map(adapter => [adapter.vendor, adapter.backendIndex])).toEqual([
+      ['nvidia', 0],
+      ['nvidia', 1],
+      ['intel', 0]
+    ]);
+  });
+
   test('discovers every physical Windows adapter from structured CIM JSON and restores 64-bit registry VRAM', async () => {
     const commands = [];
     const analyzer = new SystemAnalyzer({

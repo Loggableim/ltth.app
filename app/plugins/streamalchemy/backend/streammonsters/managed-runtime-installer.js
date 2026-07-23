@@ -172,6 +172,12 @@ class ManagedRuntimeInstaller {
     this.managedChild = null;
     this.processState = { state: 'stopped', pid: null, port: null, baseUrl: null };
     this.idleTimer = null;
+    this.activeRequests = 0;
+    this.idleStopPending = false;
+    this.stopPromise = null;
+    this.disposed = false;
+    this.destroyPromise = null;
+    this.verifiedArtifactPaths = new Set();
     this.lastSmokeTest = null;
     this.installation = this.loadInstallationRecord();
   }
@@ -280,6 +286,10 @@ class ManagedRuntimeInstaller {
   }
 
   createInstallJob(request = {}, adapters = []) {
+    this.throwIfDisposed();
+    if ([...this.jobs.values()].some(job => !this.isTerminalJobState(job.state))) {
+      throw new Error('STREAM_MONSTERS_RUNTIME_INSTALL_IN_PROGRESS');
+    }
     this.validateInstallRequest(request);
     const adapter = request.adapterId
       ? adapters.find(item => item.id === request.adapterId)
@@ -303,11 +313,17 @@ class ManagedRuntimeInstaller {
       updatedAt: new Date().toISOString(),
       adapter,
       controller,
+      promise: null,
+      start: null,
       error: null,
       result: null
     };
+    job.start = () => {
+      if (!job.promise) job.promise = this.runInstallJob(job);
+      return job.promise;
+    };
     this.jobs.set(jobId, job);
-    this.scheduleJob(() => this.runInstallJob(job).catch(() => {}));
+    job.scheduleHandle = this.scheduleJob(() => job.start().catch(() => {}));
     return { jobId, state: job.state };
   }
 
@@ -333,7 +349,14 @@ class ManagedRuntimeInstaller {
   }
 
   async runInstallJob(job) {
-    if (job.state === 'cancelled' || job.controller.signal.aborted) return this.publicJob(job);
+    if (job.state === 'cancelled' || job.controller.signal.aborted || this.disposed) {
+      this.updateJob(job, {
+        state: 'cancelled',
+        error: null,
+        progress: { ...job.progress, phase: 'cancelled' }
+      });
+      return this.publicJob(job);
+    }
     this.updateJob(job, { state: 'running', progress: { ...job.progress, phase: 'preflight' } });
     try {
       const result = await this.performInstall({
@@ -345,6 +368,7 @@ class ManagedRuntimeInstaller {
         onProgress: progress => this.updateJob(job, { progress: { ...job.progress, ...progress } })
       });
       this.throwIfAborted(job.controller.signal);
+      this.throwIfDisposed();
       this.installation = result;
       this.updateJob(job, {
         state: 'ready',
@@ -352,7 +376,9 @@ class ManagedRuntimeInstaller {
         progress: { ...job.progress, phase: 'complete' }
       });
     } catch (error) {
-      const cancelled = job.controller.signal.aborted || error.message === 'STREAM_MONSTERS_RUNTIME_ABORTED';
+      const cancelled = job.controller.signal.aborted ||
+        this.disposed ||
+        error.message === 'STREAM_MONSTERS_RUNTIME_ABORTED';
       this.updateJob(job, {
         state: cancelled ? 'cancelled' : 'failed',
         error: cancelled ? null : error.message,
@@ -364,7 +390,7 @@ class ManagedRuntimeInstaller {
 
   updateJob(job, updates) {
     Object.assign(job, updates, { updatedAt: new Date().toISOString() });
-    this.onState(this.publicJob(job));
+    if (!this.disposed) this.onState(this.publicJob(job));
     return job;
   }
 
@@ -373,16 +399,17 @@ class ManagedRuntimeInstaller {
     return job ? this.publicJob(job) : null;
   }
 
-  cancelInstallJob(jobId) {
+  async cancelInstallJob(jobId) {
     const job = this.jobs.get(String(jobId || ''));
     if (!job) return null;
-    if (['ready', 'failed', 'cancelled'].includes(job.state)) return this.publicJob(job);
+    if (this.isTerminalJobState(job.state)) return this.publicJob(job);
     job.controller.abort();
-    this.updateJob(job, {
-      state: 'cancelled',
-      progress: { ...job.progress, phase: 'cancelled' }
-    });
+    await job.start();
     return this.publicJob(job);
+  }
+
+  isTerminalJobState(state) {
+    return ['ready', 'failed', 'cancelled'].includes(state);
   }
 
   publicJob(job) {
@@ -404,51 +431,60 @@ class ManagedRuntimeInstaller {
   }
 
   async performCatalogInstall({ jobId, adapter, profile, model, signal, onProgress }) {
-    this.throwIfAborted(signal);
-    const requiredBytes = (Number(profile.downloadSizeBytes) || 0) + model.sizeBytes + (2 * 1024 ** 3);
+    this.throwIfUnavailable(signal);
+    const requiredBytes = await this.calculateCatalogRequiredBytes(profile, model, signal);
     await this.preflightDisk(requiredBytes);
+    this.throwIfUnavailable(signal);
     const previousInstallation = this.installation;
+    const previousCurrent = this.current;
     const stagingRoot = await this.createCatalogStaging(jobId);
     const contentRoot = path.join(stagingRoot, 'content');
-    await fs.promises.mkdir(contentRoot, { recursive: true });
     try {
+      this.throwIfUnavailable(signal);
+      await fs.promises.mkdir(contentRoot, { recursive: true });
       const archivePath = await this.downloadArtifact({
         url: profile.archiveUrl,
-        targetPath: path.join(stagingRoot, `runtime.${profile.archiveType}`),
+        targetPath: this.resolveArtifactPath(profile.sha256, `runtime.${profile.archiveType}`),
         expectedSize: Number(profile.downloadSizeBytes) || 0,
         sha256: profile.sha256,
         signal,
         onProgress: progress => onProgress({ ...progress, phase: 'runtime_download' })
       });
-      this.throwIfAborted(signal);
+      this.throwIfUnavailable(signal);
       onProgress({ phase: 'archive_inspection' });
-      await this.inspect({ archivePath, runtimeRoot: contentRoot, archiveType: profile.archiveType });
-      await this.extract({ archivePath, runtimeRoot: contentRoot, archiveType: profile.archiveType });
+      await this.inspect({
+        archivePath,
+        runtimeRoot: contentRoot,
+        archiveType: profile.archiveType,
+        signal
+      });
+      this.throwIfUnavailable(signal);
+      await this.extract({
+        archivePath,
+        runtimeRoot: contentRoot,
+        archiveType: profile.archiveType,
+        signal
+      });
+      this.throwIfUnavailable(signal);
       const extractedRuntimeRoot = this.resolveExistingInside(contentRoot, profile.runtimeRootRelativePath);
       const modelDir = this.resolveInside(extractedRuntimeRoot, path.join('ComfyUI', 'models', 'checkpoints'));
       await fs.promises.mkdir(modelDir, { recursive: true });
-      await this.downloadArtifact({
+      const modelArtifactPath = await this.downloadArtifact({
         url: model.downloadUrl,
-        targetPath: path.join(modelDir, model.fileName),
+        targetPath: this.resolveArtifactPath(model.sha256, model.fileName),
         expectedSize: model.sizeBytes,
         sha256: model.sha256,
         signal,
         onProgress: progress => onProgress({ ...progress, phase: 'model_download' })
       });
-      const installsRoot = path.join(this.resolveRuntimeRootV2(), 'installs');
-      await fs.promises.mkdir(installsRoot, { recursive: true });
-      const installDir = path.join(
-        installsRoot,
-        `${profile.id}-${profile.version}-${profile.sha256.slice(0, 16)}`
-      );
-      if (fs.existsSync(installDir)) {
-        throw new Error('STREAM_MONSTERS_RUNTIME_INSTALL_ALREADY_EXISTS');
-      }
-      await fs.promises.rename(extractedRuntimeRoot, installDir);
+      this.throwIfUnavailable(signal);
+      await fs.promises.copyFile(modelArtifactPath, path.join(modelDir, model.fileName));
+      this.throwIfUnavailable(signal);
+
       this.installation = {
-        state: 'installed',
+        state: 'verifying',
         verified: false,
-        runtimeRoot: installDir,
+        runtimeRoot: extractedRuntimeRoot,
         profileId: profile.id,
         adapterId: adapter.id,
         model: {
@@ -461,19 +497,68 @@ class ManagedRuntimeInstaller {
         previousRuntimeRoot: previousInstallation?.verified ? previousInstallation.runtimeRoot : null
       };
       onProgress({ phase: 'runtime_verification' });
-      await this.startManagedRuntime({ adapter, allowUnverified: true });
+      if (this.managedChild) await this.stopManagedRuntime({ force: true });
+      try {
+        await this.startManagedRuntime({ adapter, allowUnverified: true, signal });
+      } finally {
+        await this.stopManagedRuntime({ force: true });
+      }
+      this.throwIfUnavailable(signal);
+      const smokeTest = this.lastSmokeTest;
+
+      const installsRoot = path.join(this.resolveRuntimeRootV2(), 'installs');
+      await fs.promises.mkdir(installsRoot, { recursive: true });
+      const installDir = path.join(
+        installsRoot,
+        `${profile.id}-${profile.version}-${profile.sha256.slice(0, 16)}`
+      );
+      if (fs.existsSync(installDir)) {
+        const previousRoot = previousInstallation?.verified
+          ? fs.realpathSync(previousInstallation.runtimeRoot)
+          : null;
+        const existingRoot = fs.realpathSync(installDir);
+        if (previousRoot !== existingRoot) {
+          await this.cleanupUnreferencedInstall(installDir, installsRoot);
+        } else {
+          await this.cleanupValidatedStaging(stagingRoot);
+          this.installation = {
+            ...previousInstallation,
+            smokeTest
+          };
+          this.current = null;
+          await this.writeActiveInstallation(this.installation);
+          return this.installation;
+        }
+      }
+      await fs.promises.rename(extractedRuntimeRoot, installDir);
       this.installation = {
-        ...this.installation,
         state: 'ready',
         verified: true,
-        smokeTest: this.lastSmokeTest
+        runtimeRoot: fs.realpathSync(installDir),
+        profileId: profile.id,
+        adapterId: adapter.id,
+        model: {
+          id: model.id,
+          fileName: model.fileName,
+          sizeBytes: model.sizeBytes,
+          license: model.license,
+          verified: true
+        },
+        previousRuntimeRoot: previousInstallation?.verified ? previousInstallation.runtimeRoot : null,
+        smokeTest
       };
+      this.current = null;
       await this.writeActiveInstallation(this.installation);
       await this.cleanupValidatedStaging(stagingRoot);
       return this.installation;
     } catch (error) {
+      await this.stopManagedRuntime({ force: true }).catch(() => {});
       this.installation = previousInstallation;
+      this.current = previousCurrent;
       await this.cleanupValidatedStaging(stagingRoot).catch(() => {});
+      if (signal?.aborted || error?.name === 'AbortError') {
+        throw new Error('STREAM_MONSTERS_RUNTIME_ABORTED');
+      }
       throw error;
     }
   }
@@ -481,6 +566,77 @@ class ManagedRuntimeInstaller {
   resolveRuntimeRootV2() {
     if (!this.dataDir) throw new Error('STREAM_MONSTERS_RUNTIME_DATA_DIR_REQUIRED');
     return path.resolve(this.dataDir, 'managed-runtimes-v2');
+  }
+
+  resolveArtifactPath(sha256, fileName) {
+    if (!/^[a-f0-9]{64}$/i.test(String(sha256 || ''))) {
+      throw new Error('STREAM_MONSTERS_RUNTIME_CHECKSUM_INVALID');
+    }
+    if (
+      typeof fileName !== 'string' ||
+      !fileName ||
+      fileName !== path.basename(fileName) ||
+      !/^[a-z0-9._-]{1,160}$/i.test(fileName)
+    ) {
+      throw new Error('STREAM_MONSTERS_RUNTIME_PATH_INVALID');
+    }
+    return path.join(this.resolveRuntimeRootV2(), 'artifacts', sha256.toLowerCase(), fileName);
+  }
+
+  async calculateCatalogRequiredBytes(profile, model, signal = null) {
+    const runtimeRemaining = await this.getArtifactRemainingBytes({
+      sha256: profile.sha256,
+      fileName: `runtime.${profile.archiveType}`,
+      expectedSize: Number(profile.downloadSizeBytes) || 0,
+      signal
+    });
+    const modelRemaining = await this.getArtifactRemainingBytes({
+      sha256: model.sha256,
+      fileName: model.fileName,
+      expectedSize: Number(model.sizeBytes) || 0,
+      signal
+    });
+    return runtimeRemaining + modelRemaining + (2 * 1024 ** 3);
+  }
+
+  async getArtifactRemainingBytes({ sha256, fileName, expectedSize, signal = null }) {
+    this.throwIfUnavailable(signal);
+    const targetPath = this.resolveArtifactPath(sha256, fileName);
+    const resolvedTargetPath = path.resolve(targetPath);
+    const expected = Math.max(0, Number(expectedSize) || 0);
+    try {
+      const size = (await fs.promises.stat(targetPath)).size;
+      if (
+        (!expected || size === expected) &&
+        (
+          this.verifiedArtifactPaths.has(resolvedTargetPath) ||
+          await this.verify({ archivePath: targetPath, sha256, signal })
+        )
+      ) {
+        this.verifiedArtifactPaths.add(resolvedTargetPath);
+        return 0;
+      }
+    } catch (_) {
+      this.throwIfUnavailable(signal);
+    }
+    try {
+      const partSize = (await fs.promises.stat(`${targetPath}.part`)).size;
+      this.throwIfUnavailable(signal);
+      return Math.max(0, expected - Math.min(expected, partSize));
+    } catch (_) {
+      this.throwIfUnavailable(signal);
+      return expected;
+    }
+  }
+
+  async cleanupUnreferencedInstall(installDir, installsRoot) {
+    const resolved = path.resolve(installDir);
+    this.assertInside(path.resolve(installsRoot), resolved);
+    const stat = await fs.promises.lstat(resolved);
+    if (!stat.isDirectory() || stat.isSymbolicLink()) {
+      throw new Error('STREAM_MONSTERS_RUNTIME_INSTALL_UNSAFE');
+    }
+    await fs.promises.rm(resolved, { recursive: true, force: true });
   }
 
   async createCatalogStaging(jobId) {
@@ -515,9 +671,10 @@ class ManagedRuntimeInstaller {
 
   async getDiskStatus(profileId = null) {
     const profile = this.getProfile(profileId) || MANAGED_RUNTIME_CATALOG.profiles[0];
-    const requiredBytes = (Number(profile?.downloadSizeBytes) || 0) +
-      MANAGED_RUNTIME_CATALOG.model.sizeBytes +
-      (2 * 1024 ** 3);
+    const requiredBytes = await this.calculateCatalogRequiredBytes(
+      profile,
+      MANAGED_RUNTIME_CATALOG.model
+    );
     const freeBytes = await this.diskFreeBytes(this.dataDir);
     return {
       targetRoot: this.resolveRuntimeRootV2(),
@@ -548,7 +705,6 @@ class ManagedRuntimeInstaller {
       smokeTest: installation.smokeTest
     };
     await fs.promises.writeFile(part, JSON.stringify(publicRecord, null, 2), { mode: 0o600 });
-    await fs.promises.rm(target, { force: true });
     await fs.promises.rename(part, target);
   }
 
@@ -576,8 +732,12 @@ class ManagedRuntimeInstaller {
     }
   }
 
-  async startManagedRuntime({ adapter, allowUnverified = false } = {}) {
+  async startManagedRuntime({ adapter, allowUnverified = false, signal = null } = {}) {
+    this.throwIfUnavailable(signal);
     if (this.managedChild && this.managedChild.exitCode === null) {
+      if (adapter?.id && adapter.id !== this.processState.adapterId) {
+        throw new Error('STREAM_MONSTERS_RUNTIME_ADAPTER_MISMATCH');
+      }
       this.touchActivity();
       return this.getProcessState();
     }
@@ -595,6 +755,7 @@ class ManagedRuntimeInstaller {
     const pythonPath = this.resolveExistingInside(runtimeRoot, profile.pythonRelativePath);
     const mainPath = this.resolveExistingInside(runtimeRoot, profile.mainRelativePath);
     const port = await this.findFreePort();
+    this.throwIfUnavailable(signal);
     const args = [
       '-s',
       mainPath,
@@ -602,7 +763,8 @@ class ManagedRuntimeInstaller {
       '127.0.0.1',
       '--port',
       String(port),
-      '--disable-auto-launch'
+      '--disable-auto-launch',
+      ...this.buildDeviceSelectorArgs(profile, selectedAdapter)
     ];
     const child = this.spawn(pythonPath, args, {
       cwd: runtimeRoot,
@@ -635,10 +797,12 @@ class ManagedRuntimeInstaller {
         adapter: selectedAdapter,
         profile,
         baseUrl: this.processState.baseUrl,
-        child
+        child,
+        signal
       });
+      this.throwIfUnavailable(signal);
     } catch (error) {
-      await this.stopManagedRuntime();
+      await this.stopManagedRuntime({ force: true });
       throw error;
     }
     this.processState = { ...this.processState, state: 'running' };
@@ -655,31 +819,72 @@ class ManagedRuntimeInstaller {
     return this.getProcessState();
   }
 
-  async verifyManagedRuntime({ adapter, profile, baseUrl = this.processState.baseUrl, child = this.managedChild } = {}) {
+  buildDeviceSelectorArgs(profile, adapter) {
+    const index = Number.isInteger(Number(adapter?.backendIndex)) && Number(adapter.backendIndex) >= 0
+      ? Number(adapter.backendIndex)
+      : 0;
+    if (profile?.backend === 'xpu') {
+      return ['--oneapi-device-selector', `level_zero:${index}`];
+    }
+    if (['cuda', 'rocm'].includes(profile?.backend)) {
+      return ['--cuda-device', String(index)];
+    }
+    return [];
+  }
+
+  async verifyManagedRuntime({
+    adapter,
+    profile,
+    baseUrl = this.processState.baseUrl,
+    child = this.managedChild,
+    signal = null
+  } = {}) {
     let response = null;
     for (let attempt = 0; attempt < this.healthAttempts; attempt += 1) {
+      this.throwIfUnavailable(signal);
       if (!child || (child.exitCode !== null && child.exitCode !== undefined)) {
         throw new Error('STREAM_MONSTERS_RUNTIME_CHILD_EXITED');
       }
       try {
-        const candidate = await this.fetch(`${baseUrl}/system_stats`, { redirect: 'manual' });
+        const candidate = await this.fetch(`${baseUrl}/system_stats`, {
+          redirect: 'manual',
+          ...(signal ? { signal } : {})
+        });
         if (candidate?.ok && !REDIRECT_STATUSES.has(Number(candidate?.status))) {
           response = candidate;
           break;
         }
-      } catch (_) {}
+      } catch (error) {
+        if (signal?.aborted || error?.name === 'AbortError') {
+          throw new Error('STREAM_MONSTERS_RUNTIME_ABORTED');
+        }
+      }
       if (attempt + 1 < this.healthAttempts && this.healthRetryDelayMs > 0) {
-        await new Promise(resolve => this.setTimeout(resolve, this.healthRetryDelayMs));
+        await this.wait(this.healthRetryDelayMs, signal);
       }
     }
     if (!response) throw new Error('STREAM_MONSTERS_RUNTIME_HEALTHCHECK_FAILED');
     const stats = await response.json();
-    const serialized = JSON.stringify(stats).toLowerCase();
-    if (!serialized.includes(String(adapter.name || adapter.id || '').toLowerCase())) {
+    this.throwIfUnavailable(signal);
+    const devices = Array.isArray(stats?.devices) ? stats.devices : [];
+    const backend = String(profile.backend || '').toLowerCase();
+    const adapterName = String(adapter.name || adapter.id || '').trim().toLowerCase();
+    const backendMatches = devices.filter(device => this.deviceMatchesBackend(
+      device,
+      backend,
+      stats
+    ));
+    const selectedMatches = backendMatches.filter(device => (
+      JSON.stringify(device).toLowerCase().includes(adapterName)
+    ));
+    if (selectedMatches.length === 0 && backendMatches.length > 0) {
       throw new Error('STREAM_MONSTERS_RUNTIME_DEVICE_MISMATCH');
     }
-    if (!serialized.includes(String(profile.backend || '').toLowerCase())) {
+    if (backendMatches.length === 0) {
       throw new Error('STREAM_MONSTERS_RUNTIME_BACKEND_MISMATCH');
+    }
+    if (selectedMatches.length > 1) {
+      throw new Error('STREAM_MONSTERS_RUNTIME_DEVICE_AMBIGUOUS');
     }
     const smoke = await this.smokeTest({
       baseUrl,
@@ -687,8 +892,10 @@ class ManagedRuntimeInstaller {
       height: 256,
       adapter,
       profile,
-      model: { ...MANAGED_RUNTIME_CATALOG.model }
+      model: { ...MANAGED_RUNTIME_CATALOG.model },
+      signal
     });
+    this.throwIfUnavailable(signal);
     if (!smoke?.ok || smoke.width !== 256 || smoke.height !== 256) {
       throw new Error('STREAM_MONSTERS_RUNTIME_SMOKE_TEST_FAILED');
     }
@@ -701,7 +908,24 @@ class ManagedRuntimeInstaller {
     return this.lastSmokeTest;
   }
 
-  async runGenerationSmokeTest({ baseUrl, width, height, model }) {
+  deviceMatchesBackend(device, backend, stats) {
+    const deviceText = JSON.stringify(device).toLowerCase();
+    const pytorchVersion = String(stats?.system?.pytorch_version || '').toLowerCase();
+    if (backend === 'rocm') {
+      return deviceText.includes('rocm') ||
+        (deviceText.includes('cuda') && /(?:rocm|hip)/.test(pytorchVersion));
+    }
+    if (backend === 'cuda') {
+      return deviceText.includes('cuda') && !/(?:rocm|hip)/.test(pytorchVersion);
+    }
+    if (backend === 'xpu') {
+      return deviceText.includes('xpu') || deviceText.includes('oneapi');
+    }
+    return deviceText.includes(backend);
+  }
+
+  async runGenerationSmokeTest({ baseUrl, width, height, model, signal = null }) {
+    this.throwIfUnavailable(signal);
     const workflow = {
       '1': { class_type: 'CheckpointLoaderSimple', inputs: { ckpt_name: model.fileName } },
       '2': { class_type: 'EmptyLatentImage', inputs: { width, height, batch_size: 1 } },
@@ -728,19 +952,23 @@ class ManagedRuntimeInstaller {
     const submitted = await this.fetch(`${baseUrl}/prompt`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ prompt: workflow })
+      body: JSON.stringify({ prompt: workflow }),
+      ...(signal ? { signal } : {})
     });
     if (!submitted?.ok) return { ok: false, width, height };
     const payload = await submitted.json();
     const promptId = payload.prompt_id;
     if (!promptId) return { ok: false, width, height };
     for (let attempt = 0; attempt < 60; attempt += 1) {
-      const history = await this.fetch(`${baseUrl}/history/${encodeURIComponent(promptId)}`);
+      this.throwIfUnavailable(signal);
+      const history = await this.fetch(`${baseUrl}/history/${encodeURIComponent(promptId)}`, (
+        signal ? { signal } : undefined
+      ));
       if (history?.ok) {
         const body = await history.json();
         if (body?.[promptId]?.outputs) return { ok: true, width, height };
       }
-      await new Promise(resolve => this.setTimeout(resolve, 500));
+      await this.wait(500, signal);
     }
     return { ok: false, width, height };
   }
@@ -760,23 +988,90 @@ class ManagedRuntimeInstaller {
 
   touchActivity() {
     if (this.idleTimer) this.clearTimeout(this.idleTimer);
-    this.idleTimer = this.setTimeout(() => this.stopManagedRuntime(), this.idleTimeoutMs);
+    this.idleTimer = null;
+    this.idleStopPending = false;
+    if (!this.managedChild || this.activeRequests > 0) return;
+    this.idleTimer = this.setTimeout(() => {
+      this.idleTimer = null;
+      return this.stopManagedRuntime({ force: false });
+    }, this.idleTimeoutMs);
     this.idleTimer?.unref?.();
   }
 
-  async stopManagedRuntime() {
+  acquireActivityLease() {
+    if (!this.managedChild || this.managedChild.exitCode !== null) return async () => {};
     if (this.idleTimer) {
       this.clearTimeout(this.idleTimer);
       this.idleTimer = null;
     }
+    this.activeRequests += 1;
+    let released = false;
+    return async () => {
+      if (released) return;
+      released = true;
+      this.activeRequests = Math.max(0, this.activeRequests - 1);
+      if (this.activeRequests > 0) return;
+      if (this.idleStopPending) {
+        await this.stopManagedRuntime({ force: false });
+        return;
+      }
+      this.touchActivity();
+    };
+  }
+
+  async stopManagedRuntime({ force = true } = {}) {
+    if (!force && this.activeRequests > 0) {
+      this.idleStopPending = true;
+      return this.getProcessState();
+    }
+    if (this.stopPromise) return this.stopPromise;
+    this.stopPromise = this.settleManagedRuntimeStop();
+    try {
+      return await this.stopPromise;
+    } finally {
+      this.stopPromise = null;
+    }
+  }
+
+  async settleManagedRuntimeStop() {
+    if (this.idleTimer) {
+      this.clearTimeout(this.idleTimer);
+      this.idleTimer = null;
+    }
+    this.idleStopPending = false;
     const child = this.managedChild;
     if (child) {
       this.managedChild = null;
-      try { child.kill(); } catch (_) {}
+      await this.killAndWaitForChildExit(child);
     }
     this.processState = { ...this.processState, state: 'stopped', pid: null };
     this.current = this.current ? { ...this.current, state: 'stopped', pid: null } : null;
     return this.getProcessState();
+  }
+
+  killAndWaitForChildExit(child) {
+    if (!child || (child.exitCode !== null && child.exitCode !== undefined)) {
+      return Promise.resolve();
+    }
+    if (typeof child.once !== 'function') {
+      try { child.kill(); } catch (_) {}
+      return Promise.resolve();
+    }
+    return new Promise(resolve => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        resolve();
+      };
+      const timeout = setTimeout(finish, 5000);
+      timeout.unref?.();
+      child.once('exit', finish);
+      child.once('error', finish);
+      try { child.kill(); } catch (_) {}
+      if (child.exitCode !== null && child.exitCode !== undefined) finish();
+    });
   }
 
   getProcessState() {
@@ -784,10 +1079,19 @@ class ManagedRuntimeInstaller {
   }
 
   async destroy() {
-    for (const job of this.jobs.values()) {
-      if (!['ready', 'failed', 'cancelled'].includes(job.state)) this.cancelInstallJob(job.jobId);
-    }
-    await this.stopManagedRuntime();
+    if (this.destroyPromise) return this.destroyPromise;
+    this.disposed = true;
+    this.destroyPromise = (async () => {
+      const pending = [];
+      for (const job of this.jobs.values()) {
+        if (this.isTerminalJobState(job.state)) continue;
+        job.controller.abort();
+        pending.push(job.start());
+      }
+      await Promise.allSettled(pending);
+      await this.stopManagedRuntime({ force: true });
+    })();
+    return this.destroyPromise;
   }
 
   async install(gpu, requestedManifest, { signal = null } = {}) {
@@ -970,12 +1274,33 @@ class ManagedRuntimeInstaller {
     this.throwIfAborted(signal);
     await fs.promises.mkdir(path.dirname(targetPath), { recursive: true });
     const partPath = `${targetPath}.part`;
+    const resolvedTargetPath = path.resolve(targetPath);
+    let targetSize = 0;
+    try {
+      targetSize = (await fs.promises.stat(targetPath)).size;
+    } catch (_) {}
+    if (!expectedSize || targetSize === Number(expectedSize)) {
+      const alreadyVerified = this.verifiedArtifactPaths.has(resolvedTargetPath);
+      if (
+        targetSize > 0 &&
+        (alreadyVerified || await this.verify({ archivePath: targetPath, sha256, signal }))
+      ) {
+        this.verifiedArtifactPaths.add(resolvedTargetPath);
+        onProgress({
+          phase: 'download',
+          completedBytes: targetSize,
+          totalBytes: Math.max(0, Number(expectedSize) || targetSize)
+        });
+        return targetPath;
+      }
+    }
+    if (targetSize > 0) await fs.promises.rm(targetPath, { force: true });
     let completedBytes = 0;
     try {
       completedBytes = (await fs.promises.stat(partPath)).size;
     } catch (_) {}
     if (expectedSize > 0 && completedBytes === Number(expectedSize)) {
-      const complete = await this.verify({ archivePath: partPath, sha256 });
+      const complete = await this.verify({ archivePath: partPath, sha256, signal });
       if (complete) {
         await fs.promises.rm(targetPath, { force: true });
         await fs.promises.rename(partPath, targetPath);
@@ -995,7 +1320,7 @@ class ManagedRuntimeInstaller {
     if (!append) completedBytes = 0;
     const source = response.body.getReader && Readable.fromWeb
       ? Readable.fromWeb(response.body)
-      : Readable.from(response.body);
+      : (response.body instanceof Readable ? response.body : Readable.from(response.body));
     source.on('data', chunk => {
       completedBytes += chunk.length;
       onProgress({
@@ -1004,22 +1329,30 @@ class ManagedRuntimeInstaller {
         totalBytes: Math.max(0, Number(expectedSize) || 0)
       });
     });
-    await pipeline(
-      source,
-      fs.createWriteStream(partPath, { flags: append ? 'a' : 'w' }),
-      ...(signal ? [{ signal }] : [])
-    );
+    try {
+      await pipeline(
+        source,
+        fs.createWriteStream(partPath, { flags: append ? 'a' : 'w' }),
+        ...(signal ? [{ signal }] : [])
+      );
+    } catch (error) {
+      if (signal?.aborted || error?.name === 'AbortError') {
+        throw new Error('STREAM_MONSTERS_RUNTIME_ABORTED');
+      }
+      throw error;
+    }
     this.throwIfAborted(signal);
     if (expectedSize > 0 && completedBytes !== Number(expectedSize)) {
       throw new Error('STREAM_MONSTERS_RUNTIME_DOWNLOAD_SIZE_MISMATCH');
     }
-    const verified = await this.verify({ archivePath: partPath, sha256 });
+    const verified = await this.verify({ archivePath: partPath, sha256, signal });
     if (!verified) {
       await fs.promises.rm(partPath, { force: true });
       throw new Error('STREAM_MONSTERS_RUNTIME_CHECKSUM_MISMATCH');
     }
     await fs.promises.rm(targetPath, { force: true });
     await fs.promises.rename(partPath, targetPath);
+    this.verifiedArtifactPaths.add(resolvedTargetPath);
     return targetPath;
   }
 
@@ -1077,15 +1410,29 @@ class ManagedRuntimeInstaller {
     } catch (_) {}
   }
 
-  async verify({ archivePath, sha256 }) {
+  async verify({ archivePath, sha256, signal = null }) {
+    this.throwIfUnavailable(signal);
     const hash = crypto.createHash('sha256');
-    await pipeline(fs.createReadStream(archivePath), hash);
+    try {
+      await pipeline(
+        fs.createReadStream(archivePath),
+        hash,
+        ...(signal ? [{ signal }] : [])
+      );
+    } catch (error) {
+      if (signal?.aborted || error?.name === 'AbortError') {
+        throw new Error('STREAM_MONSTERS_RUNTIME_ABORTED');
+      }
+      throw error;
+    }
+    this.throwIfUnavailable(signal);
     return hash.digest('hex').toLowerCase() === sha256.toLowerCase();
   }
 
-  async inspect({ archivePath, runtimeRoot, archiveType = 'zip' }) {
+  async inspect({ archivePath, runtimeRoot, archiveType = 'zip', signal = null }) {
+    this.throwIfUnavailable(signal);
     if (archiveType === '7z') {
-      return this.inspectSevenZip({ archivePath, runtimeRoot });
+      return this.inspectSevenZip({ archivePath, runtimeRoot, signal });
     }
     const canonicalRoot = path.resolve(runtimeRoot);
     let totalBytes = 0;
@@ -1103,20 +1450,26 @@ class ManagedRuntimeInstaller {
           return;
         }
         let settled = false;
-        const fail = () => {
+        const cleanup = () => signal?.removeEventListener?.('abort', abort);
+        const fail = (error = new Error('STREAM_MONSTERS_RUNTIME_ARCHIVE_ENTRY_UNSAFE')) => {
           if (settled) return;
           settled = true;
+          cleanup();
           zipFile.close();
-          reject(new Error('STREAM_MONSTERS_RUNTIME_ARCHIVE_ENTRY_UNSAFE'));
+          reject(error);
         };
+        const abort = () => fail(new Error('STREAM_MONSTERS_RUNTIME_ABORTED'));
+        signal?.addEventListener?.('abort', abort, { once: true });
         zipFile.once('error', fail);
         zipFile.once('end', () => {
           if (settled) return;
           settled = true;
+          cleanup();
           resolve();
         });
         zipFile.on('entry', entry => {
           try {
+            this.throwIfUnavailable(signal);
             seenEntries += 1;
             totalBytes += Number(entry.uncompressedSize) || 0;
             if (seenEntries > this.maxArchiveEntries || totalBytes > this.maxArchiveUncompressedBytes) {
@@ -1136,14 +1489,16 @@ class ManagedRuntimeInstaller {
     });
   }
 
-  async inspectSevenZip({ archivePath, runtimeRoot }) {
-    const { stdout } = await this.runTar(['-tvf', archivePath]);
+  async inspectSevenZip({ archivePath, runtimeRoot, signal = null }) {
+    this.throwIfUnavailable(signal);
+    const { stdout } = await this.runTar(['-tvf', archivePath], { signal });
     const lines = String(stdout || '').split(/\r?\n/).filter(Boolean);
     if (lines.length > this.maxArchiveEntries) {
       throw new Error('STREAM_MONSTERS_RUNTIME_ARCHIVE_ENTRY_UNSAFE');
     }
     let totalBytes = 0;
     for (const line of lines) {
+      this.throwIfUnavailable(signal);
       const type = line[0];
       if (!['-', 'd'].includes(type)) {
         throw new Error('STREAM_MONSTERS_RUNTIME_ARCHIVE_ENTRY_UNSAFE');
@@ -1167,19 +1522,27 @@ class ManagedRuntimeInstaller {
     }
   }
 
-  async extractSevenZip({ archivePath, runtimeRoot }) {
+  async extractSevenZip({ archivePath, runtimeRoot, signal = null }) {
+    this.throwIfUnavailable(signal);
     await fs.promises.mkdir(runtimeRoot, { recursive: true });
-    await this.runTar(['-xf', archivePath, '-C', runtimeRoot]);
+    await this.runTar(['-xf', archivePath, '-C', runtimeRoot], { signal });
+    this.throwIfUnavailable(signal);
   }
 
-  runTar(args) {
+  runTar(args, { signal = null } = {}) {
     return new Promise((resolve, reject) => {
-      this.execFile('tar.exe', args, {
+      const options = {
         windowsHide: true,
         shell: false,
         maxBuffer: 64 * 1024 * 1024
-      }, (error, stdout, stderr) => {
+      };
+      if (signal) options.signal = signal;
+      this.execFile('tar.exe', args, options, (error, stdout, stderr) => {
         if (error) {
+          if (signal?.aborted || error?.name === 'AbortError') {
+            reject(new Error('STREAM_MONSTERS_RUNTIME_ABORTED'));
+            return;
+          }
           reject(new Error('STREAM_MONSTERS_RUNTIME_ARCHIVE_INVALID'));
           return;
         }
@@ -1210,9 +1573,10 @@ class ManagedRuntimeInstaller {
     }
   }
 
-  async extract({ archivePath, runtimeRoot, archiveType = 'zip' }) {
+  async extract({ archivePath, runtimeRoot, archiveType = 'zip', signal = null }) {
+    this.throwIfUnavailable(signal);
     if (archiveType === '7z') {
-      return this.extractSevenZip({ archivePath, runtimeRoot });
+      return this.extractSevenZip({ archivePath, runtimeRoot, signal });
     }
     let unsafePath = null;
     const unzip = new zipLib.Unzip({
@@ -1226,6 +1590,7 @@ class ManagedRuntimeInstaller {
       }
     });
     await unzip.extract(archivePath, runtimeRoot);
+    this.throwIfUnavailable(signal);
     if (unsafePath) throw unsafePath;
   }
 
@@ -1290,6 +1655,36 @@ class ManagedRuntimeInstaller {
 
   throwIfAborted(signal) {
     if (signal?.aborted) throw new Error('STREAM_MONSTERS_RUNTIME_ABORTED');
+  }
+
+  throwIfDisposed() {
+    if (this.disposed) throw new Error('STREAM_MONSTERS_RUNTIME_DISPOSED');
+  }
+
+  throwIfUnavailable(signal) {
+    this.throwIfAborted(signal);
+    this.throwIfDisposed();
+  }
+
+  wait(delay, signal = null) {
+    this.throwIfUnavailable(signal);
+    return new Promise((resolve, reject) => {
+      let timer = null;
+      const abort = () => {
+        if (timer) this.clearTimeout(timer);
+        reject(new Error('STREAM_MONSTERS_RUNTIME_ABORTED'));
+      };
+      signal?.addEventListener?.('abort', abort, { once: true });
+      timer = this.setTimeout(() => {
+        signal?.removeEventListener?.('abort', abort);
+        try {
+          this.throwIfUnavailable(signal);
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      }, delay);
+    });
   }
 }
 

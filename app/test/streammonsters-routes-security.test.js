@@ -49,9 +49,20 @@ function createSubject({ storedManifest = null, artPool = null } = {}) {
       model: { verified: true }
     },
     lastSmokeTest: { state: 'passed', width: 256, height: 256 },
-    recommend: jest.fn(() => ({ supported: true, presetId: 'sdxl_lightning_4step', width: 768, height: 768, steps: 4 })),
+    recommend: jest.fn(() => ({
+      supported: true,
+      profileId: 'nvidia-standard',
+      presetId: 'sdxl_lightning_4step',
+      width: 768,
+      height: 768,
+      steps: 4
+    })),
     getPublicProfiles: jest.fn(() => [{ id: 'nvidia-standard', label: 'NVIDIA RTX 20+', backend: 'cuda' }]),
     getCatalog: jest.fn(() => ({
+      profiles: [{
+        id: 'nvidia-standard',
+        downloadSizeBytes: 2092156323
+      }],
       model: {
         id: 'sdxl_lightning_4step',
         fileName: 'sdxl_lightning_4step.safetensors',
@@ -206,7 +217,10 @@ describe('Stream Monsters privileged routes', () => {
       runtime: expect.any(Object),
       recommendation: expect.any(Object),
       manifestAvailable: true,
-      installDetails: expect.any(Object),
+      installDetails: expect.objectContaining({
+        runtimeDownloadBytes: 2092156323,
+        modelDownloadBytes: 6938040682
+      }),
       adapters: expect.arrayContaining([expect.objectContaining({ id: 'gpu-1' })]),
       selectedAdapterId: 'gpu-1',
       profiles: expect.arrayContaining([expect.objectContaining({ id: 'nvidia-standard' })]),

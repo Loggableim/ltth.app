@@ -305,8 +305,12 @@ class StreamMonstersRoutes {
           { state: recommendation.supported ? 'ready_to_install' : 'expert_or_remote' },
         recommendation,
         manifestAvailable: Boolean(manifest || profiles.length),
-        installDetails: this.publicInstallDetails(manifest)
-          || this.publicCatalogInstallDetails(catalog),
+        installDetails: profiles.length
+          ? this.publicCatalogInstallDetails(
+            catalog,
+            this.managedRuntime.installation?.profileId || recommendation.profileId
+          )
+          : this.publicInstallDetails(manifest),
         adapters: analysis.adapters || (analysis.gpu?.id ? [analysis.gpu] : []),
         selectedAdapterId: this.managedRuntime.installation?.adapterId || analysis.gpu?.id || null,
         profiles,
@@ -337,8 +341,8 @@ class StreamMonstersRoutes {
       if (!job) return res.status(404).json({ success: false, error: 'STREAM_MONSTERS_RUNTIME_JOB_NOT_FOUND' });
       return res.json(job);
     }));
-    this.api.registerRoute('DELETE', '/api/streammonsters/local-runtime/install/:jobId', this.protectAdmin((req, res) => {
-      const job = this.managedRuntime.cancelInstallJob(req.params?.jobId);
+    this.api.registerRoute('DELETE', '/api/streammonsters/local-runtime/install/:jobId', this.protectAdmin(async (req, res) => {
+      const job = await this.managedRuntime.cancelInstallJob(req.params?.jobId);
       if (!job) return res.status(404).json({ success: false, error: 'STREAM_MONSTERS_RUNTIME_JOB_NOT_FOUND' });
       return res.json(job);
     }));
@@ -461,9 +465,12 @@ class StreamMonstersRoutes {
     };
   }
 
-  publicCatalogInstallDetails(catalog = {}) {
+  publicCatalogInstallDetails(catalog = {}, profileId = null) {
+    const selectedProfile = catalog.profiles?.find(profile => profile.id === profileId)
+      || catalog.profiles?.[0]
+      || null;
     return {
-      runtimeDownloadBytes: 0,
+      runtimeDownloadBytes: Math.max(0, Number(selectedProfile?.downloadSizeBytes) || 0),
       modelDownloadBytes: Math.max(0, Number(catalog.model?.sizeBytes) || 0),
       targetDir: (() => {
         try { return this.managedRuntime.resolveRuntimeRootV2?.() || null; } catch (_) { return null; }

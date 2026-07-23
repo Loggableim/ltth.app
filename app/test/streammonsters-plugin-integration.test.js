@@ -88,6 +88,22 @@ describe('Stream Monsters plugin integration', () => {
     expect(overlayFile).toContain('streammonsters-overlay.html');
   });
 
+  test('connects the local provider to the current managed runtime port', async () => {
+    const { api } = createApi();
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    plugin.streamMonstersManagedRuntime.processState = {
+      state: 'running',
+      pid: 42,
+      port: 8307,
+      baseUrl: 'http://127.0.0.1:8307'
+    };
+
+    expect(plugin.providers.localComfy.resolveBaseUrl()).toBe('http://127.0.0.1:8307');
+
+    await plugin.destroy();
+  });
+
   test('registers the public Stream Monsters commands with GCCE when available', async () => {
     const gcce = {
       unregisterCommandsForPlugin: jest.fn(),

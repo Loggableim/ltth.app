@@ -3,7 +3,8 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { EventEmitter } = require('events');
-const { Readable } = require('stream');
+const { PassThrough, Readable } = require('stream');
+const { archiveFolder } = require('zip-lib');
 const ManagedRuntimeInstaller = require('../plugins/streamalchemy/backend/streammonsters/managed-runtime-installer');
 
 const ADAPTER = Object.freeze({
@@ -11,9 +12,38 @@ const ADAPTER = Object.freeze({
   name: 'NVIDIA GeForce RTX 4090',
   vendor: 'nvidia',
   architecture: 'rtx_20_plus',
+  backendIndex: 1,
   vramMb: 24576,
   memoryState: 'known'
 });
+
+async function createPortableRuntimeArchive(dataDir) {
+  const sourceRoot = path.join(dataDir, 'runtime-source');
+  const portableRoot = path.join(sourceRoot, 'ComfyUI_windows_portable');
+  fs.mkdirSync(path.join(portableRoot, 'python_embeded'), { recursive: true });
+  fs.mkdirSync(path.join(portableRoot, 'ComfyUI'), { recursive: true });
+  fs.writeFileSync(path.join(portableRoot, 'python_embeded', 'python.exe'), 'fixture-python');
+  fs.writeFileSync(path.join(portableRoot, 'ComfyUI', 'main.py'), 'fixture-main');
+  const archivePath = path.join(dataDir, 'runtime.zip');
+  await archiveFolder(sourceRoot, archivePath);
+  const bytes = fs.readFileSync(archivePath);
+  return {
+    bytes,
+    sha256: crypto.createHash('sha256').update(bytes).digest('hex')
+  };
+}
+
+function createManagedChild(pid) {
+  const child = new EventEmitter();
+  child.pid = pid;
+  child.exitCode = null;
+  child.kill = jest.fn(() => {
+    child.exitCode = 0;
+    child.emit('exit', 0);
+    return true;
+  });
+  return child;
+}
 
 describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
   test('loads only an existing verified installation record inside the versioned plugin-data root', () => {
@@ -92,7 +122,7 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
     expect(progress.map(event => event.state)).toEqual(expect.arrayContaining(['running', 'ready']));
   });
 
-  test('cancels a queued install job without starting any download', () => {
+  test('cancels a queued install job without starting any download', async () => {
     let scheduled;
     const performInstall = jest.fn();
     const installer = new ManagedRuntimeInstaller({
@@ -106,9 +136,60 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
       acceptModelLicense: true
     }, [ADAPTER]);
 
-    expect(installer.cancelInstallJob(accepted.jobId)).toEqual(expect.objectContaining({ state: 'cancelled' }));
+    await expect(installer.cancelInstallJob(accepted.jobId))
+      .resolves.toEqual(expect.objectContaining({ state: 'cancelled' }));
     expect(performInstall).not.toHaveBeenCalled();
     expect(scheduled).toEqual(expect.any(Function));
+  });
+
+  test('serializes installs and waits for running job settlement during cancellation and destroy', async () => {
+    let installStarted;
+    let settled = false;
+    const performInstall = jest.fn(({ signal }) => new Promise((resolve, reject) => {
+      installStarted = true;
+      signal.addEventListener('abort', () => {
+        setImmediate(() => {
+          settled = true;
+          reject(new Error('STREAM_MONSTERS_RUNTIME_ABORTED'));
+        });
+      }, { once: true });
+    }));
+    const installer = new ManagedRuntimeInstaller({
+      platform: () => 'win32',
+      windowsRelease: () => '10.0.22631',
+      performInstall
+    });
+    const accepted = installer.createInstallJob({
+      adapterId: ADAPTER.id,
+      acceptModelLicense: true
+    }, [ADAPTER]);
+
+    expect(() => installer.createInstallJob({
+      adapterId: ADAPTER.id,
+      acceptModelLicense: true
+    }, [ADAPTER])).toThrow('STREAM_MONSTERS_RUNTIME_INSTALL_IN_PROGRESS');
+    await new Promise(resolve => setImmediate(resolve));
+    expect(installStarted).toBe(true);
+
+    await expect(installer.cancelInstallJob(accepted.jobId))
+      .resolves.toEqual(expect.objectContaining({ state: 'cancelled' }));
+    expect(settled).toBe(true);
+
+    const replacement = installer.createInstallJob({
+      adapterId: ADAPTER.id,
+      acceptModelLicense: true
+    }, [ADAPTER]);
+    await new Promise(resolve => setImmediate(resolve));
+    await installer.destroy();
+
+    expect(settled).toBe(true);
+    expect(installer.getInstallJob(replacement.jobId)).toEqual(expect.objectContaining({
+      state: 'cancelled'
+    }));
+    expect(() => installer.createInstallJob({
+      adapterId: ADAPTER.id,
+      acceptModelLicense: true
+    }, [ADAPTER])).toThrow('STREAM_MONSTERS_RUNTIME_DISPOSED');
   });
 
   test('resumes a part download, verifies SHA-256, and atomically completes the artifact', async () => {
@@ -159,6 +240,25 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
       })).resolves.toBe(targetPath);
       expect(fetchImpl).not.toHaveBeenCalled();
       expect(fs.readFileSync(targetPath)).toEqual(content);
+    } finally {
+      fs.rmSync(dataDir, { recursive: true, force: true });
+    }
+  });
+
+  test('propagates cancellation through artifact hashing', async () => {
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-hash-cancel-'));
+    const artifactPath = path.join(dataDir, 'artifact.bin');
+    fs.writeFileSync(artifactPath, 'artifact');
+    const controller = new AbortController();
+    controller.abort();
+    const installer = new ManagedRuntimeInstaller();
+
+    try {
+      await expect(installer.verify({
+        archivePath: artifactPath,
+        sha256: crypto.createHash('sha256').update('artifact').digest('hex'),
+        signal: controller.signal
+      })).rejects.toThrow('STREAM_MONSTERS_RUNTIME_ABORTED');
     } finally {
       fs.rmSync(dataDir, { recursive: true, force: true });
     }
@@ -238,10 +338,7 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
     fs.mkdirSync(path.dirname(mainPath), { recursive: true });
     fs.writeFileSync(pythonPath, 'python');
     fs.writeFileSync(mainPath, 'main');
-    const child = new EventEmitter();
-    child.pid = 4242;
-    child.exitCode = null;
-    child.kill = jest.fn(() => { child.exitCode = 0; child.emit('exit', 0); return true; });
+    const child = createManagedChild(4242);
     const spawnImpl = jest.fn(() => child);
     const smokeTest = jest.fn(async () => ({ ok: true, width: 256, height: 256 }));
     let idleCallback;
@@ -275,7 +372,17 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
       expect(state).toEqual(expect.objectContaining({ state: 'running', pid: 4242, port: 8299 }));
       expect(spawnImpl).toHaveBeenCalledWith(
         fs.realpathSync(pythonPath),
-        ['-s', fs.realpathSync(mainPath), '--listen', '127.0.0.1', '--port', '8299', '--disable-auto-launch'],
+        [
+          '-s',
+          fs.realpathSync(mainPath),
+          '--listen',
+          '127.0.0.1',
+          '--port',
+          '8299',
+          '--disable-auto-launch',
+          '--cuda-device',
+          '1'
+        ],
         expect.objectContaining({ cwd: fs.realpathSync(runtimeRoot), shell: false, windowsHide: true })
       );
       expect(smokeTest).toHaveBeenCalledWith(expect.objectContaining({
@@ -285,6 +392,10 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
       }));
       expect(setTimeoutImpl).toHaveBeenCalledWith(expect.any(Function), 5 * 60 * 1000);
 
+      const releaseActivity = installer.acquireActivityLease();
+      await idleCallback();
+      expect(child.kill).not.toHaveBeenCalled();
+      releaseActivity();
       await idleCallback();
       expect(child.kill).toHaveBeenCalledTimes(1);
       expect(installer.getProcessState()).toEqual(expect.objectContaining({ state: 'stopped' }));
@@ -316,6 +427,79 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
       child
     })).resolves.toEqual(expect.objectContaining({ state: 'passed' }));
     expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  test('requires exactly one active device record matching the selected adapter and backend', async () => {
+    const child = { exitCode: null };
+    const installer = new ManagedRuntimeInstaller({
+      fetchImpl: async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          devices: [
+            { name: ADAPTER.name, type: 'cuda' },
+            { name: ADAPTER.name, type: 'cuda' }
+          ]
+        })
+      }),
+      smokeTest: async () => ({ ok: true, width: 256, height: 256 }),
+      healthAttempts: 1
+    });
+
+    await expect(installer.verifyManagedRuntime({
+      adapter: ADAPTER,
+      profile: installer.getProfile('nvidia-standard'),
+      baseUrl: 'http://127.0.0.1:8299',
+      child
+    })).rejects.toThrow('STREAM_MONSTERS_RUNTIME_DEVICE_AMBIGUOUS');
+  });
+
+  test('recognizes the ROCm package backend when PyTorch exposes its selected AMD device as cuda', async () => {
+    const amdAdapter = {
+      id: 'gpu-rx7900xtx',
+      name: 'AMD Radeon RX 7900 XTX',
+      vendor: 'amd',
+      architecture: 'amd_radeon',
+      backendIndex: 0,
+      vramMb: 24576,
+      memoryState: 'known'
+    };
+    const installer = new ManagedRuntimeInstaller({
+      fetchImpl: async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          system: { pytorch_version: '2.9.1+rocm6.4' },
+          devices: [{ name: amdAdapter.name, type: 'cuda', index: 0 }]
+        })
+      }),
+      smokeTest: async () => ({ ok: true, width: 256, height: 256 }),
+      healthAttempts: 1
+    });
+
+    await expect(installer.verifyManagedRuntime({
+      adapter: amdAdapter,
+      profile: installer.getProfile('amd-experimental'),
+      baseUrl: 'http://127.0.0.1:8299',
+      child: { exitCode: null }
+    })).resolves.toEqual(expect.objectContaining({ state: 'passed' }));
+  });
+
+  test('uses official backend selectors for supported NVIDIA, AMD, and Intel runtimes', () => {
+    const installer = new ManagedRuntimeInstaller();
+
+    expect(installer.buildDeviceSelectorArgs(
+      installer.getProfile('nvidia-standard'),
+      { ...ADAPTER, backendIndex: 2 }
+    )).toEqual(['--cuda-device', '2']);
+    expect(installer.buildDeviceSelectorArgs(
+      installer.getProfile('amd-experimental'),
+      { ...ADAPTER, vendor: 'amd', backendIndex: 1 }
+    )).toEqual(['--cuda-device', '1']);
+    expect(installer.buildDeviceSelectorArgs(
+      installer.getProfile('intel-arc'),
+      { ...ADAPTER, vendor: 'intel', backendIndex: 3 }
+    )).toEqual(['--oneapi-device-selector', 'level_zero:3']);
   });
 
   test('stops only the managed child when device verification fails during startup', async () => {
@@ -356,6 +540,198 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
       expect(installer.getProcessState()).toEqual(expect.objectContaining({ state: 'stopped', pid: null }));
     } finally {
       fs.rmSync(runtimeRoot, { recursive: true, force: true });
+    }
+  });
+
+  test('verifies in staging before promotion, keeps hash-keyed artifacts for retry, and restarts on a new port', async () => {
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-catalog-install-'));
+    const runtimeArtifact = await createPortableRuntimeArchive(dataDir);
+    const modelBytes = Buffer.from('fixture-model');
+    const modelSha256 = crypto.createHash('sha256').update(modelBytes).digest('hex');
+    const artifactRequests = [];
+    const ports = [8299, 8300, 8301];
+    const children = [];
+    let failSmoke = true;
+    let diskChecks = 0;
+    const fetchImpl = jest.fn(async url => {
+      const value = String(url);
+      if (value.endsWith('/system_stats')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ devices: [{ name: ADAPTER.name, type: 'cuda' }] })
+        };
+      }
+      artifactRequests.push(value);
+      const bytes = value.includes('runtime.zip') ? runtimeArtifact.bytes : modelBytes;
+      return {
+        ok: true,
+        status: 200,
+        body: Readable.from([bytes])
+      };
+    });
+    const installer = new ManagedRuntimeInstaller({
+      dataDir,
+      fetchImpl,
+      diskFreeBytes: async () => {
+        diskChecks += 1;
+        return diskChecks === 1 ? Number.MAX_SAFE_INTEGER : (2 * 1024 ** 3) + 1;
+      },
+      findFreePort: async () => ports.shift(),
+      spawnImpl: () => {
+        const child = createManagedChild(9000 + children.length);
+        children.push(child);
+        return child;
+      },
+      smokeTest: async () => failSmoke
+        ? { ok: false, width: 256, height: 256 }
+        : { ok: true, width: 256, height: 256 },
+      healthAttempts: 1
+    });
+    const profile = {
+      ...installer.getProfile('nvidia-standard'),
+      archiveUrl: 'https://github.com/Comfy-Org/ComfyUI/releases/download/v0.28.0/runtime.zip',
+      archiveType: 'zip',
+      downloadSizeBytes: runtimeArtifact.bytes.length,
+      sha256: runtimeArtifact.sha256
+    };
+    const model = {
+      id: 'fixture-model',
+      fileName: 'fixture.safetensors',
+      downloadUrl: 'https://huggingface.co/ByteDance/SDXL-Lightning/resolve/main/fixture.safetensors',
+      sizeBytes: modelBytes.length,
+      sha256: modelSha256,
+      license: 'OpenRAIL++'
+    };
+    const installDir = path.join(
+      dataDir,
+      'managed-runtimes-v2',
+      'installs',
+      `nvidia-standard-0.28.0-${runtimeArtifact.sha256.slice(0, 16)}`
+    );
+
+    try {
+      await expect(installer.performCatalogInstall({
+        jobId: 'runtime-job-failure',
+        adapter: ADAPTER,
+        profile,
+        model,
+        signal: new AbortController().signal,
+        onProgress: jest.fn()
+      })).rejects.toThrow('STREAM_MONSTERS_RUNTIME_SMOKE_TEST_FAILED');
+
+      expect(fs.existsSync(installDir)).toBe(false);
+      expect(fs.existsSync(path.join(dataDir, 'managed-runtimes-v2', 'active.json'))).toBe(false);
+      expect(artifactRequests).toHaveLength(2);
+      expect(fs.readdirSync(path.join(dataDir, 'managed-runtimes-v2', 'artifacts'))).toEqual(
+        expect.arrayContaining([runtimeArtifact.sha256, modelSha256])
+      );
+
+      failSmoke = false;
+      const installation = await installer.performCatalogInstall({
+        jobId: 'runtime-job-retry',
+        adapter: ADAPTER,
+        profile,
+        model,
+        signal: new AbortController().signal,
+        onProgress: jest.fn()
+      });
+
+      expect(artifactRequests).toHaveLength(2);
+      expect(installation).toEqual(expect.objectContaining({
+        state: 'ready',
+        verified: true,
+        runtimeRoot: fs.realpathSync(installDir)
+      }));
+      expect(installer.getProcessState()).toEqual(expect.objectContaining({ state: 'stopped' }));
+      expect(JSON.parse(fs.readFileSync(
+        path.join(dataDir, 'managed-runtimes-v2', 'active.json'),
+        'utf8'
+      ))).toEqual(expect.objectContaining({ runtimeRoot: fs.realpathSync(installDir), verified: true }));
+
+      const restarted = await installer.startManagedRuntime({ adapter: ADAPTER });
+      expect(restarted).toEqual(expect.objectContaining({
+        state: 'running',
+        baseUrl: 'http://127.0.0.1:8301'
+      }));
+    } finally {
+      await installer.destroy();
+      fs.rmSync(dataDir, { recursive: true, force: true });
+    }
+  });
+
+  test('aborts a real catalog install while preserving its reusable artifact part', async () => {
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-catalog-cancel-'));
+    const controller = new AbortController();
+    const body = new PassThrough();
+    const bytes = Buffer.from('partial-runtime');
+    const sha256 = crypto.createHash('sha256').update(Buffer.concat([bytes, Buffer.from('rest')])).digest('hex');
+    let markFetchStarted;
+    const fetchStarted = new Promise(resolve => { markFetchStarted = resolve; });
+    let markProgress;
+    const progressStarted = new Promise(resolve => { markProgress = resolve; });
+    const installer = new ManagedRuntimeInstaller({
+      dataDir,
+      diskFreeBytes: async () => Number.MAX_SAFE_INTEGER,
+      fetchImpl: async () => {
+        markFetchStarted();
+        return {
+          ok: true,
+          status: 200,
+          body
+        };
+      }
+    });
+    const installPromise = installer.performCatalogInstall({
+      jobId: 'runtime-job-cancel',
+      adapter: ADAPTER,
+      profile: {
+        ...installer.getProfile('nvidia-standard'),
+        archiveUrl: 'https://github.com/Comfy-Org/ComfyUI/releases/download/v0.28.0/runtime.zip',
+        archiveType: 'zip',
+        downloadSizeBytes: bytes.length + 4,
+        sha256
+      },
+      model: {
+        id: 'fixture-model',
+        fileName: 'fixture.safetensors',
+        downloadUrl: 'https://huggingface.co/ByteDance/SDXL-Lightning/resolve/main/fixture.safetensors',
+        sizeBytes: 1,
+        sha256: crypto.createHash('sha256').update('x').digest('hex'),
+        license: 'OpenRAIL++'
+      },
+      signal: controller.signal,
+      onProgress: progress => {
+        if (progress.completedBytes >= bytes.length) markProgress();
+      }
+    });
+
+    try {
+      body.write(bytes);
+      await fetchStarted;
+      await progressStarted;
+      const expectedPartPath = path.join(
+        dataDir,
+        'managed-runtimes-v2',
+        'artifacts',
+        sha256,
+        'runtime.zip.part'
+      );
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (fs.existsSync(expectedPartPath) && fs.statSync(expectedPartPath).size >= bytes.length) break;
+        await new Promise(resolve => setImmediate(resolve));
+      }
+      controller.abort();
+      await expect(installPromise).rejects.toThrow('STREAM_MONSTERS_RUNTIME_ABORTED');
+
+      const partPath = expectedPartPath;
+      expect(fs.existsSync(partPath)).toBe(true);
+      expect(fs.readFileSync(partPath)).toEqual(bytes);
+      expect(fs.readdirSync(path.join(dataDir, 'managed-runtimes-v2', 'staging'))).toEqual([]);
+    } finally {
+      body.destroy();
+      await installer.destroy();
+      fs.rmSync(dataDir, { recursive: true, force: true });
     }
   });
 });

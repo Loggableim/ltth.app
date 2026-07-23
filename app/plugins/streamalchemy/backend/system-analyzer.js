@@ -81,13 +81,13 @@ class SystemAnalyzer {
             const firstLine = stdout.trim().split(/\r?\n/)[0];
             const [name, memory, driver] = firstLine.split(',').map(part => part.trim());
             const vramMb = Number.parseInt(String(memory).replace(/[^\d]/g, ''), 10) || 0;
-            resolve([this.normalizeAdapter({
+            resolve(this.assignBackendIndexes([this.normalizeAdapter({
               name,
               vendor: 'nvidia',
               vramMb,
               driver,
               pnpDeviceId: `nvidia-smi:${name}`
-            })]);
+            })]));
             return;
           }
 
@@ -127,7 +127,7 @@ class SystemAnalyzer {
     }
     const adapterRows = Array.isArray(payload?.adapters) ? payload.adapters : (payload?.adapters ? [payload.adapters] : []);
     const registryRows = Array.isArray(payload?.registry) ? payload.registry : (payload?.registry ? [payload.registry] : []);
-    return adapterRows
+    return this.assignBackendIndexes(adapterRows
       .filter(row => this.isPhysicalAdapter(row))
       .map(row => {
         const registry = this.findRegistryAdapter(row, registryRows);
@@ -141,20 +141,20 @@ class SystemAnalyzer {
           driver: row.DriverVersion || null,
           pnpDeviceId: row.PNPDeviceID || row.DeviceID || row.Name
         });
-      });
+      }));
   }
 
   parseLegacyFixture(stdout) {
     const text = String(stdout).trim();
     if (/nvidia/i.test(text) && text.includes(',')) {
       const [name, memory, driver] = text.split(/\r?\n/)[0].split(',').map(value => value.trim());
-      return [this.normalizeAdapter({
+      return this.assignBackendIndexes([this.normalizeAdapter({
         name,
         vendor: 'nvidia',
         vramMb: Number.parseInt(String(memory).replace(/[^\d]/g, ''), 10) || 0,
         driver,
         pnpDeviceId: `legacy:${name}`
-      })];
+      })]);
     }
     const row = {};
     text.split(/[;\r\n]+/).forEach(part => {
@@ -162,13 +162,23 @@ class SystemAnalyzer {
       if (key && rest.length) row[key.trim()] = rest.join('=').trim();
     });
     if (!row.Name || !this.isPhysicalAdapter(row)) return [];
-    return [this.normalizeAdapter({
+    return this.assignBackendIndexes([this.normalizeAdapter({
       name: row.Name,
       vendor: this.vendorForName(row.Name),
       vramMb: Math.round(this.parseBytes(row.AdapterRAM) / 1024 / 1024),
       driver: row.DriverVersion || null,
       pnpDeviceId: row.PNPDeviceID || `legacy:${row.Name}`
-    })];
+    })]);
+  }
+
+  assignBackendIndexes(adapters = []) {
+    const counts = new Map();
+    return adapters.map(adapter => {
+      const vendor = adapter.vendor || 'unknown';
+      const backendIndex = counts.get(vendor) || 0;
+      counts.set(vendor, backendIndex + 1);
+      return { ...adapter, backendIndex };
+    });
   }
 
   normalizeAdapter({ name, vendor, vramMb, driver, pnpDeviceId }) {

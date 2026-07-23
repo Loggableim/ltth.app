@@ -210,6 +210,79 @@ describe('LocalComfyProvider', () => {
     });
     expect(historyAttempts).toBe(25);
   });
+
+  test('uses the current managed runtime URL for every generation and holds an activity lease', async () => {
+    const catalog = new ModelCatalog();
+    let managedBaseUrl = 'http://127.0.0.1:8299';
+    let promptNumber = 0;
+    const releases = [];
+    const fetchImpl = jest.fn(async url => {
+      const value = String(url);
+      if (value.endsWith('/system_stats')) return { ok: true };
+      if (value.endsWith('/prompt')) {
+        promptNumber += 1;
+        return {
+          ok: true,
+          json: async () => ({ prompt_id: `prompt-${promptNumber}` })
+        };
+      }
+      const match = value.match(/\/history\/(prompt-\d+)$/);
+      if (match) {
+        return {
+          ok: true,
+          json: async () => ({
+            [match[1]]: {
+              outputs: {
+                '9': {
+                  images: [{
+                    filename: `${match[1]}.png`,
+                    subfolder: 'streammonsters',
+                    type: 'output'
+                  }]
+                }
+              }
+            }
+          })
+        };
+      }
+      throw new Error(`Unexpected URL: ${value}`);
+    });
+    const provider = new LocalComfyProvider({
+      config: {
+        enabled: true,
+        comfyUrl: 'http://127.0.0.1:8188',
+        comfyRootDir: 'C:\\ComfyUI',
+        selectedPresetId: 'sdxl_lightning_4step'
+      },
+      getRuntimeBaseUrl: () => managedBaseUrl,
+      acquireRuntimeActivity: () => {
+        const release = jest.fn();
+        releases.push(release);
+        return release;
+      },
+      catalog,
+      fsImpl: {
+        existsSync: jest.fn(target => target.endsWith('sdxl_lightning_4step.safetensors'))
+      },
+      fetchImpl
+    });
+
+    const first = await provider.generate({ prompt: 'first', negativePrompt: 'none' });
+    managedBaseUrl = 'http://127.0.0.1:8300';
+    const second = await provider.generate({ prompt: 'second', negativePrompt: 'none' });
+
+    expect(first.imageUrl).toContain('http://127.0.0.1:8299/view');
+    expect(second.imageUrl).toContain('http://127.0.0.1:8300/view');
+    expect(fetchImpl.mock.calls.map(call => call[0])).not.toContain(
+      expect.stringContaining('http://127.0.0.1:8188')
+    );
+    expect(fetchImpl.mock.calls.map(call => call[0])).toEqual(expect.arrayContaining([
+      'http://127.0.0.1:8299/prompt',
+      'http://127.0.0.1:8300/prompt'
+    ]));
+    expect(releases).toHaveLength(2);
+    expect(releases.every(release => release.mock.calls.length === 1)).toBe(true);
+  });
 });
 
 describe('GenerationService', () => {

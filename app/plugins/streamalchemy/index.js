@@ -291,6 +291,13 @@ class StreamAlchemyPlugin {
     return {
       localComfy: new LocalComfyProvider({
         getConfig: () => this.config.localGeneration,
+        getRuntimeBaseUrl: () => {
+          const state = this.streamMonstersManagedRuntime?.getProcessState?.();
+          return state?.state === 'running' ? state.baseUrl : null;
+        },
+        acquireRuntimeActivity: () => (
+          this.streamMonstersManagedRuntime?.acquireActivityLease?.()
+        ),
         dataDir: this.getPluginDataDir(),
         logger,
         catalog: this.modelCatalog
