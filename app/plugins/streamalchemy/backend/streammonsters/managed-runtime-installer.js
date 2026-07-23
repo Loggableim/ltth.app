@@ -1011,8 +1011,23 @@ class ManagedRuntimeInstaller {
       state: 'passed',
       width: smoke.width,
       height: smoke.height,
+      adapterId: adapter.id,
+      profileId: profile.id,
+      runtimeVersion: profile.version || null,
       completedAt: new Date().toISOString()
     };
+    if (
+      this.installation?.state === 'ready' &&
+      this.installation?.verified === true &&
+      this.installation?.adapterId === adapter.id &&
+      this.installation?.profileId === profile.id
+    ) {
+      this.installation = {
+        ...this.installation,
+        smokeTest: this.lastSmokeTest
+      };
+      if (this.dataDir) await this.writeActiveInstallation(this.installation);
+    }
     return this.lastSmokeTest;
   }
 

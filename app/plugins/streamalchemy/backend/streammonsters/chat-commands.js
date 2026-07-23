@@ -281,12 +281,16 @@ class ChatCommands {
     const weekly = this.progression
       ? this.store.getViewerQuests(userId, this.progression.weekKey())
       : [];
+    const withTitleKey = quest => ({
+      ...quest,
+      titleKey: this.progression?.questTitleKey?.(quest.quest_key) || 'questUnknown'
+    });
     return {
       success: true,
       status: 'quests',
       message: `${daily.filter(quest => quest.completed).length}/${daily.length} daily · ${weekly.filter(quest => quest.completed).length}/${weekly.length} weekly.`,
-      daily,
-      weekly
+      daily: daily.map(withTitleKey),
+      weekly: weekly.map(withTitleKey)
     };
   }
 

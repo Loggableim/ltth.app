@@ -64,7 +64,16 @@ function bootUi({ runtimeFetch } = {}) {
   const dom = new JSDOM(html, {
     url: 'http://localhost:3000/streammonsters/ui',
     runScripts: 'dangerously',
-    beforeParse(window) { window.fetch = fetchMock; }
+    beforeParse(window) {
+      window.fetch = fetchMock;
+      window.i18n = {
+        init: async () => {},
+        updateDOM: () => {},
+        t: key => ({
+          'plugins.streamalchemy.ui.monsters.achievementFirstHatch': 'Erster Schlupf'
+        }[key] || key)
+      };
+    }
   });
   return { dom, fetchMock };
 }
@@ -245,7 +254,7 @@ describe('Stream Monsters creator wizard', () => {
 
     await waitFor(() => expect(dom.window.document.getElementById('viewerSummary').textContent)
       .toContain('Silber'));
-    expect(dom.window.document.getElementById('viewerSummary').textContent).toContain('first hatch');
+    expect(dom.window.document.getElementById('viewerSummary').textContent).toContain('Erster Schlupf');
     expect(dom.window.document.getElementById('viewerCollection').textContent).toContain('AKTIV');
     dom.window.close();
   });

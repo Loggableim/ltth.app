@@ -551,13 +551,26 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
       healthAttempts: 2,
       healthRetryDelayMs: 0
     });
+    installer.installation = {
+      state: 'ready',
+      verified: true,
+      adapterId: ADAPTER.id,
+      profileId: 'nvidia-standard'
+    };
 
-    await expect(installer.verifyManagedRuntime({
+    const smokeTest = await installer.verifyManagedRuntime({
       adapter: ADAPTER,
       profile: installer.getProfile('nvidia-standard'),
       baseUrl: 'http://127.0.0.1:8299',
       child
-    })).resolves.toEqual(expect.objectContaining({ state: 'passed' }));
+    });
+    expect(smokeTest).toEqual(expect.objectContaining({
+      state: 'passed',
+      adapterId: ADAPTER.id,
+      profileId: 'nvidia-standard',
+      runtimeVersion: installer.getProfile('nvidia-standard').version
+    }));
+    expect(installer.installation.smokeTest).toEqual(smokeTest);
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 

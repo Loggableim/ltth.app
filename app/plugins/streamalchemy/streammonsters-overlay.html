@@ -117,8 +117,31 @@
   const rankLabel = rank => ({
     Bronze: text('rankBronze', 'Bronze'),
     Silver: text('rankSilver', 'Silber'),
-    Crystal: text('rankCrystal', 'Kristall')
-  }[rank] || value(rank, text('rankNew', 'Neuer Rang')));
+    Gold: text('rankGold', 'Gold'),
+    Crystal: text('rankCrystal', 'Kristall'),
+    'Monster Master': text('rankMonsterMaster', 'Monster-Meister')
+  }[rank] || text('rankNew', 'Neuer Rang'));
+  const QUEST_TITLE_KEYS = Object.freeze({
+    'daily:gift': 'questDailyGift',
+    'daily:hatch': 'questDailyHatch',
+    'daily:chat': 'questDailyChat',
+    'weekly:event': 'questWeeklyEvent',
+    'weekly:battle': 'questWeeklyBattle',
+    'weekly:collection': 'questWeeklyCollection'
+  });
+  const ACHIEVEMENT_TITLE_KEYS = Object.freeze({
+    first_hatch: 'achievementFirstHatch',
+    charged_hatch: 'achievementChargedHatch',
+    six_elements: 'achievementSixElements',
+    '10_battles': 'achievement10Battles',
+    '50_battles': 'achievement50Battles',
+    '100_battles': 'achievement100Battles',
+    five_win_streak: 'achievementFiveWinStreak'
+  });
+  const questTitleKey = quest => QUEST_TITLE_KEYS[quest?.quest_key] || 'questUnknown';
+  const achievementTitleKey = achievement => (
+    ACHIEVEMENT_TITLE_KEYS[achievement?.achievement_key] || 'achievementUnknown'
+  );
   const itemName = item => value(item?.name || item?.gift_name || item?.giftName, text('eggFallback', 'Element-Ei'));
   const stanceName = stance => ({
     power: text('stancePower', 'Kraft'),
@@ -428,7 +451,7 @@
     });
     if (type === 'achievement_unlocked') return showCard({
       kicker:text('achievement', 'Achievement freigeschaltet'),
-      title:value(data?.achievement?.achievement_key, text('milestone', 'Neuer Meilenstein')).replaceAll('_', ' '),
+      title:text(achievementTitleKey(data?.achievement), 'Neuer Meilenstein'),
       subtitle:text('achievementCopy', '{viewer} erweitert die Collector-Karte.', {
         viewer: value(data?.userId, 'Viewer')
       }),
@@ -447,7 +470,7 @@
       cue:'win'
     });
     if (type === 'quest_completed') return showToast(text('questComplete', 'Quest geschafft · {reward}', {
-      reward: value(data?.quest?.title, text('reward', 'Belohnung eingesammelt'))
+      reward: text(questTitleKey(data?.quest), 'Belohnung eingesammelt')
     }));
     if (type === 'chat_result') return showChat(data);
   };

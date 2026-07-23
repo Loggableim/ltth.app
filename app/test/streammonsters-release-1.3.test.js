@@ -6,6 +6,7 @@ const repoRoot = path.resolve(process.cwd(), '..');
 const overlayRuntimePath = path.join(pluginDir, 'streammonsters-overlay-runtime.js');
 const overlayRuntime = fs.existsSync(overlayRuntimePath) ? require(overlayRuntimePath) : {};
 const CommandIngress = require('../plugins/streamalchemy/backend/streammonsters/command-ingress');
+const ProgressionService = require('../plugins/streamalchemy/backend/streammonsters/progression-service');
 
 describe('Stream Monsters 1.3 creator and overlay release', () => {
   test('ships a reconnect-safe priority queue that protects battle and hatch events', () => {
@@ -276,6 +277,25 @@ describe('Stream Monsters 1.3 creator and overlay release', () => {
       expect(text[key]).toEqual(expect.any(String));
       expect(text[key].trim()).not.toBe('');
     }
+    for (const key of [
+      'rankCollectorTitle',
+      'questDailyGift',
+      'questDailyHatch',
+      'questDailyChat',
+      'questWeeklyEvent',
+      'questWeeklyBattle',
+      'questWeeklyCollection',
+      'achievementFirstHatch',
+      'achievementChargedHatch',
+      'achievementSixElements',
+      'achievement10Battles',
+      'achievement50Battles',
+      'achievement100Battles',
+      'achievementFiveWinStreak'
+    ]) {
+      expect(text[key]).toEqual(expect.any(String));
+      expect(text[key].trim()).not.toBe('');
+    }
     expect(JSON.stringify(text)).not.toMatch(/Stream[\s-]?Alchemy/i);
   });
 
@@ -310,6 +330,40 @@ describe('Stream Monsters 1.3 creator and overlay release', () => {
     }));
     expect(overlayRuntime.chatMessageKey({ messageKey: 'chatResultRank' })).toBe('chatResultRank');
     expect(overlayRuntime.chatMessageKey({ messageKey: 'attackerKey' })).toBe('chatResultUnknown');
+  });
+
+  test('defines stable locale keys for every current quest and achievement code', () => {
+    expect(ProgressionService.QUEST_TITLE_KEYS).toEqual({
+      'daily:gift': 'questDailyGift',
+      'daily:hatch': 'questDailyHatch',
+      'daily:chat': 'questDailyChat',
+      'weekly:event': 'questWeeklyEvent',
+      'weekly:battle': 'questWeeklyBattle',
+      'weekly:collection': 'questWeeklyCollection'
+    });
+    expect(ProgressionService.ACHIEVEMENT_TITLE_KEYS).toEqual({
+      first_hatch: 'achievementFirstHatch',
+      charged_hatch: 'achievementChargedHatch',
+      six_elements: 'achievementSixElements',
+      '10_battles': 'achievement10Battles',
+      '50_battles': 'achievement50Battles',
+      '100_battles': 'achievement100Battles',
+      five_win_streak: 'achievementFiveWinStreak'
+    });
+  });
+
+  test('renders owned rank, quest and achievement locale keys instead of backend English labels', () => {
+    const uiSource = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
+    const overlaySource = fs.readFileSync(path.join(pluginDir, 'streammonsters-overlay.html'), 'utf8');
+
+    expect(uiSource).toContain("Gold:text('rankGold'");
+    expect(uiSource).toContain("'Monster Master':text('rankMonsterMaster'");
+    expect(overlaySource).toContain("Gold: text('rankGold'");
+    expect(overlaySource).toContain("'Monster Master': text('rankMonsterMaster'");
+    expect(uiSource).toContain('achievementTitleKey');
+    expect(overlaySource).toContain('questTitleKey');
+    expect(uiSource).not.toContain("replaceAll('_',' ')");
+    expect(overlaySource).not.toContain('data?.quest?.title');
   });
 
   test('keeps user data routes stable and releases 1.3.0 without replacing 1.2.0', () => {

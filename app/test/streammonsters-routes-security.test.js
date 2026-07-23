@@ -48,7 +48,14 @@ function createSubject({ storedManifest = null, artPool = null } = {}) {
       profileId: 'nvidia-standard',
       model: { verified: true }
     },
-    lastSmokeTest: { state: 'passed', width: 256, height: 256 },
+    lastSmokeTest: {
+      state: 'passed',
+      width: 256,
+      height: 256,
+      adapterId: 'gpu-1',
+      profileId: 'nvidia-standard',
+      runtimeVersion: '0.28.0'
+    },
     recommend: jest.fn(() => ({
       supported: true,
       profileId: 'nvidia-standard',
@@ -58,9 +65,15 @@ function createSubject({ storedManifest = null, artPool = null } = {}) {
       steps: 4
     })),
     getPublicProfiles: jest.fn(() => [
-      { id: 'nvidia-standard', label: 'NVIDIA RTX 20+', backend: 'cuda' },
+      { id: 'nvidia-standard', label: 'NVIDIA RTX 20+', backend: 'cuda', version: '0.28.0' },
+      { id: 'nvidia-cuda126-legacy', label: 'NVIDIA legacy', backend: 'cuda', version: '0.27.2' },
       { id: 'amd-experimental', label: 'AMD Radeon (experimental)', backend: 'rocm', experimental: true }
     ]),
+    getProfile: jest.fn(profileId => ({
+      'nvidia-standard': { id: 'nvidia-standard', backend: 'cuda', version: '0.28.0' },
+      'nvidia-cuda126-legacy': { id: 'nvidia-cuda126-legacy', backend: 'cuda', version: '0.27.2' },
+      'amd-experimental': { id: 'amd-experimental', backend: 'rocm' }
+    }[profileId] || null)),
     getCatalog: jest.fn(() => ({
       profiles: [{
         id: 'nvidia-standard',
@@ -346,6 +359,14 @@ describe('Stream Monsters privileged routes', () => {
     const { findRoute, managedRuntime } = createSubject();
     managedRuntime.installation.adapterId = 'gpu-2';
     managedRuntime.installation.profileId = 'amd-experimental';
+    managedRuntime.lastSmokeTest = {
+      state: 'passed',
+      width: 256,
+      height: 256,
+      adapterId: 'gpu-2',
+      profileId: 'amd-experimental',
+      runtimeVersion: null
+    };
     managedRuntime.recommend.mockImplementation(adapter => ({
       supported: true,
       profileId: adapter.id === 'gpu-2' ? 'amd-experimental' : 'nvidia-standard'
@@ -366,6 +387,95 @@ describe('Stream Monsters privileged routes', () => {
         verifiedOnDevice: true
       })
     }));
+  });
+
+  test('rejects adapter A smoke evidence after switching the installed and selected adapter to B', async () => {
+    const { findRoute, managedRuntime } = createSubject();
+    managedRuntime.installation.adapterId = 'gpu-2';
+    managedRuntime.installation.profileId = 'amd-experimental';
+    managedRuntime.recommend.mockReturnValue({
+      supported: true,
+      profileId: 'amd-experimental'
+    });
+    const response = createResponse();
+
+    await findRoute('GET', '/api/streammonsters/local-runtime/status').handler({
+      query: { adapterId: 'gpu-2' }
+    }, response);
+
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
+      runtimeDetails: expect.objectContaining({
+        adapterId: 'gpu-2',
+        profileId: 'amd-experimental',
+        verifiedOnDevice: false
+      })
+    }));
+  });
+
+  test('rejects smoke evidence from a previous profile on the same adapter', async () => {
+    const { findRoute, managedRuntime } = createSubject();
+    managedRuntime.installation.profileId = 'nvidia-cuda126-legacy';
+    managedRuntime.recommend.mockReturnValue({
+      supported: true,
+      profileId: 'nvidia-cuda126-legacy'
+    });
+    const response = createResponse();
+
+    await findRoute('GET', '/api/streammonsters/local-runtime/status').handler({
+      query: { adapterId: 'gpu-1' }
+    }, response);
+
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
+      runtimeDetails: expect.objectContaining({
+        adapterId: 'gpu-1',
+        profileId: 'nvidia-cuda126-legacy',
+        verifiedOnDevice: false
+      })
+    }));
+  });
+
+  test('verify binds returned smoke evidence to the installed adapter and profile', async () => {
+    const { findRoute, managedRuntime } = createSubject();
+    managedRuntime.verifyManagedRuntime.mockImplementation(async ({ adapter, profile }) => ({
+      state: 'passed',
+      width: 256,
+      height: 256,
+      adapterId: adapter.id,
+      profileId: profile.id,
+      runtimeVersion: profile.version
+    }));
+    const response = createResponse();
+
+    await findRoute('POST', '/api/streammonsters/local-runtime/verify').handler({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      body: { adapterId: 'gpu-1', profileId: 'nvidia-standard' }
+    }, response);
+
+    expect(response.json).toHaveBeenCalledWith({
+      success: true,
+      smokeTest: expect.objectContaining({
+        adapterId: 'gpu-1',
+        profileId: 'nvidia-standard',
+        runtimeVersion: '0.28.0'
+      })
+    });
+  });
+
+  test('does not verify a profile that differs from the installed runtime', async () => {
+    const { findRoute, managedRuntime } = createSubject();
+    const response = createResponse();
+
+    await findRoute('POST', '/api/streammonsters/local-runtime/verify').handler({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      body: { adapterId: 'gpu-1', profileId: 'nvidia-cuda126-legacy' }
+    }, response);
+
+    expect(response.statusCode).toBe(409);
+    expect(managedRuntime.verifyManagedRuntime).not.toHaveBeenCalled();
   });
 
   test('starts an installed managed runtime before pool preparation and emits progress/state events', async () => {

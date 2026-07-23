@@ -398,7 +398,25 @@
     'runtimeErrorUnknown',
     'The runtime action failed. Please try again.'
   );
-  const rankLabel = rank => ({ Silver:text('rankSilver', 'Silber'), Crystal:text('rankCrystal', 'Kristall') }[rank] || rank || text('rankBronze', 'Bronze'));
+  const rankLabel = rank => ({
+    Bronze:text('rankBronze', 'Bronze'),
+    Silver:text('rankSilver', 'Silber'),
+    Gold:text('rankGold', 'Gold'),
+    Crystal:text('rankCrystal', 'Kristall'),
+    'Monster Master':text('rankMonsterMaster', 'Monster-Meister')
+  }[rank] || text('rankNew', 'Neuer Rang'));
+  const ACHIEVEMENT_TITLE_KEYS = Object.freeze({
+    first_hatch:'achievementFirstHatch',
+    charged_hatch:'achievementChargedHatch',
+    six_elements:'achievementSixElements',
+    '10_battles':'achievement10Battles',
+    '50_battles':'achievement50Battles',
+    '100_battles':'achievement100Battles',
+    five_win_streak:'achievementFiveWinStreak'
+  });
+  const achievementTitleKey = achievement => (
+    ACHIEVEMENT_TITLE_KEYS[achievement?.achievement_key] || 'achievementUnknown'
+  );
   const formatBytes = bytes => {
     const value = Math.max(0, Number(bytes) || 0);
     if (!value) return '0 B';
@@ -532,7 +550,7 @@
     const rank = viewer.rank || {};
     const summary = byId('viewerSummary');
     const achievementLabel = achievements.length
-      ? achievements.map(entry => String(entry.achievement_key || '').replaceAll('_',' ')).join(', ')
+      ? achievements.map(entry => text(achievementTitleKey(entry), 'Achievement')).join(', ')
       : text('noAchievements', 'noch keine Achievements');
     summary.textContent = text('viewerSummary', '{rank} · {points} Punkte · {achievements}', {
       rank:rankLabel(rank.rank),
@@ -595,7 +613,7 @@
       const rank = document.createElement('small');
       rank.textContent = text('rankLine', '{rank}{title}', {
         rank:rankLabel(entry.rank),
-        title:entry.title ? ` · ${entry.title}` : ''
+        title:` · ${text('rankCollectorTitle', '{rank}-Sammler', { rank:rankLabel(entry.rank) })}`
       });
       copy.append(user,rank);
       const points = document.createElement('strong');
@@ -828,10 +846,11 @@
   };
   const verifyRuntime = async () => {
     const adapterId = byId('runtimeAdapters').value;
+    const profileId = runtimePayload?.recommendation?.profileId;
     const result = await request('/api/streammonsters/local-runtime/verify', {
       method:'POST',
       headers:jsonHeaders,
-      body:JSON.stringify({ adapterId })
+      body:JSON.stringify({ adapterId, profileId })
     });
     byId('runtimeSmokeTest').textContent = text('smokeResult', '{state} · {width}×{height}', {
       state:codeText(RUNTIME_STATE_KEYS, result.smokeTest?.state, 'runtimeStateUnknown', 'unbekannt'),

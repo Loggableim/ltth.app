@@ -8,6 +8,23 @@ const RANKS = [
   { name: 'Silver', minimum: 100 },
   { name: 'Bronze', minimum: 0 }
 ];
+const QUEST_TITLE_KEYS = Object.freeze({
+  'daily:gift': 'questDailyGift',
+  'daily:hatch': 'questDailyHatch',
+  'daily:chat': 'questDailyChat',
+  'weekly:event': 'questWeeklyEvent',
+  'weekly:battle': 'questWeeklyBattle',
+  'weekly:collection': 'questWeeklyCollection'
+});
+const ACHIEVEMENT_TITLE_KEYS = Object.freeze({
+  first_hatch: 'achievementFirstHatch',
+  charged_hatch: 'achievementChargedHatch',
+  six_elements: 'achievementSixElements',
+  '10_battles': 'achievement10Battles',
+  '50_battles': 'achievement50Battles',
+  '100_battles': 'achievement100Battles',
+  five_win_streak: 'achievementFiveWinStreak'
+});
 
 class ProgressionService {
   constructor({ store, emit = () => {}, now = () => new Date() }) {
@@ -109,9 +126,11 @@ class ProgressionService {
       if (streamKey) this.store.incrementStreamMetric(streamKey, 'quest_completions');
       this.store.awardViewerXp(userId, 50);
       this.addSeasonPoints(userId, 20);
+      const messageKey = this.questTitleKey(quest.quest_key);
       this.emit('streammonsters:quest_completed', {
         userId,
-        quest,
+        quest: { ...quest, titleKey: messageKey },
+        messageKey,
         xpReward: 50,
         seasonReward: 20
       });
@@ -143,9 +162,11 @@ class ProgressionService {
       if (streamKey) this.store.incrementStreamMetric(streamKey, 'quest_completions');
       if (xpReward) this.store.awardViewerXp(userId, xpReward);
       if (seasonReward) this.addSeasonPoints(userId, seasonReward);
+      const messageKey = this.questTitleKey(quest.quest_key);
       this.emit('streammonsters:quest_completed', {
         userId,
-        quest,
+        quest: { ...quest, titleKey: messageKey },
+        messageKey,
         xpReward,
         seasonReward
       });
@@ -238,9 +259,22 @@ class ProgressionService {
   unlock(userId, achievementKey) {
     const achievement = this.store.unlockAchievement(userId, achievementKey, this.currentMs());
     if (achievement.unlockedNow) {
-      this.emit('streammonsters:achievement_unlocked', { userId, achievement });
+      const messageKey = this.achievementTitleKey(achievement.achievement_key);
+      this.emit('streammonsters:achievement_unlocked', {
+        userId,
+        achievement: { ...achievement, titleKey: messageKey },
+        messageKey
+      });
     }
     return achievement;
+  }
+
+  questTitleKey(questKey) {
+    return QUEST_TITLE_KEYS[questKey] || 'questUnknown';
+  }
+
+  achievementTitleKey(achievementKey) {
+    return ACHIEVEMENT_TITLE_KEYS[achievementKey] || 'achievementUnknown';
   }
 
   dateKey() {
@@ -271,3 +305,5 @@ class ProgressionService {
 module.exports = ProgressionService;
 module.exports.SEASON_DURATION_MS = SEASON_DURATION_MS;
 module.exports.RANKS = RANKS;
+module.exports.QUEST_TITLE_KEYS = QUEST_TITLE_KEYS;
+module.exports.ACHIEVEMENT_TITLE_KEYS = ACHIEVEMENT_TITLE_KEYS;

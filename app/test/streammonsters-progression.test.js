@@ -5,13 +5,18 @@ const ProgressionService = require('../plugins/streamalchemy/backend/streammonst
 function createProgression() {
   const store = new StreamMonstersDatabase(new Database(':memory:'));
   store.initialize();
-  const progression = new ProgressionService({ store, now: () => new Date('2026-07-21T12:00:00Z') });
-  return { store, progression };
+  const emitted = [];
+  const progression = new ProgressionService({
+    store,
+    emit: (event, payload) => emitted.push({ event, payload }),
+    now: () => new Date('2026-07-21T12:00:00Z')
+  });
+  return { store, progression, emitted };
 }
 
 describe('Stream Monsters progression', () => {
   test('creates a transparent deterministic event and daily quest progress for a viewer', () => {
-    const { store, progression } = createProgression();
+    const { store, progression, emitted } = createProgression();
 
     const event = progression.startStreamSession({ streamKey: 'creator:room-1' });
     progression.recordGift('viewer-a', event.stream_key);
@@ -29,6 +34,12 @@ describe('Stream Monsters progression', () => {
       active_viewers: 1,
       quest_completions: 3
     }));
+    expect(emitted.filter(entry => entry.event === 'streammonsters:quest_completed')
+      .map(entry => entry.payload.messageKey)).toEqual(expect.arrayContaining([
+      'questDailyGift',
+      'questDailyHatch',
+      'questDailyChat'
+    ]));
   });
 
   test('allows prestige only after collecting every original element and never deletes monsters', () => {

@@ -137,6 +137,12 @@ describe('Stream Monsters 1.2 progression and seasons', () => {
       expect.arrayContaining(['first_hatch', 'charged_hatch', 'six_elements'])
     );
     expect(emitted.filter(entry => entry.event === 'streammonsters:achievement_unlocked')).toHaveLength(3);
+    expect(emitted.filter(entry => entry.event === 'streammonsters:achievement_unlocked')
+      .map(entry => entry.payload.messageKey)).toEqual(expect.arrayContaining([
+      'achievementFirstHatch',
+      'achievementChargedHatch',
+      'achievementSixElements'
+    ]));
   });
 
   test('counts battle achievements across the whole viewer collection', () => {

@@ -151,7 +151,11 @@ class StreamMonstersRoutes {
       });
       emit('streammonsters:achievement_unlocked', {
         userId: 'demo-viewer',
-        achievement: { achievement_key: 'charged_hatch' }
+        achievement: {
+          achievement_key: 'charged_hatch',
+          titleKey: 'achievementChargedHatch'
+        },
+        messageKey: 'achievementChargedHatch'
       });
       emit('streammonsters:battle_started', {
         challenger: monster,
@@ -180,7 +184,12 @@ class StreamMonstersRoutes {
       emit('streammonsters:rivalry', { left: monster, right: opponent, count: 2, battleId: battle.battleId });
       emit('streammonsters:quest_completed', {
         userId: 'demo-viewer',
-        quest: { quest_key: 'weekly:battle', title: 'Arena Challenger' }
+        quest: {
+          quest_key: 'weekly:battle',
+          title: 'Fight a battle',
+          titleKey: 'questWeeklyBattle'
+        },
+        messageKey: 'questWeeklyBattle'
       });
       emit('streammonsters:season_rank_changed', {
         userId: 'demo-viewer',
@@ -348,6 +357,15 @@ class StreamMonstersRoutes {
       const activeProfileId = recommendation.supported ? recommendation.profileId : null;
       const activeProfile = profiles.find(profile => profile.id === activeProfileId) || null;
       const smokeTest = this.managedRuntime.lastSmokeTest || this.managedRuntime.installation?.smokeTest || null;
+      const smokeMatchesSelection = Boolean(
+        smokeTest?.adapterId &&
+        smokeTest.adapterId === selectedAdapter?.id &&
+        smokeTest.profileId === activeProfileId &&
+        (
+          !activeProfile?.version ||
+          smokeTest.runtimeVersion === activeProfile.version
+        )
+      );
       let disk = analysis.disk || null;
       try {
         if (recommendation.supported && this.managedRuntime.getDiskStatus) {
@@ -387,6 +405,7 @@ class StreamMonstersRoutes {
             installationMatchesAdapter &&
             this.managedRuntime.installation?.profileId === activeProfileId &&
             this.managedRuntime.installation?.verified &&
+            smokeMatchesSelection &&
             smokeTest?.state === 'passed' &&
             smokeTest?.width === 256 &&
             smokeTest?.height === 256
@@ -443,13 +462,32 @@ class StreamMonstersRoutes {
     }));
     this.api.registerRoute('POST', '/api/streammonsters/local-runtime/verify', this.protectAdmin(async (req, res) => {
       try {
+        const installation = this.managedRuntime.installation;
+        if (!installation?.verified || installation.state !== 'ready') {
+          throw new Error('STREAM_MONSTERS_RUNTIME_NOT_INSTALLED');
+        }
+        const requestedAdapterId = req.body?.adapterId || installation.adapterId;
+        const requestedProfileId = req.body?.profileId || installation.profileId;
+        if (requestedAdapterId !== installation.adapterId) {
+          throw new Error('STREAM_MONSTERS_RUNTIME_VERIFY_ADAPTER_MISMATCH');
+        }
+        if (requestedProfileId !== installation.profileId) {
+          throw new Error('STREAM_MONSTERS_RUNTIME_VERIFY_PROFILE_MISMATCH');
+        }
         const analysis = await this.systemAnalyzer.analyze();
         const adapter = this.selectAdapter(
           analysis.adapters || [analysis.gpu].filter(Boolean),
-          req.body?.adapterId || this.managedRuntime.installation?.adapterId
+          requestedAdapterId
         );
-        const profile = this.managedRuntime.getProfile?.(this.managedRuntime.installation?.profileId)
-          || { id: this.managedRuntime.installation?.profileId, backend: 'cuda' };
+        if (!adapter || adapter.id !== installation.adapterId) {
+          throw new Error('STREAM_MONSTERS_RUNTIME_VERIFY_ADAPTER_MISMATCH');
+        }
+        const profile = this.managedRuntime.getProfile?.(requestedProfileId)
+          || (this.managedRuntime.getPublicProfiles?.() || [])
+            .find(entry => entry.id === requestedProfileId);
+        if (!profile || profile.id !== installation.profileId) {
+          throw new Error('STREAM_MONSTERS_RUNTIME_VERIFY_PROFILE_MISMATCH');
+        }
         const smokeTest = await this.managedRuntime.verifyManagedRuntime({
           adapter,
           profile,
@@ -489,7 +527,10 @@ class StreamMonstersRoutes {
       eggs: this.store.getViewerEggs(resolvedUserId),
       monsters: this.store.getViewerMonsters(resolvedUserId),
       selectedMonster: this.store.getSelectedMonster(resolvedUserId),
-      achievements: this.store.getViewerAchievements(resolvedUserId),
+      achievements: this.store.getViewerAchievements(resolvedUserId).map(achievement => ({
+        ...achievement,
+        titleKey: this.progression?.achievementTitleKey?.(achievement.achievement_key) || 'achievementUnknown'
+      })),
       rank: this.progression?.getViewerSeason?.(resolvedUserId) || null
     };
   }
