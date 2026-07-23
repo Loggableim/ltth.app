@@ -142,6 +142,45 @@ describe('GCCE core runtime', () => {
     await gcce.destroy();
   });
 
+  test('emits one plugin result event per accepted or cooldown-rejected command input', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-07-23T12:00:00.000Z'));
+    const { api, gcce } = await createInitializedGCCE();
+    gcce.registerCommandsForPlugin('result-test', [{
+      name: 'resultprobe',
+      permission: 'all',
+      cooldown: { user: 1_000, global: 250 },
+      handler: () => ({ success: true, message: 'accepted' })
+    }]);
+    api.emitted = [];
+
+    await gcce.handleChatMessage({ comment: '/resultprobe', uniqueId: 'viewer-a' });
+    await gcce.handleChatMessage({ comment: '/resultprobe', uniqueId: 'viewer-b' });
+
+    expect(api.emitted.filter(entry => entry.event === 'gcce:command_result')).toEqual([
+      expect.objectContaining({
+        data: expect.objectContaining({
+          success: true,
+          commandName: 'resultprobe',
+          pluginId: 'result-test',
+          userId: 'viewer-a'
+        })
+      }),
+      expect.objectContaining({
+        data: expect.objectContaining({
+          success: false,
+          errorCode: 'COMMAND_ON_COOLDOWN',
+          cooldownType: 'global',
+          commandName: 'resultprobe',
+          pluginId: 'result-test',
+          userId: 'viewer-b'
+        })
+      })
+    ]);
+
+    await gcce.destroy();
+  });
+
   test('executes registered flow commands through the parser API', async () => {
     const { api, gcce } = await createInitializedGCCE();
 

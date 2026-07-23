@@ -70,15 +70,15 @@ describe('Stream Monsters 1.2 public commands', () => {
     engine.processGift({ userId: 'viewer-a', giftId: 1, giftName: 'Rose', coinValue: 1 });
     engine.markReadyEggs();
 
-    expect(commands.handle({ username: 'viewer-a' }, '!eggs').status).toBe('eggs');
-    expect(commands.handle({ username: 'viewer-a' }, '!hatch 1').status).toBe('hatched');
-    expect(commands.handle({ username: 'viewer-a' }, '!monster 1').status).toBe('monster');
-    expect(commands.handle({ username: 'viewer-a' }, '!rank').status).toBe('rank');
-    const quests = commands.handle({ username: 'viewer-a' }, '!quests');
+    expect(commands.execute({ userId: 'viewer-a' }, 'eggs').status).toBe('eggs');
+    expect(commands.execute({ userId: 'viewer-a' }, 'hatch', ['1']).status).toBe('hatched');
+    expect(commands.execute({ userId: 'viewer-a' }, 'monster', ['1']).status).toBe('monster');
+    expect(commands.execute({ userId: 'viewer-a' }, 'rank').status).toBe('rank');
+    const quests = commands.execute({ userId: 'viewer-a' }, 'quests');
     expect(quests.status).toBe('quests');
     expect(quests.daily).toHaveLength(3);
     expect(quests.weekly).toHaveLength(3);
-    expect(commands.handle({ username: 'viewer-a' }, '!monstershelp').message).toContain('!hatch');
+    expect(commands.execute({ userId: 'viewer-a' }, 'monstershelp').message).toContain('!hatch');
   });
 
   test('does not auto-hatch a ready egg when another command is used', () => {
@@ -93,7 +93,7 @@ describe('Stream Monsters 1.2 public commands', () => {
     engine.processGift({ userId: 'viewer-a', giftId: 1, giftName: 'Rose', coinValue: 1 });
     engine.markReadyEggs();
 
-    commands.handle({ username: 'viewer-a' }, '!monsters');
+    commands.execute({ userId: 'viewer-a' }, 'monsters');
 
     expect(store.getViewerEggs('viewer-a', 'ready')).toHaveLength(1);
     expect(store.getViewerMonsters('viewer-a')).toHaveLength(0);
@@ -123,8 +123,8 @@ describe('Stream Monsters 1.2 public commands', () => {
     });
     engine.markReadyEggs();
 
-    const listed = commands.handle({ username: 'viewer-a' }, '!eggs');
-    const hatched = commands.handle({ username: 'viewer-a' }, '!hatch 2');
+    const listed = commands.execute({ userId: 'viewer-a' }, 'eggs');
+    const hatched = commands.execute({ userId: 'viewer-a' }, 'hatch', ['2']);
 
     expect(listed.eggs.map(egg => egg.state)).toEqual(['incubating', 'ready']);
     expect(hatched.status).toBe('hatched');
@@ -137,14 +137,14 @@ describe('Stream Monsters 1.2 public commands', () => {
     spawnReady('level-ten', 2, 10);
     spawnReady('level-two', 3, 2);
 
-    expect(commands.handle({ username: 'level-one' }, '!battle').status).toBe('queued');
-    expect(commands.handle({ username: 'level-ten' }, '!battle').status).toBe('queued');
-    expect(commands.handle({ username: 'level-two' }, '!battle').status).toBe('started');
+    expect(commands.execute({ userId: 'level-one' }, 'battle').status).toBe('queued');
+    expect(commands.execute({ userId: 'level-ten' }, 'battle').status).toBe('queued');
+    expect(commands.execute({ userId: 'level-two' }, 'battle').status).toBe('started');
 
     spawnReady('level-one-b', 4, 1);
-    expect(commands.handle({ username: 'level-one-b' }, '!battle').status).toBe('queued');
+    expect(commands.execute({ userId: 'level-one-b' }, 'battle').status).toBe('queued');
     setNow(40_000);
-    expect(commands.handle({ username: 'level-ten' }, '!battle').status).toBe('started');
+    expect(commands.execute({ userId: 'level-ten' }, 'battle').status).toBe('started');
   });
 
   test('emits each of the three stored battle rounds before the winner', () => {
@@ -152,8 +152,8 @@ describe('Stream Monsters 1.2 public commands', () => {
     spawnReady('viewer-a', 1, 1);
     spawnReady('viewer-b', 2, 1);
 
-    commands.handle({ username: 'viewer-a' }, '!battle');
-    commands.handle({ username: 'viewer-b' }, '!battle');
+    commands.execute({ userId: 'viewer-a' }, 'battle');
+    commands.execute({ userId: 'viewer-b' }, 'battle');
 
     expect(emitted.filter(entry => entry.event === 'streammonsters:battle_round')).toHaveLength(3);
     const completed = emitted.find(entry => entry.event === 'streammonsters:battle_completed');

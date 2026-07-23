@@ -1,19 +1,24 @@
 const Database = require('better-sqlite3');
+const { EventEmitter } = require('events');
 const StreamAlchemyPlugin = require('../plugins/streamalchemy');
 
 function createApi({ gcce = null, streamMonstersEnabled = true } = {}) {
   const events = [];
   const routes = [];
   const emitted = [];
+  const pluginEvents = new EventEmitter();
   const settings = new Map([['streamalchemy_config', {
     enabled: true,
     streamMonsters: { enabled: streamMonstersEnabled, hatchDurationMs: 1, maxUnhatchedEggs: 3 }
   }]]);
   const sqlite = new Database(':memory:');
+  const loadedPlugins = new Map();
+  if (gcce) loadedPlugins.set('gcce', { instance: gcce });
   return {
     events,
     routes,
     emitted,
+    pluginEvents,
     api: {
       pluginDir: require('path').join(process.cwd(), 'plugins', 'streamalchemy'),
       log: jest.fn(),
@@ -25,8 +30,27 @@ function createApi({ gcce = null, streamMonstersEnabled = true } = {}) {
       registerRoute: (method, path, handler) => routes.push({ method, path, handler }),
       registerTikTokEvent: (event, handler) => events.push({ event, handler }),
       emit: (event, payload) => emitted.push({ event, payload }),
-      pluginLoader: gcce ? { loadedPlugins: new Map([['gcce', { instance: gcce }]]) } : undefined
+      on: (event, handler) => {
+        pluginEvents.on(event, handler);
+        return true;
+      },
+      removeListener: (event, handler) => pluginEvents.removeListener(event, handler),
+      pluginLoader: { loadedPlugins }
     }
+  };
+}
+
+function createGCCE(commandPrefix = '!', enabled = true) {
+  const definitions = new Map();
+  return {
+    pluginConfig: { enabled, commandPrefix },
+    parser: { commandPrefix },
+    definitions,
+    registerCommandsForPlugin: jest.fn((pluginId, commands) => {
+      commands.forEach(command => definitions.set(command.name, command));
+      return { pluginId, registered: commands.map(command => command.name), failed: [] };
+    }),
+    unregisterCommandsForPlugin: jest.fn(() => definitions.clear())
   };
 }
 
@@ -163,6 +187,211 @@ describe('Stream Monsters plugin integration', () => {
 
     expect(plugin.streamMonstersStore.getViewerEggs('viewer-a')).toEqual([]);
     expect(emitted).toEqual([]);
+    await plugin.destroy();
+  });
+
+  test('uses GCCE as the only ingress and emits one personalized result for one input', async () => {
+    const gcce = createGCCE('!');
+    const { api, events, emitted, routes } = createApi({ gcce });
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    const progression = jest.spyOn(plugin.streamMonstersProgression, 'recordCommand');
+    const chat = events.find(entry => entry.event === 'chat').handler;
+
+    await gcce.definitions.get('eggs').handler([], {
+      userId: 'viewer-a',
+      username: 'Viewer A',
+      uniqueId: 'viewer-a'
+    });
+    await chat({ uniqueId: 'viewer-a', nickname: 'Viewer A', comment: '!eggs' });
+
+    expect(progression).toHaveBeenCalledTimes(1);
+    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toEqual([
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          userId: 'viewer-a',
+          username: 'Viewer A',
+          result: expect.objectContaining({ status: 'eggs' })
+        })
+      })
+    ]);
+    const stateRoute = routes.find(route => route.method === 'GET' && route.path === '/api/streammonsters/state');
+    let state = null;
+    stateRoute.handler({ query: {} }, { json: payload => { state = payload; } });
+    expect(state.gcce).toEqual({
+      commandPrefix: '!',
+      registrationState: 'active',
+      commandsRegistered: true
+    });
+    await plugin.destroy();
+  });
+
+  test('enqueues and grants command progression once when both transports see a battle input', async () => {
+    const gcce = createGCCE('!');
+    const { api, events, emitted } = createApi({ gcce });
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    plugin.streamMonstersEngine.config.hatchDurationMs = 0;
+    plugin.streamMonstersStore.upsertGiftMapping({
+      giftId: 1,
+      giftName: 'Rose',
+      element: 'Ember',
+      effect: 'spawn',
+      enabled: true
+    });
+    plugin.streamMonstersEngine.processGift({
+      userId: 'viewer-a',
+      giftId: 1,
+      giftName: 'Rose',
+      coinValue: 1
+    });
+    plugin.streamMonstersEngine.hatchReadyEggs('viewer-a');
+    const progression = jest.spyOn(plugin.streamMonstersProgression, 'recordCommand');
+
+    await gcce.definitions.get('battle').handler([], {
+      userId: 'viewer-a',
+      username: 'Viewer A'
+    });
+    await events.find(entry => entry.event === 'chat').handler({
+      uniqueId: 'viewer-a',
+      nickname: 'Viewer A',
+      comment: '!battle'
+    });
+
+    expect(plugin.streamMonstersChatCommands.queue).toHaveLength(1);
+    expect(progression).toHaveBeenCalledTimes(1);
+    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toEqual([
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          userId: 'viewer-a',
+          result: expect.objectContaining({ status: 'queued' })
+        })
+      })
+    ]);
+    await plugin.destroy();
+  });
+
+  test('switches idempotently across late GCCE load, reload and unload while preserving the prefix', async () => {
+    const { api, events, emitted, pluginEvents, routes } = createApi();
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    const chat = events.find(entry => entry.event === 'chat').handler;
+
+    await chat({ uniqueId: 'fallback-user', nickname: 'Fallback User', comment: '!eggs' });
+    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toHaveLength(1);
+
+    const firstGCCE = createGCCE('/');
+    api.pluginLoader.loadedPlugins.set('gcce', { instance: firstGCCE });
+    pluginEvents.emit('plugin:loaded', { id: 'gcce', instance: firstGCCE });
+    pluginEvents.emit('plugin:enabled', 'gcce');
+    pluginEvents.emit('gcce:ready', { timestamp: Date.now() });
+    expect(firstGCCE.registerCommandsForPlugin).toHaveBeenCalledTimes(1);
+    expect(firstGCCE.definitions.get('eggs').syntax).toBe('/eggs');
+
+    const secondGCCE = createGCCE('/');
+    api.pluginLoader.loadedPlugins.set('gcce', { instance: secondGCCE });
+    pluginEvents.emit('plugin:reloaded', 'gcce');
+    expect(firstGCCE.unregisterCommandsForPlugin).toHaveBeenCalledWith('streamalchemy');
+    expect(secondGCCE.registerCommandsForPlugin).toHaveBeenCalledTimes(1);
+
+    api.pluginLoader.loadedPlugins.delete('gcce');
+    pluginEvents.emit('plugin:unloaded', 'gcce');
+    await chat({ uniqueId: 'fallback-user-2', nickname: 'Fallback User 2', comment: '/eggs' });
+    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toHaveLength(2);
+
+    const stateRoute = routes.find(route => route.method === 'GET' && route.path === '/api/streammonsters/state');
+    let state = null;
+    stateRoute.handler({ query: {} }, { json: payload => { state = payload; } });
+    expect(state.gcce).toEqual(expect.objectContaining({
+      commandPrefix: '/',
+      registrationState: 'fallback',
+      commandsRegistered: false
+    }));
+
+    await plugin.destroy();
+    expect(pluginEvents.eventNames()).toEqual([]);
+    expect(secondGCCE.unregisterCommandsForPlugin).toHaveBeenCalledWith('streamalchemy');
+  });
+
+  test('uses the configured GCCE prefix for fallback when GCCE is disabled', async () => {
+    const gcce = createGCCE('/', false);
+    const { api, events, emitted } = createApi({ gcce });
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+
+    await events.find(entry => entry.event === 'chat').handler({
+      uniqueId: 'viewer-a',
+      nickname: 'Viewer A',
+      comment: '/eggs'
+    });
+
+    expect(gcce.registerCommandsForPlugin).not.toHaveBeenCalled();
+    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toEqual([
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          userId: 'viewer-a',
+          result: expect.objectContaining({ status: 'eggs' })
+        })
+      })
+    ]);
+    await plugin.destroy();
+  });
+
+  test('enforces fallback global and user cooldowns before domain side effects', async () => {
+    const { api, events, emitted } = createApi();
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    let now = 10_000;
+    plugin.streamMonstersCommandIngress.now = () => now;
+    const progression = jest.spyOn(plugin.streamMonstersProgression, 'recordCommand');
+    const chat = events.find(entry => entry.event === 'chat').handler;
+
+    await chat({ uniqueId: 'viewer-a', comment: '!eggs' });
+    await chat({ uniqueId: 'viewer-b', comment: '!eggs' });
+    now += 251;
+    await chat({ uniqueId: 'viewer-a', comment: '!eggs' });
+    now += 750;
+    await chat({ uniqueId: 'viewer-a', comment: '!eggs' });
+
+    expect(progression).toHaveBeenCalledTimes(2);
+    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result').map(entry => entry.payload.result.status)).toEqual([
+      'eggs',
+      'global_cooldown',
+      'cooldown',
+      'eggs'
+    ]);
+    await plugin.destroy();
+  });
+
+  test('translates a GCCE cooldown rejection into one personalized Stream Monsters result', async () => {
+    const gcce = createGCCE('!');
+    const { api, emitted, pluginEvents } = createApi({ gcce });
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+
+    pluginEvents.emit('gcce:command_result', {
+      success: false,
+      error: 'Command is on cooldown.',
+      errorCode: 'COMMAND_ON_COOLDOWN',
+      cooldownType: 'user',
+      commandName: 'eggs',
+      pluginId: 'streamalchemy',
+      userId: 'viewer-a',
+      username: 'Viewer A'
+    });
+
+    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toEqual([
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          userId: 'viewer-a',
+          username: 'Viewer A',
+          result: expect.objectContaining({
+            success: false,
+            status: 'cooldown'
+          })
+        })
+      })
+    ]);
     await plugin.destroy();
   });
 });

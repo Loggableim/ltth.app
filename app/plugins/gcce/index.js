@@ -1532,6 +1532,7 @@ class GlobalChatCommandEngine {
 
             // Handle result
             if (result.isCommand === false) return;
+            this.broadcastCommandResult(result, context);
 
             // V4: Log to audit log
             this.auditLog.log({
@@ -1603,14 +1604,24 @@ class GlobalChatCommandEngine {
      * @param {Object} context - Execution context
      */
     broadcastCommandResult(result, context) {
-        this.api.emit('gcce:command_result', {
+        const payload = {
+            commandName: result.commandName,
+            pluginId: result.pluginId,
             success: result.success,
             error: result.error,
+            errorCode: result.errorCode,
+            cooldownType: result.cooldownType,
             message: result.message,
             data: result.data,
+            userId: context.userId,
             username: context.username,
             timestamp: context.timestamp
-        });
+        };
+        if (typeof this.api.pluginLoader?.emit === 'function') {
+            this.api.pluginLoader.emit('gcce:command_result', payload);
+        } else {
+            this.api.emit('gcce:command_result', payload);
+        }
     }
 
     /**
@@ -1958,6 +1969,18 @@ class GlobalChatCommandEngine {
             });
 
             if (success) {
+                const cooldown = commandDef.cooldown;
+                if (cooldown === undefined || cooldown === null) {
+                    this.parser.removeCommandCooldown(commandDef.name);
+                } else if (typeof cooldown === 'number') {
+                    this.parser.setCommandCooldown(commandDef.name, Math.max(0, cooldown), 0);
+                } else {
+                    this.parser.setCommandCooldown(
+                        commandDef.name,
+                        Math.max(0, Number(cooldown.user) || 0),
+                        Math.max(0, Number(cooldown.global) || 0)
+                    );
+                }
                 results.registered.push(commandDef.name);
             } else {
                 results.failed.push(commandDef.name);
@@ -1973,7 +1996,9 @@ class GlobalChatCommandEngine {
      * @param {string} pluginId - Plugin ID
      */
     unregisterCommandsForPlugin(pluginId) {
+        const commandNames = this.registry.getPluginCommands(pluginId).map(command => command.name);
         this.registry.unregisterPluginCommands(pluginId);
+        commandNames.forEach(commandName => this.parser.removeCommandCooldown(commandName));
     }
 
     /**

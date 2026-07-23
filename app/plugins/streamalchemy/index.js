@@ -22,6 +22,7 @@ const StreamMonstersEngine = require('./backend/streammonsters/game-engine');
 const StreamMonstersRoutes = require('./backend/streammonsters/routes');
 const StreamMonstersBattleService = require('./backend/streammonsters/battle-service');
 const StreamMonstersChatCommands = require('./backend/streammonsters/chat-commands');
+const StreamMonstersCommandIngress = require('./backend/streammonsters/command-ingress');
 const StreamMonstersGenerationPool = require('./backend/streammonsters/generation-pool');
 const StreamMonstersProgressionService = require('./backend/streammonsters/progression-service');
 const StreamMonstersManagedRuntimeInstaller = require('./backend/streammonsters/managed-runtime-installer');
@@ -76,6 +77,18 @@ class StreamAlchemyPlugin {
       progression: this.streamMonstersProgression,
       emit: (event, payload) => this.api.emit(event, payload)
     });
+    this.streamMonstersCommandPrefix = '!';
+    this.streamMonstersGCCERegistrationState = 'fallback';
+    this.streamMonstersGCCELifecycleListeners = [];
+    this.streamMonstersCommandIngress = new StreamMonstersCommandIngress({
+      execute: (context, commandName, args) => this.streamMonstersChatCommands.execute(context, commandName, args),
+      emit: (event, payload) => this.api.emit(event, payload),
+      commandPrefix: this.streamMonstersCommandPrefix
+    });
+    this.streamMonstersCommandIngress.setCommands(
+      this.buildStreamMonstersCommandDefinitions(this.streamMonstersCommandPrefix),
+      this.streamMonstersCommandPrefix
+    );
     this.modelCatalog = new ModelCatalog();
 
     this.promptService = new PromptService({ promptVersion: this.config.promptVersion });
@@ -162,12 +175,14 @@ class StreamAlchemyPlugin {
       managedRuntime: this.streamMonstersManagedRuntime,
       localModelInstaller: this.localModelInstaller,
       giftCatalogProvider: locale => this.getStreamMonstersGiftCatalog(locale),
+      gcceStateProvider: () => this.getStreamMonstersGCCEState(),
       configProvider: {
         getConfig: () => this.config,
         updateConfig: updates => this.updateConfig(updates)
       }
     });
     this.streamMonstersRoutes.register();
+    this.setupStreamMonstersGCCELifecycle();
     this.integrateStreamMonstersGCCE();
 
     this.api.registerTikTokEvent('gift', async data => {
@@ -436,6 +451,15 @@ class StreamAlchemyPlugin {
       }
     };
     this.api.setConfig('streamalchemy_config', this.config);
+    if (
+      this.streamMonstersCommandIngress &&
+      (
+        Object.prototype.hasOwnProperty.call(safeUpdates, 'enabled') ||
+        Object.prototype.hasOwnProperty.call(streamMonstersUpdates, 'enabled')
+      )
+    ) {
+      this.integrateStreamMonstersGCCE({ force: true });
+    }
     return this.config;
   }
 
@@ -444,9 +468,9 @@ class StreamAlchemyPlugin {
       clearInterval(this.streamMonstersReadyTimer);
       this.streamMonstersReadyTimer = null;
     }
-    if (this.streamMonstersGCCE?.unregisterCommandsForPlugin) {
-      this.streamMonstersGCCE.unregisterCommandsForPlugin('streamalchemy');
-    }
+    this.removeStreamMonstersGCCELifecycle();
+    this.deactivateStreamMonstersGCCE();
+    this.streamMonstersCommandIngress?.clear();
     this.streamMonstersEngine?.recentGifts?.clear?.();
     this.streamMonstersChatCommands?.queue?.splice?.(0);
     await this.streamMonstersManagedRuntime?.destroy?.();
@@ -504,12 +528,11 @@ class StreamAlchemyPlugin {
     }
   }
 
-  integrateStreamMonstersGCCE() {
-    const gcce = this.api.pluginLoader?.loadedPlugins?.get('gcce')?.instance;
-    if (!gcce?.registerCommandsForPlugin || !gcce?.unregisterCommandsForPlugin) return false;
-    const definitions = [
+  buildStreamMonstersCommandDefinitions(commandPrefix = this.streamMonstersCommandPrefix) {
+    return [
       ['eggs', 'Show your Stream Monsters eggs', 0, 0],
       ['hatch', 'Hatch a ready egg by slot', 0, 1],
+      ['inventory', 'Show your Stream Monsters inventory', 0, 0],
       ['monsters', 'Show your Stream Monsters', 0, 0],
       ['monster', 'Show one monster by slot', 1, 1],
       ['choose', 'Choose a monster by slot', 1, 1],
@@ -521,22 +544,155 @@ class StreamAlchemyPlugin {
     ].map(([name, description, minArgs, maxArgs]) => ({
       name,
       description,
-      syntax: `!${name}${minArgs ? ' <slot>' : ''}`,
+      syntax: `${commandPrefix}${name}${minArgs ? ' <slot>' : ''}`,
       permission: 'all',
       enabled: true,
       minArgs,
       maxArgs,
       category: 'Stream Monsters',
-      cooldown: { user: name === 'battle' ? 2000 : 1000, global: 250 },
-      handler: async (args, context) => this.streamMonstersChatCommands.handle(
-        { username: context?.username || context?.uniqueId || context?.userId },
-        `!${name}${Array.isArray(args) && args.length ? ` ${args.join(' ')}` : ''}`
+      cooldown: { user: name === 'battle' ? 2000 : 1000, global: name === 'battle' ? 0 : 250 },
+      handler: async (args, context = {}) => this.streamMonstersCommandIngress.executeCommand(
+        name,
+        Array.isArray(args) ? args : [],
+        {
+          ...context,
+          userId: context.userId || context.uniqueId || context.rawData?.uniqueId || context.username,
+          username: context.username || context.nickname || context.uniqueId || context.userId
+        },
+        'gcce'
       )
     }));
-    gcce.unregisterCommandsForPlugin('streamalchemy');
-    gcce.registerCommandsForPlugin('streamalchemy', definitions);
-    this.streamMonstersGCCE = gcce;
-    return true;
+  }
+
+  getStreamMonstersGCCEState() {
+    return {
+      commandPrefix: this.streamMonstersCommandPrefix,
+      registrationState: this.streamMonstersGCCERegistrationState,
+      commandsRegistered: this.streamMonstersGCCERegistrationState === 'active'
+    };
+  }
+
+  resolveStreamMonstersGCCE(candidate = null) {
+    return candidate || this.api.pluginLoader?.loadedPlugins?.get('gcce')?.instance || null;
+  }
+
+  resolveStreamMonstersCommandPrefix(gcce) {
+    const configured = gcce?.parser?.commandPrefix || gcce?.pluginConfig?.commandPrefix;
+    return typeof configured === 'string' && configured.length > 0
+      ? configured
+      : this.streamMonstersCommandPrefix;
+  }
+
+  integrateStreamMonstersGCCE({ force = false, candidate = null } = {}) {
+    const gcce = this.resolveStreamMonstersGCCE(candidate);
+    const commandPrefix = this.resolveStreamMonstersCommandPrefix(gcce);
+    this.streamMonstersCommandPrefix = commandPrefix;
+    const definitions = this.buildStreamMonstersCommandDefinitions(commandPrefix);
+    this.streamMonstersCommandIngress.setCommands(definitions, commandPrefix);
+
+    const streamMonstersEnabled = Boolean(this.config?.enabled && this.config?.streamMonsters?.enabled);
+    const gcceEnabled = gcce?.pluginConfig?.enabled !== false;
+    const gcceAvailable = Boolean(gcce?.registerCommandsForPlugin && gcce?.unregisterCommandsForPlugin);
+    if (!streamMonstersEnabled || !gcceEnabled || !gcceAvailable) {
+      this.deactivateStreamMonstersGCCE();
+      return false;
+    }
+    if (!force && this.streamMonstersGCCE === gcce && this.streamMonstersGCCERegistrationState === 'active') {
+      return true;
+    }
+
+    if (this.streamMonstersGCCE && this.streamMonstersGCCE !== gcce) {
+      this.deactivateStreamMonstersGCCE();
+    }
+
+    try {
+      gcce.unregisterCommandsForPlugin('streamalchemy');
+      const result = gcce.registerCommandsForPlugin('streamalchemy', definitions);
+      const registered = Array.isArray(result?.registered) ? result.registered : [];
+      if (registered.length !== definitions.length) {
+        gcce.unregisterCommandsForPlugin('streamalchemy');
+        this.streamMonstersGCCE = null;
+        this.streamMonstersGCCERegistrationState = 'fallback';
+        return false;
+      }
+      this.streamMonstersGCCE = gcce;
+      this.streamMonstersGCCERegistrationState = 'active';
+      return true;
+    } catch (error) {
+      this.api.log(`[STREAM MONSTERS] GCCE registration failed: ${error.message}`, 'warn');
+      this.streamMonstersGCCE = null;
+      this.streamMonstersGCCERegistrationState = 'fallback';
+      return false;
+    }
+  }
+
+  deactivateStreamMonstersGCCE() {
+    if (this.streamMonstersGCCE?.unregisterCommandsForPlugin) {
+      try {
+        this.streamMonstersGCCE.unregisterCommandsForPlugin('streamalchemy');
+      } catch (error) {
+        this.api.log(`[STREAM MONSTERS] GCCE cleanup failed: ${error.message}`, 'debug');
+      }
+    }
+    this.streamMonstersGCCE = null;
+    this.streamMonstersGCCERegistrationState = 'fallback';
+  }
+
+  setupStreamMonstersGCCELifecycle() {
+    if (this.streamMonstersGCCELifecycleListeners.length || typeof this.api.on !== 'function') return;
+    const pluginId = payload => typeof payload === 'string' ? payload : payload?.id;
+    const activate = (eventName, payload) => {
+      if (eventName !== 'gcce:ready' && pluginId(payload) !== 'gcce') return;
+      this.integrateStreamMonstersGCCE({
+        force: eventName === 'plugin:reloaded',
+        candidate: payload?.instance || null
+      });
+    };
+    const deactivate = payload => {
+      if (pluginId(payload) === 'gcce') this.deactivateStreamMonstersGCCE();
+    };
+    const listeners = [
+      ['gcce:ready', payload => activate('gcce:ready', payload)],
+      ['plugin:loaded', payload => activate('plugin:loaded', payload)],
+      ['plugin:enabled', payload => activate('plugin:enabled', payload)],
+      ['plugin:reloaded', payload => activate('plugin:reloaded', payload)],
+      ['plugin:unloaded', deactivate],
+      ['plugin:disabled', deactivate],
+      ['gcce:command_result', payload => this.handleStreamMonstersGCCECommandResult(payload)]
+    ];
+    listeners.forEach(([event, callback]) => {
+      if (this.api.on(event, callback)) this.streamMonstersGCCELifecycleListeners.push({ event, callback });
+    });
+  }
+
+  removeStreamMonstersGCCELifecycle() {
+    this.streamMonstersGCCELifecycleListeners.forEach(({ event, callback }) => {
+      if (typeof this.api.removeListener === 'function') this.api.removeListener(event, callback);
+    });
+    this.streamMonstersGCCELifecycleListeners = [];
+  }
+
+  handleStreamMonstersGCCECommandResult(payload = {}) {
+    if (
+      payload.pluginId !== 'streamalchemy' ||
+      payload.errorCode !== 'COMMAND_ON_COOLDOWN'
+    ) {
+      return;
+    }
+    const result = {
+      success: false,
+      status: payload.cooldownType === 'global' ? 'global_cooldown' : 'cooldown',
+      message: payload.error
+    };
+    this.streamMonstersCommandIngress.emitResult(
+      payload.commandName,
+      {
+        userId: payload.userId,
+        username: payload.username
+      },
+      result,
+      'gcce'
+    );
   }
 
   async handleStreamMonstersGift(data = {}) {
@@ -555,13 +711,8 @@ class StreamAlchemyPlugin {
   }
 
   async handleStreamMonstersChat(data = {}) {
-    const userId = data.uniqueId || data.userId || data.username;
-    if (!userId) return;
-    const message = data.comment || data.message || data.text || '';
-    const result = this.streamMonstersChatCommands.handle({ userId, username: userId }, message);
-    if (result.status !== 'ignored') {
-      this.api.emit('streammonsters:chat_result', { userId, result });
-    }
+    if (this.streamMonstersGCCERegistrationState === 'active') return { success: false, status: 'gcce_active' };
+    return this.streamMonstersCommandIngress.handleFallback(data);
   }
 
   async handleStreamMonstersSession(data = {}) {

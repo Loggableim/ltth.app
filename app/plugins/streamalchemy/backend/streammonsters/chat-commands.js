@@ -1,5 +1,5 @@
 class ChatCommands {
-  constructor({ store, engine, battleService, progression = null, emit = () => {}, now = () => Date.now(), queueTtlMs = 5 * 60 * 1000, globalCooldownMs = 250 }) {
+  constructor({ store, engine, battleService, progression = null, emit = () => {}, now = () => Date.now(), queueTtlMs = 5 * 60 * 1000 }) {
     this.store = store;
     this.engine = engine;
     this.battleService = battleService;
@@ -7,39 +7,32 @@ class ChatCommands {
     this.emit = emit;
     this.now = now;
     this.queueTtlMs = queueTtlMs;
-    this.globalCooldownMs = globalCooldownMs;
     this.queue = [];
-    this.userCooldowns = new Map();
-    this.lastGlobalCommandAt = null;
   }
 
-  handle(context = {}, rawMessage = '') {
-    const userId = context.username || context.uniqueId || context.userId;
-    const [command, ...args] = String(rawMessage || '').trim().toLowerCase().split(/\s+/);
-    if (!userId || !command?.startsWith('!')) return { success: false, status: 'ignored' };
+  execute(context = {}, commandName = '', args = []) {
+    const userId = context.userId || context.uniqueId || context.username;
+    const command = String(commandName || '').trim().toLowerCase();
+    const commandArgs = Array.isArray(args) ? args : [];
+    if (!userId) return { success: false, status: 'ignored' };
     if (![
-      '!eggs', '!hatch', '!inventory', '!monsters', '!monster', '!choose',
-      '!battle', '!leavebattle', '!rank', '!quests', '!monstershelp'
+      'eggs', 'hatch', 'inventory', 'monsters', 'monster', 'choose',
+      'battle', 'leavebattle', 'rank', 'quests', 'monstershelp'
     ].includes(command)) {
       return { success: false, status: 'ignored' };
     }
-    if (this.isCoolingDown(userId, command)) return { success: false, status: 'cooldown', message: 'Please wait before using that command again.' };
-    if (command !== '!battle' && this.isGloballyCoolingDown()) {
-      return { success: false, status: 'global_cooldown', message: 'The Stream Monsters chat is busy. Please try again in a moment.' };
-    }
-    this.recordCommandUsage(userId, command);
     this.engine.markReadyEggs();
     this.progression?.recordCommand(userId, this.engine.streamKey);
 
-    if (command === '!eggs') return this.eggs(userId);
-    if (command === '!hatch') return this.hatch(userId, args[0]);
-    if (command === '!inventory' || command === '!monsters') return this.inventory(userId);
-    if (command === '!monster') return this.monster(userId, args[0]);
-    if (command === '!choose') return this.choose(userId, args[0]);
-    if (command === '!battle') return this.joinBattle(userId);
-    if (command === '!leavebattle') return this.leaveBattle(userId);
-    if (command === '!rank') return this.rank(userId);
-    if (command === '!quests') return this.quests(userId);
+    if (command === 'eggs') return this.eggs(userId);
+    if (command === 'hatch') return this.hatch(userId, commandArgs[0]);
+    if (command === 'inventory' || command === 'monsters') return this.inventory(userId);
+    if (command === 'monster') return this.monster(userId, commandArgs[0]);
+    if (command === 'choose') return this.choose(userId, commandArgs[0]);
+    if (command === 'battle') return this.joinBattle(userId);
+    if (command === 'leavebattle') return this.leaveBattle(userId);
+    if (command === 'rank') return this.rank(userId);
+    if (command === 'quests') return this.quests(userId);
     return {
       success: true,
       status: 'help',
@@ -205,24 +198,6 @@ class ChatCommands {
   purgeExpiredQueue() {
     const cutoff = this.now() - this.queueTtlMs;
     this.queue = this.queue.filter(entry => entry.queuedAt >= cutoff);
-  }
-
-  isCoolingDown(userId, command) {
-    const key = `${userId}:${command}`;
-    const cooldownMs = command === '!battle' ? 2_000 : 1_000;
-    const previous = this.userCooldowns.get(key);
-    return previous !== undefined && this.now() - previous < cooldownMs;
-  }
-
-  recordCommandUsage(userId, command) {
-    this.userCooldowns.set(`${userId}:${command}`, this.now());
-  }
-
-  isGloballyCoolingDown() {
-    const current = this.now();
-    if (this.lastGlobalCommandAt !== null && current - this.lastGlobalCommandAt < this.globalCooldownMs) return true;
-    this.lastGlobalCommandAt = current;
-    return false;
   }
 }
 

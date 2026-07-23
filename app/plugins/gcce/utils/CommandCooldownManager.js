@@ -127,7 +127,13 @@ class CommandCooldownManager {
    * @param {string} commandName - Command name
    */
   removeCooldown(commandName) {
-    this.commandCooldowns.delete(commandName.toLowerCase());
+    const normalizedName = commandName.toLowerCase();
+    this.commandCooldowns.delete(normalizedName);
+    this.globalCooldowns.delete(normalizedName);
+    const userKeySuffix = `:${normalizedName}`;
+    for (const userKey of this.userCooldowns.keys()) {
+      if (userKey.endsWith(userKeySuffix)) this.userCooldowns.delete(userKey);
+    }
   }
 
   /**

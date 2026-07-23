@@ -169,7 +169,10 @@ class CommandParser {
                     error: error.message,
                     suggestion: error.suggestion,
                     displayOverlay: true,
-                    errorCode: error.code
+                    errorCode: error.code,
+                    commandName: commandDef.name,
+                    pluginId: commandDef.pluginId,
+                    cooldownType: cooldownCheck.type
                 };
             }
 
@@ -401,6 +404,10 @@ class CommandParser {
     setCommandCooldown(commandName, userCooldown, globalCooldown = 0) {
         this.cooldownManager.setCooldown(commandName, userCooldown, globalCooldown);
         this.logger.info(`[GCCE Parser] Set cooldown for /${commandName}: user=${userCooldown}ms, global=${globalCooldown}ms`);
+    }
+
+    removeCommandCooldown(commandName) {
+        this.cooldownManager.removeCooldown(commandName);
     }
 
     /**

@@ -15,7 +15,8 @@ class StreamMonstersRoutes {
     managedRuntime,
     localModelInstaller,
     giftCatalogProvider,
-    configProvider
+    configProvider,
+    gcceStateProvider = () => ({ commandPrefix: '!', registrationState: 'fallback', commandsRegistered: false })
   }) {
     this.api = api;
     this.pluginDir = pluginDir;
@@ -30,6 +31,7 @@ class StreamMonstersRoutes {
     this.localModelInstaller = localModelInstaller;
     this.giftCatalogProvider = giftCatalogProvider || (() => []);
     this.configProvider = configProvider;
+    this.gcceStateProvider = gcceStateProvider;
     this.adminAuth = createAdminAuth();
   }
 
@@ -58,6 +60,7 @@ class StreamMonstersRoutes {
         pool: this.artPool?.coverage?.(config.artPoolTarget) || this.store.getArtPoolCoverage(),
         hype: this.store.getStreamHype(this.engine.streamKey),
         season,
+        gcce: this.gcceStateProvider(),
         metrics: this.engine.streamKey ? this.store.getStreamMetrics(this.engine.streamKey) : null
       });
     });

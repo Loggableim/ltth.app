@@ -33,7 +33,7 @@ describe('Stream Monsters chat commands', () => {
     hatch('viewer-a', 1);
     hatch('viewer-b', 2);
 
-    const result = commands.handle({ username: 'viewer-a' }, '!inventory');
+    const result = commands.execute({ userId: 'viewer-a' }, 'inventory');
 
     expect(result.success).toBe(true);
     expect(result.message).toContain('1 monster');
@@ -45,7 +45,7 @@ describe('Stream Monsters chat commands', () => {
     hatch('viewer-a', 1);
     hatch('viewer-a', 2);
 
-    const result = commands.handle({ username: 'viewer-a' }, '!choose 2');
+    const result = commands.execute({ userId: 'viewer-a' }, 'choose', ['2']);
 
     expect(result.success).toBe(true);
     expect(store.getSelectedMonster('viewer-a').egg_id).toBe(store.getViewerMonsters('viewer-a')[1].egg_id);
@@ -56,8 +56,8 @@ describe('Stream Monsters chat commands', () => {
     hatch('viewer-a', 1);
     hatch('viewer-b', 2);
 
-    expect(commands.handle({ username: 'viewer-a' }, '!battle').status).toBe('queued');
-    const result = commands.handle({ username: 'viewer-b' }, '!battle');
+    expect(commands.execute({ userId: 'viewer-a' }, 'battle').status).toBe('queued');
+    const result = commands.execute({ userId: 'viewer-b' }, 'battle');
 
     expect(result.status).toBe('started');
     expect(emitted.map(entry => entry.event)).toContain('streammonsters:battle_started');
@@ -68,21 +68,21 @@ describe('Stream Monsters chat commands', () => {
     const { commands, hatch, setNow } = createCommands();
     hatch('viewer-a', 1);
     hatch('viewer-b', 2);
-    commands.handle({ username: 'viewer-a' }, '!battle');
+    commands.execute({ userId: 'viewer-a' }, 'battle');
     setNow(301_001);
 
-    expect(commands.handle({ username: 'viewer-b' }, '!battle').status).toBe('queued');
-    expect(commands.handle({ username: 'viewer-b' }, '!leavebattle').status).toBe('left');
+    expect(commands.execute({ userId: 'viewer-b' }, 'battle').status).toBe('queued');
+    expect(commands.execute({ userId: 'viewer-b' }, 'leavebattle').status).toBe('left');
   });
 
-  test('applies a short global cooldown to non-battle commands while allowing battle pairs instantly', () => {
+  test('keeps command execution transport-neutral while allowing battle pairs instantly', () => {
     const { commands, hatch } = createCommands();
     hatch('viewer-a', 1);
     hatch('viewer-b', 2);
 
-    expect(commands.handle({ username: 'viewer-a' }, '!inventory').status).toBe('inventory');
-    expect(commands.handle({ username: 'viewer-b' }, '!inventory')).toEqual(expect.objectContaining({ status: 'global_cooldown' }));
-    expect(commands.handle({ username: 'viewer-a' }, '!battle').status).toBe('queued');
-    expect(commands.handle({ username: 'viewer-b' }, '!battle').status).toBe('started');
+    expect(commands.execute({ userId: 'viewer-a' }, 'inventory').status).toBe('inventory');
+    expect(commands.execute({ userId: 'viewer-b' }, 'inventory').status).toBe('inventory');
+    expect(commands.execute({ userId: 'viewer-a' }, 'battle').status).toBe('queued');
+    expect(commands.execute({ userId: 'viewer-b' }, 'battle').status).toBe('started');
   });
 });
