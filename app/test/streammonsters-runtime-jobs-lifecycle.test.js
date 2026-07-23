@@ -13,6 +13,15 @@ const ADAPTER = Object.freeze({
   vendor: 'nvidia',
   architecture: 'rtx_20_plus',
   backendIndex: 1,
+  backendSelectionState: 'verified',
+  pciBusId: '0000:65:00.0',
+  backendIdentity: {
+    source: 'nvidia-smi',
+    index: 1,
+    uuid: 'GPU-4090',
+    pciBusId: '0000:65:00.0',
+    name: 'NVIDIA GeForce RTX 4090'
+  },
   vramMb: 24576,
   memoryState: 'known'
 });
@@ -119,7 +128,99 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
     }));
     expect(JSON.stringify(installer.getInstallJob(accepted.jobId))).not.toContain('archiveUrl');
     expect(JSON.stringify(installer.getInstallJob(accepted.jobId))).not.toContain('sha256');
+    expect(JSON.stringify(installer.getInstallJob(accepted.jobId))).not.toContain('runtimeRoot');
     expect(progress.map(event => event.state)).toEqual(expect.arrayContaining(['running', 'ready']));
+  });
+
+  test('rejects cancellation after a job enters its non-cancellable commit phase', async () => {
+    let releaseCommit;
+    let markCommitting;
+    const committing = new Promise(resolve => { markCommitting = resolve; });
+    const commitGate = new Promise(resolve => { releaseCommit = resolve; });
+    const performInstall = jest.fn(async input => {
+      if (typeof input.beginCommit !== 'function') {
+        markCommitting();
+        throw new Error('beginCommit missing');
+      }
+      input.beginCommit();
+      markCommitting();
+      await commitGate;
+      return {
+        state: 'ready',
+        runtimeRoot: 'C:\\LTTH\\runtime',
+        adapterId: input.adapter.id,
+        profileId: input.profile.id,
+        verified: true
+      };
+    });
+    const installer = new ManagedRuntimeInstaller({
+      platform: () => 'win32',
+      windowsRelease: () => '10.0.22631',
+      performInstall
+    });
+    const accepted = installer.createInstallJob({
+      adapterId: ADAPTER.id,
+      profileId: 'nvidia-standard',
+      acceptModelLicense: true
+    }, [ADAPTER]);
+
+    await committing;
+
+    expect(installer.getInstallJob(accepted.jobId)).toEqual(expect.objectContaining({
+      state: 'committing',
+      progress: expect.objectContaining({ phase: 'committing' })
+    }));
+    await expect(installer.cancelInstallJob(accepted.jobId))
+      .rejects.toThrow('STREAM_MONSTERS_RUNTIME_INSTALL_COMMITTING');
+    expect(performInstall.mock.calls[0][0].signal.aborted).toBe(false);
+
+    releaseCommit();
+    await expect(installer.jobs.get(accepted.jobId).promise)
+      .resolves.toEqual(expect.objectContaining({ state: 'ready' }));
+    expect(installer.installation).toEqual(expect.objectContaining({
+      adapterId: ADAPTER.id,
+      profileId: 'nvidia-standard',
+      verified: true
+    }));
+  });
+
+  test('preflights remaining downloads plus extracted runtime, a full model copy, and safety margin', async () => {
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-disk-plan-'));
+    const runtimeBytes = Buffer.alloc(100, 1);
+    const modelBytes = Buffer.alloc(200, 2);
+    const runtimeSha256 = crypto.createHash('sha256').update(runtimeBytes).digest('hex');
+    const modelSha256 = crypto.createHash('sha256').update(modelBytes).digest('hex');
+    const installer = new ManagedRuntimeInstaller({
+      dataDir,
+      diskSafetyMarginBytes: 50
+    });
+    const runtimePath = installer.resolveArtifactPath(runtimeSha256, 'runtime.zip');
+    const modelPath = installer.resolveArtifactPath(modelSha256, 'fixture.safetensors');
+    fs.mkdirSync(path.dirname(runtimePath), { recursive: true });
+    fs.mkdirSync(path.dirname(modelPath), { recursive: true });
+    fs.writeFileSync(`${runtimePath}.part`, runtimeBytes.subarray(0, 25));
+    fs.writeFileSync(modelPath, modelBytes);
+
+    try {
+      await expect(installer.calculateCatalogRequiredBytes({
+        sha256: runtimeSha256,
+        archiveType: 'zip',
+        downloadSizeBytes: runtimeBytes.length,
+        installedSizeBytes: 400
+      }, {
+        sha256: modelSha256,
+        fileName: 'fixture.safetensors',
+        sizeBytes: modelBytes.length
+      })).resolves.toBe(
+        75 +
+        0 +
+        400 +
+        modelBytes.length +
+        50
+      );
+    } finally {
+      fs.rmSync(dataDir, { recursive: true, force: true });
+    }
   });
 
   test('cancels a queued install job without starting any download', async () => {
@@ -328,6 +429,16 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
       archivePath: 'C:\\staging\\runtime.7z',
       runtimeRoot: 'C:\\staging\\runtime'
     })).rejects.toThrow('STREAM_MONSTERS_RUNTIME_ARCHIVE_ENTRY_UNSAFE');
+
+    const catalogBound = new ManagedRuntimeInstaller({
+      maxArchiveUncompressedBytes: 1000,
+      execFileImpl: (file, args, options, callback) => callback(null, listing, '')
+    });
+    await expect(catalogBound.inspectSevenZip({
+      archivePath: 'C:\\staging\\runtime.7z',
+      runtimeRoot: 'C:\\staging\\runtime',
+      maxUncompressedBytes: 100
+    })).rejects.toThrow('STREAM_MONSTERS_RUNTIME_ARCHIVE_ENTRY_UNSAFE');
   });
 
   test('spawns embedded Python directly, verifies adapter/backend plus 256 smoke output, and owns idle shutdown', async () => {
@@ -351,7 +462,15 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
       fetchImpl: jest.fn(async () => ({
         ok: true,
         status: 200,
-        json: async () => ({ devices: [{ name: 'NVIDIA GeForce RTX 4090', type: 'cuda' }] })
+        json: async () => ({
+          devices: [{
+            name: 'NVIDIA GeForce RTX 4090',
+            type: 'cuda',
+            index: 0,
+            uuid: 'GPU-4090',
+            pci_bus_id: '0000:65:00.0'
+          }]
+        })
       })),
       findFreePort: jest.fn(async () => 8299),
       smokeTest,
@@ -369,7 +488,13 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
     try {
       const state = await installer.startManagedRuntime({ adapter: ADAPTER });
 
-      expect(state).toEqual(expect.objectContaining({ state: 'running', pid: 4242, port: 8299 }));
+      expect(state).toEqual(expect.objectContaining({
+        state: 'running',
+        pid: 4242,
+        port: 8299,
+        backendIndex: ADAPTER.backendIndex,
+        runtimeDeviceIndex: 0
+      }));
       expect(spawnImpl).toHaveBeenCalledWith(
         fs.realpathSync(pythonPath),
         [
@@ -411,7 +536,14 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ({ devices: [{ name: ADAPTER.name, type: 'cuda' }] })
+        json: async () => ({
+          devices: [{
+            name: ADAPTER.name,
+            type: 'cuda',
+            index: 0,
+            uuid: ADAPTER.backendIdentity.uuid
+          }]
+        })
       });
     const installer = new ManagedRuntimeInstaller({
       fetchImpl,
@@ -437,8 +569,8 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
         status: 200,
         json: async () => ({
           devices: [
-            { name: ADAPTER.name, type: 'cuda' },
-            { name: ADAPTER.name, type: 'cuda' }
+            { name: ADAPTER.name, type: 'cuda', index: 0 },
+            { name: ADAPTER.name, type: 'cuda', index: 0 }
           ]
         })
       }),
@@ -454,6 +586,42 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
     })).rejects.toThrow('STREAM_MONSTERS_RUNTIME_DEVICE_AMBIGUOUS');
   });
 
+  test('requires the active device record to match both backend index and adapter identity', async () => {
+    const installer = new ManagedRuntimeInstaller({
+      fetchImpl: async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          devices: [
+            {
+              name: ADAPTER.name,
+              type: 'cuda',
+              index: ADAPTER.backendIndex,
+              uuid: ADAPTER.backendIdentity.uuid,
+              pci_bus_id: ADAPTER.pciBusId
+            },
+            {
+              name: 'NVIDIA GeForce RTX 4080',
+              type: 'cuda',
+              index: 0,
+              uuid: 'GPU-4080',
+              pci_bus_id: '0000:17:00.0'
+            }
+          ]
+        })
+      }),
+      smokeTest: async () => ({ ok: true, width: 256, height: 256 }),
+      healthAttempts: 1
+    });
+
+    await expect(installer.verifyManagedRuntime({
+      adapter: ADAPTER,
+      profile: installer.getProfile('nvidia-standard'),
+      baseUrl: 'http://127.0.0.1:8299',
+      child: { exitCode: null }
+    })).rejects.toThrow('STREAM_MONSTERS_RUNTIME_DEVICE_MISMATCH');
+  });
+
   test('recognizes the ROCm package backend when PyTorch exposes its selected AMD device as cuda', async () => {
     const amdAdapter = {
       id: 'gpu-rx7900xtx',
@@ -461,6 +629,15 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
       vendor: 'amd',
       architecture: 'amd_radeon',
       backendIndex: 0,
+      backendSelectionState: 'verified',
+      pciBusId: '0000:03:00.0',
+      backendIdentity: {
+        source: 'rocm-smi',
+        index: 0,
+        uuid: 'AMD-7900-XTX',
+        pciBusId: '0000:03:00.0',
+        name: 'AMD Radeon RX 7900 XTX'
+      },
       vramMb: 24576,
       memoryState: 'known'
     };
@@ -500,6 +677,10 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
       installer.getProfile('intel-arc'),
       { ...ADAPTER, vendor: 'intel', backendIndex: 3 }
     )).toEqual(['--oneapi-device-selector', 'level_zero:3']);
+    expect(() => installer.buildDeviceSelectorArgs(
+      installer.getProfile('nvidia-standard'),
+      { ...ADAPTER, backendIndex: null, backendSelectionState: 'ambiguous' }
+    )).toThrow('STREAM_MONSTERS_RUNTIME_ADAPTER_MAPPING_AMBIGUOUS');
   });
 
   test('stops only the managed child when device verification fails during startup', async () => {
@@ -520,7 +701,9 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
       fetchImpl: async () => ({
         ok: true,
         status: 200,
-        json: async () => ({ devices: [{ name: 'Different GPU', type: 'cuda' }] })
+        json: async () => ({
+          devices: [{ name: 'Different GPU', type: 'cuda', index: 0 }]
+        })
       }),
       healthAttempts: 1
     });
@@ -543,23 +726,32 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
     }
   });
 
-  test('verifies in staging before promotion, keeps hash-keyed artifacts for retry, and restarts on a new port', async () => {
+  test('keeps promotion durable across cleanup failure and persists fresh metadata when reusing a pinned install', async () => {
     const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-catalog-install-'));
     const runtimeArtifact = await createPortableRuntimeArchive(dataDir);
     const modelBytes = Buffer.from('fixture-model');
     const modelSha256 = crypto.createHash('sha256').update(modelBytes).digest('hex');
     const artifactRequests = [];
-    const ports = [8299, 8300, 8301];
+    const ports = [8299, 8300, 8301, 8302];
     const children = [];
     let failSmoke = true;
     let diskChecks = 0;
+    let activeAdapter = ADAPTER;
     const fetchImpl = jest.fn(async url => {
       const value = String(url);
       if (value.endsWith('/system_stats')) {
         return {
           ok: true,
           status: 200,
-          json: async () => ({ devices: [{ name: ADAPTER.name, type: 'cuda' }] })
+          json: async () => ({
+            devices: [{
+              name: activeAdapter.name,
+              type: 'cuda',
+              index: 0,
+              uuid: activeAdapter.backendIdentity.uuid,
+              pci_bus_id: activeAdapter.pciBusId
+            }]
+          })
         };
       }
       artifactRequests.push(value);
@@ -573,9 +765,10 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
     const installer = new ManagedRuntimeInstaller({
       dataDir,
       fetchImpl,
+      diskSafetyMarginBytes: 128,
       diskFreeBytes: async () => {
         diskChecks += 1;
-        return diskChecks === 1 ? Number.MAX_SAFE_INTEGER : (2 * 1024 ** 3) + 1;
+        return diskChecks === 1 ? Number.MAX_SAFE_INTEGER : 1024 + modelBytes.length + 128 + 1;
       },
       findFreePort: async () => ports.shift(),
       spawnImpl: () => {
@@ -593,6 +786,8 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
       archiveUrl: 'https://github.com/Comfy-Org/ComfyUI/releases/download/v0.28.0/runtime.zip',
       archiveType: 'zip',
       downloadSizeBytes: runtimeArtifact.bytes.length,
+      installedSizeBytes: 1024,
+      installedSizeBasis: 'conservative_fixture',
       sha256: runtimeArtifact.sha256
     };
     const model = {
@@ -628,6 +823,9 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
       );
 
       failSmoke = false;
+      installer.cleanupValidatedStaging = jest.fn(async () => {
+        throw new Error('fixture staging cleanup failed');
+      });
       const installation = await installer.performCatalogInstall({
         jobId: 'runtime-job-retry',
         adapter: ADAPTER,
@@ -648,11 +846,62 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
         path.join(dataDir, 'managed-runtimes-v2', 'active.json'),
         'utf8'
       ))).toEqual(expect.objectContaining({ runtimeRoot: fs.realpathSync(installDir), verified: true }));
+      expect(installer.installation).toEqual(installation);
+      expect(installer.cleanupValidatedStaging).toHaveBeenCalled();
 
-      const restarted = await installer.startManagedRuntime({ adapter: ADAPTER });
+      const secondAdapter = {
+        ...ADAPTER,
+        id: 'gpu-rtx4090-second',
+        backendIndex: 0,
+        pnpDeviceId: 'PCI\\VEN_10DE&DEV_2684\\SECOND',
+        pciBusId: '0000:17:00.0',
+        backendIdentity: {
+          ...ADAPTER.backendIdentity,
+          index: 0,
+          uuid: 'GPU-4090-SECOND',
+          pciBusId: '0000:17:00.0'
+        }
+      };
+      activeAdapter = secondAdapter;
+      const reused = await installer.performCatalogInstall({
+        jobId: 'runtime-job-reuse',
+        adapter: secondAdapter,
+        profile,
+        model,
+        signal: new AbortController().signal,
+        onProgress: jest.fn()
+      });
+      const activeRecord = JSON.parse(fs.readFileSync(
+        path.join(dataDir, 'managed-runtimes-v2', 'active.json'),
+        'utf8'
+      ));
+
+      expect(reused).toEqual(expect.objectContaining({
+        state: 'ready',
+        verified: true,
+        runtimeRoot: fs.realpathSync(installDir),
+        adapterId: secondAdapter.id,
+        profileId: profile.id,
+        model: expect.objectContaining({
+          id: model.id,
+          fileName: model.fileName,
+          sizeBytes: model.sizeBytes,
+          verified: true
+        }),
+        smokeTest: expect.objectContaining({ state: 'passed' })
+      }));
+      expect(activeRecord).toEqual(expect.objectContaining({
+        adapterId: secondAdapter.id,
+        profileId: profile.id,
+        model: expect.objectContaining({ id: model.id, verified: true }),
+        smokeTest: expect.objectContaining({ state: 'passed' })
+      }));
+      expect(installer.installation).toEqual(reused);
+
+      const restarted = await installer.startManagedRuntime({ adapter: secondAdapter });
       expect(restarted).toEqual(expect.objectContaining({
         state: 'running',
-        baseUrl: 'http://127.0.0.1:8301'
+        baseUrl: 'http://127.0.0.1:8302'
       }));
     } finally {
       await installer.destroy();

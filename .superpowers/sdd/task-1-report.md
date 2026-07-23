@@ -244,3 +244,83 @@ All Jest commands used bundled Node `C:\Users\logga\Documents\ltth_codex\ltth_de
 1. The multi-gigabyte official packages and model were not downloaded in tests; the integration tests use small real ZIP/file fixtures through the production install path.
 2. NVIDIA, Intel, and AMD selectors were verified against the official ComfyUI v0.28.0 argument handling and deterministic fixtures, but only the local Intel Arc discovery probe from the original task used real hardware.
 3. The pre-existing UI-i18n audit failure remains outside Task 1 boundaries.
+
+## Second review fix pass: 2026-07-23
+
+Status: `DONE_WITH_CONCERNS`
+
+Reviewed implementation range: `8e53137f..45030b1f`
+
+Second-fix base/head: base `45030b1f`; fix range `45030b1f..HEAD`. This report is included in the separate fix commit, whose exact full hash is returned in the task handoff.
+
+### Remaining Important findings fixed
+
+1. Disk preflight now counts the real peak allocation: remaining runtime and model downloads, the selected catalog profile's conservative extracted-runtime bound, a complete model copy into the candidate, and a separate 2 GiB safety margin. The four pinned profiles carry server-owned `installedSizeBytes` plus `installedSizeBasis`; archive inspection enforces the same profile bound before extraction so the conservative estimate is also a hard maximum.
+2. Install jobs enter an explicit non-cancellable `committing` state immediately before deterministic promotion and the atomic `active.json` pointer write. DELETE cancellation returns a controlled conflict in this state. Plugin destroy waits for a commit already in progress rather than aborting it.
+3. The durable transaction now writes `active.json` before publishing the ready installation in memory. Staging cleanup after that point is best-effort and cannot roll a ready installation back to failed. Before durability, errors restore the prior in-memory installation while the atomic pointer retains the prior active record.
+4. Reusing an existing deterministic pinned install now writes a fresh verified record for the requested adapter, profile, model, and smoke result instead of cloning stale adapter metadata from the previous record.
+5. Windows adapter discovery no longer derives backend indexes from CIM order. Stable records retain PNP identity, computed PCI BDF, and location paths. Read-only `nvidia-smi`, `xpu-smi`, and `rocm-smi` inventories are mapped by PCI BDF first, then UUID or a unique name where available. Multiple indistinguishable adapters without a trustworthy mapping are marked `ambiguous` and rejected for managed installation.
+6. Managed startup uses the backend index obtained from that mapping in the official ComfyUI selector. Verification requires one active backend record with the selector-remapped runtime index plus matching UUID, PCI BDF, or adapter name. The original backend index and selector are retained in managed process state. This accounts for pinned ComfyUI v0.28.0 applying `CUDA_VISIBLE_DEVICES`, `HIP_VISIBLE_DEVICES`, or `ONEAPI_DEVICE_SELECTOR` before importing PyTorch, which exposes the selected device as runtime index 0.
+7. Public job results no longer disclose the local runtime filesystem path. Public install-size reporting now includes both download bytes and the conservative installed-runtime bytes without exposing server-pinned URLs or hashes.
+
+### Second-fix changed files
+
+- `app/plugins/streamalchemy/backend/system-analyzer.js`
+- `app/plugins/streamalchemy/backend/streammonsters/managed-runtime-installer.js`
+- `app/plugins/streamalchemy/backend/streammonsters/routes.js`
+- `app/test/streamalchemy-relaunch-system-analysis.test.js`
+- `app/test/streammonsters-managed-runtime.test.js`
+- `app/test/streammonsters-runtime-jobs-lifecycle.test.js`
+- `app/test/streammonsters-routes-security.test.js`
+- `.superpowers/sdd/task-1-report.md`
+
+No UI, gameplay, GCCE, release ZIP, locale, or unrelated plugin file was changed. The installer remains a large module; it was not split during this safety fix because that would be a broad speculative rewrite of stabilized lifecycle code.
+
+### Second-fix TDD ledger
+
+All commands used bundled Node `C:\Users\logga\Documents\ltth_codex\ltth_desktop2-main\runtime\node\node.exe` v22.14.0 / ABI 127 from `app/`.
+
+1. Initial remaining-findings RED
+   - Command: bundled Jest for `streamalchemy-relaunch-system-analysis`, `streammonsters-managed-runtime`, and `streammonsters-runtime-jobs-lifecycle`, `--runInBand`.
+   - Result: 3/3 suites failed; 7 failed / 35 passed tests.
+   - Expected failures showed CIM-order backend indexes, absent installed-size metadata, the old 2 GiB-only disk reserve, cancellable promotion, and public runtime-path disclosure.
+2. Complete remaining-findings RED
+   - Same three-suite command after adding identity/index, cleanup-failure, and pinned-install reuse cases.
+   - Result: 3/3 suites failed; 10 failed / 33 passed tests.
+   - Expected failures additionally proved that health verification ignored backend index, missing mappings silently fell back to index 0, cleanup failure reclassified a durable install, and reuse retained stale adapter metadata.
+3. Commit-route RED/GREEN
+   - RED: routes test filtered to `non-cancellable commit phase`.
+   - Result: 1 failed / 8 skipped because the committing cancellation rejection escaped the route.
+   - GREEN: the full routes suite passed after returning HTTP 409 with the stable committing error.
+4. Catalog extraction-bound RED/GREEN
+   - RED: lifecycle test filtered to `rejects excessive 7z`.
+   - Result: 1 failed / 22 skipped because an injected catalog bound was ignored.
+   - GREEN: the full lifecycle suite passed after the profile's installed-size bound was enforced during archive inspection.
+5. Selector-remap RED/GREEN
+   - RED: lifecycle test filtered to `spawns embedded Python`.
+   - Result: 1 failed / 22 skipped with `STREAM_MONSTERS_RUNTIME_DEVICE_MISMATCH`.
+   - GREEN: 23/23 lifecycle tests passed after separating the mapped physical backend index from ComfyUI's selector-remapped runtime index 0.
+6. Focused implementation GREEN
+   - Command: bundled Jest for analyzer, managed catalog, runtime lifecycle, and runtime routes, `--runInBand`.
+   - Result: 4/4 suites passed; 52/52 tests passed.
+
+### Second-fix final verification
+
+- Covering runtime/analyzer/provider/routes/plugin Jest:
+  - Command: bundled Jest for `streamalchemy-relaunch-system-analysis`, `streamalchemy-model-catalog`, `streamalchemy-relaunch-generation`, `streammonsters-managed-runtime`, `streammonsters-runtime-jobs-lifecycle`, `streammonsters-routes-security`, `streammonsters-plugin-integration`, and `streammonsters-art-pool-kenney`, `--runInBand`.
+  - Result: 8/8 suites passed; 80/80 tests passed.
+- Syntax:
+  - Bundled Node `--check` passed for system analyzer, managed runtime installer, and Stream Monsters routes.
+- ESLint:
+  - `npm run lint -- --quiet` exited 0 with no lint errors.
+- Diff:
+  - `git diff --check` passed.
+- Real Windows read-only discovery:
+  - The local `Intel(R) Arc(TM) A770 Graphics` returned stable PNP identity, PCI BDF `0000:08:00.0`, registry-restored 16258 MB VRAM, and location paths.
+  - `xpu-smi` was not available on this host. Because there is one physical Intel adapter, the explicit `single_adapter_fallback` maps backend index 0 safely; no multi-adapter order is inferred.
+
+### Second-fix self-review and remaining concerns
+
+1. The official multi-gigabyte archives and model were not downloaded. Exact download sizes/hashes remain pinned, and production download/extraction/promotion is covered with small real ZIP/file fixtures. Extracted runtime sizes use an enforced conservative 4x archive bound rather than an unverified exact claim.
+2. The local host has only one Intel GPU and no `xpu-smi`; reordered NVIDIA/Intel backend inventories, ROCm backend stats, selector remapping, and identical-GPU ambiguity are covered deterministically through injected fixtures rather than multiple real vendor machines.
+3. The pre-existing UI-i18n audit failure remains outside the Task 1 boundary.

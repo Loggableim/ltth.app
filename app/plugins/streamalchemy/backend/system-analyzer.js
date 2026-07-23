@@ -7,7 +7,26 @@ const ModelCatalog = require('./model-catalog');
 
 const WINDOWS_ADAPTER_SCRIPT = [
   '$ErrorActionPreference = "Stop"',
-  '$adapters = @(Get-CimInstance Win32_VideoController | Select-Object Name,AdapterRAM,DriverVersion,PNPDeviceID,DeviceID,Status)',
+  '$pnpPropertyCommand = Get-Command Get-PnpDeviceProperty -ErrorAction SilentlyContinue',
+  '$adapters = @(Get-CimInstance Win32_VideoController | ForEach-Object {',
+  '  $video = $_',
+  '  $bus = $null',
+  '  $address = $null',
+  '  $locationPaths = @()',
+  '  if ($pnpPropertyCommand -and $video.PNPDeviceID) {',
+  '    $bus = (Get-PnpDeviceProperty -InstanceId $video.PNPDeviceID -KeyName "DEVPKEY_Device_BusNumber" -ErrorAction SilentlyContinue).Data',
+  '    $address = (Get-PnpDeviceProperty -InstanceId $video.PNPDeviceID -KeyName "DEVPKEY_Device_Address" -ErrorAction SilentlyContinue).Data',
+  '    $locationPaths = @((Get-PnpDeviceProperty -InstanceId $video.PNPDeviceID -KeyName "DEVPKEY_Device_LocationPaths" -ErrorAction SilentlyContinue).Data)',
+  '  }',
+  '  $pciBusId = $null',
+  '  if ($null -ne $bus -and $null -ne $address) {',
+  '    $addressValue = [uint32]$address',
+  '    $device = [math]::Floor($addressValue / 65536)',
+  '    $function = $addressValue % 65536',
+  '    $pciBusId = "0000:{0:x2}:{1:x2}.{2}" -f [uint32]$bus,[uint32]$device,[uint32]$function',
+  '  }',
+  '  [pscustomobject]@{ Name=$video.Name; AdapterRAM=$video.AdapterRAM; DriverVersion=$video.DriverVersion; PNPDeviceID=$video.PNPDeviceID; DeviceID=$video.DeviceID; Status=$video.Status; PciBusId=$pciBusId; LocationPaths=$locationPaths }',
+  '})',
   '$registry = @(Get-ItemProperty "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Video\\*\\0000" -ErrorAction SilentlyContinue | ForEach-Object {',
   '  [pscustomobject]@{ DriverDesc=$_.DriverDesc; MatchingDeviceId=$_.MatchingDeviceId; MemorySize=[string]$_."HardwareInformation.qwMemorySize" }',
   '})',
@@ -16,12 +35,20 @@ const WINDOWS_ADAPTER_SCRIPT = [
 const VIRTUAL_ADAPTER_PATTERN = /\b(microsoft basic|remote display|rdp|virtual|vmware|virtualbox|hyper-v|citrix|parallels|indirect display|dummy)\b/i;
 
 class SystemAnalyzer {
-  constructor({ execFileImpl = execFile, osImpl = os, fetchImpl = global.fetch, fsImpl = fs, catalog = new ModelCatalog() } = {}) {
+  constructor({
+    execFileImpl = execFile,
+    osImpl = os,
+    fetchImpl = global.fetch,
+    fsImpl = fs,
+    catalog = new ModelCatalog(),
+    backendProbe = null
+  } = {}) {
     this.execFile = execFileImpl;
     this.os = osImpl;
     this.fetch = fetchImpl;
     this.fs = fsImpl;
     this.catalog = catalog;
+    this.backendProbe = backendProbe || (vendor => this.probeVendorBackend(vendor));
   }
 
   async analyze({ comfyUrl, comfyRootDir = null } = {}) {
@@ -72,29 +99,17 @@ class SystemAnalyzer {
     if (this.os.platform() === 'win32') {
       return this.detectWindowsAdapters();
     }
-    return new Promise(resolve => {
-      this.execFile(
-        'nvidia-smi',
-        ['--query-gpu=name,memory.total,driver_version', '--format=csv,noheader'],
-        async (error, stdout) => {
-          if (!error && stdout) {
-            const firstLine = stdout.trim().split(/\r?\n/)[0];
-            const [name, memory, driver] = firstLine.split(',').map(part => part.trim());
-            const vramMb = Number.parseInt(String(memory).replace(/[^\d]/g, ''), 10) || 0;
-            resolve(this.assignBackendIndexes([this.normalizeAdapter({
-              name,
-              vendor: 'nvidia',
-              vramMb,
-              driver,
-              pnpDeviceId: `nvidia-smi:${name}`
-            })]));
-            return;
-          }
-
-          resolve([]);
-        }
-      );
-    });
+    return this.backendProbe('nvidia').then(records => records.map(record => this.normalizeAdapter({
+      name: record.name,
+      vendor: 'nvidia',
+      vramMb: record.vramMb,
+      driver: record.driver,
+      pnpDeviceId: record.uuid || record.pciBusId || `nvidia-smi:${record.name}`,
+      pciBusId: record.pciBusId,
+      backendIndex: record.index,
+      backendSelectionState: 'verified',
+      backendIdentity: record
+    }))).catch(() => []);
   }
 
   detectWindowsGpu() {
@@ -106,13 +121,14 @@ class SystemAnalyzer {
       this.execFile(
         'powershell',
         ['-NoProfile', '-NonInteractive', '-Command', WINDOWS_ADAPTER_SCRIPT],
-        (error, stdout) => {
+        async (error, stdout) => {
           if (error || !stdout) {
             resolve([]);
             return;
           }
 
-          resolve(this.parseWindowsAdapters(stdout));
+          const adapters = this.parseWindowsAdapters(stdout);
+          resolve(await this.mapBackendIdentities(adapters));
         }
       );
     });
@@ -127,7 +143,7 @@ class SystemAnalyzer {
     }
     const adapterRows = Array.isArray(payload?.adapters) ? payload.adapters : (payload?.adapters ? [payload.adapters] : []);
     const registryRows = Array.isArray(payload?.registry) ? payload.registry : (payload?.registry ? [payload.registry] : []);
-    return this.assignBackendIndexes(adapterRows
+    return adapterRows
       .filter(row => this.isPhysicalAdapter(row))
       .map(row => {
         const registry = this.findRegistryAdapter(row, registryRows);
@@ -139,22 +155,24 @@ class SystemAnalyzer {
           vendor: this.vendorForName(row.Name),
           vramMb: bytes > 0 ? Math.round(bytes / 1024 / 1024) : 0,
           driver: row.DriverVersion || null,
-          pnpDeviceId: row.PNPDeviceID || row.DeviceID || row.Name
+          pnpDeviceId: row.PNPDeviceID || row.DeviceID || row.Name,
+          pciBusId: row.PciBusId || row.PCIBusId || row.PciBdf || null,
+          locationPaths: row.LocationPaths
         });
-      }));
+      });
   }
 
   parseLegacyFixture(stdout) {
     const text = String(stdout).trim();
     if (/nvidia/i.test(text) && text.includes(',')) {
       const [name, memory, driver] = text.split(/\r?\n/)[0].split(',').map(value => value.trim());
-      return this.assignBackendIndexes([this.normalizeAdapter({
+      return [this.normalizeAdapter({
         name,
         vendor: 'nvidia',
         vramMb: Number.parseInt(String(memory).replace(/[^\d]/g, ''), 10) || 0,
         driver,
         pnpDeviceId: `legacy:${name}`
-      })]);
+      })];
     }
     const row = {};
     text.split(/[;\r\n]+/).forEach(part => {
@@ -162,26 +180,247 @@ class SystemAnalyzer {
       if (key && rest.length) row[key.trim()] = rest.join('=').trim();
     });
     if (!row.Name || !this.isPhysicalAdapter(row)) return [];
-    return this.assignBackendIndexes([this.normalizeAdapter({
+    return [this.normalizeAdapter({
       name: row.Name,
       vendor: this.vendorForName(row.Name),
       vramMb: Math.round(this.parseBytes(row.AdapterRAM) / 1024 / 1024),
       driver: row.DriverVersion || null,
       pnpDeviceId: row.PNPDeviceID || `legacy:${row.Name}`
-    })]);
+    })];
   }
 
-  assignBackendIndexes(adapters = []) {
-    const counts = new Map();
-    return adapters.map(adapter => {
-      const vendor = adapter.vendor || 'unknown';
-      const backendIndex = counts.get(vendor) || 0;
-      counts.set(vendor, backendIndex + 1);
-      return { ...adapter, backendIndex };
+  async mapBackendIdentities(adapters = []) {
+    const assignments = new Map();
+    const vendors = [...new Set(adapters.map(adapter => adapter.vendor).filter(vendor => (
+      ['nvidia', 'intel', 'amd'].includes(vendor)
+    )))];
+    await Promise.all(vendors.map(async vendor => {
+      const vendorAdapters = adapters.filter(adapter => adapter.vendor === vendor);
+      let backendRecords = [];
+      try {
+        const probed = await this.backendProbe(vendor);
+        backendRecords = Array.isArray(probed)
+          ? probed.map(record => this.normalizeBackendRecord(record, vendor)).filter(Boolean)
+          : [];
+      } catch (_) {}
+      const usedRecords = new Set();
+      for (const adapter of vendorAdapters) {
+        const matchingRecord = this.findBackendRecord(
+          adapter,
+          vendorAdapters,
+          backendRecords,
+          usedRecords
+        );
+        if (matchingRecord) {
+          usedRecords.add(matchingRecord);
+          assignments.set(adapter, {
+            backendIndex: matchingRecord.index,
+            backendSelectionState: 'verified',
+            backendIdentity: {
+              source: matchingRecord.source,
+              index: matchingRecord.index,
+              uuid: matchingRecord.uuid,
+              pciBusId: matchingRecord.pciBusId,
+              name: matchingRecord.name
+            }
+          });
+          continue;
+        }
+        if (vendorAdapters.length === 1 && backendRecords.length === 0) {
+          assignments.set(adapter, {
+            backendIndex: 0,
+            backendSelectionState: 'single_adapter_fallback',
+            backendIdentity: {
+              source: 'single-adapter-fallback',
+              index: 0,
+              uuid: null,
+              pciBusId: adapter.pciBusId,
+              name: adapter.name
+            }
+          });
+          continue;
+        }
+        const normalizedName = this.normalizeAdapterName(adapter.name);
+        const indistinguishable = vendorAdapters.filter(candidate => (
+          this.normalizeAdapterName(candidate.name) === normalizedName
+        )).length > 1;
+        assignments.set(adapter, {
+          backendIndex: null,
+          backendSelectionState: indistinguishable ? 'ambiguous' : 'unavailable',
+          backendIdentity: null
+        });
+      }
+    }));
+    return adapters.map(adapter => ({
+      ...adapter,
+      ...(assignments.get(adapter) || {
+        backendIndex: null,
+        backendSelectionState: 'unsupported',
+        backendIdentity: null
+      })
+    }));
+  }
+
+  findBackendRecord(adapter, vendorAdapters, backendRecords, usedRecords) {
+    const pciBusId = this.normalizePciBusId(adapter.pciBusId);
+    if (pciBusId) {
+      const pciMatches = backendRecords.filter(record => (
+        !usedRecords.has(record) && record.pciBusId === pciBusId
+      ));
+      if (pciMatches.length === 1) return pciMatches[0];
+    }
+    const backendUuid = String(adapter.backendUuid || '').trim().toLowerCase();
+    if (backendUuid) {
+      const uuidMatches = backendRecords.filter(record => (
+        !usedRecords.has(record) &&
+        String(record.uuid || '').trim().toLowerCase() === backendUuid
+      ));
+      if (uuidMatches.length === 1) return uuidMatches[0];
+    }
+    const normalizedName = this.normalizeAdapterName(adapter.name);
+    const adapterNameCount = vendorAdapters.filter(candidate => (
+      this.normalizeAdapterName(candidate.name) === normalizedName
+    )).length;
+    const nameMatches = backendRecords.filter(record => (
+      !usedRecords.has(record) &&
+      this.normalizeAdapterName(record.name) === normalizedName
+    ));
+    return adapterNameCount === 1 && nameMatches.length === 1 ? nameMatches[0] : null;
+  }
+
+  normalizeBackendRecord(record, vendor) {
+    const index = Number(record?.index);
+    if (!Number.isInteger(index) || index < 0) return null;
+    return {
+      source: record.source || this.probeSourceForVendor(vendor),
+      index,
+      name: String(record.name || '').trim() || null,
+      uuid: String(record.uuid || '').trim() || null,
+      pciBusId: this.normalizePciBusId(record.pciBusId),
+      vramMb: Math.max(0, Number(record.vramMb) || 0),
+      driver: String(record.driver || '').trim() || null
+    };
+  }
+
+  probeVendorBackend(vendor) {
+    const probes = {
+      nvidia: {
+        file: 'nvidia-smi',
+        args: [
+          '--query-gpu=index,name,uuid,pci.bus_id,memory.total,driver_version',
+          '--format=csv,noheader,nounits'
+        ],
+        parse: stdout => this.parseNvidiaSmi(stdout)
+      },
+      intel: {
+        file: 'xpu-smi',
+        args: ['discovery', '-j'],
+        parse: stdout => this.parseXpuSmi(stdout)
+      },
+      amd: {
+        file: 'rocm-smi',
+        args: ['--showuniqueid', '--showbus', '--showproductname', '--json'],
+        parse: stdout => this.parseRocmSmi(stdout)
+      }
+    };
+    const probe = probes[vendor];
+    if (!probe) return Promise.resolve([]);
+    return new Promise(resolve => {
+      this.execFile(probe.file, probe.args, (error, stdout) => {
+        if (error || !stdout) {
+          resolve([]);
+          return;
+        }
+        try {
+          resolve(probe.parse(stdout));
+        } catch (_) {
+          resolve([]);
+        }
+      });
     });
   }
 
-  normalizeAdapter({ name, vendor, vramMb, driver, pnpDeviceId }) {
+  parseNvidiaSmi(stdout) {
+    return String(stdout || '').trim().split(/\r?\n/).filter(Boolean).map((line, fallbackIndex) => {
+      const fields = line.split(',').map(value => value.trim());
+      if (fields.length >= 6 && /^\d+$/.test(fields[0])) {
+        return {
+          source: 'nvidia-smi',
+          index: Number(fields[0]),
+          name: fields[1],
+          uuid: fields[2],
+          pciBusId: fields[3],
+          vramMb: Number.parseInt(fields[4], 10) || 0,
+          driver: fields[5]
+        };
+      }
+      return {
+        source: 'nvidia-smi',
+        index: fallbackIndex,
+        name: fields[0],
+        uuid: null,
+        pciBusId: null,
+        vramMb: Number.parseInt(String(fields[1] || '').replace(/[^\d]/g, ''), 10) || 0,
+        driver: fields[2] || null
+      };
+    });
+  }
+
+  parseXpuSmi(stdout) {
+    const payload = JSON.parse(String(stdout || '{}'));
+    const rows = payload.device_list || payload.deviceList || payload.devices || [];
+    return (Array.isArray(rows) ? rows : []).map((row, fallbackIndex) => ({
+      source: 'xpu-smi',
+      index: Number.parseInt(row.device_id ?? row.deviceId ?? row.index ?? fallbackIndex, 10),
+      name: row.device_name || row.deviceName || row.name,
+      uuid: row.uuid || row.device_uuid || row.deviceUuid || null,
+      pciBusId: row.pci_bdf_address || row.pciBdfAddress || row.pci_address || row.pciAddress || null
+    }));
+  }
+
+  parseRocmSmi(stdout) {
+    const payload = JSON.parse(String(stdout || '{}'));
+    return Object.entries(payload).map(([key, row], fallbackIndex) => ({
+      source: 'rocm-smi',
+      index: Number.parseInt(String(key).replace(/[^\d]/g, ''), 10) || fallbackIndex,
+      name: row['Card series'] || row['Card model'] || row['Card SKU'] || row.name || key,
+      uuid: row['Unique ID'] || row.UniqueID || row.uuid || null,
+      pciBusId: row['PCI Bus'] || row.PCIBus || row.pci_bus || null
+    }));
+  }
+
+  probeSourceForVendor(vendor) {
+    return {
+      nvidia: 'nvidia-smi',
+      intel: 'xpu-smi',
+      amd: 'rocm-smi'
+    }[vendor] || 'unknown';
+  }
+
+  normalizePciBusId(value) {
+    const text = String(value || '').trim().toLowerCase();
+    const match = text.match(/(?:^|[^0-9a-f])(?:([0-9a-f]{4,8}):)?([0-9a-f]{2}):([0-9a-f]{2})[.:]([0-7])(?:$|[^0-9a-f])/i);
+    if (!match) return null;
+    const domain = String(match[1] || '0000').slice(-4).padStart(4, '0');
+    return `${domain}:${match[2]}:${match[3]}.${match[4]}`;
+  }
+
+  normalizeAdapterName(name) {
+    return String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  normalizeAdapter({
+    name,
+    vendor,
+    vramMb,
+    driver,
+    pnpDeviceId,
+    pciBusId = null,
+    locationPaths = null,
+    backendIndex = null,
+    backendSelectionState = null,
+    backendIdentity = null
+  }) {
     const normalizedName = String(name || '').trim();
     const normalizedPnp = String(pnpDeviceId || normalizedName).trim().toLowerCase();
     const memory = Math.max(0, Number(vramMb) || 0);
@@ -195,6 +434,13 @@ class SystemAnalyzer {
       memoryState: memory > 0 ? 'known' : 'unknown',
       driver: driver || null,
       pnpDeviceId: pnpDeviceId || null,
+      pciBusId: this.normalizePciBusId(pciBusId),
+      locationPaths: Array.isArray(locationPaths)
+        ? locationPaths.filter(Boolean).map(value => String(value))
+        : [],
+      backendIndex,
+      backendSelectionState,
+      backendIdentity,
       state: normalizedName ? 'detected' : 'not_detected'
     };
   }

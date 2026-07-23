@@ -61,7 +61,8 @@ function createSubject({ storedManifest = null, artPool = null } = {}) {
     getCatalog: jest.fn(() => ({
       profiles: [{
         id: 'nvidia-standard',
-        downloadSizeBytes: 2092156323
+        downloadSizeBytes: 2092156323,
+        installedSizeBytes: 8368625292
       }],
       model: {
         id: 'sdxl_lightning_4step',
@@ -219,6 +220,7 @@ describe('Stream Monsters privileged routes', () => {
       manifestAvailable: true,
       installDetails: expect.objectContaining({
         runtimeDownloadBytes: 2092156323,
+        runtimeInstalledBytes: 8368625292,
         modelDownloadBytes: 6938040682
       }),
       adapters: expect.arrayContaining([expect.objectContaining({ id: 'gpu-1' })]),
@@ -282,5 +284,26 @@ describe('Stream Monsters privileged routes', () => {
     expect(emit).toHaveBeenCalledWith('local_runtime_progress', expect.objectContaining({ phase: 'pool_prepare' }));
     expect(emit).toHaveBeenCalledWith('local_runtime_state', expect.objectContaining({ state: 'running' }));
     expect(emit).toHaveBeenCalledWith('art_pool_progress', expect.objectContaining({ state: 'complete' }));
+  });
+
+  test('returns a conflict when cancellation reaches the non-cancellable commit phase', async () => {
+    const { findRoute, managedRuntime } = createSubject();
+    managedRuntime.cancelInstallJob.mockRejectedValueOnce(
+      new Error('STREAM_MONSTERS_RUNTIME_INSTALL_COMMITTING')
+    );
+    const response = createResponse();
+
+    await findRoute('DELETE', '/api/streammonsters/local-runtime/install/:jobId').handler({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      params: { jobId: 'runtime-job-1' }
+    }, response);
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'STREAM_MONSTERS_RUNTIME_INSTALL_COMMITTING'
+    });
   });
 });

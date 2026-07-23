@@ -2,35 +2,110 @@ const SystemAnalyzer = require('../plugins/streamalchemy/backend/system-analyzer
 const ModelCatalog = require('../plugins/streamalchemy/backend/model-catalog');
 
 describe('SystemAnalyzer', () => {
-  test('assigns backend device indexes independently for each physical GPU vendor', () => {
-    const analyzer = new SystemAnalyzer();
+  test('maps reordered CIM adapters to real backend indexes by PCI identity', async () => {
+    const backendProbe = jest.fn(async vendor => {
+      if (vendor === 'nvidia') {
+        return [
+          {
+            index: 0,
+            name: 'NVIDIA GeForce RTX 4080',
+            uuid: 'GPU-4080',
+            pciBusId: '00000000:17:00.0'
+          },
+          {
+            index: 1,
+            name: 'NVIDIA GeForce RTX 4090',
+            uuid: 'GPU-4090',
+            pciBusId: '00000000:65:00.0'
+          }
+        ];
+      }
+      return [{
+        index: 3,
+        name: 'Intel(R) Arc(TM) A770 Graphics',
+        uuid: 'intel-a770',
+        pciBusId: '0000:03:00.0'
+      }];
+    });
+    const analyzer = new SystemAnalyzer({
+      osImpl: {
+        platform: () => 'win32'
+      },
+      execFileImpl: (file, args, callback) => callback(null, JSON.stringify({
+        adapters: [
+          {
+            Name: 'NVIDIA GeForce RTX 4090',
+            AdapterRAM: 4293918720,
+            PNPDeviceID: 'PCI\\VEN_10DE&DEV_2684\\1',
+            PciBusId: '0000:65:00.0'
+          },
+          {
+            Name: 'NVIDIA GeForce RTX 4080',
+            AdapterRAM: 4293918720,
+            PNPDeviceID: 'PCI\\VEN_10DE&DEV_2704\\2',
+            PciBusId: '0000:17:00.0'
+          },
+          {
+            Name: 'Intel(R) Arc(TM) A770 Graphics',
+            AdapterRAM: 4293918720,
+            PNPDeviceID: 'PCI\\VEN_8086&DEV_56A0\\3',
+            PciBusId: '0000:03:00.0'
+          }
+        ],
+        registry: []
+      })),
+      backendProbe
+    });
 
-    const adapters = analyzer.parseWindowsAdapters(JSON.stringify({
-      adapters: [
-        {
-          Name: 'NVIDIA GeForce RTX 4090',
-          AdapterRAM: 4293918720,
-          PNPDeviceID: 'PCI\\VEN_10DE&DEV_2684\\1'
-        },
-        {
-          Name: 'NVIDIA GeForce RTX 4080',
-          AdapterRAM: 4293918720,
-          PNPDeviceID: 'PCI\\VEN_10DE&DEV_2704\\2'
-        },
-        {
-          Name: 'Intel(R) Arc(TM) A770 Graphics',
-          AdapterRAM: 4293918720,
-          PNPDeviceID: 'PCI\\VEN_8086&DEV_56A0\\3'
-        }
-      ],
-      registry: []
-    }));
+    const adapters = await analyzer.detectWindowsAdapters();
 
-    expect(adapters.map(adapter => [adapter.vendor, adapter.backendIndex])).toEqual([
-      ['nvidia', 0],
-      ['nvidia', 1],
-      ['intel', 0]
+    expect(adapters.map(adapter => [
+      adapter.vendor,
+      adapter.backendIndex,
+      adapter.pciBusId,
+      adapter.backendIdentity?.uuid
+    ])).toEqual([
+      ['nvidia', 1, '0000:65:00.0', 'GPU-4090'],
+      ['nvidia', 0, '0000:17:00.0', 'GPU-4080'],
+      ['intel', 3, '0000:03:00.0', 'intel-a770']
     ]);
+    expect(adapters.every(adapter => adapter.backendSelectionState === 'verified')).toBe(true);
+    expect(backendProbe).toHaveBeenCalledWith('nvidia');
+    expect(backendProbe).toHaveBeenCalledWith('intel');
+  });
+
+  test('marks identical physical GPUs ambiguous when no vendor identity mapping is available', async () => {
+    const analyzer = new SystemAnalyzer({
+      osImpl: {
+        platform: () => 'win32'
+      },
+      execFileImpl: (file, args, callback) => callback(null, JSON.stringify({
+        adapters: [
+          {
+            Name: 'NVIDIA GeForce RTX 4090',
+            AdapterRAM: 4293918720,
+            PNPDeviceID: 'PCI\\VEN_10DE&DEV_2684\\A'
+          },
+          {
+            Name: 'NVIDIA GeForce RTX 4090',
+            AdapterRAM: 4293918720,
+            PNPDeviceID: 'PCI\\VEN_10DE&DEV_2684\\B'
+          }
+        ],
+        registry: []
+      })),
+      backendProbe: async () => []
+    });
+
+    const adapters = await analyzer.detectWindowsAdapters();
+
+    expect(adapters).toHaveLength(2);
+    expect(adapters.map(adapter => adapter.backendIndex)).toEqual([null, null]);
+    expect(adapters.map(adapter => adapter.backendSelectionState)).toEqual([
+      'ambiguous',
+      'ambiguous'
+    ]);
+    expect(new Set(adapters.map(adapter => adapter.pnpDeviceId)).size).toBe(2);
   });
 
   test('discovers every physical Windows adapter from structured CIM JSON and restores 64-bit registry VRAM', async () => {
@@ -49,13 +124,15 @@ describe('SystemAnalyzer', () => {
               Name: 'Intel(R) Arc(TM) A770 Graphics',
               AdapterRAM: 4293918720,
               DriverVersion: '32.0.101.5972',
-              PNPDeviceID: 'PCI\\VEN_8086&DEV_56A0\\1'
+              PNPDeviceID: 'PCI\\VEN_8086&DEV_56A0\\1',
+              PciBusId: '0000:03:00.0'
             },
             {
               Name: 'NVIDIA GeForce RTX 4090',
               AdapterRAM: 4293918720,
               DriverVersion: '32.0.15.6094',
-              PNPDeviceID: 'PCI\\VEN_10DE&DEV_2684\\2'
+              PNPDeviceID: 'PCI\\VEN_10DE&DEV_2684\\2',
+              PciBusId: '0000:65:00.0'
             },
             {
               Name: 'Microsoft Remote Display Adapter',
@@ -78,6 +155,19 @@ describe('SystemAnalyzer', () => {
           ]
         }), '');
       },
+      backendProbe: async vendor => vendor === 'intel'
+        ? [{
+          index: 0,
+          name: 'Intel(R) Arc(TM) A770 Graphics',
+          uuid: 'intel-a770',
+          pciBusId: '0000:03:00.0'
+        }]
+        : [{
+          index: 0,
+          name: 'NVIDIA GeForce RTX 4090',
+          uuid: 'GPU-4090',
+          pciBusId: '0000:65:00.0'
+        }],
       fetchImpl: jest.fn()
     });
 
@@ -95,7 +185,11 @@ describe('SystemAnalyzer', () => {
         vendor: 'intel',
         architecture: 'arc_a770',
         vramMb: 16384,
-        memoryState: 'known'
+        memoryState: 'known',
+        pnpDeviceId: 'PCI\\VEN_8086&DEV_56A0\\1',
+        pciBusId: '0000:03:00.0',
+        backendIndex: 0,
+        backendSelectionState: 'verified'
       }),
       expect.objectContaining({
         id: expect.stringMatching(/^gpu-[a-f0-9]{16}$/),
@@ -103,7 +197,11 @@ describe('SystemAnalyzer', () => {
         vendor: 'nvidia',
         architecture: 'rtx_20_plus',
         vramMb: 24576,
-        memoryState: 'known'
+        memoryState: 'known',
+        pnpDeviceId: 'PCI\\VEN_10DE&DEV_2684\\2',
+        pciBusId: '0000:65:00.0',
+        backendIndex: 0,
+        backendSelectionState: 'verified'
       })
     ]);
     expect(new Set(result.adapters.map(adapter => adapter.id)).size).toBe(2);

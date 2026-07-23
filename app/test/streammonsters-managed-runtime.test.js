@@ -53,6 +53,16 @@ describe('Stream Monsters managed local runtime', () => {
       ['intel-arc', 1680009614, 'https://github.com/Comfy-Org/ComfyUI/releases/download/v0.28.0/ComfyUI_windows_portable_intel.7z'],
       ['amd-experimental', 1762815561, 'https://github.com/Comfy-Org/ComfyUI/releases/download/v0.28.0/ComfyUI_windows_portable_amd.7z']
     ]);
+    expect(catalog.profiles.map(profile => [
+      profile.id,
+      profile.installedSizeBytes,
+      profile.installedSizeBasis
+    ])).toEqual([
+      ['nvidia-standard', 8368625292, 'conservative_4x_archive'],
+      ['nvidia-cuda126-legacy', 8136643852, 'conservative_4x_archive'],
+      ['intel-arc', 6720038456, 'conservative_4x_archive'],
+      ['amd-experimental', 7051262244, 'conservative_4x_archive']
+    ]);
     expect(catalog.model).toEqual(expect.objectContaining({
       fileName: 'sdxl_lightning_4step.safetensors',
       sizeBytes: 6938040682,
@@ -79,6 +89,17 @@ describe('Stream Monsters managed local runtime', () => {
     expect(installer.recommend({
       name: 'NVIDIA GeForce RTX 4080', vendor: 'nvidia', architecture: 'rtx_20_plus', vramMb: 0, memoryState: 'unknown'
     })).toEqual(expect.objectContaining({ supported: false, reasonCode: 'unknown_memory' }));
+    expect(installer.recommend({
+      name: 'NVIDIA GeForce RTX 4090',
+      vendor: 'nvidia',
+      architecture: 'rtx_20_plus',
+      vramMb: 24576,
+      memoryState: 'known',
+      backendSelectionState: 'ambiguous'
+    })).toEqual(expect.objectContaining({
+      supported: false,
+      reasonCode: 'backend_mapping_ambiguous'
+    }));
   });
 
   test('recommends a fast four-step Windows NVIDIA profile from detected VRAM', () => {

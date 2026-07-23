@@ -342,9 +342,13 @@ class StreamMonstersRoutes {
       return res.json(job);
     }));
     this.api.registerRoute('DELETE', '/api/streammonsters/local-runtime/install/:jobId', this.protectAdmin(async (req, res) => {
-      const job = await this.managedRuntime.cancelInstallJob(req.params?.jobId);
-      if (!job) return res.status(404).json({ success: false, error: 'STREAM_MONSTERS_RUNTIME_JOB_NOT_FOUND' });
-      return res.json(job);
+      try {
+        const job = await this.managedRuntime.cancelInstallJob(req.params?.jobId);
+        if (!job) return res.status(404).json({ success: false, error: 'STREAM_MONSTERS_RUNTIME_JOB_NOT_FOUND' });
+        return res.json(job);
+      } catch (error) {
+        return res.status(409).json({ success: false, error: error.message });
+      }
     }));
     this.api.registerRoute('POST', '/api/streammonsters/local-runtime/start', this.protectAdmin(async (req, res) => {
       try {
@@ -471,6 +475,7 @@ class StreamMonstersRoutes {
       || null;
     return {
       runtimeDownloadBytes: Math.max(0, Number(selectedProfile?.downloadSizeBytes) || 0),
+      runtimeInstalledBytes: Math.max(0, Number(selectedProfile?.installedSizeBytes) || 0),
       modelDownloadBytes: Math.max(0, Number(catalog.model?.sizeBytes) || 0),
       targetDir: (() => {
         try { return this.managedRuntime.resolveRuntimeRootV2?.() || null; } catch (_) { return null; }

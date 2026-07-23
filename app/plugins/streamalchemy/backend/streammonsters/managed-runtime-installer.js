@@ -25,6 +25,7 @@ const RELEASE_TRUSTED_MANIFEST = null;
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 const MAX_ARCHIVE_ENTRIES = 100000;
 const MAX_ARCHIVE_UNCOMPRESSED_BYTES = 64 * 1024 * 1024 * 1024;
+const DEFAULT_DISK_SAFETY_MARGIN_BYTES = 2 * 1024 ** 3;
 const COMFYUI_VERSION = '0.28.0';
 const RELEASE_BASE_URL = 'https://github.com/Comfy-Org/ComfyUI/releases/download/v0.28.0';
 const AMD_SUPPORTED_HARDWARE = Object.freeze([
@@ -51,6 +52,8 @@ const MANAGED_RUNTIME_CATALOG = Object.freeze({
       archiveUrl: `${RELEASE_BASE_URL}/ComfyUI_windows_portable_nvidia.7z`,
       sha256: '797183fe6165b96a1800793cdc2110e4c62c45e8775647a7166fe8c6290e2fd9',
       downloadSizeBytes: 2092156323,
+      installedSizeBytes: 8368625292,
+      installedSizeBasis: 'conservative_4x_archive',
       archiveType: '7z',
       runtimeRootRelativePath: 'ComfyUI_windows_portable',
       pythonRelativePath: 'python_embeded/python.exe',
@@ -64,6 +67,8 @@ const MANAGED_RUNTIME_CATALOG = Object.freeze({
       archiveUrl: `${RELEASE_BASE_URL}/ComfyUI_windows_portable_nvidia_cu126.7z`,
       sha256: '6af1b60b6a1fad780b07871e4ff356ac04a1807755ee13c6050e3ec3a4157cc0',
       downloadSizeBytes: 2034160963,
+      installedSizeBytes: 8136643852,
+      installedSizeBasis: 'conservative_4x_archive',
       archiveType: '7z',
       runtimeRootRelativePath: 'ComfyUI_windows_portable',
       pythonRelativePath: 'python_embeded/python.exe',
@@ -77,6 +82,8 @@ const MANAGED_RUNTIME_CATALOG = Object.freeze({
       archiveUrl: `${RELEASE_BASE_URL}/ComfyUI_windows_portable_intel.7z`,
       sha256: 'cc662b0d71c06419e92511ba40d7bef681c2b3cdb1be9f725f8da197bb68ce94',
       downloadSizeBytes: 1680009614,
+      installedSizeBytes: 6720038456,
+      installedSizeBasis: 'conservative_4x_archive',
       archiveType: '7z',
       runtimeRootRelativePath: 'ComfyUI_windows_portable',
       pythonRelativePath: 'python_embeded/python.exe',
@@ -90,6 +97,8 @@ const MANAGED_RUNTIME_CATALOG = Object.freeze({
       archiveUrl: `${RELEASE_BASE_URL}/ComfyUI_windows_portable_amd.7z`,
       sha256: '824f70126a8733ce25cc5713d20dba91ddd9f27efd6ac04a6d4a57dbf09ecd3c',
       downloadSizeBytes: 1762815561,
+      installedSizeBytes: 7051262244,
+      installedSizeBasis: 'conservative_4x_archive',
       archiveType: '7z',
       runtimeRootRelativePath: 'ComfyUI_windows_portable',
       pythonRelativePath: 'python_embeded/python.exe',
@@ -129,6 +138,7 @@ class ManagedRuntimeInstaller {
     findFreePort = null,
     smokeTest = null,
     diskFreeBytes = null,
+    diskSafetyMarginBytes = DEFAULT_DISK_SAFETY_MARGIN_BYTES,
     setTimeoutImpl = setTimeout,
     clearTimeoutImpl = clearTimeout,
     idleTimeoutMs = 5 * 60 * 1000,
@@ -158,6 +168,12 @@ class ManagedRuntimeInstaller {
     this.findFreePort = findFreePort || (() => this.findAvailablePort());
     this.smokeTest = smokeTest || (input => this.runGenerationSmokeTest(input));
     this.diskFreeBytes = diskFreeBytes || (target => this.readDiskFreeBytes(target));
+    this.diskSafetyMarginBytes = Math.max(
+      0,
+      Number.isFinite(Number(diskSafetyMarginBytes))
+        ? Number(diskSafetyMarginBytes)
+        : DEFAULT_DISK_SAFETY_MARGIN_BYTES
+    );
     this.setTimeout = setTimeoutImpl;
     this.clearTimeout = clearTimeoutImpl;
     this.idleTimeoutMs = Math.max(1, Number(idleTimeoutMs) || 5 * 60 * 1000);
@@ -191,6 +207,22 @@ class ManagedRuntimeInstaller {
         mode: 'expert_or_remote',
         reasonCode: 'windows_required',
         reason: 'Managed local generation is Windows-first; use external ComfyUI or a remote provider.'
+      };
+    }
+    if (gpu.backendSelectionState === 'ambiguous') {
+      return {
+        supported: false,
+        mode: 'expert_or_remote',
+        reasonCode: 'backend_mapping_ambiguous',
+        reason: 'Multiple indistinguishable adapters cannot be mapped to a backend device safely.'
+      };
+    }
+    if (['unavailable', 'unsupported'].includes(gpu.backendSelectionState)) {
+      return {
+        supported: false,
+        mode: 'expert_or_remote',
+        reasonCode: 'backend_mapping_unavailable',
+        reason: 'The selected adapter could not be mapped to a backend device safely.'
       };
     }
     if (!vramMb || gpu.memoryState === 'unknown') {
@@ -270,6 +302,9 @@ class ManagedRuntimeInstaller {
       label: profile.label,
       backend: profile.backend,
       version: profile.version,
+      downloadSizeBytes: profile.downloadSizeBytes,
+      installedSizeBytes: profile.installedSizeBytes,
+      installedSizeBasis: profile.installedSizeBasis,
       experimental: Boolean(profile.experimental)
     }));
   }
@@ -365,10 +400,13 @@ class ManagedRuntimeInstaller {
         profile: this.getProfile(job.profileId),
         model: { ...MANAGED_RUNTIME_CATALOG.model },
         signal: job.controller.signal,
-        onProgress: progress => this.updateJob(job, { progress: { ...job.progress, ...progress } })
+        onProgress: progress => this.updateJob(job, { progress: { ...job.progress, ...progress } }),
+        beginCommit: () => this.beginJobCommit(job)
       });
-      this.throwIfAborted(job.controller.signal);
-      this.throwIfDisposed();
+      if (job.state !== 'committing') {
+        this.throwIfAborted(job.controller.signal);
+        this.throwIfDisposed();
+      }
       this.installation = result;
       this.updateJob(job, {
         state: 'ready',
@@ -403,6 +441,9 @@ class ManagedRuntimeInstaller {
     const job = this.jobs.get(String(jobId || ''));
     if (!job) return null;
     if (this.isTerminalJobState(job.state)) return this.publicJob(job);
+    if (job.state === 'committing') {
+      throw new Error('STREAM_MONSTERS_RUNTIME_INSTALL_COMMITTING');
+    }
     job.controller.abort();
     await job.start();
     return this.publicJob(job);
@@ -410,6 +451,15 @@ class ManagedRuntimeInstaller {
 
   isTerminalJobState(state) {
     return ['ready', 'failed', 'cancelled'].includes(state);
+  }
+
+  beginJobCommit(job) {
+    if (job.state === 'committing') return;
+    this.throwIfUnavailable(job.controller.signal);
+    this.updateJob(job, {
+      state: 'committing',
+      progress: { ...job.progress, phase: 'committing' }
+    });
   }
 
   publicJob(job) {
@@ -424,13 +474,20 @@ class ManagedRuntimeInstaller {
       error: job.error,
       result: job.result ? {
         state: job.result.state,
-        verified: Boolean(job.result.verified),
-        runtimeRoot: job.result.runtimeRoot
+        verified: Boolean(job.result.verified)
       } : null
     };
   }
 
-  async performCatalogInstall({ jobId, adapter, profile, model, signal, onProgress }) {
+  async performCatalogInstall({
+    jobId,
+    adapter,
+    profile,
+    model,
+    signal,
+    onProgress,
+    beginCommit = () => {}
+  }) {
     this.throwIfUnavailable(signal);
     const requiredBytes = await this.calculateCatalogRequiredBytes(profile, model, signal);
     await this.preflightDisk(requiredBytes);
@@ -456,7 +513,8 @@ class ManagedRuntimeInstaller {
         archivePath,
         runtimeRoot: contentRoot,
         archiveType: profile.archiveType,
-        signal
+        signal,
+        maxUncompressedBytes: profile.installedSizeBytes
       });
       this.throwIfUnavailable(signal);
       await this.extract({
@@ -512,6 +570,9 @@ class ManagedRuntimeInstaller {
         installsRoot,
         `${profile.id}-${profile.version}-${profile.sha256.slice(0, 16)}`
       );
+      this.throwIfUnavailable(signal);
+      beginCommit();
+      let finalRuntimeRoot = null;
       if (fs.existsSync(installDir)) {
         const previousRoot = previousInstallation?.verified
           ? fs.realpathSync(previousInstallation.runtimeRoot)
@@ -520,21 +581,17 @@ class ManagedRuntimeInstaller {
         if (previousRoot !== existingRoot) {
           await this.cleanupUnreferencedInstall(installDir, installsRoot);
         } else {
-          await this.cleanupValidatedStaging(stagingRoot);
-          this.installation = {
-            ...previousInstallation,
-            smokeTest
-          };
-          this.current = null;
-          await this.writeActiveInstallation(this.installation);
-          return this.installation;
+          finalRuntimeRoot = existingRoot;
         }
       }
-      await fs.promises.rename(extractedRuntimeRoot, installDir);
-      this.installation = {
+      if (!finalRuntimeRoot) {
+        await fs.promises.rename(extractedRuntimeRoot, installDir);
+        finalRuntimeRoot = fs.realpathSync(installDir);
+      }
+      const committedInstallation = {
         state: 'ready',
         verified: true,
-        runtimeRoot: fs.realpathSync(installDir),
+        runtimeRoot: finalRuntimeRoot,
         profileId: profile.id,
         adapterId: adapter.id,
         model: {
@@ -547,10 +604,11 @@ class ManagedRuntimeInstaller {
         previousRuntimeRoot: previousInstallation?.verified ? previousInstallation.runtimeRoot : null,
         smokeTest
       };
+      await this.writeActiveInstallation(committedInstallation);
+      this.installation = committedInstallation;
       this.current = null;
-      await this.writeActiveInstallation(this.installation);
-      await this.cleanupValidatedStaging(stagingRoot);
-      return this.installation;
+      await this.cleanupValidatedStaging(stagingRoot).catch(() => {});
+      return committedInstallation;
     } catch (error) {
       await this.stopManagedRuntime({ force: true }).catch(() => {});
       this.installation = previousInstallation;
@@ -584,6 +642,11 @@ class ManagedRuntimeInstaller {
   }
 
   async calculateCatalogRequiredBytes(profile, model, signal = null) {
+    const plan = await this.calculateCatalogDiskPlan(profile, model, signal);
+    return plan.requiredBytes;
+  }
+
+  async calculateCatalogDiskPlan(profile, model, signal = null) {
     const runtimeRemaining = await this.getArtifactRemainingBytes({
       sha256: profile.sha256,
       fileName: `runtime.${profile.archiveType}`,
@@ -596,7 +659,24 @@ class ManagedRuntimeInstaller {
       expectedSize: Number(model.sizeBytes) || 0,
       signal
     });
-    return runtimeRemaining + modelRemaining + (2 * 1024 ** 3);
+    const runtimeInstalledBytes = Math.max(
+      0,
+      Number(profile.installedSizeBytes) ||
+        ((Number(profile.downloadSizeBytes) || 0) * 4)
+    );
+    const modelCopyBytes = Math.max(0, Number(model.sizeBytes) || 0);
+    return {
+      runtimeDownloadRemainingBytes: runtimeRemaining,
+      modelDownloadRemainingBytes: modelRemaining,
+      runtimeInstalledBytes,
+      modelCopyBytes,
+      safetyMarginBytes: this.diskSafetyMarginBytes,
+      requiredBytes: runtimeRemaining +
+        modelRemaining +
+        runtimeInstalledBytes +
+        modelCopyBytes +
+        this.diskSafetyMarginBytes
+    };
   }
 
   async getArtifactRemainingBytes({ sha256, fileName, expectedSize, signal = null }) {
@@ -671,16 +751,16 @@ class ManagedRuntimeInstaller {
 
   async getDiskStatus(profileId = null) {
     const profile = this.getProfile(profileId) || MANAGED_RUNTIME_CATALOG.profiles[0];
-    const requiredBytes = await this.calculateCatalogRequiredBytes(
+    const plan = await this.calculateCatalogDiskPlan(
       profile,
       MANAGED_RUNTIME_CATALOG.model
     );
     const freeBytes = await this.diskFreeBytes(this.dataDir);
     return {
       targetRoot: this.resolveRuntimeRootV2(),
-      requiredBytes,
+      ...plan,
       freeBytes: Number.isFinite(freeBytes) ? freeBytes : null,
-      sufficient: Number.isFinite(freeBytes) && freeBytes >= requiredBytes
+      sufficient: Number.isFinite(freeBytes) && freeBytes >= plan.requiredBytes
     };
   }
 
@@ -756,6 +836,9 @@ class ManagedRuntimeInstaller {
     const mainPath = this.resolveExistingInside(runtimeRoot, profile.mainRelativePath);
     const port = await this.findFreePort();
     this.throwIfUnavailable(signal);
+    const backendIndex = this.resolveBackendIndex(selectedAdapter);
+    const deviceSelectorArgs = this.buildDeviceSelectorArgs(profile, selectedAdapter);
+    const runtimeDeviceIndex = this.resolveRuntimeDeviceIndex(profile);
     const args = [
       '-s',
       mainPath,
@@ -764,7 +847,7 @@ class ManagedRuntimeInstaller {
       '--port',
       String(port),
       '--disable-auto-launch',
-      ...this.buildDeviceSelectorArgs(profile, selectedAdapter)
+      ...deviceSelectorArgs
     ];
     const child = this.spawn(pythonPath, args, {
       cwd: runtimeRoot,
@@ -780,7 +863,10 @@ class ManagedRuntimeInstaller {
       port,
       baseUrl: `http://127.0.0.1:${port}`,
       adapterId: selectedAdapter.id,
-      profileId: profile.id
+      profileId: profile.id,
+      backendIndex,
+      runtimeDeviceIndex,
+      deviceSelectorArgs: [...deviceSelectorArgs]
     };
     child.once?.('exit', () => {
       if (this.managedChild === child) {
@@ -820,9 +906,7 @@ class ManagedRuntimeInstaller {
   }
 
   buildDeviceSelectorArgs(profile, adapter) {
-    const index = Number.isInteger(Number(adapter?.backendIndex)) && Number(adapter.backendIndex) >= 0
-      ? Number(adapter.backendIndex)
-      : 0;
+    const index = this.resolveBackendIndex(adapter);
     if (profile?.backend === 'xpu') {
       return ['--oneapi-device-selector', `level_zero:${index}`];
     }
@@ -830,6 +914,24 @@ class ManagedRuntimeInstaller {
       return ['--cuda-device', String(index)];
     }
     return [];
+  }
+
+  resolveBackendIndex(adapter) {
+    if (adapter?.backendSelectionState === 'ambiguous') {
+      throw new Error('STREAM_MONSTERS_RUNTIME_ADAPTER_MAPPING_AMBIGUOUS');
+    }
+    const index = Number(adapter?.backendIndex);
+    if (!Number.isInteger(index) || index < 0) {
+      throw new Error('STREAM_MONSTERS_RUNTIME_ADAPTER_MAPPING_UNAVAILABLE');
+    }
+    return index;
+  }
+
+  resolveRuntimeDeviceIndex(profile) {
+    // ComfyUI applies these selectors before importing torch, so the selected
+    // physical backend device is exposed to /system_stats as runtime index 0.
+    if (['cuda', 'rocm', 'xpu'].includes(profile?.backend)) return 0;
+    return null;
   }
 
   async verifyManagedRuntime({
@@ -868,14 +970,16 @@ class ManagedRuntimeInstaller {
     this.throwIfUnavailable(signal);
     const devices = Array.isArray(stats?.devices) ? stats.devices : [];
     const backend = String(profile.backend || '').toLowerCase();
-    const adapterName = String(adapter.name || adapter.id || '').trim().toLowerCase();
+    this.resolveBackendIndex(adapter);
+    const runtimeDeviceIndex = this.resolveRuntimeDeviceIndex(profile);
     const backendMatches = devices.filter(device => this.deviceMatchesBackend(
       device,
       backend,
       stats
     ));
     const selectedMatches = backendMatches.filter(device => (
-      JSON.stringify(device).toLowerCase().includes(adapterName)
+      this.readBackendDeviceIndex(device) === runtimeDeviceIndex &&
+      this.deviceMatchesAdapterIdentity(device, adapter)
     ));
     if (selectedMatches.length === 0 && backendMatches.length > 0) {
       throw new Error('STREAM_MONSTERS_RUNTIME_DEVICE_MISMATCH');
@@ -922,6 +1026,49 @@ class ManagedRuntimeInstaller {
       return deviceText.includes('xpu') || deviceText.includes('oneapi');
     }
     return deviceText.includes(backend);
+  }
+
+  readBackendDeviceIndex(device = {}) {
+    const explicit = device.index ?? device.device_index ?? device.deviceIndex;
+    if (Number.isInteger(Number(explicit)) && Number(explicit) >= 0) {
+      return Number(explicit);
+    }
+    const match = String(device.name || '').match(/\b(?:cuda|xpu|oneapi|level_zero):(\d+)\b/i);
+    return match ? Number(match[1]) : null;
+  }
+
+  deviceMatchesAdapterIdentity(device = {}, adapter = {}) {
+    const deviceText = JSON.stringify(device).toLowerCase();
+    const expectedUuid = String(adapter.backendIdentity?.uuid || '').trim().toLowerCase();
+    const actualUuid = String(
+      device.uuid ||
+      device.device_uuid ||
+      device.deviceUuid ||
+      device.gpu_uuid ||
+      ''
+    ).trim().toLowerCase();
+    if (expectedUuid && actualUuid && expectedUuid !== actualUuid) return false;
+    const expectedPci = this.normalizePciBusId(
+      adapter.backendIdentity?.pciBusId || adapter.pciBusId
+    );
+    const actualPci = this.normalizePciBusId(
+      device.pci_bus_id ||
+      device.pciBusId ||
+      device.pci_bdf_address ||
+      device.pciBdfAddress
+    );
+    if (expectedPci && actualPci && expectedPci !== actualPci) return false;
+    if ((expectedUuid && actualUuid) || (expectedPci && actualPci)) return true;
+    const adapterName = String(adapter.name || adapter.id || '').trim().toLowerCase();
+    return Boolean(adapterName) && deviceText.includes(adapterName);
+  }
+
+  normalizePciBusId(value) {
+    const text = String(value || '').trim().toLowerCase();
+    const match = text.match(/(?:^|[^0-9a-f])(?:([0-9a-f]{4,8}):)?([0-9a-f]{2}):([0-9a-f]{2})[.:]([0-7])(?:$|[^0-9a-f])/i);
+    if (!match) return null;
+    const domain = String(match[1] || '0000').slice(-4).padStart(4, '0');
+    return `${domain}:${match[2]}:${match[3]}.${match[4]}`;
   }
 
   async runGenerationSmokeTest({ baseUrl, width, height, model, signal = null }) {
@@ -1085,7 +1232,7 @@ class ManagedRuntimeInstaller {
       const pending = [];
       for (const job of this.jobs.values()) {
         if (this.isTerminalJobState(job.state)) continue;
-        job.controller.abort();
+        if (job.state !== 'committing') job.controller.abort();
         pending.push(job.start());
       }
       await Promise.allSettled(pending);
@@ -1429,10 +1576,21 @@ class ManagedRuntimeInstaller {
     return hash.digest('hex').toLowerCase() === sha256.toLowerCase();
   }
 
-  async inspect({ archivePath, runtimeRoot, archiveType = 'zip', signal = null }) {
+  async inspect({
+    archivePath,
+    runtimeRoot,
+    archiveType = 'zip',
+    signal = null,
+    maxUncompressedBytes = this.maxArchiveUncompressedBytes
+  }) {
     this.throwIfUnavailable(signal);
     if (archiveType === '7z') {
-      return this.inspectSevenZip({ archivePath, runtimeRoot, signal });
+      return this.inspectSevenZip({
+        archivePath,
+        runtimeRoot,
+        signal,
+        maxUncompressedBytes
+      });
     }
     const canonicalRoot = path.resolve(runtimeRoot);
     let totalBytes = 0;
@@ -1472,7 +1630,7 @@ class ManagedRuntimeInstaller {
             this.throwIfUnavailable(signal);
             seenEntries += 1;
             totalBytes += Number(entry.uncompressedSize) || 0;
-            if (seenEntries > this.maxArchiveEntries || totalBytes > this.maxArchiveUncompressedBytes) {
+            if (seenEntries > this.maxArchiveEntries || totalBytes > maxUncompressedBytes) {
               throw new Error('archive limits exceeded');
             }
             const normalizedName = String(entry.fileName || '').replace(/\/$/, '').toLowerCase();
@@ -1489,7 +1647,12 @@ class ManagedRuntimeInstaller {
     });
   }
 
-  async inspectSevenZip({ archivePath, runtimeRoot, signal = null }) {
+  async inspectSevenZip({
+    archivePath,
+    runtimeRoot,
+    signal = null,
+    maxUncompressedBytes = this.maxArchiveUncompressedBytes
+  }) {
     this.throwIfUnavailable(signal);
     const { stdout } = await this.runTar(['-tvf', archivePath], { signal });
     const lines = String(stdout || '').split(/\r?\n/).filter(Boolean);
@@ -1506,7 +1669,7 @@ class ManagedRuntimeInstaller {
       const match = line.match(/^\S+\s+\S+\s+\S+\s+(\d+)\s+\S+\s+\S+\s+\S+\s+(.+)$/);
       if (!match) throw new Error('STREAM_MONSTERS_RUNTIME_ARCHIVE_ENTRY_UNSAFE');
       totalBytes += Number(match[1]) || 0;
-      if (totalBytes > this.maxArchiveUncompressedBytes) {
+      if (totalBytes > maxUncompressedBytes) {
         throw new Error('STREAM_MONSTERS_RUNTIME_ARCHIVE_ENTRY_UNSAFE');
       }
       const entryName = match[2];
