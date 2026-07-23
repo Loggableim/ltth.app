@@ -251,7 +251,7 @@ Status: `DONE_WITH_CONCERNS`
 
 Reviewed implementation range: `8e53137f..45030b1f`
 
-Second-fix base/head: base `45030b1f`; fix range `45030b1f..HEAD`. This report is included in the separate fix commit, whose exact full hash is returned in the task handoff.
+Second-fix base/head: base `45030b1f`; head `0752bf86`; fix range `45030b1f..0752bf86`.
 
 ### Remaining Important findings fixed
 
@@ -323,4 +323,53 @@ All commands used bundled Node `C:\Users\logga\Documents\ltth_codex\ltth_desktop
 
 1. The official multi-gigabyte archives and model were not downloaded. Exact download sizes/hashes remain pinned, and production download/extraction/promotion is covered with small real ZIP/file fixtures. Extracted runtime sizes use an enforced conservative 4x archive bound rather than an unverified exact claim.
 2. The local host has only one Intel GPU and no `xpu-smi`; reordered NVIDIA/Intel backend inventories, ROCm backend stats, selector remapping, and identical-GPU ambiguity are covered deterministically through injected fixtures rather than multiple real vendor machines.
+3. The pre-existing UI-i18n audit failure remains outside the Task 1 boundary.
+
+## Final local-generation concurrency fix: 2026-07-23
+
+Status: `DONE_WITH_CONCERNS`
+
+Reviewed implementation through: `0752bf86`
+
+Final-fix base/head: base `0752bf86`; fix range `0752bf86..HEAD`. This report is included in the separate fix commit, whose exact full hash is returned in the task handoff.
+
+### Finding fixed
+
+The configured and recommended local-generation concurrency remained clamped to one, but this was only declarative. Independent callers such as the local-generation test route and Stream Monsters generation pools share one `LocalComfyProvider` and could previously overlap their ComfyUI prompt/history work.
+
+`LocalComfyProvider.generate()` now enters a provider-wide FIFO slot before resolving the current runtime URL, acquiring the runtime activity lease, checking readiness, submitting a prompt, and waiting for its output. The slot is always released in `finally`, so a failed or rejected generation cannot poison the queue and the next caller proceeds in arrival order. The server-side concurrency clamp remains one.
+
+### Final-fix changed files
+
+- `app/plugins/streamalchemy/backend/providers/local-comfy-provider.js`
+- `app/test/streamalchemy-relaunch-generation.test.js`
+- `.superpowers/sdd/task-1-report.md`
+
+### Final-fix TDD ledger
+
+1. RED
+   - Command: bundled Jest for `streamalchemy-relaunch-generation`, filtered to `serializes concurrent local generations`.
+   - Result: 1 failed / 12 skipped. Before the first request was released, all three prompts (`first`, `second`, `third`) had already reached ComfyUI.
+2. GREEN
+   - Same filtered command passed after adding the FIFO slot.
+   - The test proves maximum active local generation is one, FIFO order is preserved, a rejected first generation releases the slot, both waiting generations complete, and the active counter returns to zero.
+3. Focused provider suite
+   - Full `streamalchemy-relaunch-generation` suite passed: 13/13 tests.
+
+### Final-fix verification
+
+- Covering provider/generation/runtime/routes/plugin gate:
+  - Bundled Jest for `streamalchemy-relaunch-generation`, `streamalchemy-model-catalog`, `streammonsters-generation-pool`, `streammonsters-art-pool-kenney`, `streammonsters-managed-runtime`, `streammonsters-runtime-jobs-lifecycle`, `streammonsters-routes-security`, and `streammonsters-plugin-integration`, `--runInBand`.
+  - Result: 8/8 suites passed; 77/77 tests passed.
+- Syntax:
+  - Bundled Node `--check` passed for the local ComfyUI provider.
+- ESLint:
+  - `npm run lint -- --quiet` exited 0 with no lint errors.
+- Diff:
+  - `git diff --check` passed.
+
+### Remaining concerns after the final fix
+
+1. The official multi-gigabyte archives and model were not downloaded.
+2. Multi-vendor and multi-GPU behavior remains fixture-covered because the local host has only one Intel GPU and no `xpu-smi`.
 3. The pre-existing UI-i18n audit failure remains outside the Task 1 boundary.

@@ -15,6 +15,16 @@ function createStore() {
   return { store, logger };
 }
 
+function createDeferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
 describe('PlaceholderProvider', () => {
   test('returns deterministic data URL and metadata', async () => {
     const provider = new PlaceholderProvider();
@@ -282,6 +292,91 @@ describe('LocalComfyProvider', () => {
     ]));
     expect(releases).toHaveLength(2);
     expect(releases.every(release => release.mock.calls.length === 1)).toBe(true);
+  });
+
+  test('serializes concurrent local generations in FIFO order and releases the queue after rejection', async () => {
+    const firstHistoryStarted = createDeferred();
+    const releaseFirstHistory = createDeferred();
+    const promptOrder = [];
+    let activeGenerations = 0;
+    let maximumActiveGenerations = 0;
+    const fetchImpl = jest.fn(async (url, options = {}) => {
+      const value = String(url);
+      if (value.endsWith('/system_stats')) return { ok: true };
+      if (value.endsWith('/prompt')) {
+        const payload = JSON.parse(options.body);
+        const prompt = payload.prompt['3'].inputs.text;
+        promptOrder.push(prompt);
+        activeGenerations += 1;
+        maximumActiveGenerations = Math.max(maximumActiveGenerations, activeGenerations);
+        return {
+          ok: true,
+          json: async () => ({ prompt_id: `prompt-${prompt}` })
+        };
+      }
+
+      const match = value.match(/\/history\/prompt-(.+)$/);
+      if (!match) throw new Error(`Unexpected URL: ${value}`);
+      const prompt = match[1];
+      if (prompt === 'first') {
+        firstHistoryStarted.resolve();
+        await releaseFirstHistory.promise;
+        activeGenerations -= 1;
+        throw new Error('first generation failed');
+      }
+
+      activeGenerations -= 1;
+      return {
+        ok: true,
+        json: async () => ({
+          [`prompt-${prompt}`]: {
+            outputs: {
+              '9': {
+                images: [{
+                  filename: `${prompt}.png`,
+                  subfolder: 'streammonsters',
+                  type: 'output'
+                }]
+              }
+            }
+          }
+        })
+      };
+    });
+    const provider = new LocalComfyProvider({
+      config: {
+        enabled: true,
+        comfyUrl: 'http://127.0.0.1:8188',
+        comfyRootDir: 'C:\\ComfyUI',
+        selectedPresetId: 'sdxl_lightning_4step'
+      },
+      catalog: new ModelCatalog(),
+      fsImpl: {
+        existsSync: jest.fn(target => target.endsWith('sdxl_lightning_4step.safetensors'))
+      },
+      fetchImpl
+    });
+
+    const pending = [
+      provider.generate({ prompt: 'first', negativePrompt: 'none' }),
+      provider.generate({ prompt: 'second', negativePrompt: 'none' }),
+      provider.generate({ prompt: 'third', negativePrompt: 'none' })
+    ];
+
+    await firstHistoryStarted.promise;
+    await new Promise(resolve => setImmediate(resolve));
+    const promptOrderBeforeRelease = [...promptOrder];
+    releaseFirstHistory.resolve();
+    const results = await Promise.allSettled(pending);
+
+    expect(promptOrderBeforeRelease).toEqual(['first']);
+    expect(promptOrder).toEqual(['first', 'second', 'third']);
+    expect(maximumActiveGenerations).toBe(1);
+    expect(activeGenerations).toBe(0);
+    expect(results.map(result => result.status)).toEqual(['rejected', 'fulfilled', 'fulfilled']);
+    expect(results[0].reason.message).toBe('first generation failed');
+    expect(results[1].value.imageUrl).toContain('filename=second.png');
+    expect(results[2].value.imageUrl).toContain('filename=third.png');
   });
 });
 

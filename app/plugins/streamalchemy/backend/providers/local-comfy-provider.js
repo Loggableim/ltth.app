@@ -28,6 +28,7 @@ class LocalComfyProvider {
     this.catalog = catalog;
     this.fs = fsImpl;
     this.delay = delayImpl;
+    this.generationQueue = Promise.resolve();
   }
 
   resolveConfig() {
@@ -119,6 +120,10 @@ class LocalComfyProvider {
   }
 
   async generate(input = {}) {
+    return this.withGenerationSlot(() => this.performGeneration(input));
+  }
+
+  async performGeneration(input = {}) {
     const config = this.resolveConfig();
     const baseUrl = this.resolveBaseUrl(config);
     return this.withRuntimeActivity(async () => {
@@ -173,6 +178,20 @@ class LocalComfyProvider {
         model: preset.id
       };
     });
+  }
+
+  async withGenerationSlot(operation) {
+    const previous = this.generationQueue;
+    let release;
+    this.generationQueue = new Promise(resolve => {
+      release = resolve;
+    });
+    await previous;
+    try {
+      return await operation();
+    } finally {
+      release();
+    }
   }
 
   async waitForHistory(comfyUrl, promptId) {
