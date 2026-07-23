@@ -121,11 +121,21 @@ class StreamMonstersRoutes {
         rounds
       };
       const emit = (event, payload) => this.api.emit(event, { ...payload, demo: true });
+      emit('streammonsters:stream_started', {
+        event: { element: 'Volt' },
+        element: 'Volt'
+      });
       emit('streammonsters:egg_spawned', { userId: 'demo-viewer', egg, gift, hint: '!eggs' });
       emit('streammonsters:hype_changed', {
         userId: 'demo-viewer',
         hype: { points: 0, charged_eggs: 1 }
       });
+      emit('streammonsters:hype_milestone', {
+        userId: 'demo-viewer',
+        points: 100,
+        hype: { points: 100, charged_eggs: 1 }
+      });
+      emit('streammonsters:starter_claimed', { userId: 'demo-viewer', egg, monster });
       emit('streammonsters:egg_ready', {
         userId: 'demo-viewer',
         egg: { ...egg, state: 'ready' },
@@ -147,10 +157,31 @@ class StreamMonstersRoutes {
         challenger: monster,
         defender: opponent,
         seed: battle.seed,
+        stanceA: 'speed',
+        stanceB: 'power',
         elementAdvantageMonsterId: monster.monster_id
+      });
+      emit('streammonsters:stance_revealed', {
+        userId: 'demo-viewer',
+        monster,
+        stance: 'speed',
+        battleId: battle.battleId
+      });
+      emit('streammonsters:stance_revealed', {
+        userId: 'demo-rival',
+        monster: opponent,
+        stance: 'power',
+        battleId: battle.battleId
       });
       rounds.forEach(round => emit('streammonsters:battle_round', { battleId: battle.battleId, round }));
       emit('streammonsters:battle_completed', { battle, winner: monster });
+      emit('streammonsters:win_streak', { userId: 'demo-viewer', monster, count: 3, battleId: battle.battleId });
+      emit('streammonsters:upset', { userId: 'demo-viewer', winner: monster, loser: opponent, battleId: battle.battleId });
+      emit('streammonsters:rivalry', { left: monster, right: opponent, count: 2, battleId: battle.battleId });
+      emit('streammonsters:quest_completed', {
+        userId: 'demo-viewer',
+        quest: { quest_key: 'weekly:battle', title: 'Arena Challenger' }
+      });
       emit('streammonsters:season_rank_changed', {
         userId: 'demo-viewer',
         before: 'Bronze',
@@ -165,7 +196,7 @@ class StreamMonstersRoutes {
       });
       emit('streammonsters:chat_result', {
         userId: 'demo-viewer',
-        result: { status: 'rank', message: 'Silver · 100 season points.' }
+        result: { status: 'rank', messageKey: 'chatResultRank', message: 'Silver · 100 season points.' }
       });
       res.json({ success: true, demo: true });
     }));
@@ -314,37 +345,35 @@ class StreamMonstersRoutes {
         this.managedRuntime.installation?.adapterId &&
         this.managedRuntime.installation.adapterId === selectedAdapter?.id
       );
-      const activeProfileId = installationMatchesAdapter
-        ? this.managedRuntime.installation.profileId
-        : recommendation.profileId;
+      const activeProfileId = recommendation.supported ? recommendation.profileId : null;
       const activeProfile = profiles.find(profile => profile.id === activeProfileId) || null;
       const smokeTest = this.managedRuntime.lastSmokeTest || this.managedRuntime.installation?.smokeTest || null;
       let disk = analysis.disk || null;
       try {
-        if (this.managedRuntime.getDiskStatus) {
+        if (recommendation.supported && this.managedRuntime.getDiskStatus) {
           disk = await this.managedRuntime.getDiskStatus(recommendation.profileId);
         }
       } catch (_) {}
       res.json({
         success: true,
-        runtime: this.managedRuntime.current ||
-          (this.managedRuntime.installation ? processState : null) ||
-          { state: recommendation.supported ? 'ready_to_install' : 'expert_or_remote' },
+        runtime: installationMatchesAdapter
+          ? (this.managedRuntime.current || processState || { state: 'stopped' })
+          : { state: recommendation.supported ? 'ready_to_install' : 'expert_or_remote' },
         recommendation,
         manifestAvailable: Boolean(manifest || profiles.length),
-        installDetails: profiles.length
+        installDetails: profiles.length && recommendation.supported
           ? this.publicCatalogInstallDetails(
             catalog,
-            this.managedRuntime.installation?.profileId || recommendation.profileId
+            recommendation.profileId
           )
-          : this.publicInstallDetails(manifest),
+          : (profiles.length ? null : this.publicInstallDetails(manifest)),
         adapters,
         selectedAdapterId: selectedAdapter?.id || null,
         profiles,
         installation: this.publicInstallation(this.managedRuntime.installation),
         model: this.publicModel({
           ...catalog.model,
-          ...(this.managedRuntime.installation?.model || {})
+          verified: Boolean(this.managedRuntime.installation?.model?.verified)
         }),
         smokeTest,
         runtimeDetails: {
@@ -356,6 +385,7 @@ class StreamMonstersRoutes {
           vramMb: Math.max(0, Number(selectedAdapter?.vramMb) || 0),
           verifiedOnDevice: Boolean(
             installationMatchesAdapter &&
+            this.managedRuntime.installation?.profileId === activeProfileId &&
             this.managedRuntime.installation?.verified &&
             smokeTest?.state === 'passed' &&
             smokeTest?.width === 256 &&

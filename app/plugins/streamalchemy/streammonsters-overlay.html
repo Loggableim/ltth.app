@@ -219,8 +219,8 @@
     const previous = chatCooldowns.get(userId) || 0;
     if (Date.now() - previous < 4500) return;
     chatCooldowns.set(userId,Date.now());
-    const message = data?.result?.message;
-    if (!message) return;
+    const messageKey = window.StreamMonstersOverlayRuntime.chatMessageKey(data?.result);
+    const message = text(messageKey, 'Command result is unavailable.');
     node('chat-card').textContent = `${userId} · ${message}`;
     node('chat-card').classList.add('visible');
     await wait(2800);
@@ -454,8 +454,11 @@
   const drainQueue = async () => {
     if (queueRunning || !snapshotReady) return;
     queueRunning = true;
-    for (let next = eventQueue.shift(Date.now()); next; next = eventQueue.shift(Date.now())) {
+    while (snapshotReady) {
+      const next = eventQueue.shift(Date.now());
+      if (!next) break;
       try { await present(next); } catch (_) {}
+      if (!snapshotReady) break;
     }
     queueRunning = false;
   };
@@ -465,6 +468,19 @@
   };
   const socket = typeof io === 'function' ? io() : null;
   if (!socket) return;
+  const reconnectController = window.StreamMonstersOverlayRuntime.createReconnectController({
+    queue: eventQueue,
+    loadSnapshot: async signal => {
+      const response = await fetch('/api/streammonsters/state', { signal });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    },
+    fallbackSnapshot: () => ({
+      hype: { points: 0 },
+      gcce: { commandPrefix: '!' },
+      config: { hatchDurationMs: 0 }
+    })
+  });
   const eventTypes = {
     'streammonsters:stream_started':'stream_started',
     'streammonsters:starter_claimed':'starter_revealed',
@@ -493,21 +509,9 @@
   Object.entries(eventTypes).forEach(([eventName, type]) => socket.on(eventName, data => enqueue(type, data)));
   socket.on('connect', async () => {
     snapshotReady = false;
-    try {
-      const response = await fetch('/api/streammonsters/state');
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const payload = await response.json();
-      eventQueue.prependSnapshot(payload, Date.now());
-    } catch (error) {
-      eventQueue.prependSnapshot({
-        hype: { points: 0 },
-        gcce: { commandPrefix: '!' },
-        config: { hatchDurationMs: 0 },
-        recovery: error.message
-      }, Date.now());
-    }
-    snapshotReady = true;
-    drainQueue();
+    const completed = await reconnectController.reconnect();
+    snapshotReady = reconnectController.isSnapshotReady();
+    if (completed) drainQueue();
   });
 })();
 </script>

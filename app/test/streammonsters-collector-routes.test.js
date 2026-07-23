@@ -255,14 +255,22 @@ describe('Stream Monsters 1.2 public API', () => {
     expect(result.body).toEqual({ success: true, demo: true });
     expect(emitted.map(entry => entry.event)).toEqual(expect.arrayContaining([
       'streammonsters:egg_spawned',
+      'streammonsters:stream_started',
       'streammonsters:hype_changed',
+      'streammonsters:hype_milestone',
+      'streammonsters:starter_claimed',
       'streammonsters:egg_ready',
       'streammonsters:hatch_started',
       'streammonsters:egg_hatched',
       'streammonsters:monster_visual_evolved',
       'streammonsters:battle_started',
+      'streammonsters:stance_revealed',
       'streammonsters:battle_round',
       'streammonsters:battle_completed',
+      'streammonsters:win_streak',
+      'streammonsters:upset',
+      'streammonsters:rivalry',
+      'streammonsters:quest_completed',
       'streammonsters:achievement_unlocked',
       'streammonsters:season_rank_changed',
       'streammonsters:chat_result'

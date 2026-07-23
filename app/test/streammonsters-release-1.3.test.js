@@ -5,6 +5,7 @@ const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
 const repoRoot = path.resolve(process.cwd(), '..');
 const overlayRuntimePath = path.join(pluginDir, 'streammonsters-overlay-runtime.js');
 const overlayRuntime = fs.existsSync(overlayRuntimePath) ? require(overlayRuntimePath) : {};
+const CommandIngress = require('../plugins/streamalchemy/backend/streammonsters/command-ingress');
 
 describe('Stream Monsters 1.3 creator and overlay release', () => {
   test('ships a reconnect-safe priority queue that protects battle and hatch events', () => {
@@ -44,6 +45,65 @@ describe('Stream Monsters 1.3 creator and overlay release', () => {
       'hatch_started',
       'egg_hatched'
     ]);
+  });
+
+  test('preserves durable arena cards through long battle sequences', () => {
+    const queue = overlayRuntime.createPriorityQueue({ maxSize: 4, staleAfterMs: 1000 });
+    for (const type of [
+      'stance_revealed',
+      'rank_card',
+      'quest_completed',
+      'win_streak',
+      'upset',
+      'rivalry'
+    ]) {
+      queue.enqueue(type, { type }, 100);
+    }
+    for (const type of ['battle_started', 'battle_round', 'battle_round', 'battle_round', 'battle_completed']) {
+      queue.enqueue(type, { type }, 200);
+    }
+
+    const drained = [];
+    for (let next = queue.shift(20_000); next; next = queue.shift(20_000)) drained.push(next.type);
+    expect(drained).toEqual([
+      'stance_revealed',
+      'battle_started',
+      'battle_round',
+      'battle_round',
+      'battle_round',
+      'battle_completed',
+      'rank_card',
+      'quest_completed',
+      'win_streak',
+      'upset',
+      'rivalry'
+    ]);
+  });
+
+  test('atomically replaces stale reconnect work and ignores an older slow snapshot', async () => {
+    expect(typeof overlayRuntime.createReconnectController).toBe('function');
+    const queue = overlayRuntime.createPriorityQueue();
+    const pending = [];
+    const reconnect = overlayRuntime.createReconnectController({
+      queue,
+      loadSnapshot: (signal, generation) => new Promise(resolve => {
+        pending.push({ signal, generation, resolve });
+      })
+    });
+    queue.enqueue('rank_card', { rank: 'stale' });
+
+    const slow = reconnect.reconnect();
+    expect(queue.size()).toBe(0);
+    queue.enqueue('quest_completed', { quest: 'current' });
+    const fast = reconnect.reconnect();
+    expect(pending[0].signal.aborted).toBe(true);
+    pending[0].resolve({ marker: 'old' });
+    pending[1].resolve({ marker: 'new' });
+
+    await expect(slow).resolves.toBe(false);
+    await expect(fast).resolves.toBe(true);
+    expect(reconnect.isSnapshotReady()).toBe(true);
+    expect(queue.snapshot().map(entry => entry.data.marker || entry.data.quest)).toEqual(['new']);
   });
 
   test('exposes the guided runtime wizard, dynamic rules and creator audio controls', () => {
@@ -97,7 +157,9 @@ describe('Stream Monsters 1.3 creator and overlay release', () => {
     expect(source).toContain('/plugins/streamalchemy/streammonsters-overlay-runtime.js');
     expect(source).toContain("socket.on('connect'");
     expect(source).toContain('/api/streammonsters/state');
-    expect(source).toContain('prependSnapshot');
+    expect(source).toContain('createReconnectController');
+    expect(source).toContain('isSnapshotReady()');
+    expect(source).toContain('if (!snapshotReady) break');
     expect(source).toContain('@media (orientation: portrait)');
     for (const type of [
       'starter_revealed',
@@ -197,7 +259,57 @@ describe('Stream Monsters 1.3 creator and overlay release', () => {
       expect(text[key]).toEqual(expect.any(String));
       expect(text[key].trim()).not.toBe('');
     }
+    for (const key of [
+      'unsupported',
+      'runtimeReasonSupportedProfile',
+      'runtimeReasonUnsupportedAdapter',
+      'runtimeStateRunning',
+      'runtimeStateCancelled',
+      'runtimePhaseRuntimeDownload',
+      'runtimePhaseModelDownload',
+      'providerStateReady',
+      'providerStateMissingApiKey',
+      'runtimeErrorUnknown',
+      'chatResultRank',
+      'chatResultExecutionFailed'
+    ]) {
+      expect(text[key]).toEqual(expect.any(String));
+      expect(text[key].trim()).not.toBe('');
+    }
     expect(JSON.stringify(text)).not.toMatch(/Stream[\s-]?Alchemy/i);
+  });
+
+  test('uses localized runtime and chat codes without rendering backend prose', () => {
+    const uiSource = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
+    const overlaySource = fs.readFileSync(path.join(pluginDir, 'streammonsters-overlay.html'), 'utf8');
+
+    expect(uiSource).toContain('RUNTIME_REASON_KEYS');
+    expect(uiSource).toContain('RUNTIME_PHASE_KEYS');
+    expect(uiSource).toContain('PROVIDER_STATE_KEYS');
+    expect(uiSource).not.toContain('recommendation.reason ||');
+    expect(uiSource).not.toContain('state:job.state');
+    expect(overlaySource).toContain('chatMessageKey');
+    expect(overlaySource).not.toContain('data?.result?.message');
+  });
+
+  test('publishes an owned chat message key and ignores untrusted prose keys', () => {
+    const emit = jest.fn();
+    const ingress = new CommandIngress({ execute: jest.fn(), emit });
+
+    ingress.emitResult('rank', { userId: 'viewer-a' }, {
+      success: true,
+      status: 'rank',
+      message: 'English backend prose'
+    }, 'gcce');
+
+    expect(emit).toHaveBeenCalledWith('streammonsters:chat_result', expect.objectContaining({
+      result: expect.objectContaining({
+        messageKey: 'chatResultRank',
+        message: 'English backend prose'
+      })
+    }));
+    expect(overlayRuntime.chatMessageKey({ messageKey: 'chatResultRank' })).toBe('chatResultRank');
+    expect(overlayRuntime.chatMessageKey({ messageKey: 'attackerKey' })).toBe('chatResultUnknown');
   });
 
   test('keeps user data routes stable and releases 1.3.0 without replacing 1.2.0', () => {

@@ -299,6 +299,10 @@ describe('Stream Monsters privileged routes', () => {
         profileId: 'amd-experimental',
         experimental: true
       }),
+      installDetails: expect.objectContaining({
+        runtimeDownloadBytes: 1762815561,
+        runtimeInstalledBytes: 7051262244
+      }),
       runtimeDetails: expect.objectContaining({
         profileId: 'amd-experimental',
         backend: 'rocm',
@@ -311,10 +315,41 @@ describe('Stream Monsters privileged routes', () => {
     }));
   });
 
+  test('does not reuse installed profile values for an unsupported selected adapter', async () => {
+    const { findRoute, managedRuntime } = createSubject();
+    managedRuntime.recommend.mockReturnValue({
+      supported: false,
+      profileId: null,
+      reasonCode: 'unsupported_adapter',
+      mode: 'expert_or_remote'
+    });
+    const response = createResponse();
+
+    await findRoute('GET', '/api/streammonsters/local-runtime/status').handler({
+      query: { adapterId: 'gpu-2' }
+    }, response);
+
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
+      selectedAdapterId: 'gpu-2',
+      recommendation: expect.objectContaining({ supported: false, reasonCode: 'unsupported_adapter' }),
+      installDetails: null,
+      runtimeDetails: expect.objectContaining({
+        profileId: null,
+        backend: null,
+        adapterId: 'gpu-2',
+        verifiedOnDevice: false
+      })
+    }));
+  });
+
   test('defaults runtime status to the installed adapter and reports only matching smoke verification', async () => {
     const { findRoute, managedRuntime } = createSubject();
     managedRuntime.installation.adapterId = 'gpu-2';
     managedRuntime.installation.profileId = 'amd-experimental';
+    managedRuntime.recommend.mockImplementation(adapter => ({
+      supported: true,
+      profileId: adapter.id === 'gpu-2' ? 'amd-experimental' : 'nvidia-standard'
+    }));
     const response = createResponse();
 
     await findRoute('GET', '/api/streammonsters/local-runtime/status').handler({

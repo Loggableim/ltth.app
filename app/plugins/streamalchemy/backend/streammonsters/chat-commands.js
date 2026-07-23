@@ -181,6 +181,18 @@ class ChatCommands {
       opponent.stance,
       stance
     );
+    this.emit('streammonsters:stance_revealed', {
+      userId: opponent.userId,
+      monster: opponent.monster,
+      stance: battle.stanceA,
+      battleId: battle.battleId
+    });
+    this.emit('streammonsters:stance_revealed', {
+      userId,
+      monster: selected,
+      stance: battle.stanceB,
+      battleId: battle.battleId
+    });
     this.emit('streammonsters:battle_started', {
       challenger: opponent.monster,
       defender: selected,
@@ -205,6 +217,38 @@ class ChatCommands {
       this.emit('streammonsters:battle_round', { battleId: battle.battleId, round });
     });
     this.emit('streammonsters:battle_completed', { battle, winner });
+    if (winner) {
+      const loser = winner.monster_id === opponent.monster.monster_id ? selected : opponent.monster;
+      const streak = this.store.getViewerBattleStats?.(winner.user_id)?.win_streak || 0;
+      if (streak >= 2) {
+        this.emit('streammonsters:win_streak', {
+          userId: winner.user_id,
+          monster: winner,
+          count: streak,
+          battleId: battle.battleId
+        });
+      }
+      if ((Number(winner.level) || 1) < (Number(loser.level) || 1)) {
+        this.emit('streammonsters:upset', {
+          userId: winner.user_id,
+          winner,
+          loser,
+          battleId: battle.battleId
+        });
+      }
+      const rivalryCount = this.store.countBattlesBetween?.(
+        opponent.monster.monster_id,
+        selected.monster_id
+      ) || 0;
+      if (rivalryCount >= 2) {
+        this.emit('streammonsters:rivalry', {
+          left: opponent.monster,
+          right: selected,
+          count: rivalryCount,
+          battleId: battle.battleId
+        });
+      }
+    }
     return { success: true, status: 'started', message: `${opponent.monster.name} battles ${selected.name}!`, battle };
   }
 

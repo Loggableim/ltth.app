@@ -162,4 +162,40 @@ describe('Stream Monsters 1.2 public commands', () => {
     expect(completed.payload.battle.rounds[0].elementAdvantageMonsterId)
       .toBe(completed.payload.battle.elementAdvantageMonsterId);
   });
+
+  test('produces stance, streak, upset and rivalry cards from persisted battle results', () => {
+    const { commands, emitted, spawnReady, store } = createCommands();
+    const monsterA = spawnReady('viewer-a', 1, 1);
+    const monsterB = spawnReady('viewer-b', 2, 1);
+
+    commands.execute({ userId: 'viewer-a' }, 'battle', ['power']);
+    const first = commands.execute({ userId: 'viewer-b' }, 'battle', ['guard']);
+    const winnerId = first.battle.winnerId;
+    const loserId = winnerId === monsterA.monster_id ? monsterB.monster_id : monsterA.monster_id;
+    store.db.prepare('UPDATE streammonsters_monsters SET level = 1 WHERE monster_id = ?').run(winnerId);
+    store.db.prepare('UPDATE streammonsters_monsters SET level = 9 WHERE monster_id = ?').run(loserId);
+
+    commands.execute({ userId: 'viewer-a' }, 'battle', ['speed']);
+    store.db.prepare('UPDATE streammonsters_battle_queue SET queued_at_ms = queued_at_ms - 30000')
+      .run();
+    commands.execute({ userId: 'viewer-b' }, 'battle', ['guard']);
+
+    expect(emitted.filter(entry => entry.event === 'streammonsters:stance_revealed')).toHaveLength(4);
+    expect(emitted).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        event: 'streammonsters:win_streak',
+        payload: expect.objectContaining({ count: 2 })
+      }),
+      expect.objectContaining({
+        event: 'streammonsters:upset',
+        payload: expect.objectContaining({
+          winner: expect.objectContaining({ monster_id: winnerId })
+        })
+      }),
+      expect.objectContaining({
+        event: 'streammonsters:rivalry',
+        payload: expect.objectContaining({ count: 2 })
+      })
+    ]));
+  });
 });

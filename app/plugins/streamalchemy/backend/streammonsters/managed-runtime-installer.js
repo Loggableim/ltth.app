@@ -284,6 +284,7 @@ class ManagedRuntimeInstaller {
       concurrency: 1,
       experimental: Boolean(profile?.experimental),
       smokeTestRequired: true,
+      reasonCode: 'supported_profile',
       reason: `${Math.round(vramMb / 1024)} GB GPU memory supports the pinned ${profile?.label || profileId} profile.`
     };
   }
@@ -472,6 +473,9 @@ class ManagedRuntimeInstaller {
       createdAt: job.createdAt,
       updatedAt: job.updatedAt,
       error: job.error,
+      errorCode: job.error
+        ? (/^[A-Z][A-Z0-9_]+$/.test(job.error) ? job.error : 'STREAM_MONSTERS_RUNTIME_UNKNOWN')
+        : null,
       result: job.result ? {
         state: job.result.state,
         verified: Boolean(job.result.verified)

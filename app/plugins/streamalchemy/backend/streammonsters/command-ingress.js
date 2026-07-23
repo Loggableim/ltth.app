@@ -1,3 +1,28 @@
+const CHAT_RESULT_MESSAGE_KEYS = Object.freeze({
+  help: 'chatResultHelp',
+  invalid_arguments: 'chatResultInvalidArguments',
+  global_cooldown: 'chatResultGlobalCooldown',
+  cooldown: 'chatResultCooldown',
+  starter_already_claimed: 'chatResultStarterAlreadyClaimed',
+  starter_claimed: 'chatResultStarterClaimed',
+  eggs: 'chatResultEggs',
+  hatched: 'chatResultHatched',
+  egg_not_ready: 'chatResultEggNotReady',
+  inventory: 'chatResultInventory',
+  invalid_slot: 'chatResultInvalidSlot',
+  selected: 'chatResultSelected',
+  monster: 'chatResultMonster',
+  invalid_stance: 'chatResultInvalidStance',
+  no_monster: 'chatResultNoMonster',
+  queued: 'chatResultQueued',
+  started: 'chatResultStarted',
+  left: 'chatResultLeft',
+  rank: 'chatResultRank',
+  quests: 'chatResultQuests',
+  command_disabled: 'chatResultCommandDisabled',
+  execution_failed: 'chatResultExecutionFailed'
+});
+
 class StreamMonstersCommandIngress {
   constructor({
     execute,
@@ -99,12 +124,16 @@ class StreamMonstersCommandIngress {
   }
 
   emitResult(commandName, context, result, transport) {
+    const publicResult = {
+      ...result,
+      messageKey: CHAT_RESULT_MESSAGE_KEYS[result?.status] || 'chatResultUnknown'
+    };
     this.emit('streammonsters:chat_result', {
       userId: context.userId || context.uniqueId || context.username,
       username: context.username || context.nickname || context.userId || context.uniqueId,
       command: commandName,
       transport,
-      result
+      result: publicResult
     });
   }
 

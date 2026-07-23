@@ -727,6 +727,17 @@ class StreamMonstersDatabase {
     return this.db.prepare('SELECT * FROM streammonsters_battles WHERE battle_id = ?').get(battleId) || null;
   }
 
+  countBattlesBetween(monsterAId, monsterBId) {
+    if (!monsterAId || !monsterBId) return 0;
+    const row = this.db.prepare(`
+      SELECT COUNT(*) AS count
+      FROM streammonsters_battles
+      WHERE (monster_a_id = ? AND monster_b_id = ?)
+         OR (monster_a_id = ? AND monster_b_id = ?)
+    `).get(monsterAId, monsterBId, monsterBId, monsterAId);
+    return Math.max(0, Number(row?.count) || 0);
+  }
+
   hasRecentOpponentPair(userAId, userBId, sinceMs) {
     if (!userAId || !userBId) return false;
     return Boolean(this.db.prepare(`

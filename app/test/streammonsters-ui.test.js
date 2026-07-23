@@ -6,9 +6,13 @@ function response(payload) {
   return { ok: true, json: async () => payload };
 }
 
-function bootUi() {
+function bootUi({ runtimeFetch } = {}) {
   const html = fs.readFileSync(path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-ui.html'), 'utf8');
   const fetchMock = jest.fn(async (url, options = {}) => {
+    if (runtimeFetch) {
+      const runtimeResponse = await runtimeFetch(url, options);
+      if (runtimeResponse) return runtimeResponse;
+    }
     if (url === '/api/status') return response({ username: 'creator_live' });
     if (url === '/api/streammonsters/state') return response({
       success: true,
@@ -78,6 +82,117 @@ async function waitFor(assertion) {
 }
 
 describe('Stream Monsters creator wizard', () => {
+  test('starts a fresh install job with the remembered request after cancel and resume', async () => {
+    let installCount = 0;
+    const runtimeStatus = {
+      success: true,
+      adapters: [{ id: 'gpu-1', name: 'NVIDIA RTX 4060', vramMb: 8192 }],
+      selectedAdapterId: 'gpu-1',
+      recommendation: {
+        supported: true,
+        profileId: 'nvidia-standard',
+        reasonCode: 'supported_profile',
+        width: 768,
+        height: 768,
+        steps: 4
+      },
+      profiles: [{ id: 'nvidia-standard', label: 'NVIDIA RTX 20+', backend: 'cuda' }],
+      runtimeDetails: { profileId: 'nvidia-standard', backend: 'cuda', adapterId: 'gpu-1' },
+      installDetails: {},
+      model: { license: 'OpenRAIL++' }
+    };
+    const { dom, fetchMock } = bootUi({
+      runtimeFetch: async (url, options) => {
+        if (url.startsWith('/api/streammonsters/local-runtime/status')) return response(runtimeStatus);
+        if (url === '/api/streammonsters/local-runtime/install' && options.method === 'POST') {
+          installCount += 1;
+          return response({ jobId: `runtime-job-${installCount}`, state: 'queued' });
+        }
+        if (url === '/api/streammonsters/local-runtime/install/runtime-job-1' && !options.method) {
+          return response({ jobId: 'runtime-job-1', state: 'running', progress: { phase: 'runtime_download', completedBytes: 4, totalBytes: 10 } });
+        }
+        if (url === '/api/streammonsters/local-runtime/install/runtime-job-1' && options.method === 'DELETE') {
+          return response({ jobId: 'runtime-job-1', state: 'cancelled', progress: { phase: 'cancelled' } });
+        }
+        if (url === '/api/streammonsters/local-runtime/install/runtime-job-2' && !options.method) {
+          return response({ jobId: 'runtime-job-2', state: 'running', progress: { phase: 'model_download', completedBytes: 5, totalBytes: 10 } });
+        }
+        return null;
+      }
+    });
+    await waitFor(() => expect(dom.window.document.getElementById('runtimeAdapters').value).toBe('gpu-1'));
+    dom.window.document.getElementById('runtimeLicenseAccepted').checked = true;
+
+    dom.window.document.getElementById('runtimeInstall').click();
+    await waitFor(() => expect(fetchMock.mock.calls.filter(([url, options]) => (
+      url === '/api/streammonsters/local-runtime/install' && options.method === 'POST'
+    ))).toHaveLength(1));
+    dom.window.document.getElementById('runtimeCancel').click();
+    await waitFor(() => expect(dom.window.localStorage.getItem('streammonsters-runtime-job-id')).toBeNull());
+    dom.window.document.getElementById('runtimeResume').click();
+
+    await waitFor(() => expect(fetchMock.mock.calls.filter(([url, options]) => (
+      url === '/api/streammonsters/local-runtime/install' && options.method === 'POST'
+    ))).toHaveLength(2));
+    const resumedPost = fetchMock.mock.calls.filter(([url, options]) => (
+      url === '/api/streammonsters/local-runtime/install' && options.method === 'POST'
+    ))[1];
+    expect(JSON.parse(resumedPost[1].body)).toEqual({
+      adapterId: 'gpu-1',
+      profileId: 'nvidia-standard',
+      acceptModelLicense: true
+    });
+    await waitFor(() => expect(dom.window.document.getElementById('runtimeProgress').value).toBe(50));
+    dom.window.close();
+  });
+
+  test('labels an unsupported adapter with its localized recovery path, never the official path', async () => {
+    const base = {
+      success: true,
+      adapters: [
+        { id: 'gpu-1', name: 'NVIDIA RTX 4060', vramMb: 8192 },
+        { id: 'gpu-2', name: 'Legacy AMD', vramMb: 4096 }
+      ],
+      profiles: [{ id: 'nvidia-standard', label: 'NVIDIA RTX 20+', backend: 'cuda' }],
+      model: { license: 'OpenRAIL++' },
+      installDetails: {}
+    };
+    const { dom } = bootUi({
+      runtimeFetch: async url => {
+        if (url === '/api/streammonsters/local-runtime/status?adapterId=gpu-2') {
+          return response({
+            ...base,
+            selectedAdapterId: 'gpu-2',
+            recommendation: { supported: false, reasonCode: 'unsupported_adapter' },
+            runtimeDetails: { profileId: null, backend: null, adapterId: 'gpu-2' },
+            installDetails: null
+          });
+        }
+        if (url === '/api/streammonsters/local-runtime/status') {
+          return response({
+            ...base,
+            selectedAdapterId: 'gpu-1',
+            recommendation: { supported: true, profileId: 'nvidia-standard', reasonCode: 'supported_profile' },
+            runtimeDetails: { profileId: 'nvidia-standard', backend: 'cuda', adapterId: 'gpu-1' }
+          });
+        }
+        return null;
+      }
+    });
+    await waitFor(() => expect(dom.window.document.getElementById('runtimeAdapters').value).toBe('gpu-1'));
+    const adapters = dom.window.document.getElementById('runtimeAdapters');
+    adapters.value = 'gpu-2';
+    adapters.dispatchEvent(new dom.window.Event('change'));
+
+    await waitFor(() => expect(dom.window.document.getElementById('runtimeRecommendation').textContent)
+      .toContain('Nicht unterstützt'));
+    expect(dom.window.document.getElementById('runtimeRecommendation').textContent)
+      .not.toContain('Offizieller Runtime-Pfad');
+    expect(dom.window.document.getElementById('runtimeRecovery').textContent)
+      .toContain('Remote-Provider');
+    dom.window.close();
+  });
+
   test('uses the connected creator as a default that can be saved as an override', async () => {
     const { dom, fetchMock } = bootUi();
     await waitFor(() => expect(dom.window.document.getElementById('creatorName').value).toBe('creator_live'));

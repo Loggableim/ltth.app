@@ -337,6 +337,67 @@
     const translated = window.i18n?.t?.(fullKey, params);
     return translated && translated !== fullKey ? translated : interpolate(fallback, params);
   };
+  const RUNTIME_REASON_KEYS = Object.freeze({
+    supported_profile: 'runtimeReasonSupportedProfile',
+    windows_required: 'runtimeReasonWindowsRequired',
+    backend_mapping_ambiguous: 'runtimeReasonBackendMappingAmbiguous',
+    backend_mapping_unavailable: 'runtimeReasonBackendMappingUnavailable',
+    unknown_memory: 'runtimeReasonUnknownMemory',
+    windows_11_required: 'runtimeReasonWindows11Required',
+    unsupported_amd_hardware: 'runtimeReasonUnsupportedAmdHardware',
+    insufficient_memory: 'runtimeReasonInsufficientMemory',
+    unsupported_adapter: 'runtimeReasonUnsupportedAdapter'
+  });
+  const RUNTIME_STATE_KEYS = Object.freeze({
+    queued: 'runtimeStateQueued',
+    running: 'runtimeStateRunning',
+    committing: 'runtimeStateCommitting',
+    ready: 'runtimeStateReady',
+    passed: 'runtimeStateReady',
+    failed: 'runtimeStateFailed',
+    cancelled: 'runtimeStateCancelled'
+  });
+  const RUNTIME_PHASE_KEYS = Object.freeze({
+    queued: 'runtimePhaseQueued',
+    preflight: 'runtimePhasePreflight',
+    runtime_download: 'runtimePhaseRuntimeDownload',
+    archive_inspection: 'runtimePhaseArchiveInspection',
+    model_download: 'runtimePhaseModelDownload',
+    runtime_verification: 'runtimePhaseRuntimeVerification',
+    committing: 'runtimePhaseCommitting',
+    complete: 'runtimePhaseComplete',
+    cancelled: 'runtimePhaseCancelled',
+    failed: 'runtimePhaseFailed'
+  });
+  const PROVIDER_STATE_KEYS = Object.freeze({
+    ready: 'providerStateReady',
+    missing_api_key: 'providerStateMissingApiKey',
+    not_configured: 'providerStateNotConfigured',
+    unavailable: 'providerStateUnavailable',
+    disabled: 'providerStateDisabled',
+    error: 'providerStateError'
+  });
+  const RUNTIME_ERROR_KEYS = Object.freeze({
+    STREAM_MONSTERS_RUNTIME_INSTALL_IN_PROGRESS: 'runtimeErrorInstallInProgress',
+    STREAM_MONSTERS_RUNTIME_ADAPTER_NOT_FOUND: 'runtimeErrorAdapterNotFound',
+    STREAM_MONSTERS_RUNTIME_UNSUPPORTED_GPU: 'runtimeErrorUnsupportedGpu',
+    STREAM_MONSTERS_RUNTIME_PROFILE_INVALID: 'runtimeErrorProfileInvalid',
+    STREAM_MONSTERS_MODEL_LICENSE_REQUIRED: 'runtimeErrorLicenseRequired',
+    STREAM_MONSTERS_RUNTIME_INSTALL_COMMITTING: 'runtimeErrorCommitting',
+    STREAM_MONSTERS_RUNTIME_DISK_SPACE_INSUFFICIENT: 'runtimeErrorDiskSpace',
+    STREAM_MONSTERS_RUNTIME_CHECKSUM_MISMATCH: 'runtimeErrorChecksum',
+    STREAM_MONSTERS_RUNTIME_SMOKE_TEST_FAILED: 'runtimeErrorSmokeTest'
+  });
+  const codeText = (mapping, code, fallbackKey, fallback) => text(
+    mapping[String(code || '')] || fallbackKey,
+    fallback
+  );
+  const runtimeErrorText = error => codeText(
+    RUNTIME_ERROR_KEYS,
+    error?.message || error,
+    'runtimeErrorUnknown',
+    'The runtime action failed. Please try again.'
+  );
   const rankLabel = rank => ({ Silver:text('rankSilver', 'Silber'), Crystal:text('rankCrystal', 'Kristall') }[rank] || rank || text('rankBronze', 'Bronze'));
   const formatBytes = bytes => {
     const value = Math.max(0, Number(bytes) || 0);
@@ -355,6 +416,7 @@
   let searchTimer = null;
   let runtimePayload = null;
   let runtimeJobTimer = null;
+  const runtimeInstallRequestKey = 'streammonsters-runtime-install-request';
   const notice = (message, type = '') => {
     const root = byId('notice');
     if (!root) return;
@@ -578,10 +640,10 @@
       button.disabled = false;
     }
   };
-  const runtimeRecoveryText = ({ recommendation = {}, disk = {}, installation = {}, job = null } = {}) => {
+  const runtimeRecoveryText = ({ recommendation = {}, disk = {}, runtimeDetails = {}, job = null } = {}) => {
     if (job?.state === 'failed') {
       return text('runtimeRetry', 'Fehler {error}. Installation erneut starten; eine zuvor verifizierte Runtime bleibt erhalten.', {
-        error:job.error || text('unknownError', 'unbekannt')
+        error:runtimeErrorText(job.errorCode || job.error)
       });
     }
     if (job?.state === 'cancelled') return text('runtimeResume', 'Abgebrochen. Installation erneut starten; verifizierte Teildownloads werden fortgesetzt.');
@@ -591,9 +653,14 @@
       });
     }
     if (!recommendation.supported) {
-      return recommendation.reason || text('runtimeRemote', 'Offiziellen Grafiktreiber aktualisieren oder externes ComfyUI beziehungsweise einen Remote-Provider verwenden.');
+      return codeText(
+        RUNTIME_REASON_KEYS,
+        recommendation.reasonCode,
+        'runtimeReasonUnsupportedAdapter',
+        'Grafiktreiber aktualisieren oder externes ComfyUI beziehungsweise einen Remote-Provider verwenden.'
+      );
     }
-    if (installation?.verified) return text('runtimePreparePool', 'Backend verifizieren und danach den Pre-Stream-Pool vorbereiten.');
+    if (runtimeDetails.verifiedOnDevice) return text('runtimePreparePool', 'Backend verifizieren und danach den Pre-Stream-Pool vorbereiten.');
     return text('runtimeInstallNext', 'Lizenz akzeptieren und die empfohlene Runtime installieren.');
   };
   const renderRuntimeStatus = payload => {
@@ -621,10 +688,20 @@
     }
 
     const profile = (payload.profiles || []).find(item => item.id === details.profileId || item.id === recommendation.profileId);
-    const statusLabel = recommendation.experimental
-      ? text('experimental', 'Experimenteller Runtime-Pfad')
-      : text('officialBeta', 'Offizieller Runtime-Pfad · Beta');
-    byId('runtimeRecommendation').textContent = `${statusLabel} · ${recommendation.reason || recommendation.mode || '—'}`;
+    const statusLabel = !recommendation.supported
+      ? text('unsupported', 'Nicht unterstützt')
+      : (recommendation.experimental
+        ? text('experimental', 'Experimenteller Runtime-Pfad')
+        : text('officialBeta', 'Offizieller Runtime-Pfad · Beta'));
+    const reasonLabel = codeText(
+      RUNTIME_REASON_KEYS,
+      recommendation.reasonCode,
+      recommendation.supported ? 'runtimeReasonSupportedProfile' : 'runtimeReasonUnsupportedAdapter',
+      recommendation.supported
+        ? 'Das empfohlene Profil passt zur aktuellen Auswahl.'
+        : 'Diese Auswahl benötigt einen externen oder Remote-Provider.'
+    );
+    byId('runtimeRecommendation').textContent = `${statusLabel} · ${reasonLabel}`;
     byId('runtimeProfile').textContent = profile?.label || details.profileId || recommendation.profileId || '—';
     byId('runtimeBackend').textContent = details.backend || profile?.backend || '—';
     byId('runtimeDevice').textContent = details.device || adapters.find(item => item.id === selectedAdapterId)?.name || '—';
@@ -648,7 +725,9 @@
     byId('runtimeSmokeTest').textContent = details.verifiedOnDevice
       ? text('smokeVerified', 'Auf diesem Gerät verifiziert · {width}×{height}', { width:smoke?.width || 256, height:smoke?.height || 256 })
       : (smoke?.state
-        ? text('smokeRecorded', 'Letztes Ergebnis: {state} · keine Hardware-Behauptung für die aktuelle Auswahl', { state:smoke.state })
+        ? text('smokeRecorded', 'Letztes Ergebnis: {state} · keine Hardware-Behauptung für die aktuelle Auswahl', {
+          state:codeText(RUNTIME_STATE_KEYS, smoke.state, 'runtimeStateUnknown', 'unbekannt')
+        })
         : text('smokePending', 'Ausstehend · keine Verifizierung auf diesem Gerät'));
     byId('runtimeRecovery').textContent = runtimeRecoveryText(payload);
     byId('localRuntimeStatus').textContent = recommendation.supported
@@ -665,7 +744,7 @@
       const payload = await request(`/api/streammonsters/local-runtime/status${query}`);
       renderRuntimeStatus(payload);
     } catch (error) {
-      byId('localRuntimeStatus').textContent = text('providerUnavailable', 'Providercheck nicht verfügbar: {error}', { error:error.message });
+      byId('localRuntimeStatus').textContent = text('providerUnavailable', 'Providercheck nicht verfügbar: {error}', { error:runtimeErrorText(error) });
       byId('runtimeRecovery').textContent = text('runtimeStatusRetry', 'Status erneut laden. Wenn das fehlschlägt, externes ComfyUI oder einen Remote-Provider verwenden.');
     }
   };
@@ -676,8 +755,8 @@
     const percent = total ? Math.min(100, Math.round((completed / total) * 100)) : (job.state === 'ready' ? 100 : 0);
     byId('runtimeProgress').value = percent;
     byId('runtimeProgressText').textContent = text('runtimeJobProgress', '{state} · {phase} · {percent}%', {
-      state:job.state,
-      phase:progress.phase || job.state,
+      state:codeText(RUNTIME_STATE_KEYS, job.state, 'runtimeStateUnknown', 'unbekannt'),
+      phase:codeText(RUNTIME_PHASE_KEYS, progress.phase || job.state, 'runtimePhaseUnknown', 'unbekannt'),
       percent
     });
     byId('runtimeRecovery').textContent = runtimeRecoveryText({ ...(runtimePayload || {}), job });
@@ -690,12 +769,25 @@
       if (['ready','failed','cancelled'].includes(job.state)) {
         localStorage.removeItem('streammonsters-runtime-job-id');
         if (job.state === 'ready') await checkLocalRuntime(byId('runtimeAdapters').value);
-        return;
+        return job;
       }
       runtimeJobTimer = setTimeout(() => pollRuntimeJob(jobId), 900);
+      return job;
     } catch (error) {
-      byId('runtimeRecovery').textContent = text('runtimeJobLost', 'Installationsstatus nicht erreichbar: {error}. Mit „Fortschritt fortsetzen“ erneut prüfen.', { error:error.message });
+      byId('runtimeRecovery').textContent = text('runtimeJobLost', 'Installationsstatus nicht erreichbar: {error}. Mit „Fortschritt fortsetzen“ erneut prüfen.', { error:runtimeErrorText(error) });
+      return null;
     }
+  };
+  const startRuntimeInstall = async installRequest => {
+    localStorage.setItem(runtimeInstallRequestKey, JSON.stringify(installRequest));
+    const accepted = await request('/api/streammonsters/local-runtime/install', {
+      method:'POST',
+      headers:jsonHeaders,
+      body:JSON.stringify(installRequest)
+    });
+    localStorage.setItem('streammonsters-runtime-job-id', accepted.jobId);
+    renderRuntimeJob({ ...accepted, progress:{ phase:'queued' } });
+    await pollRuntimeJob(accepted.jobId);
   };
   const installRuntime = async () => {
     if (!byId('runtimeLicenseAccepted').checked) {
@@ -704,14 +796,7 @@
     }
     const adapterId = byId('runtimeAdapters').value;
     const profileId = runtimePayload?.recommendation?.profileId;
-    const accepted = await request('/api/streammonsters/local-runtime/install', {
-      method:'POST',
-      headers:jsonHeaders,
-      body:JSON.stringify({ adapterId, profileId, acceptModelLicense:true })
-    });
-    localStorage.setItem('streammonsters-runtime-job-id', accepted.jobId);
-    renderRuntimeJob({ ...accepted, progress:{ phase:'queued' } });
-    await pollRuntimeJob(accepted.jobId);
+    await startRuntimeInstall({ adapterId, profileId, acceptModelLicense:true });
   };
   const cancelRuntimeInstall = async () => {
     const jobId = localStorage.getItem('streammonsters-runtime-job-id');
@@ -723,7 +808,20 @@
   const resumeRuntimeInstall = async () => {
     const jobId = localStorage.getItem('streammonsters-runtime-job-id');
     if (jobId) {
-      await pollRuntimeJob(jobId);
+      try {
+        const job = await request(`/api/streammonsters/local-runtime/install/${encodeURIComponent(jobId)}`);
+        renderRuntimeJob(job);
+        if (!['ready','failed','cancelled'].includes(job.state)) {
+          await pollRuntimeJob(jobId);
+          return;
+        }
+      } catch (_) {}
+      localStorage.removeItem('streammonsters-runtime-job-id');
+    }
+    let remembered = null;
+    try { remembered = JSON.parse(localStorage.getItem(runtimeInstallRequestKey) || 'null'); } catch (_) {}
+    if (remembered?.adapterId && remembered?.profileId && remembered.acceptModelLicense === true) {
+      await startRuntimeInstall(remembered);
       return;
     }
     await checkLocalRuntime(byId('runtimeAdapters').value);
@@ -736,7 +834,7 @@
       body:JSON.stringify({ adapterId })
     });
     byId('runtimeSmokeTest').textContent = text('smokeResult', '{state} · {width}×{height}', {
-      state:result.smokeTest?.state || text('unknown', 'unbekannt'),
+      state:codeText(RUNTIME_STATE_KEYS, result.smokeTest?.state, 'runtimeStateUnknown', 'unbekannt'),
       width:result.smokeTest?.width || 256,
       height:result.smokeTest?.height || 256
     });
@@ -753,7 +851,7 @@
         if (!target) return;
         target.textContent = provider.state === 'ready'
           ? text('providerReady', 'bereit{model}', { model:provider.model ? ` · ${provider.model}` : '' })
-          : (provider.detail || provider.state || text('notConfigured', 'nicht konfiguriert'));
+          : codeText(PROVIDER_STATE_KEYS, provider.state, 'providerStateUnavailable', 'nicht verfügbar');
         if (provider.state === 'ready') readyProviders.push(provider.provider);
       });
       byId('providerFallback').textContent = [...readyProviders, 'Kenney'].join(' → ');
@@ -826,10 +924,10 @@
   byId('loadViewer').addEventListener('click', () => loadViewer().catch(error => notice(error.message, 'error')));
   byId('openLocalSetup').addEventListener('click', () => checkLocalRuntime(byId('runtimeAdapters').value));
   byId('runtimeAdapters').addEventListener('change', event => checkLocalRuntime(event.target.value));
-  byId('runtimeInstall').addEventListener('click', () => installRuntime().catch(error => notice(error.message, 'error')));
-  byId('runtimeCancel').addEventListener('click', () => cancelRuntimeInstall().catch(error => notice(error.message, 'error')));
-  byId('runtimeResume').addEventListener('click', () => resumeRuntimeInstall().catch(error => notice(error.message, 'error')));
-  byId('runtimeVerify').addEventListener('click', () => verifyRuntime().catch(error => notice(error.message, 'error')));
+  byId('runtimeInstall').addEventListener('click', () => installRuntime().catch(error => notice(runtimeErrorText(error), 'error')));
+  byId('runtimeCancel').addEventListener('click', () => cancelRuntimeInstall().catch(error => notice(runtimeErrorText(error), 'error')));
+  byId('runtimeResume').addEventListener('click', () => resumeRuntimeInstall().catch(error => notice(runtimeErrorText(error), 'error')));
+  byId('runtimeVerify').addEventListener('click', () => verifyRuntime().catch(error => notice(runtimeErrorText(error), 'error')));
   byId('runDemo').addEventListener('click', async () => {
     try {
       await request('/api/streammonsters/demo', { method:'POST' });
