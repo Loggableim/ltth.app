@@ -38,6 +38,7 @@ describe('Stream Monsters plugin integration', () => {
     await plugin.init();
 
     expect(events.map(entry => entry.event)).toEqual(expect.arrayContaining(['gift', 'chat', 'streamSessionStarted']));
+    expect(plugin.config.localGeneration.generationMode).toBe('local_preferred');
     expect(plugin.streamMonstersEngine.artPool).toBeDefined();
     plugin.streamMonstersStore.upsertGiftMapping({
       giftId: 1, giftName: 'Rose', element: 'Ember', effect: 'spawn', enabled: true
@@ -70,7 +71,12 @@ describe('Stream Monsters plugin integration', () => {
       'POST /api/streammonsters/pool/prepare',
       'GET /api/streammonsters/gift-catalog',
       'GET /api/streammonsters/local-runtime/status',
-      'POST /api/streammonsters/local-runtime/install'
+      'POST /api/streammonsters/local-runtime/install',
+      'GET /api/streammonsters/local-runtime/install/:jobId',
+      'DELETE /api/streammonsters/local-runtime/install/:jobId',
+      'POST /api/streammonsters/local-runtime/start',
+      'POST /api/streammonsters/local-runtime/stop',
+      'POST /api/streammonsters/local-runtime/verify'
     ]));
     const legacyUi = routes.find(route => route.method === 'GET' && route.path === '/streamalchemy/ui');
     const legacyOverlay = routes.find(route => route.method === 'GET' && route.path === '/streamalchemy/overlay');
@@ -91,7 +97,6 @@ describe('Stream Monsters plugin integration', () => {
     const plugin = new StreamAlchemyPlugin(api);
 
     await plugin.init();
-
     expect(gcce.unregisterCommandsForPlugin).toHaveBeenCalledWith('streamalchemy');
     expect(gcce.registerCommandsForPlugin).toHaveBeenCalledWith('streamalchemy', expect.arrayContaining([
       expect.objectContaining({ name: 'eggs', permission: 'all' }),
@@ -104,6 +109,7 @@ describe('Stream Monsters plugin integration', () => {
     const { api } = createApi();
     const plugin = new StreamAlchemyPlugin(api);
     await plugin.init();
+    const destroyRuntime = jest.spyOn(plugin.streamMonstersManagedRuntime, 'destroy');
     plugin.streamMonstersEngine.recentGifts.set('viewer-a', { giftId: 1, timestamp: 1 });
     plugin.streamMonstersChatCommands.queue.push({ userId: 'viewer-a', queuedAt: 1 });
 
@@ -113,6 +119,7 @@ describe('Stream Monsters plugin integration', () => {
     expect(plugin.streamMonstersReadyTimer).toBeNull();
     expect(plugin.streamMonstersEngine.recentGifts.size).toBe(0);
     expect(plugin.streamMonstersChatCommands.queue).toEqual([]);
+    expect(destroyRuntime).toHaveBeenCalledTimes(1);
   });
 
   test('honors the nested Stream Monsters enable switch for gifts and chat', async () => {

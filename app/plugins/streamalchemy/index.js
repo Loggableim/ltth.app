@@ -90,7 +90,8 @@ class StreamAlchemyPlugin {
       catalog: this.modelCatalog
     });
     this.streamMonstersManagedRuntime = new StreamMonstersManagedRuntimeInstaller({
-      dataDir: this.getPluginDataDir()
+      dataDir: this.getPluginDataDir(),
+      onState: state => this.handleManagedRuntimeState(state)
     });
 
     this.generationService = new GenerationService(this.store, logger, {
@@ -441,7 +442,42 @@ class StreamAlchemyPlugin {
     }
     this.streamMonstersEngine?.recentGifts?.clear?.();
     this.streamMonstersChatCommands?.queue?.splice?.(0);
+    await this.streamMonstersManagedRuntime?.destroy?.();
     this.api.log('[STREAM MONSTERS] Collector Arena runtime stopped', 'info');
+  }
+
+  handleManagedRuntimeState(state) {
+    this.api.emit('local_runtime_progress', {
+      jobId: state.jobId,
+      state: state.state,
+      ...(state.progress || {})
+    });
+    this.api.emit('local_runtime_state', state);
+    if (state.state !== 'ready') return;
+    const installation = this.streamMonstersManagedRuntime?.installation;
+    const job = this.streamMonstersManagedRuntime?.jobs?.get?.(state.jobId);
+    if (!installation || !job?.adapter) return;
+    const recommendation = this.streamMonstersManagedRuntime.recommend(job.adapter);
+    const processState = this.streamMonstersManagedRuntime.getProcessState();
+    this.updateConfig({
+      streamMonsters: {
+        localRuntime: {
+          state: installation.state,
+          runtimeRoot: installation.runtimeRoot
+        }
+      },
+      localGeneration: {
+        enabled: true,
+        generationMode: 'local_preferred',
+        comfyUrl: processState.baseUrl,
+        comfyRootDir: require('path').join(installation.runtimeRoot, 'ComfyUI'),
+        selectedPresetId: 'sdxl_lightning_4step',
+        width: recommendation.width,
+        height: recommendation.height,
+        steps: 4,
+        concurrency: 1
+      }
+    });
   }
 
   getStreamMonstersGiftCatalog(locale = null) {

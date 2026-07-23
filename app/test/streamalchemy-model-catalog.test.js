@@ -16,7 +16,10 @@ describe('StreamAlchemy model catalog', () => {
       id: 'sdxl_lightning_4step',
       workflowId: 'comfy_sdxl_lightning_4step',
       installMethod: 'one_click',
-      targetRelativePath: path.join('models', 'checkpoints', 'sdxl_lightning_4step.safetensors')
+      targetRelativePath: path.join('models', 'checkpoints', 'sdxl_lightning_4step.safetensors'),
+      sizeBytes: 6938040682,
+      sha256: 'e0d996ee0013e79d9d3561f50fcafb9a17e3ff07b780358e3b66d67932c4d490',
+      license: 'OpenRAIL++'
     }));
 
     expect(presets[1]).toEqual(expect.objectContaining({

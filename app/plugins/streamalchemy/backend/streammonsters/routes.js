@@ -251,11 +251,24 @@ class StreamMonstersRoutes {
           8,
           Number.parseInt(req.body?.targetPerVariant, 10) || 3
         ));
+        this.api.emit('local_runtime_progress', { phase: 'pool_prepare', state: 'checking' });
+        if (this.managedRuntime.installation?.verified) {
+          const analysis = await this.systemAnalyzer.analyze({
+            comfyUrl: this.configProvider.getConfig().localGeneration?.comfyUrl,
+            comfyRootDir: this.configProvider.getConfig().localGeneration?.comfyRootDir
+          });
+          const adapter = this.selectAdapter(analysis.adapters, this.managedRuntime.installation.adapterId);
+          const processState = await this.managedRuntime.startManagedRuntime({ adapter });
+          this.api.emit('local_runtime_state', processState);
+        }
+        this.api.emit('art_pool_progress', { state: 'running', targetPerVariant });
         const result = this.artPool
           ? await this.artPool.prepare({ targetPerVariant })
           : { entries: await this.generationPool.preparePending() };
+        this.api.emit('art_pool_progress', { state: 'complete', targetPerVariant });
         res.json({ success: true, ...result });
       } catch (error) {
+        this.api.emit('art_pool_progress', { state: 'failed', error: error.message });
         res.status(409).json({ success: false, error: error.message });
       }
     }));
@@ -276,12 +289,34 @@ class StreamMonstersRoutes {
         comfyRootDir: this.configProvider.getConfig().localGeneration?.comfyRootDir
       });
       const recommendation = this.managedRuntime.recommend(analysis.gpu);
+      const catalog = this.managedRuntime.getCatalog?.() || { profiles: [], model: null };
+      const profiles = this.managedRuntime.getPublicProfiles?.() || [];
+      const processState = this.managedRuntime.getProcessState?.();
+      let disk = analysis.disk || null;
+      try {
+        if (this.managedRuntime.getDiskStatus) {
+          disk = await this.managedRuntime.getDiskStatus(recommendation.profileId);
+        }
+      } catch (_) {}
       res.json({
         success: true,
-        runtime: this.managedRuntime.current || { state: recommendation.supported ? 'ready_to_install' : 'expert_or_remote' },
+        runtime: this.managedRuntime.current ||
+          (this.managedRuntime.installation ? processState : null) ||
+          { state: recommendation.supported ? 'ready_to_install' : 'expert_or_remote' },
         recommendation,
-        manifestAvailable: Boolean(manifest),
+        manifestAvailable: Boolean(manifest || profiles.length),
         installDetails: this.publicInstallDetails(manifest)
+          || this.publicCatalogInstallDetails(catalog),
+        adapters: analysis.adapters || (analysis.gpu?.id ? [analysis.gpu] : []),
+        selectedAdapterId: this.managedRuntime.installation?.adapterId || analysis.gpu?.id || null,
+        profiles,
+        installation: this.publicInstallation(this.managedRuntime.installation),
+        model: this.publicModel({
+          ...catalog.model,
+          ...(this.managedRuntime.installation?.model || {})
+        }),
+        smokeTest: this.managedRuntime.lastSmokeTest || this.managedRuntime.installation?.smokeTest || null,
+        disk
       });
     });
     this.api.registerRoute('POST', '/api/streammonsters/local-runtime/install', this.protectAdmin(async (req, res) => {
@@ -291,35 +326,59 @@ class StreamMonstersRoutes {
           comfyUrl: current.localGeneration?.comfyUrl,
           comfyRootDir: current.localGeneration?.comfyRootDir
         });
-        const manifest = this.managedRuntime.getTrustedManifest();
-        if (!manifest) throw new Error('STREAM_MONSTERS_RUNTIME_MANIFEST_UNAVAILABLE');
-        const runtime = await this.managedRuntime.install(analysis.gpu);
-        const comfyRootDir = runtime.comfyRootDir || this.managedRuntime.resolveExistingInside(
-          runtime.runtimeRoot,
-          manifest.comfyRootRelativePath || 'ComfyUI'
-        );
-        const localGeneration = {
-          enabled: true,
-          generationMode: 'local_strict',
-          comfyUrl: manifest.healthBaseUrl || 'http://127.0.0.1:8188',
-          comfyRootDir,
-          selectedPresetId: runtime.recommendation.presetId,
-          width: runtime.recommendation.width,
-          height: runtime.recommendation.height,
-          steps: runtime.recommendation.steps,
-          concurrency: 1,
-          modelChecksumSha256: manifest.modelSha256
-        };
-        const model = this.localModelInstaller?.startInstall(localGeneration) || null;
-        const next = this.configProvider.updateConfig({
-          streamMonsters: {
-            localRuntime: { state: runtime.state, runtimeRoot: runtime.runtimeRoot }
-          },
-          localGeneration
-        });
-        res.json({ success: true, runtime, model, config: this.publicConfig(next.streamMonsters) });
+        const accepted = this.managedRuntime.createInstallJob(req.body, analysis.adapters || [analysis.gpu].filter(Boolean));
+        res.status(202).json(accepted);
       } catch (error) {
         res.status(400).json({ success: false, error: error.message });
+      }
+    }));
+    this.api.registerRoute('GET', '/api/streammonsters/local-runtime/install/:jobId', this.protectAdmin((req, res) => {
+      const job = this.managedRuntime.getInstallJob(req.params?.jobId);
+      if (!job) return res.status(404).json({ success: false, error: 'STREAM_MONSTERS_RUNTIME_JOB_NOT_FOUND' });
+      return res.json(job);
+    }));
+    this.api.registerRoute('DELETE', '/api/streammonsters/local-runtime/install/:jobId', this.protectAdmin((req, res) => {
+      const job = this.managedRuntime.cancelInstallJob(req.params?.jobId);
+      if (!job) return res.status(404).json({ success: false, error: 'STREAM_MONSTERS_RUNTIME_JOB_NOT_FOUND' });
+      return res.json(job);
+    }));
+    this.api.registerRoute('POST', '/api/streammonsters/local-runtime/start', this.protectAdmin(async (req, res) => {
+      try {
+        const analysis = await this.systemAnalyzer.analyze();
+        const adapter = this.selectAdapter(
+          analysis.adapters || [analysis.gpu].filter(Boolean),
+          req.body?.adapterId || this.managedRuntime.installation?.adapterId
+        );
+        const runtime = await this.managedRuntime.startManagedRuntime({ adapter });
+        this.api.emit('local_runtime_state', runtime);
+        res.json({ success: true, runtime });
+      } catch (error) {
+        res.status(409).json({ success: false, error: error.message });
+      }
+    }));
+    this.api.registerRoute('POST', '/api/streammonsters/local-runtime/stop', this.protectAdmin(async (req, res) => {
+      const runtime = await this.managedRuntime.stopManagedRuntime();
+      this.api.emit('local_runtime_state', runtime);
+      res.json({ success: true, runtime });
+    }));
+    this.api.registerRoute('POST', '/api/streammonsters/local-runtime/verify', this.protectAdmin(async (req, res) => {
+      try {
+        const analysis = await this.systemAnalyzer.analyze();
+        const adapter = this.selectAdapter(
+          analysis.adapters || [analysis.gpu].filter(Boolean),
+          req.body?.adapterId || this.managedRuntime.installation?.adapterId
+        );
+        const profile = this.managedRuntime.getProfile?.(this.managedRuntime.installation?.profileId)
+          || { id: this.managedRuntime.installation?.profileId, backend: 'cuda' };
+        const smokeTest = await this.managedRuntime.verifyManagedRuntime({
+          adapter,
+          profile,
+          baseUrl: this.managedRuntime.getProcessState?.().baseUrl,
+          child: this.managedRuntime.managedChild
+        });
+        res.json({ success: true, smokeTest });
+      } catch (error) {
+        res.status(409).json({ success: false, error: error.message });
       }
     }));
   }
@@ -369,6 +428,47 @@ class StreamMonstersRoutes {
       coinValue: Number(gift.diamond_count ?? gift.coin_value ?? gift.coinValue ?? 0),
       imageUrl: gift.image_url || gift.imageUrl || null
     })).filter(gift => Number.isInteger(gift.giftId) && gift.giftId > 0);
+  }
+
+  selectAdapter(adapters = [], adapterId = null) {
+    const selected = adapterId
+      ? adapters.find(adapter => adapter.id === adapterId)
+      : adapters[0];
+    if (!selected) throw new Error('STREAM_MONSTERS_RUNTIME_ADAPTER_NOT_FOUND');
+    return selected;
+  }
+
+  publicInstallation(installation) {
+    if (!installation) return null;
+    return {
+      state: installation.state,
+      verified: Boolean(installation.verified),
+      runtimeRoot: installation.runtimeRoot,
+      profileId: installation.profileId,
+      adapterId: installation.adapterId,
+      previousRuntimeRoot: installation.previousRuntimeRoot || null
+    };
+  }
+
+  publicModel(model) {
+    if (!model) return null;
+    return {
+      id: model.id,
+      fileName: model.fileName,
+      sizeBytes: Math.max(0, Number(model.sizeBytes) || 0),
+      license: model.license,
+      verified: Boolean(model.verified)
+    };
+  }
+
+  publicCatalogInstallDetails(catalog = {}) {
+    return {
+      runtimeDownloadBytes: 0,
+      modelDownloadBytes: Math.max(0, Number(catalog.model?.sizeBytes) || 0),
+      targetDir: (() => {
+        try { return this.managedRuntime.resolveRuntimeRootV2?.() || null; } catch (_) { return null; }
+      })()
+    };
   }
 
   publicInstallDetails(manifest) {

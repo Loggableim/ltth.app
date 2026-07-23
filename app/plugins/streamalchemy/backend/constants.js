@@ -9,7 +9,7 @@ const DEFAULT_CONFIG = {
   providerOrder: ['localComfy', 'siliconflow', 'openai', 'lightx', 'placeholder'],
   localGeneration: {
     enabled: true,
-    generationMode: 'remote',
+    generationMode: 'local_preferred',
     comfyUrl: 'http://127.0.0.1:8188',
     comfyRootDir: '',
     selectedPresetId: 'sdxl_lightning_4step',

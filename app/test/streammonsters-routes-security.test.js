@@ -23,8 +23,9 @@ function createResponse() {
   };
 }
 
-function createSubject({ storedManifest = null } = {}) {
+function createSubject({ storedManifest = null, artPool = null } = {}) {
   const registered = [];
+  const emit = jest.fn();
   const updateConfig = jest.fn(updates => ({
     streamMonsters: {
       enabled: true,
@@ -40,8 +41,26 @@ function createSubject({ storedManifest = null } = {}) {
   };
   const managedRuntime = {
     current: null,
+    installation: {
+      state: 'ready',
+      verified: true,
+      adapterId: 'gpu-1',
+      profileId: 'nvidia-standard',
+      model: { verified: true }
+    },
+    lastSmokeTest: { state: 'passed', width: 256, height: 256 },
     recommend: jest.fn(() => ({ supported: true, presetId: 'sdxl_lightning_4step', width: 768, height: 768, steps: 4 })),
+    getPublicProfiles: jest.fn(() => [{ id: 'nvidia-standard', label: 'NVIDIA RTX 20+', backend: 'cuda' }]),
+    getCatalog: jest.fn(() => ({
+      model: {
+        id: 'sdxl_lightning_4step',
+        fileName: 'sdxl_lightning_4step.safetensors',
+        sizeBytes: 6938040682,
+        license: 'OpenRAIL++'
+      }
+    })),
     getTrustedManifest: jest.fn(() => ({ ...TRUSTED_MANIFEST })),
+    getProcessState: jest.fn(() => ({ state: 'stopped', pid: null })),
     resolveRuntimeRoot: jest.fn(() => 'C:\\LTTH\\managed-runtime'),
     resolveInside: jest.fn((root, relativePath) => require('path').resolve(root, relativePath)),
     resolveExistingInside: jest.fn((root, relativePath) => require('path').resolve(root, relativePath)),
@@ -49,18 +68,31 @@ function createSubject({ storedManifest = null } = {}) {
       state: 'ready',
       runtimeRoot: 'C:\\LTTH\\managed-runtime',
       recommendation: { presetId: 'sdxl_lightning_4step', width: 768, height: 768, steps: 4 }
-    }))
+    })),
+    createInstallJob: jest.fn(() => ({ jobId: 'runtime-job-1', state: 'queued' })),
+    getInstallJob: jest.fn(jobId => ({ jobId, state: 'running' })),
+    cancelInstallJob: jest.fn(jobId => ({ jobId, state: 'cancelled' })),
+    startManagedRuntime: jest.fn(async () => ({ state: 'running', pid: 42 })),
+    stopManagedRuntime: jest.fn(async () => ({ state: 'stopped', pid: null })),
+    verifyManagedRuntime: jest.fn(async () => ({ state: 'passed', width: 256, height: 256 }))
   };
   const routes = new StreamMonstersRoutes({
     api: {
       registerRoute: (method, routePath, handler) => registered.push({ method, routePath, handler }),
-      emit: jest.fn()
+      emit
     },
     pluginDir: 'C:\\LTTH\\plugins\\streamalchemy',
     store: {},
     engine: {},
     generationPool: {},
-    systemAnalyzer: { analyze: jest.fn(async () => ({ gpu: { vendor: 'nvidia', vramMb: 8192 } })) },
+    artPool,
+    systemAnalyzer: {
+      analyze: jest.fn(async () => ({
+        gpu: { id: 'gpu-1', name: 'NVIDIA GeForce RTX 4060', vendor: 'nvidia', vramMb: 8192 },
+        adapters: [{ id: 'gpu-1', name: 'NVIDIA GeForce RTX 4060', vendor: 'nvidia', vramMb: 8192 }],
+        disk: { targetRoot: 'C:\\LTTH', freeGb: 50 }
+      }))
+    },
     managedRuntime,
     localModelInstaller: { startInstall: jest.fn(() => null) },
     configProvider: {
@@ -70,7 +102,7 @@ function createSubject({ storedManifest = null } = {}) {
   });
   routes.register();
   const findRoute = (method, routePath) => registered.find(route => route.method === method && route.routePath === routePath);
-  return { findRoute, managedRuntime, updateConfig };
+  return { findRoute, managedRuntime, updateConfig, emit };
 }
 
 describe('Stream Monsters privileged routes', () => {
@@ -130,7 +162,7 @@ describe('Stream Monsters privileged routes', () => {
     expect(updateConfig).toHaveBeenCalledWith({ streamMonsters: {} });
   });
 
-  test('ignores a previously stored attacker manifest and installs only the server-pinned manifest', async () => {
+  test('ignores stored trust data and accepts only adapter/profile/license identifiers for an async job', async () => {
     const attackerManifest = {
       ...TRUSTED_MANIFEST,
       archiveUrl: 'https://attacker.example/payload.zip',
@@ -144,16 +176,97 @@ describe('Stream Monsters privileged routes', () => {
       ip: '127.0.0.1',
       socket: { remoteAddress: '127.0.0.1' },
       headers: {},
-      body: {}
+      body: {
+        adapterId: 'gpu-1',
+        profileId: 'nvidia-standard',
+        acceptModelLicense: true
+      }
     }, response);
 
-    expect(managedRuntime.install).toHaveBeenCalledWith({ vendor: 'nvidia', vramMb: 8192 });
-    expect(updateConfig).toHaveBeenCalledWith(expect.objectContaining({
-      localGeneration: expect.objectContaining({
-        modelChecksumSha256: TRUSTED_MANIFEST.modelSha256,
-        comfyUrl: TRUSTED_MANIFEST.healthBaseUrl
-      })
+    expect(response.statusCode).toBe(202);
+    expect(response.json).toHaveBeenCalledWith({ jobId: 'runtime-job-1', state: 'queued' });
+    expect(managedRuntime.createInstallJob).toHaveBeenCalledWith({
+      adapterId: 'gpu-1',
+      profileId: 'nvidia-standard',
+      acceptModelLicense: true
+    }, expect.arrayContaining([expect.objectContaining({ id: 'gpu-1' })]));
+    expect(managedRuntime.install).not.toHaveBeenCalled();
+    expect(updateConfig).not.toHaveBeenCalled();
+    expect(JSON.stringify(managedRuntime.createInstallJob.mock.calls)).not.toContain('attacker.example');
+  });
+
+  test('extends status compatibly and exposes job plus managed-process admin routes', async () => {
+    const { findRoute, managedRuntime } = createSubject();
+    const statusResponse = createResponse();
+
+    await findRoute('GET', '/api/streammonsters/local-runtime/status').handler({}, statusResponse);
+
+    expect(statusResponse.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      runtime: expect.any(Object),
+      recommendation: expect.any(Object),
+      manifestAvailable: true,
+      installDetails: expect.any(Object),
+      adapters: expect.arrayContaining([expect.objectContaining({ id: 'gpu-1' })]),
+      selectedAdapterId: 'gpu-1',
+      profiles: expect.arrayContaining([expect.objectContaining({ id: 'nvidia-standard' })]),
+      installation: expect.objectContaining({ verified: true }),
+      model: expect.objectContaining({ license: 'OpenRAIL++', verified: true }),
+      smokeTest: expect.objectContaining({ state: 'passed' }),
+      disk: expect.objectContaining({ freeGb: 50 })
     }));
-    expect(JSON.stringify(updateConfig.mock.calls)).not.toContain('attacker.example');
+
+    const getResponse = createResponse();
+    await findRoute('GET', '/api/streammonsters/local-runtime/install/:jobId').handler({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      params: { jobId: 'runtime-job-1' }
+    }, getResponse);
+    expect(managedRuntime.getInstallJob).toHaveBeenCalledWith('runtime-job-1');
+
+    const deleteResponse = createResponse();
+    await findRoute('DELETE', '/api/streammonsters/local-runtime/install/:jobId').handler({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      params: { jobId: 'runtime-job-1' }
+    }, deleteResponse);
+    expect(managedRuntime.cancelInstallJob).toHaveBeenCalledWith('runtime-job-1');
+
+    for (const action of ['start', 'stop', 'verify']) {
+      const response = createResponse();
+      await findRoute('POST', `/api/streammonsters/local-runtime/${action}`).handler({
+        ip: '127.0.0.1',
+        socket: { remoteAddress: '127.0.0.1' },
+        headers: {},
+        body: {}
+      }, response);
+      expect(response.statusCode).toBe(200);
+    }
+    expect(managedRuntime.startManagedRuntime).toHaveBeenCalled();
+    expect(managedRuntime.stopManagedRuntime).toHaveBeenCalled();
+    expect(managedRuntime.verifyManagedRuntime).toHaveBeenCalled();
+  });
+
+  test('starts an installed managed runtime before pool preparation and emits progress/state events', async () => {
+    const artPool = { prepare: jest.fn(async () => ({ jobs: [], coverage: [] })) };
+    const { findRoute, managedRuntime, emit } = createSubject({ artPool });
+    const response = createResponse();
+
+    await findRoute('POST', '/api/streammonsters/pool/prepare').handler({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      body: { targetPerVariant: 2 }
+    }, response);
+
+    expect(managedRuntime.startManagedRuntime).toHaveBeenCalledWith(expect.objectContaining({
+      adapter: expect.objectContaining({ id: 'gpu-1' })
+    }));
+    expect(artPool.prepare).toHaveBeenCalledWith({ targetPerVariant: 2 });
+    expect(emit).toHaveBeenCalledWith('local_runtime_progress', expect.objectContaining({ phase: 'pool_prepare' }));
+    expect(emit).toHaveBeenCalledWith('local_runtime_state', expect.objectContaining({ state: 'running' }));
+    expect(emit).toHaveBeenCalledWith('art_pool_progress', expect.objectContaining({ state: 'complete' }));
   });
 });

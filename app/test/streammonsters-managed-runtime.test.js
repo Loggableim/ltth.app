@@ -32,6 +32,55 @@ async function writeSymlinkArchive(archivePath) {
 }
 
 describe('Stream Monsters managed local runtime', () => {
+  test('pins ComfyUI 0.28.0 packages and the licensed SDXL Lightning model server-side', () => {
+    const installer = new ManagedRuntimeInstaller({
+      platform: () => 'win32',
+      windowsRelease: () => '10.0.22631'
+    });
+
+    const catalog = installer.getCatalog();
+
+    expect(catalog.version).toBe('0.28.0');
+    expect(catalog.profiles.map(profile => [profile.id, profile.sha256])).toEqual([
+      ['nvidia-standard', '797183fe6165b96a1800793cdc2110e4c62c45e8775647a7166fe8c6290e2fd9'],
+      ['nvidia-cuda126-legacy', '6af1b60b6a1fad780b07871e4ff356ac04a1807755ee13c6050e3ec3a4157cc0'],
+      ['intel-arc', 'cc662b0d71c06419e92511ba40d7bef681c2b3cdb1be9f725f8da197bb68ce94'],
+      ['amd-experimental', '824f70126a8733ce25cc5713d20dba91ddd9f27efd6ac04a6d4a57dbf09ecd3c']
+    ]);
+    expect(catalog.profiles.map(profile => [profile.id, profile.downloadSizeBytes, profile.archiveUrl])).toEqual([
+      ['nvidia-standard', 2092156323, 'https://github.com/Comfy-Org/ComfyUI/releases/download/v0.28.0/ComfyUI_windows_portable_nvidia.7z'],
+      ['nvidia-cuda126-legacy', 2034160963, 'https://github.com/Comfy-Org/ComfyUI/releases/download/v0.28.0/ComfyUI_windows_portable_nvidia_cu126.7z'],
+      ['intel-arc', 1680009614, 'https://github.com/Comfy-Org/ComfyUI/releases/download/v0.28.0/ComfyUI_windows_portable_intel.7z'],
+      ['amd-experimental', 1762815561, 'https://github.com/Comfy-Org/ComfyUI/releases/download/v0.28.0/ComfyUI_windows_portable_amd.7z']
+    ]);
+    expect(catalog.model).toEqual(expect.objectContaining({
+      fileName: 'sdxl_lightning_4step.safetensors',
+      sizeBytes: 6938040682,
+      sha256: 'e0d996ee0013e79d9d3561f50fcafb9a17e3ff07b780358e3b66d67932c4d490',
+      license: 'OpenRAIL++'
+    }));
+    expect(installer.recommend({
+      name: 'Intel(R) Arc(TM) A770 Graphics', vendor: 'intel', architecture: 'arc_a770', vramMb: 16384
+    })).toEqual(expect.objectContaining({ supported: true, profileId: 'intel-arc', width: 1024 }));
+    expect(installer.recommend({
+      name: 'NVIDIA GeForce RTX 2080 Ti', vendor: 'nvidia', architecture: 'rtx_20_plus', vramMb: 11264
+    })).toEqual(expect.objectContaining({ supported: true, profileId: 'nvidia-standard', width: 768 }));
+    expect(installer.recommend({
+      name: 'NVIDIA GeForce GTX 1080', vendor: 'nvidia', architecture: 'gtx_10_legacy', vramMb: 8192
+    })).toEqual(expect.objectContaining({ supported: true, profileId: 'nvidia-cuda126-legacy', width: 768 }));
+    expect(installer.recommend({
+      name: 'AMD Radeon RX 7900 XTX', vendor: 'amd', architecture: 'amd_radeon', vramMb: 24576
+    })).toEqual(expect.objectContaining({
+      supported: true, profileId: 'amd-experimental', experimental: true, smokeTestRequired: true
+    }));
+    expect(installer.recommend({
+      name: 'AMD Radeon RX 6600', vendor: 'amd', architecture: 'amd_radeon', vramMb: 8192
+    })).toEqual(expect.objectContaining({ supported: false, reasonCode: 'unsupported_amd_hardware' }));
+    expect(installer.recommend({
+      name: 'NVIDIA GeForce RTX 4080', vendor: 'nvidia', architecture: 'rtx_20_plus', vramMb: 0, memoryState: 'unknown'
+    })).toEqual(expect.objectContaining({ supported: false, reasonCode: 'unknown_memory' }));
+  });
+
   test('recommends a fast four-step Windows NVIDIA profile from detected VRAM', () => {
     const installer = new ManagedRuntimeInstaller({ platform: () => 'win32' });
 

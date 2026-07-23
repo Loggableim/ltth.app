@@ -1,8 +1,19 @@
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { execFile } = require('child_process');
 const ModelCatalog = require('./model-catalog');
+
+const WINDOWS_ADAPTER_SCRIPT = [
+  '$ErrorActionPreference = "Stop"',
+  '$adapters = @(Get-CimInstance Win32_VideoController | Select-Object Name,AdapterRAM,DriverVersion,PNPDeviceID,DeviceID,Status)',
+  '$registry = @(Get-ItemProperty "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Video\\*\\0000" -ErrorAction SilentlyContinue | ForEach-Object {',
+  '  [pscustomobject]@{ DriverDesc=$_.DriverDesc; MatchingDeviceId=$_.MatchingDeviceId; MemorySize=[string]$_."HardwareInformation.qwMemorySize" }',
+  '})',
+  '[pscustomobject]@{ adapters=$adapters; registry=$registry } | ConvertTo-Json -Depth 5 -Compress'
+].join('; ');
+const VIRTUAL_ADAPTER_PATTERN = /\b(microsoft basic|remote display|rdp|virtual|vmware|virtualbox|hyper-v|citrix|parallels|indirect display|dummy)\b/i;
 
 class SystemAnalyzer {
   constructor({ execFileImpl = execFile, osImpl = os, fetchImpl = global.fetch, fsImpl = fs, catalog = new ModelCatalog() } = {}) {
@@ -14,7 +25,8 @@ class SystemAnalyzer {
   }
 
   async analyze({ comfyUrl, comfyRootDir = null } = {}) {
-    const gpu = await this.detectGpu();
+    const adapters = await this.detectAdapters();
+    const gpu = this.selectPreferredAdapter(adapters);
     const comfy = await this.checkComfy(comfyUrl);
     const comfyRoot = this.checkComfyRoot(comfyRootDir);
     const disk = this.detectDisk(comfyRootDir);
@@ -34,6 +46,7 @@ class SystemAnalyzer {
       memory: {
         totalGb: Math.round(this.os.totalmem() / 1024 / 1024 / 1024)
       },
+      adapters,
       gpu,
       disk,
       comfy,
@@ -52,6 +65,13 @@ class SystemAnalyzer {
   }
 
   detectGpu() {
+    return this.detectAdapters().then(adapters => this.selectPreferredAdapter(adapters));
+  }
+
+  detectAdapters() {
+    if (this.os.platform() === 'win32') {
+      return this.detectWindowsAdapters();
+    }
     return new Promise(resolve => {
       this.execFile(
         'nvidia-smi',
@@ -61,75 +81,177 @@ class SystemAnalyzer {
             const firstLine = stdout.trim().split(/\r?\n/)[0];
             const [name, memory, driver] = firstLine.split(',').map(part => part.trim());
             const vramMb = Number.parseInt(String(memory).replace(/[^\d]/g, ''), 10) || 0;
-            resolve({
+            resolve([this.normalizeAdapter({
               name,
               vendor: 'nvidia',
               vramMb,
-              vramGb: Math.round((vramMb / 1024) * 10) / 10,
               driver,
-              state: 'detected'
-            });
+              pnpDeviceId: `nvidia-smi:${name}`
+            })]);
             return;
           }
 
-          if (this.os.platform() === 'win32') {
-            resolve(await this.detectWindowsGpu());
-            return;
-          }
-
-          resolve({
-            name: null,
-            vendor: null,
-            vramMb: 0,
-            vramGb: 0,
-            driver: null,
-            state: 'not_detected'
-          });
+          resolve([]);
         }
       );
     });
   }
 
   detectWindowsGpu() {
+    return this.detectWindowsAdapters().then(adapters => this.selectPreferredAdapter(adapters));
+  }
+
+  detectWindowsAdapters() {
     return new Promise(resolve => {
       this.execFile(
         'powershell',
-        ['-NoProfile', '-Command', 'Get-CimInstance Win32_VideoController | Select-Object Name,AdapterRAM,DriverVersion | Format-List'],
+        ['-NoProfile', '-NonInteractive', '-Command', WINDOWS_ADAPTER_SCRIPT],
         (error, stdout) => {
           if (error || !stdout) {
-            resolve({
-              name: null,
-              vendor: null,
-              vramMb: 0,
-              vramGb: 0,
-              driver: null,
-              state: 'not_detected'
-            });
+            resolve([]);
             return;
           }
 
-          const data = {};
-          stdout.trim().split(/[;\r\n]+/).forEach(part => {
-            const [key, ...rest] = part.split('=');
-            if (key && rest.length) {
-              data[key.trim()] = rest.join('=').trim();
-            }
-          });
-          const bytes = Number.parseInt(String(data.AdapterRAM || '').replace(/[^\d]/g, ''), 10) || 0;
-          const vramMb = Math.round(bytes / 1024 / 1024);
-          const name = data.Name || null;
-          const lower = String(name || '').toLowerCase();
-          resolve({
-            name,
-            vendor: lower.includes('nvidia') ? 'nvidia' : (lower.includes('amd') ? 'amd' : (lower.includes('intel') ? 'intel' : 'unknown')),
-            vramMb,
-            vramGb: Math.round((vramMb / 1024) * 10) / 10,
-            driver: data.DriverVersion || null,
-            state: name ? 'detected' : 'not_detected'
-          });
+          resolve(this.parseWindowsAdapters(stdout));
         }
       );
     });
+  }
+
+  parseWindowsAdapters(stdout) {
+    let payload;
+    try {
+      payload = JSON.parse(String(stdout).trim());
+    } catch (_) {
+      return this.parseLegacyFixture(stdout);
+    }
+    const adapterRows = Array.isArray(payload?.adapters) ? payload.adapters : (payload?.adapters ? [payload.adapters] : []);
+    const registryRows = Array.isArray(payload?.registry) ? payload.registry : (payload?.registry ? [payload.registry] : []);
+    return adapterRows
+      .filter(row => this.isPhysicalAdapter(row))
+      .map(row => {
+        const registry = this.findRegistryAdapter(row, registryRows);
+        const cimBytes = this.parseBytes(row.AdapterRAM);
+        const registryBytes = this.parseBytes(registry?.MemorySize ?? registry?.['HardwareInformation.qwMemorySize']);
+        const bytes = registryBytes > cimBytes ? registryBytes : cimBytes;
+        return this.normalizeAdapter({
+          name: row.Name,
+          vendor: this.vendorForName(row.Name),
+          vramMb: bytes > 0 ? Math.round(bytes / 1024 / 1024) : 0,
+          driver: row.DriverVersion || null,
+          pnpDeviceId: row.PNPDeviceID || row.DeviceID || row.Name
+        });
+      });
+  }
+
+  parseLegacyFixture(stdout) {
+    const text = String(stdout).trim();
+    if (/nvidia/i.test(text) && text.includes(',')) {
+      const [name, memory, driver] = text.split(/\r?\n/)[0].split(',').map(value => value.trim());
+      return [this.normalizeAdapter({
+        name,
+        vendor: 'nvidia',
+        vramMb: Number.parseInt(String(memory).replace(/[^\d]/g, ''), 10) || 0,
+        driver,
+        pnpDeviceId: `legacy:${name}`
+      })];
+    }
+    const row = {};
+    text.split(/[;\r\n]+/).forEach(part => {
+      const [key, ...rest] = part.split('=');
+      if (key && rest.length) row[key.trim()] = rest.join('=').trim();
+    });
+    if (!row.Name || !this.isPhysicalAdapter(row)) return [];
+    return [this.normalizeAdapter({
+      name: row.Name,
+      vendor: this.vendorForName(row.Name),
+      vramMb: Math.round(this.parseBytes(row.AdapterRAM) / 1024 / 1024),
+      driver: row.DriverVersion || null,
+      pnpDeviceId: row.PNPDeviceID || `legacy:${row.Name}`
+    })];
+  }
+
+  normalizeAdapter({ name, vendor, vramMb, driver, pnpDeviceId }) {
+    const normalizedName = String(name || '').trim();
+    const normalizedPnp = String(pnpDeviceId || normalizedName).trim().toLowerCase();
+    const memory = Math.max(0, Number(vramMb) || 0);
+    return {
+      id: `gpu-${crypto.createHash('sha256').update(normalizedPnp).digest('hex').slice(0, 16)}`,
+      name: normalizedName || null,
+      vendor: vendor || this.vendorForName(normalizedName),
+      architecture: this.architectureForName(normalizedName),
+      vramMb: memory,
+      vramGb: Math.round((memory / 1024) * 10) / 10,
+      memoryState: memory > 0 ? 'known' : 'unknown',
+      driver: driver || null,
+      pnpDeviceId: pnpDeviceId || null,
+      state: normalizedName ? 'detected' : 'not_detected'
+    };
+  }
+
+  selectPreferredAdapter(adapters = []) {
+    if (!adapters.length) {
+      return {
+        id: null,
+        name: null,
+        vendor: null,
+        architecture: 'unknown',
+        vramMb: 0,
+        vramGb: 0,
+        memoryState: 'unknown',
+        driver: null,
+        state: 'not_detected'
+      };
+    }
+    const vendorScore = { nvidia: 4, intel: 3, amd: 2, unknown: 1 };
+    return [...adapters].sort((left, right) => (
+      (vendorScore[right.vendor] || 0) - (vendorScore[left.vendor] || 0) ||
+      right.vramMb - left.vramMb ||
+      left.id.localeCompare(right.id)
+    ))[0];
+  }
+
+  isPhysicalAdapter(row = {}) {
+    const value = `${row.Name || ''} ${row.PNPDeviceID || ''} ${row.DeviceID || ''}`;
+    return Boolean(String(row.Name || '').trim()) && !VIRTUAL_ADAPTER_PATTERN.test(value);
+  }
+
+  findRegistryAdapter(adapter, rows) {
+    const pnp = String(adapter.PNPDeviceID || '').toLowerCase();
+    const name = String(adapter.Name || '').trim().toLowerCase();
+    return rows.find(row => {
+      const matchingId = String(row.MatchingDeviceId || '').toLowerCase();
+      return (matchingId && pnp.includes(matchingId)) ||
+        String(row.DriverDesc || '').trim().toLowerCase() === name;
+    }) || null;
+  }
+
+  parseBytes(value) {
+    try {
+      const digits = String(value ?? '').replace(/[^\d]/g, '');
+      if (!digits) return 0;
+      const parsed = BigInt(digits);
+      return parsed > BigInt(Number.MAX_SAFE_INTEGER) ? Number.MAX_SAFE_INTEGER : Number(parsed);
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  vendorForName(name) {
+    const lower = String(name || '').toLowerCase();
+    if (lower.includes('nvidia') || lower.includes('geforce')) return 'nvidia';
+    if (lower.includes('amd') || lower.includes('radeon')) return 'amd';
+    if (lower.includes('intel')) return 'intel';
+    return 'unknown';
+  }
+
+  architectureForName(name) {
+    const lower = String(name || '').toLowerCase();
+    if (/intel.*arc.*a770/.test(lower)) return 'arc_a770';
+    if (/nvidia|geforce/.test(lower) && /\brtx\s*(20|30|40|50)\d{2}\b/.test(lower)) return 'rtx_20_plus';
+    if (/nvidia|geforce/.test(lower) && /\bgtx\s*10\d{2}\b/.test(lower)) return 'gtx_10_legacy';
+    if (/amd|radeon/.test(lower)) return 'amd_radeon';
+    return 'unknown';
   }
 
   async checkComfy(comfyUrl) {
