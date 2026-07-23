@@ -148,6 +148,7 @@ class ManagedRuntimeInstaller {
     healthAttempts = 20,
     healthRequestTimeoutMs = 5000,
     forcedVerifyTimeoutMs = 120000,
+    startTimeoutMs = 120000,
     healthRetryDelayMs = 500
   } = {}) {
     this.platform = platform;
@@ -191,6 +192,10 @@ class ManagedRuntimeInstaller {
       1,
       Math.min(600000, Number(forcedVerifyTimeoutMs) || 120000)
     );
+    this.startTimeoutMs = Math.max(
+      1,
+      Math.min(600000, Number(startTimeoutMs) || 120000)
+    );
     this.healthRetryDelayMs = Math.max(0, Math.min(10000, Number(healthRetryDelayMs) || 0));
     this.current = null;
     this.installation = null;
@@ -201,6 +206,8 @@ class ManagedRuntimeInstaller {
     this.activeRequests = 0;
     this.idleStopPending = false;
     this.startPromise = null;
+    this.startGeneration = 0;
+    this.activeStartAttempt = null;
     this.forcedVerifyPromise = null;
     this.stopPromise = null;
     this.disposed = false;
@@ -838,16 +845,91 @@ class ManagedRuntimeInstaller {
       }
       return this.startPromise;
     }
-    const pending = this.startManagedRuntimeOnce(options);
+    const attempt = this.createStartAttempt(options.signal);
+    this.activeStartAttempt = attempt;
+    const operation = this.startManagedRuntimeOnce({
+      ...options,
+      signal: attempt.controller.signal
+    }, attempt);
+    let pending = null;
+    pending = (async () => {
+      try {
+        return await Promise.race([operation, attempt.abortPromise]);
+      } catch (error) {
+        await this.stopStartAttempt(attempt);
+        throw error;
+      } finally {
+        attempt.cleanup();
+        if (
+          this.startGeneration === attempt.generation &&
+          this.activeStartAttempt === attempt
+        ) {
+          this.activeStartAttempt = null;
+        }
+        if (
+          this.startGeneration === attempt.generation &&
+          this.startPromise === pending
+        ) {
+          this.startPromise = null;
+        }
+      }
+    })();
+    attempt.promise = pending;
     this.startPromise = pending;
-    try {
-      return await pending;
-    } finally {
-      if (this.startPromise === pending) this.startPromise = null;
+    return pending;
+  }
+
+  createStartAttempt(signal = null) {
+    const controller = new AbortController();
+    const generation = this.startGeneration + 1;
+    this.startGeneration = generation;
+    let timeout = null;
+    let externalAbortListener = null;
+    let internalAbortListener = null;
+    const abortPromise = new Promise((_, reject) => {
+      internalAbortListener = () => {
+        const reason = controller.signal.reason;
+        reject(reason instanceof Error
+          ? reason
+          : new Error('STREAM_MONSTERS_RUNTIME_ABORTED'));
+      };
+      controller.signal.addEventListener('abort', internalAbortListener, { once: true });
+      externalAbortListener = () => {
+        controller.abort(new Error('STREAM_MONSTERS_RUNTIME_ABORTED'));
+      };
+      if (signal?.aborted) {
+        externalAbortListener();
+        return;
+      }
+      signal?.addEventListener?.('abort', externalAbortListener, { once: true });
+      timeout = setTimeout(() => {
+        controller.abort(new Error('STREAM_MONSTERS_RUNTIME_START_TIMEOUT'));
+      }, this.startTimeoutMs);
+    });
+    return {
+      generation,
+      controller,
+      abortPromise,
+      child: null,
+      promise: null,
+      stopPromise: null,
+      invalidated: false,
+      cleanup: () => {
+        if (timeout) clearTimeout(timeout);
+        signal?.removeEventListener?.('abort', externalAbortListener);
+        controller.signal.removeEventListener('abort', internalAbortListener);
+      }
+    };
+  }
+
+  assertStartAttemptCurrent(attempt) {
+    this.throwIfUnavailable(attempt.controller.signal);
+    if (attempt.invalidated || this.startGeneration !== attempt.generation) {
+      throw new Error('STREAM_MONSTERS_RUNTIME_ABORTED');
     }
   }
 
-  async startManagedRuntimeOnce({ adapter, allowUnverified = false, signal = null } = {}) {
+  async startManagedRuntimeOnce({ adapter, allowUnverified = false, signal = null } = {}, attempt) {
     this.throwIfUnavailable(signal);
     if (this.managedChild && this.managedChild.exitCode === null) {
       if (adapter?.id && adapter.id !== this.processState.adapterId) {
@@ -870,7 +952,7 @@ class ManagedRuntimeInstaller {
     const pythonPath = this.resolveExistingInside(runtimeRoot, profile.pythonRelativePath);
     const mainPath = this.resolveExistingInside(runtimeRoot, profile.mainRelativePath);
     const port = await this.findFreePort();
-    this.throwIfUnavailable(signal);
+    this.assertStartAttemptCurrent(attempt);
     const backendIndex = this.resolveBackendIndex(selectedAdapter);
     const deviceSelectorArgs = this.buildDeviceSelectorArgs(profile, selectedAdapter);
     const runtimeDeviceIndex = this.resolveRuntimeDeviceIndex(profile);
@@ -891,6 +973,8 @@ class ManagedRuntimeInstaller {
       stdio: 'ignore',
       shell: false
     });
+    attempt.child = child;
+    this.assertStartAttemptCurrent(attempt);
     this.managedChild = child;
     this.processState = {
       state: 'starting',
@@ -904,7 +988,10 @@ class ManagedRuntimeInstaller {
       deviceSelectorArgs: [...deviceSelectorArgs]
     };
     child.once?.('exit', () => {
-      if (this.managedChild === child) {
+      if (
+        this.managedChild === child &&
+        this.startGeneration === attempt.generation
+      ) {
         this.managedChild = null;
         this.processState = { ...this.processState, state: 'stopped', pid: null };
       }
@@ -921,11 +1008,13 @@ class ManagedRuntimeInstaller {
         child,
         signal
       });
-      this.throwIfUnavailable(signal);
+      this.assertStartAttemptCurrent(attempt);
     } catch (error) {
-      await this.stopManagedRuntime({ force: true });
+      await this.stopStartAttempt(attempt, { abort: false });
       throw error;
     }
+    this.assertStartAttemptCurrent(attempt);
+    if (this.managedChild !== child) throw new Error('STREAM_MONSTERS_RUNTIME_ABORTED');
     this.processState = { ...this.processState, state: 'running' };
     this.current = {
       state: 'ready',
@@ -940,6 +1029,40 @@ class ManagedRuntimeInstaller {
     return this.getProcessState();
   }
 
+  async stopStartAttempt(attempt, { abort = true } = {}) {
+    if (!attempt) return this.getProcessState();
+    if (attempt.stopPromise) return attempt.stopPromise;
+    attempt.invalidated = true;
+    if (abort && !attempt.controller.signal.aborted) {
+      attempt.controller.abort(new Error('STREAM_MONSTERS_RUNTIME_ABORTED'));
+    }
+    if (
+      this.startGeneration === attempt.generation &&
+      this.activeStartAttempt === attempt
+    ) {
+      this.activeStartAttempt = null;
+    }
+    if (
+      this.startGeneration === attempt.generation &&
+      this.startPromise === attempt.promise
+    ) {
+      this.startPromise = null;
+    }
+    attempt.stopPromise = (async () => {
+      const child = attempt.child;
+      if (child && this.managedChild === child) this.managedChild = null;
+      if (child) await this.killAndWaitForChildExit(child);
+      if (this.startGeneration === attempt.generation) {
+        this.processState = { ...this.processState, state: 'stopped', pid: null };
+        this.current = this.current
+          ? { ...this.current, state: 'stopped', pid: null }
+          : null;
+      }
+      return this.getProcessState();
+    })();
+    return attempt.stopPromise;
+  }
+
   forceVerifyManagedRuntime({ adapter, profile, signal = null } = {}) {
     this.throwIfUnavailable(signal);
     if (this.forcedVerifyPromise) return this.forcedVerifyPromise;
@@ -950,6 +1073,15 @@ class ManagedRuntimeInstaller {
       signal: deadline.signal
     });
     const pending = Promise.race([operation, deadline.promise])
+      .catch(async error => {
+        if (
+          ['STREAM_MONSTERS_RUNTIME_VERIFY_TIMEOUT', 'STREAM_MONSTERS_RUNTIME_ABORTED']
+            .includes(error?.message)
+        ) {
+          await this.stopStartAttempt(this.activeStartAttempt);
+        }
+        throw error;
+      })
       .finally(deadline.cleanup);
     this.forcedVerifyPromise = pending;
     const clearPending = () => {

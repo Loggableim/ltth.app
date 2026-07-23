@@ -900,6 +900,135 @@ describe('Stream Monsters 1.3 runtime jobs and lifecycle', () => {
     expect(smokeTest).toHaveBeenCalledTimes(1);
   });
 
+  test('forced verification aborts an owned hung start and a fresh retry survives its late completion', async () => {
+    const runtimeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-start-race-'));
+    const pythonPath = path.join(runtimeRoot, 'python_embeded', 'python.exe');
+    const mainPath = path.join(runtimeRoot, 'ComfyUI', 'main.py');
+    fs.mkdirSync(path.dirname(pythonPath), { recursive: true });
+    fs.mkdirSync(path.dirname(mainPath), { recursive: true });
+    fs.writeFileSync(pythonPath, 'python');
+    fs.writeFileSync(mainPath, 'main');
+    const stalePromptBody = createDeferred();
+    const firstChild = createManagedChild(5101);
+    const retryChild = createManagedChild(5102);
+    const spawnImpl = jest.fn()
+      .mockReturnValueOnce(firstChild)
+      .mockReturnValueOnce(retryChild);
+    let promptRequests = 0;
+    const fetchImpl = jest.fn((url, options) => {
+      const value = String(url);
+      if (value.endsWith('/system_stats')) {
+        return Promise.resolve(jsonResponse(systemStatsBody()));
+      }
+      if (value.endsWith('/prompt')) {
+        promptRequests += 1;
+        if (promptRequests === 1) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: () => stalePromptBody.promise
+          });
+        }
+        return Promise.resolve(jsonResponse({ prompt_id: `retry-prompt-${promptRequests}` }));
+      }
+      if (value.includes('/history/retry-prompt-')) {
+        const promptId = decodeURIComponent(value.split('/history/')[1]);
+        return Promise.resolve(jsonResponse({
+          [promptId]: { outputs: { 7: { images: [{}] } } }
+        }));
+      }
+      if (value.endsWith('/history/stale-prompt')) {
+        return Promise.resolve(jsonResponse({
+          'stale-prompt': { outputs: { 7: { images: [{}] } } }
+        }));
+      }
+      throw new Error(`unexpected URL ${value}`);
+    });
+    const installer = new ManagedRuntimeInstaller({
+      fetchImpl,
+      spawnImpl,
+      findFreePort: jest.fn()
+        .mockResolvedValueOnce(8299)
+        .mockResolvedValueOnce(8300),
+      healthAttempts: 1,
+      healthRequestTimeoutMs: 1000,
+      forcedVerifyTimeoutMs: 20,
+      startTimeoutMs: 1000
+    });
+    const cachedSmokeTest = {
+      state: 'passed',
+      width: 256,
+      height: 256,
+      adapterId: ADAPTER.id,
+      profileId: 'nvidia-standard',
+      runtimeVersion: '0.28.0',
+      completedAt: '2020-01-01T00:00:00.000Z'
+    };
+    installer.installation = {
+      state: 'ready',
+      verified: true,
+      runtimeRoot,
+      adapterId: ADAPTER.id,
+      profileId: 'nvidia-standard',
+      smokeTest: cachedSmokeTest
+    };
+    installer.lastSmokeTest = cachedSmokeTest;
+
+    try {
+      const staleStart = installer.startManagedRuntime({ adapter: ADAPTER }).then(
+        () => 'unexpected-pass',
+        error => error.message
+      );
+      for (let attempt = 0; attempt < 20 && promptRequests === 0; attempt += 1) {
+        await new Promise(resolve => setImmediate(resolve));
+      }
+      expect(promptRequests).toBe(1);
+      expect(installer.getProcessState()).toEqual(expect.objectContaining({ state: 'starting', pid: 5101 }));
+      expect(installer.startPromise).not.toBeNull();
+
+      const forcedOutcome = forceVerification(installer).then(
+        () => 'unexpected-pass',
+        error => error.message
+      );
+      const safetyTimeout = new Promise(resolve => {
+        setTimeout(() => resolve('test-safety-timeout'), 150);
+      });
+      await expect(Promise.race([forcedOutcome, safetyTimeout]))
+        .resolves.toBe('STREAM_MONSTERS_RUNTIME_VERIFY_TIMEOUT');
+
+      expect(firstChild.kill).toHaveBeenCalledTimes(1);
+      expect(installer.getProcessState()).toEqual(expect.objectContaining({
+        state: 'stopped',
+        pid: null
+      }));
+      expect(installer.startPromise).toBeNull();
+      expect(installer.lastSmokeTest).toBe(cachedSmokeTest);
+
+      const retryEvidence = await forceVerification(installer);
+      expect(retryEvidence).toEqual(expect.objectContaining({ state: 'passed' }));
+      expect(installer.managedChild).toBe(retryChild);
+      expect(installer.getProcessState()).toEqual(expect.objectContaining({
+        state: 'running',
+        pid: 5102
+      }));
+
+      stalePromptBody.resolve({ prompt_id: 'stale-prompt' });
+      await flushDeferredVerification();
+      await expect(staleStart).resolves.toBe('STREAM_MONSTERS_RUNTIME_ABORTED');
+      expect(firstChild.kill).toHaveBeenCalledTimes(1);
+      expect(retryChild.kill).not.toHaveBeenCalled();
+      expect(installer.managedChild).toBe(retryChild);
+      expect(installer.getProcessState()).toEqual(expect.objectContaining({
+        state: 'running',
+        pid: 5102
+      }));
+      expect(installer.lastSmokeTest).toBe(retryEvidence);
+      expect(installer.installation.smokeTest).toBe(retryEvidence);
+    } finally {
+      fs.rmSync(runtimeRoot, { recursive: true, force: true });
+    }
+  });
+
   test('forced verification rejects a non-responsive running child instead of returning cached evidence', async () => {
     const fetchImpl = jest.fn(() => new Promise(() => {}));
     const smokeTest = jest.fn(async () => ({ ok: true, width: 256, height: 256 }));
