@@ -140,6 +140,30 @@ describe('Stream Monsters overlay layout and critical queue', () => {
       ]);
   });
 
+  test('rejects late unique events after a complete critical group was dropped', () => {
+    const queue = runtime.createPriorityQueue({ maxSize: 4, maxCriticalOverflow: 3 });
+    const oldBattleId = 'battle-complete-dropped';
+    queue.enqueue('battle_started', { battleId: oldBattleId }, 1);
+    for (let round = 1; round <= 3; round += 1) {
+      queue.enqueue('battle_round', { battleId: oldBattleId, round: { number: round } }, 1 + round);
+    }
+    queue.enqueue('battle_completed', { battleId: oldBattleId }, 5);
+
+    const newBattleId = 'battle-pressure';
+    queue.enqueue('battle_started', { battleId: newBattleId }, 6);
+    queue.enqueue('battle_round', { battleId: newBattleId, round: { number: 1 } }, 7);
+    queue.enqueue('battle_round', { battleId: newBattleId, round: { number: 2 } }, 8);
+    expect(queue.snapshot().some(entry => entry.groupKey === `battle:${oldBattleId}`)).toBe(false);
+
+    expect(queue.enqueue('battle_skill_used', {
+      battleId: oldBattleId,
+      round: 4,
+      actorId: 'monster-late',
+      skill: { vfxKey: 'late:unique' }
+    }, 9)).toBe(false);
+    expect(queue.snapshot().some(entry => entry.groupKey === `battle:${oldBattleId}`)).toBe(false);
+  });
+
   test('never admits a retransmitted terminal event from a discarded incomplete group', () => {
     const queue = runtime.createPriorityQueue({ maxSize: 2, maxCriticalOverflow: 0 });
     const battleId = 'battle-discarded-incomplete';

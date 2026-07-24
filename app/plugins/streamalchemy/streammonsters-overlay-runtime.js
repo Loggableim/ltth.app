@@ -278,11 +278,10 @@
     function dropCriticalGroup(targetGroupKey, droppedAt) {
       const grouped = entries.filter(entry => entry.groupKey === targetGroupKey);
       if (!grouped.length || targetGroupKey === activeGroupKey) return false;
-      const complete = grouped.some(entry => terminalType(entry.type));
       for (let index = entries.length - 1; index >= 0; index -= 1) {
         if (entries[index].groupKey === targetGroupKey) entries.splice(index, 1);
       }
-      if (!complete) rememberDroppedGroup(targetGroupKey, droppedAt);
+      rememberDroppedGroup(targetGroupKey, droppedAt);
       return true;
     }
 
