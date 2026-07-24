@@ -1238,6 +1238,48 @@ describe('InteractiveController', () => {
     harness.sqlite.close();
   });
 
+  test('refreshes active Connect4 audio config without rescheduling the viewer timer', () => {
+    const harness = createHarness({
+      connect4HostStarts: false,
+      settings: {
+        connect4ViewerTimeoutEnabled: true,
+        connect4ViewerResponseSeconds: 30,
+        connect4ViewerWarningSeconds: 10
+      }
+    });
+    harness.controller.init();
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'audio-config-viewer',
+      viewerDisplayName: 'Audio Config Viewer'
+    });
+    const original = harness.controller.getState().activeSessions[0];
+
+    expect(harness.controller.refreshConnect4TimerConfiguration({
+      soundEnabled: false,
+      soundVolume: 0.25,
+      roundTimerEnabled: true,
+      roundTimeLimit: 30,
+      roundWarningTime: 10
+    })).toMatchObject({ updatedSessions: 1 });
+
+    const refreshed = harness.controller.getState().activeSessions[0];
+    expect(refreshed).toMatchObject({
+      sessionId: match.sessionId,
+      sessionRevision: original.sessionRevision + 1,
+      viewerDeadlineMs: original.viewerDeadlineMs,
+      viewerTimeRemainingMs: original.viewerTimeRemainingMs,
+      config: expect.objectContaining({
+        soundEnabled: false,
+        soundVolume: 0.25
+      })
+    });
+    expect(harness.controller.timers.viewerTimers.size).toBe(1);
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
   test('starts the canonical Connect4 viewer deadline only after a host move when enabled', () => {
     const harness = createHarness({
       settings: {

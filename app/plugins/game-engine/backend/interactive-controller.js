@@ -195,6 +195,12 @@ class InteractiveController {
       )
     );
     let updatedSessions = 0;
+    const nextSessionConfig = {
+      ...config,
+      roundTimerEnabled: enabled,
+      roundTimeLimit: responseSeconds,
+      roundWarningTime: warningSeconds
+    };
 
     for (const session of this.registry.list()) {
       if (session.gameType !== 'connect4' || session.status !== 'active') continue;
@@ -216,22 +222,22 @@ class InteractiveController {
       );
       const scheduleChanged = previousEnabled !== enabled || previousResponseSeconds !== responseSeconds;
       const presentationChanged = scheduleChanged || previousWarningSeconds !== warningSeconds;
-      if (!presentationChanged) continue;
+      const nextConfig = {
+        ...session.config,
+        ...nextSessionConfig
+      };
+      const sessionConfigChanged = JSON.stringify(session.config || {}) !== JSON.stringify(nextConfig);
+      if (!presentationChanged && !sessionConfigChanged) continue;
 
       const viewerTurn = session.turnRole === 'viewer';
-      if (viewerTurn && enabled && !scheduleChanged) {
+      if (presentationChanged && viewerTurn && enabled && !scheduleChanged) {
         this.timers.pauseViewer(session, { persist: false });
-      } else if (viewerTurn && !enabled) {
+      } else if (presentationChanged && viewerTurn && !enabled) {
         this.timers.clearViewer(session.sessionId, { persist: false });
       }
-      session.config = {
-        ...session.config,
-        roundTimerEnabled: enabled,
-        roundTimeLimit: responseSeconds,
-        roundWarningTime: warningSeconds
-      };
+      session.config = nextConfig;
       session.sessionRevision += 1;
-      if (viewerTurn && enabled) {
+      if (presentationChanged && viewerTurn && enabled) {
         if (scheduleChanged) {
           this.timers.prepareViewer(session, responseSeconds, { persist: false });
         }
@@ -239,6 +245,7 @@ class InteractiveController {
       this.database.updateInteractiveState(session.sessionId, this._sessionRecord(session));
       const display = this.router.snapshot();
       if (
+        presentationChanged &&
         viewerTurn &&
         enabled &&
         display.displaySessionId === session.sessionId &&
