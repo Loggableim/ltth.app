@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 const overlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
+const creatorRuntime = require('../plugins/streamalchemy/streammonsters-creator-runtime');
 
 function response(payload) {
   return { ok: true, json: async () => payload };
@@ -28,8 +29,12 @@ function bootUi({ runtimeFetch, locale = null } = {}) {
     if (url === '/api/streammonsters/state') return response({
       success: true,
       config: { creatorName: '', hatchDurationMs: 300000, maxUnhatchedEggs: 3, elementRules: 'deterministic', artPoolTarget: 3 },
+      effectiveHatchDurationMs: 120000,
+      eggCounts: { incubating: 2, queued: 3, ready: 1 },
       pool: [],
       hype: { points: 0, charged_eggs: 0 },
+      heartChain: { chain_length: 4 },
+      streamMission: { mission_key: 'six_hatches', progress: 2, target: 6 },
       season: { season_id: 'season-1', starts_at_ms: 1, ends_at_ms: 2 }
     });
     if (url.startsWith('/api/streammonsters/state?userId=')) return response({
@@ -58,6 +63,21 @@ function bootUi({ runtimeFetch, locale = null } = {}) {
       limit: 40
     });
     if (url === '/api/streammonsters/gift-mappings') return response({ success: true, mappings: [] });
+    if (url.startsWith('/api/streammonsters/monster-catalog')) return response({
+      success: true,
+      templates: Array.from({ length: 24 }, (_, index) => ({
+        templateId: `template-${index}`,
+        name: `Monster ${index}`,
+        element: index % 2 ? 'Tide' : 'Ember',
+        assetPath: `/monster-${index}.png`,
+        owned: index === 0,
+        silhouette: index !== 0,
+        mastery: index === 0 ? { level: 2, points: 7 } : null
+      })),
+      dex: { owned: 0, total: 24 },
+      essence: [{ element: 'Ember', amount: 5, unlocks: ['aura'] }],
+      cosmetics: []
+    });
     if (url === '/api/streammonsters/pool') return response({ success: true, coverage: [] });
     if (url.startsWith('/api/streammonsters/leaderboard')) return response({ success: true, entries: [] });
     if (url === '/api/streamalchemy/providers/status') return response({
@@ -78,6 +98,7 @@ function bootUi({ runtimeFetch, locale = null } = {}) {
     beforeParse(window) {
       window.fetch = fetchMock;
       window.StreamMonstersOverlayRuntime = overlayRuntime;
+      window.StreamMonstersCreatorRuntime = creatorRuntime;
       window.i18n = {
         init: async () => {},
         updateDOM: () => {},
@@ -287,7 +308,28 @@ describe('Stream Monsters creator wizard', () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/streammonsters/config', expect.objectContaining({ method: 'POST' })));
     const saveCall = fetchMock.mock.calls.find(([url, options]) => url === '/api/streammonsters/config' && options.method === 'POST');
-    expect(JSON.parse(saveCall[1].body)).toEqual(expect.objectContaining({ creatorName: 'The Egg Forge' }));
+    expect(JSON.parse(saveCall[1].body)).toEqual(expect.objectContaining({
+      creatorName: 'The Egg Forge',
+      hatchDurationMs: 300000,
+      visualPack: 'furry',
+      landscapeAnchor: 'bottom-center',
+      landscapeScale: 100,
+      portraitAnchor: 'center',
+      portraitScale: 100,
+      giftMappingCustomized: false
+    }));
+    dom.window.close();
+  });
+
+  test('renders real readiness, Heart Chain, mission and all 24 Dex slots', async () => {
+    const { dom } = bootUi();
+    await waitFor(() => expect(dom.window.document.querySelectorAll('#monsterDex .dex-slot')).toHaveLength(24));
+
+    expect(dom.window.document.getElementById('creatorMetrics').textContent)
+      .toMatch(/2 active.*3 queued.*1 ready.*2m/);
+    expect(dom.window.document.getElementById('heartChainStatus').textContent).toContain('4');
+    expect(dom.window.document.getElementById('streamMissionStatus').textContent).toContain('2/6');
+    expect(dom.window.document.querySelectorAll('#monsterDex .dex-slot.locked')).toHaveLength(23);
     dom.window.close();
   });
 

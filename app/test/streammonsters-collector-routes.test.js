@@ -252,7 +252,8 @@ describe('Stream Monsters 1.2 public API', () => {
       dex: { owned: 0, total: 24 },
       heartChain: expect.objectContaining({ chain_length: 0 }),
       streamMission: expect.objectContaining({ mission_key: expect.any(String) }),
-      visualPack: 'furry'
+      visualPack: 'furry',
+      eggCounts: { incubating: 0, queued: 0, ready: 0 }
     }));
 
     const prepared = response();

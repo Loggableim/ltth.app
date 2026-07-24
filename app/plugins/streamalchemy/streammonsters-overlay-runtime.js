@@ -8,8 +8,11 @@
   const CRITICAL_TYPES = new Set([
     'battle_started',
     'stance_revealed',
+    'battle_skill_used',
+    'battle_special_charged',
     'battle_round',
     'battle_completed',
+    'egg_spawned',
     'egg_ready',
     'hatch_started',
     'egg_hatched'
@@ -99,6 +102,23 @@
     STREAM_MONSTERS_RUNTIME_JOB_NOT_FOUND: 'runtimeErrorJobNotFound',
     STREAM_MONSTERS_RUNTIME_ABORTED: 'runtimeErrorAborted'
   });
+  const ANCHORS = Object.freeze([
+    'top-left', 'top-center', 'top-right',
+    'middle-left', 'center', 'middle-right',
+    'bottom-left', 'bottom-center', 'bottom-right'
+  ]);
+  const ANCHOR_SET = new Set(ANCHORS);
+  const ANCHOR_PLACEMENTS = Object.freeze({
+    'top-left': Object.freeze({ align: 'flex-start', justify: 'flex-start' }),
+    'top-center': Object.freeze({ align: 'flex-start', justify: 'center' }),
+    'top-right': Object.freeze({ align: 'flex-start', justify: 'flex-end' }),
+    'middle-left': Object.freeze({ align: 'center', justify: 'flex-start' }),
+    center: Object.freeze({ align: 'center', justify: 'center' }),
+    'middle-right': Object.freeze({ align: 'center', justify: 'flex-end' }),
+    'bottom-left': Object.freeze({ align: 'flex-end', justify: 'flex-start' }),
+    'bottom-center': Object.freeze({ align: 'flex-end', justify: 'center' }),
+    'bottom-right': Object.freeze({ align: 'flex-end', justify: 'flex-end' })
+  });
 
   function normalizeVolume(storedValue) {
     const numeric = Number(storedValue);
@@ -120,9 +140,14 @@
     return audioContext.decodeAudioData(bytes.buffer);
   }
 
-  function createPriorityQueue({ maxSize = 30, staleAfterMs = 10000 } = {}) {
+  function createPriorityQueue({
+    maxSize = 30,
+    staleAfterMs = 10000,
+    maxCriticalOverflow = 0
+  } = {}) {
     const entries = [];
     const boundedMaxSize = Math.max(1, Number(maxSize) || 1);
+    const overflowLimit = boundedMaxSize + Math.max(0, Number(maxCriticalOverflow) || 0);
     let snapshotEvent = null;
     let sequence = 0;
     let activeGroupKey = null;
@@ -137,11 +162,11 @@
     function groupKey(type, data = {}) {
       if (!CRITICAL_TYPES.has(type)) return null;
       if (type.startsWith('egg_') || type === 'hatch_started') {
-        const eggId = data.egg?.egg_id || data.egg?.id || data.eggId || data.userId || 'ungrouped';
-        return `hatch:${eggId}`;
+        const eggId = data.egg?.egg_id || data.egg?.id || data.eggId || data.userId;
+        return eggId ? `hatch:${eggId}` : null;
       }
-      const battleId = data.battleId || data.battle?.battleId || data.battle?.battle_id || 'ungrouped';
-      return `battle:${battleId}`;
+      const battleId = data.battleId || data.battle?.battleId || data.battle?.battle_id;
+      return battleId ? `battle:${battleId}` : null;
     }
 
     function totalSize() {
@@ -164,12 +189,16 @@
           continue;
         }
 
+        if (totalSize() <= overflowLimit) break;
         const removableCriticalGroups = [];
         for (const entry of entries) {
-          if (entry.priority !== 3 || entry.groupKey === activeGroupKey) continue;
+          if (entry.priority !== 3 || !entry.groupKey || entry.groupKey === activeGroupKey) continue;
           if (!removableCriticalGroups.includes(entry.groupKey)) removableCriticalGroups.push(entry.groupKey);
         }
-        if (removableCriticalGroups.length > 1 || (activeGroupKey && removableCriticalGroups.length)) {
+        const allCriticalGroups = [...new Set(entries
+          .filter(entry => entry.priority === 3 && entry.groupKey)
+          .map(entry => entry.groupKey))];
+        if (allCriticalGroups.length > 1 && removableCriticalGroups.length) {
           const oldestGroup = removableCriticalGroups[0];
           for (let index = entries.length - 1; index >= 0; index -= 1) {
             if (entries[index].groupKey === oldestGroup) removeEntry(index);
@@ -177,11 +206,9 @@
           continue;
         }
 
-        const criticalIndex = entries.findIndex(entry => (
-          entry.priority === 3 && entry.groupKey !== activeGroupKey
-        ));
-        if (criticalIndex >= 0) {
-          removeEntry(criticalIndex);
+        const ungroupedCriticalIndex = entries.findIndex(entry => entry.priority === 3 && !entry.groupKey);
+        if (ungroupedCriticalIndex >= 0) {
+          removeEntry(ungroupedCriticalIndex);
           continue;
         }
 
@@ -191,11 +218,9 @@
           continue;
         }
 
-        const activeCriticalIndex = entries.findIndex(entry => entry.priority === 3);
-        if (activeCriticalIndex >= 0) {
-          removeEntry(activeCriticalIndex);
-          continue;
-        }
+        // A single critical group is deliberately indivisible. Known spawn/hatch
+        // and battle groups are bounded by their event vocabularies, so this is a
+        // temporary, bounded overflow in normal operation.
         break;
       }
     }
@@ -372,8 +397,117 @@
     );
   }
 
+  function validScale(value, fallback = 100) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric >= 70 && numeric <= 130 ? numeric : fallback;
+  }
+
+  function anchorPlacement(anchor) {
+    return ANCHOR_PLACEMENTS[anchor] || ANCHOR_PLACEMENTS.center;
+  }
+
+  function resolveLayoutSettings({
+    width = 0,
+    height = 0,
+    search = '',
+    config = {}
+  } = {}) {
+    const params = new URLSearchParams(String(search || '').replace(/^\?/, ''));
+    const requestedLayout = params.get('layout');
+    const automaticLayout = Number(width) >= Number(height) ? 'landscape' : 'portrait';
+    const layout = ['landscape', 'portrait'].includes(requestedLayout)
+      ? requestedLayout
+      : automaticLayout;
+    const defaultAnchor = layout === 'landscape' ? 'bottom-center' : 'center';
+    const anchorKey = `${layout}Anchor`;
+    const scaleKey = `${layout}Scale`;
+    const configuredAnchor = ANCHOR_SET.has(config[anchorKey]) ? config[anchorKey] : defaultAnchor;
+    const configuredScale = validScale(config[scaleKey], 100);
+    const urlAnchor = params.get(anchorKey);
+    const urlScale = params.get(scaleKey);
+    return {
+      layout,
+      anchor: ANCHOR_SET.has(urlAnchor) ? urlAnchor : configuredAnchor,
+      scale: validScale(urlScale, configuredScale),
+      source: ['landscape', 'portrait'].includes(requestedLayout) ? 'override' : 'auto'
+    };
+  }
+
+  function createLayoutController({
+    window: windowLike,
+    stage,
+    battle = null,
+    config = {}
+  } = {}) {
+    const hostWindow = windowLike || (typeof window === 'object' ? window : null);
+    function apply() {
+      const resolved = resolveLayoutSettings({
+        width: hostWindow?.innerWidth,
+        height: hostWindow?.innerHeight,
+        search: hostWindow?.location?.search,
+        config
+      });
+      if (stage?.dataset) {
+        stage.dataset.layout = resolved.layout;
+        stage.dataset.anchor = resolved.anchor;
+        stage.dataset.scale = String(resolved.scale);
+      }
+      const placement = anchorPlacement(resolved.anchor);
+      stage?.style?.setProperty?.('--reveal-align', placement.align);
+      stage?.style?.setProperty?.('--reveal-justify', placement.justify);
+      stage?.style?.setProperty?.('--reveal-scale', String(resolved.scale / 100));
+      if (battle?.dataset) battle.dataset.layoutIndependent = 'true';
+      return resolved;
+    }
+    let current = null;
+    const applyAndRemember = () => {
+      current = apply();
+      return current;
+    };
+    const onResize = () => applyAndRemember();
+    hostWindow?.addEventListener?.('resize', onResize);
+    hostWindow?.addEventListener?.('orientationchange', onResize);
+    applyAndRemember();
+    return {
+      apply: applyAndRemember,
+      current: () => current,
+      destroy() {
+        hostWindow?.removeEventListener?.('resize', onResize);
+        hostWindow?.removeEventListener?.('orientationchange', onResize);
+      }
+    };
+  }
+
+  function rectanglesOverlap(first = {}, second = {}) {
+    const a = {
+      x: Number(first.x) || 0,
+      y: Number(first.y) || 0,
+      width: Math.max(0, Number(first.width) || 0),
+      height: Math.max(0, Number(first.height) || 0)
+    };
+    const b = {
+      x: Number(second.x) || 0,
+      y: Number(second.y) || 0,
+      width: Math.max(0, Number(second.width) || 0),
+      height: Math.max(0, Number(second.height) || 0)
+    };
+    return a.x < b.x + b.width &&
+      a.x + a.width > b.x &&
+      a.y < b.y + b.height &&
+      a.y + a.height > b.y;
+  }
+
+  function safeZoneCollisions({ reveal, reserved = {} } = {}) {
+    return Object.entries(reserved)
+      .filter(([, rectangle]) => rectanglesOverlap(reveal, rectangle))
+      .map(([name]) => name);
+  }
+
   return {
+    ANCHORS,
     apiErrorKey,
+    anchorPlacement,
+    createLayoutController,
     createPriorityQueue,
     createReconnectController,
     chatMessageKey,
@@ -383,6 +517,9 @@
     isCritical: type => CRITICAL_TYPES.has(type),
     normalizeVolume,
     personalityKey: value => enumKey(PERSONALITY_KEYS, value),
+    rectanglesOverlap,
+    resolveLayoutSettings,
+    safeZoneCollisions,
     variantKey: value => enumKey(VARIANT_KEYS, value)
   };
 }));

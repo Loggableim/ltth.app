@@ -722,6 +722,27 @@ class StreamMonstersDatabase {
     return userId ? this.db.prepare(sql).all(userId) : this.db.prepare(sql).all();
   }
 
+  getEggStateCounts(userId = null) {
+    const counts = { incubating: 0, queued: 0, ready: 0 };
+    const rows = userId
+      ? this.db.prepare(`
+        SELECT state, COUNT(*) AS count
+        FROM streammonsters_eggs
+        WHERE user_id = ? AND state IN ('incubating', 'queued', 'ready')
+        GROUP BY state
+      `).all(userId)
+      : this.db.prepare(`
+        SELECT state, COUNT(*) AS count
+        FROM streammonsters_eggs
+        WHERE state IN ('incubating', 'queued', 'ready')
+        GROUP BY state
+      `).all();
+    rows.forEach(row => {
+      if (Object.prototype.hasOwnProperty.call(counts, row.state)) counts[row.state] = Number(row.count) || 0;
+    });
+    return counts;
+  }
+
   boostOldestEgg(userId, boostMs) {
     const egg = this.getViewerEggs(userId, 'incubating')[0];
     if (!egg) return null;

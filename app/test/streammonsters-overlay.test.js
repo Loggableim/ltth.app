@@ -28,4 +28,24 @@ describe('Stream Monsters OBS overlay', () => {
     expect(html).toContain('@media (orientation: portrait)');
     expect(html).toContain('!hatch');
   });
+
+  test('provides transparent 16:9/9:16 effect and reveal stages with WebGPU fallback contracts', () => {
+    const html = fs.readFileSync(path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-overlay.html'), 'utf8');
+
+    expect(html).toContain('id="effects-canvas"');
+    expect(html).toContain('id="reveal-stage"');
+    expect(html).toContain('streammonsters-effects-renderer.js');
+    expect(html).toContain('createEffectsRenderer');
+    expect(html).toContain('createLayoutController');
+    expect(html).toContain('background:transparent');
+    expect(html).toContain('effects-fallback');
+    expect(html).toContain('[data-anchor="top-left"]');
+    expect(html).toContain('[data-anchor="bottom-right"]');
+    expect(html).toContain('@media (orientation: portrait)');
+    expect(html).toContain('@media (prefers-reduced-motion: reduce)');
+    expect(html).toContain('streammonsters:battle_skill_used');
+    expect(html).toContain('streammonsters:battle_special_charged');
+    expect(html).toContain('battleMonsters.find');
+    expect(html).toContain('imageErrorFallback');
+  });
 });

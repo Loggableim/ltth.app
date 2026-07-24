@@ -83,6 +83,7 @@
     button.secondary { color:#dfe8ff; background:#273654; }
     button.danger { background:#733548; }
     button:disabled { opacity:.5; cursor:wait; }
+    button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible { outline:3px solid var(--cyan); outline-offset:3px; }
     code { display:block; padding:10px; margin-top:8px; overflow-wrap:anywhere; color:#c5f3ff; border-radius:10px; background:#080c16; }
     .gift-layout { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(300px,.7fr); gap:14px; }
     .catalog,.mapping-list,.collection-list,.leaderboard { display:grid; gap:8px; max-height:390px; overflow:auto; margin-top:12px; }
@@ -119,12 +120,30 @@
     .rank-track { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; margin-top:12px; }
     .rank-track div { padding:10px; border:1px solid #334263; border-radius:11px; text-align:center; color:var(--muted); background:#0b1221; }
     .rank-track strong { display:block; color:var(--gold); }
+    .control-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+    .safe-zone {
+      position:relative; width:min(100%,760px); aspect-ratio:16/9; overflow:hidden; margin-top:14px;
+      border:2px solid #6576a4; border-radius:16px; background:#080c16;
+    }
+    .safe-zone.portrait { width:min(100%,360px); aspect-ratio:9/16; }
+    .safe-box { position:absolute; display:grid; place-items:center; padding:5px; border:2px dashed #607099; border-radius:8px; color:#dce5ff; background:#26324aa8; font-size:11px; text-align:center; }
+    .safe-box.reveal { border-style:solid; border-color:var(--mint); color:#dffff0; background:#285d4ebf; }
+    .safe-box.collision { border-color:var(--danger); background:#752d42c7; }
+    .collision-warning { min-height:24px; margin-top:8px; color:#ffb9c6; font-weight:800; }
+    .dex-grid { display:grid; grid-template-columns:repeat(6,minmax(90px,1fr)); gap:9px; margin-top:12px; }
+    .dex-slot { min-height:150px; padding:9px; border:1px solid #405076; border-radius:13px; text-align:center; background:#0c1426; }
+    .dex-slot img { width:78px; height:78px; object-fit:contain; }
+    .dex-slot.locked img { filter:brightness(0) opacity(.44); }
+    .dex-slot strong,.dex-slot small { display:block; }
+    .dex-slot small { color:var(--muted); }
     @media (max-width:960px) {
       .hero,.gift-layout { grid-template-columns:1fr; }
       .card,.card.wide { grid-column:1/-1; }
       .egg-grid { grid-template-columns:repeat(4,1fr); }
       .provider-grid { grid-template-columns:repeat(3,1fr); }
       .runtime-details { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .control-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .dex-grid { grid-template-columns:repeat(4,minmax(80px,1fr)); }
     }
     @media (max-width:620px) {
       main { padding:14px 12px 60px; }
@@ -133,6 +152,8 @@
       .egg-grid { grid-template-columns:repeat(2,1fr); }
       .coverage,.rank-track { grid-template-columns:repeat(2,1fr); }
       .runtime-details { grid-template-columns:1fr; }
+      .control-grid { grid-template-columns:1fr; }
+      .dex-grid { grid-template-columns:repeat(2,minmax(80px,1fr)); }
     }
   </style>
 </head>
@@ -183,6 +204,61 @@
         <div><span data-i18n="plugins.streamalchemy.ui.monsters.prefix">Aktives GCCE-Präfix</span>: <strong id="activePrefix">!</strong></div>
         <div><span data-i18n="plugins.streamalchemy.ui.monsters.hatchDuration">Tatsächliche Brutzeit</span>: <strong id="activeHatchDuration">—</strong></div>
         <div id="creatorMetrics" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.noMetrics">Noch keine Streamdaten</div>
+        <div id="heartChainStatus" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.heartChainEmpty">Heart Chain · 0</div>
+        <div id="streamMissionStatus" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.missionLoading">Mission loading</div>
+      </article>
+      <article class="card full">
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.presentationControls">Presentation and layout</h3>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.presentationCopy">Configure hatch timing, visual assets and independent landscape and portrait reveal placement.</p>
+        <div class="control-grid">
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.hatchPreset">Hatch preset</span><select id="hatchPreset">
+            <option value="30000" data-i18n="plugins.streamalchemy.ui.monsters.duration30Seconds">30 seconds</option>
+            <option value="60000" data-i18n="plugins.streamalchemy.ui.monsters.duration1Minute">1 minute</option>
+            <option value="120000" data-i18n="plugins.streamalchemy.ui.monsters.duration2Minutes">2 minutes</option>
+            <option value="300000" data-i18n="plugins.streamalchemy.ui.monsters.duration5Minutes">5 minutes</option>
+            <option value="600000" data-i18n="plugins.streamalchemy.ui.monsters.duration10Minutes">10 minutes</option>
+            <option value="1800000" data-i18n="plugins.streamalchemy.ui.monsters.duration30Minutes">30 minutes</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.visualPack">Visual pack</span><select id="visualPack">
+            <option value="furry" data-i18n="plugins.streamalchemy.ui.monsters.visualPackFurry">Furry</option>
+            <option value="art_lab" data-i18n="plugins.streamalchemy.ui.monsters.visualPackArtLab">Art Lab</option>
+            <option value="kenney" data-i18n="plugins.streamalchemy.ui.monsters.visualPackKenney">Kenney</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.safeZoneLayout">Safe-zone format</span><select id="safeZoneLayout">
+            <option value="landscape" data-i18n="plugins.streamalchemy.ui.monsters.layoutLandscape">Landscape 16:9</option>
+            <option value="portrait" data-i18n="plugins.streamalchemy.ui.monsters.layoutPortrait">Portrait 9:16</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.landscapeAnchor">Landscape anchor</span><select id="landscapeAnchor">
+            <option value="top-left" data-i18n="plugins.streamalchemy.ui.monsters.anchorTopLeft">Top left</option><option value="top-center" data-i18n="plugins.streamalchemy.ui.monsters.anchorTopCenter">Top center</option><option value="top-right" data-i18n="plugins.streamalchemy.ui.monsters.anchorTopRight">Top right</option>
+            <option value="middle-left" data-i18n="plugins.streamalchemy.ui.monsters.anchorMiddleLeft">Middle left</option><option value="center" data-i18n="plugins.streamalchemy.ui.monsters.anchorCenter">Center</option><option value="middle-right" data-i18n="plugins.streamalchemy.ui.monsters.anchorMiddleRight">Middle right</option>
+            <option value="bottom-left" data-i18n="plugins.streamalchemy.ui.monsters.anchorBottomLeft">Bottom left</option><option value="bottom-center" data-i18n="plugins.streamalchemy.ui.monsters.anchorBottomCenter">Bottom center</option><option value="bottom-right" data-i18n="plugins.streamalchemy.ui.monsters.anchorBottomRight">Bottom right</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.landscapeScale">Landscape scale</span><input id="landscapeScale" type="number" min="70" max="130" value="100"></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.portraitAnchor">Portrait anchor</span><select id="portraitAnchor">
+            <option value="top-left" data-i18n="plugins.streamalchemy.ui.monsters.anchorTopLeft">Top left</option><option value="top-center" data-i18n="plugins.streamalchemy.ui.monsters.anchorTopCenter">Top center</option><option value="top-right" data-i18n="plugins.streamalchemy.ui.monsters.anchorTopRight">Top right</option>
+            <option value="middle-left" data-i18n="plugins.streamalchemy.ui.monsters.anchorMiddleLeft">Middle left</option><option value="center" data-i18n="plugins.streamalchemy.ui.monsters.anchorCenter">Center</option><option value="middle-right" data-i18n="plugins.streamalchemy.ui.monsters.anchorMiddleRight">Middle right</option>
+            <option value="bottom-left" data-i18n="plugins.streamalchemy.ui.monsters.anchorBottomLeft">Bottom left</option><option value="bottom-center" data-i18n="plugins.streamalchemy.ui.monsters.anchorBottomCenter">Bottom center</option><option value="bottom-right" data-i18n="plugins.streamalchemy.ui.monsters.anchorBottomRight">Bottom right</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.portraitScale">Portrait scale</span><input id="portraitScale" type="number" min="70" max="130" value="100"></label>
+        </div>
+        <div id="safeZonePreview" class="safe-zone" role="img" aria-label="Overlay safe-zone preview" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.safeZonePreviewLabel">
+          <div id="safeLogo" class="safe-box" data-i18n="plugins.streamalchemy.ui.monsters.safeZoneLogo">Logo</div>
+          <div id="safeHype" class="safe-box" data-i18n="plugins.streamalchemy.ui.monsters.safeZoneHype">Hype</div>
+          <div id="safeChat" class="safe-box" data-i18n="plugins.streamalchemy.ui.monsters.safeZoneChat">Chat cards</div>
+          <div id="safeReveal" class="safe-box reveal" data-i18n="plugins.streamalchemy.ui.monsters.safeZoneReveal">Reveal and effects</div>
+        </div>
+        <div id="safeZoneWarning" class="collision-warning" role="alert" aria-live="polite"></div>
+        <div class="control-grid">
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.demoScene">Demo scene</span><select id="demoScene">
+            <option value="spawn" data-i18n="plugins.streamalchemy.ui.monsters.demoSpawn">Spawn</option>
+            <option value="hatch" data-i18n="plugins.streamalchemy.ui.monsters.demoHatch">Hatch</option>
+            <option value="attack" data-i18n="plugins.streamalchemy.ui.monsters.demoAttack">Attack</option>
+            <option value="defense" data-i18n="plugins.streamalchemy.ui.monsters.demoDefense">Defense</option>
+            <option value="special" data-i18n="plugins.streamalchemy.ui.monsters.demoSpecial">Special</option>
+          </select></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.demoTemplate">Demo monster</span><select id="demoTemplate"></select></label>
+        </div>
+        <button id="runSceneDemo" type="button" data-i18n="plugins.streamalchemy.ui.monsters.runSceneDemo">Preview selected scene</button>
       </article>
       <article class="card full">
         <h3 data-i18n="plugins.streamalchemy.ui.monsters.viewerCommands">Viewer-Kommandos</h3>
@@ -193,6 +269,11 @@
         </div>
       </article>
     </div>
+    <article class="card full" style="margin-top:14px">
+      <h3 data-i18n="plugins.streamalchemy.ui.monsters.monsterDex">Monsterdex · 24</h3>
+      <p id="dexProgress" class="muted" data-i18n="plugins.streamalchemy.ui.monsters.dexEmpty">0 of 24 discovered</p>
+      <div id="monsterDex" class="dex-grid" aria-live="polite"></div>
+    </article>
   </section>
 
   <section id="gifts" class="area">
@@ -208,7 +289,8 @@
         <input id="selectedGiftId" type="hidden">
         <div id="selectedGift" class="gift-row"><span class="muted" data-i18n="plugins.streamalchemy.ui.monsters.chooseGift">Im Katalog ein Geschenk wählen.</span></div>
         <label><span data-i18n="plugins.streamalchemy.ui.monsters.action">Aktion</span><select id="giftEffect"><option value="spawn" data-i18n="plugins.streamalchemy.ui.monsters.spawnEgg">Ei spawnen</option><option value="boost" data-i18n="plugins.streamalchemy.ui.monsters.boostEgg">Ältestes Ei boosten</option></select></label>
-        <label><span data-i18n="plugins.streamalchemy.ui.monsters.element">Element</span><select id="giftElement"><option data-i18n="plugins.streamalchemy.ui.monsters.ember">Ember</option><option data-i18n="plugins.streamalchemy.ui.monsters.tide">Tide</option><option data-i18n="plugins.streamalchemy.ui.monsters.grove">Grove</option><option data-i18n="plugins.streamalchemy.ui.monsters.gale">Gale</option><option data-i18n="plugins.streamalchemy.ui.monsters.volt">Volt</option><option data-i18n="plugins.streamalchemy.ui.monsters.lunar">Lunar</option></select></label>
+        <label><span data-i18n="plugins.streamalchemy.ui.monsters.element">Element</span><select id="giftElement"><option value="Random" data-i18n="plugins.streamalchemy.ui.monsters.randomElement">Random</option><option data-i18n="plugins.streamalchemy.ui.monsters.ember">Ember</option><option data-i18n="plugins.streamalchemy.ui.monsters.tide">Tide</option><option data-i18n="plugins.streamalchemy.ui.monsters.grove">Grove</option><option data-i18n="plugins.streamalchemy.ui.monsters.gale">Gale</option><option data-i18n="plugins.streamalchemy.ui.monsters.volt">Volt</option><option data-i18n="plugins.streamalchemy.ui.monsters.lunar">Lunar</option></select></label>
+        <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.heartMeHelp">Heart Me is mapped automatically to a deterministic random element until you customize gift mappings manually.</p>
         <button id="saveGiftMapping" type="button" data-i18n="plugins.streamalchemy.ui.monsters.enableMapping">Mapping aktivieren</button>
         <h3 style="margin-top:18px" data-i18n="plugins.streamalchemy.ui.monsters.activeSelection">Aktive Auswahl</h3>
         <div id="mappingList" class="mapping-list"></div>
@@ -321,6 +403,7 @@
 
 <script src="/js/i18n-client.js"></script>
 <script src="/plugins/streamalchemy/streammonsters-overlay-runtime.js"></script>
+<script src="/plugins/streamalchemy/streammonsters-creator-runtime.js"></script>
 <script>
 (async () => {
   if (window.i18n?.init) {
@@ -339,6 +422,7 @@
     return translated && translated !== fullKey ? translated : interpolate(fallback, params);
   };
   const runtimeText = window.StreamMonstersOverlayRuntime;
+  const creatorRuntime = window.StreamMonstersCreatorRuntime;
   const elementName = element => text(runtimeText.elementKey(element), 'Unknown');
   const variantName = variant => text(runtimeText.variantKey(variant), 'Unknown');
   const personalityName = personality => text(runtimeText.personalityKey(personality), 'Unknown');
@@ -427,6 +511,7 @@
   let searchTimer = null;
   let runtimePayload = null;
   let runtimeJobTimer = null;
+  let currentStateConfig = {};
   const runtimeInstallRequestKey = 'streammonsters-runtime-install-request';
   const notice = (message, type = '') => {
     const root = byId('notice');
@@ -597,11 +682,59 @@
     });
     if (!items.length) root.textContent = text('noCollectionItems', 'Noch keine Eier oder Monster.');
   };
+  const renderDex = payload => {
+    const slots = creatorRuntime.buildDexSlots(payload);
+    const root = byId('monsterDex');
+    root.replaceChildren();
+    slots.forEach(slot => {
+      const card = document.createElement('article');
+      card.className = `dex-slot${slot.locked ? ' locked' : ''}`;
+      const image = document.createElement('img');
+      image.src = slot.assetPath;
+      image.alt = slot.locked ? text('dexLocked', 'Locked monster') : slot.name;
+      const title = document.createElement('strong');
+      title.textContent = slot.locked ? text('dexUnknown', '???') : slot.name;
+      const element = document.createElement('small');
+      element.textContent = slot.locked
+        ? text('dexLocked', 'Locked monster')
+        : text('dexElementFound', '{element} · first found', { element:elementName(slot.element) });
+      const mastery = document.createElement('small');
+      mastery.textContent = text('dexMasteryEssence', 'Mastery {mastery} · Essence {essence}', {
+        mastery:slot.masteryLevel,
+        essence:slot.essence
+      });
+      card.append(image,title,element,mastery);
+      if (slot.cosmetic) card.classList.add('cosmetic');
+      root.append(card);
+    });
+    const owned = slots.filter(slot => !slot.locked).length;
+    byId('dexProgress').textContent = text('dexProgress', '{found} of {total} discovered', {
+      found:owned,
+      total:slots.length
+    });
+    const templateSelect = byId('demoTemplate');
+    const selected = templateSelect.value;
+    templateSelect.replaceChildren();
+    slots.forEach(slot => {
+      const option = document.createElement('option');
+      option.value = slot.templateId;
+      option.textContent = `${slot.name} · ${elementName(slot.element)}`;
+      option.selected = slot.templateId === selected;
+      templateSelect.append(option);
+    });
+  };
+  const loadMonsterCatalog = async (userId = '') => {
+    const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+    const payload = await request(`/api/streammonsters/monster-catalog${query}`);
+    renderDex(payload);
+    return payload;
+  };
   const loadViewer = async () => {
     const userId = byId('viewerSearch').value.trim();
     if (!userId) return;
     const payload = await request(`/api/streammonsters/state?userId=${encodeURIComponent(userId)}`);
     renderViewer(payload.viewer || {});
+    await loadMonsterCatalog(userId);
   };
   const renderLeaderboard = entries => {
     const root = byId('leaderboard');
@@ -633,12 +766,25 @@
     renderLeaderboard(payload.entries || []);
   };
   const saveSetup = async () => {
-    const creatorName = byId('creatorName').value.trim();
+    const payload = creatorRuntime.buildConfigPayload({
+      currentConfig: currentStateConfig,
+      values: {
+        creatorName:byId('creatorName').value,
+        artPoolTarget:byId('poolTarget').value,
+        hatchDurationMs:byId('hatchPreset').value,
+        visualPack:byId('visualPack').value,
+        landscapeAnchor:byId('landscapeAnchor').value,
+        landscapeScale:byId('landscapeScale').value,
+        portraitAnchor:byId('portraitAnchor').value,
+        portraitScale:byId('portraitScale').value
+      }
+    });
     await request('/api/streammonsters/config', {
       method:'POST',
       headers:jsonHeaders,
-      body:JSON.stringify({ creatorName, artPoolTarget:Number(byId('poolTarget').value) })
+      body:JSON.stringify(payload)
     });
+    currentStateConfig = { ...currentStateConfig, ...payload };
     notice(text('setupSaved', 'Weltname und Art-Pool-Ziel gespeichert.'), 'success');
   };
   const preparePool = async () => {
@@ -902,6 +1048,88 @@
       localStorage.setItem('streammonsters-overlay-volume', String(event.target.value));
     });
   };
+  const positionSafeBox = (id, rectangle) => {
+    const target = byId(id);
+    target.style.left = `${rectangle.x}%`;
+    target.style.top = `${rectangle.y}%`;
+    target.style.width = `${rectangle.width}%`;
+    target.style.height = `${rectangle.height}%`;
+  };
+  const safeRevealRectangle = (layout, anchor, scale) => {
+    const width = Math.min(layout === 'portrait' ? 90 : 48, (layout === 'portrait' ? 78 : 42) * scale / 100);
+    const height = Math.min(layout === 'portrait' ? 42 : 30, (layout === 'portrait' ? 32 : 22) * scale / 100);
+    const [vertical, horizontal] = anchor === 'center'
+      ? ['middle','center']
+      : (anchor.includes('-') ? anchor.split('-') : ['middle',anchor]);
+    const x = horizontal === 'left' ? 3 : (horizontal === 'right' ? 97 - width : (100 - width) / 2);
+    const y = vertical === 'top' ? 3 : (vertical === 'bottom' ? 97 - height : (100 - height) / 2);
+    return { x, y, width, height };
+  };
+  const renderSafeZone = () => {
+    const layout = byId('safeZoneLayout').value;
+    const anchor = byId(`${layout}Anchor`).value;
+    const scale = Math.max(70, Math.min(130, Number(byId(`${layout}Scale`).value) || 100));
+    const preview = byId('safeZonePreview');
+    preview.classList.toggle('portrait', layout === 'portrait');
+    const reserved = layout === 'portrait'
+      ? {
+        logo:{ x:4,y:2,width:42,height:8 },
+        hype:{ x:78,y:2,width:18,height:10 },
+        chat:{ x:4,y:86,width:70,height:10 }
+      }
+      : {
+        logo:{ x:2,y:3,width:22,height:12 },
+        hype:{ x:87,y:3,width:10,height:18 },
+        chat:{ x:2,y:80,width:34,height:16 }
+      };
+    const reveal = safeRevealRectangle(layout, anchor, scale);
+    positionSafeBox('safeLogo', reserved.logo);
+    positionSafeBox('safeHype', reserved.hype);
+    positionSafeBox('safeChat', reserved.chat);
+    positionSafeBox('safeReveal', reveal);
+    const collisions = runtimeText.safeZoneCollisions({ reveal, reserved });
+    for (const [name, id] of [['logo','safeLogo'],['hype','safeHype'],['chat','safeChat']]) {
+      byId(id).classList.toggle('collision', collisions.includes(name));
+    }
+    byId('safeReveal').classList.toggle('collision', collisions.length > 0);
+    byId('safeZoneWarning').textContent = collisions.length
+      ? text('safeZoneCollision', 'Collision: {areas}', { areas:collisions.join(', ') })
+      : text('safeZoneClear', 'No safe-zone collisions.');
+  };
+  const applyPresentationState = state => {
+    currentStateConfig = {
+      ...(state.config || {}),
+      giftMappingCustomized:Boolean(state.config?.giftMappingCustomized)
+    };
+    byId('hatchPreset').value = String(state.config?.hatchDurationMs || 120000);
+    byId('visualPack').value = state.config?.visualPack || 'furry';
+    byId('landscapeAnchor').value = state.config?.landscapeAnchor || 'bottom-center';
+    byId('landscapeScale').value = String(state.config?.landscapeScale || 100);
+    byId('portraitAnchor').value = state.config?.portraitAnchor || 'center';
+    byId('portraitScale').value = String(state.config?.portraitScale || 100);
+    const counts = creatorRuntime.eggReadinessCounts(state);
+    byId('creatorMetrics').textContent = text(
+      'readinessCounts',
+      '{active} active · {queued} queued · {ready} ready · {duration}',
+      {
+        ...counts,
+        duration:formatDuration(counts.durationMs)
+      }
+    );
+    byId('heartChainStatus').textContent = text('heartChainStatus', 'Heart Chain · {count}', {
+      count:state.heartChain?.chain_length || 0
+    });
+    byId('streamMissionStatus').textContent = text(
+      'missionProgress',
+      'Mission · {mission} · {progress}/{target}',
+      {
+        mission:text(`mission${String(state.streamMission?.mission_key || 'unknown').replace(/(^|_)(\w)/g, (match, gap, letter) => letter.toUpperCase())}`, state.streamMission?.mission_key || '—'),
+        progress:state.streamMission?.progress || 0,
+        target:state.streamMission?.target || 0
+      }
+    );
+    renderSafeZone();
+  };
   const applyDynamicRules = state => {
     const prefix = state.gcce?.commandPrefix || '!';
     const hatchDurationMs = state.config?.hatchDurationMs || 0;
@@ -928,12 +1156,8 @@
       byId('hypeMetric').textContent = `${state.hype?.points || 0}%`;
       renderPool(state.pool || []);
       applyDynamicRules(state);
-      const metrics = state.metrics;
-      if (metrics) byId('creatorMetrics').textContent = text('metrics', '{eggs} Eier · {hatches} Hatches · {duels} Duelle', {
-        eggs:metrics.eggs_spawned || 0,
-        hatches:metrics.hatches || 0,
-        duels:metrics.duels || 0
-      });
+      applyPresentationState(state);
+      await loadMonsterCatalog(status.username || '');
       const readiness = [Boolean(byId('creatorName').value), mappings.length > 0, true, Boolean(byId('overlayUrl').textContent)].filter(Boolean).length;
       byId('readinessScore').textContent = `${readiness}/4`;
       const end = state.season?.ends_at_ms;
@@ -964,6 +1188,38 @@
       notice(apiErrorText(error), 'error');
     }
   });
+  byId('runSceneDemo').addEventListener('click', async () => {
+    const layout = byId('safeZoneLayout').value;
+    const payload = creatorRuntime.normalizeDemoRequest({
+      scene:byId('demoScene').value,
+      templateId:byId('demoTemplate').value,
+      layout,
+      anchor:byId(`${layout}Anchor`).value,
+      scale:byId(`${layout}Scale`).value
+    });
+    try {
+      await request('/api/streammonsters/demo', {
+        method:'POST',
+        headers:jsonHeaders,
+        body:JSON.stringify(payload)
+      });
+      notice(text('demoSceneSent', '{scene} preview sent to the overlay.', {
+        scene:text(`demo${payload.scene[0].toUpperCase()}${payload.scene.slice(1)}`, payload.scene)
+      }), 'success');
+    } catch (error) {
+      notice(apiErrorText(error), 'error');
+    }
+  });
+  for (const id of [
+    'safeZoneLayout',
+    'landscapeAnchor',
+    'landscapeScale',
+    'portraitAnchor',
+    'portraitScale'
+  ]) {
+    byId(id).addEventListener('input', renderSafeZone);
+    byId(id).addEventListener('change', renderSafeZone);
+  }
   byId('giftEffect').addEventListener('change', () => {
     byId('giftElement').disabled = byId('giftEffect').value === 'boost';
   });

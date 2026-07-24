@@ -60,4 +60,62 @@ describe('StreamAlchemy UI i18n', () => {
       expect(source).toContain('/js/i18n-client.js');
     }
   });
+
+  test.each(['de', 'en', 'es', 'fr'])('localizes every Stream Monsters creator and overlay presentation key in %s', (locale) => {
+    const localePath = path.join(repoRoot, 'app', 'plugins', pluginId, 'locales', `${locale}.json`);
+    const values = flattenTranslations(JSON.parse(fs.readFileSync(localePath, 'utf8')));
+    for (const key of [
+      'heartMeHelp',
+      'readinessCounts',
+      'heartChainStatus',
+      'missionProgress',
+      'presentationControls',
+      'hatchPreset',
+      'visualPack',
+      'landscapeAnchor',
+      'portraitAnchor',
+      'landscapeScale',
+      'portraitScale',
+      'safeZoneCollision',
+      'safeZoneClear',
+      'monsterDex',
+      'dexProgress',
+      'dexMasteryEssence',
+      'demoSpawn',
+      'demoHatch',
+      'demoAttack',
+      'demoDefense',
+      'demoSpecial',
+      'specialCharged',
+      'skillUsedCopy'
+    ]) {
+      expect(values[`plugins.streamalchemy.ui.monsters.${key}`]).toEqual(expect.any(String));
+      expect(values[`plugins.streamalchemy.ui.monsters.${key}`]).not.toMatch(/^plugins\./);
+    }
+  });
+
+  test('keeps the DE/EN/ES/FR Stream Monsters locale trees structurally aligned', () => {
+    const keySets = ['de', 'en', 'es', 'fr'].map(locale => {
+      const localePath = path.join(repoRoot, 'app', 'plugins', pluginId, 'locales', `${locale}.json`);
+      const values = flattenTranslations(JSON.parse(fs.readFileSync(localePath, 'utf8')));
+      return Object.keys(values).filter(key => key.startsWith('plugins.streamalchemy.ui.monsters.')).sort();
+    });
+    expect(keySets[1]).toEqual(keySets[0]);
+    expect(keySets[2]).toEqual(keySets[0]);
+    expect(keySets[3]).toEqual(keySets[0]);
+  });
+
+  test.each(['de', 'en', 'es', 'fr'])('keeps dynamic Stream Monsters placeholders aligned in %s', locale => {
+    const localePath = path.join(repoRoot, 'app', 'plugins', pluginId, 'locales', `${locale}.json`);
+    const values = flattenTranslations(JSON.parse(fs.readFileSync(localePath, 'utf8')));
+    const prefix = 'plugins.streamalchemy.ui.monsters.';
+    expect(values[`${prefix}readinessCounts`]).toEqual(expect.stringMatching(
+      /{{active}}.*{{queued}}.*{{ready}}.*{{duration}}/
+    ));
+    expect(values[`${prefix}heartChainStatus`]).toContain('{{count}}');
+    expect(values[`${prefix}missionProgress`]).toEqual(expect.stringMatching(
+      /{{mission}}.*{{progress}}.*{{target}}/
+    ));
+    expect(values[`${prefix}dexProgress`]).toEqual(expect.stringMatching(/{{found}}.*{{total}}/));
+  });
 });
