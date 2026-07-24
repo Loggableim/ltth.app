@@ -76,8 +76,10 @@ describe('Stream Monsters 1.4 collection layer', () => {
     expect(selected.slice(0, 4)).toContain('ashfang');
     expect(selected[0]).not.toBe('ashfang');
     expect(selected[4]).toBeDefined();
-    expect(collection.reserveTemplateForEgg(eggs[0]).templateId).toBe(selected[0]);
-    expect(store.getTemplateBag('viewer-a', 'Ember')).toEqual(expect.objectContaining({ cycle: 1, position: 1 }));
+    const bagAfterReservations = store.getTemplateBag('viewer-a', 'Ember');
+    const replayed = Array.from({ length: 12 }, () => collection.reserveTemplateForEgg(eggs[0]).templateId);
+    expect(new Set(replayed)).toEqual(new Set([selected[0]]));
+    expect(store.getTemplateBag('viewer-a', 'Ember')).toEqual(bagAfterReservations);
   });
 
   test('awards duplicate essence and cosmetic thresholds without changing monster stats', () => {
@@ -130,6 +132,10 @@ describe('Stream Monsters 1.4 collection layer', () => {
       template_id: expect.stringMatching(/^(ripple|brine|reefbite|axi)$/), name: 'Legacy Name',
       image_url: '/legacy.png', level: 7, xp: 42, stats: { vitality: 8 }, is_selected: 1, created_at_ms: 2
     }));
+    expect(sqlite.prepare("PRAGMA index_list('streammonsters_monsters')").all().map(row => row.name))
+      .toContain('streammonsters_monsters_user_template');
+    expect(sqlite.prepare("PRAGMA index_list('streammonsters_art_pool')").all().map(row => row.name))
+      .toContain('streammonsters_art_pool_template_lookup');
   });
 
   test('tracks Heart Chain gaps and same-viewer repeats, awarding each 3/5/10 milestone once', () => {
@@ -142,7 +148,9 @@ describe('Stream Monsters 1.4 collection layer', () => {
     collection.recordHeartMe({ streamKey: 'stream-a', userId: 'd', atMs: 5 });
     expect(collection.recordHeartMe({ streamKey: 'stream-a', userId: 'e', atMs: 6 })).toEqual(expect.objectContaining({ length: 5, hypeAward: 10 }));
     expect(collection.recordHeartMe({ streamKey: 'stream-a', userId: 'f', atMs: 9_000 })).toEqual(expect.objectContaining({ length: 1, hypeAward: 0 }));
-    expect(emitted.filter(entry => entry.event === 'streammonsters:heart_chain_changed')).toHaveLength(7);
+    collection.recordHeartMe({ streamKey: 'stream-a', userId: 'g', atMs: 9_001 });
+    expect(collection.recordHeartMe({ streamKey: 'stream-a', userId: 'h', atMs: 9_002 })).toEqual(expect.objectContaining({ length: 3, hypeAward: 5 }));
+    expect(emitted.filter(entry => entry.event === 'streammonsters:heart_chain_changed')).toHaveLength(9);
   });
 
   test('creates one deterministic stream mission and grants participant rewards idempotently', () => {
@@ -184,6 +192,39 @@ describe('Stream Monsters 1.4 collection layer', () => {
     expect(collection.getStreamMission(battleStream).progress).toBe(1);
   });
 
+  test('rewards both battle participants when completion occurs before the second participant is recorded', () => {
+    const { store, collection } = createCollection();
+    const left = addMonster(store, { userId: 'left', templateId: 'ashfang', index: 1 });
+    const right = addMonster(store, { userId: 'right', templateId: 'ripple', element: 'Tide', index: 2 });
+    const streamKey = Array.from({ length: 64 }, (_, index) => `completion-battle-${index}`).find(key => (
+      collection.getStreamMission(key).mission_key === 'three_battles'
+    ));
+    store.setStreamMissionProgress(streamKey, 2);
+    collection.recordMissionProgress(streamKey, 'battle', {
+      userId: left.user_id, monster: left, actionKey: 'battle:finisher'
+    });
+    collection.recordMissionProgress(streamKey, 'battle', {
+      userId: right.user_id, monster: right, actionKey: 'battle:finisher'
+    });
+    expect(collection.getMastery('left', 'ashfang').points).toBe(3);
+    expect(collection.getMastery('right', 'ripple').points).toBe(3);
+    expect(collection.getCosmetics('left')).toContain(`season_badge:${streamKey}`);
+    expect(collection.getCosmetics('right')).toContain(`season_badge:${streamKey}`);
+  });
+
+  test('rewards mission mastery on the selected monster before the event monster fallback', () => {
+    const { store, collection } = createCollection();
+    const selected = addMonster(store, { userId: 'viewer-a', templateId: 'ashfang', index: 1 });
+    const eventMonster = addMonster(store, { userId: 'viewer-a', templateId: 'cinder', index: 2 });
+    collection.recordMissionProgress('selected-priority', 'hatch', {
+      userId: 'viewer-a', monster: eventMonster, actionKey: 'hatch:event-monster'
+    });
+    collection.completeMission('selected-priority');
+    expect(store.getSelectedMonster('viewer-a').monster_id).toBe(selected.monster_id);
+    expect(collection.getMastery('viewer-a', 'ashfang').points).toBe(3);
+    expect(collection.getMastery('viewer-a', 'cinder').points).toBe(0);
+  });
+
   test('uses template art, legacy art, furry assets, then Kenney in the configured visual order', () => {
     const { collection } = createCollection();
     const template = TEMPLATE_CATALOG.find(entry => entry.templateId === 'ashfang');
@@ -194,5 +235,25 @@ describe('Stream Monsters 1.4 collection layer', () => {
     expect(collection.selectVisual({ template, egg: { element: 'Ember', variant: 'standard', seed: 'x' }, visualPack: 'art_lab', artPool, kenneyBuilder, hasBundledAsset: () => true }).imageUrl).toBe('/legacy.png');
     expect(collection.selectVisual({ template, egg: { element: 'Ember', variant: 'standard', seed: 'x' }, visualPack: 'furry', artPool, kenneyBuilder, hasBundledAsset: () => true }).imageUrl).toBe(template.assetPath);
     expect(collection.selectVisual({ template, egg: { element: 'Ember', variant: 'standard', seed: 'x' }, visualPack: 'furry', artPool, kenneyBuilder, hasBundledAsset: () => false }).visualSource).toBe('kenney');
+  });
+
+  test('never consumes a different template row as art_lab legacy fallback', () => {
+    const { store, collection } = createCollection();
+    const template = TEMPLATE_CATALOG.find(entry => entry.templateId === 'ashfang');
+    const other = store.addArtPoolSkin({
+      artId: 'cinder-art', element: 'Ember', variant: 'standard', provider: 'local',
+      imageUrl: '/cinder.png', visualKey: 'ai:cinder', templateId: 'cinder', createdAtMs: 1
+    });
+    const artPool = {
+      consumeForTemplate: (...args) => store.consumeArtPoolSkinForTemplate(...args),
+      consume: (...args) => store.consumeArtPoolSkin(...args)
+    };
+    const visual = collection.selectVisual({
+      template,
+      egg: { element: 'Ember', variant: 'standard', seed: 'x' },
+      visualPack: 'art_lab', artPool, hasBundledAsset: () => true
+    });
+    expect(visual).toEqual(expect.objectContaining({ imageUrl: template.assetPath, visualSource: 'furry' }));
+    expect(store.db.prepare('SELECT status FROM streammonsters_art_pool WHERE art_id = ?').get(other.art_id).status).toBe('ready');
   });
 });

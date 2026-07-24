@@ -293,6 +293,10 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_viewer_progress', 'battle_win_streak', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_viewer_progress', 'best_battle_win_streak', 'INTEGER NOT NULL DEFAULT 0');
     this.db.exec(`
+      CREATE INDEX IF NOT EXISTS streammonsters_monsters_user_template
+        ON streammonsters_monsters(user_id, template_id, created_at_ms);
+      CREATE INDEX IF NOT EXISTS streammonsters_art_pool_template_lookup
+        ON streammonsters_art_pool(element, variant, template_id, status, created_at_ms);
       CREATE INDEX IF NOT EXISTS streammonsters_battles_created
         ON streammonsters_battles(created_at_ms);
       CREATE INDEX IF NOT EXISTS streammonsters_battles_pair_time

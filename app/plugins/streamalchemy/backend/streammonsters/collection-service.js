@@ -132,8 +132,13 @@ class CollectionService {
 
   recordMissionProgress(streamKey, event, { userId = null, monster = null, value = null, actionKey = null } = {}) {
     const mission = this.getStreamMission(streamKey);
-    if (userId) this.store.addMissionParticipant(streamKey, userId, monster?.monster_id || null);
-    if (mission.completed_at_ms) return mission;
+    const participant = userId
+      ? this.store.addMissionParticipant(streamKey, userId, monster?.monster_id || null)
+      : null;
+    if (mission.completed_at_ms) {
+      if (participant) this.rewardMissionParticipant(streamKey, participant);
+      return mission;
+    }
     if (actionKey && !this.store.claimCollectionAction(`mission:${streamKey}:${actionKey}`, this.now())) return mission;
     let progress = mission.progress;
     if (mission.mission_key === 'six_hatches' && event === 'hatch') progress += 1;
@@ -155,15 +160,20 @@ class CollectionService {
       : this.store.setStreamMissionProgress(streamKey, mission.target, this.now());
     const newlyCompleted = completedDuringProgressUpdate || !mission.completed_at_ms;
     this.store.getMissionParticipants(streamKey).forEach(participant => {
-      if (!this.store.claimMissionParticipantReward(streamKey, participant.user_id, this.now())) return;
-      this.store.unlockCollectionCosmetic(participant.user_id, `season_badge:${streamKey}`, this.now());
-      const target = participant.selected_monster_id
-        ? this.store.getMonster(participant.selected_monster_id)
-        : (this.store.getSelectedMonster(participant.user_id) || this.store.getViewerMonsters(participant.user_id).at(-1));
-      if (target) this.recordMissionCompletion(target, streamKey);
+      this.rewardMissionParticipant(streamKey, participant);
     });
     if (newlyCompleted) this.emit('streammonsters:stream_mission_completed', { streamKey, mission: completed });
     return completed;
+  }
+
+  rewardMissionParticipant(streamKey, participant) {
+    if (!this.store.claimMissionParticipantReward(streamKey, participant.user_id, this.now())) return false;
+    this.store.unlockCollectionCosmetic(participant.user_id, `season_badge:${streamKey}`, this.now());
+    const target = this.store.getSelectedMonster(participant.user_id) ||
+      (participant.selected_monster_id ? this.store.getMonster(participant.selected_monster_id) : null) ||
+      this.store.getViewerMonsters(participant.user_id).at(-1);
+    if (target) this.recordMissionCompletion(target, streamKey);
+    return true;
   }
 
   getMissionParticipant(streamKey, userId) {
@@ -175,16 +185,17 @@ class CollectionService {
     let length = chain.chain_length;
     let lastUserId = chain.last_user_id;
     let lastGiftAtMs = chain.last_gift_at_ms;
+    let awarded = [...chain.awarded];
     if (!lastUserId || atMs - lastGiftAtMs > 8_000) {
       length = 1;
       lastUserId = userId;
       lastGiftAtMs = atMs;
+      awarded = [];
     } else if (lastUserId !== userId) {
       length += 1;
       lastUserId = userId;
       lastGiftAtMs = atMs;
     }
-    const awarded = [...chain.awarded];
     const milestone = [[3, 5], [5, 10], [10, 20]].find(([threshold]) => length >= threshold && !awarded.includes(threshold));
     const hypeAward = milestone ? milestone[1] : 0;
     if (milestone) awarded.push(milestone[0]);
@@ -205,7 +216,7 @@ class CollectionService {
     if (pack === 'art_lab') {
       const templateArt = artPool?.consumeForTemplate?.(egg.element, egg.variant, template.templateId) || null;
       if (templateArt) return { imageUrl: templateArt.image_url, visualSource: 'ai', visualKey: templateArt.visual_key };
-      const legacyArt = artPool?.consumeForTemplate?.(egg.element, egg.variant, null) || artPool?.consume?.(egg.element, egg.variant) || null;
+      const legacyArt = artPool?.consumeForTemplate?.(egg.element, egg.variant, null) || null;
       if (legacyArt) return { imageUrl: legacyArt.image_url, visualSource: 'ai', visualKey: legacyArt.visual_key };
     }
     if (pack !== 'kenney' && hasBundledAsset(template)) {
