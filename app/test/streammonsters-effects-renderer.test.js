@@ -54,6 +54,7 @@ function createGpuHarness() {
     save: jest.fn(),
     restore: jest.fn(),
     translate: jest.fn(),
+    scale: jest.fn(),
     rotate: jest.fn(),
     moveTo: jest.fn(),
     lineTo: jest.fn(),
@@ -169,6 +170,70 @@ describe('Stream Monsters effects renderer', () => {
     const next = renderer.play('attack', { element: 'Tide' });
     await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.attack);
     await expect(next).resolves.toEqual(expect.objectContaining({ mode: 'fallback' }));
+  });
+
+  test('device loss keeps drawing fallback frames and advancing the active phase', async () => {
+    const harness = createGpuHarness();
+    const renderer = createEffectsRenderer({
+      canvas: harness.canvas,
+      navigator: { gpu: harness.gpu },
+      matchMedia: () => ({ matches: false }),
+      requestAnimationFrame: callback => setTimeout(() => callback(Date.now()), 16),
+      cancelAnimationFrame: clearTimeout,
+      now: () => Date.now()
+    });
+    await renderer.init();
+    const completion = renderer.play('hatch', { element: 'Lunar' });
+    await jest.advanceTimersByTimeAsync(32);
+
+    harness.lost.resolve({ reason: 'destroyed' });
+    await Promise.resolve();
+    const drawsAtLoss = harness.canvas2d.stroke.mock.calls.length;
+    const phaseAtLoss = harness.canvas.dataset.effectPhase;
+
+    await jest.advanceTimersByTimeAsync(700);
+    expect(harness.canvas2d.stroke.mock.calls.length).toBeGreaterThan(drawsAtLoss);
+    expect(harness.canvas.dataset.effectPhase).not.toBe(phaseAtLoss);
+
+    await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.hatch);
+    await completion;
+  });
+
+  test('replaces a WebGPU-bound canvas so device-loss fallback can acquire Canvas2D', async () => {
+    const harness = createGpuHarness();
+    const replacement = {
+      width: 1920,
+      height: 1080,
+      classList: { toggle: jest.fn() },
+      dataset: {},
+      getContext: jest.fn(type => (type === '2d' ? harness.canvas2d : null))
+    };
+    harness.canvas.getContext = jest.fn(type => (type === 'webgpu' ? harness.context : null));
+    harness.canvas.cloneNode = jest.fn(() => replacement);
+    harness.canvas.replaceWith = jest.fn();
+    const renderer = createEffectsRenderer({
+      canvas: harness.canvas,
+      navigator: { gpu: harness.gpu },
+      matchMedia: () => ({ matches: false }),
+      requestAnimationFrame: callback => setTimeout(() => callback(Date.now()), 16),
+      cancelAnimationFrame: clearTimeout,
+      now: () => Date.now()
+    });
+    await renderer.init();
+    const completion = renderer.play('spawn', { element: 'Ember' });
+    await jest.advanceTimersByTimeAsync(32);
+
+    harness.lost.resolve({ reason: 'destroyed' });
+    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(700);
+
+    expect(harness.canvas.replaceWith).toHaveBeenCalledWith(replacement);
+    expect(replacement.getContext).toHaveBeenCalledWith('2d', { alpha: true });
+    expect(harness.canvas2d.stroke.mock.calls.length).toBeGreaterThan(1);
+    expect(replacement.dataset.effectPhase).toBe('particle-swirl');
+
+    await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.spawn);
+    await completion;
   });
 
   test('reduced motion uses the fallback choreography and preserves the public duration', async () => {
@@ -308,6 +373,48 @@ describe('Stream Monsters effects renderer', () => {
     expect(third.canvas2d.lineTo.mock.calls.at(-1)).not.toEqual(second.canvas2d.lineTo.mock.calls.at(-1));
     await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.attack);
     await thirdPlay;
+  });
+
+  test('applies the reveal origin and scale to WebGPU uniforms and Canvas2D transforms', async () => {
+    const webgpu = createGpuHarness();
+    const webgpuRenderer = createEffectsRenderer({
+      canvas: webgpu.canvas,
+      navigator: { gpu: webgpu.gpu },
+      matchMedia: () => ({ matches: false }),
+      requestAnimationFrame: callback => setTimeout(() => callback(Date.now()), 16),
+      cancelAnimationFrame: clearTimeout
+    });
+    await webgpuRenderer.init();
+    const webgpuPlay = webgpuRenderer.play('spawn', {
+      element: 'Volt',
+      origin: { x: 0.25, y: 0.8 },
+      scale: 1.3
+    });
+    await jest.advanceTimersByTimeAsync(32);
+    const uniforms = [...webgpu.device.queue.writeBuffer.mock.calls.at(-1)[2]];
+    expect(uniforms.slice(12, 15)).toEqual([0.25, 0.800000011920929, 1.2999999523162842]);
+    await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.spawn);
+    await webgpuPlay;
+
+    const fallback = createGpuHarness();
+    const fallbackRenderer = createEffectsRenderer({
+      canvas: fallback.canvas,
+      navigator: {},
+      matchMedia: () => ({ matches: false }),
+      requestAnimationFrame: callback => setTimeout(() => callback(Date.now()), 16),
+      cancelAnimationFrame: clearTimeout
+    });
+    await fallbackRenderer.init();
+    const fallbackPlay = fallbackRenderer.play('hatch', {
+      element: 'Grove',
+      origin: { x: 0.75, y: 0.2 },
+      scale: 0.7
+    });
+    await jest.advanceTimersByTimeAsync(32);
+    expect(fallback.canvas2d.translate).toHaveBeenCalledWith(1440, 216);
+    expect(fallback.canvas2d.scale).toHaveBeenCalledWith(0.7, 0.7);
+    await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.hatch);
+    await fallbackPlay;
   });
 
   test('draws every spawn and hatch phase through the Canvas2D fallback', async () => {

@@ -120,7 +120,7 @@
       <h1 id="title" data-i18n="plugins.streamalchemy.ui.monsters.overlayTitle">Collector Arena</h1>
       <div id="subtitle" data-i18n="plugins.streamalchemy.ui.monsters.overlayWaiting">Das nächste Monster wartet.</div>
       <div id="progress"><div id="bar"></div></div>
-      <div id="hint" data-i18n="plugins.streamalchemy.ui.monsters.overlayCommands">!eggs · !hatch [slot] · !battle</div>
+      <div id="hint">eggs · hatch [slot] · battle</div>
     </div>
   </section>
   </div>
@@ -222,6 +222,18 @@
   let battleIds = [null, null];
   let battleMonsters = [null, null];
   let battleAdvantageName = '';
+  let currentCommandPrefix = '!';
+  const commandHint = (key = 'overlayCommands', fallback = '{prefix}eggs · {prefix}hatch [slot] · {prefix}battle') => (
+    text(key, fallback, { prefix: currentCommandPrefix })
+  );
+  const formatHatchDuration = durationMs => {
+    const duration = window.StreamMonstersOverlayRuntime.hatchDurationSpec(durationMs);
+    const fallback = duration.params.seconds != null
+      ? '{seconds} seconds'
+      : '{minutes} minutes';
+    return text(duration.key, fallback, duration.params);
+  };
+  node('hint').textContent = commandHint();
 
   const readAudioSettings = () => ({
     muted: localStorage.getItem('streammonsters-overlay-muted') === 'true',
@@ -259,11 +271,26 @@
     node('reveal-stage').style.setProperty('--reveal-justify', placement.justify);
     node('reveal-stage').style.setProperty('--reveal-scale', String(preview.scale / 100));
   };
+  const effectPlacementForScene = scene => {
+    if (['attack', 'defense', 'special'].includes(scene)) {
+      return { origin: { x: 0.5, y: 0.5 }, scale: 1 };
+    }
+    const stage = node('reveal-stage');
+    return window.StreamMonstersOverlayRuntime.effectPlacement(
+      stage.dataset.anchor,
+      stage.dataset.scale
+    );
+  };
   const showToast = async (message, duration = 2600, cue = null, effect = null) => {
     if (cue) playCue(cue);
     node('toast').textContent = message;
     node('toast').classList.add('visible');
-    if (effect) await effectsRenderer.play(effect.scene, effect.payload);
+    if (effect) {
+      await effectsRenderer.play(effect.scene, {
+        ...effect.payload,
+        ...effectPlacementForScene(effect.scene)
+      });
+    }
     else await wait(duration);
     node('toast').classList.remove('visible');
     await wait(250);
@@ -297,10 +324,16 @@
     if (imageUrl) node('art').src = imageUrl;
     else imageErrorFallback(element);
     node('bar').style.width = `${Math.max(0, Math.min(100, progress))}%`;
-    node('hint').textContent = hint || text('overlayCommands', '!eggs · !hatch [slot] · !battle');
+    node('hint').textContent = hint || commandHint();
     node('card').classList.toggle('charged', Boolean(charged));
     node('card').classList.add('visible');
-    if (effectScene) await effectsRenderer.play(effectScene, { ...effectPayload, element });
+    if (effectScene) {
+      await effectsRenderer.play(effectScene, {
+        ...effectPayload,
+        element,
+        ...effectPlacementForScene(effectScene)
+      });
+    }
     else await wait(3900);
     node('card').classList.remove('visible');
     await wait(350);
@@ -341,17 +374,16 @@
   };
   const applySnapshot = data => {
     const points = Number(data?.hype?.points) || 0;
-    const prefix = value(data?.gcce?.commandPrefix, '!');
+    currentCommandPrefix = value(data?.gcce?.commandPrefix, currentCommandPrefix);
     const duration = Math.max(0, Number(data?.config?.hatchDurationMs) || 0);
-    const minutes = Math.round(duration / 60000);
     node('hype').style.setProperty('--hype', `${points}%`);
     node('hype-value').textContent = data?.hype?.charged_eggs
       ? text('charged', 'CHARGED!')
       : `${points}%`;
     node('hint').textContent = text(
       'snapshotRules',
-      '{prefix}eggs · {prefix}hatch [slot] · {minutes} min',
-      { prefix, minutes }
+      '{prefix}eggs · {prefix}hatch [slot] · {duration}',
+      { prefix: currentCommandPrefix, duration: formatHatchDuration(duration) }
     );
     Object.assign(layoutConfig, {
       landscapeAnchor: data?.config?.landscapeAnchor || 'bottom-center',
@@ -362,7 +394,6 @@
     layoutController.apply();
   };
   const present = async ({ type, data }) => {
-    applyPreviewLayout(data?.preview);
     if (type === 'state_snapshot') {
       applySnapshot(data);
       return;
@@ -384,7 +415,7 @@
       imageUrl:data?.egg?.image_url,
       element:data?.egg?.element,
       charged:data?.egg?.variant === 'charged',
-      hint: text('eggsTimer', '!eggs zeigt den Timer'),
+      hint: commandHint('eggsTimer', '{prefix}eggs shows the timer'),
       progress:4,
       cue:'spawn',
       effectScene:'spawn'
@@ -426,7 +457,7 @@
       imageUrl:data?.egg?.image_url,
       progress:100,
       charged:data?.egg?.variant === 'charged',
-      hint: text('hatchNow', 'Jetzt !hatch [slot] schreiben'),
+      hint: commandHint('hatchNow', 'Write {prefix}hatch [slot] now'),
       cue:'ready'
     });
     if (type === 'hatch_started') return showToast(
@@ -450,7 +481,7 @@
       imageUrl:data?.monster?.image_url || data?.egg?.image_url,
       element:data?.monster?.element || data?.egg?.element,
       charged:data?.egg?.variant === 'charged',
-      hint: text('monsterCardHint', '!monster [slot] zeigt die Karte'),
+      hint: commandHint('monsterCardHint', '{prefix}monster [slot] shows the card'),
       progress:100,
       cue:'hatch'
     });
@@ -623,13 +654,22 @@
     }));
     if (type === 'chat_result') return showChat(data);
   };
+  const presentWithPreview = async event => {
+    const preview = event?.data?.preview;
+    if (preview) applyPreviewLayout(preview);
+    try {
+      return await present(event);
+    } finally {
+      if (preview) layoutController.apply();
+    }
+  };
   const drainQueue = async () => {
     if (queueRunning || !snapshotReady) return;
     queueRunning = true;
     while (snapshotReady) {
       const next = eventQueue.shift(Date.now());
       if (!next) break;
-      try { await present(next); } catch (_) {}
+      try { await presentWithPreview(next); } catch (_) {}
       if (!snapshotReady) break;
     }
     queueRunning = false;

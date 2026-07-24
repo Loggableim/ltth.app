@@ -58,27 +58,137 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     expect(shifted).toEqual(expect.arrayContaining(['egg_spawned', 'hatch_started', 'egg_hatched']));
   });
 
-  test('stays strictly bounded while compacting 100 events from one critical battle group', () => {
+  test('deduplicates a transport flood before enqueue while retaining the complete battle', () => {
     const queue = runtime.createPriorityQueue({ maxSize: 30, maxCriticalOverflow: 20 });
     const battleId = 'battle-flood';
-    queue.enqueue('battle_started', { battleId }, 1);
-    queue.enqueue('battle_special_charged', { battleId, monsterId: 'monster-a' }, 2);
-    for (let round = 1; round <= 100; round += 1) {
-      queue.enqueue('battle_round', { battleId, round: { number: round } }, 2 + round);
+    const events = [
+      ['battle_started', { battleId, eventId: 'start' }],
+      ['battle_special_charged', { battleId, monsterId: 'monster-a', eventId: 'charged' }],
+      ['battle_round', { battleId, round: { number: 1 }, eventId: 'round-1' }],
+      ['battle_round', { battleId, round: { number: 2 }, eventId: 'round-2' }],
+      ['battle_round', { battleId, round: { number: 3 }, eventId: 'round-3' }],
+      ['battle_completed', { battleId, eventId: 'completed' }]
+    ];
+    for (let repeat = 0; repeat < 100; repeat += 1) {
+      for (const [type, data] of events) queue.enqueue(type, data, repeat);
       expect(queue.size()).toBeLessThanOrEqual(50);
     }
-    queue.enqueue('battle_completed', { battleId }, 200);
 
-    expect(queue.size()).toBeLessThanOrEqual(50);
-    expect(queue.snapshot().map(entry => entry.type)).toEqual(expect.arrayContaining([
+    expect(queue.snapshot().map(entry => entry.type)).toEqual([
       'battle_started',
       'battle_special_charged',
       'battle_round',
+      'battle_round',
+      'battle_round',
       'battle_completed'
-    ]));
+    ]);
+    expect(queue.snapshot().every(entry => entry.data.criticalGroupSummary == null)).toBe(true);
   });
 
-  test('drops lower-priority durable events before compacting a critical group', () => {
+  test('deduplicates a repeated skill event without collapsing the same skill in another round', () => {
+    const queue = runtime.createPriorityQueue({ maxSize: 10, maxCriticalOverflow: 5 });
+    const skill = {
+      battleId: 'battle-skill-fingerprint',
+      actorId: 'monster-a',
+      skill: { vfxKey: 'ashfang:attack' }
+    };
+    queue.enqueue('battle_skill_used', { ...skill, round: 1 }, 1);
+    queue.enqueue('battle_skill_used', { ...skill, round: 1 }, 2);
+    queue.enqueue('battle_skill_used', { ...skill, round: 2 }, 3);
+
+    expect(queue.snapshot().map(entry => entry.data.round)).toEqual([1, 2]);
+  });
+
+  test('retains every event in a normal three-round battle sequence', () => {
+    const queue = runtime.createPriorityQueue({ maxSize: 3, maxCriticalOverflow: 8 });
+    const battleId = 'battle-three-rounds';
+    const sequence = [
+      ['battle_started', { battleId }],
+      ['stance_revealed', { battleId, monsterId: 'left' }],
+      ['stance_revealed', { battleId, monsterId: 'right' }],
+      ['battle_round', { battleId, round: { number: 1 } }],
+      ['battle_round', { battleId, round: { number: 2 } }],
+      ['battle_round', { battleId, round: { number: 3 } }],
+      ['battle_completed', { battleId }]
+    ];
+    sequence.forEach(([type, data], index) => queue.enqueue(type, data, index));
+
+    expect(queue.snapshot().map(entry => entry.type)).toEqual(sequence.map(([type]) => type));
+  });
+
+  test('drops an entire oldest critical group at the hard limit, never a partial group', () => {
+    const queue = runtime.createPriorityQueue({ maxSize: 4, maxCriticalOverflow: 3 });
+    const enqueueBattle = battleId => {
+      queue.enqueue('battle_started', { battleId }, 1);
+      for (let round = 1; round <= 3; round += 1) {
+        queue.enqueue('battle_round', { battleId, round: { number: round } }, 1 + round);
+      }
+      queue.enqueue('battle_completed', { battleId }, 5);
+    };
+    enqueueBattle('battle-oldest');
+    enqueueBattle('battle-newest');
+
+    expect(queue.size()).toBeLessThanOrEqual(7);
+    expect(queue.snapshot().filter(entry => entry.groupKey === 'battle:battle-oldest')).toHaveLength(0);
+    expect(queue.snapshot().filter(entry => entry.groupKey === 'battle:battle-newest').map(entry => entry.type))
+      .toEqual([
+        'battle_started',
+        'battle_round',
+        'battle_round',
+        'battle_round',
+        'battle_completed'
+      ]);
+  });
+
+  test('never admits a retransmitted terminal event from a discarded incomplete group', () => {
+    const queue = runtime.createPriorityQueue({ maxSize: 2, maxCriticalOverflow: 0 });
+    const battleId = 'battle-discarded-incomplete';
+    queue.enqueue('battle_started', { battleId }, 1);
+    queue.enqueue('battle_round', { battleId, round: { number: 1 } }, 2);
+    queue.enqueue('battle_round', { battleId, round: { number: 2 } }, 3);
+    queue.enqueue('battle_completed', { battleId }, 4);
+    queue.enqueue('battle_completed', { battleId }, 5);
+
+    expect(queue.snapshot()).toHaveLength(0);
+  });
+
+  test('bounds discarded-group tombstones and evicts the oldest deterministically', () => {
+    const queue = runtime.createPriorityQueue({
+      maxSize: 1,
+      maxCriticalOverflow: 0,
+      tombstoneAfterMs: 1_000_000
+    });
+    for (let index = 0; index < 100; index += 1) {
+      const battleId = `battle-discarded-${index}`;
+      queue.enqueue('battle_started', { battleId }, index * 2);
+      queue.enqueue('battle_round', { battleId, round: { number: 1 } }, index * 2 + 1);
+    }
+
+    expect(queue.enqueue('battle_started', { battleId: 'battle-discarded-0' }, 1000)).toBe(true);
+    expect(queue.snapshot()).toEqual([
+      expect.objectContaining({ groupKey: 'battle:battle-discarded-0' })
+    ]);
+  });
+
+  test('expires discarded-group tombstones after the configured retention window', () => {
+    const queue = runtime.createPriorityQueue({
+      maxSize: 2,
+      maxCriticalOverflow: 0,
+      tombstoneAfterMs: 10
+    });
+    const battleId = 'battle-expired-tombstone';
+    queue.enqueue('battle_started', { battleId }, 1);
+    queue.enqueue('battle_round', { battleId, round: { number: 1 } }, 2);
+    queue.enqueue('battle_round', { battleId, round: { number: 2 } }, 3);
+    expect(queue.enqueue('battle_completed', { battleId }, 5)).toBe(false);
+
+    expect(queue.enqueue('battle_started', { battleId }, 20)).toBe(true);
+    expect(queue.snapshot()).toEqual([
+      expect.objectContaining({ type: 'battle_started', groupKey: `battle:${battleId}` })
+    ]);
+  });
+
+  test('drops excess lower-priority durable events before a critical group', () => {
     const queue = runtime.createPriorityQueue({ maxSize: 3, maxCriticalOverflow: 0 });
     const battle = { battleId: 'battle-priority' };
     queue.enqueue('battle_started', battle, 1);
@@ -126,6 +236,17 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     ['landscape', 1920, 1080],
     ['portrait', 1080, 1920]
   ])('resolves all nine anchors and bounded scales for %s', (layout, width, height) => {
+    const expectedOrigins = {
+      'top-left': { x: 0.18, y: 0.18 },
+      'top-center': { x: 0.5, y: 0.18 },
+      'top-right': { x: 0.82, y: 0.18 },
+      'middle-left': { x: 0.18, y: 0.5 },
+      center: { x: 0.5, y: 0.5 },
+      'middle-right': { x: 0.82, y: 0.5 },
+      'bottom-left': { x: 0.18, y: 0.82 },
+      'bottom-center': { x: 0.5, y: 0.82 },
+      'bottom-right': { x: 0.82, y: 0.82 }
+    };
     expect(runtime.ANCHORS).toEqual([
       'top-left', 'top-center', 'top-right',
       'middle-left', 'center', 'middle-right',
@@ -142,7 +263,21 @@ describe('Stream Monsters overlay layout and critical queue', () => {
         align: expect.any(String),
         justify: expect.any(String)
       }));
+      const effect = runtime.effectPlacement(anchor, 113);
+      expect(effect.origin).toEqual(expectedOrigins[anchor]);
+      expect(effect.scale).toBe(1.13);
     }
+  });
+
+  test('describes the exact hatch duration including the 30-second preset', () => {
+    expect(runtime.hatchDurationSpec(30_000)).toEqual({
+      key: 'duration30Seconds',
+      params: { seconds: 30 }
+    });
+    expect(runtime.hatchDurationSpec(120_000)).toEqual({
+      key: 'duration2Minutes',
+      params: { minutes: 2 }
+    });
   });
 
   test('uses specified defaults, validates URL overrides, and updates on resize without moving the battle arena', () => {

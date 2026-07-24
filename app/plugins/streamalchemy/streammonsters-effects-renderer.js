@@ -40,6 +40,7 @@ struct Uniforms {
   frame: vec4<f32>,
   color: vec4<f32>,
   effect: vec4<f32>,
+  placement: vec4<f32>,
 };
 @group(0) @binding(0) var<uniform> u: Uniforms;
 
@@ -67,7 +68,11 @@ fn ring(point: vec2<f32>, radius: f32, thickness: f32) -> f32 {
 
 @fragment
 fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
-  let centered = vec2<f32>((input.uv.x - 0.5) * u.frame.w, input.uv.y - 0.5);
+  let effectScale = max(0.1, u.placement.z);
+  let centered = vec2<f32>(
+    (input.uv.x - u.placement.x) * u.frame.w,
+    input.uv.y - u.placement.y
+  ) / effectScale;
   let angle = atan2(centered.y, centered.x);
   let distance = length(centered);
   let phase = u.effect.x;
@@ -152,6 +157,9 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
   function sceneChoreography(scene, payload = {}) {
     const normalizedScene = Object.prototype.hasOwnProperty.call(CHOREOGRAPHY, scene) ? scene : 'spawn';
     const vfxKey = payload.vfxKey || payload.skill?.vfxKey || payload.skill?.vfx_key || null;
+    const originX = Number(payload.origin?.x);
+    const originY = Number(payload.origin?.y);
+    const requestedScale = Number(payload.scale);
     return {
       scene: normalizedScene,
       steps: [...CHOREOGRAPHY[normalizedScene]],
@@ -159,12 +167,19 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
       vfx: vfxParameters(vfxKey || `${normalizedScene}:default`),
       element: payload.element || payload.monster?.element || payload.actor?.element || 'Lunar',
       color: colorForElement(payload.element || payload.monster?.element || payload.actor?.element),
+      origin: {
+        x: Number.isFinite(originX) ? Math.max(0, Math.min(1, originX)) : 0.5,
+        y: Number.isFinite(originY) ? Math.max(0, Math.min(1, originY)) : 0.5
+      },
+      scale: Number.isFinite(requestedScale)
+        ? Math.max(0.7, Math.min(1.3, requestedScale))
+        : 1,
       duration: SCENE_DURATIONS[normalizedScene]
     };
   }
 
   function createEffectsRenderer(options = {}) {
-    const canvas = options.canvas || null;
+    let canvas = options.canvas || null;
     const navigatorLike = options.navigator || (typeof navigator === 'object' ? navigator : {});
     const mediaQuery = options.matchMedia || (query => (
       typeof matchMedia === 'function' ? matchMedia(query) : { matches: false }
@@ -207,6 +222,7 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
         frameHandle = null;
       }
       device = null;
+      context = null;
       pipeline = null;
       uniformBuffer = null;
       bindGroup = null;
@@ -215,8 +231,25 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
       } catch (_) {
         canvas2d = null;
       }
+      if (!canvas2d && canvas?.cloneNode && canvas?.replaceWith) {
+        const previousCanvas = canvas;
+        const replacement = previousCanvas.cloneNode(false);
+        replacement.width = previousCanvas.width;
+        replacement.height = previousCanvas.height;
+        previousCanvas.replaceWith(replacement);
+        canvas = replacement;
+        try {
+          canvas2d = canvas.getContext?.('2d', { alpha: true }) || null;
+        } catch (_) {
+          canvas2d = null;
+        }
+      }
       markMode('fallback', reason);
-      if (activeScene) renderFallback(activeScene, Math.min(1, (now() - activeScene.startedAt) / activeScene.duration));
+      if (activeScene) {
+        const progress = Math.min(1, (now() - activeScene.startedAt) / activeScene.duration);
+        renderFallback(activeScene, progress);
+        if (!reducedMotion && progress < 1) frameHandle = scheduleFrame(animate);
+      }
       return rendererMode;
     }
 
@@ -254,7 +287,7 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
           (globalThis.GPUBufferUsage?.COPY_DST || 0x0008);
         uniformBuffer = device.createBuffer({
           label: 'Stream Monsters effect uniforms',
-          size: 48,
+          size: 64,
           usage
         });
         bindGroup = device.createBindGroup({
@@ -303,7 +336,11 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
         phase.code,
         scene.vfx.variant,
         scene.vfx.twist,
-        scene.vfx.spread
+        scene.vfx.spread,
+        scene.origin.x,
+        scene.origin.y,
+        scene.scale,
+        0
       ]);
       device.queue.writeBuffer(uniformBuffer, 0, values);
       const encoder = device.createCommandEncoder({ label: 'Stream Monsters transparent effects frame' });
@@ -340,7 +377,8 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
       canvas.dataset.vfxVariant = `v${scene.vfx.variant}`;
       canvas2d.clearRect(0, 0, width, height);
       canvas2d.save();
-      canvas2d.translate(width / 2, height / 2);
+      canvas2d.translate(width * scene.origin.x, height * scene.origin.y);
+      canvas2d.scale?.(scene.scale, scene.scale);
       canvas2d.rotate((scene.vfx.twist - 3) * 0.035);
       canvas2d.globalAlpha = reducedMotion ? 0.35 : Math.max(0.12, 1 - progress);
       canvas2d.strokeStyle = scene.color;
@@ -400,12 +438,13 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
 
     function animate() {
       if (!activeScene) return;
+      frameHandle = null;
       const elapsed = Math.max(0, now() - activeScene.startedAt);
       const progress = Math.min(1, elapsed / activeScene.duration);
       if (rendererMode === 'webgpu') renderWebGpu(activeScene, progress, now());
       else if (!reducedMotion) renderFallback(activeScene, progress);
-      if (progress < 1 && activeScene) frameHandle = scheduleFrame(animate);
-      else frameHandle = null;
+      if (progress >= 1 || !activeScene) frameHandle = null;
+      else if (frameHandle == null) frameHandle = scheduleFrame(animate);
     }
 
     async function play(sceneName, payload = {}) {

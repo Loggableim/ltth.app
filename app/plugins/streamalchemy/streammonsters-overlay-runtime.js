@@ -119,6 +119,25 @@
     'bottom-center': Object.freeze({ align: 'flex-end', justify: 'center' }),
     'bottom-right': Object.freeze({ align: 'flex-end', justify: 'flex-end' })
   });
+  const EFFECT_ORIGINS = Object.freeze({
+    'top-left': Object.freeze({ x: 0.18, y: 0.18 }),
+    'top-center': Object.freeze({ x: 0.5, y: 0.18 }),
+    'top-right': Object.freeze({ x: 0.82, y: 0.18 }),
+    'middle-left': Object.freeze({ x: 0.18, y: 0.5 }),
+    center: Object.freeze({ x: 0.5, y: 0.5 }),
+    'middle-right': Object.freeze({ x: 0.82, y: 0.5 }),
+    'bottom-left': Object.freeze({ x: 0.18, y: 0.82 }),
+    'bottom-center': Object.freeze({ x: 0.5, y: 0.82 }),
+    'bottom-right': Object.freeze({ x: 0.82, y: 0.82 })
+  });
+  const HATCH_DURATION_KEYS = new Map([
+    [30_000, 'duration30Seconds'],
+    [60_000, 'duration1Minute'],
+    [120_000, 'duration2Minutes'],
+    [300_000, 'duration5Minutes'],
+    [600_000, 'duration10Minutes'],
+    [1_800_000, 'duration30Minutes']
+  ]);
 
   function normalizeVolume(storedValue) {
     const numeric = Number(storedValue);
@@ -143,11 +162,16 @@
   function createPriorityQueue({
     maxSize = 30,
     staleAfterMs = 10000,
-    maxCriticalOverflow = 0
+    maxCriticalOverflow = 0,
+    tombstoneAfterMs = 60_000
   } = {}) {
     const entries = [];
     const boundedMaxSize = Math.max(1, Number(maxSize) || 1);
     const overflowLimit = boundedMaxSize + Math.max(0, Number(maxCriticalOverflow) || 0);
+    const maxFingerprintCount = Math.max(64, overflowLimit * 4);
+    const boundedTombstoneAfterMs = Math.max(1, Number(tombstoneAfterMs) || 60_000);
+    const seenFingerprints = new Map();
+    const droppedGroups = new Map();
     let snapshotEvent = null;
     let sequence = 0;
     let activeGroupKey = null;
@@ -173,6 +197,76 @@
       return entries.length + (snapshotEvent ? 1 : 0);
     }
 
+    function eventFingerprint(type, data = {}, targetGroupKey = null) {
+      const explicitId = data.eventId || data.event_id || data.event?.id ||
+        data.round?.eventId || data.round?.event_id;
+      const round = typeof data.round === 'object'
+        ? data.round?.number
+        : (data.round ?? data.roundNumber);
+      if (explicitId) return `${targetGroupKey || 'event'}:${type}:id:${explicitId}`;
+      if (!targetGroupKey) return null;
+      if ([
+        'battle_started',
+        'battle_completed',
+        'egg_spawned',
+        'egg_ready',
+        'hatch_started',
+        'egg_hatched'
+      ].includes(type)) {
+        return `${targetGroupKey}:${type}`;
+      }
+      if (type === 'battle_special_charged') {
+        const monsterId = data.monsterId || data.actorId || data.monster?.monster_id;
+        return monsterId ? `${targetGroupKey}:${type}:${round ?? ''}:${monsterId}` : null;
+      }
+      if (type === 'battle_round' && round != null) {
+        return `${targetGroupKey}:${type}:${round}`;
+      }
+      if (type === 'stance_revealed') {
+        const monsterId = data.monster?.monster_id || data.monsterId;
+        return monsterId ? `${targetGroupKey}:${type}:${monsterId}` : null;
+      }
+      if (type === 'battle_skill_used') {
+        const actorId = data.actorId || data.actor?.monster_id;
+        const skill = data.skill?.id || data.skill?.vfxKey || data.skill?.vfx_key || data.action?.type;
+        return actorId && round != null && skill
+          ? `${targetGroupKey}:${type}:${round}:${actorId}:${skill}`
+          : null;
+      }
+      return null;
+    }
+
+    function rememberFingerprint(fingerprint) {
+      if (seenFingerprints.has(fingerprint)) return false;
+      seenFingerprints.set(fingerprint, sequence + 1);
+      while (seenFingerprints.size > maxFingerprintCount) {
+        seenFingerprints.delete(seenFingerprints.keys().next().value);
+      }
+      return true;
+    }
+
+    function terminalType(type) {
+      return type === 'battle_completed' || type === 'egg_hatched';
+    }
+
+    function expireDroppedGroups(at = Date.now()) {
+      const currentTime = Number(at) || Date.now();
+      for (const [targetGroupKey, droppedAt] of droppedGroups) {
+        if (currentTime - droppedAt <= boundedTombstoneAfterMs) continue;
+        droppedGroups.delete(targetGroupKey);
+        for (const fingerprint of seenFingerprints.keys()) {
+          if (fingerprint.startsWith(`${targetGroupKey}:`)) seenFingerprints.delete(fingerprint);
+        }
+      }
+    }
+
+    function rememberDroppedGroup(targetGroupKey, droppedAt) {
+      droppedGroups.set(targetGroupKey, Number(droppedAt) || Date.now());
+      while (droppedGroups.size > maxFingerprintCount) {
+        droppedGroups.delete(droppedGroups.keys().next().value);
+      }
+    }
+
     function removeEntry(index) {
       const [removed] = entries.splice(index, 1);
       if (removed?.groupKey === activeGroupKey && !entries.some(entry => entry.groupKey === activeGroupKey)) {
@@ -181,72 +275,18 @@
       }
     }
 
-    function compactCriticalGroup(targetGroupKey) {
+    function dropCriticalGroup(targetGroupKey, droppedAt) {
       const grouped = entries.filter(entry => entry.groupKey === targetGroupKey);
-      if (!grouped.length) return false;
-      const outsideCount = totalSize() - grouped.length;
-      const available = Math.max(0, overflowLimit - outsideCount);
-      if (grouped.length < 2 && available > 0) return false;
-      const retained = [];
-      const keyed = new Map();
-      const rounds = grouped.filter(entry => entry.type === 'battle_round');
-      for (const entry of grouped) {
-        if (entry.type === 'battle_round') continue;
-        const discriminator = entry.type === 'battle_skill_used'
-          ? `${entry.type}:${entry.data?.action?.type || entry.data?.skill?.type || 'skill'}:${entry.data?.actorId || ''}`
-          : (entry.type === 'stance_revealed'
-            ? `${entry.type}:${entry.data?.monster?.monster_id || entry.data?.monsterId || ''}`
-            : entry.type);
-        if (entry.type === 'battle_started' || entry.type === 'egg_spawned') {
-          if (!keyed.has(discriminator)) keyed.set(discriminator, entry);
-        } else {
-          keyed.set(discriminator, entry);
-        }
-      }
-      retained.push(...keyed.values());
-      if (rounds.length) {
-        retained.push(rounds[0]);
-        if (rounds.length > 1) retained.push(rounds.at(-1));
-      }
-      retained.sort((left, right) => left.sequence - right.sequence);
-
-      let representatives = retained;
-      if (retained.length > available && available > 0) {
-        const terminal = retained.findLast(entry => (
-          entry.type === 'battle_completed' || entry.type === 'egg_hatched'
-        )) || retained.at(-1);
-        representatives = retained
-          .filter(entry => entry !== terminal)
-          .slice(0, Math.max(0, available - 1));
-        representatives.push(terminal);
-      } else if (available === 0) {
-        representatives = [];
-      }
-      if (representatives.length) {
-        const summaryTarget = representatives.at(-1);
-        summaryTarget.data = {
-          ...summaryTarget.data,
-          criticalGroupSummary: {
-            count: grouped.length,
-            types: [...new Set(grouped.map(entry => entry.type))],
-            firstSequence: grouped[0].sequence,
-            lastSequence: grouped.at(-1).sequence
-          }
-        };
-      }
-      const firstIndex = entries.findIndex(entry => entry.groupKey === targetGroupKey);
+      if (!grouped.length || targetGroupKey === activeGroupKey) return false;
+      const complete = grouped.some(entry => terminalType(entry.type));
       for (let index = entries.length - 1; index >= 0; index -= 1) {
         if (entries[index].groupKey === targetGroupKey) entries.splice(index, 1);
       }
-      entries.splice(firstIndex, 0, ...representatives);
-      if (!representatives.length && activeGroupKey === targetGroupKey) {
-        activeGroupKey = null;
-        durableTurn = true;
-      }
-      return representatives.length < grouped.length;
+      if (!complete) rememberDroppedGroup(targetGroupKey, droppedAt);
+      return true;
     }
 
-    function trim() {
+    function trim(trimmedAt = Date.now()) {
       while (totalSize() > boundedMaxSize) {
         const ephemeralIndex = entries.findIndex(entry => entry.priority === 1);
         if (ephemeralIndex >= 0) {
@@ -263,25 +303,14 @@
         }
 
         if (totalSize() <= overflowLimit) break;
-        const removableCriticalGroups = [];
-        for (const entry of entries) {
-          if (entry.priority !== 3 || !entry.groupKey || entry.groupKey === activeGroupKey) continue;
-          if (!removableCriticalGroups.includes(entry.groupKey)) removableCriticalGroups.push(entry.groupKey);
+        if (snapshotEvent && durableIndexes.length) {
+          removeEntry(durableIndexes.at(-1));
+          continue;
         }
-        const allCriticalGroups = [...new Set(entries
-          .filter(entry => entry.priority === 3 && entry.groupKey)
+        const removableCriticalGroups = [...new Set(entries
+          .filter(entry => entry.priority === 3 && entry.groupKey && entry.groupKey !== activeGroupKey)
           .map(entry => entry.groupKey))];
-        const compactableGroup = allCriticalGroups.find(group => {
-          const groupedCount = entries.filter(entry => entry.groupKey === group).length;
-          const available = Math.max(0, overflowLimit - (totalSize() - groupedCount));
-          return groupedCount > available || groupedCount > 1;
-        });
-        if (compactableGroup && compactCriticalGroup(compactableGroup)) continue;
-        if (allCriticalGroups.length > 1 && removableCriticalGroups.length) {
-          const oldestGroup = removableCriticalGroups[0];
-          for (let index = entries.length - 1; index >= 0; index -= 1) {
-            if (entries[index].groupKey === oldestGroup) removeEntry(index);
-          }
+        if (removableCriticalGroups.length && dropCriticalGroup(removableCriticalGroups[0], trimmedAt)) {
           continue;
         }
 
@@ -291,14 +320,20 @@
           continue;
         }
 
-        // A single critical group is deliberately indivisible. Known spawn/hatch
-        // and battle groups are bounded by their event vocabularies, so this is a
-        // temporary, bounded overflow in normal operation.
+        // An actively displayed group cannot be truncated. It drains in order and
+        // is the only allowed temporary overflow beyond the configured hard limit.
         break;
       }
     }
 
     function enqueue(type, data, enqueuedAt = Date.now()) {
+      expireDroppedGroups(enqueuedAt);
+      const targetGroupKey = groupKey(type, data);
+      if (targetGroupKey && droppedGroups.has(targetGroupKey)) {
+        return false;
+      }
+      const fingerprint = eventFingerprint(type, data, targetGroupKey);
+      if (fingerprint && !rememberFingerprint(fingerprint)) return false;
       if (COALESCED_TYPES.has(type)) {
         const priorIndex = entries.findIndex(entry => entry.type === type);
         if (priorIndex >= 0) entries.splice(priorIndex, 1);
@@ -309,9 +344,11 @@
         enqueuedAt,
         priority: priority(type),
         sequence: sequence += 1,
-        groupKey: groupKey(type, data)
+        groupKey: targetGroupKey,
+        fingerprint
       });
-      trim();
+      trim(enqueuedAt);
+      return true;
     }
 
     function prependSnapshot(data, enqueuedAt = Date.now()) {
@@ -322,7 +359,7 @@
         priority: priority('state_snapshot'),
         sequence: sequence += 1
       };
-      trim();
+      trim(enqueuedAt);
     }
 
     function orderedEntries() {
@@ -384,6 +421,8 @@
     function beginSnapshot() {
       snapshotEvent = null;
       entries.length = 0;
+      seenFingerprints.clear();
+      droppedGroups.clear();
       activeGroupKey = null;
       durableTurn = false;
     }
@@ -477,6 +516,36 @@
 
   function anchorPlacement(anchor) {
     return ANCHOR_PLACEMENTS[anchor] || ANCHOR_PLACEMENTS.center;
+  }
+
+  function effectPlacement(anchor, scale = 100) {
+    return {
+      origin: EFFECT_ORIGINS[anchor] || EFFECT_ORIGINS.center,
+      scale: validScale(scale, 100) / 100
+    };
+  }
+
+  function hatchDurationSpec(durationMs) {
+    const milliseconds = Math.max(0, Number(durationMs) || 0);
+    const presetKey = HATCH_DURATION_KEYS.get(milliseconds);
+    if (presetKey) {
+      return {
+        key: presetKey,
+        params: milliseconds < 60_000
+          ? { seconds: milliseconds / 1000 }
+          : { minutes: milliseconds / 60_000 }
+      };
+    }
+    if (milliseconds < 60_000 || milliseconds % 60_000 !== 0) {
+      return {
+        key: 'durationSeconds',
+        params: { seconds: Math.round(milliseconds / 1000) }
+      };
+    }
+    return {
+      key: 'durationMinutes',
+      params: { minutes: milliseconds / 60_000 }
+    };
   }
 
   function resolveLayoutSettings({
@@ -585,8 +654,10 @@
     createReconnectController,
     chatMessageKey,
     decodeAudioCue,
+    effectPlacement,
     elementKey: value => enumKey(ELEMENT_KEYS, value),
     hypeMilestonePoints,
+    hatchDurationSpec,
     isCritical: type => CRITICAL_TYPES.has(type),
     normalizeVolume,
     personalityKey: value => enumKey(PERSONALITY_KEYS, value),
