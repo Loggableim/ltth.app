@@ -254,6 +254,14 @@
           continue;
         }
 
+        const durableIndexes = entries
+          .map((entry, index) => entry.priority === 2 ? index : -1)
+          .filter(index => index >= 0);
+        if (durableIndexes.length > 1) {
+          removeEntry(durableIndexes.at(-1));
+          continue;
+        }
+
         if (totalSize() <= overflowLimit) break;
         const removableCriticalGroups = [];
         for (const entry of entries) {
@@ -280,12 +288,6 @@
         const ungroupedCriticalIndex = entries.findIndex(entry => entry.priority === 3 && !entry.groupKey);
         if (ungroupedCriticalIndex >= 0) {
           removeEntry(ungroupedCriticalIndex);
-          continue;
-        }
-
-        const durableIndex = entries.findIndex(entry => entry.priority === 2);
-        if (durableIndex >= 0) {
-          removeEntry(durableIndex);
           continue;
         }
 

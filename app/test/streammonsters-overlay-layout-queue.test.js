@@ -78,6 +78,22 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     ]));
   });
 
+  test('drops lower-priority durable events before compacting a critical group', () => {
+    const queue = runtime.createPriorityQueue({ maxSize: 3, maxCriticalOverflow: 0 });
+    const battle = { battleId: 'battle-priority' };
+    queue.enqueue('battle_started', battle, 1);
+    queue.enqueue('battle_completed', battle, 2);
+    queue.enqueue('hype_milestone', { milestone: 10 }, 3);
+    queue.enqueue('quest_completed', { questId: 'quest-a' }, 4);
+
+    expect(queue.size()).toBe(3);
+    expect(queue.snapshot().map(entry => entry.type)).toEqual([
+      'battle_started',
+      'battle_completed',
+      'hype_milestone'
+    ]);
+  });
+
   test('keeps the strict bound when a snapshot leaves no room for a single critical group', () => {
     const queue = runtime.createPriorityQueue({ maxSize: 1, maxCriticalOverflow: 0 });
     queue.enqueue('battle_started', { battleId: 'battle-snapshot' }, 1);
