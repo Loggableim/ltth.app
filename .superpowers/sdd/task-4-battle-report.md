@@ -44,9 +44,10 @@ gift rules, or collection schema.
 - Added `battle-simulator.js`.
   - Uses the same rules engine as live battles.
   - Explicitly disables element advantage.
-  - Uses mirrored opponent order, mirrored legal 28-point stats, levels,
-    personalities, and deterministic seeds.
-  - Reports wins, losses, draws, and normalized win rate for all six elements.
+  - Crosses independent attacker/defender legal 28-point allocations and
+    personalities across levels and deterministic seeds.
+  - Mirrors each participant configuration across both side/order positions.
+  - Reports literal engine wins/losses/draws and win rate for all six elements.
 
 ## Action Record Contract
 
@@ -96,16 +97,18 @@ PASS test/streammonsters-battle-simulator.test.js
 
 ## Balance Result
 
-The complete default neutral matrix runs 32,256 mirrored battle resolutions:
+The complete default neutral matrix runs 12,096 literal mirrored battle
+resolutions / 24,192 participant samples. It includes 6,048 battles with
+different allocations and 8,064 battles with different personalities:
 
-| Element | Wins | Losses | Draws | Normalized win rate |
+| Element | Wins | Losses | Draws | Win rate |
 | --- | ---: | ---: | ---: | ---: |
-| Ember | 449 | 90 | 4,837 | 53.339% |
-| Tide | 642 | 292 | 4,442 | 53.255% |
-| Grove | 394 | 242 | 4,740 | 51.414% |
-| Gale | 243 | 530 | 4,603 | 47.331% |
-| Volt | 141 | 676 | 4,559 | 45.024% |
-| Lunar | 296 | 335 | 4,745 | 49.637% |
+| Ember | 2,038 | 1,994 | 0 | 50.546% |
+| Tide | 2,029 | 2,003 | 0 | 50.322% |
+| Grove | 2,114 | 1,918 | 0 | 52.431% |
+| Gale | 2,001 | 2,031 | 0 | 49.628% |
+| Volt | 1,949 | 2,083 | 0 | 48.338% |
+| Lunar | 1,965 | 2,067 | 0 | 48.735% |
 
 Every result is within the approved 45%..55% neutral band.
 
@@ -121,7 +124,7 @@ Final combined focused/regression run:
 
 ```text
 Test Suites: 14 passed, 14 total
-Tests:       164 passed, 164 total
+Tests:       169 passed, 169 total
 Snapshots:   0 total
 ```
 
@@ -149,3 +152,88 @@ Exit code: 0
 ## Concerns
 
 None.
+
+## Review Follow-up Evidence
+
+The review fixes were implemented in separate RED/GREEN cycles:
+
+- Gale evasion now short-circuits the complete target side of the incoming
+  action. Seeds `evade-ember-0`, `evade-tide-3`, and `evade-volt-6` prove no HP
+  damage, shield absorption/removal/penetration, burn, or outgoing-damage
+  reduction is applied.
+- The simulator now runs the literal cross-product described above. It no
+  longer converts split mirrored outcomes into synthetic draws.
+- Terminal action and pre-final-round winner IDs remain `null`; only the final
+  terminal round records the final tie-break winner. Seed `ko-0` covers the
+  double-KO case.
+- Every seeded automatic attack/defense choice is preserved as an
+  `automaticDecision` entry in `action.seedRolls`.
+
+Follow-up RED command:
+
+```powershell
+$node = 'C:\Users\logga\Documents\ltth_codex\ltth_desktop2-main\runtime\node\node.exe'
+& $node node_modules/jest/bin/jest.js --runInBand `
+  test/streammonsters-battle-v3.test.js `
+  test/streammonsters-battle-simulator.test.js
+```
+
+Observed before production fixes:
+
+```text
+Test Suites: 2 failed, 2 total
+Tests:       7 failed, 14 passed, 21 total
+```
+
+The failures reproduced all three evasion leaks, missing simulator cross-product
+counts, missing participant counts, absent automatic decision rolls, and the
+`ko-0` contradictory winner.
+
+Final focused gate command:
+
+```powershell
+$node = 'C:\Users\logga\Documents\ltth_codex\ltth_desktop2-main\runtime\node\node.exe'
+& $node node_modules/jest/bin/jest.js --runInBand `
+  test/streammonsters-core.test.js `
+  test/streammonsters-gameplay-v2.test.js `
+  test/streammonsters-chat-commands.test.js `
+  test/streammonsters-progression.test.js `
+  test/streammonsters-collection-layer.test.js `
+  test/streammonsters-collector-arena.test.js `
+  test/streammonsters-collector-commands.test.js `
+  test/streammonsters-battle-v3.test.js `
+  test/streammonsters-battle-simulator.test.js `
+  test/streammonsters-collector-routes.test.js `
+  test/streammonsters-release-1.3.test.js `
+  test/streammonsters-plugin-integration.test.js `
+  test/streammonsters-routes-security.test.js `
+  test/streammonsters-core-rules-v3.test.js
+```
+
+Observed:
+
+```text
+Test Suites: 14 passed, 14 total
+Tests:       169 passed, 169 total
+Snapshots:   0 total
+Jest time:   11.244 s
+Wall time:   12.244 s
+```
+
+Separate default simulator evidence:
+
+```text
+Battles:                     12,096
+Participant samples:         24,192
+Cross-allocation battles:     6,048
+Cross-personality battles:    8,064
+Wall time:                    0.506 s
+```
+
+Repository lint:
+
+```text
+> eslint .
+Exit code: 0
+Wall time: 14.011 s
+```

@@ -159,18 +159,31 @@ function personalityKind(personality) {
 }
 
 function chooseAction(actor, target, context) {
-  if (actor.charged && !actor.specialUsed) return 'special';
+  if (actor.charged && !actor.specialUsed) return { type: 'special', seedRoll: null };
   const planned = context.actionPlan?.[actor.monster.monster_id]?.[context.round - 1];
-  if (planned === 'attack' || planned === 'defense') return planned;
+  if (planned === 'attack' || planned === 'defense') return { type: planned, seedRoll: null };
   const kind = personalityKind(actor.monster.personality);
   const behindBy = (target.hp / target.maxHp) - (actor.hp / actor.maxHp);
-  if (kind === 'adaptive' && behindBy >= 0.15) return 'defense';
   const threshold = kind === 'aggressive' ? 75 : (kind === 'defensive' ? 25 : 60);
-  return roll(
+  const value = roll(
     context.seed,
     `round:${context.round}:actor:${actor.monster.monster_id}:decision`,
     100
-  ) < threshold ? 'attack' : 'defense';
+  );
+  const type = kind === 'adaptive' && behindBy >= 0.15
+    ? 'defense'
+    : (value < threshold ? 'attack' : 'defense');
+  return {
+    type,
+    seedRoll: {
+      purpose: 'automaticDecision',
+      value,
+      threshold,
+      choice: type,
+      personality: kind,
+      materiallyBehind: behindBy >= 0.15
+    }
+  };
 }
 
 function chargeIfEligible(state, context, cause, events) {
@@ -311,6 +324,7 @@ function resolveDefense(actor, target, context, action) {
 function resolveDamagingAction(actor, target, context, action) {
   const type = action.skill.type;
   const element = actor.monster.element;
+  const evadesAction = target.evadeNextAction;
   const computedBase = baseDamage(actor, target, context, type, 0);
   action.baseDamage = computedBase.value;
   action.seedRolls.push({
@@ -337,7 +351,7 @@ function resolveDamagingAction(actor, target, context, action) {
   }
 
   let shieldRemovedBeforeDamage = 0;
-  if (type === 'attack' && element === 'Volt') {
+  if (!evadesAction && type === 'attack' && element === 'Volt') {
     shieldRemovedBeforeDamage = Math.min(2, target.shield);
     target.shield -= shieldRemovedBeforeDamage;
     action.consumedEffects.push({
@@ -348,7 +362,6 @@ function resolveDamagingAction(actor, target, context, action) {
   }
   const combinedDamage = Math.max(1, computedBase.value + bonus);
   const hitDamages = splitDamage(combinedDamage, hitCount);
-  const evadesAction = target.evadeNextAction;
   for (let index = 0; index < hitDamages.length; index += 1) {
     action.hits.push(applyHit(
       actor,
@@ -367,7 +380,7 @@ function resolveDamagingAction(actor, target, context, action) {
   }
   const actualHpDamage = action.hits.reduce((sum, hit) => sum + hit.hpDamage, 0);
 
-  if (type === 'attack' && element === 'Ember') {
+  if (!evadesAction && type === 'attack' && element === 'Ember') {
     target.burn.push({
       amount: 2,
       dueRound: context.round + 1,
@@ -379,7 +392,7 @@ function resolveDamagingAction(actor, target, context, action) {
       dueRound: context.round + 1,
       targetId: target.monster.monster_id
     });
-  } else if (type === 'attack' && element === 'Tide') {
+  } else if (!evadesAction && type === 'attack' && element === 'Tide') {
     target.outgoingDamageReduction += 2;
     action.appliedEffects.push({
       type: 'outgoingDamageReduction',
@@ -408,7 +421,7 @@ function resolveDamagingAction(actor, target, context, action) {
   }
 }
 
-function resolveAction(actor, target, actionType, context) {
+function resolveAction(actor, target, actionType, context, decisionRoll = null) {
   const action = {
     round: context.round,
     actorId: actor.monster.monster_id,
@@ -421,7 +434,7 @@ function resolveAction(actor, target, actionType, context) {
     hits: [],
     appliedEffects: [],
     consumedEffects: [],
-    seedRolls: [],
+    seedRolls: decisionRoll ? [decisionRoll] : [],
     maxHp: { actor: actor.maxHp, target: target.maxHp },
     terminal: false,
     winnerId: null
@@ -438,9 +451,7 @@ function resolveAction(actor, target, actionType, context) {
     resolveDamagingAction(actor, target, context, action);
   }
   action.terminal = actor.hp <= 0 || target.hp <= 0;
-  action.winnerId = action.terminal
-    ? (actor.hp > target.hp ? actor.monster.monster_id : target.monster.monster_id)
-    : null;
+  action.winnerId = null;
   action.after = { actor: snapshot(actor), target: snapshot(target) };
   context.events.push({
     type: 'streammonsters:battle_skill_used',
@@ -524,8 +535,8 @@ function resolveBattle(monsterA, monsterB, seed, options = {}) {
     for (const actor of ordered) {
       const target = actor === left ? right : left;
       if (actor.hp <= 0 || target.hp <= 0) continue;
-      const actionType = chooseAction(actor, target, context);
-      actions.push(resolveAction(actor, target, actionType, context));
+      const decision = chooseAction(actor, target, context);
+      actions.push(resolveAction(actor, target, decision.type, context, decision.seedRoll));
     }
     const terminal = left.hp <= 0 || right.hp <= 0;
     const first = actions[0] || null;
@@ -546,9 +557,7 @@ function resolveBattle(monsterA, monsterB, seed, options = {}) {
       startEffects,
       actions,
       terminal,
-      winnerId: terminal
-        ? (left.hp > right.hp ? monsterA.monster_id : monsterB.monster_id)
-        : null
+      winnerId: null
     });
   }
 
@@ -559,6 +568,7 @@ function resolveBattle(monsterA, monsterB, seed, options = {}) {
         : monsterB.monster_id
     )
     : (left.hp > right.hp ? monsterA.monster_id : monsterB.monster_id);
+  rounds[rounds.length - 1].terminal = true;
   rounds[rounds.length - 1].winnerId = winnerId;
   return {
     rulesVersion: RULES_VERSION,

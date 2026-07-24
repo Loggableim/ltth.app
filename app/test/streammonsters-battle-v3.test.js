@@ -150,6 +150,58 @@ describe('Stream Monsters rules-v3 exact element skills', () => {
     expect(outcomes.some(action => action?.appliedEffects?.some(effect => effect.type === 'shield' && effect.amount === 3))).toBe(true);
     expect(outcomes.every(action => action?.seedRolls?.some(roll => roll.purpose === 'galeDefense'))).toBe(true);
   });
+
+  test.each([
+    ['Ember', 'evade-ember-0'],
+    ['Tide', 'evade-tide-3'],
+    ['Volt', 'evade-volt-6']
+  ])('Gale evade prevents the complete incoming %s action and all target-side effects', (element, seed) => {
+    const { store } = createStore();
+    const gale = monster('gale', 'Gale', {
+      stats: { vitality: 7, might: 7, guard: 7, agility: 20 }
+    });
+    const attacker = monster(element.toLowerCase(), element, {
+      stats: { vitality: 7, might: 7, guard: 7, agility: 10 }
+    });
+    const result = new BattleService({ store }).resolve(
+      gale,
+      attacker,
+      seed,
+      null,
+      null,
+      {
+        actionPlan: {
+          gale: ['defense', 'defense', 'defense'],
+          [attacker.monster_id]: ['attack', 'defense', 'defense']
+        },
+        initialState: { gale: { shield: 6 } },
+        disableElementAdvantage: true
+      }
+    );
+    const defense = result.rounds[0].actions.find(action => action.actorId === 'gale');
+    const incoming = result.rounds[0].actions.find(action => action.actorId === attacker.monster_id);
+
+    expect(defense.appliedEffects).toContainEqual(expect.objectContaining({ type: 'evade' }));
+    expect(incoming.hits).not.toHaveLength(0);
+    expect(incoming.hits.every(hit => (
+      hit.evaded &&
+      hit.hpDamage === 0 &&
+      hit.shieldAbsorbed === 0 &&
+      hit.shieldRemoved === 0 &&
+      hit.shieldPenetrated === 0
+    ))).toBe(true);
+    expect(incoming.after.target).toEqual(expect.objectContaining({
+      hp: incoming.before.target.hp,
+      shield: 6,
+      burn: [],
+      outgoingDamageReduction: 0,
+      evadeNextAction: false
+    }));
+    expect(incoming.appliedEffects.filter(effect => effect.targetId === 'gale')).toEqual([]);
+    expect(incoming.consumedEffects).toEqual([
+      { type: 'evade', scope: 'incomingAction' }
+    ]);
+  });
 });
 
 describe('Stream Monsters automatic rules-v3 battles', () => {
@@ -196,6 +248,27 @@ describe('Stream Monsters automatic rules-v3 battles', () => {
     expect(attacks).toBeGreaterThan(20);
     expect(defenses).toBeGreaterThan(20);
     expect(choices('Adaptive').every(type => type === 'defense')).toBe(true);
+  });
+
+  test('preserves every seeded automatic decision roll in the resolved action', () => {
+    const { store } = createStore();
+    const result = new BattleService({ store }).resolve(
+      monster('left', 'Ember', { personality: 'Aggressive' }),
+      monster('right', 'Tide', { personality: 'Defensive' }),
+      'decision-rolls'
+    );
+    const automaticActions = result.rounds.flatMap(round => round.actions)
+      .filter(action => action.skill.type !== 'special');
+
+    expect(automaticActions).not.toHaveLength(0);
+    automaticActions.forEach(action => {
+      expect(action.seedRolls).toContainEqual(expect.objectContaining({
+        purpose: 'automaticDecision',
+        value: expect.any(Number),
+        threshold: expect.any(Number),
+        choice: action.skill.type
+      }));
+    });
   });
 
   test('charges at or below forty percent once and uses the special once on the next own action', () => {
@@ -254,6 +327,11 @@ describe('Stream Monsters automatic rules-v3 battles', () => {
       Object.hasOwn(round, 'winnerId') &&
       Object.hasOwn(round, 'terminal')
     ))).toBe(true);
+    expect(result.rounds.slice(0, -1).every(round => round.winnerId === null)).toBe(true);
+    expect(result.rounds.at(-1)).toEqual(expect.objectContaining({
+      terminal: true,
+      winnerId: result.winnerId
+    }));
     expect(stored).toEqual(expect.objectContaining({
       rules_version: 3,
       rulesVersion: 3,
@@ -278,6 +356,43 @@ describe('Stream Monsters automatic rules-v3 battles', () => {
     expect(JSON.stringify(replay)).toBe(JSON.stringify(first));
     expect(changed.rounds).not.toEqual(first.rounds);
     expect(changed.rounds).toHaveLength(3);
+  });
+
+  test('uses only the final tie-break winner in terminal action and round context', () => {
+    const { store } = createStore();
+    const result = new BattleService({ store }).resolve(
+      monster('left', 'Grove', {
+        stats: { vitality: 7, might: 20, guard: 0, agility: 20 }
+      }),
+      monster('right', 'Ember', {
+        stats: { vitality: 7, might: 7, guard: 0, agility: 10 }
+      }),
+      'ko-0',
+      null,
+      null,
+      {
+        actionPlan: {
+          left: ['defense', 'attack', 'attack'],
+          right: ['defense', 'defense', 'defense']
+        },
+        initialState: { left: { hp: 2 }, right: { hp: 1 } },
+        disableElementAdvantage: true
+      }
+    );
+    const stored = store.getBattle(result.battleId);
+    const terminalActions = result.rounds.flatMap(round => round.actions)
+      .filter(action => action.terminal);
+
+    expect(result.finalHp).toEqual({ left: 0, right: 0 });
+    expect(result.winnerId).toBe('left');
+    expect(terminalActions).not.toHaveLength(0);
+    expect(terminalActions.every(action => action.winnerId === null)).toBe(true);
+    expect(result.rounds.slice(0, -1).every(round => round.winnerId === null)).toBe(true);
+    expect(result.rounds.at(-1)).toEqual(expect.objectContaining({
+      terminal: true,
+      winnerId: 'left'
+    }));
+    expect(stored.result.rounds).toEqual(result.rounds);
   });
 
   test('keeps malformed legacy JSON readable without mutating permanent monster data', () => {

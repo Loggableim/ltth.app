@@ -26,6 +26,10 @@ describe('Stream Monsters neutral rules-v3 balance simulator', () => {
     expect(replay).toEqual(first);
     expect(first.elementAdvantageDisabled).toBe(true);
     expect(first.mirroredOpponentSampling).toBe(true);
+    expect(first.battleCount).toBe(6_048);
+    expect(first.participantSampleCount).toBe(12_096);
+    expect(first.crossAllocationBattleCount).toBe(3_024);
+    expect(first.crossPersonalityBattleCount).toBe(4_032);
     expect(first.results).toHaveLength(6);
     first.results.forEach(result => {
       expect(result).toEqual(expect.objectContaining({
@@ -36,16 +40,25 @@ describe('Stream Monsters neutral rules-v3 balance simulator', () => {
         winRate: expect.any(Number)
       }));
       expect(result.wins + result.losses + result.draws).toBeGreaterThan(0);
+      expect(result.draws).toBe(0);
       expect(result.winRate).toBeGreaterThanOrEqual(0.45);
       expect(result.winRate).toBeLessThanOrEqual(0.55);
     });
+    expect(first.results.reduce(
+      (sum, result) => sum + result.wins + result.losses + result.draws,
+      0
+    )).toBe(first.battleCount * 2);
   });
 
   test('keeps the complete default development matrix inside the approved balance band', () => {
     const report = BattleSimulator.runNeutralBalanceMatrix();
 
-    expect(report.battleCount).toBeGreaterThan(0);
+    expect(report.battleCount).toBe(12_096);
+    expect(report.participantSampleCount).toBe(24_192);
+    expect(report.crossAllocationBattleCount).toBe(6_048);
+    expect(report.crossPersonalityBattleCount).toBe(8_064);
     report.results.forEach(result => {
+      expect(result.draws).toBe(0);
       expect(result.winRate).toBeGreaterThanOrEqual(0.45);
       expect(result.winRate).toBeLessThanOrEqual(0.55);
     });
