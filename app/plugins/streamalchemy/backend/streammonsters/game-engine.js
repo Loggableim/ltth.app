@@ -1,5 +1,6 @@
 const { createHash } = require('crypto');
 const { getTemplate, deterministicTemplateId } = require('./catalog');
+const { isHeartMeGift } = require('./gift-name');
 
 const ELEMENTS = ['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar'];
 const EGG_COLORS = ['#ef6b45', '#3aaee8', '#54b86d', '#8ecfcb', '#f1ca43', '#a778e2'];
@@ -309,7 +310,7 @@ class StreamMonstersEngine {
   }
 
   recordHeartMeGift(userId, gift, atMs) {
-    if (!this.collection || String(gift?.giftName || '').trim().toLowerCase() !== 'heart me') return null;
+    if (!this.collection || !isHeartMeGift(gift?.giftName)) return null;
     const chain = this.collection.recordHeartMe({ streamKey: this.streamKey || 'offline', userId, atMs });
     if (chain.hypeAward) this.addHype(chain.hypeAward, { userId, gift, heartChain: chain });
     return chain;

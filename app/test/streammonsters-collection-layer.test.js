@@ -2,6 +2,7 @@ const Database = require('better-sqlite3');
 const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
 const { TEMPLATE_CATALOG, getTemplatesForElement } = require('../plugins/streamalchemy/backend/streammonsters/catalog');
 const CollectionService = require('../plugins/streamalchemy/backend/streammonsters/collection-service');
+const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
 
 function createCollection(options = {}) {
   const store = new StreamMonstersDatabase(new Database(':memory:'));
@@ -43,6 +44,12 @@ function addMonster(store, input = {}) {
     visualKey: input.visualKey || `furry:${templateId}`,
     createdAtMs: input.createdAtMs || 1
   });
+}
+
+function findMissionStream(collection, missionKey, prefix = missionKey) {
+  return Array.from({ length: 64 }, (_, index) => `${prefix}-${index}`).find(key => (
+    collection.getStreamMission(key).mission_key === missionKey
+  ));
 }
 
 describe('Stream Monsters 1.4 collection layer', () => {
@@ -153,19 +160,108 @@ describe('Stream Monsters 1.4 collection layer', () => {
     expect(emitted.filter(entry => entry.event === 'streammonsters:heart_chain_changed')).toHaveLength(9);
   });
 
+  test('uses the discovery-grade Heart Me normalization for chains and their active mission', () => {
+    const { store, collection, emitted } = createCollection();
+    const streamKey = findMissionStream(collection, 'heart_chain_five', 'normalized-heart');
+    const engine = new StreamMonstersEngine({
+      store,
+      collection,
+      emit: (event, payload) => emitted.push({ event, payload }),
+      now: () => 1_000
+    });
+    engine.setStreamKey(streamKey);
+
+    engine.recordHeartMeGift('viewer-a', { giftName: 'Heart-Me' }, 1);
+    engine.recordHeartMeGift('viewer-b', { giftName: 'heart   me' }, 2);
+    const chain = engine.recordHeartMeGift('viewer-c', { giftName: 'HEART ME' }, 3);
+
+    expect(chain).toEqual(expect.objectContaining({ length: 3, hypeAward: 5 }));
+    expect(collection.getStreamMission(streamKey)).toEqual(expect.objectContaining({ progress: 3 }));
+    expect(store.getMissionParticipants(streamKey).map(item => item.user_id))
+      .toEqual(['viewer-a', 'viewer-b', 'viewer-c']);
+  });
+
+  test('ignores Heart Chain activity when the active mission requires hatches', () => {
+    const { store, collection } = createCollection();
+    const streamKey = findMissionStream(collection, 'six_hatches', 'heart-vs-hatch');
+
+    collection.recordHeartMe({ streamKey, userId: 'heart-viewer', atMs: 1 });
+
+    expect(collection.getStreamMission(streamKey)).toEqual(expect.objectContaining({ progress: 0 }));
+    expect(store.getMissionParticipants(streamKey)).toEqual([]);
+  });
+
+  test('does not claim or register a hatch against an active battle mission', () => {
+    const { store, collection } = createCollection();
+    const monster = addMonster(store, { userId: 'hatch-viewer', templateId: 'ashfang' });
+    const streamKey = findMissionStream(collection, 'three_battles', 'hatch-vs-battle');
+    const actionKey = `mission:${streamKey}:hatch:${monster.monster_id}`;
+
+    collection.recordMissionProgress(streamKey, 'hatch', {
+      userId: monster.user_id,
+      monster,
+      actionKey: `hatch:${monster.monster_id}`
+    });
+
+    expect(collection.getStreamMission(streamKey)).toEqual(expect.objectContaining({ progress: 0 }));
+    expect(collection.getMissionParticipant(streamKey, monster.user_id)).toBeNull();
+    expect(store.db.prepare('SELECT 1 FROM streammonsters_collection_actions WHERE action_key = ?').get(actionKey))
+      .toBeUndefined();
+  });
+
+  test('does not claim or register a single battle against an active Heart Chain mission', () => {
+    const { store, collection } = createCollection();
+    const monster = addMonster(store, { userId: 'battle-viewer', templateId: 'ashfang' });
+    const streamKey = findMissionStream(collection, 'heart_chain_five', 'battle-vs-heart');
+    const actionKey = `mission:${streamKey}:battle:one`;
+
+    collection.recordMissionProgress(streamKey, 'battle', {
+      userId: monster.user_id,
+      monster,
+      actionKey: 'battle:one'
+    });
+
+    expect(collection.getStreamMission(streamKey)).toEqual(expect.objectContaining({ progress: 0 }));
+    expect(collection.getMissionParticipant(streamKey, monster.user_id)).toBeNull();
+    expect(store.db.prepare('SELECT 1 FROM streammonsters_collection_actions WHERE action_key = ?').get(actionKey))
+      .toBeUndefined();
+  });
+
+  test('does not claim or register a battle batch against a non-battle mission', () => {
+    const { store, collection } = createCollection();
+    const left = addMonster(store, { userId: 'left', templateId: 'ashfang', index: 1 });
+    const right = addMonster(store, { userId: 'right', templateId: 'ripple', element: 'Tide', index: 2 });
+    const streamKey = findMissionStream(collection, 'heart_chain_five', 'batch-vs-heart');
+    const actionKey = `mission-battle:${streamKey}:battle:wrong-mission`;
+
+    collection.recordBattleOutcome({
+      streamKey,
+      battleId: 'battle:wrong-mission',
+      fighters: [{ monster: left, won: true }, { monster: right, won: false }]
+    });
+
+    expect(collection.getStreamMission(streamKey)).toEqual(expect.objectContaining({ progress: 0 }));
+    expect(store.getMissionParticipants(streamKey)).toEqual([]);
+    expect(store.db.prepare('SELECT 1 FROM streammonsters_collection_actions WHERE action_key = ?').get(actionKey))
+      .toBeUndefined();
+    expect(collection.getMastery('left', 'ashfang').points).toBe(3);
+    expect(collection.getMastery('right', 'ripple').points).toBe(2);
+  });
+
   test('creates one deterministic stream mission and grants participant rewards idempotently', () => {
     const { store, collection } = createCollection();
     const monster = addMonster(store, { templateId: 'ashfang' });
-    const mission = collection.getStreamMission('stream-a');
-    expect(collection.getStreamMission('stream-a')).toEqual(mission);
-    collection.recordMissionProgress('stream-a', 'hatch', { userId: 'viewer-a', monster });
-    const participant = collection.getMissionParticipant('stream-a', 'viewer-a');
+    const streamKey = findMissionStream(collection, 'six_hatches', 'deterministic-mission');
+    const mission = collection.getStreamMission(streamKey);
+    expect(collection.getStreamMission(streamKey)).toEqual(mission);
+    collection.recordMissionProgress(streamKey, 'hatch', { userId: 'viewer-a', monster });
+    const participant = collection.getMissionParticipant(streamKey, 'viewer-a');
     expect(participant).toEqual(expect.objectContaining({ user_id: 'viewer-a' }));
-    collection.completeMission('stream-a');
+    collection.completeMission(streamKey);
     const afterFirst = collection.getMastery('viewer-a', 'ashfang').points;
-    collection.completeMission('stream-a');
+    collection.completeMission(streamKey);
     expect(collection.getMastery('viewer-a', 'ashfang').points).toBe(afterFirst);
-    expect(collection.getCosmetics('viewer-a')).toContain('season_badge:stream-a');
+    expect(collection.getCosmetics('viewer-a')).toContain(`season_badge:${streamKey}`);
   });
 
   test('counts stream mission battles once and tracks four discovered elements across participants', () => {
@@ -246,13 +342,78 @@ describe('Stream Monsters 1.4 collection layer', () => {
     const { store, collection } = createCollection();
     const selected = addMonster(store, { userId: 'viewer-a', templateId: 'ashfang', index: 1 });
     const eventMonster = addMonster(store, { userId: 'viewer-a', templateId: 'cinder', index: 2 });
-    collection.recordMissionProgress('selected-priority', 'hatch', {
+    const streamKey = findMissionStream(collection, 'six_hatches', 'selected-priority');
+    collection.recordMissionProgress(streamKey, 'hatch', {
       userId: 'viewer-a', monster: eventMonster, actionKey: 'hatch:event-monster'
     });
-    collection.completeMission('selected-priority');
+    collection.completeMission(streamKey);
     expect(store.getSelectedMonster('viewer-a').monster_id).toBe(selected.monster_id);
     expect(collection.getMastery('viewer-a', 'ashfang').points).toBe(3);
     expect(collection.getMastery('viewer-a', 'cinder').points).toBe(0);
+  });
+
+  test('rolls back a failed mission reward batch and retries every reward without early events', () => {
+    const { store, collection, emitted } = createCollection();
+    const first = addMonster(store, { userId: 'a-viewer', templateId: 'ashfang', index: 1 });
+    const second = addMonster(store, { userId: 'b-viewer', templateId: 'ripple', element: 'Tide', index: 2 });
+    const streamKey = findMissionStream(collection, 'six_hatches', 'reward-rollback');
+    for (const monster of [first, second]) {
+      collection.addMastery(monster.user_id, monster.template_id, 8, `setup:${monster.monster_id}`);
+      collection.recordMissionProgress(streamKey, 'hatch', {
+        userId: monster.user_id,
+        monster,
+        actionKey: `hatch:${monster.monster_id}`
+      });
+    }
+    emitted.length = 0;
+    const setTemplateMastery = store.setTemplateMastery.bind(store);
+    store.setTemplateMastery = (userId, ...args) => {
+      if (userId === second.user_id) throw new Error('INJECTED_MASTERY_FAILURE');
+      return setTemplateMastery(userId, ...args);
+    };
+
+    expect(() => collection.completeMission(streamKey)).toThrow('INJECTED_MASTERY_FAILURE');
+
+    expect(collection.getStreamMission(streamKey).completed_at_ms).toBeNull();
+    for (const monster of [first, second]) {
+      expect(collection.getMissionParticipant(streamKey, monster.user_id).rewarded_at_ms).toBeNull();
+      expect(collection.getCosmetics(monster.user_id)).not.toContain(`season_badge:${streamKey}`);
+      expect(collection.getMastery(monster.user_id, monster.template_id))
+        .toEqual(expect.objectContaining({ points: 8, unlocks: [] }));
+    }
+    expect(emitted).toEqual([]);
+
+    store.setTemplateMastery = setTemplateMastery;
+    collection.completeMission(streamKey);
+
+    for (const monster of [first, second]) {
+      expect(collection.getMissionParticipant(streamKey, monster.user_id).rewarded_at_ms).toEqual(expect.any(Number));
+      expect(collection.getCosmetics(monster.user_id)).toContain(`season_badge:${streamKey}`);
+      expect(collection.getMastery(monster.user_id, monster.template_id))
+        .toEqual(expect.objectContaining({ points: 11, unlocks: ['title'] }));
+    }
+    expect(emitted.filter(entry => entry.event === 'streammonsters:mastery_unlocked')).toHaveLength(2);
+    expect(emitted.filter(entry => entry.event === 'streammonsters:stream_mission_completed')).toHaveLength(1);
+  });
+
+  test('rolls back an essence claim when its write fails so retry can grant the unlock', () => {
+    const { store, collection } = createCollection();
+    collection.addEssence('viewer-a', 'Ember', 2, 'setup:essence');
+    const setElementEssence = store.setElementEssence.bind(store);
+    store.setElementEssence = () => {
+      throw new Error('INJECTED_ESSENCE_FAILURE');
+    };
+
+    expect(() => collection.addEssence('viewer-a', 'Ember', 1, 'duplicate:retry'))
+      .toThrow('INJECTED_ESSENCE_FAILURE');
+    expect(collection.getEssence('viewer-a', 'Ember'))
+      .toEqual(expect.objectContaining({ amount: 2, unlocks: [] }));
+    expect(store.db.prepare('SELECT 1 FROM streammonsters_collection_actions WHERE action_key = ?')
+      .get('essence:duplicate:retry')).toBeUndefined();
+
+    store.setElementEssence = setElementEssence;
+    expect(collection.addEssence('viewer-a', 'Ember', 1, 'duplicate:retry'))
+      .toEqual(expect.objectContaining({ amount: 3, unlocks: ['palette'] }));
   });
 
   test('uses template art, legacy art, furry assets, then Kenney in the configured visual order', () => {

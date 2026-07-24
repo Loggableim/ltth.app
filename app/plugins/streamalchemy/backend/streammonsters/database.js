@@ -6,6 +6,10 @@ class StreamMonstersDatabase {
     this.db = sqlite?.db || sqlite;
   }
 
+  runInTransaction(operation) {
+    return this.db.transaction(operation)();
+  }
+
   initialize() {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS streammonsters_eggs (
@@ -971,7 +975,7 @@ class StreamMonstersDatabase {
   recordBattleMission({ streamKey, battleId, participants, completedAtMs }) {
     const transaction = this.db.transaction(() => {
       const mission = this.getStreamMission(streamKey);
-      if (!mission || mission.completed_at_ms) {
+      if (!mission || mission.completed_at_ms || mission.mission_key !== 'three_battles') {
         return { mission, accepted: false, newlyCompleted: false };
       }
       const addParticipant = this.db.prepare(`
@@ -987,8 +991,8 @@ class StreamMonstersDatabase {
       const claimed = this.db.prepare(`
         INSERT OR IGNORE INTO streammonsters_collection_actions (action_key, created_at_ms) VALUES (?, ?)
       `).run(`mission-battle:${streamKey}:${battleId}`, completedAtMs).changes > 0;
-      if (!claimed || mission.mission_key !== 'three_battles') {
-        return { mission: this.getStreamMission(streamKey), accepted: claimed, newlyCompleted: false };
+      if (!claimed) {
+        return { mission: this.getStreamMission(streamKey), accepted: false, newlyCompleted: false };
       }
       const progress = Math.min(mission.target, mission.progress + 1);
       const completed = progress >= mission.target;

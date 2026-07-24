@@ -29,6 +29,7 @@ const StreamMonstersManagedRuntimeInstaller = require('./backend/streammonsters/
 const StreamMonstersArtPoolService = require('./backend/streammonsters/art-pool-service');
 const KenneyMonsterBuilder = require('./backend/streammonsters/kenney-monster-builder');
 const StreamMonstersCollectionService = require('./backend/streammonsters/collection-service');
+const { normalizeGiftName } = require('./backend/streammonsters/gift-name');
 
 const RUNTIME_TRUST_FIELDS = new Set([
   'manifest', 'archiveUrl', 'sha256', 'modelSha256', 'archiveType',
@@ -568,11 +569,7 @@ class StreamAlchemyPlugin {
   }
 
   normalizeStreamMonstersGiftName(name) {
-    return String(name || '')
-      .normalize('NFKD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLocaleLowerCase()
-      .replace(/[^\p{L}\p{N}]+/gu, '');
+    return normalizeGiftName(name);
   }
 
   ensureDefaultStreamMonstersGiftMapping(gift = null) {
