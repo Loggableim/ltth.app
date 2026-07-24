@@ -707,7 +707,7 @@
         : text('dexElementFound', '{element} · first found', { element:elementName(slot.element) });
       const mastery = document.createElement('small');
       mastery.textContent = text('dexMasteryEssence', 'Mastery {mastery} · Essence {essence}', {
-        mastery:slot.masteryLevel,
+        mastery:slot.masteryProgressLabel,
         essence:slot.essence
       });
       card.append(image,title,element,mastery);

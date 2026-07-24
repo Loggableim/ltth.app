@@ -38,14 +38,14 @@ describe('Stream Monsters creator controls', () => {
     });
   });
 
-  test('builds a complete 24-slot Dex with locked silhouettes and mastery/essence cosmetics', () => {
+  test('builds a complete 24-slot Dex from the real points/unlocks mastery payload', () => {
     const templates = Array.from({ length: 24 }, (_, index) => ({
       templateId: `monster-${index}`,
       name: `Monster ${index}`,
       element: index < 4 ? 'Ember' : 'Tide',
       owned: index === 0,
       silhouette: index !== 0,
-      mastery: index === 0 ? { level: 2, points: 7 } : null
+      mastery: index === 0 ? { points: 17, unlocks: ['title'] } : null
     }));
     const slots = buildDexSlots({
       templates,
@@ -57,7 +57,11 @@ describe('Stream Monsters creator controls', () => {
     expect(slots[0]).toEqual(expect.objectContaining({
       locked: false,
       firstFound: true,
-      masteryLevel: 2,
+      masteryLevel: 1,
+      masteryPoints: 17,
+      masteryNextThreshold: 25,
+      masteryProgressLabel: '17/25',
+      masteryUnlocks: ['title'],
       essence: 5,
       cosmetic: true
     }));

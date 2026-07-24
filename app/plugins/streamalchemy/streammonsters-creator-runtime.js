@@ -7,6 +7,7 @@
 
   const HATCH_PRESETS = Object.freeze([30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000]);
   const VISUAL_PACKS = Object.freeze(['furry', 'art_lab', 'kenney']);
+  const MASTERY_THRESHOLDS = Object.freeze([10, 25, 50]);
 
   function buildConfigPayload({ currentConfig = {}, values = {} } = {}) {
     return {
@@ -28,13 +29,17 @@
     const essenceByElement = new Map(essence.map(entry => [entry.element, entry]));
     return templates.slice(0, 24).map(template => {
       const elementEssence = essenceByElement.get(template.element) || { amount: 0, unlocks: [] };
-      const masteryLevel = Number(template.mastery?.level) || 0;
+      const masteryPoints = Math.max(0, Number(template.mastery?.points) || 0);
+      const masteryLevel = MASTERY_THRESHOLDS.filter(threshold => masteryPoints >= threshold).length;
+      const masteryNextThreshold = MASTERY_THRESHOLDS.find(threshold => masteryPoints < threshold) || null;
       return {
         ...template,
         locked: template.silhouette !== false || !template.owned,
         firstFound: Boolean(template.owned),
         masteryLevel,
-        masteryPoints: Number(template.mastery?.points) || 0,
+        masteryPoints,
+        masteryNextThreshold,
+        masteryProgressLabel: `${masteryPoints}/${masteryNextThreshold || MASTERY_THRESHOLDS.at(-1)}`,
         masteryUnlocks: [...(template.mastery?.unlocks || [])],
         essence: Number(elementEssence.amount) || 0,
         essenceUnlocks: [...(elementEssence.unlocks || [])],
@@ -66,6 +71,7 @@
 
   return {
     HATCH_PRESETS,
+    MASTERY_THRESHOLDS,
     VISUAL_PACKS,
     buildConfigPayload,
     buildDexSlots,

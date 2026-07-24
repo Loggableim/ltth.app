@@ -72,7 +72,7 @@ function bootUi({ runtimeFetch, locale = null } = {}) {
         assetPath: `/monster-${index}.png`,
         owned: index === 0,
         silhouette: index !== 0,
-        mastery: index === 0 ? { level: 2, points: 7, unlocks: ['badge-bronze'] } : null
+        mastery: index === 0 ? { points: 17, unlocks: ['title'] } : null
       })),
       dex: { owned: 0, total: 24 },
       essence: [{ element: 'Ember', amount: 5, unlocks: ['aura'] }],
@@ -338,7 +338,8 @@ describe('Stream Monsters creator wizard', () => {
     expect(dom.window.document.getElementById('dexElementProgress').textContent).toMatch(/Ember.*1\/4/);
     const ownedCard = dom.window.document.querySelector('#monsterDex .dex-slot:not(.locked)');
     expect(ownedCard.textContent).toMatch(/first found/i);
-    expect(ownedCard.textContent).toContain('badge-bronze');
+    expect(ownedCard.textContent).toContain('17/25');
+    expect(ownedCard.textContent).toContain('title');
     expect(ownedCard.textContent).toContain('aura');
     expect(ownedCard.textContent).toContain('frame:ember');
     dom.window.close();
