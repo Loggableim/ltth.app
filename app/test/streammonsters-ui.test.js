@@ -68,15 +68,15 @@ function bootUi({ runtimeFetch, locale = null } = {}) {
       templates: Array.from({ length: 24 }, (_, index) => ({
         templateId: `template-${index}`,
         name: `Monster ${index}`,
-        element: index % 2 ? 'Tide' : 'Ember',
+        element: ['Ember','Tide','Grove','Gale','Volt','Lunar'][Math.floor(index / 4)],
         assetPath: `/monster-${index}.png`,
         owned: index === 0,
         silhouette: index !== 0,
-        mastery: index === 0 ? { level: 2, points: 7 } : null
+        mastery: index === 0 ? { level: 2, points: 7, unlocks: ['badge-bronze'] } : null
       })),
       dex: { owned: 0, total: 24 },
       essence: [{ element: 'Ember', amount: 5, unlocks: ['aura'] }],
-      cosmetics: []
+      cosmetics: ['frame:ember']
     });
     if (url === '/api/streammonsters/pool') return response({ success: true, coverage: [] });
     if (url.startsWith('/api/streammonsters/leaderboard')) return response({ success: true, entries: [] });
@@ -102,9 +102,14 @@ function bootUi({ runtimeFetch, locale = null } = {}) {
       window.i18n = {
         init: async () => {},
         updateDOM: () => {},
-        t: key => {
+        t: (key, params = {}) => {
           const prefix = 'plugins.streamalchemy.ui.monsters.';
-          if (localeText && key.startsWith(prefix)) return localeText[key.slice(prefix.length)] || key;
+          if (localeText && key.startsWith(prefix)) {
+            const translated = localeText[key.slice(prefix.length)] || key;
+            return translated.replace(/\{\{(\w+)\}\}/g, (match, name) => (
+              Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+            ));
+          }
           return ({
             'plugins.streamalchemy.ui.monsters.achievementFirstHatch': 'Erster Schlupf'
           }[key] || key);
@@ -322,14 +327,83 @@ describe('Stream Monsters creator wizard', () => {
   });
 
   test('renders real readiness, Heart Chain, mission and all 24 Dex slots', async () => {
-    const { dom } = bootUi();
+    const { dom } = bootUi({ locale:'en' });
     await waitFor(() => expect(dom.window.document.querySelectorAll('#monsterDex .dex-slot')).toHaveLength(24));
 
     expect(dom.window.document.getElementById('creatorMetrics').textContent)
       .toMatch(/2 active.*3 queued.*1 ready.*2m/);
     expect(dom.window.document.getElementById('heartChainStatus').textContent).toContain('4');
-    expect(dom.window.document.getElementById('streamMissionStatus').textContent).toContain('2/6');
+    expect(dom.window.document.getElementById('streamMissionStatus').textContent).toMatch(/2\s*\/\s*6/);
     expect(dom.window.document.querySelectorAll('#monsterDex .dex-slot.locked')).toHaveLength(23);
+    expect(dom.window.document.getElementById('dexElementProgress').textContent).toMatch(/Ember.*1\/4/);
+    const ownedCard = dom.window.document.querySelector('#monsterDex .dex-slot:not(.locked)');
+    expect(ownedCard.textContent).toMatch(/first found/i);
+    expect(ownedCard.textContent).toContain('badge-bronze');
+    expect(ownedCard.textContent).toContain('aura');
+    expect(ownedCard.textContent).toContain('frame:ember');
+    dom.window.close();
+  });
+
+  test('keeps mapping customization true after manual PUT and a later setup save', async () => {
+    const { dom, fetchMock } = bootUi({
+      runtimeFetch: async (url, options) => {
+        if (url === '/api/streammonsters/gift-mappings/5655' && options.method === 'PUT') {
+          return response({ success: true });
+        }
+        return null;
+      }
+    });
+    await waitFor(() => expect(dom.window.document.querySelector('#giftCatalog button')).not.toBeNull());
+    dom.window.document.querySelector('#giftCatalog button').click();
+    dom.window.document.getElementById('saveGiftMapping').click();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/streammonsters/gift-mappings/5655',
+      expect.objectContaining({ method: 'PUT' })
+    ));
+    await waitFor(() => expect(dom.window.document.getElementById('notice').textContent).toContain('Rose'));
+    dom.window.document.getElementById('saveSetup').click();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/streammonsters/config',
+      expect.objectContaining({ method: 'POST' })
+    ));
+    const setupCall = fetchMock.mock.calls.filter(([url]) => url === '/api/streammonsters/config').at(-1);
+    expect(JSON.parse(setupCall[1].body).giftMappingCustomized).toBe(true);
+    dom.window.close();
+  });
+
+  test('keeps mapping customization true after manual DELETE and a later setup save', async () => {
+    let mappingsLoaded = 0;
+    const { dom, fetchMock } = bootUi({
+      runtimeFetch: async (url, options) => {
+        if (url === '/api/streammonsters/gift-mappings' && !options.method) {
+          mappingsLoaded += 1;
+          return response({
+            success: true,
+            mappings: mappingsLoaded === 1
+              ? [{ gift_id: 5655, gift_name: 'Rose', coin_value: 1, image_url: '/rose.png' }]
+              : []
+          });
+        }
+        if (url === '/api/streammonsters/gift-mappings/5655' && options.method === 'DELETE') {
+          return response({ success: true, removed: true });
+        }
+        return null;
+      }
+    });
+    await waitFor(() => expect(dom.window.document.querySelector('#mappingList button')).not.toBeNull());
+    dom.window.document.querySelector('#mappingList button').click();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/streammonsters/gift-mappings/5655',
+      expect.objectContaining({ method: 'DELETE' })
+    ));
+    await waitFor(() => expect(dom.window.document.querySelector('#mappingList button')).toBeNull());
+    dom.window.document.getElementById('saveSetup').click();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/streammonsters/config',
+      expect.objectContaining({ method: 'POST' })
+    ));
+    const setupCall = fetchMock.mock.calls.filter(([url]) => url === '/api/streammonsters/config').at(-1);
+    expect(JSON.parse(setupCall[1].body).giftMappingCustomized).toBe(true);
     dom.window.close();
   });
 

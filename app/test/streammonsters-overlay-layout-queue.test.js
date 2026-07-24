@@ -58,6 +58,36 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     expect(shifted).toEqual(expect.arrayContaining(['egg_spawned', 'hatch_started', 'egg_hatched']));
   });
 
+  test('stays strictly bounded while compacting 100 events from one critical battle group', () => {
+    const queue = runtime.createPriorityQueue({ maxSize: 30, maxCriticalOverflow: 20 });
+    const battleId = 'battle-flood';
+    queue.enqueue('battle_started', { battleId }, 1);
+    queue.enqueue('battle_special_charged', { battleId, monsterId: 'monster-a' }, 2);
+    for (let round = 1; round <= 100; round += 1) {
+      queue.enqueue('battle_round', { battleId, round: { number: round } }, 2 + round);
+      expect(queue.size()).toBeLessThanOrEqual(50);
+    }
+    queue.enqueue('battle_completed', { battleId }, 200);
+
+    expect(queue.size()).toBeLessThanOrEqual(50);
+    expect(queue.snapshot().map(entry => entry.type)).toEqual(expect.arrayContaining([
+      'battle_started',
+      'battle_special_charged',
+      'battle_round',
+      'battle_completed'
+    ]));
+  });
+
+  test('keeps the strict bound when a snapshot leaves no room for a single critical group', () => {
+    const queue = runtime.createPriorityQueue({ maxSize: 1, maxCriticalOverflow: 0 });
+    queue.enqueue('battle_started', { battleId: 'battle-snapshot' }, 1);
+    queue.prependSnapshot({ marker: 'latest-state' }, 2);
+    expect(queue.size()).toBe(1);
+    expect(queue.snapshot()).toEqual([
+      expect.objectContaining({ type: 'state_snapshot', data: { marker: 'latest-state' } })
+    ]);
+  });
+
   test('clears pre-reconnect events and always prepends the fetched snapshot before socket arrivals', async () => {
     let resolveSnapshot;
     const queue = runtime.createPriorityQueue();

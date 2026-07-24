@@ -235,6 +235,27 @@ describe('Stream Monsters 1.2 public API', () => {
     expect(artPool.prepare).toHaveBeenCalledWith({ targetPerVariant: 7 });
   });
 
+  test('keeps manual gift mapping customization monotonic across later setup saves', () => {
+    const { find, configProvider } = createRoutes();
+    configProvider.getConfig = () => ({
+      streamMonsters: {
+        giftMappingCustomized: true,
+        hatchDurationMs: 300000
+      }
+    });
+    const result = response();
+    find('POST', '/api/streammonsters/config')({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      body: { creatorName: 'Creator', giftMappingCustomized: false }
+    }, result);
+
+    expect(configProvider.updateConfig).toHaveBeenCalledWith({
+      streamMonsters: { creatorName: 'Creator', giftMappingCustomized: true }
+    });
+  });
+
   test('exposes the template Dex, stream collection state, and validated template-specific pool preparation', async () => {
     const { find, artPool } = createRoutes();
     const catalog = response();
@@ -263,6 +284,54 @@ describe('Stream Monsters 1.2 public API', () => {
     }, prepared);
     expect(prepared.statusCode).toBe(200);
     expect(artPool.prepare).toHaveBeenLastCalledWith({ targetPerVariant: 2, templateIds: ['ashfang', 'cinder'] });
+  });
+
+  test('resolves monster-catalog aliases and returns owned mastery, essence and cosmetic indicators', () => {
+    const { find, store } = createRoutes();
+    const canonicalUserId = 'viewer-canonical';
+    store.recordViewerAlias('viewer-alias', canonicalUserId, 1);
+    const egg = store.createEgg({
+      eggId: 'alias-egg',
+      userId: canonicalUserId,
+      giftId: 1,
+      giftName: 'Rose',
+      element: 'Ember',
+      eggColor: '#ff7043',
+      seed: 'alias-seed',
+      state: 'ready',
+      variant: 'standard',
+      hatchDurationMs: 30000,
+      createdAtMs: 1,
+      readyAtMs: 1
+    });
+    store.createMonsterFromEgg(egg, {
+      monsterId: 'alias-monster',
+      name: 'Ashfang',
+      rarity: 'standard',
+      stats: { vitality: 7, might: 7, guard: 7, agility: 7 },
+      personality: 'Brave',
+      templateId: 'ashfang',
+      createdAtMs: 2
+    });
+    store.setTemplateMastery(canonicalUserId, 'ashfang', 8, ['badge-bronze']);
+    store.setElementEssence(canonicalUserId, 'Ember', 6, ['ember-aura']);
+    store.unlockCollectionCosmetic(canonicalUserId, 'frame:ember', 1);
+
+    const catalog = response();
+    find('GET', '/api/streammonsters/monster-catalog')({ query: { userId: 'viewer-alias' } }, catalog);
+    expect(catalog.body.dex).toEqual({ owned: 1, total: 24 });
+    expect(catalog.body.templates).toContainEqual(expect.objectContaining({
+      templateId: 'ashfang',
+      owned: true,
+      silhouette: false,
+      mastery: expect.objectContaining({ points: 8, unlocks: ['badge-bronze'] })
+    }));
+    expect(catalog.body.essence).toContainEqual(expect.objectContaining({
+      element: 'Ember',
+      amount: 6,
+      unlocks: ['ember-aura']
+    }));
+    expect(catalog.body.cosmetics).toContain('frame:ember');
   });
 
   test('sends a complete non-mutating overlay demo through the serialized event vocabulary', () => {

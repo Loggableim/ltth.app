@@ -35,8 +35,10 @@
         firstFound: Boolean(template.owned),
         masteryLevel,
         masteryPoints: Number(template.mastery?.points) || 0,
+        masteryUnlocks: [...(template.mastery?.unlocks || [])],
         essence: Number(elementEssence.amount) || 0,
         essenceUnlocks: [...(elementEssence.unlocks || [])],
+        cosmetics: [...cosmetics],
         cosmetic: masteryLevel > 0 || (elementEssence.unlocks || []).length > 0 || cosmetics.length > 0
       };
     });

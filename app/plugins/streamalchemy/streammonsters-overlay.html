@@ -97,8 +97,12 @@
       #chat-card { left:16px; bottom:18px; max-width:calc(100vw - 32px); }
     }
     @media (prefers-reduced-motion: reduce) {
-      *,*::before,*::after { animation-duration:.001ms!important; transition-duration:.001ms!important; }
-      #card,#battle,#toast,#chat-card,#hype { transform:none; }
+      *,*::before,*::after {
+        animation-duration:.001ms!important;
+        animation-iteration-count:1!important;
+        transition-duration:.001ms!important;
+        scroll-behavior:auto!important;
+      }
     }
   </style>
 </head>

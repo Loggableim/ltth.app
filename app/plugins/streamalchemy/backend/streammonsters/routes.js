@@ -145,7 +145,8 @@ class StreamMonstersRoutes {
       });
     });
     this.api.registerRoute('GET', '/api/streammonsters/monster-catalog', (req, res) => {
-      const userId = String(req.query?.userId || '').trim();
+      const requestedUserId = String(req.query?.userId || '').trim();
+      const userId = this.store.resolveKnownViewerId?.(requestedUserId) || requestedUserId;
       const catalog = this.collection?.getCatalogState(userId) || {
         templates: TEMPLATE_CATALOG.map(template => ({ ...template, owned: false, silhouette: true, mastery: null })),
         dex: { owned: 0, total: TEMPLATE_CATALOG.length }, essence: [], cosmetics: []
@@ -153,7 +154,10 @@ class StreamMonstersRoutes {
       res.json({ success: true, ...catalog });
     });
     this.api.registerRoute('POST', '/api/streammonsters/config', this.protectAdmin((req, res) => {
-      const next = this.configProvider.updateConfig({ streamMonsters: this.sanitizeConfigUpdate(req.body) });
+      const current = this.configProvider.getConfig().streamMonsters || {};
+      const update = this.sanitizeConfigUpdate(req.body);
+      if (current.giftMappingCustomized) update.giftMappingCustomized = true;
+      const next = this.configProvider.updateConfig({ streamMonsters: update });
       res.json({ success: true, config: this.publicConfig(next.streamMonsters) });
     }));
     this.api.registerRoute('POST', '/api/streammonsters/demo', this.protectAdmin((req, res) => {

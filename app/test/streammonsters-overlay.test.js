@@ -43,6 +43,10 @@ describe('Stream Monsters OBS overlay', () => {
     expect(html).toContain('[data-anchor="bottom-right"]');
     expect(html).toContain('@media (orientation: portrait)');
     expect(html).toContain('@media (prefers-reduced-motion: reduce)');
+    const reducedMotion = html.match(/@media \(prefers-reduced-motion: reduce\) \{([\s\S]*?)\n    \}/)?.[1] || '';
+    expect(reducedMotion).not.toContain('transform:none');
+    expect(html).toContain('transform:translate(-50%,-50%)');
+    expect(html).toContain('transform:scale(var(--reveal-scale,1))');
     expect(html).toContain('streammonsters:battle_skill_used');
     expect(html).toContain('streammonsters:battle_special_charged');
     expect(html).toContain('battleMonsters.find');

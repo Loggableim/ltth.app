@@ -136,6 +136,10 @@
     .dex-slot.locked img { filter:brightness(0) opacity(.44); }
     .dex-slot strong,.dex-slot small { display:block; }
     .dex-slot small { color:var(--muted); }
+    .dex-indicators { display:flex; flex-wrap:wrap; justify-content:center; gap:4px; margin-top:6px; }
+    .dex-indicator { padding:2px 6px; border:1px solid #607099; border-radius:999px; color:#ecf2ff; background:#273654; font-size:10px; }
+    .dex-indicator.first { border-color:var(--mint); color:#dffff0; }
+    .dex-element-progress { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
     @media (max-width:960px) {
       .hero,.gift-layout { grid-template-columns:1fr; }
       .card,.card.wide { grid-column:1/-1; }
@@ -272,6 +276,7 @@
     <article class="card full" style="margin-top:14px">
       <h3 data-i18n="plugins.streamalchemy.ui.monsters.monsterDex">Monsterdex · 24</h3>
       <p id="dexProgress" class="muted" data-i18n="plugins.streamalchemy.ui.monsters.dexEmpty">0 of 24 discovered</p>
+      <div id="dexElementProgress" class="dex-element-progress"></div>
       <div id="monsterDex" class="dex-grid" aria-live="polite"></div>
     </article>
   </section>
@@ -585,6 +590,7 @@
       };
       root.append(giftRow(gift, text('remove', 'Entfernen'), async () => {
         await request(`/api/streammonsters/gift-mappings/${mapping.gift_id}`, { method:'DELETE' });
+        currentStateConfig.giftMappingCustomized = true;
         await loadMappings();
       }));
     });
@@ -604,6 +610,7 @@
       headers:jsonHeaders,
       body:JSON.stringify({ enabled:true, effect, element:byId('giftElement').value })
     });
+    currentStateConfig.giftMappingCustomized = true;
     await loadMappings();
     notice(text('mappingEnabled', '{gift} ist jetzt für Stream Monsters aktiv.', { gift:selectedGift.giftName }), 'success');
   };
@@ -704,6 +711,32 @@
         essence:slot.essence
       });
       card.append(image,title,element,mastery);
+      if (!slot.locked) {
+        const indicators = document.createElement('div');
+        indicators.className = 'dex-indicators';
+        const values = [
+          { kind:'first', value:text('dexFirstFound', 'First found') },
+          ...slot.masteryUnlocks.map(value => ({
+            kind:'mastery',
+            value:text('dexMasteryUnlock', 'Mastery: {unlock}', { unlock:value })
+          })),
+          ...slot.essenceUnlocks.map(value => ({
+            kind:'essence',
+            value:text('dexEssenceUnlock', 'Essence: {unlock}', { unlock:value })
+          })),
+          ...slot.cosmetics.map(value => ({
+            kind:'cosmetic',
+            value:text('dexCosmeticUnlock', 'Cosmetic: {unlock}', { unlock:value })
+          }))
+        ];
+        values.forEach(indicator => {
+          const badge = document.createElement('span');
+          badge.className = `dex-indicator ${indicator.kind}`;
+          badge.textContent = indicator.value;
+          indicators.append(badge);
+        });
+        card.append(indicators);
+      }
       if (slot.cosmetic) card.classList.add('cosmetic');
       root.append(card);
     });
@@ -712,6 +745,20 @@
       found:owned,
       total:slots.length
     });
+    const elementProgress = byId('dexElementProgress');
+    elementProgress.replaceChildren();
+    for (const elementNameValue of ['Ember','Tide','Grove','Gale','Volt','Lunar']) {
+      const elementSlots = slots.filter(slot => slot.element === elementNameValue);
+      const found = elementSlots.filter(slot => !slot.locked).length;
+      const badge = document.createElement('span');
+      badge.className = 'dex-indicator';
+      badge.textContent = text('dexElementProgress', '{element} {found}/{total}', {
+        element:elementName(elementNameValue),
+        found,
+        total:elementSlots.length
+      });
+      elementProgress.append(badge);
+    }
     const templateSelect = byId('demoTemplate');
     const selected = templateSelect.value;
     templateSelect.replaceChildren();

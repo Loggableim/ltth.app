@@ -181,6 +181,71 @@
       }
     }
 
+    function compactCriticalGroup(targetGroupKey) {
+      const grouped = entries.filter(entry => entry.groupKey === targetGroupKey);
+      if (!grouped.length) return false;
+      const outsideCount = totalSize() - grouped.length;
+      const available = Math.max(0, overflowLimit - outsideCount);
+      if (grouped.length < 2 && available > 0) return false;
+      const retained = [];
+      const keyed = new Map();
+      const rounds = grouped.filter(entry => entry.type === 'battle_round');
+      for (const entry of grouped) {
+        if (entry.type === 'battle_round') continue;
+        const discriminator = entry.type === 'battle_skill_used'
+          ? `${entry.type}:${entry.data?.action?.type || entry.data?.skill?.type || 'skill'}:${entry.data?.actorId || ''}`
+          : (entry.type === 'stance_revealed'
+            ? `${entry.type}:${entry.data?.monster?.monster_id || entry.data?.monsterId || ''}`
+            : entry.type);
+        if (entry.type === 'battle_started' || entry.type === 'egg_spawned') {
+          if (!keyed.has(discriminator)) keyed.set(discriminator, entry);
+        } else {
+          keyed.set(discriminator, entry);
+        }
+      }
+      retained.push(...keyed.values());
+      if (rounds.length) {
+        retained.push(rounds[0]);
+        if (rounds.length > 1) retained.push(rounds.at(-1));
+      }
+      retained.sort((left, right) => left.sequence - right.sequence);
+
+      let representatives = retained;
+      if (retained.length > available && available > 0) {
+        const terminal = retained.findLast(entry => (
+          entry.type === 'battle_completed' || entry.type === 'egg_hatched'
+        )) || retained.at(-1);
+        representatives = retained
+          .filter(entry => entry !== terminal)
+          .slice(0, Math.max(0, available - 1));
+        representatives.push(terminal);
+      } else if (available === 0) {
+        representatives = [];
+      }
+      if (representatives.length) {
+        const summaryTarget = representatives.at(-1);
+        summaryTarget.data = {
+          ...summaryTarget.data,
+          criticalGroupSummary: {
+            count: grouped.length,
+            types: [...new Set(grouped.map(entry => entry.type))],
+            firstSequence: grouped[0].sequence,
+            lastSequence: grouped.at(-1).sequence
+          }
+        };
+      }
+      const firstIndex = entries.findIndex(entry => entry.groupKey === targetGroupKey);
+      for (let index = entries.length - 1; index >= 0; index -= 1) {
+        if (entries[index].groupKey === targetGroupKey) entries.splice(index, 1);
+      }
+      entries.splice(firstIndex, 0, ...representatives);
+      if (!representatives.length && activeGroupKey === targetGroupKey) {
+        activeGroupKey = null;
+        durableTurn = true;
+      }
+      return representatives.length < grouped.length;
+    }
+
     function trim() {
       while (totalSize() > boundedMaxSize) {
         const ephemeralIndex = entries.findIndex(entry => entry.priority === 1);
@@ -198,6 +263,12 @@
         const allCriticalGroups = [...new Set(entries
           .filter(entry => entry.priority === 3 && entry.groupKey)
           .map(entry => entry.groupKey))];
+        const compactableGroup = allCriticalGroups.find(group => {
+          const groupedCount = entries.filter(entry => entry.groupKey === group).length;
+          const available = Math.max(0, overflowLimit - (totalSize() - groupedCount));
+          return groupedCount > available || groupedCount > 1;
+        });
+        if (compactableGroup && compactCriticalGroup(compactableGroup)) continue;
         if (allCriticalGroups.length > 1 && removableCriticalGroups.length) {
           const oldestGroup = removableCriticalGroups[0];
           for (let index = entries.length - 1; index >= 0; index -= 1) {

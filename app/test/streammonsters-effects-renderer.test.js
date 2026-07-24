@@ -3,6 +3,7 @@
 const {
   SCENE_DURATIONS,
   createEffectsRenderer,
+  phaseForProgress,
   sceneChoreography
 } = require('../plugins/streamalchemy/streammonsters-effects-renderer');
 
@@ -56,6 +57,9 @@ function createGpuHarness() {
     rotate: jest.fn(),
     moveTo: jest.fn(),
     lineTo: jest.fn(),
+    ellipse: jest.fn(),
+    fillRect: jest.fn(),
+    setLineDash: jest.fn(),
     set globalAlpha(value) { this.alpha = value; },
     set strokeStyle(value) { this.strokeColor = value; },
     set fillStyle(value) { this.fillColor = value; },
@@ -205,5 +209,137 @@ describe('Stream Monsters effects renderer', () => {
       .toEqual(expect.objectContaining({ steps: ['shield-burst'], vfxKey: 'ripple:defense' }));
     expect(sceneChoreography('special', { vfxKey: 'selene:special', element: 'Lunar' }))
       .toEqual(expect.objectContaining({ steps: ['element-color-special'], vfxKey: 'selene:special', color: '#c7a4ff' }));
+  });
+
+  test('advances real spawn and hatch phases in WebGPU uniforms and the canvas DOM contract', async () => {
+    const harness = createGpuHarness();
+    const renderer = createEffectsRenderer({
+      canvas: harness.canvas,
+      navigator: { gpu: harness.gpu },
+      matchMedia: () => ({ matches: false }),
+      requestAnimationFrame: callback => setTimeout(() => callback(Date.now()), 16),
+      cancelAnimationFrame: clearTimeout,
+      now: () => Date.now()
+    });
+    await renderer.init();
+    const spawn = renderer.play('spawn', { element: 'Volt' });
+    await jest.advanceTimersByTimeAsync(32);
+    expect(harness.canvas.dataset.effectPhase).toBe('element-portal');
+    expect(harness.device.queue.writeBuffer.mock.calls.at(-1)[2][8]).toBe(1);
+    await jest.advanceTimersByTimeAsync(600);
+    expect(harness.canvas.dataset.effectPhase).toBe('particle-swirl');
+    expect(harness.device.queue.writeBuffer.mock.calls.at(-1)[2][8]).toBe(2);
+    await jest.advanceTimersByTimeAsync(600);
+    expect(harness.canvas.dataset.effectPhase).toBe('egg-fly-in');
+    await jest.advanceTimersByTimeAsync(600);
+    expect(harness.canvas.dataset.effectPhase).toBe('spring-landing');
+    await jest.advanceTimersByTimeAsync(600);
+    await spawn;
+
+    const hatch = renderer.play('hatch', { element: 'Lunar' });
+    await jest.advanceTimersByTimeAsync(32);
+    expect(harness.canvas.dataset.effectPhase).toBe('pulse');
+    await jest.advanceTimersByTimeAsync(600);
+    expect(harness.canvas.dataset.effectPhase).toBe('cracks');
+    await jest.advanceTimersByTimeAsync(600);
+    expect(harness.canvas.dataset.effectPhase).toBe('energy-build');
+    await jest.advanceTimersByTimeAsync(600);
+    expect(harness.canvas.dataset.effectPhase).toBe('flash');
+    await jest.advanceTimersByTimeAsync(600);
+    expect(harness.canvas.dataset.effectPhase).toBe('monster-reveal');
+    await jest.advanceTimersByTimeAsync(600);
+    await hatch;
+  });
+
+  test('uses deterministic VFX-key variants in WebGPU uniforms and Canvas2D drawing', async () => {
+    expect(phaseForProgress('spawn', 0.26).name).toBe('particle-swirl');
+    expect(sceneChoreography('attack', { vfxKey: 'ashfang:attack' }).vfx)
+      .not.toEqual(sceneChoreography('attack', { vfxKey: 'ripple:attack' }).vfx);
+    const first = createGpuHarness();
+    const firstRenderer = createEffectsRenderer({
+      canvas: first.canvas,
+      navigator: { gpu: first.gpu },
+      matchMedia: () => ({ matches: false }),
+      requestAnimationFrame: callback => setTimeout(() => callback(Date.now()), 16),
+      cancelAnimationFrame: clearTimeout
+    });
+    await firstRenderer.init();
+    const firstPlay = firstRenderer.play('attack', { vfxKey: 'ashfang:attack', element: 'Ember' });
+    await jest.advanceTimersByTimeAsync(32);
+    const firstUniforms = [...first.device.queue.writeBuffer.mock.calls.at(-1)[2]];
+    await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.attack);
+    await firstPlay;
+    const alternatePlay = firstRenderer.play('attack', { vfxKey: 'ripple:attack', element: 'Tide' });
+    await jest.advanceTimersByTimeAsync(32);
+    const alternateUniforms = [...first.device.queue.writeBuffer.mock.calls.at(-1)[2]];
+    expect(firstUniforms.slice(9, 12)).not.toEqual(alternateUniforms.slice(9, 12));
+    await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.attack);
+    await alternatePlay;
+
+    const second = createGpuHarness();
+    const secondRenderer = createEffectsRenderer({
+      canvas: second.canvas,
+      navigator: {},
+      matchMedia: () => ({ matches: false }),
+      requestAnimationFrame: callback => setTimeout(() => callback(Date.now()), 16),
+      cancelAnimationFrame: clearTimeout
+    });
+    await secondRenderer.init();
+    const secondPlay = secondRenderer.play('attack', { vfxKey: 'ripple:attack', element: 'Tide' });
+    await jest.advanceTimersByTimeAsync(32);
+    expect(second.canvas.dataset.vfxVariant).toMatch(/^v[0-9]+$/);
+    expect(second.canvas2d.rotate).toHaveBeenCalled();
+    expect(firstUniforms.slice(9, 11)).not.toEqual([0, 0]);
+    await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.attack);
+    await secondPlay;
+
+    const third = createGpuHarness();
+    const thirdRenderer = createEffectsRenderer({
+      canvas: third.canvas,
+      navigator: {},
+      matchMedia: () => ({ matches: false }),
+      requestAnimationFrame: callback => setTimeout(() => callback(Date.now()), 16),
+      cancelAnimationFrame: clearTimeout
+    });
+    await thirdRenderer.init();
+    const thirdPlay = thirdRenderer.play('attack', { vfxKey: 'ashfang:attack', element: 'Ember' });
+    await jest.advanceTimersByTimeAsync(32);
+    expect(third.canvas2d.rotate.mock.calls.at(-1)).not.toEqual(second.canvas2d.rotate.mock.calls.at(-1));
+    expect(third.canvas2d.lineTo.mock.calls.at(-1)).not.toEqual(second.canvas2d.lineTo.mock.calls.at(-1));
+    await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.attack);
+    await thirdPlay;
+  });
+
+  test('draws every spawn and hatch phase through the Canvas2D fallback', async () => {
+    const harness = createGpuHarness();
+    const renderer = createEffectsRenderer({
+      canvas: harness.canvas,
+      navigator: {},
+      matchMedia: () => ({ matches: false }),
+      requestAnimationFrame: callback => setTimeout(() => callback(Date.now()), 16),
+      cancelAnimationFrame: clearTimeout,
+      now: () => Date.now()
+    });
+    await renderer.init();
+    const spawn = renderer.play('spawn', { element: 'Ember' });
+    await jest.advanceTimersByTimeAsync(650);
+    expect(harness.canvas.dataset.effectPhase).toBe('particle-swirl');
+    expect(harness.canvas2d.moveTo).toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(650);
+    expect(harness.canvas.dataset.effectPhase).toBe('egg-fly-in');
+    expect(harness.canvas2d.ellipse).toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.spawn);
+    await spawn;
+
+    const hatch = renderer.play('hatch', { element: 'Lunar' });
+    await jest.advanceTimersByTimeAsync(650);
+    expect(harness.canvas.dataset.effectPhase).toBe('cracks');
+    await jest.advanceTimersByTimeAsync(1200);
+    expect(harness.canvas.dataset.effectPhase).toBe('flash');
+    expect(harness.canvas2d.fillRect).toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(600);
+    expect(harness.canvas.dataset.effectPhase).toBe('monster-reveal');
+    await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.hatch);
+    await hatch;
   });
 });
