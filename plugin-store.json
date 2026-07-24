@@ -623,12 +623,12 @@
         "fr": "Stream Monsters"
       },
       "description": {
-        "en": "Turn TikTok gifts into deterministic element eggs, community monsters, quests and transparent three-round duels. Visuals are prepared before the stream.",
-        "de": "TikTok-Geschenke werden zu deterministischen Element-Eiern, Community-Monstern, Quests und transparenten Drei-Runden-Duellen. Bilder werden vor dem Stream vorbereitet.",
-        "es": "Convierte regalos de TikTok en huevos elementales deterministas, monstruos comunitarios, misiones y duelos transparentes de tres rondas. Las imagenes se preparan antes del directo.",
-        "fr": "Transformez les cadeaux TikTok en oeufs elementaires deterministes, monstres communautaires, quetes et duels transparents en tres manches. Les visuels sont prepares avant le live."
+        "en": "Heart Me is the default discovery gift for a 24-Furry Monsterdex with a three-slot FIFO egg queue, automatic skill battles, mastery, missions, and animated overlays.",
+        "de": "Heart Me ist das Standard-Entdeckungsgeschenk für einen Monsterdex mit 24 Furry-Monstern, drei aktiven Ei-Slots plus FIFO-Warteschlange, automatischen Skill-Kämpfen, Meisterschaft, Missionen und animierten Overlays.",
+        "es": "Heart Me es el regalo de descubrimiento predeterminado para un Monsterdex de 24 monstruos Furry, con tres espacios de huevos y cola FIFO, batallas automáticas de habilidades, maestría, misiones y overlays animados.",
+        "fr": "Heart Me est le cadeau de découverte par défaut pour un Monsterdex de 24 monstres Furry, avec trois emplacements d'oeufs et une file FIFO, des combats automatiques de compétences, la maîtrise, des missions et des overlays animés."
       },
-      "version": "1.3.0",
+      "version": "1.4.0",
       "author": "Pup Cid",
       "category": "plugin",
       "channel": "open-beta",
@@ -641,8 +641,8 @@
       "access": {
         "type": "subscriber"
       },
-      "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.3.0.zip",
-      "sha256": "c3939f09fd9ec877dd3350049eec820fe9448f2a89af812a8937a8b9ae8be0bf",
+      "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.4.0.zip",
+      "sha256": "f50d489d533654cb2bb19ca7eb9468ab7833385c3e7e801689cee0d0e7351ebf",
       "pricing": {
         "type": "free",
         "amount": 0,

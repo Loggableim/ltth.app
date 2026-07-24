@@ -215,7 +215,7 @@
     "ui": {
       "monsters": {
         "title": "Stream Monsters · Collector Arena",
-        "version": "Collector Arena · Versión 1.3",
+        "version": "Furry Skill Arena · Versión 1.4",
         "heroTitle": "Un regalo. Un huevo. Un monstruo para siempre.",
         "heroCopy": "El juego de colección en directo justo: los regalos aceleran el espectáculo, nunca la fuerza de combate. El arte de IA se prepara antes; Kenney responde al instante.",
         "readinessLive": "Listo para directo",
@@ -244,7 +244,7 @@
         "responsiveCopy": "Admite 16:9 y 9:16 automáticamente.",
         "runDemo": "Ejecutar demo completa",
         "rules": "Reglas del juego",
-        "rulesDynamic": "{duration} de incubación · prefijo activo {prefix} · Charged solo cosmético · 28 puntos iniciales · 3 rondas reproducibles.",
+        "rulesDynamic": "{duration} de incubación · prefijo activo {prefix} · Charged solo cosmético · 28 puntos iniciales · batallas automáticas de habilidades.",
         "noMetrics": "Aún no hay datos del directo",
         "viewerCommands": "Comandos del público",
         "giftsTitle": "Mapeo de regalos",
@@ -785,7 +785,7 @@
         "giftHeading":"2. Pool de regalos","giftCopy":"Anade los regalos esperados. Se ponen en cola ahora y nunca se generan durante el directo.","knownGift":"Elige un regalo conocido...","giftIdPlaceholder":"p. ej. 5655","giftNamePlaceholder":"p. ej. Rosa","spawnEgg":"Genera un huevo","boostEgg":"Acelera el huevo mas antiguo","queueGift":"Anadir al pool de preparacion",
         "aiHeading":"3. IA de imagen local","aiCopy":"Windows con NVIDIA recibe el perfil seguro mas rapido para la GPU detectada. Otros sistemas usan remoto o ComfyUI existente.","checkingAi":"Comprobando compatibilidad de IA local...","checkAi":"Comprobar IA local",
         "prepareHeading":"4. Preparar antes del directo","prepareCopy":"Un trabajo a la vez. Si el arte no esta listo, los espectadores ven un huevo de marca y usan !inventory despues.","prepare":"Preparar arte en cola",
-        "overlayHeading":"5. Overlay OBS","overlayCopy":"Anade esta fuente de navegador a OBS. Usa la demo antes de emitir.","demo":"Ejecutar demo segura","dashboardHeading":"Panel en directo","dashboardCopy":"La actividad actual es transparente y nunca se usa para facturacion.","playHeading":"Juego comunitario","ruleElements":"Seis elementos deterministas: Ember, Tide, Grove, Gale, Volt y Lunar.","ruleHatch":"Los huevos eclosionan tras 30 minutos reales; los regalos impulso reducen el tiempo.","ruleBattle":"Los duelos tienen tres rondas reproducibles sin apuestas ni premios.","readyHatch":"Listo para eclosionar","waiting":"Esperando",
+        "overlayHeading":"5. Overlay OBS","overlayCopy":"Anade esta fuente de navegador a OBS. Usa la demo antes de emitir.","demo":"Ejecutar demo segura","dashboardHeading":"Panel en directo","dashboardCopy":"La actividad actual es transparente y nunca se usa para facturacion.","playHeading":"Juego comunitario","ruleElements":"Seis elementos deterministas: Ember, Tide, Grove, Gale, Volt y Lunar.","ruleHatch":"Los huevos eclosionan tras 30 minutos reales; los regalos impulso reducen el tiempo.","ruleBattle":"Los duelos son batallas automáticas de habilidades reproducibles sin apuestas ni premios.","readyHatch":"Listo para eclosionar","waiting":"Esperando",
         "noGifts":"Aun no hay regalos en cola.","dashboardMetrics":"{eggs} huevos - {hatches} eclosiones - {viewers} espectadores activos - {duels} duelos - {quests} misiones completadas - {ready}/{total} arte listo","giftOption":"{name} - {coins} diamantes","runtimeInstallStarted":"La instalacion verificada del entorno se inicio. La descarga del modelo y el estado apareceran aqui.","runtimeUnsupported":"Usa ComfyUI existente o un proveedor de imagen remoto en este sistema.","expertSetup":"Usar configuracion experta o remota","runtimeMissing":"Se recomienda {resolution}. Aun no hay un paquete LTTH firmado; usa ComfyUI o generacion remota.","refreshCompatibility":"Actualizar compatibilidad","runtimeRecommended":"Se recomienda {resolution}. Entorno: {runtime}; modelo: {model}; destino: {target}.","installAi":"Instalar IA local verificada","localCheckFailed":"Fallo al comprobar la IA local: {error}","confirmInstall":"Instalar IA local verificada de Stream Monsters? Entorno: {runtime} Modelo: {model} Destino: {target}"
       }
     }

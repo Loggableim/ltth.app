@@ -166,7 +166,7 @@
   <header class="hero">
     <div>
       <img class="hero-logo" src="/plugins/streamalchemy/assets/branding/stream-monsters-logo.png" alt="Stream Monsters">
-      <div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.version">Collector Arena · Version 1.3</div>
+      <div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.version">Furry Skill Arena · Version 1.4</div>
       <h1 data-i18n="plugins.streamalchemy.ui.monsters.heroTitle">Ein Geschenk. Ein Ei. Ein Monster für immer.</h1>
       <p data-i18n="plugins.streamalchemy.ui.monsters.heroCopy">Das faire Live-Sammelspiel: Geschenke beschleunigen die Show, niemals die Kampfstärke. KI-Kunst wird vor dem Stream vorbereitet; Kenney übernimmt live sofort.</p>
     </div>
@@ -1183,7 +1183,7 @@
     const duration = formatDuration(hatchDurationMs);
     byId('activePrefix').textContent = prefix;
     byId('activeHatchDuration').textContent = duration;
-    byId('dynamicRules').textContent = text('rulesDynamic', '{duration} Brutzeit · aktives Präfix {prefix} · Charged nur kosmetisch · 28 feste Startpunkte · 3 reproduzierbare Kampfrunden.', { duration, prefix });
+    byId('dynamicRules').textContent = text('rulesDynamic', '{duration} Brutzeit · aktives Präfix {prefix} · Charged nur kosmetisch · 28 feste Startpunkte · automatische Skill-Kämpfe.', { duration, prefix });
     document.querySelectorAll('[data-command]').forEach(command => {
       const name = command.dataset.command;
       const suffix = ['hatch','monster'].includes(name) ? ' [slot]' : (name === 'choose' ? ' <slot>' : '');

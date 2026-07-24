@@ -215,7 +215,7 @@
     "ui": {
       "monsters": {
         "title": "Stream Monsters · Collector Arena",
-        "version": "Collector Arena · Version 1.3",
+        "version": "Furry Skill Arena · Version 1.4",
         "heroTitle": "Un cadeau. Un œuf. Un monstre pour toujours.",
         "heroCopy": "Le jeu de collection live équitable : les cadeaux accélèrent le spectacle, jamais la force de combat. L’art IA est préparé avant le live ; Kenney prend le relais immédiatement.",
         "readinessLive": "Prêt pour le live",
@@ -244,7 +244,7 @@
         "responsiveCopy": "Prend automatiquement en charge le 16:9 et le 9:16.",
         "runDemo": "Lancer la démo complète",
         "rules": "Règles du jeu",
-        "rulesDynamic": "{duration} d’incubation · préfixe actif {prefix} · Charged uniquement cosmétique · 28 points initiaux · 3 manches reproductibles.",
+        "rulesDynamic": "{duration} d’incubation · préfixe actif {prefix} · Charged uniquement cosmétique · 28 points initiaux · combats automatiques de compétences.",
         "noMetrics": "Aucune donnée de live",
         "viewerCommands": "Commandes du public",
         "giftsTitle": "Association des cadeaux",
@@ -785,7 +785,7 @@
         "giftHeading":"2. Pool de cadeaux","giftCopy":"Ajoutez les cadeaux attendus. Ils sont mis en file maintenant et jamais generes pendant le live.","knownGift":"Choisissez un cadeau connu...","giftIdPlaceholder":"ex. 5655","giftNamePlaceholder":"ex. Rose","spawnEgg":"Fait apparaitre un oeuf","boostEgg":"Accelere l oeuf le plus ancien","queueGift":"Ajouter au pool de preparation",
         "aiHeading":"3. IA d image locale","aiCopy":"Windows avec NVIDIA recoit le profil sur le plus rapide pour le GPU detecte. Les autres systemes utilisent le distant ou ComfyUI existant.","checkingAi":"Verification de la compatibilite IA locale...","checkAi":"Verifier l IA locale",
         "prepareHeading":"4. Preparer avant le live","prepareCopy":"Un seul travail a la fois. Sans visuel pret, les spectateurs voient un oeuf de marque et utilisent !inventory au prochain stream.","prepare":"Preparer les visuels en file",
-        "overlayHeading":"5. Overlay OBS","overlayCopy":"Ajoutez cette source navigateur a OBS. Utilisez la demo avant le live.","demo":"Lancer la demo sure","dashboardHeading":"Tableau live","dashboardCopy":"L activite du stream est transparente et jamais utilisee pour la facturation.","playHeading":"Jeu communautaire","ruleElements":"Six elements deterministes : Ember, Tide, Grove, Gale, Volt et Lunar.","ruleHatch":"Les oeufs eclosent apres 30 minutes reelles; les cadeaux bonus reduisent le temps.","ruleBattle":"Les duels ont trois manches reproductibles sans mises ni prix.","readyHatch":"Pret a eclore","waiting":"En attente",
+        "overlayHeading":"5. Overlay OBS","overlayCopy":"Ajoutez cette source navigateur a OBS. Utilisez la demo avant le live.","demo":"Lancer la demo sure","dashboardHeading":"Tableau live","dashboardCopy":"L activite du stream est transparente et jamais utilisee pour la facturation.","playHeading":"Jeu communautaire","ruleElements":"Six elements deterministes : Ember, Tide, Grove, Gale, Volt et Lunar.","ruleHatch":"Les oeufs eclosent apres 30 minutes reelles; les cadeaux bonus reduisent le temps.","ruleBattle":"Les duels sont des combats automatiques de compétences reproductibles sans mises ni prix.","readyHatch":"Pret a eclore","waiting":"En attente",
         "noGifts":"Aucun cadeau en file pour le moment.","dashboardMetrics":"{eggs} oeufs - {hatches} eclosions - {viewers} spectateurs actifs - {duels} duels - {quests} quetes terminees - {ready}/{total} visuels prets","giftOption":"{name} - {coins} diamants","runtimeInstallStarted":"L installation verifiee du runtime a commence. Le telechargement du modele et son etat apparaitront ici.","runtimeUnsupported":"Utilisez ComfyUI existant ou un fournisseur d images distant sur ce systeme.","expertSetup":"Utiliser la configuration experte ou distante","runtimeMissing":"{resolution} recommande. Aucun paquet LTTH signe n est encore configure; utilisez ComfyUI ou la generation distante.","refreshCompatibility":"Actualiser la compatibilite","runtimeRecommended":"{resolution} recommande. Runtime : {runtime}; modele : {model}; cible : {target}.","installAi":"Installer l IA locale verifiee","localCheckFailed":"Verification de l IA locale echouee : {error}","confirmInstall":"Installer l IA locale verifiee Stream Monsters ? Runtime : {runtime} Modele : {model} Cible : {target}"
       }
     }

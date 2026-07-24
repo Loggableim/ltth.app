@@ -215,7 +215,7 @@
     "ui": {
       "monsters": {
         "title": "Stream Monsters · Collector Arena",
-        "version": "Collector Arena · Version 1.3",
+        "version": "Furry Skill Arena · Version 1.4",
         "heroTitle": "Ein Geschenk. Ein Ei. Ein Monster für immer.",
         "heroCopy": "Das faire Live-Sammelspiel: Geschenke beschleunigen die Show, niemals die Kampfstärke. KI-Kunst wird vor dem Stream vorbereitet; Kenney übernimmt live sofort.",
         "readinessLive": "Live bereit",
@@ -244,7 +244,7 @@
         "responsiveCopy": "Unterstützt 16:9 und 9:16 automatisch.",
         "runDemo": "Kompletten Demoablauf starten",
         "rules": "Spielregeln",
-        "rulesDynamic": "{duration} Brutzeit · aktives Präfix {prefix} · Charged nur kosmetisch · 28 feste Startpunkte · 3 reproduzierbare Kampfrunden.",
+        "rulesDynamic": "{duration} Brutzeit · aktives Präfix {prefix} · Charged nur kosmetisch · 28 feste Startpunkte · automatische Skill-Kämpfe.",
         "noMetrics": "Noch keine Streamdaten",
         "viewerCommands": "Viewer-Kommandos",
         "giftsTitle": "Geschenke-Mapping",
@@ -785,7 +785,7 @@
         "giftHeading":"2. Geschenkpool","giftCopy":"Fuege erwartete Geschenke hinzu. Sie werden jetzt vorgemerkt und niemals im Live generiert.","knownGift":"Bekanntes Geschenk waehlen...","giftIdPlaceholder":"z.B. 5655","giftNamePlaceholder":"z.B. Rose","spawnEgg":"Erzeugt ein Ei","boostEgg":"Beschleunigt das aelteste Ei","queueGift":"Zum Vorbereitungspool hinzufuegen",
         "aiHeading":"3. Lokale Bild-KI","aiCopy":"Windows mit NVIDIA erhaelt das schnellste sichere Profil fuer die erkannte GPU. Andere Systeme nutzen Remote oder vorhandenes ComfyUI.","checkingAi":"Lokale KI-Kompatibilitaet wird geprueft...","checkAi":"Lokale KI pruefen",
         "prepareHeading":"4. Vor dem Live vorbereiten","prepareCopy":"Immer nur ein Job. Fehlt ein Bild, sehen Zuschauer ein Marken-Ei und nutzen im naechsten Stream !inventory.","prepare":"Vorgemerkte Bilder vorbereiten",
-        "overlayHeading":"5. OBS-Overlay","overlayCopy":"Fuege diese Browserquelle in OBS ein. Nutze vor dem Live die sichere Demo.","demo":"Sichere Demo starten","dashboardHeading":"Live-Dashboard","dashboardCopy":"Die aktuelle Stream-Aktivitaet ist transparent und wird nie fuer Abrechnung verwendet.","playHeading":"Community-Spiel","ruleElements":"Sechs deterministische Elemente: Ember, Tide, Grove, Gale, Volt und Lunar.","ruleHatch":"Eier schluepfen nach 30 Minuten Echtzeit; konfigurierte Booster-Geschenke verkuerzen den Timer.","ruleBattle":"Duelle laufen in drei reproduzierbaren Runden ohne Einsaetze oder Preise.","readyHatch":"Bereit zum Schluepfen","waiting":"Wartet",
+        "overlayHeading":"5. OBS-Overlay","overlayCopy":"Fuege diese Browserquelle in OBS ein. Nutze vor dem Live die sichere Demo.","demo":"Sichere Demo starten","dashboardHeading":"Live-Dashboard","dashboardCopy":"Die aktuelle Stream-Aktivitaet ist transparent und wird nie fuer Abrechnung verwendet.","playHeading":"Community-Spiel","ruleElements":"Sechs deterministische Elemente: Ember, Tide, Grove, Gale, Volt und Lunar.","ruleHatch":"Eier schluepfen nach 30 Minuten Echtzeit; konfigurierte Booster-Geschenke verkuerzen den Timer.","ruleBattle":"Duelle laufen als reproduzierbare automatische Skill-Kämpfe ohne Einsaetze oder Preise.","readyHatch":"Bereit zum Schluepfen","waiting":"Wartet",
         "noGifts":"Noch keine Geschenke vorgemerkt.","dashboardMetrics":"{eggs} Eier - {hatches} Schluepfe - {viewers} aktive Zuschauer - {duels} Duelle - {quests} Quest-Abschluesse - {ready}/{total} Bilder bereit","giftOption":"{name} - {coins} Diamanten","runtimeInstallStarted":"Die verifizierte Runtime-Installation wurde gestartet. Modell-Download und Health-Status erscheinen hier.","runtimeUnsupported":"Nutze auf diesem System vorhandenes ComfyUI oder einen Remote-Bildanbieter.","expertSetup":"Experten- oder Remote-Setup nutzen","runtimeMissing":"{resolution} empfohlen. Ein signiertes LTTH-Runtime-Paket ist noch nicht konfiguriert; nutze ComfyUI oder Remote-Generierung.","refreshCompatibility":"Kompatibilitaet aktualisieren","runtimeRecommended":"{resolution} empfohlen. Runtime: {runtime}; Modell: {model}; Ziel: {target}.","installAi":"Verifizierte lokale KI installieren","localCheckFailed":"Pruefung der lokalen KI fehlgeschlagen: {error}","confirmInstall":"Verifizierte lokale Stream-Monsters-KI installieren? Runtime: {runtime} Modell: {model} Ziel: {target}"
       }
     }

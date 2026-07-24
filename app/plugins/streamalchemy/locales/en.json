@@ -215,7 +215,7 @@
     "ui": {
       "monsters": {
         "title": "Stream Monsters · Collector Arena",
-        "version": "Collector Arena · Version 1.3",
+        "version": "Furry Skill Arena · Version 1.4",
         "heroTitle": "One gift. One egg. One monster forever.",
         "heroCopy": "The fair live collecting game: gifts speed up the show, never combat strength. AI art is prepared before the stream; Kenney takes over instantly during live.",
         "readinessLive": "Live ready",
@@ -244,7 +244,7 @@
         "responsiveCopy": "Supports 16:9 and 9:16 automatically.",
         "runDemo": "Run the complete demo",
         "rules": "Game rules",
-        "rulesDynamic": "{duration} incubation · active prefix {prefix} · Charged is cosmetic only · 28 fixed starting points · 3 reproducible combat rounds.",
+        "rulesDynamic": "{duration} incubation · active prefix {prefix} · Charged is cosmetic only · 28 fixed starting points · automatic skill battles.",
         "noMetrics": "No stream data yet",
         "viewerCommands": "Viewer commands",
         "giftsTitle": "Gift mapping",
@@ -785,7 +785,7 @@
         "giftHeading":"2. Gift pool","giftCopy":"Add gifts you expect tonight. They are queued now, never generated while live.","knownGift":"Choose a known gift...","giftIdPlaceholder":"e.g. 5655","giftNamePlaceholder":"e.g. Rose","spawnEgg":"Spawns an egg","boostEgg":"Accelerates the oldest egg","queueGift":"Add to preparation pool",
         "aiHeading":"3. Local image AI","aiCopy":"Windows plus NVIDIA receives the fastest safe profile for the detected GPU. Other systems can use remote or existing ComfyUI.","checkingAi":"Checking local AI compatibility...","checkAi":"Check local AI setup",
         "prepareHeading":"4. Prepare before live","prepareCopy":"One job at a time. If art is not ready, viewers see a branded egg and can use !inventory next stream.","prepare":"Prepare queued art",
-        "overlayHeading":"5. OBS overlay","overlayCopy":"Add this browser source to OBS. Use the demo before going live.","demo":"Run safe demo","dashboardHeading":"Live dashboard","dashboardCopy":"Current stream activity is transparent and never used for billing.","playHeading":"Community play","ruleElements":"Six deterministic elements: Ember, Tide, Grove, Gale, Volt and Lunar.","ruleHatch":"Eggs hatch after 30 minutes in real time; configured booster gifts reduce the timer.","ruleBattle":"Duels are three reproducible rounds without stakes or prizes.","readyHatch":"Ready to hatch","waiting":"Waiting",
+        "overlayHeading":"5. OBS overlay","overlayCopy":"Add this browser source to OBS. Use the demo before going live.","demo":"Run safe demo","dashboardHeading":"Live dashboard","dashboardCopy":"Current stream activity is transparent and never used for billing.","playHeading":"Community play","ruleElements":"Six deterministic elements: Ember, Tide, Grove, Gale, Volt and Lunar.","ruleHatch":"Eggs hatch after 30 minutes in real time; configured booster gifts reduce the timer.","ruleBattle":"Duels are reproducible automatic skill battles without stakes or prizes.","readyHatch":"Ready to hatch","waiting":"Waiting",
         "noGifts":"No gifts queued yet.","dashboardMetrics":"{eggs} eggs - {hatches} hatches - {viewers} active viewers - {duels} duels - {quests} quest completions - {ready}/{total} art ready","giftOption":"{name} - {coins} diamonds","runtimeInstallStarted":"Verified runtime installation started. Model download and health status will appear here when ready.","runtimeUnsupported":"Use existing ComfyUI or a remote image provider on this system.","expertSetup":"Use expert or remote setup","runtimeMissing":"{resolution} recommended. A signed LTTH runtime package is not configured yet; use existing ComfyUI or remote generation.","refreshCompatibility":"Refresh compatibility","runtimeRecommended":"{resolution} recommended. Runtime: {runtime}; model: {model}; target: {target}.","installAi":"Install verified local AI","localCheckFailed":"Local AI check failed: {error}","confirmInstall":"Install verified Stream Monsters local AI? Runtime: {runtime} Model: {model} Target: {target}"
       }
     }
