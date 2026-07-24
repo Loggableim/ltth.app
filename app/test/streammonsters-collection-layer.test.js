@@ -192,7 +192,7 @@ describe('Stream Monsters 1.4 collection layer', () => {
     expect(collection.getStreamMission(battleStream).progress).toBe(1);
   });
 
-  test('rewards both battle participants when completion occurs before the second participant is recorded', () => {
+  test('records both battle participants atomically before a completing battle mission rewards them', () => {
     const { store, collection } = createCollection();
     const left = addMonster(store, { userId: 'left', templateId: 'ashfang', index: 1 });
     const right = addMonster(store, { userId: 'right', templateId: 'ripple', element: 'Tide', index: 2 });
@@ -200,16 +200,46 @@ describe('Stream Monsters 1.4 collection layer', () => {
       collection.getStreamMission(key).mission_key === 'three_battles'
     ));
     store.setStreamMissionProgress(streamKey, 2);
-    collection.recordMissionProgress(streamKey, 'battle', {
-      userId: left.user_id, monster: left, actionKey: 'battle:finisher'
+    collection.recordBattleOutcome({
+      streamKey,
+      battleId: 'battle:finisher',
+      fighters: [
+        { monster: left, won: true },
+        { monster: right, won: false }
+      ]
     });
-    collection.recordMissionProgress(streamKey, 'battle', {
-      userId: right.user_id, monster: right, actionKey: 'battle:finisher'
-    });
-    expect(collection.getMastery('left', 'ashfang').points).toBe(3);
-    expect(collection.getMastery('right', 'ripple').points).toBe(3);
+    expect(collection.getMastery('left', 'ashfang').points).toBe(6);
+    expect(collection.getMastery('right', 'ripple').points).toBe(5);
     expect(collection.getCosmetics('left')).toContain(`season_badge:${streamKey}`);
     expect(collection.getCosmetics('right')).toContain(`season_badge:${streamKey}`);
+    collection.recordBattleOutcome({
+      streamKey,
+      battleId: 'battle:finisher',
+      fighters: [{ monster: left, won: true }, { monster: right, won: false }]
+    });
+    expect(collection.getMastery('left', 'ashfang').points).toBe(6);
+    expect(collection.getMastery('right', 'ripple').points).toBe(5);
+  });
+
+  test('does not register or reward an unrelated viewer after a completed six-hatch mission', () => {
+    const { store, collection } = createCollection();
+    const original = addMonster(store, { userId: 'original', templateId: 'ashfang', index: 1 });
+    const late = addMonster(store, { userId: 'late', templateId: 'ripple', element: 'Tide', index: 2 });
+    const streamKey = Array.from({ length: 64 }, (_, index) => `six-hatch-${index}`).find(key => (
+      collection.getStreamMission(key).mission_key === 'six_hatches'
+    ));
+    for (let index = 0; index < 6; index += 1) {
+      collection.recordMissionProgress(streamKey, 'hatch', {
+        userId: original.user_id, monster: original, actionKey: `hatch:original:${index}`
+      });
+    }
+    expect(collection.getStreamMission(streamKey).completed_at_ms).toEqual(expect.any(Number));
+    collection.recordMissionProgress(streamKey, 'hatch', {
+      userId: late.user_id, monster: late, actionKey: 'hatch:late'
+    });
+    expect(collection.getMissionParticipant(streamKey, 'late')).toBeNull();
+    expect(collection.getCosmetics('late')).not.toContain(`season_badge:${streamKey}`);
+    expect(collection.getMastery('late', 'ripple').points).toBe(0);
   });
 
   test('rewards mission mastery on the selected monster before the event monster fallback', () => {

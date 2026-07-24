@@ -33,3 +33,27 @@ Exact rerun command (Node v22.14.0):
 ```
 
 Result: 9 passed suites, 90 passed tests, 0 failures (2026-07-24).
+
+## Atomic Battle Mission Follow-up
+
+Added `recordBattleOutcome()` and its transactional database operation so both fighters are persisted before a completing battle-mission progress update. Chat battle resolution invokes this API once. Generic mission progress now exits before registering any participant once a mission is complete, preventing unrelated later events from receiving a mission badge or mission mastery.
+
+Exact rerun command (Node v22.14.0):
+
+```powershell
+& 'C:\Users\logga\Documents\ltth_codex\ltth_desktop2-main\runtime\node\node.exe' '.\node_modules\jest\bin\jest.js' --runInBand --silent --runTestsByPath '.\test\streammonsters-collection-layer.test.js' '.\test\streammonsters-collector-arena.test.js' '.\test\streammonsters-collector-progression.test.js' '.\test\streammonsters-art-pool-kenney.test.js' '.\test\streammonsters-collector-routes.test.js' '.\test\streammonsters-core-rules-v3.test.js' '.\test\streammonsters-collector-commands.test.js' '.\test\streammonsters-chat-commands.test.js' '.\test\streammonsters-routes-security.test.js'
+```
+
+Result: 9 passed suites, 92 passed tests, 0 failures (2026-07-24).
+
+## Atomic Battle Batch Follow-up
+
+Added a SQLite-transactional `recordBattleMission()` path and public `recordBattleOutcome()` service API. The battle command invokes it once with both fighters, so both participant rows exist before a third battle completes and rewards the mission. Generic mission progress now checks completion before registering a participant, so unrelated late events cannot obtain a participant row, badge, or mission mastery.
+
+Exact rerun command (Node v22.14.0):
+
+```powershell
+& 'C:\Users\logga\Documents\ltth_codex\ltth_desktop2-main\runtime\node\node.exe' '.\node_modules\jest\bin\jest.js' --runInBand --silent --runTestsByPath '.\test\streammonsters-collection-layer.test.js' '.\test\streammonsters-collector-arena.test.js' '.\test\streammonsters-collector-progression.test.js' '.\test\streammonsters-art-pool-kenney.test.js' '.\test\streammonsters-collector-routes.test.js' '.\test\streammonsters-core-rules-v3.test.js' '.\test\streammonsters-collector-commands.test.js' '.\test\streammonsters-chat-commands.test.js' '.\test\streammonsters-routes-security.test.js'
+```
+
+Result: 9 passed suites, 92 passed tests, 0 failures (2026-07-24).

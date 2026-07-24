@@ -224,15 +224,13 @@ class ChatCommands {
       monster: selected,
       won: battle.winnerId === selected.monster_id
     });
-    this.collection?.recordBattle(opponent.monster, {
+    this.collection?.recordBattleOutcome({
+      streamKey: this.engine.streamKey,
       battleId: battle.battleId,
-      won: battle.winnerId === opponent.monster.monster_id,
-      streamKey: this.engine.streamKey
-    });
-    this.collection?.recordBattle(selected, {
-      battleId: battle.battleId,
-      won: battle.winnerId === selected.monster_id,
-      streamKey: this.engine.streamKey
+      fighters: [
+        { monster: opponent.monster, won: battle.winnerId === opponent.monster.monster_id },
+        { monster: selected, won: battle.winnerId === selected.monster_id }
+      ]
     });
     battle.rounds.forEach(round => {
       this.emit('streammonsters:battle_round', { battleId: battle.battleId, round });

@@ -943,6 +943,40 @@ class StreamMonstersDatabase {
     return this.getMissionParticipant(streamKey, userId);
   }
 
+  recordBattleMission({ streamKey, battleId, participants, completedAtMs }) {
+    const transaction = this.db.transaction(() => {
+      const mission = this.getStreamMission(streamKey);
+      if (!mission || mission.completed_at_ms) {
+        return { mission, accepted: false, newlyCompleted: false };
+      }
+      const addParticipant = this.db.prepare(`
+        INSERT INTO streammonsters_stream_mission_participants (stream_key, user_id, selected_monster_id)
+        VALUES (?, ?, ?)
+        ON CONFLICT(stream_key, user_id) DO UPDATE SET selected_monster_id = COALESCE(excluded.selected_monster_id, selected_monster_id)
+      `);
+      participants.forEach(participant => addParticipant.run(
+        streamKey,
+        participant.userId,
+        participant.monsterId || null
+      ));
+      const claimed = this.db.prepare(`
+        INSERT OR IGNORE INTO streammonsters_collection_actions (action_key, created_at_ms) VALUES (?, ?)
+      `).run(`mission-battle:${streamKey}:${battleId}`, completedAtMs).changes > 0;
+      if (!claimed || mission.mission_key !== 'three_battles') {
+        return { mission: this.getStreamMission(streamKey), accepted: claimed, newlyCompleted: false };
+      }
+      const progress = Math.min(mission.target, mission.progress + 1);
+      const completed = progress >= mission.target;
+      this.db.prepare(`
+        UPDATE streammonsters_stream_missions
+        SET progress = ?, completed_at_ms = COALESCE(completed_at_ms, ?)
+        WHERE stream_key = ?
+      `).run(progress, completed ? completedAtMs : null, streamKey);
+      return { mission: this.getStreamMission(streamKey), accepted: true, newlyCompleted: completed };
+    });
+    return transaction();
+  }
+
   getMissionParticipant(streamKey, userId) {
     return this.db.prepare(`
       SELECT * FROM streammonsters_stream_mission_participants WHERE stream_key = ? AND user_id = ?

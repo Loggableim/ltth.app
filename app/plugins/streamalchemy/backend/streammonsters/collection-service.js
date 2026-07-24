@@ -78,6 +78,30 @@ class CollectionService {
     return mastery;
   }
 
+  recordBattleOutcome({ streamKey, battleId, fighters = [] } = {}) {
+    if (!battleId) return null;
+    const validFighters = fighters.filter(fighter => fighter?.monster?.template_id && fighter.monster.user_id);
+    validFighters.forEach(fighter => this.addMastery(
+      fighter.monster.user_id,
+      fighter.monster.template_id,
+      2 + (fighter.won ? 1 : 0),
+      `battle:${battleId}:${fighter.monster.monster_id}`
+    ));
+    if (!streamKey || !validFighters.length) return null;
+    const result = this.store.recordBattleMission({
+      streamKey,
+      battleId,
+      participants: validFighters.map(fighter => ({
+        userId: fighter.monster.user_id,
+        monsterId: fighter.monster.monster_id
+      })),
+      completedAtMs: this.now()
+    });
+    if (result.accepted) this.emit('streammonsters:stream_mission_progress', { streamKey, mission: result.mission });
+    if (result.newlyCompleted) this.completeMission(streamKey, true);
+    return result.mission;
+  }
+
   recordMissionCompletion(monster, streamKey) {
     if (!monster?.template_id) return null;
     return this.addMastery(monster.user_id, monster.template_id, 3, `mission:${streamKey}:${monster.monster_id}`);
@@ -132,13 +156,8 @@ class CollectionService {
 
   recordMissionProgress(streamKey, event, { userId = null, monster = null, value = null, actionKey = null } = {}) {
     const mission = this.getStreamMission(streamKey);
-    const participant = userId
-      ? this.store.addMissionParticipant(streamKey, userId, monster?.monster_id || null)
-      : null;
-    if (mission.completed_at_ms) {
-      if (participant) this.rewardMissionParticipant(streamKey, participant);
-      return mission;
-    }
+    if (mission.completed_at_ms) return mission;
+    if (userId) this.store.addMissionParticipant(streamKey, userId, monster?.monster_id || null);
     if (actionKey && !this.store.claimCollectionAction(`mission:${streamKey}:${actionKey}`, this.now())) return mission;
     let progress = mission.progress;
     if (mission.mission_key === 'six_hatches' && event === 'hatch') progress += 1;
