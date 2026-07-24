@@ -33,6 +33,10 @@ class ProgressionService {
     this.now = now;
   }
 
+  emitAfterCommit(event, payload) {
+    this.store.afterCommit(() => this.emit(event, payload));
+  }
+
   startStreamSession({ streamKey }) {
     const source = String(streamKey || this.dateKey());
     const index = this.hashNumber(source) % ELEMENTS.length;
@@ -127,7 +131,7 @@ class ProgressionService {
       this.store.awardViewerXp(userId, 50);
       this.addSeasonPoints(userId, 20);
       const messageKey = this.questTitleKey(quest.quest_key);
-      this.emit('streammonsters:quest_completed', {
+      this.emitAfterCommit('streammonsters:quest_completed', {
         userId,
         quest: { ...quest, titleKey: messageKey },
         messageKey,
@@ -163,7 +167,7 @@ class ProgressionService {
       if (xpReward) this.store.awardViewerXp(userId, xpReward);
       if (seasonReward) this.addSeasonPoints(userId, seasonReward);
       const messageKey = this.questTitleKey(quest.quest_key);
-      this.emit('streammonsters:quest_completed', {
+      this.emitAfterCommit('streammonsters:quest_completed', {
         userId,
         quest: { ...quest, titleKey: messageKey },
         messageKey,
@@ -205,7 +209,12 @@ class ProgressionService {
     );
     const after = { ...persisted, rank };
     if (after.rank !== before.rank) {
-      this.emit('streammonsters:season_rank_changed', { userId, before: before.rank, after: after.rank, score: after });
+      this.emitAfterCommit('streammonsters:season_rank_changed', {
+        userId,
+        before: before.rank,
+        after: after.rank,
+        score: after
+      });
     }
     return after;
   }
@@ -260,7 +269,7 @@ class ProgressionService {
     const achievement = this.store.unlockAchievement(userId, achievementKey, this.currentMs());
     if (achievement.unlockedNow) {
       const messageKey = this.achievementTitleKey(achievement.achievement_key);
-      this.emit('streammonsters:achievement_unlocked', {
+      this.emitAfterCommit('streammonsters:achievement_unlocked', {
         userId,
         achievement: { ...achievement, titleKey: messageKey },
         messageKey

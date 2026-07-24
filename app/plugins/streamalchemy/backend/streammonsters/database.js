@@ -4,10 +4,35 @@ const { deterministicTemplateId } = require('./catalog');
 class StreamMonstersDatabase {
   constructor(sqlite) {
     this.db = sqlite?.db || sqlite;
+    this.transactionDepth = 0;
+    this.afterCommitCallbacks = null;
   }
 
   runInTransaction(operation) {
-    return this.db.transaction(operation)();
+    if (this.transactionDepth > 0) return operation();
+    const callbacks = [];
+    this.transactionDepth = 1;
+    this.afterCommitCallbacks = callbacks;
+    let result;
+    try {
+      result = this.db.transaction(operation)();
+    } catch (error) {
+      this.transactionDepth = 0;
+      this.afterCommitCallbacks = null;
+      throw error;
+    }
+    this.transactionDepth = 0;
+    this.afterCommitCallbacks = null;
+    callbacks.forEach(callback => callback());
+    return result;
+  }
+
+  afterCommit(callback) {
+    if (this.afterCommitCallbacks) {
+      this.afterCommitCallbacks.push(callback);
+      return;
+    }
+    callback();
   }
 
   initialize() {

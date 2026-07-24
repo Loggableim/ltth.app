@@ -12,6 +12,10 @@ class ChatCommands {
     this.syncQueue();
   }
 
+  emitAfterCommit(event, payload) {
+    this.store.afterCommit(() => this.emit(event, payload));
+  }
+
   execute(context = {}, commandName = '', args = []) {
     const userId = context.userId || context.uniqueId || context.username;
     const command = String(commandName || '').trim().toLowerCase();
@@ -25,6 +29,7 @@ class ChatCommands {
     }
     this.engine.markReadyEggs();
     if (command === 'adopt') return this.adopt(userId);
+    if (command === 'battle') return this.executeBattle(userId, commandArgs[0]);
     this.progression?.recordCommand(userId, this.engine.streamKey);
 
     if (command === 'eggs') return this.eggs(userId);
@@ -32,7 +37,6 @@ class ChatCommands {
     if (command === 'inventory' || command === 'monsters') return this.inventory(userId);
     if (command === 'monster') return this.monster(userId, commandArgs[0]);
     if (command === 'choose') return this.choose(userId, commandArgs[0]);
-    if (command === 'battle') return this.joinBattle(userId, commandArgs[0]);
     if (command === 'leavebattle') return this.leaveBattle(userId);
     if (command === 'rank') return this.rank(userId);
     if (command === 'quests') return this.quests(userId);
@@ -132,6 +136,27 @@ class ChatCommands {
   }
 
   joinBattle(userId, requestedStance = null) {
+    try {
+      return this.store.runInTransaction(() => this.joinBattleLifecycle(userId, requestedStance));
+    } catch (error) {
+      this.syncQueue();
+      throw error;
+    }
+  }
+
+  executeBattle(userId, requestedStance = null) {
+    try {
+      return this.store.runInTransaction(() => {
+        this.progression?.recordCommand(userId, this.engine.streamKey);
+        return this.joinBattleLifecycle(userId, requestedStance);
+      });
+    } catch (error) {
+      this.syncQueue();
+      throw error;
+    }
+  }
+
+  joinBattleLifecycle(userId, requestedStance = null) {
     this.purgeExpiredQueue();
     const normalizedRequestedStance = String(requestedStance || '').trim().toLowerCase();
     if (requestedStance && !['power', 'guard', 'speed'].includes(normalizedRequestedStance)) {
@@ -191,19 +216,19 @@ class ChatCommands {
       opponent.stance,
       stance
     );
-    this.emit('streammonsters:stance_revealed', {
+    this.emitAfterCommit('streammonsters:stance_revealed', {
       userId: opponent.userId,
       monster: opponent.monster,
       stance: battle.stanceA,
       battleId: battle.battleId
     });
-    this.emit('streammonsters:stance_revealed', {
+    this.emitAfterCommit('streammonsters:stance_revealed', {
       userId,
       monster: selected,
       stance: battle.stanceB,
       battleId: battle.battleId
     });
-    this.emit('streammonsters:battle_started', {
+    this.emitAfterCommit('streammonsters:battle_started', {
       battleId: battle.battleId,
       challenger: opponent.monster,
       defender: selected,
@@ -236,11 +261,11 @@ class ChatCommands {
       battle.events
         .filter(event => event.payload?.round === round.number)
         .forEach(event => {
-          this.emit(event.type, { battleId: battle.battleId, ...event.payload });
+          this.emitAfterCommit(event.type, { battleId: battle.battleId, ...event.payload });
         });
-      this.emit('streammonsters:battle_round', { battleId: battle.battleId, round });
+      this.emitAfterCommit('streammonsters:battle_round', { battleId: battle.battleId, round });
     });
-    this.emit('streammonsters:battle_completed', {
+    this.emitAfterCommit('streammonsters:battle_completed', {
       battleId: battle.battleId,
       battle,
       winner
@@ -249,7 +274,7 @@ class ChatCommands {
       const loser = winner.monster_id === opponent.monster.monster_id ? selected : opponent.monster;
       const streak = this.store.getViewerBattleStats?.(winner.user_id)?.win_streak || 0;
       if (streak >= 2) {
-        this.emit('streammonsters:win_streak', {
+        this.emitAfterCommit('streammonsters:win_streak', {
           userId: winner.user_id,
           monster: winner,
           count: streak,
@@ -257,7 +282,7 @@ class ChatCommands {
         });
       }
       if ((Number(winner.level) || 1) < (Number(loser.level) || 1)) {
-        this.emit('streammonsters:upset', {
+        this.emitAfterCommit('streammonsters:upset', {
           userId: winner.user_id,
           winner,
           loser,
@@ -269,7 +294,7 @@ class ChatCommands {
         selected.monster_id
       ) || 0;
       if (rivalryCount >= 2) {
-        this.emit('streammonsters:rivalry', {
+        this.emitAfterCommit('streammonsters:rivalry', {
           left: opponent.monster,
           right: selected,
           count: rivalryCount,

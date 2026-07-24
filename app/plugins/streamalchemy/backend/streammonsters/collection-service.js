@@ -23,35 +23,14 @@ class CollectionService {
     this.store = store;
     this.emit = emit;
     this.now = now;
-    this.transactionDepth = 0;
-    this.pendingEvents = null;
   }
 
   runAtomic(operation) {
-    if (this.transactionDepth > 0) return operation();
-    const pendingEvents = [];
-    this.transactionDepth = 1;
-    this.pendingEvents = pendingEvents;
-    let result;
-    try {
-      result = this.store.runInTransaction(operation);
-    } catch (error) {
-      this.transactionDepth = 0;
-      this.pendingEvents = null;
-      throw error;
-    }
-    this.transactionDepth = 0;
-    this.pendingEvents = null;
-    pendingEvents.forEach(({ event, payload }) => this.emit(event, payload));
-    return result;
+    return this.store.runInTransaction(operation);
   }
 
   emitAfterCommit(event, payload) {
-    if (this.pendingEvents) {
-      this.pendingEvents.push({ event, payload });
-      return;
-    }
-    this.emit(event, payload);
+    this.store.afterCommit(() => this.emit(event, payload));
   }
 
   missionAcceptsEvent(mission, event, monster = null) {

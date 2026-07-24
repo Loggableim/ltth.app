@@ -48,6 +48,10 @@ class StreamMonstersEngine {
     this.recentGifts = new Map();
   }
 
+  emitAfterCommit(event, payload) {
+    this.store.afterCommit(() => this.emit(event, payload));
+  }
+
   describeGift({ giftId, giftName, coinValue = 0, userId = '', eventTimeMs = 0 }) {
     const normalizedGiftId = Number.parseInt(giftId, 10);
     const mapping = this.store.getGiftMapping(normalizedGiftId);
@@ -91,7 +95,7 @@ class StreamMonstersEngine {
       this.store.incrementStreamMetric(this.streamKey, 'egg_boosts');
       if (combo) this.addHype(20, { userId, gift, combo });
       this.recordHeartMeGift(userId, gift, createdAtMs);
-      this.emit('streammonsters:egg_boosted', { userId, egg, gift, event, hint: '!inventory' });
+      this.emitAfterCommit('streammonsters:egg_boosted', { userId, egg, gift, event, hint: '!inventory' });
       return { type: 'boosted', egg, gift };
     }
     const state = eggs.length >= this.config.maxUnhatchedEggs ? 'queued' : 'incubating';
@@ -128,7 +132,7 @@ class StreamMonstersEngine {
       elementalHourMatch
     });
     this.recordHeartMeGift(userId, gift, createdAtMs);
-    this.emit('streammonsters:egg_spawned', { userId, egg, gift, event, hint: '!inventory' });
+    this.emitAfterCommit('streammonsters:egg_spawned', { userId, egg, gift, event, hint: '!inventory' });
     return { type: 'spawned', egg, gift };
   }
 
@@ -156,7 +160,7 @@ class StreamMonstersEngine {
       visualKey: `egg:${element.toLowerCase()}:standard`
     });
     if (result.claimed) {
-      this.emit('streammonsters:starter_claimed', {
+      this.emitAfterCommit('streammonsters:starter_claimed', {
         userId,
         egg: result.egg,
         hint: '!eggs'
@@ -179,7 +183,7 @@ class StreamMonstersEngine {
   markReadyEggs() {
     const ready = this.store.markReadyEggs(this.now());
     ready.forEach(egg => {
-      this.emit('streammonsters:egg_ready', {
+      this.emitAfterCommit('streammonsters:egg_ready', {
         userId: egg.user_id,
         egg,
         hint: '!hatch [slot]'
@@ -190,25 +194,27 @@ class StreamMonstersEngine {
   }
 
   hatchEgg(userId, slot = 1) {
-    const visibleEggs = this.store.getViewerEggs(userId).filter(egg => egg.state !== 'hatched');
-    const index = Math.max(0, Number.parseInt(slot, 10) - 1);
-    const egg = visibleEggs[index];
-    if (!egg || egg.state !== 'ready') throw new Error('STREAM_MONSTERS_EGG_NOT_READY');
-    this.emit('streammonsters:hatch_started', { userId, egg, slot: index + 1 });
-    const currentMs = this.now();
-    const reservation = this.collection?.reserveTemplateForEgg(egg);
-    const monster = this.store.createMonsterFromEgg(egg, this.createMonster(egg, currentMs, reservation?.template));
-    this.store.incrementViewer(userId, 'eggs_hatched');
-    this.store.incrementStreamMetric(this.streamKey, 'hatches');
-    this.progression?.recordHatch(userId, this.streamKey, monster);
-    this.collection?.recordHatch(monster, this.streamKey);
-    this.progression?.recordCollection(
-      userId,
-      new Set(this.store.getViewerMonsters(userId).map(item => item.element)).size,
-      this.streamKey
-    );
-    this.emit('streammonsters:egg_hatched', { userId, egg, monster });
-    return monster;
+    return this.store.runInTransaction(() => {
+      const visibleEggs = this.store.getViewerEggs(userId).filter(egg => egg.state !== 'hatched');
+      const index = Math.max(0, Number.parseInt(slot, 10) - 1);
+      const egg = visibleEggs[index];
+      if (!egg || egg.state !== 'ready') throw new Error('STREAM_MONSTERS_EGG_NOT_READY');
+      this.emitAfterCommit('streammonsters:hatch_started', { userId, egg, slot: index + 1 });
+      const currentMs = this.now();
+      const reservation = this.collection?.reserveTemplateForEgg(egg);
+      const monster = this.store.createMonsterFromEgg(egg, this.createMonster(egg, currentMs, reservation?.template));
+      this.store.incrementViewer(userId, 'eggs_hatched');
+      this.store.incrementStreamMetric(this.streamKey, 'hatches');
+      this.progression?.recordHatch(userId, this.streamKey, monster);
+      this.collection?.recordHatch(monster, this.streamKey);
+      this.progression?.recordCollection(
+        userId,
+        new Set(this.store.getViewerMonsters(userId).map(item => item.element)).size,
+        this.streamKey
+      );
+      this.emitAfterCommit('streammonsters:egg_hatched', { userId, egg, monster });
+      return monster;
+    });
   }
 
   calculateBoostMs(coinValue) {
@@ -224,7 +230,7 @@ class StreamMonstersEngine {
     const previous = this.recentGifts.get(streamKey);
     this.recentGifts.set(streamKey, { giftId: gift.giftId, timestamp, userId });
     if (!previous || previous.giftId === gift.giftId || timestamp - previous.timestamp > this.config.comboWindowMs) return false;
-    this.emit('streammonsters:gift_combo', {
+    this.emitAfterCommit('streammonsters:gift_combo', {
       userId,
       gift,
       previousGiftId: previous.giftId,
@@ -289,13 +295,13 @@ class StreamMonstersEngine {
       previous.points < milestone && total >= milestone
     ));
     const hype = this.store.addStreamHype(this.streamKey, normalizedPoints, this.now());
-    this.emit('streammonsters:hype_changed', {
+    this.emitAfterCommit('streammonsters:hype_changed', {
       streamKey: this.streamKey,
       hype,
       ...context
     });
     milestones.forEach(milestone => {
-      this.emit('streammonsters:hype_milestone', {
+      this.emitAfterCommit('streammonsters:hype_milestone', {
         streamKey: this.streamKey,
         milestone,
         hype,
