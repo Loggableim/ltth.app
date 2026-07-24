@@ -223,6 +223,38 @@ describe('GameEnginePlugin interactive controller integration', () => {
     expect(plugin.db.saveGameConfig).not.toHaveBeenCalled();
   });
 
+  test('defaults Connect4 sounds to muted and validates the master sound toggle', () => {
+    const { plugin, routes } = createPlugin();
+    let savedConfig = null;
+    plugin.db = {
+      getGameConfig: jest.fn(() => null),
+      saveGameConfig: jest.fn((gameType, config) => {
+        savedConfig = { gameType, config };
+      })
+    };
+    plugin.registerRoutes();
+    const route = routes.find(item => item.method === 'POST' && item.path === '/api/game-engine/config/:gameType');
+    const res = { json: jest.fn(), status: jest.fn(() => res) };
+
+    expect(plugin._getConfigWithDefaults('connect4', {})).toMatchObject({
+      soundEnabled: false,
+      soundVolume: 0.5
+    });
+    expect(plugin._isValidConnect4Config({ soundEnabled: 'yes' })).toBe(false);
+
+    route.handler({ params: { gameType: 'connect4' }, body: { soundEnabled: true, soundVolume: 0.25 } }, res);
+
+    expect(plugin.db.saveGameConfig).toHaveBeenCalled();
+    expect(savedConfig).toMatchObject({
+      gameType: 'connect4',
+      config: {
+        soundEnabled: true,
+        soundVolume: 0.25
+      }
+    });
+    expect(res.json).toHaveBeenCalledWith({ success: true });
+  });
+
   test('registers a real Connect4 audio upload and persists the uploaded file', () => {
     const { plugin, routes, io } = createPlugin();
     plugin.db = {
@@ -262,6 +294,91 @@ describe('GameEnginePlugin interactive controller integration', () => {
       filename: 'piece_drop.mp3',
       url: '/game-engine/media/connect4/piece_drop'
     }));
+  });
+
+  test('accepts custom Connect4 audio when the browser sends a generic MIME type', () => {
+    const { plugin, routes } = createPlugin();
+    plugin.db = {
+      getGameMedia: jest.fn(() => null),
+      saveGameMedia: jest.fn()
+    };
+    plugin.registerRoutes();
+    const route = routes.find(item => (
+      item.method === 'POST' &&
+      item.path === '/api/game-engine/media/:gameType/:mediaEvent'
+    ));
+    const uploadedPath = path.join(testPluginDataDir, 'game-media', 'connect4', 'timer_warning.mp3');
+    const res = { json: jest.fn(), status: jest.fn(() => res) };
+
+    route.handler({
+      params: { gameType: 'connect4', mediaEvent: 'timer_warning' },
+      file: {
+        path: uploadedPath,
+        mimetype: 'application/octet-stream',
+        originalname: 'timer-warning.MP3'
+      }
+    }, res);
+
+    expect(plugin.db.saveGameMedia).toHaveBeenCalledWith(
+      'connect4',
+      'timer_warning',
+      uploadedPath,
+      'audio/mpeg'
+    );
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      filename: 'timer_warning.mp3'
+    }));
+  });
+
+  test('locks out a timed-out interactive viewer from starting another game for 24 hours', () => {
+    const { plugin, io } = createPlugin();
+    plugin.endGame = jest.fn();
+    plugin.db = {
+      getGameConfig: jest.fn(() => null),
+      getActiveSessionForPlayer: jest.fn(() => null),
+      setGamePlayerLockout: jest.fn(() => ({
+        username: 'slow-viewer',
+        reason: 'viewer_timeout',
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+        remainingMs: 24 * 60 * 60 * 1000
+      })),
+      getActiveGamePlayerLockout: jest.fn(() => ({
+        username: 'slow-viewer',
+        reason: 'viewer_timeout',
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+        remainingMs: 24 * 60 * 60 * 1000
+      }))
+    };
+    plugin.interactiveController = {
+      startMatch: jest.fn()
+    };
+
+    plugin._finishInteractiveGame({
+      sessionId: 123,
+      viewerId: 'slow-viewer',
+      winner: 'streamer',
+      reason: 'viewer_timeout',
+      gameResult: { timeout: true }
+    });
+    const result = plugin.handleGameStart('connect4', 'slow-viewer', 'Slow Viewer', 'command', '/c4start');
+
+    expect(plugin.db.setGamePlayerLockout).toHaveBeenCalledWith(
+      'slow-viewer',
+      'viewer_timeout',
+      24 * 60 * 60 * 1000
+    );
+    expect(plugin.interactiveController.startMatch).not.toHaveBeenCalled();
+    expect(io.emit).toHaveBeenCalledWith('game-engine:player-lockout', expect.objectContaining({
+      username: 'slow-viewer',
+      reason: 'viewer_timeout'
+    }));
+    expect(result).toMatchObject({
+      success: false,
+      error: 'game_lockout'
+    });
+    expect(result.remainingMs).toBeGreaterThan(0);
   });
 
   test('rejects unknown Connect4 audio events before accepting a file', () => {

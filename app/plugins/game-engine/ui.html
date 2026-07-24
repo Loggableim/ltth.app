@@ -1647,6 +1647,20 @@
           </select>
         </div>
 
+        <h3 data-i18n="plugins.game-engine.labels.sound_effekte">🎵 Sound & Effekte</h3>
+
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="connect4-sound-enabled"><span data-i18n="plugins.game-engine.labels.sound_effekte_aktivieren">
+            Sound-Effekte aktivieren
+          </span></label>
+        </div>
+
+        <div class="form-group">
+          <label data-i18n="plugins.game-engine.labels.sound_lautstarke">Sound-Lautstärke:</label>
+          <input type="range" id="connect4-sound-volume" min="0" max="1" step="0.1" value="0.5">
+        </div>
+
         <h3 data-i18n="plugins.game-engine.labels.chat_command_einstellungen">Chat Command Einstellungen</h3>
 
         <div class="form-group">
@@ -4123,7 +4137,7 @@
               <button type="button" class="secondary audio-toggle-btn" data-game-type="connect4" data-audio-event="new_challenger" data-scope-id="default" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             </div>
             <div id="currentMediaNewChallenger" style="margin-top: 5px; color: #aaa;"></div>
-            <button data-upload="new_challenger" data-input="mediaNewChallenger" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.upload_custom_69fd87">Upload Custom</button>
+            <button data-upload="new_challenger" data-input="mediaNewChallenger" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.ui.audio.save_custom_sound">Save sound</button>
             <button data-delete="new_challenger" class="delete-media-btn danger" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.zuruck_zu_default_d0b5c0">Zurück zu Default</button>
           </div>
 
@@ -4136,7 +4150,7 @@
               <button type="button" class="secondary audio-toggle-btn" data-game-type="connect4" data-audio-event="challenge_accepted" data-scope-id="default" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             </div>
             <div id="currentMediaChallengeAccepted" style="margin-top: 5px; color: #aaa;"></div>
-            <button data-upload="challenge_accepted" data-input="mediaChallengeAccepted" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.upload_custom_330388">Upload Custom</button>
+            <button data-upload="challenge_accepted" data-input="mediaChallengeAccepted" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.ui.audio.save_custom_sound">Save sound</button>
             <button data-delete="challenge_accepted" class="delete-media-btn danger" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.zuruck_zu_default_660d57">Zurück zu Default</button>
           </div>
 
@@ -4151,7 +4165,7 @@
               <button type="button" class="secondary audio-toggle-btn" data-game-type="connect4" data-audio-event="player_1_wins" data-scope-id="default" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             </div>
             <div id="currentMediaPlayer1Wins" style="margin-top: 5px; color: #aaa;"></div>
-            <button data-upload="player_1_wins" data-input="mediaPlayer1Wins" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.upload_custom_6790d8">Upload Custom</button>
+            <button data-upload="player_1_wins" data-input="mediaPlayer1Wins" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.ui.audio.save_custom_sound">Save sound</button>
             <button data-delete="player_1_wins" class="delete-media-btn danger" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.zuruck_zu_default_8a52f8">Zurück zu Default</button>
           </div>
 
@@ -4164,7 +4178,7 @@
               <button type="button" class="secondary audio-toggle-btn" data-game-type="connect4" data-audio-event="player_2_wins" data-scope-id="default" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             </div>
             <div id="currentMediaPlayer2Wins" style="margin-top: 5px; color: #aaa;"></div>
-            <button data-upload="player_2_wins" data-input="mediaPlayer2Wins" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.upload_custom_2560cd">Upload Custom</button>
+            <button data-upload="player_2_wins" data-input="mediaPlayer2Wins" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.ui.audio.save_custom_sound">Save sound</button>
             <button data-delete="player_2_wins" class="delete-media-btn danger" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.zuruck_zu_default_aaccac">Zurück zu Default</button>
           </div>
 
@@ -4177,7 +4191,7 @@
               <button type="button" class="secondary audio-toggle-btn" data-game-type="connect4" data-audio-event="game_over" data-scope-id="default" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             </div>
             <div id="currentMediaGameOver" style="margin-top: 5px; color: #aaa;"></div>
-            <button data-upload="game_over" data-input="mediaGameOver" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.upload_custom_bd125f">Upload Custom</button>
+            <button data-upload="game_over" data-input="mediaGameOver" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.ui.audio.save_custom_sound">Save sound</button>
             <button data-delete="game_over" class="delete-media-btn danger" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.zuruck_zu_default">Zurück zu Default</button>
           </div>
 
@@ -4190,7 +4204,7 @@
               <button type="button" class="secondary audio-toggle-btn" data-game-type="connect4" data-audio-event="piece_drop" data-scope-id="default" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             </div>
             <div id="currentMediaPieceDrop" style="margin-top: 5px; color: #aaa;"></div>
-            <button data-upload="piece_drop" data-input="mediaPieceDrop" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.upload_custom_e2c63f">Upload Custom</button>
+            <button data-upload="piece_drop" data-input="mediaPieceDrop" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.ui.audio.save_custom_sound">Save sound</button>
             <button data-delete="piece_drop" class="delete-media-btn danger" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.zuruck_zu_default_c2c595">Zurück zu Default</button>
           </div>
 
@@ -4203,7 +4217,7 @@
               <button type="button" class="secondary audio-toggle-btn" data-game-type="connect4" data-audio-event="timer_warning" data-scope-id="default" data-enabled="true" data-i18n="plugins.game-engine.ui.audio.disable">Disable</button>
             </div>
             <div id="currentMediaTimerWarning" style="margin-top: 5px; color: #aaa;"></div>
-            <button data-upload="timer_warning" data-input="mediaTimerWarning" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.upload_custom_67d8da">Upload Custom</button>
+            <button data-upload="timer_warning" data-input="mediaTimerWarning" class="upload-media-btn" style="margin-top: 5px;" data-i18n="plugins.game-engine.ui.audio.save_custom_sound">Save sound</button>
             <button data-delete="timer_warning" class="delete-media-btn danger" style="margin-top: 5px;" data-i18n="plugins.game-engine.labels.zuruck_zu_default_53ba75">Zurück zu Default</button>
           </div>
         </div>
@@ -4539,6 +4553,8 @@
         showCoordinates: document.getElementById('showCoordinates').checked,
         animationSpeed: parseInt(document.getElementById('animationSpeed').value),
         streamerRole: document.getElementById('streamerRole').value,
+        soundEnabled: document.getElementById('connect4-sound-enabled').checked,
+        soundVolume: parseFloat(document.getElementById('connect4-sound-volume').value),
         chatCommand: (() => {
           const cmd = document.getElementById('c4ChatCommand').value.trim();
           // Validate command: only alphanumeric, underscore, and hyphen
@@ -4601,6 +4617,8 @@
         if (config.showCoordinates !== undefined) document.getElementById('showCoordinates').checked = config.showCoordinates;
         if (config.animationSpeed) document.getElementById('animationSpeed').value = config.animationSpeed;
         if (config.streamerRole) document.getElementById('streamerRole').value = config.streamerRole;
+        if (config.soundEnabled !== undefined) document.getElementById('connect4-sound-enabled').checked = config.soundEnabled;
+        if (config.soundVolume !== undefined) document.getElementById('connect4-sound-volume').value = config.soundVolume;
 
         // Chat command setting
         if (config.chatCommand) document.getElementById('c4ChatCommand').value = config.chatCommand;

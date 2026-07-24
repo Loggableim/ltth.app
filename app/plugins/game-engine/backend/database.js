@@ -188,6 +188,16 @@ class GameEngineDatabase {
       )
     `);
 
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS game_player_lockouts (
+        username TEXT PRIMARY KEY,
+        reason TEXT NOT NULL,
+        expires_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    `);
+
     // Round timer configuration
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS game_round_timers (
@@ -1558,6 +1568,58 @@ class GameEngineDatabase {
     return result.changes > 0;
   }
 
+  setGamePlayerLockout(username, reason, durationMs, now = Date.now()) {
+    const normalizedUsername = this._normalizeGameAudioIdentifier(username);
+    const normalizedReason = this._normalizeGameAudioIdentifier(reason, 'timeout');
+    const numericDuration = Number(durationMs);
+    const currentTime = Number.isFinite(Number(now)) ? Math.floor(Number(now)) : Date.now();
+
+    if (!normalizedUsername || !Number.isFinite(numericDuration) || numericDuration <= 0) return null;
+
+    const expiresAt = currentTime + Math.floor(numericDuration);
+    this.db.prepare(`
+      INSERT INTO game_player_lockouts (username, reason, expires_at, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(username) DO UPDATE SET
+        reason = excluded.reason,
+        expires_at = excluded.expires_at,
+        updated_at = excluded.updated_at
+    `).run(normalizedUsername, normalizedReason, expiresAt, currentTime, currentTime);
+
+    return {
+      username: normalizedUsername,
+      reason: normalizedReason,
+      expiresAt,
+      remainingMs: expiresAt - currentTime
+    };
+  }
+
+  getActiveGamePlayerLockout(username, now = Date.now()) {
+    const normalizedUsername = this._normalizeGameAudioIdentifier(username);
+    const currentTime = Number.isFinite(Number(now)) ? Math.floor(Number(now)) : Date.now();
+    if (!normalizedUsername) return null;
+
+    const row = this.db.prepare(`
+      SELECT username, reason, expires_at
+      FROM game_player_lockouts
+      WHERE username = ?
+    `).get(normalizedUsername);
+
+    if (!row) return null;
+
+    if (Number(row.expires_at) <= currentTime) {
+      this.db.prepare(`DELETE FROM game_player_lockouts WHERE username = ?`).run(normalizedUsername);
+      return null;
+    }
+
+    return {
+      username: row.username,
+      reason: row.reason,
+      expiresAt: Number(row.expires_at),
+      remainingMs: Number(row.expires_at) - currentTime
+    };
+  }
+
   getGameMedia(gameType, mediaEvent = null) {
     if (mediaEvent) {
       const stmt = this.db.prepare(`
@@ -1584,8 +1646,11 @@ class GameEngineDatabase {
       VALUES (?, ?, ?, ?, ?, 1)
     `);
     
-    const mediaType = fileType.startsWith('audio/') ? 'audio' : 'video';
-    stmt.run(gameType, mediaType, mediaEvent, filePath, fileType);
+    const normalizedFileType = typeof fileType === 'string' && fileType.trim()
+      ? fileType.trim()
+      : 'application/octet-stream';
+    const mediaType = normalizedFileType.startsWith('audio/') ? 'audio' : 'video';
+    stmt.run(gameType, mediaType, mediaEvent, filePath, normalizedFileType);
   }
 
   /**

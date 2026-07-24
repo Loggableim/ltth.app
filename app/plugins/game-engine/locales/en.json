@@ -1236,6 +1236,7 @@
           "disabled": "Disabled",
           "enable": "Enable",
           "disable": "Disable",
+          "save_custom_sound": "Save sound",
           "state_updated": "Sound state updated",
           "state_update_failed": "Sound state could not be updated"
         },

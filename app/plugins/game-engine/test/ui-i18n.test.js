@@ -39,6 +39,7 @@ describe('Game Engine UI i18n', () => {
         disabled: 'Deaktiviert',
         enable: 'Aktivieren',
         disable: 'Deaktivieren',
+        save_custom_sound: 'Sound speichern',
         state_updated: 'Soundstatus aktualisiert',
         state_update_failed: 'Soundstatus konnte nicht aktualisiert werden'
       },
@@ -47,6 +48,7 @@ describe('Game Engine UI i18n', () => {
         disabled: 'Disabled',
         enable: 'Enable',
         disable: 'Disable',
+        save_custom_sound: 'Save sound',
         state_updated: 'Sound state updated',
         state_update_failed: 'Sound state could not be updated'
       },
@@ -55,6 +57,7 @@ describe('Game Engine UI i18n', () => {
         disabled: 'Desactivado',
         enable: 'Activar',
         disable: 'Desactivar',
+        save_custom_sound: 'Guardar sonido',
         state_updated: 'Estado del sonido actualizado',
         state_update_failed: 'No se pudo actualizar el estado del sonido'
       },
@@ -63,6 +66,7 @@ describe('Game Engine UI i18n', () => {
         disabled: 'Désactivé',
         enable: 'Activer',
         disable: 'Désactiver',
+        save_custom_sound: 'Enregistrer le son',
         state_updated: 'État du son mis à jour',
         state_update_failed: 'Impossible de mettre à jour l’état du son'
       }

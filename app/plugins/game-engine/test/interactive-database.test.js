@@ -63,6 +63,25 @@ describe('GameEngineDatabase interactive persistence', () => {
     });
   });
 
+  test('stores a 24 hour game lockout and clears it after expiry', () => {
+    const created = database.setGamePlayerLockout('slow-viewer', 'viewer_timeout', 24 * 60 * 60 * 1000, 1000);
+
+    expect(created).toMatchObject({
+      username: 'slow-viewer',
+      reason: 'viewer_timeout',
+      expiresAt: 86401000,
+      remainingMs: 86400000
+    });
+    expect(database.getActiveGamePlayerLockout('slow-viewer', 2000)).toMatchObject({
+      username: 'slow-viewer',
+      reason: 'viewer_timeout',
+      expiresAt: 86401000,
+      remainingMs: 86399000
+    });
+    expect(database.getActiveGamePlayerLockout('slow-viewer', 86401001)).toBeNull();
+    expect(database.getActiveGamePlayerLockout('slow-viewer', 86402000)).toBeNull();
+  });
+
   test('creates and reads active interactive state with parsed game data', () => {
     database.createInteractiveState(session());
 

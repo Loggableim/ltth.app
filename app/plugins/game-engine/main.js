@@ -88,6 +88,15 @@ const CONNECT4_AUDIO_EXTENSIONS = new Map([
   ['audio/x-m4a', '.m4a'],
   ['audio/aac', '.aac']
 ]);
+const CONNECT4_AUDIO_TYPES_BY_EXTENSION = new Map([
+  ['.mp3', 'audio/mpeg'],
+  ['.wav', 'audio/wav'],
+  ['.ogg', 'audio/ogg'],
+  ['.webm', 'audio/webm'],
+  ['.m4a', 'audio/mp4'],
+  ['.aac', 'audio/aac']
+]);
+const GAME_TIMEOUT_LOCKOUT_MS = 24 * 60 * 60 * 1000;
 
 class GameEnginePlugin {
   constructor(api) {
@@ -150,7 +159,7 @@ class GameEnginePlugin {
         showCoordinates: true,
         animationSpeed: 500,
         streamerRole: 'player2', // streamer is player 2 (yellow) by default
-        soundEnabled: true,
+        soundEnabled: false,
         soundVolume: 0.5,
         showWinStreaks: true,
         celebrationEnabled: true,
@@ -425,6 +434,7 @@ class GameEnginePlugin {
   }
 
   _finishInteractiveGame(payload) {
+    this._applyViewerTimeoutLockout(payload);
     this.endGame(
       payload.sessionId,
       payload.winner,
@@ -493,6 +503,37 @@ class GameEnginePlugin {
     };
   }
 
+  _resolveConnect4AudioUpload(file) {
+    if (!file || typeof file !== 'object') return null;
+
+    const mimetype = String(file.mimetype || '').trim().toLowerCase();
+    const originalExtension = path.extname(String(file.originalname || '')).toLowerCase();
+    const extensionFromMime = CONNECT4_AUDIO_EXTENSIONS.get(mimetype);
+    const fileTypeFromExtension = CONNECT4_AUDIO_TYPES_BY_EXTENSION.get(originalExtension);
+    const extension = extensionFromMime || (fileTypeFromExtension ? originalExtension : null);
+
+    if (!extension) return null;
+
+    return {
+      extension,
+      fileType: extensionFromMime ? mimetype : fileTypeFromExtension
+    };
+  }
+
+  _getUploadedConnect4AudioFile(req) {
+    if (req?.file) return req.file;
+    const files = req?.files;
+
+    if (Array.isArray(files)) {
+      return files.find(file => file?.fieldname === 'file') ||
+        files.find(file => file?.fieldname === 'audio') ||
+        files[0] ||
+        null;
+    }
+
+    return files?.file?.[0] || files?.audio?.[0] || null;
+  }
+
   _isSafeAudioFilename(filename) {
     if (!filename || typeof filename !== 'string') {
       return false;
@@ -547,6 +588,81 @@ class GameEnginePlugin {
       };
       return settings;
     }, {});
+  }
+
+  _isStreamerLockoutIdentity(username) {
+    const normalizedUsername = this._normalizeTikTokUsername(username);
+    const hostName = this._normalizeTikTokUsername(this._resolveHostDisplayName());
+    return normalizedUsername === 'streamer' ||
+      (normalizedUsername && hostName && normalizedUsername.toLowerCase() === hostName.toLowerCase());
+  }
+
+  _getActiveGameLockout(username) {
+    if (!username || this._isStreamerLockoutIdentity(username)) return null;
+    if (typeof this.db?.getActiveGamePlayerLockout !== 'function') return null;
+
+    try {
+      return this.db.getActiveGamePlayerLockout(username);
+    } catch (error) {
+      this.logger.error(`Failed to read game lockout for ${username}: ${error.message}`);
+      return null;
+    }
+  }
+
+  _formatGameLockoutMessage(lockout) {
+    const remainingMs = Math.max(0, Number(lockout?.remainingMs) || 0);
+    const remainingHours = Math.max(1, Math.ceil(remainingMs / (60 * 60 * 1000)));
+    return `You are locked out from games for ${remainingHours}h after timing out.`;
+  }
+
+  _rejectIfGameLocked(username, nickname, gameType) {
+    const lockout = this._getActiveGameLockout(username);
+    if (!lockout) return null;
+
+    const payload = {
+      username,
+      nickname: nickname || username,
+      gameType,
+      reason: lockout.reason,
+      expiresAt: lockout.expiresAt,
+      remainingMs: lockout.remainingMs
+    };
+    this.io.emit('game-engine:player-lockout', payload);
+    this.logger.info(`[GAME LOCKOUT] ${username} blocked from ${gameType || 'game'} (${Math.ceil(lockout.remainingMs / 1000)}s remaining)`);
+    return {
+      success: false,
+      error: 'game_lockout',
+      message: this._formatGameLockoutMessage(lockout),
+      displayOverlay: true,
+      lockedUntil: lockout.expiresAt,
+      remainingMs: lockout.remainingMs
+    };
+  }
+
+  _applyViewerTimeoutLockout(payload) {
+    if (payload?.reason !== 'viewer_timeout') return null;
+    const viewerId = payload.viewerId;
+    if (!viewerId || this._isStreamerLockoutIdentity(viewerId)) return null;
+    if (typeof this.db?.setGamePlayerLockout !== 'function') return null;
+
+    try {
+      const lockout = this.db.setGamePlayerLockout(viewerId, 'viewer_timeout', GAME_TIMEOUT_LOCKOUT_MS);
+      if (lockout) {
+        this.io.emit('game-engine:player-lockout', {
+          username: viewerId,
+          nickname: payload.viewerDisplayName || viewerId,
+          gameType: payload.gameType || 'connect4',
+          reason: lockout.reason,
+          expiresAt: lockout.expiresAt,
+          remainingMs: lockout.remainingMs
+        });
+        this.logger.info(`[GAME LOCKOUT] ${viewerId} locked from games for 24h after interactive timeout`);
+      }
+      return lockout;
+    } catch (error) {
+      this.logger.error(`Failed to persist game lockout for ${viewerId}: ${error.message}`);
+      return null;
+    }
   }
 
   _getSocketAddress(socket) {
@@ -825,6 +941,9 @@ class GameEnginePlugin {
       normalized.soundVolume >= 0 && normalized.soundVolume <= 1
       ? normalized.soundVolume
       : defaults.soundVolume;
+    normalized.soundEnabled = typeof normalized.soundEnabled === 'boolean'
+      ? normalized.soundEnabled
+      : defaults.soundEnabled;
     normalized.leaderboardTypes = Array.isArray(normalized.leaderboardTypes) &&
       normalized.leaderboardTypes.every(type => validLeaderboardTypes.includes(type))
       ? [...new Set(normalized.leaderboardTypes)]
@@ -861,6 +980,7 @@ class GameEnginePlugin {
       if (!command || !/^[a-z0-9_-]+$/i.test(command)) return false;
     }
     if (['boardColor', 'player1Color', 'player2Color', 'textColor'].some(key => has(key) && !validColor(config[key]))) return false;
+    if (has('soundEnabled') && typeof config.soundEnabled !== 'boolean') return false;
     if (has('soundVolume') && (typeof config.soundVolume !== 'number' || !Number.isFinite(config.soundVolume) || config.soundVolume < 0 || config.soundVolume > 1)) return false;
     if (has('leaderboardTypes') && (!Array.isArray(config.leaderboardTypes) ||
       config.leaderboardTypes.some(type => !allowedTypes.includes(type)) ||
@@ -2342,15 +2462,21 @@ class GameEnginePlugin {
     const connect4MediaStorage = multer.diskStorage({
       destination: (req, file, callback) => callback(null, connect4MediaDir),
       filename: (req, file, callback) => {
-        const extension = CONNECT4_AUDIO_EXTENSIONS.get(String(file.mimetype || '').toLowerCase());
-        callback(null, `${req.params.mediaEvent}${extension}`);
+        const uploadInfo = this._resolveConnect4AudioUpload(file);
+        if (!uploadInfo) {
+          const error = new Error('Unsupported Connect4 audio type');
+          error.code = 'INVALID_CONNECT4_MEDIA_TYPE';
+          callback(error);
+          return;
+        }
+        callback(null, `${req.params.mediaEvent}${uploadInfo.extension}`);
       }
     });
     const connect4MediaUpload = multer({
       storage: connect4MediaStorage,
       limits: { fileSize: 5 * 1024 * 1024 },
       fileFilter: (req, file, callback) => {
-        if (CONNECT4_AUDIO_EXTENSIONS.has(String(file.mimetype || '').toLowerCase())) {
+        if (this._resolveConnect4AudioUpload(file)) {
           callback(null, true);
           return;
         }
@@ -2360,7 +2486,10 @@ class GameEnginePlugin {
       }
     });
     const receiveConnect4MediaUpload = (req, res, next) => {
-      connect4MediaUpload.single('file')(req, res, error => {
+      connect4MediaUpload.fields([
+        { name: 'file', maxCount: 1 },
+        { name: 'audio', maxCount: 1 }
+      ])(req, res, error => {
         if (!error) {
           next();
           return;
@@ -2427,18 +2556,23 @@ class GameEnginePlugin {
       receiveConnect4MediaUpload,
       (req, res) => {
         try {
-          if (!req.file) {
+          const uploadedFile = this._getUploadedConnect4AudioFile(req);
+          if (!uploadedFile) {
             return res.status(400).json({ success: false, error: 'connect4_media_file_required' });
+          }
+          const uploadInfo = this._resolveConnect4AudioUpload(uploadedFile);
+          if (!uploadInfo) {
+            return res.status(400).json({ success: false, error: 'invalid_connect4_media_type' });
           }
           const { gameType, mediaEvent } = req.params;
           const previousMedia = this.db.getGameMedia(gameType, mediaEvent);
-          const uploadedPath = path.resolve(req.file.path);
+          const uploadedPath = path.resolve(uploadedFile.path);
 
           if (!this._isPathInside(connect4MediaDir, uploadedPath)) {
             return res.status(400).json({ success: false, error: 'invalid_connect4_media_path' });
           }
 
-          this.db.saveGameMedia(gameType, mediaEvent, uploadedPath, req.file.mimetype);
+          this.db.saveGameMedia(gameType, mediaEvent, uploadedPath, uploadInfo.fileType);
           if (
             previousMedia &&
             previousMedia.file_path !== uploadedPath &&
@@ -4474,6 +4608,11 @@ class GameEnginePlugin {
     const userRoles = { isModerator, isSubscriber, teamMemberLevel, isSuperfan };
 
     try {
+      const lockoutRejection = this._rejectIfGameLocked(username, nickname || username, 'slot');
+      if (lockoutRejection) {
+        return lockoutRejection;
+      }
+
       const result = await this.slotGame.triggerSpinFromChat(
         username,
         nickname || username,
@@ -4496,10 +4635,20 @@ class GameEnginePlugin {
    */
   async handleWheelCommand(args, context) {
     const { username, uniqueId, nickname, profilePictureUrl } = context;
+    const playerId = uniqueId || username;
     
     try {
+      const lockoutRejection = this._rejectIfGameLocked(playerId, nickname || username, 'wheel');
+      if (lockoutRejection) {
+        return {
+          success: false,
+          response: `@${nickname || username} ${lockoutRejection.message}`,
+          error: lockoutRejection.error
+        };
+      }
+
       const result = await this.wheelGame.triggerSpin(
-        uniqueId || username,
+        playerId,
         nickname || username,
         profilePictureUrl || '',
         'Chat Command'
@@ -4702,6 +4851,11 @@ class GameEnginePlugin {
    */
   async handleWheelGiftTrigger(username, nickname, profilePictureUrl, giftName, wheelId = null) {
     try {
+      const lockoutRejection = this._rejectIfGameLocked(username, nickname, 'wheel');
+      if (lockoutRejection) {
+        return lockoutRejection;
+      }
+
       const result = await this.wheelGame.triggerSpin(
         username,
         nickname,
@@ -4736,6 +4890,11 @@ class GameEnginePlugin {
    */
   async handleSlotGiftTrigger(username, nickname, profilePictureUrl, giftName, oddsProfile = 'gift_common', machineId = null) {
     try {
+      const lockoutRejection = this._rejectIfGameLocked(username, nickname, 'slot');
+      if (lockoutRejection) {
+        return lockoutRejection;
+      }
+
       const result = await this.slotGame.triggerSpinFromGift(
         username,
         nickname,
@@ -4759,6 +4918,11 @@ class GameEnginePlugin {
    */
   async handlePlinkoGiftTrigger(username, nickname, profilePictureUrl, giftName, giftId = null, useDefaults = false, boardId = null) {
     try {
+      const lockoutRejection = this._rejectIfGameLocked(username, nickname, 'plinko');
+      if (lockoutRejection) {
+        return lockoutRejection;
+      }
+
       // Normalize gift name and ID for consistent comparisons
       const normalizedGiftName = (giftName || '').trim();
       // Gift IDs from the catalog are stored as string keys (e.g. "5655")
@@ -4938,6 +5102,11 @@ class GameEnginePlugin {
       return { success: false, error: 'unsupported_game_type' };
     }
 
+    const lockoutRejection = this._rejectIfGameLocked(viewerUsername, viewerNickname, gameType);
+    if (lockoutRejection) {
+      return lockoutRejection;
+    }
+
     if (this.interactiveController) {
       return this.interactiveController.startMatch({
         gameType,
@@ -5023,6 +5192,14 @@ class GameEnginePlugin {
   async startGameFromQueue(gameType, viewerUsername, viewerNickname, triggerType, triggerValue, giftPictureUrl = null) {
     try {
       this._ensureDatabaseInitialized();
+
+      const lockoutRejection = this._rejectIfGameLocked(viewerUsername, viewerNickname, gameType);
+      if (lockoutRejection) {
+        if (this.unifiedQueue) {
+          this.unifiedQueue.completeProcessing();
+        }
+        return { ...lockoutRejection, completed: true };
+      }
 
       if (this.interactiveController) {
         return this.interactiveController.startMatch({
@@ -5128,6 +5305,10 @@ class GameEnginePlugin {
       const matchingSlotMachine = this.slotGame.findMachineByChatCommand(cleanCommand);
       if (matchingSlotMachine) {
         this.logger.debug(`Slot chat command matched: "${cleanCommand}" -> Slot "${matchingSlotMachine.name}" (ID: ${matchingSlotMachine.id})`);
+        const lockoutRejection = this._rejectIfGameLocked(viewerId, viewerNickname, 'slot');
+        if (lockoutRejection) {
+          return;
+        }
         this.slotGame.triggerSpinFromChat(viewerId, viewerNickname, profilePictureUrl, cleanCommand, matchingSlotMachine.id, userRoles)
           .then(result => {
             if (!result.success) {
@@ -5398,7 +5579,9 @@ class GameEnginePlugin {
             ? 'You already have an interactive game in progress.'
             : result?.error === 'interactive_session_limit'
               ? 'The interactive game limit is currently reached.'
-              : 'Could not start the game.',
+              : result?.error === 'game_lockout'
+                ? (result.message || 'You are locked out from games after timing out.')
+                : 'Could not start the game.',
           displayOverlay: true
         };
       }
@@ -5426,6 +5609,11 @@ class GameEnginePlugin {
     if (gameType !== 'connect4' && gameType !== 'chess') {
       this.logger.warn(`Unsupported game type: ${gameType}`);
       return { success: false, error: `Unsupported game type: ${gameType}` };
+    }
+
+    const lockoutRejection = this._rejectIfGameLocked(viewerUsername, viewerNickname, gameType);
+    if (lockoutRejection) {
+      return lockoutRejection;
     }
 
     if (this.interactiveController) {
@@ -6645,6 +6833,15 @@ class GameEnginePlugin {
       const userId = context.userId || context.username;
       const nickname = context.nickname || context.username || userId;
       const profilePictureUrl = context.rawData?.profilePictureUrl || context.profilePictureUrl || '';
+      const lockoutRejection = this._rejectIfGameLocked(userId, nickname, 'plinko');
+      if (lockoutRejection) {
+        return {
+          success: false,
+          message: lockoutRejection.message,
+          error: lockoutRejection.error,
+          displayOverlay: true
+        };
+      }
       
       // Get bet amount
       const primaryArg = args[0] || '0';

@@ -1236,6 +1236,7 @@
           "disabled": "Desactivado",
           "enable": "Activar",
           "disable": "Desactivar",
+          "save_custom_sound": "Guardar sonido",
           "state_updated": "Estado del sonido actualizado",
           "state_update_failed": "No se pudo actualizar el estado del sonido"
         },

@@ -81,6 +81,15 @@ describe('interactive games admin UI contract', () => {
     expect(ui).not.toContain("fetch('/api/game-engine/round-timer/connect4'");
   });
 
+  test('renders Connect4 master mute controls and persists them with the game settings', () => {
+    expect(ui).toContain('id="connect4-sound-enabled"');
+    expect(ui).toContain('id="connect4-sound-volume"');
+    expect(ui).toContain("soundEnabled: document.getElementById('connect4-sound-enabled').checked");
+    expect(ui).toContain("soundVolume: parseFloat(document.getElementById('connect4-sound-volume').value)");
+    expect(ui).toContain("document.getElementById('connect4-sound-enabled').checked = config.soundEnabled");
+    expect(ui).toContain("document.getElementById('connect4-sound-volume').value = config.soundVolume");
+  });
+
   test('applies server-returned canonical timer values after save and renders timed and untimed states', () => {
     const functionSource = ui.match(/    function applyInteractiveSettings\(config\) \{[\s\S]*?\n    \}/)?.[0];
     expect(functionSource).toEqual(expect.any(String));
@@ -216,6 +225,7 @@ describe('interactive games admin UI contract', () => {
     expect(ui).toContain("'plugins.game-engine.ui.audio.disabled'");
     expect(ui).toContain("'plugins.game-engine.ui.audio.enable'");
     expect(ui).toContain("'plugins.game-engine.ui.audio.disable'");
+    expect(ui).toContain('plugins.game-engine.ui.audio.save_custom_sound');
     expect(ui).toContain("e.target.closest('.audio-toggle-btn')");
 
     const connect4Events = [
