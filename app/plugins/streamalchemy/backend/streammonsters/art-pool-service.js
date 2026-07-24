@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { getTemplate } = require('./catalog');
 
 const ELEMENTS = ['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar'];
 const VARIANTS = ['standard', 'charged'];
@@ -55,13 +56,16 @@ class ArtPoolService {
     });
   }
 
-  async prepare({ targetPerVariant = 3, combinations = null } = {}) {
+  async prepare({ targetPerVariant = 3, combinations = null, templateIds = null } = {}) {
     if (this.running) throw new Error('STREAM_MONSTERS_POOL_ALREADY_RUNNING');
     this.running = true;
     const target = this.normalizeTarget(targetPerVariant);
     const requested = Array.isArray(combinations) && combinations.length
       ? combinations.filter(item => ELEMENTS.includes(item.element) && VARIANTS.includes(item.variant))
       : this.activeCombinations();
+    const templates = Array.isArray(templateIds)
+      ? templateIds.map(getTemplate).filter(Boolean)
+      : [];
     const jobs = [];
     try {
       for (const combination of requested) {
@@ -73,8 +77,10 @@ class ArtPoolService {
           combination.element,
           combination.variant
         );
+        const relevantTemplates = templates.filter(template => template.element === combination.element);
         for (let index = 0; index < missing; index += 1) {
-          jobs.push(await this.prepareOne(combination, index));
+          const template = relevantTemplates.length ? relevantTemplates[index % relevantTemplates.length] : null;
+          jobs.push(await this.prepareOne({ ...combination, templateId: template?.templateId || null }, index));
         }
         if (evolutionTarget) {
           jobs.push(await this.prepareOne(combination, missing, evolutionTarget.monster_id));
@@ -87,10 +93,10 @@ class ArtPoolService {
     }
   }
 
-  async prepareOne({ element, variant }, index, evolutionMonsterId = null) {
+  async prepareOne({ element, variant, templateId = null }, index, evolutionMonsterId = null) {
     const recipeKey = `streammonster:${element.toLowerCase()}:${variant}:${this.now()}:${index}`;
     const prompt = [
-      `Single original cute ${element} Stream Monster creature, ${variant} cosmetic variant.`,
+      `Single original cute ${templateId || element} ${element} Stream Monster creature, ${variant} cosmetic variant.`,
       'Full body game collectible, crystalline fantasy style, centered, clear silhouette.',
       'Transparent background, no text, no logo, no watermark.'
     ].join(' ');
@@ -115,6 +121,7 @@ class ArtPoolService {
         provider: generated.provider || 'unknown',
         imageUrl: materialized.publicUrl,
         visualKey: materialized.visualKey,
+        templateId,
         createdAtMs: this.now()
       });
       if (!evolutionMonsterId) return poolEntry;
@@ -201,6 +208,10 @@ class ArtPoolService {
 
   consume(element, variant) {
     return this.store.consumeArtPoolSkin(element, variant, null, this.now());
+  }
+
+  consumeForTemplate(element, variant, templateId) {
+    return this.store.consumeArtPoolSkinForTemplate(element, variant, templateId || null, null, this.now());
   }
 }
 

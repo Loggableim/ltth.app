@@ -3,6 +3,7 @@ const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streamm
 const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
 const ProgressionService = require('../plugins/streamalchemy/backend/streammonsters/progression-service');
 const StreamMonstersRoutes = require('../plugins/streamalchemy/backend/streammonsters/routes');
+const CollectionService = require('../plugins/streamalchemy/backend/streammonsters/collection-service');
 
 function response() {
   return {
@@ -32,6 +33,7 @@ function createRoutes() {
     store,
     now: () => new Date('2026-07-23T12:00:00Z')
   });
+  const collection = new CollectionService({ store, now: () => 1 });
   const catalog = Array.from({ length: 175 }, (_, index) => ({
     id: index + 1,
     name: index === 149 ? 'Crystal Comet' : `Gift ${index + 1}`,
@@ -68,6 +70,7 @@ function createRoutes() {
     store,
     engine,
     progression,
+    collection,
     artPool,
     generationPool: { preparePending: jest.fn() },
     giftCatalogProvider: () => catalog,
@@ -85,7 +88,7 @@ function createRoutes() {
   const find = (method, routePath) => registered.find(route => (
     route.method === method && route.routePath === routePath
   )).handler;
-  return { find, store, artPool, emitted, configProvider };
+  return { find, store, artPool, emitted, configProvider, collection };
 }
 
 describe('Stream Monsters 1.2 public API', () => {
@@ -230,6 +233,35 @@ describe('Stream Monsters 1.2 public API', () => {
       body: { targetPerVariant: 7 }
     }, local);
     expect(artPool.prepare).toHaveBeenCalledWith({ targetPerVariant: 7 });
+  });
+
+  test('exposes the template Dex, stream collection state, and validated template-specific pool preparation', async () => {
+    const { find, artPool } = createRoutes();
+    const catalog = response();
+    find('GET', '/api/streammonsters/monster-catalog')({ query: { userId: 'viewer-a' } }, catalog);
+    expect(catalog.body).toEqual(expect.objectContaining({
+      dex: { owned: 0, total: 24 },
+      templates: expect.arrayContaining([
+        expect.objectContaining({ templateId: 'ashfang', silhouette: true, owned: false })
+      ])
+    }));
+
+    const state = response();
+    find('GET', '/api/streammonsters/state')({ query: { userId: 'viewer-a' } }, state);
+    expect(state.body).toEqual(expect.objectContaining({
+      dex: { owned: 0, total: 24 },
+      heartChain: expect.objectContaining({ chain_length: 0 }),
+      streamMission: expect.objectContaining({ mission_key: expect.any(String) }),
+      visualPack: 'furry'
+    }));
+
+    const prepared = response();
+    await find('POST', '/api/streammonsters/pool/prepare')({
+      ip: '127.0.0.1', socket: { remoteAddress: '127.0.0.1' }, headers: {},
+      body: { targetPerVariant: 2, templateIds: ['ashfang', 'cinder'] }
+    }, prepared);
+    expect(prepared.statusCode).toBe(200);
+    expect(artPool.prepare).toHaveBeenLastCalledWith({ targetPerVariant: 2, templateIds: ['ashfang', 'cinder'] });
   });
 
   test('sends a complete non-mutating overlay demo through the serialized event vocabulary', () => {

@@ -28,6 +28,7 @@ const StreamMonstersProgressionService = require('./backend/streammonsters/progr
 const StreamMonstersManagedRuntimeInstaller = require('./backend/streammonsters/managed-runtime-installer');
 const StreamMonstersArtPoolService = require('./backend/streammonsters/art-pool-service');
 const KenneyMonsterBuilder = require('./backend/streammonsters/kenney-monster-builder');
+const StreamMonstersCollectionService = require('./backend/streammonsters/collection-service');
 
 const RUNTIME_TRUST_FIELDS = new Set([
   'manifest', 'archiveUrl', 'sha256', 'modelSha256', 'archiveType',
@@ -66,9 +67,14 @@ class StreamAlchemyPlugin {
       store: this.streamMonstersStore,
       emit: (event, payload) => this.api.emit(event, payload)
     });
+    this.streamMonstersCollection = new StreamMonstersCollectionService({
+      store: this.streamMonstersStore,
+      emit: (event, payload) => this.api.emit(event, payload)
+    });
     this.streamMonstersEngine = new StreamMonstersEngine({
       store: this.streamMonstersStore,
       progression: this.streamMonstersProgression,
+      collection: this.streamMonstersCollection,
       emit: (event, payload) => this.api.emit(event, payload),
       config: this.config.streamMonsters
     });
@@ -79,6 +85,7 @@ class StreamAlchemyPlugin {
       engine: this.streamMonstersEngine,
       battleService: this.streamMonstersBattleService,
       progression: this.streamMonstersProgression,
+      collection: this.streamMonstersCollection,
       emit: (event, payload) => this.api.emit(event, payload)
     });
     this.streamMonstersCommandPrefix = '!';
@@ -139,6 +146,9 @@ class StreamAlchemyPlugin {
     });
     this.streamMonstersEngine.artPool = this.streamMonstersArtPool;
     this.streamMonstersEngine.kenneyBuilder = this.streamMonstersKenneyBuilder;
+    this.streamMonstersEngine.hasBundledAsset = template => require('fs').existsSync(
+      require('path').join(this.pluginDir, 'assets', 'streammonsters', 'furry', `${template.templateId}.png`)
+    );
 
     this.craftingEngine = new CraftingEngine({
       store: this.store,
@@ -180,6 +190,7 @@ class StreamAlchemyPlugin {
       generationPool: this.streamMonstersGenerationPool,
       artPool: this.streamMonstersArtPool,
       progression: this.streamMonstersProgression,
+      collection: this.streamMonstersCollection,
       systemAnalyzer: this.systemAnalyzer,
       managedRuntime: this.streamMonstersManagedRuntime,
       localModelInstaller: this.localModelInstaller,

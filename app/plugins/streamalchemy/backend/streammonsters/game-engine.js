@@ -1,4 +1,5 @@
 const { createHash } = require('crypto');
+const { getTemplate, deterministicTemplateId } = require('./catalog');
 
 const ELEMENTS = ['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar'];
 const EGG_COLORS = ['#ef6b45', '#3aaee8', '#54b86d', '#8ecfcb', '#f1ca43', '#a778e2'];
@@ -19,6 +20,8 @@ class StreamMonstersEngine {
     artPool = null,
     kenneyBuilder = null,
     progression = null,
+    collection = null,
+    hasBundledAsset = () => true,
     emit = () => {},
     now = () => Date.now(),
     config = {}
@@ -28,6 +31,8 @@ class StreamMonstersEngine {
     this.artPool = artPool;
     this.kenneyBuilder = kenneyBuilder;
     this.progression = progression;
+    this.collection = collection;
+    this.hasBundledAsset = hasBundledAsset;
     this.streamKey = null;
     this.emit = emit;
     this.now = now;
@@ -84,6 +89,7 @@ class StreamMonstersEngine {
       this.progression?.recordFirstAction(userId, this.streamKey);
       this.store.incrementStreamMetric(this.streamKey, 'egg_boosts');
       if (combo) this.addHype(20, { userId, gift, combo });
+      this.recordHeartMeGift(userId, gift, createdAtMs);
       this.emit('streammonsters:egg_boosted', { userId, egg, gift, event, hint: '!inventory' });
       return { type: 'boosted', egg, gift };
     }
@@ -120,6 +126,7 @@ class StreamMonstersEngine {
       combo,
       elementalHourMatch
     });
+    this.recordHeartMeGift(userId, gift, createdAtMs);
     this.emit('streammonsters:egg_spawned', { userId, egg, gift, event, hint: '!inventory' });
     return { type: 'spawned', egg, gift };
   }
@@ -188,10 +195,12 @@ class StreamMonstersEngine {
     if (!egg || egg.state !== 'ready') throw new Error('STREAM_MONSTERS_EGG_NOT_READY');
     this.emit('streammonsters:hatch_started', { userId, egg, slot: index + 1 });
     const currentMs = this.now();
-    const monster = this.store.createMonsterFromEgg(egg, this.createMonster(egg, currentMs));
+    const reservation = this.collection?.reserveTemplateForEgg(egg);
+    const monster = this.store.createMonsterFromEgg(egg, this.createMonster(egg, currentMs, reservation?.template));
     this.store.incrementViewer(userId, 'eggs_hatched');
     this.store.incrementStreamMetric(this.streamKey, 'hatches');
     this.progression?.recordHatch(userId, this.streamKey, monster);
+    this.collection?.recordHatch(monster, this.streamKey);
     this.progression?.recordCollection(
       userId,
       new Set(this.store.getViewerMonsters(userId).map(item => item.element)).size,
@@ -232,24 +241,36 @@ class StreamMonstersEngine {
     return this.streamKey ? this.store.getStreamEvent(this.streamKey) : null;
   }
 
-  createMonster(egg, createdAtMs) {
+  createMonster(egg, createdAtMs, selectedTemplate = null) {
     const statNames = ['vitality', 'might', 'guard', 'agility'];
     const values = [5, 5, 5, 5];
     for (let point = 0; point < 8; point += 1) {
       values[this.hashNumber(`${egg.seed}:stat:${point}`) % values.length] += 1;
     }
-    const name = MONSTER_NAMES[this.hashNumber(`${egg.seed}:name`) % MONSTER_NAMES.length];
+    const template = selectedTemplate || getTemplate(deterministicTemplateId(egg.element, egg.seed));
+    const name = template?.name || MONSTER_NAMES[this.hashNumber(`${egg.seed}:name`) % MONSTER_NAMES.length];
     const personality = PERSONALITIES[this.hashNumber(`${egg.seed}:personality`) % PERSONALITIES.length];
-    const skin = this.artPool?.consume?.(egg.element, egg.variant);
-    const fallback = skin ? null : this.kenneyBuilder?.build?.({ seed: egg.seed, element: egg.element });
+    const visual = template && this.collection
+      ? this.collection.selectVisual({
+        template,
+        egg,
+        visualPack: this.config.visualPack || 'furry',
+        artPool: this.artPool,
+        kenneyBuilder: this.kenneyBuilder,
+        hasBundledAsset: this.hasBundledAsset
+      })
+      : null;
+    const skin = visual ? null : this.artPool?.consume?.(egg.element, egg.variant);
+    const fallback = visual || skin ? null : this.kenneyBuilder?.build?.({ seed: egg.seed, element: egg.element });
     return {
       name,
+      templateId: template?.templateId || null,
       personality,
       rarity: egg.variant === 'charged' ? 'Charged' : 'Standard',
       stats: Object.fromEntries(statNames.map((stat, index) => [stat, values[index]])),
-      imageUrl: skin?.image_url || fallback?.publicUrl || egg.image_url,
-      visualSource: skin ? 'ai' : (fallback?.visualSource || 'egg_asset'),
-      visualKey: skin?.visual_key || fallback?.visualKey || egg.visual_key,
+      imageUrl: visual?.imageUrl || skin?.image_url || fallback?.publicUrl || egg.image_url,
+      visualSource: visual?.visualSource || (skin ? 'ai' : (fallback?.visualSource || 'egg_asset')),
+      visualKey: visual?.visualKey || skin?.visual_key || fallback?.visualKey || egg.visual_key,
       createdAtMs
     };
   }
@@ -285,6 +306,13 @@ class StreamMonstersEngine {
 
   seedFor(userId, giftId, createdAtMs) {
     return `${this.hashNumber(`${userId}:${giftId}:${createdAtMs}`).toString(16)}-${createdAtMs}`;
+  }
+
+  recordHeartMeGift(userId, gift, atMs) {
+    if (!this.collection || String(gift?.giftName || '').trim().toLowerCase() !== 'heart me') return null;
+    const chain = this.collection.recordHeartMe({ streamKey: this.streamKey || 'offline', userId, atMs });
+    if (chain.hypeAward) this.addHype(chain.hypeAward, { userId, gift, heartChain: chain });
+    return chain;
   }
 
   selectRandomElement({ userId, giftId, eventTimeMs }) {

@@ -1,5 +1,6 @@
 const path = require('path');
 const { createAdminAuth } = require('../../../../modules/admin-auth');
+const { TEMPLATE_CATALOG } = require('./catalog');
 
 function stableRuntimeErrorCode(error) {
   const code = String(error?.errorCode || error?.code || error?.message || error || '').trim();
@@ -72,6 +73,7 @@ class StreamMonstersRoutes {
     generationPool,
     artPool = null,
     progression = null,
+    collection = null,
     systemAnalyzer,
     managedRuntime,
     localModelInstaller,
@@ -92,6 +94,7 @@ class StreamMonstersRoutes {
     this.generationPool = generationPool;
     this.artPool = artPool;
     this.progression = progression;
+    this.collection = collection;
     this.systemAnalyzer = systemAnalyzer;
     this.managedRuntime = managedRuntime;
     this.localModelInstaller = localModelInstaller;
@@ -127,10 +130,22 @@ class StreamMonstersRoutes {
         viewer: userId ? this.viewerState(userId) : null,
         pool: this.artPool?.coverage?.(config.artPoolTarget) || this.store.getArtPoolCoverage(),
         hype: this.store.getStreamHype(this.engine.streamKey),
+        dex: userId ? (this.collection?.getCatalogState(userId).dex || null) : null,
+        heartChain: this.collection?.getHeartChain(this.engine.streamKey || 'offline') || null,
+        streamMission: this.collection?.getStreamMission(this.engine.streamKey || 'offline') || null,
+        visualPack: this.publicConfig(config).visualPack,
         season,
         gcce: this.gcceStateProvider(),
         metrics: this.engine.streamKey ? this.store.getStreamMetrics(this.engine.streamKey) : null
       });
+    });
+    this.api.registerRoute('GET', '/api/streammonsters/monster-catalog', (req, res) => {
+      const userId = String(req.query?.userId || '').trim();
+      const catalog = this.collection?.getCatalogState(userId) || {
+        templates: TEMPLATE_CATALOG.map(template => ({ ...template, owned: false, silhouette: true, mastery: null })),
+        dex: { owned: 0, total: TEMPLATE_CATALOG.length }, essence: [], cosmetics: []
+      };
+      res.json({ success: true, ...catalog });
     });
     this.api.registerRoute('POST', '/api/streammonsters/config', this.protectAdmin((req, res) => {
       const next = this.configProvider.updateConfig({ streamMonsters: this.sanitizeConfigUpdate(req.body) });
@@ -365,6 +380,12 @@ class StreamMonstersRoutes {
           8,
           Number.parseInt(req.body?.targetPerVariant, 10) || 3
         ));
+        const templateIds = Array.isArray(req.body?.templateIds)
+          ? [...new Set(req.body.templateIds.map(value => String(value || '').trim()))]
+          : null;
+        if (templateIds && (templateIds.length !== req.body.templateIds.length || templateIds.some(id => !TEMPLATE_CATALOG.some(template => template.templateId === id)))) {
+          throw new Error('STREAM_MONSTERS_TEMPLATE_IDS_INVALID');
+        }
         this.api.emit(
           'local_runtime_progress',
           StreamMonstersRoutes.publicRuntimeProgress({ phase: 'pool_prepare', state: 'checking' })
@@ -380,7 +401,7 @@ class StreamMonstersRoutes {
         }
         this.api.emit('art_pool_progress', { state: 'running', targetPerVariant });
         const result = this.artPool
-          ? await this.artPool.prepare({ targetPerVariant })
+          ? await this.artPool.prepare({ targetPerVariant, ...(templateIds ? { templateIds } : {}) })
           : { entries: await this.generationPool.preparePending() };
         this.api.emit('art_pool_progress', { state: 'complete', targetPerVariant });
         res.json({ success: true, ...result });
@@ -647,7 +668,8 @@ class StreamMonstersRoutes {
         ...achievement,
         titleKey: this.progression?.achievementTitleKey?.(achievement.achievement_key) || 'achievementUnknown'
       })),
-      rank: this.progression?.getViewerSeason?.(resolvedUserId) || null
+      rank: this.progression?.getViewerSeason?.(resolvedUserId) || null,
+      dex: this.collection?.getCatalogState(resolvedUserId).dex || null
     };
   }
 

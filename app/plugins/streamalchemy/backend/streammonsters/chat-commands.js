@@ -1,9 +1,10 @@
 class ChatCommands {
-  constructor({ store, engine, battleService, progression = null, emit = () => {}, now = () => Date.now(), queueTtlMs = 5 * 60 * 1000 }) {
+  constructor({ store, engine, battleService, progression = null, collection = null, emit = () => {}, now = () => Date.now(), queueTtlMs = 5 * 60 * 1000 }) {
     this.store = store;
     this.engine = engine;
     this.battleService = battleService;
     this.progression = progression;
+    this.collection = collection;
     this.emit = emit;
     this.now = now;
     this.queueTtlMs = queueTtlMs;
@@ -222,6 +223,16 @@ class ChatCommands {
     this.progression?.recordBattle(userId, this.engine.streamKey, {
       monster: selected,
       won: battle.winnerId === selected.monster_id
+    });
+    this.collection?.recordBattle(opponent.monster, {
+      battleId: battle.battleId,
+      won: battle.winnerId === opponent.monster.monster_id,
+      streamKey: this.engine.streamKey
+    });
+    this.collection?.recordBattle(selected, {
+      battleId: battle.battleId,
+      won: battle.winnerId === selected.monster_id,
+      streamKey: this.engine.streamKey
     });
     battle.rounds.forEach(round => {
       this.emit('streammonsters:battle_round', { battleId: battle.battleId, round });
