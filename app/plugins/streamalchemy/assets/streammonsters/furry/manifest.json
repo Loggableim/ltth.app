@@ -24,8 +24,8 @@
         247.0,
         15.0
       ],
-      "opaqueFraction": 0.380692,
-      "sha256": "fc1169343ed45d2a334e5d16ee7c0c097aeca9971a81de980ea414cb38e6cd11"
+      "opaqueFraction": 0.379431,
+      "sha256": "942ca3239ad13c01983ac031408e8882111677b3882e4b8e03e1a193eff6c363"
     },
     {
       "templateId": "cinder",
@@ -47,8 +47,8 @@
         236.0,
         20.0
       ],
-      "opaqueFraction": 0.315784,
-      "sha256": "38e4d505714bb7f40e317fb1205c33729d29b5d320cc6d144435be06a8e05d10"
+      "opaqueFraction": 0.31221,
+      "sha256": "0c36be95be48d5b5e3329455cb873f82a1f44b2be302f28614120db87756fbd2"
     },
     {
       "templateId": "embergrin",
@@ -70,8 +70,8 @@
         240.0,
         20.0
       ],
-      "opaqueFraction": 0.378179,
-      "sha256": "26eb8b2141b18a56296478971eed4fc34d268276639823d405d9bed57ff46f19"
+      "opaqueFraction": 0.376661,
+      "sha256": "094cd234234402ec9b37fc8002d2db085a961049524259b17148a951ab3ca04f"
     },
     {
       "templateId": "pyrra",
@@ -93,8 +93,8 @@
         237.0,
         21.0
       ],
-      "opaqueFraction": 0.380301,
-      "sha256": "9bc4954873ac164ba3c07fd9cafb7c096f8d9bf5607b031724776af63f6fead2"
+      "opaqueFraction": 0.379205,
+      "sha256": "eac4e16139dc968e6637312abbcd005b10b3064f28a1445faec3fc7d42040636"
     },
     {
       "templateId": "ripple",
@@ -116,8 +116,8 @@
         237.0,
         20.0
       ],
-      "opaqueFraction": 0.336162,
-      "sha256": "cc8096da71e2b1d29b55b25ce0c047ca55d296463d5e6f6de73b4f5a3cc74228"
+      "opaqueFraction": 0.334819,
+      "sha256": "015efd8ec699edc8ca97a0c4057ba5917d63579b598826e802d7481e62a01de8"
     },
     {
       "templateId": "brine",
@@ -162,8 +162,8 @@
         244.0,
         12.0
       ],
-      "opaqueFraction": 0.369612,
-      "sha256": "f99cd4184b3087f969efc0813f38f2e700673d3b1fcf514c9d2b51f256012e4d"
+      "opaqueFraction": 0.368757,
+      "sha256": "508b20c09cb9795622e8286aaf731a31afc51005ad788cf2488c0197bf45e3f8"
     },
     {
       "templateId": "axi",
@@ -185,8 +185,8 @@
         241.0,
         16.0
       ],
-      "opaqueFraction": 0.36011,
-      "sha256": "431b3d353099af99d05299d13c5b31facbd4f1325fafad3efe39982c123c479f"
+      "opaqueFraction": 0.358629,
+      "sha256": "55786ca360f9475ef759258279646be41093c04e66f670efb570def959bc08e8"
     },
     {
       "templateId": "mosswhisker",
@@ -208,8 +208,8 @@
         233.0,
         24.0
       ],
-      "opaqueFraction": 0.305063,
-      "sha256": "2336286787983b2b17511c3591c91f7427ae7a2bbc9671043613507f7af415fc"
+      "opaqueFraction": 0.304053,
+      "sha256": "9c3fbb76b345198adae2ba7ef23041d96bbbdae4de800f1609ec9a21763d0f1a"
     },
     {
       "templateId": "cloverhop",
@@ -231,8 +231,8 @@
         4.0,
         229.0
       ],
-      "opaqueFraction": 0.303213,
-      "sha256": "89d30d34d02d45ca2d37477db2ebda6ca97ee8e5cfa34d21511b79cd5e567a3a"
+      "opaqueFraction": 0.302877,
+      "sha256": "fcea5e0a1b7f2d781c435f162d524c7aa00d061ae5d179b829c63a91b44eec6d"
     },
     {
       "templateId": "oakheart",
@@ -254,8 +254,8 @@
         3.0,
         231.0
       ],
-      "opaqueFraction": 0.282372,
-      "sha256": "a0c459d84dd5d1ceaae8ad6a70ce0157155295d2317ac70dadbea5deb6b84f66"
+      "opaqueFraction": 0.279442,
+      "sha256": "fcc55cf61a0822a7d8c777c513116d3d4ba0de6442501a4f4bd0d9804fce0b86"
     },
     {
       "templateId": "fernmask",
@@ -277,8 +277,8 @@
         2.0,
         232.0
       ],
-      "opaqueFraction": 0.417617,
-      "sha256": "92828319614e195100ea5525d86be7f2a4e82fd025ccca203d33928ee648f143"
+      "opaqueFraction": 0.414683,
+      "sha256": "e1bfb1bbe2583f7266431a10bc71c1da80309f8038ff3fc0c4883247c900d1d4"
     },
     {
       "templateId": "zephyr",
@@ -323,8 +323,8 @@
         3.0,
         233.0
       ],
-      "opaqueFraction": 0.40027,
-      "sha256": "fe5ea215403cc3bf7e32af19dd132e5f77fa3711342a47154da8ced88a476852"
+      "opaqueFraction": 0.400172,
+      "sha256": "1eabcba1a31ef66824cd2dde103ee1ea03079a46fa22981d0a3eaa7fe0ee3900"
     },
     {
       "templateId": "cirrus",
@@ -392,8 +392,8 @@
         235.0,
         23.0
       ],
-      "opaqueFraction": 0.344818,
-      "sha256": "e1feaf4075d8c76fc41ef261af22c0e06f300f14342ea6e5930dd4eeb90c5be0"
+      "opaqueFraction": 0.341721,
+      "sha256": "63a02d9eb2b9da4b492b0ce78a7ecf40958571fdd88b45e2c958f85b7f5e1046"
     },
     {
       "templateId": "neonclaw",
@@ -438,8 +438,8 @@
         237.0,
         24.0
       ],
-      "opaqueFraction": 0.300246,
-      "sha256": "4d7156cea27403814478073b0b1ef5385f1d6b12e3a4a57153012fef8a1554cd"
+      "opaqueFraction": 0.296669,
+      "sha256": "834b9a819166c60fa908e2f84b498ecab3101c1854fe31111a7fbf60048bc56c"
     },
     {
       "templateId": "flashstep",
@@ -484,8 +484,8 @@
         238.0,
         25.0
       ],
-      "opaqueFraction": 0.348261,
-      "sha256": "4e72b9d3b455ff96285fedaa8c80baea7ef34b9426e5eb65d8f8c3e40d20ac7d"
+      "opaqueFraction": 0.344121,
+      "sha256": "3800bfa4318fbfe15eabf1b0816916d546321db5bd0953c9daec7adeb9f449b3"
     },
     {
       "templateId": "umbra",
@@ -553,8 +553,8 @@
         234.0,
         26.0
       ],
-      "opaqueFraction": 0.380529,
-      "sha256": "724088a4f1b9db59fbe834041fec5727acbc1eea6efb6059f16bc24c0498bd9f"
+      "opaqueFraction": 0.378001,
+      "sha256": "5b67fc8c98eb0d62d075b3576172f0eaa7ee7e3879c655b0c825fd22cc431c4a"
     }
   ]
 }

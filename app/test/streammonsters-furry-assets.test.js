@@ -111,19 +111,22 @@ describe('Stream Monsters furry template assets', () => {
 
       let opaquePixels = 0;
       let chromaFringePixels = 0;
+      let opaqueChromaPixels = 0;
       const [backgroundRed, backgroundGreen, backgroundBlue] = asset.backgroundRgb;
       for (let index = 0; index < image.rgba.length; index += 4) {
         const alpha = image.rgba[index + 3];
         if (alpha > 200) opaquePixels += 1;
-        if (alpha <= 8 || alpha >= 248) continue;
         const redDistance = image.rgba[index] - backgroundRed;
         const greenDistance = image.rgba[index + 1] - backgroundGreen;
         const blueDistance = image.rgba[index + 2] - backgroundBlue;
-        if (Math.hypot(redDistance, greenDistance, blueDistance) < 90) chromaFringePixels += 1;
+        const backgroundDistance = Math.hypot(redDistance, greenDistance, blueDistance);
+        if (alpha >= 248 && backgroundDistance < 62) opaqueChromaPixels += 1;
+        if (alpha > 8 && alpha < 248 && backgroundDistance < 90) chromaFringePixels += 1;
       }
       const opaqueFraction = opaquePixels / (image.width * image.height);
       expect(opaqueFraction).toBeGreaterThan(0.2);
       expect(opaqueFraction).toBeLessThan(0.65);
+      expect(opaqueChromaPixels).toBeLessThan(25);
       expect(chromaFringePixels).toBeLessThan(100);
     });
 

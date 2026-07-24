@@ -6,7 +6,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
+import re
+import tempfile
 
 import cv2
 import numpy as np
@@ -15,6 +18,33 @@ from PIL import Image, ImageDraw, ImageFont
 
 TARGET_SIZE = (1024, 1024)
 PROMPT_VERSION = "furry-v1"
+CATALOG = {
+    "ashfang": ("Ember", "Ashfang", "Wolf"),
+    "cinder": ("Ember", "Cinder", "Fox"),
+    "embergrin": ("Ember", "Embergrin", "Hyena"),
+    "pyrra": ("Ember", "Pyrra", "Red Panda"),
+    "ripple": ("Tide", "Ripple", "Otter"),
+    "brine": ("Tide", "Brine", "Seal"),
+    "reefbite": ("Tide", "Reefbite", "Shark Furry"),
+    "axi": ("Tide", "Axi", "Axolotl"),
+    "mosswhisker": ("Grove", "Mosswhisker", "Mouse"),
+    "cloverhop": ("Grove", "Cloverhop", "Rabbit"),
+    "oakheart": ("Grove", "Oakheart", "Deer"),
+    "fernmask": ("Grove", "Fernmask", "Raccoon"),
+    "zephyr": ("Gale", "Zephyr", "Bat"),
+    "skyrend": ("Gale", "Skyrend", "Griffin"),
+    "cirrus": ("Gale", "Cirrus", "Owl Furry"),
+    "gusttail": ("Gale", "Gusttail", "Flying Squirrel"),
+    "pulse": ("Volt", "Pulse", "Protogen"),
+    "neonclaw": ("Volt", "Neonclaw", "Cyber Lynx"),
+    "ampjack": ("Volt", "Ampjack", "Synth Jackal"),
+    "flashstep": ("Volt", "Flashstep", "Cheetah"),
+    "selene": ("Lunar", "Selene", "Snow Leopard"),
+    "umbra": ("Lunar", "Umbra", "Black Cat"),
+    "lumen": ("Lunar", "Lumen", "Moth Furry"),
+    "tsuki": ("Lunar", "Tsuki", "Kitsune"),
+}
+SAFE_TEMPLATE_ID = re.compile(r"^[a-z][a-z0-9-]*$")
 
 
 def sha256(path: Path) -> str:
@@ -56,7 +86,12 @@ def connected_chroma_mask(rgb: np.ndarray, background: np.ndarray) -> np.ndarray
         np.concatenate((labels[0, :], labels[-1, :], labels[:, 0], labels[:, -1]))
     )
     edge_labels = edge_labels[edge_labels != 0]
-    return np.isin(labels, edge_labels)
+    edge_connected = np.isin(labels, edge_labels)
+    # Limbs, tails, and wings can fully enclose a patch of the flat key color.
+    # Keep the broader color predicate edge-connected, but remove only very
+    # close key-color matches globally so genuine element colors survive.
+    enclosed_key_color = distance < 62
+    return edge_connected | enclosed_key_color
 
 
 def despill_edges(rgb: np.ndarray, background_mask: np.ndarray, background: np.ndarray) -> np.ndarray:
@@ -132,46 +167,76 @@ def main() -> None:
     args = parser.parse_args()
 
     source_records = json.loads(args.source_map.read_text(encoding="utf-8"))
-    if len(source_records) != 24:
-        raise ValueError(f"Expected exactly 24 source records, got {len(source_records)}")
+    if not isinstance(source_records, list) or len(source_records) != len(CATALOG):
+        count = len(source_records) if isinstance(source_records, list) else "non-list"
+        raise ValueError(f"Expected exactly {len(CATALOG)} source records, got {count}")
 
+    validated_records = []
     seen = set()
-    manifest_records = []
     for record in source_records:
-        template_id = record["templateId"]
+        if not isinstance(record, dict):
+            raise ValueError("Every source record must be an object")
+        template_id = record.get("templateId")
+        if not isinstance(template_id, str) or not SAFE_TEMPLATE_ID.fullmatch(template_id):
+            raise ValueError(f"Unsafe template ID: {template_id!r}")
         if template_id in seen:
             raise ValueError(f"Duplicate template ID: {template_id}")
+        if template_id not in CATALOG:
+            raise ValueError(f"Unknown template ID: {template_id}")
         seen.add(template_id)
-        source = Path(record["source"])
+
+        expected_element, expected_name, expected_species = CATALOG[template_id]
+        actual_identity = (record.get("element"), record.get("name"), record.get("species"))
+        if actual_identity != (expected_element, expected_name, expected_species):
+            raise ValueError(f"Catalog metadata mismatch for {template_id}: {actual_identity!r}")
+
+        source = Path(record.get("source", "")).resolve(strict=True)
         if not source.is_file():
             raise FileNotFoundError(source)
+        validated_records.append({**record, "source": source})
 
-        destination = args.output_dir / f"{template_id}.png"
-        metrics = prepare_image(source, destination)
-        manifest_records.append(
-            {
-                "templateId": template_id,
-                "element": record["element"],
-                "name": record["name"],
-                "species": record["species"],
-                "assetPath": f"assets/streammonsters/furry/{template_id}.png",
-                "promptVersion": PROMPT_VERSION,
-                **metrics,
-            }
-        )
+    if seen != set(CATALOG):
+        raise ValueError(f"Source map does not match catalog: {sorted(set(CATALOG) - seen)}")
 
-    manifest = {
-        "schemaVersion": 1,
-        "pack": "furry",
-        "generator": "OpenAI built-in image generator",
-        "promptVersion": PROMPT_VERSION,
-        "assets": manifest_records,
-    }
-    args.manifest.parent.mkdir(parents=True, exist_ok=True)
-    args.manifest.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    output_dir = args.output_dir.resolve()
+    manifest_path = args.manifest.resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    manifest_records = []
+    with tempfile.TemporaryDirectory(prefix="furry-assets-", dir=output_dir.parent) as staging_name:
+        staging_dir = Path(staging_name)
+        for record in validated_records:
+            template_id = record["templateId"]
+            staging_destination = staging_dir / f"{template_id}.png"
+            metrics = prepare_image(record["source"], staging_destination)
+            manifest_records.append(
+                {
+                    "templateId": template_id,
+                    "element": record["element"],
+                    "name": record["name"],
+                    "species": record["species"],
+                    "assetPath": f"assets/streammonsters/furry/{template_id}.png",
+                    "promptVersion": PROMPT_VERSION,
+                    **metrics,
+                }
+            )
+
+        manifest = {
+            "schemaVersion": 1,
+            "pack": "furry",
+            "generator": "OpenAI built-in image generator",
+            "promptVersion": PROMPT_VERSION,
+            "assets": manifest_records,
+        }
+        staged_manifest = staging_dir / "manifest.json"
+        staged_manifest.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+
+        manifest_path.parent.mkdir(parents=True, exist_ok=True)
+        for template_id in CATALOG:
+            os.replace(staging_dir / f"{template_id}.png", output_dir / f"{template_id}.png")
+        os.replace(staged_manifest, manifest_path)
 
     if args.contact_sheet:
-        contact_sheet(source_records, args.output_dir, args.contact_sheet)
+        contact_sheet(source_records, output_dir, args.contact_sheet)
 
 
 if __name__ == "__main__":
