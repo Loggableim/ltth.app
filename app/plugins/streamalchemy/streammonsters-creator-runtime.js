@@ -32,6 +32,7 @@
       const masteryPoints = Math.max(0, Number(template.mastery?.points) || 0);
       const masteryLevel = MASTERY_THRESHOLDS.filter(threshold => masteryPoints >= threshold).length;
       const masteryNextThreshold = MASTERY_THRESHOLDS.find(threshold => masteryPoints < threshold) || null;
+      const masteryProgressThreshold = masteryNextThreshold || MASTERY_THRESHOLDS.at(-1);
       return {
         ...template,
         locked: template.silhouette !== false || !template.owned,
@@ -39,7 +40,7 @@
         masteryLevel,
         masteryPoints,
         masteryNextThreshold,
-        masteryProgressLabel: `${masteryPoints}/${masteryNextThreshold || MASTERY_THRESHOLDS.at(-1)}`,
+        masteryProgressLabel: `${Math.min(masteryPoints, masteryProgressThreshold)}/${masteryProgressThreshold}`,
         masteryUnlocks: [...(template.mastery?.unlocks || [])],
         essence: Number(elementEssence.amount) || 0,
         essenceUnlocks: [...(elementEssence.unlocks || [])],

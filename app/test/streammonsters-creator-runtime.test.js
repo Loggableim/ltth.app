@@ -65,6 +65,14 @@ describe('Stream Monsters creator controls', () => {
       essence: 5,
       cosmetic: true
     }));
+    expect(buildDexSlots({
+      templates: [{ ...templates[0], mastery: { points: 75, unlocks: ['title', 'trail', 'frame'] } }]
+    })[0]).toEqual(expect.objectContaining({
+      masteryLevel: 3,
+      masteryPoints: 75,
+      masteryNextThreshold: null,
+      masteryProgressLabel: '50/50'
+    }));
     expect(slots[1]).toEqual(expect.objectContaining({ locked: true }));
   });
 
