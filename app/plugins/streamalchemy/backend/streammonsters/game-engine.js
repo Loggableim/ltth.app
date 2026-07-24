@@ -1,4 +1,6 @@
 const { createHash } = require('crypto');
+const { getTemplate, deterministicTemplateId } = require('./catalog');
+const { isHeartMeGift } = require('./gift-name');
 
 const ELEMENTS = ['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar'];
 const EGG_COLORS = ['#ef6b45', '#3aaee8', '#54b86d', '#8ecfcb', '#f1ca43', '#a778e2'];
@@ -19,6 +21,8 @@ class StreamMonstersEngine {
     artPool = null,
     kenneyBuilder = null,
     progression = null,
+    collection = null,
+    hasBundledAsset = () => true,
     emit = () => {},
     now = () => Date.now(),
     config = {}
@@ -28,11 +32,13 @@ class StreamMonstersEngine {
     this.artPool = artPool;
     this.kenneyBuilder = kenneyBuilder;
     this.progression = progression;
+    this.collection = collection;
+    this.hasBundledAsset = hasBundledAsset;
     this.streamKey = null;
     this.emit = emit;
     this.now = now;
     this.config = {
-      hatchDurationMs: 5 * 60 * 1000,
+      hatchDurationMs: 2 * 60 * 1000,
       chargedHatchMultiplier: 0.75,
       maxUnhatchedEggs: 3,
       comboWindowMs: 6_000,
@@ -42,26 +48,41 @@ class StreamMonstersEngine {
     this.recentGifts = new Map();
   }
 
-  describeGift({ giftId, giftName, coinValue = 0 }) {
+  emitAfterCommit(event, payload) {
+    this.store.afterCommit(() => this.emit(event, payload));
+  }
+
+  describeGift({ giftId, giftName, coinValue = 0, userId = '', eventTimeMs = 0 }) {
     const normalizedGiftId = Number.parseInt(giftId, 10);
-    const index = this.hashNumber(`gift:${normalizedGiftId}`) % ELEMENTS.length;
     const mapping = this.store.getGiftMapping(normalizedGiftId);
+    const mappedElement = mapping?.element || null;
+    const element = mappedElement === 'Random'
+      ? this.selectRandomElement({ userId, giftId: normalizedGiftId, eventTimeMs })
+      : (mappedElement || ELEMENTS[this.hashNumber(`gift:${normalizedGiftId}`) % ELEMENTS.length]);
+    const index = ELEMENTS.indexOf(element);
     return {
       giftId: normalizedGiftId,
       giftName: String(giftName || `Gift ${normalizedGiftId}`),
       coinValue: Math.max(0, Number.parseInt(mapping?.coin_value ?? coinValue, 10) || 0),
-      element: mapping?.element || ELEMENTS[index],
+      element,
       eggColor: mapping?.egg_color || EGG_COLORS[index],
       effect: mapping?.effect || 'spawn',
       enabled: Boolean(mapping?.enabled),
       imageUrl: mapping?.image_url || null,
-      poolKey: `${mapping?.element || ELEMENTS[index]}:standard`
+      poolKey: `${element}:standard`
     };
   }
 
   processGift({ userId, giftId, giftName, coinValue = 0 }) {
     if (!userId) throw new Error('STREAM_MONSTERS_USER_REQUIRED');
-    const gift = this.describeGift({ giftId, giftName, coinValue });
+    const createdAtMs = this.now();
+    const gift = this.describeGift({
+      giftId,
+      giftName,
+      coinValue,
+      userId,
+      eventTimeMs: createdAtMs
+    });
     if (!gift.enabled) return { type: 'ignored', gift, reason: 'gift_not_selected' };
     const eggs = this.store.getViewerEggs(userId, 'incubating');
     const event = this.getActiveEvent();
@@ -73,14 +94,11 @@ class StreamMonstersEngine {
       this.progression?.recordFirstAction(userId, this.streamKey);
       this.store.incrementStreamMetric(this.streamKey, 'egg_boosts');
       if (combo) this.addHype(20, { userId, gift, combo });
-      this.emit('streammonsters:egg_boosted', { userId, egg, gift, event, hint: '!inventory' });
+      this.recordHeartMeGift(userId, gift, createdAtMs);
+      this.emitAfterCommit('streammonsters:egg_boosted', { userId, egg, gift, event, hint: '!inventory' });
       return { type: 'boosted', egg, gift };
     }
-    if (eggs.length >= this.config.maxUnhatchedEggs) {
-      return { type: 'ignored', gift, reason: 'incubators_full' };
-    }
-
-    const createdAtMs = this.now();
+    const state = eggs.length >= this.config.maxUnhatchedEggs ? 'queued' : 'incubating';
     const variant = this.store.consumeChargedEgg(this.streamKey, createdAtMs) ? 'charged' : 'standard';
     const hatchDurationMs = this.hatchDurationFor(variant);
     const elementalHourMatch = event?.element === gift.element;
@@ -95,6 +113,9 @@ class StreamMonstersEngine {
       createdAtMs,
       hatchDurationMs,
       initialBoostMs,
+      state,
+      queuedAtMs: state === 'queued' ? createdAtMs : null,
+      incubatingAtMs: state === 'incubating' ? createdAtMs : null,
       imageUrl: this.createDefaultEggImage(gift, variant),
       variant,
       visualSource: 'egg_asset',
@@ -110,7 +131,8 @@ class StreamMonstersEngine {
       combo,
       elementalHourMatch
     });
-    this.emit('streammonsters:egg_spawned', { userId, egg, gift, event, hint: '!inventory' });
+    this.recordHeartMeGift(userId, gift, createdAtMs);
+    this.emitAfterCommit('streammonsters:egg_spawned', { userId, egg, gift, event, hint: '!inventory' });
     return { type: 'spawned', egg, gift };
   }
 
@@ -138,7 +160,7 @@ class StreamMonstersEngine {
       visualKey: `egg:${element.toLowerCase()}:standard`
     });
     if (result.claimed) {
-      this.emit('streammonsters:starter_claimed', {
+      this.emitAfterCommit('streammonsters:starter_claimed', {
         userId,
         egg: result.egg,
         hint: '!eggs'
@@ -161,33 +183,38 @@ class StreamMonstersEngine {
   markReadyEggs() {
     const ready = this.store.markReadyEggs(this.now());
     ready.forEach(egg => {
-      this.emit('streammonsters:egg_ready', {
+      this.emitAfterCommit('streammonsters:egg_ready', {
         userId: egg.user_id,
         egg,
         hint: '!hatch [slot]'
       });
     });
+    this.store.promoteQueuedEggs(this.now(), this.config.maxUnhatchedEggs);
     return ready;
   }
 
   hatchEgg(userId, slot = 1) {
-    const visibleEggs = this.store.getViewerEggs(userId).filter(egg => egg.state !== 'hatched');
-    const index = Math.max(0, Number.parseInt(slot, 10) - 1);
-    const egg = visibleEggs[index];
-    if (!egg || egg.state !== 'ready') throw new Error('STREAM_MONSTERS_EGG_NOT_READY');
-    this.emit('streammonsters:hatch_started', { userId, egg, slot: index + 1 });
-    const currentMs = this.now();
-    const monster = this.store.createMonsterFromEgg(egg, this.createMonster(egg, currentMs));
-    this.store.incrementViewer(userId, 'eggs_hatched');
-    this.store.incrementStreamMetric(this.streamKey, 'hatches');
-    this.progression?.recordHatch(userId, this.streamKey, monster);
-    this.progression?.recordCollection(
-      userId,
-      new Set(this.store.getViewerMonsters(userId).map(item => item.element)).size,
-      this.streamKey
-    );
-    this.emit('streammonsters:egg_hatched', { userId, egg, monster });
-    return monster;
+    return this.store.runInTransaction(() => {
+      const visibleEggs = this.store.getViewerEggs(userId).filter(egg => egg.state !== 'hatched');
+      const index = Math.max(0, Number.parseInt(slot, 10) - 1);
+      const egg = visibleEggs[index];
+      if (!egg || egg.state !== 'ready') throw new Error('STREAM_MONSTERS_EGG_NOT_READY');
+      this.emitAfterCommit('streammonsters:hatch_started', { userId, egg, slot: index + 1 });
+      const currentMs = this.now();
+      const reservation = this.collection?.reserveTemplateForEgg(egg);
+      const monster = this.store.createMonsterFromEgg(egg, this.createMonster(egg, currentMs, reservation?.template));
+      this.store.incrementViewer(userId, 'eggs_hatched');
+      this.store.incrementStreamMetric(this.streamKey, 'hatches');
+      this.progression?.recordHatch(userId, this.streamKey, monster);
+      this.collection?.recordHatch(monster, this.streamKey);
+      this.progression?.recordCollection(
+        userId,
+        new Set(this.store.getViewerMonsters(userId).map(item => item.element)).size,
+        this.streamKey
+      );
+      this.emitAfterCommit('streammonsters:egg_hatched', { userId, egg, monster });
+      return monster;
+    });
   }
 
   calculateBoostMs(coinValue) {
@@ -203,7 +230,7 @@ class StreamMonstersEngine {
     const previous = this.recentGifts.get(streamKey);
     this.recentGifts.set(streamKey, { giftId: gift.giftId, timestamp, userId });
     if (!previous || previous.giftId === gift.giftId || timestamp - previous.timestamp > this.config.comboWindowMs) return false;
-    this.emit('streammonsters:gift_combo', {
+    this.emitAfterCommit('streammonsters:gift_combo', {
       userId,
       gift,
       previousGiftId: previous.giftId,
@@ -221,24 +248,36 @@ class StreamMonstersEngine {
     return this.streamKey ? this.store.getStreamEvent(this.streamKey) : null;
   }
 
-  createMonster(egg, createdAtMs) {
+  createMonster(egg, createdAtMs, selectedTemplate = null) {
     const statNames = ['vitality', 'might', 'guard', 'agility'];
     const values = [5, 5, 5, 5];
     for (let point = 0; point < 8; point += 1) {
       values[this.hashNumber(`${egg.seed}:stat:${point}`) % values.length] += 1;
     }
-    const name = MONSTER_NAMES[this.hashNumber(`${egg.seed}:name`) % MONSTER_NAMES.length];
+    const template = selectedTemplate || getTemplate(deterministicTemplateId(egg.element, egg.seed));
+    const name = template?.name || MONSTER_NAMES[this.hashNumber(`${egg.seed}:name`) % MONSTER_NAMES.length];
     const personality = PERSONALITIES[this.hashNumber(`${egg.seed}:personality`) % PERSONALITIES.length];
-    const skin = this.artPool?.consume?.(egg.element, egg.variant);
-    const fallback = skin ? null : this.kenneyBuilder?.build?.({ seed: egg.seed, element: egg.element });
+    const visual = template && this.collection
+      ? this.collection.selectVisual({
+        template,
+        egg,
+        visualPack: this.config.visualPack || 'furry',
+        artPool: this.artPool,
+        kenneyBuilder: this.kenneyBuilder,
+        hasBundledAsset: this.hasBundledAsset
+      })
+      : null;
+    const skin = visual ? null : this.artPool?.consume?.(egg.element, egg.variant);
+    const fallback = visual || skin ? null : this.kenneyBuilder?.build?.({ seed: egg.seed, element: egg.element });
     return {
       name,
+      templateId: template?.templateId || null,
       personality,
       rarity: egg.variant === 'charged' ? 'Charged' : 'Standard',
       stats: Object.fromEntries(statNames.map((stat, index) => [stat, values[index]])),
-      imageUrl: skin?.image_url || fallback?.publicUrl || egg.image_url,
-      visualSource: skin ? 'ai' : (fallback?.visualSource || 'egg_asset'),
-      visualKey: skin?.visual_key || fallback?.visualKey || egg.visual_key,
+      imageUrl: visual?.imageUrl || skin?.image_url || fallback?.publicUrl || egg.image_url,
+      visualSource: visual?.visualSource || (skin ? 'ai' : (fallback?.visualSource || 'egg_asset')),
+      visualKey: visual?.visualKey || skin?.visual_key || fallback?.visualKey || egg.visual_key,
       createdAtMs
     };
   }
@@ -256,13 +295,13 @@ class StreamMonstersEngine {
       previous.points < milestone && total >= milestone
     ));
     const hype = this.store.addStreamHype(this.streamKey, normalizedPoints, this.now());
-    this.emit('streammonsters:hype_changed', {
+    this.emitAfterCommit('streammonsters:hype_changed', {
       streamKey: this.streamKey,
       hype,
       ...context
     });
     milestones.forEach(milestone => {
-      this.emit('streammonsters:hype_milestone', {
+      this.emitAfterCommit('streammonsters:hype_milestone', {
         streamKey: this.streamKey,
         milestone,
         hype,
@@ -274,6 +313,19 @@ class StreamMonstersEngine {
 
   seedFor(userId, giftId, createdAtMs) {
     return `${this.hashNumber(`${userId}:${giftId}:${createdAtMs}`).toString(16)}-${createdAtMs}`;
+  }
+
+  recordHeartMeGift(userId, gift, atMs) {
+    if (!this.collection || !isHeartMeGift(gift?.giftName)) return null;
+    const chain = this.collection.recordHeartMe({ streamKey: this.streamKey || 'offline', userId, atMs });
+    if (chain.hypeAward) this.addHype(chain.hypeAward, { userId, gift, heartChain: chain });
+    return chain;
+  }
+
+  selectRandomElement({ userId, giftId, eventTimeMs }) {
+    const streamKey = this.streamKey || 'offline';
+    const value = `${streamKey}:${userId || ''}:${giftId}:${eventTimeMs}`;
+    return ELEMENTS[this.hashNumber(value) % ELEMENTS.length];
   }
 
   hashNumber(value) {

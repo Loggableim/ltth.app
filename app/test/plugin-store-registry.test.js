@@ -181,7 +181,7 @@ describe('Official plugin store registry', () => {
     await assertPackagedFilesMatchSource(packagePath, sourceDir, ['main.js', 'overlay.html', 'ui.html']);
   });
 
-  it('publishes Stream Monsters 1.3.0 with source-identical Collector Arena assets and keeps 1.2.0', async () => {
+  it('publishes Stream Monsters 1.4.0 with source-identical release assets and keeps 1.2/1.3 unchanged', async () => {
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
     const storePlugin = registry.plugins.find((plugin) => plugin.id === 'streamalchemy');
     const sourceDir = path.join(repoRoot, 'app', 'plugins', 'streamalchemy');
@@ -189,14 +189,23 @@ describe('Official plugin store registry', () => {
 
     assert(storePlugin, 'Stream Monsters must exist in the official store registry');
     assert.strictEqual(sourceManifest.id, 'streamalchemy');
-    assert.strictEqual(sourceManifest.version, '1.3.0');
+    assert.strictEqual(sourceManifest.version, '1.4.0');
     assert.strictEqual(storePlugin.version, sourceManifest.version);
-    assert.strictEqual(storePlugin.packageUrl, 'https://ltth.app/plugin-store/packages/streamalchemy-1.3.0.zip');
+    assert.strictEqual(storePlugin.packageUrl, 'https://ltth.app/plugin-store/packages/streamalchemy-1.4.0.zip');
     assert.strictEqual(storePlugin.channel, 'open-beta');
     assert(storePlugin.badges.includes('working-beta'));
-    assert(fs.existsSync(path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.2.0.zip')));
+    const legacyPackages = new Map([
+      ['streamalchemy-1.2.0.zip', 'b31507530333ff179a17a9951644cab0bb299f2358d98ffa0a67a9448ce38780'],
+      ['streamalchemy-1.3.0.zip', 'c3939f09fd9ec877dd3350049eec820fe9448f2a89af812a8937a8b9ae8be0bf']
+    ]);
+    for (const [fileName, expectedHash] of legacyPackages) {
+      const legacyPath = path.join(repoRoot, 'plugin-store', 'packages', fileName);
+      assert(fs.existsSync(legacyPath), `${fileName} must remain available`);
+      const legacyDigest = crypto.createHash('sha256').update(fs.readFileSync(legacyPath)).digest('hex');
+      assert.strictEqual(legacyDigest, expectedHash, `${fileName} must remain byte-for-byte unchanged`);
+    }
 
-    const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.3.0.zip');
+    const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.4.0.zip');
     const digest = crypto.createHash('sha256').update(fs.readFileSync(packagePath)).digest('hex');
     assert.strictEqual(storePlugin.sha256, digest);
 

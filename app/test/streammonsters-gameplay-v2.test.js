@@ -99,8 +99,8 @@ function createMonster(store, {
   });
 }
 
-describe('Stream Monsters rules version 2 migration', () => {
-  test('migrates only the missing-version legacy default and persists rulesVersion 2', () => {
+describe('Stream Monsters rules version 3 migration', () => {
+  test('migrates only the missing-version legacy default and persists rulesVersion 3', () => {
     const setConfig = jest.fn();
     const plugin = new StreamAlchemyPlugin({
       getConfig: jest.fn(),
@@ -117,8 +117,8 @@ describe('Stream Monsters rules version 2 migration', () => {
     plugin.config = plugin.loadConfig(legacy);
 
     expect(plugin.config.streamMonsters).toEqual(expect.objectContaining({
-      rulesVersion: 2,
-      hatchDurationMs: 300_000
+      rulesVersion: 3,
+      hatchDurationMs: 120_000
     }));
     expect(plugin.persistSanitizedConfigIfNeeded(legacy)).toBe(true);
     expect(setConfig).toHaveBeenCalledWith('streamalchemy_config', plugin.config);
@@ -144,7 +144,7 @@ describe('Stream Monsters rules version 2 migration', () => {
         }
       });
 
-      expect(loaded.streamMonsters.rulesVersion).toBe(2);
+      expect(loaded.streamMonsters.rulesVersion).toBe(3);
       expect(loaded.streamMonsters.hatchDurationMs).toBe(hatchDurationMs);
     }
   );
@@ -209,7 +209,7 @@ describe('Stream Monsters rules version 2 migration', () => {
     }));
   });
 
-  test('accepts only the creator incubation choices 2, 5, 10 and 30 minutes', () => {
+  test('accepts only the creator incubation choices from 30 seconds through 30 minutes', () => {
     const routes = new StreamMonstersRoutes({
       api: {},
       pluginDir: __dirname,
@@ -222,12 +222,12 @@ describe('Stream Monsters rules version 2 migration', () => {
       configProvider: {}
     });
 
-    expect([2, 5, 10, 30].map(minutes => (
+    expect([0.5, 1, 2, 5, 10, 30].map(minutes => (
       routes.sanitizeConfigUpdate({ hatchDurationMs: minutes * 60_000 }).hatchDurationMs
-    ))).toEqual([120_000, 300_000, 600_000, 1_800_000]);
-    expect(routes.sanitizeConfigUpdate({ hatchDurationMs: 60_000 })).toEqual({});
+    ))).toEqual([30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000]);
+    expect(routes.sanitizeConfigUpdate({ hatchDurationMs: 90_000 })).toEqual({});
     expect(routes.publicConfig({ rulesVersion: 2, hatchDurationMs: 300_000 })).toEqual(
-      expect.objectContaining({ rulesVersion: 2 })
+      expect.objectContaining({ rulesVersion: 3 })
     );
   });
 });
@@ -341,7 +341,7 @@ describe('Stream Monsters starter adoption', () => {
 });
 
 describe('Stream Monsters battle stances and fair matchmaking', () => {
-  test('persists revealed stances, seed and all rounds while applying only temporary +2 damage', () => {
+  test('accepts legacy stances while rules v3 ignores them and leaves permanent stats unchanged', () => {
     const { store } = createStore();
     const monsterA = createMonster(store, {
       userId: 'viewer-a',
@@ -362,36 +362,31 @@ describe('Stream Monsters battle stances and fair matchmaking', () => {
     const baseline = battles.resolve(monsterA, monsterB, 'stance-seed', 'power', 'power');
     const advantaged = battles.resolve(monsterA, monsterB, 'stance-seed', 'power', 'guard');
     const persisted = store.getBattle(advantaged.battleId);
+    const expectedStanceA = battles.stanceForMonster(monsterA);
+    const expectedStanceB = battles.stanceForMonster(monsterB);
 
     expect(advantaged).toEqual(expect.objectContaining({
       seed: 'stance-seed',
-      stanceA: 'power',
-      stanceB: 'guard',
-      stanceAdvantageMonsterId: 'monster-a',
+      rulesVersion: 3,
+      stanceA: expectedStanceA,
+      stanceB: expectedStanceB,
+      stanceAdvantageMonsterId: null,
       rounds: expect.any(Array)
     }));
+    expect(advantaged).toEqual(baseline);
     expect(advantaged.rounds).toHaveLength(3);
-    advantaged.rounds.forEach((round, index) => {
-      const control = baseline.rounds[index];
-      if (round.firstMonsterId === 'monster-a') {
-        expect(round.firstDamage).toBe(control.firstDamage + 2);
-        expect(round.secondDamage).toBe(control.secondDamage);
-      } else {
-        expect(round.firstDamage).toBe(control.firstDamage);
-        expect(round.secondDamage).toBe(control.secondDamage + 2);
-      }
-    });
     expect(persisted).toEqual(expect.objectContaining({
       seed: 'stance-seed',
-      stance_a: 'power',
-      stance_b: 'guard'
+      stance_a: expectedStanceA,
+      stance_b: expectedStanceB,
+      rules_version: 3
     }));
     expect(JSON.parse(persisted.rounds_json)).toHaveLength(3);
     expect([store.getMonster('monster-a').stats, store.getMonster('monster-b').stats]).toEqual(statsBefore);
     expect(Object.values(store.getMonster('monster-a').stats).reduce((sum, value) => sum + value, 0)).toBe(28);
   });
 
-  test('persists explicit queue stance and reveals a deterministic personality stance when omitted', () => {
+  test('persists accepted queue stance metadata but resolves both fighters automatically', () => {
     const game = createGame({ config: { hatchDurationMs: 0 } });
     const monsterA = game.hatch('viewer-a', 1);
     const monsterB = game.hatch('viewer-b', 2);
@@ -413,7 +408,8 @@ describe('Stream Monsters battle stances and fair matchmaking', () => {
 
     expect(result.status).toBe('started');
     expect(result.battle).toEqual(expect.objectContaining({
-      stanceA: 'power',
+      rulesVersion: 3,
+      stanceA: game.battleService.stanceForMonster(monsterA),
       stanceB: expectedStance
     }));
     expect(game.store.getBattleQueue()).toEqual([]);

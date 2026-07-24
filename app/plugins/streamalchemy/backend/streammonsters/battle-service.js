@@ -1,3 +1,9 @@
+const {
+  RULES_VERSION,
+  elementAdvantage,
+  resolveBattle
+} = require('./battle-rules-v3');
+
 const STANCES = ['power', 'guard', 'speed'];
 
 class BattleService {
@@ -6,79 +12,20 @@ class BattleService {
     this.now = now;
   }
 
-  resolve(monsterA, monsterB, seed, requestedStanceA = null, requestedStanceB = null) {
-    const stanceA = this.normalizeStance(requestedStanceA, monsterA);
-    const stanceB = this.normalizeStance(requestedStanceB, monsterB);
-    const orderedSides = [
-      `${monsterA.monster_id}:${stanceA}`,
-      `${monsterB.monster_id}:${stanceB}`
-    ].sort();
-    const battleId = `battle-${this.hashNumber(`${seed}:${orderedSides.join(':')}`).toString(16)}`;
+  resolve(monsterA, monsterB, seed, requestedStanceA = null, requestedStanceB = null, options = {}) {
+    const orderedMonsterIds = [monsterA.monster_id, monsterB.monster_id].sort();
+    const battleId = `battle-${this.hashNumber(
+      `${RULES_VERSION}:${seed}:${orderedMonsterIds.join(':')}`
+    ).toString(16)}`;
     const existing = this.store.getBattle(battleId);
-    if (existing) return JSON.parse(existing.result_json);
+    if (existing?.result) return existing.result;
 
-    let hpA = 30 + (monsterA.stats.vitality * 4);
-    let hpB = 30 + (monsterB.stats.vitality * 4);
-    const elementAdvantageMonsterId = this.elementAdvantageMonsterId(monsterA, monsterB);
-    const stanceAdvantageMonsterId = this.stanceAdvantage(stanceA, stanceB)
-      ? monsterA.monster_id
-      : (this.stanceAdvantage(stanceB, stanceA) ? monsterB.monster_id : null);
-    const rounds = [];
-    for (let index = 0; index < 3; index += 1) {
-      const aFirst = monsterA.stats.agility === monsterB.stats.agility
-        ? this.roll(seed, index) >= 50
-        : monsterA.stats.agility > monsterB.stats.agility;
-      const first = aFirst ? monsterA : monsterB;
-      const second = aFirst ? monsterB : monsterA;
-      const firstDamage = this.damage(
-        first,
-        second,
-        seed,
-        index,
-        0,
-        stanceAdvantageMonsterId === first.monster_id
-      );
-      const secondDamage = this.damage(
-        second,
-        first,
-        seed,
-        index,
-        1,
-        stanceAdvantageMonsterId === second.monster_id
-      );
-      if (aFirst) {
-        hpB = Math.max(0, hpB - firstDamage);
-        hpA = Math.max(0, hpA - secondDamage);
-      } else {
-        hpA = Math.max(0, hpA - firstDamage);
-        hpB = Math.max(0, hpB - secondDamage);
-      }
-      rounds.push({
-        number: index + 1,
-        firstMonsterId: first.monster_id,
-        firstDamage,
-        secondDamage,
-        hpA,
-        hpB,
-        elementAdvantageMonsterId,
-        stanceAdvantageMonsterId
-      });
-    }
-
-    const winnerId = hpA === hpB
-      ? (this.roll(seed, 99) >= 50 ? monsterA.monster_id : monsterB.monster_id)
-      : (hpA > hpB ? monsterA.monster_id : monsterB.monster_id);
     const result = {
       battleId,
-      seed,
-      monsterAId: monsterA.monster_id,
-      monsterBId: monsterB.monster_id,
-      stanceA,
-      stanceB,
-      winnerId,
-      elementAdvantageMonsterId,
-      stanceAdvantageMonsterId,
-      rounds
+      ...resolveBattle(monsterA, monsterB, seed, options),
+      // Stances remain as compatibility metadata, but v3 never reads user input.
+      stanceA: this.stanceForMonster(monsterA),
+      stanceB: this.stanceForMonster(monsterB)
     };
     this.store.createBattle({
       battleId,
@@ -87,28 +34,19 @@ class BattleService {
       monsterBId: monsterB.monster_id,
       userAId: monsterA.user_id,
       userBId: monsterB.user_id,
-      stanceA,
-      stanceB,
-      winnerMonsterId: winnerId,
+      stanceA: result.stanceA,
+      stanceB: result.stanceB,
+      winnerMonsterId: result.winnerId,
+      rulesVersion: RULES_VERSION,
+      skills: result.skills,
       result,
       createdAtMs: this.now()
     });
     return result;
   }
 
-  damage(attacker, defender, seed, round, order, hasStanceAdvantage = false) {
-    const advantage = this.elementAdvantage(attacker.element, defender.element) ? 3 : 0;
-    const stanceBonus = hasStanceAdvantage ? 2 : 0;
-    const variance = this.roll(`${seed}:${attacker.monster_id}`, (round * 2) + order) % 3;
-    return Math.max(
-      1,
-      5 + attacker.stats.might + advantage + stanceBonus + variance - Math.floor(defender.stats.guard / 2)
-    );
-  }
-
-  normalizeStance(stance, monster) {
-    const normalized = String(stance || '').trim().toLowerCase();
-    return STANCES.includes(normalized) ? normalized : this.stanceForMonster(monster);
+  normalizeStance(_stance, monster) {
+    return this.stanceForMonster(monster);
   }
 
   stanceForMonster(monster) {
@@ -116,14 +54,12 @@ class BattleService {
     return STANCES[this.hashNumber(`stance:${personality}`) % STANCES.length];
   }
 
-  stanceAdvantage(attacker, defender) {
-    return new Set(['power:guard', 'guard:speed', 'speed:power'])
-      .has(`${attacker}:${defender}`);
+  stanceAdvantage() {
+    return false;
   }
 
   elementAdvantage(attacker, defender) {
-    return new Set(['Ember:Grove', 'Grove:Tide', 'Tide:Ember', 'Volt:Gale', 'Gale:Lunar', 'Lunar:Volt'])
-      .has(`${attacker}:${defender}`);
+    return elementAdvantage(attacker, defender);
   }
 
   elementAdvantageMonsterId(monsterA, monsterB) {

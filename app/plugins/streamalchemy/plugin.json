@@ -1,8 +1,8 @@
 {
   "id": "streamalchemy",
   "name": "Stream Monsters",
-  "version": "1.3.0",
-  "description": "Collector Arena turns selected TikTok gifts into fair element eggs, permanent monsters, quests, achievements and transparent viewer duels.",
+  "version": "1.4.0",
+  "description": "Heart Me is the default discovery gift for a 24-Furry Monsterdex with a three-slot FIFO egg queue, automatic skill battles, mastery, missions, and animated overlays.",
   "author": "Pup Cid",
   "icon": "/plugins/streamalchemy/assets/branding/stream-monsters-icon.png",
   "logo": "/plugins/streamalchemy/assets/branding/stream-monsters-logo.png",
@@ -21,9 +21,9 @@
     "database"
   ],
   "descriptions": {
-    "en": "A fair live Collector Arena with selected gifts, twelve element eggs, permanent monsters, quests, achievements, 28-day leagues and transparent three-round duels. AI art is prepared before live; Kenney works instantly.",
-    "de": "Eine faire Live-Collector-Arena mit ausgewählten Gifts, zwölf Element-Eiern, permanenten Monstern, Quests, Achievements, 28-Tage-Ligen und transparenten Drei-Runden-Duellen. KI-Kunst wird vorab vorbereitet; Kenney funktioniert sofort.",
-    "es": "Una Collector Arena en directo justa con regalos seleccionados, doce huevos elementales, monstruos permanentes, misiones, logros, ligas de 28 días y duelos transparentes de tres rondas. El arte de IA se prepara antes; Kenney funciona al instante.",
-    "fr": "Une Collector Arena équitable avec cadeaux sélectionnés, douze oeufs élémentaires, monstres permanents, quêtes, succès, ligues de 28 jours et duels transparents en trois manches. L'art IA est préparé avant; Kenney fonctionne immédiatement."
+    "en": "Heart Me is the default discovery gift for a 24-Furry Monsterdex with a three-slot FIFO egg queue, automatic skill battles, mastery, missions, and animated overlays.",
+    "de": "Heart Me ist das Standard-Entdeckungsgeschenk für einen Monsterdex mit 24 Furry-Monstern, drei aktiven Ei-Slots plus FIFO-Warteschlange, automatischen Skill-Kämpfen, Meisterschaft, Missionen und animierten Overlays.",
+    "es": "Heart Me es el regalo de descubrimiento predeterminado para un Monsterdex de 24 monstruos Furry, con tres espacios de huevos y cola FIFO, batallas automáticas de habilidades, maestría, misiones y overlays animados.",
+    "fr": "Heart Me est le cadeau de découverte par défaut pour un Monsterdex de 24 monstres Furry, avec trois emplacements d'oeufs et une file FIFO, des combats automatiques de compétences, la maîtrise, des missions et des overlays animés."
   }
 }

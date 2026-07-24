@@ -4,7 +4,7 @@ const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammon
 const BattleService = require('../plugins/streamalchemy/backend/streammonsters/battle-service');
 const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
 
-function createCommands() {
+function createCommands(options = {}) {
   let now = 1_000;
   const store = new StreamMonstersDatabase(new Database(':memory:'));
   store.initialize();
@@ -14,6 +14,7 @@ function createCommands() {
     store,
     engine,
     battleService: new BattleService({ store, now: () => now }),
+    collection: options.collection || null,
     emit: (event, payload) => emitted.push({ event, payload }),
     now: () => now
   });
@@ -70,6 +71,25 @@ describe('Stream Monsters chat commands', () => {
     ].includes(entry.event));
     expect(grouped).not.toHaveLength(0);
     expect(grouped.every(entry => entry.payload.battleId === result.battle.battleId)).toBe(true);
+  });
+
+  test('records one atomic collection outcome for both battle fighters', () => {
+    const collection = { recordBattleOutcome: jest.fn() };
+    const { commands, hatch } = createCommands({ collection });
+    hatch('viewer-a', 1);
+    hatch('viewer-b', 2);
+
+    commands.execute({ userId: 'viewer-a' }, 'battle');
+    const result = commands.execute({ userId: 'viewer-b' }, 'battle');
+
+    expect(collection.recordBattleOutcome).toHaveBeenCalledTimes(1);
+    expect(collection.recordBattleOutcome).toHaveBeenCalledWith(expect.objectContaining({
+      battleId: result.battle.battleId,
+      fighters: expect.arrayContaining([
+        expect.objectContaining({ monster: expect.objectContaining({ user_id: 'viewer-a' }) }),
+        expect.objectContaining({ monster: expect.objectContaining({ user_id: 'viewer-b' }) })
+      ])
+    }));
   });
 
   test('expires queue entries after five minutes and lets a viewer leave', () => {

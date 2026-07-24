@@ -1,14 +1,19 @@
 class ChatCommands {
-  constructor({ store, engine, battleService, progression = null, emit = () => {}, now = () => Date.now(), queueTtlMs = 5 * 60 * 1000 }) {
+  constructor({ store, engine, battleService, progression = null, collection = null, emit = () => {}, now = () => Date.now(), queueTtlMs = 5 * 60 * 1000 }) {
     this.store = store;
     this.engine = engine;
     this.battleService = battleService;
     this.progression = progression;
+    this.collection = collection;
     this.emit = emit;
     this.now = now;
     this.queueTtlMs = queueTtlMs;
     this.queue = [];
     this.syncQueue();
+  }
+
+  emitAfterCommit(event, payload) {
+    this.store.afterCommit(() => this.emit(event, payload));
   }
 
   execute(context = {}, commandName = '', args = []) {
@@ -24,6 +29,7 @@ class ChatCommands {
     }
     this.engine.markReadyEggs();
     if (command === 'adopt') return this.adopt(userId);
+    if (command === 'battle') return this.executeBattle(userId, commandArgs[0]);
     this.progression?.recordCommand(userId, this.engine.streamKey);
 
     if (command === 'eggs') return this.eggs(userId);
@@ -31,7 +37,6 @@ class ChatCommands {
     if (command === 'inventory' || command === 'monsters') return this.inventory(userId);
     if (command === 'monster') return this.monster(userId, commandArgs[0]);
     if (command === 'choose') return this.choose(userId, commandArgs[0]);
-    if (command === 'battle') return this.joinBattle(userId, commandArgs[0]);
     if (command === 'leavebattle') return this.leaveBattle(userId);
     if (command === 'rank') return this.rank(userId);
     if (command === 'quests') return this.quests(userId);
@@ -63,10 +68,11 @@ class ChatCommands {
   eggs(userId) {
     const eggs = this.store.getViewerEggs(userId).filter(egg => egg.state !== 'hatched');
     const ready = eggs.filter(egg => egg.state === 'ready').length;
+    const queued = eggs.filter(egg => egg.state === 'queued').length;
     return {
       success: true,
       status: 'eggs',
-      message: `${eggs.length} egg${eggs.length === 1 ? '' : 's'} (${ready} ready). Use !hatch <slot>.`,
+      message: `${eggs.length} egg${eggs.length === 1 ? '' : 's'} (${ready} ready${queued ? `, ${queued} queued` : ''}). Use !hatch <slot>.`,
       eggs
     };
   }
@@ -130,6 +136,27 @@ class ChatCommands {
   }
 
   joinBattle(userId, requestedStance = null) {
+    try {
+      return this.store.runInTransaction(() => this.joinBattleLifecycle(userId, requestedStance));
+    } catch (error) {
+      this.syncQueue();
+      throw error;
+    }
+  }
+
+  executeBattle(userId, requestedStance = null) {
+    try {
+      return this.store.runInTransaction(() => {
+        this.progression?.recordCommand(userId, this.engine.streamKey);
+        return this.joinBattleLifecycle(userId, requestedStance);
+      });
+    } catch (error) {
+      this.syncQueue();
+      throw error;
+    }
+  }
+
+  joinBattleLifecycle(userId, requestedStance = null) {
     this.purgeExpiredQueue();
     const normalizedRequestedStance = String(requestedStance || '').trim().toLowerCase();
     if (requestedStance && !['power', 'guard', 'speed'].includes(normalizedRequestedStance)) {
@@ -189,19 +216,19 @@ class ChatCommands {
       opponent.stance,
       stance
     );
-    this.emit('streammonsters:stance_revealed', {
+    this.emitAfterCommit('streammonsters:stance_revealed', {
       userId: opponent.userId,
       monster: opponent.monster,
       stance: battle.stanceA,
       battleId: battle.battleId
     });
-    this.emit('streammonsters:stance_revealed', {
+    this.emitAfterCommit('streammonsters:stance_revealed', {
       userId,
       monster: selected,
       stance: battle.stanceB,
       battleId: battle.battleId
     });
-    this.emit('streammonsters:battle_started', {
+    this.emitAfterCommit('streammonsters:battle_started', {
       battleId: battle.battleId,
       challenger: opponent.monster,
       defender: selected,
@@ -222,10 +249,23 @@ class ChatCommands {
       monster: selected,
       won: battle.winnerId === selected.monster_id
     });
-    battle.rounds.forEach(round => {
-      this.emit('streammonsters:battle_round', { battleId: battle.battleId, round });
+    this.collection?.recordBattleOutcome({
+      streamKey: this.engine.streamKey,
+      battleId: battle.battleId,
+      fighters: [
+        { monster: opponent.monster, won: battle.winnerId === opponent.monster.monster_id },
+        { monster: selected, won: battle.winnerId === selected.monster_id }
+      ]
     });
-    this.emit('streammonsters:battle_completed', {
+    battle.rounds.forEach(round => {
+      battle.events
+        .filter(event => event.payload?.round === round.number)
+        .forEach(event => {
+          this.emitAfterCommit(event.type, { battleId: battle.battleId, ...event.payload });
+        });
+      this.emitAfterCommit('streammonsters:battle_round', { battleId: battle.battleId, round });
+    });
+    this.emitAfterCommit('streammonsters:battle_completed', {
       battleId: battle.battleId,
       battle,
       winner
@@ -234,7 +274,7 @@ class ChatCommands {
       const loser = winner.monster_id === opponent.monster.monster_id ? selected : opponent.monster;
       const streak = this.store.getViewerBattleStats?.(winner.user_id)?.win_streak || 0;
       if (streak >= 2) {
-        this.emit('streammonsters:win_streak', {
+        this.emitAfterCommit('streammonsters:win_streak', {
           userId: winner.user_id,
           monster: winner,
           count: streak,
@@ -242,7 +282,7 @@ class ChatCommands {
         });
       }
       if ((Number(winner.level) || 1) < (Number(loser.level) || 1)) {
-        this.emit('streammonsters:upset', {
+        this.emitAfterCommit('streammonsters:upset', {
           userId: winner.user_id,
           winner,
           loser,
@@ -254,7 +294,7 @@ class ChatCommands {
         selected.monster_id
       ) || 0;
       if (rivalryCount >= 2) {
-        this.emit('streammonsters:rivalry', {
+        this.emitAfterCommit('streammonsters:rivalry', {
           left: opponent.monster,
           right: selected,
           count: rivalryCount,

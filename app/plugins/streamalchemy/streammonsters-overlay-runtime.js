@@ -8,8 +8,11 @@
   const CRITICAL_TYPES = new Set([
     'battle_started',
     'stance_revealed',
+    'battle_skill_used',
+    'battle_special_charged',
     'battle_round',
     'battle_completed',
+    'egg_spawned',
     'egg_ready',
     'hatch_started',
     'egg_hatched'
@@ -99,6 +102,42 @@
     STREAM_MONSTERS_RUNTIME_JOB_NOT_FOUND: 'runtimeErrorJobNotFound',
     STREAM_MONSTERS_RUNTIME_ABORTED: 'runtimeErrorAborted'
   });
+  const ANCHORS = Object.freeze([
+    'top-left', 'top-center', 'top-right',
+    'middle-left', 'center', 'middle-right',
+    'bottom-left', 'bottom-center', 'bottom-right'
+  ]);
+  const ANCHOR_SET = new Set(ANCHORS);
+  const ANCHOR_PLACEMENTS = Object.freeze({
+    'top-left': Object.freeze({ align: 'flex-start', justify: 'flex-start' }),
+    'top-center': Object.freeze({ align: 'flex-start', justify: 'center' }),
+    'top-right': Object.freeze({ align: 'flex-start', justify: 'flex-end' }),
+    'middle-left': Object.freeze({ align: 'center', justify: 'flex-start' }),
+    center: Object.freeze({ align: 'center', justify: 'center' }),
+    'middle-right': Object.freeze({ align: 'center', justify: 'flex-end' }),
+    'bottom-left': Object.freeze({ align: 'flex-end', justify: 'flex-start' }),
+    'bottom-center': Object.freeze({ align: 'flex-end', justify: 'center' }),
+    'bottom-right': Object.freeze({ align: 'flex-end', justify: 'flex-end' })
+  });
+  const EFFECT_ORIGINS = Object.freeze({
+    'top-left': Object.freeze({ x: 0.18, y: 0.18 }),
+    'top-center': Object.freeze({ x: 0.5, y: 0.18 }),
+    'top-right': Object.freeze({ x: 0.82, y: 0.18 }),
+    'middle-left': Object.freeze({ x: 0.18, y: 0.5 }),
+    center: Object.freeze({ x: 0.5, y: 0.5 }),
+    'middle-right': Object.freeze({ x: 0.82, y: 0.5 }),
+    'bottom-left': Object.freeze({ x: 0.18, y: 0.82 }),
+    'bottom-center': Object.freeze({ x: 0.5, y: 0.82 }),
+    'bottom-right': Object.freeze({ x: 0.82, y: 0.82 })
+  });
+  const HATCH_DURATION_KEYS = new Map([
+    [30_000, 'duration30Seconds'],
+    [60_000, 'duration1Minute'],
+    [120_000, 'duration2Minutes'],
+    [300_000, 'duration5Minutes'],
+    [600_000, 'duration10Minutes'],
+    [1_800_000, 'duration30Minutes']
+  ]);
 
   function normalizeVolume(storedValue) {
     const numeric = Number(storedValue);
@@ -120,9 +159,19 @@
     return audioContext.decodeAudioData(bytes.buffer);
   }
 
-  function createPriorityQueue({ maxSize = 30, staleAfterMs = 10000 } = {}) {
+  function createPriorityQueue({
+    maxSize = 30,
+    staleAfterMs = 10000,
+    maxCriticalOverflow = 0,
+    tombstoneAfterMs = 60_000
+  } = {}) {
     const entries = [];
     const boundedMaxSize = Math.max(1, Number(maxSize) || 1);
+    const overflowLimit = boundedMaxSize + Math.max(0, Number(maxCriticalOverflow) || 0);
+    const maxFingerprintCount = Math.max(64, overflowLimit * 4);
+    const boundedTombstoneAfterMs = Math.max(1, Number(tombstoneAfterMs) || 60_000);
+    const seenFingerprints = new Map();
+    const droppedGroups = new Map();
     let snapshotEvent = null;
     let sequence = 0;
     let activeGroupKey = null;
@@ -137,15 +186,85 @@
     function groupKey(type, data = {}) {
       if (!CRITICAL_TYPES.has(type)) return null;
       if (type.startsWith('egg_') || type === 'hatch_started') {
-        const eggId = data.egg?.egg_id || data.egg?.id || data.eggId || data.userId || 'ungrouped';
-        return `hatch:${eggId}`;
+        const eggId = data.egg?.egg_id || data.egg?.id || data.eggId || data.userId;
+        return eggId ? `hatch:${eggId}` : null;
       }
-      const battleId = data.battleId || data.battle?.battleId || data.battle?.battle_id || 'ungrouped';
-      return `battle:${battleId}`;
+      const battleId = data.battleId || data.battle?.battleId || data.battle?.battle_id;
+      return battleId ? `battle:${battleId}` : null;
     }
 
     function totalSize() {
       return entries.length + (snapshotEvent ? 1 : 0);
+    }
+
+    function eventFingerprint(type, data = {}, targetGroupKey = null) {
+      const explicitId = data.eventId || data.event_id || data.event?.id ||
+        data.round?.eventId || data.round?.event_id;
+      const round = typeof data.round === 'object'
+        ? data.round?.number
+        : (data.round ?? data.roundNumber);
+      if (explicitId) return `${targetGroupKey || 'event'}:${type}:id:${explicitId}`;
+      if (!targetGroupKey) return null;
+      if ([
+        'battle_started',
+        'battle_completed',
+        'egg_spawned',
+        'egg_ready',
+        'hatch_started',
+        'egg_hatched'
+      ].includes(type)) {
+        return `${targetGroupKey}:${type}`;
+      }
+      if (type === 'battle_special_charged') {
+        const monsterId = data.monsterId || data.actorId || data.monster?.monster_id;
+        return monsterId ? `${targetGroupKey}:${type}:${round ?? ''}:${monsterId}` : null;
+      }
+      if (type === 'battle_round' && round != null) {
+        return `${targetGroupKey}:${type}:${round}`;
+      }
+      if (type === 'stance_revealed') {
+        const monsterId = data.monster?.monster_id || data.monsterId;
+        return monsterId ? `${targetGroupKey}:${type}:${monsterId}` : null;
+      }
+      if (type === 'battle_skill_used') {
+        const actorId = data.actorId || data.actor?.monster_id;
+        const skill = data.skill?.id || data.skill?.vfxKey || data.skill?.vfx_key || data.action?.type;
+        return actorId && round != null && skill
+          ? `${targetGroupKey}:${type}:${round}:${actorId}:${skill}`
+          : null;
+      }
+      return null;
+    }
+
+    function rememberFingerprint(fingerprint) {
+      if (seenFingerprints.has(fingerprint)) return false;
+      seenFingerprints.set(fingerprint, sequence + 1);
+      while (seenFingerprints.size > maxFingerprintCount) {
+        seenFingerprints.delete(seenFingerprints.keys().next().value);
+      }
+      return true;
+    }
+
+    function terminalType(type) {
+      return type === 'battle_completed' || type === 'egg_hatched';
+    }
+
+    function expireDroppedGroups(at = Date.now()) {
+      const currentTime = Number(at) || Date.now();
+      for (const [targetGroupKey, droppedAt] of droppedGroups) {
+        if (currentTime - droppedAt <= boundedTombstoneAfterMs) continue;
+        droppedGroups.delete(targetGroupKey);
+        for (const fingerprint of seenFingerprints.keys()) {
+          if (fingerprint.startsWith(`${targetGroupKey}:`)) seenFingerprints.delete(fingerprint);
+        }
+      }
+    }
+
+    function rememberDroppedGroup(targetGroupKey, droppedAt) {
+      droppedGroups.set(targetGroupKey, Number(droppedAt) || Date.now());
+      while (droppedGroups.size > maxFingerprintCount) {
+        droppedGroups.delete(droppedGroups.keys().next().value);
+      }
     }
 
     function removeEntry(index) {
@@ -156,7 +275,17 @@
       }
     }
 
-    function trim() {
+    function dropCriticalGroup(targetGroupKey, droppedAt) {
+      const grouped = entries.filter(entry => entry.groupKey === targetGroupKey);
+      if (!grouped.length || targetGroupKey === activeGroupKey) return false;
+      for (let index = entries.length - 1; index >= 0; index -= 1) {
+        if (entries[index].groupKey === targetGroupKey) entries.splice(index, 1);
+      }
+      rememberDroppedGroup(targetGroupKey, droppedAt);
+      return true;
+    }
+
+    function trim(trimmedAt = Date.now()) {
       while (totalSize() > boundedMaxSize) {
         const ephemeralIndex = entries.findIndex(entry => entry.priority === 1);
         if (ephemeralIndex >= 0) {
@@ -164,43 +293,46 @@
           continue;
         }
 
-        const removableCriticalGroups = [];
-        for (const entry of entries) {
-          if (entry.priority !== 3 || entry.groupKey === activeGroupKey) continue;
-          if (!removableCriticalGroups.includes(entry.groupKey)) removableCriticalGroups.push(entry.groupKey);
-        }
-        if (removableCriticalGroups.length > 1 || (activeGroupKey && removableCriticalGroups.length)) {
-          const oldestGroup = removableCriticalGroups[0];
-          for (let index = entries.length - 1; index >= 0; index -= 1) {
-            if (entries[index].groupKey === oldestGroup) removeEntry(index);
-          }
+        const durableIndexes = entries
+          .map((entry, index) => entry.priority === 2 ? index : -1)
+          .filter(index => index >= 0);
+        if (durableIndexes.length > 1) {
+          removeEntry(durableIndexes.at(-1));
           continue;
         }
 
-        const criticalIndex = entries.findIndex(entry => (
-          entry.priority === 3 && entry.groupKey !== activeGroupKey
-        ));
-        if (criticalIndex >= 0) {
-          removeEntry(criticalIndex);
+        if (totalSize() <= overflowLimit) break;
+        if (snapshotEvent && durableIndexes.length) {
+          removeEntry(durableIndexes.at(-1));
+          continue;
+        }
+        const removableCriticalGroups = [...new Set(entries
+          .filter(entry => entry.priority === 3 && entry.groupKey && entry.groupKey !== activeGroupKey)
+          .map(entry => entry.groupKey))];
+        if (removableCriticalGroups.length && dropCriticalGroup(removableCriticalGroups[0], trimmedAt)) {
           continue;
         }
 
-        const durableIndex = entries.findIndex(entry => entry.priority === 2);
-        if (durableIndex >= 0) {
-          removeEntry(durableIndex);
+        const ungroupedCriticalIndex = entries.findIndex(entry => entry.priority === 3 && !entry.groupKey);
+        if (ungroupedCriticalIndex >= 0) {
+          removeEntry(ungroupedCriticalIndex);
           continue;
         }
 
-        const activeCriticalIndex = entries.findIndex(entry => entry.priority === 3);
-        if (activeCriticalIndex >= 0) {
-          removeEntry(activeCriticalIndex);
-          continue;
-        }
+        // An actively displayed group cannot be truncated. It drains in order and
+        // is the only allowed temporary overflow beyond the configured hard limit.
         break;
       }
     }
 
     function enqueue(type, data, enqueuedAt = Date.now()) {
+      expireDroppedGroups(enqueuedAt);
+      const targetGroupKey = groupKey(type, data);
+      if (targetGroupKey && droppedGroups.has(targetGroupKey)) {
+        return false;
+      }
+      const fingerprint = eventFingerprint(type, data, targetGroupKey);
+      if (fingerprint && !rememberFingerprint(fingerprint)) return false;
       if (COALESCED_TYPES.has(type)) {
         const priorIndex = entries.findIndex(entry => entry.type === type);
         if (priorIndex >= 0) entries.splice(priorIndex, 1);
@@ -211,9 +343,11 @@
         enqueuedAt,
         priority: priority(type),
         sequence: sequence += 1,
-        groupKey: groupKey(type, data)
+        groupKey: targetGroupKey,
+        fingerprint
       });
-      trim();
+      trim(enqueuedAt);
+      return true;
     }
 
     function prependSnapshot(data, enqueuedAt = Date.now()) {
@@ -224,7 +358,7 @@
         priority: priority('state_snapshot'),
         sequence: sequence += 1
       };
-      trim();
+      trim(enqueuedAt);
     }
 
     function orderedEntries() {
@@ -286,6 +420,8 @@
     function beginSnapshot() {
       snapshotEvent = null;
       entries.length = 0;
+      seenFingerprints.clear();
+      droppedGroups.clear();
       activeGroupKey = null;
       durableTurn = false;
     }
@@ -372,17 +508,161 @@
     );
   }
 
+  function validScale(value, fallback = 100) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric >= 70 && numeric <= 130 ? numeric : fallback;
+  }
+
+  function anchorPlacement(anchor) {
+    return ANCHOR_PLACEMENTS[anchor] || ANCHOR_PLACEMENTS.center;
+  }
+
+  function effectPlacement(anchor, scale = 100) {
+    return {
+      origin: EFFECT_ORIGINS[anchor] || EFFECT_ORIGINS.center,
+      scale: validScale(scale, 100) / 100
+    };
+  }
+
+  function hatchDurationSpec(durationMs) {
+    const milliseconds = Math.max(0, Number(durationMs) || 0);
+    const presetKey = HATCH_DURATION_KEYS.get(milliseconds);
+    if (presetKey) {
+      return {
+        key: presetKey,
+        params: milliseconds < 60_000
+          ? { seconds: milliseconds / 1000 }
+          : { minutes: milliseconds / 60_000 }
+      };
+    }
+    if (milliseconds < 60_000 || milliseconds % 60_000 !== 0) {
+      return {
+        key: 'durationSeconds',
+        params: { seconds: Math.round(milliseconds / 1000) }
+      };
+    }
+    return {
+      key: 'durationMinutes',
+      params: { minutes: milliseconds / 60_000 }
+    };
+  }
+
+  function resolveLayoutSettings({
+    width = 0,
+    height = 0,
+    search = '',
+    config = {}
+  } = {}) {
+    const params = new URLSearchParams(String(search || '').replace(/^\?/, ''));
+    const requestedLayout = params.get('layout');
+    const automaticLayout = Number(width) >= Number(height) ? 'landscape' : 'portrait';
+    const layout = ['landscape', 'portrait'].includes(requestedLayout)
+      ? requestedLayout
+      : automaticLayout;
+    const defaultAnchor = layout === 'landscape' ? 'bottom-center' : 'center';
+    const anchorKey = `${layout}Anchor`;
+    const scaleKey = `${layout}Scale`;
+    const configuredAnchor = ANCHOR_SET.has(config[anchorKey]) ? config[anchorKey] : defaultAnchor;
+    const configuredScale = validScale(config[scaleKey], 100);
+    const urlAnchor = params.get(anchorKey);
+    const urlScale = params.get(scaleKey);
+    return {
+      layout,
+      anchor: ANCHOR_SET.has(urlAnchor) ? urlAnchor : configuredAnchor,
+      scale: validScale(urlScale, configuredScale),
+      source: ['landscape', 'portrait'].includes(requestedLayout) ? 'override' : 'auto'
+    };
+  }
+
+  function createLayoutController({
+    window: windowLike,
+    stage,
+    battle = null,
+    config = {}
+  } = {}) {
+    const hostWindow = windowLike || (typeof window === 'object' ? window : null);
+    function apply() {
+      const resolved = resolveLayoutSettings({
+        width: hostWindow?.innerWidth,
+        height: hostWindow?.innerHeight,
+        search: hostWindow?.location?.search,
+        config
+      });
+      if (stage?.dataset) {
+        stage.dataset.layout = resolved.layout;
+        stage.dataset.anchor = resolved.anchor;
+        stage.dataset.scale = String(resolved.scale);
+      }
+      const placement = anchorPlacement(resolved.anchor);
+      stage?.style?.setProperty?.('--reveal-align', placement.align);
+      stage?.style?.setProperty?.('--reveal-justify', placement.justify);
+      stage?.style?.setProperty?.('--reveal-scale', String(resolved.scale / 100));
+      if (battle?.dataset) battle.dataset.layoutIndependent = 'true';
+      return resolved;
+    }
+    let current = null;
+    const applyAndRemember = () => {
+      current = apply();
+      return current;
+    };
+    const onResize = () => applyAndRemember();
+    hostWindow?.addEventListener?.('resize', onResize);
+    hostWindow?.addEventListener?.('orientationchange', onResize);
+    applyAndRemember();
+    return {
+      apply: applyAndRemember,
+      current: () => current,
+      destroy() {
+        hostWindow?.removeEventListener?.('resize', onResize);
+        hostWindow?.removeEventListener?.('orientationchange', onResize);
+      }
+    };
+  }
+
+  function rectanglesOverlap(first = {}, second = {}) {
+    const a = {
+      x: Number(first.x) || 0,
+      y: Number(first.y) || 0,
+      width: Math.max(0, Number(first.width) || 0),
+      height: Math.max(0, Number(first.height) || 0)
+    };
+    const b = {
+      x: Number(second.x) || 0,
+      y: Number(second.y) || 0,
+      width: Math.max(0, Number(second.width) || 0),
+      height: Math.max(0, Number(second.height) || 0)
+    };
+    return a.x < b.x + b.width &&
+      a.x + a.width > b.x &&
+      a.y < b.y + b.height &&
+      a.y + a.height > b.y;
+  }
+
+  function safeZoneCollisions({ reveal, reserved = {} } = {}) {
+    return Object.entries(reserved)
+      .filter(([, rectangle]) => rectanglesOverlap(reveal, rectangle))
+      .map(([name]) => name);
+  }
+
   return {
+    ANCHORS,
     apiErrorKey,
+    anchorPlacement,
+    createLayoutController,
     createPriorityQueue,
     createReconnectController,
     chatMessageKey,
     decodeAudioCue,
+    effectPlacement,
     elementKey: value => enumKey(ELEMENT_KEYS, value),
     hypeMilestonePoints,
+    hatchDurationSpec,
     isCritical: type => CRITICAL_TYPES.has(type),
     normalizeVolume,
     personalityKey: value => enumKey(PERSONALITY_KEYS, value),
+    rectanglesOverlap,
+    resolveLayoutSettings,
+    safeZoneCollisions,
     variantKey: value => enumKey(VARIANT_KEYS, value)
   };
 }));

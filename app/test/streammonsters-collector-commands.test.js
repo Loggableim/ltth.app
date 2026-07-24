@@ -4,11 +4,17 @@ const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammon
 const BattleService = require('../plugins/streamalchemy/backend/streammonsters/battle-service');
 const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
 const ProgressionService = require('../plugins/streamalchemy/backend/streammonsters/progression-service');
+const { resolveBattle } = require('../plugins/streamalchemy/backend/streammonsters/battle-rules-v3');
 
 function createCommands() {
   let now = 1_000;
   const store = new StreamMonstersDatabase(new Database(':memory:'));
   store.initialize();
+  const createMonsterFromEgg = store.createMonsterFromEgg.bind(store);
+  store.createMonsterFromEgg = (egg, monster) => createMonsterFromEgg(egg, {
+    ...monster,
+    monsterId: `test-monster:${egg.seed}`
+  });
   const emitted = [];
   const engine = new StreamMonstersEngine({
     store,
@@ -164,7 +170,7 @@ describe('Stream Monsters 1.2 public commands', () => {
   });
 
   test('produces stance, streak, upset and rivalry cards from persisted battle results', () => {
-    const { commands, emitted, spawnReady, store } = createCommands();
+    const { commands, emitted, spawnReady, store, setNow } = createCommands();
     const monsterA = spawnReady('viewer-a', 1, 1);
     const monsterB = spawnReady('viewer-b', 2, 1);
 
@@ -174,6 +180,16 @@ describe('Stream Monsters 1.2 public commands', () => {
     const loserId = winnerId === monsterA.monster_id ? monsterB.monster_id : monsterA.monster_id;
     store.db.prepare('UPDATE streammonsters_monsters SET level = 1 WHERE monster_id = ?').run(winnerId);
     store.db.prepare('UPDATE streammonsters_monsters SET level = 9 WHERE monster_id = ?').run(loserId);
+    const currentA = store.getMonster(monsterA.monster_id);
+    const currentB = store.getMonster(monsterB.monster_id);
+    const rematchTime = Array.from({ length: 100 }, (_, index) => 2_000 + index)
+      .find(candidate => resolveBattle(
+        currentA,
+        currentB,
+        `queue:viewer-a:viewer-b:${candidate}`
+      ).winnerId === winnerId);
+    expect(rematchTime).toBeDefined();
+    setNow(rematchTime);
 
     commands.execute({ userId: 'viewer-a' }, 'battle', ['speed']);
     store.db.prepare('UPDATE streammonsters_battle_queue SET queued_at_ms = queued_at_ms - 30000')

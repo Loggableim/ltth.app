@@ -47,7 +47,7 @@ describe('Stream Monsters game core', () => {
     expect(first.eggColor).toMatch(/^#/);
   });
 
-  test('creates eggs only for selected spawn gifts and uses selected boost gifts for acceleration', () => {
+  test('queues paid overflow eggs while selected boost gifts accelerate the oldest incubating egg', () => {
     let now = 10_000;
     const { store, engine } = createGame({ now: () => now });
     for (let giftId = 1; giftId <= 4; giftId += 1) {
@@ -65,9 +65,10 @@ describe('Stream Monsters game core', () => {
     engine.processGift({ userId: 'viewer-a', giftId: 99, giftName: 'Boost', coinValue: 10 });
 
     const eggs = store.getViewerEggs('viewer-a');
-    expect(eggs).toHaveLength(3);
+    expect(eggs).toHaveLength(4);
     expect(eggs[0].boost_ms).toBeGreaterThan(0);
-    expect(eggs.every(egg => egg.state === 'incubating')).toBe(true);
+    expect(eggs.slice(0, 3).every(egg => egg.state === 'incubating')).toBe(true);
+    expect(eggs[3].state).toBe('queued');
   });
 
   test('hatches overdue eggs after the viewer returns and persists a selectable monster', () => {

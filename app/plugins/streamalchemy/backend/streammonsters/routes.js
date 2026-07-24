@@ -1,5 +1,6 @@
 const path = require('path');
 const { createAdminAuth } = require('../../../../modules/admin-auth');
+const { TEMPLATE_CATALOG, getTemplate } = require('./catalog');
 
 function stableRuntimeErrorCode(error) {
   const code = String(error?.errorCode || error?.code || error?.message || error || '').trim();
@@ -72,6 +73,7 @@ class StreamMonstersRoutes {
     generationPool,
     artPool = null,
     progression = null,
+    collection = null,
     systemAnalyzer,
     managedRuntime,
     localModelInstaller,
@@ -92,6 +94,7 @@ class StreamMonstersRoutes {
     this.generationPool = generationPool;
     this.artPool = artPool;
     this.progression = progression;
+    this.collection = collection;
     this.systemAnalyzer = systemAnalyzer;
     this.managedRuntime = managedRuntime;
     this.localModelInstaller = localModelInstaller;
@@ -122,25 +125,55 @@ class StreamMonstersRoutes {
       res.json({
         success: true,
         config: this.publicConfig(config),
+        effectiveHatchDurationMs: this.engine.hatchDurationFor?.('standard') ?? config.hatchDurationMs,
+        queue: userId ? this.store.getQueuedEggs(userId) : this.store.getQueuedEggs(),
+        eggCounts: this.store.getEggStateCounts?.(userId || null) || {
+          incubating: 0,
+          queued: 0,
+          ready: 0
+        },
         viewer: userId ? this.viewerState(userId) : null,
         pool: this.artPool?.coverage?.(config.artPoolTarget) || this.store.getArtPoolCoverage(),
         hype: this.store.getStreamHype(this.engine.streamKey),
+        dex: userId ? (this.collection?.getCatalogState(userId).dex || null) : null,
+        heartChain: this.collection?.getHeartChain(this.engine.streamKey || 'offline') || null,
+        streamMission: this.collection?.getStreamMission(this.engine.streamKey || 'offline') || null,
+        visualPack: this.publicConfig(config).visualPack,
         season,
         gcce: this.gcceStateProvider(),
         metrics: this.engine.streamKey ? this.store.getStreamMetrics(this.engine.streamKey) : null
       });
     });
+    this.api.registerRoute('GET', '/api/streammonsters/monster-catalog', (req, res) => {
+      const requestedUserId = String(req.query?.userId || '').trim();
+      const userId = this.store.resolveKnownViewerId?.(requestedUserId) || requestedUserId;
+      const catalog = this.collection?.getCatalogState(userId) || {
+        templates: TEMPLATE_CATALOG.map(template => ({ ...template, owned: false, silhouette: true, mastery: null })),
+        dex: { owned: 0, total: TEMPLATE_CATALOG.length }, essence: [], cosmetics: []
+      };
+      res.json({ success: true, ...catalog });
+    });
     this.api.registerRoute('POST', '/api/streammonsters/config', this.protectAdmin((req, res) => {
-      const next = this.configProvider.updateConfig({ streamMonsters: this.sanitizeConfigUpdate(req.body) });
+      const current = this.configProvider.getConfig().streamMonsters || {};
+      const update = this.sanitizeConfigUpdate(req.body);
+      if (current.giftMappingCustomized) update.giftMappingCustomized = true;
+      const next = this.configProvider.updateConfig({ streamMonsters: update });
       res.json({ success: true, config: this.publicConfig(next.streamMonsters) });
     }));
     this.api.registerRoute('POST', '/api/streammonsters/demo', this.protectAdmin((req, res) => {
+      let preview = null;
+      try {
+        preview = this.validateDemoRequest(req.body);
+      } catch (error) {
+        return res.status(400).json({ success: false, error: error.message });
+      }
       const config = this.configProvider.getConfig().streamMonsters;
+      const selectedTemplate = getTemplate(preview?.templateId) || TEMPLATE_CATALOG[0];
       const gift = {
         giftId: 0,
-        giftName: 'Demo Crystal',
+        giftName: 'Demo Heart',
         coinValue: 1,
-        element: 'Volt',
+        element: selectedTemplate.element,
         eggColor: '#f1ca43',
         effect: 'spawn'
       };
@@ -148,24 +181,30 @@ class StreamMonstersRoutes {
         egg_id: 'demo-egg', user_id: 'demo-viewer', gift_id: 0, gift_name: gift.giftName,
         element: gift.element, egg_color: gift.eggColor, state: 'incubating', variant: 'charged',
         hatch_duration_ms: config.hatchDurationMs, boost_ms: 0,
-        image_url: '/plugins/streamalchemy/assets/eggs/volt-charged.png'
+        image_url: `/plugins/streamalchemy/assets/eggs/${gift.element.toLowerCase()}-charged.png`
       };
       const monster = {
         monster_id: 'demo-monster',
-        name: 'Sparkfin',
+        template_id: selectedTemplate.templateId,
+        name: selectedTemplate.name,
         element: gift.element,
         personality: 'Mischievous',
         rarity: 'Charged',
         level: 4,
         stats: { vitality: 7, might: 8, guard: 6, agility: 7 },
-        image_url: '/plugins/streamalchemy/assets/branding/stream-monsters-icon.png'
+        image_url: selectedTemplate.assetPath,
+        skills: selectedTemplate.skills
       };
+      const opponentTemplate = TEMPLATE_CATALOG.find(entry => entry.element !== selectedTemplate.element) || TEMPLATE_CATALOG[1];
       const opponent = {
         monster_id: 'demo-opponent',
-        name: 'Mossbit',
-        element: 'Grove',
+        template_id: opponentTemplate.templateId,
+        name: opponentTemplate.name,
+        element: opponentTemplate.element,
         personality: 'Brave',
-        level: 5
+        level: 5,
+        image_url: opponentTemplate.assetPath,
+        skills: opponentTemplate.skills
       };
       const rounds = [
         { number: 1, firstDamage: 8, secondDamage: 6, hpA: 50, hpB: 48, elementAdvantageMonsterId: monster.monster_id },
@@ -181,7 +220,46 @@ class StreamMonstersRoutes {
         elementAdvantageMonsterId: monster.monster_id,
         rounds
       };
-      const emit = (event, payload) => this.api.emit(event, { ...payload, demo: true });
+      const emit = (event, payload) => this.api.emit(event, {
+        ...payload,
+        demo: true,
+        ...(preview ? { preview: {
+          scene: preview.scene,
+          layout: preview.layout,
+          anchor: preview.anchor,
+          scale: preview.scale
+        } } : {})
+      });
+      if (preview) {
+        const skillPayload = type => ({
+          battleId: 'demo-battle',
+          actorId: monster.monster_id,
+          targetId: opponent.monster_id,
+          monster,
+          target: opponent,
+          element: monster.element,
+          skill: { ...selectedTemplate.skills[type], type },
+          action: { type, actorId: monster.monster_id, targetId: opponent.monster_id }
+        });
+        if (preview.scene === 'spawn') {
+          emit('streammonsters:egg_spawned', { userId: 'demo-viewer', egg, gift, hint: '!eggs' });
+        } else if (preview.scene === 'hatch') {
+          emit('streammonsters:hatch_started', { userId: 'demo-viewer', egg, slot: 1 });
+          emit('streammonsters:egg_hatched', { userId: 'demo-viewer', egg, monster });
+        } else if (preview.scene === 'special') {
+          emit('streammonsters:battle_special_charged', {
+            battleId: 'demo-battle',
+            monsterId: monster.monster_id,
+            monster,
+            element: monster.element,
+            skill: selectedTemplate.skills.special
+          });
+          emit('streammonsters:battle_skill_used', skillPayload('special'));
+        } else {
+          emit('streammonsters:battle_skill_used', skillPayload(preview.scene));
+        }
+        return res.json({ success: true, demo: true, ...preview });
+      }
       emit('streammonsters:stream_started', {
         event: { element: 'Volt' },
         element: 'Volt'
@@ -219,6 +297,7 @@ class StreamMonstersRoutes {
         messageKey: 'achievementChargedHatch'
       });
       emit('streammonsters:battle_started', {
+        battleId: battle.battleId,
         challenger: monster,
         defender: opponent,
         seed: battle.seed,
@@ -237,6 +316,43 @@ class StreamMonstersRoutes {
         monster: opponent,
         stance: 'power',
         battleId: battle.battleId
+      });
+      emit('streammonsters:battle_skill_used', {
+        battleId: battle.battleId,
+        actorId: monster.monster_id,
+        targetId: opponent.monster_id,
+        monster,
+        target: opponent,
+        element: monster.element,
+        skill: { ...selectedTemplate.skills.attack, type: 'attack' },
+        action: { type: 'attack', actorId: monster.monster_id, targetId: opponent.monster_id }
+      });
+      emit('streammonsters:battle_skill_used', {
+        battleId: battle.battleId,
+        actorId: opponent.monster_id,
+        targetId: monster.monster_id,
+        monster: opponent,
+        target: monster,
+        element: opponent.element,
+        skill: { ...opponentTemplate.skills.defense, type: 'defense' },
+        action: { type: 'defense', actorId: opponent.monster_id, targetId: monster.monster_id }
+      });
+      emit('streammonsters:battle_special_charged', {
+        battleId: battle.battleId,
+        monsterId: monster.monster_id,
+        monster,
+        element: monster.element,
+        skill: selectedTemplate.skills.special
+      });
+      emit('streammonsters:battle_skill_used', {
+        battleId: battle.battleId,
+        actorId: monster.monster_id,
+        targetId: opponent.monster_id,
+        monster,
+        target: opponent,
+        element: monster.element,
+        skill: { ...selectedTemplate.skills.special, type: 'special' },
+        action: { type: 'special', actorId: monster.monster_id, targetId: opponent.monster_id }
       });
       rounds.forEach(round => emit('streammonsters:battle_round', { battleId: battle.battleId, round }));
       emit('streammonsters:battle_completed', { battle, winner: monster });
@@ -304,7 +420,7 @@ class StreamMonstersRoutes {
         if (!giftId || !['spawn', 'boost'].includes(effect)) {
           throw new Error('STREAM_MONSTERS_GIFT_MAPPING_INVALID');
         }
-        if (effect === 'spawn' && !['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar'].includes(element)) {
+        if (effect === 'spawn' && !['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar', 'Random'].includes(element)) {
           throw new Error('STREAM_MONSTERS_GIFT_ELEMENT_INVALID');
         }
         const catalogGift = this.normalizedGiftCatalog().find(gift => gift.giftId === giftId);
@@ -317,6 +433,7 @@ class StreamMonstersRoutes {
           effect,
           element: effect === 'spawn' ? element : (element || null)
         });
+        this.configProvider.updateConfig({ streamMonsters: { giftMappingCustomized: true } });
         res.json({ success: true, mapping });
       } catch (error) {
         res.status(400).json({ success: false, error: error.message });
@@ -324,7 +441,9 @@ class StreamMonstersRoutes {
     }));
     this.api.registerRoute('DELETE', '/api/streammonsters/gift-mappings/:giftId', this.protectAdmin((req, res) => {
       const giftId = Number.parseInt(req.params?.giftId, 10);
-      res.json({ success: true, removed: giftId ? this.store.deleteGiftMapping(giftId) : false });
+      const removed = giftId ? this.store.deleteGiftMapping(giftId) : false;
+      if (giftId) this.configProvider.updateConfig({ streamMonsters: { giftMappingCustomized: true } });
+      res.json({ success: true, removed });
     }));
     this.api.registerRoute('GET', '/api/streammonsters/pool', (req, res) => {
       const config = this.configProvider.getConfig().streamMonsters;
@@ -360,6 +479,12 @@ class StreamMonstersRoutes {
           8,
           Number.parseInt(req.body?.targetPerVariant, 10) || 3
         ));
+        const templateIds = Array.isArray(req.body?.templateIds)
+          ? [...new Set(req.body.templateIds.map(value => String(value || '').trim()))]
+          : null;
+        if (templateIds && (templateIds.length !== req.body.templateIds.length || templateIds.some(id => !TEMPLATE_CATALOG.some(template => template.templateId === id)))) {
+          throw new Error('STREAM_MONSTERS_TEMPLATE_IDS_INVALID');
+        }
         this.api.emit(
           'local_runtime_progress',
           StreamMonstersRoutes.publicRuntimeProgress({ phase: 'pool_prepare', state: 'checking' })
@@ -375,7 +500,7 @@ class StreamMonstersRoutes {
         }
         this.api.emit('art_pool_progress', { state: 'running', targetPerVariant });
         const result = this.artPool
-          ? await this.artPool.prepare({ targetPerVariant })
+          ? await this.artPool.prepare({ targetPerVariant, ...(templateIds ? { templateIds } : {}) })
           : { entries: await this.generationPool.preparePending() };
         this.api.emit('art_pool_progress', { state: 'complete', targetPerVariant });
         res.json({ success: true, ...result });
@@ -607,13 +732,62 @@ class StreamMonstersRoutes {
     for (const key of ['enabled', 'creatorName', 'maxUnhatchedEggs', 'elementRules']) {
       if (Object.prototype.hasOwnProperty.call(input, key)) safe[key] = input[key];
     }
-    const allowedHatchDurations = new Set([2, 5, 10, 30].map(minutes => minutes * 60_000));
+    if (typeof input.giftMappingCustomized === 'boolean') safe.giftMappingCustomized = input.giftMappingCustomized;
+    const allowedHatchDurations = new Set([30_000, 60_000, 2, 5, 10, 30].map(value => (
+      value < 1_000 ? value * 60_000 : value
+    )));
     const hatchDurationMs = Number(input.hatchDurationMs);
     if (allowedHatchDurations.has(hatchDurationMs)) safe.hatchDurationMs = hatchDurationMs;
+    if (['furry', 'art_lab', 'kenney'].includes(input.visualPack)) safe.visualPack = input.visualPack;
+    const anchors = new Set([
+      'top-left', 'top-center', 'top-right', 'middle-left', 'center', 'middle-right',
+      'bottom-left', 'bottom-center', 'bottom-right'
+    ]);
+    for (const key of ['landscapeAnchor', 'portraitAnchor']) {
+      if (anchors.has(input[key])) safe[key] = input[key];
+    }
+    for (const key of ['landscapeScale', 'portraitScale']) {
+      const value = Number(input[key]);
+      if (Number.isFinite(value) && value >= 70 && value <= 130) safe[key] = value;
+    }
     if (Object.prototype.hasOwnProperty.call(input, 'artPoolTarget')) {
       safe.artPoolTarget = Math.max(1, Math.min(8, Number.parseInt(input.artPoolTarget, 10) || 3));
     }
     return safe;
+  }
+
+  validateDemoRequest(input) {
+    if (input == null) return null;
+    if (!input || typeof input !== 'object' || Array.isArray(input)) {
+      throw new Error('STREAM_MONSTERS_DEMO_REQUEST_INVALID');
+    }
+    if (!Object.keys(input).length) return null;
+    const scenes = new Set(['spawn', 'hatch', 'attack', 'defense', 'special']);
+    if (!scenes.has(input.scene)) throw new Error('STREAM_MONSTERS_DEMO_SCENE_INVALID');
+    const template = input.templateId ? getTemplate(input.templateId) : TEMPLATE_CATALOG[0];
+    if (!template) throw new Error('STREAM_MONSTERS_DEMO_TEMPLATE_INVALID');
+    const layout = input.layout || 'auto';
+    if (!['auto', 'landscape', 'portrait'].includes(layout)) {
+      throw new Error('STREAM_MONSTERS_DEMO_LAYOUT_INVALID');
+    }
+    const anchors = new Set([
+      'top-left', 'top-center', 'top-right', 'middle-left', 'center', 'middle-right',
+      'bottom-left', 'bottom-center', 'bottom-right'
+    ]);
+    const defaultAnchor = layout === 'portrait' ? 'center' : 'bottom-center';
+    const anchor = input.anchor || defaultAnchor;
+    if (!anchors.has(anchor)) throw new Error('STREAM_MONSTERS_DEMO_ANCHOR_INVALID');
+    const scale = input.scale === undefined ? 100 : Number(input.scale);
+    if (!Number.isFinite(scale) || scale < 70 || scale > 130) {
+      throw new Error('STREAM_MONSTERS_DEMO_SCALE_INVALID');
+    }
+    return {
+      scene: input.scene,
+      templateId: template.templateId,
+      layout,
+      anchor,
+      scale
+    };
   }
 
   viewerState(userId) {
@@ -627,7 +801,8 @@ class StreamMonstersRoutes {
         ...achievement,
         titleKey: this.progression?.achievementTitleKey?.(achievement.achievement_key) || 'achievementUnknown'
       })),
-      rank: this.progression?.getViewerSeason?.(resolvedUserId) || null
+      rank: this.progression?.getViewerSeason?.(resolvedUserId) || null,
+      dex: this.collection?.getCatalogState(resolvedUserId).dex || null
     };
   }
 
@@ -635,11 +810,17 @@ class StreamMonstersRoutes {
     return {
       enabled: Boolean(config.enabled),
       creatorName: config.creatorName || '',
-      rulesVersion: 2,
+      rulesVersion: 3,
       hatchDurationMs: config.hatchDurationMs,
       maxUnhatchedEggs: config.maxUnhatchedEggs,
       elementRules: config.elementRules || 'deterministic',
-      artPoolTarget: Math.max(1, Math.min(8, Number(config.artPoolTarget) || 3))
+      artPoolTarget: Math.max(1, Math.min(8, Number(config.artPoolTarget) || 3)),
+      giftMappingCustomized: Boolean(config.giftMappingCustomized),
+      visualPack: ['furry', 'art_lab', 'kenney'].includes(config.visualPack) ? config.visualPack : 'furry',
+      landscapeAnchor: config.landscapeAnchor || null,
+      portraitAnchor: config.portraitAnchor || null,
+      landscapeScale: Number.isFinite(Number(config.landscapeScale)) ? Number(config.landscapeScale) : null,
+      portraitScale: Number.isFinite(Number(config.portraitScale)) ? Number(config.portraitScale) : null
     };
   }
 

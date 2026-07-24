@@ -8,7 +8,22 @@
     :root { --ink:#f8f7ff; --muted:#bdc5dc; --violet:#a984ff; --cyan:#55dcff; --mint:#6ef1b8; --gold:#ffd76f; }
     * { box-sizing:border-box; }
     body { margin:0; overflow:hidden; color:var(--ink); background:transparent; font-family:Inter,Segoe UI,Arial,sans-serif; }
-    #streammonsters-overlay { position:fixed; inset:0; pointer-events:none; }
+    #streammonsters-overlay { position:fixed; inset:0; pointer-events:none; isolation:isolate; }
+    #effects-canvas { position:fixed; inset:0; z-index:0; width:100%; height:100%; background:transparent; }
+    #effects-canvas.effects-fallback { background:radial-gradient(circle at center,#a984ff20 0,transparent 38%); }
+    #reveal-stage {
+      position:fixed; inset:0; z-index:2; display:flex; align-items:var(--reveal-align,flex-end);
+      justify-content:var(--reveal-justify,center); padding:38px; pointer-events:none;
+    }
+    #reveal-stage[data-anchor="top-left"] { align-items:flex-start; justify-content:flex-start; }
+    #reveal-stage[data-anchor="top-center"] { align-items:flex-start; justify-content:center; }
+    #reveal-stage[data-anchor="top-right"] { align-items:flex-start; justify-content:flex-end; }
+    #reveal-stage[data-anchor="middle-left"] { align-items:center; justify-content:flex-start; }
+    #reveal-stage[data-anchor="center"] { align-items:center; justify-content:center; }
+    #reveal-stage[data-anchor="middle-right"] { align-items:center; justify-content:flex-end; }
+    #reveal-stage[data-anchor="bottom-left"] { align-items:flex-end; justify-content:flex-start; }
+    #reveal-stage[data-anchor="bottom-center"] { align-items:flex-end; justify-content:center; }
+    #reveal-stage[data-anchor="bottom-right"] { align-items:flex-end; justify-content:flex-end; }
     #brand {
       position:absolute; top:28px; left:30px; width:250px; height:70px; object-fit:contain; object-position:left center;
       opacity:.88; filter:drop-shadow(0 8px 20px #0009);
@@ -28,15 +43,23 @@
     }
     #toast.visible { opacity:1; transform:translate(-50%,0); }
     #card {
-      position:absolute; right:38px; bottom:38px; display:grid; grid-template-columns:158px minmax(250px,1fr); gap:18px;
+      position:relative; display:grid; grid-template-columns:158px minmax(250px,1fr); gap:18px;
       width:min(610px,calc(100vw - 76px)); min-height:190px; padding:18px; border:1px solid #6d77a5; border-radius:27px;
       background:linear-gradient(140deg,#202a46f5,#101628f7); box-shadow:0 28px 80px #000b;
-      opacity:0; transform:translateX(100px) scale(.94); transition:.35s cubic-bezier(.2,.85,.25,1.1);
+      opacity:0; transform:translateX(100px) scale(calc(var(--reveal-scale,1) * .94));
+      transform-origin:center; transition:.35s cubic-bezier(.2,.85,.25,1.1);
     }
-    #card.visible { opacity:1; transform:none; }
+    #card.visible { opacity:1; transform:scale(var(--reveal-scale,1)); }
     #card.charged { border-color:#d5b4ff; box-shadow:0 0 50px #9d72ff69,0 28px 80px #000b; }
     #art-wrap { display:grid; place-items:center; overflow:hidden; border-radius:20px; background:radial-gradient(circle,#4a3b7c,#0a1020 70%); }
     #art { width:158px; height:158px; object-fit:contain; filter:drop-shadow(0 12px 16px #0009); }
+    #art-wrap.image-fallback::before {
+      content:attr(data-element); display:grid; place-items:center; width:112px; height:112px;
+      border:4px solid var(--cyan); border-radius:38% 62% 52% 48%; color:var(--ink);
+      background:radial-gradient(circle,#6c54a7aa,#172039); box-shadow:0 0 35px #8b6cff88;
+      font-weight:900; text-transform:uppercase;
+    }
+    #art-wrap.image-fallback #art { display:none; }
     #kicker { color:#dac9ff; text-transform:uppercase; letter-spacing:.12em; font-size:12px; font-weight:900; }
     #title { margin:5px 0; font-size:clamp(28px,3vw,39px); line-height:1.03; }
     #subtitle { color:var(--muted); font-size:16px; }
@@ -66,29 +89,41 @@
       #brand { top:20px; left:20px; width:210px; height:58px; }
       #hype { top:18px; right:20px; width:76px; height:76px; }
       #toast { top:104px; width:calc(100vw - 32px); }
-      #card { right:16px; bottom:50px; grid-template-columns:1fr; width:calc(100vw - 32px); text-align:center; }
+      #reveal-stage { padding:50px 16px; }
+      #card { grid-template-columns:1fr; width:calc(100vw - 32px); text-align:center; }
       #art-wrap { width:160px; height:160px; margin:auto; }
       #battle { top:48%; width:calc(100vw - 32px); padding:22px 14px; }
       #versus { gap:9px; font-size:21px; }
       #chat-card { left:16px; bottom:18px; max-width:calc(100vw - 32px); }
     }
+    @media (prefers-reduced-motion: reduce) {
+      *,*::before,*::after {
+        animation-duration:.001ms!important;
+        animation-iteration-count:1!important;
+        transition-duration:.001ms!important;
+        scroll-behavior:auto!important;
+      }
+    }
   </style>
 </head>
 <body>
 <main id="streammonsters-overlay" aria-live="polite">
+  <canvas id="effects-canvas" aria-hidden="true"></canvas>
   <img id="brand" src="/plugins/streamalchemy/assets/branding/stream-monsters-logo.png" alt="">
   <div id="hype" style="--hype:0%"><span id="hype-value">0%</span></div>
   <div id="toast"></div>
-  <section id="card">
+  <div id="reveal-stage" data-layout="landscape" data-anchor="bottom-center" data-scale="100">
+  <section id="card" role="status" aria-atomic="true">
     <div id="art-wrap"><img id="art" alt=""></div>
     <div>
       <div id="kicker" data-i18n="plugins.streamalchemy.ui.monsters.overlayBrand">Stream Monsters</div>
       <h1 id="title" data-i18n="plugins.streamalchemy.ui.monsters.overlayTitle">Collector Arena</h1>
       <div id="subtitle" data-i18n="plugins.streamalchemy.ui.monsters.overlayWaiting">Das nächste Monster wartet.</div>
       <div id="progress"><div id="bar"></div></div>
-      <div id="hint" data-i18n="plugins.streamalchemy.ui.monsters.overlayCommands">!eggs · !hatch [slot] · !battle</div>
+      <div id="hint">eggs · hatch [slot] · battle</div>
     </div>
   </section>
+  </div>
   <section id="battle">
     <div id="battle-kicker" data-i18n="plugins.streamalchemy.ui.monsters.overlayBattleKicker">Collector Arena · Drei Runden</div>
     <div id="versus"><span id="fighterA" data-i18n="plugins.streamalchemy.ui.monsters.monsterA">Monster A</span><span class="vs">VS</span><span id="fighterB" data-i18n="plugins.streamalchemy.ui.monsters.monsterB">Monster B</span></div>
@@ -101,6 +136,7 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/i18n-client.js"></script>
 <script src="/plugins/streamalchemy/assets/audio/streammonsters-cues.js"></script>
+<script src="/plugins/streamalchemy/streammonsters-effects-renderer.js"></script>
 <script src="/plugins/streamalchemy/streammonsters-overlay-runtime.js"></script>
 <script>
 (async () => {
@@ -162,16 +198,42 @@
     speed: text('stanceSpeed', 'Tempo')
   }[String(stance || '').toLowerCase()] || value(stance, text('unknown', 'unbekannt')));
   const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+  const effectsRenderer = window.StreamMonstersEffectsRenderer.createEffectsRenderer({
+    canvas: node('effects-canvas')
+  });
+  effectsRenderer.init();
+  const layoutConfig = {};
+  const layoutController = window.StreamMonstersOverlayRuntime.createLayoutController({
+    window,
+    stage: node('reveal-stage'),
+    battle: node('battle'),
+    config: layoutConfig
+  });
+  window.addEventListener('resize', () => effectsRenderer.resize());
   const eventQueue = window.StreamMonstersOverlayRuntime.createPriorityQueue({
     maxSize: 30,
-    staleAfterMs: 15000
+    staleAfterMs: 15000,
+    maxCriticalOverflow: 20
   });
   const chatCooldowns = new Map();
   let queueRunning = false;
   let snapshotReady = false;
   let battleNames = [text('monsterA', 'Monster A'), text('monsterB', 'Monster B')];
   let battleIds = [null, null];
+  let battleMonsters = [null, null];
   let battleAdvantageName = '';
+  let currentCommandPrefix = '!';
+  const commandHint = (key = 'overlayCommands', fallback = '{prefix}eggs · {prefix}hatch [slot] · {prefix}battle') => (
+    text(key, fallback, { prefix: currentCommandPrefix })
+  );
+  const formatHatchDuration = durationMs => {
+    const duration = window.StreamMonstersOverlayRuntime.hatchDurationSpec(durationMs);
+    const fallback = duration.params.seconds != null
+      ? '{seconds} seconds'
+      : '{minutes} minutes';
+    return text(duration.key, fallback, duration.params);
+  };
+  node('hint').textContent = commandHint();
 
   const readAudioSettings = () => ({
     muted: localStorage.getItem('streammonsters-overlay-muted') === 'true',
@@ -199,25 +261,80 @@
       source.start();
     })().catch(() => {});
   };
-  const showToast = async (message, duration = 2600, cue = null) => {
+  const applyPreviewLayout = preview => {
+    if (!preview) return;
+    const placement = window.StreamMonstersOverlayRuntime.anchorPlacement(preview.anchor);
+    node('reveal-stage').dataset.layout = preview.layout;
+    node('reveal-stage').dataset.anchor = preview.anchor;
+    node('reveal-stage').dataset.scale = String(preview.scale);
+    node('reveal-stage').style.setProperty('--reveal-align', placement.align);
+    node('reveal-stage').style.setProperty('--reveal-justify', placement.justify);
+    node('reveal-stage').style.setProperty('--reveal-scale', String(preview.scale / 100));
+  };
+  const effectPlacementForScene = scene => {
+    if (['attack', 'defense', 'special'].includes(scene)) {
+      return { origin: { x: 0.5, y: 0.5 }, scale: 1 };
+    }
+    const stage = node('reveal-stage');
+    return window.StreamMonstersOverlayRuntime.effectPlacement(
+      stage.dataset.anchor,
+      stage.dataset.scale
+    );
+  };
+  const showToast = async (message, duration = 2600, cue = null, effect = null) => {
     if (cue) playCue(cue);
     node('toast').textContent = message;
     node('toast').classList.add('visible');
-    await wait(duration);
+    if (effect) {
+      await effectsRenderer.play(effect.scene, {
+        ...effect.payload,
+        ...effectPlacementForScene(effect.scene)
+      });
+    }
+    else await wait(duration);
     node('toast').classList.remove('visible');
     await wait(250);
   };
-  const showCard = async ({ kicker, title, subtitle, imageUrl, progress = 0, charged = false, hint, cue = null }) => {
+  const imageErrorFallback = element => {
+    node('art-wrap').classList.add('image-fallback');
+    node('art-wrap').dataset.element = elementName(element);
+    node('art').removeAttribute('src');
+  };
+  const showCard = async ({
+    kicker,
+    title,
+    subtitle,
+    imageUrl,
+    progress = 0,
+    charged = false,
+    hint,
+    cue = null,
+    element = null,
+    effectScene = null,
+    effectPayload = {}
+  }) => {
     if (cue) playCue(cue);
     node('kicker').textContent = kicker;
     node('title').textContent = title;
     node('subtitle').textContent = subtitle;
-    node('art').src = imageUrl || '/plugins/streamalchemy/assets/branding/stream-monsters-icon.png';
+    node('art-wrap').classList.remove('image-fallback');
+    node('art-wrap').removeAttribute('data-element');
+    node('art').alt = title;
+    node('art').onerror = () => imageErrorFallback(element);
+    if (imageUrl) node('art').src = imageUrl;
+    else imageErrorFallback(element);
     node('bar').style.width = `${Math.max(0, Math.min(100, progress))}%`;
-    node('hint').textContent = hint || text('overlayCommands', '!eggs · !hatch [slot] · !battle');
+    node('hint').textContent = hint || commandHint();
     node('card').classList.toggle('charged', Boolean(charged));
     node('card').classList.add('visible');
-    await wait(3900);
+    if (effectScene) {
+      await effectsRenderer.play(effectScene, {
+        ...effectPayload,
+        element,
+        ...effectPlacementForScene(effectScene)
+      });
+    }
+    else await wait(3900);
     node('card').classList.remove('visible');
     await wait(350);
   };
@@ -257,18 +374,24 @@
   };
   const applySnapshot = data => {
     const points = Number(data?.hype?.points) || 0;
-    const prefix = value(data?.gcce?.commandPrefix, '!');
+    currentCommandPrefix = value(data?.gcce?.commandPrefix, currentCommandPrefix);
     const duration = Math.max(0, Number(data?.config?.hatchDurationMs) || 0);
-    const minutes = Math.round(duration / 60000);
     node('hype').style.setProperty('--hype', `${points}%`);
     node('hype-value').textContent = data?.hype?.charged_eggs
       ? text('charged', 'CHARGED!')
       : `${points}%`;
     node('hint').textContent = text(
       'snapshotRules',
-      '{prefix}eggs · {prefix}hatch [slot] · {minutes} min',
-      { prefix, minutes }
+      '{prefix}eggs · {prefix}hatch [slot] · {duration}',
+      { prefix: currentCommandPrefix, duration: formatHatchDuration(duration) }
     );
+    Object.assign(layoutConfig, {
+      landscapeAnchor: data?.config?.landscapeAnchor || 'bottom-center',
+      landscapeScale: data?.config?.landscapeScale || 100,
+      portraitAnchor: data?.config?.portraitAnchor || 'center',
+      portraitScale: data?.config?.portraitScale || 100
+    });
+    layoutController.apply();
   };
   const present = async ({ type, data }) => {
     if (type === 'state_snapshot') {
@@ -290,10 +413,12 @@
         viewer: value(data?.userId, 'Viewer')
       }),
       imageUrl:data?.egg?.image_url,
+      element:data?.egg?.element,
       charged:data?.egg?.variant === 'charged',
-      hint: text('eggsTimer', '!eggs zeigt den Timer'),
+      hint: commandHint('eggsTimer', '{prefix}eggs shows the timer'),
       progress:4,
-      cue:'spawn'
+      cue:'spawn',
+      effectScene:'spawn'
     });
     if (type === 'egg_boosted') return showCard({
       kicker: text('speedBoost', 'Tempo-Boost'),
@@ -332,17 +457,18 @@
       imageUrl:data?.egg?.image_url,
       progress:100,
       charged:data?.egg?.variant === 'charged',
-      hint: text('hatchNow', 'Jetzt !hatch [slot] schreiben'),
+      hint: commandHint('hatchNow', 'Write {prefix}hatch [slot] now'),
       cue:'ready'
     });
-    if (type === 'hatch_started') return showToast(text(
-      'hatchStarted',
-      '{viewer} öffnet ein {element}-Ei …',
-      {
+    if (type === 'hatch_started') return showToast(
+      text('hatchStarted', '{viewer} öffnet ein {element}-Ei …', {
         viewer: value(data?.userId, 'Viewer'),
         element: elementName(data?.egg?.element)
-      }
-    ), 1800, 'hatch');
+      }),
+      1800,
+      'hatch',
+      { scene:'hatch', payload:{ element:data?.egg?.element } }
+    );
     if (type === 'egg_hatched') return showCard({
       kicker: text('monsterKicker', '{element} · {personality}', {
         element: elementName(data?.monster?.element || data?.egg?.element),
@@ -353,11 +479,51 @@
         viewer: value(data?.userId, text('viewerOwner', 'dem Viewer'))
       }),
       imageUrl:data?.monster?.image_url || data?.egg?.image_url,
+      element:data?.monster?.element || data?.egg?.element,
       charged:data?.egg?.variant === 'charged',
-      hint: text('monsterCardHint', '!monster [slot] zeigt die Karte'),
+      hint: commandHint('monsterCardHint', '{prefix}monster [slot] shows the card'),
       progress:100,
       cue:'hatch'
     });
+    if (type === 'battle_special_charged') {
+      const monster = data?.monster || battleMonsters.find(entry => entry?.monster_id === data?.monsterId);
+      return showCard({
+        kicker:text('specialCharged', 'Special charged'),
+        title:itemName(monster),
+        subtitle:text('specialChargedCopy', '{monster} is glowing with {element} energy.', {
+          monster:itemName(monster),
+          element:elementName(data?.element || monster?.element)
+        }),
+        imageUrl:monster?.image_url,
+        element:data?.element || monster?.element,
+        progress:100,
+        charged:true,
+        effectScene:'special',
+        effectPayload:{ vfxKey:data?.skill?.vfxKey || monster?.skills?.special?.vfxKey }
+      });
+    }
+    if (type === 'battle_skill_used') {
+      const skillType = String(
+        data?.action?.type || data?.skill?.type || data?.skill?.vfxKey?.split(':').at(-1) || 'attack'
+      ).toLowerCase();
+      const effectScene = ['attack', 'defense', 'special'].includes(skillType) ? skillType : 'attack';
+      const monster = data?.monster || data?.actor ||
+        battleMonsters.find(entry => entry?.monster_id === data?.actorId);
+      return showCard({
+        kicker:text(`skill${effectScene[0].toUpperCase()}${effectScene.slice(1)}`, effectScene),
+        title:value(data?.skill?.name, text('skillUsed', 'Skill used')),
+        subtitle:text('skillUsedCopy', '{monster} uses {skill}.', {
+          monster:itemName(monster),
+          skill:value(data?.skill?.name, effectScene)
+        }),
+        imageUrl:monster?.image_url,
+        element:data?.element || monster?.element,
+        progress:100,
+        charged:effectScene === 'special',
+        effectScene,
+        effectPayload:{ vfxKey:data?.skill?.vfxKey || data?.skill?.vfx_key }
+      });
+    }
     if (type === 'starter_revealed') return showCard({
       kicker: text('starter', 'Starter-Monster'),
       title: itemName(data?.monster || data?.egg),
@@ -387,6 +553,7 @@
       right:itemName(data?.defender),
       detail:(() => {
         battleIds = [data?.challenger?.monster_id,data?.defender?.monster_id];
+        battleMonsters = [data?.challenger || null, data?.defender || null];
         battleAdvantageName = data?.elementAdvantageMonsterId === battleIds[0]
           ? itemName(data?.challenger)
           : (data?.elementAdvantageMonsterId === battleIds[1] ? itemName(data?.defender) : '');
@@ -487,13 +654,22 @@
     }));
     if (type === 'chat_result') return showChat(data);
   };
+  const presentWithPreview = async event => {
+    const preview = event?.data?.preview;
+    if (preview) applyPreviewLayout(preview);
+    try {
+      return await present(event);
+    } finally {
+      if (preview) layoutController.apply();
+    }
+  };
   const drainQueue = async () => {
     if (queueRunning || !snapshotReady) return;
     queueRunning = true;
     while (snapshotReady) {
       const next = eventQueue.shift(Date.now());
       if (!next) break;
-      try { await present(next); } catch (_) {}
+      try { await presentWithPreview(next); } catch (_) {}
       if (!snapshotReady) break;
     }
     queueRunning = false;
@@ -532,6 +708,8 @@
     'streammonsters:egg_hatched':'egg_hatched',
     'streammonsters:monster_visual_evolved':'monster_visual_evolved',
     'streammonsters:battle_started':'battle_started',
+    'streammonsters:battle_skill_used':'battle_skill_used',
+    'streammonsters:battle_special_charged':'battle_special_charged',
     'streammonsters:battle_round':'battle_round',
     'streammonsters:battle_completed':'battle_completed',
     'streammonsters:win_streak':'win_streak',
