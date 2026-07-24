@@ -10,6 +10,11 @@ function createCommands() {
   let now = 1_000;
   const store = new StreamMonstersDatabase(new Database(':memory:'));
   store.initialize();
+  const createMonsterFromEgg = store.createMonsterFromEgg.bind(store);
+  store.createMonsterFromEgg = (egg, monster) => createMonsterFromEgg(egg, {
+    ...monster,
+    monsterId: `test-monster:${egg.seed}`
+  });
   const emitted = [];
   const engine = new StreamMonstersEngine({
     store,
@@ -183,6 +188,7 @@ describe('Stream Monsters 1.2 public commands', () => {
         currentB,
         `queue:viewer-a:viewer-b:${candidate}`
       ).winnerId === winnerId);
+    expect(rematchTime).toBeDefined();
     setNow(rematchTime);
 
     commands.execute({ userId: 'viewer-a' }, 'battle', ['speed']);
