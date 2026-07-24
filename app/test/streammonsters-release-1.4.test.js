@@ -616,6 +616,14 @@ describe('Stream Monsters 1.4 creator and overlay release', () => {
     expect(uiSource).not.toMatch(/Version 1\.3/);
   });
 
+  test('documents configurable hatch presets with the two-minute 1.4 default', () => {
+    const readme = fs.readFileSync(path.join(pluginDir, 'README.md'), 'utf8');
+
+    expect(readme).toContain('Standard incubation defaults to two minutes');
+    expect(readme).toContain('configurable hatch presets');
+    expect(readme).not.toMatch(/Standard incubation takes five minutes/i);
+  });
+
   test('keeps the 1.2 and 1.3 release archives byte-for-byte', () => {
     const legacyPackages = new Map([
       ['streamalchemy-1.2.0.zip', 'b31507530333ff179a17a9951644cab0bb299f2358d98ffa0a67a9448ce38780'],

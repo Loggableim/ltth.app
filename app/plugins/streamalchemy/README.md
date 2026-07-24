@@ -20,7 +20,7 @@ Only enabled mappings affect the game. A spawn gift creates an element egg. A bo
 - The six elements are Ember, Tide, Grove, Gale, Volt and Lunar.
 - Spawn mappings without a fixed element use the deterministic random-element mapping; the six hatch presets remain independently configurable.
 - Three incubator slots are active. Additional eggs wait in FIFO order, and boosts affect only the oldest active egg.
-- Standard incubation takes five minutes. Charged eggs are cosmetic and hatch faster, but never receive better stats.
+- Standard incubation defaults to two minutes. The creator can choose other configurable hatch presets. Charged eggs are cosmetic and hatch faster, but never receive better stats.
 - Finished eggs become `ready`, free their incubator slot and hatch only through `!hatch [slot]`.
 - Hype gains 10 per spawn and a 20-point bonus for two different selected gifts within six seconds. At 100, the next egg becomes deterministically charged and hype returns to zero.
 - Every monster gets a deterministic name, personality and exactly 28 base stat points.
