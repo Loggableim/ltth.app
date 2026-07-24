@@ -79,6 +79,8 @@ class StreamMonstersDatabase {
         stance_a TEXT,
         stance_b TEXT,
         rounds_json TEXT,
+        rules_version INTEGER,
+        skills_json TEXT,
         result_json TEXT NOT NULL,
         created_at_ms INTEGER NOT NULL
       );
@@ -288,6 +290,8 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_battles', 'stance_a', 'TEXT');
     this.ensureColumn('streammonsters_battles', 'stance_b', 'TEXT');
     this.ensureColumn('streammonsters_battles', 'rounds_json', 'TEXT');
+    this.ensureColumn('streammonsters_battles', 'rules_version', 'INTEGER');
+    this.ensureColumn('streammonsters_battles', 'skills_json', 'TEXT');
     this.ensureColumn('streammonsters_gift_mappings', 'enabled', 'INTEGER NOT NULL DEFAULT 1');
     this.ensureColumn('streammonsters_viewer_progress', 'pending_xp', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_viewer_progress', 'battle_win_streak', 'INTEGER NOT NULL DEFAULT 0');
@@ -1046,20 +1050,39 @@ class StreamMonstersDatabase {
       INSERT OR IGNORE INTO streammonsters_battles (
         battle_id, seed, monster_a_id, monster_b_id, winner_monster_id,
         user_a_id, user_b_id, stance_a, stance_b, rounds_json,
-        result_json, created_at_ms
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        rules_version, skills_json, result_json, created_at_ms
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       input.battleId, input.seed, input.monsterAId, input.monsterBId,
       input.winnerMonsterId, input.userAId || null, input.userBId || null,
       input.stanceA || null, input.stanceB || null,
       JSON.stringify(input.result?.rounds || []),
+      Number.isInteger(input.rulesVersion) ? input.rulesVersion : null,
+      input.skills ? JSON.stringify(input.skills) : null,
       JSON.stringify(input.result), input.createdAtMs
     );
     return this.getBattle(input.battleId);
   }
 
   getBattle(battleId) {
-    return this.db.prepare('SELECT * FROM streammonsters_battles WHERE battle_id = ?').get(battleId) || null;
+    const row = this.db.prepare('SELECT * FROM streammonsters_battles WHERE battle_id = ?').get(battleId);
+    if (!row) return null;
+    return {
+      ...row,
+      rulesVersion: Number.isInteger(row.rules_version) ? row.rules_version : null,
+      rounds: this.safeParseBattleJson(row.rounds_json, []),
+      skills: this.safeParseBattleJson(row.skills_json, null),
+      result: this.safeParseBattleJson(row.result_json, null)
+    };
+  }
+
+  safeParseBattleJson(value, fallback) {
+    if (typeof value !== 'string' || !value.trim()) return fallback;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return fallback;
+    }
   }
 
   countBattlesBetween(monsterAId, monsterBId) {

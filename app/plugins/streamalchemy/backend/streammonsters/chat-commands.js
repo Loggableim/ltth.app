@@ -233,6 +233,11 @@ class ChatCommands {
       ]
     });
     battle.rounds.forEach(round => {
+      battle.events
+        .filter(event => event.payload?.round === round.number)
+        .forEach(event => {
+          this.emit(event.type, { battleId: battle.battleId, ...event.payload });
+        });
       this.emit('streammonsters:battle_round', { battleId: battle.battleId, round });
     });
     this.emit('streammonsters:battle_completed', {
