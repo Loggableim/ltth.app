@@ -32,7 +32,7 @@ class StreamMonstersEngine {
     this.emit = emit;
     this.now = now;
     this.config = {
-      hatchDurationMs: 5 * 60 * 1000,
+      hatchDurationMs: 2 * 60 * 1000,
       chargedHatchMultiplier: 0.75,
       maxUnhatchedEggs: 3,
       comboWindowMs: 6_000,
@@ -42,26 +42,37 @@ class StreamMonstersEngine {
     this.recentGifts = new Map();
   }
 
-  describeGift({ giftId, giftName, coinValue = 0 }) {
+  describeGift({ giftId, giftName, coinValue = 0, userId = '', eventTimeMs = 0 }) {
     const normalizedGiftId = Number.parseInt(giftId, 10);
-    const index = this.hashNumber(`gift:${normalizedGiftId}`) % ELEMENTS.length;
     const mapping = this.store.getGiftMapping(normalizedGiftId);
+    const mappedElement = mapping?.element || null;
+    const element = mappedElement === 'Random'
+      ? this.selectRandomElement({ userId, giftId: normalizedGiftId, eventTimeMs })
+      : (mappedElement || ELEMENTS[this.hashNumber(`gift:${normalizedGiftId}`) % ELEMENTS.length]);
+    const index = ELEMENTS.indexOf(element);
     return {
       giftId: normalizedGiftId,
       giftName: String(giftName || `Gift ${normalizedGiftId}`),
       coinValue: Math.max(0, Number.parseInt(mapping?.coin_value ?? coinValue, 10) || 0),
-      element: mapping?.element || ELEMENTS[index],
+      element,
       eggColor: mapping?.egg_color || EGG_COLORS[index],
       effect: mapping?.effect || 'spawn',
       enabled: Boolean(mapping?.enabled),
       imageUrl: mapping?.image_url || null,
-      poolKey: `${mapping?.element || ELEMENTS[index]}:standard`
+      poolKey: `${element}:standard`
     };
   }
 
   processGift({ userId, giftId, giftName, coinValue = 0 }) {
     if (!userId) throw new Error('STREAM_MONSTERS_USER_REQUIRED');
-    const gift = this.describeGift({ giftId, giftName, coinValue });
+    const createdAtMs = this.now();
+    const gift = this.describeGift({
+      giftId,
+      giftName,
+      coinValue,
+      userId,
+      eventTimeMs: createdAtMs
+    });
     if (!gift.enabled) return { type: 'ignored', gift, reason: 'gift_not_selected' };
     const eggs = this.store.getViewerEggs(userId, 'incubating');
     const event = this.getActiveEvent();
@@ -76,11 +87,7 @@ class StreamMonstersEngine {
       this.emit('streammonsters:egg_boosted', { userId, egg, gift, event, hint: '!inventory' });
       return { type: 'boosted', egg, gift };
     }
-    if (eggs.length >= this.config.maxUnhatchedEggs) {
-      return { type: 'ignored', gift, reason: 'incubators_full' };
-    }
-
-    const createdAtMs = this.now();
+    const state = eggs.length >= this.config.maxUnhatchedEggs ? 'queued' : 'incubating';
     const variant = this.store.consumeChargedEgg(this.streamKey, createdAtMs) ? 'charged' : 'standard';
     const hatchDurationMs = this.hatchDurationFor(variant);
     const elementalHourMatch = event?.element === gift.element;
@@ -95,6 +102,9 @@ class StreamMonstersEngine {
       createdAtMs,
       hatchDurationMs,
       initialBoostMs,
+      state,
+      queuedAtMs: state === 'queued' ? createdAtMs : null,
+      incubatingAtMs: state === 'incubating' ? createdAtMs : null,
       imageUrl: this.createDefaultEggImage(gift, variant),
       variant,
       visualSource: 'egg_asset',
@@ -167,6 +177,7 @@ class StreamMonstersEngine {
         hint: '!hatch [slot]'
       });
     });
+    this.store.promoteQueuedEggs(this.now(), this.config.maxUnhatchedEggs);
     return ready;
   }
 
@@ -274,6 +285,12 @@ class StreamMonstersEngine {
 
   seedFor(userId, giftId, createdAtMs) {
     return `${this.hashNumber(`${userId}:${giftId}:${createdAtMs}`).toString(16)}-${createdAtMs}`;
+  }
+
+  selectRandomElement({ userId, giftId, eventTimeMs }) {
+    const streamKey = this.streamKey || 'offline';
+    const value = `${streamKey}:${userId || ''}:${giftId}:${eventTimeMs}`;
+    return ELEMENTS[this.hashNumber(value) % ELEMENTS.length];
   }
 
   hashNumber(value) {

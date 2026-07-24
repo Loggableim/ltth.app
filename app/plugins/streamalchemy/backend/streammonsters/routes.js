@@ -122,6 +122,8 @@ class StreamMonstersRoutes {
       res.json({
         success: true,
         config: this.publicConfig(config),
+        effectiveHatchDurationMs: this.engine.hatchDurationFor?.('standard') ?? config.hatchDurationMs,
+        queue: userId ? this.store.getQueuedEggs(userId) : this.store.getQueuedEggs(),
         viewer: userId ? this.viewerState(userId) : null,
         pool: this.artPool?.coverage?.(config.artPoolTarget) || this.store.getArtPoolCoverage(),
         hype: this.store.getStreamHype(this.engine.streamKey),
@@ -304,7 +306,7 @@ class StreamMonstersRoutes {
         if (!giftId || !['spawn', 'boost'].includes(effect)) {
           throw new Error('STREAM_MONSTERS_GIFT_MAPPING_INVALID');
         }
-        if (effect === 'spawn' && !['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar'].includes(element)) {
+        if (effect === 'spawn' && !['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar', 'Random'].includes(element)) {
           throw new Error('STREAM_MONSTERS_GIFT_ELEMENT_INVALID');
         }
         const catalogGift = this.normalizedGiftCatalog().find(gift => gift.giftId === giftId);
@@ -317,6 +319,7 @@ class StreamMonstersRoutes {
           effect,
           element: effect === 'spawn' ? element : (element || null)
         });
+        this.configProvider.updateConfig({ streamMonsters: { giftMappingCustomized: true } });
         res.json({ success: true, mapping });
       } catch (error) {
         res.status(400).json({ success: false, error: error.message });
@@ -324,7 +327,9 @@ class StreamMonstersRoutes {
     }));
     this.api.registerRoute('DELETE', '/api/streammonsters/gift-mappings/:giftId', this.protectAdmin((req, res) => {
       const giftId = Number.parseInt(req.params?.giftId, 10);
-      res.json({ success: true, removed: giftId ? this.store.deleteGiftMapping(giftId) : false });
+      const removed = giftId ? this.store.deleteGiftMapping(giftId) : false;
+      if (giftId) this.configProvider.updateConfig({ streamMonsters: { giftMappingCustomized: true } });
+      res.json({ success: true, removed });
     }));
     this.api.registerRoute('GET', '/api/streammonsters/pool', (req, res) => {
       const config = this.configProvider.getConfig().streamMonsters;
@@ -607,9 +612,24 @@ class StreamMonstersRoutes {
     for (const key of ['enabled', 'creatorName', 'maxUnhatchedEggs', 'elementRules']) {
       if (Object.prototype.hasOwnProperty.call(input, key)) safe[key] = input[key];
     }
-    const allowedHatchDurations = new Set([2, 5, 10, 30].map(minutes => minutes * 60_000));
+    if (typeof input.giftMappingCustomized === 'boolean') safe.giftMappingCustomized = input.giftMappingCustomized;
+    const allowedHatchDurations = new Set([30_000, 60_000, 2, 5, 10, 30].map(value => (
+      value < 1_000 ? value * 60_000 : value
+    )));
     const hatchDurationMs = Number(input.hatchDurationMs);
     if (allowedHatchDurations.has(hatchDurationMs)) safe.hatchDurationMs = hatchDurationMs;
+    if (['furry', 'art_lab', 'kenney'].includes(input.visualPack)) safe.visualPack = input.visualPack;
+    const anchors = new Set([
+      'top-left', 'top-center', 'top-right', 'middle-left', 'center', 'middle-right',
+      'bottom-left', 'bottom-center', 'bottom-right'
+    ]);
+    for (const key of ['landscapeAnchor', 'portraitAnchor']) {
+      if (anchors.has(input[key])) safe[key] = input[key];
+    }
+    for (const key of ['landscapeScale', 'portraitScale']) {
+      const value = Number(input[key]);
+      if (Number.isFinite(value) && value >= 70 && value <= 130) safe[key] = value;
+    }
     if (Object.prototype.hasOwnProperty.call(input, 'artPoolTarget')) {
       safe.artPoolTarget = Math.max(1, Math.min(8, Number.parseInt(input.artPoolTarget, 10) || 3));
     }
@@ -635,11 +655,17 @@ class StreamMonstersRoutes {
     return {
       enabled: Boolean(config.enabled),
       creatorName: config.creatorName || '',
-      rulesVersion: 2,
+      rulesVersion: 3,
       hatchDurationMs: config.hatchDurationMs,
       maxUnhatchedEggs: config.maxUnhatchedEggs,
       elementRules: config.elementRules || 'deterministic',
-      artPoolTarget: Math.max(1, Math.min(8, Number(config.artPoolTarget) || 3))
+      artPoolTarget: Math.max(1, Math.min(8, Number(config.artPoolTarget) || 3)),
+      giftMappingCustomized: Boolean(config.giftMappingCustomized),
+      visualPack: ['furry', 'art_lab', 'kenney'].includes(config.visualPack) ? config.visualPack : 'furry',
+      landscapeAnchor: config.landscapeAnchor || null,
+      portraitAnchor: config.portraitAnchor || null,
+      landscapeScale: Number.isFinite(Number(config.landscapeScale)) ? Number(config.landscapeScale) : null,
+      portraitScale: Number.isFinite(Number(config.portraitScale)) ? Number(config.portraitScale) : null
     };
   }
 

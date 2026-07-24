@@ -99,8 +99,8 @@ function createMonster(store, {
   });
 }
 
-describe('Stream Monsters rules version 2 migration', () => {
-  test('migrates only the missing-version legacy default and persists rulesVersion 2', () => {
+describe('Stream Monsters rules version 3 migration', () => {
+  test('migrates only the missing-version legacy default and persists rulesVersion 3', () => {
     const setConfig = jest.fn();
     const plugin = new StreamAlchemyPlugin({
       getConfig: jest.fn(),
@@ -117,8 +117,8 @@ describe('Stream Monsters rules version 2 migration', () => {
     plugin.config = plugin.loadConfig(legacy);
 
     expect(plugin.config.streamMonsters).toEqual(expect.objectContaining({
-      rulesVersion: 2,
-      hatchDurationMs: 300_000
+      rulesVersion: 3,
+      hatchDurationMs: 120_000
     }));
     expect(plugin.persistSanitizedConfigIfNeeded(legacy)).toBe(true);
     expect(setConfig).toHaveBeenCalledWith('streamalchemy_config', plugin.config);
@@ -144,7 +144,7 @@ describe('Stream Monsters rules version 2 migration', () => {
         }
       });
 
-      expect(loaded.streamMonsters.rulesVersion).toBe(2);
+      expect(loaded.streamMonsters.rulesVersion).toBe(3);
       expect(loaded.streamMonsters.hatchDurationMs).toBe(hatchDurationMs);
     }
   );
@@ -209,7 +209,7 @@ describe('Stream Monsters rules version 2 migration', () => {
     }));
   });
 
-  test('accepts only the creator incubation choices 2, 5, 10 and 30 minutes', () => {
+  test('accepts only the creator incubation choices from 30 seconds through 30 minutes', () => {
     const routes = new StreamMonstersRoutes({
       api: {},
       pluginDir: __dirname,
@@ -222,12 +222,12 @@ describe('Stream Monsters rules version 2 migration', () => {
       configProvider: {}
     });
 
-    expect([2, 5, 10, 30].map(minutes => (
+    expect([0.5, 1, 2, 5, 10, 30].map(minutes => (
       routes.sanitizeConfigUpdate({ hatchDurationMs: minutes * 60_000 }).hatchDurationMs
-    ))).toEqual([120_000, 300_000, 600_000, 1_800_000]);
-    expect(routes.sanitizeConfigUpdate({ hatchDurationMs: 60_000 })).toEqual({});
+    ))).toEqual([30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000]);
+    expect(routes.sanitizeConfigUpdate({ hatchDurationMs: 90_000 })).toEqual({});
     expect(routes.publicConfig({ rulesVersion: 2, hatchDurationMs: 300_000 })).toEqual(
-      expect.objectContaining({ rulesVersion: 2 })
+      expect.objectContaining({ rulesVersion: 3 })
     );
   });
 });

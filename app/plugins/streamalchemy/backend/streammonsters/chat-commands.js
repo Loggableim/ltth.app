@@ -63,10 +63,11 @@ class ChatCommands {
   eggs(userId) {
     const eggs = this.store.getViewerEggs(userId).filter(egg => egg.state !== 'hatched');
     const ready = eggs.filter(egg => egg.state === 'ready').length;
+    const queued = eggs.filter(egg => egg.state === 'queued').length;
     return {
       success: true,
       status: 'eggs',
-      message: `${eggs.length} egg${eggs.length === 1 ? '' : 's'} (${ready} ready). Use !hatch <slot>.`,
+      message: `${eggs.length} egg${eggs.length === 1 ? '' : 's'} (${ready} ready${queued ? `, ${queued} queued` : ''}). Use !hatch <slot>.`,
       eggs
     };
   }

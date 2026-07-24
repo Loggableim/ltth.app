@@ -23,6 +23,8 @@ class StreamMonstersDatabase {
         monster_id TEXT,
         variant TEXT NOT NULL DEFAULT 'standard',
         ready_at_ms INTEGER,
+        queued_at_ms INTEGER,
+        incubating_at_ms INTEGER,
         visual_source TEXT NOT NULL DEFAULT 'egg_asset',
         visual_key TEXT
       );
@@ -224,6 +226,8 @@ class StreamMonstersDatabase {
     `);
     this.ensureColumn('streammonsters_eggs', 'variant', "TEXT NOT NULL DEFAULT 'standard'");
     this.ensureColumn('streammonsters_eggs', 'ready_at_ms', 'INTEGER');
+    this.ensureColumn('streammonsters_eggs', 'queued_at_ms', 'INTEGER');
+    this.ensureColumn('streammonsters_eggs', 'incubating_at_ms', 'INTEGER');
     this.ensureColumn('streammonsters_eggs', 'visual_source', "TEXT NOT NULL DEFAULT 'legacy'");
     this.ensureColumn('streammonsters_eggs', 'visual_key', 'TEXT');
     this.ensureColumn('streammonsters_monsters', 'personality', 'TEXT');
@@ -400,6 +404,10 @@ class StreamMonstersDatabase {
     `).all();
   }
 
+  hasGiftMappings() {
+    return this.db.prepare('SELECT 1 FROM streammonsters_gift_mappings LIMIT 1').get() !== undefined;
+  }
+
   deleteGiftMapping(giftId) {
     return this.db.prepare('DELETE FROM streammonsters_gift_mappings WHERE gift_id = ?').run(giftId).changes > 0;
   }
@@ -478,13 +486,18 @@ class StreamMonstersDatabase {
       INSERT INTO streammonsters_eggs (
         egg_id, user_id, gift_id, gift_name, element, egg_color, seed, state,
         created_at_ms, hatch_duration_ms, boost_ms, image_url, variant, ready_at_ms,
-        visual_source, visual_key
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'incubating', ?, ?, ?, ?, ?, ?, ?, ?)
+        queued_at_ms, incubating_at_ms, visual_source, visual_key
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       eggId, input.userId, input.giftId, input.giftName, input.element, input.eggColor,
-      input.seed, input.createdAtMs, input.hatchDurationMs, input.initialBoostMs || 0, input.imageUrl || null,
+      input.seed, input.state || 'incubating', input.createdAtMs, input.hatchDurationMs,
+      input.initialBoostMs || 0, input.imageUrl || null,
       input.variant || 'standard',
-      input.readyAtMs ?? (input.createdAtMs + input.hatchDurationMs - (input.initialBoostMs || 0)),
+      input.readyAtMs ?? (input.state === 'queued'
+        ? null
+        : input.createdAtMs + input.hatchDurationMs - (input.initialBoostMs || 0)),
+      input.queuedAtMs ?? (input.state === 'queued' ? input.createdAtMs : null),
+      input.incubatingAtMs ?? (input.state === 'queued' ? null : input.createdAtMs),
       input.visualSource || 'egg_asset',
       input.visualKey || null
     );
@@ -627,6 +640,17 @@ class StreamMonstersDatabase {
     return state ? this.db.prepare(sql).all(userId, state) : this.db.prepare(sql).all(userId);
   }
 
+  getQueuedEggs(userId = null) {
+    const sql = userId
+      ? `SELECT * FROM streammonsters_eggs
+        WHERE user_id = ? AND state = 'queued'
+        ORDER BY queued_at_ms ASC, created_at_ms ASC, egg_id ASC`
+      : `SELECT * FROM streammonsters_eggs
+        WHERE state = 'queued'
+        ORDER BY queued_at_ms ASC, created_at_ms ASC, egg_id ASC`;
+    return userId ? this.db.prepare(sql).all(userId) : this.db.prepare(sql).all();
+  }
+
   boostOldestEgg(userId, boostMs) {
     const egg = this.getViewerEggs(userId, 'incubating')[0];
     if (!egg) return null;
@@ -648,6 +672,36 @@ class StreamMonstersDatabase {
     const mark = this.db.prepare("UPDATE streammonsters_eggs SET state = 'ready' WHERE egg_id = ?");
     this.db.transaction(rows => rows.forEach(row => mark.run(row.egg_id)))(ready);
     return ready.map(row => this.getEgg(row.egg_id));
+  }
+
+  promoteQueuedEggs(nowMs, maxActive = 3) {
+    const activeLimit = Math.max(1, Number.parseInt(maxActive, 10) || 3);
+    const queued = this.getQueuedEggs();
+    if (!queued.length) return [];
+    const activeByUser = new Map(this.db.prepare(`
+      SELECT user_id, COUNT(*) AS count
+      FROM streammonsters_eggs
+      WHERE state = 'incubating'
+      GROUP BY user_id
+    `).all().map(row => [row.user_id, row.count]));
+    const promotedIds = [];
+    const promote = this.db.prepare(`
+      UPDATE streammonsters_eggs
+      SET state = 'incubating', incubating_at_ms = ?,
+        ready_at_ms = ? + hatch_duration_ms - boost_ms
+      WHERE egg_id = ? AND state = 'queued'
+    `);
+    this.db.transaction(() => {
+      queued.forEach(egg => {
+        const active = activeByUser.get(egg.user_id) || 0;
+        if (active >= activeLimit) return;
+        const result = promote.run(nowMs, nowMs, egg.egg_id);
+        if (!result.changes) return;
+        activeByUser.set(egg.user_id, active + 1);
+        promotedIds.push(egg.egg_id);
+      });
+    })();
+    return promotedIds.map(eggId => this.getEgg(eggId));
   }
 
   createMonsterFromEgg(egg, monster) {

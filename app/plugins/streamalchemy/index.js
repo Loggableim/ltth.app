@@ -34,9 +34,9 @@ const RUNTIME_TRUST_FIELDS = new Set([
   'executableRelativePath', 'executableArgs', 'comfyRootRelativePath',
   'healthBaseUrl', 'healthUrl', 'downloadSizeBytes', 'modelSizeBytes'
 ]);
-const STREAM_MONSTERS_RULES_VERSION = 2;
+const STREAM_MONSTERS_RULES_VERSION = 3;
 const LEGACY_HATCH_DURATION_MS = 30 * 60 * 1000;
-const DEFAULT_HATCH_DURATION_MS = 5 * 60 * 1000;
+const DEFAULT_HATCH_DURATION_MS = 2 * 60 * 1000;
 
 class StreamAlchemyPlugin {
   constructor(api) {
@@ -72,6 +72,7 @@ class StreamAlchemyPlugin {
       emit: (event, payload) => this.api.emit(event, payload),
       config: this.config.streamMonsters
     });
+    this.ensureDefaultStreamMonstersGiftMapping();
     this.streamMonstersBattleService = new StreamMonstersBattleService({ store: this.streamMonstersStore });
     this.streamMonstersChatCommands = new StreamMonstersChatCommands({
       store: this.streamMonstersStore,
@@ -240,6 +241,8 @@ class StreamAlchemyPlugin {
         maxUnhatchedEggs: 3,
         elementRules: 'deterministic',
         artPoolTarget: 3,
+        giftMappingCustomized: false,
+        visualPack: 'furry',
         ...storedStreamMonsters,
         rulesVersion: STREAM_MONSTERS_RULES_VERSION,
         hatchDurationMs,
@@ -553,6 +556,39 @@ class StreamAlchemyPlugin {
     }
   }
 
+  normalizeStreamMonstersGiftName(name) {
+    return String(name || '')
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, '');
+  }
+
+  ensureDefaultStreamMonstersGiftMapping(gift = null) {
+    if (
+      this.config?.streamMonsters?.giftMappingCustomized ||
+      this.streamMonstersStore?.hasGiftMappings?.()
+    ) {
+      return null;
+    }
+    const candidate = gift || this.getStreamMonstersGiftCatalog().find(item => (
+      this.normalizeStreamMonstersGiftName(item.name || item.gift_name) === 'heartme'
+    ));
+    const giftId = Number.parseInt(candidate?.id ?? candidate?.gift_id ?? candidate?.giftId, 10);
+    if (!giftId || this.normalizeStreamMonstersGiftName(candidate?.name || candidate?.gift_name || candidate?.giftName) !== 'heartme') {
+      return null;
+    }
+    return this.streamMonstersStore.upsertGiftMapping({
+      giftId,
+      giftName: candidate.name || candidate.gift_name || candidate.giftName,
+      coinValue: Number(candidate.diamond_count ?? candidate.coin_value ?? candidate.coinValue ?? 0),
+      imageUrl: candidate.image_url || candidate.imageUrl || null,
+      effect: 'spawn',
+      element: 'Random',
+      enabled: true
+    });
+  }
+
   buildStreamMonstersCommandDefinitions(commandPrefix = this.streamMonstersCommandPrefix) {
     return [
       ['adopt', 'Claim your one-time Stream Monsters starter egg', 0, 0],
@@ -766,6 +802,13 @@ class StreamAlchemyPlugin {
     if (!userId || !giftId || !giftName) {
       this.api.log('[STREAMMONSTERS] Ignored invalid gift event', 'warn');
       return;
+    }
+    if (!this.streamMonstersStore.getGiftMapping(giftId) && !this.config.streamMonsters.giftMappingCustomized) {
+      this.ensureDefaultStreamMonstersGiftMapping({
+        id: giftId,
+        name: giftName,
+        diamond_count: coinValue
+      });
     }
     for (let index = 0; index < repeatCount; index += 1) {
       this.streamMonstersEngine.processGift({ userId, giftId, giftName, coinValue });
