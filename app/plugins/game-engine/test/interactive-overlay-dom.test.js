@@ -1533,6 +1533,12 @@ describe('interactive overlay countdown DOM', () => {
     frame.dataset.ready = 'true';
     frame.contentWindow.postMessage = postMessage;
     const idleState = connect4State({ displayRevision: 6, sessionRevision: 1, phase: 'idle', deadline: null, moveNumber: 0 });
+    Object.assign(idleState.display, {
+      displaySessionId: null,
+      gameType: null,
+      sessionRevision: null,
+      state: null
+    });
     const state = {
       ...idleState,
       serverTimestamp: 101000,

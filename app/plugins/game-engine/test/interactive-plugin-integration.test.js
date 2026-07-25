@@ -200,6 +200,25 @@ describe('GameEnginePlugin interactive controller integration', () => {
     expect(result).toMatchObject({ success: true, displayOverlay: true });
   });
 
+  test('persists a two-viewer legacy move under the active participant identity', () => {
+    const { plugin } = createPlugin();
+    plugin.db = { saveMove: jest.fn() };
+    plugin._emitInteractiveLegacyEvent('move', {
+      session: { sessionId: 8, gameType: 'connect4', viewerId: 'viewer-one', adapter: { getState: () => ({}) } },
+      actorRole: 'viewer',
+      actorId: 'viewer-two',
+      actorDisplayName: 'Viewer Two',
+      result: { move: { column: 'B', moveNumber: 2 } }
+    });
+
+    expect(plugin.db.saveMove).toHaveBeenCalledWith(
+      8,
+      'viewer-two',
+      { column: 'B', moveNumber: 2 },
+      2
+    );
+  });
+
   test('rejects invalid Connect4 configuration with a stable error code', () => {
     const { plugin, routes } = createPlugin();
     plugin.db = {
@@ -1041,6 +1060,32 @@ describe('GameEnginePlugin interactive controller integration', () => {
       challengeId: 41,
       participantId: 'viewer-two'
     }));
+  });
+
+  test('keeps a configured bare c4 start alias distinct from c4 column moves in fallback chat', () => {
+    const { plugin } = createPlugin();
+    plugin.db = {
+      getGameConfig: jest.fn(gameType => gameType === 'connect4'
+        ? { ...plugin.defaultConfigs.connect4, chatCommand: 'c4' }
+        : null),
+      getTriggers: jest.fn(() => [])
+    };
+    plugin.wheelGame = { findWheelByChatCommand: jest.fn(() => null) };
+    plugin.slotGame = { findMachineByChatCommand: jest.fn(() => null) };
+    plugin.handleConnect4StartCommand = jest.fn();
+    plugin.handleViewerMove = jest.fn();
+
+    plugin.handleChatCommand({ uniqueId: 'viewer-one', nickname: 'Viewer One', comment: 'c4' });
+    plugin.handleChatCommand({ uniqueId: 'viewer-one', nickname: 'Viewer One', comment: 'c4 A' });
+
+    expect(plugin.handleConnect4StartCommand).toHaveBeenCalledTimes(1);
+    expect(plugin.handleViewerMove).toHaveBeenCalledWith(
+      'viewer-one',
+      'Viewer One',
+      'connect4',
+      'A',
+      null
+    );
   });
 
   test('keeps the legacy Arena avatar route while registering the general avatar proxy', () => {

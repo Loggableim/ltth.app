@@ -53,7 +53,7 @@ describe('interactive overlay contract', () => {
     expect(unified).toContain('function interactiveOverlayPresentation(');
     expect(unified).not.toContain('state?.activeSessions?.length === 1');
     expect(unified).not.toContain('viewerTurnSession');
-    expect(unified).toContain('switchToGame(presentationDisplay.gameType, interactiveState);');
+    expect(unified).toContain("switchToGame(showingMatchmaking ? 'connect4' : presentationDisplay.gameType, interactiveState);");
     expect(connect4).toContain('function interactiveConnect4Presentation(');
     expect(connect4).not.toContain('state?.activeSessions?.length === 1');
     expect(connect4).not.toContain('viewerTurnSession');

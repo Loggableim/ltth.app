@@ -281,10 +281,7 @@ class GameEnginePlugin {
   }
 
   _connect4StartAliases() {
-    const aliases = new Set(['connect4', '4gewinnt', this.getConnect4StartCommandName()]);
-    // /c4 is permanently reserved for an in-game column move.
-    aliases.delete('c4');
-    return aliases;
+    return new Set(['connect4', '4gewinnt', this.getConnect4StartCommandName()]);
   }
 
   _isConnect4StartAlias(message) {
@@ -484,7 +481,7 @@ class GameEnginePlugin {
     if (event === 'move') {
       const move = payload.result.move;
       if (move && this.db?.saveMove) {
-        const playerUsername = payload.actorRole === 'host' ? 'streamer' : session.viewerId;
+        const playerUsername = payload.actorId || (payload.actorRole === 'host' ? 'streamer' : session.viewerId);
         this.db.saveMove(session.sessionId, playerUsername, move, move.moveNumber);
       }
       this.io.emit('game-engine:move-made', {
@@ -4509,7 +4506,8 @@ class GameEnginePlugin {
       };
 
       const c4ChatCommand = this.getConnect4StartCommandName();
-      const connect4StartCommands = [...this._connect4StartAliases()];
+      const connect4StartCommands = [...this._connect4StartAliases()]
+        .filter(commandName => commandName !== 'c4');
 
       // Load all chat command triggers from database
       const triggers = this.db.getTriggers();
@@ -4525,10 +4523,12 @@ class GameEnginePlugin {
           syntax: '/c4 <A-G>',
           permission: 'all', // All viewers can play
           enabled: true,
-          minArgs: 1,
+          minArgs: 0,
           maxArgs: 1,
           category: 'Games',
-          handler: async (args, context) => await this.handleConnect4Command(args, context)
+          handler: async (args, context) => args?.length
+            ? await this.handleConnect4Command(args, context)
+            : await this.handleConnect4StartCommand(args, context)
         },
         ...connect4StartCommands.map(commandName => ({
           name: commandName,

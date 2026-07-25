@@ -1779,6 +1779,11 @@ describe('InteractiveController', () => {
       gameType: 'connect4',
       move: { column: 'B' }
     })).toMatchObject({ success: true, sessionId: match.sessionId });
+    expect(harness.emitLegacyEvent).toHaveBeenLastCalledWith('move', expect.objectContaining({
+      actorRole: 'viewer',
+      actorId: 'acceptor',
+      actorDisplayName: 'Acceptor'
+    }));
     expect(harness.database.getInteractiveState(match.sessionId)).toMatchObject({
       participantIds: ['opener', 'acceptor'],
       turnPlayerId: 'opener'

@@ -375,7 +375,7 @@
           presentationDisplay.activeSessionCount ?? state.hostQueue?.length ?? 0
         );
       }
-      switchToGame(presentationDisplay.gameType, interactiveState);
+      switchToGame(showingMatchmaking ? 'connect4' : presentationDisplay.gameType, interactiveState);
       updateQueueIndicator(state.hostQueue?.length || 0);
     });
 

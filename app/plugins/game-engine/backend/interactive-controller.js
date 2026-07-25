@@ -758,7 +758,13 @@ class InteractiveController {
       this._publishSessionCompletion(session, completionPayload);
     } else {
       this._publishSafely('Viewer move legacy event', session.sessionId, () => {
-        this.emitLegacyEvent?.('move', { session, result, actorRole: 'viewer' });
+        this.emitLegacyEvent?.('move', {
+          session,
+          result,
+          actorRole: 'viewer',
+          actorId: viewerId,
+          actorDisplayName: this._participant(session, viewerId)?.displayName || viewerId
+        });
       });
       this._publishSafely('Viewer move transition log', session.sessionId, () => {
         this._logTransition('viewer_move_accepted', session, {
@@ -891,7 +897,13 @@ class InteractiveController {
     }
     if (complete) this.registry.remove(session.sessionId);
     this._publishSafely('Host move legacy event', session.sessionId, () => {
-      this.emitLegacyEvent?.('move', { session, result, actorRole: 'host' });
+      this.emitLegacyEvent?.('move', {
+        session,
+        result,
+        actorRole: 'host',
+        actorId: 'streamer',
+        actorDisplayName: session.hostDisplayName
+      });
     });
     this._publishSafely('Host move transition log', session.sessionId, () => {
       this._logTransition('host_move_accepted', session);

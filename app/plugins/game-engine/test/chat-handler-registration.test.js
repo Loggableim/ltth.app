@@ -132,7 +132,11 @@ describe('Chat Handler Registration Fix', () => {
 
       const commands = registerCommandsForPlugin.mock.calls[0][1];
       expect(commands.filter(command => command.name === 'c4')).toHaveLength(1);
-      expect(commands.find(command => command.name === 'c4').minArgs).toBe(1);
+      const c4 = commands.find(command => command.name === 'c4');
+      expect(c4.minArgs).toBe(0);
+      plugin.handleConnect4StartCommand = jest.fn(() => ({ success: true }));
+      c4.handler([], { userId: 'viewer-one', username: 'Viewer One' });
+      expect(plugin.handleConnect4StartCommand).toHaveBeenCalled();
     });
 
     test('should leave prefixed chat commands to GCCE', () => {
