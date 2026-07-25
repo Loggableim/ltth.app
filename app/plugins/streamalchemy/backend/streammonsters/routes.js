@@ -15,6 +15,7 @@ class StreamMonstersRoutes {
     generationPool,
     artPool = null,
     progression = null,
+    battleMatchService = null,
     systemAnalyzer,
     managedRuntime,
     localModelInstaller,
@@ -29,6 +30,7 @@ class StreamMonstersRoutes {
     this.generationPool = generationPool;
     this.artPool = artPool;
     this.progression = progression;
+    this.battleMatchService = battleMatchService;
     this.systemAnalyzer = systemAnalyzer;
     this.managedRuntime = managedRuntime;
     this.localModelInstaller = localModelInstaller;
@@ -55,6 +57,7 @@ class StreamMonstersRoutes {
       const userId = String(req.query?.userId || '').trim();
       const config = this.configProvider.getConfig().streamMonsters;
       const season = this.progression?.getCurrentSeason?.() || null;
+      const battle = this.battleMatchService?.getPublicSnapshot(userId) || null;
       res.json({
         success: true,
         config: this.publicConfig(config),
@@ -62,6 +65,8 @@ class StreamMonstersRoutes {
         pool: this.artPool?.coverage?.(config.artPoolTarget) || this.store.getArtPoolCoverage(),
         hype: this.store.getStreamHype(this.engine.streamKey),
         season,
+        battle,
+        pendingStatChoice: battle?.pendingStatChoice || null,
         metrics: this.engine.streamKey ? this.store.getStreamMetrics(this.engine.streamKey) : null
       });
     });
@@ -346,8 +351,8 @@ class StreamMonstersRoutes {
     }
     if (Object.prototype.hasOwnProperty.call(input, 'bottomOverlayDurationMs')) {
       safe.bottomOverlayDurationMs = Math.max(
-        4_000,
-        Math.min(20_000, Number.parseInt(input.bottomOverlayDurationMs, 10) || 8_000)
+        8_000,
+        Math.min(20_000, Number.parseInt(input.bottomOverlayDurationMs, 10) || 12_000)
       );
     }
     if (Object.prototype.hasOwnProperty.call(input, 'commandAliases')) {
@@ -391,7 +396,7 @@ class StreamMonstersRoutes {
       maxUnhatchedEggs: config.maxUnhatchedEggs,
       elementRules: config.elementRules || 'deterministic',
       artPoolTarget: Math.max(1, Math.min(8, Number(config.artPoolTarget) || 3)),
-      bottomOverlayDurationMs: Math.max(4_000, Math.min(20_000, Number(config.bottomOverlayDurationMs) || 8_000)),
+      bottomOverlayDurationMs: Math.max(8_000, Math.min(20_000, Number(config.bottomOverlayDurationMs) || 12_000)),
       visualPack: ['furry', 'art_lab', 'kenney'].includes(config.visualPack) ? config.visualPack : 'furry',
       commandAliases: this.sanitizeCommandAliases(config.commandAliases)
     };

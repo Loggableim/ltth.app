@@ -85,7 +85,7 @@ function createRoutes() {
   const find = (method, routePath) => registered.find(route => (
     route.method === method && route.routePath === routePath
   )).handler;
-  return { find, store, artPool, emitted, configProvider };
+  return { find, store, artPool, emitted, configProvider, routes };
 }
 
 describe('Stream Monsters 1.2 public API', () => {
@@ -157,6 +157,34 @@ describe('Stream Monsters 1.2 public API', () => {
       event: 'streammonsters:config_changed',
       payload: { config: expect.objectContaining({ bottomOverlayDurationMs: 20_000 }) }
     });
+
+    const minimum = response();
+    find('POST', '/api/streammonsters/config')({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      body: { bottomOverlayDurationMs: 4_000 }
+    }, minimum);
+    expect(minimum.body.config.bottomOverlayDurationMs).toBe(8_000);
+  });
+
+  test('exposes the public match snapshot and the viewer-owned stat prompt in state', () => {
+    const { find, routes } = createRoutes();
+    routes.battleMatchService = {
+      getPublicSnapshot: jest.fn(userId => ({
+        match: { matchId: 'match-1', phase: 'skill_selection' },
+        pendingStatChoice: { monsterId: 'monster-1', deadlineAtMs: 1234 },
+        viewer: userId
+      }))
+    };
+    const result = response();
+
+    find('GET', '/api/streammonsters/state')({ query: { userId: 'viewer-a' } }, result);
+
+    expect(result.body).toEqual(expect.objectContaining({
+      battle: expect.objectContaining({ match: expect.objectContaining({ matchId: 'match-1' }) }),
+      pendingStatChoice: expect.objectContaining({ monsterId: 'monster-1' })
+    }));
   });
 
   test('persists furry as the selected visual pack', () => {

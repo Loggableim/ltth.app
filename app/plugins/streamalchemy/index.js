@@ -21,6 +21,7 @@ const StreamMonstersDatabase = require('./backend/streammonsters/database');
 const StreamMonstersEngine = require('./backend/streammonsters/game-engine');
 const StreamMonstersRoutes = require('./backend/streammonsters/routes');
 const StreamMonstersBattleService = require('./backend/streammonsters/battle-service');
+const StreamMonstersBattleMatchService = require('./backend/streammonsters/battle-match-service');
 const StreamMonstersChatCommands = require('./backend/streammonsters/chat-commands');
 const StreamMonstersGenerationPool = require('./backend/streammonsters/generation-pool');
 const StreamMonstersProgressionService = require('./backend/streammonsters/progression-service');
@@ -81,14 +82,23 @@ class StreamAlchemyPlugin {
       config: this.config.streamMonsters
     });
     this.streamMonstersBattleService = new StreamMonstersBattleService({ store: this.streamMonstersStore });
-    this.streamMonstersChatCommands = new StreamMonstersChatCommands({
+    this.streamMonstersBattleMatch = new StreamMonstersBattleMatchService({
       store: this.streamMonstersStore,
       engine: this.streamMonstersEngine,
       battleService: this.streamMonstersBattleService,
       progression: this.streamMonstersProgression,
       emit: (event, payload) => this.api.emit(event, payload)
     });
+    this.streamMonstersChatCommands = new StreamMonstersChatCommands({
+      store: this.streamMonstersStore,
+      engine: this.streamMonstersEngine,
+      battleService: this.streamMonstersBattleService,
+      battleMatchService: this.streamMonstersBattleMatch,
+      progression: this.streamMonstersProgression,
+      emit: (event, payload) => this.api.emit(event, payload)
+    });
     this.streamMonstersCommandPrefix = '!';
+    this.streamMonstersGCCERawRegistered = false;
     this.streamMonstersGCCELifecycleListeners = [];
     this.modelCatalog = new ModelCatalog();
 
@@ -174,6 +184,7 @@ class StreamAlchemyPlugin {
       generationPool: this.streamMonstersGenerationPool,
       artPool: this.streamMonstersArtPool,
       progression: this.streamMonstersProgression,
+      battleMatchService: this.streamMonstersBattleMatch,
       systemAnalyzer: this.systemAnalyzer,
       managedRuntime: this.streamMonstersManagedRuntime,
       localModelInstaller: this.localModelInstaller,
@@ -238,9 +249,15 @@ class StreamAlchemyPlugin {
         maxUnhatchedEggs: 3,
         elementRules: 'deterministic',
         artPoolTarget: 3,
-        bottomOverlayDurationMs: 8_000,
+        bottomOverlayDurationMs: 12_000,
         visualPack: 'furry',
         ...storedStreamMonsters,
+        // Existing short text-card durations were not readable on stream.
+        // Preserve longer creator choices while upgrading old values to 8 sec.
+        bottomOverlayDurationMs: Math.max(
+          8_000,
+          Math.min(20_000, Number(storedStreamMonsters.bottomOverlayDurationMs) || 12_000)
+        ),
         commandAliases,
         localRuntime: {
           state: 'not_installed',
@@ -494,6 +511,7 @@ class StreamAlchemyPlugin {
     this.deactivateStreamMonstersGCCE();
     this.streamMonstersEngine?.recentGifts?.clear?.();
     this.streamMonstersChatCommands?.queue?.splice?.(0);
+    this.streamMonstersBattleMatch?.destroy?.();
     this.api.log('[STREAM MONSTERS] Collector Arena runtime stopped', 'info');
   }
 
@@ -603,6 +621,7 @@ class StreamAlchemyPlugin {
     }));
     try {
       gcce.unregisterCommandsForPlugin('streamalchemy');
+      gcce.unregisterRawResponseHandlerForPlugin?.('streamalchemy');
       const registration = gcce.registerCommandsForPlugin('streamalchemy', definitions);
       if (!Array.isArray(registration?.registered) || registration.registered.length !== definitions.length) {
         gcce.unregisterCommandsForPlugin('streamalchemy');
@@ -610,12 +629,33 @@ class StreamAlchemyPlugin {
         this.api.log('[STREAM MONSTERS] GCCE command registration was incomplete; direct fallback remains active', 'warn');
         return false;
       }
+      this.streamMonstersGCCERawRegistered = false;
+      if (typeof gcce.registerRawResponseHandlerForPlugin === 'function') {
+        gcce.registerRawResponseHandlerForPlugin('streamalchemy', ({ message, context }) => {
+          const outcome = this.streamMonstersBattleMatch.handleRawResponse(context, message);
+          if (outcome.handled && outcome.result) {
+            const userId = context?.rawData?.uniqueId
+              || context?.rawData?.username
+              || context?.uniqueId
+              || context?.username
+              || context?.userId;
+            this.api.emit('streammonsters:chat_result', {
+              userId,
+              result: outcome.result,
+              bottomOverlayDurationMs: this.config.streamMonsters.bottomOverlayDurationMs
+            });
+          }
+          return outcome;
+        });
+        this.streamMonstersGCCERawRegistered = true;
+      }
       this.streamMonstersGCCE = gcce;
       return true;
     } catch (error) {
       this.api.log(`[STREAM MONSTERS] GCCE command registration failed: ${error.message}`, 'warn');
       try {
         gcce.unregisterCommandsForPlugin('streamalchemy');
+        gcce.unregisterRawResponseHandlerForPlugin?.('streamalchemy');
       } catch {
         // The direct fallback remains available even if GCCE cleanup fails.
       }
@@ -628,7 +668,9 @@ class StreamAlchemyPlugin {
     if (this.streamMonstersGCCE?.unregisterCommandsForPlugin) {
       this.streamMonstersGCCE.unregisterCommandsForPlugin('streamalchemy');
     }
+    this.streamMonstersGCCE?.unregisterRawResponseHandlerForPlugin?.('streamalchemy');
     this.streamMonstersGCCE = null;
+    this.streamMonstersGCCERawRegistered = false;
   }
 
   setupStreamMonstersGCCELifecycle() {
@@ -705,6 +747,22 @@ class StreamAlchemyPlugin {
     const userId = data.uniqueId || data.userId || data.username;
     if (!userId) return;
     const message = data.comment || data.message || data.text || '';
+    const rawOutcome = this.streamMonstersBattleMatch.handleRawResponse({
+      userId,
+      uniqueId: userId,
+      username: userId,
+      rawData: data
+    }, message);
+    if (rawOutcome.handled) {
+      if (rawOutcome.result) {
+        this.api.emit('streammonsters:chat_result', {
+          userId,
+          result: rawOutcome.result,
+          bottomOverlayDurationMs: this.config.streamMonsters.bottomOverlayDurationMs
+        });
+      }
+      return rawOutcome.result;
+    }
     const normalizedMessage = this.normalizeStreamMonstersFallbackCommand(message);
     const result = this.streamMonstersChatCommands.handle({ userId, username: userId }, normalizedMessage);
     if (result.status !== 'ignored') {

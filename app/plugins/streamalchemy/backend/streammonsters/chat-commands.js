@@ -1,8 +1,9 @@
 class ChatCommands {
-  constructor({ store, engine, battleService, progression = null, emit = () => {}, now = () => Date.now(), queueTtlMs = 5 * 60 * 1000, globalCooldownMs = 250 }) {
+  constructor({ store, engine, battleService, battleMatchService = null, progression = null, emit = () => {}, now = () => Date.now(), queueTtlMs = 5 * 60 * 1000, globalCooldownMs = 250 }) {
     this.store = store;
     this.engine = engine;
     this.battleService = battleService;
+    this.battleMatchService = battleMatchService;
     this.progression = progression;
     this.emit = emit;
     this.now = now;
@@ -96,6 +97,8 @@ class ChatCommands {
   }
 
   choose(userId, slot) {
+    const battleChoice = this.battleMatchService?.chooseMonster(userId, slot);
+    if (battleChoice) return battleChoice;
     const index = Number.parseInt(slot, 10) - 1;
     const monsters = this.store.getViewerMonsters(userId);
     if (!Number.isInteger(index) || index < 0 || !monsters[index]) {
@@ -122,6 +125,7 @@ class ChatCommands {
   }
 
   joinBattle(userId) {
+    if (this.battleMatchService) return this.battleMatchService.join(userId);
     this.purgeExpiredQueue();
     const selected = this.store.getSelectedMonster(userId);
     if (!selected) return { success: false, status: 'no_monster', message: 'Hatch an egg first, then choose a monster.' };
@@ -170,6 +174,7 @@ class ChatCommands {
   }
 
   leaveBattle(userId) {
+    if (this.battleMatchService) return this.battleMatchService.leave(userId);
     this.purgeExpiredQueue();
     const previousLength = this.queue.length;
     this.queue = this.queue.filter(entry => entry.userId !== userId);

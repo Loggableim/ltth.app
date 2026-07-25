@@ -161,9 +161,8 @@
         <code id="overlayUrl">/streammonsters/overlay</code>
         <label>Lesedauer untere Einblendungen
           <select id="bottomOverlayDuration">
-            <option value="4">4 Sekunden</option><option value="6">6 Sekunden</option>
-            <option value="8" selected>8 Sekunden</option><option value="10">10 Sekunden</option>
-            <option value="12">12 Sekunden</option><option value="15">15 Sekunden</option>
+            <option value="8">8 Sekunden</option><option value="10">10 Sekunden</option>
+            <option value="12" selected>12 Sekunden</option><option value="15">15 Sekunden</option>
             <option value="20">20 Sekunden</option>
           </select>
         </label>
@@ -562,7 +561,7 @@
       ]);
       byId('creatorName').value = state.config?.creatorName || status.username || '';
       byId('poolTarget').value = String(state.config?.artPoolTarget || 3);
-      byId('bottomOverlayDuration').value = String(Math.round((state.config?.bottomOverlayDurationMs || 8_000) / 1_000));
+      byId('bottomOverlayDuration').value = String(Math.round((state.config?.bottomOverlayDurationMs || 12_000) / 1_000));
       Object.entries(state.config?.commandAliases || {}).forEach(([action, aliases]) => {
         const input = document.querySelector(`[data-command-aliases="${action}"]`);
         if (input) input.value = (aliases || []).join(', ');

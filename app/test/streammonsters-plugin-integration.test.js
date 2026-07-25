@@ -42,11 +42,18 @@ function createApi({ gcce = null, streamMonstersEnabled = true } = {}) {
 
 function createGCCE(commandPrefix = '!', enabled = true) {
   const commands = new Map();
+  const rawHandlers = new Map();
   return {
     pluginConfig: { enabled, commandPrefix },
     parser: { commandPrefix },
     commands,
+    rawHandlers,
     unregisterCommandsForPlugin: jest.fn(() => commands.clear()),
+    unregisterRawResponseHandlerForPlugin: jest.fn(pluginId => rawHandlers.delete(pluginId)),
+    registerRawResponseHandlerForPlugin: jest.fn((pluginId, handler) => {
+      rawHandlers.set(pluginId, handler);
+      return { pluginId, registered: true };
+    }),
     registerCommandsForPlugin: jest.fn((_pluginId, definitions) => {
       definitions.forEach(definition => commands.set(definition.name, definition));
       return {
@@ -157,6 +164,23 @@ describe('Stream Monsters plugin integration', () => {
     expect(definitions.find(command => command.name === 'hatch').aliases)
       .toEqual(expect.arrayContaining(['schluepfen', 'ausbrueten']));
     expect(definitions.find(command => command.name === 'hatch').cooldown.global).toBe(0);
+  });
+
+  test('registers and removes the state-gated raw response bridge with GCCE', async () => {
+    const gcce = createGCCE('!');
+    const { api } = createApi({ gcce });
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+
+    expect(gcce.registerRawResponseHandlerForPlugin).toHaveBeenCalledWith('streamalchemy', expect.any(Function));
+    const rawHandler = gcce.rawHandlers.get('streamalchemy');
+    expect(rawHandler({
+      message: 'A',
+      context: { userId: 'viewer-a', username: 'Viewer A' }
+    })).toEqual({ handled: false });
+
+    await plugin.destroy();
+    expect(gcce.unregisterRawResponseHandlerForPlugin).toHaveBeenCalledWith('streamalchemy');
   });
 
   test('re-registers GCCE with creator-selected aliases after config changes', async () => {
@@ -358,7 +382,7 @@ describe('Stream Monsters plugin integration', () => {
       event: 'streammonsters:chat_result',
       payload: {
         userId: 'scharasthefolf',
-        bottomOverlayDurationMs: 8_000,
+        bottomOverlayDurationMs: 12_000,
         result: expect.objectContaining({
           success: false,
           status: 'egg_not_ready',
