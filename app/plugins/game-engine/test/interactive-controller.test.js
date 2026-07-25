@@ -1817,4 +1817,55 @@ describe('InteractiveController', () => {
     harness.controller.destroy();
     harness.sqlite.close();
   });
+
+  test('recovers a host-starting Connect4 session with the streamer as its active participant', () => {
+    const firstHarness = createHarness();
+    firstHarness.controller.init();
+    const match = firstHarness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'recovery-viewer',
+      viewerDisplayName: 'Recovery Viewer'
+    });
+    firstHarness.controller.destroy();
+    firstHarness.sqlite.prepare(`
+      UPDATE game_interactive_sessions SET turn_player_id = NULL WHERE session_id = ?
+    `).run(match.sessionId);
+
+    const recoveredHarness = createHarness({ dbContext: firstHarness.dbContext });
+    expect(recoveredHarness.controller.init()).toMatchObject({ recovered: 1 });
+    expect(recoveredHarness.controller.getState().activeSessions[0]).toMatchObject({
+      turnRole: 'host',
+      turnPlayerId: 'streamer'
+    });
+
+    recoveredHarness.controller.destroy();
+    firstHarness.sqlite.close();
+  });
+
+  test('keeps an open challenge unclaimed when its opener becomes active before acceptance', () => {
+    const harness = createHarness();
+    harness.controller.init();
+    const opened = harness.controller.openConnect4Challenge({
+      openerId: 'busy-opener',
+      openerDisplayName: 'Busy Opener'
+    });
+    expect(harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'busy-opener',
+      viewerDisplayName: 'Busy Opener'
+    })).toMatchObject({ success: true });
+
+    expect(harness.controller.acceptConnect4Challenge({
+      challengeId: opened.challenge.challengeId,
+      participantId: 'new-acceptor',
+      participantDisplayName: 'New Acceptor'
+    })).toEqual({ success: false, error: 'opener_active_session' });
+    expect(harness.database.getOpenInteractiveChallenge()).toMatchObject({
+      challengeId: opened.challenge.challengeId,
+      status: 'open'
+    });
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
 });

@@ -776,6 +776,15 @@ class GameEngineDatabase {
 
   createInteractiveState(data) {
     const now = Number(data.lastActivityAt) || Date.now();
+    const participantIds = data.participantIds || [data.viewerId, 'streamer'];
+    const participants = data.participants || [
+      { id: data.viewerId, displayName: data.viewerDisplayName, avatarSource: '' },
+      { id: 'streamer', displayName: data.hostDisplayName, avatarSource: '' }
+    ];
+    const turnPlayerId = data.turnPlayerId || this._interactiveTurnPlayerId(data.state, {
+      turn_role: data.turnRole,
+      viewer_id: data.viewerId
+    }, participantIds);
     this.db.prepare(`
       INSERT INTO game_interactive_sessions (
         session_id, game_type, viewer_id, viewer_display_name, host_display_name,
@@ -794,12 +803,9 @@ class GameEngineDatabase {
       data.sessionRevision || 1,
       data.displayRevision || 0,
       data.turnRole,
-      JSON.stringify(data.participantIds || [data.viewerId, 'streamer']),
-      JSON.stringify(data.participants || [
-        { id: data.viewerId, displayName: data.viewerDisplayName, avatarSource: '' },
-        { id: 'streamer', displayName: data.hostDisplayName, avatarSource: '' }
-      ]),
-      data.turnPlayerId || data.viewerId,
+      JSON.stringify(participantIds),
+      JSON.stringify(participants),
+      turnPlayerId,
       data.viewerDeadlineMs ?? null,
       data.viewerTimeRemainingMs ?? null,
       data.hostTimeRemainingMs ?? null,

@@ -631,4 +631,26 @@ describe('GameEngineDatabase interactive persistence', () => {
       turnPlayerId: 'viewer-42'
     });
   });
+
+  test('derives the streamer as active player when a host turn has no stored turn-player identity', () => {
+    database.createInteractiveState(session({
+      turnRole: 'host',
+      participantIds: ['viewer-41', 'streamer'],
+      participants: [
+        { id: 'viewer-41', displayName: 'Viewer 41', role: 'viewer', avatarSource: '' },
+        { id: 'streamer', displayName: 'Host', role: 'host', avatarSource: '' }
+      ],
+      turnPlayerId: null,
+      state: {
+        currentPlayer: 1,
+        player1: { username: 'streamer', role: 'streamer' },
+        player2: { username: 'viewer-41', role: 'viewer' }
+      }
+    }));
+
+    expect(database.getInteractiveState(41)).toMatchObject({
+      turnRole: 'host',
+      turnPlayerId: 'streamer'
+    });
+  });
 });

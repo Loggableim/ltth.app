@@ -391,6 +391,9 @@ class InteractiveController {
     if (!this._isValidAvatarSource(participantAvatarSource)) {
       return { success: false, error: 'invalid_avatar_source' };
     }
+    if (this.registry.getByParticipant(challenge.openerId)) {
+      return { success: false, error: 'opener_active_session' };
+    }
     if (this.registry.getByParticipant(normalizedId)) return { success: false, error: 'active_session' };
     const claimed = this.database.claimInteractiveChallenge(challengeId, {
       participantId: normalizedId,
