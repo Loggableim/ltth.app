@@ -266,14 +266,25 @@ class GameEnginePlugin {
     const identity = this._getChatMoveIdentity(data);
     if (!identity) return false;
     const now = Date.now();
+    const cutoff = now - 60000;
+    for (const [knownIdentity, timestamp] of this.recentConnect4MatchmakingEvents) {
+      if (timestamp > cutoff) break;
+      this.recentConnect4MatchmakingEvents.delete(knownIdentity);
+    }
     const previous = this.recentConnect4MatchmakingEvents.get(identity);
     if (previous && now - previous < 60000) return true;
     this.recentConnect4MatchmakingEvents.set(identity, now);
+    while (this.recentConnect4MatchmakingEvents.size > 1000) {
+      this.recentConnect4MatchmakingEvents.delete(this.recentConnect4MatchmakingEvents.keys().next().value);
+    }
     return false;
   }
 
   _connect4StartAliases() {
-    return new Set(['connect4', '4gewinnt', this.getConnect4StartCommandName()]);
+    const aliases = new Set(['connect4', '4gewinnt', this.getConnect4StartCommandName()]);
+    // /c4 is permanently reserved for an in-game column move.
+    aliases.delete('c4');
+    return aliases;
   }
 
   _isConnect4StartAlias(message) {
@@ -5731,36 +5742,21 @@ class GameEnginePlugin {
       const avatarSource = this._getAvatarProxyPath(context.profilePictureUrl || rawData.profilePictureUrl || '');
       const challenge = controller.recoverConnect4Challenge?.() || controller.getState?.().connect4Matchmaking;
       if (challenge?.status === 'open') {
-        const accepted = controller.acceptConnect4Challenge({
+        const result = controller.acceptAndStartConnect4Challenge({
           challengeId: challenge.challengeId,
           participantId: userId,
           participantDisplayName: nickname,
-          participantAvatarSource: avatarSource
+          participantAvatarSource: avatarSource,
+          triggerType: 'matchmaking_accept',
+          triggerValue: 'connect4'
         });
-        if (!accepted?.success) {
-          return { ...accepted, displayOverlay: true };
+        if (!result?.success) {
+          return { ...result, displayOverlay: true };
         }
         if (this.connect4MatchmakingTimeout) {
           clearTimeout(this.connect4MatchmakingTimeout);
           this.connect4MatchmakingTimeout = null;
         }
-        const participants = [
-          {
-            id: challenge.openerId,
-            displayName: challenge.openerDisplayName,
-            role: 'viewer',
-            avatarSource: challenge.openerAvatarSource || ''
-          },
-          { id: userId, displayName: nickname, role: 'viewer', avatarSource }
-        ];
-        const result = controller.startMatch({
-          gameType: 'connect4',
-          viewerId: challenge.openerId,
-          viewerDisplayName: challenge.openerDisplayName,
-          participants,
-          triggerType: 'matchmaking_accept',
-          triggerValue: 'connect4'
-        });
         return { ...result, accepted: Boolean(result?.success), displayOverlay: true };
       }
 

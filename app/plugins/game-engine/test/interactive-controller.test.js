@@ -1868,4 +1868,29 @@ describe('InteractiveController', () => {
     harness.controller.destroy();
     harness.sqlite.close();
   });
+
+  test('rolls a claimed Connect4 challenge back to open when match creation fails', () => {
+    const harness = createHarness();
+    harness.controller.init();
+    const opened = harness.controller.openConnect4Challenge({
+      openerId: 'opener',
+      openerDisplayName: 'Opener'
+    });
+    harness.createGame.mockImplementation(() => {
+      throw new Error('creation failed');
+    });
+
+    expect(harness.controller.acceptAndStartConnect4Challenge({
+      challengeId: opened.challenge.challengeId,
+      participantId: 'acceptor',
+      participantDisplayName: 'Acceptor'
+    })).toMatchObject({ success: false, error: 'creation failed' });
+    expect(harness.database.getOpenInteractiveChallenge()).toMatchObject({
+      challengeId: opened.challenge.challengeId,
+      status: 'open'
+    });
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
 });

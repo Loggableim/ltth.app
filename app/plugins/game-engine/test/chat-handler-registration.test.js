@@ -110,6 +110,31 @@ describe('Chat Handler Registration Fix', () => {
       expect(commands).toEqual(expect.arrayContaining(['connect4', '4gewinnt', 'customc4']));
     });
 
+    test('does not register c4 twice when it is configured as a start alias', () => {
+      const registerCommandsForPlugin = jest.fn((pluginId, commands) => ({
+        registered: commands.map(command => command.name),
+        failed: []
+      }));
+      mockApi.pluginLoader = {
+        loadedPlugins: new Map([['gcce', { instance: {
+          registerCommandsForPlugin,
+          unregisterCommandsForPlugin: jest.fn()
+        } }]])
+      };
+      plugin.db = {
+        getGameConfig: jest.fn(gameType => gameType === 'connect4'
+          ? { ...plugin.defaultConfigs.connect4, chatCommand: 'c4' }
+          : null),
+        getTriggers: jest.fn(() => [])
+      };
+
+      plugin.registerGCCECommands();
+
+      const commands = registerCommandsForPlugin.mock.calls[0][1];
+      expect(commands.filter(command => command.name === 'c4')).toHaveLength(1);
+      expect(commands.find(command => command.name === 'c4').minArgs).toBe(1);
+    });
+
     test('should leave prefixed chat commands to GCCE', () => {
       // Setup GCCE as available
       mockApi.pluginLoader = {

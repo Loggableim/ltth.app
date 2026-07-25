@@ -405,6 +405,60 @@ class InteractiveController {
     return { success: true, challenge: claimed };
   }
 
+  acceptAndStartConnect4Challenge({
+    challengeId,
+    participantId,
+    participantDisplayName,
+    participantAvatarSource = '',
+    triggerType = 'matchmaking_accept',
+    triggerValue = 'connect4'
+  } = {}) {
+    try {
+      const result = this.database.transaction(() => {
+        const accepted = this.acceptConnect4Challenge({
+          challengeId,
+          participantId,
+          participantDisplayName,
+          participantAvatarSource
+        });
+        if (!accepted.success) return accepted;
+        const challenge = accepted.challenge;
+        const started = this.startMatch({
+          gameType: 'connect4',
+          viewerId: challenge.openerId,
+          viewerDisplayName: challenge.openerDisplayName,
+          participants: [
+            {
+              id: challenge.openerId,
+              displayName: challenge.openerDisplayName,
+              role: 'viewer',
+              avatarSource: challenge.openerAvatarSource || ''
+            },
+            {
+              id: challenge.claimedById,
+              displayName: challenge.claimedByDisplayName,
+              role: 'viewer',
+              avatarSource: challenge.claimedByAvatarSource || ''
+            }
+          ],
+          triggerType,
+          triggerValue
+        });
+        if (!started.success) {
+          throw new Error(started.error || 'interactive_match_start_failed');
+        }
+        return { ...started, challenge };
+      });
+      return result;
+    } catch (error) {
+      // The claim and created session share one database transaction. A failed
+      // creation rolls the claim back to `open`, making it safe to retry or
+      // recover after a restart rather than stranding a claimed challenge.
+      this.emitState();
+      return { success: false, error: error.message };
+    }
+  }
+
   expireConnect4Challenge(challengeId) {
     const challenge = this.database.expireInteractiveChallenge(challengeId, this.now()) ||
       this.database.getInteractiveChallenge(challengeId);
@@ -576,6 +630,7 @@ class InteractiveController {
       if (created?.sessionId) {
         this.queue.remove(created.sessionId);
         this.registry.remove(created.sessionId);
+        this.discardRestoredGame?.(created.sessionId);
       }
       this.logger?.error?.(`[INTERACTIVE] Failed to start ${gameType}: ${error.message}`);
       return { success: false, error: error.message };

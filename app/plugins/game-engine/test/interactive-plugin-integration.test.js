@@ -1027,8 +1027,7 @@ describe('GameEnginePlugin interactive controller integration', () => {
         openerDisplayName: 'Viewer One',
         openerAvatarSource: '/api/game-engine/avatar?url=one'
       })),
-      acceptConnect4Challenge: jest.fn(() => ({ success: true, challenge: { challengeId: 41 } })),
-      startMatch: jest.fn(() => ({ success: true, started: true, sessionId: 77 }))
+      acceptAndStartConnect4Challenge: jest.fn(() => ({ success: true, started: true, sessionId: 77 }))
     };
 
     const result = await plugin.handleConnect4StartCommand([], {
@@ -1038,17 +1037,9 @@ describe('GameEnginePlugin interactive controller integration', () => {
     });
 
     expect(result).toMatchObject({ success: true, started: true, sessionId: 77 });
-    expect(plugin.interactiveController.acceptConnect4Challenge).toHaveBeenCalledWith(expect.objectContaining({
+    expect(plugin.interactiveController.acceptAndStartConnect4Challenge).toHaveBeenCalledWith(expect.objectContaining({
       challengeId: 41,
       participantId: 'viewer-two'
-    }));
-    expect(plugin.interactiveController.startMatch).toHaveBeenCalledWith(expect.objectContaining({
-      gameType: 'connect4',
-      viewerId: 'viewer-one',
-      participants: [
-        expect.objectContaining({ id: 'viewer-one', role: 'viewer' }),
-        expect.objectContaining({ id: 'viewer-two', role: 'viewer' })
-      ]
     }));
   });
 
@@ -1085,5 +1076,43 @@ describe('GameEnginePlugin interactive controller integration', () => {
       username: 'viewer-two',
       nickname: 'Viewer Two'
     }));
+  });
+
+  test('keeps the opener avatar when a matchmaking challenge falls back to the streamer', () => {
+    const { plugin } = createPlugin();
+    plugin.db = {
+      createSession: jest.fn(() => 91),
+      addPlayer2: jest.fn()
+    };
+    const avatarSource = '/api/game-engine/avatar?url=https%3A%2F%2Fp16.tiktokcdn.com%2Fopener.webp';
+
+    const created = plugin._createInteractiveGame({
+      gameType: 'connect4',
+      viewerId: 'opener',
+      viewerDisplayName: 'Opener',
+      hostDisplayName: 'Host',
+      participants: [
+        { id: 'opener', displayName: 'Opener', role: 'viewer', avatarSource },
+        { id: 'streamer', displayName: 'Host', role: 'host', avatarSource: '' }
+      ],
+      config: { streamerRole: 'player2', player1Color: '#f00', player2Color: '#ff0' },
+      triggerType: 'matchmaking_timeout',
+      triggerValue: 'connect4'
+    });
+
+    expect(created.game.player1).toMatchObject({ username: 'opener', avatarSource });
+    expect(created.game.player2).toMatchObject({ username: 'streamer', avatarSource: '' });
+  });
+
+  test('expires old matchmaking chat identities while still suppressing a duplicate event', () => {
+    const { plugin } = createPlugin();
+    jest.spyOn(Date, 'now').mockReturnValue(1000);
+    expect(plugin._isDuplicateConnect4MatchmakingEvent({ msgId: 'same' })).toBe(false);
+    expect(plugin._isDuplicateConnect4MatchmakingEvent({ msgId: 'same' })).toBe(true);
+    Date.now.mockReturnValue(62001);
+
+    expect(plugin._isDuplicateConnect4MatchmakingEvent({ msgId: 'fresh' })).toBe(false);
+    expect(plugin.recentConnect4MatchmakingEvents.has('chat:same')).toBe(false);
+    Date.now.mockRestore();
   });
 });
