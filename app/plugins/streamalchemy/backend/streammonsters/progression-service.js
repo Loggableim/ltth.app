@@ -86,14 +86,21 @@ class ProgressionService {
     if (!monster) return { rewarded: false };
     const won = Boolean(result.won);
     const updated = this.store.recordMonsterBattle(monster.monster_id, won);
+    // Monster growth is permanent and never subject to the daily season cap.
+    // The cap still protects league progression and achievement pacing only.
+    const progressed = this.store.awardMonsterXp(monster.monster_id, 10 + (won ? 5 : 0));
     const rewarded = this.store.claimDailyBattleReward(userId, this.dateKey(), 10);
     if (rewarded) {
-      this.store.awardMonsterXp(monster.monster_id, 10 + (won ? 5 : 0));
       this.addSeasonPoints(userId, 2 + (won ? 3 : 0));
     }
     this.incrementQuest(userId, this.weekKey(), 'weekly:battle', 'Fight a battle', 10, 1, streamKey, 50, 20);
     this.checkBattleAchievements(userId, updated);
-    return { rewarded, monster: this.store.getMonster(monster.monster_id) };
+    return {
+      rewarded,
+      monster: this.store.getMonster(monster.monster_id),
+      xpAwarded: progressed?.xpAwarded || 0,
+      levelUps: progressed?.levelUps || 0
+    };
   }
 
   recordCollection(userId, totalElements, streamKey = null) {

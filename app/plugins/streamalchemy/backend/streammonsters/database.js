@@ -47,6 +47,7 @@ class StreamMonstersDatabase {
         is_selected INTEGER NOT NULL DEFAULT 0,
         battle_count INTEGER NOT NULL DEFAULT 0,
         win_streak INTEGER NOT NULL DEFAULT 0,
+        unspent_stat_points INTEGER NOT NULL DEFAULT 0,
         created_at_ms INTEGER NOT NULL
       );
       CREATE INDEX IF NOT EXISTS streammonsters_monsters_user
@@ -200,6 +201,7 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_monsters', 'visual_key', 'TEXT');
     this.ensureColumn('streammonsters_monsters', 'battle_count', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_monsters', 'win_streak', 'INTEGER NOT NULL DEFAULT 0');
+    this.ensureColumn('streammonsters_monsters', 'unspent_stat_points', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_gift_mappings', 'enabled', 'INTEGER NOT NULL DEFAULT 1');
     this.ensureColumn('streammonsters_viewer_progress', 'pending_xp', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_viewer_progress', 'battle_win_streak', 'INTEGER NOT NULL DEFAULT 0');
@@ -583,27 +585,62 @@ class StreamMonstersDatabase {
   awardMonsterXp(monsterId, amount) {
     const current = this.getMonster(monsterId);
     if (!current) return null;
+    if (current.level >= 20) {
+      return { ...current, levelUps: 0, xpAwarded: 0 };
+    }
     let level = current.level;
     let xp = current.xp + Math.max(0, Number.parseInt(amount, 10) || 0);
-    const stats = { ...current.stats };
-    const seed = this.db.prepare(`
-      SELECT seed FROM streammonsters_eggs WHERE egg_id = ?
-    `).get(current.egg_id)?.seed || current.monster_id;
-    while (xp >= 100 + (25 * (level - 1))) {
+    let unspentStatPoints = Number(current.unspent_stat_points) || 0;
+    const initialLevel = level;
+    while (level < 20 && xp >= 100 + (25 * (level - 1))) {
       xp -= 100 + (25 * (level - 1));
       level += 1;
-      if (level <= 20 && level % 2 === 0) {
-        const names = ['vitality', 'might', 'guard', 'agility'];
-        const stat = names[this.hashNumber(`${seed}:level:${level}`) % names.length];
-        stats[stat] = (Number(stats[stat]) || 0) + 1;
-      }
+      unspentStatPoints += 1;
     }
+    // Level 20 is the hard cap. Any excess XP from the level-up that reaches
+    // it is intentionally discarded so the monster cannot bank progress above
+    // the cap.
+    if (level >= 20) xp = 0;
     this.db.prepare(`
       UPDATE streammonsters_monsters
-      SET level = ?, xp = ?, stats_json = ?
+      SET level = ?, xp = ?, unspent_stat_points = ?
       WHERE monster_id = ?
-    `).run(level, xp, JSON.stringify(stats), monsterId);
+    `).run(level, xp, unspentStatPoints, monsterId);
+    return {
+      ...this.getMonster(monsterId),
+      levelUps: level - initialLevel,
+      xpAwarded: Math.max(0, Number.parseInt(amount, 10) || 0)
+    };
+  }
+
+  applyMonsterStatPoint(userId, monsterId, stat) {
+    const allowed = new Set(['vitality', 'might', 'guard', 'agility']);
+    if (!allowed.has(stat)) throw new Error('STREAM_MONSTERS_INVALID_STAT');
+    const transaction = this.db.transaction(() => {
+      const monster = this.getMonster(monsterId);
+      if (!monster || monster.user_id !== userId) throw new Error('STREAM_MONSTER_NOT_OWNED');
+      if ((Number(monster.unspent_stat_points) || 0) <= 0) {
+        throw new Error('STREAM_MONSTERS_NO_STAT_POINT');
+      }
+      const stats = { ...monster.stats, [stat]: (Number(monster.stats[stat]) || 0) + 1 };
+      this.db.prepare(`
+        UPDATE streammonsters_monsters
+        SET stats_json = ?, unspent_stat_points = unspent_stat_points - 1
+        WHERE monster_id = ? AND user_id = ? AND unspent_stat_points > 0
+      `).run(JSON.stringify(stats), monsterId, userId);
+    });
+    transaction();
     return this.getMonster(monsterId);
+  }
+
+  getViewerPendingStatChoice(userId) {
+    const row = this.db.prepare(`
+      SELECT * FROM streammonsters_monsters
+      WHERE user_id = ? AND unspent_stat_points > 0
+      ORDER BY is_selected DESC, created_at_ms ASC, monster_id ASC
+      LIMIT 1
+    `).get(userId);
+    return row ? { ...row, stats: JSON.parse(row.stats_json) } : null;
   }
 
   awardViewerXp(userId, amount, preferredMonsterId = null) {

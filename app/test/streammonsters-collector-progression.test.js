@@ -46,7 +46,7 @@ describe('Stream Monsters 1.2 progression and seasons', () => {
       .toBe(28 * 24 * 60 * 60 * 1000);
   });
 
-  test('uses 100 + 25 x (level - 1) thresholds and adds one deterministic stat at even levels through 20', () => {
+  test('uses 100 + 25 x (level - 1) thresholds and leaves level-up points for the viewer through level 20', () => {
     const store = new StreamMonstersDatabase(new Database(':memory:'));
     store.initialize();
     const monster = createMonster(store, 'viewer-a', 'level-seed');
@@ -56,7 +56,12 @@ describe('Stream Monsters 1.2 progression and seasons', () => {
 
     expect(leveled.level).toBe(3);
     expect(leveled.xp).toBe(0);
-    expect(Object.values(leveled.stats).reduce((sum, value) => sum + value, 0)).toBe(29);
+    expect(leveled.unspent_stat_points).toBe(2);
+    expect(Object.values(leveled.stats).reduce((sum, value) => sum + value, 0)).toBe(28);
+
+    const assigned = store.applyMonsterStatPoint('viewer-a', monster.monster_id, 'might');
+    expect(assigned.unspent_stat_points).toBe(1);
+    expect(assigned.stats.might).toBe(8);
   });
 
   test('keeps early quest and first-action XP pending until the viewer owns a monster', () => {
@@ -77,7 +82,7 @@ describe('Stream Monsters 1.2 progression and seasons', () => {
     expect(store.getMonster(monster.monster_id).xp).toBe(52);
   });
 
-  test('only the first ten battles each UTC day grant XP and season points', () => {
+  test('awards monster XP for every battle while the daily cap only limits season rewards', () => {
     const store = new StreamMonstersDatabase(new Database(':memory:'));
     store.initialize();
     const monster = createMonster(store, 'viewer-a');
@@ -90,8 +95,29 @@ describe('Stream Monsters 1.2 progression and seasons', () => {
       progression.recordBattle('viewer-a', 'creator:room', { monster, won: false });
     }
 
-    expect(store.getMonster(monster.monster_id)).toEqual(expect.objectContaining({ level: 2, xp: 50 }));
+    expect(store.getMonster(monster.monster_id)).toEqual(expect.objectContaining({
+      level: 2,
+      xp: 70,
+      unspent_stat_points: 1
+    }));
     expect(progression.getViewerSeason('viewer-a').points).toBe(40);
+  });
+
+  test('stops monster progression at level 20 without changing XP or stats afterwards', () => {
+    const store = new StreamMonstersDatabase(new Database(':memory:'));
+    store.initialize();
+    const monster = createMonster(store, 'viewer-a', 'level-cap');
+    store.db.prepare(`
+      UPDATE streammonsters_monsters
+      SET level = 20, xp = 0, unspent_stat_points = 19
+      WHERE monster_id = ?
+    `).run(monster.monster_id);
+
+    const before = store.getMonster(monster.monster_id);
+    const awarded = store.awardMonsterXp(monster.monster_id, 999);
+
+    expect(awarded).toEqual(expect.objectContaining({ level: 20, xp: 0, unspent_stat_points: 19 }));
+    expect(awarded.stats).toEqual(before.stats);
   });
 
   test('season rollover resets league points but preserves collection and monster level', () => {
