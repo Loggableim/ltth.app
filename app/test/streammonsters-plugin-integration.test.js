@@ -228,6 +228,10 @@ describe('Stream Monsters plugin integration', () => {
     }));
     expect(Object.keys(plugin.streamMonstersBattleMatch.activeMatch.skillWindow.lockedChoices)).toHaveLength(1);
     expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toHaveLength(1);
+    expect(api.log).toHaveBeenCalledWith(
+      expect.stringContaining('[STREAM MONSTERS][GCCE] Raw A from viewer-a: skill_locked'),
+      'info'
+    );
     await plugin.destroy();
   });
 

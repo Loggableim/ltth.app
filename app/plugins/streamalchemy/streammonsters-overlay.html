@@ -272,15 +272,35 @@
   const MIN_BOTTOM_OVERLAY_DURATION_MS = 8_000;
   const MAX_BOTTOM_OVERLAY_DURATION_MS = 20_000;
   const eventQueue = [];
-  const criticalEventTypes = new Set(['egg_spawned', 'hatch_started', 'egg_hatched', 'battle_started', 'battle_skill_prompt', 'battle_action', 'battle_knockout', 'battle_completed']);
+  const criticalEventTypes = new Set(['egg_spawned', 'hatch_started', 'egg_hatched', 'battle_match_found', 'battle_roster_locked', 'battle_started', 'battle_skill_prompt', 'battle_skill_locked', 'battle_action', 'battle_knockout', 'battle_completed']);
   const lowerCardEventTypes = new Set(['hype_changed', 'gift_combo', 'chat_result', 'quest_completed', 'achievement_unlocked', 'season_rank_changed']);
   const chatCooldowns = new Map();
   const overlayViews = globalThis.StreamMonstersOverlayViews;
   let queueRunning = false;
+  let interruptActiveLowerPresentation = null;
   let battleNames = ['Monster A','Monster B'];
   let battleIds = [null,null];
   let battleAdvantageName = '';
   let bottomOverlayDurationMs = DEFAULT_BOTTOM_OVERLAY_DURATION_MS;
+  const interruptLowerPresentation = () => {
+    const interrupt = interruptActiveLowerPresentation;
+    interruptActiveLowerPresentation = null;
+    interrupt?.();
+    ['chat-card', 'card', 'monster-collection', 'monster-profile', 'hype'].forEach(id => node(id).classList.remove('visible'));
+  };
+  const waitForLowerPresentation = milliseconds => new Promise(resolve => {
+    let finished = false;
+    let timer = null;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      if (timer !== null) clearTimeout(timer);
+      if (interruptActiveLowerPresentation === finish) interruptActiveLowerPresentation = null;
+      resolve();
+    };
+    interruptActiveLowerPresentation = finish;
+    timer = setTimeout(finish, milliseconds);
+  });
   let commandPrefix = '!';
   let arenaAudioEnabled = true;
   let arenaAudioVolume = 0.7;
@@ -559,7 +579,7 @@
     node('hint').textContent = hint || '!eggs · !hatch [slot] · !battle';
     node('card').classList.toggle('charged', Boolean(charged));
     node('card').classList.add('visible');
-    await wait(normalizeBottomOverlayDuration(durationMs));
+    await waitForLowerPresentation(normalizeBottomOverlayDuration(durationMs));
     node('card').classList.remove('visible');
     await wait(350);
   };
@@ -649,7 +669,7 @@
     node('hype').style.setProperty('--hype',`${points}%`);
     node('hype-value').textContent = data?.hype?.charged_eggs ? 'CHARGED!' : `${points}%`;
     node('hype').classList.add('visible');
-    await wait(2600);
+    await waitForLowerPresentation(2600);
     node('hype').classList.remove('visible');
   };
   const showChat = async data => {
@@ -661,7 +681,7 @@
     if (!message) return;
     node('chat-card').textContent = `${userId} · ${message}`;
     node('chat-card').classList.add('visible');
-    await wait(durationFor(data));
+    await waitForLowerPresentation(durationFor(data));
     node('chat-card').classList.remove('visible');
   };
   const renderCollectionPage = ({ userId, page, pageIndex, pageCount, selected }) => {
@@ -706,10 +726,10 @@
         selected: data?.result?.selected
       });
       const pageDuration = Math.min(5_000, remaining);
-      await wait(pageDuration);
+      await waitForLowerPresentation(pageDuration);
       remaining -= pageDuration;
     }
-    if (remaining > 0) await wait(remaining);
+    if (remaining > 0) await waitForLowerPresentation(remaining);
     collection.classList.remove('visible');
     await wait(350);
   };
@@ -738,7 +758,7 @@
     });
     const card = node('monster-profile');
     card.classList.add('visible');
-    await wait(durationFor(data));
+    await waitForLowerPresentation(durationFor(data));
     card.classList.remove('visible');
     await wait(350);
   };
@@ -808,15 +828,39 @@
       if (fighters.length === 2) showBattle({ left:fighters[0].name, right:fighters[1].name, fighters, detail:battleCopy('restored'), round:data?.battle?.roundNumber || 0, keepVisible:true });
       return;
     }
-    if (type === 'battle_match_found') return showToast(battleCopy('found', { choose:`${commandPrefix}choose [slot]` }), 3000);
+    if (type === 'battle_match_found') {
+      const fighters = (data?.match?.participants || []).map(participant => participant?.monster).filter(Boolean);
+      if (fighters.length === 2) {
+        battleIds = fighters.map(fighter => fighter.monster_id || fighter.monsterId || null);
+        battleNames = fighters.map(itemName);
+        setBattleSkills();
+        showBattle({
+          left: battleNames[0],
+          right: battleNames[1],
+          fighters,
+          detail: battleCopy('found', { choose:`${commandPrefix}choose [slot]` }),
+          keepVisible: true
+        });
+        node('battle-kicker').textContent = 'Collector Arena · Monsterwahl';
+        node('battle').classList.add('arena-entering');
+        setTimeout(() => node('battle').classList.remove('arena-entering'), reducedMotion ? 0 : 1_000);
+        return;
+      }
+      return showToast(battleCopy('found', { choose:`${commandPrefix}choose [slot]` }), 3000);
+    }
     if (type === 'battle_cancelled') return showToast(battleCopy('cancelled'), 4000);
-    if (type === 'battle_roster_locked') return showToast(data?.autoLocked ? battleCopy('rosterAuto') : battleCopy('roster'), 1800);
+    if (type === 'battle_roster_locked') {
+      node('battle').classList.add('visible');
+      node('battle-detail').textContent = data?.autoLocked ? battleCopy('rosterAuto') : battleCopy('roster');
+      return;
+    }
     if (type === 'battle_started') {
       battleIds = [data?.challenger?.monster_id, data?.defender?.monster_id];
       battleAdvantageName = data?.elementAdvantageMonsterId === battleIds[0]
         ? itemName(data?.challenger)
         : (data?.elementAdvantageMonsterId === battleIds[1] ? itemName(data?.defender) : '');
       setBattleSkills();
+      node('battle-kicker').textContent = 'Collector Arena · Drei Runden';
       showBattle({
         left:itemName(data?.challenger),
         right:itemName(data?.defender),
@@ -834,6 +878,7 @@
     if (type === 'battle_skill_prompt') {
       const candidate = data?.skills?.[battleIds[0]] || Object.values(data?.skills || {})[0] || {};
       setBattleSkills(candidate);
+      node('battle-kicker').textContent = 'Collector Arena · Skill wählen';
       node('battle-detail').textContent = battleCopy('round', { round:data?.roundNumber || 1 });
       node('battle').classList.add('visible');
       return;
@@ -967,6 +1012,7 @@
   };
   const enqueue = (type,data) => {
     if (criticalEventTypes.has(type)) {
+      interruptLowerPresentation();
       for (let index = eventQueue.length - 1; index >= 0; index -= 1) {
         if (lowerCardEventTypes.has(eventQueue[index].type)) eventQueue.splice(index, 1);
       }

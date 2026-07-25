@@ -225,6 +225,93 @@ describe('Stream Monsters OBS overlay', () => {
     profile.dom.window.close();
   });
 
+  test('renders both combatants while a reserved match waits for monster selection', async () => {
+    const { dom, handlers } = bootOverlay();
+    handlers['streammonsters:battle_match_found']({
+      match: {
+        matchId: 'match-roster',
+        phase: 'roster_selection',
+        participants: [
+          {
+            userId: 'viewer-a',
+            monsterId: 'monster-a',
+            monster: { monster_id: 'monster-a', name: 'Pulse', element: 'Volt', image_url: '/pulse.png', hp: 58, maxHp: 58 }
+          },
+          {
+            userId: 'viewer-b',
+            monsterId: 'monster-b',
+            monster: { monster_id: 'monster-b', name: 'Mosswhisker', element: 'Grove', image_url: '/moss.png', hp: 62, maxHp: 62 }
+          }
+        ]
+      }
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(dom.window.document.getElementById('battle').classList).toContain('visible');
+    expect(dom.window.document.getElementById('battle-art-a').src).toContain('/pulse.png');
+    expect(dom.window.document.getElementById('battle-art-b').src).toContain('/moss.png');
+    expect(dom.window.document.getElementById('battle-detail').textContent).toContain('!choose');
+    dom.window.close();
+  });
+
+  test('interrupts a text notice when a battle begins so the arena is not delayed', async () => {
+    const { dom, handlers } = bootOverlay();
+    handlers['streammonsters:chat_result']({
+      userId: 'viewer-a',
+      result: { status: 'queued', message: 'Battle queue joined. Waiting for an opponent.' }
+    });
+    await Promise.resolve();
+    expect(dom.window.document.getElementById('chat-card').classList).toContain('visible');
+
+    handlers['streammonsters:battle_started']({
+      challenger: { monster_id: 'monster-a', name: 'Pulse', element: 'Volt', image_url: '/pulse.png', hp: 58, maxHp: 58 },
+      defender: { monster_id: 'monster-b', name: 'Mosswhisker', element: 'Grove', image_url: '/moss.png', hp: 62, maxHp: 62 }
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise(resolve => dom.window.setTimeout(resolve, 0));
+
+    expect(dom.window.document.getElementById('chat-card').classList).not.toContain('visible');
+    expect(dom.window.document.getElementById('battle').classList).toContain('visible');
+    dom.window.close();
+  });
+
+  test('interrupts a live hype card when a battle begins so skill windows stay on schedule', async () => {
+    const { dom, handlers } = bootOverlay();
+    handlers['streammonsters:hype_changed']({ hype: { points: 50 } });
+    await Promise.resolve();
+    expect(dom.window.document.getElementById('hype').classList).toContain('visible');
+
+    handlers['streammonsters:battle_started']({
+      challenger: { monster_id: 'monster-a', name: 'Pulse', element: 'Volt', image_url: '/pulse.png', hp: 58, maxHp: 58 },
+      defender: { monster_id: 'monster-b', name: 'Mosswhisker', element: 'Grove', image_url: '/moss.png', hp: 62, maxHp: 62 }
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise(resolve => dom.window.setTimeout(resolve, 0));
+
+    expect(dom.window.document.getElementById('hype').classList).not.toContain('visible');
+    expect(dom.window.document.getElementById('battle').classList).toContain('visible');
+    dom.window.close();
+  });
+
+  test('keeps the arena event stream unblocked while both rosters lock', async () => {
+    const { dom, handlers } = bootOverlay();
+    handlers['streammonsters:battle_roster_locked']({ autoLocked: false });
+    handlers['streammonsters:battle_started']({
+      challenger: { monster_id: 'monster-a', name: 'Pulse', element: 'Volt', image_url: '/pulse.png', hp: 58, maxHp: 58 },
+      defender: { monster_id: 'monster-b', name: 'Mosswhisker', element: 'Grove', image_url: '/moss.png', hp: 62, maxHp: 62 }
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise(resolve => dom.window.setTimeout(resolve, 0));
+
+    expect(dom.window.document.getElementById('battle').classList).toContain('visible');
+    expect(dom.window.document.getElementById('battle-detail').textContent).toContain('Elemente');
+    dom.window.close();
+  });
+
   test('establishes a visible two-monster arena from a standalone battle action', async () => {
     const { dom, handlers } = bootOverlay({ reducedMotion: true });
     handlers['streammonsters:battle_action']({

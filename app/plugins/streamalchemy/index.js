@@ -87,7 +87,8 @@ class StreamAlchemyPlugin {
       engine: this.streamMonstersEngine,
       battleService: this.streamMonstersBattleService,
       progression: this.streamMonstersProgression,
-      emit: (event, payload) => this.api.emit(event, payload)
+      emit: (event, payload) => this.api.emit(event, payload),
+      log: (message, level = 'info') => this.api.log(message, level)
     });
     this.streamMonstersChatCommands = new StreamMonstersChatCommands({
       store: this.streamMonstersStore,
@@ -650,12 +651,16 @@ class StreamAlchemyPlugin {
       if (typeof gcce.registerRawResponseHandlerForPlugin === 'function') {
         gcce.registerRawResponseHandlerForPlugin('streamalchemy', ({ message, context }) => {
           const outcome = this.streamMonstersBattleMatch.handleRawResponse(context, message);
+          const userId = context?.rawData?.uniqueId
+            || context?.rawData?.username
+            || context?.uniqueId
+            || context?.username
+            || context?.userId;
           if (outcome.handled && outcome.result) {
-            const userId = context?.rawData?.uniqueId
-              || context?.rawData?.username
-              || context?.uniqueId
-              || context?.username
-              || context?.userId;
+            this.api.log(
+              `[STREAM MONSTERS][GCCE] Raw ${String(message || '').trim().toUpperCase()} from ${userId || 'unknown'}: ${outcome.result.status || 'handled'}`,
+              'info'
+            );
             this.api.emit('streammonsters:chat_result', {
               userId,
               result: outcome.result,
@@ -667,6 +672,10 @@ class StreamAlchemyPlugin {
         this.streamMonstersGCCERawRegistered = true;
       }
       this.streamMonstersGCCE = gcce;
+      this.api.log(
+        `[STREAM MONSTERS][GCCE] Registered ${definitions.length} commands and the state-gated battle input bridge.`,
+        'info'
+      );
       return true;
     } catch (error) {
       this.api.log(`[STREAM MONSTERS] GCCE command registration failed: ${error.message}`, 'warn');

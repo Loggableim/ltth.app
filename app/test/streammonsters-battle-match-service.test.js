@@ -9,6 +9,7 @@ function createArena() {
   const store = new StreamMonstersDatabase(new Database(':memory:'));
   store.initialize();
   const emitted = [];
+  const logs = [];
   const engine = new StreamMonstersEngine({ store, config: { hatchDurationMs: 0 }, now: () => Date.now() });
   engine.setStreamKey('creator:arena');
   const progression = new ProgressionService({ store, now: () => new Date(Date.now()) });
@@ -18,6 +19,7 @@ function createArena() {
     progression,
     battleService: new BattleService({ store, now: () => Date.now() }),
     emit: (event, payload) => emitted.push({ event, payload }),
+    log: (message, level) => logs.push({ message, level }),
     now: () => Date.now(),
     actionDelayMs: 1_000
   });
@@ -42,7 +44,7 @@ function createArena() {
       createdAtMs: Date.now()
     });
   };
-  return { store, service, emitted, addMonster };
+  return { store, service, emitted, logs, addMonster };
 }
 
 describe('Stream Monsters cinematic BattleMatchService', () => {
@@ -63,7 +65,10 @@ describe('Stream Monsters cinematic BattleMatchService', () => {
     expect(service.join('viewer-a')).toEqual(expect.objectContaining({ status: 'queued' }));
     expect(service.join('viewer-b')).toEqual(expect.objectContaining({ status: 'match_found' }));
     expect(emitted.find(entry => entry.event === 'streammonsters:battle_match_found').payload.match.participants)
-      .toEqual(expect.arrayContaining([expect.objectContaining({ userId: 'viewer-a' }), expect.objectContaining({ userId: 'viewer-b' })]));
+      .toEqual(expect.arrayContaining([
+        expect.objectContaining({ userId: 'viewer-a', monster: expect.objectContaining({ monster_id: a.monster_id }) }),
+        expect.objectContaining({ userId: 'viewer-b', monster: expect.objectContaining({ monster_id: b.monster_id }) })
+      ]));
 
     jest.advanceTimersByTime(30_000);
     jest.advanceTimersByTime(3_000);
@@ -101,6 +106,20 @@ describe('Stream Monsters cinematic BattleMatchService', () => {
     expect(service.activeMatch.phase).toBe('resolving');
     jest.advanceTimersByTime(1_000);
     expect(service.activeMatch.phase).toBe('skill_selection');
+    service.destroy();
+  });
+
+  test('writes an auditable battle phase log when a match is reserved', () => {
+    const { service, logs, addMonster } = createArena();
+    addMonster('viewer-a');
+    addMonster('viewer-b', 'Grove');
+
+    service.join('viewer-a');
+    service.join('viewer-b');
+
+    expect(logs).toEqual(expect.arrayContaining([
+      expect.objectContaining({ level: 'info', message: expect.stringContaining('Match reserved') })
+    ]));
     service.destroy();
   });
 

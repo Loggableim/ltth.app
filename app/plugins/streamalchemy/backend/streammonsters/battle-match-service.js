@@ -5,6 +5,7 @@ class BattleMatchService {
     battleService,
     progression = null,
     emit = () => {},
+    log = () => {},
     now = () => Date.now(),
     queueTtlMs = 5 * 60 * 1000,
     rosterTimeoutMs = 30_000,
@@ -21,6 +22,7 @@ class BattleMatchService {
     this.battleService = battleService;
     this.progression = progression;
     this.emit = emit;
+    this.log = typeof log === 'function' ? log : () => {};
     this.now = now;
     this.queueTtlMs = queueTtlMs;
     this.rosterTimeoutMs = rosterTimeoutMs;
@@ -117,6 +119,7 @@ class BattleMatchService {
       return { handled: true, result: { success: false, status: 'skill_unavailable' } };
     }
     match.skillWindow.lockedChoices[monsterId] = choice;
+    this.audit(`Match ${match.matchId}: ${userId} locked skill ${choice} for round ${match.battleState.roundNumber + 1}.`);
     this.emit('streammonsters:battle_skill_locked', {
       matchId: match.matchId,
       battleId: match.battleState.battleId,
@@ -200,6 +203,7 @@ class BattleMatchService {
       skillWindow: null
     };
     this.activeMatch = match;
+    this.audit(`Match reserved ${match.matchId} for ${challenger.userId} vs ${defender.userId}; roster selection expires at ${match.rosterDeadlineAtMs}.`);
     this.emit('streammonsters:battle_match_found', { match: this.publicMatch(match) });
     this.schedule('match', this.rosterTimeoutMs, () => this.startBattle(match));
     return match;
@@ -220,6 +224,7 @@ class BattleMatchService {
     }
     match.battleState = this.battleService.createBattleState(monsters[0], monsters[1], match.seed);
     match.phase = 'entering';
+    this.audit(`Match ${match.matchId} started with ${monsters[0].monster_id} vs ${monsters[1].monster_id}.`);
     this.emit('streammonsters:battle_roster_locked', {
       matchId: match.matchId,
       autoLocked: true,
@@ -253,6 +258,7 @@ class BattleMatchService {
       participant.monsterId,
       this.battleService.getAvailableSkills(match.battleState, participant.monsterId)
     ]));
+    this.audit(`Match ${match.matchId} opened skill selection for round ${roundNumber}; deadline ${match.skillWindow.deadlineAtMs}.`);
     this.emit('streammonsters:battle_skill_prompt', {
       matchId: match.matchId,
       battleId: match.battleState.battleId,
@@ -419,12 +425,17 @@ class BattleMatchService {
 
   publicMatch(match, viewerId = null) {
     if (!match) return null;
-    const participants = Object.values(match.participants).map(participant => ({
-      userId: participant.userId,
-      monsterId: participant.monsterId,
-      locked: participant.locked,
-      isViewer: participant.userId === viewerId
-    }));
+    const participants = Object.values(match.participants).map(participant => {
+      const previewMonsterId = participant.monsterId || participant.defaultMonsterId;
+      return {
+        userId: participant.userId,
+        monsterId: participant.monsterId,
+        defaultMonsterId: participant.defaultMonsterId,
+        monster: previewMonsterId ? this.store.getMonster(previewMonsterId) : null,
+        locked: participant.locked,
+        isViewer: participant.userId === viewerId
+      };
+    });
     return {
       matchId: match.matchId,
       phase: match.phase,
@@ -484,6 +495,14 @@ class BattleMatchService {
     this.queue = [];
     this.pendingStatChoices.clear();
     this.activeMatch = null;
+  }
+
+  audit(message) {
+    try {
+      this.log(`[STREAM MONSTERS][Battle] ${message}`, 'info');
+    } catch {
+      // Battle telemetry must never interrupt a live match.
+    }
   }
 
   hashNumber(value) {
