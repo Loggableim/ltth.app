@@ -116,6 +116,28 @@ describe('Stream Monsters chat commands', () => {
     expect(commands.handle({ username: 'viewer-b' }, '!battle').status).toBe('started');
   });
 
+  test('reports the remaining incubation time when a viewer tries to hatch too early', () => {
+    const { store, commands } = createCommands();
+    store.createEgg({
+      eggId: 'incubating-egg', userId: 'viewer-a', giftId: 1, giftName: 'Heart',
+      element: 'Volt', eggColor: '#ffffff', seed: 'incubating', createdAtMs: 1_000,
+      hatchDurationMs: 65_000, readyAtMs: 66_000
+    });
+
+    // A busy fallback chat must not hide the viewer's own hatch countdown.
+    expect(commands.handle({ username: 'viewer-b' }, '!inventory').status).toBe('inventory');
+    const result = commands.handle({ username: 'viewer-a' }, '!hatch 1');
+
+    expect(result).toEqual(expect.objectContaining({
+      success: false,
+      status: 'egg_not_ready',
+      slot: 1,
+      remainingMs: 65_000,
+      readyAtMs: 66_000,
+      message: 'Egg 1 is still incubating. Try !hatch 1 again in 1m 5s.'
+    }));
+  });
+
   test('skips domain cooldowns when GCCE already owns cooldown enforcement', () => {
     const { commands, hatch } = createCommands();
     hatch('viewer-a', 1);

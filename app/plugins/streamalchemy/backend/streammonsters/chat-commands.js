@@ -1,3 +1,10 @@
+function formatRemainingDuration(remainingMs) {
+  const totalSeconds = Math.max(1, Math.ceil(Math.max(0, Number(remainingMs) || 0) / 1_000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return minutes ? `${minutes}m ${seconds}s` : `${seconds}s`;
+}
+
 class ChatCommands {
   constructor({ store, engine, battleService, battleMatchService = null, progression = null, emit = () => {}, now = () => Date.now(), queueTtlMs = 5 * 60 * 1000, globalCooldownMs = 250 }) {
     this.store = store;
@@ -26,7 +33,7 @@ class ChatCommands {
     }
     if (!context.skipCooldowns) {
       if (this.isCoolingDown(userId, command)) return { success: false, status: 'cooldown', message: 'Please wait before using that command again.' };
-      if (command !== '!battle' && this.isGloballyCoolingDown()) {
+      if (command !== '!battle' && command !== '!hatch' && this.isGloballyCoolingDown()) {
         return { success: false, status: 'global_cooldown', message: 'The Stream Monsters chat is busy. Please try again in a moment.' };
       }
       this.recordCommandUsage(userId, command);
@@ -64,8 +71,26 @@ class ChatCommands {
   }
 
   hatch(userId, slot) {
+    const requestedSlot = Math.max(1, Number.parseInt(slot, 10) || 1);
+    const egg = this.store.getViewerHatchableEggs(userId)[requestedSlot - 1];
+    if (egg?.state === 'incubating') {
+      const storedReadyAtMs = Number(egg.ready_at_ms);
+      const fallbackReadyAtMs = Number(egg.created_at_ms) + Number(egg.hatch_duration_ms) - Number(egg.boost_ms || 0);
+      const readyAtMs = Number.isFinite(storedReadyAtMs) ? storedReadyAtMs : fallbackReadyAtMs;
+      const remainingMs = Math.max(0, readyAtMs - this.now());
+      if (remainingMs > 0) {
+        return {
+          success: false,
+          status: 'egg_not_ready',
+          slot: requestedSlot,
+          remainingMs,
+          readyAtMs,
+          message: `Egg ${requestedSlot} is still incubating. Try !hatch ${requestedSlot} again in ${formatRemainingDuration(remainingMs)}.`
+        };
+      }
+    }
     try {
-      const monster = this.engine.hatchEgg(userId, slot || 1);
+      const monster = this.engine.hatchEgg(userId, requestedSlot);
       return {
         success: true,
         status: 'hatched',
@@ -73,6 +98,7 @@ class ChatCommands {
         monster
       };
     } catch (error) {
+      if (error?.message !== 'STREAM_MONSTERS_EGG_NOT_READY') throw error;
       return {
         success: false,
         status: 'egg_not_ready',
