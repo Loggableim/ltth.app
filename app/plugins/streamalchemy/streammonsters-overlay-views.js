@@ -33,5 +33,30 @@
     }
   });
 
-  return { paginate, collectionDurationMs, profile };
+  const arenaAction = (action = {}, actorSide = 'a') => {
+    const outcomes = Array.isArray(action.outcomes) ? action.outcomes : [];
+    const damageOutcomes = outcomes.filter(outcome => outcome?.type === 'damage');
+    const sum = (items, key) => items.reduce((total, item) => total + Math.max(0, Number(item?.[key]) || 0), 0);
+    const selectedChoice = String(action.selectedChoice || 'A').toUpperCase();
+    const kind = selectedChoice === 'C' ? 'special' : (selectedChoice === 'B' ? 'defense' : 'attack');
+    const hitCount = damageOutcomes.length;
+    return {
+      kind,
+      sound: kind === 'special' ? 'special' : (kind === 'defense' ? 'shield' : 'hit'),
+      vfxKey: String(action.skill?.vfxKey || `${action.before?.element || 'neutral'}-${kind}`),
+      element: action.after?.element || action.before?.element || 'Neutral',
+      actorSide: actorSide === 'b' ? 'b' : 'a',
+      targetSide: actorSide === 'b' ? 'a' : 'b',
+      hitCount,
+      multiHit: hitCount > 1,
+      damage: sum(damageOutcomes, 'hpDamage'),
+      shieldDamage: sum(damageOutcomes, 'shieldAbsorbed'),
+      shieldGain: sum(outcomes.filter(outcome => outcome?.type === 'shield'), 'amount'),
+      healing: sum(outcomes.filter(outcome => outcome?.type === 'heal'), 'amount'),
+      evaded: damageOutcomes.some(outcome => outcome?.evaded),
+      durationMs: kind === 'special' ? 3_400 : (hitCount > 1 ? 2_900 : 2_400)
+    };
+  };
+
+  return { paginate, collectionDurationMs, profile, arenaAction };
 }));

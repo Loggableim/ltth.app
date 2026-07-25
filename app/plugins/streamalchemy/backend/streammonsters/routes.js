@@ -150,17 +150,51 @@ class StreamMonstersRoutes {
           C: { name: 'Root Rocket', description: 'Charge not ready.', available: false }
         }
       };
-      const action = {
+      const actionBase = {
         monsterId: monster.monster_id,
         targetMonsterId: opponent.monster_id,
-        selectedChoice: 'C',
-        skill: { name: 'Overclock Beam', vfxKey: 'volt-overclock-beam' },
         before: { ...fighters[monster.monster_id], hp: 34, charge: 100 },
-        after: { ...fighters[monster.monster_id], hp: 34, charge: 0 },
-        targetBefore: { ...fighters[opponent.monster_id], hp: 12 },
-        targetAfter: { ...fighters[opponent.monster_id], hp: 0 },
-        outcomes: [{ type: 'damage', hpDamage: 12, shieldAbsorbed: 0 }]
+        targetBefore: { ...fighters[opponent.monster_id], hp: 12, shield: 0 },
+        targetAfter: { ...fighters[opponent.monster_id], hp: 0, shield: 0 }
       };
+      const actionByScene = {
+        attack: {
+          ...actionBase,
+          selectedChoice: 'A',
+          skill: { name: 'Circuit Claw', vfxKey: 'volt-circuit-claw' },
+          after: { ...fighters[monster.monster_id], hp: 34, charge: 100 },
+          outcomes: [{ type: 'damage', hpDamage: 7, shieldAbsorbed: 0 }]
+        },
+        defense: {
+          ...actionBase,
+          selectedChoice: 'B',
+          skill: { name: 'Charge Shell', vfxKey: 'volt-charge-shell' },
+          after: { ...fighters[monster.monster_id], hp: 37, shield: 6, charge: 100 },
+          targetAfter: { ...fighters[opponent.monster_id], hp: 12, shield: 0, charge: 50 },
+          outcomes: [{ type: 'shield', amount: 6 }, { type: 'heal', amount: 3 }]
+        },
+        multihit: {
+          ...actionBase,
+          selectedChoice: 'A',
+          skill: { name: 'Volt Volley', vfxKey: 'volt-volt-volley' },
+          after: { ...fighters[monster.monster_id], hp: 34, charge: 100 },
+          targetAfter: { ...fighters[opponent.monster_id], hp: 2, shield: 0, charge: 75 },
+          outcomes: [
+            { type: 'damage', hpDamage: 4, shieldAbsorbed: 0 },
+            { type: 'damage', hpDamage: 3, shieldAbsorbed: 0 },
+            { type: 'damage', hpDamage: 3, shieldAbsorbed: 0 }
+          ]
+        },
+        special: {
+          ...actionBase,
+          selectedChoice: 'C',
+          skill: { name: 'Overclock Beam', vfxKey: 'volt-overclock-beam' },
+          after: { ...fighters[monster.monster_id], hp: 34, charge: 0 },
+          outcomes: [{ type: 'damage', hpDamage: 12, shieldAbsorbed: 0 }]
+        }
+      };
+      const actionScene = scene === 'hit' ? 'attack' : scene;
+      const action = actionByScene[actionScene] || actionByScene.special;
       if (scene === 'knockout') {
         emit('streammonsters:battle_knockout', { battleId: battle.battleId, knockout: { winnerId: monster.monster_id, loserId: opponent.monster_id } });
         emit('streammonsters:battle_completed', { battle, winner: monster });
@@ -175,9 +209,9 @@ class StreamMonstersRoutes {
         emit('streammonsters:battle_skill_locked', { matchId: 'demo-match', battleId: battle.battleId, userId: 'demo-viewer', monsterId: monster.monster_id, choice: 'C', lockedChoices: { [monster.monster_id]: 'C' } });
         return res.json({ success: true, demo: true, scene });
       }
-      if (scene === 'hit') {
+      if (Object.prototype.hasOwnProperty.call(actionByScene, actionScene)) {
         emit('streammonsters:battle_action', { matchId: 'demo-match', battleId: battle.battleId, roundNumber: 1, action });
-        return res.json({ success: true, demo: true, scene });
+        return res.json({ success: true, demo: true, scene: actionScene });
       }
       if (scene === 'levelup') {
         emit('streammonsters:monster_xp_awarded', { userId: 'demo-viewer', monster, xpAwarded: 15, winner: true });
@@ -431,6 +465,16 @@ class StreamMonstersRoutes {
         Math.min(20_000, Number.parseInt(input.bottomOverlayDurationMs, 10) || 12_000)
       );
     }
+    if (Object.prototype.hasOwnProperty.call(input, 'arenaAudioEnabled')) {
+      safe.arenaAudioEnabled = input.arenaAudioEnabled !== false;
+    }
+    if (Object.prototype.hasOwnProperty.call(input, 'arenaAudioVolume')) {
+      const volume = Number(input.arenaAudioVolume);
+      safe.arenaAudioVolume = Math.max(0, Math.min(1, Number.isFinite(volume) ? volume : 0.7));
+    }
+    if (['auto', 'reduced'].includes(input.arenaEffectsQuality)) {
+      safe.arenaEffectsQuality = input.arenaEffectsQuality;
+    }
     if (Object.prototype.hasOwnProperty.call(input, 'commandAliases')) {
       safe.commandAliases = this.sanitizeCommandAliases(input.commandAliases);
     }
@@ -473,6 +517,9 @@ class StreamMonstersRoutes {
       elementRules: config.elementRules || 'deterministic',
       artPoolTarget: Math.max(1, Math.min(8, Number(config.artPoolTarget) || 3)),
       bottomOverlayDurationMs: Math.max(8_000, Math.min(20_000, Number(config.bottomOverlayDurationMs) || 12_000)),
+      arenaAudioEnabled: config.arenaAudioEnabled !== false,
+      arenaAudioVolume: Math.max(0, Math.min(1, Number.isFinite(Number(config.arenaAudioVolume)) ? Number(config.arenaAudioVolume) : 0.7)),
+      arenaEffectsQuality: ['auto', 'reduced'].includes(config.arenaEffectsQuality) ? config.arenaEffectsQuality : 'auto',
       visualPack: ['furry', 'art_lab', 'kenney'].includes(config.visualPack) ? config.visualPack : 'furry',
       commandAliases: this.sanitizeCommandAliases(config.commandAliases)
     };

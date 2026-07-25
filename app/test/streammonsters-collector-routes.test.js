@@ -168,6 +168,36 @@ describe('Stream Monsters 1.2 public API', () => {
     expect(minimum.body.config.bottomOverlayDurationMs).toBe(8_000);
   });
 
+  test('persists safe arena audio and quality settings through the public config contract', () => {
+    const { find, configProvider, emitted } = createRoutes();
+    const result = response();
+
+    find('POST', '/api/streammonsters/config')({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      body: { arenaAudioEnabled: false, arenaAudioVolume: 2, arenaEffectsQuality: 'reduced' }
+    }, result);
+
+    expect(result.statusCode).toBe(200);
+    expect(configProvider.updateConfig).toHaveBeenCalledWith({
+      streamMonsters: {
+        arenaAudioEnabled: false,
+        arenaAudioVolume: 1,
+        arenaEffectsQuality: 'reduced'
+      }
+    });
+    expect(result.body.config).toEqual(expect.objectContaining({
+      arenaAudioEnabled: false,
+      arenaAudioVolume: 1,
+      arenaEffectsQuality: 'reduced'
+    }));
+    expect(emitted).toContainEqual({
+      event: 'streammonsters:config_changed',
+      payload: { config: expect.objectContaining({ arenaEffectsQuality: 'reduced' }) }
+    });
+  });
+
   test('exposes the public match snapshot and the viewer-owned stat prompt in state', () => {
     const { find, routes } = createRoutes();
     routes.commandStatusProvider = () => ({ prefix: '/', gcceRegistered: true });
@@ -410,5 +440,29 @@ describe('Stream Monsters 1.2 public API', () => {
       'streammonsters:battle_knockout',
       'streammonsters:battle_completed'
     ]);
+  });
+
+  test('plays a standalone defensive arena demo with the persisted shield action payload', () => {
+    const { find, emitted } = createRoutes();
+    const result = response();
+
+    find('POST', '/api/streammonsters/demo')({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      body: { scene: 'defense' }
+    }, result);
+
+    expect(result.body).toEqual({ success: true, demo: true, scene: 'defense' });
+    expect(emitted).toContainEqual(expect.objectContaining({
+      event: 'streammonsters:battle_action',
+      payload: expect.objectContaining({
+        action: expect.objectContaining({
+          selectedChoice: 'B',
+          skill: expect.objectContaining({ vfxKey: 'volt-charge-shell' }),
+          outcomes: expect.arrayContaining([expect.objectContaining({ type: 'shield' })])
+        })
+      })
+    }));
   });
 });

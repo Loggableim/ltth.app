@@ -254,6 +254,9 @@ class StreamAlchemyPlugin {
         elementRules: 'deterministic',
         artPoolTarget: 3,
         bottomOverlayDurationMs: 12_000,
+        arenaAudioEnabled: true,
+        arenaAudioVolume: 0.7,
+        arenaEffectsQuality: 'auto',
         visualPack: 'furry',
         ...storedStreamMonsters,
         // Existing short text-card durations were not readable on stream.
@@ -262,6 +265,16 @@ class StreamAlchemyPlugin {
           8_000,
           Math.min(20_000, Number(storedStreamMonsters.bottomOverlayDurationMs) || 12_000)
         ),
+        arenaAudioEnabled: storedStreamMonsters.arenaAudioEnabled !== false,
+        arenaAudioVolume: Math.max(
+          0,
+          Math.min(1, Number.isFinite(Number(storedStreamMonsters.arenaAudioVolume))
+            ? Number(storedStreamMonsters.arenaAudioVolume)
+            : 0.7)
+        ),
+        arenaEffectsQuality: ['auto', 'reduced'].includes(storedStreamMonsters.arenaEffectsQuality)
+          ? storedStreamMonsters.arenaEffectsQuality
+          : 'auto',
         commandAliases,
         localRuntime: {
           state: 'not_installed',

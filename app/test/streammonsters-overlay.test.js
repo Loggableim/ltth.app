@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 
-function bootOverlay() {
+function bootOverlay({ reducedMotion = false, webgpu = false, fastTimers = false, audioManifest = [], audioFactory = null } = {}) {
   const html = fs.readFileSync(path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-overlay.html'), 'utf8');
   const script = html.match(/<script>\s*([\s\S]*?)<\/script>/)[1];
   const handlers = {};
@@ -10,14 +10,58 @@ function bootOverlay() {
     url: 'http://localhost:3000/streammonsters/overlay',
     runScripts: 'outside-only'
   });
+  dom.window.matchMedia = jest.fn(() => ({ matches: reducedMotion }));
+  if (fastTimers) dom.window.setTimeout = callback => { callback(); return 0; };
+  let webgpuState = null;
+  if (webgpu) {
+    const renderPass = {
+      setPipeline: jest.fn(),
+      setBindGroup: jest.fn(),
+      draw: jest.fn(),
+      end: jest.fn()
+    };
+    const commandEncoder = {
+      beginRenderPass: jest.fn(() => renderPass),
+      finish: jest.fn(() => ({ commandBuffer: true }))
+    };
+    const device = {
+      lost: new Promise(() => {}),
+      createShaderModule: jest.fn(options => options),
+      createRenderPipeline: jest.fn(() => ({ getBindGroupLayout: jest.fn(() => ({})) })),
+      createBuffer: jest.fn(() => ({})),
+      createBindGroup: jest.fn(() => ({})),
+      createCommandEncoder: jest.fn(() => commandEncoder),
+      queue: { writeBuffer: jest.fn(), submit: jest.fn() }
+    };
+    const context = {
+      configure: jest.fn(),
+      getCurrentTexture: jest.fn(() => ({ createView: jest.fn(() => ({})) }))
+    };
+    Object.defineProperty(dom.window.navigator, 'gpu', {
+      configurable: true,
+      value: {
+        requestAdapter: jest.fn(async () => ({ requestDevice: jest.fn(async () => device) })),
+        getPreferredCanvasFormat: jest.fn(() => 'bgra8unorm')
+      }
+    });
+    const originalGetContext = dom.window.HTMLCanvasElement.prototype.getContext;
+    dom.window.HTMLCanvasElement.prototype.getContext = function getContext(type, ...args) {
+      if (this.id === 'battle-effects' && type === 'webgpu') return context;
+      return originalGetContext.call(this, type, ...args);
+    };
+    webgpuState = { device, context, renderPass };
+  }
   dom.window.StreamMonstersOverlayViews = require('../plugins/streamalchemy/streammonsters-overlay-views');
   dom.window.io = () => ({ on: (event, handler) => { handlers[event] = handler; } });
-  dom.window.fetch = jest.fn(async () => ({
+  if (audioFactory) dom.window.Audio = audioFactory;
+  dom.window.fetch = jest.fn(async url => ({
     ok: true,
-    json: async () => ({ config: { bottomOverlayDurationMs: 4_000 } })
+    json: async () => url === '/plugins/streamalchemy/assets/streammonsters/audio/manifest.json'
+      ? { sounds: audioManifest }
+      : ({ config: { bottomOverlayDurationMs: 4_000 } })
   }));
   dom.window.eval(script);
-  return { dom, handlers };
+  return { dom, handlers, webgpu: webgpuState };
 }
 
 describe('Stream Monsters OBS overlay', () => {
@@ -39,6 +83,35 @@ describe('Stream Monsters OBS overlay', () => {
     expect(views.profile(monsters[0], 1)).toEqual(expect.objectContaining({
       slot: 1,
       stats: { vitality: 9, might: 8, guard: 0, agility: 0 }
+    }));
+  });
+
+  test('derives a deterministic cinematic cue from the persisted battle outcome payload', () => {
+    const views = require('../plugins/streamalchemy/streammonsters-overlay-views');
+    const cue = views.arenaAction({
+      selectedChoice: 'C',
+      skill: { vfxKey: 'volt-overclock-beam' },
+      before: { element: 'Volt' },
+      outcomes: [
+        { type: 'damage', hpDamage: 5, shieldAbsorbed: 2 },
+        { type: 'damage', hpDamage: 6, shieldAbsorbed: 1 },
+        { type: 'shield', amount: 4 },
+        { type: 'heal', amount: 2 }
+      ]
+    }, 'a');
+
+    expect(cue).toEqual(expect.objectContaining({
+      kind: 'special',
+      sound: 'special',
+      vfxKey: 'volt-overclock-beam',
+      element: 'Volt',
+      actorSide: 'a',
+      targetSide: 'b',
+      hitCount: 2,
+      damage: 11,
+      shieldDamage: 3,
+      shieldGain: 4,
+      healing: 2
     }));
   });
 
@@ -71,10 +144,12 @@ describe('Stream Monsters OBS overlay', () => {
     expect(html).toContain('showMonsterProfile');
     expect(html).toContain('collectionDurationMs');
     expect(html).toContain('bottomOverlayDurationMs');
-    expect(html).toContain('hat Elementvorteil');
-    expect(html).toContain('Vorteil ${battleAdvantageName}');
+    expect(html).toContain("advantage:'Elementvorteil: {name}'");
     expect(html).toContain('@media (orientation: portrait)');
     expect(html).toContain('!hatch');
+    expect(html.match(/if \(type === 'battle_started'\)/g)).toHaveLength(1);
+    expect(html.match(/if \(type === 'battle_round'\)/g)).toHaveLength(1);
+    expect(html.match(/if \(type === 'battle_action'\)/g)).toHaveLength(1);
   });
 
   test('provides a cinematic two-monster arena with WebGPU and accessible fallbacks', () => {
@@ -136,5 +211,138 @@ describe('Stream Monsters OBS overlay', () => {
     expect(profile.dom.window.document.getElementById('profile-title').textContent).toBe('Monster 1');
     expect(profile.dom.window.document.querySelectorAll('#profile-stats .profile-stat')).toHaveLength(4);
     profile.dom.window.close();
+  });
+
+  test('establishes a visible two-monster arena from a standalone battle action', async () => {
+    const { dom, handlers } = bootOverlay({ reducedMotion: true });
+    handlers['streammonsters:battle_action']({
+      battleId: 'battle-direct-action',
+      roundNumber: 1,
+      action: {
+        monsterId: 'monster-a',
+        targetMonsterId: 'monster-b',
+        selectedChoice: 'C',
+        skill: { name: 'Overclock Beam', vfxKey: 'volt-overclock-beam' },
+        before: { monsterId: 'monster-a', name: 'Pulse', element: 'Volt', imageUrl: '/pulse.png', maxHp: 58, hp: 58, charge: 100 },
+        after: { monsterId: 'monster-a', name: 'Pulse', element: 'Volt', imageUrl: '/pulse.png', maxHp: 58, hp: 58, charge: 0 },
+        targetBefore: { monsterId: 'monster-b', name: 'Mosswhisker', element: 'Grove', imageUrl: '/moss.png', maxHp: 62, hp: 62, charge: 25 },
+        targetAfter: { monsterId: 'monster-b', name: 'Mosswhisker', element: 'Grove', imageUrl: '/moss.png', maxHp: 62, hp: 43, charge: 50 },
+        outcomes: [{ type: 'damage', hpDamage: 19, shieldAbsorbed: 0 }]
+      }
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(dom.window.document.getElementById('battle').classList).toContain('visible');
+    expect(dom.window.document.getElementById('battle-art-a').src).toContain('/pulse.png');
+    expect(dom.window.document.getElementById('battle-art-b').src).toContain('/moss.png');
+    expect(dom.window.document.getElementById('battle').classList).toContain('arena-special');
+    expect(dom.window.document.getElementById('battle').dataset.vfxKey).toBe('volt-overclock-beam');
+    expect(dom.window.document.getElementById('battle').dataset.sound).toBe('special');
+    dom.window.close();
+  });
+
+  test('turns battle outcomes into shield, healing and damage feedback for the broadcast arena', async () => {
+    const { dom, handlers } = bootOverlay({ reducedMotion: true });
+    handlers['streammonsters:battle_action']({
+      battleId: 'battle-effects',
+      roundNumber: 2,
+      action: {
+        monsterId: 'monster-a',
+        targetMonsterId: 'monster-b',
+        selectedChoice: 'B',
+        skill: { name: 'Charge Shell', vfxKey: 'volt-charge-shell' },
+        before: { monsterId: 'monster-a', name: 'Pulse', element: 'Volt', imageUrl: '/pulse.png', maxHp: 58, hp: 41, shield: 0, charge: 50 },
+        after: { monsterId: 'monster-a', name: 'Pulse', element: 'Volt', imageUrl: '/pulse.png', maxHp: 58, hp: 44, shield: 6, charge: 100 },
+        targetBefore: { monsterId: 'monster-b', name: 'Mosswhisker', element: 'Grove', imageUrl: '/moss.png', maxHp: 62, hp: 62, shield: 0, charge: 25 },
+        targetAfter: { monsterId: 'monster-b', name: 'Mosswhisker', element: 'Grove', imageUrl: '/moss.png', maxHp: 62, hp: 56, shield: 0, charge: 50 },
+        outcomes: [
+          { type: 'damage', hpDamage: 6, shieldAbsorbed: 0 },
+          { type: 'shield', amount: 6 },
+          { type: 'heal', amount: 3 }
+        ]
+      }
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(dom.window.document.getElementById('battle-shield-label-a').textContent).toBe('6');
+    expect(dom.window.document.getElementById('battle-float-layer').textContent).toContain('-6');
+    expect(dom.window.document.getElementById('battle-float-layer').textContent).toContain('+6');
+    expect(dom.window.document.getElementById('battle-float-layer').textContent).toContain('+3');
+    expect(dom.window.document.getElementById('battle').classList).toContain('arena-defense');
+    dom.window.close();
+  });
+
+  test('adopts live audio and quality configuration without replaying an old event', async () => {
+    const { dom, handlers } = bootOverlay({ reducedMotion: true });
+    handlers['streammonsters:config_changed']({
+      config: { bottomOverlayDurationMs: 12_000, arenaAudioEnabled: false, arenaAudioVolume: 0.35, arenaEffectsQuality: 'reduced' }
+    });
+    await Promise.resolve();
+
+    const battle = dom.window.document.getElementById('battle');
+    expect(battle.dataset.audioEnabled).toBe('false');
+    expect(battle.dataset.audioVolume).toBe('0.35');
+    expect(battle.dataset.quality).toBe('reduced');
+    dom.window.close();
+  });
+
+  test('renders a real WebGPU cinematic pass when an OBS browser exposes WebGPU', async () => {
+    const { dom, handlers, webgpu } = bootOverlay({ webgpu: true, fastTimers: true });
+    handlers['streammonsters:battle_action']({
+      battleId: 'battle-webgpu',
+      roundNumber: 1,
+      action: {
+        monsterId: 'monster-a',
+        targetMonsterId: 'monster-b',
+        selectedChoice: 'C',
+        skill: { name: 'Overclock Beam', vfxKey: 'volt-overclock-beam' },
+        before: { monsterId: 'monster-a', name: 'Pulse', element: 'Volt', imageUrl: '/pulse.png', maxHp: 58, hp: 58, charge: 100 },
+        after: { monsterId: 'monster-a', name: 'Pulse', element: 'Volt', imageUrl: '/pulse.png', maxHp: 58, hp: 58, charge: 0 },
+        targetBefore: { monsterId: 'monster-b', name: 'Mosswhisker', element: 'Grove', imageUrl: '/moss.png', maxHp: 62, hp: 62, charge: 25 },
+        targetAfter: { monsterId: 'monster-b', name: 'Mosswhisker', element: 'Grove', imageUrl: '/moss.png', maxHp: 62, hp: 43, charge: 50 },
+        outcomes: [{ type: 'damage', hpDamage: 19, shieldAbsorbed: 0 }]
+      }
+    });
+    for (let tick = 0; tick < 8; tick += 1) await Promise.resolve();
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(webgpu.device.createRenderPipeline).toHaveBeenCalled();
+    expect(webgpu.renderPass.draw).toHaveBeenCalledWith(6);
+    expect(webgpu.device.queue.submit).toHaveBeenCalled();
+    dom.window.close();
+  });
+
+  test('plays a supplied arena sound at the creator-selected volume', async () => {
+    const audio = { volume: 0, play: jest.fn(() => Promise.resolve()) };
+    const audioFactory = jest.fn(() => audio);
+    const { dom, handlers } = bootOverlay({
+      reducedMotion: true,
+      audioFactory,
+      audioManifest: [{ id: 'special', file: 'special.ogg' }]
+    });
+    handlers['streammonsters:config_changed']({
+      config: { arenaAudioEnabled: true, arenaAudioVolume: 0.35, arenaEffectsQuality: 'auto' }
+    });
+    handlers['streammonsters:battle_action']({
+      battleId: 'battle-audio',
+      roundNumber: 1,
+      action: {
+        monsterId: 'monster-a', targetMonsterId: 'monster-b', selectedChoice: 'C',
+        skill: { name: 'Overclock Beam', vfxKey: 'volt-overclock-beam' },
+        before: { monsterId: 'monster-a', name: 'Pulse', element: 'Volt', imageUrl: '/pulse.png', maxHp: 58, hp: 58, charge: 100 },
+        after: { monsterId: 'monster-a', name: 'Pulse', element: 'Volt', imageUrl: '/pulse.png', maxHp: 58, hp: 58, charge: 0 },
+        targetBefore: { monsterId: 'monster-b', name: 'Mosswhisker', element: 'Grove', imageUrl: '/moss.png', maxHp: 62, hp: 62, charge: 25 },
+        targetAfter: { monsterId: 'monster-b', name: 'Mosswhisker', element: 'Grove', imageUrl: '/moss.png', maxHp: 62, hp: 43, charge: 50 },
+        outcomes: [{ type: 'damage', hpDamage: 19, shieldAbsorbed: 0 }]
+      }
+    });
+    for (let tick = 0; tick < 8; tick += 1) await Promise.resolve();
+
+    expect(audioFactory).toHaveBeenCalledWith('/plugins/streamalchemy/assets/streammonsters/audio/special.ogg');
+    expect(audio.volume).toBeCloseTo(0.35);
+    expect(audio.play).toHaveBeenCalled();
+    dom.window.close();
   });
 });

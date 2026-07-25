@@ -56,25 +56,56 @@
     #round-dots { display:flex; justify-content:center; gap:8px; margin-top:14px; }
     #round-dots span { width:12px; height:12px; border:1px solid #7c6aa5; border-radius:50%; background:#181e34; }
     #round-dots span.active { background:var(--gold); box-shadow:0 0 16px #ffcf59; }
-    #battle { width:min(1180px,calc(100vw - 56px)); min-height:590px; padding:22px; overflow:hidden; }
-    #battle-effects { position:absolute; inset:0; width:100%; height:100%; opacity:.9; pointer-events:none; }
-    #battle-arena { position:relative; z-index:1; display:grid; grid-template-columns:minmax(0,1fr) 115px minmax(0,1fr); gap:14px; min-height:435px; align-items:end; }
-    .battle-fighter { position:relative; display:grid; grid-template-rows:auto minmax(250px,1fr) auto; min-height:420px; padding:14px; border:1px solid #556899; border-radius:24px; background:linear-gradient(145deg,#202c4cdd,#111a30d9); overflow:hidden; transition:transform .45s cubic-bezier(.2,.8,.2,1), filter .25s; }
+    #battle { width:min(1180px,calc(100vw - 56px)); min-height:590px; padding:22px; overflow:hidden; isolation:isolate; }
+    #battle::before { content:""; position:absolute; inset:8% 10% 18%; z-index:0; border-radius:50%; background:radial-gradient(ellipse,#735bb433 0%,#34265112 45%,transparent 72%); filter:blur(5px); transform:perspective(700px) rotateX(66deg); }
+    #battle::after { content:""; position:absolute; inset:0; z-index:0; opacity:0; pointer-events:none; background:radial-gradient(circle at 50% 48%,#fff9 0 2%,#b58bff88 14%,transparent 43%); transition:opacity .25s; }
+    #battle.arena-special::after { opacity:1; animation:arena-flash 1.1s ease both; }
+    #battle-effects { position:absolute; inset:0; z-index:3; width:100%; height:100%; opacity:.94; pointer-events:none; }
+    #battle-arena { position:relative; z-index:1; display:grid; grid-template-columns:minmax(0,1fr) 115px minmax(0,1fr); gap:14px; min-height:435px; align-items:end; perspective:1200px; transform-style:preserve-3d; }
+    .battle-fighter { position:relative; display:grid; grid-template-rows:auto minmax(250px,1fr) auto; min-height:420px; padding:14px; border:1px solid #556899; border-radius:24px; background:linear-gradient(145deg,#202c4cdd,#111a30d9); overflow:hidden; transform-style:preserve-3d; will-change:transform,filter; transition:transform .45s cubic-bezier(.2,.8,.2,1), filter .25s; }
     .battle-fighter.right { background:linear-gradient(215deg,#42235bdd,#15192fd9); }
+    .battle-fighter::before { content:""; position:absolute; inset:12%; border-radius:50%; opacity:.32; background:radial-gradient(circle,#8dbbff66,transparent 65%); filter:blur(14px); transform:translateZ(-20px); }
     .battle-fighter.attack { transform:translateX(12%); filter:drop-shadow(0 0 26px var(--gold)); }
     .battle-fighter.right.attack { transform:translateX(-12%); }
-    .battle-fighter.hit { animation:battle-hit .5s ease both; }
+    .battle-fighter.hit { animation:battle-hit .65s ease both; }
     .battle-fighter.shielded::after { content:""; position:absolute; inset:8%; border:3px solid #61dfff; border-radius:50%; box-shadow:0 0 40px #61dfff99,inset 0 0 28px #61dfff44; animation:shield-pulse 1.1s ease both; }
-    @keyframes battle-hit { 35% { transform:translateX(-5%) rotate(-2deg); filter:brightness(2); } 100% { transform:none; } }
+    .battle-art { transform-style:preserve-3d; will-change:transform,filter; }
+    .battle-fighter.left .battle-art { transform:translateZ(34px) rotateY(8deg) rotateZ(-1deg); }
+    .battle-fighter.right .battle-art { transform:translateZ(34px) rotateY(-8deg) rotateZ(1deg) scaleX(-1); }
+    #battle.arena-entering .battle-fighter.left { animation:arena-entry-left .9s cubic-bezier(.12,.85,.2,1) both; }
+    #battle.arena-entering .battle-fighter.right { animation:arena-entry-right .9s cubic-bezier(.12,.85,.2,1) both; }
+    #battle.arena-attack .battle-fighter.left.attack .battle-art { animation:arena-lunge-left .9s cubic-bezier(.15,.8,.2,1) both; }
+    #battle.arena-attack .battle-fighter.right.attack .battle-art { animation:arena-lunge-right .9s cubic-bezier(.15,.8,.2,1) both; }
+    #battle.arena-defense .battle-fighter.shielded .battle-art { animation:arena-guard .95s cubic-bezier(.2,.8,.2,1) both; }
+    #battle.arena-special .battle-fighter.left.attack .battle-art { animation:arena-special-left 1.45s cubic-bezier(.12,.8,.18,1) both; }
+    #battle.arena-special .battle-fighter.right.attack .battle-art { animation:arena-special-right 1.45s cubic-bezier(.12,.8,.18,1) both; }
+    #battle.arena-multihit .battle-fighter.hit { animation:arena-multihit 1.1s steps(3,end) both; }
+    #battle[data-quality="reduced"] .battle-art { animation-duration:.35s !important; }
+    @keyframes battle-hit { 22% { transform:translateX(-5%) rotate(-2deg) scale(.95); filter:brightness(2.4) saturate(1.5); } 100% { transform:none; } }
     @keyframes shield-pulse { from { opacity:0; transform:scale(.65); } 45% { opacity:1; } to { opacity:0; transform:scale(1.15); } }
+    @keyframes arena-entry-left { from { opacity:0; transform:translate3d(-42%,-4%,0) rotateY(24deg); } to { opacity:1; transform:translate3d(0,0,0); } }
+    @keyframes arena-entry-right { from { opacity:0; transform:translate3d(42%,4%,0) rotateY(-24deg); } to { opacity:1; transform:translate3d(0,0,0); } }
+    @keyframes arena-lunge-left { 0% { transform:translateZ(34px) rotateY(8deg); } 42% { transform:translate3d(48%,0,100px) rotateY(-10deg) scale(1.14); filter:brightness(1.25); } 100% { transform:translateZ(34px) rotateY(8deg); } }
+    @keyframes arena-lunge-right { 0% { transform:translateZ(34px) rotateY(-8deg) scaleX(-1); } 42% { transform:translate3d(-48%,0,100px) rotateY(10deg) scale(-1.14,1.14); filter:brightness(1.25); } 100% { transform:translateZ(34px) rotateY(-8deg) scaleX(-1); } }
+    @keyframes arena-guard { 0% { transform:translateZ(34px) scale(1); } 42% { transform:translateZ(86px) scale(1.1); filter:brightness(1.35); } 100% { transform:translateZ(34px) scale(1); } }
+    @keyframes arena-special-left { 0% { transform:translateZ(34px) rotateY(8deg) scale(1); } 28% { transform:translate3d(-8%,0,70px) rotateY(-20deg) scale(1.2); filter:brightness(1.4); } 66% { transform:translate3d(45%,0,122px) rotateY(-15deg) scale(1.24); filter:brightness(2); } 100% { transform:translateZ(34px) rotateY(8deg) scale(1); } }
+    @keyframes arena-special-right { 0% { transform:translateZ(34px) rotateY(-8deg) scaleX(-1); } 28% { transform:translate3d(8%,0,70px) rotateY(20deg) scale(-1.2,1.2); filter:brightness(1.4); } 66% { transform:translate3d(-45%,0,122px) rotateY(15deg) scale(-1.24,1.24); filter:brightness(2); } 100% { transform:translateZ(34px) rotateY(-8deg) scaleX(-1); } }
+    @keyframes arena-multihit { 0%,100% { filter:brightness(1); } 18% { transform:translateX(-5%) rotate(-2deg); filter:brightness(2.3); } 48% { transform:translateX(4%) rotate(2deg); filter:brightness(1.6); } 78% { transform:translateX(-3%) rotate(-1deg); filter:brightness(2.1); } }
+    @keyframes arena-flash { 0% { opacity:0; } 18% { opacity:1; } 100% { opacity:0; } }
     .battle-hud { display:grid; grid-template-columns:1fr auto; gap:7px; text-align:left; font-size:14px; font-weight:800; }
     .battle-hud .battle-name { font-size:clamp(22px,2.5vw,34px); line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .battle-hud .battle-element { color:var(--cyan); font-size:12px; text-transform:uppercase; letter-spacing:.12em; }
     .battle-art { width:min(100%,330px); height:280px; object-fit:contain; justify-self:center; align-self:center; filter:drop-shadow(0 20px 22px #000c); transition:transform .4s ease; }
-    .battle-hp, .battle-charge { display:grid; grid-template-columns:50px 1fr auto; gap:7px; align-items:center; margin-top:6px; color:#dce8ff; font-size:12px; }
+    .battle-hp, .battle-charge, .battle-shield { display:grid; grid-template-columns:50px 1fr auto; gap:7px; align-items:center; margin-top:6px; color:#dce8ff; font-size:12px; }
     .battle-meter { height:12px; overflow:hidden; border:1px solid #5b6d92; border-radius:99px; background:#080d18; }
     .battle-meter i { display:block; width:100%; height:100%; transform-origin:left; background:linear-gradient(90deg,#62e5a9,#c4ff95); transition:transform .35s; }
     .battle-charge .battle-meter i { background:linear-gradient(90deg,#5ed8ff,#b088ff,#ffd76f); }
+    .battle-shield .battle-meter i { background:linear-gradient(90deg,#5ed8ff,#d8f8ff); }
+    #battle-float-layer { position:absolute; inset:0; z-index:4; overflow:hidden; pointer-events:none; }
+    .battle-float { position:absolute; top:42%; font-size:clamp(24px,4vw,54px); font-weight:1000; text-shadow:0 5px 14px #000d; animation:battle-float 1.25s cubic-bezier(.2,.7,.2,1) both; }
+    .battle-float.left { left:20%; } .battle-float.right { right:20%; }
+    .battle-float.damage { color:#ff8f91; } .battle-float.shield { color:#8eeaff; } .battle-float.heal { color:#8ff4b9; } .battle-float.evade { color:#e9f5ff; font-size:clamp(18px,2.8vw,34px); }
+    @keyframes battle-float { 0% { opacity:0; transform:translateY(24px) scale(.65); } 18% { opacity:1; transform:translateY(0) scale(1.08); } 100% { opacity:0; transform:translateY(-82px) scale(.92); } }
     #battle-center { align-self:center; display:grid; gap:15px; place-items:center; color:var(--gold); font-weight:900; }
     #battle-center .vs { font-size:24px; text-shadow:0 0 20px #ffcf59; }
     #battle-advantage { min-height:36px; color:var(--mint); font-size:13px; }
@@ -150,6 +181,9 @@
       #profile-title { font-size:34px; }
       #profile-subtitle { font-size:15px; }
     }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+    }
   </style>
 </head>
 <body>
@@ -174,18 +208,20 @@
       <article id="battle-fighter-a" class="battle-fighter left">
         <div class="battle-hud"><strong id="fighterA" class="battle-name">Monster A</strong><span id="battle-element-a" class="battle-element">Element</span></div>
         <img id="battle-art-a" class="battle-art" alt="">
-        <div>
-          <div class="battle-hp"><span>HP</span><div class="battle-meter"><i id="battle-hp-a"></i></div><b id="battle-hp-label-a">0/0</b></div>
-          <div class="battle-charge"><span>Special</span><div class="battle-meter"><i id="battle-charge-a"></i></div><b id="battle-charge-label-a">0%</b></div>
+          <div>
+            <div class="battle-hp"><span>HP</span><div class="battle-meter"><i id="battle-hp-a"></i></div><b id="battle-hp-label-a">0/0</b></div>
+            <div class="battle-shield"><span>Shield</span><div class="battle-meter"><i id="battle-shield-a"></i></div><b id="battle-shield-label-a">0</b></div>
+            <div class="battle-charge"><span>Special</span><div class="battle-meter"><i id="battle-charge-a"></i></div><b id="battle-charge-label-a">0%</b></div>
         </div>
       </article>
       <div id="battle-center"><span class="vs">VS</span><span id="battle-advantage"></span></div>
       <article id="battle-fighter-b" class="battle-fighter right">
         <div class="battle-hud"><strong id="fighterB" class="battle-name">Monster B</strong><span id="battle-element-b" class="battle-element">Element</span></div>
         <img id="battle-art-b" class="battle-art" alt="">
-        <div>
-          <div class="battle-hp"><span>HP</span><div class="battle-meter"><i id="battle-hp-b"></i></div><b id="battle-hp-label-b">0/0</b></div>
-          <div class="battle-charge"><span>Special</span><div class="battle-meter"><i id="battle-charge-b"></i></div><b id="battle-charge-label-b">0%</b></div>
+          <div>
+            <div class="battle-hp"><span>HP</span><div class="battle-meter"><i id="battle-hp-b"></i></div><b id="battle-hp-label-b">0/0</b></div>
+            <div class="battle-shield"><span>Shield</span><div class="battle-meter"><i id="battle-shield-b"></i></div><b id="battle-shield-label-b">0</b></div>
+            <div class="battle-charge"><span>Special</span><div class="battle-meter"><i id="battle-charge-b"></i></div><b id="battle-charge-label-b">0%</b></div>
         </div>
       </article>
     </div>
@@ -193,6 +229,7 @@
     <div id="round-dots"><span></span><span></span><span></span></div>
     <div id="battle-skill-options"></div>
   </section>
+  <div id="battle-float-layer" aria-hidden="true"></div>
   <section id="monster-collection" aria-live="polite">
     <div class="collection-head"><strong id="collection-title">Monster-Sammlung</strong><span id="collection-page"></span></div>
     <div id="collection-grid"></div>
@@ -245,24 +282,122 @@
   let battleAdvantageName = '';
   let bottomOverlayDurationMs = DEFAULT_BOTTOM_OVERLAY_DURATION_MS;
   let commandPrefix = '!';
+  let arenaAudioEnabled = true;
+  let arenaAudioVolume = 0.7;
+  let arenaEffectsQuality = 'auto';
+  const battleAudio = (() => {
+    let manifestPromise = null;
+    const loadManifest = async () => {
+      if (!manifestPromise) {
+        manifestPromise = fetch('/plugins/streamalchemy/assets/streammonsters/audio/manifest.json')
+          .then(response => response.ok ? response.json() : { sounds: [] })
+          .then(payload => new Map((Array.isArray(payload?.sounds) ? payload.sounds : [])
+            .map(entry => [String(entry?.id || ''), String(entry?.file || '')])
+            .filter(([id, file]) => /^[a-z0-9_-]{1,32}$/i.test(id) && /^[a-z0-9_-]{1,64}\.(?:ogg|mp3|wav)$/i.test(file))))
+          .catch(() => new Map());
+      }
+      return manifestPromise;
+    };
+    const play = async soundId => {
+      if (!arenaAudioEnabled || !soundId || typeof globalThis.Audio !== 'function') return;
+      const sounds = await loadManifest();
+      const file = sounds.get(String(soundId));
+      if (!file) return;
+      try {
+        const audio = new globalThis.Audio(`/plugins/streamalchemy/assets/streammonsters/audio/${file}`);
+        audio.volume = arenaAudioVolume;
+        const started = audio.play?.();
+        if (started?.catch) started.catch(() => {});
+      } catch (_) {}
+    };
+    return { play };
+  })();
   const reducedMotion = Boolean(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
   const battleEffects = (() => {
     const canvas = node('battle-effects');
     let mode = reducedMotion ? 'css' : 'pending';
     let gpuDevice = null;
     let gpuContext = null;
+    let gpuPipeline = null;
+    let gpuUniformBuffer = null;
+    let gpuBindGroup = null;
     let context2d = null;
+    let quality = 'auto';
     const colorFor = element => ({ Ember:'#ff7e62', Tide:'#55dcff', Grove:'#6ef1b8', Gale:'#d6e7ff', Volt:'#ffd76f', Lunar:'#c5a4ff' }[element] || '#a984ff');
+    const colorVector = element => {
+      const hex = colorFor(element).slice(1);
+      return [0, 2, 4].map(index => Number.parseInt(hex.slice(index, index + 2), 16) / 255);
+    };
+    const resize = () => {
+      const width = Math.max(1, canvas.clientWidth || 1100);
+      const height = Math.max(1, canvas.clientHeight || 620);
+      if (canvas.width !== width) canvas.width = width;
+      if (canvas.height !== height) canvas.height = height;
+      return { width, height };
+    };
+    const buildGpuPipeline = () => {
+      if (!gpuDevice || gpuPipeline) return;
+      const shader = gpuDevice.createShaderModule({
+        code: `
+          struct Pulse { color: vec4<f32>, timing: vec4<f32>, viewport: vec4<f32> };
+          @group(0) @binding(0) var<uniform> pulse: Pulse;
+          @vertex fn vertex(@builtin(vertex_index) index: u32) -> @builtin(position) vec4<f32> {
+            var positions = array<vec2<f32>, 6>(
+              vec2<f32>(-1.0, -1.0), vec2<f32>(1.0, -1.0), vec2<f32>(-1.0, 1.0),
+              vec2<f32>(-1.0, 1.0), vec2<f32>(1.0, -1.0), vec2<f32>(1.0, 1.0)
+            );
+            return vec4<f32>(positions[index], 0.0, 1.0);
+          }
+          @fragment fn fragment(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
+            let size = max(1.0, min(pulse.viewport.x, pulse.viewport.y));
+            let offset = (position.xy - pulse.timing.xy) / size;
+            let elapsed = clamp(pulse.timing.z / max(1.0, pulse.timing.w), 0.0, 1.0);
+            let distance = length(offset);
+            let ringRadius = mix(0.04, 0.70, elapsed);
+            let ring = smoothstep(0.035, 0.0, abs(distance - ringRadius));
+            let ray = smoothstep(0.035, 0.0, abs(offset.y)) * smoothstep(0.62, 0.04, abs(offset.x));
+            let sparkle = smoothstep(0.012, 0.0, abs(sin((offset.x + offset.y) * 42.0 + elapsed * 18.0))) * smoothstep(0.78, 0.10, distance);
+            let special = step(1.5, pulse.viewport.w);
+            let intensity = max(ring, sparkle * 0.46) + (ray * special * (1.0 - elapsed));
+            let alpha = intensity * pulse.color.a * (1.0 - elapsed * 0.45);
+            return vec4<f32>(pulse.color.rgb * alpha, alpha);
+          }`
+      });
+      gpuPipeline = gpuDevice.createRenderPipeline({
+        layout: 'auto',
+        vertex: { module: shader, entryPoint: 'vertex' },
+        fragment: {
+          module: shader,
+          entryPoint: 'fragment',
+          targets: [{
+            format: navigator.gpu.getPreferredCanvasFormat(),
+            blend: {
+              color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+              alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' }
+            }
+          }]
+        },
+        primitive: { topology: 'triangle-list' }
+      });
+      const bufferUsage = (globalThis.GPUBufferUsage?.UNIFORM || 0x40) | (globalThis.GPUBufferUsage?.COPY_DST || 0x08);
+      gpuUniformBuffer = gpuDevice.createBuffer({ size: 48, usage: bufferUsage });
+      gpuBindGroup = gpuDevice.createBindGroup({
+        layout: gpuPipeline.getBindGroupLayout(0),
+        entries: [{ binding: 0, resource: { buffer: gpuUniformBuffer } }]
+      });
+    };
     const activate = async () => {
       if (mode !== 'pending') return mode;
       try {
-        if (navigator.gpu) {
+        if (quality !== 'reduced' && navigator.gpu) {
           const adapter = await navigator.gpu.requestAdapter();
           gpuDevice = await adapter?.requestDevice();
           gpuContext = canvas.getContext('webgpu');
           if (gpuDevice && gpuContext) {
+            resize();
             gpuContext.configure({ device: gpuDevice, format: navigator.gpu.getPreferredCanvasFormat(), alphaMode: 'premultiplied' });
-            gpuDevice.lost.then(() => { mode = 'css'; gpuDevice = null; gpuContext = null; });
+            buildGpuPipeline();
+            gpuDevice.lost.then(() => { mode = 'css'; gpuDevice = null; gpuContext = null; gpuPipeline = null; });
             mode = 'webgpu';
             return mode;
           }
@@ -271,39 +406,126 @@
       if (mode === 'pending') mode = 'canvas2d';
       return mode;
     };
-    const burst = async ({ element = 'Volt', strength = 1 } = {}) => {
+    const requestFrame = callback => (globalThis.requestAnimationFrame ? globalThis.requestAnimationFrame(callback) : null);
+    const renderGpuBurst = (cue, started = performance.now()) => {
+      if (!gpuDevice || !gpuContext || !gpuPipeline || !gpuUniformBuffer || !gpuBindGroup) return;
+      const now = performance.now();
+      const elapsed = now - started;
+      const duration = Math.max(500, Number(cue.durationMs) || 1_200);
+      const { width, height } = resize();
+      const [red, green, blue] = colorVector(cue.element);
+      const originX = (cue.actorSide === 'b' ? 0.72 : 0.28) * width;
+      const originY = height * (cue.kind === 'defense' ? 0.58 : 0.49);
+      const kind = cue.kind === 'special' ? 2 : (cue.kind === 'defense' ? 1 : 0);
+      gpuDevice.queue.writeBuffer(gpuUniformBuffer, 0, new Float32Array([
+        red, green, blue, Math.min(1, 0.65 + (Number(cue.strength) || 1) * 0.12),
+        originX, originY, elapsed, duration,
+        width, height, Math.max(1, Number(cue.strength) || 1), kind
+      ]));
+      const encoder = gpuDevice.createCommandEncoder();
+      const pass = encoder.beginRenderPass({
+        colorAttachments: [{
+          view: gpuContext.getCurrentTexture().createView(),
+          loadOp: 'clear',
+          storeOp: 'store',
+          clearValue: { r: 0, g: 0, b: 0, a: 0 }
+        }]
+      });
+      pass.setPipeline(gpuPipeline);
+      pass.setBindGroup(0, gpuBindGroup);
+      pass.draw(6);
+      pass.end();
+      gpuDevice.queue.submit([encoder.finish()]);
+      if (elapsed < duration && !reducedMotion) requestFrame(() => renderGpuBurst(cue, started));
+    };
+    const renderCanvasBurst = (cue, started = performance.now()) => {
+      context2d ||= canvas.getContext('2d');
+      if (!context2d) return;
+      const { width, height } = resize();
+      const elapsed = performance.now() - started;
+      const duration = Math.max(500, Number(cue.durationMs) || 1_200);
+      const progress = Math.min(1, elapsed / duration);
+      const sourceX = (cue.actorSide === 'b' ? 0.74 : 0.26) * width;
+      const targetX = (cue.actorSide === 'b' ? 0.28 : 0.72) * width;
+      const centerY = height * 0.5;
+      const color = colorFor(cue.element);
+      context2d.clearRect(0, 0, width, height);
+      context2d.save();
+      context2d.globalCompositeOperation = 'lighter';
+      if (cue.kind === 'defense') {
+        context2d.strokeStyle = color;
+        context2d.lineWidth = 5 + ((1 - progress) * 8);
+        context2d.globalAlpha = 0.75 * (1 - progress * 0.5);
+        context2d.beginPath();
+        context2d.arc(sourceX, centerY, 44 + progress * 110, 0, Math.PI * 2);
+        context2d.stroke();
+      } else {
+        const beamProgress = cue.kind === 'special' ? Math.min(1, progress * 1.6) : Math.min(1, progress * 2.2);
+        const beamX = sourceX + ((targetX - sourceX) * beamProgress);
+        const gradient = context2d.createLinearGradient(sourceX, centerY, beamX, centerY);
+        gradient.addColorStop(0, `${color}00`);
+        gradient.addColorStop(0.35, color);
+        gradient.addColorStop(1, '#ffffff');
+        context2d.strokeStyle = gradient;
+        context2d.lineWidth = cue.kind === 'special' ? 20 : 10;
+        context2d.globalAlpha = 0.8 * (1 - Math.max(0, progress - 0.72) / 0.28);
+        context2d.beginPath();
+        context2d.moveTo(sourceX, centerY);
+        context2d.lineTo(beamX, centerY);
+        context2d.stroke();
+        const impactCount = Math.max(1, Number(cue.hitCount) || 1);
+        for (let index = 0; index < impactCount; index += 1) {
+          const hitProgress = Math.max(0, Math.min(1, progress * impactCount - index));
+          if (!hitProgress) continue;
+          context2d.globalAlpha = 0.7 * (1 - hitProgress);
+          context2d.fillStyle = color;
+          context2d.beginPath();
+          context2d.arc(targetX, centerY + ((index - ((impactCount - 1) / 2)) * 24), 10 + hitProgress * 50, 0, Math.PI * 2);
+          context2d.fill();
+        }
+      }
+      context2d.restore();
+      if (progress < 1 && !reducedMotion) requestFrame(() => renderCanvasBurst(cue, started));
+    };
+    const burst = async (cue = {}) => {
       const active = await activate();
       if (active === 'webgpu' && gpuDevice && gpuContext) {
-        const encoder = gpuDevice.createCommandEncoder();
-        const pass = encoder.beginRenderPass({ colorAttachments: [{ view: gpuContext.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'store', clearValue: { r: .18, g: .11, b: .32, a: .22 } }] });
-        pass.end();
-        gpuDevice.queue.submit([encoder.finish()]);
+        renderGpuBurst(cue);
         return;
       }
       if (active === 'canvas2d') {
-        context2d ||= canvas.getContext('2d');
-        if (!context2d) return;
-        const width = canvas.width = canvas.clientWidth || 1100;
-        const height = canvas.height = canvas.clientHeight || 620;
-        const particles = Array.from({ length: 18 + Math.round(strength * 10) }, (_, index) => ({ x: width / 2, y: height / 2, dx: Math.sin(index * 2.4) * (2 + (index % 4)), dy: Math.cos(index * 1.7) * (2 + (index % 5)), life: 1 }));
-        const started = performance.now();
-        const draw = now => {
-          const elapsed = now - started;
-          context2d.clearRect(0, 0, width, height);
-          context2d.fillStyle = colorFor(element);
-          particles.forEach(particle => {
-            particle.x += particle.dx; particle.y += particle.dy; particle.life = Math.max(0, 1 - (elapsed / 700));
-            context2d.globalAlpha = particle.life;
-            context2d.beginPath(); context2d.arc(particle.x, particle.y, 3 + (particle.life * 6), 0, Math.PI * 2); context2d.fill();
-          });
-          context2d.globalAlpha = 1;
-          if (elapsed < 700 && globalThis.requestAnimationFrame) globalThis.requestAnimationFrame(draw);
-        };
-        if (globalThis.requestAnimationFrame) globalThis.requestAnimationFrame(draw);
+        renderCanvasBurst(cue);
       }
     };
-    return { burst, mode: () => mode };
+    const setQuality = nextQuality => {
+      if (!['auto', 'reduced'].includes(nextQuality)) return;
+      quality = nextQuality;
+      // A canvas that already owns a WebGPU context cannot safely acquire a
+      // 2D context as a runtime fallback. CSS retains the same choreography.
+      if (quality === 'reduced' && mode === 'webgpu') mode = 'css';
+      if (quality === 'auto' && mode === 'css' && gpuDevice && gpuContext && !reducedMotion) mode = 'webgpu';
+    };
+    return { burst, mode: () => mode, setQuality };
   })();
+
+  const setArenaConfig = (config = {}) => {
+    if (Object.prototype.hasOwnProperty.call(config, 'arenaAudioEnabled')) {
+      arenaAudioEnabled = config.arenaAudioEnabled !== false;
+    }
+    if (Object.prototype.hasOwnProperty.call(config, 'arenaAudioVolume')) {
+      const requestedVolume = Number(config.arenaAudioVolume);
+      arenaAudioVolume = Math.max(0, Math.min(1, Number.isFinite(requestedVolume) ? requestedVolume : 0.7));
+    }
+    if (Object.prototype.hasOwnProperty.call(config, 'arenaEffectsQuality')) {
+      arenaEffectsQuality = config.arenaEffectsQuality === 'reduced' ? 'reduced' : 'auto';
+    }
+    const battle = node('battle');
+    battle.dataset.audioEnabled = String(arenaAudioEnabled);
+    battle.dataset.audioVolume = String(arenaAudioVolume);
+    battle.dataset.quality = arenaEffectsQuality;
+    battleEffects.setQuality(arenaEffectsQuality);
+  };
+  setArenaConfig();
 
   const normalizeBottomOverlayDuration = input => Math.max(
     MIN_BOTTOM_OVERLAY_DURATION_MS,
@@ -347,6 +569,7 @@
     const rawHp = Number(fighter.hp);
     const maxHp = Math.max(1, Number(fighter.maxHp) || rawHp || 1);
     const hp = Math.max(0, Number.isFinite(rawHp) ? rawHp : maxHp);
+    const shield = Math.max(0, Number(fighter.shield) || 0);
     const charge = Math.max(0, Math.min(100, Number(fighter.charge) || 0));
     node(`fighter${side === 'a' ? 'A' : 'B'}`).textContent = name;
     node(`battle-element-${suffix}`).textContent = value(fighter.element, 'Element');
@@ -354,6 +577,8 @@
     node(`battle-art-${suffix}`).alt = name;
     node(`battle-hp-${suffix}`).style.transform = `scaleX(${hp / maxHp})`;
     node(`battle-hp-label-${suffix}`).textContent = `${hp}/${maxHp}`;
+    node(`battle-shield-${suffix}`).style.transform = `scaleX(${Math.min(1, shield / 12)})`;
+    node(`battle-shield-label-${suffix}`).textContent = String(shield);
     node(`battle-charge-${suffix}`).style.transform = `scaleX(${charge / 100})`;
     node(`battle-charge-label-${suffix}`).textContent = `${charge}%`;
   };
@@ -370,6 +595,40 @@
       description.textContent = skill.available === false ? 'Special lädt noch …' : value(skill.description);
       item.append(title, description);
       root.append(item);
+    });
+  };
+  const ensureBattleFromAction = action => {
+    const actor = action?.before || action?.after || {};
+    const target = action?.targetBefore || action?.targetAfter || {};
+    const actorId = action?.monsterId || actor.monsterId;
+    const targetId = action?.targetMonsterId || target.monsterId;
+    if (!actorId || !targetId) return;
+    const actionIds = [actorId, targetId];
+    if (battleIds[0] === actionIds[0] && battleIds[1] === actionIds[1]) return;
+    battleIds = actionIds;
+    battleNames = [itemName(actor), itemName(target)];
+    setBattleFighter('a', actor);
+    setBattleFighter('b', target);
+    node('battle').classList.add('visible');
+  };
+  const showBattleFloat = (side, text, kind = 'damage') => {
+    if (!text) return;
+    const float = document.createElement('span');
+    float.className = `battle-float ${side === 'a' ? 'left' : 'right'} ${kind}`;
+    float.textContent = text;
+    node('battle-float-layer').append(float);
+    setTimeout(() => float.remove(), reducedMotion ? 0 : 1_300);
+  };
+  const showBattleOutcomes = (action, actorSide, targetSide) => {
+    (action?.outcomes || []).forEach(outcome => {
+      if (outcome.type === 'damage') {
+        if (outcome.evaded) showBattleFloat(targetSide, 'DODGE', 'evade');
+        else if (Number(outcome.hpDamage) > 0) showBattleFloat(targetSide, `-${Number(outcome.hpDamage)}`, 'damage');
+        if (Number(outcome.shieldAbsorbed) > 0) showBattleFloat(targetSide, `-${Number(outcome.shieldAbsorbed)} SHIELD`, 'shield');
+        if (Number(outcome.reactiveDamage) > 0) showBattleFloat(actorSide, `-${Number(outcome.reactiveDamage)}`, 'damage');
+      }
+      if (outcome.type === 'shield' && Number(outcome.amount) > 0) showBattleFloat(actorSide, `+${Number(outcome.amount)}`, 'shield');
+      if (outcome.type === 'heal' && Number(outcome.amount) > 0) showBattleFloat(actorSide, `+${Number(outcome.amount)}`, 'heal');
     });
   };
   const showBattle = async ({ left, right, fighters = null, detail, round = 0, winner = false, duration = 2600, keepVisible = false }) => {
@@ -486,10 +745,13 @@
   const present = async ({ type, data }) => {
     if (type === 'config_changed') {
       setBottomOverlayDuration(data?.config?.bottomOverlayDurationMs);
+      setArenaConfig(data?.config);
       return;
     }
     if (type === 'stream_started') return showToast(`${value(data?.event?.element,'Element')} Hour ist aktiv`);
-    if (type === 'egg_spawned') return showCard({
+    if (type === 'egg_spawned') {
+      void battleAudio.play('spawn');
+      return showCard({
       kicker:`${value(data?.egg?.element,'Element')} · ${value(data?.egg?.variant,'standard')}`,
       title:'Ein neues Ei!',
       subtitle:`${value(data?.userId,'Viewer')} hat einen Brutplatz gefüllt.`,
@@ -497,7 +759,8 @@
       charged:data?.egg?.variant === 'charged',
       hint:'!eggs zeigt den Timer',
       progress:4
-    });
+      });
+    }
     if (type === 'egg_boosted') return showCard({
       kicker:'Tempo-Boost',
       title:'Das Ei leuchtet!',
@@ -507,7 +770,9 @@
     });
     if (type === 'gift_combo') return showToast(`Hype-Combo für ${value(data?.userId,'einen Viewer')} · +20`);
     if (type === 'hype_changed') return showHype(data);
-    if (type === 'egg_ready') return showCard({
+    if (type === 'egg_ready') {
+      void battleAudio.play('ready');
+      return showCard({
       kicker:'Bereit!',
       title:`${value(data?.egg?.element,'Element')}-Ei kann schlüpfen`,
       subtitle:`${value(data?.userId,'Viewer')}, dein Moment gehört dir.`,
@@ -515,9 +780,12 @@
       progress:100,
       charged:data?.egg?.variant === 'charged',
       hint:'Jetzt !hatch [slot] schreiben'
-    });
+      });
+    }
     if (type === 'hatch_started') return showToast(`${value(data?.userId,'Viewer')} öffnet ein ${value(data?.egg?.element,'Element')}-Ei …`,1800);
-    if (type === 'egg_hatched') return showCard({
+    if (type === 'egg_hatched') {
+      void battleAudio.play('hatch');
+      return showCard({
       kicker:`${value(data?.monster?.element,data?.egg?.element)} · ${value(data?.monster?.personality,'Neugierig')}`,
       title:`${itemName(data?.monster)} ist da!`,
       subtitle:`28 faire Startpunkte · gehört ${value(data?.userId,'dem Viewer')} dauerhaft.`,
@@ -525,7 +793,8 @@
       charged:data?.egg?.variant === 'charged',
       hint:'!monster [slot] zeigt die Karte',
       progress:100
-    });
+      });
+    }
     if (type === 'monster_visual_evolved') return showCard({
       kicker:'Kosmetische Evolution',
       title:`${itemName(data?.monster)} strahlt neu`,
@@ -557,6 +826,8 @@
         keepVisible:true
       });
       node('battle-advantage').textContent = battleAdvantageName ? battleCopy('advantage', { name:battleAdvantageName }) : battleCopy('even');
+      node('battle').classList.add('arena-entering');
+      setTimeout(() => node('battle').classList.remove('arena-entering'), reducedMotion ? 0 : 1_000);
       await wait(reducedMotion ? 0 : 3000);
       return;
     }
@@ -577,21 +848,43 @@
     }
     if (type === 'battle_action') {
       const action = data?.action || {};
+      ensureBattleFromAction(action);
       const actorSide = action.monsterId === battleIds[0] ? 'a' : 'b';
       const targetSide = actorSide === 'a' ? 'b' : 'a';
+      const cue = overlayViews?.arenaAction?.(action, actorSide) || {
+        kind: action.selectedChoice === 'C' ? 'special' : (action.selectedChoice === 'B' ? 'defense' : 'attack'),
+        sound: action.selectedChoice === 'C' ? 'special' : 'hit',
+        vfxKey: action.skill?.vfxKey || 'neutral-attack',
+        element: action.after?.element || action.before?.element || 'Neutral',
+        damage: 0,
+        shieldGain: 0,
+        healing: 0,
+        evaded: false,
+        durationMs: 2_700
+      };
       setBattleFighter(actorSide, action.after || {});
       setBattleFighter(targetSide, action.targetAfter || {});
+      showBattleOutcomes(action, actorSide, targetSide);
       node('battle-detail').textContent = battleCopy('action', {
         name:action.before?.name || battleNames[actorSide === 'a' ? 0 : 1],
         skill:action.skill?.name || action.selectedChoice || 'skill'
       });
       const actor = node(`battle-fighter-${actorSide}`);
       const target = node(`battle-fighter-${targetSide}`);
-      actor.classList.add('attack');
-      target.classList.add('hit');
-      if ((action.outcomes || []).some(outcome => outcome.type === 'shield')) actor.classList.add('shielded');
-      battleEffects.burst({ element: action.after?.element || action.before?.element, strength: action.selectedChoice === 'C' ? 2 : 1 });
-      await wait(reducedMotion ? 0 : 2700);
+      const battle = node('battle');
+      battle.dataset.vfxKey = cue.vfxKey;
+      battle.dataset.sound = cue.sound;
+      battle.dataset.hitCount = String(cue.hitCount || 0);
+      battle.dataset.presentation = cue.multiHit ? 'multi-hit' : cue.kind;
+      battle.classList.remove('arena-attack', 'arena-defense', 'arena-special');
+      battle.classList.toggle('arena-multihit', Boolean(cue.multiHit));
+      battle.classList.add(`arena-${cue.kind}`);
+      void battleAudio.play(cue.sound);
+      actor.classList.add(cue.kind === 'defense' ? 'shielded' : 'attack');
+      if (cue.damage > 0 && !cue.evaded) target.classList.add('hit');
+      if (cue.shieldGain > 0) actor.classList.add('shielded');
+      battleEffects.burst({ ...cue, strength: cue.kind === 'special' ? 2 : 1 });
+      await wait(reducedMotion ? 0 : cue.durationMs);
       actor.classList.remove('attack', 'shielded');
       target.classList.remove('hit');
       return;
@@ -605,6 +898,7 @@
     if (type === 'battle_knockout') {
       node('battle-detail').textContent = battleCopy('knockout');
       battleEffects.burst({ strength: 3 });
+      void battleAudio.play('knockout');
       await wait(reducedMotion ? 0 : 4000);
       return;
     }
@@ -633,35 +927,16 @@
       durationMs:8_000,
       progress:100
     });
-    if (type === 'battle_started') return showBattle({
-      left:itemName(data?.challenger),
-      right:itemName(data?.defender),
-      detail:(() => {
-        battleIds = [data?.challenger?.monster_id,data?.defender?.monster_id];
-        battleAdvantageName = data?.elementAdvantageMonsterId === battleIds[0]
-          ? itemName(data?.challenger)
-          : (data?.elementAdvantageMonsterId === battleIds[1] ? itemName(data?.defender) : '');
-        return battleAdvantageName
-          ? `${battleAdvantageName} hat Elementvorteil · Seed gespeichert`
-          : 'Kein Elementvorteil · Seed gespeichert';
-      })()
-    });
-    if (type === 'battle_round') {
-      const round = Number(data?.round?.number) || 1;
+    if (type === 'battle_completed') {
+      void battleAudio.play('victory');
       return showBattle({
         left:battleNames[0],
         right:battleNames[1],
-        round,
-        detail:`Runde ${round} · ${data?.round?.firstDamage || 0} / ${data?.round?.secondDamage || 0} Schaden${battleAdvantageName ? ` · Vorteil ${battleAdvantageName}` : ''}`
+        round:3,
+        winner:true,
+        detail:`${itemName(data?.winner)} gewinnt!`
       });
     }
-    if (type === 'battle_completed') return showBattle({
-      left:battleNames[0],
-      right:battleNames[1],
-      round:3,
-      winner:true,
-      detail:`${itemName(data?.winner)} gewinnt!`
-    });
     if (type === 'achievement_unlocked') return showCard({
       kicker:'Achievement freigeschaltet',
       title:value(data?.achievement?.achievement_key,'Neuer Meilenstein').replaceAll('_',' '),
@@ -711,6 +986,7 @@
       if (!response.ok) return;
       const state = await response.json();
       setBottomOverlayDuration(state?.config?.bottomOverlayDurationMs);
+      setArenaConfig(state?.config);
       if (typeof state?.commandPrefix === 'string' && state.commandPrefix) commandPrefix = state.commandPrefix;
       if (state?.battle?.match?.battle) enqueue('battle_snapshot', state.battle.match);
     } catch (_) {}

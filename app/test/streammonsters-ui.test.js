@@ -125,6 +125,30 @@ describe('Stream Monsters creator wizard', () => {
     dom.window.close();
   });
 
+  test('saves independent arena audio and visual quality controls', async () => {
+    const { dom, fetchMock } = bootUi();
+    await waitFor(() => expect(dom.window.document.getElementById('arenaAudioEnabled')).not.toBeNull());
+
+    dom.window.document.getElementById('arenaAudioEnabled').checked = false;
+    dom.window.document.getElementById('arenaAudioVolume').value = '35';
+    dom.window.document.getElementById('arenaEffectsQuality').value = 'reduced';
+    dom.window.document.getElementById('saveSetup').click();
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/streammonsters/config',
+      expect.objectContaining({ method: 'POST' })
+    ));
+    const saveCalls = fetchMock.mock.calls.filter(([url, options]) => (
+      url === '/api/streammonsters/config' && options.method === 'POST'
+    ));
+    expect(JSON.parse(saveCalls.at(-1)[1].body)).toEqual(expect.objectContaining({
+      arenaAudioEnabled: false,
+      arenaAudioVolume: 0.35,
+      arenaEffectsQuality: 'reduced'
+    }));
+    dom.window.close();
+  });
+
   test('shows the cinematic battle flow and sends individual battle preview scenes', async () => {
     const { dom, fetchMock } = bootUi();
     await waitFor(() => expect(dom.window.document.getElementById('battleLiveStatus').textContent)
@@ -143,6 +167,24 @@ describe('Stream Monsters creator wizard', () => {
       url === '/api/streammonsters/demo' && options.method === 'POST' && options.body
     ));
     expect(JSON.parse(demoCall[1].body)).toEqual({ scene: 'knockout' });
+    dom.window.close();
+  });
+
+  test('offers deterministic attack, defense, multihit and special previews', async () => {
+    const { dom, fetchMock } = bootUi();
+    await waitFor(() => expect(dom.window.document.querySelector('[data-demo-scene="defense"]')).not.toBeNull());
+
+    dom.window.document.querySelector('[data-demo-scene="special"]').click();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/streammonsters/demo',
+      expect.objectContaining({ method: 'POST' })
+    ));
+    const demoCall = fetchMock.mock.calls.find(([url, options]) => (
+      url === '/api/streammonsters/demo' && options.method === 'POST' && options.body === JSON.stringify({ scene: 'special' })
+    ));
+    expect(demoCall).toBeDefined();
+    expect(dom.window.document.querySelector('[data-demo-scene="attack"]')).not.toBeNull();
+    expect(dom.window.document.querySelector('[data-demo-scene="multihit"]')).not.toBeNull();
     dom.window.close();
   });
 
