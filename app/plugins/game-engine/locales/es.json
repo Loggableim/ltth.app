@@ -1277,6 +1277,7 @@
             "cell_piece": "Columna {column}, fila {row}: {owner}, ficha {color}",
             "current_turn": "Turno: {player}{columnText}",
             "matchmaking_countdown": "Quedan {seconds} s para desafiar",
+            "matchmaking_other_searches": "{count} otras busquedas de espectadores",
             "matchmaking_prompt": "{player} busca rival. Escribe connect4 para jugar.",
             "matchmaking_title": "¡Desafío de Connect4!",
             "draw": "🤝 ¡Empate!",

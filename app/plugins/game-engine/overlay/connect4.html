@@ -670,6 +670,7 @@
     <div class="challenge-info" data-i18n="plugins.game-engine.labels.send_this_gift_to_start">Send this gift to start:</div>
     <div id="gift-name" style="font-size: 20px; color: #FFC107; margin-top: 10px;"></div>
     <div id="challenge-timer" class="challenge-timer"></div>
+    <div id="challenge-pending-count" aria-live="polite" hidden></div>
   </div>
 
   <!-- Leaderboard Screen -->
@@ -1055,6 +1056,9 @@
       if (matchmakingChallengeInterval) clearInterval(matchmakingChallengeInterval);
       matchmakingChallengeInterval = null;
       activeMatchmakingChallengeKey = null;
+      const pendingCount = document.getElementById('challenge-pending-count');
+      pendingCount.hidden = true;
+      pendingCount.textContent = '';
       if (!wasMatchmakingChallenge) return;
       const challengeScreen = document.getElementById('challenge-screen');
       challengeScreen.classList.remove('show');
@@ -1074,8 +1078,26 @@
         return;
       }
 
-      const key = `${challenge.challengeId}:${expiresAtMs}:${serverTimestamp}`;
-      if (!force && key === activeMatchmakingChallengeKey) return;
+      const key = `${challenge.challengeId}:${expiresAtMs}`;
+      const otherSearches = Math.max(
+        0,
+        Number(challenge.pendingCount || challenge.pendingChallenges?.length || 1) - 1
+      );
+      const pendingCount = document.getElementById('challenge-pending-count');
+      const renderPendingCount = () => {
+        pendingCount.hidden = otherSearches === 0;
+        pendingCount.textContent = otherSearches > 0
+          ? runtimeText(
+            'plugins.game-engine.runtime.connect4.matchmaking_other_searches',
+            { count: otherSearches },
+            '{count} other viewer searches'
+          )
+          : '';
+      };
+      if (!force && key === activeMatchmakingChallengeKey) {
+        renderPendingCount();
+        return;
+      }
       clearMatchmakingChallenge();
       activeMatchmakingChallengeKey = key;
 
@@ -1102,6 +1124,7 @@
       giftContainer.replaceChildren();
       giftName.hidden = true;
       if (challengeInfo) challengeInfo.hidden = true;
+      renderPendingCount();
       challengeScreen.classList.add('show');
 
       const render = () => {

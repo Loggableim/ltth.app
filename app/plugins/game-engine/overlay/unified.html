@@ -326,7 +326,7 @@
 
       const ownsDisplay = ['playing', 'animating', 'result', 'leaderboard'].includes(display.phase) &&
         (display.gameType === 'connect4' || display.gameType === 'chess');
-      const ownsConnect4Matchmaking = state?.connect4Matchmaking?.status === 'open';
+      const ownsConnect4Matchmaking = state?.connect4Matchmaking && typeof state.connect4Matchmaking === 'object';
       return ownsDisplay || ownsConnect4Matchmaking ? state : null;
     }
 
