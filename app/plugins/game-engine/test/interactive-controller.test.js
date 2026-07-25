@@ -1993,4 +1993,71 @@ describe('InteractiveController', () => {
     harness.controller.destroy();
     harness.sqlite.close();
   });
+
+  test('persists player two response time after a viewer-versus-viewer move and times out that player', () => {
+    const harness = createHarness({
+      connect4HostStarts: false,
+      settings: { connect4ViewerTimeoutEnabled: true, connect4ViewerResponseSeconds: 5 }
+    });
+    harness.controller.init();
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'player-one',
+      viewerDisplayName: 'Player One',
+      participants: [
+        { id: 'player-one', displayName: 'Player One', avatarSource: '' },
+        { id: 'player-two', displayName: 'Player Two', avatarSource: '' }
+      ]
+    });
+
+    expect(harness.controller.applyViewerMove({
+      viewerId: 'player-one',
+      gameType: 'connect4',
+      move: { column: 'A' }
+    })).toMatchObject({ success: true });
+    expect(harness.database.getInteractiveState(match.sessionId)).toMatchObject({
+      turnPlayerId: 'player-two',
+      viewerDeadlineMs: null,
+      viewerTimeRemainingMs: 5000
+    });
+
+    jest.advanceTimersByTime(500);
+    expect(harness.database.getInteractiveState(match.sessionId)).toMatchObject({
+      turnPlayerId: 'player-two',
+      viewerDeadlineMs: Date.now() + 5000,
+      viewerTimeRemainingMs: null
+    });
+    jest.advanceTimersByTime(5000);
+
+    expect(harness.finishGame).toHaveBeenCalledWith(expect.objectContaining({
+      sessionId: match.sessionId,
+      reason: 'viewer_timeout',
+      timedOutPlayerId: 'player-two',
+      winner: 1,
+      winnerDisplayName: 'Player One'
+    }));
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('retains an elapsed open challenge for startup fallback recovery instead of silently expiring it', () => {
+    const harness = createHarness();
+    harness.controller.init();
+    const opened = harness.controller.openConnect4Challenge({
+      openerId: 'fallback-opener',
+      openerDisplayName: 'Fallback Opener'
+    });
+    jest.advanceTimersByTime(30000);
+
+    expect(harness.controller.recoverConnect4Challenge({ includeExpired: true })).toMatchObject({
+      challengeId: opened.challenge.challengeId,
+      status: 'open',
+      openerId: 'fallback-opener'
+    });
+    expect(harness.database.getInteractiveChallenge(opened.challenge.challengeId)).toMatchObject({ status: 'open' });
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
 });

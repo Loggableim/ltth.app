@@ -960,6 +960,15 @@ class GameEngineDatabase {
     `).get(now));
   }
 
+  getRecoverableInteractiveChallenge() {
+    return this._mapInteractiveChallengeRow(this.db.prepare(`
+      SELECT * FROM game_interactive_challenges
+      WHERE status = 'open'
+      ORDER BY challenge_id ASC
+      LIMIT 1
+    `).get());
+  }
+
   claimInteractiveChallenge(challengeId, participant, now = Date.now()) {
     const participantId = String(participant?.participantId || '').trim();
     const participantDisplayName = String(participant?.participantDisplayName || '').trim();

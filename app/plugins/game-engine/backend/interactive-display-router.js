@@ -321,11 +321,12 @@ class InteractiveDisplayRouter {
     const hostRemaining = session?.gameType === 'chess'
       ? this.timers.getHostRemaining?.(session) ?? session.hostTimeRemainingMs
       : null;
-    const activePlayerDisplayName = session?.turnRole === 'host'
+    const activeParticipant = session?.participants?.find(participant => participant.id === session.turnPlayerId);
+    const activePlayerDisplayName = activeParticipant?.displayName || (session?.turnRole === 'host'
       ? session.hostDisplayName
       : session?.turnRole === 'viewer'
         ? session.viewerDisplayName
-        : null;
+        : null);
     return {
       displaySessionId: this.displaySessionId,
       gameType: this.phase === 'result'

@@ -1115,4 +1115,55 @@ describe('GameEnginePlugin interactive controller integration', () => {
     expect(plugin.recentConnect4MatchmakingEvents.has('chat:same')).toBe(false);
     Date.now.mockRestore();
   });
+
+  test('keeps a recovered unexpired challenge scheduled after plugin reload', () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(1000000);
+    const { plugin } = createPlugin();
+    const challenge = {
+      challengeId: 71,
+      status: 'open',
+      openerId: 'reload-opener',
+      openerDisplayName: 'Reload Opener',
+      expiresAtMs: 1030000
+    };
+    jest.spyOn(plugin, '_scheduleConnect4MatchmakingExpiry').mockImplementation(() => {});
+    plugin._recoverConnect4MatchmakingChallenge(challenge);
+
+    expect(plugin._scheduleConnect4MatchmakingExpiry).toHaveBeenCalledWith(challenge);
+    jest.useRealTimers();
+  });
+
+  test('starts streamer fallback for an elapsed open challenge during plugin reload recovery', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(1040000);
+    const { plugin } = createPlugin();
+    plugin.interactiveController = {
+      expireConnect4Challenge: jest.fn(() => ({ success: true })),
+      startMatch: jest.fn(() => ({ success: true, sessionId: 72 }))
+    };
+    plugin._resolveHostDisplayName = jest.fn(() => 'Reload Host');
+    const challenge = {
+      challengeId: 72,
+      status: 'open',
+      openerId: 'reload-opener',
+      openerDisplayName: 'Reload Opener',
+      openerAvatarSource: '/api/game-engine/avatar?url=opener',
+      expiresAtMs: 1030000
+    };
+
+    await expect(plugin._recoverConnect4MatchmakingChallenge(challenge))
+      .resolves.toMatchObject({ success: true, sessionId: 72 });
+    expect(plugin.interactiveController.expireConnect4Challenge).toHaveBeenCalledWith(72);
+    expect(plugin.interactiveController.startMatch).toHaveBeenCalledWith(expect.objectContaining({
+      gameType: 'connect4',
+      viewerId: 'reload-opener',
+      participants: [
+        expect.objectContaining({ id: 'reload-opener', role: 'viewer' }),
+        expect.objectContaining({ id: 'streamer', displayName: 'Reload Host', role: 'host' })
+      ],
+      triggerType: 'matchmaking_timeout'
+    }));
+    jest.useRealTimers();
+  });
 });

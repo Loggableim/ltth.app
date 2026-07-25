@@ -523,9 +523,18 @@ class GameEnginePlugin {
       getSettings: () => this._getInteractiveSettings()
     });
     const recovery = this.interactiveController.init();
-    const challenge = this.interactiveController.recoverConnect4Challenge?.();
-    if (challenge) this._scheduleConnect4MatchmakingExpiry(challenge);
+    const challenge = this.interactiveController.recoverConnect4Challenge?.({ includeExpired: true });
+    if (challenge) this._recoverConnect4MatchmakingChallenge(challenge);
     return recovery;
+  }
+
+  _recoverConnect4MatchmakingChallenge(challenge) {
+    if (!challenge?.challengeId || challenge.status !== 'open') return null;
+    if (Number(challenge.expiresAtMs) <= Date.now()) {
+      return this._expireConnect4MatchmakingChallenge(challenge);
+    }
+    this._scheduleConnect4MatchmakingExpiry(challenge);
+    return { success: true, scheduled: true, challengeId: challenge.challengeId };
   }
 
   _scheduleConnect4MatchmakingExpiry(challenge) {

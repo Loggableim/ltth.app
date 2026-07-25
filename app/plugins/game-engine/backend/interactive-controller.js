@@ -481,14 +481,16 @@ class InteractiveController {
     return { success: true, challenge };
   }
 
-  recoverConnect4Challenge() {
-    const challenge = this.database.getOpenInteractiveChallenge(this.now());
+  recoverConnect4Challenge({ includeExpired = false } = {}) {
+    const challenge = this.database.getRecoverableInteractiveChallenge?.() ||
+      this.database.getOpenInteractiveChallenge(this.now());
     if (!challenge) return null;
     if (!this._isValidAvatarSource(challenge.openerAvatarSource)) {
       this.database.invalidateInteractiveChallenge?.(challenge.challengeId, this.now());
       this.logger?.warn?.(`[INTERACTIVE] Rejected unsafe Connect4 challenge avatar source for ${challenge.challengeId}`);
       return null;
     }
+    if (!includeExpired && Number(challenge.expiresAtMs) <= this.now()) return null;
     return challenge;
   }
 
@@ -496,7 +498,7 @@ class InteractiveController {
     let recovered = 0;
     const reconciled = this.database.reconcileOrphanedInteractiveSessions?.() || 0;
     const activeRows = this.database.getActiveInteractiveStates();
-    const recoveredChallenge = Boolean(this.recoverConnect4Challenge());
+    const recoveredChallenge = Boolean(this.recoverConnect4Challenge({ includeExpired: true }));
     for (const row of activeRows) {
       try {
         if (row.recoveryError) throw new Error(row.recoveryError);
@@ -712,6 +714,13 @@ class InteractiveController {
     session.lastActivityAt = this.now();
 
     const complete = result.gameOver || session.adapter.isComplete();
+    if (
+      !complete &&
+      session.turnRole === 'viewer' &&
+      this._viewerTimeoutEnabled(session.gameType)
+    ) {
+      this.timers.prepareViewer(session, this._viewerResponseSeconds(session.gameType), { persist: false });
+    }
     let completionPayload = null;
     try {
       if (complete) {
