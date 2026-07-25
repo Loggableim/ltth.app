@@ -37,8 +37,16 @@ function createHarness(options = {}) {
     ...options.settings
   };
 
-  function buildGame({ sessionId, gameType, viewerId, viewerDisplayName, config, timeControl }) {
+  function buildGame({ sessionId, gameType, viewerId, viewerDisplayName, participants, config, timeControl }) {
     if (gameType === 'connect4') {
+      if (Array.isArray(participants) && participants.length === 2) {
+        return new Connect4Game(
+          sessionId,
+          { username: participants[0].id, role: 'viewer', nickname: participants[0].displayName },
+          { username: participants[1].id, role: 'viewer', nickname: participants[1].displayName },
+          logger
+        );
+      }
       const hostFirst = config.streamerRole === 'player1';
       return new Connect4Game(
         sessionId,
@@ -1694,5 +1702,119 @@ describe('InteractiveController', () => {
 
     secondHarness.controller.destroy();
     firstHarness.sqlite.close();
+  });
+
+  test('opens, claims, expires, and recovers one Connect4 challenge with a proxy avatar source', () => {
+    const firstHarness = createHarness();
+    firstHarness.controller.init();
+
+    expect(firstHarness.controller.openConnect4Challenge({
+      openerId: 'opener',
+      openerDisplayName: 'Opener',
+      openerAvatarSource: '/api/game-engine/avatar?url=https%3A%2F%2Fexample.com%2Fopener.png'
+    })).toMatchObject({ success: true, challenge: expect.objectContaining({ expiresAtMs: 1030000 }) });
+    expect(firstHarness.controller.openConnect4Challenge({
+      openerId: 'other',
+      openerDisplayName: 'Other',
+      openerAvatarSource: 'https://example.com/not-a-proxy.png'
+    })).toMatchObject({ success: false, error: 'challenge_already_open' });
+
+    const recoveredHarness = createHarness({ dbContext: firstHarness.dbContext });
+    expect(recoveredHarness.controller.init()).toMatchObject({ recoveredChallenge: true });
+    const challenge = recoveredHarness.controller.recoverConnect4Challenge();
+    expect(challenge).toMatchObject({ openerId: 'opener', status: 'open' });
+    expect(recoveredHarness.controller.acceptConnect4Challenge({
+      challengeId: challenge.challengeId,
+      participantId: 'opener',
+      participantDisplayName: 'Opener'
+    })).toEqual({ success: false, error: 'self_challenge' });
+    expect(recoveredHarness.controller.acceptConnect4Challenge({
+      challengeId: challenge.challengeId,
+      participantId: 'acceptor',
+      participantDisplayName: 'Acceptor',
+      participantAvatarSource: '/api/game-engine/avatar?url=https%3A%2F%2Fexample.com%2Facceptor.png'
+    })).toMatchObject({ success: true, challenge: expect.objectContaining({ claimedById: 'acceptor' }) });
+
+    const expiring = recoveredHarness.controller.openConnect4Challenge({
+      openerId: 'slow-opener',
+      openerDisplayName: 'Slow Opener',
+      openerAvatarSource: ''
+    });
+    jest.advanceTimersByTime(30000);
+    expect(recoveredHarness.controller.expireConnect4Challenge(expiring.challenge.challengeId))
+      .toMatchObject({ success: true, challenge: expect.objectContaining({ status: 'expired' }) });
+    expect(recoveredHarness.controller.recoverConnect4Challenge()).toBeNull();
+
+    firstHarness.controller.destroy();
+    recoveredHarness.controller.destroy();
+    firstHarness.sqlite.close();
+  });
+
+  test('authorizes Connect4 viewer-versus-viewer moves by the persisted active participant', () => {
+    const harness = createHarness({ connect4HostStarts: false });
+    harness.controller.init();
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'opener',
+      viewerDisplayName: 'Opener',
+      participants: [
+        { id: 'opener', displayName: 'Opener', avatarSource: '' },
+        { id: 'acceptor', displayName: 'Acceptor', avatarSource: '' }
+      ]
+    });
+
+    expect(harness.controller.applyViewerMove({
+      viewerId: 'acceptor',
+      gameType: 'connect4',
+      move: { column: 'A' }
+    })).toEqual({ success: false, error: 'not_active_participant_turn' });
+    expect(harness.controller.applyViewerMove({
+      viewerId: 'opener',
+      gameType: 'connect4',
+      move: { column: 'A' }
+    })).toMatchObject({ success: true, sessionId: match.sessionId });
+    jest.advanceTimersByTime(500);
+    expect(harness.controller.applyViewerMove({
+      viewerId: 'acceptor',
+      gameType: 'connect4',
+      move: { column: 'B' }
+    })).toMatchObject({ success: true, sessionId: match.sessionId });
+    expect(harness.database.getInteractiveState(match.sessionId)).toMatchObject({
+      participantIds: ['opener', 'acceptor'],
+      turnPlayerId: 'opener'
+    });
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('awards a viewer-turn timeout to the other viewer rather than the legacy host identity', () => {
+    const harness = createHarness({
+      connect4HostStarts: false,
+      settings: { connect4ViewerTimeoutEnabled: true, connect4ViewerResponseSeconds: 5 }
+    });
+    harness.controller.init();
+    const match = harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'opener',
+      viewerDisplayName: 'Opener',
+      participants: [
+        { id: 'opener', displayName: 'Opener', avatarSource: '' },
+        { id: 'acceptor', displayName: 'Acceptor', avatarSource: '' }
+      ]
+    });
+
+    expect(harness.controller._handleViewerTimeout(match.sessionId, 1)).toBe(true);
+    expect(harness.finishGame).toHaveBeenCalledWith(expect.objectContaining({
+      sessionId: match.sessionId,
+      winner: 2,
+      winnerRole: 'viewer',
+      winnerDisplayName: 'Acceptor',
+      timedOutPlayerId: 'opener',
+      reason: 'viewer_timeout'
+    }));
+
+    harness.controller.destroy();
+    harness.sqlite.close();
   });
 });

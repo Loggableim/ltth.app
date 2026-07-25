@@ -21,6 +21,10 @@ class InteractiveGameAdapter {
     return role === 'streamer' ? 'host' : role;
   }
 
+  getCurrentTurnPlayerId() {
+    return this.game.getCurrentPlayerInfo()?.username || null;
+  }
+
   _moveValue(move) {
     if (this.gameType === 'connect4') return move?.column ?? move;
     return move?.move ?? move?.san ?? move?.uci ?? move;
@@ -34,6 +38,20 @@ class InteractiveGameAdapter {
     return this.gameType === 'connect4'
       ? this.game.dropPiece(this._moveValue(move))
       : this.game.makeMove(this._moveValue(move), viewerId, {
+        skipElapsedTime: true,
+        applyIncrement: false
+      });
+  }
+
+  applyParticipantMove(move, participantId) {
+    const current = this.game.getCurrentPlayerInfo();
+    if (!current?.username || current.username !== participantId) {
+      return { success: false, error: 'Move does not belong to the active participant' };
+    }
+    if (current.role === 'streamer') return this.applyHostMove(move);
+    return this.gameType === 'connect4'
+      ? this.game.dropPiece(this._moveValue(move))
+      : this.game.makeMove(this._moveValue(move), participantId, {
         skipElapsedTime: true,
         applyIncrement: false
       });

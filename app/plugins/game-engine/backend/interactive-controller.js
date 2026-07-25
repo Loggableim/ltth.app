@@ -166,6 +166,9 @@ class InteractiveController {
       sessionRevision: session.sessionRevision,
       displayRevision: this.router.displayRevision,
       turnRole: session.turnRole,
+      participantIds: session.participantIds,
+      participants: session.participants,
+      turnPlayerId: session.turnPlayerId,
       viewerDeadlineMs: session.viewerDeadlineMs,
       viewerTimeRemainingMs: session.viewerTimeRemainingMs,
       hostTimeRemainingMs: session.gameType === 'chess'
@@ -175,6 +178,57 @@ class InteractiveController {
       lastMoveIdentity: session.lastMoveIdentity,
       lastActivityAt: session.lastActivityAt
     };
+  }
+
+  _isValidAvatarSource(value) {
+    const source = String(value || '');
+    if (!source) return true;
+    if (!source.startsWith('/')) return false;
+    try {
+      const parsed = new URL(source, 'http://ltth.local');
+      return [
+        '/api/game-engine/avatar',
+        '/api/game-engine/arena/avatar'
+      ].includes(parsed.pathname) && parsed.searchParams.has('url');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  _normalizeParticipants(viewerId, viewerDisplayName, hostDisplayName, participants) {
+    if (!Array.isArray(participants) || participants.length === 0) {
+      return [
+        { id: viewerId, displayName: viewerDisplayName || viewerId, role: 'viewer', avatarSource: '' },
+        { id: 'streamer', displayName: hostDisplayName, role: 'host', avatarSource: '' }
+      ];
+    }
+    if (participants.length !== 2) throw new Error('Interactive matches require two participants');
+    return participants.map(participant => ({
+      id: String(participant?.id || '').trim(),
+      displayName: String(participant?.displayName || participant?.id || '').trim(),
+      role: participant?.role || (participant?.id === 'streamer' ? 'host' : 'viewer'),
+      avatarSource: String(participant?.avatarSource || '')
+    }));
+  }
+
+  _isViewerVersusViewer(session) {
+    return session.participants?.every(participant => participant.role !== 'host');
+  }
+
+  _participant(session, participantId) {
+    return session.participants?.find(participant => participant.id === participantId) || null;
+  }
+
+  _winnerForPlayerId(session, playerId) {
+    const state = session.adapter.getState();
+    if (session.gameType === 'connect4') {
+      if (state.player1?.username === playerId) return 1;
+      if (state.player2?.username === playerId) return 2;
+      return null;
+    }
+    if (state.whitePlayer?.username === playerId) return 'white';
+    if (state.blackPlayer?.username === playerId) return 'black';
+    return null;
   }
 
   refreshConnect4TimerConfiguration(config = {}) {
@@ -289,10 +343,82 @@ class InteractiveController {
     return rotated;
   }
 
+  openConnect4Challenge({ openerId, openerDisplayName, openerAvatarSource = '' } = {}) {
+    if (this.database.getOpenInteractiveChallenge(this.now())) {
+      return { success: false, error: 'challenge_already_open' };
+    }
+    if (!String(openerId || '').trim() || !String(openerDisplayName || '').trim()) {
+      return { success: false, error: 'opener_identity_required' };
+    }
+    if (this.registry.getByParticipant(String(openerId).trim())) {
+      return { success: false, error: 'active_session' };
+    }
+    if (!this._isValidAvatarSource(openerAvatarSource)) {
+      return { success: false, error: 'invalid_avatar_source' };
+    }
+    if (this.registry.list().length >= this._settings().maxConcurrentInteractiveSessions) {
+      return { success: false, error: 'interactive_session_limit' };
+    }
+    try {
+      const now = this.now();
+      const challenge = this.database.createInteractiveChallenge({
+        gameType: 'connect4',
+        openerId: String(openerId).trim(),
+        openerDisplayName: String(openerDisplayName).trim(),
+        openerAvatarSource,
+        createdAt: now,
+        expiresAtMs: now + 30000
+      });
+      this.emitState();
+      return { success: true, challenge };
+    } catch (error) {
+      return { success: false, error: /open interactive challenge/i.test(error.message)
+        ? 'challenge_already_open'
+        : error.message };
+    }
+  }
+
+  acceptConnect4Challenge({ challengeId, participantId, participantDisplayName, participantAvatarSource = '' } = {}) {
+    const challenge = this.database.getInteractiveChallenge(challengeId);
+    if (!challenge || challenge.status !== 'open' || challenge.expiresAtMs <= this.now()) {
+      return { success: false, error: 'challenge_not_open' };
+    }
+    const normalizedId = String(participantId || '').trim();
+    if (normalizedId === challenge.openerId) return { success: false, error: 'self_challenge' };
+    if (!normalizedId || !String(participantDisplayName || '').trim()) {
+      return { success: false, error: 'participant_identity_required' };
+    }
+    if (!this._isValidAvatarSource(participantAvatarSource)) {
+      return { success: false, error: 'invalid_avatar_source' };
+    }
+    if (this.registry.getByParticipant(normalizedId)) return { success: false, error: 'active_session' };
+    const claimed = this.database.claimInteractiveChallenge(challengeId, {
+      participantId: normalizedId,
+      participantDisplayName: String(participantDisplayName).trim(),
+      participantAvatarSource
+    }, this.now());
+    if (!claimed) return { success: false, error: 'challenge_not_open' };
+    this.emitState();
+    return { success: true, challenge: claimed };
+  }
+
+  expireConnect4Challenge(challengeId) {
+    const challenge = this.database.expireInteractiveChallenge(challengeId, this.now()) ||
+      this.database.getInteractiveChallenge(challengeId);
+    if (!challenge || challenge.status !== 'expired') return { success: false, error: 'challenge_not_expired' };
+    this.emitState();
+    return { success: true, challenge };
+  }
+
+  recoverConnect4Challenge() {
+    return this.database.getOpenInteractiveChallenge(this.now());
+  }
+
   init() {
     let recovered = 0;
     const reconciled = this.database.reconcileOrphanedInteractiveSessions?.() || 0;
     const activeRows = this.database.getActiveInteractiveStates();
+    const recoveredChallenge = Boolean(this.recoverConnect4Challenge());
     for (const row of activeRows) {
       try {
         if (row.recoveryError) throw new Error(row.recoveryError);
@@ -344,16 +470,30 @@ class InteractiveController {
     }
     this.router.sync();
     this.emitState();
-    return { recovered, reconciled, queueLength: this.queue.list().length };
+    return { recovered, reconciled, recoveredChallenge, queueLength: this.queue.list().length };
   }
 
-  startMatch({ gameType, viewerId, viewerDisplayName, timeControl = null, triggerType = 'command', triggerValue = null }) {
+  startMatch({ gameType, viewerId, viewerDisplayName, participants = null, timeControl = null, triggerType = 'command', triggerValue = null }) {
     if (!['connect4', 'chess'].includes(gameType)) {
       return { success: false, error: 'unsupported_game_type' };
     }
     const stableViewerId = String(viewerId || '').trim();
     if (!stableViewerId) return { success: false, error: 'viewer_identity_required' };
-    const existing = this.registry.getByViewer(stableViewerId);
+    const hostDisplayName = this.resolveHostName?.() || 'Streamer';
+    let normalizedParticipants;
+    try {
+      normalizedParticipants = this._normalizeParticipants(
+        stableViewerId,
+        viewerDisplayName || stableViewerId,
+        hostDisplayName,
+        participants
+      );
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+    const existing = normalizedParticipants
+      .map(participant => this.registry.getByParticipant(participant.id))
+      .find(Boolean);
     if (existing) {
       return {
         success: false,
@@ -365,18 +505,19 @@ class InteractiveController {
 
     const settings = this._settings();
     this.registry.maxSessions = settings.maxConcurrentInteractiveSessions;
-    if (this.registry.list().length >= settings.maxConcurrentInteractiveSessions) {
+    const openChallenge = this.database.getOpenInteractiveChallenge(this.now());
+    if (this.registry.list().length + (openChallenge ? 1 : 0) >= settings.maxConcurrentInteractiveSessions) {
       return { success: false, error: 'interactive_session_limit' };
     }
 
     const config = this.getConfig(gameType) || {};
-    const hostDisplayName = this.resolveHostName?.() || 'Streamer';
     let created;
     try {
       created = this.createGame({
         gameType,
         viewerId: stableViewerId,
         viewerDisplayName: viewerDisplayName || stableViewerId,
+        ...(Array.isArray(participants) ? { participants: normalizedParticipants } : {}),
         hostDisplayName,
         config,
         timeControl,
@@ -390,6 +531,7 @@ class InteractiveController {
       }
       const state = adapter.getState();
       const turnRole = adapter.getCurrentTurnRole();
+      const turnPlayerId = adapter.getCurrentTurnPlayerId();
       const now = this.now();
       const session = this.registry.add({
         sessionId: created.sessionId,
@@ -397,12 +539,15 @@ class InteractiveController {
         viewerId: stableViewerId,
         viewerDisplayName: viewerDisplayName || stableViewerId,
         hostDisplayName,
+        participantIds: normalizedParticipants.map(participant => participant.id),
+        participants: normalizedParticipants,
         adapter,
         config,
         timeControl: created.timeControl || timeControl,
         sessionRevision: 1,
         displayRevision: this.router.displayRevision,
         turnRole,
+        turnPlayerId,
         viewerDeadlineMs: null,
         viewerTimeRemainingMs: null,
         hostTimeRemainingMs: this._hostTimeFromState(gameType, state),
@@ -435,13 +580,18 @@ class InteractiveController {
   }
 
   applyViewerMove({ viewerId, gameType, move, moveIdentity = null }) {
-    const session = this.registry.getByViewer(viewerId);
+    const session = this.registry.getByParticipant(viewerId);
     if (!session) return { success: false, error: 'no_active_session' };
     if (session.gameType !== gameType) return { success: false, error: 'wrong_game_type' };
     if (moveIdentity && this.database.hasInteractiveMoveIdentity(session.sessionId, moveIdentity)) {
       return { success: true, duplicate: true, sessionId: session.sessionId };
     }
     if (session.turnRole !== 'viewer') return { success: false, error: 'not_viewer_turn' };
+    if (session.turnPlayerId !== viewerId) {
+      return { success: false, error: this._isViewerVersusViewer(session)
+        ? 'not_active_participant_turn'
+        : 'not_viewer_turn' };
+    }
     const head = this.queue.head();
     if (!head || head.sessionId !== session.sessionId) return { success: false, error: 'not_queue_head' };
     if (this.router.snapshot().displaySessionId !== session.sessionId) {
@@ -456,17 +606,19 @@ class InteractiveController {
     const previous = {
       revision: session.sessionRevision,
       turnRole: session.turnRole,
+      turnPlayerId: session.turnPlayerId,
       deadline: session.viewerDeadlineMs,
       remaining: session.viewerTimeRemainingMs,
       lastMoveIdentity: session.lastMoveIdentity,
       lastActivityAt: session.lastActivityAt
     };
-    const result = session.adapter.applyViewerMove(move, session.viewerId);
+    const result = session.adapter.applyParticipantMove(move, viewerId);
     if (!result.success) return { success: false, error: result.error };
 
     this.timers.clearViewer(session.sessionId, { persist: false });
     session.sessionRevision += 1;
     session.turnRole = session.adapter.getCurrentTurnRole();
+    session.turnPlayerId = session.adapter.getCurrentTurnPlayerId();
     session.viewerDeadlineMs = null;
     session.viewerTimeRemainingMs = null;
     session.lastMoveIdentity = moveIdentity || `${previous.revision}:${JSON.stringify(move)}`;
@@ -495,6 +647,7 @@ class InteractiveController {
       session.adapter.restoreState(previousState);
       session.sessionRevision = previous.revision;
       session.turnRole = previous.turnRole;
+      session.turnPlayerId = previous.turnPlayerId;
       session.viewerDeadlineMs = previous.deadline;
       session.viewerTimeRemainingMs = previous.remaining;
       session.lastMoveIdentity = previous.lastMoveIdentity;
@@ -570,6 +723,7 @@ class InteractiveController {
     const previous = {
       revision: session.sessionRevision,
       turnRole: session.turnRole,
+      turnPlayerId: session.turnPlayerId,
       deadline: session.viewerDeadlineMs,
       remaining: session.viewerTimeRemainingMs,
       hostTimeRemainingMs: session.hostTimeRemainingMs,
@@ -587,6 +741,7 @@ class InteractiveController {
 
     session.sessionRevision += 1;
     session.turnRole = session.adapter.getCurrentTurnRole();
+    session.turnPlayerId = session.adapter.getCurrentTurnPlayerId();
     session.lastMoveIdentity = moveIdentity || `${session.sessionRevision - 1}:${JSON.stringify(envelope.move)}`;
     session.lastActivityAt = this.now();
     session.viewerDeadlineMs = null;
@@ -627,6 +782,7 @@ class InteractiveController {
       }
       session.sessionRevision = previous.revision;
       session.turnRole = previous.turnRole;
+      session.turnPlayerId = previous.turnPlayerId;
       session.lastMoveIdentity = previous.lastMoveIdentity;
       session.lastActivityAt = previous.lastActivityAt;
       session.viewerDeadlineMs = previous.deadline;
@@ -725,15 +881,19 @@ class InteractiveController {
     ) {
       return false;
     }
-    const winner = this._winnerForRole(session, 'host');
+    const timedOutPlayerId = session.turnPlayerId || session.viewerId;
+    const winnerPlayerId = session.participantIds.find(participantId => participantId !== timedOutPlayerId);
+    const winner = this._winnerForPlayerId(session, winnerPlayerId);
+    const winnerRole = this._participant(session, winnerPlayerId)?.role === 'host' ? 'host' : 'viewer';
     this._markTimedOut(session, winner, 'viewer_timeout');
     session.sessionRevision += 1;
     session.lastActivityAt = this.now();
     this._logTransition('viewer_timeout', session, { terminalReason: 'viewer_timeout' });
     this._completeSession(session, {
       winner,
-      winnerRole: 'host',
+      winnerRole,
       reason: 'viewer_timeout',
+      timedOutPlayerId,
       gameResult: { gameOver: true, winner, winReason: 'viewer_timeout', timeout: true }
     });
     return true;
@@ -742,15 +902,19 @@ class InteractiveController {
   _handleHostTimeout(sessionId, revision) {
     const session = this.registry.get(sessionId);
     if (!session || session.sessionRevision !== revision || session.turnRole !== 'host') return false;
-    const winner = this._winnerForRole(session, 'viewer');
+    const timedOutPlayerId = session.turnPlayerId || 'streamer';
+    const winnerPlayerId = session.participantIds.find(participantId => participantId !== timedOutPlayerId);
+    const winner = this._winnerForPlayerId(session, winnerPlayerId);
+    const winnerRole = this._participant(session, winnerPlayerId)?.role === 'host' ? 'host' : 'viewer';
     this._markTimedOut(session, winner, 'host_timeout');
     session.sessionRevision += 1;
     session.lastActivityAt = this.now();
     this._logTransition('host_timeout', session, { terminalReason: 'host_timeout' });
     this._completeSession(session, {
       winner,
-      winnerRole: 'viewer',
+      winnerRole,
       reason: 'host_timeout',
+      timedOutPlayerId,
       gameResult: { gameOver: true, winner, winReason: 'host_timeout', timeout: true }
     });
     return true;
@@ -761,19 +925,28 @@ class InteractiveController {
     skipAccounting = false,
     skipLeaderboard = false
   } = {}) {
+    const winnerPlayer = outcome.winner == null
+      ? null
+      : this._participant(session, session.gameType === 'connect4'
+        ? (Number(outcome.winner) === 1
+          ? session.adapter.getState().player1?.username
+          : session.adapter.getState().player2?.username)
+        : (outcome.winner === 'white'
+          ? session.adapter.getState().whitePlayer?.username
+          : session.adapter.getState().blackPlayer?.username));
     const resultPayload = {
       sessionId: session.sessionId,
       gameType: session.gameType,
       viewerId: session.viewerId,
       viewerDisplayName: session.viewerDisplayName,
       hostDisplayName: session.hostDisplayName,
+      participantIds: [...session.participantIds],
+      participants: session.participants.map(participant => ({ ...participant })),
+      turnPlayerId: session.turnPlayerId,
       winner: outcome.winner,
       winnerRole: outcome.winnerRole,
-      winnerDisplayName: outcome.winnerRole === 'host'
-        ? session.hostDisplayName
-        : outcome.winnerRole === 'viewer'
-          ? session.viewerDisplayName
-          : null,
+      winnerDisplayName: winnerPlayer?.displayName || null,
+      timedOutPlayerId: outcome.timedOutPlayerId || null,
       reason: outcome.reason,
       gameResult: outcome.gameResult,
       state: session.adapter.getState(),
@@ -908,6 +1081,7 @@ class InteractiveController {
       display: this.router.snapshot(),
       hostQueue: this.queue.list(),
       activeSessions: this.registry.summaries(this.now()),
+      connect4Matchmaking: this.recoverConnect4Challenge(),
       configuration: this._settings(),
       serverTimestamp: this.now()
     };
