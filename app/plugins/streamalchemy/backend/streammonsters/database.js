@@ -23,6 +23,7 @@ class StreamMonstersDatabase {
         monster_id TEXT,
         variant TEXT NOT NULL DEFAULT 'standard',
         ready_at_ms INTEGER,
+        expired_at_ms INTEGER,
         visual_source TEXT NOT NULL DEFAULT 'egg_asset',
         visual_key TEXT
       );
@@ -191,6 +192,7 @@ class StreamMonstersDatabase {
     `);
     this.ensureColumn('streammonsters_eggs', 'variant', "TEXT NOT NULL DEFAULT 'standard'");
     this.ensureColumn('streammonsters_eggs', 'ready_at_ms', 'INTEGER');
+    this.ensureColumn('streammonsters_eggs', 'expired_at_ms', 'INTEGER');
     this.ensureColumn('streammonsters_eggs', 'visual_source', "TEXT NOT NULL DEFAULT 'legacy'");
     this.ensureColumn('streammonsters_eggs', 'visual_key', 'TEXT');
     this.ensureColumn('streammonsters_monsters', 'personality', 'TEXT');
@@ -456,6 +458,31 @@ class StreamMonstersDatabase {
       ? 'SELECT * FROM streammonsters_eggs WHERE user_id = ? AND state = ? ORDER BY created_at_ms ASC, egg_id ASC'
       : 'SELECT * FROM streammonsters_eggs WHERE user_id = ? ORDER BY created_at_ms ASC, egg_id ASC';
     return state ? this.db.prepare(sql).all(userId, state) : this.db.prepare(sql).all(userId);
+  }
+
+  getViewerHatchableEggs(userId) {
+    return this.db.prepare(`
+      SELECT * FROM streammonsters_eggs
+      WHERE user_id = ? AND state IN ('incubating', 'ready')
+      ORDER BY created_at_ms ASC, egg_id ASC
+    `).all(userId);
+  }
+
+  expireUnhatchedEggs(nowMs, expiryMs = 24 * 60 * 60 * 1000) {
+    const rows = this.db.prepare(`
+      SELECT egg_id FROM streammonsters_eggs
+      WHERE state IN ('incubating', 'ready')
+        AND created_at_ms + ? <= ?
+      ORDER BY created_at_ms ASC, egg_id ASC
+    `).all(expiryMs, nowMs);
+    if (!rows.length) return [];
+    const expire = this.db.prepare(`
+      UPDATE streammonsters_eggs
+      SET state = 'expired', expired_at_ms = ?
+      WHERE egg_id = ? AND state IN ('incubating', 'ready')
+    `);
+    this.db.transaction(items => items.forEach(row => expire.run(nowMs, row.egg_id)))(rows);
+    return rows.map(row => this.getEgg(row.egg_id));
   }
 
   boostOldestEgg(userId, boostMs) {

@@ -171,6 +171,29 @@ describe('Stream Monsters game core', () => {
     expect(emitted.map(entry => entry.event)).toContain('streammonsters:egg_hatched');
   });
 
+  test('expires ready eggs at exactly 24 hours and removes them from hatchable slots', () => {
+    const { store } = createGame();
+    const dayMs = 24 * 60 * 60 * 1000;
+    store.createEgg({
+      eggId: 'old-ready', userId: 'viewer-a', giftId: 1, giftName: 'Heart',
+      element: 'Volt', eggColor: '#ffffff', seed: 'old', createdAtMs: 0,
+      hatchDurationMs: 1, readyAtMs: 1
+    });
+    store.createEgg({
+      eggId: 'new-ready', userId: 'viewer-a', giftId: 2, giftName: 'Heart',
+      element: 'Tide', eggColor: '#ffffff', seed: 'new', createdAtMs: 1,
+      hatchDurationMs: 1, readyAtMs: 2
+    });
+    store.markReadyEggs(2);
+
+    expect(store.expireUnhatchedEggs(dayMs).map(egg => egg.egg_id)).toEqual(['old-ready']);
+    expect(store.getEgg('old-ready')).toEqual(expect.objectContaining({
+      state: 'expired',
+      expired_at_ms: dayMs
+    }));
+    expect(store.getViewerHatchableEggs('viewer-a').map(egg => egg.egg_id)).toEqual(['new-ready']);
+  });
+
   test('uses bundled furry monster art by default before AI or Kenney fallbacks', () => {
     const artPool = { consume: jest.fn(() => ({ image_url: '/ai.png', visual_key: 'ai:test' })) };
     const kenneyBuilder = {
