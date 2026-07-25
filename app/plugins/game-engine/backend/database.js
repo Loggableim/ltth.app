@@ -615,7 +615,10 @@ class GameEngineDatabase {
       SELECT sql FROM sqlite_master
       WHERE type = 'table' AND name = 'game_interactive_challenges'
     `).get();
-    if (!String(challengeTable?.sql || '').includes('fallback_pending')) {
+    if (
+      !String(challengeTable?.sql || '').includes('fallback_pending') &&
+      typeof this.db.transaction === 'function'
+    ) {
       this.db.transaction(() => {
         this.db.exec(`
           ALTER TABLE game_interactive_challenges RENAME TO game_interactive_challenges_legacy;

@@ -553,30 +553,12 @@ class GameEnginePlugin {
   }
 
   async _expireConnect4MatchmakingChallenge(challenge) {
-    const result = this.interactiveController?.expireConnect4Challenge?.(challenge.challengeId);
+    const result = this.interactiveController?.beginExpiredConnect4Fallback?.(challenge.challengeId);
     if (!result?.success) return result || { success: false, error: 'interactive_controller_unavailable' };
-    const participants = [
-      {
-        id: challenge.openerId,
-        displayName: challenge.openerDisplayName,
-        role: 'viewer',
-        avatarSource: challenge.openerAvatarSource || ''
-      },
-      {
-        id: 'streamer',
-        displayName: this._resolveHostDisplayName(),
-        role: 'host',
-        avatarSource: ''
-      }
-    ];
-    return this.interactiveController.startMatch({
-      gameType: 'connect4',
-      viewerId: challenge.openerId,
-      viewerDisplayName: challenge.openerDisplayName,
-      participants,
-      triggerType: 'matchmaking_timeout',
-      triggerValue: 'connect4'
-    });
+    return this.interactiveController.startPendingConnect4Fallback?.(
+      challenge.challengeId,
+      this._resolveHostDisplayName()
+    ) || { success: false, error: 'interactive_controller_unavailable' };
   }
 
   _safeJoin(baseDir, ...parts) {

@@ -1184,8 +1184,11 @@ describe('GameEnginePlugin interactive controller integration', () => {
     jest.setSystemTime(1040000);
     const { plugin } = createPlugin();
     plugin.interactiveController = {
-      expireConnect4Challenge: jest.fn(() => ({ success: true })),
-      startMatch: jest.fn(() => ({ success: true, sessionId: 72 }))
+      beginExpiredConnect4Fallback: jest.fn(() => ({
+        success: true,
+        challenge: { challengeId: 72, status: 'fallback_pending' }
+      })),
+      startPendingConnect4Fallback: jest.fn(() => ({ success: true, sessionId: 72 }))
     };
     plugin._resolveHostDisplayName = jest.fn(() => 'Reload Host');
     const challenge = {
@@ -1199,16 +1202,67 @@ describe('GameEnginePlugin interactive controller integration', () => {
 
     await expect(plugin._recoverConnect4MatchmakingChallenge(challenge))
       .resolves.toMatchObject({ success: true, sessionId: 72 });
-    expect(plugin.interactiveController.expireConnect4Challenge).toHaveBeenCalledWith(72);
-    expect(plugin.interactiveController.startMatch).toHaveBeenCalledWith(expect.objectContaining({
-      gameType: 'connect4',
-      viewerId: 'reload-opener',
-      participants: [
-        expect.objectContaining({ id: 'reload-opener', role: 'viewer' }),
-        expect.objectContaining({ id: 'streamer', displayName: 'Reload Host', role: 'host' })
-      ],
-      triggerType: 'matchmaking_timeout'
-    }));
+    expect(plugin.interactiveController.beginExpiredConnect4Fallback).toHaveBeenCalledWith(72);
+    expect(plugin.interactiveController.startPendingConnect4Fallback).toHaveBeenCalledWith(72, 'Reload Host');
     jest.useRealTimers();
+  });
+
+  test('starts exactly one streamer fallback when a later matchmaking event promotes the elapsed challenge before its timer callback', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(1000000);
+    const { plugin } = createPlugin();
+    let fallbackPending = false;
+    plugin.interactiveController = {
+      startOrJoinConnect4Matchmaking: jest.fn(() => {
+        fallbackPending = true;
+        return { success: true, action: 'opened' };
+      }),
+      beginExpiredConnect4Fallback: jest.fn(challengeId => fallbackPending
+        ? { success: true, challenge: { challengeId, status: 'fallback_pending' } }
+        : { success: false, error: 'challenge_not_expired' }),
+      startPendingConnect4Fallback: jest.fn(() => ({ success: true, sessionId: 73 }))
+    };
+    plugin._resolveHostDisplayName = jest.fn(() => 'Timer Host');
+    const challenge = {
+      challengeId: 73,
+      status: 'open',
+      openerId: 'elapsed-opener',
+      openerDisplayName: 'Elapsed Opener',
+      expiresAtMs: 1030000
+    };
+
+    plugin._scheduleConnect4MatchmakingExpiry(challenge);
+    jest.advanceTimersByTime(29999);
+    plugin.interactiveController.startOrJoinConnect4Matchmaking({
+      participantId: 'later-viewer', participantDisplayName: 'Later Viewer'
+    });
+    jest.advanceTimersByTime(1);
+    await Promise.resolve();
+
+    expect(plugin.interactiveController.beginExpiredConnect4Fallback).toHaveBeenCalledWith(73);
+    expect(plugin.interactiveController.startPendingConnect4Fallback).toHaveBeenCalledTimes(1);
+    expect(plugin.interactiveController.startPendingConnect4Fallback).toHaveBeenCalledWith(73, 'Timer Host');
+    jest.useRealTimers();
+  });
+
+  test('retains a pending Connect4 fallback at the interactive session limit and never starts an invalidated row', async () => {
+    const { plugin } = createPlugin();
+    const pending = { challengeId: 74, status: 'fallback_pending' };
+    plugin.interactiveController = {
+      beginExpiredConnect4Fallback: jest.fn(() => ({ success: true, challenge: pending })),
+      startPendingConnect4Fallback: jest.fn(() => ({ success: false, error: 'interactive_session_limit' }))
+    };
+
+    await expect(plugin._expireConnect4MatchmakingChallenge({ challengeId: 74, status: 'open' }))
+      .resolves.toEqual({ success: false, error: 'interactive_session_limit' });
+    expect(pending.status).toBe('fallback_pending');
+
+    plugin.interactiveController.beginExpiredConnect4Fallback.mockReturnValue({
+      success: false,
+      error: 'challenge_not_expired'
+    });
+    await expect(plugin._expireConnect4MatchmakingChallenge({ challengeId: 75, status: 'claimed' }))
+      .resolves.toEqual({ success: false, error: 'challenge_not_expired' });
+    expect(plugin.interactiveController.startPendingConnect4Fallback).toHaveBeenCalledTimes(1);
   });
 });
