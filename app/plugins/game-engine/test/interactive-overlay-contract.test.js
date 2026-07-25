@@ -111,6 +111,21 @@ describe('interactive overlay contract', () => {
     expect(unifiedMatchup).not.toContain('viewerDeadlineMs');
   });
 
+  test('direct and unified Connect4 share avatar-ready matchmaking state without local challenge guesses', () => {
+    const direct = readOverlay('connect4.html');
+    const unified = readOverlay('unified.html');
+
+    expect(direct).toContain('connect4Matchmaking');
+    expect(direct).toContain('expiresAtMs');
+    expect(direct).toContain('function renderMatchmakingChallenge');
+    expect(direct).toContain('function isSafeAvatarProxySource');
+    expect(direct).toContain('piece-avatar');
+    expect(direct).toContain("addEventListener('error'");
+    expect(direct).toContain('aria-label');
+    expect(direct).toContain('clamp(');
+    expect(unified).toContain('forwardInteractiveSnapshot(frame, interactiveState)');
+  });
+
   test('direct Connect4 move audio is deduplicated by session and move number', () => {
     const html = readOverlay('connect4.html');
 

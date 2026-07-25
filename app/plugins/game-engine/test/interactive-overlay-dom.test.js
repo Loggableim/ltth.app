@@ -237,6 +237,93 @@ function chessState({
 }
 
 describe('interactive overlay countdown DOM', () => {
+  test('Connect4 renders safe proxy avatars inside coloured pieces with accessible cell descriptions', () => {
+    const { dom, listeners } = loadOverlay('connect4.html');
+    const state = connect4State();
+    state.display.state.player1.avatarSource = '/api/game-engine/avatar?url=https%3A%2F%2Fp16-sign.tiktokcdn-us.com%2Favatar.jpg';
+    state.display.state.player2.avatarSource = 'https://untrusted.example/avatar.jpg';
+
+    listeners.get('game-engine:interactive-state')(state);
+
+    const redPiece = dom.window.document.querySelector('[data-row="5"][data-col="0"] .piece');
+    expect(redPiece).not.toBeNull();
+    expect(redPiece.classList.contains('player1')).toBe(true);
+    const avatar = redPiece.querySelector('.piece-avatar');
+    expect(avatar).not.toBeNull();
+    expect(avatar.getAttribute('src')).toContain('/api/game-engine/avatar?url=');
+    expect(dom.window.document.querySelector('[data-row="5"][data-col="0"]').getAttribute('aria-label'))
+      .toContain('Host');
+
+    avatar.dispatchEvent(new dom.window.Event('error'));
+    expect(redPiece.isConnected).toBe(true);
+    expect(redPiece.querySelector('.piece-avatar')).toBeNull();
+    dom.window.close();
+  });
+
+  test('Connect4 restores a server-timed matchmaking challenge and clears it from newer state', () => {
+    const { dom, listeners, advance } = loadOverlay('connect4.html');
+    const state = connect4State({ phase: 'idle', deadline: null, moveNumber: 0 });
+    state.connect4Matchmaking = {
+      challengeId: 9,
+      status: 'open',
+      openerId: 'opener',
+      openerDisplayName: 'Avatar Player',
+      expiresAtMs: 130000
+    };
+
+    listeners.get('game-engine:interactive-state')(state);
+    const challenge = dom.window.document.getElementById('challenge-screen');
+    const timer = dom.window.document.getElementById('challenge-timer');
+    expect(challenge.classList.contains('show')).toBe(true);
+    expect(dom.window.document.getElementById('challenger-name').textContent).toBe('Avatar Player');
+    expect(timer.textContent).toContain('30');
+
+    advance(2000);
+    expect(timer.textContent).toContain('28');
+
+    listeners.get('game-engine:interactive-state')({
+      ...state,
+      serverTimestamp: 102000,
+      connect4Matchmaking: null
+    });
+    expect(challenge.classList.contains('show')).toBe(false);
+    dom.window.close();
+  });
+
+  test('Connect4 rerenders held matchmaking copy after i18n initialization', async () => {
+    let resolveReady;
+    const i18n = {
+      initialized: false,
+      ready: new Promise(resolve => { resolveReady = resolve; }),
+      t: jest.fn((key, params = {}) => key === 'plugins.game-engine.ui.runtime.connect4.matchmaking_title'
+        ? 'Localized challenge'
+        : key === 'plugins.game-engine.ui.runtime.connect4.matchmaking_prompt'
+          ? `Localized opponent: ${params.player}`
+          : key === 'plugins.game-engine.ui.runtime.connect4.matchmaking_countdown'
+            ? `Localized ${params.seconds}`
+            : key),
+      onChange: jest.fn(),
+      onLanguageChange: jest.fn()
+    };
+    const { dom, listeners } = loadOverlay('connect4.html', i18n);
+    const state = connect4State({ phase: 'idle', deadline: null, moveNumber: 0 });
+    state.connect4Matchmaking = {
+      challengeId: 10,
+      status: 'open',
+      openerDisplayName: 'Viewer',
+      expiresAtMs: 130000
+    };
+
+    listeners.get('game-engine:interactive-state')(state);
+    expect(dom.window.document.getElementById('challenge-title').textContent).toBe('Connect4 Challenge!');
+
+    i18n.initialized = true;
+    resolveReady();
+    await flushPromises();
+    expect(dom.window.document.getElementById('challenge-title').textContent).toBe('Localized challenge');
+    dom.window.close();
+  });
+
   test('direct Connect4 leaderboard renders the readable username instead of playerId', async () => {
     const playerId = '7446102145268843553';
     const fetch = jest.fn(url => {

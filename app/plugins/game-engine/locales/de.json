@@ -1273,7 +1273,12 @@
             "winner": "🏆 {player} gewinnt!"
           },
           "connect4": {
+            "cell_empty": "Spalte {column}, Reihe {row}: leer",
+            "cell_piece": "Spalte {column}, Reihe {row}: {owner}, Stein in {color}",
             "current_turn": "Am Zug: {player}{columnText}",
+            "matchmaking_countdown": "Noch {seconds} s zum Herausfordern",
+            "matchmaking_prompt": "{player} sucht einen Gegner! Schreibe connect4 zum Mitspielen.",
+            "matchmaking_title": "Connect4 Herausforderung!",
             "draw": "🤝 Unentschieden!",
             "no_active_test_game": "Kein Testspiel aktiv",
             "test_start_error": "Das Testspiel konnte nicht gestartet werden: {error}",

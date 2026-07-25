@@ -86,6 +86,28 @@ describe('Game Engine UI i18n', () => {
     }
   });
 
+  test('localizes Connect4 matchmaking and accessible board descriptions in every supported locale', () => {
+    const pluginRoot = path.join(repoRoot, 'app', 'plugins', pluginId);
+    const requiredKeys = [
+      'matchmaking_title',
+      'matchmaking_prompt',
+      'matchmaking_countdown',
+      'cell_empty',
+      'cell_piece'
+    ];
+
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      const values = flattenTranslations(JSON.parse(fs.readFileSync(
+        path.join(pluginRoot, 'locales', `${locale}.json`),
+        'utf8'
+      )));
+      for (const key of requiredKeys) {
+        expect(values[`plugins.game-engine.ui.runtime.connect4.${key}`]).toEqual(expect.any(String));
+        expect(values[`plugins.game-engine.ui.runtime.connect4.${key}`]).not.toBe('');
+      }
+    }
+  });
+
   test('routes dynamic dashboard and overlay copy through independently translated runtime keys', () => {
     const pluginRoot = path.join(repoRoot, 'app', 'plugins', pluginId);
     const sources = [
