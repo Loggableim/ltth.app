@@ -65,6 +65,18 @@ function bootOverlay({ reducedMotion = false, webgpu = false, fastTimers = false
 }
 
 describe('Stream Monsters OBS overlay', () => {
+  test('keeps chat command notices above the lower third reserved for TikTok chat', () => {
+    const { dom } = bootOverlay();
+    const card = dom.window.document.getElementById('chat-card');
+    const style = dom.window.getComputedStyle(card);
+
+    expect(style.position).toBe('absolute');
+    expect(style.top).toBe('42%');
+    expect(style.bottom).toBe('auto');
+    expect(style.maxHeight).toBe('22vh');
+    dom.window.close();
+  });
+
   test('pages collections in stable groups of six and preserves readable duration and stats', () => {
     const views = require('../plugins/streamalchemy/streammonsters-overlay-views');
     const monsters = Array.from({ length: 7 }, (_, index) => ({
