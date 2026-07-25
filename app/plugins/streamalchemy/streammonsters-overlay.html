@@ -62,6 +62,33 @@
       opacity:0; transform:translateY(35px); transition:.28s;
     }
     #chat-card.visible { opacity:1; transform:none; }
+    #monster-collection, #monster-profile {
+      position:absolute; left:50%; bottom:38px; width:min(940px,calc(100vw - 76px)); padding:18px;
+      border:1px solid #7685b8; border-radius:26px; background:linear-gradient(140deg,#17243ef7,#0d1426fa);
+      box-shadow:0 28px 80px #000c; opacity:0; transform:translate(-50%,70px) scale(.96);
+      transition:.35s cubic-bezier(.2,.85,.25,1.1);
+    }
+    #monster-collection.visible, #monster-profile.visible { opacity:1; transform:translate(-50%,0) scale(1); }
+    .collection-head { display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:13px; }
+    .collection-head strong { font-size:clamp(21px,2.4vw,31px); }
+    .collection-head span { color:var(--mint); font-size:14px; font-weight:800; }
+    #collection-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+    .monster-tile { display:grid; grid-template-columns:56px 1fr; gap:9px; min-height:82px; padding:9px; border:1px solid #3e527e; border-radius:16px; background:#101a30d9; }
+    .monster-tile.selected { border-color:var(--gold); box-shadow:inset 0 0 22px #ffcf5922; }
+    .monster-tile img { width:56px; height:56px; object-fit:contain; filter:drop-shadow(0 5px 8px #0009); }
+    .monster-tile h2 { margin:0; font-size:18px; line-height:1.05; }
+    .monster-tile p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+    .monster-tile small { color:var(--cyan); font-weight:800; }
+    #monster-profile { bottom:58px; display:grid; grid-template-columns:minmax(220px,.7fr) minmax(0,1.3fr); align-items:center; gap:24px; min-height:292px; }
+    #profile-art-wrap { display:grid; place-items:center; min-height:244px; border-radius:21px; background:radial-gradient(circle,#4a3b7c,#0a1020 72%); }
+    #profile-art { width:240px; height:240px; object-fit:contain; filter:drop-shadow(0 16px 22px #000b); }
+    #profile-kicker { color:var(--cyan); text-transform:uppercase; letter-spacing:.13em; font-size:12px; font-weight:900; }
+    #profile-title { margin:5px 0; font-size:clamp(34px,4vw,56px); line-height:1; }
+    #profile-subtitle { color:var(--muted); font-size:18px; }
+    #profile-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:18px; }
+    .profile-stat { padding:9px; border:1px solid #425684; border-radius:13px; background:#0c1427cc; text-align:center; }
+    .profile-stat small { display:block; color:var(--muted); text-transform:uppercase; font-size:10px; letter-spacing:.08em; }
+    .profile-stat strong { display:block; margin-top:2px; color:var(--gold); font-size:23px; }
     @media (orientation: portrait) {
       #brand { top:20px; left:20px; width:210px; height:58px; }
       #hype { top:18px; right:20px; width:76px; height:76px; }
@@ -71,6 +98,16 @@
       #battle { top:48%; width:calc(100vw - 32px); padding:22px 14px; }
       #versus { gap:9px; font-size:21px; }
       #chat-card { left:16px; bottom:18px; max-width:calc(100vw - 32px); }
+      #monster-collection, #monster-profile { bottom:26px; width:calc(100vw - 32px); padding:14px; }
+      #collection-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+      .monster-tile { grid-template-columns:48px 1fr; min-height:72px; padding:8px; }
+      .monster-tile img { width:48px; height:48px; }
+      .monster-tile h2 { font-size:15px; }
+      #monster-profile { grid-template-columns:1fr; gap:12px; min-height:0; text-align:center; }
+      #profile-art-wrap { min-height:150px; }
+      #profile-art { width:150px; height:150px; }
+      #profile-title { font-size:34px; }
+      #profile-subtitle { font-size:15px; }
     }
   </style>
 </head>
@@ -95,6 +132,19 @@
     <div id="battle-detail">Die Arena wird vorbereitet …</div>
     <div id="round-dots"><span></span><span></span><span></span></div>
   </section>
+  <section id="monster-collection" aria-live="polite">
+    <div class="collection-head"><strong id="collection-title">Monster-Sammlung</strong><span id="collection-page"></span></div>
+    <div id="collection-grid"></div>
+  </section>
+  <section id="monster-profile" aria-live="polite">
+    <div id="profile-art-wrap"><img id="profile-art" alt=""></div>
+    <div>
+      <div id="profile-kicker">Monsterkarte</div>
+      <h1 id="profile-title">Monster</h1>
+      <div id="profile-subtitle"></div>
+      <div id="profile-stats"></div>
+    </div>
+  </section>
   <div id="chat-card"></div>
 </main>
 
@@ -108,12 +158,33 @@
   const rankLabel = rank => ({ Silver:'Silber', Crystal:'Kristall' }[rank] || value(rank,'Neuer Rang'));
   const itemName = item => value(item?.name || item?.gift_name || item?.giftName, 'Element-Ei');
   const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+  const DEFAULT_BOTTOM_OVERLAY_DURATION_MS = 8_000;
+  const MIN_BOTTOM_OVERLAY_DURATION_MS = 4_000;
+  const MAX_BOTTOM_OVERLAY_DURATION_MS = 20_000;
   const eventQueue = [];
   const chatCooldowns = new Map();
+  const overlayViews = globalThis.StreamMonstersOverlayViews;
   let queueRunning = false;
   let battleNames = ['Monster A','Monster B'];
   let battleIds = [null,null];
   let battleAdvantageName = '';
+  let bottomOverlayDurationMs = DEFAULT_BOTTOM_OVERLAY_DURATION_MS;
+
+  const normalizeBottomOverlayDuration = input => Math.max(
+    MIN_BOTTOM_OVERLAY_DURATION_MS,
+    Math.min(MAX_BOTTOM_OVERLAY_DURATION_MS, Number(input) || DEFAULT_BOTTOM_OVERLAY_DURATION_MS)
+  );
+  const setBottomOverlayDuration = input => {
+    bottomOverlayDurationMs = normalizeBottomOverlayDuration(input);
+  };
+  const durationFor = data => normalizeBottomOverlayDuration(
+    data?.bottomOverlayDurationMs ?? bottomOverlayDurationMs
+  );
+  const clear = target => target.replaceChildren();
+  const monsterStats = monster => {
+    if (monster?.stats && typeof monster.stats === 'object') return monster.stats;
+    try { return JSON.parse(monster?.stats_json || '{}'); } catch (_) { return {}; }
+  };
 
   const showToast = async (text, duration = 2600) => {
     node('toast').textContent = text;
@@ -122,7 +193,7 @@
     node('toast').classList.remove('visible');
     await wait(250);
   };
-  const showCard = async ({ kicker, title, subtitle, imageUrl, progress = 0, charged = false, hint }) => {
+  const showCard = async ({ kicker, title, subtitle, imageUrl, progress = 0, charged = false, hint, durationMs = bottomOverlayDurationMs }) => {
     node('kicker').textContent = kicker;
     node('title').textContent = title;
     node('subtitle').textContent = subtitle;
@@ -131,7 +202,7 @@
     node('hint').textContent = hint || '!eggs · !hatch [slot] · !battle';
     node('card').classList.toggle('charged', Boolean(charged));
     node('card').classList.add('visible');
-    await wait(3900);
+    await wait(normalizeBottomOverlayDuration(durationMs));
     node('card').classList.remove('visible');
     await wait(350);
   };
@@ -163,10 +234,92 @@
     if (!message) return;
     node('chat-card').textContent = `${userId} · ${message}`;
     node('chat-card').classList.add('visible');
-    await wait(2800);
+    await wait(durationFor(data));
     node('chat-card').classList.remove('visible');
   };
+  const renderCollectionPage = ({ userId, page, pageIndex, pageCount, selected }) => {
+    const grid = node('collection-grid');
+    clear(grid);
+    node('collection-title').textContent = `${value(userId, 'Viewer')}s Monster-Sammlung`;
+    node('collection-page').textContent = pageCount > 1 ? `Seite ${pageIndex + 1}/${pageCount}` : `${page.length} Monster`;
+    page.forEach((monster, index) => {
+      const tile = document.createElement('article');
+      const selectedMonster = monster?.is_selected || selected?.monster_id === monster?.monster_id;
+      tile.className = `monster-tile${selectedMonster ? ' selected' : ''}`;
+      const art = document.createElement('img');
+      art.src = monster?.image_url || '/plugins/streamalchemy/assets/branding/stream-monsters-icon.png';
+      art.alt = '';
+      const copy = document.createElement('div');
+      const title = document.createElement('h2');
+      title.textContent = `#${pageIndex * 6 + index + 1} ${itemName(monster)}`;
+      const meta = document.createElement('p');
+      meta.textContent = `${value(monster?.element, 'Element')} · Lv.${Number(monster?.level) || 1}`;
+      const label = document.createElement('small');
+      label.textContent = selectedMonster ? 'AKTIV' : value(monster?.personality, 'Collector');
+      copy.append(title, meta, label);
+      tile.append(art, copy);
+      grid.append(tile);
+    });
+  };
+  const showCollection = async data => {
+    const monsters = Array.isArray(data?.result?.monsters) ? data.result.monsters : [];
+    if (!monsters.length) return showChat(data);
+    const pages = overlayViews?.paginate?.(monsters, 6) || [monsters.slice(0, 6)];
+    const totalDuration = overlayViews?.collectionDurationMs?.(durationFor(data), pages.length)
+      || Math.max(durationFor(data), pages.length * 5_000);
+    const collection = node('monster-collection');
+    collection.classList.add('visible');
+    let remaining = totalDuration;
+    for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
+      renderCollectionPage({
+        userId: data?.userId,
+        page: pages[pageIndex],
+        pageIndex,
+        pageCount: pages.length,
+        selected: data?.result?.selected
+      });
+      const pageDuration = Math.min(5_000, remaining);
+      await wait(pageDuration);
+      remaining -= pageDuration;
+    }
+    if (remaining > 0) await wait(remaining);
+    collection.classList.remove('visible');
+    await wait(350);
+  };
+  const showMonsterProfile = async data => {
+    const monster = data?.result?.monster;
+    if (!monster) return showChat(data);
+    const profile = overlayViews?.profile?.(monster, data?.result?.slot)
+      || { monster, slot: data?.result?.slot || 1, stats: monsterStats(monster) };
+    const stats = profile.stats || monsterStats(monster);
+    node('profile-art').src = monster.image_url || '/plugins/streamalchemy/assets/branding/stream-monsters-icon.png';
+    node('profile-art').alt = itemName(monster);
+    node('profile-kicker').textContent = `Monsterkarte · Slot ${profile.slot}`;
+    node('profile-title').textContent = itemName(monster);
+    node('profile-subtitle').textContent = `${value(monster.element, 'Element')} · Lv.${Number(monster.level) || 1} · ${value(monster.personality, 'Collector')}`;
+    const statRoot = node('profile-stats');
+    clear(statRoot);
+    [['Vitality', 'vitality'], ['Might', 'might'], ['Guard', 'guard'], ['Agility', 'agility']].forEach(([label, key]) => {
+      const stat = document.createElement('div');
+      stat.className = 'profile-stat';
+      const statLabel = document.createElement('small');
+      statLabel.textContent = label;
+      const statValue = document.createElement('strong');
+      statValue.textContent = Number(stats[key]) || 0;
+      stat.append(statLabel, statValue);
+      statRoot.append(stat);
+    });
+    const card = node('monster-profile');
+    card.classList.add('visible');
+    await wait(durationFor(data));
+    card.classList.remove('visible');
+    await wait(350);
+  };
   const present = async ({ type, data }) => {
+    if (type === 'config_changed') {
+      setBottomOverlayDuration(data?.config?.bottomOverlayDurationMs);
+      return;
+    }
     if (type === 'stream_started') return showToast(`${value(data?.event?.element,'Element')} Hour ist aktiv`);
     if (type === 'egg_spawned') return showCard({
       kicker:`${value(data?.egg?.element,'Element')} · ${value(data?.egg?.variant,'standard')}`,
@@ -257,6 +410,8 @@
       charged:true
     });
     if (type === 'quest_completed') return showToast(`Quest geschafft · ${value(data?.quest?.title,'Belohnung eingesammelt')}`);
+    if (type === 'chat_result' && data?.result?.status === 'inventory') return showCollection(data);
+    if (type === 'chat_result' && data?.result?.status === 'monster') return showMonsterProfile(data);
     if (type === 'chat_result') return showChat(data);
   };
   const drainQueue = async () => {
@@ -275,6 +430,14 @@
   };
   const socket = typeof io === 'function' ? io() : null;
   if (!socket) return;
+  const refreshOverlayConfig = async () => {
+    try {
+      const response = await fetch('/api/streammonsters/state');
+      if (!response.ok) return;
+      const state = await response.json();
+      setBottomOverlayDuration(state?.config?.bottomOverlayDurationMs);
+    } catch (_) {}
+  };
   const eventTypes = {
     'streammonsters:stream_started':'stream_started',
     'streammonsters:egg_spawned':'egg_spawned',
@@ -291,9 +454,12 @@
     'streammonsters:achievement_unlocked':'achievement_unlocked',
     'streammonsters:season_rank_changed':'season_rank_changed',
     'streammonsters:quest_completed':'quest_completed',
+    'streammonsters:config_changed':'config_changed',
     'streammonsters:chat_result':'chat_result'
   };
   Object.entries(eventTypes).forEach(([eventName,type]) => socket.on(eventName,data => enqueue(type,data)));
+  socket.on('connect', refreshOverlayConfig);
+  refreshOverlayConfig();
 })();
 </script>
 </body>

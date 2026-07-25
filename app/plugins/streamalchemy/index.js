@@ -556,7 +556,11 @@ class StreamAlchemyPlugin {
           `!${action}${Array.isArray(args) && args.length ? ` ${args.join(' ')}` : ''}`
         );
         if (result.status !== 'ignored') {
-          this.api.emit('streammonsters:chat_result', { userId, result });
+          this.api.emit('streammonsters:chat_result', {
+            userId,
+            result,
+            bottomOverlayDurationMs: this.config.streamMonsters.bottomOverlayDurationMs
+          });
         }
         return result;
       }
@@ -704,7 +708,11 @@ class StreamAlchemyPlugin {
     const normalizedMessage = this.normalizeStreamMonstersFallbackCommand(message);
     const result = this.streamMonstersChatCommands.handle({ userId, username: userId }, normalizedMessage);
     if (result.status !== 'ignored') {
-      this.api.emit('streammonsters:chat_result', { userId, result });
+      this.api.emit('streammonsters:chat_result', {
+        userId,
+        result,
+        bottomOverlayDurationMs: this.config.streamMonsters.bottomOverlayDurationMs
+      });
     }
   }
 

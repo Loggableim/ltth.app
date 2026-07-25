@@ -67,7 +67,9 @@ class StreamMonstersRoutes {
     });
     this.api.registerRoute('POST', '/api/streammonsters/config', this.protectAdmin((req, res) => {
       const next = this.configProvider.updateConfig({ streamMonsters: this.sanitizeConfigUpdate(req.body) });
-      res.json({ success: true, config: this.publicConfig(next.streamMonsters) });
+      const config = this.publicConfig(next.streamMonsters);
+      this.api.emit('streammonsters:config_changed', { config });
+      res.json({ success: true, config });
     }));
     this.api.registerRoute('POST', '/api/streammonsters/demo', this.protectAdmin((req, res) => {
       const config = this.configProvider.getConfig().streamMonsters;

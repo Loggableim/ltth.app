@@ -138,7 +138,7 @@ describe('Stream Monsters 1.2 public API', () => {
   });
 
   test('persists a readable bottom-overlay duration within the supported bounds', () => {
-    const { find, configProvider } = createRoutes();
+    const { find, configProvider, emitted } = createRoutes();
     const result = response();
 
     find('POST', '/api/streammonsters/config')({
@@ -152,6 +152,10 @@ describe('Stream Monsters 1.2 public API', () => {
     expect(result.body.config.bottomOverlayDurationMs).toBe(20_000);
     expect(configProvider.updateConfig).toHaveBeenCalledWith({
       streamMonsters: { bottomOverlayDurationMs: 20_000 }
+    });
+    expect(emitted).toContainEqual({
+      event: 'streammonsters:config_changed',
+      payload: { config: expect.objectContaining({ bottomOverlayDurationMs: 20_000 }) }
     });
   });
 

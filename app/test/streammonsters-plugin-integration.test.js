@@ -358,6 +358,7 @@ describe('Stream Monsters plugin integration', () => {
       event: 'streammonsters:chat_result',
       payload: {
         userId: 'scharasthefolf',
+        bottomOverlayDurationMs: 8_000,
         result: expect.objectContaining({
           success: false,
           status: 'egg_not_ready',

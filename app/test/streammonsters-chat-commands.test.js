@@ -66,6 +66,21 @@ describe('Stream Monsters chat commands', () => {
     expect(store.getSelectedMonster('viewer-a').egg_id).toBe(store.getViewerMonsters('viewer-a')[1].egg_id);
   });
 
+  test('returns the requested one-based slot with a monster profile result', () => {
+    const { commands, hatch } = createCommands();
+    hatch('viewer-a', 1);
+    hatch('viewer-a', 2);
+
+    const result = commands.handle({ username: 'viewer-a', skipCooldowns: true }, '!monster 2');
+
+    expect(result).toEqual(expect.objectContaining({
+      success: true,
+      status: 'monster',
+      slot: 2,
+      monster: expect.objectContaining({ user_id: 'viewer-a' })
+    }));
+  });
+
   test('pairs two queued viewers into a visible deterministic battle', () => {
     const { commands, emitted, hatch } = createCommands();
     hatch('viewer-a', 1);

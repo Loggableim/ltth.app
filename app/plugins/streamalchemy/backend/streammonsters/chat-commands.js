@@ -116,6 +116,7 @@ class ChatCommands {
       success: true,
       status: 'monster',
       message: `${monster.name} · ${monster.element} · Lv.${monster.level} · ${monster.personality}.`,
+      slot: index + 1,
       monster
     };
   }
