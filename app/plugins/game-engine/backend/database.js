@@ -996,6 +996,15 @@ class GameEngineDatabase {
     return changed ? this.getInteractiveChallenge(challengeId) : null;
   }
 
+  invalidateInteractiveChallenge(challengeId, now = Date.now()) {
+    const changed = this.db.prepare(`
+      UPDATE game_interactive_challenges
+      SET status = 'expired', updated_at = ?
+      WHERE challenge_id = ? AND status = 'open'
+    `).run(now, Number(challengeId)).changes > 0;
+    return changed ? this.getInteractiveChallenge(challengeId) : null;
+  }
+
   hasInteractiveMoveIdentity(sessionId, moveIdentity) {
     if (!moveIdentity) return false;
     return Boolean(this.db.prepare(`

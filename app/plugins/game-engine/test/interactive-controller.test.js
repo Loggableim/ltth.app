@@ -1949,4 +1949,48 @@ describe('InteractiveController', () => {
     recoveredHarness.controller.destroy();
     firstHarness.sqlite.close();
   });
+
+  test.each([
+    'https://evil.example/avatar.png',
+    '//evil.example/api/game-engine/avatar?url=x'
+  ])('expires an unsafe recovered Connect4 challenge avatar source: %s', unsafeAvatarSource => {
+    const harness = createHarness();
+    harness.controller.init();
+    const opened = harness.controller.openConnect4Challenge({
+      openerId: 'opener',
+      openerDisplayName: 'Opener',
+      openerAvatarSource: ''
+    });
+    harness.sqlite.prepare(`
+      UPDATE game_interactive_challenges SET opener_avatar_source = ? WHERE challenge_id = ?
+    `).run(unsafeAvatarSource, opened.challenge.challengeId);
+
+    expect(harness.controller.recoverConnect4Challenge()).toBeNull();
+    expect(harness.database.getInteractiveChallenge(opened.challenge.challengeId)).toMatchObject({
+      status: 'expired'
+    });
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('retains a same-origin recovered Connect4 challenge avatar source', () => {
+    const harness = createHarness();
+    harness.controller.init();
+    const avatarSource = '/api/game-engine/avatar?url=https%3A%2F%2Fp16.tiktokcdn.com%2Favatar.webp';
+    const opened = harness.controller.openConnect4Challenge({
+      openerId: 'opener',
+      openerDisplayName: 'Opener',
+      openerAvatarSource: avatarSource
+    });
+
+    expect(harness.controller.recoverConnect4Challenge()).toMatchObject({
+      challengeId: opened.challenge.challengeId,
+      openerAvatarSource: avatarSource,
+      status: 'open'
+    });
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
 });

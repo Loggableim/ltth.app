@@ -482,7 +482,14 @@ class InteractiveController {
   }
 
   recoverConnect4Challenge() {
-    return this.database.getOpenInteractiveChallenge(this.now());
+    const challenge = this.database.getOpenInteractiveChallenge(this.now());
+    if (!challenge) return null;
+    if (!this._isValidAvatarSource(challenge.openerAvatarSource)) {
+      this.database.invalidateInteractiveChallenge?.(challenge.challengeId, this.now());
+      this.logger?.warn?.(`[INTERACTIVE] Rejected unsafe Connect4 challenge avatar source for ${challenge.challengeId}`);
+      return null;
+    }
+    return challenge;
   }
 
   init() {
