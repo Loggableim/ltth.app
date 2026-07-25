@@ -1959,6 +1959,18 @@ class GlobalChatCommandEngine {
 
             if (success) {
                 results.registered.push(commandDef.name);
+                const cooldown = commandDef.cooldown;
+                if (cooldown == null) {
+                    this.parser.removeCommandCooldown(commandDef.name);
+                } else if (typeof cooldown === 'number') {
+                    this.parser.setCommandCooldown(commandDef.name, cooldown, 0);
+                } else {
+                    this.parser.setCommandCooldown(
+                        commandDef.name,
+                        Math.max(0, Number(cooldown.user) || 0),
+                        Math.max(0, Number(cooldown.global) || 0)
+                    );
+                }
             } else {
                 results.failed.push(commandDef.name);
             }
@@ -1973,7 +1985,9 @@ class GlobalChatCommandEngine {
      * @param {string} pluginId - Plugin ID
      */
     unregisterCommandsForPlugin(pluginId) {
+        const commandNames = Array.from(this.registry.pluginCommands?.get(pluginId) || []);
         this.registry.unregisterPluginCommands(pluginId);
+        commandNames.forEach(commandName => this.parser.removeCommandCooldown(commandName));
     }
 
     /**

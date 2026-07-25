@@ -58,7 +58,7 @@ class CraftingEngine {
       imageUrl = generated.imageUrl;
       generator = generated.provider;
     } catch (error) {
-      this.logger?.warn?.(`[STREAMALCHEMY] Base item image generation failed for gift ${gift.giftId}: ${error.message}`);
+      this.logger?.warn?.(`[STREAM MONSTERS] Base item image generation failed for gift ${gift.giftId}: ${error.message}`);
     }
 
     return this.store.upsertGiftItem({
@@ -100,7 +100,7 @@ class CraftingEngine {
       this.overlayPublisher.craftingCompleted({ userId, item: craftedItem, itemA: first.item, itemB: second.item });
     } catch (error) {
       this.inventoryService.restoreItems(userId, consumed);
-      this.logger?.error?.(`[STREAMALCHEMY] Crafting failed: ${error.message}`);
+      this.logger?.error?.(`[STREAM MONSTERS] Crafting failed: ${error.message}`);
       this.overlayPublisher.craftingFailed({ userId, itemA: first.item, itemB: second.item, error: error.message });
     }
   }

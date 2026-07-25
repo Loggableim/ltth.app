@@ -65,6 +65,9 @@ class GenerationService {
 
       try {
         const result = await provider.generate(input);
+        if (provider.id === 'placeholder' || result?.provider === 'placeholder') {
+          throw new Error('PLACEHOLDER_IS_NOT_GENERATED_ART');
+        }
         this.store.updateGenerationJob(job.job_id, {
           status: 'succeeded',
           provider: result.provider,
@@ -78,7 +81,7 @@ class GenerationService {
           status: 'failed',
           error: error.message
         });
-        this.logger?.warn?.(`[STREAMALCHEMY] Provider ${provider.id} failed: ${error.message}`);
+        this.logger?.warn?.(`[STREAM MONSTERS] Provider ${provider.id} failed: ${error.message}`);
       }
     }
 

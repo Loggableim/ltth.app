@@ -12,6 +12,7 @@ class BattleService {
 
     let hpA = 30 + (monsterA.stats.vitality * 4);
     let hpB = 30 + (monsterB.stats.vitality * 4);
+    const elementAdvantageMonsterId = this.elementAdvantageMonsterId(monsterA, monsterB);
     const rounds = [];
     for (let index = 0; index < 3; index += 1) {
       const aFirst = monsterA.stats.agility === monsterB.stats.agility
@@ -28,13 +29,29 @@ class BattleService {
         hpA = Math.max(0, hpA - firstDamage);
         hpB = Math.max(0, hpB - secondDamage);
       }
-      rounds.push({ number: index + 1, firstMonsterId: first.monster_id, firstDamage, secondDamage, hpA, hpB });
+      rounds.push({
+        number: index + 1,
+        firstMonsterId: first.monster_id,
+        firstDamage,
+        secondDamage,
+        hpA,
+        hpB,
+        elementAdvantageMonsterId
+      });
     }
 
     const winnerId = hpA === hpB
       ? (this.roll(seed, 99) >= 50 ? monsterA.monster_id : monsterB.monster_id)
       : (hpA > hpB ? monsterA.monster_id : monsterB.monster_id);
-    const result = { battleId, seed, monsterAId: monsterA.monster_id, monsterBId: monsterB.monster_id, winnerId, rounds };
+    const result = {
+      battleId,
+      seed,
+      monsterAId: monsterA.monster_id,
+      monsterBId: monsterB.monster_id,
+      winnerId,
+      elementAdvantageMonsterId,
+      rounds
+    };
     this.store.createBattle({
       battleId,
       seed,
@@ -56,6 +73,12 @@ class BattleService {
   elementAdvantage(attacker, defender) {
     return new Set(['Ember:Grove', 'Grove:Tide', 'Tide:Ember', 'Volt:Gale', 'Gale:Lunar', 'Lunar:Volt'])
       .has(`${attacker}:${defender}`);
+  }
+
+  elementAdvantageMonsterId(monsterA, monsterB) {
+    if (this.elementAdvantage(monsterA.element, monsterB.element)) return monsterA.monster_id;
+    if (this.elementAdvantage(monsterB.element, monsterA.element)) return monsterB.monster_id;
+    return null;
   }
 
   roll(seed, offset) {

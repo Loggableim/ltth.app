@@ -115,7 +115,7 @@ class LocalModelInstaller {
       await this.fs.promises.mkdir(job.targetDir, { recursive: true });
       await this.fs.promises.rm(job.partialPath, { force: true });
 
-      this.logger?.info?.(`[STREAMALCHEMY] Installing local model ${job.modelName} to ${job.targetPath}`);
+      this.logger?.info?.(`[STREAM MONSTERS] Installing local model ${job.modelName} to ${job.targetPath}`);
       const fetchOptions = this.createFetchOptions(job);
       const response = fetchOptions
         ? await this.fetch(job.downloadUrl, fetchOptions)
@@ -156,14 +156,14 @@ class LocalModelInstaller {
       job.bytesDownloaded = stat.size;
       job.bytesTotal = job.bytesTotal || stat.size;
       job.finishedAt = new Date().toISOString();
-      this.logger?.info?.(`[STREAMALCHEMY] Local model installed: ${job.targetPath}`);
+      this.logger?.info?.(`[STREAM MONSTERS] Local model installed: ${job.targetPath}`);
       return this.formatJobStatus(job);
     } catch (error) {
       job.state = 'failed';
       job.error = error.message;
       job.finishedAt = new Date().toISOString();
       await this.fs.promises.rm(job.partialPath, { force: true }).catch(() => {});
-      this.logger?.error?.(`[STREAMALCHEMY] Local model install failed: ${error.message}`);
+      this.logger?.error?.(`[STREAM MONSTERS] Local model install failed: ${error.message}`);
       return this.formatJobStatus(job);
     }
   }

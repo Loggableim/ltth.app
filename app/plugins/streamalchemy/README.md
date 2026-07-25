@@ -1,54 +1,63 @@
-# Stream Monsters
+# Stream Monsters 1.2 – Collector Arena
 
-Stream Monsters keeps the stable `streamalchemy` plugin ID so existing installations and store updates continue to work. The former crafting data remains untouched; the new game uses separate `streammonsters_*` tables.
+Stream Monsters keeps the stable `streamalchemy` plugin ID so existing installations, routes and data remain compatible. The public product name is exclusively **Stream Monsters**. Existing crafting data stays untouched; Collector Arena uses additive `streammonsters_*` tables.
 
 ## Creator flow
 
-1. Open `/streammonsters/ui` (the legacy `/streamalchemy/ui` route serves the same setup).
-2. Confirm or override the creator name, select TikTok gifts and mark optional booster gifts.
-3. Prepare the image pool before the stream. Generation is serialized to one local job and never runs from a live gift event.
-4. Add `/streammonsters/overlay` as an OBS browser source and run the safe demo.
+1. Open `/streammonsters/ui`.
+2. In **Geschenke-Mapping**, search the complete shared TikTok catalog and explicitly enable each spawn or boost gift.
+3. In **Art Lab**, prepare one to eight AI skins per active element/variant before going live. Three is the default. Generation is serial and a live gift never starts an image job.
+4. Add `/streammonsters/overlay` as an OBS browser source and run the full safe demo.
 
-Unknown gifts always show the deterministic element-egg fallback immediately. The viewer can use `!inventory` in the next stream; the gift is remembered for the next pre-stream preparation.
+Only enabled mappings affect the game. A spawn gift creates an element egg. A boost gift shortens the oldest active egg by 15, 30, 60 or 120 seconds according to the catalog diamond band. Gift value never changes combat strength or random odds.
 
-## Game rules
+## Eggs, monsters and progression
 
-- Gift IDs deterministically map to Ember, Tide, Grove, Gale, Volt or Lunar and to an egg colour.
-- Every gift spawns one egg. At three unhatched eggs, the oldest egg is accelerated instead.
-- Eggs hatch after 30 minutes of real time, including while the creator is offline. Configured booster gifts and mixed-gift combos visibly shorten the timer.
-- Hatched monsters persist with an element, rarity, four seed-derived battle stats, XP, level and selected status.
-- Daily quests cover receiving an egg, hatching and using a command. Weekly quests cover collections, duels and event help.
-- A TikTok session starts a transparent elemental hour. Matching element eggs receive its configured hatch bonus.
-- Prestige is voluntary after collecting all six elements. It resets only progress counters, never monsters.
+- The six elements are Ember, Tide, Grove, Gale, Volt and Lunar.
+- Standard incubation takes five minutes. Charged eggs are cosmetic and hatch faster, but never receive better stats.
+- Finished eggs become `ready`, free their incubator slot and hatch only through `!hatch [slot]`.
+- Hype gains 10 per spawn and a 20-point bonus for two different selected gifts within six seconds. At 100, the next egg becomes deterministically charged and hype returns to zero.
+- Every monster gets a deterministic name, personality and exactly 28 base stat points.
+- AI art is consumed from the pre-stream pool by `element:variant`. With no prepared skin, the bundled CC0 Kenney Monster Builder renders a deterministic local SVG immediately.
+- A later preparation may cosmetically evolve one Kenney monster to AI art without changing its owner, identity or stats.
+- Collections and levels are permanent. A 28-day league resets only season points and rank.
+- XP and season points come from hatches, the first ten daily battles, wins and quests. Cosmetic ranks, titles, badges and frames never add combat power.
 
 ## Viewer commands
 
-- `!inventory` or `!monsters`
+- `!eggs`
+- `!hatch [slot]`
+- `!monsters`
+- `!monster [slot]`
 - `!choose <slot>`
-- `!battle` / `!leavebattle`
+- `!battle`
+- `!leavebattle`
+- `!monsterrank`
+- `!quests`
 - `!monstershelp`
 
-`!battle` joins a five-minute public queue. Two different viewers immediately resolve a reproducible three-round duel with stored rounds and element advantages. There are no stakes, cash prizes, transferable rewards, paid random outcomes, or third-party character assets.
+Additional aliases can be configured per action in the Creator UI. The defaults include `!eierliste` and `!meineeier` for the egg list plus `!schluepfen` and `!ausbrueten` for hatching.
 
-## Local image generation
+`!battle` joins a public queue. Matchmaking starts within ±2 levels and widens after 30 seconds. Two viewers resolve a reproducible three-round duel with a stored seed, stored round results and visible element advantage. There are no stakes, cash prizes, transferable rewards, paid random outcomes, teams, battle passes or world bosses.
 
-The managed path is intentionally Windows/NVIDIA-first. It recommends 512 px at 6–7 GB VRAM, 768 px from 8 GB and 1024 px from 12 GB, always at four steps and one job at a time. A managed install accepts only a pinned HTTPS runtime archive and a SHA-256-pinned model, extracts it safely, starts it and health-checks it. Unsupported GPUs, macOS and Linux are clearly routed to an existing ComfyUI or remote-provider setup.
+## Public API
 
-A release must set the signed `streamMonsters.localRuntime.manifest` configuration before the managed download button is enabled. This avoids a false “installed” result for an unpinned runtime.
-
-## HTTP and overlay events
-
-- `GET /api/streammonsters/state`
-- `GET /api/streammonsters/gift-catalog`
+- `GET /api/streammonsters/state?userId=`
+- `GET /api/streammonsters/gift-catalog?q=&locale=&offset=&limit=`
+- `GET /api/streammonsters/gift-mappings`
+- `PUT /api/streammonsters/gift-mappings/:giftId`
+- `DELETE /api/streammonsters/gift-mappings/:giftId`
 - `POST /api/streammonsters/config`
-- `POST /api/streammonsters/pool`
+- `GET /api/streammonsters/pool`
 - `POST /api/streammonsters/pool/prepare`
+- `GET /api/streammonsters/season`
+- `GET /api/streammonsters/leaderboard?limit=`
 - `POST /api/streammonsters/demo`
 - `GET /api/streammonsters/local-runtime/status`
 - `POST /api/streammonsters/local-runtime/install`
 
-The overlay consumes `streammonsters:egg_spawned`, `streammonsters:egg_boosted`, `streammonsters:gift_combo`, `streammonsters:egg_hatched`, `streammonsters:stream_started`, `streammonsters:battle_started`, and `streammonsters:battle_completed`.
+The responsive overlay serializes its animation queue and consumes the compatible legacy events plus `egg_ready`, `hatch_started`, `monster_visual_evolved`, `hype_changed`, `battle_round`, `achievement_unlocked` and `season_rank_changed` events in the `streammonsters:` namespace.
 
-## Explicit later work
+## Bundled assets and license
 
-Seasonal collections are a future release item. This version records compatible progress foundations but intentionally does not ship seasonal paid content or billing.
+The plugin bundles twelve transparent 1024×1024 element eggs, the Stream Monsters icon and wide logo, and Kenney Monster Builder Pack 1.0. Kenney assets are CC0; the upstream license is included at `assets/kenney-monster-builder/License.txt`.

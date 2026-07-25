@@ -1,0 +1,560 @@
+{
+  "schemaVersion": 1,
+  "pack": "furry",
+  "generator": "OpenAI built-in image generator",
+  "promptVersion": "furry-v1",
+  "assets": [
+    {
+      "templateId": "ashfang",
+      "element": "Ember",
+      "name": "Ashfang",
+      "species": "Wolf",
+      "assetPath": "assets/streammonsters/furry/ashfang.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        7.0,
+        247.0,
+        15.0
+      ],
+      "opaqueFraction": 0.379431,
+      "sha256": "942ca3239ad13c01983ac031408e8882111677b3882e4b8e03e1a193eff6c363"
+    },
+    {
+      "templateId": "cinder",
+      "element": "Ember",
+      "name": "Cinder",
+      "species": "Fox",
+      "assetPath": "assets/streammonsters/furry/cinder.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        10.0,
+        236.0,
+        20.0
+      ],
+      "opaqueFraction": 0.31221,
+      "sha256": "0c36be95be48d5b5e3329455cb873f82a1f44b2be302f28614120db87756fbd2"
+    },
+    {
+      "templateId": "embergrin",
+      "element": "Ember",
+      "name": "Embergrin",
+      "species": "Hyena",
+      "assetPath": "assets/streammonsters/furry/embergrin.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        7.0,
+        240.0,
+        20.0
+      ],
+      "opaqueFraction": 0.376661,
+      "sha256": "094cd234234402ec9b37fc8002d2db085a961049524259b17148a951ab3ca04f"
+    },
+    {
+      "templateId": "pyrra",
+      "element": "Ember",
+      "name": "Pyrra",
+      "species": "Red Panda",
+      "assetPath": "assets/streammonsters/furry/pyrra.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        6.0,
+        237.0,
+        21.0
+      ],
+      "opaqueFraction": 0.379205,
+      "sha256": "eac4e16139dc968e6637312abbcd005b10b3064f28a1445faec3fc7d42040636"
+    },
+    {
+      "templateId": "ripple",
+      "element": "Tide",
+      "name": "Ripple",
+      "species": "Otter",
+      "assetPath": "assets/streammonsters/furry/ripple.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        8.0,
+        237.0,
+        20.0
+      ],
+      "opaqueFraction": 0.334819,
+      "sha256": "015efd8ec699edc8ca97a0c4057ba5917d63579b598826e802d7481e62a01de8"
+    },
+    {
+      "templateId": "brine",
+      "element": "Tide",
+      "name": "Brine",
+      "species": "Seal",
+      "assetPath": "assets/streammonsters/furry/brine.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        9.0,
+        234.0,
+        18.0
+      ],
+      "opaqueFraction": 0.339437,
+      "sha256": "a1593f43ea43a03560f8b2d954efc7829fc6a2f31e743be2c15c1cdc4554f673"
+    },
+    {
+      "templateId": "reefbite",
+      "element": "Tide",
+      "name": "Reefbite",
+      "species": "Shark Furry",
+      "assetPath": "assets/streammonsters/furry/reefbite.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        5.0,
+        244.0,
+        12.0
+      ],
+      "opaqueFraction": 0.368757,
+      "sha256": "508b20c09cb9795622e8286aaf731a31afc51005ad788cf2488c0197bf45e3f8"
+    },
+    {
+      "templateId": "axi",
+      "element": "Tide",
+      "name": "Axi",
+      "species": "Axolotl",
+      "assetPath": "assets/streammonsters/furry/axi.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        7.0,
+        241.0,
+        16.0
+      ],
+      "opaqueFraction": 0.358629,
+      "sha256": "55786ca360f9475ef759258279646be41093c04e66f670efb570def959bc08e8"
+    },
+    {
+      "templateId": "mosswhisker",
+      "element": "Grove",
+      "name": "Mosswhisker",
+      "species": "Mouse",
+      "assetPath": "assets/streammonsters/furry/mosswhisker.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        12.0,
+        233.0,
+        24.0
+      ],
+      "opaqueFraction": 0.304053,
+      "sha256": "9c3fbb76b345198adae2ba7ef23041d96bbbdae4de800f1609ec9a21763d0f1a"
+    },
+    {
+      "templateId": "cloverhop",
+      "element": "Grove",
+      "name": "Cloverhop",
+      "species": "Rabbit",
+      "assetPath": "assets/streammonsters/furry/cloverhop.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        249.0,
+        4.0,
+        229.0
+      ],
+      "opaqueFraction": 0.302877,
+      "sha256": "fcea5e0a1b7f2d781c435f162d524c7aa00d061ae5d179b829c63a91b44eec6d"
+    },
+    {
+      "templateId": "oakheart",
+      "element": "Grove",
+      "name": "Oakheart",
+      "species": "Deer",
+      "assetPath": "assets/streammonsters/furry/oakheart.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        250.0,
+        3.0,
+        231.0
+      ],
+      "opaqueFraction": 0.279442,
+      "sha256": "fcc55cf61a0822a7d8c777c513116d3d4ba0de6442501a4f4bd0d9804fce0b86"
+    },
+    {
+      "templateId": "fernmask",
+      "element": "Grove",
+      "name": "Fernmask",
+      "species": "Raccoon",
+      "assetPath": "assets/streammonsters/furry/fernmask.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        249.0,
+        2.0,
+        232.0
+      ],
+      "opaqueFraction": 0.414683,
+      "sha256": "e1bfb1bbe2583f7266431a10bc71c1da80309f8038ff3fc0c4883247c900d1d4"
+    },
+    {
+      "templateId": "zephyr",
+      "element": "Gale",
+      "name": "Zephyr",
+      "species": "Bat",
+      "assetPath": "assets/streammonsters/furry/zephyr.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        249.0,
+        2.0,
+        237.0
+      ],
+      "opaqueFraction": 0.36799,
+      "sha256": "1509a577288c5266103cce14ef847dc3199b882a509ee32a019cc1183df2d319"
+    },
+    {
+      "templateId": "skyrend",
+      "element": "Gale",
+      "name": "Skyrend",
+      "species": "Griffin",
+      "assetPath": "assets/streammonsters/furry/skyrend.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        246.0,
+        3.0,
+        233.0
+      ],
+      "opaqueFraction": 0.400172,
+      "sha256": "1eabcba1a31ef66824cd2dde103ee1ea03079a46fa22981d0a3eaa7fe0ee3900"
+    },
+    {
+      "templateId": "cirrus",
+      "element": "Gale",
+      "name": "Cirrus",
+      "species": "Owl Furry",
+      "assetPath": "assets/streammonsters/furry/cirrus.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        249.0,
+        3.0,
+        234.0
+      ],
+      "opaqueFraction": 0.3831,
+      "sha256": "9be5b2edaeacc890801433bf2244ffd9d2ad1cd054958cd62a57bf5a8f88572c"
+    },
+    {
+      "templateId": "gusttail",
+      "element": "Gale",
+      "name": "Gusttail",
+      "species": "Flying Squirrel",
+      "assetPath": "assets/streammonsters/furry/gusttail.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        251.0,
+        5.0,
+        230.0
+      ],
+      "opaqueFraction": 0.404714,
+      "sha256": "757954480229cd0ea04cb9ef89e7cff9b771b055434a05e36a2df0fe3dda7bc2"
+    },
+    {
+      "templateId": "pulse",
+      "element": "Volt",
+      "name": "Pulse",
+      "species": "Protogen",
+      "assetPath": "assets/streammonsters/furry/pulse.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        13.0,
+        235.0,
+        23.0
+      ],
+      "opaqueFraction": 0.341721,
+      "sha256": "63a02d9eb2b9da4b492b0ce78a7ecf40958571fdd88b45e2c958f85b7f5e1046"
+    },
+    {
+      "templateId": "neonclaw",
+      "element": "Volt",
+      "name": "Neonclaw",
+      "species": "Cyber Lynx",
+      "assetPath": "assets/streammonsters/furry/neonclaw.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        8.0,
+        235.0,
+        19.0
+      ],
+      "opaqueFraction": 0.340417,
+      "sha256": "50dce76c84fc9df53e3e02cecfdbafcf735fa91df9a57c5f4b199c487f746c62"
+    },
+    {
+      "templateId": "ampjack",
+      "element": "Volt",
+      "name": "Ampjack",
+      "species": "Synth Jackal",
+      "assetPath": "assets/streammonsters/furry/ampjack.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        8.0,
+        237.0,
+        24.0
+      ],
+      "opaqueFraction": 0.296669,
+      "sha256": "834b9a819166c60fa908e2f84b498ecab3101c1854fe31111a7fbf60048bc56c"
+    },
+    {
+      "templateId": "flashstep",
+      "element": "Volt",
+      "name": "Flashstep",
+      "species": "Cheetah",
+      "assetPath": "assets/streammonsters/furry/flashstep.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        10.0,
+        237.0,
+        24.0
+      ],
+      "opaqueFraction": 0.325319,
+      "sha256": "196647d60a1525ca3d83eea157fe763a1a6eaac9cf6b76d37653578564a39e80"
+    },
+    {
+      "templateId": "selene",
+      "element": "Lunar",
+      "name": "Selene",
+      "species": "Snow Leopard",
+      "assetPath": "assets/streammonsters/furry/selene.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        12.0,
+        238.0,
+        25.0
+      ],
+      "opaqueFraction": 0.344121,
+      "sha256": "3800bfa4318fbfe15eabf1b0816916d546321db5bd0953c9daec7adeb9f449b3"
+    },
+    {
+      "templateId": "umbra",
+      "element": "Lunar",
+      "name": "Umbra",
+      "species": "Black Cat",
+      "assetPath": "assets/streammonsters/furry/umbra.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        11.0,
+        238.0,
+        18.0
+      ],
+      "opaqueFraction": 0.363267,
+      "sha256": "1d1b4d347a722bb2e6a0829a279c5322bcb2d59bb9aeb5f8ed97c8f629e2016b"
+    },
+    {
+      "templateId": "lumen",
+      "element": "Lunar",
+      "name": "Lumen",
+      "species": "Moth Furry",
+      "assetPath": "assets/streammonsters/furry/lumen.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        8.0,
+        237.0,
+        15.0
+      ],
+      "opaqueFraction": 0.401208,
+      "sha256": "9b669eb4ecffb694468b0c518b13fb31aa2e1dec8cb49e1509a41162b59dde15"
+    },
+    {
+      "templateId": "tsuki",
+      "element": "Lunar",
+      "name": "Tsuki",
+      "species": "Kitsune",
+      "assetPath": "assets/streammonsters/furry/tsuki.png",
+      "promptVersion": "furry-v1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "backgroundRgb": [
+        9.0,
+        234.0,
+        26.0
+      ],
+      "opaqueFraction": 0.378001,
+      "sha256": "5b67fc8c98eb0d62d075b3576172f0eaa7ee7e3879c655b0c825fd22cc431c4a"
+    }
+  ]
+}

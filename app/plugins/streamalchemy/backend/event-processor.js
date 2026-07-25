@@ -12,7 +12,7 @@ class EventProcessor {
     const repeatCount = Math.max(Number.parseInt(data.repeatCount || 1, 10) || 1, 1);
 
     if (!userId || !giftId || !giftName) {
-      this.logger?.warn?.('[STREAMALCHEMY] Ignored invalid gift event');
+      this.logger?.warn?.('[STREAM MONSTERS] Ignored invalid gift event');
       return;
     }
 

@@ -404,6 +404,15 @@ class CommandParser {
     }
 
     /**
+     * Remove a command cooldown when a plugin command is replaced or unloaded.
+     * @param {string} commandName - Command name
+     */
+    removeCommandCooldown(commandName) {
+        this.cooldownManager.removeCooldown(commandName);
+        this.logger.info(`[GCCE Parser] Removed cooldown for /${commandName}`);
+    }
+
+    /**
      * Get rate limiter statistics
      * @returns {Object} Rate limiter stats
      */

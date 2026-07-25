@@ -18,6 +18,9 @@ function createCommands() {
     now: () => now
   });
   const hatch = (userId, giftId) => {
+    store.upsertGiftMapping({
+      giftId, giftName: `Gift ${giftId}`, element: giftId % 2 ? 'Ember' : 'Tide', effect: 'spawn', enabled: true
+    });
     engine.processGift({ userId, giftId, giftName: `Gift ${giftId}`, coinValue: 1 });
     return engine.hatchReadyEggs(userId)[0];
   };
@@ -81,5 +84,23 @@ describe('Stream Monsters chat commands', () => {
     expect(commands.handle({ username: 'viewer-b' }, '!inventory')).toEqual(expect.objectContaining({ status: 'global_cooldown' }));
     expect(commands.handle({ username: 'viewer-a' }, '!battle').status).toBe('queued');
     expect(commands.handle({ username: 'viewer-b' }, '!battle').status).toBe('started');
+  });
+
+  test('skips domain cooldowns when GCCE already owns cooldown enforcement', () => {
+    const { commands, hatch } = createCommands();
+    hatch('viewer-a', 1);
+    hatch('viewer-b', 2);
+
+    expect(commands.handle({ username: 'viewer-a', skipCooldowns: true }, '!monsters').status)
+      .toBe('inventory');
+    expect(commands.handle({ username: 'viewer-b', skipCooldowns: true }, '!monsters').status)
+      .toBe('inventory');
+  });
+
+  test('advertises the non-conflicting Monster rank command in help', () => {
+    const { commands } = createCommands();
+
+    expect(commands.handle({ username: 'viewer-a' }, '!monstershelp').message)
+      .toContain('!monsterrank');
   });
 });

@@ -1,46 +1,298 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Stream Monsters Overlay</title>
+  <title>Stream Monsters · Collector Arena Overlay</title>
   <style>
-    :root { --ink:#f4f7ff; --muted:#b8c3dc; --panel:#12182af0; --accent:#a576ff; --green:#7ef0ba; }
-    * { box-sizing:border-box; } body { margin:0; overflow:hidden; font-family:Inter,Segoe UI,Arial,sans-serif; color:var(--ink); background:transparent; }
-    #streammonsters-overlay { position:fixed; inset:0; pointer-events:none; } #event { position:absolute; top:34px; left:34px; border:1px solid #5f4b9a; border-radius:999px; background:#151229e8; padding:9px 15px; font-size:15px; opacity:0; transform:translateY(-15px); transition:.3s; } #event.visible { opacity:1; transform:none; }
-    #card { position:absolute; right:42px; bottom:42px; display:grid; grid-template-columns:130px 1fr; gap:16px; min-width:430px; max-width:560px; padding:16px; border:1px solid #6175a0; border-radius:22px; background:linear-gradient(140deg,#202a42f7,#111725f7); box-shadow:0 20px 60px #000a; opacity:0; transform:translateX(80px) scale(.95); transition:.35s; }
-    #card.visible { opacity:1; transform:none; } #art { width:130px; height:130px; object-fit:contain; border-radius:16px; background:radial-gradient(circle,#483579,#101522); } .kicker { text-transform:uppercase; letter-spacing:.11em; font-size:12px; font-weight:700; color:#d9c8ff; } #title { margin:4px 0; font-size:29px; line-height:1.05; } #subtitle { color:var(--muted); } #progress { height:10px; overflow:hidden; margin-top:12px; border-radius:99px; background:#090d15; } #bar { height:100%; width:0; transition:width .5s; background:linear-gradient(90deg,#68e8c0,#a576ff); }
-    #battle { position:absolute; left:50%; top:48%; min-width:600px; padding:22px 30px; text-align:center; border:1px solid #8f75cb; border-radius:24px; background:linear-gradient(140deg,#21173ce8,#121b31e8); box-shadow:0 25px 80px #000b; opacity:0; transform:translate(-50%,-50%) scale(.92); transition:.35s; } #battle.visible { opacity:1; transform:translate(-50%,-50%) scale(1); } #versus { display:flex; align-items:center; justify-content:space-between; gap:20px; font-size:24px; font-weight:800; } #versus .vs { color:#ffd875; font-size:18px; } #battle-detail { color:var(--muted); margin-top:10px; } .hint { color:var(--green); margin-top:8px; font-size:14px; }
+    :root { --ink:#f8f7ff; --muted:#bdc5dc; --violet:#a984ff; --cyan:#55dcff; --mint:#6ef1b8; --gold:#ffd76f; }
+    * { box-sizing:border-box; }
+    body { margin:0; overflow:hidden; color:var(--ink); background:transparent; font-family:Inter,Segoe UI,Arial,sans-serif; }
+    #streammonsters-overlay { position:fixed; inset:0; pointer-events:none; }
+    #brand {
+      position:absolute; top:28px; left:30px; width:250px; height:70px; object-fit:contain; object-position:left center;
+      opacity:.88; filter:drop-shadow(0 8px 20px #0009);
+    }
+    #hype {
+      position:absolute; top:30px; right:34px; display:grid; place-items:center; width:92px; height:92px;
+      border:3px solid #725ba5; border-radius:50%; background:conic-gradient(var(--violet) var(--hype),#172039 0);
+      box-shadow:0 12px 40px #0009; opacity:0; transform:scale(.8); transition:.28s;
+    }
+    #hype::before { content:""; position:absolute; inset:7px; border-radius:50%; background:#101629f2; }
+    #hype.visible { opacity:1; transform:none; }
+    #hype-value { position:relative; font-weight:900; font-size:19px; }
+    #toast {
+      position:absolute; left:50%; top:32px; max-width:620px; padding:10px 18px; border:1px solid #675397;
+      border-radius:999px; background:#151229ee; box-shadow:0 14px 38px #0008; opacity:0;
+      transform:translate(-50%,-18px); transition:.3s; text-align:center;
+    }
+    #toast.visible { opacity:1; transform:translate(-50%,0); }
+    #card {
+      position:absolute; right:38px; bottom:38px; display:grid; grid-template-columns:158px minmax(250px,1fr); gap:18px;
+      width:min(610px,calc(100vw - 76px)); min-height:190px; padding:18px; border:1px solid #6d77a5; border-radius:27px;
+      background:linear-gradient(140deg,#202a46f5,#101628f7); box-shadow:0 28px 80px #000b;
+      opacity:0; transform:translateX(100px) scale(.94); transition:.35s cubic-bezier(.2,.85,.25,1.1);
+    }
+    #card.visible { opacity:1; transform:none; }
+    #card.charged { border-color:#d5b4ff; box-shadow:0 0 50px #9d72ff69,0 28px 80px #000b; }
+    #art-wrap { display:grid; place-items:center; overflow:hidden; border-radius:20px; background:radial-gradient(circle,#4a3b7c,#0a1020 70%); }
+    #art { width:158px; height:158px; object-fit:contain; filter:drop-shadow(0 12px 16px #0009); }
+    #kicker { color:#dac9ff; text-transform:uppercase; letter-spacing:.12em; font-size:12px; font-weight:900; }
+    #title { margin:5px 0; font-size:clamp(28px,3vw,39px); line-height:1.03; }
+    #subtitle { color:var(--muted); font-size:16px; }
+    #hint { margin-top:11px; color:var(--mint); font-size:14px; font-weight:700; }
+    #progress { height:9px; margin-top:13px; overflow:hidden; border-radius:99px; background:#070b13; }
+    #bar { width:0; height:100%; background:linear-gradient(90deg,var(--cyan),var(--violet),var(--gold)); transition:width .5s; }
+    #battle {
+      position:absolute; left:50%; top:50%; width:min(760px,calc(100vw - 80px)); padding:26px; border:1px solid #9676d2;
+      border-radius:28px; text-align:center; background:linear-gradient(140deg,#261841f2,#101a30f4); box-shadow:0 30px 100px #000c;
+      opacity:0; transform:translate(-50%,-45%) scale(.9); transition:.35s;
+    }
+    #battle.visible { opacity:1; transform:translate(-50%,-50%) scale(1); }
+    #battle-kicker { color:var(--gold); text-transform:uppercase; letter-spacing:.13em; font-size:12px; font-weight:900; }
+    #versus { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:20px; margin:15px 0; font-size:28px; font-weight:900; }
+    #versus .vs { color:var(--gold); font-size:15px; }
+    #battle-detail { color:var(--muted); font-size:18px; }
+    #round-dots { display:flex; justify-content:center; gap:8px; margin-top:14px; }
+    #round-dots span { width:12px; height:12px; border:1px solid #7c6aa5; border-radius:50%; background:#181e34; }
+    #round-dots span.active { background:var(--gold); box-shadow:0 0 16px #ffcf59; }
+    #chat-card {
+      position:absolute; left:34px; bottom:34px; max-width:min(460px,calc(100vw - 68px)); padding:12px 15px;
+      border:1px solid #3d6d75; border-radius:15px; color:#dffcff; background:#0d2429eb; box-shadow:0 16px 42px #0009;
+      opacity:0; transform:translateY(35px); transition:.28s;
+    }
+    #chat-card.visible { opacity:1; transform:none; }
+    @media (orientation: portrait) {
+      #brand { top:20px; left:20px; width:210px; height:58px; }
+      #hype { top:18px; right:20px; width:76px; height:76px; }
+      #toast { top:104px; width:calc(100vw - 32px); }
+      #card { right:16px; bottom:50px; grid-template-columns:1fr; width:calc(100vw - 32px); text-align:center; }
+      #art-wrap { width:160px; height:160px; margin:auto; }
+      #battle { top:48%; width:calc(100vw - 32px); padding:22px 14px; }
+      #versus { gap:9px; font-size:21px; }
+      #chat-card { left:16px; bottom:18px; max-width:calc(100vw - 32px); }
+    }
   </style>
 </head>
 <body>
 <main id="streammonsters-overlay" aria-live="polite">
-  <div id="event"></div>
-  <section id="card"><img id="art" alt=""><div><div id="kicker" class="kicker">Stream Monsters</div><h1 id="title" data-i18n="plugins.streamalchemy.streammonsters.readyHatch">Ready to hatch</h1><div id="subtitle">Viewers can check !inventory.</div><div id="progress"><div id="bar"></div></div><div class="hint">!inventory · !choose &lt;slot&gt; · !battle</div></div></section>
-  <section id="battle"><div class="kicker">Stream Monsters Duel</div><div id="versus"><span id="fighterA" data-i18n="plugins.streamalchemy.streammonsters.waiting">Waiting</span><span class="vs">VS</span><span id="fighterB" data-i18n="plugins.streamalchemy.streammonsters.waiting">Waiting</span></div><div id="battle-detail">Three transparent rounds</div></section>
+  <img id="brand" src="/plugins/streamalchemy/assets/branding/stream-monsters-logo.png" alt="">
+  <div id="hype" style="--hype:0%"><span id="hype-value">0%</span></div>
+  <div id="toast"></div>
+  <section id="card">
+    <div id="art-wrap"><img id="art" alt=""></div>
+    <div>
+      <div id="kicker">Stream Monsters</div>
+      <h1 id="title">Collector Arena</h1>
+      <div id="subtitle">Das nächste Monster wartet.</div>
+      <div id="progress"><div id="bar"></div></div>
+      <div id="hint">!eggs · !hatch [slot] · !battle</div>
+    </div>
+  </section>
+  <section id="battle">
+    <div id="battle-kicker">Collector Arena · Drei Runden</div>
+    <div id="versus"><span id="fighterA">Monster A</span><span class="vs">VS</span><span id="fighterB">Monster B</span></div>
+    <div id="battle-detail">Die Arena wird vorbereitet …</div>
+    <div id="round-dots"><span></span><span></span><span></span></div>
+  </section>
+  <div id="chat-card"></div>
 </main>
+
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/i18n-client.js"></script>
 <script>
 (() => {
-  const doc = document; const node = id => doc.getElementById(id); let cardTimer = null; let battleTimer = null;
+  const node = id => document.getElementById(id);
   const value = (input, fallback = '') => String(input ?? fallback);
-  const itemName = item => value(item?.name || item?.gift_name || item?.giftName, 'Element Egg');
-  const showCard = ({ kicker, title, subtitle, imageUrl, progress = 0 }) => {
-    node('kicker').textContent = kicker; node('title').textContent = title; node('subtitle').textContent = subtitle; node('art').src = imageUrl || '';
-    node('bar').style.width = `${Math.max(0, Math.min(100, progress))}%`; node('card').classList.add('visible');
-    clearTimeout(cardTimer); cardTimer = setTimeout(() => node('card').classList.remove('visible'), 6500);
+  const rankLabel = rank => ({ Silver:'Silber', Crystal:'Kristall' }[rank] || value(rank,'Neuer Rang'));
+  const itemName = item => value(item?.name || item?.gift_name || item?.giftName, 'Element-Ei');
+  const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+  const eventQueue = [];
+  const chatCooldowns = new Map();
+  let queueRunning = false;
+  let battleNames = ['Monster A','Monster B'];
+  let battleIds = [null,null];
+  let battleAdvantageName = '';
+
+  const showToast = async (text, duration = 2600) => {
+    node('toast').textContent = text;
+    node('toast').classList.add('visible');
+    await wait(duration);
+    node('toast').classList.remove('visible');
+    await wait(250);
   };
-  const showEvent = text => { node('event').textContent = text; node('event').classList.add('visible'); setTimeout(() => node('event').classList.remove('visible'), 8500); };
-  const showBattle = (left, right, detail) => { node('fighterA').textContent = left; node('fighterB').textContent = right; node('battle-detail').textContent = detail; node('battle').classList.add('visible'); clearTimeout(battleTimer); battleTimer = setTimeout(() => node('battle').classList.remove('visible'), 9000); };
-  const socket = typeof io === 'function' ? io() : null; if (!socket) return;
-  socket.on('streammonsters:stream_started', data => showEvent(`${value(data?.event?.element, 'Elemental')} Hour · eggs receive visible boosts`));
-  socket.on('streammonsters:egg_spawned', data => showCard({ kicker:`${value(data?.egg?.element, 'Element')} egg spawned`, title:itemName(data?.egg), subtitle:`${value(data?.userId, 'Viewer')}, check !inventory when it hatches.`, imageUrl:data?.egg?.image_url, progress:0 }));
-  socket.on('streammonsters:egg_boosted', data => showCard({ kicker:'Egg accelerated', title:itemName(data?.egg), subtitle:'A configured boost gift shortened the hatch time.', imageUrl:data?.egg?.image_url, progress:65 }));
-  socket.on('streammonsters:gift_combo', data => showCard({ kicker:'Gift combo!', title:itemName(data?.egg), subtitle:`Two different gifts combined for ${value(data?.userId, 'a viewer')}. The oldest egg gets a visible hatch boost.`, imageUrl:data?.egg?.image_url, progress:78 }));
-  socket.on('streammonsters:egg_hatched', data => showCard({ kicker:`${value(data?.monster?.rarity, 'Rare')} monster hatched`, title:itemName(data?.monster), subtitle:`${value(data?.userId, 'Viewer')} can select it with !choose.`, imageUrl:data?.monster?.image_url || data?.egg?.image_url, progress:100 }));
-  socket.on('streammonsters:battle_started', data => showBattle(itemName(data?.challenger), itemName(data?.defender), 'Three seeded rounds are starting…'));
-  socket.on('streammonsters:battle_completed', data => { const winner = data?.winner?.name || 'A Stream Monster'; showBattle(value(data?.battle?.monsterAId, 'Monster A'), value(data?.battle?.monsterBId, 'Monster B'), `${winner} wins the transparent three-round duel.`); });
+  const showCard = async ({ kicker, title, subtitle, imageUrl, progress = 0, charged = false, hint }) => {
+    node('kicker').textContent = kicker;
+    node('title').textContent = title;
+    node('subtitle').textContent = subtitle;
+    node('art').src = imageUrl || '/plugins/streamalchemy/assets/branding/stream-monsters-icon.png';
+    node('bar').style.width = `${Math.max(0,Math.min(100,progress))}%`;
+    node('hint').textContent = hint || '!eggs · !hatch [slot] · !battle';
+    node('card').classList.toggle('charged', Boolean(charged));
+    node('card').classList.add('visible');
+    await wait(3900);
+    node('card').classList.remove('visible');
+    await wait(350);
+  };
+  const showBattle = async ({ left, right, detail, round = 0, winner = false }) => {
+    battleNames = [left || battleNames[0],right || battleNames[1]];
+    node('fighterA').textContent = battleNames[0];
+    node('fighterB').textContent = battleNames[1];
+    node('battle-detail').textContent = detail;
+    [...node('round-dots').children].forEach((dot,index) => dot.classList.toggle('active',index < round));
+    node('battle').classList.add('visible');
+    await wait(winner ? 4300 : 2600);
+    node('battle').classList.remove('visible');
+    await wait(300);
+  };
+  const showHype = async data => {
+    const points = Number(data?.hype?.points) || 0;
+    node('hype').style.setProperty('--hype',`${points}%`);
+    node('hype-value').textContent = data?.hype?.charged_eggs ? 'CHARGED!' : `${points}%`;
+    node('hype').classList.add('visible');
+    await wait(2600);
+    node('hype').classList.remove('visible');
+  };
+  const showChat = async data => {
+    const userId = value(data?.userId,'Viewer');
+    const previous = chatCooldowns.get(userId) || 0;
+    if (Date.now() - previous < 4500) return;
+    chatCooldowns.set(userId,Date.now());
+    const message = data?.result?.message;
+    if (!message) return;
+    node('chat-card').textContent = `${userId} · ${message}`;
+    node('chat-card').classList.add('visible');
+    await wait(2800);
+    node('chat-card').classList.remove('visible');
+  };
+  const present = async ({ type, data }) => {
+    if (type === 'stream_started') return showToast(`${value(data?.event?.element,'Element')} Hour ist aktiv`);
+    if (type === 'egg_spawned') return showCard({
+      kicker:`${value(data?.egg?.element,'Element')} · ${value(data?.egg?.variant,'standard')}`,
+      title:'Ein neues Ei!',
+      subtitle:`${value(data?.userId,'Viewer')} hat einen Brutplatz gefüllt.`,
+      imageUrl:data?.egg?.image_url,
+      charged:data?.egg?.variant === 'charged',
+      hint:'!eggs zeigt den Timer',
+      progress:4
+    });
+    if (type === 'egg_boosted') return showCard({
+      kicker:'Tempo-Boost',
+      title:'Das Ei leuchtet!',
+      subtitle:'Ein ausgewähltes Gift hat nur die Brutzeit verkürzt.',
+      imageUrl:data?.egg?.image_url,
+      progress:62
+    });
+    if (type === 'gift_combo') return showToast(`Hype-Combo für ${value(data?.userId,'einen Viewer')} · +20`);
+    if (type === 'hype_changed') return showHype(data);
+    if (type === 'egg_ready') return showCard({
+      kicker:'Bereit!',
+      title:`${value(data?.egg?.element,'Element')}-Ei kann schlüpfen`,
+      subtitle:`${value(data?.userId,'Viewer')}, dein Moment gehört dir.`,
+      imageUrl:data?.egg?.image_url,
+      progress:100,
+      charged:data?.egg?.variant === 'charged',
+      hint:'Jetzt !hatch [slot] schreiben'
+    });
+    if (type === 'hatch_started') return showToast(`${value(data?.userId,'Viewer')} öffnet ein ${value(data?.egg?.element,'Element')}-Ei …`,1800);
+    if (type === 'egg_hatched') return showCard({
+      kicker:`${value(data?.monster?.element,data?.egg?.element)} · ${value(data?.monster?.personality,'Neugierig')}`,
+      title:`${itemName(data?.monster)} ist da!`,
+      subtitle:`28 faire Startpunkte · gehört ${value(data?.userId,'dem Viewer')} dauerhaft.`,
+      imageUrl:data?.monster?.image_url || data?.egg?.image_url,
+      charged:data?.egg?.variant === 'charged',
+      hint:'!monster [slot] zeigt die Karte',
+      progress:100
+    });
+    if (type === 'monster_visual_evolved') return showCard({
+      kicker:'Kosmetische Evolution',
+      title:`${itemName(data?.monster)} strahlt neu`,
+      subtitle:'KI-Kunst ersetzt Kenney. Name, Werte und Besitz bleiben unverändert.',
+      imageUrl:data?.monster?.image_url,
+      charged:true,
+      progress:100
+    });
+    if (type === 'battle_started') return showBattle({
+      left:itemName(data?.challenger),
+      right:itemName(data?.defender),
+      detail:(() => {
+        battleIds = [data?.challenger?.monster_id,data?.defender?.monster_id];
+        battleAdvantageName = data?.elementAdvantageMonsterId === battleIds[0]
+          ? itemName(data?.challenger)
+          : (data?.elementAdvantageMonsterId === battleIds[1] ? itemName(data?.defender) : '');
+        return battleAdvantageName
+          ? `${battleAdvantageName} hat Elementvorteil · Seed gespeichert`
+          : 'Kein Elementvorteil · Seed gespeichert';
+      })()
+    });
+    if (type === 'battle_round') {
+      const round = Number(data?.round?.number) || 1;
+      return showBattle({
+        left:battleNames[0],
+        right:battleNames[1],
+        round,
+        detail:`Runde ${round} · ${data?.round?.firstDamage || 0} / ${data?.round?.secondDamage || 0} Schaden${battleAdvantageName ? ` · Vorteil ${battleAdvantageName}` : ''}`
+      });
+    }
+    if (type === 'battle_completed') return showBattle({
+      left:battleNames[0],
+      right:battleNames[1],
+      round:3,
+      winner:true,
+      detail:`${itemName(data?.winner)} gewinnt!`
+    });
+    if (type === 'achievement_unlocked') return showCard({
+      kicker:'Achievement freigeschaltet',
+      title:value(data?.achievement?.achievement_key,'Neuer Meilenstein').replaceAll('_',' '),
+      subtitle:`${value(data?.userId,'Viewer')} erweitert die Collector-Karte.`,
+      progress:100,
+      charged:true
+    });
+    if (type === 'season_rank_changed') return showCard({
+      kicker:'Liga-Aufstieg',
+      title:`${rankLabel(data?.after)}!`,
+      subtitle:`${value(data?.userId,'Viewer')} erreicht ${data?.score?.points || 0} Saisonpunkte.`,
+      progress:100,
+      charged:true
+    });
+    if (type === 'quest_completed') return showToast(`Quest geschafft · ${value(data?.quest?.title,'Belohnung eingesammelt')}`);
+    if (type === 'chat_result') return showChat(data);
+  };
+  const drainQueue = async () => {
+    if (queueRunning) return;
+    queueRunning = true;
+    while (eventQueue.length) {
+      const next = eventQueue.shift();
+      try { await present(next); } catch (_) {}
+    }
+    queueRunning = false;
+  };
+  const enqueue = (type,data) => {
+    eventQueue.push({ type,data });
+    if (eventQueue.length > 30) eventQueue.splice(0,eventQueue.length - 30);
+    drainQueue();
+  };
+  const socket = typeof io === 'function' ? io() : null;
+  if (!socket) return;
+  const eventTypes = {
+    'streammonsters:stream_started':'stream_started',
+    'streammonsters:egg_spawned':'egg_spawned',
+    'streammonsters:egg_boosted':'egg_boosted',
+    'streammonsters:gift_combo':'gift_combo',
+    'streammonsters:hype_changed':'hype_changed',
+    'streammonsters:egg_ready':'egg_ready',
+    'streammonsters:hatch_started':'hatch_started',
+    'streammonsters:egg_hatched':'egg_hatched',
+    'streammonsters:monster_visual_evolved':'monster_visual_evolved',
+    'streammonsters:battle_started':'battle_started',
+    'streammonsters:battle_round':'battle_round',
+    'streammonsters:battle_completed':'battle_completed',
+    'streammonsters:achievement_unlocked':'achievement_unlocked',
+    'streammonsters:season_rank_changed':'season_rank_changed',
+    'streammonsters:quest_completed':'quest_completed',
+    'streammonsters:chat_result':'chat_result'
+  };
+  Object.entries(eventTypes).forEach(([eventName,type]) => socket.on(eventName,data => enqueue(type,data)));
 })();
 </script>
 </body>
