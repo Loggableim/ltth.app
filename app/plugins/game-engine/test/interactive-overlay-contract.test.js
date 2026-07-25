@@ -53,7 +53,7 @@ describe('interactive overlay contract', () => {
     expect(unified).toContain('function interactiveOverlayPresentation(');
     expect(unified).not.toContain('state?.activeSessions?.length === 1');
     expect(unified).not.toContain('viewerTurnSession');
-    expect(unified).toContain('switchToGame(presentationDisplay.gameType, interactiveState);');
+    expect(unified).toContain("switchToGame(showingMatchmaking ? 'connect4' : presentationDisplay.gameType, interactiveState);");
     expect(connect4).toContain('function interactiveConnect4Presentation(');
     expect(connect4).not.toContain('state?.activeSessions?.length === 1');
     expect(connect4).not.toContain('viewerTurnSession');
@@ -109,6 +109,21 @@ describe('interactive overlay contract', () => {
     expect(unified).not.toContain('interactiveViewerCountdownInterval');
     expect(unified).not.toContain('startInteractiveViewerCountdown');
     expect(unifiedMatchup).not.toContain('viewerDeadlineMs');
+  });
+
+  test('direct and unified Connect4 share avatar-ready matchmaking state without local challenge guesses', () => {
+    const direct = readOverlay('connect4.html');
+    const unified = readOverlay('unified.html');
+
+    expect(direct).toContain('connect4Matchmaking');
+    expect(direct).toContain('expiresAtMs');
+    expect(direct).toContain('function renderMatchmakingChallenge');
+    expect(direct).toContain('function isSafeAvatarProxySource');
+    expect(direct).toContain('piece-avatar');
+    expect(direct).toContain("addEventListener('error'");
+    expect(direct).toContain('aria-label');
+    expect(direct).toContain('clamp(');
+    expect(unified).toContain('forwardInteractiveSnapshot(frame, interactiveState)');
   });
 
   test('direct Connect4 move audio is deduplicated by session and move number', () => {

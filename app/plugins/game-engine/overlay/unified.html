@@ -241,6 +241,7 @@
     let latestInteractiveState = null;
     let lastInteractiveDisplayRevision = -1;
     let lastInteractiveSessionRevision = -1;
+    let lastInteractiveMatchmakingTimestamp = -1;
     let interactiveStatusInterval = null;
     let interactiveStateReceivedAt = 0;
 
@@ -325,7 +326,8 @@
 
       const ownsDisplay = ['playing', 'animating', 'result', 'leaderboard'].includes(display.phase) &&
         (display.gameType === 'connect4' || display.gameType === 'chess');
-      return ownsDisplay ? state : null;
+      const ownsConnect4Matchmaking = state?.connect4Matchmaking?.status === 'open';
+      return ownsDisplay || ownsConnect4Matchmaking ? state : null;
     }
 
     socket.on('game-engine:interactive-state', (state) => {
@@ -335,13 +337,20 @@
       const incomingSessionRevision = Number.isFinite(Number(display.sessionRevision))
         ? Number(display.sessionRevision)
         : -1;
+      const incomingMatchmakingTimestamp = Number(state?.serverTimestamp);
       if (incomingDisplayRevision < lastInteractiveDisplayRevision) return;
-      if (
-        incomingDisplayRevision === lastInteractiveDisplayRevision &&
-        incomingSessionRevision <= lastInteractiveSessionRevision
-      ) return;
-      lastInteractiveDisplayRevision = incomingDisplayRevision;
-      lastInteractiveSessionRevision = incomingSessionRevision;
+      const displayRevisionUnchanged = incomingDisplayRevision === lastInteractiveDisplayRevision &&
+        incomingSessionRevision <= lastInteractiveSessionRevision;
+      const newerMatchmakingState = Number.isFinite(incomingMatchmakingTimestamp) &&
+        incomingMatchmakingTimestamp > lastInteractiveMatchmakingTimestamp;
+      if (displayRevisionUnchanged && !newerMatchmakingState) return;
+      if (!displayRevisionUnchanged) {
+        lastInteractiveDisplayRevision = incomingDisplayRevision;
+        lastInteractiveSessionRevision = incomingSessionRevision;
+      }
+      if (Number.isFinite(incomingMatchmakingTimestamp)) {
+        lastInteractiveMatchmakingTimestamp = incomingMatchmakingTimestamp;
+      }
 
       const interactiveState = interactiveOverlayPresentation(state);
       latestInteractiveState = interactiveState || state;
@@ -357,7 +366,8 @@
       const presentationDisplay = interactiveState.display;
       const animationMs = Math.max(100, Math.min(2000, Number(presentationDisplay.config?.animationSpeed) || 500));
       document.documentElement.style.setProperty('--interactive-animation-ms', `${animationMs}ms`);
-      if (presentationDisplay.phase === 'leaderboard') {
+      const showingMatchmaking = interactiveState.connect4Matchmaking?.status === 'open';
+      if (presentationDisplay.phase === 'leaderboard' || showingMatchmaking) {
         hideInteractiveMatchup();
       } else {
         showInteractiveMatchup(
@@ -365,7 +375,7 @@
           presentationDisplay.activeSessionCount ?? state.hostQueue?.length ?? 0
         );
       }
-      switchToGame(presentationDisplay.gameType, interactiveState);
+      switchToGame(showingMatchmaking ? 'connect4' : presentationDisplay.gameType, interactiveState);
       updateQueueIndicator(state.hostQueue?.length || 0);
     });
 

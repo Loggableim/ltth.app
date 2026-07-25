@@ -167,15 +167,15 @@
       display: flex;
       justify-content: space-around;
       margin-bottom: 10px;
-      font-size: 24px;
-      font-weight: bold;
+      font-size: clamp(26px, 3.2vw, 42px);
+      font-weight: 800;
       text-align: center;
     }
 
     .column-label {
-      width: 70px;
+      width: clamp(56px, 7vw, 86px);
       color: var(--text-color, #FFFFFF);
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      text-shadow: 2px 2px 4px #000;
     }
 
     .board-row {
@@ -185,8 +185,8 @@
     }
 
     .board-cell {
-      width: 70px;
-      height: 70px;
+      width: clamp(56px, 7vw, 86px);
+      height: clamp(56px, 7vw, 86px);
       background: rgba(0, 0, 0, 0.3);
       border-radius: 50%;
       display: flex;
@@ -201,12 +201,26 @@
     }
 
     .piece {
-      width: 60px;
-      height: 60px;
+      width: calc(clamp(56px, 7vw, 86px) - 10px);
+      height: calc(clamp(56px, 7vw, 86px) - 10px);
       border-radius: 50%;
       position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
       animation: dropPiece var(--interactive-animation-ms, 500ms) ease-out;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .piece-avatar {
+      width: 72%;
+      height: 72%;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(255, 255, 255, 0.85);
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+      pointer-events: none;
     }
 
     @keyframes dropPiece {
@@ -254,8 +268,13 @@
       padding: 15px 25px;
       background: rgba(255, 255, 255, 0.1);
       border-radius: 10px;
-      font-size: 18px;
+      font-size: clamp(22px, 2.4vw, 32px);
+      font-weight: 800;
+      color: var(--text-color, #FFFFFF);
+      text-shadow: 1px 1px 3px #000;
     }
+
+    .player-name { font-weight: 800; }
 
     .player-info.active {
       background: rgba(255, 255, 255, 0.25);
@@ -641,9 +660,9 @@
   <div id="celebration-overlay" class="celebration-overlay"></div>
 
   <!-- Challenge Screen -->
-  <div id="challenge-screen">
-    <div class="challenge-title" data-i18n="plugins.game-engine.labels.new_challenger">NEW CHALLENGER!</div>
-    <div class="challenge-question" data-i18n="plugins.game-engine.labels.accept_challenge">Accept Challenge?</div>
+  <div id="challenge-screen" role="status" aria-live="polite">
+    <div id="challenge-title" class="challenge-title" data-i18n="plugins.game-engine.labels.new_challenger">NEW CHALLENGER!</div>
+    <div id="challenge-question" class="challenge-question" data-i18n="plugins.game-engine.labels.accept_challenge">Accept Challenge?</div>
     <div id="challenger-name" style="font-size: 24px; color: #64B5F6; margin-bottom: 20px;"></div>
     <div class="challenge-gift">
       <div id="challenge-gift-container"></div>
@@ -677,17 +696,17 @@
         <div class="column-label">F</div>
         <div class="column-label">G</div>
       </div>
-      <div id="board-grid"></div>
+      <div id="board-grid" role="grid"></div>
     </div>
 
     <div id="game-info">
       <div class="player-info" id="player1-info">
         <span class="player-color" id="player1-color"></span>
-        <span id="player1-name"></span>
+        <span class="player-name" id="player1-name"></span>
       </div>
       <div class="player-info" id="player2-info">
         <span class="player-color" id="player2-color"></span>
-        <span id="player2-name"></span>
+        <span class="player-name" id="player2-name"></span>
       </div>
     </div>
   </div>
@@ -733,6 +752,7 @@
     let gameConfig = null;
     let lastInteractiveDisplayRevision = -1;
     let lastInteractiveSessionRevision = -1;
+    let lastInteractiveMatchmakingTimestamp = -1;
     let latestInteractiveState = null;
     let latestInteractiveStateReceivedAt = 0;
     let latestInteractiveQueueIdle = true;
@@ -941,6 +961,8 @@
 
     // Challenge screen variables
     let challengeTimerInterval = null;
+    let matchmakingChallengeInterval = null;
+    let activeMatchmakingChallengeKey = null;
 
     // Media playback function
     function playMedia(mediaInfo, mediaEvent) {
@@ -956,6 +978,15 @@
       const giftContainer = document.getElementById('challenge-gift-container');
       const giftNameDiv = document.getElementById('gift-name');
       const timerDiv = document.getElementById('challenge-timer');
+      const challengeInfo = challengeScreen.querySelector('.challenge-info');
+
+      if (matchmakingChallengeInterval) {
+        clearInterval(matchmakingChallengeInterval);
+        matchmakingChallengeInterval = null;
+      }
+      activeMatchmakingChallengeKey = null;
+      giftNameDiv.hidden = false;
+      if (challengeInfo) challengeInfo.hidden = false;
 
       // Play challenge media if available
       if (data.media) {
@@ -1017,6 +1048,78 @@
         clearInterval(challengeTimerInterval);
         challengeTimerInterval = null;
       }
+    }
+
+    function clearMatchmakingChallenge() {
+      const wasMatchmakingChallenge = activeMatchmakingChallengeKey !== null;
+      if (matchmakingChallengeInterval) clearInterval(matchmakingChallengeInterval);
+      matchmakingChallengeInterval = null;
+      activeMatchmakingChallengeKey = null;
+      if (!wasMatchmakingChallenge) return;
+      const challengeScreen = document.getElementById('challenge-screen');
+      challengeScreen.classList.remove('show');
+      document.getElementById('challenge-timer').classList.remove('warning');
+    }
+
+    function renderMatchmakingChallenge(state, receivedAt = Date.now(), force = false) {
+      const challenge = state?.connect4Matchmaking;
+      if (challenge?.status !== 'open') {
+        clearMatchmakingChallenge();
+        return;
+      }
+      const expiresAtMs = Number(challenge.expiresAtMs);
+      const serverTimestamp = Number(state?.serverTimestamp);
+      if (!Number.isFinite(expiresAtMs) || !Number.isFinite(serverTimestamp)) {
+        clearMatchmakingChallenge();
+        return;
+      }
+
+      const key = `${challenge.challengeId}:${expiresAtMs}:${serverTimestamp}`;
+      if (!force && key === activeMatchmakingChallengeKey) return;
+      clearMatchmakingChallenge();
+      activeMatchmakingChallengeKey = key;
+
+      const challengeScreen = document.getElementById('challenge-screen');
+      const title = document.getElementById('challenge-title');
+      const question = document.getElementById('challenge-question');
+      const name = document.getElementById('challenger-name');
+      const timer = document.getElementById('challenge-timer');
+      const giftContainer = document.getElementById('challenge-gift-container');
+      const giftName = document.getElementById('gift-name');
+      const challengeInfo = challengeScreen.querySelector('.challenge-info');
+
+      title.textContent = runtimeText(
+        'plugins.game-engine.runtime.connect4.matchmaking_title',
+        {},
+        'Connect4 Challenge!'
+      );
+      question.textContent = runtimeText(
+        'plugins.game-engine.runtime.connect4.matchmaking_prompt',
+        { player: challenge.openerDisplayName || '' },
+        '{player} sucht einen Gegner! Schreibe connect4 zum Mitspielen.'
+      );
+      name.textContent = challenge.openerDisplayName || '';
+      giftContainer.replaceChildren();
+      giftName.hidden = true;
+      if (challengeInfo) challengeInfo.hidden = true;
+      challengeScreen.classList.add('show');
+
+      const render = () => {
+        const serverNow = serverTimestamp + (Date.now() - receivedAt);
+        const seconds = Math.max(0, Math.ceil((expiresAtMs - serverNow) / 1000));
+        timer.textContent = runtimeText(
+          'plugins.game-engine.runtime.connect4.matchmaking_countdown',
+          { seconds },
+          'Noch {seconds} s zum Herausfordern'
+        );
+        timer.classList.toggle('warning', seconds <= 5);
+        if (seconds <= 0 && matchmakingChallengeInterval) {
+          clearInterval(matchmakingChallengeInterval);
+          matchmakingChallengeInterval = null;
+        }
+      };
+      render();
+      matchmakingChallengeInterval = setInterval(render, 1000);
     }
 
     // Leaderboard display
@@ -1248,17 +1351,57 @@
       for (let row = 0; row < ROWS; row++) {
         const rowDiv = document.createElement('div');
         rowDiv.className = 'board-row';
+        rowDiv.setAttribute('role', 'row');
 
         for (let col = 0; col < COLUMNS; col++) {
           const cell = document.createElement('div');
           cell.className = 'board-cell';
           cell.dataset.row = row;
           cell.dataset.col = col;
+          cell.setAttribute('role', 'gridcell');
+          cell.setAttribute('aria-label', boardCellLabel(row, col));
           rowDiv.appendChild(cell);
         }
 
         boardGrid.appendChild(rowDiv);
       }
+    }
+
+    function isSafeAvatarProxySource(source) {
+      if (typeof source !== 'string' || !source.trim()) return false;
+      try {
+        const url = new URL(source, window.location.origin);
+        return url.origin === window.location.origin &&
+          ['/api/game-engine/avatar', '/api/game-engine/arena/avatar'].includes(url.pathname) &&
+          url.searchParams.has('url');
+      } catch (error) {
+        return false;
+      }
+    }
+
+    function playerDisplayName(player, fallback) {
+      return player?.nickname || player?.username || fallback;
+    }
+
+    function boardCellLabel(row, col, player = null, playerNumber = null) {
+      const column = String.fromCharCode(65 + col);
+      const position = { column, row: row + 1 };
+      if (!player) {
+        return runtimeText(
+          'plugins.game-engine.runtime.connect4.cell_empty',
+          position,
+          'Spalte {column}, Reihe {row}: leer'
+        );
+      }
+      return runtimeText(
+        'plugins.game-engine.runtime.connect4.cell_piece',
+        {
+          ...position,
+          owner: playerDisplayName(player, `Spieler ${playerNumber || ''}`.trim()),
+          color: player.color || (playerNumber === 1 ? '#E74C3C' : '#F1C40F')
+        },
+        'Spalte {column}, Reihe {row}: {owner}, Stein in {color}'
+      );
     }
 
     // Apply configuration
@@ -1316,10 +1459,13 @@
           // Clear existing pieces
           cell.innerHTML = '';
           cell.classList.remove('filled');
+          cell.setAttribute('aria-label', boardCellLabel(row, col));
 
           if (cellValue !== 0) {
+            const player = cellValue === 1 ? state.player1 : state.player2;
             const piece = document.createElement('div');
             piece.className = `piece player${cellValue}`;
+            piece.setAttribute('aria-hidden', 'true');
 
             // Check if this cell is part of winning combination
             if (state.winningCells) {
@@ -1329,8 +1475,18 @@
               }
             }
 
+            if (isSafeAvatarProxySource(player?.avatarSource)) {
+              const avatar = document.createElement('img');
+              avatar.className = 'piece-avatar';
+              avatar.src = player.avatarSource;
+              avatar.alt = '';
+              avatar.addEventListener('error', () => avatar.remove(), { once: true });
+              piece.appendChild(avatar);
+            }
+
             cell.appendChild(piece);
             cell.classList.add('filled');
+            cell.setAttribute('aria-label', boardCellLabel(row, col, player, cellValue));
           }
         }
       }
@@ -1341,8 +1497,8 @@
       const player1Info = document.getElementById('player1-info');
       const player2Info = document.getElementById('player2-info');
 
-      document.getElementById('player1-name').textContent = state.player1.nickname || state.player1.username;
-      document.getElementById('player2-name').textContent = state.player2.nickname || state.player2.username;
+      document.getElementById('player1-name').textContent = playerDisplayName(state.player1, 'Spieler 1');
+      document.getElementById('player2-name').textContent = playerDisplayName(state.player2, 'Spieler 2');
 
       document.getElementById('player1-color').style.background = state.player1.color;
       document.getElementById('player2-color').style.background = state.player2.color;
@@ -1489,19 +1645,35 @@
       const resultPresentation = display.phase === 'result' ? display.result : null;
       const displayRevision = Number(display.displayRevision);
       const sessionRevision = Number(resultPresentation?.sessionRevision ?? display.sessionRevision ?? -1);
+      const matchmakingTimestamp = Number(interactiveState?.serverTimestamp);
       if (!Number.isFinite(displayRevision)) return;
       if (!force && displayRevision < lastInteractiveDisplayRevision) return;
+      const displayRevisionUnchanged = displayRevision === lastInteractiveDisplayRevision &&
+        sessionRevision <= lastInteractiveSessionRevision;
+      const newerMatchmakingState = Number.isFinite(matchmakingTimestamp) &&
+        matchmakingTimestamp > lastInteractiveMatchmakingTimestamp;
       if (!force &&
-        displayRevision === lastInteractiveDisplayRevision &&
-        sessionRevision <= lastInteractiveSessionRevision
+        displayRevisionUnchanged &&
+        !newerMatchmakingState
       ) return;
 
       if (!force) {
-        lastInteractiveDisplayRevision = displayRevision;
-        lastInteractiveSessionRevision = sessionRevision;
+        if (!displayRevisionUnchanged) {
+          lastInteractiveDisplayRevision = displayRevision;
+          lastInteractiveSessionRevision = sessionRevision;
+        }
+        if (Number.isFinite(matchmakingTimestamp)) {
+          lastInteractiveMatchmakingTimestamp = matchmakingTimestamp;
+        }
         latestInteractiveState = state;
         latestInteractiveStateReceivedAt = Date.now();
       }
+      renderMatchmakingChallenge(
+        interactiveState,
+        force ? latestInteractiveStateReceivedAt : Date.now(),
+        force
+      );
+      if (!force && displayRevisionUnchanged) return;
       clearInteractivePresentation();
       if (display.gameType !== 'connect4') {
         interactiveSnapshotActive = false;

@@ -543,6 +543,9 @@ class GameEngineDatabase {
         session_revision INTEGER NOT NULL DEFAULT 1,
         display_revision INTEGER NOT NULL DEFAULT 0,
         turn_role TEXT NOT NULL CHECK(turn_role IN ('viewer', 'host')),
+        participant_ids_json TEXT,
+        participants_json TEXT,
+        turn_player_id TEXT,
         viewer_deadline_ms INTEGER,
         viewer_time_remaining_ms INTEGER,
         host_time_remaining_ms INTEGER,
@@ -589,6 +592,25 @@ class GameEngineDatabase {
 
       INSERT OR IGNORE INTO game_interactive_meta (key, value)
       VALUES ('displayRevision', '0');
+
+      CREATE TABLE IF NOT EXISTS game_interactive_challenges (
+        challenge_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        game_type TEXT NOT NULL CHECK(game_type = 'connect4'),
+        opener_id TEXT NOT NULL,
+        opener_display_name TEXT NOT NULL,
+        opener_avatar_source TEXT NOT NULL DEFAULT '',
+        expires_at_ms INTEGER NOT NULL,
+        status TEXT NOT NULL CHECK(status IN ('open', 'claimed', 'expired')) DEFAULT 'open',
+        claimed_by_id TEXT,
+        claimed_by_display_name TEXT,
+        claimed_by_avatar_source TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+
+      CREATE UNIQUE INDEX IF NOT EXISTS game_interactive_one_open_challenge
+        ON game_interactive_challenges(game_type)
+        WHERE status = 'open';
     `);
 
     const interactiveSessionColumns = this.db.prepare(`
@@ -598,6 +620,18 @@ class GameEngineDatabase {
       this.db.exec(`
         ALTER TABLE game_interactive_sessions
         ADD COLUMN viewer_time_remaining_ms INTEGER
+      `);
+    }
+    const interactiveSessionMigrations = [
+      ['participant_ids_json', 'TEXT'],
+      ['participants_json', 'TEXT'],
+      ['turn_player_id', 'TEXT']
+    ];
+    for (const [column, type] of interactiveSessionMigrations) {
+      if (interactiveSessionColumns.some(existing => existing.name === column)) continue;
+      this.db.exec(`
+        ALTER TABLE game_interactive_sessions
+        ADD COLUMN ${column} ${type}
       `);
     }
     
@@ -658,16 +692,26 @@ class GameEngineDatabase {
 
   _mapInteractiveStateRow(row) {
     if (!row) return null;
+    const state = JSON.parse(row.state_json);
+    const fallbackParticipants = this._interactiveParticipantsFromState(state, row);
+    const participantIds = this._parseInteractiveJson(
+      row.participant_ids_json,
+      fallbackParticipants.map(participant => participant.id)
+    );
+    const participants = this._parseInteractiveJson(row.participants_json, fallbackParticipants);
     return {
       sessionId: row.session_id,
       gameType: row.game_type,
       viewerId: row.viewer_id,
       viewerDisplayName: row.viewer_display_name,
       hostDisplayName: row.host_display_name,
-      state: JSON.parse(row.state_json),
+      state,
       sessionRevision: row.session_revision,
       displayRevision: row.display_revision,
       turnRole: row.turn_role,
+      participantIds,
+      participants,
+      turnPlayerId: row.turn_player_id || this._interactiveTurnPlayerId(state, row, participantIds),
       viewerDeadlineMs: row.viewer_deadline_ms,
       viewerTimeRemainingMs: row.viewer_time_remaining_ms,
       hostTimeRemainingMs: row.host_time_remaining_ms,
@@ -679,6 +723,42 @@ class GameEngineDatabase {
       createdAt: row.created_at,
       updatedAt: row.updated_at
     };
+  }
+
+  _parseInteractiveJson(value, fallback) {
+    if (value == null || value === '') return fallback;
+    const parsed = JSON.parse(value);
+    return parsed == null ? fallback : parsed;
+  }
+
+  _interactiveParticipantsFromState(state, row) {
+    const players = state?.player1 && state?.player2
+      ? [state.player1, state.player2]
+      : state?.whitePlayer && state?.blackPlayer
+        ? [state.whitePlayer, state.blackPlayer]
+        : [];
+    const participants = players
+      .filter(player => player?.username)
+      .map(player => ({
+        id: String(player.username),
+        displayName: player.nickname || player.username,
+        role: player.role === 'streamer' ? 'host' : 'viewer',
+        avatarSource: player.avatarSource || ''
+      }));
+    if (participants.length > 0) return participants;
+    return [
+      { id: row.viewer_id, displayName: row.viewer_display_name, avatarSource: '' },
+      { id: 'streamer', displayName: row.host_display_name, avatarSource: '' }
+    ];
+  }
+
+  _interactiveTurnPlayerId(state, row, participantIds) {
+    const currentPlayer = state?.player1 && state?.player2
+      ? Number(state.currentPlayer) === 1 ? state.player1 : state.player2
+      : state?.turn === 'white' ? state.whitePlayer : state?.blackPlayer;
+    return currentPlayer?.username || (row.turn_role === 'viewer'
+      ? row.viewer_id
+      : participantIds.find(id => id !== row.viewer_id) || 'streamer');
   }
 
   _mapInteractiveQueueRow(row) {
@@ -696,13 +776,23 @@ class GameEngineDatabase {
 
   createInteractiveState(data) {
     const now = Number(data.lastActivityAt) || Date.now();
+    const participantIds = data.participantIds || [data.viewerId, 'streamer'];
+    const participants = data.participants || [
+      { id: data.viewerId, displayName: data.viewerDisplayName, avatarSource: '' },
+      { id: 'streamer', displayName: data.hostDisplayName, avatarSource: '' }
+    ];
+    const turnPlayerId = data.turnPlayerId || this._interactiveTurnPlayerId(data.state, {
+      turn_role: data.turnRole,
+      viewer_id: data.viewerId
+    }, participantIds);
     this.db.prepare(`
       INSERT INTO game_interactive_sessions (
         session_id, game_type, viewer_id, viewer_display_name, host_display_name,
         state_json, session_revision, display_revision, turn_role,
+        participant_ids_json, participants_json, turn_player_id,
         viewer_deadline_ms, viewer_time_remaining_ms, host_time_remaining_ms, time_control,
         last_move_identity, last_activity_at, status, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
     `).run(
       data.sessionId,
       data.gameType,
@@ -713,6 +803,9 @@ class GameEngineDatabase {
       data.sessionRevision || 1,
       data.displayRevision || 0,
       data.turnRole,
+      JSON.stringify(participantIds),
+      JSON.stringify(participants),
+      turnPlayerId,
       data.viewerDeadlineMs ?? null,
       data.viewerTimeRemainingMs ?? null,
       data.hostTimeRemainingMs ?? null,
@@ -735,6 +828,9 @@ class GameEngineDatabase {
       sessionRevision: 'session_revision',
       displayRevision: 'display_revision',
       turnRole: 'turn_role',
+      participantIds: 'participant_ids_json',
+      participants: 'participants_json',
+      turnPlayerId: 'turn_player_id',
       viewerDeadlineMs: 'viewer_deadline_ms',
       viewerTimeRemainingMs: 'viewer_time_remaining_ms',
       hostTimeRemainingMs: 'host_time_remaining_ms',
@@ -750,7 +846,7 @@ class GameEngineDatabase {
       const column = columns[key];
       if (!column) continue;
       fields.push(`${column} = ?`);
-      values.push(key === 'state' ? JSON.stringify(value) : value);
+      values.push(['state', 'participantIds', 'participants'].includes(key) ? JSON.stringify(value) : value);
     }
     if (fields.length === 0) return this.getInteractiveState(sessionId);
     fields.push('updated_at = ?');
@@ -786,6 +882,137 @@ class GameEngineDatabase {
         };
       }
     });
+  }
+
+  _mapInteractiveChallengeRow(row) {
+    if (!row) return null;
+    return {
+      challengeId: row.challenge_id,
+      gameType: row.game_type,
+      openerId: row.opener_id,
+      openerDisplayName: row.opener_display_name,
+      openerAvatarSource: row.opener_avatar_source,
+      expiresAtMs: row.expires_at_ms,
+      status: row.status,
+      claimedById: row.claimed_by_id,
+      claimedByDisplayName: row.claimed_by_display_name,
+      claimedByAvatarSource: row.claimed_by_avatar_source,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  createInteractiveChallenge(data) {
+    const openerId = String(data?.openerId || '').trim();
+    const openerDisplayName = String(data?.openerDisplayName || '').trim();
+    const expiresAtMs = Number(data?.expiresAtMs);
+    const createdAt = Number(data?.createdAt) || Date.now();
+    if (data?.gameType !== 'connect4') throw new Error('Unsupported interactive challenge game type');
+    if (!openerId || !openerDisplayName) throw new Error('Interactive challenge opener identity is required');
+    if (!Number.isFinite(expiresAtMs) || expiresAtMs <= createdAt) {
+      throw new Error('Interactive challenge expiry must be in the future');
+    }
+    return this.transaction(() => {
+      this.expireOpenInteractiveChallenges(createdAt);
+      if (this.getOpenInteractiveChallenge(createdAt)) {
+        throw new Error('An open interactive challenge already exists');
+      }
+      const info = this.db.prepare(`
+        INSERT INTO game_interactive_challenges (
+          game_type, opener_id, opener_display_name, opener_avatar_source,
+          expires_at_ms, status, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, 'open', ?, ?)
+      `).run(
+        data.gameType,
+        openerId,
+        openerDisplayName,
+        String(data.openerAvatarSource || ''),
+        expiresAtMs,
+        createdAt,
+        createdAt
+      );
+      return this.getInteractiveChallenge(info.lastInsertRowid);
+    });
+  }
+
+  getInteractiveChallenge(challengeId) {
+    return this._mapInteractiveChallengeRow(this.db.prepare(`
+      SELECT * FROM game_interactive_challenges WHERE challenge_id = ?
+    `).get(Number(challengeId)));
+  }
+
+  expireOpenInteractiveChallenges(now = Date.now()) {
+    const result = this.db.prepare(`
+      UPDATE game_interactive_challenges
+      SET status = 'expired', updated_at = ?
+      WHERE status = 'open' AND expires_at_ms <= ?
+    `).run(now, now);
+    return Number(result?.changes) || 0;
+  }
+
+  getOpenInteractiveChallenge(now = Date.now()) {
+    this.expireOpenInteractiveChallenges(now);
+    return this._mapInteractiveChallengeRow(this.db.prepare(`
+      SELECT * FROM game_interactive_challenges
+      WHERE status = 'open' AND expires_at_ms > ?
+      ORDER BY challenge_id ASC
+      LIMIT 1
+    `).get(now));
+  }
+
+  getRecoverableInteractiveChallenge() {
+    return this._mapInteractiveChallengeRow(this.db.prepare(`
+      SELECT * FROM game_interactive_challenges
+      WHERE status = 'open'
+      ORDER BY challenge_id ASC
+      LIMIT 1
+    `).get());
+  }
+
+  claimInteractiveChallenge(challengeId, participant, now = Date.now()) {
+    const participantId = String(participant?.participantId || '').trim();
+    const participantDisplayName = String(participant?.participantDisplayName || '').trim();
+    if (!participantId || !participantDisplayName) throw new Error('Interactive challenge participant identity is required');
+    return this.transaction(() => {
+      this.expireOpenInteractiveChallenges(now);
+      const challenge = this.getInteractiveChallenge(challengeId);
+      if (!challenge || challenge.status !== 'open' || challenge.expiresAtMs <= now) return null;
+      const claimed = this.db.prepare(`
+        UPDATE game_interactive_challenges
+        SET status = 'claimed', claimed_by_id = ?, claimed_by_display_name = ?,
+            claimed_by_avatar_source = ?, updated_at = ?
+        WHERE challenge_id = ? AND status = 'open' AND expires_at_ms > ?
+      `).run(
+        participantId,
+        participantDisplayName,
+        String(participant.participantAvatarSource || ''),
+        now,
+        Number(challengeId),
+        now
+      );
+      return claimed.changes ? this.getInteractiveChallenge(challengeId) : null;
+    });
+  }
+
+  expireInteractiveChallenge(challengeId, now = Date.now()) {
+    this.expireOpenInteractiveChallenges(now);
+    const existing = this.getInteractiveChallenge(challengeId);
+    if (existing?.status === 'expired') return existing;
+    const changed = this.db.prepare(`
+      UPDATE game_interactive_challenges
+      SET status = 'expired', updated_at = ?
+      WHERE challenge_id = ? AND status = 'open' AND expires_at_ms <= ?
+    `).run(now, Number(challengeId), now).changes;
+    return changed ? this.getInteractiveChallenge(challengeId) : null;
+  }
+
+  invalidateInteractiveChallenge(challengeId, now = Date.now()) {
+    const changed = this.db.prepare(`
+      UPDATE game_interactive_challenges
+      SET status = 'expired', updated_at = ?
+      WHERE challenge_id = ? AND status = 'open'
+    `).run(now, Number(challengeId)).changes > 0;
+    return changed ? this.getInteractiveChallenge(challengeId) : null;
   }
 
   hasInteractiveMoveIdentity(sessionId, moveIdentity) {
@@ -1275,13 +1502,20 @@ class GameEngineDatabase {
   resolveLeaderboardIdentity(playerId) {
     const stableId = String(playerId);
     const identities = this.db.prepare(`
-      SELECT viewer_display_name FROM game_interactive_sessions
-      WHERE viewer_id = ?
+      SELECT viewer_id, viewer_display_name, participants_json FROM game_interactive_sessions
+      WHERE viewer_id = ? OR participants_json IS NOT NULL
       ORDER BY updated_at DESC, session_id DESC
     `).iterate(stableId);
     let username = stableId;
     for (const identity of identities) {
-      const displayName = String(identity.viewer_display_name || '');
+      let displayName = identity.viewer_id === stableId
+        ? String(identity.viewer_display_name || '')
+        : '';
+      if (!displayName) {
+        const participants = this._parseInteractiveJson(identity.participants_json, []);
+        const participant = participants.find(candidate => String(candidate?.id || '') === stableId);
+        displayName = String(participant?.displayName || '');
+      }
       if (!displayName.trim()) continue;
       username = displayName;
       break;

@@ -86,6 +86,59 @@ describe('Chat Handler Registration Fix', () => {
   });
 
   describe('When GCCE is Available', () => {
+    test('registers both fixed Connect4 matchmaking aliases alongside the configured alias', () => {
+      const registerCommandsForPlugin = jest.fn((pluginId, commands) => ({
+        registered: commands.map(command => command.name),
+        failed: []
+      }));
+      mockApi.pluginLoader = {
+        loadedPlugins: new Map([['gcce', { instance: {
+          registerCommandsForPlugin,
+          unregisterCommandsForPlugin: jest.fn()
+        } }]])
+      };
+      plugin.db = {
+        getGameConfig: jest.fn(gameType => gameType === 'connect4'
+          ? { ...plugin.defaultConfigs.connect4, chatCommand: 'customc4' }
+          : null),
+        getTriggers: jest.fn(() => [])
+      };
+
+      plugin.registerGCCECommands();
+
+      const commands = registerCommandsForPlugin.mock.calls[0][1].map(command => command.name);
+      expect(commands).toEqual(expect.arrayContaining(['connect4', '4gewinnt', 'customc4']));
+    });
+
+    test('does not register c4 twice when it is configured as a start alias', () => {
+      const registerCommandsForPlugin = jest.fn((pluginId, commands) => ({
+        registered: commands.map(command => command.name),
+        failed: []
+      }));
+      mockApi.pluginLoader = {
+        loadedPlugins: new Map([['gcce', { instance: {
+          registerCommandsForPlugin,
+          unregisterCommandsForPlugin: jest.fn()
+        } }]])
+      };
+      plugin.db = {
+        getGameConfig: jest.fn(gameType => gameType === 'connect4'
+          ? { ...plugin.defaultConfigs.connect4, chatCommand: 'c4' }
+          : null),
+        getTriggers: jest.fn(() => [])
+      };
+
+      plugin.registerGCCECommands();
+
+      const commands = registerCommandsForPlugin.mock.calls[0][1];
+      expect(commands.filter(command => command.name === 'c4')).toHaveLength(1);
+      const c4 = commands.find(command => command.name === 'c4');
+      expect(c4.minArgs).toBe(0);
+      plugin.handleConnect4StartCommand = jest.fn(() => ({ success: true }));
+      c4.handler([], { userId: 'viewer-one', username: 'Viewer One' });
+      expect(plugin.handleConnect4StartCommand).toHaveBeenCalled();
+    });
+
     test('should leave prefixed chat commands to GCCE', () => {
       // Setup GCCE as available
       mockApi.pluginLoader = {

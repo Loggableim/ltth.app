@@ -548,4 +548,133 @@ describe('GameEngineDatabase interactive persistence', () => {
     expect(database.resolveLeaderboardIdentity(playerId)).toEqual({ playerId, username: playerId });
     expect(database.getELOLeaderboard('connect4', 10)[0]).toMatchObject({ playerId, username: playerId });
   });
+
+  test('persists one open Connect4 challenge and atomically records its eligible claimant', () => {
+    const opened = database.createInteractiveChallenge({
+      gameType: 'connect4',
+      openerId: 'opener-1',
+      openerDisplayName: 'Opener One',
+      openerAvatarSource: '/api/game-engine/avatar?url=https%3A%2F%2Fexample.com%2Fopener.png',
+      expiresAtMs: 103000,
+      createdAt: 100000
+    });
+
+    expect(opened).toMatchObject({
+      gameType: 'connect4',
+      openerId: 'opener-1',
+      openerDisplayName: 'Opener One',
+      openerAvatarSource: '/api/game-engine/avatar?url=https%3A%2F%2Fexample.com%2Fopener.png',
+      expiresAtMs: 103000,
+      status: 'open'
+    });
+    expect(database.getOpenInteractiveChallenge(101000)).toMatchObject({ challengeId: opened.challengeId });
+    expect(() => database.createInteractiveChallenge({
+      gameType: 'connect4',
+      openerId: 'other',
+      openerDisplayName: 'Other',
+      openerAvatarSource: '',
+      expiresAtMs: 104000,
+      createdAt: 100001
+    })).toThrow(/open/i);
+
+    expect(database.claimInteractiveChallenge(opened.challengeId, {
+      participantId: 'acceptor-2',
+      participantDisplayName: 'Acceptor Two',
+      participantAvatarSource: '/api/game-engine/avatar?url=https%3A%2F%2Fexample.com%2Facceptor.png'
+    }, 102000)).toMatchObject({
+      status: 'claimed',
+      claimedById: 'acceptor-2',
+      claimedByDisplayName: 'Acceptor Two'
+    });
+    expect(database.getOpenInteractiveChallenge(102000)).toBeNull();
+  });
+
+  test('expires an unclaimed interactive challenge without allowing recovery to revive it', () => {
+    const opened = database.createInteractiveChallenge({
+      gameType: 'connect4',
+      openerId: 'slow-opener',
+      openerDisplayName: 'Slow Opener',
+      openerAvatarSource: '',
+      expiresAtMs: 101000,
+      createdAt: 100000
+    });
+
+    expect(database.expireInteractiveChallenge(opened.challengeId, 101000)).toMatchObject({
+      challengeId: opened.challengeId,
+      status: 'expired'
+    });
+    expect(database.getOpenInteractiveChallenge(101001)).toBeNull();
+    expect(database.claimInteractiveChallenge(opened.challengeId, {
+      participantId: 'late-viewer',
+      participantDisplayName: 'Late Viewer'
+    }, 101001)).toBeNull();
+  });
+
+  test('persists participant identities and the active turn alongside legacy viewer fields', () => {
+    database.createInteractiveState(session({
+      participantIds: ['viewer-41', 'viewer-42'],
+      participants: [
+        { id: 'viewer-41', displayName: 'Viewer 41', avatarSource: '/api/game-engine/avatar?url=one' },
+        { id: 'viewer-42', displayName: 'Viewer 42', avatarSource: '' }
+      ],
+      turnPlayerId: 'viewer-42'
+    }));
+
+    expect(database.getInteractiveState(41)).toMatchObject({
+      viewerId: 'viewer-41',
+      viewerDisplayName: 'Viewer 41',
+      participantIds: ['viewer-41', 'viewer-42'],
+      participants: [
+        expect.objectContaining({ id: 'viewer-41', displayName: 'Viewer 41' }),
+        expect.objectContaining({ id: 'viewer-42', displayName: 'Viewer 42' })
+      ],
+      turnPlayerId: 'viewer-42'
+    });
+  });
+
+  test('resolves a challenger display name from persisted interactive participants', () => {
+    const challengerId = '7446102145268843555';
+    const sessionId = database.createSession('connect4', 'opener-1', 'viewer', 'command', 'connect4');
+    database.addPlayer2(sessionId, challengerId, 'viewer');
+    database.endSession(sessionId, challengerId, { board: [[2]] }, 'win');
+    database.createInteractiveState(session({
+      sessionId,
+      viewerId: 'opener-1',
+      viewerDisplayName: 'Opener One',
+      participantIds: ['opener-1', challengerId],
+      participants: [
+        { id: 'opener-1', displayName: 'Opener One', role: 'viewer', avatarSource: '' },
+        { id: challengerId, displayName: 'Challenger Two', role: 'viewer', avatarSource: '' }
+      ],
+      turnPlayerId: challengerId
+    }));
+    database.updatePlayerStats(challengerId, 'connect4', true, false, false, 10);
+
+    expect(database.resolveLeaderboardIdentity(challengerId)).toEqual({
+      playerId: challengerId,
+      username: 'Challenger Two'
+    });
+  });
+
+  test('derives the streamer as active player when a host turn has no stored turn-player identity', () => {
+    database.createInteractiveState(session({
+      turnRole: 'host',
+      participantIds: ['viewer-41', 'streamer'],
+      participants: [
+        { id: 'viewer-41', displayName: 'Viewer 41', role: 'viewer', avatarSource: '' },
+        { id: 'streamer', displayName: 'Host', role: 'host', avatarSource: '' }
+      ],
+      turnPlayerId: null,
+      state: {
+        currentPlayer: 1,
+        player1: { username: 'streamer', role: 'streamer' },
+        player2: { username: 'viewer-41', role: 'viewer' }
+      }
+    }));
+
+    expect(database.getInteractiveState(41)).toMatchObject({
+      turnRole: 'host',
+      turnPlayerId: 'streamer'
+    });
+  });
 });

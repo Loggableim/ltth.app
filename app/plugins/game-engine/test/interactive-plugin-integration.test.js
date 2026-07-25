@@ -200,6 +200,25 @@ describe('GameEnginePlugin interactive controller integration', () => {
     expect(result).toMatchObject({ success: true, displayOverlay: true });
   });
 
+  test('persists a two-viewer legacy move under the active participant identity', () => {
+    const { plugin } = createPlugin();
+    plugin.db = { saveMove: jest.fn() };
+    plugin._emitInteractiveLegacyEvent('move', {
+      session: { sessionId: 8, gameType: 'connect4', viewerId: 'viewer-one', adapter: { getState: () => ({}) } },
+      actorRole: 'viewer',
+      actorId: 'viewer-two',
+      actorDisplayName: 'Viewer Two',
+      result: { move: { column: 'B', moveNumber: 2 } }
+    });
+
+    expect(plugin.db.saveMove).toHaveBeenCalledWith(
+      8,
+      'viewer-two',
+      { column: 'B', moveNumber: 2 },
+      2
+    );
+  });
+
   test('rejects invalid Connect4 configuration with a stable error code', () => {
     const { plugin, routes } = createPlugin();
     plugin.db = {
@@ -961,5 +980,235 @@ describe('GameEnginePlugin interactive controller integration', () => {
     expect(plugin.interactiveController).toBeNull();
     expect(plugin.endGame).not.toHaveBeenCalledWith(20, null, 'plugin_shutdown');
     expect(plugin.activeSessions.has(20)).toBe(false);
+  });
+
+  test.each(['connect4', '!connect4', '/connect4', '4gewinnt', '!4gewinnt', '/4gewinnt'])(
+    'routes the fixed Connect4 matchmaking alias %s before generic chat triggers',
+    alias => {
+      const { plugin } = createPlugin();
+      plugin.db = {
+        getGameConfig: jest.fn(() => null),
+        getTriggers: jest.fn(() => [{ trigger_type: 'command', trigger_value: alias, game_type: 'plinko' }])
+      };
+      plugin.wheelGame = { findWheelByChatCommand: jest.fn(() => null) };
+      plugin.slotGame = { findMachineByChatCommand: jest.fn(() => null) };
+      plugin.handleConnect4StartCommand = jest.fn();
+      plugin.handleGameStart = jest.fn();
+
+      plugin.handleChatCommand({
+        uniqueId: 'viewer-one',
+        nickname: 'Viewer One',
+        profilePictureUrl: 'https://p16-sign-va.tiktokcdn.com/avatar.webp',
+        comment: alias,
+        msgId: `fixed-${alias}`
+      });
+
+      expect(plugin.handleConnect4StartCommand).toHaveBeenCalledWith([], expect.objectContaining({
+        userId: 'viewer-one',
+        nickname: 'Viewer One',
+        profilePictureUrl: 'https://p16-sign-va.tiktokcdn.com/avatar.webp'
+      }));
+      expect(plugin.handleGameStart).not.toHaveBeenCalled();
+    }
+  );
+
+  test('opens a persistent Connect4 matchmaking challenge with a same-origin avatar source', async () => {
+    const { plugin } = createPlugin();
+    plugin.interactiveController = {
+      recoverConnect4Challenge: jest.fn(() => null),
+      openConnect4Challenge: jest.fn(() => ({
+        success: true,
+        challenge: { challengeId: 41, expiresAtMs: Date.now() + 30000 }
+      }))
+    };
+
+    const result = await plugin.handleConnect4StartCommand([], {
+      userId: 'viewer-one',
+      username: 'Viewer One',
+      profilePictureUrl: 'https://p16-sign-va.tiktokcdn.com/avatar.webp'
+    });
+
+    expect(result).toMatchObject({ success: true, challenge: true });
+    expect(plugin.interactiveController.openConnect4Challenge).toHaveBeenCalledWith({
+      openerId: 'viewer-one',
+      openerDisplayName: 'Viewer One',
+      openerAvatarSource: expect.stringMatching(/^\/api\/game-engine\/avatar\?url=/)
+    });
+  });
+
+  test('accepts the first eligible Connect4 challenger and starts a two-viewer game', async () => {
+    const { plugin } = createPlugin();
+    plugin.interactiveController = {
+      recoverConnect4Challenge: jest.fn(() => ({
+        challengeId: 41,
+        status: 'open',
+        openerId: 'viewer-one',
+        openerDisplayName: 'Viewer One',
+        openerAvatarSource: '/api/game-engine/avatar?url=one'
+      })),
+      acceptAndStartConnect4Challenge: jest.fn(() => ({ success: true, started: true, sessionId: 77 }))
+    };
+
+    const result = await plugin.handleConnect4StartCommand([], {
+      userId: 'viewer-two',
+      username: 'Viewer Two',
+      profilePictureUrl: 'https://p16-sign-va.tiktokcdn.com/avatar.webp'
+    });
+
+    expect(result).toMatchObject({ success: true, started: true, sessionId: 77 });
+    expect(plugin.interactiveController.acceptAndStartConnect4Challenge).toHaveBeenCalledWith(expect.objectContaining({
+      challengeId: 41,
+      participantId: 'viewer-two'
+    }));
+  });
+
+  test('keeps a configured bare c4 start alias distinct from c4 column moves in fallback chat', () => {
+    const { plugin } = createPlugin();
+    plugin.db = {
+      getGameConfig: jest.fn(gameType => gameType === 'connect4'
+        ? { ...plugin.defaultConfigs.connect4, chatCommand: 'c4' }
+        : null),
+      getTriggers: jest.fn(() => [])
+    };
+    plugin.wheelGame = { findWheelByChatCommand: jest.fn(() => null) };
+    plugin.slotGame = { findMachineByChatCommand: jest.fn(() => null) };
+    plugin.handleConnect4StartCommand = jest.fn();
+    plugin.handleViewerMove = jest.fn();
+
+    plugin.handleChatCommand({ uniqueId: 'viewer-one', nickname: 'Viewer One', comment: 'c4' });
+    plugin.handleChatCommand({ uniqueId: 'viewer-one', nickname: 'Viewer One', comment: 'c4 A' });
+
+    expect(plugin.handleConnect4StartCommand).toHaveBeenCalledTimes(1);
+    expect(plugin.handleViewerMove).toHaveBeenCalledWith(
+      'viewer-one',
+      'Viewer One',
+      'connect4',
+      'A',
+      null
+    );
+  });
+
+  test('keeps the legacy Arena avatar route while registering the general avatar proxy', () => {
+    const { plugin, routes } = createPlugin();
+    plugin.registerRoutes();
+
+    expect(routes.some(route => route.path === '/api/game-engine/arena/avatar')).toBe(true);
+    expect(routes.some(route => route.path === '/api/game-engine/avatar')).toBe(true);
+  });
+
+  test('locks the actual timed-out viewer in a two-viewer Connect4 session', () => {
+    const { plugin, io } = createPlugin();
+    plugin.db = {
+      setGamePlayerLockout: jest.fn(() => ({
+        reason: 'viewer_timeout',
+        expiresAt: Date.now() + 86400000,
+        remainingMs: 86400000
+      }))
+    };
+
+    plugin._applyViewerTimeoutLockout({
+      reason: 'viewer_timeout',
+      viewerId: 'viewer-one',
+      timedOutPlayerId: 'viewer-two',
+      participants: [
+        { id: 'viewer-one', displayName: 'Viewer One' },
+        { id: 'viewer-two', displayName: 'Viewer Two' }
+      ]
+    });
+
+    expect(plugin.db.setGamePlayerLockout).toHaveBeenCalledWith('viewer-two', 'viewer_timeout', 86400000);
+    expect(io.emit).toHaveBeenCalledWith('game-engine:player-lockout', expect.objectContaining({
+      username: 'viewer-two',
+      nickname: 'Viewer Two'
+    }));
+  });
+
+  test('keeps the opener avatar when a matchmaking challenge falls back to the streamer', () => {
+    const { plugin } = createPlugin();
+    plugin.db = {
+      createSession: jest.fn(() => 91),
+      addPlayer2: jest.fn()
+    };
+    const avatarSource = '/api/game-engine/avatar?url=https%3A%2F%2Fp16.tiktokcdn.com%2Fopener.webp';
+
+    const created = plugin._createInteractiveGame({
+      gameType: 'connect4',
+      viewerId: 'opener',
+      viewerDisplayName: 'Opener',
+      hostDisplayName: 'Host',
+      participants: [
+        { id: 'opener', displayName: 'Opener', role: 'viewer', avatarSource },
+        { id: 'streamer', displayName: 'Host', role: 'host', avatarSource: '' }
+      ],
+      config: { streamerRole: 'player2', player1Color: '#f00', player2Color: '#ff0' },
+      triggerType: 'matchmaking_timeout',
+      triggerValue: 'connect4'
+    });
+
+    expect(created.game.player1).toMatchObject({ username: 'opener', avatarSource });
+    expect(created.game.player2).toMatchObject({ username: 'streamer', avatarSource: '' });
+  });
+
+  test('expires old matchmaking chat identities while still suppressing a duplicate event', () => {
+    const { plugin } = createPlugin();
+    jest.spyOn(Date, 'now').mockReturnValue(1000);
+    expect(plugin._isDuplicateConnect4MatchmakingEvent({ msgId: 'same' })).toBe(false);
+    expect(plugin._isDuplicateConnect4MatchmakingEvent({ msgId: 'same' })).toBe(true);
+    Date.now.mockReturnValue(62001);
+
+    expect(plugin._isDuplicateConnect4MatchmakingEvent({ msgId: 'fresh' })).toBe(false);
+    expect(plugin.recentConnect4MatchmakingEvents.has('chat:same')).toBe(false);
+    Date.now.mockRestore();
+  });
+
+  test('keeps a recovered unexpired challenge scheduled after plugin reload', () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(1000000);
+    const { plugin } = createPlugin();
+    const challenge = {
+      challengeId: 71,
+      status: 'open',
+      openerId: 'reload-opener',
+      openerDisplayName: 'Reload Opener',
+      expiresAtMs: 1030000
+    };
+    jest.spyOn(plugin, '_scheduleConnect4MatchmakingExpiry').mockImplementation(() => {});
+    plugin._recoverConnect4MatchmakingChallenge(challenge);
+
+    expect(plugin._scheduleConnect4MatchmakingExpiry).toHaveBeenCalledWith(challenge);
+    jest.useRealTimers();
+  });
+
+  test('starts streamer fallback for an elapsed open challenge during plugin reload recovery', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(1040000);
+    const { plugin } = createPlugin();
+    plugin.interactiveController = {
+      expireConnect4Challenge: jest.fn(() => ({ success: true })),
+      startMatch: jest.fn(() => ({ success: true, sessionId: 72 }))
+    };
+    plugin._resolveHostDisplayName = jest.fn(() => 'Reload Host');
+    const challenge = {
+      challengeId: 72,
+      status: 'open',
+      openerId: 'reload-opener',
+      openerDisplayName: 'Reload Opener',
+      openerAvatarSource: '/api/game-engine/avatar?url=opener',
+      expiresAtMs: 1030000
+    };
+
+    await expect(plugin._recoverConnect4MatchmakingChallenge(challenge))
+      .resolves.toMatchObject({ success: true, sessionId: 72 });
+    expect(plugin.interactiveController.expireConnect4Challenge).toHaveBeenCalledWith(72);
+    expect(plugin.interactiveController.startMatch).toHaveBeenCalledWith(expect.objectContaining({
+      gameType: 'connect4',
+      viewerId: 'reload-opener',
+      participants: [
+        expect.objectContaining({ id: 'reload-opener', role: 'viewer' }),
+        expect.objectContaining({ id: 'streamer', displayName: 'Reload Host', role: 'host' })
+      ],
+      triggerType: 'matchmaking_timeout'
+    }));
+    jest.useRealTimers();
   });
 });
