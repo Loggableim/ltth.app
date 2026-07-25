@@ -4523,7 +4523,7 @@ class GameEnginePlugin {
         },
         ...connect4StartCommands.map(commandName => ({
           name: commandName,
-          description: 'Open or join a Connect4 viewer challenge',
+          description: 'Start or join a Connect4 viewer challenge',
           syntax: `/${commandName}`,
           permission: 'all',
           enabled: true,
@@ -5736,7 +5736,15 @@ class GameEnginePlugin {
       const controller = this.interactiveController;
       if (!controller) {
         const result = this.handleGameStart('connect4', userId, nickname, 'command', `/${this.getConnect4StartCommandName()}`);
-        return { ...result, displayOverlay: true };
+        return {
+          ...result,
+          message: result?.message || (result?.success
+            ? 'Game started.'
+            : result?.error === 'interactive_session_limit'
+              ? 'The interactive game limit is currently reached.'
+              : 'Failed to start game.'),
+          displayOverlay: true
+        };
       }
 
       const avatarSource = this._getAvatarProxyPath(context.profilePictureUrl || rawData.profilePictureUrl || '');

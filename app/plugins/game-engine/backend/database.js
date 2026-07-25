@@ -942,11 +942,12 @@ class GameEngineDatabase {
   }
 
   expireOpenInteractiveChallenges(now = Date.now()) {
-    return this.db.prepare(`
+    const result = this.db.prepare(`
       UPDATE game_interactive_challenges
       SET status = 'expired', updated_at = ?
       WHERE status = 'open' AND expires_at_ms <= ?
-    `).run(now, now).changes;
+    `).run(now, now);
+    return Number(result?.changes) || 0;
   }
 
   getOpenInteractiveChallenge(now = Date.now()) {
