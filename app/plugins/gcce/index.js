@@ -91,6 +91,11 @@ class GlobalChatCommandEngine {
         
         // Built-in commands
         this.builtInCommands = [];
+
+        // Plugin-scoped raw responses are intentionally separate from commands.
+        // They are used for short, state-gated game inputs such as A/B/C and
+        // never consume ordinary chat unless the owning plugin claims them.
+        this.rawResponseHandlers = new Map();
     }
 
     /**
@@ -1458,9 +1463,6 @@ class GlobalChatCommandEngine {
             const message = data.comment || data.message;
             if (!message) return;
 
-            // Check if it's a command
-            if (!this.parser.isCommand(message)) return;
-
             // Build enriched context with user data
             const context = {
                 userId: data.uniqueId || data.userId,
@@ -1519,6 +1521,12 @@ class GlobalChatCommandEngine {
                     }
                 }
             }
+
+            if (await this.dispatchRawPluginResponse(message, context)) return;
+
+            // Check if it's a command. Raw handlers above can safely inspect all
+            // chat, but only a handler that explicitly claims an input consumes it.
+            if (!this.parser.isCommand(message)) return;
 
             // Broadcast command input to overlay
             if (this.pluginConfig.enableOverlayMessages) {
@@ -1991,6 +1999,58 @@ class GlobalChatCommandEngine {
     }
 
     /**
+     * Register a plugin-scoped handler for short raw chat responses. The handler
+     * receives every chat message and must return { handled: true } to consume it.
+     * This deliberately keeps normal command parsing intact for unclaimed input.
+     * @param {string} pluginId - Stable plugin ID
+     * @param {Function} handler - Async or sync raw response handler
+     * @returns {{pluginId: string, registered: boolean}}
+     */
+    registerRawResponseHandlerForPlugin(pluginId, handler) {
+        if (typeof pluginId !== 'string' || !pluginId.trim()) {
+            throw new Error('pluginId is required for raw response registration');
+        }
+        if (typeof handler !== 'function') {
+            throw new Error('Raw response handler must be a function');
+        }
+        if (!this.rawResponseHandlers) this.rawResponseHandlers = new Map();
+        this.rawResponseHandlers.set(pluginId, handler);
+        this.api.log(`[GCCE] Plugin ${pluginId} registered a raw response handler`, 'debug');
+        return { pluginId, registered: true };
+    }
+
+    /**
+     * Remove a plugin's raw response handler. Safe to call repeatedly during
+     * reload and unload lifecycle transitions.
+     * @param {string} pluginId - Stable plugin ID
+     * @returns {boolean} Whether a handler was removed
+     */
+    unregisterRawResponseHandlerForPlugin(pluginId) {
+        return this.rawResponseHandlers?.delete(pluginId) || false;
+    }
+
+    /**
+     * Dispatch raw chat to plugin handlers in registration order. A faulty
+     * plugin must not make GCCE stop processing normal commands.
+     * @param {string} message - Original chat message
+     * @param {Object} context - Enriched chat context
+     * @returns {Promise<boolean>} true only when a handler claimed the input
+     */
+    async dispatchRawPluginResponse(message, context) {
+        if (!this.rawResponseHandlers?.size) return false;
+
+        for (const [pluginId, handler] of this.rawResponseHandlers) {
+            try {
+                const result = await handler({ message, context });
+                if (result?.handled === true) return true;
+            } catch (error) {
+                this.api.log(`[GCCE] Raw response handler for ${pluginId} failed: ${error.message}`, 'error');
+            }
+        }
+        return false;
+    }
+
+    /**
      * Start periodic cleanup timer
      */
     startCleanupTimer() {
@@ -2027,6 +2087,8 @@ class GlobalChatCommandEngine {
         if (this.registry) {
             this.registry.clear();
         }
+
+        this.rawResponseHandlers?.clear();
 
         this.api.log('[GCCE] Global Chat Command Engine shut down successfully', 'info');
     }

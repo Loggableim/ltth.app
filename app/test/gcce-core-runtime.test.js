@@ -142,6 +142,79 @@ describe('GCCE core runtime', () => {
     await gcce.destroy();
   });
 
+  test('lets a plugin consume a claimed raw response without parsing it as a command', async () => {
+    const { gcce } = await createInitializedGCCE({
+      gcce_config: {
+        commandPrefix: '!',
+        enableOverlayMessages: false
+      }
+    });
+    const rawHandler = jest.fn(async ({ message, context }) => {
+      expect(message).toBe('A');
+      expect(context).toMatchObject({
+        userId: 'viewer-a',
+        username: 'Viewer A'
+      });
+      return { handled: true };
+    });
+    const parse = jest.spyOn(gcce.parser, 'parse');
+
+    expect(gcce.registerRawResponseHandlerForPlugin('streamalchemy', rawHandler)).toEqual({
+      pluginId: 'streamalchemy',
+      registered: true
+    });
+
+    await gcce.handleChatMessage({
+      comment: 'A',
+      uniqueId: 'viewer-a',
+      nickname: 'Viewer A'
+    });
+
+    expect(rawHandler).toHaveBeenCalledTimes(1);
+    expect(parse).not.toHaveBeenCalled();
+    expect(gcce.auditLog.getRecentLogs(1)).toEqual([]);
+
+    expect(gcce.unregisterRawResponseHandlerForPlugin('streamalchemy')).toBe(true);
+    await gcce.handleChatMessage({
+      comment: 'A',
+      uniqueId: 'viewer-a',
+      nickname: 'Viewer A'
+    });
+    expect(rawHandler).toHaveBeenCalledTimes(1);
+
+    await gcce.destroy();
+  });
+
+  test('leaves unclaimed raw responses on the normal command path', async () => {
+    const { gcce } = await createInitializedGCCE({
+      gcce_config: {
+        commandPrefix: '!',
+        enableOverlayMessages: false
+      }
+    });
+    const rawHandler = jest.fn(() => ({ handled: false }));
+    const parse = jest.spyOn(gcce.parser, 'parse');
+    gcce.registerRawResponseHandlerForPlugin('streamalchemy', rawHandler);
+
+    await gcce.handleChatMessage({
+      comment: '!commands',
+      uniqueId: 'viewer-b',
+      nickname: 'Viewer B'
+    });
+
+    expect(rawHandler).toHaveBeenCalledWith(expect.objectContaining({
+      message: '!commands',
+      context: expect.objectContaining({ userId: 'viewer-b' })
+    }));
+    expect(parse).toHaveBeenCalledTimes(1);
+    expect(gcce.auditLog.getRecentLogs(1)[0]).toMatchObject({
+      command: 'commands',
+      success: true
+    });
+
+    await gcce.destroy();
+  });
+
   test('executes registered flow commands through the parser API', async () => {
     const { api, gcce } = await createInitializedGCCE();
 
