@@ -357,6 +357,161 @@ class InteractiveController {
     return rotated;
   }
 
+  startOrJoinConnect4Matchmaking({
+    participantId,
+    participantDisplayName,
+    participantAvatarSource = '',
+    triggerType = 'matchmaking_accept',
+    triggerValue = 'connect4'
+  } = {}) {
+    const normalizedId = String(participantId || '').trim();
+    const normalizedDisplayName = String(participantDisplayName || '').trim();
+    if (!normalizedId || !normalizedDisplayName) {
+      return { success: false, error: 'participant_identity_required' };
+    }
+    if (this.registry.getByParticipant(normalizedId)) {
+      return { success: false, error: 'active_session' };
+    }
+    if (!this._isValidAvatarSource(participantAvatarSource)) {
+      return { success: false, error: 'invalid_avatar_source' };
+    }
+
+    try {
+      const result = this.database.transaction(() => {
+        const now = this.now();
+        const duplicate = this.database.listOpenInteractiveChallenges(now)
+          .find(challenge => challenge.openerId === normalizedId);
+        if (duplicate) return { success: false, error: 'challenge_already_open' };
+
+        const challenge = this.database.claimOldestEligibleInteractiveChallenge({
+          participantId: normalizedId,
+          participantDisplayName: normalizedDisplayName,
+          participantAvatarSource
+        }, now);
+        if (!challenge) {
+          const opened = this.database.createInteractiveChallenge({
+            gameType: 'connect4',
+            openerId: normalizedId,
+            openerDisplayName: normalizedDisplayName,
+            openerAvatarSource: participantAvatarSource,
+            createdAt: now,
+            expiresAtMs: now + 30000
+          });
+          return { success: true, action: 'opened', challenge: opened };
+        }
+
+        const started = this.startMatch({
+          gameType: 'connect4',
+          viewerId: challenge.openerId,
+          viewerDisplayName: challenge.openerDisplayName,
+          participants: [
+            {
+              id: challenge.openerId,
+              displayName: challenge.openerDisplayName,
+              role: 'viewer',
+              avatarSource: challenge.openerAvatarSource || ''
+            },
+            {
+              id: challenge.claimedById,
+              displayName: challenge.claimedByDisplayName,
+              role: 'viewer',
+              avatarSource: challenge.claimedByAvatarSource || ''
+            }
+          ],
+          triggerType,
+          triggerValue
+        });
+        if (!started.success) throw new Error(started.error || 'interactive_match_start_failed');
+        return { success: true, action: 'matched', challenge, sessionId: started.sessionId };
+      });
+      if (result.success) this.emitState();
+      return result;
+    } catch (error) {
+      this.emitState();
+      return { success: false, error: error.message };
+    }
+  }
+
+  listRecoverableConnect4Challenges() {
+    const challenges = this.database.listRecoverableInteractiveChallenges?.() || [];
+    let invalidated = false;
+    const valid = challenges.filter(challenge => {
+      if (this._isValidAvatarSource(challenge.openerAvatarSource)) return true;
+      invalidated = Boolean(this.database.invalidateInteractiveChallenge?.(challenge.challengeId, this.now())) || invalidated;
+      this.logger?.warn?.(`[INTERACTIVE] Rejected unsafe Connect4 challenge avatar source for ${challenge.challengeId}`);
+      return false;
+    });
+    if (invalidated) this.emitState();
+    return valid;
+  }
+
+  getConnect4MatchmakingSnapshot() {
+    const openChallenges = this.database.listOpenInteractiveChallenges?.(this.now()) || [];
+    if (openChallenges.length === 0) return null;
+    const oldestChallenge = openChallenges[0];
+    return {
+      ...oldestChallenge,
+      pendingCount: openChallenges.length,
+      pendingChallenges: openChallenges.map(({
+        challengeId,
+        openerId,
+        openerDisplayName,
+        openerAvatarSource,
+        expiresAtMs,
+        createdAt
+      }) => ({
+        challengeId,
+        openerId,
+        openerDisplayName,
+        openerAvatarSource,
+        expiresAtMs,
+        createdAt
+      }))
+    };
+  }
+
+  beginExpiredConnect4Fallback(challengeId) {
+    const challenge = this.database.markInteractiveChallengeFallbackPending?.(challengeId, this.now());
+    if (!challenge) return { success: false, error: 'challenge_not_expired' };
+    this.emitState();
+    return { success: true, challenge };
+  }
+
+  startPendingConnect4Fallback(challengeId, hostDisplayName) {
+    const pending = this.database.getInteractiveChallenge(challengeId);
+    if (!pending || pending.status !== 'fallback_pending') {
+      return { success: false, error: 'fallback_not_pending' };
+    }
+    if (this.registry.list().length >= this._settings().maxConcurrentInteractiveSessions) {
+      return { success: false, error: 'interactive_session_limit' };
+    }
+    try {
+      const result = this.database.transaction(() => {
+        const challenge = this.database.getInteractiveChallenge(challengeId);
+        if (!challenge || challenge.status !== 'fallback_pending') {
+          return { success: false, error: 'fallback_not_pending' };
+        }
+        const started = this.startMatch({
+          gameType: 'connect4',
+          viewerId: challenge.openerId,
+          viewerDisplayName: challenge.openerDisplayName,
+          hostDisplayName,
+          triggerType: 'matchmaking_timeout',
+          triggerValue: 'connect4'
+        });
+        if (!started.success) return started;
+        const terminal = this.database.invalidateInteractiveChallenge(challengeId, this.now());
+        if (!terminal) throw new Error('fallback_terminal_update_failed');
+        return { success: true, action: 'fallback_started', challenge: terminal, sessionId: started.sessionId };
+      });
+      if (result.success) this.emitState();
+      return result;
+    } catch (error) {
+      this.emitState();
+      return { success: false, error: error.message };
+    }
+  }
+
   openConnect4Challenge({ openerId, openerDisplayName, openerAvatarSource = '' } = {}) {
     if (this.database.getOpenInteractiveChallenge(this.now())) {
       return { success: false, error: 'challenge_already_open' };
@@ -488,6 +643,7 @@ class InteractiveController {
     if (!this._isValidAvatarSource(challenge.openerAvatarSource)) {
       this.database.invalidateInteractiveChallenge?.(challenge.challengeId, this.now());
       this.logger?.warn?.(`[INTERACTIVE] Rejected unsafe Connect4 challenge avatar source for ${challenge.challengeId}`);
+      this.emitState();
       return null;
     }
     if (!includeExpired && Number(challenge.expiresAtMs) <= this.now()) return null;
@@ -498,7 +654,7 @@ class InteractiveController {
     let recovered = 0;
     const reconciled = this.database.reconcileOrphanedInteractiveSessions?.() || 0;
     const activeRows = this.database.getActiveInteractiveStates();
-    const recoveredChallenge = Boolean(this.recoverConnect4Challenge({ includeExpired: true }));
+    const recoveredChallenge = this.listRecoverableConnect4Challenges().length > 0;
     for (const row of activeRows) {
       try {
         if (row.recoveryError) throw new Error(row.recoveryError);
@@ -561,13 +717,13 @@ class InteractiveController {
     return { recovered, reconciled, recoveredChallenge, queueLength: this.queue.list().length };
   }
 
-  startMatch({ gameType, viewerId, viewerDisplayName, participants = null, timeControl = null, triggerType = 'command', triggerValue = null }) {
+  startMatch({ gameType, viewerId, viewerDisplayName, participants = null, timeControl = null, triggerType = 'command', triggerValue = null, hostDisplayName: requestedHostDisplayName = null }) {
     if (!['connect4', 'chess'].includes(gameType)) {
       return { success: false, error: 'unsupported_game_type' };
     }
     const stableViewerId = String(viewerId || '').trim();
     if (!stableViewerId) return { success: false, error: 'viewer_identity_required' };
-    const hostDisplayName = this.resolveHostName?.() || 'Streamer';
+    const hostDisplayName = String(requestedHostDisplayName || '').trim() || this.resolveHostName?.() || 'Streamer';
     let normalizedParticipants;
     try {
       normalizedParticipants = this._normalizeParticipants(
@@ -593,8 +749,7 @@ class InteractiveController {
 
     const settings = this._settings();
     this.registry.maxSessions = settings.maxConcurrentInteractiveSessions;
-    const openChallenge = this.database.getOpenInteractiveChallenge(this.now());
-    if (this.registry.list().length + (openChallenge ? 1 : 0) >= settings.maxConcurrentInteractiveSessions) {
+    if (this.registry.list().length >= settings.maxConcurrentInteractiveSessions) {
       return { success: false, error: 'interactive_session_limit' };
     }
 
@@ -1189,7 +1344,7 @@ class InteractiveController {
       display: this.router.snapshot(),
       hostQueue: this.queue.list(),
       activeSessions: this.registry.summaries(this.now()),
-      connect4Matchmaking: this.recoverConnect4Challenge(),
+      connect4Matchmaking: this.getConnect4MatchmakingSnapshot(),
       configuration: this._settings(),
       serverTimestamp: this.now()
     };

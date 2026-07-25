@@ -600,7 +600,7 @@ class GameEngineDatabase {
         opener_display_name TEXT NOT NULL,
         opener_avatar_source TEXT NOT NULL DEFAULT '',
         expires_at_ms INTEGER NOT NULL,
-        status TEXT NOT NULL CHECK(status IN ('open', 'claimed', 'expired')) DEFAULT 'open',
+        status TEXT NOT NULL CHECK(status IN ('open', 'claimed', 'expired', 'fallback_pending')) DEFAULT 'open',
         claimed_by_id TEXT,
         claimed_by_display_name TEXT,
         claimed_by_avatar_source TEXT,
@@ -608,9 +608,47 @@ class GameEngineDatabase {
         updated_at INTEGER NOT NULL
       );
 
-      CREATE UNIQUE INDEX IF NOT EXISTS game_interactive_one_open_challenge
-        ON game_interactive_challenges(game_type)
-        WHERE status = 'open';
+    `);
+
+    this.db.exec('DROP INDEX IF EXISTS game_interactive_one_open_challenge');
+    const challengeTable = this.db.prepare(`
+      SELECT sql FROM sqlite_master
+      WHERE type = 'table' AND name = 'game_interactive_challenges'
+    `).get();
+    if (!String(challengeTable?.sql || '').includes('fallback_pending')) {
+      this.db.transaction(() => {
+        this.db.exec(`
+          ALTER TABLE game_interactive_challenges RENAME TO game_interactive_challenges_legacy;
+          CREATE TABLE game_interactive_challenges (
+            challenge_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_type TEXT NOT NULL CHECK(game_type = 'connect4'),
+            opener_id TEXT NOT NULL,
+            opener_display_name TEXT NOT NULL,
+            opener_avatar_source TEXT NOT NULL DEFAULT '',
+            expires_at_ms INTEGER NOT NULL,
+            status TEXT NOT NULL CHECK(status IN ('open', 'claimed', 'expired', 'fallback_pending')) DEFAULT 'open',
+            claimed_by_id TEXT,
+            claimed_by_display_name TEXT,
+            claimed_by_avatar_source TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+          );
+          INSERT INTO game_interactive_challenges (
+            challenge_id, game_type, opener_id, opener_display_name, opener_avatar_source,
+            expires_at_ms, status, claimed_by_id, claimed_by_display_name,
+            claimed_by_avatar_source, created_at, updated_at
+          ) SELECT
+            challenge_id, game_type, opener_id, opener_display_name, opener_avatar_source,
+            expires_at_ms, status, claimed_by_id, claimed_by_display_name,
+            claimed_by_avatar_source, created_at, updated_at
+          FROM game_interactive_challenges_legacy;
+          DROP TABLE game_interactive_challenges_legacy;
+        `);
+      })();
+    }
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS game_interactive_open_fifo
+        ON game_interactive_challenges(game_type, status, expires_at_ms, challenge_id);
     `);
 
     const interactiveSessionColumns = this.db.prepare(`
@@ -914,9 +952,6 @@ class GameEngineDatabase {
     }
     return this.transaction(() => {
       this.expireOpenInteractiveChallenges(createdAt);
-      if (this.getOpenInteractiveChallenge(createdAt)) {
-        throw new Error('An open interactive challenge already exists');
-      }
       const info = this.db.prepare(`
         INSERT INTO game_interactive_challenges (
           game_type, opener_id, opener_display_name, opener_avatar_source,
@@ -960,6 +995,14 @@ class GameEngineDatabase {
     `).get(now));
   }
 
+  listOpenInteractiveChallenges(now = Date.now()) {
+    return this.db.prepare(`
+      SELECT * FROM game_interactive_challenges
+      WHERE status = 'open' AND expires_at_ms > ?
+      ORDER BY challenge_id ASC
+    `).all(now).map(row => this._mapInteractiveChallengeRow(row));
+  }
+
   getRecoverableInteractiveChallenge() {
     return this._mapInteractiveChallengeRow(this.db.prepare(`
       SELECT * FROM game_interactive_challenges
@@ -967,6 +1010,44 @@ class GameEngineDatabase {
       ORDER BY challenge_id ASC
       LIMIT 1
     `).get());
+  }
+
+  listRecoverableInteractiveChallenges() {
+    return this.db.prepare(`
+      SELECT * FROM game_interactive_challenges
+      WHERE status IN ('open', 'fallback_pending')
+      ORDER BY challenge_id ASC
+    `).all().map(row => this._mapInteractiveChallengeRow(row));
+  }
+
+  claimOldestEligibleInteractiveChallenge(participant, now = Date.now()) {
+    const participantId = String(participant?.participantId || '').trim();
+    const participantDisplayName = String(participant?.participantDisplayName || '').trim();
+    if (!participantId || !participantDisplayName) throw new Error('Interactive challenge participant identity is required');
+    return this.transaction(() => {
+      this.expireOpenInteractiveChallenges(now);
+      const challenge = this.db.prepare(`
+        SELECT * FROM game_interactive_challenges
+        WHERE status = 'open' AND expires_at_ms > ? AND opener_id <> ?
+        ORDER BY challenge_id ASC
+        LIMIT 1
+      `).get(now, participantId);
+      if (!challenge) return null;
+      const claimed = this.db.prepare(`
+        UPDATE game_interactive_challenges
+        SET status = 'claimed', claimed_by_id = ?, claimed_by_display_name = ?,
+            claimed_by_avatar_source = ?, updated_at = ?
+        WHERE challenge_id = ? AND status = 'open' AND expires_at_ms > ?
+      `).run(
+        participantId,
+        participantDisplayName,
+        String(participant.participantAvatarSource || ''),
+        now,
+        challenge.challenge_id,
+        now
+      );
+      return claimed.changes ? this.getInteractiveChallenge(challenge.challenge_id) : null;
+    });
   }
 
   claimInteractiveChallenge(challengeId, participant, now = Date.now()) {
@@ -1006,11 +1087,30 @@ class GameEngineDatabase {
     return changed ? this.getInteractiveChallenge(challengeId) : null;
   }
 
+  markInteractiveChallengeFallbackPending(challengeId, now = Date.now()) {
+    return this.transaction(() => {
+      const changed = this.db.prepare(`
+        UPDATE game_interactive_challenges
+        SET status = 'fallback_pending', updated_at = ?
+        WHERE challenge_id = ? AND status = 'open' AND expires_at_ms <= ?
+      `).run(now, Number(challengeId), now).changes;
+      return changed ? this.getInteractiveChallenge(challengeId) : null;
+    });
+  }
+
+  listPendingInteractiveChallengeFallbacks() {
+    return this.db.prepare(`
+      SELECT * FROM game_interactive_challenges
+      WHERE status = 'fallback_pending'
+      ORDER BY challenge_id ASC
+    `).all().map(row => this._mapInteractiveChallengeRow(row));
+  }
+
   invalidateInteractiveChallenge(challengeId, now = Date.now()) {
     const changed = this.db.prepare(`
       UPDATE game_interactive_challenges
       SET status = 'expired', updated_at = ?
-      WHERE challenge_id = ? AND status = 'open'
+      WHERE challenge_id = ? AND status IN ('open', 'fallback_pending')
     `).run(now, Number(challengeId)).changes > 0;
     return changed ? this.getInteractiveChallenge(challengeId) : null;
   }
