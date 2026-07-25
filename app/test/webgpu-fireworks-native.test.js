@@ -147,6 +147,32 @@ describe('WebGPU Fireworks native migration', () => {
     ]);
   });
 
+  test('fills legacy star explosions without thinning the existing outer contour', () => {
+    const engine = new WebGPUParticleEngine({ width: 1920, height: 1080 }, {});
+    engine.initialized = true;
+    engine.spawnExplosion({
+      shape: 'star',
+      count: 50,
+      colors: ['#ff0000'],
+      seed: 777
+    });
+
+    expect(engine.spawnQueue).toHaveLength(1);
+    expect(engine.spawnQueue[0]).toMatchObject({
+      shape: 3,
+      count: 72,
+      globalCount: 72,
+      seed: 777
+    });
+
+    const shader = engine._computeShader();
+    expect(shader).toContain('fn starBoundaryPoint(t: f32) -> vec2f');
+    expect(shader).toContain('let outerCount = min(count, max(10u, u32(floor(f32(count) * 0.7))));');
+    expect(shader).toContain('let interiorCount = max(1u, u32(floor(f32(fillCount) * 0.78)));');
+    expect(shader).toContain('let interiorRadius = 0.34 + hash(seed + fillIndex * 31u + 0x9e3779b9u) * 0.48;');
+    expect(shader).toContain('let coreRadius = 0.06 + hash(seed + coreIndex * 43u + 0x85ebca6bu) * 0.22;');
+  });
+
   test('clears stale device-loss reasons after a successful recovery status', () => {
     const WebGPUParticleEngine = require('../plugins/webgpu-fireworks/gpu/webgpu-particle-engine');
     const statuses = [];

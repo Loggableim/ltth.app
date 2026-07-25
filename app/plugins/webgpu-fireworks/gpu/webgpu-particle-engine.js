@@ -1272,7 +1272,8 @@ class WebGPUParticleEngine {
         };
         const [minimum, maximum] = ranges[shape] || [1, 220];
         const requested = Math.max(1, Math.floor(Number(options.count) || 50));
-        const count = Math.max(minimum, Math.min(requested, maximum));
+        const outlineCount = Math.max(minimum, Math.min(requested, maximum));
+        const count = shape === 3 ? Math.ceil(outlineCount / 0.7) : outlineCount;
         const palette = Array.isArray(options.colors) && options.colors.length ? options.colors : ['#ffffff'];
         const style = this._styleId(options.style);
         const seed = this._resolveSeed(options);
@@ -2866,6 +2867,16 @@ fn transFlagPoint(t: f32) -> vec2f {
   let wave = sin(local * 6.2831853 + f32(band) * 0.34) * 0.08;
   return clamp(vec2f(x, bandY + wave), vec2f(-1.0), vec2f(1.0));
 }
+fn starBoundaryPoint(t: f32) -> vec2f {
+  let edge = fract(t) * 10.0;
+  let vertex = u32(floor(edge)) % 10u;
+  let local = fract(edge);
+  let a0 = -1.5707963 + f32(vertex) * 0.6283185;
+  let a1 = -1.5707963 + f32((vertex + 1u) % 10u) * 0.6283185;
+  let r0 = select(0.42, 1.0, vertex % 2u == 0u);
+  let r1 = select(0.42, 1.0, (vertex + 1u) % 2u == 0u);
+  return mix(vec2f(cos(a0), sin(a0)) * r0, vec2f(cos(a1), sin(a1)) * r1, local);
+}
 fn shapeVelocity2(shape: u32, index: u32, count: u32, intensity: f32, seed: u32) -> vec2f {
   let t = f32(index) / max(1.0, f32(count));
   let jitter = (hash(seed + index * 17u) - 0.5) * 0.16;
@@ -2926,15 +2937,29 @@ fn shapeVelocity2(shape: u32, index: u32, count: u32, intensity: f32, seed: u32)
     return vec2f(cos(angle), sin(angle)) * (145.0 + hash(seed+index)*75.0) * intensity;
   }
   if (shape == 3u) {
-    let edge = t * 10.0;
-    let vertex = u32(floor(edge)) % 10u;
-    let local = fract(edge);
-    let a0 = -1.5707963 + f32(vertex) * 0.6283185;
-    let a1 = -1.5707963 + f32((vertex + 1u) % 10u) * 0.6283185;
-    let r0 = select(0.42, 1.0, vertex % 2u == 0u);
-    let r1 = select(0.42, 1.0, (vertex + 1u) % 2u == 0u);
-    let point = mix(vec2f(cos(a0), sin(a0))*r0, vec2f(cos(a1), sin(a1))*r1, local);
-    return point * 235.0 * intensity;
+    let outerCount = min(count, max(10u, u32(floor(f32(count) * 0.7))));
+    if (index < outerCount) {
+      let outlineT = f32(index) / max(1.0, f32(outerCount));
+      return starBoundaryPoint(outlineT) * 235.0 * intensity;
+    }
+    let fillIndex = index - outerCount;
+    let fillCount = max(1u, count - outerCount);
+    let interiorCount = max(1u, u32(floor(f32(fillCount) * 0.78)));
+    let starRotation = hash(seed ^ 0x27d4eb2fu);
+    if (fillIndex < interiorCount) {
+      let interiorT = fract(
+        (f32(fillIndex) + 0.5) / max(1.0, f32(interiorCount)) + starRotation
+      );
+      let interiorRadius = 0.34 + hash(seed + fillIndex * 31u + 0x9e3779b9u) * 0.48;
+      return starBoundaryPoint(interiorT) * 235.0 * intensity * interiorRadius;
+    }
+    let coreIndex = fillIndex - interiorCount;
+    let coreCount = max(1u, fillCount - interiorCount);
+    let coreT = fract(
+      (f32(coreIndex) + 0.5) / max(1.0, f32(coreCount)) + starRotation * 0.6180339
+    );
+    let coreRadius = 0.06 + hash(seed + coreIndex * 43u + 0x85ebca6bu) * 0.22;
+    return starBoundaryPoint(coreT) * 235.0 * intensity * coreRadius;
   }
   if (shape == 4u) {
     let angle = t * 6.2831853 + jitter;

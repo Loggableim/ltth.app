@@ -62,7 +62,7 @@ describe('WebGPU Fireworks quality parity', () => {
   test.each([
     ['heart', 1, 36, 19],
     ['paws', 2, 9, 36],
-    ['star', 3, 30, 19],
+    ['star', 3, 43, 19],
     ['ring', 4, 32, 16],
     ['spiral', 5, 14, 26]
   ])('%s keeps its own readable GPU sprite contract', (shape, shapeId, expectedCount, minimumSize) => {
