@@ -1,4 +1,5 @@
 const { randomUUID } = require('crypto');
+const { deterministicTemplate } = require('./catalog');
 
 class StreamMonstersDatabase {
   constructor(sqlite) {
@@ -44,6 +45,7 @@ class StreamMonstersDatabase {
         personality TEXT,
         visual_source TEXT NOT NULL DEFAULT 'legacy',
         visual_key TEXT,
+        template_id TEXT,
         is_selected INTEGER NOT NULL DEFAULT 0,
         battle_count INTEGER NOT NULL DEFAULT 0,
         win_streak INTEGER NOT NULL DEFAULT 0,
@@ -199,6 +201,7 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_monsters', 'personality', 'TEXT');
     this.ensureColumn('streammonsters_monsters', 'visual_source', "TEXT NOT NULL DEFAULT 'legacy'");
     this.ensureColumn('streammonsters_monsters', 'visual_key', 'TEXT');
+    this.ensureColumn('streammonsters_monsters', 'template_id', 'TEXT');
     this.ensureColumn('streammonsters_monsters', 'battle_count', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_monsters', 'win_streak', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_monsters', 'unspent_stat_points', 'INTEGER NOT NULL DEFAULT 0');
@@ -211,6 +214,17 @@ class StreamMonstersDatabase {
       SET ready_at_ms = created_at_ms + hatch_duration_ms - boost_ms
       WHERE ready_at_ms IS NULL
     `).run();
+    const legacyMonsters = this.db.prepare(`
+      SELECT monster.monster_id, monster.element, egg.seed
+      FROM streammonsters_monsters monster
+      LEFT JOIN streammonsters_eggs egg ON egg.egg_id = monster.egg_id
+      WHERE monster.template_id IS NULL OR monster.template_id = ''
+    `).all();
+    const setTemplate = this.db.prepare('UPDATE streammonsters_monsters SET template_id = ? WHERE monster_id = ?');
+    this.db.transaction(rows => rows.forEach(row => {
+      const template = deterministicTemplate(row.element, row.seed || row.monster_id);
+      if (template) setTemplate.run(template.templateId, row.monster_id);
+    }))(legacyMonsters);
   }
 
   ensureColumn(table, column, definition) {
@@ -520,13 +534,13 @@ class StreamMonstersDatabase {
         INSERT INTO streammonsters_monsters (
           monster_id, user_id, egg_id, name, element, rarity, level, xp,
           stats_json, image_url, personality, visual_source, visual_key,
-          is_selected, created_at_ms
-        ) VALUES (?, ?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?)
+          template_id, is_selected, created_at_ms
+        ) VALUES (?, ?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         monsterId, egg.user_id, egg.egg_id, monster.name, egg.element, monster.rarity,
         JSON.stringify(monster.stats), monster.imageUrl || egg.image_url || null,
         monster.personality || 'Curious', monster.visualSource || egg.visual_source || 'legacy',
-        monster.visualKey || egg.visual_key || null, hasSelection ? 0 : 1, monster.createdAtMs
+        monster.visualKey || egg.visual_key || null, monster.templateId || null, hasSelection ? 0 : 1, monster.createdAtMs
       );
       this.db.prepare(`
         UPDATE streammonsters_eggs SET state = 'hatched', monster_id = ? WHERE egg_id = ?
@@ -580,6 +594,15 @@ class StreamMonstersDatabase {
 
   getBattle(battleId) {
     return this.db.prepare('SELECT * FROM streammonsters_battles WHERE battle_id = ?').get(battleId) || null;
+  }
+
+  updateBattleResult(battleId, result) {
+    this.db.prepare(`
+      UPDATE streammonsters_battles
+      SET winner_monster_id = ?, result_json = ?
+      WHERE battle_id = ?
+    `).run(result.winnerId, JSON.stringify(result), battleId);
+    return this.getBattle(battleId);
   }
 
   awardMonsterXp(monsterId, amount) {

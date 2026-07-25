@@ -56,10 +56,40 @@
     #round-dots { display:flex; justify-content:center; gap:8px; margin-top:14px; }
     #round-dots span { width:12px; height:12px; border:1px solid #7c6aa5; border-radius:50%; background:#181e34; }
     #round-dots span.active { background:var(--gold); box-shadow:0 0 16px #ffcf59; }
+    #battle { width:min(1180px,calc(100vw - 56px)); min-height:590px; padding:22px; overflow:hidden; }
+    #battle-effects { position:absolute; inset:0; width:100%; height:100%; opacity:.9; pointer-events:none; }
+    #battle-arena { position:relative; z-index:1; display:grid; grid-template-columns:minmax(0,1fr) 115px minmax(0,1fr); gap:14px; min-height:435px; align-items:end; }
+    .battle-fighter { position:relative; display:grid; grid-template-rows:auto minmax(250px,1fr) auto; min-height:420px; padding:14px; border:1px solid #556899; border-radius:24px; background:linear-gradient(145deg,#202c4cdd,#111a30d9); overflow:hidden; transition:transform .45s cubic-bezier(.2,.8,.2,1), filter .25s; }
+    .battle-fighter.right { background:linear-gradient(215deg,#42235bdd,#15192fd9); }
+    .battle-fighter.attack { transform:translateX(12%); filter:drop-shadow(0 0 26px var(--gold)); }
+    .battle-fighter.right.attack { transform:translateX(-12%); }
+    .battle-fighter.hit { animation:battle-hit .5s ease both; }
+    .battle-fighter.shielded::after { content:""; position:absolute; inset:8%; border:3px solid #61dfff; border-radius:50%; box-shadow:0 0 40px #61dfff99,inset 0 0 28px #61dfff44; animation:shield-pulse 1.1s ease both; }
+    @keyframes battle-hit { 35% { transform:translateX(-5%) rotate(-2deg); filter:brightness(2); } 100% { transform:none; } }
+    @keyframes shield-pulse { from { opacity:0; transform:scale(.65); } 45% { opacity:1; } to { opacity:0; transform:scale(1.15); } }
+    .battle-hud { display:grid; grid-template-columns:1fr auto; gap:7px; text-align:left; font-size:14px; font-weight:800; }
+    .battle-hud .battle-name { font-size:clamp(22px,2.5vw,34px); line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .battle-hud .battle-element { color:var(--cyan); font-size:12px; text-transform:uppercase; letter-spacing:.12em; }
+    .battle-art { width:min(100%,330px); height:280px; object-fit:contain; justify-self:center; align-self:center; filter:drop-shadow(0 20px 22px #000c); transition:transform .4s ease; }
+    .battle-hp, .battle-charge { display:grid; grid-template-columns:50px 1fr auto; gap:7px; align-items:center; margin-top:6px; color:#dce8ff; font-size:12px; }
+    .battle-meter { height:12px; overflow:hidden; border:1px solid #5b6d92; border-radius:99px; background:#080d18; }
+    .battle-meter i { display:block; width:100%; height:100%; transform-origin:left; background:linear-gradient(90deg,#62e5a9,#c4ff95); transition:transform .35s; }
+    .battle-charge .battle-meter i { background:linear-gradient(90deg,#5ed8ff,#b088ff,#ffd76f); }
+    #battle-center { align-self:center; display:grid; gap:15px; place-items:center; color:var(--gold); font-weight:900; }
+    #battle-center .vs { font-size:24px; text-shadow:0 0 20px #ffcf59; }
+    #battle-advantage { min-height:36px; color:var(--mint); font-size:13px; }
+    #battle-skill-panel { position:relative; z-index:2; display:grid; grid-template-columns:minmax(160px,.7fr) 1fr; gap:16px; align-items:center; padding-top:8px; }
+    #battle-detail { font-size:17px; text-align:left; }
+    #battle-skill-options { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; }
+    .battle-skill { min-height:82px; padding:10px; border:1px solid #657bab; border-radius:15px; background:#111a31e8; text-align:left; }
+    .battle-skill strong { display:block; color:var(--gold); font-size:15px; }
+    .battle-skill small { display:block; margin-top:3px; color:var(--muted); font-size:11px; }
+    .battle-skill.locked { border-color:var(--mint); box-shadow:0 0 22px #6ef1b855; }
+    .battle-skill.disabled { opacity:.42; filter:grayscale(1); }
     #chat-card {
-      position:absolute; left:34px; bottom:34px; max-width:min(460px,calc(100vw - 68px)); padding:12px 15px;
+      position:absolute; left:34px; bottom:34px; max-width:min(650px,calc(100vw - 68px)); padding:18px 22px;
       border:1px solid #3d6d75; border-radius:15px; color:#dffcff; background:#0d2429eb; box-shadow:0 16px 42px #0009;
-      opacity:0; transform:translateY(35px); transition:.28s;
+      opacity:0; transform:translateY(35px); transition:.28s; font-size:clamp(18px,2.1vw,28px); font-weight:800; line-height:1.25;
     }
     #chat-card.visible { opacity:1; transform:none; }
     #monster-collection, #monster-profile {
@@ -95,8 +125,19 @@
       #toast { top:104px; width:calc(100vw - 32px); }
       #card { right:16px; bottom:50px; grid-template-columns:1fr; width:calc(100vw - 32px); text-align:center; }
       #art-wrap { width:160px; height:160px; margin:auto; }
-      #battle { top:48%; width:calc(100vw - 32px); padding:22px 14px; }
-      #versus { gap:9px; font-size:21px; }
+      #battle { top:49%; width:calc(100vw - 24px); min-height:740px; padding:14px 10px; }
+      #battle-arena { grid-template-columns:1fr; grid-template-rows:1fr 58px 1fr; min-height:560px; gap:5px; }
+      .battle-fighter { grid-template-columns:118px 1fr; grid-template-rows:1fr; min-height:224px; padding:10px; }
+      .battle-fighter.right { grid-column:1; }
+      .battle-hud { grid-column:2; grid-row:1; align-self:start; }
+      .battle-art { width:116px; height:190px; grid-column:1; grid-row:1; }
+      #battle-center { grid-row:2; grid-column:1; grid-template-columns:auto 1fr; }
+      #battle-center .vs { font-size:18px; }
+      #battle-skill-panel { grid-template-columns:1fr; gap:8px; }
+      #battle-detail { text-align:center; font-size:15px; }
+      .battle-skill { min-height:66px; padding:7px; }
+      .battle-skill strong { font-size:12px; }
+      .battle-skill small { display:none; }
       #chat-card { left:16px; bottom:18px; max-width:calc(100vw - 32px); }
       #monster-collection, #monster-profile { bottom:26px; width:calc(100vw - 32px); padding:14px; }
       #collection-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
@@ -127,10 +168,30 @@
     </div>
   </section>
   <section id="battle">
+    <canvas id="battle-effects" aria-hidden="true"></canvas>
     <div id="battle-kicker">Collector Arena · Drei Runden</div>
-    <div id="versus"><span id="fighterA">Monster A</span><span class="vs">VS</span><span id="fighterB">Monster B</span></div>
+    <div id="battle-arena">
+      <article id="battle-fighter-a" class="battle-fighter left">
+        <div class="battle-hud"><strong id="fighterA" class="battle-name">Monster A</strong><span id="battle-element-a" class="battle-element">Element</span></div>
+        <img id="battle-art-a" class="battle-art" alt="">
+        <div>
+          <div class="battle-hp"><span>HP</span><div class="battle-meter"><i id="battle-hp-a"></i></div><b id="battle-hp-label-a">0/0</b></div>
+          <div class="battle-charge"><span>Special</span><div class="battle-meter"><i id="battle-charge-a"></i></div><b id="battle-charge-label-a">0%</b></div>
+        </div>
+      </article>
+      <div id="battle-center"><span class="vs">VS</span><span id="battle-advantage"></span></div>
+      <article id="battle-fighter-b" class="battle-fighter right">
+        <div class="battle-hud"><strong id="fighterB" class="battle-name">Monster B</strong><span id="battle-element-b" class="battle-element">Element</span></div>
+        <img id="battle-art-b" class="battle-art" alt="">
+        <div>
+          <div class="battle-hp"><span>HP</span><div class="battle-meter"><i id="battle-hp-b"></i></div><b id="battle-hp-label-b">0/0</b></div>
+          <div class="battle-charge"><span>Special</span><div class="battle-meter"><i id="battle-charge-b"></i></div><b id="battle-charge-label-b">0%</b></div>
+        </div>
+      </article>
+    </div>
     <div id="battle-detail">Die Arena wird vorbereitet …</div>
     <div id="round-dots"><span></span><span></span><span></span></div>
+    <div id="battle-skill-options"></div>
   </section>
   <section id="monster-collection" aria-live="polite">
     <div class="collection-head"><strong id="collection-title">Monster-Sammlung</strong><span id="collection-page"></span></div>
@@ -156,12 +217,26 @@
   const node = id => document.getElementById(id);
   const value = (input, fallback = '') => String(input ?? fallback);
   const rankLabel = rank => ({ Silver:'Silber', Crystal:'Kristall' }[rank] || value(rank,'Neuer Rang'));
+  const overlayLocale = (() => {
+    const locale = new URLSearchParams(location.search).get('lang') || window.localStorage?.getItem('app_locale') || document.documentElement.lang || 'de';
+    return ['de', 'en', 'es', 'fr'].includes(locale) ? locale : 'de';
+  })();
+  const BATTLE_COPY = {
+    de: { found:'Arena-Match gefunden. Wähle in 30 Sekunden mit {choose}.', rosterAuto:'Arena-Aufstellung gesperrt.', roster:'Arena-Monster gesperrt.', advantage:'Elementvorteil: {name}', even:'Elemente sind ausgeglichen', round:'Runde {round}: A Angriff, B Verteidigung, C Special.', auto:'{choice} wurde automatisch gewählt.', locked:'{viewer} sperrt {choice}.', action:'{name} nutzt {skill}.', done:'Runde {round} abgeschlossen.', knockout:'K.-o.!', xp:'Kampf-XP', victory:'Siegesbonus erhalten.', growth:'Jeder Kampf macht dein Monster stärker.', level:'Level Up!', reaches:'{name} erreicht Level {level}', chooseStat:'Wähle: 1 Vitalität, 2 Stärke, 3 Verteidigung oder 4 Agilität.', statPrompt:'Statpunkt: 1 Vitalität, 2 Stärke, 3 Verteidigung, 4 Agilität.', statAuto:'Stat automatisch verteilt', statChosen:'Statpunkt verteilt', expired:'Das Auswahlfenster ist abgelaufen.', selected:'Der Viewer hat diesen Punkt gewählt.', cancelled:'Arena-Reservierung vor Kampfbeginn abgebrochen.', restored:'Arena-Status nach Reconnect wiederhergestellt.' },
+    en: { found:'Arena match found. Use {choose} within 30 seconds.', rosterAuto:'Arena roster locked.', roster:'Arena monster locked.', advantage:'Element advantage: {name}', even:'Elements are even', round:'Round {round}: A attack, B defense, C special.', auto:'{choice} was chosen automatically.', locked:'{viewer} locks {choice}.', action:'{name} uses {skill}.', done:'Round {round} complete.', knockout:'Knockout!', xp:'Battle XP', victory:'Victory bonus applied.', growth:'Every battle grows your monster.', level:'Level Up!', reaches:'{name} reaches level {level}', chooseStat:'Choose: 1 Vitality, 2 Might, 3 Guard, or 4 Agility.', statPrompt:'Stat point: 1 Vitality, 2 Might, 3 Guard, 4 Agility.', statAuto:'Stat auto-assigned', statChosen:'Stat point assigned', expired:'The selection window expired.', selected:'The viewer selected this point.', cancelled:'Arena reservation cancelled before the battle started.', restored:'Arena state restored after reconnect.' },
+    es: { found:'Partida de arena encontrada. Usa {choose} en 30 segundos.', rosterAuto:'Alineacion de arena bloqueada.', roster:'Monstruo de arena bloqueado.', advantage:'Ventaja elemental: {name}', even:'Los elementos estan igualados', round:'Ronda {round}: A ataque, B defensa, C especial.', auto:'{choice} se eligio automaticamente.', locked:'{viewer} bloquea {choice}.', action:'{name} usa {skill}.', done:'Ronda {round} completada.', knockout:'K. O.!', xp:'XP de combate', victory:'Bonificacion de victoria aplicada.', growth:'Cada combate hace crecer a tu monstruo.', level:'Subida de nivel!', reaches:'{name} alcanza el nivel {level}', chooseStat:'Elige: 1 Vitalidad, 2 Fuerza, 3 Defensa o 4 Agilidad.', statPrompt:'Punto de estadistica: 1 Vitalidad, 2 Fuerza, 3 Defensa, 4 Agilidad.', statAuto:'Estadistica automatica', statChosen:'Punto de estadistica asignado', expired:'La ventana de seleccion termino.', selected:'El espectador eligio este punto.', cancelled:'Reserva de arena cancelada antes de empezar.', restored:'Estado de arena restaurado tras reconectar.' },
+    fr: { found:'Match d arene trouve. Utilisez {choose} dans les 30 secondes.', rosterAuto:'Composition d arene verrouillee.', roster:'Monstre d arene verrouille.', advantage:'Avantage elementaire : {name}', even:'Les elements sont a egalite', round:'Manche {round} : A attaque, B defense, C special.', auto:'{choice} a ete choisi automatiquement.', locked:'{viewer} verrouille {choice}.', action:'{name} utilise {skill}.', done:'Manche {round} terminee.', knockout:'K.-O. !', xp:'XP de combat', victory:'Bonus de victoire applique.', growth:'Chaque combat fait progresser votre monstre.', level:'Niveau superieur !', reaches:'{name} atteint le niveau {level}', chooseStat:'Choisissez : 1 Vitalite, 2 Force, 3 Defense ou 4 Agilite.', statPrompt:'Point de statistique : 1 Vitalite, 2 Force, 3 Defense, 4 Agilite.', statAuto:'Statistique automatique', statChosen:'Point de statistique attribue', expired:'La fenetre de selection a expire.', selected:'Le spectateur a choisi ce point.', cancelled:'Reservation d arene annulee avant le combat.', restored:'Etat de l arene restaure apres reconnexion.' }
+  };
+  const battleCopy = (key, values = {}) => String(BATTLE_COPY[overlayLocale]?.[key] || BATTLE_COPY.de[key] || key)
+    .replace(/\{(\w+)\}/g, (_, name) => values[name] ?? `{${name}}`);
   const itemName = item => value(item?.name || item?.gift_name || item?.giftName, 'Element-Ei');
   const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
-  const DEFAULT_BOTTOM_OVERLAY_DURATION_MS = 8_000;
-  const MIN_BOTTOM_OVERLAY_DURATION_MS = 4_000;
+  const DEFAULT_BOTTOM_OVERLAY_DURATION_MS = 12_000;
+  const MIN_BOTTOM_OVERLAY_DURATION_MS = 8_000;
   const MAX_BOTTOM_OVERLAY_DURATION_MS = 20_000;
   const eventQueue = [];
+  const criticalEventTypes = new Set(['egg_spawned', 'hatch_started', 'egg_hatched', 'battle_started', 'battle_skill_prompt', 'battle_action', 'battle_knockout', 'battle_completed']);
+  const lowerCardEventTypes = new Set(['hype_changed', 'gift_combo', 'chat_result', 'quest_completed', 'achievement_unlocked', 'season_rank_changed']);
   const chatCooldowns = new Map();
   const overlayViews = globalThis.StreamMonstersOverlayViews;
   let queueRunning = false;
@@ -169,6 +244,66 @@
   let battleIds = [null,null];
   let battleAdvantageName = '';
   let bottomOverlayDurationMs = DEFAULT_BOTTOM_OVERLAY_DURATION_MS;
+  let commandPrefix = '!';
+  const reducedMotion = Boolean(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
+  const battleEffects = (() => {
+    const canvas = node('battle-effects');
+    let mode = reducedMotion ? 'css' : 'pending';
+    let gpuDevice = null;
+    let gpuContext = null;
+    let context2d = null;
+    const colorFor = element => ({ Ember:'#ff7e62', Tide:'#55dcff', Grove:'#6ef1b8', Gale:'#d6e7ff', Volt:'#ffd76f', Lunar:'#c5a4ff' }[element] || '#a984ff');
+    const activate = async () => {
+      if (mode !== 'pending') return mode;
+      try {
+        if (navigator.gpu) {
+          const adapter = await navigator.gpu.requestAdapter();
+          gpuDevice = await adapter?.requestDevice();
+          gpuContext = canvas.getContext('webgpu');
+          if (gpuDevice && gpuContext) {
+            gpuContext.configure({ device: gpuDevice, format: navigator.gpu.getPreferredCanvasFormat(), alphaMode: 'premultiplied' });
+            gpuDevice.lost.then(() => { mode = 'css'; gpuDevice = null; gpuContext = null; });
+            mode = 'webgpu';
+            return mode;
+          }
+        }
+      } catch (_) { mode = 'css'; }
+      if (mode === 'pending') mode = 'canvas2d';
+      return mode;
+    };
+    const burst = async ({ element = 'Volt', strength = 1 } = {}) => {
+      const active = await activate();
+      if (active === 'webgpu' && gpuDevice && gpuContext) {
+        const encoder = gpuDevice.createCommandEncoder();
+        const pass = encoder.beginRenderPass({ colorAttachments: [{ view: gpuContext.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'store', clearValue: { r: .18, g: .11, b: .32, a: .22 } }] });
+        pass.end();
+        gpuDevice.queue.submit([encoder.finish()]);
+        return;
+      }
+      if (active === 'canvas2d') {
+        context2d ||= canvas.getContext('2d');
+        if (!context2d) return;
+        const width = canvas.width = canvas.clientWidth || 1100;
+        const height = canvas.height = canvas.clientHeight || 620;
+        const particles = Array.from({ length: 18 + Math.round(strength * 10) }, (_, index) => ({ x: width / 2, y: height / 2, dx: Math.sin(index * 2.4) * (2 + (index % 4)), dy: Math.cos(index * 1.7) * (2 + (index % 5)), life: 1 }));
+        const started = performance.now();
+        const draw = now => {
+          const elapsed = now - started;
+          context2d.clearRect(0, 0, width, height);
+          context2d.fillStyle = colorFor(element);
+          particles.forEach(particle => {
+            particle.x += particle.dx; particle.y += particle.dy; particle.life = Math.max(0, 1 - (elapsed / 700));
+            context2d.globalAlpha = particle.life;
+            context2d.beginPath(); context2d.arc(particle.x, particle.y, 3 + (particle.life * 6), 0, Math.PI * 2); context2d.fill();
+          });
+          context2d.globalAlpha = 1;
+          if (elapsed < 700 && globalThis.requestAnimationFrame) globalThis.requestAnimationFrame(draw);
+        };
+        if (globalThis.requestAnimationFrame) globalThis.requestAnimationFrame(draw);
+      }
+    };
+    return { burst, mode: () => mode };
+  })();
 
   const normalizeBottomOverlayDuration = input => Math.max(
     MIN_BOTTOM_OVERLAY_DURATION_MS,
@@ -206,14 +341,47 @@
     node('card').classList.remove('visible');
     await wait(350);
   };
-  const showBattle = async ({ left, right, detail, round = 0, winner = false }) => {
+  const setBattleFighter = (side, fighter = {}) => {
+    const suffix = side === 'a' ? 'a' : 'b';
+    const name = fighter.name || fighter.fighterName || (side === 'a' ? battleNames[0] : battleNames[1]);
+    const rawHp = Number(fighter.hp);
+    const maxHp = Math.max(1, Number(fighter.maxHp) || rawHp || 1);
+    const hp = Math.max(0, Number.isFinite(rawHp) ? rawHp : maxHp);
+    const charge = Math.max(0, Math.min(100, Number(fighter.charge) || 0));
+    node(`fighter${side === 'a' ? 'A' : 'B'}`).textContent = name;
+    node(`battle-element-${suffix}`).textContent = value(fighter.element, 'Element');
+    node(`battle-art-${suffix}`).src = fighter.imageUrl || fighter.image_url || '/plugins/streamalchemy/assets/branding/stream-monsters-icon.png';
+    node(`battle-art-${suffix}`).alt = name;
+    node(`battle-hp-${suffix}`).style.transform = `scaleX(${hp / maxHp})`;
+    node(`battle-hp-label-${suffix}`).textContent = `${hp}/${maxHp}`;
+    node(`battle-charge-${suffix}`).style.transform = `scaleX(${charge / 100})`;
+    node(`battle-charge-label-${suffix}`).textContent = `${charge}%`;
+  };
+  const setBattleSkills = (skills = {}, lockedChoice = null) => {
+    const root = node('battle-skill-options');
+    clear(root);
+    ['A', 'B', 'C'].forEach(choice => {
+      const skill = skills[choice] || { name: choice === 'A' ? 'Attack' : choice === 'B' ? 'Guard' : 'Special', description: '' };
+      const item = document.createElement('article');
+      item.className = `battle-skill${skill.available === false ? ' disabled' : ''}${lockedChoice === choice ? ' locked' : ''}`;
+      const title = document.createElement('strong');
+      title.textContent = `${choice} · ${skill.name}`;
+      const description = document.createElement('small');
+      description.textContent = skill.available === false ? 'Special lädt noch …' : value(skill.description);
+      item.append(title, description);
+      root.append(item);
+    });
+  };
+  const showBattle = async ({ left, right, fighters = null, detail, round = 0, winner = false, duration = 2600, keepVisible = false }) => {
     battleNames = [left || battleNames[0],right || battleNames[1]];
-    node('fighterA').textContent = battleNames[0];
-    node('fighterB').textContent = battleNames[1];
+    const fighterList = Array.isArray(fighters) ? fighters : [];
+    setBattleFighter('a', fighterList[0] || { name: battleNames[0] });
+    setBattleFighter('b', fighterList[1] || { name: battleNames[1] });
     node('battle-detail').textContent = detail;
     [...node('round-dots').children].forEach((dot,index) => dot.classList.toggle('active',index < round));
     node('battle').classList.add('visible');
-    await wait(winner ? 4300 : 2600);
+    if (keepVisible) return;
+    await wait(winner ? 4300 : duration);
     node('battle').classList.remove('visible');
     await wait(300);
   };
@@ -366,6 +534,105 @@
       charged:true,
       progress:100
     });
+    if (type === 'battle_snapshot') {
+      const fighters = Object.values(data?.battle?.fighters || {});
+      if (fighters.length === 2) showBattle({ left:fighters[0].name, right:fighters[1].name, fighters, detail:battleCopy('restored'), round:data?.battle?.roundNumber || 0, keepVisible:true });
+      return;
+    }
+    if (type === 'battle_match_found') return showToast(battleCopy('found', { choose:`${commandPrefix}choose [slot]` }), 3000);
+    if (type === 'battle_cancelled') return showToast(battleCopy('cancelled'), 4000);
+    if (type === 'battle_roster_locked') return showToast(data?.autoLocked ? battleCopy('rosterAuto') : battleCopy('roster'), 1800);
+    if (type === 'battle_started') {
+      battleIds = [data?.challenger?.monster_id, data?.defender?.monster_id];
+      battleAdvantageName = data?.elementAdvantageMonsterId === battleIds[0]
+        ? itemName(data?.challenger)
+        : (data?.elementAdvantageMonsterId === battleIds[1] ? itemName(data?.defender) : '');
+      setBattleSkills();
+      showBattle({
+        left:itemName(data?.challenger),
+        right:itemName(data?.defender),
+        fighters:[data?.challenger, data?.defender],
+        detail:battleAdvantageName ? battleCopy('advantage', { name:battleAdvantageName }) : battleCopy('even'),
+        duration:3000,
+        keepVisible:true
+      });
+      node('battle-advantage').textContent = battleAdvantageName ? battleCopy('advantage', { name:battleAdvantageName }) : battleCopy('even');
+      await wait(reducedMotion ? 0 : 3000);
+      return;
+    }
+    if (type === 'battle_skill_prompt') {
+      const candidate = data?.skills?.[battleIds[0]] || Object.values(data?.skills || {})[0] || {};
+      setBattleSkills(candidate);
+      node('battle-detail').textContent = battleCopy('round', { round:data?.roundNumber || 1 });
+      node('battle').classList.add('visible');
+      return;
+    }
+    if (type === 'battle_skill_locked') {
+      const choice = data?.choice;
+      [...node('battle-skill-options').children].forEach(item => item.classList.toggle('locked', item.textContent.startsWith(`${choice} ·`)));
+      node('battle-detail').textContent = data?.auto
+        ? battleCopy('auto', { choice })
+        : battleCopy('locked', { viewer:data?.userId || 'Viewer', choice });
+      return;
+    }
+    if (type === 'battle_action') {
+      const action = data?.action || {};
+      const actorSide = action.monsterId === battleIds[0] ? 'a' : 'b';
+      const targetSide = actorSide === 'a' ? 'b' : 'a';
+      setBattleFighter(actorSide, action.after || {});
+      setBattleFighter(targetSide, action.targetAfter || {});
+      node('battle-detail').textContent = battleCopy('action', {
+        name:action.before?.name || battleNames[actorSide === 'a' ? 0 : 1],
+        skill:action.skill?.name || action.selectedChoice || 'skill'
+      });
+      const actor = node(`battle-fighter-${actorSide}`);
+      const target = node(`battle-fighter-${targetSide}`);
+      actor.classList.add('attack');
+      target.classList.add('hit');
+      if ((action.outcomes || []).some(outcome => outcome.type === 'shield')) actor.classList.add('shielded');
+      battleEffects.burst({ element: action.after?.element || action.before?.element, strength: action.selectedChoice === 'C' ? 2 : 1 });
+      await wait(reducedMotion ? 0 : 2700);
+      actor.classList.remove('attack', 'shielded');
+      target.classList.remove('hit');
+      return;
+    }
+    if (type === 'battle_round') {
+      const round = Number(data?.round?.number) || 1;
+      [...node('round-dots').children].forEach((dot,index) => dot.classList.toggle('active',index < round));
+      node('battle-detail').textContent = battleCopy('done', { round });
+      return;
+    }
+    if (type === 'battle_knockout') {
+      node('battle-detail').textContent = battleCopy('knockout');
+      battleEffects.burst({ strength: 3 });
+      await wait(reducedMotion ? 0 : 4000);
+      return;
+    }
+    if (type === 'monster_xp_awarded') return showCard({
+      kicker:battleCopy('xp'),
+      title:`${itemName(data?.monster)} +${data?.xpAwarded || 0} XP`,
+      subtitle:data?.winner ? battleCopy('victory') : battleCopy('growth'),
+      imageUrl:data?.monster?.image_url,
+      progress:100,
+      durationMs:8_000
+    });
+    if (type === 'monster_level_up') return showCard({
+      kicker:battleCopy('level'),
+      title:battleCopy('reaches', { name:itemName(data?.monster), level:data?.monster?.level || '' }),
+      subtitle:battleCopy('chooseStat'),
+      imageUrl:data?.monster?.image_url,
+      charged:true,
+      durationMs:12_000
+    });
+    if (type === 'monster_stat_prompt') return showToast(battleCopy('statPrompt'), 5000);
+    if (type === 'monster_stat_chosen' || type === 'monster_stat_auto_assigned') return showCard({
+      kicker:type === 'monster_stat_auto_assigned' ? battleCopy('statAuto') : battleCopy('statChosen'),
+      title:`${itemName(data?.monster)} +1 ${value(data?.stat, 'stat')}`,
+      subtitle:type === 'monster_stat_auto_assigned' ? battleCopy('expired') : battleCopy('selected'),
+      imageUrl:data?.monster?.image_url,
+      durationMs:8_000,
+      progress:100
+    });
     if (type === 'battle_started') return showBattle({
       left:itemName(data?.challenger),
       right:itemName(data?.defender),
@@ -424,6 +691,14 @@
     queueRunning = false;
   };
   const enqueue = (type,data) => {
+    if (criticalEventTypes.has(type)) {
+      for (let index = eventQueue.length - 1; index >= 0; index -= 1) {
+        if (lowerCardEventTypes.has(eventQueue[index].type)) eventQueue.splice(index, 1);
+      }
+    } else if (lowerCardEventTypes.has(type) && (node('battle').classList.contains('visible') || eventQueue.some(entry => criticalEventTypes.has(entry.type)))) {
+      const existing = eventQueue.find(entry => entry.type === type);
+      if (existing) { existing.data = data; return; }
+    }
     eventQueue.push({ type,data });
     if (eventQueue.length > 30) eventQueue.splice(0,eventQueue.length - 30);
     drainQueue();
@@ -436,6 +711,8 @@
       if (!response.ok) return;
       const state = await response.json();
       setBottomOverlayDuration(state?.config?.bottomOverlayDurationMs);
+      if (typeof state?.commandPrefix === 'string' && state.commandPrefix) commandPrefix = state.commandPrefix;
+      if (state?.battle?.match?.battle) enqueue('battle_snapshot', state.battle.match);
     } catch (_) {}
   };
   const eventTypes = {
@@ -448,9 +725,21 @@
     'streammonsters:hatch_started':'hatch_started',
     'streammonsters:egg_hatched':'egg_hatched',
     'streammonsters:monster_visual_evolved':'monster_visual_evolved',
+    'streammonsters:battle_match_found':'battle_match_found',
+    'streammonsters:battle_cancelled':'battle_cancelled',
+    'streammonsters:battle_roster_locked':'battle_roster_locked',
     'streammonsters:battle_started':'battle_started',
+    'streammonsters:battle_skill_prompt':'battle_skill_prompt',
+    'streammonsters:battle_skill_locked':'battle_skill_locked',
+    'streammonsters:battle_action':'battle_action',
+    'streammonsters:battle_knockout':'battle_knockout',
     'streammonsters:battle_round':'battle_round',
     'streammonsters:battle_completed':'battle_completed',
+    'streammonsters:monster_xp_awarded':'monster_xp_awarded',
+    'streammonsters:monster_level_up':'monster_level_up',
+    'streammonsters:monster_stat_prompt':'monster_stat_prompt',
+    'streammonsters:monster_stat_chosen':'monster_stat_chosen',
+    'streammonsters:monster_stat_auto_assigned':'monster_stat_auto_assigned',
     'streammonsters:achievement_unlocked':'achievement_unlocked',
     'streammonsters:season_rank_changed':'season_rank_changed',
     'streammonsters:quest_completed':'quest_completed',

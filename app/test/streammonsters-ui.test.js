@@ -15,6 +15,17 @@ function bootUi() {
       config: { creatorName: '', hatchDurationMs: 300000, maxUnhatchedEggs: 3, elementRules: 'deterministic', artPoolTarget: 3 },
       pool: [],
       hype: { points: 0, charged_eggs: 0 },
+      commandPrefix: '/',
+      battle: {
+        match: {
+          id: 'battle-ui-1',
+          phase: 'skill_selection',
+          round: 2,
+          participants: [{ userId: 'alpha' }, { userId: 'beta' }],
+          choices: { alpha: 'A', beta: null },
+          deadlineAt: 2_000
+        }
+      },
       season: { season_id: 'season-1', starts_at_ms: 1, ends_at_ms: 2 }
     });
     if (url.startsWith('/api/streammonsters/state?userId=')) return response({
@@ -114,6 +125,27 @@ describe('Stream Monsters creator wizard', () => {
     dom.window.close();
   });
 
+  test('shows the cinematic battle flow and sends individual battle preview scenes', async () => {
+    const { dom, fetchMock } = bootUi();
+    await waitFor(() => expect(dom.window.document.getElementById('battleLiveStatus').textContent)
+      .toContain('Runde 2'));
+
+    expect(dom.window.document.getElementById('battleInstructions').textContent).toContain('A');
+    expect(dom.window.document.getElementById('battleInstructions').textContent).toContain('/choose');
+    expect(dom.window.document.getElementById('commandPrefixStatus').textContent).toContain('/');
+    dom.window.document.querySelector('[data-demo-scene="knockout"]').click();
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/streammonsters/demo',
+      expect.objectContaining({ method: 'POST' })
+    ));
+    const demoCall = fetchMock.mock.calls.find(([url, options]) => (
+      url === '/api/streammonsters/demo' && options.method === 'POST' && options.body
+    ));
+    expect(JSON.parse(demoCall[1].body)).toEqual({ scene: 'knockout' });
+    dom.window.close();
+  });
+
   test('contains the five market-ready areas, gift search, twelve eggs, OBS and full demo surfaces', () => {
     const html = fs.readFileSync(path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-ui.html'), 'utf8');
 
@@ -135,6 +167,9 @@ describe('Stream Monsters creator wizard', () => {
     expect(html).toContain('id="viewerSummary"');
     expect(html).toContain('id="creatorMetrics"');
     expect(html).toContain('id="runDemo"');
+    expect(html).toContain('id="battleLiveStatus"');
+    expect(html).toContain('id="battleInstructions"');
+    expect(html).toContain('data-demo-scene="knockout"');
     expect((html.match(/class="egg-card(?: charged)?"/g) || [])).toHaveLength(12);
     expect(html).toContain('!hatch');
     expect(html).toContain('!monsterrank');

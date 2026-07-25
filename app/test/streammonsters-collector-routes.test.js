@@ -170,6 +170,7 @@ describe('Stream Monsters 1.2 public API', () => {
 
   test('exposes the public match snapshot and the viewer-owned stat prompt in state', () => {
     const { find, routes } = createRoutes();
+    routes.commandStatusProvider = () => ({ prefix: '/', gcceRegistered: true });
     routes.battleMatchService = {
       getPublicSnapshot: jest.fn(userId => ({
         match: { matchId: 'match-1', phase: 'skill_selection' },
@@ -183,7 +184,9 @@ describe('Stream Monsters 1.2 public API', () => {
 
     expect(result.body).toEqual(expect.objectContaining({
       battle: expect.objectContaining({ match: expect.objectContaining({ matchId: 'match-1' }) }),
-      pendingStatChoice: expect.objectContaining({ monsterId: 'monster-1' })
+      pendingStatChoice: expect.objectContaining({ monsterId: 'monster-1' }),
+      commandPrefix: '/',
+      gcceRegistered: true
     }));
   });
 
@@ -372,13 +375,40 @@ describe('Stream Monsters 1.2 public API', () => {
       'streammonsters:hatch_started',
       'streammonsters:egg_hatched',
       'streammonsters:monster_visual_evolved',
+      'streammonsters:battle_match_found',
+      'streammonsters:battle_roster_locked',
       'streammonsters:battle_started',
+      'streammonsters:battle_skill_prompt',
+      'streammonsters:battle_skill_locked',
+      'streammonsters:battle_action',
+      'streammonsters:battle_knockout',
       'streammonsters:battle_round',
       'streammonsters:battle_completed',
+      'streammonsters:monster_xp_awarded',
+      'streammonsters:monster_level_up',
+      'streammonsters:monster_stat_prompt',
       'streammonsters:achievement_unlocked',
       'streammonsters:season_rank_changed',
       'streammonsters:chat_result'
     ]));
     expect(emitted.filter(entry => entry.event === 'streammonsters:battle_round')).toHaveLength(3);
+  });
+
+  test('plays a single requested cinematic battle demo scene without mutating game state', () => {
+    const { find, emitted } = createRoutes();
+    const result = response();
+
+    find('POST', '/api/streammonsters/demo')({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      body: { scene: 'knockout' }
+    }, result);
+
+    expect(result.body).toEqual({ success: true, demo: true, scene: 'knockout' });
+    expect(emitted.map(entry => entry.event)).toEqual([
+      'streammonsters:battle_knockout',
+      'streammonsters:battle_completed'
+    ]);
   });
 });

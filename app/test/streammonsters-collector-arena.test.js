@@ -269,6 +269,7 @@ describe('Stream Monsters 1.2 Collector Arena', () => {
       name: 'Old Spark',
       level: 4,
       xp: 25,
+      template_id: 'cinder',
       personality: null,
       visual_source: 'legacy',
       battle_count: 0
@@ -277,5 +278,18 @@ describe('Stream Monsters 1.2 Collector Arena', () => {
       gifts_sent: 3,
       pending_xp: 0
     }));
+  });
+
+  test('persists the deterministic furry template separately from a monster visual for cinematic skills', () => {
+    const { store, engine, enableGift, setNow } = createArena({ config: { hatchDurationMs: 0 } });
+    enableGift(1, { element: 'Volt' });
+    engine.processGift({ userId: 'viewer-a', giftId: 1, giftName: 'Volt Gift', coinValue: 1 });
+    setNow(10_001);
+    engine.markReadyEggs();
+
+    const monster = engine.hatchEgg('viewer-a', 1);
+
+    expect(monster.template_id).toMatch(/^(pulse|neonclaw|ampjack|flashstep)$/);
+    expect(monster.visual_key).toBe(`furry:${monster.template_id}`);
   });
 });

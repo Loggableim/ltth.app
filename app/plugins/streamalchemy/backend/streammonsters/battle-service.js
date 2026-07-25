@@ -370,6 +370,20 @@ class BattleService {
     return result;
   }
 
+  persistRewards(result, rewards = []) {
+    const enriched = {
+      ...result,
+      rewards: rewards.map(reward => ({
+        monsterId: reward.monsterId,
+        xpAwarded: Number(reward.xpAwarded) || 0,
+        levelUps: Number(reward.levelUps) || 0,
+        unspentStatPoints: Number(reward.unspentStatPoints) || 0
+      }))
+    };
+    this.store.updateBattleResult(enriched.battleId, enriched);
+    return enriched;
+  }
+
   // Compatibility resolver for already deployed automatic battles and their
   // historical replays. New matches use createBattleState/resolveRound.
   resolve(monsterA, monsterB, seed) {

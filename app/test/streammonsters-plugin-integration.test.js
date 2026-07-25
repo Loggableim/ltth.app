@@ -183,6 +183,54 @@ describe('Stream Monsters plugin integration', () => {
     expect(gcce.unregisterRawResponseHandlerForPlugin).toHaveBeenCalledWith('streamalchemy');
   });
 
+  test('lets GCCE claim one raw battle response without a parallel TikTok action or duplicate overlay result', async () => {
+    const gcce = createGCCE('!');
+    const { api, events, emitted } = createApi({ gcce });
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    const createMonster = (userId, element) => {
+      const egg = plugin.streamMonstersStore.createEgg({
+        userId,
+        giftId: 1,
+        giftName: 'Battle test',
+        element,
+        eggColor: '#fff',
+        seed: `${userId}:battle`,
+        createdAtMs: Date.now(),
+        hatchDurationMs: 0
+      });
+      return plugin.streamMonstersStore.createMonsterFromEgg(egg, {
+        name: `${userId} monster`,
+        rarity: 'Standard',
+        personality: 'Brave',
+        stats: { vitality: 7, might: 7, guard: 7, agility: 7 },
+        visualKey: 'furry:ashfang',
+        visualSource: 'furry',
+        templateId: 'ashfang',
+        createdAtMs: Date.now()
+      });
+    };
+    createMonster('viewer-a', 'Ember');
+    createMonster('viewer-b', 'Grove');
+    plugin.streamMonstersBattleMatch.join('viewer-a');
+    plugin.streamMonstersBattleMatch.join('viewer-b');
+    plugin.streamMonstersBattleMatch.chooseMonster('viewer-a', 1);
+    plugin.streamMonstersBattleMatch.chooseMonster('viewer-b', 1);
+    plugin.streamMonstersBattleMatch.openSkillWindow();
+
+    await events.find(entry => entry.event === 'chat').handler({ uniqueId: 'viewer-a', comment: 'A' });
+    expect(plugin.streamMonstersBattleMatch.activeMatch.skillWindow.lockedChoices).toEqual({});
+
+    const rawHandler = gcce.rawHandlers.get('streamalchemy');
+    expect(rawHandler({ message: 'A', context: { userId: 'viewer-a' } })).toEqual(expect.objectContaining({
+      handled: true,
+      result: expect.objectContaining({ status: 'skill_locked' })
+    }));
+    expect(Object.keys(plugin.streamMonstersBattleMatch.activeMatch.skillWindow.lockedChoices)).toHaveLength(1);
+    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toHaveLength(1);
+    await plugin.destroy();
+  });
+
   test('re-registers GCCE with creator-selected aliases after config changes', async () => {
     const gcce = createGCCE('!');
     const { api } = createApi({ gcce });

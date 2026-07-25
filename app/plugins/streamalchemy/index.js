@@ -189,6 +189,10 @@ class StreamAlchemyPlugin {
       managedRuntime: this.streamMonstersManagedRuntime,
       localModelInstaller: this.localModelInstaller,
       giftCatalogProvider: locale => this.getStreamMonstersGiftCatalog(locale),
+      commandStatusProvider: () => ({
+        prefix: this.streamMonstersCommandPrefix || '!',
+        gcceRegistered: Boolean(this.streamMonstersGCCE)
+      }),
       configProvider: {
         getConfig: () => this.config,
         updateConfig: updates => this.updateConfig(updates)

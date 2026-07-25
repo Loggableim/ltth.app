@@ -89,4 +89,23 @@ describe('Stream Monsters cinematic rules v4 battle resolver', () => {
 
     expect(makeResult()).toEqual(makeResult());
   });
+
+  test('persists post-battle XP and level-up results alongside the chosen skill replay', () => {
+    const store = new StreamMonstersDatabase(new Database(':memory:'));
+    store.initialize();
+    const battles = new BattleService({ store });
+    const state = battles.createBattleState(
+      monster('a', 'viewer-a', { stats: { vitality: 7, might: 100, guard: 7, agility: 20 } }),
+      monster('b', 'viewer-b', { stats: { vitality: 1, might: 1, guard: 1, agility: 1 } }),
+      'reward-seed'
+    );
+    const result = battles.finalize(battles.resolveRound(state, { a: 'A', b: 'B' }).state);
+
+    const persisted = battles.persistRewards(result, [{ monsterId: 'a', xpAwarded: 15, levelUps: 1, unspentStatPoints: 1 }]);
+
+    expect(JSON.parse(store.getBattle(result.battleId).result_json)).toEqual(expect.objectContaining({
+      rewards: [{ monsterId: 'a', xpAwarded: 15, levelUps: 1, unspentStatPoints: 1 }]
+    }));
+    expect(persisted.rewards).toHaveLength(1);
+  });
 });

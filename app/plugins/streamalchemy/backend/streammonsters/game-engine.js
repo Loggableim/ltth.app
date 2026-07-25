@@ -241,6 +241,7 @@ class StreamMonstersEngine {
       imageUrl: visual?.image_url || visual?.publicUrl || egg.image_url,
       visualSource: skin ? 'ai' : (visual?.visualSource || 'egg_asset'),
       visualKey: visual?.visual_key || visual?.visualKey || egg.visual_key,
+      templateId: template?.templateId || null,
       createdAtMs
     };
   }

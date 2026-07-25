@@ -10,6 +10,7 @@ class BattleMatchService {
     rosterTimeoutMs = 30_000,
     skillTimeoutMs = 12_000,
     statTimeoutMs = 30_000,
+    entranceDelayMs = 3_000,
     actionDelayMs = 6_000,
     rematchCooldownMs = 10 * 60 * 1000,
     setTimer = setTimeout,
@@ -25,6 +26,7 @@ class BattleMatchService {
     this.rosterTimeoutMs = rosterTimeoutMs;
     this.skillTimeoutMs = skillTimeoutMs;
     this.statTimeoutMs = statTimeoutMs;
+    this.entranceDelayMs = entranceDelayMs;
     this.actionDelayMs = actionDelayMs;
     this.rematchCooldownMs = rematchCooldownMs;
     this.setTimer = setTimer;
@@ -217,7 +219,7 @@ class BattleMatchService {
       return;
     }
     match.battleState = this.battleService.createBattleState(monsters[0], monsters[1], match.seed);
-    match.phase = 'skill_selection';
+    match.phase = 'entering';
     this.emit('streammonsters:battle_roster_locked', {
       matchId: match.matchId,
       autoLocked: true,
@@ -234,7 +236,7 @@ class BattleMatchService {
       battleId: match.battleState.battleId,
       elementAdvantageMonsterId: match.battleState.elementAdvantageMonsterId
     });
-    this.openSkillWindow(match);
+    this.schedule('match', this.entranceDelayMs, () => this.openSkillWindow(match));
   }
 
   openSkillWindow(match = this.activeMatch) {
@@ -312,10 +314,11 @@ class BattleMatchService {
     if (!match || this.activeMatch !== match || match.phase === 'finished') return;
     this.clearScheduled('match');
     match.phase = 'finished';
-    const battle = this.battleService.finalize(match.battleState);
+    let battle = this.battleService.finalize(match.battleState);
     const winner = this.store.getMonster(battle.winnerId);
     if (winner) this.store.incrementViewer(winner.user_id, 'battles_won');
     if (this.engine.streamKey) this.store.incrementStreamMetric(this.engine.streamKey, 'duels');
+    const rewards = [];
     for (const participant of Object.values(match.participants)) {
       const monster = this.store.getMonster(participant.monsterId);
       const progress = this.progression?.recordBattle(participant.userId, this.engine.streamKey, {
@@ -323,6 +326,12 @@ class BattleMatchService {
         won: battle.winnerId === participant.monsterId
       }) || { monster };
       const progressedMonster = progress.monster || this.store.getMonster(participant.monsterId);
+      rewards.push({
+        monsterId: participant.monsterId,
+        xpAwarded: progress.xpAwarded || 0,
+        levelUps: progress.levelUps || 0,
+        unspentStatPoints: progressedMonster?.unspent_stat_points || 0
+      });
       this.emit('streammonsters:monster_xp_awarded', {
         userId: participant.userId,
         monster: progressedMonster,
@@ -338,6 +347,7 @@ class BattleMatchService {
         this.openNextStatPrompt(participant.userId, match.seed);
       }
     }
+    battle = this.battleService.persistRewards(battle, rewards);
     this.rematchAt.set(this.rematchKey(...Object.keys(match.participants)), this.now());
     this.emit('streammonsters:battle_completed', { battle, winner });
     this.activeMatch = null;

@@ -77,6 +77,30 @@ describe('Stream Monsters OBS overlay', () => {
     expect(html).toContain('!hatch');
   });
 
+  test('provides a cinematic two-monster arena with WebGPU and accessible fallbacks', () => {
+    const html = fs.readFileSync(path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-overlay.html'), 'utf8');
+
+    expect(html).toContain('id="battle-arena"');
+    expect(html).toContain('id="battle-fighter-a"');
+    expect(html).toContain('id="battle-fighter-b"');
+    expect(html).toContain('id="battle-skill-options"');
+    expect(html).toContain('id="battle-effects"');
+    expect(html).toContain('navigator.gpu');
+    expect(html).toContain("getContext('webgpu')");
+    expect(html).toContain('prefers-reduced-motion');
+    expect(html).toContain('streammonsters:battle_match_found');
+    expect(html).toContain('streammonsters:battle_cancelled');
+    expect(html).toContain('streammonsters:battle_skill_prompt');
+    expect(html).toContain('streammonsters:battle_skill_locked');
+    expect(html).toContain('streammonsters:battle_action');
+    expect(html).toContain('streammonsters:battle_knockout');
+    expect(html).toContain('streammonsters:monster_stat_prompt');
+    expect(html).toContain('streammonsters:monster_stat_chosen');
+    expect(html).toContain('streammonsters:monster_stat_auto_assigned');
+    expect(html).toContain('MIN_BOTTOM_OVERLAY_DURATION_MS = 8_000');
+    expect(html).toContain('DEFAULT_BOTTOM_OVERLAY_DURATION_MS = 12_000');
+  });
+
   test('renders six collection cards and a lower-half stats profile from chat results', async () => {
     const { dom, handlers } = bootOverlay();
     const monsters = Array.from({ length: 7 }, (_, index) => ({

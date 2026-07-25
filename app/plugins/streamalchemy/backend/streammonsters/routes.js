@@ -20,7 +20,8 @@ class StreamMonstersRoutes {
     managedRuntime,
     localModelInstaller,
     giftCatalogProvider,
-    configProvider
+    configProvider,
+    commandStatusProvider = () => ({ prefix: '!', gcceRegistered: false })
   }) {
     this.api = api;
     this.pluginDir = pluginDir;
@@ -36,6 +37,7 @@ class StreamMonstersRoutes {
     this.localModelInstaller = localModelInstaller;
     this.giftCatalogProvider = giftCatalogProvider || (() => []);
     this.configProvider = configProvider;
+    this.commandStatusProvider = commandStatusProvider;
     this.adminAuth = createAdminAuth();
   }
 
@@ -58,6 +60,7 @@ class StreamMonstersRoutes {
       const config = this.configProvider.getConfig().streamMonsters;
       const season = this.progression?.getCurrentSeason?.() || null;
       const battle = this.battleMatchService?.getPublicSnapshot(userId) || null;
+      const commandStatus = this.commandStatusProvider?.() || {};
       res.json({
         success: true,
         config: this.publicConfig(config),
@@ -67,6 +70,8 @@ class StreamMonstersRoutes {
         season,
         battle,
         pendingStatChoice: battle?.pendingStatChoice || null,
+        commandPrefix: typeof commandStatus.prefix === 'string' && commandStatus.prefix ? commandStatus.prefix : '!',
+        gcceRegistered: Boolean(commandStatus.gcceRegistered),
         metrics: this.engine.streamKey ? this.store.getStreamMetrics(this.engine.streamKey) : null
       });
     });
@@ -100,14 +105,18 @@ class StreamMonstersRoutes {
         rarity: 'Charged',
         level: 4,
         stats: { vitality: 7, might: 8, guard: 6, agility: 7 },
-        image_url: '/plugins/streamalchemy/assets/branding/stream-monsters-icon.png'
+        template_id: 'pulse',
+        image_url: '/plugins/streamalchemy/assets/streammonsters/furry/pulse.png'
       };
       const opponent = {
         monster_id: 'demo-opponent',
         name: 'Mossbit',
         element: 'Grove',
         personality: 'Brave',
-        level: 5
+        level: 5,
+        stats: { vitality: 8, might: 6, guard: 8, agility: 6 },
+        template_id: 'mosswhisker',
+        image_url: '/plugins/streamalchemy/assets/streammonsters/furry/mosswhisker.png'
       };
       const rounds = [
         { number: 1, firstDamage: 8, secondDamage: 6, hpA: 50, hpB: 48, elementAdvantageMonsterId: monster.monster_id },
@@ -124,6 +133,58 @@ class StreamMonstersRoutes {
         rounds
       };
       const emit = (event, payload) => this.api.emit(event, { ...payload, demo: true });
+      const scene = String(req.body?.scene || 'full').toLowerCase();
+      const fighters = {
+        [monster.monster_id]: { monsterId: monster.monster_id, name: monster.name, element: monster.element, imageUrl: monster.image_url, maxHp: 58, hp: 34, shield: 3, charge: 100 },
+        [opponent.monster_id]: { monsterId: opponent.monster_id, name: opponent.name, element: opponent.element, imageUrl: opponent.image_url, maxHp: 62, hp: 12, shield: 0, charge: 50 }
+      };
+      const skillPrompt = {
+        [monster.monster_id]: {
+          A: { name: 'Circuit Claw', description: 'Arc through shields.', available: true },
+          B: { name: 'Charge Shell', description: 'Shield and reflect.', available: true },
+          C: { name: 'Overclock Beam', description: 'A full-charge special.', available: true }
+        },
+        [opponent.monster_id]: {
+          A: { name: 'Bramble Bite', description: 'Thorns on impact.', available: true },
+          B: { name: 'Moss Nest', description: 'Build a shield.', available: true },
+          C: { name: 'Root Rocket', description: 'Charge not ready.', available: false }
+        }
+      };
+      const action = {
+        monsterId: monster.monster_id,
+        targetMonsterId: opponent.monster_id,
+        selectedChoice: 'C',
+        skill: { name: 'Overclock Beam', vfxKey: 'volt-overclock-beam' },
+        before: { ...fighters[monster.monster_id], hp: 34, charge: 100 },
+        after: { ...fighters[monster.monster_id], hp: 34, charge: 0 },
+        targetBefore: { ...fighters[opponent.monster_id], hp: 12 },
+        targetAfter: { ...fighters[opponent.monster_id], hp: 0 },
+        outcomes: [{ type: 'damage', hpDamage: 12, shieldAbsorbed: 0 }]
+      };
+      if (scene === 'knockout') {
+        emit('streammonsters:battle_knockout', { battleId: battle.battleId, knockout: { winnerId: monster.monster_id, loserId: opponent.monster_id } });
+        emit('streammonsters:battle_completed', { battle, winner: monster });
+        return res.json({ success: true, demo: true, scene });
+      }
+      if (scene === 'match') {
+        emit('streammonsters:battle_match_found', { match: { matchId: 'demo-match', phase: 'roster_selection', participants: [{ userId: 'demo-viewer' }, { userId: 'demo-rival' }] } });
+        return res.json({ success: true, demo: true, scene });
+      }
+      if (scene === 'skill') {
+        emit('streammonsters:battle_skill_prompt', { matchId: 'demo-match', battleId: battle.battleId, roundNumber: 1, skills: skillPrompt });
+        emit('streammonsters:battle_skill_locked', { matchId: 'demo-match', battleId: battle.battleId, userId: 'demo-viewer', monsterId: monster.monster_id, choice: 'C', lockedChoices: { [monster.monster_id]: 'C' } });
+        return res.json({ success: true, demo: true, scene });
+      }
+      if (scene === 'hit') {
+        emit('streammonsters:battle_action', { matchId: 'demo-match', battleId: battle.battleId, roundNumber: 1, action });
+        return res.json({ success: true, demo: true, scene });
+      }
+      if (scene === 'levelup') {
+        emit('streammonsters:monster_xp_awarded', { userId: 'demo-viewer', monster, xpAwarded: 15, winner: true });
+        emit('streammonsters:monster_level_up', { userId: 'demo-viewer', monster: { ...monster, level: 5 }, levels: 1 });
+        emit('streammonsters:monster_stat_prompt', { userId: 'demo-viewer', monster, choices: { 1: 'vitality', 2: 'might', 3: 'guard', 4: 'agility' } });
+        return res.json({ success: true, demo: true, scene });
+      }
       emit('streammonsters:egg_spawned', { userId: 'demo-viewer', egg, gift, hint: '!eggs' });
       emit('streammonsters:hype_changed', {
         userId: 'demo-viewer',
@@ -146,14 +207,29 @@ class StreamMonstersRoutes {
         userId: 'demo-viewer',
         achievement: { achievement_key: 'charged_hatch' }
       });
+      emit('streammonsters:battle_match_found', {
+        match: { matchId: 'demo-match', phase: 'roster_selection', participants: [{ userId: 'demo-viewer' }, { userId: 'demo-rival' }] }
+      });
+      emit('streammonsters:battle_roster_locked', {
+        matchId: 'demo-match',
+        autoLocked: true,
+        participants: [{ userId: 'demo-viewer', monster }, { userId: 'demo-rival', monster: opponent }]
+      });
       emit('streammonsters:battle_started', {
         challenger: monster,
         defender: opponent,
         seed: battle.seed,
         elementAdvantageMonsterId: monster.monster_id
       });
+      emit('streammonsters:battle_skill_prompt', { matchId: 'demo-match', battleId: battle.battleId, roundNumber: 1, skills: skillPrompt });
+      emit('streammonsters:battle_skill_locked', { matchId: 'demo-match', battleId: battle.battleId, userId: 'demo-viewer', monsterId: monster.monster_id, choice: 'C', lockedChoices: { [monster.monster_id]: 'C' } });
+      emit('streammonsters:battle_action', { matchId: 'demo-match', battleId: battle.battleId, roundNumber: 1, action });
       rounds.forEach(round => emit('streammonsters:battle_round', { battleId: battle.battleId, round }));
+      emit('streammonsters:battle_knockout', { battleId: battle.battleId, knockout: { winnerId: monster.monster_id, loserId: opponent.monster_id } });
       emit('streammonsters:battle_completed', { battle, winner: monster });
+      emit('streammonsters:monster_xp_awarded', { userId: 'demo-viewer', monster, xpAwarded: 15, winner: true });
+      emit('streammonsters:monster_level_up', { userId: 'demo-viewer', monster: { ...monster, level: 5 }, levels: 1 });
+      emit('streammonsters:monster_stat_prompt', { userId: 'demo-viewer', monster, choices: { 1: 'vitality', 2: 'might', 3: 'guard', 4: 'agility' } });
       emit('streammonsters:season_rank_changed', {
         userId: 'demo-viewer',
         before: 'Bronze',

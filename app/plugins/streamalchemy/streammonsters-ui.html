@@ -104,6 +104,11 @@
     .coverage > div { padding:9px; border-radius:10px; background:#0b1221; text-align:center; color:var(--muted); }
     .commands { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
     .commands code { display:inline-block; margin:0; }
+    .battle-preview { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(220px,.8fr); gap:12px; margin-top:12px; }
+    .battle-preview > div { padding:13px; border:1px solid #3b4b73; border-radius:13px; background:#0a1020; }
+    .battle-preview strong { color:var(--cyan); }
+    .demo-scenes { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+    .demo-scenes button { min-height:34px; margin:0; padding:6px 9px; font-size:12px; }
     .rank-track { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; margin-top:12px; }
     .rank-track div { padding:10px; border:1px solid #334263; border-radius:11px; text-align:center; color:var(--muted); background:#0b1221; }
     .rank-track strong { display:block; color:var(--gold); }
@@ -112,6 +117,7 @@
       .card,.card.wide { grid-column:1/-1; }
       .egg-grid { grid-template-columns:repeat(4,1fr); }
       .provider-grid { grid-template-columns:repeat(3,1fr); }
+      .battle-preview { grid-template-columns:1fr; }
     }
     @media (max-width:620px) {
       main { padding:14px 12px 60px; }
@@ -172,6 +178,28 @@
         <h3>Spielregeln</h3>
         <p class="muted">5 Minuten Brutzeit · Charged nur kosmetisch und schneller · 28 feste Startpunkte · 3 reproduzierbare Kampfrunden.</p>
         <div id="creatorMetrics" class="badge">Noch keine Streamdaten</div>
+      </article>
+      <article class="card full">
+        <h3 id="battlePreviewHeading">Cinematic Skill Arena</h3>
+        <p id="battleInstructions" class="muted">Mit <code>!battle</code> beitreten, nach dem Match in 30 Sekunden mit <code>!choose &lt;slot&gt;</code> das Monster sperren. In jeder der drei Runden wählen nur die beiden Kämpfer per nacktem <code>A</code> Angriff, <code>B</code> Verteidigung oder bei voller Leiste <code>C</code> Special. Nach einem Level-up werden die Punkte mit <code>1</code> Vitalität, <code>2</code> Stärke, <code>3</code> Verteidigung oder <code>4</code> Agilität verteilt.</p>
+        <div class="battle-preview">
+          <div>
+            <strong id="battleLiveHeading">Live-Auswahlfenster</strong>
+            <p id="battleLiveStatus" class="muted">Keine aktive Battle-Auswahl. Die Arena ist bereit.</p>
+          </div>
+          <div>
+            <strong id="battleDemoHeading">OBS-Vorschau</strong>
+            <p class="muted">Einzug, Skillwahl, Treffer, K.-o. und Level-up einzeln an das Overlay senden.</p>
+            <div class="demo-scenes">
+              <button class="secondary" type="button" data-demo-scene="match">Einzug</button>
+              <button class="secondary" type="button" data-demo-scene="skill">Skillwahl</button>
+              <button class="secondary" type="button" data-demo-scene="hit">Treffer</button>
+              <button class="secondary" type="button" data-demo-scene="knockout">K.-o.</button>
+              <button class="secondary" type="button" data-demo-scene="levelup">Level-up</button>
+            </div>
+          </div>
+        </div>
+        <p id="commandPrefixStatus" class="muted">Aktiver Chat-Präfix: !</p>
       </article>
       <article class="card full">
         <h3>Viewer-Kommandos</h3>
@@ -297,6 +325,41 @@
   const byId = id => document?.getElementById(id) || null;
   const jsonHeaders = { 'Content-Type':'application/json' };
   const rankLabel = rank => ({ Silver:'Silber', Crystal:'Kristall' }[rank] || rank || 'Bronze');
+  const arenaLocale = (() => {
+    const requested = new URLSearchParams(location.search).get('lang')
+      || window.localStorage?.getItem('app_locale')
+      || document.documentElement.lang
+      || 'de';
+    return ['de', 'en', 'es', 'fr'].includes(requested) ? requested : 'de';
+  })();
+  const ARENA_COPY = {
+    de: {
+      heading:'Cinematic Skill Arena', live:'Live-Auswahlfenster', preview:'OBS-Vorschau',
+      instructions:'Mit {battle} beitreten, nach dem Match in 30 Sekunden mit {choose} das Monster sperren. In jeder der drei Runden wählen nur die beiden Kämpfer per nacktem A Angriff, B Verteidigung oder bei voller Leiste C Special. Nach einem Level-up verteilen 1 Vitalität, 2 Stärke, 3 Verteidigung oder 4 Agilität den Punkt.',
+      prefix:'Aktiver Chat-Präfix: {prefix}', idle:'Keine aktive Battle-Auswahl. Die Arena ist bereit.', queue:'{count} Viewer warten auf einen fairen Gegner.', roster:'Monsterwahl', skill:'Runde {round} · Skillwahl', arena:'Arena', locked:'gesperrt', versus:' gegen ', demoSent:'{scene} an das OBS-Overlay gesendet.',
+      scenes:{ match:'Einzug', skill:'Skillwahl', hit:'Treffer', knockout:'K.-o.', levelup:'Level-up' }
+    },
+    en: {
+      heading:'Cinematic Skill Arena', live:'Live selection window', preview:'OBS preview',
+      instructions:'Join with {battle}, then lock your monster with {choose} within 30 seconds. In each of three rounds only the two fighters send bare A for attack, B for defense, or C for a full special meter. After a level-up, 1 assigns Vitality, 2 Might, 3 Guard, or 4 Agility.',
+      prefix:'Active chat prefix: {prefix}', idle:'No active battle selection. The arena is ready.', queue:'{count} viewers are waiting for a fair opponent.', roster:'Monster selection', skill:'Round {round} · skill selection', arena:'Arena', locked:'locked', versus:' vs ', demoSent:'{scene} sent to the OBS overlay.',
+      scenes:{ match:'Entrance', skill:'Skill choice', hit:'Hit', knockout:'K.O.', levelup:'Level up' }
+    },
+    es: {
+      heading:'Arena cinematica de habilidades', live:'Ventana de seleccion en directo', preview:'Vista previa de OBS',
+      instructions:'Entra con {battle} y bloquea tu monstruo con {choose} en 30 segundos. En cada una de las tres rondas solo los combatientes envian A para ataque, B para defensa o C con la barra especial llena. Tras subir de nivel, 1 asigna Vitalidad, 2 Fuerza, 3 Defensa o 4 Agilidad.',
+      prefix:'Prefijo de chat activo: {prefix}', idle:'No hay seleccion de batalla activa. La arena esta lista.', queue:'{count} espectadores esperan un rival justo.', roster:'Seleccion de monstruo', skill:'Ronda {round} · seleccion de habilidad', arena:'Arena', locked:'bloqueado', versus:' contra ', demoSent:'{scene} enviado al overlay de OBS.',
+      scenes:{ match:'Entrada', skill:'Habilidad', hit:'Golpe', knockout:'K. O.', levelup:'Subida de nivel' }
+    },
+    fr: {
+      heading:'Arena cinematographique de competences', live:'Fenetre de selection en direct', preview:'Apercu OBS',
+      instructions:'Rejoignez avec {battle}, puis verrouillez votre monstre avec {choose} en 30 secondes. Pendant chacune des trois manches, seuls les deux combattants envoient A pour attaquer, B pour defendre ou C lorsque la jauge speciale est pleine. Apres un niveau, 1 attribue Vitalite, 2 Force, 3 Defense ou 4 Agilite.',
+      prefix:'Prefixe de chat actif : {prefix}', idle:'Aucune selection de combat active. L arena est prete.', queue:'{count} spectateurs attendent un adversaire equitable.', roster:'Selection du monstre', skill:'Manche {round} · selection de competence', arena:'Arena', locked:'verrouille', versus:' contre ', demoSent:'{scene} envoye vers l overlay OBS.',
+      scenes:{ match:'Entree', skill:'Choix de competence', hit:'Impact', knockout:'K.-O.', levelup:'Niveau superieur' }
+    }
+  };
+  const arenaCopy = (key, values = {}) => String(ARENA_COPY[arenaLocale]?.[key] || ARENA_COPY.de[key] || key)
+    .replace(/\{(\w+)\}/g, (_, name) => values[name] ?? `{${name}}`);
   let selectedGift = null;
   let searchTimer = null;
   const notice = (message, type = '') => {
@@ -448,6 +511,42 @@
     const payload = await request(`/api/streammonsters/state?userId=${encodeURIComponent(userId)}`);
     renderViewer(payload.viewer || {});
   };
+  const renderBattleStatus = battle => {
+    const root = byId('battleLiveStatus');
+    if (!root) return;
+    const match = battle?.match;
+    const queueLength = Number(battle?.queueLength || battle?.queue?.length || 0);
+    if (!match) {
+      root.textContent = queueLength
+        ? arenaCopy('queue', { count: queueLength })
+        : arenaCopy('idle');
+      return;
+    }
+    const viewers = (match.participants || []).map(participant => participant.userId || participant.user_id).filter(Boolean);
+    const selected = Object.entries(match.choices || {})
+      .filter(([, choice]) => choice)
+      .map(([viewer, choice]) => `${viewer}: ${choice}`);
+    const phase = match.phase === 'roster_selection'
+      ? arenaCopy('roster')
+      : (match.phase === 'skill_selection'
+        ? arenaCopy('skill', { round: match.round || 1 })
+        : (match.phase || arenaCopy('arena')));
+    root.textContent = `${phase} · ${viewers.join(arenaCopy('versus')) || arenaCopy('idle')}${selected.length ? ` · ${arenaCopy('locked')}: ${selected.join(', ')}` : ''}`;
+  };
+  const renderArenaCopy = prefix => {
+    const activePrefix = typeof prefix === 'string' && prefix ? prefix : '!';
+    byId('battlePreviewHeading').textContent = arenaCopy('heading');
+    byId('battleLiveHeading').textContent = arenaCopy('live');
+    byId('battleDemoHeading').textContent = arenaCopy('preview');
+    byId('battleInstructions').textContent = arenaCopy('instructions', {
+      battle: `${activePrefix}battle`,
+      choose: `${activePrefix}choose <slot>`
+    });
+    byId('commandPrefixStatus').textContent = arenaCopy('prefix', { prefix: activePrefix });
+    document.querySelectorAll('[data-demo-scene]').forEach(button => {
+      button.textContent = ARENA_COPY[arenaLocale].scenes[button.dataset.demoScene] || button.dataset.demoScene;
+    });
+  };
   const renderLeaderboard = entries => {
     const root = byId('leaderboard');
     root.replaceChildren();
@@ -569,6 +668,8 @@
       byId('overlayUrl').textContent = `${location.origin}/streammonsters/overlay`;
       byId('hypeMetric').textContent = `${state.hype?.points || 0}%`;
       renderPool(state.pool || []);
+      renderArenaCopy(state.commandPrefix);
+      renderBattleStatus(state.battle);
       const metrics = state.metrics;
       if (metrics) byId('creatorMetrics').textContent = `${metrics.eggs_spawned || 0} Eier · ${metrics.hatches || 0} Hatches · ${metrics.duels || 0} Duelle`;
       const readiness = [Boolean(byId('creatorName').value), mappings.length > 0, true, Boolean(byId('overlayUrl').textContent)].filter(Boolean).length;
@@ -593,6 +694,21 @@
     } catch (error) {
       notice(error.message, 'error');
     }
+  });
+  document.querySelectorAll('[data-demo-scene]').forEach(button => {
+    button.addEventListener('click', async () => {
+      try {
+        const scene = button.dataset.demoScene;
+        await request('/api/streammonsters/demo', {
+          method:'POST',
+          headers:jsonHeaders,
+          body:JSON.stringify({ scene })
+        });
+        notice(arenaCopy('demoSent', { scene: button.textContent }), 'success');
+      } catch (error) {
+        notice(error.message, 'error');
+      }
+    });
   });
   byId('giftEffect').addEventListener('change', () => {
     byId('giftElement').disabled = byId('giftEffect').value === 'boost';

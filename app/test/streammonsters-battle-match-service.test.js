@@ -66,6 +66,7 @@ describe('Stream Monsters cinematic BattleMatchService', () => {
       .toEqual(expect.arrayContaining([expect.objectContaining({ userId: 'viewer-a' }), expect.objectContaining({ userId: 'viewer-b' })]));
 
     jest.advanceTimersByTime(30_000);
+    jest.advanceTimersByTime(3_000);
     expect(service.activeMatch.phase).toBe('skill_selection');
     expect(service.activeMatch.participants['viewer-a'].monsterId).toBe(a.monster_id);
     expect(service.activeMatch.participants['viewer-b'].monsterId).toBe(b.monster_id);
@@ -81,7 +82,13 @@ describe('Stream Monsters cinematic BattleMatchService', () => {
     service.join('viewer-b');
     service.chooseMonster('viewer-a', 1);
     service.chooseMonster('viewer-b', 1);
+    jest.advanceTimersByTime(3_000);
 
+    expect(service.handleRawResponse({ userId: 'viewer-c' }, 'A')).toEqual({ handled: false });
+    expect(service.handleRawResponse({ userId: 'viewer-a' }, 'C')).toEqual(expect.objectContaining({
+      handled: true,
+      result: expect.objectContaining({ status: 'skill_unavailable' })
+    }));
     expect(service.handleRawResponse({ userId: 'viewer-a' }, 'A')).toEqual(expect.objectContaining({ handled: true }));
     expect(service.handleRawResponse({ userId: 'viewer-a' }, 'B')).toEqual(expect.objectContaining({
       handled: true,
@@ -94,6 +101,25 @@ describe('Stream Monsters cinematic BattleMatchService', () => {
     expect(service.activeMatch.phase).toBe('resolving');
     jest.advanceTimersByTime(1_000);
     expect(service.activeMatch.phase).toBe('skill_selection');
+    service.destroy();
+  });
+
+  test('avoids a recent rematch whenever another level-eligible viewer is available', () => {
+    const { service, addMonster } = createArena();
+    const a = addMonster('viewer-a');
+    const b = addMonster('viewer-b', 'Grove');
+    const c = addMonster('viewer-c', 'Tide');
+    service.rematchAt.set(service.rematchKey('viewer-a', 'viewer-b'), Date.now());
+    service.queue = [
+      { userId: 'viewer-a', monster: a, queuedAt: Date.now() },
+      { userId: 'viewer-b', monster: b, queuedAt: Date.now() },
+      { userId: 'viewer-c', monster: c, queuedAt: Date.now() }
+    ];
+
+    service.tryMatch();
+
+    expect(Object.keys(service.activeMatch.participants)).toEqual(expect.arrayContaining(['viewer-a', 'viewer-c']));
+    expect(Object.keys(service.activeMatch.participants)).not.toContain('viewer-b');
     service.destroy();
   });
 
