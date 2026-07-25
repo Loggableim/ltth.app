@@ -1893,4 +1893,60 @@ describe('InteractiveController', () => {
     harness.controller.destroy();
     harness.sqlite.close();
   });
+
+  test('rejects protocol-relative and external participant avatar sources before session creation', () => {
+    const harness = createHarness();
+    harness.controller.init();
+
+    expect(harness.controller._isValidAvatarSource('//evil.example/api/game-engine/avatar?url=x')).toBe(false);
+    expect(harness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'opener',
+      viewerDisplayName: 'Opener',
+      participants: [
+        { id: 'opener', displayName: 'Opener', avatarSource: '//evil.example/api/game-engine/avatar?url=x' },
+        { id: 'acceptor', displayName: 'Acceptor', avatarSource: 'https://evil.example/avatar.png' }
+      ]
+    })).toEqual({ success: false, error: 'invalid_avatar_source' });
+    expect(harness.createGame).not.toHaveBeenCalled();
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('closes recovery state carrying an external participant avatar source', () => {
+    const firstHarness = createHarness({ connect4HostStarts: false });
+    firstHarness.controller.init();
+    const match = firstHarness.controller.startMatch({
+      gameType: 'connect4',
+      viewerId: 'opener',
+      viewerDisplayName: 'Opener',
+      participants: [
+        { id: 'opener', displayName: 'Opener', avatarSource: '' },
+        { id: 'acceptor', displayName: 'Acceptor', avatarSource: '' }
+      ]
+    });
+    const persistedState = firstHarness.database.getInteractiveState(match.sessionId).state;
+    firstHarness.database.updateInteractiveState(match.sessionId, {
+      participants: [
+        { id: 'opener', displayName: 'Opener', avatarSource: '//evil.example/api/game-engine/avatar?url=x' },
+        { id: 'acceptor', displayName: 'Acceptor', avatarSource: '' }
+      ],
+      state: {
+        ...persistedState,
+        player1: { ...persistedState.player1, avatarSource: 'https://evil.example/avatar.png' }
+      }
+    });
+    firstHarness.controller.destroy();
+
+    const recoveredHarness = createHarness({ dbContext: firstHarness.dbContext });
+    expect(recoveredHarness.controller.init()).toMatchObject({ recovered: 0 });
+    expect(firstHarness.database.getInteractiveState(match.sessionId)).toMatchObject({
+      status: 'completed',
+      terminalReason: 'recovery_failed'
+    });
+
+    recoveredHarness.controller.destroy();
+    firstHarness.sqlite.close();
+  });
 });

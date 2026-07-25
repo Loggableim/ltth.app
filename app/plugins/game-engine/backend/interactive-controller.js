@@ -183,10 +183,11 @@ class InteractiveController {
   _isValidAvatarSource(value) {
     const source = String(value || '');
     if (!source) return true;
-    if (!source.startsWith('/')) return false;
+    if (!source.startsWith('/') || source.startsWith('//')) return false;
     try {
-      const parsed = new URL(source, 'http://ltth.local');
-      return [
+      const base = new URL('http://ltth.local');
+      const parsed = new URL(source, base);
+      return parsed.origin === base.origin && [
         '/api/game-engine/avatar',
         '/api/game-engine/arena/avatar'
       ].includes(parsed.pathname) && parsed.searchParams.has('url');
@@ -203,12 +204,25 @@ class InteractiveController {
       ];
     }
     if (participants.length !== 2) throw new Error('Interactive matches require two participants');
-    return participants.map(participant => ({
-      id: String(participant?.id || '').trim(),
-      displayName: String(participant?.displayName || participant?.id || '').trim(),
-      role: participant?.role || (participant?.id === 'streamer' ? 'host' : 'viewer'),
-      avatarSource: String(participant?.avatarSource || '')
-    }));
+    return participants.map(participant => {
+      const avatarSource = String(participant?.avatarSource || '');
+      if (!this._isValidAvatarSource(avatarSource)) {
+        throw new Error('invalid_avatar_source');
+      }
+      return {
+        id: String(participant?.id || '').trim(),
+        displayName: String(participant?.displayName || participant?.id || '').trim(),
+        role: participant?.role || (participant?.id === 'streamer' ? 'host' : 'viewer'),
+        avatarSource
+      };
+    });
+  }
+
+  _assertSafeStateAvatarSources(state = {}) {
+    const players = [state.player1, state.player2, state.whitePlayer, state.blackPlayer];
+    if (players.some(player => !this._isValidAvatarSource(player?.avatarSource))) {
+      throw new Error('invalid_avatar_source');
+    }
   }
 
   _isViewerVersusViewer(session) {
@@ -479,11 +493,19 @@ class InteractiveController {
     for (const row of activeRows) {
       try {
         if (row.recoveryError) throw new Error(row.recoveryError);
+        const participants = this._normalizeParticipants(
+          row.viewerId,
+          row.viewerDisplayName,
+          row.hostDisplayName,
+          row.participants
+        );
+        this._assertSafeStateAvatarSources(row.state);
         const restored = this.restoreGame(row);
         const adapter = createInteractiveAdapter(row.gameType, restored.game);
         adapter.restoreState(row.state);
         const session = this.registry.restore({
           ...row,
+          participants,
           adapter,
           config: this.getConfig(row.gameType) || {},
           timeControl: row.timeControl || restored.timeControl,
