@@ -979,14 +979,13 @@ class GameEngineDatabase {
   expireOpenInteractiveChallenges(now = Date.now()) {
     const result = this.db.prepare(`
       UPDATE game_interactive_challenges
-      SET status = 'expired', updated_at = ?
+      SET status = 'fallback_pending', updated_at = ?
       WHERE status = 'open' AND expires_at_ms <= ?
     `).run(now, now);
     return Number(result?.changes) || 0;
   }
 
   getOpenInteractiveChallenge(now = Date.now()) {
-    this.expireOpenInteractiveChallenges(now);
     return this._mapInteractiveChallengeRow(this.db.prepare(`
       SELECT * FROM game_interactive_challenges
       WHERE status = 'open' AND expires_at_ms > ?
@@ -1076,7 +1075,6 @@ class GameEngineDatabase {
   }
 
   expireInteractiveChallenge(challengeId, now = Date.now()) {
-    this.expireOpenInteractiveChallenges(now);
     const existing = this.getInteractiveChallenge(challengeId);
     if (existing?.status === 'expired') return existing;
     const changed = this.db.prepare(`
@@ -1094,7 +1092,9 @@ class GameEngineDatabase {
         SET status = 'fallback_pending', updated_at = ?
         WHERE challenge_id = ? AND status = 'open' AND expires_at_ms <= ?
       `).run(now, Number(challengeId), now).changes;
-      return changed ? this.getInteractiveChallenge(challengeId) : null;
+      if (changed) return this.getInteractiveChallenge(challengeId);
+      const challenge = this.getInteractiveChallenge(challengeId);
+      return challenge?.status === 'fallback_pending' ? challenge : null;
     });
   }
 
@@ -1110,7 +1110,7 @@ class GameEngineDatabase {
     const changed = this.db.prepare(`
       UPDATE game_interactive_challenges
       SET status = 'expired', updated_at = ?
-      WHERE challenge_id = ? AND status IN ('open', 'fallback_pending')
+      WHERE challenge_id = ? AND status IN ('open', 'claimed', 'fallback_pending')
     `).run(now, Number(challengeId)).changes > 0;
     return changed ? this.getInteractiveChallenge(challengeId) : null;
   }

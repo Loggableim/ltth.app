@@ -383,11 +383,23 @@ class InteractiveController {
           .find(challenge => challenge.openerId === normalizedId);
         if (duplicate) return { success: false, error: 'challenge_already_open' };
 
-        const challenge = this.database.claimOldestEligibleInteractiveChallenge({
-          participantId: normalizedId,
-          participantDisplayName: normalizedDisplayName,
-          participantAvatarSource
-        }, now);
+        let challenge = null;
+        while (true) {
+          challenge = this.database.claimOldestEligibleInteractiveChallenge({
+            participantId: normalizedId,
+            participantDisplayName: normalizedDisplayName,
+            participantAvatarSource
+          }, now);
+          if (!challenge) break;
+          if (
+            this._isValidAvatarSource(challenge.openerAvatarSource) &&
+            !this.registry.getByParticipant(challenge.openerId)
+          ) {
+            break;
+          }
+          this.database.invalidateInteractiveChallenge(challenge.challengeId, now);
+          challenge = null;
+        }
         if (!challenge) {
           const opened = this.database.createInteractiveChallenge({
             gameType: 'connect4',
