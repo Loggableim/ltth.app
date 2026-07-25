@@ -5797,14 +5797,10 @@ class GameEnginePlugin {
 
       const controller = this.interactiveController;
       if (!controller) {
-        const result = this.handleGameStart('connect4', userId, nickname, 'command', `/${this.getConnect4StartCommandName()}`);
         return {
-          ...result,
-          message: result?.message || (result?.success
-            ? 'Game started.'
-            : result?.error === 'interactive_session_limit'
-              ? 'The interactive game limit is currently reached.'
-              : 'Failed to start game.'),
+          success: false,
+          error: 'interactive_controller_unavailable',
+          message: 'Connect4 matchmaking is unavailable. Please try again shortly.',
           displayOverlay: true
         };
       }
