@@ -342,6 +342,12 @@ class StreamMonstersRoutes {
     if (Object.prototype.hasOwnProperty.call(input, 'artPoolTarget')) {
       safe.artPoolTarget = Math.max(1, Math.min(8, Number.parseInt(input.artPoolTarget, 10) || 3));
     }
+    if (Object.prototype.hasOwnProperty.call(input, 'bottomOverlayDurationMs')) {
+      safe.bottomOverlayDurationMs = Math.max(
+        4_000,
+        Math.min(20_000, Number.parseInt(input.bottomOverlayDurationMs, 10) || 8_000)
+      );
+    }
     if (Object.prototype.hasOwnProperty.call(input, 'commandAliases')) {
       safe.commandAliases = this.sanitizeCommandAliases(input.commandAliases);
     }
@@ -383,6 +389,7 @@ class StreamMonstersRoutes {
       maxUnhatchedEggs: config.maxUnhatchedEggs,
       elementRules: config.elementRules || 'deterministic',
       artPoolTarget: Math.max(1, Math.min(8, Number(config.artPoolTarget) || 3)),
+      bottomOverlayDurationMs: Math.max(4_000, Math.min(20_000, Number(config.bottomOverlayDurationMs) || 8_000)),
       visualPack: ['furry', 'art_lab', 'kenney'].includes(config.visualPack) ? config.visualPack : 'furry',
       commandAliases: this.sanitizeCommandAliases(config.commandAliases)
     };

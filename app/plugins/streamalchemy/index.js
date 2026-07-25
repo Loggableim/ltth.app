@@ -238,6 +238,7 @@ class StreamAlchemyPlugin {
         maxUnhatchedEggs: 3,
         elementRules: 'deterministic',
         artPoolTarget: 3,
+        bottomOverlayDurationMs: 8_000,
         visualPack: 'furry',
         ...storedStreamMonsters,
         commandAliases,

@@ -137,6 +137,24 @@ describe('Stream Monsters 1.2 public API', () => {
     });
   });
 
+  test('persists a readable bottom-overlay duration within the supported bounds', () => {
+    const { find, configProvider } = createRoutes();
+    const result = response();
+
+    find('POST', '/api/streammonsters/config')({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      body: { bottomOverlayDurationMs: 99_999 }
+    }, result);
+
+    expect(result.statusCode).toBe(200);
+    expect(result.body.config.bottomOverlayDurationMs).toBe(20_000);
+    expect(configProvider.updateConfig).toHaveBeenCalledWith({
+      streamMonsters: { bottomOverlayDurationMs: 20_000 }
+    });
+  });
+
   test('persists furry as the selected visual pack', () => {
     const { find, configProvider } = createRoutes();
     const result = response();

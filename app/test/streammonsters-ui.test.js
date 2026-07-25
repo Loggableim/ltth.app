@@ -94,6 +94,26 @@ describe('Stream Monsters creator wizard', () => {
     dom.window.close();
   });
 
+  test('saves the chosen readable lower-overlay duration', async () => {
+    const { dom, fetchMock } = bootUi();
+    await waitFor(() => expect(dom.window.document.getElementById('bottomOverlayDuration')).not.toBeNull());
+
+    dom.window.document.getElementById('bottomOverlayDuration').value = '12';
+    dom.window.document.getElementById('saveSetup').click();
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/streammonsters/config',
+      expect.objectContaining({ method: 'POST' })
+    ));
+    const saveCalls = fetchMock.mock.calls.filter(([url, options]) => (
+      url === '/api/streammonsters/config' && options.method === 'POST'
+    ));
+    expect(JSON.parse(saveCalls.at(-1)[1].body)).toEqual(expect.objectContaining({
+      bottomOverlayDurationMs: 12_000
+    }));
+    dom.window.close();
+  });
+
   test('contains the five market-ready areas, gift search, twelve eggs, OBS and full demo surfaces', () => {
     const html = fs.readFileSync(path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-ui.html'), 'utf8');
 
