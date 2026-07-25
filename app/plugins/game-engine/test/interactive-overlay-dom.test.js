@@ -290,6 +290,25 @@ describe('interactive overlay countdown DOM', () => {
     dom.window.close();
   });
 
+  test('Connect4 ignores a stale open matchmaking snapshot after a newer challenge clear', () => {
+    const { dom, listeners } = loadOverlay('connect4.html');
+    const applyState = listeners.get('game-engine:interactive-state');
+    const cleared = connect4State({ displayRevision: 8, sessionRevision: 2, phase: 'idle', deadline: null, moveNumber: 0 });
+    const staleOpen = connect4State({ displayRevision: 7, sessionRevision: 1, phase: 'idle', deadline: null, moveNumber: 0 });
+    staleOpen.connect4Matchmaking = {
+      challengeId: 22,
+      status: 'open',
+      openerDisplayName: 'Stale Viewer',
+      expiresAtMs: 130000
+    };
+
+    applyState(cleared);
+    applyState(staleOpen);
+
+    expect(dom.window.document.getElementById('challenge-screen').classList.contains('show')).toBe(false);
+    dom.window.close();
+  });
+
   test('Connect4 rerenders held matchmaking copy after i18n initialization', async () => {
     let resolveReady;
     const i18n = {
@@ -1502,6 +1521,36 @@ describe('interactive overlay countdown DOM', () => {
     expect(postMessage).toHaveBeenCalledTimes(1);
     expect(dom.window.document.getElementById('interactive-viewer-countdown')).toBeNull();
 
+    dom.window.close();
+  });
+
+  test('unified forwards an open Connect4 matchmaking challenge while the display router is idle', () => {
+    const { dom, listeners } = loadOverlay('unified.html');
+    const applyState = listeners.get('game-engine:interactive-state');
+    const frame = dom.window.document.getElementById('frame-connect4');
+    const postMessage = jest.fn();
+    frame.dataset.loaded = 'true';
+    frame.dataset.ready = 'true';
+    frame.contentWindow.postMessage = postMessage;
+    const idleState = connect4State({ displayRevision: 6, sessionRevision: 1, phase: 'idle', deadline: null, moveNumber: 0 });
+    const state = {
+      ...idleState,
+      serverTimestamp: 101000,
+      connect4Matchmaking: {
+        challengeId: 21,
+        status: 'open',
+        openerDisplayName: 'Challenge Viewer',
+        expiresAtMs: 130000
+      }
+    };
+
+    applyState(idleState);
+    applyState(state);
+
+    expect(frame.classList.contains('active')).toBe(true);
+    expect(postMessage).toHaveBeenCalledTimes(1);
+    expect(postMessage.mock.calls[0][0].payload.connect4Matchmaking).toEqual(state.connect4Matchmaking);
+    expect(dom.window.document.getElementById('idle-state').classList.contains('visible')).toBe(false);
     dom.window.close();
   });
 

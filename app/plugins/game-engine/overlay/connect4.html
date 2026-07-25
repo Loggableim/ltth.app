@@ -752,6 +752,7 @@
     let gameConfig = null;
     let lastInteractiveDisplayRevision = -1;
     let lastInteractiveSessionRevision = -1;
+    let lastInteractiveMatchmakingTimestamp = -1;
     let latestInteractiveState = null;
     let latestInteractiveStateReceivedAt = 0;
     let latestInteractiveQueueIdle = true;
@@ -1639,25 +1640,40 @@
 
     function applyInteractiveSnapshot(state, { force = false, suppressEffects = false } = {}) {
       const interactiveState = interactiveConnect4Presentation(state);
-      renderMatchmakingChallenge(interactiveState, Date.now(), force);
       const display = interactiveState?.display;
       if (!display) return;
       const resultPresentation = display.phase === 'result' ? display.result : null;
       const displayRevision = Number(display.displayRevision);
       const sessionRevision = Number(resultPresentation?.sessionRevision ?? display.sessionRevision ?? -1);
+      const matchmakingTimestamp = Number(interactiveState?.serverTimestamp);
       if (!Number.isFinite(displayRevision)) return;
       if (!force && displayRevision < lastInteractiveDisplayRevision) return;
+      const displayRevisionUnchanged = displayRevision === lastInteractiveDisplayRevision &&
+        sessionRevision <= lastInteractiveSessionRevision;
+      const newerMatchmakingState = Number.isFinite(matchmakingTimestamp) &&
+        matchmakingTimestamp > lastInteractiveMatchmakingTimestamp;
       if (!force &&
-        displayRevision === lastInteractiveDisplayRevision &&
-        sessionRevision <= lastInteractiveSessionRevision
+        displayRevisionUnchanged &&
+        !newerMatchmakingState
       ) return;
 
       if (!force) {
-        lastInteractiveDisplayRevision = displayRevision;
-        lastInteractiveSessionRevision = sessionRevision;
+        if (!displayRevisionUnchanged) {
+          lastInteractiveDisplayRevision = displayRevision;
+          lastInteractiveSessionRevision = sessionRevision;
+        }
+        if (Number.isFinite(matchmakingTimestamp)) {
+          lastInteractiveMatchmakingTimestamp = matchmakingTimestamp;
+        }
         latestInteractiveState = state;
         latestInteractiveStateReceivedAt = Date.now();
       }
+      renderMatchmakingChallenge(
+        interactiveState,
+        force ? latestInteractiveStateReceivedAt : Date.now(),
+        force
+      );
+      if (!force && displayRevisionUnchanged) return;
       clearInteractivePresentation();
       if (display.gameType !== 'connect4') {
         interactiveSnapshotActive = false;
