@@ -86,6 +86,30 @@ describe('Chat Handler Registration Fix', () => {
   });
 
   describe('When GCCE is Available', () => {
+    test('registers both fixed Connect4 matchmaking aliases alongside the configured alias', () => {
+      const registerCommandsForPlugin = jest.fn((pluginId, commands) => ({
+        registered: commands.map(command => command.name),
+        failed: []
+      }));
+      mockApi.pluginLoader = {
+        loadedPlugins: new Map([['gcce', { instance: {
+          registerCommandsForPlugin,
+          unregisterCommandsForPlugin: jest.fn()
+        } }]])
+      };
+      plugin.db = {
+        getGameConfig: jest.fn(gameType => gameType === 'connect4'
+          ? { ...plugin.defaultConfigs.connect4, chatCommand: 'customc4' }
+          : null),
+        getTriggers: jest.fn(() => [])
+      };
+
+      plugin.registerGCCECommands();
+
+      const commands = registerCommandsForPlugin.mock.calls[0][1].map(command => command.name);
+      expect(commands).toEqual(expect.arrayContaining(['connect4', '4gewinnt', 'customc4']));
+    });
+
     test('should leave prefixed chat commands to GCCE', () => {
       // Setup GCCE as available
       mockApi.pluginLoader = {

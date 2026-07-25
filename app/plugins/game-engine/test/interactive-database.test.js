@@ -632,6 +632,30 @@ describe('GameEngineDatabase interactive persistence', () => {
     });
   });
 
+  test('resolves a challenger display name from persisted interactive participants', () => {
+    const challengerId = '7446102145268843555';
+    const sessionId = database.createSession('connect4', 'opener-1', 'viewer', 'command', 'connect4');
+    database.addPlayer2(sessionId, challengerId, 'viewer');
+    database.endSession(sessionId, challengerId, { board: [[2]] }, 'win');
+    database.createInteractiveState(session({
+      sessionId,
+      viewerId: 'opener-1',
+      viewerDisplayName: 'Opener One',
+      participantIds: ['opener-1', challengerId],
+      participants: [
+        { id: 'opener-1', displayName: 'Opener One', role: 'viewer', avatarSource: '' },
+        { id: challengerId, displayName: 'Challenger Two', role: 'viewer', avatarSource: '' }
+      ],
+      turnPlayerId: challengerId
+    }));
+    database.updatePlayerStats(challengerId, 'connect4', true, false, false, 10);
+
+    expect(database.resolveLeaderboardIdentity(challengerId)).toEqual({
+      playerId: challengerId,
+      username: 'Challenger Two'
+    });
+  });
+
   test('derives the streamer as active player when a host turn has no stored turn-player identity', () => {
     database.createInteractiveState(session({
       turnRole: 'host',

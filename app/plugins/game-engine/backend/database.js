@@ -1483,13 +1483,20 @@ class GameEngineDatabase {
   resolveLeaderboardIdentity(playerId) {
     const stableId = String(playerId);
     const identities = this.db.prepare(`
-      SELECT viewer_display_name FROM game_interactive_sessions
-      WHERE viewer_id = ?
+      SELECT viewer_id, viewer_display_name, participants_json FROM game_interactive_sessions
+      WHERE viewer_id = ? OR participants_json IS NOT NULL
       ORDER BY updated_at DESC, session_id DESC
     `).iterate(stableId);
     let username = stableId;
     for (const identity of identities) {
-      const displayName = String(identity.viewer_display_name || '');
+      let displayName = identity.viewer_id === stableId
+        ? String(identity.viewer_display_name || '')
+        : '';
+      if (!displayName) {
+        const participants = this._parseInteractiveJson(identity.participants_json, []);
+        const participant = participants.find(candidate => String(candidate?.id || '') === stableId);
+        displayName = String(participant?.displayName || '');
+      }
       if (!displayName.trim()) continue;
       username = displayName;
       break;

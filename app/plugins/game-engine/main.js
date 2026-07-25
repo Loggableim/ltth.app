@@ -134,6 +134,8 @@ class GameEnginePlugin {
     this.unifiedQueue = new UnifiedQueueManager(this.logger, this.io);
     this.unifiedQueue.setGameEnginePlugin(this);
     this.interactiveController = null;
+    this.connect4MatchmakingTimeout = null;
+    this.recentConnect4MatchmakingEvents = new Map();
     
     // GCCE integration state
     this.gcceCommandsRegistered = false;
@@ -260,6 +262,24 @@ class GameEnginePlugin {
     return identity == null || identity === '' ? null : `chat:${identity}`;
   }
 
+  _isDuplicateConnect4MatchmakingEvent(data = {}) {
+    const identity = this._getChatMoveIdentity(data);
+    if (!identity) return false;
+    const now = Date.now();
+    const previous = this.recentConnect4MatchmakingEvents.get(identity);
+    if (previous && now - previous < 60000) return true;
+    this.recentConnect4MatchmakingEvents.set(identity, now);
+    return false;
+  }
+
+  _connect4StartAliases() {
+    return new Set(['connect4', '4gewinnt', this.getConnect4StartCommandName()]);
+  }
+
+  _isConnect4StartAlias(message) {
+    return this._connect4StartAliases().has(this.normalizeChatCommandName(message));
+  }
+
   _getInteractiveSettings() {
     const stored = this.db?.getGameConfig?.('interactive') || {};
     const settings = this._getConfigWithDefaults('interactive', stored);
@@ -309,6 +329,7 @@ class GameEnginePlugin {
     gameType,
     viewerId,
     viewerDisplayName,
+    participants = null,
     hostDisplayName,
     config,
     timeControl,
@@ -316,7 +337,37 @@ class GameEnginePlugin {
     triggerValue
   }) {
     if (gameType === 'connect4') {
+      const viewerParticipants = Array.isArray(participants) && participants.length === 2
+        ? participants
+        : null;
+      if (viewerParticipants?.every(participant => participant.role === 'viewer')) {
+        const [playerOne, playerTwo] = viewerParticipants;
+        const sessionId = this.db.createSession(
+          gameType,
+          playerOne.id,
+          'viewer',
+          triggerType,
+          triggerValue
+        );
+        this.db.addPlayer2(sessionId, playerTwo.id, 'viewer');
+        const game = new Connect4Game(sessionId, {
+          username: playerOne.id,
+          role: 'viewer',
+          color: config.player1Color,
+          nickname: playerOne.displayName,
+          avatarSource: playerOne.avatarSource || ''
+        }, {
+          username: playerTwo.id,
+          role: 'viewer',
+          color: config.player2Color,
+          nickname: playerTwo.displayName,
+          avatarSource: playerTwo.avatarSource || ''
+        }, this.logger);
+        this.activeSessions.set(sessionId, game);
+        return { sessionId, game, timeControl: null };
+      }
       const streamerRole = config.streamerRole || 'player2';
+      const viewerParticipant = viewerParticipants?.find(participant => participant.role === 'viewer');
       const sessionId = this.db.createSession(
         gameType,
         streamerRole === 'player1' ? 'streamer' : viewerId,
@@ -333,13 +384,15 @@ class GameEnginePlugin {
         username: streamerRole === 'player1' ? 'streamer' : viewerId,
         role: streamerRole === 'player1' ? 'streamer' : 'viewer',
         color: config.player1Color,
-        nickname: streamerRole === 'player1' ? hostDisplayName : viewerDisplayName
+        nickname: streamerRole === 'player1' ? hostDisplayName : viewerDisplayName,
+        avatarSource: streamerRole === 'player1' ? '' : (viewerParticipant?.avatarSource || '')
       };
       const player2 = {
         username: streamerRole === 'player2' ? 'streamer' : viewerId,
         role: streamerRole === 'player2' ? 'streamer' : 'viewer',
         color: config.player2Color,
-        nickname: streamerRole === 'player2' ? hostDisplayName : viewerDisplayName
+        nickname: streamerRole === 'player2' ? hostDisplayName : viewerDisplayName,
+        avatarSource: streamerRole === 'player2' ? '' : (viewerParticipant?.avatarSource || '')
       };
       const game = new Connect4Game(sessionId, player1, player2, this.logger);
       this.activeSessions.set(sessionId, game);
@@ -458,7 +511,55 @@ class GameEnginePlugin {
       getConfig: gameType => this._getConfigWithDefaults(gameType, this.db.getGameConfig(gameType)),
       getSettings: () => this._getInteractiveSettings()
     });
-    return this.interactiveController.init();
+    const recovery = this.interactiveController.init();
+    const challenge = this.interactiveController.recoverConnect4Challenge?.();
+    if (challenge) this._scheduleConnect4MatchmakingExpiry(challenge);
+    return recovery;
+  }
+
+  _scheduleConnect4MatchmakingExpiry(challenge) {
+    if (this.connect4MatchmakingTimeout) {
+      clearTimeout(this.connect4MatchmakingTimeout);
+      this.connect4MatchmakingTimeout = null;
+    }
+    if (!challenge?.challengeId || challenge.status !== 'open') return;
+    const delay = Math.max(0, Number(challenge.expiresAtMs) - Date.now());
+    this.connect4MatchmakingTimeout = setTimeout(() => {
+      this.connect4MatchmakingTimeout = null;
+      this._expireConnect4MatchmakingChallenge(challenge).catch(error => {
+        this.logger.error(`Failed to expire Connect4 matchmaking challenge: ${error.message}`);
+      });
+    }, delay);
+    if (typeof this.connect4MatchmakingTimeout.unref === 'function') {
+      this.connect4MatchmakingTimeout.unref();
+    }
+  }
+
+  async _expireConnect4MatchmakingChallenge(challenge) {
+    const result = this.interactiveController?.expireConnect4Challenge?.(challenge.challengeId);
+    if (!result?.success) return result || { success: false, error: 'interactive_controller_unavailable' };
+    const participants = [
+      {
+        id: challenge.openerId,
+        displayName: challenge.openerDisplayName,
+        role: 'viewer',
+        avatarSource: challenge.openerAvatarSource || ''
+      },
+      {
+        id: 'streamer',
+        displayName: this._resolveHostDisplayName(),
+        role: 'host',
+        avatarSource: ''
+      }
+    ];
+    return this.interactiveController.startMatch({
+      gameType: 'connect4',
+      viewerId: challenge.openerId,
+      viewerDisplayName: challenge.openerDisplayName,
+      participants,
+      triggerType: 'matchmaking_timeout',
+      triggerValue: 'connect4'
+    });
   }
 
   _safeJoin(baseDir, ...parts) {
@@ -641,16 +742,20 @@ class GameEnginePlugin {
 
   _applyViewerTimeoutLockout(payload) {
     if (payload?.reason !== 'viewer_timeout') return null;
-    const viewerId = payload.viewerId;
+    const viewerId = payload.timedOutPlayerId || payload.viewerId;
     if (!viewerId || this._isStreamerLockoutIdentity(viewerId)) return null;
     if (typeof this.db?.setGamePlayerLockout !== 'function') return null;
+
+    const timedOutParticipant = Array.isArray(payload.participants)
+      ? payload.participants.find(participant => participant.id === viewerId)
+      : null;
 
     try {
       const lockout = this.db.setGamePlayerLockout(viewerId, 'viewer_timeout', GAME_TIMEOUT_LOCKOUT_MS);
       if (lockout) {
         this.io.emit('game-engine:player-lockout', {
           username: viewerId,
-          nickname: payload.viewerDisplayName || viewerId,
+          nickname: timedOutParticipant?.displayName || payload.viewerDisplayName || viewerId,
           gameType: payload.gameType || 'connect4',
           reason: lockout.reason,
           expiresAt: lockout.expiresAt,
@@ -723,7 +828,7 @@ class GameEnginePlugin {
     });
   }
 
-  _assertAllowedArenaAvatarUrl(value) {
+  _assertAllowedAvatarUrl(value) {
     let parsed;
     try {
       parsed = new URL(value);
@@ -746,8 +851,13 @@ class GameEnginePlugin {
     return parsed;
   }
 
-  async _fetchAllowedArenaAvatar(rawUrl) {
-    let currentUrl = this._assertAllowedArenaAvatarUrl(rawUrl);
+  // Kept for callers that still use the former Arena-specific helper.
+  _assertAllowedArenaAvatarUrl(value) {
+    return this._assertAllowedAvatarUrl(value);
+  }
+
+  async _fetchAllowedAvatar(rawUrl) {
+    let currentUrl = this._assertAllowedAvatarUrl(rawUrl);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), AVATAR_PROXY_TIMEOUT_MS);
 
@@ -781,6 +891,45 @@ class GameEnginePlugin {
       throw error;
     } finally {
       clearTimeout(timeout);
+    }
+  }
+
+  async _fetchAllowedArenaAvatar(rawUrl) {
+    return this._fetchAllowedAvatar(rawUrl);
+  }
+
+  _getAvatarProxyPath(rawUrl) {
+    const value = String(rawUrl || '').trim();
+    if (!value) return '';
+    try {
+      this._assertAllowedAvatarUrl(value);
+      return `/api/game-engine/avatar?url=${encodeURIComponent(value)}`;
+    } catch (_) {
+      return '';
+    }
+  }
+
+  async _serveAllowedAvatar(req, res, label = 'Avatar') {
+    try {
+      const rawUrl = String(req.query?.url || '').trim();
+      const upstream = await this._fetchAllowedAvatar(rawUrl);
+      if (!upstream.ok) {
+        return res.status(upstream.status).json({ error: 'Avatar image unavailable' });
+      }
+      const contentType = upstream.headers.get('content-type') || 'image/webp';
+      if (!contentType.toLowerCase().startsWith('image/')) {
+        return res.status(415).json({ error: 'Avatar URL is not an image' });
+      }
+      const bytes = Buffer.from(await upstream.arrayBuffer());
+      if (bytes.length > AVATAR_PROXY_MAX_BYTES) {
+        return res.status(413).json({ error: 'Avatar image too large' });
+      }
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'public, max-age=1800');
+      return res.send(bytes);
+    } catch (error) {
+      this.logger.warn(`${label} avatar proxy failed: ${error.message}`);
+      return res.status(error.statusCode || 400).json({ error: 'Invalid avatar request' });
     }
   }
 
@@ -1449,6 +1598,12 @@ class GameEnginePlugin {
   }
 
   async destroy() {
+    if (this.connect4MatchmakingTimeout) {
+      clearTimeout(this.connect4MatchmakingTimeout);
+      this.connect4MatchmakingTimeout = null;
+    }
+    this.recentConnect4MatchmakingEvents.clear();
+
     // Clear GCCE retry interval if still running
     if (this.gcceRetryInterval) {
       clearInterval(this.gcceRetryInterval);
@@ -2142,33 +2297,14 @@ class GameEnginePlugin {
       }
     });
 
-    // API: Proxy Live Arena profile pictures as same-origin images for Canvas/Pixi renderers.
+    // API: Proxy approved profile pictures as same-origin images for game overlays.
+    this.api.registerRoute('GET', '/api/game-engine/avatar', async (req, res) => {
+      await this._serveAllowedAvatar(req, res, 'Game Engine');
+    });
+
+    // Legacy Arena URL remains compatible with existing Canvas/Pixi renderers.
     this.api.registerRoute('GET', '/api/game-engine/arena/avatar', async (req, res) => {
-      try {
-        const rawUrl = String(req.query?.url || '').trim();
-        const upstream = await this._fetchAllowedArenaAvatar(rawUrl);
-
-        if (!upstream.ok) {
-          return res.status(upstream.status).json({ error: 'Avatar image unavailable' });
-        }
-
-        const contentType = upstream.headers.get('content-type') || 'image/webp';
-        if (!contentType.toLowerCase().startsWith('image/')) {
-          return res.status(415).json({ error: 'Avatar URL is not an image' });
-        }
-
-        const bytes = Buffer.from(await upstream.arrayBuffer());
-        if (bytes.length > AVATAR_PROXY_MAX_BYTES) {
-          return res.status(413).json({ error: 'Avatar image too large' });
-        }
-
-        res.setHeader('Content-Type', contentType);
-        res.setHeader('Cache-Control', 'public, max-age=1800');
-        res.send(bytes);
-      } catch (error) {
-        this.logger.warn(`Arena avatar proxy failed: ${error.message}`);
-        res.status(error.statusCode || 400).json({ error: 'Invalid avatar request' });
-      }
+      await this._serveAllowedAvatar(req, res, 'Arena');
     });
 
     // API: Trigger Live Arena test activity
@@ -4353,6 +4489,7 @@ class GameEnginePlugin {
       };
 
       const c4ChatCommand = this.getConnect4StartCommandName();
+      const connect4StartCommands = [...this._connect4StartAliases()];
 
       // Load all chat command triggers from database
       const triggers = this.db.getTriggers();
@@ -4373,17 +4510,17 @@ class GameEnginePlugin {
           category: 'Games',
           handler: async (args, context) => await this.handleConnect4Command(args, context)
         },
-        {
-          name: c4ChatCommand,
-          description: 'Start a new Connect4 game',
-          syntax: `/${c4ChatCommand}`,
+        ...connect4StartCommands.map(commandName => ({
+          name: commandName,
+          description: 'Open or join a Connect4 viewer challenge',
+          syntax: `/${commandName}`,
           permission: 'all',
           enabled: true,
           minArgs: 0,
           maxArgs: 0,
           category: 'Games',
           handler: async (args, context) => await this.handleConnect4StartCommand(args, context)
-        },
+        })),
         {
           name: 'move',
           description: 'Make a chess move (SAN or UCI format)',
@@ -5278,6 +5415,20 @@ class GameEnginePlugin {
     const userRoles = { isModerator, isSubscriber, teamMemberLevel };
     const c4ChatCommand = this.getConnect4StartCommandName();
 
+    // Matchmaking start aliases intentionally run before generic trigger and
+    // GCCE fallback routing. This keeps `connect4`/`4gewinnt` reliable even
+    // when another plugin owns a similarly named database trigger.
+    if (this._isConnect4StartAlias(message)) {
+      this.handleConnect4StartCommand([], {
+        username: viewerNickname,
+        userId: viewerId,
+        nickname: viewerNickname,
+        profilePictureUrl,
+        rawData: data
+      });
+      return;
+    }
+
     const arenaMatch = message.match(/^!arena\s+(.+)$/i);
     if (arenaMatch) {
       this.handleArenaCommand(arenaMatch[1].trim().split(/\s+/), {
@@ -5318,15 +5469,6 @@ class GameEnginePlugin {
           .catch(err => this.logger.error(`[SLOT] Chat trigger error: ${err.message}`));
         return;
       }
-    }
-
-    if (cleanCommand === c4ChatCommand) {
-      this.handleConnect4StartCommand([], {
-        username: viewerNickname,
-        userId: viewerId,
-        nickname: viewerNickname
-      });
-      return;
     }
 
     // Check if this chat message triggers a game from database triggers
@@ -5395,7 +5537,9 @@ class GameEnginePlugin {
         this.handleConnect4StartCommand([], {
           username: viewerNickname,
           userId: viewerId,
-          nickname: viewerNickname
+          nickname: viewerNickname,
+          profilePictureUrl,
+          rawData: data
         });
         return;
       }
@@ -5563,14 +5707,68 @@ class GameEnginePlugin {
    */
   async handleConnect4StartCommand(args, context) {
     try {
-      // Use userId for player identification (unique TikTok ID)
-      // Use username (which is actually nickname in GCCE context) for display
       const userId = context.userId || context.username;
-      const nickname = context.username || context.nickname || userId;
-      
-      const c4ChatCommand = this.getConnect4StartCommandName();
-      
-      const result = this.handleGameStart('connect4', userId, nickname, 'command', `/${c4ChatCommand}`);
+      const nickname = context.nickname || context.username || userId;
+      const rawData = context.rawData || context;
+      if (!userId) {
+        return { success: false, error: 'viewer_identity_required', message: 'Could not identify the player.', displayOverlay: true };
+      }
+      if (this._isHostChatEvent(rawData)) {
+        return { success: false, error: 'host_cannot_challenge', message: 'The streamer cannot join a viewer challenge.', displayOverlay: true };
+      }
+      if (this._isDuplicateConnect4MatchmakingEvent(rawData)) {
+        return { success: true, duplicate: true, displayOverlay: true };
+      }
+      const lockoutRejection = this._rejectIfGameLocked(userId, nickname, 'connect4');
+      if (lockoutRejection) return lockoutRejection;
+
+      const controller = this.interactiveController;
+      if (!controller) {
+        const result = this.handleGameStart('connect4', userId, nickname, 'command', `/${this.getConnect4StartCommandName()}`);
+        return { ...result, displayOverlay: true };
+      }
+
+      const avatarSource = this._getAvatarProxyPath(context.profilePictureUrl || rawData.profilePictureUrl || '');
+      const challenge = controller.recoverConnect4Challenge?.() || controller.getState?.().connect4Matchmaking;
+      if (challenge?.status === 'open') {
+        const accepted = controller.acceptConnect4Challenge({
+          challengeId: challenge.challengeId,
+          participantId: userId,
+          participantDisplayName: nickname,
+          participantAvatarSource: avatarSource
+        });
+        if (!accepted?.success) {
+          return { ...accepted, displayOverlay: true };
+        }
+        if (this.connect4MatchmakingTimeout) {
+          clearTimeout(this.connect4MatchmakingTimeout);
+          this.connect4MatchmakingTimeout = null;
+        }
+        const participants = [
+          {
+            id: challenge.openerId,
+            displayName: challenge.openerDisplayName,
+            role: 'viewer',
+            avatarSource: challenge.openerAvatarSource || ''
+          },
+          { id: userId, displayName: nickname, role: 'viewer', avatarSource }
+        ];
+        const result = controller.startMatch({
+          gameType: 'connect4',
+          viewerId: challenge.openerId,
+          viewerDisplayName: challenge.openerDisplayName,
+          participants,
+          triggerType: 'matchmaking_accept',
+          triggerValue: 'connect4'
+        });
+        return { ...result, accepted: Boolean(result?.success), displayOverlay: true };
+      }
+
+      const result = controller.openConnect4Challenge({
+        openerId: userId,
+        openerDisplayName: nickname,
+        openerAvatarSource: avatarSource
+      });
       if (!result?.success) {
         return {
           success: false,
@@ -5579,15 +5777,18 @@ class GameEnginePlugin {
             ? 'You already have an interactive game in progress.'
             : result?.error === 'interactive_session_limit'
               ? 'The interactive game limit is currently reached.'
-              : result?.error === 'game_lockout'
-                ? (result.message || 'You are locked out from games after timing out.')
-                : 'Could not start the game.',
+                : result?.error === 'game_lockout'
+                  ? (result.message || 'You are locked out from games after timing out.')
+                  : 'Could not start the challenge.',
           displayOverlay: true
         };
       }
+      this._scheduleConnect4MatchmakingExpiry(result.challenge);
       return {
         success: true,
-        message: `Game started! ${this._resolveHostDisplayName()} vs ${nickname}. Use /c4 <A-G> to make your move.`,
+        challenge: true,
+        challengeId: result.challenge?.challengeId,
+        message: `${nickname} opened a Connect4 challenge. Another viewer has 30 seconds to join.`,
         displayOverlay: true
       };
     } catch (error) {
