@@ -28,7 +28,7 @@
 - `app/plugins/game-engine/backend/database.js` owns Connect4 search persistence, ordered open/recovery queries, atomic claim/update operations, and the schema migration that removes the singleton partial index.
 - `app/plugins/game-engine/backend/interactive-controller.js` validates participants, selects the oldest eligible search inside the database transaction, starts viewer-vs-viewer sessions, produces the backward-compatible state snapshot, and preserves a saturated streamer fallback for retry.
 - `app/plugins/game-engine/main.js` routes chat starts through the controller, schedules every persisted search with a timeout map, restores all searches after plugin initialization, retries pending streamer fallbacks, and clears all handles only on plugin destruction.
-- `app/plugins/game-engine/overlays/connect4.html` renders the primary search countdown and `pendingCount`; `app/plugins/game-engine/overlays/unified.html` continues forwarding the complete matchmaking object to the Connect4 frame.
+- `app/plugins/game-engine/overlay/connect4.html` renders the primary search countdown and `pendingCount`; `app/plugins/game-engine/overlay/unified.html` continues forwarding the complete matchmaking object to the Connect4 frame.
 - `app/plugins/game-engine/locales/{de,en,es,fr}.json` provides the pending-search copy under the existing Connect4 runtime locale namespace.
 - `app/plugins/game-engine/test/{interactive-controller,interactive-plugin-integration,interactive-overlay-dom}.test.js` provide controller, plugin lifecycle/chat, direct overlay, Unified overlay, avatar-disc, and localized-copy regression coverage.
 
@@ -162,8 +162,8 @@
 ### Task 3: OBS Search Presentation, Locales, and Avatar-Disc Regression
 
 **Files:**
-- Modify: `app/plugins/game-engine/overlays/connect4.html`
-- Modify: `app/plugins/game-engine/overlays/unified.html`
+- Modify: `app/plugins/game-engine/overlay/connect4.html`
+- Modify: `app/plugins/game-engine/overlay/unified.html`
 - Modify: `app/plugins/game-engine/locales/de.json`
 - Modify: `app/plugins/game-engine/locales/en.json`
 - Modify: `app/plugins/game-engine/locales/es.json`
@@ -206,7 +206,7 @@
   Expected: PASS, including direct and Unified server-time countdown, pending count, state replacement, localized re-render, avatar proxy image persistence, image error fallback, and colored red/yellow discs.
 
   ```bash
-  git add app/plugins/game-engine/overlays/connect4.html app/plugins/game-engine/overlays/unified.html app/plugins/game-engine/locales/de.json app/plugins/game-engine/locales/en.json app/plugins/game-engine/locales/es.json app/plugins/game-engine/locales/fr.json app/plugins/game-engine/test/interactive-overlay-dom.test.js
+  git add app/plugins/game-engine/overlay/connect4.html app/plugins/game-engine/overlay/unified.html app/plugins/game-engine/locales/de.json app/plugins/game-engine/locales/en.json app/plugins/game-engine/locales/es.json app/plugins/game-engine/locales/fr.json app/plugins/game-engine/test/interactive-overlay-dom.test.js
   git commit -m "feat(game-engine): show queued Connect4 viewer searches"
   ```
 
