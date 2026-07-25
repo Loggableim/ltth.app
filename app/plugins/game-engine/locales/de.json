@@ -1277,6 +1277,7 @@
             "cell_piece": "Spalte {column}, Reihe {row}: {owner}, Stein in {color}",
             "current_turn": "Am Zug: {player}{columnText}",
             "matchmaking_countdown": "Noch {seconds} s zum Herausfordern",
+            "matchmaking_other_searches": "{count} weitere Zuschauersuchen",
             "matchmaking_prompt": "{player} sucht einen Gegner! Schreibe connect4 zum Mitspielen.",
             "matchmaking_title": "Connect4 Herausforderung!",
             "draw": "🤝 Unentschieden!",
