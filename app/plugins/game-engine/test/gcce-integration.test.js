@@ -291,6 +291,34 @@ describe('Game Engine GCCE Integration', () => {
   });
 
   describe('Connect4 Start Command Handler', () => {
+    test('routes GCCE starts through the FIFO matchmaking handler', async () => {
+      const context = {
+        username: 'Test User',
+        userId: 'test123',
+        nickname: 'Test User',
+        profilePictureUrl: 'https://p16-sign-va.tiktokcdn.com/avatar.webp'
+      };
+      plugin.interactiveController = {
+        destroy: jest.fn(),
+        startOrJoinConnect4Matchmaking: jest.fn(() => ({
+          success: true,
+          action: 'opened',
+          challenge: { challengeId: 43, status: 'open', expiresAtMs: Date.now() + 30000 }
+        }))
+      };
+
+      const result = await plugin.handleConnect4StartCommand([], context);
+
+      expect(result).toMatchObject({ success: true, action: 'opened', challengeId: 43 });
+      expect(plugin.interactiveController.startOrJoinConnect4Matchmaking).toHaveBeenCalledWith(expect.objectContaining({
+        participantId: 'test123',
+        participantDisplayName: 'Test User',
+        triggerType: 'matchmaking_accept',
+        triggerValue: 'connect4'
+      }));
+      plugin._clearConnect4MatchmakingExpiry(43);
+    });
+
     test('should start game when no active session', async () => {
       const context = {
         username: 'Test User',  // In GCCE, username is actually the nickname

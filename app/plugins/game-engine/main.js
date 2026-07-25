@@ -97,6 +97,7 @@ const CONNECT4_AUDIO_TYPES_BY_EXTENSION = new Map([
   ['.aac', 'audio/aac']
 ]);
 const GAME_TIMEOUT_LOCKOUT_MS = 24 * 60 * 60 * 1000;
+const CONNECT4_MATCHMAKING_DRAIN_RETRY_MS = 1000;
 
 class GameEnginePlugin {
   constructor(api) {
@@ -134,7 +135,9 @@ class GameEnginePlugin {
     this.unifiedQueue = new UnifiedQueueManager(this.logger, this.io);
     this.unifiedQueue.setGameEnginePlugin(this);
     this.interactiveController = null;
-    this.connect4MatchmakingTimeout = null;
+    this.connect4MatchmakingTimeouts = new Map();
+    this.connect4MatchmakingDrainTimeout = null;
+    this.connect4MatchmakingDrainRetries = 0;
     this.recentConnect4MatchmakingEvents = new Map();
     
     // GCCE integration state
@@ -503,6 +506,7 @@ class GameEnginePlugin {
       payload.gameResult,
       { interactive: true, skipAccounting: payload.skipAccounting === true }
     );
+    this._drainPendingConnect4Fallbacks();
   }
 
   _initializeInteractiveController() {
@@ -520,13 +524,23 @@ class GameEnginePlugin {
       getSettings: () => this._getInteractiveSettings()
     });
     const recovery = this.interactiveController.init();
-    const challenge = this.interactiveController.recoverConnect4Challenge?.({ includeExpired: true });
-    if (challenge) this._recoverConnect4MatchmakingChallenge(challenge);
+    this._recoverConnect4MatchmakingChallenges();
     return recovery;
   }
 
+  _recoverConnect4MatchmakingChallenges() {
+    const challenges = this.interactiveController?.listRecoverableConnect4Challenges?.() || [];
+    const recovered = challenges.map(challenge => this._recoverConnect4MatchmakingChallenge(challenge));
+    this._drainPendingConnect4Fallbacks();
+    return recovered;
+  }
+
   _recoverConnect4MatchmakingChallenge(challenge) {
-    if (!challenge?.challengeId || challenge.status !== 'open') return null;
+    if (!challenge?.challengeId) return null;
+    if (challenge.status === 'fallback_pending') {
+      return this._drainPendingConnect4Fallbacks();
+    }
+    if (challenge.status !== 'open') return null;
     if (Number(challenge.expiresAtMs) <= Date.now()) {
       return this._expireConnect4MatchmakingChallenge(challenge);
     }
@@ -535,30 +549,86 @@ class GameEnginePlugin {
   }
 
   _scheduleConnect4MatchmakingExpiry(challenge) {
-    if (this.connect4MatchmakingTimeout) {
-      clearTimeout(this.connect4MatchmakingTimeout);
-      this.connect4MatchmakingTimeout = null;
-    }
     if (!challenge?.challengeId || challenge.status !== 'open') return;
+    const challengeId = challenge.challengeId;
+    this._clearConnect4MatchmakingExpiry(challengeId);
     const delay = Math.max(0, Number(challenge.expiresAtMs) - Date.now());
-    this.connect4MatchmakingTimeout = setTimeout(() => {
-      this.connect4MatchmakingTimeout = null;
-      this._expireConnect4MatchmakingChallenge(challenge).catch(error => {
+    const timeout = setTimeout(() => {
+      if (this.connect4MatchmakingTimeouts.get(challengeId) !== timeout) return;
+      this.connect4MatchmakingTimeouts.delete(challengeId);
+      this._expireConnect4MatchmakingChallenge({ challengeId }).catch(error => {
         this.logger.error(`Failed to expire Connect4 matchmaking challenge: ${error.message}`);
       });
     }, delay);
-    if (typeof this.connect4MatchmakingTimeout.unref === 'function') {
-      this.connect4MatchmakingTimeout.unref();
+    this.connect4MatchmakingTimeouts.set(challengeId, timeout);
+    if (typeof timeout.unref === 'function') {
+      timeout.unref();
     }
+  }
+
+  _clearConnect4MatchmakingExpiry(challengeId) {
+    const timeout = this.connect4MatchmakingTimeouts.get(challengeId);
+    if (!timeout) return false;
+    clearTimeout(timeout);
+    this.connect4MatchmakingTimeouts.delete(challengeId);
+    return true;
   }
 
   async _expireConnect4MatchmakingChallenge(challenge) {
     const result = this.interactiveController?.beginExpiredConnect4Fallback?.(challenge.challengeId);
     if (!result?.success) return result || { success: false, error: 'interactive_controller_unavailable' };
-    return this.interactiveController.startPendingConnect4Fallback?.(
+    const started = this.interactiveController.startPendingConnect4Fallback?.(
       challenge.challengeId,
       this._resolveHostDisplayName()
     ) || { success: false, error: 'interactive_controller_unavailable' };
+    if (started.error === 'interactive_session_limit') {
+      this._scheduleConnect4MatchmakingFallbackDrain();
+    }
+    return started;
+  }
+
+  _scheduleConnect4MatchmakingFallbackDrain() {
+    if (this.connect4MatchmakingDrainTimeout || this.connect4MatchmakingDrainRetries >= 1) return;
+    this.connect4MatchmakingDrainRetries += 1;
+    this.connect4MatchmakingDrainTimeout = setTimeout(() => {
+      this.connect4MatchmakingDrainTimeout = null;
+      this._drainPendingConnect4Fallbacks();
+    }, CONNECT4_MATCHMAKING_DRAIN_RETRY_MS);
+    if (typeof this.connect4MatchmakingDrainTimeout.unref === 'function') {
+      this.connect4MatchmakingDrainTimeout.unref();
+    }
+  }
+
+  _clearConnect4MatchmakingFallbackDrain() {
+    if (this.connect4MatchmakingDrainTimeout) {
+      clearTimeout(this.connect4MatchmakingDrainTimeout);
+      this.connect4MatchmakingDrainTimeout = null;
+    }
+    this.connect4MatchmakingDrainRetries = 0;
+  }
+
+  _drainPendingConnect4Fallbacks() {
+    const challenges = this.interactiveController?.listRecoverableConnect4Challenges?.() || [];
+    const pending = challenges.filter(challenge => challenge?.status === 'fallback_pending');
+    if (pending.length === 0) {
+      this._clearConnect4MatchmakingFallbackDrain();
+      return { success: true, drained: 0 };
+    }
+
+    let drained = 0;
+    for (const challenge of pending) {
+      const result = this.interactiveController.startPendingConnect4Fallback?.(
+        challenge.challengeId,
+        this._resolveHostDisplayName()
+      ) || { success: false, error: 'interactive_controller_unavailable' };
+      if (result.error === 'interactive_session_limit') {
+        this._scheduleConnect4MatchmakingFallbackDrain();
+        return { success: false, error: result.error, drained };
+      }
+      if (result.success) drained += 1;
+    }
+    this._clearConnect4MatchmakingFallbackDrain();
+    return { success: true, drained };
   }
 
   _safeJoin(baseDir, ...parts) {
@@ -1597,10 +1667,11 @@ class GameEnginePlugin {
   }
 
   async destroy() {
-    if (this.connect4MatchmakingTimeout) {
-      clearTimeout(this.connect4MatchmakingTimeout);
-      this.connect4MatchmakingTimeout = null;
+    for (const timeout of this.connect4MatchmakingTimeouts.values()) {
+      clearTimeout(timeout);
     }
+    this.connect4MatchmakingTimeouts.clear();
+    this._clearConnect4MatchmakingFallbackDrain();
     this.recentConnect4MatchmakingEvents.clear();
 
     // Clear GCCE retry interval if still running
@@ -5739,30 +5810,12 @@ class GameEnginePlugin {
       }
 
       const avatarSource = this._getAvatarProxyPath(context.profilePictureUrl || rawData.profilePictureUrl || '');
-      const challenge = controller.recoverConnect4Challenge?.() || controller.getState?.().connect4Matchmaking;
-      if (challenge?.status === 'open') {
-        const result = controller.acceptAndStartConnect4Challenge({
-          challengeId: challenge.challengeId,
-          participantId: userId,
-          participantDisplayName: nickname,
-          participantAvatarSource: avatarSource,
-          triggerType: 'matchmaking_accept',
-          triggerValue: 'connect4'
-        });
-        if (!result?.success) {
-          return { ...result, displayOverlay: true };
-        }
-        if (this.connect4MatchmakingTimeout) {
-          clearTimeout(this.connect4MatchmakingTimeout);
-          this.connect4MatchmakingTimeout = null;
-        }
-        return { ...result, accepted: Boolean(result?.success), displayOverlay: true };
-      }
-
-      const result = controller.openConnect4Challenge({
-        openerId: userId,
-        openerDisplayName: nickname,
-        openerAvatarSource: avatarSource
+      const result = controller.startOrJoinConnect4Matchmaking({
+        participantId: userId,
+        participantDisplayName: nickname,
+        participantAvatarSource: avatarSource,
+        triggerType: 'matchmaking_accept',
+        triggerValue: 'connect4'
       });
       if (!result?.success) {
         return {
@@ -5778,14 +5831,26 @@ class GameEnginePlugin {
           displayOverlay: true
         };
       }
-      this._scheduleConnect4MatchmakingExpiry(result.challenge);
-      return {
-        success: true,
-        challenge: true,
-        challengeId: result.challenge?.challengeId,
-        message: `${nickname} opened a Connect4 challenge. Another viewer has 30 seconds to join.`,
-        displayOverlay: true
-      };
+      if (result.action === 'matched') {
+        this._clearConnect4MatchmakingExpiry(result.challenge?.challengeId);
+        return {
+          ...result,
+          accepted: true,
+          message: 'A viewer Connect4 game started.',
+          displayOverlay: true
+        };
+      }
+      if (result.action === 'opened') {
+        this._scheduleConnect4MatchmakingExpiry(result.challenge);
+        return {
+          ...result,
+          challenge: true,
+          challengeId: result.challenge?.challengeId,
+          message: `${nickname} opened a 30-second Connect4 viewer search.`,
+          displayOverlay: true
+        };
+      }
+      return { ...result, displayOverlay: true };
     } catch (error) {
       this.logger.error(`Error in handleConnect4StartCommand: ${error.message}`);
       return {
@@ -6529,9 +6594,12 @@ class GameEnginePlugin {
   cancelGame(input) {
     const request = typeof input === 'object' && input !== null ? input : { sessionId: input };
     if (this.interactiveController?.registry?.get(request.sessionId)) {
-      return this.interactiveController.cancel(request);
+      const result = this.interactiveController.cancel(request);
+      this._drainPendingConnect4Fallbacks();
+      return result;
     }
     this.endGame(request.sessionId, null, 'cancelled', null, { skipAccounting: true });
+    this._drainPendingConnect4Fallbacks();
     return { success: true };
   }
 
