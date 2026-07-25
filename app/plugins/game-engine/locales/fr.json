@@ -1236,6 +1236,7 @@
           "disabled": "Désactivé",
           "enable": "Activer",
           "disable": "Désactiver",
+          "save_custom_sound": "Enregistrer le son",
           "state_updated": "État du son mis à jour",
           "state_update_failed": "Impossible de mettre à jour l’état du son"
         },
@@ -1272,7 +1273,12 @@
             "winner": "🏆 {player} gagne !"
           },
           "connect4": {
+            "cell_empty": "Colonne {column}, ligne {row} : vide",
+            "cell_piece": "Colonne {column}, ligne {row} : {owner}, pion {color}",
             "current_turn": "À {player}{columnText}",
+            "matchmaking_countdown": "Plus que {seconds} s pour défier",
+            "matchmaking_prompt": "{player} cherche un adversaire. Écrivez connect4 pour jouer.",
+            "matchmaking_title": "Défi Connect4 !",
             "draw": "🤝 Match nul !",
             "no_active_test_game": "Aucune partie de test active",
             "test_start_error": "Impossible de démarrer la partie de test : {error}",

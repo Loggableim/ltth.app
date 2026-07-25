@@ -811,4 +811,22 @@ describe('InteractiveDisplayRouter', () => {
       result: null
     });
   });
+
+  test('uses the active participant display name for a viewer-versus-viewer turn', () => {
+    registryRows.set(1, session({
+      turnRole: 'viewer',
+      turnPlayerId: 'viewer-2',
+      participants: [
+        { id: 'viewer-1', displayName: 'Viewer One', role: 'viewer' },
+        { id: 'viewer-2', displayName: 'Viewer Two', role: 'viewer' }
+      ]
+    }));
+
+    router.sync();
+
+    expect(router.snapshot()).toMatchObject({
+      currentTurnRole: 'viewer',
+      activePlayerDisplayName: 'Viewer Two'
+    });
+  });
 });

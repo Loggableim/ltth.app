@@ -18,6 +18,7 @@ class InteractiveSessionRegistry {
     this.maxSessions = parsedLimit;
     this.sessions = new Map();
     this.viewerSessions = new Map();
+    this.participantSessions = new Map();
   }
 
   _normalize(session) {
@@ -32,10 +33,38 @@ class InteractiveSessionRegistry {
     if (!['connect4', 'chess'].includes(session.gameType)) {
       throw new Error(`Unsupported interactive game type: ${session.gameType}`);
     }
+    const rawParticipants = Array.isArray(session.participants) && session.participants.length > 0
+      ? session.participants
+      : [
+        { id: viewerId, displayName: session.viewerDisplayName || viewerId, role: 'viewer', avatarSource: '' },
+        { id: 'streamer', displayName: session.hostDisplayName || 'Streamer', role: 'host', avatarSource: '' }
+      ];
+    const participants = rawParticipants.map(participant => ({
+      id: String(participant?.id || '').trim(),
+      displayName: String(participant?.displayName || participant?.id || '').trim(),
+      role: participant?.role || (participant?.id === 'streamer' ? 'host' : 'viewer'),
+      avatarSource: String(participant?.avatarSource || '')
+    }));
+    if (participants.length !== 2 || participants.some(participant => !participant.id || !participant.displayName)) {
+      throw new Error('Interactive sessions require two identified participants');
+    }
+    const participantIds = participants.map(participant => participant.id);
+    if (new Set(participantIds).size !== participantIds.length) {
+      throw new Error('Interactive session participants must be unique');
+    }
+    const turnPlayerId = String(session.turnPlayerId || (session.turnRole === 'host'
+      ? participants.find(participant => participant.role === 'host')?.id
+      : viewerId) || '').trim();
+    if (!participantIds.includes(turnPlayerId)) {
+      throw new Error('Interactive turn player must be a participant');
+    }
     return {
       ...session,
       sessionId,
       viewerId,
+      participantIds,
+      participants,
+      turnPlayerId,
       status: session.status || 'active'
     };
   }
@@ -45,14 +74,20 @@ class InteractiveSessionRegistry {
     if (this.sessions.has(normalized.sessionId)) {
       throw new Error(`Interactive session ${normalized.sessionId} already exists`);
     }
-    if (this.viewerSessions.has(normalized.viewerId)) {
-      throw new Error(`Viewer ${normalized.viewerId} already has an active interactive match`);
+    for (const participant of normalized.participants) {
+      if (participant.role === 'host') continue;
+      if (this.participantSessions.has(participant.id)) {
+        throw new Error(`Viewer ${participant.id} already has an active interactive match`);
+      }
     }
     if (this.sessions.size >= this.maxSessions) {
       throw new Error(`Interactive session limit of ${this.maxSessions} reached`);
     }
     this.sessions.set(normalized.sessionId, normalized);
     this.viewerSessions.set(normalized.viewerId, normalized.sessionId);
+    for (const participant of normalized.participants) {
+      if (participant.role !== 'host') this.participantSessions.set(participant.id, normalized.sessionId);
+    }
     return normalized;
   }
 
@@ -65,7 +100,12 @@ class InteractiveSessionRegistry {
   }
 
   getByViewer(viewerId) {
-    const sessionId = this.viewerSessions.get(String(viewerId || '').trim());
+    return this.getByParticipant(viewerId);
+  }
+
+  getByParticipant(participantId) {
+    const normalizedId = String(participantId || '').trim();
+    const sessionId = this.participantSessions.get(normalizedId) || this.viewerSessions.get(normalizedId);
     return sessionId ? this.get(sessionId) : null;
   }
 
@@ -75,6 +115,9 @@ class InteractiveSessionRegistry {
     if (!session) return null;
     this.sessions.delete(normalizedId);
     this.viewerSessions.delete(session.viewerId);
+    for (const participant of session.participants || []) {
+      if (participant.role !== 'host') this.participantSessions.delete(participant.id);
+    }
     return session;
   }
 
@@ -91,6 +134,9 @@ class InteractiveSessionRegistry {
         viewerId: session.viewerId,
         viewerDisplayName: session.viewerDisplayName,
         hostDisplayName: session.hostDisplayName,
+        participantIds: [...session.participantIds],
+        participants: session.participants.map(participant => ({ ...participant })),
+        turnPlayerId: session.turnPlayerId,
         config: session.config ? { ...session.config } : null,
         sessionRevision: session.sessionRevision,
         turnRole: session.turnRole,

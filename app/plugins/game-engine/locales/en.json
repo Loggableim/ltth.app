@@ -1236,6 +1236,7 @@
           "disabled": "Disabled",
           "enable": "Enable",
           "disable": "Disable",
+          "save_custom_sound": "Save sound",
           "state_updated": "Sound state updated",
           "state_update_failed": "Sound state could not be updated"
         },
@@ -1270,7 +1271,12 @@
             "winner": "🏆 {player} wins!"
           },
           "connect4": {
+            "cell_empty": "Column {column}, row {row}: empty",
+            "cell_piece": "Column {column}, row {row}: {owner}, {color} piece",
             "current_turn": "Turn: {player}{columnText}",
+            "matchmaking_countdown": "{seconds}s left to challenge",
+            "matchmaking_prompt": "{player} is looking for an opponent! Type connect4 to join.",
+            "matchmaking_title": "Connect4 Challenge!",
             "draw": "🤝 Draw!",
             "no_active_test_game": "No active test game",
             "test_start_error": "Could not start the test game: {error}",
