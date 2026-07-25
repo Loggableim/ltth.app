@@ -1049,6 +1049,24 @@ describe('GameEnginePlugin interactive controller integration', () => {
     expect(plugin.interactiveController.startOrJoinConnect4Matchmaking).toHaveBeenCalledTimes(4);
   });
 
+  test('rejects Connect4 starts while the FIFO controller is unavailable without starting a legacy game', async () => {
+    const { plugin } = createPlugin();
+    plugin.handleGameStart = jest.fn(() => ({ success: true, sessionId: 99 }));
+
+    const result = await plugin.handleConnect4StartCommand([], {
+      userId: 'viewer-one',
+      username: 'Viewer One',
+      profilePictureUrl: 'https://p16-sign-va.tiktokcdn.com/avatar.webp'
+    });
+
+    expect(result).toMatchObject({
+      success: false,
+      error: 'interactive_controller_unavailable',
+      displayOverlay: true
+    });
+    expect(plugin.handleGameStart).not.toHaveBeenCalled();
+  });
+
   test('clears only the claimed matchmaking timer while later searches remain scheduled', () => {
     const { plugin } = createPlugin();
     plugin._scheduleConnect4MatchmakingExpiry({ challengeId: 41, status: 'open', expiresAtMs: Date.now() + 30000 });

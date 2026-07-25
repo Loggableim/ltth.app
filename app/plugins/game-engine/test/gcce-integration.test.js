@@ -319,7 +319,7 @@ describe('Game Engine GCCE Integration', () => {
       plugin._clearConnect4MatchmakingExpiry(43);
     });
 
-    test('should start game when no active session', async () => {
+    test('opens a FIFO viewer search when no active session exists', async () => {
       const context = {
         username: 'Test User',  // In GCCE, username is actually the nickname
         userId: 'test123',      // userId is the unique TikTok ID
@@ -332,22 +332,27 @@ describe('Game Engine GCCE Integration', () => {
         getGameConfig: jest.fn(() => plugin.defaultConfigs.connect4)
       };
       
-      plugin.handleGameStart = jest.fn(() => ({ success: true, sessionId: 42 }));
+      plugin.interactiveController = {
+        destroy: jest.fn(),
+        startOrJoinConnect4Matchmaking: jest.fn(() => ({
+          success: true,
+          action: 'opened',
+          challenge: { challengeId: 42, status: 'open', expiresAtMs: Date.now() + 30000 }
+        }))
+      };
       
       const result = await plugin.handleConnect4StartCommand(args, context);
       
       expect(result.success).toBe(true);
-      expect(result.message).toContain('Game started');
-      expect(plugin.handleGameStart).toHaveBeenCalledWith(
-        'connect4',
-        'test123',      // userId (unique TikTok ID)
-        'Test User',    // nickname for display
-        'command',
-        '/c4start'
-      );
+      expect(result.message).toContain('viewer search');
+      expect(plugin.interactiveController.startOrJoinConnect4Matchmaking).toHaveBeenCalledWith(expect.objectContaining({
+        participantId: 'test123',
+        participantDisplayName: 'Test User'
+      }));
+      plugin._clearConnect4MatchmakingExpiry(42);
     });
 
-    test('should start another interactive match when another game is already active', async () => {
+    test('matches through FIFO matchmaking when another interactive game is active', async () => {
       const context = {
         username: 'Test User',
         userId: 'test123'
@@ -362,14 +367,22 @@ describe('Game Engine GCCE Integration', () => {
         getGameConfig: jest.fn(() => plugin.defaultConfigs.connect4)
       };
       
-      plugin.handleGameStart = jest.fn(() => ({ success: true, sessionId: 43 }));
+      plugin.interactiveController = {
+        destroy: jest.fn(),
+        startOrJoinConnect4Matchmaking: jest.fn(() => ({
+          success: true,
+          action: 'matched',
+          challenge: { challengeId: 43, status: 'claimed' },
+          sessionId: 43
+        }))
+      };
       
       const result = await plugin.handleConnect4StartCommand(args, context);
       
       // Matches run concurrently; only their host turns enter the display queue.
       expect(result.success).toBe(true);
-      expect(result.message).toContain('Game started');
-      expect(plugin.handleGameStart).toHaveBeenCalled();
+      expect(result.message).toContain('viewer Connect4 game');
+      expect(plugin.interactiveController.startOrJoinConnect4Matchmaking).toHaveBeenCalled();
     });
 
     test('should return queue rejection when active game queue is full', async () => {
@@ -382,10 +395,13 @@ describe('Game Engine GCCE Integration', () => {
       plugin.db = {
         getGameConfig: jest.fn(() => plugin.defaultConfigs.connect4)
       };
-      plugin.handleGameStart = jest.fn(() => ({
-        success: false,
-        error: 'interactive_session_limit'
-      }));
+      plugin.interactiveController = {
+        destroy: jest.fn(),
+        startOrJoinConnect4Matchmaking: jest.fn(() => ({
+          success: false,
+          error: 'interactive_session_limit'
+        }))
+      };
 
       const result = await plugin.handleConnect4StartCommand([], context);
 
@@ -927,13 +943,20 @@ describe('Game Engine GCCE Integration', () => {
       expect(defaultCommand).toBeDefined();
     });
 
-    test('should start Connect4 from bare configured chat command', () => {
+    test('routes bare configured chat commands through FIFO matchmaking', () => {
       plugin.db = {
         getGameConfig: jest.fn(() => plugin.defaultConfigs.connect4),
         getTriggers: jest.fn(() => []),
         getActiveSessionForPlayer: jest.fn(() => null)
       };
-      plugin.handleGameStart = jest.fn();
+      plugin.interactiveController = {
+        destroy: jest.fn(),
+        startOrJoinConnect4Matchmaking: jest.fn(() => ({
+          success: true,
+          action: 'opened',
+          challenge: { challengeId: 44, status: 'open', expiresAtMs: Date.now() + 30000 }
+        }))
+      };
       plugin.wheelGame = {
         findWheelByChatCommand: jest.fn(() => null)
       };
@@ -948,13 +971,11 @@ describe('Game Engine GCCE Integration', () => {
         comment: 'c4start'
       });
 
-      expect(plugin.handleGameStart).toHaveBeenCalledWith(
-        'connect4',
-        'user123',
-        'TestUser',
-        'command',
-        '/c4start'
-      );
+      expect(plugin.interactiveController.startOrJoinConnect4Matchmaking).toHaveBeenCalledWith(expect.objectContaining({
+        participantId: 'user123',
+        participantDisplayName: 'TestUser'
+      }));
+      plugin._clearConnect4MatchmakingExpiry(44);
     });
   });
 
