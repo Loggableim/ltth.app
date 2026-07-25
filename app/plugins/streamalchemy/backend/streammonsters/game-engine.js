@@ -72,6 +72,7 @@ class StreamMonstersEngine {
 
   processGift({ userId, giftId, giftName, coinValue = 0, eventTimeMs = null }) {
     if (!userId) throw new Error('STREAM_MONSTERS_USER_REQUIRED');
+    this.expireUnhatchedEggs();
     const normalizedEventTimeMs = Number(eventTimeMs);
     const createdAtMs = eventTimeMs !== null && Number.isFinite(normalizedEventTimeMs)
       ? normalizedEventTimeMs
@@ -130,8 +131,8 @@ class StreamMonstersEngine {
   hatchReadyEggs(userId) {
     this.markReadyEggs();
     const hatched = [];
-    while (this.store.getViewerEggs(userId, 'ready').length) {
-      const visibleEggs = this.store.getViewerEggs(userId).filter(egg => egg.state !== 'hatched');
+    while (this.store.getViewerHatchableEggs(userId).some(egg => egg.state === 'ready')) {
+      const visibleEggs = this.store.getViewerHatchableEggs(userId);
       const readyIndex = visibleEggs.findIndex(egg => egg.state === 'ready');
       hatched.push(this.hatchEgg(userId, readyIndex + 1));
     }
@@ -139,6 +140,7 @@ class StreamMonstersEngine {
   }
 
   markReadyEggs() {
+    this.expireUnhatchedEggs();
     const ready = this.store.markReadyEggs(this.now());
     ready.forEach(egg => {
       this.emit('streammonsters:egg_ready', {
@@ -151,7 +153,8 @@ class StreamMonstersEngine {
   }
 
   hatchEgg(userId, slot = 1) {
-    const visibleEggs = this.store.getViewerEggs(userId).filter(egg => egg.state !== 'hatched');
+    this.expireUnhatchedEggs();
+    const visibleEggs = this.store.getViewerHatchableEggs(userId);
     const index = Math.max(0, Number.parseInt(slot, 10) - 1);
     const egg = visibleEggs[index];
     if (!egg || egg.state !== 'ready') throw new Error('STREAM_MONSTERS_EGG_NOT_READY');
@@ -168,6 +171,10 @@ class StreamMonstersEngine {
     );
     this.emit('streammonsters:egg_hatched', { userId, egg, monster });
     return monster;
+  }
+
+  expireUnhatchedEggs() {
+    return this.store.expireUnhatchedEggs(this.now());
   }
 
   calculateBoostMs(coinValue) {

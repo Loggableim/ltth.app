@@ -194,6 +194,21 @@ describe('Stream Monsters game core', () => {
     expect(store.getViewerHatchableEggs('viewer-a').map(egg => egg.egg_id)).toEqual(['new-ready']);
   });
 
+  test('does not hatch a ready egg once it reaches the 24-hour expiry boundary', () => {
+    let now = 0;
+    const { store, engine } = createGame({ now: () => now, config: { hatchDurationMs: 0 } });
+    store.upsertGiftMapping({
+      giftId: 9, giftName: 'Heart', element: 'Grove', effect: 'spawn', enabled: true
+    });
+    engine.processGift({ userId: 'viewer-a', giftId: 9, giftName: 'Heart', coinValue: 1 });
+    engine.markReadyEggs();
+
+    now = 24 * 60 * 60 * 1000;
+    expect(() => engine.hatchEgg('viewer-a', 1)).toThrow('STREAM_MONSTERS_EGG_NOT_READY');
+    expect(store.getViewerMonsters('viewer-a')).toHaveLength(0);
+    expect(store.getViewerEggs('viewer-a', 'expired')).toHaveLength(1);
+  });
+
   test('uses bundled furry monster art by default before AI or Kenney fallbacks', () => {
     const artPool = { consume: jest.fn(() => ({ image_url: '/ai.png', visual_key: 'ai:test' })) };
     const kenneyBuilder = {

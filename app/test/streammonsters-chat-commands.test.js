@@ -40,6 +40,21 @@ describe('Stream Monsters chat commands', () => {
     expect(result.message).not.toContain('viewer-b');
   });
 
+  test('lists expired eggs separately without assigning them hatch slots', () => {
+    const { store, commands, setNow } = createCommands();
+    store.createEgg({
+      eggId: 'spoiled', userId: 'viewer-a', giftId: 1, giftName: 'Heart',
+      element: 'Lunar', eggColor: '#ffffff', seed: 'spoiled', createdAtMs: 0,
+      hatchDurationMs: 1, readyAtMs: 1
+    });
+    setNow(24 * 60 * 60 * 1000);
+
+    const result = commands.handle({ username: 'viewer-a', skipCooldowns: true }, '!eggs');
+
+    expect(result).toEqual(expect.objectContaining({ status: 'eggs', eggs: [] }));
+    expect(result.expiredEggs).toEqual([expect.objectContaining({ egg_id: 'spoiled', state: 'expired' })]);
+  });
+
   test('selects an owned monster by one-based inventory slot', () => {
     const { store, commands, hatch } = createCommands();
     hatch('viewer-a', 1);

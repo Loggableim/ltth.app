@@ -50,13 +50,15 @@ class ChatCommands {
   }
 
   eggs(userId) {
-    const eggs = this.store.getViewerEggs(userId).filter(egg => egg.state !== 'hatched');
+    const eggs = this.store.getViewerHatchableEggs(userId);
+    const expiredEggs = this.store.getViewerEggs(userId, 'expired');
     const ready = eggs.filter(egg => egg.state === 'ready').length;
     return {
       success: true,
       status: 'eggs',
-      message: `${eggs.length} egg${eggs.length === 1 ? '' : 's'} (${ready} ready). Use !hatch <slot>.`,
-      eggs
+      message: `${eggs.length} egg${eggs.length === 1 ? '' : 's'} (${ready} ready)${expiredEggs.length ? ` · ${expiredEggs.length} expired` : ''}. Use !hatch <slot>.`,
+      eggs,
+      expiredEggs
     };
   }
 
