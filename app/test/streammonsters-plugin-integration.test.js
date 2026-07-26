@@ -313,12 +313,13 @@ describe('Stream Monsters plugin integration', () => {
     const stateRoute = routes.find(route => route.method === 'GET' && route.path === '/api/streammonsters/state');
     let state = null;
     stateRoute.handler({ query: {} }, { json: payload => { state = payload; } });
-    expect(state.gcce).toEqual({
+    expect(state.gcce).toEqual(expect.objectContaining({
       commandPrefix: '!',
       registrationState: 'active',
       registrationError: null,
+      registrationConflicts: [],
       commandsRegistered: true
-    });
+    }));
     await plugin.destroy();
   });
 
@@ -413,7 +414,7 @@ describe('Stream Monsters plugin integration', () => {
     expect(secondGCCE.unregisterRawResponseHandlerForPlugin).toHaveBeenCalledWith('streamalchemy');
   });
 
-  test('blocks direct fallback when available GCCE only partially registers commands', async () => {
+  test('keeps successful GCCE aliases and blocks direct fallback during partial registration', async () => {
     const gcce = createGCCE('!');
     gcce.registerCommandsForPlugin.mockImplementationOnce((pluginId, commands) => {
       gcce.definitions.set(commands[0].name, commands[0]);
@@ -437,15 +438,25 @@ describe('Stream Monsters plugin integration', () => {
     const stateRoute = routes.find(route => route.method === 'GET' && route.path === '/api/streammonsters/state');
     let state = null;
     stateRoute.handler({ query: {} }, { json: payload => { state = payload; } });
-    expect(state.gcce).toEqual({
+    expect(state.gcce).toEqual(expect.objectContaining({
       commandPrefix: '!',
-      registrationState: 'blocked',
-      registrationError: 'partial_registration',
-      commandsRegistered: false
-    });
-    expect(gcce.definitions.size).toBe(0);
+      registrationState: 'active_partial',
+      registrationError: 'alias_conflicts',
+      registrationConflicts: expect.arrayContaining(['hatch', 'rank', 'monsterrank']),
+      registeredCommands: ['eier'],
+      unavailableCommands: expect.arrayContaining(['hatch', 'rank']),
+      commandsRegistered: true
+    }));
+    expect(gcce.definitions.size).toBe(1);
     expect(progression).not.toHaveBeenCalled();
     expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toEqual([]);
+
+    await gcce.definitions.get('eier').handler([], {
+      userId: 'viewer-a',
+      username: 'Viewer A'
+    });
+    expect(progression).toHaveBeenCalledTimes(1);
+    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toHaveLength(1);
     await plugin.destroy();
   });
 
@@ -475,12 +486,13 @@ describe('Stream Monsters plugin integration', () => {
     const stateRoute = routes.find(route => route.method === 'GET' && route.path === '/api/streammonsters/state');
     let state = null;
     stateRoute.handler({ query: {} }, { json: payload => { state = payload; } });
-    expect(state.gcce).toEqual({
+    expect(state.gcce).toEqual(expect.objectContaining({
       commandPrefix: '!',
       registrationState: 'active',
       registrationError: null,
+      registrationConflicts: [],
       commandsRegistered: true
-    });
+    }));
     expect(progression).toHaveBeenCalledTimes(1);
     expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toHaveLength(1);
     await plugin.destroy();

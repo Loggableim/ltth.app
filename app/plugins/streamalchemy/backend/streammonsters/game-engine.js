@@ -22,6 +22,7 @@ class StreamMonstersEngine {
     hasBundledAsset = () => true,
     emit = () => {},
     now = () => Date.now(),
+    getCommandReference = command => `!${command}`,
     config = {}
   }) {
     this.store = store;
@@ -32,6 +33,7 @@ class StreamMonstersEngine {
     this.streamKey = null;
     this.emit = emit;
     this.now = now;
+    this.getCommandReference = getCommandReference;
     this.config = {
       hatchDurationMs: 2 * 60 * 1000,
       eggExpiryMs: 24 * 60 * 60 * 1000,
@@ -102,7 +104,13 @@ class StreamMonstersEngine {
       this.store.incrementStreamMetric(this.streamKey, 'egg_boosts');
       if (combo) this.addHype(20, { userId, gift, combo });
       this.recordHeartMeGift(userId, gift, createdAtMs);
-      this.emitAfterCommit('streammonsters:egg_boosted', { userId, egg, gift, event, hint: '!inventory' });
+      this.emitAfterCommit('streammonsters:egg_boosted', {
+        userId,
+        egg,
+        gift,
+        event,
+        hint: this.getCommandReference('inventory')
+      });
       return { type: 'boosted', egg, gift };
     }
     const state = eggs.length >= this.config.maxUnhatchedEggs ? 'queued' : 'incubating';
@@ -145,7 +153,13 @@ class StreamMonstersEngine {
       elementalHourMatch
     });
     this.recordHeartMeGift(userId, gift, createdAtMs);
-    this.emitAfterCommit('streammonsters:egg_spawned', { userId, egg, gift, event, hint: '!inventory' });
+    this.emitAfterCommit('streammonsters:egg_spawned', {
+      userId,
+      egg,
+      gift,
+      event,
+      hint: this.getCommandReference('inventory')
+    });
     return { type: 'spawned', egg, gift };
   }
 
@@ -161,26 +175,30 @@ class StreamMonstersEngine {
   }
 
   markReadyEggs() {
-    const ready = this.store.markReadyEggs(this.now());
-    ready.forEach(egg => {
-      this.emitAfterCommit('streammonsters:egg_ready', {
-        userId: egg.user_id,
-        egg,
-        hint: '!hatch [slot]'
+    const nowMs = this.now();
+    let ready = [];
+    this.store.runInImmediateTransaction(() => {
+      ready = this.store.markReadyEggs(nowMs);
+      ready.forEach(egg => {
+        this.emitAfterCommit('streammonsters:egg_ready', {
+          userId: egg.user_id,
+          egg,
+          hint: `${this.getCommandReference('hatch')} [slot]`
+        });
       });
-    });
-    const expired = this.store.expireReadyEggs(this.now(), this.config.eggExpiryMs);
-    expired.forEach(egg => {
-      this.emitAfterCommit('streammonsters:egg_expired', {
-        userId: egg.user_id,
-        egg
+      const expired = this.store.expireReadyEggs(nowMs, this.config.eggExpiryMs);
+      expired.forEach(egg => {
+        this.emitAfterCommit('streammonsters:egg_expired', {
+          userId: egg.user_id,
+          egg
+        });
       });
+      this.store.promoteQueuedEggs(
+        nowMs,
+        this.config.maxUnhatchedEggs,
+        this.config.eggExpiryMs
+      );
     });
-    this.store.promoteQueuedEggs(
-      this.now(),
-      this.config.maxUnhatchedEggs,
-      this.config.eggExpiryMs
-    );
     return ready;
   }
 
@@ -297,19 +315,25 @@ class StreamMonstersEngine {
     const normalizedPoints = Math.max(0, Number(points) || 0);
     const previous = this.store.getStreamHype(this.streamKey);
     const total = previous.points + normalizedPoints;
-    const milestones = [25, 50, 75, 100].filter(milestone => (
-      previous.points < milestone && total >= milestone
-    ));
+    const milestones = [];
+    const firstThreshold = (Math.floor(previous.points / 25) + 1) * 25;
+    for (let threshold = firstThreshold; threshold <= total; threshold += 25) {
+      milestones.push({
+        milestone: threshold % 100 || 100,
+        cycle: Math.floor((threshold - 1) / 100)
+      });
+    }
     const hype = this.store.addStreamHype(this.streamKey, normalizedPoints, this.now());
     this.emitAfterCommit('streammonsters:hype_changed', {
       streamKey: this.streamKey,
       hype,
       ...context
     });
-    milestones.forEach(milestone => {
+    milestones.forEach(({ milestone, cycle }) => {
       this.emitAfterCommit('streammonsters:hype_milestone', {
         streamKey: this.streamKey,
         milestone,
+        cycle,
         hype,
         ...context
       });

@@ -201,7 +201,8 @@ class CollectionService {
         throw new Error('STREAM_MONSTERS_EVOLUTION_MASTERY_REQUIRED');
       }
       const essence = this.getEssence(userId, monster.element);
-      const spendNow = Math.max(0, spentRequired - essence.spent);
+      const monsterSpent = Math.max(0, Number(monster.evolution_essence_spent) || 0);
+      const spendNow = Math.max(0, spentRequired - monsterSpent);
       if (essence.amount < spendNow) {
         throw new Error('STREAM_MONSTERS_EVOLUTION_ESSENCE_REQUIRED');
       }
@@ -211,12 +212,13 @@ class CollectionService {
       const evolved = this.store.setMonsterEvolutionStage(
         monsterId,
         nextStage,
+        spentRequired,
         `/plugins/streamalchemy/assets/streammonsters/furry/evolutions/${monster.template_id}-${stageKey}.png`,
         `furry:${monster.template_id}:evolution-${stageKey}`
       );
       const result = {
         evolutionStage: nextStage,
-        spentEssence: afterSpend.spent,
+        spentEssence: spentRequired,
         monster: evolved
       };
       this.emitAfterCommit('streammonsters:monster_evolved', {

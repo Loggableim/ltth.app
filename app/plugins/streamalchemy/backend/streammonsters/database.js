@@ -9,13 +9,24 @@ class StreamMonstersDatabase {
   }
 
   runInTransaction(operation) {
+    return this.runTransaction(operation, false);
+  }
+
+  runInImmediateTransaction(operation) {
+    return this.runTransaction(operation, true);
+  }
+
+  runTransaction(operation, immediate) {
     if (this.transactionDepth > 0) return operation();
     const callbacks = [];
     this.transactionDepth = 1;
     this.afterCommitCallbacks = callbacks;
     let result;
     try {
-      result = this.db.transaction(operation)();
+      const transaction = this.db.transaction(operation);
+      result = immediate && typeof transaction.immediate === 'function'
+        ? transaction.immediate()
+        : transaction();
     } catch (error) {
       this.transactionDepth = 0;
       this.afterCommitCallbacks = null;
@@ -36,7 +47,8 @@ class StreamMonstersDatabase {
   }
 
   initialize() {
-    this.db.exec(`
+    const migrate = () => {
+      this.db.exec(`
       CREATE TABLE IF NOT EXISTS streammonsters_eggs (
         egg_id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL,
@@ -82,6 +94,7 @@ class StreamMonstersDatabase {
         battle_count INTEGER NOT NULL DEFAULT 0,
         win_streak INTEGER NOT NULL DEFAULT 0,
         evolution_stage INTEGER NOT NULL DEFAULT 1,
+        evolution_essence_spent INTEGER NOT NULL DEFAULT 0,
         created_at_ms INTEGER NOT NULL
       );
       CREATE INDEX IF NOT EXISTS streammonsters_monsters_user
@@ -330,6 +343,7 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_monsters', 'battle_count', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_monsters', 'win_streak', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_monsters', 'evolution_stage', 'INTEGER NOT NULL DEFAULT 1');
+    this.ensureColumn('streammonsters_monsters', 'evolution_essence_spent', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_element_essence', 'spent', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_battles', 'user_a_id', 'TEXT');
     this.ensureColumn('streammonsters_battles', 'user_b_id', 'TEXT');
@@ -342,6 +356,15 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_viewer_progress', 'pending_xp', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_viewer_progress', 'battle_win_streak', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_viewer_progress', 'best_battle_win_streak', 'INTEGER NOT NULL DEFAULT 0');
+    this.db.prepare(`
+      UPDATE streammonsters_monsters
+      SET evolution_essence_spent = CASE
+        WHEN evolution_stage >= 3 THEN 8
+        WHEN evolution_stage = 2 THEN 3
+        ELSE evolution_essence_spent
+      END
+      WHERE evolution_essence_spent = 0 AND evolution_stage >= 2
+    `).run();
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS streammonsters_monsters_user_template
         ON streammonsters_monsters(user_id, template_id, created_at_ms);
@@ -357,7 +380,11 @@ class StreamMonstersDatabase {
       SET ready_at_ms = created_at_ms + hatch_duration_ms - boost_ms
       WHERE ready_at_ms IS NULL AND state != 'queued'
     `).run();
-    this.migrateLegacyTemplateIds();
+      this.migrateLegacyTemplateIds();
+    };
+    const transaction = this.db.transaction(migrate);
+    if (typeof transaction.immediate === 'function') transaction.immediate();
+    else transaction();
   }
 
   migrateLegacyTemplateIds() {
@@ -1038,12 +1065,12 @@ class StreamMonstersDatabase {
     return result.changes ? this.getElementEssence(userId, element) : null;
   }
 
-  setMonsterEvolutionStage(monsterId, stage, imageUrl, visualKey) {
+  setMonsterEvolutionStage(monsterId, stage, spentEssence, imageUrl, visualKey) {
     this.db.prepare(`
       UPDATE streammonsters_monsters
-      SET evolution_stage = ?, image_url = ?, visual_key = ?
+      SET evolution_stage = ?, evolution_essence_spent = ?, image_url = ?, visual_key = ?
       WHERE monster_id = ?
-    `).run(stage, imageUrl, visualKey, monsterId);
+    `).run(stage, spentEssence, imageUrl, visualKey, monsterId);
     return this.getMonster(monsterId);
   }
 

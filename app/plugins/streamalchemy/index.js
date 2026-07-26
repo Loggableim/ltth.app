@@ -58,7 +58,7 @@ const DEFAULT_COMMAND_ALIASES = Object.freeze({
   evolve: Object.freeze({ enabled: Object.freeze(['evolve']), disabled: Object.freeze([]) }),
   battle: Object.freeze({ enabled: Object.freeze(['battle']), disabled: Object.freeze([]) }),
   leavebattle: Object.freeze({ enabled: Object.freeze(['leavebattle']), disabled: Object.freeze([]) }),
-  rank: Object.freeze({ enabled: Object.freeze(['rank']), disabled: Object.freeze([]) }),
+  rank: Object.freeze({ enabled: Object.freeze(['rank', 'monsterrank']), disabled: Object.freeze([]) }),
   quests: Object.freeze({ enabled: Object.freeze(['quests']), disabled: Object.freeze([]) }),
   monstershelp: Object.freeze({ enabled: Object.freeze(['monstershelp']), disabled: Object.freeze([]) })
 });
@@ -98,6 +98,7 @@ class StreamAlchemyPlugin {
       progression: this.streamMonstersProgression,
       collection: this.streamMonstersCollection,
       emit: (event, payload) => this.api.emit(event, payload),
+      getCommandReference: command => this.getStreamMonstersCommandReference(command),
       config: this.config.streamMonsters
     });
     this.ensureDefaultStreamMonstersGiftMapping();
@@ -108,11 +109,15 @@ class StreamAlchemyPlugin {
       battleService: this.streamMonstersBattleService,
       progression: this.streamMonstersProgression,
       collection: this.streamMonstersCollection,
-      emit: (event, payload) => this.api.emit(event, payload)
+      emit: (event, payload) => this.api.emit(event, payload),
+      getCommandReference: command => this.getStreamMonstersCommandReference(command)
     });
     this.streamMonstersCommandPrefix = '!';
     this.streamMonstersGCCERegistrationState = 'fallback';
     this.streamMonstersGCCERegistrationError = null;
+    this.streamMonstersGCCERegistrationConflicts = [];
+    this.streamMonstersGCCERegisteredCommands = [];
+    this.streamMonstersGCCEUnavailableCommands = [];
     this.streamMonstersGCCELifecycleListeners = [];
     this.streamMonstersCommandIngress = new StreamMonstersCommandIngress({
       execute: (context, commandName, args) => this.streamMonstersChatCommands.execute(context, commandName, args),
@@ -341,6 +346,13 @@ class StreamAlchemyPlugin {
           : [...defaults.disabled]
       }];
     }));
+    if (
+      normalized.rank.enabled.length === 1 &&
+      normalized.rank.enabled[0] === 'rank' &&
+      !normalized.rank.disabled.includes('monsterrank')
+    ) {
+      normalized.rank.enabled.push('monsterrank');
+    }
     const owners = new Map();
     Object.entries(normalized).forEach(([command, aliases]) => {
       aliases.enabled.forEach(alias => {
@@ -546,12 +558,22 @@ class StreamAlchemyPlugin {
     })));
   }
 
+  getStreamMonstersCommandReference(command) {
+    const aliases = this.normalizeCommandAliases(this.config?.streamMonsters?.commandAliases);
+    const alias = aliases[command]?.enabled?.[0] || command;
+    return `${this.streamMonstersCommandPrefix || '!'}${alias}`;
+  }
+
   getStreamMonstersGCCEState() {
+    const active = this.streamMonstersGCCERegistrationState.startsWith('active');
     return {
       commandPrefix: this.streamMonstersCommandPrefix,
       registrationState: this.streamMonstersGCCERegistrationState,
       registrationError: this.streamMonstersGCCERegistrationError,
-      commandsRegistered: this.streamMonstersGCCERegistrationState === 'active'
+      registrationConflicts: [...(this.streamMonstersGCCERegistrationConflicts || [])],
+      registeredCommands: [...(this.streamMonstersGCCERegisteredCommands || [])],
+      unavailableCommands: [...(this.streamMonstersGCCEUnavailableCommands || [])],
+      commandsRegistered: active
     };
   }
 
@@ -580,7 +602,11 @@ class StreamAlchemyPlugin {
       this.deactivateStreamMonstersGCCE();
       return false;
     }
-    if (!force && this.streamMonstersGCCE === gcce && this.streamMonstersGCCERegistrationState === 'active') {
+    if (
+      !force &&
+      this.streamMonstersGCCE === gcce &&
+      this.streamMonstersGCCERegistrationState.startsWith('active')
+    ) {
       return true;
     }
 
@@ -593,21 +619,37 @@ class StreamAlchemyPlugin {
       gcce.unregisterRawResponseHandlerForPlugin?.('streamalchemy');
       const result = gcce.registerCommandsForPlugin('streamalchemy', definitions);
       const registered = Array.isArray(result?.registered) ? result.registered : [];
-      if (registered.length !== definitions.length) {
+      const failed = Array.isArray(result?.failed) ? result.failed : [];
+      if (!registered.length) {
         gcce.unregisterCommandsForPlugin('streamalchemy');
         gcce.unregisterRawResponseHandlerForPlugin?.('streamalchemy');
         this.streamMonstersGCCE = gcce;
         this.streamMonstersGCCERegistrationState = 'blocked';
-        this.streamMonstersGCCERegistrationError = 'partial_registration';
+        this.streamMonstersGCCERegistrationError = 'registration_failed';
+        this.streamMonstersGCCERegistrationConflicts = failed;
+        this.streamMonstersGCCERegisteredCommands = [];
+        this.streamMonstersGCCEUnavailableCommands = [...new Set(
+          definitions.map(definition => definition.commandName)
+        )];
         return false;
       }
+      const registeredSet = new Set(registered);
+      const unavailableCommands = [...new Set(definitions
+        .filter(definition => !definitions.some(candidate => (
+          candidate.commandName === definition.commandName &&
+          registeredSet.has(candidate.name)
+        )))
+        .map(definition => definition.commandName))];
       gcce.registerRawResponseHandlerForPlugin?.(
         'streamalchemy',
         (message, context) => this.handleStreamMonstersRawResponse(message, context)
       );
       this.streamMonstersGCCE = gcce;
-      this.streamMonstersGCCERegistrationState = 'active';
-      this.streamMonstersGCCERegistrationError = null;
+      this.streamMonstersGCCERegistrationState = failed.length ? 'active_partial' : 'active';
+      this.streamMonstersGCCERegistrationError = failed.length ? 'alias_conflicts' : null;
+      this.streamMonstersGCCERegistrationConflicts = failed;
+      this.streamMonstersGCCERegisteredCommands = registered;
+      this.streamMonstersGCCEUnavailableCommands = unavailableCommands;
       return true;
     } catch (error) {
       this.api.log(`[STREAM MONSTERS] GCCE registration failed: ${error.message}`, 'warn');
@@ -620,6 +662,9 @@ class StreamAlchemyPlugin {
       this.streamMonstersGCCE = gcce;
       this.streamMonstersGCCERegistrationState = 'blocked';
       this.streamMonstersGCCERegistrationError = 'registration_failed';
+      this.streamMonstersGCCERegistrationConflicts = [];
+      this.streamMonstersGCCERegisteredCommands = [];
+      this.streamMonstersGCCEUnavailableCommands = [];
       return false;
     }
   }
@@ -636,6 +681,9 @@ class StreamAlchemyPlugin {
     this.streamMonstersGCCE = null;
     this.streamMonstersGCCERegistrationState = 'fallback';
     this.streamMonstersGCCERegistrationError = null;
+    this.streamMonstersGCCERegistrationConflicts = [];
+    this.streamMonstersGCCERegisteredCommands = [];
+    this.streamMonstersGCCEUnavailableCommands = [];
   }
 
   setupStreamMonstersGCCELifecycle() {
@@ -799,9 +847,10 @@ class StreamAlchemyPlugin {
   async handleStreamMonstersChat(data = {}) {
     const correlationId = randomUUID();
     if (this.streamMonstersGCCERegistrationState !== 'fallback') {
+      const gcceActive = this.streamMonstersGCCERegistrationState.startsWith('active');
       const result = {
         success: false,
-        status: this.streamMonstersGCCERegistrationState === 'active' ? 'gcce_active' : 'gcce_blocked'
+        status: gcceActive ? 'gcce_active' : 'gcce_blocked'
       };
       this.logStructured('chat_ignored', {
         correlationId,

@@ -1,5 +1,15 @@
 class ChatCommands {
-  constructor({ store, engine, battleService, progression = null, collection = null, emit = () => {}, now = () => Date.now(), queueTtlMs = 5 * 60 * 1000 }) {
+  constructor({
+    store,
+    engine,
+    battleService,
+    progression = null,
+    collection = null,
+    emit = () => {},
+    now = () => Date.now(),
+    queueTtlMs = 5 * 60 * 1000,
+    getCommandReference = command => `!${command}`
+  }) {
     this.store = store;
     this.engine = engine;
     this.battleService = battleService;
@@ -8,8 +18,16 @@ class ChatCommands {
     this.emit = emit;
     this.now = now;
     this.queueTtlMs = queueTtlMs;
+    this.getCommandReference = getCommandReference;
     this.queue = [];
     this.syncQueue();
+  }
+
+  commandReference(command) {
+    const reference = this.getCommandReference?.(command);
+    return typeof reference === 'string' && reference
+      ? reference
+      : `!${command}`;
   }
 
   emitAfterCommit(event, payload) {
@@ -40,10 +58,15 @@ class ChatCommands {
     if (command === 'leavebattle') return this.leaveBattle(userId);
     if (command === 'rank') return this.rank(userId);
     if (command === 'quests') return this.quests(userId);
+    const commandReference = name => this.commandReference(name);
     return {
       success: true,
       status: 'help',
-      message: 'Commands: !eggs, !hatch <slot>, !monsters [page], !monster <slot>, !choose <slot>, !evolve <slot>, !battle [power|guard|speed], !leavebattle, !rank, !quests'
+      message: `Commands: ${commandReference('eggs')}, ${commandReference('hatch')} <slot>, ` +
+        `${commandReference('monsters')} [page], ${commandReference('monster')} <slot>, ` +
+        `${commandReference('choose')} <slot>, ${commandReference('evolve')} <slot>, ` +
+        `${commandReference('battle')} [power|guard|speed], ${commandReference('leavebattle')}, ` +
+        `${commandReference('rank')}, ${commandReference('quests')}`
     };
   }
 
@@ -61,7 +84,7 @@ class ChatCommands {
     return {
       success: true,
       status: 'eggs',
-      message: `${eggs.length} egg${eggs.length === 1 ? '' : 's'} (${ready} ready${queued ? `, ${queued} queued` : ''}). Use !hatch <slot>.`,
+      message: `${eggs.length} egg${eggs.length === 1 ? '' : 's'} (${ready} ready${queued ? `, ${queued} queued` : ''}). Use ${this.commandReference('hatch')} <slot>.`,
       eggs
     };
   }
@@ -80,14 +103,14 @@ class ChatCommands {
         return {
           success: false,
           status: 'egg_not_found',
-          message: 'That egg slot does not exist. Check !eggs.'
+          message: `That egg slot does not exist. Check ${this.commandReference('eggs')}.`
         };
       }
       const wait = error.wait || null;
       return {
         success: false,
         status: 'egg_not_ready',
-        message: 'That egg is not ready yet. Check !eggs.',
+        message: `That egg is not ready yet. Check ${this.commandReference('eggs')}.`,
         ...(wait ? {
           wait,
           card: {
@@ -128,7 +151,11 @@ class ChatCommands {
     const index = Number.parseInt(slot, 10) - 1;
     const monsters = this.store.getViewerMonsters(userId);
     if (!Number.isInteger(index) || index < 0 || !monsters[index]) {
-      return { success: false, status: 'invalid_slot', message: 'Choose a monster slot from !monsters.' };
+      return {
+        success: false,
+        status: 'invalid_slot',
+        message: `Choose a monster slot from ${this.commandReference('monsters')}.`
+      };
     }
     const selected = this.store.selectMonster(userId, monsters[index].monster_id);
     return { success: true, status: 'selected', message: `${selected.name} is ready to battle.`, selected };
@@ -138,7 +165,11 @@ class ChatCommands {
     const index = Number.parseInt(slot, 10) - 1;
     const monsters = this.store.getViewerMonsters(userId);
     if (!Number.isInteger(index) || index < 0 || !monsters[index]) {
-      return { success: false, status: 'invalid_slot', message: 'Choose a monster slot from !monsters.' };
+      return {
+        success: false,
+        status: 'invalid_slot',
+        message: `Choose a monster slot from ${this.commandReference('monsters')}.`
+      };
     }
     const monster = monsters[index];
     return {
@@ -156,7 +187,11 @@ class ChatCommands {
     const index = Number.parseInt(slot, 10) - 1;
     const monsters = this.store.getViewerMonsters(userId);
     if (!Number.isInteger(index) || index < 0 || !monsters[index]) {
-      return { success: false, status: 'invalid_slot', message: 'Choose a monster slot from !monsters.' };
+      return {
+        success: false,
+        status: 'invalid_slot',
+        message: `Choose a monster slot from ${this.commandReference('monsters')}.`
+      };
     }
     try {
       const evolution = this.collection.evolveMonster(userId, monsters[index].monster_id);
