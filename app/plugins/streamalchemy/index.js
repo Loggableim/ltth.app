@@ -560,14 +560,28 @@ class StreamAlchemyPlugin {
 
   getStreamMonstersCommandReference(command) {
     const aliases = this.normalizeCommandAliases(this.config?.streamMonsters?.commandAliases);
-    const alias = aliases[command]?.enabled?.[0] || command;
+    const enabledAliases = aliases[command]?.enabled || [];
+    const registeredCommands = new Set(this.streamMonstersGCCERegisteredCommands || []);
+    const registrationIsActive = String(
+      this.streamMonstersGCCERegistrationState || ''
+    ).startsWith('active');
+    const alias = registrationIsActive
+      ? enabledAliases.find(candidate => registeredCommands.has(candidate))
+      : enabledAliases[0];
+    if (!alias) return '';
     return `${this.streamMonstersCommandPrefix || '!'}${alias}`;
   }
 
   getStreamMonstersGCCEState() {
     const active = this.streamMonstersGCCERegistrationState.startsWith('active');
+    const commandReferences = Object.fromEntries(
+      Object.keys(DEFAULT_COMMAND_ALIASES)
+        .map(command => [command, this.getStreamMonstersCommandReference(command)])
+        .filter(([, reference]) => reference)
+    );
     return {
       commandPrefix: this.streamMonstersCommandPrefix,
+      commandReferences,
       registrationState: this.streamMonstersGCCERegistrationState,
       registrationError: this.streamMonstersGCCERegistrationError,
       registrationConflicts: [...(this.streamMonstersGCCERegistrationConflicts || [])],

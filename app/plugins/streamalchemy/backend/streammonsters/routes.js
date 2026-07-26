@@ -255,6 +255,9 @@ class StreamMonstersRoutes {
           scale: preview.scale
         } } : {})
       });
+      const commandReferences = this.gcceStateProvider()?.commandReferences || {};
+      const commandReference = command => commandReferences[command]
+        || (command === 'eggs' ? '!eier' : `!${command}`);
       if (preview) {
         const skillPayload = type => ({
           battleId: 'demo-battle',
@@ -267,7 +270,12 @@ class StreamMonstersRoutes {
           action: { type, actorId: monster.monster_id, targetId: opponent.monster_id }
         });
         if (preview.scene === 'spawn') {
-          emit('streammonsters:egg_spawned', { userId: 'demo-viewer', egg, gift, hint: '!eggs' });
+          emit('streammonsters:egg_spawned', {
+            userId: 'demo-viewer',
+            egg,
+            gift,
+            hint: commandReference('inventory')
+          });
         } else if (preview.scene === 'hatch') {
           emit('streammonsters:hatch_started', { userId: 'demo-viewer', egg, slot: 1 });
           emit('streammonsters:egg_hatched', { userId: 'demo-viewer', egg, monster });
@@ -289,7 +297,12 @@ class StreamMonstersRoutes {
         event: { element: 'Volt' },
         element: 'Volt'
       });
-      emit('streammonsters:egg_spawned', { userId: 'demo-viewer', egg, gift, hint: '!eggs' });
+      emit('streammonsters:egg_spawned', {
+        userId: 'demo-viewer',
+        egg,
+        gift,
+        hint: commandReference('inventory')
+      });
       emit('streammonsters:hype_changed', {
         userId: 'demo-viewer',
         hype: { points: 0, charged_eggs: 1 }
@@ -303,7 +316,7 @@ class StreamMonstersRoutes {
       emit('streammonsters:egg_ready', {
         userId: 'demo-viewer',
         egg: { ...egg, state: 'ready' },
-        hint: '!hatch 1'
+        hint: `${commandReference('hatch')} [slot]`
       });
       emit('streammonsters:hatch_started', { userId: 'demo-viewer', egg, slot: 1 });
       emit('streammonsters:egg_hatched', { userId: 'demo-viewer', egg, monster });

@@ -59,14 +59,20 @@ describe('Stream Monsters OBS overlay', () => {
     expect(html).toContain('return { origin: { x: 0.5, y: 0.5 }, scale: 1 }');
   });
 
-  test.each(['de', 'en', 'es', 'fr'])('localizes command hints with the dynamic prefix in %s', locale => {
+  test.each(['de', 'en', 'es', 'fr'])('localizes command hints with effective command references in %s', locale => {
     const translations = JSON.parse(fs.readFileSync(
       path.join(process.cwd(), 'plugins', 'streamalchemy', 'locales', `${locale}.json`),
       'utf8'
     )).plugins.streamalchemy.ui.monsters;
 
-    for (const key of ['overlayCommands', 'eggsTimer', 'hatchNow', 'monsterCardHint']) {
-      expect(translations[key]).toContain('{prefix}');
+    const referenceByKey = {
+      overlayCommands: '{eggs}',
+      eggsTimer: '{eggs}',
+      hatchNow: '{hatch}',
+      monsterCardHint: '{monster}'
+    };
+    for (const [key, reference] of Object.entries(referenceByKey)) {
+      expect(translations[key]).toContain(reference);
       expect(translations[key]).not.toContain('!');
     }
     expect(translations.snapshotRules).toContain('{duration}');
@@ -86,8 +92,9 @@ describe('Stream Monsters OBS overlay', () => {
     const durationLabel = interpolate(translations[duration.key], duration.params);
 
     expect(interpolate(translations.snapshotRules, {
-      prefix: '/',
+      eggs: '/eier',
+      hatch: '/hatch',
       duration: durationLabel
-    })).toBe('/eggs · /hatch [slot] · 30 seconds');
+    })).toBe('/eier · /hatch [slot] · 30 seconds');
   });
 });

@@ -146,7 +146,8 @@ describe('Stream Monsters 1.5 durable gift and egg loop', () => {
     expect(commands.execute({ userId: 'viewer-a' }, 'hatch', ['1'])).toEqual({
       success: false,
       status: 'egg_not_ready',
-      message: 'That egg is not ready yet. Check !eggs.',
+      message: 'That egg is not ready yet. Check !eier.',
+      hint: '!eier',
       wait: {
         slot: 1,
         state: 'incubating',

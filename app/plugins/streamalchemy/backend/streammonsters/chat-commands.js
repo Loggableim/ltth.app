@@ -8,7 +8,7 @@ class ChatCommands {
     emit = () => {},
     now = () => Date.now(),
     queueTtlMs = 5 * 60 * 1000,
-    getCommandReference = command => `!${command}`
+    getCommandReference = command => command === 'eggs' ? '!eier' : `!${command}`
   }) {
     this.store = store;
     this.engine = engine;
@@ -27,7 +27,7 @@ class ChatCommands {
     const reference = this.getCommandReference?.(command);
     return typeof reference === 'string' && reference
       ? reference
-      : `!${command}`;
+      : command === 'eggs' ? '!eier' : `!${command}`;
   }
 
   emitAfterCommit(event, payload) {
@@ -103,7 +103,8 @@ class ChatCommands {
         return {
           success: false,
           status: 'egg_not_found',
-          message: `That egg slot does not exist. Check ${this.commandReference('eggs')}.`
+          message: `That egg slot does not exist. Check ${this.commandReference('eggs')}.`,
+          hint: this.commandReference('eggs')
         };
       }
       const wait = error.wait || null;
@@ -111,6 +112,7 @@ class ChatCommands {
         success: false,
         status: 'egg_not_ready',
         message: `That egg is not ready yet. Check ${this.commandReference('eggs')}.`,
+        hint: this.commandReference('eggs'),
         ...(wait ? {
           wait,
           card: {

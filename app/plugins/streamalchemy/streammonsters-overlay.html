@@ -223,9 +223,29 @@
   let battleMonsters = [null, null];
   let battleAdvantageName = '';
   let currentCommandPrefix = '!';
-  const commandHint = (key = 'overlayCommands', fallback = '{prefix}eggs · {prefix}hatch [slot] · {prefix}battle') => (
-    text(key, fallback, { prefix: currentCommandPrefix })
+  let currentCommandReferences = {
+    eggs: '!eier',
+    hatch: '!hatch',
+    inventory: '!inventory',
+    monster: '!monster',
+    battle: '!battle'
+  };
+  const commandReference = command => currentCommandReferences[command] || `${currentCommandPrefix}${command}`;
+  const commandParams = () => ({
+    eggs: commandReference('eggs'),
+    hatch: commandReference('hatch'),
+    inventory: commandReference('inventory'),
+    monster: commandReference('monster'),
+    battle: commandReference('battle')
+  });
+  const commandHint = (key = 'overlayCommands', fallback = '{eggs} · {hatch} [slot] · {battle}') => (
+    text(key, fallback, commandParams())
   );
+  const safeHint = (hint, fallback = '') => {
+    const candidate = typeof hint === 'string' ? hint.trim() : '';
+    if (!candidate) return fallback;
+    return candidate.replace(/[<>\u0000-\u001F\u007F]/g, '').slice(0, 160);
+  };
   const formatHatchDuration = durationMs => {
     const duration = window.StreamMonstersOverlayRuntime.hatchDurationSpec(durationMs);
     const fallback = duration.params.seconds != null
@@ -367,7 +387,8 @@
     chatCooldowns.set(userId,Date.now());
     const messageKey = window.StreamMonstersOverlayRuntime.chatMessageKey(data?.result);
     const message = text(messageKey, 'Command result is unavailable.');
-    node('chat-card').textContent = `${userId} · ${message}`;
+    const hint = safeHint(data?.result?.hint);
+    node('chat-card').textContent = `${userId} · ${message}${hint ? ` · ${hint}` : ''}`;
     node('chat-card').classList.add('visible');
     await wait(2800);
     node('chat-card').classList.remove('visible');
@@ -375,6 +396,26 @@
   const applySnapshot = data => {
     const points = Number(data?.hype?.points) || 0;
     currentCommandPrefix = value(data?.gcce?.commandPrefix, currentCommandPrefix);
+    const registeredCommands = new Set(
+      Array.isArray(data?.gcce?.registeredCommands) ? data.gcce.registeredCommands : []
+    );
+    const registrationIsActive = String(data?.gcce?.registrationState || '').startsWith('active');
+    const configuredAliases = data?.config?.commandAliases || {};
+    currentCommandReferences = Object.fromEntries(
+      Object.keys(currentCommandReferences).map(command => {
+        const published = data?.gcce?.commandReferences?.[command];
+        if (typeof published === 'string' && published && !/[\s<>"']/.test(published)) {
+          return [command, published];
+        }
+        const enabled = Array.isArray(configuredAliases?.[command]?.enabled)
+          ? configuredAliases[command].enabled
+          : [];
+        const alias = registrationIsActive
+          ? enabled.find(candidate => registeredCommands.has(candidate))
+          : enabled[0];
+        return [command, `${currentCommandPrefix}${alias || command}`];
+      })
+    );
     const duration = Math.max(0, Number(data?.config?.hatchDurationMs) || 0);
     node('hype').style.setProperty('--hype', `${points}%`);
     node('hype-value').textContent = data?.hype?.charged_eggs
@@ -382,8 +423,8 @@
       : `${points}%`;
     node('hint').textContent = text(
       'snapshotRules',
-      '{prefix}eggs · {prefix}hatch [slot] · {duration}',
-      { prefix: currentCommandPrefix, duration: formatHatchDuration(duration) }
+      '{eggs} · {hatch} [slot] · {duration}',
+      { ...commandParams(), duration: formatHatchDuration(duration) }
     );
     Object.assign(layoutConfig, {
       landscapeAnchor: data?.config?.landscapeAnchor || 'bottom-center',
@@ -415,7 +456,7 @@
       imageUrl:data?.egg?.image_url,
       element:data?.egg?.element,
       charged:data?.egg?.variant === 'charged',
-      hint: commandHint('eggsTimer', '{prefix}eggs shows the timer'),
+      hint: safeHint(data?.hint, commandHint('eggsTimer', '{eggs} shows the timer')),
       progress:4,
       cue:'spawn',
       effectScene:'spawn'
@@ -457,7 +498,7 @@
       imageUrl:data?.egg?.image_url,
       progress:100,
       charged:data?.egg?.variant === 'charged',
-      hint: commandHint('hatchNow', 'Write {prefix}hatch [slot] now'),
+      hint: safeHint(data?.hint, commandHint('hatchNow', 'Write {hatch} [slot] now')),
       cue:'ready'
     });
     if (type === 'hatch_started') return showToast(
@@ -481,7 +522,7 @@
       imageUrl:data?.monster?.image_url || data?.egg?.image_url,
       element:data?.monster?.element || data?.egg?.element,
       charged:data?.egg?.variant === 'charged',
-      hint: commandHint('monsterCardHint', '{prefix}monster [slot] shows the card'),
+      hint: commandHint('monsterCardHint', '{monster} [slot] shows the card'),
       progress:100,
       cue:'hatch'
     });
