@@ -39,6 +39,12 @@
     setTimeout(() => { bar.style.display = 'none'; }, 4000);
   }
 
+  function translate(key, fallback) {
+    if (!window.i18n) return fallback;
+    const translated = window.i18n.t(key);
+    return translated && translated !== key ? translated : fallback;
+  }
+
   // ── Data Loading ───────────────────────────────────────────────────────────
 
   async function loadConfig() {
@@ -61,6 +67,11 @@
     renderBindMode();
     renderInterfaces();
     renderTunnel();
+    if (window.LTTHNetworkOverlayTunnel) {
+      window.LTTHNetworkOverlayTunnel.render(networkConfig.overlayTunnel || {}, {
+        translate
+      });
+    }
     renderExternalURLs();
     renderAccessURLs();
     renderSecurityWarning();
@@ -414,6 +425,24 @@
     }
   }
 
+  async function stopOverlayTunnel() {
+    const stopButton = el('network-overlay-tunnel-stop');
+    if (stopButton) stopButton.disabled = true;
+    try {
+      await window.LTTHNetworkOverlayTunnel.stop();
+      await loadConfig();
+    } catch (_) {
+      showNotification(
+        translate(
+          'common.tiktok_studio.tunnel_failed',
+          'Quick Tunnel could not be stopped'
+        ),
+        'error'
+      );
+      if (stopButton) stopButton.disabled = false;
+    }
+  }
+
   async function addExternalURL() {
     const input = el('network-external-url-input');
     if (!input || !input.value.trim()) return;
@@ -479,6 +508,37 @@
 
   const stopBtn = el('network-tunnel-stop-btn');
   if (stopBtn) stopBtn.addEventListener('click', stopTunnel);
+
+  const overlayStopBtn = el('network-overlay-tunnel-stop');
+  if (overlayStopBtn && window.LTTHNetworkOverlayTunnel) {
+    overlayStopBtn.addEventListener('click', stopOverlayTunnel);
+  }
+
+  const overlayCopyBtn = el('network-overlay-tunnel-copy');
+  if (overlayCopyBtn && window.LTTHNetworkOverlayTunnel) {
+    overlayCopyBtn.addEventListener('click', async () => {
+      const urlText = el('network-overlay-tunnel-url-text');
+      try {
+        await window.LTTHNetworkOverlayTunnel.copyTunnelURL(
+          urlText ? urlText.textContent : ''
+        );
+        showNotification(
+          translate(
+            'common.tiktok_studio.copied',
+            'TikTok Studio URL copied'
+          )
+        );
+      } catch (_) {
+        showNotification(
+          translate(
+            'common.tiktok_studio.copy_failed',
+            'Could not copy the TikTok Studio URL'
+          ),
+          'error'
+        );
+      }
+    });
+  }
 
   const addUrlBtn = el('network-add-url-btn');
   if (addUrlBtn) addUrlBtn.addEventListener('click', addExternalURL);

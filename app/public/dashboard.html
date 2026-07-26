@@ -4770,6 +4770,38 @@
                                     </div>
                                 </div>
 
+                                <!-- Overlay-only Quick Tunnel -->
+                                <div class="bg-gray-700 rounded-lg p-4 mb-4">
+                                    <h4 class="text-sm font-semibold text-gray-300 mb-3">
+                                        <i data-lucide="radio-tower" class="inline-block w-4 h-4 mr-1"></i>
+                                        <span data-i18n="network.overlay_tunnel.title">Overlay Quick Tunnel</span>
+                                    </h4>
+                                    <div class="flex flex-wrap items-center gap-4 mb-3">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs text-gray-400" data-i18n="common.status">Status:</span>
+                                            <span id="network-overlay-tunnel-status" class="text-sm text-gray-400" data-i18n="network.overlay_tunnel.inactive">Inactive</span>
+                                        </div>
+                                        <button id="network-overlay-tunnel-stop" class="btn btn-danger btn-sm" disabled>
+                                            <i data-lucide="square" class="w-4 h-4"></i>
+                                            <span data-i18n="network.overlay_tunnel.stop">Stop</span>
+                                        </button>
+                                    </div>
+                                    <div id="network-overlay-tunnel-url" class="items-center gap-2 bg-gray-800 rounded p-2 mb-3" style="display:none;">
+                                        <span class="text-xs text-gray-400 flex-shrink-0">URL:</span>
+                                        <span id="network-overlay-tunnel-url-text" class="font-mono text-sm flex-1 break-all text-green-400"></span>
+                                        <button id="network-overlay-tunnel-copy" class="btn btn-sm text-gray-400 hover:text-white" title="Copy" data-i18n-title="common.copy" aria-label="Copy" data-i18n-aria-label="common.copy" disabled>
+                                            <i data-lucide="copy" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                    <p id="network-overlay-tunnel-error" class="text-xs text-red-400 mb-2" style="display:none;"></p>
+                                    <p class="text-xs text-gray-400 mb-1" data-i18n="network.overlay_tunnel.restart_notice">
+                                        The Quick Tunnel URL changes after LTTH restarts.
+                                    </p>
+                                    <p class="text-xs text-yellow-400" data-i18n="network.overlay_tunnel.test_service_notice">
+                                        Cloudflare Quick Tunnel is a test service without an availability guarantee.
+                                    </p>
+                                </div>
+
                                 <!-- External URLs -->
                                 <div class="bg-gray-700 rounded-lg p-4 mb-4">
                                     <h4 class="text-sm font-semibold text-gray-300 mb-3">
@@ -4992,6 +5024,7 @@
     <script src="/js/wiki.js"></script>
     <script src="/js/init-language-switchers.js"></script>
     <script src="/js/cloud-sync-settings.js"></script>
+    <script src="/js/network-overlay-tunnel.js"></script>
     <script src="/js/network-settings.js"></script>
     <script src="/js/chatango-theme-adapter.js"></script>
     <script src="/js/flow-presets.js"></script>
