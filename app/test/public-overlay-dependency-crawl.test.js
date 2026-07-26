@@ -130,7 +130,7 @@ function describeDependency(source, dependency) {
 }
 
 describe('registered overlay dependency crawl', () => {
-  test('all literal local HTTP dependencies used by registered overlays are allowed', () => {
+  test('allows render dependencies and keeps game test-control writes local-only', () => {
     const blocked = [];
     for (const relativePath of surfaceSources) {
       const absolutePath = path.join(appRoot, relativePath);
@@ -144,6 +144,27 @@ describe('registered overlay dependency crawl', () => {
         }
       }
     }
-    expect(blocked).toEqual([]);
+    expect(blocked).toEqual([
+      {
+        source: 'plugins/game-engine/overlay/connect4.html',
+        method: 'POST',
+        pathname: '/api/game-engine/manual/start'
+      },
+      {
+        source: 'plugins/game-engine/overlay/connect4.html',
+        method: 'POST',
+        pathname: '/api/game-engine/manual/move'
+      },
+      {
+        source: 'plugins/game-engine/overlay/connect4.html',
+        method: 'POST',
+        pathname: '/api/game-engine/manual/end'
+      },
+      {
+        source: 'plugins/game-engine/overlay/wheel.html',
+        method: 'POST',
+        pathname: '/api/game-engine/wheel/spin'
+      }
+    ]);
   });
 });
