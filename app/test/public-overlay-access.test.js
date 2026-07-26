@@ -79,14 +79,20 @@ describe('public overlay Express middleware', () => {
     });
   });
 
-  test('allows an explicitly registered POST method', async () => {
-    const response = await request(createApp())
+  test('denies game-control writes publicly while preserving the local route', async () => {
+    const publicResponse = await request(createApp())
       .post('/api/game-engine/manual/move')
       .set('Host', 'quiet-river.trycloudflare.com')
       .send({ move: 'A1' });
+    const localResponse = await request(createApp())
+      .post('/api/game-engine/manual/move')
+      .set('Host', '127.0.0.1:3000')
+      .send({ move: 'A1' });
 
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ accepted: true, move: 'A1' });
+    expect(publicResponse.status).toBe(404);
+    expect(publicResponse.body).toEqual({ error: 'Not found' });
+    expect(localResponse.status).toBe(200);
+    expect(localResponse.body).toEqual({ accepted: true, move: 'A1' });
   });
 
   test.each([

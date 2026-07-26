@@ -100,8 +100,7 @@ describe('public overlay HTTP registry', () => {
     ['GET', '/api/streammonsters/state'],
     ['GET', '/plugins/toptier/assets/overlay.js'],
     ['GET', '/api/weather/config'],
-    ['GET', '/api/webgpu-weather/overlay-config'],
-    ['POST', '/api/game-engine/manual/move']
+    ['GET', '/api/webgpu-weather/overlay-config']
   ])('allows registered dependency %s %s', (method, pathname) => {
     expect(isHttpAllowed({ method, pathname })).toBe(true);
   });
@@ -113,6 +112,10 @@ describe('public overlay HTTP registry', () => {
     ['POST', '/api/plugins/game-engine/reload'],
     ['GET', '/plugins/game-engine/ui.html'],
     ['DELETE', '/api/game-engine/manual/end'],
+    ['POST', '/api/game-engine/manual/start'],
+    ['POST', '/api/game-engine/manual/move'],
+    ['POST', '/api/game-engine/manual/end'],
+    ['POST', '/api/game-engine/wheel/spin'],
     ['TRACE', '/animation-overlay.html'],
     ['POST', '/api/interactive-story/overlay-positions'],
     ['POST', '/api/quiz-show/hud-config']

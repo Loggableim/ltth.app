@@ -128,8 +128,6 @@ const HTTP_RULES = Object.freeze([
   rule(['GET', 'HEAD'], pattern(/^\/api\/game-engine\/(?:slot|wheel)\/audio-settings$/)),
   rule(['GET', 'HEAD'], pattern(/^\/api\/game-engine\/(?:slot|wheel)\/audio\/settings$/)),
   rule(['GET', 'HEAD'], pattern(/^\/game-engine\/sounds\/(?:default|wheel|slot)\/(?:custom\/\d+\/)?[A-Za-z0-9._ -]+\.mp3$/i)),
-  rule(['POST'], pattern(/^\/api\/game-engine\/manual\/(?:start|move|end)$/)),
-  rule(['POST'], exact('/api/game-engine/wheel/spin')),
 
   rule(['GET', 'HEAD'], exact('/api/gcce/hud/rotator')),
   rule(['GET', 'HEAD'], exact('/gcce/style.css')),
