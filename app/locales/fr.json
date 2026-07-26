@@ -3,6 +3,17 @@
     "name": "PupCid's Little TikTool Helper",
     "tagline": "Alternative gratuite open source pour le streaming TikTok LIVE"
   },
+  "network": {
+    "overlay_tunnel": {
+      "title": "Quick Tunnel pour les overlays",
+      "active": "Actif",
+      "inactive": "Inactif",
+      "starting": "Démarrage...",
+      "stop": "Arrêter",
+      "restart_notice": "L’URL du Quick Tunnel change après le redémarrage de LTTH.",
+      "test_service_notice": "Cloudflare Quick Tunnel est un service de test sans garantie de disponibilité."
+    }
+  },
   "navigation": {
     "dashboard": "Tableau de Bord",
     "events": "Événements",
@@ -276,6 +287,14 @@
     "name": "Nom",
     "value": "Valeur",
     "status": "Statut",
+    "tiktok_studio": {
+      "copy_url": "Copier l’URL TikTok Studio",
+      "starting": "Démarrage du Quick Tunnel...",
+      "copied": "URL TikTok Studio copiée",
+      "copy_failed": "Impossible de copier l’URL TikTok Studio",
+      "tunnel_failed": "Impossible de démarrer le Quick Tunnel",
+      "url_unavailable": "L’URL de l’overlay n’est pas disponible"
+    },
     "type": "Type",
     "network": "Réseau",
     "animation": "Animation",
