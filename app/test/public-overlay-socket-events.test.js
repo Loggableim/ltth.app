@@ -39,6 +39,8 @@ const overlaySources = [
   'plugins/quiz-show/quiz_show_overlay.js',
   'plugins/quiz-show/quiz_show_leaderboard_overlay.html',
   'plugins/schnorrbecher/overlay/coincup.js',
+  'plugins/spotlight/overlays/single-overlay.js',
+  'plugins/spotlight/overlays/multihud.js',
   'plugins/streamalchemy/streammonsters-overlay.html',
   'plugins/stt-ticker/overlay/ticker.html',
   'plugins/toptier/assets/overlay.js',
@@ -62,7 +64,7 @@ const lifecycleEvents = new Set([
 function collectEvents(method) {
   const events = new Map();
   const expression = new RegExp(
-    String.raw`(?:\bsocket|this\.socket|root\.socket)\s*\??\.\s*${method}\s*\(\s*['"]([^'"]+)['"]`,
+    String.raw`(?:\bsocket|this\.socket|root\.socket|state\.socket)\s*\??\.\s*${method}\s*\(\s*['"]([^'"]+)['"]`,
     'g'
   );
 

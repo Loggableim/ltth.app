@@ -45,6 +45,10 @@ const surfaceSources = [
   'plugins/quiz-show/quiz_show_leaderboard_overlay.html',
   'plugins/schnorrbecher/overlay/coincup.html',
   'plugins/schnorrbecher/overlay/coincup.js',
+  'plugins/spotlight/overlays/gifter.html',
+  'plugins/spotlight/overlays/single-overlay.js',
+  'plugins/spotlight/overlays/multihud.html',
+  'plugins/spotlight/overlays/multihud.js',
   'plugins/streamalchemy/streammonsters-overlay.html',
   'plugins/streamalchemy/streammonsters-overlay-views.js',
   'plugins/stt-ticker/overlay/ticker.html',
@@ -95,6 +99,7 @@ function collectTemplateFetchDependencies(source) {
     const pathname = match[1]
       .replace(/\$\{([^}]+)\}/g, (_placeholder, expressionText) => {
         if (/locale/i.test(expressionText)) return 'en';
+        if (/query/i.test(expressionText)) return '';
         if (/gameType/i.test(expressionText)) return 'connect4';
         if (/(^|\W)type(\W|$)/i.test(expressionText)) return 'daily';
         if (/filename|imagePath/i.test(expressionText)) return 'fixture.png';
@@ -139,12 +144,6 @@ describe('registered overlay dependency crawl', () => {
         }
       }
     }
-    expect(blocked).toEqual([
-      {
-        source: 'plugins/quiz-show/quiz_show_overlay.js',
-        method: 'POST',
-        pathname: '/api/quiz-show/hud-config'
-      }
-    ]);
+    expect(blocked).toEqual([]);
   });
 });

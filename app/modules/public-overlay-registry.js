@@ -113,8 +113,8 @@ const HTTP_RULES = Object.freeze([
   rule(['GET', 'HEAD'], pattern(/^\/plugins\/fireworks\/audio\/[A-Za-z0-9._ ,()-]+\.mp3$/i)),
 
   rule(['GET', 'HEAD'], exact('/api/flame-overlay/config')),
-  rule(['GET', 'HEAD'], exact('/plugins/flame-overlay/default-config.js')),
-  rule(['GET', 'HEAD'], pattern(/^\/plugins\/flame-overlay\/renderer\/(?:effects-engine|post-processor)\.js$/)),
+  rule(['GET', 'HEAD'], exact('/flame-overlay/default-config.js')),
+  rule(['GET', 'HEAD'], pattern(/^\/flame-overlay\/(?:effects-engine|post-processor)\.js$/)),
   rule(['GET', 'HEAD'], pattern(/^\/plugins\/flame-overlay\/textures\/[A-Za-z0-9._-]+\.(?:jpg|png|webp)$/i)),
 
   rule(['GET', 'HEAD'], pattern(/^\/api\/game-engine\/config\/(?:chess|connect4)$/)),
@@ -391,6 +391,25 @@ story:image-updated
 story:vote-update
 story:voting-ended
 story:voting-started
+lastevent.multihud.update
+lastevent.session.reset
+lastevent.settings.chatter
+lastevent.settings.follower
+lastevent.settings.gifter
+lastevent.settings.giftstreak
+lastevent.settings.like
+lastevent.settings.multihud
+lastevent.settings.share
+lastevent.settings.subscriber
+lastevent.settings.topgift
+lastevent.update.chatter
+lastevent.update.follower
+lastevent.update.gifter
+lastevent.update.giftstreak
+lastevent.update.like
+lastevent.update.share
+lastevent.update.subscriber
+lastevent.update.topgift
 stt-ticker:clear
 stt-ticker:interim
 stt-ticker:transcript
