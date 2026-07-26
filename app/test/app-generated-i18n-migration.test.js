@@ -23,6 +23,8 @@ const languageInvariantRuntimeKeys = {
     'common.dashboard.tunnel_region',
     // "Subdomain" is likewise established technical terminology in German.
     'common.dashboard.tunnel_subdomain',
+    // "Status" is the established technical term in German and English.
+    'common.status',
     'common.dashboard.cloudflare_cloudflared',
     'common.dashboard.ltth_app_ltth',
     'common.ifttt_flow_editor.drag_drop',

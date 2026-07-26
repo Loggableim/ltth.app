@@ -3,6 +3,7 @@ const path = require('path');
 const { JSDOM } = require('jsdom');
 
 const locales = ['de', 'en', 'es', 'fr'];
+const appLocalesRoot = path.join(__dirname, '..', 'locales');
 const adminSections = new Set([
   'shell', 'tabs', 'player', 'queue', 'settings', 'autoDj', 'aliases',
   'moderation', 'overlay', 'history', 'catalog', 'playlists', 'safety', 'health'
@@ -104,6 +105,9 @@ describe('Music Bot catalog admin i18n contract', () => {
 
     for (const locale of locales) {
       const translations = JSON.parse(fs.readFileSync(path.join(root, 'locales', `${locale}.json`), 'utf8'));
+      const appTranslations = JSON.parse(
+        fs.readFileSync(path.join(appLocalesRoot, `${locale}.json`), 'utf8')
+      );
 
       const assertNoPseudoKeys = (value, keyPath = 'music_bot.ui') => {
         if (!value || typeof value !== 'object') return;
@@ -117,7 +121,9 @@ describe('Music Bot catalog admin i18n contract', () => {
       for (const attribute of ['data-i18n', 'data-i18n-placeholder', 'data-i18n-aria-label', 'data-i18n-title']) {
         dom.window.document.querySelectorAll(`[${attribute}]`).forEach((element) => {
           const key = element.getAttribute(attribute);
-          const value = lookup(translations, key);
+          const value = key.startsWith('plugins.music-bot.')
+            ? lookup(translations, key)
+            : lookup(appTranslations, key);
           expect(value).toEqual(expect.any(String));
           expect(value.trim()).not.toBe('');
         });
