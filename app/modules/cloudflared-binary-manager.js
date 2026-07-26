@@ -119,8 +119,8 @@ class CloudflaredBinaryManager {
     );
   }
 
-  getMissingConfigPath() {
-    return path.join(this.getInstallDir(), 'quick-tunnel-no-config.yml');
+  getQuickTunnelConfigPath() {
+    return this.platform === 'win32' ? 'NUL' : '/dev/null';
   }
 
   async ensureInstalled() {
@@ -154,13 +154,6 @@ class CloudflaredBinaryManager {
     const metadataPath = path.join(installDir, 'install.json');
 
     fs.mkdirSync(installDir, { recursive: true });
-
-    if (fs.existsSync(this.getMissingConfigPath())) {
-      throw createError(
-        'CLOUDFLARED_CONFIG_COLLISION',
-        'The reserved Quick Tunnel config path must remain absent'
-      );
-    }
 
     if (await this._isInstalledReleaseValid(release, executablePath, metadataPath)) {
       return executablePath;

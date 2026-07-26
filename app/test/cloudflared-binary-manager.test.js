@@ -95,6 +95,24 @@ afterEach(() => {
 
 describe('CloudflaredBinaryManager', () => {
   test.each([
+    ['win32', 'NUL'],
+    ['darwin', '/dev/null'],
+    ['linux', '/dev/null']
+  ])('uses the %s null device as the accountless Quick Tunnel config source', (
+    platform,
+    expected
+  ) => {
+    const manager = new CloudflaredBinaryManager({
+      toolsRoot: createToolsRoot(),
+      platform,
+      arch: process.arch,
+      logger: { info() {}, warn() {}, error() {} }
+    });
+
+    expect(manager.getQuickTunnelConfigPath()).toBe(expected);
+  });
+
+  test.each([
     ['win32', 'x64', 'cloudflared-windows-amd64.exe'],
     ['darwin', 'x64', 'cloudflared-darwin-amd64.tgz'],
     ['darwin', 'arm64', 'cloudflared-darwin-arm64.tgz'],

@@ -292,7 +292,7 @@ class CloudflaredBinaryManager {
 
   getInstallDir() {}
   getExecutablePath() {}
-  getMissingConfigPath() {}
+  getQuickTunnelConfigPath() {}
   async ensureInstalled() {}
 }
 ```
@@ -311,7 +311,7 @@ Implementation rules:
 8. Apply mode `0o755` on macOS/Linux.
 9. Write metadata to a temporary file, then atomically rename the executable and metadata.
 10. Keep one in-flight Promise per manager instance and clear it in `finally`.
-11. Never create `getMissingConfigPath()`; it intentionally points to `<installDir>/quick-tunnel-no-config.yml`, which must remain absent.
+11. `getQuickTunnelConfigPath()` returns the operating-system null device (`NUL` on Windows, `/dev/null` on macOS/Linux). This supplies a readable empty config and prevents Cloudflared from discovering account credentials in a user-level default config.
 
 - [ ] **Step 5: Run the test and confirm GREEN**
 
@@ -343,7 +343,7 @@ Construct `NetworkManager` with injected `spawnImpl`, `cloudflaredBinaryManager`
 ```js
 describe('NetworkManager overlay Quick Tunnel', () => {
   test('installs and starts cloudflared on the first ensure call', async () => {});
-  test('uses --no-autoupdate and an explicitly missing config path', async () => {});
+  test('uses --no-autoupdate and the operating-system null config source', async () => {});
   test('targets 127.0.0.1 and the actual LTTH port', async () => {});
   test('extracts only a strict trycloudflare HTTPS URL from stdout or stderr', async () => {});
   test('coalesces concurrent ensure calls and marks later calls reused', async () => {});
@@ -398,7 +398,7 @@ spawn(executablePath, [
   'tunnel',
   '--no-autoupdate',
   '--config',
-  cloudflaredBinaryManager.getMissingConfigPath(),
+  cloudflaredBinaryManager.getQuickTunnelConfigPath(),
   '--url',
   `http://127.0.0.1:${port}`
 ], {
