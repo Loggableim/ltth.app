@@ -944,6 +944,7 @@
         }
     </style>
     <script src="/js/i18n-client.js"></script>
+    <script src="/js/tiktok-studio-url.js"></script>
 </head>
 <body>
     <div class="container">
@@ -992,6 +993,10 @@
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                                     <span id="directorUrl" class="room-info-value">-</span>
                                     <button class="copy-btn" data-copy-target="directorUrl"><span aria-hidden="true">📋</span> <span data-i18n="plugins.vdoninja.vdoninja.room.copy">Copy</span></button>
+                                    <button type="button" class="copy-btn"
+                                            data-copy-tiktok-studio-url
+                                            data-overlay-url-source="#directorUrl"
+                                            data-i18n="common.tiktok_studio.copy_url">TikTok-Studio-URL kopieren</button>
                                 </div>
                             </div>
                             <div class="room-info-row">

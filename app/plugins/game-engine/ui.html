@@ -3842,7 +3842,7 @@
             <li data-i18n="plugins.game-engine.labels.queue_management">Queue management</li>
             <li data-i18n="plugins.game-engine.labels.better_performance">Better performance</li>
           </ul>
-          <p style="margin-bottom: 0;"><strong>URL:</strong> <code style="background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px;">http://localhost:3000/overlay/game-engine/unified</code></p>
+          <p style="margin-bottom: 0;"><strong>URL:</strong> <code id="game-engine-unified-url" style="background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px;">http://localhost:3000/overlay/game-engine/unified</code></p>
         </div>
 
         <div class="info-box" style="background: #3a2a1e; border-left: 4px solid #FF9800; padding: 15px; margin: 20px 0; border-radius: 8px;">
@@ -4371,6 +4371,8 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/i18n-client.js"></script>
+  <script src="/js/tiktok-studio-url.js"></script>
+  <script src="/plugins/game-engine/tiktok-studio-ui.js"></script>
   <script src="/js/theme-manager.js"></script>
   <script src="/js/language-switcher.js"></script>
   <script>
@@ -10562,6 +10564,7 @@
             const url = useUnified
               ? `${OVERLAY_BASE_URL}/overlay/game-engine/unified`
               : `${OVERLAY_BASE_URL}/overlay/game-engine/${gameType}`;
+            urlSpan.setAttribute('data-overlay-url', url);
             if ('value' in urlSpan) {
               urlSpan.value = url;
             } else {
@@ -10614,6 +10617,7 @@
         const url = e.target.checked
           ? `${OVERLAY_BASE_URL}/overlay/game-engine/unified`
           : `${OVERLAY_BASE_URL}/overlay/game-engine/${game}`;
+        urlSpan.setAttribute('data-overlay-url', url);
         if ('value' in urlSpan) {
           urlSpan.value = url;
         } else {

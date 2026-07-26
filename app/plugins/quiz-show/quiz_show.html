@@ -1162,9 +1162,12 @@
                 <div class="panel-body">
                     <div class="help-text" style="padding: 15px; background: rgba(59, 130, 246, 0.1); border-left: 4px solid #3b82f6; border-radius: 6px;">
                         <strong data-i18n="plugins.quiz-show.labels.obs_browser_quellen_urls"> OBS Browser-Quellen URLs:</strong><br>
-                        <code style="display: block; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">/quiz-show/overlay</code>
-                        <code style="display: block; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">/quiz-show/overlay/splitscreen</code>
-                        <code style="display: block; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">/quiz-show/leaderboard-overlay</code>
+                        <code id="quiz-show-overlay-url" style="display: block; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">/quiz-show/overlay</code>
+                        <button type="button" class="btn btn-secondary" data-copy-tiktok-studio-url data-overlay-url-source="#quiz-show-overlay-url" data-i18n="common.tiktok_studio.copy_url">TikTok-Studio-URL kopieren</button>
+                        <code id="quiz-show-splitscreen-url" style="display: block; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">/quiz-show/overlay/splitscreen</code>
+                        <button type="button" class="btn btn-secondary" data-copy-tiktok-studio-url data-overlay-url-source="#quiz-show-splitscreen-url" data-i18n="common.tiktok_studio.copy_url">TikTok-Studio-URL kopieren</button>
+                        <code id="quiz-show-leaderboard-url" style="display: block; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">/quiz-show/leaderboard-overlay</code>
+                        <button type="button" class="btn btn-secondary" data-copy-tiktok-studio-url data-overlay-url-source="#quiz-show-leaderboard-url" data-i18n="common.tiktok_studio.copy_url">TikTok-Studio-URL kopieren</button>
                     </div>
                 </div>
             </div>
@@ -2139,6 +2142,7 @@
     </div>
 
     <script src="/js/theme-manager.js"></script>
+    <script src="/js/tiktok-studio-url.js"></script>
     <script src="/quiz-show/quiz_show.js"></script>
 </body>
 </html>

@@ -1757,12 +1757,17 @@
                 <strong data-i18n="plugins.emoji-rain.labels.obs_setup">🔗 OBS Setup:</strong><br>
                 <div class="code-block"><span data-i18n="plugins.emoji-rain.labels.1_in_obs_neue_browser_source_hinzufugen">
                     1. In OBS: Neue Browser Source hinzufügen</span><br><span data-i18n="plugins.emoji-rain.labels.2_url_eingeben">
-                    2. URL eingeben: </span><span class="highlight">http://localhost:3000/emoji-rain/obs-hud</span><br>
+                    2. URL eingeben: </span><span id="emoji-rain-url-complete" class="highlight">http://localhost:3000/emoji-rain/obs-hud</span>
+                    <button type="button" class="secondary" data-copy-tiktok-studio-url data-overlay-url-source="#emoji-rain-url-complete" data-i18n="common.tiktok_studio.copy_url">TikTok-Studio-URL kopieren</button><br>
                     Komplett: <span class="highlight">http://localhost:3000/emoji-rain/obs-hud</span><br><span data-i18n="plugins.emoji-rain.labels.emoji_geschenke">
-                    Emoji + Geschenke: </span><span class="highlight">http://localhost:3000/emoji-rain/obs-hud/emojiregen-geschenkeregen</span><br><span data-i18n="plugins.emoji-rain.labels.nur_emojiregen">
-                    Nur Emojiregen: </span><span class="highlight">http://localhost:3000/emoji-rain/obs-hud/emojiregen</span><br><span data-i18n="plugins.emoji-rain.labels.nur_herzballons">
-                    Nur Herzballons: </span><span class="highlight">http://localhost:3000/emoji-rain/obs-hud/herzballons</span><br><span data-i18n="plugins.emoji-rain.labels.nur_geschenkeregen">
-                    Nur Geschenkeregen: </span><span class="highlight">http://localhost:3000/emoji-rain/obs-hud/geschenkeregen</span><br><span data-i18n="plugins.emoji-rain.labels.3_breite_hohe_auf_gewahlte_auflosung_setzen">
+                    Emoji + Geschenke: </span><span id="emoji-rain-url-combined" class="highlight">http://localhost:3000/emoji-rain/obs-hud/emojiregen-geschenkeregen</span>
+                    <button type="button" class="secondary" data-copy-tiktok-studio-url data-overlay-url-source="#emoji-rain-url-combined" data-i18n="common.tiktok_studio.copy_url">TikTok-Studio-URL kopieren</button><br><span data-i18n="plugins.emoji-rain.labels.nur_emojiregen">
+                    Nur Emojiregen: </span><span id="emoji-rain-url-emojis" class="highlight">http://localhost:3000/emoji-rain/obs-hud/emojiregen</span>
+                    <button type="button" class="secondary" data-copy-tiktok-studio-url data-overlay-url-source="#emoji-rain-url-emojis" data-i18n="common.tiktok_studio.copy_url">TikTok-Studio-URL kopieren</button><br><span data-i18n="plugins.emoji-rain.labels.nur_herzballons">
+                    Nur Herzballons: </span><span id="emoji-rain-url-hearts" class="highlight">http://localhost:3000/emoji-rain/obs-hud/herzballons</span>
+                    <button type="button" class="secondary" data-copy-tiktok-studio-url data-overlay-url-source="#emoji-rain-url-hearts" data-i18n="common.tiktok_studio.copy_url">TikTok-Studio-URL kopieren</button><br><span data-i18n="plugins.emoji-rain.labels.nur_geschenkeregen">
+                    Nur Geschenkeregen: </span><span id="emoji-rain-url-gifts" class="highlight">http://localhost:3000/emoji-rain/obs-hud/geschenkeregen</span>
+                    <button type="button" class="secondary" data-copy-tiktok-studio-url data-overlay-url-source="#emoji-rain-url-gifts" data-i18n="common.tiktok_studio.copy_url">TikTok-Studio-URL kopieren</button><br><span data-i18n="plugins.emoji-rain.labels.3_breite_hohe_auf_gewahlte_auflosung_setzen">
                     3. Breite & Höhe auf gewählte Auflösung setzen</span><br><span data-i18n="plugins.emoji-rain.labels.4_shutdown_source_when_not_visible_aktivieren_fur">
                     4. "Shutdown source when not visible" aktivieren (für bessere Performance)</span><br><span data-i18n="plugins.emoji-rain.labels.5_refresh_browser_when_scene_becomes_active_aktivieren">
                     5. "Refresh browser when scene becomes active" aktivieren
@@ -2386,6 +2391,7 @@
     <div class="notification" id="notification"></div>
 
     <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/tiktok-studio-url.js"></script>
     <script src="/js/emoji-rain-command-editor.js?v=2.1.2"></script>
     <script src="/js/emoji-rain-ui.js?v=2.1.2"></script>
 </body>
