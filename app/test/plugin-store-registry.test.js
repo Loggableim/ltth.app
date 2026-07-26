@@ -1,4 +1,5 @@
 const assert = require('assert');
+const childProcess = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -93,6 +94,20 @@ async function assertPackagedFilesMatchSource(packagePath, sourceDir, relativeFi
   }
 }
 
+async function assertPackagedFilesMatchGitSource(packagePath, sourcePrefix, relativeFiles) {
+  for (const relativeFile of relativeFiles) {
+    const source = childProcess.execFileSync('git', [
+      'show',
+      `:${path.posix.join(sourcePrefix, relativeFile)}`
+    ], { cwd: repoRoot, maxBuffer: 20 * 1024 * 1024 });
+    assert.deepStrictEqual(
+      await readZipEntry(packagePath, relativeFile),
+      source,
+      `${relativeFile} must match the staged release source byte-for-byte`
+    );
+  }
+}
+
 describe('Official plugin store registry', () => {
   it('publishes the WebGPU Weather Control open beta as a source-identical 1080p package', async () => {
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
@@ -125,7 +140,7 @@ describe('Official plugin store registry', () => {
     await assertPackagedFilesMatchSource(packagePath, sourceDir, ['main.js', 'overlay.html', 'ui.html']);
   });
 
-  it('publishes Stream Monsters 1.1.2 with the hardened source-identical runtime', async () => {
+  it('publishes Stream Monsters 1.2.0 with source-identical Collector Arena assets and keeps 1.1.2', async () => {
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
     const storePlugin = registry.plugins.find((plugin) => plugin.id === 'streamalchemy');
     const sourceDir = path.join(repoRoot, 'app', 'plugins', 'streamalchemy');
@@ -133,11 +148,14 @@ describe('Official plugin store registry', () => {
 
     assert(storePlugin, 'Stream Monsters must exist in the official store registry');
     assert.strictEqual(sourceManifest.id, 'streamalchemy');
-    assert.strictEqual(sourceManifest.version, '1.1.2');
+    assert.strictEqual(sourceManifest.version, '1.2.0');
     assert.strictEqual(storePlugin.version, sourceManifest.version);
-    assert.strictEqual(storePlugin.packageUrl, 'https://ltth.app/plugin-store/packages/streamalchemy-1.1.2.zip');
+    assert.strictEqual(storePlugin.packageUrl, 'https://ltth.app/plugin-store/packages/streamalchemy-1.2.0.zip');
+    assert.strictEqual(storePlugin.channel, 'open-beta');
+    assert(storePlugin.badges.includes('working-beta'));
+    assert(fs.existsSync(path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.1.2.zip')));
 
-    const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.1.2.zip');
+    const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'streamalchemy-1.2.0.zip');
     const digest = crypto.createHash('sha256').update(fs.readFileSync(packagePath)).digest('hex');
     assert.strictEqual(storePlugin.sha256, digest);
 
@@ -146,9 +164,15 @@ describe('Official plugin store registry', () => {
     assert.strictEqual(JSON.stringify(entries.filter((entry) => !entry.endsWith('/')).sort()), JSON.stringify(sourceFiles));
     const packagedManifest = JSON.parse((await readZipEntry(packagePath, 'plugin.json')).toString('utf8'));
     assert.deepStrictEqual(packagedManifest, sourceManifest);
-    await assertPackagedFilesMatchSource(packagePath, sourceDir, [
+    await assertPackagedFilesMatchGitSource(packagePath, 'app/plugins/streamalchemy', [
       'index.js',
+      'assets/branding/stream-monsters-icon.png',
+      'assets/branding/stream-monsters-logo.png',
+      'assets/eggs/ember-standard.png',
+      'assets/kenney-monster-builder/License.txt',
       'backend/routes.js',
+      'backend/streammonsters/art-pool-service.js',
+      'backend/streammonsters/kenney-monster-builder.js',
       'backend/streammonsters/routes.js',
       'backend/streammonsters/managed-runtime-installer.js'
     ]);
