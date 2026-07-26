@@ -58,6 +58,7 @@
     "game_engine": "Game Engine",
     "viewer_xp": "Viewer XP",
     "weather_control": "Weather Control",
+    "webgpu_weather_control": "WebGPU Weather Control",
     "minecraft_connect": "Minecraft Connect",
     "streamalchemy": "Stream Monsters",
     "gcce": "Global Chat Command Engine",

@@ -37,6 +37,7 @@
     "game_engine": "Motor de Juegos",
     "viewer_xp": "XP de Espectadores",
     "weather_control": "Control del Clima",
+    "webgpu_weather_control": "Control meteorológico WebGPU",
     "minecraft_connect": "Conexión Minecraft",
     "streamalchemy": "Stream Monsters",
     "gcce": "Motor de Comandos de Chat Global",

@@ -42,6 +42,7 @@
         'osc-bridge': '#22c55e',
         openshock: '#ef4444',
         'weather-control': '#38bdf8',
+        'webgpu-weather-control': '#22d3ee',
         streamalchemy: '#ec4899',
         gcce: '#f59e0b',
         'thermal-printer': '#64748b',

@@ -54,6 +54,7 @@
     "game_engine": "Spielmaschine",
     "viewer_xp": "Zuschauer XP",
     "weather_control": "Wetterkontrolle",
+    "webgpu_weather_control": "WebGPU-Wetterkontrolle",
     "minecraft_connect": "Minecraft-Connect",
     "plugin_manager": "App Store",
     "automations": "Automatisierungen",

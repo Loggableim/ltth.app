@@ -275,6 +275,24 @@ describe('WebGPU Weather Control independent plugin surface', () => {
     db.close();
   });
 
+  test('integrates the enabled plugin into the dashboard sidebar', () => {
+    const appRoot = path.join(__dirname, '..');
+    const dashboard = fs.readFileSync(path.join(appRoot, 'public', 'dashboard.html'), 'utf8');
+    const navigation = fs.readFileSync(path.join(appRoot, 'public', 'js', 'navigation.js'), 'utf8');
+
+    expect(dashboard).toContain('data-view="webgpu-weather-control" data-plugin="webgpu-weather-control"');
+    expect(dashboard).toContain('data-i18n="navigation.webgpu_weather_control"');
+    expect(dashboard).toContain('id="view-webgpu-weather-control"');
+    expect(dashboard).toContain('data-src="/webgpu-weather-control/ui"');
+    expect(navigation).toContain("'webgpu-weather-control': '#22d3ee'");
+
+    for (const locale of ['de', 'en', 'es', 'fr']) {
+      const messages = JSON.parse(fs.readFileSync(path.join(appRoot, 'locales', `${locale}.json`), 'utf8'));
+      expect(messages.navigation.webgpu_weather_control).toEqual(expect.any(String));
+      expect(messages.navigation.webgpu_weather_control.trim()).not.toBe('');
+    }
+  });
+
   test('ships a transparent renderer-free overlay and four locale files under the new namespace', () => {
     const pluginDir = path.join(__dirname, '../plugins/webgpu-weather-control');
     const manifest = JSON.parse(fs.readFileSync(path.join(pluginDir, 'plugin.json'), 'utf8'));
