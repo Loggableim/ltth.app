@@ -29,7 +29,7 @@ function createManager(overrides = {}) {
   const spawnImpl = overrides.spawnImpl || jest.fn(() => child);
   const binaryManager = overrides.binaryManager || {
     ensureInstalled: jest.fn().mockResolvedValue('C:\\runtime-tools\\cloudflared.exe'),
-    getMissingConfigPath: jest.fn(() => 'C:\\runtime-tools\\quick-tunnel-no-config.yml')
+    getQuickTunnelConfigPath: jest.fn(() => 'NUL')
   };
   const manager = new NetworkManager(createDb(), {
     spawnImpl,
@@ -63,7 +63,7 @@ describe('NetworkManager overlay Quick Tunnel', () => {
         'tunnel',
         '--no-autoupdate',
         '--config',
-        'C:\\runtime-tools\\quick-tunnel-no-config.yml',
+        'NUL',
         '--url',
         'http://127.0.0.1:3180'
       ],

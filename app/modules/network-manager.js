@@ -428,7 +428,7 @@ class NetworkManager {
             'tunnel',
             '--no-autoupdate',
             '--config',
-            this.cloudflaredBinaryManager.getMissingConfigPath(),
+            this.cloudflaredBinaryManager.getQuickTunnelConfigPath(),
             '--url',
             `http://127.0.0.1:${port}`
           ],
