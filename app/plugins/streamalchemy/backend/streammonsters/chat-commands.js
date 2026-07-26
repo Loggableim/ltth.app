@@ -22,51 +22,40 @@ class ChatCommands {
     const commandArgs = Array.isArray(args) ? args : [];
     if (!userId) return { success: false, status: 'ignored' };
     if (![
-      'adopt', 'eggs', 'hatch', 'inventory', 'monsters', 'monster', 'choose',
-      'battle', 'leavebattle', 'rank', 'quests', 'monstershelp'
+      'eggs', 'hatch', 'inventory', 'monsters', 'monster', 'choose',
+      'evolve', 'battle', 'leavebattle', 'rank', 'quests', 'monstershelp'
     ].includes(command)) {
       return { success: false, status: 'ignored' };
     }
     this.engine.markReadyEggs();
-    if (command === 'adopt') return this.adopt(userId);
     if (command === 'battle') return this.executeBattle(userId, commandArgs[0]);
     this.progression?.recordCommand(userId, this.engine.streamKey);
 
     if (command === 'eggs') return this.eggs(userId);
     if (command === 'hatch') return this.hatch(userId, commandArgs[0]);
-    if (command === 'inventory' || command === 'monsters') return this.inventory(userId);
+    if (command === 'inventory' || command === 'monsters') return this.inventory(userId, commandArgs[0]);
     if (command === 'monster') return this.monster(userId, commandArgs[0]);
     if (command === 'choose') return this.choose(userId, commandArgs[0]);
+    if (command === 'evolve') return this.evolve(userId, commandArgs[0]);
     if (command === 'leavebattle') return this.leaveBattle(userId);
     if (command === 'rank') return this.rank(userId);
     if (command === 'quests') return this.quests(userId);
     return {
       success: true,
       status: 'help',
-      message: 'Commands: !adopt, !eggs, !hatch <slot>, !monsters, !monster <slot>, !choose <slot>, !battle [power|guard|speed], !leavebattle, !rank, !quests'
-    };
-  }
-
-  adopt(userId) {
-    const result = this.engine.adoptStarter(userId);
-    if (!result.claimed) {
-      return {
-        success: false,
-        status: 'starter_already_claimed',
-        message: 'You already claimed your starter egg.',
-        egg: result.egg
-      };
-    }
-    return {
-      success: true,
-      status: 'starter_claimed',
-      message: `Your ${result.egg.element} starter egg is incubating for 60 seconds.`,
-      egg: result.egg
+      message: 'Commands: !eggs, !hatch <slot>, !monsters [page], !monster <slot>, !choose <slot>, !evolve <slot>, !battle [power|guard|speed], !leavebattle, !rank, !quests'
     };
   }
 
   eggs(userId) {
-    const eggs = this.store.getViewerEggs(userId).filter(egg => egg.state !== 'hatched');
+    const positions = new Map(
+      this.store.getQueuedEggs(userId).map(egg => [egg.egg_id, egg.queue_position])
+    );
+    const eggs = this.store.getViewerEggs(userId)
+      .filter(egg => ['incubating', 'queued', 'ready'].includes(egg.state))
+      .map(egg => positions.has(egg.egg_id)
+        ? { ...egg, queue_position: positions.get(egg.egg_id) }
+        : egg);
     const ready = eggs.filter(egg => egg.state === 'ready').length;
     const queued = eggs.filter(egg => egg.state === 'queued').length;
     return {
@@ -87,26 +76,51 @@ class ChatCommands {
         monster
       };
     } catch (error) {
+      if (error.code === 'STREAM_MONSTERS_EGG_NOT_FOUND') {
+        return {
+          success: false,
+          status: 'egg_not_found',
+          message: 'That egg slot does not exist. Check !eggs.'
+        };
+      }
+      const wait = error.wait || null;
       return {
         success: false,
         status: 'egg_not_ready',
-        message: 'That egg is not ready yet. Check !eggs.'
+        message: 'That egg is not ready yet. Check !eggs.',
+        ...(wait ? {
+          wait,
+          card: {
+            type: 'egg_wait',
+            size: 'large',
+            placement: 'upper',
+            ...wait
+          }
+        } : {})
       };
     }
   }
 
-  inventory(userId) {
+  inventory(userId, requestedPage = 1) {
     const monsters = this.store.getViewerMonsters(userId);
     const eggs = this.store.getViewerEggs(userId).filter(egg => egg.state !== 'hatched');
     const selected = this.store.getSelectedMonster(userId);
     const selectedLabel = selected ? ` Active: ${selected.name}.` : '';
+    const page = this.collection?.getCatalogPage?.(userId, {
+      page: requestedPage,
+      pageSize: 6
+    }) || null;
+    const rotation = this.collection?.getCatalogRotation?.(userId, {
+      cursor: page ? (page.page - 1) * page.pageSize : 0
+    }) || null;
     return {
       success: true,
       status: 'inventory',
       message: `${monsters.length} monster${monsters.length === 1 ? '' : 's'} and ${eggs.length} egg${eggs.length === 1 ? '' : 's'}.${selectedLabel}`,
       monsters,
       eggs,
-      selected
+      selected,
+      ...(page ? { page, rotation } : {})
     };
   }
 
@@ -131,8 +145,36 @@ class ChatCommands {
       success: true,
       status: 'monster',
       message: `${monster.name} · ${monster.element} · Lv.${monster.level} · ${monster.personality}.`,
-      monster
+      monster,
+      ...(this.collection?.getMonsterCard
+        ? { card: this.collection.getMonsterCard(userId, monster.monster_id) }
+        : {})
     };
+  }
+
+  evolve(userId, slot) {
+    const index = Number.parseInt(slot, 10) - 1;
+    const monsters = this.store.getViewerMonsters(userId);
+    if (!Number.isInteger(index) || index < 0 || !monsters[index]) {
+      return { success: false, status: 'invalid_slot', message: 'Choose a monster slot from !monsters.' };
+    }
+    try {
+      const evolution = this.collection.evolveMonster(userId, monsters[index].monster_id);
+      return {
+        success: true,
+        status: 'evolved',
+        message: `${evolution.monster.name} reached Evolution ${evolution.evolutionStage}.`,
+        evolution,
+        card: this.collection.getMonsterCard(userId, monsters[index].monster_id)
+      };
+    } catch (error) {
+      return {
+        success: false,
+        status: 'evolution_locked',
+        message: error.message,
+        errorCode: error.message
+      };
+    }
   }
 
   joinBattle(userId, requestedStance = null) {

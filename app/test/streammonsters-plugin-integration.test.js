@@ -43,15 +43,23 @@ function createApi({ gcce = null, streamMonstersEnabled = true } = {}) {
 
 function createGCCE(commandPrefix = '!', enabled = true) {
   const definitions = new Map();
+  const rawHandlers = new Map();
   return {
     pluginConfig: { enabled, commandPrefix },
     parser: { commandPrefix },
     definitions,
+    rawHandlers,
     registerCommandsForPlugin: jest.fn((pluginId, commands) => {
       commands.forEach(command => definitions.set(command.name, command));
       return { pluginId, registered: commands.map(command => command.name), failed: [] };
     }),
-    unregisterCommandsForPlugin: jest.fn(() => definitions.clear())
+    unregisterCommandsForPlugin: jest.fn(() => definitions.clear()),
+    registerRawResponseHandlerForPlugin: jest.fn((pluginId, handler) => {
+      const replaced = rawHandlers.has(pluginId);
+      rawHandlers.set(pluginId, handler);
+      return { pluginId, registered: true, replaced };
+    }),
+    unregisterRawResponseHandlerForPlugin: jest.fn(pluginId => rawHandlers.delete(pluginId))
   };
 }
 
@@ -105,7 +113,7 @@ describe('Stream Monsters plugin integration', () => {
     await plugin.destroy();
   });
 
-  test('uses the stable TikTok viewer ID for starter claims across handle changes', async () => {
+  test('does not expose starter adoption across stable viewer handle changes', async () => {
     const { api, events, emitted } = createApi();
     const plugin = new StreamAlchemyPlugin(api);
     await plugin.init();
@@ -126,12 +134,9 @@ describe('Stream Monsters plugin integration', () => {
     });
 
     const canonicalId = plugin.streamMonstersStore.resolveKnownViewerId('7123456789012345678');
-    expect(plugin.streamMonstersStore.getViewerEggs(canonicalId)).toHaveLength(1);
-    expect(emitted.filter(entry => entry.event === 'streammonsters:starter_claimed')).toHaveLength(1);
-    expect(emitted.filter(entry => (
-      entry.event === 'streammonsters:chat_result' &&
-      entry.payload.result.status === 'starter_already_claimed'
-    ))).toHaveLength(1);
+    expect(plugin.streamMonstersStore.getViewerEggs(canonicalId)).toHaveLength(0);
+    expect(emitted.filter(entry => entry.event === 'streammonsters:starter_claimed')).toHaveLength(0);
+    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toHaveLength(0);
     await plugin.destroy();
   });
 
@@ -189,7 +194,9 @@ describe('Stream Monsters plugin integration', () => {
   test('registers the public Stream Monsters commands with GCCE when available', async () => {
     const gcce = {
       unregisterCommandsForPlugin: jest.fn(),
-      registerCommandsForPlugin: jest.fn().mockReturnValue({ registered: ['inventory', 'monsters', 'choose', 'battle', 'leavebattle', 'monstershelp'] })
+      registerCommandsForPlugin: jest.fn((pluginId, commands) => ({
+        registered: commands.map(command => command.name)
+      }))
     };
     const { api } = createApi({ gcce });
     const plugin = new StreamAlchemyPlugin(api);
@@ -197,8 +204,9 @@ describe('Stream Monsters plugin integration', () => {
     await plugin.init();
     expect(gcce.unregisterCommandsForPlugin).toHaveBeenCalledWith('streamalchemy');
     expect(gcce.registerCommandsForPlugin).toHaveBeenCalledWith('streamalchemy', expect.arrayContaining([
-      expect.objectContaining({ name: 'adopt', minArgs: 0, maxArgs: 0, permission: 'all' }),
-      expect.objectContaining({ name: 'eggs', permission: 'all' }),
+      expect.objectContaining({ name: 'eier', permission: 'all' }),
+      expect.objectContaining({ name: 'eierliste', permission: 'all' }),
+      expect.objectContaining({ name: 'meineeier', permission: 'all' }),
       expect.objectContaining({ name: 'hatch', permission: 'all' }),
       expect.objectContaining({ name: 'battle', minArgs: 0, maxArgs: 1, permission: 'all' })
     ]));
@@ -217,6 +225,36 @@ describe('Stream Monsters plugin integration', () => {
     expect(plugin.streamMonstersReadyTimer).toBeNull();
     expect(plugin.streamMonstersEngine.recentGifts.size).toBe(0);
     expect(plugin.streamMonstersChatCommands.queue).toEqual([]);
+  });
+
+  test('deduplicates retried provider gifts while processing each repeat in the event once', async () => {
+    const { api, events } = createApi();
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    plugin.streamMonstersStore.upsertGiftMapping({
+      giftId: 1,
+      giftName: 'Rose',
+      element: 'Ember',
+      effect: 'spawn',
+      enabled: true
+    });
+    const gift = events.find(entry => entry.event === 'gift').handler;
+    const payload = {
+      eventId: 'provider-event-1',
+      userId: 'stable-viewer',
+      uniqueId: 'viewer-a',
+      giftId: 1,
+      giftName: 'Rose',
+      repeatCount: 2
+    };
+
+    await gift(payload);
+    await gift(payload);
+
+    const canonicalId = plugin.streamMonstersStore.resolveKnownViewerId('stable-viewer');
+    expect(plugin.streamMonstersStore.getViewerEggs(canonicalId)).toHaveLength(2);
+    expect(plugin.streamMonstersStore.getViewerProgress(canonicalId).gifts_sent).toBe(2);
+    await plugin.destroy();
   });
 
   test('honors the nested Stream Monsters enable switch for gifts and chat', async () => {
@@ -255,12 +293,12 @@ describe('Stream Monsters plugin integration', () => {
     const progression = jest.spyOn(plugin.streamMonstersProgression, 'recordCommand');
     const chat = events.find(entry => entry.event === 'chat').handler;
 
-    await gcce.definitions.get('eggs').handler([], {
+    await gcce.definitions.get('eier').handler([], {
       userId: 'viewer-a',
       username: 'Viewer A',
       uniqueId: 'viewer-a'
     });
-    await chat({ uniqueId: 'viewer-a', nickname: 'Viewer A', comment: '!eggs' });
+    await chat({ uniqueId: 'viewer-a', nickname: 'Viewer A', comment: '!eier' });
 
     expect(progression).toHaveBeenCalledTimes(1);
     expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toEqual([
@@ -335,7 +373,7 @@ describe('Stream Monsters plugin integration', () => {
     await plugin.init();
     const chat = events.find(entry => entry.event === 'chat').handler;
 
-    await chat({ uniqueId: 'fallback-user', nickname: 'Fallback User', comment: '!eggs' });
+    await chat({ uniqueId: 'fallback-user', nickname: 'Fallback User', comment: '!eier' });
     expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toHaveLength(1);
 
     const firstGCCE = createGCCE('/');
@@ -344,17 +382,20 @@ describe('Stream Monsters plugin integration', () => {
     pluginEvents.emit('plugin:enabled', 'gcce');
     pluginEvents.emit('gcce:ready', { timestamp: Date.now() });
     expect(firstGCCE.registerCommandsForPlugin).toHaveBeenCalledTimes(1);
-    expect(firstGCCE.definitions.get('eggs').syntax).toBe('/eggs');
+    expect(firstGCCE.registerRawResponseHandlerForPlugin).toHaveBeenCalledTimes(1);
+    expect(firstGCCE.definitions.get('eier').syntax).toBe('/eier');
 
     const secondGCCE = createGCCE('/');
     api.pluginLoader.loadedPlugins.set('gcce', { instance: secondGCCE });
     pluginEvents.emit('plugin:reloaded', 'gcce');
     expect(firstGCCE.unregisterCommandsForPlugin).toHaveBeenCalledWith('streamalchemy');
+    expect(firstGCCE.unregisterRawResponseHandlerForPlugin).toHaveBeenCalledWith('streamalchemy');
     expect(secondGCCE.registerCommandsForPlugin).toHaveBeenCalledTimes(1);
+    expect(secondGCCE.registerRawResponseHandlerForPlugin).toHaveBeenCalledTimes(1);
 
     api.pluginLoader.loadedPlugins.delete('gcce');
     pluginEvents.emit('plugin:unloaded', 'gcce');
-    await chat({ uniqueId: 'fallback-user-2', nickname: 'Fallback User 2', comment: '/eggs' });
+    await chat({ uniqueId: 'fallback-user-2', nickname: 'Fallback User 2', comment: '/eier' });
     expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toHaveLength(2);
 
     const stateRoute = routes.find(route => route.method === 'GET' && route.path === '/api/streammonsters/state');
@@ -369,6 +410,7 @@ describe('Stream Monsters plugin integration', () => {
     await plugin.destroy();
     expect(pluginEvents.eventNames()).toEqual([]);
     expect(secondGCCE.unregisterCommandsForPlugin).toHaveBeenCalledWith('streamalchemy');
+    expect(secondGCCE.unregisterRawResponseHandlerForPlugin).toHaveBeenCalledWith('streamalchemy');
   });
 
   test('blocks direct fallback when available GCCE only partially registers commands', async () => {
@@ -389,7 +431,7 @@ describe('Stream Monsters plugin integration', () => {
     await events.find(entry => entry.event === 'chat').handler({
       uniqueId: 'viewer-a',
       nickname: 'Viewer A',
-      comment: '!eggs'
+      comment: '!eier'
     });
 
     const stateRoute = routes.find(route => route.method === 'GET' && route.path === '/api/streammonsters/state');
@@ -420,14 +462,14 @@ describe('Stream Monsters plugin integration', () => {
 
     pluginEvents.emit('plugin:reloaded', 'gcce');
     const progression = jest.spyOn(plugin.streamMonstersProgression, 'recordCommand');
-    await gcce.definitions.get('eggs').handler([], {
+    await gcce.definitions.get('eier').handler([], {
       userId: 'viewer-a',
       username: 'Viewer A'
     });
     await events.find(entry => entry.event === 'chat').handler({
       uniqueId: 'viewer-a',
       nickname: 'Viewer A',
-      comment: '!eggs'
+      comment: '!eier'
     });
 
     const stateRoute = routes.find(route => route.method === 'GET' && route.path === '/api/streammonsters/state');
@@ -453,7 +495,7 @@ describe('Stream Monsters plugin integration', () => {
     await events.find(entry => entry.event === 'chat').handler({
       uniqueId: 'viewer-a',
       nickname: 'Viewer A',
-      comment: '/eggs'
+      comment: '/eier'
     });
 
     expect(gcce.registerCommandsForPlugin).not.toHaveBeenCalled();
@@ -477,12 +519,12 @@ describe('Stream Monsters plugin integration', () => {
     const progression = jest.spyOn(plugin.streamMonstersProgression, 'recordCommand');
     const chat = events.find(entry => entry.event === 'chat').handler;
 
-    await chat({ uniqueId: 'viewer-a', comment: '!eggs' });
-    await chat({ uniqueId: 'viewer-b', comment: '!eggs' });
+    await chat({ uniqueId: 'viewer-a', comment: '!eier' });
+    await chat({ uniqueId: 'viewer-b', comment: '!eier' });
     now += 251;
-    await chat({ uniqueId: 'viewer-a', comment: '!eggs' });
+    await chat({ uniqueId: 'viewer-a', comment: '!eier' });
     now += 750;
-    await chat({ uniqueId: 'viewer-a', comment: '!eggs' });
+    await chat({ uniqueId: 'viewer-a', comment: '!eier' });
 
     expect(progression).toHaveBeenCalledTimes(2);
     expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result').map(entry => entry.payload.result.status)).toEqual([
@@ -541,7 +583,7 @@ describe('Stream Monsters plugin integration', () => {
       error: 'Command is on cooldown.',
       errorCode: 'COMMAND_ON_COOLDOWN',
       cooldownType: 'user',
-      commandName: 'eggs',
+      commandName: 'eier',
       pluginId: 'streamalchemy',
       userId: 'viewer-a',
       username: 'Viewer A'
@@ -585,7 +627,7 @@ describe('Stream Monsters plugin integration', () => {
       {
         error: 'Rate limit exceeded.',
         errorCode: 'RATE_LIMIT_USER',
-        commandName: 'eggs',
+        commandName: 'eier',
         userId: 'viewer-c',
         username: 'Viewer C'
       }
@@ -614,7 +656,7 @@ describe('Stream Monsters plugin integration', () => {
       }),
       expect.objectContaining({
         userId: 'viewer-c',
-        command: 'eggs',
+        command: 'eier',
         result: expect.objectContaining({ status: 'rate_limited', errorCode: 'RATE_LIMIT_USER' })
       })
     ]);
@@ -631,7 +673,7 @@ describe('Stream Monsters plugin integration', () => {
       success: false,
       error: 'Command is disabled.',
       errorCode: 'COMMAND_DISABLED',
-      commandName: 'eggs',
+      commandName: 'eier',
       pluginId: 'streamalchemy',
       userId: 'viewer-a',
       username: 'Viewer A'
@@ -649,7 +691,7 @@ describe('Stream Monsters plugin integration', () => {
     expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result').map(entry => entry.payload)).toEqual([
       expect.objectContaining({
         userId: 'viewer-a',
-        command: 'eggs',
+        command: 'eier',
         transport: 'gcce',
         result: expect.objectContaining({
           status: 'command_disabled',
@@ -678,7 +720,7 @@ describe('Stream Monsters plugin integration', () => {
     await expect(plugin.handleStreamMonstersChat({
       uniqueId: 'viewer-a',
       nickname: 'Viewer A',
-      comment: '!eggs'
+      comment: '!eier'
     })).resolves.toEqual(expect.objectContaining({
       success: false,
       status: 'execution_failed',
@@ -690,7 +732,7 @@ describe('Stream Monsters plugin integration', () => {
       expect.objectContaining({
         payload: expect.objectContaining({
           userId: 'viewer-a',
-          command: 'eggs',
+          command: 'eier',
           transport: 'fallback',
           result: expect.objectContaining({
             status: 'execution_failed',
@@ -722,7 +764,7 @@ describe('Stream Monsters plugin integration', () => {
     emitted.length = 0;
 
     await gcce.handleChatMessage({
-      comment: `${gcce.parser.commandPrefix}eggs`,
+      comment: `${gcce.parser.commandPrefix}eier`,
       uniqueId: 'viewer-a',
       nickname: 'Viewer A'
     });
@@ -731,7 +773,7 @@ describe('Stream Monsters plugin integration', () => {
       expect.objectContaining({
         success: false,
         errorCode: 'EXECUTION_FAILED',
-        commandName: 'eggs',
+        commandName: 'eier',
         pluginId: 'streamalchemy',
         userId: 'viewer-a'
       })
@@ -740,7 +782,7 @@ describe('Stream Monsters plugin integration', () => {
       expect.objectContaining({
         payload: expect.objectContaining({
           userId: 'viewer-a',
-          command: 'eggs',
+          command: 'eier',
           transport: 'gcce',
           result: expect.objectContaining({
             status: 'execution_failed',

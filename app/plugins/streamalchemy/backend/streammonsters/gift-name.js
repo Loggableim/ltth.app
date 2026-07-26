@@ -7,7 +7,7 @@ function normalizeGiftName(name) {
 }
 
 function isHeartMeGift(name) {
-  return normalizeGiftName(name) === 'heartme';
+  return ['heartme', 'teamheart'].includes(normalizeGiftName(name));
 }
 
 module.exports = {

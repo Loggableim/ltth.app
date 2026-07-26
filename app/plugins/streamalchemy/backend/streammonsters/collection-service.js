@@ -185,6 +185,48 @@ class CollectionService {
     return this.store.getCollectionCosmetics(userId);
   }
 
+  evolveMonster(userId, monsterId) {
+    return this.runAtomic(() => {
+      const monster = this.store.getMonster(monsterId);
+      if (!monster || monster.user_id !== userId) {
+        throw new Error('STREAM_MONSTERS_MONSTER_NOT_FOUND');
+      }
+      const currentStage = Math.max(1, Number(monster.evolution_stage) || 1);
+      if (currentStage >= 3) throw new Error('STREAM_MONSTERS_EVOLUTION_MAX_STAGE');
+      const nextStage = currentStage + 1;
+      const masteryRequired = nextStage === 2 ? 25 : 50;
+      const spentRequired = nextStage === 2 ? 3 : 8;
+      const mastery = this.getMastery(userId, monster.template_id);
+      if (mastery.points < masteryRequired) {
+        throw new Error('STREAM_MONSTERS_EVOLUTION_MASTERY_REQUIRED');
+      }
+      const essence = this.getEssence(userId, monster.element);
+      const spendNow = Math.max(0, spentRequired - essence.spent);
+      if (essence.amount < spendNow) {
+        throw new Error('STREAM_MONSTERS_EVOLUTION_ESSENCE_REQUIRED');
+      }
+      const afterSpend = this.store.spendElementEssence(userId, monster.element, spendNow);
+      if (!afterSpend) throw new Error('STREAM_MONSTERS_EVOLUTION_ESSENCE_REQUIRED');
+      const stageKey = nextStage === 2 ? 'ii' : 'iii';
+      const evolved = this.store.setMonsterEvolutionStage(
+        monsterId,
+        nextStage,
+        `/plugins/streamalchemy/assets/streammonsters/furry/evolutions/${monster.template_id}-${stageKey}.png`,
+        `furry:${monster.template_id}:evolution-${stageKey}`
+      );
+      const result = {
+        evolutionStage: nextStage,
+        spentEssence: afterSpend.spent,
+        monster: evolved
+      };
+      this.emitAfterCommit('streammonsters:monster_evolved', {
+        userId,
+        ...result
+      });
+      return result;
+    });
+  }
+
   getStreamMission(streamKey) {
     const mission = MISSION_DEFINITIONS[hashNumber(streamKey || 'offline') % MISSION_DEFINITIONS.length];
     return this.store.getOrCreateStreamMission(streamKey || 'offline', mission);
@@ -302,6 +344,50 @@ class CollectionService {
       dex: { owned: owned.size, total: TEMPLATE_CATALOG.length },
       essence: ['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar'].map(element => this.getEssence(userId, element)),
       cosmetics: this.getCosmetics(userId)
+    };
+  }
+
+  getCatalogPage(userId, { page = 1, pageSize = 6 } = {}) {
+    const state = this.getCatalogState(userId);
+    const normalizedPageSize = Math.max(1, Math.min(24, Number.parseInt(pageSize, 10) || 6));
+    const totalPages = Math.max(1, Math.ceil(state.templates.length / normalizedPageSize));
+    const normalizedPage = Math.max(1, Math.min(totalPages, Number.parseInt(page, 10) || 1));
+    const offset = (normalizedPage - 1) * normalizedPageSize;
+    return {
+      page: normalizedPage,
+      pageSize: normalizedPageSize,
+      total: state.templates.length,
+      totalPages,
+      cards: state.templates.slice(offset, offset + normalizedPageSize),
+      dex: state.dex
+    };
+  }
+
+  getCatalogRotation(userId, { cursor = 0 } = {}) {
+    const templates = this.getCatalogState(userId).templates;
+    const normalizedCursor = Math.max(0, Number.parseInt(cursor, 10) || 0) % templates.length;
+    const cards = Array.from(
+      { length: Math.min(6, templates.length) },
+      (_, index) => templates[(normalizedCursor + index) % templates.length]
+    );
+    return {
+      cursor: normalizedCursor,
+      nextCursor: (normalizedCursor + cards.length) % templates.length,
+      cards
+    };
+  }
+
+  getMonsterCard(userId, monsterId) {
+    const monster = this.store.getMonster(monsterId);
+    if (!monster || monster.user_id !== userId) return null;
+    return {
+      type: 'monster',
+      size: 'large',
+      placement: 'upper',
+      monster,
+      template: getTemplate(monster.template_id),
+      mastery: this.getMastery(userId, monster.template_id),
+      essence: this.getEssence(userId, monster.element)
     };
   }
 }

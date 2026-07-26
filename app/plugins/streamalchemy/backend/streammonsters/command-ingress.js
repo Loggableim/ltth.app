@@ -8,10 +8,13 @@ const CHAT_RESULT_MESSAGE_KEYS = Object.freeze({
   eggs: 'chatResultEggs',
   hatched: 'chatResultHatched',
   egg_not_ready: 'chatResultEggNotReady',
+  egg_not_found: 'chatResultEggNotFound',
   inventory: 'chatResultInventory',
   invalid_slot: 'chatResultInvalidSlot',
   selected: 'chatResultSelected',
   monster: 'chatResultMonster',
+  evolved: 'chatResultEvolved',
+  evolution_locked: 'chatResultEvolutionLocked',
   invalid_stance: 'chatResultInvalidStance',
   no_monster: 'chatResultNoMonster',
   queued: 'chatResultQueued',
@@ -50,7 +53,8 @@ class StreamMonstersCommandIngress {
         global: Math.max(0, Number(definition.cooldown?.global) || 0),
         minArgs: Math.max(0, Number(definition.minArgs) || 0),
         maxArgs: definition.maxArgs === undefined ? Infinity : Math.max(0, Number(definition.maxArgs) || 0),
-        syntax: definition.syntax || `${commandPrefix}${definition.name}`
+        syntax: definition.syntax || `${commandPrefix}${definition.name}`,
+        commandName: String(definition.commandName || definition.name).toLowerCase()
       }
     ]));
   }
@@ -98,13 +102,13 @@ class StreamMonstersCommandIngress {
     }
 
     this.recordUsage(commandName, context.userId);
-    return this.executeCommand(commandName, args, context, 'fallback');
+    return this.executeCommand(command.commandName, args, context, 'fallback', commandName);
   }
 
-  async executeCommand(commandName, args, context, transport) {
+  async executeCommand(commandName, args, context, transport, responseCommandName = commandName) {
     if (transport === 'gcce') {
       const result = await this.execute(context, commandName, args);
-      this.emitResult(commandName, context, result, transport);
+      this.emitResult(responseCommandName, context, result, transport);
       return result;
     }
 
@@ -119,7 +123,7 @@ class StreamMonstersCommandIngress {
         message: error?.message || 'Command execution failed.'
       };
     }
-    this.emitResult(commandName, context, result, transport);
+    this.emitResult(responseCommandName, context, result, transport);
     return result;
   }
 

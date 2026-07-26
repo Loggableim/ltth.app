@@ -124,7 +124,7 @@ describe('Stream Monsters 1.2 Collector Arena', () => {
     engine.processGift({ userId: 'combo-viewer', giftId: 10, giftName: 'Gift 10', coinValue: 1 });
 
     expect(store.getStreamHype('creator:collector-arena')).toEqual(expect.objectContaining({
-      points: 0,
+      points: 20,
       charged_eggs: 1
     }));
 

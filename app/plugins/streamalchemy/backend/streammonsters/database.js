@@ -55,6 +55,8 @@ class StreamMonstersDatabase {
         ready_at_ms INTEGER,
         queued_at_ms INTEGER,
         incubating_at_ms INTEGER,
+        expires_at_ms INTEGER,
+        expired_at_ms INTEGER,
         visual_source TEXT NOT NULL DEFAULT 'egg_asset',
         visual_key TEXT
       );
@@ -79,6 +81,7 @@ class StreamMonstersDatabase {
         is_selected INTEGER NOT NULL DEFAULT 0,
         battle_count INTEGER NOT NULL DEFAULT 0,
         win_streak INTEGER NOT NULL DEFAULT 0,
+        evolution_stage INTEGER NOT NULL DEFAULT 1,
         created_at_ms INTEGER NOT NULL
       );
       CREATE INDEX IF NOT EXISTS streammonsters_monsters_user
@@ -237,7 +240,17 @@ class StreamMonstersDatabase {
       );
       CREATE TABLE IF NOT EXISTS streammonsters_element_essence (
         user_id TEXT NOT NULL, element TEXT NOT NULL, amount INTEGER NOT NULL DEFAULT 0,
-        unlocks_json TEXT NOT NULL DEFAULT '[]', PRIMARY KEY (user_id, element)
+        spent INTEGER NOT NULL DEFAULT 0, unlocks_json TEXT NOT NULL DEFAULT '[]',
+        PRIMARY KEY (user_id, element)
+      );
+      CREATE TABLE IF NOT EXISTS streammonsters_gift_event_claims (
+        stream_key TEXT NOT NULL, event_key TEXT NOT NULL, claimed_at_ms INTEGER NOT NULL,
+        PRIMARY KEY (stream_key, event_key)
+      );
+      CREATE TABLE IF NOT EXISTS streammonsters_element_shuffle_bags (
+        stream_key TEXT NOT NULL, gift_id INTEGER NOT NULL, cycle INTEGER NOT NULL,
+        position INTEGER NOT NULL DEFAULT 0, order_json TEXT NOT NULL,
+        PRIMARY KEY (stream_key, gift_id)
       );
       CREATE TABLE IF NOT EXISTS streammonsters_collection_actions (
         action_key TEXT PRIMARY KEY, created_at_ms INTEGER NOT NULL
@@ -305,6 +318,8 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_eggs', 'ready_at_ms', 'INTEGER');
     this.ensureColumn('streammonsters_eggs', 'queued_at_ms', 'INTEGER');
     this.ensureColumn('streammonsters_eggs', 'incubating_at_ms', 'INTEGER');
+    this.ensureColumn('streammonsters_eggs', 'expires_at_ms', 'INTEGER');
+    this.ensureColumn('streammonsters_eggs', 'expired_at_ms', 'INTEGER');
     this.ensureColumn('streammonsters_eggs', 'visual_source', "TEXT NOT NULL DEFAULT 'legacy'");
     this.ensureColumn('streammonsters_eggs', 'visual_key', 'TEXT');
     this.ensureColumn('streammonsters_monsters', 'personality', 'TEXT');
@@ -314,6 +329,8 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_art_pool', 'template_id', 'TEXT');
     this.ensureColumn('streammonsters_monsters', 'battle_count', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_monsters', 'win_streak', 'INTEGER NOT NULL DEFAULT 0');
+    this.ensureColumn('streammonsters_monsters', 'evolution_stage', 'INTEGER NOT NULL DEFAULT 1');
+    this.ensureColumn('streammonsters_element_essence', 'spent', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_battles', 'user_a_id', 'TEXT');
     this.ensureColumn('streammonsters_battles', 'user_b_id', 'TEXT');
     this.ensureColumn('streammonsters_battles', 'stance_a', 'TEXT');
@@ -338,7 +355,7 @@ class StreamMonstersDatabase {
     this.db.prepare(`
       UPDATE streammonsters_eggs
       SET ready_at_ms = created_at_ms + hatch_duration_ms - boost_ms
-      WHERE ready_at_ms IS NULL
+      WHERE ready_at_ms IS NULL AND state != 'queued'
     `).run();
     this.migrateLegacyTemplateIds();
   }
@@ -586,8 +603,8 @@ class StreamMonstersDatabase {
       INSERT INTO streammonsters_eggs (
         egg_id, user_id, gift_id, gift_name, element, egg_color, seed, state,
         created_at_ms, hatch_duration_ms, boost_ms, image_url, variant, ready_at_ms,
-        queued_at_ms, incubating_at_ms, visual_source, visual_key
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        queued_at_ms, incubating_at_ms, expires_at_ms, expired_at_ms, visual_source, visual_key
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       eggId, input.userId, input.giftId, input.giftName, input.element, input.eggColor,
       input.seed, input.state || 'incubating', input.createdAtMs, input.hatchDurationMs,
@@ -598,6 +615,8 @@ class StreamMonstersDatabase {
         : input.createdAtMs + input.hatchDurationMs - (input.initialBoostMs || 0)),
       input.queuedAtMs ?? (input.state === 'queued' ? input.createdAtMs : null),
       input.incubatingAtMs ?? (input.state === 'queued' ? null : input.createdAtMs),
+      input.expiresAtMs ?? null,
+      input.expiredAtMs ?? null,
       input.visualSource || 'egg_asset',
       input.visualKey || null
     );
@@ -706,23 +725,6 @@ class StreamMonstersDatabase {
     ));
   }
 
-  claimStarterEgg(input) {
-    const transaction = this.db.transaction(() => {
-      const eggId = input.eggId || randomUUID();
-      const inserted = this.db.prepare(`
-        INSERT OR IGNORE INTO streammonsters_starter_claims (user_id, egg_id, claimed_at_ms)
-        VALUES (?, ?, ?)
-      `).run(input.userId, eggId, input.claimedAtMs);
-      if (!inserted.changes) {
-        const claim = this.getStarterClaim(input.userId);
-        return { claimed: false, claim, egg: claim ? this.getEgg(claim.egg_id) : null };
-      }
-      const egg = this.createEgg({ ...input, eggId });
-      return { claimed: true, claim: this.getStarterClaim(input.userId), egg };
-    });
-    return transaction();
-  }
-
   getStarterClaim(userId) {
     return this.db.prepare(`
       SELECT * FROM streammonsters_starter_claims WHERE user_id = ?
@@ -742,10 +744,16 @@ class StreamMonstersDatabase {
 
   getQueuedEggs(userId = null) {
     const sql = userId
-      ? `SELECT * FROM streammonsters_eggs
+      ? `SELECT *, ROW_NUMBER() OVER (
+          PARTITION BY user_id ORDER BY queued_at_ms ASC, created_at_ms ASC, egg_id ASC
+        ) AS queue_position
+        FROM streammonsters_eggs
         WHERE user_id = ? AND state = 'queued'
         ORDER BY queued_at_ms ASC, created_at_ms ASC, egg_id ASC`
-      : `SELECT * FROM streammonsters_eggs
+      : `SELECT *, ROW_NUMBER() OVER (
+          PARTITION BY user_id ORDER BY queued_at_ms ASC, created_at_ms ASC, egg_id ASC
+        ) AS queue_position
+        FROM streammonsters_eggs
         WHERE state = 'queued'
         ORDER BY queued_at_ms ASC, created_at_ms ASC, egg_id ASC`;
     return userId ? this.db.prepare(sql).all(userId) : this.db.prepare(sql).all();
@@ -777,9 +785,11 @@ class StreamMonstersDatabase {
     if (!egg) return null;
     this.db.prepare(`
       UPDATE streammonsters_eggs
-      SET boost_ms = boost_ms + ?, ready_at_ms = MAX(created_at_ms, ready_at_ms - ?)
+      SET boost_ms = boost_ms + ?,
+        ready_at_ms = MAX(created_at_ms, ready_at_ms - ?),
+        expires_at_ms = MAX(created_at_ms, expires_at_ms - ?)
       WHERE egg_id = ?
-    `).run(boostMs, boostMs, egg.egg_id);
+    `).run(boostMs, boostMs, boostMs, egg.egg_id);
     return this.getEgg(egg.egg_id);
   }
 
@@ -795,8 +805,28 @@ class StreamMonstersDatabase {
     return ready.map(row => this.getEgg(row.egg_id));
   }
 
-  promoteQueuedEggs(nowMs, maxActive = 3) {
+  expireReadyEggs(nowMs, eggExpiryMs = 86_400_000) {
+    const expiryMs = Math.max(1, Number.parseInt(eggExpiryMs, 10) || 86_400_000);
+    const expired = this.db.prepare(`
+      SELECT * FROM streammonsters_eggs
+      WHERE state = 'ready' AND COALESCE(expires_at_ms, ready_at_ms + ?) <= ?
+      ORDER BY expires_at_ms ASC, egg_id ASC
+    `).all(expiryMs, nowMs);
+    if (!expired.length) return [];
+    const mark = this.db.prepare(`
+      UPDATE streammonsters_eggs
+      SET state = 'expired',
+        expires_at_ms = COALESCE(expires_at_ms, ready_at_ms + ?),
+        expired_at_ms = ?
+      WHERE egg_id = ? AND state = 'ready'
+    `);
+    this.db.transaction(rows => rows.forEach(row => mark.run(expiryMs, nowMs, row.egg_id)))(expired);
+    return expired.map(row => this.getEgg(row.egg_id));
+  }
+
+  promoteQueuedEggs(nowMs, maxActive = 3, eggExpiryMs = 86_400_000) {
     const activeLimit = Math.max(1, Number.parseInt(maxActive, 10) || 3);
+    const expiryMs = Math.max(1, Number.parseInt(eggExpiryMs, 10) || 86_400_000);
     const queued = this.getQueuedEggs();
     if (!queued.length) return [];
     const activeByUser = new Map(this.db.prepare(`
@@ -809,14 +839,15 @@ class StreamMonstersDatabase {
     const promote = this.db.prepare(`
       UPDATE streammonsters_eggs
       SET state = 'incubating', incubating_at_ms = ?,
-        ready_at_ms = ? + hatch_duration_ms - boost_ms
+        ready_at_ms = ? + hatch_duration_ms - boost_ms,
+        expires_at_ms = ? + hatch_duration_ms - boost_ms + ?
       WHERE egg_id = ? AND state = 'queued'
     `);
     this.db.transaction(() => {
       queued.forEach(egg => {
         const active = activeByUser.get(egg.user_id) || 0;
         if (active >= activeLimit) return;
-        const result = promote.run(nowMs, nowMs, egg.egg_id);
+        const result = promote.run(nowMs, nowMs, nowMs, expiryMs, egg.egg_id);
         if (!result.changes) return;
         activeByUser.set(egg.user_id, active + 1);
         promotedIds.push(egg.egg_id);
@@ -885,6 +916,45 @@ class StreamMonstersDatabase {
     return row ? { ...row, order: JSON.parse(row.order_json) } : null;
   }
 
+  getElementBag(streamKey, giftId) {
+    const row = this.db.prepare(`
+      SELECT * FROM streammonsters_element_shuffle_bags
+      WHERE stream_key = ? AND gift_id = ?
+    `).get(streamKey, giftId);
+    return row ? { ...row, order: JSON.parse(row.order_json) } : null;
+  }
+
+  reserveElement(streamKey, giftId, orderForCycle) {
+    return this.db.transaction(() => {
+      let bag = this.getElementBag(streamKey, giftId);
+      if (!bag || bag.position >= bag.order.length) {
+        const cycle = bag ? bag.cycle + 1 : 0;
+        bag = { stream_key: streamKey, gift_id: giftId, cycle, position: 0, order: orderForCycle(cycle) };
+      }
+      const position = bag.position;
+      const element = bag.order[position];
+      this.db.prepare(`
+        INSERT INTO streammonsters_element_shuffle_bags (
+          stream_key, gift_id, cycle, position, order_json
+        ) VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(stream_key, gift_id) DO UPDATE SET
+          cycle = excluded.cycle,
+          position = excluded.position,
+          order_json = excluded.order_json
+      `).run(streamKey, giftId, bag.cycle, position + 1, JSON.stringify(bag.order));
+      return element;
+    })();
+  }
+
+  claimGiftEvent(streamKey, eventKey, claimedAtMs) {
+    if (!eventKey) return true;
+    return this.db.prepare(`
+      INSERT OR IGNORE INTO streammonsters_gift_event_claims (
+        stream_key, event_key, claimed_at_ms
+      ) VALUES (?, ?, ?)
+    `).run(streamKey || 'offline', eventKey, claimedAtMs).changes > 0;
+  }
+
   reserveTemplateForEgg(egg, orderForCycle) {
     const transaction = this.db.transaction(() => {
       const existing = this.db.prepare(`
@@ -941,17 +1011,40 @@ class StreamMonstersDatabase {
       SELECT * FROM streammonsters_element_essence WHERE user_id = ? AND element = ?
     `).get(userId, element);
     return row ? { ...row, unlocks: JSON.parse(row.unlocks_json) } : {
-      user_id: userId, element, amount: 0, unlocks: []
+      user_id: userId, element, amount: 0, spent: 0, unlocks: []
     };
   }
 
-  setElementEssence(userId, element, amount, unlocks) {
+  setElementEssence(userId, element, amount, unlocks, spent = null) {
+    const current = this.getElementEssence(userId, element);
     this.db.prepare(`
-      INSERT INTO streammonsters_element_essence (user_id, element, amount, unlocks_json)
-      VALUES (?, ?, ?, ?)
-      ON CONFLICT(user_id, element) DO UPDATE SET amount = excluded.amount, unlocks_json = excluded.unlocks_json
-    `).run(userId, element, amount, JSON.stringify(unlocks));
+      INSERT INTO streammonsters_element_essence (user_id, element, amount, spent, unlocks_json)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(user_id, element) DO UPDATE SET
+        amount = excluded.amount,
+        spent = excluded.spent,
+        unlocks_json = excluded.unlocks_json
+    `).run(userId, element, amount, spent ?? current.spent, JSON.stringify(unlocks));
     return this.getElementEssence(userId, element);
+  }
+
+  spendElementEssence(userId, element, amount) {
+    const normalized = Math.max(0, Number.parseInt(amount, 10) || 0);
+    const result = this.db.prepare(`
+      UPDATE streammonsters_element_essence
+      SET amount = amount - ?, spent = spent + ?
+      WHERE user_id = ? AND element = ? AND amount >= ?
+    `).run(normalized, normalized, userId, element, normalized);
+    return result.changes ? this.getElementEssence(userId, element) : null;
+  }
+
+  setMonsterEvolutionStage(monsterId, stage, imageUrl, visualKey) {
+    this.db.prepare(`
+      UPDATE streammonsters_monsters
+      SET evolution_stage = ?, image_url = ?, visual_key = ?
+      WHERE monster_id = ?
+    `).run(stage, imageUrl, visualKey, monsterId);
+    return this.getMonster(monsterId);
   }
 
   unlockCollectionCosmetic(userId, cosmeticKey, unlockedAtMs) {
@@ -1432,12 +1525,13 @@ class StreamMonstersDatabase {
     const key = streamKey || 'offline';
     const current = this.getStreamHype(key);
     const total = current.points + Math.max(0, Number(points) || 0);
-    const charged = total >= 100 ? 1 : 0;
+    const charged = Math.floor(total / 100);
+    const overflow = total % 100;
     this.db.prepare(`
       UPDATE streammonsters_hype
       SET points = ?, charged_eggs = charged_eggs + ?, updated_at_ms = ?
       WHERE stream_key = ?
-    `).run(charged ? 0 : total, charged, updatedAtMs, key);
+    `).run(overflow, charged, updatedAtMs, key);
     return this.getStreamHype(key);
   }
 

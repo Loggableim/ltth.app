@@ -10,7 +10,7 @@ const StreamMonstersCommandIngress = require('./backend/streammonsters/command-i
 const StreamMonstersProgressionService = require('./backend/streammonsters/progression-service');
 const KenneyMonsterBuilder = require('./backend/streammonsters/kenney-monster-builder');
 const StreamMonstersCollectionService = require('./backend/streammonsters/collection-service');
-const { normalizeGiftName } = require('./backend/streammonsters/gift-name');
+const { normalizeGiftName, isHeartMeGift } = require('./backend/streammonsters/gift-name');
 
 const RUNTIME_TRUST_FIELDS = new Set([
   'manifest', 'archiveUrl', 'sha256', 'modelSha256', 'archiveType',
@@ -55,6 +55,7 @@ const DEFAULT_COMMAND_ALIASES = Object.freeze({
   monsters: Object.freeze({ enabled: Object.freeze(['monsters']), disabled: Object.freeze([]) }),
   monster: Object.freeze({ enabled: Object.freeze(['monster']), disabled: Object.freeze([]) }),
   choose: Object.freeze({ enabled: Object.freeze(['choose']), disabled: Object.freeze([]) }),
+  evolve: Object.freeze({ enabled: Object.freeze(['evolve']), disabled: Object.freeze([]) }),
   battle: Object.freeze({ enabled: Object.freeze(['battle']), disabled: Object.freeze([]) }),
   leavebattle: Object.freeze({ enabled: Object.freeze(['leavebattle']), disabled: Object.freeze([]) }),
   rank: Object.freeze({ enabled: Object.freeze(['rank']), disabled: Object.freeze([]) }),
@@ -329,7 +330,7 @@ class StreamAlchemyPlugin {
       return [...new Set(value.map(alias => String(alias).trim().toLocaleLowerCase())
         .filter(alias => /^[\p{L}\p{N}_-]{1,32}$/u.test(alias)))];
     };
-    return Object.fromEntries(Object.entries(DEFAULT_COMMAND_ALIASES).map(([command, defaults]) => {
+    const normalized = Object.fromEntries(Object.entries(DEFAULT_COMMAND_ALIASES).map(([command, defaults]) => {
       const candidate = input?.[command];
       return [command, {
         enabled: candidate && Object.prototype.hasOwnProperty.call(candidate, 'enabled')
@@ -340,6 +341,15 @@ class StreamAlchemyPlugin {
           : [...defaults.disabled]
       }];
     }));
+    const owners = new Map();
+    Object.entries(normalized).forEach(([command, aliases]) => {
+      aliases.enabled.forEach(alias => {
+        const owner = owners.get(alias);
+        if (owner && owner !== command) throw new Error(`STREAM_MONSTERS_ALIAS_CONFLICT:${alias}`);
+        owners.set(alias, command);
+      });
+    });
+    return normalized;
   }
 
   getPluginDataDir() {
@@ -421,7 +431,8 @@ class StreamAlchemyPlugin {
       this.streamMonstersCommandIngress &&
       (
         Object.prototype.hasOwnProperty.call(safeUpdates, 'enabled') ||
-        Object.prototype.hasOwnProperty.call(streamMonstersUpdates, 'enabled')
+        Object.prototype.hasOwnProperty.call(streamMonstersUpdates, 'enabled') ||
+        Object.prototype.hasOwnProperty.call(streamMonstersUpdates, 'commandAliases')
       )
     ) {
       this.integrateStreamMonstersGCCE({ force: true });
@@ -471,10 +482,10 @@ class StreamAlchemyPlugin {
       return null;
     }
     const candidate = gift || this.getStreamMonstersGiftCatalog().find(item => (
-      this.normalizeStreamMonstersGiftName(item.name || item.gift_name) === 'heartme'
+      isHeartMeGift(item.name || item.gift_name)
     ));
     const giftId = Number.parseInt(candidate?.id ?? candidate?.gift_id ?? candidate?.giftId, 10);
-    if (!giftId || this.normalizeStreamMonstersGiftName(candidate?.name || candidate?.gift_name || candidate?.giftName) !== 'heartme') {
+    if (!giftId || !isHeartMeGift(candidate?.name || candidate?.gift_name || candidate?.giftName)) {
       return null;
     }
     return this.streamMonstersStore.upsertGiftMapping({
@@ -489,23 +500,25 @@ class StreamAlchemyPlugin {
   }
 
   buildStreamMonstersCommandDefinitions(commandPrefix = this.streamMonstersCommandPrefix) {
+    const aliases = this.normalizeCommandAliases(this.config?.streamMonsters?.commandAliases);
     return [
-      ['adopt', 'Claim your one-time Stream Monsters starter egg', 0, 0],
       ['eggs', 'Show your Stream Monsters eggs', 0, 0],
       ['hatch', 'Hatch a ready egg by slot', 0, 1],
-      ['inventory', 'Show your Stream Monsters inventory', 0, 0],
-      ['monsters', 'Show your Stream Monsters', 0, 0],
+      ['inventory', 'Show your Stream Monsters inventory', 0, 1],
+      ['monsters', 'Show your Stream Monsters', 0, 1],
       ['monster', 'Show one monster by slot', 1, 1],
       ['choose', 'Choose a monster by slot', 1, 1],
+      ['evolve', 'Evolve a monster cosmetically by slot', 1, 1],
       ['battle', 'Join the public Stream Monsters battle queue with an optional stance', 0, 1],
       ['leavebattle', 'Leave the Stream Monsters battle queue', 0, 0],
       ['rank', 'Show the current Collector Arena rank', 0, 0],
       ['quests', 'Show daily and weekly quests', 0, 0],
       ['monstershelp', 'Show Stream Monsters commands', 0, 0]
-    ].map(([name, description, minArgs, maxArgs]) => ({
+    ].flatMap(([command, description, minArgs, maxArgs]) => aliases[command].enabled.map(name => ({
       name,
+      commandName: command,
       description,
-      syntax: name === 'battle'
+      syntax: command === 'battle'
         ? `${commandPrefix}${name} [power|guard|speed]`
         : `${commandPrefix}${name}${minArgs ? ' <slot>' : ''}`,
       permission: 'all',
@@ -513,9 +526,9 @@ class StreamAlchemyPlugin {
       minArgs,
       maxArgs,
       category: 'Stream Monsters',
-      cooldown: { user: name === 'battle' ? 2000 : 1000, global: name === 'battle' ? 0 : 250 },
+      cooldown: { user: command === 'battle' ? 2000 : 1000, global: command === 'battle' ? 0 : 250 },
       handler: async (args, context = {}) => this.streamMonstersCommandIngress.executeCommand(
-        name,
+        command,
         Array.isArray(args) ? args : [],
         {
           ...context,
@@ -530,7 +543,7 @@ class StreamAlchemyPlugin {
         },
         'gcce'
       )
-    }));
+    })));
   }
 
   getStreamMonstersGCCEState() {
@@ -577,15 +590,21 @@ class StreamAlchemyPlugin {
 
     try {
       gcce.unregisterCommandsForPlugin('streamalchemy');
+      gcce.unregisterRawResponseHandlerForPlugin?.('streamalchemy');
       const result = gcce.registerCommandsForPlugin('streamalchemy', definitions);
       const registered = Array.isArray(result?.registered) ? result.registered : [];
       if (registered.length !== definitions.length) {
         gcce.unregisterCommandsForPlugin('streamalchemy');
+        gcce.unregisterRawResponseHandlerForPlugin?.('streamalchemy');
         this.streamMonstersGCCE = gcce;
         this.streamMonstersGCCERegistrationState = 'blocked';
         this.streamMonstersGCCERegistrationError = 'partial_registration';
         return false;
       }
+      gcce.registerRawResponseHandlerForPlugin?.(
+        'streamalchemy',
+        (message, context) => this.handleStreamMonstersRawResponse(message, context)
+      );
       this.streamMonstersGCCE = gcce;
       this.streamMonstersGCCERegistrationState = 'active';
       this.streamMonstersGCCERegistrationError = null;
@@ -594,6 +613,7 @@ class StreamAlchemyPlugin {
       this.api.log(`[STREAM MONSTERS] GCCE registration failed: ${error.message}`, 'warn');
       try {
         gcce.unregisterCommandsForPlugin('streamalchemy');
+        gcce.unregisterRawResponseHandlerForPlugin?.('streamalchemy');
       } catch (cleanupError) {
         this.api.log(`[STREAM MONSTERS] GCCE registration rollback failed: ${cleanupError.message}`, 'debug');
       }
@@ -608,6 +628,7 @@ class StreamAlchemyPlugin {
     if (this.streamMonstersGCCE?.unregisterCommandsForPlugin) {
       try {
         this.streamMonstersGCCE.unregisterCommandsForPlugin('streamalchemy');
+        this.streamMonstersGCCE.unregisterRawResponseHandlerForPlugin?.('streamalchemy');
       } catch (error) {
         this.api.log(`[STREAM MONSTERS] GCCE cleanup failed: ${error.message}`, 'debug');
       }
@@ -689,6 +710,10 @@ class StreamAlchemyPlugin {
     }) || legacyUserId || platformUserId;
   }
 
+  handleStreamMonstersRawResponse() {
+    return { handled: false };
+  }
+
   opaqueViewerRef(viewerId) {
     if (!viewerId) return null;
     const digest = createHash('sha256')
@@ -742,13 +767,32 @@ class StreamAlchemyPlugin {
         diamond_count: coinValue
       });
     }
+    const providerEventId = (
+      data.eventId ??
+      data.event_id ??
+      data.msgId ??
+      data.msg_id ??
+      data.logId ??
+      data.log_id
+    );
+    const eventPrefix = providerEventId === undefined || providerEventId === null
+      ? null
+      : `${String(data.provider || data.source || 'tiktok')}:${String(providerEventId)}`;
+    let processedCount = 0;
     for (let index = 0; index < repeatCount; index += 1) {
-      this.streamMonstersEngine.processGift({ userId, giftId, giftName, coinValue });
+      const result = this.streamMonstersEngine.processGift({
+        userId,
+        giftId,
+        giftName,
+        coinValue,
+        eventKey: eventPrefix ? `${eventPrefix}:repeat-${index + 1}` : null
+      });
+      if (result.type !== 'duplicate') processedCount += 1;
     }
     this.logStructured('gift_processed', {
       correlationId,
       viewerId: userId,
-      count: repeatCount
+      count: processedCount
     });
   }
 

@@ -232,7 +232,7 @@ describe('Stream Monsters rules version 3 migration', () => {
   });
 });
 
-describe('Stream Monsters starter adoption', () => {
+describe('Stream Monsters historical starter compatibility', () => {
   test('anchors legacy handle data to a stable platform viewer ID across handle changes', () => {
     const { store } = createStore();
     store.createEgg({
@@ -266,77 +266,25 @@ describe('Stream Monsters starter adoption', () => {
     ]);
   });
 
-  test('claims one deterministic standard starter without Hype, charge, quests or season points', () => {
+  test('keeps old starter claims readable but exposes no starter egg source', () => {
     const game = createGame({ progression: true });
+    game.store.db.prepare(`
+      INSERT INTO streammonsters_starter_claims (user_id, egg_id, claimed_at_ms)
+      VALUES ('stable-viewer-42', 'historical-starter', 123)
+    `).run();
 
-    const first = game.commands.execute({ userId: 'stable-viewer-42' }, 'adopt');
-    const second = game.commands.execute({ userId: 'stable-viewer-42' }, 'adopt');
-    const [egg] = game.store.getViewerEggs('stable-viewer-42');
-
-    expect(first).toEqual(expect.objectContaining({ success: true, status: 'starter_claimed' }));
-    expect(second).toEqual(expect.objectContaining({ success: false, status: 'starter_already_claimed' }));
-    expect(game.store.getViewerEggs('stable-viewer-42')).toHaveLength(1);
-    expect(egg).toEqual(expect.objectContaining({
-      gift_id: 0,
-      variant: 'standard',
-      hatch_duration_ms: 60_000,
-      boost_ms: 0
-    }));
-    expect(egg.ready_at_ms - egg.created_at_ms).toBe(60_000);
-    expect(game.store.getStreamHype('offline')).toEqual(expect.objectContaining({
-      points: 0,
-      charged_eggs: 0
-    }));
-    expect(game.store.getViewerQuests('stable-viewer-42', '1970-01-01')).toEqual([]);
-    expect(game.progression.getViewerSeason('stable-viewer-42').points).toBe(0);
-    expect(game.emitted.filter(entry => entry.event === 'streammonsters:starter_claimed')).toHaveLength(1);
-  });
-
-  test('rolls back the unique starter claim if its egg insert fails', () => {
-    const { store } = createStore();
-    store.createEgg({
-      eggId: 'starter-egg-collision',
-      userId: 'existing-viewer',
-      giftId: 1,
-      giftName: 'Existing Gift',
-      element: 'Ember',
-      eggColor: '#fff',
-      seed: 'existing-seed',
-      createdAtMs: 1,
-      hatchDurationMs: 300_000
+    expect(game.commands.execute({ userId: 'stable-viewer-42' }, 'adopt')).toEqual({
+      success: false,
+      status: 'ignored'
     });
-
-    expect(() => store.claimStarterEgg({
-      eggId: 'starter-egg-collision',
-      userId: 'new-viewer',
-      giftId: 0,
-      giftName: 'Starter Egg',
-      element: 'Tide',
-      eggColor: '#00f',
-      seed: 'starter-seed',
-      claimedAtMs: 2,
-      createdAtMs: 2,
-      hatchDurationMs: 60_000
-    })).toThrow();
-
-    expect(store.getStarterClaim('new-viewer')).toBeNull();
-    expect(store.getViewerEggs('new-viewer')).toEqual([]);
-  });
-
-  test('derives the same starter identity from the same stable viewer ID in separate databases', () => {
-    const first = createGame();
-    const second = createGame({ now: 50_000 });
-
-    const firstEgg = first.engine.adoptStarter('stable-viewer-42').egg;
-    const secondEgg = second.engine.adoptStarter('stable-viewer-42').egg;
-
-    expect(secondEgg).toEqual(expect.objectContaining({
-      egg_id: firstEgg.egg_id,
-      seed: firstEgg.seed,
-      element: firstEgg.element,
-      egg_color: firstEgg.egg_color,
-      variant: 'standard'
-    }));
+    expect(game.store.getStarterClaim('stable-viewer-42')).toEqual({
+      user_id: 'stable-viewer-42',
+      egg_id: 'historical-starter',
+      claimed_at_ms: 123
+    });
+    expect(game.store.getViewerEggs('stable-viewer-42')).toEqual([]);
+    expect(game.store.claimStarterEgg).toBeUndefined();
+    expect(game.engine.adoptStarter).toBeUndefined();
   });
 });
 

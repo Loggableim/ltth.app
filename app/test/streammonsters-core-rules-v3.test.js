@@ -71,17 +71,17 @@ function response() {
 }
 
 describe('Stream Monsters rules version 3 core gift and incubation rules', () => {
-  test('discovers Heart Me by catalog name without a fixed gift ID and never restores it after customization', () => {
+  test('discovers Team Heart by catalog name without a fixed gift ID and never restores it after customization', () => {
     const { store, engine } = createEngine();
     const plugin = createPlugin({ store, engine });
     plugin.getStreamMonstersGiftCatalog = () => [
       { id: 77, name: 'Rose' },
-      { id: 481516, name: '  HEART   me  ', diamond_count: 1 }
+      { id: 481516, name: '  TEAM   Heart  ', diamond_count: 1 }
     ];
 
     expect(plugin.ensureDefaultStreamMonstersGiftMapping()).toEqual(expect.objectContaining({
       gift_id: 481516,
-      gift_name: '  HEART   me  ',
+      gift_name: '  TEAM   Heart  ',
       effect: 'spawn',
       element: 'Random'
     }));
@@ -116,7 +116,7 @@ describe('Stream Monsters rules version 3 core gift and incubation rules', () =>
     expect(store.getViewerEggs('viewer-a')).toHaveLength(1);
   });
 
-  test('uses deterministic, broadly uniform Random elements from the stream event identity', () => {
+  test('uses a persistent six-element Random bag per stream and gift mapping', () => {
     const { store, engine } = createEngine();
     store.upsertGiftMapping({
       giftId: 901,
@@ -127,22 +127,18 @@ describe('Stream Monsters rules version 3 core gift and incubation rules', () =>
     });
     engine.setStreamKey('creator:session-a');
 
-    expect(engine.selectRandomElement({ userId: 'viewer-a', giftId: 901, eventTimeMs: 10_000 }))
-      .toBe(engine.selectRandomElement({ userId: 'viewer-a', giftId: 901, eventTimeMs: 10_000 }));
+    const elements = Array.from(
+      { length: 12 },
+      () => engine.selectRandomElement({ giftId: 901 })
+    );
+    const expected = new Set(['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar']);
 
-    const counts = new Map(['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar'].map(element => [element, 0]));
-    for (let eventTimeMs = 0; eventTimeMs < 3_600; eventTimeMs += 1) {
-      const element = engine.selectRandomElement({
-        userId: `viewer-${eventTimeMs % 41}`,
-        giftId: 901,
-        eventTimeMs
-      });
-      counts.set(element, counts.get(element) + 1);
-    }
-    for (const count of counts.values()) {
-      expect(count).toBeGreaterThan(450);
-      expect(count).toBeLessThan(750);
-    }
+    expect(new Set(elements.slice(0, 6))).toEqual(expected);
+    expect(new Set(elements.slice(6, 12))).toEqual(expected);
+    expect(store.getElementBag('creator:session-a', 901)).toEqual(expect.objectContaining({
+      cycle: 1,
+      position: 6
+    }));
   });
 
   test('uses the six approved presets, defaults new rules to two minutes, and migrates only missing-version legacy thirty minutes', () => {

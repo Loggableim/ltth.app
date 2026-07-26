@@ -91,6 +91,9 @@ class GlobalChatCommandEngine {
         
         // Built-in commands
         this.builtInCommands = [];
+
+        // Plugin-owned raw response handlers for interactive, non-command input.
+        this.rawResponseHandlers = new Map();
     }
 
     /**
@@ -1459,7 +1462,18 @@ class GlobalChatCommandEngine {
             if (!message) return;
 
             // Check if it's a command
-            if (!this.parser.isCommand(message)) return;
+            if (!this.parser.isCommand(message)) {
+                return await this.dispatchRawResponse(String(message), {
+                    userId: data.uniqueId || data.userId,
+                    username: data.nickname || data.username || data.uniqueId,
+                    uniqueId: data.uniqueId || data.userId,
+                    nickname: data.nickname || data.username || data.uniqueId,
+                    profilePictureUrl: data.profilePictureUrl || '',
+                    userRole: this.permissionChecker.getUserRole(data),
+                    timestamp: Date.now(),
+                    rawData: data
+                });
+            }
 
             // Build enriched context with user data
             const context = {
@@ -2001,6 +2015,32 @@ class GlobalChatCommandEngine {
         commandNames.forEach(commandName => this.parser.removeCommandCooldown(commandName));
     }
 
+    registerRawResponseHandlerForPlugin(pluginId, handler) {
+        const normalizedPluginId = String(pluginId || '').trim();
+        if (!normalizedPluginId || typeof handler !== 'function') {
+            throw new Error('GCCE_RAW_RESPONSE_HANDLER_INVALID');
+        }
+        const replaced = this.rawResponseHandlers.has(normalizedPluginId);
+        this.rawResponseHandlers.set(normalizedPluginId, handler);
+        return { pluginId: normalizedPluginId, registered: true, replaced };
+    }
+
+    unregisterRawResponseHandlerForPlugin(pluginId) {
+        return this.rawResponseHandlers.delete(String(pluginId || '').trim());
+    }
+
+    async dispatchRawResponse(message, context) {
+        for (const [pluginId, handler] of this.rawResponseHandlers.entries()) {
+            try {
+                const result = await handler(message, context);
+                if (result?.handled) return { ...result, pluginId };
+            } catch (error) {
+                this.api.log(`[GCCE] Raw response handler failed for ${pluginId}: ${error.message}`, 'warn');
+            }
+        }
+        return { handled: false };
+    }
+
     /**
      * Start periodic cleanup timer
      */
@@ -2023,6 +2063,7 @@ class GlobalChatCommandEngine {
         if (this.cleanupInterval) {
             clearInterval(this.cleanupInterval);
         }
+        this.rawResponseHandlers.clear();
 
         // Cleanup HUD Manager
         if (this.hudManager) {
