@@ -27,9 +27,9 @@ describe('Stream Monsters public branding', () => {
     const pluginPage = fs.readFileSync(path.join(repoRoot, 'plugins.html'), 'utf8');
     const docsPage = fs.readFileSync(path.join(repoRoot, 'docs', 'plugins', 'streamalchemy.html'), 'utf8');
     const docsIndex = JSON.parse(fs.readFileSync(path.join(repoRoot, 'docs', 'plugins', 'index.json'), 'utf8'));
-    const pluginUi = fs.readFileSync(path.join(repoRoot, 'app', 'plugins', 'streamalchemy', 'ui.html'), 'utf8');
-    const legacyPluginUi = fs.readFileSync(path.join(repoRoot, 'app', 'plugins', 'streamalchemy', 'ui-old.html'), 'utf8');
-    const overlay = fs.readFileSync(path.join(repoRoot, 'app', 'plugins', 'streamalchemy', 'overlay.html'), 'utf8');
+    const pluginDir = path.join(repoRoot, 'app', 'plugins', 'streamalchemy');
+    const pluginUi = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
+    const overlay = fs.readFileSync(path.join(pluginDir, 'streammonsters-overlay.html'), 'utf8');
     const storeRegistry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
     const pluginManifest = JSON.parse(fs.readFileSync(
       path.join(repoRoot, 'app', 'plugins', 'streamalchemy', 'plugin.json'),
@@ -70,10 +70,11 @@ describe('Stream Monsters public branding', () => {
     expect(fs.existsSync(iconPath)).toBe(true);
     expect(fs.existsSync(logoPath)).toBe(true);
     expect(fs.existsSync(featureBannerPath)).toBe(true);
-    expect(pluginUi).toContain('>Stream Monsters<');
+    expect(pluginUi).toContain('Stream Monsters');
     expect(pluginUi).not.toContain('>StreamAlchemy<');
-    expect(legacyPluginUi).not.toMatch(/Stream Alchemy/i);
-    expect(overlay).toContain('>Stream Monsters<');
+    expect(fs.existsSync(path.join(pluginDir, 'ui.html'))).toBe(false);
+    expect(fs.existsSync(path.join(pluginDir, 'ui-old.html'))).toBe(false);
+    expect(overlay).toContain('Stream Monsters');
     expect(overlay).not.toContain('>StreamAlchemy<');
 
     const packageEntries = await listZipEntries(packagePath);

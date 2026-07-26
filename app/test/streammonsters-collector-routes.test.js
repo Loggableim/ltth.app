@@ -122,7 +122,7 @@ describe('Stream Monsters 1.2 public API', () => {
     expect(unknownLocale.body.total).toBe(1);
   });
 
-  test('persists a clamped art pool target through the public config update', () => {
+  test('persists normalized Rules v5 controls through the admin config update', () => {
     const { find, configProvider } = createRoutes();
     const result = response();
 
@@ -130,13 +130,25 @@ describe('Stream Monsters 1.2 public API', () => {
       ip: '127.0.0.1',
       socket: { remoteAddress: '127.0.0.1' },
       headers: {},
-      body: { artPoolTarget: 99 }
+      body: {
+        seasonDurationDays: 60,
+        visualPack: 'art_lab',
+        audioChannels: { battle: { enabled: true, volume: 0.55 } }
+      }
     }, result);
 
     expect(result.statusCode).toBe(200);
-    expect(result.body.config.artPoolTarget).toBe(8);
+    expect(result.body.config).toEqual(expect.objectContaining({
+      seasonDurationDays: 60,
+      visualPack: 'furry',
+      audioChannels: { battle: { enabled: true, volume: 0.55 } }
+    }));
     expect(configProvider.updateConfig).toHaveBeenCalledWith({
-      streamMonsters: { artPoolTarget: 8 }
+      streamMonsters: {
+        seasonDurationDays: 60,
+        visualPack: 'furry',
+        audioChannels: { battle: { enabled: true, volume: 0.55 } }
+      }
     });
   });
 
@@ -180,7 +192,7 @@ describe('Stream Monsters 1.2 public API', () => {
     expect(deleted.body.removed).toBe(true);
   });
 
-  test('exposes season, leaderboard and expanded viewer state', () => {
+  test('redacts public state and exposes expanded viewer state only to the creator', () => {
     const { find, store } = createRoutes();
     store.addStreamHype('creator:routes', 40, 1);
     store.unlockAchievement('viewer-a', 'first_hatch', 1);
@@ -189,11 +201,20 @@ describe('Stream Monsters 1.2 public API', () => {
     find('GET', '/api/streammonsters/state')({ query: { userId: 'viewer-a' } }, state);
     expect(state.body).toEqual(expect.objectContaining({
       hype: expect.objectContaining({ points: 40 }),
-      season: expect.objectContaining({ season_id: expect.any(String) }),
-      viewer: expect.objectContaining({
-        achievements: [expect.objectContaining({ achievement_key: 'first_hatch' })],
-        rank: expect.objectContaining({ rank: 'Bronze' })
-      })
+      season: expect.objectContaining({ season_id: expect.any(String) })
+    }));
+    expect(state.body).not.toHaveProperty('viewer');
+
+    const creator = response();
+    find('GET', '/api/streammonsters/creator-state')({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      query: { userId: 'viewer-a' }
+    }, creator);
+    expect(creator.body.viewer).toEqual(expect.objectContaining({
+      achievements: [expect.objectContaining({ achievement_key: 'first_hatch' })],
+      rank: expect.objectContaining({ rank: 'Bronze' })
     }));
 
     const season = response();
@@ -205,7 +226,7 @@ describe('Stream Monsters 1.2 public API', () => {
     expect(leaderboard.body.entries).toEqual([]);
   });
 
-  test('keeps AI preparation explicit, serial and admin protected with a target of one through eight', async () => {
+  test('tombstones retired AI preparation without mutating mappings or Art Pool state', async () => {
     const { find, artPool, store } = createRoutes();
     const legacyPool = response();
     await find('POST', '/api/streammonsters/pool')({
@@ -213,7 +234,8 @@ describe('Stream Monsters 1.2 public API', () => {
       headers: {},
       body: { giftId: 1, giftName: 'Rose' }
     }, legacyPool);
-    expect(legacyPool.statusCode).toBe(403);
+    expect(legacyPool.statusCode).toBe(410);
+    expect(legacyPool.body).toEqual({ error: 'art_lab_removed' });
     expect(store.getGiftMappings()).toEqual([]);
 
     const remote = response();
@@ -222,7 +244,8 @@ describe('Stream Monsters 1.2 public API', () => {
       headers: {},
       body: { targetPerVariant: 8 }
     }, remote);
-    expect(remote.statusCode).toBe(403);
+    expect(remote.statusCode).toBe(410);
+    expect(remote.body).toEqual({ error: 'art_lab_removed' });
     expect(artPool.prepare).not.toHaveBeenCalled();
 
     const local = response();
@@ -232,7 +255,9 @@ describe('Stream Monsters 1.2 public API', () => {
       headers: {},
       body: { targetPerVariant: 7 }
     }, local);
-    expect(artPool.prepare).toHaveBeenCalledWith({ targetPerVariant: 7 });
+    expect(local.statusCode).toBe(410);
+    expect(local.body).toEqual({ error: 'art_lab_removed' });
+    expect(artPool.prepare).not.toHaveBeenCalled();
   });
 
   test('keeps manual gift mapping customization monotonic across later setup saves', () => {
@@ -256,7 +281,7 @@ describe('Stream Monsters 1.2 public API', () => {
     });
   });
 
-  test('exposes the template Dex, stream collection state, and validated template-specific pool preparation', async () => {
+  test('keeps the public Dex redacted, exposes creator ownership, and tombstones pool preparation', async () => {
     const { find, artPool } = createRoutes();
     const catalog = response();
     find('GET', '/api/streammonsters/monster-catalog')({ query: { userId: 'viewer-a' } }, catalog);
@@ -267,26 +292,38 @@ describe('Stream Monsters 1.2 public API', () => {
       ])
     }));
 
+    const creatorCatalog = response();
+    find('GET', '/api/streammonsters/creator-catalog')({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      query: { userId: 'viewer-a' }
+    }, creatorCatalog);
+    expect(creatorCatalog.body).toEqual(expect.objectContaining({
+      success: true,
+      userId: 'viewer-a',
+      dex: { owned: 0, total: 24 }
+    }));
+
     const state = response();
     find('GET', '/api/streammonsters/state')({ query: { userId: 'viewer-a' } }, state);
     expect(state.body).toEqual(expect.objectContaining({
-      dex: { owned: 0, total: 24 },
-      heartChain: expect.objectContaining({ chain_length: 0 }),
-      streamMission: expect.objectContaining({ mission_key: expect.any(String) }),
       visualPack: 'furry',
       eggCounts: { incubating: 0, queued: 0, ready: 0 }
     }));
+    expect(state.body).not.toHaveProperty('dex');
 
     const prepared = response();
     await find('POST', '/api/streammonsters/pool/prepare')({
       ip: '127.0.0.1', socket: { remoteAddress: '127.0.0.1' }, headers: {},
       body: { targetPerVariant: 2, templateIds: ['ashfang', 'cinder'] }
     }, prepared);
-    expect(prepared.statusCode).toBe(200);
-    expect(artPool.prepare).toHaveBeenLastCalledWith({ targetPerVariant: 2, templateIds: ['ashfang', 'cinder'] });
+    expect(prepared.statusCode).toBe(410);
+    expect(prepared.body).toEqual({ error: 'art_lab_removed' });
+    expect(artPool.prepare).not.toHaveBeenCalled();
   });
 
-  test('resolves monster-catalog aliases and returns owned mastery, essence and cosmetic indicators', () => {
+  test('resolves creator-catalog aliases and returns owned mastery, essence and cosmetic indicators', () => {
     const { find, store } = createRoutes();
     const canonicalUserId = 'viewer-canonical';
     store.recordViewerAlias('viewer-alias', canonicalUserId, 1);
@@ -318,7 +355,12 @@ describe('Stream Monsters 1.2 public API', () => {
     store.unlockCollectionCosmetic(canonicalUserId, 'frame:ember', 1);
 
     const catalog = response();
-    find('GET', '/api/streammonsters/monster-catalog')({ query: { userId: 'viewer-alias' } }, catalog);
+    find('GET', '/api/streammonsters/creator-catalog')({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      query: { userId: 'viewer-alias' }
+    }, catalog);
     expect(catalog.body.dex).toEqual({ owned: 1, total: 24 });
     expect(catalog.body.templates).toContainEqual(expect.objectContaining({
       templateId: 'ashfang',

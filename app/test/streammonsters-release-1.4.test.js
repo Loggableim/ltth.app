@@ -170,45 +170,31 @@ describe('Stream Monsters 1.4 creator and overlay release', () => {
     expect(queue.snapshot().map(entry => entry.data.marker || entry.data.quest)).toEqual(['new']);
   });
 
-  test('exposes the guided runtime wizard, dynamic rules and creator audio controls', () => {
+  test('exposes Rules v5 controls while retiring the guided Art Lab runtime wizard', () => {
     const source = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
 
     for (const id of [
-      'runtimeWizard',
-      'runtimeAdapters',
-      'runtimeRecommendation',
-      'runtimeProfile',
-      'runtimeBackend',
-      'runtimeDevice',
-      'runtimeDriver',
-      'runtimeVram',
-      'runtimeDisk',
-      'runtimeLicense',
-      'runtimeDownload',
-      'runtimeProgress',
-      'runtimeInstall',
-      'runtimeCancel',
-      'runtimeResume',
-      'runtimeVerify',
-      'runtimeSmokeTest',
-      'runtimeRecovery',
       'activePrefix',
       'activeHatchDuration',
-      'providerFallback',
-      'overlayMuted',
-      'overlayVolume'
+      'eggExpiry',
+      'seasonDuration',
+      'rendererQuality',
+      'notificationDuration',
+      'aliasEggsEnabled',
+      'aliasEggsDisabled',
+      'audioMasterVolume',
+      'audioUiVolume',
+      'audioEggVolume',
+      'audioBattleVolume',
+      'audioRewardVolume'
     ]) {
       expect(source).toContain(`id="${id}"`);
     }
 
-    expect(source).toContain('/api/streammonsters/local-runtime/install');
-    expect(source).toContain('/api/streammonsters/local-runtime/verify');
-    expect(source).toContain("method:'DELETE'");
-    expect(source).toContain('streammonsters-runtime-job-id');
-    expect(source).toContain('https://www.nvidia.com/en-us/geforce/drivers/');
-    expect(source).toContain('https://www.intel.com/content/www/us/en/download-center/home.html');
-    expect(source).toContain('https://www.amd.com/en/support/download/drivers.html');
-    expect(source).toContain('256×256');
+    expect(source).not.toContain('id="runtimeWizard"');
+    expect(source).not.toContain('/api/streammonsters/local-runtime/');
+    expect(source).not.toContain('/api/streammonsters/pool');
+    expect(source).not.toContain('/api/streamalchemy/providers/status');
     expect(source).toContain('state.gcce?.commandPrefix');
     expect(source).toContain('state.config?.hatchDurationMs');
     expect(source).toContain('await window.i18n.init()');
@@ -470,15 +456,14 @@ describe('Stream Monsters 1.4 creator and overlay release', () => {
     expect(JSON.stringify(text)).not.toMatch(/Stream[\s-]?Alchemy/i);
   });
 
-  test('uses localized runtime and chat codes without rendering backend prose', () => {
+  test('uses localized Rules v5 controls and chat codes without rendering backend prose', () => {
     const uiSource = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
     const overlaySource = fs.readFileSync(path.join(pluginDir, 'streammonsters-overlay.html'), 'utf8');
 
-    expect(uiSource).toContain('RUNTIME_REASON_KEYS');
-    expect(uiSource).toContain('RUNTIME_PHASE_KEYS');
-    expect(uiSource).toContain('PROVIDER_STATE_KEYS');
-    expect(uiSource).not.toContain('recommendation.reason ||');
-    expect(uiSource).not.toContain('state:job.state');
+    expect(uiSource).toContain('plugins.streamalchemy.ui.monsters.eggExpiry');
+    expect(uiSource).toContain('plugins.streamalchemy.ui.monsters.seasonDuration');
+    expect(uiSource).toContain('plugins.streamalchemy.ui.monsters.rendererQuality');
+    expect(uiSource).toContain('plugins.streamalchemy.ui.monsters.serverAudio');
     expect(overlaySource).toContain('chatMessageKey');
     expect(overlaySource).not.toContain('data?.result?.message');
     expect(uiSource).toContain('apiErrorText');
@@ -505,8 +490,8 @@ describe('Stream Monsters 1.4 creator and overlay release', () => {
     }
     expect(overlayRuntime.elementKey('backend prose')).toBe('unknown');
     expect(overlayRuntime.personalityKey('backend prose')).toBe('unknown');
-    expect(uiSource).toContain('elementName(entry.element)');
-    expect(uiSource).toContain('variantName(entry.variant)');
+    expect(uiSource).toContain('elementName(egg.element)');
+    expect(uiSource).toContain('variantName(egg.variant)');
     expect(uiSource).toContain('personalityName(monster.personality)');
     expect(overlaySource).toContain('battleAdvantageSuffix');
     expect(overlaySource).not.toContain('Vorteil ${battleAdvantageName}');

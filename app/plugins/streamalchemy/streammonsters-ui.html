@@ -224,21 +224,21 @@
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.visualPack">Visual pack</span><select id="visualPack">
             <option value="furry" data-i18n="plugins.streamalchemy.ui.monsters.visualPackFurry">Furry</option>
           </select></label>
-          <label><span>Ei-Ablaufzeit</span><select id="eggExpiry">
-            <option value="21600000">6 Stunden</option><option value="43200000">12 Stunden</option>
-            <option value="86400000">24 Stunden</option><option value="172800000">48 Stunden</option>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.eggExpiry">Egg expiry</span><select id="eggExpiry">
+            <option value="21600000" data-i18n="plugins.streamalchemy.ui.monsters.duration6Hours">6 hours</option><option value="43200000" data-i18n="plugins.streamalchemy.ui.monsters.duration12Hours">12 hours</option>
+            <option value="86400000" data-i18n="plugins.streamalchemy.ui.monsters.duration24Hours">24 hours</option><option value="172800000" data-i18n="plugins.streamalchemy.ui.monsters.duration48Hours">48 hours</option>
           </select></label>
-          <label><span>Saisondauer</span><select id="seasonDuration">
-            <option value="7">7 Tage</option><option value="14">14 Tage</option>
-            <option value="28">28 Tage</option><option value="60">60 Tage</option><option value="90">90 Tage</option>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.seasonDuration">Season duration</span><select id="seasonDuration">
+            <option value="7" data-i18n="plugins.streamalchemy.ui.monsters.duration7Days">7 days</option><option value="14" data-i18n="plugins.streamalchemy.ui.monsters.duration14Days">14 days</option>
+            <option value="28" data-i18n="plugins.streamalchemy.ui.monsters.duration28Days">28 days</option><option value="60" data-i18n="plugins.streamalchemy.ui.monsters.duration60Days">60 days</option><option value="90" data-i18n="plugins.streamalchemy.ui.monsters.duration90Days">90 days</option>
           </select></label>
-          <label><span>Renderer-Qualität</span><select id="rendererQuality">
-            <option value="auto">Auto</option><option value="high">Hoch</option>
-            <option value="medium">Mittel</option><option value="low">Niedrig</option>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.rendererQuality">Renderer quality</span><select id="rendererQuality">
+            <option value="auto" data-i18n="plugins.streamalchemy.ui.monsters.rendererAuto">Auto</option><option value="high" data-i18n="plugins.streamalchemy.ui.monsters.rendererHigh">High</option>
+            <option value="medium" data-i18n="plugins.streamalchemy.ui.monsters.rendererMedium">Medium</option><option value="low" data-i18n="plugins.streamalchemy.ui.monsters.rendererLow">Low</option>
           </select></label>
-          <label><span>Benachrichtigungsdauer (Sekunden)</span><input id="notificationDuration" type="number" min="8" max="30" value="12"></label>
-          <label><span>Aktive Eier-Aliase</span><input id="aliasEggsEnabled" value="eier, eierliste, meineeier"></label>
-          <label><span>Deaktivierte Eier-Aliase</span><input id="aliasEggsDisabled" value="eggs"></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.notificationDuration">Notification duration (seconds)</span><input id="notificationDuration" type="number" min="8" max="30" value="12"></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.aliasEggsEnabled">Enabled egg aliases</span><input id="aliasEggsEnabled" value="eier, eierliste, meineeier"></label>
+          <label><span data-i18n="plugins.streamalchemy.ui.monsters.aliasEggsDisabled">Disabled egg aliases</span><input id="aliasEggsDisabled" value="eggs"></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.safeZoneLayout">Safe-zone format</span><select id="safeZoneLayout">
             <option value="landscape" data-i18n="plugins.streamalchemy.ui.monsters.layoutLandscape">Landscape 16:9</option>
             <option value="portrait" data-i18n="plugins.streamalchemy.ui.monsters.layoutPortrait">Portrait 9:16</option>
@@ -256,13 +256,13 @@
           </select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.portraitScale">Portrait scale</span><input id="portraitScale" type="number" min="70" max="130" value="100"></label>
         </div>
-        <h3>Server-Audio</h3>
+        <h3 data-i18n="plugins.streamalchemy.ui.monsters.serverAudio">Server audio</h3>
         <div class="control-grid">
-          <label class="check-row"><input id="audioMasterEnabled" type="checkbox" checked><span>Master</span></label><label><span>Master-Lautstärke</span><input id="audioMasterVolume" type="number" min="0" max="1" step="0.05" value="1"></label>
-          <label class="check-row"><input id="audioUiEnabled" type="checkbox" checked><span>UI</span></label><label><span>UI-Lautstärke</span><input id="audioUiVolume" type="number" min="0" max="1" step="0.05" value="0.8"></label>
-          <label class="check-row"><input id="audioEggEnabled" type="checkbox" checked><span>Ei</span></label><label><span>Ei-Lautstärke</span><input id="audioEggVolume" type="number" min="0" max="1" step="0.05" value="0.9"></label>
-          <label class="check-row"><input id="audioBattleEnabled" type="checkbox" checked><span>Kampf</span></label><label><span>Kampf-Lautstärke</span><input id="audioBattleVolume" type="number" min="0" max="1" step="0.05" value="1"></label>
-          <label class="check-row"><input id="audioRewardEnabled" type="checkbox" checked><span>Belohnung</span></label><label><span>Belohnungs-Lautstärke</span><input id="audioRewardVolume" type="number" min="0" max="1" step="0.05" value="0.9"></label>
+          <label class="check-row"><input id="audioMasterEnabled" type="checkbox" checked><span data-i18n="plugins.streamalchemy.ui.monsters.audioMaster">Master</span></label><label><span data-i18n="plugins.streamalchemy.ui.monsters.audioMasterVolume">Master volume</span><input id="audioMasterVolume" type="number" min="0" max="1" step="0.05" value="1"></label>
+          <label class="check-row"><input id="audioUiEnabled" type="checkbox" checked><span data-i18n="plugins.streamalchemy.ui.monsters.audioUi">UI</span></label><label><span data-i18n="plugins.streamalchemy.ui.monsters.audioUiVolume">UI volume</span><input id="audioUiVolume" type="number" min="0" max="1" step="0.05" value="0.8"></label>
+          <label class="check-row"><input id="audioEggEnabled" type="checkbox" checked><span data-i18n="plugins.streamalchemy.ui.monsters.audioEgg">Egg</span></label><label><span data-i18n="plugins.streamalchemy.ui.monsters.audioEggVolume">Egg volume</span><input id="audioEggVolume" type="number" min="0" max="1" step="0.05" value="0.9"></label>
+          <label class="check-row"><input id="audioBattleEnabled" type="checkbox" checked><span data-i18n="plugins.streamalchemy.ui.monsters.audioBattle">Battle</span></label><label><span data-i18n="plugins.streamalchemy.ui.monsters.audioBattleVolume">Battle volume</span><input id="audioBattleVolume" type="number" min="0" max="1" step="0.05" value="1"></label>
+          <label class="check-row"><input id="audioRewardEnabled" type="checkbox" checked><span data-i18n="plugins.streamalchemy.ui.monsters.audioReward">Reward</span></label><label><span data-i18n="plugins.streamalchemy.ui.monsters.audioRewardVolume">Reward volume</span><input id="audioRewardVolume" type="number" min="0" max="1" step="0.05" value="0.9"></label>
         </div>
         <div id="safeZonePreview" class="safe-zone" role="img" aria-label="Overlay safe-zone preview" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.safeZonePreviewLabel">
           <div id="safeLogo" class="safe-box" data-i18n="plugins.streamalchemy.ui.monsters.safeZoneLogo">Logo</div>
@@ -648,7 +648,10 @@
   };
   const loadMonsterCatalog = async (userId = '') => {
     const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
-    const payload = await request(`/api/streammonsters/monster-catalog${query}`);
+    const route = userId
+      ? '/api/streammonsters/creator-catalog'
+      : '/api/streammonsters/monster-catalog';
+    const payload = await request(`${route}${query}`);
     renderDex(payload);
     return payload;
   };

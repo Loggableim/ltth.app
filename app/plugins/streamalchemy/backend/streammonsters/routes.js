@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 const { createAdminAuth } = require('../../../../modules/admin-auth');
 const { TEMPLATE_CATALOG, getTemplate } = require('./catalog');
@@ -14,7 +15,6 @@ const ART_LAB_ROUTES = Object.freeze([
   ['POST', '/api/streamalchemy/local-model/install'],
   ['GET', '/api/streamalchemy/system-analysis'],
   ['POST', '/api/streamalchemy/local-generation/test'],
-  ['GET', '/api/streammonsters/art/:filename'],
   ['GET', '/api/streammonsters/pool'],
   ['POST', '/api/streammonsters/pool'],
   ['POST', '/api/streammonsters/pool/prepare'],
@@ -31,6 +31,7 @@ class StreamMonstersRoutes {
   constructor({
     api,
     pluginDir,
+    dataDir,
     store,
     engine,
     progression = null,
@@ -46,6 +47,7 @@ class StreamMonstersRoutes {
   }) {
     this.api = api;
     this.pluginDir = pluginDir;
+    this.dataDir = dataDir || pluginDir;
     this.store = store;
     this.engine = engine;
     this.progression = progression;
@@ -67,10 +69,35 @@ class StreamMonstersRoutes {
     this.api.registerRoute('GET', '/streammonsters/overlay', sendOverlay);
     this.api.registerRoute('GET', '/streamalchemy/ui', sendCreator);
     this.api.registerRoute('GET', '/streamalchemy/overlay', sendOverlay);
+    this.api.registerRoute('GET', '/plugins/streamalchemy/ui.html', sendCreator);
+    this.api.registerRoute('GET', '/plugins/streamalchemy/ui-old.html', sendCreator);
+    this.api.registerRoute('GET', '/plugins/streamalchemy/overlay.html', sendOverlay);
     ART_LAB_ROUTES.forEach(([method, routePath]) => {
       this.api.registerRoute(method, routePath, (req, res) => (
         res.status(410).json({ error: 'art_lab_removed' })
       ));
+    });
+    this.api.registerRoute('GET', '/api/streammonsters/art/:filename', (req, res) => {
+      const filename = String(req.params?.filename || '');
+      if (!/^kenney-[a-f0-9]{16}\.svg$/.test(filename)) {
+        return res.status(410).json({ error: 'art_lab_removed' });
+      }
+      const artDir = path.resolve(this.dataDir, 'streammonsters', 'monster-art');
+      const absolutePath = path.resolve(artDir, filename);
+      let stat = null;
+      try {
+        stat = fs.lstatSync(absolutePath);
+      } catch (_) {
+        return res.status(404).json({ error: 'kenney_art_not_found' });
+      }
+      if (
+        path.dirname(absolutePath) !== artDir ||
+        !stat.isFile() ||
+        stat.isSymbolicLink()
+      ) {
+        return res.status(404).json({ error: 'kenney_art_not_found' });
+      }
+      return res.sendFile(absolutePath);
     });
     this.api.registerRoute('GET', '/api/streammonsters/state', (req, res) => {
       const config = this.configProvider.getConfig().streamMonsters;
@@ -120,6 +147,21 @@ class StreamMonstersRoutes {
         gcce: this.gcceStateProvider(),
         metrics: this.engine.streamKey ? this.store.getStreamMetrics(this.engine.streamKey) : null
       });
+    }));
+    this.api.registerRoute('GET', '/api/streammonsters/creator-catalog', this.protectAdmin((req, res) => {
+      const requestedUserId = String(req.query?.userId || '').trim();
+      if (!requestedUserId) {
+        return res.status(400).json({ error: 'viewer_id_required' });
+      }
+      const userId = this.store.resolveKnownViewerId?.(requestedUserId) || requestedUserId;
+      const catalog = this.collection?.getCatalogState?.(userId) || {
+        userId,
+        templates: [],
+        dex: { owned: 0, total: TEMPLATE_CATALOG.length },
+        essence: [],
+        cosmetics: []
+      };
+      return res.json({ success: true, ...catalog, userId });
     }));
     this.api.registerRoute('GET', '/api/streammonsters/monster-catalog', (req, res) => {
       res.json({

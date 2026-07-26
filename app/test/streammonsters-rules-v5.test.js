@@ -2,6 +2,7 @@ const Database = require('better-sqlite3');
 const { EventEmitter } = require('events');
 const fs = require('fs');
 const { JSDOM } = require('jsdom');
+const os = require('os');
 const path = require('path');
 const StreamAlchemyPlugin = require('../plugins/streamalchemy');
 const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
@@ -23,7 +24,6 @@ const ART_LAB_ROUTES = [
   ['POST', '/api/streamalchemy/local-model/install'],
   ['GET', '/api/streamalchemy/system-analysis'],
   ['POST', '/api/streamalchemy/local-generation/test'],
-  ['GET', '/api/streammonsters/art/:filename'],
   ['GET', '/api/streammonsters/pool'],
   ['POST', '/api/streammonsters/pool'],
   ['POST', '/api/streammonsters/pool/prepare'],
@@ -52,7 +52,7 @@ function response() {
   };
 }
 
-function createRouteSubject() {
+function createRouteSubject({ dataDir = os.tmpdir() } = {}) {
   const sqlite = new Database(':memory:');
   const store = new StreamMonstersDatabase(sqlite);
   store.initialize();
@@ -80,6 +80,7 @@ function createRouteSubject() {
       emit: jest.fn()
     },
     pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy'),
+    dataDir,
     store,
     engine: {
       streamKey: 'stream-secret',
@@ -319,6 +320,86 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
     expect(res.payload).toEqual({ error: 'art_lab_removed' });
   });
 
+  test('serves only generated Kenney fallback art and tombstones other legacy art files', () => {
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-v5-art-'));
+    const artDir = path.join(dataDir, 'streammonsters', 'monster-art');
+    const filename = 'kenney-0123456789abcdef.svg';
+    fs.mkdirSync(artDir, { recursive: true });
+    fs.writeFileSync(path.join(artDir, filename), '<svg/>', 'utf8');
+    const { find } = createRouteSubject({ dataDir });
+    const handler = find('GET', '/api/streammonsters/art/:filename');
+
+    const served = response();
+    handler({ params: { filename } }, served);
+    expect(served.sendFile).toHaveBeenCalledWith(path.join(artDir, filename));
+
+    const retired = response();
+    handler({ params: { filename: 'art-lab-output.png' } }, retired);
+    expect(retired.statusCode).toBe(410);
+    expect(retired.payload).toEqual({ error: 'art_lab_removed' });
+  });
+
+  test('ships no executable Art Lab modules and maps legacy UI URLs to the creator UI', () => {
+    const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+    for (const relativePath of [
+      'ui.html',
+      'ui-old.html',
+      'overlay.html',
+      'backend/routes.js',
+      'backend/generation-service.js',
+      'backend/local-model-installer.js',
+      'backend/providers/local-comfy-provider.js',
+      'backend/streammonsters/art-pool-service.js',
+      'backend/streammonsters/generation-pool.js',
+      'backend/streammonsters/managed-runtime-installer.js'
+    ]) {
+      expect(fs.existsSync(path.join(pluginDir, relativePath))).toBe(false);
+    }
+
+    const { find } = createRouteSubject();
+    for (const legacyPath of [
+      '/streamalchemy/ui',
+      '/plugins/streamalchemy/ui.html',
+      '/plugins/streamalchemy/ui-old.html'
+    ]) {
+      const res = response();
+      find('GET', legacyPath)({}, res);
+      expect(res.sendFile).toHaveBeenCalledWith(path.join(pluginDir, 'streammonsters-ui.html'));
+    }
+
+    const overlay = response();
+    find('GET', '/plugins/streamalchemy/overlay.html')({}, overlay);
+    expect(overlay.sendFile).toHaveBeenCalledWith(
+      path.join(pluginDir, 'streammonsters-overlay.html')
+    );
+  });
+
+  test.each(['de', 'en', 'es', 'fr'])(
+    'localizes every Rules v5 creator control in %s',
+    locale => {
+      const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+      const translations = JSON.parse(fs.readFileSync(
+        path.join(pluginDir, 'locales', `${locale}.json`),
+        'utf8'
+      )).plugins.streamalchemy.ui.monsters;
+      const source = fs.readFileSync(path.join(pluginDir, 'streammonsters-ui.html'), 'utf8');
+      const keys = [
+        'eggExpiry', 'duration6Hours', 'duration12Hours', 'duration24Hours', 'duration48Hours',
+        'seasonDuration', 'duration7Days', 'duration14Days', 'duration28Days', 'duration60Days',
+        'duration90Days', 'rendererQuality', 'rendererAuto', 'rendererHigh', 'rendererMedium',
+        'rendererLow', 'notificationDuration', 'aliasEggsEnabled', 'aliasEggsDisabled',
+        'serverAudio', 'audioMaster', 'audioMasterVolume', 'audioUi', 'audioUiVolume',
+        'audioEgg', 'audioEggVolume', 'audioBattle', 'audioBattleVolume', 'audioReward',
+        'audioRewardVolume'
+      ];
+      for (const key of keys) {
+        expect(translations[key]).toEqual(expect.any(String));
+        expect(translations[key].trim()).not.toBe('');
+        expect(source).toContain(`plugins.streamalchemy.ui.monsters.${key}`);
+      }
+    }
+  );
+
   test('keeps the public state aggregate-only and protects viewer creator state with admin auth', async () => {
     const { store, find } = createRouteSubject();
     store.createEgg({
@@ -365,6 +446,28 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
       expect.objectContaining({ egg_id: 'private-egg', user_id: 'viewer-private' })
     ]);
     expect(allowed.payload.config.creatorName).toBe('creator-secret');
+
+    const catalogDenied = response();
+    await find('GET', '/api/streammonsters/creator-catalog')({
+      ip: '203.0.113.10',
+      socket: { remoteAddress: '203.0.113.10' },
+      headers: {},
+      query: { userId: 'viewer-private' }
+    }, catalogDenied);
+    expect(catalogDenied.statusCode).toBe(403);
+
+    const catalogAllowed = response();
+    await find('GET', '/api/streammonsters/creator-catalog')({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      query: { userId: 'viewer-private' }
+    }, catalogAllowed);
+    expect(catalogAllowed.payload).toEqual(expect.objectContaining({
+      success: true,
+      userId: 'viewer-private',
+      dex: { owned: 1, total: 24 }
+    }));
   });
 
   test('always chooses bundled Furry and uses Kenney only when the bundled file is missing', () => {
@@ -507,7 +610,7 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
             ? { success: true, gifts: [], total: 0, offset: 0, limit: 40 }
             : url === '/api/streammonsters/gift-mappings'
               ? { success: true, mappings: [] }
-              : url === '/api/streammonsters/monster-catalog'
+              : url.startsWith('/api/streammonsters/creator-catalog')
                 ? { success: true, templates: [], dex: { owned: 0, total: 24 } }
                 : url.startsWith('/api/streammonsters/leaderboard')
                   ? { success: true, entries: [] }
@@ -559,6 +662,9 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
       '/api/streammonsters/pool',
       '/api/streammonsters/local-runtime/status'
     ]));
+    expect(requests.map(entry => entry.url)).toContain(
+      '/api/streammonsters/creator-catalog?userId=creator'
+    );
 
     dom.window.document.getElementById('seasonDuration').value = '60';
     dom.window.document.getElementById('rendererQuality').value = 'low';

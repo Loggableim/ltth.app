@@ -31,9 +31,9 @@ describe('Stream Monsters creator UI presentation controls', () => {
     for (const duration of ['30000', '60000', '120000', '300000', '600000', '1800000']) {
       expect(html).toContain(`value="${duration}"`);
     }
-    for (const pack of ['furry', 'art_lab', 'kenney']) {
-      expect(html).toContain(`value="${pack}"`);
-    }
+    expect(html).toContain('value="furry"');
+    expect(html).not.toContain('value="art_lab"');
+    expect(html).not.toContain('value="kenney"');
     for (const scene of ['spawn', 'hatch', 'attack', 'defense', 'special']) {
       expect(html).toContain(`value="${scene}"`);
     }
@@ -43,7 +43,7 @@ describe('Stream Monsters creator UI presentation controls', () => {
     expect(html).toContain('buildConfigPayload');
     expect(html).toContain('safeZoneCollisions');
     expect(html).toContain('buildDexSlots');
-    expect(html).toContain('/api/streammonsters/monster-catalog');
+    expect(html).toContain('/api/streammonsters/creator-catalog');
   });
 
   test('provides keyboard and live-region semantics for creator feedback', () => {

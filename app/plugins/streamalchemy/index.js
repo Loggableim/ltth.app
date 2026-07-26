@@ -139,6 +139,7 @@ class StreamAlchemyPlugin {
     this.streamMonstersRoutes = new StreamMonstersRoutes({
       api: this.api,
       pluginDir: this.pluginDir,
+      dataDir: this.getPluginDataDir(),
       store: this.streamMonstersStore,
       engine: this.streamMonstersEngine,
       progression: this.streamMonstersProgression,
