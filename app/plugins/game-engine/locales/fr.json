@@ -1277,6 +1277,7 @@
             "cell_piece": "Colonne {column}, ligne {row} : {owner}, pion {color}",
             "current_turn": "À {player}{columnText}",
             "matchmaking_countdown": "Plus que {seconds} s pour défier",
+            "matchmaking_other_searches": "{count} autres recherches de spectateurs",
             "matchmaking_prompt": "{player} cherche un adversaire. Écrivez connect4 pour jouer.",
             "matchmaking_title": "Défi Connect4 !",
             "draw": "🤝 Match nul !",

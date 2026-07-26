@@ -1,4 +1,6 @@
 const GameEnginePlugin = require('../main');
+const Database = require('better-sqlite3');
+const GameEngineDatabase = require('../backend/database');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -1012,15 +1014,46 @@ describe('GameEnginePlugin interactive controller integration', () => {
     }
   );
 
-  test('opens a persistent Connect4 matchmaking challenge with a same-origin avatar source', async () => {
+  test('routes every Connect4 start through FIFO matchmaking and preserves opened or matched responses', async () => {
     const { plugin } = createPlugin();
     plugin.interactiveController = {
-      recoverConnect4Challenge: jest.fn(() => null),
-      openConnect4Challenge: jest.fn(() => ({
-        success: true,
-        challenge: { challengeId: 41, expiresAtMs: Date.now() + 30000 }
-      }))
+      startOrJoinConnect4Matchmaking: jest.fn()
+        .mockReturnValueOnce({ success: true, action: 'opened', challenge: { challengeId: 41, status: 'open', expiresAtMs: Date.now() + 30000 } })
+        .mockReturnValueOnce({ success: true, action: 'matched', challenge: { challengeId: 41, status: 'claimed' }, sessionId: 77 })
+        .mockReturnValueOnce({ success: true, action: 'opened', challenge: { challengeId: 42, status: 'open', expiresAtMs: Date.now() + 30000 } })
+        .mockReturnValueOnce({ success: true, action: 'matched', challenge: { challengeId: 42, status: 'claimed' }, sessionId: 78 })
     };
+
+    const results = [];
+    for (const [userId, username] of [
+      ['viewer-one', 'Viewer One'], ['viewer-two', 'Viewer Two'],
+      ['viewer-three', 'Viewer Three'], ['viewer-four', 'Viewer Four']
+    ]) {
+      results.push(await plugin.handleConnect4StartCommand([], {
+        userId,
+        username,
+        profilePictureUrl: 'https://p16-sign-va.tiktokcdn.com/avatar.webp'
+      }));
+    }
+
+    expect(results.map(result => result.action)).toEqual(['opened', 'matched', 'opened', 'matched']);
+    expect(results[0]).toMatchObject({ success: true, challenge: true, challengeId: 41, displayOverlay: true });
+    expect(results[1]).toMatchObject({ success: true, accepted: true, sessionId: 77, displayOverlay: true });
+    expect(results[2]).toMatchObject({ success: true, challenge: true, challengeId: 42, displayOverlay: true });
+    expect(results[3]).toMatchObject({ success: true, accepted: true, sessionId: 78, displayOverlay: true });
+    expect(plugin.interactiveController.startOrJoinConnect4Matchmaking).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      participantId: 'viewer-one',
+      participantDisplayName: 'Viewer One',
+      participantAvatarSource: expect.stringMatching(/^\/api\/game-engine\/avatar\?url=/),
+      triggerType: 'matchmaking_accept',
+      triggerValue: 'connect4'
+    }));
+    expect(plugin.interactiveController.startOrJoinConnect4Matchmaking).toHaveBeenCalledTimes(4);
+  });
+
+  test('rejects Connect4 starts while the FIFO controller is unavailable without starting a legacy game', async () => {
+    const { plugin } = createPlugin();
+    plugin.handleGameStart = jest.fn(() => ({ success: true, sessionId: 99 }));
 
     const result = await plugin.handleConnect4StartCommand([], {
       userId: 'viewer-one',
@@ -1028,38 +1061,106 @@ describe('GameEnginePlugin interactive controller integration', () => {
       profilePictureUrl: 'https://p16-sign-va.tiktokcdn.com/avatar.webp'
     });
 
-    expect(result).toMatchObject({ success: true, challenge: true });
-    expect(plugin.interactiveController.openConnect4Challenge).toHaveBeenCalledWith({
-      openerId: 'viewer-one',
-      openerDisplayName: 'Viewer One',
-      openerAvatarSource: expect.stringMatching(/^\/api\/game-engine\/avatar\?url=/)
+    expect(result).toMatchObject({
+      success: false,
+      error: 'interactive_controller_unavailable',
+      displayOverlay: true
     });
+    expect(plugin.handleGameStart).not.toHaveBeenCalled();
   });
 
-  test('accepts the first eligible Connect4 challenger and starts a two-viewer game', async () => {
+  test('clears only the claimed matchmaking timer while later searches remain scheduled', () => {
+    const { plugin } = createPlugin();
+    plugin._scheduleConnect4MatchmakingExpiry({ challengeId: 41, status: 'open', expiresAtMs: Date.now() + 30000 });
+    plugin._scheduleConnect4MatchmakingExpiry({ challengeId: 42, status: 'open', expiresAtMs: Date.now() + 30000 });
+
+    expect(plugin.connect4MatchmakingTimeouts).toBeInstanceOf(Map);
+    expect(plugin.connect4MatchmakingTimeouts.has(41)).toBe(true);
+    expect(plugin.connect4MatchmakingTimeouts.has(42)).toBe(true);
+
+    plugin._clearConnect4MatchmakingExpiry(41);
+
+    expect(plugin.connect4MatchmakingTimeouts.has(41)).toBe(false);
+    expect(plugin.connect4MatchmakingTimeouts.has(42)).toBe(true);
+    plugin._clearConnect4MatchmakingExpiry(42);
+  });
+
+  test('expires independently scheduled searches into their own streamer fallbacks', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(1000000);
     const { plugin } = createPlugin();
     plugin.interactiveController = {
-      recoverConnect4Challenge: jest.fn(() => ({
-        challengeId: 41,
-        status: 'open',
-        openerId: 'viewer-one',
-        openerDisplayName: 'Viewer One',
-        openerAvatarSource: '/api/game-engine/avatar?url=one'
-      })),
-      acceptAndStartConnect4Challenge: jest.fn(() => ({ success: true, started: true, sessionId: 77 }))
+      beginExpiredConnect4Fallback: jest.fn(challengeId => ({ success: true, challenge: { challengeId, status: 'fallback_pending' } })),
+      startPendingConnect4Fallback: jest.fn(challengeId => ({ success: true, sessionId: challengeId }))
     };
 
-    const result = await plugin.handleConnect4StartCommand([], {
-      userId: 'viewer-two',
-      username: 'Viewer Two',
-      profilePictureUrl: 'https://p16-sign-va.tiktokcdn.com/avatar.webp'
-    });
+    plugin._scheduleConnect4MatchmakingExpiry({ challengeId: 41, status: 'open', expiresAtMs: 1030000 });
+    plugin._scheduleConnect4MatchmakingExpiry({ challengeId: 42, status: 'open', expiresAtMs: 1040000 });
+    jest.advanceTimersByTime(30000);
+    await Promise.resolve();
+    expect(plugin.interactiveController.startPendingConnect4Fallback).toHaveBeenCalledWith(41, 'LiveHost');
+    expect(plugin.interactiveController.startPendingConnect4Fallback).toHaveBeenCalledTimes(1);
+    jest.advanceTimersByTime(10000);
+    await Promise.resolve();
+    expect(plugin.interactiveController.startPendingConnect4Fallback).toHaveBeenLastCalledWith(42, 'LiveHost');
+    expect(plugin.interactiveController.startPendingConnect4Fallback).toHaveBeenCalledTimes(2);
+    jest.useRealTimers();
+  });
 
-    expect(result).toMatchObject({ success: true, started: true, sessionId: 77 });
-    expect(plugin.interactiveController.acceptAndStartConnect4Challenge).toHaveBeenCalledWith(expect.objectContaining({
-      challengeId: 41,
-      participantId: 'viewer-two'
-    }));
+  test('recovers every unexpired viewer search and starts only elapsed rows as fallbacks', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(1000000);
+    const { plugin } = createPlugin();
+    const openFirst = { challengeId: 51, status: 'open', expiresAtMs: 1030000 };
+    const openSecond = { challengeId: 52, status: 'open', expiresAtMs: 1040000 };
+    const elapsed = { challengeId: 53, status: 'open', expiresAtMs: 999999 };
+    plugin.interactiveController = {
+      listRecoverableConnect4Challenges: jest.fn(() => [openFirst, openSecond, elapsed]),
+      beginExpiredConnect4Fallback: jest.fn(challengeId => ({ success: true, challenge: { challengeId, status: 'fallback_pending' } })),
+      startPendingConnect4Fallback: jest.fn(challengeId => ({ success: true, sessionId: challengeId }))
+    };
+
+    const recovered = plugin._recoverConnect4MatchmakingChallenges();
+    await Promise.all(recovered.filter(result => result?.then));
+
+    expect(plugin.connect4MatchmakingTimeouts.has(51)).toBe(true);
+    expect(plugin.connect4MatchmakingTimeouts.has(52)).toBe(true);
+    expect(plugin.interactiveController.beginExpiredConnect4Fallback).toHaveBeenCalledWith(53);
+    expect(plugin.interactiveController.startPendingConnect4Fallback).toHaveBeenCalledWith(53, 'LiveHost');
+    plugin._clearConnect4MatchmakingExpiry(51);
+    plugin._clearConnect4MatchmakingExpiry(52);
+    jest.useRealTimers();
+  });
+
+  test('drains a capacity-blocked fallback when an interactive session finishes without pairing it to a later viewer', async () => {
+    jest.useFakeTimers();
+    const { plugin } = createPlugin();
+    let pending = true;
+    let capacityAvailable = false;
+    plugin.interactiveController = {
+      listRecoverableConnect4Challenges: jest.fn(() => pending
+        ? [{ challengeId: 61, status: 'fallback_pending', openerId: 'waiting-viewer' }]
+        : []),
+      beginExpiredConnect4Fallback: jest.fn(() => ({ success: true, challenge: { challengeId: 61, status: 'fallback_pending' } })),
+      startPendingConnect4Fallback: jest.fn(challengeId => {
+        if (!capacityAvailable) return { success: false, error: 'interactive_session_limit' };
+        pending = false;
+        return { success: true, action: 'fallback_started', sessionId: challengeId };
+      })
+    };
+    plugin.endGame = jest.fn();
+
+    await expect(plugin._expireConnect4MatchmakingChallenge({ challengeId: 61, status: 'open' }))
+      .resolves.toMatchObject({ success: false, error: 'interactive_session_limit' });
+    expect(plugin.connect4MatchmakingDrainTimeout).not.toBeNull();
+
+    capacityAvailable = true;
+    plugin._finishInteractiveGame({ sessionId: 9, winner: null, reason: 'cancelled', gameResult: null });
+
+    expect(plugin.interactiveController.startPendingConnect4Fallback).toHaveBeenCalledTimes(2);
+    expect(plugin.interactiveController.startPendingConnect4Fallback).toHaveBeenLastCalledWith(61, 'LiveHost');
+    expect(plugin.connect4MatchmakingDrainTimeout).toBeNull();
+    jest.useRealTimers();
   });
 
   test('keeps a configured bare c4 start alias distinct from c4 column moves in fallback chat', () => {
@@ -1123,30 +1224,39 @@ describe('GameEnginePlugin interactive controller integration', () => {
     }));
   });
 
-  test('keeps the opener avatar when a matchmaking challenge falls back to the streamer', () => {
-    const { plugin } = createPlugin();
-    plugin.db = {
-      createSession: jest.fn(() => 91),
-      addPlayer2: jest.fn()
-    };
+  test('keeps the persisted opener avatar through the real pending fallback path', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(100000);
+    const sqlite = new Database(':memory:');
+    const { plugin, api } = createPlugin();
+    plugin.db = new GameEngineDatabase({
+      ...api,
+      getDatabase: () => ({ db: sqlite })
+    }, plugin.logger);
+    plugin.db.initialize();
+    plugin._initializeInteractiveController();
     const avatarSource = '/api/game-engine/avatar?url=https%3A%2F%2Fp16.tiktokcdn.com%2Fopener.webp';
 
-    const created = plugin._createInteractiveGame({
-      gameType: 'connect4',
-      viewerId: 'opener',
-      viewerDisplayName: 'Opener',
-      hostDisplayName: 'Host',
-      participants: [
-        { id: 'opener', displayName: 'Opener', role: 'viewer', avatarSource },
-        { id: 'streamer', displayName: 'Host', role: 'host', avatarSource: '' }
-      ],
-      config: { streamerRole: 'player2', player1Color: '#f00', player2Color: '#ff0' },
-      triggerType: 'matchmaking_timeout',
-      triggerValue: 'connect4'
-    });
+    try {
+      const opened = plugin.interactiveController.startOrJoinConnect4Matchmaking({
+        participantId: 'opener',
+        participantDisplayName: 'Opener',
+        participantAvatarSource: avatarSource
+      });
+      jest.advanceTimersByTime(30000);
+      const started = await plugin._expireConnect4MatchmakingChallenge(opened.challenge);
+      const state = plugin.interactiveController.registry.get(started.sessionId).adapter.getState();
+      const opener = [state.player1, state.player2].find(player => player.username === 'opener');
+      const host = [state.player1, state.player2].find(player => player.username === 'streamer');
 
-    expect(created.game.player1).toMatchObject({ username: 'opener', avatarSource });
-    expect(created.game.player2).toMatchObject({ username: 'streamer', avatarSource: '' });
+      expect(started).toMatchObject({ success: true, action: 'fallback_started' });
+      expect(opener).toMatchObject({ username: 'opener', role: 'viewer', avatarSource });
+      expect(host).toMatchObject({ username: 'streamer', role: 'streamer', avatarSource: '' });
+    } finally {
+      plugin.interactiveController.destroy();
+      sqlite.close();
+      jest.useRealTimers();
+    }
   });
 
   test('expires old matchmaking chat identities while still suppressing a duplicate event', () => {
@@ -1159,6 +1269,29 @@ describe('GameEnginePlugin interactive controller integration', () => {
     expect(plugin._isDuplicateConnect4MatchmakingEvent({ msgId: 'fresh' })).toBe(false);
     expect(plugin.recentConnect4MatchmakingEvents.has('chat:same')).toBe(false);
     Date.now.mockRestore();
+  });
+
+  test('does not open or match twice for a deduplicated Connect4 chat event', async () => {
+    const { plugin } = createPlugin();
+    plugin.interactiveController = {
+      startOrJoinConnect4Matchmaking: jest.fn(() => ({
+        success: true,
+        action: 'opened',
+        challenge: { challengeId: 64, status: 'open', expiresAtMs: Date.now() + 30000 }
+      }))
+    };
+    const context = {
+      userId: 'deduplicated-viewer',
+      username: 'Deduplicated Viewer',
+      profilePictureUrl: 'https://p16-sign-va.tiktokcdn.com/avatar.webp',
+      rawData: { msgId: 'same-connect4-event' }
+    };
+
+    await plugin.handleConnect4StartCommand([], context);
+    await expect(plugin.handleConnect4StartCommand([], context)).resolves.toMatchObject({ duplicate: true });
+
+    expect(plugin.interactiveController.startOrJoinConnect4Matchmaking).toHaveBeenCalledTimes(1);
+    plugin._clearConnect4MatchmakingExpiry(64);
   });
 
   test('keeps a recovered unexpired challenge scheduled after plugin reload', () => {
@@ -1184,8 +1317,11 @@ describe('GameEnginePlugin interactive controller integration', () => {
     jest.setSystemTime(1040000);
     const { plugin } = createPlugin();
     plugin.interactiveController = {
-      expireConnect4Challenge: jest.fn(() => ({ success: true })),
-      startMatch: jest.fn(() => ({ success: true, sessionId: 72 }))
+      beginExpiredConnect4Fallback: jest.fn(() => ({
+        success: true,
+        challenge: { challengeId: 72, status: 'fallback_pending' }
+      })),
+      startPendingConnect4Fallback: jest.fn(() => ({ success: true, sessionId: 72 }))
     };
     plugin._resolveHostDisplayName = jest.fn(() => 'Reload Host');
     const challenge = {
@@ -1199,16 +1335,67 @@ describe('GameEnginePlugin interactive controller integration', () => {
 
     await expect(plugin._recoverConnect4MatchmakingChallenge(challenge))
       .resolves.toMatchObject({ success: true, sessionId: 72 });
-    expect(plugin.interactiveController.expireConnect4Challenge).toHaveBeenCalledWith(72);
-    expect(plugin.interactiveController.startMatch).toHaveBeenCalledWith(expect.objectContaining({
-      gameType: 'connect4',
-      viewerId: 'reload-opener',
-      participants: [
-        expect.objectContaining({ id: 'reload-opener', role: 'viewer' }),
-        expect.objectContaining({ id: 'streamer', displayName: 'Reload Host', role: 'host' })
-      ],
-      triggerType: 'matchmaking_timeout'
-    }));
+    expect(plugin.interactiveController.beginExpiredConnect4Fallback).toHaveBeenCalledWith(72);
+    expect(plugin.interactiveController.startPendingConnect4Fallback).toHaveBeenCalledWith(72, 'Reload Host');
     jest.useRealTimers();
+  });
+
+  test('starts exactly one streamer fallback when a later matchmaking event promotes the elapsed challenge before its timer callback', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(1000000);
+    const { plugin } = createPlugin();
+    let fallbackPending = false;
+    plugin.interactiveController = {
+      startOrJoinConnect4Matchmaking: jest.fn(() => {
+        fallbackPending = true;
+        return { success: true, action: 'opened' };
+      }),
+      beginExpiredConnect4Fallback: jest.fn(challengeId => fallbackPending
+        ? { success: true, challenge: { challengeId, status: 'fallback_pending' } }
+        : { success: false, error: 'challenge_not_expired' }),
+      startPendingConnect4Fallback: jest.fn(() => ({ success: true, sessionId: 73 }))
+    };
+    plugin._resolveHostDisplayName = jest.fn(() => 'Timer Host');
+    const challenge = {
+      challengeId: 73,
+      status: 'open',
+      openerId: 'elapsed-opener',
+      openerDisplayName: 'Elapsed Opener',
+      expiresAtMs: 1030000
+    };
+
+    plugin._scheduleConnect4MatchmakingExpiry(challenge);
+    jest.advanceTimersByTime(29999);
+    plugin.interactiveController.startOrJoinConnect4Matchmaking({
+      participantId: 'later-viewer', participantDisplayName: 'Later Viewer'
+    });
+    jest.advanceTimersByTime(1);
+    await Promise.resolve();
+
+    expect(plugin.interactiveController.beginExpiredConnect4Fallback).toHaveBeenCalledWith(73);
+    expect(plugin.interactiveController.startPendingConnect4Fallback).toHaveBeenCalledTimes(1);
+    expect(plugin.interactiveController.startPendingConnect4Fallback).toHaveBeenCalledWith(73, 'Timer Host');
+    jest.useRealTimers();
+  });
+
+  test('retains a pending Connect4 fallback at the interactive session limit and never starts an invalidated row', async () => {
+    const { plugin } = createPlugin();
+    const pending = { challengeId: 74, status: 'fallback_pending' };
+    plugin.interactiveController = {
+      beginExpiredConnect4Fallback: jest.fn(() => ({ success: true, challenge: pending })),
+      startPendingConnect4Fallback: jest.fn(() => ({ success: false, error: 'interactive_session_limit' }))
+    };
+
+    await expect(plugin._expireConnect4MatchmakingChallenge({ challengeId: 74, status: 'open' }))
+      .resolves.toEqual({ success: false, error: 'interactive_session_limit' });
+    expect(pending.status).toBe('fallback_pending');
+
+    plugin.interactiveController.beginExpiredConnect4Fallback.mockReturnValue({
+      success: false,
+      error: 'challenge_not_expired'
+    });
+    await expect(plugin._expireConnect4MatchmakingChallenge({ challengeId: 75, status: 'claimed' }))
+      .resolves.toEqual({ success: false, error: 'challenge_not_expired' });
+    expect(plugin.interactiveController.startPendingConnect4Fallback).toHaveBeenCalledTimes(1);
   });
 });

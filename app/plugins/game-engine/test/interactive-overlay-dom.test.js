@@ -237,30 +237,43 @@ function chessState({
 }
 
 describe('interactive overlay countdown DOM', () => {
-  test('Connect4 renders safe proxy avatars inside coloured pieces with accessible cell descriptions', () => {
+  test('Connect4 keeps both safe proxy avatars on a later board state and preserves the coloured disc when one image fails', () => {
     const { dom, listeners } = loadOverlay('connect4.html');
     const state = connect4State();
     state.display.state.player1.avatarSource = '/api/game-engine/avatar?url=https%3A%2F%2Fp16-sign.tiktokcdn-us.com%2Favatar.jpg';
-    state.display.state.player2.avatarSource = 'https://untrusted.example/avatar.jpg';
+    state.display.state.player2.avatarSource = '/api/game-engine/arena/avatar?url=https%3A%2F%2Fp16-sign.tiktokcdn-us.com%2Fviewer.jpg';
+    state.display.state.board[5][1] = 2;
 
     listeners.get('game-engine:interactive-state')(state);
 
+    const newerState = connect4State({ displayRevision: 2 });
+    newerState.display.state.player1.avatarSource = state.display.state.player1.avatarSource;
+    newerState.display.state.player2.avatarSource = state.display.state.player2.avatarSource;
+    newerState.display.state.board[5][1] = 2;
+    listeners.get('game-engine:interactive-state')(newerState);
+
     const redPiece = dom.window.document.querySelector('[data-row="5"][data-col="0"] .piece');
+    const yellowPiece = dom.window.document.querySelector('[data-row="5"][data-col="1"] .piece');
     expect(redPiece).not.toBeNull();
     expect(redPiece.classList.contains('player1')).toBe(true);
-    const avatar = redPiece.querySelector('.piece-avatar');
-    expect(avatar).not.toBeNull();
-    expect(avatar.getAttribute('src')).toContain('/api/game-engine/avatar?url=');
+    expect(yellowPiece.classList.contains('player2')).toBe(true);
+    const redAvatar = redPiece.querySelector('.piece-avatar');
+    const yellowAvatar = yellowPiece.querySelector('.piece-avatar');
+    expect(redAvatar).not.toBeNull();
+    expect(yellowAvatar).not.toBeNull();
+    expect(redAvatar.getAttribute('src')).toContain('/api/game-engine/avatar?url=');
+    expect(yellowAvatar.getAttribute('src')).toContain('/api/game-engine/arena/avatar?url=');
     expect(dom.window.document.querySelector('[data-row="5"][data-col="0"]').getAttribute('aria-label'))
       .toContain('Host');
 
-    avatar.dispatchEvent(new dom.window.Event('error'));
+    redAvatar.dispatchEvent(new dom.window.Event('error'));
     expect(redPiece.isConnected).toBe(true);
     expect(redPiece.querySelector('.piece-avatar')).toBeNull();
+    expect(yellowPiece.querySelector('.piece-avatar')).not.toBeNull();
     dom.window.close();
   });
 
-  test('Connect4 restores a server-timed matchmaking challenge and clears it from newer state', () => {
+  test('Connect4 presents the oldest queued viewer, a server-timed countdown, and two other searches', () => {
     const { dom, listeners, advance } = loadOverlay('connect4.html');
     const state = connect4State({ phase: 'idle', deadline: null, moveNumber: 0 });
     state.connect4Matchmaking = {
@@ -268,7 +281,13 @@ describe('interactive overlay countdown DOM', () => {
       status: 'open',
       openerId: 'opener',
       openerDisplayName: 'Avatar Player',
-      expiresAtMs: 130000
+      expiresAtMs: 130000,
+      pendingCount: 3,
+      pendingChallenges: [
+        { challengeId: 9, openerDisplayName: 'Avatar Player' },
+        { challengeId: 10, openerDisplayName: 'Second Viewer' },
+        { challengeId: 11, openerDisplayName: 'Third Viewer' }
+      ]
     };
 
     listeners.get('game-engine:interactive-state')(state);
@@ -277,6 +296,7 @@ describe('interactive overlay countdown DOM', () => {
     expect(challenge.classList.contains('show')).toBe(true);
     expect(dom.window.document.getElementById('challenger-name').textContent).toBe('Avatar Player');
     expect(timer.textContent).toContain('30');
+    expect(dom.window.document.getElementById('challenge-pending-count').textContent).toContain('2');
 
     advance(2000);
     expect(timer.textContent).toContain('28');
@@ -287,6 +307,7 @@ describe('interactive overlay countdown DOM', () => {
       connect4Matchmaking: null
     });
     expect(challenge.classList.contains('show')).toBe(false);
+    expect(dom.window.document.getElementById('challenge-pending-count').hidden).toBe(true);
     dom.window.close();
   });
 
@@ -317,10 +338,12 @@ describe('interactive overlay countdown DOM', () => {
       t: jest.fn((key, params = {}) => key === 'plugins.game-engine.ui.runtime.connect4.matchmaking_title'
         ? 'Localized challenge'
         : key === 'plugins.game-engine.ui.runtime.connect4.matchmaking_prompt'
-          ? `Localized opponent: ${params.player}`
-          : key === 'plugins.game-engine.ui.runtime.connect4.matchmaking_countdown'
-            ? `Localized ${params.seconds}`
-            : key),
+            ? `Localized opponent: ${params.player}`
+            : key === 'plugins.game-engine.ui.runtime.connect4.matchmaking_countdown'
+              ? `Localized ${params.seconds}`
+              : key === 'plugins.game-engine.ui.runtime.connect4.matchmaking_other_searches'
+                ? `Localized other searches: ${params.count}`
+              : key),
       onChange: jest.fn(),
       onLanguageChange: jest.fn()
     };
@@ -330,7 +353,12 @@ describe('interactive overlay countdown DOM', () => {
       challengeId: 10,
       status: 'open',
       openerDisplayName: 'Viewer',
-      expiresAtMs: 130000
+      expiresAtMs: 130000,
+      pendingCount: 2,
+      pendingChallenges: [
+        { challengeId: 10, openerDisplayName: 'Viewer' },
+        { challengeId: 11, openerDisplayName: 'Second Viewer' }
+      ]
     };
 
     listeners.get('game-engine:interactive-state')(state);
@@ -340,6 +368,8 @@ describe('interactive overlay countdown DOM', () => {
     resolveReady();
     await flushPromises();
     expect(dom.window.document.getElementById('challenge-title').textContent).toBe('Localized challenge');
+    expect(dom.window.document.getElementById('challenge-pending-count').textContent)
+      .toBe('Localized other searches: 1');
     dom.window.close();
   });
 
@@ -1546,7 +1576,13 @@ describe('interactive overlay countdown DOM', () => {
         challengeId: 21,
         status: 'open',
         openerDisplayName: 'Challenge Viewer',
-        expiresAtMs: 130000
+        expiresAtMs: 130000,
+        pendingCount: 3,
+        pendingChallenges: [
+          { challengeId: 21, openerDisplayName: 'Challenge Viewer' },
+          { challengeId: 22, openerDisplayName: 'Second Viewer' },
+          { challengeId: 23, openerDisplayName: 'Third Viewer' }
+        ]
       }
     };
 
@@ -1556,6 +1592,10 @@ describe('interactive overlay countdown DOM', () => {
     expect(frame.classList.contains('active')).toBe(true);
     expect(postMessage).toHaveBeenCalledTimes(1);
     expect(postMessage.mock.calls[0][0].payload.connect4Matchmaking).toEqual(state.connect4Matchmaking);
+    expect(postMessage.mock.calls[0][0].payload.connect4Matchmaking.pendingCount).toBe(3);
+    expect(postMessage.mock.calls[0][0].payload.connect4Matchmaking.pendingChallenges).toEqual(
+      state.connect4Matchmaking.pendingChallenges
+    );
     expect(dom.window.document.getElementById('idle-state').classList.contains('visible')).toBe(false);
     dom.window.close();
   });

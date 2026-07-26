@@ -1275,6 +1275,7 @@
             "cell_piece": "Column {column}, row {row}: {owner}, {color} piece",
             "current_turn": "Turn: {player}{columnText}",
             "matchmaking_countdown": "{seconds}s left to challenge",
+            "matchmaking_other_searches": "{count} other viewer searches",
             "matchmaking_prompt": "{player} is looking for an opponent! Type connect4 to join.",
             "matchmaking_title": "Connect4 Challenge!",
             "draw": "🤝 Draw!",
