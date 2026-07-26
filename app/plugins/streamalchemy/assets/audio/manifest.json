@@ -18,7 +18,7 @@
       "archiveSha256": "f2193d072726d6758a5f7871b2dcc54dcce0d5c35c6f0a62f92549b327c81232",
       "license": "CC0-1.0",
       "licensePath": "assets/audio/licenses/interface-License.txt",
-      "licenseSha256": "f7966c773bbed0eca6a9c75081c44a178b38eae112724dbb5fdfbd4192d118a9"
+      "licenseSha256": "88769c4e631f10944e2af30bb88bda747c305aca117ba8a30129e35c45f46c6f"
     },
     {
       "id": "impact",
@@ -28,7 +28,7 @@
       "archiveSha256": "029d734af1582474edf3a694d1b0cebc97c1c152f2f39fa34d4c2bafc5de77f8",
       "license": "CC0-1.0",
       "licensePath": "assets/audio/licenses/impact-License.txt",
-      "licenseSha256": "b49aa9c56b04528b95913de13e506a0f7c5e807b9925db9bfef86af1f91120db"
+      "licenseSha256": "55605eade0839012551b06f2d6c345beb57f41acfa4d4c42f45b38ca4a499ed7"
     },
     {
       "id": "rpg",
@@ -38,7 +38,7 @@
       "archiveSha256": "6dbeaf8544da958d8f2adcb4a4a4b76c1ade34a05f8ab9edccd327da7375f38b",
       "license": "CC0-1.0",
       "licensePath": "assets/audio/licenses/rpg-License.txt",
-      "licenseSha256": "5735dfd72cb64cbbceda4ebc00c380c41ca680edb82ff153aa7c9ab97614c539"
+      "licenseSha256": "842c42cc1942963f6fcdc18fe57e9e0631e8a4936f9803688e8152e830088eb9"
     },
     {
       "id": "basic-spell",

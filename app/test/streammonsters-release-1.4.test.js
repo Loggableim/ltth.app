@@ -261,8 +261,9 @@ describe('Stream Monsters 1.4 compatibility in the 1.5 creator and overlay relea
     expect(hashes.size).toBeGreaterThanOrEqual(22);
     for (const source of manifest.sources) {
       const license = fs.readFileSync(path.join(pluginDir, source.licensePath), 'utf8');
+      const canonicalLicense = license.replace(/\r+\n/g, '\n').replace(/\r/g, '\n');
       expect(source.license).toBe('CC0-1.0');
-      expect(crypto.createHash('sha256').update(license).digest('hex'))
+      expect(crypto.createHash('sha256').update(canonicalLicense).digest('hex'))
         .toBe(source.licenseSha256);
     }
     expect(overlay).toContain('/plugins/streamalchemy/assets/audio/manifest.json');
