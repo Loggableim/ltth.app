@@ -141,11 +141,6 @@ describe('registered overlay dependency crawl', () => {
     }
     expect(blocked).toEqual([
       {
-        source: 'plugins/interactive-story/overlay.html',
-        method: 'POST',
-        pathname: '/api/interactive-story/overlay-positions'
-      },
-      {
         source: 'plugins/quiz-show/quiz_show_overlay.js',
         method: 'POST',
         pathname: '/api/quiz-show/hud-config'

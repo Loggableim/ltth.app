@@ -525,6 +525,12 @@
     const migration = get('streamAssistant.migration');
     const overlayUrl = `${window.location.origin}/overlay/animazingpal/stream-assistant`;
     const t = (key, fallback, params = {}) => streamAssistantText(key.replace('plugins.animazingpal.live_host.', ''), fallback, params);
+    const tiktokCopyKey = 'common.tiktok_studio.copy_url';
+    const translatedTikTokCopy = window.i18n?.t?.(tiktokCopyKey);
+    const tiktokCopyLabel = translatedTikTokCopy &&
+      translatedTikTokCopy !== tiktokCopyKey
+      ? translatedTikTokCopy
+      : 'TikTok-Studio-URL kopieren';
     const migrationNote = migration
       ? `<p class="text-xs text-green-300 mt-3">${escapeHtml(t('plugins.animazingpal.live_host.stream_assistant.ui.migration_note', 'Übernommene Legacy-Daten: {users} Profile, {memories} Erinnerungen. Die Quelle bleibt unverändert.', { users: migration.importedUsers || 0, memories: migration.importedMessages || 0 }))}</p>`
       : '';
@@ -552,7 +558,8 @@
         ${input('streamAssistant.batching.separator', t('plugins.animazingpal.live_host.stream_assistant.ui.batch_separator', 'Batch-Trenner'))}
       </div>
       <div class="mt-3 text-sm text-gray-400">${escapeHtml(t('plugins.animazingpal.live_host.stream_assistant.ui.session_summary', 'Session: {processed} verarbeitet · {responses} Antworten · {deduped} Duplikate', { processed: diagnostics.processedEvents || 0, responses: diagnostics.respondedEvents || 0, deduped: diagnostics.dedupedEvents || 0 }))}</div>
-      <p class="mt-2 text-sm">${escapeHtml(t('plugins.animazingpal.live_host.stream_assistant.ui.obs_hud', 'OBS-HUD'))}: <code class="text-cyan-300 select-all">${escapeHtml(overlayUrl)}</code></p>
+      <p class="mt-2 text-sm">${escapeHtml(t('plugins.animazingpal.live_host.stream_assistant.ui.obs_hud', 'OBS-HUD'))}: <code id="stream-assistant-overlay-url" class="text-cyan-300 select-all">${escapeHtml(overlayUrl)}</code></p>
+      <button type="button" class="btn btn-secondary mt-3" data-copy-tiktok-studio-url data-overlay-url-source="#stream-assistant-overlay-url" data-i18n-key="common.tiktok_studio.copy_url">${escapeHtml(tiktokCopyLabel)}</button>
       <div class="mt-3 flex flex-wrap gap-3"><button class="btn btn-primary" data-livehost-save="streamAssistant">${escapeHtml(t('plugins.animazingpal.live_host.stream_assistant.ui.save', 'Stream Assistant speichern'))}</button><button class="btn btn-secondary" data-stream-assistant-reset>${escapeHtml(t('plugins.animazingpal.live_host.stream_assistant.ui.reset', 'Session-Analytics und Ereignislog zurücksetzen'))}</button></div>
       ${migrationNote}
     </div></section>`;

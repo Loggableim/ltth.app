@@ -2,7 +2,9 @@
 
 const {
   TikTokStudioUrlError,
-  copy
+  copy,
+  handleButtonClick,
+  readButtonURL
 } = require('../public/js/tiktok-studio-url');
 
 function response(body, ok = true) {
@@ -178,5 +180,121 @@ describe('LTTHTikTokStudioUrl.copy', () => {
     ]);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(deps.writeText).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('declarative TikTok Studio copy buttons', () => {
+  function buttonHarness(source) {
+    const attributes = {
+      'data-overlay-url-source': '#overlay-url'
+    };
+    const button = {
+      disabled: false,
+      getAttribute: jest.fn(name => attributes[name] || null),
+      setAttribute: jest.fn(),
+      removeAttribute: jest.fn()
+    };
+    const documentRef = {
+      querySelector: jest.fn(selector => (
+        selector === '#overlay-url' ? source : null
+      ))
+    };
+    return { button, documentRef };
+  }
+
+  test('reads the referenced URL field at click time rather than caching it', async () => {
+    const source = { value: 'http://127.0.0.1:3000/animation-overlay.html' };
+    const { button, documentRef } = buttonHarness(source);
+    const copyImpl = jest.fn().mockResolvedValue(
+      'https://quiet-river.trycloudflare.com/animation-overlay.html'
+    );
+    const report = jest.fn();
+
+    expect(readButtonURL(button, { documentRef })).toBe(source.value);
+    source.value = 'http://127.0.0.1:3000/weather-control/overlay';
+
+    await handleButtonClick(button, {
+      documentRef,
+      copyImpl,
+      report
+    });
+
+    expect(copyImpl).toHaveBeenCalledWith(
+      'http://127.0.0.1:3000/weather-control/overlay'
+    );
+    expect(report).toHaveBeenNthCalledWith(
+      1,
+      'starting',
+      'Starting Quick Tunnel...'
+    );
+    expect(report).toHaveBeenLastCalledWith(
+      'success',
+      'TikTok Studio URL copied'
+    );
+    expect(button.disabled).toBe(false);
+    expect(button.removeAttribute).toHaveBeenCalledWith('aria-busy');
+  });
+
+  test('reads text content and an explicitly named attribute when requested', () => {
+    const source = {
+      textContent: '  http://localhost:3000/flame-overlay/overlay  ',
+      getAttribute: jest.fn(name => (
+        name === 'href' ? 'https://vdo.ninja/?director=room-7' : null
+      ))
+    };
+    const { button, documentRef } = buttonHarness(source);
+
+    expect(readButtonURL(button, { documentRef })).toBe(
+      'http://localhost:3000/flame-overlay/overlay'
+    );
+
+    button.getAttribute.mockImplementation(name => {
+      if (name === 'data-overlay-url-source') return '#overlay-url';
+      if (name === 'data-overlay-url-attribute') return 'href';
+      return null;
+    });
+    expect(readButtonURL(button, { documentRef })).toBe(
+      'https://vdo.ninja/?director=room-7'
+    );
+  });
+
+  test('can read a generated URL stored on the clicked button itself', () => {
+    const attributes = {
+      'data-overlay-url-source': 'self',
+      'data-overlay-url-attribute': 'data-url',
+      'data-url': 'http://localhost:3000/plugins/toptier/overlay.html?board=likes'
+    };
+    const button = {
+      getAttribute: jest.fn(name => attributes[name] || null)
+    };
+
+    expect(readButtonURL(button, {
+      documentRef: { querySelector: jest.fn() }
+    })).toBe(
+      'http://localhost:3000/plugins/toptier/overlay.html?board=likes'
+    );
+  });
+
+  test('reports a localized failure and always restores the clicked button', async () => {
+    const { button, documentRef } = buttonHarness({ value: '' });
+    const error = new TikTokStudioUrlError(
+      'URL_UNAVAILABLE',
+      'Overlay URL is unavailable'
+    );
+    const report = jest.fn();
+
+    await expect(handleButtonClick(button, {
+      documentRef,
+      copyImpl: jest.fn().mockRejectedValue(error),
+      translate: (key, fallback) => (
+        key === 'common.tiktok_studio.url_unavailable'
+          ? 'Keine Overlay-URL'
+          : fallback
+      ),
+      report
+    })).resolves.toBeNull();
+
+    expect(report).toHaveBeenLastCalledWith('error', 'Keine Overlay-URL');
+    expect(button.disabled).toBe(false);
   });
 });

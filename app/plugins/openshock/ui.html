@@ -863,6 +863,12 @@
                     <div class="input-group">
                         <input type="text" class="form-input" id="zappiehellOverlayUrl" readonly>
                         <button class="btn btn-secondary" id="copyZappieHellOverlayUrl" data-i18n="plugins.openshock.labels.copy">📋 Copy</button>
+                        <button type="button" class="btn btn-secondary"
+                                data-copy-tiktok-studio-url
+                                data-overlay-url-source="#zappiehellOverlayUrl"
+                                data-i18n="common.tiktok_studio.copy_url">
+                            TikTok-Studio-URL kopieren
+                        </button>
                     </div>
                 </div>
                 <div class="info-box">
@@ -1487,6 +1493,7 @@
     <script src="/socket.io/socket.io.js"></script>
 
     <!-- Hybrid Shock UI JavaScript -->
+    <script src="/js/tiktok-studio-url.js"></script>
     <script src="/openshock/ui.js"></script>
 
 <style id="final-late-day-device-control-contrast">

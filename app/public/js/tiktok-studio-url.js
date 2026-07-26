@@ -7,11 +7,21 @@
   }
   if (root) {
     root.LTTHTikTokStudioUrl = api;
+    const install = () => api.install({
+      documentRef: root.document,
+      windowRef: root
+    });
+    if (root.document?.readyState === 'loading') {
+      root.document.addEventListener('DOMContentLoaded', install, { once: true });
+    } else {
+      install();
+    }
   }
 })(
   typeof window !== 'undefined' ? window : null,
   function createTikTokStudioUrlApi(root) {
     const ensureRequests = new Map();
+    const installedDocuments = new WeakSet();
 
     class TikTokStudioUrlError extends Error {
       constructor(code, message) {
@@ -190,9 +200,148 @@
       return copiedUrl;
     }
 
+    function readButtonURL(button, {
+      documentRef = root?.document
+    } = {}) {
+      const selector = button?.getAttribute?.('data-overlay-url-source');
+      if (!selector || !documentRef?.querySelector) return '';
+      const source = selector === 'self'
+        ? button
+        : documentRef.querySelector(selector);
+      if (!source) return '';
+
+      const attribute = button.getAttribute('data-overlay-url-attribute');
+      if (attribute) {
+        return String(source.getAttribute?.(attribute) || '').trim();
+      }
+      if (typeof source.value === 'string') {
+        return source.value.trim();
+      }
+      return String(source.textContent || '').trim();
+    }
+
+    function defaultTranslate(key, fallback, windowRef) {
+      if (!windowRef?.i18n) return fallback;
+      const translated = windowRef.i18n.t(key);
+      return translated && translated !== key ? translated : fallback;
+    }
+
+    function defaultReporter(documentRef, windowRef) {
+      return (state, message) => {
+        if (typeof windowRef?.showToast === 'function') {
+          windowRef.showToast(message, state === 'error' ? 'error' : 'success');
+          return;
+        }
+        if (!documentRef?.body || !documentRef.createElement) return;
+        let region = documentRef.getElementById?.('tiktok-studio-copy-status');
+        if (!region) {
+          region = documentRef.createElement('div');
+          region.id = 'tiktok-studio-copy-status';
+          region.setAttribute('role', 'status');
+          region.setAttribute('aria-live', 'polite');
+          region.style.position = 'fixed';
+          region.style.right = '16px';
+          region.style.bottom = '16px';
+          region.style.zIndex = '10000';
+          region.style.maxWidth = '360px';
+          region.style.padding = '10px 14px';
+          region.style.borderRadius = '8px';
+          region.style.background = 'rgba(17, 24, 39, 0.96)';
+          region.style.color = '#f9fafb';
+          documentRef.body.appendChild(region);
+        }
+        region.dataset.state = state;
+        region.textContent = message;
+      };
+    }
+
+    function errorTranslation(error) {
+      if (error?.code === 'URL_UNAVAILABLE') {
+        return [
+          'common.tiktok_studio.url_unavailable',
+          'Overlay URL is unavailable'
+        ];
+      }
+      if (
+        String(error?.code || '').startsWith('OVERLAY_') ||
+        String(error?.code || '').startsWith('PUBLIC_OVERLAY_')
+      ) {
+        return [
+          'common.tiktok_studio.tunnel_failed',
+          'Quick Tunnel could not be started'
+        ];
+      }
+      return [
+        'common.tiktok_studio.copy_failed',
+        'Could not copy the TikTok Studio URL'
+      ];
+    }
+
+    async function handleButtonClick(button, {
+      documentRef = root?.document,
+      windowRef = root,
+      copyImpl = copy,
+      translate = (key, fallback) =>
+        defaultTranslate(key, fallback, windowRef),
+      report = defaultReporter(documentRef, windowRef)
+    } = {}) {
+      if (!button || button.disabled) return null;
+      button.disabled = true;
+      button.setAttribute?.('aria-busy', 'true');
+      report(
+        'starting',
+        translate(
+          'common.tiktok_studio.starting',
+          'Starting Quick Tunnel...'
+        )
+      );
+      try {
+        const copiedUrl = await copyImpl(readButtonURL(button, { documentRef }));
+        report(
+          'success',
+          translate(
+            'common.tiktok_studio.copied',
+            'TikTok Studio URL copied'
+          )
+        );
+        return copiedUrl;
+      } catch (error) {
+        const [key, fallback] = errorTranslation(error);
+        report('error', translate(key, fallback));
+        return null;
+      } finally {
+        button.disabled = false;
+        button.removeAttribute?.('aria-busy');
+      }
+    }
+
+    function install({
+      documentRef = root?.document,
+      windowRef = root
+    } = {}) {
+      if (
+        !documentRef?.addEventListener ||
+        installedDocuments.has(documentRef)
+      ) {
+        return;
+      }
+      installedDocuments.add(documentRef);
+      documentRef.addEventListener('click', event => {
+        const button = event.target?.closest?.(
+          '[data-copy-tiktok-studio-url]'
+        );
+        if (!button) return;
+        event.preventDefault?.();
+        handleButtonClick(button, { documentRef, windowRef });
+      });
+    }
+
     return {
       TikTokStudioUrlError,
-      copy
+      copy,
+      handleButtonClick,
+      install,
+      readButtonURL
     };
   }
 );

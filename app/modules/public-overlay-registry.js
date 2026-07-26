@@ -73,6 +73,7 @@ const HTTP_RULES = Object.freeze([
   rule(['GET', 'HEAD'], exact('/socket.io/socket.io.js')),
   rule(['GET', 'POST'], exact('/socket.io/')),
   rule(['GET', 'HEAD'], exact('/js/i18n-client.js')),
+  rule(['GET', 'HEAD'], exact('/js/public-overlay-render-mode.js')),
   rule(['GET', 'HEAD'], exact('/js/matter.min.js')),
   rule(['GET', 'HEAD'], exact('/css/themes.css')),
   rule(['GET', 'HEAD'], exact('/css/overlay-base.css')),

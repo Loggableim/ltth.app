@@ -256,6 +256,12 @@
         <h3 data-i18n="plugins.streamalchemy.ui.monsters.obsSource">OBS Browser Source</h3>
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.responsiveCopy">Portrait and landscape use independent broadcast layouts.</p>
         <code id="overlayUrl">/streammonsters/overlay</code>
+        <button type="button"
+                data-copy-tiktok-studio-url
+                data-overlay-url-source="#overlayUrl"
+                data-i18n="common.tiktok_studio.copy_url">
+          TikTok-Studio-URL kopieren
+        </button>
         <button id="runDemo" type="button" data-i18n="plugins.streamalchemy.ui.monsters.runDemo">Run complete demo</button>
       </article>
       <article class="card">
@@ -580,6 +586,7 @@
 </main>
 
 <script src="/js/i18n-client.js"></script>
+<script src="/js/tiktok-studio-url.js"></script>
 <script src="/plugins/streamalchemy/streammonsters-overlay-runtime.js"></script>
 <script src="/plugins/streamalchemy/streammonsters-creator-runtime.js"></script>
 <script>

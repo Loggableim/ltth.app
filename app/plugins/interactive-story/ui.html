@@ -4445,6 +4445,13 @@
 
             <button class="btn btn-outline-primary" id="copyOverlayUrlBtn" data-i18n-key="plugins.interactive-story.cards.overlay.copy">Copy</button>
 
+            <button type="button" class="btn btn-outline-primary"
+                    data-copy-tiktok-studio-url
+                    data-overlay-url-source="#overlayUrl"
+                    data-i18n-key="common.tiktok_studio.copy_url">
+              TikTok-Studio-URL kopieren
+            </button>
+
             <button class="btn btn-primary" id="openOverlayBtn" data-i18n-key="plugins.interactive-story.cards.overlay.open">Open</button>
 
           </div>
@@ -4821,6 +4828,7 @@
   <!-- i18n client is loaded first so the inline translations can rely on it safely -->
 
   <script src="/js/i18n-client.js"></script>
+  <script src="/js/tiktok-studio-url.js"></script>
 
   <script src="/socket.io/socket.io.js"></script>
 

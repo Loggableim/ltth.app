@@ -1027,6 +1027,7 @@
         }
     </style>
     <script src="/js/i18n-client.js"></script>
+    <script src="/js/tiktok-studio-url.js"></script>
 </head>
 <body>
     <div class="container">
@@ -1325,6 +1326,12 @@
                     Add this URL as a Browser Source in OBS:
                     </span><code id="hud-overlay-url">http://localhost:3000/plugins/gcce/overlay-hud</code>
                     <button class="btn-sm" id="btn-copy-overlay-url" data-i18n="plugins.gcce.labels.copy">📋 Copy</button>
+                    <button type="button" class="btn-sm"
+                            data-copy-tiktok-studio-url
+                            data-overlay-url-source="#hud-overlay-url"
+                            data-i18n="common.tiktok_studio.copy_url">
+                        TikTok-Studio-URL kopieren
+                    </button>
                 </div>
             </div>
 

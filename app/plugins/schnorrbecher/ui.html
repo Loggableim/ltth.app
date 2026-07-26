@@ -51,7 +51,15 @@
       <label>OBS Browser-Source URL
         <input id="overlay-url" readonly>
       </label>
-      <div class="actions"><button id="copy-overlay-url" type="button" class="secondary">Overlay-URL kopieren</button></div>
+      <div class="actions">
+        <button id="copy-overlay-url" type="button" class="secondary">Overlay-URL kopieren</button>
+        <button type="button" class="secondary"
+                data-copy-tiktok-studio-url
+                data-overlay-url-source="#overlay-url"
+                data-i18n="common.tiktok_studio.copy_url">
+          TikTok-Studio-URL kopieren
+        </button>
+      </div>
       <h2>Konfiguration</h2>
       <form id="coin-jar-config">
         <div class="form-grid">
@@ -101,6 +109,7 @@
     </aside>
   </main>
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/tiktok-studio-url.js"></script>
   <script src="/plugins/schnorrbecher/ui.js"></script>
 </body>
 </html>
