@@ -14,7 +14,7 @@
 - Do not reload the Game Engine or restart the app during implementation or verification; a later live action needs a new explicit user approval.
 - Every valid viewer start-command creates its own persistent 30-second search if no eligible earlier viewer search exists.
 - A new viewer must atomically claim the oldest open Connect4 search whose opener is a different eligible viewer; opener is player 1/red and claimant is player 2/yellow.
-- A viewer may not pair with themself, join while in an active interactive session, bypass a Connect4 lockout, or use an unsafe/missing avatar proxy source; ineligible attempts must not consume another viewer's search.
+- A viewer may not pair with themself, join while in an active interactive session, bypass a Connect4 lockout, or place an unsafe external avatar source into state/DOM; an empty or missing avatar source is allowed and renders the colored-disc fallback, while ineligible attempts must not consume another viewer's search.
 - At the 30-second deadline, an unmatched search starts exactly one normal viewer-vs-streamer Connect4 match. If no interactive slot is available, preserve the fallback work durably and retry when capacity is freed; do not silently discard it or convert another open search.
 - Open searches do not reserve interactive session capacity. Active interactive sessions alone count against `maxConcurrentInteractiveSessions`.
 - Keep `connect4Matchmaking` backward-compatible as the oldest open challenge and add `pendingCount` plus `pendingChallenges`; all timestamps remain server timestamps in milliseconds.

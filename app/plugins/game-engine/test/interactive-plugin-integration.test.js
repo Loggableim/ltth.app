@@ -1,4 +1,6 @@
 const GameEnginePlugin = require('../main');
+const Database = require('better-sqlite3');
+const GameEngineDatabase = require('../backend/database');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -1222,30 +1224,39 @@ describe('GameEnginePlugin interactive controller integration', () => {
     }));
   });
 
-  test('keeps the opener avatar when a matchmaking challenge falls back to the streamer', () => {
-    const { plugin } = createPlugin();
-    plugin.db = {
-      createSession: jest.fn(() => 91),
-      addPlayer2: jest.fn()
-    };
+  test('keeps the persisted opener avatar through the real pending fallback path', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(100000);
+    const sqlite = new Database(':memory:');
+    const { plugin, api } = createPlugin();
+    plugin.db = new GameEngineDatabase({
+      ...api,
+      getDatabase: () => ({ db: sqlite })
+    }, plugin.logger);
+    plugin.db.initialize();
+    plugin._initializeInteractiveController();
     const avatarSource = '/api/game-engine/avatar?url=https%3A%2F%2Fp16.tiktokcdn.com%2Fopener.webp';
 
-    const created = plugin._createInteractiveGame({
-      gameType: 'connect4',
-      viewerId: 'opener',
-      viewerDisplayName: 'Opener',
-      hostDisplayName: 'Host',
-      participants: [
-        { id: 'opener', displayName: 'Opener', role: 'viewer', avatarSource },
-        { id: 'streamer', displayName: 'Host', role: 'host', avatarSource: '' }
-      ],
-      config: { streamerRole: 'player2', player1Color: '#f00', player2Color: '#ff0' },
-      triggerType: 'matchmaking_timeout',
-      triggerValue: 'connect4'
-    });
+    try {
+      const opened = plugin.interactiveController.startOrJoinConnect4Matchmaking({
+        participantId: 'opener',
+        participantDisplayName: 'Opener',
+        participantAvatarSource: avatarSource
+      });
+      jest.advanceTimersByTime(30000);
+      const started = await plugin._expireConnect4MatchmakingChallenge(opened.challenge);
+      const state = plugin.interactiveController.registry.get(started.sessionId).adapter.getState();
+      const opener = [state.player1, state.player2].find(player => player.username === 'opener');
+      const host = [state.player1, state.player2].find(player => player.username === 'streamer');
 
-    expect(created.game.player1).toMatchObject({ username: 'opener', avatarSource });
-    expect(created.game.player2).toMatchObject({ username: 'streamer', avatarSource: '' });
+      expect(started).toMatchObject({ success: true, action: 'fallback_started' });
+      expect(opener).toMatchObject({ username: 'opener', role: 'viewer', avatarSource });
+      expect(host).toMatchObject({ username: 'streamer', role: 'streamer', avatarSource: '' });
+    } finally {
+      plugin.interactiveController.destroy();
+      sqlite.close();
+      jest.useRealTimers();
+    }
   });
 
   test('expires old matchmaking chat identities while still suppressing a duplicate event', () => {

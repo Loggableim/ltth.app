@@ -82,6 +82,91 @@ describe('GameEngineDatabase interactive persistence', () => {
     expect(database.getActiveGamePlayerLockout('slow-viewer', 86402000)).toBeNull();
   });
 
+  test('migrates the released challenge schema without losing history or sequence state', () => {
+    sqlite.close();
+    sqlite = new Database(':memory:');
+    sqlite.exec(`
+      CREATE TABLE game_interactive_challenges (
+        challenge_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        game_type TEXT NOT NULL CHECK(game_type = 'connect4'),
+        opener_id TEXT NOT NULL,
+        opener_display_name TEXT NOT NULL,
+        opener_avatar_source TEXT NOT NULL DEFAULT '',
+        expires_at_ms INTEGER NOT NULL,
+        status TEXT NOT NULL CHECK(status IN ('open', 'claimed', 'expired')) DEFAULT 'open',
+        claimed_by_id TEXT,
+        claimed_by_display_name TEXT,
+        claimed_by_avatar_source TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE UNIQUE INDEX game_interactive_one_open_challenge
+        ON game_interactive_challenges(game_type)
+        WHERE status = 'open';
+      INSERT INTO game_interactive_challenges (
+        challenge_id, game_type, opener_id, opener_display_name, opener_avatar_source,
+        expires_at_ms, status, claimed_by_id, claimed_by_display_name,
+        claimed_by_avatar_source, created_at, updated_at
+      ) VALUES
+        (4, 'connect4', 'open-viewer', 'Open Viewer', '/api/game-engine/avatar?url=open',
+          1500, 'open', NULL, NULL, NULL, 1000, 1000),
+        (7, 'connect4', 'claimed-viewer', 'Claimed Viewer', '',
+          1600, 'claimed', 'claimant', 'Claimant', '/api/game-engine/avatar?url=claimant', 1001, 1100),
+        (11, 'connect4', 'expired-viewer', 'Expired Viewer', '',
+          1200, 'expired', NULL, NULL, NULL, 1002, 1200);
+    `);
+
+    ({ database, sqlite } = createDatabase(sqlite));
+
+    expect(sqlite.prepare(`
+      SELECT challenge_id, opener_id, status, claimed_by_id, claimed_by_display_name,
+             claimed_by_avatar_source
+      FROM game_interactive_challenges
+      ORDER BY challenge_id
+    `).all()).toEqual([
+      {
+        challenge_id: 4,
+        opener_id: 'open-viewer',
+        status: 'open',
+        claimed_by_id: null,
+        claimed_by_display_name: null,
+        claimed_by_avatar_source: null
+      },
+      {
+        challenge_id: 7,
+        opener_id: 'claimed-viewer',
+        status: 'claimed',
+        claimed_by_id: 'claimant',
+        claimed_by_display_name: 'Claimant',
+        claimed_by_avatar_source: '/api/game-engine/avatar?url=claimant'
+      },
+      {
+        challenge_id: 11,
+        opener_id: 'expired-viewer',
+        status: 'expired',
+        claimed_by_id: null,
+        claimed_by_display_name: null,
+        claimed_by_avatar_source: null
+      }
+    ]);
+    expect(sqlite.prepare(`PRAGMA index_list('game_interactive_challenges')`).all()
+      .map(index => index.name)).toEqual(['game_interactive_open_fifo']);
+    expect(sqlite.prepare(`
+      SELECT sql FROM sqlite_master
+      WHERE type = 'table' AND name = 'game_interactive_challenges'
+    `).get().sql).toContain("'fallback_pending'");
+    expect(database.markInteractiveChallengeFallbackPending(4, 2000))
+      .toMatchObject({ challengeId: 4, status: 'fallback_pending' });
+    expect(database.createInteractiveChallenge({
+      gameType: 'connect4',
+      openerId: 'next-viewer',
+      openerDisplayName: 'Next Viewer',
+      openerAvatarSource: '',
+      expiresAtMs: 6000,
+      createdAt: 5000
+    })).toMatchObject({ challengeId: 12, status: 'open' });
+  });
+
   test('creates and reads active interactive state with parsed game data', () => {
     database.createInteractiveState(session());
 

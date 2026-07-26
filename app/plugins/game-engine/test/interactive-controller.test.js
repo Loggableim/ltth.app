@@ -2229,4 +2229,84 @@ describe('InteractiveController', () => {
     harness.controller.destroy();
     harness.sqlite.close();
   });
+
+  test('invalidates a FIFO opener locked after opening and matches the next eligible challenge', () => {
+    const harness = createHarness();
+    harness.controller.init();
+    const locked = harness.controller.startOrJoinConnect4Matchmaking({
+      participantId: 'locked-opener',
+      participantDisplayName: 'Locked Opener',
+      participantAvatarSource: ''
+    });
+    harness.database.setGamePlayerLockout('locked-opener', 'viewer_timeout', 86400000, Date.now());
+    const eligible = harness.database.createInteractiveChallenge({
+      gameType: 'connect4',
+      openerId: 'eligible-opener',
+      openerDisplayName: 'Eligible Opener',
+      openerAvatarSource: '',
+      createdAt: Date.now(),
+      expiresAtMs: Date.now() + 30000
+    });
+
+    expect(harness.controller.startOrJoinConnect4Matchmaking({
+      participantId: 'arriving-viewer',
+      participantDisplayName: 'Arriving Viewer',
+      participantAvatarSource: ''
+    })).toMatchObject({
+      success: true,
+      action: 'matched',
+      challenge: {
+        challengeId: eligible.challengeId,
+        openerId: 'eligible-opener',
+        claimedById: 'arriving-viewer'
+      }
+    });
+    expect(harness.database.getInteractiveChallenge(locked.challenge.challengeId))
+      .toMatchObject({ status: 'expired' });
+    expect(harness.controller.registry.get(1).adapter.getState()).toMatchObject({
+      player1: { username: 'eligible-opener' },
+      player2: { username: 'arriving-viewer' }
+    });
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
+
+  test('terminally closes a locked pending fallback and allows the next FIFO fallback to start', () => {
+    const harness = createHarness();
+    harness.controller.init();
+    const locked = harness.controller.startOrJoinConnect4Matchmaking({
+      participantId: 'locked-fallback',
+      participantDisplayName: 'Locked Fallback',
+      participantAvatarSource: ''
+    });
+    const eligible = harness.database.createInteractiveChallenge({
+      gameType: 'connect4',
+      openerId: 'eligible-fallback',
+      openerDisplayName: 'Eligible Fallback',
+      openerAvatarSource: '',
+      createdAt: Date.now(),
+      expiresAtMs: Date.now() + 30000
+    });
+    harness.database.setGamePlayerLockout('locked-fallback', 'viewer_timeout', 86400000, Date.now());
+    jest.advanceTimersByTime(30000);
+    expect(harness.controller.beginExpiredConnect4Fallback(locked.challenge.challengeId))
+      .toMatchObject({ success: true });
+    expect(harness.controller.beginExpiredConnect4Fallback(eligible.challengeId))
+      .toMatchObject({ success: true });
+
+    expect(harness.controller.startPendingConnect4Fallback(locked.challenge.challengeId, 'Host'))
+      .toEqual({ success: false, error: 'game_lockout' });
+    expect(harness.database.getInteractiveChallenge(locked.challenge.challengeId))
+      .toMatchObject({ status: 'expired' });
+    expect(harness.controller.startPendingConnect4Fallback(eligible.challengeId, 'Host'))
+      .toMatchObject({ success: true, action: 'fallback_started', sessionId: 1 });
+    expect(harness.controller.registry.get(1).adapter.getState()).toMatchObject({
+      player1: { username: 'eligible-fallback' },
+      player2: { username: 'streamer' }
+    });
+
+    harness.controller.destroy();
+    harness.sqlite.close();
+  });
 });
