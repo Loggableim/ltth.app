@@ -131,13 +131,76 @@ const STRAIGHTFORWARD_SURFACES = [
     sources: ['plugins/webgpu-fireworks/ui/settings.js'],
     selectors: ['#webgpu-fireworks-overlay-url'],
     existingCopyToken: 'id="copy-overlay-url"'
+  },
+  {
+    html: 'plugins/emoji-rain/ui.html',
+    selectors: [
+      '#emoji-rain-url-complete',
+      '#emoji-rain-url-combined',
+      '#emoji-rain-url-emojis',
+      '#emoji-rain-url-hearts',
+      '#emoji-rain-url-gifts'
+    ],
+    existingCopyToken: 'OBS Setup'
+  },
+  {
+    html: 'plugins/webgpu-emoji-rain/ui.html',
+    selectors: [
+      '#webgpu-emoji-rain-url-complete',
+      '#webgpu-emoji-rain-url-combined',
+      '#webgpu-emoji-rain-url-emojis',
+      '#webgpu-emoji-rain-url-hearts',
+      '#webgpu-emoji-rain-url-gifts'
+    ],
+    existingCopyToken: 'OBS Setup'
+  },
+  {
+    html: 'plugins/quiz-show/quiz_show.html',
+    selectors: [
+      '#quiz-show-overlay-url',
+      '#quiz-show-splitscreen-url',
+      '#quiz-show-leaderboard-url'
+    ],
+    existingCopyToken: 'OBS Browser-Quellen URLs'
+  },
+  {
+    html: 'plugins/game-engine/ui.html',
+    sources: ['plugins/game-engine/tiktok-studio-ui.js'],
+    generatedActions: true,
+    selectors: [
+      '#chess-overlay-url',
+      '#plinko-overlay-url',
+      '#wheel-overlay-url',
+      '#slot-overlay-url',
+      '#arena-overlay-url',
+      '#overlay-url-gameboard',
+      '#overlay-url-chess',
+      '#overlay-url-plinko',
+      '#overlay-url-wheel',
+      '#overlay-url-slot',
+      '#overlay-url-arena',
+      '#overlay-url-hud',
+      '#game-engine-unified-url',
+      '#overlay-url-connect4-mode',
+      '#overlay-url-chess-mode',
+      '#overlay-url-plinko-mode',
+      '#overlay-url-wheel-mode',
+      '#overlay-url-slot-mode',
+      '#overlay-url-arena-mode'
+    ],
+    existingCopyToken: 'function copyOverlayURL'
+  },
+  {
+    html: 'plugins/vdoninja/ui.html',
+    selectors: ['#directorUrl'],
+    existingCopyToken: 'data-copy-target="directorUrl"'
   }
 ];
 
 describe('TikTok Studio overlay action inventory', () => {
   test.each(STRAIGHTFORWARD_SURFACES)(
     '$html keeps OBS copy and exposes every URL group to the shared helper',
-    ({ html, sources = [], selectors, existingCopyToken }) => {
+    ({ html, sources = [], selectors, existingCopyToken, generatedActions = false }) => {
       const markup = read(html);
       const combined = [markup, ...sources.map(read)].join('\n');
 
@@ -145,19 +208,31 @@ describe('TikTok Studio overlay action inventory', () => {
         '<script src="/js/tiktok-studio-url.js"></script>'
       );
       expect(combined).toContain(existingCopyToken);
-      expect(
-        (combined.match(/\bdata-copy-tiktok-studio-url\b/g) || []).length
-      ).toBe(selectors.length);
-      expect(
-        (combined.match(
-          /data-i18n(?:-key)?="common\.tiktok_studio\.copy_url"/g
-        ) || []).length
-      ).toBeGreaterThanOrEqual(selectors.length);
-
-      for (const selector of selectors) {
+      if (generatedActions) {
         expect(combined).toContain(
-          `data-overlay-url-source="${selector}"`
+          "button.setAttribute('data-copy-tiktok-studio-url', '')"
         );
+        expect(combined).toContain(
+          "button.setAttribute('data-i18n', 'common.tiktok_studio.copy_url')"
+        );
+        for (const selector of selectors) {
+          expect(combined).toContain(`selector: '${selector}'`);
+        }
+      } else {
+        expect(
+          (combined.match(/\bdata-copy-tiktok-studio-url\b/g) || []).length
+        ).toBe(selectors.length);
+        expect(
+          (combined.match(
+            /data-i18n(?:-key)?="common\.tiktok_studio\.copy_url"/g
+          ) || []).length
+        ).toBeGreaterThanOrEqual(selectors.length);
+
+        for (const selector of selectors) {
+          expect(combined).toContain(
+            `data-overlay-url-source="${selector}"`
+          );
+        }
       }
     }
   );

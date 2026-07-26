@@ -507,13 +507,12 @@
 
     async function saveHUDConfig() {
         try {
-            const response = await fetch('/api/quiz-show/hud-config', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(hudConfig)
-            });
+            const { skipped, response } =
+                await window.LTTHPublicOverlayRenderMode.postJsonLocalOnly(
+                    '/api/quiz-show/hud-config',
+                    hudConfig
+                );
+            if (skipped) return;
 
             if (!response.ok) {
                 console.error('Failed to save HUD config');
