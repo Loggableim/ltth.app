@@ -1,4 +1,4 @@
-# Wiki Index - Little TikTool Helper v1.4.0
+# Wiki Index - Little TikTool Helper v1.4.1
 
 **Vollständige Dokumentation für PupCid's Little TikTool Helper**
 
@@ -208,8 +208,8 @@ Siehe **[Home](./Home.md)** für vollständige Übersicht.
 | Developer Guide | ✅ | 100% |
 | Troubleshooting | ✅ | 100% |
 
-**Letzte große Aktualisierung:** 2026-07-22
-**Version:** 1.4.0
+**Letzte große Aktualisierung:** 2026-07-26
+**Version:** 1.4.1
 
 ---
 
@@ -324,7 +324,7 @@ app/wiki/
 
 ---
 
-*Letzte Aktualisierung: 2026-07-22*
-*Version: 1.4.0*
+*Letzte Aktualisierung: 2026-07-26*
+*Version: 1.4.1*
 *Wiki-Seiten: 20+*
 *Status: funktionsfähig, mit bekannten historischen Detailtexten*

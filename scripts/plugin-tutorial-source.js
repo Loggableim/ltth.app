@@ -104,6 +104,11 @@ function buildGuides(repoRoot) {
     const overlay = contract.overlay || null;
     const steps = contract.steps.map(captureEvidenceStep);
     const copy = contract.copy;
+    const integrationInventory = collectPluginIntegrationInventory(repoRoot, record.id, contract.route);
+    const excludedIntegrationValues = new Set(contract.excludedIntegrationValues || []);
+    integrationInventory.integrations = integrationInventory.integrations.filter(
+      (integration) => !excludedIntegrationValues.has(integration.value)
+    );
     return {
       id: record.id,
       name,
@@ -113,6 +118,7 @@ function buildGuides(repoRoot) {
       copy,
       related: contract.related || [],
       overlay,
+      excludedIntegrationValues: [...excludedIntegrationValues],
       capture: { fixture: { profile: `docs-${record.id}`, externalPolicy: 'blocked', mode: contract.mode || 'ui' } },
       steps,
       definition: createGuideDefinition({
@@ -123,7 +129,7 @@ function buildGuides(repoRoot) {
         steps,
         overlay,
         inventory: collectGuideUiInventory(repoRoot, { id: record.id, definition: { activation: { route: contract.route } } }),
-        integrationInventory: collectPluginIntegrationInventory(repoRoot, record.id, contract.route)
+        integrationInventory
       })
     };
   }).sort((left, right) => left.name.localeCompare(right.name));

@@ -1,0 +1,210 @@
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const { JSDOM } = require('jsdom');
+const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
+const CommandIngress = require('../plugins/streamalchemy/backend/streammonsters/command-ingress');
+const {
+  projectChatResult
+} = require('../plugins/streamalchemy/backend/streammonsters/public-event-projector');
+const chatRuntime = require('../plugins/streamalchemy/streammonsters-chat-view');
+const overlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
+
+const pluginDir = path.join(process.cwd(), 'plugins', 'streamalchemy');
+
+describe('Stream Monsters 1.5 League World runtime cleanup', () => {
+  test('reports Arena Rating and Collector Score as distinct rank systems', () => {
+    const commands = new ChatCommands({
+      store: {},
+      engine: { markReadyEggs: jest.fn() },
+      battleService: {},
+      battleMatchService: {
+        getCurrentArenaSeason: () => ({ seasonId: 'arena-28-1' }),
+        getArenaRating: (seasonId, userId) => ({
+          seasonId,
+          viewerId: userId,
+          rating: 1314,
+          battlesRated: 7,
+          tier: 'Crystal'
+        })
+      },
+      progression: {
+        recordCommand: jest.fn(),
+        getViewerSeason: () => ({
+          points: 275,
+          rank: 'Gold',
+          season: { season_id: 'collector-28-1' }
+        })
+      }
+    });
+
+    const result = commands.execute({ userId: 'viewer-a' }, 'rank');
+
+    expect(result).toEqual(expect.objectContaining({
+      success: true,
+      status: 'rank',
+      message: 'Arena Rating: Crystal · 1314. Collector Score: Gold · 275.',
+      arena: expect.objectContaining({
+        rating: 1314,
+        tier: 'Crystal',
+        battlesRated: 7
+      }),
+      collector: expect.objectContaining({
+        points: 275,
+        rank: 'Gold'
+      })
+    }));
+    expect(result.score).toBe(result.collector);
+  });
+
+  test('renders the two rank systems as one readable upper overlay card', async () => {
+    const dom = new JSDOM(`
+      <!doctype html>
+      <body>
+        <section id="detail"></section>
+        <div id="compact"></div>
+      </body>
+    `);
+    const detail = dom.window.document.getElementById('detail');
+    const compact = dom.window.document.getElementById('compact');
+    const snapshots = [];
+    const labels = {
+      viewer: 'Viewer',
+      rankCard: 'League ranks',
+      arenaRating: 'Arena Rating',
+      collectorScore: 'Collector Score',
+      commandUnavailable: 'Unavailable'
+    };
+    const view = chatRuntime.createChatView({
+      document: dom.window.document,
+      detailElement: detail,
+      compactElement: compact,
+      translate: key => labels[key] || key,
+      wait: async () => snapshots.push({
+        kind: detail.dataset.kind,
+        text: detail.textContent
+      })
+    });
+
+    const shown = await view.show({
+      displayName: 'Rival',
+      result: {
+        status: 'rank',
+        arena: { rating: 1314, tier: 'Crystal' },
+        collector: { points: 275, rank: 'Gold' }
+      }
+    });
+
+    expect(shown).toEqual({ handled: true, kind: 'rank' });
+    expect(snapshots).toHaveLength(1);
+    expect(snapshots[0].kind).toBe('rank');
+    expect(snapshots[0].text).toContain('Arena Rating');
+    expect(snapshots[0].text).toContain('Crystal');
+    expect(snapshots[0].text).toContain('1314');
+    expect(snapshots[0].text).toContain('Collector Score');
+    expect(snapshots[0].text).toContain('Gold');
+    expect(snapshots[0].text).toContain('275');
+    expect(detail.dataset.kind).toBeUndefined();
+    expect(compact.textContent).toBe('');
+  });
+
+  test('projects only the public fields required by the two-system rank card', () => {
+    const projected = projectChatResult({
+      success: true,
+      status: 'rank',
+      messageKey: 'chatResultRank',
+      arena: {
+        viewerId: 'private-viewer',
+        seasonId: 'private-arena-season',
+        rating: 1314,
+        battlesRated: 7,
+        tier: 'Crystal'
+      },
+      collector: {
+        user_id: 'private-viewer',
+        season_id: 'private-collector-season',
+        points: 275,
+        rank: 'Gold',
+        title: 'Gold Collector'
+      }
+    });
+
+    expect(projected).toEqual(expect.objectContaining({
+      arena: {
+        rating: 1314,
+        battlesRated: 7,
+        tier: 'Crystal'
+      },
+      collector: {
+        points: 275,
+        rank: 'Gold'
+      }
+    }));
+    expect(JSON.stringify(projected)).not.toContain('private-');
+  });
+
+  test('does not translate retired starter command results into live overlay cards', () => {
+    const emit = jest.fn();
+    const ingress = new CommandIngress({
+      execute: jest.fn(),
+      emit
+    });
+
+    ingress.emitResult('adopt', { userId: 'viewer-a' }, {
+      success: false,
+      status: 'starter_claimed'
+    }, 'fallback');
+
+    expect(emit).toHaveBeenCalledWith(
+      'streammonsters:chat_result',
+      expect.objectContaining({
+        result: expect.objectContaining({ messageKey: 'chatResultUnknown' })
+      })
+    );
+  });
+
+  test('does not replay retired starter events after reconnect', () => {
+    const replay = overlayRuntime.replayableRecentEvents({
+      recentEvents: [{
+        sequence: 1,
+        eventId: 'legacy-starter-event',
+        type: 'streammonsters:starter_claimed',
+        payload: { displayName: 'Viewer' }
+      }]
+    });
+
+    expect(replay).toEqual([]);
+  });
+
+  test('uses generic API errors for retired generation runtimes while preserving game errors', () => {
+    expect(overlayRuntime.apiErrorKey(
+      'STREAM_MONSTERS_RUNTIME_INSTALL_REQUEST_INVALID'
+    )).toBe('apiErrorUnknown');
+    expect(overlayRuntime.apiErrorKey(
+      'STREAM_MONSTERS_AI_PROVIDER_UNAVAILABLE'
+    )).toBe('apiErrorUnknown');
+    expect(overlayRuntime.apiErrorKey(
+      'STREAM_MONSTERS_POOL_ALREADY_RUNNING'
+    )).toBe('apiErrorUnknown');
+    expect(overlayRuntime.apiErrorKey(
+      'STREAM_MONSTERS_GIFT_MAPPING_INVALID'
+    )).toBe('apiErrorGiftMapping');
+  });
+
+  test('ships only League World Hybrid fallback branding and no starter socket path', () => {
+    const indexSource = fs.readFileSync(path.join(pluginDir, 'index.js'), 'utf8');
+    const overlaySource = fs.readFileSync(
+      path.join(pluginDir, 'streammonsters-overlay.html'),
+      'utf8'
+    );
+    const overlayDocument = new JSDOM(overlaySource).window.document;
+
+    expect(indexSource).not.toContain('Collector Arena');
+    expect(overlaySource).not.toContain('Collector Arena');
+    expect(overlayDocument.title).toBe('Stream Monsters · League World Hybrid Overlay');
+    expect(overlayDocument.getElementById('title').textContent).toBe('League World Hybrid');
+    expect(overlaySource).not.toContain('starter_revealed');
+    expect(overlaySource).not.toContain('streammonsters:starter_claimed');
+  });
+});

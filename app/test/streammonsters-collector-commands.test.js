@@ -84,7 +84,10 @@ describe('Stream Monsters 1.2 public commands', () => {
     expect(quests.status).toBe('quests');
     expect(quests.daily).toHaveLength(3);
     expect(quests.weekly).toHaveLength(3);
-    expect(commands.execute({ userId: 'viewer-a' }, 'monstershelp').message).toContain('!hatch');
+    const help = commands.execute({ userId: 'viewer-a' }, 'monstershelp').message;
+    expect(help).toContain('!hatch');
+    expect(help).toContain('A/B/C');
+    expect(help).not.toContain('power|guard|speed');
   });
 
   test('does not auto-hatch a ready egg when another command is used', () => {
@@ -135,6 +138,80 @@ describe('Stream Monsters 1.2 public commands', () => {
     expect(listed.eggs.map(egg => egg.state)).toEqual(['incubating', 'ready']);
     expect(hatched.status).toBe('hatched');
     expect(hatched.monster.egg_id).toBe(listed.eggs[1].egg_id);
+  });
+
+  test('hatches the oldest ready egg when no slot is supplied', () => {
+    const { commands, engine, store } = createCommands();
+    store.createEgg({
+      userId: 'viewer-a',
+      giftId: 1,
+      giftName: 'Slow Egg',
+      element: 'Ember',
+      eggColor: '#ef6b45',
+      seed: 'slow-default',
+      createdAtMs: 900,
+      hatchDurationMs: 10_000
+    });
+    store.createEgg({
+      userId: 'viewer-a',
+      giftId: 2,
+      giftName: 'Ready Egg',
+      element: 'Tide',
+      eggColor: '#3aaee8',
+      seed: 'ready-default',
+      createdAtMs: 1_000,
+      hatchDurationMs: 0
+    });
+    engine.markReadyEggs();
+
+    const listed = commands.execute({ userId: 'viewer-a' }, 'eggs');
+    const hatched = commands.execute({ userId: 'viewer-a' }, 'hatch');
+
+    expect(listed.eggs.map(egg => egg.state)).toEqual(['incubating', 'ready']);
+    expect(hatched.status).toBe('hatched');
+    expect(hatched.monster.egg_id).toBe(listed.eggs[1].egg_id);
+  });
+
+  test('does not misreport an unexpected hatch failure as an egg wait', () => {
+    const { commands, engine } = createCommands();
+    engine.hatchEgg = jest.fn(() => {
+      throw new Error('database unavailable');
+    });
+
+    expect(() => commands.execute({ userId: 'viewer-a' }, 'hatch'))
+      .toThrow('database unavailable');
+  });
+
+  test('includes the FIFO position when a requested egg is still queued', () => {
+    const { commands, store } = createCommands();
+    for (let index = 0; index < 4; index += 1) {
+      store.createEgg({
+        userId: 'viewer-a',
+        giftId: index + 1,
+        giftName: `Egg ${index + 1}`,
+        element: 'Grove',
+        eggColor: '#67b96b',
+        seed: `queue-${index}`,
+        state: index === 3 ? 'queued' : 'incubating',
+        createdAtMs: 900 + index,
+        hatchDurationMs: 10_000
+      });
+    }
+
+    const waiting = commands.execute({ userId: 'viewer-a' }, 'hatch', ['4']);
+
+    expect(waiting).toEqual(expect.objectContaining({
+      status: 'egg_not_ready',
+      wait: expect.objectContaining({
+        state: 'queued',
+        queuePosition: 1,
+        queue_position: 1
+      }),
+      card: expect.objectContaining({
+        placement: 'upper',
+        queuePosition: 1
+      })
+    }));
   });
 
   test('matches within two levels first and expands after thirty seconds', () => {

@@ -176,7 +176,9 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
     });
 
     expect(config.enabled).toBe(false);
-    expect(config.historicalProviderSetting).toBe('preserved-but-unused');
+    expect(config).not.toHaveProperty('historicalProviderSetting');
+    expect(plugin.composeStoredConfig(config).historicalProviderSetting)
+      .toBe('preserved-but-unused');
     expect(config.streamMonsters).toEqual(expect.objectContaining({
       rulesVersion: 5,
       hatchDurationMs: 300_000,
@@ -225,9 +227,16 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
         }
       }
     });
+    plugin.streamMonstersProgression = {
+      setSeasonDurationDays: jest.fn()
+    };
+    plugin.streamMonstersBattleMatchService = {
+      setSeasonDurationDays: jest.fn()
+    };
 
     const updated = plugin.updateConfig({
       streamMonsters: {
+        seasonDurationDays: 60,
         commandAliases: {
           eggs: { enabled: ['eierliste'], disabled: ['eggs'] }
         },
@@ -252,6 +261,8 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
       enabled: false,
       volume: 0.5
     });
+    expect(plugin.streamMonstersProgression.setSeasonDurationDays).toHaveBeenCalledWith(60);
+    expect(plugin.streamMonstersBattleMatchService.setSeasonDurationDays).toHaveBeenCalledWith(60);
   });
 
   test('keeps legacy egg timing, battle replay, generation pool and art pool rows byte-for-byte', () => {
@@ -498,7 +509,8 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
     })).toEqual({
       imageUrl: template.assetPath,
       visualSource: 'furry',
-      visualKey: `furry:${template.templateId}`
+      visualKey: `furry:${template.templateId}`,
+      assetVersion: 'furry-1.5.0'
     });
     expect(artPool.consumeForTemplate).not.toHaveBeenCalled();
     expect(kenneyBuilder.build).not.toHaveBeenCalled();
@@ -513,7 +525,8 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
     })).toEqual({
       imageUrl: '/kenney-fallback.png',
       visualSource: 'kenney',
-      visualKey: 'kenney:fallback'
+      visualKey: 'kenney:fallback',
+      assetVersion: 'kenney-cc0-v1'
     });
   });
 
@@ -610,6 +623,14 @@ describe('Stream Monsters Rules v5 and Art Lab retirement', () => {
             ? { success: true, gifts: [], total: 0, offset: 0, limit: 40 }
             : url === '/api/streammonsters/gift-mappings'
               ? { success: true, mappings: [] }
+              : url.startsWith('/api/streammonsters/monster-catalog')
+                ? {
+                  success: true,
+                  templates: [],
+                  total: 24,
+                  formsTotal: 72,
+                  assetIntegrity: { expected: 72, available: 72, healthy: true }
+                }
               : url.startsWith('/api/streammonsters/creator-catalog')
                 ? { success: true, templates: [], dex: { owned: 0, total: 24 } }
                 : url.startsWith('/api/streammonsters/leaderboard')

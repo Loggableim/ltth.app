@@ -1,0 +1,464 @@
+{
+  "schemaVersion": 1,
+  "license": "CC0-1.0",
+  "selection": "deterministic",
+  "productionMode": "bundled-only",
+  "renderedFormat": {
+    "codec": "PCM signed 16-bit little-endian",
+    "sampleRate": 48000,
+    "channels": 1,
+    "truePeakCeilingDbfs": -3
+  },
+  "sources": [
+    {
+      "id": "interface",
+      "name": "Kenney Interface Sounds",
+      "url": "https://www.kenney.nl/assets/interface-sounds",
+      "sourceArchive": "kenney_interface-sounds.zip",
+      "archiveSha256": "f2193d072726d6758a5f7871b2dcc54dcce0d5c35c6f0a62f92549b327c81232",
+      "license": "CC0-1.0",
+      "licensePath": "assets/audio/licenses/interface-License.txt",
+      "licenseSha256": "f7966c773bbed0eca6a9c75081c44a178b38eae112724dbb5fdfbd4192d118a9"
+    },
+    {
+      "id": "impact",
+      "name": "Kenney Impact Sounds",
+      "url": "https://www.kenney.nl/assets/impact-sounds",
+      "sourceArchive": "kenney_impact-sounds.zip",
+      "archiveSha256": "029d734af1582474edf3a694d1b0cebc97c1c152f2f39fa34d4c2bafc5de77f8",
+      "license": "CC0-1.0",
+      "licensePath": "assets/audio/licenses/impact-License.txt",
+      "licenseSha256": "b49aa9c56b04528b95913de13e506a0f7c5e807b9925db9bfef86af1f91120db"
+    },
+    {
+      "id": "rpg",
+      "name": "Kenney RPG Audio",
+      "url": "https://www.kenney.nl/assets/rpg-audio",
+      "sourceArchive": "kenney_rpg-audio.zip",
+      "archiveSha256": "6dbeaf8544da958d8f2adcb4a4a4b76c1ade34a05f8ab9edccd327da7375f38b",
+      "license": "CC0-1.0",
+      "licensePath": "assets/audio/licenses/rpg-License.txt",
+      "licenseSha256": "5735dfd72cb64cbbceda4ebc00c380c41ca680edb82ff153aa7c9ab97614c539"
+    },
+    {
+      "id": "basic-spell",
+      "name": "Basic Spell Impacts",
+      "url": "https://lentikula.itch.io/freecc0-basic-spell-impacts-sfx",
+      "sourceArchive": "Basic Spell Impacts.zip",
+      "archiveSha256": "6e265452877dd4121635200b2c59be3b36a2d2aed20ee15915c7c59396028f4d",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "licensePath": "assets/audio/licenses/basic-spell-impacts-LICENSE-EVIDENCE.txt",
+      "licenseSha256": "1392f9dfcab7044a3158c1c36ce1917d7db2c62f39024d82d2935b7d150d0d7e"
+    }
+  ],
+  "excludedSources": [],
+  "cues": {
+    "ui.navigate": {
+      "channel": "ui",
+      "gainDb": -8,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/ui-navigate-1.wav",
+          "sha256": "3bd39c44a40fc3ca52ccac2d7099ebb496a6db196fcecb86a2e4aa840501c28d",
+          "sourceArchive": "kenney_interface-sounds.zip",
+          "sourcePath": "Audio/select_001.ogg",
+          "sourceSha256": "aec0c31ea934a35936ae0d2ab8fac8123c93aa5647f935853a58dbaf90278b7a",
+          "durationMs": 60,
+          "peakDbfs": -3.5
+        },
+        {
+          "assetPath": "assets/audio/cues/ui-navigate-2.wav",
+          "sha256": "212f9ea784d431962aba532a1235e34373978d72c36cc9ac045e768ccbafeac5",
+          "sourceArchive": "kenney_interface-sounds.zip",
+          "sourcePath": "Audio/click_003.ogg",
+          "sourceSha256": "2fa929138bc3a0f432696588f66eac94b8f6d463905ec8808c6461ce4b054292",
+          "durationMs": 60,
+          "peakDbfs": -3.59
+        }
+      ]
+    },
+    "egg.spawn": {
+      "channel": "egg",
+      "gainDb": -6,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/egg-spawn-1.wav",
+          "sha256": "85ae9775701711fbee029cf76a4a8a83d68b089b0b2627588f8732b1d5568c82",
+          "sourceArchive": "kenney_interface-sounds.zip",
+          "sourcePath": "Audio/open_002.ogg",
+          "sourceSha256": "24ff224fe2c09c6aed1b41249825382dc74cf324b887ff279d8494912ce2beee",
+          "durationMs": 314,
+          "peakDbfs": -4.68
+        }
+      ]
+    },
+    "egg.ready": {
+      "channel": "egg",
+      "gainDb": -6,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/egg-ready-1.wav",
+          "sha256": "3c113c86aa442a6d53b7e7103d7cda83d912cbd6b6d8a99e0ffd241efaab9e2d",
+          "sourceArchive": "kenney_interface-sounds.zip",
+          "sourcePath": "Audio/confirmation_002.ogg",
+          "sourceSha256": "33b17a9a9a2397c62b285c52c33a907fdffb476909c99e42dde603f6a7a8b12c",
+          "durationMs": 539,
+          "peakDbfs": -5.66
+        }
+      ]
+    },
+    "egg.crack": {
+      "channel": "egg",
+      "gainDb": -5,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/egg-crack-1.wav",
+          "sha256": "acbe3818e0b02910e734e14af77356a67df2274589b5bb37c15044439fc8d033",
+          "sourceArchive": "kenney_interface-sounds.zip",
+          "sourcePath": "Audio/glass_003.ogg",
+          "sourceSha256": "9a6f16e3c2eff6fe5d017a4755a28306b14555728831cd00d70308e8f9689566",
+          "durationMs": 121,
+          "peakDbfs": -3.52
+        }
+      ]
+    },
+    "egg.hatch": {
+      "channel": "egg",
+      "gainDb": -4,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/egg-hatch-1.wav",
+          "sha256": "cece9166a3460b34bbcaa0ad289a70c44c18c22caf6739a33d29049bacd83019",
+          "sourceArchive": "kenney_interface-sounds.zip",
+          "sourcePath": "Audio/maximize_001.ogg",
+          "sourceSha256": "fd3e75e1de2f2fda90aceeacaeb0427ac8bddd3b07a6ce2a8f9ba923df3771f9",
+          "durationMs": 258,
+          "peakDbfs": -3.5
+        }
+      ]
+    },
+    "arena.portal": {
+      "channel": "battle",
+      "gainDb": -7,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/arena-portal-1.wav",
+          "sha256": "d2362d92e9bfd220bcc182e2ecdb3642ec8934ccbc6bdc35afb06e68ebc69805",
+          "sourceArchive": "kenney_interface-sounds.zip",
+          "sourcePath": "Audio/glitch_001.ogg",
+          "sourceSha256": "da78c642bbd95da2c364ed0e991ebbfc5a4c0d281165d932b5819e0dd31a39d2",
+          "durationMs": 60,
+          "peakDbfs": -3.56
+        }
+      ]
+    },
+    "arena.hit": {
+      "channel": "battle",
+      "gainDb": -8,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/arena-hit-1.wav",
+          "sha256": "237d1b452b2fd12d14767ec21013e718f3e8ae0720a6770160cee1e8de3f7ee3",
+          "sourceArchive": "kenney_impact-sounds.zip",
+          "sourcePath": "Audio/impactPunch_medium_000.ogg",
+          "sourceSha256": "486988aa2d6440ffc4c62a0e8ccf3c23673ba84424bd4723378d451b7255eb5c",
+          "durationMs": 431,
+          "peakDbfs": -3.5
+        },
+        {
+          "assetPath": "assets/audio/cues/arena-hit-2.wav",
+          "sha256": "63c65375b978f170c61c7d429135adf0316b30d0b09576ca5ed12cb1fb8d5bce",
+          "sourceArchive": "kenney_impact-sounds.zip",
+          "sourcePath": "Audio/impactPunch_medium_003.ogg",
+          "sourceSha256": "2d7c719c05999e0532f4384e1018e04cd916db715140bf16dee2dff3f820e908",
+          "durationMs": 455,
+          "peakDbfs": -3.5
+        }
+      ]
+    },
+    "arena.shield": {
+      "channel": "battle",
+      "gainDb": -9,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/arena-shield-1.wav",
+          "sha256": "7121312e5b14d3ac5e667d622863ab2f8acf0910e7f4e0306a29602cffaad17b",
+          "sourceArchive": "kenney_impact-sounds.zip",
+          "sourcePath": "Audio/impactBell_heavy_001.ogg",
+          "sourceSha256": "9df61e3ae9a83dc65e5a1fd3ed19d480876f3b22b963a1b9ef6fa293592dcec4",
+          "durationMs": 1741,
+          "peakDbfs": -3.51
+        }
+      ]
+    },
+    "arena.heal": {
+      "channel": "battle",
+      "gainDb": -10,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/arena-heal-1.wav",
+          "sha256": "e6c3c910e00ec9d33492f8ff18625c550940e4a026a3d9c242921173173e8478",
+          "sourceArchive": "kenney_interface-sounds.zip",
+          "sourcePath": "Audio/bong_001.ogg",
+          "sourceSha256": "d21d0f0b782445db579d11e2506b24cd1ac9d664ee33aeaf807761aa7b6fd710",
+          "durationMs": 120,
+          "peakDbfs": -3.5
+        }
+      ]
+    },
+    "element.ember": {
+      "channel": "battle",
+      "gainDb": -9,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/element-ember-1.wav",
+          "sha256": "1d3d61cd5a7e0f4d7582590d8afc4031e7383672acf1a0a594ae4058c4dea51b",
+          "sourceArchive": "kenney_impact-sounds.zip",
+          "sourcePath": "Audio/impactMetal_heavy_003.ogg",
+          "sourceSha256": "b0f2ba4dabde9a87eb9c188a19d31e0c2300fd321adeba08d3b9b8aa011d7037",
+          "durationMs": 204,
+          "peakDbfs": -3.51
+        },
+        {
+          "assetPath": "assets/audio/cues/element-ember-2.wav",
+          "sha256": "41c3b070fa607a58621d6178a41a47624cbbaa68f57d2809f0c907e89abfafb0",
+          "sourceArchive": "Basic Spell Impacts.zip",
+          "sourcePath": "Fire Spell Impacts/Fire Spell Impact 3.wav",
+          "sourceSha256": "5d54547593efd13eeda5ca237118774117591769ebc3421f0f06f9755b7b514d",
+          "durationMs": 1875,
+          "peakDbfs": -4.53
+        }
+      ]
+    },
+    "element.tide": {
+      "channel": "battle",
+      "gainDb": -9,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/element-tide-1.wav",
+          "sha256": "df5125d78debc26724cd8edc0094dd918a0c42f3af1113f2e2109f343d2ada48",
+          "sourceArchive": "kenney_impact-sounds.zip",
+          "sourcePath": "Audio/impactSoft_medium_003.ogg",
+          "sourceSha256": "5c4a1f35fde7e14046931da7bc3d1b23736541b7190ba107e08a379c4ca43cd6",
+          "durationMs": 137,
+          "peakDbfs": -3.5
+        },
+        {
+          "assetPath": "assets/audio/cues/element-tide-2.wav",
+          "sha256": "9587470cc3f911a8dac214e33515637a96f5c36c543957a88e20a9efcff06a57",
+          "sourceArchive": "Basic Spell Impacts.zip",
+          "sourcePath": "Water Spell Impacts/Water Spell Impact 4.wav",
+          "sourceSha256": "6477732f23a72a36992f867eb592b9b2fbce720e5efce4d397459c46c2e6270d",
+          "durationMs": 1875,
+          "peakDbfs": -3.72
+        }
+      ]
+    },
+    "element.grove": {
+      "channel": "battle",
+      "gainDb": -11,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/element-grove-1.wav",
+          "sha256": "11108426e0f50d7421c1bf267a7f705a91fcb82ea12e46363a5a553762dded6c",
+          "sourceArchive": "kenney_impact-sounds.zip",
+          "sourcePath": "Audio/footstep_grass_002.ogg",
+          "sourceSha256": "73a520139f5be716a403bfe9c80e0e94d1e61d8e9de04a354b336392164b53dc",
+          "durationMs": 690,
+          "peakDbfs": -3.51
+        }
+      ]
+    },
+    "element.gale": {
+      "channel": "battle",
+      "gainDb": -11,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/element-gale-1.wav",
+          "sha256": "8dcffd2199702cc88aaca6c92ca1e6507df52d58e2472c6f7e33f53cff7e3249",
+          "sourceArchive": "kenney_impact-sounds.zip",
+          "sourcePath": "Audio/impactGeneric_light_004.ogg",
+          "sourceSha256": "f906fa3a37acc4372787b496efcedefa2856045d5ec9456a3bd6c303c0eabb41",
+          "durationMs": 137,
+          "peakDbfs": -3.5
+        }
+      ]
+    },
+    "element.volt": {
+      "channel": "battle",
+      "gainDb": -10,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/element-volt-1.wav",
+          "sha256": "85e540afaa3842b874bc3520f4a7c13d3f7cb0d76bfb0adf1078cab84d13a847",
+          "sourceArchive": "kenney_interface-sounds.zip",
+          "sourcePath": "Audio/glitch_003.ogg",
+          "sourceSha256": "d55e0c64aee9f1ab2ba9523d0e256ca76639c3ec2f230405e2ff25aff36020b3",
+          "durationMs": 60,
+          "peakDbfs": -3.51
+        },
+        {
+          "assetPath": "assets/audio/cues/element-volt-2.wav",
+          "sha256": "0581b677db4871d684e1ae02581d61d75baf7d3edc2f5e05efc3092810688b2d",
+          "sourceArchive": "Basic Spell Impacts.zip",
+          "sourcePath": "Lightning Spell Impacts/Lightning Spell Impact 1.wav",
+          "sourceSha256": "15d3a0491e6e51e14cea718dbdb3d597163b0bc00e0fc0fadf1d1d68b0f8b853",
+          "durationMs": 3680,
+          "peakDbfs": -3.59
+        }
+      ]
+    },
+    "element.lunar": {
+      "channel": "battle",
+      "gainDb": -11,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/element-lunar-1.wav",
+          "sha256": "fa49bb802679b5b3e54f4c7fb4b328129016ed78d53a134ee7264a3beac8efa3",
+          "sourceArchive": "kenney_interface-sounds.zip",
+          "sourcePath": "Audio/pluck_002.ogg",
+          "sourceSha256": "c977fe249ff42d1c93a552b33abc13a8399df3879fa510475426e5c4bbac1da9",
+          "durationMs": 162,
+          "peakDbfs": -3.43
+        }
+      ]
+    },
+    "arena.special": {
+      "channel": "battle",
+      "gainDb": -9,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/arena-special-1.wav",
+          "sha256": "49d8f018c3aad81aa8fc8fb218a1549449a6b121db94c6f4cb1c30454a60fe26",
+          "sourceArchive": "kenney_rpg-audio.zip",
+          "sourcePath": "Audio/knifeSlice2.ogg",
+          "sourceSha256": "6c2064d0ef988d1ec3d56868e823ea8823a5cac00f2742560052633529407def",
+          "durationMs": 569,
+          "peakDbfs": -5.84
+        },
+        {
+          "assetPath": "assets/audio/cues/arena-special-2.wav",
+          "sha256": "0dcb1ae21875199f9280050d95172e37323b5ea8678804c587c357f17e431dde",
+          "sourceArchive": "Basic Spell Impacts.zip",
+          "sourcePath": "Ice Spell Impacts/Ice Spell Impact 5.wav",
+          "sourceSha256": "2d93547c3ac7c09ee010f9dbc986e57b016d6cee749cabd888e1dd29dc6ba3d6",
+          "durationMs": 1797,
+          "peakDbfs": -5.18
+        }
+      ]
+    },
+    "arena.ko": {
+      "channel": "battle",
+      "gainDb": -7,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/arena-ko-1.wav",
+          "sha256": "decf7f168018f1619c1da5e320b5183753770fb528c31e92265415b19fc75654",
+          "sourceArchive": "kenney_impact-sounds.zip",
+          "sourcePath": "Audio/impactPunch_heavy_004.ogg",
+          "sourceSha256": "f4c0c3eb8ab6517583b8218ed03f28923d1b687379aab4c1d5a6d4c10cf8e500",
+          "durationMs": 536,
+          "peakDbfs": -3.5
+        }
+      ]
+    },
+    "arena.victory": {
+      "channel": "reward",
+      "gainDb": -5,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/arena-victory-1.wav",
+          "sha256": "844feb10b16fce90c69392fd707c0613560484ffbb188d09c8e41580cc801ad5",
+          "sourceArchive": "kenney_interface-sounds.zip",
+          "sourcePath": "Audio/confirmation_004.ogg",
+          "sourceSha256": "568967a3d9f8a8f6af54ea01729c4882284308f2a27d78c07ffd7ee0d6951661",
+          "durationMs": 490,
+          "peakDbfs": -8.54
+        }
+      ]
+    },
+    "progress.xp": {
+      "channel": "reward",
+      "gainDb": -11,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/progress-xp-1.wav",
+          "sha256": "4c4396512252aa74e5c521542409aeb8fa74a4d4a7f2821f594f08b3d20b023a",
+          "sourceArchive": "kenney_rpg-audio.zip",
+          "sourcePath": "Audio/handleCoins.ogg",
+          "sourceSha256": "8a91f969e932df709df80ee124d86a51389eed9b67f22e5e716bc2bbf60d8dab",
+          "durationMs": 846,
+          "peakDbfs": -4.96
+        }
+      ]
+    },
+    "progress.level": {
+      "channel": "reward",
+      "gainDb": -6,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/progress-level-1.wav",
+          "sha256": "daee63f6454406af8499cbe523f4dede1c0f7b10a286cb5b8818a6a49c6f7782",
+          "sourceArchive": "kenney_interface-sounds.zip",
+          "sourcePath": "Audio/maximize_006.ogg",
+          "sourceSha256": "f050b3bb77cb0b901bc8df43d2cc1872c353aebae10b4030cf8ae681726ad343",
+          "durationMs": 380,
+          "peakDbfs": -3.5
+        }
+      ]
+    },
+    "progress.evolution": {
+      "channel": "reward",
+      "gainDb": -7,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/progress-evolution-1.wav",
+          "sha256": "7f16c1b6d0ebcd001dc7cfef1b2d7a249879f83ff17e4098ce5dc378e678a8ae",
+          "sourceArchive": "kenney_rpg-audio.zip",
+          "sourcePath": "Audio/bookOpen.ogg",
+          "sourceSha256": "953390534377222bee89ac8cd9e60a58fdc037c71a4d7c18c43cd647c7f34ba8",
+          "durationMs": 151,
+          "peakDbfs": -5.46
+        }
+      ]
+    },
+    "progress.rank": {
+      "channel": "reward",
+      "gainDb": -9,
+      "deterministicVariantKey": "stableEventId",
+      "variants": [
+        {
+          "assetPath": "assets/audio/cues/progress-rank-1.wav",
+          "sha256": "774c4b4fb0ffb07d24beee449ca932499ccbda595a067dad36ba1a9ea1518920",
+          "sourceArchive": "kenney_rpg-audio.zip",
+          "sourcePath": "Audio/metalClick.ogg",
+          "sourceSha256": "9851a69d0c613e13bceef08060ecc4148f098ef487927cbebe270d642398a3b3",
+          "durationMs": 446,
+          "peakDbfs": -4.75
+        }
+      ]
+    }
+  }
+}

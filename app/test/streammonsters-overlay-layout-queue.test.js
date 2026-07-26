@@ -3,6 +3,258 @@
 const runtime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
 
 describe('Stream Monsters overlay layout and critical queue', () => {
+  test('baselines the first battle snapshot without replaying an already-running fight', async () => {
+    const loadPage = jest.fn();
+    const present = jest.fn();
+    const synchronizer = runtime.createBattleReplaySynchronizer({
+      loadPage,
+      present
+    });
+
+    const result = await synchronizer.sync({
+      rulesVersion: 5,
+      matches: [{ matchId: 'match-live', cursor: 7 }]
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      baseline: true,
+      replayed: 0,
+      caughtUp: true
+    }));
+    expect(loadPage).not.toHaveBeenCalled();
+    expect(present).not.toHaveBeenCalled();
+    expect(synchronizer.state().matches).toEqual([
+      expect.objectContaining({ matchId: 'match-live', cursor: 7 })
+    ]);
+  });
+
+  test('replays missed rules-v5 events once in sequence across bounded pages', async () => {
+    const pages = new Map([
+      [4, {
+        cursor: 6,
+        hasMore: true,
+        events: [
+          {
+            sequence: 6,
+            eventId: 'match-live:event:6',
+            correlationId: 'match-live',
+            type: 'streammonsters:battle_skill_used',
+            payload: {
+              matchId: 'match-live',
+              action: { matchId: 'match-live', eventSequence: 6, choice: 'B' }
+            }
+          },
+          {
+            sequence: 5,
+            eventId: 'match-live:event:5',
+            correlationId: 'match-live',
+            type: 'streammonsters:battle_choice_locked',
+            payload: { matchId: 'match-live', decision: { sequence: 5, slot: 1, choice: 'B' } }
+          }
+        ]
+      }],
+      [6, {
+        cursor: 8,
+        hasMore: false,
+        events: [
+          {
+            sequence: 6,
+            eventId: 'match-live:event:6',
+            correlationId: 'match-live',
+            type: 'streammonsters:battle_skill_used',
+            payload: {
+              matchId: 'match-live',
+              action: { matchId: 'match-live', eventSequence: 6, choice: 'B' }
+            }
+          },
+          {
+            sequence: 7,
+            eventId: 'match-live:event:7',
+            correlationId: 'match-live',
+            type: 'streammonsters:battle_skill_used',
+            payload: {
+              matchId: 'match-live',
+              action: { matchId: 'match-live', eventSequence: 7, choice: 'A' }
+            }
+          },
+          {
+            sequence: 8,
+            eventId: 'match-live:event:8',
+            correlationId: 'match-live',
+            type: 'streammonsters:battle_choice_opened',
+            payload: { matchId: 'match-live', round: 2, choices: ['A', 'B'] }
+          }
+        ]
+      }]
+    ]);
+    const loadPage = jest.fn(async ({ cursor }) => pages.get(cursor));
+    const shown = [];
+    const synchronizer = runtime.createBattleReplaySynchronizer({
+      loadPage,
+      present: async event => shown.push(event)
+    });
+    await synchronizer.sync({
+      matches: [{ matchId: 'match-live', cursor: 4 }]
+    });
+
+    const replay = await synchronizer.sync({
+      matches: [{ matchId: 'match-live', cursor: 8 }]
+    });
+
+    expect(loadPage.mock.calls.map(([request]) => request.cursor)).toEqual([4, 6]);
+    expect(shown.map(event => event.sequence)).toEqual([5, 6, 7, 8]);
+    expect(shown.map(event => event.type)).toEqual([
+      'battle_choice_locked',
+      'battle_skill_used',
+      'battle_skill_used',
+      'battle_choice_opened'
+    ]);
+    expect(shown[1].data).toEqual(expect.objectContaining({
+      eventId: 'match-live:event:6',
+      correlationId: 'match-live',
+      action: expect.objectContaining({ eventSequence: 6 })
+    }));
+    expect(replay).toEqual(expect.objectContaining({
+      baseline: false,
+      replayed: 4,
+      caughtUp: true
+    }));
+
+    await synchronizer.sync({
+      matches: [{ matchId: 'match-live', cursor: 8 }]
+    });
+    expect(shown).toHaveLength(4);
+  });
+
+  test('deduplicates a live socket event against replay and resumes after a bounded page limit', async () => {
+    const shown = [];
+    const loadPage = jest.fn(async ({ cursor }) => ({
+      cursor: cursor + 1,
+      hasMore: true,
+      events: [{
+        sequence: cursor + 1,
+        eventId: `match-bounded:event:${cursor + 1}`,
+        correlationId: 'match-bounded',
+        type: 'streammonsters:battle_skill_used',
+        payload: {
+          matchId: 'match-bounded',
+          action: { matchId: 'match-bounded', eventSequence: cursor + 1 }
+        }
+      }]
+    }));
+    const synchronizer = runtime.createBattleReplaySynchronizer({
+      loadPage,
+      present: async event => shown.push(event),
+      maxPages: 2,
+      pageLimit: 1
+    });
+    await synchronizer.sync({
+      matches: [{ matchId: 'match-bounded', cursor: 1 }]
+    });
+    synchronizer.observe('battle_skill_used', {
+      matchId: 'match-bounded',
+      sequence: 2,
+      eventId: 'match-bounded:event:2',
+      action: { eventSequence: 2 }
+    });
+
+    const first = await synchronizer.sync({
+      matches: [{ matchId: 'match-bounded', cursor: 100 }]
+    });
+
+    expect(loadPage.mock.calls.map(([request]) => request.cursor)).toEqual([2, 3]);
+    expect(shown.map(event => event.sequence)).toEqual([3, 4]);
+    expect(first.caughtUp).toBe(false);
+    expect(synchronizer.state().matches).toEqual([
+      expect.objectContaining({ matchId: 'match-bounded', cursor: 4 })
+    ]);
+
+    loadPage.mockClear();
+    const second = await synchronizer.sync({
+      matches: [{ matchId: 'match-bounded', cursor: 100 }]
+    });
+    expect(loadPage.mock.calls.map(([request]) => request.cursor)).toEqual([4, 5]);
+    expect(shown.map(event => event.sequence)).toEqual([3, 4, 5, 6]);
+    expect(second.caughtUp).toBe(false);
+    expect(synchronizer.hasSeen('battle_skill_used', {
+      matchId: 'match-bounded',
+      sequence: 5,
+      eventId: 'match-bounded:event:5'
+    })).toBe(true);
+  });
+
+  test('finishes the tracked old match before replaying a match created during disconnect', async () => {
+    const shown = [];
+    const loadPage = jest.fn(async ({ matchId, cursor }) => {
+      if (matchId === 'match-old') {
+        return {
+          cursor: 3,
+          hasMore: false,
+          events: [{
+            sequence: 3,
+            eventId: 'match-old:event:3',
+            correlationId: 'match-old',
+            type: 'streammonsters:battle_completed',
+            payload: { matchId: 'match-old', winnerSlot: 1 }
+          }]
+        };
+      }
+      expect(cursor).toBe(0);
+      return {
+        cursor: 2,
+        hasMore: false,
+        events: [{
+          sequence: 1,
+          eventId: 'match-new:event:1',
+          correlationId: 'match-new',
+          type: 'streammonsters:battle_match_found',
+          payload: { matchId: 'match-new' }
+        }, {
+          sequence: 2,
+          eventId: 'match-new:event:2',
+          correlationId: 'match-new',
+          type: 'streammonsters:battle_choice_opened',
+          payload: { matchId: 'match-new', round: 1, choices: ['A', 'B'] }
+        }]
+      };
+    });
+    const synchronizer = runtime.createBattleReplaySynchronizer({
+      loadPage,
+      present: async event => shown.push(`${event.data.matchId}:${event.type}`)
+    });
+    await synchronizer.sync({
+      matches: [{ matchId: 'match-old', cursor: 2 }]
+    });
+
+    await synchronizer.sync({
+      matches: [{ matchId: 'match-new', cursor: 2 }]
+    });
+
+    expect(shown).toEqual([
+      'match-old:battle_completed',
+      'match-new:battle_match_found',
+      'match-new:battle_choice_opened'
+    ]);
+    expect(synchronizer.state().matches).toEqual([
+      expect.objectContaining({ matchId: 'match-new', cursor: 2 })
+    ]);
+  });
+
+  test('fingerprints canonical and compatibility stat prompts per participant window', () => {
+    const canonical = {
+      matchId: 'match-level-up',
+      slot: 1,
+      deadlineMs: 123456
+    };
+    expect(runtime.statPromptKey(canonical)).toBe('match-level-up:1:123456');
+    expect(runtime.statPromptKey({
+      ...canonical,
+      compatibilityAlias: true
+    })).toBe(runtime.statPromptKey(canonical));
+    expect(runtime.statPromptKey({ ...canonical, slot: 2 })).not.toBe(runtime.statPromptKey(canonical));
+    expect(runtime.statPromptKey({ ...canonical, deadlineMs: 123457 })).not.toBe(runtime.statPromptKey(canonical));
+  });
+
   test('keeps spawn, hatch and every battle skill event in indivisible critical groups', () => {
     for (const type of [
       'egg_spawned',
@@ -12,7 +264,12 @@ describe('Stream Monsters overlay layout and critical queue', () => {
       'battle_skill_used',
       'battle_special_charged',
       'battle_round',
-      'battle_completed'
+      'battle_completed',
+      'battle_match_found',
+      'battle_choice_opened',
+      'battle_choice_locked',
+      'battle_cancelled',
+      'monster_evolved'
     ]) {
       expect(runtime.isCritical(type)).toBe(true);
     }
@@ -33,6 +290,38 @@ describe('Stream Monsters overlay layout and critical queue', () => {
       'battle_completed'
     ]);
     expect(queue.size()).toBe(5);
+  });
+
+  test('groups the durable rules-v5 room by match id and terminates it on completion or cancellation', () => {
+    const queue = runtime.createPriorityQueue({ maxSize: 3, maxCriticalOverflow: 8 });
+    const match = { matchId: 'match-v5' };
+    [
+      'battle_match_found',
+      'battle_choice_opened',
+      'battle_choice_locked',
+      'battle_skill_used',
+      'battle_completed'
+    ].forEach((type, index) => queue.enqueue(type, {
+      ...match,
+      eventId: `event-${index}`,
+      action: type === 'battle_skill_used' ? { eventSequence: 4 } : undefined
+    }, index));
+    expect(queue.snapshot().map(entry => entry.groupKey)).toEqual(
+      Array(5).fill('battle:match-v5')
+    );
+    expect(queue.snapshot().map(entry => entry.type)).toEqual([
+      'battle_match_found',
+      'battle_choice_opened',
+      'battle_choice_locked',
+      'battle_skill_used',
+      'battle_completed'
+    ]);
+
+    const cancelled = runtime.createPriorityQueue();
+    cancelled.enqueue('battle_match_found', { matchId: 'match-cancelled', eventId: 'found' }, 1);
+    cancelled.enqueue('battle_cancelled', { matchId: 'match-cancelled', eventId: 'cancel' }, 2);
+    expect(cancelled.shift(3).type).toBe('battle_match_found');
+    expect(cancelled.shift(3).type).toBe('battle_cancelled');
   });
 
   test('coalesces hype/chat, drops stale noncritical events, and never partially trims hatch groups', () => {
@@ -116,7 +405,7 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     expect(queue.snapshot().map(entry => entry.type)).toEqual(sequence.map(([type]) => type));
   });
 
-  test('drops an entire oldest critical group at the hard limit, never a partial group', () => {
+  test('retains every complete critical group beyond the soft queue limit', () => {
     const queue = runtime.createPriorityQueue({ maxSize: 4, maxCriticalOverflow: 3 });
     const enqueueBattle = battleId => {
       queue.enqueue('battle_started', { battleId }, 1);
@@ -128,8 +417,15 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     enqueueBattle('battle-oldest');
     enqueueBattle('battle-newest');
 
-    expect(queue.size()).toBeLessThanOrEqual(7);
-    expect(queue.snapshot().filter(entry => entry.groupKey === 'battle:battle-oldest')).toHaveLength(0);
+    expect(queue.size()).toBe(10);
+    expect(queue.snapshot().filter(entry => entry.groupKey === 'battle:battle-oldest').map(entry => entry.type))
+      .toEqual([
+        'battle_started',
+        'battle_round',
+        'battle_round',
+        'battle_round',
+        'battle_completed'
+      ]);
     expect(queue.snapshot().filter(entry => entry.groupKey === 'battle:battle-newest').map(entry => entry.type))
       .toEqual([
         'battle_started',
@@ -140,9 +436,9 @@ describe('Stream Monsters overlay layout and critical queue', () => {
       ]);
   });
 
-  test('rejects late unique events after a complete critical group was dropped', () => {
+  test('accepts a late unique event without sacrificing an earlier critical group', () => {
     const queue = runtime.createPriorityQueue({ maxSize: 4, maxCriticalOverflow: 3 });
-    const oldBattleId = 'battle-complete-dropped';
+    const oldBattleId = 'battle-complete-retained';
     queue.enqueue('battle_started', { battleId: oldBattleId }, 1);
     for (let round = 1; round <= 3; round += 1) {
       queue.enqueue('battle_round', { battleId: oldBattleId, round: { number: round } }, 1 + round);
@@ -153,30 +449,37 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     queue.enqueue('battle_started', { battleId: newBattleId }, 6);
     queue.enqueue('battle_round', { battleId: newBattleId, round: { number: 1 } }, 7);
     queue.enqueue('battle_round', { battleId: newBattleId, round: { number: 2 } }, 8);
-    expect(queue.snapshot().some(entry => entry.groupKey === `battle:${oldBattleId}`)).toBe(false);
+    expect(queue.snapshot().filter(entry => entry.groupKey === `battle:${oldBattleId}`))
+      .toHaveLength(5);
 
     expect(queue.enqueue('battle_skill_used', {
       battleId: oldBattleId,
       round: 4,
       actorId: 'monster-late',
       skill: { vfxKey: 'late:unique' }
-    }, 9)).toBe(false);
-    expect(queue.snapshot().some(entry => entry.groupKey === `battle:${oldBattleId}`)).toBe(false);
+    }, 9)).toBe(true);
+    expect(queue.snapshot().filter(entry => entry.groupKey === `battle:${oldBattleId}`))
+      .toHaveLength(6);
   });
 
-  test('never admits a retransmitted terminal event from a discarded incomplete group', () => {
+  test('deduplicates a retransmitted terminal event without discarding its critical group', () => {
     const queue = runtime.createPriorityQueue({ maxSize: 2, maxCriticalOverflow: 0 });
-    const battleId = 'battle-discarded-incomplete';
+    const battleId = 'battle-retained-incomplete';
     queue.enqueue('battle_started', { battleId }, 1);
     queue.enqueue('battle_round', { battleId, round: { number: 1 } }, 2);
     queue.enqueue('battle_round', { battleId, round: { number: 2 } }, 3);
-    queue.enqueue('battle_completed', { battleId }, 4);
-    queue.enqueue('battle_completed', { battleId }, 5);
+    expect(queue.enqueue('battle_completed', { battleId }, 4)).toBe(true);
+    expect(queue.enqueue('battle_completed', { battleId }, 5)).toBe(false);
 
-    expect(queue.snapshot()).toHaveLength(0);
+    expect(queue.snapshot().map(entry => entry.type)).toEqual([
+      'battle_started',
+      'battle_round',
+      'battle_round',
+      'battle_completed'
+    ]);
   });
 
-  test('bounds discarded-group tombstones and evicts the oldest deterministically', () => {
+  test('deduplicates queued critical events after the fingerprint history rolls over', () => {
     const queue = runtime.createPriorityQueue({
       maxSize: 1,
       maxCriticalOverflow: 0,
@@ -188,13 +491,13 @@ describe('Stream Monsters overlay layout and critical queue', () => {
       queue.enqueue('battle_round', { battleId, round: { number: 1 } }, index * 2 + 1);
     }
 
-    expect(queue.enqueue('battle_started', { battleId: 'battle-discarded-0' }, 1000)).toBe(true);
-    expect(queue.snapshot()).toEqual([
-      expect.objectContaining({ groupKey: 'battle:battle-discarded-0' })
-    ]);
+    expect(queue.enqueue('battle_started', { battleId: 'battle-discarded-0' }, 1000)).toBe(false);
+    expect(queue.snapshot()).toHaveLength(200);
+    expect(queue.snapshot().filter(entry => entry.groupKey === 'battle:battle-discarded-0'))
+      .toHaveLength(2);
   });
 
-  test('expires discarded-group tombstones after the configured retention window', () => {
+  test('allows reconnect snapshot initialization to replace prior critical overflow', () => {
     const queue = runtime.createPriorityQueue({
       maxSize: 2,
       maxCriticalOverflow: 0,
@@ -204,8 +507,10 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     queue.enqueue('battle_started', { battleId }, 1);
     queue.enqueue('battle_round', { battleId, round: { number: 1 } }, 2);
     queue.enqueue('battle_round', { battleId, round: { number: 2 } }, 3);
-    expect(queue.enqueue('battle_completed', { battleId }, 5)).toBe(false);
+    expect(queue.enqueue('battle_completed', { battleId }, 5)).toBe(true);
+    expect(queue.snapshot()).toHaveLength(4);
 
+    queue.beginSnapshot();
     expect(queue.enqueue('battle_started', { battleId }, 20)).toBe(true);
     expect(queue.snapshot()).toEqual([
       expect.objectContaining({ type: 'battle_started', groupKey: `battle:${battleId}` })
@@ -228,13 +533,17 @@ describe('Stream Monsters overlay layout and critical queue', () => {
     ]);
   });
 
-  test('keeps the strict bound when a snapshot leaves no room for a single critical group', () => {
+  test('prepends a reconnect snapshot without displacing a critical group', () => {
     const queue = runtime.createPriorityQueue({ maxSize: 1, maxCriticalOverflow: 0 });
     queue.enqueue('battle_started', { battleId: 'battle-snapshot' }, 1);
     queue.prependSnapshot({ marker: 'latest-state' }, 2);
-    expect(queue.size()).toBe(1);
+    expect(queue.size()).toBe(2);
     expect(queue.snapshot()).toEqual([
-      expect.objectContaining({ type: 'state_snapshot', data: { marker: 'latest-state' } })
+      expect.objectContaining({ type: 'state_snapshot', data: { marker: 'latest-state' } }),
+      expect.objectContaining({
+        type: 'battle_started',
+        groupKey: 'battle:battle-snapshot'
+      })
     ]);
   });
 
@@ -254,6 +563,206 @@ describe('Stream Monsters overlay layout and critical queue', () => {
 
     expect(queue.snapshot().map(entry => entry.type)).toEqual(['state_snapshot', 'egg_spawned']);
     expect(queue.snapshot()[0].data).toEqual({ marker: 'snapshot' });
+  });
+
+  test('replays persisted events after the snapshot cursor without replaying battle actions twice', () => {
+    const snapshot = {
+      battle: {
+        matches: [{
+          matchId: 'match-live',
+          cursor: 4
+        }]
+      },
+      recentEvents: [{
+        sequence: 19,
+        eventId: 'battle-match-snapshot-already-has',
+        correlationId: 'match-live',
+        type: 'streammonsters:battle_match_found',
+        payload: {
+          matchId: 'match-live',
+          fighters: []
+        }
+      }, {
+        sequence: 20,
+        eventId: 'battle-action-old',
+        correlationId: 'match-live',
+        type: 'streammonsters:battle_skill_used',
+        payload: {
+          matchId: 'match-live',
+          action: { eventSequence: 4, choice: 'A' }
+        }
+      }, {
+        sequence: 21,
+        eventId: 'battle-action-new',
+        correlationId: 'match-live',
+        type: 'streammonsters:battle_skill_used',
+        payload: {
+          matchId: 'match-live',
+          action: { eventSequence: 5, choice: 'B' }
+        }
+      }, {
+        sequence: 22,
+        eventId: 'egg-ready-public',
+        correlationId: 'egg-public',
+        type: 'streammonsters:egg_ready',
+        payload: {
+          displayName: 'Public Hatcher',
+          egg: { element: 'Lunar', state: 'ready' }
+        }
+      }, {
+        sequence: 23,
+        eventId: 'battle-match-already-in-snapshot',
+        correlationId: 'match-live',
+        type: 'streammonsters:battle_match_found',
+        payload: {
+          matchId: 'match-live',
+          fighters: []
+        }
+      }]
+    };
+
+    expect(runtime.replayableRecentEvents(snapshot, { afterSequence: 20 })).toEqual([
+      expect.objectContaining({
+        type: 'battle_skill_used',
+        data: expect.objectContaining({
+          eventId: 'battle-action-new',
+          correlationId: 'match-live',
+          action: expect.objectContaining({ eventSequence: 5 })
+        })
+      }),
+      expect.objectContaining({
+        type: 'egg_ready',
+        data: expect.objectContaining({
+          eventId: 'egg-ready-public',
+          displayName: 'Public Hatcher'
+        })
+      })
+    ]);
+  });
+
+  test('deduplicates persisted event ids and a matching live socket delivery', () => {
+    const snapshot = {
+      battle: { matches: [] },
+      recentEvents: [{
+        sequence: 4,
+        eventId: 'persisted-ready',
+        correlationId: 'egg-correlation',
+        type: 'streammonsters:egg_ready',
+        payload: { displayName: 'Viewer', egg: { element: 'Grove' } }
+      }, {
+        sequence: 5,
+        eventId: 'persisted-ready',
+        correlationId: 'egg-correlation',
+        type: 'streammonsters:egg_ready',
+        payload: { displayName: 'Viewer', egg: { element: 'Grove' } }
+      }]
+    };
+    const replay = runtime.replayableRecentEvents(snapshot);
+    const queue = runtime.createPriorityQueue();
+
+    expect(replay).toHaveLength(1);
+    expect(queue.enqueue(replay[0].type, replay[0].data, 1)).toBe(true);
+    expect(queue.enqueue('egg_ready', {
+      eventId: 'persisted-ready',
+      correlationId: 'egg-correlation',
+      displayName: 'Viewer',
+      egg: { element: 'Grove' }
+    }, 2)).toBe(false);
+    expect(queue.snapshot()).toHaveLength(1);
+  });
+
+  test('honors the persisted public cursor and event ids already shown live', () => {
+    const snapshot = {
+      battle: { matches: [] },
+      recentEvents: [{
+        sequence: 9,
+        eventId: 'already-cursor',
+        type: 'streammonsters:egg_ready',
+        payload: { displayName: 'One' }
+      }, {
+        sequence: 10,
+        eventId: 'already-live',
+        type: 'streammonsters:egg_ready',
+        payload: { displayName: 'Two' }
+      }, {
+        sequence: 11,
+        eventId: 'missed-while-offline',
+        type: 'streammonsters:egg_ready',
+        payload: { displayName: 'Three' }
+      }]
+    };
+
+    expect(runtime.replayableRecentEvents(snapshot, {
+      afterSequence: 9,
+      seenEventIds: new Set(['already-live'])
+    })).toEqual([
+      expect.objectContaining({
+        sequence: 11,
+        data: expect.objectContaining({
+          eventId: 'missed-while-offline',
+          displayName: 'Three'
+        })
+      })
+    ]);
+  });
+
+  test.each([
+    [{
+      layout: 'portrait',
+      quality: 'high',
+      renderer: {
+        renderer: 'webgpu',
+        fps: 59.6,
+        fallbackReason: null
+      },
+      audio: {
+        channels: {
+          master: { enabled: true, volume: 0.65 }
+        }
+      }
+    }, {
+      layout: 'portrait',
+      renderer: {
+        backend: 'webgpu',
+        quality: 'high',
+        fps: 60,
+        deviceLost: false,
+        fallbackReason: null
+      },
+      audio: {
+        muted: false,
+        masterVolume: 0.65
+      }
+    }],
+    [{
+      layout: 'landscape',
+      quality: 'medium',
+      renderer: {
+        renderer: 'canvas2d',
+        fps: 28,
+        fallbackReason: 'device-lost'
+      },
+      audio: {
+        channels: {
+          master: { enabled: false, volume: 0.4 }
+        }
+      }
+    }, {
+      layout: 'landscape',
+      renderer: {
+        backend: 'canvas2d',
+        quality: 'medium',
+        fps: 28,
+        deviceLost: true,
+        fallbackReason: 'device-lost'
+      },
+      audio: {
+        muted: true,
+        masterVolume: 0.4
+      }
+    }]
+  ])('builds a bounded OBS heartbeat for WebGPU and fallback diagnostics', (input, expected) => {
+    expect(runtime.overlayHeartbeatPayload(input)).toEqual(expected);
   });
 
   test.each([

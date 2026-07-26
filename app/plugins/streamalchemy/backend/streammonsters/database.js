@@ -1,10 +1,11 @@
 const { randomUUID } = require('crypto');
-const { deterministicTemplateId } = require('./catalog');
+const { deterministicTemplateId, getTemplate } = require('./catalog');
 
 class StreamMonstersDatabase {
-  constructor(sqlite, { logger = null } = {}) {
+  constructor(sqlite, { logger = null, assetRegistry = null } = {}) {
     this.db = sqlite?.db || sqlite;
     this.logger = logger;
+    this.assetRegistry = assetRegistry;
     this.transactionDepth = 0;
     this.afterCommitCallbacks = null;
   }
@@ -100,6 +101,7 @@ class StreamMonstersDatabase {
         personality TEXT,
         visual_source TEXT NOT NULL DEFAULT 'legacy',
         visual_key TEXT,
+        asset_version TEXT,
         template_id TEXT,
         is_selected INTEGER NOT NULL DEFAULT 0,
         battle_count INTEGER NOT NULL DEFAULT 0,
@@ -145,6 +147,7 @@ class StreamMonstersDatabase {
         user_id TEXT PRIMARY KEY,
         monster_id TEXT NOT NULL,
         stance TEXT NOT NULL,
+        stream_key TEXT,
         queued_at_ms INTEGER NOT NULL
       );
       CREATE INDEX IF NOT EXISTS streammonsters_battle_queue_time
@@ -346,6 +349,7 @@ class StreamMonstersDatabase {
         phase_version INTEGER NOT NULL DEFAULT 1,
         seed TEXT NOT NULL,
         rules_version INTEGER NOT NULL DEFAULT 5,
+        matchmaking_level_gap INTEGER NOT NULL DEFAULT 2,
         round_number INTEGER NOT NULL DEFAULT 0,
         roster_deadline_ms INTEGER,
         action_deadline_ms INTEGER,
@@ -365,6 +369,7 @@ class StreamMonstersDatabase {
         viewer_id TEXT NOT NULL,
         slot INTEGER NOT NULL CHECK (slot IN (1, 2)),
         queued_monster_id TEXT NOT NULL,
+        queued_level INTEGER,
         locked_monster_id TEXT,
         roster_json TEXT,
         combat_state_json TEXT,
@@ -424,6 +429,18 @@ class StreamMonstersDatabase {
         FOREIGN KEY (match_id) REFERENCES streammonsters_matches(match_id)
       );
 
+      CREATE TABLE IF NOT EXISTS streammonsters_public_events (
+        sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id TEXT NOT NULL UNIQUE,
+        correlation_id TEXT NOT NULL,
+        stream_key TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        payload_json TEXT NOT NULL,
+        created_at_ms INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS streammonsters_public_events_stream_cursor
+        ON streammonsters_public_events(stream_key, sequence);
+
       CREATE TABLE IF NOT EXISTS streammonsters_match_rewards (
         match_id TEXT NOT NULL,
         participant_id TEXT NOT NULL,
@@ -454,6 +471,23 @@ class StreamMonstersDatabase {
       );
       CREATE INDEX IF NOT EXISTS streammonsters_stat_prompts_viewer_open
         ON streammonsters_stat_prompts(viewer_id, status, deadline_ms);
+
+      CREATE TABLE IF NOT EXISTS streammonsters_stat_allocations (
+        prompt_id TEXT PRIMARY KEY,
+        viewer_id TEXT NOT NULL,
+        monster_id TEXT NOT NULL,
+        source_key TEXT NOT NULL UNIQUE,
+        deadline_ms INTEGER NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('open', 'claimed', 'expired')),
+        choice TEXT,
+        event_id TEXT UNIQUE,
+        created_at_ms INTEGER NOT NULL,
+        claimed_at_ms INTEGER
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS streammonsters_one_open_stat_allocation
+        ON streammonsters_stat_allocations(monster_id) WHERE status = 'open';
+      CREATE INDEX IF NOT EXISTS streammonsters_stat_allocations_viewer_open
+        ON streammonsters_stat_allocations(viewer_id, status, deadline_ms);
 
       CREATE TABLE IF NOT EXISTS streammonsters_arena_seasons (
         season_id TEXT PRIMARY KEY,
@@ -490,6 +524,7 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_monsters', 'personality', 'TEXT');
     this.ensureColumn('streammonsters_monsters', 'visual_source', "TEXT NOT NULL DEFAULT 'legacy'");
     this.ensureColumn('streammonsters_monsters', 'visual_key', 'TEXT');
+    this.ensureColumn('streammonsters_monsters', 'asset_version', 'TEXT');
     this.ensureColumn('streammonsters_monsters', 'template_id', 'TEXT');
     this.ensureColumn('streammonsters_art_pool', 'template_id', 'TEXT');
     this.ensureColumn('streammonsters_monsters', 'battle_count', 'INTEGER NOT NULL DEFAULT 0');
@@ -509,6 +544,13 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_battles', 'replay_version', 'INTEGER');
     this.ensureColumn('streammonsters_match_decisions', 'event_sequence', 'INTEGER');
     this.ensureColumn('streammonsters_match_actions', 'event_sequence', 'INTEGER');
+    this.ensureColumn(
+      'streammonsters_matches',
+      'matchmaking_level_gap',
+      'INTEGER NOT NULL DEFAULT 2'
+    );
+    this.ensureColumn('streammonsters_match_participants', 'queued_level', 'INTEGER');
+    this.ensureColumn('streammonsters_battle_queue', 'stream_key', 'TEXT');
     this.ensureColumn('streammonsters_gift_mappings', 'enabled', 'INTEGER NOT NULL DEFAULT 1');
     this.ensureColumn('streammonsters_viewer_progress', 'pending_xp', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_viewer_progress', 'battle_win_streak', 'INTEGER NOT NULL DEFAULT 0');
@@ -538,6 +580,7 @@ class StreamMonstersDatabase {
       WHERE ready_at_ms IS NULL AND state != 'queued'
     `).run();
       this.migrateLegacyTemplateIds();
+      this.migrateCanonicalFurryVisuals();
     };
     const transaction = this.db.transaction(migrate);
     if (typeof transaction.immediate === 'function') transaction.immediate();
@@ -556,6 +599,41 @@ class StreamMonstersDatabase {
       deterministicTemplateId(row.element, row.seed || row.monster_id),
       row.monster_id
     ));
+  }
+
+  migrateCanonicalFurryVisuals() {
+    if (!this.assetRegistry) return;
+    const auditedAssets = this.assetRegistry.audit().assets;
+    const rows = this.db.prepare(`
+      SELECT monster_id, template_id, evolution_stage
+      FROM streammonsters_monsters
+      WHERE template_id IS NOT NULL
+        AND template_id != ''
+        AND (
+          visual_source IS NULL
+          OR visual_source = ''
+          OR visual_source IN ('legacy', 'furry', 'kenney')
+        )
+    `).all();
+    const update = this.db.prepare(`
+      UPDATE streammonsters_monsters
+      SET image_url = ?, visual_source = 'furry', visual_key = ?,
+          asset_version = ?
+      WHERE monster_id = ?
+    `);
+    rows.forEach(row => {
+      const template = getTemplate(row.template_id);
+      if (!template) return;
+      const stage = Math.max(1, Math.min(3, Number(row.evolution_stage) || 1));
+      const asset = auditedAssets.get(`${template.templateId}:${stage}`);
+      if (!asset) return;
+      update.run(
+        asset.publicUrl,
+        stage === 1 ? `furry:${template.templateId}` : `furry:${template.templateId}:stage-${stage}`,
+        asset.assetVersion || null,
+        row.monster_id
+      );
+    });
   }
 
   ensureColumn(table, column, definition) {
@@ -880,6 +958,27 @@ class StreamMonstersDatabase {
     return alias?.canonical_user_id || value;
   }
 
+  getViewerDisplayName(userId) {
+    const value = String(userId || '').trim();
+    if (!value) return null;
+    const identity = this.db.prepare(`
+      SELECT current_unique_id
+      FROM streammonsters_viewer_identities
+      WHERE canonical_user_id = ? OR platform_user_id = ?
+      ORDER BY updated_at_ms DESC
+      LIMIT 1
+    `).get(value, value);
+    if (identity?.current_unique_id) return identity.current_unique_id;
+    const alias = this.db.prepare(`
+      SELECT alias_id
+      FROM streammonsters_viewer_aliases
+      WHERE canonical_user_id = ?
+      ORDER BY updated_at_ms DESC
+      LIMIT 1
+    `).get(value);
+    return alias?.alias_id || null;
+  }
+
   viewerDataExists(userId) {
     return Boolean(this.db.prepare(`
       SELECT 1 FROM (
@@ -1050,13 +1149,14 @@ class StreamMonstersDatabase {
         INSERT INTO streammonsters_monsters (
           monster_id, user_id, egg_id, name, element, rarity, level, xp,
           stats_json, image_url, personality, visual_source, visual_key,
-          template_id, is_selected, created_at_ms
-        ) VALUES (?, ?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?)
+          asset_version, template_id, is_selected, created_at_ms
+        ) VALUES (?, ?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         monsterId, egg.user_id, egg.egg_id, monster.name, egg.element, monster.rarity,
         JSON.stringify(monster.stats), monster.imageUrl || egg.image_url || null,
         monster.personality || 'Curious', monster.visualSource || egg.visual_source || 'legacy',
         monster.visualKey || egg.visual_key || null,
+        monster.assetVersion || null,
         monster.templateId || deterministicTemplateId(egg.element, egg.seed),
         hasSelection ? 0 : 1, monster.createdAtMs
       );
@@ -1222,12 +1322,29 @@ class StreamMonstersDatabase {
     return result.changes ? this.getElementEssence(userId, element) : null;
   }
 
-  setMonsterEvolutionStage(monsterId, stage, spentEssence, imageUrl, visualKey) {
+  setMonsterEvolutionStage(
+    monsterId,
+    stage,
+    spentEssence,
+    imageUrl,
+    visualKey,
+    visualSource = 'furry',
+    assetVersion = 'furry-1.5.0'
+  ) {
     this.db.prepare(`
       UPDATE streammonsters_monsters
-      SET evolution_stage = ?, evolution_essence_spent = ?, image_url = ?, visual_key = ?
+      SET evolution_stage = ?, evolution_essence_spent = ?, image_url = ?,
+          visual_source = ?, visual_key = ?, asset_version = ?
       WHERE monster_id = ?
-    `).run(stage, spentEssence, imageUrl, visualKey, monsterId);
+    `).run(
+      stage,
+      spentEssence,
+      imageUrl,
+      visualSource,
+      visualKey,
+      assetVersion,
+      monsterId
+    );
     return this.getMonster(monsterId);
   }
 
@@ -1447,15 +1564,17 @@ class StreamMonstersDatabase {
     `).get(sinceMs, userAId, userBId, userBId, userAId));
   }
 
-  enqueueBattle({ userId, monsterId, stance, queuedAtMs }) {
+  enqueueBattle({ userId, monsterId, stance, streamKey = null, queuedAtMs }) {
     this.db.prepare(`
-      INSERT INTO streammonsters_battle_queue (user_id, monster_id, stance, queued_at_ms)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO streammonsters_battle_queue (
+        user_id, monster_id, stance, stream_key, queued_at_ms
+      ) VALUES (?, ?, ?, ?, ?)
       ON CONFLICT(user_id) DO UPDATE SET
         monster_id = excluded.monster_id,
         stance = excluded.stance,
+        stream_key = excluded.stream_key,
         queued_at_ms = excluded.queued_at_ms
-    `).run(userId, monsterId, stance, queuedAtMs);
+    `).run(userId, monsterId, stance, streamKey, queuedAtMs);
     return this.getBattleQueueEntry(userId);
   }
 
@@ -1478,10 +1597,18 @@ class StreamMonstersDatabase {
     `).run(userId).changes > 0;
   }
 
-  purgeBattleQueue(cutoffMs) {
+  purgeBattleQueue(cutoffMs, streamKey = undefined) {
+    if (streamKey === undefined) {
+      return this.db.prepare(`
+        DELETE FROM streammonsters_battle_queue WHERE queued_at_ms < ?
+      `).run(cutoffMs).changes;
+    }
+    const scopedStreamKey = String(streamKey || '').trim();
+    if (!scopedStreamKey) return 0;
     return this.db.prepare(`
-      DELETE FROM streammonsters_battle_queue WHERE queued_at_ms < ?
-    `).run(cutoffMs).changes;
+      DELETE FROM streammonsters_battle_queue
+      WHERE stream_key = ? AND queued_at_ms < ?
+    `).run(scopedStreamKey, cutoffMs).changes;
   }
 
   awardMonsterXp(monsterId, amount) {
@@ -1759,6 +1886,91 @@ class StreamMonstersDatabase {
       input.visualKey, input.templateId || null, input.createdAtMs
     );
     return this.db.prepare('SELECT * FROM streammonsters_art_pool WHERE art_id = ?').get(artId);
+  }
+
+  appendPublicEvent({
+    eventId,
+    correlationId,
+    streamKey,
+    eventType,
+    payload,
+    createdAtMs = Date.now()
+  }) {
+    const result = this.db.prepare(`
+      INSERT OR IGNORE INTO streammonsters_public_events (
+        event_id, correlation_id, stream_key, event_type, payload_json, created_at_ms
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
+      eventId,
+      correlationId,
+      streamKey || 'offline',
+      eventType,
+      JSON.stringify(payload || {}),
+      createdAtMs
+    );
+    const row = this.db.prepare(`
+      SELECT sequence, event_id, correlation_id, stream_key, event_type,
+             payload_json, created_at_ms
+      FROM streammonsters_public_events
+      WHERE event_id = ?
+    `).get(eventId);
+    return {
+      inserted: result.changes > 0,
+      event: row ? this.projectPublicEventRow(row) : null
+    };
+  }
+
+  getRecentPublicEvents(streamKey, {
+    afterSequence = 0,
+    limit = 100
+  } = {}) {
+    const normalizedLimit = Math.max(1, Math.min(200, Number(limit) || 100));
+    const rows = this.db.prepare(`
+      SELECT sequence, event_id, correlation_id, stream_key, event_type,
+             payload_json, created_at_ms
+      FROM streammonsters_public_events
+      WHERE stream_key = ? AND sequence > ?
+      ORDER BY sequence DESC
+      LIMIT ?
+    `).all(
+      streamKey || 'offline',
+      Math.max(0, Number(afterSequence) || 0),
+      normalizedLimit
+    );
+    return rows.reverse().map(row => this.projectPublicEventRow(row));
+  }
+
+  projectPublicEventRow(row) {
+    let payload = {};
+    try {
+      payload = JSON.parse(row.payload_json || '{}');
+    } catch (_) {
+      payload = {};
+    }
+    return {
+      sequence: row.sequence,
+      eventId: row.event_id,
+      correlationId: row.correlation_id,
+      type: row.event_type,
+      createdAtMs: row.created_at_ms,
+      payload
+    };
+  }
+
+  prunePublicEvents(cutoffMs, maximumRows = 500) {
+    const expired = this.db.prepare(`
+      DELETE FROM streammonsters_public_events WHERE created_at_ms < ?
+    `).run(cutoffMs).changes;
+    const overflow = this.db.prepare(`
+      DELETE FROM streammonsters_public_events
+      WHERE sequence IN (
+        SELECT sequence
+        FROM streammonsters_public_events
+        ORDER BY sequence DESC
+        LIMIT -1 OFFSET ?
+      )
+    `).run(Math.max(1, Number(maximumRows) || 500)).changes;
+    return expired + overflow;
   }
 
   consumeArtPoolSkin(element, variant, monsterId = null, consumedAtMs = Date.now()) {

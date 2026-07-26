@@ -1,7 +1,9 @@
 const {
   TEMPLATE_CATALOG,
+  FURRY_ASSET_VERSION,
   getTemplate,
   getTemplatesForElement,
+  getEvolutionAssetPath,
   hashNumber
 } = require('./catalog');
 
@@ -19,9 +21,16 @@ const MISSION_DEFINITIONS = Object.freeze([
 ]);
 
 class CollectionService {
-  constructor({ store, progression = null, emit = () => {}, now = () => Date.now() }) {
+  constructor({
+    store,
+    progression = null,
+    assetRegistry = null,
+    emit = () => {},
+    now = () => Date.now()
+  }) {
     this.store = store;
     this.progression = progression;
+    this.assetRegistry = assetRegistry;
     this.emit = emit;
     this.now = now;
   }
@@ -212,15 +221,33 @@ class CollectionService {
       if (essence.amount < spendNow) {
         throw new Error('STREAM_MONSTERS_EVOLUTION_ESSENCE_REQUIRED');
       }
+      const egg = this.store.getEgg(monster.egg_id);
+      const evolutionVisual = this.assetRegistry
+        ? this.assetRegistry.resolveVisual({
+          templateId: monster.template_id,
+          stage: nextStage,
+          seed: `${egg?.seed || monster.monster_id}:evolution:${nextStage}`,
+          element: monster.element
+        })
+        : {
+          imageUrl: getEvolutionAssetPath(monster.template_id, nextStage),
+          visualSource: 'furry',
+          visualKey: `furry:${monster.template_id}:stage-${nextStage}`,
+          assetVersion: FURRY_ASSET_VERSION
+        };
+      if (!evolutionVisual?.imageUrl) {
+        throw new Error('STREAM_MONSTERS_EVOLUTION_ASSET_UNAVAILABLE');
+      }
       const afterSpend = this.store.spendElementEssence(userId, monster.element, spendNow);
       if (!afterSpend) throw new Error('STREAM_MONSTERS_EVOLUTION_ESSENCE_REQUIRED');
-      const stageKey = nextStage === 2 ? 'ii' : 'iii';
       const evolved = this.store.setMonsterEvolutionStage(
         monsterId,
         nextStage,
         spentRequired,
-        `/plugins/streamalchemy/assets/streammonsters/furry/evolutions/${monster.template_id}-${stageKey}.png`,
-        `furry:${monster.template_id}:evolution-${stageKey}`
+        evolutionVisual.imageUrl,
+        evolutionVisual.visualKey,
+        evolutionVisual.visualSource,
+        evolutionVisual.assetVersion
       );
       const result = {
         evolutionStage: nextStage,
@@ -323,6 +350,10 @@ class CollectionService {
         length += 1;
         lastUserId = userId;
         lastGiftAtMs = atMs;
+      } else {
+        length = 1;
+        lastGiftAtMs = atMs;
+        awarded = [];
       }
       const milestone = [[3, 5], [5, 10], [10, 20]]
         .find(([threshold]) => length >= threshold && !awarded.includes(threshold));
@@ -342,11 +373,25 @@ class CollectionService {
 
   selectVisual({ template, egg, kenneyBuilder = null, hasBundledAsset = () => true }) {
     if (hasBundledAsset(template)) {
-      return { imageUrl: template.assetPath, visualSource: 'furry', visualKey: `furry:${template.templateId}` };
+      return {
+        imageUrl: template.assetPath,
+        visualSource: 'furry',
+        visualKey: `furry:${template.templateId}`,
+        assetVersion: this.assetRegistry?.getAsset(template.templateId, 1)?.assetVersion ||
+          FURRY_ASSET_VERSION
+      };
     }
     const fallback = kenneyBuilder?.build?.({ seed: egg.seed, element: egg.element }) || null;
-    return fallback ? { imageUrl: fallback.publicUrl, visualSource: fallback.visualSource, visualKey: fallback.visualKey } : {
-      imageUrl: template.assetPath, visualSource: 'furry', visualKey: `furry:${template.templateId}`
+    return fallback ? {
+      imageUrl: fallback.publicUrl,
+      visualSource: fallback.visualSource,
+      visualKey: fallback.visualKey,
+      assetVersion: 'kenney-cc0-v1'
+    } : {
+      imageUrl: template.assetPath,
+      visualSource: 'furry',
+      visualKey: `furry:${template.templateId}`,
+      assetVersion: FURRY_ASSET_VERSION
     };
   }
 

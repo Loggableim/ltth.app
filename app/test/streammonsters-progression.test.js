@@ -1,6 +1,9 @@
 const Database = require('better-sqlite3');
 const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
 const ProgressionService = require('../plugins/streamalchemy/backend/streammonsters/progression-service');
+const BattleMatchService = require(
+  '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+);
 
 function createProgression() {
   const store = new StreamMonstersDatabase(new Database(':memory:'));
@@ -15,6 +18,27 @@ function createProgression() {
 }
 
 describe('Stream Monsters progression', () => {
+  test('uses the configured Collector season duration and applies changes immediately', () => {
+    const store = new StreamMonstersDatabase(new Database(':memory:'));
+    store.initialize();
+    const nowMs = Date.parse('2026-07-21T12:00:00Z');
+    const progression = new ProgressionService({
+      store,
+      now: () => new Date(nowMs),
+      seasonDurationDays: 7
+    });
+
+    const weekly = progression.getCurrentSeason();
+    expect(weekly.ends_at_ms - weekly.starts_at_ms).toBe(7 * 24 * 60 * 60 * 1000);
+    expect(weekly.season_id).toMatch(/^season-7-/);
+
+    progression.setSeasonDurationDays(60);
+    const long = progression.getCurrentSeason();
+    expect(long.ends_at_ms - long.starts_at_ms).toBe(60 * 24 * 60 * 60 * 1000);
+    expect(long.season_id).toMatch(/^season-60-/);
+    expect(long.season_id).not.toBe(weekly.season_id);
+  });
+
   test('creates a transparent deterministic event and daily quest progress for a viewer', () => {
     const { store, progression, emitted } = createProgression();
 
@@ -72,5 +96,95 @@ describe('Stream Monsters progression', () => {
     expect(store.getViewerQuests('viewer-a', '2026-W30')).toEqual(expect.arrayContaining([
       expect.objectContaining({ quest_key: 'weekly:collection', progress: 2, completed: 0 })
     ]));
+  });
+
+  test('opens and consumes a 30-second stat choice when non-battle XP levels a monster', () => {
+    const store = new StreamMonstersDatabase(new Database(':memory:'));
+    store.initialize();
+    const emitted = [];
+    let nowMs = 1_000;
+    const matchService = new BattleMatchService({
+      store,
+      battleService: {},
+      emit: (event, payload) => emitted.push({ event, payload }),
+      now: () => nowMs,
+      autoStart: false
+    });
+    const progression = new ProgressionService({
+      store,
+      now: () => new Date('2026-07-21T12:00:00Z'),
+      onMonsterProgressed: change => {
+        matchService.createStandaloneStatPrompt({
+          userId: change.userId,
+          monsterId: change.monster.monster_id,
+          sourceKey: change.sourceKey
+        });
+      }
+    });
+    const egg = store.createEgg({
+      userId: 'viewer-level',
+      giftId: 1,
+      giftName: 'Team Heart',
+      element: 'Ember',
+      eggColor: '#ef6b45',
+      seed: 'level-seed',
+      createdAtMs: 1,
+      hatchDurationMs: 0
+    });
+    const monster = store.createMonsterFromEgg(egg, {
+      name: 'Ashfang',
+      rarity: 'Common',
+      stats: { vitality: 7, might: 7, guard: 7, agility: 7 },
+      templateId: 'ashfang',
+      imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+      createdAtMs: 2
+    });
+    store.db.prepare(`
+      UPDATE streammonsters_monsters SET xp = 90 WHERE monster_id = ?
+    `).run(monster.monster_id);
+
+    progression.recordHatch('viewer-level', 'stream-level', store.getMonster(monster.monster_id));
+
+    const prompt = store.db.prepare(`
+      SELECT * FROM streammonsters_stat_allocations
+      WHERE viewer_id = 'viewer-level' AND status = 'open'
+    `).get();
+    expect(prompt).toEqual(expect.objectContaining({
+      monster_id: monster.monster_id,
+      deadline_ms: 31_000,
+      status: 'open'
+    }));
+    expect(emitted).toContainEqual(expect.objectContaining({
+      event: 'streammonsters:monster_stat_prompt',
+      payload: expect.objectContaining({
+        deadlineMs: 31_000,
+        choices: ['1', '2', '3', '4']
+      })
+    }));
+
+    expect(matchService.submitStatChoice({
+      userId: 'viewer-level',
+      choice: '2',
+      eventId: 'outside-level-choice'
+    })).toEqual(expect.objectContaining({
+      handled: true,
+      stat: 'might',
+      matchId: null
+    }));
+    expect(store.getMonster(monster.monster_id)).toEqual(expect.objectContaining({
+      level: 2,
+      unspent_stat_points: 0,
+      stats: expect.objectContaining({ might: 8 })
+    }));
+    expect(matchService.submitStatChoice({
+      userId: 'viewer-level',
+      choice: '3',
+      eventId: 'outside-level-choice'
+    })).toEqual({ handled: false, reason: 'duplicate_event' });
+
+    nowMs = 40_000;
+    expect(matchService.sweep()).toEqual(expect.objectContaining({
+      allocationsExpired: 0
+    }));
   });
 });

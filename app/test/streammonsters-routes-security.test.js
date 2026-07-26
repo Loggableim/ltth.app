@@ -2,7 +2,10 @@ const Database = require('better-sqlite3');
 const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
 const StreamMonstersRoutes = require('../plugins/streamalchemy/backend/streammonsters/routes');
 
-function createSubject() {
+function createSubject({
+  now = () => Date.now(),
+  gcceStateProvider
+} = {}) {
   const registered = [];
   const store = new StreamMonstersDatabase(new Database(':memory:'));
   store.initialize();
@@ -13,6 +16,14 @@ function createSubject() {
     hatchDurationMs: 120_000,
     visualPack: 'furry'
   };
+  const engine = {
+    streamKey: null,
+    hatchDurationFor: () => 120_000,
+    markReadyEggs: jest.fn(() => {
+      store.markReadyEggs(now());
+      store.expireReadyEggs(now(), 86_400_000);
+    })
+  };
   const routes = new StreamMonstersRoutes({
     api: {
       registerRoute: (method, routePath, handler) => registered.push({ method, routePath, handler }),
@@ -20,9 +31,11 @@ function createSubject() {
     },
     pluginDir: __dirname,
     store,
-    engine: { streamKey: null, hatchDurationFor: () => 120_000 },
+    engine,
     progression: { getCurrentSeason: () => null, getLeaderboard: () => [] },
     collection: { getHeartChain: () => null, getStreamMission: () => null },
+    gcceStateProvider,
+    now,
     configProvider: {
       getConfig: () => ({ streamMonsters: config }),
       updateConfig: updates => ({ streamMonsters: { ...config, ...updates.streamMonsters } })
@@ -31,6 +44,8 @@ function createSubject() {
   routes.register();
   return {
     routes,
+    store,
+    engine,
     find: (method, routePath) => registered.find(route => (
       route.method === method && route.routePath === routePath
     )).handler
@@ -73,6 +88,170 @@ describe('Stream Monsters Rules v5 route security', () => {
     }, res);
     expect(JSON.stringify(res.payload)).not.toMatch(/private-creator|arbitrary-viewer|user_id/);
     expect(res.payload.config.visualPack).toBe('furry');
+    expect(res.payload.battle).toEqual({ rulesVersion: 5, matches: [] });
+  });
+
+  test('keeps creator-only GCCE diagnostics out of the public overlay snapshot', async () => {
+    const gcce = {
+      commandPrefix: '!',
+      commandReferences: { eggs: '!eier', battle: '!battle' },
+      commandPolicies: {
+        eggs: { userCooldownMs: 1000, globalCooldownMs: 250 }
+      },
+      tiktokFilter: {
+        status: 'not_probeable',
+        probeable: false,
+        recommendation: 'use_custom_aliases'
+      },
+      registrationState: 'active',
+      registrationError: 'creator-only detail',
+      registrationConflicts: ['private-conflict'],
+      registeredCommands: ['eier', 'battle'],
+      unavailableCommands: ['rank'],
+      commandsRegistered: true
+    };
+    const { find } = createSubject({ gcceStateProvider: () => gcce });
+
+    const publicState = response();
+    await find('GET', '/api/streammonsters/state')({ query: {} }, publicState);
+    expect(publicState.payload.gcce).toEqual({
+      commandPrefix: '!',
+      commandReferences: { eggs: '!eier', battle: '!battle' },
+      registrationState: 'active',
+      registeredCommands: ['eier', 'battle'],
+      commandsRegistered: true
+    });
+    expect(JSON.stringify(publicState.payload.gcce)).not.toMatch(
+      /commandPolicies|tiktokFilter|creator-only|private-conflict|unavailableCommands/
+    );
+
+    const creatorState = response();
+    await find('GET', '/api/streammonsters/creator-state')({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      query: {}
+    }, creatorState);
+    expect(creatorState.payload.gcce).toBe(gcce);
+  });
+
+  test('accepts a bounded overlay heartbeat but exposes diagnostics only to the creator route', async () => {
+    let nowMs = 10_000;
+    const { find } = createSubject({ now: () => nowMs });
+    const heartbeat = response();
+    await find('POST', '/api/streammonsters/overlay/heartbeat')({
+      body: {
+        layout: 'portrait',
+        renderer: {
+          backend: 'webgpu',
+          quality: 'high',
+          fps: 59.4,
+          deviceLost: false,
+          fallbackReason: 'private path and token'
+        },
+        audio: { muted: true, masterVolume: 0.42 },
+        secret: 'must-not-escape'
+      }
+    }, heartbeat);
+    expect(heartbeat.payload).toEqual({ success: true, acceptedAtMs: 10_000 });
+
+    const creator = response();
+    await find('GET', '/api/streammonsters/creator-state')({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      query: {}
+    }, creator);
+    expect(creator.payload).toEqual(expect.objectContaining({
+      obs: { status: 'connected', lastSeenAtMs: 10_000, ageMs: 0 },
+      renderer: expect.objectContaining({
+        backend: 'webgpu',
+        quality: 'high',
+        fps: 59,
+        fallbackReason: null,
+        status: 'connected'
+      }),
+      audioRuntime: {
+        muted: true,
+        masterVolume: 0.42,
+        status: 'connected'
+      }
+    }));
+    expect(JSON.stringify(creator.payload)).not.toContain('must-not-escape');
+
+    const publicState = response();
+    await find('GET', '/api/streammonsters/state')({ query: {} }, publicState);
+    expect(publicState.payload.renderer).toBeUndefined();
+    expect(publicState.payload.obs).toBeUndefined();
+    expect(publicState.payload.audioRuntime).toBeUndefined();
+
+    nowMs = 30_000;
+    const stale = response();
+    await find('GET', '/api/streammonsters/creator-state')({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      query: {}
+    }, stale);
+    expect(stale.payload.obs.status).toBe('stale');
+  });
+
+  test('repairs only due eggs behind admin auth with dry-run and explicit confirmation', async () => {
+    let nowMs = 200_000;
+    const { find, store, engine } = createSubject({ now: () => nowMs });
+    store.createEgg({
+      userId: 'viewer-repair',
+      giftId: 1,
+      giftName: 'Team Heart',
+      element: 'Ember',
+      eggColor: '#ef6b45',
+      seed: 'repair-seed',
+      createdAtMs: 1,
+      hatchDurationMs: 100,
+      readyAtMs: 101,
+      expiresAtMs: 86_400_101,
+      state: 'incubating'
+    });
+    const localRequest = body => ({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      body
+    });
+
+    const dry = response();
+    await find('POST', '/api/streammonsters/repair/eggs')(
+      localRequest({ dryRun: true }),
+      dry
+    );
+    expect(dry.payload).toEqual(expect.objectContaining({
+      success: true,
+      dryRun: true,
+      before: { readyDue: 1, expiryDue: 0, queued: 0 },
+      repaired: 0
+    }));
+    expect(engine.markReadyEggs).not.toHaveBeenCalled();
+
+    const missingConfirmation = response();
+    await find('POST', '/api/streammonsters/repair/eggs')(
+      localRequest({ dryRun: false }),
+      missingConfirmation
+    );
+    expect(missingConfirmation.statusCode).toBe(400);
+    expect(engine.markReadyEggs).not.toHaveBeenCalled();
+
+    const repaired = response();
+    await find('POST', '/api/streammonsters/repair/eggs')(
+      localRequest({ dryRun: false, confirm: 'reconcile_eggs' }),
+      repaired
+    );
+    expect(repaired.payload).toEqual(expect.objectContaining({
+      success: true,
+      dryRun: false,
+      repaired: 1,
+      after: { readyDue: 0, expiryDue: 0, queued: 0 }
+    }));
+    expect(store.getViewerEggs('viewer-repair', 'ready')).toHaveLength(1);
   });
 
   test.each([
@@ -80,6 +259,8 @@ describe('Stream Monsters Rules v5 route security', () => {
     ['POST', '/api/streammonsters/pool/prepare'],
     ['GET', '/api/streammonsters/local-runtime/status'],
     ['POST', '/api/streammonsters/local-runtime/install'],
+    ['GET', '/api/streammonsters/local-runtime/jobs/:jobId'],
+    ['DELETE', '/api/streammonsters/local-runtime/jobs/:jobId'],
     ['GET', '/api/streamalchemy/providers/status']
   ])('returns the same unauthenticated 410 contract for retired %s %s', async (method, routePath) => {
     const { find } = createSubject();

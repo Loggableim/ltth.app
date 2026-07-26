@@ -871,31 +871,31 @@
     "devStatus": "working-beta",
     "storeAvailable": false,
     "image": {
-      "de": "/screenshots/features/stream-monsters.png",
-      "en": "/screenshots/features/stream-monsters.png",
-      "es": "/screenshots/features/stream-monsters.png",
-      "fr": "/screenshots/features/stream-monsters.png"
+      "de": "/screenshots/features/stream-monsters-creator-1.5.png",
+      "en": "/screenshots/features/stream-monsters-creator-1.5.png",
+      "es": "/screenshots/features/stream-monsters-creator-1.5.png",
+      "fr": "/screenshots/features/stream-monsters-creator-1.5.png"
     },
     "translations": {
       "de": {
         "title": "Stream Monsters",
-        "summary": "Ausgewählte TikTok-Geschenke werden zu fairen Element-Eiern, permanenten Monstern, Quests und reproduzierbaren Duellen.",
-        "firstResult": "ein ausgewähltes Gift erzeugt sofort ein Ei; Kenney liefert ohne Bild-KI ein lokales Monster"
+        "summary": "Stream Monsters 1.5 verbindet ausschließlich durch aktivierte Gifts erzeugte Eier, 72 gebündelte Furry-Formen mit kosmetischer Evolution, permanenten Fortschritt und interaktive A/B/C-Duelle in einer Portrait-first-Arena.",
+        "firstResult": "Der Creator zeigt Live-Bereitschaft, Gifts-only-Eier, alle 72 Formen, die A/B/C-Arena und die OBS-Browserquelle, ohne eine LIVE-Aktion auszulösen."
       },
       "en": {
         "title": "Stream Monsters",
-        "summary": "Selected TikTok gifts become fair element eggs, permanent monsters, quests and reproducible duels.",
-        "firstResult": "a selected gift spawns an egg immediately and Kenney supplies a local monster without image AI"
+        "summary": "Stream Monsters 1.5 combines eggs created only by enabled gifts, 72 bundled Furry forms with cosmetic evolution, permanent progression, and interactive A/B/C battles in a portrait-first arena.",
+        "firstResult": "The Creator shows live readiness, gifts-only eggs, all 72 forms, the A/B/C arena, and the OBS browser source without triggering a LIVE action."
       },
       "es": {
         "title": "Stream Monsters",
-        "summary": "Los regalos seleccionados se convierten en huevos elementales justos, monstruos permanentes, misiones y duelos reproducibles.",
-        "firstResult": "un regalo seleccionado crea un huevo y Kenney genera un monstruo local sin IA de imagen"
+        "summary": "Stream Monsters 1.5 combina huevos creados solo por regalos activados, 72 formas Furry incluidas con evolución cosmética, progreso permanente y combates interactivos A/B/C en una arena pensada para formato vertical.",
+        "firstResult": "Creator muestra la preparación para directo, los huevos solo por regalos, las 72 formas, la arena A/B/C y la fuente de navegador de OBS sin activar ninguna acción LIVE."
       },
       "fr": {
         "title": "Stream Monsters",
-        "summary": "Les cadeaux sélectionnés deviennent des oeufs élémentaires équitables, des monstres permanents, des quêtes et des duels reproductibles.",
-        "firstResult": "un cadeau sélectionné crée un oeuf et Kenney fournit un monstre local sans IA d’image"
+        "summary": "Stream Monsters 1.5 réunit des œufs créés uniquement par les cadeaux activés, 72 formes Furry intégrées avec évolution cosmétique, une progression permanente et des combats interactifs A/B/C dans une arène pensée pour le portrait.",
+        "firstResult": "Le Creator affiche l’état de préparation, les œufs obtenus uniquement par cadeaux, les 72 formes, l’arène A/B/C et la source navigateur OBS sans déclencher d’action LIVE."
       }
     }
   },

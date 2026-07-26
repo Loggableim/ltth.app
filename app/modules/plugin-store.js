@@ -12,6 +12,7 @@ const {
 const {
   hasStoreAdminAccess
 } = require('./clerk-store-auth');
+const { version: DEFAULT_LTTH_VERSION } = require('../package.json');
 
 const DEFAULT_OFFICIAL_STORE_URL = process.env.LTTH_PLUGIN_STORE_URL || 'https://ltth.app/plugin-store.json';
 
@@ -182,6 +183,7 @@ class PluginStore {
     this.logger = options.logger || pluginLoader.logger || console;
     this.fetchImpl = options.fetchImpl || global.fetch;
     this.officialStoreUrl = options.officialStoreUrl || DEFAULT_OFFICIAL_STORE_URL;
+    this.ltthVersion = String(options.ltthVersion || DEFAULT_LTTH_VERSION || '0.0.0');
     this.cacheTtlMs = options.cacheTtlMs || 5 * 60 * 1000;
     this.cache = new Map();
     this.stateFile = options.stateFile || this.getDefaultStateFile();
@@ -646,6 +648,16 @@ class PluginStore {
   async installPlugin(sourceId, pluginId) {
     const safePluginId = assertPluginId(pluginId);
     const { plugin } = await this.findPlugin(sourceId, safePluginId);
+    const minLtthVersion = String(plugin.minLtthVersion || '').trim();
+    if (
+      minLtthVersion &&
+      compareVersions(this.ltthVersion, minLtthVersion) < 0
+    ) {
+      throw new Error(
+        `Plugin ${safePluginId} requires LTTH ${minLtthVersion} or newer ` +
+        `(current ${this.ltthVersion})`
+      );
+    }
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-plugin-store-'));
     const extractDir = path.join(tempDir, 'extract');
     const transactionDir = path.join(this.pluginLoader.pluginsDir, `.store-transaction-${safePluginId}-${crypto.randomUUID()}`);

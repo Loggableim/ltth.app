@@ -68,5 +68,5 @@ Aktualisiere diese Seite, wenn sich einer dieser Punkte ändert:
 
 ---
 
-*Letzte Aktualisierung: 2026-07-22*
-*Version: 1.4.0*
+*Letzte Aktualisierung: 2026-07-26*
+*Version: 1.4.1*

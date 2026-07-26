@@ -1984,13 +1984,14 @@ class GlobalChatCommandEngine {
 
             if (success) {
                 const cooldown = commandDef.cooldown;
+                const cooldownKey = commandDef.cooldownKey || commandDef.name;
                 if (cooldown === undefined || cooldown === null) {
-                    this.parser.removeCommandCooldown(commandDef.name);
+                    this.parser.removeCommandCooldown(cooldownKey);
                 } else if (typeof cooldown === 'number') {
-                    this.parser.setCommandCooldown(commandDef.name, Math.max(0, cooldown), 0);
+                    this.parser.setCommandCooldown(cooldownKey, Math.max(0, cooldown), 0);
                 } else {
                     this.parser.setCommandCooldown(
-                        commandDef.name,
+                        cooldownKey,
                         Math.max(0, Number(cooldown.user) || 0),
                         Math.max(0, Number(cooldown.global) || 0)
                     );
@@ -2010,9 +2011,13 @@ class GlobalChatCommandEngine {
      * @param {string} pluginId - Plugin ID
      */
     unregisterCommandsForPlugin(pluginId) {
-        const commandNames = this.registry.getPluginCommands(pluginId).map(command => command.name);
+        const commandNames = this.registry.getPluginCommands(pluginId).map(
+            command => command.cooldownKey || command.name
+        );
         this.registry.unregisterPluginCommands(pluginId);
-        commandNames.forEach(commandName => this.parser.removeCommandCooldown(commandName));
+        [...new Set(commandNames)].forEach(
+            commandName => this.parser.removeCommandCooldown(commandName)
+        );
     }
 
     registerRawResponseHandlerForPlugin(pluginId, handler) {

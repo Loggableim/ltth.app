@@ -1,16 +1,19 @@
 const Database = require('better-sqlite3');
+const path = require('path');
 const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
+const AssetRegistry = require('../plugins/streamalchemy/backend/streammonsters/asset-registry');
 const CollectionService = require('../plugins/streamalchemy/backend/streammonsters/collection-service');
 const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
 
-function createCollection(progression = null) {
+function createCollection(progression = null, assetRegistry = null) {
   const sqlite = new Database(':memory:');
-  const store = new StreamMonstersDatabase(sqlite);
+  const store = new StreamMonstersDatabase(sqlite, { assetRegistry });
   store.initialize();
   const emitted = [];
   const collection = new CollectionService({
     store,
     progression,
+    assetRegistry,
     emit: (event, payload) => emitted.push({ event, payload }),
     now: () => 5_000
   });
@@ -75,8 +78,15 @@ describe('Stream Monsters 1.5 collection and cosmetic evolution', () => {
   });
 
   test('spends essence durably for cosmetic Evolution II and III without changing stats', () => {
-    const { store, collection, monster } = createCollection();
+    const { sqlite, store, collection, monster } = createCollection();
     const originalStats = monster.stats;
+    sqlite.prepare(`
+      UPDATE streammonsters_monsters
+      SET visual_source = 'kenney',
+          visual_key = 'kenney:legacy-fallback',
+          image_url = '/api/streammonsters/art/kenney-0123456789abcdef.svg'
+      WHERE monster_id = 'monster-a'
+    `).run();
     store.setTemplateMastery('viewer-a', 'ashfang', 25, []);
     store.setElementEssence('viewer-a', 'Ember', 3, []);
 
@@ -86,6 +96,9 @@ describe('Stream Monsters 1.5 collection and cosmetic evolution', () => {
       spentEssence: 3,
       monster: expect.objectContaining({
         evolution_stage: 2,
+        image_url: '/plugins/streamalchemy/assets/streammonsters/furry/evolution/ember/ashfang-stage2.png',
+        visual_source: 'furry',
+        visual_key: 'furry:ashfang:stage-2',
         stats: originalStats
       })
     }));
@@ -103,6 +116,8 @@ describe('Stream Monsters 1.5 collection and cosmetic evolution', () => {
       spentEssence: 8,
       monster: expect.objectContaining({
         evolution_stage: 3,
+        image_url: '/plugins/streamalchemy/assets/streammonsters/furry/evolution/ember/ashfang-stage3.png',
+        visual_key: 'furry:ashfang:stage-3',
         stats: originalStats
       })
     }));
@@ -110,7 +125,32 @@ describe('Stream Monsters 1.5 collection and cosmetic evolution', () => {
       level: 1,
       xp: 0,
       stats: originalStats,
-      evolution_stage: 3
+      evolution_stage: 3,
+      visual_source: 'furry'
+    }));
+  });
+
+  test('upgrades automatic Kenney fallback visuals to their bundled canonical Furry form', () => {
+    const assetRegistry = new AssetRegistry({
+      pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy')
+    });
+    const { sqlite, store } = createCollection(null, assetRegistry);
+    sqlite.prepare(`
+      UPDATE streammonsters_monsters
+      SET visual_source = 'kenney',
+          visual_key = 'kenney:legacy-fallback',
+          image_url = '/api/streammonsters/art/kenney-0123456789abcdef.svg'
+      WHERE monster_id = 'monster-a'
+    `).run();
+
+    store.initialize();
+
+    expect(store.getMonster('monster-a')).toEqual(expect.objectContaining({
+      template_id: 'ashfang',
+      evolution_stage: 1,
+      image_url: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+      visual_source: 'furry',
+      visual_key: 'furry:ashfang'
     }));
   });
 

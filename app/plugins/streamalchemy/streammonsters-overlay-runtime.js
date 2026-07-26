@@ -12,30 +12,63 @@
     'battle_special_charged',
     'battle_round',
     'battle_completed',
+    'battle_match_found',
+    'battle_choice_opened',
+    'battle_choice_locked',
+    'battle_cancelled',
     'egg_spawned',
     'egg_ready',
     'hatch_started',
-    'egg_hatched'
+    'egg_hatched',
+    'monster_evolved',
+    'monster_visual_evolved'
   ]);
   const COALESCED_TYPES = new Set(['hype_changed', 'chat_result']);
   const DURABLE_TYPES = new Set([
-    'starter_revealed',
     'hype_milestone',
     'elemental_hour',
     'win_streak',
     'upset',
     'rivalry',
     'rank_card',
+    'monster_xp_awarded',
+    'monster_level_up',
+    'monster_stat_prompt',
+    'monster_stat_chosen',
+    'monster_stat_auto_assigned',
+    'arena_rating_changed',
     'quest_completed',
     'achievement_unlocked'
   ]);
+  const REPLAYABLE_RECENT_TYPES = new Set([
+    ...CRITICAL_TYPES,
+    ...DURABLE_TYPES,
+    ...COALESCED_TYPES,
+    'stream_started',
+    'egg_boosted',
+    'gift_combo',
+    'elemental_hour',
+    'quest_completed',
+    'stat_choice_opened',
+    'arena_rating_changed',
+    'win_streak',
+    'upset',
+    'rivalry'
+  ]);
+  const RECENT_TYPE_ALIASES = Object.freeze({
+    season_rank_changed: 'rank_card',
+    battle_skill_prompt: 'battle_choice_opened',
+    battle_skill_locked: 'battle_choice_locked',
+    battle_action: 'battle_skill_used',
+    battle_knockout: 'battle_skill_used'
+  });
   const CHAT_RESULT_KEYS = new Set([
     'chatResultHelp',
     'chatResultInvalidArguments',
+    'chatResultPermissionDenied',
+    'chatResultRateLimited',
     'chatResultGlobalCooldown',
     'chatResultCooldown',
-    'chatResultStarterAlreadyClaimed',
-    'chatResultStarterClaimed',
     'chatResultEggs',
     'chatResultHatched',
     'chatResultEggNotReady',
@@ -57,6 +90,88 @@
     'chatResultExecutionFailed',
     'chatResultUnknown'
   ]);
+
+  function statPromptKey(data = {}) {
+    const matchId = String(data.matchId || '').trim();
+    const slot = Number(data.slot);
+    const deadlineMs = Number(data.deadlineMs);
+    if (!matchId || !Number.isInteger(slot) || slot < 1 || !Number.isFinite(deadlineMs)) return null;
+    return `${matchId}:${slot}:${deadlineMs}`;
+  }
+
+  function normalizeRecentEventType(type) {
+    const normalized = String(type || '').trim().replace(/^streammonsters:/, '');
+    return RECENT_TYPE_ALIASES[normalized] || normalized;
+  }
+
+  function normalizeBattleEventType(type) {
+    const normalized = String(type || '').trim().replace(/^streammonsters:/, '');
+    if (!normalized.startsWith('battle_')) return normalized;
+    return RECENT_TYPE_ALIASES[normalized] || normalized;
+  }
+
+  function replayableRecentEvents(snapshot = {}, {
+    afterSequence = 0,
+    seenEventIds = []
+  } = {}) {
+    const recentEvents = Array.isArray(snapshot.recentEvents) ? snapshot.recentEvents : [];
+    const battleCursors = new Map(
+      (Array.isArray(snapshot?.battle?.matches) ? snapshot.battle.matches : [])
+        .map(match => [
+          String(match?.matchId || ''),
+          Math.max(0, Number(match?.cursor) || 0)
+        ])
+        .filter(([matchId]) => matchId)
+    );
+    const seenIds = new Set(
+      typeof seenEventIds?.[Symbol.iterator] === 'function' ? seenEventIds : []
+    );
+    const replayIds = new Set();
+    const replay = [];
+    const cursor = Math.max(0, Number(afterSequence) || 0);
+
+    for (const event of recentEvents) {
+      if (!event || typeof event !== 'object') continue;
+      const publicSequence = Math.max(0, Number(event.sequence) || 0);
+      if (publicSequence && publicSequence <= cursor) continue;
+      const type = normalizeRecentEventType(event.type);
+      if (!REPLAYABLE_RECENT_TYPES.has(type)) continue;
+      const eventId = String(event.eventId || '').trim();
+      if (eventId && (seenIds.has(eventId) || replayIds.has(eventId))) continue;
+      if (eventId) replayIds.add(eventId);
+      const payload = event.payload && typeof event.payload === 'object'
+        ? event.payload
+        : {};
+      const matchId = String(
+        payload.matchId ||
+        payload.battleId ||
+        payload.action?.matchId ||
+        ''
+      ).trim();
+      const isBattleEvent = type.startsWith('battle_') || type === 'stance_revealed';
+      if (isBattleEvent) {
+        if (!matchId || !battleCursors.has(matchId)) continue;
+        const actionCursor = Number(
+          payload.action?.eventSequence ??
+          payload.eventSequence ??
+          payload.cursor
+        );
+        if (!Number.isFinite(actionCursor) || actionCursor <= battleCursors.get(matchId)) {
+          continue;
+        }
+      }
+      replay.push({
+        type,
+        data: {
+          ...payload,
+          ...(eventId ? { eventId } : {}),
+          ...(event.correlationId ? { correlationId: event.correlationId } : {})
+        },
+        sequence: publicSequence
+      });
+    }
+    return replay;
+  }
   const ELEMENT_KEYS = Object.freeze({
     ember: 'elementEmber',
     tide: 'elementTide',
@@ -87,23 +202,7 @@
     STREAM_MONSTERS_GIFT_MAPPING_INVALID: 'apiErrorGiftMapping',
     STREAM_MONSTERS_GIFT_ELEMENT_INVALID: 'apiErrorGiftElement',
     STREAM_MONSTERS_GIFT_ID_REQUIRED: 'apiErrorGiftId',
-    STREAM_MONSTERS_POOL_ALREADY_RUNNING: 'apiErrorPoolBusy',
-    STREAM_MONSTERS_EGG_NOT_READY: 'apiErrorEggNotReady',
-    STREAM_MONSTERS_MODEL_LICENSE_REQUIRED: 'runtimeErrorLicenseRequired',
-    STREAM_MONSTERS_RUNTIME_INSTALL_IN_PROGRESS: 'runtimeErrorInstallInProgress',
-    STREAM_MONSTERS_RUNTIME_ADAPTER_NOT_FOUND: 'runtimeErrorAdapterNotFound',
-    STREAM_MONSTERS_RUNTIME_UNSUPPORTED_GPU: 'runtimeErrorUnsupportedGpu',
-    STREAM_MONSTERS_RUNTIME_PROFILE_INVALID: 'runtimeErrorProfileInvalid',
-    STREAM_MONSTERS_RUNTIME_INSTALL_REQUEST_INVALID: 'runtimeErrorInstallRequest',
-    STREAM_MONSTERS_RUNTIME_INSTALL_COMMITTING: 'runtimeErrorCommitting',
-    STREAM_MONSTERS_RUNTIME_DISK_SPACE_INSUFFICIENT: 'runtimeErrorDiskSpace',
-    STREAM_MONSTERS_RUNTIME_CHECKSUM_MISMATCH: 'runtimeErrorChecksum',
-    STREAM_MONSTERS_RUNTIME_SMOKE_TEST_FAILED: 'runtimeErrorSmokeTest',
-    STREAM_MONSTERS_RUNTIME_NOT_INSTALLED: 'runtimeErrorNotInstalled',
-    STREAM_MONSTERS_RUNTIME_VERIFY_ADAPTER_MISMATCH: 'runtimeErrorVerifyAdapterMismatch',
-    STREAM_MONSTERS_RUNTIME_VERIFY_PROFILE_MISMATCH: 'runtimeErrorVerifyProfileMismatch',
-    STREAM_MONSTERS_RUNTIME_JOB_NOT_FOUND: 'runtimeErrorJobNotFound',
-    STREAM_MONSTERS_RUNTIME_ABORTED: 'runtimeErrorAborted'
+    STREAM_MONSTERS_EGG_NOT_READY: 'apiErrorEggNotReady'
   });
   const ANCHORS = Object.freeze([
     'top-left', 'top-center', 'top-right',
@@ -149,6 +248,55 @@
     return Math.max(0, Math.min(1, ratio));
   }
 
+  function overlayHeartbeatPayload({
+    layout = null,
+    quality = 'auto',
+    renderer = {},
+    audio = {}
+  } = {}) {
+    const allowedLayouts = new Set(['portrait', 'landscape']);
+    const allowedBackends = new Set(['webgpu', 'canvas2d', 'css', 'waiting']);
+    const allowedQualities = new Set(['auto', 'high', 'medium', 'low']);
+    const requestedBackend = String(
+      renderer.backend ?? renderer.renderer ?? renderer.mode ?? ''
+    ).trim().toLowerCase();
+    const backend = allowedBackends.has(requestedBackend)
+      ? requestedBackend
+      : 'waiting';
+    const fpsValue = Number(renderer.fps);
+    const fps = Number.isFinite(fpsValue)
+      ? Math.max(0, Math.min(240, Math.round(fpsValue)))
+      : 0;
+    const rawReason = String(renderer.fallbackReason || '').trim();
+    const fallbackReason = /^[a-z0-9_-]{1,48}$/i.test(rawReason)
+      ? rawReason.toLowerCase()
+      : null;
+    const master = audio?.channels?.master || {};
+    const volume = Number(audio.masterVolume ?? master.volume);
+    const masterVolume = Number.isFinite(volume)
+      ? Math.max(0, Math.min(1, Math.round(volume * 100) / 100))
+      : 1;
+    const muted = typeof audio.muted === 'boolean'
+      ? audio.muted
+      : master.enabled === false;
+    return {
+      layout: allowedLayouts.has(layout) ? layout : null,
+      renderer: {
+        backend,
+        quality: allowedQualities.has(quality) ? quality : 'auto',
+        fps,
+        deviceLost: Boolean(renderer.deviceLost) ||
+          fallbackReason === 'device-lost' ||
+          fallbackReason === 'device_lost',
+        fallbackReason
+      },
+      audio: {
+        muted,
+        masterVolume
+      }
+    };
+  }
+
   function decodeAudioCue(audioContext, dataUri, decodeBase64 = globalThis.atob) {
     const match = /^data:audio\/wav;base64,([a-z0-9+/=]+)$/i.exec(String(dataUri || ''));
     if (!match || typeof decodeBase64 !== 'function' || typeof audioContext?.decodeAudioData !== 'function') {
@@ -164,17 +312,12 @@
 
   function createPriorityQueue({
     maxSize = 30,
-    staleAfterMs = 10000,
-    maxCriticalOverflow = 0,
-    tombstoneAfterMs = 60_000
+    staleAfterMs = 10000
   } = {}) {
     const entries = [];
     const boundedMaxSize = Math.max(1, Number(maxSize) || 1);
-    const overflowLimit = boundedMaxSize + Math.max(0, Number(maxCriticalOverflow) || 0);
-    const maxFingerprintCount = Math.max(64, overflowLimit * 4);
-    const boundedTombstoneAfterMs = Math.max(1, Number(tombstoneAfterMs) || 60_000);
+    const maxFingerprintCount = Math.max(64, boundedMaxSize * 4);
     const seenFingerprints = new Map();
-    const droppedGroups = new Map();
     let snapshotEvent = null;
     let sequence = 0;
     let activeGroupKey = null;
@@ -188,11 +331,23 @@
 
     function groupKey(type, data = {}) {
       if (!CRITICAL_TYPES.has(type)) return null;
+      const correlationId = String(
+        data.correlationId ||
+        data.correlation_id ||
+        data.event?.correlationId ||
+        ''
+      ).trim();
+      if (correlationId) return `critical:${correlationId}`;
       if (type.startsWith('egg_') || type === 'hatch_started') {
         const eggId = data.egg?.egg_id || data.egg?.id || data.eggId || data.userId;
         return eggId ? `hatch:${eggId}` : null;
       }
-      const battleId = data.battleId || data.battle?.battleId || data.battle?.battle_id;
+      if (type === 'monster_evolved' || type === 'monster_visual_evolved') {
+        const monsterId = data.monster?.monster_id || data.monsterId;
+        return monsterId ? `evolution:${monsterId}` : null;
+      }
+      const battleId = data.battleId || data.matchId ||
+        data.battle?.battleId || data.battle?.battle_id;
       return battleId ? `battle:${battleId}` : null;
     }
 
@@ -248,28 +403,6 @@
       return true;
     }
 
-    function terminalType(type) {
-      return type === 'battle_completed' || type === 'egg_hatched';
-    }
-
-    function expireDroppedGroups(at = Date.now()) {
-      const currentTime = Number(at) || Date.now();
-      for (const [targetGroupKey, droppedAt] of droppedGroups) {
-        if (currentTime - droppedAt <= boundedTombstoneAfterMs) continue;
-        droppedGroups.delete(targetGroupKey);
-        for (const fingerprint of seenFingerprints.keys()) {
-          if (fingerprint.startsWith(`${targetGroupKey}:`)) seenFingerprints.delete(fingerprint);
-        }
-      }
-    }
-
-    function rememberDroppedGroup(targetGroupKey, droppedAt) {
-      droppedGroups.set(targetGroupKey, Number(droppedAt) || Date.now());
-      while (droppedGroups.size > maxFingerprintCount) {
-        droppedGroups.delete(droppedGroups.keys().next().value);
-      }
-    }
-
     function removeEntry(index) {
       const [removed] = entries.splice(index, 1);
       if (removed?.groupKey === activeGroupKey && !entries.some(entry => entry.groupKey === activeGroupKey)) {
@@ -278,17 +411,7 @@
       }
     }
 
-    function dropCriticalGroup(targetGroupKey, droppedAt) {
-      const grouped = entries.filter(entry => entry.groupKey === targetGroupKey);
-      if (!grouped.length || targetGroupKey === activeGroupKey) return false;
-      for (let index = entries.length - 1; index >= 0; index -= 1) {
-        if (entries[index].groupKey === targetGroupKey) entries.splice(index, 1);
-      }
-      rememberDroppedGroup(targetGroupKey, droppedAt);
-      return true;
-    }
-
-    function trim(trimmedAt = Date.now()) {
+    function trim() {
       while (totalSize() > boundedMaxSize) {
         const ephemeralIndex = entries.findIndex(entry => entry.priority === 1);
         if (ephemeralIndex >= 0) {
@@ -299,43 +422,27 @@
         const durableIndexes = entries
           .map((entry, index) => entry.priority === 2 ? index : -1)
           .filter(index => index >= 0);
-        if (durableIndexes.length > 1) {
+        if (durableIndexes.length) {
           removeEntry(durableIndexes.at(-1));
           continue;
         }
 
-        if (totalSize() <= overflowLimit) break;
-        if (snapshotEvent && durableIndexes.length) {
-          removeEntry(durableIndexes.at(-1));
-          continue;
-        }
-        const removableCriticalGroups = [...new Set(entries
-          .filter(entry => entry.priority === 3 && entry.groupKey && entry.groupKey !== activeGroupKey)
-          .map(entry => entry.groupKey))];
-        if (removableCriticalGroups.length && dropCriticalGroup(removableCriticalGroups[0], trimmedAt)) {
-          continue;
-        }
-
-        const ungroupedCriticalIndex = entries.findIndex(entry => entry.priority === 3 && !entry.groupKey);
-        if (ungroupedCriticalIndex >= 0) {
-          removeEntry(ungroupedCriticalIndex);
-          continue;
-        }
-
-        // An actively displayed group cannot be truncated. It drains in order and
-        // is the only allowed temporary overflow beyond the configured hard limit.
+        // Snapshots and critical gameplay sequences are lossless. They may exceed
+        // the soft queue limit until the renderer drains them in order.
         break;
       }
     }
 
     function enqueue(type, data, enqueuedAt = Date.now()) {
-      expireDroppedGroups(enqueuedAt);
       const targetGroupKey = groupKey(type, data);
-      if (targetGroupKey && droppedGroups.has(targetGroupKey)) {
-        return false;
-      }
       const fingerprint = eventFingerprint(type, data, targetGroupKey);
-      if (fingerprint && !rememberFingerprint(fingerprint)) return false;
+      if (
+        fingerprint &&
+        (
+          entries.some(entry => entry.fingerprint === fingerprint) ||
+          !rememberFingerprint(fingerprint)
+        )
+      ) return false;
       if (COALESCED_TYPES.has(type)) {
         const priorIndex = entries.findIndex(entry => entry.type === type);
         if (priorIndex >= 0) entries.splice(priorIndex, 1);
@@ -349,7 +456,7 @@
         groupKey: targetGroupKey,
         fingerprint
       });
-      trim(enqueuedAt);
+      trim();
       return true;
     }
 
@@ -361,7 +468,7 @@
         priority: priority('state_snapshot'),
         sequence: sequence += 1
       };
-      trim(enqueuedAt);
+      trim();
     }
 
     function orderedEntries() {
@@ -382,8 +489,7 @@
         const groupedIndex = entries.findIndex(entry => entry.groupKey === activeGroupKey);
         if (groupedIndex >= 0) {
           const next = entries.splice(groupedIndex, 1)[0];
-          const terminal = next.type === 'battle_completed' || next.type === 'egg_hatched';
-          if (terminal || !entries.some(entry => entry.groupKey === activeGroupKey)) {
+          if (!entries.some(entry => entry.groupKey === activeGroupKey)) {
             activeGroupKey = null;
             durableTurn = true;
           }
@@ -404,8 +510,7 @@
         if (criticalIndex >= 0) {
           activeGroupKey = entries[criticalIndex].groupKey;
           const next = entries.splice(criticalIndex, 1)[0];
-          const terminal = next.type === 'battle_completed' || next.type === 'egg_hatched';
-          if (terminal || !entries.some(entry => entry.groupKey === activeGroupKey)) {
+          if (!entries.some(entry => entry.groupKey === activeGroupKey)) {
             activeGroupKey = null;
             durableTurn = true;
           }
@@ -424,7 +529,6 @@
       snapshotEvent = null;
       entries.length = 0;
       seenFingerprints.clear();
-      droppedGroups.clear();
       activeGroupKey = null;
       durableTurn = false;
     }
@@ -436,6 +540,269 @@
       shift,
       snapshot: orderedEntries,
       size: totalSize
+    };
+  }
+
+  function createBattleReplaySynchronizer({
+    loadPage,
+    present,
+    maxPages = 8,
+    pageLimit = 50,
+    maxTrackedMatches = 8,
+    maxSeenEventIds = 512
+  } = {}) {
+    if (typeof loadPage !== 'function') {
+      throw new Error('STREAM_MONSTERS_BATTLE_REPLAY_LOADER_REQUIRED');
+    }
+    if (typeof present !== 'function') {
+      throw new Error('STREAM_MONSTERS_BATTLE_REPLAY_PRESENTER_REQUIRED');
+    }
+    const boundedMaxPages = Math.max(1, Math.min(20, Number(maxPages) || 8));
+    const boundedPageLimit = Math.max(1, Math.min(100, Number(pageLimit) || 50));
+    const boundedTrackedMatches = Math.max(1, Math.min(32, Number(maxTrackedMatches) || 8));
+    const boundedSeenEventIds = Math.max(16, Math.min(2048, Number(maxSeenEventIds) || 512));
+    const matches = new Map();
+    const seenEventIds = new Set();
+    let initialized = false;
+    let syncChain = Promise.resolve();
+
+    function snapshotMatches(snapshot = {}) {
+      const battle = snapshot?.battle && typeof snapshot.battle === 'object'
+        ? snapshot.battle
+        : snapshot;
+      return (Array.isArray(battle?.matches) ? battle.matches : [])
+        .map(match => ({
+          matchId: String(match?.matchId || '').trim(),
+          cursor: Math.max(0, Number(match?.cursor) || 0)
+        }))
+        .filter(match => match.matchId);
+    }
+
+    function eventMatchId(type, data = {}) {
+      const normalizedType = normalizeRecentEventType(type);
+      if (!normalizedType.startsWith('battle_') &&
+          !normalizedType.startsWith('monster_') &&
+          normalizedType !== 'arena_rating_changed' &&
+          normalizedType !== 'stat_choice_opened') {
+        return '';
+      }
+      return String(
+        data.matchId ||
+        data.correlationId ||
+        data.action?.matchId ||
+        data.battle?.matchId ||
+        data.battleId ||
+        ''
+      ).trim();
+    }
+
+    function eventSequence(data = {}) {
+      return Math.max(0, Number(
+        data.sequence ??
+        data.eventSequence ??
+        data.action?.eventSequence ??
+        data.decision?.sequence
+      ) || 0);
+    }
+
+    function rememberEventId(eventId) {
+      const normalized = String(eventId || '').trim();
+      if (!normalized) return;
+      seenEventIds.add(normalized);
+      while (seenEventIds.size > boundedSeenEventIds) {
+        seenEventIds.delete(seenEventIds.values().next().value);
+      }
+    }
+
+    function trimMatches() {
+      while (matches.size > boundedTrackedMatches) {
+        const removable = [...matches.entries()].find(([, state]) => state.terminal) ||
+          matches.entries().next().value;
+        if (!removable) break;
+        matches.delete(removable[0]);
+      }
+    }
+
+    function isTerminal(type) {
+      const normalized = normalizeRecentEventType(type);
+      return normalized === 'battle_completed' || normalized === 'battle_cancelled';
+    }
+
+    function hasSeen(type, data = {}) {
+      const eventId = String(data.eventId || '').trim();
+      if (eventId && seenEventIds.has(eventId)) return true;
+      const matchId = eventMatchId(type, data);
+      const sequence = eventSequence(data);
+      return Boolean(
+        matchId &&
+        sequence &&
+        matches.has(matchId) &&
+        sequence <= matches.get(matchId).cursor
+      );
+    }
+
+    function observe(type, data = {}) {
+      const matchId = eventMatchId(type, data);
+      if (!matchId) return false;
+      const prior = matches.get(matchId) || {
+        cursor: 0,
+        terminal: false
+      };
+      const sequence = eventSequence(data);
+      matches.set(matchId, {
+        cursor: Math.max(prior.cursor, sequence),
+        terminal: prior.terminal || isTerminal(type)
+      });
+      rememberEventId(data.eventId);
+      trimMatches();
+      return true;
+    }
+
+    function normalizeReplayEvent(event = {}) {
+      const type = normalizeRecentEventType(event.type);
+      const payload = event.payload && typeof event.payload === 'object'
+        ? event.payload
+        : {};
+      const sequence = Math.max(0, Number(event.sequence) || 0);
+      return {
+        type,
+        sequence,
+        data: {
+          ...payload,
+          ...(event.eventId ? { eventId: String(event.eventId) } : {}),
+          ...(event.correlationId ? { correlationId: String(event.correlationId) } : {}),
+          ...(sequence ? { sequence } : {})
+        }
+      };
+    }
+
+    async function replayMatch(matchId, targetCursor = null) {
+      let state = matches.get(matchId) || { cursor: 0, terminal: false };
+      let replayed = 0;
+      let caughtUp = false;
+      for (let pageNumber = 0; pageNumber < boundedMaxPages; pageNumber += 1) {
+        if (targetCursor != null && state.cursor >= targetCursor) {
+          caughtUp = true;
+          break;
+        }
+        const requestedCursor = state.cursor;
+        const page = await loadPage({
+          matchId,
+          cursor: requestedCursor,
+          limit: boundedPageLimit
+        });
+        if (!page || typeof page !== 'object') break;
+        const events = (Array.isArray(page.events) ? page.events : [])
+          .map(normalizeReplayEvent)
+          .filter(event => event.sequence > requestedCursor)
+          .filter(event => eventMatchId(event.type, event.data) === matchId)
+          .sort((left, right) => left.sequence - right.sequence);
+        for (const event of events) {
+          if (event.sequence <= state.cursor) continue;
+          if (!hasSeen(event.type, event.data)) {
+            await present(event);
+            replayed += 1;
+          }
+          observe(event.type, event.data);
+          state = matches.get(matchId) || state;
+        }
+        const responseCursor = Math.max(
+          state.cursor,
+          requestedCursor,
+          Number(page.cursor) || 0
+        );
+        matches.set(matchId, {
+          ...state,
+          cursor: responseCursor
+        });
+        state = matches.get(matchId);
+        const reachedSnapshot = targetCursor != null && state.cursor >= targetCursor;
+        if (reachedSnapshot || page.hasMore !== true) {
+          caughtUp = true;
+          break;
+        }
+        if (state.cursor <= requestedCursor) break;
+      }
+      return { replayed, caughtUp };
+    }
+
+    async function syncNow(snapshot = {}) {
+      const currentMatches = snapshotMatches(snapshot);
+      const currentById = new Map(currentMatches.map(match => [match.matchId, match]));
+      if (!initialized) {
+        for (const match of currentMatches) {
+          matches.set(match.matchId, {
+            cursor: match.cursor,
+            terminal: false
+          });
+        }
+        initialized = true;
+        trimMatches();
+        return {
+          baseline: true,
+          replayed: 0,
+          caughtUp: true
+        };
+      }
+
+      const trackedBeforeSync = new Set(matches.keys());
+      for (const match of currentMatches) {
+        if (!matches.has(match.matchId)) {
+          matches.set(match.matchId, {
+            cursor: 0,
+            terminal: false
+          });
+        }
+      }
+
+      let replayed = 0;
+      let caughtUp = true;
+      const orderedMatchIds = [
+        ...trackedBeforeSync,
+        ...currentMatches
+          .map(match => match.matchId)
+          .filter(matchId => !trackedBeforeSync.has(matchId))
+      ];
+      for (const matchId of orderedMatchIds) {
+        const state = matches.get(matchId);
+        const current = currentById.get(matchId);
+        if (!current && state?.terminal) {
+          matches.delete(matchId);
+          continue;
+        }
+        const result = await replayMatch(matchId, current ? current.cursor : null);
+        replayed += result.replayed;
+        caughtUp = caughtUp && result.caughtUp;
+        const after = matches.get(matchId);
+        if (!current && after?.terminal && result.caughtUp) matches.delete(matchId);
+      }
+      trimMatches();
+      return {
+        baseline: false,
+        replayed,
+        caughtUp
+      };
+    }
+
+    function sync(snapshot) {
+      const pending = syncChain.then(() => syncNow(snapshot));
+      syncChain = pending.catch(() => {});
+      return pending;
+    }
+
+    return {
+      hasSeen,
+      observe,
+      sync,
+      state: () => ({
+        initialized,
+        matches: [...matches.entries()].map(([matchId, state]) => ({
+          matchId,
+          cursor: state.cursor,
+          terminal: state.terminal
+        })),
+        seenEventIds: [...seenEventIds]
+      })
     };
   }
 
@@ -487,17 +854,6 @@
   function apiErrorKey(error) {
     const code = String(error?.code || error?.message || error || '').trim();
     if (API_ERROR_KEYS[code]) return API_ERROR_KEYS[code];
-    if (/^STREAM_MONSTERS_RUNTIME_DOWNLOAD_HTTP_/.test(code)) return 'runtimeErrorDownloadHttp';
-    if (code === 'STREAM_MONSTERS_RUNTIME_DOWNLOAD_SIZE_MISMATCH') return 'runtimeErrorDownloadSize';
-    if (/^STREAM_MONSTERS_RUNTIME_(?:ARCHIVE|REDIRECT)/.test(code)) return 'runtimeErrorArchive';
-    if (/^STREAM_MONSTERS_RUNTIME_(?:HEALTH|BACKEND|DEVICE|CHILD)/.test(code)) return 'runtimeErrorHealthcheck';
-    if (/^STREAM_MONSTERS_RUNTIME_(?:PATH|DATA_DIR|BASE_DIR|STAGING|INSTALL_UNSAFE|EXECUTABLE)/.test(code)) {
-      return 'runtimeErrorPath';
-    }
-    if (/^STREAM_MONSTERS_RUNTIME_MANIFEST/.test(code)) return 'runtimeErrorManifest';
-    if (/^STREAM_MONSTERS_RUNTIME_(?:ADAPTER_MAPPING|ADAPTER_MISMATCH)/.test(code)) return 'runtimeErrorAdapterMapping';
-    if (/^STREAM_MONSTERS_RUNTIME_/.test(code)) return 'runtimeErrorUnknown';
-    if (/^STREAM_MONSTERS_(?:AI|ART|KENNEY)_/.test(code)) return 'apiErrorArtUnavailable';
     if (/^STREAM_MONSTERS_GIFT_/.test(code)) return 'apiErrorGiftMapping';
     if (/^STREAM_MONSTERS_EGG_/.test(code)) return 'apiErrorEggNotReady';
     if (/^STREAM_MONSTERS_(?:USER|PRESTIGE|PROGRESS|INVALID)_/.test(code)) return 'apiErrorInvalidRequest';
@@ -651,6 +1007,7 @@
     ANCHORS,
     apiErrorKey,
     anchorPlacement,
+    createBattleReplaySynchronizer,
     createLayoutController,
     createPriorityQueue,
     createReconnectController,
@@ -662,10 +1019,14 @@
     hatchDurationSpec,
     isCritical: type => CRITICAL_TYPES.has(type),
     normalizeVolume,
+    normalizeBattleEventType,
+    overlayHeartbeatPayload,
     personalityKey: value => enumKey(PERSONALITY_KEYS, value),
+    replayableRecentEvents,
     rectanglesOverlap,
     resolveLayoutSettings,
     safeZoneCollisions,
+    statPromptKey,
     variantKey: value => enumKey(VARIANT_KEYS, value)
   };
 }));

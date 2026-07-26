@@ -41,10 +41,10 @@ function createApi({ gcce = null, streamMonstersEnabled = true } = {}) {
   };
 }
 
-function createGCCE(commandPrefix = '!', enabled = true) {
+function createGCCE(commandPrefix = '!', enabled = true, { rawResponses = true } = {}) {
   const definitions = new Map();
   const rawHandlers = new Map();
-  return {
+  const gcce = {
     pluginConfig: { enabled, commandPrefix },
     parser: { commandPrefix },
     definitions,
@@ -53,14 +53,45 @@ function createGCCE(commandPrefix = '!', enabled = true) {
       commands.forEach(command => definitions.set(command.name, command));
       return { pluginId, registered: commands.map(command => command.name), failed: [] };
     }),
-    unregisterCommandsForPlugin: jest.fn(() => definitions.clear()),
-    registerRawResponseHandlerForPlugin: jest.fn((pluginId, handler) => {
+    unregisterCommandsForPlugin: jest.fn(() => definitions.clear())
+  };
+  if (rawResponses) {
+    gcce.registerRawResponseHandlerForPlugin = jest.fn((pluginId, handler) => {
       const replaced = rawHandlers.has(pluginId);
       rawHandlers.set(pluginId, handler);
       return { pluginId, registered: true, replaced };
-    }),
-    unregisterRawResponseHandlerForPlugin: jest.fn(pluginId => rawHandlers.delete(pluginId))
-  };
+    });
+    gcce.unregisterRawResponseHandlerForPlugin = jest.fn(
+      pluginId => rawHandlers.delete(pluginId)
+    );
+  }
+  return gcce;
+}
+
+function publicChatEvent({ displayName, command, status, transport }) {
+  return expect.objectContaining({
+    event: 'streammonsters:chat_result',
+    payload: expect.objectContaining({
+      displayName,
+      command,
+      ...(transport ? { transport } : {}),
+      eventId: expect.any(String),
+      correlationId: expect.any(String),
+      result: expect.objectContaining({
+        status,
+        messageKey: expect.stringMatching(/^chatResult/)
+      })
+    })
+  });
+}
+
+function expectPublicChatPrivacy(entries) {
+  for (const entry of entries) {
+    expect(entry.payload).not.toHaveProperty('userId');
+    expect(entry.payload).not.toHaveProperty('username');
+    expect(entry.payload.result).not.toHaveProperty('errorCode');
+    expect(entry.payload.result).not.toHaveProperty('message');
+  }
 }
 
 describe('Stream Monsters plugin integration', () => {
@@ -257,6 +288,45 @@ describe('Stream Monsters plugin integration', () => {
     await plugin.destroy();
   });
 
+  test('durably deduplicates provider-id-less gifts by stable TikTok time and repeat payload', async () => {
+    const { api, events } = createApi();
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    plugin.streamMonstersStore.upsertGiftMapping({
+      giftId: 1,
+      giftName: 'Rose',
+      element: 'Ember',
+      effect: 'spawn',
+      enabled: true
+    });
+    const gift = events.find(entry => entry.event === 'gift').handler;
+    const first = {
+      userId: 'stable-viewer',
+      uniqueId: 'viewer-a',
+      giftId: 1,
+      giftName: 'Rose',
+      diamondCount: 1,
+      repeatCount: 2,
+      giftType: 0,
+      isStreakEnd: true,
+      createTime: 1_753_000_000_123
+    };
+
+    await gift(first);
+    await gift({
+      ...first,
+      createTime: undefined,
+      timestamp: new Date(first.createTime).toISOString()
+    });
+    await gift({ ...first, createTime: first.createTime + 1, timestamp: undefined });
+    await gift({ ...first, repeatCount: 3 });
+
+    const canonicalId = plugin.streamMonstersStore.resolveKnownViewerId('stable-viewer');
+    expect(plugin.streamMonstersStore.getViewerEggs(canonicalId)).toHaveLength(7);
+    expect(plugin.streamMonstersStore.getViewerProgress(canonicalId).gifts_sent).toBe(7);
+    await plugin.destroy();
+  });
+
   test('honors the nested Stream Monsters enable switch for gifts and chat', async () => {
     const { api, events, emitted } = createApi({ streamMonstersEnabled: false });
     const plugin = new StreamAlchemyPlugin(api);
@@ -301,25 +371,28 @@ describe('Stream Monsters plugin integration', () => {
     await chat({ uniqueId: 'viewer-a', nickname: 'Viewer A', comment: '!eier' });
 
     expect(progression).toHaveBeenCalledTimes(1);
-    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toEqual([
-      expect.objectContaining({
-        payload: expect.objectContaining({
-          userId: 'viewer-a',
-          username: 'Viewer A',
-          result: expect.objectContaining({ status: 'eggs' })
-        })
+    const chatResults = emitted.filter(entry => entry.event === 'streammonsters:chat_result');
+    expect(chatResults).toEqual([
+      publicChatEvent({
+        displayName: 'Viewer A',
+        command: 'eier',
+        status: 'eggs',
+        transport: 'gcce'
       })
     ]);
-    const stateRoute = routes.find(route => route.method === 'GET' && route.path === '/api/streammonsters/state');
+    expectPublicChatPrivacy(chatResults);
+    const stateRoute = routes.find(route => (
+      route.method === 'GET' && route.path === '/api/streammonsters/state'
+    ));
     let state = null;
     stateRoute.handler({ query: {} }, { json: payload => { state = payload; } });
     expect(state.gcce).toEqual(expect.objectContaining({
       commandPrefix: '!',
       registrationState: 'active',
-      registrationError: null,
-      registrationConflicts: [],
       commandsRegistered: true
     }));
+    expect(state.gcce).not.toHaveProperty('registrationError');
+    expect(state.gcce).not.toHaveProperty('registrationConflicts');
     await plugin.destroy();
   });
 
@@ -357,14 +430,16 @@ describe('Stream Monsters plugin integration', () => {
 
     expect(plugin.streamMonstersChatCommands.queue).toHaveLength(1);
     expect(progression).toHaveBeenCalledTimes(1);
-    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toEqual([
-      expect.objectContaining({
-        payload: expect.objectContaining({
-          userId: 'viewer-a',
-          result: expect.objectContaining({ status: 'queued' })
-        })
+    const chatResults = emitted.filter(entry => entry.event === 'streammonsters:chat_result');
+    expect(chatResults).toEqual([
+      publicChatEvent({
+        displayName: 'Viewer A',
+        command: 'battle',
+        status: 'queued',
+        transport: 'gcce'
       })
     ]);
+    expectPublicChatPrivacy(chatResults);
     await plugin.destroy();
   });
 
@@ -399,9 +474,16 @@ describe('Stream Monsters plugin integration', () => {
     await chat({ uniqueId: 'fallback-user-2', nickname: 'Fallback User 2', comment: '/eier' });
     expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toHaveLength(2);
 
-    const stateRoute = routes.find(route => route.method === 'GET' && route.path === '/api/streammonsters/state');
+    const stateRoute = routes.find(route => (
+      route.method === 'GET' && route.path === '/api/streammonsters/creator-state'
+    ));
     let state = null;
-    stateRoute.handler({ query: {} }, { json: payload => { state = payload; } });
+    stateRoute.handler({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      query: {}
+    }, { json: payload => { state = payload; } });
     expect(state.gcce).toEqual(expect.objectContaining({
       commandPrefix: '/',
       registrationState: 'fallback',
@@ -412,6 +494,70 @@ describe('Stream Monsters plugin integration', () => {
     expect(pluginEvents.eventNames()).toEqual([]);
     expect(secondGCCE.unregisterCommandsForPlugin).toHaveBeenCalledWith('streamalchemy');
     expect(secondGCCE.unregisterRawResponseHandlerForPlugin).toHaveBeenCalledWith('streamalchemy');
+  });
+
+  test('keeps legacy GCCE as sole command ingress while accepting only authorized raw battle replies directly', async () => {
+    const gcce = createGCCE('!', true, { rawResponses: false });
+    const { api, events, emitted, routes } = createApi({ gcce });
+    const plugin = new StreamAlchemyPlugin(api);
+    await plugin.init();
+    const progression = jest.spyOn(plugin.streamMonstersProgression, 'recordCommand');
+    plugin.streamMonstersBattleMatchService = {
+      submitChoice: ({ userId, choice }) => (
+        userId === 'viewer-a' && choice === 'A'
+          ? { handled: true, matchId: 'legacy-match' }
+          : { handled: false, reason: 'no_active_window' }
+      ),
+      submitStatChoice: () => ({ handled: false, reason: 'no_stat_window' }),
+      destroy: jest.fn()
+    };
+
+    expect(events.some(entry => entry.event === 'chat')).toBe(true);
+    await expect(plugin.handleStreamMonstersChat({
+      uniqueId: 'viewer-a',
+      nickname: 'Viewer A',
+      comment: 'A',
+      eventId: 'legacy-raw-a'
+    })).resolves.toEqual(expect.objectContaining({
+      handled: true,
+      matchId: 'legacy-match'
+    }));
+    await expect(plugin.handleStreamMonstersChat({
+      uniqueId: 'viewer-a',
+      nickname: 'Viewer A',
+      comment: '!eier'
+    })).resolves.toEqual(expect.objectContaining({
+      success: false,
+      status: 'gcce_active'
+    }));
+    expect(progression).not.toHaveBeenCalled();
+
+    await gcce.definitions.get('eier').handler([], {
+      userId: 'viewer-a',
+      username: 'Viewer A'
+    });
+    expect(progression).toHaveBeenCalledTimes(1);
+    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result'))
+      .toHaveLength(1);
+
+    const stateRoute = routes.find(route => (
+      route.method === 'GET' && route.path === '/api/streammonsters/creator-state'
+    ));
+    let state = null;
+    stateRoute.handler({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      query: {}
+    }, { json: payload => { state = payload; } });
+    expect(state.gcce).toEqual(expect.objectContaining({
+      registrationState: 'active_legacy_raw_fallback',
+      ingressMode: 'gcce_commands_direct_raw',
+      registrationWarning: 'raw_response_api_unavailable',
+      commandsRegistered: true
+    }));
+
+    await plugin.destroy();
   });
 
   test('keeps successful GCCE aliases and blocks direct fallback during partial registration', async () => {
@@ -435,9 +581,16 @@ describe('Stream Monsters plugin integration', () => {
       comment: '!eier'
     });
 
-    const stateRoute = routes.find(route => route.method === 'GET' && route.path === '/api/streammonsters/state');
+    const stateRoute = routes.find(route => (
+      route.method === 'GET' && route.path === '/api/streammonsters/creator-state'
+    ));
     let state = null;
-    stateRoute.handler({ query: {} }, { json: payload => { state = payload; } });
+    stateRoute.handler({
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+      headers: {},
+      query: {}
+    }, { json: payload => { state = payload; } });
     expect(state.gcce).toEqual(expect.objectContaining({
       commandPrefix: '!',
       registrationState: 'active_partial',
@@ -489,10 +642,10 @@ describe('Stream Monsters plugin integration', () => {
     expect(state.gcce).toEqual(expect.objectContaining({
       commandPrefix: '!',
       registrationState: 'active',
-      registrationError: null,
-      registrationConflicts: [],
       commandsRegistered: true
     }));
+    expect(state.gcce).not.toHaveProperty('registrationError');
+    expect(state.gcce).not.toHaveProperty('registrationConflicts');
     expect(progression).toHaveBeenCalledTimes(1);
     expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toHaveLength(1);
     await plugin.destroy();
@@ -511,14 +664,16 @@ describe('Stream Monsters plugin integration', () => {
     });
 
     expect(gcce.registerCommandsForPlugin).not.toHaveBeenCalled();
-    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toEqual([
-      expect.objectContaining({
-        payload: expect.objectContaining({
-          userId: 'viewer-a',
-          result: expect.objectContaining({ status: 'eggs' })
-        })
+    const chatResults = emitted.filter(entry => entry.event === 'streammonsters:chat_result');
+    expect(chatResults).toEqual([
+      publicChatEvent({
+        displayName: 'Viewer A',
+        command: 'eier',
+        status: 'eggs',
+        transport: 'fallback'
       })
     ]);
+    expectPublicChatPrivacy(chatResults);
     await plugin.destroy();
   });
 
@@ -559,28 +714,22 @@ describe('Stream Monsters plugin integration', () => {
     await chat({ uniqueId: 'viewer-b', nickname: 'Viewer B', comment: '!choose' });
 
     expect(progression).not.toHaveBeenCalled();
-    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toEqual([
-      expect.objectContaining({
-        payload: expect.objectContaining({
-          userId: 'viewer-a',
-          command: 'monster',
-          result: expect.objectContaining({
-            status: 'invalid_arguments',
-            errorCode: 'VALIDATION_ERROR'
-          })
-        })
+    const chatResults = emitted.filter(entry => entry.event === 'streammonsters:chat_result');
+    expect(chatResults).toEqual([
+      publicChatEvent({
+        displayName: 'Viewer A',
+        command: 'monster',
+        status: 'invalid_arguments',
+        transport: 'fallback'
       }),
-      expect.objectContaining({
-        payload: expect.objectContaining({
-          userId: 'viewer-b',
-          command: 'choose',
-          result: expect.objectContaining({
-            status: 'invalid_arguments',
-            errorCode: 'VALIDATION_ERROR'
-          })
-        })
+      publicChatEvent({
+        displayName: 'Viewer B',
+        command: 'choose',
+        status: 'invalid_arguments',
+        transport: 'fallback'
       })
     ]);
+    expectPublicChatPrivacy(chatResults);
     await plugin.destroy();
   });
 
@@ -601,18 +750,16 @@ describe('Stream Monsters plugin integration', () => {
       username: 'Viewer A'
     });
 
-    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toEqual([
-      expect.objectContaining({
-        payload: expect.objectContaining({
-          userId: 'viewer-a',
-          username: 'Viewer A',
-          result: expect.objectContaining({
-            success: false,
-            status: 'cooldown'
-          })
-        })
+    const chatResults = emitted.filter(entry => entry.event === 'streammonsters:chat_result');
+    expect(chatResults).toEqual([
+      publicChatEvent({
+        displayName: 'Viewer A',
+        command: 'eier',
+        status: 'cooldown',
+        transport: 'gcce'
       })
     ]);
+    expectPublicChatPrivacy(chatResults);
     await plugin.destroy();
   });
 
@@ -655,23 +802,30 @@ describe('Stream Monsters plugin integration', () => {
       pluginId: 'another-plugin'
     });
 
-    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result').map(entry => entry.payload)).toEqual([
-      expect.objectContaining({
-        userId: 'viewer-a',
+    const chatResults = emitted.filter(entry => entry.event === 'streammonsters:chat_result');
+    expect(chatResults).toEqual([
+      publicChatEvent({
+        displayName: 'Viewer A',
         command: 'monster',
-        result: expect.objectContaining({ status: 'invalid_arguments', errorCode: 'VALIDATION_ERROR' })
+        status: 'invalid_arguments',
+        transport: 'gcce'
       }),
-      expect.objectContaining({
-        userId: 'viewer-b',
+      publicChatEvent({
+        displayName: 'Viewer B',
         command: 'choose',
-        result: expect.objectContaining({ status: 'permission_denied', errorCode: 'PERMISSION_DENIED' })
+        status: 'permission_denied',
+        transport: 'gcce'
       }),
-      expect.objectContaining({
-        userId: 'viewer-c',
+      publicChatEvent({
+        displayName: 'Viewer C',
         command: 'eier',
-        result: expect.objectContaining({ status: 'rate_limited', errorCode: 'RATE_LIMIT_USER' })
+        status: 'rate_limited',
+        transport: 'gcce'
       })
     ]);
+    expect(chatResults[1].payload.result.messageKey).toBe('chatResultPermissionDenied');
+    expect(chatResults[2].payload.result.messageKey).toBe('chatResultRateLimited');
+    expectPublicChatPrivacy(chatResults);
     await plugin.destroy();
   });
 
@@ -700,26 +854,22 @@ describe('Stream Monsters plugin integration', () => {
       username: 'Viewer B'
     });
 
-    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result').map(entry => entry.payload)).toEqual([
-      expect.objectContaining({
-        userId: 'viewer-a',
+    const chatResults = emitted.filter(entry => entry.event === 'streammonsters:chat_result');
+    expect(chatResults).toEqual([
+      publicChatEvent({
+        displayName: 'Viewer A',
         command: 'eier',
-        transport: 'gcce',
-        result: expect.objectContaining({
-          status: 'command_disabled',
-          errorCode: 'COMMAND_DISABLED'
-        })
+        status: 'command_disabled',
+        transport: 'gcce'
       }),
-      expect.objectContaining({
-        userId: 'viewer-b',
+      publicChatEvent({
+        displayName: 'Viewer B',
         command: 'battle',
-        transport: 'gcce',
-        result: expect.objectContaining({
-          status: 'execution_failed',
-          errorCode: 'EXECUTION_FAILED'
-        })
+        status: 'execution_failed',
+        transport: 'gcce'
       })
     ]);
+    expectPublicChatPrivacy(chatResults);
     await plugin.destroy();
   });
 
@@ -737,22 +887,19 @@ describe('Stream Monsters plugin integration', () => {
       success: false,
       status: 'execution_failed',
       errorCode: 'EXECUTION_FAILED',
-      message: expect.stringContaining('handler exploded')
+      message: 'Command execution failed.'
     }));
 
-    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toEqual([
-      expect.objectContaining({
-        payload: expect.objectContaining({
-          userId: 'viewer-a',
-          command: 'eier',
-          transport: 'fallback',
-          result: expect.objectContaining({
-            status: 'execution_failed',
-            errorCode: 'EXECUTION_FAILED'
-          })
-        })
+    const chatResults = emitted.filter(entry => entry.event === 'streammonsters:chat_result');
+    expect(chatResults).toEqual([
+      publicChatEvent({
+        displayName: 'Viewer A',
+        command: 'eier',
+        status: 'execution_failed',
+        transport: 'fallback'
       })
     ]);
+    expectPublicChatPrivacy(chatResults);
     await plugin.destroy();
   });
 
@@ -790,19 +937,16 @@ describe('Stream Monsters plugin integration', () => {
         userId: 'viewer-a'
       })
     ]);
-    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toEqual([
-      expect.objectContaining({
-        payload: expect.objectContaining({
-          userId: 'viewer-a',
-          command: 'eier',
-          transport: 'gcce',
-          result: expect.objectContaining({
-            status: 'execution_failed',
-            errorCode: 'EXECUTION_FAILED'
-          })
-        })
+    const chatResults = emitted.filter(entry => entry.event === 'streammonsters:chat_result');
+    expect(chatResults).toEqual([
+      publicChatEvent({
+        displayName: 'Viewer A',
+        command: 'eier',
+        status: 'execution_failed',
+        transport: 'gcce'
       })
     ]);
+    expectPublicChatPrivacy(chatResults);
 
     await plugin.destroy();
     await gcce.destroy();

@@ -402,11 +402,10 @@ describe('Stream Monsters 1.2 public API', () => {
       'streammonsters:stream_started',
       'streammonsters:hype_changed',
       'streammonsters:hype_milestone',
-      'streammonsters:starter_claimed',
       'streammonsters:egg_ready',
       'streammonsters:hatch_started',
       'streammonsters:egg_hatched',
-      'streammonsters:monster_visual_evolved',
+      'streammonsters:monster_evolved',
       'streammonsters:battle_started',
       'streammonsters:stance_revealed',
       'streammonsters:battle_round',
@@ -416,9 +415,16 @@ describe('Stream Monsters 1.2 public API', () => {
       'streammonsters:rivalry',
       'streammonsters:quest_completed',
       'streammonsters:achievement_unlocked',
+      'streammonsters:arena_rating_changed',
       'streammonsters:season_rank_changed',
       'streammonsters:chat_result'
     ]));
+    expect(emitted.find(entry => entry.event === 'streammonsters:chat_result')?.payload?.result)
+      .toEqual(expect.objectContaining({
+        status: 'rank',
+        arena: { rating: 1011, tier: 'Silver' },
+        collector: { points: 275, rank: 'Gold' }
+      }));
     expect(emitted.filter(entry => entry.event === 'streammonsters:battle_round')).toHaveLength(3);
   });
 });

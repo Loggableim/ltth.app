@@ -172,39 +172,39 @@ http://localhost:3000/gcce-hud/overlay
 ---
 
 ### 4. Stream Monsters
-**Status:** 🔴 Early Beta
-**Version:** 1.1.0
+**Estado:** 🟡 Working / Open Beta
+**Versión:** 1.5.0
 **Autor:** Pup Cid
 
-**Beschreibung:**
-Verwandle TikTok-Geschenke in virtuelle RPG-Items mit Crafting-Mechaniken und KI-generierten Icons. Gamification-System für Streams.
+**Descripción:**
+Los regalos de TikTok activados son la única fuente de huevos. Los espectadores coleccionan 72 formas Furry incluidas, evolucionan sus monstruos de forma cosmética y combaten con A, B o C.
 
-**Features:**
-- 🎁 Gift-to-Item-Transformation
-- ⚔️ RPG-Itemsystem (Common, Rare, Epic, Legendary)
-- 🔨 Crafting-Mechanik (Items kombinieren)
-- 🤖 KI-generierte Item-Icons
-- 📦 Inventar-System pro Zuschauer
-- 📊 Item-Statistiken und Seltenheit
-- 🎨 Overlay-Anzeige für neue Items
-- 💱 Item-Trading (geplant)
+**Funciones:**
+- 🎁 Huevos solo por regalos, con tres incubadoras, cola FIFO y caducidad de 24 horas
+- 🐾 24 plantillas en Evolución I, II y III – 72 formas incluidas
+- ⚔️ Combates A/B/C persistentes con tiempo, replay, XP y puntos de estadísticas
+- 🏆 Clasificaciones separadas de Collector Score y Arena Rating
+- 📱 Arena vertical con zona segura de chat del 26 por ciento y diseño horizontal
+- ✨ Efectos WebGPU con fallback Canvas2D y audio CC0 seleccionado
+- 🔒 Sin Art Lab, generación de imágenes por IA ni instalador de modelos
 
 **Endpoints:**
-- `GET /api/streamalchemy/inventory/:user` - Benutzer-Inventar
-- `POST /api/streamalchemy/craft` - Items craften
-- `GET /api/streamalchemy/items` - Alle verfügbaren Items
+- `GET /api/streammonsters/state` - Estado público agregado
+- `GET /api/streammonsters/battle-state` - Estado público de la arena
+- `GET /api/streammonsters/battles/:battleId/replay` - Replay con privacidad reducida
+- `GET /api/streammonsters/monster-catalog` - Catálogo de monstruos incluido
+- `GET /api/streammonsters/leaderboard?type=collector|arena` - Clasificaciones separadas
 
-**Overlay-URL:**
+**URL del overlay:**
 ```
 http://localhost:3000/streammonsters/overlay
 ```
 
-**Integration:** Optional mit GCCE für Chat-Commands
+**Integración:** Cuando GCCE está disponible, es la única entrada de comandos. El prefijo y los alias son editables y se comprueban los conflictos.
 
-**Bekannte Einschränkungen:**
-- ⚠️ Early Beta: KI-Generierung kann langsam sein
-- ⚠️ Trading-System noch nicht implementiert
-- ⚠️ Crafting-Rezepte in Entwicklung
+**Equidad y compatibilidad:**
+- Los regalos de pago nunca mejoran estadísticas, multiplicadores de XP, rareza ni probabilidad de victoria.
+- Se conservan el ID estable `streamalchemy`, los datos existentes y los replays históricos.
 
 ---
 

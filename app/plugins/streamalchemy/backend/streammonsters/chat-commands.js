@@ -27,9 +27,7 @@ class ChatCommands {
 
   commandReference(command) {
     const reference = this.getCommandReference?.(command);
-    return typeof reference === 'string' && reference
-      ? reference
-      : command === 'eggs' ? '!eier' : `!${command}`;
+    return typeof reference === 'string' ? reference.trim() : '';
   }
 
   emitAfterCommit(event, payload) {
@@ -60,15 +58,28 @@ class ChatCommands {
     if (command === 'leavebattle') return this.leaveBattle(userId);
     if (command === 'rank') return this.rank(userId);
     if (command === 'quests') return this.quests(userId);
-    const commandReference = name => this.commandReference(name);
+    const commandReferences = [
+      ['eggs', ''],
+      ['hatch', ' <slot>'],
+      ['monsters', ' [page]'],
+      ['monster', ' <slot>'],
+      ['choose', ' <slot>'],
+      ['evolve', ' <slot>'],
+      ['battle', ''],
+      ['leavebattle', ''],
+      ['rank', ''],
+      ['quests', '']
+    ].map(([name, suffix]) => {
+      const reference = this.commandReference(name);
+      return reference ? `${reference}${suffix}` : '';
+    }).filter(Boolean);
     return {
       success: true,
       status: 'help',
-      message: `Commands: ${commandReference('eggs')}, ${commandReference('hatch')} <slot>, ` +
-        `${commandReference('monsters')} [page], ${commandReference('monster')} <slot>, ` +
-        `${commandReference('choose')} <slot>, ${commandReference('evolve')} <slot>, ` +
-        `${commandReference('battle')} [power|guard|speed], ${commandReference('leavebattle')}, ` +
-        `${commandReference('rank')}, ${commandReference('quests')}`
+      message: `${commandReferences.length
+        ? `Commands: ${commandReferences.join(', ')}. `
+        : 'No commands are currently available. '}` +
+        'After pairing, choose a monster and answer each round with A/B/C.'
     };
   }
 
@@ -83,17 +94,21 @@ class ChatCommands {
         : egg);
     const ready = eggs.filter(egg => egg.state === 'ready').length;
     const queued = eggs.filter(egg => egg.state === 'queued').length;
+    const hatchReference = this.commandReference('hatch');
+    const hatchGuidance = hatchReference
+      ? ` Use ${hatchReference} <slot>.`
+      : '';
     return {
       success: true,
       status: 'eggs',
-      message: `${eggs.length} egg${eggs.length === 1 ? '' : 's'} (${ready} ready${queued ? `, ${queued} queued` : ''}). Use ${this.commandReference('hatch')} <slot>.`,
+      message: `${eggs.length} egg${eggs.length === 1 ? '' : 's'} (${ready} ready${queued ? `, ${queued} queued` : ''}).${hatchGuidance}`,
       eggs
     };
   }
 
   hatch(userId, slot) {
     try {
-      const monster = this.engine.hatchEgg(userId, slot || 1);
+      const monster = this.engine.hatchEgg(userId, slot);
       return {
         success: true,
         status: 'hatched',
@@ -101,20 +116,23 @@ class ChatCommands {
         monster
       };
     } catch (error) {
+      const eggsReference = this.commandReference('eggs');
+      const eggsGuidance = eggsReference ? ` Check ${eggsReference}.` : '';
       if (error.code === 'STREAM_MONSTERS_EGG_NOT_FOUND') {
         return {
           success: false,
           status: 'egg_not_found',
-          message: `That egg slot does not exist. Check ${this.commandReference('eggs')}.`,
-          hint: this.commandReference('eggs')
+          message: `That egg slot does not exist.${eggsGuidance}`,
+          ...(eggsReference ? { hint: eggsReference } : {})
         };
       }
+      if (error.code !== 'STREAM_MONSTERS_EGG_NOT_READY') throw error;
       const wait = error.wait || null;
       return {
         success: false,
         status: 'egg_not_ready',
-        message: `That egg is not ready yet. Check ${this.commandReference('eggs')}.`,
-        hint: this.commandReference('eggs'),
+        message: `That egg is not ready yet.${eggsGuidance}`,
+        ...(eggsReference ? { hint: eggsReference } : {}),
         ...(wait ? {
           wait,
           card: {
@@ -155,10 +173,13 @@ class ChatCommands {
     const index = Number.parseInt(slot, 10) - 1;
     const monsters = this.store.getViewerMonsters(userId);
     if (!Number.isInteger(index) || index < 0 || !monsters[index]) {
+      const monstersReference = this.commandReference('monsters');
       return {
         success: false,
         status: 'invalid_slot',
-        message: `Choose a monster slot from ${this.commandReference('monsters')}.`
+        message: monstersReference
+          ? `Choose a monster slot from ${monstersReference}.`
+          : 'Choose a valid monster slot.'
       };
     }
     const selected = this.store.selectMonster(userId, monsters[index].monster_id);
@@ -179,10 +200,13 @@ class ChatCommands {
     const index = Number.parseInt(slot, 10) - 1;
     const monsters = this.store.getViewerMonsters(userId);
     if (!Number.isInteger(index) || index < 0 || !monsters[index]) {
+      const monstersReference = this.commandReference('monsters');
       return {
         success: false,
         status: 'invalid_slot',
-        message: `Choose a monster slot from ${this.commandReference('monsters')}.`
+        message: monstersReference
+          ? `Choose a monster slot from ${monstersReference}.`
+          : 'Choose a valid monster slot.'
       };
     }
     const monster = monsters[index];
@@ -201,10 +225,13 @@ class ChatCommands {
     const index = Number.parseInt(slot, 10) - 1;
     const monsters = this.store.getViewerMonsters(userId);
     if (!Number.isInteger(index) || index < 0 || !monsters[index]) {
+      const monstersReference = this.commandReference('monsters');
       return {
         success: false,
         status: 'invalid_slot',
-        message: `Choose a monster slot from ${this.commandReference('monsters')}.`
+        message: monstersReference
+          ? `Choose a monster slot from ${monstersReference}.`
+          : 'Choose a valid monster slot.'
       };
     }
     try {
@@ -243,9 +270,12 @@ class ChatCommands {
         stance: requestedStance || 'adaptive'
       });
       this.syncQueue();
+      const chooseReference = this.commandReference('choose');
       const messages = {
         queued: 'Battle queue joined. Waiting for an opponent.',
-        reserved: `Match found. Use ${this.commandReference('choose')} <slot> within 15 seconds.`,
+        reserved: chooseReference
+          ? `Match found. Use ${chooseReference} <slot> within 15 seconds.`
+          : 'Match found. Your active monster locks in after 15 seconds.',
         active: 'Your current match is still active.',
         no_monster: 'Hatch an egg first, then choose a monster.'
       };
@@ -416,11 +446,22 @@ class ChatCommands {
   }
 
   leaveBattle(userId) {
-    if (this.battleMatchService?.getActiveMatchForViewer?.(userId)) {
+    const activeMatch = this.battleMatchService?.getActiveMatchForViewer?.(userId);
+    if (activeMatch?.state === 'roster') {
+      const cancelled = this.battleMatchService.cancelBeforeBattle?.(userId);
+      if (cancelled?.cancelled) {
+        return {
+          success: true,
+          status: 'match_cancelled',
+          message: 'The reserved battle was cancelled before it started.'
+        };
+      }
+    }
+    if (activeMatch) {
       return {
         success: false,
         status: 'match_locked',
-        message: 'A reserved match cannot be left.'
+        message: 'A battle in progress cannot be left.'
       };
     }
     this.purgeExpiredQueue();
@@ -434,12 +475,28 @@ class ChatCommands {
   }
 
   rank(userId) {
-    const score = this.progression?.getViewerSeason?.(userId) || { points: 0, rank: 'Bronze' };
+    const collector = this.progression?.getViewerSeason?.(userId) || {
+      points: 0,
+      rank: 'Bronze'
+    };
+    const arenaSeason = this.battleMatchService?.getCurrentArenaSeason?.();
+    const arena = arenaSeason?.seasonId
+      ? this.battleMatchService.getArenaRating(arenaSeason.seasonId, userId)
+      : {
+          seasonId: null,
+          viewerId: userId,
+          rating: 900,
+          battlesRated: 0,
+          tier: 'Bronze'
+        };
     return {
       success: true,
       status: 'rank',
-      message: `${score.rank} · ${score.points} season points.`,
-      score
+      message: `Arena Rating: ${arena.tier} · ${arena.rating}. ` +
+        `Collector Score: ${collector.rank} · ${collector.points}.`,
+      arena,
+      collector,
+      score: collector
     };
   }
 

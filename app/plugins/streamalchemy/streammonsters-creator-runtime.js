@@ -5,11 +5,59 @@
 }(typeof globalThis === 'object' ? globalThis : this, () => {
   'use strict';
 
+  const CREATOR_SECTIONS = Object.freeze([
+    Object.freeze({ id: 'live-center', titleKey: 'liveCenterTitle' }),
+    Object.freeze({ id: 'gameplay', titleKey: 'gameplayTitle' }),
+    Object.freeze({ id: 'gifts-chat', titleKey: 'giftsChatTitle' }),
+    Object.freeze({ id: 'overlay-studio', titleKey: 'overlayStudioTitle' }),
+    Object.freeze({ id: 'asset-library', titleKey: 'assetLibraryTitle' }),
+    Object.freeze({ id: 'community-seasons', titleKey: 'communitySeasonsTitle' })
+  ]);
+  const COMMAND_ACTIONS = Object.freeze([
+    'eggs',
+    'hatch',
+    'inventory',
+    'monsters',
+    'monster',
+    'choose',
+    'evolve',
+    'battle',
+    'leavebattle',
+    'rank',
+    'quests',
+    'monstershelp'
+  ]);
+  const DEMO_SCENES = Object.freeze([
+    'spawn',
+    'ready',
+    'hatch',
+    'collection',
+    'evolution',
+    'match',
+    'skill',
+    'multihit',
+    'special',
+    'ko',
+    'xp',
+    'rankup',
+    'attack',
+    'defense'
+  ]);
   const HATCH_PRESETS = Object.freeze([30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000]);
   const EGG_EXPIRY_PRESETS = Object.freeze([21_600_000, 43_200_000, 86_400_000, 172_800_000]);
   const SEASON_DURATIONS = Object.freeze([7, 14, 28, 60, 90]);
   const RENDERER_QUALITIES = Object.freeze(['auto', 'high', 'medium', 'low']);
   const MASTERY_THRESHOLDS = Object.freeze([10, 25, 50]);
+  const REPAIR_ACTIONS = Object.freeze({
+    eggs: Object.freeze({
+      route: '/api/streammonsters/repair/eggs',
+      confirmation: 'reconcile_eggs'
+    }),
+    matches: Object.freeze({
+      route: '/api/streammonsters/repair/matches',
+      confirmation: 'cancel_stale_matches'
+    })
+  });
 
   function buildConfigPayload({ currentConfig = {}, values = {} } = {}) {
     const notificationDurationMs = Number(values.notificationDurationMs);
@@ -44,6 +92,265 @@
       commandAliases: values.commandAliases || currentConfig.commandAliases || {},
       audioChannels: values.audioChannels || currentConfig.audioChannels || {},
       giftMappingCustomized: Boolean(currentConfig.giftMappingCustomized)
+    };
+  }
+
+  function buildAliasDiagnostics(commandAliases = {}, gcce = {}) {
+    const owners = new Map();
+    Object.entries(commandAliases).forEach(([command, aliases]) => {
+      const enabled = Array.isArray(aliases?.enabled) ? aliases.enabled : [];
+      enabled.forEach(rawAlias => {
+        const alias = String(rawAlias || '').trim().toLocaleLowerCase();
+        if (!alias) return;
+        if (!owners.has(alias)) owners.set(alias, new Set());
+        owners.get(alias).add(command);
+      });
+    });
+    const conflicts = [...owners.entries()]
+      .filter(([, commands]) => commands.size > 1)
+      .map(([alias, commands]) => ({ alias, commands: [...commands].sort() }))
+      .sort((left, right) => left.alias.localeCompare(right.alias));
+    const registrationConflicts = Array.isArray(gcce.registrationConflicts)
+      ? [...gcce.registrationConflicts]
+      : [];
+    const unavailableCommands = Array.isArray(gcce.unavailableCommands)
+      ? [...gcce.unavailableCommands]
+      : [];
+    return {
+      conflicts,
+      registrationConflicts,
+      unavailableCommands,
+      healthy: conflicts.length === 0 &&
+        registrationConflicts.length === 0 &&
+        unavailableCommands.length === 0
+    };
+  }
+
+  function leaderboardDisplayName(entry = {}) {
+    return String(
+      entry.displayName ??
+      entry.display_name ??
+      entry.user_id ??
+      entry.viewer_id ??
+      'Viewer'
+    )
+      .replace(/[\u0000-\u001f\u007f]/g, '')
+      .trim()
+      .slice(0, 64) || 'Viewer';
+  }
+
+  function resolveCommandReference(command, {
+    gcce = {},
+    commandAliases = {}
+  } = {}) {
+    const publishedReference = String(
+      gcce.commandReferences?.[command] || ''
+    ).trim();
+    if (publishedReference) return publishedReference;
+
+    const enabledAliases = Array.isArray(commandAliases?.[command]?.enabled)
+      ? commandAliases[command].enabled
+        .map(alias => String(alias || '').trim().toLocaleLowerCase())
+        .filter(Boolean)
+      : [];
+    const registeredCommands = new Set(
+      (Array.isArray(gcce.registeredCommands) ? gcce.registeredCommands : [])
+        .map(alias => String(alias || '').trim().toLocaleLowerCase())
+        .filter(Boolean)
+    );
+    const registrationIsActive = String(gcce.registrationState || '')
+      .startsWith('active');
+    const alias = registrationIsActive
+      ? enabledAliases.find(candidate => registeredCommands.has(candidate))
+      : enabledAliases[0];
+    if (!alias) return '';
+
+    const prefix = typeof gcce.commandPrefix === 'string' &&
+      gcce.commandPrefix.length > 0
+      ? gcce.commandPrefix
+      : '!';
+    return `${prefix}${alias}`;
+  }
+
+  function buildCommandDiagnostics(gcce = {}) {
+    const policies = gcce.commandPolicies && typeof gcce.commandPolicies === 'object'
+      ? gcce.commandPolicies
+      : {};
+    return COMMAND_ACTIONS.map(command => {
+      const policy = policies[command] || {};
+      const reference = String(gcce.commandReferences?.[command] || '').trim();
+      const enabledAliases = Array.isArray(policy.enabledAliases)
+        ? policy.enabledAliases.map(alias => String(alias || '').trim()).filter(Boolean)
+        : [];
+      const registeredAliases = Array.isArray(policy.registeredAliases)
+        ? policy.registeredAliases.map(alias => String(alias || '').trim()).filter(Boolean)
+        : [];
+      return {
+        command,
+        reference,
+        enabled: Boolean(reference || registeredAliases.length),
+        enabledAliases,
+        registeredAliases,
+        userCooldownMs: Math.max(0, Number(policy.userCooldownMs) || 0),
+        globalCooldownMs: Math.max(0, Number(policy.globalCooldownMs) || 0)
+      };
+    });
+  }
+
+  const LIVE_STATUS_TRANSLATIONS = Object.freeze({
+    connected: 'statusConnected',
+    disconnected: 'statusDisconnected',
+    enabled: 'statusEnabled',
+    disabled: 'statusDisabled',
+    active: 'statusActive',
+    active_partial: 'statusActivePartial',
+    inactive: 'statusInactive',
+    fallback: 'statusFallback',
+    stale: 'statusStale',
+    idle: 'statusIdle',
+    waiting: 'statusWaiting',
+    muted: 'statusMuted',
+    roster: 'statusRoster',
+    action: 'statusAction',
+    resolving: 'statusResolving',
+    complete: 'statusComplete',
+    completed: 'statusComplete',
+    cancelled: 'statusCancelled',
+    canceled: 'statusCancelled',
+    queued: 'statusQueued',
+    searching: 'statusSearching'
+  });
+
+  function liveStatusTranslationKey(value) {
+    const normalized = String(value || '')
+      .trim()
+      .toLocaleLowerCase()
+      .replace(/[\s-]+/g, '_');
+    return LIVE_STATUS_TRANSLATIONS[normalized] || '';
+  }
+
+  function buildCreatorLiveView({ status = {}, state = {}, now = Date.now() } = {}) {
+    const match = Array.isArray(state.battle?.matches) ? state.battle.matches[0] : null;
+    const deadlineMs = Number(
+      match?.deadlineMs ??
+      match?.deadline_ms ??
+      (match?.state === 'roster' ? match?.rosterDeadlineMs : match?.actionDeadlineMs) ??
+      (match?.state === 'roster' ? match?.roster_deadline_ms : match?.action_deadline_ms) ??
+      match?.deadline ??
+      0
+    );
+    const rendererBackend = state.renderer?.backend || state.renderer?.renderer || 'waiting';
+    const rendererFps = Number(state.renderer?.fps);
+    const renderer = Number.isFinite(rendererFps) && rendererFps > 0
+      ? `${rendererBackend} · ${Math.round(rendererFps)} FPS`
+      : rendererBackend;
+    const warnings = [];
+    if (status.restarting) warnings.push('restart_pending');
+    if (state.gcce?.registrationError) warnings.push('gcce_error');
+    if ((state.gcce?.registrationConflicts || []).length) warnings.push('alias_conflicts');
+    if (state.renderer?.fallbackReason) warnings.push('renderer_fallback');
+    if (state.renderer?.deviceLost) warnings.push('renderer_device_lost');
+    if (state.obs?.status === 'stale') warnings.push('obs_stale');
+    if (state.obs?.status === 'disconnected') warnings.push('obs_disconnected');
+    return {
+      tiktok: status.isConnected ? 'connected' : 'disconnected',
+      plugin: state.config?.enabled === false ? 'disabled' : 'enabled',
+      gcce: state.gcce?.commandsRegistered
+        ? 'active'
+        : (state.gcce?.registrationState || 'fallback'),
+      obs: state.obs?.status || 'disconnected',
+      prefix: state.gcce?.commandPrefix || '!',
+      queue: Math.max(0, Number(state.eggCounts?.queued ?? state.queue?.length) || 0),
+      hype: Math.max(0, Number(state.hype?.points) || 0),
+      battlePhase: match?.phase || match?.state || 'idle',
+      countdownMs: deadlineMs > 0 ? Math.max(0, deadlineMs - Number(now || 0)) : 0,
+      renderer,
+      audio: state.audioRuntime?.muted ||
+        state.config?.audioChannels?.master?.enabled === false
+        ? 'muted'
+        : (state.audioRuntime?.status === 'connected' ? 'active' : 'waiting'),
+      warnings
+    };
+  }
+
+  function previewGeometry(layout) {
+    const portrait = layout === 'portrait';
+    return {
+      width: portrait ? 1080 : 1920,
+      height: portrait ? 1920 : 1080,
+      gameplayPercent: 74,
+      chatPercent: 26
+    };
+  }
+
+  function buildAssetStageEntries({ assets = [] } = {}) {
+    const seen = new Set();
+    return assets.flatMap(asset => {
+      const templateId = String(asset?.templateId || '').toLocaleLowerCase();
+      const stage = Number(asset?.stage);
+      const assetPath = String(asset?.assetPath || '').replace(/\\/g, '/');
+      const key = `${templateId}:${stage}`;
+      if (
+        !templateId ||
+        ![1, 2, 3].includes(stage) ||
+        !/^assets\/streammonsters\/furry\/[a-z0-9/-]+\.png$/.test(assetPath) ||
+        seen.has(key)
+      ) {
+        return [];
+      }
+      seen.add(key);
+      return [{
+        templateId,
+        name: String(asset?.name || templateId),
+        element: String(asset?.element || ''),
+        species: String(asset?.species || ''),
+        stage,
+        assetUrl:`/plugins/streamalchemy/${assetPath}`,
+        healthy:Number(asset?.dimensions?.[0]) === 1024 &&
+          Number(asset?.dimensions?.[1]) === 1024 &&
+          /^[a-f0-9]{64}$/i.test(String(asset?.sha256 || ''))
+      }];
+    });
+  }
+
+  function summarizeAssetLibrary({ templates = [], assets = [] } = {}) {
+    const expectedTemplates = 24;
+    const expectedForms = expectedTemplates * 3;
+    const stages = assets.length
+      ? assets.map(asset => ({
+        stage: asset?.stage,
+        integrity: asset?.integrity || (
+          asset?.assetPath &&
+          Number(asset?.dimensions?.[0] ?? asset?.width) === 1024 &&
+          Number(asset?.dimensions?.[1] ?? asset?.height) === 1024 &&
+          /^[a-f0-9]{64}$/i.test(String(asset?.sha256 || ''))
+            ? 'ok'
+            : 'missing'
+        )
+      }))
+      : templates.flatMap(template => (
+        Array.isArray(template?.stages)
+          ? template.stages
+          : [1, 2, 3].map(stage => ({
+            stage,
+            integrity: template?.integrity || (template?.assetPath ? 'ok' : 'missing')
+          }))
+      ));
+    const healthyForms = Math.min(
+      expectedForms,
+      stages.filter(stage => stage?.integrity === 'ok').length
+    );
+    const damagedForms = Math.max(0, expectedForms - healthyForms);
+    return {
+      templates: Math.min(
+        expectedTemplates,
+        templates.length || new Set(assets.map(asset => asset?.templateId).filter(Boolean)).size
+      ),
+      expectedForms,
+      healthyForms,
+      damagedForms,
+      integrity: damagedForms === 0 ? 'healthy' : 'degraded',
+      fallback: 'kenney_emergency_only'
     };
   }
 
@@ -82,6 +389,54 @@
     };
   }
 
+  function buildRepairRequest(kind, {
+    execute = false,
+    previewed = false,
+    confirmed = false
+  } = {}) {
+    const action = REPAIR_ACTIONS[kind];
+    if (!action) throw new Error('STREAM_MONSTERS_REPAIR_KIND_INVALID');
+    if (execute && !previewed) {
+      throw new Error('STREAM_MONSTERS_REPAIR_PREVIEW_REQUIRED');
+    }
+    if (execute && !confirmed) {
+      throw new Error('STREAM_MONSTERS_REPAIR_CONFIRMATION_REQUIRED');
+    }
+    return {
+      url: action.route,
+      body: execute
+        ? { dryRun: false, confirm: action.confirmation }
+        : { dryRun: true }
+    };
+  }
+
+  function summarizeRepairResult(kind, payload = {}) {
+    if (!REPAIR_ACTIONS[kind]) {
+      throw new Error('STREAM_MONSTERS_REPAIR_KIND_INVALID');
+    }
+    const count = value => Math.max(0, Number(value) || 0);
+    if (kind === 'eggs') {
+      const plan = payload.before || {};
+      const readyDue = count(plan.readyDue);
+      const expiryDue = count(plan.expiryDue);
+      return {
+        kind,
+        dryRun: payload.dryRun !== false,
+        candidates: readyDue + expiryDue,
+        repaired: count(payload.repaired),
+        readyDue,
+        expiryDue,
+        queued: count(plan.queued)
+      };
+    }
+    return {
+      kind,
+      dryRun: payload.dryRun !== false,
+      candidates: count(payload.candidates),
+      repaired: count(payload.cancelled)
+    };
+  }
+
   function normalizeDemoRequest(input = {}) {
     if (!input || input.scene === 'full' || !input.scene) return null;
     const result = { scene: input.scene };
@@ -93,14 +448,29 @@
   }
 
   return {
+    COMMAND_ACTIONS,
+    CREATOR_SECTIONS,
+    DEMO_SCENES,
     HATCH_PRESETS,
     EGG_EXPIRY_PRESETS,
     MASTERY_THRESHOLDS,
+    REPAIR_ACTIONS,
     RENDERER_QUALITIES,
     SEASON_DURATIONS,
+    buildAliasDiagnostics,
+    buildAssetStageEntries,
+    buildCommandDiagnostics,
     buildConfigPayload,
+    buildCreatorLiveView,
     buildDexSlots,
+    buildRepairRequest,
     eggReadinessCounts,
-    normalizeDemoRequest
+    leaderboardDisplayName,
+    liveStatusTranslationKey,
+    normalizeDemoRequest,
+    previewGeometry,
+    resolveCommandReference,
+    summarizeRepairResult,
+    summarizeAssetLibrary
   };
 }));

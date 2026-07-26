@@ -124,6 +124,82 @@ describe('Stream Monsters rules version 3 migration', () => {
     expect(setConfig).toHaveBeenCalledWith('streamalchemy_config', plugin.config);
   });
 
+  test('archives retired image-generation settings without exposing or changing them', () => {
+    const setConfig = jest.fn();
+    const plugin = new StreamAlchemyPlugin({
+      getConfig: jest.fn(),
+      setConfig
+    });
+    const retired = {
+      providerOrder: ['localComfy', 'openai'],
+      openaiApiKey: 'legacy-secret',
+      localGeneration: {
+        generationMode: 'local_preferred',
+        model: 'ByteDance/SDXL-Lightning',
+        modelFile: 'sdxl_lightning_4step.safetensors'
+      },
+      streamMonsters: {
+        enabled: true,
+        hatchDurationMs: 120_000,
+        localRuntime: {
+          state: 'verified',
+          runtimeRoot: 'C:\\legacy\\ComfyUI',
+          archiveUrl: 'https://retired.invalid/runtime.7z'
+        },
+        artPoolTarget: 8,
+        provider: 'localComfy',
+        modelId: 'sdxl-lightning'
+      }
+    };
+
+    plugin.config = plugin.loadConfig(retired);
+
+    expect(plugin.config).not.toHaveProperty('providerOrder');
+    expect(plugin.config).not.toHaveProperty('openaiApiKey');
+    expect(plugin.config).not.toHaveProperty('localGeneration');
+    expect(plugin.config.streamMonsters).not.toHaveProperty('localRuntime');
+    expect(plugin.config.streamMonsters).not.toHaveProperty('artPoolTarget');
+    expect(plugin.config.streamMonsters).not.toHaveProperty('provider');
+    expect(plugin.config.streamMonsters).not.toHaveProperty('modelId');
+
+    expect(plugin.persistSanitizedConfigIfNeeded(retired)).toBe(true);
+    const persisted = setConfig.mock.calls.at(-1)[1];
+    expect(persisted.providerOrder).toEqual(retired.providerOrder);
+    expect(persisted.openaiApiKey).toBe('legacy-secret');
+    expect(persisted.localGeneration).toEqual(retired.localGeneration);
+    expect(persisted.streamMonsters.localRuntime).toEqual(retired.streamMonsters.localRuntime);
+    expect(persisted.streamMonsters.artPoolTarget).toBe(8);
+    expect(persisted.streamMonsters.provider).toBe('localComfy');
+    expect(persisted.streamMonsters.modelId).toBe('sdxl-lightning');
+
+    plugin.updateConfig({
+      providerOrder: ['attacker'],
+      openaiApiKey: 'replacement-secret',
+      localGeneration: { model: 'replacement-model' },
+      streamMonsters: {
+        hatchDurationMs: 300_000,
+        localRuntime: { state: 'replacement' },
+        provider: 'replacement-provider',
+        modelId: 'replacement-model'
+      }
+    });
+    const updated = setConfig.mock.calls.at(-1)[1];
+    expect(updated.streamMonsters.hatchDurationMs).toBe(300_000);
+    expect(updated.providerOrder).toEqual(retired.providerOrder);
+    expect(updated.openaiApiKey).toBe('legacy-secret');
+    expect(updated.localGeneration).toEqual(retired.localGeneration);
+    expect(updated.streamMonsters.localRuntime).toEqual(retired.streamMonsters.localRuntime);
+    expect(updated.streamMonsters.artPoolTarget).toBe(8);
+    expect(updated.streamMonsters.provider).toBe('localComfy');
+    expect(updated.streamMonsters.modelId).toBe('sdxl-lightning');
+    expect(plugin.config).not.toHaveProperty('openaiApiKey');
+    expect(plugin.config.streamMonsters).not.toHaveProperty('localRuntime');
+
+    setConfig.mockClear();
+    expect(plugin.persistSanitizedConfigIfNeeded(updated)).toBe(false);
+    expect(setConfig).not.toHaveBeenCalled();
+  });
+
   test.each([
     [120_000, undefined],
     [600_000, undefined],
@@ -226,8 +302,10 @@ describe('Stream Monsters rules version 3 migration', () => {
       routes.sanitizeConfigUpdate({ hatchDurationMs: minutes * 60_000 }).hatchDurationMs
     ))).toEqual([30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000]);
     expect(routes.sanitizeConfigUpdate({ hatchDurationMs: 90_000 })).toEqual({});
+    expect(routes.sanitizeConfigUpdate({ maxUnhatchedEggs: 0 })).toEqual({});
+    expect(routes.sanitizeConfigUpdate({ maxUnhatchedEggs: 99 })).toEqual({});
     expect(routes.publicConfig({ rulesVersion: 2, hatchDurationMs: 300_000 })).toEqual(
-      expect.objectContaining({ rulesVersion: 5 })
+      expect.objectContaining({ rulesVersion: 5, maxUnhatchedEggs: 3 })
     );
   });
 });

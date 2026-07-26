@@ -139,7 +139,7 @@ This project is licensed under the **Creative Commons Attribution-NonCommercial 
 
 ---
 
-*Last updated: 2026-07-22*
-*Version: 1.4.0*
+*Last updated: 2026-07-26*
+*Version: 1.4.1*
 
 ---

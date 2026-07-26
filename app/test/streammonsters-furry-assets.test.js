@@ -68,27 +68,29 @@ describe('Stream Monsters furry template assets', () => {
     const hashes = new Set();
 
     expect(manifest).toEqual(expect.objectContaining({
-      schemaVersion: 1,
+      schemaVersion: 2,
       pack: 'furry',
-      generator: 'OpenAI built-in image generator',
-      promptVersion: 'furry-v1'
+      productionMode: 'bundled-only',
+      generator: expect.stringMatching(/chat image/i)
     }));
-    expect(manifest.assets).toHaveLength(24);
-    expect(manifest.assets.map(asset => asset.templateId).sort()).toEqual(
+    expect(manifest.assets).toHaveLength(72);
+    const baseForms = manifest.assets.filter(asset => asset.stage === 1);
+    expect(baseForms).toHaveLength(24);
+    expect(baseForms.map(asset => asset.templateId).sort()).toEqual(
       TEMPLATE_CATALOG.map(template => template.templateId).sort()
     );
     expectedElements.forEach(element => {
-      expect(manifest.assets.filter(asset => asset.element === element)).toHaveLength(4);
+      expect(baseForms.filter(asset => asset.element === element)).toHaveLength(4);
     });
 
-    manifest.assets.forEach(asset => {
+    baseForms.forEach(asset => {
       const catalogEntry = TEMPLATE_CATALOG.find(template => template.templateId === asset.templateId);
       expect(asset).toEqual(expect.objectContaining({
         templateId: expect.any(String),
         name: expect.any(String),
         species: expect.any(String),
         dimensions: [1024, 1024],
-        promptVersion: 'furry-v1',
+        promptVersion: expect.stringMatching(/^furry-v1/),
         sha256: expect.stringMatching(/^[a-f0-9]{64}$/)
       }));
       expect(`/${asset.assetPath}`).toBe(catalogEntry.assetPath.replace('/plugins/streamalchemy', ''));
@@ -112,14 +114,22 @@ describe('Stream Monsters furry template assets', () => {
       let opaquePixels = 0;
       let chromaFringePixels = 0;
       let opaqueChromaPixels = 0;
-      const [backgroundRed, backgroundGreen, backgroundBlue] = asset.backgroundRgb;
+      expect(asset.backgroundRgb).toEqual([
+        expect.any(Number),
+        expect.any(Number),
+        expect.any(Number)
+      ]);
       for (let index = 0; index < image.rgba.length; index += 4) {
         const alpha = image.rgba[index + 3];
         if (alpha > 200) opaquePixels += 1;
-        const redDistance = image.rgba[index] - backgroundRed;
-        const greenDistance = image.rgba[index + 1] - backgroundGreen;
-        const blueDistance = image.rgba[index + 2] - backgroundBlue;
-        const backgroundDistance = Math.hypot(redDistance, greenDistance, blueDistance);
+        const red = image.rgba[index];
+        const green = image.rgba[index + 1];
+        const blue = image.rgba[index + 2];
+        const backgroundDistance = Math.sqrt(
+          ((red - asset.backgroundRgb[0]) ** 2) +
+          ((green - asset.backgroundRgb[1]) ** 2) +
+          ((blue - asset.backgroundRgb[2]) ** 2)
+        );
         if (alpha >= 248 && backgroundDistance < 62) opaqueChromaPixels += 1;
         if (alpha > 8 && alpha < 248 && backgroundDistance < 90) chromaFringePixels += 1;
       }

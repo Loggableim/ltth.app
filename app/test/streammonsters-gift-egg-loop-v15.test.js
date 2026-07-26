@@ -6,7 +6,8 @@ const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/ch
 function createLoop({
   now = 1_000,
   hatchDurationMs = 120_000,
-  eggExpiryMs = 86_400_000
+  eggExpiryMs = 86_400_000,
+  maxUnhatchedEggs = 3
 } = {}) {
   const sqlite = new Database(':memory:');
   const store = new StreamMonstersDatabase(sqlite);
@@ -17,7 +18,7 @@ function createLoop({
     store,
     emit: (event, payload) => emitted.push({ event, payload }),
     now: () => currentNow,
-    config: { hatchDurationMs, eggExpiryMs, maxUnhatchedEggs: 3 }
+    config: { hatchDurationMs, eggExpiryMs, maxUnhatchedEggs }
   });
   engine.setStreamKey('creator:stream-1');
   store.upsertGiftMapping({
@@ -109,6 +110,46 @@ describe('Stream Monsters 1.5 durable gift and egg loop', () => {
     }));
   });
 
+  test('does not consume the Random shuffle bag for disabled or boost mappings', () => {
+    const loop = createLoop();
+    loop.store.upsertGiftMapping({
+      giftId: 78,
+      giftName: 'Disabled Heart',
+      element: 'Random',
+      effect: 'spawn',
+      enabled: false
+    });
+    loop.store.upsertGiftMapping({
+      giftId: 79,
+      giftName: 'Time Boost',
+      element: 'Random',
+      effect: 'boost',
+      enabled: true
+    });
+
+    expect(loop.engine.processGift({
+      userId: 'viewer-a',
+      giftId: 78,
+      giftName: 'Disabled Heart',
+      eventKey: 'disabled-random'
+    })).toEqual(expect.objectContaining({
+      type: 'ignored',
+      reason: 'gift_not_selected'
+    }));
+    expect(loop.store.getElementBag('creator:stream-1', 78)).toBeNull();
+
+    expect(loop.engine.processGift({
+      userId: 'viewer-a',
+      giftId: 79,
+      giftName: 'Time Boost',
+      eventKey: 'boost-random'
+    })).toEqual(expect.objectContaining({
+      type: 'ignored',
+      reason: 'no_incubating_egg'
+    }));
+    expect(loop.store.getElementBag('creator:stream-1', 79)).toBeNull();
+  });
+
   test('uses exactly three incubators while ready eggs free slots for FIFO promotion', () => {
     const loop = createLoop({ now: 1_000, hatchDurationMs: 100 });
     for (let index = 0; index < 5; index += 1) {
@@ -133,6 +174,25 @@ describe('Stream Monsters 1.5 durable gift and egg loop', () => {
     expect(loop.store.getViewerEggs('viewer-a', 'incubating').map(egg => egg.queued_at_ms))
       .toEqual([1_000, 1_000]);
   });
+
+  test.each([0, -1, 1, 99, 'invalid'])(
+    'keeps exactly three incubators when legacy config contains %p slots',
+    maxUnhatchedEggs => {
+      const loop = createLoop({ maxUnhatchedEggs });
+      for (let index = 0; index < 4; index += 1) {
+        loop.engine.processGift({
+          userId: 'viewer-a',
+          giftId: 77,
+          giftName: 'Team Heart',
+          eventKey: `fixed-slots-${index}`
+        });
+      }
+
+      expect(loop.engine.config.maxUnhatchedEggs).toBe(3);
+      expect(loop.store.getViewerEggs('viewer-a', 'incubating')).toHaveLength(3);
+      expect(loop.store.getQueuedEggs('viewer-a')).toHaveLength(1);
+    }
+  );
 
   test('returns exact early-hatch wait data and an upper large egg card', () => {
     const { commands } = createLoop({ now: 50_000, hatchDurationMs: 120_000 });

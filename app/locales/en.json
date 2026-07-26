@@ -717,7 +717,7 @@
       "uses_the_official_fish_audio_api_fish_speech_with_the_s1_model_get_your_key_at": "Uses the official Fish.audio API (Fish Speech) with the S1 model. Get your key at",
       "fish_audio_quickstart": "Fish.audio Quickstart",
       "siliconflow_api_key": "SiliconFlow API Key",
-      "used_for_fish_speech_1_5_tts_and_streamalchemy_flux_1_schnell_image_generation": ". Used for Fish Speech 1.5 TTS and Stream Monsters local image generation.",
+      "used_for_fish_speech_1_5_tts": ". Used for Fish Speech 1.5 TTS.",
       "ollama_cloud_api_key_stt_ticker_ubersetzung": "Ollama Cloud API Key (STT Ticker translation)",
       "wird_vom": "Used by",
       "stt_ticker_plugin": "STT Ticker Plugin",

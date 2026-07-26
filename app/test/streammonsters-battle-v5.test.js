@@ -32,18 +32,37 @@ describe('Stream Monsters rules-v5 skill catalog', () => {
     expect(new Set(Object.values(catalog).flatMap(entry => (
       Object.values(entry).map(skill => skill.id)
     ))).size).toBe(72);
+    const names = new Set();
     Object.values(catalog).forEach(skills => {
       expect(Object.keys(skills)).toEqual(['A', 'B', 'C']);
       expect(skills).toEqual({
-        A: expect.objectContaining({ type: 'attack', effects: expect.any(Array) }),
-        B: expect.objectContaining({ type: 'defense', effects: expect.any(Array) }),
+        A: expect.objectContaining({
+          type: 'attack',
+          icon: expect.any(String),
+          shortText: expect.any(String),
+          effects: expect.any(Array)
+        }),
+        B: expect.objectContaining({
+          type: 'defense',
+          icon: expect.any(String),
+          shortText: expect.any(String),
+          effects: expect.any(Array)
+        }),
         C: expect.objectContaining({
           type: 'special',
+          icon: expect.any(String),
+          shortText: expect.any(String),
           chargeRequired: 100,
           effects: expect.any(Array)
         })
       });
+      Object.values(skills).forEach(skill => {
+        expect(skill.icon).not.toHaveLength(0);
+        expect(skill.shortText.length).toBeGreaterThanOrEqual(8);
+        names.add(skill.name);
+      });
     });
+    expect(names.size).toBe(72);
   });
 });
 
@@ -76,6 +95,31 @@ describe('Stream Monsters rules-v5 deterministic resolver', () => {
       after: expect.any(Object),
       hits: expect.any(Array)
     }));
+  });
+
+  test('adds exactly three temporary damage for an elemental advantage and can disable it for balance simulation', () => {
+    const service = new BattleService({ store: {} });
+    const ember = fighter('ember', 'Ember', 'ashfang', { agility: 20 });
+    const grove = fighter('grove', 'Grove', 'oakheart', { agility: 1 });
+    const input = {
+      fighters: [ember, grove],
+      choices: { ember: 'A', grove: 'B' },
+      seed: 'v5-element-advantage',
+      round: 1
+    };
+    const advantaged = service.resolveInteractiveRound(input);
+    const neutral = service.resolveInteractiveRound({
+      ...input,
+      disableElementAdvantage: true
+    });
+    const advantagedHit = advantaged.actions
+      .find(action => action.actorId === 'ember').hits[0];
+    const neutralHit = neutral.actions
+      .find(action => action.actorId === 'ember').hits[0];
+
+    expect(advantagedHit.requestedDamage - neutralHit.requestedDamage).toBe(3);
+    expect(ember.stats).toEqual(expect.objectContaining({ might: 10 }));
+    expect(grove.stats).toEqual(expect.objectContaining({ guard: 10 }));
   });
 
   test('gates C at 100 charge, consumes it and applies the specified charge sources', () => {

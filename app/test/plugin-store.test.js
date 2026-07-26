@@ -234,6 +234,30 @@ describe('PluginStore', () => {
     assert.strictEqual(tts.support.feedbackEnabled, true);
   });
 
+  it('rejects a plugin below its declared minimum LTTH version before installation', async () => {
+    const plugin = {
+      id: 'streamalchemy',
+      name: { en: 'Stream Monsters' },
+      description: { en: 'Portrait battle arena' },
+      version: '1.5.0',
+      minLtthVersion: '1.4.1',
+      packageUrl: 'https://example.com/streamalchemy.zip',
+      sha256: '0'.repeat(64)
+    };
+    const store = createStore(tempDir, {
+      schemaVersion: 1,
+      plugins: [plugin]
+    }, {
+      storeOptions: { ltthVersion: '1.4.0' }
+    });
+
+    await assert.rejects(
+      () => store.installPlugin('official', 'streamalchemy'),
+      /requires LTTH 1\.4\.1 or newer.*current 1\.4\.0/i
+    );
+    assert.strictEqual(fs.existsSync(path.join(tempDir, 'streamalchemy')), false);
+  });
+
   it('rolls back an existing plugin when a store update fails after replacement', async () => {
     writePlugin(tempDir, 'tts', '1.0.0');
     const { zipPath, sha256 } = await createPluginPackage(tempDir, 'tts', '2.0.0');

@@ -69,7 +69,22 @@ describe('Stream Monsters targeted demo API', () => {
     ]));
   });
 
-  test.each(['spawn', 'hatch', 'attack', 'defense', 'special'])(
+  test.each([
+    'spawn',
+    'ready',
+    'hatch',
+    'collection',
+    'evolution',
+    'match',
+    'attack',
+    'defense',
+    'skill',
+    'multihit',
+    'special',
+    'ko',
+    'xp',
+    'rankup'
+  ])(
     'emits only the requested %s preview sequence with validated catalog/layout metadata',
     scene => {
       const { demo, emitted } = harness();
@@ -101,12 +116,69 @@ describe('Stream Monsters targeted demo API', () => {
       }
       const allowed = {
         spawn: ['streammonsters:egg_spawned'],
+        ready: ['streammonsters:egg_ready'],
         hatch: ['streammonsters:hatch_started', 'streammonsters:egg_hatched'],
-        attack: ['streammonsters:battle_skill_used'],
-        defense: ['streammonsters:battle_skill_used'],
-        special: ['streammonsters:battle_special_charged', 'streammonsters:battle_skill_used']
+        collection: ['streammonsters:collection_shown'],
+        evolution: ['streammonsters:monster_evolved'],
+        match: ['streammonsters:battle_match_found', 'streammonsters:battle_choice_opened'],
+        attack: ['streammonsters:battle_choice_opened', 'streammonsters:battle_skill_used'],
+        defense: ['streammonsters:battle_choice_opened', 'streammonsters:battle_skill_used'],
+        skill: [
+          'streammonsters:battle_choice_opened',
+          'streammonsters:battle_choice_locked',
+          'streammonsters:battle_skill_used'
+        ],
+        multihit: ['streammonsters:battle_choice_opened', 'streammonsters:battle_skill_used'],
+        special: [
+          'streammonsters:battle_choice_opened',
+          'streammonsters:battle_special_charged',
+          'streammonsters:battle_skill_used'
+        ],
+        ko: [
+          'streammonsters:battle_choice_opened',
+          'streammonsters:battle_skill_used',
+          'streammonsters:battle_completed'
+        ],
+        xp: ['streammonsters:monster_xp_awarded', 'streammonsters:monster_level_up'],
+        rankup: [
+          'streammonsters:arena_rating_changed',
+          'streammonsters:season_rank_changed'
+        ]
       };
       expect(emitted.map(entry => entry.event)).toEqual(allowed[scene]);
+      if (scene === 'rankup') {
+        expect(emitted[0].payload).toEqual(expect.objectContaining({
+          before: { rating: 995, tier: 'Bronze' },
+          after: { rating: 1011, tier: 'Silver' },
+          delta: 16
+        }));
+        expect(emitted[1].payload).toEqual(expect.objectContaining({
+          before: 'Silver',
+          after: 'Gold',
+          score: expect.objectContaining({
+            points: 275,
+            rank: 'Gold'
+          })
+        }));
+      }
+      if (['attack', 'defense', 'skill', 'multihit', 'special', 'ko'].includes(scene)) {
+        const roster = emitted.find(entry => (
+          entry.event === 'streammonsters:battle_choice_opened'
+        ))?.payload?.fighters;
+        expect(roster).toEqual([
+          expect.objectContaining({
+            slot: 1,
+            name: 'Ashfang',
+            imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png'
+          }),
+          expect.objectContaining({
+            slot: 2,
+            imageUrl: expect.stringMatching(
+              /^\/plugins\/streamalchemy\/assets\/streammonsters\/furry\/.+\.png$/
+            )
+          })
+        ]);
+      }
     }
   );
 

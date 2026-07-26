@@ -30,8 +30,13 @@ describe('scoped plugin locale character-loss regressions', () => {
     ));
 
     expect(likelyLostCharacter('https://localhost:3000/overlay?lang=fr&mode=preview')).toBe(false);
-    expect(JSON.parse(fs.readFileSync(SCOPED_LOCALE_FILES[2], 'utf8')).plugins.streamalchemy.streamalchemy.title)
-      .toBe('Stream Monsters - Configuración avanzada');
+    const streamMonstersLocale = JSON.parse(fs.readFileSync(SCOPED_LOCALE_FILES[2], 'utf8'))
+      .plugins.streamalchemy;
+    expect(Object.keys(streamMonstersLocale)).toEqual(['ui']);
+    expect(Object.keys(streamMonstersLocale.ui)).toEqual(['monsters']);
+    expect(streamMonstersLocale.ui.monsters.title)
+      .toBe('Stream Monsters · League World Hybrid');
+    expect(streamMonstersLocale.ui.monsters.heartMeHelp).toContain('Team Heart');
     expect(JSON.parse(fs.readFileSync(SCOPED_LOCALE_FILES[7], 'utf8')).plugins['osc-bridge'].osc_bridge.config.target_host)
       .toBe('Hôte cible (IP de VRChat)');
     expect(JSON.parse(fs.readFileSync(SCOPED_LOCALE_FILES[7], 'utf8')).plugins['osc-bridge'].osc_bridge.custom_command.osc_value_help)

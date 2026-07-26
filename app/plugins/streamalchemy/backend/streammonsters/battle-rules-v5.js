@@ -1,4 +1,5 @@
 const { buildV5SkillCatalog, hashNumber } = require('./catalog');
+const { elementAdvantage } = require('./battle-rules-v3');
 
 const RULES_VERSION = 5;
 const CHOICES = Object.freeze(['A', 'B', 'C']);
@@ -45,11 +46,18 @@ function heal(state, amount, outcomes, type = 'heal') {
   outcomes.push({ type, requested, amount: state.hp - before });
 }
 
-function damageFor(fighter, target, effect) {
+function damageFor(fighter, target, effect, disableElementAdvantage = false) {
   const might = Math.max(0, Number(fighter.stats?.might) || 0);
   const guard = Math.max(0, Number(target.stats?.guard) || 0);
   const weakened = Math.max(0, Number(fighter.weakened) || 0);
-  return Math.max(1, Math.round(effect.power + (might * 0.6) - (guard * 0.25) - weakened));
+  const elementBonus = !disableElementAdvantage &&
+    elementAdvantage(fighter.element, target.element)
+    ? 3
+    : 0;
+  return Math.max(
+    1,
+    Math.round(effect.power + (might * 0.6) - (guard * 0.25) - weakened + elementBonus)
+  );
 }
 
 function applyDamage(target, requestedDamage, hitIndex, {
@@ -108,7 +116,7 @@ function applyBurnTick(state, statusEffects) {
   const amount = Math.min(state.hp, state.burn);
   const hpBefore = state.hp;
   state.hp -= amount;
-  state.burn = Math.max(0, state.burn - 1);
+  state.burn = 0;
   if (amount > 0) addCharge(state, 25);
   statusEffects.push({
     type: 'burn_tick',
@@ -144,7 +152,8 @@ function resolveAction({
   requestedChoice,
   round,
   sequence,
-  seed
+  seed,
+  disableElementAdvantage = false
 }) {
   const { choice, choiceFallback } = normalizeChoice(requestedChoice, actorState);
   const skill = SKILL_CATALOG[actor.template_id]?.[choice];
@@ -186,44 +195,53 @@ function resolveAction({
 
   for (const effect of skill.effects) {
     if (effect.type === 'damage') {
-      const total = damageFor({ ...actor, weakened: actorState.weakened }, target, effect);
+      const total = damageFor(
+        { ...actor, weakened: actorState.weakened },
+        target,
+        effect,
+        disableElementAdvantage
+      );
       const count = Math.max(1, Number(effect.hits) || 1);
       if (count > 1) outcomes.push({ type: 'multihit', hits: count });
       const pierce = skill.effects.find(candidate => candidate.type === 'pierce')?.power || 0;
       if (pierce > 0) outcomes.push({ type: 'pierce', amount: pierce });
+      const actionEvadeChance = targetState.evade;
+      const actionEvadeRoll = hashNumber(
+        `${seed}:round:${round}:sequence:${sequence}:hit:1:evade:${target.monster_id}`
+      ) % 100;
       for (let index = 0; index < count && targetState.hp > 0; index += 1) {
         const remaining = total - hits.reduce((sum, hit) => sum + hit.requestedDamage, 0);
         const requested = Math.max(1, Math.ceil(remaining / (count - index)));
-        const evadeChance = targetState.evade;
-        const evadeRoll = hashNumber(
-          `${seed}:round:${round}:sequence:${sequence}:hit:${index + 1}:evade:${target.monster_id}`
-        ) % 100;
         const hit = applyDamage(targetState, requested, index + 1, {
           pierce,
-          evadeChance,
-          evadeRoll
+          evadeChance: actionEvadeChance,
+          evadeRoll: actionEvadeRoll
         });
-        if (evadeChance > 0) targetState.evade = 0;
         hits.push(hit);
         dealtHpDamage += hit.hpDamage;
         if (hit.hpDamage > 0 && targetState.thorns > 0 && actorState.hp > 0) {
+          const thorns = targetState.thorns;
+          targetState.thorns = 0;
           retaliations.push(applyRetaliation(
             actorState,
             'thorns',
-            targetState.thorns,
+            thorns,
             retaliations.length + 1
           ));
         }
         if (hit.hpDamage > 0 && targetState.reflect > 0 && actorState.hp > 0) {
+          const reflect = targetState.reflect;
+          targetState.reflect = 0;
           retaliations.push(applyRetaliation(
             actorState,
             'reflect',
-            targetState.reflect,
+            reflect,
             retaliations.length + 1
           ));
         }
         if (actorState.hp <= 0) break;
       }
+      if (actionEvadeChance > 0) targetState.evade = 0;
     } else if (effect.type === 'shield') {
       addShield(actorState, effect.power + Math.floor((Number(actor.stats?.guard) || 0) / 3), outcomes);
     } else if (effect.type === 'heal') {
@@ -250,6 +268,9 @@ function resolveAction({
     }
     if (actorState.hp <= 0 || targetState.hp <= 0) break;
   }
+  if (before.actor.weakened > 0) {
+    actorState.weakened = Math.max(0, actorState.weakened - 1);
+  }
 
   return {
     sequence,
@@ -273,7 +294,14 @@ function resolveAction({
   };
 }
 
-function resolveInteractiveRound({ fighters, choices = {}, seed, round = 1, state = {} }) {
+function resolveInteractiveRound({
+  fighters,
+  choices = {},
+  seed,
+  round = 1,
+  state = {},
+  disableElementAdvantage = false
+}) {
   if (!Array.isArray(fighters) || fighters.length !== 2) {
     throw new Error('STREAM_MONSTERS_V5_REQUIRES_TWO_FIGHTERS');
   }
@@ -299,7 +327,8 @@ function resolveInteractiveRound({ fighters, choices = {}, seed, round = 1, stat
       requestedChoice: choices[actor.monster_id],
       round,
       sequence: actions.length + 1,
-      seed
+      seed,
+      disableElementAdvantage
     }));
     if (states[target.monster_id].hp <= 0) break;
   }

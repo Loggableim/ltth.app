@@ -83,7 +83,9 @@ npm run lint
 
 ## Status
 
-- Current LTTH release: `1.4.0`
+- Current LTTH release: `1.4.1`
+- Current Stream Monsters release: `1.5.0` (Open Beta, stable plugin ID `streamalchemy`)
+- Stream Monsters 1.5.0 uses enabled gifts as the only egg source and adds 72 bundled evolution forms, interactive A/B/C PvP, permanent progression, separate Collector/Arena leaderboards, and portrait-first OBS arenas without an Art Lab runtime.
 - Current WebGPU Fireworks plugin release: `3.1.1`
 - Fireworks 3.1.1 keeps star, ring, standard, and special rockets inside one shared visible envelope so each burst opens at the exact rendered rocket endpoint without top-edge clipping.
 - Current changelog: [CHANGELOG.md](CHANGELOG.md)

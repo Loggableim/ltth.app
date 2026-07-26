@@ -1,0 +1,140 @@
+'use strict';
+
+const StreamMonstersPublicEventProjector = require(
+  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+);
+const runtime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
+
+function publicEnvelope(projector, type, payload) {
+  const eventType = `streammonsters:${type}`;
+  return {
+    ...projector.project(eventType, payload),
+    ...projector.identifiers(eventType, payload)
+  };
+}
+
+describe('Stream Monsters public critical overlay queue', () => {
+  test('groups projected egg, evolution and battle flows by their public correlation id', () => {
+    const projector = new StreamMonstersPublicEventProjector();
+    const queue = runtime.createPriorityQueue({ maxSize: 20 });
+    const egg = {
+      egg_id: 'private-egg-7',
+      element: 'Lunar',
+      state: 'ready'
+    };
+    const monster = {
+      monster_id: 'private-monster-7',
+      name: 'Selene',
+      element: 'Lunar'
+    };
+
+    for (const type of ['egg_spawned', 'hatch_started', 'egg_hatched']) {
+      queue.enqueue(type, publicEnvelope(projector, type, {
+        egg,
+        ...(type === 'egg_hatched' ? { monster } : {})
+      }));
+    }
+    for (const type of ['monster_evolved', 'monster_visual_evolved']) {
+      queue.enqueue(type, publicEnvelope(projector, type, { monster }));
+    }
+    for (const [index, type] of [
+      'battle_match_found',
+      'battle_skill_used',
+      'battle_completed'
+    ].entries()) {
+      queue.enqueue(type, publicEnvelope(projector, type, {
+        eventId: `public-match:event:${index + 1}`,
+        correlationId: 'public-match-correlation',
+        matchId: 'internal-match-id'
+      }));
+    }
+
+    const entries = queue.snapshot();
+    expect(entries.every(entry => entry.data.egg?.egg_id == null)).toBe(true);
+    expect(entries.every(entry => entry.data.monster?.monster_id == null)).toBe(true);
+
+    const eggCorrelationId = entries.find(entry => entry.type === 'egg_spawned')
+      .data.correlationId;
+    const evolutionCorrelationId = entries.find(entry => entry.type === 'monster_evolved')
+      .data.correlationId;
+    expect(entries.slice(0, 3).map(entry => entry.groupKey)).toEqual(
+      Array(3).fill(`critical:${eggCorrelationId}`)
+    );
+    expect(entries.slice(3, 5).map(entry => entry.groupKey)).toEqual(
+      Array(2).fill(`critical:${evolutionCorrelationId}`)
+    );
+    expect(entries.slice(5).map(entry => entry.groupKey)).toEqual(
+      Array(3).fill('critical:public-match-correlation')
+    );
+  });
+
+  test('retains every critical group under overload and evicts only noncritical work', () => {
+    const queue = runtime.createPriorityQueue({
+      maxSize: 3,
+      maxCriticalOverflow: 0
+    });
+    queue.enqueue('chat_result', { result: { message: 'replaceable' } }, 1);
+    queue.enqueue('hype_changed', { points: 25 }, 2);
+    queue.enqueue('quest_completed', { quest: 'daily' }, 3);
+
+    const expected = [];
+    for (let group = 1; group <= 6; group += 1) {
+      const correlationId = `public-battle-${group}`;
+      for (const [offset, type] of [
+        'battle_match_found',
+        'battle_skill_used',
+        'battle_completed'
+      ].entries()) {
+        const eventId = `${correlationId}:event:${offset + 1}`;
+        expected.push({ type, groupKey: `critical:${correlationId}` });
+        queue.enqueue(type, {
+          eventId,
+          correlationId,
+          matchId: `private-match-${group}`
+        }, 10 + expected.length);
+      }
+    }
+    queue.prependSnapshot({ cursor: 44 }, 100);
+
+    const snapshot = queue.snapshot();
+    expect(snapshot[0]).toEqual(expect.objectContaining({ type: 'state_snapshot' }));
+    expect(snapshot.slice(1).map(({ type, groupKey }) => ({ type, groupKey })))
+      .toEqual(expected);
+    expect(snapshot.some(entry => entry.priority < 3)).toBe(false);
+    expect(queue.size()).toBe(1 + expected.length);
+
+    const drained = [];
+    for (let entry = queue.shift(101); entry; entry = queue.shift(101)) {
+      drained.push({ type: entry.type, groupKey: entry.groupKey });
+    }
+    expect(drained[0].type).toBe('state_snapshot');
+    expect(drained.slice(1)).toEqual(expected);
+  });
+
+  test('normalizes planned battle aliases before queue dedupe to render one logical event', () => {
+    const normalize = runtime.normalizeBattleEventType || (type => type);
+    const queue = runtime.createPriorityQueue({ maxSize: 20 });
+    const event = {
+      eventId: 'match-15:event:3',
+      correlationId: 'match-15',
+      matchId: 'match-15',
+      round: 1,
+      action: { actorSlot: 1, targetSlot: 2, terminal: true }
+    };
+
+    expect(normalize('battle_skill_prompt')).toBe('battle_choice_opened');
+    expect(normalize('battle_skill_locked')).toBe('battle_choice_locked');
+    expect(normalize('battle_action')).toBe('battle_skill_used');
+    expect(normalize('battle_knockout')).toBe('battle_skill_used');
+
+    expect(queue.enqueue(normalize('battle_skill_used'), event, 1)).toBe(true);
+    expect(queue.enqueue(normalize('battle_action'), event, 2)).toBe(false);
+    expect(queue.enqueue(normalize('battle_knockout'), event, 3)).toBe(false);
+    expect(queue.snapshot()).toEqual([
+      expect.objectContaining({
+        type: 'battle_skill_used',
+        data: event
+      })
+    ]);
+  });
+});

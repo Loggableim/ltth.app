@@ -1,5 +1,7 @@
 const Database = require('better-sqlite3');
+const path = require('path');
 const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
+const AssetRegistry = require('../plugins/streamalchemy/backend/streammonsters/asset-registry');
 const { TEMPLATE_CATALOG, getTemplatesForElement } = require('../plugins/streamalchemy/backend/streammonsters/catalog');
 const CollectionService = require('../plugins/streamalchemy/backend/streammonsters/collection-service');
 const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
@@ -116,7 +118,7 @@ describe('Stream Monsters 1.4 collection layer', () => {
     expect(emitted.filter(entry => entry.event === 'streammonsters:mastery_unlocked')).toHaveLength(1);
   });
 
-  test('migrates legacy monsters to deterministic templates without altering their non-template fields', () => {
+  test('migrates legacy monsters to deterministic templates and canonical Furry visuals without altering identity or stats', () => {
     const sqlite = new Database(':memory:');
     sqlite.exec(`
       CREATE TABLE streammonsters_eggs (
@@ -133,11 +135,24 @@ describe('Stream Monsters 1.4 collection layer', () => {
       INSERT INTO streammonsters_eggs VALUES ('legacy-egg', 'legacy-user', 1, 'Gift', 'Tide', '#fff', 'legacy-seed', 'hatched', 1, 1, 0, '/legacy.png', 'legacy-monster');
       INSERT INTO streammonsters_monsters VALUES ('legacy-monster', 'legacy-user', 'legacy-egg', 'Legacy Name', 'Tide', 'Rare', 7, 42, '{"vitality":8}', '/legacy.png', 1, 2);
     `);
-    const store = new StreamMonstersDatabase(sqlite);
+    const store = new StreamMonstersDatabase(sqlite, {
+      assetRegistry: new AssetRegistry({
+        pluginDir: path.join(process.cwd(), 'plugins', 'streamalchemy')
+      })
+    });
     store.initialize();
     expect(store.getMonster('legacy-monster')).toEqual(expect.objectContaining({
       template_id: expect.stringMatching(/^(ripple|brine|reefbite|axi)$/), name: 'Legacy Name',
-      image_url: '/legacy.png', level: 7, xp: 42, stats: { vitality: 8 }, is_selected: 1, created_at_ms: 2
+      image_url: expect.stringMatching(
+        /^\/plugins\/streamalchemy\/assets\/streammonsters\/furry\/(ripple|brine|reefbite|axi)\.png$/
+      ),
+      visual_source: 'furry',
+      visual_key: expect.stringMatching(/^furry:(ripple|brine|reefbite|axi)$/),
+      level: 7,
+      xp: 42,
+      stats: { vitality: 8 },
+      is_selected: 1,
+      created_at_ms: 2
     }));
     expect(sqlite.prepare("PRAGMA index_list('streammonsters_monsters')").all().map(row => row.name))
       .toContain('streammonsters_monsters_user_template');
@@ -158,6 +173,31 @@ describe('Stream Monsters 1.4 collection layer', () => {
     collection.recordHeartMe({ streamKey: 'stream-a', userId: 'g', atMs: 9_001 });
     expect(collection.recordHeartMe({ streamKey: 'stream-a', userId: 'h', atMs: 9_002 })).toEqual(expect.objectContaining({ length: 3, hypeAward: 5 }));
     expect(emitted.filter(entry => entry.event === 'streammonsters:heart_chain_changed')).toHaveLength(9);
+  });
+
+  test('resets a Heart Chain when the same viewer gifts twice in a row', () => {
+    const { collection } = createCollection();
+
+    expect(collection.recordHeartMe({
+      streamKey: 'stream-reset',
+      userId: 'a',
+      atMs: 1
+    })).toEqual(expect.objectContaining({ length: 1, hypeAward: 0 }));
+    expect(collection.recordHeartMe({
+      streamKey: 'stream-reset',
+      userId: 'b',
+      atMs: 2
+    })).toEqual(expect.objectContaining({ length: 2, hypeAward: 0 }));
+    expect(collection.recordHeartMe({
+      streamKey: 'stream-reset',
+      userId: 'b',
+      atMs: 3
+    })).toEqual(expect.objectContaining({ length: 1, hypeAward: 0 }));
+    expect(collection.recordHeartMe({
+      streamKey: 'stream-reset',
+      userId: 'a',
+      atMs: 4
+    })).toEqual(expect.objectContaining({ length: 2, hypeAward: 0 }));
   });
 
   test('uses the discovery-grade Heart Me normalization for chains and their active mission', () => {

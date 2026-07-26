@@ -161,7 +161,8 @@ class CommandParser {
             }
 
             // F2: Check command cooldown
-            const cooldownCheck = this.cooldownManager.checkCooldown(commandDef.name, context.userId);
+            const cooldownKey = commandDef.cooldownKey || commandDef.name;
+            const cooldownCheck = this.cooldownManager.checkCooldown(cooldownKey, context.userId);
             if (cooldownCheck.onCooldown) {
                 const remainingSeconds = Math.ceil(cooldownCheck.remainingMs / 1000);
                 const error = this.errorHandler.createError('COMMAND_ON_COOLDOWN', {
@@ -227,7 +228,7 @@ class CommandParser {
             
             // F2: Record cooldown usage if successful
             if (result.success) {
-                this.cooldownManager.recordUsage(commandDef.name, context.userId);
+                this.cooldownManager.recordUsage(cooldownKey, context.userId);
             }
             
             return result;

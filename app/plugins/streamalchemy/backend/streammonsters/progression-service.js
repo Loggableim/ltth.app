@@ -1,5 +1,6 @@
 const ELEMENTS = ['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar'];
 
+const SEASON_DURATION_PRESETS = Object.freeze([7, 14, 28, 60, 90]);
 const SEASON_DURATION_MS = 28 * 24 * 60 * 60 * 1000;
 const RANKS = [
   { name: 'Monster Master', minimum: 900 },
@@ -27,10 +28,30 @@ const ACHIEVEMENT_TITLE_KEYS = Object.freeze({
 });
 
 class ProgressionService {
-  constructor({ store, emit = () => {}, now = () => new Date() }) {
+  constructor({
+    store,
+    emit = () => {},
+    now = () => new Date(),
+    seasonDurationDays = 28,
+    onMonsterProgressed = () => {}
+  }) {
     this.store = store;
     this.emit = emit;
     this.now = now;
+    this.onMonsterProgressed = onMonsterProgressed;
+    this.setSeasonDurationDays(seasonDurationDays);
+  }
+
+  setMonsterProgressHandler(handler) {
+    this.onMonsterProgressed = typeof handler === 'function' ? handler : () => {};
+  }
+
+  setSeasonDurationDays(value) {
+    const normalized = Number(value);
+    this.seasonDurationDays = SEASON_DURATION_PRESETS.includes(normalized)
+      ? normalized
+      : 28;
+    return this.seasonDurationDays;
   }
 
   emitAfterCommit(event, payload) {
@@ -58,7 +79,12 @@ class ProgressionService {
 
   recordHatch(userId, streamKey = null, monster = null) {
     const target = monster || this.store.getSelectedMonster(userId);
-    this.store.awardViewerXp(userId, 20, target?.monster_id);
+    this.awardViewerMonsterXp(
+      userId,
+      20,
+      target?.monster_id,
+      `hatch:${target?.monster_id || userId}`
+    );
     if (target) {
       this.awardCollectorPoints(userId, 2, `hatch:${target.monster_id}`);
       if (target.template_id) {
@@ -116,14 +142,29 @@ class ProgressionService {
     if (!monster) return { rewarded: false };
     const won = Boolean(result.won);
     const updated = this.store.recordMonsterBattle(monster.monster_id, won);
-    this.store.awardMonsterXp(monster.monster_id, 10 + (won ? 5 : 0));
+    this.awardMonsterXp(
+      userId,
+      monster.monster_id,
+      10 + (won ? 5 : 0),
+      `legacy-battle:${monster.monster_id}:${this.currentMs()}`
+    );
     const rewarded = this.store.claimDailyBattleReward(userId, this.dateKey(), 10);
     if (rewarded) {
       this.addSeasonPoints(userId, 2 + (won ? 3 : 0));
     }
-    this.incrementQuest(userId, this.weekKey(), 'weekly:battle', 'Fight a battle', 10, 1, streamKey, 50, 20);
-    this.checkBattleAchievements(userId, updated);
+    this.recordBattleProgress(userId, streamKey, {
+      monster: updated,
+      won
+    });
     return { rewarded, monster: this.store.getMonster(monster.monster_id) };
+  }
+
+  recordBattleProgress(userId, streamKey = null, result = {}) {
+    const monster = result.monster || this.store.getSelectedMonster(userId);
+    if (!monster) return { recorded: false };
+    this.incrementQuest(userId, this.weekKey(), 'weekly:battle', 'Fight a battle', 10, 1, streamKey, 50, 20);
+    this.checkBattleAchievements(userId, monster);
+    return { recorded: true, monster };
   }
 
   recordCollection(userId, totalElements, streamKey = null) {
@@ -137,7 +178,12 @@ class ProgressionService {
     });
     if (quest.completedNow) {
       if (streamKey) this.store.incrementStreamMetric(streamKey, 'quest_completions');
-      this.store.awardViewerXp(userId, 50);
+      this.awardViewerMonsterXp(
+        userId,
+        50,
+        null,
+        `weekly-collection:${this.weekKey()}`
+      );
       this.addSeasonPoints(userId, 20);
       const messageKey = this.questTitleKey(quest.quest_key);
       this.emitAfterCommit('streammonsters:quest_completed', {
@@ -173,7 +219,14 @@ class ProgressionService {
     const quest = this.store.upsertQuestProgress({ userId, periodKey, questKey, title, target, increment });
     if (quest.completedNow) {
       if (streamKey) this.store.incrementStreamMetric(streamKey, 'quest_completions');
-      if (xpReward) this.store.awardViewerXp(userId, xpReward);
+      if (xpReward) {
+        this.awardViewerMonsterXp(
+          userId,
+          xpReward,
+          null,
+          `quest:${periodKey}:${questKey}`
+        );
+      }
       if (seasonReward) this.addSeasonPoints(userId, seasonReward);
       const messageKey = this.questTitleKey(quest.quest_key);
       this.emitAfterCommit('streammonsters:quest_completed', {
@@ -189,18 +242,67 @@ class ProgressionService {
 
   recordFirstAction(userId, streamKey) {
     if (!streamKey || !this.store.claimFirstStreamAction(streamKey, userId, this.currentMs())) return false;
-    this.store.awardViewerXp(userId, 2);
+    this.awardViewerMonsterXp(
+      userId,
+      2,
+      null,
+      `first-action:${streamKey}`
+    );
     return true;
+  }
+
+  awardViewerMonsterXp(userId, amount, preferredMonsterId = null, sourceKey = 'viewer-xp') {
+    const before = preferredMonsterId
+      ? this.store.getMonster(preferredMonsterId)
+      : this.store.getSelectedMonster(userId);
+    const monster = this.store.awardViewerXp(userId, amount, preferredMonsterId);
+    this.notifyMonsterProgress(userId, before, monster, sourceKey);
+    return monster;
+  }
+
+  awardMonsterXp(userId, monsterId, amount, sourceKey = 'monster-xp') {
+    const before = this.store.getMonster(monsterId);
+    const monster = this.store.awardMonsterXp(monsterId, amount);
+    this.notifyMonsterProgress(userId, before, monster, sourceKey);
+    return monster;
+  }
+
+  notifyMonsterProgress(userId, before, monster, sourceKey) {
+    if (!monster) return;
+    const pointsGained = Math.max(
+      0,
+      (Number(monster.unspent_stat_points) || 0) -
+        (Number(before?.unspent_stat_points) || 0)
+    );
+    const levelsGained = Math.max(
+      0,
+      (Number(monster.level) || 1) - (Number(before?.level) || 1)
+    );
+    if (pointsGained < 1 && levelsGained < 1) return;
+    this.onMonsterProgressed({
+      userId,
+      monster,
+      before,
+      pointsGained,
+      levelsGained,
+      sourceKey
+    });
   }
 
   getCurrentSeason() {
     const nowMs = this.currentMs();
-    const bucket = Math.floor(nowMs / SEASON_DURATION_MS);
-    const startsAtMs = bucket * SEASON_DURATION_MS;
+    const durationMs = this.seasonDurationDays * 24 * 60 * 60 * 1000;
+    const bucket = Math.floor(nowMs / durationMs);
+    const startsAtMs = bucket * durationMs;
+    // Preserve the historical 28-day namespace so an upgrade never hides the
+    // active Collector score. Non-default durations are explicitly namespaced.
+    const seasonId = this.seasonDurationDays === 28
+      ? `season-${bucket}`
+      : `season-${this.seasonDurationDays}-${bucket}`;
     return this.store.ensureSeason({
-      seasonId: `season-${bucket}`,
+      seasonId,
       startsAtMs,
-      endsAtMs: startsAtMs + SEASON_DURATION_MS
+      endsAtMs: startsAtMs + durationMs
     });
   }
 
@@ -340,3 +442,4 @@ module.exports.SEASON_DURATION_MS = SEASON_DURATION_MS;
 module.exports.RANKS = RANKS;
 module.exports.QUEST_TITLE_KEYS = QUEST_TITLE_KEYS;
 module.exports.ACHIEVEMENT_TITLE_KEYS = ACHIEVEMENT_TITLE_KEYS;
+module.exports.SEASON_DURATION_PRESETS = SEASON_DURATION_PRESETS;

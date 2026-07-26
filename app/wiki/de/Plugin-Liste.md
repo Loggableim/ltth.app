@@ -172,39 +172,39 @@ http://localhost:3000/gcce-hud/overlay
 ---
 
 ### 4. Stream Monsters
-**Status:** 🔴 Early Beta
-**Version:** 1.1.0
+**Status:** 🟡 Working / Open Beta
+**Version:** 1.5.0
 **Autor:** Pup Cid
 
 **Beschreibung:**
-Verwandle TikTok-Geschenke in virtuelle RPG-Items mit Crafting-Mechaniken und KI-generierten Icons. Gamification-System für Streams.
+Aktivierte TikTok-Geschenke sind die einzige Ei-Quelle. Zuschauer sammeln 72 gebündelte Furry-Formen, entwickeln Monster kosmetisch weiter und kämpfen interaktiv mit A, B oder C.
 
 **Features:**
-- 🎁 Gift-to-Item-Transformation
-- ⚔️ RPG-Itemsystem (Common, Rare, Epic, Legendary)
-- 🔨 Crafting-Mechanik (Items kombinieren)
-- 🤖 KI-generierte Item-Icons
-- 📦 Inventar-System pro Zuschauer
-- 📊 Item-Statistiken und Seltenheit
-- 🎨 Overlay-Anzeige für neue Items
-- 💱 Item-Trading (geplant)
+- 🎁 Gift-only Eier mit drei Inkubatoren, FIFO-Warteschlange und 24-Stunden-Ablauf
+- 🐾 24 Monster-Vorlagen mit Evolution I, II und III – insgesamt 72 gebündelte Formen
+- ⚔️ Persistente A/B/C-Duelle mit Zeitfenstern, Replay, XP und Statpunkten
+- 🏆 Getrennte Collector-Score- und Arena-Rating-Ranglisten
+- 📱 Portrait-Arena mit 26-Prozent-Chat-Safe-Zone plus Landscape-Layout
+- ✨ WebGPU-Effekte mit Canvas2D-Fallback und kuratiertem CC0-Audio
+- 🔒 Kein Art Lab, keine KI-Bildgenerierung und kein Modell-Installer im Plugin
 
 **Endpoints:**
-- `GET /api/streamalchemy/inventory/:user` - Benutzer-Inventar
-- `POST /api/streamalchemy/craft` - Items craften
-- `GET /api/streamalchemy/items` - Alle verfügbaren Items
+- `GET /api/streammonsters/state` - Öffentlicher aggregierter Zustand
+- `GET /api/streammonsters/battle-state` - Öffentlicher Arena-Zustand
+- `GET /api/streammonsters/battles/:battleId/replay` - Datenschutzreduziertes Replay
+- `GET /api/streammonsters/monster-catalog` - Gebündelter Monsterkatalog
+- `GET /api/streammonsters/leaderboard?type=collector|arena` - Getrennte Ranglisten
 
 **Overlay-URL:**
 ```
 http://localhost:3000/streammonsters/overlay
 ```
 
-**Integration:** Optional mit GCCE für Chat-Commands
+**Integration:** Wenn GCCE verfügbar ist, ist es der einzige Kommando-Eingang. Prefix und Aliase sind editierbar und konfliktgeprüft.
 
-**Bekannte Einschränkungen:**
-- ⚠️ Early Beta: KI-Generierung kann langsam sein
-- ⚠️ Trading-System noch nicht implementiert
-- ⚠️ Crafting-Rezepte in Entwicklung
+**Faire Grenzen und Kompatibilität:**
+- Bezahlte Gifts verbessern niemals Kampfwerte, XP-Multiplikatoren, Seltenheit oder Gewinnwahrscheinlichkeit.
+- Die stabile Plugin-ID `streamalchemy`, bestehende Spielerdaten und historische Replays bleiben erhalten.
 
 ---
 

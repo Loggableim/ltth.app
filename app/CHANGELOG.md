@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-07-26
+
+### Added
+
+- **Stream Monsters 1.5.0 (Open Beta)**: Enabled TikTok gifts are now the only egg source. Three incubators, FIFO overflow, configurable hatch presets, 24-hour ready-egg expiry, Hype milestones, Heart Chains, quests, and editable GCCE aliases complete the gift-to-collection loop.
+- **72 Bundled Furry Forms**: The 24 monster templates now ship with verified Evolution I, II, and III artwork. Cosmetic evolution, mastery, essence, levels, and allocated stats persist without changing paid combat odds.
+- **Interactive Arena PvP**: Both viewers choose A, B, or C in timed, reproducible battles with deterministic timeout choices, ordered replay, reload recovery, XP, and post-battle stat allocation.
+- **Two Seasonal Leaderboards**: Collector Score and Arena Rating are tracked separately in configurable seasons while collections, evolution, levels, and stats remain permanent.
+- **Portrait-First Arena**: The OBS arena keeps the lower 26 percent clear for TikTok chat, supports landscape layouts, and shares one deterministic timeline across WebGPU effects and Canvas2D fallback.
+- **Curated Local Audio**: Five persisted audio channels route deterministic, impact-synchronized CC0 cues with preload, limiting, and silent failure handling.
+
+### Changed
+
+- **Creator Live Center**: Replaced Art Lab with six focused creator areas for live status, gameplay, gifts and chat, overlay setup, the bundled monster library, and community/season controls.
+- **Bundled-Only Visuals**: Stream Monsters no longer ships a provider, model installer, generation pool, ComfyUI path, or any live image-generation runtime. Verified bundled Furry artwork is canonical and Kenney remains an emergency fallback.
+- **Rules v5**: Gift deduplication, egg promotion, battle reservations, public replay projection, critical overlay queues, renderer recovery, and structured privacy-safe diagnostics are now durable and bounded.
+
+### Compatibility
+
+- **Stable Identity and Data**: The `streamalchemy` plugin ID, existing player data, legacy battle replays, and every published Stream Monsters archive through 1.4.0 are preserved.
+- **Plugin Versions**: This LTTH patch advances Stream Monsters to 1.5.0; all other plugin versions remain unchanged, including WebGPU Fireworks 3.1.1.
+
 ## [1.4.0] - 2026-07-22
 
 ### Added

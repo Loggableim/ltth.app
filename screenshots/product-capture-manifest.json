@@ -587,13 +587,24 @@
       }
     },
     {
-      "id": "stream-alchemy",
-      "canonical": "/screenshots/features/stream-monsters.png",
-      "route": "/streamalchemy/ui",
+      "id": "stream-monsters-arena-portrait-1.5",
+      "canonical": "/screenshots/features/stream-monsters-arena-portrait-1.5.png",
+      "route": "/streammonsters/overlay?layout=portrait",
       "state": "default-demo",
       "viewport": {
-        "width": 1280,
-        "height": 800,
+        "width": 1080,
+        "height": 1920,
+        "deviceScaleFactor": 1
+      }
+    },
+    {
+      "id": "stream-monsters-creator-1.5",
+      "canonical": "/screenshots/features/stream-monsters-creator-1.5.png",
+      "route": "/streammonsters/ui",
+      "state": "default-demo",
+      "viewport": {
+        "width": 1920,
+        "height": 1080,
         "deviceScaleFactor": 1
       }
     },
@@ -1230,9 +1241,19 @@
     },
     {
       "locale": "de",
-      "id": "stream-alchemy",
-      "path": "screenshots/de/features/stream-monsters.png",
-      "route": "/streamalchemy/ui",
+      "id": "stream-monsters-arena-portrait-1.5",
+      "path": "screenshots/de/features/stream-monsters-arena-portrait-1.5.png",
+      "route": "/streammonsters/overlay?layout=portrait",
+      "state": {
+        "lang": "de",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "de",
+      "id": "stream-monsters-creator-1.5",
+      "path": "screenshots/de/features/stream-monsters-creator-1.5.png",
+      "route": "/streammonsters/ui",
       "state": {
         "lang": "de",
         "theme": "cid"
@@ -1800,9 +1821,19 @@
     },
     {
       "locale": "en",
-      "id": "stream-alchemy",
-      "path": "screenshots/features/stream-monsters.png",
-      "route": "/streamalchemy/ui",
+      "id": "stream-monsters-arena-portrait-1.5",
+      "path": "screenshots/features/stream-monsters-arena-portrait-1.5.png",
+      "route": "/streammonsters/overlay?layout=portrait",
+      "state": {
+        "lang": "en",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "en",
+      "id": "stream-monsters-creator-1.5",
+      "path": "screenshots/features/stream-monsters-creator-1.5.png",
+      "route": "/streammonsters/ui",
       "state": {
         "lang": "en",
         "theme": "cid"
@@ -2370,9 +2401,19 @@
     },
     {
       "locale": "es",
-      "id": "stream-alchemy",
-      "path": "screenshots/es/features/stream-monsters.png",
-      "route": "/streamalchemy/ui",
+      "id": "stream-monsters-arena-portrait-1.5",
+      "path": "screenshots/es/features/stream-monsters-arena-portrait-1.5.png",
+      "route": "/streammonsters/overlay?layout=portrait",
+      "state": {
+        "lang": "es",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "es",
+      "id": "stream-monsters-creator-1.5",
+      "path": "screenshots/es/features/stream-monsters-creator-1.5.png",
+      "route": "/streammonsters/ui",
       "state": {
         "lang": "es",
         "theme": "cid"
@@ -2940,9 +2981,19 @@
     },
     {
       "locale": "fr",
-      "id": "stream-alchemy",
-      "path": "screenshots/fr/features/stream-monsters.png",
-      "route": "/streamalchemy/ui",
+      "id": "stream-monsters-arena-portrait-1.5",
+      "path": "screenshots/fr/features/stream-monsters-arena-portrait-1.5.png",
+      "route": "/streammonsters/overlay?layout=portrait",
+      "state": {
+        "lang": "fr",
+        "theme": "cid"
+      }
+    },
+    {
+      "locale": "fr",
+      "id": "stream-monsters-creator-1.5",
+      "path": "screenshots/fr/features/stream-monsters-creator-1.5.png",
+      "route": "/streammonsters/ui",
       "state": {
         "lang": "fr",
         "theme": "cid"

@@ -3,6 +3,7 @@ const { isHeartMeGift } = require('./gift-name');
 
 const ELEMENTS = ['Ember', 'Tide', 'Grove', 'Gale', 'Volt', 'Lunar'];
 const EGG_COLORS = ['#ef6b45', '#3aaee8', '#54b86d', '#8ecfcb', '#f1ca43', '#a778e2'];
+const ACTIVE_INCUBATOR_SLOTS = 3;
 
 const MONSTER_NAMES = [
   'Fizzlet', 'Mossbit', 'Crystaroo', 'Nimblet', 'Pebblin', 'Glowmunk',
@@ -43,6 +44,7 @@ class StreamMonstersEngine {
       defaultCreatorName: 'Creator',
       ...config
     };
+    this.config.maxUnhatchedEggs = ACTIVE_INCUBATOR_SLOTS;
     this.recentGifts = new Map();
   }
 
@@ -54,19 +56,34 @@ class StreamMonstersEngine {
     const normalizedGiftId = Number.parseInt(giftId, 10);
     const mapping = this.store.getGiftMapping(normalizedGiftId);
     const mappedElement = mapping?.element || null;
-    const element = mappedElement === 'Random'
-      ? this.selectRandomElement({ userId, giftId: normalizedGiftId, eventTimeMs })
-      : (mappedElement || ELEMENTS[this.hashNumber(`gift:${normalizedGiftId}`) % ELEMENTS.length]);
+    const element = mappedElement ||
+      ELEMENTS[this.hashNumber(`gift:${normalizedGiftId}`) % ELEMENTS.length];
     const index = ELEMENTS.indexOf(element);
     return {
       giftId: normalizedGiftId,
       giftName: String(giftName || `Gift ${normalizedGiftId}`),
       coinValue: Math.max(0, Number.parseInt(mapping?.coin_value ?? coinValue, 10) || 0),
       element,
-      eggColor: mapping?.egg_color || EGG_COLORS[index],
+      eggColor: mapping?.egg_color || EGG_COLORS[index] || null,
       effect: mapping?.effect || 'spawn',
       enabled: Boolean(mapping?.enabled),
       imageUrl: mapping?.image_url || null,
+      poolKey: `${element}:standard`
+    };
+  }
+
+  resolveSpawnGiftElement(gift, { userId, eventTimeMs }) {
+    if (gift.element !== 'Random') return gift;
+    const element = this.selectRandomElement({
+      userId,
+      giftId: gift.giftId,
+      eventTimeMs
+    });
+    const index = ELEMENTS.indexOf(element);
+    return {
+      ...gift,
+      element,
+      eggColor: gift.eggColor || EGG_COLORS[index],
       poolKey: `${element}:standard`
     };
   }
@@ -85,7 +102,7 @@ class StreamMonstersEngine {
     ) {
       return { type: 'duplicate', eventKey: normalizedEventKey };
     }
-    const gift = this.describeGift({
+    let gift = this.describeGift({
       giftId,
       giftName,
       coinValue,
@@ -113,6 +130,10 @@ class StreamMonstersEngine {
       });
       return { type: 'boosted', egg, gift };
     }
+    gift = this.resolveSpawnGiftElement(gift, {
+      userId,
+      eventTimeMs: createdAtMs
+    });
     const state = eggs.length >= this.config.maxUnhatchedEggs ? 'queued' : 'incubating';
     const variant = this.store.consumeChargedEgg(this.streamKey, createdAtMs) ? 'charged' : 'standard';
     const hatchDurationMs = this.hatchDurationFor(variant);
@@ -202,11 +223,23 @@ class StreamMonstersEngine {
     return ready;
   }
 
-  hatchEgg(userId, slot = 1) {
+  hatchEgg(userId, slot = null) {
     return this.store.runInTransaction(() => {
       const visibleEggs = this.store.getViewerEggs(userId)
         .filter(egg => ['incubating', 'queued', 'ready'].includes(egg.state));
-      const index = Math.max(0, Number.parseInt(slot, 10) - 1);
+      const hasExplicitSlot = slot !== null &&
+        slot !== undefined &&
+        String(slot).trim() !== '';
+      const index = hasExplicitSlot
+        ? Math.max(0, Number.parseInt(slot, 10) - 1)
+        : visibleEggs
+          .map((egg, visibleIndex) => ({ egg, visibleIndex }))
+          .filter(entry => entry.egg.state === 'ready')
+          .sort((left, right) => (
+            (Number(left.egg.ready_at_ms) || 0) - (Number(right.egg.ready_at_ms) || 0) ||
+            (Number(left.egg.created_at_ms) || 0) - (Number(right.egg.created_at_ms) || 0) ||
+            String(left.egg.egg_id).localeCompare(String(right.egg.egg_id))
+          ))[0]?.visibleIndex ?? 0;
       const egg = visibleEggs[index];
       if (!egg) {
         const error = new Error('STREAM_MONSTERS_EGG_NOT_FOUND');
@@ -215,6 +248,9 @@ class StreamMonstersEngine {
         throw error;
       }
       if (egg.state !== 'ready') {
+        const queued = egg.state === 'queued'
+          ? this.store.getQueuedEggs(userId).find(entry => entry.egg_id === egg.egg_id)
+          : null;
         const error = new Error('STREAM_MONSTERS_EGG_NOT_READY');
         error.code = 'STREAM_MONSTERS_EGG_NOT_READY';
         error.wait = {
@@ -223,7 +259,11 @@ class StreamMonstersEngine {
           readyAtMs: egg.ready_at_ms,
           remainingMs: egg.ready_at_ms === null
             ? null
-            : Math.max(0, egg.ready_at_ms - this.now())
+            : Math.max(0, egg.ready_at_ms - this.now()),
+          ...(queued ? {
+            queuePosition: Number(queued.queue_position) || 1,
+            queue_position: Number(queued.queue_position) || 1
+          } : {})
         };
         throw error;
       }
@@ -302,6 +342,7 @@ class StreamMonstersEngine {
       imageUrl: visual?.imageUrl || egg.image_url,
       visualSource: visual?.visualSource || 'egg_asset',
       visualKey: visual?.visualKey || egg.visual_key,
+      assetVersion: visual?.assetVersion || null,
       createdAtMs
     };
   }

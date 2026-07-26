@@ -8,6 +8,30 @@ const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streamm
 const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
 const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
 const overlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
+const chatViewRuntime = require('../plugins/streamalchemy/streammonsters-chat-view');
+
+const activeDoms = new Set();
+const activeGcceInstances = new Set();
+
+function closeDom(dom) {
+  if (!dom) return;
+  activeDoms.delete(dom);
+  try {
+    dom.window.dispatchEvent(new dom.window.Event('pagehide'));
+  } catch (_) {}
+  try {
+    dom.window.close();
+  } catch (_) {}
+}
+
+afterEach(async () => {
+  for (const dom of [...activeDoms]) closeDom(dom);
+  for (const gcce of [...activeGcceInstances]) {
+    try {
+      await gcce.destroy();
+    } catch (_) {}
+  }
+});
 
 function createGCCEApi() {
   const configStore = {};
@@ -38,6 +62,12 @@ function createGCCEApi() {
 
 async function createCollisionRuntime() {
   const gcce = new GCCE(createGCCEApi());
+  const destroy = gcce.destroy.bind(gcce);
+  gcce.destroy = async () => {
+    activeGcceInstances.delete(gcce);
+    return destroy();
+  };
+  activeGcceInstances.add(gcce);
   await gcce.init();
   gcce.parser.commandPrefix = '/';
   gcce.pluginConfig.commandPrefix = '/';
@@ -132,6 +162,7 @@ async function createLiveOverlay(snapshot) {
     'utf8'
   )).plugins.streamalchemy.ui.monsters;
   const socketHandlers = new Map();
+  const chatWaitResolvers = [];
   let fetchFailure = null;
   const interpolate = (template, params = {}) => String(template).replace(
     /\{(\w+)\}/g,
@@ -162,6 +193,13 @@ async function createLiveOverlay(snapshot) {
         };
       });
       window.StreamMonstersOverlayRuntime = overlayRuntime;
+      window.StreamMonstersChatView = {
+        ...chatViewRuntime,
+        createChatView: options => chatViewRuntime.createChatView({
+          ...options,
+          wait: () => new Promise(resolve => chatWaitResolvers.push(resolve))
+        })
+      };
       window.StreamMonstersEffectsRenderer = {
         createEffectsRenderer: () => ({
           init: () => {},
@@ -177,6 +215,7 @@ async function createLiveOverlay(snapshot) {
       window.clearTimeout = () => {};
     }
   });
+  activeDoms.add(dom);
   await flush();
   await flush();
   await socketHandlers.get('connect')();
@@ -186,6 +225,13 @@ async function createLiveOverlay(snapshot) {
     dom,
     hint: () => dom.window.document.getElementById('hint'),
     chat: () => dom.window.document.getElementById('chat-card'),
+    detail: () => dom.window.document.getElementById('chat-detail'),
+    close: () => closeDom(dom),
+    async releaseChat() {
+      for (const resolve of chatWaitResolvers.splice(0)) resolve();
+      await flush();
+      await flush();
+    },
     failFetch(error = new Error('state unavailable')) {
       fetchFailure = error;
     },
@@ -234,19 +280,27 @@ describe('Stream Monsters review fix round 2 guidance', () => {
 
     expect(events.earlyHatch.hint).toBe('/eier');
     await overlay.emit('streammonsters:chat_result', {
-      userId: 'viewer-a',
+      userId: 'viewer-a-secret',
+      displayName: 'Public Hatcher',
       result: {
         ...events.earlyHatch,
         messageKey: 'chatResultEggNotReady'
       }
     });
-    expect(overlay.chat().textContent).toContain('/eier');
+    expect(overlay.detail().dataset.placement).toBe('upper');
+    expect(overlay.detail().dataset.kind).toBe('egg-wait');
+    expect(overlay.detail().textContent).toContain('Public Hatcher');
+    expect(overlay.detail().textContent).toContain('The egg is still incubating');
+    expect(overlay.detail().textContent).toContain('Ready in 00:01');
+    expect(overlay.detail().textContent).not.toContain('viewer-a-secret');
+    expect(overlay.chat().textContent).toBe('');
+    await overlay.releaseChat();
 
     await overlay.emit('streammonsters:egg_ready', events.ready);
     expect(overlay.hint().textContent).toBe('/schlupf [slot]');
     expect(overlay.hint().textContent).not.toContain('/hatch');
 
-    overlay.dom.window.close();
+    overlay.close();
     await gcce.destroy();
   });
 
@@ -275,7 +329,7 @@ describe('Stream Monsters review fix round 2 guidance', () => {
     expect(overlay.hint().querySelector('img')).toBeNull();
     expect(overlay.dom.window.overlayPwned).toBeUndefined();
 
-    overlay.dom.window.close();
+    overlay.close();
     await gcce.destroy();
   });
 
@@ -293,6 +347,6 @@ describe('Stream Monsters review fix round 2 guidance', () => {
     expect(overlay.hint().textContent).toContain('/hatch [slot]');
     expect(overlay.hint().textContent).not.toContain('/eggs');
 
-    overlay.dom.window.close();
+    overlay.close();
   });
 });

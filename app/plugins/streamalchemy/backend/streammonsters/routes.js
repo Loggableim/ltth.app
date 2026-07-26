@@ -1,7 +1,13 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { createAdminAuth } = require('../../../../modules/admin-auth');
-const { TEMPLATE_CATALOG, getTemplate } = require('./catalog');
+const {
+  FURRY_ASSET_VERSION,
+  TEMPLATE_CATALOG,
+  getTemplate,
+  getEvolutionAssetPath
+} = require('./catalog');
 
 const ART_LAB_ROUTES = Object.freeze([
   ['GET', '/api/streamalchemy/config'],
@@ -22,6 +28,8 @@ const ART_LAB_ROUTES = Object.freeze([
   ['POST', '/api/streammonsters/local-runtime/install'],
   ['GET', '/api/streammonsters/local-runtime/install/:jobId'],
   ['DELETE', '/api/streammonsters/local-runtime/install/:jobId'],
+  ['GET', '/api/streammonsters/local-runtime/jobs/:jobId'],
+  ['DELETE', '/api/streammonsters/local-runtime/jobs/:jobId'],
   ['POST', '/api/streammonsters/local-runtime/start'],
   ['POST', '/api/streammonsters/local-runtime/stop'],
   ['POST', '/api/streammonsters/local-runtime/verify']
@@ -39,6 +47,7 @@ class StreamMonstersRoutes {
     battleMatchService = null,
     giftCatalogProvider,
     configProvider,
+    now = () => Date.now(),
     gcceStateProvider = () => ({
       commandPrefix: '!',
       registrationState: 'fallback',
@@ -56,8 +65,11 @@ class StreamMonstersRoutes {
     this.battleMatchService = battleMatchService;
     this.giftCatalogProvider = giftCatalogProvider || (() => []);
     this.configProvider = configProvider;
+    this.now = now;
     this.gcceStateProvider = gcceStateProvider;
     this.adminAuth = createAdminAuth();
+    this.assetCatalogCache = null;
+    this.overlayHeartbeat = null;
   }
 
   register() {
@@ -101,9 +113,17 @@ class StreamMonstersRoutes {
       }
       return res.sendFile(absolutePath);
     });
+    this.api.registerRoute('POST', '/api/streammonsters/overlay/heartbeat', (req, res) => {
+      const heartbeat = this.recordOverlayHeartbeat(req.body);
+      return res.json({ success: true, acceptedAtMs: heartbeat.lastSeenAtMs });
+    });
     this.api.registerRoute('GET', '/api/streammonsters/state', (req, res) => {
       const config = this.configProvider.getConfig().streamMonsters;
       const season = this.progression?.getCurrentSeason?.() || null;
+      const recentEvents = this.store.getRecentPublicEvents?.(
+        this.engine.streamKey || 'offline',
+        { limit: 100 }
+      ) || [];
       res.json({
         success: true,
         config: this.publicConfig(config),
@@ -122,7 +142,13 @@ class StreamMonstersRoutes {
         ),
         visualPack: 'furry',
         season,
-        gcce: this.gcceStateProvider()
+        gcce: this.publicGcceState(this.gcceStateProvider()),
+        battle: this.battleMatchService?.getPublicSnapshot?.() || {
+          rulesVersion: 5,
+          matches: []
+        },
+        recentEvents,
+        eventCursor: recentEvents.at(-1)?.sequence || 0
       });
     });
     this.api.registerRoute('GET', '/api/streammonsters/battle-state', (req, res) => {
@@ -154,6 +180,7 @@ class StreamMonstersRoutes {
     this.api.registerRoute('GET', '/api/streammonsters/creator-state', this.protectAdmin((req, res) => {
       const userId = String(req.query?.userId || '').trim();
       const config = this.configProvider.getConfig().streamMonsters;
+      const overlayDiagnostics = this.getOverlayDiagnostics();
       res.json({
         success: true,
         config: this.publicConfig(config, { includeCreator: true }),
@@ -173,6 +200,13 @@ class StreamMonstersRoutes {
         visualPack: 'furry',
         season: this.progression?.getCurrentSeason?.() || null,
         gcce: this.gcceStateProvider(),
+        battle: this.battleMatchService?.getPublicSnapshot?.() || {
+          rulesVersion: 5,
+          matches: []
+        },
+        obs: overlayDiagnostics.obs,
+        renderer: overlayDiagnostics.renderer,
+        audioRuntime: overlayDiagnostics.audio,
         metrics: this.engine.streamKey ? this.store.getStreamMetrics(this.engine.streamKey) : null
       });
     }));
@@ -192,15 +226,37 @@ class StreamMonstersRoutes {
       return res.json({ success: true, ...catalog, userId });
     }));
     this.api.registerRoute('GET', '/api/streammonsters/monster-catalog', (req, res) => {
+      const hasPaging = req.query?.offset !== undefined || req.query?.limit !== undefined;
+      const offset = hasPaging
+        ? Math.max(0, Number.parseInt(req.query?.offset, 10) || 0)
+        : 0;
+      const limit = hasPaging
+        ? Math.max(1, Math.min(100, Number.parseInt(req.query?.limit, 10) || 24))
+        : TEMPLATE_CATALOG.length;
+      const stageCatalog = this.getBundledFurryStageCatalog();
+      const templates = TEMPLATE_CATALOG.map(template => ({
+        ...template,
+        assetPath: stageCatalog.byTemplate.get(template.templateId)?.[0]?.assetPath ||
+          template.assetPath,
+        stages: stageCatalog.byTemplate.get(template.templateId) || [],
+        owned: false,
+        silhouette: true,
+        mastery: null
+      }));
       res.json({
         success: true,
-        templates: TEMPLATE_CATALOG.map(template => ({
-          ...template,
-          owned: false,
-          silhouette: true,
-          mastery: null
-        })),
-        dex: { owned: 0, total: TEMPLATE_CATALOG.length }
+        templates: templates.slice(offset, offset + limit),
+        dex: { owned: 0, total: TEMPLATE_CATALOG.length },
+        total: TEMPLATE_CATALOG.length,
+        formsTotal: stageCatalog.available,
+        assetIntegrity: {
+          assetVersion: stageCatalog.assetVersion,
+          expected: 72,
+          available: stageCatalog.available,
+          healthy: stageCatalog.assetVersion === FURRY_ASSET_VERSION &&
+            stageCatalog.available === 72
+        },
+        ...(hasPaging ? { offset, limit } : {})
       });
     });
     this.api.registerRoute('POST', '/api/streammonsters/config', this.protectAdmin((req, res) => {
@@ -213,6 +269,56 @@ class StreamMonstersRoutes {
         config: this.publicConfig(next.streamMonsters, { includeCreator: true })
       });
     }));
+    this.api.registerRoute(
+      'POST',
+      '/api/streammonsters/repair/eggs',
+      this.protectAdmin((req, res) => {
+        const dryRun = req.body?.dryRun !== false;
+        if (!dryRun && req.body?.confirm !== 'reconcile_eggs') {
+          return res.status(400).json({ error: 'repair_confirmation_required' });
+        }
+        const before = this.getEggRepairPlan();
+        if (!dryRun) this.engine.markReadyEggs();
+        const after = this.getEggRepairPlan();
+        const result = {
+          success: true,
+          kind: 'eggs',
+          dryRun,
+          before,
+          after,
+          repaired: dryRun
+            ? 0
+            : Math.max(
+              0,
+              before.readyDue + before.expiryDue - after.readyDue - after.expiryDue
+            )
+        };
+        this.auditRepair(result);
+        return res.json(result);
+      })
+    );
+    this.api.registerRoute(
+      'POST',
+      '/api/streammonsters/repair/matches',
+      this.protectAdmin((req, res) => {
+        const dryRun = req.body?.dryRun !== false;
+        if (!dryRun && req.body?.confirm !== 'cancel_stale_matches') {
+          return res.status(400).json({ error: 'repair_confirmation_required' });
+        }
+        const result = {
+          success: true,
+          kind: 'matches',
+          ...(
+            this.battleMatchService?.repairStaleMatches?.({
+              dryRun,
+              graceMs: 60_000
+            }) || { dryRun, candidates: 0, cancelled: 0 }
+          )
+        };
+        this.auditRepair(result);
+        return res.json(result);
+      })
+    );
     this.api.registerRoute('POST', '/api/streammonsters/demo', this.protectAdmin((req, res) => {
       let preview = null;
       try {
@@ -287,16 +393,111 @@ class StreamMonstersRoutes {
       const commandReference = command => commandReferences[command]
         || (command === 'eggs' ? '!eier' : `!${command}`);
       if (preview) {
+        const fighters = [
+          {
+            slot: 1,
+            locked: true,
+            name: monster.name,
+            element: monster.element,
+            templateId: monster.template_id,
+            evolutionStage: 1,
+            imageUrl: monster.image_url,
+            level: monster.level,
+            hp: 50,
+            maxHp: 50,
+            shield: 0,
+            charge: preview.scene === 'special' ? 100 : 50
+          },
+          {
+            slot: 2,
+            locked: true,
+            name: opponent.name,
+            element: opponent.element,
+            templateId: opponent.template_id,
+            evolutionStage: 1,
+            imageUrl: opponent.image_url,
+            level: opponent.level,
+            hp: 48,
+            maxHp: 52,
+            shield: 3,
+            charge: 50
+          }
+        ];
+        const publicAction = ({
+          choice = 'A',
+          skillType = 'attack',
+          hits = [{ index: 1, requestedDamage: 8, shieldAbsorbed: 3, hpDamage: 5, evaded: false }],
+          outcomes = [],
+          terminal = false
+        } = {}) => ({
+          sequence: 1,
+          eventSequence: 4,
+          round: 1,
+          actorSlot: 1,
+          targetSlot: 2,
+          requestedChoice: choice,
+          choice,
+          choiceFallback: null,
+          skill: {
+            id: `${selectedTemplate.templateId}:${choice}`,
+            name: selectedTemplate.skills[skillType]?.name || `${selectedTemplate.name} Strike`,
+            type: skillType,
+            element: selectedTemplate.element,
+            vfxKey: selectedTemplate.skills[skillType]?.vfxKey || `${selectedTemplate.templateId}:${skillType}`
+          },
+          hits,
+          outcomes,
+          retaliations: [],
+          statusEffects: [],
+          actorState: {
+            hp: 50,
+            maxHp: 50,
+            shield: skillType === 'defense' ? 8 : 0,
+            charge: choice === 'C' ? 0 : 75
+          },
+          targetState: {
+            hp: terminal ? 0 : 43,
+            maxHp: 52,
+            shield: 0,
+            charge: 75
+          },
+          terminal
+        });
         const skillPayload = type => ({
           battleId: 'demo-battle',
+          matchId: 'demo-match',
+          eventId: `demo-match:${type}`,
+          sequence: 4,
           actorId: monster.monster_id,
           targetId: opponent.monster_id,
           monster,
           target: opponent,
           element: monster.element,
           skill: { ...selectedTemplate.skills[type], type },
-          action: { type, actorId: monster.monster_id, targetId: opponent.monster_id }
+          action: publicAction({
+            choice: type === 'special' ? 'C' : (type === 'defense' ? 'B' : 'A'),
+            skillType: type
+          })
         });
+        const isolatedBattleScenes = new Set([
+          'attack',
+          'defense',
+          'skill',
+          'multihit',
+          'special',
+          'ko'
+        ]);
+        if (isolatedBattleScenes.has(preview.scene)) {
+          emit('streammonsters:battle_choice_opened', {
+            matchId: 'demo-match',
+            eventId: `demo-match:${preview.scene}:roster`,
+            sequence: 1,
+            round: 1,
+            deadlineMs: Date.now() + 8_000,
+            choices: ['A', 'B', 'C'],
+            fighters
+          });
+        }
         if (preview.scene === 'spawn') {
           emit('streammonsters:egg_spawned', {
             userId: 'demo-viewer',
@@ -304,18 +505,119 @@ class StreamMonstersRoutes {
             gift,
             hint: commandReference('inventory')
           });
+        } else if (preview.scene === 'ready') {
+          emit('streammonsters:egg_ready', {
+            userId: 'demo-viewer',
+            egg: { ...egg, state: 'ready' },
+            hint: `${commandReference('hatch')} [slot]`
+          });
         } else if (preview.scene === 'hatch') {
           emit('streammonsters:hatch_started', { userId: 'demo-viewer', egg, slot: 1 });
           emit('streammonsters:egg_hatched', { userId: 'demo-viewer', egg, monster });
+        } else if (preview.scene === 'collection') {
+          emit('streammonsters:collection_shown', {
+            cards: TEMPLATE_CATALOG.slice(0, 7).map((template, index) => ({
+              slot: index + 1,
+              name: template.name,
+              element: template.element,
+              templateId: template.templateId,
+              imageUrl: template.assetPath,
+              level: index + 1
+            })),
+            rotate: true
+          });
+        } else if (preview.scene === 'evolution') {
+          emit('streammonsters:monster_evolved', {
+            monster: {
+              ...monster,
+              evolution_stage: 2,
+              image_url: getEvolutionAssetPath(selectedTemplate, 2)
+            },
+            evolutionStage: 2,
+            spentEssence: 3
+          });
+        } else if (preview.scene === 'match') {
+          emit('streammonsters:battle_match_found', {
+            matchId: 'demo-match',
+            deadlineMs: Date.now() + 15_000
+          });
+          emit('streammonsters:battle_choice_opened', {
+            matchId: 'demo-match',
+            round: 1,
+            deadlineMs: Date.now() + 8_000,
+            choices: ['A', 'B', 'C'],
+            fighters
+          });
+        } else if (preview.scene === 'skill') {
+          emit('streammonsters:battle_choice_locked', {
+            matchId: 'demo-match',
+            decision: { sequence: 3, round: 1, slot: 1, choice: 'A', source: 'viewer', timeout: false }
+          });
+          emit('streammonsters:battle_skill_used', skillPayload('attack'));
+        } else if (preview.scene === 'multihit') {
+          emit('streammonsters:battle_skill_used', {
+            ...skillPayload('attack'),
+            action: publicAction({
+              choice: 'A',
+              skillType: 'attack',
+              hits: [
+                { index: 1, requestedDamage: 4, shieldAbsorbed: 3, hpDamage: 1, evaded: false },
+                { index: 2, requestedDamage: 4, shieldAbsorbed: 0, hpDamage: 4, evaded: false },
+                { index: 3, requestedDamage: 4, shieldAbsorbed: 0, hpDamage: 4, evaded: false }
+              ],
+              outcomes: [{ type: 'multihit', hits: 3 }]
+            })
+          });
         } else if (preview.scene === 'special') {
           emit('streammonsters:battle_special_charged', {
             battleId: 'demo-battle',
+            matchId: 'demo-match',
             monsterId: monster.monster_id,
             monster,
             element: monster.element,
             skill: selectedTemplate.skills.special
           });
           emit('streammonsters:battle_skill_used', skillPayload('special'));
+        } else if (preview.scene === 'ko') {
+          emit('streammonsters:battle_skill_used', {
+            ...skillPayload('special'),
+            action: publicAction({
+              choice: 'C',
+              skillType: 'special',
+              hits: [{ index: 1, requestedDamage: 52, shieldAbsorbed: 3, hpDamage: 48, evaded: false }],
+              terminal: true
+            })
+          });
+          emit('streammonsters:battle_completed', {
+            matchId: 'demo-match',
+            winnerSlot: 1
+          });
+        } else if (preview.scene === 'xp') {
+          emit('streammonsters:monster_xp_awarded', {
+            monster: { ...monster, xp: 105 },
+            amount: 15
+          });
+          emit('streammonsters:monster_level_up', {
+            monster: { ...monster, level: 5, xp: 5, unspent_stat_points: 1 },
+            levelsGained: 1
+          });
+        } else if (preview.scene === 'rankup') {
+          emit('streammonsters:arena_rating_changed', {
+            before: { rating: 995, tier: 'Bronze' },
+            after: { rating: 1011, tier: 'Silver' },
+            delta: 16
+          });
+          emit('streammonsters:season_rank_changed', {
+            before: 'Silver',
+            after: 'Gold',
+            score: {
+              points: 275,
+              rank: 'Gold',
+              title: 'Gold Collector',
+              badge: 'gold',
+              frame: 'gold'
+            }
+          });
         } else {
           emit('streammonsters:battle_skill_used', skillPayload(preview.scene));
         }
@@ -340,7 +642,6 @@ class StreamMonstersRoutes {
         points: 100,
         hype: { points: 100, charged_eggs: 1 }
       });
-      emit('streammonsters:starter_claimed', { userId: 'demo-viewer', egg, monster });
       emit('streammonsters:egg_ready', {
         userId: 'demo-viewer',
         egg: { ...egg, state: 'ready' },
@@ -348,11 +649,15 @@ class StreamMonstersRoutes {
       });
       emit('streammonsters:hatch_started', { userId: 'demo-viewer', egg, slot: 1 });
       emit('streammonsters:egg_hatched', { userId: 'demo-viewer', egg, monster });
-      emit('streammonsters:monster_visual_evolved', {
+      emit('streammonsters:monster_evolved', {
         userId: 'demo-viewer',
-        monster: { ...monster, image_url: '/plugins/streamalchemy/assets/branding/stream-monsters-logo.png' },
-        previousVisualSource: 'kenney',
-        visualSource: 'ai'
+        monster: {
+          ...monster,
+          evolution_stage: 2,
+          image_url: getEvolutionAssetPath(selectedTemplate, 2)
+        },
+        evolutionStage: 2,
+        spentEssence: 3
       });
       emit('streammonsters:achievement_unlocked', {
         userId: 'demo-viewer',
@@ -434,21 +739,34 @@ class StreamMonstersRoutes {
         },
         messageKey: 'questWeeklyBattle'
       });
+      emit('streammonsters:arena_rating_changed', {
+        userId: 'demo-viewer',
+        before: { rating: 995, tier: 'Bronze' },
+        after: { rating: 1011, tier: 'Silver' },
+        delta: 16
+      });
       emit('streammonsters:season_rank_changed', {
         userId: 'demo-viewer',
-        before: 'Bronze',
-        after: 'Silver',
+        before: 'Silver',
+        after: 'Gold',
         score: {
-          points: 100,
-          rank: 'Silver',
-          title: 'Silver Collector',
-          badge: 'silver',
-          frame: 'silver'
+          points: 275,
+          rank: 'Gold',
+          title: 'Gold Collector',
+          badge: 'gold',
+          frame: 'gold'
         }
       });
       emit('streammonsters:chat_result', {
         userId: 'demo-viewer',
-        result: { status: 'rank', messageKey: 'chatResultRank', message: 'Silver · 100 season points.' }
+        result: {
+          status: 'rank',
+          messageKey: 'chatResultRank',
+          message: 'Arena Rating: Silver · 1011. Collector Score: Gold · 275.',
+          arena: { rating: 1011, tier: 'Silver' },
+          collector: { points: 275, rank: 'Gold' },
+          score: { points: 275, rank: 'Gold' }
+        }
       });
       res.json({ success: true, demo: true });
     }));
@@ -516,9 +834,14 @@ class StreamMonstersRoutes {
     });
     this.api.registerRoute('GET', '/api/streammonsters/leaderboard', (req, res) => {
       const limit = Math.max(1, Math.min(100, Number.parseInt(req.query?.limit, 10) || 50));
+      const type = req.query?.type === 'arena' ? 'arena' : 'collector';
+      const entries = type === 'arena'
+        ? this.getArenaLeaderboard(limit)
+        : (this.progression?.getLeaderboard?.(limit) || []);
       res.json({
         success: true,
-        entries: this.progression?.getLeaderboard?.(limit) || []
+        type,
+        entries: entries.map(entry => this.publicLeaderboardEntry(entry, type))
       });
     });
   }
@@ -527,10 +850,335 @@ class StreamMonstersRoutes {
     return (req, res, next) => this.adminAuth(req, res, () => handler(req, res, next));
   }
 
+  recordOverlayHeartbeat(input = {}) {
+    const allowedBackends = new Set(['webgpu', 'canvas2d', 'css', 'waiting']);
+    const allowedQualities = new Set(['auto', 'high', 'medium', 'low']);
+    const allowedLayouts = new Set(['portrait', 'landscape']);
+    const backend = allowedBackends.has(input?.renderer?.backend)
+      ? input.renderer.backend
+      : 'waiting';
+    const quality = allowedQualities.has(input?.renderer?.quality)
+      ? input.renderer.quality
+      : 'auto';
+    const fpsValue = Number(input?.renderer?.fps);
+    const fps = Number.isFinite(fpsValue)
+      ? Math.max(0, Math.min(240, Math.round(fpsValue)))
+      : 0;
+    const rawReason = String(input?.renderer?.fallbackReason || '').trim();
+    const fallbackReason = /^[a-z0-9_-]{1,48}$/i.test(rawReason)
+      ? rawReason.toLowerCase()
+      : null;
+    const volumeValue = Number(input?.audio?.masterVolume);
+    this.overlayHeartbeat = {
+      lastSeenAtMs: this.now(),
+      layout: allowedLayouts.has(input.layout) ? input.layout : null,
+      renderer: {
+        backend,
+        quality,
+        fps,
+        deviceLost: Boolean(input?.renderer?.deviceLost),
+        fallbackReason
+      },
+      audio: {
+        muted: Boolean(input?.audio?.muted),
+        masterVolume: Number.isFinite(volumeValue)
+          ? Math.max(0, Math.min(1, Math.round(volumeValue * 100) / 100))
+          : 1
+      }
+    };
+    return this.overlayHeartbeat;
+  }
+
+  getOverlayDiagnostics() {
+    const heartbeat = this.overlayHeartbeat;
+    const ageMs = heartbeat
+      ? Math.max(0, this.now() - heartbeat.lastSeenAtMs)
+      : null;
+    const status = ageMs === null
+      ? 'disconnected'
+      : (ageMs <= 15_000 ? 'connected' : (ageMs <= 60_000 ? 'stale' : 'disconnected'));
+    return {
+      obs: {
+        status,
+        lastSeenAtMs: heartbeat?.lastSeenAtMs || null,
+        ageMs
+      },
+      renderer: heartbeat
+        ? { ...heartbeat.renderer, status }
+        : {
+          backend: 'waiting',
+          quality: 'auto',
+          fps: 0,
+          deviceLost: false,
+          fallbackReason: 'overlay_disconnected',
+          status
+        },
+      audio: heartbeat
+        ? { ...heartbeat.audio, status }
+        : { muted: false, masterVolume: 1, status }
+    };
+  }
+
+  getEggRepairPlan() {
+    const nowMs = this.now();
+    const expiryMs = Number(
+      this.configProvider.getConfig().streamMonsters?.eggExpiryMs
+    ) || 86_400_000;
+    const readyDue = this.store.db.prepare(`
+      SELECT COUNT(*) AS count
+      FROM streammonsters_eggs
+      WHERE state = 'incubating' AND ready_at_ms IS NOT NULL AND ready_at_ms <= ?
+    `).get(nowMs).count;
+    const expiryDue = this.store.db.prepare(`
+      SELECT COUNT(*) AS count
+      FROM streammonsters_eggs
+      WHERE state = 'ready'
+        AND COALESCE(expires_at_ms, ready_at_ms + ?) <= ?
+    `).get(expiryMs, nowMs).count;
+    const queued = this.store.db.prepare(`
+      SELECT COUNT(*) AS count
+      FROM streammonsters_eggs
+      WHERE state = 'queued'
+    `).get().count;
+    return {
+      readyDue: Math.max(0, Number(readyDue) || 0),
+      expiryDue: Math.max(0, Number(expiryDue) || 0),
+      queued: Math.max(0, Number(queued) || 0)
+    };
+  }
+
+  auditRepair(result) {
+    this.api.log?.(JSON.stringify({
+      component: 'streammonsters',
+      event: 'creator_repair',
+      kind: result.kind,
+      dryRun: Boolean(result.dryRun),
+      repaired: Math.max(0, Number(result.repaired ?? result.cancelled) || 0),
+      candidates: Math.max(
+        0,
+        Number(result.candidates ?? result.before?.readyDue ?? 0) || 0
+      )
+    }), 'info');
+  }
+
+  getArenaLeaderboard(limit = 50) {
+    const sqlite = this.store?.db;
+    if (!sqlite?.prepare) return [];
+    let seasonId = null;
+    try {
+      seasonId = this.battleMatchService?.getCurrentArenaSeason?.()?.seasonId || null;
+    } catch (_) {
+      seasonId = null;
+    }
+    if (!seasonId) return [];
+    const rows = sqlite.prepare(`
+      SELECT
+        ratings.viewer_id AS user_id,
+        ratings.rating,
+        ratings.battles_rated
+      FROM streammonsters_arena_ratings AS ratings
+      WHERE ratings.season_id = ?
+      ORDER BY ratings.rating DESC, ratings.battles_rated DESC, ratings.viewer_id ASC
+      LIMIT ?
+    `).all(seasonId, Math.max(1, Math.min(100, Number(limit) || 50)));
+    return rows.map(row => ({
+      ...row,
+      tier: row.rating >= 1500
+        ? 'Monster Master'
+        : (row.rating >= 1300
+          ? 'Crystal'
+          : (row.rating >= 1150 ? 'Gold' : (row.rating >= 1000 ? 'Silver' : 'Bronze')))
+    }));
+  }
+
+  publicLeaderboardEntry(entry = {}, type = 'collector') {
+    const viewerId = entry.user_id ?? entry.viewer_id;
+    const rawDisplayName = this.store?.getViewerDisplayName?.(viewerId) || 'Viewer';
+    const displayName = String(rawDisplayName)
+      .replace(/[\u0000-\u001f\u007f]/g, '')
+      .trim()
+      .slice(0, 64) || 'Viewer';
+    if (type === 'arena') {
+      return {
+        displayName,
+        rating: Math.max(0, Number(entry.rating) || 0),
+        battles_rated: Math.max(0, Number(entry.battles_rated) || 0),
+        tier: String(entry.tier || 'Bronze').slice(0, 32)
+      };
+    }
+    const result = {
+      displayName,
+      points: Math.max(0, Number(entry.points) || 0),
+      rank: String(entry.rank || 'Bronze').slice(0, 32)
+    };
+    for (const key of ['title', 'badge', 'frame']) {
+      if (entry[key] !== null && entry[key] !== undefined) {
+        result[key] = String(entry[key]).slice(0, 96);
+      }
+    }
+    return result;
+  }
+
+  getBundledFurryStageCatalog() {
+    const byTemplate = new Map();
+    let parsed = null;
+    let manifestBuffer = null;
+    let manifestStat = null;
+    const manifestPath = path.join(
+      this.pluginDir,
+      'assets',
+      'streammonsters',
+      'furry',
+      'manifest.json'
+    );
+    try {
+      manifestStat = fs.lstatSync(manifestPath);
+      if (!manifestStat.isFile() || manifestStat.isSymbolicLink()) {
+        return { byTemplate, available: 0, assetVersion: null };
+      }
+      manifestBuffer = fs.readFileSync(manifestPath);
+      parsed = JSON.parse(manifestBuffer.toString('utf8'));
+    } catch (_) {
+      parsed = null;
+    }
+    if (
+      parsed?.schemaVersion !== 2 ||
+      parsed?.productionMode !== 'bundled-only' ||
+      parsed?.assetVersion !== FURRY_ASSET_VERSION ||
+      !Array.isArray(parsed.assets)
+    ) {
+      return { byTemplate, available: 0, assetVersion: null };
+    }
+    const assetRoot = path.resolve(
+      this.pluginDir,
+      'assets',
+      'streammonsters',
+      'furry'
+    );
+    const candidates = [];
+    parsed.assets.forEach(asset => {
+      const templateId = String(asset?.templateId || '').toLocaleLowerCase();
+      const stage = Number(asset?.stage);
+      const relativePath = String(asset?.assetPath || '').replace(/\\/g, '/');
+      const dimensions = Array.isArray(asset?.dimensions)
+        ? asset.dimensions.map(Number)
+        : [];
+      if (
+        !getTemplate(templateId) ||
+        ![1, 2, 3].includes(stage) ||
+        !/^assets\/streammonsters\/furry\/[a-z0-9/-]+\.png$/.test(relativePath) ||
+        dimensions[0] !== 1024 ||
+        dimensions[1] !== 1024 ||
+        !/^[a-f0-9]{64}$/i.test(String(asset?.sha256 || ''))
+      ) {
+        return;
+      }
+      const absolutePath = path.resolve(this.pluginDir, relativePath);
+      if (
+        absolutePath !== assetRoot &&
+        !absolutePath.startsWith(`${assetRoot}${path.sep}`)
+      ) {
+        return;
+      }
+      let stat = null;
+      try {
+        stat = fs.lstatSync(absolutePath);
+      } catch (_) {
+        stat = null;
+      }
+      candidates.push({
+        asset,
+        absolutePath,
+        dimensions,
+        relativePath,
+        stage,
+        stat,
+        templateId
+      });
+    });
+    const manifestHash = crypto
+      .createHash('sha256')
+      .update(manifestBuffer)
+      .digest('hex');
+    const cacheKey = JSON.stringify({
+      manifestHash,
+      manifestSize: manifestStat.size,
+      manifestMtimeMs: manifestStat.mtimeMs,
+      files: candidates.map(candidate => ({
+        path: candidate.relativePath,
+        size: candidate.stat?.size ?? null,
+        mtimeMs: candidate.stat?.mtimeMs ?? null,
+        ctimeMs: candidate.stat?.ctimeMs ?? null
+      }))
+    });
+    if (this.assetCatalogCache?.key === cacheKey) {
+      return this.assetCatalogCache.value;
+    }
+    candidates.forEach(candidate => {
+      const {
+        asset,
+        absolutePath,
+        dimensions,
+        relativePath,
+        stage,
+        stat,
+        templateId
+      } = candidate;
+      if (!stat?.isFile() || stat.isSymbolicLink()) return;
+      let fileBuffer = null;
+      try {
+        fileBuffer = fs.readFileSync(absolutePath);
+      } catch (_) {
+        return;
+      }
+      if (
+        fileBuffer.length < 24 ||
+        !fileBuffer.subarray(0, 8).equals(
+          Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
+        ) ||
+        fileBuffer.readUInt32BE(8) !== 13 ||
+        fileBuffer.subarray(12, 16).toString('ascii') !== 'IHDR' ||
+        fileBuffer.readUInt32BE(16) !== dimensions[0] ||
+        fileBuffer.readUInt32BE(20) !== dimensions[1] ||
+        crypto.createHash('sha256').update(fileBuffer).digest('hex') !==
+          String(asset.sha256).toLocaleLowerCase()
+      ) {
+        return;
+      }
+      if (!byTemplate.has(templateId)) byTemplate.set(templateId, []);
+      const stages = byTemplate.get(templateId);
+      if (stages.some(existing => existing.stage === stage)) return;
+      stages.push({
+        stage,
+        element: asset.element,
+        species: asset.species,
+        assetPath: `/plugins/streamalchemy/${relativePath}`,
+        dimensions,
+        sha256: String(asset.sha256).toLocaleLowerCase(),
+        trimRect: asset.trimRect || null,
+        pivot: asset.pivot || null,
+        facing: asset.facing || 'center',
+        hitAnchor: asset.hitAnchor || null,
+        effectAnchor: asset.effectAnchor || null
+      });
+    });
+    byTemplate.forEach(stages => stages.sort((left, right) => left.stage - right.stage));
+    const available = [...byTemplate.values()].reduce((sum, stages) => (
+      sum + new Set(stages.map(stage => stage.stage)).size
+    ), 0);
+    const value = {
+      byTemplate,
+      available,
+      assetVersion: parsed.assetVersion
+    };
+    this.assetCatalogCache = { key: cacheKey, value };
+    return value;
+  }
+
   sanitizeConfigUpdate(input = {}) {
     if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
     const safe = {};
-    for (const key of ['enabled', 'creatorName', 'maxUnhatchedEggs', 'elementRules']) {
+    for (const key of ['enabled', 'creatorName', 'elementRules']) {
       if (Object.prototype.hasOwnProperty.call(input, key)) safe[key] = input[key];
     }
     if (typeof input.giftMappingCustomized === 'boolean') safe.giftMappingCustomized = input.giftMappingCustomized;
@@ -623,7 +1271,22 @@ class StreamMonstersRoutes {
       throw new Error('STREAM_MONSTERS_DEMO_REQUEST_INVALID');
     }
     if (!Object.keys(input).length) return null;
-    const scenes = new Set(['spawn', 'hatch', 'attack', 'defense', 'special']);
+    const scenes = new Set([
+      'spawn',
+      'ready',
+      'hatch',
+      'collection',
+      'evolution',
+      'match',
+      'attack',
+      'defense',
+      'skill',
+      'multihit',
+      'special',
+      'ko',
+      'xp',
+      'rankup'
+    ]);
     if (!scenes.has(input.scene)) throw new Error('STREAM_MONSTERS_DEMO_SCENE_INVALID');
     const template = input.templateId ? getTemplate(input.templateId) : TEMPLATE_CATALOG[0];
     if (!template) throw new Error('STREAM_MONSTERS_DEMO_TEMPLATE_INVALID');
@@ -680,7 +1343,7 @@ class StreamMonstersRoutes {
       seasonDurationDays: [7, 14, 28, 60, 90].includes(Number(config.seasonDurationDays))
         ? Number(config.seasonDurationDays)
         : 28,
-      maxUnhatchedEggs: config.maxUnhatchedEggs,
+      maxUnhatchedEggs: 3,
       elementRules: config.elementRules || 'deterministic',
       giftMappingCustomized: Boolean(config.giftMappingCustomized),
       visualPack: 'furry',
@@ -697,6 +1360,22 @@ class StreamMonstersRoutes {
     };
     if (includeCreator) result.creatorName = config.creatorName || '';
     return result;
+  }
+
+  publicGcceState(state = {}) {
+    return {
+      commandPrefix: typeof state.commandPrefix === 'string' && state.commandPrefix
+        ? state.commandPrefix
+        : '!',
+      commandReferences: state.commandReferences && typeof state.commandReferences === 'object'
+        ? { ...state.commandReferences }
+        : {},
+      registrationState: String(state.registrationState || 'fallback'),
+      registeredCommands: Array.isArray(state.registeredCommands)
+        ? [...state.registeredCommands]
+        : [],
+      commandsRegistered: Boolean(state.commandsRegistered)
+    };
   }
 
   publicHype(hype = null) {

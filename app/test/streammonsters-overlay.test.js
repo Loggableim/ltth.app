@@ -3,7 +3,7 @@ const path = require('path');
 const runtime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
 
 describe('Stream Monsters OBS overlay', () => {
-  test('serializes the complete Collector Arena event set for landscape and portrait', () => {
+  test('serializes the complete League World event set for landscape and portrait', () => {
     const html = fs.readFileSync(path.join(process.cwd(), 'plugins', 'streamalchemy', 'streammonsters-overlay.html'), 'utf8');
 
     expect(html).toContain('streammonsters:egg_spawned');
@@ -55,6 +55,8 @@ describe('Stream Monsters OBS overlay', () => {
     expect(html).toContain('streammonsters:battle_special_charged');
     expect(html).toContain('battleMonsters.find');
     expect(html).toContain('imageErrorFallback');
+    expect(html).toMatch(/#brand\s*\{[^}]*z-index:40/);
+    expect(html).toMatch(/#brand\s*\{[^}]*brightness\(1\.18\)/);
     expect(html).toContain("['attack', 'defense', 'special'].includes(scene)");
     expect(html).toContain('return { origin: { x: 0.5, y: 0.5 }, scale: 1 }');
   });
@@ -78,6 +80,20 @@ describe('Stream Monsters OBS overlay', () => {
     expect(translations.snapshotRules).toContain('{duration}');
     expect(translations.snapshotRules).not.toContain('{minutes}');
   });
+
+  test.each(['de', 'en', 'es', 'fr'])(
+    'localizes the charged-special feed with the monster and element in %s',
+    locale => {
+      const translations = JSON.parse(fs.readFileSync(
+        path.join(process.cwd(), 'plugins', 'streamalchemy', 'locales', `${locale}.json`),
+        'utf8'
+      )).plugins.streamalchemy.ui.monsters;
+
+      expect(translations.specialChargedCopy).toContain('{{monster}}');
+      expect(translations.specialChargedCopy).toContain('{{element}}');
+      expect(translations.specialChargedCopy).not.toContain('{{user}}');
+    }
+  );
 
   test('renders the slash GCCE prefix with the actual 30-second hatch duration', () => {
     const translations = JSON.parse(fs.readFileSync(

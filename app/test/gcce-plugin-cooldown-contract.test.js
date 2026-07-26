@@ -101,6 +101,31 @@ describe('GCCE plugin command cooldown contract', () => {
     expect(handler).toHaveBeenCalledTimes(2);
   });
 
+  test('shares one canonical plugin cooldown across separately registered aliases', async () => {
+    const { gcce, parser } = createHarness();
+    const handler = jest.fn(() => ({ success: true }));
+    gcce.registerCommandsForPlugin('streamalchemy', ['eier', 'eierliste'].map(name => ({
+      name,
+      cooldownKey: 'streamalchemy:eggs',
+      permission: 'all',
+      cooldown: { user: 1_000, global: 0 },
+      handler
+    })));
+
+    await expect(parser.parse('/eier', context('viewer-a')))
+      .resolves.toEqual(expect.objectContaining({ success: true }));
+    await expect(parser.parse('/eierliste', context('viewer-a')))
+      .resolves.toEqual(expect.objectContaining({
+        success: false,
+        errorCode: 'COMMAND_ON_COOLDOWN',
+        cooldownType: 'user'
+      }));
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    gcce.unregisterCommandsForPlugin('streamalchemy');
+    expect(parser.cooldownManager.getCooldownConfig('streamalchemy:eggs')).toBeNull();
+  });
+
   test('unregistering bar keeps the exact other:bar user cooldown owned by another plugin', () => {
     const { gcce, parser } = createHarness();
     const handler = () => ({ success: true });

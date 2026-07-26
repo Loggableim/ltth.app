@@ -1,8 +1,8 @@
 {
   "id": "streamalchemy",
   "name": "Stream Monsters",
-  "version": "1.4.0",
-  "description": "Heart Me is the default discovery gift for a 24-Furry Monsterdex with a three-slot FIFO egg queue, automatic skill battles, mastery, missions, and animated overlays.",
+  "version": "1.5.0",
+  "description": "Portrait-first gift egg collection with 72 bundled Furry forms, interactive A/B/C PvP, permanent progression, two seasonal leaderboards, and cinematic OBS overlays.",
   "author": "Pup Cid",
   "icon": "/plugins/streamalchemy/assets/branding/stream-monsters-icon.png",
   "logo": "/plugins/streamalchemy/assets/branding/stream-monsters-logo.png",
@@ -21,9 +21,9 @@
     "database"
   ],
   "descriptions": {
-    "en": "Heart Me is the default discovery gift for a 24-Furry Monsterdex with a three-slot FIFO egg queue, automatic skill battles, mastery, missions, and animated overlays.",
-    "de": "Heart Me ist das Standard-Entdeckungsgeschenk für einen Monsterdex mit 24 Furry-Monstern, drei aktiven Ei-Slots plus FIFO-Warteschlange, automatischen Skill-Kämpfen, Meisterschaft, Missionen und animierten Overlays.",
-    "es": "Heart Me es el regalo de descubrimiento predeterminado para un Monsterdex de 24 monstruos Furry, con tres espacios de huevos y cola FIFO, batallas automáticas de habilidades, maestría, misiones y overlays animados.",
-    "fr": "Heart Me est le cadeau de découverte par défaut pour un Monsterdex de 24 monstres Furry, avec trois emplacements d'oeufs et une file FIFO, des combats automatiques de compétences, la maîtrise, des missions et des overlays animés."
+    "en": "Portrait-first gift egg collection with 72 bundled Furry forms, interactive A/B/C PvP, permanent progression, two seasonal leaderboards, and cinematic OBS overlays.",
+    "de": "Portrait-first Geschenk-Eiersammlung mit 72 gebündelten Furry-Formen, interaktivem A/B/C-PvP, permanentem Fortschritt, zwei Saisonranglisten und cineastischem OBS-Overlay.",
+    "es": "Colección de huevos por regalos optimizada para retrato, con 72 formas Furry incluidas, PvP interactivo A/B/C, progreso permanente, dos clasificaciones de temporada y overlay cinematográfico para OBS.",
+    "fr": "Collection d'œufs par cadeaux pensée pour le portrait, avec 72 formes Furry intégrées, PvP interactif A/B/C, progression permanente, deux classements saisonniers et overlay OBS cinématique."
   }
 }

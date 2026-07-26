@@ -1,6 +1,6 @@
 # Snapshot Status
 
-Last reviewed: 2026-07-22
+Last reviewed: 2026-07-26
 
 ## Scope
 
@@ -51,7 +51,7 @@ Do not confuse this snapshot with older LTTH repositories or stale archive refer
 - Runtime state: `runtime/`
 - Repository identity: `REPOSITORY_IDENTITY.md`
 - Developer onboarding: `AGENTS.md` and `infos/llm_start_here.md`
-- Version: `1.4.0` (see `version.json` and `app/package.json`)
+- Version: `1.4.1` (see `version.json` and `app/package.json`)
 
 ## Dependency State
 
@@ -207,7 +207,7 @@ The workspace currently contains 37 plugin manifests in `app/plugins/`:
 - schnorrbecher
 - soundboard
 - spotlight
-- streamalchemy (Stream Monsters 1.3.0)
+- streamalchemy (Stream Monsters 1.5.0, Open Beta)
 - stt-ticker
 - talking-heads
 - thermal-printer

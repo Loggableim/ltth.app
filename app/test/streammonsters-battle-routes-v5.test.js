@@ -212,17 +212,36 @@ describe('Stream Monsters rules-v5 battle routes', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.body.actions).toEqual([
-        expect.objectContaining({ actorSlot: 2, targetSlot: 1, choice: 'A' }),
-        expect.objectContaining({ actorSlot: 1, targetSlot: 2, choice: 'B' })
+        expect.objectContaining({
+          actorSlot: 2,
+          targetSlot: 1,
+          choice: 'A',
+          actorState: expect.objectContaining({ hp: expect.any(Number), charge: expect.any(Number) }),
+          targetState: expect.objectContaining({ hp: expect.any(Number), shield: expect.any(Number) })
+        }),
+        expect.objectContaining({
+          actorSlot: 1,
+          targetSlot: 2,
+          choice: 'B',
+          actorState: expect.objectContaining({ shield: expect.any(Number), charge: expect.any(Number) }),
+          targetState: expect.objectContaining({ hp: expect.any(Number) })
+        })
       ]);
       expect(res.body.decisions).toHaveLength(2);
+      expect(res.body.events).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          eventId: expect.stringMatching(
+            new RegExp(`^${joined.match.matchId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:event:\\d+$`)
+          ),
+          correlationId: joined.match.matchId
+        })
+      ]));
       const serialized = JSON.stringify(res.body);
       [
         'viewer-private',
         'db-secret',
         'provider-event',
         'participantId',
-        'eventId',
         '"before"',
         '"after"',
         'payload_json'

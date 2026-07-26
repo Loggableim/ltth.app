@@ -193,6 +193,13 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
     ));
     const setTimer = options.setTimeout || setTimeout;
     const clearTimer = options.clearTimeout || clearTimeout;
+    const diagnostics = typeof options.diagnostics === 'function'
+      ? options.diagnostics
+      : (typeof window === 'object' && window?.console?.info
+          ? record => window.console.info(record)
+          : null);
+    const lowFpsThreshold = Math.max(1, Number(options.lowFpsThreshold) || 24);
+    const lowFpsSampleSize = Math.max(3, Math.round(Number(options.lowFpsSampleSize) || 30));
     let rendererMode = 'pending';
     let fallbackReason = null;
     let reducedMotion = false;
@@ -205,15 +212,85 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
     let frameHandle = null;
     let activeScene = null;
     let initialization = null;
+    let lastFrameAt = null;
+    let measuredFps = null;
+    let fpsSamples = [];
+    let fpsDegraded = false;
+
+    function diagnosticRenderer(mode = rendererMode) {
+      if (mode === 'webgpu' || mode === 'pending') return mode;
+      return canvas2d ? 'canvas2d' : 'css';
+    }
+
+    function emitDiagnostic(event, {
+      renderer = diagnosticRenderer(),
+      previousRenderer = renderer,
+      reason = fallbackReason,
+      fps = measuredFps
+    } = {}) {
+      if (!diagnostics) return;
+      const record = {
+        component: 'streammonsters-overlay',
+        subsystem: 'renderer',
+        event: String(event),
+        renderer: String(renderer),
+        previousRenderer: String(previousRenderer),
+        fallbackReason: reason == null ? null : String(reason),
+        fps: Number.isFinite(fps) ? Math.round(fps) : null
+      };
+      try {
+        diagnostics(record);
+      } catch (_) {}
+    }
 
     function markMode(nextMode, reason = null) {
+      const previousRenderer = diagnosticRenderer();
       rendererMode = nextMode;
       fallbackReason = reason;
+      const renderer = diagnosticRenderer();
       canvas?.classList?.toggle?.('effects-fallback', nextMode === 'fallback');
       if (canvas?.dataset) {
         canvas.dataset.renderer = nextMode;
+        canvas.dataset.rendererBackend = renderer;
         if (reason) canvas.dataset.fallbackReason = reason;
+        else delete canvas.dataset.fallbackReason;
       }
+      emitDiagnostic(
+        previousRenderer === 'pending' ? 'renderer_selected' : 'renderer_switched',
+        { renderer, previousRenderer, reason }
+      );
+    }
+
+    function observeFrame(timestamp) {
+      const frameAt = Number(timestamp);
+      if (!Number.isFinite(frameAt)) return;
+      if (lastFrameAt != null) {
+        const elapsed = frameAt - lastFrameAt;
+        if (elapsed > 0 && elapsed <= 1000) {
+          fpsSamples.push(1000 / elapsed);
+          if (fpsSamples.length > lowFpsSampleSize) fpsSamples.shift();
+          if (fpsSamples.length >= lowFpsSampleSize) {
+            measuredFps = fpsSamples.reduce((sum, fps) => sum + fps, 0) / fpsSamples.length;
+            if (canvas?.dataset) canvas.dataset.fps = String(Math.round(measuredFps));
+            if (!fpsDegraded && measuredFps < lowFpsThreshold) {
+              fpsDegraded = true;
+              emitDiagnostic('renderer_fps_degraded', {
+                renderer: diagnosticRenderer(),
+                previousRenderer: diagnosticRenderer(),
+                reason: 'low-fps'
+              });
+            } else if (fpsDegraded && measuredFps >= lowFpsThreshold + 8) {
+              fpsDegraded = false;
+              emitDiagnostic('renderer_fps_recovered', {
+                renderer: diagnosticRenderer(),
+                previousRenderer: diagnosticRenderer(),
+                reason: null
+              });
+            }
+          }
+        }
+      }
+      lastFrameAt = frameAt;
     }
 
     function switchToFallback(reason) {
@@ -296,9 +373,15 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
           entries: [{ binding: 0, resource: { buffer: uniformBuffer } }]
         });
         markMode('webgpu');
-        Promise.resolve(device.lost).then(() => switchToFallback('device-lost')).catch(() => {
+        const handleDeviceLoss = () => {
+          emitDiagnostic('renderer_device_lost', {
+            renderer: 'webgpu',
+            previousRenderer: 'webgpu',
+            reason: 'device-lost'
+          });
           switchToFallback('device-lost');
-        });
+        };
+        Promise.resolve(device.lost).then(handleDeviceLoss).catch(handleDeviceLoss);
         return rendererMode;
       } catch (_) {
         return switchToFallback('initialization-failed');
@@ -357,6 +440,33 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
       pass.draw(3);
       pass.end();
       device.queue.submit([encoder.finish()]);
+    }
+
+    function clearSurface() {
+      if (rendererMode === 'webgpu' && device && context) {
+        try {
+          resize();
+          const encoder = device.createCommandEncoder({
+            label: 'Stream Monsters transparent effects clear'
+          });
+          const pass = encoder.beginRenderPass({
+            colorAttachments: [{
+              view: context.getCurrentTexture().createView(),
+              clearValue: { r: 0, g: 0, b: 0, a: 0 },
+              loadOp: 'clear',
+              storeOp: 'store'
+            }]
+          });
+          pass.end();
+          device.queue.submit([encoder.finish()]);
+        } catch (_) {}
+      } else if (canvas2d && canvas) {
+        canvas2d.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      if (canvas?.dataset) {
+        delete canvas.dataset.effectPhase;
+        delete canvas.dataset.vfxVariant;
+      }
     }
 
     function renderFallback(scene, progress) {
@@ -439,9 +549,11 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
     function animate() {
       if (!activeScene) return;
       frameHandle = null;
-      const elapsed = Math.max(0, now() - activeScene.startedAt);
+      const timestamp = now();
+      observeFrame(timestamp);
+      const elapsed = Math.max(0, timestamp - activeScene.startedAt);
       const progress = Math.min(1, elapsed / activeScene.duration);
-      if (rendererMode === 'webgpu') renderWebGpu(activeScene, progress, now());
+      if (rendererMode === 'webgpu') renderWebGpu(activeScene, progress, timestamp);
       else if (!reducedMotion) renderFallback(activeScene, progress);
       if (progress >= 1 || !activeScene) frameHandle = null;
       else if (frameHandle == null) frameHandle = scheduleFrame(animate);
@@ -472,7 +584,7 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
             if (!completed || completed.resolve !== resolve) return;
             if (frameHandle != null) cancelFrame(frameHandle);
             frameHandle = null;
-            if (canvas2d && canvas) canvas2d.clearRect(0, 0, canvas.width, canvas.height);
+            clearSurface();
             activeScene = null;
             resolve({
               scene: scene.scene,
@@ -490,9 +602,12 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
     function destroy() {
       if (frameHandle != null) cancelFrame(frameHandle);
       if (activeScene?.timer != null) clearTimer(activeScene.timer);
+      clearSurface();
       frameHandle = null;
       activeScene = null;
       device = null;
+      lastFrameAt = null;
+      fpsSamples = [];
     }
 
     return {
@@ -504,7 +619,13 @@ fn fragmentMain(input: Output) -> @location(0) vec4<f32> {
       mode: () => rendererMode,
       play,
       reason: () => fallbackReason,
-      resize
+      resize,
+      status: () => ({
+        mode: rendererMode,
+        renderer: diagnosticRenderer(),
+        fps: Number.isFinite(measuredFps) ? Math.round(measuredFps) : null,
+        fallbackReason
+      })
     };
   }
 

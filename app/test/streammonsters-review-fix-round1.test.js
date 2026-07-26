@@ -189,7 +189,13 @@ describe('Stream Monsters review fix round 1', () => {
       nickname: 'Viewer A'
     });
     expect(plugin.streamMonstersCommandIngress.executeCommand)
-      .toHaveBeenCalledWith('rank', [], expect.objectContaining({ userId: 'viewer-a' }), 'gcce');
+      .toHaveBeenCalledWith(
+        'rank',
+        [],
+        expect.objectContaining({ userId: 'viewer-a' }),
+        'gcce',
+        'monsterrank'
+      );
     expect(plugin.streamMonstersGCCERegistrationState).not.toBe('fallback');
     await gcce.destroy();
   });

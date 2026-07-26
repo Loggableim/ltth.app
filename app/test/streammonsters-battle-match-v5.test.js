@@ -6,6 +6,9 @@ const { Worker } = require('worker_threads');
 const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
 const BattleService = require('../plugins/streamalchemy/backend/streammonsters/battle-service');
 const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
+const ProgressionService = require(
+  '../plugins/streamalchemy/backend/streammonsters/progression-service'
+);
 const BattleMatchService = require(
   '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
 );
@@ -21,6 +24,7 @@ function createStore(filename = ':memory:', options = {}) {
 function insertMonster(sqlite, {
   id,
   userId,
+  name = id,
   templateId = 'ashfang',
   element = 'Ember',
   level = 1,
@@ -36,7 +40,7 @@ function insertMonster(sqlite, {
     id,
     userId,
     `egg-${id}`,
-    id,
+    name,
     element,
     level,
     JSON.stringify(stats),
@@ -51,6 +55,8 @@ function createMatchService({
   now,
   emit = jest.fn(),
   collection = null,
+  progression = null,
+  getStreamKey = () => null,
   logger = null,
   autoStart = false
 }) {
@@ -59,6 +65,8 @@ function createMatchService({
     battleService: new BattleService({ store, now }),
     emit,
     collection,
+    progression,
+    getStreamKey,
     now,
     logger,
     autoStart
@@ -81,6 +89,7 @@ describe('Stream Monsters durable rules-v5 match schema', () => {
       'streammonsters_match_events',
       'streammonsters_match_rewards',
       'streammonsters_stat_prompts',
+      'streammonsters_stat_allocations',
       'streammonsters_arena_seasons',
       'streammonsters_arena_ratings',
       'streammonsters_arena_daily_ledger'
@@ -116,6 +125,23 @@ describe('Stream Monsters durable rules-v5 match schema', () => {
 });
 
 describe('Stream Monsters durable BattleMatchService', () => {
+  test('applies Arena season duration changes without requiring a plugin reload', () => {
+    const { store } = createStore();
+    const nowMs = Date.parse('2026-07-21T12:00:00Z');
+    const service = createMatchService({ store, now: () => nowMs });
+
+    service.setSeasonDurationDays(14);
+    const fortnight = service.getCurrentArenaSeason();
+    expect(fortnight).toEqual(expect.objectContaining({ durationDays: 14 }));
+    expect(fortnight.endsAtMs - fortnight.startsAtMs)
+      .toBe(14 * 24 * 60 * 60 * 1000);
+
+    service.setSeasonDurationDays(90);
+    const long = service.getCurrentArenaSeason();
+    expect(long).toEqual(expect.objectContaining({ durationDays: 90 }));
+    expect(long.seasonId).not.toBe(fortnight.seasonId);
+  });
+
   test('has a dedicated persistent state-machine owner', () => {
     expect(() => require(
       '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
@@ -165,6 +191,118 @@ describe('Stream Monsters durable BattleMatchService', () => {
       status: 'active',
       match: expect.objectContaining({ matchId: joined.match.matchId })
     }));
+  });
+
+  test('prevents a viewer from queueing a low-level monster and swapping to an unfair roster', () => {
+    const { sqlite, store } = createStore();
+    insertMonster(sqlite, {
+      id: 'fair-anchor-a',
+      userId: 'viewer-fair-a',
+      level: 1
+    });
+    insertMonster(sqlite, {
+      id: 'fair-swap-a',
+      userId: 'viewer-fair-a',
+      level: 20,
+      selected: false
+    });
+    insertMonster(sqlite, {
+      id: 'fair-anchor-b',
+      userId: 'viewer-fair-b',
+      level: 1,
+      element: 'Tide',
+      templateId: 'ripple'
+    });
+    const service = createMatchService({ store, now: () => 10_000 });
+    service.join({ userId: 'viewer-fair-a' });
+    const joined = service.join({ userId: 'viewer-fair-b' });
+
+    expect(joined.status).toBe('reserved');
+    expect(service.lockRoster({
+      userId: 'viewer-fair-a',
+      monsterId: 'fair-swap-a'
+    })).toEqual(expect.objectContaining({
+      accepted: false,
+      reason: 'monster_out_of_match_range',
+      allowedLevelGap: 2
+    }));
+    expect(service.lockRoster({
+      userId: 'viewer-fair-a',
+      monsterId: 'fair-anchor-a'
+    })).toEqual(expect.objectContaining({ accepted: true }));
+  });
+
+  test('lets either participant cancel during roster selection exactly once without rewards', () => {
+    const { sqlite, store } = createStore();
+    insertMonster(sqlite, { id: 'cancel-a', userId: 'viewer-cancel-a' });
+    insertMonster(sqlite, {
+      id: 'cancel-b',
+      userId: 'viewer-cancel-b',
+      element: 'Tide',
+      templateId: 'ripple'
+    });
+    const emit = jest.fn();
+    const service = createMatchService({ store, now: () => 1_000, emit });
+    service.join({ userId: 'viewer-cancel-a' });
+    const joined = service.join({ userId: 'viewer-cancel-b' });
+
+    expect(service.cancelBeforeBattle('viewer-cancel-b')).toEqual({
+      cancelled: true,
+      matchId: joined.match.matchId
+    });
+    expect(service.cancelBeforeBattle('viewer-cancel-a')).toEqual({
+      cancelled: false,
+      reason: 'no_roster_match'
+    });
+    expect(service.getMatch(joined.match.matchId)).toEqual(
+      expect.objectContaining({ state: 'cancelled' })
+    );
+    expect(service.getActiveMatchForViewer('viewer-cancel-a')).toBeNull();
+    expect(sqlite.prepare(`
+      SELECT COUNT(*) AS count FROM streammonsters_match_rewards WHERE match_id = ?
+    `).get(joined.match.matchId).count).toBe(0);
+    expect(emit.mock.calls.filter(([event]) => (
+      event === 'streammonsters:battle_cancelled'
+    ))).toHaveLength(1);
+  });
+
+  test('dry-runs and idempotently cancels only stale roster or action matches without rewards', () => {
+    const { sqlite, store } = createStore();
+    [
+      ['repair-a', 'viewer-repair-a', 'Ember', 'ashfang'],
+      ['repair-b', 'viewer-repair-b', 'Tide', 'ripple'],
+      ['repair-c', 'viewer-repair-c', 'Grove', 'oakheart'],
+      ['repair-d', 'viewer-repair-d', 'Gale', 'zephyr']
+    ].forEach(([id, userId, element, templateId]) => insertMonster(sqlite, {
+      id,
+      userId,
+      element,
+      templateId
+    }));
+    let nowMs = 1_000;
+    const service = createMatchService({ store, now: () => nowMs });
+    service.join({ userId: 'viewer-repair-a' });
+    const actionMatch = service.join({ userId: 'viewer-repair-b' }).match;
+    service.lockRoster({ userId: 'viewer-repair-a' });
+    service.lockRoster({ userId: 'viewer-repair-b' });
+    service.join({ userId: 'viewer-repair-c' });
+    const rosterMatch = service.join({ userId: 'viewer-repair-d' }).match;
+
+    nowMs = 100_000;
+    expect(service.repairStaleMatches({ dryRun: true, graceMs: 60_000 }))
+      .toEqual({ dryRun: true, candidates: 2, cancelled: 0 });
+    expect(service.getMatch(actionMatch.matchId).state).toBe('action');
+    expect(service.getMatch(rosterMatch.matchId).state).toBe('roster');
+
+    expect(service.repairStaleMatches({ dryRun: false, graceMs: 60_000 }))
+      .toEqual({ dryRun: false, candidates: 2, cancelled: 2 });
+    expect(service.getMatch(actionMatch.matchId).state).toBe('cancelled');
+    expect(service.getMatch(rosterMatch.matchId).state).toBe('cancelled');
+    expect(service.repairStaleMatches({ dryRun: false, graceMs: 60_000 }))
+      .toEqual({ dryRun: false, candidates: 0, cancelled: 0 });
+    expect(sqlite.prepare(`
+      SELECT COUNT(*) AS count FROM streammonsters_match_rewards
+    `).get().count).toBe(0);
   });
 
   test('deduplicates concurrent locks from real worker threads using separate SQLite connections', async () => {
@@ -381,6 +519,160 @@ describe('Stream Monsters durable BattleMatchService', () => {
     expect(result.participants.map(participant => participant.viewerId)).toEqual(
       expect.arrayContaining(['viewer-target', 'viewer-near'])
     );
+  });
+
+  test('widens the Arena rating band every 30 seconds and rematches queued viewers on sweep', () => {
+    const { sqlite, store } = createStore();
+    insertMonster(sqlite, { id: 'rated-a', userId: 'viewer-rated-a', level: 5 });
+    insertMonster(sqlite, {
+      id: 'rated-b',
+      userId: 'viewer-rated-b',
+      level: 5,
+      element: 'Tide',
+      templateId: 'ripple'
+    });
+    let nowMs = 10_000;
+    const service = createMatchService({ store, now: () => nowMs });
+    const season = service.getCurrentArenaSeason();
+    service.setArenaRating(season.seasonId, 'viewer-rated-a', 900);
+    service.setArenaRating(season.seasonId, 'viewer-rated-b', 1_250);
+
+    expect(service.join({ userId: 'viewer-rated-a' }).status).toBe('queued');
+    expect(service.join({ userId: 'viewer-rated-b' }).status).toBe('queued');
+    expect(store.getBattleQueue()).toHaveLength(2);
+
+    nowMs += 60_000;
+    expect(service.sweep()).toEqual(expect.objectContaining({ matchesReserved: 1 }));
+    expect(store.getBattleQueue()).toEqual([]);
+    expect(service.getActiveMatchForViewer('viewer-rated-a')).toEqual(
+      expect.objectContaining({ state: 'roster' })
+    );
+  });
+
+  test('reload preserves a persistent queue until the concrete stream identity can recover it', () => {
+    const { sqlite, store } = createStore();
+    insertMonster(sqlite, { id: 'reload-a', userId: 'viewer-reload-a' });
+    insertMonster(sqlite, {
+      id: 'reload-b',
+      userId: 'viewer-reload-b',
+      element: 'Tide',
+      templateId: 'ripple'
+    });
+    const nowMs = 1_000_000;
+    store.enqueueBattle({
+      userId: 'viewer-reload-a',
+      monsterId: 'reload-a',
+      stance: 'adaptive',
+      streamKey: 'stream-live',
+      queuedAtMs: nowMs - 1_000
+    });
+    store.enqueueBattle({
+      userId: 'viewer-reload-b',
+      monsterId: 'reload-b',
+      stance: 'adaptive',
+      streamKey: 'stream-live',
+      queuedAtMs: nowMs - 500
+    });
+
+    let activeStreamKey = null;
+    const service = createMatchService({
+      store,
+      now: () => nowMs,
+      getStreamKey: () => activeStreamKey,
+      autoStart: true
+    });
+    try {
+      expect(store.getBattleQueue().map(entry => entry.user_id)).toEqual([
+        'viewer-reload-a',
+        'viewer-reload-b'
+      ]);
+      expect(service.getActiveMatchForViewer('viewer-reload-a')).toBeNull();
+      expect(service.safeSweep()).toEqual(expect.objectContaining({
+        matchesReserved: 0,
+        queuePurged: 0
+      }));
+      activeStreamKey = 'stream-live';
+      expect(service.safeSweep()).toEqual(expect.objectContaining({
+        matchesReserved: 1,
+        queuePurged: 0
+      }));
+      expect(store.getBattleQueue()).toEqual([]);
+      expect(service.getActiveMatchForViewer('viewer-reload-a')).toEqual(
+        expect.objectContaining({ state: 'roster' })
+      );
+    } finally {
+      service.destroy();
+    }
+  });
+
+  test('a resolved stream sweep purges and recovers only its matching queue rows', () => {
+    const { sqlite, store } = createStore();
+    [
+      ['stale-current', 'viewer-stale-current', 'Ember', 'ashfang'],
+      ['current-a', 'viewer-current-a', 'Tide', 'ripple'],
+      ['current-b', 'viewer-current-b', 'Grove', 'oakheart'],
+      ['foreign-a', 'viewer-foreign-a', 'Gale', 'zephyr'],
+      ['foreign-b', 'viewer-foreign-b', 'Volt', 'pulse']
+    ].forEach(([id, userId, element, templateId]) => insertMonster(sqlite, {
+      id,
+      userId,
+      element,
+      templateId
+    }));
+    const nowMs = 1_000_000;
+    store.enqueueBattle({
+      userId: 'viewer-stale-current',
+      monsterId: 'stale-current',
+      stance: 'adaptive',
+      streamKey: 'stream-current',
+      queuedAtMs: nowMs - (11 * 60 * 1000)
+    });
+    store.enqueueBattle({
+      userId: 'viewer-current-a',
+      monsterId: 'current-a',
+      stance: 'adaptive',
+      streamKey: 'stream-current',
+      queuedAtMs: nowMs - 1_000
+    });
+    store.enqueueBattle({
+      userId: 'viewer-current-b',
+      monsterId: 'current-b',
+      stance: 'adaptive',
+      streamKey: 'stream-current',
+      queuedAtMs: nowMs - 500
+    });
+    store.enqueueBattle({
+      userId: 'viewer-foreign-a',
+      monsterId: 'foreign-a',
+      stance: 'adaptive',
+      streamKey: 'stream-foreign',
+      queuedAtMs: nowMs - 900
+    });
+    store.enqueueBattle({
+      userId: 'viewer-foreign-b',
+      monsterId: 'foreign-b',
+      stance: 'adaptive',
+      streamKey: 'stream-foreign',
+      queuedAtMs: nowMs - 400
+    });
+    const service = createMatchService({
+      store,
+      now: () => nowMs,
+      getStreamKey: () => 'stream-current'
+    });
+
+    expect(service.sweep()).toEqual(expect.objectContaining({
+      matchesReserved: 1,
+      queuePurged: 1
+    }));
+    expect(store.getBattleQueue().map(entry => entry.user_id)).toEqual([
+      'viewer-foreign-a',
+      'viewer-foreign-b'
+    ]);
+    expect(service.getActiveMatchForViewer('viewer-current-a')).toEqual(
+      expect.objectContaining({ state: 'roster' })
+    );
+    expect(service.getActiveMatchForViewer('viewer-foreign-a')).toBeNull();
   });
 
   test('locks roster snapshots, accepts only the first authorized A/B/C and resolves both-ready immediately', () => {
@@ -720,6 +1012,131 @@ describe('Stream Monsters durable BattleMatchService', () => {
     expect(store.getViewerProgress('viewer-winner').battles_won).toBe(1);
   });
 
+  test('records and emits zero applied XP for level-20 fighters', () => {
+    const { sqlite, store } = createStore();
+    insertMonster(sqlite, {
+      id: 'capped-winner',
+      userId: 'viewer-capped-winner',
+      level: 20,
+      stats: { vitality: 10, might: 80, guard: 10, agility: 80 }
+    });
+    insertMonster(sqlite, {
+      id: 'capped-loser',
+      userId: 'viewer-capped-loser',
+      level: 20,
+      element: 'Tide',
+      templateId: 'ripple',
+      stats: { vitality: 1, might: 1, guard: 0, agility: 1 }
+    });
+    const emit = jest.fn();
+    const service = createMatchService({ store, now: () => 1_000, emit });
+    service.join({ userId: 'viewer-capped-winner' });
+    const joined = service.join({ userId: 'viewer-capped-loser' });
+    service.lockRoster({ userId: 'viewer-capped-winner' });
+    service.lockRoster({ userId: 'viewer-capped-loser' });
+    const active = service.getMatch(joined.match.matchId);
+    const completed = service.finalize(
+      joined.match.matchId,
+      active.phaseVersion,
+      'capped-winner'
+    );
+
+    expect(completed.state).toBe('completed');
+    expect(sqlite.prepare(`
+      SELECT xp_awarded FROM streammonsters_match_rewards
+      WHERE match_id = ? ORDER BY participant_id
+    `).all(joined.match.matchId)).toEqual([
+      { xp_awarded: 0 },
+      { xp_awarded: 0 }
+    ]);
+    expect(emit.mock.calls
+      .filter(([event]) => event === 'streammonsters:monster_xp_awarded')
+      .map(([, payload]) => payload.amount)).toEqual([0, 0]);
+    expect(store.getMonster('capped-winner')).toEqual(
+      expect.objectContaining({ level: 20, xp: 0, unspent_stat_points: 0 })
+    );
+    expect(store.getMonster('capped-loser')).toEqual(
+      expect.objectContaining({ level: 20, xp: 0, unspent_stat_points: 0 })
+    );
+  });
+
+  test('advances battle quests and achievements once without duplicating v5 battle XP', () => {
+    const { sqlite, store } = createStore();
+    insertMonster(sqlite, {
+      id: 'winner',
+      userId: 'viewer-winner',
+      stats: { vitality: 10, might: 80, guard: 10, agility: 80 }
+    });
+    insertMonster(sqlite, {
+      id: 'loser',
+      userId: 'viewer-loser',
+      element: 'Tide',
+      templateId: 'ripple',
+      stats: { vitality: 1, might: 1, guard: 0, agility: 1 }
+    });
+    store.ensureViewer('viewer-winner');
+    sqlite.prepare(`
+      UPDATE streammonsters_monsters SET battle_count = 9 WHERE monster_id = 'winner'
+    `).run();
+    sqlite.prepare(`
+      UPDATE streammonsters_viewer_progress
+      SET battle_win_streak = 4, best_battle_win_streak = 4
+      WHERE user_id = 'viewer-winner'
+    `).run();
+    const nowDate = new Date('2026-07-26T12:00:00Z');
+    const progression = new ProgressionService({
+      store,
+      now: () => nowDate
+    });
+    store.setQuestProgress({
+      userId: 'viewer-winner',
+      periodKey: progression.weekKey(),
+      questKey: 'weekly:battle',
+      title: 'Fight a battle',
+      target: 10,
+      progress: 10
+    });
+    const service = createMatchService({
+      store,
+      now: () => nowDate.getTime(),
+      progression
+    });
+    service.join({ userId: 'viewer-winner' });
+    const joined = service.join({ userId: 'viewer-loser' });
+    service.lockRoster({ userId: 'viewer-winner' });
+    service.lockRoster({ userId: 'viewer-loser' });
+    service.submitChoice({ userId: 'viewer-winner', choice: 'A', eventId: 'quest-a' });
+    const completed = service.submitChoice({
+      userId: 'viewer-loser',
+      choice: 'A',
+      eventId: 'quest-b'
+    }).match;
+
+    expect(store.getMonster('winner')).toEqual(expect.objectContaining({
+      xp: 15,
+      battle_count: 10
+    }));
+    expect(store.getMonster('loser')).toEqual(expect.objectContaining({
+      xp: 10,
+      battle_count: 1
+    }));
+    expect(store.getViewerQuests('viewer-loser', progression.weekKey()))
+      .toEqual(expect.arrayContaining([
+        expect.objectContaining({ quest_key: 'weekly:battle', progress: 1 })
+      ]));
+    expect(store.getViewerAchievements('viewer-winner').map(item => item.achievement_key))
+      .toEqual(expect.arrayContaining(['10_battles', 'five_win_streak']));
+
+    service.finalize(joined.match.matchId, completed.phaseVersion - 1, 'winner');
+    expect(store.getViewerQuests('viewer-loser', progression.weekKey())
+      .find(quest => quest.quest_key === 'weekly:battle').progress).toBe(1);
+    expect(store.getViewerAchievements('viewer-winner').filter(item => (
+      ['10_battles', 'five_win_streak'].includes(item.achievement_key)
+    ))).toHaveLength(2);
+    expect(store.getMonster('winner').xp).toBe(15);
+    expect(store.getMonster('loser').xp).toBe(10);
+  });
+
   test('uses K32 Arena Elo and exact tiers only inside the separate daily ledger', () => {
     const { sqlite, store } = createStore();
     insertMonster(sqlite, {
@@ -813,13 +1230,66 @@ describe('Stream Monsters durable BattleMatchService', () => {
       UPDATE streammonsters_monsters SET xp = 95 WHERE monster_id = 'winner'
     `).run();
     let nowMs = 10_000;
-    const service = createMatchService({ store, now: () => nowMs });
+    const emit = jest.fn();
+    const service = createMatchService({ store, now: () => nowMs, emit });
     service.join({ userId: 'viewer-winner' });
     const joined = service.join({ userId: 'viewer-loser' });
     service.lockRoster({ userId: 'viewer-winner' });
     service.lockRoster({ userId: 'viewer-loser' });
     service.submitChoice({ userId: 'viewer-winner', choice: 'A', eventId: 'stat-a' });
     service.submitChoice({ userId: 'viewer-loser', choice: 'A', eventId: 'stat-b' });
+
+    const winnerSlot = joined.match.participants.find(
+      participant => participant.viewerId === 'viewer-winner'
+    ).slot;
+    const loserSlot = joined.match.participants.find(
+      participant => participant.viewerId === 'viewer-loser'
+    ).slot;
+    const emitted = emit.mock.calls.map(([event, payload]) => ({ event, payload }));
+    expect(emitted.filter(entry => (
+      entry.event === 'streammonsters:monster_xp_awarded'
+    ))).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          matchId: joined.match.matchId,
+          slot: winnerSlot,
+          amount: 15,
+          monster: expect.objectContaining({ name: 'winner', level: 2, xp: 10 })
+        })
+      }),
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          matchId: joined.match.matchId,
+          slot: loserSlot,
+          amount: 10,
+          monster: expect.objectContaining({ name: 'loser', level: 1, xp: 10 })
+        })
+      })
+    ]));
+    expect(emitted).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        event: 'streammonsters:monster_level_up',
+        payload: expect.objectContaining({
+          matchId: joined.match.matchId,
+          slot: winnerSlot,
+          levelsGained: 1,
+          monster: expect.objectContaining({ level: 2, unspentStatPoints: 1 })
+        })
+      }),
+      expect.objectContaining({
+        event: 'streammonsters:monster_stat_prompt',
+        payload: expect.objectContaining({
+          matchId: joined.match.matchId,
+          slot: winnerSlot,
+          choices: ['1', '2', '3', '4']
+        })
+      })
+    ]));
+    expect(emitted.filter(entry => (
+      entry.event === 'streammonsters:arena_rating_changed'
+    ))).toHaveLength(2);
+    expect(JSON.stringify(emitted)).not.toContain('viewer-winner');
+    expect(JSON.stringify(emitted)).not.toContain('"monsterId":"winner"');
 
     const prompt = sqlite.prepare(`
       SELECT * FROM streammonsters_stat_prompts
@@ -840,6 +1310,15 @@ describe('Stream Monsters durable BattleMatchService', () => {
       choice: '2',
       eventId: 'right-stat'
     })).toEqual(expect.objectContaining({ handled: true, stat: 'might' }));
+    expect(emit).toHaveBeenCalledWith(
+      'streammonsters:monster_stat_chosen',
+      expect.objectContaining({
+        matchId: joined.match.matchId,
+        slot: winnerSlot,
+        stat: 'might',
+        source: 'viewer'
+      })
+    );
     expect(store.getMonster('winner')).toEqual(expect.objectContaining({
       unspent_stat_points: 0,
       stats: expect.objectContaining({ might: 81 })
@@ -861,6 +1340,15 @@ describe('Stream Monsters durable BattleMatchService', () => {
     `).get(joined.match.matchId);
     expect(timeoutDecision.choice).toMatch(/^(vitality|might|guard|agility)$/);
     expect(timeoutDecision.event_id).toContain(':stat-timeout:');
+    expect(emit).toHaveBeenCalledWith(
+      'streammonsters:monster_stat_auto_assigned',
+      expect.objectContaining({
+        matchId: joined.match.matchId,
+        slot: loserSlot,
+        stat: timeoutDecision.choice,
+        source: 'timeout'
+      })
+    );
   });
 
   test('keeps private v3 readability and pages v5 on one lossless public cursor with provenance', () => {
@@ -878,7 +1366,8 @@ describe('Stream Monsters durable BattleMatchService', () => {
         rounds_json, rules_version, result_json, created_at_ms
       ) VALUES ('legacy-v3', 'old-seed', 'old-a', 'old-b', 'old-a', ?, 3, ?, 1)
     `).run(JSON.stringify(legacyRounds), JSON.stringify({ rounds: legacyRounds }));
-    const service = createMatchService({ store, now: () => 1_000 });
+    const emit = jest.fn();
+    const service = createMatchService({ store, now: () => 1_000, emit });
 
     expect(service.getPrivateNormalizedReplay('legacy-v3')).toEqual(expect.objectContaining({
       battleId: 'legacy-v3',
@@ -896,10 +1385,15 @@ describe('Stream Monsters durable BattleMatchService', () => {
       rules_version: 3
     });
 
-    insertMonster(sqlite, { id: 'secret-alpha', userId: 'viewer-secret-a' });
+    insertMonster(sqlite, {
+      id: 'secret-alpha',
+      userId: 'viewer-secret-a',
+      name: 'Public Alpha'
+    });
     insertMonster(sqlite, {
       id: 'secret-beta',
       userId: 'viewer-secret-b',
+      name: 'Public Beta',
       element: 'Tide',
       templateId: 'ripple'
     });
@@ -930,12 +1424,34 @@ describe('Stream Monsters durable BattleMatchService', () => {
     const events = pages.flatMap(page => page.events);
     const actions = pages.flatMap(page => page.actions);
     const decisions = pages.flatMap(page => page.decisions);
+    expect(events.every(event => (
+      event.eventId === `${joined.match.matchId}:event:${event.sequence}` &&
+      event.correlationId === joined.match.matchId
+    ))).toBe(true);
+    const liveEventsById = new Map(emit.mock.calls
+      .map(([type, payload]) => ({ type, payload }))
+      .filter(entry => entry.payload?.eventId)
+      .map(entry => [entry.payload.eventId, entry]));
+    expect(events.every(event => (
+      liveEventsById.get(event.eventId)?.type === event.type &&
+      liveEventsById.get(event.eventId)?.payload.correlationId === event.correlationId
+    ))).toBe(true);
     expect(events.map(event => event.sequence)).toEqual(
       [...new Set(events.map(event => event.sequence))].sort((a, b) => a - b)
     );
     expect(actions).toHaveLength(2);
     expect(actions.map(action => action.sequence)).toEqual([1, 2]);
     expect(actions.every(action => Number.isInteger(action.eventSequence))).toBe(true);
+    const liveActions = emit.mock.calls
+      .filter(([event]) => event === 'streammonsters:battle_skill_used')
+      .map(([, payload]) => payload.action);
+    expect(actions.map(action => action.actorState)).toEqual(
+      liveActions.map(action => action.actorState)
+    );
+    expect(actions.map(action => action.targetState)).toEqual(
+      liveActions.map(action => action.targetState)
+    );
+    expect(actions.some(action => action.actorState.maxHp > 0)).toBe(true);
     expect(decisions).toEqual(expect.arrayContaining([
       expect.objectContaining({
         round: 1,
@@ -961,12 +1477,44 @@ describe('Stream Monsters durable BattleMatchService', () => {
       'secret-beta',
       'provider-private',
       'participantId',
-      'eventId',
       '"before"',
       '"after"'
     ].forEach(secret => expect(publicJson).not.toContain(secret));
     const privateReplay = service.getPrivateNormalizedReplay(joined.match.matchId);
     expect(JSON.stringify(privateReplay)).toContain('secret-alpha');
+  });
+
+  test('keeps historical choice-window fighter HUDs unchanged after later actions', () => {
+    const { sqlite, store } = createStore();
+    insertMonster(sqlite, { id: 'alpha', userId: 'viewer-a' });
+    insertMonster(sqlite, {
+      id: 'beta',
+      userId: 'viewer-b',
+      element: 'Tide',
+      templateId: 'ripple'
+    });
+    const service = createMatchService({ store, now: () => 1_000 });
+    service.join({ userId: 'viewer-a' });
+    const joined = service.join({ userId: 'viewer-b' });
+    service.lockRoster({ userId: 'viewer-a' });
+    service.lockRoster({ userId: 'viewer-b' });
+
+    const before = service.getPublicNormalizedReplay(joined.match.matchId);
+    const firstWindow = before.events.find(event => (
+      event.type === 'streammonsters:battle_choice_opened' &&
+      event.payload.round === 1
+    ));
+    expect(firstWindow.payload.fighters).toHaveLength(2);
+    const originalFighters = JSON.parse(JSON.stringify(firstWindow.payload.fighters));
+
+    service.submitChoice({ userId: 'viewer-a', choice: 'A', eventId: 'choice-a' });
+    service.submitChoice({ userId: 'viewer-b', choice: 'B', eventId: 'choice-b' });
+
+    const after = service.getPublicNormalizedReplay(joined.match.matchId);
+    const replayedFirstWindow = after.events.find(event => (
+      event.sequence === firstWindow.sequence
+    ));
+    expect(replayedFirstWindow.payload.fighters).toEqual(originalFighters);
   });
 
   test('publishes only a redacted active battle snapshot', () => {
@@ -991,8 +1539,20 @@ describe('Stream Monsters durable BattleMatchService', () => {
       state: 'action',
       roundNumber: 1,
       fighters: expect.arrayContaining([
-        expect.objectContaining({ element: 'Ember', templateId: 'ashfang' }),
-        expect.objectContaining({ element: 'Tide', templateId: 'ripple' })
+        expect.objectContaining({
+          element: 'Ember',
+          templateId: 'ashfang',
+          evolutionStage: 1,
+          imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+          maxHp: expect.any(Number)
+        }),
+        expect.objectContaining({
+          element: 'Tide',
+          templateId: 'ripple',
+          evolutionStage: 1,
+          imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ripple.png',
+          maxHp: expect.any(Number)
+        })
       ]),
       cursor: expect.any(Number)
     }));
@@ -1001,16 +1561,58 @@ describe('Stream Monsters durable BattleMatchService', () => {
     expect(serialized).not.toContain('queuedMonsterId');
     expect(serialized).not.toContain('stats');
   });
+
+  test('opens the live skill window with both safe visual fighters for the OBS arena', () => {
+    const { sqlite, store } = createStore();
+    insertMonster(sqlite, { id: 'alpha', userId: 'viewer-private-a' });
+    insertMonster(sqlite, {
+      id: 'beta',
+      userId: 'viewer-private-b',
+      element: 'Tide',
+      templateId: 'ripple'
+    });
+    const emit = jest.fn();
+    const service = createMatchService({ store, now: () => 1_000, emit });
+    service.join({ userId: 'viewer-private-a' });
+    service.join({ userId: 'viewer-private-b' });
+    service.lockRoster({ userId: 'viewer-private-a' });
+    service.lockRoster({ userId: 'viewer-private-b' });
+
+    const opened = emit.mock.calls.find(([event]) => (
+      event === 'streammonsters:battle_choice_opened'
+    ));
+    expect(opened?.[1]).toEqual(expect.objectContaining({
+      round: 1,
+      choices: ['A', 'B', 'C'],
+      fighters: expect.arrayContaining([
+        expect.objectContaining({
+          slot: 1,
+          templateId: expect.any(String),
+          imageUrl: expect.stringMatching(/^\/plugins\/streamalchemy\/assets\/streammonsters\/furry\//),
+          hp: expect.any(Number),
+          maxHp: expect.any(Number)
+        }),
+        expect.objectContaining({ slot: 2, templateId: expect.any(String) })
+      ])
+    }));
+    expect(JSON.stringify(opened)).not.toContain('viewer-private');
+    expect(JSON.stringify(opened)).not.toContain('"stats"');
+  });
 });
 
 describe('Stream Monsters v5 command composition', () => {
-  test('routes battle/choose into the durable owner and refuses to leave a locked match', () => {
+  test('routes battle/choose into the durable owner, cancels roster selection and locks active rounds', () => {
+    let activeMatch = {
+      matchId: 'match-a',
+      state: 'roster'
+    };
     const battleMatchService = {
       join: jest.fn(() => ({ status: 'queued' })),
       lockRoster: jest.fn(() => ({ accepted: true, waiting: true })),
-      getActiveMatchForViewer: jest.fn(() => ({
-        matchId: 'match-a',
-        state: 'action'
+      getActiveMatchForViewer: jest.fn(() => activeMatch),
+      cancelBeforeBattle: jest.fn(() => ({
+        cancelled: true,
+        matchId: 'match-a'
       }))
     };
     const store = {
@@ -1044,9 +1646,17 @@ describe('Stream Monsters v5 command composition', () => {
       expect.objectContaining({ success: true, status: 'roster_locked' })
     );
     expect(commands.execute({ userId: 'viewer-a' }, 'leavebattle', [])).toEqual({
+      success: true,
+      status: 'match_cancelled',
+      message: 'The reserved battle was cancelled before it started.'
+    });
+    expect(battleMatchService.cancelBeforeBattle).toHaveBeenCalledWith('viewer-a');
+
+    activeMatch = { matchId: 'match-b', state: 'action' };
+    expect(commands.execute({ userId: 'viewer-a' }, 'leavebattle', [])).toEqual({
       success: false,
       status: 'match_locked',
-      message: 'A reserved match cannot be left.'
+      message: 'A battle in progress cannot be left.'
     });
     expect(store.removeBattleQueueEntry).not.toHaveBeenCalled();
   });

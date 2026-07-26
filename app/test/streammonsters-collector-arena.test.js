@@ -271,6 +271,8 @@ describe('Stream Monsters 1.2 Collector Arena', () => {
       xp: 25,
       personality: null,
       visual_source: 'legacy',
+      image_url: null,
+      visual_key: null,
       battle_count: 0
     }));
     expect(store.getViewerProgress('legacy-viewer')).toEqual(expect.objectContaining({

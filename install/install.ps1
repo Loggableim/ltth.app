@@ -107,16 +107,190 @@ function Get-VersionJsonUrl {
     return "https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/$LTTHRepoBranch/version.json"
 }
 
-function Get-LauncherDownloadUrl {
-    if (
+function Use-OfficialLauncherRelease {
+    return (
         $LTTHRepoOwner -eq 'Loggableim' -and
         $LTTHRepoName -eq 'ltth.app' -and
         $LTTHRepoBranch -eq 'main'
-    ) {
-        return 'https://ltth.app/downloads/launcher.exe'
+    )
+}
+
+function Get-LauncherReleaseManifestUrl {
+    if (-not (Use-OfficialLauncherRelease)) {
+        # Branch compatibility mode intentionally uses the mutable raw file.
+        # There is no release manifest, therefore no release-integrity claim.
+        return $null
+    }
+
+    if ($script:LTTHInstallMode -eq 'latest') {
+        return 'https://github.com/Loggableim/ltth.app/releases/latest/download/launcher-release.json'
+    }
+
+    $requestedVersion = ([string]$script:LTTHVersion).Trim().TrimStart('v')
+    if ($requestedVersion -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
+        throw "Ungueltige Launcher-Version: $script:LTTHVersion"
+    }
+    return "https://github.com/Loggableim/ltth.app/releases/download/v$requestedVersion/launcher-release.json"
+}
+
+function Get-LauncherDownloadUrl {
+    param(
+        [string]$ReleaseTag
+    )
+
+    if (Use-OfficialLauncherRelease) {
+        if ($ReleaseTag -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') {
+            throw "Ein gueltiger Release-Tag ist fuer den offiziellen Launcher-Download erforderlich."
+        }
+        return "https://github.com/Loggableim/ltth.app/releases/download/$ReleaseTag/launcher.exe"
     }
 
     return "https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/$LTTHRepoBranch/downloads/launcher.exe"
+}
+
+function Assert-LauncherReleaseManifest {
+    param(
+        [Parameter(Mandatory = $true)]
+        $Manifest
+    )
+
+    if ($null -eq $Manifest) {
+        throw "Launcher-Manifest fehlt."
+    }
+    if ([string]$Manifest.schema -ne '1') {
+        throw "Launcher-Manifest schema muss 1 sein."
+    }
+    if ([string]$Manifest.component -ne 'launcher.exe') {
+        throw "Launcher-Manifest component muss launcher.exe sein."
+    }
+
+    $version = [string]$Manifest.version
+    if ($version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
+        throw "Launcher-Manifest version muss X.Y.Z entsprechen."
+    }
+
+    $tag = [string]$Manifest.tag
+    if ($tag -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$' -or $tag -ne "v$version") {
+        throw "Launcher-Manifest tag muss exakt v$version sein."
+    }
+
+    $commitSha = ([string]$Manifest.commitSha).ToLowerInvariant()
+    if ($commitSha -notmatch '^[0-9a-f]{40}$') {
+        throw "Launcher-Manifest commitSha muss 40 Hex-Zeichen enthalten."
+    }
+
+    $manifestBytes = [int64]0
+    if (
+        -not [int64]::TryParse([string]$Manifest.bytes, [ref]$manifestBytes) -or
+        $manifestBytes -le 0
+    ) {
+        throw "Launcher-Manifest bytes muss eine positive Ganzzahl sein."
+    }
+
+    $sha256 = ([string]$Manifest.sha256).ToLowerInvariant()
+    if ($sha256 -notmatch '^[0-9a-f]{64}$') {
+        throw "Launcher-Manifest sha256 muss 64 Hex-Zeichen enthalten."
+    }
+
+    return [pscustomobject][ordered]@{
+        schema = 1
+        component = 'launcher.exe'
+        tag = $tag
+        version = $version
+        commitSha = $commitSha
+        bytes = $manifestBytes
+        sha256 = $sha256
+    }
+}
+
+function Assert-LauncherFile {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$LauncherPath,
+        [Parameter(Mandatory = $true)]
+        $Manifest
+    )
+
+    if (-not (Test-Path -LiteralPath $LauncherPath -PathType Leaf)) {
+        throw "Launcher-Datei fehlt: $LauncherPath"
+    }
+
+    $actualBytes = (Get-Item -LiteralPath $LauncherPath).Length
+    if ($actualBytes -ne [int64]$Manifest.bytes) {
+        throw "Launcher bytes stimmen nicht: erwartet $($Manifest.bytes), erhalten $actualBytes."
+    }
+
+    $actualSha256 = (Get-FileHash -LiteralPath $LauncherPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($actualSha256 -ne [string]$Manifest.sha256) {
+        throw "Launcher sha256 stimmt nicht mit dem Release-Manifest ueberein."
+    }
+}
+
+function Test-VerifiedInstalledLauncher {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$LauncherPath,
+        [Parameter(Mandatory = $true)]
+        [string]$ManifestPath
+    )
+
+    try {
+        if (
+            -not (Test-Path -LiteralPath $LauncherPath -PathType Leaf) -or
+            -not (Test-Path -LiteralPath $ManifestPath -PathType Leaf)
+        ) {
+            return $false
+        }
+        $storedManifest = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        $verifiedManifest = Assert-LauncherReleaseManifest -Manifest $storedManifest
+        Assert-LauncherFile -LauncherPath $LauncherPath -Manifest $verifiedManifest
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+function Move-FileAtomically {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$StagedPath,
+        [Parameter(Mandatory = $true)]
+        [string]$TargetPath
+    )
+
+    if (Test-Path -LiteralPath $TargetPath -PathType Leaf) {
+        $backupPath = "$TargetPath.backup-$([guid]::NewGuid().ToString('N'))"
+        try {
+            [System.IO.File]::Replace($StagedPath, $TargetPath, $backupPath, $true)
+        } finally {
+            Remove-Item -LiteralPath $backupPath -Force -ErrorAction SilentlyContinue
+        }
+        return
+    }
+
+    [System.IO.File]::Move($StagedPath, $TargetPath)
+}
+
+function Save-LauncherReleaseManifest {
+    param(
+        [Parameter(Mandatory = $true)]
+        $Manifest,
+        [Parameter(Mandatory = $true)]
+        [string]$ManifestPath
+    )
+
+    $stagedPath = "$ManifestPath.staged-$([guid]::NewGuid().ToString('N'))"
+    try {
+        $json = $Manifest | ConvertTo-Json -Depth 4
+        [System.IO.File]::WriteAllText(
+            $stagedPath,
+            ($json + [Environment]::NewLine),
+            (New-Object System.Text.UTF8Encoding($false))
+        )
+        Move-FileAtomically -StagedPath $stagedPath -TargetPath $ManifestPath
+    } finally {
+        Remove-Item -LiteralPath $stagedPath -Force -ErrorAction SilentlyContinue
+    }
 }
 
 function Use-OfficialWindowsZipBootstrap {
@@ -130,7 +304,7 @@ function Use-OfficialWindowsZipBootstrap {
 
 function Get-AppBundleZipUrl {
     if (Use-OfficialWindowsZipBootstrap) {
-        return 'https://ltth.app/app/ltth_latest.zip'
+        return 'https://github.com/Loggableim/ltth.app/releases/latest/download/ltth_latest.zip'
     }
 
     return "https://github.com/$LTTHRepoOwner/$LTTHRepoName/raw/$LTTHRepoBranch/app/ltth_latest.zip"
@@ -1352,36 +1526,88 @@ function Install-Deps {
 # ---------- Launcher ----------
 function Install-Launcher {
     $launcherPath = Join-Path $LTTHDir 'launcher.exe'
-    $launcherUrl = Get-LauncherDownloadUrl
-    $tmpLauncher = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-launcher-" + [guid]::NewGuid().ToString('N') + ".exe")
-    $launcherExisted = Test-Path $launcherPath
+    $localManifestPath = Join-Path $LTTHDir 'launcher-release.json'
+    New-Item -ItemType Directory -Path $LTTHDir -Force | Out-Null
+    $stagedLauncher = Join-Path $LTTHDir (".launcher-" + [guid]::NewGuid().ToString('N') + ".staged")
 
+    if (-not (Use-OfficialLauncherRelease)) {
+        Warn "Branch compatibility mode: Launcher ohne Release-Manifest; keine Integritaetsaussage moeglich."
+        try {
+            $launcherUrl = Get-LauncherDownloadUrl
+            Log "Lade LTTH Branch-Launcher herunter..."
+            Invoke-DownloadFileWithProgress -Uri $launcherUrl -OutFile $stagedLauncher -Activity 'LTTH Launcher wird heruntergeladen'
+            $launcherInfo = Get-Item -LiteralPath $stagedLauncher
+            if ($launcherInfo.Length -lt 1048576) {
+                throw "Branch-Launcher wirkt unvollstaendig ($($launcherInfo.Length) Bytes)."
+            }
+            Move-FileAtomically -StagedPath $stagedLauncher -TargetPath $launcherPath
+            Remove-Item -LiteralPath $localManifestPath -Force -ErrorAction SilentlyContinue
+            Ok "Branch-Launcher bereit (Kompatibilitaetsmodus): $launcherPath"
+            return $launcherPath
+        } catch {
+            if (Test-Path -LiteralPath $launcherPath -PathType Leaf) {
+                Warn "Branch-Launcher-Download fehlgeschlagen; vorhandener ungepruefter Branch-Launcher bleibt erhalten: $($_.Exception.Message)"
+                return $launcherPath
+            }
+            Warn "Branch-Launcher konnte nicht eingerichtet werden: $($_.Exception.Message)"
+            return $null
+        } finally {
+            Remove-Item -LiteralPath $stagedLauncher -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    $manifestUrl = Get-LauncherReleaseManifestUrl
     try {
-        Log "Lade LTTH Windows Launcher herunter..."
-        Invoke-DownloadFileWithProgress -Uri $launcherUrl -OutFile $tmpLauncher -Activity 'LTTH Launcher wird heruntergeladen'
-        Move-Item -LiteralPath $tmpLauncher -Destination $launcherPath -Force
-
-        if (-not (Test-Path $launcherPath)) {
-            throw "Launcher-Datei fehlt nach Installation."
-        }
-
-        $launcherInfo = Get-Item -LiteralPath $launcherPath
-        if ($launcherInfo.Length -lt 1048576) {
-            throw "Launcher-Datei wirkt unvollstaendig ($($launcherInfo.Length) Bytes)."
-        }
-
-        Ok "Launcher bereit: $launcherPath"
-        return $launcherPath
+        Log "Lade LTTH Launcher-Release-Manifest herunter..."
+        $manifestResponse = Invoke-RestMethod -Uri $manifestUrl -TimeoutSec 30 -ErrorAction Stop
     } catch {
-        if ($launcherExisted -and (Test-Path $launcherPath)) {
-            Warn "Launcher-Download fehlgeschlagen, verwende vorhandene Datei: $($_.Exception.Message)"
+        if (Test-VerifiedInstalledLauncher -LauncherPath $launcherPath -ManifestPath $localManifestPath) {
+            Warn "Launcher-Manifest ist nicht erreichbar; verwende den lokal verifizierten Launcher: $($_.Exception.Message)"
             return $launcherPath
         }
+        Warn "Launcher-Manifest ist nicht erreichbar und es existiert kein lokal verifizierter Launcher: $($_.Exception.Message)"
+        return $null
+    }
 
-        Warn "Launcher konnte nicht eingerichtet werden: $($_.Exception.Message)"
+    try {
+        $manifest = Assert-LauncherReleaseManifest -Manifest $manifestResponse
+        if ($script:LTTHInstallMode -ne 'latest') {
+            $requestedVersion = ([string]$script:LTTHVersion).Trim().TrimStart('v')
+            if ($manifest.version -ne $requestedVersion) {
+                throw "Launcher-Manifest version $($manifest.version) entspricht nicht der angeforderten Version $requestedVersion."
+            }
+        }
+    } catch {
+        Warn "Launcher-Manifest wurde abgelehnt: $($_.Exception.Message)"
+        return $null
+    }
+
+    $launcherUrl = Get-LauncherDownloadUrl -ReleaseTag $manifest.tag
+    try {
+        try {
+            Log "Lade verifizierbaren LTTH Windows Launcher herunter..."
+            Invoke-DownloadFileWithProgress -Uri $launcherUrl -OutFile $stagedLauncher -Activity 'LTTH Launcher wird heruntergeladen'
+        } catch {
+            if (Test-VerifiedInstalledLauncher -LauncherPath $launcherPath -ManifestPath $localManifestPath) {
+                Warn "Launcher-Download ist nicht erreichbar; verwende den lokal verifizierten Launcher: $($_.Exception.Message)"
+                return $launcherPath
+            }
+            Warn "Launcher-Download ist nicht erreichbar und es existiert kein lokal verifizierter Launcher: $($_.Exception.Message)"
+            return $null
+        }
+
+        Assert-LauncherFile -LauncherPath $stagedLauncher -Manifest $manifest
+        Move-FileAtomically -StagedPath $stagedLauncher -TargetPath $launcherPath
+        Save-LauncherReleaseManifest -Manifest $manifest -ManifestPath $localManifestPath
+        $script:LTTHVersion = $manifest.version
+
+        Ok "Verifizierter Launcher bereit: $launcherPath"
+        return $launcherPath
+    } catch {
+        Warn "Launcher-Datei wurde abgelehnt; vorhandene Datei wird nicht ersetzt: $($_.Exception.Message)"
         return $null
     } finally {
-        Remove-Item -LiteralPath $tmpLauncher -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $stagedLauncher -Force -ErrorAction SilentlyContinue
     }
 }
 

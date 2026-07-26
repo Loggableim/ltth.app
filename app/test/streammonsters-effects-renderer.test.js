@@ -79,7 +79,7 @@ function createGpuHarness() {
     })),
     getPreferredCanvasFormat: jest.fn(() => 'bgra8unorm')
   };
-  return { canvas, canvas2d, context, device, pass, gpu, lost };
+  return { canvas, canvas2d, context, device, encoder, pass, gpu, lost };
 }
 
 describe('Stream Monsters effects renderer', () => {
@@ -116,6 +116,17 @@ describe('Stream Monsters effects renderer', () => {
       scene: 'spawn',
       duration: SCENE_DURATIONS.spawn
     }));
+    expect(harness.device.createCommandEncoder).toHaveBeenCalledTimes(
+      harness.pass.draw.mock.calls.length + 1
+    );
+    expect(harness.encoder.beginRenderPass.mock.calls.at(-1)[0]).toEqual({
+      colorAttachments: [{
+        view: expect.any(Object),
+        clearValue: { r: 0, g: 0, b: 0, a: 0 },
+        loadOp: 'clear',
+        storeOp: 'store'
+      }]
+    });
   });
 
   test.each([
@@ -170,6 +181,108 @@ describe('Stream Monsters effects renderer', () => {
     const next = renderer.play('attack', { element: 'Tide' });
     await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.attack);
     await expect(next).resolves.toEqual(expect.objectContaining({ mode: 'fallback' }));
+  });
+
+  test('emits privacy-safe structured renderer selection, switch and device-loss diagnostics', async () => {
+    const harness = createGpuHarness();
+    const diagnostics = jest.fn();
+    const renderer = createEffectsRenderer({
+      canvas: harness.canvas,
+      navigator: { gpu: harness.gpu },
+      matchMedia: () => ({ matches: false }),
+      diagnostics,
+      requestAnimationFrame: callback => setTimeout(() => callback(Date.now()), 16),
+      cancelAnimationFrame: clearTimeout,
+      now: () => Date.now()
+    });
+
+    await renderer.init();
+    expect(diagnostics).toHaveBeenCalledWith({
+      component: 'streammonsters-overlay',
+      subsystem: 'renderer',
+      event: 'renderer_selected',
+      renderer: 'webgpu',
+      previousRenderer: 'pending',
+      fallbackReason: null,
+      fps: null
+    });
+
+    harness.lost.resolve({
+      reason: 'destroyed',
+      message: 'must never be logged',
+      viewerId: 'secret-viewer'
+    });
+    await Promise.resolve();
+
+    expect(diagnostics).toHaveBeenCalledWith(expect.objectContaining({
+      event: 'renderer_device_lost',
+      renderer: 'webgpu',
+      fallbackReason: 'device-lost'
+    }));
+    expect(diagnostics).toHaveBeenCalledWith(expect.objectContaining({
+      event: 'renderer_switched',
+      renderer: 'canvas2d',
+      previousRenderer: 'webgpu',
+      fallbackReason: 'device-lost'
+    }));
+    for (const [record] of diagnostics.mock.calls) {
+      expect(Object.keys(record).sort()).toEqual([
+        'component',
+        'event',
+        'fallbackReason',
+        'fps',
+        'previousRenderer',
+        'renderer',
+        'subsystem'
+      ]);
+      expect(JSON.stringify(record)).not.toMatch(/viewer|secret|must never/i);
+    }
+  });
+
+  test('reports sustained FPS degradation once without logging scene or viewer payloads', async () => {
+    const harness = createGpuHarness();
+    const diagnostics = jest.fn();
+    const renderer = createEffectsRenderer({
+      canvas: harness.canvas,
+      navigator: { gpu: harness.gpu },
+      matchMedia: () => ({ matches: false }),
+      diagnostics,
+      lowFpsThreshold: 24,
+      lowFpsSampleSize: 3,
+      requestAnimationFrame: callback => setTimeout(() => callback(Date.now()), 100),
+      cancelAnimationFrame: clearTimeout,
+      now: () => Date.now()
+    });
+
+    await renderer.init();
+    const completion = renderer.play('attack', {
+      eventId: 'private-event',
+      viewerId: 'private-viewer',
+      secret: 'private-secret'
+    });
+    await jest.advanceTimersByTimeAsync(500);
+
+    const degraded = diagnostics.mock.calls
+      .map(([record]) => record)
+      .filter(record => record.event === 'renderer_fps_degraded');
+    expect(degraded).toEqual([{
+      component: 'streammonsters-overlay',
+      subsystem: 'renderer',
+      event: 'renderer_fps_degraded',
+      renderer: 'webgpu',
+      previousRenderer: 'webgpu',
+      fallbackReason: 'low-fps',
+      fps: 10
+    }]);
+    expect(JSON.stringify(degraded)).not.toMatch(/private|viewer|secret/i);
+    expect(renderer.status()).toEqual(expect.objectContaining({
+      renderer: 'webgpu',
+      fps: 10,
+      fallbackReason: null
+    }));
+
+    await jest.advanceTimersByTimeAsync(SCENE_DURATIONS.attack);
+    await completion;
   });
 
   test('device loss keeps drawing fallback frames and advancing the active phase', async () => {

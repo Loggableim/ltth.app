@@ -623,15 +623,16 @@
         "fr": "Stream Monsters"
       },
       "description": {
-        "en": "Heart Me is the default discovery gift for a 24-Furry Monsterdex with a three-slot FIFO egg queue, automatic skill battles, mastery, missions, and animated overlays.",
-        "de": "Heart Me ist das Standard-Entdeckungsgeschenk für einen Monsterdex mit 24 Furry-Monstern, drei aktiven Ei-Slots plus FIFO-Warteschlange, automatischen Skill-Kämpfen, Meisterschaft, Missionen und animierten Overlays.",
-        "es": "Heart Me es el regalo de descubrimiento predeterminado para un Monsterdex de 24 monstruos Furry, con tres espacios de huevos y cola FIFO, batallas automáticas de habilidades, maestría, misiones y overlays animados.",
-        "fr": "Heart Me est le cadeau de découverte par défaut pour un Monsterdex de 24 monstres Furry, avec trois emplacements d'oeufs et une file FIFO, des combats automatiques de compétences, la maîtrise, des missions et des overlays animés."
+        "en": "Creator-selected TikTok gifts are the only egg source for 72 bundled Furry forms, cosmetic evolution, permanent progression, interactive A/B/C PvP in a portrait-first arena, and separate Arena Rating and Collector Score leaderboards.",
+        "de": "Vom Creator ausgewählte TikTok-Gifts sind die einzige Ei-Quelle für 72 gebündelte Furry-Formen, kosmetische Evolution, permanenten Fortschritt, interaktives A/B/C-PvP in einer Portrait-first-Arena sowie getrennte Ranglisten für Arena Rating und Collector Score.",
+        "es": "Los regalos de TikTok elegidos por el creador son la única fuente de huevos para 72 formas Furry incluidas, evolución cosmética, progresión permanente, PvP interactivo A/B/C en una arena vertical y clasificaciones separadas de Arena Rating y Collector Score.",
+        "fr": "Les cadeaux TikTok choisis par le Creator sont l’unique source d’œufs pour 72 formes Furry intégrées, l’évolution cosmétique, la progression permanente, le PvP interactif A/B/C dans une arène portrait et deux classements distincts Arena Rating et Collector Score."
       },
-      "version": "1.4.0",
+      "version": "1.5.0",
       "author": "Pup Cid",
       "category": "plugin",
       "channel": "open-beta",
+      "minLtthVersion": "1.4.1",
       "icon": "/plugins/streamalchemy/assets/branding/stream-monsters-icon.png",
       "logo": "/plugins/streamalchemy/assets/branding/stream-monsters-logo.png",
       "badges": [
@@ -641,15 +642,16 @@
       "access": {
         "type": "subscriber"
       },
-      "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.4.0.zip",
-      "sha256": "ea706b60df78a8666a5b02d7ebe75b2b595aad66a16f6a2c0587cb9ab1ff82c0",
+      "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.5.0.zip",
+      "sha256": "a25d2cd6c6f5804374c0e8b997c50de23a18ca61ad53ac56d3859574e6bcef14",
       "pricing": {
         "type": "free",
         "amount": 0,
         "currency": "EUR"
       },
       "screenshots": [
-        "/screenshots/features/stream-monsters.png"
+        "/screenshots/features/stream-monsters-creator-1.5.png",
+        "/screenshots/features/stream-monsters-arena-portrait-1.5.png"
       ]
     },
     {

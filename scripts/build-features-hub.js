@@ -221,7 +221,17 @@ function buildFeatureCatalog(lang) {
     const category = catalog.categories.find(entry => entry.id === categoryId) || catalog.categories[0];
     const title = getTitle(detail, storeItem);
     const description = getDescription(slug, lang, detail, storeItem);
-    const screenshots = detail.screenshots.slice(0, 5).map((shot, index) => {
+    const declaredScreenshots = [
+      ...detail.screenshots,
+      ...((storeItem && Array.isArray(storeItem.screenshots))
+        ? storeItem.screenshots
+          .filter((src) => src.startsWith('/screenshots/features/'))
+          .map((src) => ({ src }))
+        : [])
+    ].filter((shot, index, entries) => (
+      shot.src && entries.findIndex((entry) => entry.src === shot.src) === index
+    ));
+    const screenshots = declaredScreenshots.slice(0, 5).map((shot, index) => {
       const label = screenshotDescriptor(shot.src, lang);
       const alt = `${title} - ${label}`;
       const caption = `${label}`;

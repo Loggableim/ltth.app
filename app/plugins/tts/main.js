@@ -1110,7 +1110,7 @@ class TTSPlugin {
         // Fish.audio API key (official API)
         config.fishaudioApiKey = getValidApiKey('tts_fishaudio_api_key', 'fishaudio_api_key') || config.fishaudioApiKey;
         
-        // SiliconFlow API key (centralized for Fish Speech TTS + StreamAlchemy image generation)
+        // SiliconFlow API key used by Fish Speech TTS.
         // Try centralized key first, then legacy keys for backwards compatibility
         config.siliconflowApiKey = getValidApiKey('siliconflow_api_key', 'tts_fishspeech_api_key', 'streamalchemy_siliconflow_api_key') || config.siliconflowApiKey;
 
