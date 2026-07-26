@@ -92,4 +92,67 @@ describe('Stream Monsters 1.5 GCCE contracts', () => {
     expect(replacement).toHaveBeenCalledTimes(1);
     await gcce.destroy();
   });
+
+  test('claims only authorized durable A/B/C and 1-4 windows and lets every other message fall through', () => {
+    const plugin = new StreamAlchemyPlugin({ pluginDir: '', log: jest.fn() });
+    plugin.resolveStreamMonstersViewerId = jest.fn(({ platformUserId, legacyUserId }) => (
+      platformUserId || legacyUserId
+    ));
+    plugin.streamMonstersBattleMatchService = {
+      submitChoice: jest.fn(({ userId, choice, eventId }) => (
+        userId === 'viewer-a' && choice === 'A'
+          ? { handled: true, matchId: 'match-a', eventId }
+          : { handled: false, reason: 'no_active_window' }
+      )),
+      submitStatChoice: jest.fn(({ userId, choice }) => (
+        userId === 'viewer-b' && choice === '2'
+          ? { handled: true, stat: 'might' }
+          : { handled: false, reason: 'no_stat_window' }
+      ))
+    };
+
+    expect(plugin.handleStreamMonstersRawResponse(' A ', {
+      userId: 'viewer-a',
+      rawData: { eventId: 'raw-a' }
+    })).toEqual(expect.objectContaining({ handled: true, matchId: 'match-a' }));
+    expect(plugin.handleStreamMonstersRawResponse('2', {
+      userId: 'viewer-b',
+      rawData: { msgId: 'raw-stat' }
+    })).toEqual(expect.objectContaining({ handled: true, stat: 'might' }));
+    expect(plugin.handleStreamMonstersRawResponse('A', {
+      userId: 'bystander',
+      rawData: { eventId: 'foreign' }
+    })).toEqual({ handled: false, reason: 'no_active_window' });
+    expect(plugin.handleStreamMonstersRawResponse('hello', {
+      userId: 'viewer-a'
+    })).toEqual({ handled: false });
+    expect(plugin.handleStreamMonstersRawResponse('!battle', {
+      userId: 'viewer-a'
+    })).toEqual({ handled: false });
+    expect(plugin.streamMonstersBattleMatchService.submitChoice).toHaveBeenCalledTimes(2);
+    expect(plugin.streamMonstersBattleMatchService.submitStatChoice).toHaveBeenCalledTimes(1);
+  });
+
+  test('removes both the raw handler and persistent-match sweep on plugin destroy', async () => {
+    const plugin = new StreamAlchemyPlugin({
+      pluginDir: '',
+      log: jest.fn()
+    });
+    plugin.api.removeListener = jest.fn();
+    plugin.streamMonstersReadyTimer = setInterval(() => {}, 60_000);
+    plugin.streamMonstersBattleMatchService = { destroy: jest.fn() };
+    plugin.streamMonstersCommandIngress = { clear: jest.fn() };
+    plugin.streamMonstersEngine = { recentGifts: new Map() };
+    plugin.streamMonstersChatCommands = { queue: [] };
+    plugin.streamMonstersGCCE = {
+      unregisterCommandsForPlugin: jest.fn(),
+      unregisterRawResponseHandlerForPlugin: jest.fn()
+    };
+
+    await plugin.destroy();
+
+    expect(plugin.streamMonstersBattleMatchService.destroy).toHaveBeenCalledTimes(1);
+    expect(plugin.streamMonstersGCCE).toBeNull();
+    expect(plugin.streamMonstersReadyTimer).toBeNull();
+  });
 });

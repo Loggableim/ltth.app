@@ -19,8 +19,9 @@ const MISSION_DEFINITIONS = Object.freeze([
 ]);
 
 class CollectionService {
-  constructor({ store, emit = () => {}, now = () => Date.now() }) {
+  constructor({ store, progression = null, emit = () => {}, now = () => Date.now() }) {
     this.store = store;
+    this.progression = progression;
     this.emit = emit;
     this.now = now;
   }
@@ -153,6 +154,11 @@ class CollectionService {
       newUnlocks.forEach(unlock => this.emitAfterCommit('streammonsters:mastery_unlocked', {
         userId, templateId, unlock, mastery
       }));
+      newUnlocks.forEach(unlock => this.progression?.awardCollectorPoints?.(
+        userId,
+        10,
+        `mastery:${templateId}:${unlock}`
+      ));
       return mastery;
     });
   }
@@ -225,6 +231,11 @@ class CollectionService {
         userId,
         ...result
       });
+      this.progression?.awardCollectorPoints?.(
+        userId,
+        nextStage === 2 ? 25 : 50,
+        `evolution:${monsterId}:${nextStage}`
+      );
       return result;
     });
   }
@@ -283,6 +294,11 @@ class CollectionService {
         (participant.selected_monster_id ? this.store.getMonster(participant.selected_monster_id) : null) ||
         this.store.getViewerMonsters(participant.user_id).at(-1);
       if (target) this.recordMissionCompletion(target, streamKey);
+      this.progression?.awardCollectorPoints?.(
+        participant.user_id,
+        20,
+        `stream-mission:${streamKey}`
+      );
       return true;
     });
   }

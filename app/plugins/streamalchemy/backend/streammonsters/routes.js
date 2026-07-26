@@ -36,6 +36,7 @@ class StreamMonstersRoutes {
     engine,
     progression = null,
     collection = null,
+    battleMatchService = null,
     giftCatalogProvider,
     configProvider,
     gcceStateProvider = () => ({
@@ -52,6 +53,7 @@ class StreamMonstersRoutes {
     this.engine = engine;
     this.progression = progression;
     this.collection = collection;
+    this.battleMatchService = battleMatchService;
     this.giftCatalogProvider = giftCatalogProvider || (() => []);
     this.configProvider = configProvider;
     this.gcceStateProvider = gcceStateProvider;
@@ -123,6 +125,27 @@ class StreamMonstersRoutes {
         gcce: this.gcceStateProvider()
       });
     });
+    this.api.registerRoute('GET', '/api/streammonsters/battle-state', (req, res) => {
+      const snapshot = this.battleMatchService?.getPublicSnapshot?.() || {
+        rulesVersion: 5,
+        matches: []
+      };
+      res.json({ success: true, ...snapshot });
+    });
+    this.api.registerRoute(
+      'GET',
+      '/api/streammonsters/battles/:battleId/replay',
+      (req, res) => {
+        const rawCursor = Number.parseInt(req.query?.cursor, 10);
+        const cursor = Number.isInteger(rawCursor) && rawCursor > 0 ? rawCursor : 0;
+        const replay = this.battleMatchService?.getNormalizedReplay?.(
+          String(req.params?.battleId || ''),
+          cursor
+        ) || null;
+        if (!replay) return res.status(404).json({ error: 'battle_not_found' });
+        return res.json({ success: true, ...replay });
+      }
+    );
     this.api.registerRoute('GET', '/api/streammonsters/creator-state', this.protectAdmin((req, res) => {
       const userId = String(req.query?.userId || '').trim();
       const config = this.configProvider.getConfig().streamMonsters;

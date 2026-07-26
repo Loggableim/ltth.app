@@ -326,6 +326,145 @@ class StreamMonstersDatabase {
         rewarded_at_ms INTEGER NOT NULL,
         PRIMARY KEY (stream_key, user_id)
       );
+
+      CREATE TABLE IF NOT EXISTS streammonsters_matches (
+        match_id TEXT PRIMARY KEY,
+        state TEXT NOT NULL CHECK (
+          state IN ('roster', 'action', 'finalizing', 'completed', 'cancelled')
+        ),
+        phase_version INTEGER NOT NULL DEFAULT 1,
+        seed TEXT NOT NULL,
+        rules_version INTEGER NOT NULL DEFAULT 5,
+        round_number INTEGER NOT NULL DEFAULT 0,
+        roster_deadline_ms INTEGER,
+        action_deadline_ms INTEGER,
+        winner_monster_id TEXT,
+        result_json TEXT,
+        finalized_at_ms INTEGER,
+        created_at_ms INTEGER NOT NULL,
+        updated_at_ms INTEGER NOT NULL,
+        completed_at_ms INTEGER
+      );
+      CREATE INDEX IF NOT EXISTS streammonsters_matches_state_deadline
+        ON streammonsters_matches(state, roster_deadline_ms, action_deadline_ms);
+
+      CREATE TABLE IF NOT EXISTS streammonsters_match_participants (
+        match_id TEXT NOT NULL,
+        participant_id TEXT NOT NULL,
+        viewer_id TEXT NOT NULL,
+        slot INTEGER NOT NULL CHECK (slot IN (1, 2)),
+        queued_monster_id TEXT NOT NULL,
+        locked_monster_id TEXT,
+        roster_json TEXT,
+        combat_state_json TEXT,
+        rating_before INTEGER,
+        rating_after INTEGER,
+        active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
+        PRIMARY KEY (match_id, participant_id),
+        UNIQUE (match_id, slot),
+        UNIQUE (match_id, viewer_id),
+        FOREIGN KEY (match_id) REFERENCES streammonsters_matches(match_id)
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS streammonsters_one_active_match_per_viewer
+        ON streammonsters_match_participants(viewer_id) WHERE active = 1;
+      CREATE UNIQUE INDEX IF NOT EXISTS streammonsters_one_active_match_per_monster
+        ON streammonsters_match_participants(locked_monster_id)
+        WHERE active = 1 AND locked_monster_id IS NOT NULL;
+
+      CREATE TABLE IF NOT EXISTS streammonsters_match_decisions (
+        match_id TEXT NOT NULL,
+        participant_id TEXT NOT NULL,
+        window_kind TEXT NOT NULL CHECK (window_kind IN ('action', 'stat')),
+        window_sequence INTEGER NOT NULL,
+        choice TEXT NOT NULL,
+        requested_choice TEXT NOT NULL,
+        source TEXT NOT NULL CHECK (source IN ('viewer', 'timeout')),
+        event_id TEXT,
+        created_at_ms INTEGER NOT NULL,
+        PRIMARY KEY (match_id, participant_id, window_kind, window_sequence),
+        UNIQUE (event_id),
+        FOREIGN KEY (match_id, participant_id)
+          REFERENCES streammonsters_match_participants(match_id, participant_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS streammonsters_match_actions (
+        match_id TEXT NOT NULL,
+        sequence INTEGER NOT NULL,
+        round_number INTEGER NOT NULL,
+        actor_participant_id TEXT NOT NULL,
+        event_id TEXT NOT NULL UNIQUE,
+        action_json TEXT NOT NULL,
+        created_at_ms INTEGER NOT NULL,
+        PRIMARY KEY (match_id, sequence),
+        FOREIGN KEY (match_id) REFERENCES streammonsters_matches(match_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS streammonsters_match_events (
+        match_id TEXT NOT NULL,
+        sequence INTEGER NOT NULL,
+        event_id TEXT NOT NULL UNIQUE,
+        event_type TEXT NOT NULL,
+        payload_json TEXT NOT NULL,
+        public_payload_json TEXT NOT NULL,
+        created_at_ms INTEGER NOT NULL,
+        PRIMARY KEY (match_id, sequence),
+        FOREIGN KEY (match_id) REFERENCES streammonsters_matches(match_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS streammonsters_match_rewards (
+        match_id TEXT NOT NULL,
+        participant_id TEXT NOT NULL,
+        xp_awarded INTEGER NOT NULL,
+        arena_eligible INTEGER NOT NULL CHECK (arena_eligible IN (0, 1)),
+        rating_delta INTEGER NOT NULL DEFAULT 0,
+        claimed_at_ms INTEGER NOT NULL,
+        PRIMARY KEY (match_id, participant_id),
+        FOREIGN KEY (match_id, participant_id)
+          REFERENCES streammonsters_match_participants(match_id, participant_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS streammonsters_stat_prompts (
+        prompt_id TEXT PRIMARY KEY,
+        match_id TEXT NOT NULL,
+        participant_id TEXT NOT NULL,
+        viewer_id TEXT NOT NULL,
+        monster_id TEXT NOT NULL,
+        deadline_ms INTEGER NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('open', 'claimed', 'expired')),
+        choice TEXT,
+        event_id TEXT UNIQUE,
+        created_at_ms INTEGER NOT NULL,
+        claimed_at_ms INTEGER,
+        UNIQUE (match_id, monster_id),
+        FOREIGN KEY (match_id, participant_id)
+          REFERENCES streammonsters_match_participants(match_id, participant_id)
+      );
+      CREATE INDEX IF NOT EXISTS streammonsters_stat_prompts_viewer_open
+        ON streammonsters_stat_prompts(viewer_id, status, deadline_ms);
+
+      CREATE TABLE IF NOT EXISTS streammonsters_arena_seasons (
+        season_id TEXT PRIMARY KEY,
+        starts_at_ms INTEGER NOT NULL,
+        ends_at_ms INTEGER NOT NULL,
+        duration_days INTEGER NOT NULL CHECK (duration_days IN (7, 14, 28, 60, 90))
+      );
+
+      CREATE TABLE IF NOT EXISTS streammonsters_arena_ratings (
+        season_id TEXT NOT NULL,
+        viewer_id TEXT NOT NULL,
+        rating INTEGER NOT NULL DEFAULT 900,
+        battles_rated INTEGER NOT NULL DEFAULT 0,
+        updated_at_ms INTEGER NOT NULL,
+        PRIMARY KEY (season_id, viewer_id),
+        FOREIGN KEY (season_id) REFERENCES streammonsters_arena_seasons(season_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS streammonsters_arena_daily_ledger (
+        viewer_id TEXT NOT NULL,
+        day_key TEXT NOT NULL,
+        rated_battles INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (viewer_id, day_key)
+      );
     `);
     this.ensureColumn('streammonsters_eggs', 'variant', "TEXT NOT NULL DEFAULT 'standard'");
     this.ensureColumn('streammonsters_eggs', 'ready_at_ms', 'INTEGER');
@@ -344,6 +483,7 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_monsters', 'win_streak', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_monsters', 'evolution_stage', 'INTEGER NOT NULL DEFAULT 1');
     this.ensureColumn('streammonsters_monsters', 'evolution_essence_spent', 'INTEGER NOT NULL DEFAULT 0');
+    this.ensureColumn('streammonsters_monsters', 'unspent_stat_points', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_element_essence', 'spent', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_battles', 'user_a_id', 'TEXT');
     this.ensureColumn('streammonsters_battles', 'user_b_id', 'TEXT');
@@ -352,6 +492,8 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_battles', 'rounds_json', 'TEXT');
     this.ensureColumn('streammonsters_battles', 'rules_version', 'INTEGER');
     this.ensureColumn('streammonsters_battles', 'skills_json', 'TEXT');
+    this.ensureColumn('streammonsters_battles', 'match_id', 'TEXT');
+    this.ensureColumn('streammonsters_battles', 'replay_version', 'INTEGER');
     this.ensureColumn('streammonsters_gift_mappings', 'enabled', 'INTEGER NOT NULL DEFAULT 1');
     this.ensureColumn('streammonsters_viewer_progress', 'pending_xp', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_viewer_progress', 'battle_win_streak', 'INTEGER NOT NULL DEFAULT 0');
@@ -1332,25 +1474,41 @@ class StreamMonstersDatabase {
     if (!current) return null;
     let level = current.level;
     let xp = current.xp + Math.max(0, Number.parseInt(amount, 10) || 0);
-    const stats = { ...current.stats };
-    const seed = this.db.prepare(`
-      SELECT seed FROM streammonsters_eggs WHERE egg_id = ?
-    `).get(current.egg_id)?.seed || current.monster_id;
-    while (xp >= 100 + (25 * (level - 1))) {
+    let unspentStatPoints = Math.max(0, Number(current.unspent_stat_points) || 0);
+    while (level < 20 && xp >= 100 + (25 * (level - 1))) {
       xp -= 100 + (25 * (level - 1));
       level += 1;
-      if (level <= 20 && level % 2 === 0) {
-        const names = ['vitality', 'might', 'guard', 'agility'];
-        const stat = names[this.hashNumber(`${seed}:level:${level}`) % names.length];
-        stats[stat] = (Number(stats[stat]) || 0) + 1;
-      }
+      unspentStatPoints += 1;
     }
+    if (level >= 20) xp = 0;
     this.db.prepare(`
       UPDATE streammonsters_monsters
-      SET level = ?, xp = ?, stats_json = ?
+      SET level = ?, xp = ?, unspent_stat_points = ?
       WHERE monster_id = ?
-    `).run(level, xp, JSON.stringify(stats), monsterId);
+    `).run(level, xp, unspentStatPoints, monsterId);
     return this.getMonster(monsterId);
+  }
+
+  applyMonsterStatPoint({ userId, monsterId, stat }) {
+    const names = ['vitality', 'might', 'guard', 'agility'];
+    if (!names.includes(stat)) return { applied: false, reason: 'invalid_stat' };
+    return this.runInImmediateTransaction(() => {
+      const monster = this.getMonster(monsterId);
+      if (!monster || monster.user_id !== userId) {
+        return { applied: false, reason: 'not_owned' };
+      }
+      if ((Number(monster.unspent_stat_points) || 0) < 1) {
+        return { applied: false, reason: 'no_points' };
+      }
+      const stats = { ...monster.stats, [stat]: (Number(monster.stats[stat]) || 0) + 1 };
+      const updated = this.db.prepare(`
+        UPDATE streammonsters_monsters
+        SET stats_json = ?, unspent_stat_points = unspent_stat_points - 1
+        WHERE monster_id = ? AND user_id = ? AND unspent_stat_points > 0
+      `).run(JSON.stringify(stats), monsterId, userId);
+      if (!updated.changes) return { applied: false, reason: 'already_claimed' };
+      return { applied: true, stat, monster: this.getMonster(monsterId) };
+    });
   }
 
   awardViewerXp(userId, amount, preferredMonsterId = null) {

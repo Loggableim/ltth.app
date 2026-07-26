@@ -39,14 +39,16 @@ describe('Stream Monsters 1.2 progression and seasons', () => {
       xp: 50
     }));
     expect(progression.getViewerSeason('viewer-a')).toEqual(expect.objectContaining({
-      points: 12,
+      points: 20,
       rank: 'Bronze'
     }));
+    progression.recordHatch('viewer-a', 'creator:room', monster);
+    expect(progression.getViewerSeason('viewer-a').points).toBe(20);
     expect(progression.getCurrentSeason().ends_at_ms - progression.getCurrentSeason().starts_at_ms)
       .toBe(28 * 24 * 60 * 60 * 1000);
   });
 
-  test('uses 100 + 25 x (level - 1) thresholds and adds one deterministic stat at even levels through 20', () => {
+  test('uses 100 + 25 x (level - 1) thresholds and grants one unspent point per level through 20', () => {
     const store = new StreamMonstersDatabase(new Database(':memory:'));
     store.initialize();
     const monster = createMonster(store, 'viewer-a', 'level-seed');
@@ -56,7 +58,8 @@ describe('Stream Monsters 1.2 progression and seasons', () => {
 
     expect(leveled.level).toBe(3);
     expect(leveled.xp).toBe(0);
-    expect(Object.values(leveled.stats).reduce((sum, value) => sum + value, 0)).toBe(29);
+    expect(Object.values(leveled.stats).reduce((sum, value) => sum + value, 0)).toBe(28);
+    expect(leveled.unspent_stat_points).toBe(2);
   });
 
   test('keeps early quest and first-action XP pending until the viewer owns a monster', () => {
@@ -77,7 +80,7 @@ describe('Stream Monsters 1.2 progression and seasons', () => {
     expect(store.getMonster(monster.monster_id).xp).toBe(52);
   });
 
-  test('only the first ten battles each UTC day grant XP and season points', () => {
+  test('all battles grant XP while only the first ten each UTC day grant season points', () => {
     const store = new StreamMonstersDatabase(new Database(':memory:'));
     store.initialize();
     const monster = createMonster(store, 'viewer-a');
@@ -90,7 +93,7 @@ describe('Stream Monsters 1.2 progression and seasons', () => {
       progression.recordBattle('viewer-a', 'creator:room', { monster, won: false });
     }
 
-    expect(store.getMonster(monster.monster_id)).toEqual(expect.objectContaining({ level: 2, xp: 50 }));
+    expect(store.getMonster(monster.monster_id)).toEqual(expect.objectContaining({ level: 2, xp: 70 }));
     expect(progression.getViewerSeason('viewer-a').points).toBe(40);
   });
 

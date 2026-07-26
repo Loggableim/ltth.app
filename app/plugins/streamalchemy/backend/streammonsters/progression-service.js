@@ -59,7 +59,16 @@ class ProgressionService {
   recordHatch(userId, streamKey = null, monster = null) {
     const target = monster || this.store.getSelectedMonster(userId);
     this.store.awardViewerXp(userId, 20, target?.monster_id);
-    this.addSeasonPoints(userId, 2);
+    if (target) {
+      this.awardCollectorPoints(userId, 2, `hatch:${target.monster_id}`);
+      if (target.template_id) {
+        this.awardCollectorPoints(
+          userId,
+          8,
+          `first-template:${target.template_id}`
+        );
+      }
+    }
     this.incrementQuest(userId, this.dateKey(), 'daily:hatch', 'Hatch a monster', 1, 1, streamKey, 15, 5);
     this.checkHatchAchievements(userId, target);
   }
@@ -107,9 +116,9 @@ class ProgressionService {
     if (!monster) return { rewarded: false };
     const won = Boolean(result.won);
     const updated = this.store.recordMonsterBattle(monster.monster_id, won);
+    this.store.awardMonsterXp(monster.monster_id, 10 + (won ? 5 : 0));
     const rewarded = this.store.claimDailyBattleReward(userId, this.dateKey(), 10);
     if (rewarded) {
-      this.store.awardMonsterXp(monster.monster_id, 10 + (won ? 5 : 0));
       this.addSeasonPoints(userId, 2 + (won ? 3 : 0));
     }
     this.incrementQuest(userId, this.weekKey(), 'weekly:battle', 'Fight a battle', 10, 1, streamKey, 50, 20);
@@ -217,6 +226,21 @@ class ProgressionService {
       });
     }
     return after;
+  }
+
+  awardCollectorPoints(userId, points, claimKey) {
+    if (!userId || !claimKey || !(Number(points) > 0)) return { awarded: false };
+    const season = this.getCurrentSeason();
+    const claimed = this.store.claimCollectionAction(
+      `collector:${season.season_id}:${userId}:${claimKey}`,
+      this.currentMs()
+    );
+    if (!claimed) return { awarded: false, score: this.getViewerSeason(userId) };
+    return {
+      awarded: true,
+      points: Number(points),
+      score: this.addSeasonPoints(userId, Number(points))
+    };
   }
 
   getViewerSeason(userId) {

@@ -3,6 +3,7 @@ const {
   elementAdvantage,
   resolveBattle
 } = require('./battle-rules-v3');
+const { resolveInteractiveRound } = require('./battle-rules-v5');
 
 const STANCES = ['power', 'guard', 'speed'];
 
@@ -43,6 +44,10 @@ class BattleService {
       createdAtMs: this.now()
     });
     return result;
+  }
+
+  resolveInteractiveRound(input) {
+    return resolveInteractiveRound(input);
   }
 
   normalizeStance(_stance, monster) {

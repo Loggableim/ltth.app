@@ -64,4 +64,79 @@ function deterministicTemplateId(element, seed) {
   return templates[hashNumber(`${element}:${seed}`) % templates.length]?.templateId || null;
 }
 
-module.exports = { ELEMENTS, TEMPLATE_CATALOG, getTemplate, getTemplatesForElement, deterministicTemplateId, hashNumber };
+const V5_ELEMENT_EFFECTS = Object.freeze({
+  Ember: Object.freeze({
+    A: Object.freeze([{ type: 'damage', power: 5 }, { type: 'burn', power: 1 }]),
+    B: Object.freeze([{ type: 'shield', power: 5 }, { type: 'thorns', power: 1 }]),
+    C: Object.freeze([{ type: 'damage', power: 9 }, { type: 'heal', power: 2 }])
+  }),
+  Tide: Object.freeze({
+    A: Object.freeze([{ type: 'damage', power: 4 }, { type: 'weaken', power: 1 }]),
+    B: Object.freeze([{ type: 'shield', power: 4 }, { type: 'heal', power: 2 }]),
+    C: Object.freeze([{ type: 'damage', power: 7 }, { type: 'heal', power: 5 }])
+  }),
+  Grove: Object.freeze({
+    A: Object.freeze([{ type: 'damage', power: 4 }, { type: 'thorns', power: 1 }]),
+    B: Object.freeze([{ type: 'shield', power: 7 }]),
+    C: Object.freeze([{ type: 'shield', power: 5 }, { type: 'heal', power: 4 }])
+  }),
+  Gale: Object.freeze({
+    A: Object.freeze([{ type: 'damage', power: 5, hits: 2 }]),
+    B: Object.freeze([{ type: 'shield', power: 4 }, { type: 'evade', chance: 25 }]),
+    C: Object.freeze([{ type: 'damage', power: 9, hits: 3 }])
+  }),
+  Volt: Object.freeze({
+    A: Object.freeze([{ type: 'damage', power: 5 }, { type: 'pierce', power: 2 }]),
+    B: Object.freeze([{ type: 'shield', power: 5 }, { type: 'reflect', power: 1 }]),
+    C: Object.freeze([{ type: 'damage', power: 10 }, { type: 'pierce', power: 4 }])
+  }),
+  Lunar: Object.freeze({
+    A: Object.freeze([{ type: 'damage', power: 4 }, { type: 'heal', power: 1 }]),
+    B: Object.freeze([{ type: 'shield', power: 6 }, { type: 'weaken', power: 1 }]),
+    C: Object.freeze([{ type: 'damage', power: 8 }, { type: 'lifesteal', ratio: 0.5 }])
+  })
+});
+
+function buildV5SkillCatalog() {
+  return Object.fromEntries(TEMPLATE_CATALOG.map(entry => [
+    entry.templateId,
+    Object.freeze({
+      A: Object.freeze({
+        id: `${entry.templateId}:A`,
+        name: entry.skills.attack.name,
+        type: 'attack',
+        element: entry.element,
+        vfxKey: entry.skills.attack.vfxKey,
+        effects: V5_ELEMENT_EFFECTS[entry.element].A
+      }),
+      B: Object.freeze({
+        id: `${entry.templateId}:B`,
+        name: entry.skills.defense.name,
+        type: 'defense',
+        element: entry.element,
+        vfxKey: entry.skills.defense.vfxKey,
+        effects: V5_ELEMENT_EFFECTS[entry.element].B
+      }),
+      C: Object.freeze({
+        id: `${entry.templateId}:C`,
+        name: entry.skills.special.name,
+        type: 'special',
+        element: entry.element,
+        vfxKey: entry.skills.special.vfxKey,
+        chargeRequired: 100,
+        effects: V5_ELEMENT_EFFECTS[entry.element].C
+      })
+    })
+  ]));
+}
+
+module.exports = {
+  ELEMENTS,
+  TEMPLATE_CATALOG,
+  getTemplate,
+  getTemplatesForElement,
+  deterministicTemplateId,
+  hashNumber,
+  V5_ELEMENT_EFFECTS,
+  buildV5SkillCatalog
+};

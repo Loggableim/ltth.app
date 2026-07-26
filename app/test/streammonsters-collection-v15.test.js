@@ -3,13 +3,14 @@ const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streamm
 const CollectionService = require('../plugins/streamalchemy/backend/streammonsters/collection-service');
 const ChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
 
-function createCollection() {
+function createCollection(progression = null) {
   const sqlite = new Database(':memory:');
   const store = new StreamMonstersDatabase(sqlite);
   store.initialize();
   const emitted = [];
   const collection = new CollectionService({
     store,
+    progression,
     emit: (event, payload) => emitted.push({ event, payload }),
     now: () => 5_000
   });
@@ -42,6 +43,37 @@ function createCollection() {
 }
 
 describe('Stream Monsters 1.5 collection and cosmetic evolution', () => {
+  test('awards the exact Collector points for mastery milestones, evolutions and missions once', () => {
+    const progression = { awardCollectorPoints: jest.fn(() => ({ awarded: true })) };
+    const { store, collection, monster } = createCollection(progression);
+
+    collection.addMastery('viewer-a', 'ashfang', 10, 'milestone-10');
+    collection.addMastery('viewer-a', 'ashfang', 15, 'milestone-25');
+    collection.addMastery('viewer-a', 'ashfang', 25, 'milestone-50');
+    store.setElementEssence('viewer-a', 'Ember', 8, []);
+    collection.evolveMonster('viewer-a', monster.monster_id);
+    collection.evolveMonster('viewer-a', monster.monster_id);
+    store.addMissionParticipant('stream-a', 'viewer-a', monster.monster_id);
+    collection.rewardMissionParticipant(
+      'stream-a',
+      store.getMissionParticipant('stream-a', 'viewer-a')
+    );
+    collection.rewardMissionParticipant(
+      'stream-a',
+      store.getMissionParticipant('stream-a', 'viewer-a')
+    );
+
+    expect(progression.awardCollectorPoints.mock.calls.map(call => call.slice(0, 2)))
+      .toEqual([
+        ['viewer-a', 10],
+        ['viewer-a', 10],
+        ['viewer-a', 10],
+        ['viewer-a', 25],
+        ['viewer-a', 50],
+        ['viewer-a', 20]
+      ]);
+  });
+
   test('spends essence durably for cosmetic Evolution II and III without changing stats', () => {
     const { store, collection, monster } = createCollection();
     const originalStats = monster.stats;

@@ -3,6 +3,7 @@ class ChatCommands {
     store,
     engine,
     battleService,
+    battleMatchService = null,
     progression = null,
     collection = null,
     emit = () => {},
@@ -13,6 +14,7 @@ class ChatCommands {
     this.store = store;
     this.engine = engine;
     this.battleService = battleService;
+    this.battleMatchService = battleMatchService;
     this.progression = progression;
     this.collection = collection;
     this.emit = emit;
@@ -160,7 +162,17 @@ class ChatCommands {
       };
     }
     const selected = this.store.selectMonster(userId, monsters[index].monster_id);
-    return { success: true, status: 'selected', message: `${selected.name} is ready to battle.`, selected };
+    const rosterLock = this.battleMatchService?.lockRoster?.({
+      userId,
+      monsterId: selected.monster_id
+    }) || null;
+    return {
+      success: true,
+      status: rosterLock?.accepted ? 'roster_locked' : 'selected',
+      message: `${selected.name} is ready to battle.`,
+      selected,
+      ...(rosterLock ? { rosterLock } : {})
+    };
   }
 
   monster(userId, slot) {
@@ -224,6 +236,25 @@ class ChatCommands {
   }
 
   executeBattle(userId, requestedStance = null) {
+    if (this.battleMatchService) {
+      this.progression?.recordCommand(userId, this.engine.streamKey);
+      const result = this.battleMatchService.join({
+        userId,
+        stance: requestedStance || 'adaptive'
+      });
+      this.syncQueue();
+      const messages = {
+        queued: 'Battle queue joined. Waiting for an opponent.',
+        reserved: `Match found. Use ${this.commandReference('choose')} <slot> within 15 seconds.`,
+        active: 'Your current match is still active.',
+        no_monster: 'Hatch an egg first, then choose a monster.'
+      };
+      return {
+        success: !['invalid', 'no_monster'].includes(result.status),
+        ...result,
+        message: messages[result.status] || result.error || result.status
+      };
+    }
     try {
       return this.store.runInTransaction(() => {
         this.progression?.recordCommand(userId, this.engine.streamKey);
@@ -385,6 +416,13 @@ class ChatCommands {
   }
 
   leaveBattle(userId) {
+    if (this.battleMatchService?.getActiveMatchForViewer?.(userId)) {
+      return {
+        success: false,
+        status: 'match_locked',
+        message: 'A reserved match cannot be left.'
+      };
+    }
     this.purgeExpiredQueue();
     const removed = this.store.removeBattleQueueEntry(userId);
     this.syncQueue();
