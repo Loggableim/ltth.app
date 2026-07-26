@@ -108,6 +108,20 @@ describe('public overlay Socket.IO source contract', () => {
     expect(unregistered).toEqual([]);
   });
 
+  test('every Stream Monsters event from its data-driven listener map is explicitly registered', () => {
+    const relativePath = 'plugins/streamalchemy/streammonsters-overlay.html';
+    const source = fs.readFileSync(path.join(appRoot, relativePath), 'utf8');
+    const eventNames = new Set(
+      [...source.matchAll(/['"](streammonsters:[A-Za-z0-9:_-]+)['"]\s*:/g)]
+        .map(match => match[1])
+    );
+
+    expect(eventNames.size).toBeGreaterThan(0);
+    expect(
+      [...eventNames].filter(eventName => !isOutgoingSocketEventAllowed(eventName))
+    ).toEqual([]);
+  });
+
   test('the initial public surface uses Socket.IO instead of raw WebSocket clients', () => {
     const offenders = [];
     for (const relativePath of overlaySources) {

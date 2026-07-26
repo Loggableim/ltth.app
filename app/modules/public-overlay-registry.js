@@ -159,10 +159,18 @@ const HTTP_RULES = Object.freeze([
   rule(['GET', 'HEAD'], exact('/api/lastevent/all')),
 
   rule(['GET', 'HEAD'], exact('/api/streammonsters/state')),
-  rule(['GET', 'HEAD'], exact('/plugins/streamalchemy/streammonsters-overlay-views.js')),
+  rule(['GET', 'HEAD'], exact('/api/streammonsters/battle-state')),
+  rule(['GET', 'HEAD'], pattern(/^\/api\/streammonsters\/battles\/[A-Za-z0-9_-]+\/replay$/)),
+  rule(['GET', 'HEAD'], pattern(/^\/api\/streammonsters\/art\/kenney-[a-f0-9]{16}\.svg$/)),
+  rule(['POST'], exact('/api/streammonsters/overlay/heartbeat')),
+  rule(['GET', 'HEAD'], pattern(/^\/plugins\/streamalchemy\/streammonsters-(?:effects-renderer|overlay-runtime|arena-director|audio-engine|arena-view|chat-view)\.js$/)),
+  rule(['GET', 'HEAD'], exact('/plugins/streamalchemy/assets/branding/stream-monsters-icon.png')),
   rule(['GET', 'HEAD'], exact('/plugins/streamalchemy/assets/branding/stream-monsters-logo.png')),
-  rule(['GET', 'HEAD'], exact('/plugins/streamalchemy/assets/streammonsters/audio/manifest.json')),
-  rule(['GET', 'HEAD'], pattern(/^\/plugins\/streamalchemy\/assets\/streammonsters\/audio\/[A-Za-z0-9._ -]+\.(?:m4a|mp3|ogg|wav)$/i)),
+  rule(['GET', 'HEAD'], exact('/plugins/streamalchemy/assets/audio/manifest.json')),
+  rule(['GET', 'HEAD'], pattern(/^\/plugins\/streamalchemy\/assets\/audio\/cues\/[A-Za-z0-9._-]+\.wav$/i)),
+  rule(['GET', 'HEAD'], pattern(/^\/plugins\/streamalchemy\/assets\/eggs\/[a-z]+-(?:charged|standard)\.png$/)),
+  rule(['GET', 'HEAD'], pattern(/^\/plugins\/streamalchemy\/assets\/streammonsters\/furry\/[a-z0-9-]+\.png$/)),
+  rule(['GET', 'HEAD'], pattern(/^\/plugins\/streamalchemy\/assets\/streammonsters\/furry\/evolution\/[a-z]+\/[a-z0-9-]+-stage[23]\.png$/)),
 
   rule(['GET', 'HEAD'], exact('/plugins/toptier/assets/animations.css')),
   rule(['GET', 'HEAD'], exact('/plugins/toptier/assets/avatar-placeholder.svg')),
@@ -408,6 +416,46 @@ lastevent.update.like
 lastevent.update.share
 lastevent.update.subscriber
 lastevent.update.topgift
+streammonsters:achievement_unlocked
+streammonsters:arena_rating_changed
+streammonsters:battle_action
+streammonsters:battle_cancelled
+streammonsters:battle_choice_locked
+streammonsters:battle_choice_opened
+streammonsters:battle_completed
+streammonsters:battle_knockout
+streammonsters:battle_match_found
+streammonsters:battle_round
+streammonsters:battle_skill_locked
+streammonsters:battle_skill_prompt
+streammonsters:battle_skill_used
+streammonsters:battle_special_charged
+streammonsters:battle_started
+streammonsters:chat_result
+streammonsters:egg_boosted
+streammonsters:egg_hatched
+streammonsters:egg_ready
+streammonsters:egg_spawned
+streammonsters:elemental_hour
+streammonsters:gift_combo
+streammonsters:hatch_started
+streammonsters:hype_changed
+streammonsters:hype_milestone
+streammonsters:monster_evolved
+streammonsters:monster_level_up
+streammonsters:monster_stat_auto_assigned
+streammonsters:monster_stat_chosen
+streammonsters:monster_stat_prompt
+streammonsters:monster_visual_evolved
+streammonsters:monster_xp_awarded
+streammonsters:quest_completed
+streammonsters:rivalry
+streammonsters:season_rank_changed
+streammonsters:stance_revealed
+streammonsters:stat_choice_opened
+streammonsters:stream_started
+streammonsters:upset
+streammonsters:win_streak
 stt-ticker:clear
 stt-ticker:interim
 stt-ticker:transcript
