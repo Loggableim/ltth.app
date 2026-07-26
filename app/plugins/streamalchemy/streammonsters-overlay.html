@@ -223,13 +223,19 @@
   let battleMonsters = [null, null];
   let battleAdvantageName = '';
   let currentCommandPrefix = '!';
-  let currentCommandReferences = {
-    eggs: '!eier',
-    hatch: '!hatch',
-    inventory: '!inventory',
-    monster: '!monster',
-    battle: '!battle'
+  const safeFallbackCommandNames = {
+    eggs: 'eier',
+    hatch: 'hatch',
+    inventory: 'inventory',
+    monster: 'monster',
+    battle: 'battle'
   };
+  const safeFallbackCommandReferences = prefix => Object.fromEntries(
+    Object.entries(safeFallbackCommandNames).map(([command, alias]) => (
+      [command, `${prefix}${alias}`]
+    ))
+  );
+  let currentCommandReferences = safeFallbackCommandReferences(currentCommandPrefix);
   const commandReference = command => currentCommandReferences[command] || `${currentCommandPrefix}${command}`;
   const commandParams = () => ({
     eggs: commandReference('eggs'),
@@ -401,8 +407,9 @@
     );
     const registrationIsActive = String(data?.gcce?.registrationState || '').startsWith('active');
     const configuredAliases = data?.config?.commandAliases || {};
+    const fallbackReferences = safeFallbackCommandReferences(currentCommandPrefix);
     currentCommandReferences = Object.fromEntries(
-      Object.keys(currentCommandReferences).map(command => {
+      Object.keys(fallbackReferences).map(command => {
         const published = data?.gcce?.commandReferences?.[command];
         if (typeof published === 'string' && published && !/[\s<>"']/.test(published)) {
           return [command, published];
@@ -413,7 +420,7 @@
         const alias = registrationIsActive
           ? enabled.find(candidate => registeredCommands.has(candidate))
           : enabled[0];
-        return [command, `${currentCommandPrefix}${alias || command}`];
+        return [command, alias ? `${currentCommandPrefix}${alias}` : fallbackReferences[command]];
       })
     );
     const duration = Math.max(0, Number(data?.config?.hatchDurationMs) || 0);
@@ -730,7 +737,10 @@
     },
     fallbackSnapshot: () => ({
       hype: { points: 0 },
-      gcce: { commandPrefix: '!' },
+      gcce: {
+        commandPrefix: currentCommandPrefix,
+        commandReferences: safeFallbackCommandReferences(currentCommandPrefix)
+      },
       config: { hatchDurationMs: 0 }
     })
   });

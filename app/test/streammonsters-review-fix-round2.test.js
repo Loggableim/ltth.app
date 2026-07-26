@@ -132,6 +132,7 @@ async function createLiveOverlay(snapshot) {
     'utf8'
   )).plugins.streamalchemy.ui.monsters;
   const socketHandlers = new Map();
+  let fetchFailure = null;
   const interpolate = (template, params = {}) => String(template).replace(
     /\{(\w+)\}/g,
     (match, key) => Object.prototype.hasOwnProperty.call(params, key) ? params[key] : match
@@ -153,10 +154,13 @@ async function createLiveOverlay(snapshot) {
       window.io = () => ({
         on: (event, handler) => socketHandlers.set(event, handler)
       });
-      window.fetch = jest.fn(async () => ({
-        ok: true,
-        json: async () => snapshot
-      }));
+      window.fetch = jest.fn(async () => {
+        if (fetchFailure) throw fetchFailure;
+        return {
+          ok: true,
+          json: async () => snapshot
+        };
+      });
       window.StreamMonstersOverlayRuntime = overlayRuntime;
       window.StreamMonstersEffectsRenderer = {
         createEffectsRenderer: () => ({
@@ -182,6 +186,14 @@ async function createLiveOverlay(snapshot) {
     dom,
     hint: () => dom.window.document.getElementById('hint'),
     chat: () => dom.window.document.getElementById('chat-card'),
+    failFetch(error = new Error('state unavailable')) {
+      fetchFailure = error;
+    },
+    async reconnect() {
+      await socketHandlers.get('connect')();
+      await flush();
+      await flush();
+    },
     async emit(event, payload) {
       socketHandlers.get(event)(payload);
       await flush();
@@ -265,5 +277,22 @@ describe('Stream Monsters review fix round 2 guidance', () => {
 
     overlay.dom.window.close();
     await gcce.destroy();
+  });
+
+  test('renders safe enabled defaults with the known prefix when reconnect state fetch fails', async () => {
+    const overlay = await createLiveOverlay({
+      hype: { points: 0 },
+      gcce: { commandPrefix: '/' },
+      config: { hatchDurationMs: 120_000 }
+    });
+
+    overlay.failFetch();
+    await overlay.reconnect();
+
+    expect(overlay.hint().textContent).toContain('/eier');
+    expect(overlay.hint().textContent).toContain('/hatch [slot]');
+    expect(overlay.hint().textContent).not.toContain('/eggs');
+
+    overlay.dom.window.close();
   });
 });
