@@ -149,3 +149,58 @@ than a mock or single-connection path.
 - `git diff --check`: passed; only expected LF-to-CRLF notices were emitted.
 
 Review fix implementation commit: `5a84dd26`
+
+## Review fix round 2
+
+Review findings 3 and 8 addressed on 2026-07-26.
+
+### RED evidence
+
+- The focused round-2 suite contained 3 tests and all 3 failed against the
+  reviewed round-1 tree.
+- A real GCCE collision left Viewer XP owning `rank` and Stream Monsters owning
+  `monsterrank`, while the backend reference resolver still returned `/rank`.
+- The live overlay rendered `/eggs` and `/hatch` from the state snapshot instead
+  of the enabled `/eier` and `/schlupf` aliases.
+- Spawn guidance without an event hint fell back to disabled `/eggs`.
+
+### Executed overlay coverage
+
+The regression harness loads the complete `streammonsters-overlay.html` in
+JSDOM, executes its inline script, follows its real reconnect/state-snapshot
+path, and emits through the socket handlers registered by that script. The
+spawn and ready payloads come from the real game engine; the early-hatch result
+comes from the real chat-command service. No source regex or mocked command
+reference map substitutes for the rendered DOM assertions.
+
+Coverage includes state snapshot, `egg_spawned`, `egg_ready`, early-hatch
+`chat_result`, a hint-absent fallback, and an HTML-shaped untrusted hint. The
+last path remains text-only and cannot create an element or execute a handler.
+
+### Fixes
+
+- The backend resolver selects the first enabled alias that GCCE actually
+  registered. Public GCCE state now includes only successfully resolved command
+  references, so a `rank` collision publishes `/monsterrank`.
+- Overlay translations accept complete effective references instead of
+  rebuilding English command names from a prefix. German, English, Spanish,
+  and French retain localized surrounding guidance.
+- Snapshot fallback derives references from enabled aliases and registered GCCE
+  ownership. The pre-snapshot default and standalone chat fallback use `eier`,
+  never disabled `eggs`.
+- Spawn, ready, and early-hatch rendering consumes bounded, text-only backend
+  hints. Demo spawn/ready events use the same published live references instead
+  of hardcoded commands.
+
+### Verification
+
+- Initial RED: 1/1 suite executed, 0/3 tests passed.
+- Focused final event/routes matrix: 5/5 suites, 38/38 tests.
+- Final explicit Stream Monsters/StreamAlchemy/GCCE matrix: 48/48 suites,
+  427/427 tests, 0 snapshots.
+- ESLint on every changed JavaScript and test file: passed.
+- Locale JSON parse for `de`, `en`, `es`, and `fr`: passed.
+- Cached `git diff --check`: passed; only expected LF-to-CRLF notices were
+  emitted.
+
+Review fix round 2 implementation commit: `c60e00ac`
