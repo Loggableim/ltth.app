@@ -1131,6 +1131,10 @@
                     <div class="overlay-url">
                         <input type="text" class="form-input" id="pyramid-overlay-url" readonly>
                         <button class="btn btn-sm" id="btn-copy-pyramid-url" data-i18n="plugins.coinbattle.overlay.copy">Copy</button>
+                        <button type="button" class="btn btn-sm"
+                                data-copy-tiktok-studio-url
+                                data-overlay-url-source="#pyramid-overlay-url"
+                                data-i18n="common.tiktok_studio.copy_url">TikTok-Studio-URL kopieren</button>
                         <button class="btn btn-sm btn-secondary" id="btn-preview-pyramid" data-i18n="plugins.coinbattle.overlay.preview">Preview</button>
                     </div>
                 </div>
@@ -1297,6 +1301,10 @@
                     <div class="overlay-url">
                         <input type="text" class="form-input" id="overlay-url" readonly>
                         <button class="btn btn-sm" id="btn-copy-url" data-i18n="plugins.coinbattle.overlay.copy">Copy</button>
+                        <button type="button" class="btn btn-sm"
+                                data-copy-tiktok-studio-url
+                                data-overlay-url-source="#overlay-url"
+                                data-i18n="common.tiktok_studio.copy_url">TikTok-Studio-URL kopieren</button>
                         <button class="btn btn-sm btn-secondary" id="btn-preview-overlay" data-i18n="plugins.coinbattle.overlay.preview">Preview</button>
                     </div>
                 </div>
@@ -1396,6 +1404,7 @@
         </div>
     </div>
 
+    <script src="/js/tiktok-studio-url.js"></script>
     <script src="/plugins/coinbattle/ui.js"></script>
 </body>
 </html>

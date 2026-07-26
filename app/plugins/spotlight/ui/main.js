@@ -70,6 +70,14 @@ function renderOverlayCards() {
           <button class="btn btn-primary btn-sm" data-action="copy" data-type="${type.id}">
             ${translate('plugins.spotlight.runtime.cards.copy_url', 'Copy URL')}
           </button>
+          <button type="button" class="btn btn-primary btn-sm"
+                  data-copy-tiktok-studio-url
+                  data-overlay-url-source="self"
+                  data-overlay-url-attribute="data-url"
+                  data-url="${url}"
+                  data-i18n="common.tiktok_studio.copy_url">
+            ${translate('common.tiktok_studio.copy_url', 'TikTok-Studio-URL kopieren')}
+          </button>
           <button class="btn btn-secondary btn-sm" data-action="preview" data-type="${type.id}">
             ${translate('plugins.spotlight.runtime.cards.preview', 'Preview')}
           </button>

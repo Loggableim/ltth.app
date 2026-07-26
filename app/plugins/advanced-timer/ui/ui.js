@@ -369,6 +369,12 @@ function buildTimerCard(t) {
     card.className = 'at-timer-card';
     card.id = 'tc-' + t.id;
     const overlayUrl = window.location.origin + '/advanced-timer/overlay?timer=' + t.id;
+    const tiktokCopyKey = 'common.tiktok_studio.copy_url';
+    const translatedTikTokCopy = window.i18n?.t?.(tiktokCopyKey);
+    const tiktokCopyLabel = translatedTikTokCopy &&
+      translatedTikTokCopy !== tiktokCopyKey
+        ? translatedTikTokCopy
+        : 'TikTok-Studio-URL kopieren';
 
     card.innerHTML =
         // Header
@@ -399,6 +405,7 @@ function buildTimerCard(t) {
           '<span style="font-size:0.78rem;color:var(--color-text-secondary);flex-shrink:0;">' + tr('overlay') + '</span>' +
           '<span class="at-overlay-url-text">' + overlayUrl + '</span>' +
           '<button class="btn btn-xs btn-secondary copy-url-btn" title="' + tr('copyOverlayUrl') + '">' + tr('copyOverlayUrl') + '</button>' +
+          '<button type="button" class="btn btn-xs btn-secondary" data-copy-tiktok-studio-url data-overlay-url-source="self" data-overlay-url-attribute="data-url" data-url="' + escapeHtml(overlayUrl) + '" data-i18n="common.tiktok_studio.copy_url">' + escapeHtml(tiktokCopyLabel) + '</button>' +
         '</div>' +
         // Settings section
         '<button class="at-section-toggle" data-sec="settings">' + tr('settings') + ' <span class="chevron">' + tr('chevron') + '</span></button>' +

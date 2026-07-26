@@ -30,6 +30,18 @@ function translations(values = {}) {
   }]));
 }
 
+function writeAppLocales(repoRoot, values) {
+  const localesRoot = path.join(repoRoot, 'app', 'locales');
+  fs.mkdirSync(localesRoot, { recursive: true });
+  locales.forEach((locale) => {
+    fs.writeFileSync(
+      path.join(localesRoot, `${locale}.json`),
+      JSON.stringify(values[locale]),
+      'utf8'
+    );
+  });
+}
+
 describe('plugin UI i18n audit', () => {
   let repoRoot;
 
@@ -95,6 +107,26 @@ describe('plugin UI i18n audit', () => {
     const errors = auditPluginUi({ repoRoot, catalog: { plugins: [first, second] } }).errors.join('\n');
 
     expect(errors).toContain('en: UI translation collision common.save between fixture/ui.html and second/ui.html');
+  });
+
+  test('accepts common UI keys supplied by the app locale catalog', () => {
+    writeAppLocales(repoRoot, Object.fromEntries(locales.map((locale) => [locale, {
+      common: {
+        tiktok_studio: {
+          copy_url: locale === 'de' ? 'TikTok-Studio-URL kopieren' : `Copy TikTok Studio URL ${locale}`
+        }
+      }
+    }])));
+    const plugin = writeFixturePlugin(repoRoot, 'fixture', {
+      html: '<button data-i18n="common.tiktok_studio.copy_url">Copy TikTok Studio URL</button>',
+      translations: translations()
+    });
+
+    const errors = auditPluginUi({ repoRoot, catalog: { plugins: [plugin] } }).errors;
+
+    expect(errors).not.toEqual(expect.arrayContaining([
+      expect.stringContaining('missing locale leaf common.tiktok_studio.copy_url')
+    ]));
   });
 
   test('ignores dynamic translation-key templates that cannot be audited statically', () => {

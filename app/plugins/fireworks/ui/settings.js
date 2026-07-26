@@ -21,6 +21,11 @@ const BENCHMARK_CONFIG = {
 // ============================================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
+    const overlayUrlInput = document.getElementById('fireworks-overlay-url');
+    if (overlayUrlInput) {
+        overlayUrlInput.value = `${window.location.origin}/fireworks/overlay`;
+    }
+
     // Initialize i18n first
     if (window.i18n) {
         await window.i18n.init();

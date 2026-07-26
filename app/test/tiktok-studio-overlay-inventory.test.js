@@ -89,6 +89,48 @@ const STRAIGHTFORWARD_SURFACES = [
     html: 'plugins/webgpu-weather-control/ui.html',
     selectors: ['#overlayUrl'],
     existingCopyToken: 'id="copyOverlayUrlBtn"'
+  },
+  {
+    html: 'plugins/advanced-timer/ui.html',
+    sources: ['plugins/advanced-timer/ui/ui.js'],
+    selectors: ['self'],
+    existingCopyToken: 'class="btn btn-xs btn-secondary copy-url-btn"'
+  },
+  {
+    html: 'plugins/clarityhud/ui/main.html',
+    sources: ['plugins/clarityhud/ui/main.js'],
+    selectors: ['#chat-url', '#full-url', '#multi-url', '#stream-url'],
+    existingCopyToken: 'data-action="copy-url"'
+  },
+  {
+    html: 'plugins/coinbattle/ui.html',
+    sources: ['plugins/coinbattle/ui.js'],
+    selectors: ['#pyramid-overlay-url', '#overlay-url'],
+    existingCopyToken: 'id="btn-copy-url"'
+  },
+  {
+    html: 'plugins/fireworks/ui/settings.html',
+    sources: ['plugins/fireworks/ui/settings.js'],
+    selectors: ['#fireworks-overlay-url'],
+    existingCopyToken: 'id="copy-overlay-url"'
+  },
+  {
+    html: 'plugins/goals/ui.html',
+    sources: ['plugins/goals/ui.js'],
+    selectors: ['self', 'self'],
+    existingCopyToken: 'data-action="copy-multigoal-url"'
+  },
+  {
+    html: 'plugins/spotlight/ui/main.html',
+    sources: ['plugins/spotlight/ui/main.js'],
+    selectors: ['self'],
+    existingCopyToken: 'data-action="copy"'
+  },
+  {
+    html: 'plugins/webgpu-fireworks/ui/settings.html',
+    sources: ['plugins/webgpu-fireworks/ui/settings.js'],
+    selectors: ['#webgpu-fireworks-overlay-url'],
+    existingCopyToken: 'id="copy-overlay-url"'
   }
 ];
 

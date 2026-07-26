@@ -230,6 +230,12 @@ function renderGoals() {
                     <div class="overlay-url">
                         ${overlayUrl}
                         <button class="btn btn-primary copy-btn" data-action="copy-url" data-url="${escapeHtml(overlayUrl)}">${t('plugins.goals.goals.ui.runtime.copy', 'Copy')}</button>
+                        <button type="button" class="btn btn-primary copy-btn"
+                                data-copy-tiktok-studio-url
+                                data-overlay-url-source="self"
+                                data-overlay-url-attribute="data-url"
+                                data-url="${escapeHtml(overlayUrl)}"
+                                data-i18n="common.tiktok_studio.copy_url">${t('common.tiktok_studio.copy_url', 'TikTok-Studio-URL kopieren')}</button>
                     </div>
                 </div>
 
@@ -1128,6 +1134,13 @@ function renderMultiGoalCard(multigoal) {
                             data-action="copy-multigoal-url" data-url="${escapeHtml(overlayUrl)}">
                             📋 ${t('plugins.goals.goals.ui.runtime.copy', 'Copy')}
                     </button>
+                    <button type="button" class="btn btn-secondary"
+                            style="padding: 8px 16px;"
+                            data-copy-tiktok-studio-url
+                            data-overlay-url-source="self"
+                            data-overlay-url-attribute="data-url"
+                            data-url="${escapeHtml(overlayUrl)}"
+                            data-i18n="common.tiktok_studio.copy_url">${t('common.tiktok_studio.copy_url', 'TikTok-Studio-URL kopieren')}</button>
                 </div>
             </div>
 

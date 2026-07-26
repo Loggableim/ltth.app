@@ -286,6 +286,11 @@ const BENCHMARK_CONFIG = {
 // ============================================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
+    const overlayUrlInput = document.getElementById('webgpu-fireworks-overlay-url');
+    if (overlayUrlInput) {
+        overlayUrlInput.value = `${window.location.origin}/webgpu-fireworks/overlay`;
+    }
+
     // Initialize i18n first
     if (window.i18n) {
         await window.i18n.init();
