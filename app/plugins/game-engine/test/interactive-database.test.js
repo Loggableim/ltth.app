@@ -549,7 +549,7 @@ describe('GameEngineDatabase interactive persistence', () => {
     expect(database.getELOLeaderboard('connect4', 10)[0]).toMatchObject({ playerId, username: playerId });
   });
 
-  test('persists one open Connect4 challenge and atomically records its eligible claimant', () => {
+  test('persists FIFO open Connect4 challenges and atomically records the first eligible claimant', () => {
     const opened = database.createInteractiveChallenge({
       gameType: 'connect4',
       openerId: 'opener-1',
@@ -568,14 +568,16 @@ describe('GameEngineDatabase interactive persistence', () => {
       status: 'open'
     });
     expect(database.getOpenInteractiveChallenge(101000)).toMatchObject({ challengeId: opened.challengeId });
-    expect(() => database.createInteractiveChallenge({
+    const second = database.createInteractiveChallenge({
       gameType: 'connect4',
       openerId: 'other',
       openerDisplayName: 'Other',
       openerAvatarSource: '',
       expiresAtMs: 104000,
       createdAt: 100001
-    })).toThrow(/open/i);
+    });
+    expect(database.listOpenInteractiveChallenges(101000).map(challenge => challenge.challengeId))
+      .toEqual([opened.challengeId, second.challengeId]);
 
     expect(database.claimInteractiveChallenge(opened.challengeId, {
       participantId: 'acceptor-2',
@@ -586,7 +588,10 @@ describe('GameEngineDatabase interactive persistence', () => {
       claimedById: 'acceptor-2',
       claimedByDisplayName: 'Acceptor Two'
     });
-    expect(database.getOpenInteractiveChallenge(102000)).toBeNull();
+    expect(database.getOpenInteractiveChallenge(102000)).toMatchObject({ challengeId: second.challengeId });
+    expect(database.listOpenInteractiveChallenges(102000)).toEqual([
+      expect.objectContaining({ challengeId: second.challengeId, openerId: 'other', status: 'open' })
+    ]);
   });
 
   test('expires an unclaimed interactive challenge without allowing recovery to revive it', () => {
