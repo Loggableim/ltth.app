@@ -90,6 +90,7 @@ loadClerkEnvFallback();
 const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
+const { Adapter } = require('socket.io-adapter');
 const multer = require('multer');
 const crypto = require('crypto');
 
@@ -135,6 +136,14 @@ const getSessionExtractor = () => {
 
 // Import New Modules
 const logger = require('./modules/logger');
+const { CloudflaredBinaryManager } = require('./modules/cloudflared-binary-manager');
+const {
+    createPublicOverlayMiddleware,
+    attachPublicSocketPolicy
+} = require('./modules/public-overlay-access');
+const {
+    createPublicOverlayAdapter
+} = require('./modules/public-overlay-socket-adapter');
 const debugLogger = require('./modules/debug-logger');
 const { apiLimiter, authLimiter, uploadLimiter, pluginLimiter, iftttLimiter } = require('./modules/rate-limiter');
 const OBSWebSocket = require('./modules/obs-websocket');
@@ -214,6 +223,7 @@ const CLERK_CSP_SOURCES = buildClerkCspSources();
 // ========== EXPRESS APP ==========
 const app = express();
 const server = http.createServer(app);
+let networkManager;
 
 // Trust proxy configuration for rate limiting when behind a reverse proxy
 // Set to 1 for single proxy (nginx, cloudflare, etc.), or 'loopback' for localhost only
@@ -221,6 +231,8 @@ const server = http.createServer(app);
 if (process.env.TRUST_PROXY === 'true' || process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
 }
+
+app.use(createPublicOverlayMiddleware({ logger }));
 
 // Clerk's frontend API proxy must run before body parsing so auth flows can
 // forward request bodies without reserializing them.
@@ -262,6 +274,8 @@ const io = socketIO(server, {
     // Allow EIO 4 (Socket.IO 4.x)
     allowEIO3: true
 });
+io.adapter(createPublicOverlayAdapter(Adapter));
+attachPublicSocketPolicy({ io, logger });
 io.sockets.setMaxListeners(50);
 
 // Middleware
@@ -540,7 +554,13 @@ initState.setDatabaseReady();
 
 // ========== NETWORK MANAGER ==========
 const NetworkManager = require('./modules/network-manager');
-const networkManager = new NetworkManager(db);
+const cloudflaredBinaryManager = new CloudflaredBinaryManager({
+    toolsRoot: path.join(configPathManager.getDefaultConfigDir(), 'runtime-tools'),
+    logger
+});
+networkManager = new NetworkManager(db, {
+    cloudflaredBinaryManager
+});
 const { bindAddress: BIND_ADDRESS } = networkManager.init();
 
 // Ensure soundboard_enabled has a default value so that alerts.js and the
