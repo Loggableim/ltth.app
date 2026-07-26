@@ -204,3 +204,38 @@ last path remains text-only and cannot create an element or execute a handler.
   emitted.
 
 Review fix round 2 implementation commit: `c60e00ac`
+
+## Review fix round 3
+
+Remaining review finding 3 addressed on 2026-07-26.
+
+### RED evidence
+
+- The existing real JSDOM overlay harness first completed a successful snapshot
+  with `/` as the known GCCE prefix, then forced the next live reconnect state
+  fetch to throw.
+- The reconnect controller's sparse fallback rendered
+  `!eggs · !hatch [slot] · 0 seconds`: it reset the known prefix and
+  `applySnapshot` substituted the disabled canonical `eggs` command.
+- The focused suite executed 4 tests; only the new reconnect regression failed.
+
+### Fix
+
+- A single safe fallback reference builder now defines `eier`, `hatch`,
+  `inventory`, `monster`, and `battle` for any known prefix.
+- Initial rendering, sparse `applySnapshot` input, and reconnect fetch failure
+  all use those same references.
+- Reconnect fallback preserves the last known dynamic GCCE prefix. Text-only
+  rendering and hint sanitization are unchanged.
+
+### Verification
+
+- Focused overlay matrix: 3/3 suites, 29/29 tests.
+- Final explicit Stream Monsters/StreamAlchemy/GCCE matrix: 48/48 suites,
+  428/428 tests, 0 snapshots.
+- ESLint on the changed JavaScript test: passed.
+- Locale JSON parse for `de`, `en`, `es`, and `fr`: passed.
+- Cached `git diff --check`: passed; only expected LF-to-CRLF notices were
+  emitted.
+
+Review fix round 3 implementation commit: `07cfad3b`
