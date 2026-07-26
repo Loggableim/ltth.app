@@ -11,8 +11,17 @@
  */
 
 const os = require('os');
-const { spawn } = require('child_process');
+const { spawn: defaultSpawn } = require('child_process');
 const logger = require('./logger');
+
+const QUICK_TUNNEL_URL_PATTERN =
+  /https:\/\/[a-z0-9-]+\.trycloudflare\.com(?![a-z0-9.-])/;
+
+function createOverlayTunnelError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -56,13 +65,24 @@ const PRIVATE_RANGES_REGEX = /^https?:\/\/(10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|
 // ── NetworkManager ──────────────────────────────────────────────────────────
 
 class NetworkManager {
-  constructor(db) {
+  constructor(db, {
+    spawnImpl = defaultSpawn,
+    cloudflaredBinaryManager = null,
+    overlayTunnelTimeoutMs = 60_000
+  } = {}) {
     this.db = db;
+    this.spawnImpl = spawnImpl;
+    this.cloudflaredBinaryManager = cloudflaredBinaryManager;
+    this.overlayTunnelTimeoutMs = overlayTunnelTimeoutMs;
 
     // Runtime state
     this.tunnelProcess = null;
     this.tunnelURL = null;
     this.tunnelStarting = false;
+    this.overlayTunnelProcess = null;
+    this.overlayTunnelURL = null;
+    this.overlayTunnelStarting = null;
+    this.overlayTunnelLastError = null;
 
     // Loaded from DB on init()
     this.bindMode = 'local';
@@ -203,6 +223,9 @@ class NetworkManager {
         origins.add(this.tunnelURL.replace('https://', 'http://'));
       }
     }
+    if (this.overlayTunnelURL) {
+      origins.add(this.overlayTunnelURL);
+    }
 
     // Extra CORS origins configured by the user
     for (const origin of this.corsExtra) {
@@ -315,6 +338,179 @@ class NetworkManager {
     logger.info('🚇 Tunnel stopped.');
   }
 
+  async ensureOverlayQuickTunnel(port) {
+    if (this.overlayTunnelProcess && this.overlayTunnelURL) {
+      return {
+        tunnelURL: this.overlayTunnelURL,
+        reused: true
+      };
+    }
+
+    if (this.overlayTunnelStarting) {
+      const tunnelURL = await this.overlayTunnelStarting;
+      return { tunnelURL, reused: true };
+    }
+
+    const starting = this._startOverlayQuickTunnel(port);
+    this.overlayTunnelStarting = starting;
+    try {
+      const tunnelURL = await starting;
+      return { tunnelURL, reused: false };
+    } finally {
+      if (this.overlayTunnelStarting === starting) {
+        this.overlayTunnelStarting = null;
+      }
+    }
+  }
+
+  async _startOverlayQuickTunnel(port) {
+    if (!this.cloudflaredBinaryManager) {
+      this.overlayTunnelLastError = 'Quick Tunnel installer is unavailable';
+      throw createOverlayTunnelError(
+        'OVERLAY_TUNNEL_INSTALL_FAILED',
+        this.overlayTunnelLastError
+      );
+    }
+
+    let executablePath;
+    try {
+      executablePath = await this.cloudflaredBinaryManager.ensureInstalled();
+    } catch (_) {
+      this.overlayTunnelLastError = 'Quick Tunnel installation failed';
+      throw createOverlayTunnelError(
+        'OVERLAY_TUNNEL_INSTALL_FAILED',
+        this.overlayTunnelLastError
+      );
+    }
+
+    return new Promise((resolve, reject) => {
+      let child;
+      let completed = false;
+      let output = '';
+
+      const finishError = (code, message) => {
+        if (completed) return;
+        completed = true;
+        clearTimeout(timer);
+        this.overlayTunnelLastError = message;
+        if (child && !child.killed) {
+          try {
+            child.kill('SIGTERM');
+          } catch (_) {}
+        }
+        if (this.overlayTunnelProcess === child) {
+          this.overlayTunnelProcess = null;
+          this.overlayTunnelURL = null;
+        }
+        reject(createOverlayTunnelError(code, message));
+      };
+
+      const finishSuccess = tunnelURL => {
+        if (completed) return;
+        completed = true;
+        clearTimeout(timer);
+        this.overlayTunnelURL = tunnelURL;
+        this.overlayTunnelLastError = null;
+        resolve(tunnelURL);
+      };
+
+      const timer = setTimeout(() => {
+        finishError(
+          'OVERLAY_TUNNEL_START_TIMEOUT',
+          'Quick Tunnel start timed out'
+        );
+      }, this.overlayTunnelTimeoutMs);
+
+      try {
+        child = this.spawnImpl(
+          executablePath,
+          [
+            'tunnel',
+            '--no-autoupdate',
+            '--config',
+            this.cloudflaredBinaryManager.getMissingConfigPath(),
+            '--url',
+            `http://127.0.0.1:${port}`
+          ],
+          {
+            windowsHide: true,
+            stdio: ['ignore', 'pipe', 'pipe']
+          }
+        );
+        this.overlayTunnelProcess = child;
+      } catch (_) {
+        finishError(
+          'OVERLAY_TUNNEL_START_FAILED',
+          'Quick Tunnel process could not be started'
+        );
+        return;
+      }
+
+      const handleOutput = data => {
+        output = `${output}${data.toString()}`.slice(-4096);
+        const match = output.match(QUICK_TUNNEL_URL_PATTERN);
+        if (match) {
+          finishSuccess(match[0]);
+        }
+      };
+
+      child.stdout.on('data', handleOutput);
+      child.stderr.on('data', handleOutput);
+      child.on('error', () => {
+        finishError(
+          'OVERLAY_TUNNEL_START_FAILED',
+          'Quick Tunnel process could not be started'
+        );
+      });
+      child.on('exit', () => {
+        const wasActive = completed && this.overlayTunnelURL;
+        if (!completed) {
+          finishError(
+            'OVERLAY_TUNNEL_START_FAILED',
+            'Quick Tunnel process exited before publishing a URL'
+          );
+          return;
+        }
+        if (this.overlayTunnelProcess === child) {
+          this.overlayTunnelProcess = null;
+          this.overlayTunnelURL = null;
+          if (wasActive) {
+            this.overlayTunnelLastError = 'Quick Tunnel process exited';
+          }
+        }
+      });
+    });
+  }
+
+  stopOverlayQuickTunnel() {
+    const child = this.overlayTunnelProcess;
+    this.overlayTunnelProcess = null;
+    this.overlayTunnelURL = null;
+    this.overlayTunnelLastError = null;
+    if (!child) return;
+    try {
+      child.kill('SIGTERM');
+    } catch (_) {}
+    logger.info('Overlay Quick Tunnel stopped.');
+  }
+
+  getActiveQuickTunnelHosts() {
+    const hosts = new Set();
+    for (const candidate of [this.overlayTunnelURL, this.tunnelURL]) {
+      if (!candidate) continue;
+      try {
+        const hostname = new URL(candidate).hostname.toLowerCase();
+        if (
+          hostname.endsWith('.trycloudflare.com') &&
+          hostname !== 'trycloudflare.com'
+        ) {
+          hosts.add(hostname);
+        }
+      } catch (_) {}
+    }
+    return hosts;
+  }
+
   _spawnTunnel(port) {
     return new Promise((resolve, reject) => {
       const provider = this.tunnelProvider;
@@ -352,7 +548,7 @@ class NetworkManager {
           args.splice(0, args.length, 'tunnel', 'run', cfg.namedTunnel);
         }
 
-        child = spawn(bin, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+        child = this.spawnImpl(bin, args, { stdio: ['ignore', 'pipe', 'pipe'] });
         this.tunnelProcess = child;
 
         const handler = (data) => {
@@ -374,7 +570,7 @@ class NetworkManager {
         if (cfg.subdomain) args.push('--subdomain', cfg.subdomain);
         if (cfg.region) args.push('--region', cfg.region);
 
-        child = spawn(bin, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+        child = this.spawnImpl(bin, args, { stdio: ['ignore', 'pipe', 'pipe'] });
         this.tunnelProcess = child;
 
         // ngrok exposes its API on localhost:4040
@@ -408,7 +604,7 @@ class NetworkManager {
         const args = ['localtunnel', '--port', String(port)];
         if (cfg.subdomain) args.push('--subdomain', cfg.subdomain);
 
-        child = spawn('npx', args, { stdio: ['ignore', 'pipe', 'pipe'] });
+        child = this.spawnImpl('npx', args, { stdio: ['ignore', 'pipe', 'pipe'] });
         this.tunnelProcess = child;
 
         child.stdout.on('data', (data) => {
@@ -432,7 +628,7 @@ class NetworkManager {
         const parts = command.split(/\s+/);
         // Note: simple whitespace splitting does not handle quoted arguments.
         // Document that custom commands should not contain quoted arguments with spaces.
-        child = spawn(parts[0], parts.slice(1), { stdio: ['ignore', 'pipe', 'pipe'] });
+        child = this.spawnImpl(parts[0], parts.slice(1), { stdio: ['ignore', 'pipe', 'pipe'] });
         this.tunnelProcess = child;
 
         const handler = (data) => {
@@ -540,6 +736,12 @@ class NetworkManager {
       tunnelConfig: this._safeTunnelConfig(),
       tunnelURL: this.tunnelURL,
       tunnelStarting: this.tunnelStarting,
+      overlayTunnel: {
+        active: Boolean(this.overlayTunnelProcess && this.overlayTunnelURL),
+        starting: Boolean(this.overlayTunnelStarting),
+        url: this.overlayTunnelURL,
+        lastError: this.overlayTunnelLastError
+      },
       corsExtra: this.corsExtra,
       interfaces: this.getInterfaces(),
       accessURLs: this.getAccessURLs(port),
@@ -630,6 +832,7 @@ class NetworkManager {
   // ── Shutdown ──────────────────────────────────────────────────────────────
 
   shutdown() {
+    this.stopOverlayQuickTunnel();
     this.stopTunnel();
   }
 }
