@@ -215,3 +215,135 @@ notices (`LF will be replaced by CRLF`), with no whitespace errors.
 - No live runtime proof was attempted because Task 3 explicitly forbids reload
   or deployment. Verification is limited to direct bundled-runtime tests and
   static checks in the isolated worktree.
+
+## Review fix round 1
+
+Implementation commit: `0f02e08e`
+(`fix(streammonsters): harden public battle replay`)
+
+All seven review findings were reproduced against `bc4d98de` before production
+changes. The corrected RED baseline contained 3 failing suites, 11 failing
+tests, 17 passing tests, and 0 snapshots.
+
+### Public/private replay boundary
+
+The unauthenticated replay route now calls only
+`getPublicNormalizedReplay()`. It never calls the full replay reader.
+Public v5 pages are built exclusively from `public_payload_json` and then pass
+through a second event-type-specific allowlist projection.
+
+Public action projections expose only:
+
+- durable event/action sequence;
+- round, actor slot, and target slot;
+- requested/locked choice and safe fallback reason;
+- safe skill presentation fields;
+- reduced hit, outcome, retaliation, and status-effect results.
+
+They omit viewer IDs, participant IDs, monster database IDs, provider event
+IDs, persisted event IDs, and private before/after state internals. A real
+SQLite + `BattleMatchService` + registered-route integration test proves the
+boundary without mocking service forwarding.
+
+Full v3/v5 replay remains available only through the separate
+`getPrivateNormalizedReplay()` service method. No public route exposes it.
+
+### One lossless cursor and decision provenance
+
+`streammonsters_match_events.sequence` is now the single durable paging
+domain. Additive nullable `event_sequence` columns attach both decision and
+action rows to that global sequence. Public pages select one ordered event
+range and derive their actions and decisions only from that range, preventing
+cross-table cursor skips and duplicates.
+
+Public decision provenance contains:
+
+```text
+sequence, round, window, slot, choice, source, timeout
+```
+
+Both viewer and deterministic-timeout decisions are persisted as ordered
+events. Provider IDs and viewer/participant identifiers remain private.
+Multi-page coverage starts with early non-action events and proves that later
+actions are returned once, in order, without loss.
+
+### Exclusive deadlines and recovery containment
+
+Roster, action, and stat submissions now consistently reject at
+`now >= deadline`; recovery consistently claims at `deadline <= now`.
+A file-backed two-connection test covers all three exact boundaries.
+
+Recovery now runs per roster match, action match, and stat prompt in isolated
+immediate transactions. Missing selected monsters deterministically fall back
+to the queued owned monster; if neither exists, the affected match is
+cancelled and its participants are released without aborting unrelated
+recovery.
+
+The interval uses a guarded sweep entrypoint. Per-item and outer sweep errors
+are logged and contained. After-commit callbacks are invoked independently;
+one failing socket callback is logged and cannot prevent later callbacks or
+escape as a process-fatal exception. Fake-timer and injected-error tests prove
+continuation and timer cleanup.
+
+### Runtime mechanics and coverage correction
+
+The deterministic v5 resolver now applies every catalog-advertised mechanic:
+
+- burn persists, ticks in sequence, and expires within a capped budget;
+- evade uses a deterministic seeded roll and is consumed by the next incoming
+  hit;
+- thorns and reflect retaliate sequentially and honor shield/HP/KO rules;
+- pierce bypasses the advertised amount instead of merely deleting extra
+  shield;
+- heal, lifesteal, shield, multihit, agility initiative, and weaken/debuff all
+  produce persisted state plus replay evidence.
+
+Burn, evade, thorns, reflect, and weaken stacks/chances are bounded. Charge,
+shield-before-HP, sequential multi-hit, and early KO contracts remain intact.
+
+Coverage now includes:
+
+- a real worker-thread two-connection queue-to-reservation race;
+- true level-gap 3 rejection before 30 seconds and widening at 30 seconds;
+- a closer recent-rematch candidate avoided for a valid alternative;
+- real multi-page v5 cursor behavior and decision provenance;
+- service-backed route privacy;
+- all 24 templates at levels 1/5/10/15/20 using A, B, and C against rotating
+  opponents, with runtime evidence for every declared effect family.
+
+### Review-fix verification
+
+Targeted GREEN after implementation:
+
+```text
+3/3 suites passed
+28/28 tests passed
+0 snapshots
+```
+
+Focused compatibility GREEN:
+
+```text
+16/16 suites passed
+154/154 tests passed
+0 snapshots
+```
+
+Recursive explicit relevant-suite GREEN, including
+`plugins/game-engine/test/gcce-integration.test.js`:
+
+```text
+51/51 suites passed
+459/459 tests passed
+0 snapshots
+62.956 seconds
+```
+
+ESLint over all eight changed JavaScript production/test files returned exit
+0. Locale JSON parsing returned `de:ok`, `en:ok`, `es:ok`, and `fr:ok`.
+`git diff --check` returned exit 0 with only Git's line-ending conversion
+notices.
+
+No v3 rows were rewritten, no Collector tiers changed, no duplicate Raw GCCE
+ingress was introduced, and no push, live reload, deployment, or application
+restart was performed.
