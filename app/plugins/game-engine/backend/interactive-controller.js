@@ -393,7 +393,8 @@ class InteractiveController {
           if (!challenge) break;
           if (
             this._isValidAvatarSource(challenge.openerAvatarSource) &&
-            !this.registry.getByParticipant(challenge.openerId)
+            !this.registry.getByParticipant(challenge.openerId) &&
+            !this.database.getActiveGamePlayerLockout?.(challenge.openerId, now)
           ) {
             break;
           }
@@ -494,20 +495,44 @@ class InteractiveController {
     if (!pending || pending.status !== 'fallback_pending') {
       return { success: false, error: 'fallback_not_pending' };
     }
-    if (this.registry.list().length >= this._settings().maxConcurrentInteractiveSessions) {
-      return { success: false, error: 'interactive_session_limit' };
-    }
+    const resolvedHostDisplayName = String(hostDisplayName || '').trim() ||
+      this.resolveHostName?.() ||
+      'Streamer';
+    let invalidated = false;
     try {
       const result = this.database.transaction(() => {
         const challenge = this.database.getInteractiveChallenge(challengeId);
         if (!challenge || challenge.status !== 'fallback_pending') {
           return { success: false, error: 'fallback_not_pending' };
         }
+        if (this.database.getActiveGamePlayerLockout?.(challenge.openerId, this.now())) {
+          const terminal = this.database.invalidateInteractiveChallenge(challengeId, this.now());
+          if (!terminal) throw new Error('fallback_terminal_update_failed');
+          invalidated = true;
+          return { success: false, error: 'game_lockout' };
+        }
+        if (this.registry.list().length >= this._settings().maxConcurrentInteractiveSessions) {
+          return { success: false, error: 'interactive_session_limit' };
+        }
         const started = this.startMatch({
           gameType: 'connect4',
           viewerId: challenge.openerId,
           viewerDisplayName: challenge.openerDisplayName,
-          hostDisplayName,
+          hostDisplayName: resolvedHostDisplayName,
+          participants: [
+            {
+              id: challenge.openerId,
+              displayName: challenge.openerDisplayName,
+              role: 'viewer',
+              avatarSource: challenge.openerAvatarSource || ''
+            },
+            {
+              id: 'streamer',
+              displayName: resolvedHostDisplayName,
+              role: 'host',
+              avatarSource: ''
+            }
+          ],
           triggerType: 'matchmaking_timeout',
           triggerValue: 'connect4'
         });
@@ -516,7 +541,7 @@ class InteractiveController {
         if (!terminal) throw new Error('fallback_terminal_update_failed');
         return { success: true, action: 'fallback_started', challenge: terminal, sessionId: started.sessionId };
       });
-      if (result.success) this.emitState();
+      if (result.success || invalidated) this.emitState();
       return result;
     } catch (error) {
       this.emitState();
