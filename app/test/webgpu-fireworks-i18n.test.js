@@ -44,6 +44,12 @@ function pluginMessages(locale) {
   return JSON.parse(read(`locales/${locale}.json`)).plugins['webgpu-fireworks'];
 }
 
+function appMessages(locale) {
+  return JSON.parse(
+    fs.readFileSync(path.join(appRoot, 'locales', `${locale}.json`), 'utf8')
+  );
+}
+
 function valueAt(object, dottedPath) {
   return dottedPath.split('.').reduce((value, segment) => value?.[segment], object);
 }
@@ -285,6 +291,7 @@ describe('WebGPU Fireworks user-facing i18n', () => {
 
   test.each(locales)('%s resolves every Settings and Goals finale fixture key', locale => {
     const webgpu = pluginMessages(locale);
+    const app = appMessages(locale);
     const goals = JSON.parse(fs.readFileSync(path.join(goalsRoot, 'locales', `${locale}.json`), 'utf8'));
     const settingsHtml = read('ui/settings.html');
     const settingsKeys = [...settingsHtml.matchAll(/data-i18n="([^"]+)"/g)].map(match => match[1]);
@@ -300,7 +307,16 @@ describe('WebGPU Fireworks user-facing i18n', () => {
       'goals.modal.firework_finale_length_long',
       ...builtInIds.map(id => `goals.modal.firework_finale_style_${id.replace(/-/g, '_')}`)
     ];
-    settingsKeys.forEach(key => expect(valueAt(webgpu, settingsLocalePath(key))).toBeDefined());
+    settingsKeys.forEach(key => {
+      const value = key.startsWith('plugins.webgpu-fireworks.')
+        ? valueAt(webgpu, settingsLocalePath(key))
+        : valueAt(app, key);
+      expect({ locale, key, value }).toEqual({
+        locale,
+        key,
+        value: expect.any(String)
+      });
+    });
     const goalMessages = goals.plugins?.goals;
     goalsKeys.forEach(key => expect(valueAt(goalMessages, goalsLocalePath(`plugins.goals.${key}`))).toEqual(expect.any(String)));
   });
