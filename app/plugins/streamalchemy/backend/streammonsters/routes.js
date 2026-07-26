@@ -138,9 +138,14 @@ class StreamMonstersRoutes {
       (req, res) => {
         const rawCursor = Number.parseInt(req.query?.cursor, 10);
         const cursor = Number.isInteger(rawCursor) && rawCursor > 0 ? rawCursor : 0;
-        const replay = this.battleMatchService?.getNormalizedReplay?.(
+        const rawLimit = Number.parseInt(req.query?.limit, 10);
+        const limit = Number.isInteger(rawLimit) && rawLimit > 0
+          ? Math.min(rawLimit, 100)
+          : 50;
+        const replay = this.battleMatchService?.getPublicNormalizedReplay?.(
           String(req.params?.battleId || ''),
-          cursor
+          cursor,
+          limit
         ) || null;
         if (!replay) return res.status(404).json({ error: 'battle_not_found' });
         return res.json({ success: true, ...replay });

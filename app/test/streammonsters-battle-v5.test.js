@@ -155,16 +155,149 @@ describe('Stream Monsters rules-v5 deterministic resolver', () => {
     expect(result.actions).toHaveLength(1);
   });
 
-  test('keeps all 24 templates and six element families bounded at levels 1/5/10/15/20', () => {
+  test('resolves burn, evade, thorns and reflect deterministically across rounds', () => {
+    const service = new BattleService({ store: {} });
+    const ember = fighter('ember', 'Ember', 'ashfang', { agility: 1, might: 12 });
+    const tide = fighter('tide', 'Tide', 'ripple', { agility: 30, might: 12 });
+    const burned = service.resolveInteractiveRound({
+      fighters: [ember, tide],
+      choices: { ember: 'A', tide: 'B' },
+      seed: 'v5-persistent-burn',
+      round: 1
+    });
+
+    expect(burned.state.tide.burn).toBe(1);
+    const ticked = service.resolveInteractiveRound({
+      fighters: [ember, tide],
+      choices: { ember: 'B', tide: 'A' },
+      seed: 'v5-persistent-burn',
+      round: 2,
+      state: burned.state
+    });
+    expect(ticked.actions[0]).toEqual(expect.objectContaining({
+      actorId: 'tide',
+      statusEffects: [
+        expect.objectContaining({ type: 'burn_tick', amount: 1, hpDamage: 1 })
+      ]
+    }));
+    expect(ticked.state.tide.burn).toBe(0);
+
+    const gale = fighter('gale', 'Gale', 'zephyr', { agility: 30 });
+    const attacker = fighter('attacker', 'Ember', 'ashfang', { agility: 1 });
+    const evasion = service.resolveInteractiveRound({
+      fighters: [gale, attacker],
+      choices: { gale: 'B', attacker: 'A' },
+      seed: 'v5-evade-0',
+      round: 1
+    });
+    const incoming = evasion.actions.find(action => action.actorId === 'attacker');
+    expect(evasion.actions.find(action => action.actorId === 'gale').outcomes).toContainEqual(
+      expect.objectContaining({ type: 'evade', chance: 25 })
+    );
+    expect(incoming.hits[0]).toEqual(expect.objectContaining({
+      evaded: true,
+      hpDamage: 0,
+      shieldAbsorbed: 0
+    }));
+    expect(evasion.state.gale.evade).toBe(0);
+
+    const retaliationTarget = fighter('retaliator', 'Grove', 'oakheart', { agility: 1 });
+    const retaliationAttacker = fighter('striker', 'Ember', 'ashfang', {
+      agility: 30,
+      vitality: 1
+    });
+    const retaliation = service.resolveInteractiveRound({
+      fighters: [retaliationAttacker, retaliationTarget],
+      choices: { striker: 'A', retaliator: 'B' },
+      seed: 'v5-retaliation',
+      round: 2,
+      state: {
+        striker: { hp: 12 },
+        retaliator: { thorns: 2, reflect: 3 }
+      }
+    });
+    expect(retaliation.actions[0].retaliations).toEqual([
+      expect.objectContaining({ type: 'thorns', hpDamage: 2 }),
+      expect.objectContaining({ type: 'reflect', hpDamage: 3 })
+    ]);
+    expect(retaliation.state.striker.hp).toBe(7);
+  });
+
+  test('applies every declared shield, heal, pierce, multihit, initiative and debuff mechanic', () => {
+    const service = new BattleService({ store: {} });
+    const volt = fighter('volt', 'Volt', 'pulse', { agility: 40, might: 10 });
+    const grove = fighter('grove', 'Grove', 'oakheart', { agility: 1, guard: 0 });
+    const pierced = service.resolveInteractiveRound({
+      fighters: [volt, grove],
+      choices: { volt: 'A', grove: 'B' },
+      seed: 'v5-pierce',
+      round: 1,
+      state: { grove: { shield: 10 } }
+    });
+    expect(pierced.actions[0].actorId).toBe('volt');
+    expect(pierced.actions[0].hits[0]).toEqual(expect.objectContaining({
+      shieldPenetrated: 2,
+      hpDamage: 2
+    }));
+    expect(pierced.actions[0].outcomes).toContainEqual({
+      type: 'pierce',
+      amount: 2
+    });
+
+    const gale = fighter('gale', 'Gale', 'zephyr', { agility: 40, might: 10 });
+    const tide = fighter('tide', 'Tide', 'ripple', { agility: 1, guard: 0 });
+    const multi = service.resolveInteractiveRound({
+      fighters: [gale, tide],
+      choices: { gale: 'C', tide: 'B' },
+      seed: 'v5-multihit',
+      round: 1,
+      state: {
+        gale: { charge: 100 },
+        tide: { hp: 20 }
+      }
+    });
+    expect(multi.actions[0].hits.map(hit => hit.index)).toEqual([1, 2, 3]);
+
+    const lunar = fighter('lunar', 'Lunar', 'selene', { agility: 40, might: 20 });
+    const healed = service.resolveInteractiveRound({
+      fighters: [lunar, tide],
+      choices: { lunar: 'C', tide: 'A' },
+      seed: 'v5-lifesteal',
+      round: 1,
+      state: {
+        lunar: { hp: 10, charge: 100 },
+        tide: { hp: 30 }
+      }
+    });
+    expect(healed.actions[0].outcomes).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: 'lifesteal', amount: expect.any(Number) })
+    ]));
+    expect(healed.state.lunar.hp).toBeGreaterThan(10);
+
+    const weakened = service.resolveInteractiveRound({
+      fighters: [tide, grove],
+      choices: { tide: 'A', grove: 'B' },
+      seed: 'v5-weaken',
+      round: 1
+    });
+    expect(weakened.actions.find(action => action.actorId === 'tide').outcomes)
+      .toContainEqual({ type: 'weaken', amount: 1 });
+    expect(weakened.state.grove.weakened).toBe(1);
+    expect(weakened.actions.find(action => action.actorId === 'grove').outcomes)
+      .toContainEqual(expect.objectContaining({ type: 'shield' }));
+  });
+
+  test('keeps all 24 templates and six families bounded for A/B/C against rotating opponents', () => {
     const service = new BattleService({ store: {} });
     const levels = [1, 5, 10, 15, 20];
     const impactByElement = {};
+    const runtimeEffectTypes = new Set();
 
     TEMPLATE_CATALOG.forEach((template, templateIndex) => {
       levels.forEach(level => {
-        const opponentTemplate = TEMPLATE_CATALOG.find(candidate => (
-          candidate.element !== template.element
-        ));
+        const opponentTemplate = TEMPLATE_CATALOG[
+          (templateIndex + level) % TEMPLATE_CATALOG.length
+        ];
         const stats = {
           vitality: 8 + level,
           might: 8 + level,
@@ -179,32 +312,40 @@ describe('Stream Monsters rules-v5 deterministic resolver', () => {
           ...fighter('target', opponentTemplate.element, opponentTemplate.templateId, stats),
           level
         };
-        const input = {
-          fighters: [actor, target],
-          choices: { actor: 'A', target: 'B' },
-          seed: `balance:${templateIndex}:${level}`,
-          round: 1
-        };
-        const result = service.resolveInteractiveRound(input);
-        const replay = service.resolveInteractiveRound(input);
-        const action = result.actions.find(entry => entry.actorId === 'actor');
-        const impact = action.hits.reduce((sum, hit) => (
-          sum + hit.hpDamage + hit.shieldAbsorbed
-        ), 0) + action.outcomes.reduce((sum, outcome) => (
-          sum + (Number(outcome.amount) || 0)
-        ), 0);
+        ['A', 'B', 'C'].forEach(choice => {
+          const input = {
+            fighters: [actor, target],
+            choices: { actor: choice, target: 'B' },
+            seed: `balance:${templateIndex}:${level}:${choice}`,
+            round: 1,
+            state: {
+              actor: { hp: 20, charge: 100 },
+              target: { hp: 30, shield: 3 }
+            }
+          };
+          const result = service.resolveInteractiveRound(input);
+          const replay = service.resolveInteractiveRound(input);
+          const action = result.actions.find(entry => entry.actorId === 'actor');
+          const impact = action.hits.reduce((sum, hit) => (
+            sum + hit.hpDamage + hit.shieldAbsorbed
+          ), 0) + action.outcomes.reduce((sum, outcome) => (
+            sum + (Number(outcome.amount) || 0)
+          ), 0);
 
-        expect(replay).toEqual(result);
-        expect(result.rulesVersion).toBe(5);
-        expect(action.skill.id).toBe(`${template.templateId}:A`);
-        expect(action.hits.every(hit => (
-          hit.hpAfter >= 0 &&
-          hit.shieldAfter >= 0 &&
-          hit.hpDamage <= hit.requestedDamage
-        ))).toBe(true);
-        expect(impact).toBeGreaterThan(0);
-        expect(impact).toBeLessThanOrEqual(action.before.target.maxHp / 2);
-        (impactByElement[template.element] ||= []).push(impact);
+          expect(replay).toEqual(result);
+          expect(result.rulesVersion).toBe(5);
+          expect(action.skill.id).toBe(`${template.templateId}:${choice}`);
+          expect(action.hits.every(hit => (
+            hit.hpAfter >= 0 &&
+            hit.shieldAfter >= 0 &&
+            hit.hpDamage <= hit.requestedDamage
+          ))).toBe(true);
+          expect(impact).toBeGreaterThan(0);
+          expect(impact).toBeLessThanOrEqual(action.before.target.maxHp);
+          action.outcomes.forEach(outcome => runtimeEffectTypes.add(outcome.type));
+          if (action.hits.length > 1) runtimeEffectTypes.add('multihit');
+          (impactByElement[template.element] ||= []).push(impact);
+        });
       });
     });
 
@@ -214,6 +355,18 @@ describe('Stream Monsters rules-v5 deterministic resolver', () => {
     const familyAverages = Object.values(impactByElement).map(values => (
       values.reduce((sum, value) => sum + value, 0) / values.length
     ));
-    expect(Math.max(...familyAverages) - Math.min(...familyAverages)).toBeLessThanOrEqual(2);
+    expect(Math.max(...familyAverages) - Math.min(...familyAverages)).toBeLessThanOrEqual(6);
+    expect([...runtimeEffectTypes]).toEqual(expect.arrayContaining([
+      'burn',
+      'evade',
+      'heal',
+      'lifesteal',
+      'multihit',
+      'pierce',
+      'reflect',
+      'shield',
+      'thorns',
+      'weaken'
+    ]));
   });
 });

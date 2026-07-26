@@ -20,9 +20,11 @@ function initialFighterState(fighter, override = {}) {
     maxHp: maximum,
     shield: Math.max(0, Number(override.shield) || 0),
     charge: Math.max(0, Math.min(100, Number(override.charge) || 0)),
-    thorns: Math.max(0, Number(override.thorns) || 0),
-    reflect: Math.max(0, Number(override.reflect) || 0),
-    weakened: Math.max(0, Number(override.weakened) || 0)
+    burn: Math.max(0, Math.min(3, Number(override.burn) || 0)),
+    evade: Math.max(0, Math.min(75, Number(override.evade) || 0)),
+    thorns: Math.max(0, Math.min(3, Number(override.thorns) || 0)),
+    reflect: Math.max(0, Math.min(3, Number(override.reflect) || 0)),
+    weakened: Math.max(0, Math.min(3, Number(override.weakened) || 0))
   };
 }
 
@@ -36,11 +38,11 @@ function addShield(state, amount, outcomes) {
   outcomes.push({ type: 'shield', amount: gained });
 }
 
-function heal(state, amount, outcomes) {
+function heal(state, amount, outcomes, type = 'heal') {
   const requested = Math.max(0, Math.round(amount));
   const before = state.hp;
   state.hp = Math.min(state.maxHp, state.hp + requested);
-  outcomes.push({ type: 'heal', requested, amount: state.hp - before });
+  outcomes.push({ type, requested, amount: state.hp - before });
 }
 
 function damageFor(fighter, target, effect) {
@@ -50,17 +52,39 @@ function damageFor(fighter, target, effect) {
   return Math.max(1, Math.round(effect.power + (might * 0.6) - (guard * 0.25) - weakened));
 }
 
-function applyDamage(actor, target, requestedDamage, hitIndex, pierce = 0) {
+function applyDamage(target, requestedDamage, hitIndex, {
+  pierce = 0,
+  evadeChance = 0,
+  evadeRoll = null
+} = {}) {
   const shieldBefore = target.shield;
   const hpBefore = target.hp;
-  const penetrated = Math.min(shieldBefore, Math.max(0, pierce));
-  const shieldAvailable = Math.max(0, shieldBefore - penetrated);
-  const shieldAbsorbed = Math.min(shieldAvailable, requestedDamage);
+  const chance = Math.max(0, Math.min(100, Number(evadeChance) || 0));
+  const evaded = chance > 0 && Number(evadeRoll) < chance;
+  if (evaded) {
+    return {
+      index: hitIndex,
+      requestedDamage,
+      evadeChance: chance,
+      evadeRoll,
+      evaded: true,
+      shieldBefore,
+      shieldPenetrated: 0,
+      shieldAbsorbed: 0,
+      hpBefore,
+      hpDamage: 0,
+      shieldAfter: target.shield,
+      hpAfter: target.hp
+    };
+  }
+  const penetrated = Math.min(requestedDamage, Math.max(0, pierce));
+  const shieldDamage = Math.max(0, requestedDamage - penetrated);
+  const shieldAbsorbed = Math.min(shieldBefore, shieldDamage);
   const hpDamage = Math.min(
     target.hp,
-    Math.max(0, requestedDamage - shieldAbsorbed)
+    penetrated + Math.max(0, shieldDamage - shieldAbsorbed)
   );
-  target.shield = Math.max(0, shieldBefore - penetrated - shieldAbsorbed);
+  target.shield = Math.max(0, shieldBefore - shieldAbsorbed);
   target.hp = Math.max(0, target.hp - hpDamage);
   if (hpDamage > 0) addCharge(target, 25);
   return {
@@ -69,11 +93,36 @@ function applyDamage(actor, target, requestedDamage, hitIndex, pierce = 0) {
     shieldBefore,
     shieldPenetrated: penetrated,
     shieldAbsorbed,
+    evadeChance: chance,
+    evadeRoll,
+    evaded: false,
     hpBefore,
     hpDamage,
     shieldAfter: target.shield,
     hpAfter: target.hp
   };
+}
+
+function applyBurnTick(state, statusEffects) {
+  if (state.burn < 1 || state.hp < 1) return;
+  const amount = Math.min(state.hp, state.burn);
+  const hpBefore = state.hp;
+  state.hp -= amount;
+  state.burn = Math.max(0, state.burn - 1);
+  if (amount > 0) addCharge(state, 25);
+  statusEffects.push({
+    type: 'burn_tick',
+    amount,
+    hpBefore,
+    hpDamage: amount,
+    hpAfter: state.hp,
+    remaining: state.burn
+  });
+}
+
+function applyRetaliation(actorState, type, amount, index) {
+  const hit = applyDamage(actorState, amount, index);
+  return { type, ...hit };
 }
 
 function normalizeChoice(requestedChoice, state) {
@@ -94,7 +143,8 @@ function resolveAction({
   targetState,
   requestedChoice,
   round,
-  sequence
+  sequence,
+  seed
 }) {
   const { choice, choiceFallback } = normalizeChoice(requestedChoice, actorState);
   const skill = SKILL_CATALOG[actor.template_id]?.[choice];
@@ -105,8 +155,31 @@ function resolveAction({
   };
   const hits = [];
   const outcomes = [];
+  const retaliations = [];
+  const statusEffects = [];
   let dealtHpDamage = 0;
 
+  applyBurnTick(actorState, statusEffects);
+  if (actorState.hp <= 0) {
+    return {
+      sequence,
+      round,
+      actorId: actor.monster_id,
+      targetId: target.monster_id,
+      requestedChoice: String(requestedChoice || '').trim().toUpperCase(),
+      choice,
+      choiceFallback,
+      skill: clone(skill),
+      before,
+      after: { actor: clone(actorState), target: clone(targetState) },
+      hits,
+      outcomes,
+      retaliations,
+      statusEffects,
+      terminal: true,
+      skipped: 'burn_ko'
+    };
+  }
   if (choice === 'A') addCharge(actorState, 25);
   if (choice === 'B') addCharge(actorState, 50);
   if (choice === 'C') actorState.charge = 0;
@@ -115,30 +188,67 @@ function resolveAction({
     if (effect.type === 'damage') {
       const total = damageFor({ ...actor, weakened: actorState.weakened }, target, effect);
       const count = Math.max(1, Number(effect.hits) || 1);
+      if (count > 1) outcomes.push({ type: 'multihit', hits: count });
+      const pierce = skill.effects.find(candidate => candidate.type === 'pierce')?.power || 0;
+      if (pierce > 0) outcomes.push({ type: 'pierce', amount: pierce });
       for (let index = 0; index < count && targetState.hp > 0; index += 1) {
         const remaining = total - hits.reduce((sum, hit) => sum + hit.requestedDamage, 0);
         const requested = Math.max(1, Math.ceil(remaining / (count - index)));
-        const pierce = skill.effects.find(candidate => candidate.type === 'pierce')?.power || 0;
-        const hit = applyDamage(actorState, targetState, requested, index + 1, pierce);
+        const evadeChance = targetState.evade;
+        const evadeRoll = hashNumber(
+          `${seed}:round:${round}:sequence:${sequence}:hit:${index + 1}:evade:${target.monster_id}`
+        ) % 100;
+        const hit = applyDamage(targetState, requested, index + 1, {
+          pierce,
+          evadeChance,
+          evadeRoll
+        });
+        if (evadeChance > 0) targetState.evade = 0;
         hits.push(hit);
         dealtHpDamage += hit.hpDamage;
+        if (hit.hpDamage > 0 && targetState.thorns > 0 && actorState.hp > 0) {
+          retaliations.push(applyRetaliation(
+            actorState,
+            'thorns',
+            targetState.thorns,
+            retaliations.length + 1
+          ));
+        }
+        if (hit.hpDamage > 0 && targetState.reflect > 0 && actorState.hp > 0) {
+          retaliations.push(applyRetaliation(
+            actorState,
+            'reflect',
+            targetState.reflect,
+            retaliations.length + 1
+          ));
+        }
+        if (actorState.hp <= 0) break;
       }
     } else if (effect.type === 'shield') {
       addShield(actorState, effect.power + Math.floor((Number(actor.stats?.guard) || 0) / 3), outcomes);
     } else if (effect.type === 'heal') {
       heal(actorState, effect.power, outcomes);
     } else if (effect.type === 'lifesteal') {
-      heal(actorState, Math.floor(dealtHpDamage * effect.ratio), outcomes);
+      heal(actorState, Math.floor(dealtHpDamage * effect.ratio), outcomes, 'lifesteal');
+    } else if (effect.type === 'burn') {
+      const amount = Math.max(0, Number(effect.power) || 0);
+      targetState.burn = Math.min(3, targetState.burn + amount);
+      outcomes.push({ type: 'burn', amount, pending: targetState.burn });
+    } else if (effect.type === 'evade') {
+      const chance = Math.max(0, Math.min(75, Number(effect.chance) || 0));
+      actorState.evade = Math.max(actorState.evade, chance);
+      outcomes.push({ type: 'evade', chance });
     } else if (effect.type === 'thorns') {
-      actorState.thorns += effect.power;
+      actorState.thorns = Math.min(3, actorState.thorns + effect.power);
       outcomes.push({ type: 'thorns', amount: effect.power });
     } else if (effect.type === 'reflect') {
-      actorState.reflect += effect.power;
+      actorState.reflect = Math.min(3, actorState.reflect + effect.power);
       outcomes.push({ type: 'reflect', amount: effect.power });
     } else if (effect.type === 'weaken') {
-      targetState.weakened += effect.power;
+      targetState.weakened = Math.min(3, targetState.weakened + effect.power);
       outcomes.push({ type: 'weaken', amount: effect.power });
     }
+    if (actorState.hp <= 0 || targetState.hp <= 0) break;
   }
 
   return {
@@ -157,7 +267,9 @@ function resolveAction({
     },
     hits,
     outcomes,
-    terminal: targetState.hp <= 0
+    retaliations,
+    statusEffects,
+    terminal: actorState.hp <= 0 || targetState.hp <= 0
   };
 }
 
@@ -186,7 +298,8 @@ function resolveInteractiveRound({ fighters, choices = {}, seed, round = 1, stat
       targetState: states[target.monster_id],
       requestedChoice: choices[actor.monster_id],
       round,
-      sequence: actions.length + 1
+      sequence: actions.length + 1,
+      seed
     }));
     if (states[target.monster_id].hp <= 0) break;
   }

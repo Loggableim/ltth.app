@@ -84,7 +84,7 @@ class StreamAlchemyPlugin {
       debug: msg => this.api.log(msg, 'debug')
     };
 
-    this.streamMonstersStore = new StreamMonstersDatabase(this.api.getDatabase());
+    this.streamMonstersStore = new StreamMonstersDatabase(this.api.getDatabase(), { logger });
     this.streamMonstersStore.initialize();
     this.streamMonstersProgression = new StreamMonstersProgressionService({
       store: this.streamMonstersStore,
@@ -112,6 +112,7 @@ class StreamAlchemyPlugin {
       collection: this.streamMonstersCollection,
       emit: (event, payload) => this.api.emit(event, payload),
       getStreamKey: () => this.streamMonstersEngine?.streamKey || null,
+      logger,
       seasonDurationDays: this.config.streamMonsters.seasonDurationDays
     });
     this.streamMonstersChatCommands = new StreamMonstersChatCommands({

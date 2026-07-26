@@ -34,6 +34,7 @@ class BattleMatchService {
     emit = () => {},
     now = () => Date.now(),
     getStreamKey = () => null,
+    logger = null,
     seasonDurationDays = 28,
     sweepIntervalMs = 1_000,
     autoStart = true
@@ -46,6 +47,7 @@ class BattleMatchService {
     this.emit = emit;
     this.now = now;
     this.getStreamKey = getStreamKey;
+    this.logger = logger;
     this.seasonDurationDays = ARENA_DURATION_PRESETS.includes(Number(seasonDurationDays))
       ? Number(seasonDurationDays)
       : 28;
@@ -55,9 +57,9 @@ class BattleMatchService {
   }
 
   start() {
-    this.sweep();
+    this.safeSweep();
     if (!this.sweepTimer) {
-      this.sweepTimer = setInterval(() => this.sweep(), this.sweepIntervalMs);
+      this.sweepTimer = setInterval(() => this.safeSweep(), this.sweepIntervalMs);
       this.sweepTimer.unref?.();
     }
     return this;
@@ -72,6 +74,21 @@ class BattleMatchService {
 
   emitAfterCommit(event, payload) {
     this.store.afterCommit(() => this.emit(event, payload));
+  }
+
+  reportError(context, error) {
+    const message = `[STREAM MONSTERS] ${context} failed: ${error.message}`;
+    if (typeof this.logger === 'function') this.logger(message, error);
+    else this.logger?.error?.(message, error);
+  }
+
+  safeSweep() {
+    try {
+      return this.sweep();
+    } catch (error) {
+      this.reportError('battle recovery sweep', error);
+      return { rosterExpired: 0, actionsExpired: 0, statsExpired: 0, errors: 1 };
+    }
   }
 
   join({ userId, stance = 'adaptive' }) {
@@ -252,7 +269,7 @@ class BattleMatchService {
   lockRoster({ userId, monsterId = null, source = 'viewer' }) {
     return this.store.runInImmediateTransaction(() => {
       const match = this.getActiveMatchForViewer(userId);
-      if (!match || match.state !== 'roster' || match.rosterDeadlineMs < this.now()) {
+      if (!match || match.state !== 'roster' || match.rosterDeadlineMs <= this.now()) {
         return { accepted: false, reason: 'no_roster_window' };
       }
       const participant = match.participants.find(entry => entry.viewerId === userId);
@@ -301,6 +318,115 @@ class BattleMatchService {
     };
   }
 
+  appendDecisionEvent(match, participant, {
+    choice,
+    source,
+    providerEventId = null
+  }) {
+    const normalizedSource = source === 'timeout' ? 'timeout' : 'viewer';
+    const event = this.appendEvent(
+      match.matchId,
+      'streammonsters:battle_choice_locked',
+      {
+        matchId: match.matchId,
+        participantId: participant.participantId,
+        viewerId: participant.viewerId,
+        providerEventId,
+        round: match.roundNumber,
+        window: 'action',
+        choice,
+        source: normalizedSource,
+        timeout: normalizedSource === 'timeout'
+      },
+      ({ sequence }) => ({
+        matchId: match.matchId,
+        decision: {
+          sequence,
+          round: match.roundNumber,
+          window: 'action',
+          slot: participant.slot,
+          choice,
+          source: normalizedSource,
+          timeout: normalizedSource === 'timeout'
+        }
+      })
+    );
+    this.db.prepare(`
+      UPDATE streammonsters_match_decisions
+      SET event_sequence = ?
+      WHERE match_id = ? AND participant_id = ?
+        AND window_kind = 'action' AND window_sequence = ?
+    `).run(
+      event.sequence,
+      match.matchId,
+      participant.participantId,
+      match.roundNumber
+    );
+    return event;
+  }
+
+  projectPublicAction(action, match, eventSequence = null) {
+    const actor = match.participants.find(participant => (
+      participant.lockedMonsterId === action.actorId
+    ));
+    const target = match.participants.find(participant => (
+      participant.lockedMonsterId === action.targetId
+    ));
+    const numeric = value => Number.isFinite(Number(value)) ? Number(value) : 0;
+    const projectHit = hit => ({
+      index: numeric(hit.index),
+      requestedDamage: numeric(hit.requestedDamage),
+      shieldPenetrated: numeric(hit.shieldPenetrated),
+      shieldAbsorbed: numeric(hit.shieldAbsorbed),
+      hpDamage: numeric(hit.hpDamage),
+      evaded: Boolean(hit.evaded)
+    });
+    const projectOutcome = outcome => ({
+      type: String(outcome.type || ''),
+      ...(outcome.amount != null ? { amount: numeric(outcome.amount) } : {}),
+      ...(outcome.requested != null ? { requested: numeric(outcome.requested) } : {}),
+      ...(outcome.hits != null ? { hits: numeric(outcome.hits) } : {}),
+      ...(outcome.chance != null ? { chance: numeric(outcome.chance) } : {}),
+      ...(outcome.pending != null ? { pending: numeric(outcome.pending) } : {})
+    });
+    return {
+      sequence: numeric(action.sequence),
+      eventSequence: numeric(eventSequence ?? action.eventSequence),
+      round: numeric(action.round),
+      actorSlot: numeric(action.actorSlot ?? actor?.slot),
+      targetSlot: numeric(action.targetSlot ?? target?.slot),
+      requestedChoice: String(action.requestedChoice || ''),
+      choice: String(action.choice || ''),
+      choiceFallback: action.choiceFallback || null,
+      decisionSequence: numeric(action.decisionSequence),
+      skill: {
+        id: String(action.skill?.id || ''),
+        name: String(action.skill?.name || ''),
+        type: String(action.skill?.type || ''),
+        element: String(action.skill?.element || ''),
+        vfxKey: String(action.skill?.vfxKey || '')
+      },
+      hits: Array.isArray(action.hits) ? action.hits.map(projectHit) : [],
+      outcomes: Array.isArray(action.outcomes) ? action.outcomes.map(projectOutcome) : [],
+      retaliations: Array.isArray(action.retaliations)
+        ? action.retaliations.map(retaliation => ({
+          type: String(retaliation.type || ''),
+          ...projectHit(retaliation)
+        }))
+        : [],
+      statusEffects: Array.isArray(action.statusEffects)
+        ? action.statusEffects.map(effect => ({
+          type: String(effect.type || ''),
+          amount: numeric(effect.amount),
+          hpDamage: numeric(effect.hpDamage),
+          remaining: numeric(effect.remaining)
+        }))
+        : [],
+      terminal: Boolean(action.terminal),
+      ...(action.skipped ? { skipped: String(action.skipped) } : {})
+    };
+  }
+
   startActionWindow(matchId, expectedVersion = null) {
     const nowMs = this.now();
     const predicate = expectedVersion == null ? '' : 'AND phase_version = ?';
@@ -340,7 +466,7 @@ class BattleMatchService {
     }
     return this.store.runInImmediateTransaction(() => {
       const match = this.getActiveMatchForViewer(userId);
-      if (!match || match.state !== 'action' || match.actionDeadlineMs < this.now()) {
+      if (!match || match.state !== 'action' || match.actionDeadlineMs <= this.now()) {
         return { handled: false, reason: 'no_active_window' };
       }
       const participant = match.participants.find(entry => entry.viewerId === userId);
@@ -348,6 +474,7 @@ class BattleMatchService {
       if (!['A', 'B', 'C'].includes(normalized)) {
         return { handled: false, reason: 'invalid_choice' };
       }
+      const normalizedSource = source === 'timeout' ? 'timeout' : 'viewer';
       const inserted = this.db.prepare(`
         INSERT OR IGNORE INTO streammonsters_match_decisions (
           match_id, participant_id, window_kind, window_sequence, choice,
@@ -359,11 +486,16 @@ class BattleMatchService {
         match.roundNumber,
         normalized,
         normalized,
-        source,
+        normalizedSource,
         normalizedEventId,
         this.now()
       );
       if (!inserted.changes) return { handled: false, reason: 'already_locked' };
+      this.appendDecisionEvent(match, participant, {
+        choice: normalized,
+        source: normalizedSource,
+        providerEventId: normalizedEventId
+      });
       const decisionCount = this.db.prepare(`
         SELECT COUNT(*) AS count FROM streammonsters_match_decisions
         WHERE match_id = ? AND window_kind = 'action' AND window_sequence = ?
@@ -404,26 +536,43 @@ class BattleMatchService {
     `).get(matchId).count;
     outcome.actions.forEach((action, index) => {
       const participant = match.participants.find(entry => entry.lockedMonsterId === action.actorId);
+      const decision = decisions.find(entry => entry.participant_id === participant.participantId);
       const sequence = existingCount + index + 1;
+      const persistedAction = {
+        ...action,
+        sequence,
+        decisionSequence: decision?.event_sequence || 0
+      };
+      const event = this.appendEvent(
+        matchId,
+        'streammonsters:battle_skill_used',
+        {
+          matchId,
+          round: match.roundNumber,
+          action: persistedAction
+        },
+        ({ sequence: eventSequence }) => ({
+          matchId,
+          round: match.roundNumber,
+          action: this.projectPublicAction(persistedAction, match, eventSequence)
+        })
+      );
+      persistedAction.eventSequence = event.sequence;
       this.db.prepare(`
         INSERT INTO streammonsters_match_actions (
           match_id, sequence, round_number, actor_participant_id,
-          event_id, action_json, created_at_ms
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          event_id, event_sequence, action_json, created_at_ms
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         matchId,
         sequence,
         match.roundNumber,
         participant.participantId,
         `${matchId}:action:${sequence}`,
-        JSON.stringify({ ...action, sequence }),
+        event.sequence,
+        JSON.stringify(persistedAction),
         this.now()
       );
-      this.appendEvent(matchId, 'streammonsters:battle_skill_used', {
-        matchId,
-        round: match.roundNumber,
-        action: { ...action, sequence }
-      });
     });
     match.participants.forEach(participant => {
       this.db.prepare(`
@@ -596,6 +745,9 @@ class BattleMatchService {
       this.appendEvent(matchId, 'streammonsters:battle_completed', {
         matchId,
         winnerMonsterId
+      }, {
+        matchId,
+        winnerSlot: winnerParticipant.slot
       });
       return this.getMatch(matchId);
     });
@@ -701,7 +853,7 @@ class BattleMatchService {
       }
       const prompt = this.db.prepare(`
         SELECT * FROM streammonsters_stat_prompts
-        WHERE viewer_id = ? AND status = 'open' AND deadline_ms >= ?
+        WHERE viewer_id = ? AND status = 'open' AND deadline_ms > ?
         ORDER BY created_at_ms, prompt_id
         LIMIT 1
       `).get(userId, this.now());
@@ -731,12 +883,13 @@ class BattleMatchService {
   getReplay(matchId, cursor = 0) {
     const actions = this.db.prepare(`
       SELECT * FROM streammonsters_match_actions
-      WHERE match_id = ? AND sequence > ?
-      ORDER BY sequence
+      WHERE match_id = ? AND COALESCE(event_sequence, sequence) > ?
+      ORDER BY COALESCE(event_sequence, sequence), sequence
     `).all(matchId, Math.max(0, Number(cursor) || 0)).map(row => ({
       ...parseJson(row.action_json, {}),
       eventId: row.event_id,
-      sequence: row.sequence
+      sequence: row.sequence,
+      eventSequence: row.event_sequence || row.sequence
     }));
     const events = this.db.prepare(`
       SELECT * FROM streammonsters_match_events
@@ -757,7 +910,7 @@ class BattleMatchService {
     };
   }
 
-  getNormalizedReplay(battleOrMatchId, cursor = 0) {
+  getPrivateNormalizedReplay(battleOrMatchId, cursor = 0) {
     const match = this.getMatch(battleOrMatchId);
     if (match) {
       return {
@@ -800,6 +953,172 @@ class BattleMatchService {
         payload: { action }
       }))
     };
+  }
+
+  sanitizePublicEvent(eventType, storedPayload, match, sequence) {
+    const payload = storedPayload && typeof storedPayload === 'object' ? storedPayload : {};
+    if (eventType === 'streammonsters:battle_skill_used') {
+      return {
+        matchId: match.matchId,
+        round: Number(payload.round) || Number(payload.action?.round) || 0,
+        action: this.projectPublicAction(payload.action || {}, match, sequence)
+      };
+    }
+    if (eventType === 'streammonsters:battle_choice_locked') {
+      const decision = payload.decision || payload;
+      return {
+        matchId: match.matchId,
+        decision: {
+          sequence,
+          round: Number(decision.round) || 0,
+          window: 'action',
+          slot: Number(decision.slot) || 0,
+          choice: ['A', 'B', 'C'].includes(decision.choice) ? decision.choice : 'A',
+          source: decision.source === 'timeout' ? 'timeout' : 'viewer',
+          timeout: decision.source === 'timeout' || decision.timeout === true
+        }
+      };
+    }
+    if (eventType === 'streammonsters:battle_match_found') {
+      return {
+        matchId: match.matchId,
+        deadlineMs: Number(payload.deadlineMs) || match.rosterDeadlineMs
+      };
+    }
+    if (eventType === 'streammonsters:battle_choice_opened') {
+      return {
+        matchId: match.matchId,
+        round: Number(payload.round) || 0,
+        deadlineMs: Number(payload.deadlineMs) || 0,
+        choices: ['A', 'B', 'C']
+      };
+    }
+    if (eventType === 'streammonsters:battle_completed') {
+      const winner = match.participants.find(participant => (
+        participant.lockedMonsterId === match.winnerMonsterId
+      ));
+      return {
+        matchId: match.matchId,
+        winnerSlot: Number(payload.winnerSlot) || winner?.slot || 0
+      };
+    }
+    if (eventType === 'streammonsters:stat_choice_opened') {
+      return {
+        matchId: match.matchId,
+        deadlineMs: Number(payload.deadlineMs) || 0,
+        choices: ['1', '2', '3', '4']
+      };
+    }
+    if (eventType === 'streammonsters:battle_cancelled') {
+      return {
+        matchId: match.matchId,
+        reason: String(payload.reason || 'roster_unavailable')
+      };
+    }
+    return { matchId: match.matchId };
+  }
+
+  getPublicMatchReplay(match, battleId, cursor = 0, limit = 50) {
+    const normalizedCursor = Math.max(0, Number(cursor) || 0);
+    const normalizedLimit = Math.max(1, Math.min(100, Number(limit) || 50));
+    const rows = this.db.prepare(`
+      SELECT sequence, event_type, public_payload_json
+      FROM streammonsters_match_events
+      WHERE match_id = ? AND sequence > ?
+      ORDER BY sequence
+      LIMIT ?
+    `).all(match.matchId, normalizedCursor, normalizedLimit);
+    const events = rows.map(row => ({
+      sequence: row.sequence,
+      type: row.event_type,
+      payload: this.sanitizePublicEvent(
+        row.event_type,
+        parseJson(row.public_payload_json, {}),
+        match,
+        row.sequence
+      )
+    }));
+    const nextCursor = events.at(-1)?.sequence || normalizedCursor;
+    const hasMore = Boolean(this.db.prepare(`
+      SELECT 1 FROM streammonsters_match_events
+      WHERE match_id = ? AND sequence > ?
+      LIMIT 1
+    `).get(match.matchId, nextCursor));
+    return {
+      battleId,
+      matchId: match.matchId,
+      rulesVersion: 5,
+      replayVersion: 5,
+      cursor: nextCursor,
+      hasMore,
+      actions: events
+        .filter(event => event.type === 'streammonsters:battle_skill_used')
+        .map(event => event.payload.action),
+      decisions: events
+        .filter(event => event.type === 'streammonsters:battle_choice_locked')
+        .map(event => event.payload.decision),
+      events
+    };
+  }
+
+  getPublicLegacyReplay(battle) {
+    let sequence = 0;
+    const participants = [
+      { lockedMonsterId: battle.monster_a_id, slot: 1 },
+      { lockedMonsterId: battle.monster_b_id, slot: 2 }
+    ];
+    const match = { matchId: null, participants };
+    const actions = (battle.rounds || []).flatMap(round => (
+      Array.isArray(round.actions) ? round.actions.map(action => {
+        sequence += 1;
+        return this.projectPublicAction({
+          ...action,
+          round: action.round || round.round || null,
+          sequence
+        }, match, sequence);
+      }) : []
+    ));
+    return {
+      battleId: battle.battle_id,
+      matchId: null,
+      rulesVersion: battle.rulesVersion,
+      replayVersion: battle.rulesVersion || 3,
+      winnerSlot: battle.winner_monster_id === battle.monster_a_id ? 1 : 2,
+      cursor: actions.at(-1)?.eventSequence || 0,
+      hasMore: false,
+      actions,
+      decisions: [],
+      events: actions.map(action => ({
+        sequence: action.eventSequence,
+        type: 'streammonsters:battle_skill_used',
+        payload: { matchId: null, round: action.round, action }
+      }))
+    };
+  }
+
+  getPublicNormalizedReplay(battleOrMatchId, cursor = 0, limit = 50) {
+    const directMatch = this.getMatch(battleOrMatchId);
+    if (directMatch) {
+      return this.getPublicMatchReplay(
+        directMatch,
+        `battle-${directMatch.matchId}`,
+        cursor,
+        limit
+      );
+    }
+    const battle = this.store.getBattle(battleOrMatchId);
+    if (!battle) return null;
+    if (battle.match_id) {
+      const match = this.getMatch(battle.match_id);
+      return match
+        ? this.getPublicMatchReplay(match, battle.battle_id, cursor, limit)
+        : null;
+    }
+    return this.getPublicLegacyReplay(battle);
+  }
+
+  getNormalizedReplay(battleOrMatchId, cursor = 0, limit = 50) {
+    return this.getPublicNormalizedReplay(battleOrMatchId, cursor, limit);
   }
 
   getPublicSnapshot() {
@@ -847,6 +1166,9 @@ class BattleMatchService {
       FROM streammonsters_match_events WHERE match_id = ?
     `).get(matchId).next;
     const eventId = `${matchId}:event:${sequence}`;
+    const persistedPublicPayload = typeof publicPayload === 'function'
+      ? publicPayload({ eventId, sequence })
+      : publicPayload;
     this.db.prepare(`
       INSERT INTO streammonsters_match_events (
         match_id, sequence, event_id, event_type, payload_json,
@@ -858,10 +1180,10 @@ class BattleMatchService {
       eventId,
       eventType,
       JSON.stringify(payload),
-      JSON.stringify(publicPayload),
+      JSON.stringify(persistedPublicPayload),
       this.now()
     );
-    this.emitAfterCommit(eventType, { ...publicPayload, eventId, sequence });
+    this.emitAfterCommit(eventType, { ...persistedPublicPayload, eventId, sequence });
     return { eventId, sequence };
   }
 
@@ -874,100 +1196,165 @@ class BattleMatchService {
     ) % choices.length];
   }
 
+  cancelRosterMatch(match, reason = 'roster_unavailable') {
+    const nowMs = this.now();
+    const changed = this.db.prepare(`
+      UPDATE streammonsters_matches
+      SET state = 'cancelled',
+          phase_version = phase_version + 1,
+          roster_deadline_ms = NULL,
+          action_deadline_ms = NULL,
+          completed_at_ms = ?,
+          updated_at_ms = ?
+      WHERE match_id = ? AND state = 'roster' AND phase_version = ?
+    `).run(nowMs, nowMs, match.matchId, match.phaseVersion);
+    if (!changed.changes) return false;
+    this.db.prepare(`
+      UPDATE streammonsters_match_participants SET active = 0 WHERE match_id = ?
+    `).run(match.matchId);
+    this.appendEvent(
+      match.matchId,
+      'streammonsters:battle_cancelled',
+      { matchId: match.matchId, reason },
+      { matchId: match.matchId, reason }
+    );
+    return true;
+  }
+
+  recoverRosterMatch(matchId, nowMs = this.now()) {
+    return this.store.runInImmediateTransaction(() => {
+      const match = this.getMatch(matchId);
+      if (!match || match.state !== 'roster' || match.rosterDeadlineMs > nowMs) return false;
+      for (const participant of match.participants.filter(entry => !entry.lockedMonsterId)) {
+        const selected = this.store.getSelectedMonster(participant.viewerId);
+        const queued = this.store.getMonster(participant.queuedMonsterId);
+        const monster = selected?.user_id === participant.viewerId
+          ? selected
+          : queued?.user_id === participant.viewerId
+            ? queued
+            : null;
+        if (!monster) {
+          this.cancelRosterMatch(match, 'roster_monster_missing');
+          return true;
+        }
+        const snapshot = this.snapshotMonster(monster);
+        this.db.prepare(`
+          UPDATE streammonsters_match_participants
+          SET locked_monster_id = ?, roster_json = ?
+          WHERE match_id = ? AND participant_id = ? AND locked_monster_id IS NULL
+        `).run(
+          monster.monster_id,
+          JSON.stringify(snapshot),
+          matchId,
+          participant.participantId
+        );
+      }
+      this.startActionWindow(matchId, match.phaseVersion);
+      return true;
+    });
+  }
+
+  recoverActionMatch(matchId, nowMs = this.now()) {
+    return this.store.runInImmediateTransaction(() => {
+      const match = this.getMatch(matchId);
+      if (!match || match.state !== 'action' || match.actionDeadlineMs > nowMs) return false;
+      match.participants.forEach(participant => {
+        const existing = this.db.prepare(`
+          SELECT 1 FROM streammonsters_match_decisions
+          WHERE match_id = ? AND participant_id = ?
+            AND window_kind = 'action' AND window_sequence = ?
+        `).get(matchId, participant.participantId, match.roundNumber);
+        if (existing) return;
+        const choice = this.deterministicTimeoutChoice(match, participant);
+        const providerEventId = `${matchId}:timeout:${match.roundNumber}:${participant.participantId}`;
+        this.db.prepare(`
+          INSERT INTO streammonsters_match_decisions (
+            match_id, participant_id, window_kind, window_sequence, choice,
+            requested_choice, source, event_id, created_at_ms
+          ) VALUES (?, ?, 'action', ?, ?, ?, 'timeout', ?, ?)
+        `).run(
+          matchId,
+          participant.participantId,
+          match.roundNumber,
+          choice,
+          choice,
+          providerEventId,
+          nowMs
+        );
+        this.appendDecisionEvent(match, participant, {
+          choice,
+          source: 'timeout',
+          providerEventId
+        });
+      });
+      this.resolveRound(matchId, match.phaseVersion);
+      return true;
+    });
+  }
+
+  recoverStatPrompt(promptId, nowMs = this.now()) {
+    return this.store.runInImmediateTransaction(() => {
+      const prompt = this.db.prepare(`
+        SELECT * FROM streammonsters_stat_prompts
+        WHERE prompt_id = ? AND status = 'open' AND deadline_ms <= ?
+      `).get(promptId, nowMs);
+      if (!prompt) return false;
+      const stats = ['vitality', 'might', 'guard', 'agility'];
+      const stat = stats[this.hashNumber(
+        `${prompt.match_id}:${prompt.monster_id}:stat-timeout`
+      ) % stats.length];
+      const applied = this.store.applyMonsterStatPoint({
+        userId: prompt.viewer_id,
+        monsterId: prompt.monster_id,
+        stat
+      });
+      const eventId = `${prompt.match_id}:stat-timeout:${prompt.participant_id}`;
+      this.db.prepare(`
+        UPDATE streammonsters_stat_prompts
+        SET status = ?, choice = ?, event_id = ?, claimed_at_ms = ?
+        WHERE prompt_id = ? AND status = 'open'
+      `).run(
+        applied.applied ? 'claimed' : 'expired',
+        stat,
+        eventId,
+        nowMs,
+        prompt.prompt_id
+      );
+      return true;
+    });
+  }
+
   sweep() {
     const nowMs = this.now();
-    const result = { rosterExpired: 0, actionsExpired: 0, statsExpired: 0 };
-    this.store.runInImmediateTransaction(() => {
-      const rosterMatches = this.db.prepare(`
-        SELECT match_id FROM streammonsters_matches
-        WHERE state = 'roster' AND roster_deadline_ms <= ?
-        ORDER BY roster_deadline_ms, match_id
-      `).all(nowMs);
-      rosterMatches.forEach(({ match_id: matchId }) => {
-        const match = this.getMatch(matchId);
-        match.participants.filter(participant => !participant.lockedMonsterId)
-          .forEach(participant => {
-            const monster = this.store.getSelectedMonster(participant.viewerId) ||
-              this.store.getMonster(participant.queuedMonsterId);
-            const snapshot = this.snapshotMonster(monster);
-            this.db.prepare(`
-              UPDATE streammonsters_match_participants
-              SET locked_monster_id = ?, roster_json = ?
-              WHERE match_id = ? AND participant_id = ? AND locked_monster_id IS NULL
-            `).run(
-              monster.monster_id,
-              JSON.stringify(snapshot),
-              matchId,
-              participant.participantId
-            );
-          });
-        this.startActionWindow(matchId, match.phaseVersion);
-        result.rosterExpired += 1;
-      });
-
-      const actionMatches = this.db.prepare(`
-        SELECT match_id FROM streammonsters_matches
-        WHERE state = 'action' AND action_deadline_ms <= ?
-        ORDER BY action_deadline_ms, match_id
-      `).all(nowMs);
-      actionMatches.forEach(({ match_id: matchId }) => {
-        const match = this.getMatch(matchId);
-        match.participants.forEach(participant => {
-          const existing = this.db.prepare(`
-            SELECT 1 FROM streammonsters_match_decisions
-            WHERE match_id = ? AND participant_id = ?
-              AND window_kind = 'action' AND window_sequence = ?
-          `).get(matchId, participant.participantId, match.roundNumber);
-          if (existing) return;
-          const choice = this.deterministicTimeoutChoice(match, participant);
-          this.db.prepare(`
-            INSERT INTO streammonsters_match_decisions (
-              match_id, participant_id, window_kind, window_sequence, choice,
-              requested_choice, source, event_id, created_at_ms
-            ) VALUES (?, ?, 'action', ?, ?, ?, 'timeout', ?, ?)
-          `).run(
-            matchId,
-            participant.participantId,
-            match.roundNumber,
-            choice,
-            choice,
-            `${matchId}:timeout:${match.roundNumber}:${participant.participantId}`,
-            nowMs
-          );
-        });
-        this.resolveRound(matchId, match.phaseVersion);
-        result.actionsExpired += 1;
-      });
-
-      const statPrompts = this.db.prepare(`
-        SELECT * FROM streammonsters_stat_prompts
-        WHERE status = 'open' AND deadline_ms <= ?
-        ORDER BY deadline_ms, prompt_id
-      `).all(nowMs);
-      const stats = ['vitality', 'might', 'guard', 'agility'];
-      statPrompts.forEach(prompt => {
-        const stat = stats[this.hashNumber(
-          `${prompt.match_id}:${prompt.monster_id}:stat-timeout`
-        ) % stats.length];
-        const applied = this.store.applyMonsterStatPoint({
-          userId: prompt.viewer_id,
-          monsterId: prompt.monster_id,
-          stat
-        });
-        const eventId = `${prompt.match_id}:stat-timeout:${prompt.participant_id}`;
-        this.db.prepare(`
-          UPDATE streammonsters_stat_prompts
-          SET status = ?, choice = ?, event_id = ?, claimed_at_ms = ?
-          WHERE prompt_id = ? AND status = 'open'
-        `).run(
-          applied.applied ? 'claimed' : 'expired',
-          stat,
-          eventId,
-          nowMs,
-          prompt.prompt_id
-        );
-        result.statsExpired += 1;
-      });
+    const result = { rosterExpired: 0, actionsExpired: 0, statsExpired: 0, errors: 0 };
+    const recover = (kind, id, operation) => {
+      try {
+        if (operation()) result[kind] += 1;
+      } catch (error) {
+        result.errors += 1;
+        this.reportError(`battle recovery ${id}`, error);
+      }
+    };
+    this.db.prepare(`
+      SELECT match_id FROM streammonsters_matches
+      WHERE state = 'roster' AND roster_deadline_ms <= ?
+      ORDER BY roster_deadline_ms, match_id
+    `).all(nowMs).forEach(({ match_id: matchId }) => {
+      recover('rosterExpired', matchId, () => this.recoverRosterMatch(matchId, nowMs));
+    });
+    this.db.prepare(`
+      SELECT match_id FROM streammonsters_matches
+      WHERE state = 'action' AND action_deadline_ms <= ?
+      ORDER BY action_deadline_ms, match_id
+    `).all(nowMs).forEach(({ match_id: matchId }) => {
+      recover('actionsExpired', matchId, () => this.recoverActionMatch(matchId, nowMs));
+    });
+    this.db.prepare(`
+      SELECT prompt_id FROM streammonsters_stat_prompts
+      WHERE status = 'open' AND deadline_ms <= ?
+      ORDER BY deadline_ms, prompt_id
+    `).all(nowMs).forEach(({ prompt_id: promptId }) => {
+      recover('statsExpired', promptId, () => this.recoverStatPrompt(promptId, nowMs));
     });
     return result;
   }

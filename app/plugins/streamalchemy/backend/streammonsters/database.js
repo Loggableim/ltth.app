@@ -2,8 +2,9 @@ const { randomUUID } = require('crypto');
 const { deterministicTemplateId } = require('./catalog');
 
 class StreamMonstersDatabase {
-  constructor(sqlite) {
+  constructor(sqlite, { logger = null } = {}) {
     this.db = sqlite?.db || sqlite;
+    this.logger = logger;
     this.transactionDepth = 0;
     this.afterCommitCallbacks = null;
   }
@@ -34,8 +35,18 @@ class StreamMonstersDatabase {
     }
     this.transactionDepth = 0;
     this.afterCommitCallbacks = null;
-    callbacks.forEach(callback => callback());
+    callbacks.forEach(callback => this.invokeAfterCommit(callback));
     return result;
+  }
+
+  invokeAfterCommit(callback) {
+    try {
+      callback();
+    } catch (error) {
+      const message = `[STREAM MONSTERS] afterCommit callback failed: ${error.message}`;
+      if (typeof this.logger === 'function') this.logger(message, error);
+      else this.logger?.error?.(message, error);
+    }
   }
 
   afterCommit(callback) {
@@ -43,7 +54,7 @@ class StreamMonstersDatabase {
       this.afterCommitCallbacks.push(callback);
       return;
     }
-    callback();
+    this.invokeAfterCommit(callback);
   }
 
   initialize() {
@@ -380,6 +391,7 @@ class StreamMonstersDatabase {
         requested_choice TEXT NOT NULL,
         source TEXT NOT NULL CHECK (source IN ('viewer', 'timeout')),
         event_id TEXT,
+        event_sequence INTEGER,
         created_at_ms INTEGER NOT NULL,
         PRIMARY KEY (match_id, participant_id, window_kind, window_sequence),
         UNIQUE (event_id),
@@ -393,6 +405,7 @@ class StreamMonstersDatabase {
         round_number INTEGER NOT NULL,
         actor_participant_id TEXT NOT NULL,
         event_id TEXT NOT NULL UNIQUE,
+        event_sequence INTEGER,
         action_json TEXT NOT NULL,
         created_at_ms INTEGER NOT NULL,
         PRIMARY KEY (match_id, sequence),
@@ -494,6 +507,8 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_battles', 'skills_json', 'TEXT');
     this.ensureColumn('streammonsters_battles', 'match_id', 'TEXT');
     this.ensureColumn('streammonsters_battles', 'replay_version', 'INTEGER');
+    this.ensureColumn('streammonsters_match_decisions', 'event_sequence', 'INTEGER');
+    this.ensureColumn('streammonsters_match_actions', 'event_sequence', 'INTEGER');
     this.ensureColumn('streammonsters_gift_mappings', 'enabled', 'INTEGER NOT NULL DEFAULT 1');
     this.ensureColumn('streammonsters_viewer_progress', 'pending_xp', 'INTEGER NOT NULL DEFAULT 0');
     this.ensureColumn('streammonsters_viewer_progress', 'battle_win_streak', 'INTEGER NOT NULL DEFAULT 0');

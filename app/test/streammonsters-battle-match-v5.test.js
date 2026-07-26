@@ -10,10 +10,10 @@ const BattleMatchService = require(
   '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
 );
 
-function createStore(filename = ':memory:') {
+function createStore(filename = ':memory:', options = {}) {
   const sqlite = new Database(filename);
   sqlite.pragma('foreign_keys = ON');
-  const store = new StreamMonstersDatabase(sqlite);
+  const store = new StreamMonstersDatabase(sqlite, options);
   store.initialize();
   return { sqlite, store };
 }
@@ -51,6 +51,7 @@ function createMatchService({
   now,
   emit = jest.fn(),
   collection = null,
+  logger = null,
   autoStart = false
 }) {
   return new BattleMatchService({
@@ -59,6 +60,7 @@ function createMatchService({
     emit,
     collection,
     now,
+    logger,
     autoStart
   });
 }
@@ -89,6 +91,27 @@ describe('Stream Monsters durable rules-v5 match schema', () => {
       .map(column => column.name)).toEqual(expect.arrayContaining([
         'match_id', 'replay_version'
       ]));
+    expect(sqlite.prepare('PRAGMA table_info(streammonsters_match_actions)').all()
+      .map(column => column.name)).toContain('event_sequence');
+    expect(sqlite.prepare('PRAGMA table_info(streammonsters_match_decisions)').all()
+      .map(column => column.name)).toContain('event_sequence');
+  });
+
+  test('isolates and logs failing afterCommit callbacks while later callbacks still run', () => {
+    const errors = [];
+    const { store } = createStore(':memory:', {
+      logger: { error: message => errors.push(String(message)) }
+    });
+    const reached = jest.fn();
+
+    expect(() => store.runInImmediateTransaction(() => {
+      store.afterCommit(() => {
+        throw new Error('first callback failed');
+      });
+      store.afterCommit(reached);
+    })).not.toThrow();
+    expect(reached).toHaveBeenCalledTimes(1);
+    expect(errors.join('\n')).toContain('first callback failed');
   });
 });
 
@@ -220,13 +243,103 @@ describe('Stream Monsters durable BattleMatchService', () => {
     }
   });
 
-  test('chooses nearest Arena rating, widens level range after 30s and avoids a recent rematch', () => {
+  test('atomically turns a real two-connection queue race into exactly one reservation', async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-queue-race-'));
+    const filename = path.join(tempDir, 'matches.sqlite');
+    const { sqlite } = createStore(filename);
+    const workers = [];
+    try {
+      insertMonster(sqlite, { id: 'alpha', userId: 'viewer-a', level: 5 });
+      insertMonster(sqlite, {
+        id: 'beta',
+        userId: 'viewer-b',
+        level: 5,
+        element: 'Tide',
+        templateId: 'ripple'
+      });
+      const gate = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT);
+      const workerSource = `
+        const { parentPort, workerData } = require('worker_threads');
+        const Database = require(workerData.sqliteModule);
+        const Store = require(workerData.storeModule);
+        const MatchService = require(workerData.serviceModule);
+        const BattleService = require(workerData.battleModule);
+        const gate = new Int32Array(workerData.gate);
+        const sqlite = new Database(workerData.filename);
+        sqlite.pragma('busy_timeout = 5000');
+        const store = new Store(sqlite);
+        const service = new MatchService({
+          store,
+          battleService: new BattleService({ store }),
+          now: () => 1000,
+          autoStart: false
+        });
+        parentPort.postMessage({ ready: true });
+        Atomics.wait(gate, 0, 0);
+        const result = service.join({ userId: workerData.userId });
+        sqlite.close();
+        parentPort.postMessage({ result });
+      `;
+      const modules = {
+        filename,
+        gate,
+        sqliteModule: require.resolve('better-sqlite3'),
+        storeModule: require.resolve(
+          '../plugins/streamalchemy/backend/streammonsters/database'
+        ),
+        serviceModule: require.resolve(
+          '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
+        ),
+        battleModule: require.resolve(
+          '../plugins/streamalchemy/backend/streammonsters/battle-service'
+        )
+      };
+      const startWorker = userId => {
+        const worker = new Worker(workerSource, {
+          eval: true,
+          workerData: { ...modules, userId }
+        });
+        workers.push(worker);
+        return new Promise((resolve, reject) => {
+          worker.once('message', ready => {
+            if (!ready.ready) reject(new Error('worker_not_ready'));
+            else resolve();
+          });
+          worker.once('error', reject);
+        });
+      };
+      await Promise.all([startWorker('viewer-a'), startWorker('viewer-b')]);
+      const results = workers.map(worker => new Promise((resolve, reject) => {
+        worker.once('message', message => resolve(message.result));
+        worker.once('error', reject);
+      }));
+      const gateView = new Int32Array(gate);
+      Atomics.store(gateView, 0, 1);
+      Atomics.notify(gateView, 0, workers.length);
+      const joined = await Promise.all(results);
+
+      expect(joined.map(result => result.status).sort()).toEqual(['queued', 'reserved']);
+      expect(sqlite.prepare('SELECT COUNT(*) AS count FROM streammonsters_matches').get().count)
+        .toBe(1);
+      expect(sqlite.prepare(`
+        SELECT COUNT(*) AS count FROM streammonsters_match_participants WHERE active = 1
+      `).get().count).toBe(2);
+      expect(sqlite.prepare('SELECT COUNT(*) AS count FROM streammonsters_battle_queue')
+        .get().count).toBe(0);
+    } finally {
+      await Promise.all(workers.map(worker => worker.terminate()));
+      sqlite.close();
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  test('widens beyond +/-2 only after 30s and avoids a closer recent rematch', () => {
     const { sqlite, store } = createStore();
     [
       ['target', 'viewer-target', 8],
-      ['near', 'viewer-near', 10],
-      ['far', 'viewer-far', 10],
-      ['rematch', 'viewer-rematch', 8]
+      ['near', 'viewer-near', 11],
+      ['far', 'viewer-far', 11],
+      ['rematch', 'viewer-rematch', 11]
     ].forEach(([id, userId, level]) => insertMonster(sqlite, { id, userId, level }));
     let nowMs = 100_000;
     const service = createMatchService({ store, now: () => nowMs });
@@ -239,13 +352,13 @@ describe('Stream Monsters durable BattleMatchService', () => {
       userId: 'viewer-near',
       monsterId: 'near',
       stance: 'adaptive',
-      queuedAtMs: nowMs - 31_000
+      queuedAtMs: nowMs
     });
     store.enqueueBattle({
       userId: 'viewer-far',
       monsterId: 'far',
       stance: 'adaptive',
-      queuedAtMs: nowMs - 31_000
+      queuedAtMs: nowMs
     });
     store.enqueueBattle({
       userId: 'viewer-rematch',
@@ -260,10 +373,12 @@ describe('Stream Monsters durable BattleMatchService', () => {
       ) VALUES ('old-rematch', 'old', 'target', 'rematch', 'target', ?, ?, '{}', ?)
     `).run('viewer-target', 'viewer-rematch', nowMs - 60_000);
 
-    const result = service.join({ userId: 'viewer-target' });
+    const queued = service.join({ userId: 'viewer-target' });
+    expect(queued.status).toBe('queued');
+    nowMs += 30_000;
+    const result = service.reserveBestMatch('viewer-target');
 
-    expect(result.status).toBe('reserved');
-    expect(result.match.participants.map(participant => participant.viewerId)).toEqual(
+    expect(result.participants.map(participant => participant.viewerId)).toEqual(
       expect.arrayContaining(['viewer-target', 'viewer-near'])
     );
   });
@@ -382,12 +497,162 @@ describe('Stream Monsters durable BattleMatchService', () => {
       `).all(joined.match.matchId);
       expect(decisions).toHaveLength(2);
       expect(decisions.every(decision => decision.source === 'timeout')).toBe(true);
+      expect(service.getPublicNormalizedReplay(joined.match.matchId).decisions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            round: 1,
+            window: 'action',
+            choice: expect.stringMatching(/^[ABC]$/),
+            source: 'timeout',
+            timeout: true,
+            sequence: expect.any(Number)
+          })
+        ])
+      );
 
       expect(jest.getTimerCount()).toBeGreaterThan(0);
       service.destroy();
       expect(jest.getTimerCount()).toBe(0);
     } finally {
       jest.useRealTimers();
+    }
+  });
+
+  test('isolates stale roster and callback failures so timer recovery continues and cleans up', () => {
+    jest.useFakeTimers();
+    const errors = [];
+    try {
+      const { sqlite, store } = createStore(':memory:', {
+        logger: { error: message => errors.push(String(message)) }
+      });
+      [
+        ['stale-a', 'viewer-stale-a', 'Ember', 'ashfang'],
+        ['stale-b', 'viewer-stale-b', 'Tide', 'ripple'],
+        ['healthy-a', 'viewer-healthy-a', 'Grove', 'oakheart'],
+        ['healthy-b', 'viewer-healthy-b', 'Gale', 'zephyr']
+      ].forEach(([id, userId, element, templateId]) => insertMonster(sqlite, {
+        id,
+        userId,
+        element,
+        templateId
+      }));
+      let nowMs = 1_000;
+      const service = createMatchService({
+        store,
+        now: () => nowMs,
+        logger: { error: message => errors.push(String(message)) },
+        emit: () => {
+          throw new Error('socket unavailable');
+        },
+        autoStart: true
+      });
+      service.join({ userId: 'viewer-stale-a' });
+      const stale = service.join({ userId: 'viewer-stale-b' }).match;
+      service.join({ userId: 'viewer-healthy-a' });
+      const healthy = service.join({ userId: 'viewer-healthy-b' }).match;
+      sqlite.prepare(`
+        DELETE FROM streammonsters_monsters
+        WHERE monster_id IN ('stale-a', 'stale-b')
+      `).run();
+
+      nowMs = 16_000;
+      expect(() => jest.advanceTimersByTime(1_000)).not.toThrow();
+      expect(service.getMatch(stale.matchId)).toEqual(expect.objectContaining({
+        state: 'cancelled'
+      }));
+      expect(service.getMatch(healthy.matchId)).toEqual(expect.objectContaining({
+        state: 'action',
+        roundNumber: 1
+      }));
+      expect(errors.join('\n')).toContain('socket unavailable');
+
+      const originalRecovery = service.recoverActionMatch.bind(service);
+      let injected = false;
+      service.recoverActionMatch = matchId => {
+        if (!injected) {
+          injected = true;
+          throw new Error(`injected recovery failure:${matchId}`);
+        }
+        return originalRecovery(matchId);
+      };
+      nowMs = 24_000;
+      expect(() => jest.advanceTimersByTime(1_000)).not.toThrow();
+      expect(errors.join('\n')).toContain('injected recovery failure');
+
+      expect(jest.getTimerCount()).toBeGreaterThan(0);
+      service.destroy();
+      expect(jest.getTimerCount()).toBe(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('uses an exclusive roster/action/stat deadline consistently across two connections', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'streammonsters-deadline-'));
+    const filename = path.join(tempDir, 'matches.sqlite');
+    const primary = createStore(filename);
+    const secondary = createStore(filename);
+    try {
+      insertMonster(primary.sqlite, { id: 'alpha', userId: 'viewer-a' });
+      insertMonster(primary.sqlite, {
+        id: 'beta',
+        userId: 'viewer-b',
+        element: 'Tide',
+        templateId: 'ripple'
+      });
+      let nowMs = 1_000;
+      const submitter = createMatchService({
+        store: primary.store,
+        now: () => nowMs
+      });
+      const sweeper = createMatchService({
+        store: secondary.store,
+        now: () => nowMs
+      });
+      submitter.join({ userId: 'viewer-a' });
+      const joined = submitter.join({ userId: 'viewer-b' });
+      submitter.lockRoster({ userId: 'viewer-a' });
+
+      nowMs = joined.match.rosterDeadlineMs;
+      expect(submitter.lockRoster({ userId: 'viewer-b' })).toEqual({
+        accepted: false,
+        reason: 'no_roster_window'
+      });
+      expect(sweeper.sweep().rosterExpired).toBe(1);
+      const actionMatch = sweeper.getMatch(joined.match.matchId);
+      expect(actionMatch.state).toBe('action');
+
+      nowMs = actionMatch.actionDeadlineMs;
+      expect(submitter.submitChoice({
+        userId: 'viewer-a',
+        choice: 'A',
+        eventId: 'deadline-action'
+      })).toEqual({ handled: false, reason: 'no_active_window' });
+      expect(sweeper.sweep().actionsExpired).toBe(1);
+      expect(primary.sqlite.prepare(`
+        SELECT COUNT(*) AS count FROM streammonsters_match_decisions
+        WHERE match_id = ? AND source = 'timeout'
+      `).get(joined.match.matchId).count).toBe(2);
+
+      primary.sqlite.prepare(`
+        UPDATE streammonsters_monsters
+        SET unspent_stat_points = 1
+        WHERE monster_id = 'alpha'
+      `).run();
+      const participant = sweeper.getMatch(joined.match.matchId).participants
+        .find(entry => entry.viewerId === 'viewer-a');
+      const prompt = sweeper.createStatPrompt(joined.match.matchId, participant, 1);
+      nowMs = prompt.deadline_ms;
+      expect(submitter.submitStatChoice({
+        userId: 'viewer-a',
+        choice: '2',
+        eventId: 'deadline-stat'
+      })).toEqual({ handled: false, reason: 'no_stat_window' });
+      expect(sweeper.sweep().statsExpired).toBe(1);
+    } finally {
+      primary.sqlite.close();
+      secondary.sqlite.close();
+      fs.rmSync(tempDir, { recursive: true, force: true });
     }
   });
 
@@ -598,7 +863,7 @@ describe('Stream Monsters durable BattleMatchService', () => {
     expect(timeoutDecision.event_id).toContain(':stat-timeout:');
   });
 
-  test('normalizes old v3 replays and returns ordered v5 cursor pages without rewriting history', () => {
+  test('keeps private v3 readability and pages v5 on one lossless public cursor with provenance', () => {
     const { sqlite, store } = createStore();
     const legacyRounds = [{
       round: 1,
@@ -615,7 +880,7 @@ describe('Stream Monsters durable BattleMatchService', () => {
     `).run(JSON.stringify(legacyRounds), JSON.stringify({ rounds: legacyRounds }));
     const service = createMatchService({ store, now: () => 1_000 });
 
-    expect(service.getNormalizedReplay('legacy-v3')).toEqual(expect.objectContaining({
+    expect(service.getPrivateNormalizedReplay('legacy-v3')).toEqual(expect.objectContaining({
       battleId: 'legacy-v3',
       rulesVersion: 3,
       replayVersion: 3,
@@ -630,6 +895,78 @@ describe('Stream Monsters durable BattleMatchService', () => {
       rounds_json: JSON.stringify(legacyRounds),
       rules_version: 3
     });
+
+    insertMonster(sqlite, { id: 'secret-alpha', userId: 'viewer-secret-a' });
+    insertMonster(sqlite, {
+      id: 'secret-beta',
+      userId: 'viewer-secret-b',
+      element: 'Tide',
+      templateId: 'ripple'
+    });
+    service.join({ userId: 'viewer-secret-a' });
+    const joined = service.join({ userId: 'viewer-secret-b' });
+    service.lockRoster({ userId: 'viewer-secret-a' });
+    service.lockRoster({ userId: 'viewer-secret-b' });
+    service.submitChoice({
+      userId: 'viewer-secret-a',
+      choice: 'A',
+      eventId: 'provider-private-a'
+    });
+    service.submitChoice({
+      userId: 'viewer-secret-b',
+      choice: 'B',
+      eventId: 'provider-private-b'
+    });
+
+    const pages = [];
+    let cursor = 0;
+    do {
+      const page = service.getPublicNormalizedReplay(joined.match.matchId, cursor, 2);
+      pages.push(page);
+      expect(page.events.every(event => event.sequence > cursor)).toBe(true);
+      cursor = page.cursor;
+      if (!page.hasMore) break;
+    } while (pages.length < 20);
+    const events = pages.flatMap(page => page.events);
+    const actions = pages.flatMap(page => page.actions);
+    const decisions = pages.flatMap(page => page.decisions);
+    expect(events.map(event => event.sequence)).toEqual(
+      [...new Set(events.map(event => event.sequence))].sort((a, b) => a - b)
+    );
+    expect(actions).toHaveLength(2);
+    expect(actions.map(action => action.sequence)).toEqual([1, 2]);
+    expect(actions.every(action => Number.isInteger(action.eventSequence))).toBe(true);
+    expect(decisions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        round: 1,
+        window: 'action',
+        slot: 2,
+        choice: 'A',
+        source: 'viewer',
+        timeout: false
+      }),
+      expect.objectContaining({
+        round: 1,
+        window: 'action',
+        slot: 1,
+        choice: 'B',
+        source: 'viewer',
+        timeout: false
+      })
+    ]));
+    const publicJson = JSON.stringify(pages);
+    [
+      'viewer-secret',
+      'secret-alpha',
+      'secret-beta',
+      'provider-private',
+      'participantId',
+      'eventId',
+      '"before"',
+      '"after"'
+    ].forEach(secret => expect(publicJson).not.toContain(secret));
+    const privateReplay = service.getPrivateNormalizedReplay(joined.match.matchId);
+    expect(JSON.stringify(privateReplay)).toContain('secret-alpha');
   });
 
   test('publishes only a redacted active battle snapshot', () => {
