@@ -87,6 +87,7 @@ describe('public overlay HTTP registry', () => {
     ['GET', '/socket.io/socket.io.js'],
     ['POST', '/socket.io/'],
     ['GET', '/js/i18n-client.js'],
+    ['GET', '/js/public-overlay-render-mode.js'],
     ['GET', '/plugins/advanced-timer/overlay/overlay.js'],
     ['GET', '/api/advanced-timer/timers/timer-1'],
     ['GET', '/api/clarityhud/settings/chat'],

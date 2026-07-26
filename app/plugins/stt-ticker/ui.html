@@ -1112,6 +1112,7 @@
     }
     </style>
     <script src="/js/i18n-client.js"></script>
+    <script src="/js/tiktok-studio-url.js"></script>
 </head>
 <body>
   <div class="container stt-shell">
@@ -1201,6 +1202,12 @@
         <div class="card-title" data-i18n="plugins.stt-ticker.labels.overlay_obs_browser_source">Overlay (OBS Browser Source)</div>
         <p class="help-text" style="margin-bottom:8px;" data-i18n="plugins.stt-ticker.labels.diese_url_als_browser_source_in_obs_hinzufugen">Diese URL als Browser Source in OBS hinzuf&uuml;gen:</p>
         <input type="text" id="overlay-url" readonly style="font-family:monospace;font-size:12px;cursor:text;">
+        <button type="button" class="btn btn-primary" style="margin-top:10px;"
+                data-copy-tiktok-studio-url
+                data-overlay-url-source="#overlay-url"
+                data-i18n="common.tiktok_studio.copy_url">
+          TikTok-Studio-URL kopieren
+        </button>
         <div class="grid-2" style="margin-top:10px;">
           <div>
             <label data-i18n="plugins.stt-ticker.stt_ticker.ui.labels.caption_style">Untertitel-Stil</label>
@@ -2252,8 +2259,6 @@
   </div>
 </body>
 </html>
-
-
 
 
 

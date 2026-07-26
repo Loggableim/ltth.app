@@ -1572,6 +1572,7 @@
     }
   </style>
     <script src="/js/i18n-client.js"></script>
+    <script src="/js/tiktok-studio-url.js"></script>
 </head>
 <body>
 <main class="tt-shell">
@@ -2527,6 +2528,12 @@
           <div class="tt-url-row__label">${escHtml(translateMessage(item.labelKey, item.label))}</div>
           <div class="tt-url-row__code">${escHtml(url)}</div>
           <button type="button" class="tt-url-chip__button tt-url-chip__button--copy" data-url="${escAttr(url)}">${escHtml(translateUi('plugins.toptier.toptier.ui.actions.copy', 'Copy'))}</button>
+          <button type="button" class="tt-url-chip__button"
+                  data-copy-tiktok-studio-url
+                  data-overlay-url-source="self"
+                  data-overlay-url-attribute="data-url"
+                  data-url="${escAttr(url)}"
+                  data-i18n="common.tiktok_studio.copy_url">${escHtml(translateUi('common.tiktok_studio.copy_url', 'TikTok-Studio-URL kopieren'))}</button>
         </div>
       `;
     }).join('');
@@ -2674,6 +2681,12 @@
             <div class="tt-url-chip__label">${escHtml(label)}</div>
             <div class="tt-url-chip__url">${escHtml(url)}</div>
             <button type="button" class="tt-url-chip__button" data-copy-url="${escAttr(url)}">${escHtml(translateUi('plugins.toptier.toptier.ui.actions.copy', 'Copy'))}</button>
+            <button type="button" class="tt-url-chip__button"
+                    data-copy-tiktok-studio-url
+                    data-overlay-url-source="self"
+                    data-overlay-url-attribute="data-url"
+                    data-url="${escAttr(url)}"
+                    data-i18n="common.tiktok_studio.copy_url">${escHtml(translateUi('common.tiktok_studio.copy_url', 'TikTok-Studio-URL kopieren'))}</button>
           </div>
         `;
       }).join('');

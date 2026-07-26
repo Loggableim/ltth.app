@@ -479,6 +479,12 @@
           <div style="display:flex;gap:8px;align-items:center">
             <input type="text" id="overlay-url" readonly style="flex:1;font-size:12px">
             <button id="overlay-copy" class="btn ghost" type="button" data-i18n="plugins.music-bot.music_bot.ui.overlay.copy">Kopieren</button>
+            <button type="button" class="btn ghost"
+                    data-copy-tiktok-studio-url
+                    data-overlay-url-source="#overlay-url"
+                    data-i18n="common.tiktok_studio.copy_url">
+              TikTok-Studio-URL kopieren
+            </button>
             <button id="overlay-open" class="btn ghost" type="button" data-i18n="plugins.music-bot.music_bot.ui.overlay.open">Öffnen</button>
           </div>
         </label>
@@ -806,6 +812,7 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/tiktok-studio-url.js"></script>
   <script src="/plugins/music-bot/assets/ui.js"></script>
 </body>
 </html>

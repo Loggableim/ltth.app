@@ -812,6 +812,12 @@
       <div class="inline-flex" style="gap:6px;">
         <input type="text" id="ml-overlay-url" readonly style="flex:1;font-family:monospace;font-size:12px;padding:6px 8px;cursor:text;" value="">
         <button id="btn-copy-overlay-url" class="btn btn-small btn-primary" style="flex:0;" data-i18n="plugins.stt-ticker.stt_ticker.ui.actions.copy">Kopieren</button>
+        <button type="button" class="btn btn-small btn-primary" style="flex:0;"
+                data-copy-tiktok-studio-url
+                data-overlay-url-source="#ml-overlay-url"
+                data-i18n="common.tiktok_studio.copy_url">
+          TikTok-Studio-URL kopieren
+        </button>
       </div>
       <p class="help-text" style="margin-top:8px;" data-i18n="plugins.stt-ticker.labels.als_browser_source_in_obs_einfugen">Als Browser Source in OBS einfügen</p>
     </section>
@@ -878,6 +884,7 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/stt-ticker/capture-audio.js"></script>
+  <script src="/js/tiktok-studio-url.js"></script>
   <script>
     const SAMPLE_RATE = 16000;
     const CHUNK_DURATION_MS = 5000;

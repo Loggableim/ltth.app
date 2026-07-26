@@ -728,6 +728,7 @@
     }
     </style>
     <script src="/js/i18n-client.js"></script>
+    <script src="/js/public-overlay-render-mode.js"></script>
 </head>
 <body>
   <div id="storyOverlay">
@@ -940,6 +941,10 @@
       snapToGrid: false,
       gridSize: 20
     };
+    const publicRenderMode =
+      window.LTTHPublicOverlayRenderMode.isPublicQuickTunnelHostname(
+        window.location.hostname
+      );
 
     /**
      * Initialize draggable functionality for overlay elements
@@ -948,6 +953,10 @@
     function initDraggableElements() {
       // Load saved positions
       loadOverlayPositions();
+      if (publicRenderMode) {
+        document.documentElement.dataset.publicRenderMode = 'true';
+        return;
+      }
 
       const draggableElements = document.querySelectorAll('.draggable');
 
@@ -1093,13 +1102,12 @@
 
     async function saveOverlayPositions() {
       try {
-        const response = await fetch('/api/interactive-story/overlay-positions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(overlayConfig)
-        });
+        const { skipped, response } =
+          await window.LTTHPublicOverlayRenderMode.postJsonLocalOnly(
+            '/api/interactive-story/overlay-positions',
+            overlayConfig
+          );
+        if (skipped) return;
 
         if (!response.ok) {
           console.error('Failed to save overlay positions');

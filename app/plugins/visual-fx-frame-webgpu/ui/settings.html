@@ -2296,6 +2296,12 @@
             <h3 data-i18n="plugins.visual-fx-frame-webgpu.labels.obs_browser_source_einrichtung">📋 OBS Browser Source Einrichtung</h3>
             <p><strong>1.</strong><span data-i18n="plugins.visual-fx-frame-webgpu.labels.in_obs_eine_neue_browser_source_erstellen"> In OBS eine neue Browser Source erstellen</span></p>
             <p><strong>2.</strong><span data-i18n="plugins.visual-fx-frame-webgpu.labels.url_eingeben"> URL eingeben: </span><code id="overlayUrl">http://localhost:3000/visual-fx-frame-webgpu/overlay</code></p>
+            <button type="button" class="btn btn-secondary"
+                    data-copy-tiktok-studio-url
+                    data-overlay-url-source="#overlayUrl"
+                    data-i18n="common.tiktok_studio.copy_url">
+                TikTok-Studio-URL kopieren
+            </button>
             <p><strong>3.</strong><span data-i18n="plugins.visual-fx-frame-webgpu.labels.breite_und_hohe_entsprechend_deiner_auswahl_einstellen"> Breite und Höhe entsprechend deiner Auswahl einstellen</span></p>
             <p><strong>4.</strong><span data-i18n="plugins.visual-fx-frame-webgpu.labels.shutdown_source_when_not_visible_deaktivieren_fur_bessere"> "Shutdown source when not visible" deaktivieren (für bessere Performance)</span></p>
             <p><strong>5.</strong><span data-i18n="plugins.visual-fx-frame-webgpu.labels.transparenter_hintergrund_ist_bereits_aktiviert_und_obs_safe"> Transparenter Hintergrund ist bereits aktiviert und OBS-safe ✅</span></p>
@@ -2312,6 +2318,7 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="/visual-fx-frame-webgpu/default-config.js"></script>
+    <script src="/js/tiktok-studio-url.js"></script>
     <script>
         // Configuration constants
         const LANDSCAPE_PRESETS = ['tiktok-landscape', 'hd-landscape', '2k-landscape', '4k-landscape'];

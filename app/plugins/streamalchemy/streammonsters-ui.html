@@ -165,6 +165,12 @@
         <h3>OBS Browser Source</h3>
         <p class="muted">Unterstützt 16:9 und 9:16 automatisch.</p>
         <code id="overlayUrl">/streammonsters/overlay</code>
+        <button type="button"
+                data-copy-tiktok-studio-url
+                data-overlay-url-source="#overlayUrl"
+                data-i18n="common.tiktok_studio.copy_url">
+          TikTok-Studio-URL kopieren
+        </button>
         <label>Lesedauer untere Einblendungen
           <select id="bottomOverlayDuration">
             <option value="8">8 Sekunden</option><option value="10">10 Sekunden</option>
@@ -336,6 +342,7 @@
 </main>
 
 <script src="/js/i18n-client.js"></script>
+<script src="/js/tiktok-studio-url.js"></script>
 <script>
 (() => {
   const byId = id => document?.getElementById(id) || null;
