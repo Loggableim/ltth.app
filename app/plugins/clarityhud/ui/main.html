@@ -1145,6 +1145,10 @@
             <div class="url-display">
               <div class="url-text" id="chat-url" aria-live="polite">Loading...</div>
               <button class="btn btn-info btn-icon" data-action="copy-url" data-type="chat" title="Copy URL" data-i18n-title="plugins.clarityhud.clarityhud.buttons.copy_url" data-i18n="plugins.clarityhud.clarityhud.buttons.copy">Copy</button>
+              <button type="button" class="btn btn-info"
+                      data-copy-tiktok-studio-url
+                      data-overlay-url-source="#chat-url"
+                      data-i18n="common.tiktok_studio.copy_url">TikTok-Studio-URL kopieren</button>
             </div>
           </div>
 
@@ -1172,6 +1176,10 @@
             <div class="url-display">
               <div class="url-text" id="full-url" aria-live="polite">Loading...</div>
               <button class="btn btn-info btn-icon" data-action="copy-url" data-type="full" title="Copy URL" data-i18n-title="plugins.clarityhud.clarityhud.buttons.copy_url" data-i18n="plugins.clarityhud.clarityhud.buttons.copy">Copy</button>
+              <button type="button" class="btn btn-info"
+                      data-copy-tiktok-studio-url
+                      data-overlay-url-source="#full-url"
+                      data-i18n="common.tiktok_studio.copy_url">TikTok-Studio-URL kopieren</button>
             </div>
           </div>
 
@@ -1199,6 +1207,10 @@
             <div class="url-display">
               <div class="url-text" id="multi-url" aria-live="polite">Loading...</div>
               <button class="btn btn-info btn-icon" data-action="copy-url" data-type="multi" title="Copy URL" data-i18n-title="plugins.clarityhud.clarityhud.buttons.copy_url" data-i18n="plugins.clarityhud.clarityhud.buttons.copy">Copy</button>
+              <button type="button" class="btn btn-info"
+                      data-copy-tiktok-studio-url
+                      data-overlay-url-source="#multi-url"
+                      data-i18n="common.tiktok_studio.copy_url">TikTok-Studio-URL kopieren</button>
             </div>
           </div>
 
@@ -1230,6 +1242,10 @@
             <div class="url-display">
               <div class="url-text" id="stream-url" aria-live="polite">Loading...</div>
               <button class="btn btn-info btn-icon" data-action="copy-url" data-type="stream" title="Copy URL" data-i18n-title="plugins.clarityhud.clarityhud.buttons.copy_url" data-i18n="plugins.clarityhud.clarityhud.buttons.copy">Copy</button>
+              <button type="button" class="btn btn-info"
+                      data-copy-tiktok-studio-url
+                      data-overlay-url-source="#stream-url"
+                      data-i18n="common.tiktok_studio.copy_url">TikTok-Studio-URL kopieren</button>
             </div>
           </div>
 
@@ -1294,8 +1310,9 @@
     </div>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="/plugins/clarityhud/lib/settings-schema.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/tiktok-studio-url.js"></script>
+    <script src="/plugins/clarityhud/lib/settings-schema.js"></script>
   <script src="/plugins/clarityhud/ui/stream-settings.js"></script>
   <script src="/plugins/clarityhud/ui/main.js"></script>
 </body>

@@ -1494,9 +1494,18 @@
                         Use this URL in OBS as a Browser Source.
                     </p>
 
-                    <div class="flex">
+                    <input id="fireworks-overlay-url" type="text" readonly
+                           class="w-full bg-black/20 rounded-lg px-3 py-2 mb-3 font-mono text-sm"
+                           value="/fireworks/overlay">
+                    <div class="flex gap-2">
                         <button id="copy-overlay-url" class="w-full bg-white/10 hover:bg-white/20 py-2 rounded-lg transition" data-i18n="plugins.fireworks.fireworks.copy_overlay_url">
                             &#x1F4CB; Copy Overlay URL
+                        </button>
+                        <button type="button" class="w-full bg-white/10 hover:bg-white/20 py-2 rounded-lg transition"
+                                data-copy-tiktok-studio-url
+                                data-overlay-url-source="#fireworks-overlay-url"
+                                data-i18n="common.tiktok_studio.copy_url">
+                            TikTok-Studio-URL kopieren
                         </button>
                     </div>
                 </div>
@@ -1715,6 +1724,7 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/i18n-client.js"></script>
+    <script src="/js/tiktok-studio-url.js"></script>
     <script src="/plugins/fireworks/ui/settings.js"></script>
 
 <style id="final-fireworks-night-card-contrast">

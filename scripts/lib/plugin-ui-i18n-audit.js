@@ -232,6 +232,27 @@ function loadPluginLocales(pluginRoot, pluginId, errors) {
   return valuesByLocale;
 }
 
+function loadAppCommonLocales(repoRoot, errors) {
+  const valuesByLocale = {};
+  for (const locale of LOCALES) {
+    const localePath = path.join(repoRoot, 'app', 'locales', `${locale}.json`);
+    if (!fs.existsSync(localePath)) {
+      valuesByLocale[locale] = {};
+      continue;
+    }
+    try {
+      const translations = flattenTranslations(readJson(localePath));
+      valuesByLocale[locale] = Object.fromEntries(
+        Object.entries(translations).filter(([key]) => key.startsWith('common.'))
+      );
+    } catch (error) {
+      errors.push(`app/${locale}: invalid JSON (${error.message})`);
+      valuesByLocale[locale] = {};
+    }
+  }
+  return valuesByLocale;
+}
+
 function assertKey(pluginId, key, file, valuesByLocale, errors, claims) {
   if (!key.startsWith('common.') && (key.startsWith('generated.') || !key.startsWith(`plugins.${pluginId}.`))) {
     errors.push(`${pluginId}/${file}: invalid UI key ${key}`);
@@ -271,6 +292,7 @@ function auditPluginUi({ repoRoot, catalog }) {
   const claims = new Map();
   const controlsByPlugin = {};
   const keysByPlugin = {};
+  const appCommonByLocale = loadAppCommonLocales(repoRoot, errors);
 
   for (const plugin of catalog.plugins) {
     const pluginId = plugin.id;
@@ -282,7 +304,11 @@ function auditPluginUi({ repoRoot, catalog }) {
       if (filePath.endsWith('.html')) return true;
       return filePath.endsWith('.js');
     });
-    const valuesByLocale = loadPluginLocales(pluginRoot, pluginId, errors);
+    const pluginValuesByLocale = loadPluginLocales(pluginRoot, pluginId, errors);
+    const valuesByLocale = Object.fromEntries(LOCALES.map((locale) => [
+      locale,
+      { ...appCommonByLocale[locale], ...pluginValuesByLocale[locale] }
+    ]));
     const controls = htmlFiles.flatMap((uiPath) => collectHtmlControls(pluginId, uiPath));
     controlsByPlugin[pluginId] = controls;
     controls.forEach((control) => {
