@@ -21,10 +21,10 @@ Do not confuse this snapshot with older LTTH repositories or stale archive refer
 ## Git State
 
 - This workspace **is** a Git checkout (`.git/` present).
-- Active local branch: `codex/main-deploy`.
+- The active branch is worktree-specific; verify it with `git branch --show-current` before editing or publishing.
 - Remote `origin/main` is the default branch on GitHub.
-- 90+ `origin/copilot/*` remote branches exist from Copilot-generated feature work.
-- 3 local `codex/*` feature branches exist.
+- `origin/copilot/*` remote branches may exist from Copilot-generated feature work.
+- Local `codex/*` feature branches may exist in separate worktrees.
 - `git status` may include unrelated temporary artifacts from local browser/image work; ignore them when reviewing release changes.
 - Use `git log`, `git branch`, `git diff`, etc. normally.
 
@@ -165,6 +165,17 @@ Key modules in `app/modules/`:
 - `changelog-agent/` — Automated changelog generation from git history.
 - `webgpu-engine/` — WebGPU engine (TypeScript, experimental).
 
+## TikTok Studio Overlay Quick Tunnel
+
+LTTH can now turn local overlay URLs into random HTTPS `trycloudflare.com` URLs for TikTok Studio:
+
+- The first **TikTok-Studio-URL kopieren** action downloads the pinned Cloudflared 2026.7.2 executable into the OS-level LTTH `runtime-tools` directory, verifies its SHA-256 digest, starts one accountless Quick Tunnel to the actual loopback server port, and copies the matching public overlay URL.
+- Later copy actions reuse the same overlay tunnel. Stopping or restarting it changes the random hostname and does not stop or modify the existing manually configured network tunnel.
+- Local/private HTTP overlay URLs are rewritten through the tunnel. Existing external HTTPS destinations such as VDO.Ninja remain unchanged and do not start a tunnel.
+- A central public-surface registry exposes only the 38 registered overlay entry points, their required static assets, explicitly read-only data paths, and registered Socket.IO events. Every other HTTP method/path or Socket.IO event on a `trycloudflare.com` host is denied by default.
+- Public JSON responses redact credential-shaped keys. Quiz and Interactive Story public views switch to render-only mode so their local write paths are not exposed.
+- Network settings show the separate overlay-tunnel status and provide start/copy/stop controls. Cloudflare Quick Tunnel remains a test service without an availability guarantee.
+
 ## Known Gaps
 
 - Electron-specific source files are missing. Any future desktop shell work needs a deliberate Electron restoration task.
@@ -176,6 +187,7 @@ Key modules in `app/modules/`:
 - `update-manager.js` is now Git-backed again. It refuses dirty working trees, performs fast-forward updates, and rolls back on failure.
 - `launcher.exe~` (9.8 MB) in root is a stale backup binary. `.gitignore` covers `*.backup` but not `*.exe~`.
 - Go version inconsistency: `go.mod` requires Go 1.24.10, but `build-launcher.yml` CI uses `~1.21`. Launcher CI builds may fail if Go 1.21 cannot parse 1.24 syntax.
+- `go test ./...` in `build-src/` currently fails on pre-existing undefined launcher test helpers; `launcher/` is separately blocked by a missing `go.sum` entry for `github.com/jchv/go-webview2`.
 - `naked/` is a reduced repo clone from 2026-04-30 (29 MB), ignored by `.gitignore`. It predates the plugin store, shared layout, and installer systems.
 
 ## Plugin Inventory
@@ -242,25 +254,20 @@ Before dependency install, static cleanup performed:
 - `npm run build:css` passes.
 - `npm run lint -- --quiet` passes.
 
-Latest measured Jest state with dependencies installed:
+Latest measured state on the TikTok Studio Quick Tunnel branch:
 
-```bash
-cd app
-npm test -- --runInBand --silent
-```
+- Focused feature/security/i18n verification: 23 passed suites, 393 passed tests.
+- Full non-baseline Jest collection: 621 suites, 6722 tests. One full run passed 620 suites and 6721 tests; the remaining dependency-crawl expectation was then updated to require the four Game Engine test-control POST paths to stay local-only and passed together with the complete 206-test public-surface set.
+- Real isolated Windows smoke test: the pinned Cloudflared download and checksum verification succeeded; a random public hostname served a registered overlay and redacted read API; dashboard/network routes and non-read methods returned neutral 404 responses; allowed Socket.IO events passed while unregistered events were blocked; a second ensure reused the same process; stop preserved the manual tunnel; restart produced a different hostname.
+- `npm run lint`, `npm run build:css`, and `npm run i18n:check` pass. Translation validation reports no findings.
 
-Result: 262 passed suites, 262 total suites; 2560 passed tests, 2560 total tests.
+The default full collection currently contains 624 suites and 6734 tests. Three unrelated baseline suites remain red and were excluded from the green 621-suite run:
 
-Normal `npm test -- --runInBand --silent` exits cleanly in the current dependency state.
+- `plugin-store-registry.test.js`: the WebGPU Weather package compares LF archive bytes with a CRLF Windows checkout, and the StreamAlchemy 1.1.2 package is older than its current source tree.
+- `streamalchemy-ui-i18n.test.js`: the published StreamAlchemy package still contains legacy untranslated UI.
+- `plugin-static-form-controls-i18n.test.js`: it reports the same stale StreamAlchemy package surface.
 
-Coverage also runs cleanly:
-
-```bash
-cd app
-npm run test:coverage -- --runInBand --silent
-```
-
-Result: 262 passed suites, 262 total suites; 2560 passed tests, 2560 total tests.
+Coverage was not re-measured for this feature branch.
 
 ## Next Practical Step
 
