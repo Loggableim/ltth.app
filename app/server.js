@@ -144,6 +144,9 @@ const {
 const {
     createPublicOverlayAdapter
 } = require('./modules/public-overlay-socket-adapter');
+const {
+    registerOverlayTunnelRoutes
+} = require('./modules/overlay-tunnel-routes');
 const debugLogger = require('./modules/debug-logger');
 const { apiLimiter, authLimiter, uploadLimiter, pluginLimiter, iftttLimiter } = require('./modules/rate-limiter');
 const OBSWebSocket = require('./modules/obs-websocket');
@@ -3673,6 +3676,14 @@ tiktok.on('streamChanged', async (data) => {
 });
 
 // ========== NETWORK MANAGER API ROUTES ==========
+
+registerOverlayTunnelRoutes({
+    app,
+    networkManager,
+    getPort: () => PORT || 3000,
+    apiLimiter,
+    logger
+});
 
 /**
  * GET /api/network/config
