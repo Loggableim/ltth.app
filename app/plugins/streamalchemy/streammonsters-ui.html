@@ -180,7 +180,7 @@
   <nav class="nav" aria-label="Collector Arena Bereiche" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.navAreas">
     <a href="#readiness" data-i18n="plugins.streamalchemy.ui.monsters.navReadiness">1 · Live-Readiness</a>
     <a href="#gifts" data-i18n="plugins.streamalchemy.ui.monsters.navGifts">2 · Geschenke-Mapping</a>
-    <a href="#art-lab" data-i18n="plugins.streamalchemy.ui.monsters.navArt">3 · Art Lab</a>
+    <a href="#visual-library">3 · Furry-Bibliothek</a>
     <a href="#collections" data-i18n="plugins.streamalchemy.ui.monsters.navCollections">4 · Zuschauer-Sammlungen</a>
     <a href="#league" data-i18n="plugins.streamalchemy.ui.monsters.navLeague">5 · Saison &amp; Liga</a>
   </nav>
@@ -198,8 +198,6 @@
         <h3 data-i18n="plugins.streamalchemy.ui.monsters.obsSource">OBS Browser Source</h3>
         <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.responsiveCopy">Unterstützt 16:9 und 9:16 automatisch.</p>
         <code id="overlayUrl">/streammonsters/overlay</code>
-        <label class="check-row"><input id="overlayMuted" type="checkbox"><span data-i18n="plugins.streamalchemy.ui.monsters.mute">Overlay-Sounds stummschalten</span></label>
-        <label><span data-i18n="plugins.streamalchemy.ui.monsters.volume">Overlay-Lautstärke</span><input id="overlayVolume" type="range" min="0" max="100" value="70"></label>
         <button id="runDemo" type="button" data-i18n="plugins.streamalchemy.ui.monsters.runDemo">Kompletten Demoablauf starten</button>
       </article>
       <article class="card">
@@ -225,9 +223,22 @@
           </select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.visualPack">Visual pack</span><select id="visualPack">
             <option value="furry" data-i18n="plugins.streamalchemy.ui.monsters.visualPackFurry">Furry</option>
-            <option value="art_lab" data-i18n="plugins.streamalchemy.ui.monsters.visualPackArtLab">Art Lab</option>
-            <option value="kenney" data-i18n="plugins.streamalchemy.ui.monsters.visualPackKenney">Kenney</option>
           </select></label>
+          <label><span>Ei-Ablaufzeit</span><select id="eggExpiry">
+            <option value="21600000">6 Stunden</option><option value="43200000">12 Stunden</option>
+            <option value="86400000">24 Stunden</option><option value="172800000">48 Stunden</option>
+          </select></label>
+          <label><span>Saisondauer</span><select id="seasonDuration">
+            <option value="7">7 Tage</option><option value="14">14 Tage</option>
+            <option value="28">28 Tage</option><option value="60">60 Tage</option><option value="90">90 Tage</option>
+          </select></label>
+          <label><span>Renderer-Qualität</span><select id="rendererQuality">
+            <option value="auto">Auto</option><option value="high">Hoch</option>
+            <option value="medium">Mittel</option><option value="low">Niedrig</option>
+          </select></label>
+          <label><span>Benachrichtigungsdauer (Sekunden)</span><input id="notificationDuration" type="number" min="8" max="30" value="12"></label>
+          <label><span>Aktive Eier-Aliase</span><input id="aliasEggsEnabled" value="eier, eierliste, meineeier"></label>
+          <label><span>Deaktivierte Eier-Aliase</span><input id="aliasEggsDisabled" value="eggs"></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.safeZoneLayout">Safe-zone format</span><select id="safeZoneLayout">
             <option value="landscape" data-i18n="plugins.streamalchemy.ui.monsters.layoutLandscape">Landscape 16:9</option>
             <option value="portrait" data-i18n="plugins.streamalchemy.ui.monsters.layoutPortrait">Portrait 9:16</option>
@@ -244,6 +255,14 @@
             <option value="bottom-left" data-i18n="plugins.streamalchemy.ui.monsters.anchorBottomLeft">Bottom left</option><option value="bottom-center" data-i18n="plugins.streamalchemy.ui.monsters.anchorBottomCenter">Bottom center</option><option value="bottom-right" data-i18n="plugins.streamalchemy.ui.monsters.anchorBottomRight">Bottom right</option>
           </select></label>
           <label><span data-i18n="plugins.streamalchemy.ui.monsters.portraitScale">Portrait scale</span><input id="portraitScale" type="number" min="70" max="130" value="100"></label>
+        </div>
+        <h3>Server-Audio</h3>
+        <div class="control-grid">
+          <label class="check-row"><input id="audioMasterEnabled" type="checkbox" checked><span>Master</span></label><label><span>Master-Lautstärke</span><input id="audioMasterVolume" type="number" min="0" max="1" step="0.05" value="1"></label>
+          <label class="check-row"><input id="audioUiEnabled" type="checkbox" checked><span>UI</span></label><label><span>UI-Lautstärke</span><input id="audioUiVolume" type="number" min="0" max="1" step="0.05" value="0.8"></label>
+          <label class="check-row"><input id="audioEggEnabled" type="checkbox" checked><span>Ei</span></label><label><span>Ei-Lautstärke</span><input id="audioEggVolume" type="number" min="0" max="1" step="0.05" value="0.9"></label>
+          <label class="check-row"><input id="audioBattleEnabled" type="checkbox" checked><span>Kampf</span></label><label><span>Kampf-Lautstärke</span><input id="audioBattleVolume" type="number" min="0" max="1" step="0.05" value="1"></label>
+          <label class="check-row"><input id="audioRewardEnabled" type="checkbox" checked><span>Belohnung</span></label><label><span>Belohnungs-Lautstärke</span><input id="audioRewardVolume" type="number" min="0" max="1" step="0.05" value="0.9"></label>
         </div>
         <div id="safeZonePreview" class="safe-zone" role="img" aria-label="Overlay safe-zone preview" data-i18n-aria-label="plugins.streamalchemy.ui.monsters.safeZonePreviewLabel">
           <div id="safeLogo" class="safe-box" data-i18n="plugins.streamalchemy.ui.monsters.safeZoneLogo">Logo</div>
@@ -303,79 +322,13 @@
     </div>
   </section>
 
-  <section id="art-lab" class="area">
-    <div class="area-head"><div><div class="eyebrow" data-i18n="plugins.streamalchemy.ui.monsters.area3">Bereich 3</div><h2 data-i18n="plugins.streamalchemy.ui.monsters.artLab">Art Lab</h2><p class="section-copy" data-i18n="plugins.streamalchemy.ui.monsters.artCopy">Premium-KI wird seriell vor dem Stream vorbereitet. Fehlt Kunst, baut Kenney sofort ein deterministisches Monster.</p></div><span id="poolStatus" class="badge" data-i18n="plugins.streamalchemy.ui.monsters.poolChecking">Pool wird geprüft</span></div>
-    <div class="grid">
-      <article class="card wide">
-        <h3 data-i18n="plugins.streamalchemy.ui.monsters.twelveEggs">Die zwölf Element-Eier</h3>
-        <div class="egg-grid">
-          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/ember-standard.png" alt="Ember · Standard" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggEmberStandard"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggEmberStandard">Ember · Standard</strong></div>
-          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/ember-charged.png" alt="Ember · Aufgeladen" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggEmberCharged"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggEmberCharged">Ember · Aufgeladen</strong></div>
-          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/tide-standard.png" alt="Tide · Standard" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggTideStandard"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggTideStandard">Tide · Standard</strong></div>
-          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/tide-charged.png" alt="Tide · Aufgeladen" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggTideCharged"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggTideCharged">Tide · Aufgeladen</strong></div>
-          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/grove-standard.png" alt="Grove · Standard" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggGroveStandard"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggGroveStandard">Grove · Standard</strong></div>
-          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/grove-charged.png" alt="Grove · Aufgeladen" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggGroveCharged"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggGroveCharged">Grove · Aufgeladen</strong></div>
-          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/gale-standard.png" alt="Gale · Standard" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggGaleStandard"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggGaleStandard">Gale · Standard</strong></div>
-          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/gale-charged.png" alt="Gale · Aufgeladen" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggGaleCharged"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggGaleCharged">Gale · Aufgeladen</strong></div>
-          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/volt-standard.png" alt="Volt · Standard" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggVoltStandard"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggVoltStandard">Volt · Standard</strong></div>
-          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/volt-charged.png" alt="Volt · Aufgeladen" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggVoltCharged"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggVoltCharged">Volt · Aufgeladen</strong></div>
-          <div class="egg-card"><img src="/plugins/streamalchemy/assets/eggs/lunar-standard.png" alt="Lunar · Standard" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggLunarStandard"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggLunarStandard">Lunar · Standard</strong></div>
-          <div class="egg-card charged"><img src="/plugins/streamalchemy/assets/eggs/lunar-charged.png" alt="Lunar · Aufgeladen" data-i18n-alt="plugins.streamalchemy.ui.monsters.eggLunarCharged"><strong data-i18n="plugins.streamalchemy.ui.monsters.eggLunarCharged">Lunar · Aufgeladen</strong></div>
-        </div>
-      </article>
-      <article class="card">
-        <h3 data-i18n="plugins.streamalchemy.ui.monsters.providersCoverage">Provider & Zielabdeckung</h3>
-        <div class="provider-grid">
-          <div class="provider"><strong>ComfyUI</strong><span id="provider-localComfy" data-i18n="plugins.streamalchemy.ui.monsters.checking">wird geprüft</span></div>
-          <div class="provider"><strong>SiliconFlow</strong><span id="provider-siliconflow" data-i18n="plugins.streamalchemy.ui.monsters.checking">wird geprüft</span></div>
-          <div class="provider"><strong>OpenAI</strong><span id="provider-openai" data-i18n="plugins.streamalchemy.ui.monsters.checking">wird geprüft</span></div>
-          <div class="provider"><strong>LightX</strong><span id="provider-lightx" data-i18n="plugins.streamalchemy.ui.monsters.checking">wird geprüft</span></div>
-          <div class="provider"><strong>Kenney</strong><span id="provider-kenney" data-i18n="plugins.streamalchemy.ui.monsters.kenneyReady">CC0 · sofort bereit</span></div>
-        </div>
-        <p id="localRuntimeStatus" class="muted" data-i18n="plugins.streamalchemy.ui.monsters.providerChecking">Providerstatus wird geprüft …</p>
-        <div><span data-i18n="plugins.streamalchemy.ui.monsters.providerFallback">Provider-Fallback</span>: <strong id="providerFallback">Kenney</strong></div>
-        <label><span data-i18n="plugins.streamalchemy.ui.monsters.poolTargetLabel">Freie KI-Skins je Variante</span><select id="poolTarget"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label>
-        <button id="preparePool" type="button" data-i18n="plugins.streamalchemy.ui.monsters.preparePool">Pre-Stream-Pool vorbereiten</button>
-      </article>
-      <article class="card full runtime-wizard" id="runtimeWizard">
-        <div>
-          <h3 data-i18n="plugins.streamalchemy.ui.monsters.wizardTitle">Geführte lokale Art-Lab-Einrichtung</h3>
-          <p class="muted" data-i18n="plugins.streamalchemy.ui.monsters.wizardCopy">Erkannten Adapter wählen, festes Profil und Anforderungen prüfen, dann installieren, Backend verifizieren und den Pool vorbereiten.</p>
-        </div>
-        <label><span data-i18n="plugins.streamalchemy.ui.monsters.adapter">Grafikadapter</span><select id="runtimeAdapters"></select></label>
-        <button class="secondary" id="openLocalSetup" type="button" data-i18n="plugins.streamalchemy.ui.monsters.recommendation">Empfehlung aktualisieren</button>
-        <div id="runtimeRecommendation" class="badge">—</div>
-        <div class="runtime-details">
-          <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.profile">Runtime-Profil</span><strong id="runtimeProfile">—</strong></div>
-          <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.backend">Backend</span><strong id="runtimeBackend">—</strong></div>
-          <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.device">Gerät</span><strong id="runtimeDevice">—</strong></div>
-          <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.driver">Treiber</span><strong id="runtimeDriver">—</strong></div>
-          <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.vram">VRAM</span><strong id="runtimeVram">—</strong></div>
-          <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.disk">Speicherplatz</span><strong id="runtimeDisk">—</strong></div>
-          <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.license">Modell-Lizenz</span><strong id="runtimeLicense">—</strong></div>
-          <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.download">Download- und Installationsgröße</span><strong id="runtimeDownload">—</strong></div>
-        </div>
-        <div class="driver-links"><span data-i18n="plugins.streamalchemy.ui.monsters.driverLinks">Offizielle Treiber-Downloads</span>:
-          <a href="https://www.nvidia.com/en-us/geforce/drivers/" target="_blank" rel="noopener noreferrer" data-i18n="plugins.streamalchemy.ui.monsters.nvidiaDriver">NVIDIA-Treiber</a>
-          <a href="https://www.intel.com/content/www/us/en/download-center/home.html" target="_blank" rel="noopener noreferrer" data-i18n="plugins.streamalchemy.ui.monsters.intelDriver">Intel-Treiber</a>
-          <a href="https://www.amd.com/en/support/download/drivers.html" target="_blank" rel="noopener noreferrer" data-i18n="plugins.streamalchemy.ui.monsters.amdDriver">AMD-Treiber</a>
-        </div>
-        <label class="check-row"><input id="runtimeLicenseAccepted" type="checkbox"><span data-i18n="plugins.streamalchemy.ui.monsters.licenseAccept">Ich akzeptiere die OpenRAIL++-Modell-Lizenz.</span></label>
-        <div><span data-i18n="plugins.streamalchemy.ui.monsters.progress">Installationsfortschritt</span><progress id="runtimeProgress" max="100" value="0"></progress><strong id="runtimeProgressText">—</strong></div>
-        <div class="runtime-actions">
-          <button id="runtimeInstall" type="button" data-i18n="plugins.streamalchemy.ui.monsters.install">Installieren</button>
-          <button id="runtimeCancel" class="danger" type="button" data-i18n="plugins.streamalchemy.ui.monsters.cancel">Abbrechen</button>
-          <button id="runtimeResume" class="secondary" type="button" data-i18n="plugins.streamalchemy.ui.monsters.resume">Fortschritt fortsetzen</button>
-          <button id="runtimeVerify" class="secondary" type="button" data-i18n="plugins.streamalchemy.ui.monsters.verify">Backend verifizieren</button>
-        </div>
-        <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.smokeTest">256×256-Smoke-Test</span><strong id="runtimeSmokeTest">—</strong></div>
-        <div class="runtime-detail"><span data-i18n="plugins.streamalchemy.ui.monsters.recovery">Wiederherstellungsaktion</span><strong id="runtimeRecovery">—</strong></div>
-      </article>
-      <article class="card full">
-        <h3 data-i18n="plugins.streamalchemy.ui.monsters.poolCoverage">Poolabdeckung</h3>
-        <div id="poolList" class="coverage"></div>
-      </article>
-    </div>
+
+  <section id="visual-library" class="area">
+    <div class="area-head"><div><div class="eyebrow">Bereich 3</div><h2>Furry-Bibliothek</h2><p class="section-copy">Stream Monsters nutzt ausschließlich gebündelte Furry-Grafiken. Fehlt eine Datei, greift der lokale Kenney-Fallback.</p></div><span class="badge">Keine Bild-KI</span></div>
+    <article class="card full">
+      <h3>Kanonsicherer Visual-Pfad</h3>
+      <p class="muted">Keine Provider, Modelle, Installationen, Generierungsjobs oder Art-Pools werden beim Start oder im Stream ausgeführt.</p>
+    </article>
   </section>
 
   <section id="collections" class="area">
@@ -431,55 +384,10 @@
   const elementName = element => text(runtimeText.elementKey(element), 'Unknown');
   const variantName = variant => text(runtimeText.variantKey(variant), 'Unknown');
   const personalityName = personality => text(runtimeText.personalityKey(personality), 'Unknown');
-  const RUNTIME_REASON_KEYS = Object.freeze({
-    supported_profile: 'runtimeReasonSupportedProfile',
-    windows_required: 'runtimeReasonWindowsRequired',
-    backend_mapping_ambiguous: 'runtimeReasonBackendMappingAmbiguous',
-    backend_mapping_unavailable: 'runtimeReasonBackendMappingUnavailable',
-    unknown_memory: 'runtimeReasonUnknownMemory',
-    windows_11_required: 'runtimeReasonWindows11Required',
-    unsupported_amd_hardware: 'runtimeReasonUnsupportedAmdHardware',
-    insufficient_memory: 'runtimeReasonInsufficientMemory',
-    unsupported_adapter: 'runtimeReasonUnsupportedAdapter'
-  });
-  const RUNTIME_STATE_KEYS = Object.freeze({
-    queued: 'runtimeStateQueued',
-    running: 'runtimeStateRunning',
-    committing: 'runtimeStateCommitting',
-    ready: 'runtimeStateReady',
-    passed: 'runtimeStateReady',
-    failed: 'runtimeStateFailed',
-    cancelled: 'runtimeStateCancelled'
-  });
-  const RUNTIME_PHASE_KEYS = Object.freeze({
-    queued: 'runtimePhaseQueued',
-    preflight: 'runtimePhasePreflight',
-    runtime_download: 'runtimePhaseRuntimeDownload',
-    archive_inspection: 'runtimePhaseArchiveInspection',
-    model_download: 'runtimePhaseModelDownload',
-    runtime_verification: 'runtimePhaseRuntimeVerification',
-    committing: 'runtimePhaseCommitting',
-    complete: 'runtimePhaseComplete',
-    cancelled: 'runtimePhaseCancelled',
-    failed: 'runtimePhaseFailed'
-  });
-  const PROVIDER_STATE_KEYS = Object.freeze({
-    ready: 'providerStateReady',
-    missing_api_key: 'providerStateMissingApiKey',
-    not_configured: 'providerStateNotConfigured',
-    unavailable: 'providerStateUnavailable',
-    disabled: 'providerStateDisabled',
-    error: 'providerStateError'
-  });
-  const codeText = (mapping, code, fallbackKey, fallback) => text(
-    mapping[String(code || '')] || fallbackKey,
-    fallback
-  );
   const apiErrorText = error => text(
     runtimeText.apiErrorKey(error),
     'The action failed. Please try again.'
   );
-  const runtimeErrorText = apiErrorText;
   const rankLabel = rank => ({
     Bronze:text('rankBronze', 'Bronze'),
     Silver:text('rankSilver', 'Silber'),
@@ -499,13 +407,6 @@
   const achievementTitleKey = achievement => (
     ACHIEVEMENT_TITLE_KEYS[achievement?.achievement_key] || 'achievementUnknown'
   );
-  const formatBytes = bytes => {
-    const value = Math.max(0, Number(bytes) || 0);
-    if (!value) return '0 B';
-    const units = ['B','KB','MB','GB','TB'];
-    const index = Math.min(units.length - 1, Math.floor(Math.log(value) / Math.log(1024)));
-    return `${(value / (1024 ** index)).toFixed(index > 2 ? 1 : 0)} ${units[index]}`;
-  };
   const formatDuration = milliseconds => {
     const totalSeconds = Math.max(0, Math.round((Number(milliseconds) || 0) / 1000));
     const minutes = Math.floor(totalSeconds / 60);
@@ -514,10 +415,7 @@
   };
   let selectedGift = null;
   let searchTimer = null;
-  let runtimePayload = null;
-  let runtimeJobTimer = null;
   let currentStateConfig = {};
-  const runtimeInstallRequestKey = 'streammonsters-runtime-install-request';
   const notice = (message, type = '') => {
     const root = byId('notice');
     if (!root) return;
@@ -613,28 +511,6 @@
     currentStateConfig.giftMappingCustomized = true;
     await loadMappings();
     notice(text('mappingEnabled', '{gift} ist jetzt für Stream Monsters aktiv.', { gift:selectedGift.giftName }), 'success');
-  };
-  const renderPool = coverage => {
-    const root = byId('poolList');
-    root.replaceChildren();
-    (coverage || []).forEach(entry => {
-      const item = document.createElement('div');
-      const title = document.createElement('strong');
-      title.textContent = `${elementName(entry.element)} · ${variantName(entry.variant)}`;
-      const count = document.createElement('span');
-      count.textContent = text('poolFree', '{count} frei', { count:entry.ready || 0 });
-      item.append(title,document.createElement('br'),count);
-      root.append(item);
-    });
-    if (!(coverage || []).length) root.textContent = text('poolEmpty', 'Noch keine KI-Skins vorbereitet. Kenney ist jederzeit startklar.');
-    const ready = (coverage || []).reduce((sum, entry) => sum + (entry.ready || 0), 0);
-    byId('poolStatus').textContent = ready
-      ? text('poolReady', '{count} KI-Skins frei', { count:ready })
-      : text('kenneyFallback', 'Kenney-Fallback bereit');
-  };
-  const refreshPool = async () => {
-    const payload = await request('/api/streammonsters/pool');
-    renderPool(payload.coverage || []);
   };
   const renderViewer = viewer => {
     const root = byId('viewerCollection');
@@ -779,7 +655,7 @@
   const loadViewer = async () => {
     const userId = byId('viewerSearch').value.trim();
     if (!userId) return;
-    const payload = await request(`/api/streammonsters/state?userId=${encodeURIComponent(userId)}`);
+    const payload = await request(`/api/streammonsters/creator-state?userId=${encodeURIComponent(userId)}`);
     renderViewer(payload.viewer || {});
     await loadMonsterCatalog(userId);
   };
@@ -813,17 +689,38 @@
     renderLeaderboard(payload.entries || []);
   };
   const saveSetup = async () => {
+    const aliases = id => byId(id).value.split(',').map(value => value.trim()).filter(Boolean);
+    const audioChannel = name => ({
+      enabled:byId(`audio${name}Enabled`).checked,
+      volume:Number(byId(`audio${name}Volume`).value)
+    });
     const payload = creatorRuntime.buildConfigPayload({
       currentConfig: currentStateConfig,
       values: {
         creatorName:byId('creatorName').value,
-        artPoolTarget:byId('poolTarget').value,
         hatchDurationMs:byId('hatchPreset').value,
-        visualPack:byId('visualPack').value,
+        eggExpiryMs:byId('eggExpiry').value,
+        seasonDurationDays:byId('seasonDuration').value,
         landscapeAnchor:byId('landscapeAnchor').value,
         landscapeScale:byId('landscapeScale').value,
         portraitAnchor:byId('portraitAnchor').value,
-        portraitScale:byId('portraitScale').value
+        portraitScale:byId('portraitScale').value,
+        rendererQuality:byId('rendererQuality').value,
+        notificationDurationMs:Number(byId('notificationDuration').value) * 1000,
+        commandAliases:{
+          ...currentStateConfig.commandAliases,
+          eggs:{
+            enabled:aliases('aliasEggsEnabled'),
+            disabled:aliases('aliasEggsDisabled')
+          }
+        },
+        audioChannels:{
+          master:audioChannel('Master'),
+          ui:audioChannel('Ui'),
+          egg:audioChannel('Egg'),
+          battle:audioChannel('Battle'),
+          reward:audioChannel('Reward')
+        }
       }
     });
     await request('/api/streammonsters/config', {
@@ -832,268 +729,7 @@
       body:JSON.stringify(payload)
     });
     currentStateConfig = { ...currentStateConfig, ...payload };
-    notice(text('setupSaved', 'Weltname und Art-Pool-Ziel gespeichert.'), 'success');
-  };
-  const preparePool = async () => {
-    const button = byId('preparePool');
-    button.disabled = true;
-    notice(text('poolPreparing', 'KI-Skins werden seriell vor dem Stream vorbereitet …'));
-    try {
-      const targetPerVariant = Number(byId('poolTarget').value);
-      const result = await request('/api/streammonsters/pool/prepare', {
-        method:'POST',
-        headers:jsonHeaders,
-        body:JSON.stringify({ targetPerVariant })
-      });
-      renderPool(result.coverage || []);
-      notice((result.coverage || []).length
-        ? text('poolPrepared', 'Art-Pool ist vorbereitet. Live wird keine Bild-KI gestartet.')
-        : text('poolNeedsGift', 'Aktiviere zuerst mindestens ein Spawn-Gift; erst dann werden KI-Jobs erstellt.'),
-      (result.coverage || []).length ? 'success' : 'error');
-    } catch (error) {
-      notice(text('poolFailed', '{error} · Kenney bleibt als sofortiger Fallback aktiv.', {
-        error:apiErrorText(error)
-      }), 'error');
-    } finally {
-      button.disabled = false;
-    }
-  };
-  const runtimeRecoveryText = ({ recommendation = {}, disk = {}, runtimeDetails = {}, job = null } = {}) => {
-    if (job?.state === 'failed') {
-      return text('runtimeRetry', 'Fehler {error}. Installation erneut starten; eine zuvor verifizierte Runtime bleibt erhalten.', {
-        error:runtimeErrorText(job.errorCode || job.error)
-      });
-    }
-    if (job?.state === 'cancelled') return text('runtimeResume', 'Abgebrochen. Installation erneut starten; verifizierte Teildownloads werden fortgesetzt.');
-    if (disk?.sufficient === false) {
-      return text('runtimeFreeDisk', '{required} freigeben und die Prüfung wiederholen.', {
-        required:formatBytes(disk.requiredBytes)
-      });
-    }
-    if (!recommendation.supported) {
-      return codeText(
-        RUNTIME_REASON_KEYS,
-        recommendation.reasonCode,
-        'runtimeReasonUnsupportedAdapter',
-        'Grafiktreiber aktualisieren oder externes ComfyUI beziehungsweise einen Remote-Provider verwenden.'
-      );
-    }
-    if (runtimeDetails.verifiedOnDevice) return text('runtimePreparePool', 'Backend verifizieren und danach den Pre-Stream-Pool vorbereiten.');
-    return text('runtimeInstallNext', 'Lizenz akzeptieren und die empfohlene Runtime installieren.');
-  };
-  const renderRuntimeStatus = payload => {
-    runtimePayload = payload;
-    const recommendation = payload.recommendation || {};
-    const details = payload.runtimeDetails || {};
-    const adapters = payload.adapters || [];
-    const selectedAdapterId = payload.selectedAdapterId || adapters[0]?.id || '';
-    const adapterSelect = byId('runtimeAdapters');
-    adapterSelect.replaceChildren();
-    adapters.forEach(adapter => {
-      const option = document.createElement('option');
-      option.value = adapter.id;
-      option.textContent = text('runtimeAdapter', '{name} · {vram} GB', {
-        name: adapter.name || adapter.id,
-        vram: Math.round((Number(adapter.vramMb) || 0) / 1024)
-      });
-      option.selected = adapter.id === selectedAdapterId;
-      adapterSelect.append(option);
-    });
-    if (!adapters.length) {
-      const option = document.createElement('option');
-      option.textContent = text('noAdapters', 'Kein sicher zugeordneter Grafikadapter erkannt');
-      adapterSelect.append(option);
-    }
-
-    const profile = (payload.profiles || []).find(item => item.id === details.profileId || item.id === recommendation.profileId);
-    const statusLabel = !recommendation.supported
-      ? text('unsupported', 'Nicht unterstützt')
-      : (recommendation.experimental
-        ? text('experimental', 'Experimenteller Runtime-Pfad')
-        : text('officialBeta', 'Offizieller Runtime-Pfad · Beta'));
-    const reasonLabel = codeText(
-      RUNTIME_REASON_KEYS,
-      recommendation.reasonCode,
-      recommendation.supported ? 'runtimeReasonSupportedProfile' : 'runtimeReasonUnsupportedAdapter',
-      recommendation.supported
-        ? 'Das empfohlene Profil passt zur aktuellen Auswahl.'
-        : 'Diese Auswahl benötigt einen externen oder Remote-Provider.'
-    );
-    byId('runtimeRecommendation').textContent = `${statusLabel} · ${reasonLabel}`;
-    byId('runtimeProfile').textContent = profile?.label || details.profileId || recommendation.profileId || '—';
-    byId('runtimeBackend').textContent = details.backend || profile?.backend || '—';
-    byId('runtimeDevice').textContent = details.device || adapters.find(item => item.id === selectedAdapterId)?.name || '—';
-    byId('runtimeDriver').textContent = details.driverVersion || text('unknown', 'unbekannt');
-    byId('runtimeVram').textContent = details.vramMb ? formatBytes(details.vramMb * 1024 * 1024) : text('unknown', 'unbekannt');
-    const disk = payload.disk || {};
-    byId('runtimeDisk').textContent = disk.freeBytes
-      ? text('diskAvailable', '{free} frei · {required} benötigt', {
-        free:formatBytes(disk.freeBytes),
-        required:formatBytes(disk.requiredBytes)
-      })
-      : (disk.freeGb ? `${disk.freeGb} GB` : text('unknown', 'unbekannt'));
-    byId('runtimeLicense').textContent = `${payload.model?.license || '—'} · ${payload.model?.verified ? text('verified', 'verifiziert') : text('checksumPending', 'Prüfsumme vor Installation')}`;
-    const install = payload.installDetails || {};
-    byId('runtimeDownload').textContent = text('runtimeSizes', '{download} Download + {model} Modell · {installed} installiert', {
-      download:formatBytes(install.runtimeDownloadBytes),
-      model:formatBytes(install.modelDownloadBytes),
-      installed:formatBytes(install.runtimeInstalledBytes)
-    });
-    const smoke = payload.smokeTest;
-    byId('runtimeSmokeTest').textContent = details.verifiedOnDevice
-      ? text('smokeVerified', 'Auf diesem Gerät verifiziert · {width}×{height}', { width:smoke?.width || 256, height:smoke?.height || 256 })
-      : (smoke?.state
-        ? text('smokeRecorded', 'Letztes Ergebnis: {state} · keine Hardware-Behauptung für die aktuelle Auswahl', {
-          state:codeText(RUNTIME_STATE_KEYS, smoke.state, 'runtimeStateUnknown', 'unbekannt')
-        })
-        : text('smokePending', 'Ausstehend · keine Verifizierung auf diesem Gerät'));
-    byId('runtimeRecovery').textContent = runtimeRecoveryText(payload);
-    byId('localRuntimeStatus').textContent = recommendation.supported
-      ? text('runtimeCompatible', 'Lokale KI kompatibel · {width}×{height} · {steps} Schritte', {
-        width:recommendation.width || '?',
-        height:recommendation.height || '?',
-        steps:recommendation.steps || '?'
-      })
-      : runtimeRecoveryText(payload);
-  };
-  const checkLocalRuntime = async (adapterId = '') => {
-    try {
-      const query = adapterId ? `?adapterId=${encodeURIComponent(adapterId)}` : '';
-      const payload = await request(`/api/streammonsters/local-runtime/status${query}`);
-      renderRuntimeStatus(payload);
-    } catch (error) {
-      byId('localRuntimeStatus').textContent = text('providerUnavailable', 'Providercheck nicht verfügbar: {error}', { error:runtimeErrorText(error) });
-      byId('runtimeRecovery').textContent = text('runtimeStatusRetry', 'Status erneut laden. Wenn das fehlschlägt, externes ComfyUI oder einen Remote-Provider verwenden.');
-    }
-  };
-  const renderRuntimeJob = job => {
-    const progress = job.progress || {};
-    const completed = Math.max(0, Number(progress.completedBytes) || 0);
-    const total = Math.max(0, Number(progress.totalBytes) || 0);
-    const percent = total ? Math.min(100, Math.round((completed / total) * 100)) : (job.state === 'ready' ? 100 : 0);
-    byId('runtimeProgress').value = percent;
-    byId('runtimeProgressText').textContent = text('runtimeJobProgress', '{state} · {phase} · {percent}%', {
-      state:codeText(RUNTIME_STATE_KEYS, job.state, 'runtimeStateUnknown', 'unbekannt'),
-      phase:codeText(RUNTIME_PHASE_KEYS, progress.phase || job.state, 'runtimePhaseUnknown', 'unbekannt'),
-      percent
-    });
-    byId('runtimeRecovery').textContent = runtimeRecoveryText({ ...(runtimePayload || {}), job });
-  };
-  const pollRuntimeJob = async jobId => {
-    clearTimeout(runtimeJobTimer);
-    try {
-      const job = await request(`/api/streammonsters/local-runtime/install/${encodeURIComponent(jobId)}`);
-      renderRuntimeJob(job);
-      if (['ready','failed','cancelled'].includes(job.state)) {
-        localStorage.removeItem('streammonsters-runtime-job-id');
-        if (job.state === 'ready') await checkLocalRuntime(byId('runtimeAdapters').value);
-        return job;
-      }
-      runtimeJobTimer = setTimeout(() => pollRuntimeJob(jobId), 900);
-      return job;
-    } catch (error) {
-      byId('runtimeRecovery').textContent = text('runtimeJobLost', 'Installationsstatus nicht erreichbar: {error}. Mit „Fortschritt fortsetzen“ erneut prüfen.', { error:runtimeErrorText(error) });
-      return null;
-    }
-  };
-  const startRuntimeInstall = async installRequest => {
-    localStorage.setItem(runtimeInstallRequestKey, JSON.stringify(installRequest));
-    const accepted = await request('/api/streammonsters/local-runtime/install', {
-      method:'POST',
-      headers:jsonHeaders,
-      body:JSON.stringify(installRequest)
-    });
-    localStorage.setItem('streammonsters-runtime-job-id', accepted.jobId);
-    renderRuntimeJob({ ...accepted, progress:{ phase:'queued' } });
-    await pollRuntimeJob(accepted.jobId);
-  };
-  const installRuntime = async () => {
-    if (!byId('runtimeLicenseAccepted').checked) {
-      notice(text('licenseRequired', 'Die Modell-Lizenz muss vor der Installation akzeptiert werden.'), 'error');
-      return;
-    }
-    const adapterId = byId('runtimeAdapters').value;
-    const profileId = runtimePayload?.recommendation?.profileId;
-    await startRuntimeInstall({ adapterId, profileId, acceptModelLicense:true });
-  };
-  const cancelRuntimeInstall = async () => {
-    const jobId = localStorage.getItem('streammonsters-runtime-job-id');
-    if (!jobId) return;
-    const job = await request(`/api/streammonsters/local-runtime/install/${encodeURIComponent(jobId)}`, { method:'DELETE' });
-    localStorage.removeItem('streammonsters-runtime-job-id');
-    renderRuntimeJob(job);
-  };
-  const resumeRuntimeInstall = async () => {
-    const jobId = localStorage.getItem('streammonsters-runtime-job-id');
-    if (jobId) {
-      try {
-        const job = await request(`/api/streammonsters/local-runtime/install/${encodeURIComponent(jobId)}`);
-        renderRuntimeJob(job);
-        if (!['ready','failed','cancelled'].includes(job.state)) {
-          await pollRuntimeJob(jobId);
-          return;
-        }
-      } catch (_) {}
-      localStorage.removeItem('streammonsters-runtime-job-id');
-    }
-    let remembered = null;
-    try { remembered = JSON.parse(localStorage.getItem(runtimeInstallRequestKey) || 'null'); } catch (_) {}
-    if (remembered?.adapterId && remembered?.profileId && remembered.acceptModelLicense === true) {
-      await startRuntimeInstall(remembered);
-      return;
-    }
-    await checkLocalRuntime(byId('runtimeAdapters').value);
-  };
-  const verifyRuntime = async () => {
-    const adapterId = byId('runtimeAdapters').value;
-    const profileId = runtimePayload?.recommendation?.profileId;
-    const result = await request('/api/streammonsters/local-runtime/verify', {
-      method:'POST',
-      headers:jsonHeaders,
-      body:JSON.stringify({ adapterId, profileId })
-    });
-    byId('runtimeSmokeTest').textContent = text('smokeResult', '{state} · {width}×{height}', {
-      state:codeText(RUNTIME_STATE_KEYS, result.smokeTest?.state, 'runtimeStateUnknown', 'unbekannt'),
-      width:result.smokeTest?.width || 256,
-      height:result.smokeTest?.height || 256
-    });
-    await checkLocalRuntime(adapterId);
-  };
-  const loadProviderStatus = async () => {
-    try {
-      const payload = await request('/api/streamalchemy/providers/status');
-      const known = new Set(['localComfy','siliconflow','openai','lightx']);
-      const readyProviders = [];
-      (payload.providers || []).forEach(provider => {
-        if (!known.has(provider.provider)) return;
-        const target = byId(`provider-${provider.provider}`);
-        if (!target) return;
-        target.textContent = provider.state === 'ready'
-          ? text('providerReady', 'bereit{model}', { model:provider.model ? ` · ${provider.model}` : '' })
-          : codeText(PROVIDER_STATE_KEYS, provider.state, 'providerStateUnavailable', 'nicht verfügbar');
-        if (provider.state === 'ready') readyProviders.push(provider.provider);
-      });
-      byId('providerFallback').textContent = [...readyProviders, 'Kenney'].join(' → ');
-    } catch (error) {
-      ['localComfy','siliconflow','openai','lightx'].forEach(providerId => {
-        const target = byId(`provider-${providerId}`);
-        if (target) target.textContent = text('statusUnavailable', 'Status nicht verfügbar');
-      });
-      byId('providerFallback').textContent = text('kenneyOnly', 'Kenney · lokaler Sofort-Fallback');
-    }
-  };
-  const configureOverlayAudio = () => {
-    const muted = localStorage.getItem('streammonsters-overlay-muted') === 'true';
-    const storedVolume = localStorage.getItem('streammonsters-overlay-volume');
-    const volume = Math.max(0, Math.min(100, storedVolume === null ? 70 : Number(storedVolume)));
-    byId('overlayMuted').checked = muted;
-    byId('overlayVolume').value = String(volume);
-    byId('overlayMuted').addEventListener('change', event => {
-      localStorage.setItem('streammonsters-overlay-muted', String(event.target.checked));
-    });
-    byId('overlayVolume').addEventListener('input', event => {
-      localStorage.setItem('streammonsters-overlay-volume', String(event.target.value));
-    });
+    notice(text('setupSaved', 'Regeln, Layout und Audio gespeichert.'), 'success');
   };
   const positionSafeBox = (id, rectangle) => {
     const target = byId(id);
@@ -1149,11 +785,30 @@
       giftMappingCustomized:Boolean(state.config?.giftMappingCustomized)
     };
     byId('hatchPreset').value = String(state.config?.hatchDurationMs || 120000);
-    byId('visualPack').value = state.config?.visualPack || 'furry';
-    byId('landscapeAnchor').value = state.config?.landscapeAnchor || 'bottom-center';
-    byId('landscapeScale').value = String(state.config?.landscapeScale || 100);
-    byId('portraitAnchor').value = state.config?.portraitAnchor || 'center';
-    byId('portraitScale').value = String(state.config?.portraitScale || 100);
+    byId('visualPack').value = 'furry';
+    byId('eggExpiry').value = String(state.config?.eggExpiryMs || 86400000);
+    byId('seasonDuration').value = String(state.config?.seasonDurationDays || 28);
+    byId('rendererQuality').value = state.config?.rendererQuality || 'auto';
+    byId('notificationDuration').value = String(
+      Math.round((state.config?.notificationDurationMs || 12000) / 1000)
+    );
+    byId('aliasEggsEnabled').value = (state.config?.commandAliases?.eggs?.enabled || []).join(', ');
+    byId('aliasEggsDisabled').value = (state.config?.commandAliases?.eggs?.disabled || []).join(', ');
+    byId('landscapeAnchor').value = state.config?.layouts?.landscape?.anchor || 'bottom-center';
+    byId('landscapeScale').value = String(state.config?.layouts?.landscape?.scale || 100);
+    byId('portraitAnchor').value = state.config?.layouts?.portrait?.anchor || 'top-center';
+    byId('portraitScale').value = String(state.config?.layouts?.portrait?.scale || 100);
+    for (const [name, suffix] of [
+      ['master', 'Master'],
+      ['ui', 'Ui'],
+      ['egg', 'Egg'],
+      ['battle', 'Battle'],
+      ['reward', 'Reward']
+    ]) {
+      const channel = state.config?.audioChannels?.[name] || { enabled:true, volume:1 };
+      byId(`audio${suffix}Enabled`).checked = channel.enabled !== false;
+      byId(`audio${suffix}Volume`).value = String(channel.volume ?? 1);
+    }
     const counts = creatorRuntime.eggReadinessCounts(state);
     byId('creatorMetrics').textContent = text(
       'readinessCounts',
@@ -1194,14 +849,12 @@
     try {
       const [status,state,mappings] = await Promise.all([
         request('/api/status'),
-        request('/api/streammonsters/state'),
+        request('/api/streammonsters/creator-state'),
         loadMappings()
       ]);
       byId('creatorName').value = state.config?.creatorName || status.username || '';
-      byId('poolTarget').value = String(state.config?.artPoolTarget || 3);
       byId('overlayUrl').textContent = `${location.origin}/streammonsters/overlay`;
       byId('hypeMetric').textContent = `${state.hype?.points || 0}%`;
-      renderPool(state.pool || []);
       applyDynamicRules(state);
       applyPresentationState(state);
       await loadMonsterCatalog(status.username || '');
@@ -1209,7 +862,7 @@
       byId('readinessScore').textContent = `${readiness}/4`;
       const end = state.season?.ends_at_ms;
       if (end) byId('seasonCountdown').textContent = text('seasonEnds', 'Endet {date}', { date:new Date(end).toLocaleDateString() });
-      notice(text('arenaReady', 'Collector Arena bereit. Gifts auswählen, Pool prüfen, Demo starten.'), 'success');
+      notice(text('arenaReady', 'Collector Arena bereit. Gifts auswählen und Demo starten.'), 'success');
     } catch (error) {
       notice(text('setupFailed', 'Setup konnte nicht geladen werden: {error}', {
         error:apiErrorText(error)
@@ -1219,14 +872,7 @@
 
   byId('saveSetup').addEventListener('click', () => saveSetup().catch(error => notice(apiErrorText(error), 'error')));
   byId('saveGiftMapping').addEventListener('click', () => saveGiftMapping().catch(error => notice(apiErrorText(error), 'error')));
-  byId('preparePool').addEventListener('click', preparePool);
   byId('loadViewer').addEventListener('click', () => loadViewer().catch(error => notice(apiErrorText(error), 'error')));
-  byId('openLocalSetup').addEventListener('click', () => checkLocalRuntime(byId('runtimeAdapters').value));
-  byId('runtimeAdapters').addEventListener('change', event => checkLocalRuntime(event.target.value));
-  byId('runtimeInstall').addEventListener('click', () => installRuntime().catch(error => notice(runtimeErrorText(error), 'error')));
-  byId('runtimeCancel').addEventListener('click', () => cancelRuntimeInstall().catch(error => notice(runtimeErrorText(error), 'error')));
-  byId('runtimeResume').addEventListener('click', () => resumeRuntimeInstall().catch(error => notice(runtimeErrorText(error), 'error')));
-  byId('runtimeVerify').addEventListener('click', () => verifyRuntime().catch(error => notice(runtimeErrorText(error), 'error')));
   byId('runDemo').addEventListener('click', async () => {
     try {
       await request('/api/streammonsters/demo', { method:'POST' });
@@ -1276,19 +922,12 @@
   });
   loadCatalog().catch(() => {});
   loadLeaderboard().catch(() => {});
-  loadProviderStatus();
-  checkLocalRuntime();
-  configureOverlayAudio();
-  const savedRuntimeJobId = localStorage.getItem('streammonsters-runtime-job-id');
-  if (savedRuntimeJobId) pollRuntimeJob(savedRuntimeJobId);
   if (window.i18n?.onLanguageChange) {
     window.i18n.onLanguageChange(() => {
       Promise.allSettled([
         init(),
         loadCatalog(byId('giftSearch').value),
-        loadLeaderboard(),
-        loadProviderStatus(),
-        checkLocalRuntime(byId('runtimeAdapters').value)
+        loadLeaderboard()
       ]);
     });
   }

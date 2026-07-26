@@ -63,8 +63,9 @@ describe('Stream Monsters plugin integration', () => {
     await plugin.init();
 
     expect(events.map(entry => entry.event)).toEqual(expect.arrayContaining(['gift', 'chat', 'streamSessionStarted']));
-    expect(plugin.config.localGeneration.generationMode).toBe('local_preferred');
-    expect(plugin.streamMonstersEngine.artPool).toBeDefined();
+    expect(plugin.config.streamMonsters.visualPack).toBe('furry');
+    expect(plugin.providers).toBeUndefined();
+    expect(plugin.streamMonstersEngine.artPool).toBeUndefined();
     plugin.streamMonstersStore.upsertGiftMapping({
       giftId: 1, giftName: 'Rose', element: 'Ember', effect: 'spawn', enabled: true
     });
@@ -167,18 +168,20 @@ describe('Stream Monsters plugin integration', () => {
     expect(overlayFile).toContain('streammonsters-overlay.html');
   });
 
-  test('connects the local provider to the current managed runtime port', async () => {
-    const { api } = createApi();
+  test('does not construct provider or managed-runtime services', async () => {
+    const { api, routes } = createApi();
     const plugin = new StreamAlchemyPlugin(api);
     await plugin.init();
-    plugin.streamMonstersManagedRuntime.processState = {
-      state: 'running',
-      pid: 42,
-      port: 8307,
-      baseUrl: 'http://127.0.0.1:8307'
-    };
 
-    expect(plugin.providers.localComfy.resolveBaseUrl()).toBe('http://127.0.0.1:8307');
+    expect(plugin.providers).toBeUndefined();
+    expect(plugin.streamMonstersManagedRuntime).toBeUndefined();
+    const tombstone = routes.find(route => (
+      route.method === 'GET' && route.path === '/api/streammonsters/local-runtime/status'
+    ));
+    const response = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    tombstone.handler({}, response);
+    expect(response.status).toHaveBeenCalledWith(410);
+    expect(response.json).toHaveBeenCalledWith({ error: 'art_lab_removed' });
 
     await plugin.destroy();
   });
@@ -205,7 +208,6 @@ describe('Stream Monsters plugin integration', () => {
     const { api } = createApi();
     const plugin = new StreamAlchemyPlugin(api);
     await plugin.init();
-    const destroyRuntime = jest.spyOn(plugin.streamMonstersManagedRuntime, 'destroy');
     plugin.streamMonstersEngine.recentGifts.set('viewer-a', { giftId: 1, timestamp: 1 });
     plugin.streamMonstersChatCommands.queue.push({ userId: 'viewer-a', queuedAt: 1 });
 
@@ -215,7 +217,6 @@ describe('Stream Monsters plugin integration', () => {
     expect(plugin.streamMonstersReadyTimer).toBeNull();
     expect(plugin.streamMonstersEngine.recentGifts.size).toBe(0);
     expect(plugin.streamMonstersChatCommands.queue).toEqual([]);
-    expect(destroyRuntime).toHaveBeenCalledTimes(1);
   });
 
   test('honors the nested Stream Monsters enable switch for gifts and chat', async () => {

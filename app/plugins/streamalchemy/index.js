@@ -1,32 +1,13 @@
-const StreamAlchemyDatabase = require('./backend/database');
-const PromptService = require('./backend/prompt-service');
-const RecipeService = require('./backend/recipe-service');
-const InventoryService = require('./backend/inventory-service');
-const PlaceholderProvider = require('./backend/providers/placeholder-provider');
-const LocalComfyProvider = require('./backend/providers/local-comfy-provider');
-const { ExistingServiceProvider } = require('./backend/providers/remote-provider-adapters');
-const GenerationService = require('./backend/generation-service');
-const LocalModelInstaller = require('./backend/local-model-installer');
-const SystemAnalyzer = require('./backend/system-analyzer');
-const ModelCatalog = require('./backend/model-catalog');
-const OverlayPublisher = require('./backend/overlay-publisher');
-const CraftingEngine = require('./backend/crafting-engine');
-const EventProcessor = require('./backend/event-processor');
-const StreamAlchemyRoutes = require('./backend/routes');
-const { DEFAULT_CONFIG } = require('./backend/constants');
-const CraftingService = require('./craftingService');
-const SiliconFlowService = require('./siliconFlowService');
-const LightXService = require('./lightxService');
+const { createHash, randomUUID } = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const StreamMonstersDatabase = require('./backend/streammonsters/database');
 const StreamMonstersEngine = require('./backend/streammonsters/game-engine');
 const StreamMonstersRoutes = require('./backend/streammonsters/routes');
 const StreamMonstersBattleService = require('./backend/streammonsters/battle-service');
 const StreamMonstersChatCommands = require('./backend/streammonsters/chat-commands');
 const StreamMonstersCommandIngress = require('./backend/streammonsters/command-ingress');
-const StreamMonstersGenerationPool = require('./backend/streammonsters/generation-pool');
 const StreamMonstersProgressionService = require('./backend/streammonsters/progression-service');
-const StreamMonstersManagedRuntimeInstaller = require('./backend/streammonsters/managed-runtime-installer');
-const StreamMonstersArtPoolService = require('./backend/streammonsters/art-pool-service');
 const KenneyMonsterBuilder = require('./backend/streammonsters/kenney-monster-builder');
 const StreamMonstersCollectionService = require('./backend/streammonsters/collection-service');
 const { normalizeGiftName } = require('./backend/streammonsters/gift-name');
@@ -36,9 +17,50 @@ const RUNTIME_TRUST_FIELDS = new Set([
   'executableRelativePath', 'executableArgs', 'comfyRootRelativePath',
   'healthBaseUrl', 'healthUrl', 'downloadSizeBytes', 'modelSizeBytes'
 ]);
-const STREAM_MONSTERS_RULES_VERSION = 3;
+const STREAM_MONSTERS_RULES_VERSION = 5;
 const LEGACY_HATCH_DURATION_MS = 30 * 60 * 1000;
 const DEFAULT_HATCH_DURATION_MS = 2 * 60 * 1000;
+const INCUBATION_PRESETS_MS = Object.freeze([
+  30_000,
+  60_000,
+  120_000,
+  300_000,
+  600_000,
+  1_800_000
+]);
+const EGG_EXPIRY_PRESETS_MS = Object.freeze([
+  21_600_000,
+  43_200_000,
+  86_400_000,
+  172_800_000
+]);
+const DEFAULT_LAYOUTS = Object.freeze({
+  portrait: Object.freeze({ anchor: 'top-center', scale: 100 }),
+  landscape: Object.freeze({ anchor: 'bottom-center', scale: 100 })
+});
+const DEFAULT_AUDIO_CHANNELS = Object.freeze({
+  master: Object.freeze({ enabled: true, volume: 1 }),
+  ui: Object.freeze({ enabled: true, volume: 0.8 }),
+  egg: Object.freeze({ enabled: true, volume: 0.9 }),
+  battle: Object.freeze({ enabled: true, volume: 1 }),
+  reward: Object.freeze({ enabled: true, volume: 0.9 })
+});
+const DEFAULT_COMMAND_ALIASES = Object.freeze({
+  eggs: Object.freeze({
+    enabled: Object.freeze(['eier', 'eierliste', 'meineeier']),
+    disabled: Object.freeze(['eggs'])
+  }),
+  hatch: Object.freeze({ enabled: Object.freeze(['hatch']), disabled: Object.freeze([]) }),
+  inventory: Object.freeze({ enabled: Object.freeze(['inventory']), disabled: Object.freeze([]) }),
+  monsters: Object.freeze({ enabled: Object.freeze(['monsters']), disabled: Object.freeze([]) }),
+  monster: Object.freeze({ enabled: Object.freeze(['monster']), disabled: Object.freeze([]) }),
+  choose: Object.freeze({ enabled: Object.freeze(['choose']), disabled: Object.freeze([]) }),
+  battle: Object.freeze({ enabled: Object.freeze(['battle']), disabled: Object.freeze([]) }),
+  leavebattle: Object.freeze({ enabled: Object.freeze(['leavebattle']), disabled: Object.freeze([]) }),
+  rank: Object.freeze({ enabled: Object.freeze(['rank']), disabled: Object.freeze([]) }),
+  quests: Object.freeze({ enabled: Object.freeze(['quests']), disabled: Object.freeze([]) }),
+  monstershelp: Object.freeze({ enabled: Object.freeze(['monstershelp']), disabled: Object.freeze([]) })
+});
 
 class StreamAlchemyPlugin {
   constructor(api) {
@@ -60,8 +82,6 @@ class StreamAlchemyPlugin {
       debug: msg => this.api.log(msg, 'debug')
     };
 
-    this.store = new StreamAlchemyDatabase(this.api.getDatabase(), logger);
-    this.store.initialize();
     this.streamMonstersStore = new StreamMonstersDatabase(this.api.getDatabase());
     this.streamMonstersStore.initialize();
     this.streamMonstersProgression = new StreamMonstersProgressionService({
@@ -106,95 +126,23 @@ class StreamAlchemyPlugin {
       this.buildStreamMonstersCommandDefinitions(this.streamMonstersCommandPrefix),
       this.streamMonstersCommandPrefix
     );
-    this.modelCatalog = new ModelCatalog();
-
-    this.promptService = new PromptService({ promptVersion: this.config.promptVersion });
-    this.recipeService = new RecipeService(this.store, this.promptService);
-    this.inventoryService = new InventoryService(this.store);
-    this.overlayPublisher = new OverlayPublisher(this.api);
-
-    this.providers = this.createProviders(logger);
-    this.localModelInstaller = new LocalModelInstaller({
-      dataDir: this.getPluginDataDir(),
-      logger,
-      catalog: this.modelCatalog
-    });
-    this.streamMonstersManagedRuntime = new StreamMonstersManagedRuntimeInstaller({
-      dataDir: this.getPluginDataDir(),
-      onState: state => this.handleManagedRuntimeState(state)
-    });
-
-    this.generationService = new GenerationService(this.store, logger, {
-      providerOrder: this.config.providerOrder,
-      providers: this.providers,
-      getConfig: () => this.config
-    });
-    this.streamMonstersGenerationPool = new StreamMonstersGenerationPool({
-      store: this.streamMonstersStore,
-      generationService: this.generationService
-    });
-    this.streamMonstersArtPool = new StreamMonstersArtPoolService({
-      store: this.streamMonstersStore,
-      generationService: this.generationService,
-      dataDir: this.getPluginDataDir(),
-      logger,
-      emit: (event, payload) => this.api.emit(event, payload)
-    });
     this.streamMonstersKenneyBuilder = new KenneyMonsterBuilder({
-      assetDir: require('path').join(this.pluginDir, 'assets', 'kenney-monster-builder'),
+      assetDir: path.join(this.pluginDir, 'assets', 'kenney-monster-builder'),
       dataDir: this.getPluginDataDir(),
       logger
     });
-    this.streamMonstersEngine.artPool = this.streamMonstersArtPool;
     this.streamMonstersEngine.kenneyBuilder = this.streamMonstersKenneyBuilder;
-    this.streamMonstersEngine.hasBundledAsset = template => require('fs').existsSync(
-      require('path').join(this.pluginDir, 'assets', 'streammonsters', 'furry', `${template.templateId}.png`)
+    this.streamMonstersEngine.hasBundledAsset = template => fs.existsSync(
+      path.join(this.pluginDir, 'assets', 'streammonsters', 'furry', `${template.templateId}.png`)
     );
 
-    this.craftingEngine = new CraftingEngine({
-      store: this.store,
-      promptService: this.promptService,
-      recipeService: this.recipeService,
-      inventoryService: this.inventoryService,
-      generationService: this.generationService,
-      overlayPublisher: this.overlayPublisher,
-      logger,
-      config: this.config
-    });
-
-    this.eventProcessor = new EventProcessor({
-      engine: this.craftingEngine,
-      logger
-    });
-
-    this.systemAnalyzer = new SystemAnalyzer({ catalog: this.modelCatalog });
-    this.routes = new StreamAlchemyRoutes({
-      api: this.api,
-      pluginDir: this.pluginDir,
-      store: this.store,
-      generationService: this.generationService,
-      systemAnalyzer: this.systemAnalyzer,
-      localModelInstaller: this.localModelInstaller,
-      modelCatalog: this.modelCatalog,
-      configProvider: {
-        getConfig: () => this.config,
-        updateConfig: updates => this.updateConfig(updates)
-      }
-    });
-    this.routes.register();
     this.streamMonstersRoutes = new StreamMonstersRoutes({
       api: this.api,
       pluginDir: this.pluginDir,
-      dataDir: this.getPluginDataDir(),
       store: this.streamMonstersStore,
       engine: this.streamMonstersEngine,
-      generationPool: this.streamMonstersGenerationPool,
-      artPool: this.streamMonstersArtPool,
       progression: this.streamMonstersProgression,
       collection: this.streamMonstersCollection,
-      systemAnalyzer: this.systemAnalyzer,
-      managedRuntime: this.streamMonstersManagedRuntime,
-      localModelInstaller: this.localModelInstaller,
       giftCatalogProvider: locale => this.getStreamMonstersGiftCatalog(locale),
       gcceStateProvider: () => this.getStreamMonstersGCCEState(),
       configProvider: {
@@ -240,37 +188,49 @@ class StreamAlchemyPlugin {
       ? DEFAULT_HATCH_DURATION_MS
       : (storedStreamMonsters.hatchDurationMs ?? DEFAULT_HATCH_DURATION_MS);
     return {
-      ...DEFAULT_CONFIG,
+      enabled: true,
       ...stored,
-      localGeneration: {
-        ...DEFAULT_CONFIG.localGeneration,
-        ...(stored.localGeneration || {})
-      },
       streamMonsters: {
         enabled: true,
         creatorName: '',
         hatchDurationMs: DEFAULT_HATCH_DURATION_MS,
+        incubationPresetsMs: [...INCUBATION_PRESETS_MS],
+        eggExpiryMs: 86_400_000,
+        eggExpiryPresetsMs: [...EGG_EXPIRY_PRESETS_MS],
+        seasonDurationDays: 28,
+        commandAliases: this.normalizeCommandAliases(),
+        layouts: this.normalizeLayouts(),
+        rendererQuality: 'auto',
+        notificationDurationMs: 12_000,
+        audioChannels: this.normalizeAudioChannels(),
         maxUnhatchedEggs: 3,
         elementRules: 'deterministic',
-        artPoolTarget: 3,
         giftMappingCustomized: false,
         visualPack: 'furry',
         ...storedStreamMonsters,
         rulesVersion: STREAM_MONSTERS_RULES_VERSION,
         hatchDurationMs,
-        localRuntime: {
-          state: 'not_installed',
-          ...(storedStreamMonsters.localRuntime || {})
-        }
+        incubationPresetsMs: [...INCUBATION_PRESETS_MS],
+        eggExpiryMs: EGG_EXPIRY_PRESETS_MS.includes(Number(storedStreamMonsters.eggExpiryMs))
+          ? Number(storedStreamMonsters.eggExpiryMs)
+          : 86_400_000,
+        eggExpiryPresetsMs: [...EGG_EXPIRY_PRESETS_MS],
+        seasonDurationDays: this.normalizeSeasonDuration(storedStreamMonsters.seasonDurationDays),
+        commandAliases: this.normalizeCommandAliases(storedStreamMonsters.commandAliases),
+        layouts: this.normalizeLayouts(storedStreamMonsters.layouts),
+        rendererQuality: this.normalizeRendererQuality(storedStreamMonsters.rendererQuality),
+        notificationDurationMs: this.normalizeNotificationDuration(
+          storedStreamMonsters.notificationDurationMs
+        ),
+        audioChannels: this.normalizeAudioChannels(storedStreamMonsters.audioChannels),
+        visualPack: 'furry'
       }
     };
   }
 
   persistSanitizedConfigIfNeeded(storedConfig) {
     if (!storedConfig || typeof storedConfig !== 'object' || Array.isArray(storedConfig)) return false;
-    const sanitizedStored = this.sanitizeConfig(storedConfig);
-    const rulesAreCurrent = sanitizedStored.streamMonsters?.rulesVersion === STREAM_MONSTERS_RULES_VERSION;
-    if (rulesAreCurrent && JSON.stringify(storedConfig) === JSON.stringify(sanitizedStored)) return false;
+    if (JSON.stringify(storedConfig) === JSON.stringify(this.config)) return false;
     this.api.setConfig('streamalchemy_config', this.config);
     return true;
   }
@@ -313,71 +273,72 @@ class StreamAlchemyPlugin {
     return safe;
   }
 
-  createProviders(logger) {
-    const openaiKey = this.getFirstSetting([
-      'openai_api_key',
-      'tts_openai_api_key'
-    ]) || this.normalizeSecret(this.config.openaiApiKey) || process.env.OPENAI_API_KEY || null;
+  normalizeSeasonDuration(value) {
+    const duration = Number(value);
+    return [7, 14, 28, 60, 90].includes(duration) ? duration : 28;
+  }
 
-    const siliconFlowKey = this.getFirstSetting([
-      'siliconflow_api_key',
-      'tts_fishspeech_api_key',
-      'streamalchemy_siliconflow_api_key'
-    ]) || this.normalizeSecret(this.config.siliconFlowApiKey) || process.env.SILICONFLOW_API_KEY || null;
+  normalizeRendererQuality(value) {
+    return ['auto', 'high', 'medium', 'low'].includes(value) ? value : 'auto';
+  }
 
-    const lightxKey = this.getFirstSetting([
-      'lightx_api_key',
-      'streamalchemy_lightx_api_key'
-    ]) || this.normalizeSecret(this.config.lightxApiKey) || process.env.LIGHTX_API_KEY || null;
+  normalizeNotificationDuration(value) {
+    const duration = Number(value);
+    return Number.isFinite(duration) && duration >= 8_000 && duration <= 30_000
+      ? Math.round(duration)
+      : 12_000;
+  }
 
-    const dalleService = new CraftingService(this.store, logger, openaiKey, null, 'Common');
-    const siliconFlowService = new SiliconFlowService(logger, siliconFlowKey);
-    const lightxService = new LightXService(logger, lightxKey);
-
-    return {
-      localComfy: new LocalComfyProvider({
-        getConfig: () => this.config.localGeneration,
-        getRuntimeBaseUrl: () => {
-          const state = this.streamMonstersManagedRuntime?.getProcessState?.();
-          return state?.state === 'running' ? state.baseUrl : null;
-        },
-        acquireRuntimeActivity: () => (
-          this.streamMonstersManagedRuntime?.acquireActivityLease?.()
-        ),
-        dataDir: this.getPluginDataDir(),
-        logger,
-        catalog: this.modelCatalog
-      }),
-      siliconflow: new ExistingServiceProvider({
-        id: 'siliconflow',
-        model: siliconFlowService.model || 'black-forest-labs/FLUX.1-schnell',
-        hasApiKey: () => siliconFlowService.hasApiKey(),
-        generate: input => siliconFlowService.generateFusionImage(
-          this.normalizeLegacyItem(input.itemA),
-          this.normalizeLegacyItem(input.itemB),
-          input.prompt,
-          this.createRemoteOptions(input)
-        )
-      }),
-      openai: new ExistingServiceProvider({
-        id: 'openai',
-        model: 'dall-e-3',
-        hasApiKey: () => !!dalleService.apiKey,
-        generate: input => dalleService.queueAIGeneration(input.prompt)
-      }),
-      lightx: new ExistingServiceProvider({
-        id: 'lightx',
-        model: 'lightx-text2image',
-        hasApiKey: () => lightxService.hasApiKey(),
-        generate: input => lightxService.generateFusionImage(
-          this.normalizeLegacyItem(input.itemA),
-          this.normalizeLegacyItem(input.itemB),
-          input.prompt,
-          this.createRemoteOptions(input)
-        )
-      }),
-      placeholder: new PlaceholderProvider()
+  normalizeLayouts(input = {}) {
+    const anchors = new Set([
+      'top-left', 'top-center', 'top-right', 'middle-left', 'center', 'middle-right',
+      'bottom-left', 'bottom-center', 'bottom-right'
+    ]);
+    const normalize = (name, defaults) => {
+      const candidate = input?.[name];
+      const anchor = anchors.has(candidate?.anchor) ? candidate.anchor : defaults.anchor;
+      const rawScale = Number(candidate?.scale);
+      const scale = Number.isFinite(rawScale) && rawScale >= 70 && rawScale <= 130
+        ? rawScale
+        : defaults.scale;
+      return { anchor, scale };
     };
+    return {
+      portrait: normalize('portrait', DEFAULT_LAYOUTS.portrait),
+      landscape: normalize('landscape', DEFAULT_LAYOUTS.landscape)
+    };
+  }
+
+  normalizeAudioChannels(input = {}) {
+    return Object.fromEntries(Object.entries(DEFAULT_AUDIO_CHANNELS).map(([name, defaults]) => {
+      const channel = input?.[name];
+      const volume = Number(channel?.volume);
+      return [name, {
+        enabled: typeof channel?.enabled === 'boolean' ? channel.enabled : defaults.enabled,
+        volume: Number.isFinite(volume) && volume >= 0 && volume <= 1
+          ? Math.round(volume * 100) / 100
+          : defaults.volume
+      }];
+    }));
+  }
+
+  normalizeCommandAliases(input = {}) {
+    const normalizeList = value => {
+      if (!Array.isArray(value)) return [];
+      return [...new Set(value.map(alias => String(alias).trim().toLocaleLowerCase())
+        .filter(alias => /^[\p{L}\p{N}_-]{1,32}$/u.test(alias)))];
+    };
+    return Object.fromEntries(Object.entries(DEFAULT_COMMAND_ALIASES).map(([command, defaults]) => {
+      const candidate = input?.[command];
+      return [command, {
+        enabled: candidate && Object.prototype.hasOwnProperty.call(candidate, 'enabled')
+          ? normalizeList(candidate.enabled)
+          : [...defaults.enabled],
+        disabled: candidate && Object.prototype.hasOwnProperty.call(candidate, 'disabled')
+          ? normalizeList(candidate.disabled)
+          : [...defaults.disabled]
+      }];
+    }));
   }
 
   getPluginDataDir() {
@@ -390,96 +351,62 @@ class StreamAlchemyPlugin {
     return this.pluginDir;
   }
 
-  getFirstSetting(keys) {
-    for (const key of keys) {
-      const value = this.getCentralSetting(key);
-      if (value) return value;
-    }
-    return null;
-  }
-
-  getCentralSetting(key) {
-    try {
-      const db = this.api.getDatabase();
-      if (db && typeof db.getSetting === 'function') {
-        return this.normalizeSecret(db.getSetting(key));
-      }
-      if (db && typeof db.prepare === 'function') {
-        const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
-        return this.normalizeSecret(row?.value);
-      }
-    } catch (error) {
-      this.api.log(`[STREAM MONSTERS] Central setting ${key} unavailable: ${error.message}`, 'debug');
-    }
-    return null;
-  }
-
-  normalizeSecret(value) {
-    if (!value || typeof value !== 'string') return null;
-    const trimmed = value.trim();
-    if (!trimmed || trimmed === '***REDACTED***') return null;
-    return trimmed;
-  }
-
-  normalizeLegacyItem(item) {
-    if (!item) return {};
-    return {
-      ...item,
-      itemId: item.itemId || item.item_id,
-      imageURL: item.imageURL || item.image_url || item.imageUrl,
-      coinValue: item.coinValue || item.coin_value
-    };
-  }
-
-  createRemoteOptions(input) {
-    return {
-      negativePrompt: input.negativePrompt,
-      imageSize: '1024x1024',
-      steps: Math.max(1, Math.min(4, Number(this.config.localGeneration?.steps) || 4))
-    };
-  }
-
   updateConfig(updates = {}) {
     const safeUpdates = this.sanitizeConfig(updates);
-    const localGenerationUpdates = {
-      ...(safeUpdates.localGeneration || {})
-    };
-    if (Object.prototype.hasOwnProperty.call(localGenerationUpdates, 'modelAuthToken') && !this.normalizeSecret(localGenerationUpdates.modelAuthToken)) {
-      delete localGenerationUpdates.modelAuthToken;
-    }
-    const preset = this.modelCatalog.resolveConfigPreset({
-      ...this.config.localGeneration,
-      ...localGenerationUpdates
-    });
-    localGenerationUpdates.selectedPresetId = preset.id;
-    localGenerationUpdates.workflowId = preset.workflowId;
-    localGenerationUpdates.modelInstallMethod = preset.installMethod;
-    localGenerationUpdates.model = preset.source;
-    localGenerationUpdates.modelFile = preset.fileName;
-    localGenerationUpdates.modelDownloadUrl = preset.downloadUrl;
-
     const currentStreamMonsters = this.sanitizeStreamMonstersConfig(this.config.streamMonsters);
     const streamMonstersUpdates = this.sanitizeStreamMonstersConfig(safeUpdates.streamMonsters);
-    const currentLocalRuntime = {
-      state: 'not_installed',
-      ...(currentStreamMonsters.localRuntime || {})
+    const mergeNamedObjects = (current, next) => {
+      const currentObject = current && typeof current === 'object' ? current : {};
+      const nextObject = next && typeof next === 'object' ? next : {};
+      return Object.fromEntries(
+        [...new Set([...Object.keys(currentObject), ...Object.keys(nextObject)])]
+          .map(name => [name, {
+            ...(currentObject[name] && typeof currentObject[name] === 'object'
+              ? currentObject[name]
+              : {}),
+            ...(nextObject[name] && typeof nextObject[name] === 'object'
+              ? nextObject[name]
+              : {})
+          }])
+      );
     };
-    const nextLocalRuntime = Object.prototype.hasOwnProperty.call(streamMonstersUpdates, 'localRuntime')
-      ? { ...currentLocalRuntime, ...streamMonstersUpdates.localRuntime }
-      : currentLocalRuntime;
+    const mergedStreamMonsters = {
+      ...currentStreamMonsters,
+      ...streamMonstersUpdates,
+      commandAliases: mergeNamedObjects(
+        currentStreamMonsters.commandAliases,
+        streamMonstersUpdates.commandAliases
+      ),
+      layouts: mergeNamedObjects(
+        currentStreamMonsters.layouts,
+        streamMonstersUpdates.layouts
+      ),
+      audioChannels: mergeNamedObjects(
+        currentStreamMonsters.audioChannels,
+        streamMonstersUpdates.audioChannels
+      )
+    };
 
     this.config = {
       ...this.config,
       ...safeUpdates,
-      localGeneration: {
-        ...this.config.localGeneration,
-        ...localGenerationUpdates
-      },
       streamMonsters: {
-        ...currentStreamMonsters,
-        ...streamMonstersUpdates,
+        ...mergedStreamMonsters,
         rulesVersion: STREAM_MONSTERS_RULES_VERSION,
-        localRuntime: nextLocalRuntime
+        incubationPresetsMs: [...INCUBATION_PRESETS_MS],
+        eggExpiryMs: EGG_EXPIRY_PRESETS_MS.includes(Number(mergedStreamMonsters.eggExpiryMs))
+          ? Number(mergedStreamMonsters.eggExpiryMs)
+          : 86_400_000,
+        eggExpiryPresetsMs: [...EGG_EXPIRY_PRESETS_MS],
+        seasonDurationDays: this.normalizeSeasonDuration(mergedStreamMonsters.seasonDurationDays),
+        commandAliases: this.normalizeCommandAliases(mergedStreamMonsters.commandAliases),
+        layouts: this.normalizeLayouts(mergedStreamMonsters.layouts),
+        rendererQuality: this.normalizeRendererQuality(mergedStreamMonsters.rendererQuality),
+        notificationDurationMs: this.normalizeNotificationDuration(
+          mergedStreamMonsters.notificationDurationMs
+        ),
+        audioChannels: this.normalizeAudioChannels(mergedStreamMonsters.audioChannels),
+        visualPack: 'furry'
       }
     };
     this.api.setConfig('streamalchemy_config', this.config);
@@ -511,44 +438,7 @@ class StreamAlchemyPlugin {
     this.streamMonstersCommandIngress?.clear();
     this.streamMonstersEngine?.recentGifts?.clear?.();
     this.streamMonstersChatCommands?.queue?.splice?.(0);
-    await this.streamMonstersManagedRuntime?.destroy?.();
     this.api.log('[STREAM MONSTERS] Collector Arena runtime stopped', 'info');
-  }
-
-  handleManagedRuntimeState(state) {
-    this.api.emit(
-      'local_runtime_progress',
-      StreamMonstersRoutes.publicRuntimeProgress({
-        ...state,
-        ...(state.progress || {})
-      })
-    );
-    this.api.emit('local_runtime_state', StreamMonstersRoutes.publicRuntimeEvent(state));
-    if (state.state !== 'ready') return;
-    const installation = this.streamMonstersManagedRuntime?.installation;
-    const job = this.streamMonstersManagedRuntime?.jobs?.get?.(state.jobId);
-    if (!installation || !job?.adapter) return;
-    const recommendation = this.streamMonstersManagedRuntime.recommend(job.adapter);
-    const processState = this.streamMonstersManagedRuntime.getProcessState();
-    this.updateConfig({
-      streamMonsters: {
-        localRuntime: {
-          state: installation.state,
-          runtimeRoot: installation.runtimeRoot
-        }
-      },
-      localGeneration: {
-        enabled: true,
-        generationMode: 'local_preferred',
-        comfyUrl: processState.baseUrl,
-        comfyRootDir: require('path').join(installation.runtimeRoot, 'ComfyUI'),
-        selectedPresetId: 'sdxl_lightning_4step',
-        width: recommendation.width,
-        height: recommendation.height,
-        steps: 4,
-        concurrency: 1
-      }
-    });
   }
 
   getStreamMonstersGiftCatalog(locale = null) {
@@ -798,7 +688,36 @@ class StreamAlchemyPlugin {
     }) || legacyUserId || platformUserId;
   }
 
+  opaqueViewerRef(viewerId) {
+    if (!viewerId) return null;
+    const digest = createHash('sha256')
+      .update(`streammonsters:v5:${String(viewerId)}`)
+      .digest('hex')
+      .slice(0, 16);
+    return `viewer:${digest}`;
+  }
+
+  logStructured(event, {
+    correlationId = randomUUID(),
+    viewerId = null,
+    status = 'ok',
+    count = null
+  } = {}, level = 'info') {
+    const payload = {
+      component: 'streammonsters',
+      event,
+      correlationId,
+      status
+    };
+    const viewerRef = this.opaqueViewerRef(viewerId);
+    if (viewerRef) payload.viewerRef = viewerRef;
+    if (Number.isInteger(count) && count >= 0) payload.count = count;
+    this.api.log(JSON.stringify(payload), level);
+    return correlationId;
+  }
+
   async handleStreamMonstersGift(data = {}) {
+    const correlationId = randomUUID();
     const userId = this.resolveStreamMonstersViewerId({
       platformUserId: data.userId,
       legacyUserId: data.uniqueId || data.username
@@ -808,7 +727,11 @@ class StreamAlchemyPlugin {
     const coinValue = Number.parseInt(data.diamondCount ?? data.coins ?? 0, 10) || 0;
     const repeatCount = Math.max(Number.parseInt(data.repeatCount || 1, 10) || 1, 1);
     if (!userId || !giftId || !giftName) {
-      this.api.log('[STREAMMONSTERS] Ignored invalid gift event', 'warn');
+      this.logStructured('gift_ignored', {
+        correlationId,
+        viewerId: userId,
+        status: 'invalid'
+      }, 'warn');
       return;
     }
     if (!this.streamMonstersStore.getGiftMapping(giftId) && !this.config.streamMonsters.giftMappingCustomized) {
@@ -821,16 +744,34 @@ class StreamAlchemyPlugin {
     for (let index = 0; index < repeatCount; index += 1) {
       this.streamMonstersEngine.processGift({ userId, giftId, giftName, coinValue });
     }
+    this.logStructured('gift_processed', {
+      correlationId,
+      viewerId: userId,
+      count: repeatCount
+    });
   }
 
   async handleStreamMonstersChat(data = {}) {
+    const correlationId = randomUUID();
     if (this.streamMonstersGCCERegistrationState !== 'fallback') {
-      return {
+      const result = {
         success: false,
         status: this.streamMonstersGCCERegistrationState === 'active' ? 'gcce_active' : 'gcce_blocked'
       };
+      this.logStructured('chat_ignored', {
+        correlationId,
+        viewerId: data.userId || data.uniqueId,
+        status: result.status
+      }, 'debug');
+      return result;
     }
-    return this.streamMonstersCommandIngress.handleFallback(data);
+    const result = await this.streamMonstersCommandIngress.handleFallback(data);
+    this.logStructured('chat_processed', {
+      correlationId,
+      viewerId: data.userId || data.uniqueId,
+      status: result?.status || (result?.success ? 'ok' : 'ignored')
+    }, 'debug');
+    return result;
   }
 
   async handleStreamMonstersSession(data = {}) {
@@ -845,6 +786,7 @@ class StreamAlchemyPlugin {
       creatorName: this.config.streamMonsters.creatorName || 'Creator',
       event
     });
+    this.logStructured('stream_session_started', { status: 'ok' });
   }
 
   selectStreamEvent(data = {}) {

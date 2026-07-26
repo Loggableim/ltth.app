@@ -416,19 +416,18 @@ describe('Stream Monsters 1.4 collection layer', () => {
       .toEqual(expect.objectContaining({ amount: 3, unlocks: ['palette'] }));
   });
 
-  test('uses template art, legacy art, furry assets, then Kenney in the configured visual order', () => {
+  test('uses bundled Furry first and Kenney only when the bundled file is missing', () => {
     const { collection } = createCollection();
     const template = TEMPLATE_CATALOG.find(entry => entry.templateId === 'ashfang');
     const artPool = { consumeForTemplate: jest.fn(() => ({ image_url: '/template.png', visual_key: 'ai:template' })) };
     const kenneyBuilder = { build: jest.fn(() => ({ publicUrl: '/kenney.svg', visualSource: 'kenney', visualKey: 'kenney:x' })) };
-    expect(collection.selectVisual({ template, egg: { element: 'Ember', variant: 'standard', seed: 'x' }, visualPack: 'art_lab', artPool, kenneyBuilder, hasBundledAsset: () => true }).imageUrl).toBe('/template.png');
-    artPool.consumeForTemplate.mockReturnValueOnce(null).mockReturnValueOnce({ image_url: '/legacy.png', visual_key: 'ai:legacy' });
-    expect(collection.selectVisual({ template, egg: { element: 'Ember', variant: 'standard', seed: 'x' }, visualPack: 'art_lab', artPool, kenneyBuilder, hasBundledAsset: () => true }).imageUrl).toBe('/legacy.png');
+    expect(collection.selectVisual({ template, egg: { element: 'Ember', variant: 'standard', seed: 'x' }, visualPack: 'art_lab', artPool, kenneyBuilder, hasBundledAsset: () => true }).imageUrl).toBe(template.assetPath);
     expect(collection.selectVisual({ template, egg: { element: 'Ember', variant: 'standard', seed: 'x' }, visualPack: 'furry', artPool, kenneyBuilder, hasBundledAsset: () => true }).imageUrl).toBe(template.assetPath);
     expect(collection.selectVisual({ template, egg: { element: 'Ember', variant: 'standard', seed: 'x' }, visualPack: 'furry', artPool, kenneyBuilder, hasBundledAsset: () => false }).visualSource).toBe('kenney');
+    expect(artPool.consumeForTemplate).not.toHaveBeenCalled();
   });
 
-  test('never consumes a different template row as art_lab legacy fallback', () => {
+  test('never consumes a historical Art Lab row', () => {
     const { store, collection } = createCollection();
     const template = TEMPLATE_CATALOG.find(entry => entry.templateId === 'ashfang');
     const other = store.addArtPoolSkin({

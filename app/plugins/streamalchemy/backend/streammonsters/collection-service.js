@@ -280,19 +280,11 @@ class CollectionService {
     return this.store.getHeartChain(streamKey);
   }
 
-  selectVisual({ template, egg, visualPack = 'furry', artPool = null, kenneyBuilder = null, hasBundledAsset = () => true }) {
-    const pack = ['furry', 'art_lab', 'kenney'].includes(visualPack) ? visualPack : 'furry';
-    const kenney = () => kenneyBuilder?.build?.({ seed: egg.seed, element: egg.element }) || null;
-    if (pack === 'art_lab') {
-      const templateArt = artPool?.consumeForTemplate?.(egg.element, egg.variant, template.templateId) || null;
-      if (templateArt) return { imageUrl: templateArt.image_url, visualSource: 'ai', visualKey: templateArt.visual_key };
-      const legacyArt = artPool?.consumeForTemplate?.(egg.element, egg.variant, null) || null;
-      if (legacyArt) return { imageUrl: legacyArt.image_url, visualSource: 'ai', visualKey: legacyArt.visual_key };
-    }
-    if (pack !== 'kenney' && hasBundledAsset(template)) {
+  selectVisual({ template, egg, kenneyBuilder = null, hasBundledAsset = () => true }) {
+    if (hasBundledAsset(template)) {
       return { imageUrl: template.assetPath, visualSource: 'furry', visualKey: `furry:${template.templateId}` };
     }
-    const fallback = kenney();
+    const fallback = kenneyBuilder?.build?.({ seed: egg.seed, element: egg.element }) || null;
     return fallback ? { imageUrl: fallback.publicUrl, visualSource: fallback.visualSource, visualKey: fallback.visualKey } : {
       imageUrl: template.assetPath, visualSource: 'furry', visualKey: `furry:${template.templateId}`
     };

@@ -2,81 +2,39 @@ const path = require('path');
 const { createAdminAuth } = require('../../../../modules/admin-auth');
 const { TEMPLATE_CATALOG, getTemplate } = require('./catalog');
 
-function stableRuntimeErrorCode(error) {
-  const code = String(error?.errorCode || error?.code || error?.message || error || '').trim();
-  if (!code) return null;
-  return /^STREAM_MONSTERS_[A-Z0-9_]+$/.test(code)
-    ? code
-    : 'STREAM_MONSTERS_RUNTIME_UNKNOWN';
-}
-
-function publicRuntimeProgress(payload = {}) {
-  const progress = payload.progress && typeof payload.progress === 'object'
-    ? payload.progress
-    : payload;
-  const result = {};
-  for (const key of ['jobId', 'state', 'phase', 'adapterId', 'profileId']) {
-    const value = payload[key] ?? progress[key];
-    if (typeof value === 'string' && value) result[key] = value;
-  }
-  for (const key of ['completedBytes', 'totalBytes', 'width', 'height']) {
-    const value = Number(progress[key] ?? payload[key]);
-    if (Number.isFinite(value) && value >= 0) result[key] = value;
-  }
-  const errorCode = stableRuntimeErrorCode(
-    payload.errorCode || progress.errorCode || payload.error || progress.error
-  );
-  if (errorCode) result.errorCode = errorCode;
-  return result;
-}
-
-function publicSmokeTest(smokeTest) {
-  if (!smokeTest) return null;
-  return {
-    state: smokeTest.state || null,
-    width: Math.max(0, Number(smokeTest.width) || 0),
-    height: Math.max(0, Number(smokeTest.height) || 0),
-    adapterId: smokeTest.adapterId || null,
-    profileId: smokeTest.profileId || null,
-    runtimeVersion: smokeTest.runtimeVersion || null,
-    completedAt: smokeTest.completedAt || null
-  };
-}
-
-function publicRuntimeEvent(payload = {}) {
-  const result = {
-    state: String(payload.state || 'stopped')
-  };
-  for (const key of ['jobId', 'adapterId', 'profileId']) {
-    if (typeof payload[key] === 'string' && payload[key]) result[key] = payload[key];
-  }
-  if (payload.progress) result.progress = publicRuntimeProgress(payload);
-  const errorCode = stableRuntimeErrorCode(payload.errorCode || payload.error);
-  if (errorCode) result.errorCode = errorCode;
-  if (payload.result) {
-    result.result = {
-      state: payload.result.state || null,
-      verified: Boolean(payload.result.verified)
-    };
-  }
-  if (payload.smokeTest) result.smokeTest = publicSmokeTest(payload.smokeTest);
-  return result;
-}
+const ART_LAB_ROUTES = Object.freeze([
+  ['GET', '/api/streamalchemy/config'],
+  ['POST', '/api/streamalchemy/config'],
+  ['GET', '/api/streamalchemy/items'],
+  ['GET', '/api/streamalchemy/recipes'],
+  ['GET', '/api/streamalchemy/generation-jobs'],
+  ['GET', '/api/streamalchemy/model-catalog'],
+  ['GET', '/api/streamalchemy/providers/status'],
+  ['GET', '/api/streamalchemy/local-model/status'],
+  ['POST', '/api/streamalchemy/local-model/install'],
+  ['GET', '/api/streamalchemy/system-analysis'],
+  ['POST', '/api/streamalchemy/local-generation/test'],
+  ['GET', '/api/streammonsters/art/:filename'],
+  ['GET', '/api/streammonsters/pool'],
+  ['POST', '/api/streammonsters/pool'],
+  ['POST', '/api/streammonsters/pool/prepare'],
+  ['GET', '/api/streammonsters/local-runtime/status'],
+  ['POST', '/api/streammonsters/local-runtime/install'],
+  ['GET', '/api/streammonsters/local-runtime/install/:jobId'],
+  ['DELETE', '/api/streammonsters/local-runtime/install/:jobId'],
+  ['POST', '/api/streammonsters/local-runtime/start'],
+  ['POST', '/api/streammonsters/local-runtime/stop'],
+  ['POST', '/api/streammonsters/local-runtime/verify']
+]);
 
 class StreamMonstersRoutes {
   constructor({
     api,
     pluginDir,
-    dataDir,
     store,
     engine,
-    generationPool,
-    artPool = null,
     progression = null,
     collection = null,
-    systemAnalyzer,
-    managedRuntime,
-    localModelInstaller,
     giftCatalogProvider,
     configProvider,
     gcceStateProvider = () => ({
@@ -88,16 +46,10 @@ class StreamMonstersRoutes {
   }) {
     this.api = api;
     this.pluginDir = pluginDir;
-    this.dataDir = dataDir || pluginDir;
     this.store = store;
     this.engine = engine;
-    this.generationPool = generationPool;
-    this.artPool = artPool;
     this.progression = progression;
     this.collection = collection;
-    this.systemAnalyzer = systemAnalyzer;
-    this.managedRuntime = managedRuntime;
-    this.localModelInstaller = localModelInstaller;
     this.giftCatalogProvider = giftCatalogProvider || (() => []);
     this.configProvider = configProvider;
     this.gcceStateProvider = gcceStateProvider;
@@ -105,26 +57,51 @@ class StreamMonstersRoutes {
   }
 
   register() {
-    this.api.registerRoute('GET', '/streammonsters/ui', (req, res) => {
+    const sendCreator = (req, res) => {
       res.sendFile(path.join(this.pluginDir, 'streammonsters-ui.html'));
-    });
-    this.api.registerRoute('GET', '/streammonsters/overlay', (req, res) => {
+    };
+    const sendOverlay = (req, res) => {
       res.sendFile(path.join(this.pluginDir, 'streammonsters-overlay.html'));
-    });
-    this.api.registerRoute('GET', '/api/streammonsters/art/:filename', (req, res) => {
-      const filename = String(req.params?.filename || '');
-      if (!/^(?:ai|kenney)-[a-z0-9.-]+\.(?:png|jpg|jpeg|webp|svg)$/i.test(filename) || path.basename(filename) !== filename) {
-        return res.status(400).json({ success: false, error: 'STREAM_MONSTERS_ART_PATH_INVALID' });
-      }
-      return res.sendFile(path.join(this.dataDir, 'streammonsters', 'monster-art', filename));
+    };
+    this.api.registerRoute('GET', '/streammonsters/ui', sendCreator);
+    this.api.registerRoute('GET', '/streammonsters/overlay', sendOverlay);
+    this.api.registerRoute('GET', '/streamalchemy/ui', sendCreator);
+    this.api.registerRoute('GET', '/streamalchemy/overlay', sendOverlay);
+    ART_LAB_ROUTES.forEach(([method, routePath]) => {
+      this.api.registerRoute(method, routePath, (req, res) => (
+        res.status(410).json({ error: 'art_lab_removed' })
+      ));
     });
     this.api.registerRoute('GET', '/api/streammonsters/state', (req, res) => {
-      const userId = String(req.query?.userId || '').trim();
       const config = this.configProvider.getConfig().streamMonsters;
       const season = this.progression?.getCurrentSeason?.() || null;
       res.json({
         success: true,
         config: this.publicConfig(config),
+        effectiveHatchDurationMs: this.engine.hatchDurationFor?.('standard') ?? config.hatchDurationMs,
+        eggCounts: this.store.getEggStateCounts?.(null) || {
+          incubating: 0,
+          queued: 0,
+          ready: 0
+        },
+        hype: this.publicHype(this.store.getStreamHype(this.engine.streamKey)),
+        heartChain: this.publicHeartChain(
+          this.collection?.getHeartChain(this.engine.streamKey || 'offline')
+        ),
+        streamMission: this.publicStreamMission(
+          this.collection?.getStreamMission(this.engine.streamKey || 'offline')
+        ),
+        visualPack: 'furry',
+        season,
+        gcce: this.gcceStateProvider()
+      });
+    });
+    this.api.registerRoute('GET', '/api/streammonsters/creator-state', this.protectAdmin((req, res) => {
+      const userId = String(req.query?.userId || '').trim();
+      const config = this.configProvider.getConfig().streamMonsters;
+      res.json({
+        success: true,
+        config: this.publicConfig(config, { includeCreator: true }),
         effectiveHatchDurationMs: this.engine.hatchDurationFor?.('standard') ?? config.hatchDurationMs,
         queue: userId ? this.store.getQueuedEggs(userId) : this.store.getQueuedEggs(),
         eggCounts: this.store.getEggStateCounts?.(userId || null) || {
@@ -133,32 +110,38 @@ class StreamMonstersRoutes {
           ready: 0
         },
         viewer: userId ? this.viewerState(userId) : null,
-        pool: this.artPool?.coverage?.(config.artPoolTarget) || this.store.getArtPoolCoverage(),
+        giftMappings: this.store.getGiftMappings(),
         hype: this.store.getStreamHype(this.engine.streamKey),
         dex: userId ? (this.collection?.getCatalogState(userId).dex || null) : null,
         heartChain: this.collection?.getHeartChain(this.engine.streamKey || 'offline') || null,
         streamMission: this.collection?.getStreamMission(this.engine.streamKey || 'offline') || null,
-        visualPack: this.publicConfig(config).visualPack,
-        season,
+        visualPack: 'furry',
+        season: this.progression?.getCurrentSeason?.() || null,
         gcce: this.gcceStateProvider(),
         metrics: this.engine.streamKey ? this.store.getStreamMetrics(this.engine.streamKey) : null
       });
-    });
+    }));
     this.api.registerRoute('GET', '/api/streammonsters/monster-catalog', (req, res) => {
-      const requestedUserId = String(req.query?.userId || '').trim();
-      const userId = this.store.resolveKnownViewerId?.(requestedUserId) || requestedUserId;
-      const catalog = this.collection?.getCatalogState(userId) || {
-        templates: TEMPLATE_CATALOG.map(template => ({ ...template, owned: false, silhouette: true, mastery: null })),
-        dex: { owned: 0, total: TEMPLATE_CATALOG.length }, essence: [], cosmetics: []
-      };
-      res.json({ success: true, ...catalog });
+      res.json({
+        success: true,
+        templates: TEMPLATE_CATALOG.map(template => ({
+          ...template,
+          owned: false,
+          silhouette: true,
+          mastery: null
+        })),
+        dex: { owned: 0, total: TEMPLATE_CATALOG.length }
+      });
     });
     this.api.registerRoute('POST', '/api/streammonsters/config', this.protectAdmin((req, res) => {
       const current = this.configProvider.getConfig().streamMonsters || {};
       const update = this.sanitizeConfigUpdate(req.body);
       if (current.giftMappingCustomized) update.giftMappingCustomized = true;
       const next = this.configProvider.updateConfig({ streamMonsters: update });
-      res.json({ success: true, config: this.publicConfig(next.streamMonsters) });
+      res.json({
+        success: true,
+        config: this.publicConfig(next.streamMonsters, { includeCreator: true })
+      });
     }));
     this.api.registerRoute('POST', '/api/streammonsters/demo', this.protectAdmin((req, res) => {
       let preview = null;
@@ -445,74 +428,6 @@ class StreamMonstersRoutes {
       if (giftId) this.configProvider.updateConfig({ streamMonsters: { giftMappingCustomized: true } });
       res.json({ success: true, removed });
     }));
-    this.api.registerRoute('GET', '/api/streammonsters/pool', (req, res) => {
-      const config = this.configProvider.getConfig().streamMonsters;
-      res.json({
-        success: true,
-        coverage: this.artPool?.coverage?.(config.artPoolTarget) || this.store.getArtPoolCoverage()
-      });
-    });
-    this.api.registerRoute('POST', '/api/streammonsters/pool', this.protectAdmin((req, res) => {
-      try {
-        const gifts = Array.isArray(req.body?.gifts) ? req.body.gifts : [req.body || {}];
-        const entries = gifts.map(input => {
-          const giftId = Number.parseInt(input.giftId, 10);
-          if (!giftId) throw new Error('STREAM_MONSTERS_GIFT_ID_REQUIRED');
-          const gift = this.engine.describeGift({
-            giftId,
-            giftName: input.giftName || input.name || `Gift ${giftId}`,
-            coinValue: input.coinValue || input.diamondCount || 0
-          });
-          if (input.effect === 'boost') {
-            this.store.upsertGiftMapping({ ...gift, effect: 'boost' });
-          }
-          return this.generationPool.queueGift(gift);
-        });
-        res.json({ success: true, entries });
-      } catch (error) {
-        res.status(400).json({ success: false, error: error.message });
-      }
-    }));
-    this.api.registerRoute('POST', '/api/streammonsters/pool/prepare', this.protectAdmin(async (req, res) => {
-      try {
-        const targetPerVariant = Math.max(1, Math.min(
-          8,
-          Number.parseInt(req.body?.targetPerVariant, 10) || 3
-        ));
-        const templateIds = Array.isArray(req.body?.templateIds)
-          ? [...new Set(req.body.templateIds.map(value => String(value || '').trim()))]
-          : null;
-        if (templateIds && (templateIds.length !== req.body.templateIds.length || templateIds.some(id => !TEMPLATE_CATALOG.some(template => template.templateId === id)))) {
-          throw new Error('STREAM_MONSTERS_TEMPLATE_IDS_INVALID');
-        }
-        this.api.emit(
-          'local_runtime_progress',
-          StreamMonstersRoutes.publicRuntimeProgress({ phase: 'pool_prepare', state: 'checking' })
-        );
-        if (this.managedRuntime.installation?.verified) {
-          const analysis = await this.systemAnalyzer.analyze({
-            comfyUrl: this.configProvider.getConfig().localGeneration?.comfyUrl,
-            comfyRootDir: this.configProvider.getConfig().localGeneration?.comfyRootDir
-          });
-          const adapter = this.selectAdapter(analysis.adapters, this.managedRuntime.installation.adapterId);
-          const processState = await this.managedRuntime.startManagedRuntime({ adapter });
-          this.api.emit('local_runtime_state', StreamMonstersRoutes.publicRuntimeEvent(processState));
-        }
-        this.api.emit('art_pool_progress', { state: 'running', targetPerVariant });
-        const result = this.artPool
-          ? await this.artPool.prepare({ targetPerVariant, ...(templateIds ? { templateIds } : {}) })
-          : { entries: await this.generationPool.preparePending() };
-        this.api.emit('art_pool_progress', { state: 'complete', targetPerVariant });
-        res.json({ success: true, ...result });
-      } catch (error) {
-        this.api.emit('art_pool_progress', StreamMonstersRoutes.publicRuntimeProgress({
-          state: 'failed',
-          phase: 'pool_prepare',
-          errorCode: error.message
-        }));
-        res.status(409).json({ success: false, error: error.message });
-      }
-    }));
     this.api.registerRoute('GET', '/api/streammonsters/season', (req, res) => {
       res.json({ success: true, season: this.progression?.getCurrentSeason?.() || null });
     });
@@ -523,203 +438,6 @@ class StreamMonstersRoutes {
         entries: this.progression?.getLeaderboard?.(limit) || []
       });
     });
-    this.api.registerRoute('GET', '/api/streammonsters/local-runtime/status', async (req, res) => {
-      const manifest = this.managedRuntime.getTrustedManifest();
-      const analysis = await this.systemAnalyzer.analyze({
-        comfyUrl: this.configProvider.getConfig().localGeneration?.comfyUrl,
-        comfyRootDir: this.configProvider.getConfig().localGeneration?.comfyRootDir
-      });
-      const adapters = analysis.adapters || (analysis.gpu?.id ? [analysis.gpu] : []);
-      const requestedAdapter = String(req.query?.adapterId || '').trim();
-      const installedAdapter = adapters.find(
-        adapter => adapter.id === this.managedRuntime.installation?.adapterId
-      );
-      const selectedAdapter = adapters.find(adapter => adapter.id === requestedAdapter) ||
-        installedAdapter ||
-        analysis.gpu ||
-        adapters[0] ||
-        null;
-      const recommendation = this.managedRuntime.recommend(selectedAdapter || {});
-      const catalog = this.managedRuntime.getCatalog?.() || { profiles: [], model: null };
-      const profiles = this.managedRuntime.getPublicProfiles?.() || [];
-      const processState = this.managedRuntime.getProcessState?.();
-      const installationMatchesAdapter = Boolean(
-        this.managedRuntime.installation?.adapterId &&
-        this.managedRuntime.installation.adapterId === selectedAdapter?.id
-      );
-      const activeProfileId = recommendation.supported ? recommendation.profileId : null;
-      const activeProfile = profiles.find(profile => profile.id === activeProfileId) || null;
-      const smokeTest = this.managedRuntime.lastSmokeTest || this.managedRuntime.installation?.smokeTest || null;
-      const smokeMatchesSelection = Boolean(
-        smokeTest?.adapterId &&
-        smokeTest.adapterId === selectedAdapter?.id &&
-        smokeTest.profileId === activeProfileId &&
-        (
-          !activeProfile?.version ||
-          smokeTest.runtimeVersion === activeProfile.version
-        )
-      );
-      let disk = analysis.disk || null;
-      try {
-        if (recommendation.supported && this.managedRuntime.getDiskStatus) {
-          disk = await this.managedRuntime.getDiskStatus(recommendation.profileId);
-        }
-      } catch (_) {}
-      res.json({
-        success: true,
-        runtime: this.publicRuntime(installationMatchesAdapter
-          ? (this.managedRuntime.current || processState || { state: 'stopped' })
-          : { state: recommendation.supported ? 'ready_to_install' : 'expert_or_remote' }),
-        recommendation: this.publicRecommendation(recommendation),
-        manifestAvailable: Boolean(manifest || profiles.length),
-        installDetails: profiles.length && recommendation.supported
-          ? this.publicCatalogInstallDetails(
-            catalog,
-            recommendation.profileId
-          )
-          : (profiles.length ? null : this.publicInstallDetails(manifest)),
-        adapters: adapters.map(adapter => this.publicAdapter(adapter)),
-        selectedAdapterId: selectedAdapter?.id || null,
-        profiles: profiles.map(profile => this.publicProfile(profile)),
-        installation: this.publicInstallation(this.managedRuntime.installation),
-        model: this.publicModel({
-          ...catalog.model,
-          verified: Boolean(this.managedRuntime.installation?.model?.verified)
-        }),
-        smokeTest: this.publicSmokeTest(smokeTest),
-        runtimeDetails: {
-          profileId: activeProfileId || null,
-          backend: activeProfile?.backend || null,
-          adapterId: selectedAdapter?.id || null,
-          device: selectedAdapter?.name || null,
-          driverVersion: selectedAdapter?.driverVersion || selectedAdapter?.driver || null,
-          vramMb: Math.max(0, Number(selectedAdapter?.vramMb) || 0),
-          verifiedOnDevice: Boolean(
-            installationMatchesAdapter &&
-            this.managedRuntime.installation?.profileId === activeProfileId &&
-            this.managedRuntime.installation?.verified &&
-            smokeMatchesSelection &&
-            smokeTest?.state === 'passed' &&
-            smokeTest?.width === 256 &&
-            smokeTest?.height === 256
-          )
-        },
-        disk: this.publicDisk(disk)
-      });
-    });
-    this.api.registerRoute('POST', '/api/streammonsters/local-runtime/install', this.protectAdmin(async (req, res) => {
-      try {
-        const current = this.configProvider.getConfig();
-        const analysis = await this.systemAnalyzer.analyze({
-          comfyUrl: current.localGeneration?.comfyUrl,
-          comfyRootDir: current.localGeneration?.comfyRootDir
-        });
-        const accepted = this.managedRuntime.createInstallJob(req.body, analysis.adapters || [analysis.gpu].filter(Boolean));
-        res.status(202).json(accepted);
-      } catch (error) {
-        res.status(400).json({ success: false, error: error.message });
-      }
-    }));
-    this.api.registerRoute('GET', '/api/streammonsters/local-runtime/install/:jobId', this.protectAdmin((req, res) => {
-      const job = this.managedRuntime.getInstallJob(req.params?.jobId);
-      if (!job) return res.status(404).json({ success: false, error: 'STREAM_MONSTERS_RUNTIME_JOB_NOT_FOUND' });
-      return res.json(job);
-    }));
-    this.api.registerRoute('DELETE', '/api/streammonsters/local-runtime/install/:jobId', this.protectAdmin(async (req, res) => {
-      try {
-        const job = await this.managedRuntime.cancelInstallJob(req.params?.jobId);
-        if (!job) return res.status(404).json({ success: false, error: 'STREAM_MONSTERS_RUNTIME_JOB_NOT_FOUND' });
-        return res.json(job);
-      } catch (error) {
-        return res.status(409).json({ success: false, error: error.message });
-      }
-    }));
-    this.api.registerRoute('POST', '/api/streammonsters/local-runtime/start', this.protectAdmin(async (req, res) => {
-      try {
-        const analysis = await this.systemAnalyzer.analyze();
-        const adapter = this.selectAdapter(
-          analysis.adapters || [analysis.gpu].filter(Boolean),
-          req.body?.adapterId || this.managedRuntime.installation?.adapterId
-        );
-        const runtime = await this.managedRuntime.startManagedRuntime({ adapter });
-        const publicRuntime = this.publicRuntime(runtime);
-        this.api.emit('local_runtime_state', StreamMonstersRoutes.publicRuntimeEvent(runtime));
-        res.json({ success: true, runtime: publicRuntime });
-      } catch (error) {
-        this.api.emit('local_runtime_progress', StreamMonstersRoutes.publicRuntimeProgress({
-          phase: 'start',
-          state: 'failed',
-          errorCode: error.message
-        }));
-        res.status(409).json({ success: false, error: error.message });
-      }
-    }));
-    this.api.registerRoute('POST', '/api/streammonsters/local-runtime/stop', this.protectAdmin(async (req, res) => {
-      const runtime = await this.managedRuntime.stopManagedRuntime();
-      const publicRuntime = this.publicRuntime(runtime);
-      this.api.emit('local_runtime_state', StreamMonstersRoutes.publicRuntimeEvent(runtime));
-      res.json({ success: true, runtime: publicRuntime });
-    }));
-    this.api.registerRoute('POST', '/api/streammonsters/local-runtime/verify', this.protectAdmin(async (req, res) => {
-      try {
-        this.api.emit('local_runtime_progress', StreamMonstersRoutes.publicRuntimeProgress({
-          phase: 'verify',
-          state: 'checking'
-        }));
-        const installation = this.managedRuntime.installation;
-        if (!installation?.verified || installation.state !== 'ready') {
-          throw new Error('STREAM_MONSTERS_RUNTIME_NOT_INSTALLED');
-        }
-        const requestedAdapterId = req.body?.adapterId || installation.adapterId;
-        const requestedProfileId = req.body?.profileId || installation.profileId;
-        if (requestedAdapterId !== installation.adapterId) {
-          throw new Error('STREAM_MONSTERS_RUNTIME_VERIFY_ADAPTER_MISMATCH');
-        }
-        if (requestedProfileId !== installation.profileId) {
-          throw new Error('STREAM_MONSTERS_RUNTIME_VERIFY_PROFILE_MISMATCH');
-        }
-        const analysis = await this.systemAnalyzer.analyze();
-        const adapter = this.selectAdapter(
-          analysis.adapters || [analysis.gpu].filter(Boolean),
-          requestedAdapterId
-        );
-        if (!adapter || adapter.id !== installation.adapterId) {
-          throw new Error('STREAM_MONSTERS_RUNTIME_VERIFY_ADAPTER_MISMATCH');
-        }
-        const profile = this.managedRuntime.getProfile?.(requestedProfileId)
-          || (this.managedRuntime.getPublicProfiles?.() || [])
-            .find(entry => entry.id === requestedProfileId);
-        if (!profile || profile.id !== installation.profileId) {
-          throw new Error('STREAM_MONSTERS_RUNTIME_VERIFY_PROFILE_MISMATCH');
-        }
-        const smokeTest = await this.managedRuntime.forceVerifyManagedRuntime({
-          adapter,
-          profile
-        });
-        if (
-          !smokeTest ||
-          smokeTest.state !== 'passed' ||
-          smokeTest.adapterId !== adapter.id ||
-          smokeTest.profileId !== profile.id
-        ) {
-          throw new Error('STREAM_MONSTERS_RUNTIME_SMOKE_TEST_FAILED');
-        }
-        this.api.emit('local_runtime_progress', StreamMonstersRoutes.publicRuntimeProgress({
-          phase: 'verify',
-          state: 'passed',
-          width: smokeTest.width,
-          height: smokeTest.height
-        }));
-        res.json({ success: true, smokeTest: this.publicSmokeTest(smokeTest) });
-      } catch (error) {
-        this.api.emit('local_runtime_progress', StreamMonstersRoutes.publicRuntimeProgress({
-          phase: 'verify',
-          state: 'failed',
-          errorCode: error.message
-        }));
-        res.status(409).json({ success: false, error: error.message });
-      }
-    }));
   }
 
   protectAdmin(handler) {
@@ -738,20 +456,80 @@ class StreamMonstersRoutes {
     )));
     const hatchDurationMs = Number(input.hatchDurationMs);
     if (allowedHatchDurations.has(hatchDurationMs)) safe.hatchDurationMs = hatchDurationMs;
-    if (['furry', 'art_lab', 'kenney'].includes(input.visualPack)) safe.visualPack = input.visualPack;
+    if (Object.prototype.hasOwnProperty.call(input, 'visualPack')) safe.visualPack = 'furry';
+    const eggExpiryMs = Number(input.eggExpiryMs);
+    if ([21_600_000, 43_200_000, 86_400_000, 172_800_000].includes(eggExpiryMs)) {
+      safe.eggExpiryMs = eggExpiryMs;
+    }
+    const seasonDurationDays = Number(input.seasonDurationDays);
+    if ([7, 14, 28, 60, 90].includes(seasonDurationDays)) {
+      safe.seasonDurationDays = seasonDurationDays;
+    }
+    if (['auto', 'high', 'medium', 'low'].includes(input.rendererQuality)) {
+      safe.rendererQuality = input.rendererQuality;
+    }
+    const notificationDurationMs = Number(input.notificationDurationMs);
+    if (
+      Number.isFinite(notificationDurationMs) &&
+      notificationDurationMs >= 8_000 &&
+      notificationDurationMs <= 30_000
+    ) {
+      safe.notificationDurationMs = Math.round(notificationDurationMs);
+    }
     const anchors = new Set([
       'top-left', 'top-center', 'top-right', 'middle-left', 'center', 'middle-right',
       'bottom-left', 'bottom-center', 'bottom-right'
     ]);
+    const layouts = {};
+    for (const name of ['portrait', 'landscape']) {
+      const candidate = input.layouts?.[name];
+      if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) continue;
+      const layout = {};
+      if (anchors.has(candidate.anchor)) layout.anchor = candidate.anchor;
+      const scale = Number(candidate.scale);
+      if (Number.isFinite(scale) && scale >= 70 && scale <= 130) layout.scale = scale;
+      if (Object.keys(layout).length) layouts[name] = layout;
+    }
     for (const key of ['landscapeAnchor', 'portraitAnchor']) {
-      if (anchors.has(input[key])) safe[key] = input[key];
+      if (!anchors.has(input[key])) continue;
+      const name = key.startsWith('portrait') ? 'portrait' : 'landscape';
+      layouts[name] = { ...(layouts[name] || {}), anchor: input[key] };
     }
     for (const key of ['landscapeScale', 'portraitScale']) {
       const value = Number(input[key]);
-      if (Number.isFinite(value) && value >= 70 && value <= 130) safe[key] = value;
+      if (!Number.isFinite(value) || value < 70 || value > 130) continue;
+      const name = key.startsWith('portrait') ? 'portrait' : 'landscape';
+      layouts[name] = { ...(layouts[name] || {}), scale: value };
     }
-    if (Object.prototype.hasOwnProperty.call(input, 'artPoolTarget')) {
-      safe.artPoolTarget = Math.max(1, Math.min(8, Number.parseInt(input.artPoolTarget, 10) || 3));
+    if (Object.keys(layouts).length) safe.layouts = layouts;
+    const normalizeAliases = value => {
+      if (!Array.isArray(value)) return [];
+      return [...new Set(value.map(alias => String(alias).trim().toLocaleLowerCase())
+        .filter(alias => /^[\p{L}\p{N}_-]{1,32}$/u.test(alias)))];
+    };
+    if (input.commandAliases && typeof input.commandAliases === 'object' && !Array.isArray(input.commandAliases)) {
+      safe.commandAliases = {};
+      for (const [command, aliases] of Object.entries(input.commandAliases)) {
+        if (!/^[a-z][a-z0-9_-]{0,31}$/.test(command) || !aliases || typeof aliases !== 'object') continue;
+        safe.commandAliases[command] = {
+          enabled: normalizeAliases(aliases.enabled),
+          disabled: normalizeAliases(aliases.disabled)
+        };
+      }
+    }
+    if (input.audioChannels && typeof input.audioChannels === 'object' && !Array.isArray(input.audioChannels)) {
+      safe.audioChannels = {};
+      for (const name of ['master', 'ui', 'egg', 'battle', 'reward']) {
+        const channel = input.audioChannels[name];
+        if (!channel || typeof channel !== 'object' || Array.isArray(channel)) continue;
+        const normalized = {};
+        if (typeof channel.enabled === 'boolean') normalized.enabled = channel.enabled;
+        const volume = Number(channel.volume);
+        if (Number.isFinite(volume) && volume >= 0 && volume <= 1) {
+          normalized.volume = Math.round(volume * 100) / 100;
+        }
+        if (Object.keys(normalized).length) safe.audioChannels[name] = normalized;
+      }
     }
     return safe;
   }
@@ -806,21 +584,59 @@ class StreamMonstersRoutes {
     };
   }
 
-  publicConfig(config = {}) {
-    return {
+  publicConfig(config = {}, { includeCreator = false } = {}) {
+    const result = {
       enabled: Boolean(config.enabled),
-      creatorName: config.creatorName || '',
-      rulesVersion: 3,
+      rulesVersion: 5,
       hatchDurationMs: config.hatchDurationMs,
+      incubationPresetsMs: [30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000],
+      eggExpiryMs: [21_600_000, 43_200_000, 86_400_000, 172_800_000].includes(
+        Number(config.eggExpiryMs)
+      ) ? Number(config.eggExpiryMs) : 86_400_000,
+      eggExpiryPresetsMs: [21_600_000, 43_200_000, 86_400_000, 172_800_000],
+      seasonDurationDays: [7, 14, 28, 60, 90].includes(Number(config.seasonDurationDays))
+        ? Number(config.seasonDurationDays)
+        : 28,
       maxUnhatchedEggs: config.maxUnhatchedEggs,
       elementRules: config.elementRules || 'deterministic',
-      artPoolTarget: Math.max(1, Math.min(8, Number(config.artPoolTarget) || 3)),
       giftMappingCustomized: Boolean(config.giftMappingCustomized),
-      visualPack: ['furry', 'art_lab', 'kenney'].includes(config.visualPack) ? config.visualPack : 'furry',
-      landscapeAnchor: config.landscapeAnchor || null,
-      portraitAnchor: config.portraitAnchor || null,
-      landscapeScale: Number.isFinite(Number(config.landscapeScale)) ? Number(config.landscapeScale) : null,
-      portraitScale: Number.isFinite(Number(config.portraitScale)) ? Number(config.portraitScale) : null
+      visualPack: 'furry',
+      commandAliases: config.commandAliases || {},
+      layouts: config.layouts || {
+        portrait: { anchor: 'top-center', scale: 100 },
+        landscape: { anchor: 'bottom-center', scale: 100 }
+      },
+      rendererQuality: ['auto', 'high', 'medium', 'low'].includes(config.rendererQuality)
+        ? config.rendererQuality
+        : 'auto',
+      notificationDurationMs: Number(config.notificationDurationMs) || 12_000,
+      audioChannels: config.audioChannels || {}
+    };
+    if (includeCreator) result.creatorName = config.creatorName || '';
+    return result;
+  }
+
+  publicHype(hype = null) {
+    if (!hype) return null;
+    return {
+      points: Math.max(0, Number(hype.points) || 0),
+      chargedEggs: Math.max(0, Number(hype.charged_eggs) || 0)
+    };
+  }
+
+  publicHeartChain(chain = null) {
+    if (!chain) return null;
+    return {
+      chainLength: Math.max(0, Number(chain.chain_length) || 0)
+    };
+  }
+
+  publicStreamMission(mission = null) {
+    if (!mission) return null;
+    return {
+      target: Math.max(0, Number(mission.target) || 0),
+      progress: Math.max(0, Number(mission.progress) || 0),
+      completed: Boolean(mission.completed_at_ms)
     };
   }
 
@@ -833,122 +649,6 @@ class StreamMonstersRoutes {
     })).filter(gift => Number.isInteger(gift.giftId) && gift.giftId > 0);
   }
 
-  selectAdapter(adapters = [], adapterId = null) {
-    const selected = adapterId
-      ? adapters.find(adapter => adapter.id === adapterId)
-      : adapters[0];
-    if (!selected) throw new Error('STREAM_MONSTERS_RUNTIME_ADAPTER_NOT_FOUND');
-    return selected;
-  }
-
-  publicInstallation(installation) {
-    if (!installation) return null;
-    return {
-      state: installation.state,
-      verified: Boolean(installation.verified),
-      profileId: installation.profileId,
-      adapterId: installation.adapterId
-    };
-  }
-
-  publicRuntime(runtime = {}) {
-    return {
-      state: String(runtime.state || 'stopped')
-    };
-  }
-
-  publicRecommendation(recommendation = {}) {
-    return {
-      supported: Boolean(recommendation.supported),
-      mode: recommendation.mode || null,
-      reasonCode: recommendation.reasonCode || null,
-      profileId: recommendation.profileId || null,
-      presetId: recommendation.presetId || null,
-      width: Math.max(0, Number(recommendation.width) || 0),
-      height: Math.max(0, Number(recommendation.height) || 0),
-      steps: Math.max(0, Number(recommendation.steps) || 0),
-      experimental: Boolean(recommendation.experimental)
-    };
-  }
-
-  publicAdapter(adapter = {}) {
-    const vramMb = Math.max(0, Number(adapter.vramMb) || 0);
-    return {
-      id: adapter.id || null,
-      name: adapter.name || null,
-      vendor: adapter.vendor || null,
-      vramMb,
-      vramGb: Number.isFinite(Number(adapter.vramGb))
-        ? Number(adapter.vramGb)
-        : Math.round((vramMb / 1024) * 10) / 10,
-      driverVersion: adapter.driverVersion || adapter.driver || null,
-      supportState: adapter.supportState || adapter.backendSelectionState || null
-    };
-  }
-
-  publicProfile(profile = {}) {
-    return {
-      id: profile.id || null,
-      label: profile.label || null,
-      backend: profile.backend || null,
-      version: profile.version || null,
-      experimental: Boolean(profile.experimental),
-      recommendationState: profile.recommendationState || null
-    };
-  }
-
-  publicSmokeTest(smokeTest) {
-    return publicSmokeTest(smokeTest);
-  }
-
-  publicDisk(disk) {
-    if (!disk) return null;
-    return {
-      freeGb: Number.isFinite(Number(disk.freeGb)) ? Number(disk.freeGb) : null,
-      runtimeDownloadBytes: Math.max(0, Number(disk.runtimeDownloadBytes) || 0),
-      runtimeInstalledBytes: Math.max(0, Number(disk.runtimeInstalledBytes) || 0),
-      modelDownloadBytes: Math.max(0, Number(disk.modelDownloadBytes) || 0),
-      modelCopyBytes: Math.max(0, Number(disk.modelCopyBytes) || 0),
-      safetyMarginBytes: Math.max(0, Number(disk.safetyMarginBytes) || 0),
-      requiredBytes: Math.max(0, Number(disk.requiredBytes) || 0),
-      freeBytes: Number.isFinite(Number(disk.freeBytes)) ? Number(disk.freeBytes) : null,
-      sufficient: typeof disk.sufficient === 'boolean' ? disk.sufficient : null
-    };
-  }
-
-  publicModel(model) {
-    if (!model) return null;
-    return {
-      id: model.id,
-      fileName: model.fileName,
-      sizeBytes: Math.max(0, Number(model.sizeBytes) || 0),
-      license: model.license,
-      verified: Boolean(model.verified)
-    };
-  }
-
-  publicCatalogInstallDetails(catalog = {}, profileId = null) {
-    const selectedProfile = catalog.profiles?.find(profile => profile.id === profileId)
-      || catalog.profiles?.[0]
-      || null;
-    return {
-      runtimeDownloadBytes: Math.max(0, Number(selectedProfile?.downloadSizeBytes) || 0),
-      runtimeInstalledBytes: Math.max(0, Number(selectedProfile?.installedSizeBytes) || 0),
-      modelDownloadBytes: Math.max(0, Number(catalog.model?.sizeBytes) || 0)
-    };
-  }
-
-  publicInstallDetails(manifest) {
-    if (!manifest) return null;
-    return {
-      runtimeDownloadBytes: Math.max(0, Number(manifest.downloadSizeBytes) || 0),
-      modelDownloadBytes: Math.max(0, Number(manifest.modelSizeBytes) || 0)
-    };
-  }
 }
-
-StreamMonstersRoutes.publicRuntimeEvent = publicRuntimeEvent;
-StreamMonstersRoutes.publicRuntimeProgress = publicRuntimeProgress;
-StreamMonstersRoutes.stableRuntimeErrorCode = stableRuntimeErrorCode;
 
 module.exports = StreamMonstersRoutes;

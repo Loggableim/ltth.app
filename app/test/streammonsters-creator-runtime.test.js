@@ -2,7 +2,9 @@
 
 const {
   HATCH_PRESETS,
-  VISUAL_PACKS,
+  EGG_EXPIRY_PRESETS,
+  RENDERER_QUALITIES,
+  SEASON_DURATIONS,
   buildConfigPayload,
   buildDexSlots,
   eggReadinessCounts,
@@ -10,30 +12,42 @@ const {
 } = require('../plugins/streamalchemy/streammonsters-creator-runtime');
 
 describe('Stream Monsters creator controls', () => {
-  test('offers exactly six hatch durations, three visual packs and preserves mapping customization', () => {
+  test('offers Rules v5 presets, canonical Furry and preserves mapping customization', () => {
     expect(HATCH_PRESETS).toEqual([30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000]);
-    expect(VISUAL_PACKS).toEqual(['furry', 'art_lab', 'kenney']);
+    expect(EGG_EXPIRY_PRESETS).toEqual([21_600_000, 43_200_000, 86_400_000, 172_800_000]);
+    expect(SEASON_DURATIONS).toEqual([7, 14, 28, 60, 90]);
+    expect(RENDERER_QUALITIES).toEqual(['auto', 'high', 'medium', 'low']);
     expect(buildConfigPayload({
       currentConfig: { giftMappingCustomized: true },
       values: {
         creatorName: 'Creator',
-        artPoolTarget: '4',
         hatchDurationMs: '300000',
+        eggExpiryMs: '86400000',
+        seasonDurationDays: '60',
         visualPack: 'art_lab',
         landscapeAnchor: 'middle-right',
         landscapeScale: '110',
         portraitAnchor: 'center',
-        portraitScale: '90'
+        portraitScale: '90',
+        rendererQuality: 'low',
+        notificationDurationMs: 12_000,
+        commandAliases: { eggs: { enabled: ['eier'], disabled: ['eggs'] } },
+        audioChannels: { master: { enabled: true, volume: 0.8 } }
       }
     })).toEqual({
       creatorName: 'Creator',
-      artPoolTarget: 4,
       hatchDurationMs: 300_000,
-      visualPack: 'art_lab',
-      landscapeAnchor: 'middle-right',
-      landscapeScale: 110,
-      portraitAnchor: 'center',
-      portraitScale: 90,
+      eggExpiryMs: 86_400_000,
+      seasonDurationDays: 60,
+      visualPack: 'furry',
+      layouts: {
+        landscape: { anchor: 'middle-right', scale: 110 },
+        portrait: { anchor: 'center', scale: 90 }
+      },
+      rendererQuality: 'low',
+      notificationDurationMs: 12_000,
+      commandAliases: { eggs: { enabled: ['eier'], disabled: ['eggs'] } },
+      audioChannels: { master: { enabled: true, volume: 0.8 } },
       giftMappingCustomized: true
     });
   });

@@ -17,8 +17,6 @@ const PERSONALITIES = [
 class StreamMonstersEngine {
   constructor({
     store,
-    generationPool = null,
-    artPool = null,
     kenneyBuilder = null,
     progression = null,
     collection = null,
@@ -28,8 +26,6 @@ class StreamMonstersEngine {
     config = {}
   }) {
     this.store = store;
-    this.generationPool = generationPool;
-    this.artPool = artPool;
     this.kenneyBuilder = kenneyBuilder;
     this.progression = progression;
     this.collection = collection;
@@ -261,23 +257,19 @@ class StreamMonstersEngine {
       ? this.collection.selectVisual({
         template,
         egg,
-        visualPack: this.config.visualPack || 'furry',
-        artPool: this.artPool,
         kenneyBuilder: this.kenneyBuilder,
         hasBundledAsset: this.hasBundledAsset
       })
       : null;
-    const skin = visual ? null : this.artPool?.consume?.(egg.element, egg.variant);
-    const fallback = visual || skin ? null : this.kenneyBuilder?.build?.({ seed: egg.seed, element: egg.element });
     return {
       name,
       templateId: template?.templateId || null,
       personality,
       rarity: egg.variant === 'charged' ? 'Charged' : 'Standard',
       stats: Object.fromEntries(statNames.map((stat, index) => [stat, values[index]])),
-      imageUrl: visual?.imageUrl || skin?.image_url || fallback?.publicUrl || egg.image_url,
-      visualSource: visual?.visualSource || (skin ? 'ai' : (fallback?.visualSource || 'egg_asset')),
-      visualKey: visual?.visualKey || skin?.visual_key || fallback?.visualKey || egg.visual_key,
+      imageUrl: visual?.imageUrl || egg.image_url,
+      visualSource: visual?.visualSource || 'egg_asset',
+      visualKey: visual?.visualKey || egg.visual_key,
       createdAtMs
     };
   }

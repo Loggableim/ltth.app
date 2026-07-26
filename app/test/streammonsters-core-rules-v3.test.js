@@ -148,13 +148,13 @@ describe('Stream Monsters rules version 3 core gift and incubation rules', () =>
   test('uses the six approved presets, defaults new rules to two minutes, and migrates only missing-version legacy thirty minutes', () => {
     const plugin = new StreamAlchemyPlugin({ getConfig: jest.fn(), setConfig: jest.fn() });
     expect(plugin.loadConfig({ streamMonsters: {} }).streamMonsters).toEqual(expect.objectContaining({
-      rulesVersion: 3,
+      rulesVersion: 5,
       hatchDurationMs: 120_000
     }));
     expect(plugin.loadConfig({ streamMonsters: { hatchDurationMs: 1_800_000 } }).streamMonsters.hatchDurationMs)
       .toBe(120_000);
     expect(plugin.loadConfig({ streamMonsters: { rulesVersion: 2, hatchDurationMs: 300_000 } }).streamMonsters)
-      .toEqual(expect.objectContaining({ rulesVersion: 3, hatchDurationMs: 300_000 }));
+      .toEqual(expect.objectContaining({ rulesVersion: 5, hatchDurationMs: 300_000 }));
 
     const { store, engine } = createEngine();
     const { routes } = createRoutes({ store, engine });
@@ -220,7 +220,7 @@ describe('Stream Monsters rules version 3 core gift and incubation rules', () =>
     find('GET', '/api/streammonsters/state')({ query: { userId: 'viewer-a' } }, state);
     expect(state.body).toEqual(expect.objectContaining({
       effectiveHatchDurationMs: 120_000,
-      queue: []
+      visualPack: 'furry'
     }));
   });
 
@@ -236,13 +236,14 @@ describe('Stream Monsters rules version 3 core gift and incubation rules', () =>
       portraitScale: 130
     })).toEqual(expect.objectContaining({
       giftMappingCustomized: true,
-      visualPack: 'kenney',
-      landscapeAnchor: 'top-right',
-      portraitAnchor: 'bottom-left',
-      landscapeScale: 70,
-      portraitScale: 130
+      visualPack: 'furry',
+      layouts: {
+        landscape: { anchor: 'top-right', scale: 70 },
+        portrait: { anchor: 'bottom-left', scale: 130 }
+      }
     }));
-    expect(routes.sanitizeConfigUpdate({ visualPack: 'other', landscapeScale: 69, portraitScale: 131 })).toEqual({});
+    expect(routes.sanitizeConfigUpdate({ visualPack: 'other', landscapeScale: 69, portraitScale: 131 }))
+      .toEqual({ visualPack: 'furry' });
 
     const put = response();
     find('PUT', '/api/streammonsters/gift-mappings/:giftId')({

@@ -117,7 +117,7 @@ describe('Stream Monsters rules version 3 migration', () => {
     plugin.config = plugin.loadConfig(legacy);
 
     expect(plugin.config.streamMonsters).toEqual(expect.objectContaining({
-      rulesVersion: 3,
+      rulesVersion: 5,
       hatchDurationMs: 120_000
     }));
     expect(plugin.persistSanitizedConfigIfNeeded(legacy)).toBe(true);
@@ -144,7 +144,7 @@ describe('Stream Monsters rules version 3 migration', () => {
         }
       });
 
-      expect(loaded.streamMonsters.rulesVersion).toBe(3);
+      expect(loaded.streamMonsters.rulesVersion).toBe(5);
       expect(loaded.streamMonsters.hatchDurationMs).toBe(hatchDurationMs);
     }
   );
@@ -227,7 +227,7 @@ describe('Stream Monsters rules version 3 migration', () => {
     ))).toEqual([30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000]);
     expect(routes.sanitizeConfigUpdate({ hatchDurationMs: 90_000 })).toEqual({});
     expect(routes.publicConfig({ rulesVersion: 2, hatchDurationMs: 300_000 })).toEqual(
-      expect.objectContaining({ rulesVersion: 3 })
+      expect.objectContaining({ rulesVersion: 5 })
     );
   });
 });
