@@ -24,6 +24,8 @@ describe('Fireworks benchmark UI', () => {
   let mainJs;
   let enLocale;
   let deLocale;
+  let appEnLocale;
+  let appDeLocale;
 
   beforeAll(() => {
     settingsHtml = readAppFile('plugins', 'fireworks', 'ui', 'settings.html');
@@ -31,15 +33,23 @@ describe('Fireworks benchmark UI', () => {
     mainJs = readAppFile('plugins', 'fireworks', 'main.js');
     enLocale = JSON.parse(readAppFile('plugins', 'fireworks', 'locales', 'en.json'));
     deLocale = JSON.parse(readAppFile('plugins', 'fireworks', 'locales', 'de.json'));
+    appEnLocale = JSON.parse(readAppFile('locales', 'en.json'));
+    appDeLocale = JSON.parse(readAppFile('locales', 'de.json'));
   });
 
-  test('all settings page i18n keys resolve from app locales', () => {
+  test('all settings page i18n keys resolve from merged app and plugin locales', () => {
     const domKeys = Array.from(settingsHtml.matchAll(/data-i18n="([^"]+)"/g), match => match[1]);
     const scriptKeys = Array.from(settingsJs.matchAll(/i18n\.t\('([^']+)'\)/g), match => match[1]);
     const keys = [...new Set([...domKeys, ...scriptKeys])];
 
-    for (const [localeName, locale] of [['en', enLocale], ['de', deLocale]]) {
-      const missing = keys.filter(key => getDottedValue(locale, key) === undefined);
+    for (const [localeName, pluginLocale, appLocale] of [
+      ['en', enLocale, appEnLocale],
+      ['de', deLocale, appDeLocale]
+    ]) {
+      const missing = keys.filter(key => {
+        const source = key.startsWith('plugins.fireworks.') ? pluginLocale : appLocale;
+        return getDottedValue(source, key) === undefined;
+      });
 
       expect(missing).toEqual([]);
     }
