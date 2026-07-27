@@ -764,3 +764,137 @@ env.OVERLAY_ROUTING_DB (ltth-overlay-routing-local)
 
 `git diff --cached --check` completed without findings before commit
 `6d1319f1`.
+
+## Fix round 4/5: Free-compatible Ruleset and adversarial validator
+
+Commit `6afad2a2` (`fix(overlay-router): certify raw-path ruleset policy`)
+closes both Important round-4 findings. The deferred `Vary` minor remains
+unchanged.
+
+### Reproduced validator and plan-tier gaps
+
+The checked-in restoration expression ended with Cloudflare's `matches`
+operator. Cloudflare documents `matches` as a Business/Enterprise feature, so
+the artifact was not deployable on a Free zone despite the host scope itself
+using plan-neutral functions.
+
+The previous offline validator also did not certify the safety predicate. It
+checked only for one recursive `url_decode` substring, absence of undocumented
+nested calls, and a shared expression prefix. It therefore accepted a
+broadened routing scope, `and` weakened to `or`, paid-plan regex, invalid
+recursive decode options, and removal of every individual path-safety clause.
+
+The new Node mutation suite passes an isolated candidate template to the real
+CLI. Before the production change, the CLI ignored that candidate and
+validated the checked-in file instead:
+
+```text
+npm run test:raw-path-ruleset
+tests 28
+pass 1
+fail 27
+```
+
+All 27 adversarial candidates were incorrectly accepted. The failures covered
+rule order, broadened removal/restoration scope, paid regex, invalid recursive
+decode syntax, conjunction weakening, and deletion of each of the 20 required
+raw/decoded safety clauses.
+
+### Exact Free-compatible safety contract
+
+Both ordered rules now use the exact routing scope:
+
+```text
+http.host eq "overlay.ltth.app" or
+(starts_with(http.host, "r-") and
+ ends_with(http.host, ".ltth.app") and
+ len(http.host) eq 43)
+```
+
+The restoration expression contains no `matches`, regex replacement, HMAC, or
+other paid-plan primitive. It uses equality, `contains`, `lower`,
+`starts_with`, `ends_with`, `len`, and the documented recursive form:
+
+```text
+url_decode(raw.http.request.uri.path, "r")
+```
+
+For both `raw.http.request.uri.path` and that recursively decoded value, the
+canonical expression rejects:
+
+- a backslash;
+- repeated `/` separators;
+- exact `.` and `..` segments at the root, middle, or end;
+- case-insensitive `%2f` and `%5c` encoded separators.
+
+Direct encoded separators are rejected from the immutable raw field. Recursive
+decoding exposes nested backslash, repeated-separator, and dot-segment
+structure. A deeply encoded slash that becomes one ordinary slash inside a
+segment remains visible as encoded data to the Worker and is rejected by the
+independent bounded fixed-point validator from fix round 3.
+
+The template expression is 1,322 characters, below Cloudflare's 4,096
+character expression limit. The deliberately unusable token placeholder is
+unchanged, and no Cloudflare ID, credential, or usable marker token is present.
+
+### Validator enforcement and mutation coverage
+
+The CLI now accepts an optional candidate path for isolated testing while
+defaulting to the checked-in template. It requires:
+
+- the zone late-transform phase and exactly two stable ordered rules;
+- caller-marker removal first and safe restoration second;
+- exactly one header mutation per rule;
+- the exact Free-compatible host scope;
+- the exact 20-clause canonical restoration expression;
+- the fail-closed secret placeholder;
+- absence of `matches` and `~`.
+
+Exact policy comparison is deliberate. It makes missing clauses, broadened
+scope, changed decode options, changed boolean operators, and appended
+weakening predicates fail closed instead of passing a substring check.
+
+After the implementation:
+
+```text
+npm run test:raw-path-ruleset
+tests 28
+pass 28
+fail 0
+
+npm run validate:raw-path-ruleset
+Raw-path guard ruleset template is structurally valid and secret-free.
+```
+
+### Round-4 final verification
+
+```text
+npm test -- test/public-router.test.js test/proxy.test.js test/worker-smoke.test.js
+Test Files  3 passed (3)
+Tests       81 passed (81)
+
+npm test
+Test Files  8 passed (8)
+Tests       215 passed (215)
+
+node --check scripts/validate-raw-path-ruleset.mjs
+node --check test/raw-path-ruleset-validator.node.mjs
+
+npx wrangler deploy --dry-run --env=
+Total Upload: 95.46 KiB / gzip: 19.26 KiB
+env.OVERLAY_ROUTING_DB (ltth-overlay-routing-local)
+--dry-run: exiting now.
+```
+
+`git diff --cached --check` completed without findings before commit
+`6afad2a2`.
+
+### Residual external boundary
+
+No live Cloudflare rule, secret, normalization setting, DNS record, Worker, or
+request trace was changed. The offline validator certifies the checked-in
+structure, not Cloudflare API acceptance or edge behavior. Task 12 must still
+run the credentialed Rulesets API, Trace, and staging acceptance gate before
+the Worker secret can be enabled. If edge normalization prevents raw repeated
+slash or backslash from being distinguished, the marker design remains
+disabled and the Worker stays failed closed.
