@@ -8,6 +8,7 @@ const StreamMonstersBattleService = require('./backend/streammonsters/battle-ser
 const StreamMonstersBattleMatchService = require('./backend/streammonsters/battle-match-service');
 const StreamMonstersChatCommands = require('./backend/streammonsters/chat-commands');
 const StreamMonstersCommandIngress = require('./backend/streammonsters/command-ingress');
+const FreeEggDropService = require('./backend/streammonsters/free-egg-drop-service');
 const StreamMonstersPublicEventProjector = require(
   './backend/streammonsters/public-event-projector'
 );
@@ -70,6 +71,7 @@ const DEFAULT_COMMAND_ALIASES = Object.freeze({
   leavebattle: Object.freeze({ enabled: Object.freeze(['leavebattle']), disabled: Object.freeze([]) }),
   rank: Object.freeze({ enabled: Object.freeze(['rank', 'monsterrank']), disabled: Object.freeze([]) }),
   quests: Object.freeze({ enabled: Object.freeze(['quests']), disabled: Object.freeze([]) }),
+  adopt: Object.freeze({ enabled: Object.freeze(['adopt', 'adoptieren']), disabled: Object.freeze([]) }),
   monstershelp: Object.freeze({ enabled: Object.freeze(['monstershelp']), disabled: Object.freeze([]) })
 });
 
@@ -132,6 +134,12 @@ class StreamAlchemyPlugin {
       getCommandReference: command => this.getStreamMonstersCommandReference(command),
       config: this.config.streamMonsters
     });
+    this.streamMonstersFreeEggDrops = new FreeEggDropService({
+      store: this.streamMonstersStore,
+      engine: this.streamMonstersEngine,
+      emit: (event, payload) => this.emitStreamMonsters(event, payload),
+      config: this.config.streamMonsters
+    });
     this.ensureDefaultStreamMonstersGiftMapping();
     this.streamMonstersBattleService = new StreamMonstersBattleService({ store: this.streamMonstersStore });
     this.streamMonstersBattleMatchService = new StreamMonstersBattleMatchService({
@@ -169,6 +177,7 @@ class StreamAlchemyPlugin {
       battleMatchService: this.streamMonstersBattleMatchService,
       progression: this.streamMonstersProgression,
       collection: this.streamMonstersCollection,
+      freeEggDropService: this.streamMonstersFreeEggDrops,
       emit: (event, payload) => this.emitStreamMonsters(event, payload),
       getCommandReference: command => this.getStreamMonstersCommandReference(command)
     });
@@ -278,6 +287,8 @@ class StreamAlchemyPlugin {
         eggExpiryMs: 86_400_000,
         eggExpiryPresetsMs: [...EGG_EXPIRY_PRESETS_MS],
         seasonDurationDays: 28,
+        freeEggDropsEnabled: true,
+        freeEggCooldownSeconds: 86_400,
         commandAliases: this.normalizeCommandAliases(),
         layouts: this.normalizeLayouts(),
         rendererQuality: 'auto',
@@ -296,6 +307,10 @@ class StreamAlchemyPlugin {
           : 86_400_000,
         eggExpiryPresetsMs: [...EGG_EXPIRY_PRESETS_MS],
         seasonDurationDays: this.normalizeSeasonDuration(storedStreamMonsters.seasonDurationDays),
+        freeEggDropsEnabled: storedStreamMonsters.freeEggDropsEnabled !== false,
+        freeEggCooldownSeconds: this.normalizeFreeEggCooldownSeconds(
+          storedStreamMonsters.freeEggCooldownSeconds
+        ),
         commandAliases: this.normalizeCommandAliases(storedStreamMonsters.commandAliases),
         layouts: this.normalizeLayouts(storedStreamMonsters.layouts),
         rendererQuality: this.normalizeRendererQuality(storedStreamMonsters.rendererQuality),
@@ -408,6 +423,13 @@ class StreamAlchemyPlugin {
   normalizeSeasonDuration(value) {
     const duration = Number(value);
     return [7, 14, 28, 60, 90].includes(duration) ? duration : 28;
+  }
+
+  normalizeFreeEggCooldownSeconds(value) {
+    const seconds = Number(value);
+    return Number.isFinite(seconds) && seconds >= 60 && seconds <= 31_536_000
+      ? Math.round(seconds)
+      : 86_400;
   }
 
   normalizeRendererQuality(value) {
@@ -547,6 +569,10 @@ class StreamAlchemyPlugin {
           : 86_400_000,
         eggExpiryPresetsMs: [...EGG_EXPIRY_PRESETS_MS],
         seasonDurationDays: this.normalizeSeasonDuration(mergedStreamMonsters.seasonDurationDays),
+        freeEggDropsEnabled: mergedStreamMonsters.freeEggDropsEnabled !== false,
+        freeEggCooldownSeconds: this.normalizeFreeEggCooldownSeconds(
+          mergedStreamMonsters.freeEggCooldownSeconds
+        ),
         commandAliases: this.normalizeCommandAliases(mergedStreamMonsters.commandAliases),
         layouts: this.normalizeLayouts(mergedStreamMonsters.layouts),
         rendererQuality: this.normalizeRendererQuality(mergedStreamMonsters.rendererQuality),
@@ -564,6 +590,12 @@ class StreamAlchemyPlugin {
         ...this.streamMonstersEngine.config,
         ...this.config.streamMonsters,
         maxUnhatchedEggs: 3
+      };
+    }
+    if (this.streamMonstersFreeEggDrops) {
+      this.streamMonstersFreeEggDrops.config = {
+        freeEggDropsEnabled: this.config.streamMonsters.freeEggDropsEnabled,
+        freeEggCooldownSeconds: this.config.streamMonsters.freeEggCooldownSeconds
       };
     }
     this.streamMonstersProgression?.setSeasonDurationDays?.(
@@ -659,6 +691,7 @@ class StreamAlchemyPlugin {
       ['leavebattle', 'Leave the Stream Monsters battle queue', 0, 0],
       ['rank', 'Show Arena Rating and Collector Score', 0, 0],
       ['quests', 'Show daily and weekly quests', 0, 0],
+      ['adopt', 'Adopt your available free Stream Monsters egg', 0, 0],
       ['monstershelp', 'Show Stream Monsters commands', 0, 0]
     ].flatMap(([command, description, minArgs, maxArgs]) => aliases[command].enabled.map(name => ({
       name,
@@ -1234,6 +1267,7 @@ class StreamAlchemyPlugin {
 
   async handleStreamMonstersChat(data = {}) {
     const correlationId = randomUUID();
+    this.observeStreamMonstersFirstChat(data);
     const directCommandFallback = this.streamMonstersGCCERegistrationState === 'fallback';
     const directRawFallback = directCommandFallback ||
       this.streamMonstersGCCERegistrationState.includes('legacy_raw_fallback');
@@ -1281,12 +1315,46 @@ class StreamAlchemyPlugin {
     return result;
   }
 
+  observeStreamMonstersFirstChat(data = {}) {
+    if (!this.streamMonstersFreeEggDrops || !this.streamMonstersEngine) return null;
+    const userId = this.resolveStreamMonstersViewerId({
+      platformUserId: data.userId,
+      legacyUserId: data.uniqueId || data.username
+    });
+    if (!userId) return null;
+    const providerEventId = data.eventId ?? data.event_id ?? data.msgId ?? data.msg_id;
+    const streamKey = this.streamMonstersEngine.streamKey || 'offline';
+    const eventId = providerEventId === undefined || providerEventId === null
+      ? `chat:${createHash('sha256').update(JSON.stringify({
+        streamKey,
+        userId,
+        message: data.comment || data.message || data.text || '',
+        timestamp: data.timestamp || data.createTime || data.create_time || null
+      })).digest('hex')}`
+      : `chat:${String(data.provider || data.source || 'tiktok')}:${String(providerEventId)}`;
+    try {
+      return this.streamMonstersFreeEggDrops.onFirstChat({
+        userId,
+        streamKey,
+        eventId,
+        displayName: data.nickname || data.username || data.uniqueId || userId
+      });
+    } catch (error) {
+      this.api.log(`[STREAM MONSTERS] Free egg observation failed: ${error.message}`, 'warn');
+      return null;
+    }
+  }
+
   async handleStreamMonstersSession(data = {}) {
     const creatorName = data.username || data.uniqueId || null;
     if (!this.config.streamMonsters.creatorName && creatorName) {
       this.updateConfig({ streamMonsters: { creatorName } });
     }
     const streamKey = data.streamIdentity || `${creatorName || 'creator'}:${data.streamSessionId || data.roomId || 'session'}`;
+    const previousStreamKey = this.streamMonstersEngine?.streamKey;
+    if (previousStreamKey && previousStreamKey !== streamKey) {
+      this.streamMonstersFreeEggDrops?.cleanupStream({ streamKey: previousStreamKey });
+    }
     const event = this.streamMonstersProgression.startStreamSession({ streamKey });
     this.streamMonstersEngine.setStreamKey(streamKey);
     this.emitStreamMonsters('streammonsters:stream_started', {

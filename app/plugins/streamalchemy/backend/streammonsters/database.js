@@ -159,6 +159,44 @@ class StreamMonstersDatabase {
         claimed_at_ms INTEGER NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS streammonsters_free_egg_offers (
+        offer_id TEXT PRIMARY KEY,
+        stream_key TEXT NOT NULL,
+        source_user_id TEXT NOT NULL,
+        source_display_name TEXT,
+        offer_event_id TEXT NOT NULL UNIQUE,
+        offered_at_ms INTEGER NOT NULL,
+        reserved_until_ms INTEGER NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('reserved', 'public', 'claimed')),
+        claimed_by_user_id TEXT,
+        claimed_at_ms INTEGER,
+        UNIQUE (stream_key, source_user_id)
+      );
+      CREATE INDEX IF NOT EXISTS streammonsters_free_egg_offers_public_fifo
+        ON streammonsters_free_egg_offers(stream_key, status, offered_at_ms, offer_id);
+
+      CREATE TABLE IF NOT EXISTS streammonsters_free_egg_claims (
+        claim_id TEXT PRIMARY KEY,
+        offer_id TEXT NOT NULL UNIQUE,
+        stream_key TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        claim_event_id TEXT NOT NULL UNIQUE,
+        claimed_at_ms INTEGER NOT NULL,
+        FOREIGN KEY (offer_id) REFERENCES streammonsters_free_egg_offers(offer_id)
+      );
+      CREATE INDEX IF NOT EXISTS streammonsters_free_egg_claims_cooldown
+        ON streammonsters_free_egg_claims(user_id, claimed_at_ms DESC);
+
+      CREATE TABLE IF NOT EXISTS streammonsters_free_egg_events (
+        event_id TEXT PRIMARY KEY,
+        stream_key TEXT NOT NULL,
+        event_type TEXT NOT NULL CHECK (event_type IN ('first_chat', 'adopt')),
+        result_json TEXT NOT NULL,
+        created_at_ms INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS streammonsters_free_egg_events_stream
+        ON streammonsters_free_egg_events(stream_key, created_at_ms);
+
       CREATE TABLE IF NOT EXISTS streammonsters_viewer_identities (
         platform_user_id TEXT PRIMARY KEY,
         canonical_user_id TEXT NOT NULL UNIQUE,
@@ -1012,6 +1050,137 @@ class StreamMonstersDatabase {
     return this.db.prepare(`
       SELECT * FROM streammonsters_starter_claims WHERE user_id = ?
     `).get(userId) || null;
+  }
+
+  getFreeEggEvent(eventId) {
+    const row = this.db.prepare(`
+      SELECT result_json FROM streammonsters_free_egg_events WHERE event_id = ?
+    `).get(eventId);
+    if (!row) return null;
+    try {
+      return JSON.parse(row.result_json);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  recordFreeEggEvent({ eventId, streamKey, eventType, result, createdAtMs }) {
+    this.db.prepare(`
+      INSERT INTO streammonsters_free_egg_events (
+        event_id, stream_key, event_type, result_json, created_at_ms
+      ) VALUES (?, ?, ?, ?, ?)
+    `).run(eventId, streamKey, eventType, JSON.stringify(result), createdAtMs);
+    return result;
+  }
+
+  createFreeEggOffer(input) {
+    this.db.prepare(`
+      INSERT INTO streammonsters_free_egg_offers (
+        offer_id, stream_key, source_user_id, source_display_name, offer_event_id,
+        offered_at_ms, reserved_until_ms, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'reserved')
+    `).run(
+      input.offerId,
+      input.streamKey,
+      input.sourceUserId,
+      input.sourceDisplayName || null,
+      input.offerEventId,
+      input.offeredAtMs,
+      input.reservedUntilMs
+    );
+    return this.getFreeEggOffer(input.offerId);
+  }
+
+  getFreeEggOffer(offerId) {
+    return this.db.prepare(`
+      SELECT * FROM streammonsters_free_egg_offers WHERE offer_id = ?
+    `).get(offerId) || null;
+  }
+
+  getFreeEggOfferBySource(streamKey, sourceUserId) {
+    return this.db.prepare(`
+      SELECT * FROM streammonsters_free_egg_offers
+      WHERE stream_key = ? AND source_user_id = ?
+    `).get(streamKey, sourceUserId) || null;
+  }
+
+  getFreeEggOffers(streamKey) {
+    return this.db.prepare(`
+      SELECT * FROM streammonsters_free_egg_offers
+      WHERE stream_key = ?
+      ORDER BY offered_at_ms ASC, offer_id ASC
+    `).all(streamKey);
+  }
+
+  releaseExpiredFreeEggOffers(streamKey, nowMs) {
+    const released = this.db.prepare(`
+      SELECT * FROM streammonsters_free_egg_offers
+      WHERE stream_key = ? AND status = 'reserved' AND reserved_until_ms <= ?
+      ORDER BY offered_at_ms ASC, offer_id ASC
+    `).all(streamKey, nowMs);
+    if (released.length) {
+      this.db.prepare(`
+        UPDATE streammonsters_free_egg_offers
+        SET status = 'public'
+        WHERE stream_key = ? AND status = 'reserved' AND reserved_until_ms <= ?
+      `).run(streamKey, nowMs);
+    }
+    return released.map(offer => ({ ...offer, status: 'public' }));
+  }
+
+  getReservedFreeEggOffer(streamKey, userId, nowMs) {
+    return this.db.prepare(`
+      SELECT * FROM streammonsters_free_egg_offers
+      WHERE stream_key = ? AND source_user_id = ?
+        AND status = 'reserved' AND reserved_until_ms > ?
+      ORDER BY offered_at_ms ASC, offer_id ASC
+      LIMIT 1
+    `).get(streamKey, userId, nowMs) || null;
+  }
+
+  getOldestPublicFreeEggOffer(streamKey) {
+    return this.db.prepare(`
+      SELECT * FROM streammonsters_free_egg_offers
+      WHERE stream_key = ? AND status = 'public'
+      ORDER BY offered_at_ms ASC, offer_id ASC
+      LIMIT 1
+    `).get(streamKey) || null;
+  }
+
+  claimFreeEggOffer({ offerId, userId, claimedAtMs }) {
+    const result = this.db.prepare(`
+      UPDATE streammonsters_free_egg_offers
+      SET status = 'claimed', claimed_by_user_id = ?, claimed_at_ms = ?
+      WHERE offer_id = ? AND status IN ('reserved', 'public')
+    `).run(userId, claimedAtMs, offerId);
+    return result.changes === 1 ? this.getFreeEggOffer(offerId) : null;
+  }
+
+  createFreeEggClaim({ claimId, offerId, streamKey, userId, claimEventId, claimedAtMs }) {
+    this.db.prepare(`
+      INSERT INTO streammonsters_free_egg_claims (
+        claim_id, offer_id, stream_key, user_id, claim_event_id, claimed_at_ms
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `).run(claimId, offerId, streamKey, userId, claimEventId, claimedAtMs);
+  }
+
+  getLatestFreeEggClaim(userId) {
+    return this.db.prepare(`
+      SELECT * FROM streammonsters_free_egg_claims
+      WHERE user_id = ?
+      ORDER BY claimed_at_ms DESC, claim_id DESC
+      LIMIT 1
+    `).get(userId) || null;
+  }
+
+  cleanupFreeEggStream(streamKey) {
+    const offersRemoved = this.db.prepare(`
+      DELETE FROM streammonsters_free_egg_offers WHERE stream_key = ?
+    `).run(streamKey).changes;
+    const eventsRemoved = this.db.prepare(`
+      DELETE FROM streammonsters_free_egg_events WHERE stream_key = ?
+    `).run(streamKey).changes;
+    return { offersRemoved, eventsRemoved };
   }
 
   getEgg(eggId) {

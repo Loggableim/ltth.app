@@ -33,7 +33,7 @@ function createGCCEApi() {
 }
 
 describe('Stream Monsters 1.5 GCCE contracts', () => {
-  test('builds live definitions from enabled aliases and leaves eggs disabled', () => {
+  test('builds live definitions from enabled aliases and keeps legacy eggs disabled', () => {
     const plugin = new StreamAlchemyPlugin({ pluginDir: '', log: jest.fn() });
     plugin.streamMonstersCommandPrefix = '!';
     plugin.config = {
@@ -51,7 +51,9 @@ describe('Stream Monsters 1.5 GCCE contracts', () => {
       'eier', 'eierliste', 'meineeier', 'hatch', 'inventory', 'monsters'
     ]));
     expect(definitions.map(definition => definition.name)).not.toContain('eggs');
-    expect(definitions.map(definition => definition.name)).not.toContain('adopt');
+    expect(definitions.map(definition => definition.name)).toEqual(expect.arrayContaining([
+      'adopt', 'adoptieren'
+    ]));
     expect(definitions.find(definition => definition.name === 'eier').handler)
       .toEqual(expect.any(Function));
     expect(definitions.find(definition => definition.commandName === 'battle'))

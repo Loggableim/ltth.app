@@ -184,6 +184,40 @@ class StreamMonstersEngine {
     return { type: 'spawned', egg, gift };
   }
 
+  createFreeEgg({ userId, createdAtMs = this.now() }) {
+    if (!userId) throw new Error('STREAM_MONSTERS_USER_REQUIRED');
+    const giftId = 0;
+    const element = this.selectRandomElement({ giftId });
+    const elementIndex = ELEMENTS.indexOf(element);
+    const eggs = this.store.getViewerEggs(userId, 'incubating');
+    const state = eggs.length >= this.config.maxUnhatchedEggs ? 'queued' : 'incubating';
+    const hatchDurationMs = this.hatchDurationFor('standard');
+    const egg = this.store.createEgg({
+      userId,
+      giftId,
+      giftName: 'Free Egg Drop',
+      element,
+      eggColor: EGG_COLORS[elementIndex],
+      seed: this.seedFor(userId, `free:${element}`, createdAtMs),
+      createdAtMs,
+      hatchDurationMs,
+      initialBoostMs: 0,
+      readyAtMs: state === 'queued' ? null : createdAtMs + hatchDurationMs,
+      expiresAtMs: state === 'queued'
+        ? null
+        : createdAtMs + hatchDurationMs + this.config.eggExpiryMs,
+      state,
+      queuedAtMs: state === 'queued' ? createdAtMs : null,
+      incubatingAtMs: state === 'incubating' ? createdAtMs : null,
+      imageUrl: this.createDefaultEggImage({ element }, 'standard'),
+      variant: 'standard',
+      visualSource: 'egg_asset',
+      visualKey: `egg:${element.toLowerCase()}:standard`
+    });
+    this.store.incrementStreamMetric(this.streamKey, 'eggs_spawned');
+    return egg;
+  }
+
   hatchReadyEggs(userId) {
     this.markReadyEggs();
     const hatched = [];

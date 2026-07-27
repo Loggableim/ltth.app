@@ -144,7 +144,7 @@ describe('Stream Monsters plugin integration', () => {
     await plugin.destroy();
   });
 
-  test('does not expose starter adoption across stable viewer handle changes', async () => {
+  test('uses one recurring free-egg claim across stable viewer handle changes', async () => {
     const { api, events, emitted } = createApi();
     const plugin = new StreamAlchemyPlugin(api);
     await plugin.init();
@@ -165,9 +165,10 @@ describe('Stream Monsters plugin integration', () => {
     });
 
     const canonicalId = plugin.streamMonstersStore.resolveKnownViewerId('7123456789012345678');
-    expect(plugin.streamMonstersStore.getViewerEggs(canonicalId)).toHaveLength(0);
+    expect(plugin.streamMonstersStore.getViewerEggs(canonicalId)).toHaveLength(1);
     expect(emitted.filter(entry => entry.event === 'streammonsters:starter_claimed')).toHaveLength(0);
-    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toHaveLength(0);
+    expect(emitted.filter(entry => entry.event === 'streammonsters:free_egg_claimed')).toHaveLength(1);
+    expect(emitted.filter(entry => entry.event === 'streammonsters:chat_result')).toHaveLength(2);
     await plugin.destroy();
   });
 

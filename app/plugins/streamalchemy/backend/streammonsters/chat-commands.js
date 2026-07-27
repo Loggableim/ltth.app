@@ -1,3 +1,5 @@
+const { createHash, randomUUID } = require('crypto');
+
 class ChatCommands {
   constructor({
     store,
@@ -6,6 +8,7 @@ class ChatCommands {
     battleMatchService = null,
     progression = null,
     collection = null,
+    freeEggDropService = null,
     emit = () => {},
     now = () => Date.now(),
     queueTtlMs = 5 * 60 * 1000,
@@ -17,6 +20,7 @@ class ChatCommands {
     this.battleMatchService = battleMatchService;
     this.progression = progression;
     this.collection = collection;
+    this.freeEggDropService = freeEggDropService;
     this.emit = emit;
     this.now = now;
     this.queueTtlMs = queueTtlMs;
@@ -41,7 +45,7 @@ class ChatCommands {
     if (!userId) return { success: false, status: 'ignored' };
     if (![
       'eggs', 'hatch', 'inventory', 'monsters', 'monster', 'choose',
-      'evolve', 'battle', 'leavebattle', 'rank', 'quests', 'monstershelp'
+      'evolve', 'battle', 'leavebattle', 'rank', 'quests', 'adopt', 'monstershelp'
     ].includes(command)) {
       return { success: false, status: 'ignored' };
     }
@@ -55,6 +59,7 @@ class ChatCommands {
     if (command === 'monster') return this.monster(userId, commandArgs[0]);
     if (command === 'choose') return this.choose(userId, commandArgs[0]);
     if (command === 'evolve') return this.evolve(userId, commandArgs[0]);
+    if (command === 'adopt') return this.adopt(userId, context);
     if (command === 'leavebattle') return this.leaveBattle(userId);
     if (command === 'rank') return this.rank(userId);
     if (command === 'quests') return this.quests(userId);
@@ -104,6 +109,44 @@ class ChatCommands {
       message: `${eggs.length} egg${eggs.length === 1 ? '' : 's'} (${ready} ready${queued ? `, ${queued} queued` : ''}).${hatchGuidance}`,
       eggs
     };
+  }
+
+  adopt(userId, context = {}) {
+    if (!this.freeEggDropService) {
+      return {
+        success: false,
+        status: 'ignored'
+      };
+    }
+    const rawData = context.rawData || {};
+    const providerEventId = rawData.eventId ?? rawData.event_id ?? rawData.msgId ?? rawData.msg_id;
+    const streamKey = this.engine.streamKey || 'offline';
+    const eventId = providerEventId === undefined || providerEventId === null
+      ? `adopt:${createHash('sha256').update(JSON.stringify({
+        streamKey,
+        userId,
+        message: rawData.comment || rawData.message || rawData.text || 'adopt',
+        timestamp: rawData.timestamp || rawData.createTime || rawData.create_time || null
+      })).digest('hex')}`
+      : `adopt:${String(rawData.provider || rawData.source || 'tiktok')}:${String(providerEventId)}`;
+    const result = this.freeEggDropService.adopt({
+      userId,
+      streamKey,
+      eventId: eventId || `adopt:${randomUUID()}`,
+      nowMs: this.now()
+    });
+    if (result.success) {
+      return {
+        ...result,
+        message: 'You adopted a free egg. Check your eggs to follow incubation.'
+      };
+    }
+    const messages = {
+      cooldown: 'You already adopted a free egg recently.',
+      no_offer: 'There is no free egg available right now.',
+      disabled: 'Free egg drops are currently unavailable.'
+    };
+    return { ...result, message: messages[result.status] || 'Free egg adoption is unavailable.' };
   }
 
   hatch(userId, slot) {
