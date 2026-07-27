@@ -254,7 +254,7 @@ describe('Clerk management authentication', () => {
     );
   });
 
-  it('refreshes a cached JWKS once when Clerk rotates to a new kid', async () => {
+  it('refreshes a cached JWKS once for rotation and bounds later unknown kids', async () => {
     const jwks = createJwksFetch(
       [primaryKeys.publicJwk],
       [rotatedKeys.publicJwk]
@@ -262,9 +262,34 @@ describe('Clerk management authentication', () => {
     const verifier = createVerifier(jwks.fetch);
     const firstToken = await signJwt(validClaims());
     const rotatedToken = await signJwt(validClaims(), rotatedKeys);
+    const firstUnknownToken = await signJwt(
+      validClaims(),
+      attackerKeys,
+      { kid: 'random-unknown-a' }
+    );
+    const secondUnknownToken = await signJwt(
+      validClaims(),
+      attackerKeys,
+      { kid: 'random-unknown-b' }
+    );
 
     await verifier.verifyToken(firstToken);
     const rotatedClaims = await verifier.verifyToken(rotatedToken);
+    await expectAuthFailure(
+      () => verifier.verifyToken(firstUnknownToken),
+      AUTH_ERROR_CODES.CLERK_UNAUTHORIZED,
+      401
+    );
+    await expectAuthFailure(
+      () => verifier.verifyToken(firstUnknownToken),
+      AUTH_ERROR_CODES.CLERK_UNAUTHORIZED,
+      401
+    );
+    await expectAuthFailure(
+      () => verifier.verifyToken(secondUnknownToken),
+      AUTH_ERROR_CODES.CLERK_UNAUTHORIZED,
+      401
+    );
 
     expect(rotatedClaims.sub).toBe('user-owner');
     expect(jwks.callCount).toBe(2);

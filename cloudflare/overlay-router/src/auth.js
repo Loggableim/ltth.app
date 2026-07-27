@@ -274,11 +274,24 @@ export function createClerkJwtVerifier(options = {}) {
     ? options.jwksCache
     : new Map();
 
-  async function fetchKeys(forceRefresh = false) {
+  function normalizeCacheEntry(entry) {
+    if (!(entry.unknownKids instanceof Set)) {
+      entry.unknownKids = new Set();
+    }
+    if (typeof entry.refreshUsed !== 'boolean') {
+      entry.refreshUsed = false;
+    }
+    return entry;
+  }
+
+  async function fetchKeys(forceRefresh = false, previousEntry = null) {
     const currentTime = now();
     const cached = jwksCache.get(jwksUrl);
     if (!forceRefresh && cached && cached.expiresAt > currentTime) {
-      return cached.keys;
+      return {
+        entry: normalizeCacheEntry(cached),
+        fetched: false
+      };
     }
 
     let response;
@@ -310,24 +323,51 @@ export function createClerkJwtVerifier(options = {}) {
     if (keys.length === 0) {
       fail(AUTH_ERROR_CODES.AUTH_UNAVAILABLE);
     }
-    jwksCache.set(jwksUrl, {
+    const entry = {
       keys,
-      expiresAt: currentTime + cacheTtlMs
-    });
-    return keys;
+      expiresAt: forceRefresh &&
+        previousEntry?.expiresAt > currentTime
+        ? previousEntry.expiresAt
+        : currentTime + cacheTtlMs,
+      refreshUsed: forceRefresh,
+      refreshPromise: null,
+      unknownKids: new Set()
+    };
+    jwksCache.set(jwksUrl, entry);
+    return { entry, fetched: true };
   }
 
   async function resolveKey(kid) {
-    let keys = await fetchKeys();
-    let jwk = keys.find((key) => isUsableJwk(key, kid));
-    if (!jwk) {
-      keys = await fetchKeys(true);
-      jwk = keys.find((key) => isUsableJwk(key, kid));
+    const loaded = await fetchKeys();
+    let entry = loaded.entry;
+    let jwk = entry.keys.find((key) => isUsableJwk(key, kid));
+    if (jwk) {
+      return importVerificationKey(jwk);
     }
-    if (!jwk) {
+
+    if (entry.unknownKids.has(kid)) {
       fail(AUTH_ERROR_CODES.CLERK_UNAUTHORIZED);
     }
-    return importVerificationKey(jwk);
+    if (loaded.fetched) {
+      entry.unknownKids.add(kid);
+      fail(AUTH_ERROR_CODES.CLERK_UNAUTHORIZED);
+    }
+
+    if (!entry.refreshUsed && !entry.refreshPromise) {
+      entry.refreshUsed = true;
+      entry.refreshPromise = fetchKeys(true, entry)
+        .then((result) => result.entry);
+    }
+    if (entry.refreshPromise) {
+      entry = await entry.refreshPromise;
+      jwk = entry.keys.find((key) => isUsableJwk(key, kid));
+      if (jwk) {
+        return importVerificationKey(jwk);
+      }
+    }
+
+    entry.unknownKids.add(kid);
+    fail(AUTH_ERROR_CODES.CLERK_UNAUTHORIZED);
   }
 
   return Object.freeze({
