@@ -591,3 +591,176 @@ env.OVERLAY_ROUTING_DB (ltth-overlay-routing-local)
 
 `git diff --cached --check` completed without findings before commit
 `e7e6e20f`.
+
+## Fix round 3/5: fixed-point decoding and checked-in Ruleset
+
+Commit `6d1319f1` (`fix(overlay-router): validate recursively encoded paths`)
+closes both Important round-3 findings. The deferred `Vary` minor remains
+unchanged.
+
+### Bounded fixed-point Worker validation
+
+The round-2 Worker decoded exactly two layers. A third or deeper layer
+therefore remained encoded when the function returned `true`:
+
+```text
+%25252f                 -> %252f -> %2f       (accepted)
+%25252e%25252e          -> %252e%252e -> %2e%2e
+%25252525255c           -> still encoded after two passes
+```
+
+The validator now decodes a scratch pathname until it reaches a fixed point,
+with an explicit maximum of 16 stages. The original pathname is never
+modified. Initial invalid percent syntax, raw backslash, repeated slash, and
+literal dot segments are rejected. After every decoded stage, the validator
+rejects:
+
+- a newly introduced `/`;
+- any `\`;
+- an exact `.` or `..` segment.
+
+Percent bytes are decoded only in the scratch copy. Filename dots and literal
+percent data therefore remain allowed when they never become path structure.
+Coverage includes safe deeply nested forms such as an encoded dot inside
+`overlay...html` and an encoded percent inside `100...-ready.html`, including
+a safe value that reaches its fixed point on stage 16.
+
+After stage 16 the validator attempts one more layer. If that layer would
+change the scratch pathname, it fails closed instead of accepting unresolved
+nesting. This intentionally rejects even otherwise-safe stage-17 data because
+its structural meaning has not been proven within the finite budget.
+
+Entry redirects and proxy targets continue to use the untouched original
+WHATWG-visible path/query, so accepted deep safe encodings remain exact in the
+`Location` or upstream URL.
+
+### Deployment-ready Cloudflare Ruleset artifact
+
+The round-2 report used undocumented nested
+`url_decode(url_decode(...))` notation. The checked-in replacement is:
+
+- `cloudflare/overlay-router/rulesets/raw-path-guard.ruleset.template.json`;
+- `cloudflare/overlay-router/rulesets/README.md`;
+- `cloudflare/overlay-router/scripts/validate-raw-path-ruleset.mjs`;
+- package command `npm run validate:raw-path-ruleset`.
+
+The JSON is a zone-level `http_request_late_transform` entry-point template.
+It defines exactly two enabled rules in security-significant order:
+
+1. `ltth_raw_path_guard_remove_caller_marker` removes every incoming
+   `x-ltth-raw-path-guard` header on the routing host scope;
+2. `ltth_raw_path_guard_restore_safe_marker` restores it only under the
+   structural raw-path expression.
+
+The restoration expression uses Cloudflare's documented recursive syntax:
+
+```text
+url_decode(raw.http.request.uri.path, "r")
+```
+
+It rejects recursively decoded backslashes, repeated separators, and exact
+dot segments. It also rejects ordinary arbitrarily nested percent-encoded
+slashes with a lowercased raw-path pattern. Composed encodings that remain
+visible are independently rejected by the Worker's fixed-point validator.
+The raw-rule/visible-Worker split is therefore explicit: the Ruleset attests
+structure that may be irreversibly lost before `Request.url`; the Worker
+recursively validates all structural encodings still visible to it.
+
+The static header value is the deliberately unusable
+`<REPLACE_WITH_64_CHAR_URL_SAFE_TOKEN>` placeholder. It does not match the
+Worker token grammar, so deploying the template without credentialed
+substitution remains failed closed. No real marker secret is checked in.
+
+The offline validator parses the JSON and verifies:
+
+- `kind: zone` and phase `http_request_late_transform`;
+- exactly two rules and their stable order/refs;
+- removal followed by restoration of the same header;
+- exact host-scope inheritance;
+- the unusable placeholder rather than a token-shaped value;
+- presence of `url_decode(raw.http.request.uri.path, "r")`;
+- absence of nested `url_decode(url_decode(...))`.
+
+Test-first artifact evidence:
+
+```text
+npm run validate:raw-path-ruleset
+Ruleset template could not be parsed: ENOENT ... raw-path-guard.ruleset.template.json
+```
+
+After adding the template:
+
+```text
+npm run validate:raw-path-ruleset
+Raw-path guard ruleset template is structurally valid and secret-free.
+```
+
+### External API and Trace gate
+
+`rulesets/README.md` contains explicit PowerShell commands that require
+external `CLOUDFLARE_API_TOKEN`, zone/account IDs, and a generated 64-character
+marker token. The workflow:
+
+1. runs the offline validator and validates token shape;
+2. substitutes the token only into an untracked temporary payload;
+3. inspects the current late-transform entry point to prevent overwriting
+   unrelated rules;
+4. creates or updates the zone Ruleset through the Rulesets API;
+5. removes the temporary secret-bearing payload;
+6. uses `POST /accounts/{account_id}/request-tracer/trace` with
+   `skip_response` for safe, dangerous, and caller-spoof fixtures;
+7. requires real staging requests before the Worker secret can be enabled in
+   production.
+
+The Cloudflare API, Trace, staging, secret, and deployment commands were not
+run in this task because their credentials and external state are outside
+Task 6. The existing deployment stop remains: if Cloudflare basic
+normalization prevents Trace/staging from distinguishing raw repeated slash
+or backslash, the Worker secret must stay disabled.
+
+Authoritative syntax/API references are recorded next to the commands:
+
+- https://developers.cloudflare.com/ruleset-engine/rules-language/functions/#url_decode
+- https://developers.cloudflare.com/rules/transform/request-header-modification/
+- https://developers.cloudflare.com/ruleset-engine/rulesets-api/update/
+- https://developers.cloudflare.com/api/resources/request_tracers/subresources/traces/methods/create/
+
+### Round-3 test-first and final evidence
+
+Before the fixed-point production change:
+
+```text
+npm test -- test/public-router.test.js test/proxy.test.js test/worker-smoke.test.js
+Test Files  2 failed | 1 passed
+Tests       8 failed | 71 passed
+```
+
+The failures showed triple/deeper encoded slash, backslash, and dot segments
+being proxied or classified safe, plus an over-budget safe filename being
+accepted instead of failing closed.
+
+After the change:
+
+```text
+npm test -- test/public-router.test.js test/proxy.test.js test/worker-smoke.test.js
+Test Files  3 passed (3)
+Tests       81 passed (81)
+
+npm test
+Test Files  8 passed (8)
+Tests       215 passed (215)
+
+npm run validate:raw-path-ruleset
+Raw-path guard ruleset template is structurally valid and secret-free.
+
+node --check src/public-path.js
+node --check scripts/validate-raw-path-ruleset.mjs
+
+npx wrangler deploy --dry-run --env=
+Total Upload: 95.46 KiB / gzip: 19.26 KiB
+env.OVERLAY_ROUTING_DB (ltth-overlay-routing-local)
+--dry-run: exiting now.
+```
+
+`git diff --cached --check` completed without findings before commit
+`6d1319f1`.
