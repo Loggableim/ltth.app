@@ -117,6 +117,13 @@ function isCopiedEnglishUiText(targetValue, englishValue) {
     && !isInvariantUiText(englishValue);
 }
 
+function interpolationPlaceholders(value) {
+  if (typeof value !== 'string') return [];
+  return [...value.matchAll(/{{[A-Za-z_][\w.-]*}}|{[A-Za-z_][\w.-]*}/g)]
+    .map((match) => match[0])
+    .sort();
+}
+
 function auditPluginLocales(pluginsRoot) {
   const errors = [];
   const claims = new Map();
@@ -197,6 +204,16 @@ function auditPluginLocales(pluginsRoot) {
           if (isCopiedEnglishUiText(valuesByLocale[locale][key], englishValue)) {
             errors.push(`${pluginId}/${locale}: English UI copy at ${key}`);
           }
+
+          const expectedPlaceholders = interpolationPlaceholders(englishValue);
+          const actualPlaceholders = interpolationPlaceholders(valuesByLocale[locale][key]);
+          if (expectedPlaceholders.join('\u0000') !== actualPlaceholders.join('\u0000')) {
+            errors.push(
+              `${pluginId}/${locale}: placeholder mismatch at ${key} ` +
+              `(expected ${expectedPlaceholders.join(', ') || 'none'}; ` +
+              `got ${actualPlaceholders.join(', ') || 'none'})`
+            );
+          }
         });
       }
     });
@@ -205,4 +222,11 @@ function auditPluginLocales(pluginsRoot) {
   return { errors: [...new Set(errors)].sort(), plugins };
 }
 
-module.exports = { LOCALES, flattenTranslations, isInvariantUiText, isCopiedEnglishUiText, auditPluginLocales };
+module.exports = {
+  LOCALES,
+  flattenTranslations,
+  isInvariantUiText,
+  isCopiedEnglishUiText,
+  interpolationPlaceholders,
+  auditPluginLocales
+};

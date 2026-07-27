@@ -129,6 +129,38 @@ describe('plugin i18n audit', () => {
     );
   });
 
+  test('reports interpolation placeholder mismatches between plugin locales', () => {
+    writePluginFixture(pluginsRoot, 'emoji-rain', {
+      de: { plugins: { 'emoji-rain': { status: { ready: '{{monster}} ist in {sekunden} s bereit.' } } } },
+      en: { plugins: { 'emoji-rain': { status: { ready: '{{monster}} is ready in {seconds}s.' } } } },
+      es: { plugins: { 'emoji-rain': { status: { ready: '{{monster}} estará listo en {seconds}s para {viewer}.' } } } },
+      fr: { plugins: { 'emoji-rain': { status: { ready: '{{monster}} sera prêt dans {seconds}s.' } } } }
+    });
+
+    const errors = auditPluginLocales(pluginsRoot).errors;
+    expect(errors).toContain(
+      'emoji-rain/de: placeholder mismatch at plugins.emoji-rain.status.ready ' +
+      '(expected {seconds}, {{monster}}; got {sekunden}, {{monster}})'
+    );
+    expect(errors).toContain(
+      'emoji-rain/es: placeholder mismatch at plugins.emoji-rain.status.ready ' +
+      '(expected {seconds}, {{monster}}; got {seconds}, {viewer}, {{monster}})'
+    );
+  });
+
+  test('does not treat translated CSS or JSON examples as interpolation placeholders', () => {
+    writePluginFixture(pluginsRoot, 'emoji-rain', {
+      de: { plugins: { 'emoji-rain': { examples: { css: 'body { color: blau; }', json: '{ "Titel": "Regen" }' } } } },
+      en: { plugins: { 'emoji-rain': { examples: { css: 'body { color: red; }', json: '{ "title": "rain" }' } } } },
+      es: { plugins: { 'emoji-rain': { examples: { css: 'body { color: rojo; }', json: '{ "título": "lluvia" }' } } } },
+      fr: { plugins: { 'emoji-rain': { examples: { css: 'body { color: rouge; }', json: '{ "titre": "pluie" }' } } } }
+    });
+
+    expect(auditPluginLocales(pluginsRoot).errors.filter(
+      error => error.includes('placeholder mismatch')
+    )).toEqual([]);
+  });
+
   test('reports cross-plugin key collisions that would overwrite a translation at runtime', () => {
     writePluginFixture(pluginsRoot, 'first-plugin', {
       de: { shared: { title: 'Erstes' } },
