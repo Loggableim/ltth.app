@@ -347,3 +347,260 @@ The tests cover:
   by the inherited Task 4 interface but is not recommended for production.
 - No live deployment, DNS route, index wiring, desktop client, or public proxy
   behavior is part of Task 5.
+
+---
+
+## Fix round 1/5: Important review findings
+
+Fix commit:
+
+- `1ed0d3c3` - `fix(overlay-router): close management route races`
+
+This round addresses all four Important review findings. The two explicitly
+deferred Minor observations were not changed.
+
+### 1. Atomic active-device admission
+
+Root cause:
+
+```text
+countActiveDevicesByOwner()
+        |
+        | another enrollment may observe the same count
+        v
+createDevice()
+```
+
+The former management flow used two D1 statements. Two controlled concurrent
+requests both observed zero active devices and both returned `201`, exceeding a
+limit of one.
+
+Task 2's repository now exposes the narrowly scoped prepared D1 operation:
+
+```js
+repository.createDeviceWithActiveLimit({
+  deviceId,
+  clerkUserId,
+  tokenHash,
+  label,
+  now,
+  activeDeviceLimit
+}) -> device | null
+```
+
+Its one statement is:
+
+```sql
+INSERT INTO devices (...)
+SELECT ...
+WHERE (
+  SELECT COUNT(*)
+  FROM devices
+  WHERE clerk_user_id = ?
+    AND revoked_at IS NULL
+) < ?
+RETURNING *
+```
+
+D1 evaluates the count predicate and insert as one write statement. There is
+no management-layer count/read window. A null result maps to the existing
+`409 active_device_limit_reached`; the generated unused credential is discarded
+and never returned or persisted.
+
+Two regressions cover this:
+
+- the HTTP test uses a barrier around the old count boundary so the previous
+  implementation deterministically produces the forbidden `201/201`, then
+  verifies the new handler produces exactly `201/409`;
+- the repository test launches two real
+  `createDeviceWithActiveLimit(... activeDeviceLimit: 1)` D1 operations
+  concurrently and verifies exactly one row/result is admitted.
+
+Both tests use the Worker pool's real local D1 binding.
+
+### 2. Authentication before dynamic-parameter validation
+
+Root cause:
+
+The route dispatcher previously decoded and normalized `:username` or
+`:deviceId` before entering the endpoint handler. A malformed encoded value
+therefore returned `400` without authentication, while the same endpoint shape
+with a valid value returned `401`/`403`.
+
+The dispatcher now only recognizes the route shape and passes the encoded
+segment into its endpoint-specific handler. Each handler executes its explicit
+Task 4 guard first:
+
+| Dynamic endpoint | First operation |
+| --- | --- |
+| claim restore | Clerk management authentication |
+| claim release | Clerk management authentication |
+| device revocation | Clerk management authentication |
+| administrative release | combined Clerk/admin authentication |
+
+Only after successful authentication does that handler decode, enforce
+canonical path encoding, and normalize the username/device ID. Authenticated
+callers retain the same strict `400` validation semantics.
+
+Worker HTTP regressions compare malformed `%` and valid dynamic values for all
+four endpoint families. Every unauthenticated request now reaches the same
+`401` boundary without parameter-detail disclosure.
+
+### 3. State-authoritative, non-blocking audit semantics
+
+Root cause:
+
+Every mutation awaited `recordAuditEvent` after its D1 state change. If audit
+persistence failed, the handler returned `503` even though the mutation was
+already committed. For enrollment this stranded a valid device hash while
+withholding its only plaintext credential.
+
+The deliberate guarantee selected for this Worker is:
+
+> A completed state mutation is authoritative. Audit is one bounded,
+> best-effort asynchronous write/prune attempt and can never rewrite the
+> mutation's HTTP result.
+
+The shared management `record()` path now:
+
+1. starts the sanitized `audit.record(...)` promise;
+2. converts audit insert/prune rejection into a resolved background result;
+3. passes that bounded promise to `context.waitUntil` when available;
+4. never awaits it from the mutation response path;
+5. ignores a synchronous `waitUntil` scheduling failure without changing the
+   state result.
+
+There is no retry loop and no unhandled rejection. The audit payload remains
+the same bounded, sanitized Task 5 shape.
+
+This semantics is applied centrally to enrollment, claim create/release/
+restore, device revoke, lease update/close, and admin release, including
+audited domain failures such as rate limits and conflicts.
+
+The controlled regression makes `recordAuditEvent` fail for every attempt while
+keeping every real state operation in D1. It proves:
+
+- enrollment still returns `201` with the one-time credential;
+- the stored hash matches that returned credential;
+- claim success remains `201`;
+- a first-claim conflict remains `409 claim_unavailable`, not `503`;
+- lease activation remains `200`;
+- claim release remains `200`;
+- lease close, device revocation, and admin release remain `204`.
+
+Task 6 must pass the actual Worker execution context to preserve the
+`waitUntil` lifetime guarantee. If no execution context is supplied, the
+promise remains rejection-safe but the runtime is not required to keep the
+isolate alive for audit completion.
+
+### 4. Controlled D1/repository interleavings
+
+The management suite now includes four race families. The small proxy used by
+the tests only inserts barriers or a real competing repository operation; all
+state reads and writes still execute through the production Task 2 repository
+against D1.
+
+#### Enrollment admission
+
+Two concurrent HTTP enrollment requests for one account and a limit of one.
+Expected: one `201`, one `409`, one active D1 device.
+
+#### Release/restore CAS
+
+- Release: after the handler reads the active row, a real
+  `repository.releaseClaim` commits first. The delayed handler carries the
+  original `expectedUpdatedAt`; its update affects no row and returns
+  `409 claim_conflict`.
+- Restore: after the handler reads the cooldown row, real repository operations
+  restore and release it again with newer timestamps. The delayed restore keeps
+  the originally observed `expectedUpdatedAt`, affects no row, and returns
+  `409 claim_conflict`.
+
+These tests verify the final D1 state/version rather than inspecting method
+arguments.
+
+#### Revocation versus lease update
+
+The device authenticates successfully, then a real
+`repository.revokeDevice` wins before the delayed activation statement.
+Task 2's device-active predicate rejects activation, Task 5 returns
+`409 lease_conflict`, no lease exists, and the D1 device is revoked.
+
+#### Competing device activations
+
+Device A reaches activation first but is held at a barrier. Device B commits
+revision 1, then A is released and commits revision 2. Both requests succeed,
+and the final real D1 lease belongs to A with its exact instance ID and
+revision 2. This confirms "newest accepted operation wins", independent of
+request-start order.
+
+### Fix-round TDD evidence
+
+RED after adding the finding-specific tests and before production changes:
+
+```text
+npm test -- --run test/management.test.js
+Test Files  1 failed (1)
+Tests       6 failed | 24 passed (30)
+
+Failures:
+- concurrent admission returned [201, 201], expected [201, 409]
+- audit outage returned 503 after device persistence, expected 201
+- four malformed dynamic endpoint families returned 400, expected 401
+```
+
+Atomic-admission GREEN:
+
+```text
+npm test -- --run test/management.test.js -t "atomically admits"
+Test Files  1 passed (1)
+Tests       1 passed | 29 skipped (30)
+```
+
+Dynamic-auth GREEN:
+
+```text
+npm test -- --run test/management.test.js -t \
+  "authentication boundary|authenticates malformed"
+Test Files  1 passed (1)
+Tests       8 passed | 22 skipped (30)
+```
+
+Audit-outage GREEN:
+
+```text
+npm test -- --run test/management.test.js -t "audit persistence fails"
+Test Files  1 passed (1)
+Tests       1 passed | 29 skipped (30)
+```
+
+Focused management plus repository verification:
+
+```text
+npm test -- --run test/management.test.js test/repository.test.js
+Test Files  2 passed (2)
+Tests       44 passed (44)
+Duration    2.02s
+```
+
+Full Worker package verification before the fix commit:
+
+```text
+npm test
+Test Files  6 passed (6)
+Tests       132 passed (132)
+Duration    4.32s
+```
+
+`git diff --check` completed with exit code 0 before commit.
+
+### Fix-round residual concerns
+
+- Audit availability is deliberately decoupled from mutation availability.
+  During a D1 audit-specific outage, a state change can succeed without an
+  audit row. This avoids false failure responses and the enrollment credential
+  loss ambiguity. There is intentionally no retry queue in Task 5.
+- The context-less handler form remains useful for tests/composition, but Task 6
+  must pass `ExecutionContext` for background audit lifetime.
+- No Task 6 wiring/deployment or Task 7 client behavior was added in this fix
+  round.
