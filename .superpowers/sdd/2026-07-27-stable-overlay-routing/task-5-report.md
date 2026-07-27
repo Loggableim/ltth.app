@@ -604,3 +604,263 @@ Duration    4.32s
   must pass `ExecutionContext` for background audit lifetime.
 - No Task 6 wiring/deployment or Task 7 client behavior was added in this fix
   round.
+
+---
+
+## Fix round 2/5: user ruling for atomic mutation plus audit
+
+The user selected Variant 1. This ruling supersedes Fix round 1's
+state-authoritative/best-effort audit semantics for every successful state
+mutation.
+
+Fix commit:
+
+- `61207314` - `fix(overlay-router): atomically audit state mutations`
+
+### Governing acceptance guarantee
+
+For every successful management state mutation:
+
+```text
+mutation accepted  <=>  state mutation AND sanitized audit insert commit
+```
+
+If the audit insert fails, D1 rolls back the mutation and the handler returns
+the neutral retryable `503 Service Unavailable`. Enrollment therefore returns
+no JSON and no plaintext credential, and D1 retains neither its device row nor
+its credential hash.
+
+Non-mutating results remain separate:
+
+- schema and authentication failures remain neutral;
+- rate limits and domain conflicts retain their documented JSON response;
+- their optional result audit is bounded/best-effort and cannot convert a
+  `409`/`429` into `503`;
+- a conditional success-audit statement inserts no row when its preceding
+  mutation changed no row.
+
+This distinction prevents a failed ownership/revision comparison from creating
+a misleading success audit while preserving stable conflict behavior.
+
+### Sanitized event construction
+
+`src/audit.js` now exports:
+
+```js
+createSanitizedAuditEvent(fields, {
+  eventIdFactory // optional deterministic test seam
+}) -> {
+  eventId,
+  occurredAt,
+  actorClerkUserId,
+  action,
+  usernameKey,
+  deviceId,
+  resultCode,
+  cfRayId
+}
+```
+
+It validates canonical UTC and bounded safe identifiers before any mutation
+statement is run. The production event ID remains 128 random bits with the
+`a-` prefix. The event-ID factory exists only to induce a real D1 unique-key
+failure deterministically in Worker tests.
+
+The event shape has no field for route key, device credential/hash, Clerk JWT,
+tunnel origin, URL/query, cookie, email, or request body.
+
+`createAuditRecorder` exposes:
+
+- `create(fields)` for an event that will be committed by the mutation batch;
+- `record(fields)` for non-mutating domain-result audit;
+- `prune(occurredAt)` for opportunistic post-commit 90-day pruning.
+
+Pruning is not part of acceptance. It remains a bounded `waitUntil` cleanup and
+cannot roll back a successfully accepted event/mutation.
+
+### Task 2 repository transaction boundary
+
+Successful management mutations pass `auditEvent` into the same production
+Task 2 method that owns the state transition:
+
+```js
+claimUsername({ ..., auditEvent })
+releaseClaim({ ..., expectedUpdatedAt, auditEvent })
+restoreClaim({ ..., expectedUpdatedAt, auditEvent })
+forceReleaseClaim(usernameKey, auditEvent)
+createDeviceWithActiveLimit({ ..., auditEvent })
+revokeDevice({ ..., auditEvent })
+activateLease({ ..., auditEvent })
+renewLease({ ..., expectedRevision, auditEvent })
+closeLease({ ..., expectedRevision, auditEvent })
+```
+
+Prepared D1 batches use this order:
+
+```text
+1. prepared state mutation, normally with RETURNING
+2. prepared sanitized audit insert:
+   INSERT ... SELECT ... WHERE changes() = 1
+3. tightly coupled trailing mutation when applicable
+```
+
+Cloudflare D1 `batch()` runs the statements as one transaction. A statement
+failure rolls back every earlier statement in the batch. The conditional
+second statement attempts the audit insert only when statement 1 changed
+exactly one row.
+
+Repository return handling reads the state row from the first batch result.
+Zero-row ownership/CAS/revision/limit results return the same null/false
+contract as before.
+
+Special multi-write cases:
+
+- Device revocation batches device update, conditional audit insert, and active
+  lease deletion. Lease deletion is conditioned on the successful audit
+  insert, so audit failure restores both device and lease.
+- Audited lease activation/renewal batches lease mutation, conditional audit,
+  and `last_seen_at` update. The device touch is conditioned on the audit
+  insert. Audit failure therefore restores lease revision/origin/expiry and
+  device metadata together.
+- Lease close now uses `DELETE ... RETURNING` so it shares the exact generic
+  mutation/audit transaction helper.
+
+Task 2 methods still accept an omitted `auditEvent` for their existing
+repository-level consumers/tests. Every Task 5 successful HTTP mutation
+supplies one.
+
+### Handler behavior
+
+Task 5 builds the success event before calling the repository operation.
+
+- A thrown batch/audit error reaches the existing neutral availability
+  boundary and returns `503`.
+- A zero-row mutation schedules only its sanitized non-mutating result audit
+  and returns its original domain error.
+- A successful batch schedules only retention pruning; it does not attempt a
+  duplicate second audit write.
+
+This is implemented for:
+
+- enrollment;
+- claim creation;
+- claim release;
+- cooldown restore;
+- device revocation;
+- lease activation;
+- lease renewal/rotation;
+- lease close;
+- administrative release.
+
+Release/restore continue to propagate the exact observed
+`current.updatedAt` as `expectedUpdatedAt`. Moving their audit write into the
+same batch does not add a read/retry or weaken compare-and-swap behavior.
+
+### Controlled rollback tests
+
+Each failure test first inserts one fixture audit event with ID
+`a-controlled-duplicate`, then configures only the audit event-ID factory to
+reuse that ID. The production repository and real local D1 binding remain
+unchanged. The resulting unique-key violation occurs inside statement 2 of the
+real mutation batch.
+
+#### Enrollment
+
+Expected and observed:
+
+- neutral `503`;
+- no credential JSON/text;
+- no owner device row and therefore no stored hash;
+- no `device_enroll` audit row.
+
+#### Claim creation
+
+Expected and observed:
+
+- neutral `503`;
+- no claim row;
+- no `claim_create` audit row.
+
+#### Lease activation
+
+A normally enrolled/authenticated device attempts activation.
+
+Expected and observed:
+
+- neutral `503`;
+- no account lease;
+- no `lease_update` audit row.
+
+#### Administrative release
+
+A real claim exists before the allowlisted request.
+
+Expected and observed:
+
+- neutral `503`;
+- original claim still exists with its route/ownership state intact;
+- no `admin_claim_release` audit row.
+
+All Fix round 1 race tests remain in the same focused suite and continue to
+exercise atomic admission, release/restore CAS, revocation versus lease update,
+and controlled competing device activations.
+
+### Fix-round TDD and verification evidence
+
+RED with the four user-ruling tests before production changes:
+
+```text
+npm test -- --run test/management.test.js -t \
+  "atomic audit insert fails"
+Test Files  1 failed (1)
+Tests       4 failed | 29 skipped (33)
+
+Observed old responses:
+- enrollment: 201, expected 503
+- claim creation: 201, expected 503
+- lease activation: 200, expected 503
+- admin release: 204, expected 503
+```
+
+Focused rollback GREEN:
+
+```text
+npm test -- --run test/management.test.js -t \
+  "atomic audit insert fails"
+Test Files  1 passed (1)
+Tests       4 passed | 29 skipped (33)
+```
+
+Focused Task 5 plus Task 2 repository verification:
+
+```text
+npm test -- --run test/management.test.js test/repository.test.js
+Test Files  2 passed (2)
+Tests       47 passed (47)
+Duration    3.68s
+```
+
+Full Worker package before commit:
+
+```text
+npm test
+Test Files  6 passed (6)
+Tests       135 passed (135)
+Duration    7.23s
+```
+
+`git diff --check` and Node syntax checks for `audit.js`, `management.js`, and
+`repository.js` completed with exit code 0 before commit.
+
+### Fix-round residual concerns
+
+- Application rate-limit bucket consumption happens before the state/audit
+  batch and intentionally still counts the failed attempt. A retry is safe for
+  claim/device/lease state, but the caller may need to respect the remaining
+  fixed window (notably 10 seconds for a device lease update).
+- Retention pruning is intentionally outside the acceptance transaction. Audit
+  insertion itself is inside and mandatory; cleanup availability is not.
+- The atomicity guarantee depends on Cloudflare D1 `batch()` transactional
+  semantics and is exercised in the actual Worker pool with induced constraint
+  failures.
+- No Task 6 routing/deployment or Task 7 client change was added.
