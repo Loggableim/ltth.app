@@ -1,6 +1,7 @@
 const { randomUUID } = require('crypto');
 const { getEvolutionAssetPath, getTemplate } = require('./catalog');
 const { maxHp } = require('./battle-rules-v5');
+const { selectBattleWinner } = require('./battle-tie-break');
 
 const ROSTER_WINDOW_MS = 10_000;
 const ACTION_WINDOW_MS = 6_000;
@@ -684,6 +685,13 @@ class BattleMatchService {
       ...(outcome.chance != null ? { chance: numeric(outcome.chance) } : {}),
       ...(outcome.pending != null ? { pending: numeric(outcome.pending) } : {})
     });
+    const projectSkillEffect = effect => ({
+      type: String(effect?.type || '').slice(0, 32),
+      ...(effect?.power != null ? { power: numeric(effect.power) } : {}),
+      ...(effect?.hits != null ? { hits: numeric(effect.hits) } : {}),
+      ...(effect?.chance != null ? { chance: numeric(effect.chance) } : {}),
+      ...(effect?.ratio != null ? { ratio: numeric(effect.ratio) } : {})
+    });
     const projectState = state => ({
       hp: numeric(state?.hp),
       maxHp: numeric(state?.maxHp),
@@ -695,7 +703,20 @@ class BattleMatchService {
       reflect: numeric(state?.reflect),
       weakened: numeric(state?.weakened)
     });
-    return {
+    const isRulesV6 = this.isRulesV6(match);
+    const rawKnockouts = Array.isArray(action.knockouts)
+      ? action.knockouts
+      : (action.knockout ? [action.knockout] : []);
+    const knockouts = rawKnockouts.map(knockout => {
+      const participant = match.participants.find(entry => (
+        entry.lockedMonsterId === knockout?.monsterId
+      ));
+      return {
+        slot: numeric(knockout?.slot ?? participant?.slot),
+        cause: String(knockout?.cause || 'skill').slice(0, 32)
+      };
+    });
+    const projected = {
       sequence: numeric(action.sequence),
       eventSequence: numeric(eventSequence ?? action.eventSequence),
       round: numeric(action.round),
@@ -713,7 +734,15 @@ class BattleMatchService {
         shortTextKey: String(action.skill?.shortTextKey || '').slice(0, 64),
         type: String(action.skill?.type || ''),
         element: String(action.skill?.element || ''),
-        vfxKey: String(action.skill?.vfxKey || '')
+        vfxKey: String(action.skill?.vfxKey || ''),
+        ...(isRulesV6
+          ? {
+              role: String(action.skill?.role || '').slice(0, 16),
+              effects: Array.isArray(action.skill?.effects)
+                ? action.skill.effects.map(projectSkillEffect)
+                : []
+            }
+          : {})
       },
       hits: Array.isArray(action.hits) ? action.hits.map(projectHit) : [],
       outcomes: Array.isArray(action.outcomes) ? action.outcomes.map(projectOutcome) : [],
@@ -736,6 +765,19 @@ class BattleMatchService {
       terminal: Boolean(action.terminal),
       ...(action.skipped ? { skipped: String(action.skipped) } : {})
     };
+    if (isRulesV6) {
+      projected.rolls = Array.isArray(action.rolls)
+        ? action.rolls.map(roll => ({
+          purpose: String(roll?.purpose || '').slice(0, 32),
+          hitIndex: numeric(roll?.hitIndex),
+          chance: numeric(roll?.chance),
+          value: numeric(roll?.value)
+        }))
+        : [];
+      projected.knockouts = knockouts;
+      projected.knockout = knockouts.length === 1 ? knockouts[0] : null;
+    }
+    return projected;
   }
 
   startActionWindow(matchId, expectedVersion = null) {
@@ -953,14 +995,10 @@ class BattleMatchService {
   }
 
   tieBreakWinner(match, state) {
-    return [...match.participants].sort((left, right) => {
-      const hp = (state[right.lockedMonsterId]?.hp || 0) - (state[left.lockedMonsterId]?.hp || 0);
-      if (hp) return hp;
-      const agility = (right.roster?.stats?.agility || 0) - (left.roster?.stats?.agility || 0);
-      if (agility) return agility;
-      return this.hashNumber(`${match.seed}:winner:${left.lockedMonsterId}`) -
-        this.hashNumber(`${match.seed}:winner:${right.lockedMonsterId}`);
-    })[0].lockedMonsterId;
+    return selectBattleWinner(match.participants.map(participant => ({
+      monsterId: participant.lockedMonsterId,
+      agility: participant.roster?.stats?.agility
+    })), state, match.seed);
   }
 
   finalize(matchId, expectedVersion, winnerMonsterId) {

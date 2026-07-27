@@ -86,7 +86,7 @@ function insertMonster(sqlite, { id, userId, element, templateId, agility }) {
   );
 }
 
-function createRealRoutes() {
+function createRealRoutes(rulesVersion = 5) {
   const registered = [];
   const sqlite = new Database(':memory:');
   sqlite.pragma('foreign_keys = ON');
@@ -96,6 +96,7 @@ function createRealRoutes() {
     store,
     battleService: new BattleService({ store }),
     now: () => 1_000,
+    rulesVersion,
     autoStart: false
   });
   const routes = new StreamMonstersRoutes({
@@ -249,6 +250,78 @@ describe('Stream Monsters rules-v5 battle routes', () => {
       expect(JSON.stringify(
         battleMatchService.getPrivateNormalizedReplay(joined.match.matchId)
       )).toContain('db-secret-alpha');
+    } finally {
+      sqlite.close();
+    }
+  });
+
+  test('serves required Rules-v6 action fields through public normalized replay and route', () => {
+    const { registered, sqlite, battleMatchService } = createRealRoutes(6);
+    try {
+      insertMonster(sqlite, {
+        id: 'v6-secret-alpha',
+        userId: 'viewer-v6-a',
+        element: 'Ember',
+        templateId: 'cinder',
+        agility: 30
+      });
+      insertMonster(sqlite, {
+        id: 'v6-secret-beta',
+        userId: 'viewer-v6-b',
+        element: 'Grove',
+        templateId: 'oakheart',
+        agility: 1
+      });
+      battleMatchService.join({ userId: 'viewer-v6-a' });
+      const joined = battleMatchService.join({ userId: 'viewer-v6-b' });
+      battleMatchService.lockRoster({ userId: 'viewer-v6-a' });
+      battleMatchService.lockRoster({ userId: 'viewer-v6-b' });
+      battleMatchService.submitChoice({
+        userId: 'viewer-v6-a',
+        choice: 'A',
+        eventId: 'private-provider-a'
+      });
+      battleMatchService.submitChoice({
+        userId: 'viewer-v6-b',
+        choice: 'B',
+        eventId: 'private-provider-b'
+      });
+
+      const normalized = battleMatchService.getPublicNormalizedReplay(
+        joined.match.matchId
+      );
+      expect(normalized.rulesVersion).toBe(6);
+      expect(normalized.actions[0]).toEqual(expect.objectContaining({
+        skill: expect.objectContaining({
+          role: 'trickster',
+          effects: expect.arrayContaining([
+            expect.objectContaining({ type: 'damage', power: expect.any(Number) })
+          ])
+        }),
+        rolls: [
+          expect.objectContaining({
+            purpose: 'evade',
+            hitIndex: 1,
+            value: expect.any(Number)
+          })
+        ],
+        knockout: null,
+        knockouts: []
+      }));
+
+      const route = registered.find(entry => (
+        entry.method === 'GET' &&
+        entry.routePath === '/api/streammonsters/battles/:battleId/replay'
+      ));
+      const res = response();
+      route.handler({
+        params: { battleId: joined.match.matchId },
+        query: { cursor: '0', limit: '50' }
+      }, res);
+      expect(res.statusCode).toBe(200);
+      expect(res.body.actions[0]).toEqual(normalized.actions[0]);
+      expect(JSON.stringify(res.body)).not.toContain('v6-secret');
+      expect(JSON.stringify(res.body)).not.toContain('private-provider');
     } finally {
       sqlite.close();
     }

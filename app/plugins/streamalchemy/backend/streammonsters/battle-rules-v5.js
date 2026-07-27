@@ -220,7 +220,10 @@ function resolveAction({
     };
     if (rulesVersion >= V6_RULES_VERSION) {
       action.rolls = rolls;
-      action.knockout = { monsterId: actor.monster_id, cause: 'status' };
+      action.knockouts = [
+        { monsterId: actor.monster_id, cause: 'status' }
+      ];
+      action.knockout = action.knockouts[0];
     }
     return action;
   }
@@ -339,13 +342,22 @@ function resolveAction({
   };
   if (rulesVersion >= V6_RULES_VERSION) {
     action.rolls = rolls;
-    action.knockout = targetState.hp <= 0
-      ? { monsterId: target.monster_id, cause: 'skill' }
-      : (
-        actorState.hp <= 0
-          ? { monsterId: actor.monster_id, cause: 'retaliation' }
-          : null
-      );
+    action.knockouts = [];
+    if (targetState.hp <= 0) {
+      action.knockouts.push({ monsterId: target.monster_id, cause: 'skill' });
+    }
+    if (actorState.hp <= 0) {
+      const lethalRetaliation = retaliations.find(retaliation => (
+        retaliation.hpAfter <= 0
+      ));
+      action.knockouts.push({
+        monsterId: actor.monster_id,
+        cause: lethalRetaliation?.type || 'retaliation'
+      });
+    }
+    action.knockout = action.knockouts.length === 1
+      ? action.knockouts[0]
+      : null;
   }
   return action;
 }

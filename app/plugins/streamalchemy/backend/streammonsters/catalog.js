@@ -49,22 +49,24 @@ const TEMPLATE_ROLES = Object.freeze({
   lumen: 'sustain'
 });
 const ROLE_EFFECT_BUDGET_EQUIVALENTS = Object.freeze({
+  burnPowerPerPoint: 0.25,
   evadeChancePerPoint: 25,
-  lifestealRatioPerPoint: 0.5
+  lifestealRatioPerPoint: 0.2,
+  piercePowerPerPoint: 0.25
 });
 const V6_ELEMENT_ADVANTAGE_DAMAGE = Object.freeze({
-  'Ember:Grove': 0.4,
+  'Ember:Grove': 0.8,
   'Ember:Gale': 1,
-  'Tide:Ember': 0.3,
-  'Tide:Lunar': 1.25,
+  'Tide:Ember': 0,
+  'Tide:Lunar': 0.6,
   'Grove:Tide': 1.2,
-  'Grove:Volt': 1.7,
+  'Grove:Volt': 1.2,
   'Gale:Grove': 0.8,
-  'Gale:Lunar': 1.3,
-  'Volt:Gale': 1,
-  'Volt:Tide': 1.05,
-  'Lunar:Volt': 1.4,
-  'Lunar:Ember': 0.3
+  'Gale:Lunar': 1,
+  'Volt:Gale': 2,
+  'Volt:Tide': 2,
+  'Lunar:Volt': 1.3,
+  'Lunar:Ember': 0.7
 });
 const V6_SUSTAIN_TUNING = Object.freeze({
   attackDamagePenalty: 2,
@@ -79,11 +81,15 @@ const V6_STRIKER_TUNING = Object.freeze({
   specialSecondaryBudget: 1
 });
 const V6_TRICKSTER_TUNING = Object.freeze({
-  transferBudget: 0.75
+  transferBudget: 1
+});
+const V6_GUARDIAN_TUNING = Object.freeze({
+  damagePenalty: 1,
+  shieldBonus: 1
 });
 const V6_ELEMENT_DAMAGE_TUNING = Object.freeze({
-  Lunar: 0.5,
-  Volt: 0.5
+  Lunar: 1,
+  Volt: 1.5
 });
 
 const SKILL_PRESENTATION = Object.freeze({
@@ -357,11 +363,17 @@ function cloneEffects(effects) {
 
 function numericEffectValue(effect) {
   if (!effect) return 0;
+  if (effect.type === 'burn') {
+    return effect.power / ROLE_EFFECT_BUDGET_EQUIVALENTS.burnPowerPerPoint;
+  }
   if (effect.type === 'evade') {
     return effect.chance / ROLE_EFFECT_BUDGET_EQUIVALENTS.evadeChancePerPoint;
   }
   if (effect.type === 'lifesteal') {
     return effect.ratio / ROLE_EFFECT_BUDGET_EQUIVALENTS.lifestealRatioPerPoint;
+  }
+  if (effect.type === 'pierce') {
+    return effect.power / ROLE_EFFECT_BUDGET_EQUIVALENTS.piercePowerPerPoint;
   }
   return Number(effect.power) || 0;
 }
@@ -394,6 +406,18 @@ function adjustSecondary(effects, type, delta) {
       0,
       (Number(target.ratio) || 0) +
         (delta * ROLE_EFFECT_BUDGET_EQUIVALENTS.lifestealRatioPerPoint)
+    );
+  } else if (type === 'burn') {
+    target.power = Math.max(
+      0,
+      (Number(target.power) || 0) +
+        (delta * ROLE_EFFECT_BUDGET_EQUIVALENTS.burnPowerPerPoint)
+    );
+  } else if (type === 'pierce') {
+    target.power = Math.max(
+      0,
+      (Number(target.power) || 0) +
+        (delta * ROLE_EFFECT_BUDGET_EQUIVALENTS.piercePowerPerPoint)
     );
   } else {
     target.power = Math.max(0, (Number(target.power) || 0) + delta);
@@ -431,11 +455,15 @@ function applyRoleEffects(element, role, choice, sourceEffects) {
       }
     }
   } else if (role === 'guardian') {
-    if (choice === 'A') adjustPower(effects, 'damage', -1, 1);
-    if (choice === 'B') adjustPower(effects, 'shield', 2);
+    if (choice === 'A') {
+      adjustPower(effects, 'damage', -V6_GUARDIAN_TUNING.damagePenalty, 1);
+    }
+    if (choice === 'B') {
+      adjustPower(effects, 'shield', V6_GUARDIAN_TUNING.shieldBonus);
+    }
     if (choice === 'C') {
-      adjustPower(effects, 'damage', -1, 1);
-      adjustPower(effects, 'shield', 2);
+      adjustPower(effects, 'damage', -V6_GUARDIAN_TUNING.damagePenalty, 1);
+      adjustPower(effects, 'shield', V6_GUARDIAN_TUNING.shieldBonus);
     }
   } else if (role === 'sustain') {
     if (choice === 'A') {
@@ -533,6 +561,7 @@ module.exports = {
   V6_SUSTAIN_TUNING,
   V6_STRIKER_TUNING,
   V6_TRICKSTER_TUNING,
+  V6_GUARDIAN_TUNING,
   V6_ELEMENT_DAMAGE_TUNING,
   TEMPLATE_CATALOG,
   getTemplate,

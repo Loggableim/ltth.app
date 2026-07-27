@@ -9,6 +9,7 @@ const {
   V6_SUSTAIN_TUNING,
   V6_STRIKER_TUNING,
   V6_ELEMENT_DAMAGE_TUNING,
+  V6_GUARDIAN_TUNING,
   buildV6SkillCatalog
 } = require('../plugins/streamalchemy/backend/streammonsters/catalog');
 const Rules = require(
@@ -101,11 +102,17 @@ function fighter(id, templateId, stats = {}) {
 
 function effectBudget(effects) {
   return effects.reduce((sum, effect) => {
+    if (effect.type === 'burn') {
+      return sum + (effect.power / ROLE_EFFECT_BUDGET_EQUIVALENTS.burnPowerPerPoint);
+    }
     if (effect.type === 'evade') {
       return sum + (effect.chance / ROLE_EFFECT_BUDGET_EQUIVALENTS.evadeChancePerPoint);
     }
     if (effect.type === 'lifesteal') {
       return sum + (effect.ratio / ROLE_EFFECT_BUDGET_EQUIVALENTS.lifestealRatioPerPoint);
+    }
+    if (effect.type === 'pierce') {
+      return sum + (effect.power / ROLE_EFFECT_BUDGET_EQUIVALENTS.piercePowerPerPoint);
     }
     return sum + (Number(effect.power) || 0);
   }, 0);
@@ -188,17 +195,27 @@ describe('Stream Monsters Rules-v6 catalog contracts', () => {
         expect(effect(skills.A.effects, 'damage').power)
           .toBe(Math.max(
             1,
-            effect(baseline.A, 'damage').power - 1 - elementDamageTuning
+            effect(baseline.A, 'damage').power -
+              V6_GUARDIAN_TUNING.damagePenalty -
+              elementDamageTuning
           ));
         expect(effect(skills.B.effects, 'shield').power)
-          .toBe((effect(baseline.B, 'shield')?.power || 0) + 2);
+          .toBe(
+            (effect(baseline.B, 'shield')?.power || 0) +
+              V6_GUARDIAN_TUNING.shieldBonus
+          );
         expect(effect(skills.C.effects, 'damage').power)
           .toBe(Math.max(
             1,
-            effect(baseline.C, 'damage').power - 1 - elementDamageTuning
+            effect(baseline.C, 'damage').power -
+              V6_GUARDIAN_TUNING.damagePenalty -
+              elementDamageTuning
           ));
         expect(effect(skills.C.effects, 'shield').power)
-          .toBe((effect(baseline.C, 'shield')?.power || 0) + 2);
+          .toBe(
+            (effect(baseline.C, 'shield')?.power || 0) +
+              V6_GUARDIAN_TUNING.shieldBonus
+          );
       } else if (template.role === 'sustain') {
         expect(effect(skills.A.effects, 'damage').power)
           .toBe(Math.max(
@@ -336,6 +353,45 @@ describe('Stream Monsters Rules-v6 deterministic resolver', () => {
       monsterId: 'ember',
       cause: 'skill'
     });
+    expect(action.knockouts).toEqual([action.knockout]);
+  });
+
+  test('records both knockouts when a lethal hit also kills the attacker', () => {
+    const attacker = fighter('attacker', 'ashfang', {
+      agility: 30,
+      might: 1,
+      vitality: 1
+    });
+    const target = fighter('target', 'oakheart', {
+      agility: 1,
+      guard: 0,
+      vitality: 1
+    });
+    const input = {
+      fighters: [attacker, target],
+      choices: { attacker: 'A', target: 'B' },
+      seed: 'rules-v6-simultaneous-ko',
+      round: 1,
+      rulesVersion: 6,
+      state: {
+        attacker: { hp: 2 },
+        target: { hp: 1, thorns: 2 }
+      }
+    };
+    const first = Rules.resolveInteractiveRound(input);
+    const replay = Rules.resolveInteractiveRound(input);
+    const action = first.actions[0];
+
+    expect(replay).toEqual(first);
+    expect(action.after.actor.hp).toBe(0);
+    expect(action.after.target.hp).toBe(0);
+    expect(action.knockouts).toEqual([
+      { monsterId: 'target', cause: 'skill' },
+      { monsterId: 'attacker', cause: 'thorns' }
+    ]);
+    expect(action.knockout).toBeNull();
+    expect(first.terminal).toBe(true);
+    expect(first.winnerId).toBeNull();
   });
 
   test('carries burn, weaken, evade, thorns and reflect as temporary state only', () => {
@@ -463,20 +519,32 @@ describe('Stream Monsters Rules-v6 balance simulator', () => {
       seeds: ['v6-a', 'v6-b'],
       templates: expect.any(Array),
       neutralResults: expect.any(Array),
-      advantageResults: expect.any(Array)
+      advantageResults: expect.any(Array),
+      templateNeutralResults: expect.any(Array)
     }));
     expect(first.templates).toHaveLength(24);
+    expect(first.neutralResults.map(result => result.pair)).toEqual([
+      'Ember:Volt',
+      'Tide:Gale',
+      'Grove:Lunar'
+    ]);
     expect(first.battleCount).toBeGreaterThan(0);
   });
 
-  test('meets the complete neutral, advantage and per-template acceptance gates', () => {
+  test('measures neutral gates only across the three cross-element pairs without self matches', () => {
     const report = Simulator.runV6BalanceMatrix();
 
     expect(report.levels).toEqual([1, 5, 10, 15, 20]);
     expect(report.statProfiles).toEqual(['balanced', 'power', 'guard']);
     expect(report.templates).toHaveLength(24);
-    expect(report.neutralBattleCount).toBeGreaterThan(0);
-    expect(report.advantageBattleCount).toBeGreaterThan(0);
+    expect(report.neutralBattleCount).toBe(51_840);
+    expect(report.advantageBattleCount).toBe(207_360);
+    expect(report.battleCount).toBe(259_200);
+    expect(report.neutralResults.map(result => result.pair)).toEqual([
+      'Ember:Volt',
+      'Tide:Gale',
+      'Grove:Lunar'
+    ]);
     report.neutralResults.forEach(result => {
       expect(result.winRate).toBeGreaterThanOrEqual(0.47);
       expect(result.winRate).toBeLessThanOrEqual(0.53);
@@ -486,7 +554,30 @@ describe('Stream Monsters Rules-v6 balance simulator', () => {
       expect(result.winRate).toBeLessThanOrEqual(0.60);
     });
     report.templateNeutralResults.forEach(result => {
+      expect(result.samples).toBe(4_320);
       expect(result.winRate).toBeLessThanOrEqual(0.56);
     });
+  });
+
+  test('uses the same deterministic tie-break as the durable match service', () => {
+    const store = {};
+    const service = new BattleMatchService({
+      store,
+      battleService: new BattleService({ store }),
+      autoStart: false
+    });
+    const left = fighter('left', 'ashfang', { agility: 10 });
+    const right = fighter('right', 'ripple', { agility: 10 });
+    const state = { left: { hp: 0 }, right: { hp: 0 } };
+    const match = {
+      seed: 'shared-tie-break',
+      participants: [
+        { lockedMonsterId: 'left', roster: left },
+        { lockedMonsterId: 'right', roster: right }
+      ]
+    };
+
+    expect(Simulator.tieBreakWinner([left, right], state, match.seed))
+      .toBe(service.tieBreakWinner(match, state));
   });
 });
