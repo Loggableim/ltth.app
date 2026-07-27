@@ -6,9 +6,14 @@ const {
   FURRY_ASSET_VERSION,
   TEMPLATE_CATALOG,
   getTemplate,
-  getEvolutionAssetPath
+  getEvolutionAssetPath,
+  resolveStageSkill
 } = require('./catalog');
 const { V7_RULES_VERSION } = require('./battle-rules-v5');
+const {
+  evolutionStatGrant,
+  applyEvolutionGrant
+} = require('./evolution-rules');
 
 const ART_LAB_ROUTES = Object.freeze([
   ['GET', '/api/streamalchemy/config'],
@@ -385,6 +390,59 @@ class StreamMonstersRoutes {
         image_url: opponentTemplate.assetPath,
         skills: opponentTemplate.skills
       };
+      const demoSkillDeck = (template, evolutionStage, charge) => (
+        ['A', 'B', 'C'].map(choice => {
+          const skill = resolveStageSkill(
+            template.templateId,
+            choice,
+            evolutionStage,
+            V7_RULES_VERSION
+          );
+          const chargeRequired = choice === 'C'
+            ? Math.max(1, Number(skill.chargeRequired) || 100)
+            : 0;
+          return {
+            choice,
+            icon: skill.icon,
+            name: skill.name,
+            nameKey: skill.nameKey,
+            shortText: skill.shortText,
+            shortTextKey: skill.shortTextKey,
+            available: choice !== 'C' || charge >= chargeRequired,
+            ...(choice === 'C' ? { chargeRequired } : {})
+          };
+        })
+      );
+      const evolutionStage = 2;
+      const statsBefore = { ...monster.stats };
+      const statChanges = evolutionStatGrant(monster.element, evolutionStage);
+      const statsAfter = applyEvolutionGrant(
+        statsBefore,
+        monster.element,
+        evolutionStage
+      );
+      const unlockedChoice = ['striker', 'trickster'].includes(selectedTemplate.role)
+        ? 'A'
+        : 'B';
+      const evolutionPayload = {
+        monster: {
+          ...monster,
+          stats: statsAfter,
+          evolution_stage: evolutionStage,
+          image_url: getEvolutionAssetPath(selectedTemplate, evolutionStage)
+        },
+        evolutionStage,
+        spentEssence: 3,
+        statsBefore,
+        statsAfter,
+        statChanges,
+        unlockedSkill: resolveStageSkill(
+          selectedTemplate.templateId,
+          unlockedChoice,
+          evolutionStage,
+          V7_RULES_VERSION
+        )
+      };
       const rounds = [
         { number: 1, firstDamage: 8, secondDamage: 6, hpA: 50, hpB: 48, elementAdvantageMonsterId: monster.monster_id },
         { number: 2, firstDamage: 7, secondDamage: 9, hpA: 41, hpB: 41, elementAdvantageMonsterId: monster.monster_id },
@@ -432,6 +490,7 @@ class StreamMonstersRoutes {
         }
       );
       if (preview) {
+        const primaryCharge = preview.scene === 'special' ? 100 : 50;
         const fighters = [
           {
             slot: 1,
@@ -445,7 +504,8 @@ class StreamMonstersRoutes {
             hp: 50,
             maxHp: 50,
             shield: 0,
-            charge: preview.scene === 'special' ? 100 : 50
+            charge: primaryCharge,
+            skills: demoSkillDeck(selectedTemplate, 1, primaryCharge)
           },
           {
             slot: 2,
@@ -459,7 +519,8 @@ class StreamMonstersRoutes {
             hp: 48,
             maxHp: 52,
             shield: 3,
-            charge: 50
+            charge: 50,
+            skills: demoSkillDeck(opponentTemplate, 1, 50)
           }
         ];
         const publicAction = ({
@@ -640,15 +701,7 @@ class StreamMonstersRoutes {
             rotate: true
           });
         } else if (preview.scene === 'evolution') {
-          emit('streammonsters:monster_evolved', {
-            monster: {
-              ...monster,
-              evolution_stage: 2,
-              image_url: getEvolutionAssetPath(selectedTemplate, 2)
-            },
-            evolutionStage: 2,
-            spentEssence: 3
-          });
+          emit('streammonsters:monster_evolved', evolutionPayload);
         } else if (preview.scene === 'match') {
           emit('streammonsters:battle_match_found', {
             matchId: 'demo-match',
@@ -772,13 +825,7 @@ class StreamMonstersRoutes {
       emit('streammonsters:egg_hatched', { userId: 'demo-viewer', egg, monster });
       emit('streammonsters:monster_evolved', {
         userId: 'demo-viewer',
-        monster: {
-          ...monster,
-          evolution_stage: 2,
-          image_url: getEvolutionAssetPath(selectedTemplate, 2)
-        },
-        evolutionStage: 2,
-        spentEssence: 3
+        ...evolutionPayload
       });
       emit('streammonsters:achievement_unlocked', {
         userId: 'demo-viewer',

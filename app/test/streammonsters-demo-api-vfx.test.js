@@ -67,7 +67,86 @@ describe('Stream Monsters targeted demo API', () => {
       'streammonsters:battle_skill_used',
       'streammonsters:battle_special_charged'
     ]));
+    const evolution = emitted.find(entry => (
+      entry.event === 'streammonsters:monster_evolved'
+    ))?.payload;
+    expect(evolution).toEqual(expect.objectContaining({
+      statsBefore: { vitality: 7, might: 8, guard: 6, agility: 7 },
+      statChanges: { vitality: 0, might: 2, guard: 0, agility: 1 },
+      statsAfter: { vitality: 7, might: 10, guard: 6, agility: 8 },
+      unlockedSkill: expect.objectContaining({
+        id: 'ashfang:A:stage-2',
+        choice: 'A',
+        icon: '🔥',
+        nameKey: 'skillNameAshfangAStage2',
+        shortTextKey: 'skillEffectAshfangAStage2',
+        role: 'striker',
+        evolutionStage: 2
+      }),
+      monster: expect.objectContaining({
+        stats: { vitality: 7, might: 10, guard: 6, agility: 8 },
+        evolution_stage: 2
+      })
+    }));
   });
+
+  test.each([
+    ['ashfang', {
+      element: 'Ember',
+      changes: { vitality: 0, might: 2, guard: 0, agility: 1 },
+      after: { vitality: 7, might: 10, guard: 6, agility: 8 },
+      skill: {
+        id: 'ashfang:A:stage-2',
+        choice: 'A',
+        icon: '🔥',
+        nameKey: 'skillNameAshfangAStage2',
+        shortTextKey: 'skillEffectAshfangAStage2',
+        role: 'striker',
+        evolutionStage: 2
+      }
+    }],
+    ['oakheart', {
+      element: 'Grove',
+      changes: { vitality: 1, might: 0, guard: 2, agility: 0 },
+      after: { vitality: 8, might: 8, guard: 8, agility: 7 },
+      skill: {
+        id: 'oakheart:B:stage-2',
+        choice: 'B',
+        icon: '🪵',
+        nameKey: 'skillNameOakheartBStage2',
+        shortTextKey: 'skillEffectOakheartBStage2',
+        role: 'guardian',
+        evolutionStage: 2
+      }
+    }]
+  ])(
+    'derives the %s Stage-II evolution preview from element and role rules',
+    (templateId, expected) => {
+      const { demo, emitted } = harness();
+      const res = response();
+      demo(localRequest({ scene: 'evolution', templateId }), res);
+
+      const evolution = emitted.find(entry => (
+        entry.event === 'streammonsters:monster_evolved'
+      ))?.payload;
+      expect(res.statusCode).toBe(200);
+      expect(evolution).toEqual(expect.objectContaining({
+        statsBefore: { vitality: 7, might: 8, guard: 6, agility: 7 },
+        statChanges: expected.changes,
+        statsAfter: expected.after,
+        unlockedSkill: expect.objectContaining(expected.skill),
+        monster: expect.objectContaining({
+          element: expected.element,
+          stats: expected.after,
+          evolution_stage: 2
+        })
+      }));
+      expect(Object.values(evolution.statChanges).reduce(
+        (total, amount) => total + amount,
+        0
+      )).toBe(3);
+    }
+  );
 
   test.each([
     'spawn',
@@ -161,7 +240,7 @@ describe('Stream Monsters targeted demo API', () => {
           })
         }));
       }
-      if (['attack', 'defense', 'skill', 'multihit', 'special', 'ko'].includes(scene)) {
+      if (['match', 'attack', 'defense', 'skill', 'multihit', 'special', 'ko'].includes(scene)) {
         const roster = emitted.find(entry => (
           entry.event === 'streammonsters:battle_choice_opened'
         ))?.payload?.fighters;
@@ -178,6 +257,60 @@ describe('Stream Monsters targeted demo API', () => {
             )
           })
         ]);
+        expect(roster[0].skills).toEqual([
+          expect.objectContaining({
+            choice: 'A',
+            icon: '🔥',
+            nameKey: 'skillNameAshfangAStage1',
+            shortTextKey: 'skillEffectAshfangAStage1',
+            available: true
+          }),
+          expect.objectContaining({
+            choice: 'B',
+            icon: '🛡️',
+            nameKey: 'skillNameAshfangBStage1',
+            shortTextKey: 'skillEffectAshfangBStage1',
+            available: true
+          }),
+          expect.objectContaining({
+            choice: 'C',
+            icon: '☄️',
+            nameKey: 'skillNameAshfangCStage1',
+            shortTextKey: 'skillEffectAshfangCStage1',
+            available: scene === 'special',
+            chargeRequired: 100
+          })
+        ]);
+        expect(roster[1].skills).toEqual([
+          expect.objectContaining({
+            choice: 'A',
+            icon: '🌊',
+            nameKey: 'skillNameRippleAStage1',
+            shortTextKey: 'skillEffectRippleAStage1',
+            available: true
+          }),
+          expect.objectContaining({
+            choice: 'B',
+            icon: '🌫️',
+            nameKey: 'skillNameRippleBStage1',
+            shortTextKey: 'skillEffectRippleBStage1',
+            available: true
+          }),
+          expect.objectContaining({
+            choice: 'C',
+            icon: '💧',
+            nameKey: 'skillNameRippleCStage1',
+            shortTextKey: 'skillEffectRippleCStage1',
+            available: false,
+            chargeRequired: 100
+          })
+        ]);
+        for (const fighter of roster) {
+          expect(fighter.skills.map(skill => skill.choice)).toEqual(['A', 'B', 'C']);
+          expect(JSON.stringify(fighter.skills)).not.toMatch(
+            /"id"|"effects"|"power"|"vfxKey"|"role"/
+          );
+        }
       }
     }
   );
