@@ -120,6 +120,29 @@ describe('strict opaque-host HTTP proxy', () => {
   });
 
   it.each([
+    '/plugins/overlay%2Ehtml',
+    '/plugins/100%25-ready%2525.html'
+  ])('preserves a legitimate encoded proxy filename %s', async (
+    pathname
+  ) => {
+    let upstreamUrl;
+    const { handle } = createHandler({
+      fetchImpl: async (request) => {
+        upstreamUrl = request.url;
+        return new Response('ok');
+      }
+    });
+    const response = await handle(new Request(
+      `https://${ROUTE_HOST}${pathname}?label=100%25`
+    ));
+
+    expect(response.status).toBe(200);
+    expect(upstreamUrl).toBe(
+      `https://quiet-river.trycloudflare.com${pathname}?label=100%25`
+    );
+  });
+
+  it.each([
     ['PUT', '/api/state', {}],
     ['DELETE', '/socket.io/', {}],
     ['POST', '/api/state', {}],
@@ -213,7 +236,11 @@ describe('strict opaque-host HTTP proxy', () => {
     '//socket.io/',
     '/socket.io/%5c/transport',
     '/socket.io/%2Ftransport',
-    '/socket.io/%252e/transport'
+    '/socket.io/%252ftransport',
+    '/socket.io/%255ctransport',
+    '/socket.io/%252e/transport',
+    '/socket.io/%25%32%65/transport',
+    '/socket.io/bad%zz'
   ])('rejects an ambiguous visible proxy path %s before route lookup', async (
     pathname
   ) => {

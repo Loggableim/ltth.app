@@ -4,8 +4,8 @@ export const RAW_PATH_GUARD_TOKEN_ENV =
 
 const GUARD_TOKEN_PATTERN = /^[A-Za-z0-9_-]{32,256}$/;
 const INVALID_PERCENT_ESCAPE_PATTERN = /%(?![0-9a-f]{2})/i;
-const AMBIGUOUS_ENCODED_PATH_PATTERN =
-  /%(?:25|2e|2f|5c)/i;
+const PERCENT_ESCAPE_PATTERN = /%([0-9a-f]{2})/gi;
+const STRUCTURAL_DECODE_PASSES = 2;
 
 function constantTimeEqual(left, right) {
   if (left.length !== right.length) {
@@ -30,16 +30,53 @@ export function hasTrustedRawPathAttestation(request, env) {
     constantTimeEqual(supplied, expected);
 }
 
+function hasDotSegment(pathname) {
+  return pathname
+    .split('/')
+    .some((segment) => segment === '.' || segment === '..');
+}
+
+function countSlashes(pathname) {
+  return pathname
+    .split('')
+    .reduce((count, character) =>
+      count + (character === '/' ? 1 : 0), 0);
+}
+
+function decodeAsciiPercentLayer(pathname) {
+  return pathname.replace(
+    PERCENT_ESCAPE_PATTERN,
+    (escape, hexadecimal) => {
+      const value = Number.parseInt(hexadecimal, 16);
+      return value <= 0x7f
+        ? String.fromCharCode(value)
+        : escape;
+    }
+  );
+}
+
 export function isUnambiguousPublicPath(pathname) {
   if (typeof pathname !== 'string' ||
       !pathname.startsWith('/') ||
       pathname.includes('\\') ||
       pathname.includes('//') ||
       INVALID_PERCENT_ESCAPE_PATTERN.test(pathname) ||
-      AMBIGUOUS_ENCODED_PATH_PATTERN.test(pathname)) {
+      hasDotSegment(pathname)) {
     return false;
   }
-  return !pathname
-    .split('/')
-    .some((segment) => segment === '.' || segment === '..');
+
+  let decodedPathname = pathname;
+  for (let pass = 0; pass < STRUCTURAL_DECODE_PASSES; pass += 1) {
+    const nextPathname = decodeAsciiPercentLayer(decodedPathname);
+    if (nextPathname === decodedPathname) {
+      return true;
+    }
+    if (nextPathname.includes('\\') ||
+        countSlashes(nextPathname) > countSlashes(decodedPathname) ||
+        hasDotSegment(nextPathname)) {
+      return false;
+    }
+    decodedPathname = nextPathname;
+  }
+  return true;
 }

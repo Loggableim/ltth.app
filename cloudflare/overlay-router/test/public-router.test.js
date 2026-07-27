@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createOverlayRouterWorker } from './src/index.js';
 import { OFFLINE_PROBE_PARAMETER } from './src/offline-page.js';
+import { isUnambiguousPublicPath } from './src/public-path.js';
 import { createPublicRouter } from './src/public-router.js';
 
 const NOW_MS = Date.parse('2026-07-27T10:00:00.000Z');
@@ -77,6 +78,34 @@ describe('stable public entry routing', () => {
       ['claim', 'creator.name'],
       ['lease', 'user-public', NOW_ISO]
     ]);
+  });
+
+  it.each([
+    [
+      '/creator.name/plugins/overlay%2Ehtml?label=main',
+      '/plugins/overlay%2Ehtml?label=main'
+    ],
+    [
+      '/creator.name/plugins/100%25-ready%2525.html?label=100%25',
+      '/plugins/100%25-ready%2525.html?label=100%25'
+    ]
+  ])('preserves a legitimate encoded filename in %s', async (
+    publicPath,
+    routedPath
+  ) => {
+    const handle = createPublicRouter({
+      repository: createRepository(),
+      now: () => NOW_MS
+    });
+    const response = await handle(new Request(
+      `https://overlay.ltth.app${publicPath}`,
+      { headers: navigationHeaders() }
+    ));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe(
+      `https://r-${ROUTE_KEY}.ltth.app${routedPath}`
+    );
   });
 
   it('returns an exact empty online probe instead of redirecting', async () => {
@@ -250,15 +279,42 @@ describe('stable public entry routing', () => {
   });
 });
 
+describe('visible public path ambiguity guard', () => {
+  it.each([
+    ['/plugins/overlay%2Ehtml', true],
+    ['/plugins/100%25-ready.html', true],
+    ['/plugins/100%2525-ready.html', true],
+    ['/plugins/%41lpha%20overlay.html', true],
+    ['/plugins/%2e/overlay.html', false],
+    ['/plugins/.%2e/overlay.html', false],
+    ['/plugins/%252e%252e/overlay.html', false],
+    ['/plugins/%25%32%65%25%32%65/overlay.html', false],
+    ['/plugins/%2ftransport', false],
+    ['/plugins/%252ftransport', false],
+    ['/plugins/%25%32%66transport', false],
+    ['/plugins/%5ctransport', false],
+    ['/plugins/%255ctransport', false],
+    ['/plugins/%25%35%63transport', false],
+    ['/plugins/bad%zz', false],
+    ['/plugins\\overlay.html', false],
+    ['/plugins//overlay.html', false],
+    ['/plugins/../overlay.html', false]
+  ])('classifies %s as unambiguous=%s', (pathname, expected) => {
+    expect(isUnambiguousPublicPath(pathname)).toBe(expected);
+  });
+});
+
 describe('Worker public dispatcher', () => {
-  it('offers every host to management before exact public-host dispatch', async () => {
+  it('classifies exact authorities before attestation and management', async () => {
     const events = [];
     const managementResponse = new Response('management', { status: 202 });
     const worker = createOverlayRouterWorker({
       repositoryFactory() {
+        events.push('repository');
         return {};
       },
       managementHandlerFactory() {
+        events.push('management:create');
         return async (request) => {
           events.push(`management:${new URL(request.url).hostname}`);
           if (new URL(request.url).pathname === '/_ltth/v1/account') {
@@ -279,11 +335,20 @@ describe('Worker public dispatcher', () => {
           return new Response('proxy');
         };
       },
-      rawPathAttestationVerifier: () => true
+      rawPathAttestationVerifier(request) {
+        events.push(`attestation:${new URL(request.url).hostname}`);
+        return true;
+      }
     });
 
-    const management = await worker.fetch(new Request(
+    const unrelatedManagement = await worker.fetch(new Request(
       'https://unrelated.ltth.app/_ltth/v1/account'
+    ), {}, {});
+    expect(unrelatedManagement.status).toBe(404);
+    expect(events).toEqual([]);
+
+    const management = await worker.fetch(new Request(
+      'https://overlay.ltth.app/_ltth/v1/account'
     ), {}, {});
     const entry = await worker.fetch(new Request(
       'https://overlay.ltth.app/creator/overlay.html'
@@ -301,12 +366,20 @@ describe('Worker public dispatcher', () => {
     expect(unrelated.status).toBe(404);
     expect(await unrelated.text()).toBe('Not Found');
     expect(events).toEqual([
-      'management:unrelated.ltth.app',
+      'attestation:overlay.ltth.app',
+      'repository',
+      'management:create',
+      'management:overlay.ltth.app',
+      'attestation:overlay.ltth.app',
+      'repository',
+      'management:create',
       'management:overlay.ltth.app',
       'entry',
+      `attestation:r-${ROUTE_KEY}.ltth.app`,
+      'repository',
+      'management:create',
       `management:r-${ROUTE_KEY}.ltth.app`,
-      'proxy',
-      'management:www.ltth.app'
+      'proxy'
     ]);
   });
 
@@ -351,18 +424,27 @@ describe('Worker public dispatcher', () => {
   it('fails closed when Fetch has discarded an encoded dot path before dispatch', async () => {
     const events = [];
     const worker = createOverlayRouterWorker({
-      repositoryFactory: () => ({}),
+      repositoryFactory: () => {
+        events.push('repository');
+        return {};
+      },
       managementHandlerFactory: () => async () => {
         events.push('management');
         return null;
       },
-      publicRouterFactory: () => async () => {
-        events.push('entry');
-        return new Response('entry');
+      publicRouterFactory: () => {
+        events.push('entry:create');
+        return async () => {
+          events.push('entry');
+          return new Response('entry');
+        };
       },
-      proxyHandlerFactory: () => async () => {
-        events.push('proxy');
-        return new Response('proxy');
+      proxyHandlerFactory: () => {
+        events.push('proxy:create');
+        return async () => {
+          events.push('proxy');
+          return new Response('proxy');
+        };
       }
     });
     const rawEntry = new Request(

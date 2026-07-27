@@ -28,6 +28,24 @@ export function createOverlayRouterWorker(options = {}) {
 
   return Object.freeze({
     async fetch(request, env, context) {
+      let url;
+      try {
+        url = new URL(request.url);
+      } catch {
+        return createNeutralErrorResponse(404);
+      }
+      if (url.protocol !== 'https:' || url.port !== '') {
+        return createNeutralErrorResponse(404);
+      }
+      const routeKind = url.hostname === MANAGEMENT_HOST
+        ? 'entry'
+        : parseInternalRouteHost(url.hostname)
+          ? 'proxy'
+          : null;
+      if (routeKind === null) {
+        return createNeutralErrorResponse(404);
+      }
+
       let repository;
       let managementHandler;
       try {
@@ -51,21 +69,11 @@ export function createOverlayRouterWorker(options = {}) {
         return createNeutralErrorResponse(503);
       }
 
-      let url;
       try {
-        url = new URL(request.url);
-      } catch {
-        return createNeutralErrorResponse(404);
-      }
-      if (url.protocol !== 'https:' || url.port !== '') {
-        return createNeutralErrorResponse(404);
-      }
-
-      try {
-        if (url.hostname === MANAGEMENT_HOST) {
+        if (routeKind === 'entry') {
           return await publicRouterFactory(repository)(request);
         }
-        if (parseInternalRouteHost(url.hostname)) {
+        if (routeKind === 'proxy') {
           return await proxyHandlerFactory(repository)(request);
         }
       } catch {
