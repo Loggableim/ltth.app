@@ -7,6 +7,7 @@ const T0 = '2026-07-27T10:00:00.000Z';
 const T1 = '2026-07-27T10:01:00.000Z';
 const T2 = '2026-07-27T10:02:00.000Z';
 const T3 = '2026-07-27T10:03:00.000Z';
+const T4 = '2026-07-27T10:04:00.000Z';
 const DAY_7 = '2026-08-03T10:01:00.000Z';
 const DAY_8 = '2026-08-04T10:01:00.000Z';
 
@@ -52,6 +53,7 @@ describe('overlay routing repository', () => {
     const released = await repository.releaseClaim({
       usernameKey: 'unique_owner',
       clerkUserId: 'user-owner-a',
+      expectedUpdatedAt: T0,
       now: T1,
       reusableAfter: DAY_7
     });
@@ -72,6 +74,7 @@ describe('overlay routing repository', () => {
     await repository.releaseClaim({
       usernameKey: 'restore_me',
       clerkUserId: 'user-restore',
+      expectedUpdatedAt: T0,
       now: T1,
       reusableAfter: DAY_7
     });
@@ -80,6 +83,7 @@ describe('overlay routing repository', () => {
       usernameKey: 'restore_me',
       clerkUserId: 'another-user',
       displayUsername: 'Restore_Me',
+      expectedUpdatedAt: T1,
       now: T2
     })).toBeNull();
 
@@ -87,12 +91,93 @@ describe('overlay routing repository', () => {
       usernameKey: 'restore_me',
       clerkUserId: 'user-restore',
       displayUsername: 'Restore_Me',
+      expectedUpdatedAt: T1,
       now: T2
     });
     expect(restored.state).toBe('active');
     expect(restored.routeKey).toBe('route-restore');
     expect(restored.releaseRequestedAt).toBeNull();
     expect(restored.reusableAfter).toBeNull();
+  });
+
+  it('rejects a delayed release retry after the claim was restored', async () => {
+    await repository.claimUsername({
+      usernameKey: 'release_retry',
+      displayUsername: 'Release_Retry',
+      clerkUserId: 'user-release-retry',
+      routeKey: 'route-release-retry',
+      now: T0
+    });
+    await repository.releaseClaim({
+      usernameKey: 'release_retry',
+      clerkUserId: 'user-release-retry',
+      expectedUpdatedAt: T0,
+      now: T1,
+      reusableAfter: DAY_7
+    });
+    await repository.restoreClaim({
+      usernameKey: 'release_retry',
+      clerkUserId: 'user-release-retry',
+      displayUsername: 'Release_Retry',
+      expectedUpdatedAt: T1,
+      now: T2
+    });
+
+    expect(await repository.releaseClaim({
+      usernameKey: 'release_retry',
+      clerkUserId: 'user-release-retry',
+      expectedUpdatedAt: T0,
+      now: T3,
+      reusableAfter: DAY_8
+    })).toBeNull();
+    expect(await repository.findClaimByUsername('release_retry')).toMatchObject({
+      state: 'active',
+      updatedAt: T2
+    });
+  });
+
+  it('rejects a delayed restore retry after a newer release', async () => {
+    await repository.claimUsername({
+      usernameKey: 'restore_retry',
+      displayUsername: 'Restore_Retry',
+      clerkUserId: 'user-restore-retry',
+      routeKey: 'route-restore-retry',
+      now: T0
+    });
+    await repository.releaseClaim({
+      usernameKey: 'restore_retry',
+      clerkUserId: 'user-restore-retry',
+      expectedUpdatedAt: T0,
+      now: T1,
+      reusableAfter: DAY_7
+    });
+    await repository.restoreClaim({
+      usernameKey: 'restore_retry',
+      clerkUserId: 'user-restore-retry',
+      displayUsername: 'Restore_Retry',
+      expectedUpdatedAt: T1,
+      now: T2
+    });
+    await repository.releaseClaim({
+      usernameKey: 'restore_retry',
+      clerkUserId: 'user-restore-retry',
+      expectedUpdatedAt: T2,
+      now: T3,
+      reusableAfter: DAY_8
+    });
+
+    expect(await repository.restoreClaim({
+      usernameKey: 'restore_retry',
+      clerkUserId: 'user-restore-retry',
+      displayUsername: 'Restore_Retry',
+      expectedUpdatedAt: T1,
+      now: T4
+    })).toBeNull();
+    expect(await repository.findClaimByUsername('restore_retry')).toMatchObject({
+      state: 'cooldown',
+      releaseRequestedAt: T3,
+      updatedAt: T3
+    });
   });
 
   it('atomically transfers an expired cooldown claim with a new route key', async () => {
@@ -106,6 +191,7 @@ describe('overlay routing repository', () => {
     await repository.releaseClaim({
       usernameKey: 'takeover_me',
       clerkUserId: 'user-former',
+      expectedUpdatedAt: T0,
       now: T1,
       reusableAfter: DAY_7
     });
@@ -284,6 +370,51 @@ describe('overlay routing repository', () => {
       instanceId: 'instance-revision',
       expectedRevision: 2
     })).toBe(true);
+  });
+
+  it('rejects an older same-origin heartbeat after a newer one was accepted', async () => {
+    await repository.createDevice({
+      deviceId: 'device-reverse-heartbeat',
+      clerkUserId: 'user-reverse-heartbeat',
+      tokenHash: HASH_A,
+      label: 'Reverse Heartbeat PC',
+      now: T0
+    });
+    await repository.activateLease({
+      clerkUserId: 'user-reverse-heartbeat',
+      deviceId: 'device-reverse-heartbeat',
+      instanceId: 'instance-reverse-heartbeat',
+      tunnelOrigin: 'https://same.trycloudflare.com',
+      now: T1,
+      expiresAt: T3
+    });
+
+    const newer = await repository.renewLease({
+      clerkUserId: 'user-reverse-heartbeat',
+      deviceId: 'device-reverse-heartbeat',
+      instanceId: 'instance-reverse-heartbeat',
+      expectedRevision: 1,
+      tunnelOrigin: 'https://same.trycloudflare.com',
+      now: T3,
+      expiresAt: DAY_8
+    });
+    expect(newer).toMatchObject({
+      revision: 1,
+      updatedAt: T3,
+      expiresAt: DAY_8
+    });
+
+    expect(await repository.renewLease({
+      clerkUserId: 'user-reverse-heartbeat',
+      deviceId: 'device-reverse-heartbeat',
+      instanceId: 'instance-reverse-heartbeat',
+      expectedRevision: 1,
+      tunnelOrigin: 'https://same.trycloudflare.com',
+      now: T2,
+      expiresAt: DAY_7
+    })).toBeNull();
+    expect(await repository.findActiveLeaseByOwner('user-reverse-heartbeat', T3))
+      .toMatchObject({ updatedAt: T3, expiresAt: DAY_8 });
   });
 
   it('does not return an expired or revoked-device lease', async () => {

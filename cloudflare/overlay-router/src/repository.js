@@ -217,12 +217,14 @@ export class OverlayRepository {
   async releaseClaim({
     usernameKey,
     clerkUserId,
+    expectedUpdatedAt,
     now,
     reusableAfter
   }) {
     requireString(usernameKey, 'usernameKey');
     requireString(clerkUserId, 'clerkUserId');
-    requireUtcIso(now, 'now');
+    requireUtcIso(expectedUpdatedAt, 'expectedUpdatedAt');
+    requireLaterTimestamp(now, 'now', expectedUpdatedAt);
     requireLaterTimestamp(reusableAfter, 'reusableAfter', now);
 
     const row = await this.database.prepare(`
@@ -234,13 +236,15 @@ export class OverlayRepository {
       WHERE username_key = ?
         AND clerk_user_id = ?
         AND state = 'active'
+        AND updated_at = ?
       RETURNING *
     `).bind(
       now,
       reusableAfter,
       now,
       usernameKey,
-      clerkUserId
+      clerkUserId,
+      expectedUpdatedAt
     ).first();
     return mapClaim(row);
   }
@@ -249,12 +253,14 @@ export class OverlayRepository {
     usernameKey,
     clerkUserId,
     displayUsername,
+    expectedUpdatedAt,
     now
   }) {
     requireString(usernameKey, 'usernameKey');
     requireString(clerkUserId, 'clerkUserId');
     requireString(displayUsername, 'displayUsername');
-    requireUtcIso(now, 'now');
+    requireUtcIso(expectedUpdatedAt, 'expectedUpdatedAt');
+    requireLaterTimestamp(now, 'now', expectedUpdatedAt);
 
     const row = await this.database.prepare(`
       UPDATE claims
@@ -267,13 +273,15 @@ export class OverlayRepository {
         AND clerk_user_id = ?
         AND state = 'cooldown'
         AND reusable_after > ?
+        AND updated_at = ?
       RETURNING *
     `).bind(
       displayUsername,
       now,
       usernameKey,
       clerkUserId,
-      now
+      now,
+      expectedUpdatedAt
     ).first();
     return mapClaim(row);
   }
@@ -499,6 +507,8 @@ export class OverlayRepository {
         AND device_id = ?
         AND instance_id = ?
         AND revision = ?
+        AND updated_at < ?
+        AND expires_at < ?
         AND EXISTS (
           SELECT 1
           FROM devices
@@ -515,7 +525,9 @@ export class OverlayRepository {
       clerkUserId,
       deviceId,
       instanceId,
-      expectedRevision
+      expectedRevision,
+      now,
+      expiresAt
     ).first();
     return mapLease(row);
   }
