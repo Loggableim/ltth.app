@@ -1,0 +1,21 @@
+# Copy this file to .dev.vars for local-only Worker work.  Keep .dev.vars
+# untracked and private: this example contains deliberately fake values only.
+# Never put a Cloudflare account/zone/database ID, API token, Clerk secret,
+# device credential, or production value in this file or in Git.
+
+# The Worker rejects Clerk-authenticated requests until these are replaced in
+# your private environment with values for the existing LTTH Clerk application.
+CLERK_ISSUER=https://clerk.invalid
+CLERK_AUTHORIZED_PARTIES=http://localhost:3000
+CLERK_JWKS_URL=https://clerk.invalid/.well-known/jwks.json
+
+# Comma-separated Clerk user IDs. Leave empty for local work unless a private
+# test setup needs an admin. This must never contain a real production ID here.
+OVERLAY_ADMIN_CLERK_USER_IDS=
+
+# Deliberately fake local-only values. The raw-path token is syntactically valid
+# so local guard tests can supply it as x-ltth-raw-path-guard; it is not a
+# production secret and cannot stand in for the Cloudflare Transform Rule gate.
+OVERLAY_DEVICE_TOKEN_PEPPER=LOCAL_DEVELOPMENT_ONLY_NOT_A_SECRET
+OVERLAY_MAX_ACTIVE_DEVICES_PER_ACCOUNT=5
+OVERLAY_RAW_PATH_GUARD_TOKEN=local-development-only-raw-path-guard-token-0000
