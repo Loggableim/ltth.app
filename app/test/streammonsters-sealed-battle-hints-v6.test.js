@@ -77,10 +77,10 @@ describe('Stream Monsters Rules-v6 sealed battle decisions', () => {
     expect(revealed[1]).toEqual(expect.objectContaining({
       matchId,
       round: 1,
-      choices: expect.arrayContaining([
-        expect.objectContaining({ slot: slotA, choice: 'A' }),
-        expect.objectContaining({ slot: slotB, choice: 'C' })
-      ])
+      choices: [
+        { slot: slotA, choice: 'A', source: 'viewer' },
+        { slot: slotB, choice: 'C', source: 'viewer' }
+      ].sort((left, right) => left.slot - right.slot)
     }));
     const revealIndex = emit.mock.calls.indexOf(revealed);
     const actionIndex = emit.mock.calls.findIndex(([type]) => type === 'streammonsters:battle_skill_used');
@@ -131,6 +131,33 @@ describe('Stream Monsters Rules-v6 sealed battle decisions', () => {
     });
   });
 
+  test('preserves the Rules-v5 live lock choice projection', () => {
+    const projector = new PublicEventProjector();
+    expect(projector.project('streammonsters:battle_choice_locked', {
+      matchId: 'match-v5',
+      decision: {
+        sequence: 4,
+        round: 1,
+        window: 'action',
+        slot: 2,
+        choice: 'B',
+        source: 'viewer',
+        timeout: false
+      }
+    })).toEqual({
+      matchId: 'match-v5',
+      decision: {
+        sequence: 4,
+        round: 1,
+        window: 'action',
+        slot: 2,
+        choice: 'B',
+        source: 'viewer',
+        timeout: false
+      }
+    });
+  });
+
   test('uses a 15-second persisted standalone stat window', () => {
     let nowMs = 2_000;
     const { sqlite, service } = createMatch(() => nowMs);
@@ -172,13 +199,13 @@ describe('Stream Monsters overlay-only tutorial hints', () => {
     expect(director.setIntervalSeconds(59)).toBe(90);
     expect(director.setIntervalSeconds(301)).toBe(90);
     expect(director.setIntervalSeconds(120)).toBe(120);
-    expect(director.nextHint({ eventType: 'streammonsters:battle_choice_opened', critical: true }, 1_000))
+    expect(director.nextHint({ eventType: 'streammonsters:egg_ready', critical: true }, 1_000))
       .toBeNull();
-    expect(director.nextHint({ eventType: 'streammonsters:egg_ready' }, 1_000))
+    expect(director.nextHint({}, 1_001))
       .toEqual(expect.objectContaining({ kind: 'hatch' }));
     expect(director.nextHint({ eventType: 'streammonsters:monster_discovered' }, 2_000))
       .toBeNull();
-    expect(director.nextHint({}, 121_000)).toEqual(expect.objectContaining({
+    expect(director.nextHint({}, 121_001)).toEqual(expect.objectContaining({
       kind: 'collection',
       command: '!monsters'
     }));

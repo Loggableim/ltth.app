@@ -668,6 +668,7 @@
     applySnapshot:() => {},
     openChoice:() => {},
     lockChoice:() => {},
+    revealChoices:() => {},
     playAction:async () => {},
     complete:async () => {},
     cancel:() => {}
@@ -1187,6 +1188,14 @@
     });
     if (type === 'battle_choice_opened') return arenaView.openChoice(data);
     if (type === 'battle_choice_locked') return arenaView.lockChoice(data);
+    if (type === 'battle_choices_revealed') return arenaView.revealChoices(data);
+    if (type === 'tutorial_hint') return showCard({
+      kicker:'Stream Monsters',
+      title:safeHint(data?.title, 'Stream Monsters'),
+      subtitle:safeHint(data?.body),
+      hint:safeHint(data?.command),
+      duration:6_000
+    });
     if (type === 'battle_special_charged') {
       const monster = data?.monster || battleMonsters.find(entry => (
         itemMonsterId(entry) === data?.monsterId
@@ -1576,6 +1585,7 @@
     'streammonsters:battle_skill_prompt':'battle_choice_opened',
     'streammonsters:battle_choice_locked':'battle_choice_locked',
     'streammonsters:battle_skill_locked':'battle_choice_locked',
+    'streammonsters:battle_choices_revealed':'battle_choices_revealed',
     'streammonsters:battle_skill_used':'battle_skill_used',
     'streammonsters:battle_action':'battle_skill_used',
     'streammonsters:battle_knockout':'battle_skill_used',
@@ -1596,7 +1606,8 @@
     'streammonsters:achievement_unlocked':'achievement_unlocked',
     'streammonsters:season_rank_changed':'rank_card',
     'streammonsters:quest_completed':'quest_completed',
-    'streammonsters:chat_result':'chat_result'
+    'streammonsters:chat_result':'chat_result',
+    'streammonsters:tutorial_hint':'tutorial_hint'
   };
   Object.entries(eventTypes).forEach(([eventName, type]) => socket.on(eventName, data => enqueue(type, data)));
   socket.on('connect', async () => {

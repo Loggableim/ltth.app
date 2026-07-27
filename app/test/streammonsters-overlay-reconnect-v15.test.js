@@ -153,6 +153,7 @@ describe('Stream Monsters OBS rules-v5 reconnect integration', () => {
             ),
             openChoice: value => arenaOperations.push(`open:${value.sequence || 7}`),
             lockChoice: value => arenaOperations.push(`lock:${value.sequence || 5}`),
+            revealChoices: value => arenaOperations.push(`reveal:${value.choices?.length || 0}`),
             playAction: async value => arenaOperations.push(
               `action:${value.eventSequence || value.action?.eventSequence}`
             ),
@@ -170,6 +171,13 @@ describe('Stream Monsters OBS rules-v5 reconnect integration', () => {
       await waitFor(() => arenaOperations.includes('snapshot:4'));
       expect(replayRequests).toEqual([]);
       expect(arenaOperations).toEqual(['snapshot:4']);
+
+      socketHandlers.get('streammonsters:battle_choices_revealed')({
+        matchId: 'match-reconnect',
+        choices: [{ slot: 1, choice: 'A' }, { slot: 2, choice: 'C' }]
+      });
+      await waitFor(() => arenaOperations.includes('reveal:2'));
+      expect(socketHandlers.has('streammonsters:tutorial_hint')).toBe(true);
 
       snapshot = {
         ...snapshot,

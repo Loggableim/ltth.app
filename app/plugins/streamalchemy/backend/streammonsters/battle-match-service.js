@@ -848,7 +848,7 @@ class BattleMatchService {
             choice: decision.choice,
             source: decision.source === 'timeout' ? 'timeout' : 'viewer'
           };
-        })
+        }).sort((left, right) => left.slot - right.slot)
       });
     }
     const fighters = match.participants.map(participant => participant.roster);

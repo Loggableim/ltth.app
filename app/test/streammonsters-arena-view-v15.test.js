@@ -129,6 +129,30 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     expect(document.querySelector('#battle').dataset.terminal).toBe('cancelled');
   });
 
+  test('keeps sealed locks choice-free until the ordered reveal event arrives', () => {
+    mountArena();
+    const view = ArenaView.createArenaView({ document });
+    view.applyMatch({
+      matchId: 'match-sealed',
+      state: 'action',
+      fighters: [
+        { slot: 1, name: 'Ashfang', templateId: 'ashfang', element: 'Ember' },
+        { slot: 2, name: 'Ripple', templateId: 'ripple', element: 'Tide' }
+      ]
+    });
+
+    view.lockChoice({ decision: { slot: 1, locked: true, source: 'viewer' } });
+    expect(document.querySelector('#arena-fighter-1').dataset.choice).toBeUndefined();
+    expect(view.revealChoices({
+      choices: [
+        { slot: 1, choice: 'A', source: 'viewer' },
+        { slot: 2, choice: 'C', source: 'timeout' }
+      ]
+    })).toBe(true);
+    expect(document.querySelector('#arena-fighter-1').dataset.choice).toBe('A');
+    expect(document.querySelector('#arena-fighter-2').dataset.choice).toBe('C');
+  });
+
   test('updates the deadline countdown from the durable timestamp and clears it at terminal state', async () => {
     mountArena();
     let currentTime = 1_000;

@@ -153,6 +153,8 @@ describe('public overlay Socket.IO registry', () => {
     'game-engine:current-state',
     'story:chapter-display',
     'stt-ticker:transcript',
+    'streammonsters:battle_choices_revealed',
+    'streammonsters:tutorial_hint',
     'weather:trigger'
   ])('allows required outgoing event %s', eventName => {
     expect(isOutgoingSocketEventAllowed(eventName)).toBe(true);

@@ -422,6 +422,7 @@ streammonsters:battle_action
 streammonsters:battle_cancelled
 streammonsters:battle_choice_locked
 streammonsters:battle_choice_opened
+streammonsters:battle_choices_revealed
 streammonsters:battle_completed
 streammonsters:battle_knockout
 streammonsters:battle_match_found
@@ -454,6 +455,7 @@ streammonsters:season_rank_changed
 streammonsters:stance_revealed
 streammonsters:stat_choice_opened
 streammonsters:stream_started
+streammonsters:tutorial_hint
 streammonsters:upset
 streammonsters:win_streak
 stt-ticker:clear

@@ -328,6 +328,20 @@ class StreamMonstersPublicEventProjector {
   project(eventType, payload = {}) {
     if (eventType === 'streammonsters:battle_choice_locked') {
       const decision = payload.decision || {};
+      if (decision.locked !== true && decision.deadlineMs == null) {
+        return {
+          matchId: boundedText(payload.matchId, 160),
+          decision: {
+            sequence: Math.max(0, finiteNumber(decision.sequence, 0)),
+            round: Math.max(0, finiteNumber(decision.round, 0)),
+            window: 'action',
+            slot: Math.max(0, finiteNumber(decision.slot, 0)),
+            choice: ['A', 'B', 'C'].includes(decision.choice) ? decision.choice : 'A',
+            source: decision.source === 'timeout' ? 'timeout' : 'viewer',
+            timeout: decision.timeout === true || decision.source === 'timeout'
+          }
+        };
+      }
       return {
         matchId: boundedText(payload.matchId, 160),
         decision: {

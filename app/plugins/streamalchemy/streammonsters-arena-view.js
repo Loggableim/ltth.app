@@ -261,6 +261,7 @@
       for (const slot of [1, 2]) {
         const fighter = fighterNode(slot);
         fighter?.classList.remove('choice-locked');
+        fighter?.classList.remove('choice-revealed');
         if (fighter) delete fighter.dataset.choice;
       }
     }
@@ -271,10 +272,29 @@
       if (![1, 2].includes(slot)) return false;
       const fighter = fighterNode(slot);
       if (!fighter) return false;
-      fighter.dataset.choice = String(decision.choice || '');
-      fighter.dataset.choiceSource = decision.timeout ? 'timeout' : 'viewer';
+      if (decision.choice) fighter.dataset.choice = String(decision.choice);
+      else delete fighter.dataset.choice;
+      fighter.dataset.choiceSource = (
+        decision.timeout || decision.source === 'timeout'
+      ) ? 'timeout' : 'viewer';
       fighter.classList.add('choice-locked');
       return true;
+    }
+
+    function revealChoices(payload = {}) {
+      const choices = Array.isArray(payload.choices) ? payload.choices : [];
+      let revealed = false;
+      choices.slice().sort((left, right) => numeric(left?.slot) - numeric(right?.slot))
+        .forEach(choice => {
+          const slot = numeric(choice?.slot);
+          const fighter = fighterNode(slot);
+          if (!fighter || !['A', 'B', 'C'].includes(choice?.choice)) return;
+          fighter.dataset.choice = choice.choice;
+          fighter.dataset.choiceSource = choice?.source === 'timeout' ? 'timeout' : 'viewer';
+          fighter.classList.add('choice-locked', 'choice-revealed');
+          revealed = true;
+        });
+      return revealed;
     }
 
     function applyHit(action, hit) {
@@ -511,6 +531,7 @@
       cancel,
       complete,
       lockChoice,
+      revealChoices,
       openChoice,
       playAction,
       renderCountdown,

@@ -47,9 +47,9 @@ class TutorialHintDirector {
   }
 
   nextHint(state = {}, nowMs = Date.now()) {
-    if (state?.critical || state?.criticalSequence) return null;
     const kind = EVENT_KINDS[String(state?.eventType || '')] || null;
     if (kind) this.pendingKind = kind;
+    if (state?.critical || state?.criticalSequence) return null;
     if (!this.pendingKind || nowMs < this.nextAllowedAtMs) return null;
     const nextKind = this.pendingKind;
     this.pendingKind = null;
