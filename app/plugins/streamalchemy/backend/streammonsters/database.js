@@ -1121,19 +1121,29 @@ class StreamMonstersDatabase {
   }
 
   releaseExpiredFreeEggOffers(streamKey, nowMs) {
+    const hasStreamKey = streamKey !== undefined && streamKey !== null;
     const released = this.db.prepare(`
-      SELECT * FROM streammonsters_free_egg_offers
-      WHERE stream_key = ? AND status = 'reserved' AND reserved_until_ms <= ?
-      ORDER BY offered_at_ms ASC, offer_id ASC
-    `).all(streamKey, nowMs);
-    if (released.length) {
-      this.db.prepare(`
-        UPDATE streammonsters_free_egg_offers
-        SET status = 'public'
-        WHERE stream_key = ? AND status = 'reserved' AND reserved_until_ms <= ?
-      `).run(streamKey, nowMs);
-    }
-    return released.map(offer => ({ ...offer, status: 'public' }));
+      UPDATE streammonsters_free_egg_offers
+      SET status = 'public'
+      WHERE ${hasStreamKey ? 'stream_key = ? AND ' : ''}
+        status = 'reserved' AND reserved_until_ms <= ?
+      RETURNING *
+    `).all(...(hasStreamKey ? [streamKey, nowMs] : [nowMs]));
+    return released.sort((left, right) => (
+      left.offered_at_ms - right.offered_at_ms ||
+      left.offer_id.localeCompare(right.offer_id)
+    ));
+  }
+
+  getNextFreeEggReservationDeadline() {
+    const row = this.db.prepare(`
+      SELECT MIN(reserved_until_ms) AS reserved_until_ms
+      FROM streammonsters_free_egg_offers
+      WHERE status = 'reserved'
+    `).get();
+    return Number.isFinite(Number(row?.reserved_until_ms))
+      ? Number(row.reserved_until_ms)
+      : null;
   }
 
   getReservedFreeEggOffer(streamKey, userId, nowMs) {

@@ -1,4 +1,4 @@
-const { createHash, randomUUID } = require('crypto');
+const { normalizeIngressEventId } = require('./ingress-event-id');
 
 class ChatCommands {
   constructor({
@@ -119,20 +119,22 @@ class ChatCommands {
       };
     }
     const rawData = context.rawData || {};
-    const providerEventId = rawData.eventId ?? rawData.event_id ?? rawData.msgId ?? rawData.msg_id;
     const streamKey = this.engine.streamKey || 'offline';
-    const eventId = providerEventId === undefined || providerEventId === null
-      ? `adopt:${createHash('sha256').update(JSON.stringify({
+    const eventId = normalizeIngressEventId({
+      namespace: 'adopt',
+      context,
+      rawData,
+      nowMs: this.now(),
+      fingerprint: {
         streamKey,
         userId,
-        message: rawData.comment || rawData.message || rawData.text || 'adopt',
-        timestamp: rawData.timestamp || rawData.createTime || rawData.create_time || null
-      })).digest('hex')}`
-      : `adopt:${String(rawData.provider || rawData.source || 'tiktok')}:${String(providerEventId)}`;
+        message: rawData.comment || rawData.message || rawData.text || 'adopt'
+      }
+    });
     const result = this.freeEggDropService.adopt({
       userId,
       streamKey,
-      eventId: eventId || `adopt:${randomUUID()}`,
+      eventId,
       nowMs: this.now()
     });
     if (result.success) {

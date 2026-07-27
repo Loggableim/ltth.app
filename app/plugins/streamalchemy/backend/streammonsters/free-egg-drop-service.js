@@ -22,6 +22,9 @@ class FreeEggDropService {
         Number(config.freeEggCooldownSeconds) || DEFAULT_COOLDOWN_SECONDS
       )
     };
+    this.releaseTimer = null;
+    this.destroyed = false;
+    this.sweepAndRearm();
   }
 
   emitAfterCommit(event, payload) {
@@ -29,7 +32,7 @@ class FreeEggDropService {
   }
 
   onFirstChat({ userId, streamKey, eventId, displayName = null, nowMs = this.now() } = {}) {
-    return this.store.runInImmediateTransaction(() => {
+    const result = this.store.runInImmediateTransaction(() => {
       const input = this.normalizeInput({ userId, streamKey, eventId, nowMs });
       const duplicate = this.store.getFreeEggEvent(input.eventId);
       if (duplicate) return duplicate;
@@ -72,10 +75,12 @@ class FreeEggDropService {
       });
       return result;
     });
+    this.rearmReleaseTimer();
+    return result;
   }
 
   adopt({ userId, streamKey, eventId, nowMs = this.now() } = {}) {
-    return this.store.runInImmediateTransaction(() => {
+    const result = this.store.runInImmediateTransaction(() => {
       const input = this.normalizeInput({ userId, streamKey, eventId, nowMs });
       const duplicate = this.store.getFreeEggEvent(input.eventId);
       if (duplicate) return duplicate;
@@ -130,23 +135,60 @@ class FreeEggDropService {
       });
       return result;
     });
+    this.rearmReleaseTimer();
+    return result;
   }
 
   cleanupStream({ streamKey } = {}) {
     const normalizedStreamKey = this.normalizeStreamKey(streamKey);
-    return this.store.runInImmediateTransaction(() => (
+    const result = this.store.runInImmediateTransaction(() => (
       this.store.cleanupFreeEggStream(normalizedStreamKey)
     ));
+    this.rearmReleaseTimer();
+    return result;
   }
 
-  releaseExpiredOffers(streamKey, nowMs) {
+  releaseExpiredOffers(streamKey = null, nowMs = this.now()) {
     const released = this.store.releaseExpiredFreeEggOffers(streamKey, nowMs);
     released.forEach(offer => this.emitAfterCommit('streammonsters:free_egg_released', {
-      streamKey,
+      streamKey: offer.stream_key,
       offerId: offer.offer_id,
       sourceUserId: offer.source_user_id
     }));
     return released;
+  }
+
+  sweepAndRearm(nowMs = this.now()) {
+    if (this.destroyed) return [];
+    const released = this.store.runInImmediateTransaction(() => (
+      this.releaseExpiredOffers(null, nowMs)
+    ));
+    this.rearmReleaseTimer();
+    return released;
+  }
+
+  rearmReleaseTimer() {
+    if (this.releaseTimer) {
+      clearTimeout(this.releaseTimer);
+      this.releaseTimer = null;
+    }
+    if (this.destroyed) return;
+    const deadlineMs = this.store.getNextFreeEggReservationDeadline();
+    if (deadlineMs === null) return;
+    const delayMs = Math.max(0, deadlineMs - Number(this.now()));
+    this.releaseTimer = setTimeout(() => {
+      this.releaseTimer = null;
+      this.sweepAndRearm();
+    }, delayMs);
+    this.releaseTimer.unref?.();
+  }
+
+  destroy() {
+    this.destroyed = true;
+    if (this.releaseTimer) {
+      clearTimeout(this.releaseTimer);
+      this.releaseTimer = null;
+    }
   }
 
   recordEvent(input, eventType, result) {

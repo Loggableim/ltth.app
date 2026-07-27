@@ -6,6 +6,10 @@ const { Worker } = require('worker_threads');
 const StreamMonstersDatabase = require('../plugins/streamalchemy/backend/streammonsters/database');
 const StreamMonstersEngine = require('../plugins/streamalchemy/backend/streammonsters/game-engine');
 const FreeEggDropService = require('../plugins/streamalchemy/backend/streammonsters/free-egg-drop-service');
+const StreamMonstersChatCommands = require('../plugins/streamalchemy/backend/streammonsters/chat-commands');
+const {
+  normalizeIngressEventId
+} = require('../plugins/streamalchemy/backend/streammonsters/ingress-event-id');
 const StreamAlchemyPlugin = require('../plugins/streamalchemy');
 
 function createSubject({ now = 1_000, config = {} } = {}) {
@@ -31,6 +35,7 @@ function createSubject({ now = 1_000, config = {} } = {}) {
     engine,
     service,
     emitted,
+    now: () => currentNow,
     setNow(value) { currentNow = value; }
   };
 }
@@ -101,9 +106,20 @@ function runContendingAdopters({ databasePath, attempts = 20 } = {}) {
   };
   const workers = Array.from({ length: attempts }, (_, index) => {
     let resolveReady;
+    let rejectReady;
     let resolveResult;
     let resolveExit;
-    const ready = new Promise(resolve => { resolveReady = resolve; });
+    let readySettled = false;
+    const ready = new Promise((resolve, reject) => {
+      resolveReady = () => {
+        readySettled = true;
+        resolve();
+      };
+      rejectReady = error => {
+        readySettled = true;
+        reject(error);
+      };
+    });
     const result = new Promise(resolve => {
       resolveResult = resolve;
     });
@@ -123,8 +139,16 @@ function runContendingAdopters({ databasePath, attempts = 20 } = {}) {
       else if (message.error) resolveResult({ success: false, error: message.error });
       else resolveResult(message.result);
     });
-    worker.on('error', error => resolveResult({ success: false, error: error.message }));
-    worker.on('exit', resolveExit);
+    worker.on('error', error => {
+      if (!readySettled) rejectReady(error);
+      resolveResult({ success: false, error: error.message });
+    });
+    worker.on('exit', code => {
+      if (!readySettled) {
+        rejectReady(new Error(`Free egg contention worker exited before ready (${code})`));
+      }
+      resolveExit();
+    });
     return { worker, ready, result, exited };
   });
   return {
@@ -255,6 +279,85 @@ describe('Stream Monsters recurring free egg drops', () => {
     expect(subject.store.getViewerEggs('viewer-a')).toHaveLength(1);
   });
 
+  test('does not reuse a minimal-context no-offer receipt for a later adoption ingress', () => {
+    const subject = createSubject();
+    const commands = new StreamMonstersChatCommands({
+      store: subject.store,
+      engine: subject.engine,
+      freeEggDropService: subject.service,
+      now: subject.now
+    });
+
+    expect(commands.execute({ userId: 'viewer-b' }, 'adopt'))
+      .toEqual(expect.objectContaining({ success: false, status: 'no_offer' }));
+    subject.setNow(2_000);
+    offer(subject, 'viewer-a', 'chat-a', 2_000);
+    subject.setNow(62_000);
+
+    expect(commands.execute({ userId: 'viewer-b' }, 'adopt'))
+      .toEqual(expect.objectContaining({
+        success: true,
+        status: 'claimed',
+        sourceUserId: 'viewer-a'
+      }));
+  });
+
+  test('normalizes ingress ids by provider id, raw timestamp, context timestamp, then nonce', () => {
+    const fingerprint = { streamKey: 'creator:stream-1', userId: 'viewer-a', message: '!adopt' };
+    expect(normalizeIngressEventId({
+      namespace: 'adopt',
+      rawData: { eventId: 'provider-7', timestamp: 10 },
+      context: { timestamp: 20 },
+      fingerprint,
+      nowMs: 30,
+      nonce: 'unused'
+    })).toBe('adopt:tiktok:provider-7');
+
+    const fromRawTimestamp = normalizeIngressEventId({
+      namespace: 'adopt',
+      rawData: { timestamp: 10 },
+      context: { timestamp: 20 },
+      fingerprint,
+      nowMs: 30,
+      nonce: 'unused'
+    });
+    expect(fromRawTimestamp).toBe(normalizeIngressEventId({
+      namespace: 'adopt',
+      rawData: { timestamp: 10 },
+      context: { timestamp: 999 },
+      fingerprint,
+      nowMs: 999,
+      nonce: 'different'
+    }));
+
+    const fromContextTimestamp = normalizeIngressEventId({
+      namespace: 'adopt',
+      context: { timestamp: 20 },
+      fingerprint,
+      nowMs: 30,
+      nonce: 'unused'
+    });
+    expect(fromContextTimestamp).toBe(normalizeIngressEventId({
+      namespace: 'adopt',
+      context: { timestamp: 20 },
+      fingerprint,
+      nowMs: 999,
+      nonce: 'different'
+    }));
+
+    expect(normalizeIngressEventId({
+      namespace: 'adopt',
+      fingerprint,
+      nowMs: 30,
+      nonce: 'first'
+    })).not.toBe(normalizeIngressEventId({
+      namespace: 'adopt',
+      fingerprint,
+      nowMs: 30,
+      nonce: 'second'
+    }));
+  });
+
   test('removes outstanding offers and their event receipts when a stream is cleaned up', () => {
     const subject = createSubject();
     offer(subject, 'viewer-a', 'chat-a', 1_000);
@@ -295,6 +398,95 @@ describe('Stream Monsters recurring free egg drops', () => {
     expect(reloaded.adopt({
       userId: 'viewer-a', streamKey: 'creator:stream-1', eventId: 'adopt-a', nowMs: 1_001
     })).toEqual(expect.objectContaining({ success: true, status: 'claimed' }));
+  });
+
+  describe('persisted reservation release scheduling', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    test('releases an offer at 60 seconds without requiring another ingress', () => {
+      const subject = createSubject();
+      offer(subject, 'viewer-a', 'chat-a', 1_000);
+
+      subject.setNow(60_999);
+      jest.advanceTimersByTime(59_999);
+      expect(subject.store.getFreeEggOfferBySource('creator:stream-1', 'viewer-a').status)
+        .toBe('reserved');
+
+      subject.setNow(61_000);
+      jest.advanceTimersByTime(1);
+      expect(subject.store.getFreeEggOfferBySource('creator:stream-1', 'viewer-a').status)
+        .toBe('public');
+      expect(subject.emitted).toContainEqual({
+        event: 'streammonsters:free_egg_released',
+        payload: expect.objectContaining({
+          streamKey: 'creator:stream-1',
+          sourceUserId: 'viewer-a'
+        })
+      });
+    });
+
+    test('sweeps an expired persisted reservation immediately on reload', () => {
+      const subject = createSubject();
+      offer(subject, 'viewer-a', 'chat-a', 1_000);
+      subject.service.destroy();
+      subject.setNow(61_000);
+      subject.emitted.splice(0);
+
+      const reloaded = new FreeEggDropService({
+        store: subject.store,
+        engine: subject.engine,
+        emit: (event, payload) => subject.emitted.push({ event, payload }),
+        now: subject.now
+      });
+
+      expect(subject.store.getFreeEggOfferBySource('creator:stream-1', 'viewer-a').status)
+        .toBe('public');
+      expect(subject.emitted.map(entry => entry.event))
+        .toEqual(['streammonsters:free_egg_released']);
+      reloaded.destroy();
+    });
+
+    test('rearms to the next reservation and clears scheduling on stream cleanup and destroy', () => {
+      const subject = createSubject();
+      offer(subject, 'viewer-a', 'chat-a', 1_000);
+      subject.setNow(2_000);
+      subject.service.onFirstChat({
+        userId: 'viewer-b',
+        streamKey: 'creator:stream-2',
+        eventId: 'chat-b',
+        nowMs: 2_000
+      });
+
+      subject.setNow(61_000);
+      jest.advanceTimersByTime(59_000);
+      expect(subject.store.getFreeEggOfferBySource('creator:stream-1', 'viewer-a').status)
+        .toBe('public');
+      expect(subject.store.getFreeEggOfferBySource('creator:stream-2', 'viewer-b').status)
+        .toBe('reserved');
+
+      subject.service.cleanupStream({ streamKey: 'creator:stream-1' });
+      subject.setNow(62_000);
+      jest.advanceTimersByTime(1_000);
+      expect(subject.store.getFreeEggOfferBySource('creator:stream-2', 'viewer-b').status)
+        .toBe('public');
+
+      subject.setNow(70_000);
+      subject.service.onFirstChat({
+        userId: 'viewer-c',
+        streamKey: 'creator:stream-3',
+        eventId: 'chat-c',
+        nowMs: 70_000
+      });
+      expect(jest.getTimerCount()).toBe(1);
+      subject.service.destroy();
+      expect(jest.getTimerCount()).toBe(0);
+    });
   });
 
   test('atomically allows one winner when twenty independent SQLite callers contend for one released offer', async () => {

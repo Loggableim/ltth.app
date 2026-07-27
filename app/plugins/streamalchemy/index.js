@@ -9,6 +9,7 @@ const StreamMonstersBattleMatchService = require('./backend/streammonsters/battl
 const StreamMonstersChatCommands = require('./backend/streammonsters/chat-commands');
 const StreamMonstersCommandIngress = require('./backend/streammonsters/command-ingress');
 const FreeEggDropService = require('./backend/streammonsters/free-egg-drop-service');
+const { normalizeIngressEventId } = require('./backend/streammonsters/ingress-event-id');
 const TutorialHintDirector = require('./backend/streammonsters/tutorial-hint-director');
 const StreamMonstersPublicEventProjector = require(
   './backend/streammonsters/public-event-projector'
@@ -655,6 +656,7 @@ class StreamAlchemyPlugin {
       clearTimeout(this.streamMonstersTutorialHintFlushTimer);
       this.streamMonstersTutorialHintFlushTimer = null;
     }
+    this.streamMonstersFreeEggDrops?.destroy();
     this.streamMonstersBattleMatchService?.destroy();
     this.removeStreamMonstersGCCELifecycle();
     this.deactivateStreamMonstersGCCE();
@@ -1387,16 +1389,18 @@ class StreamAlchemyPlugin {
       legacyUserId: data.uniqueId || data.username
     });
     if (!userId) return null;
-    const providerEventId = data.eventId ?? data.event_id ?? data.msgId ?? data.msg_id;
     const streamKey = this.streamMonstersEngine.streamKey || 'offline';
-    const eventId = providerEventId === undefined || providerEventId === null
-      ? `chat:${createHash('sha256').update(JSON.stringify({
+    const eventId = normalizeIngressEventId({
+      namespace: 'chat',
+      context: data,
+      rawData: data,
+      nowMs: Date.now(),
+      fingerprint: {
         streamKey,
         userId,
-        message: data.comment || data.message || data.text || '',
-        timestamp: data.timestamp || data.createTime || data.create_time || null
-      })).digest('hex')}`
-      : `chat:${String(data.provider || data.source || 'tiktok')}:${String(providerEventId)}`;
+        message: data.comment || data.message || data.text || ''
+      }
+    });
     try {
       return this.streamMonstersFreeEggDrops.onFirstChat({
         userId,
