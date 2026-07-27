@@ -1574,13 +1574,10 @@
       }
       return;
     }
-    if (type === 'stream_started') return showToast(text(
-      'elementalHourActive',
-      '{element} Hour ist aktiv',
-      { element: elementName(data?.event?.element || data?.element) }
-    ));
-    if (type === 'elemental_hour') {
-      const hour = window.StreamMonstersArenaDirector.buildElementalHourPresentation(data);
+    const hour = type === 'stream_started' || type === 'elemental_hour'
+      ? window.StreamMonstersArenaDirector.buildElementalHourEventPresentation(type, data)
+      : null;
+    if (hour) {
       const element = elementName(hour.element);
       return showCard({
         kicker:text('elementalHourActive', '{element} Hour is active', { element }),
@@ -1598,6 +1595,11 @@
         duration:hour.durationMs
       });
     }
+    if (type === 'stream_started') return showToast(text(
+      'elementalHourActive',
+      '{element} Hour ist aktiv',
+      { element: elementName(data?.event?.element || data?.element) }
+    ));
     if (type === 'egg_spawned') return presentArcadeScene(type, data, showCard({
       kicker: text('eggKicker', '{element} · {variant}', {
         element: elementName(data?.egg?.element),

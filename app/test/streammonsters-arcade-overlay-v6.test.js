@@ -131,9 +131,15 @@ describe('Stream Monsters Rules-v6 deterministic arcade timeline', () => {
   });
 
   test('describes Elemental Hour as an eight-second upper card with exact neutral effects', () => {
-    expect(ArenaDirector.buildElementalHourPresentation({
-      event: { element: 'Volt' }
-    })).toEqual({
+    const liveStreamStarted = {
+      creatorName: 'Creator',
+      event: {
+        id: 'elemental-hour:4',
+        element: 'Volt',
+        boostMultiplier: 2
+      }
+    };
+    const expected = {
       presentation: 'elemental-hour',
       placement: 'upper-gameplay',
       durationMs: 8_000,
@@ -142,7 +148,24 @@ describe('Stream Monsters Rules-v6 deterministic arcade timeline', () => {
       hypeBonus: 10,
       combatStatBonus: 0,
       hatchQualityBonus: 0
-    });
+    };
+
+    expect(ArenaDirector.buildElementalHourPresentation(liveStreamStarted)).toEqual(expected);
+    expect(ArenaDirector.buildElementalHourEventPresentation(
+      'stream_started',
+      liveStreamStarted
+    )).toEqual(expected);
+    expect(ArenaDirector.buildElementalHourEventPresentation(
+      'stream_started',
+      { creatorName: 'Creator' }
+    )).toBeNull();
+    expect(ArenaDirector.buildElementalHourEventPresentation(
+      'elemental_hour',
+      { element: 'Ember' }
+    )).toEqual(expect.objectContaining({
+      element: 'Ember',
+      durationMs: 8_000
+    }));
     expect(ArenaDirector.buildArcadeTimeline('elemental_hour', {
       eventId: 'elemental-hour-1',
       event: { element: 'Volt' }

@@ -168,6 +168,20 @@
     });
   }
 
+  function buildElementalHourEventPresentation(eventType, payload = {}) {
+    const type = normalizedEventType(eventType);
+    if (type === 'elemental_hour') {
+      return buildElementalHourPresentation(payload);
+    }
+    if (
+      type === 'stream_started' &&
+      String(payload?.event?.element || '').trim()
+    ) {
+      return buildElementalHourPresentation(payload);
+    }
+    return null;
+  }
+
   function buildEvolutionPresentation(payload = {}, { reducedMotion = false } = {}) {
     const before = payload.statsBefore || {};
     const after = payload.statsAfter || {};
@@ -969,6 +983,7 @@
     canonicalImageUrl,
     normalizeFighters,
     buildElementalHourPresentation,
+    buildElementalHourEventPresentation,
     buildEvolutionPresentation,
     buildActionTimeline,
     buildArcadeTimeline,

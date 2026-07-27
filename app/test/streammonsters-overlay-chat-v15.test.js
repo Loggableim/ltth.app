@@ -155,9 +155,14 @@ describe('Stream Monsters 1.5 OBS chat presentation', () => {
     expect(document.getElementById('evolution-skill-title')).not.toBeNull();
     expect(document.getElementById('evolution-skill-effect')).not.toBeNull();
     expect(presentSource).toMatch(
-      /type === 'elemental_hour'[\s\S]*?buildElementalHourPresentation[\s\S]*?showCard/
+      /buildElementalHourEventPresentation\(type, data\)[\s\S]*?if \(hour\)[\s\S]*?return showCard/
     );
     expect(presentSource).toContain("'elementalHourExplanation'");
+    expect(presentSource).toMatch(/if \(type === 'stream_started'\) return showToast/);
+    expect(presentSource.indexOf('if (hour)')).toBeLessThan(
+      presentSource.indexOf("if (type === 'stream_started') return showToast")
+    );
+    expect(presentSource.match(/presentation:hour\.presentation/g)).toHaveLength(1);
     expect(presentSource).toMatch(
       /type === 'monster_evolved'[\s\S]*?buildEvolutionPresentation[\s\S]*?evolution/
     );
