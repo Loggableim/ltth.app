@@ -410,3 +410,184 @@ env.OVERLAY_ROUTING_DB (ltth-overlay-routing-local)
 
 `git diff --cached --check` completed without findings before commit
 `ef96b549`.
+
+## Fix round 2/5: authority-first guard and structural path decoding
+
+Commit `e7e6e20f` (`fix(overlay-router): narrow raw path guard`) closes both
+Important round-2 findings. The deferred `Vary` minor remains unchanged.
+
+### Authority classification now precedes ingress attestation
+
+The round-1 dispatcher verified the raw-path marker before parsing and
+classifying the request authority. As a result, an unrelated authority such
+as `www.ltth.app` received `503` without a marker, and management was offered
+requests that were outside the routing authorities.
+
+The dispatcher now parses and classifies the exact authority first:
+
+- only HTTPS `overlay.ltth.app` on the default port is an entry/management
+  candidate;
+- only HTTPS `r-<32 lowercase hex>.ltth.app` on the default port is a proxy
+  candidate;
+- every malformed, insecure, ported, or unrelated authority returns the
+  neutral no-store `404` immediately.
+
+Only after a request is an exact routing candidate does the Worker verify the
+raw-path marker. For both candidate kinds, a missing/malformed/mismatched
+marker returns `503` before D1 repository construction, management handler
+construction, management execution, or public/proxy handler construction.
+This includes management paths on `overlay.ltth.app`.
+
+The real Workers-pool default export, without dependency injection, now proves
+that `www.ltth.app` returns `404` without guard configuration, while entry,
+management, and exact opaque requests all remain failed closed at `503`.
+
+### Narrow structural path predicate
+
+The round-1 visible predicate rejected `%2e` and `%25` anywhere. That treated
+safe filename data as path structure, so legitimate paths such as
+`/plugins/overlay%2Ehtml` and `/plugins/100%25-ready.html` returned `404`.
+
+The new predicate keeps the original pathname immutable and classifies a
+separate scratch value. It:
+
+1. rejects an initial raw backslash, repeated slash, literal `.`/`..` segment,
+   or invalid percent escape;
+2. decodes ASCII percent escapes into the scratch value for at most two
+   layers;
+3. after each layer, rejects a newly introduced slash, backslash, or exact
+   `.`/`..` segment;
+4. otherwise accepts the original pathname unchanged.
+
+Two layers cover direct and double-encoded structural forms, including split
+hex encodings:
+
+```text
+%2f              -> /
+%252f            -> %2f -> /
+%25%32%66        -> %2f -> /
+%252e%252e       -> %2e%2e -> ..
+%25%32%65        -> %2e -> .
+%255c            -> %5c -> \
+```
+
+The same process deliberately accepts encoded filename data:
+
+```text
+overlay%2Ehtml       -> overlay.html
+100%25-ready.html    -> 100%-ready.html
+100%2525-ready.html  -> 100%25-ready.html -> 100%-ready.html
+```
+
+Only the scratch value is decoded. Redirect and proxy builders still receive
+the original WHATWG-visible pathname and query and retain their exact
+round-trip equality check, so accepted encoded path/query bytes are preserved.
+
+### Exact raw-versus-visible responsibility
+
+The ingress rule and Worker validator have different evidence:
+
+- the Cloudflare Transform Rule uses immutable
+  `raw.http.request.uri.path`, before the Worker API can lose a raw
+  backslash, repeated slash, or literal/encoded dot segment;
+- the Worker trusts that evidence only through the unforgeable ordered marker,
+  then validates the still-visible pathname independently.
+
+The Transform Rule predicate documented in round 1 is superseded by the
+following structural predicate. For readability, define:
+
+```text
+P0 = raw.http.request.uri.path
+P1 = url_decode(raw.http.request.uri.path)
+P2 = url_decode(url_decode(raw.http.request.uri.path))
+```
+
+For each `P` used below, `NO_DOT_SEGMENT(P)` means:
+
+```text
+not (P eq "/.") and
+not (P eq "/..") and
+not (P contains "/./") and
+not (P contains "/../") and
+not ends_with(P, "/.") and
+not ends_with(P, "/..")
+```
+
+The safe-marker rule must combine the unchanged exact host scope with this
+expanded Rules-language expression:
+
+```text
+not (raw.http.request.uri.path contains "\\") and
+not (raw.http.request.uri.path contains "//") and
+not (raw.http.request.uri.path eq "/.") and
+not (raw.http.request.uri.path eq "/..") and
+not (raw.http.request.uri.path contains "/./") and
+not (raw.http.request.uri.path contains "/../") and
+not ends_with(raw.http.request.uri.path, "/.") and
+not ends_with(raw.http.request.uri.path, "/..") and
+not (lower(raw.http.request.uri.path) contains "%2f") and
+not (lower(raw.http.request.uri.path) contains "%5c") and
+not (lower(url_decode(raw.http.request.uri.path)) contains "%2f") and
+not (lower(url_decode(raw.http.request.uri.path)) contains "%5c") and
+not (url_decode(raw.http.request.uri.path) eq "/.") and
+not (url_decode(raw.http.request.uri.path) eq "/..") and
+not (url_decode(raw.http.request.uri.path) contains "/./") and
+not (url_decode(raw.http.request.uri.path) contains "/../") and
+not ends_with(url_decode(raw.http.request.uri.path), "/.") and
+not ends_with(url_decode(raw.http.request.uri.path), "/..") and
+not (url_decode(url_decode(raw.http.request.uri.path)) eq "/.") and
+not (url_decode(url_decode(raw.http.request.uri.path)) eq "/..") and
+not (url_decode(url_decode(raw.http.request.uri.path)) contains "/./") and
+not (url_decode(url_decode(raw.http.request.uri.path)) contains "/../") and
+not ends_with(url_decode(url_decode(raw.http.request.uri.path)), "/.") and
+not ends_with(url_decode(url_decode(raw.http.request.uri.path)), "/..")
+```
+
+`P0` separator checks reject direct encodings. The `P1` separator checks
+reject double encodings and composed forms such as `%25%32%66`.
+`NO_DOT_SEGMENT(P1/P2)` rejects direct and double-encoded dot segments without
+rejecting a dot inside a filename. A bare `%25` is no longer forbidden.
+
+Invalid percent syntax is rejected by the Worker visible validator. If
+Cloudflare does not preserve that syntax to the Worker, the existing
+Cloudflare Trace/staging characterization gate applies and the secret must
+remain disabled. The same gate remains for Cloudflare HTTP-server baseline
+normalization of repeated slashes or backslashes. No live rule, secret,
+normalization setting, or Worker deployment was changed in this fix round.
+
+### Round-2 test-first and final evidence
+
+Before the production change:
+
+```text
+npm test -- test/public-router.test.js test/proxy.test.js test/worker-smoke.test.js
+Test Files  3 failed (3)
+Tests       9 failed | 56 passed
+```
+
+The failures showed both legitimate encoded filename fixtures rejected, the
+unrelated production authority returning `503`, and unrelated management
+reaching management before classification.
+
+After the change:
+
+```text
+npm test -- test/public-router.test.js test/proxy.test.js test/worker-smoke.test.js
+Test Files  3 passed (3)
+Tests       65 passed (65)
+
+npm test
+Test Files  8 passed (8)
+Tests       199 passed (199)
+
+node --check src/index.js
+node --check src/public-path.js
+
+npx wrangler deploy --dry-run --env=
+Total Upload: 95.49 KiB / gzip: 19.28 KiB
+env.OVERLAY_ROUTING_DB (ltth-overlay-routing-local)
+--dry-run: exiting now.
+```
+
+`git diff --cached --check` completed without findings before commit
+`e7e6e20f`.
