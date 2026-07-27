@@ -14,6 +14,29 @@ The template uses Cloudflare's documented recursive form
 fail-closed placeholder `<REPLACE_WITH_64_CHAR_URL_SAFE_TOKEN>`, never a usable
 secret.
 
+Both rules use the same exact routing-host scope:
+
+```text
+http.host eq "overlay.ltth.app" or
+(starts_with(http.host, "r-") and
+ ends_with(http.host, ".ltth.app") and
+ len(http.host) eq 43)
+```
+
+The restoration predicate uses equality, `contains`, `lower`,
+`starts_with`, `ends_with`, `len`, and `url_decode` only. It does not use the
+`matches` regular-expression operator, which Cloudflare reserves for Business
+and Enterprise plans. The template therefore has no paid-plan Rules-language
+dependency.
+
+For both the immutable raw path and its recursively decoded value, the
+predicate rejects backslashes, repeated separators, exact `.`/`..` segments
+at every segment position, and case-insensitive `%2f`/`%5c` separator
+encodings. A deeply encoded separator that becomes a single ordinary `/`
+inside a segment is still visible as encoded data to the Worker and is
+rejected by its independent bounded fixed-point validator. The marker is
+therefore only one half of the defense; it never replaces Worker validation.
+
 ## Offline gate
 
 Run this before preparing an API payload:
@@ -22,9 +45,26 @@ Run this before preparing an API payload:
 npm run validate:raw-path-ruleset
 ```
 
-This parses the JSON and verifies the phase, two-rule order, header
-operations, placeholder, exact host-scope inheritance, recursive decode
-syntax, and absence of nested `url_decode(url_decode(...))`.
+This parses the JSON and verifies:
+
+- the zone-level late-transform phase and exact two-rule order;
+- caller-marker removal first and restoration second, with no other header
+  mutations;
+- the exact Free-compatible routing-host scope on both rules;
+- the fail-closed placeholder;
+- every raw and recursively decoded backslash, repeated-separator, dot-segment,
+  and encoded-separator clause;
+- the documented `url_decode(raw.http.request.uri.path, "r")` syntax;
+- the absence of paid-plan regular-expression operators.
+
+The validator intentionally requires the canonical expression rather than
+accepting a substring match. Removing a clause, broadening a scope, changing
+`and` to `or`, changing recursive decode options, or adding `matches` fails
+the gate. The adversarial mutation suite is:
+
+```powershell
+npm run test:raw-path-ruleset
+```
 
 ## Credentialed API preparation and deployment gate
 
@@ -150,6 +190,7 @@ this external gate.
 References:
 
 - https://developers.cloudflare.com/ruleset-engine/rules-language/functions/#url_decode
+- https://developers.cloudflare.com/ruleset-engine/rules-language/operators/
 - https://developers.cloudflare.com/rules/transform/request-header-modification/
 - https://developers.cloudflare.com/ruleset-engine/rulesets-api/update/
 - https://developers.cloudflare.com/api/resources/request_tracers/subresources/traces/methods/create/
