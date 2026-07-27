@@ -78,6 +78,8 @@ function harness(overrides = {}) {
   let mutationFailure = null;
   const mutationFailuresByUrl = new Map();
   let accountFailure = null;
+  let nextStatusFailure = null;
+  let nextAccountResponse = null;
   const fetchImpl = jest.fn(async (url, options = {}) => {
     requests.push({
       url,
@@ -86,6 +88,11 @@ function harness(overrides = {}) {
       body: options.body
     });
     if (url === '/api/stable-overlay-routing/status') {
+      if (nextStatusFailure) {
+        const failure = nextStatusFailure;
+        nextStatusFailure = null;
+        return jsonResponse(failure.body, failure.status);
+      }
       return jsonResponse(currentStatus);
     }
     if (url === '/api/status') {
@@ -95,6 +102,11 @@ function harness(overrides = {}) {
       });
     }
     if (url === '/api/stable-overlay-routing/account') {
+      if (nextAccountResponse) {
+        const response = nextAccountResponse;
+        nextAccountResponse = null;
+        return response;
+      }
       if (accountFailure) {
         return jsonResponse(accountFailure.body, accountFailure.status);
       }
@@ -155,6 +167,20 @@ function harness(overrides = {}) {
     },
     failAccount(body, status = 503) {
       accountFailure = { body, status };
+    },
+    failNextStatus(body, status = 503) {
+      nextStatusFailure = { body, status };
+    },
+    deferNextAccount() {
+      let resolveResponse;
+      nextAccountResponse = new Promise(resolve => {
+        resolveResponse = resolve;
+      });
+      return {
+        resolve(body, status = 200) {
+          resolveResponse(jsonResponse(body, status));
+        }
+      };
     },
     get(selector) {
       return dom.window.document.querySelector(selector);
@@ -384,6 +410,61 @@ describe('Stable overlay routing Network Settings UI', () => {
     );
     expect(deps.get('[data-stable-routing-refresh]').disabled).toBe(false);
     expect(deps.get('[data-stable-routing-release="pup.cid"]')).toBeNull();
+  });
+
+  test('does not rehydrate stale actions when a delayed account read outlives a failed sibling read', async () => {
+    const deps = harness();
+    const emptyAccount = accountPayload({
+      account: {
+        claims: [],
+        devices: [],
+        lease: { active: false }
+      },
+      defaultUsername: null
+    });
+    deps.setAccount(emptyAccount);
+    deps.setStatus({
+      success: true,
+      status: {
+        state: 'unenrolled',
+        revision: null,
+        lastSuccessfulHeartbeat: null
+      }
+    });
+
+    await deps.ui.init();
+    await deps.click('[data-stable-routing-refresh]');
+    deps.get('[data-stable-routing-first-claim]').checked = true;
+    deps.get('[data-stable-routing-first-claim]').dispatchEvent(
+      new deps.dom.window.Event('change', { bubbles: true })
+    );
+    const delayedAccount = deps.deferNextAccount();
+    deps.failNextStatus({
+      success: false,
+      code: 'STABLE_ROUTING_UNAVAILABLE',
+      error: 'Stable overlay routing is temporarily unavailable.'
+    });
+
+    await deps.click('[data-stable-routing-claim]');
+
+    expect(deps.requests.filter(item =>
+      item.url === '/api/stable-overlay-routing/devices/enroll'
+    )).toHaveLength(1);
+    expect(deps.ui.state.reconciliationRequired).toBe(true);
+    expect(deps.get('[data-stable-routing-claim]').disabled).toBe(true);
+
+    delayedAccount.resolve(emptyAccount);
+    await new Promise(resolve => setImmediate(resolve));
+    deps.get('[data-stable-routing-first-claim]').dispatchEvent(
+      new deps.dom.window.Event('change', { bubbles: true })
+    );
+
+    expect(deps.ui.state.accountLoaded).toBe(false);
+    expect(deps.get('[data-stable-routing-claim]').disabled).toBe(true);
+    await deps.click('[data-stable-routing-claim]');
+    expect(deps.requests.filter(item =>
+      item.url === '/api/stable-overlay-routing/devices/enroll'
+    )).toHaveLength(1);
   });
 
   test('shows and requires the exact canonical release value when display case differs', async () => {

@@ -118,6 +118,7 @@
         accountPayload: null,
         accountLoaded: false,
         reconciliationRequired: false,
+        reconciliationGeneration: 0,
         releaseTarget: null,
         message: '',
         messageType: 'info'
@@ -401,7 +402,7 @@
         button.className = `btn btn-ghost btn-sm ${extraClass}`.trim();
         button.setAttribute(attribute, value);
         button.textContent = text;
-        button.disabled = state.busy;
+        button.disabled = state.busy || state.reconciliationRequired;
         return button;
       }
 
@@ -501,6 +502,7 @@
         if (claimButton) {
           claimButton.disabled =
             state.busy ||
+            state.reconciliationRequired ||
             featureUnavailable ||
             !state.accountLoaded ||
             !state.connectedUsername ||
@@ -514,7 +516,10 @@
         const reenrollButton = q('[data-stable-routing-reenroll]');
         if (reenrollButton) {
           reenrollButton.disabled =
-            state.busy || featureUnavailable || !state.accountLoaded;
+            state.busy ||
+            state.reconciliationRequired ||
+            featureUnavailable ||
+            !state.accountLoaded;
         }
         const stableCopy = q('[data-stable-routing-copy-stable]');
         if (stableCopy) stableCopy.disabled = state.busy || featureUnavailable;
@@ -536,33 +541,76 @@
         return payload;
       }
 
-      async function loadStatus() {
+      async function fetchStatus() {
         const response = await fetchImpl(`${LOCAL_PREFIX}/status`, {
           method: 'GET',
           credentials: 'same-origin',
           cache: 'no-store'
         });
-        const payload = await parseResponse(response);
+        return parseResponse(response);
+      }
+
+      async function loadStatus() {
+        const payload = await fetchStatus();
         state.status = payload.status;
         return payload;
       }
 
+      async function fetchConnectedUsername() {
+        return getConnectedUsername({ fetchImpl });
+      }
+
       async function loadConnectedUsername() {
-        state.connectedUsername = await getConnectedUsername({ fetchImpl });
+        state.connectedUsername = await fetchConnectedUsername();
         return state.connectedUsername;
       }
 
-      async function loadAccountWithToken(token) {
-        const payload = await getAccount({ token, fetchImpl });
-        state.accountPayload = payload;
-        state.accountLoaded = true;
-        return payload;
+      function fetchAccountWithToken(token) {
+        return getAccount({ token, fetchImpl });
       }
 
-      function invalidateAccountState() {
+      function invalidateAccountState({ supersede = true } = {}) {
+        if (supersede) {
+          state.reconciliationGeneration += 1;
+        }
         state.accountPayload = null;
         state.accountLoaded = false;
         state.reconciliationRequired = true;
+      }
+
+      async function reconcileAccountState(token) {
+        const generation = state.reconciliationGeneration + 1;
+        state.reconciliationGeneration = generation;
+        state.reconciliationRequired = true;
+        let accountPayload;
+        let statusPayload;
+        let connectedUsername;
+        try {
+          [
+            accountPayload,
+            statusPayload,
+            connectedUsername
+          ] = await Promise.all([
+            fetchAccountWithToken(token),
+            fetchStatus(),
+            fetchConnectedUsername()
+          ]);
+        } catch (error) {
+          if (generation !== state.reconciliationGeneration) {
+            return false;
+          }
+          invalidateAccountState({ supersede: false });
+          throw error;
+        }
+        if (generation !== state.reconciliationGeneration) {
+          return false;
+        }
+        state.accountPayload = accountPayload;
+        state.accountLoaded = true;
+        state.status = statusPayload.status;
+        state.connectedUsername = connectedUsername;
+        state.reconciliationRequired = false;
+        return true;
       }
 
       async function init() {
@@ -594,17 +642,16 @@
         render();
         try {
           const token = await getFreshToken({ action: 'account' });
-          await Promise.all([
-            loadAccountWithToken(token),
-            loadStatus(),
-            loadConnectedUsername()
-          ]);
-          state.reconciliationRequired = false;
+          const committed = await reconcileAccountState(token);
+          if (!committed) return state;
           state.message = t('account_refreshed', 'Account refreshed.');
           state.messageType = 'success';
         } catch (error) {
-          state.accountPayload = null;
-          state.accountLoaded = false;
+          if (!state.reconciliationRequired) {
+            state.reconciliationGeneration += 1;
+            state.accountPayload = null;
+            state.accountLoaded = false;
+          }
           state.message = error?.code &&
             error.code !== 'AUTH_REQUIRED'
             ? t(
@@ -675,14 +722,9 @@
           }
 
           try {
-            await Promise.all([
-              loadAccountWithToken(token),
-              loadStatus(),
-              loadConnectedUsername()
-            ]);
-            state.reconciliationRequired = false;
+            const committed = await reconcileAccountState(token);
+            if (!committed) return;
           } catch (_) {
-            invalidateAccountState();
             state.message = t(
               'action_complete_refresh_required',
               'Action completed, but account state could not be refreshed. Refresh account state before another change.'
@@ -725,6 +767,7 @@
         const username = state.connectedUsername;
         if (
           !state.accountLoaded ||
+          state.reconciliationRequired ||
           !username ||
           q('[data-stable-routing-first-claim]')?.checked !== true
         ) {
@@ -858,7 +901,9 @@
         if (event.target.matches('[data-stable-routing-release-input]')) {
           const confirm = q('[data-stable-routing-release-confirm]');
           if (confirm) {
-            confirm.disabled = event.target.value !== state.releaseTarget;
+            confirm.disabled =
+              state.reconciliationRequired ||
+              event.target.value !== state.releaseTarget;
           }
         }
       });
