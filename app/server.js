@@ -147,6 +147,16 @@ const {
 const {
     registerOverlayTunnelRoutes
 } = require('./modules/overlay-tunnel-routes');
+const {
+    createStableOverlayRoutingLifecycle,
+    registerStableOverlayRoutingRoutes
+} = require('./modules/stable-overlay-routing-routes');
+const {
+    StableOverlayRoutingCredentials
+} = require('./modules/stable-overlay-routing-credentials');
+const {
+    StableOverlayRoutingClient
+} = require('./modules/stable-overlay-routing-client');
 const debugLogger = require('./modules/debug-logger');
 const { apiLimiter, authLimiter, uploadLimiter, pluginLimiter, iftttLimiter } = require('./modules/rate-limiter');
 const OBSWebSocket = require('./modules/obs-websocket');
@@ -180,7 +190,8 @@ const { createAdminAuth } = require('./modules/admin-auth');
 const { obsCacheControl } = require('./modules/obs-cache-control');
 const {
     createClerkFrontendProxy,
-    createClerkMiddleware
+    createClerkMiddleware,
+    verifyClerkSessionToken
 } = require('./modules/clerk-store-auth');
 const StoreSessionStore = require('./modules/store-session-store');
 const { getAnimationFilePath } = require('./modules/animation-files');
@@ -565,6 +576,44 @@ networkManager = new NetworkManager(db, {
     cloudflaredBinaryManager
 });
 const { bindAddress: BIND_ADDRESS } = networkManager.init();
+const stableOverlayRoutingConfig = {
+    enabled: process.env.LTTH_STABLE_OVERLAY_ROUTING_ENABLED,
+    apiOrigin: process.env.LTTH_STABLE_OVERLAY_ROUTING_API_ORIGIN
+};
+const stableOverlayRoutingCredentials = new StableOverlayRoutingCredentials({
+    configPathManager,
+    profileId: activeProfile
+});
+const stableOverlayRoutingFetch = (...args) => globalThis.fetch(...args);
+const stableOverlayRoutingClient = new StableOverlayRoutingClient({
+    networkManager,
+    fetch: stableOverlayRoutingFetch,
+    clock: Date.now,
+    timers: {
+        setTimeout,
+        clearTimeout
+    },
+    credentialStore: stableOverlayRoutingCredentials,
+    config: stableOverlayRoutingConfig,
+    logger,
+    getPort: () => PORT || 3000
+});
+const stableOverlayRoutingLifecycle = createStableOverlayRoutingLifecycle({
+    client: stableOverlayRoutingClient,
+    networkManager,
+    enabled: stableOverlayRoutingConfig.enabled,
+    logger
+});
+registerStableOverlayRoutingRoutes({
+    app,
+    apiLimiter,
+    fetch: stableOverlayRoutingFetch,
+    verifyClerkSessionToken,
+    credentialStore: stableOverlayRoutingCredentials,
+    client: stableOverlayRoutingClient,
+    config: stableOverlayRoutingConfig,
+    logger
+});
 
 // Ensure soundboard_enabled has a default value so that alerts.js and the
 // soundboard plugin both agree on the initial state (prevents double audio
@@ -4022,6 +4071,7 @@ function writeObsOverlayWrapper(resolvedPort) {
         initState.setServerStarted();
         ALLOWED_ORIGINS = networkManager.getAllowedOrigins(PORT);
         logger.info(`📋 CORS whitelist initialized for port ${PORT} (mode: ${networkManager.bindMode})`);
+        await stableOverlayRoutingLifecycle.afterServerListening();
 
         try {
             writeCurrentPortFile(PORT);
@@ -4530,12 +4580,8 @@ async function gracefulShutdown(signal) {
         logger.error('Error shutting down cloud sync:', error);
     }
 
-    // Network Manager beenden (stops any running tunnel)
-    try {
-        networkManager.shutdown();
-    } catch (error) {
-        logger.error('Error shutting down network manager:', error);
-    }
+    // Stable routing must release its lease before NetworkManager stops tunnels.
+    await stableOverlayRoutingLifecycle.shutdown();
 
     // Alle Socket.io-Verbindungen sofort trennen damit server.close() nicht endlos wartet
     io.disconnectSockets(true);
