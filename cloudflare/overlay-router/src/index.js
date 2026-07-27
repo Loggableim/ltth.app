@@ -50,7 +50,7 @@ export function createOverlayRouterWorker(options = {}) {
       } catch {
         return createNeutralErrorResponse(404);
       }
-      if (url.protocol !== 'https:') {
+      if (url.protocol !== 'https:' || url.port !== '') {
         return createNeutralErrorResponse(404);
       }
 

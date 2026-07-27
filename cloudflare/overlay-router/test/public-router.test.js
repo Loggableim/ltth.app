@@ -287,11 +287,15 @@ describe('Worker public dispatcher', () => {
   });
 
   it('never dispatches malformed opaque or non-HTTPS hosts to proxying', async () => {
+    let entryCalls = 0;
     let proxyCalls = 0;
     const worker = createOverlayRouterWorker({
       repositoryFactory: () => ({}),
       managementHandlerFactory: () => async () => null,
-      publicRouterFactory: () => async () => new Response('entry'),
+      publicRouterFactory: () => async () => {
+        entryCalls += 1;
+        return new Response('entry');
+      },
       proxyHandlerFactory: () => async () => {
         proxyCalls += 1;
         return new Response('proxy');
@@ -304,9 +308,18 @@ describe('Worker public dispatcher', () => {
     const insecure = await worker.fetch(new Request(
       `http://r-${ROUTE_KEY}.ltth.app/overlay.html`
     ), {}, {});
+    const alternateOpaquePort = await worker.fetch(new Request(
+      `https://r-${ROUTE_KEY}.ltth.app:8443/overlay.html`
+    ), {}, {});
+    const alternateEntryPort = await worker.fetch(new Request(
+      'https://overlay.ltth.app:8443/creator/overlay.html'
+    ), {}, {});
 
     expect(malformed.status).toBe(404);
     expect(insecure.status).toBe(404);
+    expect(alternateOpaquePort.status).toBe(404);
+    expect(alternateEntryPort.status).toBe(404);
+    expect(entryCalls).toBe(0);
     expect(proxyCalls).toBe(0);
   });
 });
