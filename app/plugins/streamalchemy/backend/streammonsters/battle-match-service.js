@@ -1755,11 +1755,24 @@ class BattleMatchService {
       };
     }
     if (eventType === 'streammonsters:battle_choice_opened') {
+      const openedAtMs = Number(payload.chargeWindow?.openedAtMs);
+      const deadlineMs = Number(payload.chargeWindow?.deadlineMs);
+      const chargeWindow = this.isRulesV7(match) &&
+        Number.isFinite(openedAtMs) &&
+        Number.isFinite(deadlineMs) &&
+        deadlineMs >= openedAtMs
+        ? {
+            openedAtMs,
+            deadlineMs,
+            passivePerSecond: PASSIVE_CHARGE_PER_SECOND
+          }
+        : null;
       return {
         matchId: match.matchId,
         round: Number(payload.round) || 0,
         deadlineMs: Number(payload.deadlineMs) || 0,
         choices: ['A', 'B', 'C'],
+        ...(chargeWindow ? { chargeWindow } : {}),
         fighters: this.sanitizeStoredPublicFighters(payload.fighters, match)
       };
     }

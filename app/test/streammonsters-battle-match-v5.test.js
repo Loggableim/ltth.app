@@ -1660,6 +1660,54 @@ describe('Stream Monsters durable BattleMatchService', () => {
     expect(replayedFirstWindow.payload.fighters).toEqual(originalFighters);
   });
 
+  test('retains the safe Rules-v7 charge window in public reconnect replays', () => {
+    [5, 6, 7].forEach(rulesVersion => {
+      const { sqlite, store } = createStore();
+      insertMonster(sqlite, { id: `alpha-v${rulesVersion}`, userId: `viewer-a-v${rulesVersion}` });
+      insertMonster(sqlite, {
+        id: `beta-v${rulesVersion}`,
+        userId: `viewer-b-v${rulesVersion}`,
+        element: 'Tide',
+        templateId: 'ripple'
+      });
+      const emit = jest.fn();
+      const service = createMatchService({
+        store,
+        now: () => 1_000,
+        emit,
+        rulesVersion
+      });
+      service.join({ userId: `viewer-a-v${rulesVersion}` });
+      const joined = service.join({ userId: `viewer-b-v${rulesVersion}` });
+      service.lockRoster({ userId: `viewer-a-v${rulesVersion}` });
+      service.lockRoster({ userId: `viewer-b-v${rulesVersion}` });
+
+      const live = emit.mock.calls.find(([event]) => (
+        event === 'streammonsters:battle_choice_opened'
+      ))?.[1];
+      const replay = service.getPublicNormalizedReplay(joined.match.matchId).events.find(event => (
+        event.type === 'streammonsters:battle_choice_opened' && event.payload.round === 1
+      ))?.payload;
+      expect(replay).toEqual(expect.objectContaining({
+        round: 1,
+        deadlineMs: live.deadlineMs,
+        choices: ['A', 'B', 'C']
+      }));
+      if (rulesVersion === 7) {
+        expect(live.chargeWindow).toEqual({
+          openedAtMs: 1_000,
+          deadlineMs: 7_000,
+          passivePerSecond: 5
+        });
+        expect(replay.chargeWindow).toEqual(live.chargeWindow);
+      } else {
+        expect(live.chargeWindow).toBeUndefined();
+        expect(replay.chargeWindow).toBeUndefined();
+      }
+      expect(JSON.stringify(replay)).not.toContain(`viewer-a-v${rulesVersion}`);
+    });
+  });
+
   test('publishes only a redacted active battle snapshot', () => {
     const { sqlite, store } = createStore();
     insertMonster(sqlite, { id: 'alpha', userId: 'viewer-secret-a' });
