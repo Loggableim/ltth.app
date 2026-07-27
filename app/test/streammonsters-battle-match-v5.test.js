@@ -939,18 +939,23 @@ describe('Stream Monsters durable BattleMatchService', () => {
       `).all(joined.match.matchId);
       expect(decisions).toHaveLength(2);
       expect(decisions.every(decision => decision.source === 'timeout')).toBe(true);
-      expect(service.getPublicNormalizedReplay(joined.match.matchId).decisions).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            round: 1,
-            window: 'action',
-            choice: expect.stringMatching(/^[ABC]$/),
-            source: 'timeout',
-            timeout: true,
-            sequence: expect.any(Number)
-          })
-        ])
-      );
+      const replay = service.getPublicNormalizedReplay(joined.match.matchId);
+      expect(replay.decisions).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          round: 1,
+          slot: expect.any(Number),
+          locked: true,
+          source: 'timeout',
+          deadlineMs: 24_001
+        })
+      ]));
+      expect(JSON.stringify(replay.decisions)).not.toMatch(/choice|participantId|viewerId/);
+      expect(replay.reveals[0].choices).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          choice: expect.stringMatching(/^[ABC]$/),
+          source: 'timeout'
+        })
+      ]));
 
       expect(jest.getTimerCount()).toBeGreaterThan(0);
       service.destroy();
@@ -1574,6 +1579,7 @@ describe('Stream Monsters durable BattleMatchService', () => {
     const events = pages.flatMap(page => page.events);
     const actions = pages.flatMap(page => page.actions);
     const decisions = pages.flatMap(page => page.decisions);
+    const reveals = pages.flatMap(page => page.reveals);
     expect(events.every(event => (
       event.eventId === `${joined.match.matchId}:event:${event.sequence}` &&
       event.correlationId === joined.match.matchId
@@ -1605,19 +1611,26 @@ describe('Stream Monsters durable BattleMatchService', () => {
     expect(decisions).toEqual(expect.arrayContaining([
       expect.objectContaining({
         round: 1,
-        window: 'action',
         slot: 2,
-        choice: 'A',
+        locked: true,
         source: 'viewer',
-        timeout: false
+        deadlineMs: 9_000
       }),
       expect.objectContaining({
         round: 1,
-        window: 'action',
         slot: 1,
-        choice: 'B',
+        locked: true,
         source: 'viewer',
-        timeout: false
+        deadlineMs: 9_000
+      })
+    ]));
+    expect(JSON.stringify(decisions)).not.toContain('"choice"');
+    expect(reveals).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        choices: expect.arrayContaining([
+          expect.objectContaining({ slot: 2, choice: 'A', source: 'viewer' }),
+          expect.objectContaining({ slot: 1, choice: 'B', source: 'viewer' })
+        ])
       })
     ]));
     const publicJson = JSON.stringify(pages);
@@ -1643,7 +1656,11 @@ describe('Stream Monsters durable BattleMatchService', () => {
       element: 'Tide',
       templateId: 'ripple'
     });
-    const service = createMatchService({ store, now: () => 1_000 });
+    const service = createMatchService({
+      store,
+      now: () => 1_000,
+      rulesVersion: 7
+    });
     service.join({ userId: 'viewer-a' });
     const joined = service.join({ userId: 'viewer-b' });
     service.lockRoster({ userId: 'viewer-a' });
@@ -1656,6 +1673,29 @@ describe('Stream Monsters durable BattleMatchService', () => {
     ));
     expect(firstWindow.payload.fighters).toHaveLength(2);
     const originalFighters = JSON.parse(JSON.stringify(firstWindow.payload.fighters));
+    const storedRow = sqlite.prepare(`
+      SELECT public_payload_json
+      FROM streammonsters_match_events
+      WHERE match_id = ? AND sequence = ?
+    `).get(joined.match.matchId, firstWindow.sequence);
+    const legacyPayload = JSON.parse(storedRow.public_payload_json);
+    legacyPayload.fighters.forEach(fighter => {
+      delete fighter.skills;
+    });
+    sqlite.prepare(`
+      UPDATE streammonsters_match_events
+      SET public_payload_json = ?
+      WHERE match_id = ? AND sequence = ?
+    `).run(
+      JSON.stringify(legacyPayload),
+      joined.match.matchId,
+      firstWindow.sequence
+    );
+
+    const rebuiltWindow = service.getPublicNormalizedReplay(joined.match.matchId)
+      .events.find(event => event.sequence === firstWindow.sequence);
+    expect(rebuiltWindow.payload.fighters.map(fighter => fighter.skills))
+      .toEqual(originalFighters.map(fighter => fighter.skills));
 
     service.submitChoice({ userId: 'viewer-a', choice: 'A', eventId: 'choice-a' });
     service.submitChoice({ userId: 'viewer-b', choice: 'B', eventId: 'choice-b' });
@@ -1798,6 +1838,28 @@ describe('Stream Monsters durable BattleMatchService', () => {
           passivePerSecond: 5
         });
         expect(replay.chargeWindow).toEqual(live.chargeWindow);
+        expect(live.fighters[0].skills).toEqual(expect.arrayContaining([
+          expect.objectContaining({
+            choice: 'A',
+            icon: expect.any(String),
+            nameKey: expect.any(String),
+            shortTextKey: expect.any(String),
+            available: true
+          }),
+          expect.objectContaining({
+            choice: 'C',
+            chargeRequired: 100,
+            readyAtMs: expect.any(Number)
+          })
+        ]));
+        expect(replay.fighters).toEqual(live.fighters);
+        expect(service.getPublicSnapshot().matches[0]).toEqual(expect.objectContaining({
+          chargeWindow: live.chargeWindow,
+          fighters: live.fighters
+        }));
+        expect(JSON.stringify({ live, replay })).not.toMatch(
+          /participantId|viewerId|providerEventId|requestedChoice|charge_at_choice/
+        );
       } else {
         expect(live.chargeWindow).toBeUndefined();
         expect(replay.chargeWindow).toBeUndefined();

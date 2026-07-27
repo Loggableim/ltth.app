@@ -641,13 +641,31 @@ describe('Stream Monsters Rules-v6 portrait arcade DOM and fallback behavior', (
     ));
     const portraitBattle = [...portraitRule.cssRules]
       .find(rule => rule.selectorText === '#battle');
+    const battleRule = rules.find(rule => rule.selectorText === '#battle');
     const spriteRule = rules.find(rule => rule.selectorText === '.arena-sprite');
+    const landscapeRule = rules.find(rule => (
+      String(rule.conditionText || '').includes('orientation: landscape')
+    ));
+    const reducedMotionRule = rules.find(rule => (
+      String(rule.conditionText || '').includes('prefers-reduced-motion')
+    ));
     const portrait = ArenaDirector.createArenaGeometry('portrait');
 
     expect(portrait.gameplay.height / portrait.height).toBeCloseTo(0.74, 2);
     expect(portrait.chatSafeZone.height / portrait.height).toBeCloseTo(0.26, 2);
+    expect(battleRule.style.inset).toBe('0 0 26%');
     expect(portraitBattle.style.inset).toBe('0 0 26%');
     expect(spriteRule.style.objectFit).toBe('contain');
+    expect(dom.window.document.querySelectorAll('.arena-skill-deck')).toHaveLength(2);
+    expect(dom.window.document.querySelectorAll('.arena-skill-card')).toHaveLength(6);
+    expect([...landscapeRule.cssRules].some(rule => (
+      rule.selectorText === '.arena-skill-deck' &&
+      rule.style.gridTemplateColumns.includes('repeat(3')
+    ))).toBe(true);
+    expect([...reducedMotionRule.cssRules].some(rule => (
+      rule.selectorText === '.arena-skill-card.ready' &&
+      rule.style.animation.includes('none')
+    ))).toBe(true);
     expect(html).toContain('font-size:clamp(17px,2.2vw,28px)');
     expect(html).toContain('font-size:clamp(16px,2vw,26px)');
     expect(rules.some(rule => (

@@ -42,7 +42,8 @@
     effects = SILENT_OUTPUT,
     clock = {},
     choiceLabels = {},
-    labels: arenaLabels = {}
+    labels: arenaLabels = {},
+    localize = null
   } = {}) {
     if (!documentLike) throw new Error('STREAM_MONSTERS_ARENA_DOCUMENT_REQUIRED');
     const wait = typeof clock.wait === 'function'
@@ -71,6 +72,7 @@
     const stateBySlot = new Map();
     let activeMatchId = null;
     let activeDeadlineMs = 0;
+    let activeChargeWindow = null;
     let lastEventSequence = 0;
     let countdownHandle = null;
     let surfaceVersion = 0;
@@ -101,12 +103,28 @@
 
     const node = id => documentLike.getElementById(id);
     const fighterNode = slot => node(`arena-fighter-${slot}`);
+    const skillDeckNode = slot => documentLike.querySelector(
+      `[data-skill-deck="${slot}"]`
+    );
     const formatLabel = (key, params = {}) => String(labels[key] || '').replace(
       /\{(\w+)\}/g,
       (match, name) => Object.prototype.hasOwnProperty.call(params, name)
         ? String(params[name])
         : match
     );
+    const localizedSkillText = (key, fallback = '') => {
+      const normalizedKey = String(key || '').trim();
+      if (!normalizedKey) return String(fallback || '');
+      if (Object.prototype.hasOwnProperty.call(labels, normalizedKey)) {
+        return String(labels[normalizedKey] || fallback || '');
+      }
+      if (typeof localize === 'function') {
+        try {
+          return String(localize(normalizedKey, String(fallback || '')) || fallback || '');
+        } catch (_) {}
+      }
+      return String(fallback || '');
+    };
 
     function setText(id, text) {
       const target = node(id);
@@ -119,6 +137,91 @@
       const percent = clampPercent(value);
       target.style.width = `${percent}%`;
       target.setAttribute('aria-valuenow', String(Math.round(percent)));
+    }
+
+    function normalizeChargeWindow(payload = {}) {
+      const source = payload.chargeWindow || payload.charge_window || (
+        payload.actionOpenedAtMs || payload.actionDeadlineMs
+          ? {
+              openedAtMs: payload.actionOpenedAtMs,
+              deadlineMs: payload.actionDeadlineMs,
+              passivePerSecond: payload.passivePerSecond
+            }
+          : null
+      );
+      if (!source || typeof source !== 'object') return null;
+      const openedAtMs = numeric(source.openedAtMs, -1);
+      const deadlineMs = numeric(source.deadlineMs, -1);
+      const passivePerSecond = Math.max(0, numeric(source.passivePerSecond));
+      if (openedAtMs < 0 || deadlineMs < openedAtMs) return null;
+      return { openedAtMs, deadlineMs, passivePerSecond };
+    }
+
+    function renderSkillDeck(slot) {
+      const deck = skillDeckNode(slot);
+      if (!deck) return;
+      const fighter = stateBySlot.get(slot) || {};
+      const skills = Array.isArray(fighter.skills) ? fighter.skills : [];
+      for (const choice of ['A', 'B', 'C']) {
+        const card = deck.querySelector(`[data-skill="${choice}"]`);
+        if (!card) continue;
+        const skill = skills.find(entry => entry?.choice === choice);
+        card.hidden = !skill;
+        card.classList.remove('charging', 'ready', 'unavailable');
+        if (!skill) {
+          for (const className of [
+            'skill-icon',
+            'skill-choice',
+            'skill-name',
+            'skill-copy',
+            'skill-charge'
+          ]) {
+            const target = card.querySelector(`.${className}`);
+            if (target) target.textContent = '';
+          }
+          continue;
+        }
+        const setSkillText = (className, text) => {
+          const target = card.querySelector(`.${className}`);
+          if (target) target.textContent = String(text ?? '');
+        };
+        setSkillText('skill-icon', skill.icon);
+        setSkillText('skill-choice', choice);
+        setSkillText(
+          'skill-name',
+          localizedSkillText(skill.nameKey, skill.name || choicesByKey[choice] || labels.skill)
+        );
+        setSkillText(
+          'skill-copy',
+          localizedSkillText(skill.shortTextKey, skill.shortText)
+        );
+        if (choice !== 'C') {
+          setSkillText('skill-charge', '');
+          card.classList.toggle('unavailable', skill.available === false);
+          continue;
+        }
+        const required = Math.max(1, numeric(skill.chargeRequired, 100));
+        const window = activeChargeWindow;
+        const asOfMs = window
+          ? Math.min(window.deadlineMs, Math.max(window.openedAtMs, now()))
+          : now();
+        const projectedCharge = window
+          ? numeric(fighter.charge) +
+            (((asOfMs - window.openedAtMs) / 1_000) * window.passivePerSecond)
+          : numeric(fighter.charge);
+        const readyAtMs = numeric(skill.readyAtMs, Number.POSITIVE_INFINITY);
+        const ready = skill.available === true ||
+          projectedCharge >= required ||
+          asOfMs >= readyAtMs;
+        const charge = ready ? required : Math.max(0, Math.min(required, projectedCharge));
+        setSkillText('skill-charge', `${Math.round((charge / required) * 100)}%`);
+        card.classList.toggle('charging', !ready);
+        card.classList.toggle('ready', ready);
+      }
+    }
+
+    function renderSkillDecks() {
+      for (const slot of [1, 2]) renderSkillDeck(slot);
     }
 
     function pulseClass(target, className) {
@@ -192,6 +295,7 @@
         fighter.dataset.element = String(state.element || '').toLowerCase();
         fighter.dataset.slot = String(slot);
       }
+      renderSkillDeck(slot);
       return state;
     }
 
@@ -203,6 +307,7 @@
 
     function resetFighters() {
       stateBySlot.clear();
+      activeChargeWindow = null;
       acceptedEventIds.clear();
       lastEventSequence = 0;
       for (const slot of [1, 2]) {
@@ -227,6 +332,10 @@
           shield: 0,
           charge: 0
         });
+        const deck = skillDeckNode(slot);
+        deck?.querySelectorAll('[data-skill]').forEach(card => {
+          card.classList.remove('selected', 'charging', 'ready', 'unavailable');
+        });
       }
     }
 
@@ -244,6 +353,7 @@
       const seconds = Math.max(0, Math.ceil((activeDeadlineMs - now()) / 1000));
       setText('arena-countdown', activeDeadlineMs ? `${seconds}s` : '');
       if (arena) arena.dataset.countdown = String(seconds);
+      renderSkillDecks();
       return seconds;
     }
 
@@ -317,6 +427,7 @@
 
     function applyMatch(match = {}) {
       activateMatch(match.matchId);
+      activeChargeWindow = normalizeChargeWindow(match);
       lastEventSequence = Math.max(
         lastEventSequence,
         numeric(match.cursor ?? match.eventSequence)
@@ -337,6 +448,7 @@
 
     function openChoice(payload = {}) {
       activateMatch(payload.matchId);
+      activeChargeWindow = normalizeChargeWindow(payload);
       if (payload.fighters) renderFighters(payload.fighters);
       const round = Math.max(1, numeric(payload.round ?? payload.roundNumber, 1));
       const choices = Array.isArray(payload.choices) && payload.choices.length
@@ -356,8 +468,16 @@
         const fighter = fighterNode(slot);
         fighter?.classList.remove('choice-locked');
         fighter?.classList.remove('choice-revealed');
-        if (fighter) delete fighter.dataset.choice;
+        if (fighter) {
+          delete fighter.dataset.choice;
+          delete fighter.dataset.choiceSource;
+        }
+        const deck = skillDeckNode(slot);
+        deck?.querySelectorAll('[data-skill]').forEach(card => {
+          card.classList.remove('selected');
+        });
       }
+      renderSkillDecks();
     }
 
     function lockChoice(payload = {}) {
@@ -366,8 +486,7 @@
       if (![1, 2].includes(slot)) return false;
       const fighter = fighterNode(slot);
       if (!fighter) return false;
-      if (decision.choice) fighter.dataset.choice = String(decision.choice);
-      else delete fighter.dataset.choice;
+      delete fighter.dataset.choice;
       fighter.dataset.choiceSource = (
         decision.timeout || decision.source === 'timeout'
       ) ? 'timeout' : 'viewer';
@@ -381,9 +500,12 @@
       choices.slice().sort((left, right) => numeric(left?.slot) - numeric(right?.slot))
         .forEach(choice => {
           const slot = numeric(choice?.slot);
-          const fighter = fighterNode(slot);
-          if (!fighter || !['A', 'B', 'C'].includes(choice?.choice)) return;
-          fighter.dataset.choice = choice.choice;
+           const fighter = fighterNode(slot);
+           if (!fighter || !['A', 'B', 'C'].includes(choice?.choice)) return;
+           skillDeckNode(slot)?.querySelectorAll('[data-skill]').forEach(card => {
+             card.classList.toggle('selected', card.dataset.skill === choice.choice);
+           });
+           fighter.dataset.choice = choice.choice;
           fighter.dataset.choiceSource = choice?.source === 'timeout' ? 'timeout' : 'viewer';
           fighter.classList.add('choice-locked', 'choice-revealed');
           revealed = true;

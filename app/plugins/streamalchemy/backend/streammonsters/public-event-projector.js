@@ -44,6 +44,10 @@ const PRIVATE_KEYS = new Set([
   'queued_monster_id',
   'providereventid',
   'provider_event_id',
+  'requestedchoice',
+  'requested_choice',
+  'chargeatchoice',
+  'charge_at_choice',
   'streamkey',
   'stream_key'
 ]);
@@ -61,6 +65,8 @@ const PRIVATE_KEY_SUFFIXES = Object.freeze([
   'visualsource',
   'poolkey',
   'providereventid',
+  'requestedchoice',
+  'chargeatchoice',
   'streamkey'
 ]);
 
@@ -158,6 +164,81 @@ function projectGift(gift = null) {
     element: boundedText(gift.element, 24),
     effect: boundedText(gift.effect, 24),
     imageUrl: safeImageUrl(gift.imageUrl ?? gift.image_url)
+  };
+}
+
+function projectBattleSkill(skill = null) {
+  if (!skill || typeof skill !== 'object') return null;
+  const choice = ['A', 'B', 'C'].includes(skill.choice) ? skill.choice : null;
+  const icon = boundedText(skill.icon, 16);
+  const nameKey = boundedText(skill.nameKey, 96);
+  const shortTextKey = boundedText(skill.shortTextKey ?? skill.effectKey, 96);
+  if (!choice || !icon || !nameKey || !shortTextKey) return null;
+  const projected = {
+    choice,
+    icon,
+    name: boundedText(skill.name, 96) || 'Skill',
+    nameKey,
+    shortText: boundedText(skill.shortText, 240),
+    shortTextKey,
+    available: skill.available !== false
+  };
+  if (choice === 'C') {
+    projected.chargeRequired = Math.max(1, finiteNumber(skill.chargeRequired, 100));
+    const readyAtMs = finiteNumber(skill.readyAtMs);
+    if (readyAtMs !== null) projected.readyAtMs = Math.max(0, readyAtMs);
+  }
+  return projected;
+}
+
+function projectBattleFighter(fighter = null) {
+  if (!fighter || typeof fighter !== 'object') return null;
+  const imageUrl = safeImageUrl(fighter.imageUrl ?? fighter.image_url);
+  const projected = {
+    slot: Math.max(0, finiteNumber(fighter.slot, 0)),
+    locked: Boolean(fighter.locked)
+  };
+  if (!imageUrl) return projected;
+  const skills = Array.isArray(fighter.skills)
+    ? fighter.skills.map(projectBattleSkill).filter(Boolean)
+    : [];
+  return {
+    ...projected,
+    name: boundedText(fighter.name, 80) || 'Monster',
+    element: boundedText(fighter.element, 24),
+    templateId: boundedText(fighter.templateId ?? fighter.template_id, 48),
+    evolutionStage: Math.max(
+      1,
+      Math.min(3, finiteNumber(fighter.evolutionStage ?? fighter.evolution_stage, 1))
+    ),
+    imageUrl,
+    level: Math.max(1, Math.min(20, finiteNumber(fighter.level, 1))),
+    hp: Math.max(0, finiteNumber(fighter.hp, 0)),
+    maxHp: Math.max(1, finiteNumber(fighter.maxHp, 1)),
+    shield: Math.max(0, finiteNumber(fighter.shield, 0)),
+    charge: Math.max(0, Math.min(100, finiteNumber(fighter.charge, 0))),
+    ...(skills.length ? { skills } : {})
+  };
+}
+
+function projectBattleChargeWindow(chargeWindow = null) {
+  if (!chargeWindow || typeof chargeWindow !== 'object') return null;
+  const openedAtMs = finiteNumber(chargeWindow.openedAtMs);
+  const deadlineMs = finiteNumber(chargeWindow.deadlineMs);
+  const passivePerSecond = finiteNumber(chargeWindow.passivePerSecond);
+  if (
+    openedAtMs === null ||
+    deadlineMs === null ||
+    passivePerSecond === null ||
+    deadlineMs < openedAtMs ||
+    passivePerSecond < 0
+  ) {
+    return null;
+  }
+  return {
+    openedAtMs: Math.max(0, openedAtMs),
+    deadlineMs: Math.max(0, deadlineMs),
+    passivePerSecond
   };
 }
 
@@ -326,22 +407,21 @@ class StreamMonstersPublicEventProjector {
   }
 
   project(eventType, payload = {}) {
+    if (eventType === 'streammonsters:battle_choice_opened') {
+      const chargeWindow = projectBattleChargeWindow(payload.chargeWindow);
+      return {
+        matchId: boundedText(payload.matchId, 160),
+        round: Math.max(0, finiteNumber(payload.round, 0)),
+        deadlineMs: Math.max(0, finiteNumber(payload.deadlineMs, 0)),
+        choices: ['A', 'B', 'C'],
+        ...(chargeWindow ? { chargeWindow } : {}),
+        fighters: Array.isArray(payload.fighters)
+          ? payload.fighters.map(projectBattleFighter).filter(Boolean)
+          : []
+      };
+    }
     if (eventType === 'streammonsters:battle_choice_locked') {
       const decision = payload.decision || {};
-      if (decision.locked !== true && decision.deadlineMs == null) {
-        return {
-          matchId: boundedText(payload.matchId, 160),
-          decision: {
-            sequence: Math.max(0, finiteNumber(decision.sequence, 0)),
-            round: Math.max(0, finiteNumber(decision.round, 0)),
-            window: 'action',
-            slot: Math.max(0, finiteNumber(decision.slot, 0)),
-            choice: ['A', 'B', 'C'].includes(decision.choice) ? decision.choice : 'A',
-            source: decision.source === 'timeout' ? 'timeout' : 'viewer',
-            timeout: decision.timeout === true || decision.source === 'timeout'
-          }
-        };
-      }
       return {
         matchId: boundedText(payload.matchId, 160),
         decision: {
@@ -464,3 +544,6 @@ module.exports.CRITICAL_EVENT_TYPES = CRITICAL_EVENT_TYPES;
 module.exports.projectMonster = projectMonster;
 module.exports.projectEgg = projectEgg;
 module.exports.projectChatResult = projectChatResult;
+module.exports.projectBattleSkill = projectBattleSkill;
+module.exports.projectBattleFighter = projectBattleFighter;
+module.exports.projectBattleChargeWindow = projectBattleChargeWindow;

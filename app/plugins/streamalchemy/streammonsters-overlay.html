@@ -165,7 +165,7 @@
     #progress { height:9px; margin-top:13px; overflow:hidden; border-radius:99px; background:#070b13; }
     #bar { width:0; height:100%; background:linear-gradient(90deg,var(--cyan),var(--violet),var(--gold)); transition:width .5s; }
     #battle {
-      position:absolute; inset:0; z-index:4; overflow:hidden; opacity:0; visibility:hidden;
+      position:absolute; inset:0 0 26%; z-index:4; overflow:hidden; opacity:0; visibility:hidden;
       background:
         radial-gradient(ellipse at 50% 88%,#7d5cff28 0 12%,transparent 46%),
         linear-gradient(180deg,#070a1630 0%,#121937eb 62%,#080b18f5 100%);
@@ -212,6 +212,50 @@
       border:1px solid #7deaff55; border-radius:18px; color:#eafaff; background:#0c1c31df;
       box-shadow:0 14px 40px #0008,inset 0 0 22px #55dcff12; transform:translateX(-50%);
       text-align:center; font-size:clamp(17px,2.2vw,28px); font-weight:950; letter-spacing:.08em;
+    }
+    .arena-skill-deck {
+      position:absolute; top:22%; left:0; z-index:14; display:grid; gap:7px; width:100%;
+      opacity:0; transform:translateY(8px); transition:opacity .2s ease,transform .26s ease;
+    }
+    #battle[data-phase="choice"] .arena-skill-deck {
+      opacity:1; transform:none;
+    }
+    .arena-skill-card {
+      display:grid; grid-template-columns:auto auto minmax(0,1fr) auto;
+      grid-template-areas:"icon choice name charge" "icon choice copy charge";
+      align-items:center; gap:1px 8px; min-width:0; padding:7px 9px;
+      border:1px solid #aebaff4f; border-radius:13px;
+      color:#f7fbff; background:linear-gradient(145deg,#121a31f2,#080d1dec);
+      box-shadow:0 8px 18px #0009,inset 0 0 16px #7deaff08;
+      transition:border-color .2s ease,box-shadow .2s ease,filter .2s ease,opacity .2s ease;
+    }
+    .arena-skill-card .skill-icon { grid-area:icon; font-size:clamp(16px,1.9vw,24px); }
+    .arena-skill-card .skill-choice {
+      grid-area:choice; display:grid; place-items:center; width:25px; height:25px;
+      border:1px solid #d8e7ff5e; border-radius:8px; color:var(--gold); background:#263153;
+      font-size:13px; font-weight:1000;
+    }
+    .arena-skill-card .skill-name {
+      grid-area:name; overflow:hidden; font-size:clamp(11px,1.25vw,16px); font-weight:950;
+      text-overflow:ellipsis; white-space:nowrap;
+    }
+    .arena-skill-card .skill-copy {
+      grid-area:copy; overflow:hidden; color:#b9c7dc; font-size:clamp(9px,1vw,12px);
+      line-height:1.1; text-overflow:ellipsis; white-space:nowrap;
+    }
+    .arena-skill-card .skill-charge {
+      grid-area:charge; min-width:39px; color:#ffdc83; font-size:12px; font-weight:1000;
+      text-align:right; font-variant-numeric:tabular-nums;
+    }
+    .arena-skill-card.charging { opacity:.68; filter:saturate(.62); }
+    .arena-skill-card.ready {
+      border-color:#ffe884bd; box-shadow:0 0 22px #ffc95242,inset 0 0 18px #ffdf6b18;
+      animation:arena-skill-ready .9s ease-in-out infinite alternate;
+    }
+    .arena-skill-card.unavailable { opacity:.48; filter:grayscale(.42); }
+    .arena-skill-card.selected {
+      border-color:#f8f1ff; background:linear-gradient(145deg,#593bdff2,#b83fcce8);
+      box-shadow:0 0 30px #bd73ff8a,inset 0 0 18px #ffffff24;
     }
     .arena-fighter {
       position:absolute; z-index:6; width:42%; height:70%; transform-origin:50% 100%;
@@ -319,6 +363,9 @@
       visibility:hidden; pointer-events:none;
     }
     @keyframes arena-drift { to { background-position:90px -70px,-120px 80px,150px -100px; } }
+    @keyframes arena-skill-ready {
+      to { filter:brightness(1.12); box-shadow:0 0 30px #ffc95266,inset 0 0 22px #ffdf6b22; }
+    }
     @keyframes arena-impact-pop {
       0% { opacity:0; transform:translate(-50%,-50%) scale(.4) rotate(-8deg); }
       38% { opacity:1; transform:translate(-50%,-50%) scale(1.2) rotate(3deg); }
@@ -528,6 +575,16 @@
       #arena-fighter-1 { left:3%; bottom:4%; }
       #arena-fighter-2 { right:3%; bottom:4%; }
       .arena-sprite-wrap { inset:16% 0 0; }
+      .arena-skill-deck {
+        top:auto; bottom:4%; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px;
+      }
+      .arena-skill-card {
+        grid-template-columns:auto auto minmax(0,1fr);
+        grid-template-areas:"choice icon name" "charge charge charge";
+        gap:2px 5px; padding:6px;
+      }
+      .arena-skill-card .skill-copy { display:none; }
+      .arena-skill-card .skill-charge { min-width:0; text-align:center; }
       #arena-feed { top:18%; bottom:auto; }
       #chat-detail { top:9%; right:5%; bottom:28%; left:5%; }
     }
@@ -563,6 +620,8 @@
       #arena-fighter-1 .fighter-hud { top:0; }
       #arena-fighter-2 .fighter-hud { top:auto; bottom:0; }
       #arena-fighter-2 .arena-sprite-wrap { inset:0 0 24%; }
+      .arena-skill-deck { top:24%; gap:5px; }
+      .arena-skill-card { padding:6px 8px; }
       #arena-feed { top:16%; bottom:auto; width:82%; }
       #arena-impact { top:49%; }
       #chat-card { left:16px; bottom:calc(26% + 18px); max-width:calc(100vw - 32px); }
@@ -580,6 +639,10 @@
       .sm-monster-stat strong { font-size:clamp(25px,6vw,42px); }
     }
     @media (prefers-reduced-motion: reduce) {
+      .arena-skill-card.ready {
+        animation:none!important;
+        filter:none!important;
+      }
       *,*::before,*::after {
         animation-duration:.001ms!important;
         animation-iteration-count:1!important;
@@ -642,6 +705,23 @@
           <span id="arena-special-label-1">Special</span>
         </div>
       </div>
+      <div class="arena-skill-deck" data-skill-deck="1" aria-label="Monster A skills">
+        <div class="arena-skill-card" data-skill="A">
+          <span class="skill-icon"></span><span class="skill-choice">A</span>
+          <span class="skill-name"></span><span class="skill-copy"></span>
+          <span class="skill-charge"></span>
+        </div>
+        <div class="arena-skill-card" data-skill="B">
+          <span class="skill-icon"></span><span class="skill-choice">B</span>
+          <span class="skill-name"></span><span class="skill-copy"></span>
+          <span class="skill-charge"></span>
+        </div>
+        <div class="arena-skill-card" data-skill="C">
+          <span class="skill-icon"></span><span class="skill-choice">C</span>
+          <span class="skill-name"></span><span class="skill-copy"></span>
+          <span class="skill-charge"></span>
+        </div>
+      </div>
     </article>
     <article id="arena-fighter-2" class="arena-fighter" data-slot="2">
       <div class="arena-sprite-wrap">
@@ -659,6 +739,23 @@
         <div class="arena-meter-labels">
           <span id="arena-shield-label-2">Schild</span>
           <span id="arena-special-label-2">Special</span>
+        </div>
+      </div>
+      <div class="arena-skill-deck" data-skill-deck="2" aria-label="Monster B skills">
+        <div class="arena-skill-card" data-skill="A">
+          <span class="skill-icon"></span><span class="skill-choice">A</span>
+          <span class="skill-name"></span><span class="skill-copy"></span>
+          <span class="skill-charge"></span>
+        </div>
+        <div class="arena-skill-card" data-skill="B">
+          <span class="skill-icon"></span><span class="skill-choice">B</span>
+          <span class="skill-name"></span><span class="skill-copy"></span>
+          <span class="skill-charge"></span>
+        </div>
+        <div class="arena-skill-card" data-skill="C">
+          <span class="skill-icon"></span><span class="skill-choice">C</span>
+          <span class="skill-name"></span><span class="skill-copy"></span>
+          <span class="skill-charge"></span>
         </div>
       </div>
     </article>
@@ -796,6 +893,7 @@
     document,
     audio:audioEngine,
     effects:effectsRenderer,
+    localize:text,
     choiceLabels:{
       A:text('skillAttack', 'Angriff'),
       B:text('skillDefense', 'Verteidigung'),

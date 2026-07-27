@@ -11,6 +11,9 @@ const {
   PASSIVE_CHARGE_PER_SECOND,
   projectPassiveCharge
 } = require('./battle-charge');
+const {
+  projectBattleFighter
+} = require('./public-event-projector');
 
 const ROSTER_WINDOW_MS = 10_000;
 const ACTION_WINDOW_MS = 6_000;
@@ -627,38 +630,96 @@ class BattleMatchService {
     return getEvolutionAssetPath(templateId, stage);
   }
 
-  projectPublicFighters(match) {
-    return match.participants.map(participant => ({
-      slot: participant.slot,
-      locked: Boolean(participant.lockedMonsterId),
-      ...(participant.roster ? {
-        name: participant.roster.name,
-        element: participant.roster.element,
-        templateId: participant.roster.template_id,
-        evolutionStage: Math.max(
-          1,
-          Math.min(3, Number(participant.roster.evolution_stage) || 1)
-        ),
-        imageUrl: this.resolveFighterImage(
-          participant.roster.template_id,
-          participant.roster.evolution_stage,
-          participant.roster.image_url,
-          participant.roster.visual_key
-        ),
-        level: participant.roster.level,
-        hp: participant.combatState?.hp ?? maxHp(participant.roster),
-        maxHp: participant.combatState?.maxHp ?? maxHp(participant.roster),
-        shield: participant.combatState?.shield ?? 0,
-        charge: participant.combatState?.charge ?? 0
-      } : {})
-    }));
+  projectPublicSkillDeck(participant, match, {
+    charge = participant?.combatState?.charge,
+    chargeWindow = this.chargeWindow(match)
+  } = {}) {
+    const roster = participant?.roster;
+    if (!this.isRulesV7(match) || !roster) return [];
+    const baseCharge = Math.max(0, Math.min(100, Number(charge) || 0));
+    return ['A', 'B', 'C'].map((choice, index) => {
+      const skill = roster.skills?.find(entry => entry?.choice === choice) ||
+        roster.skills?.[index] ||
+        resolveStageSkill(
+          roster.template_id,
+          choice,
+          roster.evolution_stage,
+          match.rulesVersion
+        );
+      const chargeRequired = choice === 'C'
+        ? Math.max(1, Number(skill.chargeRequired) || 100)
+        : 0;
+      const passivePerSecond = Number(chargeWindow?.passivePerSecond) || 0;
+      const openedAtMs = Number(chargeWindow?.openedAtMs) || 0;
+      const readyAtMs = choice === 'C'
+        ? (
+            baseCharge >= chargeRequired || passivePerSecond <= 0
+              ? openedAtMs
+              : openedAtMs + Math.ceil(
+                ((chargeRequired - baseCharge) / passivePerSecond) * 1_000
+              )
+          )
+        : null;
+      return {
+        choice,
+        icon: skill.icon,
+        name: skill.name,
+        nameKey: skill.nameKey,
+        shortText: skill.shortText,
+        shortTextKey: skill.shortTextKey,
+        available: choice !== 'C' || baseCharge >= chargeRequired,
+        ...(choice === 'C' ? { chargeRequired, readyAtMs } : {})
+      };
+    });
   }
 
-  sanitizeStoredPublicFighters(fighters, match) {
+  projectPublicFighters(match) {
+    const chargeWindow = this.chargeWindow(match);
+    return match.participants.map(participant => {
+      const roster = participant.roster;
+      const charge = Math.max(
+        0,
+        Math.min(100, Number(participant.combatState?.charge) || 0)
+      );
+      const skills = this.projectPublicSkillDeck(participant, match, {
+        charge,
+        chargeWindow
+      });
+      return projectBattleFighter({
+        slot: participant.slot,
+        locked: Boolean(participant.lockedMonsterId),
+        ...(roster ? {
+          name: roster.name,
+          element: roster.element,
+          templateId: roster.template_id,
+          evolutionStage: Math.max(
+            1,
+            Math.min(3, Number(roster.evolution_stage) || 1)
+          ),
+          imageUrl: this.resolveFighterImage(
+            roster.template_id,
+            roster.evolution_stage,
+            roster.image_url,
+            roster.visual_key
+          ),
+          level: roster.level,
+          hp: participant.combatState?.hp ?? maxHp(roster),
+          maxHp: participant.combatState?.maxHp ?? maxHp(roster),
+          shield: participant.combatState?.shield ?? 0,
+          charge,
+          ...(skills.length ? { skills } : {})
+        } : {})
+      });
+    });
+  }
+
+  sanitizeStoredPublicFighters(fighters, match, chargeWindow = null) {
     if (!Array.isArray(fighters) || fighters.length !== 2) {
       return this.projectPublicFighters(match);
     }
     return fighters.map(fighter => {
+      const slot = Number(fighter?.slot) || 0;
+      const participant = match.participants.find(entry => entry.slot === slot);
       const stage = Math.max(1, Math.min(3, Number(fighter?.evolutionStage) || 1));
       const templateId = String(fighter?.templateId || '');
       const imageUrl = this.resolveFighterImage(
@@ -668,26 +729,25 @@ class BattleMatchService {
         fighter?.visualKey
       );
       const publicFighter = {
-        slot: Number(fighter?.slot) || 0,
+        slot,
         locked: Boolean(fighter?.locked)
       };
       if (!imageUrl) return publicFighter;
-      const number = (value, fallback = 0) => (
-        Number.isFinite(Number(value)) ? Number(value) : fallback
-      );
-      return {
-        ...publicFighter,
+      const skills = participant
+        ? this.projectPublicSkillDeck(participant, match, {
+            charge: fighter?.charge,
+            chargeWindow
+          })
+        : [];
+      return projectBattleFighter({
+        ...fighter,
         name: String(fighter?.name || '').slice(0, 80),
         element: String(fighter?.element || '').slice(0, 16),
         templateId,
         evolutionStage: stage,
         imageUrl,
-        level: Math.max(1, Math.min(20, Math.round(number(fighter?.level, 1)))),
-        hp: Math.max(0, number(fighter?.hp)),
-        maxHp: Math.max(1, number(fighter?.maxHp, 1)),
-        shield: Math.max(0, number(fighter?.shield)),
-        charge: Math.max(0, Math.min(100, number(fighter?.charge)))
-      };
+        ...(skills.length ? { skills } : {})
+      });
     });
   }
 
@@ -753,25 +813,14 @@ class BattleMatchService {
         source: normalizedSource,
         timeout: normalizedSource === 'timeout'
       },
-      ({ sequence }) => ({
+      () => ({
         matchId: match.matchId,
         decision: {
-          sequence,
           round: match.roundNumber,
-          ...(this.isRulesV6(match)
-            ? {
-                slot: participant.slot,
-                locked: true,
-                source: normalizedSource,
-                deadlineMs: match.actionDeadlineMs
-              }
-            : {
-                window: 'action',
-                slot: participant.slot,
-                choice,
-                source: normalizedSource,
-                timeout: normalizedSource === 'timeout'
-              })
+          slot: participant.slot,
+          locked: true,
+          source: normalizedSource,
+          deadlineMs: match.actionDeadlineMs
         }
       })
     );
@@ -1025,22 +1074,20 @@ class BattleMatchService {
       );
       match = this.materializePassiveCharge(match, materializedAtMs);
     }
-    if (this.isRulesV6(match)) {
-      this.appendEvent(matchId, 'streammonsters:battle_choices_revealed', {
-        matchId,
-        round: match.roundNumber,
-        choices: decisions.map(decision => {
-          const participant = match.participants.find(entry => (
-            entry.participantId === decision.participant_id
-          ));
-          return {
-            slot: participant?.slot || 0,
-            choice: decision.choice,
-            source: decision.source === 'timeout' ? 'timeout' : 'viewer'
-          };
-        }).sort((left, right) => left.slot - right.slot)
-      });
-    }
+    this.appendEvent(matchId, 'streammonsters:battle_choices_revealed', {
+      matchId,
+      round: match.roundNumber,
+      choices: decisions.map(decision => {
+        const participant = match.participants.find(entry => (
+          entry.participantId === decision.participant_id
+        ));
+        return {
+          slot: participant?.slot || 0,
+          choice: decision.choice,
+          source: decision.source === 'timeout' ? 'timeout' : 'viewer'
+        };
+      }).sort((left, right) => left.slot - right.slot)
+    });
     const fighters = match.participants.map(participant => participant.roster);
     const choices = Object.fromEntries(decisions.map(decision => {
       const participant = match.participants.find(entry => entry.participantId === decision.participant_id);
@@ -1793,23 +1840,11 @@ class BattleMatchService {
       return {
         matchId: match.matchId,
         decision: {
-          ...(this.isRulesV6(match)
-            ? {
-                round: Number(decision.round) || 0,
-                slot: Number(decision.slot) || 0,
-                locked: true,
-                source: decision.source === 'timeout' ? 'timeout' : 'viewer',
-                deadlineMs: Number(decision.deadlineMs) || match.actionDeadlineMs || 0
-              }
-            : {
-                sequence,
-                round: Number(decision.round) || 0,
-                window: 'action',
-                slot: Number(decision.slot) || 0,
-                choice: ['A', 'B', 'C'].includes(decision.choice) ? decision.choice : 'A',
-                source: decision.source === 'timeout' ? 'timeout' : 'viewer',
-                timeout: decision.source === 'timeout' || decision.timeout === true
-              })
+          round: Number(decision.round) || 0,
+          slot: Number(decision.slot) || 0,
+          locked: true,
+          source: decision.source === 'timeout' ? 'timeout' : 'viewer',
+          deadlineMs: Number(decision.deadlineMs) || match.actionDeadlineMs || 0
         }
       };
     }
@@ -1849,7 +1884,11 @@ class BattleMatchService {
         deadlineMs: Number(payload.deadlineMs) || 0,
         choices: ['A', 'B', 'C'],
         ...(chargeWindow ? { chargeWindow } : {}),
-        fighters: this.sanitizeStoredPublicFighters(payload.fighters, match)
+        fighters: this.sanitizeStoredPublicFighters(
+          payload.fighters,
+          match,
+          chargeWindow
+        )
       };
     }
     if (eventType === 'streammonsters:battle_completed') {
@@ -2147,6 +2186,7 @@ class BattleMatchService {
           SELECT COALESCE(MAX(sequence), 0) AS cursor
           FROM streammonsters_match_events WHERE match_id = ?
         `).get(matchId).cursor;
+        const chargeWindow = this.chargeWindow(match);
         return {
           matchId,
           rulesVersion: match.rulesVersion,
@@ -2155,6 +2195,7 @@ class BattleMatchService {
           rosterDeadlineMs: match.rosterDeadlineMs,
           actionDeadlineMs: match.actionDeadlineMs,
           cursor,
+          ...(chargeWindow ? { chargeWindow } : {}),
           fighters: this.projectPublicFighters(match)
         };
       })

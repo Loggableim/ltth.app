@@ -57,8 +57,29 @@ describe('Stream Monsters Rules-v6 sealed battle decisions', () => {
         openedAtMs: 1_000,
         deadlineMs: 7_000,
         passivePerSecond: 5
-      }
+      },
+      fighters: expect.arrayContaining([
+        expect.objectContaining({
+          skills: expect.arrayContaining([
+            expect.objectContaining({
+              choice: 'A',
+              icon: expect.any(String),
+              nameKey: expect.any(String),
+              shortTextKey: expect.any(String),
+              available: true
+            }),
+            expect.objectContaining({
+              choice: 'C',
+              chargeRequired: 100,
+              readyAtMs: expect.any(Number)
+            })
+          ])
+        })
+      ])
     }));
+    expect(JSON.stringify(opened[1])).not.toMatch(
+      /participantId|viewerId|providerEventId|requestedChoice|charge_at_choice/
+    );
     service.submitChoice({ userId: 'viewer-a', choice: 'A', eventId: 'v7-sealed-a' });
     const locked = emit.mock.calls.find(([type]) => type === 'streammonsters:battle_choice_locked');
     expect(JSON.stringify(locked[1])).not.toContain('"choice":"A"');
@@ -128,6 +149,30 @@ describe('Stream Monsters Rules-v6 sealed battle decisions', () => {
     }));
   });
 
+  test('seals Rules-v5 service locks and reveals both choices together', () => {
+    const { emit, service } = createMatch(() => 1_000, 5);
+    service.join({ userId: 'viewer-a' });
+    service.join({ userId: 'viewer-b' });
+    service.lockRoster({ userId: 'viewer-a' });
+    service.lockRoster({ userId: 'viewer-b' });
+
+    service.submitChoice({ userId: 'viewer-a', choice: 'A', eventId: 'v5-sealed-a' });
+    const lock = emit.mock.calls.find(([type]) => type === 'streammonsters:battle_choice_locked');
+    expect(lock[1].decision).toEqual(expect.objectContaining({
+      locked: true,
+      source: 'viewer'
+    }));
+    expect(lock[1].decision).not.toHaveProperty('choice');
+
+    service.submitChoice({ userId: 'viewer-b', choice: 'B', eventId: 'v5-sealed-b' });
+    expect(emit.mock.calls.find(([type]) => (
+      type === 'streammonsters:battle_choices_revealed'
+    ))?.[1].choices).toEqual(expect.arrayContaining([
+      expect.objectContaining({ choice: 'A' }),
+      expect.objectContaining({ choice: 'B' })
+    ]));
+  });
+
   test('removes a forged choice from a public Rules-v6 lock projection before reveal', () => {
     const projector = new PublicEventProjector();
     const publicLock = projector.project('streammonsters:battle_choice_locked', {
@@ -154,7 +199,75 @@ describe('Stream Monsters Rules-v6 sealed battle decisions', () => {
     });
   });
 
-  test('preserves the Rules-v5 live lock choice projection', () => {
+  test('allowlists choice-open skill presentation in the generic public projector', () => {
+    const projector = new PublicEventProjector();
+    const projected = projector.project('streammonsters:battle_choice_opened', {
+      matchId: 'match-public-skills',
+      participantId: 'private-participant',
+      requestedChoice: 'C',
+      charge_at_choice: 95,
+      round: 2,
+      deadlineMs: 7_000,
+      chargeWindow: {
+        openedAtMs: 1_000,
+        deadlineMs: 7_000,
+        passivePerSecond: 5
+      },
+      fighters: [{
+        slot: 1,
+        locked: true,
+        name: 'Ashfang',
+        element: 'Ember',
+        templateId: 'ashfang',
+        evolutionStage: 1,
+        imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png',
+        level: 1,
+        hp: 62,
+        maxHp: 62,
+        shield: 0,
+        charge: 95,
+        skills: [{
+          choice: 'C',
+          icon: '☄️',
+          name: 'Ashfang: Inferno Heart',
+          nameKey: 'skillNameAshfangCStage1',
+          shortText: 'A charged blaze.',
+          shortTextKey: 'skillEffectAshfangCStage1',
+          available: false,
+          chargeRequired: 100,
+          readyAtMs: 2_000,
+          effects: [{ type: 'damage', power: 99 }],
+          requestedChoice: 'C'
+        }]
+      }]
+    });
+
+    expect(projected).toEqual(expect.objectContaining({
+      chargeWindow: {
+        openedAtMs: 1_000,
+        deadlineMs: 7_000,
+        passivePerSecond: 5
+      },
+      fighters: [
+        expect.objectContaining({
+          skills: [
+            expect.objectContaining({
+              choice: 'C',
+              nameKey: 'skillNameAshfangCStage1',
+              shortTextKey: 'skillEffectAshfangCStage1',
+              chargeRequired: 100,
+              readyAtMs: 2_000
+            })
+          ]
+        })
+      ]
+    }));
+    expect(JSON.stringify(projected)).not.toMatch(
+      /participantId|requestedChoice|charge_at_choice|effects|power/
+    );
+  });
+
+  test('removes a selected choice from every live lock projection before reveal', () => {
     const projector = new PublicEventProjector();
     expect(projector.project('streammonsters:battle_choice_locked', {
       matchId: 'match-v5',
@@ -170,13 +283,11 @@ describe('Stream Monsters Rules-v6 sealed battle decisions', () => {
     })).toEqual({
       matchId: 'match-v5',
       decision: {
-        sequence: 4,
-        round: 1,
-        window: 'action',
         slot: 2,
-        choice: 'B',
+        locked: true,
         source: 'viewer',
-        timeout: false
+        round: 1,
+        deadlineMs: 0
       }
     });
   });

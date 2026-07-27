@@ -3,6 +3,22 @@ const fs = require('fs');
 const path = require('path');
 const ArenaView = require('../plugins/streamalchemy/streammonsters-arena-view');
 
+function skillDeck(slot) {
+  return `
+    <div class="arena-skill-deck" data-skill-deck="${slot}">
+      ${['A', 'B', 'C'].map(choice => `
+        <div class="arena-skill-card" data-skill="${choice}">
+          <span class="skill-icon"></span>
+          <span class="skill-choice"></span>
+          <span class="skill-name"></span>
+          <span class="skill-copy"></span>
+          <span class="skill-charge"></span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
 function mountArena() {
   const dom = new JSDOM('<!doctype html><html><body></body></html>');
   global.document = dom.window.document;
@@ -14,17 +30,19 @@ function mountArena() {
       <div id="arena-special"></div>
       <div id="arena-impact"></div>
       <div id="arena-feed"></div>
-      <article id="arena-fighter-1">
+      <article id="arena-fighter-1" data-slot="1">
         <img id="arena-image-1"><div id="arena-name-1"></div>
         <div id="arena-level-1"></div><div id="arena-hp-text-1"></div>
         <div id="arena-hp-1"></div><div id="arena-shield-1"></div><div id="arena-charge-1"></div>
         <span id="arena-shield-label-1"></span><span id="arena-special-label-1"></span>
+        ${skillDeck(1)}
       </article>
-      <article id="arena-fighter-2">
+      <article id="arena-fighter-2" data-slot="2">
         <img id="arena-image-2"><div id="arena-name-2"></div>
         <div id="arena-level-2"></div><div id="arena-hp-text-2"></div>
         <div id="arena-hp-2"></div><div id="arena-shield-2"></div><div id="arena-charge-2"></div>
         <span id="arena-shield-label-2"></span><span id="arena-special-label-2"></span>
+        ${skillDeck(2)}
       </article>
     </section>
   `;
@@ -119,7 +137,7 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
       fighters: [{ slot: 1, name: 'Ashfang', templateId: 'ashfang', element: 'Ember' }]
     });
     view.lockChoice({ decision: { slot: 1, choice: 'A', timeout: false } });
-    expect(document.querySelector('#arena-fighter-1').dataset.choice).toBe('A');
+    expect(document.querySelector('#arena-fighter-1').dataset.choice).toBeUndefined();
     await view.complete({ winnerSlot: 1 });
     expect(document.querySelector('#arena-fighter-1').classList.contains('winner')).toBe(true);
     expect(document.querySelector('#battle').dataset.terminal).toBe('winner');
@@ -151,6 +169,105 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
     })).toBe(true);
     expect(document.querySelector('#arena-fighter-1').dataset.choice).toBe('A');
     expect(document.querySelector('#arena-fighter-2').dataset.choice).toBe('C');
+  });
+
+  test('renders localized fighter skill decks and advances special charge from server time', () => {
+    mountArena();
+    let currentTime = 1_000;
+    const clock = {
+      now: () => currentTime,
+      advance: milliseconds => {
+        currentTime += milliseconds;
+      }
+    };
+    const view = ArenaView.createArenaView({
+      document,
+      clock,
+      labels: {
+        skillNameAshfangAStage1: 'Ashfang Flame Fang',
+        skillEffectAshfangAStage1: 'A fast ember strike.',
+        skillNameAshfangBStage1: 'Ashfang Cinder Guard',
+        skillEffectAshfangBStage1: 'A bright ember shield.',
+        skillNameAshfangCStage1: 'Ashfang Inferno',
+        skillEffectAshfangCStage1: 'A fully charged blaze.',
+        skillNameRippleAStage1: 'Ripple Tide Cut',
+        skillEffectRippleAStage1: 'A flowing tide strike.',
+        skillNameRippleBStage1: 'Ripple Mist Guard',
+        skillEffectRippleBStage1: 'A cooling mist shield.',
+        skillNameRippleCStage1: 'Ripple Renewal',
+        skillEffectRippleCStage1: 'A fully charged wave.'
+      }
+    });
+    const skills = template => ['A', 'B', 'C'].map(choice => ({
+      choice,
+      icon: choice === 'A' ? '⚔️' : choice === 'B' ? '🛡️' : '✨',
+      name: `${template} fallback ${choice}`,
+      nameKey: `skillName${template}${choice}Stage1`,
+      shortText: `${template} fallback copy ${choice}`,
+      shortTextKey: `skillEffect${template}${choice}Stage1`,
+      available: choice !== 'C',
+      ...(choice === 'C' ? { chargeRequired: 100, readyAtMs: 2_000 } : {})
+    }));
+
+    view.openChoice({
+      matchId: 'match-skills',
+      round: 1,
+      deadlineMs: 7_000,
+      chargeWindow: {
+        openedAtMs: 1_000,
+        deadlineMs: 7_000,
+        passivePerSecond: 5
+      },
+      fighters: [
+        { slot: 1, name: 'Ashfang', charge: 95, skills: skills('Ashfang') },
+        { slot: 2, name: 'Ripple', charge: 95, skills: skills('Ripple') }
+      ]
+    });
+
+    expect(document.querySelector('[data-slot="1"] [data-skill="A"] .skill-name').textContent)
+      .toContain('Ashfang');
+    expect(document.querySelector('[data-slot="1"] [data-skill="A"] .skill-copy').textContent)
+      .toBe('A fast ember strike.');
+    expect(document.querySelector('[data-slot="1"] [data-skill="C"]').classList)
+      .toContain('charging');
+    expect(document.querySelector('[data-slot="1"] [data-skill="C"] .skill-charge').textContent)
+      .toContain('95%');
+
+    clock.advance(1_000);
+    view.renderCountdown();
+    expect(document.querySelector('[data-slot="1"] [data-skill="C"] .skill-charge').textContent)
+      .toContain('100%');
+    expect(document.querySelector('[data-slot="1"] [data-skill="C"]').classList)
+      .toContain('ready');
+  });
+
+  test('shows a sealed lock without selecting a skill until both choices are revealed', () => {
+    mountArena();
+    const view = ArenaView.createArenaView({ document });
+    view.openChoice({
+      matchId: 'match-sealed-board',
+      round: 1,
+      fighters: [
+        { slot: 1, skills: [] },
+        { slot: 2, skills: [] }
+      ]
+    });
+
+    view.lockChoice({ decision: { slot: 1, choice: 'A', locked: true } });
+    expect(document.querySelector('#arena-fighter-1').dataset.choice).toBeUndefined();
+    expect(document.querySelector('[data-slot="1"] [data-skill="A"]').classList)
+      .not.toContain('selected');
+
+    view.revealChoices({
+      choices: [
+        { slot: 1, choice: 'A', source: 'viewer' },
+        { slot: 2, choice: 'C', source: 'timeout' }
+      ]
+    });
+    expect(document.querySelector('[data-slot="1"] [data-skill="A"]').classList)
+      .toContain('selected');
+    expect(document.querySelector('[data-slot="2"] [data-skill="C"]').classList)
+      .toContain('selected');
   });
 
   test('updates the deadline countdown from the durable timestamp and clears it at terminal state', async () => {
@@ -337,14 +454,22 @@ describe('Stream Monsters 1.5 cinematic arena DOM view', () => {
 
     expect(dom.window.document.querySelectorAll('#battle')).toHaveLength(1);
     expect(dom.window.document.querySelectorAll('[id^="arena-fighter-"]')).toHaveLength(2);
+    expect(dom.window.document.querySelectorAll('.arena-skill-deck')).toHaveLength(2);
+    expect(dom.window.document.querySelectorAll('.arena-skill-card')).toHaveLength(6);
     expect(dom.window.document.querySelector('#arena-chat-safe-zone')).not.toBeNull();
     expect(html).toContain('--arena-gameplay-height:74%');
-    expect(html).toContain('inset:0 0 26%');
+    expect(html).toMatch(/#battle\s*\{[^}]*inset:0 0 26%/s);
     expect(html).toMatch(
       /\.arena-sprite\s*\{[^}]*max-width:100%;[^}]*max-height:100%;[^}]*object-fit:contain/s
     );
     expect(html).toMatch(/@media \(orientation: landscape\)\s*\{[^}]*height:65%/s);
     expect(html).toMatch(/@media \(orientation: landscape\)[\s\S]*#arena-feed\s*\{[^}]*top:18%/);
+    expect(html).toMatch(
+      /@media \(orientation: landscape\)[\s\S]*\.arena-skill-deck\s*\{[^}]*grid-template-columns/s
+    );
+    expect(html).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.arena-skill-card\.ready/s
+    );
     expect(html).toContain('#arena-fighter-1.advancing .arena-sprite-wrap');
     expect(html).toContain('#arena-fighter-2.advancing .arena-sprite-wrap');
     expect(scripts).toEqual(expect.arrayContaining([
