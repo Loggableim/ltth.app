@@ -76,6 +76,7 @@ function harness(overrides = {}) {
     }
   };
   let mutationFailure = null;
+  const mutationFailuresByUrl = new Map();
   let accountFailure = null;
   const fetchImpl = jest.fn(async (url, options = {}) => {
     requests.push({
@@ -98,6 +99,11 @@ function harness(overrides = {}) {
         return jsonResponse(accountFailure.body, accountFailure.status);
       }
       return jsonResponse(currentAccount);
+    }
+    if (mutationFailuresByUrl.has(url)) {
+      const failure = mutationFailuresByUrl.get(url);
+      mutationFailuresByUrl.delete(url);
+      return jsonResponse(failure.body, failure.status);
     }
     if (mutationFailure) {
       return jsonResponse(mutationFailure.body, mutationFailure.status);
@@ -143,6 +149,9 @@ function harness(overrides = {}) {
     },
     failNextMutation(body, status = 409) {
       mutationFailure = { body, status };
+    },
+    failMutation(url, body, status = 409) {
+      mutationFailuresByUrl.set(url, { body, status });
     },
     failAccount(body, status = 503) {
       accountFailure = { body, status };
@@ -300,14 +309,104 @@ describe('Stable overlay routing Network Settings UI', () => {
       .not.toContain('other@example.com');
   });
 
-  test('requires exact canonical-name retyping for release and offers owner restore', async () => {
+  test('prevents replaying enrollment when claim fails after enrollment succeeds', async () => {
     const deps = harness();
+    deps.setAccount(accountPayload({
+      account: {
+        claims: [],
+        devices: [],
+        lease: { active: false }
+      },
+      defaultUsername: null
+    }));
+    deps.setStatus({
+      success: true,
+      status: {
+        state: 'unenrolled',
+        revision: null,
+        lastSuccessfulHeartbeat: null
+      }
+    });
+    deps.failMutation('/api/stable-overlay-routing/claims', {
+      success: false,
+      code: 'claim_conflict',
+      error: 'The stable overlay routing request could not be completed.'
+    });
+
+    await deps.ui.init();
+    await deps.click('[data-stable-routing-refresh]');
+    deps.get('[data-stable-routing-first-claim]').checked = true;
+    deps.get('[data-stable-routing-first-claim]').dispatchEvent(
+      new deps.dom.window.Event('change', { bubbles: true })
+    );
+
+    await deps.click('[data-stable-routing-claim]');
+
+    expect(deps.requests.filter(item =>
+      item.url === '/api/stable-overlay-routing/devices/enroll'
+    )).toHaveLength(1);
+    expect(deps.requests.filter(item =>
+      item.url === '/api/stable-overlay-routing/claims'
+    )).toHaveLength(1);
+    expect(deps.get('[data-stable-routing-claim]').disabled).toBe(true);
+    expect(deps.get('[data-stable-routing-message]').textContent)
+      .toContain('Refresh account state before another change');
+
+    await deps.click('[data-stable-routing-claim]');
+
+    expect(deps.requests.filter(item =>
+      item.url === '/api/stable-overlay-routing/devices/enroll'
+    )).toHaveLength(1);
+  });
+
+  test('keeps a successful mutation distinct when reconciliation fails', async () => {
+    const deps = harness();
+    await deps.ui.init();
+    await deps.click('[data-stable-routing-refresh]');
+    deps.failAccount({
+      success: false,
+      code: 'STABLE_ROUTING_UNAVAILABLE',
+      error: 'Stable overlay routing is temporarily unavailable.'
+    });
+
+    await deps.click('[data-stable-routing-release="pup.cid"]');
+    const input = deps.get('[data-stable-routing-release-input]');
+    input.value = 'pup.cid';
+    input.dispatchEvent(new deps.dom.window.Event('input', { bubbles: true }));
+    await deps.click('[data-stable-routing-release-confirm]');
+
+    expect(deps.requests.filter(item =>
+      item.url === '/api/stable-overlay-routing/claims/pup.cid' &&
+      item.method === 'DELETE'
+    )).toHaveLength(1);
+    expect(deps.get('[data-stable-routing-message]').textContent).toBe(
+      'Action completed, but account state could not be refreshed. Refresh account state before another change.'
+    );
+    expect(deps.get('[data-stable-routing-refresh]').disabled).toBe(false);
+    expect(deps.get('[data-stable-routing-release="pup.cid"]')).toBeNull();
+  });
+
+  test('shows and requires the exact canonical release value when display case differs', async () => {
+    const deps = harness();
+    deps.setAccount(accountPayload({
+      account: {
+        ...accountPayload().account,
+        claims: [{
+          ...activeClaim('pup.cid'),
+          displayUsername: 'Pup.Cid'
+        }, cooldownClaim()]
+      }
+    }));
     await deps.ui.init();
     await deps.click('[data-stable-routing-refresh]');
 
     await deps.click('[data-stable-routing-release="pup.cid"]');
     const input = deps.get('[data-stable-routing-release-input]');
     const confirm = deps.get('[data-stable-routing-release-confirm]');
+    expect(deps.get('[data-stable-routing-release-canonical]').textContent)
+      .toBe('pup.cid');
+    expect(deps.get('[data-claim-username="pup.cid"]').textContent)
+      .toContain('@Pup.Cid');
     expect(confirm.disabled).toBe(true);
 
     input.value = 'PUP.CID';

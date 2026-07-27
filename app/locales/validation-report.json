@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-27T18:22:36.520Z",
+  "generatedAt": "2026-07-27T18:37:55.668Z",
   "locales": [
     "en",
     "de",
@@ -10,7 +10,7 @@
     {
       "label": "app",
       "directory": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\.worktrees\\stable-overlay-routing\\app\\locales",
-      "keys": 1347
+      "keys": 1350
     },
     {
       "label": "website",

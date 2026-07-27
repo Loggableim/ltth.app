@@ -400,11 +400,11 @@ describe('Clerk auth bridge', () => {
     assert.strictEqual(callback.searchParams.get('relay_action'), 'copy_stable');
     assert.strictEqual(window.sessionStorage.getItem('ltth_store_auth_token'), null);
 
-    function dispatchMessage(origin, data) {
+    function dispatchMessage(origin, data, source = popup) {
       const event = new window.Event('message');
       Object.defineProperties(event, {
         origin: { value: origin },
-        source: { value: popup },
+        source: { value: source },
         data: { value: data }
       });
       window.dispatchEvent(event);
@@ -425,6 +425,18 @@ describe('Clerk auth bridge', () => {
     dispatchMessage(window.location.origin, {
         type: 'ltth:clerk-fresh-token',
         state,
+        action: 'release',
+        token: 'wrong-action-token'
+    });
+    dispatchMessage(window.location.origin, {
+        type: 'ltth:clerk-fresh-token',
+        state,
+        action: 'copy_stable',
+        token: 'wrong-popup-token'
+    }, { close: jest.fn() });
+    dispatchMessage(window.location.origin, {
+        type: 'ltth:clerk-fresh-token',
+        state,
         action: 'copy_stable',
         token: 'fresh-action-token'
     });
@@ -432,8 +444,55 @@ describe('Clerk auth bridge', () => {
     await assert.doesNotReject(async () => {
       assert.strictEqual(await pending, 'fresh-action-token');
     });
+    dispatchMessage(window.location.origin, {
+        type: 'ltth:clerk-fresh-token',
+        state,
+        action: 'copy_stable',
+        token: 'duplicate-token'
+    });
+    assert.strictEqual(popup.close.mock.calls.length, 1);
     assert.strictEqual(window.sessionStorage.getItem('ltth_store_auth_token'), null);
     assert.strictEqual(window.localStorage.getItem('ltth_store_auth_token'), null);
+  });
+
+  it('rejects and clears a fresh-token request after the bounded timeout', async () => {
+    const { window } = createStoreAuthDom();
+    const popup = { closed: false, close: jest.fn() };
+    window.fetch = async url => {
+      if (url === '/api/plugin-store/config') {
+        return jsonResponse({
+          success: true,
+          clerkEnabled: true,
+          publishableKey: 'pk_test_public',
+          authBridgeUrl: 'https://ltth.app/auth/',
+          authCallbackPath: '/auth/clerk/callback.html'
+        });
+      }
+      return jsonResponse({ success: false }, 401);
+    };
+    window.eval(readAppFile('public', 'js', 'clerk-store-auth.js'));
+    window.StoreAuth.configureForTest({
+      openWindow: () => popup
+    });
+    await window.StoreAuth.init();
+
+    jest.useFakeTimers();
+    try {
+      const pending = window.StoreAuth.getFreshToken({ action: 'account' });
+      await Promise.resolve();
+      const rejection = expect(pending).rejects.toThrow(
+        'The sign-in window timed out.'
+      );
+
+      jest.advanceTimersByTime(120_000);
+
+      await rejection;
+      expect(popup.close).toHaveBeenCalledTimes(1);
+      await expect(window.StoreAuth.signOut()).resolves.toBeUndefined();
+      expect(popup.close).toHaveBeenCalledTimes(1);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('cancels an in-memory fresh-token request when the user signs out', async () => {

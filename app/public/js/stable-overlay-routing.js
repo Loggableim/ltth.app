@@ -117,6 +117,7 @@
         connectedUsername: null,
         accountPayload: null,
         accountLoaded: false,
+        reconciliationRequired: false,
         releaseTarget: null,
         message: '',
         messageType: 'info'
@@ -360,6 +361,19 @@
               'release_retype',
               'Retype the canonical username to release it'
             );
+            const canonicalHint = documentRef.createElement('p');
+            canonicalHint.className = 'text-gray-400 mb-2';
+            canonicalHint.textContent = `${t(
+              'release_canonical_label',
+              'Exact canonical value:'
+            )} `;
+            const canonicalValue = documentRef.createElement('code');
+            canonicalValue.setAttribute(
+              'data-stable-routing-release-canonical',
+              ''
+            );
+            canonicalValue.textContent = claim.username;
+            canonicalHint.appendChild(canonicalValue);
             const input = documentRef.createElement('input');
             input.id = 'stable-routing-release-input';
             input.className = 'form-input w-full mb-2';
@@ -374,7 +388,7 @@
             );
             confirm.textContent = t('release_confirm', 'Confirm release');
             confirm.disabled = true;
-            release.append(releaseLabel, input, confirm);
+            release.append(releaseLabel, canonicalHint, input, confirm);
             row.appendChild(release);
           }
           container.appendChild(row);
@@ -436,7 +450,12 @@
         );
         setText(
           '[data-stable-routing-auth-status]',
-          state.accountLoaded
+          state.reconciliationRequired
+            ? t(
+              'refresh_required',
+              'Refresh account state before another change.'
+            )
+            : state.accountLoaded
             ? t('signed_in', 'Signed in')
             : t('sign_in_required', 'Sign-in required')
         );
@@ -540,6 +559,12 @@
         return payload;
       }
 
+      function invalidateAccountState() {
+        state.accountPayload = null;
+        state.accountLoaded = false;
+        state.reconciliationRequired = true;
+      }
+
       async function init() {
         if (state.initialized) return state;
         state.initialized = true;
@@ -574,6 +599,7 @@
             loadStatus(),
             loadConnectedUsername()
           ]);
+          state.reconciliationRequired = false;
           state.message = t('account_refreshed', 'Account refreshed.');
           state.messageType = 'success';
         } catch (error) {
@@ -600,39 +626,75 @@
       async function authenticatedAction(action, operation) {
         state.busy = true;
         render();
+        let mutationSucceeded = false;
+        let token;
+        let operationError = null;
         try {
-          const token = await getFreshToken({ action });
-          await operation(token);
-          await Promise.all([
-            loadAccountWithToken(token),
-            loadStatus(),
-            loadConnectedUsername()
-          ]);
+          token = await getFreshToken({ action });
+          const runMutation = async (path, method, body) => {
+            const payload = await mutation(token, path, method, body);
+            mutationSucceeded = true;
+            invalidateAccountState();
+            return payload;
+          };
+          await operation(runMutation);
+        } catch (error) {
+          operationError = error;
+        }
+
+        try {
+          if (operationError) {
+            if (operationError?.code === 'AUTH_REQUIRED') {
+              state.message = t(
+                'auth_error',
+                'Sign in again to manage stable URLs.'
+              );
+            } else if ([
+              'claim_conflict',
+              'claim_unavailable'
+            ].includes(operationError?.code)) {
+              state.message = t(
+                'conflict_error',
+                'This TikTok username is unavailable. No account identity was disclosed.'
+              );
+            } else {
+              state.message = t(
+                'request_error',
+                'The stable overlay routing request could not be completed.'
+              );
+            }
+            if (mutationSucceeded) {
+              state.message = `${state.message} ${t(
+                'refresh_required',
+                'Refresh account state before another change.'
+              )}`;
+            }
+            state.messageType = 'error';
+            notify(state.message, 'error');
+            return;
+          }
+
+          try {
+            await Promise.all([
+              loadAccountWithToken(token),
+              loadStatus(),
+              loadConnectedUsername()
+            ]);
+            state.reconciliationRequired = false;
+          } catch (_) {
+            invalidateAccountState();
+            state.message = t(
+              'action_complete_refresh_required',
+              'Action completed, but account state could not be refreshed. Refresh account state before another change.'
+            );
+            state.messageType = 'error';
+            notify(state.message, 'error');
+            return;
+          }
+
           state.message = t('action_complete', 'Action completed.');
           state.messageType = 'success';
           notify(state.message, 'success');
-        } catch (error) {
-          if (error?.code === 'AUTH_REQUIRED') {
-            state.message = t(
-              'auth_error',
-              'Sign in again to manage stable URLs.'
-            );
-          } else if ([
-            'claim_conflict',
-            'claim_unavailable'
-          ].includes(error?.code)) {
-            state.message = t(
-              'conflict_error',
-              'This TikTok username is unavailable. No account identity was disclosed.'
-            );
-          } else {
-            state.message = t(
-              'request_error',
-              'The stable overlay routing request could not be completed.'
-            );
-          }
-          state.messageType = 'error';
-          notify(state.message, 'error');
         } finally {
           state.busy = false;
           state.releaseTarget = null;
@@ -668,19 +730,18 @@
         ) {
           return;
         }
-        await authenticatedAction('claim', async token => {
+        await authenticatedAction('claim', async runMutation => {
           if (state.status.state === 'unenrolled') {
-            await mutation(token, '/devices/enroll', 'POST', {
+            await runMutation('/devices/enroll', 'POST', {
               label: installationLabel()
             });
           }
-          await mutation(token, '/claims', 'POST', { username });
+          await runMutation('/claims', 'POST', { username });
         });
       }
 
       async function restore(username) {
-        await authenticatedAction('restore', token => mutation(
-          token,
+        await authenticatedAction('restore', runMutation => runMutation(
           `/claims/${encodeURIComponent(username)}/restore`,
           'POST',
           {}
@@ -688,8 +749,7 @@
       }
 
       async function release(username) {
-        await authenticatedAction('release', token => mutation(
-          token,
+        await authenticatedAction('release', runMutation => runMutation(
           `/claims/${encodeURIComponent(username)}`,
           'DELETE',
           { username }
@@ -697,8 +757,7 @@
       }
 
       async function setDefault(username) {
-        await authenticatedAction('set_default', token => mutation(
-          token,
+        await authenticatedAction('set_default', runMutation => runMutation(
           '/default-username',
           'PUT',
           { username }
@@ -706,8 +765,7 @@
       }
 
       async function reenroll() {
-        await authenticatedAction('enroll', token => mutation(
-          token,
+        await authenticatedAction('enroll', runMutation => runMutation(
           '/devices/enroll',
           'POST',
           { label: installationLabel() }
@@ -715,8 +773,7 @@
       }
 
       async function revoke(deviceId) {
-        await authenticatedAction('revoke_device', token => mutation(
-          token,
+        await authenticatedAction('revoke_device', runMutation => runMutation(
           `/devices/${encodeURIComponent(deviceId)}`,
           'DELETE',
           {}
