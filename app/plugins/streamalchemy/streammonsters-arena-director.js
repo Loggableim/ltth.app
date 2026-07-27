@@ -201,10 +201,67 @@
   }
 
   function buildActionTimeline(action = {}) {
-    const beats = [
+    const beats = [];
+    let offset = 0;
+    for (const effect of Array.isArray(action.statusEffects) ? action.statusEffects : []) {
+      const hpDamage = Math.max(0, numeric(effect?.hpDamage ?? effect?.amount));
+      if (hpDamage < 1) continue;
+      beats.push({
+        type: 'status_damage',
+        atMs: offset,
+        durationMs: 340,
+        effectType: String(effect?.type || 'status'),
+        actorSlot: numeric(action.actorSlot),
+        targetSlot: numeric(action.actorSlot),
+        hpDamage,
+        remaining: numeric(effect?.remaining)
+      }, {
+        type: 'status_hud',
+        atMs: offset + 160,
+        durationMs: 200,
+        actorSlot: numeric(action.actorSlot),
+        targetSlot: numeric(action.actorSlot),
+        hpDamage
+      });
+      offset += 440;
+    }
+
+    const explicitKnockouts = Array.isArray(action.knockouts)
+      ? action.knockouts
+        .map(knockout => ({
+          slot: numeric(knockout?.slot),
+          cause: String(knockout?.cause || 'skill')
+        }))
+        .filter(knockout => [1, 2].includes(knockout.slot))
+      : null;
+    if (action.skipped === 'burn_ko') {
+      const knockouts = explicitKnockouts || [{
+        slot: numeric(action.actorSlot),
+        cause: 'status'
+      }];
+      const knockoutAtMs = offset + 120;
+      knockouts.forEach(knockout => beats.push({
+        type: 'knockout',
+        atMs: knockoutAtMs,
+        durationMs: 900,
+        slot: knockout.slot,
+        targetSlot: knockout.slot,
+        cause: knockout.cause
+      }));
+      beats.push({
+        type: 'recover',
+        atMs: knockoutAtMs + 900,
+        durationMs: 1200,
+        actorSlot: numeric(action.actorSlot),
+        targetSlot: numeric(action.targetSlot)
+      });
+      return beats;
+    }
+
+    beats.push(
       {
         type: 'telegraph',
-        atMs: 0,
+        atMs: offset,
         durationMs: 700,
         actorSlot: numeric(action.actorSlot),
         targetSlot: numeric(action.targetSlot),
@@ -212,17 +269,17 @@
       },
       {
         type: 'advance',
-        atMs: 700,
+        atMs: offset + 700,
         durationMs: 350,
         actorSlot: numeric(action.actorSlot),
         targetSlot: numeric(action.targetSlot)
       }
-    ];
+    );
     if (String(action.choice || action.skill?.type || '').toLowerCase() === 'c' ||
         String(action.skill?.type || '').toLowerCase() === 'special') {
       beats.push({
         type: 'special',
-        atMs: 1050,
+        atMs: offset + 1050,
         durationMs: 250,
         element: action.skill?.element || null,
         vfxKey: action.skill?.vfxKey || null
@@ -230,7 +287,7 @@
     }
 
     const hits = Array.isArray(action.hits) ? action.hits : [];
-    const impactStart = 1300;
+    const impactStart = offset + 1300;
     hits.forEach((hit, index) => {
       const atMs = impactStart + (index * 440);
       beats.push({
@@ -268,20 +325,56 @@
         amount: numeric(outcome.amount)
       });
     }
-    if (action.terminal) {
-      cursor += 480;
+
+    for (const retaliation of Array.isArray(action.retaliations) ? action.retaliations : []) {
+      cursor += 260;
       beats.push({
-        type: 'knockout',
+        type: 'retaliation',
         atMs: cursor,
-        durationMs: 900,
-        targetSlot: numeric(action.targetSlot)
+        durationMs: 320,
+        retaliationType: String(retaliation?.type || 'retaliation'),
+        actorSlot: numeric(action.targetSlot),
+        targetSlot: numeric(action.actorSlot),
+        hpDamage: Math.max(0, numeric(retaliation?.hpDamage)),
+        shieldAbsorbed: Math.max(0, numeric(retaliation?.shieldAbsorbed)),
+        evaded: Boolean(retaliation?.evaded),
+        hitIndex: numeric(retaliation?.index)
+      }, {
+        type: 'retaliation_hud',
+        atMs: cursor + 160,
+        durationMs: 200,
+        actorSlot: numeric(action.targetSlot),
+        targetSlot: numeric(action.actorSlot),
+        hpDamage: Math.max(0, numeric(retaliation?.hpDamage)),
+        shieldAbsorbed: Math.max(0, numeric(retaliation?.shieldAbsorbed))
       });
+      cursor += 220;
     }
-    cursor += action.terminal ? 900 : 480;
+
+    const knockouts = explicitKnockouts || (
+      action.terminal
+        ? [{ slot: numeric(action.targetSlot), cause: 'skill' }]
+        : []
+    );
+    if (knockouts.length) {
+      cursor += 480;
+      const knockoutAtMs = cursor;
+      knockouts.forEach(knockout => beats.push({
+        type: 'knockout',
+        atMs: knockoutAtMs,
+        durationMs: 900,
+        slot: knockout.slot,
+        targetSlot: knockout.slot,
+        cause: knockout.cause
+      }));
+      cursor += 900;
+    } else {
+      cursor += 480;
+    }
     beats.push({
       type: 'recover',
       atMs: cursor,
-      durationMs: action.terminal ? 1200 : 550,
+      durationMs: knockouts.length ? 1200 : 550,
       actorSlot: numeric(action.actorSlot),
       targetSlot: numeric(action.targetSlot)
     });
@@ -292,6 +385,52 @@
     const base = buildActionTimeline(action);
     const expanded = [];
     for (const beat of base) {
+      if (beat.type === 'status_damage') {
+        expanded.push({
+          ...beat,
+          peak: true,
+          audioCue: 'arena.hit',
+          effect: {
+            scene: 'attack',
+            element: action.skill?.element || null,
+            vfxKey: beat.effectType
+          }
+        });
+        continue;
+      }
+      if (beat.type === 'retaliation') {
+        expanded.push({
+          ...beat,
+          peak: true,
+          audioCue: 'arena.hit',
+          effect: {
+            scene: 'attack',
+            element: action.skill?.element || null,
+            vfxKey: beat.retaliationType
+          }
+        }, {
+          type: 'camera_impulse',
+          atMs: beat.atMs + 18,
+          durationMs: 220,
+          hitIndex: beat.hitIndex,
+          intensity: Math.max(
+            0.35,
+            Math.min(1, (beat.hpDamage + beat.shieldAbsorbed) / 10)
+          )
+        }, {
+          type: 'damage_number',
+          atMs: beat.atMs + 34,
+          durationMs: 390,
+          targetSlot: beat.targetSlot,
+          amount: beat.hpDamage,
+          retaliationType: beat.retaliationType
+        });
+        continue;
+      }
+      if (beat.type === 'retaliation_hud' || beat.type === 'status_hud') {
+        expanded.push(beat);
+        continue;
+      }
       if (beat.type === 'telegraph') {
         expanded.push({
           ...beat,
@@ -497,7 +636,9 @@
       const evolutionStage = Math.max(1, numeric(
         payload.evolutionStage ?? payload.monster?.evolutionStage
       ) || 1);
-      const isNew = payload.discovery?.isNew === true || payload.isNew === true;
+      const isNew = type === 'monster_discovered' ||
+        payload.discovery?.isNew === true ||
+        payload.isNew === true;
       beats = [
         {
           type: 'silhouette',
@@ -628,14 +769,26 @@
       }];
     } else if (type === 'arena_rating_changed' || type === 'season_rank_changed') {
       scene = 'rank';
+      const tierChanged = type === 'season_rank_changed' ||
+        payload.tierChanged === true ||
+        payload.rankChanged === true ||
+        (
+          payload.before?.tier != null &&
+          payload.after?.tier != null &&
+          String(payload.before.tier) !== String(payload.after.tier)
+        );
       beats = [{
-        type: 'rank_up',
+        type: tierChanged ? 'rank_up' : 'rating_update',
         atMs: 0,
-        durationMs: 1100,
+        durationMs: tierChanged ? 1100 : 720,
         tier: payload.after?.tier || payload.rank || null,
-        peak: true,
-        audioCue: 'progress.rank',
-        audioDucking: { amount: 0.35, durationMs: 900 }
+        rating: numeric(payload.after?.rating ?? payload.rating),
+        delta: numeric(payload.delta),
+        peak: tierChanged,
+        audioCue: tierChanged ? 'progress.rank' : 'ui.navigate',
+        ...(tierChanged
+          ? { audioDucking: { amount: 0.35, durationMs: 900 } }
+          : {})
       }];
     }
     return decorateTimeline({

@@ -21,6 +21,7 @@
     'egg_ready',
     'hatch_started',
     'egg_hatched',
+    'monster_discovered',
     'monster_evolved',
     'monster_visual_evolved'
   ]);
@@ -313,7 +314,8 @@
 
   function createPriorityQueue({
     maxSize = 30,
-    staleAfterMs = 10000
+    staleAfterMs = 10000,
+    criticalGroupHoldMs = 1200
   } = {}) {
     const entries = [];
     const boundedMaxSize = Math.max(1, Number(maxSize) || 1);
@@ -322,6 +324,7 @@
     let snapshotEvent = null;
     let sequence = 0;
     let activeGroupKey = null;
+    let activeGroupDeadlineMs = 0;
     let durableTurn = false;
 
     function priority(type) {
@@ -406,10 +409,37 @@
 
     function removeEntry(index) {
       const [removed] = entries.splice(index, 1);
-      if (removed?.groupKey === activeGroupKey && !entries.some(entry => entry.groupKey === activeGroupKey)) {
-        activeGroupKey = null;
-        durableTurn = true;
-      }
+      return removed;
+    }
+
+    function closesCriticalGroup(type, data = {}) {
+      if (data.criticalFinal === true || data.groupFinal === true) return true;
+      return [
+        'egg_hatched',
+        'monster_discovered',
+        'monster_visual_evolved',
+        'battle_completed',
+        'battle_cancelled'
+      ].includes(type);
+    }
+
+    function activateCriticalGroup(entry, now) {
+      activeGroupKey = entry.groupKey;
+      activeGroupDeadlineMs = Math.max(
+        Number(now) || 0,
+        Number(entry.enqueuedAt) || 0
+      ) + Math.max(0, Number(criticalGroupHoldMs) || 0);
+    }
+
+    function finishCriticalGroup() {
+      activeGroupKey = null;
+      activeGroupDeadlineMs = 0;
+      durableTurn = true;
+    }
+
+    function releaseDelay(now = Date.now()) {
+      if (!activeGroupKey || activeGroupDeadlineMs <= 0) return null;
+      return Math.max(0, activeGroupDeadlineMs - (Number(now) || 0));
     }
 
     function trim() {
@@ -490,14 +520,15 @@
         const groupedIndex = entries.findIndex(entry => entry.groupKey === activeGroupKey);
         if (groupedIndex >= 0) {
           const next = entries.splice(groupedIndex, 1)[0];
-          if (!entries.some(entry => entry.groupKey === activeGroupKey)) {
-            activeGroupKey = null;
-            durableTurn = true;
-          }
+          activeGroupDeadlineMs = Math.max(
+            activeGroupDeadlineMs,
+            (Number(next.enqueuedAt) || 0) + Math.max(0, Number(criticalGroupHoldMs) || 0)
+          );
+          if (closesCriticalGroup(next.type, next.data)) finishCriticalGroup();
           return next;
         }
-        activeGroupKey = null;
-        durableTurn = true;
+        if ((Number(now) || 0) < activeGroupDeadlineMs) return null;
+        finishCriticalGroup();
       }
 
       if (durableTurn) {
@@ -509,11 +540,10 @@
       while (entries.length) {
         const criticalIndex = entries.findIndex(entry => entry.priority === 3);
         if (criticalIndex >= 0) {
-          activeGroupKey = entries[criticalIndex].groupKey;
           const next = entries.splice(criticalIndex, 1)[0];
-          if (!entries.some(entry => entry.groupKey === activeGroupKey)) {
-            activeGroupKey = null;
-            durableTurn = true;
+          if (next.groupKey) {
+            activateCriticalGroup(next, now);
+            if (closesCriticalGroup(next.type, next.data)) finishCriticalGroup();
           }
           return next;
         }
@@ -531,6 +561,7 @@
       entries.length = 0;
       seenFingerprints.clear();
       activeGroupKey = null;
+      activeGroupDeadlineMs = 0;
       durableTurn = false;
     }
 
@@ -538,6 +569,7 @@
       enqueue,
       beginSnapshot,
       prependSnapshot,
+      releaseDelay,
       shift,
       snapshot: orderedEntries,
       size: totalSize

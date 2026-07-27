@@ -7,10 +7,24 @@ const ArenaDirector = require('../plugins/streamalchemy/streammonsters-arena-dir
 const ArenaView = require('../plugins/streamalchemy/streammonsters-arena-view');
 const AudioEngine = require('../plugins/streamalchemy/streammonsters-audio-engine');
 const OverlayRuntime = require('../plugins/streamalchemy/streammonsters-overlay-runtime');
+const PublicEventProjector = require(
+  '../plugins/streamalchemy/backend/streammonsters/public-event-projector'
+);
 
 function mountArena() {
   const dom = new JSDOM(`<!doctype html><html><body>
     <main id="streammonsters-overlay">
+      <section id="arcade-choreography" aria-hidden="true">
+        <div id="arcade-portal"></div>
+        <div id="arcade-roulette"></div>
+        <div id="arcade-energy"></div>
+        <div id="arcade-egg-shell">
+          <img id="arcade-egg-image">
+          <i class="arcade-crack arcade-crack-1"></i>
+          <i class="arcade-crack arcade-crack-2"></i>
+          <i class="arcade-crack arcade-crack-3"></i>
+        </div>
+      </section>
       <section id="battle">
         <div id="arena-round"></div>
         <div id="arena-countdown"></div>
@@ -116,6 +130,29 @@ describe('Stream Monsters Rules-v6 deterministic arcade timeline', () => {
       .toEqual(expect.objectContaining({ peak: true, audioCue: 'progress.level' }));
   });
 
+  test('treats the real projected monster_discovered payload as a first discovery', () => {
+    const timeline = ArenaDirector.buildArcadeTimeline('monster_discovered', {
+      eventId: 'public-discovery-event',
+      correlationId: 'public-discovery-correlation',
+      displayName: 'Viewer',
+      monster: {
+        name: 'Ashfang',
+        element: 'Ember',
+        templateId: 'ashfang',
+        imageUrl: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png'
+      },
+      template: {
+        templateId: 'ashfang',
+        element: 'Ember',
+        species: 'Wolf'
+      }
+    });
+
+    expect(timeline.scene).toBe('reveal');
+    expect(beatTypes(timeline)).toContain('new_discovery');
+    expect(beatTypes(timeline)).not.toContain('duplicate_reward');
+  });
+
   test('keeps sealed choices private and reveals both cards on the same beat', () => {
     const lock = ArenaDirector.buildArcadeTimeline('battle_choice_locked', {
       eventId: 'match-1:lock:1',
@@ -214,6 +251,72 @@ describe('Stream Monsters Rules-v6 deterministic arcade timeline', () => {
       }));
   });
 
+  test('renders a burn-at-turn-start knockout without an invalid advance or target KO', () => {
+    const timeline = ArenaDirector.buildArcadeTimeline('battle_action', {
+      eventId: 'match-burn:action:1',
+      correlationId: 'match-burn',
+      action: {
+        eventSequence: 1,
+        actorSlot: 1,
+        targetSlot: 2,
+        skipped: 'burn_ko',
+        terminal: true,
+        statusEffects: [
+          { type: 'burn_tick', amount: 5, hpDamage: 5, remaining: 0 }
+        ],
+        actorState: { hp: 0, maxHp: 40, shield: 0, charge: 25 },
+        targetState: { hp: 18, maxHp: 40, shield: 0, charge: 0 },
+        knockouts: [{ slot: 1, cause: 'status' }]
+      }
+    });
+
+    expect(beatTypes(timeline)).toEqual([
+      'status_damage',
+      'status_hud',
+      'knockout',
+      'recover'
+    ]);
+    expect(beatTypes(timeline)).not.toEqual(expect.arrayContaining(['telegraph', 'advance']));
+    expect(timeline.beats.find(beat => beat.type === 'knockout'))
+      .toEqual(expect.objectContaining({ slot: 1, cause: 'status' }));
+  });
+
+  test('shows retaliation damage and explicit simultaneous knockouts for both slots', () => {
+    const timeline = ArenaDirector.buildArcadeTimeline('battle_action', {
+      eventId: 'match-double-ko:action:1',
+      correlationId: 'match-double-ko',
+      action: {
+        eventSequence: 1,
+        actorSlot: 1,
+        targetSlot: 2,
+        skill: { name: 'Crystal Fang', type: 'attack', element: 'Ember' },
+        hits: [{ index: 1, hpDamage: 8, shieldAbsorbed: 0, evaded: false }],
+        retaliations: [
+          { type: 'thorns', index: 1, hpDamage: 4, shieldAbsorbed: 0, evaded: false }
+        ],
+        actorState: { hp: 0, maxHp: 40, shield: 0, charge: 50 },
+        targetState: { hp: 0, maxHp: 40, shield: 0, charge: 25 },
+        terminal: true,
+        knockouts: [
+          { slot: 2, cause: 'skill' },
+          { slot: 1, cause: 'thorns' }
+        ]
+      }
+    });
+    const retaliation = timeline.beats.find(beat => beat.type === 'retaliation');
+    const knockouts = timeline.beats.filter(beat => beat.type === 'knockout');
+
+    expect(retaliation).toEqual(expect.objectContaining({
+      retaliationType: 'thorns',
+      targetSlot: 1,
+      hpDamage: 4
+    }));
+    expect(beatTypes(timeline)).toContain('retaliation_hud');
+    expect(knockouts).toHaveLength(2);
+    expect(knockouts.map(beat => beat.slot).sort()).toEqual([1, 2]);
+    expect(new Set(knockouts.map(beat => beat.atMs)).size).toBe(1);
+  });
+
   test('orders winner, XP and rank beats as one critical finale', () => {
     const timeline = ArenaDirector.buildArcadeTimeline('battle_completed', {
       eventId: 'match-3:completed',
@@ -241,6 +344,36 @@ describe('Stream Monsters Rules-v6 deterministic arcade timeline', () => {
       peak: true,
       audioCue: 'progress.rank'
     }));
+  });
+
+  test('uses a quiet rating update unless the arena tier actually changes', () => {
+    const ordinary = ArenaDirector.buildArcadeTimeline('arena_rating_changed', {
+      eventId: 'rating-ordinary',
+      before: { rating: 910, tier: 'Bronze' },
+      after: { rating: 926, tier: 'Bronze' },
+      delta: 16
+    });
+    const promoted = ArenaDirector.buildArcadeTimeline('arena_rating_changed', {
+      eventId: 'rating-promoted',
+      before: { rating: 995, tier: 'Bronze' },
+      after: { rating: 1005, tier: 'Silver' },
+      delta: 10
+    });
+
+    expect(ordinary.beats).toEqual([
+      expect.objectContaining({
+        type: 'rating_update',
+        peak: false,
+        audioCue: 'ui.navigate'
+      })
+    ]);
+    expect(promoted.beats).toEqual([
+      expect.objectContaining({
+        type: 'rank_up',
+        peak: true,
+        audioCue: 'progress.rank'
+      })
+    ]);
   });
 });
 
@@ -353,6 +486,99 @@ describe('Stream Monsters Rules-v6 portrait arcade DOM and fallback behavior', (
     expect(dom.window.document.querySelector('#arena-hp-text-2').textContent).toBe('35 / 40');
   });
 
+  test('applies Rules-v6 status, retaliation and simultaneous knockout state to the DOM', async () => {
+    const dom = mountArena();
+    const view = ArenaView.createArenaView({
+      document: dom.window.document,
+      clock: { wait: async () => {}, now: () => 1_000 }
+    });
+    view.applyMatch({
+      matchId: 'match-v6-dom',
+      fighters: [
+        { slot: 1, name: 'Ashfang', templateId: 'ashfang', element: 'Ember', hp: 4, maxHp: 40 },
+        { slot: 2, name: 'Ripple', templateId: 'ripple', element: 'Tide', hp: 8, maxHp: 40 }
+      ]
+    });
+
+    await view.playEvent('battle_action', {
+      eventId: 'match-v6-dom:action',
+      correlationId: 'match-v6-dom',
+      matchId: 'match-v6-dom',
+      action: {
+        eventSequence: 1,
+        actorSlot: 1,
+        targetSlot: 2,
+        skill: { name: 'Crystal Fang', type: 'attack', element: 'Ember' },
+        hits: [{ index: 1, hpDamage: 8, shieldAbsorbed: 0, evaded: false }],
+        retaliations: [
+          { type: 'reflect', index: 1, hpDamage: 4, shieldAbsorbed: 0, evaded: false }
+        ],
+        actorState: { hp: 0, maxHp: 40, shield: 0, charge: 50 },
+        targetState: { hp: 0, maxHp: 40, shield: 0, charge: 25 },
+        terminal: true,
+        knockouts: [
+          { slot: 2, cause: 'skill' },
+          { slot: 1, cause: 'reflect' }
+        ]
+      }
+    });
+
+    expect(dom.window.document.querySelector('#arena-hp-text-1').textContent).toBe('0 / 40');
+    expect(dom.window.document.querySelector('#arena-hp-text-2').textContent).toBe('0 / 40');
+    expect(dom.window.document.querySelector('#arena-fighter-1').classList.contains('knockout'))
+      .toBe(true);
+    expect(dom.window.document.querySelector('#arena-fighter-2').classList.contains('knockout'))
+      .toBe(true);
+  });
+
+  test('shows roulette, egg flight, hatch pulse, cracks and energy on a visible stage then cleans up', async () => {
+    const dom = mountArena();
+    const observed = [];
+    const stage = dom.window.document.querySelector('#arcade-choreography');
+    const view = ArenaView.createArenaView({
+      document: dom.window.document,
+      clock: {
+        wait: async () => observed.push({
+          phase: stage.dataset.phase,
+          visible: stage.classList.contains('visible'),
+          classes: [...stage.classList],
+          crack: stage.dataset.crack || null,
+          roulette: dom.window.document.querySelector('#arcade-roulette').textContent
+        }),
+        now: () => 1_000
+      }
+    });
+
+    await view.playEvent('egg_spawned', {
+      eventId: 'visible-spawn',
+      correlationId: 'visible-egg',
+      egg: {
+        element: 'Volt',
+        imageUrl: '/plugins/streamalchemy/assets/eggs/volt-standard.png'
+      }
+    });
+    expect(observed.some(state => state.visible && state.phase === 'roulette' && state.roulette))
+      .toBe(true);
+    expect(observed.some(state => state.classes.includes('egg-flight'))).toBe(true);
+    expect(stage.classList.contains('visible')).toBe(false);
+
+    observed.length = 0;
+    await view.playEvent('hatch_started', {
+      eventId: 'visible-hatch',
+      correlationId: 'visible-egg',
+      egg: {
+        element: 'Volt',
+        imageUrl: '/plugins/streamalchemy/assets/eggs/volt-standard.png'
+      }
+    });
+    expect(observed.some(state => state.visible && state.classes.includes('hatch-pulse')))
+      .toBe(true);
+    expect(observed.some(state => state.crack === '3')).toBe(true);
+    expect(observed.some(state => state.classes.includes('energy-build'))).toBe(true);
+    expect(stage.classList.contains('visible')).toBe(false);
+    expect(stage.dataset.phase).toBeUndefined();
+  });
+
   test('holds the complete timeline duration, clears transient peaks and closes the finale', async () => {
     const dom = mountArena();
     const waits = [];
@@ -432,6 +658,10 @@ describe('Stream Monsters Rules-v6 portrait arcade DOM and fallback behavior', (
       .map(selector => selector.trim())
       .filter(Boolean));
     for (const selector of [
+      '#arcade-choreography.visible',
+      '#arcade-choreography.egg-flight #arcade-egg-shell',
+      '#arcade-choreography.hatch-pulse #arcade-egg-shell',
+      '#arcade-choreography.energy-build #arcade-energy',
       '#streammonsters-overlay.arcade-egg-impact #card',
       '#streammonsters-overlay.arcade-monster-reveal #card',
       '#battle.camera-impulse',
@@ -441,6 +671,8 @@ describe('Stream Monsters Rules-v6 portrait arcade DOM and fallback behavior', (
     ]) {
       expect(selectors.has(selector)).toBe(true);
     }
+    expect(dom.window.document.querySelector('#arcade-egg-image')).not.toBeNull();
+    expect(dom.window.document.querySelectorAll('.arcade-crack')).toHaveLength(3);
   });
 
   test('keeps every critical correlation group intact under overload', () => {
@@ -465,6 +697,47 @@ describe('Stream Monsters Rules-v6 portrait arcade DOM and fallback behavior', (
     expect(critical.map(entry => entry.type)).toEqual(types);
     expect(new Set(critical.map(entry => entry.groupKey)))
       .toEqual(new Set(['critical:critical-flow-1']));
+  });
+
+  test('holds a staggered critical group until its finale and releases it on timeout', () => {
+    const grouped = OverlayRuntime.createPriorityQueue({
+      maxSize: 20,
+      criticalGroupHoldMs: 1_000
+    });
+    grouped.enqueue('hatch_started', {
+      eventId: 'A1',
+      correlationId: 'A'
+    }, 0);
+    expect(grouped.shift(0).data.eventId).toBe('A1');
+    grouped.enqueue('battle_match_found', {
+      eventId: 'B1',
+      correlationId: 'B'
+    }, 10);
+    grouped.enqueue('egg_hatched', {
+      eventId: 'A2',
+      correlationId: 'A'
+    }, 20);
+    expect(grouped.shift(20).data.eventId).toBe('A2');
+    expect(grouped.shift(20).data.eventId).toBe('B1');
+
+    const timedOut = OverlayRuntime.createPriorityQueue({
+      maxSize: 20,
+      criticalGroupHoldMs: 1_000
+    });
+    timedOut.enqueue('hatch_started', {
+      eventId: 'timeout-A1',
+      correlationId: 'timeout-A'
+    }, 0);
+    expect(timedOut.shift(0).data.eventId).toBe('timeout-A1');
+    timedOut.enqueue('battle_match_found', {
+      eventId: 'timeout-B1',
+      correlationId: 'timeout-B'
+    }, 10);
+    expect(timedOut.shift(999)).toBeNull();
+    expect(timedOut.releaseDelay(999)).toBe(1);
+    expect(timedOut.shift(1_000).data.eventId).toBe('timeout-B1');
+    timedOut.beginSnapshot();
+    expect(timedOut.releaseDelay(2_000)).toBeNull();
   });
 
   test('routes critical socket scenes through the shared timeline in the real overlay', async () => {
@@ -552,10 +825,12 @@ describe('Stream Monsters Rules-v6 portrait arcade DOM and fallback behavior', (
       }
       await socketHandlers.get('connect')();
       await flush();
+      const projector = new PublicEventProjector();
       const events = [
         ['streammonsters:egg_spawned', 'egg_spawned'],
         ['streammonsters:hatch_started', 'hatch_started'],
         ['streammonsters:egg_hatched', 'egg_hatched'],
+        ['streammonsters:monster_discovered', 'monster_discovered'],
         ['streammonsters:battle_choice_locked', 'battle_choice_locked'],
         ['streammonsters:battle_choices_revealed', 'battle_choices_revealed'],
         ['streammonsters:battle_skill_used', 'battle_skill_used'],
@@ -563,13 +838,41 @@ describe('Stream Monsters Rules-v6 portrait arcade DOM and fallback behavior', (
         ['streammonsters:monster_xp_awarded', 'monster_xp_awarded'],
         ['streammonsters:arena_rating_changed', 'arena_rating_changed']
       ];
+      const expectedTimelineCalls = [];
       for (const [socketEvent, type] of events) {
-        const payload = {
+        let payload = {
           eventId: `event-${type}`,
           correlationId: 'arcade-flow',
           egg: { element: 'Ember' },
           monster: { name: 'Ashfang', element: 'Ember' }
         };
+        if (type === 'monster_discovered') {
+          const eventType = 'streammonsters:monster_discovered';
+          const emitted = {
+            userId: 'private-viewer',
+            monster: {
+              monster_id: 'private-monster',
+              name: 'Ashfang',
+              element: 'Ember',
+              template_id: 'ashfang',
+              image_url: '/plugins/streamalchemy/assets/streammonsters/furry/ashfang.png'
+            },
+            template: {
+              templateId: 'ashfang',
+              element: 'Ember',
+              species: 'Wolf'
+            }
+          };
+          payload = {
+            ...projector.project(eventType, emitted),
+            ...projector.identifiers(eventType, emitted)
+          };
+          expect(payload).not.toHaveProperty('discovery');
+          expect(payload.monster).toEqual(expect.objectContaining({
+            name: 'Ashfang',
+            templateId: 'ashfang'
+          }));
+        }
         if (type.startsWith('battle_')) payload.matchId = 'match-overlay';
         if (type === 'battle_choice_locked') {
           payload.decision = { slot: 1, locked: true };
@@ -586,16 +889,14 @@ describe('Stream Monsters Rules-v6 portrait arcade DOM and fallback behavior', (
             hits: []
           };
         }
+        expectedTimelineCalls.push([type, payload.eventId]);
         socketHandlers.get(socketEvent)(payload);
       }
       for (let attempt = 0; attempt < 60 && timelineCalls.length < events.length; attempt += 1) {
         await flush();
       }
       expect(timelineCalls).toHaveLength(events.length);
-      expect(timelineCalls).toEqual(expect.arrayContaining(events.map(([, type]) => [
-        type,
-        `event-${type}`
-      ])));
+      expect(timelineCalls).toEqual(expect.arrayContaining(expectedTimelineCalls));
     } finally {
       dom.window.close();
     }

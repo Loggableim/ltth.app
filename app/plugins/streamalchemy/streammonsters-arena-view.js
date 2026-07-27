@@ -59,6 +59,7 @@
       : (Object.keys(clock).length ? null : handle => clearInterval(handle));
     const arena = documentLike.getElementById('battle');
     const surface = documentLike.getElementById('streammonsters-overlay') || arena;
+    const choreography = documentLike.getElementById('arcade-choreography');
     const transientPresentationClasses = Object.freeze([
       'arcade-egg-impact',
       'arcade-silhouette',
@@ -125,6 +126,36 @@
       target.classList.remove(className);
       void target.offsetWidth;
       target.classList.add(className);
+    }
+
+    function resetChoreography() {
+      if (!choreography) return;
+      choreography.className = '';
+      for (const key of ['phase', 'element', 'crack']) {
+        delete choreography.dataset[key];
+      }
+      const roulette = node('arcade-roulette');
+      if (roulette) roulette.textContent = '';
+      const image = node('arcade-egg-image');
+      if (image) {
+        image.removeAttribute('src');
+        image.alt = '';
+      }
+    }
+
+    function showChoreography(payload, phase, element = null) {
+      if (!choreography) return;
+      choreography.classList.add('visible');
+      choreography.dataset.phase = phase;
+      choreography.dataset.element = String(
+        element || payload?.egg?.element || payload?.monster?.element || ''
+      ).toLowerCase();
+      const image = node('arcade-egg-image');
+      const imageUrl = payload?.egg?.imageUrl || payload?.egg?.image_url;
+      if (image && imageUrl) {
+        image.src = imageUrl;
+        image.alt = String(payload?.egg?.element || 'Monster egg');
+      }
     }
 
     function renderState(slot, incoming = {}) {
@@ -437,6 +468,40 @@
           });
           break;
         }
+        case 'status_damage':
+          setText('arena-impact', `-${Math.max(0, numeric(beat.hpDamage))}`);
+          node('arena-impact')?.classList.add('visible', 'damage-number');
+          fighterNode(beat.targetSlot)?.classList.add('hit', 'status-hit');
+          fireTimelineOutputs(beat, action);
+          break;
+        case 'status_hud': {
+          const current = stateBySlot.get(beat.targetSlot) || {};
+          renderState(beat.targetSlot, {
+            ...current,
+            hp: Math.max(0, numeric(current.hp) - numeric(beat.hpDamage))
+          });
+          fighterNode(beat.targetSlot)?.classList.remove('hit', 'status-hit');
+          node('arena-impact')?.classList.remove('visible');
+          break;
+        }
+        case 'retaliation':
+          setText('arena-impact', `-${Math.max(0, numeric(beat.hpDamage))}`);
+          node('arena-impact')?.classList.add('visible', 'damage-number', 'retaliation-number');
+          fighterNode(beat.targetSlot)?.classList.add('hit', 'retaliation-hit');
+          setText('arena-feed', String(beat.retaliationType || 'retaliation').toUpperCase());
+          fireTimelineOutputs(beat, action);
+          break;
+        case 'retaliation_hud': {
+          const current = stateBySlot.get(beat.targetSlot) || {};
+          renderState(beat.targetSlot, {
+            ...current,
+            hp: Math.max(0, numeric(current.hp) - numeric(beat.hpDamage)),
+            shield: Math.max(0, numeric(current.shield) - numeric(beat.shieldAbsorbed))
+          });
+          fighterNode(beat.targetSlot)?.classList.remove('hit', 'retaliation-hit');
+          node('arena-impact')?.classList.remove('visible');
+          break;
+        }
         case 'hit_stop':
           if (arena) {
             arena.dataset.hitStop = String(beat.hitIndex || 1);
@@ -499,7 +564,11 @@
           break;
         }
         case 'knockout':
-          target?.classList.add('knockout');
+          fighterNode(
+            [1, 2].includes(numeric(beat.slot))
+              ? numeric(beat.slot)
+              : numeric(beat.targetSlot)
+          )?.classList.add('knockout');
           if (arena) arena.dataset.phase = 'knockout';
           setText('arena-feed', labels.knockout);
           fire(audio, 'arena.ko', {
@@ -509,7 +578,7 @@
           break;
         case 'recover':
           actor?.classList.remove('telegraphing', 'advancing');
-          target?.classList.remove('hit', 'evaded');
+          target?.classList.remove('hit', 'evaded', 'status-hit', 'retaliation-hit');
           arena?.classList.remove('hit-stop', 'camera-impulse');
           node('arena-special')?.classList.remove('visible');
           break;
@@ -568,6 +637,10 @@
         rootDataset.arcadeBeatId = beat.beatId;
       }
       switch (beat.type) {
+        case 'portal':
+          showChoreography(payload, 'portal', beat.element);
+          choreography?.classList.add('portal-open');
+          break;
         case 'sealed_card':
           lockChoice({
             decision: {
@@ -581,17 +654,54 @@
           revealChoices({ choices: beat.choices });
           break;
         case 'element_roulette':
+          showChoreography(payload, 'roulette', beat.element);
           setText('arena-feed', beat.element);
+          setText('arcade-roulette', beat.element);
           break;
         case 'roulette_lock':
           setText('arena-feed', beat.element);
           if (rootDataset) rootDataset.rouletteElement = beat.element;
+          if (choreography) {
+            choreography.dataset.phase = 'roulette-lock';
+            choreography.classList.add('roulette-locked');
+          }
+          break;
+        case 'egg_flight':
+          showChoreography(payload, 'egg-flight', beat.element);
+          choreography?.classList.add('egg-flight');
           break;
         case 'egg_impact':
+          showChoreography(payload, 'egg-impact', beat.element);
+          choreography?.classList.remove('egg-flight');
+          choreography?.classList.add('egg-impact');
           pulseClass(surface, 'arcade-egg-impact');
+          break;
+        case 'reward_peak':
+          if (choreography) choreography.dataset.phase = 'reward';
+          break;
+        case 'hatch_pulse':
+          showChoreography(payload, 'hatch', beat.element);
+          choreography?.classList.add('hatch-pulse');
           break;
         case 'hatch_crack':
           if (rootDataset) rootDataset.hatchCrack = String(beat.crackIndex);
+          if (choreography) {
+            choreography.dataset.phase = 'crack';
+            choreography.dataset.crack = String(beat.crackIndex);
+            choreography.classList.add(`crack-${beat.crackIndex}`);
+          }
+          break;
+        case 'energy_build':
+          if (choreography) {
+            choreography.dataset.phase = 'energy';
+            choreography.classList.add('energy-build');
+          }
+          break;
+        case 'hatch_flash':
+          if (choreography) {
+            choreography.dataset.phase = 'flash';
+            choreography.classList.add('hatch-flash');
+          }
           break;
         case 'silhouette':
           if (surface) surface.classList.add('arcade-silhouette');
@@ -640,6 +750,12 @@
           if (rootDataset) rootDataset.rank = String(beat.tier || '');
           pulseClass(surface, 'arcade-rank-up');
           break;
+        case 'rating_update':
+          if (rootDataset) {
+            rootDataset.rating = String(beat.rating || 0);
+            rootDataset.ratingDelta = String(beat.delta || 0);
+          }
+          break;
         default:
           break;
       }
@@ -660,6 +776,7 @@
       const timeline = ArenaDirector.buildArcadeTimeline(normalized, payload);
       if (!timeline.beats.length || !rememberTimelineEvent(timeline.eventId)) return false;
       transientPresentationClasses.forEach(className => surface?.classList.remove(className));
+      resetChoreography();
       syncRendererStatus();
       let cursor = 0;
       for (const beat of timeline.beats) {
@@ -668,6 +785,7 @@
         playPresentationBeat(beat, timeline, payload);
       }
       await wait(Math.max(0, timeline.durationMs - cursor));
+      resetChoreography();
       if (timeline.type === 'battle_completed') {
         arena?.classList.remove('visible');
       }
