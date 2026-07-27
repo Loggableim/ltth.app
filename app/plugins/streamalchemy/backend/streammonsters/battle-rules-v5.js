@@ -404,7 +404,7 @@ function resolveInteractiveRound({
   }
   const living = fighters.filter(fighter => states[fighter.monster_id].hp > 0);
   return {
-    rulesVersion: rulesVersion >= V6_RULES_VERSION ? V6_RULES_VERSION : RULES_VERSION,
+    rulesVersion: Math.max(RULES_VERSION, Number(rulesVersion) || RULES_VERSION),
     round,
     actions,
     state: states,

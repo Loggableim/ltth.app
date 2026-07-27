@@ -398,6 +398,7 @@ class StreamMonstersDatabase {
         matchmaking_level_gap INTEGER NOT NULL DEFAULT 2,
         round_number INTEGER NOT NULL DEFAULT 0,
         roster_deadline_ms INTEGER,
+        action_opened_at_ms INTEGER,
         action_deadline_ms INTEGER,
         winner_monster_id TEXT,
         result_json TEXT,
@@ -443,6 +444,7 @@ class StreamMonstersDatabase {
         source TEXT NOT NULL CHECK (source IN ('viewer', 'timeout')),
         event_id TEXT,
         event_sequence INTEGER,
+        charge_at_choice INTEGER,
         created_at_ms INTEGER NOT NULL,
         PRIMARY KEY (match_id, participant_id, window_kind, window_sequence),
         UNIQUE (event_id),
@@ -589,7 +591,9 @@ class StreamMonstersDatabase {
     this.ensureColumn('streammonsters_battles', 'match_id', 'TEXT');
     this.ensureColumn('streammonsters_battles', 'replay_version', 'INTEGER');
     this.ensureColumn('streammonsters_match_decisions', 'event_sequence', 'INTEGER');
+    this.ensureColumn('streammonsters_match_decisions', 'charge_at_choice', 'INTEGER');
     this.ensureColumn('streammonsters_match_actions', 'event_sequence', 'INTEGER');
+    this.ensureColumn('streammonsters_matches', 'action_opened_at_ms', 'INTEGER');
     this.ensureColumn(
       'streammonsters_matches',
       'matchmaking_level_gap',

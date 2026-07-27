@@ -13,7 +13,7 @@ const PublicEventProjector = require(
 );
 const StreamAlchemyPlugin = require('../plugins/streamalchemy');
 
-function createMatch(now) {
+function createMatch(now, rulesVersion = 6) {
   const sqlite = new Database(':memory:');
   const store = new StreamMonstersDatabase(sqlite);
   store.initialize();
@@ -35,13 +35,35 @@ function createMatch(now) {
     battleService: new BattleService({ store, now }),
     now,
     emit,
-    rulesVersion: 6,
+    rulesVersion,
     autoStart: false
   });
   return { sqlite, store, emit, service };
 }
 
 describe('Stream Monsters Rules-v6 sealed battle decisions', () => {
+  test('publishes a Rules-v7 passive charge window without revealing sealed choices', () => {
+    let nowMs = 1_000;
+    const { emit, service } = createMatch(() => nowMs, 7);
+    service.join({ userId: 'viewer-a' });
+    const reserved = service.join({ userId: 'viewer-b' });
+    service.lockRoster({ userId: 'viewer-a' });
+    service.lockRoster({ userId: 'viewer-b' });
+
+    const opened = emit.mock.calls.find(([type]) => type === 'streammonsters:battle_choice_opened');
+    expect(opened[1]).toEqual(expect.objectContaining({
+      matchId: reserved.match.matchId,
+      chargeWindow: {
+        openedAtMs: 1_000,
+        deadlineMs: 7_000,
+        passivePerSecond: 5
+      }
+    }));
+    service.submitChoice({ userId: 'viewer-a', choice: 'A', eventId: 'v7-sealed-a' });
+    const locked = emit.mock.calls.find(([type]) => type === 'streammonsters:battle_choice_locked');
+    expect(JSON.stringify(locked[1])).not.toContain('"choice":"A"');
+  });
+
   test('seals individual locks, reveals both choices once, and uses fast durable windows', () => {
     let nowMs = 1_000;
     const { emit, service } = createMatch(() => nowMs);

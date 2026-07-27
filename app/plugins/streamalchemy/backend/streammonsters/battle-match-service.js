@@ -2,6 +2,10 @@ const { randomUUID } = require('crypto');
 const { getEvolutionAssetPath, getTemplate } = require('./catalog');
 const { maxHp } = require('./battle-rules-v5');
 const { selectBattleWinner } = require('./battle-tie-break');
+const {
+  PASSIVE_CHARGE_PER_SECOND,
+  projectPassiveCharge
+} = require('./battle-charge');
 
 const ROSTER_WINDOW_MS = 10_000;
 const ACTION_WINDOW_MS = 6_000;
@@ -66,7 +70,7 @@ class BattleMatchService {
     this.seasonDurationDays = ARENA_DURATION_PRESETS.includes(Number(seasonDurationDays))
       ? Number(seasonDurationDays)
       : 28;
-    this.rulesVersion = Number(rulesVersion) >= 6 ? 6 : 5;
+    this.rulesVersion = Number(rulesVersion) >= 7 ? 7 : Number(rulesVersion) >= 6 ? 6 : 5;
     this.sweepIntervalMs = Math.max(250, Number(sweepIntervalMs) || 1_000);
     this.sweepTimer = null;
     if (autoStart) this.start();
@@ -122,6 +126,42 @@ class BattleMatchService {
 
   isRulesV6(match) {
     return Number(match?.rulesVersion ?? this.rulesVersion) >= 6;
+  }
+
+  isRulesV7(match) {
+    return Number(match?.rulesVersion ?? this.rulesVersion) >= 7;
+  }
+
+  chargeWindow(match) {
+    if (!this.isRulesV7(match)) return null;
+    return {
+      openedAtMs: Number(match.actionOpenedAtMs) || 0,
+      deadlineMs: Number(match.actionDeadlineMs) || 0,
+      passivePerSecond: PASSIVE_CHARGE_PER_SECOND
+    };
+  }
+
+  projectParticipantCharge(participant, match, asOfMs) {
+    return projectPassiveCharge({
+      baseCharge: participant?.combatState?.charge,
+      openedAtMs: match?.actionOpenedAtMs,
+      deadlineMs: match?.actionDeadlineMs,
+      asOfMs
+    });
+  }
+
+  materializePassiveCharge(match, asOfMs) {
+    if (!this.isRulesV7(match)) return match;
+    match.participants.forEach(participant => {
+      const state = { ...(participant.combatState || {}) };
+      state.charge = this.projectParticipantCharge(participant, match, asOfMs);
+      this.db.prepare(`
+        UPDATE streammonsters_match_participants
+        SET combat_state_json = ?
+        WHERE match_id = ? AND participant_id = ?
+      `).run(JSON.stringify(state), match.matchId, participant.participantId);
+    });
+    return this.getMatch(match.matchId);
   }
 
   rosterWindowMs(match = null) {
@@ -314,6 +354,7 @@ class BattleMatchService {
       ),
       roundNumber: row.round_number,
       rosterDeadlineMs: row.roster_deadline_ms,
+      actionOpenedAtMs: row.action_opened_at_ms,
       actionDeadlineMs: row.action_deadline_ms,
       winnerMonsterId: row.winner_monster_id,
       result: parseJson(row.result_json),
@@ -797,6 +838,7 @@ class BattleMatchService {
     const nowMs = this.now();
     const predicate = expectedVersion == null ? '' : 'AND phase_version = ?';
     const args = [
+      nowMs,
       nowMs + this.actionWindowMs(current),
       nowMs,
       matchId,
@@ -808,22 +850,26 @@ class BattleMatchService {
           phase_version = phase_version + 1,
           round_number = CASE WHEN round_number < 1 THEN 1 ELSE round_number END,
           roster_deadline_ms = NULL,
+          action_opened_at_ms = ?,
           action_deadline_ms = ?,
           updated_at_ms = ?
       WHERE match_id = ? AND state IN ('roster', 'action') ${predicate}
     `).run(...args);
     if (!changed.changes) return this.getMatch(matchId);
     const match = this.getMatch(matchId);
+    const chargeWindow = this.chargeWindow(match);
     this.appendEvent(matchId, 'streammonsters:battle_choice_opened', {
       matchId,
       round: match.roundNumber,
       deadlineMs: match.actionDeadlineMs,
-      choices: ['A', 'B', 'C']
+      choices: ['A', 'B', 'C'],
+      ...(chargeWindow ? { chargeWindow } : {})
     }, {
       matchId,
       round: match.roundNumber,
       deadlineMs: match.actionDeadlineMs,
       choices: ['A', 'B', 'C'],
+      ...(chargeWindow ? { chargeWindow } : {}),
       fighters: this.projectPublicFighters(match)
     });
     return this.getMatch(matchId);
@@ -838,7 +884,8 @@ class BattleMatchService {
     }
     return this.store.runInImmediateTransaction(() => {
       const match = this.getActiveMatchForViewer(userId);
-      if (!match || match.state !== 'action' || match.actionDeadlineMs <= this.now()) {
+      const nowMs = this.now();
+      if (!match || match.state !== 'action' || match.actionDeadlineMs <= nowMs) {
         return { handled: false, reason: 'no_active_window' };
       }
       const participant = match.participants.find(entry => entry.viewerId === userId);
@@ -846,12 +893,18 @@ class BattleMatchService {
       if (!['A', 'B', 'C'].includes(normalized)) {
         return { handled: false, reason: 'invalid_choice' };
       }
+      const chargeAtChoice = this.isRulesV7(match)
+        ? this.projectParticipantCharge(participant, match, nowMs)
+        : null;
+      if (this.isRulesV7(match) && normalized === 'C' && chargeAtChoice < 100) {
+        return { handled: false, reason: 'special_not_charged' };
+      }
       const normalizedSource = source === 'timeout' ? 'timeout' : 'viewer';
       const inserted = this.db.prepare(`
         INSERT OR IGNORE INTO streammonsters_match_decisions (
           match_id, participant_id, window_kind, window_sequence, choice,
-          requested_choice, source, event_id, created_at_ms
-        ) VALUES (?, ?, 'action', ?, ?, ?, ?, ?, ?)
+          requested_choice, source, event_id, charge_at_choice, created_at_ms
+        ) VALUES (?, ?, 'action', ?, ?, ?, ?, ?, ?, ?)
       `).run(
         match.matchId,
         participant.participantId,
@@ -860,7 +913,8 @@ class BattleMatchService {
         normalized,
         normalizedSource,
         normalizedEventId,
-        this.now()
+        chargeAtChoice,
+        nowMs
       );
       if (!inserted.changes) return { handled: false, reason: 'already_locked' };
       this.appendDecisionEvent(match, participant, {
@@ -881,13 +935,20 @@ class BattleMatchService {
   }
 
   resolveRound(matchId, expectedVersion) {
-    const match = this.getMatch(matchId);
+    let match = this.getMatch(matchId);
     if (!match || match.state !== 'action' || match.phaseVersion !== expectedVersion) return match;
     const decisions = this.db.prepare(`
       SELECT * FROM streammonsters_match_decisions
       WHERE match_id = ? AND window_kind = 'action' AND window_sequence = ?
     `).all(matchId, match.roundNumber);
     if (decisions.length !== 2) return match;
+    if (this.isRulesV7(match)) {
+      const materializedAtMs = Math.max(
+        Number(match.actionOpenedAtMs) || 0,
+        ...decisions.map(decision => Number(decision.created_at_ms) || 0)
+      );
+      match = this.materializePassiveCharge(match, materializedAtMs);
+    }
     if (this.isRulesV6(match)) {
       this.appendEvent(matchId, 'streammonsters:battle_choices_revealed', {
         matchId,
@@ -983,22 +1044,26 @@ class BattleMatchService {
       UPDATE streammonsters_matches
       SET phase_version = phase_version + 1,
           round_number = round_number + 1,
+          action_opened_at_ms = ?,
           action_deadline_ms = ?,
           updated_at_ms = ?
       WHERE match_id = ? AND state = 'action' AND phase_version = ?
-    `).run(nowMs + this.actionWindowMs(match), nowMs, matchId, expectedVersion);
+    `).run(nowMs, nowMs + this.actionWindowMs(match), nowMs, matchId, expectedVersion);
     if (changed.changes) {
       const next = this.getMatch(matchId);
+      const chargeWindow = this.chargeWindow(next);
       this.appendEvent(matchId, 'streammonsters:battle_choice_opened', {
         matchId,
         round: next.roundNumber,
         deadlineMs: next.actionDeadlineMs,
-        choices: ['A', 'B', 'C']
+        choices: ['A', 'B', 'C'],
+        ...(chargeWindow ? { chargeWindow } : {})
       }, {
         matchId,
         round: next.roundNumber,
         deadlineMs: next.actionDeadlineMs,
         choices: ['A', 'B', 'C'],
+        ...(chargeWindow ? { chargeWindow } : {}),
         fighters: this.projectPublicFighters(next)
       });
     }
@@ -2040,7 +2105,10 @@ class BattleMatchService {
   }
 
   deterministicTimeoutChoice(match, participant) {
-    const state = participant.combatState || { charge: 0 };
+    const charge = this.isRulesV7(match)
+      ? this.projectParticipantCharge(participant, match, match.actionDeadlineMs)
+      : participant.combatState?.charge;
+    const state = { charge: Number(charge) || 0 };
     const choices = state.charge >= 100 ? ['A', 'B', 'C'] : ['A', 'B'];
     const personality = participant.roster?.personality || 'Adaptive';
     return choices[this.hashNumber(
@@ -2389,8 +2457,8 @@ class BattleMatchService {
         this.db.prepare(`
           INSERT INTO streammonsters_match_decisions (
             match_id, participant_id, window_kind, window_sequence, choice,
-            requested_choice, source, event_id, created_at_ms
-          ) VALUES (?, ?, 'action', ?, ?, ?, 'timeout', ?, ?)
+            requested_choice, source, event_id, charge_at_choice, created_at_ms
+          ) VALUES (?, ?, 'action', ?, ?, ?, 'timeout', ?, ?, ?)
         `).run(
           matchId,
           participant.participantId,
@@ -2398,7 +2466,10 @@ class BattleMatchService {
           choice,
           choice,
           providerEventId,
-          nowMs
+          this.isRulesV7(match)
+            ? this.projectParticipantCharge(participant, match, match.actionDeadlineMs)
+            : null,
+          this.isRulesV7(match) ? match.actionDeadlineMs : nowMs
         );
         this.appendDecisionEvent(match, participant, {
           choice,

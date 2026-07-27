@@ -12,6 +12,32 @@ const ProgressionService = require(
 const BattleMatchService = require(
   '../plugins/streamalchemy/backend/streammonsters/battle-match-service'
 );
+const {
+  PASSIVE_CHARGE_PER_SECOND,
+  projectPassiveCharge
+} = require('../plugins/streamalchemy/backend/streammonsters/battle-charge');
+
+test('adds five charge per completed active-window second and caps at 100', () => {
+  expect(PASSIVE_CHARGE_PER_SECOND).toBe(5);
+  expect(projectPassiveCharge({
+    baseCharge: 70,
+    openedAtMs: 1_000,
+    deadlineMs: 7_000,
+    asOfMs: 1_999
+  })).toBe(70);
+  expect(projectPassiveCharge({
+    baseCharge: 70,
+    openedAtMs: 1_000,
+    deadlineMs: 7_000,
+    asOfMs: 4_100
+  })).toBe(85);
+  expect(projectPassiveCharge({
+    baseCharge: 95,
+    openedAtMs: 1_000,
+    deadlineMs: 7_000,
+    asOfMs: 9_000
+  })).toBe(100);
+});
 
 function createStore(filename = ':memory:', options = {}) {
   const sqlite = new Database(filename);
@@ -58,6 +84,7 @@ function createMatchService({
   progression = null,
   getStreamKey = () => null,
   logger = null,
+  rulesVersion = 5,
   autoStart = false
 }) {
   return new BattleMatchService({
@@ -69,8 +96,55 @@ function createMatchService({
     getStreamKey,
     now,
     logger,
+    rulesVersion,
     autoStart
   });
+}
+
+function createReservedRulesV7Match({
+  chargeA = 95,
+  chargeB = 70,
+  openedAtMs = 10_000
+} = {}) {
+  let nowMs = openedAtMs;
+  const { sqlite, store } = createStore();
+  insertMonster(sqlite, { id: 'alpha-v7', userId: 'viewer-a' });
+  insertMonster(sqlite, {
+    id: 'beta-v7',
+    userId: 'viewer-b',
+    element: 'Tide',
+    templateId: 'ripple'
+  });
+  const service = createMatchService({
+    store,
+    now: () => nowMs,
+    rulesVersion: 7
+  });
+  service.join({ userId: 'viewer-a' });
+  const reserved = service.join({ userId: 'viewer-b' });
+  service.lockRoster({ userId: 'viewer-a' });
+  service.lockRoster({ userId: 'viewer-b' });
+  const match = service.getMatch(reserved.match.matchId);
+  sqlite.prepare(`
+    UPDATE streammonsters_match_participants
+    SET combat_state_json = ?
+    WHERE match_id = ? AND viewer_id = ?
+  `).run(JSON.stringify({ charge: chargeA }), match.matchId, 'viewer-a');
+  sqlite.prepare(`
+    UPDATE streammonsters_match_participants
+    SET combat_state_json = ?
+    WHERE match_id = ? AND viewer_id = ?
+  `).run(JSON.stringify({ charge: chargeB }), match.matchId, 'viewer-b');
+  return {
+    sqlite,
+    service,
+    matchId: match.matchId,
+    advance: milliseconds => { nowMs += milliseconds; },
+    decisions: () => sqlite.prepare(`
+      SELECT * FROM streammonsters_match_decisions
+      WHERE match_id = ? ORDER BY participant_id
+    `).all(match.matchId)
+  };
 }
 
 describe('Stream Monsters durable rules-v5 match schema', () => {
@@ -104,6 +178,10 @@ describe('Stream Monsters durable rules-v5 match schema', () => {
       .map(column => column.name)).toContain('event_sequence');
     expect(sqlite.prepare('PRAGMA table_info(streammonsters_match_decisions)').all()
       .map(column => column.name)).toContain('event_sequence');
+    expect(sqlite.prepare('PRAGMA table_info(streammonsters_matches)').all()
+      .map(column => column.name)).toContain('action_opened_at_ms');
+    expect(sqlite.prepare('PRAGMA table_info(streammonsters_match_decisions)').all()
+      .map(column => column.name)).toContain('charge_at_choice');
   });
 
   test('isolates and logs failing afterCommit callbacks while later callbacks still run', () => {
@@ -125,6 +203,71 @@ describe('Stream Monsters durable rules-v5 match schema', () => {
 });
 
 describe('Stream Monsters durable BattleMatchService', () => {
+  test('Rules v7 rejects early C without a lock and accepts it at the first full tick', () => {
+    const { service, advance, decisions } = createReservedRulesV7Match({
+      chargeA: 95,
+      openedAtMs: 10_000
+    });
+    advance(999);
+    expect(service.submitChoice({ userId: 'viewer-a', choice: 'C' }))
+      .toEqual(expect.objectContaining({ handled: false, reason: 'special_not_charged' }));
+    expect(decisions()).toHaveLength(0);
+    advance(1);
+    expect(service.submitChoice({ userId: 'viewer-a', choice: 'C' }))
+      .toEqual(expect.objectContaining({ handled: true }));
+    expect(decisions()).toHaveLength(1);
+    expect(decisions()[0].charge_at_choice).toBe(100);
+  });
+
+  test('Rules v7 materializes both charges at the second lock timestamp', () => {
+    const { sqlite, service, matchId, advance, decisions } = createReservedRulesV7Match({
+      chargeA: 95,
+      chargeB: 70,
+      openedAtMs: 10_000
+    });
+    advance(1_000);
+    service.submitChoice({ userId: 'viewer-a', choice: 'C', eventId: 'v7-a' });
+    service.submitChoice({ userId: 'viewer-b', choice: 'A', eventId: 'v7-b' });
+
+    expect(decisions().map(decision => decision.charge_at_choice).sort((a, b) => a - b))
+      .toEqual([75, 100]);
+    const actions = sqlite.prepare(`
+      SELECT action_json FROM streammonsters_match_actions
+      WHERE match_id = ? ORDER BY sequence
+    `).all(matchId).map(row => JSON.parse(row.action_json));
+    expect(Object.fromEntries(actions.map(action => [action.actorId, action.before.actor.charge])))
+      .toEqual({ 'alpha-v7': 100, 'beta-v7': 75 });
+  });
+
+  test('Rules v7 timeout charge uses the persisted action deadline', () => {
+    const { service, advance, decisions } = createReservedRulesV7Match({
+      chargeA: 70,
+      chargeB: 70,
+      openedAtMs: 20_000
+    });
+    advance(60_000);
+    expect(service.sweep().actionsExpired).toBe(1);
+    expect(decisions().map(decision => decision.charge_at_choice)).toEqual([100, 100]);
+  });
+
+  test('Rules v7 reconstruction does not double passive charge mid-window', () => {
+    const original = createReservedRulesV7Match({
+      chargeA: 70,
+      chargeB: 70,
+      openedAtMs: 30_000
+    });
+    original.advance(1_000);
+    const recovered = createMatchService({
+      store: original.service.store,
+      now: () => 31_000,
+      rulesVersion: 7
+    });
+    expect(recovered.getActiveMatchForViewer('viewer-a').actionOpenedAtMs).toBe(30_000);
+    recovered.submitChoice({ userId: 'viewer-a', choice: 'A', eventId: 'reload-a' });
+    recovered.submitChoice({ userId: 'viewer-b', choice: 'A', eventId: 'reload-b' });
+    expect(original.decisions().map(decision => decision.charge_at_choice)).toEqual([75, 75]);
+  });
+
   test('applies Arena season duration changes without requiring a plugin reload', () => {
     const { store } = createStore();
     const nowMs = Date.parse('2026-07-21T12:00:00Z');

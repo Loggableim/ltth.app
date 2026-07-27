@@ -254,6 +254,21 @@ describe('Stream Monsters Rules-v6 catalog contracts', () => {
 });
 
 describe('Stream Monsters Rules-v6 deterministic resolver', () => {
+  test('preserves the caller Rules version for v5, v6, and v7 resolutions', () => {
+    const input = {
+      fighters: [
+        fighter('left-version', 'ashfang', { agility: 20 }),
+        fighter('right-version', 'ripple', { agility: 1 })
+      ],
+      choices: { 'left-version': 'A', 'right-version': 'B' },
+      seed: 'rules-version-contract',
+      round: 1
+    };
+    expect(Rules.resolveInteractiveRound({ ...input, rulesVersion: 5 }).rulesVersion).toBe(5);
+    expect(Rules.resolveInteractiveRound({ ...input, rulesVersion: 6 }).rulesVersion).toBe(6);
+    expect(Rules.resolveInteractiveRound({ ...input, rulesVersion: 7 }).rulesVersion).toBe(7);
+  });
+
   test('replays the same action envelopes including skills, effects, rolls and charge', () => {
     const input = {
       fighters: [
